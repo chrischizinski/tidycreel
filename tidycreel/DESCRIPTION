@@ -1,0 +1,47 @@
+Package: tidycreel
+Title: Tidy Interface for Creel Survey Design and Analysis
+Version: 0.0.0.9000
+Authors@R: 
+    person("Chris", "Chizinski", , "chris.chizinski@unl.edu", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0002-6248-8628"))
+Description: Provides a tidy, pipe-friendly interface for creel survey 
+    design, data management, estimation, and reporting. Built on the 'survey' 
+    package for robust design-based inference with support for access-point, 
+    roving, and hybrid survey designs.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Depends: 
+    R (>= 4.1.0)
+Imports:
+    survey,
+    dplyr,
+    tidyr,
+    tibble,
+    purrr,
+    rlang,
+    vctrs,
+    stringr,
+    lubridate,
+    janitor,
+    readr,
+    ggplot2,
+    cli
+Suggests:
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown,
+    covr,
+    bench,
+    gt,
+    flextable,
+    qs,
+    future,
+    furrr,
+    data.table,
+    DBI,
+    targets
+VignetteBuilder: knitr
+URL: https://github.com/cchizinski2/tidycreel
+BugReports: https://github.com/cchizinski2/tidycreel/issues

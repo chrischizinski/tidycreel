@@ -1,0 +1,181 @@
+---
+title: "Getting Started with tidycreel"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting Started with tidycreel}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(tidycreel)
+library(dplyr)
+library(ggplot2)
+```
+
+## Introduction
+
+The `tidycreel` package provides a comprehensive framework for designing and analyzing access-point creel surveys. This vignette demonstrates how to use the survey design constructors to create different types of creel survey designs.
+
+## Survey Design Types
+
+`tidycreel` supports three main survey design types:
+
+1. **Access-point designs**: Interviews conducted at fixed access locations
+2. **Roving designs**: Interviews conducted while moving between locations
+3. **Replicate weights**: Add variance estimation capabilities to any design
+
+## Loading Example Data
+
+The package includes example datasets that we'll use throughout this vignette:
+
+```{r load-data}
+# Load example datasets
+interviews <- readr::read_csv(system.file("extdata/toy_interviews.csv", 
+                                        package = "tidycreel"))
+counts <- readr::read_csv(system.file("extdata/toy_counts.csv", 
+                                    package = "tidycreel"))
+calendar <- readr::read_csv(system.file("extdata/toy_calendar.csv", 
+                                      package = "tidycreel"))
+
+# Preview the data
+head(interviews)
+head(counts)
+head(calendar)
+```
+
+## Creating an Access-Point Survey Design
+
+Access-point designs are used when interviews are conducted at fixed locations where anglers exit the fishery. This design assumes complete coverage of exiting anglers during interview periods.
+
+```{r access-design}
+# Create access-point survey design
+access_design <- design_access(
+  interviews = interviews,
+  calendar = calendar,
+  strata_vars = c("date", "shift_block", "location"),
+  weight_method = "standard"
+)
+
+# Examine the design object
+class(access_design)
+names(access_design)
+summary(access_design$design_weights)
+```
+
+## Creating a Roving Survey Design
+
+Roving designs are used when interviewers move between locations to conduct interviews. This design requires additional count data to estimate fishing effort.
+
+```{r roving-design}
+# Create roving survey design
+roving_design <- design_roving(
+  interviews = interviews,
+  counts = counts,
+  calendar = calendar,
+  strata_vars = c("date", "shift_block", "location"),
+  effort_method = "ratio",
+  coverage_correction = TRUE
+)
+
+# Examine the design object
+class(roving_design)
+names(roving_design)
+head(roving_design$effort_estimates)
+```
+
+## Adding Replicate Weights for Variance Estimation
+
+Replicate weights allow for robust variance estimation using methods like bootstrap, jackknife, or balanced repeated replication (BRR).
+
+```{r replicate-weights}
+# Add bootstrap replicate weights to access design
+rep_design <- design_repweights(
+  base_design = access_design,
+  replicates = 100,
+  method = "bootstrap",
+  seed = 12345
+)
+
+# Examine the replicate weights
+class(rep_design)
+dim(rep_design$replicate_weights)
+summary(rep_design$scale_factors)
+```
+
+## Design Comparison
+
+Let's compare the different survey designs:
+
+```{r design-comparison}
+# Create summary statistics for comparison
+design_summary <- tibble(
+  Design = c("Access", "Roving", "Replicate"),
+  Type = c("Access-point", "Roving", "Access + Replicates"),
+  Observations = c(nrow(access_design$interviews), 
+                   nrow(roving_design$interviews), 
+                   nrow(rep_design$base_design$interviews)),
+  Replicates = c(1, 1, rep_design$replicates),
+  Mean_Weight = c(mean(access_design$design_weights), 
+                  mean(roving_design$design_weights), 
+                  mean(rep_design$base_design$design_weights))
+)
+
+design_summary
+```
+
+## Advanced Usage
+
+### Custom Stratification
+
+You can specify custom stratification variables based on your survey design:
+
+```{r custom-stratification}
+# Create design with custom stratification
+custom_design <- design_access(
+  interviews = interviews,
+  calendar = calendar,
+  strata_vars = c("date", "location", "mode"),
+  weight_method = "post_stratify"
+)
+
+# Check stratification
+table(custom_design$interviews$date, custom_design$interviews$location)
+```
+
+### Handling Missing Data
+
+The validation functions will catch missing required columns:
+
+```{r validation}
+# This will produce an error due to missing columns
+tryCatch({
+  bad_interviews <- interviews[, -1]  # Remove first column
+  design_access(bad_interviews, calendar)
+}, error = function(e) {
+  message("Validation error: ", e$message)
+})
+```
+
+## Next Steps
+
+Now that you have created survey designs, you can:
+
+1. **Estimate catch rates** using the survey design objects
+2. **Calculate population totals** with appropriate variance estimates
+3. **Perform hypothesis tests** comparing different groups or time periods
+4. **Generate reports** with confidence intervals and uncertainty bounds
+
+See the package documentation for more advanced features and estimation functions.
+
+## References
+
+- Pollock, K. H., Jones, C. M., & Brown, T. L. (1994). *Angler survey methods and their applications in fisheries management*. American Fisheries Society.
+- Malvestuto, S. P. (1996). *Sampling the recreational creel*. In Murphy, B. R. & Willis, D. W. (Eds.), *Fisheries techniques* (2nd ed., pp. 591-623). American Fisheries Society.

@@ -1,0 +1,10 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^\.github$
+^README\.Rmd$
+^LICENSE\.md$
+^\.lintr$
+^\.styler$
+^renv$
+^renv\.lock$
+^\.DS_Store$

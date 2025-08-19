@@ -1,0 +1,10 @@
+count_id,date,time,location,mode,anglers_count,parties_count,weather_code,temperature,wind_speed,visibility,count_duration
+CNT001,2024-01-01,2024-01-01 08:00:00,Lake_A,boat,12,6,clear,22.5,5.2,good,15
+CNT002,2024-01-01,2024-01-01 08:00:00,Lake_A,bank,8,5,clear,22.5,5.2,good,15
+CNT003,2024-01-01,2024-01-01 09:00:00,Lake_A,boat,15,7,clear,24.1,4.8,good,15
+CNT004,2024-01-01,2024-01-01 09:00:00,Lake_A,bank,10,6,clear,24.1,4.8,good,15
+CNT005,2024-01-01,2024-01-01 14:00:00,Lake_A,boat,18,9,partly_cloudy,26.3,6.1,fair,15
+CNT006,2024-01-01,2024-01-01 14:00:00,Lake_A,bank,12,8,partly_cloudy,26.3,6.1,fair,15
+CNT007,2024-01-02,2024-01-02 08:00:00,Lake_A,boat,14,7,overcast,19.8,7.2,fair,15
+CNT008,2024-01-06,2024-01-06 08:00:00,Lake_A,boat,25,12,clear,20.5,3.8,good,15
+CNT009,2024-01-06,2024-01-06 08:00:00,Lake_A,bank,18,10,clear,20.5,3.8,good,15
