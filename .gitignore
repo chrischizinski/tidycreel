@@ -1,8 +1,14 @@
-.DS_Store
-*.Rhistory
-*.RData
 .Rproj.user
+.Rhistory
+.Rdata
+.httr-oauth
+.DS_Store
+.quarto
 
+# Local AI tools / config
 .claude/
 .roo/
 .kilocode/
+
+# Editor settings
+.vscode/
