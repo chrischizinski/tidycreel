@@ -4,6 +4,7 @@
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 [![CRAN status](https://www.r-pkg.org/badges/version/tidycreel)](https://CRAN.R-project.org/package=tidycreel)
 [![R-CMD-check](https://github.com/cchizinski2/tidycreel/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/cchizinski2/tidycreel/actions/workflows/R-CMD-check.yaml)
+[![R-CMD-check](https://github.com/chrischizinski/tidycreel/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/chrischizinski/tidycreel/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 ## Overview
