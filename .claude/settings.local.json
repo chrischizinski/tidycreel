@@ -19,7 +19,8 @@
       "Bash(R:*)",
       "Bash(git -C /Users/cchizinski2/Documents/git2/research/tidycreel/tidycreel status)",
       "Bash(git -C /Users/cchizinski2/Documents/git2/research/tidycreel/tidycreel add .)",
-      "Bash(git -C /Users/cchizinski2/Documents/git2/research/tidycreel/tidycreel commit -m \"Initial package structure\n\n- Package created with usethis::create_package()\n- Basic R package structure in place\n- DESCRIPTION with dependencies configured\n- Initial R functions and tests scaffolded\n\n🤖 Generated with [Claude Code](https://claude.ai/code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\")"
+      "Bash(git -C /Users/cchizinski2/Documents/git2/research/tidycreel/tidycreel commit -m \"Initial package structure\n\n- Package created with usethis::create_package()\n- Basic R package structure in place\n- DESCRIPTION with dependencies configured\n- Initial R functions and tests scaffolded\n\n🤖 Generated with [Claude Code](https://claude.ai/code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\")",
+      "Bash(git -C /Users/cchizinski2/Documents/git2/research/tidycreel/tidycreel remote -v)"
     ],
     "deny": [],
     "ask": [],

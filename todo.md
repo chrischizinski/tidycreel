@@ -30,8 +30,9 @@ _Do not proceed to Phase 1 until Phase 0 is complete._
 
 ### 0.2 Git & GitHub Setup
 - [x] Initialize Git repository with `usethis::use_git()`
-- [ ] Create GitHub repository (`tidycreel`) with `usethis::use_github()`
+- [x] Create GitHub repository (`tidycreel`) with `usethis::use_github()`
 - [ ] Configure branch protections on main branch (require PR review, CI passing, disallow force-pushes)
+- [ ] Add `.gitignore` for R package development
 - [ ] Add `.gitignore` for R package development
 
 ### 0.3 Development Environment
