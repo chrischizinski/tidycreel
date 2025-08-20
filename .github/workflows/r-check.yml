@@ -1,6 +1,7 @@
+---
 name: R CMD Check
 
-on:
+'on':
   push:
     branches: [main]
   pull_request:
@@ -14,10 +15,10 @@ jobs:
         config:
           - {os: macos-latest, r: 'release'}
           - {os: ubuntu-latest, r: 'release'}
-    
+
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
-      R_KEEP_PKG_SOURCE: yes
+      R_KEEP_PKG_SOURCE: true
 
     steps:
       - uses: actions/checkout@v4
@@ -31,12 +32,14 @@ jobs:
           cache-version: 1
 
       - name: Install system dependencies
+        if: runner.os == 'Linux'
         run: |
-          sudo apt-get update && sudo apt-get install -y --no-install-recommends \
-            libcurl4-openssl-dev \
-            libssl-dev \
-            libxml2-dev \
-            zlib1g-dev
+          sudo apt-get update && \
+            sudo apt-get install -y --no-install-recommends \
+              libcurl4-openssl-dev \
+              libssl-dev \
+              libxml2-dev \
+              zlib1g-dev
 
       - name: Check package
         run: R CMD check --no-manual --no-build-vignettes --as-cran .
@@ -44,7 +47,7 @@ jobs:
 
       - name: Upload check results
         if: failure()
-  uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ runner.os }}-rcheck
           path: tidycreel.Rcheck

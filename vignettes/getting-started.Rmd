@@ -39,26 +39,15 @@ The package includes example datasets that we'll use throughout this vignette:
 
 ```{r load-data}
 # Load example datasets
-interviews <- readr::read_csv(system.file("extdata/toy_interviews.csv",
-                                        package = "tidycreel"))
-counts <- readr::read_csv(system.file("extdata/toy_counts.csv",
-                                    package = "tidycreel"))
-calendar <- readr::read_csv(system.file("extdata/toy_calendar.csv",
-                                      package = "tidycreel"))
-
-# Create shift_block from existing time columns
-interviews <- interviews |>
-  mutate(shift_block = (lubridate::hour(time_start) %/% 6) + 1L)
-
-counts <- counts |>
-  mutate(shift_block = (lubridate::hour(cd_CountTime) %/% 6) + 1L)
-
-# Add shift_block to calendar via date linkage
-calendar <- calendar |>
-  left_join(
-    interviews |> select(date, shift_block) |> distinct(),
-    by = "date"
-  )
+interviews <- readr::read_csv(
+  system.file("extdata/toy_interviews.csv", package = "tidycreel")
+)
+counts <- readr::read_csv(
+  system.file("extdata/toy_counts.csv", package = "tidycreel")
+)
+calendar <- readr::read_csv(
+  system.file("extdata/toy_calendar.csv", package = "tidycreel")
+)
 
 # Preview the data
 head(interviews)
@@ -75,7 +64,7 @@ Access-point designs are used when interviews are conducted at fixed locations w
 access_design <- design_access(
   interviews = interviews,
   calendar = calendar,
-  strata_vars = c("date", "shift_block", "location"),
+  strata_vars = c("date", "shift_block"),
   weight_method = "standard"
 )
 
@@ -153,16 +142,20 @@ design_summary
 You can specify custom stratification variables based on your survey design:
 
 ```{r custom-stratification}
+## Diagnostics: check structure before design creation
+str(calendar)
+str(interviews)
 # Create design with custom stratification
 custom_design <- design_access(
   interviews = interviews,
   calendar = calendar,
-  strata_vars = c("date", "location", "mode"),
+  strata_vars = c("date"),
   weight_method = "post_stratify"
 )
 
 # Check stratification
-table(custom_design$interviews$date, custom_design$interviews$location)
+str(custom_design$interviews)
+dplyr::count(custom_design$interviews, date, shift_block)
 ```
 
 ### Handling Missing Data

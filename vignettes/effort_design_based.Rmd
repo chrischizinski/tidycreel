@@ -1,8 +1,13 @@
+
 ---
 title: "Effort Estimation in Creel Surveys: Design-Based Methods"
 author: "tidycreel team"
 date: "2025-08-20"
 output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Effort Estimation in Creel Surveys: Design-Based Methods}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 ---
 
 # Introduction

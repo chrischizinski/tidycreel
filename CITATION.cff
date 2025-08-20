@@ -14,15 +14,15 @@ authors:
     affiliation: "Your Institution"
 abstract: >-
   tidycreel provides a modern, tidy interface for analyzing recreational
-  fisheries creel survey data. Built on the survey package, it offers 
-  design-based estimators for effort, catch per unit effort (CPUE), and 
-  harvest totals with proper variance estimation. The package follows 
+  fisheries creel survey data. Built on the survey package, it offers
+  design-based estimators for effort, catch per unit effort (CPUE), and
+  harvest totals with proper variance estimation. The package follows
   tidyverse principles and emphasizes vectorized operations for performance.
 keywords:
   - "fisheries"
   - "creel survey"
   - "survey sampling"
-  - "recreational fishing" 
+  - "recreational fishing"
   - "R package"
   - "tidyverse"
 license: MIT

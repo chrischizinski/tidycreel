@@ -19,3 +19,5 @@
 ^\.claude$  # Exclude Claude configuration
 ^\.git$     # Exclude git directory
 
+^doc$
+^Meta$

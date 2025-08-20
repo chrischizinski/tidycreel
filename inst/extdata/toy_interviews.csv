@@ -7,3 +7,8 @@ INT005,2024-01-01,2024-01-01 15:20:00,2024-01-01 15:35:00,Lake_A,bank,afternoon,
 INT006,2024-01-02,2024-01-02 07:45:00,2024-01-02 08:00:00,Lake_A,boat,morning,weekday,4,5.0,walleye,12,8,4,6.2,TRUE,1.0
 INT007,2024-01-02,2024-01-02 09:30:00,2024-01-02 09:45:00,Lake_A,boat,morning,weekday,2,3.5,bass,6,4,2,3.1,TRUE,1.0
 INT008,2024-01-06,2024-01-06 08:15:00,2024-01-06 08:30:00,Lake_A,boat,morning,weekend,3,4.0,walleye,9,6,3,4.5,TRUE,1.0
+INT009,2024-01-01,2024-01-01 18:00:00,2024-01-01 18:15:00,Lake_A,boat,evening,weekday,2,2.0,catfish,2,2,0,1.0,TRUE,1.0
+INT010,2024-01-02,2024-01-02 14:00:00,2024-01-02 14:15:00,Lake_A,boat,afternoon,weekday,2,2.5,bass,3,2,1,1.8,TRUE,1.0
+INT011,2024-01-02,2024-01-02 18:30:00,2024-01-02 18:45:00,Lake_A,bank,evening,weekday,1,1.0,panfish,1,1,0,0.5,TRUE,1.0
+INT012,2024-01-06,2024-01-06 14:00:00,2024-01-06 14:15:00,Lake_A,boat,afternoon,weekend,2,2.0,bass,2,2,0,1.0,TRUE,1.0
+INT013,2024-01-06,2024-01-06 18:00:00,2024-01-06 18:15:00,Lake_A,bank,evening,weekend,1,1.0,catfish,1,1,0,0.5,TRUE,1.0

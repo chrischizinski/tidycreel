@@ -12,7 +12,7 @@ usethis::use_data(toy_interviews, toy_counts, toy_catch, overwrite = TRUE)'
 Rscript -e 'devtools::document()'
 
 # Basic validation
-Rscript -e 'data(toy_interviews, toy_counts, toy_catch); 
+Rscript -e 'data(toy_interviews, toy_counts, toy_catch);
 cat("Successfully loaded", nrow(toy_interviews), "interview records\n",
     nrow(toy_counts), "count records\n",
     nrow(toy_catch), "catch records\n")'

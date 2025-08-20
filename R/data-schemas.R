@@ -266,7 +266,7 @@ validate_counts <- function(counts, strict = TRUE) {
   )
 
   missing_cols <- setdiff(required_cols, names(counts))
-  
+
   if (length(missing_cols) > 0) {
     msg <- paste("Missing required columns:", paste(missing_cols, collapse = ", "))
     if (strict) {
@@ -275,23 +275,23 @@ validate_counts <- function(counts, strict = TRUE) {
       cli::cli_warn(msg)
     }
   }
-  
+
   if (!inherits(counts$date, "Date")) {
     cli::cli_abort("{.var date} must be a Date vector")
   }
-  
+
   if (!inherits(counts$time, "POSIXct")) {
     cli::cli_abort("{.var time} must be a POSIXct vector")
   }
-  
+
   if (!all(c(counts$anglers_count, counts$parties_count, counts$count_duration) %% 1 == 0)) {
     cli::cli_abort("Count variables must be integers")
   }
-  
+
   if (any(counts$anglers_count < 0) || any(counts$parties_count < 0)) {
     cli::cli_abort("Count variables must be non-negative")
   }
-  
+
   invisible(counts)
 }
 
@@ -303,9 +303,9 @@ validate_counts <- function(counts, strict = TRUE) {
 #' @export
 validate_auxiliary <- function(auxiliary, strict = TRUE) {
   required_cols <- c("date", "sunrise", "sunset", "holiday")
-  
+
   missing_cols <- setdiff(required_cols, names(auxiliary))
-  
+
   if (length(missing_cols) > 0) {
     msg <- paste("Missing required columns:", paste(missing_cols, collapse = ", "))
     if (strict) {
@@ -314,15 +314,15 @@ validate_auxiliary <- function(auxiliary, strict = TRUE) {
       cli::cli_warn(msg)
     }
   }
-  
+
   if (!inherits(auxiliary$date, "Date")) {
     cli::cli_abort("{.var date} must be a Date vector")
   }
-  
+
   if (!inherits(auxiliary$sunrise, "POSIXct") || !inherits(auxiliary$sunset, "POSIXct")) {
     cli::cli_abort("{.var sunrise} and {.var sunset} must be POSIXct vectors")
   }
-  
+
   invisible(auxiliary)
 }
 
@@ -334,9 +334,9 @@ validate_auxiliary <- function(auxiliary, strict = TRUE) {
 #' @export
 validate_reference <- function(reference, strict = TRUE) {
   required_cols <- c("code", "description")
-  
+
   missing_cols <- setdiff(required_cols, names(reference))
-  
+
   if (length(missing_cols) > 0) {
     msg <- paste("Missing required columns:", paste(missing_cols, collapse = ", "))
     if (strict) {
@@ -345,7 +345,6 @@ validate_reference <- function(reference, strict = TRUE) {
       cli::cli_warn(msg)
     }
   }
-  
+
   invisible(reference)
 }
-

@@ -10,7 +10,7 @@ Execute Phase 0.3 "Development Environment" per this enhanced protocol:
 - For each task:
   a. Cross-reference with CONTRIBUTING.md §3.2 (Coding Standards) and §4.1 (PR Guidelines)
   b. Apply .roo/config.yaml path mappings using POSIX.1-2017 compliant substitutions
-  c. Generate atomic operation plan with: 
+  c. Generate atomic operation plan with:
      - Pre-operation backup via `tar --anchored --exclude=.roo/checksums -cpf backup_$(date +%s).tar`
      - Dry-run diff output using unified format with 3-line context anchors
      - Dependency graph validation through `renv::hydrate()` and `devtools::check()`
@@ -44,16 +44,16 @@ Execute Phase 0.3 "Development Environment" per this enhanced protocol:
   - Task completion matrix (CSV format)
   - Environment delta report via `diff -ruN --label BEFORE --label AFTER pre.env post.env`
   - Compliance checklist against CONTRIBUTING.md §7.3
-- Update todo.md with: 
-  `[x] $(date -u +%FT%TZ) $(git rev-parse --short HEAD)` 
+- Update todo.md with:
+  `[x] $(date -u +%FT%TZ) $(git rev-parse --short HEAD)`
   using BSD date/GNU coreutils compatibility layer
 
 6. **Failure Protocols**
-- Halt on non-zero exit code with: 
+- Halt on non-zero exit code with:
   `trap 'echo "ERR:$(jq -n --arg cmd "$BASH_COMMAND" --arg lno "$LINENO" '\''{error: $cmd, line: $lno, stack: $(stack)}'\'')" >&2' ERR`
 - Preserve failed state using `tar --exclude='*.tar' -czf crashdump_$(date +%s)_${RANDOM}.tgz`
 
 7. **State Transition**
-- Initiate Phase 0.4 only after: 
-  `[ $(git diff --name-only HEAD~1 | grep -c '^\.roo/') -gt 0 ] && make validate-config` 
+- Initiate Phase 0.4 only after:
+  `[ $(git diff --name-only HEAD~1 | grep -c '^\.roo/') -gt 0 ] && make validate-config`
   returns 0 exit status

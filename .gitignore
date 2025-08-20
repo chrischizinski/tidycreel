@@ -347,3 +347,5 @@ packrat.lock
 *.swp
 *.swo
 *.out
+/doc/
+/Meta/

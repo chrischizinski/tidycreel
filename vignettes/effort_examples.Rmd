@@ -1,19 +1,26 @@
+
 ---
 title: "Effort Estimation: Extended Examples"
 author: "tidycreel team"
 date: "2025-08-20"
 output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Effort Estimation: Extended Examples}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 ---
-
 # Extended Examples for Effort Estimators
 
 This vignette provides additional examples and edge cases for the four main effort estimators in tidycreel. It demonstrates grouping, diagnostics, and error handling in realistic scenarios.
 
+# vignette: >
+#   %\VignetteIndexEntry{Effort Estimation: Extended Examples}
+#   %\VignetteEngine{knitr::rmarkdown}
+#   %\VignetteEncoding{UTF-8}
 # Example: Missing Grouping Columns
 
 ```r
 library(tidycreel)
-library(tibble)
 
 # Data missing 'location' and 'shift_block'
 counts <- tibble(

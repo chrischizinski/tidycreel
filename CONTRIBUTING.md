@@ -24,7 +24,7 @@ Please note that this project is released with a [Contributor Code of Conduct](C
 # ✅ Good: Vectorized approach
 effort_total <- sum(design_data$effort * design_data$weights, na.rm = TRUE)
 
-# ✅ Good: Grouped vectorized approach  
+# ✅ Good: Grouped vectorized approach
 strata_totals <- design_data %>%
   group_by(stratum_id) %>%
   summarise(effort = sum(effort * weights, na.rm = TRUE))
@@ -51,7 +51,7 @@ for (i in seq_len(nrow(design_data))) {
 **Follow the [tidyverse style guide](https://style.tidyverse.org) completely:**
 
 - **Function names:** `snake_case` with descriptive verbs (`estimate_effort`, not `effort_est`)
-- **Variable names:** `snake_case` with clear meaning (`party_size`, not `ps`)  
+- **Variable names:** `snake_case` with clear meaning (`party_size`, not `ps`)
 - **File names:** `kebab-case` for multi-word concepts (`design-constructors.R`)
 - **Documentation:** Complete roxygen2 docs with examples
 - **Pipes:** Use `%>%` for multi-step data transformations
@@ -74,10 +74,10 @@ for (i in seq_len(nrow(design_data))) {
 test_that("estimate_effort returns proper structure", {
   # Arrange
   design <- create_test_design()
-  
-  # Act  
+
+  # Act
   result <- estimate_effort(design)
-  
+
   # Assert
   expect_s3_class(result, "tbl_df")
   expect_true(all(c("effort_estimate", "se", "cv") %in% names(result)))
@@ -86,7 +86,7 @@ test_that("estimate_effort returns proper structure", {
 ```
 
 **Test edge cases explicitly:**
-- Zero effort/catch scenarios  
+- Zero effort/catch scenarios
 - Empty strata
 - Missing data patterns
 - Single-observation groups
@@ -97,7 +97,7 @@ test_that("estimate_effort returns proper structure", {
 **Functions must scale efficiently:**
 
 - **Benchmark large datasets** (10^6+ rows) in tests
-- **Use `profvis` for profiling** computationally intensive functions  
+- **Use `profvis` for profiling** computationally intensive functions
 - **Consider `data.table` backends** for heavy processing
 - **Document time/memory complexity** for key algorithms
 
@@ -157,7 +157,7 @@ R/
 ### Naming Conventions
 
 - **Design functions:** `design_*()`
-- **Estimation functions:** `estimate_*()`  
+- **Estimation functions:** `estimate_*()`
 - **Validation functions:** `validate_*()`
 - **Utility functions:** `calculate_*()`, `create_*()`
 
@@ -182,7 +182,7 @@ R/
 
 Contributors are recognized in:
 - Package DESCRIPTION file
-- NEWS.md release notes  
+- NEWS.md release notes
 - Annual contributor acknowledgments
 
 Thank you for contributing to tidycreel!

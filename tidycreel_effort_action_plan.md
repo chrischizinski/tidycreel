@@ -86,7 +86,7 @@ Columns: `by...` (strata), `estimate` (angler-hours), `se`, `ci_low`, `ci_high`,
 **Principle**: Effort (hours) ≈ sum over strata of `mean_instant_count * total_minutes_in_stratum / 60`.
 
 ### 3.1 Function: `est_effort.instantaneous`
-**Signature**: 
+**Signature**:
 ```r
 est_effort.instantaneous <- function(counts, by = c("date","shift_block","location"),
                                      minutes_col = c("count_duration","interval_minutes"),

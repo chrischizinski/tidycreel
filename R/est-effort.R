@@ -10,16 +10,17 @@
 #' @param conf_level Confidence level for CI (default: 0.95)
 #' @param ... Additional arguments
 #' @return Tibble with estimate, SE, CI, n, method, diagnostics
-est_effort.roving <- function(counts,
-                              by = c("date", "shift_block", "location"),
-                              minutes_col = c("count_duration", "interval_minutes"),
-                              svy = NULL,
-                              conf_level = 0.95,
-                              ...) {
+est_effort_roving <- function(counts,
+  by = c("date", "shift_block", "location"),
+  minutes_col = c("count_duration", "interval_minutes"),
+  svy = NULL,
+  conf_level = 0.95,
+  ...
+) {
   # Validate columns
   min_col <- minutes_col[which(minutes_col %in% names(counts))]
   if (length(min_col) == 0) {
-    stop("Missing columns in roving effort: one of ", paste(minutes_col, collapse=", "))
+    stop("Missing columns in roving effort: one of ", paste(minutes_col, collapse = ", "))
   }
   cols_needed <- c("count", min_col[1])
   tc_require_cols(counts, cols_needed, context = "roving effort")
@@ -32,7 +33,6 @@ est_effort.roving <- function(counts,
     n = dplyr::n()
   )
   summarised$estimate <- summarised$mean_count * summarised$total_minutes / 60
-  # Variance & CI
   if (!is.null(svy)) {
     est <- survey::svytotal(~count, svy, na.rm = TRUE)
     se <- as.numeric(attr(est, "var"))^0.5
@@ -69,16 +69,17 @@ est_effort.roving <- function(counts,
 #' @param conf_level Confidence level for CI (default: 0.95)
 #' @param ... Additional arguments
 #' @return Tibble with estimate, SE, CI, n, method, diagnostics
-est_effort.aerial <- function(counts,
-                              by = c("date", "shift_block", "location"),
-                              minutes_col = c("count_duration", "interval_minutes"),
-                              svy = NULL,
-                              conf_level = 0.95,
-                              ...) {
+est_effort_aerial <- function(counts,
+  by = c("date", "shift_block", "location"),
+  minutes_col = c("count_duration", "interval_minutes"),
+  svy = NULL,
+  conf_level = 0.95,
+  ...
+) {
   # Validate columns
   min_col <- minutes_col[which(minutes_col %in% names(counts))]
   if (length(min_col) == 0) {
-    stop("Missing columns in aerial effort: one of ", paste(minutes_col, collapse=", "))
+    stop("Missing columns in aerial effort: one of ", paste(minutes_col, collapse = ", "))
   }
   cols_needed <- c("count", min_col[1])
   tc_require_cols(counts, cols_needed, context = "aerial effort")
@@ -91,7 +92,6 @@ est_effort.aerial <- function(counts,
     n = dplyr::n()
   )
   summarised$estimate <- summarised$mean_count * summarised$total_minutes / 60
-  # Variance & CI
   if (!is.null(svy)) {
     est <- survey::svytotal(~count, svy, na.rm = TRUE)
     se <- as.numeric(attr(est, "var"))^0.5
@@ -128,16 +128,17 @@ est_effort.aerial <- function(counts,
 #' @param conf_level Confidence level for CI (default: 0.95)
 #' @param ... Additional arguments
 #' @return Tibble with estimate, SE, CI, n, method, diagnostics
-est_effort.progressive <- function(counts,
-                                   by = c("date", "shift_block", "location"),
-                                   minutes_col = c("count_duration", "interval_minutes"),
-                                   svy = NULL,
-                                   conf_level = 0.95,
-                                   ...) {
+est_effort_progressive <- function(counts,
+  by = c("date", "shift_block", "location"),
+  minutes_col = c("count_duration", "interval_minutes"),
+  svy = NULL,
+  conf_level = 0.95,
+  ...
+) {
   # Validate columns
   min_col <- minutes_col[which(minutes_col %in% names(counts))]
   if (length(min_col) == 0) {
-    stop("Missing columns in progressive effort: one of ", paste(minutes_col, collapse=", "))
+    stop("Missing columns in progressive effort: one of ", paste(minutes_col, collapse = ", "))
   }
   cols_needed <- c("count", min_col[1])
   tc_require_cols(counts, cols_needed, context = "progressive effort")
@@ -150,7 +151,6 @@ est_effort.progressive <- function(counts,
     n = dplyr::n()
   )
   summarised$estimate <- summarised$total_count * summarised$total_minutes / (summarised$n * 60)
-  # Variance & CI
   if (!is.null(svy)) {
     est <- survey::svytotal(~count, svy, na.rm = TRUE)
     se <- as.numeric(attr(est, "var"))^0.5
@@ -175,8 +175,6 @@ est_effort.progressive <- function(counts,
   summarised$diagnostics <- list(NULL)
   summarised
 }
-## Effort Estimators for Creel Surveys
-#'
 #' Estimate Fishing Effort via Instantaneous Count
 #'
 #' Implements the mean count method for instantaneous (snapshot) creel surveys.
@@ -190,69 +188,19 @@ est_effort.progressive <- function(counts,
 #' @param conf_level Confidence level for CI (default: 0.95)
 #' @param ... Additional arguments
 #' @return Tibble with estimate, SE, CI, n, method, diagnostics
-#' @examples
-#' df <- tibble::tibble(date = as.Date("2025-08-20"), time = "12:00", count = 10, interval_minutes = 60)
-#' est_effort.instantaneous(df)
-#' Estimate Fishing Effort via Progressive (Bus-Route) Count
-#'
-#' Implements the bus-route (progressive) count method for creel surveys.
-#' Sums counts and survey duration, then divides by number of counts for unbiased effort estimation.
-#' Supports flexible grouping and design-based variance estimation.
-#'
-#' @param counts Data frame of progressive counts (one row per count event)
-#' @param by Character vector of grouping variables (default: c("date", "shift_block", "location"))
-#' @param minutes_col Name of column with count duration (default: c("count_duration", "interval_minutes"))
-#' @param svy Optional survey design object for variance estimation
-#' @param conf_level Confidence level for CI (default: 0.95)
-#' @param ... Additional arguments
-#' @return Tibble with estimate, SE, CI, n, method, diagnostics
-#' @examples
-#' df <- tibble::tibble(date = as.Date("2025-08-20"), time = "12:00", count = 10, interval_minutes = 60)
-#' est_effort.progressive(df)
-#' Estimate Fishing Effort via Aerial (Remote Sensing) Count
-#'
-#' Implements the mean count method for aerial (remote sensing) creel surveys.
-#' Uses mean of observed counts and total survey period for effort estimation.
-#' Supports flexible grouping and design-based variance estimation.
-#'
-#' @param counts Data frame of aerial counts (one row per count event)
-#' @param by Character vector of grouping variables (default: c("date", "shift_block", "location"))
-#' @param minutes_col Name of column with count duration (default: c("count_duration", "interval_minutes"))
-#' @param svy Optional survey design object for variance estimation
-#' @param conf_level Confidence level for CI (default: 0.95)
-#' @param ... Additional arguments
-#' @return Tibble with estimate, SE, CI, n, method, diagnostics
-#' @examples
-#' df <- tibble::tibble(date = as.Date("2025-08-20"), time = "12:00", count = 10, interval_minutes = 60)
-#' est_effort.aerial(df)
-#' Estimate Fishing Effort via Roving (Creel Clerk) Count
-#'
-#' Implements the mean count method for roving (creel clerk) surveys.
-#' Uses mean of observed counts and total survey period for effort estimation.
-#' Supports flexible grouping and design-based variance estimation.
-#'
-#' @param counts Data frame of roving counts (one row per count event)
-#' @param by Character vector of grouping variables (default: c("date", "shift_block", "location"))
-#' @param minutes_col Name of column with count duration (default: c("count_duration", "interval_minutes"))
-#' @param svy Optional survey design object for variance estimation
-#' @param conf_level Confidence level for CI (default: 0.95)
-#' @param ... Additional arguments
-#' @return Tibble with estimate, SE, CI, n, method, diagnostics
-#' @examples
-#' df <- tibble::tibble(date = as.Date("2025-08-20"), time = "12:00", count = 10, interval_minutes = 60)
-#' est_effort.roving(df)
-est_effort.instantaneous <- function(counts,
-                                    by = c("date", "shift_block", "location"),
-                                    minutes_col = c("count_duration", "interval_minutes"),
-                                    visibility_col = NULL,
-                                    svy = NULL,
-                                    conf_level = 0.95,
-                                    ...) {
+est_effort_instantaneous <- function(counts,
+  by = c("date", "shift_block", "location"),
+  minutes_col = c("count_duration", "interval_minutes"),
+  visibility_col = NULL,
+  svy = NULL,
+  conf_level = 0.95,
+  ...
+) {
   # Validate columns
   # Accept either count_duration or interval_minutes
   min_col <- minutes_col[which(minutes_col %in% names(counts))]
   if (length(min_col) == 0) {
-    stop("Missing columns in instantaneous effort: one of ", paste(minutes_col, collapse=", "))
+    stop("Missing columns in instantaneous effort: one of ", paste(minutes_col, collapse = ", "))
   }
   cols_needed <- c("count", min_col[1])
   tc_require_cols(counts, cols_needed, context = "instantaneous effort")
@@ -270,9 +218,7 @@ est_effort.instantaneous <- function(counts,
     n = dplyr::n()
   )
   summarised$estimate <- summarised$mean_count * summarised$total_minutes / 60
-  # Variance & CI
   if (!is.null(svy)) {
-    # Use survey design for variance
     est <- survey::svytotal(~count, svy, na.rm = TRUE)
     se <- as.numeric(attr(est, "var"))^0.5
     ci <- tc_confint(as.numeric(est), se, level = conf_level)
@@ -280,20 +226,19 @@ est_effort.instantaneous <- function(counts,
     summarised$ci_low <- ci[1]
     summarised$ci_high <- ci[2]
   } else {
-      # If only one group, SE and CI are NA
-      if (nrow(summarised) == 1) {
-        summarised$se <- NA_real_
-        summarised$ci_low <- NA_real_
-        summarised$ci_high <- NA_real_
-      } else {
-        se <- sd(summarised$estimate, na.rm = TRUE) / sqrt(summarised$n)
-        ci <- tc_confint(summarised$estimate, se, level = conf_level)
-        summarised$se <- se
-        summarised$ci_low <- ci[1]
-        summarised$ci_high <- ci[2]
-      }
+    if (nrow(summarised) == 1) {
+      summarised$se <- NA_real_
+      summarised$ci_low <- NA_real_
+      summarised$ci_high <- NA_real_
+    } else {
+      se <- sd(summarised$estimate, na.rm = TRUE) / sqrt(summarised$n)
+      ci <- tc_confint(summarised$estimate, se, level = conf_level)
+      summarised$se <- se
+      summarised$ci_low <- ci[1]
+      summarised$ci_high <- ci[2]
+    }
   }
   summarised$method <- "instantaneous"
-  summarised$diagnostics <- list(NULL) # placeholder for diagnostics
+  summarised$diagnostics <- list(NULL)
   summarised
 }

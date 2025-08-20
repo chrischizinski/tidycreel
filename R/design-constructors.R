@@ -155,63 +155,91 @@ NULL
 design_access <- function(interviews, calendar, locations = NULL,
                           strata_vars = c("date", "shift_block"),
                           weight_method = "standard") {
-  # Validate inputs
-  interviews <- validate_interviews(interviews)
-  calendar <- validate_calendar(calendar)
+    # Validate inputs
+    interviews <- validate_interviews(interviews)
+    calendar <- validate_calendar(calendar)
 
-  # Set locations
-  if (is.null(locations)) {
-    locations <- unique(interviews$location)
-  }
+    # Set locations
+    if (is.null(locations)) {
+      locations <- unique(interviews$location)
+    }
 
-  # Validate weight method
-  weight_method <- match.arg(weight_method,
-    choices = c("standard", "post_stratify", "calibrate")
-  )
+    # --- Location-level mismatch check ---
+    interview_locations <- unique(interviews$location)
+    calendar_locations <- unique(calendar$location)
+    missing_in_interviews <- setdiff(calendar_locations, interview_locations)
+    missing_in_calendar <- setdiff(interview_locations, calendar_locations)
+    if (length(missing_in_interviews) > 0 || length(missing_in_calendar) > 0) {
+      msg <- "Location mismatch detected.\n"
+      if (length(missing_in_interviews) > 0) {
+        msg <- paste0(msg, "Locations present in calendar but missing from interviews: ", paste(missing_in_interviews, collapse=", "), "\n")
+      }
+      if (length(missing_in_calendar) > 0) {
+        msg <- paste0(msg, "Locations present in interviews but missing from calendar: ", paste(missing_in_calendar, collapse=", "), "\n")
+      }
+      stop(msg)
+    }
 
-  # Calculate design weights
-  design_weights <- calculate_access_weights(
-    interviews = interviews,
-    calendar = calendar,
-    strata_vars = strata_vars,
-    weight_method = weight_method
-  )
-  interviews$design_weights <- design_weights
-  # Warn if all or most weights are NA
-  na_weights <- sum(is.na(design_weights))
-  total_weights <- length(design_weights)
-  if (total_weights > 0 && na_weights == total_weights) {
-    warning("All design weights are NA. This usually means interview strata do not match calendar strata. Check your data and stratification variables.")
-  } else if (total_weights > 0 && na_weights > 0.5 * total_weights) {
-    warning("More than half of design weights are NA. This may indicate partial mismatch between interview and calendar strata.")
-  }
-
-  # Build survey design object
-  svy_design <- survey::svydesign(
-    ids = ~1,
-    strata = stats::as.formula(paste("~", paste(strata_vars, collapse = "+"))),
-    weights = ~design_weights,
-    data = interviews
-  )
-
-  # Create design object
-  design <- list(
-    design_type = "access_point",
-    interviews = interviews,
-    calendar = calendar,
-    locations = locations,
-    strata_vars = strata_vars,
-    weight_method = weight_method,
-    design_weights = design_weights,
-    svy_design = svy_design,
-    metadata = list(
-      creation_time = Sys.time(),
-      package_version = utils::packageVersion("tidycreel")
+    # Validate weight method
+    weight_method <- match.arg(weight_method,
+      choices = c("standard", "post_stratify", "calibrate")
     )
-  )
 
-  class(design) <- c("access_design", "creel_design", "list")
-  return(design)
+    # --- Strata-level mismatch check ---
+    interview_strata <- unique(interviews[strata_vars])
+    calendar_strata <- unique(calendar[strata_vars])
+    # Find missing strata in interviews (present in calendar, not in interviews)
+    missing_in_interviews <- dplyr::anti_join(calendar_strata, interview_strata, by = strata_vars)
+    # Find missing strata in calendar (present in interviews, not in calendar)
+    missing_in_calendar <- dplyr::anti_join(interview_strata, calendar_strata, by = strata_vars)
+    if (nrow(missing_in_interviews) > 0 || nrow(missing_in_calendar) > 0) {
+      msg <- "Strata mismatch detected.\n"
+      if (nrow(missing_in_interviews) > 0) {
+        msg <- paste0(msg, "Strata present in calendar but missing from interviews:\n",
+          paste(capture.output(print(missing_in_interviews)), collapse = "\n"), "\n")
+      }
+      if (nrow(missing_in_calendar) > 0) {
+        msg <- paste0(msg, "Strata present in interviews but missing from calendar:\n",
+          paste(capture.output(print(missing_in_calendar)), collapse = "\n"), "\n")
+      }
+      stop(msg)
+    }
+
+    # Calculate design weights
+    design_weights <- calculate_access_weights(
+      interviews = interviews,
+      calendar = calendar,
+      strata_vars = strata_vars,
+      weight_method = weight_method
+    )
+    interviews$design_weights <- design_weights
+
+    # Build survey design object
+    svy_design <- survey::svydesign(
+      ids = ~1,
+      strata = stats::as.formula(paste("~", paste(strata_vars, collapse = "+"))),
+      weights = ~design_weights,
+      data = interviews
+    )
+
+    # Create design object
+    design <- list(
+      design_type = "access_point",
+      interviews = interviews,
+      calendar = calendar,
+      locations = locations,
+      strata_vars = strata_vars,
+      weight_method = weight_method,
+      design_weights = design_weights,
+      svy_design = svy_design,
+      metadata = list(
+        creation_time = Sys.time(),
+        package_version = utils::packageVersion("tidycreel")
+      )
+    )
+
+    class(design) <- c("access_design", "creel_design", "list")
+    return(design)
 }
 
 #' Create Roving Survey Design
@@ -280,18 +308,114 @@ design_roving <- function(interviews, counts, calendar, locations = NULL,
                           strata_vars = c("date", "shift_block", "location"),
                           effort_method = "ratio",
                           coverage_correction = TRUE) {
-  # Validate inputs
-  interviews <- validate_interviews(interviews)
-  counts <- validate_counts(counts)
-  calendar <- validate_calendar(calendar)
+    # Validate inputs
+    interviews <- validate_interviews(interviews)
+    counts <- validate_counts(counts)
+    calendar <- validate_calendar(calendar)
 
-  # Set locations
-  if (is.null(locations)) {
-    locations <- union(unique(interviews$location), unique(counts$location))
+    # Set locations
+    if (is.null(locations)) {
+      locations <- union(unique(interviews$location), unique(counts$location))
+    }
+
+  # --- Location-level mismatch check ---
+  interview_locations <- unique(interviews$location)
+  count_locations <- unique(counts$location)
+  calendar_locations <- unique(calendar$location)
+  missing_in_interviews <- setdiff(calendar_locations, interview_locations)
+  missing_in_counts <- setdiff(calendar_locations, count_locations)
+  missing_in_calendar_from_interviews <- setdiff(interview_locations, calendar_locations)
+  missing_in_calendar_from_counts <- setdiff(count_locations, calendar_locations)
+  if (
+    length(missing_in_interviews) > 0 ||
+    length(missing_in_counts) > 0 ||
+    length(missing_in_calendar_from_interviews) > 0 ||
+    length(missing_in_calendar_from_counts) > 0
+  ) {
+    msg <- "Location mismatch detected.\n"
+    if (length(missing_in_interviews) > 0) {
+      msg <- paste0(
+        msg,
+        "Locations present in calendar but missing from interviews: ",
+        paste(missing_in_interviews, collapse = ", "), "\n"
+      )
+    }
+    if (length(missing_in_counts) > 0) {
+      msg <- paste0(
+        msg,
+        "Locations present in calendar but missing from counts: ",
+        paste(missing_in_counts, collapse = ", "), "\n"
+      )
+    }
+    if (length(missing_in_calendar_from_interviews) > 0) {
+      msg <- paste0(
+        msg,
+        "Locations present in interviews but missing from calendar: ",
+        paste(missing_in_calendar_from_interviews, collapse = ", "), "\n"
+      )
+    }
+    if (length(missing_in_calendar_from_counts) > 0) {
+      msg <- paste0(
+        msg,
+        "Locations present in counts but missing from calendar: ",
+        paste(missing_in_calendar_from_counts, collapse = ", "), "\n"
+      )
+    }
+    stop(msg)
+  }
+
+  # --- Strata-level mismatch check ---
+  interview_strata <- unique(interviews[strata_vars])
+  count_strata <- unique(counts[strata_vars])
+  calendar_strata <- unique(calendar[strata_vars])
+  # Find missing strata in interviews (present in calendar, not in interviews)
+  missing_in_interviews <- dplyr::anti_join(calendar_strata, interview_strata, by = strata_vars)
+  # Find missing strata in counts (present in calendar, not in counts)
+  missing_in_counts <- dplyr::anti_join(calendar_strata, count_strata, by = strata_vars)
+  # Find missing strata in calendar (present in interviews or counts, not in calendar)
+  missing_in_calendar_from_interviews <- dplyr::anti_join(interview_strata, calendar_strata, by = strata_vars)
+  missing_in_calendar_from_counts <- dplyr::anti_join(count_strata, calendar_strata, by = strata_vars)
+  if (
+    nrow(missing_in_interviews) > 0 ||
+    nrow(missing_in_counts) > 0 ||
+    nrow(missing_in_calendar_from_interviews) > 0 ||
+    nrow(missing_in_calendar_from_counts) > 0
+  ) {
+    msg <- "Strata mismatch detected.\n"
+    if (nrow(missing_in_interviews) > 0) {
+      msg <- paste0(
+        msg,
+        "Strata present in calendar but missing from interviews:\n",
+        paste(capture.output(print(missing_in_interviews)), collapse = "\n"), "\n"
+      )
+    }
+    if (nrow(missing_in_counts) > 0) {
+      msg <- paste0(
+        msg,
+        "Strata present in calendar but missing from counts:\n",
+        paste(capture.output(print(missing_in_counts)), collapse = "\n"), "\n"
+      )
+    }
+    if (nrow(missing_in_calendar_from_interviews) > 0) {
+      msg <- paste0(
+        msg,
+        "Strata present in interviews but missing from calendar:\n",
+        paste(capture.output(print(missing_in_calendar_from_interviews)), collapse = "\n"), "\n"
+      )
+    }
+    if (nrow(missing_in_calendar_from_counts) > 0) {
+      msg <- paste0(
+        msg,
+        "Strata present in counts but missing from calendar:\n",
+        paste(capture.output(print(missing_in_calendar_from_counts)), collapse = "\n"), "\n"
+      )
+    }
+    stop(msg)
   }
 
   # Validate methods
-  effort_method <- match.arg(effort_method,
+  effort_method <- match.arg(
+    effort_method,
     choices = c("ratio", "calibrate", "model_based")
   )
 
@@ -311,14 +435,6 @@ design_roving <- function(interviews, counts, calendar, locations = NULL,
     strata_vars = strata_vars
   )
   interviews$design_weights <- design_weights
-  # Warn if all or most weights are NA
-  na_weights <- sum(is.na(design_weights))
-  total_weights <- length(design_weights)
-  if (total_weights > 0 && na_weights == total_weights) {
-    warning("All design weights are NA. This usually means interview/count strata do not match calendar strata. Check your data and stratification variables.")
-  } else if (total_weights > 0 && na_weights > 0.5 * total_weights) {
-    warning("More than half of design weights are NA. This may indicate partial mismatch between interview/count and calendar strata.")
-  }
 
   # Build survey design object
   svy_design <- survey::svydesign(
@@ -348,7 +464,7 @@ design_roving <- function(interviews, counts, calendar, locations = NULL,
   )
 
   class(design) <- c("roving_design", "creel_design", "list")
-  return(design)
+  design
 }
 
 #' Create Survey Design with Replicate Weights
@@ -496,7 +612,7 @@ design_repweights <- function(base_design, replicates = NULL,
 #' @details
 #' This function provides a clear, pipe-friendly way to access the underlying survey design object
 #' created by tidycreel constructors. Use this for analysis with survey or srvyr functions.
-#' 
+#'
 #' - For access-point, roving, and bus route designs, returns a `survey::svydesign`.
 #' - For replicate weights designs, returns a `survey::svrepdesign`.
 #' - Raises an error if no embedded survey design is found.

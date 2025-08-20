@@ -30,4 +30,3 @@ Print method for creel_design objects
 
 Print a summary of a creel_design survey object
 }
-
