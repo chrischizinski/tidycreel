@@ -35,11 +35,14 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update && \
+            sudo apt-get update && \
             sudo apt-get install -y --no-install-recommends \
               libcurl4-openssl-dev \
               libssl-dev \
               libxml2-dev \
-              zlib1g-dev
+              zlib1g-dev \
+              gettext \
+              libgettextpo-dev
 
       - name: Check package
         run: R CMD check --no-manual --no-build-vignettes --as-cran .
