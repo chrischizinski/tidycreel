@@ -1,0 +1,9 @@
+linters: linters_with_defaults(
+  line_length_linter = line_length_linter(120L),
+  object_usage_linter = NULL,
+  object_name_linter = object_name_linter(styles = c("snake_case", "symbols")),
+  object_length_linter = object_length_linter(length = 30L),
+  cyclocomp_linter = if (requireNamespace("cyclocomp", quietly = TRUE)) cyclocomp_linter(complexity_limit = 25L) else NULL,
+  trailing_blank_lines_linter = trailing_blank_lines_linter(),
+  trailing_whitespace_linter = trailing_whitespace_linter()
+ )

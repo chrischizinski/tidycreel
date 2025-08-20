@@ -1,0 +1,45 @@
+# .github/workflows/roo-todo-sync.yml
+name: Roo TODO Sync
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  sync-todo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-r@v2
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: |
+            any::devtools
+            any::lintr
+            any::testthat
+
+      - name: Run lint/tests
+        run: |
+          Rscript -e 'lintr::lint_package()'
+          Rscript -e 'devtools::test(stop_on_failure = TRUE)'
+
+      - name: Emit flags (example)
+        run: |
+          mkdir -p .roo/status
+          # If we got this far, tests passed:
+          touch .roo/status/phase0.tests_zero
+          # Add other flags based on additional checks (e.g., grep in DESCRIPTION, check .Rbuildignore, etc.)
+          if grep -q 'Authors@R:' DESCRIPTION; then touch .roo/status/phase0.desc_authors_maintainer_set; fi
+          if grep -q '^\\.roo$' .Rbuildignore; then touch .roo/status/phase0.hidden_files_ignored; fi
+
+      - name: Update todo.md from flags
+        run: |
+          python3 .roo/scripts/update_todo_from_status.py
+
+      - name: Push changes (if any)
+        if: ${{ success() }}
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore(roo): sync todo.md checkboxes from .roo/status"

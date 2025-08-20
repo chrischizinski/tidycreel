@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <style>
+      :root{
+        --bg:#0F7C90;        /* teal fill inside hex */
+        --border:#2D1B46;    /* dark border & strokes */
+        --cream:#F4F1E8;     /* cream for text */
+        --basket:#F4A259;    /* basket base */
+        --basket-shade:#D97A2B; /* basket shading stripes */
+        --strap:#7A3B8F;     /* strap accent */
+      }
+      .stroke{ fill:none; stroke:var(--border); stroke-width:22; stroke-linecap:round; stroke-linejoin:round; }
+    </style>
+    <!-- rounded hex path (centered, sized for 64px corner radius look) -->
+    <path id="hexPath"
+          d="M512,50
+             l296,171
+             a64,64 0 0 1 32,55
+             v342
+             a64,64 0 0 1 -32,55
+             l-296,171
+             a64,64 0 0 1 -64,0
+             l-296,-171
+             a64,64 0 0 1 -32,-55
+             v-342
+             a64,64 0 0 1 32,-55
+             l296,-171
+             a64,64 0 0 1 64,0 z"/>
+  </defs>
+
+  <!-- fill & border -->
+  <use href="#hexPath" fill="var(--bg)"/>
+  <use href="#hexPath" fill="none" stroke="var(--border)" stroke-width="32"/>
+
+  <!-- CREEL BASKET ICON -->
+  <!-- basket body -->
+  <g transform="translate(0,6)">
+    <path d="M662 371c-31-18-93-30-150-30s-119 12-150 30c-35 21-58 63-65 108-8 55-2 89 26 117 25 25 64 43 189 43s164-18 189-43c28-28 34-62 26-117-7-45-30-87-65-108z"
+          fill="var(--basket)" stroke="var(--border)" stroke-width="18" stroke-linejoin="round"/>
+    <!-- lid -->
+    <path d="M676 392c0 39-74 70-166 70s-166-31-166-70 74-64 166-64 166 26 166 64z"
+          fill="var(--basket)" stroke="var(--border)" stroke-width="18"/>
+    <!-- lid opening -->
+    <ellipse cx="512" cy="394" rx="64" ry="24" fill="var(--border)"/>
+    <!-- latch strap -->
+    <path d="M512 462c-18 0-32 14-32 32v44c0 18 14 32 32 32s32-14 32-32v-44c0-18-14-32-32-32z"
+          fill="var(--basket-shade)" stroke="var(--border)" stroke-width="16"/>
+    <!-- weave stripes (simple flats) -->
+    <g fill="none" stroke="var(--basket-shade)" stroke-width="16" stroke-linecap="round">
+      <path d="M366 522h292"/>
+      <path d="M350 562h324"/>
+      <path d="M340 602h344"/>
+      <path d="M350 642h324"/>
+      <path d="M366 682h292"/>
+    </g>
+    <!-- side contour emphasis -->
+    <path d="M356 508c18 94 77 132 156 132s138-38 156-132" class="stroke" stroke-width="10" opacity=".35"/>
+
+    <!-- strap -->
+    <path d="M616 376c74-68 126-90 170-64 26 15 37 43 24 70-10 22-32 34-58 32-32-3-69-17-104-38"
+          fill="none" stroke="var(--strap)" stroke-width="26" stroke-linecap="round"/>
+    <path d="M636 377c30 18 59 29 86 33" class="stroke" stroke-width="10" opacity=".35"/>
+  </g>
+
+  <!-- WORDMARK -->
+  <!-- Using text for editability; change font as needed. For CRAN-style, a rounded sans works well. -->
+  <g aria-label="tidycreel" transform="translate(0,8)">
+    <text x="512" y="820"
+          font-family="Inter, Montserrat, 'Nunito Sans', 'Helvetica Neue', Arial, sans-serif"
+          font-weight="800"
+          font-size="140"
+          text-anchor="middle"
+          fill="var(--cream)"
+          letter-spacing="1">tidycreel</text>
+    <!-- subtle dark outline for contrast -->
+    <text x="512" y="820"
+          font-family="Inter, Montserrat, 'Nunito Sans', 'Helvetica Neue', Arial, sans-serif"
+          font-weight="800"
+          font-size="140"
+          text-anchor="middle"
+          fill="none" stroke="var(--border)" stroke-width="8" stroke-linejoin="round">tidycreel</text>
+  </g>
+</svg>

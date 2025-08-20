@@ -1,10 +1,10 @@
-# tidycreel is utilized for creel survey analysis
 Package: tidycreel
 Title: Tidy Interface for Creel Survey Design and Analysis
 Version: 0.0.0.9000
 Authors@R: 
-    person("Chris", "Chizinski", , "chris.chizinski@unl.edu", role = c("aut", "cre"),
-           comment = c(ORCID = "0000-0002-6248-8628"))
+    person(given = "Christopher", family = "Chizinski", role = c("aut","cre"),
+           email = "chris.chizinski@unl.edu",
+           comment = c(ORCID = "0000-0001-9294-2588"))
 Description: Provides a tidy, pipe-friendly interface for creel survey 
     design, data management, estimation, and reporting. Built on the 'survey' 
     package for robust design-based inference with support for access-point, 
@@ -42,7 +42,8 @@ Suggests:
     furrr,
     data.table,
     DBI,
-    targets
+    targets,
+    lifecycle
 VignetteBuilder: knitr
 URL: https://github.com/cchizinski2/tidycreel
 BugReports: https://github.com/cchizinski2/tidycreel/issues

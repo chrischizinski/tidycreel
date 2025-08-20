@@ -1,5 +1,7 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^\.roo/  # Exclude Roo protocol directory
+^\.roo$
 ^\.github$
 ^README\.Rmd$
 ^LICENSE\.md$
@@ -8,3 +10,12 @@
 ^renv$
 ^renv\.lock$
 ^\.DS_Store$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
+^CODE_OF_CONDUCT\.md$
+^codemeta\.json$
+^\.vscode$  # Exclude VSCode configuration
+^\.claude$  # Exclude Claude configuration
+^\.git$     # Exclude git directory
+

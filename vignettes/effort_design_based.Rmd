@@ -1,0 +1,88 @@
+---
+title: "Effort Estimation in Creel Surveys: Design-Based Methods"
+author: "tidycreel team"
+date: "2025-08-20"
+output: rmarkdown::html_vignette
+---
+
+# Introduction
+
+This vignette demonstrates how to estimate fishing effort using design-based methods in creel surveys with the tidycreel package. It covers instantaneous, progressive (bus-route), aerial, and roving estimators, with practical examples and guidance on grouping, diagnostics, and variance estimation.
+
+# Example Data
+
+```r
+library(tidycreel)
+library(tibble)
+
+# Simulated instantaneous count data
+inst_counts <- tibble(
+  date = as.Date(c("2025-08-20", "2025-08-20", "2025-08-21")),
+  time = c("12:00", "14:00", "13:00"),
+  count = c(10, 12, 8),
+  interval_minutes = c(60, 60, 60),
+  location = c("A", "A", "B")
+)
+```
+
+# Instantaneous Estimator
+
+```r
+est_effort.instantaneous(inst_counts)
+```
+
+# Progressive (Bus-Route) Estimator
+
+```r
+bus_counts <- tibble(
+  date = as.Date(rep("2025-08-20", 4)),
+  time = c("08:00", "10:00", "12:00", "14:00"),
+  count = c(5, 8, 10, 12),
+  interval_minutes = c(30, 30, 30, 30),
+  location = c("A", "A", "B", "B")
+)
+est_effort.progressive(bus_counts)
+```
+
+# Aerial Estimator
+
+```r
+aerial_counts <- tibble(
+  date = as.Date(rep("2025-08-20", 3)),
+  time = c("09:00", "11:00", "13:00"),
+  count = c(15, 18, 20),
+  interval_minutes = c(45, 45, 45),
+  location = c("A", "B", "B")
+)
+est_effort.aerial(aerial_counts)
+```
+
+# Roving Estimator
+
+```r
+roving_counts <- tibble(
+  date = as.Date(rep("2025-08-21", 2)),
+  time = c("10:00", "12:00"),
+  count = c(7, 9),
+  interval_minutes = c(60, 60),
+  location = c("A", "B")
+)
+est_effort.roving(roving_counts)
+```
+
+# Diagnostics and Grouping
+
+All estimators provide diagnostics and handle missing grouping columns gracefully. For best results, include all expected grouping columns in your data.
+
+# Variance and Confidence Intervals
+
+Effort estimates include standard errors and confidence intervals when multiple groups are present. For single-group cases, SE and CI are set to NA.
+
+# Advanced Features
+
+See the package todo for planned enhancements, including visibility correction and calibration for aerial surveys.
+
+# References
+
+- Pollock, K.H., et al. (1994). Sampling and estimation in creel surveys. Fisheries, 19(6), 24-27.
+- Malvestuto, S.P. (1996). Sampling the recreational creel. In Murphy & Willis (Eds.), Fisheries Techniques (2nd ed.).

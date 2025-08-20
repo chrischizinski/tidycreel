@@ -18,6 +18,7 @@ knitr::opts_chunk$set(
 library(tidycreel)
 library(dplyr)
 library(ggplot2)
+library(lubridate)
 ```
 
 ## Introduction
@@ -38,12 +39,26 @@ The package includes example datasets that we'll use throughout this vignette:
 
 ```{r load-data}
 # Load example datasets
-interviews <- readr::read_csv(system.file("extdata/toy_interviews.csv", 
+interviews <- readr::read_csv(system.file("extdata/toy_interviews.csv",
                                         package = "tidycreel"))
-counts <- readr::read_csv(system.file("extdata/toy_counts.csv", 
+counts <- readr::read_csv(system.file("extdata/toy_counts.csv",
                                     package = "tidycreel"))
-calendar <- readr::read_csv(system.file("extdata/toy_calendar.csv", 
+calendar <- readr::read_csv(system.file("extdata/toy_calendar.csv",
                                       package = "tidycreel"))
+
+# Create shift_block from existing time columns
+interviews <- interviews |>
+  mutate(shift_block = (lubridate::hour(time_start) %/% 6) + 1L)
+
+counts <- counts |>
+  mutate(shift_block = (lubridate::hour(cd_CountTime) %/% 6) + 1L)
+
+# Add shift_block to calendar via date linkage
+calendar <- calendar |>
+  left_join(
+    interviews |> select(date, shift_block) |> distinct(),
+    by = "date"
+  )
 
 # Preview the data
 head(interviews)
@@ -119,12 +134,12 @@ Let's compare the different survey designs:
 design_summary <- tibble(
   Design = c("Access", "Roving", "Replicate"),
   Type = c("Access-point", "Roving", "Access + Replicates"),
-  Observations = c(nrow(access_design$interviews), 
-                   nrow(roving_design$interviews), 
+  Observations = c(nrow(access_design$interviews),
+                   nrow(roving_design$interviews),
                    nrow(rep_design$base_design$interviews)),
   Replicates = c(1, 1, rep_design$replicates),
-  Mean_Weight = c(mean(access_design$design_weights), 
-                  mean(roving_design$design_weights), 
+  Mean_Weight = c(mean(access_design$design_weights),
+                  mean(roving_design$design_weights),
                   mean(rep_design$base_design$design_weights))
 )
 
