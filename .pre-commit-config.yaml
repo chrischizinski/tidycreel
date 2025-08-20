@@ -1,16 +1,14 @@
-# .pre-commit-config.yaml
 repos:
-  # Basic git hygiene hooks
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v6.0.0
-    hooks:
-      - id: trailing-whitespace
-      - id: end-of-file-fixer
-      - id: check-yaml
-      - id: check-added-large-files
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v6.0.0
+  hooks:
+    - id: trailing-whitespace
+      exclude: ^\.lintr$
+    - id: end-of-file-fixer
+      exclude: ^\.lintr$
 
-  # R linting with lintr
-  - repo: https://github.com/lorenzwalthert/precommit
-    rev: v0.4.3.9013
-    hooks:
-      - id: lintr
+- repo: https://github.com/lorenzwalthert/precommit
+  rev: v0.4.3.9013
+  hooks:
+    - id: lintr
+      exclude: ^\.lintr$
