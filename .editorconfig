@@ -1,0 +1,18 @@
+# .editorconfig — enforce consistent formatting across editors
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# R, R Markdown, YAML, Markdown, etc.
+[*.{R,Rmd,rmd,md,yml,yaml}]
+indent_style = space
+indent_size = 2
+
+# Makefile requires tabs
+[Makefile]
+indent_style = tab
