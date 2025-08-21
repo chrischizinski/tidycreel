@@ -30,3 +30,53 @@ tc_confint <- function(mean, se, level = 0.95, df = NULL) {
   }
   c(mean - crit * se, mean + crit * se)
 }
+
+#' Parse time columns using lubridate
+#'
+#' Attempts to parse a vector of time strings to POSIXct using lubridate. Returns parsed times or original if already POSIXct.
+#' @param x Character vector or POSIXct
+#' @return POSIXct vector
+#' @examples
+#' parse_time_column(c("2025-08-20 08:00:00", "2025-08-20 12:00:00"))
+#' @export
+parse_time_column <- function(x) {
+  if (inherits(x, c("POSIXct", "POSIXt"))) return(x)
+  if (requireNamespace("lubridate", quietly = TRUE)) {
+    lubridate::ymd_hms(x, quiet = TRUE)
+  } else {
+    as.POSIXct(x)
+  }
+}
+
+#' Calculate interval in minutes between two time columns
+#'
+#' Uses lubridate to compute the difference in minutes between two POSIXct vectors.
+#' @param start POSIXct vector
+#' @param end POSIXct vector
+#' @return Numeric vector of interval lengths in minutes
+#' @examples
+#' interval_minutes(start, end)
+#' @export
+interval_minutes <- function(start, end) {
+  as.numeric(difftime(end, start, units = "mins"))
+}
+
+#' Standardize time column names using stringr
+#'
+#' Renames columns in a data.frame to standard time column names if common variants are found.
+#' @param df Data.frame
+#' @return Data.frame with standardized time column names
+#' @examples
+#' standardize_time_columns(df)
+#' @export
+standardize_time_columns <- function(df) {
+  if (requireNamespace("stringr", quietly = TRUE)) {
+    names(df) <- stringr::str_replace_all(names(df),
+      c("timestamp" = "time", "date_time" = "time", "datetime" = "time"))
+  } else {
+    names(df)[names(df) == "timestamp"] <- "time"
+    names(df)[names(df) == "date_time"] <- "time"
+    names(df)[names(df) == "datetime"] <- "time"
+  }
+  df
+}

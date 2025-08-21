@@ -1,0 +1,153 @@
+---
+title: "Aerial Effort Estimation with survey"
+output:
+  rmarkdown::html_vignette:
+    df_print: paged
+vignette: >
+  %\VignetteIndexEntry{Aerial Effort Estimation with survey}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```r
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+This vignette shows how to estimate angler effort from aerial snapshot counts using tidycreel’s survey-first approach.
+
+## Data
+
+We assume a day-level sampling calendar and aerial counts with per-count minutes and (optionally) total day minutes represented.
+
+```r
+library(tidycreel)
+library(dplyr)
+
+calendar <- tibble::tibble(
+  date = as.Date(c("2025-08-20","2025-08-21")),
+  day_type = c("weekday","weekday"),
+  month = c("August","August"),
+  target_sample = c(4,4),
+  actual_sample = c(2,2)
+)
+
+counts <- tibble::tibble(
+  date = as.Date(c("2025-08-20","2025-08-20","2025-08-21","2025-08-21")),
+  location = c("A","B","A","B"),
+  count = c(10,12,8,15),
+  interval_minutes = c(60,60,60,60),
+  total_day_minutes = c(720,720,720,720),
+  cloud = c("low","low","high","high")
+)
+```
+
+## Day-level survey design
+
+Construct a day PSU design from the calendar. Weights are target/actual per stratum.
+
+```r
+svy_day <- as_day_svydesign(calendar, day_id = "date", strata_vars = c("day_type","month"))
+```
+
+## Aerial effort estimation
+
+Estimate per-location totals with design-based SE/CI via `survey`:
+
+```r
+res <- est_effort.aerial(
+  counts,
+  by = c("location"),
+  minutes_col = c("interval_minutes"),
+  total_minutes_col = c("total_day_minutes"),
+  day_id = "date",
+  covariates = c("cloud"),
+  svy = svy_day
+)
+res
+```
+
+### Post-stratification / calibration (optional)
+
+If you have known population totals for a categorical covariate (e.g., cloud classes over the season), you can post-stratify the design:
+
+```r
+cloud_pop <- tibble::tibble(cloud = c("low","high"), Freq = c(12, 18))
+res_ps <- est_effort.aerial(
+  counts, by = c("location"), minutes_col = "interval_minutes",
+  total_minutes_col = "total_day_minutes", day_id = "date", svy = svy_day,
+  post_strata_var = "cloud", post_strata = cloud_pop
+)
+res_ps
+```
+
+For calibration to known totals across numeric auxiliary variables, supply a model and totals:
+
+```r
+# Example only; supply meaningful totals in your analysis
+cal_tot <- c(`(Intercept)` = 30)
+res_cal <- est_effort.aerial(
+  counts, by = c("location"), minutes_col = "interval_minutes",
+  total_minutes_col = "total_day_minutes", day_id = "date", svy = svy_day,
+  calibrate_formula = ~ 1, calibrate_population = cal_tot, calfun = "linear"
+)
+res_cal
+```
+
+Note: Choose post-stratification vs calibration based on your design and available auxiliary information; ensure assumptions are met and targets are defensible.
+
+## Method Choice: Post-stratification vs Calibration
+
+- Post-stratification:
+  - Best when you have a categorical auxiliary variable with a defensible population distribution (e.g., proportion of days by cloud class) and your sample may under/over-represent some levels.
+  - Uses `survey::postStratify(design, ~cat, pop)`, where `pop` has columns for the category and `Freq` with known totals.
+  - Preserves design weights within post-strata; simple and stable when categories are well-populated.
+
+- Calibration:
+  - Best when adjusting to numeric auxiliary totals (e.g., totals by multiple covariates) or raking across several margins.
+  - Uses `survey::calibrate()` with a model and known totals; supports linear, raking, or logit calibration functions.
+  - More flexible but can be sensitive if targets are incompatible with the design or if extreme weights result; check diagnostics.
+
+Practical tips
+- Define the day-level PSU design first; all adjustments (post-stratification, calibration) operate on that design.
+- Use replicate-weight designs (`svrepdesign`) for robust SEs under complex adjustments.
+- Ensure auxiliary targets are well-justified (e.g., climatology, flight logs) and cover the same population and period as the estimates.
+- Inspect weight distributions before and after adjustment (e.g., `summary(weights(design))`).
+
+## References
+
+- Pollock, K.H., Jones, C.M., & Brown, T.L. (1994). Angler Survey Methods and their Applications in Fisheries Management. American Fisheries Society Special Publication.
+- Malvestuto, S.P. (1996). Sampling for creel survey data. In: Murphy, B.R. & Willis, D.W. (eds) Fisheries Techniques, 2nd ed. American Fisheries Society.
+- Lumley, T. (2010). Complex Surveys: A Guide to Analysis Using R. John Wiley & Sons. (Author of the `survey` package.)
+- Related background and project-specific guidance: see `creel_foundations.md`, `creel_effort_estimation_methods.md`, and `creel_chapter.md` in the repository.
+
+## Weight Diagnostics and Replicate Designs
+
+Inspect day-level weights before and after adjustment. Large or highly skewed weights can inflate variance and indicate mismatches between design and targets.
+
+```r
+# Weights before adjustment
+summary(survey::weights(svy_day))
+
+# Convert to replicate-weight design (bootstrap) for robust SEs
+svy_rep <- survey::as.svrepdesign(svy_day, type = "bootstrap", replicates = 50)
+summary(svy_rep)
+
+# Example: estimate with replicate design
+res_rep <- est_effort.aerial(
+  counts,
+  by = c("location"),
+  minutes_col = c("interval_minutes"),
+  total_minutes_col = c("total_day_minutes"),
+  day_id = "date",
+  svy = svy_rep
+)
+res_rep
+
+# Optional: simple weight histogram (requires ggplot2)
+if (requireNamespace("ggplot2", quietly = TRUE)) {
+  library(ggplot2)
+  wdf <- tibble::tibble(w = as.numeric(survey::weights(svy_day)))
+  ggplot(wdf, aes(w)) + geom_histogram(bins = 30) + theme_minimal() +
+    labs(title = "Day-level survey weights", x = "Weight", y = "Count")
+}
+```

@@ -45,6 +45,5 @@ VignetteBuilder: knitr
     DBI,
     targets,
     lifecycle
-VignetteBuilder: knitr
 URL: https://github.com/cchizinski2/tidycreel
 BugReports: https://github.com/cchizinski2/tidycreel/issues

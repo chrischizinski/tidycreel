@@ -21,11 +21,14 @@ design_busroute <- function(interviews, counts, calendar, route_schedule,
   counts <- validate_counts(counts)
   calendar <- validate_calendar(calendar)
   # Validate route_schedule
-  stopifnot(is.data.frame(route_schedule))
+  if (!is.data.frame(route_schedule)) cli::cli_abort("`route_schedule` must be a data.frame/tibble.")
   required_route_cols <- c("route_stop", "time", "expected_coverage")
   missing_cols <- setdiff(required_route_cols, names(route_schedule))
   if (length(missing_cols) > 0) {
-    stop(paste("Missing required columns in route_schedule:", paste(missing_cols, collapse = ", ")))
+    cli::cli_abort(c(
+      "x" = "Missing required columns in route_schedule.",
+      "i" = paste0("Add: ", paste(missing_cols, collapse = ", "))
+    ))
   }
   # Calculate design weights (placeholder, should use survey::svydesign with unequal probabilities)
   # For now, assign weights based on expected_coverage
@@ -34,7 +37,7 @@ design_busroute <- function(interviews, counts, calendar, route_schedule,
 
   # Derive selection probability from expected coverage; clamp to (0,1]
   if (!"expected_coverage" %in% names(interviews)) {
-    stop("'expected_coverage' must be present after joining route_schedule; check join keys and route_schedule columns.")
+    cli::cli_abort("'expected_coverage' missing after join; check join keys and route_schedule columns.")
   }
   interviews$probability <- pmin(pmax(interviews$expected_coverage, .Machine$double.eps), 1)
   interviews$design_weights <- 1 / interviews$probability

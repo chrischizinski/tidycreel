@@ -12,7 +12,7 @@ NULL
 #' @name .todo
 #' @keywords internal
 .todo <- function(name) {
-  stop(sprintf("%s(): not yet implemented (stub for build).", name), call. = FALSE)
+  cli::cli_abort(sprintf("%s(): not yet implemented (stub for build).", name))
   invisible(NULL)
 }
 
@@ -75,76 +75,7 @@ change_na <- function(x, from = NA, to = 0) {
   x
 }
 
-# ---- Legacy/DB/Project stubs (exported but not yet implemented) ----
-# Keep signatures minimal; mark as internal to avoid cluttering user help.
-
-#' @export
-#' @keywords internal
-connect_creel <- function(...) .todo("connect_creel")
-
-#' @export
-#' @keywords internal
-db_disconnect <- function(...) .todo("db_disconnect")
-
-#' @export
-#' @keywords internal
-db_exec <- function(...) .todo("db_exec")
-
-#' @export
-#' @keywords internal
-db_read <- function(...) .todo("db_read")
-
-#' @export
-#' @keywords internal
-convert_legacy_date <- function(x, ...) .todo("convert_legacy_date")
-
-#' @export
-#' @keywords internal
-convert_to_legacy_date <- function(x, ...) .todo("convert_to_legacy_date")
-
-#' @export
-#' @keywords internal
-convert_to_legacy_names <- function(x, ...) .todo("convert_to_legacy_names")
-
-#' @export
-#' @keywords internal
-create_days_in_creel <- function(...) .todo("create_days_in_creel")
-
-#' @export
-#' @keywords internal
-create_sample_legacy_data <- function(...) .todo("create_sample_legacy_data")
-
-#' @export
-#' @keywords internal
-extract_sequence_from_creel_id <- function(...) .todo("extract_sequence_from_creel_id")
-
-#' @export
-#' @keywords internal
-extract_year_from_creel_id <- function(...) .todo("extract_year_from_creel_id")
-
-#' @export
-#' @keywords internal
-legacy_data_access <- function(...) .todo("legacy_data_access")
-
-#' @export
-#' @keywords internal
-legacy_design <- function(...) .todo("legacy_design")
-
-#' @export
-#' @keywords internal
-legacy_estimate <- function(...) .todo("legacy_estimate")
-
-#' @export
-#' @keywords internal
-legacy_summary <- function(...) .todo("legacy_summary")
-
-#' @export
-#' @keywords internal
-split_wide_tables <- function(...) .todo("split_wide_tables")
-
-#' @export
-#' @keywords internal
-summarize_legacy_data <- function(...) .todo("summarize_legacy_data")
+## Legacy/DB/Project stubs removed per survey-first scope.
 
 # nocov end
 # nolint end

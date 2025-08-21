@@ -1,35 +1,27 @@
-# Linting and Pre-commit Hooks
-
-This repository uses [lintr](https://lintr.r-lib.org/) for tidyverse style enforcement. Linting runs automatically via pre-commit hooks and GitHub Actions.
-
-To manually run lintr:
-
-```r
-lintr::lint_package()
-```
-
-To set up pre-commit hooks locally:
-
-```sh
-pre-commit install
-pre-commit run --all-files
-```
-
-The configuration is in `.lintr` and `.pre-commit-config.yaml`. You can exclude files or customize linters as needed.
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
 # tidycreel
 
+<p align="center">
+
+<img src="man/figures/hex.png" alt="tidycreel hex sticker" width="250"/>
+</p>
+
 <!-- badges: start -->
 
 [![Lifecycle:
 experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
-[![R-CMD-check](https://github.com/cchizinski2/tidycreel/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/cchizinski2/tidycreel/actions/workflows/R-CMD-check.yaml)
-[![lint](https://github.com/cchizinski2/tidycreel/actions/workflows/lint.yaml/badge.svg)](https://github.com/cchizinski2/tidycreel/actions/workflows/lint.yaml)
+[![R CMD
+Check](https://github.com/chrischizinski/tidycreel/actions/workflows/r-check.yml/badge.svg)](https://github.com/chrischizinski/tidycreel/actions/workflows/r-check.yml)
+[![lintr](https://github.com/chrischizinski/tidycreel/actions/workflows/lintr.yaml/badge.svg)](https://github.com/chrischizinski/tidycreel/actions/workflows/lintr.yaml)
 <!-- badges: end -->
 
-The goal of tidycreel is to …
+The goal of tidycreel is to provide a survey-first, tidy interface for
+creel survey design and analysis. Estimators are built on the
+`survey`/`svrepdesign` framework with vectorized, tidyverse data
+workflows, delivering defensible estimates of effort, CPUE, catch, and
+harvest.
 
 ## Installation
 
@@ -73,3 +65,22 @@ You can also embed plots, for example:
 
 In that case, don’t forget to commit and push the resulting figure
 files, so they display on GitHub and CRAN.
+
+## Effort Overview (Survey-First)
+
+- Instantaneous and Progressive (roving) estimators aggregate to day ×
+  group totals and use a day-PSU design for inference. See the vignette:
+
+``` r
+vignette("effort_survey_first", package = "tidycreel")
+```
+
+- Aerial snapshot counts with covariates, post-stratification, and
+  calibration are covered here:
+
+``` r
+vignette("aerial", package = "tidycreel")
+```
+
+Tip: For replicate variance, convert your day design with
+`survey::as.svrepdesign()` and pass it to the estimators.

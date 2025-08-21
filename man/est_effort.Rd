@@ -2,39 +2,71 @@
 % Please edit documentation in R/estimators.R
 \name{est_effort}
 \alias{est_effort}
-\title{Estimate fishing effort from survey data}
+\title{Estimate Fishing Effort (survey-first wrapper)}
 \usage{
 est_effort(
   design,
   counts,
   method = c("instantaneous", "progressive"),
   by = NULL,
+  day_id = "date",
+  covariates = NULL,
   conf_level = 0.95,
   ...
 )
 }
 \arguments{
-\item{design}{Survey design object (creel_design or svydesign)}
+\item{design}{A day-level \code{svydesign}/\code{svrepdesign} or a \code{creel_design}
+that contains a \code{calendar} for constructing a day PSU design.}
 
-\item{counts}{Data frame or tibble with count data (must include time, count, party_size, stratum, etc.)}
+\item{counts}{Data frame/tibble of counts appropriate for the chosen
+\code{method}.}
 
-\item{method}{Character string: 'instantaneous' or 'progressive'}
+\item{method}{One of \code{"instantaneous"} (snapshot counts) or
+\code{"progressive"} (roving/pass-based counts).}
 
-\item{by}{Character vector of variables to group by. Default NULL, which uses the strata variables.}
+\item{by}{Character vector of grouping variables present in \code{counts}. If
+\code{NULL}, a best-effort default is used (e.g., \code{location}, \code{stratum},
+\code{shift_block} where available).}
 
-\item{conf_level}{Confidence level for confidence intervals. Default 0.95.}
+\item{day_id}{Day identifier (PSU) present in both \code{counts} and the survey
+design (default \code{"date"}).}
 
-\item{...}{Additional arguments for future extensibility}
+\item{covariates}{Optional character vector of additional grouping variables
+present in \code{counts}.}
+
+\item{conf_level}{Confidence level for CIs (default 0.95).}
+
+\item{...}{Forwarded to the specific estimator.}
 }
 \value{
-Tibble/data.frame with columns: stratum, estimate, SE, CI_low, CI_high, n, method, diagnostics
+A tibble with group columns, \code{estimate}, \code{se}, \code{ci_low}, \code{ci_high},
+\code{n}, \code{method}, and a \code{diagnostics} list-column.
 }
 \description{
-Supports both instantaneous (snapshot) and progressive (interval) count methods.
-Returns a tibble with effort estimates, standard errors, confidence intervals, and metadata.
+High-level convenience wrapper that delegates to the survey-first
+instantaneous or progressive estimators. It ensures a valid day-level
+survey design is available and passes it to the appropriate estimator.
+}
+\details{
+Effort is computed as day × group totals and combined using
+\code{survey::svytotal}/\code{survey::svyby}, with variance from the survey design
+(including replicate-weight designs via \code{svrepdesign}).
 }
 \examples{
-# Example usage:
-# est_effort(design, counts, method = 'instantaneous')
-# est_effort(design, counts, method = 'progressive')
+\dontrun{
+# Build a day-level design from a calendar
+svy_day <- as_day_svydesign(calendar, day_id = "date",
+  strata_vars = c("day_type","month"))
+
+# Instantaneous effort by location
+est_effort(svy_day, counts_inst, method = "instantaneous", by = "location")
+
+# Progressive effort by location
+est_effort(svy_day, counts_roving, method = "progressive", by = "location")
+}
+}
+\seealso{
+\code{\link[=est_effort.instantaneous]{est_effort.instantaneous()}}, \code{\link[=est_effort.progressive]{est_effort.progressive()}},
+\code{\link[=as_day_svydesign]{as_day_svydesign()}}, \code{\link[survey:svydesign]{survey::svydesign()}}, \code{\link[survey:svrepdesign]{survey::svrepdesign()}}.
 }

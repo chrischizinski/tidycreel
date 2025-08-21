@@ -390,120 +390,106 @@ estimate_harvest <- function(design, by = NULL, species = NULL, type = c("number
   return(result)
 }
 
-#' Estimate fishing effort from survey data
+#' Estimate Fishing Effort (survey-first wrapper)
 #'
-#' Supports both instantaneous (snapshot) and progressive (interval) count methods.
-#' Returns a tibble with effort estimates, standard errors, confidence intervals, and metadata.
+#' High-level convenience wrapper that delegates to the survey-first
+#' instantaneous or progressive estimators. It ensures a valid day-level
+#' survey design is available and passes it to the appropriate estimator.
 #'
-#' @param design Survey design object (creel_design or svydesign)
-#' @param counts Data frame or tibble with count data (must include time, count, party_size, stratum, etc.)
-#' @param method Character string: 'instantaneous' or 'progressive'
-#' @param ... Additional arguments for future extensibility
-#' @param by Character vector of variables to group by. Default NULL, which uses the strata variables.
-#' @param conf_level Confidence level for confidence intervals. Default 0.95.
+#' Effort is computed as day × group totals and combined using
+#' `survey::svytotal`/`survey::svyby`, with variance from the survey design
+#' (including replicate-weight designs via `svrepdesign`).
 #'
-#' @return Tibble/data.frame with columns: stratum, estimate, SE, CI_low, CI_high, n, method, diagnostics
+#' @param design A day-level `svydesign`/`svrepdesign` or a `creel_design`
+#'   that contains a `calendar` for constructing a day PSU design.
+#' @param counts Data frame/tibble of counts appropriate for the chosen
+#'   `method`.
+#' @param method One of `"instantaneous"` (snapshot counts) or
+#'   `"progressive"` (roving/pass-based counts).
+#' @param by Character vector of grouping variables present in `counts`. If
+#'   `NULL`, a best-effort default is used (e.g., `location`, `stratum`,
+#'   `shift_block` where available).
+#' @param day_id Day identifier (PSU) present in both `counts` and the survey
+#'   design (default `"date"`).
+#' @param covariates Optional character vector of additional grouping variables
+#'   present in `counts`.
+#' @param conf_level Confidence level for CIs (default 0.95).
+#' @param ... Forwarded to the specific estimator.
+#'
+#' @return A tibble with group columns, `estimate`, `se`, `ci_low`, `ci_high`,
+#'   `n`, `method`, and a `diagnostics` list-column.
+#'
+#' @seealso [est_effort.instantaneous()], [est_effort.progressive()],
+#'   [as_day_svydesign()], [survey::svydesign()], [survey::svrepdesign()].
+#'
 #' @examples
-#' # Example usage:
-#' # est_effort(design, counts, method = 'instantaneous')
-#' # est_effort(design, counts, method = 'progressive')
+#' \dontrun{
+#' # Build a day-level design from a calendar
+#' svy_day <- as_day_svydesign(calendar, day_id = "date",
+#'   strata_vars = c("day_type","month"))
+#'
+#' # Instantaneous effort by location
+#' est_effort(svy_day, counts_inst, method = "instantaneous", by = "location")
+#'
+#' # Progressive effort by location
+#' est_effort(svy_day, counts_roving, method = "progressive", by = "location")
+#' }
 #' @export
-est_effort <- function(design, counts, method = c('instantaneous', 'progressive'), by = NULL, conf_level = 0.95, ...) {
+est_effort <- function(design,
+                       counts,
+                       method = c('instantaneous', 'progressive'),
+                       by = NULL,
+                       day_id = "date",
+                       covariates = NULL,
+                       conf_level = 0.95,
+                       ...) {
   method <- match.arg(method)
 
-  # Extract survey design object if input is creel_design
-  if (inherits(design, "creel_design")) {
-    svy <- as_survey_design(design)
-    design_type <- design$design_type
-    strata_vars <- design$strata_vars
-    metadata <- design$metadata
-  } else if (inherits(design, "svydesign")) {
-    svy <- design
-    design_type <- "svydesign"
-    strata_vars <- NULL
-    metadata <- NULL
+  # Derive a day-level svy design
+  if (inherits(design, c("svydesign", "svyrep.design"))) {
+    svy_day <- design
+  } else if (inherits(design, "creel_design")) {
+    if (is.null(design$calendar)) {
+      cli::cli_abort("creel_design must contain a $calendar to build a day-level survey design.")
+    }
+    cal <- design$calendar
+    strata_vars <- intersect(c("day_type", "month", "season", "weekend"), names(cal))
+    svy_day <- as_day_svydesign(cal, day_id = day_id, strata_vars = strata_vars)
   } else {
-    stop("Input 'design' must be a creel_design or svydesign object.")
+    cli::cli_abort("design must be a day-level svydesign/svrepdesign or a creel_design with $calendar.")
   }
 
-  # Determine grouping variables
   if (is.null(by)) {
-    by <- strata_vars
+    by <- intersect(c("location", "stratum", "shift_block"), names(counts))
   }
-  if (is.null(by) || length(by) == 0) {
-    by <- "stratum"
-  }
-
-  # Validate counts input
-  required_cols <- c("time", "count", "party_size")
-  missing_cols <- setdiff(required_cols, names(counts))
-  if (length(missing_cols) > 0) {
-    stop("Counts data is missing required columns: ", paste(missing_cols, collapse=", "))
-  }
-
-  # Group by user-specified or design strata
-  grouped <- counts %>%
-    dplyr::group_by(across(all_of(by))) %>%
-    dplyr::summarise(
-      mean_count = mean(count, na.rm = TRUE),
-      sd_count = sd(count, na.rm = TRUE),
-      min_count = min(count, na.rm = TRUE),
-      max_count = max(count, na.rm = TRUE),
-      n_counts = dplyr::n(),
-      mean_party_size = mean(party_size, na.rm = TRUE),
-      time_interval = max(time, na.rm = TRUE) - min(time, na.rm = TRUE)
-    )
 
   if (method == 'instantaneous') {
-    # Effort: mean count × time interval / mean party size
-    grouped <- grouped %>%
-      dplyr::mutate(
-        effort_estimate = mean_count * time_interval / mean_party_size
-      )
-    # Variance estimation using survey package
-    # For each group, use svymean for count and propagate variance
-    se_list <- lapply(split(counts, counts[by]), function(df) {
-      if (nrow(df) > 0) {
-  idx <- Reduce(`&`, lapply(by, function(v) svy$variables[[v]] == df[[v]][1]))
-  svy_g <- subset(svy, idx)
-        est <- tryCatch(survey::svymean(~count, svy_g, na.rm=TRUE), error=function(e) NA)
-        se <- if (!is.na(est[1])) as.numeric(attr(est, "var"))^0.5 else NA_real_
-        ci <- if (!is.na(est[1])) as.numeric(confint(est, level=conf_level)) else c(NA_real_, NA_real_)
-        list(se=se, ci_low=ci[1], ci_high=ci[2])
-      } else {
-        list(se=NA_real_, ci_low=NA_real_, ci_high=NA_real_)
-      }
-    })
-    grouped$effort_se <- vapply(se_list, function(x) x$se, numeric(1))
-    grouped$effort_ci_low <- vapply(se_list, function(x) x$ci_low, numeric(1))
-    grouped$effort_ci_high <- vapply(se_list, function(x) x$ci_high, numeric(1))
-    return(grouped)
-  } else if (method == 'progressive') {
-    progressive_effort <- counts %>%
-      dplyr::group_by(across(all_of(by))) %>%
-      dplyr::arrange(time) %>%
-      dplyr::mutate(
-        interval = dplyr::lead(time) - time
-      ) %>%
-      dplyr::summarise(
-        effort_estimate = sum(count * interval, na.rm = TRUE) / mean(party_size, na.rm = TRUE),
-        n_counts = dplyr::n(),
-        mean_count = mean(count, na.rm = TRUE),
-        sd_count = sd(count, na.rm = TRUE),
-        min_count = min(count, na.rm = TRUE),
-        max_count = max(count, na.rm = TRUE)
-      )
-    # Variance estimation placeholder (similar logic as above)
-    progressive_effort <- progressive_effort %>%
-      dplyr::mutate(
-        effort_se = NA_real_,
-        effort_ci_low = NA_real_,
-        effort_ci_high = NA_real_
-      )
-    return(progressive_effort)
-  } else {
-    stop('Unknown method: ', method)
+    return(est_effort.instantaneous(
+      counts = counts,
+      by = by,
+      minutes_col = c("interval_minutes", "count_duration", "flight_minutes"),
+      total_minutes_col = c("total_minutes", "total_day_minutes", "block_total_minutes"),
+      day_id = day_id,
+      covariates = covariates,
+      svy = svy_day,
+      conf_level = conf_level
+    ))
   }
+
+  if (method == 'progressive') {
+    return(est_effort.progressive(
+      counts = counts,
+      by = by,
+      route_minutes_col = c("route_minutes", "circuit_minutes"),
+      pass_id = c("pass_id", "circuit_id"),
+      day_id = day_id,
+      covariates = covariates,
+      svy = svy_day,
+      conf_level = conf_level
+    ))
+  }
+
+  cli::cli_abort(paste0('Unknown method: ', method))
 }
 
 # Helper function to create survey design objects

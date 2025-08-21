@@ -7,11 +7,14 @@
 #' @return A ggplot object
 #' @export
 plot_design <- function(x, ...) {
-  if (!inherits(x, "creel_design")) stop("Object must be a creel_design")
+  if (!inherits(x, "creel_design")) cli::cli_abort("Object must be a creel_design")
   interviews <- x$interviews
   # Try to get location, date, shift_block columns
   if (!all(c("date", "shift_block", "location") %in% names(interviews))) {
-    stop("Interviews must contain 'date', 'shift_block', and 'location' columns")
+    cli::cli_abort(c(
+      "x" = "Interviews are missing required columns for plotting.",
+      "i" = "Required: 'date', 'shift_block', 'location'"
+    ))
   }
   library(ggplot2)
   p <- ggplot(interviews, aes(x = date, fill = shift_block)) +
@@ -170,14 +173,11 @@ design_access <- function(interviews, calendar, locations = NULL,
     missing_in_interviews <- setdiff(calendar_locations, interview_locations)
     missing_in_calendar <- setdiff(interview_locations, calendar_locations)
     if (length(missing_in_interviews) > 0 || length(missing_in_calendar) > 0) {
-      msg <- "Location mismatch detected.\n"
-      if (length(missing_in_interviews) > 0) {
-        msg <- paste0(msg, "Locations present in calendar but missing from interviews: ", paste(missing_in_interviews, collapse=", "), "\n")
-      }
-      if (length(missing_in_calendar) > 0) {
-        msg <- paste0(msg, "Locations present in interviews but missing from calendar: ", paste(missing_in_calendar, collapse=", "), "\n")
-      }
-      stop(msg)
+      cli::cli_abort(c(
+        "x" = "Location mismatch detected between interviews and calendar.",
+        if (length(missing_in_interviews) > 0) c("i" = paste0("In calendar, missing in interviews: ", paste(missing_in_interviews, collapse=", "))) else NULL,
+        if (length(missing_in_calendar) > 0) c("i" = paste0("In interviews, missing in calendar: ", paste(missing_in_calendar, collapse=", "))) else NULL
+      ))
     }
 
     # Validate weight method
@@ -193,16 +193,11 @@ design_access <- function(interviews, calendar, locations = NULL,
     # Find missing strata in calendar (present in interviews, not in calendar)
     missing_in_calendar <- dplyr::anti_join(interview_strata, calendar_strata, by = strata_vars)
     if (nrow(missing_in_interviews) > 0 || nrow(missing_in_calendar) > 0) {
-      msg <- "Strata mismatch detected.\n"
-      if (nrow(missing_in_interviews) > 0) {
-        msg <- paste0(msg, "Strata present in calendar but missing from interviews:\n",
-          paste(capture.output(print(missing_in_interviews)), collapse = "\n"), "\n")
-      }
-      if (nrow(missing_in_calendar) > 0) {
-        msg <- paste0(msg, "Strata present in interviews but missing from calendar:\n",
-          paste(capture.output(print(missing_in_calendar)), collapse = "\n"), "\n")
-      }
-      stop(msg)
+      cli::cli_abort(c(
+        "x" = "Strata mismatch detected between interviews and calendar.",
+        if (nrow(missing_in_interviews) > 0) c("i" = "Some calendar strata are missing from interviews.") else NULL,
+        if (nrow(missing_in_calendar) > 0) c("i" = "Some interview strata are missing from calendar.") else NULL
+      ))
     }
 
     # Calculate design weights
@@ -332,36 +327,13 @@ design_roving <- function(interviews, counts, calendar, locations = NULL,
     length(missing_in_calendar_from_interviews) > 0 ||
     length(missing_in_calendar_from_counts) > 0
   ) {
-    msg <- "Location mismatch detected.\n"
-    if (length(missing_in_interviews) > 0) {
-      msg <- paste0(
-        msg,
-        "Locations present in calendar but missing from interviews: ",
-        paste(missing_in_interviews, collapse = ", "), "\n"
-      )
-    }
-    if (length(missing_in_counts) > 0) {
-      msg <- paste0(
-        msg,
-        "Locations present in calendar but missing from counts: ",
-        paste(missing_in_counts, collapse = ", "), "\n"
-      )
-    }
-    if (length(missing_in_calendar_from_interviews) > 0) {
-      msg <- paste0(
-        msg,
-        "Locations present in interviews but missing from calendar: ",
-        paste(missing_in_calendar_from_interviews, collapse = ", "), "\n"
-      )
-    }
-    if (length(missing_in_calendar_from_counts) > 0) {
-      msg <- paste0(
-        msg,
-        "Locations present in counts but missing from calendar: ",
-        paste(missing_in_calendar_from_counts, collapse = ", "), "\n"
-      )
-    }
-    stop(msg)
+    cli::cli_abort(c(
+      "x" = "Location mismatch detected among interviews, counts, and calendar.",
+      if (length(missing_in_interviews) > 0) c("i" = paste0("In calendar, missing in interviews: ", paste(missing_in_interviews, collapse=", "))) else NULL,
+      if (length(missing_in_counts) > 0) c("i" = paste0("In calendar, missing in counts: ", paste(missing_in_counts, collapse=", "))) else NULL,
+      if (length(missing_in_calendar_from_interviews) > 0) c("i" = paste0("In interviews, missing in calendar: ", paste(missing_in_calendar_from_interviews, collapse=", "))) else NULL,
+      if (length(missing_in_calendar_from_counts) > 0) c("i" = paste0("In counts, missing in calendar: ", paste(missing_in_calendar_from_counts, collapse=", "))) else NULL
+    ))
   }
 
   # --- Strata-level mismatch check ---
@@ -381,36 +353,13 @@ design_roving <- function(interviews, counts, calendar, locations = NULL,
     nrow(missing_in_calendar_from_interviews) > 0 ||
     nrow(missing_in_calendar_from_counts) > 0
   ) {
-    msg <- "Strata mismatch detected.\n"
-    if (nrow(missing_in_interviews) > 0) {
-      msg <- paste0(
-        msg,
-        "Strata present in calendar but missing from interviews:\n",
-        paste(capture.output(print(missing_in_interviews)), collapse = "\n"), "\n"
-      )
-    }
-    if (nrow(missing_in_counts) > 0) {
-      msg <- paste0(
-        msg,
-        "Strata present in calendar but missing from counts:\n",
-        paste(capture.output(print(missing_in_counts)), collapse = "\n"), "\n"
-      )
-    }
-    if (nrow(missing_in_calendar_from_interviews) > 0) {
-      msg <- paste0(
-        msg,
-        "Strata present in interviews but missing from calendar:\n",
-        paste(capture.output(print(missing_in_calendar_from_interviews)), collapse = "\n"), "\n"
-      )
-    }
-    if (nrow(missing_in_calendar_from_counts) > 0) {
-      msg <- paste0(
-        msg,
-        "Strata present in counts but missing from calendar:\n",
-        paste(capture.output(print(missing_in_calendar_from_counts)), collapse = "\n"), "\n"
-      )
-    }
-    stop(msg)
+    cli::cli_abort(c(
+      "x" = "Strata mismatch detected among interviews, counts, and calendar.",
+      if (nrow(missing_in_interviews) > 0) c("i" = "Some calendar strata are missing from interviews.") else NULL,
+      if (nrow(missing_in_counts) > 0) c("i" = "Some calendar strata are missing from counts.") else NULL,
+      if (nrow(missing_in_calendar_from_interviews) > 0) c("i" = "Some interview strata are missing from calendar.") else NULL,
+      if (nrow(missing_in_calendar_from_counts) > 0) c("i" = "Some count strata are missing from calendar.") else NULL
+    ))
   }
 
   # Validate methods
@@ -628,12 +577,12 @@ design_repweights <- function(base_design, replicates = NULL,
 #' @export
 as_survey_design <- function(design) {
   if (!inherits(design, "creel_design")) {
-    stop("Input must be a creel_design object (from tidycreel)")
+    cli::cli_abort("Input must be a creel_design object (from tidycreel)")
   }
   if (!is.null(design$svy_design)) {
     return(design$svy_design)
   }
-  stop("No embedded survey design found in this object.")
+  cli::cli_abort("No embedded survey design found in this object.")
 }
 
 #' Extract replicate weights survey design from a repweights_design
@@ -657,12 +606,12 @@ as_survey_design <- function(design) {
 #' @export
 as_svrep_design <- function(design) {
   if (!inherits(design, "repweights_design")) {
-    stop("Input must be a repweights_design object (from tidycreel)")
+    cli::cli_abort("Input must be a repweights_design object (from tidycreel)")
   }
   if (!is.null(design$svy_design)) {
     return(design$svy_design)
   }
-  stop("No embedded svrepdesign found in this object.")
+  cli::cli_abort("No embedded svrepdesign found in this object.")
 }
 
 
