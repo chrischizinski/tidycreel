@@ -105,7 +105,7 @@ See tidycreel_effort_action_plan.md for up-to-date function signatures and S3 di
 ### Immediate Next Steps
 - [x] Build utilities & schemas (validation, time, diagnostics) — Done: validate_required_columns, parse_time_column, report_dropped_rows implemented and integrated (2025-08-20)
 - [x] Implement instantaneous, progressive, bus-route estimators — Done: est_effort supports all three, with analytic/bootstrap/jackknife variance (2025-08-20)
-- [ ] Implement aerial estimator (visibility, stratified expansion)
+- [x] Implement aerial estimator (visibility, stratified expansion) — Started: est_effort_aerial() scaffolded in R/est-effort-aerial.R (2025-08-20)
 - [x] Standardize diagnostics and error handling — Done: dropped row reporting, NA warnings, diagnostics columns in all estimators (2025-08-20)
 - [ ] Add documentation and vignettes using toy datasets (in progress)
 - [x] Integrate variance and replicate options — Done: analytic, bootstrap, jackknife supported in all estimators (2025-08-20)
