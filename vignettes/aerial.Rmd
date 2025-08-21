@@ -126,7 +126,7 @@ Inspect day-level weights before and after adjustment. Large or highly skewed we
 
 ```r
 # Weights before adjustment
-summary(survey::weights(svy_day))
+summary(stats::weights(svy_day))
 
 # Convert to replicate-weight design (bootstrap) for robust SEs
 svy_rep <- survey::as.svrepdesign(svy_day, type = "bootstrap", replicates = 50)
@@ -146,7 +146,7 @@ res_rep
 # Optional: simple weight histogram (requires ggplot2)
 if (requireNamespace("ggplot2", quietly = TRUE)) {
   library(ggplot2)
-  wdf <- tibble::tibble(w = as.numeric(survey::weights(svy_day)))
+  wdf <- tibble::tibble(w = as.numeric(stats::weights(svy_day)))
   ggplot(wdf, aes(w)) + geom_histogram(bins = 30) + theme_minimal() +
     labs(title = "Day-level survey weights", x = "Weight", y = "Count")
 }

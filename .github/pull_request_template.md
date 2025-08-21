@@ -10,6 +10,10 @@
 - [ ] Tests updated/added
 - [ ] No unrelated formatting changes
 
+### Conventions (AGENTS.md)
+- [ ] Reviewed AGENTS.md and this PR follows the survey-first, tidy, vectorized rules.
+- [ ] If conventions changed, AGENTS.md updated (Operational Conventions / Change Discipline) and this PR notes it.
+
 ## Notes for reviewers
 - Context, decisions, trade-offs
 

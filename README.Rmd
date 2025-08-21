@@ -77,3 +77,17 @@ vignette("aerial", package = "tidycreel")
 ```
 
 Tip: For replicate variance, convert your day design with `survey::as.svrepdesign()` and pass it to the estimators.
+
+## Guides and Vignettes
+
+- Survey terms in creel context: a translator
+
+``` r
+vignette("survey_creel_terms", package = "tidycreel")
+```
+
+- Replicate designs (bootstrap/jackknife/BRR) for creel inference
+
+``` r
+vignette("replicate_designs_creel", package = "tidycreel")
+```

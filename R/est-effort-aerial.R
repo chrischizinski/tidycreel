@@ -126,7 +126,7 @@ est_effort.aerial <- function(counts,
     # Compose a minimal lookup with day_id and survey weights; include any grouping vars present
     svy_lookup <- tibble::tibble(
       !!rlang::sym(day_id) := svy_vars[[day_id]],
-      .w = as.numeric(survey::weights(svy))
+      .w = as.numeric(stats::weights(svy))
     )
     # Try to carry a strata column if present
     strata_col <- intersect(c("stratum", "strata", "stratum_id"), names(svy_vars))
@@ -213,7 +213,7 @@ est_effort.aerial <- function(counts,
       names(out)[names(out) == "effort_day"] <- "estimate"
       # SE via vcov attribute for svyby (diagonal elements)
       V <- attr(est, "var")
-      out$se <- sqrt(diag(V))
+      out$se <- if (!is.null(V) && length(V) > 0) sqrt(diag(V)) else rep(NA_real_, nrow(out))
       # CI via normal approximation
       z <- stats::qnorm(1 - (1 - conf_level)/2)
       out$ci_low <- out$estimate - z * out$se

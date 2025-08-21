@@ -37,6 +37,28 @@ This guide orients an AI/code assistant to contribute safely and effectively to 
 - Ensure survey object interop: `creel_design` ↔ `survey::svydesign`/`svrepdesign` conversion helpers. Estimators must accept a design (or construct one) and compute via `survey` functions.
 - Keep documentation and examples runnable; expand vignettes and pkgdown config when present.
 
+**Operational Conventions (Current)**
+- Messaging: Standardize errors/warnings using `cli::cli_abort()` and `cli::cli_warn()`; prefer shared helpers (e.g., `tc_abort_missing_cols()`, `tc_group_warn()`) to keep phrasing consistent.
+- Day-PSU design: Construct day-level designs via `as_day_svydesign(calendar, ...)` and use them across effort estimators; prefer replicate designs via `survey::svrepdesign()` when variance requires.
+- Estimator wrappers: Expose a single `est_effort(design, counts, method=...)` that delegates to method-specific functions; keep return shape consistent (`estimate`, `se`, `ci_low`, `ci_high`, `n`, `method` + group cols).
+- Examples/tests data: Use small, bundled toy datasets for examples, vignettes, and tests; avoid network/filesystem side effects; keep examples fast (`@examplesIf interactive()` or small inputs).
+- CI workflows: Use `r-lib/actions/check-r-package@v2`; enable a modest OS/R matrix, caching, concurrency, and timeouts; run `lintr` separately; deploy `pkgdown` on default branch only (not PRs).
+- DESCRIPTION/docs: Ensure a Maintainer is set; prefer `testthat` edition 3; keep README badges current; update vignettes when APIs change.
+
+**Change Discipline**
+- Purpose: Keep this brief synchronized with actual practice so new contributors and agents stay aligned.
+- When to update:
+  - Estimator interfaces or return schema change (columns, naming, variance options).
+  - Design constructors or required columns change; new helpers added/renamed.
+  - Messaging conventions change (cli helpers, error/warn phrasing).
+  - CI workflow structure or required checks materially change.
+  - Canonical docs (CONTRIBUTING, architecture plans) update policies that affect agents.
+- How to update:
+  - In the same PR that changes conventions, edit this file and succinctly update the relevant section(s) (prefer bullets over prose).
+  - Note the update in the PR via the checklist item “Reviewed/updated AGENTS.md”.
+  - For larger policy shifts, open a focused follow-up PR and tag maintainers.
+- Scope: AGENTS.md summarizes conventions; if conflicts arise, follow CONTRIBUTING.md and architecture documents as the source of truth.
+
 **Implementation Rules (Authoritative)**
 - Survey-first framework:
   - Define/accept a valid `svydesign`/`svrepdesign` that encodes PSUs, strata, weights, and FPC when relevant.
@@ -108,3 +130,9 @@ This guide orients an AI/code assistant to contribute safely and effectively to 
 - See `tidycreel_designs.md` for constructor diagnostics and conversion helpers.
 
 Maintain this file as the single-page brief for new agents. Update when `CONTRIBUTING.md`, architecture, or plans change.
+
+**Revision Log**
+- 2025-08-21: Added Operational Conventions section to capture current practices (cli messaging, day-PSU design, estimator wrapper, examples/data, CI, DESCRIPTION/docs).
+- 2025-08-21: Added Change Discipline section; updated PR template with AGENTS.md checklist to surface convention adherence/updates.
+
+Add entries as one-line bullets with ISO date (YYYY-MM-DD), newest first; include what changed and why if not obvious.

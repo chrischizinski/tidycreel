@@ -89,7 +89,7 @@ est_effort.instantaneous <- function(counts,
     svy_vars <- svy$variables
     if (!(day_id %in% names(svy_vars))) cli::cli_abort(paste0("`svy` must include day_id variable: ", day_id))
     # Join weights and replicate weights if present
-    day_group$.w <- as.numeric(survey::weights(svy))[match(day_group[[day_id]], svy_vars[[day_id]])]
+    day_group$.w <- as.numeric(stats::weights(svy))[match(day_group[[day_id]], svy_vars[[day_id]])]
     if (any(is.na(day_group$.w))) cli::cli_abort(paste0("Failed to align survey weights on ", day_id))
 
     ids_formula <- stats::as.formula(paste("~", day_id))
@@ -118,7 +118,7 @@ est_effort.instantaneous <- function(counts,
       out <- tibble::as_tibble(est)
       names(out)[names(out) == "effort_day"] <- "estimate"
       V <- attr(est, "var")
-      out$se <- sqrt(diag(V))
+      out$se <- if (!is.null(V) && length(V) > 0) sqrt(diag(V)) else rep(NA_real_, nrow(out))
       z <- stats::qnorm(1 - (1 - conf_level)/2)
       out$ci_low <- out$estimate - z * out$se
       out$ci_high <- out$estimate + z * out$se

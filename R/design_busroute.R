@@ -1,28 +1,40 @@
 #' Create Bus Route Survey Design
 #'
-#' Constructs a survey design object for bus route creel surveys, where surveyors follow a fixed route and sample anglers at multiple locations/times. This design accounts for unequal probability sampling and route-based coverage.
+#' Constructs a lean design container for bus-route creel surveys. This design
+#' holds validated inputs and metadata; estimation is performed with
+#' survey-first estimators (e.g., [est_effort.busroute_design()]) that rely on a
+#' day-PSU survey design from [as_day_svydesign()]. No ad-hoc weighting is
+#' performed here.
 #'
-#' @param interviews A tibble containing interview data validated by validate_interviews().
-#' @param counts A tibble containing count data validated by validate_counts().
-#' @param calendar A tibble containing calendar data validated by validate_calendar().
-#' @param route_schedule A tibble describing the bus route schedule (stop, time, expected coverage).
-#' @param strata_vars Character vector of variables to use for stratification. Default is c("date", "location").
-#' @param weight_method Character specifying weight calculation method. Options: "standard", "unequal_prob", "calibrate".
-#' @return A list object of class "busroute_design" and "creel_design".
+#' @param interviews Tibble of interview data validated by [validate_interviews()].
+#' @param counts Tibble of count/observation data validated by [validate_counts()].
+#'   For HT-style effort estimation, counts should include inclusion probabilities
+#'   (e.g., `inclusion_prob`) or sufficient fields to derive them upstream.
+#' @param calendar Tibble of the sampling calendar validated by [validate_calendar()].
+#'   Used to construct day-level `svydesign` with [as_day_svydesign()].
+#' @param route_schedule Tibble describing the bus-route schedule (e.g., stop,
+#'   time, planned coverage). Used for diagnostics and documentation; not used to
+#'   compute weights here.
+#' @param strata_vars Character vector for descriptive stratification metadata
+#'   (e.g., `c("date","location")`). Missing columns are ignored.
+#'
+#' @return A list with class `c("busroute_design","creel_design","list")` and fields:
+#'   `design_type`, `interviews`, `counts`, `calendar`, `route_schedule`,
+#'   `strata_vars`, and `metadata`.
 #' @export
 #'
 #' @examples
-#' # design_busroute(interviews, counts, calendar, route_schedule)
+#' # design <- design_busroute(interviews, counts, calendar, route_schedule)
 design_busroute <- function(interviews, counts, calendar, route_schedule,
-                           strata_vars = c("date", "location"),
-                           weight_method = "unequal_prob") {
-  # Validate inputs
+                            strata_vars = c("date", "location")) {
+  # Validate core inputs
   interviews <- validate_interviews(interviews)
   counts <- validate_counts(counts)
   calendar <- validate_calendar(calendar)
-  # Validate route_schedule
+
+  # Validate route schedule minimally
   if (!is.data.frame(route_schedule)) cli::cli_abort("`route_schedule` must be a data.frame/tibble.")
-  required_route_cols <- c("route_stop", "time", "expected_coverage")
+  required_route_cols <- c("route_stop", "time")
   missing_cols <- setdiff(required_route_cols, names(route_schedule))
   if (length(missing_cols) > 0) {
     cli::cli_abort(c(
@@ -30,27 +42,10 @@ design_busroute <- function(interviews, counts, calendar, route_schedule,
       "i" = paste0("Add: ", paste(missing_cols, collapse = ", "))
     ))
   }
-  # Calculate design weights (placeholder, should use survey::svydesign with unequal probabilities)
-  # For now, assign weights based on expected_coverage
-  # Merge interviews with route_schedule to get probabilities
-  interviews <- dplyr::left_join(interviews, route_schedule, by = c("location" = "route_stop"))
 
-  # Derive selection probability from expected coverage; clamp to (0,1]
-  if (!"expected_coverage" %in% names(interviews)) {
-    cli::cli_abort("'expected_coverage' missing after join; check join keys and route_schedule columns.")
-  }
-  interviews$probability <- pmin(pmax(interviews$expected_coverage, .Machine$double.eps), 1)
-  interviews$design_weights <- 1 / interviews$probability
+  # Keep only present strata vars for metadata
+  strata_vars <- tc_group_warn(strata_vars, names(interviews))
 
-  # Build survey design object (unequal probability via weights)
-  svy_design <- survey::svydesign(
-    ids = ~1,
-    strata = stats::as.formula(paste("~", paste(strata_vars, collapse = "+"))),
-    weights = ~design_weights,
-    data = interviews
-  )
-
-  # Create design object
   design <- list(
     design_type = "busroute",
     interviews = interviews,
@@ -58,13 +53,11 @@ design_busroute <- function(interviews, counts, calendar, route_schedule,
     calendar = calendar,
     route_schedule = route_schedule,
     strata_vars = strata_vars,
-    weight_method = weight_method,
-    svy_design = svy_design,
     metadata = list(
       creation_time = Sys.time(),
-      package_version = utils::packageVersion("tidycreel")
+      package_version = tryCatch(as.character(utils::packageVersion("tidycreel")), error = function(e) NA_character_)
     )
   )
   class(design) <- c("busroute_design", "creel_design", "list")
-  return(design)
+  design
 }

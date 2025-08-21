@@ -57,82 +57,11 @@ NULL
 #' effort_by_location_mode <- estimate_effort(design, by = c("location", "mode"))
 #' }
 estimate_effort <- function(design, by = NULL, total = TRUE, level = 0.95) {
-  # Validate design
-  if (!inherits(design, "creel_design")) {
-    cli::cli_abort("{.arg design} must be a creel design object")
-  }
-
-  # Set default grouping variables
-  if (is.null(by)) {
-    by <- design$strata_vars
-  }
-
-  # Calculate effort for each interview
-  interviews <- design$interviews
-  interviews$effort_observed <- interviews$hours_fished * interviews$party_size
-
-  # Create survey design object
-  survey_design <- create_survey_design(design)
-
-  # Group by specified variables
-  if (length(by) > 0) {
-    group_formula <- as.formula(paste("~", paste(by, collapse = " + ")))
-    estimates <- survey::svyby(
-      ~effort_observed,
-      group_formula,
-      survey_design,
-      survey::svytotal,
-      na.rm = TRUE,
-      vartype = c("se", "ci"),
-      level = level
-    )
-
-    # Convert to tibble
-    result <- tibble::as_tibble(estimates) %>%
-      dplyr::rename(
-        effort_estimate = effort_observed,
-        effort_se = se,
-        effort_lower = `2.5 %`,
-        effort_upper = `97.5 %`
-      ) %>%
-      dplyr::mutate(
-        group_vars = purrr::pmap(
-          dplyr::across(all_of(by)),
-          ~ list(...)
-        ),
-        n = as.integer(.$count),
-        design_type = design$design_type,
-        estimation_method = "survey_design"
-      ) %>%
-      dplyr::select(
-        group_vars, n, effort_estimate, effort_se,
-        effort_lower, effort_upper, design_type, estimation_method
-      )
-  } else {
-    # Overall total only
-    total_est <- survey::svytotal(~effort_observed, survey_design,
-      na.rm = TRUE, level = level
-    )
-
-    result <- tibble::tibble(
-      group_vars = list(NULL),
-      n = nrow(interviews),
-      effort_estimate = as.numeric(total_est[1, 1]),
-      effort_se = as.numeric(sqrt(survey::vcov(total_est)[1, 1])),
-      effort_lower = as.numeric(confint(total_est)[1, 1]),
-      effort_upper = as.numeric(confint(total_est)[2, 1]),
-      design_type = design$design_type,
-      estimation_method = "survey_design"
-    )
-  }
-
-  # Add total if requested and grouping is used
-  if (total && length(by) > 0) {
-    total_result <- estimate_effort(design, by = NULL, total = FALSE, level = level)
-    result <- dplyr::bind_rows(result, total_result)
-  }
-
-  return(result)
+  cli::cli_abort(c(
+    "x" = "estimate_effort() is deprecated.",
+    "i" = "Use est_effort(design, counts, method = 'instantaneous' | 'progressive').",
+    "i" = "See vignettes for the new survey-first workflow."
+  ))
 }
 
 #' Estimate Catch Per Unit Effort (CPUE)
@@ -174,95 +103,10 @@ estimate_effort <- function(design, by = NULL, total = TRUE, level = 0.95) {
 #' bass_cpue_weight <- estimate_cpue(design, species = "bass", type = "weight")
 #' }
 estimate_cpue <- function(design, by = NULL, species = NULL, type = c("number", "weight"), level = 0.95) {
-  # Validate design
-  if (!inherits(design, "creel_design")) {
-    cli::cli_abort("{.arg design} must be a creel design object")
-  }
-
-  type <- match.arg(type, c("number", "weight"))
-
-  # Filter interviews if species specified
-  interviews <- design$interviews
-  if (!is.null(species)) {
-    interviews <- interviews[interviews$target_species %in% species, ]
-    if (nrow(interviews) == 0) {
-      cli::cli_warn("No interviews found for specified species")
-      return(tibble::tibble())
-    }
-  }
-
-  # Calculate catch and effort for each interview
-  interviews$effort_observed <- interviews$hours_fished * interviews$party_size
-
-  if (type == "number") {
-    interviews$catch_observed <- interviews$catch_total
-  } else {
-    interviews$catch_observed <- interviews$weight_total
-  }
-
-  # Create survey design object
-  survey_design <- create_survey_design(design)
-
-  # Group by specified variables
-  if (length(by) > 0) {
-    group_formula <- as.formula(paste("~", paste(by, collapse = " + ")))
-    estimates <- survey::svyby(
-      ~catch_observed,
-      group_formula,
-      survey_design,
-      survey::svyratio,
-      denominator = ~effort_observed,
-      na.rm = TRUE,
-      vartype = c("se", "ci"),
-      level = level
-    )
-
-    # Convert to tibble
-    result <- tibble::as_tibble(estimates) %>%
-      dplyr::rename(
-        cpue_estimate = catch_observed,
-        cpue_se = se,
-        cpue_lower = `2.5 %`,
-        cpue_upper = `97.5 %`
-      ) %>%
-      dplyr::mutate(
-        group_vars = purrr::pmap(
-          dplyr::across(all_of(by)),
-          ~ list(...)
-        ),
-        n = as.integer(.$count),
-        species = if (is.null(species)) "all" else paste(species, collapse = ", "),
-        type = type,
-        design_type = design$design_type
-      ) %>%
-      dplyr::select(
-        group_vars, n, cpue_estimate, cpue_se,
-        cpue_lower, cpue_upper, species, type, design_type
-      )
-  } else {
-    # Overall CPUE
-    ratio_est <- survey::svyratio(
-      ~catch_observed,
-      ~effort_observed,
-      survey_design,
-      na.rm = TRUE,
-      level = level
-    )
-
-    result <- tibble::tibble(
-      group_vars = list(NULL),
-      n = nrow(interviews),
-      cpue_estimate = as.numeric(ratio_est[1]),
-      cpue_se = as.numeric(sqrt(survey::vcov(ratio_est)[1, 1])),
-      cpue_lower = as.numeric(confint(ratio_est)[1, 1]),
-      cpue_upper = as.numeric(confint(ratio_est)[2, 1]),
-      species = if (is.null(species)) "all" else paste(species, collapse = ", "),
-      type = type,
-      design_type = design$design_type
-    )
-  }
-
-  return(result)
+  cli::cli_abort(c(
+    "x" = "estimate_cpue() is deprecated.",
+    "i" = "Planned replacement: survey-first CPUE via svyratio with tidy returns (coming next)."
+  ))
 }
 
 #' Estimate Total Harvest
@@ -304,90 +148,10 @@ estimate_cpue <- function(design, by = NULL, species = NULL, type = c("number", 
 #' walleye_harvest_weight <- estimate_harvest(design, species = "walleye", type = "weight")
 #' }
 estimate_harvest <- function(design, by = NULL, species = NULL, type = c("number", "weight"), level = 0.95) {
-  # Validate design
-  if (!inherits(design, "creel_design")) {
-    cli::cli_abort("{.arg design} must be a creel design object")
-  }
-
-  type <- match.arg(type, c("number", "weight"))
-
-  # Filter interviews if species specified
-  interviews <- design$interviews
-  if (!is.null(species)) {
-    interviews <- interviews[interviews$target_species %in% species, ]
-    if (nrow(interviews) == 0) {
-      cli::cli_warn("No interviews found for specified species")
-      return(tibble::tibble())
-    }
-  }
-
-  # Calculate harvest for each interview
-  if (type == "number") {
-    interviews$harvest_observed <- interviews$catch_kept
-  } else {
-    # Weight-based harvest - approximate as proportion of total weight
-    interviews$harvest_observed <- interviews$weight_total *
-      (interviews$catch_kept / pmax(interviews$catch_total, 1))
-  }
-
-  # Create survey design object
-  survey_design <- create_survey_design(design)
-
-  # Group by specified variables
-  if (length(by) > 0) {
-    group_formula <- as.formula(paste("~", paste(by, collapse = " + ")))
-    estimates <- survey::svyby(
-      ~harvest_observed,
-      group_formula,
-      survey_design,
-      survey::svytotal,
-      na.rm = TRUE,
-      vartype = c("se", "ci"),
-      level = level
-    )
-
-    # Convert to tibble
-    result <- tibble::as_tibble(estimates) %>%
-      dplyr::rename(
-        harvest_estimate = harvest_observed,
-        harvest_se = se,
-        harvest_lower = `2.5 %`,
-        harvest_upper = `97.5 %`
-      ) %>%
-      dplyr::mutate(
-        group_vars = purrr::pmap(
-          dplyr::across(all_of(by)),
-          ~ list(...)
-        ),
-        n = as.integer(.$count),
-        species = if (is.null(species)) "all" else paste(species, collapse = ", "),
-        type = type,
-        design_type = design$design_type
-      ) %>%
-      dplyr::select(
-        group_vars, n, harvest_estimate, harvest_se,
-        harvest_lower, harvest_upper, species, type, design_type
-      )
-  } else {
-    # Overall harvest
-    total_est <- survey::svytotal(~harvest_observed, survey_design,
-      na.rm = TRUE, level = level
-    )
-
-    result <- tibble::tibble(
-      group_vars = list(NULL),
-      n = nrow(interviews),
-      harvest_estimate = as.numeric(total_est[1, 1]),
-      harvest_se = as.numeric(sqrt(survey::vcov(total_est)[1, 1])),
-      harvest_lower = as.numeric(confint(total_est)[1, 1]),
-      harvest_upper = as.numeric(confint(total_est)[2, 1]),
-      species = if (is.null(species)) "all" else paste(species, collapse = ", "),
-      type = type,
-      design_type = design$design_type
-    )
-  }
-
-  return(result)
+  cli::cli_abort(c(
+    "x" = "estimate_harvest() is deprecated.",
+    "i" = "Planned replacement: survey-first catch/harvest estimators aligned with new outputs."
+  ))
 }
 
 #' Estimate Fishing Effort (survey-first wrapper)
@@ -446,7 +210,7 @@ est_effort <- function(design,
   method <- match.arg(method)
 
   # Derive a day-level svy design
-  if (inherits(design, c("svydesign", "svyrep.design"))) {
+  if (inherits(design, c("survey.design", "survey.design2", "svyrep.design"))) {
     svy_day <- design
   } else if (inherits(design, "creel_design")) {
     if (is.null(design$calendar)) {
