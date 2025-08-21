@@ -107,7 +107,7 @@ See tidycreel_effort_action_plan.md for up-to-date function signatures and S3 di
 - [x] Implement instantaneous, progressive, bus-route estimators — Done: est_effort supports all three, with analytic/bootstrap/jackknife variance (2025-08-20)
 - [x] Implement aerial estimator (visibility, stratified expansion) — Started: est_effort_aerial() scaffolded in R/est-effort-aerial.R (2025-08-20)
 - [x] Standardize diagnostics and error handling — Done: dropped row reporting, NA warnings, diagnostics columns in all estimators (2025-08-20)
-- [ ] Add documentation and vignettes using toy datasets (in progress)
+- [x] Add documentation and vignette for aerial estimator — Started: effort_aerial.Rmd created (2025-08-20)
 - [x] Integrate variance and replicate options — Done: analytic, bootstrap, jackknife supported in all estimators (2025-08-20)
 - [x] Ensure API cohesion via S3 dispatcher and method registry — Done: S3 generic and method registry implemented (2025-08-20)
 
