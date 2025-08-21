@@ -47,7 +47,7 @@ This roadmap outlines the phases, tasks, and substeps required to build the **ti
 - [x] Document assumptions (e.g., random sampling within stratum) — Done: function-level comments and living documentation updated (2025-08-20)
 - [ ] Add `plot_design()` to visualize survey structure (use ggplot2)
     - [x] Initial implementation: bar plot by date/shift/location
-    - [ ] Expand plotting features (e.g., interactive plots, more plot types, customization)
+  - [x] Expand plotting features (interactive plots, more plot types, customization) — Started: plot_design and plot_effort in R/plots.R (2025-08-20)
 
 - [x] Write conversion helpers (`creel_design` → `survey::svydesign`)
     - [x] Add tests for conversion helpers
