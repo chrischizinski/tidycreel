@@ -103,12 +103,13 @@ inst/extdata/ (toy datasets)
 See tidycreel_effort_action_plan.md for up-to-date function signatures and S3 dispatcher example.
 
 ### Immediate Next Steps
-- [ ] Build utilities & schemas (validation, time, diagnostics)
-- [ ] Implement instantaneous, progressive, bus-route, aerial estimators
-- [ ] Standardize diagnostics and error handling
-- [ ] Add documentation and vignettes using toy datasets
-- [ ] Integrate variance and replicate options
-- [ ] Ensure API cohesion via S3 dispatcher and method registry
+- [x] Build utilities & schemas (validation, time, diagnostics) — Done: validate_required_columns, parse_time_column, report_dropped_rows implemented and integrated (2025-08-20)
+- [x] Implement instantaneous, progressive, bus-route estimators — Done: est_effort supports all three, with analytic/bootstrap/jackknife variance (2025-08-20)
+- [ ] Implement aerial estimator (visibility, stratified expansion)
+- [x] Standardize diagnostics and error handling — Done: dropped row reporting, NA warnings, diagnostics columns in all estimators (2025-08-20)
+- [ ] Add documentation and vignettes using toy datasets (in progress)
+- [x] Integrate variance and replicate options — Done: analytic, bootstrap, jackknife supported in all estimators (2025-08-20)
+- [x] Ensure API cohesion via S3 dispatcher and method registry — Done: S3 generic and method registry implemented (2025-08-20)
 
 ---
 
