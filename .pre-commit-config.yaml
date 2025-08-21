@@ -12,9 +12,3 @@ repos:
         exclude: ^(renv/|\.lintr$)
       - id: end-of-file-fixer
         exclude: ^(renv/|\.lintr$)
-
-#  - repo: https://github.com/lorenzwalthert/precommit
-#    rev: v0.4.3.9013
-#    hooks:
-#      - id: lintr
-#        exclude: ^(renv/|\.lintr$)
