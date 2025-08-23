@@ -1,4 +1,4 @@
-tidycreel — Roadmap & ToDo (Last updated: 2025-08-21)
+tidycreel — Roadmap & ToDo (Last updated: 2025-08-22)
 
 Guiding Principles
 - Survey-first: Build inference on `survey`/`svrepdesign` (Taylor or replicates).
@@ -18,11 +18,9 @@ Phase 1 — Core Infrastructure (Completed)
 - [x] Sample data folder scaffold
 
 Phase 2 — Survey Design Objects (Status)
-- [x] Access-point, Roving, Replicate-weights constructors (`creel_design`)
-- [x] Bus-route design (unequal-prob weights via `svydesign`)
-- [x] Metadata + S3 print/summary methods
+- [x] Bus-route design (lean metadata; inference via survey)
 - [x] Conversion helpers: `as_survey_design()`, `as_svrep_design()`
-- [x] Plotting: `plot_design()` and `plot_effort`
+- [ ] Remove remaining legacy references in docs/vignettes (see Pause Checkpoint)
 
 Phase 3 — Estimation Core (Status)
 - [x] Wrapper: `est_effort()` delegates to survey-first estimators
@@ -32,7 +30,7 @@ Phase 3 — Estimation Core (Status)
 - [x] Bus-route: HT contributions; supports replicate designs
 - [x] CLI-based validation & diagnostics across estimators
 - [x] Return shape: group cols + estimate, se, ci_low, ci_high, n, method, diagnostics
-- [ ] Downstream compatibility: `estimate_cpue`, `estimate_catch` alignment
+- [x] Downstream compatibility: CPUE/Catch alignment (new `est_cpue()`, `est_catch()`)
 - [ ] Future corrections: incomplete trips, nonresponse, spatial options
 - [ ] Custom formula hooks and variance options
 - [ ] Plot integration helpers (e.g., `plot_effort` templates)
@@ -80,9 +78,32 @@ Tooling & Site
 
 Near-term Next Actions
 - [ ] Add toy datasets (small CSVs) to `inst/extdata/` and switch vignettes to use them
-- [ ] pkgdown site setup; navbar links to “Effort (Survey-First)” and “Aerial”
+- [ ] pkgdown site setup; navbar links to “Effort (Survey-First)”, “Aerial”, and CPUE/Catch
 - [ ] Add vignette: survey design trade-offs + replicate designs (with small examples)
-- [ ] CPUE/catch estimators alignment with survey-first pattern
+- [x] CPUE/catch estimators alignment with survey-first pattern (initial implementation; expand tests/docs)
+
+Pause Checkpoint — 2025-08-22
+- Status: All survey-first tests pass (instantaneous, progressive, aerial, bus-route, CPUE/Catch). Legacy design constructors removed; tests updated to use `survey` directly.
+- Key recent fixes:
+  - Aerial: replicate-weight handling via index alignment; `lonely.psu = "adjust"` for non-rep designs.
+  - Bus-route: same replicate handling; robust SE extraction; non-rep designs use `lonely.psu = "adjust"`.
+  - CPUE/Catch: grouped `svyratio` uses `stats::coef()`/`survey::SE()`; ungrouped SE via `stats::vcov()`.
+  - README updated; tests no longer call legacy constructors.
+- On-resume high-priority tasks:
+  1) Docs cleanup: remove/replace legacy references (`design_access`, `design_roving`, `design_repweights`). Files to scrub:
+     - `vignettes/getting-started.Rmd`
+     - `tidycreel_designs.md`
+     - `README.Rmd` (CPUE/Catch already updated)
+     - any vignette/article linking old constructors
+  2) Regenerate docs and namespace: run `devtools::document()` then `devtools::test()` and `devtools::check()`; remove orphaned man pages for deleted exports if any.
+  3) pkgdown: ensure `_pkgdown.yml` navbar reflects survey-first pages (Effort, Aerial, CPUE/Catch), and remove links to removed topics.
+  4) Add a short CPUE/Catch vignette with toy data example; cross-link from README.
+  5) Confirm no remaining exports for removed constructors (`NAMESPACE` is trimmed; verify after roxygen).
+  6) Optional: AGENTS.md update to note constructor removal and survey-first backbone.
+- Handy commands after resuming:
+  - `devtools::document(); devtools::test()`
+  - `devtools::check()`
+  - `pkgdown::build_site()` (optional)
 
 Changelog (2025-08-21)
 - Completed survey-first refactor for effort (instantaneous/progressive/aerial/bus-route)

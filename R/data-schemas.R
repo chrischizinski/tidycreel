@@ -12,7 +12,8 @@
 #'   \item{month}{Character, month identifier}
 #'   \item{weekend}{Logical, TRUE if weekend}
 #'   \item{holiday}{Logical, TRUE if holiday}
-#'   \item{shift_block}{Character, shift identifier (morning, afternoon, evening)}
+#'   \item{shift_block}{Character, shift identifier (morning, afternoon,
+#'     evening)}
 #'   \item{target_sample}{Integer, target sample size for stratum}
 #'   \item{actual_sample}{Integer, actual sample size achieved}
 #' }
@@ -86,7 +87,8 @@ NULL
 
 #' Reference Table Schema
 #'
-#' Defines the expected structure for reference tables (species, waterbody, etc.).
+#' Defines the expected structure for reference tables (species, waterbody,
+#' etc.).
 #'
 #' @format A tibble with the following columns:
 #' \describe{
@@ -132,7 +134,8 @@ validate_calendar <- function(calendar, strict = TRUE) {
   missing_cols <- setdiff(required_cols, names(calendar))
 
   if (length(missing_cols) > 0) {
-    msg <- paste("Missing required columns:", paste(missing_cols, collapse = ", "))
+    msg <- paste("Missing required columns:",
+                 paste(missing_cols, collapse = ", "))
     if (strict) {
       cli::cli_abort(msg)
     } else {
@@ -150,7 +153,9 @@ validate_calendar <- function(calendar, strict = TRUE) {
   }
 
   if (!all(c(calendar$target_sample, calendar$actual_sample) %% 1 == 0)) {
-    cli::cli_abort("{.var target_sample} and {.var actual_sample} must be integers")
+    cli::cli_abort(
+      "{.var target_sample} and {.var actual_sample} must be integers"
+    )
   }
 
   invisible(calendar)
@@ -199,7 +204,8 @@ validate_interviews <- function(interviews, strict = TRUE) {
   missing_cols <- setdiff(required_cols, names(interviews))
 
   if (length(missing_cols) > 0) {
-    msg <- paste("Missing required columns:", paste(missing_cols, collapse = ", "))
+    msg <- paste("Missing required columns:",
+                 paste(missing_cols, collapse = ", "))
     if (strict) {
       cli::cli_abort(msg)
     } else {
@@ -212,8 +218,11 @@ validate_interviews <- function(interviews, strict = TRUE) {
     cli::cli_abort("{.var date} must be a Date vector")
   }
 
-  if (!inherits(interviews$time_start, "POSIXct") || !inherits(interviews$time_end, "POSIXct")) {
-    cli::cli_abort("{.var time_start} and {.var time_end} must be POSIXct vectors")
+  if (!inherits(interviews$time_start, "POSIXct") ||
+      !inherits(interviews$time_end, "POSIXct")) {
+    cli::cli_abort(
+      "{.var time_start} and {.var time_end} must be POSIXct vectors"
+    )
   }
 
   if (!all(c(

@@ -103,19 +103,22 @@ est_effort.busroute_design <- function(x,
   # Join weights and replicate weights if present
   svy_vars <- svy$variables
   if (!(day_id %in% names(svy_vars))) cli::cli_abort(paste0("`svy` must include `", day_id, "` in its variables"))
-  day_group$.w <- as.numeric(stats::weights(svy))[match(day_group[[day_id]], svy_vars[[day_id]])]
+  # Use sampling weights for replicate designs; ensure vector length matches svy rows
+  base_w <- if (inherits(svy, "svyrep.design")) as.numeric(stats::weights(svy, type = "sampling")) else as.numeric(stats::weights(svy))
+  idx <- match(day_group[[day_id]], svy_vars[[day_id]])
+  day_group$.w <- base_w[idx]
   if (any(is.na(day_group$.w))) cli::cli_abort(paste0("Failed to align survey weights on ", day_id))
 
   ids_formula <- stats::as.formula(paste("~", day_id))
   if (inherits(svy, "svyrep.design")) {
-    repmat <- survey::repweights(svy)
-    rep_df <- tibble::as_tibble(repmat)
-    rep_df[[day_id]] <- svy_vars[[day_id]]
-    day_group <- dplyr::left_join(day_group, rep_df, by = day_id)
-    repcols <- colnames(repmat)
+    repmat <- svy$repweights
+    if (is.null(repmat)) cli::cli_abort("Replicate weights not found on svyrep.design object.")
+    # Align replicate weights by index, duplicating rows for repeated days
+    repmat_mat <- as.matrix(repmat)
+    repweights_aligned <- repmat_mat[idx, , drop = FALSE]
     design_eff <- survey::svrepdesign(
       data = day_group,
-      repweights = as.matrix(day_group[, repcols]),
+      repweights = repweights_aligned,
       weights = ~.w,
       type = attr(repmat, "type") %||% "bootstrap",
       scale = attr(repmat, "scale") %||% 1,
@@ -123,7 +126,7 @@ est_effort.busroute_design <- function(x,
       combined.weights = attr(repmat, "combined.weights") %||% TRUE
     )
   } else {
-    design_eff <- survey::svydesign(ids = ids_formula, weights = ~.w, data = day_group)
+    design_eff <- survey::svydesign(ids = ids_formula, weights = ~.w, data = day_group, nest = TRUE, lonely.psu = "adjust")
   }
 
   # Totals by groups
@@ -132,8 +135,13 @@ est_effort.busroute_design <- function(x,
     est <- survey::svyby(~effort_day, by = by_formula, design_eff, survey::svytotal, na.rm = TRUE)
     out <- tibble::as_tibble(est)
     names(out)[names(out) == "effort_day"] <- "estimate"
-    V <- attr(est, "var")
-    out$se <- if (!is.null(V) && length(V) > 0) sqrt(diag(V)) else rep(NA_real_, nrow(out))
+    se_try <- try(suppressWarnings(as.numeric(survey::SE(est))), silent = TRUE)
+    if (!inherits(se_try, "try-error") && length(se_try) == nrow(out)) {
+      out$se <- se_try
+    } else {
+      V <- attr(est, "var")
+      out$se <- if (!is.null(V) && length(V) > 0) sqrt(diag(V)) else rep(NA_real_, nrow(out))
+    }
     z <- stats::qnorm(1 - (1 - conf_level)/2)
     out$ci_low <- out$estimate - z * out$se
     out$ci_high <- out$estimate + z * out$se

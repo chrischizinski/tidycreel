@@ -48,9 +48,9 @@ as_day_svydesign <- function(calendar,
   ids_formula <- stats::as.formula(paste("~", day_id))
   if (length(strata_vars) > 0) {
     strata_formula <- stats::as.formula(paste("~", paste(strata_vars, collapse = "+")))
-    svy <- survey::svydesign(ids = ids_formula, strata = strata_formula, weights = ~.w, data = cal)
+    svy <- survey::svydesign(ids = ids_formula, strata = strata_formula, weights = ~.w, data = cal, nest = TRUE, lonely.psu = "adjust")
   } else {
-    svy <- survey::svydesign(ids = ids_formula, weights = ~.w, data = cal)
+    svy <- survey::svydesign(ids = ids_formula, weights = ~.w, data = cal, nest = TRUE, lonely.psu = "adjust")
   }
   svy
 }

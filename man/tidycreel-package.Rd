@@ -11,8 +11,8 @@
 \seealso{
 Useful links:
 \itemize{
-  \item \url{https://github.com/cchizinski2/tidycreel}
-  \item Report bugs at \url{https://github.com/cchizinski2/tidycreel/issues}
+  \item \url{https://github.com/chrischizinski/tidycreel}
+  \item Report bugs at \url{https://github.com/chrischizinski/tidycreel/issues}
 }
 
 }

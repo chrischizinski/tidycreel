@@ -39,28 +39,30 @@ pak::pak("chrischizinski/tidycreel")
 
 ## Example
 
-This is a basic example which shows you how to solve a common problem:
+Survey-first estimators using bundled toy data.
 
 ```{r example}
 library(tidycreel)
-## basic example code
+
+interviews <- readr::read_csv(system.file("extdata/toy_interviews.csv", package = "tidycreel"))
+counts <- readr::read_csv(system.file("extdata/toy_counts.csv", package = "tidycreel"))
+calendar <- readr::read_csv(system.file("extdata/toy_calendar.csv", package = "tidycreel"))
+
+# Day-PSU design from calendar
+svy_day <- as_day_svydesign(calendar, day_id = "date", strata_vars = c("day_type","month"))
+
+# Effort from instantaneous counts
+est_effort(svy_day, counts, method = "instantaneous", by = c("location"))
+
+# CPUE and Harvest from interview data (interview-level design)
+svy_int <- survey::svydesign(ids = ~1, weights = ~1, data = interviews)
+suppressWarnings({
+  est_cpue(svy_int, by = c("target_species"), response = "catch_total")
+})
+suppressWarnings({
+  est_catch(svy_int, by = c("target_species"), response = "catch_kept")
+})
 ```
-
-What is special about using `README.Rmd` instead of just `README.md`? You can include R chunks like so:
-
-```{r cars}
-summary(cars)
-```
-
-You'll still need to render `README.Rmd` regularly, to keep `README.md` up-to-date. `devtools::build_readme()` is handy for this.
-
-You can also embed plots, for example:
-
-```{r pressure, echo = FALSE}
-plot(pressure)
-```
-
-In that case, don't forget to commit and push the resulting figure files, so they display on GitHub and CRAN.
 
 ## Effort Overview (Survey-First)
 

@@ -132,6 +132,8 @@ This guide orients an AI/code assistant to contribute safely and effectively to 
 Maintain this file as the single-page brief for new agents. Update when `CONTRIBUTING.md`, architecture, or plans change.
 
 **Revision Log**
+- 2025-08-22: Removed legacy design constructors from exports/tests (design_access, design_roving, design_repweights); affirmed survey-first backbone (use as_day_svydesign and direct svydesign/svrepdesign). Hardened aerial/bus-route replicate handling; CPUE/Catch robust to survey version naming.
+- 2025-08-22: Synced with current repo state; confirmed survey-first effort estimators, vignettes, and pkgdown navbar entries are in place; minor phrasing polish.
 - 2025-08-21: Added Operational Conventions section to capture current practices (cli messaging, day-PSU design, estimator wrapper, examples/data, CI, DESCRIPTION/docs).
 - 2025-08-21: Added Change Discipline section; updated PR template with AGENTS.md checklist to surface convention adherence/updates.
 

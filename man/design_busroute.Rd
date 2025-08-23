@@ -9,29 +9,38 @@ design_busroute(
   counts,
   calendar,
   route_schedule,
-  strata_vars = c("date", "location"),
-  weight_method = "unequal_prob"
+  strata_vars = c("date", "location")
 )
 }
 \arguments{
-\item{interviews}{A tibble containing interview data validated by validate_interviews().}
+\item{interviews}{Tibble of interview data validated by \code{\link[=validate_interviews]{validate_interviews()}}.}
 
-\item{counts}{A tibble containing count data validated by validate_counts().}
+\item{counts}{Tibble of count/observation data validated by \code{\link[=validate_counts]{validate_counts()}}.
+For HT-style effort estimation, counts should include inclusion probabilities
+(e.g., \code{inclusion_prob}) or sufficient fields to derive them upstream.}
 
-\item{calendar}{A tibble containing calendar data validated by validate_calendar().}
+\item{calendar}{Tibble of the sampling calendar validated by \code{\link[=validate_calendar]{validate_calendar()}}.
+Used to construct day-level \code{svydesign} with \code{\link[=as_day_svydesign]{as_day_svydesign()}}.}
 
-\item{route_schedule}{A tibble describing the bus route schedule (stop, time, expected coverage).}
+\item{route_schedule}{Tibble describing the bus-route schedule (e.g., stop,
+time, planned coverage). Used for diagnostics and documentation; not used to
+compute weights here.}
 
-\item{strata_vars}{Character vector of variables to use for stratification. Default is c("date", "location").}
-
-\item{weight_method}{Character specifying weight calculation method. Options: "standard", "unequal_prob", "calibrate".}
+\item{strata_vars}{Character vector for descriptive stratification metadata
+(e.g., \code{c("date","location")}). Missing columns are ignored.}
 }
 \value{
-A list object of class "busroute_design" and "creel_design".
+A list with class \code{c("busroute_design","creel_design","list")} and fields:
+\code{design_type}, \code{interviews}, \code{counts}, \code{calendar}, \code{route_schedule},
+\code{strata_vars}, and \code{metadata}.
 }
 \description{
-Constructs a survey design object for bus route creel surveys, where surveyors follow a fixed route and sample anglers at multiple locations/times. This design accounts for unequal probability sampling and route-based coverage.
+Constructs a lean design container for bus-route creel surveys. This design
+holds validated inputs and metadata; estimation is performed with
+survey-first estimators (e.g., \code{\link[=est_effort.busroute_design]{est_effort.busroute_design()}}) that rely on a
+day-PSU survey design from \code{\link[=as_day_svydesign]{as_day_svydesign()}}. No ad-hoc weighting is
+performed here.
 }
 \examples{
-# design_busroute(interviews, counts, calendar, route_schedule)
+# design <- design_busroute(interviews, counts, calendar, route_schedule)
 }

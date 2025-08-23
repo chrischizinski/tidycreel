@@ -141,6 +141,34 @@ est_effort(
 )
 ```
 
+## Estimating CPUE and Catch (Survey-First)
+
+CPUE is estimated design-based from interview data. Prefer the ratio-of-means
+form for incomplete trips; use mean-of-ratios for complete trips.
+
+```{r cpue-catch}
+# Access container; CPUE/Catch accept a svydesign/svrepdesign or a creel_design.
+design <- design_access(interviews = interviews, calendar = calendar)
+
+# CPUE by species (ratio-of-means)
+suppressWarnings({
+  cpue_species <- est_cpue(design, by = c("target_species"), response = "catch_total")
+})
+cpue_species
+
+# CPUE (mean-of-ratios) — for complete trips
+suppressWarnings({
+  cpue_mor <- est_cpue(design, by = c("target_species"), response = "catch_total", mode = "mean_of_ratios")
+})
+cpue_mor
+
+# Harvest totals by species
+suppressWarnings({
+  harvest_species <- est_catch(design, by = c("target_species"), response = "catch_kept")
+})
+harvest_species
+```
+
 ## Advanced Usage
 
 ### Custom Stratification

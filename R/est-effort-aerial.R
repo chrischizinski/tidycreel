@@ -123,45 +123,32 @@ est_effort.aerial <- function(counts,
     if (!(day_id %in% names(svy_vars))) {
       cli::cli_abort(paste0("`svy` must have `", day_id, "` in its variables to join day-level totals."))
     }
-    # Compose a minimal lookup with day_id and survey weights; include any grouping vars present
-    svy_lookup <- tibble::tibble(
-      !!rlang::sym(day_id) := svy_vars[[day_id]],
-      .w = as.numeric(stats::weights(svy))
-    )
-    # Try to carry a strata column if present
+    # Align sampling weights and optional strata by day_id
+    base_w <- if (inherits(svy, "svyrep.design")) as.numeric(stats::weights(svy, type = "sampling")) else as.numeric(stats::weights(svy))
+    idx <- match(day_group[[day_id]], svy_vars[[day_id]])
+    if (any(is.na(idx))) cli::cli_abort(paste0("Failed to align day_id between counts and svy on `", day_id, "`."))
+    day_group$.w <- base_w[idx]
     strata_col <- intersect(c("stratum", "strata", "stratum_id"), names(svy_vars))
-    if (length(strata_col) > 0) {
-      svy_lookup[[strata_col[1]]] <- svy_vars[[strata_col[1]]]
-    }
-
-    # Join weights/strata onto day_group
-    day_group <- dplyr::left_join(day_group, svy_lookup, by = day_id)
-    if (!".w" %in% names(day_group)) {
-      cli::cli_abort(paste0("Failed to join survey weights. Ensure `svy` aligns on `", day_id, "`."))
+    if (length(strata_col) > 0 && !inherits(svy, "svyrep.design")) {
+      day_group$.strata <- svy_vars[[strata_col[1]]][idx]
     }
 
     # Build a survey design on day×group rows using day-level weights.
     # If `svy` is a replicate design, carry replicate weights over days.
     ids_formula <- stats::as.formula(paste("~", day_id))
     if (inherits(svy, "svyrep.design")) {
-      # Extract replicate weights and attributes
-      repmat <- survey::repweights(svy)
-      repnames <- colnames(repmat)
-      rep_df <- tibble::as_tibble(repmat)
-      rep_df[[day_id]] <- svy_vars[[day_id]]
-      # Join replicate weights to day_group (duplicates across group rows by day)
-      day_group <- dplyr::left_join(day_group, rep_df, by = day_id)
-      repcols <- repnames[repnames %in% names(day_group)]
-      if (length(repcols) != ncol(repmat)) {
-        cli::cli_abort("Failed to align replicate weights on day_id for aerial estimator.")
-      }
+      # Extract replicate weights and attributes from svyrep.design and align by day_id
+      repmat <- svy$repweights
+      if (is.null(repmat)) cli::cli_abort("Replicate weights not found on svyrep.design object.")
+      repmat_mat <- as.matrix(repmat)
+      repweights_aligned <- repmat_mat[idx, , drop = FALSE]
       type <- attr(repmat, "type") %||% "bootstrap"
       scale <- attr(repmat, "scale") %||% 1
       rscales <- attr(repmat, "rscales") %||% 1
       combined.weights <- attr(repmat, "combined.weights") %||% TRUE
       design_eff <- survey::svrepdesign(
         data = day_group,
-        repweights = as.matrix(day_group[, repcols]),
+        repweights = repweights_aligned,
         weights = ~.w,
         type = type,
         scale = scale,
@@ -169,13 +156,15 @@ est_effort.aerial <- function(counts,
         combined.weights = combined.weights
       )
     } else {
-      if (length(strata_col) > 0) {
+      if (".strata" %in% names(day_group)) {
         design_eff <- survey::svydesign(ids = ids_formula,
-                                        strata = stats::as.formula(paste("~", strata_col[1])),
+                                        strata = ~.strata,
                                         weights = ~.w,
-                                        data = day_group)
+                                        data = day_group,
+                                        nest = TRUE,
+                                        lonely.psu = "adjust")
       } else {
-        design_eff <- survey::svydesign(ids = ids_formula, weights = ~.w, data = day_group)
+        design_eff <- survey::svydesign(ids = ids_formula, weights = ~.w, data = day_group, nest = TRUE, lonely.psu = "adjust")
       }
     }
 
@@ -208,12 +197,17 @@ est_effort.aerial <- function(counts,
     # Use svyby to get totals by requested groups (by + covariates)
     if (length(by_all) > 0) {
       by_formula <- stats::as.formula(paste("~", paste(by_all, collapse = "+")))
-      est <- survey::svyby(~effort_day, by = by_formula, design_eff, survey::svytotal, na.rm = TRUE)
+      est <- survey::svyby(~effort_day, by = by_formula, design_eff, survey::svytotal, na.rm = TRUE, keep.names = FALSE)
       out <- tibble::as_tibble(est)
       names(out)[names(out) == "effort_day"] <- "estimate"
-      # SE via vcov attribute for svyby (diagonal elements)
-      V <- attr(est, "var")
-      out$se <- if (!is.null(V) && length(V) > 0) sqrt(diag(V)) else rep(NA_real_, nrow(out))
+      # Standard error via survey::SE if available, else var attribute
+      se_try <- try(suppressWarnings(as.numeric(survey::SE(est))), silent = TRUE)
+      if (!inherits(se_try, "try-error") && length(se_try) == nrow(out)) {
+        out$se <- se_try
+      } else {
+        V <- attr(est, "var")
+        out$se <- if (!is.null(V) && length(V) > 0) sqrt(diag(V)) else rep(NA_real_, nrow(out))
+      }
       # CI via normal approximation
       z <- stats::qnorm(1 - (1 - conf_level)/2)
       out$ci_low <- out$estimate - z * out$se
