@@ -44,21 +44,27 @@
 #' )
 #' est_effort.aerial(df)
 #' @export
-est_effort.aerial <- function(counts,
-                              by = c("date", "location"),
-                              minutes_col = c("flight_minutes", "interval_minutes", "count_duration"),
-                              total_minutes_col = c("total_minutes", "total_day_minutes", "block_total_minutes"),
-                              day_id = "date",
-                              covariates = NULL,
-                              visibility_col = NULL,
-                              calibration_col = NULL,
-                              svy = NULL,
-                              post_strata_var = NULL,
-                              post_strata = NULL,
-                              calibrate_formula = NULL,
-                              calibrate_population = NULL,
-                              calfun = c("linear", "raking", "logit"),
-                              conf_level = 0.95) {
+est_effort.aerial <- function(
+  counts,
+  by = c("date", "location"),
+  minutes_col = c("flight_minutes", "interval_minutes", "count_duration"),
+  total_minutes_col = c(
+    "total_minutes",
+    "total_day_minutes",
+    "block_total_minutes"
+  ),
+  day_id = "date",
+  covariates = NULL,
+  visibility_col = NULL,
+  calibration_col = NULL,
+  svy = NULL,
+  post_strata_var = NULL,
+  post_strata = NULL,
+  calibrate_formula = NULL,
+  calibrate_population = NULL,
+  calfun = c("linear", "raking", "logit"),
+  conf_level = 0.95
+) {
   calfun <- match.arg(calfun)
   # Validate required columns
   tc_require_cols(counts, c("count"), context = "aerial effort")
@@ -105,15 +111,23 @@ est_effort.aerial <- function(counts,
     dplyr::group_by(dplyr::across(dplyr::all_of(c(day_id, by_all)))) |>
     dplyr::summarise(
       mean_count = mean(adj_count, na.rm = TRUE),
-      total_minutes = if (warn_used_sum) sum(.data[[min_col]], na.rm = TRUE) else dplyr::first(.data[[tot_min_col]]),
+      total_minutes = if (warn_used_sum) {
+        sum(.data[[min_col]], na.rm = TRUE)
+      } else {
+        dplyr::first(.data[[tot_min_col]])
+      },
       n_counts = dplyr::n(),
       .groups = "drop"
     ) |>
     dplyr::mutate(effort_day = mean_count * total_minutes / 60)
 
   if (warn_used_sum) {
-    cli::cli_warn(c("!" = paste0("Aerial: using sum of ", min_col, " per day×group as total minutes."),
-                   "i" = "Provide `total_minutes_col` for proper expansion."))
+    cli::cli_warn(c(
+      "!" = paste0(
+        "Aerial: using sum of ", min_col, " per day×group as total minutes."
+      ),
+      "i" = "Provide `total_minutes_col` for proper expansion."
+    ))
   }
 
   # If a day-level survey design is provided, compute design-based totals via survey
@@ -124,9 +138,21 @@ est_effort.aerial <- function(counts,
       cli::cli_abort(paste0("`svy` must have `", day_id, "` in its variables to join day-level totals."))
     }
     # Align sampling weights and optional strata by day_id
-    base_w <- if (inherits(svy, "svyrep.design")) as.numeric(stats::weights(svy, type = "sampling")) else as.numeric(stats::weights(svy))
+    base_w <- if (inherits(svy, "svyrep.design")) {
+      as.numeric(stats::weights(svy, type = "sampling"))
+    } else {
+      as.numeric(stats::weights(svy))
+    }
     idx <- match(day_group[[day_id]], svy_vars[[day_id]])
-    if (any(is.na(idx))) cli::cli_abort(paste0("Failed to align day_id between counts and svy on `", day_id, "`."))
+    if (any(is.na(idx))) {
+      cli::cli_abort(
+        paste0(
+          "Failed to align day_id between counts and svy on `",
+          day_id,
+          "`."
+        )
+      )
+    }
     day_group$.w <- base_w[idx]
     strata_col <- intersect(c("stratum", "strata", "stratum_id"), names(svy_vars))
     if (length(strata_col) > 0 && !inherits(svy, "svyrep.design")) {
@@ -164,18 +190,35 @@ est_effort.aerial <- function(counts,
                                         nest = TRUE,
                                         lonely.psu = "adjust")
       } else {
-        design_eff <- survey::svydesign(ids = ids_formula, weights = ~.w, data = day_group, nest = TRUE, lonely.psu = "adjust")
+        design_eff <- survey::svydesign(
+          ids = ids_formula,
+          weights = ~.w,
+          data = day_group,
+          nest = TRUE,
+          lonely.psu = "adjust"
+        )
       }
     }
 
     # Optional: post-stratification by a categorical covariate
     if (!is.null(post_strata_var) && !is.null(post_strata)) {
       if (!(post_strata_var %in% names(day_group))) {
-        cli::cli_abort(paste0("post_strata_var not found in counts/day_group data: ", post_strata_var))
+        cli::cli_abort(
+          paste0(
+            "post_strata_var not found in counts/day_group data: ",
+            post_strata_var
+          )
+        )
       }
       # Ensure population table has columns: levels of post_strata_var and Freq
       if (!all(c(post_strata_var, "Freq") %in% names(post_strata))) {
-        cli::cli_abort(paste0("post_strata must have columns: ", post_strata_var, " and Freq"))
+        cli::cli_abort(
+          paste0(
+            "post_strata must have columns: ",
+            post_strata_var,
+            " and Freq"
+          )
+        )
       }
       pf <- stats::as.formula(paste("~", post_strata_var))
       design_eff <- survey::postStratify(design_eff, pf, post_strata)
@@ -197,7 +240,14 @@ est_effort.aerial <- function(counts,
     # Use svyby to get totals by requested groups (by + covariates)
     if (length(by_all) > 0) {
       by_formula <- stats::as.formula(paste("~", paste(by_all, collapse = "+")))
-      est <- survey::svyby(~effort_day, by = by_formula, design_eff, survey::svytotal, na.rm = TRUE, keep.names = FALSE)
+      est <- survey::svyby(
+        ~effort_day,
+        by = by_formula,
+        design_eff,
+        survey::svytotal,
+        na.rm = TRUE,
+        keep.names = FALSE
+      )
       out <- tibble::as_tibble(est)
       names(out)[names(out) == "effort_day"] <- "estimate"
       # Standard error via survey::SE if available, else var attribute
@@ -215,7 +265,17 @@ est_effort.aerial <- function(counts,
       out$n <- NA_integer_
       out$method <- "aerial"
       out$diagnostics <- replicate(nrow(out), list(NULL))
-      out <- dplyr::select(out, dplyr::all_of(by_all), estimate, se, ci_low, ci_high, n, method, diagnostics)
+      out <- dplyr::select(
+        out,
+        dplyr::all_of(by_all),
+        estimate,
+        se,
+        ci_low,
+        ci_high,
+        n,
+        method,
+        diagnostics
+      )
       return(out)
     } else {
       total_est <- survey::svytotal(~effort_day, design_eff, na.rm = TRUE)
@@ -234,13 +294,17 @@ est_effort.aerial <- function(counts,
     }
   }
 
-  # Fallback (no svy): produce per-group estimates using within-group variability only
+  # Fallback (no svy): per-group estimates using within-group variability only
   out <- counts |>
     dplyr::group_by(dplyr::across(dplyr::all_of(by_all))) |>
     dplyr::summarise(
       mean_count = mean(adj_count, na.rm = TRUE),
       sd_count = stats::sd(adj_count, na.rm = TRUE),
-      total_minutes = if (warn_used_sum) sum(.data[[min_col]], na.rm = TRUE) else dplyr::first(.data[[tot_min_col]]),
+      total_minutes = if (warn_used_sum) {
+        sum(.data[[min_col]], na.rm = TRUE)
+      } else {
+        dplyr::first(.data[[tot_min_col]])
+      },
       n = dplyr::n(),
       .groups = "drop"
     ) |>
@@ -259,7 +323,17 @@ est_effort.aerial <- function(counts,
   }
   out$method <- "aerial"
   out$diagnostics <- replicate(nrow(out), list(NULL))
-  dplyr::select(out, dplyr::all_of(by_all), estimate, se, ci_low, ci_high, n, method, diagnostics)
+  dplyr::select(
+    out,
+    dplyr::all_of(by_all),
+    estimate,
+    se,
+    ci_low,
+    ci_high,
+    n,
+    method,
+    diagnostics
+  )
 }
 
 #' Back-compat alias for aerial estimator
@@ -270,18 +344,24 @@ est_effort.aerial <- function(counts,
 #' @inheritParams est_effort.aerial
 #' @param x Optional `creel_design` containing a `$counts` component.
 #' @export
-est_effort_aerial <- function(x = NULL,
-                              counts = NULL,
-                              by = c("date", "location"),
-                              minutes_col = c("flight_minutes", "interval_minutes", "count_duration"),
-                              total_minutes_col = c("total_minutes", "total_day_minutes", "block_total_minutes"),
-                              day_id = "date",
-                              covariates = NULL,
-                              visibility_col = NULL,
-                              calibration_col = NULL,
-                              svy = NULL,
-                              conf_level = 0.95,
-                              ...) {
+est_effort_aerial <- function(
+  x = NULL,
+  counts = NULL,
+  by = c("date", "location"),
+  minutes_col = c("flight_minutes", "interval_minutes", "count_duration"),
+  total_minutes_col = c(
+    "total_minutes",
+    "total_day_minutes",
+    "block_total_minutes"
+  ),
+  day_id = "date",
+  covariates = NULL,
+  visibility_col = NULL,
+  calibration_col = NULL,
+  svy = NULL,
+  conf_level = 0.95,
+  ...
+) {
   if (is.null(counts)) {
     if (!is.null(x) && !is.null(x$counts)) {
       counts <- x$counts

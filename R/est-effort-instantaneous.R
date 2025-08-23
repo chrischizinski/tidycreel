@@ -36,14 +36,24 @@
 #' @return Tibble with grouping columns, `estimate`, `se`, `ci_low`, `ci_high`,
 #'   `n`, `method`, and a `diagnostics` list-column.
 #' @export
-est_effort.instantaneous <- function(counts,
-                                     by = c("date", "location"),
-                                     minutes_col = c("interval_minutes", "count_duration", "flight_minutes"),
-                                     total_minutes_col = c("total_minutes", "total_day_minutes", "block_total_minutes"),
-                                     day_id = "date",
-                                     covariates = NULL,
-                                     svy = NULL,
-                                     conf_level = 0.95) {
+est_effort.instantaneous <- function(
+  counts,
+  by = c("date", "location"),
+  minutes_col = c(
+    "interval_minutes",
+    "count_duration",
+    "flight_minutes"
+  ),
+  total_minutes_col = c(
+    "total_minutes",
+    "total_day_minutes",
+    "block_total_minutes"
+  ),
+  day_id = "date",
+  covariates = NULL,
+  svy = NULL,
+  conf_level = 0.95
+) {
   tc_require_cols(counts, c("count"), context = "instantaneous effort")
   min_col <- intersect(minutes_col, names(counts))
   if (length(min_col) == 0) cli::cli_abort(c(
@@ -73,24 +83,39 @@ est_effort.instantaneous <- function(counts,
     dplyr::group_by(dplyr::across(dplyr::all_of(c(day_id, by_all)))) |>
     dplyr::summarise(
       mean_count = mean(.data$count, na.rm = TRUE),
-      total_minutes = if (warn_used_sum) sum(.data[[min_col]], na.rm = TRUE) else dplyr::first(.data[[tot_min_col]]),
+      total_minutes = if (warn_used_sum) {
+        sum(.data[[min_col]], na.rm = TRUE)
+      } else {
+        dplyr::first(.data[[tot_min_col]])
+      },
       n_counts = dplyr::n(),
       .groups = "drop"
     ) |>
     dplyr::mutate(effort_day = mean_count * total_minutes / 60)
 
   if (warn_used_sum) {
-    cli::cli_warn(c("!" = paste0("Instantaneous: using sum of ", min_col, " per day×group as total minutes."),
-                   "i" = "Provide `total_minutes_col` for proper expansion."))
+    cli::cli_warn(c(
+      "!" = paste0(
+        "Instantaneous: using sum of ", min_col,
+        " per day×group as total minutes."
+      ),
+      "i" = "Provide `total_minutes_col` for proper expansion."
+    ))
   }
 
   # Design-based path
   if (!is.null(svy)) {
     svy_vars <- svy$variables
-    if (!(day_id %in% names(svy_vars))) cli::cli_abort(paste0("`svy` must include day_id variable: ", day_id))
+    if (!(day_id %in% names(svy_vars))) {
+      cli::cli_abort(paste0("`svy` must include day_id variable: ", day_id))
+    }
     # Join weights and replicate weights if present
-    day_group$.w <- as.numeric(stats::weights(svy))[match(day_group[[day_id]], svy_vars[[day_id]])]
-    if (any(is.na(day_group$.w))) cli::cli_abort(paste0("Failed to align survey weights on ", day_id))
+    day_group$.w <- as.numeric(stats::weights(svy))[match(
+      day_group[[day_id]], svy_vars[[day_id]]
+    )]
+    if (any(is.na(day_group$.w))) {
+      cli::cli_abort(paste0("Failed to align survey weights on ", day_id))
+    }
 
     ids_formula <- stats::as.formula(paste("~", day_id))
     if (inherits(svy, "svyrep.design")) {
@@ -114,7 +139,13 @@ est_effort.instantaneous <- function(counts,
 
     if (length(by_all) > 0) {
       by_formula <- stats::as.formula(paste("~", paste(by_all, collapse = "+")))
-      est <- survey::svyby(~effort_day, by = by_formula, design_eff, survey::svytotal, na.rm = TRUE)
+      est <- survey::svyby(
+        ~effort_day,
+        by = by_formula,
+        design_eff,
+        survey::svytotal,
+        na.rm = TRUE
+      )
       out <- tibble::as_tibble(est)
       names(out)[names(out) == "effort_day"] <- "estimate"
       V <- attr(est, "var")
@@ -131,7 +162,15 @@ est_effort.instantaneous <- function(counts,
       estimate <- as.numeric(total_est[1])
       se <- sqrt(as.numeric(survey::vcov(total_est)))
       ci <- tc_confint(estimate, se, level = conf_level)
-      return(tibble::tibble(estimate = estimate, se = se, ci_low = ci[1], ci_high = ci[2], n = NA_integer_, method = "instantaneous", diagnostics = list(NULL)))
+      return(tibble::tibble(
+        estimate = estimate,
+        se = se,
+        ci_low = ci[1],
+        ci_high = ci[2],
+        n = NA_integer_,
+        method = "instantaneous",
+        diagnostics = list(NULL)
+      ))
     }
   }
 
@@ -141,7 +180,11 @@ est_effort.instantaneous <- function(counts,
     dplyr::summarise(
       mean_count = mean(.data$count, na.rm = TRUE),
       sd_count = stats::sd(.data$count, na.rm = TRUE),
-      total_minutes = if (warn_used_sum) sum(.data[[min_col]], na.rm = TRUE) else dplyr::first(.data[[tot_min_col]]),
+      total_minutes = if (warn_used_sum) {
+        sum(.data[[min_col]], na.rm = TRUE)
+      } else {
+        dplyr::first(.data[[tot_min_col]])
+      },
       n = dplyr::n(),
       .groups = "drop"
     ) |>

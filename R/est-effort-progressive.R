@@ -30,14 +30,16 @@
 #'
 #' @seealso [as_day_svydesign()], [survey::svytotal()], [survey::svyby()].
 #' @export
-est_effort.progressive <- function(counts,
-                                   by = c("date", "location"),
-                                   route_minutes_col = c("route_minutes", "circuit_minutes"),
-                                   pass_id = c("pass_id", "circuit_id"),
-                                   day_id = "date",
-                                   covariates = NULL,
-                                   svy = NULL,
-                                   conf_level = 0.95) {
+est_effort.progressive <- function(
+  counts,
+  by = c("date", "location"),
+  route_minutes_col = c("route_minutes", "circuit_minutes"),
+  pass_id = c("pass_id", "circuit_id"),
+  day_id = "date",
+  covariates = NULL,
+  svy = NULL,
+  conf_level = 0.95
+) {
   tc_require_cols(counts, c("count"), context = "progressive effort")
   rm_col <- intersect(route_minutes_col, names(counts))
   if (length(rm_col) == 0) cli::cli_abort(c(
@@ -59,14 +61,20 @@ est_effort.progressive <- function(counts,
   # Compute pass totals then day totals
   if (!is.null(pass_col)) {
     pass_totals <- counts |>
-      dplyr::group_by(dplyr::across(dplyr::all_of(c(day_id, by_all, pass_col)))) |>
-      dplyr::summarise(pass_effort = sum(.data$count * .data[[rm_col]], na.rm = TRUE) / 60,
-                       .groups = "drop")
+      dplyr::group_by(
+        dplyr::across(dplyr::all_of(c(day_id, by_all, pass_col)))
+      ) |>
+      dplyr::summarise(
+        pass_effort = sum(.data$count * .data[[rm_col]], na.rm = TRUE) / 60,
+        .groups = "drop"
+      )
   } else {
     pass_totals <- counts |>
       dplyr::group_by(dplyr::across(dplyr::all_of(c(day_id, by_all)))) |>
-      dplyr::summarise(pass_effort = sum(.data$count * .data[[rm_col]], na.rm = TRUE) / 60,
-                       .groups = "drop")
+      dplyr::summarise(
+        pass_effort = sum(.data$count * .data[[rm_col]], na.rm = TRUE) / 60,
+        .groups = "drop"
+      )
   }
 
   day_group <- pass_totals |>
@@ -112,20 +120,42 @@ est_effort.progressive <- function(counts,
       out$n <- NA_integer_
       out$method <- "progressive"
       out$diagnostics <- replicate(nrow(out), list(NULL))
-      return(dplyr::select(out, dplyr::all_of(by_all), estimate, se, ci_low, ci_high, n, method, diagnostics))
+      return(dplyr::select(
+        out,
+        dplyr::all_of(by_all),
+        estimate,
+        se,
+        ci_low,
+        ci_high,
+        n,
+        method,
+        diagnostics
+      ))
     } else {
       total_est <- survey::svytotal(~effort_day, design_eff, na.rm = TRUE)
       estimate <- as.numeric(total_est[1])
       se <- sqrt(as.numeric(survey::vcov(total_est)))
       ci <- tc_confint(estimate, se, level = conf_level)
-      return(tibble::tibble(estimate = estimate, se = se, ci_low = ci[1], ci_high = ci[2], n = NA_integer_, method = "progressive", diagnostics = list(NULL)))
+      return(tibble::tibble(
+        estimate = estimate,
+        se = se,
+        ci_low = ci[1],
+        ci_high = ci[2],
+        n = NA_integer_,
+        method = "progressive",
+        diagnostics = list(NULL)
+      ))
     }
   }
 
   # Fallback: within-group variability only (n_passes proxy)
   out <- day_group |>
     dplyr::group_by(dplyr::across(dplyr::all_of(by_all))) |>
-    dplyr::summarise(estimate = sum(effort_day, na.rm = TRUE), n = sum(n_passes), .groups = "drop")
+    dplyr::summarise(
+      estimate = sum(effort_day, na.rm = TRUE),
+      n = sum(n_passes),
+      .groups = "drop"
+    )
   out$se <- NA_real_
   out$ci_low <- NA_real_
   out$ci_high <- NA_real_

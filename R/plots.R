@@ -1,16 +1,19 @@
 #' Plot survey design structure
 #'
-#' Visualize survey design by date, shift, location, stratum, or other grouping variables.
-#' Supports bar plots, faceted plots, and interactive plots (via plotly if available).
+#' Visualize survey design by date, shift, location, stratum, or other grouping
+#' variables. Supports bar plots, faceted plots, and interactive plots (via
+#' plotly if available).
 #'
 #' @param design A creel_design object or data frame with survey structure.
-#' @param by Character vector of grouping variables (e.g., date, shift_block, location, stratum).
+#' @param by Character vector of grouping variables (e.g., date, shift_block,
+#'   location, stratum).
 #' @param type Plot type: "bar", "facet", "interactive".
 #' @param ... Additional arguments passed to ggplot2 or plotly.
 #'
 #' @return A ggplot or plotly object.
 #' @details
-#' Visualizes survey design structure and effort estimates. Supports bar, facet, and interactive plots. See vignettes for usage examples.
+#' Visualizes survey design structure and effort estimates. Supports bar, facet,
+#' and interactive plots. See vignettes for usage examples.
 #'
 #' @examples
 #' # Plot survey design structure
@@ -58,17 +61,20 @@ plot_design <- function(design,
 
 #' Plot effort estimates
 #'
-#' Visualize effort estimates by stratum, date, location, or other grouping variables.
-#' Supports line, bar, and interactive plots.
+#' Visualize effort estimates by stratum, date, location, or other grouping
+#' variables. Supports line, bar, and interactive plots.
 #'
-#' @param effort_df Data frame/tibble of effort estimates (output from est_effort or similar).
+#' @param effort_df Data frame/tibble of effort estimates (output from
+#'   est_effort or similar).
 #' @param by Character vector of grouping variables.
 #' @param type Plot type: "line", "bar", "interactive".
 #' @param ... Additional arguments passed to ggplot2 or plotly.
 #'
 #' @return A ggplot or plotly object.
 #' @details
-#' Visualizes effort estimates by stratum, date, location, or other grouping variables. Supports line, bar, and interactive plots. See vignettes for usage examples.
+#' Visualizes effort estimates by stratum, date, location, or other grouping
+#' variables. Supports line, bar, and interactive plots. See vignettes for
+#' usage examples.
 #'
 #' @examples
 #' # Plot effort estimates

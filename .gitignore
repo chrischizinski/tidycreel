@@ -5,6 +5,9 @@
 .Rdata
 .Rprofile
 .Ruserdata
+.lintr_cache/
+dev-notes/
+AGENTS.md
 .Rapp.history
 .Rapp.session
 .Rapp.options

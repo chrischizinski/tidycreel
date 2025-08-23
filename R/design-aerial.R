@@ -8,7 +8,8 @@
 #'   `day_id`, `target_sample`, `actual_sample`, and strata variables.
 #' @param day_id Column name identifying the day PSU (default `date`).
 #' @param strata_vars Character vector of calendar columns defining strata
-#'   (e.g., `c("day_type","month")`). Missing columns are ignored with a warning.
+#'   (e.g., `c("day_type","month")`). Missing columns are ignored with a
+#'   warning.
 #' @return A `survey::svydesign` object with one row per sampled day.
 #' @examples
 #' cal <- tibble::tibble(
@@ -24,7 +25,11 @@ as_day_svydesign <- function(calendar,
                              day_id = "date",
                              strata_vars = c("day_type", "month", "season", "weekend")) {
   # Validate required columns
-  tc_abort_missing_cols(calendar, c(day_id, "target_sample", "actual_sample"), context = "as_day_svydesign")
+  tc_abort_missing_cols(
+    calendar,
+    c(day_id, "target_sample", "actual_sample"),
+    context = "as_day_svydesign"
+  )
   # Keep only sampled days (actual_sample > 0)
   cal <- dplyr::filter(calendar, .data$actual_sample > 0)
   if (nrow(cal) == 0) cli::cli_abort("No sampled days found (actual_sample > 0).")
@@ -47,10 +52,25 @@ as_day_svydesign <- function(calendar,
   # Build svydesign (PSUs = day_id; strata if available)
   ids_formula <- stats::as.formula(paste("~", day_id))
   if (length(strata_vars) > 0) {
-    strata_formula <- stats::as.formula(paste("~", paste(strata_vars, collapse = "+")))
-    svy <- survey::svydesign(ids = ids_formula, strata = strata_formula, weights = ~.w, data = cal, nest = TRUE, lonely.psu = "adjust")
+    strata_formula <- stats::as.formula(
+      paste("~", paste(strata_vars, collapse = "+"))
+    )
+    svy <- survey::svydesign(
+      ids = ids_formula,
+      strata = strata_formula,
+      weights = ~.w,
+      data = cal,
+      nest = TRUE,
+      lonely.psu = "adjust"
+    )
   } else {
-    svy <- survey::svydesign(ids = ids_formula, weights = ~.w, data = cal, nest = TRUE, lonely.psu = "adjust")
+    svy <- survey::svydesign(
+      ids = ids_formula,
+      weights = ~.w,
+      data = cal,
+      nest = TRUE,
+      lonely.psu = "adjust"
+    )
   }
   svy
 }

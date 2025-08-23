@@ -44,8 +44,12 @@ est_catch <- function(design,
     if (!inherits(se_try, "try-error") && length(se_try) == nrow(out)) {
       out$se <- se_try
     } else {
-      V <- attr(est, "var")
-      out$se <- if (!is.null(V) && length(V) > 0) sqrt(diag(V)) else rep(NA_real_, nrow(out))
+      var_mat <- attr(est, "var")
+      out$se <- if (!is.null(var_mat) && length(var_mat) > 0) {
+        sqrt(diag(var_mat))
+      } else {
+        rep(NA_real_, nrow(out))
+      }
     }
     z <- stats::qnorm(1 - (1 - conf_level)/2)
     out$ci_low <- out$estimate - z * out$se
@@ -56,9 +60,23 @@ est_catch <- function(design,
     out <- dplyr::left_join(out, n_by, by = by)
     out$method <- paste0("catch_total:", response)
     out$diagnostics <- replicate(nrow(out), list(NULL))
-    return(dplyr::select(out, dplyr::all_of(by), estimate, se, ci_low, ci_high, n, method, diagnostics))
+    return(dplyr::select(
+      out,
+      dplyr::all_of(by),
+      estimate,
+      se,
+      ci_low,
+      ci_high,
+      n,
+      method,
+      diagnostics
+    ))
   } else {
-    total_est <- survey::svytotal(as.formula(paste0("~", response)), svy, na.rm = TRUE)
+    total_est <- survey::svytotal(
+      as.formula(paste0("~", response)),
+      svy,
+      na.rm = TRUE
+    )
     estimate <- as.numeric(total_est[1])
     se <- sqrt(as.numeric(survey::vcov(total_est)))
     ci <- tc_confint(estimate, se, level = conf_level)

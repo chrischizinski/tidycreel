@@ -107,7 +107,14 @@ est_cpue <- function(design,
     svy2 <- survey::update(svy, .cpue = vars[[response]] / vars[[effort_col]])
     if (length(by) > 0) {
       by_formula <- stats::as.formula(paste("~", paste(by, collapse = "+")))
-      est <- survey::svyby(~.cpue, by = by_formula, design = svy2, FUN = survey::svymean, na.rm = TRUE, keep.names = FALSE)
+      est <- survey::svyby(
+        ~.cpue,
+        by = by_formula,
+        design = svy2,
+        FUN = survey::svymean,
+        na.rm = TRUE,
+        keep.names = FALSE
+      )
       out <- tibble::as_tibble(est)
       names(out)[names(out) == ".cpue"] <- "estimate"
       se_try <- try(suppressWarnings(as.numeric(survey::SE(est))), silent = TRUE)
@@ -126,7 +133,17 @@ est_cpue <- function(design,
       out <- dplyr::left_join(out, n_by, by = by)
       out$method <- paste0("cpue_mean_of_ratios:", response)
       out$diagnostics <- replicate(nrow(out), list(NULL))
-      return(dplyr::select(out, dplyr::all_of(by), estimate, se, ci_low, ci_high, n, method, diagnostics))
+      return(dplyr::select(
+        out,
+        dplyr::all_of(by),
+        estimate,
+        se,
+        ci_low,
+        ci_high,
+        n,
+        method,
+        diagnostics
+      ))
     } else {
       m <- survey::svymean(~.cpue, svy2, na.rm = TRUE)
       estimate <- as.numeric(m[1])
@@ -149,7 +166,11 @@ tc_interview_svy <- function(design) {
   }
   if (inherits(design, "creel_design")) {
     interviews <- design$interviews
-    if (is.null(interviews)) cli::cli_abort("creel_design must include $interviews for CPUE/catch estimators.")
+    if (is.null(interviews)) {
+      cli::cli_abort(
+        "creel_design must include $interviews for CPUE/catch estimators."
+      )
+    }
     # Use strata vars when available; assume equal weights (warn)
     if (!is.null(design$strata_vars)) {
       strata_present <- intersect(design$strata_vars, names(interviews))
@@ -161,11 +182,15 @@ tc_interview_svy <- function(design) {
       "!" = "Constructing an equal-weight interview design (ids=~1).",
       "i" = "Provide a proper svydesign/svrepdesign for defensible inference."
     ))
-    return(survey::svydesign(
-      ids = ~1,
-      strata = if (!is.null(strata_present)) stats::as.formula(paste("~", paste(strata_present, collapse = "+"))) else NULL,
-      data = interviews
-    ))
+    return(
+      survey::svydesign(
+        ids = ~1,
+        strata = if (!is.null(strata_present)) stats::as.formula(
+          paste("~", paste(strata_present, collapse = "+"))
+        ) else NULL,
+        data = interviews
+      )
+    )
   }
   cli::cli_abort("design must be a svydesign/svrepdesign or creel_design.")
 }

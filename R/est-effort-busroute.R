@@ -37,23 +37,31 @@
 #' est_effort(busroute_design_obj, counts = toy_counts, by = c("date", "shift_block", "location"))
 #'
 #' @references
-#' Malvestuto, S.P. (1996). Sampling for creel survey data. In: Murphy, B.R. & Willis, D.W. (eds) Fisheries Techniques, 2nd Edition. American Fisheries Society.
+#' Malvestuto, S.P. (1996). Sampling for creel survey data.
+#' In: Murphy, B.R. & Willis, D.W. (eds) Fisheries Techniques,
+#' 2nd Edition. American Fisheries Society.
 #'
 #' @export
-est_effort.busroute_design <- function(x,
-                                       counts = NULL,
-                                       by = c("date", "location"),
-                                       day_id = "date",
-                                       inclusion_prob_col = "inclusion_prob",
-                                       route_minutes_col = "route_minutes",
-                                       contrib_hours_col = NULL,
-                                       covariates = NULL,
-                                       svy = NULL,
-                                       conf_level = 0.95,
-                                       ...) {
+est_effort.busroute_design <- function(
+  x,
+  counts = NULL,
+  by = c("date", "location"),
+  day_id = "date",
+  inclusion_prob_col = "inclusion_prob",
+  route_minutes_col = "route_minutes",
+  contrib_hours_col = NULL,
+  covariates = NULL,
+  svy = NULL,
+  conf_level = 0.95,
+  ...
+) {
   # Resolve counts
   if (is.null(counts) && !is.null(x$counts)) counts <- x$counts
-  if (is.null(counts)) cli::cli_abort("Counts/observations must be supplied via `counts` or present in the design object as `$counts`.")
+  if (is.null(counts)) {
+    cli::cli_abort(
+      "Counts/observations must be supplied via `counts` or present in the design object as `$counts`."
+    )
+  }
 
   # Grouping
   by <- tc_group_warn(by, names(counts))
@@ -74,7 +82,9 @@ est_effort.busroute_design <- function(x,
   pi_raw <- counts[[inclusion_prob_col]]
   out_of_bounds <- which(!is.na(pi_raw) & (pi_raw <= 0 | pi_raw > 1))
   if (length(out_of_bounds) > 0) {
-    cli::cli_warn("{length(out_of_bounds)} rows had inclusion probabilities outside (0,1]; values were clamped.")
+    cli::cli_warn(
+      "{length(out_of_bounds)} rows had inclusion probabilities outside (0,1]; values were clamped."
+    )
   }
   pi_vec <- pmax(pmin(pi_raw, 1), .Machine$double.eps)
 
@@ -90,11 +100,19 @@ est_effort.busroute_design <- function(x,
   # Day×group totals
   day_group <- counts |>
     dplyr::group_by(dplyr::across(dplyr::all_of(c(day_id, by_all)))) |>
-    dplyr::summarise(effort_day = sum(.data$ht_contrib, na.rm = TRUE), n_obs = dplyr::n(), .groups = "drop")
+    dplyr::summarise(
+      effort_day = sum(.data$ht_contrib, na.rm = TRUE),
+      n_obs = dplyr::n(),
+      .groups = "drop"
+    )
 
   # Build day-PSU svy if not provided
   if (is.null(svy)) {
-    if (is.null(x$calendar)) cli::cli_abort("busroute_design lacks $calendar to build day-level design; provide `svy`. ")
+    if (is.null(x$calendar)) {
+      cli::cli_abort(
+        "busroute_design lacks $calendar to build day-level design; provide `svy`. "
+      )
+    }
     cal <- x$calendar
     strata_vars <- intersect(c("day_type", "month", "season", "weekend"), names(cal))
     svy <- as_day_svydesign(cal, day_id = day_id, strata_vars = strata_vars)
@@ -102,9 +120,15 @@ est_effort.busroute_design <- function(x,
 
   # Join weights and replicate weights if present
   svy_vars <- svy$variables
-  if (!(day_id %in% names(svy_vars))) cli::cli_abort(paste0("`svy` must include `", day_id, "` in its variables"))
-  # Use sampling weights for replicate designs; ensure vector length matches svy rows
-  base_w <- if (inherits(svy, "svyrep.design")) as.numeric(stats::weights(svy, type = "sampling")) else as.numeric(stats::weights(svy))
+  if (!(day_id %in% names(svy_vars))) {
+    cli::cli_abort(paste0("`svy` must include `", day_id, "` in its variables"))
+  }
+  # Use sampling weights for replicate designs; ensure vector length matches rows
+  base_w <- if (inherits(svy, "svyrep.design")) {
+    as.numeric(stats::weights(svy, type = "sampling"))
+  } else {
+    as.numeric(stats::weights(svy))
+  }
   idx <- match(day_group[[day_id]], svy_vars[[day_id]])
   day_group$.w <- base_w[idx]
   if (any(is.na(day_group$.w))) cli::cli_abort(paste0("Failed to align survey weights on ", day_id))
@@ -126,7 +150,13 @@ est_effort.busroute_design <- function(x,
       combined.weights = attr(repmat, "combined.weights") %||% TRUE
     )
   } else {
-    design_eff <- survey::svydesign(ids = ids_formula, weights = ~.w, data = day_group, nest = TRUE, lonely.psu = "adjust")
+    design_eff <- survey::svydesign(
+      ids = ids_formula,
+      weights = ~.w,
+      data = day_group,
+      nest = TRUE,
+      lonely.psu = "adjust"
+    )
   }
 
   # Totals by groups
@@ -154,6 +184,14 @@ est_effort.busroute_design <- function(x,
     estimate <- as.numeric(total_est[1])
     se <- sqrt(as.numeric(survey::vcov(total_est)))
     ci <- tc_confint(estimate, se, level = conf_level)
-    return(tibble::tibble(estimate = estimate, se = se, ci_low = ci[1], ci_high = ci[2], n = NA_integer_, method = "busroute_ht", diagnostics = list(dropped)))
+    return(tibble::tibble(
+      estimate = estimate,
+      se = se,
+      ci_low = ci[1],
+      ci_high = ci[2],
+      n = NA_integer_,
+      method = "busroute_ht",
+      diagnostics = list(dropped)
+    ))
   }
 }
