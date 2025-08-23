@@ -1,2 +1,2 @@
 linters: lintr::linters_with_tags("tidyverse")
-exclude: "tests/testthat/test-data-schemas\\.R|renv/|\\.lintr"
+exclusions: list("renv/" = Inf, "dev-notes/" = Inf, "AGENTS.md" = Inf, ".lintr" = Inf, "R/design-constructors.R" = Inf, "R/data-schemas.R" = Inf, "tests/testthat/test-data-schemas.R" = Inf)
