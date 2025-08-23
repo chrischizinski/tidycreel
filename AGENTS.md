@@ -72,6 +72,13 @@ This guide orients an AI/code assistant to contribute safely and effectively to 
   - snake_case names; minimal side effects; no hidden I/O; no global options changes.
   - Document statistical assumptions, estimator selection logic, and variance method.
   - Prefer `srvyr` only if it materially improves readability without obscuring design semantics; `survey` remains authoritative.
+- **Linting requirements (MANDATORY)**:
+  - Lines must be ≤80 characters; break long lines at logical points (operators, commas, function args)
+  - Use proper spacing around operators: `x <- y + z` not `x<-y+z`
+  - No explicit `return()` statements unless required for control flow
+  - Document all exported functions with `@export` tag
+  - Run `lintr::lint_package()` before committing; fix ALL violations
+  - Use `devtools::document()` to regenerate NAMESPACE when adding exports
 
 **Prohibited / Avoid**
 - External resampling packages for core variance (e.g., `boot`) — use `survey` replicate weights instead.
@@ -94,18 +101,36 @@ This guide orients an AI/code assistant to contribute safely and effectively to 
 - Plotting: `plot_design()` and `plot_effort` improvements (ggplot2), minimal defaults.
 - Tests: edge cases (zero counts, empty strata, DST/leap days), invariants, and reference checks against toy data.
 
-**Working Workflow**
+**Working Workflow (Lint-Safe)**
 - Plan: Identify smallest vertical slice; update `todo.md` with planned changes.
 - Validate: Add/extend tests first (`testthat`); define expected structure and edge cases.
 - Implement: Prefer minimal, composable functions; keep APIs tidy and vectorized.
+- **LINT CHECK**: Run `lintr::lint_package()` after ANY code changes; fix violations immediately
 - Document: Roxygen comments with examples; update vignettes/articles when needed.
-- Verify: Run devtools::document(), devtools::test(), devtools::check(); address linting if configured.
+- Verify: Run `devtools::document()`, `devtools::test()`, `devtools::check()`; address ALL issues.
+- **Pre-commit**: Ensure `lintr::lint_package()` returns no violations before committing
 - PR: Follow conventional commit style and PR checklist from CONTRIBUTING.md.
 
-**Do / Don’t**
+**Do / Don't**
 - Do: Use grouped operations, survey-backed estimators, clear errors, and informative warnings.
 - Do: Keep dependencies minimal (survey, tidyverse core); gate optional heavy deps.
-- Don’t: Introduce loops where vectorization suffices; rely on global state; write to non-temp paths in examples/tests.
+- Don't: Introduce loops where vectorization suffices; rely on global state; write to non-temp paths in examples/tests.
+
+**Linting Quick Reference**
+- **Long lines**: Break at function args, operators, or logical points:
+  ```r
+  # Bad (83 chars)
+  cli::cli_abort("{.var target_sample} and {.var actual_sample} must be integers")
+
+  # Good
+  cli::cli_abort(
+    "{.var target_sample} and {.var actual_sample} must be integers"
+  )
+  ```
+- **Operator spacing**: Always use spaces: `x <- y + z`, `collapse = ", "`
+- **Return statements**: Use implicit returns; only explicit `return()` for early exits
+- **Missing exports**: Add `@export` to function docs, run `devtools::document()`
+- **Quick check**: `lintr::lint_package()` should return clean (no output)
 
 **Design Constructors (quick cues)**
 - Access-point: Interviews + calendar; build `svydesign`; warn on NA weights or misaligned strata.
