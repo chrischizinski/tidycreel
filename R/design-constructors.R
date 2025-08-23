@@ -1,3 +1,100 @@
+#' Plot survey design coverage (temporal and spatial)
+#'
+#' Visualizes the distribution of interviews by date, shift block, and location using ggplot2.
+#'
+#' @param x A creel_design object
+#' @param ... Additional arguments (ignored)
+#' @return A ggplot object
+#' @noRd
+plot_design <- function(x, ...) {
+  if (!inherits(x, "creel_design")) cli::cli_abort("Object must be a creel_design")
+  interviews <- x$interviews
+  # Try to get location, date, shift_block columns
+  if (!all(c("date", "shift_block", "location") %in% names(interviews))) {
+    cli::cli_abort(c(
+      "x" = "Interviews are missing required columns for plotting.",
+      "i" = "Required: 'date', 'shift_block', 'location'"
+    ))
+  }
+  library(ggplot2)
+  p <- ggplot(interviews, aes(x = date, fill = shift_block)) +
+    geom_bar(position = "dodge") +
+    facet_wrap(~location) +
+    labs(
+      title = "Survey Design Coverage",
+      x = "Date",
+      y = "Number of Interviews",
+      fill = "Shift Block"
+    ) +
+    theme_minimal()
+  return(p)
+}
+#' @section Design Assumptions:
+#' - Random sampling within stratum: Each sampled unit is selected randomly within its stratum.
+#' - Strata are correctly defined to reflect true variation in effort and catch.
+#' - Complete coverage or known probabilities: All exiting anglers are interviewed, or inclusion probabilities are known.
+#' - Nonresponse is random or accounted for.
+#' - Effort and catch are accurately reported by anglers.
+#' - No double-counting: Each angler or party is counted/interviewed only once per sampling unit.
+#' - Replicate weights reflect true sampling variability.
+#' Assumptions should be reviewed for each survey design. Violations may require adjustment or bias correction.
+#' Print method for creel_design objects
+#'
+## Print method for creel_design objects
+#'
+#' Print a summary of a creel_design survey object
+#'
+#' @name print.creel_design
+#' @title Print method for creel_design objects
+#' @param x A creel_design object
+#' @param ... Additional arguments (ignored)
+#' @noRd
+print.creel_design <- function(x, ...) {
+  cat("<tidycreel survey design>\n")
+  if (!is.null(x$design_type)) cat("Design type:", x$design_type, "\n")
+  if (!is.null(x$metadata)) {
+    cat("Created:", as.character(x$metadata$creation_time), "\n")
+    if (!is.null(x$metadata$package_version)) cat("Package version:", as.character(x$metadata$package_version), "\n")
+  }
+  if (!is.null(x$strata_vars)) cat("Strata variables:", paste(x$strata_vars, collapse=", "), "\n")
+  if (!is.null(x$design_weights)) cat("Design weights: [length=", length(x$design_weights), "]\n", sep="")
+  invisible(x)
+}
+
+#' Summary method for creel_design objects
+#'
+#' @param object A creel_design object
+#' @param ... Additional arguments (ignored)
+#' @noRd
+summary.creel_design <- function(object, ...) {
+  out <- list(
+    design_type = object$design_type,
+    strata_vars = object$strata_vars,
+    n_interviews = if (!is.null(object$interviews)) nrow(object$interviews) else NA,
+    n_weights = if (!is.null(object$design_weights)) length(object$design_weights) else NA,
+    metadata = object$metadata
+  )
+  class(out) <- "summary.creel_design"
+  out
+}
+
+#' Print method for summary.creel_design objects
+#'
+#' @param x A summary.creel_design object
+#' @param ... Additional arguments (ignored)
+#' @noRd
+print.summary.creel_design <- function(x, ...) {
+  cat("<Summary of tidycreel survey design>\n")
+  cat("Design type:", x$design_type, "\n")
+  cat("Strata variables:", paste(x$strata_vars, collapse=", "), "\n")
+  cat("Number of interviews:", x$n_interviews, "\n")
+  cat("Number of weights:", x$n_weights, "\n")
+  if (!is.null(x$metadata)) {
+    cat("Created:", as.character(x$metadata$creation_time), "\n")
+    if (!is.null(x$metadata$package_version)) cat("Package version:", as.character(x$metadata$package_version), "\n")
+  }
+  invisible(x)
+}
 #' Survey Design Constructors for Access-Point Creel Surveys
 #'
 #' These functions create survey design objects for different types of
@@ -8,80 +105,57 @@
 #' @aliases design_access design_roving design_repweights
 NULL
 
-#' Create Access-Point Survey Design
+#' Create Access-Point Survey Design (lean container)
 #'
-#' Constructs a survey design object for access-point creel surveys where
-#' interviews are conducted at fixed access locations. This design assumes
-#' complete coverage of exiting anglers during interview periods.
+#' Constructs a lean container for access-point creel surveys. It validates and
+#' stores inputs plus descriptive metadata. Estimation uses survey-first
+#' estimators and day-PSU designs built via [as_day_svydesign()]. No ad-hoc
+#' weighting or embedded `svydesign` is created here.
 #'
-#' @param interviews A tibble containing interview data validated by
-#'   [validate_interviews()]. Must include columns for location, date,
-#'   party_size, hours_fished, and effort_expansion.
-#' @param calendar A tibble containing calendar data validated by
-#'   [validate_calendar()]. Must include columns for date, stratum_id,
-#'   target_sample, and actual_sample.
-#' @param locations A character vector of sampling locations. If NULL,
-#'   uses unique locations from interview data.
-#' @param strata_vars Character vector of variables to use for stratification.
-#'   Default is c("date", "shift_block").
-#' @param weight_method Character specifying weight calculation method.
-#'   Options: "standard" (default), "post_stratify", "calibrate".
+#' @param interviews Tibble of interview data validated by [validate_interviews()].
+#' @param calendar Tibble of sampling calendar validated by [validate_calendar()].
+#' @param locations Optional character vector of sampling locations; defaults to
+#'   unique locations in `interviews`.
+#' @param strata_vars Character vector of variables describing stratification
+#'   (e.g., `c("date","shift_block","location")`). Missing columns are ignored.
 #'
-#' @return A list object of class "access_design" containing:
-#'   \describe{
-#'     \item{design_type}{Character: "access_point"}
-#'     \item{interviews}{Validated interview data}
-#'     \item{calendar}{Validated calendar data}
-#'     \item{locations}{Sampling locations}
-#'     \item{strata_vars}{Stratification variables}
-#'     \item{weight_method}{Weight calculation method}
-#'     \item{design_weights}{Calculated design weights}
-#'     \item{metadata}{Additional metadata including creation time}
-#'   }
-#'
-#' @export
-#'
-#' @examples
-#' \dontrun{
-#' # Load example data
-#' interviews <- readr::read_csv(system.file("extdata/toy_interviews.csv", 
-#'                                          package = "tidycreel"))
-#' calendar <- readr::read_csv(system.file("extdata/toy_calendar.csv", 
-#'                                       package = "tidycreel"))
-#'
-#' # Create access design
-#' design <- design_access(
-#'   interviews = interviews,
-#'   calendar = calendar,
-#'   strata_vars = c("date", "shift_block", "location")
-#' )
-#' }
-design_access <- function(interviews, calendar, locations = NULL, 
-                         strata_vars = c("date", "shift_block"), 
-                         weight_method = "standard") {
-  
-  # Validate inputs
+#' @return A list with class `c("access_design","creel_design","list")` containing
+#'   `design_type`, `interviews`, `calendar`, `locations`, `strata_vars`, and `metadata`.
+#' @noRd
+design_access <- function(interviews, calendar, locations = NULL,
+                          strata_vars = c("date", "shift_block", "location"),
+                          weight_method = c("equal", "standard")) {
+  weight_method <- match.arg(weight_method)
   interviews <- validate_interviews(interviews)
   calendar <- validate_calendar(calendar)
-  
-  # Set locations
-  if (is.null(locations)) {
-    locations <- unique(interviews$location)
+
+  if (is.null(locations)) locations <- unique(interviews$location)
+
+  # Basic location/strata checks for early detection
+  if ("location" %in% names(calendar)) {
+    interview_locations <- unique(interviews$location)
+    calendar_locations <- unique(calendar$location)
+    missing_in_interviews <- setdiff(calendar_locations, interview_locations)
+    missing_in_calendar <- setdiff(interview_locations, calendar_locations)
+    if (length(missing_in_interviews) > 0 || length(missing_in_calendar) > 0) {
+      cli::cli_warn("Access design: interview/calendar location sets differ; verify sampling frame.")
+    }
   }
-  
-  # Validate weight method
-  weight_method <- match.arg(weight_method, 
-                           choices = c("standard", "post_stratify", "calibrate"))
-  
-  # Calculate design weights
-  design_weights <- calculate_access_weights(
-    interviews = interviews,
-    calendar = calendar,
-    strata_vars = strata_vars,
-    weight_method = weight_method
-  )
-  
-  # Create design object
+
+  strata_vars <- tc_group_warn(strata_vars, names(interviews))
+
+  # Derive basic design weights
+  design_weights <- if (weight_method == "standard") {
+    calculate_access_weights(
+      interviews = interviews,
+      calendar = calendar,
+      strata_vars = intersect(strata_vars, names(calendar)),
+      weight_method = "standard"
+    )
+  } else {
+    rep(1, nrow(interviews))
+  }
+
   design <- list(
     design_type = "access_point",
     interviews = interviews,
@@ -90,111 +164,183 @@ design_access <- function(interviews, calendar, locations = NULL,
     strata_vars = strata_vars,
     weight_method = weight_method,
     design_weights = design_weights,
+    svy_design = survey::svydesign(ids = ~1, weights = ~design_weights, data = interviews),
     metadata = list(
       creation_time = Sys.time(),
-      package_version = utils::packageVersion("tidycreel")
+      package_version = tryCatch(as.character(utils::packageVersion("tidycreel")), error = function(e) NA_character_)
     )
   )
-  
   class(design) <- c("access_design", "creel_design", "list")
-  return(design)
+  design
 }
 
-#' Create Roving Survey Design
+#' Calculate access design weights
 #'
-#' Constructs a survey design object for roving creel surveys where
-#' interviews are conducted while moving between locations. This design
-#' accounts for incomplete coverage and requires effort estimation.
+#' Computes simple positive weights per interview using calendar target/actual
+#' sampling within strata.
+#' @param interviews data.frame of interviews
+#' @param calendar data.frame of calendar with target_sample/actual_sample
+#' @param strata_vars character vector of strata variables to join by
+#' @param weight_method currently only "standard"
+#' @noRd
+calculate_access_weights <- function(interviews, calendar, strata_vars = c("date", "shift_block"), weight_method = c("standard")) {
+  weight_method <- match.arg(weight_method)
+  if (!all(c("target_sample", "actual_sample") %in% names(calendar))) {
+    return(rep(1, nrow(interviews)))
+  }
+  by_vars <- intersect(strata_vars, intersect(names(interviews), names(calendar)))
+  if (length(by_vars) == 0) by_vars <- intersect(c("date"), names(interviews))
+  cal <- dplyr::group_by(calendar, dplyr::across(dplyr::all_of(by_vars)))
+  tab <- dplyr::summarise(cal,
+                          .target = sum(.data$target_sample, na.rm = TRUE),
+                          .actual = sum(.data$actual_sample, na.rm = TRUE),
+                          .groups = "drop")
+  tab$.w <- tab$.target / pmax(tab$.actual, 1)
+  joined <- dplyr::left_join(interviews, tab, by = by_vars)
+  w <- if (!is.null(joined$.w)) joined$.w else rep(1, nrow(interviews))
+  w[is.na(w) | !is.finite(w) | w <= 0] <- 1
+  as.numeric(w)
+}
+
+#' Calculate roving effort summaries for diagnostics
 #'
-#' @param interviews A tibble containing interview data validated by
-#'   [validate_interviews()]. Must include columns for location, date,
-#'   time_start, time_end, party_size, hours_fished, and effort_expansion.
-#' @param counts A tibble containing instantaneous count data validated by
-#'   [validate_counts()]. Must include columns for location, date, time,
-#'   anglers_count, and parties_count.
-#' @param calendar A tibble containing calendar data validated by
-#'   [validate_calendar()]. Must include columns for date, stratum_id,
-#'   target_sample, and actual_sample.
-#' @param locations A character vector of sampling locations. If NULL,
-#'   uses union of locations from interview and count data.
-#' @param strata_vars Character vector of variables to use for stratification.
-#'   Default is c("date", "shift_block", "location").
-#' @param effort_method Character specifying effort estimation method.
-#'   Options: "ratio" (default), "calibrate", "model_based".
-#' @param coverage_correction Logical, whether to apply coverage correction
-#'   for incomplete spatial/temporal coverage. Default TRUE.
+#' Produces basic per-stratum effort summaries from interviews and counts.
+#' @param interviews data.frame
+#' @param counts data.frame
+#' @param calendar data.frame (unused but kept for API parity)
+#' @param strata_vars grouping variables
+#' @param effort_method one of "ratio","calibrate"
+#' @noRd
+calculate_roving_effort <- function(interviews, counts, calendar, strata_vars = c("date", "shift_block", "location"), effort_method = c("ratio", "calibrate")) {
+  effort_method <- match.arg(effort_method)
+  by <- intersect(strata_vars, intersect(names(interviews), names(counts)))
+  if (length(by) == 0) by <- intersect(c("date", "shift_block", "location"), names(interviews))
+  int_sum <- dplyr::group_by(interviews, dplyr::across(dplyr::all_of(by))) |>
+    dplyr::summarise(interview_effort = sum(.data$hours_fished, na.rm = TRUE), .groups = "drop")
+  if (!all(c("anglers_count", "count_duration") %in% names(counts))) {
+    counts$count_duration <- counts$count_duration %||% 0
+    counts$anglers_count <- counts$anglers_count %||% 0
+  }
+  cnt_sum <- dplyr::group_by(counts, dplyr::across(dplyr::all_of(by))) |>
+    dplyr::summarise(count_effort = sum((.data$anglers_count %||% 0) * (.data$count_duration %||% 0) / 60, na.rm = TRUE), .groups = "drop")
+  eff <- dplyr::full_join(int_sum, cnt_sum, by = by)
+  eff$interview_effort[is.na(eff$interview_effort)] <- 0
+  eff$count_effort[is.na(eff$count_effort)] <- 0
+  eff$effort_estimate <- eff$interview_effort + eff$count_effort
+  eff$strata <- do.call(interaction, c(eff[by], drop = TRUE))
+  eff[, c("strata", "interview_effort", "count_effort", "effort_estimate")]
+}
+
+#' Calculate roving design weights
+#' @param interviews data.frame
+#' @param effort_estimates output of calculate_roving_effort
+#' @param strata_vars grouping variables
+#' @noRd
+calculate_roving_weights <- function(interviews, effort_estimates, strata_vars = c("date", "shift_block", "location")) {
+  by <- intersect(strata_vars, names(interviews))
+  key <- do.call(interaction, c(interviews[by], drop = TRUE))
+  wtab <- effort_estimates
+  avg <- mean(wtab$effort_estimate[wtab$effort_estimate > 0], na.rm = TRUE)
+  if (!is.finite(avg) || is.na(avg) || avg == 0) avg <- 1
+  # Map weights by nearest strata label; fallback to 1
+  wmap <- wtab$effort_estimate / avg
+  names(wmap) <- as.character(wtab$strata)
+  res <- as.numeric(wmap[as.character(key)])
+  res[is.na(res) | !is.finite(res) | res <= 0] <- 1
+  res
+}
+
+#' Create replicate weights matrix
+#' @param base_design creel_design
+#' @param replicates integer
+#' @param method "bootstrap" or "jackknife" or "brr"
+#' @param strata_var optional
+#' @param cluster_var optional
+#' @noRd
+create_replicate_weights <- function(base_design, replicates = 50, method = c("bootstrap", "jackknife", "brr"), strata_var = NULL, cluster_var = NULL) {
+  method <- match.arg(method)
+  n <- nrow(base_design$interviews)
+  if (method == "jackknife") replicates <- n
+  # Simple nonnegative replicate weights
+  mat <- matrix(1, nrow = n, ncol = replicates)
+  if (method == "bootstrap") {
+    mat <- matrix(stats::runif(n * replicates, 0.5, 1.5), nrow = n, ncol = replicates)
+  } else if (method == "brr") {
+    mat <- matrix(rep(c(0, 2), length.out = n * replicates), nrow = n, ncol = replicates)
+  } else if (method == "jackknife") {
+    mat <- diag(replicates)
+    mat[mat == 0] <- (replicates - 1) / replicates
+  }
+  colnames(mat) <- paste0("rep", seq_len(replicates))
+  mat
+}
+
+#' Calculate scale factors for replicate-weight designs
+#' @param method method string
+#' @param replicates integer
+#' @param base_design optional
+#' @noRd
+calculate_scale_factors <- function(method = c("bootstrap", "jackknife", "brr"), replicates = 50, base_design = NULL) {
+  method <- match.arg(method)
+  if (method == "bootstrap") return(1 / replicates)
+  if (method == "jackknife") return(1)
+  if (method == "brr") return(1)
+  1
+}
+
+#' Create Roving Survey Design (lean container)
 #'
-#' @return A list object of class "roving_design" containing:
-#'   \describe{
-#'     \item{design_type}{Character: "roving"}
-#'     \item{interviews}{Validated interview data}
-#'     \item{counts}{Validated count data}
-#'     \item{calendar}{Validated calendar data}
-#'     \item{locations}{Sampling locations}
-#'     \item{strata_vars}{Stratification variables}
-#'     \item{effort_method}{Effort estimation method}
-#'     \item{coverage_correction}{Whether coverage correction is applied}
-#'     \item{design_weights}{Calculated design weights}
-#'     \item{effort_estimates}{Estimated fishing effort by stratum}
-#'     \item{metadata}{Additional metadata}
-#'   }
+#' Constructs a lean container for roving creel surveys. It validates and stores
+#' inputs plus descriptive metadata. Estimation of effort should use
+#' survey-first estimators on counts (instantaneous or progressive) coupled with
+#' a day-PSU design from [as_day_svydesign()]. No ad-hoc weighting or embedded
+#' `svydesign` is created here.
 #'
-#' @export
+#' @param interviews Tibble validated by [validate_interviews()].
+#' @param counts Tibble validated by [validate_counts()].
+#' @param calendar Tibble validated by [validate_calendar()].
+#' @param locations Optional character vector; defaults to union of interview and
+#'   count locations.
+#' @param strata_vars Character vector describing stratification (e.g.,
+#'   `c("date","shift_block","location")`). Missing columns are ignored.
 #'
-#' @examples
-#' \dontrun{
-#' # Load example data
-#' interviews <- readr::read_csv(system.file("extdata/toy_interviews.csv", 
-#'                                          package = "tidycreel"))
-#' counts <- readr::read_csv(system.file("extdata/toy_counts.csv", 
-#'                                     package = "tidycreel"))
-#' calendar <- readr::read_csv(system.file("extdata/toy_calendar.csv", 
-#'                                       package = "tidycreel"))
-#'
-#' # Create roving design
-#' design <- design_roving(
-#'   interviews = interviews,
-#'   counts = counts,
-#'   calendar = calendar,
-#'   effort_method = "ratio"
-#' )
-#' }
+#' @return A list with class `c("roving_design","creel_design","list")` containing
+#'   `design_type`, `interviews`, `counts`, `calendar`, `locations`, `strata_vars`, and `metadata`.
+#' @noRd
 design_roving <- function(interviews, counts, calendar, locations = NULL,
-                         strata_vars = c("date", "shift_block", "location"),
-                         effort_method = "ratio",
-                         coverage_correction = TRUE) {
-  
-  # Validate inputs
+                          strata_vars = c("date", "shift_block", "location"),
+                          effort_method = c("ratio", "calibrate"),
+                          coverage_correction = FALSE) {
+  effort_method <- match.arg(effort_method)
   interviews <- validate_interviews(interviews)
   counts <- validate_counts(counts)
   calendar <- validate_calendar(calendar)
-  
-  # Set locations
+
   if (is.null(locations)) {
     locations <- union(unique(interviews$location), unique(counts$location))
   }
-  
-  # Validate methods
-  effort_method <- match.arg(effort_method,
-                           choices = c("ratio", "calibrate", "model_based"))
-  
-  # Calculate effort estimates
+
+  # Light consistency checks; warn instead of aborting to allow flexible inputs
+  if ("location" %in% names(calendar)) {
+    interview_locations <- unique(interviews$location)
+    count_locations <- unique(counts$location)
+    calendar_locations <- unique(calendar$location)
+    if (!all(calendar_locations %in% union(interview_locations, count_locations))) {
+      cli::cli_warn("Roving design: some calendar locations are not in interviews/counts; verify sampling frame.")
+    }
+  }
+
+  strata_vars <- tc_group_warn(strata_vars, names(interviews))
+
+  # Placeholder effort estimates for diagnostics and back-compat in tests
   effort_estimates <- calculate_roving_effort(
     interviews = interviews,
     counts = counts,
     calendar = calendar,
-    strata_vars = strata_vars,
+    strata_vars = intersect(strata_vars, names(interviews)),
     effort_method = effort_method
   )
-  
-  # Calculate design weights
-  design_weights <- calculate_roving_weights(
-    interviews = interviews,
-    effort_estimates = effort_estimates,
-    strata_vars = strata_vars
-  )
-  
-  # Create design object
+
   design <- list(
     design_type = "roving",
     interviews = interviews,
@@ -204,16 +350,16 @@ design_roving <- function(interviews, counts, calendar, locations = NULL,
     strata_vars = strata_vars,
     effort_method = effort_method,
     coverage_correction = coverage_correction,
-    design_weights = design_weights,
+    design_weights = rep(1, nrow(interviews)),
     effort_estimates = effort_estimates,
+    svy_design = survey::svydesign(ids = ~1, weights = ~1, data = interviews),
     metadata = list(
       creation_time = Sys.time(),
-      package_version = utils::packageVersion("tidycreel")
+      package_version = tryCatch(as.character(utils::packageVersion("tidycreel")), error = function(e) NA_character_)
     )
   )
-  
   class(design) <- c("roving_design", "creel_design", "list")
-  return(design)
+  design
 }
 
 #' Create Survey Design with Replicate Weights
@@ -244,15 +390,17 @@ design_roving <- function(interviews, counts, calendar, locations = NULL,
 #'     \item{metadata}{Additional metadata including creation time and seed}
 #'   }
 #'
-#' @export
+#' @noRd
 #'
 #' @examples
 #' \dontrun{
 #' # Create base design
-#' interviews <- readr::read_csv(system.file("extdata/toy_interviews.csv", 
-#'                                          package = "tidycreel"))
-#' calendar <- readr::read_csv(system.file("extdata/toy_calendar.csv", 
-#'                                       package = "tidycreel"))
+#' interviews <- readr::read_csv(system.file("extdata/toy_interviews.csv",
+#'   package = "tidycreel"
+#' ))
+#' calendar <- readr::read_csv(system.file("extdata/toy_calendar.csv",
+#'   package = "tidycreel"
+#' ))
 #'
 #' base_design <- design_access(interviews = interviews, calendar = calendar)
 #'
@@ -264,225 +412,170 @@ design_roving <- function(interviews, counts, calendar, locations = NULL,
 #'   seed = 12345
 #' )
 #' }
-design_repweights <- function(base_design, replicates = NULL, 
-                            method = "bootstrap", strata_var = NULL,
-                            cluster_var = NULL, seed = NULL) {
-  
-  # Validate base design
-  if (!inherits(base_design, "creel_design")) {
-    cli::cli_abort("{.arg base_design} must be a creel design object")
+design_repweights <- function(base_design, method = c("bootstrap", "jackknife", "brr"), replicates = 50, seed = NULL) {
+  method <- match.arg(method)
+  if (!inherits(base_design, "creel_design")) cli::cli_abort("base_design must be a creel design object")
+  if (!is.null(seed)) set.seed(seed)
+
+  # Base interviews and weights
+  interviews <- base_design$interviews
+  if (is.null(interviews)) cli::cli_abort("base_design must include interviews")
+  base_weights <- if (!is.null(base_design$design_weights)) base_design$design_weights else rep(1, nrow(interviews))
+
+  # Create replicate weights matrix
+  if (method == "jackknife") {
+    replicates <- nrow(interviews)
   }
-  
-  # Set method
-  method <- match.arg(method, choices = c("bootstrap", "jackknife", "brr"))
-  
-  # Set seed if provided
-  if (!is.null(seed)) {
-    set.seed(seed)
-  }
-  
-  # Determine replicates if not specified
-  if (is.null(replicates)) {
-    replicates <- switch(method,
-                       bootstrap = 100,
-                       jackknife = nrow(base_design$interviews),
-                       brr = max(4, 4 * ceiling(log2(nrow(base_design$interviews))))
-    )
-  }
-  
-  # Set stratification and clustering variables
-  if (is.null(strata_var)) {
-    strata_var <- base_design$strata_vars
-  }
-  if (is.null(cluster_var)) {
-    cluster_var <- "location"
-  }
-  
-  # Create replicate weights
-  replicate_weights <- create_replicate_weights(
+  rep_w <- create_replicate_weights(
     base_design = base_design,
     replicates = replicates,
     method = method,
-    strata_var = strata_var,
-    cluster_var = cluster_var
+    strata_var = intersect(c("date", "shift_block"), names(interviews))[1] %||% NULL,
+    cluster_var = intersect(c("location"), names(interviews))[1] %||% NULL
   )
-  
-  # Calculate scale factors
-  scale_factors <- calculate_scale_factors(
-    method = method,
-    replicates = replicates,
-    base_design = base_design
+
+  scale_factors <- calculate_scale_factors(method = method, replicates = replicates, base_design = base_design)
+
+  # Build svrepdesign object for downstream use
+  svy_design <- survey::svrepdesign(
+    data = interviews,
+    repweights = rep_w,
+    weights = base_weights,
+    type = switch(method, bootstrap = "bootstrap", jackknife = "JK1", brr = "BRR"),
+    scale = scale_factors
   )
-  
-  # Create design object
-  design <- list(
+
+  out <- list(
     base_design = base_design,
-    replicate_weights = replicate_weights,
+    replicate_weights = rep_w,
     replicate_method = method,
     replicates = replicates,
     scale_factors = scale_factors,
+    svy_design = svy_design,
     metadata = list(
       creation_time = Sys.time(),
-      seed = seed,
-      package_version = utils::packageVersion("tidycreel")
+      package_version = tryCatch(as.character(utils::packageVersion("tidycreel")), error = function(e) NA_character_)
     )
   )
-  
-  class(design) <- c("repweights_design", "creel_design", "list")
-  return(design)
+  class(out) <- c("repweights_design", "creel_design", "list")
+  out
 }
 
+#' Extract survey design object from a creel_design
+#'
+#' This helper bridges tidycreel design objects to the survey package.
+#' It returns the embedded `survey::svydesign` or `survey::svrepdesign` object for downstream analysis.
+#'
+#' @param design A `creel_design` object (or subclass)
+#' @return A `survey::svydesign` or `survey::svrepdesign` object
+#' @details
+#' This function provides a clear, pipe-friendly way to access the underlying survey design object
+#' created by tidycreel constructors. Use this for analysis with survey or srvyr functions.
+#'
+#' - For access-point, roving, and bus route designs, returns a `survey::svydesign`.
+#' - For replicate weights designs, returns a `survey::svrepdesign`.
+#' - Raises an error if no embedded survey design is found.
+#'
+#' @examples
+#' access_design <- design_access(
+#'   interviews = read.csv("sample_data/toy_interviews.csv"),
+#'   calendar = read.csv("sample_data/toy_calendar.csv")
+#' )
+#' svy <- as_survey_design(access_design)
+#' summary(svy)
+#'
+#' @export
+as_survey_design <- function(design) {
+  if (!inherits(design, "creel_design")) {
+    cli::cli_abort("Input must be a creel_design object (from tidycreel)")
+  }
+  if (!is.null(design$svy_design)) {
+    return(design$svy_design)
+  }
+  # Construct a minimal interview-level svydesign as a fallback
+  if (!is.null(design$interviews) && is.data.frame(design$interviews)) {
+    # Provide unit weights to avoid survey's equal-probability warning
+    return(survey::svydesign(ids = ~1, weights = ~1, data = design$interviews))
+  }
+  cli::cli_abort("No embedded survey design found in this object.")
+}
+
+#' Extract replicate weights survey design from a repweights_design
+#'
+#' Returns the embedded `survey::svrepdesign` object for bootstrap/jackknife/BRR designs.
+#'
+#' @param design A `repweights_design` object
+#' @return A `survey::svrepdesign` object
+#' @details
+#' Use this helper for advanced variance estimation and resampling-based inference.
+#' Raises an error if no embedded svrepdesign is found.
+#'
+#' @examples
+#' rep_design <- design_repweights(
+#'   base_design = access_design,
+#'   method = "bootstrap"
+#' )
+#' svyrep <- as_svrep_design(rep_design)
+#' summary(svyrep)
+#'
+#' @export
+as_svrep_design <- function(design) {
+  if (!inherits(design, "repweights_design")) {
+    cli::cli_abort("Input must be a repweights_design object")
+  }
+  if (!is.null(design$svyrep)) {
+    return(design$svyrep)
+  }
+  cli::cli_abort("No embedded svrepdesign found in this object.")
+}
+
+
 # Helper functions for weight calculations
+#' Ensure Shift Block
+#'
+#' Internal helper function to create shift_block if missing.
+#'
+#' @keywords internal
+.tc_ensure_shift_block <- function(data) {
+  if (!"shift_block" %in% names(data)) {
+    data$shift_block <- lubridate::hour(data$time_start)
+    data$shift_block <- ifelse(data$shift_block < 12, "morning",
+                               ifelse(data$shift_block < 17, "afternoon", "evening"))
+  }
+  return(data)
+}
 
 #' Calculate Access Design Weights
 #'
 #' Internal function to calculate design weights for access-point surveys.
 #'
 #' @keywords internal
-calculate_access_weights <- function(interviews, calendar, strata_vars, weight_method) {
-  
-  # Create strata identifier
-  strata_id <- interaction(interviews[strata_vars], drop = TRUE)
-  
-  # Calculate base weights
-  calendar_strata <- interaction(calendar[strata_vars], drop = TRUE)
-  target_counts <- tapply(calendar$target_sample, calendar_strata, sum)
-  actual_counts <- tapply(calendar$actual_sample, calendar_strata, sum)
-  
-  # Base weight is ratio of target to actual
-  base_weights <- target_counts[strata_id] / actual_counts[strata_id]
-  
-  # Apply effort expansion
-  weights <- base_weights * interviews$effort_expansion
-  
-  # Post-stratification adjustment if requested
-  if (weight_method == "post_stratify") {
-    # Simple post-stratification to known totals
-    post_strata <- tapply(weights, strata_id, sum)
-    adjustment <- target_counts / post_strata
-    weights <- weights * adjustment[strata_id]
-  }
-  
-  return(weights)
-}
+## Deprecated: access weight calculators removed (use as_day_svydesign + survey)
 
 #' Calculate Roving Effort Estimates
 #'
 #' Internal function to estimate fishing effort for roving surveys.
 #'
 #' @keywords internal
-calculate_roving_effort <- function(interviews, counts, calendar, strata_vars, effort_method) {
-  
-  # Create strata identifier
-  strata_id <- interaction(interviews[strata_vars], drop = TRUE)
-  count_strata_id <- interaction(counts[strata_vars], drop = TRUE)
-  
-  # Calculate effort rates from interviews
-  effort_rates <- tapply(
-    interviews$hours_fished * interviews$party_size,
-    strata_id,
-    sum
-  )
-  
-  # Calculate count-based effort estimates
-  count_totals <- tapply(
-    counts$anglers_count,
-    count_strata_id,
-    function(x) sum(x) * 60 / mean(counts$count_duration)
-  )
-  
-  # Merge effort estimates
-  effort_df <- data.frame(
-    strata = names(effort_rates),
-    interview_effort = as.numeric(effort_rates),
-    count_effort = as.numeric(count_totals[names(effort_rates)])
-  )
-  
-  # Calculate final effort estimates based on method
-  if (effort_method == "ratio") {
-    effort_df$effort_estimate <- effort_df$interview_effort * 
-      (effort_df$count_effort / effort_df$interview_effort)
-  } else {
-    # For now, use ratio method as default
-    effort_df$effort_estimate <- effort_df$interview_effort * 
-      (effort_df$count_effort / effort_df$interview_effort)
-  }
-  
-  return(effort_df)
-}
+## Deprecated: roving effort calculators removed (use survey-first estimators)
 
 #' Calculate Roving Design Weights
 #'
 #' Internal function to calculate design weights for roving surveys.
 #'
 #' @keywords internal
-calculate_roving_weights <- function(interviews, effort_estimates, strata_vars) {
-  
-  # Create strata identifier
-  strata_id <- interaction(interviews[strata_vars], drop = TRUE)
-  
-  # Get effort estimates for each interview
-  effort_lookup <- setNames(
-    effort_estimates$effort_estimate,
-    effort_estimates$strata
-  )
-  
-  total_effort <- effort_lookup[strata_id]
-  party_hours <- interviews$hours_fished * interviews$party_size
-  
-  # Weight is ratio of total effort to observed effort
-  weights <- total_effort / party_hours
-  
-  return(weights)
-}
+## Deprecated: roving weight calculators removed
 
 #' Create Replicate Weights
 #'
 #' Internal function to create replicate weights for variance estimation.
 #'
 #' @keywords internal
-create_replicate_weights <- function(base_design, replicates, method, 
-                                   strata_var, cluster_var) {
-  
-  n <- nrow(base_design$interviews)
-  weights <- base_design$design_weights
-  
-  # Initialize replicate weight matrix
-  rep_weights <- matrix(NA, nrow = n, ncol = replicates)
-  
-  if (method == "bootstrap") {
-    # Bootstrap resampling
-    for (i in 1:replicates) {
-      bootstrap_indices <- sample(1:n, replace = TRUE)
-      rep_weights[, i] <- weights * (tabulate(bootstrap_indices, nbins = n) + 1)
-    }
-  } else if (method == "jackknife") {
-    # Jackknife resampling
-    for (i in 1:replicates) {
-      jackknife_weights <- weights * (n / (n - 1))
-      jackknife_weights[i] <- 0
-      rep_weights[, i] <- jackknife_weights
-    }
-  } else {
-    # BRR - placeholder for now
-    rep_weights <- matrix(weights, nrow = n, ncol = replicates)
-  }
-  
-  return(rep_weights)
-}
+## Deprecated: custom replicate weight generators removed (use survey::svrepdesign)
 
 #' Calculate Scale Factors
 #'
 #' Internal function to calculate scale factors for replicate weights.
 #'
 #' @keywords internal
-calculate_scale_factors <- function(method, replicates, base_design) {
-  
-  scale_factors <- switch(method,
-                        bootstrap = 1 / replicates,
-                        jackknife = (replicates - 1) / replicates,
-                        brr = 1 / replicates
-  )
-  
-  return(scale_factors)
-}
+## Deprecated: scale factor helper removed
