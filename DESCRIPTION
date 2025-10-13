@@ -1,19 +1,20 @@
-# tidycreel is utilized for creel survey analysis
 Package: tidycreel
 Title: Tidy Interface for Creel Survey Design and Analysis
 Version: 0.0.0.9000
-Authors@R: 
-    person("Chris", "Chizinski", , "chris.chizinski@unl.edu", role = c("aut", "cre"),
-           comment = c(ORCID = "0000-0002-6248-8628"))
-Description: Provides a tidy, pipe-friendly interface for creel survey 
-    design, data management, estimation, and reporting. Built on the 'survey' 
-    package for robust design-based inference with support for access-point, 
+Authors@R:
+    person(given = "Christopher", family = "Chizinski", role = c("aut", "cre"),
+           email = "chris.chizinski@unl.edu",
+           comment = c(ORCID = "0000-0001-9294-2588"))
+Maintainer: Christopher Chizinski <chris.chizinski@unl.edu>
+Description: Provides a tidy, pipe-friendly interface for creel survey
+    design, data management, estimation, and reporting. Built on the 'survey'
+    package for robust design-based inference with support for access-point,
     roving, and hybrid survey designs.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
-Depends: 
+Depends:
     R (>= 4.1.0)
 Imports:
     survey,
@@ -33,6 +34,7 @@ Suggests:
     testthat (>= 3.0.0),
     knitr,
     rmarkdown,
+    pkgdown,
     covr,
     bench,
     gt,
@@ -42,7 +44,9 @@ Suggests:
     furrr,
     data.table,
     DBI,
-    targets
+    targets,
+    lifecycle
 VignetteBuilder: knitr
-URL: https://github.com/cchizinski2/tidycreel
-BugReports: https://github.com/cchizinski2/tidycreel/issues
+Config/testthat/edition: 3
+URL: https://github.com/chrischizinski/tidycreel
+BugReports: https://github.com/chrischizinski/tidycreel/issues

@@ -1,205 +1,86 @@
-# tidycreel <img src="man/figures/logo.png" align="right" height="139" alt="" />
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+# tidycreel
+
+<p align="center">
+
+<img src="man/figures/hex.png" alt="tidycreel hex sticker" width="250"/>
+</p>
 
 <!-- badges: start -->
-[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
-[![CRAN status](https://www.r-pkg.org/badges/version/tidycreel)](https://CRAN.R-project.org/package=tidycreel)
-[![R-CMD-check](https://github.com/cchizinski2/tidycreel/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/cchizinski2/tidycreel/actions/workflows/R-CMD-check.yaml)
+
+[![Lifecycle:
+experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+[![R CMD
+Check](https://github.com/chrischizinski/tidycreel/actions/workflows/r-check.yml/badge.svg)](https://github.com/chrischizinski/tidycreel/actions/workflows/r-check.yml)
+[![lintr](https://github.com/chrischizinski/tidycreel/actions/workflows/lintr.yaml/badge.svg)](https://github.com/chrischizinski/tidycreel/actions/workflows/lintr.yaml)
 <!-- badges: end -->
 
-## Overview
-
-`tidycreel` provides a comprehensive framework for designing and analyzing access-point creel surveys in recreational fisheries. Built on the robust `survey` package, it offers a tidy, pipe-friendly interface for survey design construction, data validation, effort estimation, catch rate estimation, and variance estimation.
-
-## Key Features
-
-- **Survey Design Constructors**: Support for access-point, roving, and hybrid survey designs
-- **Built-in Validation**: Automatic validation of interview, count, and calendar data
-- **Replicate Weights**: Bootstrap, jackknife, and BRR methods for variance estimation
-- **Effort Estimation**: Advanced methods for roving survey effort estimation
-- **Post-stratification**: Calibration and post-stratification options
-- **Tidy Interface**: Full integration with the tidyverse ecosystem
+The goal of tidycreel is to provide a survey-first, tidy interface for
+creel survey design and analysis. Estimators are built on the
+`survey`/`svrepdesign` framework with vectorized, tidyverse data
+workflows, delivering defensible estimates of effort, CPUE, catch, and
+harvest.
 
 ## Installation
 
-You can install the development version from GitHub:
+You can install the development version of tidycreel from
+[GitHub](https://github.com/) with:
 
-```r
-# install.packages("devtools")
-devtools::install_github("cchizinski2/tidycreel")
+``` r
+# install.packages("pak")
+pak::pak("chrischizinski/tidycreel")
 ```
 
-## Quick Start
+## Example
 
-### 1. Load Example Data
+This is a basic example which shows you how to solve a common problem:
 
-```r
+``` r
 library(tidycreel)
-library(dplyr)
-
-# Load example datasets
-interviews <- readr::read_csv(system.file("extdata/toy_interviews.csv", 
-                                        package = "tidycreel"))
-counts <- readr::read_csv(system.file("extdata/toy_counts.csv", 
-                                    package = "tidycreel"))
-calendar <- readr::read_csv(system.file("extdata/toy_calendar.csv", 
-                                      package = "tidycreel"))
+## basic example code
 ```
 
-### 2. Create Survey Designs
+What is special about using `README.Rmd` instead of just `README.md`?
+You can include R chunks like so:
 
-#### Access-Point Design
-```r
-# Create access-point survey design
-access_design <- design_access(
-  interviews = interviews,
-  calendar = calendar,
-  strata_vars = c("date", "shift_block", "location"),
-  weight_method = "standard"
-)
+``` r
+summary(cars)
+#>      speed           dist
+#>  Min.   : 4.0   Min.   :  2.00
+#>  1st Qu.:12.0   1st Qu.: 26.00
+#>  Median :15.0   Median : 36.00
+#>  Mean   :15.4   Mean   : 42.98
+#>  3rd Qu.:19.0   3rd Qu.: 56.00
+#>  Max.   :25.0   Max.   :120.00
 ```
 
-#### Roving Design
-```r
-# Create roving survey design
-roving_design <- design_roving(
-  interviews = interviews,
-  counts = counts,
-  calendar = calendar,
-  strata_vars = c("date", "shift_block", "location"),
-  effort_method = "ratio"
-)
+You’ll still need to render `README.Rmd` regularly, to keep `README.md`
+up-to-date. `devtools::build_readme()` is handy for this.
+
+You can also embed plots, for example:
+
+<img src="man/figures/README-pressure-1.png" width="100%" />
+
+In that case, don’t forget to commit and push the resulting figure
+files, so they display on GitHub and CRAN.
+
+## Effort Overview (Survey-First)
+
+- Instantaneous and Progressive (roving) estimators aggregate to day ×
+  group totals and use a day-PSU design for inference. See the vignette:
+
+``` r
+vignette("effort_survey_first", package = "tidycreel")
 ```
 
-#### Add Replicate Weights
-```r
-# Add bootstrap replicate weights
-rep_design <- design_repweights(
-  base_design = access_design,
-  replicates = 100,
-  method = "bootstrap"
-)
+- Aerial snapshot counts with covariates, post-stratification, and
+  calibration are covered here:
+
+``` r
+vignette("aerial", package = "tidycreel")
 ```
 
-### 3. Validate Data
-
-All survey design constructors include built-in validation:
-
-```r
-# Validate interview data
-validate_interviews(interviews)
-
-# Validate count data
-validate_counts(counts)
-
-# Validate calendar data
-validate_calendar(calendar)
-```
-
-## Survey Design Types
-
-### Access-Point Surveys
-Access-point surveys are conducted at fixed locations where anglers exit the fishery. Interviewers attempt to interview all exiting anglers during scheduled interview periods.
-
-**Key assumptions:**
-- Complete coverage of exiting anglers during interview periods
-- Accurate counts of total anglers exiting
-- Representative sampling across time and space
-
-### Roving Surveys
-Roving surveys involve interviewers moving between locations to conduct interviews. This design requires additional count data to estimate fishing effort.
-
-**Key features:**
-- Requires count data for effort estimation
-- Uses ratio estimation methods
-- Can incorporate coverage correction factors
-
-### Replicate Weights
-Replicate weights provide robust variance estimation for complex survey designs.
-
-**Supported methods:**
-- **Bootstrap**: Resampling with replacement
-- **Jackknife**: Leave-one-out resampling
-- **BRR**: Balanced repeated replication
-
-## Advanced Usage
-
-### Custom Stratification
-
-```r
-# Custom stratification variables
-custom_design <- design_access(
-  interviews = interviews,
-  calendar = calendar,
-  strata_vars = c("date", "location", "mode"),
-  weight_method = "post_stratify"
-)
-```
-
-### Handling Complex Designs
-
-```r
-# Hybrid design with multiple modes
-hybrid_design <- design_roving(
-  interviews = interviews,
-  counts = counts,
-  calendar = calendar,
-  strata_vars = c("date", "shift_block", "location", "mode"),
-  effort_method = "separate_ratio",
-  coverage_correction = TRUE
-)
-```
-
-## Data Requirements
-
-### Interview Data
-Required columns:
-- `date`: Interview date
-- `time_start`: Interview start time
-- `time_end`: Interview end time
-- `location`: Sampling location
-- `mode`: Fishing mode (shore, boat, etc.)
-- `catch_total`: Total fish caught
-- `catch_kept`: Fish kept
-- `catch_released`: Fish released
-- `hours_fished`: Hours spent fishing
-- `party_size`: Number of anglers in party
-
-### Count Data (Roving Surveys)
-Required columns:
-- `date`: Count date
-- `time_start`: Count start time
-- `time_end`: Count end time
-- `location`: Count location
-- `anglers_count`: Number of anglers counted
-- `parties_count`: Number of parties counted
-
-### Calendar Data
-Required columns:
-- `date`: Survey date
-- `location`: Survey location
-- `shift_block`: Time block identifier
-- `weekend`: Weekend indicator
-- `holiday`: Holiday indicator
-- `target_sample`: Target sample size
-- `actual_sample`: Actual sample size
-
-## Contributing
-
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
-
-## License
-
-This package is licensed under the MIT License. See [LICENSE](LICENSE) for details.
-
-## Citation
-
-If you use `tidycreel` in your research, please cite:
-
-```bibtex
-@software{tidycreel2024,
-  title = {tidycreel: Tidy Interface for Creel Survey Design and Analysis},
-  author = {Chris Chizinski},
-  year = {2024},
-  url = {https://github.com/cchizinski2/tidycreel},
-  version = {0.0.0.9000}
-}
+Tip: For replicate variance, convert your day design with
+`survey::as.svrepdesign()` and pass it to the estimators.
