@@ -69,5 +69,7 @@ est_effort(busroute_design_obj, counts = toy_counts, by = c("date", "shift_block
 
 }
 \references{
-Malvestuto, S.P. (1996). Sampling for creel survey data. In: Murphy, B.R. & Willis, D.W. (eds) Fisheries Techniques, 2nd Edition. American Fisheries Society.
+Malvestuto, S.P. (1996). Sampling for creel survey data.
+In: Murphy, B.R. & Willis, D.W. (eds) Fisheries Techniques,
+2nd Edition. American Fisheries Society.
 }

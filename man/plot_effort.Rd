@@ -12,7 +12,8 @@ plot_effort(
 )
 }
 \arguments{
-\item{effort_df}{Data frame/tibble of effort estimates (output from est_effort or similar).}
+\item{effort_df}{Data frame/tibble of effort estimates (output from
+est_effort or similar).}
 
 \item{by}{Character vector of grouping variables.}
 
@@ -24,11 +25,13 @@ plot_effort(
 A ggplot or plotly object.
 }
 \description{
-Visualize effort estimates by stratum, date, location, or other grouping variables.
-Supports line, bar, and interactive plots.
+Visualize effort estimates by stratum, date, location, or other grouping
+variables. Supports line, bar, and interactive plots.
 }
 \details{
-Visualizes effort estimates by stratum, date, location, or other grouping variables. Supports line, bar, and interactive plots. See vignettes for usage examples.
+Visualizes effort estimates by stratum, date, location, or other grouping
+variables. Supports line, bar, and interactive plots. See vignettes for
+usage examples.
 }
 \examples{
 # Plot effort estimates

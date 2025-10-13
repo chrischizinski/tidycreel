@@ -13,7 +13,8 @@ A tibble with the following columns:
 \item{month}{Character, month identifier}
 \item{weekend}{Logical, TRUE if weekend}
 \item{holiday}{Logical, TRUE if holiday}
-\item{shift_block}{Character, shift identifier (morning, afternoon, evening)}
+\item{shift_block}{Character, shift identifier (morning, afternoon,
+evening)}
 \item{target_sample}{Integer, target sample size for stratum}
 \item{actual_sample}{Integer, actual sample size achieved}
 }
