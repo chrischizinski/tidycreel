@@ -36,6 +36,7 @@
 #' - **Mean-of-ratios**: computes trip-level `response/effort_col` then uses
 #'   `svymean`/`svyby`. Prefer for complete trips with minimal zero-inflation.
 #'
+#' @importFrom stats update
 #' @seealso [survey::svyratio()], [survey::svymean()], [survey::svyby()].
 #' @export
 est_cpue <- function(design,
@@ -124,7 +125,7 @@ est_cpue <- function(design,
     }
   } else {
     # mean_of_ratios: define per-trip CPUE
-    svy2 <- survey::update(svy, .cpue = vars[[response]] / vars[[effort_col]])
+    svy2 <- stats::update(svy, .cpue = vars[[response]] / vars[[effort_col]])
     if (length(by) > 0) {
       by_formula <- stats::as.formula(paste("~", paste(by, collapse = "+")))
       est <- survey::svyby(
