@@ -121,7 +121,7 @@ NULL
 #'
 #' @return A list with class `c("access_design","creel_design","list")` containing
 #'   `design_type`, `interviews`, `calendar`, `locations`, `strata_vars`, and `metadata`.
-#' @noRd
+#' @export
 design_access <- function(interviews, calendar, locations = NULL,
                           strata_vars = c("date", "shift_block", "location"),
                           weight_method = c("equal", "standard")) {
@@ -306,7 +306,7 @@ calculate_scale_factors <- function(method = c("bootstrap", "jackknife", "brr"),
 #'
 #' @return A list with class `c("roving_design","creel_design","list")` containing
 #'   `design_type`, `interviews`, `counts`, `calendar`, `locations`, `strata_vars`, and `metadata`.
-#' @noRd
+#' @export
 design_roving <- function(interviews, counts, calendar, locations = NULL,
                           strata_vars = c("date", "shift_block", "location"),
                           effort_method = c("ratio", "calibrate"),
