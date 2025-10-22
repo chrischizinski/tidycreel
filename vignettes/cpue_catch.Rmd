@@ -232,15 +232,30 @@ harvest_species
 
 ### Released Fish
 
-Calculate released fish:
+Calculate released fish as the difference between total catch and kept fish:
 
 ```{r released}
-# Released fish by species
-released_species <- est_catch(
-  svy_interview,
-  by = c("target_species"),
-  response = "catch_released"
-)
+# Released fish by species (computed as total - kept)
+# Since est_catch doesn't support "catch_released" directly,
+# we compute it from total catch and harvest estimates
+
+# We already have catch_species (total) and harvest_species (kept) from above
+released_species <- dplyr::left_join(
+  catch_species,
+  harvest_species,
+  by = "target_species",
+  suffix = c("_total", "_kept")
+) %>%
+  dplyr::mutate(
+    estimate = estimate_total - estimate_kept,
+    # Conservative variance assuming independence: Var(total) + Var(kept)
+    se = sqrt(se_total^2 + se_kept^2),
+    ci_low = estimate - 1.96 * se,
+    ci_high = estimate + 1.96 * se,
+    n = pmax(n_total, n_kept, na.rm = TRUE),
+    method = "catch_difference"
+  ) %>%
+  dplyr::select(target_species, estimate, se, ci_low, ci_high, n, method)
 
 released_species
 ```
