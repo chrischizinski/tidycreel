@@ -1,0 +1,82 @@
+---
+title: "Aerial Survey Effort Estimation Example"
+author: "tidycreel team"
+date: "2025-08-20"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+vignette: >
+  %\VignetteIndexEntry{Aerial Survey Effort Estimation Example}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+## Aerial Survey Effort Estimation in tidycreel
+
+This vignette demonstrates aerial effort estimation using a day-PSU survey design with optional visibility and calibration adjustments.
+
+## Example Data
+
+```r
+library(tidycreel)
+library(dplyr)
+
+# Minimal calendar and day design
+calendar <- tibble::tibble(
+  date = as.Date(c('2025-08-01','2025-08-02')),
+  day_type = c('weekday','weekend'),
+  month = c('Aug','Aug'),
+  target_sample = c(4,4),
+  actual_sample = c(2,2)
+)
+svy_day <- as_day_svydesign(calendar, day_id = 'date', strata_vars = c('day_type','month'))
+
+# Simulated aerial counts
+aerial_counts <- tibble::tibble(
+  date = rep(calendar$date, each = 2),
+  location = rep(c('A','B'), times = 2),
+  count = c(20, 15, 25, 18),
+  interval_minutes = 60,
+  total_day_minutes = 600,
+  visibility = c(0.8, 0.9, 0.75, 0.9),
+  calibration = c(1.05, 1.00, 1.10, 1.02)
+)
+```
+
+## Estimation with Visibility and Calibration Correction
+
+```r
+result <- est_effort.aerial(
+  counts = aerial_counts,
+  by = c('location'),
+  minutes_col = 'interval_minutes',
+  total_minutes_col = 'total_day_minutes',
+  visibility_col = 'visibility',
+  calibration_col = 'calibration',
+  day_id = 'date',
+  svy = svy_day
+)
+result
+```
+
+## Output Structure
+
+- `estimate`: Visibility- and calibration-adjusted effort per group
+- `se`: Standard error (design-based)
+- `ci_low`, `ci_high`: Confidence interval
+- `n`: Number of counts per stratum
+- `method`: "aerial"
+- `diagnostics`: Diagnostics column (future expansion)
+
+## Notes
+
+- Visibility correction adjusts for detection probability (e.g., observer bias, weather).
+- Calibration factors integrate ground truth or reference counts.
+- Stratified expansion allows for aggregation by date, location, and stratum.
+- Variance estimation supports analytic (Taylor) and replicate-weight designs via `svrepdesign`.
+
+## References
+
+- Pollock, K. H., et al. (1994). "Estimating fishing effort from aerial surveys." Fisheries Research.
+- Malvestuto, S. P. (1996). "Sampling for creel survey design." American Fisheries Society.

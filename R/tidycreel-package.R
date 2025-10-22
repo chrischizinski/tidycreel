@@ -1,41 +1,9 @@
-#' tidycreel: Survey Design and Analysis for Access-Point Creel Surveys
+#' tidycreel: Tools for creel survey design, estimation, and reporting
 #'
-#' @description
-#' Provides comprehensive tools for designing and analyzing access-point creel
-#' surveys in recreational fisheries. Includes functions for survey design
-#' construction, data validation, effort estimation, catch rate estimation,
-#' and variance estimation with replicate weights.
+#' (One-sentence summary goes here.)
 #'
-#' @section Survey Design Constructors:
-#' The package provides three main survey design constructors:
-#' \describe{
-#'   \item{\code{\link{design_access}}}{Create access-point survey designs}
-#'   \item{\code{\link{design_roving}}}{Create roving survey designs}
-#'   \item{\code{\link{design_repweights}}}{Add replicate weights for variance estimation}
-#' }
-#'
-#' @section Data Validation:
-#' All survey design constructors include built-in validation for:
-#' \itemize{
-#'   \item Interview data (\code{\link{validate_interviews}})
-#'   \item Count data (\code{\link{validate_counts}})
-#'   \item Calendar data (\code{\link{validate_calendar}})
-#' }
-#'
-#' @section Key Features:
-#' \itemize{
-#'   \item Support for access-point and roving survey designs
-#'   \item Built-in data validation and schema checking
-#'   \item Replicate weights for variance estimation (bootstrap, jackknife, BRR)
-#'   \item Effort estimation for roving surveys
-#'   \item Post-stratification and calibration options
-#'   \item Comprehensive documentation and examples
-#' }
-#'
-#' @docType package
-#' @name tidycreel
-#' @aliases tidycreel-package
-NULL
+#' @keywords internal
+"_PACKAGE"
 
 # Suppress R CMD check notes
 if (getRversion() >= "2.15.1") {
