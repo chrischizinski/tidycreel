@@ -1,0 +1,28 @@
+name: Bug report
+description: Report a problem to help us improve
+labels: [bug]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What happened? What did you expect?
+      placeholder: Clear and concise description of the bug
+    validations:
+      required: true
+  - type: input
+    id: repro
+    attributes:
+      label: Minimal reproducible example (reprex)
+      description: Provide an R code snippet to reproduce the issue
+      placeholder: reprex::reprex() output (if possible)
+  - type: input
+    id: session
+    attributes:
+      label: sessionInfo()
+      description: Paste output of utils::sessionInfo()
+  - type: textarea
+    id: extra
+    attributes:
+      label: Additional context
+      description: Screenshots, logs, or anything else

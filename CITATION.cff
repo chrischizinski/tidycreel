@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "tidycreel: Tidy Analysis of Creel Survey Data"
+version: 0.0.0.9000
+date-released: 2025-08-19
+url: "https://github.com/yourusername/tidycreel"
+repository-code: "https://github.com/yourusername/tidycreel"
+authors:
+  - family-names: "Chizinski"
+    given-names: "Christopher"
+    orcid: "https://orcid.org/0000-0000-0000-0000"
+    email: "your.email@example.com"
+    affiliation: "Your Institution"
+abstract: >-
+  tidycreel provides a modern, tidy interface for analyzing recreational
+  fisheries creel survey data. Built on the survey package, it offers
+  design-based estimators for effort, catch per unit effort (CPUE), and
+  harvest totals with proper variance estimation. The package follows
+  tidyverse principles and emphasizes vectorized operations for performance.
+keywords:
+  - "fisheries"
+  - "creel survey"
+  - "survey sampling"
+  - "recreational fishing"
+  - "R package"
+  - "tidyverse"
+license: MIT
+license-url: "https://github.com/yourusername/tidycreel/blob/main/LICENSE"
