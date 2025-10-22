@@ -1,0 +1,18 @@
+# .yamllint
+extends: default
+
+rules:
+  # Don't require '---' at the start of each YAML doc
+  document-start: disable
+
+  # Allow longer lines (GitHub expressions often exceed 80 chars)
+  line-length:
+    max: 120
+    level: warning
+
+  # Allow truthy values like "yes"/"no" (handy for Actions)
+  truthy: disable
+
+  # Still keep these strict
+  new-line-at-end-of-file: enable
+  trailing-spaces: enable

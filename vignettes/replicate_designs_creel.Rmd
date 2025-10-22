@@ -1,0 +1,86 @@
+---
+title: "Replicate Designs for Creel Inference"
+subtitle: "Bootstrap, jackknife, and BRR with day PSUs"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Replicate Designs for Creel Inference}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```r
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+# When to use replicate designs
+
+Taylor linearization (analytic SE) is often sufficient for creel totals and ratios. Replicate designs (bootstrap, jackknife, BRR) are useful when:
+
+- Variance structure is complex (e.g., HT contributions with variable inclusion probabilities),
+- You combine multiple non-linear steps (e.g., effort × CPUE), or
+- You need small-sample robustness checks.
+
+In tidycreel, we recommend building replicate designs from a day-PSU `svydesign` created with `as_day_svydesign()`.
+
+# Build a replicate design from day PSUs
+
+```r
+library(tidycreel)
+library(survey)
+library(dplyr)
+
+# Toy calendar of sampled days
+a <- tibble::tibble(
+  date = as.Date(c("2025-08-20","2025-08-21","2025-08-22")),
+  day_type = c("weekday","weekday","weekend"),
+  month = c("Aug","Aug","Aug"),
+  target_sample = c(4,4,4),
+  actual_sample = c(2,2,1)
+)
+svy_day <- as_day_svydesign(a, day_id = "date", strata_vars = c("day_type","month"))
+
+# Convert to replicate-weight design (bootstrap with 50 reps)
+svy_rep <- survey::as.svrepdesign(svy_day, type = "bootstrap", replicates = 50, mse = TRUE)
+svy_rep
+```
+
+Notes:
+- `as.svrepdesign()` derives replicate weights from your day design (preferred over custom resampling).
+- Use `type = "JK1"` for jackknife or `type = "BRR"` if your design fits BRR assumptions.
+
+# Use replicate design in estimators
+
+```r
+# Instantaneous counts example (very small synthetic data)
+counts <- tibble::tibble(
+  date = rep(a$date, each = 2),
+  location = rep(c("A","B"), times = 3),
+  count = c(10, 12, 8, 11, 9, 14),
+  interval_minutes = 60,
+  total_day_minutes = 600
+)
+
+est_effort(
+  design = svy_rep,
+  counts = counts,
+  method = "instantaneous",
+  by = "location"
+)
+```
+
+Because `svy_rep` carries replicate weights, the estimator computes totals and SE using replicate variance automatically.
+
+# Tips and caveats
+
+- Keep replicate counts modest in examples and vignettes (e.g., 50–200) to avoid slow builds; increase for production analysis.
+- Ensure PSUs truly represent days; if you need sub-day PSUs (rare), document assumptions.
+- For Horvitz–Thompson contributions (e.g., bus-route), compute day×group totals first, then let the day replicate design handle SE.
+
+# References
+
+- survey package: `as.svrepdesign`, `svrepdesign`, variance vignette.
+- creel methodology references and `creel_chapter.md` for context.
+
+```r
+sessionInfo()
+```

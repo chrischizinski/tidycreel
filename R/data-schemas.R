@@ -12,7 +12,8 @@
 #'   \item{month}{Character, month identifier}
 #'   \item{weekend}{Logical, TRUE if weekend}
 #'   \item{holiday}{Logical, TRUE if holiday}
-#'   \item{shift_block}{Character, shift identifier (morning, afternoon, evening)}
+#'   \item{shift_block}{Character, shift identifier (morning, afternoon,
+#'     evening)}
 #'   \item{target_sample}{Integer, target sample size for stratum}
 #'   \item{actual_sample}{Integer, actual sample size achieved}
 #' }
@@ -69,6 +70,34 @@ NULL
 #' @name count_schema
 NULL
 
+#' Auxiliary Data Schema
+#'
+#' Defines the expected structure for auxiliary data (sunrise/sunset, holidays).
+#'
+#' @format A tibble with the following columns:
+#' \describe{
+#'   \item{date}{Date, date of auxiliary data}
+#'   \item{sunrise}{POSIXct, sunrise time}
+#'   \item{sunset}{POSIXct, sunset time}
+#'   \item{holiday}{Character, holiday name (if any)}
+#' }
+#'
+#' @name auxiliary_schema
+NULL
+
+#' Reference Table Schema
+#'
+#' Defines the expected structure for reference tables (species, waterbody,
+#' etc.).
+#'
+#' @format A tibble with the following columns:
+#' \describe{
+#'   \item{code}{Character, unique code}
+#'   \item{description}{Character, code description}
+#' }
+#'
+#' @name reference_schema
+NULL
 #' Validate Calendar Data
 #'
 #' Validates that calendar data conforms to the expected schema.
@@ -96,34 +125,39 @@ NULL
 #' validate_calendar(calendar)
 #' }
 validate_calendar <- function(calendar, strict = TRUE) {
-  required_cols <- c("date", "stratum_id", "day_type", "season", "month", 
-                     "weekend", "holiday", "shift_block", "target_sample", 
-                     "actual_sample")
-  
+  required_cols <- c(
+    "date", "stratum_id", "day_type", "season", "month",
+    "weekend", "holiday", "shift_block", "target_sample",
+    "actual_sample"
+  )
+
   missing_cols <- setdiff(required_cols, names(calendar))
-  
+
   if (length(missing_cols) > 0) {
-    msg <- paste("Missing required columns:", paste(missing_cols, collapse = ", "))
+    msg <- paste("Missing required columns:",
+                 paste(missing_cols, collapse = ", "))
     if (strict) {
       cli::cli_abort(msg)
     } else {
       cli::cli_warn(msg)
     }
   }
-  
+
   # Validate data types
   if (!inherits(calendar$date, "Date")) {
     cli::cli_abort("{.var date} must be a Date vector")
   }
-  
+
   if (!is.logical(calendar$weekend) || !is.logical(calendar$holiday)) {
     cli::cli_abort("{.var weekend} and {.var holiday} must be logical vectors")
   }
-  
+
   if (!all(c(calendar$target_sample, calendar$actual_sample) %% 1 == 0)) {
-    cli::cli_abort("{.var target_sample} and {.var actual_sample} must be integers")
+    cli::cli_abort(
+      "{.var target_sample} and {.var actual_sample} must be integers"
+    )
   }
-  
+
   invisible(calendar)
 }
 
@@ -159,41 +193,49 @@ validate_calendar <- function(calendar, strict = TRUE) {
 #' validate_interviews(interviews)
 #' }
 validate_interviews <- function(interviews, strict = TRUE) {
-  required_cols <- c("interview_id", "date", "time_start", "time_end", 
-                     "location", "mode", "party_size", "hours_fished",
-                     "target_species", "catch_total", "catch_kept", 
-                     "catch_released", "weight_total", "trip_complete",
-                     "effort_expansion")
-  
+  required_cols <- c(
+    "interview_id", "date", "time_start", "time_end",
+    "location", "mode", "party_size", "hours_fished",
+    "target_species", "catch_total", "catch_kept",
+    "catch_released", "weight_total", "trip_complete",
+    "effort_expansion"
+  )
+
   missing_cols <- setdiff(required_cols, names(interviews))
-  
+
   if (length(missing_cols) > 0) {
-    msg <- paste("Missing required columns:", paste(missing_cols, collapse = ", "))
+    msg <- paste("Missing required columns:",
+                 paste(missing_cols, collapse = ", "))
     if (strict) {
       cli::cli_abort(msg)
     } else {
       cli::cli_warn(msg)
     }
   }
-  
+
   # Validate data types
   if (!inherits(interviews$date, "Date")) {
     cli::cli_abort("{.var date} must be a Date vector")
   }
-  
-  if (!inherits(interviews$time_start, "POSIXct") || !inherits(interviews$time_end, "POSIXct")) {
-    cli::cli_abort("{.var time_start} and {.var time_end} must be POSIXct vectors")
+
+  if (!inherits(interviews$time_start, "POSIXct") ||
+      !inherits(interviews$time_end, "POSIXct")) {
+    cli::cli_abort(
+      "{.var time_start} and {.var time_end} must be POSIXct vectors"
+    )
   }
-  
-  if (!all(c(interviews$party_size, interviews$catch_total, 
-             interviews$catch_kept, interviews$catch_released) %% 1 == 0)) {
+
+  if (!all(c(
+    interviews$party_size, interviews$catch_total,
+    interviews$catch_kept, interviews$catch_released
+  ) %% 1 == 0)) {
     cli::cli_abort("Count variables must be integers")
   }
-  
+
   if (any(interviews$hours_fished < 0)) {
     cli::cli_abort("{.var hours_fished} must be non-negative")
   }
-  
+
   invisible(interviews)
 }
 
@@ -226,12 +268,14 @@ validate_interviews <- function(interviews, strict = TRUE) {
 #' validate_counts(counts)
 #' }
 validate_counts <- function(counts, strict = TRUE) {
-  required_cols <- c("count_id", "date", "time", "location", "mode",
-                     "anglers_count", "parties_count", "weather_code",
-                     "temperature", "wind_speed", "visibility", "count_duration")
-  
+  required_cols <- c(
+    "count_id", "date", "time", "location", "mode",
+    "anglers_count", "parties_count", "weather_code",
+    "temperature", "wind_speed", "visibility", "count_duration"
+  )
+
   missing_cols <- setdiff(required_cols, names(counts))
-  
+
   if (length(missing_cols) > 0) {
     msg <- paste("Missing required columns:", paste(missing_cols, collapse = ", "))
     if (strict) {
@@ -240,23 +284,76 @@ validate_counts <- function(counts, strict = TRUE) {
       cli::cli_warn(msg)
     }
   }
-  
-  # Validate data types
+
   if (!inherits(counts$date, "Date")) {
     cli::cli_abort("{.var date} must be a Date vector")
   }
-  
+
   if (!inherits(counts$time, "POSIXct")) {
     cli::cli_abort("{.var time} must be a POSIXct vector")
   }
-  
+
   if (!all(c(counts$anglers_count, counts$parties_count, counts$count_duration) %% 1 == 0)) {
     cli::cli_abort("Count variables must be integers")
   }
-  
+
   if (any(counts$anglers_count < 0) || any(counts$parties_count < 0)) {
     cli::cli_abort("Count variables must be non-negative")
   }
-  
+
   invisible(counts)
+}
+
+#' Validate auxiliary data schema
+#'
+#' @param auxiliary A tibble containing auxiliary data
+#' @param strict Logical, if TRUE throws error on validation failure
+#' @return Invisibly returns the validated data, or throws error if invalid
+#' @export
+validate_auxiliary <- function(auxiliary, strict = TRUE) {
+  required_cols <- c("date", "sunrise", "sunset", "holiday")
+
+  missing_cols <- setdiff(required_cols, names(auxiliary))
+
+  if (length(missing_cols) > 0) {
+    msg <- paste("Missing required columns:", paste(missing_cols, collapse = ", "))
+    if (strict) {
+      cli::cli_abort(msg)
+    } else {
+      cli::cli_warn(msg)
+    }
+  }
+
+  if (!inherits(auxiliary$date, "Date")) {
+    cli::cli_abort("{.var date} must be a Date vector")
+  }
+
+  if (!inherits(auxiliary$sunrise, "POSIXct") || !inherits(auxiliary$sunset, "POSIXct")) {
+    cli::cli_abort("{.var sunrise} and {.var sunset} must be POSIXct vectors")
+  }
+
+  invisible(auxiliary)
+}
+
+#' Validate reference table schema
+#'
+#' @param reference A tibble containing reference table data
+#' @param strict Logical, if TRUE throws error on validation failure
+#' @return Invisibly returns the validated data, or throws error if invalid
+#' @export
+validate_reference <- function(reference, strict = TRUE) {
+  required_cols <- c("code", "description")
+
+  missing_cols <- setdiff(required_cols, names(reference))
+
+  if (length(missing_cols) > 0) {
+    msg <- paste("Missing required columns:", paste(missing_cols, collapse = ", "))
+    if (strict) {
+      cli::cli_abort(msg)
+    } else {
+      cli::cli_warn(msg)
+    }
+  }
+
+  invisible(reference)
 }

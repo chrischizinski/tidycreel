@@ -18,19 +18,20 @@ knitr::opts_chunk$set(
 library(tidycreel)
 library(dplyr)
 library(ggplot2)
+library(lubridate)
 ```
 
 ## Introduction
 
-The `tidycreel` package provides a comprehensive framework for designing and analyzing access-point creel surveys. This vignette demonstrates how to use the survey design constructors to create different types of creel survey designs.
+The `tidycreel` package provides a survey-first framework for creel surveys. Designs are lean containers; estimation uses day-level survey designs (`svydesign`) built from the sampling calendar with `as_day_svydesign()`.
 
 ## Survey Design Types
 
-`tidycreel` supports three main survey design types:
+`tidycreel` supports three main data components:
 
-1. **Access-point designs**: Interviews conducted at fixed access locations
-2. **Roving designs**: Interviews conducted while moving between locations
-3. **Replicate weights**: Add variance estimation capabilities to any design
+1. Interviews (access-point or roving) and count tables (instantaneous/progressive).
+2. Sampling calendar (days, strata, target vs actual samples).
+3. Estimators that operate with a day-PSU `svydesign` for variance.
 
 ## Loading Example Data
 
@@ -38,12 +39,15 @@ The package includes example datasets that we'll use throughout this vignette:
 
 ```{r load-data}
 # Load example datasets
-interviews <- readr::read_csv(system.file("extdata/toy_interviews.csv", 
-                                        package = "tidycreel"))
-counts <- readr::read_csv(system.file("extdata/toy_counts.csv", 
-                                    package = "tidycreel"))
-calendar <- readr::read_csv(system.file("extdata/toy_calendar.csv", 
-                                      package = "tidycreel"))
+interviews <- readr::read_csv(
+  system.file("extdata/toy_interviews.csv", package = "tidycreel")
+)
+counts <- readr::read_csv(
+  system.file("extdata/toy_counts.csv", package = "tidycreel")
+)
+calendar <- readr::read_csv(
+  system.file("extdata/toy_calendar.csv", package = "tidycreel")
+)
 
 # Preview the data
 head(interviews)
@@ -51,84 +55,118 @@ head(counts)
 head(calendar)
 ```
 
-## Creating an Access-Point Survey Design
+## Creating an Access-Point Survey Container
 
-Access-point designs are used when interviews are conducted at fixed locations where anglers exit the fishery. This design assumes complete coverage of exiting anglers during interview periods.
+Access-point designs are used when interviews are conducted at fixed locations where anglers exit the fishery. This constructor validates and stores inputs for downstream estimation.
 
 ```{r access-design}
 # Create access-point survey design
 access_design <- design_access(
   interviews = interviews,
   calendar = calendar,
-  strata_vars = c("date", "shift_block", "location"),
-  weight_method = "standard"
+  strata_vars = c("date", "shift_block")
 )
 
 # Examine the design object
 class(access_design)
 names(access_design)
-summary(access_design$design_weights)
 ```
 
-## Creating a Roving Survey Design
+## Creating a Roving Survey Container
 
-Roving designs are used when interviewers move between locations to conduct interviews. This design requires additional count data to estimate fishing effort.
+Roving designs are used when interviewers move between locations to conduct interviews. This constructor stores interview/count data and the calendar for downstream estimation.
 
 ```{r roving-design}
+# Minimal counts table matching the validation schema
+counts_rov <- tibble::tibble(
+  count_id = c("C001","C002","C003"),
+  date = as.Date(c("2025-08-20","2025-08-20","2025-08-21")),
+  time = as.POSIXct(c("2025-08-20 09:00:00","2025-08-20 11:00:00","2025-08-21 10:00:00"), tz = "UTC"),
+  location = c("A","B","A"),
+  mode = c("boat","bank","boat"),
+  anglers_count = c(10L, 12L, 8L),
+  parties_count = c(5L, 6L, 4L),
+  weather_code = c("clear","clear","overcast"),
+  temperature = c(20, 22, 19),
+  wind_speed = c(5, 6, 4),
+  visibility = c("good","good","fair"),
+  count_duration = c(60L, 60L, 60L)
+)
+
 # Create roving survey design
 roving_design <- design_roving(
   interviews = interviews,
-  counts = counts,
+  counts = counts_rov,
   calendar = calendar,
-  strata_vars = c("date", "shift_block", "location"),
-  effort_method = "ratio",
-  coverage_correction = TRUE
+  strata_vars = c("date", "shift_block", "location")
 )
 
 # Examine the design object
 class(roving_design)
 names(roving_design)
-head(roving_design$effort_estimates)
 ```
 
-## Adding Replicate Weights for Variance Estimation
+## Day-PSU Designs and Replicate Variance
 
-Replicate weights allow for robust variance estimation using methods like bootstrap, jackknife, or balanced repeated replication (BRR).
+Build a day-level survey design from the calendar and (optionally) convert to a replicate-weight design for robust SEs.
 
 ```{r replicate-weights}
-# Add bootstrap replicate weights to access design
-rep_design <- design_repweights(
-  base_design = access_design,
-  replicates = 100,
-  method = "bootstrap",
-  seed = 12345
-)
+svy_day <- as_day_svydesign(calendar, day_id = "date", strata_vars = c("day_type", "month"))
 
-# Examine the replicate weights
-class(rep_design)
-dim(rep_design$replicate_weights)
-summary(rep_design$scale_factors)
+# Bootstrap replicate design with 50 reps (keep small in examples)
+svy_rep <- survey::as.svrepdesign(svy_day, type = "bootstrap", replicates = 50, mse = TRUE)
+class(svy_rep)
+summary(stats::weights(svy_day))
 ```
 
-## Design Comparison
+## Estimating Effort (Survey-First)
 
-Let's compare the different survey designs:
+Once you have a day-PSU design, estimate effort from counts using the survey-first estimators.
 
-```{r design-comparison}
-# Create summary statistics for comparison
-design_summary <- tibble(
-  Design = c("Access", "Roving", "Replicate"),
-  Type = c("Access-point", "Roving", "Access + Replicates"),
-  Observations = c(nrow(access_design$interviews), 
-                   nrow(roving_design$interviews), 
-                   nrow(rep_design$base_design$interviews)),
-  Replicates = c(1, 1, rep_design$replicates),
-  Mean_Weight = c(mean(access_design$design_weights), 
-                  mean(roving_design$design_weights), 
-                  mean(rep_design$base_design$design_weights))
+```{r estimate-effort}
+# Example instantaneous counts (toy)
+counts_inst <- tibble::tibble(
+  date = as.Date(c("2024-01-01","2024-01-01","2024-01-02","2024-01-02")),
+  location = c("A","B","A","B"),
+  count = c(10,12,8,15),
+  interval_minutes = 60,
+  total_day_minutes = 600
 )
 
-design_summary
+est_effort(
+  design = svy_day,
+  counts = counts_inst,
+  method = "instantaneous",
+  by = c("location")
+)
+```
+
+## Estimating CPUE and Catch (Survey-First)
+
+CPUE is estimated design-based from interview data. Prefer the ratio-of-means
+form for incomplete trips; use mean-of-ratios for complete trips.
+
+```{r cpue-catch}
+# Access container; CPUE/Catch accept a svydesign/svrepdesign or a creel_design.
+design <- design_access(interviews = interviews, calendar = calendar)
+
+# CPUE by species (ratio-of-means)
+suppressWarnings({
+  cpue_species <- est_cpue(design, by = c("target_species"), response = "catch_total")
+})
+cpue_species
+
+# CPUE (mean-of-ratios) — for complete trips
+suppressWarnings({
+  cpue_mor <- est_cpue(design, by = c("target_species"), response = "catch_total", mode = "mean_of_ratios")
+})
+cpue_mor
+
+# Harvest totals by species
+suppressWarnings({
+  harvest_species <- est_catch(design, by = c("target_species"), response = "catch_kept")
+})
+harvest_species
 ```
 
 ## Advanced Usage
@@ -138,16 +176,19 @@ design_summary
 You can specify custom stratification variables based on your survey design:
 
 ```{r custom-stratification}
+## Diagnostics: check structure before design creation
+str(calendar)
+str(interviews)
 # Create design with custom stratification
 custom_design <- design_access(
   interviews = interviews,
   calendar = calendar,
-  strata_vars = c("date", "location", "mode"),
-  weight_method = "post_stratify"
+  strata_vars = c("date")
 )
 
 # Check stratification
-table(custom_design$interviews$date, custom_design$interviews$location)
+str(custom_design$interviews)
+dplyr::count(custom_design$interviews, date, shift_block)
 ```
 
 ### Handling Missing Data
@@ -166,9 +207,9 @@ tryCatch({
 
 ## Next Steps
 
-Now that you have created survey designs, you can:
+Now that you have lean survey containers and a day-PSU design, you can:
 
-1. **Estimate catch rates** using the survey design objects
+1. **Estimate effort and CPUE** with survey-first estimators and `svydesign`
 2. **Calculate population totals** with appropriate variance estimates
 3. **Perform hypothesis tests** comparing different groups or time periods
 4. **Generate reports** with confidence intervals and uncertainty bounds

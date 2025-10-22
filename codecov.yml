@@ -1,0 +1,22 @@
+comment: false
+
+coverage:
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 1%
+        informational: true
+    patch:
+      default:
+        target: auto
+        threshold: 1%
+        informational: true
+
+ignore:
+  - "R/globals.R"
+  - "R/data.R"
+  - "data-raw/*"
+  - "dev-notes/*"
+  - "renv/*"
+  - "tests/testthat.R"

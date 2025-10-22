@@ -1,0 +1,24 @@
+{
+  "default": true,
+  "MD013": false,
+  "MD033": {
+    "allowed_elements": ["br", "img", "a"]
+  },
+  "MD041": false,
+  "ignores": [
+    "README.html",
+    "codemeta.json",
+    "creel_chapter.md",
+    "tidycreel_architecture_plan.md",
+    "tidycreel_designs.md",
+    "Kickoff.md",
+    "tidycreel_effort_action_plan.md",
+    "dev-notes/**",
+    "AGENTS.md",
+    "CODE_OF_CONDUCT.md",
+    "CONTRIBUTING.md",
+    ".github/**",
+    "doc/**",
+    "inst/**"
+  ]
+}

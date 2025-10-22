@@ -1,0 +1,87 @@
+---
+title: "Effort Estimation (Survey-First)"
+output:
+  rmarkdown::html_vignette:
+    df_print: paged
+vignette: >
+  %\VignetteIndexEntry{Effort Estimation (Survey-First)}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```r
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+library(dplyr)
+library(tidycreel)
+```
+
+This vignette shows a survey-first workflow for estimating angler effort using instantaneous (snapshot) and progressive (roving) counts.
+
+## 1) Build a day-PSU survey design
+
+```r
+calendar <- tibble::tibble(
+  date = as.Date(c("2025-08-20","2025-08-21")),
+  day_type = c("weekday","weekday"),
+  month = c("August","August"),
+  target_sample = c(4,4),
+  actual_sample = c(2,2)
+)
+
+svy_day <- as_day_svydesign(calendar, day_id = "date", strata_vars = c("day_type","month"))
+```
+
+## 2) Instantaneous (snapshot) effort
+
+```r
+counts_inst <- tibble::tibble(
+  date = as.Date(c("2025-08-20","2025-08-20","2025-08-21","2025-08-21")),
+  location = c("A","B","A","B"),
+  count = c(10,12,8,15),
+  interval_minutes = 60,
+  total_day_minutes = 720
+)
+
+res_inst <- est_effort.instantaneous(
+  counts_inst,
+  by = c("location"),
+  minutes_col = c("interval_minutes"),
+  total_minutes_col = c("total_day_minutes"),
+  day_id = "date",
+  svy = svy_day
+)
+res_inst
+```
+
+## 3) Progressive (roving) effort
+
+```r
+counts_prog <- tibble::tibble(
+  date = rep(as.Date(c("2025-08-20","2025-08-21")), each = 4),
+  location = rep(c("A","A","B","B"), times = 2),
+  pass_id = rep(c(1,2,1,2), times = 2),
+  count = c(10,12,8,15,9,11,7,16),
+  route_minutes = 60
+)
+
+res_prog <- est_effort.progressive(
+  counts_prog,
+  by = c("location"),
+  route_minutes_col = c("route_minutes"),
+  pass_id = c("pass_id"),
+  day_id = "date",
+  svy = svy_day
+)
+res_prog
+```
+
+## Notes
+
+- Estimates and variance come from the day-PSU design via the `survey` package.
+- For replicate variance, convert `svy_day` with `survey::as.svrepdesign()` and pass it to the estimators.
+- Prefer defining `total_minutes_col` for instantaneous counts; otherwise the estimator sums per-count minutes with a warning.
+
+## See also
+
+- `vignettes/aerial.Rmd` for aerial snapshot counts with covariates and calibration/post-stratification.
+- `?est_effort.instantaneous`, `?est_effort.progressive`, `?as_day_svydesign`.

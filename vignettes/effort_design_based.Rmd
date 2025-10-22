@@ -1,0 +1,85 @@
+
+---
+title: "Effort Estimation in Creel Surveys: Design-Based Methods"
+author: "tidycreel team"
+date: "2025-08-20"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Effort Estimation in Creel Surveys: Design-Based Methods}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+# Introduction
+
+This vignette demonstrates how to estimate fishing effort using design-based methods in creel surveys with the tidycreel package. It covers instantaneous, progressive (roving), and aerial estimators using a day-PSU survey design for variance.
+
+# Example Data
+
+```r
+library(tidycreel)
+library(tibble)
+
+# Simulated instantaneous count data
+inst_counts <- tibble(
+  date = as.Date(c("2025-08-20", "2025-08-20", "2025-08-21")),
+  time = c("12:00", "14:00", "13:00"),
+  count = c(10, 12, 8),
+  interval_minutes = c(60, 60, 60),
+  location = c("A", "A", "B")
+)
+```
+
+## Build a day-PSU design
+
+```r
+calendar <- tibble(
+  date = as.Date(c("2025-08-20","2025-08-21")),
+  day_type = c("weekday","weekday"),
+  month = c("Aug","Aug"),
+  target_sample = c(4,4),
+  actual_sample = c(2,2)
+)
+svy_day <- as_day_svydesign(calendar, day_id = "date", strata_vars = c("day_type","month"))
+```
+
+# Instantaneous Estimator (snapshot)
+
+```r
+est_effort.instantaneous(inst_counts, by = c("location"), minutes_col = "interval_minutes", day_id = "date", svy = svy_day)
+```
+
+# Progressive (Roving) Estimator
+
+```r
+prog_counts <- tibble(
+  date = rep(as.Date(c("2025-08-20","2025-08-21")), each = 2),
+  location = rep(c("A","B"), times = 2),
+  pass_id = rep(1:2, times = 2),
+  count = c(5, 8, 10, 12),
+  route_minutes = c(45, 45, 45, 45)
+)
+est_effort.progressive(prog_counts, by = c("location"), route_minutes_col = "route_minutes", pass_id = "pass_id", day_id = "date", svy = svy_day)
+```
+
+# Aerial Estimator
+
+```r
+aerial_counts <- tibble(
+  date = as.Date(rep("2025-08-20", 3)),
+  time = c("09:00", "11:00", "13:00"),
+  count = c(15, 18, 20),
+  interval_minutes = c(45, 45, 45),
+  location = c("A", "B", "B")
+)
+est_effort.aerial(aerial_counts, by = c("location"), minutes_col = "interval_minutes", day_id = "date", svy = svy_day)
+```
+
+## Diagnostics and Grouping
+
+Estimators handle missing grouping columns with warnings and compute design-based SE/CI from the day design. For single-group cases without a design, SE/CI may be NA; prefer providing `svy`.
+
+# References
+
+- Pollock, K.H., et al. (1994). Sampling and estimation in creel surveys. Fisheries, 19(6), 24-27.
+- Malvestuto, S.P. (1996). Sampling the recreational creel. In Murphy & Willis (Eds.), Fisheries Techniques (2nd ed.).

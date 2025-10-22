@@ -1,0 +1,19 @@
+url: ~
+template:
+  bootstrap: 5
+navbar:
+  structure:
+    left: [home, reference, articles]
+    right: [github]
+  components:
+    articles:
+      text: Articles
+      menu:
+        - text: Effort (Survey-First)
+          href: articles/effort_survey_first.html
+        - text: Aerial Effort
+          href: articles/aerial.html
+        - text: Survey Terms → Creel Translator
+          href: articles/survey_creel_terms.html
+        - text: Replicate Designs for Creel
+          href: articles/replicate_designs_creel.html

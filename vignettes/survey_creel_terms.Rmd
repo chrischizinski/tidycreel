@@ -1,0 +1,156 @@
+---
+title: "Survey Package to Creel: A Translator"
+subtitle: "Design-based estimation in creel terms"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Survey Package to Creel: A Translator}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```r
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+# Why this guide
+
+Many creel practitioners know the field methods and estimators but are less familiar with the survey package vocabulary. This guide “translates” survey’s core concepts into creel terms and shows how tidycreel applies them with a survey-first workflow. See also `creel_chapter.md` for background and references.
+
+# Core translation: concepts and terms
+
+- Population and Units:
+  - PSUs (Primary Sampling Units): sampled days; sometimes day×stratum if needed.
+  - SSUs: count passes or interviews within a day; typically aggregated to day totals.
+  - Strata: calendar groupings (e.g., weekday/weekend, month, season, area).
+
+- Design metadata and weights:
+  - target_sample vs actual_sample: planned vs realized number of sampled PSUs in a stratum.
+  - Day weights (w): expansion from sampled to target days; often w = target_sample / actual_sample within stratum.
+  - Inclusion probability (π): probability a unit is observed. For bus-route HT, per-observation π enters directly.
+
+- Estimators and variance:
+  - Totals (svytotal): sum of day totals across sampled days with design-based variance.
+  - Means (svymean): average over PSUs; less common for creel totals.
+  - Ratios (svyratio): CPUE as catch/effort with design-based variance.
+  - Replicate designs (svrepdesign): bootstrap/jackknife/BRR when Taylor SE is complex.
+
+# Survey-first workflow in tidycreel
+
+1) Build a day-PSU survey design from the calendar.
+2) Aggregate raw counts to day×group totals (vectorized, tidy).
+3) Use survey to get totals and SEs by group (`svytotal`/`svyby`).
+4) Prefer replicate-weight designs for complex cases.
+
+## 1) Day-PSU design
+
+```r
+library(tidycreel)
+library(dplyr)
+
+# Minimal, toy calendar: two sampled days, both intended 4 samples/stratum
+calendar <- tibble::tibble(
+  date = as.Date(c("2025-08-20", "2025-08-21")),
+  day_type = c("weekday", "weekday"),
+  month = c("Aug", "Aug"),
+  target_sample = c(4, 4),
+  actual_sample = c(2, 2)
+)
+
+svy_day <- as_day_svydesign(calendar, day_id = "date", strata_vars = c("day_type", "month"))
+svy_day
+```
+
+What this means in creel terms: each sampled day represents `target_sample / actual_sample` similar days within its stratum. survey carries that weight into variance estimation.
+
+## 2) Instantaneous effort from counts
+
+```r
+# Toy snapshot counts for two locations over two days (minutes per snapshot)
+counts_inst <- tibble::tibble(
+  date = rep(calendar$date, each = 2),
+  location = rep(c("A", "B"), times = 2),
+  count = c(10, 12, 9, 15),
+  interval_minutes = 60,
+  total_day_minutes = 600  # e.g., 10-hour day window
+)
+
+est_effort(
+  design = svy_day,
+  counts = counts_inst,
+  method = "instantaneous",
+  by = "location"
+)
+```
+
+Interpretation: per day×location, effort_day = mean(count) × total_day_minutes / 60; totals and SEs come from the day design.
+
+## 3) Progressive (roving) effort
+
+```r
+# Toy progressive (roving) pass counts with per-pass route minutes
+counts_prog <- tibble::tibble(
+  date = rep(calendar$date, each = 3),
+  location = rep(c("A", "A", "B"), times = 2),
+  pass_id = rep(1:3, times = 2),
+  count = c(4, 6, 8, 5, 7, 9),
+  route_minutes = c(45, 45, 45, 45, 45, 45)
+)
+
+est_effort(
+  design = svy_day,
+  counts = counts_prog,
+  method = "progressive",
+  by = "location"
+)
+```
+
+Interpretation: per day×location, sum(count × route_minutes)/60 across passes, then design-based totals.
+
+## 4) Aerial effort and visibility
+
+```r
+# Aerial snapshots with a simple visibility factor (0-1)
+counts_air <- tibble::tibble(
+  date = rep(calendar$date, each = 2),
+  location = rep(c("A", "B"), times = 2),
+  count = c(10, 8, 12, 15),
+  interval_minutes = 60,
+  total_day_minutes = 600,
+  visibility = c(0.8, 0.9, 0.7, 1.0)
+)
+
+est_effort.aerial(
+  counts = counts_air,
+  by = "location",
+  minutes_col = "interval_minutes",
+  total_minutes_col = "total_day_minutes",
+  visibility_col = "visibility",
+  svy = svy_day
+)
+```
+
+Interpretation: adjust counts by visibility, compute day totals, then use the day design for totals/SEs.
+
+# CPUE and Harvest (in brief)
+
+- CPUE: a ratio estimator (`svyratio`) of catch to effort. In creel terms, this means combining interview-derived catch with associated effort, respecting the day-PSU design. A survey-first `estimate_cpue()` aligned with tidy outputs is planned.
+- Harvest/Catch totals: use `svytotal` on interview-level kept/total catch expanded by day weights, or a combined estimator that multiplies effort and CPUE when appropriate (delta/replicate methods).
+
+# Jargon quick map
+
+- PSU (Primary Sampling Unit): sampled day (the primary “draw”).
+- Strata: calendar groups (weekday/weekend, month, season, region).
+- Weight: expansion factor from sampled days to target days in a stratum.
+- Inclusion probability (π): chance an observation appears (e.g., bus-route pass); enters HT contributions.
+- HT (Horvitz–Thompson) contribution: observed contribution divided by π.
+- Taylor SE: analytic variance from survey; Replicate SE: via bootstrap/jackknife/BRR with `svrepdesign`.
+
+# References and further reading
+
+- tidycreel design/estimation vignettes and function docs.
+- survey package documentation for `svydesign`, `svytotal`, `svyratio`, `svyby`, `svrepdesign`.
+- creel_chapter.md and creel_foundations.md in this repo for statistical background.
+
+```r
+sessionInfo()
+```
