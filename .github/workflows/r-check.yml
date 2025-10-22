@@ -9,7 +9,7 @@ on:
 jobs:
   r-cmd-check:
     runs-on: ${{ matrix.config.os }}
-    timeout-minutes: 45
+    timeout-minutes: 30
     concurrency:
       group: r-check-${{ github.ref }}
       cancel-in-progress: true
@@ -17,11 +17,10 @@ jobs:
       fail-fast: false
       matrix:
         config:
+          # Simplified for GitHub-only distribution (not CRAN)
+          # Test on main platforms with R release only
           - {os: macos-latest,   r: 'release'}
-          - {os: windows-latest, r: 'release'}
-          - {os: ubuntu-latest,  r: 'devel',   http-user-agent: 'release'}
           - {os: ubuntu-latest,  r: 'release'}
-          - {os: ubuntu-latest,  r: 'oldrel-1'}
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
