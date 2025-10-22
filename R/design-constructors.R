@@ -395,10 +395,10 @@ design_roving <- function(interviews, counts, calendar, locations = NULL,
 #' @examples
 #' \dontrun{
 #' # Create base design
-#' interviews <- readr::read_csv(system.file("extdata/toy_interviews.csv",
+#' interviews <- utils::read.csv(system.file("extdata", "toy_interviews.csv",
 #'   package = "tidycreel"
 #' ))
-#' calendar <- readr::read_csv(system.file("extdata/toy_calendar.csv",
+#' calendar <- utils::read.csv(system.file("extdata", "toy_calendar.csv",
 #'   package = "tidycreel"
 #' ))
 #'
@@ -477,12 +477,18 @@ design_repweights <- function(base_design, method = c("bootstrap", "jackknife", 
 #' - Raises an error if no embedded survey design is found.
 #'
 #' @examples
+#' \dontrun{
 #' access_design <- design_access(
-#'   interviews = read.csv("sample_data/toy_interviews.csv"),
-#'   calendar = read.csv("sample_data/toy_calendar.csv")
+#'   interviews = utils::read.csv(system.file("extdata", "toy_interviews.csv",
+#'     package = "tidycreel"
+#'   )),
+#'   calendar = utils::read.csv(system.file("extdata", "toy_calendar.csv",
+#'     package = "tidycreel"
+#'   ))
 #' )
 #' svy <- as_survey_design(access_design)
 #' summary(svy)
+#' }
 #'
 #' @export
 as_survey_design <- function(design) {

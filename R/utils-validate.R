@@ -65,7 +65,7 @@ tc_group_warn <- function(by, df_names) {
   missing <- setdiff(by, df_names)
   if (length(missing) > 0) {
     msg <- paste0("Grouping columns not found and will be ignored: ", paste(missing, collapse = ", "))
-    cli::cli_warn(c("!" = msg))
+    warning(msg, call. = FALSE)
     by <- intersect(by, df_names)
   }
   by

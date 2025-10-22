@@ -1,0 +1,24 @@
+"flight_id","date","month","season","day_type","time_of_day","flight_time","flight_minutes","altitude_feet","speed_mph","cloud_cover","glare","wind_mph","observer","observer_experience","visibility_correction","calibration_factor","boats_observed","total_anglers_observed"
+"F20240602_1",2024-06-02,"Jun","summer","weekend","morning",2024-06-02 09:05:34.549886,25,304,94,"partly_cloudy","moderate",16,"Observer_A","veteran",0.7125,1.09529615374268,33,50
+"F20240602_2",2024-06-02,"Jun","summer","weekend","afternoon",2024-06-02 14:32:28.082578,22.4,423,87,"clear","high",14,"Observer_A","veteran",0.7225,1.20707549641523,23,52
+"F20240604_1",2024-06-04,"Jun","summer","weekday","morning",2024-06-04 09:19:51.2056,30.5,382,98,"overcast","none",12,"Observer_C","novice",0.595,1.28229067072206,14,41
+"F20240606_1",2024-06-06,"Jun","summer","weekday","morning",2024-06-06 09:00:58.072408,33.1,469,95,"overcast","none",8,"Observer_B","experienced",0.665,1.14375462131773,12,27
+"F20240606_2",2024-06-06,"Jun","summer","weekday","afternoon",2024-06-06 15:25:49.791439,34.4,331,96,"clear","high",10,"Observer_C","novice",0.614125,1.33644611915678,12,21
+"F20240611_1",2024-06-11,"Jun","summer","weekday","morning",2024-06-11 08:53:05.713098,27.1,463,97,"overcast","none",17,"Observer_A","veteran",0.7,1.20149014709804,19,37
+"F20240618_1",2024-06-18,"Jun","summer","weekday","morning",2024-06-18 08:43:45.23759,31.9,313,97,"overcast","none",10,"Observer_B","experienced",0.665,1.001760412834,10,22
+"F20240620_1",2024-06-20,"Jun","summer","weekday","morning",2024-06-20 09:00:29.081023,27.7,386,83,"clear","high",7,"Observer_C","novice",0.614125,1.21196566039579,18,35
+"F20240622_1",2024-06-22,"Jun","summer","weekend","morning",2024-06-22 08:41:58.205396,30.7,422,92,"clear","high",13,"Observer_A","veteran",0.7225,1.16968445376193,27,56
+"F20240622_2",2024-06-22,"Jun","summer","weekend","afternoon",2024-06-22 15:27:54.26835,32.9,370,81,"partly_cloudy","moderate",6,"Observer_A","veteran",0.7125,1.07812829578436,18,43
+"F20240623_1",2024-06-23,"Jun","summer","weekend","morning",2024-06-23 08:41:50.494115,32.3,478,99,"clear","high",8,"Observer_C","novice",0.614125,1.34902341817423,17,33
+"F20240625_1",2024-06-25,"Jun","summer","weekday","morning",2024-06-25 08:55:47.53702,33.2,443,89,"clear","high",7,"Observer_B","experienced",0.686375,1.24678273993887,20,36
+"F20240627_1",2024-06-27,"Jun","summer","weekday","morning",2024-06-27 09:27:00.006503,21,343,85,"partly_cloudy","moderate",7,"Observer_B","experienced",0.676875,1.22984826116851,17,37
+"F20240702_1",2024-07-02,"Jul","summer","weekday","morning",2024-07-02 09:29:06.96664,32,325,89,"partly_cloudy","moderate",2,"Observer_A","veteran",0.7125,1.17734331298487,13,20
+"F20240704_1",2024-07-04,"Jul","summer","weekday","morning",2024-07-04 09:17:49.64703,20.2,434,84,"clear","high",8,"Observer_A","veteran",0.7225,1.10612086847124,23,40
+"F20240709_1",2024-07-09,"Jul","summer","weekday","morning",2024-07-09 09:14:48.644575,20.2,455,93,"overcast","none",0,"Observer_A","veteran",0.7,1.10196169191844,20,39
+"F20240709_2",2024-07-09,"Jul","summer","weekday","afternoon",2024-07-09 14:48:53.385963,31.1,391,84,"clear","high",5,"Observer_A","veteran",0.7225,1.16597520739876,13,14
+"F20240713_1",2024-07-13,"Jul","summer","weekend","morning",2024-07-13 09:02:19.893843,23.9,362,93,"overcast","none",8,"Observer_B","experienced",0.665,1.07237093458946,34,66
+"F20240716_1",2024-07-16,"Jul","summer","weekday","morning",2024-07-16 08:47:12.379818,33.7,422,96,"clear","high",18,"Observer_B","experienced",0.686375,1.36949649681846,13,14
+"F20240716_2",2024-07-16,"Jul","summer","weekday","afternoon",2024-07-16 14:45:21.456691,30.6,485,96,"clear","high",18,"Observer_B","experienced",0.686375,1.11646766697503,13,21
+"F20240718_1",2024-07-18,"Jul","summer","weekday","morning",2024-07-18 08:45:49.970745,34.4,479,92,"clear","high",14,"Observer_A","veteran",0.7225,1.06959113686769,19,38
+"F20240721_1",2024-07-21,"Jul","summer","weekend","morning",2024-07-21 08:36:04.523449,33.6,463,95,"partly_cloudy","moderate",6,"Observer_B","experienced",0.676875,1.15076340695036,30,54
+"F20240725_1",2024-07-25,"Jul","summer","weekday","morning",2024-07-25 08:35:27.982586,22.7,414,87,"overcast","none",1,"Observer_C","novice",0.595,1.63464197416224,19,38
