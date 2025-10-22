@@ -25,12 +25,15 @@ harvest.
 
 ## Installation
 
-You can install the development version of tidycreel from
-[GitHub](https://github.com/) with:
+**tidycreel is distributed via GitHub only** (not submitted to CRAN). Install the latest version with:
 
 ``` r
 # install.packages("pak")
 pak::pak("chrischizinski/tidycreel")
+
+# Or using devtools/remotes
+# install.packages("devtools")
+devtools::install_github("chrischizinski/tidycreel")
 ```
 
 ## Example

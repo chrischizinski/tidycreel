@@ -7,7 +7,6 @@
 .Ruserdata
 .lintr_cache/
 dev-notes/
-AGENTS.md
 .Rapp.history
 .Rapp.session
 .Rapp.options
@@ -325,6 +324,21 @@ desktop.ini
 .claude/
 .roo/
 .kilocode/
+.kiro/
+.cursor/
+.aider/
+
+# AI and architectural documentation
+AGENTS.md
+Kickoff.md
+creel_foundations.md
+creel_chapter.md
+creel_effort_estimation_methods.md
+tidycreel_architecture_plan.md
+tidycreel_effort_action_plan.md
+tidycreel_designs.md
+todo.md
+done.md
 
 # Build and documentation
 docs/
