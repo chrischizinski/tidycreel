@@ -37,6 +37,12 @@ jobs:
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
 
+      - name: Install system dependencies for gdtools
+        if: runner.os == 'macOS'
+        run: |
+          brew install pkg-config cairo pango libpng jpeg giflib fontconfig gettext
+          brew link gettext --force
+
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: any::rcmdcheck
