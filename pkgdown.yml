@@ -1,0 +1,16 @@
+pandoc: 3.1.11
+pkgdown: 2.1.3
+pkgdown_sha: ~
+articles:
+  aerial: aerial.html
+  cpue_catch: cpue_catch.html
+  effort_aerial: effort_aerial.html
+  effort_design_based: effort_design_based.html
+  effort_examples: effort_examples.html
+  effort_survey_first: effort_survey_first.html
+  getting-started: getting-started.html
+  ratio-estimators-guide_full_with_hybrid: ratio-estimators-guide_full_with_hybrid.html
+  ratio-estimators-guide: ratio-estimators-guide.html
+  replicate_designs_creel: replicate_designs_creel.html
+  survey_creel_terms: survey_creel_terms.html
+last_built: 2025-10-23T19:22Z
