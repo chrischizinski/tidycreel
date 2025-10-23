@@ -64,8 +64,11 @@ a day-PSU survey design to compute totals/variance via the \code{survey} package
 Replicate-weight designs are supported by passing a \code{svrepdesign}.
 }
 \examples{
-# Estimate effort for bus-route design
-est_effort(busroute_design_obj, counts = toy_counts, by = c("date", "shift_block", "location"))
+\dontrun{
+# Example: Create bus-route design and estimate effort
+# design <- design_busroute(counts, schedule, calendar)
+# est_effort(design, by = c("date", "location"))
+}
 
 }
 \references{

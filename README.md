@@ -5,16 +5,20 @@
 
 <p align="center">
 
-<img src="man/figures/hex.png" alt="tidycreel hex sticker" width="250"/>
+<img src="man/figures/tidycreel-hex.svg" alt="tidycreel hex sticker" width="250"/>
 </p>
 
 <!-- badges: start -->
 
-[![Lifecycle:
-experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
-[![R CMD
-Check](https://github.com/chrischizinski/tidycreel/actions/workflows/r-check.yml/badge.svg)](https://github.com/chrischizinski/tidycreel/actions/workflows/r-check.yml)
-[![lintr](https://github.com/chrischizinski/tidycreel/actions/workflows/lintr.yaml/badge.svg)](https://github.com/chrischizinski/tidycreel/actions/workflows/lintr.yaml)
+\[\![Lifecycle: experimental\]
+(<https://img.shields.io/badge/lifecycle-experimental-orange.svg>)\]
+(<https://lifecycle.r-lib.org/articles/stages.html#experimental>) \[\![R
+CMD Check\]
+(<https://github.com/chrischizinski/tidycreel/actions/workflows/r-check.yml/badge.svg>)\]
+(<https://github.com/chrischizinski/tidycreel/actions/workflows/r-check.yml>)
+\[\![lintr\]
+(<https://github.com/chrischizinski/tidycreel/actions/workflows/lintr.yaml/badge.svg>)\]
+(<https://github.com/chrischizinski/tidycreel/actions/workflows/lintr.yaml>)
 <!-- badges: end -->
 
 The goal of tidycreel is to provide a survey-first, tidy interface for
@@ -25,7 +29,8 @@ harvest.
 
 ## Installation
 
-**tidycreel is distributed via GitHub only** (not submitted to CRAN). Install the latest version with:
+**tidycreel is distributed via GitHub only** (not submitted to CRAN).
+Install the latest version with:
 
 ``` r
 # install.packages("pak")
@@ -38,36 +43,37 @@ devtools::install_github("chrischizinski/tidycreel")
 
 ## Example
 
-This is a basic example which shows you how to solve a common problem:
+Survey-first estimators using bundled toy data:
 
 ``` r
 library(tidycreel)
-## basic example code
+
+# Load example data
+interviews <- readr::read_csv(
+  system.file("extdata/toy_interviews.csv", package = "tidycreel")
+)
+counts <- readr::read_csv(
+  system.file("extdata/toy_counts.csv", package = "tidycreel")
+)
+calendar <- readr::read_csv(
+  system.file("extdata/toy_calendar.csv", package = "tidycreel")
+)
+
+# Create day-PSU design from calendar
+svy_day <- as_day_svydesign(
+  calendar,
+  day_id = "date",
+  strata_vars = c("day_type", "month")
+)
+
+# Estimate effort from instantaneous counts
+est_effort(svy_day, counts, method = "instantaneous", by = c("location"))
+
+# Estimate CPUE and catch from interview data
+svy_int <- survey::svydesign(ids = ~1, weights = ~1, data = interviews)
+est_cpue(svy_int, by = c("target_species"), response = "catch_total")
+est_catch(svy_int, by = c("target_species"), response = "catch_kept")
 ```
-
-What is special about using `README.Rmd` instead of just `README.md`?
-You can include R chunks like so:
-
-``` r
-summary(cars)
-#>      speed           dist
-#>  Min.   : 4.0   Min.   :  2.00
-#>  1st Qu.:12.0   1st Qu.: 26.00
-#>  Median :15.0   Median : 36.00
-#>  Mean   :15.4   Mean   : 42.98
-#>  3rd Qu.:19.0   3rd Qu.: 56.00
-#>  Max.   :25.0   Max.   :120.00
-```
-
-You’ll still need to render `README.Rmd` regularly, to keep `README.md`
-up-to-date. `devtools::build_readme()` is handy for this.
-
-You can also embed plots, for example:
-
-<img src="man/figures/README-pressure-1.png" width="100%" />
-
-In that case, don’t forget to commit and push the resulting figure
-files, so they display on GitHub and CRAN.
 
 ## Effort Overview (Survey-First)
 
@@ -87,3 +93,17 @@ vignette("aerial", package = "tidycreel")
 
 Tip: For replicate variance, convert your day design with
 `survey::as.svrepdesign()` and pass it to the estimators.
+
+## Guides and Vignettes
+
+- Survey terms in creel context: a translator
+
+``` r
+vignette("survey_creel_terms", package = "tidycreel")
+```
+
+- Replicate designs (bootstrap/jackknife/BRR) for creel inference
+
+``` r
+vignette("replicate_designs_creel", package = "tidycreel")
+```

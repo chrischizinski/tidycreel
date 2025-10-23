@@ -121,7 +121,7 @@ NULL
 #'
 #' @return A list with class `c("access_design","creel_design","list")` containing
 #'   `design_type`, `interviews`, `calendar`, `locations`, `strata_vars`, and `metadata`.
-#' @noRd
+#' @export
 design_access <- function(interviews, calendar, locations = NULL,
                           strata_vars = c("date", "shift_block", "location"),
                           weight_method = c("equal", "standard")) {
@@ -306,7 +306,7 @@ calculate_scale_factors <- function(method = c("bootstrap", "jackknife", "brr"),
 #'
 #' @return A list with class `c("roving_design","creel_design","list")` containing
 #'   `design_type`, `interviews`, `counts`, `calendar`, `locations`, `strata_vars`, and `metadata`.
-#' @noRd
+#' @export
 design_roving <- function(interviews, counts, calendar, locations = NULL,
                           strata_vars = c("date", "shift_block", "location"),
                           effort_method = c("ratio", "calibrate"),
@@ -395,10 +395,10 @@ design_roving <- function(interviews, counts, calendar, locations = NULL,
 #' @examples
 #' \dontrun{
 #' # Create base design
-#' interviews <- readr::read_csv(system.file("extdata/toy_interviews.csv",
+#' interviews <- utils::read.csv(system.file("extdata", "toy_interviews.csv",
 #'   package = "tidycreel"
 #' ))
-#' calendar <- readr::read_csv(system.file("extdata/toy_calendar.csv",
+#' calendar <- utils::read.csv(system.file("extdata", "toy_calendar.csv",
 #'   package = "tidycreel"
 #' ))
 #'
@@ -477,12 +477,18 @@ design_repweights <- function(base_design, method = c("bootstrap", "jackknife", 
 #' - Raises an error if no embedded survey design is found.
 #'
 #' @examples
+#' \dontrun{
 #' access_design <- design_access(
-#'   interviews = read.csv("sample_data/toy_interviews.csv"),
-#'   calendar = read.csv("sample_data/toy_calendar.csv")
+#'   interviews = utils::read.csv(system.file("extdata", "toy_interviews.csv",
+#'     package = "tidycreel"
+#'   )),
+#'   calendar = utils::read.csv(system.file("extdata", "toy_calendar.csv",
+#'     package = "tidycreel"
+#'   ))
 #' )
 #' svy <- as_survey_design(access_design)
 #' summary(svy)
+#' }
 #'
 #' @export
 as_survey_design <- function(design) {
@@ -511,12 +517,13 @@ as_survey_design <- function(design) {
 #' Raises an error if no embedded svrepdesign is found.
 #'
 #' @examples
-#' rep_design <- design_repweights(
-#'   base_design = access_design,
-#'   method = "bootstrap"
-#' )
-#' svyrep <- as_svrep_design(rep_design)
-#' summary(svyrep)
+#' \dontrun{
+#' # Create a replicate weights design first
+#' # (design_repweights is an internal function)
+#' access_design <- design_access(interviews, calendar)
+#' # Then extract the survey design for advanced use
+#' # svyrep <- as_svrep_design(rep_design)
+#' }
 #'
 #' @export
 as_svrep_design <- function(design) {

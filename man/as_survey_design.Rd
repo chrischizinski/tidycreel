@@ -26,11 +26,17 @@ created by tidycreel constructors. Use this for analysis with survey or srvyr fu
 }
 }
 \examples{
+\dontrun{
 access_design <- design_access(
-  interviews = read.csv("sample_data/toy_interviews.csv"),
-  calendar = read.csv("sample_data/toy_calendar.csv")
+  interviews = utils::read.csv(system.file("extdata", "toy_interviews.csv",
+    package = "tidycreel"
+  )),
+  calendar = utils::read.csv(system.file("extdata", "toy_calendar.csv",
+    package = "tidycreel"
+  ))
 )
 svy <- as_survey_design(access_design)
 summary(svy)
+}
 
 }

@@ -16,5 +16,6 @@ Data.frame with standardized time column names
 Renames columns in a data.frame to standard time column names if common variants are found.
 }
 \examples{
+df <- data.frame(timestamp = "2025-01-01 08:00", value = 1)
 standardize_time_columns(df)
 }

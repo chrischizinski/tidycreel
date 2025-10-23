@@ -55,7 +55,9 @@ parse_time_column <- function(x) {
 #' @param end POSIXct vector
 #' @return Numeric vector of interval lengths in minutes
 #' @examples
-#' interval_minutes(start, end)
+#' start_time <- as.POSIXct("2025-01-01 08:00:00")
+#' end_time <- as.POSIXct("2025-01-01 12:30:00")
+#' interval_minutes(start_time, end_time)
 #' @export
 interval_minutes <- function(start, end) {
   as.numeric(difftime(end, start, units = "mins"))
@@ -67,6 +69,7 @@ interval_minutes <- function(start, end) {
 #' @param df Data.frame
 #' @return Data.frame with standardized time column names
 #' @examples
+#' df <- data.frame(timestamp = "2025-01-01 08:00", value = 1)
 #' standardize_time_columns(df)
 #' @export
 standardize_time_columns <- function(df) {

@@ -19,5 +19,6 @@ Checks that all values in a column are within a set of allowed values.
 Returns TRUE if all are valid, otherwise returns a vector of invalid values.
 }
 \examples{
-validate_allowed_values(df$shift_block, c("AM", "PM"))
+shifts <- c("AM", "PM", "AM")
+validate_allowed_values(shifts, c("AM", "PM", "EVE"))
 }
