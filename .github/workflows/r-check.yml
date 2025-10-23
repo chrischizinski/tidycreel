@@ -14,14 +14,15 @@ jobs:
   r-cmd-check:
     runs-on: ${{ matrix.config.os }}
     timeout-minutes: 30
+    continue-on-error: ${{ matrix.config.allow-failure || false }}
     strategy:
       fail-fast: false
       matrix:
         config:
           # Simplified for GitHub-only distribution (not CRAN)
           # Test on main platforms with R release only
-          # macOS temporarily disabled due to gdtools compilation issues (libintl linking)
-          # - {os: macos-latest,   r: 'release'}
+          # macOS has known gdtools compilation issues (libintl linking) - allowed to fail
+          - {os: macos-latest,   r: 'release', allow-failure: true}
           - {os: ubuntu-latest,  r: 'release'}
 
     env:
