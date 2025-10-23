@@ -16,11 +16,13 @@
 #' and interactive plots. See vignettes for usage examples.
 #'
 #' @examples
-#' # Plot survey design structure
-#' plot_design(design_obj, by = c("date", "shift_block", "location"), type = "bar")
+#' \dontrun{
+#' # Create a design first
+#' design <- design_access(interviews, calendar)
 #'
-#' # Plot effort estimates
-#' plot_effort(effort_df, by = c("date", "location"), type = "line")
+#' # Plot survey design structure
+#' plot_design(design, by = c("date", "shift_block"), type = "bar")
+#' }
 #'
 #' @references
 #' Wickham, H. (2016). ggplot2: Elegant Graphics for Data Analysis. Springer-Verlag New York.
@@ -77,8 +79,13 @@ plot_design <- function(design,
 #' usage examples.
 #'
 #' @examples
+#' \dontrun{
+#' # First estimate effort
+#' effort_est <- est_effort(design, counts, by = c("date", "location"))
+#'
 #' # Plot effort estimates
-#' plot_effort(effort_df, by = c("date", "location"), type = "line")
+#' plot_effort(effort_est, by = c("date", "location"), type = "line")
+#' }
 #'
 #' @references
 #' Wickham, H. (2016). ggplot2: Elegant Graphics for Data Analysis. Springer-Verlag New York.
