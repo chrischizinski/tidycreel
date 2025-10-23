@@ -3,7 +3,7 @@
     <style>
       :root{
         --bg:#0F7C90;        /* teal fill inside hex */
-        --border:#2D1B46;    /* dark border & strokes */
+        --border:#2D1B46;    /* dark border and strokes */
         --cream:#F4F1E8;     /* cream for text */
         --basket:#F4A259;    /* basket base */
         --basket-shade:#D97A2B; /* basket shading stripes */
