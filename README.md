@@ -5,7 +5,7 @@
 
 <p align="center">
 
-<img src="https://raw.githubusercontent.com/chrischizinski/tidycreel/main/man/figures/tidycreel-hex.svg" alt="tidycreel hex sticker" width="250"/>
+<img src="https://raw.githubusercontent.com/chrischizinski/tidycreel/main/man/figures/tidycreel-hex.png" alt="tidycreel hex sticker" width="250"/>
 </p>
 
 <!-- badges: start -->
