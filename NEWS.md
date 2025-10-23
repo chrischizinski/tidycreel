@@ -1,4 +1,4 @@
-tidycreel 0.0.0.9000 (development)
+# tidycreel 0.0.0.9000 (development)
 
 - Survey-first refactor: Estimation relies on day-PSU designs from
   `as_day_svydesign()` and interview-level `svydesign`; legacy constructors
@@ -19,7 +19,7 @@ tidycreel 0.0.0.9000 (development)
 - Docs/DevEx: Updated README, pkgdown navbar, and AGENTS.md conventions;
   modernized CI workflows (R CMD check, lintr, pkgdown).
 
-2025-08-22
+# tidycreel 0.0.0.9000 (2025-08-22)
 - Added survey-first CPUE and Catch estimators: `est_cpue()` (ratio-of-means
   default; mean-of-ratios option) and `est_catch()` (totals via
   svytotal/svyby).
