@@ -52,5 +52,5 @@ jobs:
         with:
           upload-snapshots: true
           # Temporarily relaxed checking until issue #9 is resolved
-          error-on: error
+          error-on: "error"
           args: 'c("--no-manual", "--as-cran", "--no-examples")'
