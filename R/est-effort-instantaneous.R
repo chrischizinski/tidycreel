@@ -149,10 +149,16 @@ est_effort.instantaneous <- function(
       out <- tibble::as_tibble(est)
       names(out)[names(out) == "effort_day"] <- "estimate"
       V <- attr(est, "var")
-      out$se <- if (!is.null(V) && length(V) > 0) sqrt(diag(V)) else rep(NA_real_, nrow(out))
+      # Robust SE extraction: handle NULL, NA, or lonely PSU cases
+      if (!is.null(V) && length(V) > 0 && is.matrix(V)) {
+        se_raw <- sqrt(diag(V))
+        out$se <- ifelse(is.na(se_raw) | !is.finite(se_raw), NA_real_, se_raw)
+      } else {
+        out$se <- rep(NA_real_, nrow(out))
+      }
       z <- stats::qnorm(1 - (1 - conf_level)/2)
-      out$ci_low <- out$estimate - z * out$se
-      out$ci_high <- out$estimate + z * out$se
+      out$ci_low <- ifelse(!is.na(out$se), out$estimate - z * out$se, NA_real_)
+      out$ci_high <- ifelse(!is.na(out$se), out$estimate + z * out$se, NA_real_)
       out$n <- NA_integer_
       out$method <- "instantaneous"
       out$diagnostics <- replicate(nrow(out), list(NULL))

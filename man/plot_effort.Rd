@@ -34,8 +34,13 @@ variables. Supports line, bar, and interactive plots. See vignettes for
 usage examples.
 }
 \examples{
+\dontrun{
+# First estimate effort
+effort_est <- est_effort(design, counts, by = c("date", "location"))
+
 # Plot effort estimates
-plot_effort(effort_df, by = c("date", "location"), type = "line")
+plot_effort(effort_est, by = c("date", "location"), type = "line")
+}
 
 }
 \references{

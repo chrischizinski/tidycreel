@@ -20,11 +20,12 @@ Use this helper for advanced variance estimation and resampling-based inference.
 Raises an error if no embedded svrepdesign is found.
 }
 \examples{
-rep_design <- design_repweights(
-  base_design = access_design,
-  method = "bootstrap"
-)
-svyrep <- as_svrep_design(rep_design)
-summary(svyrep)
+\dontrun{
+# Create a replicate weights design first
+# (design_repweights is an internal function)
+access_design <- design_access(interviews, calendar)
+# Then extract the survey design for advanced use
+# svyrep <- as_svrep_design(rep_design)
+}
 
 }

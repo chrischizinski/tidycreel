@@ -20,6 +20,10 @@
 ^\.vscode$  # Exclude VSCode configuration
 ^\.claude$  # Exclude Claude configuration
 ^\.git$     # Exclude git directory
+^\.pre-commit-config\.yaml$  # Exclude pre-commit config
+^\.python-version$  # Exclude Python version file
+^\.yamllint$  # Exclude yamllint config
+^\.codacy$  # Exclude Codacy config
 
 ^doc$
 ^Meta$

@@ -18,5 +18,7 @@ List with n_dropped and dropped_rows
 Returns a summary of rows dropped due to missing or invalid data.
 }
 \examples{
-report_dropped_rows(df, df_clean)
+df_original <- data.frame(id = 1:3, value = c(10, NA, 30))
+df_cleaned <- data.frame(id = c(1, 3), value = c(10, 30))
+report_dropped_rows(df_original, df_cleaned)
 }

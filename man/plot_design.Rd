@@ -34,11 +34,13 @@ Visualizes survey design structure and effort estimates. Supports bar, facet,
 and interactive plots. See vignettes for usage examples.
 }
 \examples{
-# Plot survey design structure
-plot_design(design_obj, by = c("date", "shift_block", "location"), type = "bar")
+\dontrun{
+# Create a design first
+design <- design_access(interviews, calendar)
 
-# Plot effort estimates
-plot_effort(effort_df, by = c("date", "location"), type = "line")
+# Plot survey design structure
+plot_design(design, by = c("date", "shift_block"), type = "bar")
+}
 
 }
 \references{

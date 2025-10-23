@@ -9,7 +9,8 @@ est_cpue(
   by = NULL,
   response = c("catch_total", "catch_kept", "weight_total"),
   effort_col = "hours_fished",
-  mode = c("ratio_of_means", "mean_of_ratios"),
+  mode = c("auto", "ratio_of_means", "mean_of_ratios"),
+  min_trip_hours = 0.5,
   conf_level = 0.95
 )
 }
@@ -28,8 +29,13 @@ Determines the CPUE numerator.}
 \item{effort_col}{Interview effort column for the denominator (default
 \code{"hours_fished"}).}
 
-\item{mode}{Estimation mode: \code{"ratio_of_means"} (default; preferred for
-incomplete trips) or \code{"mean_of_ratios"} (for complete trips).}
+\item{mode}{Estimation mode: \code{"auto"} (default; automatically selects based on
+trip_complete field), \code{"ratio_of_means"} (for incomplete trips), or
+\code{"mean_of_ratios"} (for complete trips).}
+
+\item{min_trip_hours}{Minimum trip duration in hours for incomplete trips.
+Trips shorter than this are truncated to avoid unstable ratios. Default 0.5 (30 minutes).
+Only used when mode="auto" or mode="ratio_of_means" with incomplete trips.}
 
 \item{conf_level}{Confidence level for Wald CIs (default 0.95).}
 }
@@ -45,10 +51,13 @@ consistent schema across estimators.
 }
 \details{
 \itemize{
-\item Ratio-of-means: \code{svyratio(~response, ~effort_col)} optionally via
+\item \strong{Auto mode}: Examines \code{trip_complete} field to determine appropriate estimator.
+For complete trips uses mean-of-ratios; for incomplete uses ratio-of-means with
+truncation; for mixed data combines estimates using effort-weighting.
+\item \strong{Ratio-of-means}: \code{svyratio(~response, ~effort_col)} optionally via
 \verb{svyby(…, by=~group, FUN=svyratio)}. This is robust when trips are
-incomplete.
-\item Mean-of-ratios: computes trip-level \code{response/effort_col} then uses
+incomplete. Short trips are truncated when detected.
+\item \strong{Mean-of-ratios}: computes trip-level \code{response/effort_col} then uses
 \code{svymean}/\code{svyby}. Prefer for complete trips with minimal zero-inflation.
 }
 }

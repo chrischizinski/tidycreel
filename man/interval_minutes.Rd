@@ -18,5 +18,7 @@ Numeric vector of interval lengths in minutes
 Uses lubridate to compute the difference in minutes between two POSIXct vectors.
 }
 \examples{
-interval_minutes(start, end)
+start_time <- as.POSIXct("2025-01-01 08:00:00")
+end_time <- as.POSIXct("2025-01-01 12:30:00")
+interval_minutes(start_time, end_time)
 }

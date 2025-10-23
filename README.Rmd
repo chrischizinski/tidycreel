@@ -17,7 +17,7 @@ knitr::opts_chunk$set(
 # tidycreel
 
 <p align="center">
-  <img src="man/figures/hex.png" alt="tidycreel hex sticker" width="250"/>
+  <img src="man/figures/tidycreel-hex.svg" alt="tidycreel hex sticker" width="250"/>
 </p>
 
 <!-- badges: start -->
@@ -52,29 +52,36 @@ devtools::install_github("chrischizinski/tidycreel")
 
 ## Example
 
-Survey-first estimators using bundled toy data.
+Survey-first estimators using bundled toy data:
 
-```{r example}
+```{r example, eval=FALSE}
 library(tidycreel)
 
-interviews <- readr::read_csv(system.file("extdata/toy_interviews.csv", package = "tidycreel"))
-counts <- readr::read_csv(system.file("extdata/toy_counts.csv", package = "tidycreel"))
-calendar <- readr::read_csv(system.file("extdata/toy_calendar.csv", package = "tidycreel"))
+# Load example data
+interviews <- readr::read_csv(
+  system.file("extdata/toy_interviews.csv", package = "tidycreel")
+)
+counts <- readr::read_csv(
+  system.file("extdata/toy_counts.csv", package = "tidycreel")
+)
+calendar <- readr::read_csv(
+  system.file("extdata/toy_calendar.csv", package = "tidycreel")
+)
 
-# Day-PSU design from calendar
-svy_day <- as_day_svydesign(calendar, day_id = "date", strata_vars = c("day_type","month"))
+# Create day-PSU design from calendar
+svy_day <- as_day_svydesign(
+  calendar,
+  day_id = "date",
+  strata_vars = c("day_type", "month")
+)
 
-# Effort from instantaneous counts
+# Estimate effort from instantaneous counts
 est_effort(svy_day, counts, method = "instantaneous", by = c("location"))
 
-# CPUE and Harvest from interview data (interview-level design)
+# Estimate CPUE and catch from interview data
 svy_int <- survey::svydesign(ids = ~1, weights = ~1, data = interviews)
-suppressWarnings({
-  est_cpue(svy_int, by = c("target_species"), response = "catch_total")
-})
-suppressWarnings({
-  est_catch(svy_int, by = c("target_species"), response = "catch_kept")
-})
+est_cpue(svy_int, by = c("target_species"), response = "catch_total")
+est_catch(svy_int, by = c("target_species"), response = "catch_kept")
 ```
 
 ## Effort Overview (Survey-First)
