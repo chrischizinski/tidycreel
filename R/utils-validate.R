@@ -98,6 +98,7 @@ tc_diag_drop <- function(df_before, df_after, reason) {
 #' @param required Character vector of required column names
 #' @return TRUE if all present, else character vector of missing columns
 #' @examples
+#' df <- data.frame(date = "2025-01-01", count = 5)
 #' validate_required_columns(df, c("date", "count"))
 #' @export
 validate_required_columns <- function(df, required) {
@@ -114,7 +115,8 @@ validate_required_columns <- function(df, required) {
 #' @param allowed Allowed values
 #' @return TRUE if all valid, else vector of invalid values
 #' @examples
-#' validate_allowed_values(df$shift_block, c("AM", "PM"))
+#' shifts <- c("AM", "PM", "AM")
+#' validate_allowed_values(shifts, c("AM", "PM", "EVE"))
 #' @export
 validate_allowed_values <- function(x, allowed) {
   invalid <- setdiff(unique(x), allowed)
@@ -129,7 +131,9 @@ validate_allowed_values <- function(x, allowed) {
 #' @param filtered Filtered data.frame
 #' @return List with n_dropped and dropped_rows
 #' @examples
-#' report_dropped_rows(df, df_clean)
+#' df_original <- data.frame(id = 1:3, value = c(10, NA, 30))
+#' df_cleaned <- data.frame(id = c(1, 3), value = c(10, 30))
+#' report_dropped_rows(df_original, df_cleaned)
 #' @export
 report_dropped_rows <- function(original, filtered) {
   dropped <- dplyr::anti_join(original, filtered, by = intersect(names(original), names(filtered)))
