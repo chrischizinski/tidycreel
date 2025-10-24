@@ -36,6 +36,7 @@ NULL
 #'     \item{estimation_method}{Method used for estimation}
 #'   }
 #'
+#' @importFrom stats as.formula
 #' @export
 #'
 #' @examples

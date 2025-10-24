@@ -368,6 +368,10 @@ packrat.lock
 /doc/
 /Meta/
 
+# Vignette caches
+*_cache/
+*_files/
+
 
 #Ignore vscode AI rules
 .github/instructions/codacy.instructions.md

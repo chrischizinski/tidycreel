@@ -36,7 +36,7 @@
 #' - **Mean-of-ratios**: computes trip-level `response/effort_col` then uses
 #'   `svymean`/`svyby`. Prefer for complete trips with minimal zero-inflation.
 #'
-#' @importFrom stats update
+#' @importFrom stats update as.formula qnorm
 #' @seealso [survey::svyratio()], [survey::svymean()], [survey::svyby()].
 #' @export
 est_cpue <- function(design,
