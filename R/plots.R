@@ -26,6 +26,7 @@
 #'
 #' @references
 #' Wickham, H. (2016). ggplot2: Elegant Graphics for Data Analysis. Springer-Verlag New York.
+#' @importFrom stats as.formula
 #' @export
 plot_design <- function(design,
                         by = c("date", "shift_block", "location", "stratum"),

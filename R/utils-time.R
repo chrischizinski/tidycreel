@@ -20,6 +20,7 @@ tc_as_time <- function(x) {
 #' @param level Confidence level
 #' @param df Degrees of freedom (optional)
 #' @return Numeric vector: lower, upper
+#' @importFrom stats qt qnorm
 #' @export
 tc_confint <- function(mean, se, level = 0.95, df = NULL) {
   alpha <- 1 - level
