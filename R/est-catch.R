@@ -15,6 +15,7 @@
 #' @return Tibble with grouping columns, `estimate`, `se`, `ci_low`, `ci_high`,
 #'   `n`, `method`, and a `diagnostics` list-column.
 #'
+#' @importFrom stats as.formula qnorm
 #' @seealso [survey::svytotal()], [survey::svyby()].
 #' @export
 est_catch <- function(design,

@@ -16,6 +16,7 @@ knitr::opts_chunk$set(
 
 ```{r setup}
 library(tidycreel)
+library(survey)
 library(dplyr)
 library(ggplot2)
 library(lubridate)
@@ -23,7 +24,7 @@ library(lubridate)
 
 ## Introduction
 
-The `tidycreel` package provides a survey-first framework for creel surveys. Designs are lean containers; estimation uses day-level survey designs (`svydesign`) built from the sampling calendar with `as_day_svydesign()`.
+The `tidycreel` package provides a survey-first framework for creel surveys, built on the `survey` package. Estimation uses day-level survey designs (`svydesign`) created from the sampling calendar with `as_day_svydesign()`, and interview-level designs for CPUE and catch estimation.
 
 ## Survey Design Types
 
@@ -55,68 +56,52 @@ head(counts)
 head(calendar)
 ```
 
-## Creating an Access-Point Survey Container
+## Creating Survey Designs
 
-Access-point designs are used when interviews are conducted at fixed locations where anglers exit the fishery. This constructor validates and stores inputs for downstream estimation.
+The survey-first approach uses the `survey` package directly. You create a day-level survey design from your sampling calendar using `as_day_svydesign()`.
 
-```{r access-design}
-# Create access-point survey design
-access_design <- design_access(
-  interviews = interviews,
-  calendar = calendar,
-  strata_vars = c("date", "shift_block")
+```{r day-design}
+# Create day-level survey design from calendar
+svy_day <- as_day_svydesign(
+  calendar,
+  day_id = "date",
+  strata_vars = c("day_type", "month")
 )
 
-# Examine the design object
-class(access_design)
-names(access_design)
+# Examine the survey design
+class(svy_day)
+summary(stats::weights(svy_day))
 ```
 
-## Creating a Roving Survey Container
+## Interview-Level Survey Designs
 
-Roving designs are used when interviewers move between locations to conduct interviews. This constructor stores interview/count data and the calendar for downstream estimation.
+For CPUE and catch estimation, you can create interview-level survey designs directly with the `survey` package:
 
-```{r roving-design}
-# Minimal counts table matching the validation schema
-counts_rov <- tibble::tibble(
-  count_id = c("C001","C002","C003"),
-  date = as.Date(c("2025-08-20","2025-08-20","2025-08-21")),
-  time = as.POSIXct(c("2025-08-20 09:00:00","2025-08-20 11:00:00","2025-08-21 10:00:00"), tz = "UTC"),
-  location = c("A","B","A"),
-  mode = c("boat","bank","boat"),
-  anglers_count = c(10L, 12L, 8L),
-  parties_count = c(5L, 6L, 4L),
-  weather_code = c("clear","clear","overcast"),
-  temperature = c(20, 22, 19),
-  wind_speed = c(5, 6, 4),
-  visibility = c("good","good","fair"),
-  count_duration = c(60L, 60L, 60L)
+```{r interview-design}
+# Simple survey design from interviews (no stratification)
+svy_interviews <- survey::svydesign(
+  ids = ~1,
+  weights = ~1,
+  data = interviews
 )
 
-# Create roving survey design
-roving_design <- design_roving(
-  interviews = interviews,
-  counts = counts_rov,
-  calendar = calendar,
-  strata_vars = c("date", "shift_block", "location")
-)
-
-# Examine the design object
-class(roving_design)
-names(roving_design)
+# Or with stratification if needed
+# svy_interviews_strat <- survey::svydesign(
+#   ids = ~1,
+#   strata = ~location,
+#   weights = ~1,
+#   data = interviews
+# )
 ```
 
-## Day-PSU Designs and Replicate Variance
+## Replicate Variance (Optional)
 
-Build a day-level survey design from the calendar and (optionally) convert to a replicate-weight design for robust SEs.
+You can convert day-level designs to replicate-weight designs for robust standard errors:
 
 ```{r replicate-weights}
-svy_day <- as_day_svydesign(calendar, day_id = "date", strata_vars = c("day_type", "month"))
-
 # Bootstrap replicate design with 50 reps (keep small in examples)
 svy_rep <- survey::as.svrepdesign(svy_day, type = "bootstrap", replicates = 50, mse = TRUE)
 class(svy_rep)
-summary(stats::weights(svy_day))
 ```
 
 ## Estimating Effort (Survey-First)
@@ -147,24 +132,22 @@ CPUE is estimated design-based from interview data. Prefer the ratio-of-means
 form for incomplete trips; use mean-of-ratios for complete trips.
 
 ```{r cpue-catch}
-# Access container; CPUE/Catch accept a svydesign/svrepdesign or a creel_design.
-design <- design_access(interviews = interviews, calendar = calendar)
-
+# CPUE/Catch use interview-level survey designs
 # CPUE by species (ratio-of-means)
 suppressWarnings({
-  cpue_species <- est_cpue(design, by = c("target_species"), response = "catch_total")
+  cpue_species <- est_cpue(svy_interviews, by = c("target_species"), response = "catch_total")
 })
 cpue_species
 
 # CPUE (mean-of-ratios) — for complete trips
 suppressWarnings({
-  cpue_mor <- est_cpue(design, by = c("target_species"), response = "catch_total", mode = "mean_of_ratios")
+  cpue_mor <- est_cpue(svy_interviews, by = c("target_species"), response = "catch_total", mode = "mean_of_ratios")
 })
 cpue_mor
 
 # Harvest totals by species
 suppressWarnings({
-  harvest_species <- est_catch(design, by = c("target_species"), response = "catch_kept")
+  harvest_species <- est_catch(svy_interviews, by = c("target_species"), response = "catch_kept")
 })
 harvest_species
 ```
@@ -173,22 +156,23 @@ harvest_species
 
 ### Custom Stratification
 
-You can specify custom stratification variables based on your survey design:
+You can specify custom stratification variables when creating survey designs:
 
 ```{r custom-stratification}
 ## Diagnostics: check structure before design creation
 str(calendar)
 str(interviews)
-# Create design with custom stratification
-custom_design <- design_access(
-  interviews = interviews,
-  calendar = calendar,
-  strata_vars = c("date")
+
+# Create day-level design with simpler stratification
+svy_day_simple <- as_day_svydesign(
+  calendar,
+  day_id = "date",
+  strata_vars = c("day_type")  # Single stratification variable
 )
 
 # Check stratification
-str(custom_design$interviews)
-dplyr::count(custom_design$interviews, date, shift_block)
+summary(svy_day_simple)
+table(calendar$day_type)
 ```
 
 ### Handling Missing Data
@@ -198,8 +182,8 @@ The validation functions will catch missing required columns:
 ```{r validation}
 # This will produce an error due to missing columns
 tryCatch({
-  bad_interviews <- interviews[, -1]  # Remove first column
-  design_access(bad_interviews, calendar)
+  bad_calendar <- calendar[, -1]  # Remove first column
+  as_day_svydesign(bad_calendar, day_id = "date", strata_vars = c("day_type"))
 }, error = function(e) {
   message("Validation error: ", e$message)
 })
@@ -207,14 +191,18 @@ tryCatch({
 
 ## Next Steps
 
-Now that you have lean survey containers and a day-PSU design, you can:
+Now that you have survey designs from the `survey` package, you can:
 
-1. **Estimate effort and CPUE** with survey-first estimators and `svydesign`
-2. **Calculate population totals** with appropriate variance estimates
-3. **Perform hypothesis tests** comparing different groups or time periods
-4. **Generate reports** with confidence intervals and uncertainty bounds
+1. **Estimate effort** from counts using day-level designs (`est_effort()`)
+2. **Estimate CPUE and catch** from interviews using interview-level designs (`est_cpue()`, `est_catch()`)
+3. **Use replicate designs** for robust variance estimation
+4. **Perform hypothesis tests** comparing different groups or time periods
+5. **Generate reports** with confidence intervals and uncertainty bounds
 
-See the package documentation for more advanced features and estimation functions.
+See the package vignettes for more advanced features:
+- `vignette("effort-survey-first")` for detailed effort estimation
+- `vignette("aerial")` for aerial survey methods
+- `vignette("cpue-catch")` for CPUE and catch estimation (coming soon)
 
 ## References
 
