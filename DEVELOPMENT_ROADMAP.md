@@ -2,134 +2,620 @@
 ## Comprehensive Feature Planning & Gap Analysis
 
 **Last Updated:** October 24, 2025
-**Status:** Package is ~70% complete for basic creel analysis
-**Next Major Milestone:** Complete core estimation workflow with total harvest
+**Package Version:** 0.0.0.9000
+**Status:** Package is ~75% complete for basic creel analysis
+**Next Major Milestone:** Implement roving estimators and QA/QC framework
 
 ---
 
-## Executive Summary
+## Recent Accomplishments ✅
+
+### October 2025 - Critical Functions Implemented
+
+1. **`aggregate_cpue()`** - Survey-based species aggregation ✅
+   - Properly aggregates CPUE across species groups
+   - Accounts for covariance between species
+   - Essential for species group harvest estimation
+   - **383 lines of code, 10 passing tests**
+
+2. **`est_total_harvest()`** - Total harvest/catch estimation ✅
+   - Product estimator with delta method variance propagation
+   - Independent and correlated variance estimation
+   - Flexible stratification support
+   - **418 lines of code, 66 passing tests**
+
+3. **Survey-First Vignette Refactoring** ✅
+   - Migrated from design containers to direct survey package usage
+   - Cleaned vignette caches
+   - Updated documentation
+
+**Impact:** Users can now complete full creel analyses from effort → CPUE → species aggregation → total harvest with proper variance estimation.
+
+---
+
+## Comprehensive Gap Analysis Summary
+
+A detailed comparison with the comprehensive textbook chapter (*Analysis and Interpretation of Freshwater Fisheries Data, 2nd Edition*, Chapter 17: Creel Surveys) revealed **18 major gaps** organized by priority.
+
+**Full Report:** See `CHAPTER_GAP_ANALYSIS.md` (1,581 lines)
 
 ### Current State Assessment
 
 **Strengths (What We Have):**
-- ✅ 48 exported functions with robust survey-first architecture
+- ✅ 48+ exported functions with robust survey-first architecture
 - ✅ Core effort estimation methods (instantaneous, progressive, aerial, bus route)
 - ✅ CPUE estimation with multiple approaches (ratio-of-means, mean-of-ratios, auto mode)
-- ✅ Basic catch estimation from interview data
+- ✅ **NEW:** Species aggregation with survey-based variance
+- ✅ **NEW:** Total harvest estimation with delta method
 - ✅ Survey design integration (`as_day_svydesign`, replicate designs)
 - ✅ Comprehensive validation framework
 - ✅ Basic visualization (`plot_design`, `plot_effort`)
 - ✅ Excellent documentation structure and vignettes
 
-**Critical Gap Identified:**
-The package lacks **total harvest estimation** (effort × CPUE), which is the PRIMARY outcome of most creel surveys. Users can estimate effort and CPUE separately, but there's no function to properly combine them with variance propagation using the delta method.
-
-**Completeness Assessment:**
+**Updated Completeness Assessment:**
 - **Survey Design & Sampling:** 90% complete
-- **Effort Estimation:** 85% complete (missing tie-in estimators, party expansion)
-- **Catch/Harvest Estimation:** 60% complete (missing total harvest calculation)
+- **Effort Estimation:** 85% complete (missing roving/incomplete trip methods)
+- **Catch/Harvest Estimation:** ✅ **85% complete** (was 60%, now has total harvest + aggregation)
+- **Quality Assurance/Control:** 30% complete (basic validation only)
+- **Variance Analysis Tools:** 40% complete (missing decomposition)
+- **Sample Size Planning:** 10% complete (no formal tools)
 - **Biological Data Analysis:** 20% complete (length frequencies not implemented)
 - **Visualization & Reporting:** 40% complete (basic plots only)
-- **Data Quality Tools:** 70% complete (validation exists, diagnostics limited)
-- **Survey Planning Tools:** 10% complete (no sample size calculators)
+- **Advanced Methods:** 20% complete (aerial, cameras, hybrid designs)
+- **Angler Segmentation:** 30% complete (ad-hoc via `by` argument)
 
 ---
 
-## Top 10 Priority Functions
+## Top 15 Priority Features
+### Reorganized Based on Chapter Analysis & User Needs
 
-### PHASE 1 - Critical Missing Pieces (Immediate Priority - Next 4-6 weeks)
+---
 
-#### 1. 🔴 **`est_total_harvest()`** - HIGHEST PRIORITY
+## PHASE 1 - Critical Operational Gaps (Next 8-10 weeks)
+
+### 1. 🔴 **Roving/Incomplete Trip Estimators** - HIGHEST PRIORITY
 
 **Status:** Not implemented
-**Priority:** P0 - Blocking users from completing analyses
-**Effort:** 2-3 weeks (including tests, vignette, validation)
+**Priority:** P0 - One of the most common survey types
+**Effort:** 2-3 weeks
+**Chapter Reference:** Section 17.3.2, Box 18.5 (Pollock et al. 1997)
 
-**Description:**
-Combines effort and CPUE estimates to calculate total harvest with proper variance propagation using the delta method.
+**Why Critical:**
+- Roving surveys are extremely common (anglers interviewed while actively fishing)
+- Current `est_cpue()` has basic incomplete trip handling but missing proper Pollock et al. methods
+- Length-biased sampling correction needed
+- Different variance formulas than access-point surveys
 
-**Function Signature:**
+**Missing Components:**
+- **Pollock et al. (1997) mean-of-ratios estimator** for incomplete trips
+- **Trip length truncation** - systematic handling of very short trips (< 0.5 hrs)
+- **Length-biased sampling correction** - longer trips more likely intercepted
+- **Incomplete trip expansion** - proper handling when anglers still fishing
+- **Separate variance formulas** for roving vs access-point
+
+**Key Formulas:**
 ```r
-est_total_harvest(
-  effort_est,           # Tibble from est_effort()
-  cpue_est,             # Tibble from est_cpue()
-  by = NULL,            # Grouping variables (must match between inputs)
-  method = "product",   # "product", "ratio_est", "separate_ratio"
-  correlation = NULL,   # Optional correlation between effort and CPUE
+# Roving (incomplete) - Mean of Ratios
+rate_i = catch_i / effort_i  (for each party)
+mean_rate = Σ(rate_i) / k
+var_rate = [Σ(rate_i²) - (Σ rate_i)²/k] / [k(k-1)]
+
+# MUST truncate trips < 0.5 hours (Hoenig et al. 1997)
+```
+
+**Implementation Plan:**
+```r
+est_cpue_roving(
+  interviews,
+  response = "catch_total",
+  effort_col = "hours_fished",
+  min_trip_hours = 0.5,              # Truncation threshold
+  correction = c("none", "length_biased"),  # Length-biased sampling
+  by = NULL,
+  svy = NULL,
   conf_level = 0.95
 )
-```
 
-**Returns:**
-Tibble with schema: `[grouping_vars], estimate, se, ci_low, ci_high, n, method, diagnostics`
-
-**Statistical Methods:**
-- **Product estimator:** `H = E × C` where E = effort, C = CPUE
-- **Delta method variance:** `Var(H) ≈ E² × Var(C) + C² × Var(E) + 2 × E × C × Cov(E,C)`
-- **Correlation handling:** When effort and CPUE from same survey, estimate correlation; otherwise assume independent
-
-**Implementation Notes:**
-- Must handle grouped estimates (join on grouping variables)
-- Validate that grouping variables match between inputs
-- Propagate diagnostics from both input estimates
-- Handle NA values gracefully
-- Provide informative error messages for common mistakes
-
-**Testing Strategy:**
-- Unit tests with known variance propagation
-- Compare to manual calculations
-- Test with correlated and uncorrelated inputs
-- Test grouped and ungrouped estimates
-- Edge cases: zero effort, zero CPUE, single group
-
-**Documentation:**
-- Comprehensive vignette showing complete workflow: design → effort → CPUE → total harvest
-- Mathematical notation for variance formulas
-- When to use each method
-- Interpretation guidance
-
-**Success Metrics:**
-- Function implemented and passing all tests
-- Vignette demonstrating end-to-end workflow
-- Matches hand calculations for test cases
-- User can complete full creel analysis from start to finish
-
----
-
-#### 2. 🟡 **`expand_party_to_angler()`**
-
-**Status:** Not implemented
-**Priority:** P1 - Commonly needed, workarounds exist
-**Effort:** 1 week
-
-**Description:**
-Converts party-based counts to angler counts for accurate effort estimation. Many surveys record counts by party/boat rather than individual anglers.
-
-**Function Signature:**
-```r
-expand_party_to_angler(
-  data,
-  party_col = "parties_count",
-  angler_col = "anglers_count",
-  by = NULL,                    # Stratification variables
-  method = "mean_ratio",        # "mean_ratio", "weighted", "stratified"
-  expansion_source = NULL       # Optional interview data for ratios
+# Or enhance existing est_cpue()
+est_cpue(
+  ...,
+  interview_type = c("complete", "incomplete", "mixed"),
+  apply_truncation = TRUE,
+  length_bias_correction = FALSE
 )
 ```
 
-**Methods:**
-- **Mean ratio:** Mean anglers per party from interviews, apply to counts
-- **Weighted:** Survey-weighted mean expansion factor
-- **Stratified:** Separate ratios by strata (e.g., weekday/weekend, mode)
+**Testing:**
+- Compare to Pollock et al. examples
+- Validate truncation effects
+- Test variance formulas against access-point method
+- Integration with `est_total_harvest()`
 
-**Use Cases:**
-- Boat counts → angler counts
-- Party counts → angler counts
-- Vehicle counts → angler counts (with occupancy data)
+**Documentation:**
+- Vignette: "Roving vs Access-Point Surveys"
+- When to use each method
+- Variance implications
+- Best practices for field implementation
+
+**Success Metrics:**
+- Matches Pollock et al. (1997) examples
+- Users can analyze roving survey data correctly
+- Proper variance estimation for incomplete trips
 
 ---
 
-#### 3. 🟡 **`plot_estimates_timeseries()`**
+### 2. 🔴 **Quality Assurance/Quality Control Framework**
+
+**Status:** Basic schemas only
+**Priority:** P0 - Data quality issues extremely common
+**Effort:** 2-3 weeks
+**Chapter Reference:** Section 17.2.2, Table 17.3
+
+**Why Critical:**
+- Table 17.3 lists 10 common mistakes in creel surveys
+- Current package only validates basic data schemas
+- No systematic checks for common errors
+- Users need guidance to avoid biased estimates
+
+**Common Mistakes to Detect (Table 17.3):**
+1. **Skipping zeros** - Creel clerks only recording when anglers present
+2. **Targeting successful parties** - Interviewing at cleaning stations
+3. **Measuring biggest fish only** - Size structure bias
+4. **Counts don't cover entire area** - Spatial coverage gaps
+5. **Interviews exclude groups** - Non-response bias
+6. **Mixing measurement units** - Inches vs mm, hours vs minutes
+7. **Species misidentification** - Data quality issues
+8. **Party-level effort errors** - Accounting for multiple anglers
+9. **Lack of standardized training** - Data inconsistency
+10. **No QA-QC procedures** - Compounding errors
+
+**Implementation:**
+```r
+qa_checks(
+  counts = NULL,
+  interviews = NULL,
+  schedule = NULL,
+  checks = c(
+    "zero_counts",         # Flag if no zero counts recorded
+    "successful_bias",     # Detect interviewing only at cleaning stations
+    "measurement_units",   # Check unit consistency
+    "party_effort",        # Validate multi-angler party effort
+    "coverage",           # Verify counts covered entire waterbody
+    "outliers",           # Statistical outlier detection
+    "species_id",         # Flag uncommon species combinations
+    "missing_data",       # Completeness checks
+    "temporal_coverage",  # All strata sampled
+    "interview_location"  # Location bias assessment
+  ),
+  severity = c("error", "warning", "info")
+)
+
+# Generate comprehensive report
+qc_report(
+  data,
+  qa_results,
+  output_format = c("html", "pdf", "console"),
+  include_recommendations = TRUE
+)
+
+# Validation functions
+validate_counts(counts, design_type, check_design_requirements = TRUE)
+validate_interviews(interviews, survey_type, check_consistency = TRUE)
+validate_schedule(schedule, calendar, check_allocation = TRUE)
+```
+
+**Testing:**
+- Synthetic data with known issues
+- Real data examples (anonymized)
+- Edge cases for each check
+- Performance with large datasets
+
+**Documentation:**
+- Vignette: "Data Quality Best Practices"
+- Table of common mistakes and checks
+- How to interpret QA/QC report
+- Fixing common issues
+
+**Success Metrics:**
+- Detects all 10 common mistakes
+- Clear, actionable error messages
+- Users improve data quality before analysis
+
+---
+
+### 3. 🟡 **Variance Component Decomposition**
+
+**Status:** Uses survey package variance but no decomposition
+**Priority:** P1 - Needed for optimal survey design
+**Effort:** 2 weeks
+**Chapter Reference:** Box 18.4, Rasmussen et al. (1998)
+
+**Why Important:**
+- Understanding variance components guides sampling decisions
+- Optimal allocation between weekdays/weekends
+- Optimal number of counts per shift
+- Design effect calculations
+
+**Missing Components:**
+- Within-day variance (variance among counts within a shift)
+- Among-day variance (variance among days within a stratum)
+- Within-shift variance (multiple counts per shift)
+- Variance ratio analysis for optimal allocation
+
+**Key Formula:**
+```r
+# Strata estimator with variance decomposition
+var(Y_stratum) = ((1 - n/N)/n) * s_b² + (1/(2N)) * s_w²
+
+where:
+  s_b² = among-day variance
+  s_w² = within-day variance (from multiple counts)
+  n = days sampled
+  N = total days in stratum
+```
+
+**Implementation:**
+```r
+decompose_variance(
+  effort_est,  # Output from est_effort()
+  level = c("shift", "day", "stratum", "month"),
+  components = c("within_day", "among_day", "within_shift")
+)
+
+# Output includes:
+# - Variance components table
+# - Intraclass correlation
+# - Design effects
+# - Optimal allocation recommendations
+# - Variance ratio (for sample size planning)
+
+# Visualize variance components
+plot_variance_components(
+  variance_decomp,
+  type = c("table", "barplot", "nested")
+)
+```
+
+**Testing:**
+- Known variance decomposition examples
+- Compare to manual calculations
+- Nested ANOVA validation
+- Different survey designs
+
+**Documentation:**
+- Vignette: "Understanding Variance in Creel Surveys"
+- Optimal allocation examples
+- Sample size determination using variance ratios
+
+**Success Metrics:**
+- Correct variance decomposition
+- Users can optimize sampling design
+- Clear recommendations for allocation
+
+---
+
+### 4. 🟡 **Sample Size Determination Tools**
+
+**Status:** Not implemented
+**Priority:** P1 - Frequently needed for planning and grants
+**Effort:** 2-3 weeks
+**Chapter Reference:** Newman et al. (1997), McCormick & Meyer (2017)
+
+**Why Important:**
+- Grant proposals require sample size justification
+- Pilot studies need proper analysis
+- Budget constraints require optimization
+- Users ask "how many days should I sample?"
+
+**Missing Components:**
+- Power analysis for detecting trends
+- Precision-based sample size for target CV
+- Optimal allocation between weekdays/weekends
+- Optimal counts per shift
+- Pilot study analysis tools
+- Variance ratio methods
+
+**Implementation:**
+```r
+calc_sample_size(
+  target_cv = 0.15,              # Desired coefficient of variation
+  variance_ratio = NULL,          # s_within² / s_among² from pilot
+  pilot_data = NULL,              # Or provide pilot data directly
+  allocation = c("proportional", "optimal", "equal"),
+  strata = c("weekday", "weekend", "highuse"),
+  budget_constraint = NULL,
+  cost_per_day = NULL
+)
+
+# Power analysis for trend detection
+calc_power_creel(
+  effect_size,                    # Minimum detectable change
+  years = 5,
+  alpha = 0.05,
+  days_per_stratum,
+  variance_components
+)
+
+# Analyze pilot study
+analyze_pilot(
+  pilot_data,
+  recommend_sample_size = TRUE,
+  target_precision = 0.15,
+  stratification = c("weekday", "weekend")
+)
+
+# Optimal counts per shift
+calc_optimal_counts(
+  variance_components,
+  shift_duration = 8,
+  cost_per_count = NULL
+)
+```
+
+**Testing:**
+- Known examples from literature
+- Sensitivity to variance ratios
+- Budget constraint scenarios
+- Integration with variance decomposition
+
+**Documentation:**
+- Vignette: "Planning Your Creel Survey"
+- Sample size workflow
+- Pilot study analysis
+- Budget optimization
+
+**Success Metrics:**
+- Accurate sample size recommendations
+- Power analysis matches published examples
+- Users can justify sampling effort
+
+---
+
+### 5. 🟡 **Angler Segmentation Framework**
+
+**Status:** Ad-hoc via `by` argument
+**Priority:** P1 - Addresses heterogeneity and bias
+**Effort:** 3-4 weeks
+**Chapter Reference:** Section 17.4.2
+
+**Why Important:**
+- Anglers are heterogeneous (bank vs boat, target species, etc.)
+- Different segments have different detection probabilities
+- Non-response bias assessment
+- Proper variance estimation requires accounting for segments
+
+**Segmentation Types:**
+- **Geographic** - Resident vs non-resident, location
+- **Demographic** - Age, gender, income, education
+- **Psychographic** - Motivations, values, attitudes
+- **Behavioral** - Bank vs boat, target species, gear type
+
+**Missing Components:**
+- Formal segmentation framework
+- Detection probability adjustment
+- Non-response bias assessment by segment
+- Harvest propensity modeling
+
+**Implementation:**
+```r
+define_segments(
+  interviews,
+  segment_type = c("method", "target_species", "demographic", "behavioral"),
+  segment_vars = NULL,             # Variables defining segments
+  estimate_detection = TRUE        # Adjust for differential detection
+)
+
+# Enhanced estimation with segmentation
+est_effort_segmented(
+  counts,
+  interviews,
+  segments,
+  adjust_detection = TRUE,
+  test_differences = TRUE,         # Test if segments differ significantly
+  by = NULL,
+  svy = NULL
+)
+
+# Assess non-response bias by segment
+assess_nonresponse_bias(
+  interviews,
+  counts,
+  segments,
+  methods = c("comparison", "sensitivity", "bounds")
+)
+
+# Automatic bank vs boat separation
+separate_bank_boat(
+  counts,
+  interviews,
+  method_col = "fishing_method",
+  estimate_separately = TRUE
+)
+```
+
+**Testing:**
+- Known segmentation examples
+- Detection probability scenarios
+- Non-response bias assessment
+- Integration with existing estimators
+
+**Documentation:**
+- Vignette: "Angler Segmentation and Heterogeneity"
+- When segmentation is needed
+- Detection probability concepts
+- Non-response bias implications
+
+**Success Metrics:**
+- Proper segment-specific estimates
+- Detection probability adjustment working
+- Non-response bias quantified
+
+---
+
+## PHASE 2 - Enhanced Functionality (6-8 weeks)
+
+### 6. 🟢 **Enhanced Bus Route Estimator**
+
+**Status:** Basic implementation exists
+**Priority:** P2 - Enhancement to existing feature
+**Effort:** 1-2 weeks
+**Current:** `/Users/cchizinski2/Dev/tidycreel/R/est-effort-busroute.R`
+
+**Enhancements Needed:**
+
+**6.1 Interview-based Expansion**
+- Current: Only time-interval method
+- Missing: Completed trip interview expansion (second method from chapter)
+
+**6.2 Sampling Probability Adjustment**
+- Current: Uses `inclusion_prob` column
+- Missing: Automatic calculation from wait times and travel times
+- Formula: `π_j = w_i / T` where w_i is wait time at site i, T is total circuit time
+
+**6.3 Non-uniform Probability Documentation**
+- Reference: Malvestuto et al. (1978)
+- Missing: Explicit handling when sites have different sampling probabilities
+
+**Implementation:**
+```r
+est_effort.busroute_design(
+  x,
+  method = c("time_interval", "completed_trips"),  # ADD choice
+
+  # For completed_trips method (NEW)
+  interview_based = FALSE,
+  trip_duration_col = "trip_duration",
+
+  # Probability calculation (NEW)
+  auto_calc_pi = TRUE,
+  wait_time_col = "wait_time",
+  total_circuit_time_col = "circuit_time"
+)
+```
+
+---
+
+### 7. 🟢 **Aerial Survey Methods**
+
+**Status:** Stub implementation only
+**Priority:** P2 - Specialized but important
+**Effort:** 3-4 weeks
+**Chapter Reference:** Sections 17.3.1.2, 17.5.3
+
+**Missing Components:**
+- Instantaneous aerial counts with expansion factors
+- Treatment of boats in transit vs active fishing
+- Inflation factors for time-of-day expansion
+- Integration with ground counts for calibration
+- Weather/visibility adjustments
+- Flight path design and coverage probability
+
+**Key Formula:**
+```r
+# Instantaneous aerial to daily effort
+Daily_Effort = Aerial_Count × Inflation_Factor
+Inflation_Factor = (Total_Day_Hours / Peak_Period_Hours) × Activity_Ratio
+```
+
+**Implementation:**
+```r
+est_effort_aerial(
+  counts,                    # Aerial count data
+  inflation_factors,         # Time-of-day expansion
+  boats_in_transit = c("include", "exclude", "adjust"),
+  calibration_data = NULL,   # Ground truth for validation
+  flight_coverage = NULL,    # Coverage probability by area
+  by = NULL,
+  svy = NULL
+)
+
+# Companion function
+calc_inflation_factors(
+  aerial_counts,
+  reference_counts,          # High-res camera or complete counts
+  time_periods = c("dawn", "morning", "afternoon", "dusk"),
+  method = c("ratio", "regression")
+)
+```
+
+---
+
+### 8. 🟢 **Remote Camera Integration**
+
+**Status:** Not implemented
+**Priority:** P2 - Emerging technology
+**Effort:** 3-4 weeks
+**Chapter Reference:** Section 17.3.1.2 (van Poorten et al. 2015)
+
+**Missing Components:**
+- Image analysis workflow
+- Field-of-view correction
+- Missing data imputation (camera malfunction, vandalism)
+- Zero-inflation handling
+- Hierarchical Bayesian models
+- Integration with aerial counts
+
+**Implementation:**
+```r
+process_camera_counts(
+  images,                    # Image metadata with timestamps
+  field_of_view = c("partial", "complete"),
+  missing_data = c("interpolate", "model", "omit"),
+  validation_counts = NULL   # Whole-system counts for calibration
+)
+
+est_effort_camera(
+  camera_counts,
+  field_of_view_fraction,    # Proportion of total area visible
+  calibration_method = c("ratio", "hierarchical_bayes"),
+  whole_system_counts = NULL,
+  by = NULL,
+  svy = NULL
+)
+```
+
+---
+
+### 9. 🟢 **Hybrid Survey Design Support**
+
+**Status:** Mentioned but not fully implemented
+**Priority:** P2 - Advanced integration
+**Effort:** 2-3 weeks
+**Chapter Reference:** Table 17.4, Section 17.3.2
+
+**Missing Components:**
+- Bus route with interviews (McGlennon & Kinloch 1997)
+- Access + Roving combined
+- Aerial + On-site integration
+- Camera + Creel + Aerial
+- Postcard surveys
+- Variance combination across multiple data sources
+
+**Implementation:**
+```r
+design_hybrid(
+  methods = c("access", "roving", "aerial", "camera", "postcard"),
+  counts_list,               # Named list of count data by method
+  interviews_list,           # Named list of interview data by method
+  calendar,
+  combination_method = c("hierarchical_bayes", "glm", "glmm"),
+  weights = "auto"
+)
+
+est_effort_hybrid(
+  design,
+  method_weights = "auto",   # Effort-based or precision-based
+  correlation_structure = NULL,
+  by = NULL,
+  svy = NULL
+)
+```
+
+---
+
+## PHASE 3 - Visualization & Reporting (4-6 weeks)
+
+### 10. 🟡 **`plot_estimates_timeseries()`**
 
 **Status:** Not implemented
 **Priority:** P1 - Essential for reporting
@@ -138,1099 +624,284 @@ expand_party_to_angler(
 **Description:**
 Professional time series visualization with confidence bands, faceting, and reference lines.
 
-**Function Signature:**
 ```r
 plot_estimates_timeseries(
-  estimates,            # Tibble from estimation functions
+  estimates,
   x = "date",
   y = "estimate",
   ci = TRUE,
-  ci_alpha = 0.2,
-  facet_by = NULL,      # e.g., "species", "location"
+  facet_by = NULL,
   color_by = NULL,
   reference_line = NULL,
-  title = NULL,
   theme = theme_tidycreel()
 )
 ```
 
-**Features:**
-- Confidence bands with customizable transparency
-- Automatic date formatting for x-axis
-- Faceting by categorical variables
-- Reference lines (e.g., historical average, management target)
-- Consistent tidycreel theme
-- Export-ready quality (print, reports, presentations)
-
-**Example Output:**
-```r
-# Time series of effort by location
-effort_est %>%
-  plot_estimates_timeseries(
-    x = "date",
-    facet_by = "location",
-    title = "Fishing Effort by Access Point"
-  )
-```
-
 ---
 
-#### 4. 🟡 **`plot_catch_composition()`**
+### 11. 🟡 **`plot_catch_composition()`**
 
 **Status:** Not implemented
-**Priority:** P1 - Common output for multi-species fisheries
+**Priority:** P1 - Common for multi-species fisheries
 **Effort:** 1 week
 
 **Description:**
-Species composition visualization with confidence intervals, supporting multiple display formats.
+Species composition visualization with confidence intervals.
 
-**Function Signature:**
 ```r
 plot_catch_composition(
   catch_data,
   by = "species",
-  type = "bar",           # "bar", "stacked", "pie", "treemap"
-  proportional = FALSE,   # Show as proportions vs absolute
+  type = "bar",              # "bar", "stacked", "pie", "treemap"
+  proportional = FALSE,
   ci = TRUE,
-  order_by = "estimate",  # "estimate", "alphabetical", "manual"
-  palette = NULL
+  order_by = "estimate"
 )
 ```
 
-**Features:**
-- Multiple visualization types
-- Error bars on bar charts
-- Proportional and absolute scales
-- Custom ordering and colors
-- Legend management
-
 ---
 
-#### 5. 🟢 **`compare_estimates()`**
+### 12. 🟢 **Diagnostic Plots**
 
 **Status:** Not implemented
-**Priority:** P2 - Useful for sensitivity analysis
-**Effort:** 1 week
-
-**Description:**
-Side-by-side comparison of different estimation methods, models, or time periods.
-
-**Function Signature:**
-```r
-compare_estimates(
-  estimate_list,        # Named list of estimate tibbles
-  metric = "estimate",
-  show_ci = TRUE,
-  format = "table",     # "table", "plot", "both"
-  test_differences = FALSE
-)
-```
-
-**Outputs:**
-- Comparison table with all estimates
-- Optional forest plot showing estimates with CIs
-- Difference calculations with significance tests
-- Relative differences (% change)
-
-**Use Cases:**
-- Compare ratio-of-means vs mean-of-ratios
-- Compare years (2024 vs 2023)
-- Sensitivity to design assumptions
-- Method validation
-
----
-
-### PHASE 2 - Survey Planning & Advanced Methods (Months 2-3)
-
-#### 6. 🟢 **`est_effort_tiein()`**
-
-**Status:** Not implemented
-**Priority:** P2 - Classic methodology, some agencies require
+**Priority:** P2 - Enhance analysis quality
 **Effort:** 2-3 weeks
 
-**Description:**
-Classic Robson & Jones (1989) tie-in estimator combining interview and count data.
+**Needed Plots:**
+- Residual plots for CPUE models
+- Variance component visualization
+- QA/QC diagnostic dashboards
+- Outlier detection plots
+- Coverage assessment maps
+- Sample size simulation plots
 
-**Function Signature:**
 ```r
-est_effort_tiein(
-  interviews,
-  counts,
-  svy_day,
-  by = c("date", "location"),
-  party_hours_col = "hours_fished",
-  count_col = "parties_count",
-  method = "traditional"  # "traditional", "stratified"
+plot_diagnostics(
+  effort_est,
+  type = c("residuals", "qq", "influence", "coverage")
 )
-```
 
-**Statistical Method:**
-1. From interviews: estimate mean party hours per unit time
-2. From counts: total parties observed
-3. Product: total effort = mean party hours × total parties
-4. Variance via delta method
-
-**References:**
-- Robson & Jones (1989) - "The Theoretical Basis of an Access Site Angler Survey Design"
-- Pollock et al. (1994) - "Angler Survey Methods and Their Applications in Fisheries Management"
-
----
-
-#### 7. 🟢 **`calc_sample_size()`**
-
-**Status:** Not implemented
-**Priority:** P2 - Essential for survey planning
-**Effort:** 2 weeks
-
-**Description:**
-Power analysis and sample size determination for creel surveys.
-
-**Function Signature:**
-```r
-calc_sample_size(
-  target_cv = 0.2,        # Target coefficient of variation
-  expected_mean = NULL,   # Expected estimate value
-  expected_sd = NULL,     # Expected standard deviation
-  power = 0.8,
-  alpha = 0.05,
-  design_effect = 1.5,    # Clustering effect
-  finite_pop = FALSE,     # Apply FPC?
-  method = "cv"           # "cv", "power", "precision"
+plot_variance_components(
+  variance_decomp,
+  type = c("nested_barplot", "table", "pie")
 )
-```
 
-**Methods:**
-- **CV-based:** Determine n for target CV
-- **Power-based:** Detect minimum effect size
-- **Precision-based:** Achieve target CI width
-
-**Outputs:**
-- Required sample size
-- Expected precision
-- Design effect adjustment
-- Budget implications (if costs provided)
-
----
-
-#### 8. 🟢 **`sample_allocation()`**
-
-**Status:** Not implemented
-**Priority:** P2 - Optimize survey design
-**Effort:** 1-2 weeks
-
-**Description:**
-Optimal allocation of sampling effort across strata.
-
-**Function Signature:**
-```r
-sample_allocation(
-  total_n,
-  strata_sizes,         # Population sizes by stratum
-  strata_variance,      # Expected variance by stratum
-  method = "neyman",    # "neyman", "proportional", "equal", "cost_optimal"
-  costs = NULL,         # Relative costs by stratum
-  min_per_stratum = 2   # Minimum sample per stratum
-)
-```
-
-**Methods:**
-- **Neyman allocation:** Minimize variance for fixed n
-- **Proportional:** Allocate proportional to stratum size
-- **Equal:** Equal samples per stratum
-- **Cost-optimal:** Minimize cost for target precision
-
-**Use Cases:**
-- Allocate interview days across weekday/weekend
-- Distribute effort across access points
-- Balance temporal coverage (months, seasons)
-
----
-
-#### 9. 🟢 **`est_length_dist()`**
-
-**Status:** Not implemented
-**Priority:** P2 - Common biological data analysis
-**Effort:** 2 weeks
-
-**Description:**
-Survey-weighted length frequency distribution with proper variance estimation.
-
-**Function Signature:**
-```r
-est_length_dist(
-  length_data,
-  svy_design,
-  by = NULL,
-  bins = NULL,            # Or specify breaks
-  min_length = NULL,
-  max_length = NULL,
-  bin_width = 10,         # mm or cm
-  proportional = FALSE
-)
-```
-
-**Features:**
-- Survey-weighted frequencies
-- Variance estimation for each bin
-- Flexible binning strategies
-- Handles multiple species
-- Integration with length-weight relationships
-
-**Outputs:**
-- Length frequency table with CIs
-- Mean length by group
-- Size structure metrics (PSD, RSD)
-
----
-
-#### 10. 🟢 **`creel_report()`**
-
-**Status:** Not implemented
-**Priority:** P2 - Automate routine reporting
-**Effort:** 3-4 weeks
-
-**Description:**
-Automated comprehensive report generation for creel surveys.
-
-**Function Signature:**
-```r
-creel_report(
-  design,
-  interviews,
-  counts,
-  calendar,
-  output_file = "creel_report.html",
-  template = "standard",  # "standard", "detailed", "summary", "custom"
-  include_sections = c("effort", "cpue", "catch", "length", "diagnostics"),
-  custom_sections = NULL,
-  parameters = list()     # Report parameters (title, dates, waterbody, etc.)
-)
-```
-
-**Report Sections:**
-- Executive summary with key findings
-- Survey design description
-- Data quality metrics
-- Effort estimates with temporal patterns
-- CPUE by species/group
-- Total harvest estimates
-- Length distributions
-- Diagnostic plots
-- Methods and references
-
-**Output Formats:**
-- HTML (interactive, embedded plots)
-- PDF (print-ready)
-- Word (editable)
-
-**Template System:**
-- Built-in templates for common report types
-- Customizable via Quarto/RMarkdown
-- Agency-specific branding options
-
----
-
-## Additional Functions by Category
-
-### Data Quality & QA/QC
-
-#### `detect_outliers()`
-**Priority:** P3
-**Effort:** 1 week
-
-Identify and flag outliers in creel data using multiple methods.
-
-```r
-detect_outliers(
-  data,
-  vars = c("catch_total", "hours_fished", "cpue"),
-  method = "iqr",         # "iqr", "mad", "dixon", "grubbs", "mahalanobis"
-  action = "flag",        # "flag", "remove", "winsorize"
-  multiplier = 3,
-  by = NULL               # Group-specific outlier detection
-)
-```
-
-**Methods:**
-- IQR rule (Q1 - k×IQR, Q3 + k×IQR)
-- MAD (median absolute deviation)
-- Dixon's Q test
-- Grubbs' test
-- Multivariate (Mahalanobis distance)
-
----
-
-#### `survey_coverage_report()`
-**Priority:** P3
-**Effort:** 1 week
-
-Assess temporal and spatial coverage of survey effort.
-
-```r
-survey_coverage_report(
-  calendar,
-  actual_days,
-  target_coverage = 0.8,
-  by = c("month", "day_type", "location"),
-  visualize = TRUE
-)
-```
-
-**Metrics:**
-- Percent of strata sampled
-- Days sampled per stratum
-- Gap analysis (unsampled periods)
-- Coverage uniformity index
-- Recommendations for additional sampling
-
----
-
-#### `qa_report()`
-**Priority:** P3
-**Effort:** 2 weeks
-
-Comprehensive data quality report.
-
-```r
-qa_report(
-  interviews,
-  counts,
-  calendar,
-  checks = "all",         # Specify which checks to run
-  output_format = "html"
-)
-```
-
-**Checks:**
-- Missing data patterns
-- Duplicate detection
-- Date/time consistency
-- Outlier flagging
-- Cross-table validation (interviews match calendar dates)
-- Species code validation
-- Effort unit consistency
-- Interview quality metrics (response rate, refusals)
-
----
-
-### Biological Extensions
-
-#### `est_mean_length()`
-**Priority:** P3
-**Effort:** 1 week
-
-Survey-weighted mean length by group.
-
-```r
-est_mean_length(
-  length_data,
-  svy_design,
-  by = c("species"),
-  length_col = "length_mm",
-  conf_level = 0.95
+plot_qa_dashboard(
+  qa_results,
+  highlight = c("errors", "warnings")
 )
 ```
 
 ---
 
-#### `create_age_length_key()`
-**Priority:** P4 (specialized)
-**Effort:** 2 weeks
+## PHASE 4 - Documentation & Refinement (Ongoing)
 
-Create and apply age-length keys for age composition estimation.
+### 13. 🔴 **Comprehensive Vignette Suite**
 
-```r
-create_age_length_key(
-  aged_sample,
-  length_bins,
-  method = "traditional"  # "traditional", "smooth"
-)
-```
+**Status:** Basic vignettes exist
+**Priority:** P0 - Critical for adoption
+**Effort:** Ongoing
 
----
+**Missing Vignettes:**
 
-#### `est_mortality_proxy()`
-**Priority:** P4 (specialized)
-**Effort:** 2 weeks
-
-Estimate fishing mortality indices from catch rates.
-
-```r
-est_mortality_proxy(
-  catch_data,
-  effort_data,
-  by = "year",
-  method = "catch_rate"   # "catch_rate", "exploitation_rate"
-)
-```
+1. **"Choosing the Right Design"** - Decision tree for method selection
+2. **"Roving vs Access-Point Surveys"** - When to use each, variance implications
+3. **"Sample Size Planning"** - Power analysis workflow
+4. **"Data Quality Best Practices"** - Avoiding common mistakes (Table 17.3)
+5. **"Angler Segmentation"** - How and when to stratify
+6. **"Hybrid Designs"** - Combining multiple data sources
+7. **"Understanding Variance"** - Variance decomposition and optimization
+8. **"Species Aggregation"** - Using aggregate_cpue() correctly
+9. **"Complete Workflow"** - End-to-end example with real data
 
 ---
 
-### Advanced Diagnostics
+### 14. 🟡 **Enhanced Data Validation**
 
-#### `model_diagnostics()`
-**Priority:** P3
-**Effort:** 2 weeks
+**Status:** Basic validation exists
+**Priority:** P1 - Part of QA/QC framework
+**Effort:** Integrated with Item 2
 
-Residual analysis and goodness-of-fit tests.
-
-```r
-model_diagnostics(
-  estimates,
-  data,
-  tests = c("shapiro", "ks", "levene"),
-  plot = TRUE
-)
-```
-
-**Diagnostics:**
-- Residual plots
-- Q-Q plots
-- Leverage and influence
-- Goodness-of-fit tests
-- Variance homogeneity
+Expand current validation in `R/data-schemas.R` and `R/validation.R`
 
 ---
 
-#### `bootstrap_estimates()`
-**Priority:** P3
-**Effort:** 2 weeks
+### 15. 🟢 **Additional Helper Functions**
 
-Bootstrap resampling for robust confidence intervals.
+**Status:** Various
+**Priority:** P2 - Nice to have
+**Effort:** 1-2 weeks total
 
-```r
-bootstrap_estimates(
-  estimator_function,
-  data,
-  svy_design,
-  n_boot = 1000,
-  method = "stratified",  # "stratified", "cluster", "simple"
-  parallel = TRUE
-)
-```
+**Functions Needed:**
+- `expand_party_to_angler()` - Convert party counts to angler counts
+- `calc_angler_hours()` - Standardized effort calculation
+- `standardize_species_codes()` - Species name harmonization
+- `convert_units()` - Length/weight unit conversions
+- `impute_missing_effort()` - Handle incomplete trip data
+- `flag_outliers()` - Statistical outlier detection
+- `merge_interview_biological()` - Link interview and bio data
 
 ---
 
-#### `sensitivity_analysis()`
-**Priority:** P3
-**Effort:** 2 weeks
-
-Systematically vary assumptions and assess impact.
-
-```r
-sensitivity_analysis(
-  estimator_function,
-  data,
-  parameters,
-  ranges,               # Parameter ranges to test
-  metrics = c("estimate", "cv", "ci_width")
-)
-```
-
----
-
-### Multi-year Analysis
-
-#### `combine_years()`
-**Priority:** P3
-**Effort:** 2 weeks
-
-Meta-analysis combining multiple years of data.
-
-```r
-combine_years(
-  year_list,            # List of annual estimates
-  method = "meta",      # "meta", "pooled", "average"
-  weights = NULL,       # Optional weights (e.g., by precision)
-  test_homogeneity = TRUE
-)
-```
-
----
-
-#### `trend_analysis()`
-**Priority:** P3
-**Effort:** 2-3 weeks
-
-Temporal trend estimation with survey design.
-
-```r
-trend_analysis(
-  multi_year_data,
-  response,
-  time_var = "year",
-  by = NULL,
-  method = "regression", # "regression", "mann_kendall", "loess"
-  svy_design = NULL
-)
-```
-
-**Methods:**
-- Survey-weighted regression
-- Mann-Kendall trend test
-- Locally weighted smoothing (LOESS)
-- Change point detection
-
----
-
-#### `detect_changepoints()`
-**Priority:** P4 (specialized)
-**Effort:** 2 weeks
-
-Identify regime shifts in time series data.
-
-```r
-detect_changepoints(
-  time_series_data,
-  response,
-  method = "pettitt",    # "pettitt", "bcp", "segmented"
-  confidence = 0.95
-)
-```
-
----
-
-## Enhanced Visualization Suite
-
-### Priority Plots (Beyond Top 10)
-
-#### `plot_effort_distribution()`
-**Priority:** P2
-**Effort:** 1 week
-
-Visualize effort distribution by time/space.
-
-```r
-plot_effort_distribution(
-  effort_data,
-  type = "histogram",    # "histogram", "density", "violin"
-  by = NULL,
-  overlay_normal = FALSE
-)
-```
-
----
-
-#### `plot_model_comparison()`
-**Priority:** P2
-**Effort:** 1 week
-
-Visual comparison of different models/methods.
-
-```r
-plot_model_comparison(
-  model_results,
-  type = "forest",       # "forest", "bar", "table"
-  metric = "estimate",
-  show_aic = TRUE
-)
-```
-
-**Outputs:**
-- Forest plot with estimates and CIs
-- AIC comparison table
-- Relative effect sizes
-
----
-
-#### `plot_length_frequency()`
-**Priority:** P2
-**Effort:** 1 week
-
-Length frequency histograms with confidence intervals.
-
-```r
-plot_length_frequency(
-  length_data,
-  by = NULL,
-  bins = 20,
-  ci = TRUE,
-  reference_lengths = NULL  # e.g., size limits
-)
-```
-
----
-
-#### `plot_catch_map()` (Spatial)
-**Priority:** P4 (if spatial scope expands)
-**Effort:** 2 weeks
-
-Spatial distribution of catch/effort.
-
-```r
-plot_catch_map(
-  catch_data,
-  locations,            # Spatial coordinates
-  metric = "cpue",
-  map_type = "point"    # "point", "heatmap", "polygon"
-)
-```
-
----
-
-## Implementation Strategy
-
-### Development Phases
-
-#### **SPRINT 1: Critical Gap Closure (Weeks 1-4)**
-
-**Goal:** Enable users to complete full creel analysis workflow
-
-**Deliverables:**
-1. `est_total_harvest()` implemented with tests
-2. `expand_party_to_angler()` implemented with tests
-3. Comprehensive vignette: "Complete Creel Analysis Workflow"
-4. Update getting-started vignette with harvest example
-
-**Success Criteria:**
-- [ ] User can estimate total harvest from effort and CPUE
-- [ ] Variance properly propagated using delta method
-- [ ] All tests passing with >90% coverage
-- [ ] Vignette demonstrates end-to-end analysis
-- [ ] Documentation reviewed by fisheries expert
-
----
-
-#### **SPRINT 2: Visualization & Communication (Weeks 5-7)**
-
-**Goal:** Professional-quality plots for reports and presentations
-
-**Deliverables:**
-1. `plot_estimates_timeseries()` - time series with CIs
-2. `plot_catch_composition()` - species composition
-3. `compare_estimates()` - model comparison
-4. Visualization vignette with examples
-5. Consistent tidycreel theme
-
-**Success Criteria:**
-- [ ] Plots ready for publication/reports
-- [ ] Consistent styling across all plots
-- [ ] Export to common formats (PNG, PDF, SVG)
-- [ ] Examples in vignettes
-- [ ] User feedback incorporated
-
----
-
-#### **SPRINT 3: Survey Planning Tools (Weeks 8-11)**
-
-**Goal:** Support survey design and optimization
-
-**Deliverables:**
-1. `calc_sample_size()` - power analysis
-2. `sample_allocation()` - optimal allocation
-3. `survey_coverage_report()` - QA/QC
-4. Survey planning vignette
-
-**Success Criteria:**
-- [ ] Sample size calculations match published methods
-- [ ] Allocation algorithms validated
-- [ ] Coverage reports actionable
-- [ ] Integrated into design workflow
-
----
-
-#### **SPRINT 4: Advanced Methods (Weeks 12-16)**
-
-**Goal:** Classic methods and biological extensions
-
-**Deliverables:**
-1. `est_effort_tiein()` - Robson & Jones methodology
-2. `est_length_dist()` - length frequencies
-3. `est_mean_length()` - mean length estimation
-4. Biological data vignette
-
-**Success Criteria:**
-- [ ] Tie-in estimates match published examples
-- [ ] Length distributions properly weighted
-- [ ] Integration with size limit regulations
-- [ ] Validated against known datasets
-
----
-
-#### **SPRINT 5: Reporting & Automation (Weeks 17-21)**
-
-**Goal:** Automated report generation
-
-**Deliverables:**
-1. `creel_report()` - comprehensive reports
-2. Report templates (standard, detailed, summary)
-3. Customization guide
-4. Example reports
-
-**Success Criteria:**
-- [ ] HTML/PDF reports generated automatically
-- [ ] Templates cover common use cases
-- [ ] Customization straightforward
-- [ ] Agency adoption
-
----
-
-#### **SPRINT 6: Data Quality & Diagnostics (Weeks 22-26)**
-
-**Goal:** Robust QA/QC and diagnostic tools
-
-**Deliverables:**
-1. `detect_outliers()` - outlier detection
-2. `qa_report()` - comprehensive QA
-3. `model_diagnostics()` - goodness-of-fit
-4. Quality assurance vignette
-
-**Success Criteria:**
-- [ ] Outlier detection algorithms validated
-- [ ] QA reports catch common errors
-- [ ] Diagnostics guide interpretation
-- [ ] Integration into workflow
-
----
-
-### Design Principles
-
-#### 1. **Survey-First Consistency**
-All functions must integrate seamlessly with the `survey` package:
-- Accept `svydesign`/`svrepdesign` objects
-- Return consistent tibble schema
-- Preserve survey design properties
-- Support replicate weights
-
-**Standard Return Schema:**
-```r
-tibble(
-  [grouping_vars],
-  estimate,
-  se,
-  ci_low,
-  ci_high,
-  n,
-  method,
-  diagnostics  # list-column with additional info
-)
-```
-
----
-
-#### 2. **Composability & Pipe-Friendliness**
-Functions should work together seamlessly:
-```r
-# Example: Complete workflow
-svy_day %>%
-  est_effort(counts, method = "instantaneous") %>%
-  combine_with_cpue(cpue_est) %>%
-  est_total_harvest() %>%
-  plot_estimates_timeseries(facet_by = "location")
-```
-
----
-
-#### 3. **Defensive Programming**
-- Validate inputs rigorously
-- Informative error messages (use `cli` package)
-- Warn about potential issues (lonely PSUs, small samples)
-- Handle edge cases gracefully (zero values, missing data)
-- Document assumptions clearly
-
-**Example Error Message:**
-```r
-if (!all(by %in% names(effort_est))) {
-  cli::cli_abort(c(
-    "x" = "Grouping variables not found in effort estimates.",
-    "i" = "Available variables: {.field {names(effort_est)}}",
-    "!" = "Missing: {.field {setdiff(by, names(effort_est))}}"
-  ))
-}
-```
-
----
-
-#### 4. **Performance Considerations**
-- Vectorize operations (avoid loops)
-- Use grouped operations (`dplyr::group_by()` + `summarise()`)
-- Lazy evaluation where possible
-- Profile bottlenecks for large datasets
-- Consider parallel processing for bootstrap/permutation tests
-
----
-
-#### 5. **Testing Strategy**
-
-**Test Coverage Targets:**
-- Unit tests: >90% coverage for all functions
-- Integration tests: Complete workflows
-- Validation tests: Compare to published results
-- Edge case tests: Extreme values, missing data, single groups
-
-**Test Data:**
-- Synthetic data with known properties
-- Published datasets with expected results
-- Edge cases and boundary conditions
-
-**Example Test Structure:**
-```r
-test_that("est_total_harvest multiplies effort and CPUE", {
-  # Known inputs
-  effort <- tibble(estimate = 1000, se = 100, species = "bass")
-  cpue <- tibble(estimate = 2, se = 0.2, species = "bass")
-
-  # Expected output
-  expected_harvest <- 2000
-  expected_se <- sqrt(1000^2 * 0.2^2 + 2^2 * 100^2)  # Delta method
-
-  # Actual
-  result <- est_total_harvest(effort, cpue, by = "species")
-
-  # Assertions
-  expect_equal(result$estimate, expected_harvest)
-  expect_equal(result$se, expected_se, tolerance = 0.01)
-})
-```
-
----
-
-#### 6. **Documentation Standards**
-
-**Required for Each Function:**
-- Clear purpose statement
-- Parameter descriptions with types and defaults
-- Return value schema
-- Statistical methods with references
-- Examples using toy data
-- Common use cases
-- Edge cases and limitations
-
-**Vignette Structure:**
-- Introduction with learning objectives
-- Conceptual overview
-- Step-by-step examples
-- Real-world applications
-- Troubleshooting common issues
-- References to literature
-
----
-
-## Priority Matrix
-
-### P0 - Blocking (Must have immediately)
-- `est_total_harvest()` - Can't complete analyses without this
-
-### P1 - High Priority (Next 2 months)
-- `expand_party_to_angler()` - Common preprocessing need
-- `plot_estimates_timeseries()` - Essential for communication
-- `plot_catch_composition()` - Multi-species fisheries
-- `compare_estimates()` - Method validation
-
-### P2 - Medium Priority (Months 3-5)
-- `est_effort_tiein()` - Classic methodology
-- `calc_sample_size()` - Survey planning
-- `sample_allocation()` - Design optimization
-- `est_length_dist()` - Biological data
-- `creel_report()` - Automated reporting
-
-### P3 - Nice to Have (Months 6-12)
-- QA/QC tools (`detect_outliers()`, `qa_report()`)
-- Advanced diagnostics (`model_diagnostics()`, `bootstrap_estimates()`)
-- Multi-year analysis (`combine_years()`, `trend_analysis()`)
-- Enhanced visualizations
-
-### P4 - Specialized (Future consideration)
-- Age composition estimators
-- Economic valuation
-- Spatial analysis tools
-- Mortality proxies
+## Implementation Timeline
+
+### Sprint 1-2 (Weeks 1-4): Critical Foundations
+- ✅ **Complete:** `aggregate_cpue()` and `est_total_harvest()`
+- 🔲 Roving/incomplete trip estimators
+- 🔲 QA/QC framework (Part 1: Core checks)
+
+### Sprint 3-4 (Weeks 5-8): Variance & Planning
+- 🔲 Variance component decomposition
+- 🔲 Sample size determination tools
+- 🔲 QA/QC framework (Part 2: Reporting)
+
+### Sprint 5-6 (Weeks 9-12): Segmentation & Enhancement
+- 🔲 Angler segmentation framework
+- 🔲 Enhanced bus route estimator
+- 🔲 Vignette suite (Part 1)
+
+### Sprint 7-8 (Weeks 13-16): Advanced Methods
+- 🔲 Aerial survey methods
+- 🔲 Remote camera integration
+- 🔲 Hybrid design support
+
+### Sprint 9-10 (Weeks 17-20): Visualization
+- 🔲 Time series plots
+- 🔲 Composition plots
+- 🔲 Diagnostic plots
+- 🔲 Vignette suite (Part 2)
+
+### Sprint 11-12 (Weeks 21-24): Polish & Testing
+- 🔲 Helper functions
+- 🔲 Enhanced validation
+- 🔲 Comprehensive testing
+- 🔲 Documentation completion
+- 🔲 CRAN preparation
 
 ---
 
 ## Success Metrics
 
-### Package Completeness
-- [ ] 100% of core creel workflow implemented
-- [ ] 85%+ of common use cases supported
-- [ ] <5 critical missing features
+### Package Completeness Targets
 
-### Code Quality
-- [ ] >90% test coverage
-- [ ] All functions documented with examples
-- [ ] Zero ERROR/WARNING/NOTE in R CMD check
-- [ ] Passes lintr style checks
+**By End of Q1 2026:**
+- Survey Design & Sampling: 95%
+- Effort Estimation: 95%
+- Catch/Harvest Estimation: 95%
+- Quality Assurance/Control: 85%
+- Variance Analysis: 90%
+- Sample Size Planning: 85%
+- Visualization: 80%
+- Advanced Methods: 60%
+- Documentation: 95%
 
-### User Adoption
-- [ ] >10 successful analyses by external users
-- [ ] Positive feedback from fisheries professionals
-- [ ] Agency adoption (at least 1 state/federal agency)
-- [ ] Published analyses using the package
+**Overall Target:** 90% feature complete for standard creel survey workflows
 
-### Performance
-- [ ] Handles datasets up to 100K interviews efficiently (<10s)
-- [ ] Parallel processing for computationally intensive operations
-- [ ] Memory-efficient for large simulations
+### User Experience Metrics
+- Users can complete full analysis from design → estimates → reporting
+- Clear guidance for method selection
+- Excellent error messages and warnings
+- Comprehensive validation and QA/QC
+- Professional visualizations
+- Reproducible workflows
 
----
-
-## Risk Assessment
-
-### Technical Risks
-
-**Risk:** Variance propagation errors in total harvest estimation
-- **Likelihood:** Medium
-- **Impact:** High (incorrect inference)
-- **Mitigation:** Extensive testing against known results, peer review by statistician
-
-**Risk:** Survey design edge cases (lonely PSUs, single-stratum)
-- **Likelihood:** High
-- **Impact:** Medium (estimation fails)
-- **Mitigation:** Robust error handling, clear warnings, documented solutions
-
-**Risk:** Performance degradation with large datasets
-- **Likelihood:** Medium
-- **Impact:** Medium (user frustration)
-- **Mitigation:** Profiling, optimization, parallel processing
-
-### Adoption Risks
-
-**Risk:** Learning curve too steep for target users
-- **Likelihood:** Medium
-- **Impact:** High (low adoption)
-- **Mitigation:** Comprehensive vignettes, workshops, support
-
-**Risk:** Competition from established tools (FSA, RMark, custom scripts)
-- **Likelihood:** High
-- **Impact:** Medium (slow adoption)
-- **Mitigation:** Clear advantages (survey-first, modern, documented), migration guides
+### Code Quality Metrics
+- >90% test coverage
+- All estimators validated against literature
+- Comprehensive documentation
+- Consistent API design
+- Performance benchmarks
 
 ---
 
-## Dependencies
+## Risk Assessment & Mitigation
 
-### Current Dependencies (Keep Lean)
-- **survey** - Core survey design and estimation
-- **dplyr** - Data manipulation
-- **tidyr** - Data tidying
-- **ggplot2** - Visualization
-- **cli** - User communication
-- **tibble** - Modern data frames
-- **purrr** - Functional programming
+### High Risk Items
 
-### Potential New Dependencies (Evaluate Carefully)
-- **scales** - Axis formatting (ggplot2 extension)
-- **patchwork** - Combine plots
-- **gt** or **flextable** - Publication-quality tables
-- **quarto** or **rmarkdown** - Report generation
-- **future** - Parallel processing backend
+**1. Roving Estimator Complexity**
+- **Risk:** Statistical complexity, limited examples in literature
+- **Mitigation:** Start with Pollock et al. (1997) canonical methods, extensive testing
 
-### Avoid Unless Essential
-- Heavy spatial packages (sf, terra) - only if spatial scope expands
-- Database backends - only if needed for large data
-- Shiny - keep separate from core package
+**2. QA/QC False Positives**
+- **Risk:** Overly strict checks frustrate users
+- **Mitigation:** Severity levels (error/warning/info), comprehensive documentation
 
----
+**3. Sample Size Tool Accuracy**
+- **Risk:** Variance estimates from pilots may be unreliable
+- **Mitigation:** Clear documentation of assumptions, sensitivity analysis
 
-## References & Resources
+**4. Hybrid Design Integration**
+- **Risk:** Multiple data sources create complex variance structure
+- **Mitigation:** Start with simple combinations, leverage Bayesian approaches
 
-### Statistical Methods
-- Pollock, K. H., C. M. Jones, and T. L. Brown. 1994. "Angler Survey Methods and Their Applications in Fisheries Management." American Fisheries Society Special Publication 25.
-- Robson, D. S., and C. M. Jones. 1989. "The Theoretical Basis of an Access Site Angler Survey Design." Biometrics 45:83-98.
-- Lumley, T. 2010. "Complex Surveys: A Guide to Analysis Using R." Wiley.
+**5. Documentation Completeness**
+- **Risk:** Technical methods hard to explain
+- **Mitigation:** Multiple vignettes, worked examples, decision trees
 
-### R Package Development
-- Wickham, H., and J. Bryan. "R Packages" (2nd ed.). https://r-pkgs.org
-- Tidyverse Style Guide: https://style.tidyverse.org
+### Medium Risk Items
 
-### Survey Package Resources
-- survey package documentation: https://r-survey.r-forge.r-project.org/survey/
-- Survey analysis in R tutorial: https://stats.idre.ucla.edu/r/seminars/survey-data-analysis-with-r/
+- Aerial survey inflation factors (method-specific, data-intensive)
+- Camera integration (emerging tech, limited R packages)
+- Angler segmentation (detection probability modeling complex)
+
+### Mitigation Strategy
+- Iterative development with user feedback
+- Extensive testing against published examples
+- Clear documentation of assumptions and limitations
+- Vignettes with worked examples
+- Regular consultation with creel survey practitioners
 
 ---
 
-## Changelog
+## Key References for Implementation
 
-### October 24, 2025 - Initial Roadmap
-- Completed comprehensive gap analysis
-- Identified top 10 priority functions
-- Defined 6-sprint development plan (26 weeks)
-- Established design principles and testing strategy
+### Critical Papers
 
-### Next Review: November 2025
-- Assess Sprint 1 progress
-- Adjust priorities based on user feedback
-- Update timelines if needed
+1. **Pollock et al. (1994)** - *Angler Survey Methods and Their Applications* - Foundation
+2. **Pollock et al. (1997)** - Incomplete trip/roving methods
+3. **Robson (1961)** - Progressive count theory
+4. **Malvestuto (1996)** - Review of creel survey methods
+5. **Rasmussen et al. (1998)** - Three-stage sampling variance
+6. **Newman et al. (1997)** - Precision and sample size
+7. **Hoenig et al. (1993, 1997)** - Instantaneous counts, trip truncation
+8. **McGlennon & Kinloch (1997)** - Bus route with interviews
+9. **van Poorten et al. (2015)** - Camera-based estimation with missing data
+10. **Malvestuto et al. (1978)** - Bus route with unequal probabilities
+11. **Vølstad et al. (2006)** - Aerial survey methods
+12. **McCormick & Meyer (2017)** - Sample size determination
+13. **Askey et al. (2018)** - Modern aerial survey applications
 
----
-
-## Contributing
-
-This roadmap is a living document. Contributions and feedback are welcome:
-
-1. **Function Priorities:** Disagree with priorities? Open an issue to discuss.
-2. **New Features:** Suggest additional functions with use case justification.
-3. **Implementation:** Pick a function and submit a PR following design principles.
-4. **Testing:** Help validate implementations against published results.
-
-**Contact:** See CONTRIBUTING.md for guidelines.
+### Textbook
+- **Pope et al. (2025)** - Chapter 17: Creel Surveys in *Analysis and Interpretation of Freshwater Fisheries Data, 2nd Edition*
 
 ---
 
-## Appendix: Function Quick Reference
+## Notes
 
-### Effort Estimation
-- ✅ `est_effort()` - Wrapper for effort estimation
-- ✅ `est_effort.instantaneous()` - Snapshot counts
-- ✅ `est_effort.progressive()` - Roving surveys
-- ✅ `est_effort.aerial()` - Aerial counts
-- ✅ `est_effort.busroute()` - Bus route method
-- 🔴 `est_effort_tiein()` - Tie-in estimator (NOT IMPLEMENTED)
+### Design Philosophy
+- **Survey-first:** Leverage R's survey package for design-based inference
+- **Tidy workflows:** Pipe-friendly, consistent return schemas
+- **Validation by default:** Comprehensive checks, informative errors
+- **Reproducibility:** Document workflows, enable reproducible analyses
+- **Modern R:** Use current best practices, maintain code quality
 
-### Catch & Harvest
-- ✅ `est_cpue()` - Catch per unit effort
-- ✅ `est_catch()` - Total catch from interviews
-- 🔴 `est_total_harvest()` - Effort × CPUE (NOT IMPLEMENTED)
+### Community Engagement
+- Seek feedback from practicing creel biologists
+- Present at fisheries conferences
+- Publish methods paper
+- Engage with state/federal agencies
+- Build example datasets
 
-### Data Preprocessing
-- 🔴 `expand_party_to_angler()` - Party to angler conversion (NOT IMPLEMENTED)
-- ✅ `parse_time_column()` - Time parsing
-- ✅ `standardize_time_columns()` - Time standardization
-
-### Survey Design
-- ✅ `as_day_svydesign()` - Create day-level design
-- ✅ `as_survey_design()` - Convert to survey design
-- ✅ `as_svrep_design()` - Convert to replicate design
-- ✅ `design_access()` - Access point design (legacy)
-- ✅ `design_roving()` - Roving design (legacy)
-- ✅ `design_busroute()` - Bus route design
-
-### Visualization
-- ✅ `plot_design()` - Visualize survey design
-- ✅ `plot_effort()` - Plot effort estimates
-- 🔴 `plot_estimates_timeseries()` - Time series with CIs (NOT IMPLEMENTED)
-- 🔴 `plot_catch_composition()` - Species composition (NOT IMPLEMENTED)
-- 🔴 `plot_model_comparison()` - Compare models (NOT IMPLEMENTED)
-- 🔴 `plot_length_frequency()` - Length distributions (NOT IMPLEMENTED)
-
-### Survey Planning
-- 🔴 `calc_sample_size()` - Sample size calculation (NOT IMPLEMENTED)
-- 🔴 `sample_allocation()` - Optimal allocation (NOT IMPLEMENTED)
-
-### Data Quality
-- ✅ `validate_interviews()` - Interview validation
-- ✅ `validate_counts()` - Count validation
-- ✅ `validate_calendar()` - Calendar validation
-- 🔴 `detect_outliers()` - Outlier detection (NOT IMPLEMENTED)
-- 🔴 `qa_report()` - Quality assurance report (NOT IMPLEMENTED)
-
-### Biological Data
-- 🔴 `est_length_dist()` - Length frequency (NOT IMPLEMENTED)
-- 🔴 `est_mean_length()` - Mean length (NOT IMPLEMENTED)
-
-### Analysis & Comparison
-- 🔴 `compare_estimates()` - Compare estimates (NOT IMPLEMENTED)
-- 🔴 `model_diagnostics()` - Model diagnostics (NOT IMPLEMENTED)
-- 🔴 `trend_analysis()` - Temporal trends (NOT IMPLEMENTED)
-
-### Reporting
-- 🔴 `creel_report()` - Automated reports (NOT IMPLEMENTED)
-
-**Legend:**
-- ✅ Implemented
-- 🔴 Not implemented
-- 🟡 Partially implemented
+### Long-Term Vision
+Position tidycreel as:
+- **The** R solution for creel surveys
+- Comprehensive alternative to specialized software
+- Integration point for emerging technologies
+- Teaching tool for survey methods
+- Platform for methodological innovation
 
 ---
 
-**End of Roadmap**
+**Last Updated:** October 24, 2025
+**Next Review:** Monthly or after major milestones
+**Maintained by:** tidycreel development team
