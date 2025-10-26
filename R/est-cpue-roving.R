@@ -158,9 +158,9 @@ est_cpue_roving <- function(
   tc_abort_missing_cols(vars, required_cols, context = "est_cpue_roving")
 
   # Validate min_trip_hours
-  if (!is.numeric(min_trip_hours) || length(min_trip_hours) != 1 || min_trip_hours <= 0) {
+  if (!is.numeric(min_trip_hours) || length(min_trip_hours) != 1 || min_trip_hours < 0) {
     cli::cli_abort(c(
-      "x" = "{.arg min_trip_hours} must be a positive number.",
+      "x" = "{.arg min_trip_hours} must be a non-negative number.",
       "i" = "Received: {.val {min_trip_hours}}"
     ))
   }
@@ -227,18 +227,23 @@ est_cpue_roving <- function(
     }
 
     # Subset survey design to valid trips
-    # Use base::subset since survey::subset is not exported
-    valid_trips <- vars[[effort_col]] >= min_trip_hours
-    valid_trips[is.na(valid_trips)] <- FALSE
-    svy$variables <- vars[valid_trips, ]
-    svy$prob <- svy$prob[valid_trips]
-    if (!is.null(svy$allprob)) svy$allprob <- svy$allprob[valid_trips, , drop = FALSE]
-    if (!is.null(svy$strata)) svy$strata <- svy$strata[valid_trips, , drop = FALSE]
-    if (!is.null(svy$cluster)) svy$cluster <- svy$cluster[valid_trips, , drop = FALSE]
-    if (!is.null(svy$fpc)) {
-      svy$fpc$sampsize <- svy$fpc$sampsize[valid_trips]
-      svy$fpc$popsize <- svy$fpc$popsize[valid_trips]
+    # Create filter for valid trips
+    valid_trips <- vars[[effort_col]] >= min_trip_hours & !is.na(vars[[effort_col]])
+
+    # Filter the data
+    vars_filtered <- vars[valid_trips, ]
+
+    # Rebuild survey design using original call but with filtered data
+    if ("survey.design" %in% class(svy)) {
+      # For regular designs - rebuild from scratch with filtered data
+      call_args <- as.list(svy$call)[-1]  # Remove function name
+      call_args$data <- vars_filtered
+      svy <- do.call(survey::svydesign, call_args)
+    } else if ("svyrep.design" %in% class(svy)) {
+      # For replicate designs - just update variables
+      svy$variables <- vars_filtered
     }
+
     vars <- svy$variables
   }
 
@@ -464,7 +469,8 @@ est_cpue_roving <- function(
     out$diagnostics <- diag_list
 
   } else {
-    out$diagnostics <- replicate(nrow(out), list(NULL), simplify = FALSE)
+    # Create list with NULL for each row
+    out$diagnostics <- vector("list", nrow(out))
   }
 
   # ============================================================================

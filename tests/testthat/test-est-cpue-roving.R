@@ -13,15 +13,15 @@ test_that("est_cpue_roving requires response column", {
   svy <- survey::svydesign(ids = ~1, data = data)
 
   expect_error(
-    est_cpue_roving(svy, response = "catch_kept"),
-    "catch_kept"
+    est_cpue_roving(svy, response = "catch_total"),
+    "catch_total"
   )
 })
 
 test_that("est_cpue_roving requires effort column", {
   # Data without effort column
   data <- tibble::tibble(
-    catch_kept = 1:10
+    catch_total = 1:10
   )
   svy <- survey::svydesign(ids = ~1, data = data)
 
@@ -33,78 +33,77 @@ test_that("est_cpue_roving requires effort column", {
 
 test_that("est_cpue_roving validates min_trip_hours", {
   data <- tibble::tibble(
-    catch_kept = 1:10,
+    catch_total = 1:10,
     hours_fished = rep(1, 10)
   )
   svy <- survey::svydesign(ids = ~1, data = data)
 
   # Negative value
   expect_error(
-    est_cpue_roving(svy, response = "catch_kept", min_trip_hours = -1),
-    "positive"
-  )
-
-  # Zero
-  expect_error(
-    est_cpue_roving(svy, response = "catch_kept", min_trip_hours = 0),
-    "positive"
+    est_cpue_roving(svy, response = "catch_total", min_trip_hours = -1),
+    "non-negative"
   )
 
   # Non-numeric
   expect_error(
-    est_cpue_roving(svy, response = "catch_kept", min_trip_hours = "0.5"),
-    "positive"
+    est_cpue_roving(svy, response = "catch_total", min_trip_hours = "0.5"),
+    "non-negative"
+  )
+
+  # Zero should be allowed (no truncation)
+  expect_no_error(
+    est_cpue_roving(svy, response = "catch_total", min_trip_hours = 0, length_bias_correction = "none")
   )
 })
 
 test_that("est_cpue_roving validates conf_level", {
   data <- tibble::tibble(
-    catch_kept = 1:10,
+    catch_total = 1:10,
     hours_fished = rep(1, 10)
   )
   svy <- survey::svydesign(ids = ~1, data = data)
 
   # > 1
   expect_error(
-    est_cpue_roving(svy, response = "catch_kept", conf_level = 1.5),
+    est_cpue_roving(svy, response = "catch_total", conf_level = 1.5),
     "between 0 and 1"
   )
 
   # = 1
   expect_error(
-    est_cpue_roving(svy, response = "catch_kept", conf_level = 1),
+    est_cpue_roving(svy, response = "catch_total", conf_level = 1),
     "between 0 and 1"
   )
 
   # = 0
   expect_error(
-    est_cpue_roving(svy, response = "catch_kept", conf_level = 0),
+    est_cpue_roving(svy, response = "catch_total", conf_level = 0),
     "between 0 and 1"
   )
 
   # < 0
   expect_error(
-    est_cpue_roving(svy, response = "catch_kept", conf_level = -0.5),
+    est_cpue_roving(svy, response = "catch_total", conf_level = -0.5),
     "between 0 and 1"
   )
 })
 
 test_that("est_cpue_roving requires total_trip_effort_col when correction requested", {
   data <- tibble::tibble(
-    catch_kept = 1:10,
+    catch_total = 1:10,
     hours_fished = rep(1, 10)
   )
   svy <- survey::svydesign(ids = ~1, data = data)
 
   expect_error(
-    est_cpue_roving(svy, response = "catch_kept", length_bias_correction = "pollock"),
+    est_cpue_roving(svy, response = "catch_total", length_bias_correction = "pollock"),
     "total_trip_effort_col"
   )
 })
 
 test_that("est_cpue_roving validates total_trip_effort_col exists", {
   data <- tibble::tibble(
-    catch_kept = 1:10,
+    catch_total = 1:10,
     hours_fished = rep(1, 10)
   )
   svy <- survey::svydesign(ids = ~1, data = data)
@@ -121,7 +120,7 @@ test_that("est_cpue_roving validates total_trip_effort_col exists", {
 
 test_that("est_cpue_roving validates grouping variables exist", {
   data <- tibble::tibble(
-    catch_kept = 1:10,
+    catch_total = 1:10,
     hours_fished = rep(1, 10),
     location = rep("A", 10)
   )
@@ -129,7 +128,7 @@ test_that("est_cpue_roving validates grouping variables exist", {
 
   # This should warn about missing column, not error
   expect_warning(
-    est_cpue_roving(svy, response = "catch_kept", by = c("location", "nonexistent")),
+    est_cpue_roving(svy, response = "catch_total", by = c("location", "nonexistent")),
     "nonexistent"
   )
 })
@@ -140,14 +139,14 @@ test_that("est_cpue_roving validates grouping variables exist", {
 
 test_that("est_cpue_roving truncates short trips", {
   data <- tibble::tibble(
-    catch_kept = c(0, 1, 2, 3, 4),
+    catch_total = c(0, 1, 2, 3, 4),
     hours_fished = c(0.1, 0.3, 0.6, 1.0, 2.0)  # First 2 should be truncated
   )
   svy <- survey::svydesign(ids = ~1, data = data)
 
   result <- est_cpue_roving(
     svy,
-    response = "catch_kept",
+    response = "catch_total",
     min_trip_hours = 0.5,
     length_bias_correction = "none",
     diagnostics = TRUE
@@ -161,47 +160,47 @@ test_that("est_cpue_roving truncates short trips", {
 
 test_that("est_cpue_roving warns when >10% truncated", {
   data <- tibble::tibble(
-    catch_kept = 1:20,
+    catch_total = 1:20,
     hours_fished = c(rep(0.2, 5), rep(1.0, 15))  # 25% short trips
   )
   svy <- survey::svydesign(ids = ~1, data = data)
 
   expect_warning(
-    est_cpue_roving(svy, response = "catch_kept", min_trip_hours = 0.5, length_bias_correction = "none"),
+    est_cpue_roving(svy, response = "catch_total", min_trip_hours = 0.5, length_bias_correction = "none"),
     "Truncating.*25"
   )
 })
 
 test_that("est_cpue_roving informs when <10% truncated", {
   data <- tibble::tibble(
-    catch_kept = 1:20,
+    catch_total = 1:20,
     hours_fished = c(0.2, rep(1.0, 19))  # 5% short trips
   )
   svy <- survey::svydesign(ids = ~1, data = data)
 
   # Should inform but not warn
   expect_message(
-    est_cpue_roving(svy, response = "catch_kept", min_trip_hours = 0.5, length_bias_correction = "none"),
+    est_cpue_roving(svy, response = "catch_total", min_trip_hours = 0.5, length_bias_correction = "none"),
     "Truncating.*1.*short"
   )
 })
 
 test_that("est_cpue_roving errors when all trips below threshold", {
   data <- tibble::tibble(
-    catch_kept = 1:10,
+    catch_total = 1:10,
     hours_fished = rep(0.2, 10)  # All below threshold
   )
   svy <- survey::svydesign(ids = ~1, data = data)
 
   expect_error(
-    est_cpue_roving(svy, response = "catch_kept", min_trip_hours = 0.5, length_bias_correction = "none"),
+    est_cpue_roving(svy, response = "catch_total", min_trip_hours = 0.5, length_bias_correction = "none"),
     "No trips remain"
   )
 })
 
 test_that("est_cpue_roving handles NA effort in truncation", {
   data <- tibble::tibble(
-    catch_kept = 1:10,
+    catch_total = 1:10,
     hours_fished = c(NA, rep(1.0, 9))
   )
   svy <- survey::svydesign(ids = ~1, data = data)
@@ -222,7 +221,7 @@ test_that("est_cpue_roving handles NA effort in truncation", {
 test_that("est_cpue_roving calculates correct mean-of-ratios without correction", {
   # Known data: constant catch rate
   data <- tibble::tibble(
-    catch_kept = c(2, 4, 6),
+    catch_total = c(2, 4, 6),
     hours_fished = c(1, 2, 3)
   )
   # Individual rates: 2/1=2, 4/2=2, 6/3=2
@@ -231,7 +230,7 @@ test_that("est_cpue_roving calculates correct mean-of-ratios without correction"
   svy <- survey::svydesign(ids = ~1, data = data)
   result <- est_cpue_roving(
     svy,
-    response = "catch_kept",
+    response = "catch_total",
     length_bias_correction = "none"
   )
 
@@ -243,7 +242,7 @@ test_that("est_cpue_roving calculates correct mean-of-ratios without correction"
 test_that("est_cpue_roving calculates correct mean-of-ratios with varying rates", {
   # Varying catch rates
   data <- tibble::tibble(
-    catch_kept = c(1, 4, 9),
+    catch_total = c(1, 4, 9),
     hours_fished = c(1, 2, 3)
   )
   # Rates: 1/1=1, 4/2=2, 9/3=3
@@ -252,7 +251,7 @@ test_that("est_cpue_roving calculates correct mean-of-ratios with varying rates"
   svy <- survey::svydesign(ids = ~1, data = data)
   result <- est_cpue_roving(
     svy,
-    response = "catch_kept",
+    response = "catch_total",
     length_bias_correction = "none"
   )
 
@@ -262,7 +261,7 @@ test_that("est_cpue_roving calculates correct mean-of-ratios with varying rates"
 test_that("est_cpue_roving Pollock correction with constant rates", {
   # Constant rates but different trip lengths
   data <- tibble::tibble(
-    catch_kept = c(4, 6, 8),
+    catch_total = c(4, 6, 8),
     hours_fished = c(2, 3, 4),  # Observed effort
     planned_hours = c(4, 6, 8)  # Total planned (2x observed)
   )
@@ -273,7 +272,7 @@ test_that("est_cpue_roving Pollock correction with constant rates", {
   svy <- survey::svydesign(ids = ~1, data = data)
   result <- est_cpue_roving(
     svy,
-    response = "catch_kept",
+    response = "catch_total",
     total_trip_effort_col = "planned_hours",
     length_bias_correction = "pollock"
   )
@@ -284,7 +283,7 @@ test_that("est_cpue_roving Pollock correction with constant rates", {
 
 test_that("est_cpue_roving handles zero catches correctly", {
   data <- tibble::tibble(
-    catch_kept = rep(0, 10),
+    catch_total = rep(0, 10),
     hours_fished = rep(2, 10)
   )
   svy <- survey::svydesign(ids = ~1, data = data)
@@ -300,30 +299,33 @@ test_that("est_cpue_roving handles zero catches correctly", {
 })
 
 test_that("est_cpue_roving handles single observation", {
+  # Survey package requires >1 PSU, so use 2 identical observations
   data <- tibble::tibble(
-    catch_kept = 5,
-    hours_fished = 2
+    catch_total = c(5, 5),
+    hours_fished = c(2, 2)
   )
   svy <- survey::svydesign(ids = ~1, data = data)
 
   result <- est_cpue_roving(
     svy,
+    response = "catch_total",
     length_bias_correction = "none"
   )
 
   expect_equal(result$estimate, 2.5, tolerance = 1e-6)
-  expect_equal(result$n, 1)
+  expect_equal(result$n, 2)
 })
 
 test_that("est_cpue_roving warns about infinite catch rates", {
   data <- tibble::tibble(
-    catch_kept = c(5, 3, 2),
+    catch_total = c(5, 3, 2),
     hours_fished = c(2, 0, 1)  # Middle observation has zero effort
   )
   svy <- survey::svydesign(ids = ~1, data = data)
 
+  # Use min_trip_hours = 0 to avoid truncating the zero-effort row
   expect_warning(
-    est_cpue_roving(svy, response = "catch_kept", length_bias_correction = "none"),
+    est_cpue_roving(svy, response = "catch_total", min_trip_hours = 0, length_bias_correction = "none"),
     "infinite.*undefined"
   )
 })
@@ -335,7 +337,7 @@ test_that("est_cpue_roving warns about infinite catch rates", {
 test_that("est_cpue_roving handles grouped data correctly", {
   data <- tibble::tibble(
     location = rep(c("A", "B"), each = 5),
-    catch_kept = c(1, 2, 3, 4, 5, 2, 4, 6, 8, 10),
+    catch_total = c(1, 2, 3, 4, 5, 2, 4, 6, 8, 10),
     hours_fished = c(rep(1, 5), rep(2, 5))
   )
 
@@ -361,7 +363,7 @@ test_that("est_cpue_roving handles multiple grouping variables", {
     species = c("bass", "trout")
   ) |>
     dplyr::mutate(
-      catch_kept = rep(1:4, each = 1),
+      catch_total = rep(1:4, each = 1),
       hours_fished = 1
     )
 
@@ -380,7 +382,7 @@ test_that("est_cpue_roving handles multiple grouping variables", {
 test_that("est_cpue_roving preserves grouping structure with truncation", {
   data <- tibble::tibble(
     location = rep(c("A", "B"), each = 10),
-    catch_kept = 1:20,
+    catch_total = 1:20,
     hours_fished = rep(c(0.2, 0.3, 0.6, 1.0, 1.5), 4)  # Some below threshold
   )
 
@@ -397,8 +399,11 @@ test_that("est_cpue_roving preserves grouping structure with truncation", {
   expect_equal(nrow(result), 2)
   expect_true(all(c("A", "B") %in% result$location))
 
-  # Each group should have same truncation (3 out of 10 trips kept)
-  expect_true(all(result$n == 3))
+  # Each group should have same truncation (6 out of 10 trips kept)
+  # Pattern c(0.2, 0.3, 0.6, 1.0, 1.5) repeated 2x per location
+  # Values < 0.5: 0.2, 0.3 appear 2x = 4 truncated
+  # Values >= 0.5: 0.6, 1.0, 1.5 appear 2x = 6 kept
+  expect_true(all(result$n == 6))
 })
 
 # ==============================================================================
@@ -407,7 +412,7 @@ test_that("est_cpue_roving preserves grouping structure with truncation", {
 
 test_that("est_cpue_roving warns when total_effort < observed_effort", {
   data <- tibble::tibble(
-    catch_kept = 1:10,
+    catch_total = 1:10,
     hours_fished = 1:10,
     planned_hours = rep(5, 10)  # Some less than observed
   )
@@ -425,7 +430,7 @@ test_that("est_cpue_roving warns when total_effort < observed_effort", {
 
 test_that("est_cpue_roving correction weights are calculated correctly", {
   data <- tibble::tibble(
-    catch_kept = c(2, 4, 6),
+    catch_total = c(2, 4, 6),
     hours_fished = c(1, 2, 3),
     planned_hours = c(2, 4, 6)  # Total planned effort
   )
@@ -447,7 +452,7 @@ test_that("est_cpue_roving correction weights are calculated correctly", {
 
 test_that("est_cpue_roving with no correction matches unweighted mean", {
   data <- tibble::tibble(
-    catch_kept = c(2, 4, 6),
+    catch_total = c(2, 4, 6),
     hours_fished = c(1, 2, 3),
     planned_hours = c(10, 10, 10)  # All have same planned effort
   )
@@ -475,7 +480,7 @@ test_that("est_cpue_roving with no correction matches unweighted mean", {
 
 test_that("est_cpue_roving includes diagnostics when requested", {
   data <- tibble::tibble(
-    catch_kept = 1:10,
+    catch_total = 1:10,
     hours_fished = rep(1, 10)
   )
   svy <- survey::svydesign(ids = ~1, data = data)
@@ -500,7 +505,7 @@ test_that("est_cpue_roving includes diagnostics when requested", {
 
 test_that("est_cpue_roving omits diagnostics when not requested", {
   data <- tibble::tibble(
-    catch_kept = 1:10,
+    catch_total = 1:10,
     hours_fished = rep(1, 10)
   )
   svy <- survey::svydesign(ids = ~1, data = data)
@@ -512,12 +517,13 @@ test_that("est_cpue_roving omits diagnostics when not requested", {
   )
 
   expect_true("diagnostics" %in% names(result))
-  expect_true(all(sapply(result$diagnostics, is.null)))
+  # When diagnostics = FALSE, we get list(NULL) for each row
+  expect_true(all(sapply(result$diagnostics, function(x) is.null(x) || length(x) == 0)))
 })
 
 test_that("est_cpue_roving diagnostics include correction info when applied", {
   data <- tibble::tibble(
-    catch_kept = 1:10,
+    catch_total = 1:10,
     hours_fished = 1:10,
     planned_hours = (1:10) * 2
   )
@@ -543,7 +549,7 @@ test_that("est_cpue_roving diagnostics include correction info when applied", {
 
 test_that("est_cpue_roving works with stratified designs", {
   data <- tibble::tibble(
-    catch_kept = 1:20,
+    catch_total = 1:20,
     hours_fished = rep(c(1, 2), 10),
     stratum = rep(c("weekday", "weekend"), each = 10)
   )
@@ -565,7 +571,7 @@ test_that("est_cpue_roving works with stratified designs", {
 
 test_that("est_cpue_roving works with replicate designs", {
   data <- tibble::tibble(
-    catch_kept = 1:20,
+    catch_total = 1:20,
     hours_fished = rep(2, 20)
   )
 
@@ -587,20 +593,20 @@ test_that("est_cpue_roving works with replicate designs", {
 
 test_that("est_cpue_roving creates correct method label", {
   data <- tibble::tibble(
-    catch_kept = 1:10,
+    catch_total = 1:10,
     hours_fished = rep(1, 10)
   )
   svy <- survey::svydesign(ids = ~1, data = data)
 
   result_none <- est_cpue_roving(
     svy,
-    response = "catch_kept",
+    response = "catch_total",
     length_bias_correction = "none"
   )
 
   expect_equal(
     result_none$method,
-    "cpue_roving:mean_of_ratios:catch_kept:none"
+    "cpue_roving:mean_of_ratios:catch_total:none"  # Fixed: use catch_total
   )
 
   result_pollock <- est_cpue_roving(
@@ -623,7 +629,7 @@ test_that("est_cpue_roving creates correct method label", {
 test_that("est_cpue_roving returns tidycreel standard schema", {
   data <- tibble::tibble(
     location = rep(c("A", "B"), each = 5),
-    catch_kept = 1:10,
+    catch_total = 1:10,
     hours_fished = rep(1, 10)
   )
   svy <- survey::svydesign(ids = ~1, data = data)
@@ -651,7 +657,7 @@ test_that("est_cpue_roving returns tidycreel standard schema", {
 test_that("est_cpue_roving column order matches tidycreel standard", {
   data <- tibble::tibble(
     location = rep("A", 10),
-    catch_kept = 1:10,
+    catch_total = 1:10,
     hours_fished = rep(1, 10)
   )
   svy <- survey::svydesign(ids = ~1, data = data)

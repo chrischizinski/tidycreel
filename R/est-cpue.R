@@ -35,9 +35,13 @@
 #'   incomplete. Short trips are truncated when detected.
 #' - **Mean-of-ratios**: computes trip-level `response/effort_col` then uses
 #'   `svymean`/`svyby`. Prefer for complete trips with minimal zero-inflation.
+#' - **For roving/creel surveys**: Use [est_cpue_roving()] which implements the
+#'   Pollock et al. (1997) mean-of-ratios estimator with optional length-bias
+#'   correction for incomplete trips intercepted during fishing.
 #'
 #' @importFrom stats update as.formula qnorm
-#' @seealso [survey::svyratio()], [survey::svymean()], [survey::svyby()].
+#' @seealso [est_cpue_roving()] for roving survey CPUE with Pollock correction,
+#'   [survey::svyratio()], [survey::svymean()], [survey::svyby()].
 #' @export
 est_cpue <- function(design,
                      by = NULL,

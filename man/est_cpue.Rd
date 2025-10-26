@@ -59,8 +59,12 @@ truncation; for mixed data combines estimates using effort-weighting.
 incomplete. Short trips are truncated when detected.
 \item \strong{Mean-of-ratios}: computes trip-level \code{response/effort_col} then uses
 \code{svymean}/\code{svyby}. Prefer for complete trips with minimal zero-inflation.
+\item \strong{For roving/creel surveys}: Use \code{\link[=est_cpue_roving]{est_cpue_roving()}} which implements the
+Pollock et al. (1997) mean-of-ratios estimator with optional length-bias
+correction for incomplete trips intercepted during fishing.
 }
 }
 \seealso{
+\code{\link[=est_cpue_roving]{est_cpue_roving()}} for roving survey CPUE with Pollock correction,
 \code{\link[survey:svyratio]{survey::svyratio()}}, \code{\link[survey:surveysummary]{survey::svymean()}}, \code{\link[survey:svyby]{survey::svyby()}}.
 }

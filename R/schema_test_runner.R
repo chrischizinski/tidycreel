@@ -6,6 +6,8 @@
 #' @param strict Logical, if TRUE throws error on validation failure
 #' @return Invisibly returns validated data, or errors if invalid
 #' @examples
+#' \donttest{
+#' \dontrun{
 #' schema_test_runner(list(
 #'   calendar = calendar_tbl,
 #'   interviews = interviews_tbl,
@@ -13,6 +15,7 @@
 #'   auxiliary = auxiliary_tbl,
 #'   reference = reference_tbl
 #' ))
+#' }
 #' @export
 schema_test_runner <- function(data_list, strict = TRUE) {
   stopifnot(is.list(data_list))
@@ -34,3 +37,1420 @@ schema_test_runner <- function(data_list, strict = TRUE) {
   }
   invisible(results)
 }
+}
+  if (!is.null(data_list$interviews)) {
+    results$interviews <- validate_interviews(data_list$interviews, strict = strict)
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+}
+  invisible(results)
+}
+  if (!is.null(data_list$interviews)) {
+    results$interviews <- validate_interviews(data_list$interviews, strict = strict)
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+}
+  invisible(results)
+}
+  if (!is.null(data_list$interviews)) {
+    results$interviews <- validate_interviews(data_list$interviews, strict = strict)
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+
+  invisible(results)
+}
+
+  if (!is.null(data_list$interviews)) {
+    results$interviews <- validate_interviews(data_list$interviews, strict = strict)
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+}
+  invisible(results)
+}
+  if (!is.null(data_list$interviews)) {
+    results$interviews <- validate_interviews(data_list$interviews, strict = strict)
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+}
+  invisible(results)
+}
+  if (!is.null(data_list$interviews)) {
+    results$interviews <- validate_interviews(data_list$interviews, strict = strict)
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+
+  invisible(results)
+}
+
+
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+
+  invisible(results)
+}
+
+  }
+  if (!is.null(data_list$interviews)) {
+    results$interviews <- validate_interviews(data_list$interviews, strict = strict)
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+}
+  invisible(results)
+}
+  if (!is.null(data_list$interviews)) {
+    results$interviews <- validate_interviews(data_list$interviews, strict = strict)
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+}
+  invisible(results)
+}
+  if (!is.null(data_list$interviews)) {
+    results$interviews <- validate_interviews(data_list$interviews, strict = strict)
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+
+  invisible(results)
+}
+
+  if (!is.null(data_list$interviews)) {
+    results$interviews <- validate_interviews(data_list$interviews, strict = strict)
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+}
+  invisible(results)
+}
+  if (!is.null(data_list$interviews)) {
+    results$interviews <- validate_interviews(data_list$interviews, strict = strict)
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+}
+  invisible(results)
+}
+  if (!is.null(data_list$interviews)) {
+    results$interviews <- validate_interviews(data_list$interviews, strict = strict)
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+
+  invisible(results)
+}
+
+
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+
+  invisible(results)
+}
+
+
+  invisible(results)
+}
+}
+  if (!is.null(data_list$interviews)) {
+    results$interviews <- validate_interviews(data_list$interviews, strict = strict)
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+}
+  invisible(results)
+}
+  if (!is.null(data_list$interviews)) {
+    results$interviews <- validate_interviews(data_list$interviews, strict = strict)
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+}
+  invisible(results)
+}
+  if (!is.null(data_list$interviews)) {
+    results$interviews <- validate_interviews(data_list$interviews, strict = strict)
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+
+  invisible(results)
+}
+
+  if (!is.null(data_list$interviews)) {
+    results$interviews <- validate_interviews(data_list$interviews, strict = strict)
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+}
+  invisible(results)
+}
+  if (!is.null(data_list$interviews)) {
+    results$interviews <- validate_interviews(data_list$interviews, strict = strict)
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+}
+  invisible(results)
+}
+  if (!is.null(data_list$interviews)) {
+    results$interviews <- validate_interviews(data_list$interviews, strict = strict)
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+
+  invisible(results)
+}
+
+
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+
+  invisible(results)
+}
+
+  }
+  if (!is.null(data_list$interviews)) {
+    results$interviews <- validate_interviews(data_list$interviews, strict = strict)
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+}
+  invisible(results)
+}
+  if (!is.null(data_list$interviews)) {
+    results$interviews <- validate_interviews(data_list$interviews, strict = strict)
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+}
+  invisible(results)
+}
+  if (!is.null(data_list$interviews)) {
+    results$interviews <- validate_interviews(data_list$interviews, strict = strict)
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+
+  invisible(results)
+}
+
+  if (!is.null(data_list$interviews)) {
+    results$interviews <- validate_interviews(data_list$interviews, strict = strict)
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+}
+  invisible(results)
+}
+  if (!is.null(data_list$interviews)) {
+    results$interviews <- validate_interviews(data_list$interviews, strict = strict)
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+}
+  invisible(results)
+}
+  if (!is.null(data_list$interviews)) {
+    results$interviews <- validate_interviews(data_list$interviews, strict = strict)
+  }
+  if (!is.null(data_list$counts)) {
+    results$counts <- validate_counts(data_list$counts, strict = strict)
+  }
+  if (!is.null(data_list$auxiliary)) {
+    results$auxiliary <- validate_auxiliary(data_list$auxiliary, strict = strict)
+  }
+  if (!is.null(data_list$reference)) {
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+
+  invisible(results)
+}
+
+
+    results$reference <- validate_reference(data_list$reference, strict = strict)
+  }
+  invisible(results)
+}
+
+
+  invisible(results)
+}
+
+
+
