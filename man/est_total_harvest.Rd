@@ -2,7 +2,7 @@
 % Please edit documentation in R/est-total-harvest.R
 \name{est_total_harvest}
 \alias{est_total_harvest}
-\title{Estimate Total Harvest/Catch Using Product Estimator}
+\title{Estimate Total Harvest/Catch Using Product Estimator (REBUILT)}
 \usage{
 est_total_harvest(
   effort_est,
@@ -20,172 +20,78 @@ est_total_harvest(
 
 \item{cpue_est}{Tibble from \code{est_cpue()} or \code{aggregate_cpue()} with CPUE estimates}
 
-\item{by}{Character vector of grouping variables (must match between inputs).
-If \code{NULL}, assumes both inputs represent the same population (e.g., all species).}
+\item{by}{Character vector of grouping variables (must match between inputs).}
 
-\item{response}{Type of catch: \code{"catch_total"}, \code{"catch_kept"}, or \code{"catch_released"}.
-Must match the response type used in CPUE estimation.}
+\item{response}{Type of catch: \code{"catch_total"}, \code{"catch_kept"}, or \code{"catch_released"}.}
 
-\item{method}{Estimation method: \code{"product"} (default) or \code{"separate_ratio"}.
-Product estimator is recommended for most cases.}
+\item{method}{Estimation method: \code{"product"} (default) or \code{"separate_ratio"}.}
 
-\item{correlation}{Correlation between effort and CPUE estimates:
+\item{correlation}{Correlation between effort and CPUE estimates (default \code{NULL}):
 \itemize{
-\item \code{NULL} (default): Assumes independent (conservative, appropriate when
-effort and CPUE from different data sources)
-\item Numeric value between -1 and 1: Use specified correlation
-\item \code{"auto"}: Attempt to estimate from data (not yet implemented)
+\item \code{NULL}: Independent (conservative)
+\item Numeric (-1 to 1): Specified correlation
+\item \code{"auto"}: Estimate from data (not implemented)
 }}
 
-\item{conf_level}{Confidence level for Wald confidence intervals (default 0.95)}
+\item{conf_level}{Confidence level for Wald CIs (default 0.95)}
 
-\item{diagnostics}{Include diagnostic information in output (default \code{TRUE})}
+\item{diagnostics}{Include diagnostic information (default \code{TRUE})}
 }
 \value{
-Tibble with standard tidycreel schema:
-\itemize{
-\item Grouping columns (from \code{by} parameter)
-\item \code{estimate}: Total harvest/catch/release estimate
-\item \code{se}: Standard error
-\item \code{ci_low}, \code{ci_high}: Confidence interval bounds
-\item \code{n}: Sample size (minimum of effort and CPUE sample sizes)
-\item \code{method}: Method used for estimation
-\item \code{diagnostics}: List-column with diagnostic information
-}
+Tibble with grouping columns, \code{estimate}, \code{se}, \code{ci_low}, \code{ci_high},
+\code{deff} (design effect propagated from inputs), \code{n}, \code{method}, \code{diagnostics}
+list-column, and \code{variance_info} list-column.
 }
 \description{
 Estimates total harvest, catch, or releases by multiplying effort and CPUE
 estimates with proper variance propagation using the delta method.
 }
 \details{
+\strong{REBUILT}: Enhanced output structure with design effects and comprehensive
+variance information, matching the native survey integration architecture.
 \subsection{Statistical Method}{
 
-Combines effort (E) and catch-per-unit-effort (C) estimates:
-
-\deqn{H = E \times C}
-
-where:
-\itemize{
-\item H = Total harvest/catch
-\item E = Total effort (angler-hours)
-\item C = CPUE (catch per angler-hour)
-}
+Combines effort (E) and CPUE (C): H = E × C
 }
 
 \subsection{Variance Propagation (Delta Method)}{
 
-When effort and CPUE are \strong{independent} (default):
-\deqn{Var(H) = E^2 \times Var(C) + C^2 \times Var(E)}
-
-When effort and CPUE are \strong{correlated}:
-\deqn{Var(H) = E^2 \times Var(C) + C^2 \times Var(E) + 2 \times E \times C \times Cov(E,C)}
-
-where \eqn{Cov(E,C) = \rho \times SE(E) \times SE(C)} and \eqn{\rho} is the
-correlation coefficient.
-}
-
-\subsection{When to Use Correlation}{
-
-\strong{Use correlation = 0 (NULL, default) when:}
-\itemize{
-\item Effort estimated from count data (access point, bus route)
-\item CPUE estimated from separate interview data
-\item Different survey designs or time periods
-}
-
-\strong{Use non-zero correlation when:}
-\itemize{
-\item Both estimates come from the same interview survey
-\item Roving surveys where effort and CPUE use same data source
-\item You have prior knowledge of correlation structure
-}
+Independent (default): Var(H) = E² × Var(C) + C² × Var(E)
+Correlated: Var(H) = E² × Var(C) + C² × Var(E) + 2 × E × C × Cov(E,C)
 }
 
 \subsection{Species Aggregation}{
 
-For species group estimates (e.g., black bass, panfish), use \code{aggregate_cpue()}
-BEFORE calling this function to ensure proper variance estimation:
+Use \code{aggregate_cpue()} BEFORE this function for proper variance:
 
-\if{html}{\out{<div class="sourceCode r">}}\preformatted{# CORRECT approach
-cpue_black_bass <- aggregate_cpue(
-  interviews, svy_int,
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{# CORRECT
+cpue_black_bass <- aggregate_cpue(interviews, svy_int,
   species_values = c("largemouth_bass", "smallmouth_bass"),
-  group_name = "black_bass"
-)
-harvest_black_bass <- est_total_harvest(effort_est, cpue_black_bass)
+  group_name = "black_bass")
+harvest <- est_total_harvest(effort_est, cpue_black_bass)
 
-# WRONG approach (ignores covariance)
-harvest_lmb <- est_total_harvest(effort_est, cpue_largemouth)
-harvest_smb <- est_total_harvest(effort_est, cpue_smallmouth)
-harvest_wrong <- harvest_lmb$estimate + harvest_smb$estimate  # Bad!
+# WRONG (ignores covariance)
+harvest <- sum(est_total_harvest(effort, cpue_lmb)$estimate,
+               est_total_harvest(effort, cpue_smb)$estimate)
 }\if{html}{\out{</div>}}
 }
 }
 \examples{
 \dontrun{
-library(tidycreel)
-library(survey)
+# BACKWARD COMPATIBLE
+harvest <- est_total_harvest(effort_est, cpue_est)
 
-# Complete workflow
-# 1. Estimate effort from count data
-svy_day <- as_day_svydesign(
-  calendar,
-  day_id = "date",
-  strata_vars = "day_type"
-)
-effort_est <- est_effort(
-  svy_day, counts,
-  method = "instantaneous",
-  by = "location"
-)
-
-# 2. Estimate CPUE from interview data
-svy_int <- svydesign(ids = ~1, weights = ~1, data = interviews)
-cpue_est <- est_cpue(
-  svy_int,
-  by = c("location", "species"),
-  response = "catch_kept"
-)
-
-# 3. Calculate total harvest
-harvest_total <- est_total_harvest(
-  effort_est,
-  cpue_est,
-  by = c("location", "species"),
-  response = "catch_kept"
-)
-
-# Species group aggregation
-cpue_black_bass <- aggregate_cpue(
-  interviews, svy_int,
-  species_values = c("largemouth_bass", "smallmouth_bass"),
-  group_name = "black_bass",
-  response = "catch_kept"
-)
-harvest_black_bass <- est_total_harvest(effort_est, cpue_black_bass)
-
-# Multiple response types
-catch_total <- est_total_harvest(effort_est, cpue_total,
-                                 response = "catch_total")
-releases <- est_total_harvest(effort_est, cpue_released,
-                              response = "catch_released")
-
-# Verify relationship: total ≈ kept + released
-all.equal(
-  catch_total$estimate,
-  harvest_total$estimate + releases$estimate
-)
+# NEW: Enhanced output with deff and variance_info
+harvest <- est_total_harvest(effort_est, cpue_est)
+harvest$deff  # Design effect propagated from inputs
+harvest$variance_info[[1]]  # Delta method details
 }
 
 }
 \references{
-Pollock, K.H., C.M. Jones, and T.L. Brown. 1994. Angler Survey Methods
-and Their Applications in Fisheries Management. American Fisheries
-Society Special Publication 25.
-
-Seber, G.A.F. 1982. The Estimation of Animal Abundance and Related Parameters.
-2nd edition. Charles Griffin, London.
+Pollock, K.H., C.M. Jones, and T.L. Brown. 1994. Angler Survey Methods.
+American Fisheries Society Special Publication 25.
 }
 \seealso{
-\code{\link[=est_effort]{est_effort()}}, \code{\link[=est_cpue]{est_cpue()}}, \code{\link[=aggregate_cpue]{aggregate_cpue()}}, \code{\link[=est_catch]{est_catch()}}
+\code{\link[=est_effort]{est_effort()}}, \code{\link[=est_cpue]{est_cpue()}}, \code{\link[=aggregate_cpue]{aggregate_cpue()}}
 }

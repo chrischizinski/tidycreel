@@ -2,7 +2,7 @@
 % Please edit documentation in R/aggregate-cpue.R
 \name{aggregate_cpue}
 \alias{aggregate_cpue}
-\title{Aggregate CPUE Across Species Using Survey Design}
+\title{Aggregate CPUE Across Species (REBUILT with Native Survey Integration)}
 \usage{
 aggregate_cpue(
   cpue_data,
@@ -14,7 +14,11 @@ aggregate_cpue(
   response = c("catch_total", "catch_kept", "catch_released"),
   effort_col = "hours_fished",
   mode = "ratio_of_means",
-  conf_level = 0.95
+  conf_level = 0.95,
+  variance_method = "survey",
+  decompose_variance = FALSE,
+  design_diagnostics = FALSE,
+  n_replicates = 1000
 )
 }
 \arguments{
@@ -38,26 +42,35 @@ aggregate_cpue(
 Defaults to \code{"ratio_of_means"} for robustness.}
 
 \item{conf_level}{Confidence level for Wald CIs (default 0.95)}
+
+\item{variance_method}{\strong{NEW} Variance estimation method (default "survey")}
+
+\item{decompose_variance}{\strong{NEW} Logical, decompose variance (default FALSE)}
+
+\item{design_diagnostics}{\strong{NEW} Logical, compute diagnostics (default FALSE)}
+
+\item{n_replicates}{\strong{NEW} Bootstrap/jackknife replicates (default 1000)}
 }
 \value{
 Tibble with grouping columns (including \code{species_group}), \code{estimate},
-\code{se}, \code{ci_low}, \code{ci_high}, \code{n}, \code{method}, and \code{diagnostics} list-column.
-Schema matches \code{est_cpue()} output for seamless use with \code{est_total_harvest()}.
+\code{se}, \code{ci_low}, \code{ci_high}, \code{deff} (design effect), \code{n}, \code{method},
+\code{diagnostics} list-column, and \code{variance_info} list-column.
 }
 \description{
 Combines CPUE estimates for multiple species into a single aggregate,
-properly accounting for survey design and covariance between species.
-This function is essential for calculating total harvest for species groups
-(e.g., black bass, panfish, catfish) while maintaining proper variance estimation.
+properly accounting for survey design and covariance between species with
+NATIVE support for advanced variance methods.
 }
 \details{
+\strong{NEW}: Native support for multiple variance methods, variance decomposition,
+and design diagnostics without requiring wrapper functions.
+
 \strong{Statistical Approach:}
 
 This function performs survey-design-based aggregation, which is CRITICAL for
 proper variance estimation. It works by:
 \enumerate{
 \item Creating an aggregated catch variable by summing catch across specified species
-within each interview
 \item Updating the survey design with this aggregated variable
 \item Estimating CPUE for the aggregate using standard survey methods
 \item Properly accounting for covariance between species
@@ -65,81 +78,29 @@ within each interview
 
 \strong{Why This Matters:}
 
-Simply adding species-specific harvest estimates (effort × CPUE for each species)
-and summing them produces INCORRECT variance estimates because it ignores
-the covariance between species catches. This function ensures proper variance
-by aggregating at the CPUE level before multiplying by effort.
-
-\strong{WRONG Approach:}
-
-\if{html}{\out{<div class="sourceCode r">}}\preformatted{# DON'T DO THIS - ignores covariance
-harvest_lmb <- est_total_harvest(effort, cpue_largemouth)
-harvest_smb <- est_total_harvest(effort, cpue_smallmouth)
-harvest_bass_wrong <- harvest_lmb$estimate + harvest_smb$estimate
-}\if{html}{\out{</div>}}
-
-\strong{CORRECT Approach:}
-
-\if{html}{\out{<div class="sourceCode r">}}\preformatted{# DO THIS - proper survey-based aggregation
+Simply adding species-specific harvest estimates ignores covariance between species.
+This function ensures proper variance by aggregating at the CPUE level.
+}
+\examples{
+\dontrun{
+# BACKWARD COMPATIBLE
 cpue_black_bass <- aggregate_cpue(
   interviews, svy_int,
   species_values = c("largemouth_bass", "smallmouth_bass"),
   group_name = "black_bass"
 )
-harvest_bass_correct <- est_total_harvest(effort, cpue_black_bass)
-}\if{html}{\out{</div>}}
 
-\strong{Missing Species Handling:}
-
-If \code{species_values} includes species not present in the data, they are
-silently ignored (contributing zero to the aggregate). A warning is issued
-if ALL specified species are missing.
-}
-\examples{
-\dontrun{
-library(tidycreel)
-library(survey)
-
-# Example: Aggregate black bass species
-svy_int <- svydesign(ids = ~1, weights = ~1, data = interviews)
-
+# NEW: Advanced features
 cpue_black_bass <- aggregate_cpue(
-  cpue_data = interviews,
-  svy_design = svy_int,
-  species_col = "species",
-  species_values = c("largemouth_bass", "smallmouth_bass", "spotted_bass"),
+  interviews, svy_int,
+  species_values = c("largemouth_bass", "smallmouth_bass"),
   group_name = "black_bass",
-  response = "catch_kept"
-)
-
-# Use in harvest calculation
-harvest_black_bass <- est_total_harvest(effort_est, cpue_black_bass)
-
-# Aggregate by location and species group
-cpue_panfish_by_loc <- aggregate_cpue(
-  cpue_data = interviews,
-  svy_design = svy_int,
-  species_values = c("bluegill", "redear_sunfish", "green_sunfish"),
-  group_name = "panfish",
-  by = "location",
-  response = "catch_kept"
-)
-
-# All species combined
-cpue_all_species <- aggregate_cpue(
-  cpue_data = interviews,
-  svy_design = svy_int,
-  species_values = unique(interviews$species),
-  group_name = "all_species",
-  response = "catch_total"
+  variance_method = "bootstrap",
+  decompose_variance = TRUE,
+  design_diagnostics = TRUE
 )
 }
 
-}
-\references{
-Pollock, K.H., C.M. Jones, and T.L. Brown. 1994. Angler Survey Methods
-and Their Applications in Fisheries Management. American Fisheries
-Society Special Publication 25.
 }
 \seealso{
 \code{\link[=est_cpue]{est_cpue()}}, \code{\link[=est_total_harvest]{est_total_harvest()}}

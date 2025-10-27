@@ -2,7 +2,7 @@
 % Please edit documentation in R/est-effort-aerial.R
 \name{est_effort.aerial}
 \alias{est_effort.aerial}
-\title{Aerial Effort Estimator}
+\title{Aerial Effort Estimator (REBUILT with Native Survey Integration)}
 \usage{
 est_effort.aerial(
   counts,
@@ -19,7 +19,11 @@ est_effort.aerial(
   calibrate_formula = NULL,
   calibrate_population = NULL,
   calfun = c("linear", "raking", "logit"),
-  conf_level = 0.95
+  conf_level = 0.95,
+  variance_method = "survey",
+  decompose_variance = FALSE,
+  design_diagnostics = FALSE,
+  n_replicates = 1000
 )
 }
 \arguments{
@@ -54,29 +58,61 @@ calibration factors to apply after visibility correction.}
 design (must include \code{day_id} in \code{svy$variables}). When provided, totals,
 SEs, and CIs are computed with \code{survey} functions.}
 
+\item{post_strata_var}{Optional post-stratification variable name}
+
+\item{post_strata}{Optional post-stratification population table}
+
+\item{calibrate_formula}{Optional calibration formula}
+
+\item{calibrate_population}{Optional calibration population totals}
+
+\item{calfun}{Calibration function: "linear", "raking", or "logit"}
+
 \item{conf_level}{Confidence level for Wald CIs (default 0.95).}
+
+\item{variance_method}{\strong{NEW} Variance estimation method (default "survey")}
+
+\item{decompose_variance}{\strong{NEW} Logical, decompose variance (default FALSE)}
+
+\item{design_diagnostics}{\strong{NEW} Logical, compute diagnostics (default FALSE)}
+
+\item{n_replicates}{\strong{NEW} Bootstrap/jackknife replicates (default 1000)}
 }
 \value{
-Tibble with grouping columns, \code{estimate}, \code{se}, \code{ci_low}, \code{ci_high},
-\code{n}, \code{method}, and a \code{diagnostics} list-column.
+Tibble with grouping columns plus:
+\describe{
+\item{estimate}{Estimated total effort (angler-hours)}
+\item{se}{Standard error}
+\item{ci_low, ci_high}{Confidence interval limits}
+\item{deff}{Design effect}
+\item{n}{Sample size}
+\item{method}{Estimation method ("aerial")}
+\item{variance_info}{\strong{NEW} List-column with comprehensive variance information}
+}
 }
 \description{
 Estimate angler-hours from aerial snapshot counts using a mean-count
 expansion within groups, with optional visibility and calibration
-adjustments, and design-based variance via the \code{survey} package when a
-day-level \code{svydesign} is provided.
+adjustments, and design-based variance via the \code{survey} package with
+NATIVE support for advanced variance methods.
 }
 \details{
-Effort per day×group = mean(adjusted_count) × total_minutes_represented ÷ 60.
-Group totals are then computed with \code{survey::svytotal}/\code{svyby} when \code{svy}
-encodes the day sampling design.
+\strong{NEW}: Native support for multiple variance methods, variance decomposition,
+and design diagnostics without requiring wrapper functions.
 }
 \examples{
-df <- tibble::tibble(
-  date = as.Date(rep("2025-08-20", 4)),
-  location = c("A","A","B","B"),
-  count = c(10, 12, 8, 15),
-  interval_minutes = c(60, 60, 60, 60)
+\dontrun{
+# BACKWARD COMPATIBLE
+result <- est_effort.aerial_rebuilt(counts, svy = design)
+
+# NEW: Complete analysis
+result_full <- est_effort.aerial_rebuilt(
+  counts,
+  svy = design,
+  variance_method = "bootstrap",
+  decompose_variance = TRUE,
+  design_diagnostics = TRUE
 )
-est_effort.aerial(df)
+}
+
 }

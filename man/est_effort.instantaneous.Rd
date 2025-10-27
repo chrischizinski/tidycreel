@@ -2,7 +2,7 @@
 % Please edit documentation in R/est-effort-instantaneous.R
 \name{est_effort.instantaneous}
 \alias{est_effort.instantaneous}
-\title{Instantaneous Effort Estimator (survey-first)}
+\title{Instantaneous Effort Estimator (REBUILT with Native Survey Integration)}
 \usage{
 est_effort.instantaneous(
   counts,
@@ -12,7 +12,11 @@ est_effort.instantaneous(
   day_id = "date",
   covariates = NULL,
   svy = NULL,
-  conf_level = 0.95
+  conf_level = 0.95,
+  variance_method = "survey",
+  decompose_variance = FALSE,
+  design_diagnostics = FALSE,
+  n_replicates = 1000
 )
 }
 \arguments{
@@ -40,18 +44,56 @@ survey design.}
 \item{svy}{Optional \code{svydesign}/\code{svrepdesign} for day-level sampling design.}
 
 \item{conf_level}{Confidence level for Wald CIs (default 0.95).}
+
+\item{variance_method}{\strong{NEW} Variance estimation method:
+\describe{
+\item{"survey"}{Standard survey package variance (default, backward compatible)}
+\item{"svyrecvar"}{survey:::svyrecvar internals for maximum accuracy}
+\item{"bootstrap"}{Bootstrap resampling variance}
+\item{"jackknife"}{Jackknife resampling variance}
+\item{"linearization"}{Taylor linearization (alias for "survey")}
+}}
+
+\item{decompose_variance}{\strong{NEW} Logical, whether to decompose variance into
+components (among-day, within-day, etc.). Adds variance decomposition to
+the variance_info output. Default FALSE for backward compatibility.}
+
+\item{design_diagnostics}{\strong{NEW} Logical, whether to compute design quality
+diagnostics. Adds diagnostic information to variance_info output.
+Default FALSE for backward compatibility.}
+
+\item{n_replicates}{\strong{NEW} Number of bootstrap/jackknife replicates (default 1000)}
 }
 \value{
-Tibble with grouping columns, \code{estimate}, \code{se}, \code{ci_low}, \code{ci_high},
-\code{n}, \code{method}, and a \code{diagnostics} list-column.
+Tibble with grouping columns plus:
+\describe{
+\item{estimate}{Estimated total effort (angler-hours)}
+\item{se}{Standard error}
+\item{ci_low, ci_high}{Confidence interval limits}
+\item{deff}{Design effect (variance inflation due to design)}
+\item{n}{Sample size}
+\item{method}{Estimation method ("instantaneous")}
+\item{variance_info}{\strong{NEW} List-column with comprehensive variance information:}
+}
+
+The \code{variance_info} list-column contains:
+\itemize{
+\item \code{variance}: Variance estimate
+\item \code{method}: Variance method used
+\item \code{method_details}: Method-specific information
+\item \code{decomposition}: Variance components (if \code{decompose_variance = TRUE})
+\item \code{diagnostics}: Design diagnostics (if \code{design_diagnostics = TRUE})
+}
 }
 \description{
 Estimate angler-hours from instantaneous (snapshot) counts using mean-count
 expansion per day × group, then compute design-based totals and variance via
-the \code{survey} package when a day-level design is supplied.
+the \code{survey} package with NATIVE support for advanced variance methods.
 }
 \details{
-Effort per day×group = mean(count) × total_minutes ÷ 60.
+\strong{NEW}: This function now natively supports multiple variance estimation methods,
+variance decomposition, and design diagnostics without requiring wrapper functions.
+\subsection{Survey-Based Estimation}{
 
 Aggregates per-count observations to day × group totals and uses a
 day-PSU survey design to compute totals/variance via the \code{survey} package.
@@ -59,6 +101,82 @@ When \code{svy} is not provided, a non-design fallback uses within-group
 variability to approximate SE/CI; prefer a valid survey design for
 defensible inference.
 }
+
+\subsection{NEW: Advanced Variance Methods}{
+
+This rebuilt function provides NATIVE support for advanced variance estimation:
+\itemize{
+\item \strong{Standard} (\code{variance_method = "survey"}): Uses survey package public API
+\item \strong{Survey Internals} (\code{variance_method = "svyrecvar"}): Most accurate for complex designs
+\item \strong{Bootstrap} (\code{variance_method = "bootstrap"}): Resampling-based variance
+\item \strong{Jackknife} (\code{variance_method = "jackknife"}): Leave-one-out variance
+}
+
+These are built-in, not wrapper functions, ensuring optimal performance.
+}
+
+\subsection{NEW: Variance Decomposition}{
+
+Set \code{decompose_variance = TRUE} to decompose total variance into components:
+\itemize{
+\item Among-day variance
+\item Within-day variance
+\item Stratum effects (if stratified design)
+}
+
+Results are available in the \code{variance_info} list-column.
+}
+
+\subsection{NEW: Design Diagnostics}{
+
+Set \code{design_diagnostics = TRUE} to assess design quality:
+\itemize{
+\item Singleton strata/clusters detection
+\item Weight distribution analysis
+\item Sample size adequacy checks
+\item Design improvement recommendations
+}
+}
+}
+\examples{
+\dontrun{
+# BACKWARD COMPATIBLE: Standard usage (no change from old version)
+result <- est_effort.instantaneous_rebuilt(counts, svy = design)
+
+# NEW: Bootstrap variance
+result_boot <- est_effort.instantaneous_rebuilt(
+  counts,
+  svy = design,
+  variance_method = "bootstrap",
+  n_replicates = 2000
+)
+
+# NEW: With variance decomposition
+result_decomp <- est_effort.instantaneous_rebuilt(
+  counts,
+  svy = design,
+  variance_method = "survey",
+  decompose_variance = TRUE
+)
+
+# View decomposition
+result_decomp$variance_info[[1]]$decomposition
+
+# NEW: Complete analysis with all features
+result_full <- est_effort.instantaneous_rebuilt(
+  counts,
+  svy = design,
+  variance_method = "svyrecvar",
+  decompose_variance = TRUE,
+  design_diagnostics = TRUE
+)
+
+# View diagnostics
+result_full$variance_info[[1]]$diagnostics
+}
+
+}
 \seealso{
-\code{\link[=as_day_svydesign]{as_day_svydesign()}}, \code{\link[survey:surveysummary]{survey::svytotal()}}, \code{\link[survey:svyby]{survey::svyby()}}.
+\code{\link[=as_day_svydesign]{as_day_svydesign()}}, \code{\link[=tc_compute_variance]{tc_compute_variance()}}, \code{\link[=tc_decompose_variance]{tc_decompose_variance()}},
+\code{\link[=tc_design_diagnostics]{tc_design_diagnostics()}}
 }
