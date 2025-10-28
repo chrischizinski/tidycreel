@@ -35,10 +35,12 @@ jobs:
             any::lintr
             any::styler
           needs: check
+      - name: Restore renv packages
+        run: Rscript -e "if (file.exists('renv.lock')) renv::restore()"
       - name: Lint
         run: Rscript -e "lintr::lint_package()"
       - name: Style (dry-run)
-        run: Rscript -e "styler::style_dir(dry = TRUE)"
+        run: Rscript -e "styler::style_dir(dry = 'on')"
       - name: Check
         env:
           _R_CHECK_FORCE_SUGGESTS_: false
