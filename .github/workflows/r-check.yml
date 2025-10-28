@@ -13,7 +13,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: r-lib/actions/setup-r@v2
-        with: { r-version: ${{ matrix.r }} }
+        with:
+          r-version: ${{ matrix.r }}
       - name: Install system dependencies (macOS)
         if: runner.os == 'macOS'
         run: |
@@ -47,4 +48,6 @@ jobs:
       - name: Upload check results on failure
         if: failure()
         uses: actions/upload-artifact@v4
-        with: { name: r-cmd-check-results, path: check }
+        with:
+          name: r-cmd-check-results
+          path: check
