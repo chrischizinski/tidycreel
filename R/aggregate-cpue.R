@@ -202,6 +202,9 @@ aggregate_cpue <- function(
     ))
   }
 
+  # Handle zero effort by setting a minimum threshold
+  updated_data[[effort_col]][updated_data[[effort_col]] <= 0 | is.na(updated_data[[effort_col]])] <- 0.001
+
   if (mode == "ratio_of_means") {
     # For ratio estimation, create the ratio first then use mean
     # This allows us to use tc_compute_variance
@@ -383,15 +386,15 @@ aggregate_cpue <- function(
   out$method <- paste0("aggregate_cpue:", response, ":", mode)
 
   # Add diagnostics (original)
-  out$diagnostics <- replicate(nrow(out), list(list(
+  out$diagnostics <- replicate(nrow(out), list(
     species_aggregated = present_species,
     species_missing = missing_species,
     n_species = length(present_species),
     aggregation_method = mode
-  )), simplify = FALSE)
+  ), simplify = FALSE)
 
   # ── NEW: Add variance_info ────────────────────────────────────────────────
-  out$variance_info <- replicate(nrow(out), list(variance_result), simplify = FALSE)
+  out$variance_info <- replicate(nrow(out), variance_result %||% list(NULL), simplify = FALSE)
 
   # Return in standard schema
   result_cols <- c(

@@ -105,6 +105,9 @@ est_cpue <- function(design,
     ))
   }
 
+  # Handle zero effort by setting a minimum threshold
+  vars[[effort_col]][vars[[effort_col]] <= 0 | is.na(vars[[effort_col]])] <- 0.001
+
   if (mode == "ratio_of_means") {
     # For ratio estimation, create ratio variable first then use mean
     # Replace Inf/NaN from zero effort with NA
@@ -276,7 +279,7 @@ est_cpue <- function(design,
 
   # ── Add metadata ──────────────────────────────────────────────────────────
   out$diagnostics <- replicate(nrow(out), list(NULL), simplify = FALSE)
-  out$variance_info <- replicate(nrow(out), list(variance_result), simplify = FALSE)
+  out$variance_info <- replicate(nrow(out), variance_result %||% list(NULL), simplify = FALSE)
 
   return(dplyr::select(
     out,

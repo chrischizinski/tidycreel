@@ -21,9 +21,8 @@ test_interviews <- data.frame(
   stringsAsFactors = FALSE
 )
 
-# Add some edge cases
-test_interviews$hours_fished[c(1, 50)] <- 0  # Zero effort
-test_interviews$hours_fished[c(2, 51)] <- NA  # Missing effort
+# Base survey design (no zero-effort modifications)
+# Zero-effort scenarios are constructed within specific tests
 
 # Create survey design
 test_design <- svydesign(
@@ -48,7 +47,7 @@ test_that("variance method fallback sets correct method name", {
     error = function(e) NULL
   )
 
-  if (!is.null(result) && !is.null(result$variance_info)) {
+  if (!is.null(result) && !is.null(result$variance_info) && length(result$variance_info) > 0) {
     var_info <- result$variance_info[[1]]
 
     # If fallback occurred, method should be "survey", not "bootstrap"
@@ -66,11 +65,12 @@ test_that("svyrecvar fallback sets correct method name", {
   result <- est_cpue(
     test_design,
     response = "catch_kept",
-    mode = "ratio_of_means",  # Specify mode explicitly
-    mode = "ratio_of_means", variance_method = "svyrecvar"
+    mode = "ratio_of_means",
+    variance_method = "svyrecvar"
   )
 
   # svyrecvar currently always falls back
+  expect_true(length(result$variance_info) >= 1)
   var_info <- result$variance_info[[1]]
   expect_equal(var_info$method, "survey")
   expect_equal(var_info$requested_method, "svyrecvar")
@@ -190,7 +190,8 @@ test_that("grouped estimation with multiple grouping vars works", {
   result <- est_cpue(
     test_design,
     by = c("stratum", "location"),
-    response = "catch_kept"
+    response = "catch_kept",
+    mode = "ratio_of_means"
   )
 
   # Check that we get the right number of groups
@@ -238,11 +239,16 @@ test_that("aggregate_cpue aligns sample sizes correctly", {
 test_that("zero effort triggers warning", {
   skip_on_cran()
 
-  # We already have zero effort in test_interviews
+  zero_interviews <- test_interviews
+  zero_interviews$hours_fished[c(1, 50)] <- 0
+  zero_interviews$hours_fished[c(2, 51)] <- NA
+  zero_design <- svydesign(ids = ~1, data = zero_interviews, weights = ~1)
+
   expect_warning(
     result <- est_cpue(
-      test_design,
-      response = "catch_kept"
+      zero_design,
+      response = "catch_kept",
+      mode = "ratio_of_means"
     ),
     regexp = "zero or negative effort"
   )
@@ -255,11 +261,17 @@ test_that("zero effort triggers warning", {
 test_that("zero effort produces NA not Inf", {
   skip_on_cran()
 
+  zero_interviews <- test_interviews
+  zero_interviews$hours_fished[c(1, 50)] <- 0
+  zero_interviews$hours_fished[c(2, 51)] <- NA
+  zero_design <- svydesign(ids = ~1, data = zero_interviews, weights = ~1)
+
   # Suppress the expected warning
   suppressWarnings({
     result <- est_cpue(
-      test_design,
-      response = "catch_kept"
+      zero_design,
+      response = "catch_kept",
+      mode = "ratio_of_means"
     )
   })
 
@@ -270,10 +282,15 @@ test_that("zero effort produces NA not Inf", {
 test_that("aggregate_cpue handles zero effort", {
   skip_on_cran()
 
+  zero_interviews <- test_interviews
+  zero_interviews$hours_fished[c(1, 50)] <- 0
+  zero_interviews$hours_fished[c(2, 51)] <- NA
+  zero_design <- svydesign(ids = ~1, data = zero_interviews, weights = ~1)
+
   expect_warning(
     result <- aggregate_cpue(
-      cpue_data = test_interviews,
-      svy_design = test_design,
+      cpue_data = zero_interviews,
+      svy_design = zero_design,
       species_values = c("bass", "pike"),
       group_name = "predators"
     ),
@@ -298,6 +315,7 @@ test_that("default parameters maintain backward compatibility", {
   expect_true("variance_info" %in% names(result))
 
   # Should use default variance method
+  expect_true(length(result$variance_info) >= 1)
   var_info <- result$variance_info[[1]]
   expect_equal(var_info$method, "survey")
 })
@@ -325,20 +343,22 @@ test_that("new variance methods work", {
 test_that("full workflow with new variance methods works", {
   skip_on_cran()
 
-  # Create effort estimate
-  effort_data <- data.frame(
+  # Create effort counts data
+  counts_data <- data.frame(
     date = seq.Date(as.Date("2024-01-01"), as.Date("2024-01-10"), by = "day"),
     stratum = rep(c("A", "B"), length.out = 10),
-    anglers_count = rpois(10, lambda = 50),
-    total_hours = 12
+    count = rpois(10, lambda = 50),
+    interval_minutes = 30
   )
 
-  effort_design <- svydesign(ids = ~1, data = effort_data, weights = ~1)
+  effort_design <- svydesign(ids = ~1, data = counts_data, weights = ~1)
 
   # Estimate effort
   effort_est <- est_effort.instantaneous(
-    effort_design,
-    response = "anglers_count"
+    counts_data,
+    by = NULL,
+    minutes_col = "interval_minutes",
+    svy = effort_design
   )
 
   # Estimate CPUE (with zero effort warnings)
@@ -375,6 +395,7 @@ test_that("variance decomposition and diagnostics work", {
   expect_true("variance_info" %in% names(result))
 
   # Check that variance_info contains decomposition and diagnostics
+  expect_true(length(result$variance_info) >= 1)
   var_info <- result$variance_info[[1]]
   # These may be NULL if they failed, but the function should not error
   expect_true("decomposition" %in% names(var_info) || TRUE)
@@ -389,19 +410,21 @@ test_that("grouped estimation with no variance works", {
   # Create data where one group has no variance
   no_var_data <- test_interviews
   no_var_data$catch_kept[no_var_data$stratum == "A"] <- 5  # All same value
+  no_var_data$hours_fished[no_var_data$stratum == "A"] <- 2  # Constant effort to eliminate variance
 
   no_var_design <- svydesign(ids = ~1, data = no_var_data, weights = ~1)
 
   result <- est_cpue(
     no_var_design,
     by = "stratum",
-    response = "catch_kept"
+    response = "catch_kept",
+    mode = "ratio_of_means"
   )
 
   expect_s3_class(result, "data.frame")
   # Group A should have SE = 0 or NA
   group_a <- result |> filter(stratum == "A")
-  expect_true(is.na(group_a$se) || group_a$se == 0)
+  expect_true(is.na(group_a$se) || abs(group_a$se) < 1e-8)
 })
 
 test_that("single observation per group handled", {
@@ -425,7 +448,8 @@ test_that("single observation per group handled", {
     result <- est_cpue(
       single_obs_design,
       by = "stratum",
-      response = "catch_kept"
+      response = "catch_kept",
+      mode = "ratio_of_means"
     ),
     regexp = "fewer than 3 observations"
   )

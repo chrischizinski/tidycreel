@@ -187,11 +187,15 @@ tc_compute_variance <- function(design,
 
   # Add method metadata
   # Use actual method from result if fallback occurred, otherwise use requested
-  actual_method <- result$method %||% method
+  actual_method <- result[["method"]] %||% method
   result$method <- actual_method
   result$requested_method <- method  # Track what user requested
   result$conf_level <- conf_level
   result$response_variable <- response_var
+
+  # Ensure diagnostics and variance_info are always initialized as lists
+  result$diagnostics <- result$diagnostics %||% list(NULL)
+  result$variance_info <- result$variance_info %||% list(NULL)
 
   return(result)
 }
@@ -216,12 +220,19 @@ tc_compute_variance <- function(design,
 
     # Design effects
     deff <- if (calculate_deff) {
-      tryCatch(
-        as.numeric(survey::deff(est)),
-        error = function(e) NA_real_
-      )
+      tryCatch({
+        if (inherits(est, "survey.design")) {
+          as.numeric(survey::deff(est))
+        } else {
+          NA_real_
+        }
+      }, error = function(e) NA_real_)
     } else {
       NA_real_
+    }
+
+    if (length(deff) == 0 || !is.finite(deff)) {
+      deff <- NA_real_
     }
 
   } else {
@@ -241,12 +252,24 @@ tc_compute_variance <- function(design,
 
     # Design effects for grouped estimates
     deff <- if (calculate_deff) {
-      tryCatch(
-        as.numeric(survey::deff(est)),
-        error = function(e) rep(NA_real_, length(estimate))
-      )
+      tryCatch({
+        if (inherits(est, "survey.design")) {
+          deff_val <- as.numeric(survey::deff(est))
+          if (length(deff_val) == 0 || any(!is.finite(deff_val))) {
+            rep(NA_real_, length(estimate))
+          } else {
+            deff_val
+          }
+        } else {
+          rep(NA_real_, length(estimate))
+        }
+      }, error = function(e) rep(NA_real_, length(estimate)))
     } else {
       rep(NA_real_, length(estimate))
+    }
+
+    if (length(deff) == 0) {
+      deff <- rep(NA_real_, length(estimate))
     }
 
     # Extract grouping variables from result
@@ -374,9 +397,24 @@ tc_compute_variance <- function(design,
     variance <- se^2
 
     deff <- if (calculate_deff) {
-      tryCatch(as.numeric(survey::deff(est)), error = function(e) NA_real_)
+      tryCatch({
+        if (inherits(est, "survey.design")) {
+          deff_val <- as.numeric(survey::deff(est))
+          if (length(deff_val) == 0 || !is.finite(deff_val)) {
+            NA_real_
+          } else {
+            deff_val
+          }
+        } else {
+          NA_real_
+        }
+      }, error = function(e) NA_real_)
     } else {
       NA_real_
+    }
+
+    if (length(deff) == 0) {
+      deff <- NA_real_
     }
 
   } else {
@@ -394,12 +432,24 @@ tc_compute_variance <- function(design,
     variance <- se^2
 
     deff <- if (calculate_deff) {
-      tryCatch(
-        as.numeric(survey::deff(est)),
-        error = function(e) rep(NA_real_, length(estimate))
-      )
+      tryCatch({
+        if (inherits(est, "survey.design")) {
+          deff_val <- as.numeric(survey::deff(est))
+          if (length(deff_val) == 0 || any(!is.finite(deff_val))) {
+            rep(NA_real_, length(estimate))
+          } else {
+            deff_val
+          }
+        } else {
+          rep(NA_real_, length(estimate))
+        }
+      }, error = function(e) rep(NA_real_, length(estimate)))
     } else {
       rep(NA_real_, length(estimate))
+    }
+
+    if (length(deff) == 0) {
+      deff <- rep(NA_real_, length(estimate))
     }
 
     # Extract grouping variables from result
@@ -479,9 +529,24 @@ tc_compute_variance <- function(design,
     variance <- se^2
 
     deff <- if (calculate_deff) {
-      tryCatch(as.numeric(survey::deff(est)), error = function(e) NA_real_)
+      tryCatch({
+        if (inherits(est, "survey.design")) {
+          deff_val <- as.numeric(survey::deff(est))
+          if (length(deff_val) == 0 || !is.finite(deff_val)) {
+            NA_real_
+          } else {
+            deff_val
+          }
+        } else {
+          NA_real_
+        }
+      }, error = function(e) NA_real_)
     } else {
       NA_real_
+    }
+
+    if (length(deff) == 0) {
+      deff <- NA_real_
     }
 
   } else {
@@ -499,12 +564,24 @@ tc_compute_variance <- function(design,
     variance <- se^2
 
     deff <- if (calculate_deff) {
-      tryCatch(
-        as.numeric(survey::deff(est)),
-        error = function(e) rep(NA_real_, length(estimate))
-      )
+      tryCatch({
+        if (inherits(est, "survey.design")) {
+          deff_val <- as.numeric(survey::deff(est))
+          if (length(deff_val) == 0 || any(!is.finite(deff_val))) {
+            rep(NA_real_, length(estimate))
+          } else {
+            deff_val
+          }
+        } else {
+          rep(NA_real_, length(estimate))
+        }
+      }, error = function(e) rep(NA_real_, length(estimate)))
     } else {
       rep(NA_real_, length(estimate))
+    }
+
+    if (length(deff) == 0) {
+      deff <- rep(NA_real_, length(estimate))
     }
 
     # Extract grouping variables from result
