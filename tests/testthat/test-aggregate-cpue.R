@@ -97,7 +97,7 @@ test_that("aggregate_cpue produces correct structure", {
   # Check structure
   expect_s3_class(result, "tbl_df")
   expect_named(result, c("species_group", "estimate", "se", "ci_low",
-                         "ci_high", "n", "method", "diagnostics"))
+                         "ci_high", "deff", "n", "method", "diagnostics", "variance_info"))
 
   # Check values
   expect_equal(result$species_group, "black_bass")
