@@ -30,24 +30,20 @@ jobs:
           # Set paths for both Intel and Apple Silicon Macs
           if [[ -d "/opt/homebrew" ]]; then
             # Apple Silicon Mac
-            cat > ~/.R/Makevars << 'EOF'
-LDFLAGS=-L/opt/homebrew/lib -L/opt/homebrew/opt/gettext/lib
-CPPFLAGS=-I/opt/homebrew/include -I/opt/homebrew/opt/gettext/include
-PKG_CONFIG_PATH=/opt/homebrew/lib/pkgconfig:/opt/homebrew/opt/gettext/lib/pkgconfig
-LIBRARY_PATH=/opt/homebrew/lib:/opt/homebrew/opt/gettext/lib
-EOF
+            echo 'LDFLAGS=-L/opt/homebrew/lib -L/opt/homebrew/opt/gettext/lib' > ~/.R/Makevars
+            echo 'CPPFLAGS=-I/opt/homebrew/include -I/opt/homebrew/opt/gettext/include' >> ~/.R/Makevars
+            echo 'PKG_CONFIG_PATH=/opt/homebrew/lib/pkgconfig:/opt/homebrew/opt/gettext/lib/pkgconfig' >> ~/.R/Makevars
+            echo 'LIBRARY_PATH=/opt/homebrew/lib:/opt/homebrew/opt/gettext/lib' >> ~/.R/Makevars
             echo 'LDFLAGS=-L/opt/homebrew/lib -L/opt/homebrew/opt/gettext/lib' >> $GITHUB_ENV
             echo 'CPPFLAGS=-I/opt/homebrew/include -I/opt/homebrew/opt/gettext/include' >> $GITHUB_ENV
             echo 'PKG_CONFIG_PATH=/opt/homebrew/lib/pkgconfig:/opt/homebrew/opt/gettext/lib/pkgconfig' >> $GITHUB_ENV
             echo 'LIBRARY_PATH=/opt/homebrew/lib:/opt/homebrew/opt/gettext/lib' >> $GITHUB_ENV
           else
             # Intel Mac
-            cat > ~/.R/Makevars << 'EOF'
-LDFLAGS=-L/usr/local/lib -L/usr/local/opt/gettext/lib
-CPPFLAGS=-I/usr/local/include -I/usr/local/opt/gettext/include
-PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/usr/local/opt/gettext/lib/pkgconfig
-LIBRARY_PATH=/usr/local/lib:/usr/local/opt/gettext/lib
-EOF
+            echo 'LDFLAGS=-L/usr/local/lib -L/usr/local/opt/gettext/lib' > ~/.R/Makevars
+            echo 'CPPFLAGS=-I/usr/local/include -I/usr/local/opt/gettext/include' >> ~/.R/Makevars
+            echo 'PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/usr/local/opt/gettext/lib/pkgconfig' >> ~/.R/Makevars
+            echo 'LIBRARY_PATH=/usr/local/lib:/usr/local/opt/gettext/lib' >> ~/.R/Makevars
             echo 'LDFLAGS=-L/usr/local/lib -L/usr/local/opt/gettext/lib' >> $GITHUB_ENV
             echo 'CPPFLAGS=-I/usr/local/include -I/usr/local/opt/gettext/include' >> $GITHUB_ENV
             echo 'PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/usr/local/opt/gettext/lib/pkgconfig' >> $GITHUB_ENV
