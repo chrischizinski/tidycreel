@@ -102,7 +102,7 @@ print.summary.creel_design <- function(x, ...) {
 #' designs, and designs with replicate weights.
 #'
 #' @name design-constructors
-#' @aliases design_access design_roving design_repweights
+#' @aliases design_repweights
 NULL
 
 #' Create Access-Point Survey Design (lean container)
@@ -118,6 +118,8 @@ NULL
 #'   unique locations in `interviews`.
 #' @param strata_vars Character vector of variables describing stratification
 #'   (e.g., `c("date","shift_block","location")`). Missing columns are ignored.
+#' @param weight_method Method for calculating design weights. One of "equal" (all weights = 1)
+#'   or "standard" (weights based on target vs actual sample sizes in calendar).
 #'
 #' @return A list with class `c("access_design","creel_design","list")` containing
 #'   `design_type`, `interviews`, `calendar`, `locations`, `strata_vars`, and `metadata`.
@@ -303,6 +305,9 @@ calculate_scale_factors <- function(method = c("bootstrap", "jackknife", "brr"),
 #'   count locations.
 #' @param strata_vars Character vector describing stratification (e.g.,
 #'   `c("date","shift_block","location")`). Missing columns are ignored.
+#' @param effort_method Method for effort estimation. One of "ratio" or "calibrate".
+#' @param coverage_correction Logical; whether to apply coverage correction for incomplete
+#'   survey days. Default is FALSE.
 #'
 #' @return A list with class `c("roving_design","creel_design","list")` containing
 #'   `design_type`, `interviews`, `counts`, `calendar`, `locations`, `strata_vars`, and `metadata`.

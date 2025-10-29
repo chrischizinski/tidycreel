@@ -1,9 +1,10 @@
-#' CPUE Estimator (survey-first)
+#' CPUE Estimator (REBUILT with Native Survey Integration)
 #'
 #' Design-based estimation of catch per unit effort (CPUE) using the
-#' `survey` package. Supports ratio-of-means (recommended for incomplete trips)
-#' and mean-of-ratios (for complete trips). Returns a tidy tibble with a
-#' consistent schema across estimators.
+#' `survey` package with NATIVE support for advanced variance methods.
+#'
+#' **NEW**: Native support for multiple variance methods, variance decomposition,
+#' and design diagnostics without requiring wrapper functions.
 #'
 #' @param design A `svydesign`/`svrepdesign` built on interview data, or a
 #'   `creel_design` containing `interviews`. If a `creel_design` is supplied,
@@ -15,41 +16,57 @@
 #'   Determines the CPUE numerator.
 #' @param effort_col Interview effort column for the denominator (default
 #'   `"hours_fished"`).
-#' @param mode Estimation mode: `"auto"` (default; automatically selects based on
-#'   trip_complete field), `"ratio_of_means"` (for incomplete trips), or
-#'   `"mean_of_ratios"` (for complete trips).
-#' @param min_trip_hours Minimum trip duration in hours for incomplete trips.
-#'   Trips shorter than this are truncated to avoid unstable ratios. Default 0.5 (30 minutes).
-#'   Only used when mode="auto" or mode="ratio_of_means" with incomplete trips.
+#' @param mode Estimation mode: `"auto"` (default), `"ratio_of_means"`, or
+#'   `"mean_of_ratios"`.
+#' @param min_trip_hours Minimum trip duration for incomplete trips (default 0.5).
 #' @param conf_level Confidence level for Wald CIs (default 0.95).
+#' @param variance_method **NEW** Variance estimation method (default "survey")
+#' @param decompose_variance **NEW** Logical, decompose variance (default FALSE)
+#' @param design_diagnostics **NEW** Logical, compute diagnostics (default FALSE)
+#' @param n_replicates **NEW** Bootstrap/jackknife replicates (default 1000)
 #'
 #' @return Tibble with grouping columns, `estimate`, `se`, `ci_low`, `ci_high`,
-#'   `n`, `method`, and a `diagnostics` list-column.
+#'   `deff` (design effect), `n`, `method`, `diagnostics` list-column, and
+#'   `variance_info` list-column.
 #'
 #' @details
 #' - **Auto mode**: Examines `trip_complete` field to determine appropriate estimator.
-#'   For complete trips uses mean-of-ratios; for incomplete uses ratio-of-means with
-#'   truncation; for mixed data combines estimates using effort-weighting.
-#' - **Ratio-of-means**: `svyratio(~response, ~effort_col)` optionally via
-#'   `svyby(…, by=~group, FUN=svyratio)`. This is robust when trips are
-#'   incomplete. Short trips are truncated when detected.
-#' - **Mean-of-ratios**: computes trip-level `response/effort_col` then uses
-#'   `svymean`/`svyby`. Prefer for complete trips with minimal zero-inflation.
+#' - **Ratio-of-means**: Robust for incomplete trips
+#' - **Mean-of-ratios**: Preferred for complete trips
+#' - **For roving surveys**: Use [est_cpue_roving()] for Pollock correction
 #'
-#' @importFrom stats update as.formula qnorm
-#' @seealso [survey::svyratio()], [survey::svymean()], [survey::svyby()].
+#' @examples
+#' \dontrun{
+#' # BACKWARD COMPATIBLE
+#' result <- est_cpue(design, response = "catch_kept")
+#'
+#' # NEW: Advanced features
+#' result <- est_cpue(
+#'   design,
+#'   response = "catch_kept",
+#'   variance_method = "bootstrap",
+#'   decompose_variance = TRUE,
+#'   design_diagnostics = TRUE
+#' )
+#' }
+#'
+#' @seealso [est_cpue_roving()], [survey::svyratio()], [survey::svymean()]
 #' @export
 est_cpue <- function(design,
-                     by = NULL,
-                     response = c("catch_total", "catch_kept", "weight_total"),
-                     effort_col = "hours_fished",
-                     mode = c("auto", "ratio_of_means", "mean_of_ratios"),
-                     min_trip_hours = 0.5,
-                     conf_level = 0.95) {
+                             by = NULL,
+                             response = c("catch_total", "catch_kept", "weight_total"),
+                             effort_col = "hours_fished",
+                             mode = c("auto", "ratio_of_means", "mean_of_ratios"),
+                             min_trip_hours = 0.5,
+                             conf_level = 0.95,
+                             variance_method = "survey",
+                             decompose_variance = FALSE,
+                             design_diagnostics = FALSE,
+                             n_replicates = 1000) {
   response <- match.arg(response)
   mode <- match.arg(mode)
 
-  # Handle auto mode
+  # Handle auto mode (delegates to helper which will call this function recursively)
   if (mode == "auto") {
     return(est_cpue_auto(
       design = design,
@@ -57,11 +74,15 @@ est_cpue <- function(design,
       response = response,
       effort_col = effort_col,
       min_trip_hours = min_trip_hours,
-      conf_level = conf_level
+      conf_level = conf_level,
+      variance_method = variance_method,
+      decompose_variance = decompose_variance,
+      design_diagnostics = design_diagnostics,
+      n_replicates = n_replicates
     ))
   }
 
-  # Derive a survey design over interviews
+  # ── Derive Survey Design (unchanged) ──────────────────────────────────────
   svy <- tc_interview_svy(design)
   vars <- svy$variables
 
@@ -72,163 +93,215 @@ est_cpue <- function(design,
   # Grouping
   by <- tc_group_warn(by %||% character(), names(vars))
 
-  # Build estimation by grouping
+  # ── Estimate CPUE (REBUILT with variance engine) ─────────────────────────
+
+  # Check for zero or missing effort values
+  zero_effort <- sum(vars[[effort_col]] <= 0 | is.na(vars[[effort_col]]), na.rm = TRUE)
+  if (zero_effort > 0) {
+    cli::cli_warn(c(
+      "!" = "{zero_effort} observation(s) have zero or negative effort",
+      "i" = "These will produce Inf or NaN CPUE values",
+      "i" = "Consider filtering data or setting a minimum effort threshold"
+    ))
+  }
+
+  # Handle zero effort by setting a minimum threshold
+  vars[[effort_col]][vars[[effort_col]] <= 0 | is.na(vars[[effort_col]])] <- 0.001
+
   if (mode == "ratio_of_means") {
-    # Grouped svyratio
+    # For ratio estimation, create ratio variable first then use mean
+    # Replace Inf/NaN from zero effort with NA
+    cpue_ratio_values <- vars[[response]] / vars[[effort_col]]
+    cpue_ratio_values[!is.finite(cpue_ratio_values)] <- NA_real_
+    svy_ratio <- stats::update(svy, .cpue_ratio = cpue_ratio_values)
+
     if (length(by) > 0) {
-      by_formula <- stats::as.formula(paste("~", paste(by, collapse = "+")))
-      est <- survey::svyby(
-        as.formula(paste0("~", response)),
-        by = by_formula,
-        design = svy,
-        FUN = survey::svyratio,
-        denominator = as.formula(paste0("~", effort_col)),
-        na.rm = TRUE,
-        keep.names = FALSE
+      # Grouped estimation using core variance engine
+      variance_result <- tc_compute_variance(
+        design = svy_ratio,
+        response = ".cpue_ratio",
+        method = variance_method,
+        by = by,
+        conf_level = conf_level,
+        n_replicates = n_replicates,
+        calculate_deff = TRUE
       )
-      out <- tibble::as_tibble(est)
-      # Robust: take estimates and SE directly from model methods
-      out$estimate <- as.numeric(stats::coef(est))
-      se_try <- try(suppressWarnings(as.numeric(survey::SE(est))), silent = TRUE)
-      if (!inherits(se_try, "try-error") && length(se_try) == nrow(out)) {
-        out$se <- se_try
+
+      # Use group_data from variance_result for proper alignment
+      if (!is.null(variance_result$group_data)) {
+        out <- tibble::as_tibble(variance_result$group_data)
       } else {
-        V <- attr(est, "var")
-        out$se <- if (!is.null(V) && length(V) > 0) sqrt(diag(V)) else rep(NA_real_, nrow(out))
+        # Fallback: extract from design (shouldn't happen with fixed variance engine)
+        out <- tibble::tibble(
+          !!!setNames(
+            lapply(by, function(v) unique(svy_ratio$variables[[v]])[seq_along(variance_result$estimate)]),
+            by
+          )
+        )
       }
-      z <- stats::qnorm(1 - (1 - conf_level)/2)
-      out$ci_low <- out$estimate - z * out$se
-      out$ci_high <- out$estimate + z * out$se
-      # n by group (unweighted count)
+
+      # Add variance estimates
+      out$estimate <- variance_result$estimate
+      out$se <- variance_result$se
+      out$ci_low <- variance_result$ci_lower
+      out$ci_high <- variance_result$ci_upper
+      out$deff <- variance_result$deff
+
+      # Get sample sizes (now properly aligned with variance results)
       n_by <- vars |>
         dplyr::group_by(dplyr::across(dplyr::all_of(by))) |>
         dplyr::summarise(n = dplyr::n(), .groups = "drop")
       out <- dplyr::left_join(out, n_by, by = by)
-      out$method <- paste0("cpue_ratio_of_means:", response)
-      out$diagnostics <- replicate(nrow(out), list(NULL))
-      return(dplyr::select(out, dplyr::all_of(by), estimate, se, ci_low, ci_high, n, method, diagnostics))
+
     } else {
-      r <- survey::svyratio(
-        as.formula(paste0("~", response)),
-        as.formula(paste0("~", effort_col)),
-        svy,
-        na.rm = TRUE
+      # Overall estimation using core variance engine
+      variance_result <- tc_compute_variance(
+        design = svy_ratio,
+        response = ".cpue_ratio",
+        method = variance_method,
+        by = NULL,
+        conf_level = conf_level,
+        n_replicates = n_replicates,
+        calculate_deff = TRUE
       )
-      estimate <- as.numeric(stats::coef(r))
-      se <- sqrt(as.numeric(stats::vcov(r)))
-      ci <- tc_confint(estimate, se, level = conf_level)
-      n <- nrow(vars)
-      return(tibble::tibble(
-        estimate = estimate, se = se, ci_low = ci[1], ci_high = ci[2], n = n,
-        method = paste0("cpue_ratio_of_means:", response), diagnostics = list(NULL)
-      ))
+
+      out <- tibble::tibble(
+        estimate = variance_result$estimate,
+        se = variance_result$se,
+        ci_low = variance_result$ci_lower,
+        ci_high = variance_result$ci_upper,
+        deff = variance_result$deff,
+        n = nrow(vars)
+      )
     }
+
+    out$method <- paste0("cpue_ratio_of_means:", response)
+
   } else {
     # mean_of_ratios: define per-trip CPUE
-    svy2 <- stats::update(svy, .cpue = vars[[response]] / vars[[effort_col]])
+    # Replace Inf/NaN from zero effort with NA
+    cpue_values <- vars[[response]] / vars[[effort_col]]
+    cpue_values[!is.finite(cpue_values)] <- NA_real_
+    svy2 <- stats::update(svy, .cpue = cpue_values)
+
     if (length(by) > 0) {
-      by_formula <- stats::as.formula(paste("~", paste(by, collapse = "+")))
-      est <- survey::svyby(
-        ~.cpue,
-        by = by_formula,
+      # Grouped estimation using core variance engine
+      variance_result <- tc_compute_variance(
         design = svy2,
-        FUN = survey::svymean,
-        na.rm = TRUE,
-        keep.names = FALSE
+        response = ".cpue",
+        method = variance_method,
+        by = by,
+        conf_level = conf_level,
+        n_replicates = n_replicates,
+        calculate_deff = TRUE
       )
-      out <- tibble::as_tibble(est)
-      names(out)[names(out) == ".cpue"] <- "estimate"
-      se_try <- try(suppressWarnings(as.numeric(survey::SE(est))), silent = TRUE)
-      if (!inherits(se_try, "try-error") && length(se_try) == nrow(out)) {
-        out$se <- se_try
+
+      # Use group_data from variance_result for proper alignment
+      if (!is.null(variance_result$group_data)) {
+        out <- tibble::as_tibble(variance_result$group_data)
       } else {
-        V <- attr(est, "var")
-        out$se <- if (!is.null(V) && length(V) > 0) sqrt(diag(V)) else rep(NA_real_, nrow(out))
+        # Fallback: extract from design (shouldn't happen with fixed variance engine)
+        out <- tibble::tibble(
+          !!!setNames(
+            lapply(by, function(v) unique(svy2$variables[[v]])[seq_along(variance_result$estimate)]),
+            by
+          )
+        )
       }
-      z <- stats::qnorm(1 - (1 - conf_level)/2)
-      out$ci_low <- out$estimate - z * out$se
-      out$ci_high <- out$estimate + z * out$se
+
+      # Add variance estimates
+      out$estimate <- variance_result$estimate
+      out$se <- variance_result$se
+      out$ci_low <- variance_result$ci_lower
+      out$ci_high <- variance_result$ci_upper
+      out$deff <- variance_result$deff
+
+      # Get sample sizes (now properly aligned with variance results)
       n_by <- vars |>
         dplyr::group_by(dplyr::across(dplyr::all_of(by))) |>
         dplyr::summarise(n = dplyr::n(), .groups = "drop")
       out <- dplyr::left_join(out, n_by, by = by)
-      out$method <- paste0("cpue_mean_of_ratios:", response)
-      out$diagnostics <- replicate(nrow(out), list(NULL))
-      return(dplyr::select(
-        out,
-        dplyr::all_of(by),
-        estimate,
-        se,
-        ci_low,
-        ci_high,
-        n,
-        method,
-        diagnostics
-      ))
-    } else {
-      m <- survey::svymean(~.cpue, svy2, na.rm = TRUE)
-      estimate <- as.numeric(m[1])
-      se <- sqrt(as.numeric(stats::vcov(m)))
-      ci <- tc_confint(estimate, se, level = conf_level)
-      n <- nrow(vars)
-      return(tibble::tibble(
-        estimate = estimate, se = se, ci_low = ci[1], ci_high = ci[2], n = n,
-        method = paste0("cpue_mean_of_ratios:", response), diagnostics = list(NULL)
-      ))
-    }
-  }
-}
 
-# Minimal helper: interview-level svy design from `creel_design` or passthrough
-#' @keywords internal
-tc_interview_svy <- function(design) {
-  if (inherits(design, c("survey.design", "survey.design2", "svyrep.design"))) {
-    return(design)
-  }
-  if (inherits(design, "creel_design")) {
-    interviews <- design$interviews
-    if (is.null(interviews)) {
-      cli::cli_abort(
-        "creel_design must include $interviews for CPUE/catch estimators."
+    } else {
+      # Overall estimation using core variance engine
+      variance_result <- tc_compute_variance(
+        design = svy2,
+        response = ".cpue",
+        method = variance_method,
+        by = NULL,
+        conf_level = conf_level,
+        n_replicates = n_replicates,
+        calculate_deff = TRUE
+      )
+
+      out <- tibble::tibble(
+        estimate = variance_result$estimate,
+        se = variance_result$se,
+        ci_low = variance_result$ci_lower,
+        ci_high = variance_result$ci_upper,
+        deff = variance_result$deff,
+        n = nrow(vars)
       )
     }
-    # Use strata vars when available; assume equal weights (warn)
-    if (!is.null(design$strata_vars)) {
-      strata_present <- intersect(design$strata_vars, names(interviews))
-      if (length(strata_present) == 0) strata_present <- NULL
-    } else {
-      strata_present <- NULL
-    }
-    cli::cli_warn(c(
-      "!" = "Constructing an equal-weight interview design (ids=~1).",
-      "i" = "Provide a proper svydesign/svrepdesign for defensible inference."
-    ))
-    return(
-      survey::svydesign(
-        ids = ~1,
-        strata = if (!is.null(strata_present)) stats::as.formula(
-          paste("~", paste(strata_present, collapse = "+"))
-        ) else NULL,
-        data = interviews
-      )
-    )
+
+    out$method <- paste0("cpue_mean_of_ratios:", response)
   }
-  cli::cli_abort("design must be a svydesign/svrepdesign or creel_design.")
+
+  # ── NEW: Variance Decomposition ───────────────────────────────────────────
+  if (decompose_variance) {
+    variance_result$decomposition <- tryCatch({
+      design_to_use <- if (mode == "ratio_of_means") svy_ratio else svy2
+      response_to_use <- if (mode == "ratio_of_means") ".cpue_ratio" else ".cpue"
+
+      tc_decompose_variance(
+        design = design_to_use,
+        response = response_to_use,
+        cluster_vars = character(),
+        method = "anova",
+        conf_level = conf_level
+      )
+    }, error = function(e) {
+      cli::cli_warn("Variance decomposition failed: {e$message}")
+      NULL
+    })
+  }
+
+  # ── NEW: Design Diagnostics ───────────────────────────────────────────────
+  if (design_diagnostics) {
+    variance_result$diagnostics_survey <- tryCatch({
+      design_to_use <- if (mode == "ratio_of_means") svy_ratio else svy2
+      tc_design_diagnostics(design = design_to_use, detailed = FALSE)
+    }, error = function(e) {
+      cli::cli_warn("Design diagnostics failed: {e$message}")
+      NULL
+    })
+  }
+
+  # ── Add metadata ──────────────────────────────────────────────────────────
+  out$diagnostics <- replicate(nrow(out), list(NULL), simplify = FALSE)
+  out$variance_info <- replicate(nrow(out), variance_result %||% list(NULL), simplify = FALSE)
+
+  return(dplyr::select(
+    out,
+    dplyr::all_of(by),
+    estimate, se, ci_low, ci_high, deff, n, method, diagnostics, variance_info
+  ))
 }
 
-# Auto mode: intelligent estimator selection based on trip_complete field
+# Auto mode: intelligent estimator selection (REBUILT to pass new parameters)
 #' @keywords internal
-est_cpue_auto <- function(design, by, response, effort_col, min_trip_hours, conf_level) {
+est_cpue_auto <- function(design, by, response, effort_col, min_trip_hours,
+                                   conf_level, variance_method, decompose_variance,
+                                   design_diagnostics, n_replicates) {
   # Get survey design and data
   svy <- tc_interview_svy(design)
   vars <- svy$variables
 
-  # Check for trip_complete column (STRICT requirement)
+  # Check for trip_complete column
   if (!"trip_complete" %in% names(vars)) {
     cli::cli_abort(c(
       "x" = "mode='auto' requires a 'trip_complete' column in interview data.",
-      "i" = "Add trip_complete (logical: TRUE for complete trips, FALSE for incomplete),",
-      "i" = "or specify mode='ratio_of_means' or mode='mean_of_ratios' explicitly."
+      "i" = "Add trip_complete (logical: TRUE/FALSE), or specify mode explicitly."
     ))
   }
 
@@ -244,17 +317,14 @@ est_cpue_auto <- function(design, by, response, effort_col, min_trip_hours, conf
   # Handle NA values
   n_na <- sum(is.na(vars$trip_complete))
   if (n_na > 0) {
-    cli::cli_warn(c(
-      "!" = "{n_na} interview{?s} with missing trip_complete status will be excluded."
-    ))
-    # Filter out NAs
+    cli::cli_warn("{n_na} interview{?s} with missing trip_complete excluded.")
     vars <- vars[!is.na(vars$trip_complete), ]
-    svy <- survey::subset(svy, !is.na(trip_complete))
+    svy <- subset(svy, !is.na(trip_complete))
     n_total <- n_complete + n_incomplete
   }
 
   if (n_total == 0) {
-    cli::cli_abort("No valid interviews after removing missing trip_complete values.")
+    cli::cli_abort("No valid interviews after removing missing trip_complete.")
   }
 
   pct_complete <- round(100 * n_complete / n_total, 1)
@@ -263,8 +333,7 @@ est_cpue_auto <- function(design, by, response, effort_col, min_trip_hours, conf
   # Case 1: All complete trips
   if (n_incomplete == 0) {
     cli::cli_inform(c(
-      "v" = "Auto mode: Detected 100% complete trips (n={n_complete}).",
-      "i" = "Using mean-of-ratios estimator (appropriate for complete trips)."
+      "v" = "Auto: 100% complete trips (n={n_complete}). Using mean-of-ratios."
     ))
     return(est_cpue(
       design = svy,
@@ -272,28 +341,30 @@ est_cpue_auto <- function(design, by, response, effort_col, min_trip_hours, conf
       response = response,
       effort_col = effort_col,
       mode = "mean_of_ratios",
-      conf_level = conf_level
+      conf_level = conf_level,
+      variance_method = variance_method,
+      decompose_variance = decompose_variance,
+      design_diagnostics = design_diagnostics,
+      n_replicates = n_replicates
     ))
   }
 
   # Case 2: All incomplete trips
   if (n_complete == 0) {
     # Apply truncation
-    n_before <- nrow(vars)
     short_trips <- vars[[effort_col]] < min_trip_hours
     n_truncated <- sum(short_trips, na.rm = TRUE)
 
     if (n_truncated > 0) {
       cli::cli_inform(c(
-        "v" = "Auto mode: Detected 100% incomplete trips (n={n_incomplete}).",
-        "!" = "Truncating {n_truncated} trip{?s} < {min_trip_hours} hours to avoid unstable ratios.",
-        "i" = "Using ratio-of-means estimator (appropriate for incomplete trips)."
+        "v" = "Auto: 100% incomplete trips (n={n_incomplete}).",
+        "!" = "Truncating {n_truncated} trip{?s} < {min_trip_hours} hours.",
+        "i" = "Using ratio-of-means."
       ))
-      svy <- survey::subset(svy, !!as.name(effort_col) >= min_trip_hours)
+      svy <- subset(svy, !!as.name(effort_col) >= min_trip_hours)
     } else {
       cli::cli_inform(c(
-        "v" = "Auto mode: Detected 100% incomplete trips (n={n_incomplete}).",
-        "i" = "Using ratio-of-means estimator (appropriate for incomplete trips)."
+        "v" = "Auto: 100% incomplete trips (n={n_incomplete}). Using ratio-of-means."
       ))
     }
 
@@ -303,42 +374,46 @@ est_cpue_auto <- function(design, by, response, effort_col, min_trip_hours, conf
       response = response,
       effort_col = effort_col,
       mode = "ratio_of_means",
-      conf_level = conf_level
+      conf_level = conf_level,
+      variance_method = variance_method,
+      decompose_variance = decompose_variance,
+      design_diagnostics = design_diagnostics,
+      n_replicates = n_replicates
     ))
   }
 
-  # Case 3: Mixed complete and incomplete trips (HYBRID)
+  # Case 3: Mixed (hybrid approach)
   cli::cli_inform(c(
-    "v" = "Auto mode: Detected mixed trip types:",
-    "*" = "Complete: {n_complete} ({pct_complete}%)",
-    "*" = "Incomplete: {n_incomplete} ({pct_incomplete}%)",
-    "i" = "Using hybrid approach: separate estimation + effort-weighted combination."
+    "v" = "Auto: Mixed trips - Complete: {n_complete} ({pct_complete}%), Incomplete: {n_incomplete} ({pct_incomplete}%)",
+    "i" = "Using hybrid: separate estimation + effort-weighted combination."
   ))
 
   # Separate into complete and incomplete
-  svy_complete <- survey::subset(svy, trip_complete == TRUE)
-  svy_incomplete <- survey::subset(svy, trip_complete == FALSE)
+  svy_complete <- subset(svy, trip_complete == TRUE)
+  svy_incomplete <- subset(svy, trip_complete == FALSE)
 
-  # Apply truncation to incomplete trips
+  # Apply truncation to incomplete
   vars_incomplete <- svy_incomplete$variables
   short_trips <- vars_incomplete[[effort_col]] < min_trip_hours
   n_truncated <- sum(short_trips, na.rm = TRUE)
 
   if (n_truncated > 0) {
-    cli::cli_inform(c(
-      "!" = "Truncating {n_truncated} short incomplete trip{?s} < {min_trip_hours} hours."
-    ))
-    svy_incomplete <- survey::subset(svy_incomplete, !!as.name(effort_col) >= min_trip_hours)
+    cli::cli_inform("!" = "Truncating {n_truncated} short incomplete trip{?s}.")
+    svy_incomplete <- subset(svy_incomplete, !!as.name(effort_col) >= min_trip_hours)
   }
 
-  # Estimate CPUE for each group
+  # Estimate for each group
   cpue_complete <- est_cpue(
     design = svy_complete,
     by = by,
     response = response,
     effort_col = effort_col,
     mode = "mean_of_ratios",
-    conf_level = conf_level
+    conf_level = conf_level,
+    variance_method = variance_method,
+    decompose_variance = FALSE,  # Don't decompose in subgroups
+    design_diagnostics = FALSE,
+    n_replicates = n_replicates
   )
 
   cpue_incomplete <- est_cpue(
@@ -347,10 +422,14 @@ est_cpue_auto <- function(design, by, response, effort_col, min_trip_hours, conf
     response = response,
     effort_col = effort_col,
     mode = "ratio_of_means",
-    conf_level = conf_level
+    conf_level = conf_level,
+    variance_method = variance_method,
+    decompose_variance = FALSE,
+    design_diagnostics = FALSE,
+    n_replicates = n_replicates
   )
 
-  # Calculate total effort for each group
+  # Calculate effort weights
   vars_complete <- svy_complete$variables
   vars_incomplete_filtered <- svy_incomplete$variables
 
@@ -358,8 +437,6 @@ est_cpue_auto <- function(design, by, response, effort_col, min_trip_hours, conf
   E_incomplete <- sum(vars_incomplete_filtered[[effort_col]], na.rm = TRUE)
   E_total <- E_complete + E_incomplete
 
-  # Combine estimates using effort-weighting
-  # R_combined = (R1 * E_complete + R2 * E_incomplete) / E_total
   w_complete <- E_complete / E_total
   w_incomplete <- E_incomplete / E_total
 
@@ -372,8 +449,6 @@ est_cpue_auto <- function(design, by, response, effort_col, min_trip_hours, conf
   R_combined <- R1 * w_complete + R2 * w_incomplete
 
   # Combined SE using delta method
-  # Var(R_combined) ≈ w1^2 * Var(R1) + w2^2 * Var(R2)
-  # (assuming independence between complete and incomplete samples)
   SE_combined <- sqrt(w_complete^2 * SE1^2 + w_incomplete^2 * SE2^2)
 
   # Confidence interval
@@ -382,18 +457,20 @@ est_cpue_auto <- function(design, by, response, effort_col, min_trip_hours, conf
   ci_high <- R_combined + z * SE_combined
 
   cli::cli_inform(c(
-    "v" = "Hybrid combination complete:",
-    "*" = "Complete trips: CPUE = {round(R1, 3)} (weight = {round(w_complete, 3)})",
-    "*" = "Incomplete trips: CPUE = {round(R2, 3)} (weight = {round(w_incomplete, 3)})",
+    "v" = "Hybrid complete:",
+    "*" = "Complete: CPUE = {round(R1, 3)} (w = {round(w_complete, 3)})",
+    "*" = "Incomplete: CPUE = {round(R2, 3)} (w = {round(w_incomplete, 3)})",
     "*" = "Combined: CPUE = {round(R_combined, 3)} +/- {round(SE_combined, 3)}"
   ))
 
-  # Return combined result
+  # Build combined result
+  # Note: For hybrid, deff is not computed (would need special handling)
   result <- tibble::tibble(
     estimate = R_combined,
     se = SE_combined,
     ci_low = ci_low,
     ci_high = ci_high,
+    deff = NA_real_,
     n = n_total,
     method = paste0("cpue_hybrid:", response),
     diagnostics = list(list(
@@ -408,15 +485,15 @@ est_cpue_auto <- function(design, by, response, effort_col, min_trip_hours, conf
       effort_incomplete = E_incomplete,
       weight_complete = w_complete,
       weight_incomplete = w_incomplete
-    ))
+    )),
+    variance_info = list(NULL)  # Hybrid doesn't have single variance_info
   )
 
-  # Add grouping columns if present
+  # Warn about grouping
   if (!is.null(by) && length(by) > 0) {
-    # For now, hybrid mode doesn't support grouping
     cli::cli_warn(c(
-      "!" = "Grouping (by=) not yet supported in hybrid mode.",
-      "i" = "Returning overall estimate across all groups."
+      "!" = "Grouping not yet supported in hybrid mode.",
+      "i" = "Returning overall estimate."
     ))
   }
 

@@ -7,7 +7,6 @@
 #' design constructors.
 #'
 #' @name estimators
-#' @aliases estimate_effort estimate_cpue estimate_harvest
 NULL
 
 #' Estimate Fishing Effort

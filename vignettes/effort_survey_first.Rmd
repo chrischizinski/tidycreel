@@ -2,6 +2,8 @@
 title: "Effort Estimation (Survey-First)"
 output:
   rmarkdown::html_vignette:
+    pandoc_args: ["--highlight-style=tango"]
+    highlight: null
     df_print: paged
 vignette: >
   %\VignetteIndexEntry{Effort Estimation (Survey-First)}

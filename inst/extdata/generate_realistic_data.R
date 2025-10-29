@@ -6,7 +6,7 @@
 library(dplyr)
 library(lubridate)
 
-set.seed(20240601)  # Reproducible data
+set.seed(20240601) # Reproducible data
 
 # Survey parameters
 start_date <- as.Date("2024-06-01")
@@ -41,12 +41,14 @@ calendar <- expand.grid(
     weekend = day_type == "weekend",
     # Target sampling: 40% of weekdays, 80% of weekends
     target_sample = ifelse(day_type == "weekend",
-                          rbinom(n(), 1, 0.8),
-                          rbinom(n(), 1, 0.4)),
+      rbinom(n(), 1, 0.8),
+      rbinom(n(), 1, 0.4)
+    ),
     # Actual sampling: 90% success rate when targeted
     actual_sample = ifelse(target_sample == 1,
-                          rbinom(n(), 1, 0.90),
-                          0)
+      rbinom(n(), 1, 0.90),
+      0
+    )
   ) %>%
   arrange(date, location, shift_block)
 
@@ -102,12 +104,18 @@ interviews <- sampled_days %>%
   group_by(location) %>%
   mutate(
     target_species = case_when(
-      location == "North Ramp" ~ sample(species_list, n(), replace = TRUE,
-                                       prob = c(0.4, 0.3, 0.2, 0.1)),
-      location == "South Ramp" ~ sample(species_list, n(), replace = TRUE,
-                                        prob = c(0.3, 0.3, 0.3, 0.1)),
-      location == "East Pier" ~ sample(species_list, n(), replace = TRUE,
-                                       prob = c(0.1, 0.1, 0.5, 0.3))
+      location == "North Ramp" ~ sample(species_list, n(),
+        replace = TRUE,
+        prob = c(0.4, 0.3, 0.2, 0.1)
+      ),
+      location == "South Ramp" ~ sample(species_list, n(),
+        replace = TRUE,
+        prob = c(0.3, 0.3, 0.3, 0.1)
+      ),
+      location == "East Pier" ~ sample(species_list, n(),
+        replace = TRUE,
+        prob = c(0.1, 0.1, 0.5, 0.3)
+      )
     )
   ) %>%
   ungroup() %>%
@@ -131,7 +139,7 @@ interviews <- sampled_days %>%
     catch_released = catch_total - catch_kept,
     # Interview metadata
     interview_complete = TRUE,
-    trip_complete = runif(n()) < 0.85,  # 85% complete trips
+    trip_complete = runif(n()) < 0.85, # 85% complete trips
     refused = FALSE
   ) %>%
   select(
@@ -155,7 +163,7 @@ counts_instantaneous <- sampled_days %>%
     # Count time within shift
     time = case_when(
       shift_block == "morning" ~ as.POSIXct(paste(date, "07:00:00"), tz = "UTC") +
-        (row_number() - 1) * 2 * 3600,  # Every 2 hours
+        (row_number() - 1) * 2 * 3600, # Every 2 hours
       shift_block == "afternoon" ~ as.POSIXct(paste(date, "15:00:00"), tz = "UTC") +
         (row_number() - 1) * 2 * 3600
     ),
@@ -173,11 +181,13 @@ counts_instantaneous <- sampled_days %>%
     # Count duration (how long the count took, in minutes)
     interval_minutes = sample(5:15, n(), replace = TRUE),
     # Total minutes in the shift that counts represent
-    total_day_minutes = 240  # 4-hour shift blocks
+    total_day_minutes = 240 # 4-hour shift blocks
   ) %>%
   ungroup() %>%
-  select(count_id, date, location, shift_block, time, count,
-         interval_minutes, total_day_minutes)
+  select(
+    count_id, date, location, shift_block, time, count,
+    interval_minutes, total_day_minutes
+  )
 
 # =============================================================================
 # 4. PROGRESSIVE COUNTS - Roving with passes
@@ -206,7 +216,7 @@ counts_progressive <- sampled_days %>%
     ),
     # Route duration varies slightly
     route_minutes = 30 + rnorm(n(), 0, 5),
-    route_minutes = pmax(20, route_minutes),  # At least 20 minutes
+    route_minutes = pmax(20, route_minutes), # At least 20 minutes
     # Angler counts along route
     base_count = case_when(
       day_type == "weekend" ~ 12,
@@ -217,11 +227,13 @@ counts_progressive <- sampled_days %>%
       location == "South Ramp" ~ 1.0,
       location == "East Pier" ~ 0.7
     ),
-    count = rpois(n(), base_count * location_mult * 0.8)  # Slightly lower than instantaneous
+    count = rpois(n(), base_count * location_mult * 0.8) # Slightly lower than instantaneous
   ) %>%
   ungroup() %>%
-  select(count_id, date, location, shift_block, pass_id, time,
-         count, route_minutes)
+  select(
+    count_id, date, location, shift_block, pass_id, time,
+    count, route_minutes
+  )
 
 # =============================================================================
 # Save datasets

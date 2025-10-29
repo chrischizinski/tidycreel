@@ -95,7 +95,7 @@ test_that("est_total_harvest produces correct estimates with known values", {
 
   # Check structure
   expect_s3_class(result, "tbl_df")
-  expect_named(result, c("estimate", "se", "ci_low", "ci_high", "n", "method", "diagnostics"))
+  expect_named(result, c("estimate", "se", "ci_low", "ci_high", "deff", "n", "method", "diagnostics", "variance_info"))
 
   # Check estimate
   expect_equal(result$estimate, 100 * 2.5)

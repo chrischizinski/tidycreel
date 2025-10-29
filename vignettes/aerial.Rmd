@@ -2,6 +2,8 @@
 title: "Aerial Effort Estimation with survey"
 output:
   rmarkdown::html_vignette:
+    pandoc_args: ["--highlight-style=tango"]
+    highlight: null
     df_print: paged
 vignette: >
   %\VignetteIndexEntry{Aerial Effort Estimation with survey}

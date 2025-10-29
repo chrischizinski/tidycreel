@@ -1,13 +1,12 @@
-#' Aerial Effort Estimator
+#' Aerial Effort Estimator (REBUILT with Native Survey Integration)
 #'
 #' Estimate angler-hours from aerial snapshot counts using a mean-count
 #' expansion within groups, with optional visibility and calibration
-#' adjustments, and design-based variance via the `survey` package when a
-#' day-level `svydesign` is provided.
+#' adjustments, and design-based variance via the `survey` package with
+#' NATIVE support for advanced variance methods.
 #'
-#' Effort per day×group = mean(adjusted_count) × total_minutes_represented ÷ 60.
-#' Group totals are then computed with `survey::svytotal`/`svyby` when `svy`
-#' encodes the day sampling design.
+#' **NEW**: Native support for multiple variance methods, variance decomposition,
+#' and design diagnostics without requiring wrapper functions.
 #'
 #' @param counts Data frame/tibble of aerial counts with at least `count` and a
 #'   minutes column (e.g., `flight_minutes`, `interval_minutes`, or `count_duration`).
@@ -16,33 +15,58 @@
 #' @param minutes_col Candidate column names for minutes represented by each
 #'   count. The first present is used.
 #' @param total_minutes_col Optional column giving the total minutes represented
-#'   for the whole day×group (e.g., full day length or block coverage). If
+#'   for the whole day x group (e.g., full day length or block coverage). If
 #'   absent, the estimator falls back to the sum of per-count minutes within the
-#'   day×group (warns).
+#'   day x group (warns).
 #' @param day_id Day identifier (PSU), typically `date`, used to join to the
 #'   survey design.
 #' @param covariates Optional character vector of additional grouping variables
 #'   for aerial conditions (e.g., `cloud`, `glare`, `observer`, `altitude`).
 #' @param visibility_col Optional name of a column with visibility proportion
-#'   (0–1). Counts are divided by this value (guarded to avoid division by very
+#'   (0-1). Counts are divided by this value (guarded to avoid division by very
 #'   small numbers).
 #' @param calibration_col Optional name of a column with multiplicative
 #'   calibration factors to apply after visibility correction.
 #' @param svy Optional `svydesign`/`svrepdesign` encoding the day sampling
 #'   design (must include `day_id` in `svy$variables`). When provided, totals,
 #'   SEs, and CIs are computed with `survey` functions.
+#' @param post_strata_var Optional post-stratification variable name
+#' @param post_strata Optional post-stratification population table
+#' @param calibrate_formula Optional calibration formula
+#' @param calibrate_population Optional calibration population totals
+#' @param calfun Calibration function: "linear", "raking", or "logit"
 #' @param conf_level Confidence level for Wald CIs (default 0.95).
+#' @param variance_method **NEW** Variance estimation method (default "survey")
+#' @param decompose_variance **NEW** Logical, decompose variance (default FALSE)
+#' @param design_diagnostics **NEW** Logical, compute diagnostics (default FALSE)
+#' @param n_replicates **NEW** Bootstrap/jackknife replicates (default 1000)
 #'
-#' @return Tibble with grouping columns, `estimate`, `se`, `ci_low`, `ci_high`,
-#'   `n`, `method`, and a `diagnostics` list-column.
+#' @return Tibble with grouping columns plus:
+#'   \describe{
+#'     \item{estimate}{Estimated total effort (angler-hours)}
+#'     \item{se}{Standard error}
+#'     \item{ci_low, ci_high}{Confidence interval limits}
+#'     \item{deff}{Design effect}
+#'     \item{n}{Sample size}
+#'     \item{method}{Estimation method ("aerial")}
+#'     \item{variance_info}{**NEW** List-column with comprehensive variance information}
+#'   }
+#'
 #' @examples
-#' df <- tibble::tibble(
-#'   date = as.Date(rep("2025-08-20", 4)),
-#'   location = c("A","A","B","B"),
-#'   count = c(10, 12, 8, 15),
-#'   interval_minutes = c(60, 60, 60, 60)
+#' \dontrun{
+#' # BACKWARD COMPATIBLE
+#' result <- est_effort.aerial_rebuilt(counts, svy = design)
+#'
+#' # NEW: Complete analysis
+#' result_full <- est_effort.aerial_rebuilt(
+#'   counts,
+#'   svy = design,
+#'   variance_method = "bootstrap",
+#'   decompose_variance = TRUE,
+#'   design_diagnostics = TRUE
 #' )
-#' est_effort.aerial(df)
+#' }
+#'
 #' @export
 est_effort.aerial <- function(
   counts,
@@ -63,10 +87,16 @@ est_effort.aerial <- function(
   calibrate_formula = NULL,
   calibrate_population = NULL,
   calfun = c("linear", "raking", "logit"),
-  conf_level = 0.95
+  conf_level = 0.95,
+  variance_method = "survey",
+  decompose_variance = FALSE,
+  design_diagnostics = FALSE,
+  n_replicates = 1000
 ) {
+
   calfun <- match.arg(calfun)
-  # Validate required columns
+
+  # -- Input Validation ------------------------------------------------------
   tc_require_cols(counts, c("count"), context = "aerial effort")
   min_col <- intersect(minutes_col, names(counts))
   if (length(min_col) == 0) {
@@ -95,18 +125,17 @@ est_effort.aerial <- function(
   covariates <- tc_group_warn(covariates, names(counts))
   by_all <- unique(c(by, covariates))
 
-  # Determine total minutes represented per day×group
+  # Determine total minutes
   tot_min_col <- intersect(total_minutes_col, names(counts))
   warn_used_sum <- FALSE
   if (length(tot_min_col) == 0) {
-    # Fallback: sum of per-count minutes within day×group
     tot_min_col <- min_col
     warn_used_sum <- TRUE
   } else {
     tot_min_col <- tot_min_col[1]
   }
 
-  # Compute day-level totals per group
+  # -- Compute Day-Level Totals ----------------------------------------------
   day_group <- counts |>
     dplyr::group_by(dplyr::across(dplyr::all_of(c(day_id, by_all)))) |>
     dplyr::summarise(
@@ -123,21 +152,19 @@ est_effort.aerial <- function(
 
   if (warn_used_sum) {
     cli::cli_warn(c(
-      "!" = paste0(
-        "Aerial: using sum of ", min_col, " per day×group as total minutes."
-      ),
+      "!" = paste0("Aerial: using sum of ", min_col, " per day x group as total minutes."),
       "i" = "Provide `total_minutes_col` for proper expansion."
     ))
   }
 
-  # If a day-level survey design is provided, compute design-based totals via survey
+  # -- Design-Based Path (REBUILT) -------------------------------------------
   if (!is.null(svy)) {
-    # Attempt to extract day-level weights and (optional) strata from svy
     svy_vars <- svy$variables
     if (!(day_id %in% names(svy_vars))) {
-      cli::cli_abort(paste0("`svy` must have `", day_id, "` in its variables to join day-level totals."))
+      cli::cli_abort(paste0("`svy` must have `", day_id, "` in its variables."))
     }
-    # Align sampling weights and optional strata by day_id
+
+    # Align weights
     base_w <- if (inherits(svy, "svyrep.design")) {
       as.numeric(stats::weights(svy, type = "sampling"))
     } else {
@@ -145,27 +172,21 @@ est_effort.aerial <- function(
     }
     idx <- match(day_group[[day_id]], svy_vars[[day_id]])
     if (any(is.na(idx))) {
-      cli::cli_abort(
-        paste0(
-          "Failed to align day_id between counts and svy on `",
-          day_id,
-          "`."
-        )
-      )
+      cli::cli_abort(paste0("Failed to align day_id on `", day_id, "`."))
     }
     day_group$.w <- base_w[idx]
+
+    # Strata if available
     strata_col <- intersect(c("stratum", "strata", "stratum_id"), names(svy_vars))
     if (length(strata_col) > 0 && !inherits(svy, "svyrep.design")) {
       day_group$.strata <- svy_vars[[strata_col[1]]][idx]
     }
 
-    # Build a survey design on day×group rows using day-level weights.
-    # If `svy` is a replicate design, carry replicate weights over days.
+    # Build design
     ids_formula <- stats::as.formula(paste("~", day_id))
     if (inherits(svy, "svyrep.design")) {
-      # Extract replicate weights and attributes from svyrep.design and align by day_id
       repmat <- svy$repweights
-      if (is.null(repmat)) cli::cli_abort("Replicate weights not found on svyrep.design object.")
+      if (is.null(repmat)) cli::cli_abort("Replicate weights not found.")
       repmat_mat <- as.matrix(repmat)
       repweights_aligned <- repmat_mat[idx, , drop = FALSE]
       type <- attr(repmat, "type") %||% "bootstrap"
@@ -183,12 +204,14 @@ est_effort.aerial <- function(
       )
     } else {
       if (".strata" %in% names(day_group)) {
-        design_eff <- survey::svydesign(ids = ids_formula,
-                                        strata = ~.strata,
-                                        weights = ~.w,
-                                        data = day_group,
-                                        nest = TRUE,
-                                        lonely.psu = "adjust")
+        design_eff <- survey::svydesign(
+          ids = ids_formula,
+          strata = ~.strata,
+          weights = ~.w,
+          data = day_group,
+          nest = TRUE,
+          lonely.psu = "adjust"
+        )
       } else {
         design_eff <- survey::svydesign(
           ids = ids_formula,
@@ -200,101 +223,120 @@ est_effort.aerial <- function(
       }
     }
 
-    # Optional: post-stratification by a categorical covariate
+    # Optional post-stratification
     if (!is.null(post_strata_var) && !is.null(post_strata)) {
       if (!(post_strata_var %in% names(day_group))) {
-        cli::cli_abort(
-          paste0(
-            "post_strata_var not found in counts/day_group data: ",
-            post_strata_var
-          )
-        )
+        cli::cli_abort(paste0("post_strata_var not found: ", post_strata_var))
       }
-      # Ensure population table has columns: levels of post_strata_var and Freq
       if (!all(c(post_strata_var, "Freq") %in% names(post_strata))) {
-        cli::cli_abort(
-          paste0(
-            "post_strata must have columns: ",
-            post_strata_var,
-            " and Freq"
-          )
-        )
+        cli::cli_abort(paste0("post_strata must have: ", post_strata_var, " and Freq"))
       }
       pf <- stats::as.formula(paste("~", post_strata_var))
       design_eff <- survey::postStratify(design_eff, pf, post_strata)
     }
 
-    # Optional: calibration to known totals
+    # Optional calibration
     if (!is.null(calibrate_formula) && !is.null(calibrate_population)) {
       calfun_fun <- switch(calfun,
         linear = survey::cal.linear,
         raking = survey::cal.raking,
         logit = survey::cal.logit
       )
-      design_eff <- survey::calibrate(design_eff,
-                                      formula = calibrate_formula,
-                                      population = calibrate_population,
-                                      calfun = calfun_fun)
+      design_eff <- survey::calibrate(
+        design_eff,
+        formula = calibrate_formula,
+        population = calibrate_population,
+        calfun = calfun_fun
+      )
     }
 
-    # Use svyby to get totals by requested groups (by + covariates)
+    # -- NEW: Use Core Variance Engine -----------------------------------------
     if (length(by_all) > 0) {
-      by_formula <- stats::as.formula(paste("~", paste(by_all, collapse = "+")))
-      est <- survey::svyby(
-        ~effort_day,
-        by = by_formula,
-        design_eff,
-        survey::svytotal,
-        na.rm = TRUE,
-        keep.names = FALSE
+      # Grouped estimation
+      variance_result <- tc_compute_variance(
+        design = design_eff,
+        response = "effort_day",
+        method = variance_method,
+        by = by_all,
+        conf_level = conf_level,
+        n_replicates = n_replicates,
+        calculate_deff = TRUE
       )
-      out <- tibble::as_tibble(est)
-      names(out)[names(out) == "effort_day"] <- "estimate"
-      # Standard error via survey::SE if available, else var attribute
-      se_try <- try(suppressWarnings(as.numeric(survey::SE(est))), silent = TRUE)
-      if (!inherits(se_try, "try-error") && length(se_try) == nrow(out)) {
-        out$se <- se_try
-      } else {
-        V <- attr(est, "var")
-        out$se <- if (!is.null(V) && length(V) > 0) sqrt(diag(V)) else rep(NA_real_, nrow(out))
-      }
-      # CI via normal approximation
-      z <- stats::qnorm(1 - (1 - conf_level)/2)
-      out$ci_low <- out$estimate - z * out$se
-      out$ci_high <- out$estimate + z * out$se
-      out$n <- NA_integer_
-      out$method <- "aerial"
-      out$diagnostics <- replicate(nrow(out), list(NULL))
-      out <- dplyr::select(
-        out,
-        dplyr::all_of(by_all),
-        estimate,
-        se,
-        ci_low,
-        ci_high,
-        n,
-        method,
-        diagnostics
+
+      out <- tibble::tibble(
+        !!!setNames(
+          lapply(by_all, function(v) design_eff$variables[[v]][seq_along(variance_result$estimate)]),
+          by_all
+        ),
+        estimate = variance_result$estimate,
+        se = variance_result$se,
+        ci_low = variance_result$ci_lower,
+        ci_high = variance_result$ci_upper,
+        deff = variance_result$deff,
+        n = rep(NA_integer_, length(variance_result$estimate)),
+        method = "aerial"
       )
-      return(out)
+
     } else {
-      total_est <- survey::svytotal(~effort_day, design_eff, na.rm = TRUE)
-      estimate <- as.numeric(total_est[1])
-      se <- sqrt(as.numeric(survey::vcov(total_est)))
-      ci <- tc_confint(estimate, se, level = conf_level)
-      return(tibble::tibble(
-        estimate = estimate,
-        se = se,
-        ci_low = ci[1],
-        ci_high = ci[2],
+      # Overall estimation
+      variance_result <- tc_compute_variance(
+        design = design_eff,
+        response = "effort_day",
+        method = variance_method,
+        by = NULL,
+        conf_level = conf_level,
+        n_replicates = n_replicates,
+        calculate_deff = TRUE
+      )
+
+      out <- tibble::tibble(
+        estimate = variance_result$estimate,
+        se = variance_result$se,
+        ci_low = variance_result$ci_lower,
+        ci_high = variance_result$ci_upper,
+        deff = variance_result$deff,
         n = NA_integer_,
-        method = "aerial",
-        diagnostics = list(NULL)
-      ))
+        method = "aerial"
+      )
     }
+
+    # -- NEW: Variance Decomposition --------------------------------------------
+    if (decompose_variance) {
+      variance_result$decomposition <- tryCatch({
+        tc_decompose_variance(
+          design = design_eff,
+          response = "effort_day",
+          cluster_vars = c(day_id),
+          method = "anova",
+          conf_level = conf_level
+        )
+      }, error = function(e) {
+        cli::cli_warn("Variance decomposition failed: {e$message}")
+        NULL
+      })
+    }
+
+    # -- NEW: Design Diagnostics ------------------------------------------------
+    if (design_diagnostics) {
+      variance_result$diagnostics <- tryCatch({
+        tc_design_diagnostics(design = design_eff, detailed = FALSE)
+      }, error = function(e) {
+        cli::cli_warn("Design diagnostics failed: {e$message}")
+        NULL
+      })
+    }
+
+    # -- NEW: Add variance_info -------------------------------------------------
+    out$variance_info <- replicate(nrow(out), variance_result, simplify = FALSE)
+
+    return(dplyr::select(
+      out,
+      dplyr::any_of(by_all),
+      estimate, se, ci_low, ci_high, deff, n, method, variance_info
+    ))
   }
 
-  # Fallback (no svy): per-group estimates using within-group variability only
+  # -- Fallback: non-design path ----------------------------------------------
   out <- counts |>
     dplyr::group_by(dplyr::across(dplyr::all_of(by_all))) |>
     dplyr::summarise(
@@ -312,7 +354,7 @@ est_effort.aerial <- function(
       estimate = mean_count * total_minutes / 60,
       se = ifelse(n > 1, (sd_count / sqrt(n)) * (total_minutes / 60), NA_real_)
     )
-  # Compute CI row-wise to keep dependencies minimal
+
   out$ci_low <- NA_real_
   out$ci_high <- NA_real_
   idx <- which(out$n > 1 & !is.na(out$estimate) & !is.na(out$se))
@@ -321,62 +363,14 @@ est_effort.aerial <- function(
     out$ci_low[idx] <- cis[seq_along(idx)]
     out$ci_high[idx] <- cis[length(idx) + seq_along(idx)]
   }
+
+  out$deff <- NA_real_
   out$method <- "aerial"
-  out$diagnostics <- replicate(nrow(out), list(NULL))
+  out$variance_info <- replicate(nrow(out), NULL, simplify = FALSE)
+
   dplyr::select(
     out,
-    dplyr::all_of(by_all),
-    estimate,
-    se,
-    ci_low,
-    ci_high,
-    n,
-    method,
-    diagnostics
+    dplyr::any_of(by_all),
+    estimate, se, ci_low, ci_high, deff, n, method, variance_info
   )
-}
-
-#' Back-compat alias for aerial estimator
-#'
-#' Accepts either a `creel_design` in `x` with embedded counts or a `counts`
-#' data frame directly. Prefer `est_effort.aerial()` with `counts`.
-#'
-#' @inheritParams est_effort.aerial
-#' @param x Optional `creel_design` containing a `$counts` component.
-#' @export
-est_effort_aerial <- function(
-  x = NULL,
-  counts = NULL,
-  by = c("date", "location"),
-  minutes_col = c("flight_minutes", "interval_minutes", "count_duration"),
-  total_minutes_col = c(
-    "total_minutes",
-    "total_day_minutes",
-    "block_total_minutes"
-  ),
-  day_id = "date",
-  covariates = NULL,
-  visibility_col = NULL,
-  calibration_col = NULL,
-  svy = NULL,
-  conf_level = 0.95,
-  ...
-) {
-  if (is.null(counts)) {
-    if (!is.null(x) && !is.null(x$counts)) {
-      counts <- x$counts
-    } else {
-      cli::cli_abort("Provide `counts` or a design object `x` with `$counts`.")
-    }
-  }
-  est_effort.aerial(counts = counts,
-                    by = by,
-                    minutes_col = minutes_col,
-                    total_minutes_col = total_minutes_col,
-                    day_id = day_id,
-                    covariates = covariates,
-                    visibility_col = visibility_col,
-                    calibration_col = calibration_col,
-                    svy = svy,
-                    conf_level = conf_level)
 }

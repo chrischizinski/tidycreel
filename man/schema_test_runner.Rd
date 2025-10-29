@@ -19,6 +19,8 @@ This function runs all available schema validation functions on a named list of 
 It returns a list of results (invisible if all pass, errors if any fail).
 }
 \examples{
+\donttest{
+\dontrun{
 schema_test_runner(list(
   calendar = calendar_tbl,
   interviews = interviews_tbl,
@@ -26,4 +28,6 @@ schema_test_runner(list(
   auxiliary = auxiliary_tbl,
   reference = reference_tbl
 ))
+}
+}
 }
