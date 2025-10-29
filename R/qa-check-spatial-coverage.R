@@ -271,7 +271,7 @@ qa_check_spatial_coverage <- function(
     recommendation <- paste0(
       "SPATIAL COVERAGE ISSUE (Severity: ", toupper(severity), ")\n\n",
       "* Location coverage: ", round(location_coverage * 100, 1), "% ",
-      "(expected ≥", round(min_coverage * 100, 0), "%)\n",
+      "(expected >=", round(min_coverage * 100, 0), "%)\n",
       "* Locations expected: ", n_expected, "\n",
       "* Locations found: ", n_found, " (", length(locations_observed), " total observed)\n"
     )

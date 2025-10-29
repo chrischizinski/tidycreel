@@ -60,9 +60,10 @@ jobs:
       - name: Check
         env:
           _R_CHECK_FORCE_SUGGESTS_: false
+          _R_CHECK_CRAN_INCOMING_REMOTE_: false
           R_DEFAULT_INTERNET_TIMEOUT: 20
           LC_ALL: ${{ runner.os != 'Windows' && 'C.UTF-8' || '' }}
-        run: Rscript -e "rcmdcheck::rcmdcheck(error_on='warning', check_dir='check')"
+        run: Rscript -e "rcmdcheck::rcmdcheck(args = c('--no-manual', '--as-cran'), error_on='warning', check_dir='check')"
       - name: Upload check results on failure
         if: failure()
         uses: actions/upload-artifact@v4

@@ -25,12 +25,12 @@
 #' @details
 #' ## Statistical Method
 #'
-#' Combines effort (E) and CPUE (C): H = E × C
+#' Combines effort (E) and CPUE (C): H = E x C
 #'
 #' ## Variance Propagation (Delta Method)
 #'
-#' Independent (default): Var(H) = E² × Var(C) + C² × Var(E)
-#' Correlated: Var(H) = E² × Var(C) + C² × Var(E) + 2 × E × C × Cov(E,C)
+#' Independent (default): Var(H) = E^2 x Var(C) + C^2 x Var(E)
+#' Correlated: Var(H) = E^2 x Var(C) + C^2 x Var(E) + 2 x E x C x Cov(E,C)
 #'
 #' ## Species Aggregation
 #'
@@ -77,7 +77,7 @@ est_total_harvest <- function(
   diagnostics = TRUE
 ) {
 
-  # ── Input Validation (unchanged) ──────────────────────────────────────────
+  # -- Input Validation (unchanged) ------------------------------------------
   response <- match.arg(response)
   method <- match.arg(method)
 
@@ -140,7 +140,7 @@ est_total_harvest <- function(
     }
   }
 
-  # ── Join Effort and CPUE (unchanged) ──────────────────────────────────────
+  # -- Join Effort and CPUE (unchanged) --------------------------------------
   if (!is.null(by)) {
     cpue_extra_cols <- setdiff(
       names(cpue_est),
@@ -198,7 +198,7 @@ est_total_harvest <- function(
     )
   }
 
-  # ── Product Estimator: H = E × C (unchanged) ──────────────────────────────
+  # -- Product Estimator: H = E x C (unchanged) ------------------------------
   E <- joined$estimate_effort
   SE_E <- joined$se_effort
   C <- joined$estimate_cpue
@@ -206,7 +206,7 @@ est_total_harvest <- function(
 
   H <- E * C
 
-  # ── Delta Method Variance (unchanged) ─────────────────────────────────────
+  # -- Delta Method Variance (unchanged) -------------------------------------
   Var_E <- SE_E^2
   Var_C <- SE_C^2
 
@@ -229,7 +229,7 @@ est_total_harvest <- function(
   # Sample size
   n <- pmin(joined$n_effort, joined$n_cpue, na.rm = TRUE)
 
-  # ── NEW: Propagate design effects ─────────────────────────────────────────
+  # -- NEW: Propagate design effects -----------------------------------------
   # Extract deff from inputs if available
   deff_effort <- if ("deff_effort" %in% names(joined)) {
     joined$deff_effort
@@ -251,7 +251,7 @@ est_total_harvest <- function(
            ifelse(!is.na(deff_cpue), deff_cpue, NA_real_))
   )
 
-  # ── Build Output (REBUILT) ────────────────────────────────────────────────
+  # -- Build Output (REBUILT) ------------------------------------------------
   if (!is.null(by)) {
     grouping_cols <- intersect(names(joined), c(by, cpue_extra_cols))
     out <- joined |>
@@ -278,7 +278,7 @@ est_total_harvest <- function(
   # Method
   out$method <- paste0("product:", response, ":", ifelse(cor_used == 0, "independent", "correlated"))
 
-  # ── Diagnostics (unchanged) ───────────────────────────────────────────────
+  # -- Diagnostics (unchanged) -----------------------------------------------
   if (diagnostics) {
     out$diagnostics <- vector("list", nrow(out))
     for (i in seq_len(nrow(out))) {
@@ -301,7 +301,7 @@ est_total_harvest <- function(
     out$diagnostics <- vector("list", nrow(out))
   }
 
-  # ── NEW: Add variance_info ────────────────────────────────────────────────
+  # -- NEW: Add variance_info ------------------------------------------------
   # For product estimator, variance_info contains delta method details
   out$variance_info <- vector("list", nrow(out))
   for (i in seq_len(nrow(out))) {
@@ -315,8 +315,8 @@ est_total_harvest <- function(
       correlation = cor_used,
       variance_formula = ifelse(
         cor_used == 0,
-        "Var(H) = E² × Var(C) + C² × Var(E)",
-        "Var(H) = E² × Var(C) + C² × Var(E) + 2 × E × C × Cov(E,C)"
+        "Var(H) = E^2 x Var(C) + C^2 x Var(E)",
+        "Var(H) = E^2 x Var(C) + C^2 x Var(E) + 2 x E x C x Cov(E,C)"
       ),
       deff_effort = deff_effort[i],
       deff_cpue = deff_cpue[i],

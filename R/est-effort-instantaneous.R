@@ -1,7 +1,7 @@
 #' Instantaneous Effort Estimator (REBUILT with Native Survey Integration)
 #'
 #' Estimate angler-hours from instantaneous (snapshot) counts using mean-count
-#' expansion per day × group, then compute design-based totals and variance via
+#' expansion per day x group, then compute design-based totals and variance via
 #' the `survey` package with NATIVE support for advanced variance methods.
 #'
 #' **NEW**: This function now natively supports multiple variance estimation methods,
@@ -15,8 +15,8 @@
 #'   Missing columns are ignored with a warning.
 #' @param minutes_col Candidate name(s) for per-count minutes. The first present
 #'   is used.
-#' @param total_minutes_col Candidate name(s) for day×group total minutes.
-#'   If absent, falls back to the sum of per-count minutes within the day×group
+#' @param total_minutes_col Candidate name(s) for dayxgroup total minutes.
+#'   If absent, falls back to the sum of per-count minutes within the dayxgroup
 #'   (warns).
 #' @param day_id Day identifier (PSU), typically `date`, used to join with the
 #'   survey design.
@@ -43,7 +43,7 @@
 #' @details
 #' ## Survey-Based Estimation
 #'
-#' Aggregates per-count observations to day × group totals and uses a
+#' Aggregates per-count observations to day x group totals and uses a
 #' day-PSU survey design to compute totals/variance via the `survey` package.
 #' When `svy` is not provided, a non-design fallback uses within-group
 #' variability to approximate SE/CI; prefer a valid survey design for
@@ -159,7 +159,7 @@ est_effort.instantaneous <- function(
   n_replicates = 1000
 ) {
 
-  # ── Input Validation (unchanged from original) ────────────────────────────
+  # -- Input Validation (unchanged from original) ----------------------------
   tc_require_cols(counts, c("count"), context = "instantaneous effort")
   min_col <- intersect(minutes_col, names(counts))
   if (length(min_col) == 0) cli::cli_abort(c(
@@ -184,7 +184,7 @@ est_effort.instantaneous <- function(
     tot_min_col <- tot_min_col[1]
   }
 
-  # ── Compute Day-Level Totals (unchanged from original) ────────────────────
+  # -- Compute Day-Level Totals (unchanged from original) --------------------
   day_group <- counts |>
     dplyr::group_by(dplyr::across(dplyr::all_of(c(day_id, by_all)))) |>
     dplyr::summarise(
@@ -203,13 +203,13 @@ est_effort.instantaneous <- function(
     cli::cli_warn(c(
       "!" = paste0(
         "Instantaneous: using sum of ", min_col,
-        " per day×group as total minutes."
+        " per dayxgroup as total minutes."
       ),
       "i" = "Provide `total_minutes_col` for proper expansion."
     ))
   }
 
-  # ── Design-Based Path (REBUILT with native survey integration) ───────────
+  # -- Design-Based Path (REBUILT with native survey integration) -----------
   if (!is.null(svy)) {
     svy_vars <- svy$variables
     if (!(day_id %in% names(svy_vars))) {
@@ -245,7 +245,7 @@ est_effort.instantaneous <- function(
       design_eff <- survey::svydesign(ids = ids_formula, weights = ~.w, data = day_group)
     }
 
-    # ── NEW: Use Core Variance Engine ────────────────────────────────────────
+    # -- NEW: Use Core Variance Engine ----------------------------------------
     # This is the key change: use tc_compute_variance instead of direct survey calls
     if (length(by_all) > 0) {
       # Grouped estimation
@@ -297,7 +297,7 @@ est_effort.instantaneous <- function(
       )
     }
 
-    # ── NEW: Variance Decomposition if requested ─────────────────────────────
+    # -- NEW: Variance Decomposition if requested -----------------------------
     if (decompose_variance) {
       variance_result$decomposition <- tryCatch({
         tc_decompose_variance(
@@ -313,7 +313,7 @@ est_effort.instantaneous <- function(
       })
     }
 
-    # ── NEW: Design Diagnostics if requested ─────────────────────────────────
+    # -- NEW: Design Diagnostics if requested ---------------------------------
     if (design_diagnostics) {
       variance_result$diagnostics <- tryCatch({
         tc_design_diagnostics(design = design_eff, detailed = FALSE)
@@ -323,7 +323,7 @@ est_effort.instantaneous <- function(
       })
     }
 
-    # ── NEW: Add variance_info list-column ───────────────────────────────────
+    # -- NEW: Add variance_info list-column -----------------------------------
     # This is the enriched output structure
     out$variance_info <- replicate(nrow(out), variance_result, simplify = FALSE)
 
@@ -335,7 +335,7 @@ est_effort.instantaneous <- function(
     ))
   }
 
-  # ── Fallback: non-design path (unchanged from original) ──────────────────
+  # -- Fallback: non-design path (unchanged from original) ------------------
   out <- counts |>
     dplyr::group_by(dplyr::across(dplyr::all_of(by_all))) |>
     dplyr::summarise(

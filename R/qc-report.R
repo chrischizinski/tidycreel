@@ -159,7 +159,7 @@ qc_report <- function(qa_results,
     if (nrow(passed_checks) > 0) {
       cli::cli_alert_success("Passed Checks ({nrow(passed_checks)}):")
       for (i in seq_len(nrow(passed_checks))) {
-        cli::cli_text("  ✓ {passed_checks$check[i]}: {passed_checks$description[i]}")
+        cli::cli_text("  (v) {passed_checks$check[i]}: {passed_checks$description[i]}")
       }
     }
     
@@ -167,10 +167,10 @@ qc_report <- function(qa_results,
       cli::cli_alert_warning("Failed Checks ({nrow(failed_checks)}):")
       for (i in seq_len(nrow(failed_checks))) {
         severity_icon <- switch(failed_checks$severity[i],
-          "high" = "🔴",
-          "medium" = "🟡", 
-          "low" = "🟢",
-          "⚪"
+          "high" = "[HIGH]",
+          "medium" = "[MEDIUM]", 
+          "low" = "[LOW]",
+          "[NONE]"
         )
         cli::cli_text("  {severity_icon} {failed_checks$check[i]} ({failed_checks$severity[i]}): {failed_checks$description[i]}")
         if (failed_checks$issues_found[i] > 0) {

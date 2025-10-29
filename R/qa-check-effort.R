@@ -34,7 +34,7 @@
 #' ## Detection Logic
 #'
 #' 1. **Effort Calculation Validation:**
-#'    - Check if effort = num_anglers × hours_fished
+#'    - Check if effort = num_anglers x hours_fished
 #'    - Flag inconsistencies (allowing for small rounding errors)
 #'    - Recommend correction formula
 #'
@@ -331,7 +331,7 @@ qa_check_effort <- function(
         "\nEFFORT CALCULATION ERRORS:\n",
         "* Incorrect calculations: ", n_effort_inconsistent,
         " (", round(pct_inconsistent * 100, 1), "%)\\n",
-        "* Expected formula: effort = num_anglers × hours_fished\n"
+        "* Expected formula: effort = num_anglers x hours_fished\n"
       )
 
       if (!is.null(effort_inconsistent_records) && nrow(effort_inconsistent_records) > 0) {
@@ -343,7 +343,7 @@ qa_check_effort <- function(
           rec <- effort_inconsistent_records[i, ]
           recommendation <- paste0(
             recommendation,
-            sprintf("  - Actual: %.2f, Expected: %.0f × %.2f = %.2f (diff: %.2f)\n",
+            sprintf("  - Actual: %.2f, Expected: %.0f x %.2f = %.2f (diff: %.2f)\n",
                     rec$effort_actual, rec$num_anglers, rec$hours_fished,
                     rec$effort_expected, rec$difference)
           )
@@ -374,7 +374,7 @@ qa_check_effort <- function(
       recommendation <- paste0(
         recommendation,
         "\nPOSSIBLE DECIMAL POINT ERRORS:\n",
-        "* Records with 10× or 0.1× expected effort: ", nrow(decimal_error_candidates), "\n",
+        "* Records with 10x or 0.1x expected effort: ", nrow(decimal_error_candidates), "\n",
         "* Example: Actual = ", decimal_error_candidates$effort_actual[1],
         ", Expected = ", round(decimal_error_candidates$effort_expected[1], 2), "\n"
       )
@@ -383,7 +383,7 @@ qa_check_effort <- function(
     recommendation <- paste0(
       recommendation,
       "\nRECOMMENDATIONS:\n",
-      "1. Verify effort calculation formula: effort = num_anglers × hours_fished\n",
+      "1. Verify effort calculation formula: effort = num_anglers x hours_fished\n",
       "2. Review data entry protocols for decimal point errors\n",
       "3. Establish reasonable bounds for effort values (e.g., 0.1-24 hours)\n",
       "4. Ensure zero effort is only recorded for true zero-catch trips\n",
@@ -395,7 +395,7 @@ qa_check_effort <- function(
     recommendation <- paste0(
       "No effort calculation issues detected.\n",
       "* All effort calculations appear correct\n",
-      "* Mean effort: ", round(effort_summary$mean_effort, 2), " hours (±",
+      "* Mean effort: ", round(effort_summary$mean_effort, 2), " hours (+/-",
       round(effort_summary$sd_effort, 2), " SD)\n",
       "* Range: ", round(effort_summary$min_effort, 2), " to ",
       round(effort_summary$max_effort, 2), " hours"

@@ -15,15 +15,15 @@
 #' @param minutes_col Candidate column names for minutes represented by each
 #'   count. The first present is used.
 #' @param total_minutes_col Optional column giving the total minutes represented
-#'   for the whole day×group (e.g., full day length or block coverage). If
+#'   for the whole day x group (e.g., full day length or block coverage). If
 #'   absent, the estimator falls back to the sum of per-count minutes within the
-#'   day×group (warns).
+#'   day x group (warns).
 #' @param day_id Day identifier (PSU), typically `date`, used to join to the
 #'   survey design.
 #' @param covariates Optional character vector of additional grouping variables
 #'   for aerial conditions (e.g., `cloud`, `glare`, `observer`, `altitude`).
 #' @param visibility_col Optional name of a column with visibility proportion
-#'   (0–1). Counts are divided by this value (guarded to avoid division by very
+#'   (0-1). Counts are divided by this value (guarded to avoid division by very
 #'   small numbers).
 #' @param calibration_col Optional name of a column with multiplicative
 #'   calibration factors to apply after visibility correction.
@@ -96,7 +96,7 @@ est_effort.aerial <- function(
 
   calfun <- match.arg(calfun)
 
-  # ── Input Validation ──────────────────────────────────────────────────────
+  # -- Input Validation ------------------------------------------------------
   tc_require_cols(counts, c("count"), context = "aerial effort")
   min_col <- intersect(minutes_col, names(counts))
   if (length(min_col) == 0) {
@@ -135,7 +135,7 @@ est_effort.aerial <- function(
     tot_min_col <- tot_min_col[1]
   }
 
-  # ── Compute Day-Level Totals ─────────────────────────────────────────────
+  # -- Compute Day-Level Totals ----------------------------------------------
   day_group <- counts |>
     dplyr::group_by(dplyr::across(dplyr::all_of(c(day_id, by_all)))) |>
     dplyr::summarise(
@@ -152,12 +152,12 @@ est_effort.aerial <- function(
 
   if (warn_used_sum) {
     cli::cli_warn(c(
-      "!" = paste0("Aerial: using sum of ", min_col, " per day×group as total minutes."),
+      "!" = paste0("Aerial: using sum of ", min_col, " per day x group as total minutes."),
       "i" = "Provide `total_minutes_col` for proper expansion."
     ))
   }
 
-  # ── Design-Based Path (REBUILT) ──────────────────────────────────────────
+  # -- Design-Based Path (REBUILT) -------------------------------------------
   if (!is.null(svy)) {
     svy_vars <- svy$variables
     if (!(day_id %in% names(svy_vars))) {
@@ -250,7 +250,7 @@ est_effort.aerial <- function(
       )
     }
 
-    # ── NEW: Use Core Variance Engine ────────────────────────────────────────
+    # -- NEW: Use Core Variance Engine -----------------------------------------
     if (length(by_all) > 0) {
       # Grouped estimation
       variance_result <- tc_compute_variance(
@@ -300,7 +300,7 @@ est_effort.aerial <- function(
       )
     }
 
-    # ── NEW: Variance Decomposition ───────────────────────────────────────────
+    # -- NEW: Variance Decomposition --------------------------------------------
     if (decompose_variance) {
       variance_result$decomposition <- tryCatch({
         tc_decompose_variance(
@@ -316,7 +316,7 @@ est_effort.aerial <- function(
       })
     }
 
-    # ── NEW: Design Diagnostics ───────────────────────────────────────────────
+    # -- NEW: Design Diagnostics ------------------------------------------------
     if (design_diagnostics) {
       variance_result$diagnostics <- tryCatch({
         tc_design_diagnostics(design = design_eff, detailed = FALSE)
@@ -326,7 +326,7 @@ est_effort.aerial <- function(
       })
     }
 
-    # ── NEW: Add variance_info ────────────────────────────────────────────────
+    # -- NEW: Add variance_info -------------------------------------------------
     out$variance_info <- replicate(nrow(out), variance_result, simplify = FALSE)
 
     return(dplyr::select(
@@ -336,7 +336,7 @@ est_effort.aerial <- function(
     ))
   }
 
-  # ── Fallback: non-design path ─────────────────────────────────────────────
+  # -- Fallback: non-design path ----------------------------------------------
   out <- counts |>
     dplyr::group_by(dplyr::across(dplyr::all_of(by_all))) |>
     dplyr::summarise(
