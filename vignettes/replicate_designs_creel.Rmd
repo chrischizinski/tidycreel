@@ -3,7 +3,7 @@ title: "Replicate Designs for Creel Inference"
 subtitle: "Bootstrap, jackknife, and BRR with day PSUs"
 output:
   rmarkdown::html_vignette:
-    pandoc_args: ["--syntax-highlighting=tango"]
+    pandoc_args: ["--highlight-style=tango"]
     highlight: null
 vignette: >
   %\VignetteIndexEntry{Replicate Designs for Creel Inference}

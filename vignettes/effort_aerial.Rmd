@@ -4,7 +4,7 @@ author: "tidycreel team"
 date: "2025-08-20"
 output:
   html_document:
-    pandoc_args: ["--syntax-highlighting=tango"]
+    pandoc_args: ["--highlight-style=tango"]
     highlight: null
     toc: true
     toc_depth: 2

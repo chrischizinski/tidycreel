@@ -2,7 +2,7 @@
 title: "Getting Started with tidycreel"
 output:
   rmarkdown::html_vignette:
-    pandoc_args: ["--syntax-highlighting=tango"]
+    pandoc_args: ["--highlight-style=tango"]
     highlight: null
 vignette: >
   %\VignetteIndexEntry{Getting Started with tidycreel}

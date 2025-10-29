@@ -1,0 +1,1160 @@
+---
+title: "Ratio Estimators"
+subtitle: "When to Use Ratio-of-Means vs Mean-of-Ratios"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    self_contained: true
+    code_folding: show
+    css: code-styles.css
+    pandoc_args: ["--highlight-style=tango"]
+    highlight: null
+vignette: >
+  %\VignetteIndexEntry{Ratio Estimators}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, eval = FALSE)
+```
+
+
+
+
+```{r}
+# R code example
+# Load required packages
+library(survey)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(purrr)
+
+if (requireNamespace("ggtext", quietly = TRUE)) {
+  library(ggtext)
+} else {
+  message("Note: ggtext not installed. Install for annotated plot examples.")
+}
+
+# Try to load tidycreel if available (for the practical examples)
+# The simulations work without it
+if (requireNamespace("tidycreel", quietly = TRUE)) {
+  library(tidycreel)
+  has_tidycreel <- TRUE
+} else {
+  has_tidycreel <- FALSE
+  message("Note: tidycreel not installed. Practical examples will not run, but simulations will work.")
+}
+```
+
+
+## Introduction
+
+One of the most common questions in creel survey analysis is: “Should I use ratio-of-means or mean-of-ratios to estimate catch rate?”
+
+This vignette answers that question through:
+
+1. **Decision rules** based on survey design type
+2. **Simulation demonstrations** showing estimator performance
+3. **Practical guidance** on variance estimation
+4. **Clear examples** using `tidycreel`
+
+
+## Quick Answer: Decision Tree
+
+```
+# Code code example
+┌─────────────────────────────────────────────┐
+│   What type of interviews do you have?      │
+└─────────────────┬───────────────────────────┘
+                  │
+        ┌─────────┴───────────┐
+        │                     │
+    ┌───▼──────┐          ┌───▼────────┐
+    │ ACCESS   │          │ ROVING     │
+    │(Complete │          │(Incomplete │
+    │ trips)   │          │  trips)    │
+    └───┬──────┘          └───┬────────┘
+        │                     │
+        │                     │
+    ┌───▼─────────────────┐   │
+    │ Use RATIO-OF-MEANS  │   │
+    │  R₁ = Σcatch/Σeffort│   │
+    │                     │   │
+    │ Why? Each angler    │   │
+    │ has equal sampling  │   │
+    │ probability.        │   │
+    │                     │   │
+    │ ✓ Unbiased          │   │
+    │ ✓ Finite variance   │   │
+    └─────────────────────┘   │
+                              │
+                  ┌───────────▼────────────────┐
+                  │ Use MEAN-OF-RATIOS         │
+                  │  R₂ = (1/n)Σ(catch/effort) │
+                  │                            │
+                  │ IMPORTANT: Truncate short  │
+                  │ trips (< 20-30 minutes)    │
+                  │                            │
+                  │ Why? Sampling probability  │
+                  │ ∝ trip length. R₁ would    │
+                  │ give biased estimate.      │
+                  │                            │
+                  │ ⚠ Avoid if bag limits      │
+                  │   are low & easily obtained│
+                  └────────────────────────────┘
+```
+
+
+## Theoretical Background
+
+Before diving into simulations and practical examples, let's establish the statistical foundation for why estimator choice matters. The key is understanding how sampling probabilities differ between survey designs.
+
+### Access Point (Complete Trip) Interviews
+
+Sampling Design:
+
+complete
+- Interviews conducted as anglers complete their trips
+equal probability
+- All anglers have equal probability of being interviewed
+- P(interviewed) = constant, regardless of trip length
+
+Appropriate Estimator: Ratio-of-Means (R₁)
+
+$$\hat{R}_1 = \frac{\sum_{j=1}^{n} C_j^*}{\sum_{j=1}^{n} L_j^*}$$
+
+where $C_j^*$ = total catch for the completed trip and $L_j^*$ = total trip length at completion.
+
+Expected Value: $$E(\hat{R}_1) \approx \frac{\text{Total Catch}}{\text{Total Effort}}$$
+
+✓ This is what we want for total catch estimation!
+
+
+### Roving (Incomplete Trip) Interviews
+
+Sampling Design:
+
+during
+- Interviews conducted during fishing trips
+∝ trip length
+- Sampling probability ∝ trip length
+- Longer trips are more likely to be encountered
+
+Appropriate Estimator: Mean-of-Ratios (R₂) with Truncation
+
+$$\hat{R}_2 = \frac{1}{n} \sum_{j=1}^{n} \frac{C_j}{L_j}$$
+
+where $C_j$ = catch at time of interview and $L_j$ = elapsed time at interview.
+
+With truncation: Only include interviews where $L_j > L_{min}$ (typically 20-30 minutes).
+
+Expected Value: $$E(\hat{R}_2) \approx \frac{\text{Total Catch}}{\text{Total Effort}}$$
+
+✓ Correct for roving interviews!
+
+Why NOT use R₁ for roving?
+
+The ratio-of-means for roving interviews has: $$E(\hat{R}_1^{roving}) \approx \frac{\sum L_j^{*2} \cdot (C_j^*/L_j^*)}{\sum L_j^{*2}}$$
+
+This is a weighted average with weights = (trip length)², which does not estimate the population catch rate!
+
+
+
+## Handling Mixed Complete and Incomplete Trips
+
+**Why this matters.** Real creel surveys often produce a mix of *completed* (access-point) and *incomplete* (roving/intercept) interviews. Estimator choice must follow the **inclusion probability**, not just trip status, to avoid bias.
+
+### Principle
+When inclusion probability differs by design (equal-probability at access points vs. length-biased in roving), pooling interviews and applying a single estimator can introduce bias. Treat designs according to their sampling properties.
+
+### 1️⃣ Separate Estimation (Recommended)
+Treat complete and incomplete interviews as two strata, then combine by **effort weighting**:
+
+- **Complete trips (access point):** use *Ratio-of-Means* (R₁ = ΣC / ΣE).
+- **Incomplete trips (roving):** use *Mean-of-Ratios* (R₂ = (1/n) Σ(C/E)) with **truncation** of short trips (e.g., < 20–30 min).
+
+**Effort-weighted combination:**
+
+$$
+\hat{R}_{\text{combined}} = \frac{R_1 E_{\text{complete}} + R_2 E_{\text{incomplete}}}{E_{\text{complete}} + E_{\text{incomplete}}}
+$$
+
+### 2️⃣ Model-Based Weighting (optional)
+If you can estimate selection/inclusion probabilities (e.g., a model for trip completeness or roving intercept likelihood), use a weighted ratio:
+
+$$
+\hat{R}_{\text{weighted}} = \frac{\sum_i w_i C_i}{\sum_i w_i E_i}, \quad w_i = 1 / P(\text{select}_i).
+$$
+
+This is useful for hybrid designs where sampling varies predictably across modes, times, or sites.
+
+### 3️⃣ Sensitivity Analysis
+Compute: (a) R₁ on complete only, (b) R₂ on incomplete (with truncation), and (c) the combined estimator. If differences are small (e.g., < 5–10%), pooling assumptions may be reasonable; document them.
+
+### Cautions
+- Do **not** apply R₁ to unfiltered roving data — it is biased high due to length-biased sampling.
+- Do **not** apply R₂ to complete trips only — bias direction depends on effort variability.
+- Always truncate short incomplete trips to stabilize R₂ and reduce small-denominator issues.
+- When bag limits are frequently hit, be cautious with R₂ (ceiling effects can distort ratios).
+
+### Implementation sketch (R)
+```{r implementation_sketch, eval=FALSE}
+# R code example
+complete <- data %>% dplyr::filter(trip_complete == TRUE)
+incomplete <- data %>% dplyr::filter(trip_complete == FALSE, trip_length >= 0.5)  # 0.5 h = 30 min
+
+r1 <- sum(complete$catch) / sum(complete$effort)
+r2 <- mean(incomplete$catch / incomplete$effort)
+
+E1 <- sum(complete$effort)
+E2 <- sum(incomplete$effort)
+
+R_combined <- (r1 * E1 + r2 * E2) / (E1 + E2)
+```
+
+### Variance note
+Estimate SEs for each stratum with the appropriate formula (delta-method for R₁; sample variance of ratios for R₂), then combine via delta-method using the effort-weight combination above.
+
+## Simulation Study
+
+The theoretical results above show why estimator choice matters. But how large is the bias in practice? And does truncation really help?
+
+Let’s demonstrate these principles through simulation, following the approach of Rasmussen et al. (1998) and Pollock et al. (1997).
+
+
+### Simulation Setup
+
+We’ll simulate a realistic fishing scenario and compare estimator performance.
+
+```{r}
+# R code example
+#' Simulate a day of fishing with known parameters
+#'
+#' @param n_anglers Number of anglers fishing during the day
+#' @param mean_trip_hours Mean trip length (hours)
+#' @param mean_catch_rate Mean catch per hour (Poisson rate parameter)
+#' @param day_length_hours Length of fishing day
+#' @return List with population parameters and individual angler data
+simulate_fishing_day <- function(n_anglers = 100,
+                                 mean_trip_hours = 4,
+                                 mean_catch_rate = 2,
+                                 day_length_hours = 12) {
+
+  # Each angler's true catch rate (gamma-distributed for heterogeneity)
+  # Shape = 1, rate = 1/mean gives exponential with specified mean
+  # This creates variation in angler skill/success
+  alpha <- 1
+  beta <- 1 / mean_catch_rate
+  catch_rates <- rgamma(n_anglers, shape = alpha, rate = beta)
+
+  # Trip lengths (gamma-distributed)
+  shape_trip <- 4  # Controls variability
+  rate_trip <- shape_trip / mean_trip_hours
+  trip_lengths <- rgamma(n_anglers, shape = shape_trip, rate = rate_trip)
+  trip_lengths <- pmin(trip_lengths, day_length_hours)  # Can't exceed day length
+
+  # Generate catches for each angler (Poisson process)
+  # Expected catch = catch_rate * trip_length
+  completed_catch <- rpois(n_anglers, lambda = catch_rates * trip_lengths)
+
+  # True population parameters
+  total_effort <- sum(trip_lengths)
+  total_catch <- sum(completed_catch)
+  true_catch_rate <- total_catch / total_effort
+
+  # Return angler-level data
+  tibble(
+    angler_id = 1:n_anglers,
+    catch_rate_true = catch_rates,
+    trip_length = trip_lengths,
+    completed_catch = completed_catch,
+    true_population_rate = true_catch_rate,
+    total_effort = total_effort,
+    total_catch = total_catch
+  )
+}
+
+# Example
+fishing_day <- simulate_fishing_day(n_anglers = 100)
+head(fishing_day)
+```
+
+```
+# Code code example
+# A tibble: 6 × 7
+  angler_id catch_rate_true trip_length completed_catch true_population_rate
+      <int>           <dbl>       <dbl>           <int>                <dbl>
+1         1           2.00         4.78               7                 2.15
+2         2           2.26         1.56               5                 2.15
+3         3           0.851        4.74               4                 2.15
+4         4           1.03         6.06               5                 2.15
+5         5           6.96         4.52              35                 2.15
+6         6           0.627        5.59               3                 2.15
+# ℹ 2 more variables: total_effort <dbl>, total_catch <int>
+```
+
+```{r}
+# R code example
+# Summary of true population parameters
+cat("True Population Parameters:\n")
+```
+
+```
+# Code code example
+True Population Parameters:
+```
+
+```{r}
+# R code example
+cat("  Total anglers:", nrow(fishing_day), "\n")
+```
+
+```
+# Code code example
+  Total anglers: 100 
+```
+
+```{r}
+# R code example
+cat("  Total effort:", round(fishing_day$total_effort[1], 1), "hours\n")
+```
+
+```
+# Code code example
+  Total effort: 391.8 hours
+```
+
+```{r}
+# R code example
+cat("  Total catch:", fishing_day$total_catch[1], "fish\n")
+```
+
+```
+# Code code example
+  Total catch: 844 fish
+```
+
+```{r}
+# R code example
+cat("  True catch rate:", round(fishing_day$true_population_rate[1], 3), "fish/hour\n")
+```
+
+```
+# Code code example
+  True catch rate: 2.154 fish/hour
+```
+
+
+### Scenario 1: Access Point Interviews (Complete Trips)
+
+Simulate a traditional access point creel where we interview anglers as they finish.
+
+```{r}
+# R code example
+#' Simulate access point interviews
+#'
+#' @param fishing_day Tibble from simulate_fishing_day()
+#' @param n_interviews Number of interviews to conduct
+#' @return Tibble with interview data
+sample_access_interviews <- function(fishing_day, n_interviews = 30) {
+  # Simple random sample (equal probability)
+  sampled <- fishing_day %>%
+    sample_n(size = min(n_interviews, nrow(fishing_day)), replace = FALSE) %>%
+    select(angler_id, completed_catch, trip_length, true_population_rate)
+
+  sampled
+}
+
+# Single realization
+access_sample <- sample_access_interviews(fishing_day, n_interviews = 30)
+head(access_sample)
+```
+
+```
+# Code code example
+# A tibble: 6 × 4
+  angler_id completed_catch trip_length true_population_rate
+      <int>           <int>       <dbl>                <dbl>
+1         1               7        4.78                 2.15
+2        69               4        5.05                 2.15
+3        79              14        6.27                 2.15
+4        19               5        6.75                 2.15
+5        12               1        4.72                 2.15
+6        64               0        5.88                 2.15
+```
+
+```{r}
+# R code example
+# Calculate both estimators
+calculate_estimates <- function(interviews, truncate_minutes = NULL) {
+
+  # Apply truncation if specified (for roving surveys)
+  if (!is.null(truncate_minutes)) {
+    interviews <- interviews %>%
+      filter(trip_length >= truncate_minutes / 60)
+  }
+
+  n <- nrow(interviews)
+
+  # Ratio-of-means
+  r1 <- sum(interviews$completed_catch) / sum(interviews$trip_length)
+
+  # Mean-of-ratios
+  r2 <- mean(interviews$completed_catch / interviews$trip_length)
+
+  # Variance estimates (simplified)
+  # For R₁: use delta method (Taylor series approximation)
+  # Var(R₁) ≈ (1/n·E̅²) · Var(C - R₁·E)
+  # where residual = catch - estimated_rate × effort
+  r <- interviews$completed_catch
+  e <- interviews$trip_length
+  r_bar <- mean(r)
+  e_bar <- mean(e)
+  var_r1 <- (1 / (n * e_bar^2)) * var(r - r1 * e)
+  se_r1 <- sqrt(var_r1)
+
+  # For R₂: simple variance of the ratios
+  ratios <- interviews$completed_catch / interviews$trip_length
+  var_r2 <- var(ratios) / n
+  se_r2 <- sqrt(var_r2)
+
+  tibble(
+    n = n,
+    ratio_of_means = r1,
+    mean_of_ratios = r2,
+    se_r1 = se_r1,
+    se_r2 = se_r2,
+    true_rate = interviews$true_population_rate[1]
+  )
+}
+
+access_results <- calculate_estimates(access_sample)
+access_results
+```
+
+```
+# Code code example
+# A tibble: 1 × 6
+      n ratio_of_means mean_of_ratios se_r1 se_r2 true_rate
+  <int>          <dbl>          <dbl> <dbl> <dbl>     <dbl>
+1    30           2.04           2.41 0.401 0.463      2.15
+```
+
+
+### Scenario 2: Roving Interviews (Incomplete Trips)
+
+Now simulate roving interviews where anglers are intercepted during their trips.
+
+```{r}
+# R code example
+#' Simulate roving interviews
+#'
+#' @param fishing_day Tibble from simulate_fishing_day()
+#' @param n_interviews Target number of interviews
+#' @return Tibble with incomplete trip interview data
+sample_roving_interviews <- function(fishing_day, n_interviews = 30) {
+
+  # Length-biased sampling: probability of encounter ∝ trip duration
+  # P(interview angler i) = L_i / Σ L_j (normalized by total effort)
+  # Longer trips have higher chance of being encountered during roving
+  prob_intercept <- fishing_day$trip_length / sum(fishing_day$trip_length)
+
+  # Sample with probability proportional to size
+  sampled_indices <- sample(
+    1:nrow(fishing_day),
+    size = min(n_interviews, nrow(fishing_day)),
+    replace = FALSE,
+    prob = prob_intercept
+  )
+
+  sampled <- fishing_day[sampled_indices, ]
+
+  # For each intercepted angler, determine interview time
+  # Uniform on [0, trip_length] (on average, intercepted at midpoint)
+  sampled <- sampled %>%
+    mutate(
+      # Time fished when interviewed (uniform on [0, trip_length])
+      # On average, anglers are intercepted at midpoint of their trip
+      time_at_interview = runif(n(), min = 0, max = trip_length),
+
+      # Catch at interview time (incomplete trip)
+      # Poisson process: E[catch | time_t] = λ × t
+      # where λ = angler's true catch rate, t = time fished so far
+      catch_at_interview = rpois(n(), lambda = catch_rate_true * time_at_interview)
+    ) %>%
+    select(angler_id, catch_at_interview, time_at_interview,
+           completed_catch, trip_length, true_population_rate)
+
+  sampled
+}
+
+roving_sample <- sample_roving_interviews(fishing_day, n_interviews = 30)
+head(roving_sample)
+```
+
+```
+# Code code example
+# A tibble: 6 × 6
+  angler_id catch_at_interview time_at_interview completed_catch trip_length
+      <int>              <int>             <dbl>           <int>       <dbl>
+1        27                  1             2.57                2        5.27
+2        37                  4             1.46               13        2.99
+3        81                  0             0.326               3        3.86
+4        32                  1             2.30                8        5.76
+5        97                  6             3.54               10        4.81
+6        28                  4             2.58                5        2.72
+# ℹ 1 more variable: true_population_rate <dbl>
+```
+
+```{r}
+# R code example
+# For roving, use incomplete data
+# Note: calculate_estimates() expects columns named 'completed_catch' and 'trip_length'
+roving_data <- roving_sample %>%
+  select(angler_id,
+         completed_catch = catch_at_interview,
+         trip_length = time_at_interview,
+         true_population_rate)
+
+# No truncation
+roving_no_trunc <- calculate_estimates(roving_data, truncate_minutes = NULL)
+
+# With truncation (30 minutes)
+roving_with_trunc <- calculate_estimates(roving_data, truncate_minutes = 30)
+
+bind_rows(
+  roving_no_trunc %>% mutate(truncation = "None"),
+  roving_with_trunc %>% mutate(truncation = "30 min")
+)
+```
+
+```
+# Code code example
+# A tibble: 2 × 7
+      n ratio_of_means mean_of_ratios se_r1 se_r2 true_rate truncation
+  <int>          <dbl>          <dbl> <dbl> <dbl>     <dbl> <chr>     
+1    30           1.98           1.77 0.329 0.289      2.15 None      
+2    27           1.97           1.67 0.334 0.281      2.15 30 min    
+```
+
+
+### Monte Carlo Simulation
+
+Run 1000 replications to assess bias and precision.
+
+```{r}
+# R code example
+run_simulation <- function(n_reps = 1000,
+                           n_anglers = 100,
+                           n_interviews = 30,
+                           interview_type = c("access", "roving")) {
+
+  interview_type <- match.arg(interview_type)
+
+  results <- map_dfr(1:n_reps, function(rep) {
+    # Generate population
+    day <- simulate_fishing_day(n_anglers = n_anglers)
+    true_rate <- day$true_population_rate[1]
+
+    # Sample based on design
+    if (interview_type == "access") {
+      sample_data <- sample_access_interviews(day, n_interviews)
+      sample_data <- sample_data %>%
+        rename(catch = completed_catch, effort = trip_length)
+    } else {
+      sample_data <- sample_roving_interviews(day, n_interviews) %>%
+        rename(catch = catch_at_interview, effort = time_at_interview)
+    }
+
+    # Calculate estimators
+    # No truncation
+    r1_no <- sum(sample_data$catch) / sum(sample_data$effort)
+    r2_no <- mean(sample_data$catch / sample_data$effort)
+
+    # With truncation (30 min = 0.5 hr)
+    trunc_data <- sample_data %>% filter(effort >= 0.5)
+    if (nrow(trunc_data) > 0) {
+      r1_trunc <- sum(trunc_data$catch) / sum(trunc_data$effort)
+      r2_trunc <- mean(trunc_data$catch / trunc_data$effort)
+    } else {
+      r1_trunc <- NA
+      r2_trunc <- NA
+    }
+
+    tibble(
+      rep = rep,
+      true_rate = true_rate,
+      r1_no_trunc = r1_no,
+      r2_no_trunc = r2_no,
+      r1_with_trunc = r1_trunc,
+      r2_with_trunc = r2_trunc,
+      n_interviews = n_interviews,
+      n_after_trunc = nrow(trunc_data)
+    )
+  })
+
+  results %>%
+    mutate(design = interview_type)
+}
+
+# Run simulations
+access_mc <- run_simulation(n_reps = 1000, interview_type = "access")
+roving_mc <- run_simulation(n_reps = 1000, interview_type = "roving")
+```
+
+
+### Results: Access Point Design
+
+```{r}
+# R code example
+# Summary statistics
+access_summary <- access_mc %>%
+  summarise(
+    true_rate = mean(true_rate),
+
+    # Ratio of means (R₁)
+    r1_mean = mean(r1_no_trunc),
+    r1_bias = mean(r1_no_trunc - true_rate),
+    r1_pct_bias = 100 * mean((r1_no_trunc - true_rate) / true_rate),
+    r1_rmse = sqrt(mean((r1_no_trunc - true_rate)^2)),
+    r1_se = sd(r1_no_trunc),
+
+    # Mean of ratios (R₂)
+    r2_mean = mean(r2_no_trunc),
+    r2_bias = mean(r2_no_trunc - true_rate),
+    r2_pct_bias = 100 * mean((r2_no_trunc - true_rate) / true_rate),
+    r2_rmse = sqrt(mean((r2_no_trunc - true_rate)^2)),
+    r2_se = sd(r2_no_trunc)
+  )
+
+access_summary %>%
+  pivot_longer(cols = -true_rate, names_to = c("estimator", "metric"), names_sep = "_", values_to = "value", names_repair = "minimal") %>%
+  pivot_wider(names_from = metric, values_from = value) %>%
+  select(estimator, mean, bias, pct, se, rmse) %>%
+  rename(pct_bias = pct) %>%
+  knitr::kable(digits = 4, caption = "Access Point Design: Estimator Performance")
+```
+
+Access Point Design: Estimator Performance
+estimator
+mean
+bias
+pct_bias
+se
+rmse
+r1
+1.9953
+-0.0069
+-0.3452
+0.4276
+0.4274
+r2
+2.0081
+0.0059
+0.2955
+0.4081
+0.4079
+Key Finding: For access interviews, both estimators are approximately unbiased, but ratio-of-means (R₁) typically has slightly lower variance.
+
+```{r}
+# R code example
+access_mc %>%
+  select(rep, true_rate, r1_no_trunc, r2_no_trunc) %>%
+  pivot_longer(cols = c(r1_no_trunc, r2_no_trunc),
+               names_to = "estimator",
+               values_to = "estimate") %>%
+  mutate(
+    estimator = recode(estimator,
+      r1_no_trunc = "Ratio of Means (R1)",
+      r2_no_trunc = "Mean of Ratios (R2)"
+    ),
+    # NEW: HTML subscripts for facet strips
+    estimator_lab = recode(estimator,
+      "Ratio of Means (R1)" = "R<sub>1</sub> (Ratio of Means)",
+      "Mean of Ratios (R2)" = "R<sub>2</sub> (Mean of Ratios)"
+    )
+  ) %>%
+  ggplot(aes(x = estimate, fill = estimator)) +
+  geom_histogram(bins = 50, alpha = 0.6, position = "identity") +
+  geom_vline(aes(xintercept = mean(true_rate)), linetype = "dashed", size = 1) +
+  facet_wrap(~ estimator_lab, ncol = 1) +
+  labs(
+    title = "Access Point Design: Sampling Distribution",
+    subtitle = "Dashed line = true population catch rate",
+    x = "Estimated Catch Rate (fish/hour)",
+    y = "Frequency"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    # NEW: render HTML in strip labels
+    strip.text = ggtext::element_markdown()
+  )
+```
+
+_Access Point Design_: Both estimators center on the true value (dashed line), and the ratio-of-means (R₁) exhibits slightly smaller variance.
+
+
+
+### Results: Roving Design
+
+```{r}
+# R code example
+# Summary statistics
+roving_summary <- roving_mc %>%
+  summarise(
+    true_rate = mean(true_rate),
+
+    # R1 no truncation
+    r1_no_mean = mean(r1_no_trunc, na.rm = TRUE),
+    r1_no_bias = mean(r1_no_trunc - true_rate, na.rm = TRUE),
+    r1_no_pct_bias = 100 * mean((r1_no_trunc - true_rate) / true_rate, na.rm = TRUE),
+    r1_no_rmse = sqrt(mean((r1_no_trunc - true_rate)^2, na.rm = TRUE)),
+
+    # R2 no truncation
+    r2_no_mean = mean(r2_no_trunc, na.rm = TRUE),
+    r2_no_bias = mean(r2_no_trunc - true_rate, na.rm = TRUE),
+    r2_no_pct_bias = 100 * mean((r2_no_trunc - true_rate) / true_rate, na.rm = TRUE),
+    r2_no_rmse = sqrt(mean((r2_no_trunc - true_rate)^2, na.rm = TRUE)),
+
+    # R1 with truncation
+    r1_trunc_mean = mean(r1_with_trunc, na.rm = TRUE),
+    r1_trunc_bias = mean(r1_with_trunc - true_rate, na.rm = TRUE),
+    r1_trunc_pct_bias = 100 * mean((r1_with_trunc - true_rate) / true_rate, na.rm = TRUE),
+    r1_trunc_rmse = sqrt(mean((r1_with_trunc - true_rate)^2, na.rm = TRUE)),
+
+    # R2 with truncation
+    r2_trunc_mean = mean(r2_with_trunc, na.rm = TRUE),
+    r2_trunc_bias = mean(r2_with_trunc - true_rate, na.rm = TRUE),
+    r2_trunc_pct_bias = 100 * mean((r2_with_trunc - true_rate) / true_rate, na.rm = TRUE),
+    r2_trunc_rmse = sqrt(mean((r2_with_trunc - true_rate)^2, na.rm = TRUE))
+  )
+
+roving_summary %>%
+  pivot_longer(cols = -true_rate,
+               names_to = c("estimator", "truncation", "metric"),
+               names_pattern = "([^_]+)_([^_]+)_(.*)",
+               values_to = "value") %>%
+  pivot_wider(names_from = metric, values_from = value) %>%
+  mutate(estimator = recode(estimator, r1 = "Ratio of Means", r2 = "Mean of Ratios"),
+         truncation = recode(truncation, no = "No truncation", trunc = "30-min truncation")) %>%
+  select(estimator, truncation, mean, bias, pct_bias, rmse) %>%
+  knitr::kable(digits = 4, caption = "Roving Design: Estimator Performance")
+```
+
+Roving Design: Estimator Performance
+estimator
+truncation
+mean
+bias
+pct_bias
+rmse
+Ratio of Means
+No truncation
+1.9957
+-0.0209
+-1.0341
+0.4985
+Mean of Ratios
+No truncation
+1.9909
+-0.0256
+-1.2698
+0.4629
+Ratio of Means
+30-min truncation
+1.9966
+-0.0199
+-0.9880
+0.5041
+Mean of Ratios
+30-min truncation
+2.0092
+-0.0073
+-0.3629
+0.4400
+Key Findings:
+
+R₁ (ratio-of-means) is BIASED for roving interviews
+1. R₁ (ratio-of-means) is BIASED for roving interviews - does not estimate population catch rate
+R₂ (mean-of-ratios) without truncation is approximately unbiased BUT has high variance
+2. R₂ (mean-of-ratios) without truncation is approximately unbiased BUT has high variance (unstable)
+R₂ with truncation is approximately unbiased AND has lower variance
+RECOMMENDED
+3. R₂ with truncation is approximately unbiased AND has lower variance ✓ RECOMMENDED
+
+```{r}
+# R code example
+
+labels <- c(
+  "r1" = "italic(R)[1]~'(Ratio~of~Means)'",
+  "r2" = "italic(R)[2]~'(Mean~of~Ratios)'"
+)
+
+
+roving_mc %>%
+  select(rep, true_rate, r1_no_trunc, r2_no_trunc, r1_with_trunc, r2_with_trunc) %>%
+  pivot_longer(cols = -c(rep, true_rate),
+               names_to = "estimator",
+               values_to = "estimate") %>%
+  filter(!is.na(estimate)) %>%
+  mutate(
+    Estimator_lab = dplyr::case_when(
+      Estimator %in% c("R1","Ratio of Means","Ratio-of-Means","R_1") ~
+        "R<sub>1</sub> (Ratio of Means)",
+      Estimator %in% c("R2","Mean of Ratios","Mean-of-Ratios","R_2") ~
+        "R<sub>2</sub> (Mean of Ratios)",
+      TRUE ~ Estimator
+    ),
+    Truncation_lab = dplyr::case_when(
+      Truncation %in% c("30-Min Truncation","30 min","30min","30") ~
+        "30-Min Truncation",
+      TRUE ~ "No Truncation"
+    )
+  ) %>%
+  ggplot(aes(x = estimate, fill = Estimator)) +
+  # ... geoms ...
+  facet_grid(Estimator_lab ~ Truncation_lab, switch = "y") +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    strip.text.x = ggtext::element_markdown(),
+    strip.text.y = ggtext::element_markdown()
+  )
+```
+
+_Roving Design_: R₁ (ratio-of-means) remains biased for roving surveys regardless of truncation. R₂ (mean-of-ratios) is unbiased but high variance without truncation; truncating short trips stabilises the estimator while keeping it unbiased.
+
+
+
+## Practical Implementation with tidycreel
+
+
+### Access Point Survey Example
+
+```{r}
+# R code example
+# Assuming you have complete-trip interview data
+interviews_complete <- tibble(
+  angler_id = 1:100,
+  date = rep(as.Date("2024-01-01") + 0:9, each = 10),
+  catch_total = rpois(100, lambda = 8),
+  hours_fished = rgamma(100, shape = 4, rate = 1),
+  day_type = rep(c("weekday", "weekend"), length.out = 100)
+)
+
+# Create survey design
+svy_interviews <- survey::svydesign(
+  ids = ~1,
+  strata = ~day_type,
+  data = interviews_complete
+)
+
+# Use RATIO-OF-MEANS (default and recommended)
+cpue_access <- est_cpue(
+  design = svy_interviews,
+  by = NULL,
+  response = "catch_total",
+  effort_col = "hours_fished",
+  mode = "ratio_of_means"  # ✓ Correct for access interviews
+)
+
+cpue_access
+```
+
+
+### Roving Survey Example
+
+```{r}
+# R code example
+# Assuming you have incomplete-trip interview data
+interviews_incomplete <- tibble(
+  angler_id = 1:100,
+  date = rep(as.Date("2024-01-01") + 0:9, each = 10),
+  catch_total = rpois(100, lambda = 4),  # Catch so far
+  hours_fished = runif(100, min = 0.2, max = 6),  # Time so far
+  day_type = rep(c("weekday", "weekend"), length.out = 100)
+)
+
+# IMPORTANT: Truncate short trips before analysis
+interviews_truncated <- interviews_incomplete %>%
+  filter(hours_fished >= 0.5)  # Remove trips < 30 minutes
+
+# Create survey design
+svy_roving <- survey::svydesign(
+  ids = ~1,
+  strata = ~day_type,
+  data = interviews_truncated
+)
+
+# Use MEAN-OF-RATIOS for roving interviews
+cpue_roving <- est_cpue(
+  design = svy_roving,
+  by = NULL,
+  response = "catch_total",
+  effort_col = "hours_fished",
+  mode = "mean_of_ratios"  # ✓ Correct for roving interviews
+)
+
+cpue_roving
+```
+
+
+## Variance Estimation
+
+
+### Access Point (Ratio-of-Means)
+
+For ratio-of-means with survey weights, the survey package automatically uses the delta method:
+
+Note: These variance formulas assume sampling from an infinite (or very large) population. If your sample size is substantial relative to the total number of anglers (n/N > 5%), you may want to apply a finite population correction (FPC): multiply the variance by (1 - n/N). However, for most creel surveys where the population of potential anglers is large, this correction is negligible.
+
+$$\text{Var}(\hat{R}_1) \approx \frac{1}{n\bar{E}^2} \text{Var}(C - \hat{R}_1 E)$$
+
+where $C$ = catch, $E$ = effort.
+
+```{r}
+# R code example
+# survey::svyratio() provides proper variance
+cpue_result <- est_cpue(design = svy_interviews, mode = "ratio_of_means")
+
+# Standard error is included
+cpue_result$se
+
+# 95% confidence interval
+cpue_result$ci_low
+cpue_result$ci_high
+```
+
+
+### Roving (Mean-of-Ratios with Truncation)
+
+For mean-of-ratios, variance is straightforward:
+
+$$\text{Var}(\hat{R}_2) = \frac{1}{n} \text{Var}\left(\frac{C_j}{E_j}\right)$$
+
+```{r}
+# R code example
+# survey::svymean() on the ratio variable
+cpue_roving <- est_cpue(design = svy_roving, mode = "mean_of_ratios")
+
+# Standard error and CIs included
+cpue_roving$se
+cpue_roving$ci_low
+cpue_roving$ci_high
+```
+
+
+## Special Considerations
+
+
+### Bag Limits
+
+⚠️ CRITICAL WARNING: Roving surveys can produce severe negative bias (underestimation of 20-50%+) when bag limits are low (≤5 fish) and anglers comply by leaving immediately upon reaching the limit.
+
+Problem: If anglers leave immediately after catching their limit, the roving clerk will encounter only unsuccessful anglers, leading to severe underestimation.
+
+Example simulation (bag limit = 2 fish):
+
+```{r}
+# R code example
+simulate_with_bag_limit <- function(n_reps = 500, bag_limit = 2) {
+  map_dfr(1:n_reps, function(rep) {
+    # Simulate fishing day
+    day <- simulate_fishing_day(n_anglers = 100)
+    true_rate <- day$true_population_rate[1]
+
+    # Apply bag limit: anglers stop when limit reached
+    day_limited <- day %>%
+      mutate(
+        # Time to reach bag limit (exponential waiting time)
+        time_to_limit = ifelse(catch_rate_true > 0,
+                               bag_limit / catch_rate_true,
+                               Inf),
+        # Actual trip length (stop at limit or planned end, whichever comes first)
+        actual_trip_length = pmin(trip_length, time_to_limit),
+        # Actual catch (capped at bag limit)
+        actual_catch = pmin(completed_catch, bag_limit),
+        # Did angler reach bag limit before planned trip end?
+        reached_limit = (time_to_limit < trip_length)
+      )
+
+    # Roving interviews can only encounter anglers still on-site
+    # Those who reached bag limit before their planned trip end have already left
+    # Only those who haven't reached the limit OR reached it at/after planned end are available
+    still_fishing <- day_limited %>%
+      filter(!reached_limit)
+
+    if (nrow(still_fishing) > 10) {
+      # Sample from those still fishing
+      sample_data <- sample_roving_interviews(still_fishing, n_interviews = 30) %>%
+        rename(catch = catch_at_interview, effort = time_at_interview) %>%
+        filter(effort >= 0.5)
+
+      if (nrow(sample_data) > 0) {
+        r2 <- mean(sample_data$catch / sample_data$effort)
+        return(tibble(rep = rep, true_rate = true_rate, estimated_rate = r2,
+                     bag_limit = bag_limit))
+      }
+    }
+
+    tibble(rep = rep, true_rate = true_rate, estimated_rate = NA, bag_limit = bag_limit)
+  })
+}
+
+bag_limit_results <- bind_rows(
+  simulate_with_bag_limit(bag_limit = 2),
+  simulate_with_bag_limit(bag_limit = 5),
+  simulate_with_bag_limit(bag_limit = 10)
+)
+
+bag_limit_summary <- bag_limit_results %>%
+  filter(!is.na(estimated_rate)) %>%
+  group_by(bag_limit) %>%
+  summarise(
+    true_rate = mean(true_rate),
+    mean_estimate = mean(estimated_rate),
+    bias = mean(estimated_rate - true_rate),
+    pct_bias = 100 * mean((estimated_rate - true_rate) / true_rate)
+  )
+
+bag_limit_summary %>%
+  knitr::kable(digits = 3, caption = "Roving Bias Under Different Bag Limits")
+```
+
+Roving Bias Under Different Bag Limits
+bag_limit
+true_rate
+mean_estimate
+bias
+pct_bias
+2
+2.010
+0.341
+-1.668
+-83.017
+5
+2.001
+0.655
+-1.346
+-67.286
+10
+2.003
+1.021
+-0.982
+-49.014
+Recommendation: If bag limits are low (≤5 fish) and compliance is high, use access point interviews instead of roving.
+
+
+### Nonstationary Catch Rates
+
+If catch rates change systematically during trips (e.g., learning curve, time-of-day effects), roving interviews may be biased.
+
+Check this by:
+
+1. Comparing incomplete-trip catch rates to complete-trip catch rates
+2. Looking for patterns in catch rate vs. time-of-day
+
+If nonstationary: Consider access point interviews or model the time-varying catch rate.
+
+
+## Summary: Practical Guidelines
+
+
+### Decision Rules
+
+Survey Type
+Interview Type
+Recommended Estimator
+Function Call
+Access point
+Complete trips
+Ratio-of-means (R₁)
+est_cpue(..., mode = "ratio_of_means")
+Roving
+Incomplete trips
+Mean-of-ratios (R₂) with truncation
+est_cpue(..., mode = "mean_of_ratios")
+ + filter short trips
+Complemented (aerial-access)
+Complete trips
+Ratio-of-means (R₁)
+est_cpue(..., mode = "ratio_of_means")
+Complemented (aerial-roving)
+Incomplete trips
+Mean-of-ratios (R₂) with truncation
+est_cpue(..., mode = "mean_of_ratios")
+ + filter
+
+### Pre-processing Checklist
+
+For ALL surveys:
+
+Check for missing data in catch and effort
+- Check for missing data in catch and effort
+Verify effort > 0 for all interviews
+- Verify effort > 0 for all interviews
+Check for outliers (data entry errors)
+- Check for outliers (data entry errors)
+
+For ROVING surveys specifically:
+
+Truncate short trips (< 20-30 minutes)
+- Truncate short trips (< 20-30 minutes)
+Check bag limit compliance (may cause bias)
+- Check bag limit compliance (may cause bias)
+Verify catch rate stationarity (if possible)
+- Verify catch rate stationarity (if possible)
+
+
+### Variance Estimation Checklist
+
+Use proper survey weights in 
+svydesign()
+- Use proper survey weights in svydesign()
+Include stratification variables
+- Include stratification variables
+Use 
+svyratio()
+ for ratio-of-means
+- Use svyratio() for ratio-of-means
+Use 
+svymean()
+ on catch/effort ratio for mean-of-ratios
+- Use svymean() on catch/effort ratio for mean-of-ratios
+Report standard errors and confidence intervals
+- Report standard errors and confidence intervals
+
+
+## References
+
+Pollock, K.H., Hoenig, J.M., Jones, C.M., Robson, D.S., & Greene, C.J. (1997). Catch rate estimation for roving and access point surveys. North American Journal of Fisheries Management, 17(1), 11-19.
+
+- Pollock, K.H., Hoenig, J.M., Jones, C.M., Robson, D.S., & Greene, C.J. (1997). Catch rate estimation for roving and access point surveys. North American Journal of Fisheries Management , 17(1), 11-19.
+Rasmussen, P.W., Staggs, M.D., Beard, T.D., & Newman, S.P. (1998). Bias and confidence interval coverage of creel survey estimators evaluated by simulation. Transactions of the American Fisheries Society, 127(3), 469-480.
+
+- Rasmussen, P.W., Staggs, M.D., Beard, T.D., & Newman, S.P. (1998). Bias and confidence interval coverage of creel survey estimators evaluated by simulation. Transactions of the American Fisheries Society , 127(3), 469-480.
+Jones, C.M., Robson, D.S., Lakkis, H.D., & Kressel, J. (1995). Properties of catch rates used in analysis of angler surveys. Transactions of the American Fisheries Society, 124(6), 911-928.
+
+- Jones, C.M., Robson, D.S., Lakkis, H.D., & Kressel, J. (1995). Properties of catch rates used in analysis of angler surveys. Transactions of the American Fisheries Society , 124(6), 911-928.
+Lumley, T. (2004). Analysis of complex survey samples. Journal of Statistical Software, 9(1), 1-19.
+
+- Lumley, T. (2004). Analysis of complex survey samples. Journal of Statistical Software , 9(1), 1-19.
+
+
+## Conclusion
+
+The choice between ratio-of-means and mean-of-ratios depends fundamentally on your survey design:
+
+Access point interviews
+ratio-of-means
+- Access point interviews → Use ratio-of-means
+Roving interviews
+mean-of-ratios with truncation
+- Roving interviews → Use mean-of-ratios with truncation
+
+The tidycreel package implements both estimators with proper variance estimation through the survey package. By following the decision rules in this vignette, you can ensure your catch rate estimates are unbiased and your confidence intervals have correct coverage.

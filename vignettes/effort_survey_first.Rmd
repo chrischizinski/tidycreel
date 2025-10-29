@@ -2,7 +2,7 @@
 title: "Effort Estimation (Survey-First)"
 output:
   rmarkdown::html_vignette:
-    pandoc_args: ["--syntax-highlighting=tango"]
+    pandoc_args: ["--highlight-style=tango"]
     highlight: null
     df_print: paged
 vignette: >

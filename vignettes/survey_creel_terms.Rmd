@@ -3,7 +3,7 @@ title: "Survey Package to Creel: A Translator"
 subtitle: "Design-based estimation in creel terms"
 output:
   rmarkdown::html_vignette:
-    pandoc_args: ["--syntax-highlighting=tango"]
+    pandoc_args: ["--highlight-style=tango"]
     highlight: null
 vignette: >
   %\VignetteIndexEntry{Survey Package to Creel: A Translator}

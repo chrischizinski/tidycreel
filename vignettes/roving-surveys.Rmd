@@ -2,7 +2,7 @@
 title: "Roving Survey CPUE Estimation"
 output:
   rmarkdown::html_vignette:
-    pandoc_args: ["--syntax-highlighting=tango"]
+    pandoc_args: ["--highlight-style=tango"]
     highlight: null
 vignette: >
   %\VignetteIndexEntry{Roving Survey CPUE Estimation}
