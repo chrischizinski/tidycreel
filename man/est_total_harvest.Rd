@@ -51,13 +51,13 @@ estimates with proper variance propagation using the delta method.
 variance information, matching the native survey integration architecture.
 \subsection{Statistical Method}{
 
-Combines effort (E) and CPUE (C): H = E × C
+Combines effort (E) and CPUE (C): H = E x C
 }
 
 \subsection{Variance Propagation (Delta Method)}{
 
-Independent (default): Var(H) = E² × Var(C) + C² × Var(E)
-Correlated: Var(H) = E² × Var(C) + C² × Var(E) + 2 × E × C × Cov(E,C)
+Independent (default): Var(H) = E^2 x Var(C) + C^2 x Var(E)
+Correlated: Var(H) = E^2 x Var(C) + C^2 x Var(E) + 2 x E x C x Cov(E,C)
 }
 
 \subsection{Species Aggregation}{

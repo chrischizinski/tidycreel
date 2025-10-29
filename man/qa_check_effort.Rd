@@ -62,7 +62,7 @@ under/overestimates catch and harvest rates (Table 17.3, #8).
 \enumerate{
 \item \strong{Effort Calculation Validation:}
 \itemize{
-\item Check if effort = num_anglers × hours_fished
+\item Check if effort = num_anglers x hours_fished
 \item Flag inconsistencies (allowing for small rounding errors)
 \item Recommend correction formula
 }

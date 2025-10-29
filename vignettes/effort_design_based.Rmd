@@ -3,7 +3,10 @@
 title: "Effort Estimation in Creel Surveys: Design-Based Methods"
 author: "tidycreel team"
 date: "2025-08-20"
-output: rmarkdown::html_vignette
+output:
+  rmarkdown::html_vignette:
+    pandoc_args: ["--syntax-highlighting=tango"]
+    highlight: null
 vignette: >
   %\VignetteIndexEntry{Effort Estimation in Creel Surveys: Design-Based Methods}
   %\VignetteEngine{knitr::rmarkdown}

@@ -31,8 +31,8 @@ Missing columns are ignored with a warning.}
 \item{minutes_col}{Candidate name(s) for per-count minutes. The first present
 is used.}
 
-\item{total_minutes_col}{Candidate name(s) for day×group total minutes.
-If absent, falls back to the sum of per-count minutes within the day×group
+\item{total_minutes_col}{Candidate name(s) for dayxgroup total minutes.
+If absent, falls back to the sum of per-count minutes within the dayxgroup
 (warns).}
 
 \item{day_id}{Day identifier (PSU), typically \code{date}, used to join with the
@@ -87,7 +87,7 @@ The \code{variance_info} list-column contains:
 }
 \description{
 Estimate angler-hours from instantaneous (snapshot) counts using mean-count
-expansion per day × group, then compute design-based totals and variance via
+expansion per day x group, then compute design-based totals and variance via
 the \code{survey} package with NATIVE support for advanced variance methods.
 }
 \details{
@@ -95,7 +95,7 @@ the \code{survey} package with NATIVE support for advanced variance methods.
 variance decomposition, and design diagnostics without requiring wrapper functions.
 \subsection{Survey-Based Estimation}{
 
-Aggregates per-count observations to day × group totals and uses a
+Aggregates per-count observations to day x group totals and uses a
 day-PSU survey design to compute totals/variance via the \code{survey} package.
 When \code{svy} is not provided, a non-design fallback uses within-group
 variability to approximate SE/CI; prefer a valid survey design for

@@ -37,9 +37,9 @@ minutes column (e.g., \code{flight_minutes}, \code{interval_minutes}, or \code{c
 count. The first present is used.}
 
 \item{total_minutes_col}{Optional column giving the total minutes represented
-for the whole day×group (e.g., full day length or block coverage). If
+for the whole day x group (e.g., full day length or block coverage). If
 absent, the estimator falls back to the sum of per-count minutes within the
-day×group (warns).}
+day x group (warns).}
 
 \item{day_id}{Day identifier (PSU), typically \code{date}, used to join to the
 survey design.}
@@ -48,7 +48,7 @@ survey design.}
 for aerial conditions (e.g., \code{cloud}, \code{glare}, \code{observer}, \code{altitude}).}
 
 \item{visibility_col}{Optional name of a column with visibility proportion
-(0–1). Counts are divided by this value (guarded to avoid division by very
+(0-1). Counts are divided by this value (guarded to avoid division by very
 small numbers).}
 
 \item{calibration_col}{Optional name of a column with multiplicative

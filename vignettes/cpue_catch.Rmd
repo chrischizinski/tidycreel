@@ -1,6 +1,9 @@
 ---
 title: "CPUE and Catch Estimation"
-output: rmarkdown::html_vignette
+output:
+  rmarkdown::html_vignette:
+    pandoc_args: ["--syntax-highlighting=tango"]
+    highlight: null
 vignette: >
   %\VignetteIndexEntry{CPUE and Catch Estimation}
   %\VignetteEngine{knitr::rmarkdown}
