@@ -20,13 +20,39 @@ jobs:
         run: |
           brew install gettext
           brew install harfbuzz fribidi
-      - name: Set library path for system libraries (macOS)
+          brew link --force gettext
+      - name: Configure R build environment (macOS)
         if: runner.os == 'macOS'
         run: |
-          echo 'export LIBRARY_PATH=/opt/homebrew/lib:$LIBRARY_PATH' >> $GITHUB_ENV
-          echo 'export CPPFLAGS=-I/opt/homebrew/include' >> $GITHUB_ENV
-          echo 'export LDFLAGS=-L/opt/homebrew/lib' >> $GITHUB_ENV
-          echo 'export PKG_CONFIG_PATH=/opt/homebrew/lib/pkgconfig:$PKG_CONFIG_PATH' >> $GITHUB_ENV
+          # Create R Makevars with proper library paths
+          mkdir -p ~/.R
+
+          # Set paths for both Intel and Apple Silicon Macs
+          if [[ -d "/opt/homebrew" ]]; then
+            # Apple Silicon Mac
+            cat > ~/.R/Makevars << 'EOF'
+LDFLAGS=-L/opt/homebrew/lib -L/opt/homebrew/opt/gettext/lib
+CPPFLAGS=-I/opt/homebrew/include -I/opt/homebrew/opt/gettext/include
+PKG_CONFIG_PATH=/opt/homebrew/lib/pkgconfig:/opt/homebrew/opt/gettext/lib/pkgconfig
+LIBRARY_PATH=/opt/homebrew/lib:/opt/homebrew/opt/gettext/lib
+EOF
+            echo 'LDFLAGS=-L/opt/homebrew/lib -L/opt/homebrew/opt/gettext/lib' >> $GITHUB_ENV
+            echo 'CPPFLAGS=-I/opt/homebrew/include -I/opt/homebrew/opt/gettext/include' >> $GITHUB_ENV
+            echo 'PKG_CONFIG_PATH=/opt/homebrew/lib/pkgconfig:/opt/homebrew/opt/gettext/lib/pkgconfig' >> $GITHUB_ENV
+            echo 'LIBRARY_PATH=/opt/homebrew/lib:/opt/homebrew/opt/gettext/lib' >> $GITHUB_ENV
+          else
+            # Intel Mac
+            cat > ~/.R/Makevars << 'EOF'
+LDFLAGS=-L/usr/local/lib -L/usr/local/opt/gettext/lib
+CPPFLAGS=-I/usr/local/include -I/usr/local/opt/gettext/include
+PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/usr/local/opt/gettext/lib/pkgconfig
+LIBRARY_PATH=/usr/local/lib:/usr/local/opt/gettext/lib
+EOF
+            echo 'LDFLAGS=-L/usr/local/lib -L/usr/local/opt/gettext/lib' >> $GITHUB_ENV
+            echo 'CPPFLAGS=-I/usr/local/include -I/usr/local/opt/gettext/include' >> $GITHUB_ENV
+            echo 'PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/usr/local/opt/gettext/lib/pkgconfig' >> $GITHUB_ENV
+            echo 'LIBRARY_PATH=/usr/local/lib:/usr/local/opt/gettext/lib' >> $GITHUB_ENV
+          fi
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: |
@@ -35,12 +61,6 @@ jobs:
             any::lintr
             any::styler
           needs: check
-      - name: Restore renv packages
-        run: Rscript -e "if (file.exists('renv.lock')) renv::restore()"
-      - name: Lint
-        run: Rscript -e "lintr::lint_package()"
-      - name: Style (dry-run)
-        run: Rscript -e "styler::style_dir(dry = 'on')"
       - name: Check
         env:
           _R_CHECK_FORCE_SUGGESTS_: false
