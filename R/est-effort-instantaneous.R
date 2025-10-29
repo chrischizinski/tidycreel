@@ -227,7 +227,7 @@ est_effort.instantaneous <- function(
     # Build effort design (unchanged from original)
     ids_formula <- stats::as.formula(paste("~", day_id))
     if (inherits(svy, "svyrep.design")) {
-      repmat <- survey::repweights(svy)
+      repmat <- svy$repweights
       rep_df <- tibble::as_tibble(repmat)
       rep_df[[day_id]] <- svy_vars[[day_id]]
       day_group <- dplyr::left_join(day_group, rep_df, by = day_id)

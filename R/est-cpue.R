@@ -319,7 +319,7 @@ est_cpue_auto <- function(design, by, response, effort_col, min_trip_hours,
   if (n_na > 0) {
     cli::cli_warn("{n_na} interview{?s} with missing trip_complete excluded.")
     vars <- vars[!is.na(vars$trip_complete), ]
-    svy <- survey::subset(svy, !is.na(trip_complete))
+    svy <- subset(svy, !is.na(trip_complete))
     n_total <- n_complete + n_incomplete
   }
 
@@ -361,7 +361,7 @@ est_cpue_auto <- function(design, by, response, effort_col, min_trip_hours,
         "!" = "Truncating {n_truncated} trip{?s} < {min_trip_hours} hours.",
         "i" = "Using ratio-of-means."
       ))
-      svy <- survey::subset(svy, !!as.name(effort_col) >= min_trip_hours)
+      svy <- subset(svy, !!as.name(effort_col) >= min_trip_hours)
     } else {
       cli::cli_inform(c(
         "v" = "Auto: 100% incomplete trips (n={n_incomplete}). Using ratio-of-means."
@@ -389,8 +389,8 @@ est_cpue_auto <- function(design, by, response, effort_col, min_trip_hours,
   ))
 
   # Separate into complete and incomplete
-  svy_complete <- survey::subset(svy, trip_complete == TRUE)
-  svy_incomplete <- survey::subset(svy, trip_complete == FALSE)
+  svy_complete <- subset(svy, trip_complete == TRUE)
+  svy_incomplete <- subset(svy, trip_complete == FALSE)
 
   # Apply truncation to incomplete
   vars_incomplete <- svy_incomplete$variables
@@ -399,7 +399,7 @@ est_cpue_auto <- function(design, by, response, effort_col, min_trip_hours,
 
   if (n_truncated > 0) {
     cli::cli_inform("!" = "Truncating {n_truncated} short incomplete trip{?s}.")
-    svy_incomplete <- survey::subset(svy_incomplete, !!as.name(effort_col) >= min_trip_hours)
+    svy_incomplete <- subset(svy_incomplete, !!as.name(effort_col) >= min_trip_hours)
   }
 
   # Estimate for each group
