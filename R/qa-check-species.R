@@ -105,7 +105,7 @@
 #' )
 #' }
 #'
-#' @seealso \code{\link{qa_checks}}, \code{\link{validate_species}}
+#' @seealso \code{\link{qa_checks}}
 #'
 #' @export
 qa_check_species <- function(interviews,

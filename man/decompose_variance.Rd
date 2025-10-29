@@ -17,7 +17,7 @@ decompose_variance(
 }
 \arguments{
 \item{design}{Survey design object from \code{\link{as_day_svydesign}} or
-\code{\link{survey::svydesign}}}
+\code{\link[survey]{svydesign}}}
 
 \item{response}{Formula or character string specifying the response variable
 for decomposition (e.g., "anglers_count" or ~anglers_count)}

@@ -279,7 +279,7 @@ est_effort.busroute_design <- function(
 
   # ── NEW: Add variance_info and diagnostics ────────────────────────────────
   out$diagnostics <- replicate(nrow(out), list(dropped), simplify = FALSE)
-  out$variance_info <- replicate(nrow(out), list(variance_result), simplify = FALSE)
+  out$variance_info <- replicate(nrow(out), variance_result, simplify = FALSE)
 
   return(dplyr::select(
     out,

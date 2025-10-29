@@ -2,9 +2,6 @@
 % Please edit documentation in R/design-constructors.R
 \name{design-constructors}
 \alias{design-constructors}
-\alias{design_access}
-\alias{design_roving}
-\alias{design_repweights}
 \title{Survey Design Constructors for Access-Point Creel Surveys}
 \description{
 These functions create survey design objects for different types of

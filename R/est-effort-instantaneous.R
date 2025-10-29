@@ -325,7 +325,7 @@ est_effort.instantaneous <- function(
 
     # ── NEW: Add variance_info list-column ───────────────────────────────────
     # This is the enriched output structure
-    out$variance_info <- replicate(nrow(out), list(variance_result), simplify = FALSE)
+    out$variance_info <- replicate(nrow(out), variance_result, simplify = FALSE)
 
     # Return with consistent column order
     return(dplyr::select(
@@ -365,7 +365,7 @@ est_effort.instantaneous <- function(
 
   out$deff <- NA_real_
   out$method <- "instantaneous"
-  out$variance_info <- replicate(nrow(out), list(NULL), simplify = FALSE)
+  out$variance_info <- replicate(nrow(out), NULL, simplify = FALSE)
 
   dplyr::select(
     out,

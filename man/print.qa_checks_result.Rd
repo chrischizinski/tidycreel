@@ -6,6 +6,11 @@
 \usage{
 \method{print}{qa_checks_result}(x, ...)
 }
+\arguments{
+\item{x}{A qa_checks_result object}
+
+\item{...}{Additional arguments (currently unused)}
+}
 \description{
 Print method for QA check results
 }

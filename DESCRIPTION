@@ -29,7 +29,9 @@ Imports:
     janitor,
     readr,
     ggplot2,
-    cli
+    cli,
+    lme4,
+    plotly
 Suggests:
     testthat (>= 3.0.0),
     knitr,

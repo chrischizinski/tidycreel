@@ -262,7 +262,7 @@ est_effort.progressive <- function(
     }
 
     # ── NEW: Add variance_info list-column ───────────────────────────────────
-    out$variance_info <- replicate(nrow(out), list(variance_result), simplify = FALSE)
+    out$variance_info <- replicate(nrow(out), variance_result, simplify = FALSE)
 
     # Return with consistent column order
     return(dplyr::select(
@@ -286,7 +286,7 @@ est_effort.progressive <- function(
   out$ci_high <- NA_real_
   out$deff <- NA_real_
   out$method <- "progressive"
-  out$variance_info <- replicate(nrow(out), list(NULL), simplify = FALSE)
+  out$variance_info <- replicate(nrow(out), NULL, simplify = FALSE)
 
   dplyr::select(
     out,

@@ -146,5 +146,5 @@ species_check <- qa_check_species(
 
 }
 \seealso{
-\code{\link{qa_checks}}, \code{\link{validate_species}}
+\code{\link{qa_checks}}
 }

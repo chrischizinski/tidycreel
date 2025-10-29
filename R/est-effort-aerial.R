@@ -40,6 +40,7 @@
 #' @param decompose_variance **NEW** Logical, decompose variance (default FALSE)
 #' @param design_diagnostics **NEW** Logical, compute diagnostics (default FALSE)
 #' @param n_replicates **NEW** Bootstrap/jackknife replicates (default 1000)
+#' @param ... Additional arguments passed to survey functions
 #'
 #' @return Tibble with grouping columns plus:
 #'   \describe{
@@ -327,7 +328,7 @@ est_effort.aerial <- function(
     }
 
     # ── NEW: Add variance_info ────────────────────────────────────────────────
-    out$variance_info <- replicate(nrow(out), list(variance_result), simplify = FALSE)
+    out$variance_info <- replicate(nrow(out), variance_result, simplify = FALSE)
 
     return(dplyr::select(
       out,
@@ -366,7 +367,7 @@ est_effort.aerial <- function(
 
   out$deff <- NA_real_
   out$method <- "aerial"
-  out$variance_info <- replicate(nrow(out), list(NULL), simplify = FALSE)
+  out$variance_info <- replicate(nrow(out), NULL, simplify = FALSE)
 
   dplyr::select(
     out,

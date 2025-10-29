@@ -5,7 +5,7 @@
 #' objects to guide optimal sampling design and allocation decisions.
 #'
 #' @param design Survey design object from \code{\link{as_day_svydesign}} or 
-#'   \code{\link{survey::svydesign}}
+#'   \code{\link[survey]{svydesign}}
 #' @param response Formula or character string specifying the response variable
 #'   for decomposition (e.g., "anglers_count" or ~anglers_count)
 #' @param by Character vector of grouping variables for stratified decomposition

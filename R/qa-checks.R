@@ -463,6 +463,8 @@ qa_checks <- function(counts = NULL,
 }
 
 #' Print method for QA check results
+#' @param x A qa_checks_result object
+#' @param ... Additional arguments (currently unused)
 #' @export
 print.qa_checks_result <- function(x, ...) {
     cli::cli_h1("Creel Survey Data Quality Assessment")
