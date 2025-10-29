@@ -102,6 +102,7 @@ print.summary.creel_design <- function(x, ...) {
 #' designs, and designs with replicate weights.
 #'
 #' @name design-constructors
+#' @aliases design_repweights
 NULL
 
 #' Create Access-Point Survey Design (lean container)

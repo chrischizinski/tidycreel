@@ -77,8 +77,6 @@ SEs, and CIs are computed with \code{survey} functions.}
 \item{design_diagnostics}{\strong{NEW} Logical, compute diagnostics (default FALSE)}
 
 \item{n_replicates}{\strong{NEW} Bootstrap/jackknife replicates (default 1000)}
-
-\item{...}{Additional arguments passed to survey functions}
 }
 \value{
 Tibble with grouping columns plus:

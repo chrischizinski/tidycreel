@@ -40,7 +40,6 @@
 #' @param decompose_variance **NEW** Logical, decompose variance (default FALSE)
 #' @param design_diagnostics **NEW** Logical, compute diagnostics (default FALSE)
 #' @param n_replicates **NEW** Bootstrap/jackknife replicates (default 1000)
-#' @param ... Additional arguments passed to survey functions
 #'
 #' @return Tibble with grouping columns plus:
 #'   \describe{
