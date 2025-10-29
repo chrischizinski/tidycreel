@@ -61,7 +61,7 @@ jobs:
         env:
           _R_CHECK_FORCE_SUGGESTS_: false
           R_DEFAULT_INTERNET_TIMEOUT: 20
-          LC_ALL: C.UTF-8
+          LC_ALL: ${{ runner.os != 'Windows' && 'C.UTF-8' || '' }}
         run: Rscript -e "rcmdcheck::rcmdcheck(error_on='warning', check_dir='check')"
       - name: Upload check results on failure
         if: failure()
