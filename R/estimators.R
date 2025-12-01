@@ -9,58 +9,12 @@
 #' @name estimators
 NULL
 
-#' Estimate Fishing Effort
-#'
-#' Estimates total fishing effort (angler-hours or party-hours) by strata
-#' and overall, using the survey design weights. Supports both access-point
-#' and roving survey designs.
-#'
-#' @param design A creel design object created by \code{\link{design_access}},
-#'   \code{\link{design_roving}}, or \code{\link{design_repweights}}.
-#' @param by Character vector of variables to group estimates by. Default
-#'   is the strata variables defined in the design.
-#' @param total Logical, whether to include overall total estimate in addition
-#'   to grouped estimates. Default TRUE.
-#' @param level Confidence level for confidence intervals. Default 0.95.
-#'
-#' @return A tibble with columns:
-#'   \describe{
-#'     \item{group_vars}{Grouping variables as a list column}
-#'     \item{n}{Number of interviews in group}
-#'     \item{effort_estimate}{Estimated total effort}
-#'     \item{effort_se}{Standard error of effort estimate}
-#'     \item{effort_lower}{Lower confidence limit}
-#'     \item{effort_upper}{Upper confidence limit}
-#'     \item{design_type}{Type of survey design used}
-#'     \item{estimation_method}{Method used for estimation}
-#'   }
-#'
-#' @importFrom stats as.formula
 #' @export
-#'
-#' @examples
-#' \dontrun{
-#' # Create design
-#' interviews <- readr::read_csv(system.file("extdata/toy_interviews.csv",
-#'   package = "tidycreel"
-#' ))
-#' calendar <- readr::read_csv(system.file("extdata/toy_calendar.csv",
-#'   package = "tidycreel"
-#' ))
-#'
-#' design <- design_access(interviews = interviews, calendar = calendar)
-#'
-#' # Estimate effort by date
-#' effort_by_date <- estimate_effort(design, by = "date")
-#'
-#' # Estimate effort by location and mode
-#' effort_by_location_mode <- estimate_effort(design, by = c("location", "mode"))
-#' }
 estimate_effort <- function(design, by = NULL, total = TRUE, level = 0.95) {
   cli::cli_abort(c(
     "x" = "estimate_effort() is deprecated.",
-    "i" = "Use est_effort(design, counts, method = 'instantaneous' | 'progressive').",
-    "i" = "See vignettes for the new survey-first workflow."
+    "i" = "Use the survey-first workflow: as_day_svydesign() + est_effort().",
+    "i" = "See vignette('effort_survey_first', package = 'tidycreel') for examples."
   ))
 }
 

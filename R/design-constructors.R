@@ -95,85 +95,15 @@ print.summary.creel_design <- function(x, ...) {
   }
   invisible(x)
 }
-#' Survey Design Constructors for Access-Point Creel Surveys
-#'
-#' These functions create survey design objects for different types of
-#' access-point creel surveys, including standard access designs, roving
-#' designs, and designs with replicate weights.
-#'
-#' @name design-constructors
-#' @aliases design_repweights
-NULL
-
-#' Create Access-Point Survey Design (lean container)
-#'
-#' Constructs a lean container for access-point creel surveys. It validates and
-#' stores inputs plus descriptive metadata. Estimation uses survey-first
-#' estimators and day-PSU designs built via [as_day_svydesign()]. No ad-hoc
-#' weighting or embedded `svydesign` is created here.
-#'
-#' @param interviews Tibble of interview data validated by [validate_interviews()].
-#' @param calendar Tibble of sampling calendar validated by [validate_calendar()].
-#' @param locations Optional character vector of sampling locations; defaults to
-#'   unique locations in `interviews`.
-#' @param strata_vars Character vector of variables describing stratification
-#'   (e.g., `c("date","shift_block","location")`). Missing columns are ignored.
-#' @param weight_method Method for calculating design weights. One of "equal" (all weights = 1)
-#'   or "standard" (weights based on target vs actual sample sizes in calendar).
-#'
-#' @return A list with class `c("access_design","creel_design","list")` containing
-#'   `design_type`, `interviews`, `calendar`, `locations`, `strata_vars`, and `metadata`.
 #' @export
 design_access <- function(interviews, calendar, locations = NULL,
                           strata_vars = c("date", "shift_block", "location"),
                           weight_method = c("equal", "standard")) {
-  weight_method <- match.arg(weight_method)
-  interviews <- validate_interviews(interviews)
-  calendar <- validate_calendar(calendar)
-
-  if (is.null(locations)) locations <- unique(interviews$location)
-
-  # Basic location/strata checks for early detection
-  if ("location" %in% names(calendar)) {
-    interview_locations <- unique(interviews$location)
-    calendar_locations <- unique(calendar$location)
-    missing_in_interviews <- setdiff(calendar_locations, interview_locations)
-    missing_in_calendar <- setdiff(interview_locations, calendar_locations)
-    if (length(missing_in_interviews) > 0 || length(missing_in_calendar) > 0) {
-      cli::cli_warn("Access design: interview/calendar location sets differ; verify sampling frame.")
-    }
-  }
-
-  strata_vars <- tc_group_warn(strata_vars, names(interviews))
-
-  # Derive basic design weights
-  design_weights <- if (weight_method == "standard") {
-    calculate_access_weights(
-      interviews = interviews,
-      calendar = calendar,
-      strata_vars = intersect(strata_vars, names(calendar)),
-      weight_method = "standard"
-    )
-  } else {
-    rep(1, nrow(interviews))
-  }
-
-  design <- list(
-    design_type = "access_point",
-    interviews = interviews,
-    calendar = calendar,
-    locations = locations,
-    strata_vars = strata_vars,
-    weight_method = weight_method,
-    design_weights = design_weights,
-    svy_design = survey::svydesign(ids = ~1, weights = ~design_weights, data = interviews),
-    metadata = list(
-      creation_time = Sys.time(),
-      package_version = tryCatch(as.character(utils::packageVersion("tidycreel")), error = function(e) NA_character_)
-    )
-  )
-  class(design) <- c("access_design", "creel_design", "list")
-  design
+  cli::cli_abort(c(
+    "x" = "design_access() is deprecated.",
+    "i" = "Use the survey-first workflow: as_day_svydesign() for day-PSU designs.",
+    "i" = "See vignette('effort_survey_first', package = 'tidycreel') for examples."
+  ))
 }
 
 #' Calculate access design weights
@@ -290,180 +220,25 @@ calculate_scale_factors <- function(method = c("bootstrap", "jackknife", "brr"),
   1
 }
 
-#' Create Roving Survey Design (lean container)
-#'
-#' Constructs a lean container for roving creel surveys. It validates and stores
-#' inputs plus descriptive metadata. Estimation of effort should use
-#' survey-first estimators on counts (instantaneous or progressive) coupled with
-#' a day-PSU design from [as_day_svydesign()]. No ad-hoc weighting or embedded
-#' `svydesign` is created here.
-#'
-#' @param interviews Tibble validated by [validate_interviews()].
-#' @param counts Tibble validated by [validate_counts()].
-#' @param calendar Tibble validated by [validate_calendar()].
-#' @param locations Optional character vector; defaults to union of interview and
-#'   count locations.
-#' @param strata_vars Character vector describing stratification (e.g.,
-#'   `c("date","shift_block","location")`). Missing columns are ignored.
-#' @param effort_method Method for effort estimation. One of "ratio" or "calibrate".
-#' @param coverage_correction Logical; whether to apply coverage correction for incomplete
-#'   survey days. Default is FALSE.
-#'
-#' @return A list with class `c("roving_design","creel_design","list")` containing
-#'   `design_type`, `interviews`, `counts`, `calendar`, `locations`, `strata_vars`, and `metadata`.
 #' @export
 design_roving <- function(interviews, counts, calendar, locations = NULL,
                           strata_vars = c("date", "shift_block", "location"),
                           effort_method = c("ratio", "calibrate"),
                           coverage_correction = FALSE) {
-  effort_method <- match.arg(effort_method)
-  interviews <- validate_interviews(interviews)
-  counts <- validate_counts(counts)
-  calendar <- validate_calendar(calendar)
-
-  if (is.null(locations)) {
-    locations <- union(unique(interviews$location), unique(counts$location))
-  }
-
-  # Light consistency checks; warn instead of aborting to allow flexible inputs
-  if ("location" %in% names(calendar)) {
-    interview_locations <- unique(interviews$location)
-    count_locations <- unique(counts$location)
-    calendar_locations <- unique(calendar$location)
-    if (!all(calendar_locations %in% union(interview_locations, count_locations))) {
-      cli::cli_warn("Roving design: some calendar locations are not in interviews/counts; verify sampling frame.")
-    }
-  }
-
-  strata_vars <- tc_group_warn(strata_vars, names(interviews))
-
-  # Placeholder effort estimates for diagnostics and back-compat in tests
-  effort_estimates <- calculate_roving_effort(
-    interviews = interviews,
-    counts = counts,
-    calendar = calendar,
-    strata_vars = intersect(strata_vars, names(interviews)),
-    effort_method = effort_method
-  )
-
-  design <- list(
-    design_type = "roving",
-    interviews = interviews,
-    counts = counts,
-    calendar = calendar,
-    locations = locations,
-    strata_vars = strata_vars,
-    effort_method = effort_method,
-    coverage_correction = coverage_correction,
-    design_weights = rep(1, nrow(interviews)),
-    effort_estimates = effort_estimates,
-    svy_design = survey::svydesign(ids = ~1, weights = ~1, data = interviews),
-    metadata = list(
-      creation_time = Sys.time(),
-      package_version = tryCatch(as.character(utils::packageVersion("tidycreel")), error = function(e) NA_character_)
-    )
-  )
-  class(design) <- c("roving_design", "creel_design", "list")
-  design
+  cli::cli_abort(c(
+    "x" = "design_roving() is deprecated.",
+    "i" = "Use the survey-first workflow: as_day_svydesign() + est_effort.progressive().",
+    "i" = "See vignette('effort_survey_first', package = 'tidycreel') for examples."
+  ))
 }
 
-#' Create Survey Design with Replicate Weights
-#'
-#' Constructs a survey design object that incorporates replicate weights
-#' for variance estimation. Supports both access-point and roving designs
-#' with bootstrap or jackknife replicate weights.
-#'
-#' @param base_design A creel design object created by [design_access()] or
-#'   [design_roving()].
-#' @param replicates Integer specifying number of replicate weights to create.
-#'   Default is 100 for bootstrap, or determined by design for jackknife.
-#' @param method Character specifying replicate weight method.
-#'   Options: "bootstrap" (default), "jackknife", "brr" (balanced repeated replication).
-#' @param strata_var Character specifying stratification variable for
-#'   replicate creation. If NULL, uses strata from base design.
-#' @param cluster_var Character specifying cluster variable for
-#'   replicate creation. If NULL, uses location as cluster.
-#' @param seed Integer random seed for reproducibility.
-#'
-#' @return A list object of class "repweights_design" containing:
-#'   \describe{
-#'     \item{base_design}{Original design object}
-#'     \item{replicate_weights}{Matrix of replicate weights}
-#'     \item{replicate_method}{Method used to create replicates}
-#'     \item{replicates}{Number of replicates}
-#'     \item{scale_factors}{Scaling factors for variance estimation}
-#'     \item{metadata}{Additional metadata including creation time and seed}
-#'   }
-#'
 #' @noRd
-#'
-#' @examples
-#' \dontrun{
-#' # Create base design
-#' interviews <- utils::read.csv(system.file("extdata", "toy_interviews.csv",
-#'   package = "tidycreel"
-#' ))
-#' calendar <- utils::read.csv(system.file("extdata", "toy_calendar.csv",
-#'   package = "tidycreel"
-#' ))
-#'
-#' base_design <- design_access(interviews = interviews, calendar = calendar)
-#'
-#' # Add replicate weights
-#' rep_design <- design_repweights(
-#'   base_design = base_design,
-#'   replicates = 50,
-#'   method = "bootstrap",
-#'   seed = 12345
-#' )
-#' }
 design_repweights <- function(base_design, method = c("bootstrap", "jackknife", "brr"), replicates = 50, seed = NULL) {
-  method <- match.arg(method)
-  if (!inherits(base_design, "creel_design")) cli::cli_abort("base_design must be a creel design object")
-  if (!is.null(seed)) set.seed(seed)
-
-  # Base interviews and weights
-  interviews <- base_design$interviews
-  if (is.null(interviews)) cli::cli_abort("base_design must include interviews")
-  base_weights <- if (!is.null(base_design$design_weights)) base_design$design_weights else rep(1, nrow(interviews))
-
-  # Create replicate weights matrix
-  if (method == "jackknife") {
-    replicates <- nrow(interviews)
-  }
-  rep_w <- create_replicate_weights(
-    base_design = base_design,
-    replicates = replicates,
-    method = method,
-    strata_var = intersect(c("date", "shift_block"), names(interviews))[1] %||% NULL,
-    cluster_var = intersect(c("location"), names(interviews))[1] %||% NULL
-  )
-
-  scale_factors <- calculate_scale_factors(method = method, replicates = replicates, base_design = base_design)
-
-  # Build svrepdesign object for downstream use
-  svy_design <- survey::svrepdesign(
-    data = interviews,
-    repweights = rep_w,
-    weights = base_weights,
-    type = switch(method, bootstrap = "bootstrap", jackknife = "JK1", brr = "BRR"),
-    scale = scale_factors
-  )
-
-  out <- list(
-    base_design = base_design,
-    replicate_weights = rep_w,
-    replicate_method = method,
-    replicates = replicates,
-    scale_factors = scale_factors,
-    svy_design = svy_design,
-    metadata = list(
-      creation_time = Sys.time(),
-      package_version = tryCatch(as.character(utils::packageVersion("tidycreel")), error = function(e) NA_character_)
-    )
-  )
-  class(out) <- c("repweights_design", "creel_design", "list")
-  out
+  cli::cli_abort(c(
+    "x" = "design_repweights() is deprecated.",
+    "i" = "Use survey::as.svrepdesign() on day-PSU designs instead.",
+    "i" = "See vignette('replicate_designs_creel', package = 'tidycreel') for examples."
+  ))
 }
 
 #' Extract survey design object from a creel_design
