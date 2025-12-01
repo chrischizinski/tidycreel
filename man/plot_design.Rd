@@ -35,11 +35,8 @@ and interactive plots. See vignettes for usage examples.
 }
 \examples{
 \dontrun{
-# Create a design first
-design <- design_access(interviews, calendar)
-
-# Plot survey design structure
-plot_design(design, by = c("date", "shift_block"), type = "bar")
+# Plot calendar structure
+plot_design(calendar, by = c("date", "shift_block"), type = "bar")
 }
 
 }

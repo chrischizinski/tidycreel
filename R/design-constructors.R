@@ -258,16 +258,13 @@ design_repweights <- function(base_design, method = c("bootstrap", "jackknife", 
 #'
 #' @examples
 #' \dontrun{
-#' access_design <- design_access(
-#'   interviews = utils::read.csv(system.file("extdata", "toy_interviews.csv",
-#'     package = "tidycreel"
-#'   )),
-#'   calendar = utils::read.csv(system.file("extdata", "toy_calendar.csv",
-#'     package = "tidycreel"
-#'   ))
-#' )
-#' svy <- as_survey_design(access_design)
-#' summary(svy)
+#' # Build a day-level survey design
+#' calendar <- utils::read.csv(system.file("extdata", "toy_calendar.csv",
+#'   package = "tidycreel"
+#' ))
+#' svy_day <- as_day_svydesign(calendar, day_id = "date",
+#'   strata_vars = c("day_type", "month"))
+#' summary(svy_day)
 #' }
 #'
 #' @export
@@ -298,11 +295,11 @@ as_survey_design <- function(design) {
 #'
 #' @examples
 #' \dontrun{
-#' # Create a replicate weights design first
-#' # (design_repweights is an internal function)
-#' access_design <- design_access(interviews, calendar)
-#' # Then extract the survey design for advanced use
-#' # svyrep <- as_svrep_design(rep_design)
+#' # Build a day-level survey design, then convert to replicate weights
+#' svy_day <- as_day_svydesign(calendar, day_id = "date",
+#'   strata_vars = c("day_type", "month"))
+#' svyrep <- survey::as.svrepdesign(svy_day, type = "bootstrap")
+#' summary(svyrep)
 #' }
 #'
 #' @export

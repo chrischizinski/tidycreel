@@ -18,93 +18,21 @@ estimate_effort <- function(design, by = NULL, total = TRUE, level = 0.95) {
   ))
 }
 
-#' Estimate Catch Per Unit Effort (CPUE)
-#'
-#' Estimates catch per unit effort by species, mode, or other grouping variables.
-#' Supports both number-based (fish per hour) and weight-based (kg per hour) CPUE.
-#'
-#' @param design A creel design object created by \code{\link{design_access}},
-#'   \code{\link{design_roving}}, or \code{\link{design_repweights}}.
-#' @param by Character vector of variables to group estimates by. Default
-#'   is to estimate overall CPUE.
-#' @param species Character vector of species to include. If NULL, includes
-#'   all species in the data.
-#' @param type Character, either "number" (fish per hour) or "weight"
-#'   (kg per hour). Default "number".
-#' @param level Confidence level for confidence intervals. Default 0.95.
-#'
-#' @return A tibble with columns:
-#'   \describe{
-#'     \item{group_vars}{Grouping variables as a list column}
-#'     \item{n}{Number of interviews in group}
-#'     \item{cpue_estimate}{Estimated CPUE}
-#'     \item{cpue_se}{Standard error of CPUE estimate}
-#'     \item{cpue_lower}{Lower confidence limit}
-#'     \item{cpue_upper}{Upper confidence limit}
-#'     \item{species}{Species included in estimate}
-#'     \item{type}{Type of CPUE (number or weight)}
-#'     \item{design_type}{Type of survey design used}
-#'   }
-#'
 #' @export
-#'
-#' @examples
-#' \dontrun{
-#' # Estimate CPUE by species
-#' cpue_by_species <- estimate_cpue(design, by = "target_species")
-#'
-#' # Estimate weight-based CPUE for bass
-#' bass_cpue_weight <- estimate_cpue(design, species = "bass", type = "weight")
-#' }
 estimate_cpue <- function(design, by = NULL, species = NULL, type = c("number", "weight"), level = 0.95) {
   cli::cli_abort(c(
     "x" = "estimate_cpue() is deprecated.",
-    "i" = "Planned replacement: survey-first CPUE via svyratio with tidy returns (coming next)."
+    "i" = "Use est_cpue(svy_design, by = ..., response = 'catch_total').",
+    "i" = "See vignette('cpue_catch', package = 'tidycreel') for examples."
   ))
 }
 
-#' Estimate Total Harvest
-#'
-#' Estimates total harvest (catch kept) by species, mode, or other grouping
-#' variables. Supports both number-based (count) and weight-based (kg) harvest.
-#'
-#' @param design A creel design object created by \code{\link{design_access}},
-#'   \code{\link{design_roving}}, or \code{\link{design_repweights}}.
-#' @param by Character vector of variables to group estimates by. Default
-#'   is to estimate overall harvest.
-#' @param species Character vector of species to include. If NULL, includes
-#'   all species in the data.
-#' @param type Character, either "number" (count) or "weight" (kg).
-#'   Default "number".
-#' @param level Confidence level for confidence intervals. Default 0.95.
-#'
-#' @return A tibble with columns:
-#'   \describe{
-#'     \item{group_vars}{Grouping variables as a list column}
-#'     \item{n}{Number of interviews in group}
-#'     \item{harvest_estimate}{Estimated total harvest}
-#'     \item{harvest_se}{Standard error of harvest estimate}
-#'     \item{harvest_lower}{Lower confidence limit}
-#'     \item{harvest_upper}{Upper confidence limit}
-#'     \item{species}{Species included in estimate}
-#'     \item{type}{Type of harvest (number or weight)}
-#'     \item{design_type}{Type of survey design used}
-#'   }
-#'
 #' @export
-#'
-#' @examples
-#' \dontrun{
-#' # Estimate harvest by species
-#' harvest_by_species <- estimate_harvest(design, by = "target_species")
-#'
-#' # Estimate weight-based harvest for walleye
-#' walleye_harvest_weight <- estimate_harvest(design, species = "walleye", type = "weight")
-#' }
 estimate_harvest <- function(design, by = NULL, species = NULL, type = c("number", "weight"), level = 0.95) {
   cli::cli_abort(c(
     "x" = "estimate_harvest() is deprecated.",
-    "i" = "Planned replacement: survey-first catch/harvest estimators aligned with new outputs."
+    "i" = "Use est_catch(svy_design, by = ..., response = 'catch_kept').",
+    "i" = "See vignette('cpue_catch', package = 'tidycreel') for examples."
   ))
 }
 

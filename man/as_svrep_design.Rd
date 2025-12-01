@@ -21,11 +21,11 @@ Raises an error if no embedded svrepdesign is found.
 }
 \examples{
 \dontrun{
-# Create a replicate weights design first
-# (design_repweights is an internal function)
-access_design <- design_access(interviews, calendar)
-# Then extract the survey design for advanced use
-# svyrep <- as_svrep_design(rep_design)
+# Build a day-level survey design, then convert to replicate weights
+svy_day <- as_day_svydesign(calendar, day_id = "date",
+  strata_vars = c("day_type", "month"))
+svyrep <- survey::as.svrepdesign(svy_day, type = "bootstrap")
+summary(svyrep)
 }
 
 }
