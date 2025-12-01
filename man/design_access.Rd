@@ -22,6 +22,9 @@ unique locations in \code{interviews}.}
 
 \item{strata_vars}{Character vector of variables describing stratification
 (e.g., \code{c("date","shift_block","location")}). Missing columns are ignored.}
+
+\item{weight_method}{Method for calculating design weights. One of "equal" (all weights = 1)
+or "standard" (weights based on target vs actual sample sizes in calendar).}
 }
 \value{
 A list with class \code{c("access_design","creel_design","list")} containing

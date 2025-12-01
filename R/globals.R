@@ -30,5 +30,7 @@ utils::globalVariables(c(
   "svy_vars",
   "day_id",
   "tc_interview_svy",
-  "tc_abort_missing_cols"
+  "tc_abort_missing_cols",
+  ".catch_rate",
+  ".length_bias_weights"
 ))

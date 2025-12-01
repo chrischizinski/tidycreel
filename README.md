@@ -29,12 +29,14 @@ harvest.
 Install the latest version with:
 
 ``` r
-# install.packages("pak")
+# install.packages("pak") # if needed
 pak::pak("chrischizinski/tidycreel")
 
-# Or using devtools/remotes
-# install.packages("devtools")
-devtools::install_github("chrischizinski/tidycreel")
+# or pin to a tagged release (replace with latest tag)
+pak::pak("chrischizinski/tidycreel@v0.1.0")
+
+# remotes alternative:
+# remotes::install_github("chrischizinski/tidycreel")
 ```
 
 ## Example
