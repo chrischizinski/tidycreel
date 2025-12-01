@@ -1,0 +1,31 @@
+/* Enhanced code block styling for readability */
+pre, code, .sourceCode {
+  background-color: #f8f9fa;
+  border: 1px solid #dcdcdc;
+  border-radius: 6px;
+  padding: 0.75em;
+  font-family: "Fira Code", "Source Code Pro", monospace;
+  font-size: 0.9em;
+  line-height: 1.4;
+  color: #2a2a2a;
+}
+pre code {
+  background: none;
+  border: none;
+  padding: 0;
+}
+/* Inline code highlight */
+code:not(pre code) {
+  background-color: #f1f3f5;
+  border-radius: 4px;
+  padding: 0.2em 0.4em;
+}
+/* Distinguish R code blocks visually */
+pre code.language-r {
+  background-color: #f3f8ff;
+  border-left: 4px solid #007acc;
+}
+/* Headings spacing for clarity */
+h2, h3, h4 {
+  margin-top: 1.5em;
+}

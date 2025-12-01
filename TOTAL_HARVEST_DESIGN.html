@@ -38,7 +38,7 @@
 
 <div id="total-harvestcatch-estimator---design-document" class="section level1">
 
-<p><strong>Function:</strong> <code>est_total_harvest()</code> <strong>Status:</strong> Design phase <strong>Priority:</strong> P0 - Critical blocking function</p>
+<p><strong>Function:</strong> <code><a href="reference/est_total_harvest.html">est_total_harvest()</a></code> <strong>Status:</strong> Design phase <strong>Priority:</strong> P0 - Critical blocking function</p>
 <hr><div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a></h2>
 <p>Estimates total harvest, catch, or releases by multiplying effort estimates with CPUE estimates, properly propagating variance using the delta method. Supports both general population estimates and target species-specific estimates (caught while sought).</p>
@@ -48,7 +48,7 @@
 <div class="section level3">
 <h3 id="primary-function">Primary Function<a class="anchor" aria-label="anchor" href="#primary-function"></a></h3>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">est_total_harvest</span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="reference/est_total_harvest.html">est_total_harvest</a></span><span class="op">(</span></span>
 <span>  <span class="va">effort_est</span>,                    <span class="co"># Tibble from est_effort()</span></span>
 <span>  <span class="va">cpue_est</span>,                      <span class="co"># Tibble from est_cpue()</span></span>
 <span>  by <span class="op">=</span> <span class="cn">NULL</span>,                     <span class="co"># Grouping variables (must match)</span></span>
@@ -87,7 +87,7 @@
 <span><span class="op">)</span></span></code></pre></div>
 <p><strong>Alternative approach:</strong> Build this into main function via parameters</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">est_total_harvest</span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="reference/est_total_harvest.html">est_total_harvest</a></span><span class="op">(</span></span>
 <span>  <span class="va">effort_est</span>,</span>
 <span>  <span class="va">cpue_est</span>,</span>
 <span>  by <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -131,7 +131,7 @@
 <div class="section level4">
 <h4 id="level-1-individual-species-default">Level 1: Individual Species (Default)<a class="anchor" aria-label="anchor" href="#level-1-individual-species-default"></a></h4>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">est_total_harvest</span><span class="op">(</span><span class="va">effort_est</span>, <span class="va">cpue_est</span>, by <span class="op">=</span> <span class="st">"species"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="reference/est_total_harvest.html">est_total_harvest</a></span><span class="op">(</span><span class="va">effort_est</span>, <span class="va">cpue_est</span>, by <span class="op">=</span> <span class="st">"species"</span><span class="op">)</span></span></code></pre></div>
 <p>Returns estimates for each species separately:</p>
 <pre><code>species          estimate    se
 largemouth_bass      1500   200
@@ -148,7 +148,7 @@ bluegill             600    90</code></pre>
 <span>  centrarchids <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"black_bass"</span>, <span class="st">"panfish"</span><span class="op">)</span>  <span class="co"># Can reference other groups</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">est_total_harvest</span><span class="op">(</span></span>
+<span><span class="fu"><a href="reference/est_total_harvest.html">est_total_harvest</a></span><span class="op">(</span></span>
 <span>  <span class="va">effort_est</span>,</span>
 <span>  <span class="va">cpue_est</span>,</span>
 <span>  by <span class="op">=</span> <span class="st">"species"</span>,</span>
@@ -164,7 +164,7 @@ catfish             900   130</code></pre>
 <div class="section level4">
 <h4 id="level-3-all-species-combined">Level 3: All Species Combined<a class="anchor" aria-label="anchor" href="#level-3-all-species-combined"></a></h4>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">est_total_harvest</span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="reference/est_total_harvest.html">est_total_harvest</a></span><span class="op">(</span></span>
 <span>  <span class="va">effort_est</span>,</span>
 <span>  <span class="va">cpue_est</span>,</span>
 <span>  aggregate_level <span class="op">=</span> <span class="st">"all"</span></span>
@@ -188,14 +188,14 @@ catfish             900   130</code></pre>
 <h3 id="implementation-strategy">Implementation Strategy<a class="anchor" aria-label="anchor" href="#implementation-strategy"></a></h3>
 <div class="section level4">
 <h4 id="option-a-pre-aggregate-cpue-recommended">Option A: Pre-aggregate CPUE (Recommended)<a class="anchor" aria-label="anchor" href="#option-a-pre-aggregate-cpue-recommended"></a></h4>
-<p>User aggregates CPUE before calling <code>est_total_harvest()</code>:</p>
+<p>User aggregates CPUE before calling <code><a href="reference/est_total_harvest.html">est_total_harvest()</a></code>:</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># 1. Calculate species-level CPUE</span></span>
 <span><span class="va">cpue_by_species</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/est_cpue.html">est_cpue</a></span><span class="op">(</span><span class="va">svy_int</span>, by <span class="op">=</span> <span class="st">"species"</span>, response <span class="op">=</span> <span class="st">"catch_kept"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># 2. Aggregate CPUE to groups using survey design</span></span>
 <span><span class="co"># Helper function needed: aggregate_cpue()</span></span>
-<span><span class="va">cpue_black_bass</span> <span class="op">&lt;-</span> <span class="fu">aggregate_cpue</span><span class="op">(</span></span>
+<span><span class="va">cpue_black_bass</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/aggregate_cpue.html">aggregate_cpue</a></span><span class="op">(</span></span>
 <span>  cpue_data <span class="op">=</span> <span class="va">interviews</span>,  <span class="co"># Raw interview data</span></span>
 <span>  svy_design <span class="op">=</span> <span class="va">svy_int</span>,</span>
 <span>  species_col <span class="op">=</span> <span class="st">"species"</span>,</span>
@@ -205,18 +205,18 @@ catfish             900   130</code></pre>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># 3. Calculate total harvest for group</span></span>
-<span><span class="va">harvest_black_bass</span> <span class="op">&lt;-</span> <span class="fu">est_total_harvest</span><span class="op">(</span><span class="va">effort_est</span>, <span class="va">cpue_black_bass</span><span class="op">)</span></span></code></pre></div>
-<p><strong>Advantage:</strong> Clear two-step process, explicit about survey-based aggregation <strong>Disadvantage:</strong> Requires helper function <code>aggregate_cpue()</code></p>
+<span><span class="va">harvest_black_bass</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/est_total_harvest.html">est_total_harvest</a></span><span class="op">(</span><span class="va">effort_est</span>, <span class="va">cpue_black_bass</span><span class="op">)</span></span></code></pre></div>
+<p><strong>Advantage:</strong> Clear two-step process, explicit about survey-based aggregation <strong>Disadvantage:</strong> Requires helper function <code><a href="reference/aggregate_cpue.html">aggregate_cpue()</a></code></p>
 </div>
 <div class="section level4">
 <h4 id="option-b-integrated-aggregation-user-friendly">Option B: Integrated Aggregation (User-Friendly)<a class="anchor" aria-label="anchor" href="#option-b-integrated-aggregation-user-friendly"></a></h4>
-<p><code>est_total_harvest()</code> handles aggregation internally:</p>
+<p><code><a href="reference/est_total_harvest.html">est_total_harvest()</a></code> handles aggregation internally:</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">species_groups</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  black_bass <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"largemouth_bass"</span>, <span class="st">"smallmouth_bass"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">harvest_by_group</span> <span class="op">&lt;-</span> <span class="fu">est_total_harvest</span><span class="op">(</span></span>
+<span><span class="va">harvest_by_group</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/est_total_harvest.html">est_total_harvest</a></span><span class="op">(</span></span>
 <span>  <span class="va">effort_est</span>,</span>
 <span>  <span class="va">cpue_est</span>,</span>
 <span>  by <span class="op">=</span> <span class="st">"species"</span>,</span>
@@ -356,7 +356,7 @@ catfish             900   130</code></pre>
 <p>Support estimation at multiple strata simultaneously:</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># By location and species group</span></span>
-<span><span class="fu">est_total_harvest</span><span class="op">(</span></span>
+<span><span class="fu"><a href="reference/est_total_harvest.html">est_total_harvest</a></span><span class="op">(</span></span>
 <span>  <span class="va">effort_by_location</span>,           <span class="co"># Effort stratified by location</span></span>
 <span>  <span class="va">cpue_by_location_species</span>,     <span class="co"># CPUE by location × species</span></span>
 <span>  by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"location"</span>, <span class="st">"species"</span><span class="op">)</span>,</span>
@@ -378,26 +378,26 @@ South     panfish            1200   150</code></pre>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Want: largemouth (individual), other bass (grouped), panfish (grouped)</span></span>
 <span><span class="va">cpue_largemouth</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/est_cpue.html">est_cpue</a></span><span class="op">(</span><span class="va">svy_int</span>, filter_species <span class="op">=</span> <span class="st">"largemouth_bass"</span><span class="op">)</span></span>
-<span><span class="va">cpue_other_bass</span> <span class="op">&lt;-</span> <span class="fu">aggregate_cpue</span><span class="op">(</span></span>
+<span><span class="va">cpue_other_bass</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/aggregate_cpue.html">aggregate_cpue</a></span><span class="op">(</span></span>
 <span>  <span class="va">svy_int</span>, species <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"smallmouth_bass"</span>, <span class="st">"spotted_bass"</span><span class="op">)</span>,</span>
 <span>  group_name <span class="op">=</span> <span class="st">"other_bass"</span></span>
 <span><span class="op">)</span></span>
-<span><span class="va">cpue_panfish</span> <span class="op">&lt;-</span> <span class="fu">aggregate_cpue</span><span class="op">(</span></span>
+<span><span class="va">cpue_panfish</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/aggregate_cpue.html">aggregate_cpue</a></span><span class="op">(</span></span>
 <span>  <span class="va">svy_int</span>, species <span class="op">=</span> <span class="va">panfish_species</span>, group_name <span class="op">=</span> <span class="st">"panfish"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Combine for reporting</span></span>
-<span><span class="va">harvest_detailed</span> <span class="op">&lt;-</span> <span class="fu">bind_rows</span><span class="op">(</span></span>
-<span>  <span class="fu">est_total_harvest</span><span class="op">(</span><span class="va">effort_est</span>, <span class="va">cpue_largemouth</span><span class="op">)</span>,</span>
-<span>  <span class="fu">est_total_harvest</span><span class="op">(</span><span class="va">effort_est</span>, <span class="va">cpue_other_bass</span><span class="op">)</span>,</span>
-<span>  <span class="fu">est_total_harvest</span><span class="op">(</span><span class="va">effort_est</span>, <span class="va">cpue_panfish</span><span class="op">)</span></span>
+<span><span class="va">harvest_detailed</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="reference/est_total_harvest.html">est_total_harvest</a></span><span class="op">(</span><span class="va">effort_est</span>, <span class="va">cpue_largemouth</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="reference/est_total_harvest.html">est_total_harvest</a></span><span class="op">(</span><span class="va">effort_est</span>, <span class="va">cpue_other_bass</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="reference/est_total_harvest.html">est_total_harvest</a></span><span class="op">(</span><span class="va">effort_est</span>, <span class="va">cpue_panfish</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="id_2-all-species-combined">2. All Species Combined<a class="anchor" aria-label="anchor" href="#id_2-all-species-combined"></a></h4>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Aggregate CPUE across ALL species</span></span>
-<span><span class="va">cpue_all</span> <span class="op">&lt;-</span> <span class="fu">aggregate_cpue</span><span class="op">(</span></span>
+<span><span class="va">cpue_all</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/aggregate_cpue.html">aggregate_cpue</a></span><span class="op">(</span></span>
 <span>  cpue_data <span class="op">=</span> <span class="va">interviews</span>,</span>
 <span>  svy_design <span class="op">=</span> <span class="va">svy_int</span>,</span>
 <span>  species_col <span class="op">=</span> <span class="st">"species"</span>,</span>
@@ -406,14 +406,14 @@ South     panfish            1200   150</code></pre>
 <span>  response <span class="op">=</span> <span class="st">"catch_kept"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">harvest_total</span> <span class="op">&lt;-</span> <span class="fu">est_total_harvest</span><span class="op">(</span><span class="va">effort_est</span>, <span class="va">cpue_all</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">harvest_total</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/est_total_harvest.html">est_total_harvest</a></span><span class="op">(</span><span class="va">effort_est</span>, <span class="va">cpue_all</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="id_3-conditional-grouping">3. Conditional Grouping<a class="anchor" aria-label="anchor" href="#id_3-conditional-grouping"></a></h4>
 <p>Group by species only in certain locations:</p>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Black bass grouped in reservoirs, separate in rivers</span></span>
-<span><span class="fu">est_total_harvest</span><span class="op">(</span></span>
+<span><span class="fu"><a href="reference/est_total_harvest.html">est_total_harvest</a></span><span class="op">(</span></span>
 <span>  <span class="va">effort_est</span>,</span>
 <span>  <span class="va">cpue_est</span>,</span>
 <span>  by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"waterbody_type"</span>, <span class="st">"species"</span><span class="op">)</span>,</span>
@@ -433,7 +433,7 @@ South     panfish            1200   150</code></pre>
 <span></span>
 <span>  <span class="kw">for</span> <span class="op">(</span><span class="va">group_name</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">species_groups</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>    <span class="va">group_species</span> <span class="op">&lt;-</span> <span class="va">species_groups</span><span class="op">[[</span><span class="va">group_name</span><span class="op">]</span><span class="op">]</span></span>
-<span>    <span class="va">missing</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sets.html" class="external-link">setdiff</a></span><span class="op">(</span><span class="va">group_species</span>, <span class="va">all_species</span><span class="op">)</span></span>
+<span>    <span class="va">missing</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://generics.r-lib.org/reference/setops.html" class="external-link">setdiff</a></span><span class="op">(</span><span class="va">group_species</span>, <span class="va">all_species</span><span class="op">)</span></span>
 <span></span>
 <span>    <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">missing</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span> <span class="op">{</span></span>
 <span>      <span class="fu">cli</span><span class="fu">::</span><span class="fu"><a href="https://cli.r-lib.org/reference/cli_abort.html" class="external-link">cli_warn</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
@@ -523,7 +523,7 @@ South     panfish            1200   150</code></pre>
 <div class="section level4">
 <h4 id="option-b-integrated-function-more-flexible">Option B: Integrated Function (More flexible)<a class="anchor" aria-label="anchor" href="#option-b-integrated-function-more-flexible"></a></h4>
 <div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">est_total_harvest</span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="reference/est_total_harvest.html">est_total_harvest</a></span><span class="op">(</span></span>
 <span>  <span class="va">effort_est</span>,</span>
 <span>  <span class="va">cpue_est</span>,</span>
 <span>  by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"species"</span>, <span class="st">"location"</span><span class="op">)</span>,</span>
@@ -670,7 +670,7 @@ South     panfish            1200   150</code></pre>
 <h3 id="phase-2-target-species-variant-week-2">Phase 2: Target Species Variant (Week 2)<a class="anchor" aria-label="anchor" href="#phase-2-target-species-variant-week-2"></a></h3>
 <p>Add parameters to main function:</p>
 <div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">est_total_harvest</span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="reference/est_total_harvest.html">est_total_harvest</a></span><span class="op">(</span></span>
 <span>  <span class="va">...</span>,</span>
 <span>  target_species_only <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  target_col <span class="op">=</span> <span class="st">"target_species"</span>,</span>
@@ -697,11 +697,11 @@ South     panfish            1200   150</code></pre>
 <h3 id="decision-1-single-function-vs-multiple-functions">Decision 1: Single Function vs Multiple Functions<a class="anchor" aria-label="anchor" href="#decision-1-single-function-vs-multiple-functions"></a></h3>
 <p><strong>Option A: Single comprehensive function</strong></p>
 <div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">est_total_harvest</span><span class="op">(</span><span class="va">effort_est</span>, <span class="va">cpue_est</span>, <span class="va">...</span>, target_species_only <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="reference/est_total_harvest.html">est_total_harvest</a></span><span class="op">(</span><span class="va">effort_est</span>, <span class="va">cpue_est</span>, <span class="va">...</span>, target_species_only <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <p>✅ Pros: Flexible, fewer functions to document ❌ Cons: More complex parameter handling</p>
 <p><strong>Option B: Separate functions</strong></p>
 <div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">est_total_harvest</span><span class="op">(</span><span class="va">effort_est</span>, <span class="va">cpue_est</span>, <span class="va">...</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="reference/est_total_harvest.html">est_total_harvest</a></span><span class="op">(</span><span class="va">effort_est</span>, <span class="va">cpue_est</span>, <span class="va">...</span><span class="op">)</span></span>
 <span><span class="fu">est_total_harvest_sought</span><span class="op">(</span><span class="va">effort_est</span>, <span class="va">cpue_est</span>, <span class="va">target_col</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
 <p>✅ Pros: Clearer intent, simpler parameters ❌ Cons: More functions, potential code duplication</p>
 <p><strong>DECISION:</strong> Start with Option A, add Option B if needed.</p>
@@ -811,10 +811,10 @@ South     panfish            1200   150</code></pre>
 <p><strong>File:</strong> <code>tests/testthat/test-est-total-harvest.R</code></p>
 <div class="sourceCode" id="cb49"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">test_that</span><span class="op">(</span><span class="st">"product estimator multiplies correctly"</span>, <span class="op">{</span></span>
-<span>  <span class="va">effort</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="op">(</span>estimate <span class="op">=</span> <span class="fl">1000</span>, se <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span>
-<span>  <span class="va">cpue</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="op">(</span>estimate <span class="op">=</span> <span class="fl">2</span>, se <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span></span>
+<span>  <span class="va">effort</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span>estimate <span class="op">=</span> <span class="fl">1000</span>, se <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span>
+<span>  <span class="va">cpue</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span>estimate <span class="op">=</span> <span class="fl">2</span>, se <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span></span>
 <span></span>
-<span>  <span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">est_total_harvest</span><span class="op">(</span><span class="va">effort</span>, <span class="va">cpue</span>, correlation <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
+<span>  <span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/est_total_harvest.html">est_total_harvest</a></span><span class="op">(</span><span class="va">effort</span>, <span class="va">cpue</span>, correlation <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
 <span></span>
 <span>  <span class="fu">expect_equal</span><span class="op">(</span><span class="va">result</span><span class="op">$</span><span class="va">estimate</span>, <span class="fl">2000</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span></span>
@@ -829,26 +829,26 @@ South     panfish            1200   150</code></pre>
 <span>  <span class="va">var_expected</span> <span class="op">&lt;-</span> <span class="va">E</span><span class="op">^</span><span class="fl">2</span> <span class="op">*</span> <span class="va">SE_C</span><span class="op">^</span><span class="fl">2</span> <span class="op">+</span> <span class="va">C</span><span class="op">^</span><span class="fl">2</span> <span class="op">*</span> <span class="va">SE_E</span><span class="op">^</span><span class="fl">2</span></span>
 <span>  <span class="va">se_expected</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="va">var_expected</span><span class="op">)</span></span>
 <span></span>
-<span>  <span class="va">effort</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="op">(</span>estimate <span class="op">=</span> <span class="va">E</span>, se <span class="op">=</span> <span class="va">SE_E</span><span class="op">)</span></span>
-<span>  <span class="va">cpue</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="op">(</span>estimate <span class="op">=</span> <span class="va">C</span>, se <span class="op">=</span> <span class="va">SE_C</span><span class="op">)</span></span>
+<span>  <span class="va">effort</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span>estimate <span class="op">=</span> <span class="va">E</span>, se <span class="op">=</span> <span class="va">SE_E</span><span class="op">)</span></span>
+<span>  <span class="va">cpue</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span>estimate <span class="op">=</span> <span class="va">C</span>, se <span class="op">=</span> <span class="va">SE_C</span><span class="op">)</span></span>
 <span></span>
-<span>  <span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">est_total_harvest</span><span class="op">(</span><span class="va">effort</span>, <span class="va">cpue</span>, correlation <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
+<span>  <span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/est_total_harvest.html">est_total_harvest</a></span><span class="op">(</span><span class="va">effort</span>, <span class="va">cpue</span>, correlation <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
 <span></span>
 <span>  <span class="fu">expect_equal</span><span class="op">(</span><span class="va">result</span><span class="op">$</span><span class="va">se</span>, <span class="va">se_expected</span>, tolerance <span class="op">=</span> <span class="fl">0.01</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">test_that</span><span class="op">(</span><span class="st">"correlation increases/decreases variance appropriately"</span>, <span class="op">{</span></span>
-<span>  <span class="va">effort</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="op">(</span>estimate <span class="op">=</span> <span class="fl">1000</span>, se <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span>
-<span>  <span class="va">cpue</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="op">(</span>estimate <span class="op">=</span> <span class="fl">2</span>, se <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span></span>
+<span>  <span class="va">effort</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span>estimate <span class="op">=</span> <span class="fl">1000</span>, se <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span>
+<span>  <span class="va">cpue</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span>estimate <span class="op">=</span> <span class="fl">2</span>, se <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span></span>
 <span></span>
 <span>  <span class="co"># Independent</span></span>
-<span>  <span class="va">result_ind</span> <span class="op">&lt;-</span> <span class="fu">est_total_harvest</span><span class="op">(</span><span class="va">effort</span>, <span class="va">cpue</span>, correlation <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
+<span>  <span class="va">result_ind</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/est_total_harvest.html">est_total_harvest</a></span><span class="op">(</span><span class="va">effort</span>, <span class="va">cpue</span>, correlation <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
 <span></span>
 <span>  <span class="co"># Positive correlation</span></span>
-<span>  <span class="va">result_pos</span> <span class="op">&lt;-</span> <span class="fu">est_total_harvest</span><span class="op">(</span><span class="va">effort</span>, <span class="va">cpue</span>, correlation <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span>
+<span>  <span class="va">result_pos</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/est_total_harvest.html">est_total_harvest</a></span><span class="op">(</span><span class="va">effort</span>, <span class="va">cpue</span>, correlation <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span>
 <span></span>
 <span>  <span class="co"># Negative correlation</span></span>
-<span>  <span class="va">result_neg</span> <span class="op">&lt;-</span> <span class="fu">est_total_harvest</span><span class="op">(</span><span class="va">effort</span>, <span class="va">cpue</span>, correlation <span class="op">=</span> <span class="op">-</span><span class="fl">0.5</span><span class="op">)</span></span>
+<span>  <span class="va">result_neg</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/est_total_harvest.html">est_total_harvest</a></span><span class="op">(</span><span class="va">effort</span>, <span class="va">cpue</span>, correlation <span class="op">=</span> <span class="op">-</span><span class="fl">0.5</span><span class="op">)</span></span>
 <span></span>
 <span>  <span class="co"># Positive correlation should increase variance</span></span>
 <span>  <span class="fu">expect_gt</span><span class="op">(</span><span class="va">result_pos</span><span class="op">$</span><span class="va">se</span>, <span class="va">result_ind</span><span class="op">$</span><span class="va">se</span><span class="op">)</span></span>
@@ -858,7 +858,7 @@ South     panfish            1200   150</code></pre>
 <span><span class="op">}</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">test_that</span><span class="op">(</span><span class="st">"grouped estimates work correctly"</span>, <span class="op">{</span></span>
-<span>  <span class="va">effort</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="op">(</span></span>
+<span>  <span class="va">effort</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
 <span>    species <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"bass"</span>, <span class="st">"pike"</span><span class="op">)</span>,</span>
 <span>    estimate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1000</span>, <span class="fl">800</span><span class="op">)</span>,</span>
 <span>    se <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">100</span>, <span class="fl">80</span><span class="op">)</span>,</span>
@@ -869,7 +869,7 @@ South     panfish            1200   150</code></pre>
 <span>    diagnostics <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="cn">NULL</span>, <span class="cn">NULL</span><span class="op">)</span></span>
 <span>  <span class="op">)</span></span>
 <span></span>
-<span>  <span class="va">cpue</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="op">(</span></span>
+<span>  <span class="va">cpue</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
 <span>    species <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"bass"</span>, <span class="st">"pike"</span><span class="op">)</span>,</span>
 <span>    estimate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">1.5</span><span class="op">)</span>,</span>
 <span>    se <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.2</span>, <span class="fl">0.15</span><span class="op">)</span>,</span>
@@ -880,7 +880,7 @@ South     panfish            1200   150</code></pre>
 <span>    diagnostics <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="cn">NULL</span>, <span class="cn">NULL</span><span class="op">)</span></span>
 <span>  <span class="op">)</span></span>
 <span></span>
-<span>  <span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">est_total_harvest</span><span class="op">(</span><span class="va">effort</span>, <span class="va">cpue</span>, by <span class="op">=</span> <span class="st">"species"</span><span class="op">)</span></span>
+<span>  <span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/est_total_harvest.html">est_total_harvest</a></span><span class="op">(</span><span class="va">effort</span>, <span class="va">cpue</span>, by <span class="op">=</span> <span class="st">"species"</span><span class="op">)</span></span>
 <span></span>
 <span>  <span class="fu">expect_equal</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span></span>
 <span>  <span class="fu">expect_equal</span><span class="op">(</span><span class="va">result</span><span class="op">$</span><span class="va">estimate</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="fl">2000</span><span class="op">)</span>  <span class="co"># bass</span></span>
@@ -888,45 +888,45 @@ South     panfish            1200   150</code></pre>
 <span><span class="op">}</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">test_that</span><span class="op">(</span><span class="st">"response types work correctly"</span>, <span class="op">{</span></span>
-<span>  <span class="va">effort</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="op">(</span>estimate <span class="op">=</span> <span class="fl">1000</span>, se <span class="op">=</span> <span class="fl">100</span>, n <span class="op">=</span> <span class="fl">50</span>, method <span class="op">=</span> <span class="st">"instantaneous"</span>,</span>
+<span>  <span class="va">effort</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span>estimate <span class="op">=</span> <span class="fl">1000</span>, se <span class="op">=</span> <span class="fl">100</span>, n <span class="op">=</span> <span class="fl">50</span>, method <span class="op">=</span> <span class="st">"instantaneous"</span>,</span>
 <span>                   ci_low <span class="op">=</span> <span class="fl">800</span>, ci_high <span class="op">=</span> <span class="fl">1200</span>, diagnostics <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="cn">NULL</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="va">cpue_total</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="op">(</span>estimate <span class="op">=</span> <span class="fl">3</span>, se <span class="op">=</span> <span class="fl">0.3</span>, n <span class="op">=</span> <span class="fl">100</span>, method <span class="op">=</span> <span class="st">"ratio_of_means"</span>,</span>
+<span>  <span class="va">cpue_total</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span>estimate <span class="op">=</span> <span class="fl">3</span>, se <span class="op">=</span> <span class="fl">0.3</span>, n <span class="op">=</span> <span class="fl">100</span>, method <span class="op">=</span> <span class="st">"ratio_of_means"</span>,</span>
 <span>                       ci_low <span class="op">=</span> <span class="fl">2.4</span>, ci_high <span class="op">=</span> <span class="fl">3.6</span>, diagnostics <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="cn">NULL</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="va">cpue_kept</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="op">(</span>estimate <span class="op">=</span> <span class="fl">2</span>, se <span class="op">=</span> <span class="fl">0.2</span>, n <span class="op">=</span> <span class="fl">100</span>, method <span class="op">=</span> <span class="st">"ratio_of_means"</span>,</span>
+<span>  <span class="va">cpue_kept</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span>estimate <span class="op">=</span> <span class="fl">2</span>, se <span class="op">=</span> <span class="fl">0.2</span>, n <span class="op">=</span> <span class="fl">100</span>, method <span class="op">=</span> <span class="st">"ratio_of_means"</span>,</span>
 <span>                      ci_low <span class="op">=</span> <span class="fl">1.6</span>, ci_high <span class="op">=</span> <span class="fl">2.4</span>, diagnostics <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="cn">NULL</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="va">cpue_released</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="op">(</span>estimate <span class="op">=</span> <span class="fl">1</span>, se <span class="op">=</span> <span class="fl">0.1</span>, n <span class="op">=</span> <span class="fl">100</span>, method <span class="op">=</span> <span class="st">"ratio_of_means"</span>,</span>
+<span>  <span class="va">cpue_released</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span>estimate <span class="op">=</span> <span class="fl">1</span>, se <span class="op">=</span> <span class="fl">0.1</span>, n <span class="op">=</span> <span class="fl">100</span>, method <span class="op">=</span> <span class="st">"ratio_of_means"</span>,</span>
 <span>                          ci_low <span class="op">=</span> <span class="fl">0.8</span>, ci_high <span class="op">=</span> <span class="fl">1.2</span>, diagnostics <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="cn">NULL</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span>  <span class="va">total</span> <span class="op">&lt;-</span> <span class="fu">est_total_harvest</span><span class="op">(</span><span class="va">effort</span>, <span class="va">cpue_total</span>, response <span class="op">=</span> <span class="st">"catch_total"</span><span class="op">)</span></span>
-<span>  <span class="va">kept</span> <span class="op">&lt;-</span> <span class="fu">est_total_harvest</span><span class="op">(</span><span class="va">effort</span>, <span class="va">cpue_kept</span>, response <span class="op">=</span> <span class="st">"catch_kept"</span><span class="op">)</span></span>
-<span>  <span class="va">released</span> <span class="op">&lt;-</span> <span class="fu">est_total_harvest</span><span class="op">(</span><span class="va">effort</span>, <span class="va">cpue_released</span>, response <span class="op">=</span> <span class="st">"catch_released"</span><span class="op">)</span></span>
+<span>  <span class="va">total</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/est_total_harvest.html">est_total_harvest</a></span><span class="op">(</span><span class="va">effort</span>, <span class="va">cpue_total</span>, response <span class="op">=</span> <span class="st">"catch_total"</span><span class="op">)</span></span>
+<span>  <span class="va">kept</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/est_total_harvest.html">est_total_harvest</a></span><span class="op">(</span><span class="va">effort</span>, <span class="va">cpue_kept</span>, response <span class="op">=</span> <span class="st">"catch_kept"</span><span class="op">)</span></span>
+<span>  <span class="va">released</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/est_total_harvest.html">est_total_harvest</a></span><span class="op">(</span><span class="va">effort</span>, <span class="va">cpue_released</span>, response <span class="op">=</span> <span class="st">"catch_released"</span><span class="op">)</span></span>
 <span></span>
 <span>  <span class="co"># Relationship should approximately hold</span></span>
 <span>  <span class="fu">expect_equal</span><span class="op">(</span><span class="va">total</span><span class="op">$</span><span class="va">estimate</span>, <span class="va">kept</span><span class="op">$</span><span class="va">estimate</span> <span class="op">+</span> <span class="va">released</span><span class="op">$</span><span class="va">estimate</span>, tolerance <span class="op">=</span> <span class="fl">0.01</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">test_that</span><span class="op">(</span><span class="st">"input validation catches errors"</span>, <span class="op">{</span></span>
-<span>  <span class="va">effort</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="op">(</span>estimate <span class="op">=</span> <span class="fl">1000</span>, se <span class="op">=</span> <span class="fl">100</span>, species <span class="op">=</span> <span class="st">"bass"</span>,</span>
+<span>  <span class="va">effort</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span>estimate <span class="op">=</span> <span class="fl">1000</span>, se <span class="op">=</span> <span class="fl">100</span>, species <span class="op">=</span> <span class="st">"bass"</span>,</span>
 <span>                   n <span class="op">=</span> <span class="fl">50</span>, method <span class="op">=</span> <span class="st">"instantaneous"</span>, ci_low <span class="op">=</span> <span class="fl">800</span>,</span>
 <span>                   ci_high <span class="op">=</span> <span class="fl">1200</span>, diagnostics <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="cn">NULL</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="va">cpue</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="op">(</span>estimate <span class="op">=</span> <span class="fl">2</span>, se <span class="op">=</span> <span class="fl">0.2</span>, location <span class="op">=</span> <span class="st">"lake"</span>,</span>
+<span>  <span class="va">cpue</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span>estimate <span class="op">=</span> <span class="fl">2</span>, se <span class="op">=</span> <span class="fl">0.2</span>, location <span class="op">=</span> <span class="st">"lake"</span>,</span>
 <span>                 n <span class="op">=</span> <span class="fl">100</span>, method <span class="op">=</span> <span class="st">"ratio_of_means"</span>, ci_low <span class="op">=</span> <span class="fl">1.6</span>,</span>
 <span>                 ci_high <span class="op">=</span> <span class="fl">2.4</span>, diagnostics <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="cn">NULL</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span>  <span class="co"># Mismatched grouping variables</span></span>
 <span>  <span class="fu">expect_error</span><span class="op">(</span></span>
-<span>    <span class="fu">est_total_harvest</span><span class="op">(</span><span class="va">effort</span>, <span class="va">cpue</span>, by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"species"</span>, <span class="st">"location"</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="reference/est_total_harvest.html">est_total_harvest</a></span><span class="op">(</span><span class="va">effort</span>, <span class="va">cpue</span>, by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"species"</span>, <span class="st">"location"</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>    <span class="st">"Grouping variables"</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">test_that</span><span class="op">(</span><span class="st">"zero values handled appropriately"</span>, <span class="op">{</span></span>
-<span>  <span class="va">effort</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="op">(</span>estimate <span class="op">=</span> <span class="fl">0</span>, se <span class="op">=</span> <span class="fl">0</span>, n <span class="op">=</span> <span class="fl">50</span>, method <span class="op">=</span> <span class="st">"instantaneous"</span>,</span>
+<span>  <span class="va">effort</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span>estimate <span class="op">=</span> <span class="fl">0</span>, se <span class="op">=</span> <span class="fl">0</span>, n <span class="op">=</span> <span class="fl">50</span>, method <span class="op">=</span> <span class="st">"instantaneous"</span>,</span>
 <span>                   ci_low <span class="op">=</span> <span class="fl">0</span>, ci_high <span class="op">=</span> <span class="fl">0</span>, diagnostics <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="cn">NULL</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="va">cpue</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="op">(</span>estimate <span class="op">=</span> <span class="fl">2</span>, se <span class="op">=</span> <span class="fl">0.2</span>, n <span class="op">=</span> <span class="fl">100</span>, method <span class="op">=</span> <span class="st">"ratio_of_means"</span>,</span>
+<span>  <span class="va">cpue</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span>estimate <span class="op">=</span> <span class="fl">2</span>, se <span class="op">=</span> <span class="fl">0.2</span>, n <span class="op">=</span> <span class="fl">100</span>, method <span class="op">=</span> <span class="st">"ratio_of_means"</span>,</span>
 <span>                 ci_low <span class="op">=</span> <span class="fl">1.6</span>, ci_high <span class="op">=</span> <span class="fl">2.4</span>, diagnostics <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="cn">NULL</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span>  <span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">est_total_harvest</span><span class="op">(</span><span class="va">effort</span>, <span class="va">cpue</span><span class="op">)</span></span>
+<span>  <span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/est_total_harvest.html">est_total_harvest</a></span><span class="op">(</span><span class="va">effort</span>, <span class="va">cpue</span><span class="op">)</span></span>
 <span></span>
 <span>  <span class="fu">expect_equal</span><span class="op">(</span><span class="va">result</span><span class="op">$</span><span class="va">estimate</span>, <span class="fl">0</span><span class="op">)</span></span>
 <span>  <span class="fu">expect_equal</span><span class="op">(</span><span class="va">result</span><span class="op">$</span><span class="va">se</span>, <span class="fl">0</span><span class="op">)</span></span>
@@ -960,7 +960,7 @@ South     panfish            1200   150</code></pre>
 <span><span class="va">cpue_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/est_cpue.html">est_cpue</a></span><span class="op">(</span><span class="va">svy_int</span>, response <span class="op">=</span> <span class="st">"catch_kept"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># 3. Total harvest</span></span>
-<span><span class="va">harvest</span> <span class="op">&lt;-</span> <span class="fu">est_total_harvest</span><span class="op">(</span><span class="va">effort_est</span>, <span class="va">cpue_est</span>, response <span class="op">=</span> <span class="st">"catch_kept"</span><span class="op">)</span></span>
+<span><span class="va">harvest</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/est_total_harvest.html">est_total_harvest</a></span><span class="op">(</span><span class="va">effort_est</span>, <span class="va">cpue_est</span>, response <span class="op">=</span> <span class="st">"catch_kept"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">harvest</span><span class="op">)</span></span>
 <span><span class="co">#   estimate    se ci_low ci_high    n method     diagnostics</span></span>
@@ -976,7 +976,7 @@ South     panfish            1200   150</code></pre>
 <span>                             response <span class="op">=</span> <span class="st">"catch_kept"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Total harvest by location and species</span></span>
-<span><span class="va">harvest_detailed</span> <span class="op">&lt;-</span> <span class="fu">est_total_harvest</span><span class="op">(</span></span>
+<span><span class="va">harvest_detailed</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/est_total_harvest.html">est_total_harvest</a></span><span class="op">(</span></span>
 <span>  <span class="va">effort_by_loc</span>,</span>
 <span>  <span class="va">cpue_by_species</span>,</span>
 <span>  by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"location"</span>, <span class="st">"species"</span><span class="op">)</span>,</span>
@@ -998,15 +998,15 @@ South     panfish            1200   150</code></pre>
 <span><span class="va">cpue_kept</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/est_cpue.html">est_cpue</a></span><span class="op">(</span><span class="va">svy_int</span>, response <span class="op">=</span> <span class="st">"catch_kept"</span><span class="op">)</span></span>
 <span><span class="va">cpue_released</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/est_cpue.html">est_cpue</a></span><span class="op">(</span><span class="va">svy_int</span>, response <span class="op">=</span> <span class="st">"catch_released"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">catch_total</span> <span class="op">&lt;-</span> <span class="fu">est_total_harvest</span><span class="op">(</span><span class="va">effort_est</span>, <span class="va">cpue_total</span>,</span>
+<span><span class="va">catch_total</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/est_total_harvest.html">est_total_harvest</a></span><span class="op">(</span><span class="va">effort_est</span>, <span class="va">cpue_total</span>,</span>
 <span>                                 response <span class="op">=</span> <span class="st">"catch_total"</span><span class="op">)</span></span>
-<span><span class="va">catch_kept</span> <span class="op">&lt;-</span> <span class="fu">est_total_harvest</span><span class="op">(</span><span class="va">effort_est</span>, <span class="va">cpue_kept</span>,</span>
+<span><span class="va">catch_kept</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/est_total_harvest.html">est_total_harvest</a></span><span class="op">(</span><span class="va">effort_est</span>, <span class="va">cpue_kept</span>,</span>
 <span>                                response <span class="op">=</span> <span class="st">"catch_kept"</span><span class="op">)</span></span>
-<span><span class="va">catch_released</span> <span class="op">&lt;-</span> <span class="fu">est_total_harvest</span><span class="op">(</span><span class="va">effort_est</span>, <span class="va">cpue_released</span>,</span>
+<span><span class="va">catch_released</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/est_total_harvest.html">est_total_harvest</a></span><span class="op">(</span><span class="va">effort_est</span>, <span class="va">cpue_released</span>,</span>
 <span>                                    response <span class="op">=</span> <span class="st">"catch_released"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Verify relationship</span></span>
-<span><span class="va">summary_table</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="op">(</span></span>
+<span><span class="va">summary_table</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
 <span>  metric <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Total Catch"</span>, <span class="st">"Harvest (Kept)"</span>, <span class="st">"Released"</span><span class="op">)</span>,</span>
 <span>  estimate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">catch_total</span><span class="op">$</span><span class="va">estimate</span>, <span class="va">catch_kept</span><span class="op">$</span><span class="va">estimate</span>, <span class="va">catch_released</span><span class="op">$</span><span class="va">estimate</span><span class="op">)</span>,</span>
 <span>  se <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">catch_total</span><span class="op">$</span><span class="va">se</span>, <span class="va">catch_kept</span><span class="op">$</span><span class="va">se</span>, <span class="va">catch_released</span><span class="op">$</span><span class="va">se</span><span class="op">)</span></span>
@@ -1022,7 +1022,7 @@ South     panfish            1200   150</code></pre>
 <h3 id="example-4-target-species-caught-while-sought">Example 4: Target Species (Caught While Sought)<a class="anchor" aria-label="anchor" href="#example-4-target-species-caught-while-sought"></a></h3>
 <div class="sourceCode" id="cb53"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Future implementation</span></span>
-<span><span class="va">harvest_bass_sought</span> <span class="op">&lt;-</span> <span class="fu">est_total_harvest</span><span class="op">(</span></span>
+<span><span class="va">harvest_bass_sought</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/est_total_harvest.html">est_total_harvest</a></span><span class="op">(</span></span>
 <span>  <span class="va">effort_est</span>,</span>
 <span>  <span class="va">cpue_est</span>,</span>
 <span>  by <span class="op">=</span> <span class="st">"species"</span>,</span>
@@ -1067,7 +1067,7 @@ South     panfish            1200   150</code></pre>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer></div>

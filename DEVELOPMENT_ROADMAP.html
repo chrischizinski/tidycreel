@@ -40,839 +40,616 @@
 
 <div class="section level2">
 <h2 id="comprehensive-feature-planning--gap-analysis">Comprehensive Feature Planning &amp; Gap Analysis<a class="anchor" aria-label="anchor" href="#comprehensive-feature-planning--gap-analysis"></a></h2>
-<p><strong>Last Updated:</strong> October 24, 2025 <strong>Status:</strong> Package is ~70% complete for basic creel analysis <strong>Next Major Milestone:</strong> Complete core estimation workflow with total harvest</p>
+<p><strong>Last Updated:</strong> October 26, 2025 <strong>Package Version:</strong> 0.0.0.9000 <strong>Status:</strong> Package is ~80% complete for basic creel analysis <strong>Next Major Milestone:</strong> QA/QC framework and variance decomposition</p>
 <hr></div>
 <div class="section level2">
-<h2 id="executive-summary">Executive Summary<a class="anchor" aria-label="anchor" href="#executive-summary"></a></h2>
+<h2 id="recent-accomplishments-">Recent Accomplishments ✅<a class="anchor" aria-label="anchor" href="#recent-accomplishments-"></a></h2>
 <div class="section level3">
-<h3 id="current-state-assessment">Current State Assessment<a class="anchor" aria-label="anchor" href="#current-state-assessment"></a></h3>
-<p><strong>Strengths (What We Have):</strong> - ✅ 48 exported functions with robust survey-first architecture - ✅ Core effort estimation methods (instantaneous, progressive, aerial, bus route) - ✅ CPUE estimation with multiple approaches (ratio-of-means, mean-of-ratios, auto mode) - ✅ Basic catch estimation from interview data - ✅ Survey design integration (<code>as_day_svydesign</code>, replicate designs) - ✅ Comprehensive validation framework - ✅ Basic visualization (<code>plot_design</code>, <code>plot_effort</code>) - ✅ Excellent documentation structure and vignettes</p>
-<p><strong>Critical Gap Identified:</strong> The package lacks <strong>total harvest estimation</strong> (effort × CPUE), which is the PRIMARY outcome of most creel surveys. Users can estimate effort and CPUE separately, but there’s no function to properly combine them with variance propagation using the delta method.</p>
-<p><strong>Completeness Assessment:</strong> - <strong>Survey Design &amp; Sampling:</strong> 90% complete - <strong>Effort Estimation:</strong> 85% complete (missing tie-in estimators, party expansion) - <strong>Catch/Harvest Estimation:</strong> 60% complete (missing total harvest calculation) - <strong>Biological Data Analysis:</strong> 20% complete (length frequencies not implemented) - <strong>Visualization &amp; Reporting:</strong> 40% complete (basic plots only) - <strong>Data Quality Tools:</strong> 70% complete (validation exists, diagnostics limited) - <strong>Survey Planning Tools:</strong> 10% complete (no sample size calculators)</p>
+<h3 id="october-2025---critical-functions-implemented">October 2025 - Critical Functions Implemented<a class="anchor" aria-label="anchor" href="#october-2025---critical-functions-implemented"></a></h3>
+<ol style="list-style-type: decimal"><li>
+<strong><code><a href="reference/aggregate_cpue.html">aggregate_cpue()</a></code></strong> - Survey-based species aggregation ✅
+<ul><li>Properly aggregates CPUE across species groups</li>
+<li>Accounts for covariance between species</li>
+<li>Essential for species group harvest estimation</li>
+<li><strong>383 lines of code, 10 passing tests</strong></li>
+</ul></li>
+<li>
+<strong><code><a href="reference/est_total_harvest.html">est_total_harvest()</a></code></strong> - Total harvest/catch estimation ✅
+<ul><li>Product estimator with delta method variance propagation</li>
+<li>Independent and correlated variance estimation</li>
+<li>Flexible stratification support</li>
+<li><strong>418 lines of code, 66 passing tests</strong></li>
+</ul></li>
+<li>
+<strong><code><a href="reference/est_cpue_roving.html">est_cpue_roving()</a></code></strong> - Roving/incomplete trip CPUE estimation ✅ <strong>NEW</strong>
+<ul><li>Pollock et al. (1997) mean-of-ratios estimator</li>
+<li>Length-biased sampling correction</li>
+<li>Trip truncation (&lt; 0.5 hours default)</li>
+<li>Comprehensive diagnostics</li>
+<li><strong>496 lines of code, 78 passing tests</strong></li>
+<li>Includes <code>roving_survey</code> example dataset</li>
+<li>Full vignette with examples</li>
+</ul></li>
+<li>
+<strong>Survey-First Vignette Refactoring</strong> ✅
+<ul><li>Migrated from design containers to direct survey package usage</li>
+<li>Cleaned vignette caches</li>
+<li>Updated documentation</li>
+</ul></li>
+</ol><p><strong>Impact:</strong> Users can now complete full creel analyses from effort → CPUE (including roving surveys) → species aggregation → total harvest with proper variance estimation.</p>
 <hr></div>
 </div>
 <div class="section level2">
-<h2 id="top-10-priority-functions">Top 10 Priority Functions<a class="anchor" aria-label="anchor" href="#top-10-priority-functions"></a></h2>
+<h2 id="comprehensive-gap-analysis-summary">Comprehensive Gap Analysis Summary<a class="anchor" aria-label="anchor" href="#comprehensive-gap-analysis-summary"></a></h2>
+<p>A detailed comparison with the comprehensive textbook chapter (<em>Analysis and Interpretation of Freshwater Fisheries Data, 2nd Edition</em>, Chapter 17: Creel Surveys) revealed <strong>18 major gaps</strong> organized by priority.</p>
+<p><strong>Full Report:</strong> See <code>CHAPTER_GAP_ANALYSIS.md</code> (1,581 lines)</p>
 <div class="section level3">
-<h3 id="phase-1---critical-missing-pieces-immediate-priority---next-4-6-weeks">PHASE 1 - Critical Missing Pieces (Immediate Priority - Next 4-6 weeks)<a class="anchor" aria-label="anchor" href="#phase-1---critical-missing-pieces-immediate-priority---next-4-6-weeks"></a></h3>
-<div class="section level4">
-<h4 id="id_1--est_total_harvest---highest-priority">1. 🔴 <strong><code>est_total_harvest()</code></strong> - HIGHEST PRIORITY<a class="anchor" aria-label="anchor" href="#id_1--est_total_harvest---highest-priority"></a></h4>
-<p><strong>Status:</strong> Not implemented <strong>Priority:</strong> P0 - Blocking users from completing analyses <strong>Effort:</strong> 2-3 weeks (including tests, vignette, validation)</p>
-<p><strong>Description:</strong> Combines effort and CPUE estimates to calculate total harvest with proper variance propagation using the delta method.</p>
-<p><strong>Function Signature:</strong></p>
+<h3 id="current-state-assessment">Current State Assessment<a class="anchor" aria-label="anchor" href="#current-state-assessment"></a></h3>
+<p><strong>Strengths (What We Have):</strong> - ✅ 48+ exported functions with robust survey-first architecture - ✅ Core effort estimation methods (instantaneous, progressive, aerial, bus route) - ✅ CPUE estimation with multiple approaches (ratio-of-means, mean-of-ratios, auto mode) - ✅ <strong>NEW:</strong> Species aggregation with survey-based variance - ✅ <strong>NEW:</strong> Total harvest estimation with delta method - ✅ Survey design integration (<code>as_day_svydesign</code>, replicate designs) - ✅ Comprehensive validation framework - ✅ Basic visualization (<code>plot_design</code>, <code>plot_effort</code>) - ✅ Excellent documentation structure and vignettes</p>
+<p><strong>Updated Completeness Assessment:</strong> - <strong>Survey Design &amp; Sampling:</strong> 90% complete - <strong>Effort Estimation:</strong> 90% complete ✅ <strong>(was 85%, now includes roving methods)</strong> - <strong>Catch/Harvest Estimation:</strong> ✅ <strong>90% complete</strong> (was 85%, roving CPUE + total harvest + aggregation) - <strong>Quality Assurance/Control:</strong> 30% complete (basic validation only) - <strong>Variance Analysis Tools:</strong> 40% complete (missing decomposition) - <strong>Sample Size Planning:</strong> 10% complete (no formal tools) - <strong>Biological Data Analysis:</strong> 20% complete (length frequencies not implemented) - <strong>Visualization &amp; Reporting:</strong> 40% complete (basic plots only) - <strong>Advanced Methods:</strong> 20% complete (aerial, cameras, hybrid designs) - <strong>Angler Segmentation:</strong> 30% complete (ad-hoc via <code>by</code> argument)</p>
+<hr></div>
+</div>
+<div class="section level2">
+<h2 id="top-15-priority-features">Top 15 Priority Features<a class="anchor" aria-label="anchor" href="#top-15-priority-features"></a></h2>
+<div class="section level3">
+<h3 id="reorganized-based-on-chapter-analysis--user-needs">Reorganized Based on Chapter Analysis &amp; User Needs<a class="anchor" aria-label="anchor" href="#reorganized-based-on-chapter-analysis--user-needs"></a></h3>
+<hr></div>
+</div>
+<div class="section level2">
+<h2 id="phase-1---critical-operational-gaps-next-8-10-weeks">PHASE 1 - Critical Operational Gaps (Next 8-10 weeks)<a class="anchor" aria-label="anchor" href="#phase-1---critical-operational-gaps-next-8-10-weeks"></a></h2>
+<div class="section level3">
+<h3 id="id_1--rovingincomplete-trip-estimators---completed">1. ✅ <strong>Roving/Incomplete Trip Estimators</strong> - COMPLETED<a class="anchor" aria-label="anchor" href="#id_1--rovingincomplete-trip-estimators---completed"></a></h3>
+<p><strong>Status:</strong> ✅ <strong>IMPLEMENTED</strong> (October 26, 2025) <strong>Priority:</strong> P0 - One of the most common survey types <strong>Effort:</strong> 2-3 weeks (completed) <strong>Chapter Reference:</strong> Section 17.3.2, Box 18.5 (Pollock et al. 1997)</p>
+<p><strong>Implementation Summary:</strong> - ✅ <strong><code><a href="reference/est_cpue_roving.html">est_cpue_roving()</a></code></strong> function fully implemented (496 lines) - ✅ <strong>Pollock et al. (1997) mean-of-ratios estimator</strong> with length-bias correction - ✅ <strong>Trip truncation</strong> (default 0.5 hours, configurable) - ✅ <strong>Length-biased sampling correction</strong> via inverse trip duration weights - ✅ <strong>Comprehensive diagnostics</strong> (truncation rates, bias weights, effort summaries) - ✅ <strong>78 passing tests</strong> covering all functionality - ✅ <strong>Example dataset</strong> (<code>roving_survey</code>) with 50 simulated interviews - ✅ <strong>Complete vignette</strong> (<code>vignettes/roving-surveys.Rmd</code>) with examples - ✅ <strong>Exported and documented</strong> in NAMESPACE</p>
+<p><strong>Key Features:</strong></p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">est_total_harvest</span><span class="op">(</span></span>
-<span>  <span class="va">effort_est</span>,           <span class="co"># Tibble from est_effort()</span></span>
-<span>  <span class="va">cpue_est</span>,             <span class="co"># Tibble from est_cpue()</span></span>
-<span>  by <span class="op">=</span> <span class="cn">NULL</span>,            <span class="co"># Grouping variables (must match between inputs)</span></span>
-<span>  method <span class="op">=</span> <span class="st">"product"</span>,   <span class="co"># "product", "ratio_est", "separate_ratio"</span></span>
-<span>  correlation <span class="op">=</span> <span class="cn">NULL</span>,   <span class="co"># Optional correlation between effort and CPUE</span></span>
-<span>  conf_level <span class="op">=</span> <span class="fl">0.95</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="reference/est_cpue_roving.html">est_cpue_roving</a></span><span class="op">(</span></span>
+<span>  <span class="va">design</span>,                           <span class="co"># Survey design object</span></span>
+<span>  by <span class="op">=</span> <span class="cn">NULL</span>,                        <span class="co"># Grouping variables</span></span>
+<span>  response <span class="op">=</span> <span class="st">"catch_total"</span>,         <span class="co"># Catch column</span></span>
+<span>  effort_col <span class="op">=</span> <span class="st">"hours_fished"</span>,      <span class="co"># Observed effort</span></span>
+<span>  min_trip_hours <span class="op">=</span> <span class="fl">0.5</span>,             <span class="co"># Truncation threshold</span></span>
+<span>  length_bias_correction <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"none"</span>, <span class="st">"pollock"</span><span class="op">)</span>,</span>
+<span>  total_trip_effort_col <span class="op">=</span> <span class="cn">NULL</span>,     <span class="co"># For Pollock correction</span></span>
+<span>  conf_level <span class="op">=</span> <span class="fl">0.95</span>,</span>
+<span>  diagnostics <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><strong>Returns:</strong> Tibble with schema: <code>[grouping_vars], estimate, se, ci_low, ci_high, n, method, diagnostics</code></p>
-<p><strong>Statistical Methods:</strong> - <strong>Product estimator:</strong> <code>H = E × C</code> where E = effort, C = CPUE - <strong>Delta method variance:</strong> <code>Var(H) ≈ E² × Var(C) + C² × Var(E) + 2 × E × C × Cov(E,C)</code> - <strong>Correlation handling:</strong> When effort and CPUE from same survey, estimate correlation; otherwise assume independent</p>
-<p><strong>Implementation Notes:</strong> - Must handle grouped estimates (join on grouping variables) - Validate that grouping variables match between inputs - Propagate diagnostics from both input estimates - Handle NA values gracefully - Provide informative error messages for common mistakes</p>
-<p><strong>Testing Strategy:</strong> - Unit tests with known variance propagation - Compare to manual calculations - Test with correlated and uncorrelated inputs - Test grouped and ungrouped estimates - Edge cases: zero effort, zero CPUE, single group</p>
-<p><strong>Documentation:</strong> - Comprehensive vignette showing complete workflow: design → effort → CPUE → total harvest - Mathematical notation for variance formulas - When to use each method - Interpretation guidance</p>
-<p><strong>Success Metrics:</strong> - Function implemented and passing all tests - Vignette demonstrating end-to-end workflow - Matches hand calculations for test cases - User can complete full creel analysis from start to finish</p>
+<p><strong>Testing Coverage:</strong> - Input validation (8 tests) - Trip truncation (6 tests) - Known value calculations (10 tests) - Grouped estimation (8 tests) - Length-bias correction (5 tests) - Diagnostics (5 tests) - Survey package integration (5 tests) - Return schema validation (5 tests)</p>
+<p><strong>Documentation:</strong> - ✅ Full roxygen2 documentation with mathematical formulas - ✅ Vignette: “Roving Survey CPUE Estimation” - ✅ Example dataset documentation - ✅ Integration with existing workflow</p>
+<p><strong>Success Metrics Achieved:</strong> - ✅ All 78 tests passing - ✅ Proper variance estimation via survey package - ✅ Clear diagnostics for quality assurance - ✅ Works with stratified and replicate designs</p>
 <hr></div>
-<div class="section level4">
-<h4 id="id_2--expand_party_to_angler">2. 🟡 <strong><code>expand_party_to_angler()</code></strong>
-<a class="anchor" aria-label="anchor" href="#id_2--expand_party_to_angler"></a></h4>
-<p><strong>Status:</strong> Not implemented <strong>Priority:</strong> P1 - Commonly needed, workarounds exist <strong>Effort:</strong> 1 week</p>
-<p><strong>Description:</strong> Converts party-based counts to angler counts for accurate effort estimation. Many surveys record counts by party/boat rather than individual anglers.</p>
-<p><strong>Function Signature:</strong></p>
+<div class="section level3">
+<h3 id="id_2--quality-assurancequality-control-framework---next-priority">2. 🔴 <strong>Quality Assurance/Quality Control Framework</strong> - NEXT PRIORITY<a class="anchor" aria-label="anchor" href="#id_2--quality-assurancequality-control-framework---next-priority"></a></h3>
+<p><strong>Status:</strong> Basic schemas only <strong>Priority:</strong> P0 - Data quality issues extremely common <strong>Effort:</strong> 2-3 weeks <strong>Chapter Reference:</strong> Section 17.2.2, Table 17.3</p>
+<p><strong>Why Critical:</strong> - Table 17.3 lists 10 common mistakes in creel surveys - Current package only validates basic data schemas - No systematic checks for common errors - Users need guidance to avoid biased estimates</p>
+<p><strong>Common Mistakes to Detect (Table 17.3):</strong> 1. <strong>Skipping zeros</strong> - Creel clerks only recording when anglers present 2. <strong>Targeting successful parties</strong> - Interviewing at cleaning stations 3. <strong>Measuring biggest fish only</strong> - Size structure bias 4. <strong>Counts don’t cover entire area</strong> - Spatial coverage gaps 5. <strong>Interviews exclude groups</strong> - Non-response bias 6. <strong>Mixing measurement units</strong> - Inches vs mm, hours vs minutes 7. <strong>Species misidentification</strong> - Data quality issues 8. <strong>Party-level effort errors</strong> - Accounting for multiple anglers 9. <strong>Lack of standardized training</strong> - Data inconsistency 10. <strong>No QA-QC procedures</strong> - Compounding errors</p>
+<p><strong>Implementation:</strong></p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">expand_party_to_angler</span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="reference/qa_checks.html">qa_checks</a></span><span class="op">(</span></span>
+<span>  counts <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  interviews <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  schedule <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  checks <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>    <span class="st">"zero_counts"</span>,         <span class="co"># Flag if no zero counts recorded</span></span>
+<span>    <span class="st">"successful_bias"</span>,     <span class="co"># Detect interviewing only at cleaning stations</span></span>
+<span>    <span class="st">"measurement_units"</span>,   <span class="co"># Check unit consistency</span></span>
+<span>    <span class="st">"party_effort"</span>,        <span class="co"># Validate multi-angler party effort</span></span>
+<span>    <span class="st">"coverage"</span>,           <span class="co"># Verify counts covered entire waterbody</span></span>
+<span>    <span class="st">"outliers"</span>,           <span class="co"># Statistical outlier detection</span></span>
+<span>    <span class="st">"species_id"</span>,         <span class="co"># Flag uncommon species combinations</span></span>
+<span>    <span class="st">"missing_data"</span>,       <span class="co"># Completeness checks</span></span>
+<span>    <span class="st">"temporal_coverage"</span>,  <span class="co"># All strata sampled</span></span>
+<span>    <span class="st">"interview_location"</span>  <span class="co"># Location bias assessment</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  severity <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"error"</span>, <span class="st">"warning"</span>, <span class="st">"info"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Generate comprehensive report</span></span>
+<span><span class="fu"><a href="reference/qc_report.html">qc_report</a></span><span class="op">(</span></span>
 <span>  <span class="va">data</span>,</span>
-<span>  party_col <span class="op">=</span> <span class="st">"parties_count"</span>,</span>
-<span>  angler_col <span class="op">=</span> <span class="st">"anglers_count"</span>,</span>
-<span>  by <span class="op">=</span> <span class="cn">NULL</span>,                    <span class="co"># Stratification variables</span></span>
-<span>  method <span class="op">=</span> <span class="st">"mean_ratio"</span>,        <span class="co"># "mean_ratio", "weighted", "stratified"</span></span>
-<span>  expansion_source <span class="op">=</span> <span class="cn">NULL</span>       <span class="co"># Optional interview data for ratios</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p><strong>Methods:</strong> - <strong>Mean ratio:</strong> Mean anglers per party from interviews, apply to counts - <strong>Weighted:</strong> Survey-weighted mean expansion factor - <strong>Stratified:</strong> Separate ratios by strata (e.g., weekday/weekend, mode)</p>
-<p><strong>Use Cases:</strong> - Boat counts → angler counts - Party counts → angler counts - Vehicle counts → angler counts (with occupancy data)</p>
+<span>  <span class="va">qa_results</span>,</span>
+<span>  output_format <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"html"</span>, <span class="st">"pdf"</span>, <span class="st">"console"</span><span class="op">)</span>,</span>
+<span>  include_recommendations <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Validation functions</span></span>
+<span><span class="fu"><a href="reference/validate_counts.html">validate_counts</a></span><span class="op">(</span><span class="va">counts</span>, <span class="va">design_type</span>, check_design_requirements <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/validate_interviews.html">validate_interviews</a></span><span class="op">(</span><span class="va">interviews</span>, <span class="va">survey_type</span>, check_consistency <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu">validate_schedule</span><span class="op">(</span><span class="va">schedule</span>, <span class="va">calendar</span>, check_allocation <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<p><strong>Testing:</strong> - Synthetic data with known issues - Real data examples (anonymized) - Edge cases for each check - Performance with large datasets</p>
+<p><strong>Documentation:</strong> - Vignette: “Data Quality Best Practices” - Table of common mistakes and checks - How to interpret QA/QC report - Fixing common issues</p>
+<p><strong>Success Metrics:</strong> - Detects all 10 common mistakes - Clear, actionable error messages - Users improve data quality before analysis</p>
 <hr></div>
-<div class="section level4">
-<h4 id="id_3--plot_estimates_timeseries">3. 🟡 <strong><code>plot_estimates_timeseries()</code></strong>
-<a class="anchor" aria-label="anchor" href="#id_3--plot_estimates_timeseries"></a></h4>
+<div class="section level3">
+<h3 id="id_3--variance-component-decomposition">3. 🟡 <strong>Variance Component Decomposition</strong>
+<a class="anchor" aria-label="anchor" href="#id_3--variance-component-decomposition"></a></h3>
+<p><strong>Status:</strong> Uses survey package variance but no decomposition <strong>Priority:</strong> P1 - Needed for optimal survey design <strong>Effort:</strong> 2 weeks <strong>Chapter Reference:</strong> Box 18.4, Rasmussen et al. (1998)</p>
+<p><strong>Why Important:</strong> - Understanding variance components guides sampling decisions - Optimal allocation between weekdays/weekends - Optimal number of counts per shift - Design effect calculations</p>
+<p><strong>Missing Components:</strong> - Within-day variance (variance among counts within a shift) - Among-day variance (variance among days within a stratum) - Within-shift variance (multiple counts per shift) - Variance ratio analysis for optimal allocation</p>
+<p><strong>Key Formula:</strong></p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co"># Strata estimator with variance decomposition</span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="fu">var</span>(Y_stratum) <span class="ot">=</span> ((<span class="dv">1</span> <span class="sc">-</span> n<span class="sc">/</span>N)<span class="sc">/</span>n) <span class="sc">*</span> s_b² <span class="sc">+</span> (<span class="dv">1</span><span class="sc">/</span>(<span class="dv">2</span>N)) <span class="sc">*</span> s_w²</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>where<span class="sc">:</span></span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>  s_b² <span class="ot">=</span> among<span class="sc">-</span>day variance</span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>  s_w² <span class="ot">=</span> within<span class="sc">-</span>day <span class="fu">variance</span> (from multiple counts)</span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>  n <span class="ot">=</span> days sampled</span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>  N <span class="ot">=</span> total days <span class="cf">in</span> stratum</span></code></pre></div>
+<p><strong>Implementation:</strong></p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/decompose_variance.html">decompose_variance</a></span><span class="op">(</span></span>
+<span>  <span class="va">effort_est</span>,  <span class="co"># Output from est_effort()</span></span>
+<span>  level <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"shift"</span>, <span class="st">"day"</span>, <span class="st">"stratum"</span>, <span class="st">"month"</span><span class="op">)</span>,</span>
+<span>  components <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"within_day"</span>, <span class="st">"among_day"</span>, <span class="st">"within_shift"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Output includes:</span></span>
+<span><span class="co"># - Variance components table</span></span>
+<span><span class="co"># - Intraclass correlation</span></span>
+<span><span class="co"># - Design effects</span></span>
+<span><span class="co"># - Optimal allocation recommendations</span></span>
+<span><span class="co"># - Variance ratio (for sample size planning)</span></span>
+<span></span>
+<span><span class="co"># Visualize variance components</span></span>
+<span><span class="fu">plot_variance_components</span><span class="op">(</span></span>
+<span>  <span class="va">variance_decomp</span>,</span>
+<span>  type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"table"</span>, <span class="st">"barplot"</span>, <span class="st">"nested"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><strong>Testing:</strong> - Known variance decomposition examples - Compare to manual calculations - Nested ANOVA validation - Different survey designs</p>
+<p><strong>Documentation:</strong> - Vignette: “Understanding Variance in Creel Surveys” - Optimal allocation examples - Sample size determination using variance ratios</p>
+<p><strong>Success Metrics:</strong> - Correct variance decomposition - Users can optimize sampling design - Clear recommendations for allocation</p>
+<hr></div>
+<div class="section level3">
+<h3 id="id_4--sample-size-determination-tools">4. 🟡 <strong>Sample Size Determination Tools</strong>
+<a class="anchor" aria-label="anchor" href="#id_4--sample-size-determination-tools"></a></h3>
+<p><strong>Status:</strong> Not implemented <strong>Priority:</strong> P1 - Frequently needed for planning and grants <strong>Effort:</strong> 2-3 weeks <strong>Chapter Reference:</strong> Newman et al. (1997), McCormick &amp; Meyer (2017)</p>
+<p><strong>Why Important:</strong> - Grant proposals require sample size justification - Pilot studies need proper analysis - Budget constraints require optimization - Users ask “how many days should I sample?”</p>
+<p><strong>Missing Components:</strong> - Power analysis for detecting trends - Precision-based sample size for target CV - Optimal allocation between weekdays/weekends - Optimal counts per shift - Pilot study analysis tools - Variance ratio methods</p>
+<p><strong>Implementation:</strong></p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">calc_sample_size</span><span class="op">(</span></span>
+<span>  target_cv <span class="op">=</span> <span class="fl">0.15</span>,              <span class="co"># Desired coefficient of variation</span></span>
+<span>  variance_ratio <span class="op">=</span> <span class="cn">NULL</span>,          <span class="co"># s_within² / s_among² from pilot</span></span>
+<span>  pilot_data <span class="op">=</span> <span class="cn">NULL</span>,              <span class="co"># Or provide pilot data directly</span></span>
+<span>  allocation <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"proportional"</span>, <span class="st">"optimal"</span>, <span class="st">"equal"</span><span class="op">)</span>,</span>
+<span>  strata <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"weekday"</span>, <span class="st">"weekend"</span>, <span class="st">"highuse"</span><span class="op">)</span>,</span>
+<span>  budget_constraint <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  cost_per_day <span class="op">=</span> <span class="cn">NULL</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Power analysis for trend detection</span></span>
+<span><span class="fu">calc_power_creel</span><span class="op">(</span></span>
+<span>  <span class="va">effect_size</span>,                    <span class="co"># Minimum detectable change</span></span>
+<span>  years <span class="op">=</span> <span class="fl">5</span>,</span>
+<span>  alpha <span class="op">=</span> <span class="fl">0.05</span>,</span>
+<span>  <span class="va">days_per_stratum</span>,</span>
+<span>  <span class="va">variance_components</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Analyze pilot study</span></span>
+<span><span class="fu">analyze_pilot</span><span class="op">(</span></span>
+<span>  <span class="va">pilot_data</span>,</span>
+<span>  recommend_sample_size <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  target_precision <span class="op">=</span> <span class="fl">0.15</span>,</span>
+<span>  stratification <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"weekday"</span>, <span class="st">"weekend"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Optimal counts per shift</span></span>
+<span><span class="fu">calc_optimal_counts</span><span class="op">(</span></span>
+<span>  <span class="va">variance_components</span>,</span>
+<span>  shift_duration <span class="op">=</span> <span class="fl">8</span>,</span>
+<span>  cost_per_count <span class="op">=</span> <span class="cn">NULL</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><strong>Testing:</strong> - Known examples from literature - Sensitivity to variance ratios - Budget constraint scenarios - Integration with variance decomposition</p>
+<p><strong>Documentation:</strong> - Vignette: “Planning Your Creel Survey” - Sample size workflow - Pilot study analysis - Budget optimization</p>
+<p><strong>Success Metrics:</strong> - Accurate sample size recommendations - Power analysis matches published examples - Users can justify sampling effort</p>
+<hr></div>
+<div class="section level3">
+<h3 id="id_5--angler-segmentation-framework">5. 🟡 <strong>Angler Segmentation Framework</strong>
+<a class="anchor" aria-label="anchor" href="#id_5--angler-segmentation-framework"></a></h3>
+<p><strong>Status:</strong> Ad-hoc via <code>by</code> argument <strong>Priority:</strong> P1 - Addresses heterogeneity and bias <strong>Effort:</strong> 3-4 weeks <strong>Chapter Reference:</strong> Section 17.4.2</p>
+<p><strong>Why Important:</strong> - Anglers are heterogeneous (bank vs boat, target species, etc.) - Different segments have different detection probabilities - Non-response bias assessment - Proper variance estimation requires accounting for segments</p>
+<p><strong>Segmentation Types:</strong> - <strong>Geographic</strong> - Resident vs non-resident, location - <strong>Demographic</strong> - Age, gender, income, education - <strong>Psychographic</strong> - Motivations, values, attitudes - <strong>Behavioral</strong> - Bank vs boat, target species, gear type</p>
+<p><strong>Missing Components:</strong> - Formal segmentation framework - Detection probability adjustment - Non-response bias assessment by segment - Harvest propensity modeling</p>
+<p><strong>Implementation:</strong></p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">define_segments</span><span class="op">(</span></span>
+<span>  <span class="va">interviews</span>,</span>
+<span>  segment_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"method"</span>, <span class="st">"target_species"</span>, <span class="st">"demographic"</span>, <span class="st">"behavioral"</span><span class="op">)</span>,</span>
+<span>  segment_vars <span class="op">=</span> <span class="cn">NULL</span>,             <span class="co"># Variables defining segments</span></span>
+<span>  estimate_detection <span class="op">=</span> <span class="cn">TRUE</span>        <span class="co"># Adjust for differential detection</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Enhanced estimation with segmentation</span></span>
+<span><span class="fu">est_effort_segmented</span><span class="op">(</span></span>
+<span>  <span class="va">counts</span>,</span>
+<span>  <span class="va">interviews</span>,</span>
+<span>  <span class="va">segments</span>,</span>
+<span>  adjust_detection <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  test_differences <span class="op">=</span> <span class="cn">TRUE</span>,         <span class="co"># Test if segments differ significantly</span></span>
+<span>  by <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  svy <span class="op">=</span> <span class="cn">NULL</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Assess non-response bias by segment</span></span>
+<span><span class="fu">assess_nonresponse_bias</span><span class="op">(</span></span>
+<span>  <span class="va">interviews</span>,</span>
+<span>  <span class="va">counts</span>,</span>
+<span>  <span class="va">segments</span>,</span>
+<span>  methods <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"comparison"</span>, <span class="st">"sensitivity"</span>, <span class="st">"bounds"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Automatic bank vs boat separation</span></span>
+<span><span class="fu">separate_bank_boat</span><span class="op">(</span></span>
+<span>  <span class="va">counts</span>,</span>
+<span>  <span class="va">interviews</span>,</span>
+<span>  method_col <span class="op">=</span> <span class="st">"fishing_method"</span>,</span>
+<span>  estimate_separately <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><strong>Testing:</strong> - Known segmentation examples - Detection probability scenarios - Non-response bias assessment - Integration with existing estimators</p>
+<p><strong>Documentation:</strong> - Vignette: “Angler Segmentation and Heterogeneity” - When segmentation is needed - Detection probability concepts - Non-response bias implications</p>
+<p><strong>Success Metrics:</strong> - Proper segment-specific estimates - Detection probability adjustment working - Non-response bias quantified</p>
+<hr></div>
+</div>
+<div class="section level2">
+<h2 id="phase-2---enhanced-functionality-6-8-weeks">PHASE 2 - Enhanced Functionality (6-8 weeks)<a class="anchor" aria-label="anchor" href="#phase-2---enhanced-functionality-6-8-weeks"></a></h2>
+<div class="section level3">
+<h3 id="id_6--enhanced-bus-route-estimator">6. 🟢 <strong>Enhanced Bus Route Estimator</strong>
+<a class="anchor" aria-label="anchor" href="#id_6--enhanced-bus-route-estimator"></a></h3>
+<p><strong>Status:</strong> Basic implementation exists <strong>Priority:</strong> P2 - Enhancement to existing feature <strong>Effort:</strong> 1-2 weeks <strong>Current:</strong> <code>/Users/cchizinski2/Dev/tidycreel/R/est-effort-busroute.R</code></p>
+<p><strong>Enhancements Needed:</strong></p>
+<p><strong>6.1 Interview-based Expansion</strong> - Current: Only time-interval method - Missing: Completed trip interview expansion (second method from chapter)</p>
+<p><strong>6.2 Sampling Probability Adjustment</strong> - Current: Uses <code>inclusion_prob</code> column - Missing: Automatic calculation from wait times and travel times - Formula: <code>π_j = w_i / T</code> where w_i is wait time at site i, T is total circuit time</p>
+<p><strong>6.3 Non-uniform Probability Documentation</strong> - Reference: Malvestuto et al. (1978) - Missing: Explicit handling when sites have different sampling probabilities</p>
+<p><strong>Implementation:</strong></p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/est_effort.busroute_design.html">est_effort.busroute_design</a></span><span class="op">(</span></span>
+<span>  <span class="va">x</span>,</span>
+<span>  method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"time_interval"</span>, <span class="st">"completed_trips"</span><span class="op">)</span>,  <span class="co"># ADD choice</span></span>
+<span></span>
+<span>  <span class="co"># For completed_trips method (NEW)</span></span>
+<span>  interview_based <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  trip_duration_col <span class="op">=</span> <span class="st">"trip_duration"</span>,</span>
+<span></span>
+<span>  <span class="co"># Probability calculation (NEW)</span></span>
+<span>  auto_calc_pi <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  wait_time_col <span class="op">=</span> <span class="st">"wait_time"</span>,</span>
+<span>  total_circuit_time_col <span class="op">=</span> <span class="st">"circuit_time"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<hr></div>
+<div class="section level3">
+<h3 id="id_7--aerial-survey-methods">7. 🟢 <strong>Aerial Survey Methods</strong>
+<a class="anchor" aria-label="anchor" href="#id_7--aerial-survey-methods"></a></h3>
+<p><strong>Status:</strong> Stub implementation only <strong>Priority:</strong> P2 - Specialized but important <strong>Effort:</strong> 3-4 weeks <strong>Chapter Reference:</strong> Sections 17.3.1.2, 17.5.3</p>
+<p><strong>Missing Components:</strong> - Instantaneous aerial counts with expansion factors - Treatment of boats in transit vs active fishing - Inflation factors for time-of-day expansion - Integration with ground counts for calibration - Weather/visibility adjustments - Flight path design and coverage probability</p>
+<p><strong>Key Formula:</strong></p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="co"># Instantaneous aerial to daily effort</span></span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>Daily_Effort <span class="ot">=</span> Aerial_Count × Inflation_Factor</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>Inflation_Factor <span class="ot">=</span> (Total_Day_Hours <span class="sc">/</span> Peak_Period_Hours) × Activity_Ratio</span></code></pre></div>
+<p><strong>Implementation:</strong></p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">est_effort_aerial</span><span class="op">(</span></span>
+<span>  <span class="va">counts</span>,                    <span class="co"># Aerial count data</span></span>
+<span>  <span class="va">inflation_factors</span>,         <span class="co"># Time-of-day expansion</span></span>
+<span>  boats_in_transit <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"include"</span>, <span class="st">"exclude"</span>, <span class="st">"adjust"</span><span class="op">)</span>,</span>
+<span>  calibration_data <span class="op">=</span> <span class="cn">NULL</span>,   <span class="co"># Ground truth for validation</span></span>
+<span>  flight_coverage <span class="op">=</span> <span class="cn">NULL</span>,    <span class="co"># Coverage probability by area</span></span>
+<span>  by <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  svy <span class="op">=</span> <span class="cn">NULL</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Companion function</span></span>
+<span><span class="fu">calc_inflation_factors</span><span class="op">(</span></span>
+<span>  <span class="va">aerial_counts</span>,</span>
+<span>  <span class="va">reference_counts</span>,          <span class="co"># High-res camera or complete counts</span></span>
+<span>  time_periods <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"dawn"</span>, <span class="st">"morning"</span>, <span class="st">"afternoon"</span>, <span class="st">"dusk"</span><span class="op">)</span>,</span>
+<span>  method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ratio"</span>, <span class="st">"regression"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<hr></div>
+<div class="section level3">
+<h3 id="id_8--remote-camera-integration">8. 🟢 <strong>Remote Camera Integration</strong>
+<a class="anchor" aria-label="anchor" href="#id_8--remote-camera-integration"></a></h3>
+<p><strong>Status:</strong> Not implemented <strong>Priority:</strong> P2 - Emerging technology <strong>Effort:</strong> 3-4 weeks <strong>Chapter Reference:</strong> Section 17.3.1.2 (van Poorten et al. 2015)</p>
+<p><strong>Missing Components:</strong> - Image analysis workflow - Field-of-view correction - Missing data imputation (camera malfunction, vandalism) - Zero-inflation handling - Hierarchical Bayesian models - Integration with aerial counts</p>
+<p><strong>Implementation:</strong></p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">process_camera_counts</span><span class="op">(</span></span>
+<span>  <span class="va">images</span>,                    <span class="co"># Image metadata with timestamps</span></span>
+<span>  field_of_view <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"partial"</span>, <span class="st">"complete"</span><span class="op">)</span>,</span>
+<span>  missing_data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"interpolate"</span>, <span class="st">"model"</span>, <span class="st">"omit"</span><span class="op">)</span>,</span>
+<span>  validation_counts <span class="op">=</span> <span class="cn">NULL</span>   <span class="co"># Whole-system counts for calibration</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">est_effort_camera</span><span class="op">(</span></span>
+<span>  <span class="va">camera_counts</span>,</span>
+<span>  <span class="va">field_of_view_fraction</span>,    <span class="co"># Proportion of total area visible</span></span>
+<span>  calibration_method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ratio"</span>, <span class="st">"hierarchical_bayes"</span><span class="op">)</span>,</span>
+<span>  whole_system_counts <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  by <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  svy <span class="op">=</span> <span class="cn">NULL</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<hr></div>
+<div class="section level3">
+<h3 id="id_9--hybrid-survey-design-support">9. 🟢 <strong>Hybrid Survey Design Support</strong>
+<a class="anchor" aria-label="anchor" href="#id_9--hybrid-survey-design-support"></a></h3>
+<p><strong>Status:</strong> Mentioned but not fully implemented <strong>Priority:</strong> P2 - Advanced integration <strong>Effort:</strong> 2-3 weeks <strong>Chapter Reference:</strong> Table 17.4, Section 17.3.2</p>
+<p><strong>Missing Components:</strong> - Bus route with interviews (McGlennon &amp; Kinloch 1997) - Access + Roving combined - Aerial + On-site integration - Camera + Creel + Aerial - Postcard surveys - Variance combination across multiple data sources</p>
+<p><strong>Implementation:</strong></p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">design_hybrid</span><span class="op">(</span></span>
+<span>  methods <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"access"</span>, <span class="st">"roving"</span>, <span class="st">"aerial"</span>, <span class="st">"camera"</span>, <span class="st">"postcard"</span><span class="op">)</span>,</span>
+<span>  <span class="va">counts_list</span>,               <span class="co"># Named list of count data by method</span></span>
+<span>  <span class="va">interviews_list</span>,           <span class="co"># Named list of interview data by method</span></span>
+<span>  <span class="va">calendar</span>,</span>
+<span>  combination_method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"hierarchical_bayes"</span>, <span class="st">"glm"</span>, <span class="st">"glmm"</span><span class="op">)</span>,</span>
+<span>  weights <span class="op">=</span> <span class="st">"auto"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">est_effort_hybrid</span><span class="op">(</span></span>
+<span>  <span class="va">design</span>,</span>
+<span>  method_weights <span class="op">=</span> <span class="st">"auto"</span>,   <span class="co"># Effort-based or precision-based</span></span>
+<span>  correlation_structure <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  by <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  svy <span class="op">=</span> <span class="cn">NULL</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<hr></div>
+</div>
+<div class="section level2">
+<h2 id="phase-3---visualization--reporting-4-6-weeks">PHASE 3 - Visualization &amp; Reporting (4-6 weeks)<a class="anchor" aria-label="anchor" href="#phase-3---visualization--reporting-4-6-weeks"></a></h2>
+<div class="section level3">
+<h3 id="id_10--plot_estimates_timeseries">10. 🟡 <strong><code>plot_estimates_timeseries()</code></strong>
+<a class="anchor" aria-label="anchor" href="#id_10--plot_estimates_timeseries"></a></h3>
 <p><strong>Status:</strong> Not implemented <strong>Priority:</strong> P1 - Essential for reporting <strong>Effort:</strong> 1-2 weeks</p>
 <p><strong>Description:</strong> Professional time series visualization with confidence bands, faceting, and reference lines.</p>
-<p><strong>Function Signature:</strong></p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">plot_estimates_timeseries</span><span class="op">(</span></span>
-<span>  <span class="va">estimates</span>,            <span class="co"># Tibble from estimation functions</span></span>
+<span>  <span class="va">estimates</span>,</span>
 <span>  x <span class="op">=</span> <span class="st">"date"</span>,</span>
 <span>  y <span class="op">=</span> <span class="st">"estimate"</span>,</span>
 <span>  ci <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  ci_alpha <span class="op">=</span> <span class="fl">0.2</span>,</span>
-<span>  facet_by <span class="op">=</span> <span class="cn">NULL</span>,      <span class="co"># e.g., "species", "location"</span></span>
+<span>  facet_by <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  color_by <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  reference_line <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  title <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  theme <span class="op">=</span> <span class="fu">theme_tidycreel</span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><strong>Features:</strong> - Confidence bands with customizable transparency - Automatic date formatting for x-axis - Faceting by categorical variables - Reference lines (e.g., historical average, management target) - Consistent tidycreel theme - Export-ready quality (print, reports, presentations)</p>
-<p><strong>Example Output:</strong></p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Time series of effort by location</span></span>
-<span><span class="va">effort_est</span> <span class="op">%&gt;%</span></span>
-<span>  <span class="fu">plot_estimates_timeseries</span><span class="op">(</span></span>
-<span>    x <span class="op">=</span> <span class="st">"date"</span>,</span>
-<span>    facet_by <span class="op">=</span> <span class="st">"location"</span>,</span>
-<span>    title <span class="op">=</span> <span class="st">"Fishing Effort by Access Point"</span></span>
-<span>  <span class="op">)</span></span></code></pre></div>
 <hr></div>
-<div class="section level4">
-<h4 id="id_4--plot_catch_composition">4. 🟡 <strong><code>plot_catch_composition()</code></strong>
-<a class="anchor" aria-label="anchor" href="#id_4--plot_catch_composition"></a></h4>
-<p><strong>Status:</strong> Not implemented <strong>Priority:</strong> P1 - Common output for multi-species fisheries <strong>Effort:</strong> 1 week</p>
-<p><strong>Description:</strong> Species composition visualization with confidence intervals, supporting multiple display formats.</p>
-<p><strong>Function Signature:</strong></p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="section level3">
+<h3 id="id_11--plot_catch_composition">11. 🟡 <strong><code>plot_catch_composition()</code></strong>
+<a class="anchor" aria-label="anchor" href="#id_11--plot_catch_composition"></a></h3>
+<p><strong>Status:</strong> Not implemented <strong>Priority:</strong> P1 - Common for multi-species fisheries <strong>Effort:</strong> 1 week</p>
+<p><strong>Description:</strong> Species composition visualization with confidence intervals.</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">plot_catch_composition</span><span class="op">(</span></span>
 <span>  <span class="va">catch_data</span>,</span>
 <span>  by <span class="op">=</span> <span class="st">"species"</span>,</span>
-<span>  type <span class="op">=</span> <span class="st">"bar"</span>,           <span class="co"># "bar", "stacked", "pie", "treemap"</span></span>
-<span>  proportional <span class="op">=</span> <span class="cn">FALSE</span>,   <span class="co"># Show as proportions vs absolute</span></span>
+<span>  type <span class="op">=</span> <span class="st">"bar"</span>,              <span class="co"># "bar", "stacked", "pie", "treemap"</span></span>
+<span>  proportional <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  ci <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  order_by <span class="op">=</span> <span class="st">"estimate"</span>,  <span class="co"># "estimate", "alphabetical", "manual"</span></span>
-<span>  palette <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  order_by <span class="op">=</span> <span class="st">"estimate"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><strong>Features:</strong> - Multiple visualization types - Error bars on bar charts - Proportional and absolute scales - Custom ordering and colors - Legend management</p>
 <hr></div>
-<div class="section level4">
-<h4 id="id_5--compare_estimates">5. 🟢 <strong><code>compare_estimates()</code></strong>
-<a class="anchor" aria-label="anchor" href="#id_5--compare_estimates"></a></h4>
-<p><strong>Status:</strong> Not implemented <strong>Priority:</strong> P2 - Useful for sensitivity analysis <strong>Effort:</strong> 1 week</p>
-<p><strong>Description:</strong> Side-by-side comparison of different estimation methods, models, or time periods.</p>
-<p><strong>Function Signature:</strong></p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">compare_estimates</span><span class="op">(</span></span>
-<span>  <span class="va">estimate_list</span>,        <span class="co"># Named list of estimate tibbles</span></span>
-<span>  metric <span class="op">=</span> <span class="st">"estimate"</span>,</span>
-<span>  show_ci <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  format <span class="op">=</span> <span class="st">"table"</span>,     <span class="co"># "table", "plot", "both"</span></span>
-<span>  test_differences <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p><strong>Outputs:</strong> - Comparison table with all estimates - Optional forest plot showing estimates with CIs - Difference calculations with significance tests - Relative differences (% change)</p>
-<p><strong>Use Cases:</strong> - Compare ratio-of-means vs mean-of-ratios - Compare years (2024 vs 2023) - Sensitivity to design assumptions - Method validation</p>
-<hr></div>
-</div>
 <div class="section level3">
-<h3 id="phase-2---survey-planning--advanced-methods-months-2-3">PHASE 2 - Survey Planning &amp; Advanced Methods (Months 2-3)<a class="anchor" aria-label="anchor" href="#phase-2---survey-planning--advanced-methods-months-2-3"></a></h3>
-<div class="section level4">
-<h4 id="id_6--est_effort_tiein">6. 🟢 <strong><code>est_effort_tiein()</code></strong>
-<a class="anchor" aria-label="anchor" href="#id_6--est_effort_tiein"></a></h4>
-<p><strong>Status:</strong> Not implemented <strong>Priority:</strong> P2 - Classic methodology, some agencies require <strong>Effort:</strong> 2-3 weeks</p>
-<p><strong>Description:</strong> Classic Robson &amp; Jones (1989) tie-in estimator combining interview and count data.</p>
-<p><strong>Function Signature:</strong></p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">est_effort_tiein</span><span class="op">(</span></span>
-<span>  <span class="va">interviews</span>,</span>
-<span>  <span class="va">counts</span>,</span>
-<span>  <span class="va">svy_day</span>,</span>
-<span>  by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"date"</span>, <span class="st">"location"</span><span class="op">)</span>,</span>
-<span>  party_hours_col <span class="op">=</span> <span class="st">"hours_fished"</span>,</span>
-<span>  count_col <span class="op">=</span> <span class="st">"parties_count"</span>,</span>
-<span>  method <span class="op">=</span> <span class="st">"traditional"</span>  <span class="co"># "traditional", "stratified"</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p><strong>Statistical Method:</strong> 1. From interviews: estimate mean party hours per unit time 2. From counts: total parties observed 3. Product: total effort = mean party hours × total parties 4. Variance via delta method</p>
-<p><strong>References:</strong> - Robson &amp; Jones (1989) - “The Theoretical Basis of an Access Site Angler Survey Design” - Pollock et al. (1994) - “Angler Survey Methods and Their Applications in Fisheries Management”</p>
-<hr></div>
-<div class="section level4">
-<h4 id="id_7--calc_sample_size">7. 🟢 <strong><code>calc_sample_size()</code></strong>
-<a class="anchor" aria-label="anchor" href="#id_7--calc_sample_size"></a></h4>
-<p><strong>Status:</strong> Not implemented <strong>Priority:</strong> P2 - Essential for survey planning <strong>Effort:</strong> 2 weeks</p>
-<p><strong>Description:</strong> Power analysis and sample size determination for creel surveys.</p>
-<p><strong>Function Signature:</strong></p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">calc_sample_size</span><span class="op">(</span></span>
-<span>  target_cv <span class="op">=</span> <span class="fl">0.2</span>,        <span class="co"># Target coefficient of variation</span></span>
-<span>  expected_mean <span class="op">=</span> <span class="cn">NULL</span>,   <span class="co"># Expected estimate value</span></span>
-<span>  expected_sd <span class="op">=</span> <span class="cn">NULL</span>,     <span class="co"># Expected standard deviation</span></span>
-<span>  power <span class="op">=</span> <span class="fl">0.8</span>,</span>
-<span>  alpha <span class="op">=</span> <span class="fl">0.05</span>,</span>
-<span>  design_effect <span class="op">=</span> <span class="fl">1.5</span>,    <span class="co"># Clustering effect</span></span>
-<span>  finite_pop <span class="op">=</span> <span class="cn">FALSE</span>,     <span class="co"># Apply FPC?</span></span>
-<span>  method <span class="op">=</span> <span class="st">"cv"</span>           <span class="co"># "cv", "power", "precision"</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p><strong>Methods:</strong> - <strong>CV-based:</strong> Determine n for target CV - <strong>Power-based:</strong> Detect minimum effect size - <strong>Precision-based:</strong> Achieve target CI width</p>
-<p><strong>Outputs:</strong> - Required sample size - Expected precision - Design effect adjustment - Budget implications (if costs provided)</p>
-<hr></div>
-<div class="section level4">
-<h4 id="id_8--sample_allocation">8. 🟢 <strong><code>sample_allocation()</code></strong>
-<a class="anchor" aria-label="anchor" href="#id_8--sample_allocation"></a></h4>
-<p><strong>Status:</strong> Not implemented <strong>Priority:</strong> P2 - Optimize survey design <strong>Effort:</strong> 1-2 weeks</p>
-<p><strong>Description:</strong> Optimal allocation of sampling effort across strata.</p>
-<p><strong>Function Signature:</strong></p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">sample_allocation</span><span class="op">(</span></span>
-<span>  <span class="va">total_n</span>,</span>
-<span>  <span class="va">strata_sizes</span>,         <span class="co"># Population sizes by stratum</span></span>
-<span>  <span class="va">strata_variance</span>,      <span class="co"># Expected variance by stratum</span></span>
-<span>  method <span class="op">=</span> <span class="st">"neyman"</span>,    <span class="co"># "neyman", "proportional", "equal", "cost_optimal"</span></span>
-<span>  costs <span class="op">=</span> <span class="cn">NULL</span>,         <span class="co"># Relative costs by stratum</span></span>
-<span>  min_per_stratum <span class="op">=</span> <span class="fl">2</span>   <span class="co"># Minimum sample per stratum</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p><strong>Methods:</strong> - <strong>Neyman allocation:</strong> Minimize variance for fixed n - <strong>Proportional:</strong> Allocate proportional to stratum size - <strong>Equal:</strong> Equal samples per stratum - <strong>Cost-optimal:</strong> Minimize cost for target precision</p>
-<p><strong>Use Cases:</strong> - Allocate interview days across weekday/weekend - Distribute effort across access points - Balance temporal coverage (months, seasons)</p>
-<hr></div>
-<div class="section level4">
-<h4 id="id_9--est_length_dist">9. 🟢 <strong><code>est_length_dist()</code></strong>
-<a class="anchor" aria-label="anchor" href="#id_9--est_length_dist"></a></h4>
-<p><strong>Status:</strong> Not implemented <strong>Priority:</strong> P2 - Common biological data analysis <strong>Effort:</strong> 2 weeks</p>
-<p><strong>Description:</strong> Survey-weighted length frequency distribution with proper variance estimation.</p>
-<p><strong>Function Signature:</strong></p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">est_length_dist</span><span class="op">(</span></span>
-<span>  <span class="va">length_data</span>,</span>
-<span>  <span class="va">svy_design</span>,</span>
-<span>  by <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  bins <span class="op">=</span> <span class="cn">NULL</span>,            <span class="co"># Or specify breaks</span></span>
-<span>  min_length <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  max_length <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  bin_width <span class="op">=</span> <span class="fl">10</span>,         <span class="co"># mm or cm</span></span>
-<span>  proportional <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p><strong>Features:</strong> - Survey-weighted frequencies - Variance estimation for each bin - Flexible binning strategies - Handles multiple species - Integration with length-weight relationships</p>
-<p><strong>Outputs:</strong> - Length frequency table with CIs - Mean length by group - Size structure metrics (PSD, RSD)</p>
-<hr></div>
-<div class="section level4">
-<h4 id="id_10--creel_report">10. 🟢 <strong><code>creel_report()</code></strong>
-<a class="anchor" aria-label="anchor" href="#id_10--creel_report"></a></h4>
-<p><strong>Status:</strong> Not implemented <strong>Priority:</strong> P2 - Automate routine reporting <strong>Effort:</strong> 3-4 weeks</p>
-<p><strong>Description:</strong> Automated comprehensive report generation for creel surveys.</p>
-<p><strong>Function Signature:</strong></p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">creel_report</span><span class="op">(</span></span>
-<span>  <span class="va">design</span>,</span>
-<span>  <span class="va">interviews</span>,</span>
-<span>  <span class="va">counts</span>,</span>
-<span>  <span class="va">calendar</span>,</span>
-<span>  output_file <span class="op">=</span> <span class="st">"creel_report.html"</span>,</span>
-<span>  template <span class="op">=</span> <span class="st">"standard"</span>,  <span class="co"># "standard", "detailed", "summary", "custom"</span></span>
-<span>  include_sections <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"effort"</span>, <span class="st">"cpue"</span>, <span class="st">"catch"</span>, <span class="st">"length"</span>, <span class="st">"diagnostics"</span><span class="op">)</span>,</span>
-<span>  custom_sections <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  parameters <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>     <span class="co"># Report parameters (title, dates, waterbody, etc.)</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p><strong>Report Sections:</strong> - Executive summary with key findings - Survey design description - Data quality metrics - Effort estimates with temporal patterns - CPUE by species/group - Total harvest estimates - Length distributions - Diagnostic plots - Methods and references</p>
-<p><strong>Output Formats:</strong> - HTML (interactive, embedded plots) - PDF (print-ready) - Word (editable)</p>
-<p><strong>Template System:</strong> - Built-in templates for common report types - Customizable via Quarto/RMarkdown - Agency-specific branding options</p>
-<hr></div>
-</div>
-</div>
-<div class="section level2">
-<h2 id="additional-functions-by-category">Additional Functions by Category<a class="anchor" aria-label="anchor" href="#additional-functions-by-category"></a></h2>
-<div class="section level3">
-<h3 id="data-quality--qaqc">Data Quality &amp; QA/QC<a class="anchor" aria-label="anchor" href="#data-quality--qaqc"></a></h3>
-<div class="section level4">
-<h4 id="detect_outliers"><code>detect_outliers()</code><a class="anchor" aria-label="anchor" href="#detect_outliers"></a></h4>
-<p><strong>Priority:</strong> P3 <strong>Effort:</strong> 1 week</p>
-<p>Identify and flag outliers in creel data using multiple methods.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">detect_outliers</span><span class="op">(</span></span>
-<span>  <span class="va">data</span>,</span>
-<span>  vars <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"catch_total"</span>, <span class="st">"hours_fished"</span>, <span class="st">"cpue"</span><span class="op">)</span>,</span>
-<span>  method <span class="op">=</span> <span class="st">"iqr"</span>,         <span class="co"># "iqr", "mad", "dixon", "grubbs", "mahalanobis"</span></span>
-<span>  action <span class="op">=</span> <span class="st">"flag"</span>,        <span class="co"># "flag", "remove", "winsorize"</span></span>
-<span>  multiplier <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  by <span class="op">=</span> <span class="cn">NULL</span>               <span class="co"># Group-specific outlier detection</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p><strong>Methods:</strong> - IQR rule (Q1 - k×IQR, Q3 + k×IQR) - MAD (median absolute deviation) - Dixon’s Q test - Grubbs’ test - Multivariate (Mahalanobis distance)</p>
-<hr></div>
-<div class="section level4">
-<h4 id="survey_coverage_report"><code>survey_coverage_report()</code><a class="anchor" aria-label="anchor" href="#survey_coverage_report"></a></h4>
-<p><strong>Priority:</strong> P3 <strong>Effort:</strong> 1 week</p>
-<p>Assess temporal and spatial coverage of survey effort.</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">survey_coverage_report</span><span class="op">(</span></span>
-<span>  <span class="va">calendar</span>,</span>
-<span>  <span class="va">actual_days</span>,</span>
-<span>  target_coverage <span class="op">=</span> <span class="fl">0.8</span>,</span>
-<span>  by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"month"</span>, <span class="st">"day_type"</span>, <span class="st">"location"</span><span class="op">)</span>,</span>
-<span>  visualize <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p><strong>Metrics:</strong> - Percent of strata sampled - Days sampled per stratum - Gap analysis (unsampled periods) - Coverage uniformity index - Recommendations for additional sampling</p>
-<hr></div>
-<div class="section level4">
-<h4 id="qa_report"><code>qa_report()</code><a class="anchor" aria-label="anchor" href="#qa_report"></a></h4>
-<p><strong>Priority:</strong> P3 <strong>Effort:</strong> 2 weeks</p>
-<p>Comprehensive data quality report.</p>
+<h3 id="id_12--diagnostic-plots">12. 🟢 <strong>Diagnostic Plots</strong>
+<a class="anchor" aria-label="anchor" href="#id_12--diagnostic-plots"></a></h3>
+<p><strong>Status:</strong> Not implemented <strong>Priority:</strong> P2 - Enhance analysis quality <strong>Effort:</strong> 2-3 weeks</p>
+<p><strong>Needed Plots:</strong> - Residual plots for CPUE models - Variance component visualization - QA/QC diagnostic dashboards - Outlier detection plots - Coverage assessment maps - Sample size simulation plots</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">qa_report</span><span class="op">(</span></span>
-<span>  <span class="va">interviews</span>,</span>
-<span>  <span class="va">counts</span>,</span>
-<span>  <span class="va">calendar</span>,</span>
-<span>  checks <span class="op">=</span> <span class="st">"all"</span>,         <span class="co"># Specify which checks to run</span></span>
-<span>  output_format <span class="op">=</span> <span class="st">"html"</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p><strong>Checks:</strong> - Missing data patterns - Duplicate detection - Date/time consistency - Outlier flagging - Cross-table validation (interviews match calendar dates) - Species code validation - Effort unit consistency - Interview quality metrics (response rate, refusals)</p>
-<hr></div>
-</div>
-<div class="section level3">
-<h3 id="biological-extensions">Biological Extensions<a class="anchor" aria-label="anchor" href="#biological-extensions"></a></h3>
-<div class="section level4">
-<h4 id="est_mean_length"><code>est_mean_length()</code><a class="anchor" aria-label="anchor" href="#est_mean_length"></a></h4>
-<p><strong>Priority:</strong> P3 <strong>Effort:</strong> 1 week</p>
-<p>Survey-weighted mean length by group.</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">est_mean_length</span><span class="op">(</span></span>
-<span>  <span class="va">length_data</span>,</span>
-<span>  <span class="va">svy_design</span>,</span>
-<span>  by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"species"</span><span class="op">)</span>,</span>
-<span>  length_col <span class="op">=</span> <span class="st">"length_mm"</span>,</span>
-<span>  conf_level <span class="op">=</span> <span class="fl">0.95</span></span>
+<code class="sourceCode R"><span><span class="fu">plot_diagnostics</span><span class="op">(</span></span>
+<span>  <span class="va">effort_est</span>,</span>
+<span>  type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"residuals"</span>, <span class="st">"qq"</span>, <span class="st">"influence"</span>, <span class="st">"coverage"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">plot_variance_components</span><span class="op">(</span></span>
+<span>  <span class="va">variance_decomp</span>,</span>
+<span>  type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"nested_barplot"</span>, <span class="st">"table"</span>, <span class="st">"pie"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">plot_qa_dashboard</span><span class="op">(</span></span>
+<span>  <span class="va">qa_results</span>,</span>
+<span>  highlight <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"errors"</span>, <span class="st">"warnings"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <hr></div>
-<div class="section level4">
-<h4 id="create_age_length_key"><code>create_age_length_key()</code><a class="anchor" aria-label="anchor" href="#create_age_length_key"></a></h4>
-<p><strong>Priority:</strong> P4 (specialized) <strong>Effort:</strong> 2 weeks</p>
-<p>Create and apply age-length keys for age composition estimation.</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">create_age_length_key</span><span class="op">(</span></span>
-<span>  <span class="va">aged_sample</span>,</span>
-<span>  <span class="va">length_bins</span>,</span>
-<span>  method <span class="op">=</span> <span class="st">"traditional"</span>  <span class="co"># "traditional", "smooth"</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<hr></div>
-<div class="section level4">
-<h4 id="est_mortality_proxy"><code>est_mortality_proxy()</code><a class="anchor" aria-label="anchor" href="#est_mortality_proxy"></a></h4>
-<p><strong>Priority:</strong> P4 (specialized) <strong>Effort:</strong> 2 weeks</p>
-<p>Estimate fishing mortality indices from catch rates.</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">est_mortality_proxy</span><span class="op">(</span></span>
-<span>  <span class="va">catch_data</span>,</span>
-<span>  <span class="va">effort_data</span>,</span>
-<span>  by <span class="op">=</span> <span class="st">"year"</span>,</span>
-<span>  method <span class="op">=</span> <span class="st">"catch_rate"</span>   <span class="co"># "catch_rate", "exploitation_rate"</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<hr></div>
-</div>
-<div class="section level3">
-<h3 id="advanced-diagnostics">Advanced Diagnostics<a class="anchor" aria-label="anchor" href="#advanced-diagnostics"></a></h3>
-<div class="section level4">
-<h4 id="model_diagnostics"><code>model_diagnostics()</code><a class="anchor" aria-label="anchor" href="#model_diagnostics"></a></h4>
-<p><strong>Priority:</strong> P3 <strong>Effort:</strong> 2 weeks</p>
-<p>Residual analysis and goodness-of-fit tests.</p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">model_diagnostics</span><span class="op">(</span></span>
-<span>  <span class="va">estimates</span>,</span>
-<span>  <span class="va">data</span>,</span>
-<span>  tests <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"shapiro"</span>, <span class="st">"ks"</span>, <span class="st">"levene"</span><span class="op">)</span>,</span>
-<span>  plot <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p><strong>Diagnostics:</strong> - Residual plots - Q-Q plots - Leverage and influence - Goodness-of-fit tests - Variance homogeneity</p>
-<hr></div>
-<div class="section level4">
-<h4 id="bootstrap_estimates"><code>bootstrap_estimates()</code><a class="anchor" aria-label="anchor" href="#bootstrap_estimates"></a></h4>
-<p><strong>Priority:</strong> P3 <strong>Effort:</strong> 2 weeks</p>
-<p>Bootstrap resampling for robust confidence intervals.</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">bootstrap_estimates</span><span class="op">(</span></span>
-<span>  <span class="va">estimator_function</span>,</span>
-<span>  <span class="va">data</span>,</span>
-<span>  <span class="va">svy_design</span>,</span>
-<span>  n_boot <span class="op">=</span> <span class="fl">1000</span>,</span>
-<span>  method <span class="op">=</span> <span class="st">"stratified"</span>,  <span class="co"># "stratified", "cluster", "simple"</span></span>
-<span>  parallel <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<hr></div>
-<div class="section level4">
-<h4 id="sensitivity_analysis"><code>sensitivity_analysis()</code><a class="anchor" aria-label="anchor" href="#sensitivity_analysis"></a></h4>
-<p><strong>Priority:</strong> P3 <strong>Effort:</strong> 2 weeks</p>
-<p>Systematically vary assumptions and assess impact.</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">sensitivity_analysis</span><span class="op">(</span></span>
-<span>  <span class="va">estimator_function</span>,</span>
-<span>  <span class="va">data</span>,</span>
-<span>  <span class="va">parameters</span>,</span>
-<span>  <span class="va">ranges</span>,               <span class="co"># Parameter ranges to test</span></span>
-<span>  metrics <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"estimate"</span>, <span class="st">"cv"</span>, <span class="st">"ci_width"</span><span class="op">)</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<hr></div>
-</div>
-<div class="section level3">
-<h3 id="multi-year-analysis">Multi-year Analysis<a class="anchor" aria-label="anchor" href="#multi-year-analysis"></a></h3>
-<div class="section level4">
-<h4 id="combine_years"><code>combine_years()</code><a class="anchor" aria-label="anchor" href="#combine_years"></a></h4>
-<p><strong>Priority:</strong> P3 <strong>Effort:</strong> 2 weeks</p>
-<p>Meta-analysis combining multiple years of data.</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">combine_years</span><span class="op">(</span></span>
-<span>  <span class="va">year_list</span>,            <span class="co"># List of annual estimates</span></span>
-<span>  method <span class="op">=</span> <span class="st">"meta"</span>,      <span class="co"># "meta", "pooled", "average"</span></span>
-<span>  weights <span class="op">=</span> <span class="cn">NULL</span>,       <span class="co"># Optional weights (e.g., by precision)</span></span>
-<span>  test_homogeneity <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<hr></div>
-<div class="section level4">
-<h4 id="trend_analysis"><code>trend_analysis()</code><a class="anchor" aria-label="anchor" href="#trend_analysis"></a></h4>
-<p><strong>Priority:</strong> P3 <strong>Effort:</strong> 2-3 weeks</p>
-<p>Temporal trend estimation with survey design.</p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">trend_analysis</span><span class="op">(</span></span>
-<span>  <span class="va">multi_year_data</span>,</span>
-<span>  <span class="va">response</span>,</span>
-<span>  time_var <span class="op">=</span> <span class="st">"year"</span>,</span>
-<span>  by <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  method <span class="op">=</span> <span class="st">"regression"</span>, <span class="co"># "regression", "mann_kendall", "loess"</span></span>
-<span>  svy_design <span class="op">=</span> <span class="cn">NULL</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p><strong>Methods:</strong> - Survey-weighted regression - Mann-Kendall trend test - Locally weighted smoothing (LOESS) - Change point detection</p>
-<hr></div>
-<div class="section level4">
-<h4 id="detect_changepoints"><code>detect_changepoints()</code><a class="anchor" aria-label="anchor" href="#detect_changepoints"></a></h4>
-<p><strong>Priority:</strong> P4 (specialized) <strong>Effort:</strong> 2 weeks</p>
-<p>Identify regime shifts in time series data.</p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">detect_changepoints</span><span class="op">(</span></span>
-<span>  <span class="va">time_series_data</span>,</span>
-<span>  <span class="va">response</span>,</span>
-<span>  method <span class="op">=</span> <span class="st">"pettitt"</span>,    <span class="co"># "pettitt", "bcp", "segmented"</span></span>
-<span>  confidence <span class="op">=</span> <span class="fl">0.95</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<hr></div>
-</div>
 </div>
 <div class="section level2">
-<h2 id="enhanced-visualization-suite">Enhanced Visualization Suite<a class="anchor" aria-label="anchor" href="#enhanced-visualization-suite"></a></h2>
+<h2 id="phase-4---documentation--refinement-ongoing">PHASE 4 - Documentation &amp; Refinement (Ongoing)<a class="anchor" aria-label="anchor" href="#phase-4---documentation--refinement-ongoing"></a></h2>
 <div class="section level3">
-<h3 id="priority-plots-beyond-top-10">Priority Plots (Beyond Top 10)<a class="anchor" aria-label="anchor" href="#priority-plots-beyond-top-10"></a></h3>
-<div class="section level4">
-<h4 id="plot_effort_distribution"><code>plot_effort_distribution()</code><a class="anchor" aria-label="anchor" href="#plot_effort_distribution"></a></h4>
-<p><strong>Priority:</strong> P2 <strong>Effort:</strong> 1 week</p>
-<p>Visualize effort distribution by time/space.</p>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">plot_effort_distribution</span><span class="op">(</span></span>
-<span>  <span class="va">effort_data</span>,</span>
-<span>  type <span class="op">=</span> <span class="st">"histogram"</span>,    <span class="co"># "histogram", "density", "violin"</span></span>
-<span>  by <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  overlay_normal <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<h3 id="id_13--comprehensive-vignette-suite">13. 🔴 <strong>Comprehensive Vignette Suite</strong>
+<a class="anchor" aria-label="anchor" href="#id_13--comprehensive-vignette-suite"></a></h3>
+<p><strong>Status:</strong> Basic vignettes exist <strong>Priority:</strong> P0 - Critical for adoption <strong>Effort:</strong> Ongoing</p>
+<p><strong>Missing Vignettes:</strong></p>
+<ol style="list-style-type: decimal"><li>
+<strong>“Choosing the Right Design”</strong> - Decision tree for method selection</li>
+<li>
+<strong>“Roving vs Access-Point Surveys”</strong> - When to use each, variance implications</li>
+<li>
+<strong>“Sample Size Planning”</strong> - Power analysis workflow</li>
+<li>
+<strong>“Data Quality Best Practices”</strong> - Avoiding common mistakes (Table 17.3)</li>
+<li>
+<strong>“Angler Segmentation”</strong> - How and when to stratify</li>
+<li>
+<strong>“Hybrid Designs”</strong> - Combining multiple data sources</li>
+<li>
+<strong>“Understanding Variance”</strong> - Variance decomposition and optimization</li>
+<li>
+<strong>“Species Aggregation”</strong> - Using aggregate_cpue() correctly</li>
+<li>
+<strong>“Complete Workflow”</strong> - End-to-end example with real data</li>
+</ol><hr></div>
+<div class="section level3">
+<h3 id="id_14--enhanced-data-validation">14. 🟡 <strong>Enhanced Data Validation</strong>
+<a class="anchor" aria-label="anchor" href="#id_14--enhanced-data-validation"></a></h3>
+<p><strong>Status:</strong> Basic validation exists <strong>Priority:</strong> P1 - Part of QA/QC framework <strong>Effort:</strong> Integrated with Item 2</p>
+<p>Expand current validation in <code>R/data-schemas.R</code> and <code>R/validation.R</code></p>
 <hr></div>
-<div class="section level4">
-<h4 id="plot_model_comparison"><code>plot_model_comparison()</code><a class="anchor" aria-label="anchor" href="#plot_model_comparison"></a></h4>
-<p><strong>Priority:</strong> P2 <strong>Effort:</strong> 1 week</p>
-<p>Visual comparison of different models/methods.</p>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">plot_model_comparison</span><span class="op">(</span></span>
-<span>  <span class="va">model_results</span>,</span>
-<span>  type <span class="op">=</span> <span class="st">"forest"</span>,       <span class="co"># "forest", "bar", "table"</span></span>
-<span>  metric <span class="op">=</span> <span class="st">"estimate"</span>,</span>
-<span>  show_aic <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p><strong>Outputs:</strong> - Forest plot with estimates and CIs - AIC comparison table - Relative effect sizes</p>
+<div class="section level3">
+<h3 id="id_15--additional-helper-functions">15. 🟢 <strong>Additional Helper Functions</strong>
+<a class="anchor" aria-label="anchor" href="#id_15--additional-helper-functions"></a></h3>
+<p><strong>Status:</strong> Various <strong>Priority:</strong> P2 - Nice to have <strong>Effort:</strong> 1-2 weeks total</p>
+<p><strong>Functions Needed:</strong> - <code>expand_party_to_angler()</code> - Convert party counts to angler counts - <code>calc_angler_hours()</code> - Standardized effort calculation - <code>standardize_species_codes()</code> - Species name harmonization - <code>convert_units()</code> - Length/weight unit conversions - <code>impute_missing_effort()</code> - Handle incomplete trip data - <code>flag_outliers()</code> - Statistical outlier detection - <code>merge_interview_biological()</code> - Link interview and bio data</p>
 <hr></div>
-<div class="section level4">
-<h4 id="plot_length_frequency"><code>plot_length_frequency()</code><a class="anchor" aria-label="anchor" href="#plot_length_frequency"></a></h4>
-<p><strong>Priority:</strong> P2 <strong>Effort:</strong> 1 week</p>
-<p>Length frequency histograms with confidence intervals.</p>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">plot_length_frequency</span><span class="op">(</span></span>
-<span>  <span class="va">length_data</span>,</span>
-<span>  by <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  bins <span class="op">=</span> <span class="fl">20</span>,</span>
-<span>  ci <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  reference_lengths <span class="op">=</span> <span class="cn">NULL</span>  <span class="co"># e.g., size limits</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<hr></div>
-<div class="section level4">
-<h4 id="plot_catch_map-spatial">
-<code>plot_catch_map()</code> (Spatial)<a class="anchor" aria-label="anchor" href="#plot_catch_map-spatial"></a></h4>
-<p><strong>Priority:</strong> P4 (if spatial scope expands) <strong>Effort:</strong> 2 weeks</p>
-<p>Spatial distribution of catch/effort.</p>
-<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">plot_catch_map</span><span class="op">(</span></span>
-<span>  <span class="va">catch_data</span>,</span>
-<span>  <span class="va">locations</span>,            <span class="co"># Spatial coordinates</span></span>
-<span>  metric <span class="op">=</span> <span class="st">"cpue"</span>,</span>
-<span>  map_type <span class="op">=</span> <span class="st">"point"</span>    <span class="co"># "point", "heatmap", "polygon"</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<hr></div>
-</div>
 </div>
 <div class="section level2">
-<h2 id="implementation-strategy">Implementation Strategy<a class="anchor" aria-label="anchor" href="#implementation-strategy"></a></h2>
+<h2 id="implementation-timeline">Implementation Timeline<a class="anchor" aria-label="anchor" href="#implementation-timeline"></a></h2>
 <div class="section level3">
-<h3 id="development-phases">Development Phases<a class="anchor" aria-label="anchor" href="#development-phases"></a></h3>
-<div class="section level4">
-<h4 id="sprint-1-critical-gap-closure-weeks-1-4"><strong>SPRINT 1: Critical Gap Closure (Weeks 1-4)</strong><a class="anchor" aria-label="anchor" href="#sprint-1-critical-gap-closure-weeks-1-4"></a></h4>
-<p><strong>Goal:</strong> Enable users to complete full creel analysis workflow</p>
-<p><strong>Deliverables:</strong> 1. <code>est_total_harvest()</code> implemented with tests 2. <code>expand_party_to_angler()</code> implemented with tests 3. Comprehensive vignette: “Complete Creel Analysis Workflow” 4. Update getting-started vignette with harvest example</p>
-<p><strong>Success Criteria:</strong> - [ ] User can estimate total harvest from effort and CPUE - [ ] Variance properly propagated using delta method - [ ] All tests passing with &gt;90% coverage - [ ] Vignette demonstrates end-to-end analysis - [ ] Documentation reviewed by fisheries expert</p>
-<hr></div>
-<div class="section level4">
-<h4 id="sprint-2-visualization--communication-weeks-5-7"><strong>SPRINT 2: Visualization &amp; Communication (Weeks 5-7)</strong><a class="anchor" aria-label="anchor" href="#sprint-2-visualization--communication-weeks-5-7"></a></h4>
-<p><strong>Goal:</strong> Professional-quality plots for reports and presentations</p>
-<p><strong>Deliverables:</strong> 1. <code>plot_estimates_timeseries()</code> - time series with CIs 2. <code>plot_catch_composition()</code> - species composition 3. <code>compare_estimates()</code> - model comparison 4. Visualization vignette with examples 5. Consistent tidycreel theme</p>
-<p><strong>Success Criteria:</strong> - [ ] Plots ready for publication/reports - [ ] Consistent styling across all plots - [ ] Export to common formats (PNG, PDF, SVG) - [ ] Examples in vignettes - [ ] User feedback incorporated</p>
-<hr></div>
-<div class="section level4">
-<h4 id="sprint-3-survey-planning-tools-weeks-8-11"><strong>SPRINT 3: Survey Planning Tools (Weeks 8-11)</strong><a class="anchor" aria-label="anchor" href="#sprint-3-survey-planning-tools-weeks-8-11"></a></h4>
-<p><strong>Goal:</strong> Support survey design and optimization</p>
-<p><strong>Deliverables:</strong> 1. <code>calc_sample_size()</code> - power analysis 2. <code>sample_allocation()</code> - optimal allocation 3. <code>survey_coverage_report()</code> - QA/QC 4. Survey planning vignette</p>
-<p><strong>Success Criteria:</strong> - [ ] Sample size calculations match published methods - [ ] Allocation algorithms validated - [ ] Coverage reports actionable - [ ] Integrated into design workflow</p>
-<hr></div>
-<div class="section level4">
-<h4 id="sprint-4-advanced-methods-weeks-12-16"><strong>SPRINT 4: Advanced Methods (Weeks 12-16)</strong><a class="anchor" aria-label="anchor" href="#sprint-4-advanced-methods-weeks-12-16"></a></h4>
-<p><strong>Goal:</strong> Classic methods and biological extensions</p>
-<p><strong>Deliverables:</strong> 1. <code>est_effort_tiein()</code> - Robson &amp; Jones methodology 2. <code>est_length_dist()</code> - length frequencies 3. <code>est_mean_length()</code> - mean length estimation 4. Biological data vignette</p>
-<p><strong>Success Criteria:</strong> - [ ] Tie-in estimates match published examples - [ ] Length distributions properly weighted - [ ] Integration with size limit regulations - [ ] Validated against known datasets</p>
-<hr></div>
-<div class="section level4">
-<h4 id="sprint-5-reporting--automation-weeks-17-21"><strong>SPRINT 5: Reporting &amp; Automation (Weeks 17-21)</strong><a class="anchor" aria-label="anchor" href="#sprint-5-reporting--automation-weeks-17-21"></a></h4>
-<p><strong>Goal:</strong> Automated report generation</p>
-<p><strong>Deliverables:</strong> 1. <code>creel_report()</code> - comprehensive reports 2. Report templates (standard, detailed, summary) 3. Customization guide 4. Example reports</p>
-<p><strong>Success Criteria:</strong> - [ ] HTML/PDF reports generated automatically - [ ] Templates cover common use cases - [ ] Customization straightforward - [ ] Agency adoption</p>
-<hr></div>
-<div class="section level4">
-<h4 id="sprint-6-data-quality--diagnostics-weeks-22-26"><strong>SPRINT 6: Data Quality &amp; Diagnostics (Weeks 22-26)</strong><a class="anchor" aria-label="anchor" href="#sprint-6-data-quality--diagnostics-weeks-22-26"></a></h4>
-<p><strong>Goal:</strong> Robust QA/QC and diagnostic tools</p>
-<p><strong>Deliverables:</strong> 1. <code>detect_outliers()</code> - outlier detection 2. <code>qa_report()</code> - comprehensive QA 3. <code>model_diagnostics()</code> - goodness-of-fit 4. Quality assurance vignette</p>
-<p><strong>Success Criteria:</strong> - [ ] Outlier detection algorithms validated - [ ] QA reports catch common errors - [ ] Diagnostics guide interpretation - [ ] Integration into workflow</p>
-<hr></div>
-</div>
-<div class="section level3">
-<h3 id="design-principles">Design Principles<a class="anchor" aria-label="anchor" href="#design-principles"></a></h3>
-<div class="section level4">
-<h4 id="id_1-survey-first-consistency">1. <strong>Survey-First Consistency</strong>
-<a class="anchor" aria-label="anchor" href="#id_1-survey-first-consistency"></a></h4>
-<p>All functions must integrate seamlessly with the <code>survey</code> package: - Accept <code>svydesign</code>/<code>svrepdesign</code> objects - Return consistent tibble schema - Preserve survey design properties - Support replicate weights</p>
-<p><strong>Standard Return Schema:</strong></p>
-<div class="sourceCode" id="cb28"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" tabindex="-1"></a><span class="fu">tibble</span>(</span>
-<span id="cb28-2"><a href="#cb28-2" tabindex="-1"></a>  [grouping_vars],</span>
-<span id="cb28-3"><a href="#cb28-3" tabindex="-1"></a>  estimate,</span>
-<span id="cb28-4"><a href="#cb28-4" tabindex="-1"></a>  se,</span>
-<span id="cb28-5"><a href="#cb28-5" tabindex="-1"></a>  ci_low,</span>
-<span id="cb28-6"><a href="#cb28-6" tabindex="-1"></a>  ci_high,</span>
-<span id="cb28-7"><a href="#cb28-7" tabindex="-1"></a>  n,</span>
-<span id="cb28-8"><a href="#cb28-8" tabindex="-1"></a>  method,</span>
-<span id="cb28-9"><a href="#cb28-9" tabindex="-1"></a>  diagnostics  <span class="co"># list-column with additional info</span></span>
-<span id="cb28-10"><a href="#cb28-10" tabindex="-1"></a>)</span></code></pre></div>
-<hr></div>
-<div class="section level4">
-<h4 id="id_2-composability--pipe-friendliness">2. <strong>Composability &amp; Pipe-Friendliness</strong>
-<a class="anchor" aria-label="anchor" href="#id_2-composability--pipe-friendliness"></a></h4>
-<p>Functions should work together seamlessly:</p>
-<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Example: Complete workflow</span></span>
-<span><span class="va">svy_day</span> <span class="op">%&gt;%</span></span>
-<span>  <span class="fu"><a href="reference/est_effort.html">est_effort</a></span><span class="op">(</span><span class="va">counts</span>, method <span class="op">=</span> <span class="st">"instantaneous"</span><span class="op">)</span> <span class="op">%&gt;%</span></span>
-<span>  <span class="fu">combine_with_cpue</span><span class="op">(</span><span class="va">cpue_est</span><span class="op">)</span> <span class="op">%&gt;%</span></span>
-<span>  <span class="fu">est_total_harvest</span><span class="op">(</span><span class="op">)</span> <span class="op">%&gt;%</span></span>
-<span>  <span class="fu">plot_estimates_timeseries</span><span class="op">(</span>facet_by <span class="op">=</span> <span class="st">"location"</span><span class="op">)</span></span></code></pre></div>
-<hr></div>
-<div class="section level4">
-<h4 id="id_3-defensive-programming">3. <strong>Defensive Programming</strong>
-<a class="anchor" aria-label="anchor" href="#id_3-defensive-programming"></a></h4>
-<ul><li>Validate inputs rigorously</li>
-<li>Informative error messages (use <code>cli</code> package)</li>
-<li>Warn about potential issues (lonely PSUs, small samples)</li>
-<li>Handle edge cases gracefully (zero values, missing data)</li>
-<li>Document assumptions clearly</li>
-</ul><p><strong>Example Error Message:</strong></p>
-<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">by</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">effort_est</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu">cli</span><span class="fu">::</span><span class="fu"><a href="https://cli.r-lib.org/reference/cli_abort.html" class="external-link">cli_abort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
-<span>    <span class="st">"x"</span> <span class="op">=</span> <span class="st">"Grouping variables not found in effort estimates."</span>,</span>
-<span>    <span class="st">"i"</span> <span class="op">=</span> <span class="st">"Available variables: {.field {names(effort_est)}}"</span>,</span>
-<span>    <span class="st">"!"</span> <span class="op">=</span> <span class="st">"Missing: {.field {setdiff(by, names(effort_est))}}"</span></span>
-<span>  <span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">}</span></span></code></pre></div>
-<hr></div>
-<div class="section level4">
-<h4 id="id_4-performance-considerations">4. <strong>Performance Considerations</strong>
-<a class="anchor" aria-label="anchor" href="#id_4-performance-considerations"></a></h4>
-<ul><li>Vectorize operations (avoid loops)</li>
-<li>Use grouped operations (<code><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">dplyr::group_by()</a></code> + <code>summarise()</code>)</li>
-<li>Lazy evaluation where possible</li>
-<li>Profile bottlenecks for large datasets</li>
-<li>Consider parallel processing for bootstrap/permutation tests</li>
-</ul><hr></div>
-<div class="section level4">
-<h4 id="id_5-testing-strategy">5. <strong>Testing Strategy</strong>
-<a class="anchor" aria-label="anchor" href="#id_5-testing-strategy"></a></h4>
-<p><strong>Test Coverage Targets:</strong> - Unit tests: &gt;90% coverage for all functions - Integration tests: Complete workflows - Validation tests: Compare to published results - Edge case tests: Extreme values, missing data, single groups</p>
-<p><strong>Test Data:</strong> - Synthetic data with known properties - Published datasets with expected results - Edge cases and boundary conditions</p>
-<p><strong>Example Test Structure:</strong></p>
-<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">test_that</span><span class="op">(</span><span class="st">"est_total_harvest multiplies effort and CPUE"</span>, <span class="op">{</span></span>
-<span>  <span class="co"># Known inputs</span></span>
-<span>  <span class="va">effort</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="op">(</span>estimate <span class="op">=</span> <span class="fl">1000</span>, se <span class="op">=</span> <span class="fl">100</span>, species <span class="op">=</span> <span class="st">"bass"</span><span class="op">)</span></span>
-<span>  <span class="va">cpue</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="op">(</span>estimate <span class="op">=</span> <span class="fl">2</span>, se <span class="op">=</span> <span class="fl">0.2</span>, species <span class="op">=</span> <span class="st">"bass"</span><span class="op">)</span></span>
-<span></span>
-<span>  <span class="co"># Expected output</span></span>
-<span>  <span class="va">expected_harvest</span> <span class="op">&lt;-</span> <span class="fl">2000</span></span>
-<span>  <span class="va">expected_se</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fl">1000</span><span class="op">^</span><span class="fl">2</span> <span class="op">*</span> <span class="fl">0.2</span><span class="op">^</span><span class="fl">2</span> <span class="op">+</span> <span class="fl">2</span><span class="op">^</span><span class="fl">2</span> <span class="op">*</span> <span class="fl">100</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span>  <span class="co"># Delta method</span></span>
-<span></span>
-<span>  <span class="co"># Actual</span></span>
-<span>  <span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">est_total_harvest</span><span class="op">(</span><span class="va">effort</span>, <span class="va">cpue</span>, by <span class="op">=</span> <span class="st">"species"</span><span class="op">)</span></span>
-<span></span>
-<span>  <span class="co"># Assertions</span></span>
-<span>  <span class="fu">expect_equal</span><span class="op">(</span><span class="va">result</span><span class="op">$</span><span class="va">estimate</span>, <span class="va">expected_harvest</span><span class="op">)</span></span>
-<span>  <span class="fu">expect_equal</span><span class="op">(</span><span class="va">result</span><span class="op">$</span><span class="va">se</span>, <span class="va">expected_se</span>, tolerance <span class="op">=</span> <span class="fl">0.01</span><span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
-<hr></div>
-<div class="section level4">
-<h4 id="id_6-documentation-standards">6. <strong>Documentation Standards</strong>
-<a class="anchor" aria-label="anchor" href="#id_6-documentation-standards"></a></h4>
-<p><strong>Required for Each Function:</strong> - Clear purpose statement - Parameter descriptions with types and defaults - Return value schema - Statistical methods with references - Examples using toy data - Common use cases - Edge cases and limitations</p>
-<p><strong>Vignette Structure:</strong> - Introduction with learning objectives - Conceptual overview - Step-by-step examples - Real-world applications - Troubleshooting common issues - References to literature</p>
-<hr></div>
-</div>
-</div>
-<div class="section level2">
-<h2 id="priority-matrix">Priority Matrix<a class="anchor" aria-label="anchor" href="#priority-matrix"></a></h2>
-<div class="section level3">
-<h3 id="p0---blocking-must-have-immediately">P0 - Blocking (Must have immediately)<a class="anchor" aria-label="anchor" href="#p0---blocking-must-have-immediately"></a></h3>
-<ul><li>
-<code>est_total_harvest()</code> - Can’t complete analyses without this</li>
+<h3 id="sprint-1-2-weeks-1-4-critical-foundations">Sprint 1-2 (Weeks 1-4): Critical Foundations<a class="anchor" aria-label="anchor" href="#sprint-1-2-weeks-1-4-critical-foundations"></a></h3>
+<ul><li>✅ <strong>Complete:</strong> <code><a href="reference/aggregate_cpue.html">aggregate_cpue()</a></code> and <code><a href="reference/est_total_harvest.html">est_total_harvest()</a></code>
+</li>
+<li>✅ <strong>Complete:</strong> Roving/incomplete trip estimators (<code><a href="reference/est_cpue_roving.html">est_cpue_roving()</a></code>)</li>
+<li>🔲 QA/QC framework (Part 1: Core checks) - <strong>IN PROGRESS</strong>
+</li>
 </ul></div>
 <div class="section level3">
-<h3 id="p1---high-priority-next-2-months">P1 - High Priority (Next 2 months)<a class="anchor" aria-label="anchor" href="#p1---high-priority-next-2-months"></a></h3>
-<ul><li>
-<code>expand_party_to_angler()</code> - Common preprocessing need</li>
-<li>
-<code>plot_estimates_timeseries()</code> - Essential for communication</li>
-<li>
-<code>plot_catch_composition()</code> - Multi-species fisheries</li>
-<li>
-<code>compare_estimates()</code> - Method validation</li>
+<h3 id="sprint-3-4-weeks-5-8-variance--planning">Sprint 3-4 (Weeks 5-8): Variance &amp; Planning<a class="anchor" aria-label="anchor" href="#sprint-3-4-weeks-5-8-variance--planning"></a></h3>
+<ul><li>🔲 Variance component decomposition</li>
+<li>🔲 Sample size determination tools</li>
+<li>🔲 QA/QC framework (Part 2: Reporting)</li>
 </ul></div>
 <div class="section level3">
-<h3 id="p2---medium-priority-months-3-5">P2 - Medium Priority (Months 3-5)<a class="anchor" aria-label="anchor" href="#p2---medium-priority-months-3-5"></a></h3>
-<ul><li>
-<code>est_effort_tiein()</code> - Classic methodology</li>
-<li>
-<code>calc_sample_size()</code> - Survey planning</li>
-<li>
-<code>sample_allocation()</code> - Design optimization</li>
-<li>
-<code>est_length_dist()</code> - Biological data</li>
-<li>
-<code>creel_report()</code> - Automated reporting</li>
+<h3 id="sprint-5-6-weeks-9-12-segmentation--enhancement">Sprint 5-6 (Weeks 9-12): Segmentation &amp; Enhancement<a class="anchor" aria-label="anchor" href="#sprint-5-6-weeks-9-12-segmentation--enhancement"></a></h3>
+<ul><li>🔲 Angler segmentation framework</li>
+<li>🔲 Enhanced bus route estimator</li>
+<li>🔲 Vignette suite (Part 1)</li>
 </ul></div>
 <div class="section level3">
-<h3 id="p3---nice-to-have-months-6-12">P3 - Nice to Have (Months 6-12)<a class="anchor" aria-label="anchor" href="#p3---nice-to-have-months-6-12"></a></h3>
-<ul><li>QA/QC tools (<code>detect_outliers()</code>, <code>qa_report()</code>)</li>
-<li>Advanced diagnostics (<code>model_diagnostics()</code>, <code>bootstrap_estimates()</code>)</li>
-<li>Multi-year analysis (<code>combine_years()</code>, <code>trend_analysis()</code>)</li>
-<li>Enhanced visualizations</li>
+<h3 id="sprint-7-8-weeks-13-16-advanced-methods">Sprint 7-8 (Weeks 13-16): Advanced Methods<a class="anchor" aria-label="anchor" href="#sprint-7-8-weeks-13-16-advanced-methods"></a></h3>
+<ul><li>🔲 Aerial survey methods</li>
+<li>🔲 Remote camera integration</li>
+<li>🔲 Hybrid design support</li>
 </ul></div>
 <div class="section level3">
-<h3 id="p4---specialized-future-consideration">P4 - Specialized (Future consideration)<a class="anchor" aria-label="anchor" href="#p4---specialized-future-consideration"></a></h3>
-<ul><li>Age composition estimators</li>
-<li>Economic valuation</li>
-<li>Spatial analysis tools</li>
-<li>Mortality proxies</li>
+<h3 id="sprint-9-10-weeks-17-20-visualization">Sprint 9-10 (Weeks 17-20): Visualization<a class="anchor" aria-label="anchor" href="#sprint-9-10-weeks-17-20-visualization"></a></h3>
+<ul><li>🔲 Time series plots</li>
+<li>🔲 Composition plots</li>
+<li>🔲 Diagnostic plots</li>
+<li>🔲 Vignette suite (Part 2)</li>
+</ul></div>
+<div class="section level3">
+<h3 id="sprint-11-12-weeks-21-24-polish--testing">Sprint 11-12 (Weeks 21-24): Polish &amp; Testing<a class="anchor" aria-label="anchor" href="#sprint-11-12-weeks-21-24-polish--testing"></a></h3>
+<ul><li>🔲 Helper functions</li>
+<li>🔲 Enhanced validation</li>
+<li>🔲 Comprehensive testing</li>
+<li>🔲 Documentation completion</li>
+<li>🔲 CRAN preparation</li>
 </ul><hr></div>
 </div>
 <div class="section level2">
 <h2 id="success-metrics">Success Metrics<a class="anchor" aria-label="anchor" href="#success-metrics"></a></h2>
 <div class="section level3">
-<h3 id="package-completeness">Package Completeness<a class="anchor" aria-label="anchor" href="#package-completeness"></a></h3>
-<ul class="task-list"><li><label><input type="checkbox">100% of core creel workflow implemented</label></li>
-<li><label><input type="checkbox">85%+ of common use cases supported</label></li>
-<li><label><input type="checkbox">&lt;5 critical missing features</label></li>
+<h3 id="package-completeness-targets">Package Completeness Targets<a class="anchor" aria-label="anchor" href="#package-completeness-targets"></a></h3>
+<p><strong>By End of Q1 2026:</strong> - Survey Design &amp; Sampling: 95% - Effort Estimation: 95% - Catch/Harvest Estimation: 95% - Quality Assurance/Control: 85% - Variance Analysis: 90% - Sample Size Planning: 85% - Visualization: 80% - Advanced Methods: 60% - Documentation: 95%</p>
+<p><strong>Overall Target:</strong> 90% feature complete for standard creel survey workflows</p>
+</div>
+<div class="section level3">
+<h3 id="user-experience-metrics">User Experience Metrics<a class="anchor" aria-label="anchor" href="#user-experience-metrics"></a></h3>
+<ul><li>Users can complete full analysis from design → estimates → reporting</li>
+<li>Clear guidance for method selection</li>
+<li>Excellent error messages and warnings</li>
+<li>Comprehensive validation and QA/QC</li>
+<li>Professional visualizations</li>
+<li>Reproducible workflows</li>
 </ul></div>
 <div class="section level3">
-<h3 id="code-quality">Code Quality<a class="anchor" aria-label="anchor" href="#code-quality"></a></h3>
-<ul class="task-list"><li><label><input type="checkbox">&gt;90% test coverage</label></li>
-<li><label><input type="checkbox">All functions documented with examples</label></li>
-<li><label><input type="checkbox">Zero ERROR/WARNING/NOTE in R CMD check</label></li>
-<li><label><input type="checkbox">Passes lintr style checks</label></li>
-</ul></div>
-<div class="section level3">
-<h3 id="user-adoption">User Adoption<a class="anchor" aria-label="anchor" href="#user-adoption"></a></h3>
-<ul class="task-list"><li><label><input type="checkbox">&gt;10 successful analyses by external users</label></li>
-<li><label><input type="checkbox">Positive feedback from fisheries professionals</label></li>
-<li><label><input type="checkbox">Agency adoption (at least 1 state/federal agency)</label></li>
-<li><label><input type="checkbox">Published analyses using the package</label></li>
-</ul></div>
-<div class="section level3">
-<h3 id="performance">Performance<a class="anchor" aria-label="anchor" href="#performance"></a></h3>
-<ul class="task-list"><li><label><input type="checkbox">Handles datasets up to 100K interviews efficiently (&lt;10s)</label></li>
-<li><label><input type="checkbox">Parallel processing for computationally intensive operations</label></li>
-<li><label><input type="checkbox">Memory-efficient for large simulations</label></li>
+<h3 id="code-quality-metrics">Code Quality Metrics<a class="anchor" aria-label="anchor" href="#code-quality-metrics"></a></h3>
+<ul><li><blockquote>
+<p>90% test coverage</p>
+</blockquote></li>
+<li>All estimators validated against literature</li>
+<li>Comprehensive documentation</li>
+<li>Consistent API design</li>
+<li>Performance benchmarks</li>
 </ul><hr></div>
 </div>
 <div class="section level2">
-<h2 id="risk-assessment">Risk Assessment<a class="anchor" aria-label="anchor" href="#risk-assessment"></a></h2>
+<h2 id="risk-assessment--mitigation">Risk Assessment &amp; Mitigation<a class="anchor" aria-label="anchor" href="#risk-assessment--mitigation"></a></h2>
 <div class="section level3">
-<h3 id="technical-risks">Technical Risks<a class="anchor" aria-label="anchor" href="#technical-risks"></a></h3>
-<p><strong>Risk:</strong> Variance propagation errors in total harvest estimation - <strong>Likelihood:</strong> Medium - <strong>Impact:</strong> High (incorrect inference) - <strong>Mitigation:</strong> Extensive testing against known results, peer review by statistician</p>
-<p><strong>Risk:</strong> Survey design edge cases (lonely PSUs, single-stratum) - <strong>Likelihood:</strong> High - <strong>Impact:</strong> Medium (estimation fails) - <strong>Mitigation:</strong> Robust error handling, clear warnings, documented solutions</p>
-<p><strong>Risk:</strong> Performance degradation with large datasets - <strong>Likelihood:</strong> Medium - <strong>Impact:</strong> Medium (user frustration) - <strong>Mitigation:</strong> Profiling, optimization, parallel processing</p>
+<h3 id="high-risk-items">High Risk Items<a class="anchor" aria-label="anchor" href="#high-risk-items"></a></h3>
+<p><strong>1. Roving Estimator Complexity</strong> - <strong>Risk:</strong> Statistical complexity, limited examples in literature - <strong>Mitigation:</strong> Start with Pollock et al. (1997) canonical methods, extensive testing</p>
+<p><strong>2. QA/QC False Positives</strong> - <strong>Risk:</strong> Overly strict checks frustrate users - <strong>Mitigation:</strong> Severity levels (error/warning/info), comprehensive documentation</p>
+<p><strong>3. Sample Size Tool Accuracy</strong> - <strong>Risk:</strong> Variance estimates from pilots may be unreliable - <strong>Mitigation:</strong> Clear documentation of assumptions, sensitivity analysis</p>
+<p><strong>4. Hybrid Design Integration</strong> - <strong>Risk:</strong> Multiple data sources create complex variance structure - <strong>Mitigation:</strong> Start with simple combinations, leverage Bayesian approaches</p>
+<p><strong>5. Documentation Completeness</strong> - <strong>Risk:</strong> Technical methods hard to explain - <strong>Mitigation:</strong> Multiple vignettes, worked examples, decision trees</p>
 </div>
 <div class="section level3">
-<h3 id="adoption-risks">Adoption Risks<a class="anchor" aria-label="anchor" href="#adoption-risks"></a></h3>
-<p><strong>Risk:</strong> Learning curve too steep for target users - <strong>Likelihood:</strong> Medium - <strong>Impact:</strong> High (low adoption) - <strong>Mitigation:</strong> Comprehensive vignettes, workshops, support</p>
-<p><strong>Risk:</strong> Competition from established tools (FSA, RMark, custom scripts) - <strong>Likelihood:</strong> High - <strong>Impact:</strong> Medium (slow adoption) - <strong>Mitigation:</strong> Clear advantages (survey-first, modern, documented), migration guides</p>
-<hr></div>
-</div>
-<div class="section level2">
-<h2 id="dependencies">Dependencies<a class="anchor" aria-label="anchor" href="#dependencies"></a></h2>
-<div class="section level3">
-<h3 id="current-dependencies-keep-lean">Current Dependencies (Keep Lean)<a class="anchor" aria-label="anchor" href="#current-dependencies-keep-lean"></a></h3>
-<ul><li>
-<strong>survey</strong> - Core survey design and estimation</li>
-<li>
-<strong>dplyr</strong> - Data manipulation</li>
-<li>
-<strong>tidyr</strong> - Data tidying</li>
-<li>
-<strong>ggplot2</strong> - Visualization</li>
-<li>
-<strong>cli</strong> - User communication</li>
-<li>
-<strong>tibble</strong> - Modern data frames</li>
-<li>
-<strong>purrr</strong> - Functional programming</li>
+<h3 id="medium-risk-items">Medium Risk Items<a class="anchor" aria-label="anchor" href="#medium-risk-items"></a></h3>
+<ul><li>Aerial survey inflation factors (method-specific, data-intensive)</li>
+<li>Camera integration (emerging tech, limited R packages)</li>
+<li>Angler segmentation (detection probability modeling complex)</li>
 </ul></div>
 <div class="section level3">
-<h3 id="potential-new-dependencies-evaluate-carefully">Potential New Dependencies (Evaluate Carefully)<a class="anchor" aria-label="anchor" href="#potential-new-dependencies-evaluate-carefully"></a></h3>
-<ul><li>
-<strong>scales</strong> - Axis formatting (ggplot2 extension)</li>
-<li>
-<strong>patchwork</strong> - Combine plots</li>
-<li>
-<strong>gt</strong> or <strong>flextable</strong> - Publication-quality tables</li>
-<li>
-<strong>quarto</strong> or <strong>rmarkdown</strong> - Report generation</li>
-<li>
-<strong>future</strong> - Parallel processing backend</li>
-</ul></div>
-<div class="section level3">
-<h3 id="avoid-unless-essential">Avoid Unless Essential<a class="anchor" aria-label="anchor" href="#avoid-unless-essential"></a></h3>
-<ul><li>Heavy spatial packages (sf, terra) - only if spatial scope expands</li>
-<li>Database backends - only if needed for large data</li>
-<li>Shiny - keep separate from core package</li>
+<h3 id="mitigation-strategy">Mitigation Strategy<a class="anchor" aria-label="anchor" href="#mitigation-strategy"></a></h3>
+<ul><li>Iterative development with user feedback</li>
+<li>Extensive testing against published examples</li>
+<li>Clear documentation of assumptions and limitations</li>
+<li>Vignettes with worked examples</li>
+<li>Regular consultation with creel survey practitioners</li>
 </ul><hr></div>
 </div>
 <div class="section level2">
-<h2 id="references--resources">References &amp; Resources<a class="anchor" aria-label="anchor" href="#references--resources"></a></h2>
+<h2 id="key-references-for-implementation">Key References for Implementation<a class="anchor" aria-label="anchor" href="#key-references-for-implementation"></a></h2>
 <div class="section level3">
-<h3 id="statistical-methods">Statistical Methods<a class="anchor" aria-label="anchor" href="#statistical-methods"></a></h3>
-<ul><li>Pollock, K. H., C. M. Jones, and T. L. Brown. 1994. “Angler Survey Methods and Their Applications in Fisheries Management.” American Fisheries Society Special Publication 25.</li>
-<li>Robson, D. S., and C. M. Jones. 1989. “The Theoretical Basis of an Access Site Angler Survey Design.” Biometrics 45:83-98.</li>
-<li>Lumley, T. 2010. “Complex Surveys: A Guide to Analysis Using R.” Wiley.</li>
-</ul></div>
-<div class="section level3">
-<h3 id="r-package-development">R Package Development<a class="anchor" aria-label="anchor" href="#r-package-development"></a></h3>
-<ul><li>Wickham, H., and J. Bryan. “R Packages” (2nd ed.). <a href="https://r-pkgs.org" class="external-link uri">https://r-pkgs.org</a>
-</li>
-<li>Tidyverse Style Guide: <a href="https://style.tidyverse.org" class="external-link uri">https://style.tidyverse.org</a>
-</li>
-</ul></div>
-<div class="section level3">
-<h3 id="survey-package-resources">Survey Package Resources<a class="anchor" aria-label="anchor" href="#survey-package-resources"></a></h3>
-<ul><li>survey package documentation: <a href="https://r-survey.r-forge.r-project.org/survey/" class="external-link uri">https://r-survey.r-forge.r-project.org/survey/</a>
-</li>
-<li>Survey analysis in R tutorial: <a href="https://stats.idre.ucla.edu/r/seminars/survey-data-analysis-with-r/" class="external-link uri">https://stats.idre.ucla.edu/r/seminars/survey-data-analysis-with-r/</a>
-</li>
-</ul><hr></div>
-</div>
-<div class="section level2">
-<h2 id="changelog">Changelog<a class="anchor" aria-label="anchor" href="#changelog"></a></h2>
-<div class="section level3">
-<h3 id="october-24-2025---initial-roadmap">October 24, 2025 - Initial Roadmap<a class="anchor" aria-label="anchor" href="#october-24-2025---initial-roadmap"></a></h3>
-<ul><li>Completed comprehensive gap analysis</li>
-<li>Identified top 10 priority functions</li>
-<li>Defined 6-sprint development plan (26 weeks)</li>
-<li>Established design principles and testing strategy</li>
-</ul></div>
-<div class="section level3">
-<h3 id="next-review-november-2025">Next Review: November 2025<a class="anchor" aria-label="anchor" href="#next-review-november-2025"></a></h3>
-<ul><li>Assess Sprint 1 progress</li>
-<li>Adjust priorities based on user feedback</li>
-<li>Update timelines if needed</li>
-</ul><hr></div>
-</div>
-<div class="section level2">
-<h2 id="contributing">Contributing<a class="anchor" aria-label="anchor" href="#contributing"></a></h2>
-<p>This roadmap is a living document. Contributions and feedback are welcome:</p>
+<h3 id="critical-papers">Critical Papers<a class="anchor" aria-label="anchor" href="#critical-papers"></a></h3>
 <ol style="list-style-type: decimal"><li>
-<strong>Function Priorities:</strong> Disagree with priorities? Open an issue to discuss.</li>
+<strong>Pollock et al. (1994)</strong> - <em>Angler Survey Methods and Their Applications</em> - Foundation</li>
 <li>
-<strong>New Features:</strong> Suggest additional functions with use case justification.</li>
+<strong>Pollock et al. (1997)</strong> - Incomplete trip/roving methods</li>
 <li>
-<strong>Implementation:</strong> Pick a function and submit a PR following design principles.</li>
+<strong>Robson (1961)</strong> - Progressive count theory</li>
 <li>
-<strong>Testing:</strong> Help validate implementations against published results.</li>
-</ol><p><strong>Contact:</strong> See CONTRIBUTING.md for guidelines.</p>
-<hr></div>
+<strong>Malvestuto (1996)</strong> - Review of creel survey methods</li>
+<li>
+<strong>Rasmussen et al. (1998)</strong> - Three-stage sampling variance</li>
+<li>
+<strong>Newman et al. (1997)</strong> - Precision and sample size</li>
+<li>
+<strong>Hoenig et al. (1993, 1997)</strong> - Instantaneous counts, trip truncation</li>
+<li>
+<strong>McGlennon &amp; Kinloch (1997)</strong> - Bus route with interviews</li>
+<li>
+<strong>van Poorten et al. (2015)</strong> - Camera-based estimation with missing data</li>
+<li>
+<strong>Malvestuto et al. (1978)</strong> - Bus route with unequal probabilities</li>
+<li>
+<strong>Vølstad et al. (2006)</strong> - Aerial survey methods</li>
+<li>
+<strong>McCormick &amp; Meyer (2017)</strong> - Sample size determination</li>
+<li>
+<strong>Askey et al. (2018)</strong> - Modern aerial survey applications</li>
+</ol></div>
+<div class="section level3">
+<h3 id="textbook">Textbook<a class="anchor" aria-label="anchor" href="#textbook"></a></h3>
+<ul><li>
+<strong>Pope et al. (2025)</strong> - Chapter 17: Creel Surveys in <em>Analysis and Interpretation of Freshwater Fisheries Data, 2nd Edition</em>
+</li>
+</ul><hr></div>
+</div>
 <div class="section level2">
-<h2 id="appendix-function-quick-reference">Appendix: Function Quick Reference<a class="anchor" aria-label="anchor" href="#appendix-function-quick-reference"></a></h2>
+<h2 id="notes">Notes<a class="anchor" aria-label="anchor" href="#notes"></a></h2>
 <div class="section level3">
-<h3 id="effort-estimation">Effort Estimation<a class="anchor" aria-label="anchor" href="#effort-estimation"></a></h3>
-<ul><li>✅ <code><a href="reference/est_effort.html">est_effort()</a></code> - Wrapper for effort estimation</li>
-<li>✅ <code><a href="reference/est_effort.instantaneous.html">est_effort.instantaneous()</a></code> - Snapshot counts</li>
-<li>✅ <code><a href="reference/est_effort.progressive.html">est_effort.progressive()</a></code> - Roving surveys</li>
-<li>✅ <code><a href="reference/est_effort.aerial.html">est_effort.aerial()</a></code> - Aerial counts</li>
-<li>✅ <code>est_effort.busroute()</code> - Bus route method</li>
-<li>🔴 <code>est_effort_tiein()</code> - Tie-in estimator (NOT IMPLEMENTED)</li>
+<h3 id="design-philosophy">Design Philosophy<a class="anchor" aria-label="anchor" href="#design-philosophy"></a></h3>
+<ul><li>
+<strong>Survey-first:</strong> Leverage R’s survey package for design-based inference</li>
+<li>
+<strong>Tidy workflows:</strong> Pipe-friendly, consistent return schemas</li>
+<li>
+<strong>Validation by default:</strong> Comprehensive checks, informative errors</li>
+<li>
+<strong>Reproducibility:</strong> Document workflows, enable reproducible analyses</li>
+<li>
+<strong>Modern R:</strong> Use current best practices, maintain code quality</li>
 </ul></div>
 <div class="section level3">
-<h3 id="catch--harvest">Catch &amp; Harvest<a class="anchor" aria-label="anchor" href="#catch--harvest"></a></h3>
-<ul><li>✅ <code><a href="reference/est_cpue.html">est_cpue()</a></code> - Catch per unit effort</li>
-<li>✅ <code><a href="reference/est_catch.html">est_catch()</a></code> - Total catch from interviews</li>
-<li>🔴 <code>est_total_harvest()</code> - Effort × CPUE (NOT IMPLEMENTED)</li>
+<h3 id="community-engagement">Community Engagement<a class="anchor" aria-label="anchor" href="#community-engagement"></a></h3>
+<ul><li>Seek feedback from practicing creel biologists</li>
+<li>Present at fisheries conferences</li>
+<li>Publish methods paper</li>
+<li>Engage with state/federal agencies</li>
+<li>Build example datasets</li>
 </ul></div>
 <div class="section level3">
-<h3 id="data-preprocessing">Data Preprocessing<a class="anchor" aria-label="anchor" href="#data-preprocessing"></a></h3>
-<ul><li>🔴 <code>expand_party_to_angler()</code> - Party to angler conversion (NOT IMPLEMENTED)</li>
-<li>✅ <code><a href="reference/parse_time_column.html">parse_time_column()</a></code> - Time parsing</li>
-<li>✅ <code><a href="reference/standardize_time_columns.html">standardize_time_columns()</a></code> - Time standardization</li>
-</ul></div>
-<div class="section level3">
-<h3 id="survey-design">Survey Design<a class="anchor" aria-label="anchor" href="#survey-design"></a></h3>
-<ul><li>✅ <code><a href="reference/as_day_svydesign.html">as_day_svydesign()</a></code> - Create day-level design</li>
-<li>✅ <code><a href="reference/as_survey_design.html">as_survey_design()</a></code> - Convert to survey design</li>
-<li>✅ <code><a href="reference/as_svrep_design.html">as_svrep_design()</a></code> - Convert to replicate design</li>
-<li>✅ <code>design_access()</code> - Access point design (legacy)</li>
-<li>✅ <code>design_roving()</code> - Roving design (legacy)</li>
-<li>✅ <code><a href="reference/design_busroute.html">design_busroute()</a></code> - Bus route design</li>
-</ul></div>
-<div class="section level3">
-<h3 id="visualization">Visualization<a class="anchor" aria-label="anchor" href="#visualization"></a></h3>
-<ul><li>✅ <code><a href="reference/plot_design.html">plot_design()</a></code> - Visualize survey design</li>
-<li>✅ <code><a href="reference/plot_effort.html">plot_effort()</a></code> - Plot effort estimates</li>
-<li>🔴 <code>plot_estimates_timeseries()</code> - Time series with CIs (NOT IMPLEMENTED)</li>
-<li>🔴 <code>plot_catch_composition()</code> - Species composition (NOT IMPLEMENTED)</li>
-<li>🔴 <code>plot_model_comparison()</code> - Compare models (NOT IMPLEMENTED)</li>
-<li>🔴 <code>plot_length_frequency()</code> - Length distributions (NOT IMPLEMENTED)</li>
-</ul></div>
-<div class="section level3">
-<h3 id="survey-planning">Survey Planning<a class="anchor" aria-label="anchor" href="#survey-planning"></a></h3>
-<ul><li>🔴 <code>calc_sample_size()</code> - Sample size calculation (NOT IMPLEMENTED)</li>
-<li>🔴 <code>sample_allocation()</code> - Optimal allocation (NOT IMPLEMENTED)</li>
-</ul></div>
-<div class="section level3">
-<h3 id="data-quality">Data Quality<a class="anchor" aria-label="anchor" href="#data-quality"></a></h3>
-<ul><li>✅ <code><a href="reference/validate_interviews.html">validate_interviews()</a></code> - Interview validation</li>
-<li>✅ <code><a href="reference/validate_counts.html">validate_counts()</a></code> - Count validation</li>
-<li>✅ <code><a href="reference/validate_calendar.html">validate_calendar()</a></code> - Calendar validation</li>
-<li>🔴 <code>detect_outliers()</code> - Outlier detection (NOT IMPLEMENTED)</li>
-<li>🔴 <code>qa_report()</code> - Quality assurance report (NOT IMPLEMENTED)</li>
-</ul></div>
-<div class="section level3">
-<h3 id="biological-data">Biological Data<a class="anchor" aria-label="anchor" href="#biological-data"></a></h3>
-<ul><li>🔴 <code>est_length_dist()</code> - Length frequency (NOT IMPLEMENTED)</li>
-<li>🔴 <code>est_mean_length()</code> - Mean length (NOT IMPLEMENTED)</li>
-</ul></div>
-<div class="section level3">
-<h3 id="analysis--comparison">Analysis &amp; Comparison<a class="anchor" aria-label="anchor" href="#analysis--comparison"></a></h3>
-<ul><li>🔴 <code>compare_estimates()</code> - Compare estimates (NOT IMPLEMENTED)</li>
-<li>🔴 <code>model_diagnostics()</code> - Model diagnostics (NOT IMPLEMENTED)</li>
-<li>🔴 <code>trend_analysis()</code> - Temporal trends (NOT IMPLEMENTED)</li>
-</ul></div>
-<div class="section level3">
-<h3 id="reporting">Reporting<a class="anchor" aria-label="anchor" href="#reporting"></a></h3>
-<ul><li>🔴 <code>creel_report()</code> - Automated reports (NOT IMPLEMENTED)</li>
-</ul><p><strong>Legend:</strong> - ✅ Implemented - 🔴 Not implemented - 🟡 Partially implemented</p>
-<hr><p><strong>End of Roadmap</strong></p>
+<h3 id="long-term-vision">Long-Term Vision<a class="anchor" aria-label="anchor" href="#long-term-vision"></a></h3>
+<p>Position tidycreel as: - <strong>The</strong> R solution for creel surveys - Comprehensive alternative to specialized software - Integration point for emerging technologies - Teaching tool for survey methods - Platform for methodological innovation</p>
+<hr><p><strong>Last Updated:</strong> October 24, 2025 <strong>Next Review:</strong> Monthly or after major milestones <strong>Maintained by:</strong> tidycreel development team</p>
 </div>
 </div>
 </div>
@@ -886,7 +663,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer></div>

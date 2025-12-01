@@ -46,7 +46,7 @@ variables. Supports both number-based (count) and weight-based (kg) harvest.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu"><a href="https://rdrr.io/pkg/tidycreel/man/estimate_harvest.html" class="external-link">estimate_harvest</a></span><span class="op">(</span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">estimate_harvest</span><span class="op">(</span></span>
 <span>  <span class="va">design</span>,</span>
 <span>  by <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  species <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -60,8 +60,8 @@ variables. Supports both number-based (count) and weight-based (kg) harvest.</p>
 
 
 <dl><dt id="arg-design">design<a class="anchor" aria-label="anchor" href="#arg-design"></a></dt>
-<dd><p>A creel design object created by <code><a href="https://rdrr.io/pkg/tidycreel/man/design-constructors.html" class="external-link">design_access</a></code>,
-<code><a href="https://rdrr.io/pkg/tidycreel/man/design-constructors.html" class="external-link">design_roving</a></code>, or <code><a href="design-constructors.html">design_repweights</a></code>.</p></dd>
+<dd><p>A creel design object created by <code><a href="design_access.html">design_access</a></code>,
+<code><a href="design_roving.html">design_roving</a></code>, or <code><a href="design-constructors.html">design_repweights</a></code>.</p></dd>
 
 
 <dt id="arg-by">by<a class="anchor" aria-label="anchor" href="#arg-by"></a></dt>
@@ -119,10 +119,10 @@ Default "number".</p></dd>
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
 <span class="r-in"><span><span class="co"># Estimate harvest by species</span></span></span>
-<span class="r-in"><span><span class="va">harvest_by_species</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/tidycreel/man/estimate_harvest.html" class="external-link">estimate_harvest</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="st">"target_species"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">harvest_by_species</span> <span class="op">&lt;-</span> <span class="fu">estimate_harvest</span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="st">"target_species"</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Estimate weight-based harvest for walleye</span></span></span>
-<span class="r-in"><span><span class="va">walleye_harvest_weight</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/tidycreel/man/estimate_harvest.html" class="external-link">estimate_harvest</a></span><span class="op">(</span><span class="va">design</span>, species <span class="op">=</span> <span class="st">"walleye"</span>, type <span class="op">=</span> <span class="st">"weight"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">walleye_harvest_weight</span> <span class="op">&lt;-</span> <span class="fu">estimate_harvest</span><span class="op">(</span><span class="va">design</span>, species <span class="op">=</span> <span class="st">"walleye"</span>, type <span class="op">=</span> <span class="st">"weight"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 </code></pre></div>
     </div>
@@ -135,7 +135,7 @@ Default "number".</p></dd>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer></div>
