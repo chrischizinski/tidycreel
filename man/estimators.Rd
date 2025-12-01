@@ -2,9 +2,6 @@
 % Please edit documentation in R/estimators.R
 \name{estimators}
 \alias{estimators}
-\alias{estimate_effort}
-\alias{estimate_cpue}
-\alias{estimate_harvest}
 \title{Core Estimators for Creel Survey Analysis}
 \description{
 These functions provide design-based estimation of fishing effort,

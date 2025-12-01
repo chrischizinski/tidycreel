@@ -24,6 +24,57 @@
 ^\.python-version$  # Exclude Python version file
 ^\.yamllint$  # Exclude yamllint config
 ^\.codacy$  # Exclude Codacy config
+^\.dockerignore$  # Exclude Docker ignore file
+^\.editorconfig$  # Exclude editor config
+^\.markdownlint\.json$  # Exclude markdownlint config
+^\.kiro$  # Exclude kiro directory
 
 ^doc$
 ^Meta$
+
+# Exclude internal architectural/design docs that live at repo root
+^ARCHITECTURAL_STANDARDS\.md$
+^ESTIMATOR_REBUILD_GUIDE\.md$
+^FUTURE_ENHANCEMENTS\.md$
+^GROUND_UP_IMPLEMENTATION_SUMMARY\.md$
+^GROUND_UP_INTEGRATION_DESIGN\.md$
+^INTEGRATION_COMPLETE_SUMMARY\.md$
+^PREVENTING_DIVERGENCE_SUMMARY\.md$
+^QUICK_REFERENCE\.md$
+^R_Package_GitHub_Review_Guide\.md$
+^tidycreel_architecture_plan\.md$
+^tidycreel_designs\.md$
+^tidycreel_effort_action_plan\.md$
+^TOTAL_HARVEST_DESIGN\.md$
+
+^vignettes/ratio-estimators-guide_full_with_hybrid\.qmd$
+^vignettes/ratio-estimators-guide.html$
+^Kickoff\.md$
+^creel_chapter\.md$
+^CHAPTER_GAP_ANALYSIS\.md$
+
+# Exclude additional documentation and development files
+^BUGFIXES_SUMMARY\.md$
+^CITATION\.cff$
+^codecov\.yml$
+^CONTRIBUTING\.md$
+^creel_effort_estimation_methods\.md$
+^creel_foundations\.md$
+^CRITICAL_BUGS_FIXED\.md$
+^DEVELOPMENT_ROADMAP\.md$
+^Dockerfile$
+^done\.md$
+^FINAL_TEST_SUMMARY\.md$
+^GIT_DIFF_REVIEW\.md$
+^IMPLEMENTATION_PLAN_QAQC\.md$
+^IMPLEMENTATION_PLAN_ROVING\.md$
+^mcp_filesystem\.log$
+^MIGRATION_GUIDE\.md$
+^README_BUGFIXES\.md$
+^README\.html$
+^sample_data$
+^scripts$
+^survey$
+^survey_.*\.tar\.gz$
+^TEST_RESULTS_SUMMARY\.md$
+^todo\.md$

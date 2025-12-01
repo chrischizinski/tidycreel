@@ -2,7 +2,7 @@
 % Please edit documentation in R/est-effort-progressive.R
 \name{est_effort.progressive}
 \alias{est_effort.progressive}
-\title{Progressive (Roving) Effort Estimator (survey-first)}
+\title{Progressive (Roving) Effort Estimator (REBUILT with Native Survey Integration)}
 \usage{
 est_effort.progressive(
   counts,
@@ -12,7 +12,11 @@ est_effort.progressive(
   day_id = "date",
   covariates = NULL,
   svy = NULL,
-  conf_level = 0.95
+  conf_level = 0.95,
+  variance_method = "survey",
+  decompose_variance = FALSE,
+  design_diagnostics = FALSE,
+  n_replicates = 1000
 )
 }
 \arguments{
@@ -37,22 +41,88 @@ survey design.}
 \item{svy}{Optional \code{svydesign}/\code{svrepdesign} for day-level sampling design.}
 
 \item{conf_level}{Confidence level for Wald CIs (default 0.95).}
+
+\item{variance_method}{\strong{NEW} Variance estimation method:
+\describe{
+\item{"survey"}{Standard survey package variance (default, backward compatible)}
+\item{"svyrecvar"}{survey:::svyrecvar internals for maximum accuracy}
+\item{"bootstrap"}{Bootstrap resampling variance}
+\item{"jackknife"}{Jackknife resampling variance}
+\item{"linearization"}{Taylor linearization (alias for "survey")}
+}}
+
+\item{decompose_variance}{\strong{NEW} Logical, whether to decompose variance into
+components. Adds variance decomposition to variance_info output. Default FALSE.}
+
+\item{design_diagnostics}{\strong{NEW} Logical, whether to compute design quality
+diagnostics. Adds diagnostic information to variance_info output. Default FALSE.}
+
+\item{n_replicates}{\strong{NEW} Number of bootstrap/jackknife replicates (default 1000)}
 }
 \value{
-Tibble with grouping columns, \code{estimate}, \code{se}, \code{ci_low}, \code{ci_high},
-\code{n}, \code{method}, and a \code{diagnostics} list-column.
+Tibble with grouping columns plus:
+\describe{
+\item{estimate}{Estimated total effort (angler-hours)}
+\item{se}{Standard error}
+\item{ci_low, ci_high}{Confidence interval limits}
+\item{deff}{Design effect}
+\item{n}{Sample size}
+\item{method}{Estimation method ("progressive")}
+\item{variance_info}{\strong{NEW} List-column with comprehensive variance information}
+}
 }
 \description{
 Estimate angler-hours from progressive (roving) counts by summing pass-level
 counts × route_minutes per day × group, then compute design-based totals and
-variance via the \code{survey} package when a day-level design is supplied.
+variance via the \code{survey} package with NATIVE support for advanced variance methods.
 }
 \details{
-Effort per day×group = sum_over_passes(count_pass × route_minutes) ÷ 60.
+\strong{NEW}: Native support for multiple variance methods, variance decomposition,
+and design diagnostics without requiring wrapper functions.
 
 Sums pass-level contributions to day × group totals and uses the day-PSU
 survey design to compute totals and variance via the \code{survey} package.
+\subsection{NEW: Advanced Variance Methods}{
+
+This rebuilt function provides NATIVE support for advanced variance estimation.
+See \code{tc_compute_variance()} for details on variance methods.
+}
+
+\subsection{NEW: Variance Decomposition}{
+
+Set \code{decompose_variance = TRUE} to decompose total variance into components.
+Results available in the \code{variance_info} list-column.
+}
+
+\subsection{NEW: Design Diagnostics}{
+
+Set \code{design_diagnostics = TRUE} to assess design quality with recommendations.
+}
+}
+\examples{
+\dontrun{
+# BACKWARD COMPATIBLE: Standard usage
+result <- est_effort.progressive_rebuilt(counts, svy = design)
+
+# NEW: Bootstrap variance
+result_boot <- est_effort.progressive_rebuilt(
+  counts,
+  svy = design,
+  variance_method = "bootstrap"
+)
+
+# NEW: Complete analysis
+result_full <- est_effort.progressive_rebuilt(
+  counts,
+  svy = design,
+  variance_method = "svyrecvar",
+  decompose_variance = TRUE,
+  design_diagnostics = TRUE
+)
+}
+
 }
 \seealso{
-\code{\link[=as_day_svydesign]{as_day_svydesign()}}, \code{\link[survey:surveysummary]{survey::svytotal()}}, \code{\link[survey:svyby]{survey::svyby()}}.
+\code{\link[=as_day_svydesign]{as_day_svydesign()}}, \code{\link[=tc_compute_variance]{tc_compute_variance()}}, \code{\link[=tc_decompose_variance]{tc_decompose_variance()}},
+\code{\link[=tc_design_diagnostics]{tc_design_diagnostics()}}
 }

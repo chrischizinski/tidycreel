@@ -26,6 +26,11 @@ count locations.}
 
 \item{strata_vars}{Character vector describing stratification (e.g.,
 \code{c("date","shift_block","location")}). Missing columns are ignored.}
+
+\item{effort_method}{Method for effort estimation. One of "ratio" or "calibrate".}
+
+\item{coverage_correction}{Logical; whether to apply coverage correction for incomplete
+survey days. Default is FALSE.}
 }
 \value{
 A list with class \code{c("roving_design","creel_design","list")} containing

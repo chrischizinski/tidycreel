@@ -1,0 +1,287 @@
+---
+title: "Roving Survey CPUE Estimation"
+output:
+  rmarkdown::html_vignette:
+    pandoc_args: ["--highlight-style=tango"]
+    highlight: null
+vignette: >
+  %\VignetteIndexEntry{Roving Survey CPUE Estimation}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5
+)
+```
+
+```{r setup, message = FALSE}
+library(tidycreel)
+library(survey)
+library(dplyr)
+library(ggplot2)
+```
+
+## Introduction
+
+Roving (on-site) creel surveys interview anglers while they are still fishing, creating incomplete trip data. This presents two key statistical challenges:
+
+1. **Length-biased sampling**: Longer trips have higher probability of being intercepted (Robson 1961).
+2. **Incomplete catch/effort**: Observed values represent effort-to-date, not complete trips.
+
+The `est_cpue_roving()` function implements the Pollock et al. (1997) mean-of-ratios estimator with optional length-bias correction to address these issues.
+
+## The Challenge: Length-Bias in Roving Surveys
+
+When conducting roving surveys, anglers with longer trip durations are more likely to be sampled because they are present at the site for more time. This creates **length-biased sampling**:
+
+- An angler planning a 6-hour trip is twice as likely to be interviewed as one planning a 3-hour trip
+- Without correction, CPUE estimates are biased toward catch rates of long-trip anglers
+- The bias can be substantial (often 20-40% overestimation)
+
+## Example Dataset
+
+The package includes `roving_survey`, a simulated dataset with 50 incomplete trip interviews:
+
+```{r load-data}
+data(roving_survey)
+head(roving_survey)
+
+# Summary
+summary(roving_survey[, c("catch_total", "hours_fished", "total_hours_planned")])
+```
+
+Key columns:
+- `hours_fished`: Effort observed at interview (incomplete)
+- `total_hours_planned`: Total planned trip effort (for length-bias correction)
+- `catch_total`: Fish caught up to interview time
+
+## Basic CPUE Estimation (No Correction)
+
+First, let's estimate CPUE without length-bias correction:
+
+```{r basic-estimate}
+# Create survey design
+svy <- svydesign(ids = ~1, data = roving_survey)
+
+# Estimate CPUE without correction
+result_none <- est_cpue_roving(
+  svy,
+  response = "catch_total",
+  length_bias_correction = "none"
+)
+
+result_none[, c("estimate", "se", "ci_low", "ci_high", "n", "method")]
+```
+
+This estimate uses the simple mean-of-ratios:
+
+$$\text{CPUE} = \frac{1}{n} \sum_{i=1}^n \frac{C_i}{E_i}$$
+
+where $C_i$ is catch and $E_i$ is observed effort for interview $i$.
+
+## Length-Bias Correction (Pollock Method)
+
+Now apply the Pollock et al. (1997) correction using planned trip effort:
+
+```{r pollock-correction}
+result_pollock <- est_cpue_roving(
+  svy,
+  response = "catch_total",
+  length_bias_correction = "pollock",
+  total_trip_effort_col = "total_hours_planned"
+)
+
+result_pollock[, c("estimate", "se", "ci_low", "ci_high", "n", "method")]
+```
+
+The Pollock estimator uses weights $w_i = 1/T_i$ where $T_i$ is planned total effort:
+
+$$\text{CPUE}_{\text{corrected}} = \frac{\sum_{i=1}^n w_i \cdot (C_i / E_i)}{\sum_{i=1}^n w_i}$$
+
+This downweights interviews from anglers planning longer trips, removing the length-bias.
+
+## Comparing Estimates
+
+```{r compare}
+# Create comparison table
+comparison <- tibble(
+  Method = c("No correction", "Pollock correction"),
+  CPUE = c(result_none$estimate, result_pollock$estimate),
+  SE = c(result_none$se, result_pollock$se),
+  CI_low = c(result_none$ci_low, result_pollock$ci_low),
+  CI_high = c(result_none$ci_high, result_pollock$ci_high)
+)
+
+comparison
+```
+
+In this example, the correction makes a `r round(abs(result_pollock$estimate - result_none$estimate) / result_none$estimate * 100, 1)`% difference in the CPUE estimate.
+
+## Grouped Estimation
+
+Estimate CPUE separately by location:
+
+```{r grouped}
+result_by_location <- est_cpue_roving(
+  svy,
+  by = "location",
+  response = "catch_total",
+  length_bias_correction = "pollock",
+  total_trip_effort_col = "total_hours_planned"
+)
+
+result_by_location[, c("location", "estimate", "se", "ci_low", "ci_high", "n")]
+```
+
+Visualize:
+
+```{r plot-grouped, fig.cap = "CPUE estimates by location with 95% confidence intervals"}
+ggplot(result_by_location, aes(x = location, y = estimate)) +
+  geom_point(size = 3) +
+  geom_errorbar(
+    aes(ymin = ci_low, ymax = ci_high),
+    width = 0.2
+  ) +
+  labs(
+    title = "CPUE by Location (Pollock-Corrected)",
+    x = "Location",
+    y = "CPUE (fish/hour)",
+    caption = "Error bars: 95% confidence intervals"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold"),
+    axis.title = element_text(face = "bold")
+  )
+```
+
+## Multiple Grouping Variables
+
+Estimate by location AND species:
+
+```{r multiple-groups}
+result_by_both <- est_cpue_roving(
+  svy,
+  by = c("location", "target_species"),
+  response = "catch_total",
+  length_bias_correction = "pollock",
+  total_trip_effort_col = "total_hours_planned"
+)
+
+result_by_both[, c("location", "target_species", "estimate", "se", "n")]
+```
+
+## Trip Truncation
+
+Short trips (< 0.5 hours default) are automatically truncated to avoid unstable ratios:
+
+```{r truncation}
+# Check diagnostics for truncation info
+result_with_diag <- est_cpue_roving(
+  svy,
+  response = "catch_total",
+  length_bias_correction = "pollock",
+  total_trip_effort_col = "total_hours_planned",
+  min_trip_hours = 0.5,  # Default
+  diagnostics = TRUE
+)
+
+# Extract diagnostics
+diag <- result_with_diag$diagnostics[[1]]
+
+cat("Original interviews:", diag$n_original, "\n")
+cat("Truncated (< 0.5 hrs):", diag$n_truncated, "\n")
+cat("Used in analysis:", diag$n_used, "\n")
+cat("Truncation rate:", round(diag$truncation_rate * 100, 1), "%\n")
+```
+
+Adjust the threshold if needed:
+
+```{r custom-truncation}
+# Use stricter threshold
+result_strict <- est_cpue_roving(
+  svy,
+  response = "catch_total",
+  min_trip_hours = 1.0,  # Require at least 1 hour
+  length_bias_correction = "pollock",
+  total_trip_effort_col = "total_hours_planned"
+)
+
+result_strict[, c("estimate", "se", "n")]
+```
+
+## Diagnostics
+
+Request detailed diagnostics for quality assurance:
+
+```{r diagnostics}
+result_with_diag <- est_cpue_roving(
+  svy,
+  response = "catch_total",
+  length_bias_correction = "pollock",
+  total_trip_effort_col = "total_hours_planned",
+  diagnostics = TRUE
+)
+
+# Extract and display diagnostics
+diag <- result_with_diag$diagnostics[[1]]
+str(diag)
+```
+
+Key diagnostic fields:
+- `n_original`, `n_truncated`, `n_used`: Sample size tracking
+- `mean_effort_observed`, `mean_total_effort`: Effort summaries
+- `mean_catch_rate`, `sd_catch_rate`: CPUE distribution
+- `mean_bias_weight`: Average length-bias correction weight
+
+## When to Use Each Method
+
+**Use `length_bias_correction = "none"` when:**
+- Interviews are conducted at trip completion (access-point surveys)
+- All trips are complete
+- You have a bus-route survey with approximately equal trip durations
+
+**Use `length_bias_correction = "pollock"` when:**
+- Conducting roving/on-site surveys
+- Interviewing anglers during incomplete trips
+- Trip durations vary substantially
+- You have data on planned total trip effort
+
+## Technical Notes
+
+### Mean-of-Ratios vs Ratio-of-Means
+
+`est_cpue_roving()` always uses **mean-of-ratios** (average of individual catch rates):
+
+$$\text{CPUE} = \frac{1}{n} \sum_{i=1}^n \frac{C_i}{E_i}$$
+
+This is preferred over **ratio-of-means** (total catch / total effort) for incomplete trips because:
+
+1. Individual ratios better represent instantaneous catch rates
+2. Less sensitive to a few very long trips
+3. More appropriate for length-biased samples
+
+For comparison, the general `est_cpue()` function offers both methods and auto-selection based on trip completion status.
+
+### Variance Estimation
+
+Standard errors use the delta method via the `survey` package's `svymean()` function. The Pollock correction incorporates weights into the variance calculation, typically producing wider confidence intervals than the uncorrected estimate.
+
+## References
+
+Pollock, K. H., C. M. Jones, and T. L. Brown. 1997. Angler survey methods and their applications in fisheries management. American Fisheries Society, Special Publication 25, Bethesda, Maryland.
+
+Robson, D. S. 1961. On the statistical theory of a roving creel census of fishermen. Biometrics 17:415-437.
+
+Hoenig, J. M., C. M. Jones, K. H. Pollock, D. S. Robson, and D. L. Wade. 1997. Calculation of catch rate and total catch in roving and access point surveys. North American Journal of Fisheries Management 17:11-23.
+
+## See Also
+
+- `est_cpue()`: General CPUE estimator with auto-mode for complete/incomplete trips
+- `est_cpue_roving()`: Function reference documentation
+- `roving_survey`: Example dataset documentation

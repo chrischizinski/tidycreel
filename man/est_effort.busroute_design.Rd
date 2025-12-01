@@ -2,7 +2,7 @@
 % Please edit documentation in R/est-effort-busroute.R
 \name{est_effort.busroute_design}
 \alias{est_effort.busroute_design}
-\title{Bus-Route Effort Estimation (survey-first HT)}
+\title{Bus-Route Effort Estimation (REBUILT with Native Survey Integration)}
 \usage{
 est_effort.busroute_design(
   x,
@@ -15,6 +15,10 @@ est_effort.busroute_design(
   covariates = NULL,
   svy = NULL,
   conf_level = 0.95,
+  variance_method = "survey",
+  decompose_variance = FALSE,
+  design_diagnostics = FALSE,
+  n_replicates = 1000,
   ...
 )
 }
@@ -47,27 +51,60 @@ absent, a day-PSU design is constructed from \code{x$calendar} via
 
 \item{conf_level}{Confidence level for CI (default 0.95).}
 
+\item{variance_method}{\strong{NEW} Variance estimation method:
+\describe{
+\item{"survey"}{Standard survey package variance (default, backward compatible)}
+\item{"svyrecvar"}{survey:::svyrecvar internals for maximum accuracy}
+\item{"bootstrap"}{Bootstrap resampling variance}
+\item{"jackknife"}{Jackknife resampling variance}
+\item{"linearization"}{Taylor linearization (alias for "survey")}
+}}
+
+\item{decompose_variance}{\strong{NEW} Logical, whether to decompose variance into
+components. Adds variance decomposition to variance_info output. Default FALSE.}
+
+\item{design_diagnostics}{\strong{NEW} Logical, whether to compute design quality
+diagnostics. Adds diagnostic information to variance_info output. Default FALSE.}
+
+\item{n_replicates}{\strong{NEW} Number of bootstrap/jackknife replicates (default 1000)}
+
 \item{...}{Reserved for future arguments.}
 }
 \value{
 A tibble with group columns, \code{estimate}, \code{se}, \code{ci_low}, \code{ci_high},
-\code{n}, \code{method}, and a \code{diagnostics} list-column.
+\code{deff} (design effect), \code{n}, \code{method}, \code{diagnostics} list-column, and
+\code{variance_info} list-column with comprehensive variance information.
 }
 \description{
 Estimate fishing effort for bus-route designs using a Horvitz–Thompson-style
 day×group total and compute design-based totals and variance via the \code{survey}
-package. Supports replicate-weight designs.
+package with NATIVE support for advanced variance methods.
 }
 \details{
+\strong{NEW}: Native support for multiple variance methods, variance decomposition,
+and design diagnostics without requiring wrapper functions.
+
 Computes day × group totals using Horvitz–Thompson contributions and uses
 a day-PSU survey design to compute totals/variance via the \code{survey} package.
 Replicate-weight designs are supported by passing a \code{svrepdesign}.
 }
 \examples{
 \dontrun{
-# Example: Create bus-route design and estimate effort
-# design <- design_busroute(counts, schedule, calendar)
-# est_effort(design, by = c("date", "location"))
+# BACKWARD COMPATIBLE
+result <- est_effort(design, by = c("date", "location"))
+
+# NEW: Advanced features
+result <- est_effort(
+  design,
+  by = c("date", "location"),
+  variance_method = "bootstrap",
+  decompose_variance = TRUE,
+  design_diagnostics = TRUE
+)
+
+# Access enhanced information
+result$variance_info[[1]]$decomposition
+result$variance_info[[1]]$diagnostics
 }
 
 }

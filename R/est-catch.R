@@ -79,7 +79,7 @@ est_catch <- function(design,
       na.rm = TRUE
     )
     estimate <- as.numeric(total_est[1])
-    se <- sqrt(as.numeric(survey::vcov(total_est)))
+    se <- sqrt(as.numeric(vcov(total_est)))
     ci <- tc_confint(estimate, se, level = conf_level)
     n <- nrow(vars)
     return(tibble::tibble(

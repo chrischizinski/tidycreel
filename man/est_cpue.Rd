@@ -2,7 +2,7 @@
 % Please edit documentation in R/est-cpue.R
 \name{est_cpue}
 \alias{est_cpue}
-\title{CPUE Estimator (survey-first)}
+\title{CPUE Estimator (REBUILT with Native Survey Integration)}
 \usage{
 est_cpue(
   design,
@@ -11,7 +11,11 @@ est_cpue(
   effort_col = "hours_fished",
   mode = c("auto", "ratio_of_means", "mean_of_ratios"),
   min_trip_hours = 0.5,
-  conf_level = 0.95
+  conf_level = 0.95,
+  variance_method = "survey",
+  decompose_variance = FALSE,
+  design_diagnostics = FALSE,
+  n_replicates = 1000
 )
 }
 \arguments{
@@ -29,38 +33,56 @@ Determines the CPUE numerator.}
 \item{effort_col}{Interview effort column for the denominator (default
 \code{"hours_fished"}).}
 
-\item{mode}{Estimation mode: \code{"auto"} (default; automatically selects based on
-trip_complete field), \code{"ratio_of_means"} (for incomplete trips), or
-\code{"mean_of_ratios"} (for complete trips).}
+\item{mode}{Estimation mode: \code{"auto"} (default), \code{"ratio_of_means"}, or
+\code{"mean_of_ratios"}.}
 
-\item{min_trip_hours}{Minimum trip duration in hours for incomplete trips.
-Trips shorter than this are truncated to avoid unstable ratios. Default 0.5 (30 minutes).
-Only used when mode="auto" or mode="ratio_of_means" with incomplete trips.}
+\item{min_trip_hours}{Minimum trip duration for incomplete trips (default 0.5).}
 
 \item{conf_level}{Confidence level for Wald CIs (default 0.95).}
+
+\item{variance_method}{\strong{NEW} Variance estimation method (default "survey")}
+
+\item{decompose_variance}{\strong{NEW} Logical, decompose variance (default FALSE)}
+
+\item{design_diagnostics}{\strong{NEW} Logical, compute diagnostics (default FALSE)}
+
+\item{n_replicates}{\strong{NEW} Bootstrap/jackknife replicates (default 1000)}
 }
 \value{
 Tibble with grouping columns, \code{estimate}, \code{se}, \code{ci_low}, \code{ci_high},
-\code{n}, \code{method}, and a \code{diagnostics} list-column.
+\code{deff} (design effect), \code{n}, \code{method}, \code{diagnostics} list-column, and
+\code{variance_info} list-column.
 }
 \description{
 Design-based estimation of catch per unit effort (CPUE) using the
-\code{survey} package. Supports ratio-of-means (recommended for incomplete trips)
-and mean-of-ratios (for complete trips). Returns a tidy tibble with a
-consistent schema across estimators.
+\code{survey} package with NATIVE support for advanced variance methods.
 }
 \details{
+\strong{NEW}: Native support for multiple variance methods, variance decomposition,
+and design diagnostics without requiring wrapper functions.
 \itemize{
 \item \strong{Auto mode}: Examines \code{trip_complete} field to determine appropriate estimator.
-For complete trips uses mean-of-ratios; for incomplete uses ratio-of-means with
-truncation; for mixed data combines estimates using effort-weighting.
-\item \strong{Ratio-of-means}: \code{svyratio(~response, ~effort_col)} optionally via
-\verb{svyby(…, by=~group, FUN=svyratio)}. This is robust when trips are
-incomplete. Short trips are truncated when detected.
-\item \strong{Mean-of-ratios}: computes trip-level \code{response/effort_col} then uses
-\code{svymean}/\code{svyby}. Prefer for complete trips with minimal zero-inflation.
+\item \strong{Ratio-of-means}: Robust for incomplete trips
+\item \strong{Mean-of-ratios}: Preferred for complete trips
+\item \strong{For roving surveys}: Use \code{\link[=est_cpue_roving]{est_cpue_roving()}} for Pollock correction
 }
+}
+\examples{
+\dontrun{
+# BACKWARD COMPATIBLE
+result <- est_cpue(design, response = "catch_kept")
+
+# NEW: Advanced features
+result <- est_cpue(
+  design,
+  response = "catch_kept",
+  variance_method = "bootstrap",
+  decompose_variance = TRUE,
+  design_diagnostics = TRUE
+)
+}
+
 }
 \seealso{
-\code{\link[survey:svyratio]{survey::svyratio()}}, \code{\link[survey:surveysummary]{survey::svymean()}}, \code{\link[survey:svyby]{survey::svyby()}}.
+\code{\link[=est_cpue_roving]{est_cpue_roving()}}, \code{\link[survey:svyratio]{survey::svyratio()}}, \code{\link[survey:surveysummary]{survey::svymean()}}
 }

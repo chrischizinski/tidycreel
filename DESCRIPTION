@@ -21,15 +21,12 @@ Imports:
     dplyr,
     tidyr,
     tibble,
-    purrr,
-    rlang,
-    vctrs,
     stringr,
     lubridate,
-    janitor,
-    readr,
     ggplot2,
-    cli
+    cli,
+    lme4,
+    plotly
 Suggests:
     testthat (>= 3.0.0),
     knitr,
@@ -45,8 +42,14 @@ Suggests:
     data.table,
     DBI,
     targets,
-    lifecycle
+    lifecycle,
+    readr,
+    purrr,
+    janitor,
+    rlang,
+    vctrs
 VignetteBuilder: knitr
 Config/testthat/edition: 3
 URL: https://github.com/chrischizinski/tidycreel
 BugReports: https://github.com/chrischizinski/tidycreel/issues
+LazyData: true

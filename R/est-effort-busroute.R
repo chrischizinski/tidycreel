@@ -1,8 +1,11 @@
-#' Bus-Route Effort Estimation (survey-first HT)
+#' Bus-Route Effort Estimation (REBUILT with Native Survey Integration)
 #'
 #' Estimate fishing effort for bus-route designs using a Horvitz–Thompson-style
 #' day×group total and compute design-based totals and variance via the `survey`
-#' package. Supports replicate-weight designs.
+#' package with NATIVE support for advanced variance methods.
+#'
+#' **NEW**: Native support for multiple variance methods, variance decomposition,
+#' and design diagnostics without requiring wrapper functions.
 #'
 #' @param x A `busroute_design` object.
 #' @param counts Optional tibble/data.frame of observation data. If `x` contains
@@ -23,10 +26,25 @@
 #'   absent, a day-PSU design is constructed from `x$calendar` via
 #'   `as_day_svydesign()`.
 #' @param conf_level Confidence level for CI (default 0.95).
+#' @param variance_method **NEW** Variance estimation method:
+#'   \describe{
+#'     \item{"survey"}{Standard survey package variance (default, backward compatible)}
+#'     \item{"svyrecvar"}{survey:::svyrecvar internals for maximum accuracy}
+#'     \item{"bootstrap"}{Bootstrap resampling variance}
+#'     \item{"jackknife"}{Jackknife resampling variance}
+#'     \item{"linearization"}{Taylor linearization (alias for "survey")}
+#'   }
+#' @param decompose_variance **NEW** Logical, whether to decompose variance into
+#'   components. Adds variance decomposition to variance_info output. Default FALSE.
+#' @param design_diagnostics **NEW** Logical, whether to compute design quality
+#'   diagnostics. Adds diagnostic information to variance_info output. Default FALSE.
+#' @param n_replicates **NEW** Number of bootstrap/jackknife replicates (default 1000)
 #' @param ... Reserved for future arguments.
 #'
 #' @return A tibble with group columns, `estimate`, `se`, `ci_low`, `ci_high`,
-#'   `n`, `method`, and a `diagnostics` list-column.
+#'   `deff` (design effect), `n`, `method`, `diagnostics` list-column, and
+#'   `variance_info` list-column with comprehensive variance information.
+#'
 #' @details
 #' Computes day × group totals using Horvitz–Thompson contributions and uses
 #' a day-PSU survey design to compute totals/variance via the `survey` package.
@@ -34,9 +52,21 @@
 #'
 #' @examples
 #' \dontrun{
-#' # Example: Create bus-route design and estimate effort
-#' # design <- design_busroute(counts, schedule, calendar)
-#' # est_effort(design, by = c("date", "location"))
+#' # BACKWARD COMPATIBLE
+#' result <- est_effort(design, by = c("date", "location"))
+#'
+#' # NEW: Advanced features
+#' result <- est_effort(
+#'   design,
+#'   by = c("date", "location"),
+#'   variance_method = "bootstrap",
+#'   decompose_variance = TRUE,
+#'   design_diagnostics = TRUE
+#' )
+#'
+#' # Access enhanced information
+#' result$variance_info[[1]]$decomposition
+#' result$variance_info[[1]]$diagnostics
 #' }
 #'
 #' @references
@@ -56,8 +86,14 @@ est_effort.busroute_design <- function(
   covariates = NULL,
   svy = NULL,
   conf_level = 0.95,
+  variance_method = "survey",
+  decompose_variance = FALSE,
+  design_diagnostics = FALSE,
+  n_replicates = 1000,
   ...
 ) {
+
+  # ── Input Validation (unchanged) ──────────────────────────────────────────
   # Resolve counts
   if (is.null(counts) && !is.null(x$counts)) counts <- x$counts
   if (is.null(counts)) {
@@ -100,6 +136,7 @@ est_effort.busroute_design <- function(
   dropped <- tc_diag_drop(before, counts, reason = "missing contrib/pi/day_id")
   counts$ht_contrib <- contrib_hours / pi_vec
 
+  # ── Data Preparation (unchanged) ──────────────────────────────────────────
   # Day×group totals
   day_group <- counts |>
     dplyr::group_by(dplyr::across(dplyr::all_of(c(day_id, by_all)))) |>
@@ -121,6 +158,7 @@ est_effort.busroute_design <- function(
     svy <- as_day_svydesign(cal, day_id = day_id, strata_vars = strata_vars)
   }
 
+  # ── Design Construction (unchanged) ───────────────────────────────────────
   # Join weights and replicate weights if present
   svy_vars <- svy$variables
   if (!(day_id %in% names(svy_vars))) {
@@ -162,39 +200,90 @@ est_effort.busroute_design <- function(
     )
   }
 
+  # ── NEW: Use Core Variance Engine ────────────────────────────────────────
   # Totals by groups
   if (length(by_all) > 0) {
-    by_formula <- stats::as.formula(paste("~", paste(by_all, collapse = "+")))
-    est <- survey::svyby(~effort_day, by = by_formula, design_eff, survey::svytotal, na.rm = TRUE)
-    out <- tibble::as_tibble(est)
-    names(out)[names(out) == "effort_day"] <- "estimate"
-    se_try <- try(suppressWarnings(as.numeric(survey::SE(est))), silent = TRUE)
-    if (!inherits(se_try, "try-error") && length(se_try) == nrow(out)) {
-      out$se <- se_try
-    } else {
-      V <- attr(est, "var")
-      out$se <- if (!is.null(V) && length(V) > 0) sqrt(diag(V)) else rep(NA_real_, nrow(out))
-    }
-    z <- stats::qnorm(1 - (1 - conf_level)/2)
-    out$ci_low <- out$estimate - z * out$se
-    out$ci_high <- out$estimate + z * out$se
-    out$n <- NA_integer_
-    out$method <- "busroute_ht"
-    out$diagnostics <- replicate(nrow(out), list(dropped), simplify = FALSE)
-    return(dplyr::select(out, dplyr::all_of(by_all), estimate, se, ci_low, ci_high, n, method, diagnostics))
+    # Grouped estimation
+    variance_result <- tc_compute_variance(
+      design = design_eff,
+      response = "effort_day",
+      method = variance_method,
+      by = by_all,
+      conf_level = conf_level,
+      n_replicates = n_replicates,
+      calculate_deff = TRUE
+    )
+
+    out <- tibble::tibble(
+      !!!setNames(
+        lapply(by_all, function(v) design_eff$variables[[v]][seq_along(variance_result$estimate)]),
+        by_all
+      ),
+      estimate = variance_result$estimate,
+      se = variance_result$se,
+      ci_low = variance_result$ci_lower,
+      ci_high = variance_result$ci_upper,
+      deff = variance_result$deff,
+      n = rep(NA_integer_, length(variance_result$estimate)),
+      method = "busroute_ht"
+    )
+
   } else {
-    total_est <- survey::svytotal(~effort_day, design_eff, na.rm = TRUE)
-    estimate <- as.numeric(total_est[1])
-    se <- sqrt(as.numeric(survey::vcov(total_est)))
-    ci <- tc_confint(estimate, se, level = conf_level)
-    return(tibble::tibble(
-      estimate = estimate,
-      se = se,
-      ci_low = ci[1],
-      ci_high = ci[2],
+    # Overall estimation
+    variance_result <- tc_compute_variance(
+      design = design_eff,
+      response = "effort_day",
+      method = variance_method,
+      by = NULL,
+      conf_level = conf_level,
+      n_replicates = n_replicates,
+      calculate_deff = TRUE
+    )
+
+    out <- tibble::tibble(
+      estimate = variance_result$estimate,
+      se = variance_result$se,
+      ci_low = variance_result$ci_lower,
+      ci_high = variance_result$ci_upper,
+      deff = variance_result$deff,
       n = NA_integer_,
-      method = "busroute_ht",
-      diagnostics = list(dropped)
-    ))
+      method = "busroute_ht"
+    )
   }
+
+  # ── NEW: Variance Decomposition ───────────────────────────────────────────
+  if (decompose_variance) {
+    variance_result$decomposition <- tryCatch({
+      tc_decompose_variance(
+        design = design_eff,
+        response = "effort_day",
+        cluster_vars = c(day_id),
+        method = "anova",
+        conf_level = conf_level
+      )
+    }, error = function(e) {
+      cli::cli_warn("Variance decomposition failed: {e$message}")
+      NULL
+    })
+  }
+
+  # ── NEW: Design Diagnostics ───────────────────────────────────────────────
+  if (design_diagnostics) {
+    variance_result$diagnostics_survey <- tryCatch({
+      tc_design_diagnostics(design = design_eff, detailed = FALSE)
+    }, error = function(e) {
+      cli::cli_warn("Design diagnostics failed: {e$message}")
+      NULL
+    })
+  }
+
+  # ── NEW: Add variance_info and diagnostics ────────────────────────────────
+  out$diagnostics <- replicate(nrow(out), list(dropped), simplify = FALSE)
+  out$variance_info <- replicate(nrow(out), variance_result, simplify = FALSE)
+
+  return(dplyr::select(
+    out,
+    dplyr::any_of(by_all),
+    estimate, se, ci_low, ci_high, deff, n, method, diagnostics, variance_info
+  ))
 }
