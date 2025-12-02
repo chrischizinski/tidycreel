@@ -370,7 +370,9 @@ est_cpue_auto <- function(design, by, response, effort_col, min_trip_hours,
         "!" = "Truncating {n_truncated} trip{?s} < {min_trip_hours} hours.",
         "i" = "Using ratio-of-means."
       ))
-      svy <- subset(svy, !!as.name(effort_col) >= min_trip_hours)
+      # Filter using data frame operations
+      keep_idx <- svy$variables[[effort_col]] >= min_trip_hours
+      svy <- svy[keep_idx, ]
     } else {
       cli::cli_inform(c(
         "v" = "Auto: 100% incomplete trips (n={n_incomplete}). Using ratio-of-means."
@@ -408,7 +410,9 @@ est_cpue_auto <- function(design, by, response, effort_col, min_trip_hours,
 
   if (n_truncated > 0) {
     cli::cli_inform(c("!" = "Truncating {n_truncated} short incomplete trip{?s}."))
-    svy_incomplete <- subset(svy_incomplete, !!as.name(effort_col) >= min_trip_hours)
+    # Filter using data frame operations, then update survey design
+    keep_idx <- vars_incomplete[[effort_col]] >= min_trip_hours
+    svy_incomplete <- svy_incomplete[keep_idx, ]
   }
 
   # Estimate for each group
