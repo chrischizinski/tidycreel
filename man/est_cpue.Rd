@@ -69,16 +69,25 @@ and design diagnostics without requiring wrapper functions.
 }
 \examples{
 \dontrun{
-# BACKWARD COMPATIBLE
-result <- est_cpue(design, response = "catch_kept")
+# Load toy interview data
+interviews <- read.csv(system.file("extdata", "toy_interviews.csv", package = "tidycreel"))
+calendar <- read.csv(system.file("extdata", "toy_calendar.csv", package = "tidycreel"))
 
-# NEW: Advanced features
-result <- est_cpue(
-  design,
+# Create survey design from interviews
+library(survey)
+svy_interviews <- svydesign(ids = ~1, weights = ~1, data = interviews)
+
+# Estimate CPUE (catch per unit effort)
+cpue_est <- est_cpue(svy_interviews, response = "catch_total", by = "location")
+print(cpue_est)
+
+# With advanced features
+cpue_full <- est_cpue(
+  svy_interviews,
   response = "catch_kept",
-  variance_method = "bootstrap",
-  decompose_variance = TRUE,
-  design_diagnostics = TRUE
+  by = "location",
+  variance_method = "survey",
+  decompose_variance = TRUE
 )
 }
 

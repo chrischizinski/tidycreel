@@ -70,15 +70,17 @@ estimate_harvest <- function(design, by = NULL, species = NULL, type = c("number
 #'
 #' @examples
 #' \dontrun{
-#' # Build a day-level design from a calendar
+#' # Load toy datasets
+#' calendar <- read.csv(system.file("extdata", "toy_calendar.csv", package = "tidycreel"))
+#' counts <- read.csv(system.file("extdata", "toy_counts.csv", package = "tidycreel"))
+#'
+#' # Build a day-level design from calendar
 #' svy_day <- as_day_svydesign(calendar, day_id = "date",
-#'   strata_vars = c("day_type","month"))
+#'   strata_vars = c("day_type", "month"))
 #'
 #' # Instantaneous effort by location
-#' est_effort(svy_day, counts_inst, method = "instantaneous", by = "location")
-#'
-#' # Progressive effort by location
-#' est_effort(svy_day, counts_roving, method = "progressive", by = "location")
+#' effort_est <- est_effort(svy_day, counts, method = "instantaneous", by = "location")
+#' print(effort_est)
 #' }
 #' @export
 est_effort <- function(design,

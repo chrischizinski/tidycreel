@@ -29,12 +29,13 @@ information. Weights per sampled day are computed from target vs actual
 sample counts within strata (target_sample / actual_sample).
 }
 \examples{
-cal <- tibble::tibble(
-  date = as.Date(c("2025-08-20","2025-08-21")),
-  day_type = c("weekday","weekday"),
-  month = c("August","August"),
-  target_sample = c(4,4),
-  actual_sample = c(2,2)
-)
-svy_day <- as_day_svydesign(cal, day_id = "date", strata_vars = c("day_type","month"))
+# Load toy calendar data
+calendar <- read.csv(system.file("extdata", "toy_calendar.csv", package = "tidycreel"))
+
+# Create day-level survey design
+svy_day <- as_day_svydesign(calendar, day_id = "date",
+                            strata_vars = c("day_type", "month"))
+
+# Examine design
+summary(svy_day)
 }
