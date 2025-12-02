@@ -407,7 +407,7 @@ est_cpue_auto <- function(design, by, response, effort_col, min_trip_hours,
   n_truncated <- sum(short_trips, na.rm = TRUE)
 
   if (n_truncated > 0) {
-    cli::cli_inform("!" = "Truncating {n_truncated} short incomplete trip{?s}.")
+    cli::cli_inform(c("!" = "Truncating {n_truncated} short incomplete trip{?s}."))
     svy_incomplete <- subset(svy_incomplete, !!as.name(effort_col) >= min_trip_hours)
   }
 
