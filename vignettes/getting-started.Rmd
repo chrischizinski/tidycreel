@@ -112,21 +112,17 @@ class(svy_rep)
 Once you have a day-PSU design, estimate effort from counts using the survey-first estimators.
 
 ```{r estimate-effort}
-# Example instantaneous counts (toy)
-counts_inst <- tibble::tibble(
-  date = as.Date(c("2024-01-01","2024-01-01","2024-01-02","2024-01-02")),
-  location = c("A","B","A","B"),
-  count = c(10,12,8,15),
-  interval_minutes = 60,
-  total_day_minutes = 600
-)
-
-est_effort(
+# Use the toy counts data that was already loaded
+# This data has dates that match the calendar used in svy_day
+effort_est <- est_effort(
   design = svy_day,
-  counts = counts_inst,
+  counts = counts,
   method = "instantaneous",
   by = c("location")
 )
+
+# View results
+effort_est
 ```
 
 ## Estimating CPUE and Catch (Survey-First)
