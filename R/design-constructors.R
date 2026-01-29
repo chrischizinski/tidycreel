@@ -95,7 +95,24 @@ print.summary.creel_design <- function(x, ...) {
   }
   invisible(x)
 }
+#' Access point survey design (deprecated)
+#'
+#' @description
+#' `r lifecycle::badge("deprecated")`
+#' 
+#' This function is deprecated. Use the survey-first workflow with 
+#' [as_day_svydesign()] for day-PSU designs instead.
+#'
+#' @param interviews Interview data
+#' @param calendar Calendar data
+#' @param locations Location data (optional)
+#' @param strata_vars Stratification variables
+#' @param weight_method Weighting method
+#'
+#' @return Throws an error directing users to the new workflow
 #' @export
+#'
+#' @seealso [as_day_svydesign()], `vignette("effort_survey_first", package = "tidycreel")`
 design_access <- function(interviews, calendar, locations = NULL,
                           strata_vars = c("date", "shift_block", "location"),
                           weight_method = c("equal", "standard")) {
@@ -220,7 +237,26 @@ calculate_scale_factors <- function(method = c("bootstrap", "jackknife", "brr"),
   1
 }
 
+#' Roving survey design (deprecated)
+#'
+#' @description
+#' `r lifecycle::badge("deprecated")`
+#' 
+#' This function is deprecated. Use the survey-first workflow with 
+#' [as_day_svydesign()] and [est_effort.progressive()] instead.
+#'
+#' @param interviews Interview data
+#' @param counts Count data
+#' @param calendar Calendar data
+#' @param locations Location data (optional)
+#' @param strata_vars Stratification variables
+#' @param effort_method Effort estimation method
+#' @param coverage_correction Whether to apply coverage correction
+#'
+#' @return Throws an error directing users to the new workflow
 #' @export
+#'
+#' @seealso [as_day_svydesign()], [est_effort.progressive()], `vignette("effort_survey_first", package = "tidycreel")`
 design_roving <- function(interviews, counts, calendar, locations = NULL,
                           strata_vars = c("date", "shift_block", "location"),
                           effort_method = c("ratio", "calibrate"),

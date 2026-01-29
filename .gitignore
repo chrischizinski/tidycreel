@@ -342,6 +342,7 @@ done.md
 
 # Build and documentation
 docs/
+rag/
 build/
 *.html
 *.pdf

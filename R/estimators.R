@@ -9,7 +9,23 @@
 #' @name estimators
 NULL
 
+#' Estimate fishing effort (deprecated)
+#'
+#' @description
+#' `r lifecycle::badge("deprecated")`
+#' 
+#' This function is deprecated. Use the survey-first workflow with 
+#' [as_day_svydesign()] and [est_effort()] instead.
+#'
+#' @param design Survey design object
+#' @param by Grouping variables (optional)
+#' @param total Whether to include totals
+#' @param level Confidence level
+#'
+#' @return Throws an error directing users to the new workflow
 #' @export
+#'
+#' @seealso [as_day_svydesign()], [est_effort()], `vignette("effort_survey_first", package = "tidycreel")`
 estimate_effort <- function(design, by = NULL, total = TRUE, level = 0.95) {
   cli::cli_abort(c(
     "x" = "estimate_effort() is deprecated.",
@@ -18,7 +34,23 @@ estimate_effort <- function(design, by = NULL, total = TRUE, level = 0.95) {
   ))
 }
 
+#' Estimate catch per unit effort (deprecated)
+#'
+#' @description
+#' `r lifecycle::badge("deprecated")`
+#' 
+#' This function is deprecated. Use [est_cpue()] with a survey design instead.
+#'
+#' @param design Survey design object
+#' @param by Grouping variables (optional)
+#' @param species Species filter (optional)
+#' @param type Type of catch ("number" or "weight")
+#' @param level Confidence level
+#'
+#' @return Throws an error directing users to the new workflow
 #' @export
+#'
+#' @seealso [est_cpue()], `vignette("cpue_catch", package = "tidycreel")`
 estimate_cpue <- function(design, by = NULL, species = NULL, type = c("number", "weight"), level = 0.95) {
   cli::cli_abort(c(
     "x" = "estimate_cpue() is deprecated.",
@@ -27,7 +59,23 @@ estimate_cpue <- function(design, by = NULL, species = NULL, type = c("number", 
   ))
 }
 
+#' Estimate harvest (deprecated)
+#'
+#' @description
+#' `r lifecycle::badge("deprecated")`
+#' 
+#' This function is deprecated. Use [est_catch()] with a survey design instead.
+#'
+#' @param design Survey design object
+#' @param by Grouping variables (optional)
+#' @param species Species filter (optional)
+#' @param type Type of catch ("number" or "weight")
+#' @param level Confidence level
+#'
+#' @return Throws an error directing users to the new workflow
 #' @export
+#'
+#' @seealso [est_catch()], `vignette("cpue_catch", package = "tidycreel")`
 estimate_harvest <- function(design, by = NULL, species = NULL, type = c("number", "weight"), level = 0.95) {
   cli::cli_abort(c(
     "x" = "estimate_harvest() is deprecated.",

@@ -1,6 +1,6 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
-^\.roo/  # Exclude Roo protocol directory
+^\.roo/
 ^\.roo$
 ^\.github$
 ^README\.Rmd$
@@ -17,17 +17,17 @@
 ^pkgdown$
 ^CODE_OF_CONDUCT\.md$
 ^codemeta\.json$
-^\.vscode$  # Exclude VSCode configuration
-^\.claude$  # Exclude Claude configuration
-^\.git$     # Exclude git directory
-^\.pre-commit-config\.yaml$  # Exclude pre-commit config
-^\.python-version$  # Exclude Python version file
-^\.yamllint$  # Exclude yamllint config
-^\.codacy$  # Exclude Codacy config
-^\.dockerignore$  # Exclude Docker ignore file
-^\.editorconfig$  # Exclude editor config
-^\.markdownlint\.json$  # Exclude markdownlint config
-^\.kiro$  # Exclude kiro directory
+^\.vscode$
+^\.claude$
+^\.git$
+^\.pre-commit-config\.yaml$
+^\.python-version$
+^\.yamllint$
+^\.codacy$
+^\.dockerignore$
+^\.editorconfig$
+^\.markdownlint\.json$
+^\.kiro$
 
 ^doc$
 ^Meta$
@@ -78,3 +78,14 @@
 ^survey_.*\.tar\.gz$
 ^TEST_RESULTS_SUMMARY\.md$
 ^todo\.md$
+^logs$
+^data-raw$
+^\.planning$
+^LOCAL_TESTING\.md$
+^Makefile$
+^docker-compose\.yml$
+^check$
+^old_code$
+^rag$
+# Additional hidden files and directories
+^logs/.*\.json$

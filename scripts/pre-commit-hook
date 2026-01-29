@@ -1,0 +1,73 @@
+#!/bin/bash
+
+# Git Pre-commit Hook for tidycreel Architectural Standards
+# To install: cp scripts/pre-commit-hook .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+
+echo "🔍 Running tidycreel architectural compliance checks..."
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m'
+
+ERRORS=0
+
+# Check 1: Banned file naming patterns in staged files
+echo "Checking staged files for banned naming patterns..."
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep "\.R$" || true)
+
+if [ -n "$STAGED_FILES" ]; then
+  for file in $STAGED_FILES; do
+    if echo "$file" | grep -qE "integration|enhanced|wrapper|patch|internals-access"; then
+      echo -e "${RED}❌ ERROR: Banned file naming pattern in: $file${NC}"
+      echo "   Files with 'integration', 'enhanced', 'wrapper', 'patch', or 'internals-access'"
+      echo "   in their names violate architectural standards."
+      echo "   See ARCHITECTURAL_STANDARDS.md for details."
+      ERRORS=$((ERRORS + 1))
+    fi
+  done
+fi
+
+# Check 2: Banned function patterns in staged changes
+echo "Checking staged changes for banned function patterns..."
+STAGED_DIFF=$(git diff --cached | grep -E "^\+" || true)
+
+if echo "$STAGED_DIFF" | grep -qE "add_enhanced_|enhance_estimator|create_enhanced_|batch_enhance_"; then
+  echo -e "${RED}❌ ERROR: Banned function pattern detected in staged changes${NC}"
+  echo "   Wrapper functions like 'add_enhanced_*' or 'enhance_*' are not allowed."
+  echo "   Features must be built-in to estimator functions."
+  echo "   See ARCHITECTURAL_STANDARDS.md for details."
+  ERRORS=$((ERRORS + 1))
+fi
+
+# Check 3: Estimator files should use tc_compute_variance
+if echo "$STAGED_FILES" | grep -q "^R/est-.*\.R$"; then
+  echo "Checking estimator files use tc_compute_variance..."
+  for file in $STAGED_FILES; do
+    if echo "$file" | grep -q "^R/est-.*\.R$"; then
+      if [ -f "$file" ]; then
+        if ! grep -q "tc_compute_variance" "$file"; then
+          # Check if it has survey design
+          if grep -q "svy.*=" "$file" || grep -q "design.*=" "$file"; then
+            echo "⚠️  WARNING: $file has survey design but doesn't use tc_compute_variance()"
+            echo "   Consider rebuilding this estimator to use the core variance engine."
+            # This is a warning, not an error (for transition period)
+          fi
+        fi
+      fi
+    fi
+  done
+fi
+
+# Summary
+if [ $ERRORS -eq 0 ]; then
+  echo -e "${GREEN}✅ Architectural compliance check passed${NC}"
+  exit 0
+else
+  echo -e "${RED}❌ Architectural compliance check FAILED with $ERRORS error(s)${NC}"
+  echo ""
+  echo "Please fix the errors above before committing."
+  echo "Run: bash scripts/check-architecture.sh for detailed analysis"
+  echo "See: ARCHITECTURAL_STANDARDS.md for architectural guidelines"
+  exit 1
+fi
