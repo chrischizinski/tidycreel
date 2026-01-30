@@ -1,52 +1,127 @@
-# Requirements: Legacy Constructor Removal
+# Requirements: tidycreel v2
 
-**Defined:** 2026-01-27
-**Core Value:** Clean API with no legacy baggage - only new `est_*()` functions exposed to users
+**Defined:** 2026-01-30
+**Core Value:** Creel biologists work in domain vocabulary without understanding survey statistics
 
 ## v1 Requirements
 
-Requirements for completing the legacy constructor removal work.
+Requirements for v0.1.0 milestone (Foundation - Instantaneous Counts).
 
-### Code Removal
+### Package Infrastructure
 
-- [ ] **REM-01**: Remove `@export` tags from deprecated functions in `R/estimators.R`
-- [ ] **REM-02**: Regenerate NAMESPACE via `devtools::document()` to remove deprecated exports
-- [ ] **REM-03**: Delete deprecated function definitions from `R/estimators.R` (`estimate_effort()`, `estimate_cpue()`, `estimate_harvest()`)
-- [ ] **REM-04**: Delete `old_code/` directory containing archived legacy files (~187KB)
-- [ ] **REM-05**: Remove helper function `create_survey_design()` if unused by current API
+- [ ] **PKG-01**: Package structure initialized (DESCRIPTION, NAMESPACE, R/, tests/, man/)
+- [ ] **PKG-02**: lintr configuration file with project rules
+- [ ] **PKG-03**: Pre-commit hooks for lintr and styler
+- [ ] **PKG-04**: GitHub Actions CI/CD for R CMD check
+- [ ] **PKG-05**: GitHub Actions CI/CD for test coverage reporting
+- [ ] **PKG-06**: testthat 3 test suite configured
 
-### Pre-Removal Verification
+### Core Data Structures
 
-- [ ] **VER-01**: Search for references to deprecated functions in `tests/` directory
-- [ ] **VER-02**: Search for references to deprecated functions in `vignettes/` directory
-- [ ] **VER-03**: Search for references to `old_code/` in documentation
-- [ ] **VER-04**: Establish baseline test coverage with `covr::package_coverage()`
+- [ ] **DATA-01**: `creel_design` S3 class definition
+- [ ] **DATA-02**: `creel_design` print method
+- [ ] **DATA-03**: `creel_design` summary method
+- [ ] **DATA-04**: `creel_estimates` S3 class definition
+- [ ] **DATA-05**: `creel_estimates` print method with readable output
+- [ ] **DATA-06**: `creel_validation` S3 class definition
+- [ ] **DATA-07**: Calendar data schema validation
+- [ ] **DATA-08**: Count data schema validation
 
-### Post-Removal Verification
+### Design Construction
 
-- [ ] **VER-05**: Run `devtools::check()` (R CMD check) with no errors or warnings
-- [ ] **VER-06**: Run full test suite with `devtools::test()` - all tests pass
-- [ ] **VER-07**: Build vignettes successfully with no errors
-- [ ] **VER-08**: Verify test coverage maintained or improved
+- [ ] **DSGN-01**: `creel_design()` constructor accepts calendar data
+- [ ] **DSGN-02**: `creel_design()` uses tidy selectors for date column
+- [ ] **DSGN-03**: `creel_design()` uses tidy selectors for strata columns
+- [ ] **DSGN-04**: `creel_design()` uses tidy selectors for site column
+- [ ] **DSGN-05**: `add_counts()` method for instantaneous count data
+- [ ] **DSGN-06**: `add_counts()` validates count data schema
+- [ ] **DSGN-07**: Tier 1 validation fails fast on missing required columns
+- [ ] **DSGN-08**: Tier 1 validation fails fast on invalid date formats
+- [ ] **DSGN-09**: Internal svydesign construction (day-PSU design)
+- [ ] **DSGN-10**: Internal svydesign with stratification by date
+
+### Estimation
+
+- [ ] **EST-01**: `estimate_effort()` returns creel_estimates object
+- [ ] **EST-02**: `estimate_effort()` includes point estimates
+- [ ] **EST-03**: `estimate_effort()` includes standard errors
+- [ ] **EST-04**: `estimate_effort()` includes confidence intervals
+- [ ] **EST-05**: `estimate_effort()` includes sample sizes
+- [ ] **EST-06**: `estimate_effort()` supports total estimates (no grouping)
+- [ ] **EST-07**: `estimate_effort()` supports grouped estimation via `by = `
+- [ ] **EST-08**: `estimate_effort()` uses tidy selectors for grouping variables
+- [ ] **EST-09**: `estimate_effort()` supports variance method selection (variance = )
+- [ ] **EST-10**: `estimate_effort()` defaults to Taylor linearization
+- [ ] **EST-11**: `estimate_effort()` supports bootstrap variance
+- [ ] **EST-12**: `estimate_effort()` supports jackknife variance
+- [ ] **EST-13**: Tier 2 validation warns on zero/negative effort values
+- [ ] **EST-14**: Tier 2 validation warns on sparse strata (< 3 observations)
+- [ ] **EST-15**: Variance method used is stored in result attributes
+
+### Testing & Quality
+
+- [ ] **TEST-01**: Unit tests for creel_design constructor
+- [ ] **TEST-02**: Unit tests for add_counts method
+- [ ] **TEST-03**: Unit tests for estimate_effort function
+- [ ] **TEST-04**: Unit tests for data validation
+- [ ] **TEST-05**: Integration tests for full workflow (design → add data → estimate)
+- [ ] **TEST-06**: Reference tests comparing estimates to manual survey package calculations
+- [ ] **TEST-07**: Reference tests verify variance estimates match survey package
+- [ ] **TEST-08**: Test coverage ≥ 85% overall
+- [ ] **TEST-09**: Test coverage ≥ 95% for core estimation functions
+- [ ] **TEST-10**: All code passes lintr with project configuration
+- [ ] **TEST-11**: R CMD check passes with no errors/warnings/notes
 
 ### Documentation
 
-- [ ] **DOC-01**: Update NEWS.md with removal notice for deprecated functions
-- [ ] **DOC-02**: Verify README.md uses only current API (`est_*` functions)
-- [ ] **DOC-03**: Verify vignettes use only current API
-- [ ] **DOC-04**: Check for orphaned .Rd files in `man/` directory
+- [ ] **DOC-01**: roxygen2 documentation for all exported functions
+- [ ] **DOC-02**: roxygen2 documentation includes examples
+- [ ] **DOC-03**: Getting Started vignette with complete workflow
+- [ ] **DOC-04**: Example calendar dataset included
+- [ ] **DOC-05**: Example count dataset included
+- [ ] **DOC-06**: Vignettes render without errors
+
+## v2 Requirements
+
+Deferred to future milestones.
+
+### v0.2.0 - Additional Design Types
+
+- **DSGN-20**: Support for roving/progressive count surveys
+- **DSGN-21**: Support for aerial survey counts
+- **DSGN-22**: Support for bus route surveys
+- **DSGN-23**: Support for interview-based surveys
+- **EST-20**: `estimate_cpue()` for catch-per-unit-effort
+- **EST-21**: `estimate_catch()` for total catch
+- **EST-22**: `estimate_harvest()` for total harvest
+
+### v0.3.0 - Hybrid & Advanced Features
+
+- **DSGN-30**: Hybrid designs combining multiple data sources
+- **EST-30**: Calibration and post-stratification support
+- **EST-31**: Escape hatch functions (`as_survey_design()`, `extract_component()`)
+
+### v1.0.0 - Production Ready
+
+- **QA-01**: Deep diagnostic functions (`qa_check_effort()`, etc.)
+- **QA-02**: Comprehensive QA/QC reporting
+- **VIZ-01**: Basic plotting functions for estimates
+- **PERF-01**: Performance optimization for large surveys
+- **DOC-10**: Complete package documentation website (pkgdown)
 
 ## Out of Scope
 
-Explicitly excluded from this work.
+Explicitly excluded from all versions.
 
 | Feature | Reason |
 |---------|--------|
-| Deprecation warnings or lifecycle badges | Package never released - no users to migrate |
-| Migration vignette | Comprehensive getting-started vignettes already exist with current API |
-| Addressing other technical debt (variance complexity, zero-effort handling) | Separate work to tackle in future |
-| Adding new features or estimation methods | Separate work to tackle in future |
-| Version bump to 1.0.0 | Separate decision after this work merges |
+| Backward compatibility with tidycreel v1 | Package never released - clean slate for v2 |
+| Non-tidy API (quoted column names) | Committed to tidy selectors for consistency |
+| Survey objects in primary API | Domain translation is core value - keep survey internals hidden |
+| Real-time data collection tools | Out of scope - focus on analysis, not data collection |
+| Bayesian inference methods | Design-based inference only - defer to other packages |
+| Shiny app | Post v1.0.0 - separate package if needed |
+| Spatial mapping/GIS integration | Post v1.0.0 - defer to sf ecosystem |
 
 ## Traceability
 
@@ -54,29 +129,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| REM-01 | Pending | Pending |
-| REM-02 | Pending | Pending |
-| REM-03 | Pending | Pending |
-| REM-04 | Pending | Pending |
-| REM-05 | Pending | Pending |
-| VER-01 | Pending | Pending |
-| VER-02 | Pending | Pending |
-| VER-03 | Pending | Pending |
-| VER-04 | Pending | Pending |
-| VER-05 | Pending | Pending |
-| VER-06 | Pending | Pending |
-| VER-07 | Pending | Pending |
-| VER-08 | Pending | Pending |
-| DOC-01 | Pending | Pending |
-| DOC-02 | Pending | Pending |
-| DOC-03 | Pending | Pending |
-| DOC-04 | Pending | Pending |
+| (To be filled by roadmapper) | | |
 
 **Coverage:**
-- v1 requirements: 17 total
+- v1 requirements: 46 total
 - Mapped to phases: 0 (pending roadmap creation)
-- Unmapped: 17 ⚠️
+- Unmapped: 46 ⚠️
 
 ---
-*Requirements defined: 2026-01-27*
-*Last updated: 2026-01-27 after initial definition*
+*Requirements defined: 2026-01-30*
+*Last updated: 2026-01-30 after initial definition*
