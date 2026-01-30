@@ -129,13 +129,68 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (To be filled by roadmapper) | | |
+| PKG-01 | Phase 1 | Pending |
+| PKG-02 | Phase 1 | Pending |
+| PKG-03 | Phase 1 | Pending |
+| PKG-04 | Phase 1 | Pending |
+| PKG-05 | Phase 1 | Pending |
+| PKG-06 | Phase 1 | Pending |
+| DATA-01 | Phase 2 | Pending |
+| DATA-02 | Phase 2 | Pending |
+| DATA-03 | Phase 2 | Pending |
+| DATA-04 | Phase 2 | Pending |
+| DATA-05 | Phase 2 | Pending |
+| DATA-06 | Phase 2 | Pending |
+| DATA-07 | Phase 1 | Pending |
+| DATA-08 | Phase 1 | Pending |
+| DSGN-01 | Phase 2 | Pending |
+| DSGN-02 | Phase 2 | Pending |
+| DSGN-03 | Phase 2 | Pending |
+| DSGN-04 | Phase 2 | Pending |
+| DSGN-05 | Phase 3 | Pending |
+| DSGN-06 | Phase 3 | Pending |
+| DSGN-07 | Phase 2 | Pending |
+| DSGN-08 | Phase 2 | Pending |
+| DSGN-09 | Phase 3 | Pending |
+| DSGN-10 | Phase 3 | Pending |
+| EST-01 | Phase 4 | Pending |
+| EST-02 | Phase 4 | Pending |
+| EST-03 | Phase 4 | Pending |
+| EST-04 | Phase 4 | Pending |
+| EST-05 | Phase 4 | Pending |
+| EST-06 | Phase 4 | Pending |
+| EST-07 | Phase 5 | Pending |
+| EST-08 | Phase 5 | Pending |
+| EST-09 | Phase 6 | Pending |
+| EST-10 | Phase 4 | Pending |
+| EST-11 | Phase 6 | Pending |
+| EST-12 | Phase 6 | Pending |
+| EST-13 | Phase 4 | Pending |
+| EST-14 | Phase 4 | Pending |
+| EST-15 | Phase 4 | Pending |
+| TEST-01 | Phase 3 | Pending |
+| TEST-02 | Phase 3 | Pending |
+| TEST-03 | Phase 4 | Pending |
+| TEST-04 | Phase 5 | Pending |
+| TEST-05 | Phase 6 | Pending |
+| TEST-06 | Phase 4 | Pending |
+| TEST-07 | Phase 4 | Pending |
+| TEST-08 | Phase 7 | Pending |
+| TEST-09 | Phase 7 | Pending |
+| TEST-10 | Phase 7 | Pending |
+| TEST-11 | Phase 7 | Pending |
+| DOC-01 | Phase 7 | Pending |
+| DOC-02 | Phase 7 | Pending |
+| DOC-03 | Phase 7 | Pending |
+| DOC-04 | Phase 7 | Pending |
+| DOC-05 | Phase 7 | Pending |
+| DOC-06 | Phase 7 | Pending |
 
 **Coverage:**
-- v1 requirements: 46 total
-- Mapped to phases: 0 (pending roadmap creation)
-- Unmapped: 46 ⚠️
+- v1 requirements: 56 total
+- Mapped to phases: 56 (100% coverage)
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-01-30*
-*Last updated: 2026-01-30 after initial definition*
+*Last updated: 2026-01-30 after roadmap creation*
