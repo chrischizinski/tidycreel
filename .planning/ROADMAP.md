@@ -2,7 +2,7 @@
 
 ## Overview
 
-Building tidycreel v0.1.0 from the ground up as a domain-translator package for creel survey analysis. This milestone proves the three-layer architecture (API → Orchestration → Survey) by implementing the simplest design type (instantaneous counts) end-to-end. Seven phases progress from package scaffolding through core data structures, survey bridge construction, estimation capabilities, and final polish with comprehensive documentation.
+Building tidycreel v0.1.0 from the ground up as a domain-translator package for creel survey analysis. This milestone proves the three-layer architecture (API -> Orchestration -> Survey) by implementing the simplest design type (instantaneous counts) end-to-end. Seven phases progress from package scaffolding through core data structures, survey bridge construction, estimation capabilities, and final polish with comprehensive documentation.
 
 ## Phases
 
@@ -32,10 +32,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. GitHub Actions CI/CD runs R CMD check and test coverage on every push
   4. Pre-commit hooks enforce lintr and styler on all commits
   5. Data schemas validate calendar and count data structures
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] TBD during planning
+- [ ] 01-01-PLAN.md -- Clean v1 artifacts and scaffold v2 package
+- [ ] 01-02-PLAN.md -- Configure continuous quality gates (lintr, pre-commit, CI/CD)
+- [ ] 01-03-PLAN.md -- Data schema validators (TDD)
 
 ### Phase 2: Core Data Structures
 **Goal**: creel_design and creel_estimates objects work with proper S3 methods
@@ -128,11 +130,11 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Project Setup & Foundation | 0/TBD | Not started | - |
+| 1. Project Setup & Foundation | 0/3 | Planning complete | - |
 | 2. Core Data Structures | 0/TBD | Not started | - |
 | 3. Survey Bridge Layer | 0/TBD | Not started | - |
 | 4. Basic Estimation | 0/TBD | Not started | - |
