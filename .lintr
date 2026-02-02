@@ -3,5 +3,6 @@ linters: linters_with_defaults(
   )
 exclusions: list(
     "data-raw",
-    "inst"
+    "inst",
+    "scripts"
   )

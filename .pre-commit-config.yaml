@@ -3,17 +3,20 @@ default_stages: [pre-commit]
 
 repos:
   - repo: https://github.com/lorenzwalthert/precommit
-    rev: v0.4.3
+    rev: main
     hooks:
       - id: style-files
         args: [--style_pkg=styler, --style_fun=tidyverse_style]
+        exclude: ^scripts/
       - id: lintr
+        exclude: ^scripts/
       - id: parsable-R
       - id: no-browser-statement
       - id: no-debug-statement
       - id: readme-rmd-rendered
       - id: use-tidy-description
       - id: deps-in-desc
+        exclude: ^(scripts/|renv/)
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
     hooks:
