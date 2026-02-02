@@ -1,1 +1,7 @@
-exclusions: list("data-raw", "inst/extdata")
+linters: linters_with_defaults(
+    line_length_linter(120)
+  )
+exclusions: list(
+    "data-raw",
+    "inst"
+  )
