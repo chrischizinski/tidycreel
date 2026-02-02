@@ -5,33 +5,33 @@
 See: .planning/PROJECT.md (updated 2026-01-30)
 
 **Core value:** Creel biologists work in domain vocabulary without understanding survey statistics
-**Current focus:** Phase 1 - Project Setup & Foundation
+**Current focus:** Phase 2 - Core Data Structures
 
 ## Current Position
 
-Phase: 1 of 7 (Project Setup & Foundation)
-Plan: 2 of 3 in current phase
-Status: In progress
-Last activity: 2026-02-01 — Completed 01-02-PLAN.md
+Phase: 2 of 7 (Core Data Structures)
+Plan: 0 of TBD in current phase
+Status: Ready to plan
+Last activity: 2026-02-01 — Phase 1 complete and verified
 
-Progress: [██░░░░░░░░] 29%
+Progress: [██░░░░░░░░] 14%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
-- Average duration: 9 min
-- Total execution time: 0.3 hours
+- Total plans completed: 3
+- Average duration: 7 min
+- Total execution time: 0.35 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01 | 2 | 18 min | 9 min |
+| 01 | 3 | 21 min | 7 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (3 min), 01-02 (15 min)
-- Trend: Variable - infrastructure setup takes longer than scaffolding
+- Last 3 plans: 01-01 (3 min), 01-02 (15 min), 01-03 (3 min)
+- Trend: Infrastructure setup (01-02) took longer than code (01-01, 01-03)
 
 *Updated after each plan completion*
 
@@ -59,6 +59,13 @@ Recent decisions affecting current work:
 - Tidyverse style defaults with 120-char line length for all package code
 - GitHub Actions triggers on both main and v2-foundation branches for CI/CD
 
+**From 01-03:**
+- TDD pattern established (RED-GREEN commits) for tidycreel v2 development
+- Schema validators are internal (@keywords internal, @noRd) - not exported
+- Validators check structure/types only, not column names (tidy selectors in later phases)
+- checkmate::makeAssertCollection used to accumulate all errors before aborting
+- cli::cli_abort provides formatted error messages with bullets
+
 ### Pending Todos
 
 None yet.
@@ -70,5 +77,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-01
-Stopped at: Completed 01-02-PLAN.md
+Stopped at: Phase 1 execution complete and verified (all 3 plans), ready for Phase 2 planning
 Resume file: None

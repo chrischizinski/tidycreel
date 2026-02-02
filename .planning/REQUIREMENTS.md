@@ -9,12 +9,12 @@ Requirements for v0.1.0 milestone (Foundation - Instantaneous Counts).
 
 ### Package Infrastructure
 
-- [ ] **PKG-01**: Package structure initialized (DESCRIPTION, NAMESPACE, R/, tests/, man/)
-- [ ] **PKG-02**: lintr configuration file with project rules
-- [ ] **PKG-03**: Pre-commit hooks for lintr and styler
-- [ ] **PKG-04**: GitHub Actions CI/CD for R CMD check
-- [ ] **PKG-05**: GitHub Actions CI/CD for test coverage reporting
-- [ ] **PKG-06**: testthat 3 test suite configured
+- [x] **PKG-01**: Package structure initialized (DESCRIPTION, NAMESPACE, R/, tests/, man/)
+- [x] **PKG-02**: lintr configuration file with project rules
+- [x] **PKG-03**: Pre-commit hooks for lintr and styler
+- [x] **PKG-04**: GitHub Actions CI/CD for R CMD check
+- [x] **PKG-05**: GitHub Actions CI/CD for test coverage reporting
+- [x] **PKG-06**: testthat 3 test suite configured
 
 ### Core Data Structures
 
@@ -24,8 +24,8 @@ Requirements for v0.1.0 milestone (Foundation - Instantaneous Counts).
 - [ ] **DATA-04**: `creel_estimates` S3 class definition
 - [ ] **DATA-05**: `creel_estimates` print method with readable output
 - [ ] **DATA-06**: `creel_validation` S3 class definition
-- [ ] **DATA-07**: Calendar data schema validation
-- [ ] **DATA-08**: Count data schema validation
+- [x] **DATA-07**: Calendar data schema validation
+- [x] **DATA-08**: Count data schema validation
 
 ### Design Construction
 
