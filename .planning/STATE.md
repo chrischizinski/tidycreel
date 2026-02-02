@@ -10,31 +10,31 @@ See: .planning/PROJECT.md (updated 2026-01-30)
 ## Current Position
 
 Phase: 2 of 7 (Core Data Structures)
-Plan: 1 of TBD in current phase
+Plan: 2 of TBD in current phase
 Status: In progress
-Last activity: 2026-02-02 — Completed 02-01-PLAN.md (creel_design class)
+Last activity: 2026-02-02 — Completed 02-02-PLAN.md (creel_estimates and creel_validation classes)
 
-Progress: [██░░░░░░░░] 17%
+Progress: [██░░░░░░░░] 20%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
-- Average duration: 220 min (note: 02-01 includes system pauses)
-- Total execution time: 14.7 hours
+- Total plans completed: 5
+- Average duration: 169 min (note: 02-01 includes system pauses)
+- Total execution time: 14.8 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01 | 3 | 21 min | 7 min |
-| 02 | 1 | 840 min* | 840 min |
+| 02 | 2 | 844 min* | 422 min |
 
-*Note: 02-01 wall-clock time includes system pauses; actual work ~30-40 min
+*Note: 02-01 wall-clock time includes system pauses; actual work ~30-40 min; 02-02 actual work ~4 min
 
 **Recent Trend:**
-- Last 3 plans: 01-02 (15 min), 01-03 (3 min), 02-01 (840 min*)
-- Trend: 02-01 duration anomaly due to system pauses, not representative
+- Last 3 plans: 01-03 (3 min), 02-01 (840 min*), 02-02 (4 min)
+- Trend: TDD plans with clear specs execute quickly (02-02, 01-03); complex S3 classes take longer
 
 *Updated after each plan completion*
 
@@ -76,6 +76,12 @@ Recent decisions affecting current work:
 - creel_design S3 class uses constructor/validator/helper pattern from Advanced R
 - cli::cli_format_method() provides rich formatted output for print methods
 
+**From 02-02:**
+- Internal constructors (new_*) marked @keywords internal @noRd - not user-facing yet
+- creel_validation$passed computed automatically - TRUE only when all checks have status="pass"
+- S3 class pattern: new_* constructor with stopifnot validation, format using cli, print calling format
+- TDD RED → GREEN → REFACTOR pattern produces clean, well-tested code efficiently
+
 ### Pending Todos
 
 None yet.
@@ -87,5 +93,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-02
-Stopped at: Completed 02-01-PLAN.md (creel_design class)
+Stopped at: Completed 02-02-PLAN.md (creel_estimates and creel_validation classes)
 Resume file: None
