@@ -13,7 +13,7 @@ Building tidycreel v0.1.0 from the ground up as a domain-translator package for 
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Project Setup & Foundation** - Initialize package structure with quality gates
-- [ ] **Phase 2: Core Data Structures** - Implement creel_design and creel_estimates S3 classes
+- [x] **Phase 2: Core Data Structures** - Implement creel_design and creel_estimates S3 classes
 - [ ] **Phase 3: Survey Bridge Layer** - Build internal svydesign construction for instantaneous counts
 - [ ] **Phase 4: Basic Estimation** - Implement estimate_effort with total estimates
 - [ ] **Phase 5: Grouped Estimation** - Add grouped estimation with tidy selectors
@@ -136,7 +136,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Project Setup & Foundation | 3/3 | ✓ Complete | 2026-02-01 |
-| 2. Core Data Structures | 0/2 | In progress | - |
+| 2. Core Data Structures | 2/2 | ✓ Complete | 2026-02-02 |
 | 3. Survey Bridge Layer | 0/TBD | Not started | - |
 | 4. Basic Estimation | 0/TBD | Not started | - |
 | 5. Grouped Estimation | 0/TBD | Not started | - |

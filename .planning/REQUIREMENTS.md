@@ -18,25 +18,25 @@ Requirements for v0.1.0 milestone (Foundation - Instantaneous Counts).
 
 ### Core Data Structures
 
-- [ ] **DATA-01**: `creel_design` S3 class definition
-- [ ] **DATA-02**: `creel_design` print method
-- [ ] **DATA-03**: `creel_design` summary method
-- [ ] **DATA-04**: `creel_estimates` S3 class definition
-- [ ] **DATA-05**: `creel_estimates` print method with readable output
-- [ ] **DATA-06**: `creel_validation` S3 class definition
+- [x] **DATA-01**: `creel_design` S3 class definition
+- [x] **DATA-02**: `creel_design` print method
+- [x] **DATA-03**: `creel_design` summary method
+- [x] **DATA-04**: `creel_estimates` S3 class definition
+- [x] **DATA-05**: `creel_estimates` print method with readable output
+- [x] **DATA-06**: `creel_validation` S3 class definition
 - [x] **DATA-07**: Calendar data schema validation
 - [x] **DATA-08**: Count data schema validation
 
 ### Design Construction
 
-- [ ] **DSGN-01**: `creel_design()` constructor accepts calendar data
-- [ ] **DSGN-02**: `creel_design()` uses tidy selectors for date column
-- [ ] **DSGN-03**: `creel_design()` uses tidy selectors for strata columns
-- [ ] **DSGN-04**: `creel_design()` uses tidy selectors for site column
+- [x] **DSGN-01**: `creel_design()` constructor accepts calendar data
+- [x] **DSGN-02**: `creel_design()` uses tidy selectors for date column
+- [x] **DSGN-03**: `creel_design()` uses tidy selectors for strata columns
+- [x] **DSGN-04**: `creel_design()` uses tidy selectors for site column
 - [ ] **DSGN-05**: `add_counts()` method for instantaneous count data
 - [ ] **DSGN-06**: `add_counts()` validates count data schema
-- [ ] **DSGN-07**: Tier 1 validation fails fast on missing required columns
-- [ ] **DSGN-08**: Tier 1 validation fails fast on invalid date formats
+- [x] **DSGN-07**: Tier 1 validation fails fast on missing required columns
+- [x] **DSGN-08**: Tier 1 validation fails fast on invalid date formats
 - [ ] **DSGN-09**: Internal svydesign construction (day-PSU design)
 - [ ] **DSGN-10**: Internal svydesign with stratification by date
 
