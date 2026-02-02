@@ -52,8 +52,8 @@ counts_full <- counts_raw %>%
     ),
     time_start = c_CountTime,
     count = c_BankAnglers + c_AnglerBoats,
-    count_duration = 30,  # Assume 30-minute count
-    total_minutes = 720,  # 12-hour fishing day
+    count_duration = 30, # Assume 30-minute count
+    total_minutes = 720, # 12-hour fishing day
     interviewer = NA
   ) %>%
   select(date, location, shift_block, time_start, count, count_duration, total_minutes, interviewer) %>%
@@ -67,10 +67,14 @@ cutoff_date <- first_date + 60
 counts <- counts_full %>%
   filter(date <= cutoff_date)
 
-cat("✓ Created counts:", nrow(counts), "count records (filtered from",
-    nrow(counts_full), ")\n")
-cat("  Date range:", format(first_date, "%Y-%m-%d"), "to",
-    format(cutoff_date, "%Y-%m-%d"), "\n")
+cat(
+  "✓ Created counts:", nrow(counts), "count records (filtered from",
+  nrow(counts_full), ")\n"
+)
+cat(
+  "  Date range:", format(first_date, "%Y-%m-%d"), "to",
+  format(cutoff_date, "%Y-%m-%d"), "\n"
+)
 
 # 2. Process interviews data
 interviews_full <- interviews_raw %>%
@@ -85,13 +89,15 @@ interviews_full <- interviews_raw %>%
     interview_id = rowID,
     party_size = ii_NumberAnglers,
     hours_fished = ii_TimeFishedHours + ii_TimeFishedMinutes / 60,
-    trip_complete = ii_TripType == 1,  # 1 = completed trip
+    trip_complete = ii_TripType == 1, # 1 = completed trip
     target_species = ii_SpeciesSought,
     angler_type = ii_AnglerType,
     method_type = ii_AnglerMethod
   ) %>%
-  select(date, location, shift_block, interview_id, party_size, hours_fished,
-         trip_complete, target_species, angler_type, method_type) %>%
+  select(
+    date, location, shift_block, interview_id, party_size, hours_fished,
+    trip_complete, target_species, angler_type, method_type
+  ) %>%
   filter(!is.na(interview_id), !is.na(date)) %>%
   arrange(date, interview_id)
 
@@ -99,8 +105,10 @@ interviews_full <- interviews_raw %>%
 interviews <- interviews_full %>%
   filter(date >= first_date, date <= cutoff_date)
 
-cat("✓ Created interviews:", nrow(interviews), "interviews (filtered from",
-    nrow(interviews_full), ")\n")
+cat(
+  "✓ Created interviews:", nrow(interviews), "interviews (filtered from",
+  nrow(interviews_full), ")\n"
+)
 
 # 3. Process catch data
 catch_full <- catch_raw %>%
@@ -149,7 +157,7 @@ calendar <- tibble(
   ) %>%
   mutate(
     actual_sample = replace_na(actual_sample, 0),
-    target_sample = 2  # Assume 2 count periods per day
+    target_sample = 2 # Assume 2 count periods per day
   ) %>%
   arrange(date)
 
@@ -175,7 +183,7 @@ cat("✓ Saved interviews with catch to toy_interviews.csv\n")
 
 # 6. Create README
 readme_content <- paste0(
-"# Example Datasets for tidycreel
+  "# Example Datasets for tidycreel
 
 These datasets are real creel survey data from the **Pawnee Reservoir 2016** creel survey
 conducted by the Nebraska Game and Parks Commission.
@@ -199,7 +207,7 @@ conducted by the Nebraska Game and Parks Commission.
 ## Source
 
 Data retrieved from the University of Nebraska-Lincoln Creel Survey API on ",
-Sys.Date(), ".
+  Sys.Date(), ".
 
 - Creel UID: ", creel_uid, "
 - Creel Name: Pawnee Reservoir 2016

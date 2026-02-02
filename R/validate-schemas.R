@@ -22,7 +22,7 @@ validate_calendar_schema <- function(data) {
     }
 
     has_char <- any(vapply(data, is.character, logical(1))) ||
-                any(vapply(data, is.factor, logical(1)))
+      any(vapply(data, is.factor, logical(1)))
     if (!has_char) {
       collection$push("Must contain at least one character or factor column for strata")
     }
@@ -33,7 +33,10 @@ validate_calendar_schema <- function(data) {
     cli::cli_abort(c(
       "Calendar data validation failed:",
       stats::setNames(msgs, rep("x", length(msgs))),
-      "i" = "Calendar data must be a data frame with at least one Date column and one character/factor column for strata."
+      "i" = paste(
+        "Calendar data must be a data frame with at least one Date column",
+        "and one character/factor column for strata."
+      )
     ))
   }
 
@@ -74,7 +77,10 @@ validate_count_schema <- function(data) {
     cli::cli_abort(c(
       "Count data validation failed:",
       stats::setNames(msgs, rep("x", length(msgs))),
-      "i" = "Count data must be a data frame with at least one Date column and one numeric column."
+      "i" = paste(
+        "Count data must be a data frame with at least one Date column",
+        "and one numeric column."
+      )
     ))
   }
 
