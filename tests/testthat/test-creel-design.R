@@ -65,13 +65,10 @@ test_that("creel_design() fails when date column is not Date class", {
     day_type = c("weekday", "weekend")
   )
 
+  # Schema validator catches this (no Date column exists in the data frame)
   expect_error(
     creel_design(cal, date = date, strata = day_type),
     class = "rlang_error"
-  )
-  expect_error(
-    creel_design(cal, date = date, strata = day_type),
-    "must be of class"
   )
 })
 
@@ -81,9 +78,10 @@ test_that("creel_design() fails when date column is numeric", {
     day_type = c("weekday", "weekend", "weekend")
   )
 
+  # Schema validator catches this (no Date column exists in the data frame)
   expect_error(
     creel_design(cal, date = date, strata = day_type),
-    "must be of class"
+    class = "rlang_error"
   )
 })
 
@@ -109,8 +107,37 @@ test_that("creel_design() fails when strata column is numeric", {
     day_type = c(1, 2)
   )
 
+  # Schema validator catches this (no character/factor column exists)
   expect_error(
     creel_design(cal, date = date, strata = day_type),
+    class = "rlang_error"
+  )
+})
+
+test_that("creel_design() Tier 1 validation fails when selected date is not Date", {
+  # Schema passes (has Date column), but selected column is wrong type
+  cal <- data.frame(
+    actual_date = as.Date(c("2024-06-01", "2024-06-02")),
+    date_string = c("2024-06-01", "2024-06-02"),
+    day_type = c("weekday", "weekend")
+  )
+
+  expect_error(
+    creel_design(cal, date = date_string, strata = day_type),
+    "must be of class"
+  )
+})
+
+test_that("creel_design() Tier 1 validation fails when selected strata is numeric", {
+  # Schema passes (has character column), but selected column is wrong type
+  cal <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-02")),
+    day_type = c("weekday", "weekend"),
+    numeric_col = c(1, 2)
+  )
+
+  expect_error(
+    creel_design(cal, date = date, strata = numeric_col),
     "must be character or factor"
   )
 })

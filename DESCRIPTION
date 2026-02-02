@@ -18,7 +18,8 @@ Depends:
 Imports:
     checkmate,
     cli,
-    rlang
+    rlang,
+    tidyselect (>= 1.2.0)
 Suggests:
     covr,
     knitr,
