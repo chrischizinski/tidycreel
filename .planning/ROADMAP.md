@@ -49,10 +49,11 @@ Plans:
   3. creel_design object prints with readable summary of design structure
   4. creel_estimates object prints with estimates, SEs, CIs in user-friendly format
   5. Tier 1 validation fails fast on missing columns or invalid dates
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] TBD during planning
+- [ ] 02-01-PLAN.md -- creel_design S3 class with tidyselect and Tier 1 validation (TDD)
+- [ ] 02-02-PLAN.md -- creel_estimates and creel_validation S3 classes (TDD)
 
 ### Phase 3: Survey Bridge Layer
 **Goal**: Internal survey package designs construct correctly from creel data
@@ -135,7 +136,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Project Setup & Foundation | 3/3 | ✓ Complete | 2026-02-01 |
-| 2. Core Data Structures | 0/TBD | Not started | - |
+| 2. Core Data Structures | 0/2 | In progress | - |
 | 3. Survey Bridge Layer | 0/TBD | Not started | - |
 | 4. Basic Estimation | 0/TBD | Not started | - |
 | 5. Grouped Estimation | 0/TBD | Not started | - |
