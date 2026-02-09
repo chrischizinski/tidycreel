@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-30)
 ## Current Position
 
 Phase: 3 of 7 (Survey Bridge Layer)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-02-09 — Completed plan 03-01
+Plan: 2 of 2 in current phase
+Status: Phase complete
+Last activity: 2026-02-09 — Completed plan 03-02
 
-Progress: [█████░░░░░] 36%
+Progress: [██████░░░░] 43%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
-- Average duration: 146 min (note: 02-01 includes system pauses)
-- Total execution time: 14.9 hours
+- Total plans completed: 7
+- Average duration: 126 min (note: 02-01 includes system pauses)
+- Total execution time: 15.0 hours
 
 **By Phase:**
 
@@ -29,13 +29,13 @@ Progress: [█████░░░░░] 36%
 |-------|-------|-------|----------|
 | 01 | 3 | 21 min | 7 min |
 | 02 | 2 | 844 min* | 422 min |
-| 03 | 1 | 5 min | 5 min |
+| 03 | 2 | 9 min | 4.5 min |
 
 *Note: 02-01 wall-clock time includes system pauses; actual work ~30-40 min; 02-02 actual work ~4 min
 
 **Recent Trend:**
-- Last 3 plans: 02-01 (840 min*), 02-02 (4 min), 03-01 (5 min)
-- Trend: TDD plans with clear specs execute quickly; Phase 3 showing same fast pattern
+- Last 3 plans: 02-02 (4 min), 03-01 (5 min), 03-02 (4 min)
+- Trend: TDD plans with clear specs execute quickly; Phase 3 completed in 9 min total
 
 *Updated after each plan completion*
 
@@ -90,6 +90,12 @@ Recent decisions affecting current work:
 - Multiple strata combined via interaction() to create single stratification factor
 - Domain error wrapping: survey package errors wrapped with cli::cli_abort and domain-specific guidance
 
+**From 03-02:**
+- Once-per-session warnings use rlang::warn with .frequency = "once" and .frequency_id for scoping
+- R's copy-on-modify semantics provide mutation protection without explicit deep copy
+- Escape hatches for power users include educational warnings about recommended alternatives
+- Integration tests compare tidycreel output with manual survey package construction to verify correctness
+
 ### Pending Todos
 
 None yet.
@@ -101,5 +107,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-09
-Stopped at: Completed 03-01-PLAN.md - add_counts() and survey bridge layer
+Stopped at: Completed 03-02-PLAN.md - as_survey_design() escape hatch for power users
 Resume file: None
