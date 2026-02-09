@@ -93,10 +93,10 @@ Plans:
   1. User can specify grouping variables using by = with bare column names
   2. estimate_effort() returns group-wise estimates with correct variance
   3. Grouped results include sample sizes per group
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] TBD during planning
+- [ ] 05-01-PLAN.md -- Grouped estimation with by parameter (TDD)
 
 ### Phase 6: Variance Methods
 **Goal**: Users can control variance estimation method with clear defaults
@@ -140,6 +140,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 2. Core Data Structures | 2/2 | ✓ Complete | 2026-02-02 |
 | 3. Survey Bridge Layer | 2/2 | ✓ Complete | 2026-02-08 |
 | 4. Basic Estimation | 1/1 | ✓ Complete | 2026-02-09 |
-| 5. Grouped Estimation | 0/TBD | Not started | - |
+| 5. Grouped Estimation | 0/1 | In progress | - |
 | 6. Variance Methods | 0/TBD | Not started | - |
 | 7. Polish & Documentation | 0/TBD | Not started | - |
