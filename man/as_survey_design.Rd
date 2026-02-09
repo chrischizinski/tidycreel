@@ -18,7 +18,7 @@ affect the internal design$survey object.
 Provides power users with direct access to the internal survey.design2 object
 for advanced analysis using survey package functions. This is an escape hatch
 for workflows not yet wrapped by tidycreel. Most users should use
-\code{estimate_effort()} instead (available in future phase).
+\code{\link[=estimate_effort]{estimate_effort()}} instead.
 
 The function issues a once-per-session warning to educate users that this is
 an advanced feature with risks if the returned object is modified incorrectly.

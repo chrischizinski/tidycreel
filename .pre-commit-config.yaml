@@ -16,7 +16,7 @@ repos:
       - id: readme-rmd-rendered
       - id: use-tidy-description
       - id: deps-in-desc
-        exclude: ^(scripts/|renv/)
+        exclude: ^(scripts/|renv/|data-raw/)
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
     hooks:

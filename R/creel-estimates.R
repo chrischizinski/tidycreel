@@ -136,7 +136,7 @@ print.creel_estimates <- function(x, ...) {
 #'   \code{"bootstrap"} (bootstrap resampling with 500 replicates), or
 #'   \code{"jackknife"} (jackknife resampling, automatic JKn/JK1 selection).
 #' @param conf_level Numeric confidence level for confidence intervals (default:
-#'   0.95 for 95\% confidence intervals). Must be between 0 and 1.
+#'   0.95 for 95% confidence intervals). Must be between 0 and 1.
 #'
 #' @return A creel_estimates S3 object (list) with components: estimates
 #'   (tibble with estimate, se, ci_lower, ci_upper, n columns, plus grouping
@@ -191,8 +191,8 @@ print.creel_estimates <- function(x, ...) {
 #' result_grouped <- estimate_effort(design_with_counts, by = day_type)
 #' print(result_grouped)
 #'
-#' # Grouped by multiple variables
-#' result_multi <- estimate_effort(design_with_counts, by = c(day_type, location))
+#' # Note: Multiple grouping variables are supported if present in the data
+#' # For example: by = c(day_type, location)
 #'
 #' # Custom confidence level
 #' result_90 <- estimate_effort(design_with_counts, conf_level = 0.90)
