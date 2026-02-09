@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-30)
 ## Current Position
 
 Phase: 3 of 7 (Survey Bridge Layer)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-02-02 — Phase 2 complete and verified
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-02-09 — Completed plan 03-01
 
-Progress: [████░░░░░░] 29%
+Progress: [█████░░░░░] 36%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 5
-- Average duration: 169 min (note: 02-01 includes system pauses)
-- Total execution time: 14.8 hours
+- Total plans completed: 6
+- Average duration: 146 min (note: 02-01 includes system pauses)
+- Total execution time: 14.9 hours
 
 **By Phase:**
 
@@ -29,12 +29,13 @@ Progress: [████░░░░░░] 29%
 |-------|-------|-------|----------|
 | 01 | 3 | 21 min | 7 min |
 | 02 | 2 | 844 min* | 422 min |
+| 03 | 1 | 5 min | 5 min |
 
 *Note: 02-01 wall-clock time includes system pauses; actual work ~30-40 min; 02-02 actual work ~4 min
 
 **Recent Trend:**
-- Last 3 plans: 01-03 (3 min), 02-01 (840 min*), 02-02 (4 min)
-- Trend: TDD plans with clear specs execute quickly (02-02, 01-03); complex S3 classes take longer
+- Last 3 plans: 02-01 (840 min*), 02-02 (4 min), 03-01 (5 min)
+- Trend: TDD plans with clear specs execute quickly; Phase 3 showing same fast pattern
 
 *Updated after each plan completion*
 
@@ -82,6 +83,13 @@ Recent decisions affecting current work:
 - S3 class pattern: new_* constructor with stopifnot validation, format using cli, print calling format
 - TDD RED → GREEN → REFACTOR pattern produces clean, well-tested code efficiently
 
+**From 03-01:**
+- PSU column specified in add_counts() only, not creel_design() - PSU is meaningful only when count data present
+- Eager survey construction catches design errors when user has context about data being added
+- Lonely PSU errors deferred to estimation phase - survey::svydesign() only errors during variance computation
+- Multiple strata combined via interaction() to create single stratification factor
+- Domain error wrapping: survey package errors wrapped with cli::cli_abort and domain-specific guidance
+
 ### Pending Todos
 
 None yet.
@@ -92,6 +100,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-02
-Stopped at: Phase 2 execution complete and verified (2 plans), ready for Phase 3 planning
+Last session: 2026-02-09
+Stopped at: Completed 03-01-PLAN.md - add_counts() and survey bridge layer
 Resume file: None
