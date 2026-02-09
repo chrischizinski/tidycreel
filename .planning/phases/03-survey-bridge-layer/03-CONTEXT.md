@@ -27,7 +27,7 @@ This is the bridge between domain vocabulary (creel_design with counts) and stat
 
 ### Internal survey construction approach
 - **Construction timing**: Claude's discretion — choose eager vs lazy construction based on R patterns and error handling philosophy
-- **PSU identification**: User specifies PSU column in creel_design or add_counts() — flexible to support different sampling designs rather than hardcoding "day = PSU"
+- **PSU identification**: PSU column specified as argument to add_counts() — flexible to support different sampling designs (defaults to date_col for day-as-PSU common case). PSU is only meaningful when count data is present, so specifying it at add_counts() time (not creel_design() time) is the correct abstraction boundary.
 - **survey package dependency**: Claude's discretion — determine appropriate phase for adding survey package to DESCRIPTION
 - **Stratification mapping**: Use creel strata directly — pass strata columns from creel_design to svydesign strata argument as straightforward mapping
 
@@ -65,3 +65,4 @@ None — discussion stayed within phase scope
 
 *Phase: 03-survey-bridge-layer*
 *Context gathered: 2026-02-02*
+*Decision clarified: 2026-02-08 — PSU specification scoped to add_counts() only (not creel_design constructor)*
