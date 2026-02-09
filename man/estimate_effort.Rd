@@ -4,38 +4,52 @@
 \alias{estimate_effort}
 \title{Estimate total effort from a creel survey design}
 \usage{
-estimate_effort(design, conf_level = 0.95)
+estimate_effort(design, by = NULL, conf_level = 0.95)
 }
 \arguments{
 \item{design}{A creel_design object with counts attached via
 \code{\link{add_counts}}. The design must have a survey object constructed.}
+
+\item{by}{Optional tidy selector for grouping variables. Accepts bare column
+names (e.g., \code{by = day_type}), multiple columns (e.g.,
+\code{by = c(day_type, location)}), or tidyselect helpers (e.g.,
+\code{by = starts_with("day")}). When NULL (default), computes a single
+total estimate across all observations.}
 
 \item{conf_level}{Numeric confidence level for confidence intervals (default:
 0.95 for 95\\% confidence intervals). Must be between 0 and 1.}
 }
 \value{
 A creel_estimates S3 object (list) with components: estimates
-(tibble with estimate, se, ci_lower, ci_upper, n columns), method
-(character: "total"), variance_method (character: "taylor"), design
-(reference to source creel_design), and conf_level (numeric).
+(tibble with estimate, se, ci_lower, ci_upper, n columns, plus grouping
+columns if \code{by} is specified), method (character: "total"),
+variance_method (character: "taylor"), design (reference to source
+creel_design), conf_level (numeric), and by_vars (character vector of
+grouping variable names or NULL).
 }
 \description{
 Computes total effort estimates with standard errors and confidence intervals
 from a creel survey design with attached count data. Wraps survey::svytotal()
-with Tier 2 validation and domain-specific output formatting.
+(ungrouped) or survey::svyby() (grouped) with Tier 2 validation and
+domain-specific output formatting.
 }
 \details{
 The function performs Tier 2 validation before estimation, issuing warnings
 (not errors) for: zero values in count variables, negative values in count
-variables, and sparse strata (< 3 observations). Warnings do not prevent
-estimation but indicate data quality issues.
+variables, and sparse strata (< 3 observations). When grouped estimation is
+used (\code{by} is not NULL), additional warnings are issued for sparse
+groups (< 3 observations per group level).
 
-Phase 4 uses Taylor linearization variance estimation (default in survey
+Grouped estimation uses \code{survey::svyby()} internally, which correctly
+accounts for domain estimation variance. This is different from naive
+subsetting, which would underestimate variance.
+
+Phase 5 uses Taylor linearization variance estimation (default in survey
 package). Bootstrap and jackknife methods will be added in Phase 6.
 }
 \examples{
 \dontrun{
-# Basic usage
+# Basic ungrouped usage
 calendar <- data.frame(
   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
   day_type = c("weekday", "weekday", "weekend", "weekend")
@@ -51,6 +65,13 @@ counts <- data.frame(
 design_with_counts <- add_counts(design, counts)
 result <- estimate_effort(design_with_counts)
 print(result)
+
+# Grouped by day_type
+result_grouped <- estimate_effort(design_with_counts, by = day_type)
+print(result_grouped)
+
+# Grouped by multiple variables
+result_multi <- estimate_effort(design_with_counts, by = c(day_type, location))
 
 # Custom confidence level
 result_90 <- estimate_effort(design_with_counts, conf_level = 0.90)

@@ -473,7 +473,7 @@ test_that("grouped estimate_effort matches manual svyby standard errors", {
   for (i in seq_len(nrow(result$estimates))) {
     day <- result$estimates$day_type[i]
     tidycreel_se <- result$estimates$se[i]
-    manual_se <- manual_result$se.effort_hours[manual_result$day_type == day]
+    manual_se <- manual_result$se[manual_result$day_type == day]
 
     expect_equal(tidycreel_se, manual_se, tolerance = 1e-10)
   }
@@ -501,8 +501,8 @@ test_that("grouped estimate_effort matches manual svyby confidence intervals", {
     day <- result$estimates$day_type[i]
     tidycreel_ci_lower <- result$estimates$ci_lower[i]
     tidycreel_ci_upper <- result$estimates$ci_upper[i]
-    manual_ci_lower <- manual_result$ci_l.effort_hours[manual_result$day_type == day]
-    manual_ci_upper <- manual_result$ci_u.effort_hours[manual_result$day_type == day]
+    manual_ci_lower <- manual_result$ci_l[manual_result$day_type == day]
+    manual_ci_upper <- manual_result$ci_u[manual_result$day_type == day]
 
     expect_equal(tidycreel_ci_lower, manual_ci_lower, tolerance = 1e-10)
     expect_equal(tidycreel_ci_upper, manual_ci_upper, tolerance = 1e-10)

@@ -373,3 +373,62 @@ warn_tier2_issues <- function(design) {
 
   invisible(NULL)
 }
+
+#' Validate data quality for groups (Tier 2)
+#'
+#' Internal function that checks for sparse groups (< 3 observations per group
+#' level) in grouped estimation. Issues warnings (not errors) for data quality
+#' issues. This is a Tier 2 check - data quality issue that should be
+#' investigated but doesn't prevent estimation.
+#'
+#' @param design A creel_design object with counts attached
+#' @param by_vars Character vector of grouping variable names
+#'
+#' @return NULL (invisible) - function called for side effects (warnings)
+#'
+#' @keywords internal
+#' @noRd
+warn_tier2_group_issues <- function(design, by_vars) {
+  counts_data <- design$counts
+
+  # Count observations per group combination
+  group_data <- counts_data[by_vars]
+  group_data$count <- 1
+  group_counts <- stats::aggregate(
+    count ~ .,
+    data = group_data,
+    FUN = sum
+  )
+
+  # Identify sparse groups (< 3 observations)
+  sparse_groups <- group_counts[group_counts$count < 3, ]
+
+  if (nrow(sparse_groups) > 0) {
+    # Build bullet items for each sparse group
+    bullet_items <- character(nrow(sparse_groups))
+    for (i in seq_len(nrow(sparse_groups))) {
+      group_vals <- sparse_groups[i, by_vars, drop = FALSE]
+      group_label <- paste(
+        paste0(by_vars, "=", group_vals),
+        collapse = ", "
+      )
+      n_obs <- sparse_groups$count[i]
+      bullet_items[i] <- sprintf(
+        "Group %s: %d observation%s",
+        group_label,
+        n_obs,
+        ifelse(n_obs == 1, "", "s")
+      )
+    }
+    names(bullet_items) <- rep("*", length(bullet_items))
+
+    cli::cli_warn(c(
+      "{nrow(sparse_groups)} group{?s} ha{?s/ve} fewer than 3 observations:",
+      bullet_items,
+      "!" = "Sparse groups produce unstable variance estimates.",
+      "i" = "Consider combining sparse groups or collecting more data."
+    ))
+  }
+
+  invisible(NULL)
+}
