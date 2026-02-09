@@ -80,10 +80,10 @@ Plans:
   3. Variance method used is stored in result attributes for reproducibility
   4. Tier 2 validation warns on zero/negative effort values and sparse strata
   5. Estimates match manual survey package calculations (verified by reference tests)
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] TBD during planning
+- [ ] 04-01-PLAN.md -- estimate_effort() with Tier 2 validation and reference tests (TDD)
 
 ### Phase 5: Grouped Estimation
 **Goal**: Users can estimate effort by grouping variables using tidy selectors
@@ -139,7 +139,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 1. Project Setup & Foundation | 3/3 | ✓ Complete | 2026-02-01 |
 | 2. Core Data Structures | 2/2 | ✓ Complete | 2026-02-02 |
 | 3. Survey Bridge Layer | 2/2 | ✓ Complete | 2026-02-08 |
-| 4. Basic Estimation | 0/TBD | Not started | - |
+| 4. Basic Estimation | 0/1 | In progress | - |
 | 5. Grouped Estimation | 0/TBD | Not started | - |
 | 6. Variance Methods | 0/TBD | Not started | - |
 | 7. Polish & Documentation | 0/TBD | Not started | - |
