@@ -126,6 +126,42 @@ test_that("format.creel_validation() contains context and tier info", {
   expect_match(formatted_text, "2", fixed = TRUE)
 })
 
+test_that("format.creel_validation() shows passed status for all-pass validations", {
+  results_df <- test_validation_all_pass()
+  result <- new_creel_validation(results_df, tier = 1L, context = "test")
+
+  formatted <- format(result)
+  formatted_text <- paste(formatted, collapse = "\n")
+
+  # Should indicate passing status
+  expect_true(result$passed)
+  expect_type(formatted, "character")
+})
+
+test_that("format.creel_validation() shows fail status for failed validations", {
+  results_df <- test_validation_with_fail()
+  result <- new_creel_validation(results_df, tier = 1L, context = "test")
+
+  formatted <- format(result)
+  formatted_text <- paste(formatted, collapse = "\n")
+
+  # Should indicate failure
+  expect_false(result$passed)
+  expect_match(formatted_text, "fail|Fail", ignore.case = TRUE)
+})
+
+test_that("format.creel_validation() shows warn status for warning validations", {
+  results_df <- test_validation_with_warn()
+  result <- new_creel_validation(results_df, tier = 1L, context = "test")
+
+  formatted <- format(result)
+  formatted_text <- paste(formatted, collapse = "\n")
+
+  # Should indicate warning (status shows FAILED when any check is not "pass")
+  expect_false(result$passed)
+  expect_match(formatted_text, "FAILED|!", fixed = FALSE)
+})
+
 # Input validation tests ----
 test_that("new_creel_validation() rejects non-data.frame results", {
   expect_error(

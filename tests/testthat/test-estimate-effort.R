@@ -115,6 +115,27 @@ test_that("estimate_effort errors when counts not attached", {
   )
 })
 
+test_that("estimate_effort errors when count data has no numeric column", {
+  cal <- make_test_calendar()
+  design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+
+  # Create counts with only character/factor columns (no numeric count variable)
+  bad_counts <- data.frame(
+    date = as.Date(c(
+      "2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04",
+      "2024-06-08", "2024-06-09", "2024-06-15", "2024-06-16"
+    )),
+    day_type = rep(c("weekday", "weekend"), each = 4),
+    description = rep("no fishing", 8)
+  )
+
+  # This should fail during add_counts (schema validation requires numeric column)
+  expect_error(
+    add_counts(design, bad_counts), # nolint: object_usage_linter
+    "numeric"
+  )
+})
+
 # Tier 2 validation tests ----
 
 test_that("estimate_effort warns when count data has zero values", {
@@ -395,6 +416,36 @@ test_that("format.creel_estimates shows no Grouped by for ungrouped results", {
   formatted <- format(result)
 
   expect_false(any(grepl("Grouped by", formatted, fixed = TRUE)))
+})
+
+test_that("format.creel_estimates shows Taylor linearization for taylor method", {
+  design <- make_test_design_with_counts()
+
+  result <- suppressWarnings(estimate_effort(design, variance = "taylor")) # nolint: object_usage_linter
+  formatted <- format(result)
+
+  # Should show "Taylor linearization" (display name, not "taylor")
+  expect_true(any(grepl("Taylor", formatted, ignore.case = TRUE)))
+})
+
+test_that("format.creel_estimates shows Bootstrap for bootstrap method", {
+  design <- make_test_design_with_counts()
+
+  result <- suppressWarnings(estimate_effort(design, variance = "bootstrap")) # nolint: object_usage_linter
+  formatted <- format(result)
+
+  # Should show "Bootstrap"
+  expect_true(any(grepl("Bootstrap", formatted, ignore.case = TRUE)))
+})
+
+test_that("format.creel_estimates shows Jackknife for jackknife method", {
+  design <- make_test_design_with_counts()
+
+  result <- suppressWarnings(estimate_effort(design, variance = "jackknife")) # nolint: object_usage_linter
+  formatted <- format(result)
+
+  # Should show "Jackknife"
+  expect_true(any(grepl("Jackknife", formatted, ignore.case = TRUE)))
 })
 
 # Grouped estimation - Tier 2 validation ----

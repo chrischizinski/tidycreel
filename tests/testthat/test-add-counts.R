@@ -299,3 +299,31 @@ test_that("validation$tier is 1L (integer Tier 1)", {
 
   expect_identical(result$validation$tier, 1L)
 })
+
+# Error handling tests for construct_survey_design ----
+
+test_that("add_counts errors gracefully when PSU column missing from count data", {
+  design <- make_test_design()
+  bad_counts <- make_test_counts()
+  # Remove date column (which is default PSU)
+  bad_counts <- bad_counts[, setdiff(names(bad_counts), "date")]
+
+  # Should error with friendly message about missing PSU column
+  expect_error(
+    add_counts(design, bad_counts, psu = "date"),
+    "PSU|date|column"
+  )
+})
+
+test_that("add_counts errors gracefully when strata column missing from count data", {
+  design <- make_test_design()
+  bad_counts <- make_test_counts()
+  # Remove strata column
+  bad_counts <- bad_counts[, setdiff(names(bad_counts), "day_type")]
+
+  # Should error with friendly message about missing strata column
+  expect_error(
+    add_counts(design, bad_counts),
+    "day_type|strata|column"
+  )
+})

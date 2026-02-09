@@ -217,3 +217,26 @@ test_that("creel_design() defaults design_type to instantaneous", {
 
   expect_equal(design$design_type, "instantaneous")
 })
+
+# Format/print with counts attached ----
+
+test_that("format.creel_design() shows count information when counts attached", {
+  cal <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
+    day_type = c("weekday", "weekday", "weekend", "weekend")
+  )
+  design <- creel_design(cal, date = date, strata = day_type)
+  counts <- data.frame(
+    date = cal$date,
+    day_type = cal$day_type,
+    effort_hours = c(15, 23, 45, 52)
+  )
+  design_with_counts <- add_counts(design, counts)
+
+  formatted <- format(design_with_counts)
+
+  # Should show counts information
+  expect_true(any(grepl("Counts:", formatted, fixed = TRUE)))
+  expect_true(any(grepl("PSU column:", formatted, fixed = TRUE)))
+  expect_true(any(grepl("Survey:", formatted, fixed = TRUE)))
+})
