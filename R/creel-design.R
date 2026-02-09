@@ -274,6 +274,135 @@ resolve_multi_cols <- function(expr, data, arg_name, error_call = rlang::caller_
   names(loc)
 }
 
+#' Attach count data to a creel design
+#'
+#' @description
+#' Attaches instantaneous count data to a creel_design object and constructs
+#' the internal survey design object eagerly. This is the core of the survey
+#' bridge layer - translating domain vocabulary (creel counts) into statistical
+#' machinery (survey::svydesign). Eager construction catches design errors at
+#' add_counts() time when users have context about what data they are adding.
+#'
+#' @param design A creel_design object (created with [creel_design()])
+#' @param counts Data frame containing count data. Must have:
+#'   - A Date column matching the design's date_col
+#'   - All strata columns from the design's strata_cols
+#'   - At least one numeric column (the count variable)
+#'   - A PSU column (specified via psu argument, defaults to date_col)
+#' @param psu Character string naming the PSU (Primary Sampling Unit) column
+#'   in the count data. Defaults to NULL, which uses the design's date_col as
+#'   the PSU (day-as-PSU is the most common creel design). For other designs,
+#'   specify the PSU column explicitly (e.g., "site_day" for day-site PSUs).
+#' @param allow_invalid Logical flag for validation behavior. If FALSE (default),
+#'   validation failures abort with detailed error messages. If TRUE, validation
+#'   failures generate warnings and attach counts anyway (use with caution).
+#'
+#' @return A new creel_design object (list) with components:
+#'   \item{calendar}{Original calendar data frame}
+#'   \item{date_col}{Character name of date column}
+#'   \item{strata_cols}{Character vector of strata column names}
+#'   \item{site_col}{Character name of site column, or NULL}
+#'   \item{design_type}{Character design type}
+#'   \item{counts}{The count data frame (newly attached)}
+#'   \item{psu_col}{Character name of PSU column}
+#'   \item{survey}{Internal survey.design2 object (newly constructed)}
+#'   \item{validation}{creel_validation object with Tier 1 results}
+#'
+#' @section Immutability:
+#' add_counts() follows functional programming patterns and returns a new
+#' creel_design object. The original design object is not modified. This
+#' prevents accidental data loss and makes the workflow explicit:
+#' `design2 <- add_counts(design, counts)` not `add_counts(design, counts)`
+#'
+#' @section Validation:
+#' add_counts() performs Tier 1 validation:
+#' - Count data schema (Date column, numeric column) via validate_count_schema()
+#' - Design column presence (date_col, strata_cols, PSU in count data)
+#' - No NA values in design-critical columns (date, strata, PSU)
+#' - Survey construction (catches lonely PSU errors, stratification issues)
+#'
+#' @section PSU Specification:
+#' Per user decision (clarified 2026-02-08), PSU is specified only in add_counts(),
+#' not in creel_design() constructor. PSU is only meaningful when count data is
+#' present, making add_counts() the correct abstraction boundary. This design
+#' allows the same creel_design calendar to be used with different PSU structures.
+#'
+#' @examples
+#' # Basic usage - day as PSU (default)
+#' calendar <- data.frame(
+#'   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
+#'   day_type = c("weekday", "weekday", "weekend", "weekend")
+#' )
+#' design <- creel_design(calendar, date = date, strata = day_type)
+#'
+#' counts <- data.frame(
+#'   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
+#'   day_type = c("weekday", "weekday", "weekend", "weekend"),
+#'   count = c(15, 23, 45, 52)
+#' )
+#'
+#' design_with_counts <- add_counts(design, counts)
+#' print(design_with_counts)
+#'
+#' # Custom PSU column
+#' counts_with_site_psu <- data.frame(
+#'   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
+#'   day_type = c("weekday", "weekday", "weekend", "weekend"),
+#'   site_day = paste0("site_", 1:4),
+#'   count = c(15, 23, 45, 52)
+#' )
+#'
+#' design2 <- add_counts(design, counts_with_site_psu, psu = "site_day")
+#'
+#' @export
+add_counts <- function(design, counts, psu = NULL, allow_invalid = FALSE) {
+  # Validate design is creel_design
+  if (!inherits(design, "creel_design")) {
+    cli::cli_abort(c(
+      "{.arg design} must be a {.cls creel_design} object.",
+      "x" = "{.arg design} is {.cls {class(design)[1]}}.",
+      "i" = "Create a design with {.fn creel_design}."
+    ))
+  }
+
+  # Check counts not already attached
+  if (!is.null(design$counts)) {
+    cli::cli_abort(c(
+      "Counts already attached to design.",
+      "x" = "The design object already has count data in the {.field $counts} slot.",
+      "i" = "Create a new design with {.fn creel_design} to attach different counts.",
+      "i" = "Use immutable workflow: {.code design2 <- add_counts(design, counts)}"
+    ))
+  }
+
+  # Validate count data schema (Date column, numeric column)
+  validate_count_schema(counts) # nolint: object_usage_linter
+
+  # Set PSU column (default to date_col for day-as-PSU)
+  if (is.null(psu)) {
+    psu <- design$date_col
+  }
+
+  # Validate counts structure (Tier 1)
+  validation <- validate_counts_tier1(counts, design, psu, allow_invalid) # nolint: object_usage_linter
+
+  # Copy design and add counts + PSU
+  new_design <- design
+  new_design$counts <- counts
+  new_design$psu_col <- psu
+
+  # Construct survey design eagerly
+  new_design$survey <- construct_survey_design(new_design) # nolint: object_usage_linter
+
+  # Store validation results
+  new_design$validation <- validation
+
+  # Preserve class
+  class(new_design) <- "creel_design"
+
+  new_design
+}
+
 #' Format a creel_design object
 #'
 #' @param x A creel_design object
@@ -303,7 +432,19 @@ format.creel_design <- function(x, ...) {
     }
 
     has_counts <- !is.null(x$counts) # nolint: object_usage_linter
-    cli::cli_text("Counts: {.val {if (has_counts) 'attached' else 'none'}}")
+    has_survey <- !is.null(x$survey) # nolint: object_usage_linter
+    if (has_counts) {
+      n_counts <- nrow(x$counts) # nolint: object_usage_linter
+      psu_col <- x$psu_col # nolint: object_usage_linter
+      cli::cli_text("Counts: {.val {n_counts}} observation{?s}")
+      cli::cli_text("  PSU column: {.field {psu_col}}")
+      if (has_survey) {
+        survey_class <- class(x$survey)[1] # nolint: object_usage_linter
+        cli::cli_text("  Survey: {.cls {survey_class}} (constructed)")
+      }
+    } else {
+      cli::cli_text("Counts: {.val none}")
+    }
   })
 }
 

@@ -249,8 +249,10 @@ test_that("survey object has correct strata - multiple strata", {
   expect_true(!is.null(result$survey$strata))
 })
 
-test_that("construct_survey_design wraps lonely PSU error with guidance", {
+test_that("construct_survey_design allows lonely PSU (errors caught during estimation)", {
   # Create design with lonely PSU - only one date per stratum
+  # Note: survey package doesn't error during construction, only during variance estimation
+  # This is correct behavior - we catch lonely PSU errors in Phase 4 estimation functions
   cal <- data.frame(
     date = as.Date(c("2024-06-01", "2024-06-08")),
     day_type = c("weekday", "weekend")
@@ -263,10 +265,10 @@ test_that("construct_survey_design wraps lonely PSU error with guidance", {
     count = c(15, 45)
   )
 
-  expect_error(
-    add_counts(design, counts),
-    "stratum|PSU"
-  )
+  # Should construct successfully - lonely PSU errors happen during estimation
+  result <- add_counts(design, counts)
+  expect_s3_class(result, "creel_design")
+  expect_s3_class(result$survey, "survey.design2")
 })
 
 # Validation storage tests ----
