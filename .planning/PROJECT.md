@@ -12,21 +12,21 @@ Creel biologists can analyze survey data using creel vocabulary without ever und
 
 ### Validated
 
-(None yet — building from scratch)
+**v0.1.0 - Foundation (Instantaneous Counts)** — Shipped 2026-02-09
+- ✓ Package structure with lintr, testthat, CI/CD configured — v0.1.0
+- ✓ `creel_design()` constructor with tidy selectors for column specification — v0.1.0
+- ✓ `add_counts()` for instantaneous count data — v0.1.0
+- ✓ `estimate_effort()` returning estimates with SE and CI — v0.1.0
+- ✓ Progressive validation (Tier 1: design creation, Tier 2: estimation warnings) — v0.1.0
+- ✓ Grouped estimation with `by = ` parameter — v0.1.0
+- ✓ Variance method control (Taylor, bootstrap, jackknife) — v0.1.0
+- ✓ Internal survey design construction (day-PSU, stratified) — v0.1.0
+- ✓ Reference tests proving estimates match manual survey package calculations — v0.1.0
+- ✓ Getting Started vignette with example workflow — v0.1.0
 
 ### Active
 
-**v0.1.0 - Foundation (Instantaneous Counts)**
-- [ ] Package structure with lintr, testthat, CI/CD configured
-- [ ] `creel_design()` constructor with tidy selectors for column specification
-- [ ] `add_counts()` for instantaneous count data
-- [ ] `estimate_effort()` returning estimates with SE and CI
-- [ ] Progressive validation (Tier 1: design creation, Tier 2: estimation warnings)
-- [ ] Grouped estimation with `by = ` parameter
-- [ ] Variance method control (Taylor, bootstrap, jackknife)
-- [ ] Internal survey design construction (day-PSU, stratified)
-- [ ] Reference tests proving estimates match manual survey package calculations
-- [ ] Getting Started vignette with example workflow
+**v0.2.0 - Next Milestone** (To be defined)
 
 ### Out of Scope
 
@@ -45,31 +45,35 @@ Creel biologists can analyze survey data using creel vocabulary without ever und
 
 ## Context
 
+**Current State (v0.1.0 shipped 2026-02-09):**
+- Package structure: 1,600 LOC R across 8 core files
+- Test suite: 253 tests with 88.75% coverage
+- Quality: 0 lintr issues, R CMD check clean (0 errors, 0 warnings)
+- Documentation: Complete roxygen2 docs, example datasets, Getting Started vignette
+- Tech stack: R (≥4.1.0), survey, tidyverse (tidyselect, dplyr, rlang), checkmate, cli
+
 **Brownfield redesign:**
 - Existing tidycreel v1 codebase has ~40 R files covering estimators, variance, QA/QC
 - v1 uses survey package but exposes survey objects in user-facing API
 - Codebase mapping exists in `.planning-legacy-work/codebase/`
 - Design document: `docs/plans/2026-01-30-tidycreel-gsd-redesign.md`
 
-**Technical environment:**
-- R package development with roxygen2, devtools, testthat
-- Built on survey package (Thomas Lumley) for statistical engine
-- Tidyverse ecosystem (dplyr, tidyr, rlang for tidy evaluation)
-- GitHub for version control and CI/CD
-- Never publicly released — no users to migrate
-
-**v2 architectural innovations:**
-1. **Three-layer architecture:** User API (domain translation) → Orchestration (survey bridge) → Survey package (statistics)
-2. **Design-centric API:** Everything flows through `creel_design` object
-3. **Progressive validation:** Fail fast (creation) → warn (estimation) → deep diagnostics (optional)
-4. **Hybrid philosophy:** 90% domain translation, 10% escape hatches for power users
-5. **Continuous quality gates:** lintr, R CMD check, coverage at every phase
+**v2 architectural innovations (proven in v0.1.0):**
+1. **Three-layer architecture:** User API (domain translation) → Orchestration (survey bridge) → Survey package (statistics) ✓
+2. **Design-centric API:** Everything flows through `creel_design` object ✓
+3. **Progressive validation:** Fail fast (creation) → warn (estimation) → deep diagnostics (optional) ✓
+4. **Hybrid philosophy:** 90% domain translation, 10% escape hatches for power users ✓
+5. **Continuous quality gates:** lintr, R CMD check, coverage at every phase ✓
 
 **Development approach:**
-- Build simplest design type first (instantaneous counts) to prove architecture
+- Build simplest design type first (instantaneous counts) to prove architecture ✓ Complete
 - Each milestone adds design types incrementally
 - GSD methodology with atomic commits and phase verification
-- Start from empty package structure (not refactoring existing code)
+- Start from empty package structure (not refactoring existing code) ✓
+
+**Next milestone focus:**
+- Additional design types (roving, aerial, bus route surveys)
+- Interview-based estimation (CPUE, catch, harvest)
 
 ## Constraints
 
@@ -85,14 +89,17 @@ Creel biologists can analyze survey data using creel vocabulary without ever und
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Three-layer architecture (API → Orchestration → Survey) | Separates domain translation from statistics; enables testing layers independently | — Pending |
-| Design-centric API (everything through `creel_design` object) | Matches real workflow: design survey → collect data → estimate; single source of truth | — Pending |
-| Tidy selectors for column specification | Familiar to tidyverse users; no quoted strings; consistent with dplyr/tidyr | — Pending |
-| Progressive validation (tier 1/2/3) | Supports all workflows: production (fast), exploratory (deep), power user (skip) | — Pending |
-| Build instantaneous counts first | Simplest design type proves architecture; establishes patterns for other types | — Pending |
-| Start from empty package (not refactor v1) | Clean slate faster than unpicking v1 coupling; v1 available as reference | — Pending |
-| Variance methods visible but defaulted | Scientific software requires justification; users must know what's happening | — Pending |
-| lintr enforced at every commit | Continuous quality cheaper than cleanup phases; prevents technical debt | — Pending |
+| Three-layer architecture (API → Orchestration → Survey) | Separates domain translation from statistics; enables testing layers independently | ✓ Good — Clean separation enables independent layer testing, survey package correctly hidden |
+| Design-centric API (everything through `creel_design` object) | Matches real workflow: design survey → collect data → estimate; single source of truth | ✓ Good — Intuitive workflow, design object holds all context |
+| Tidy selectors for column specification | Familiar to tidyverse users; no quoted strings; consistent with dplyr/tidyr | ✓ Good — No user friction, tidyselect integration seamless |
+| Progressive validation (tier 1/2/3) | Supports all workflows: production (fast), exploratory (deep), power user (skip) | ✓ Good — Tier 1 fail-fast + Tier 2 warnings working well, Tier 3 deferred to v1.0 |
+| Build instantaneous counts first | Simplest design type proves architecture; establishes patterns for other types | ✓ Good — Architecture proven, patterns established for future design types |
+| Start from empty package (not refactor v1) | Clean slate faster than unpicking v1 coupling; v1 available as reference | ✓ Good — Clean implementation, v1 available as reference when needed |
+| Variance methods visible but defaulted | Scientific software requires justification; users must know what's happening | ✓ Good — Default to Taylor, bootstrap/jackknife available, method shown in output |
+| lintr enforced at every commit | Continuous quality cheaper than cleanup phases; prevents technical debt | ✓ Good — Zero technical debt, pre-commit hooks worked perfectly |
+| PSU specified in add_counts() only (Phase 3) | PSU meaningful only when count data present | ✓ Good — User-facing decision scoped correctly |
+| Eager survey construction (Phase 3) | Catch errors when user has context about data | ✓ Good — Immediate feedback on design issues |
+| Accept unreachable error handlers coverage gap (Phase 7) | Pragmatic testing vs perfectionist coverage | ✓ Good — 88.75% overall coverage, test user behavior not implementation details |
 
 ---
-*Last updated: 2026-01-30 after initialization from design document*
+*Last updated: 2026-02-09 after v0.1.0 milestone completion*

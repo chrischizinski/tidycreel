@@ -2,19 +2,18 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-01-30)
+See: .planning/PROJECT.md (updated 2026-02-09)
 
 **Core value:** Creel biologists work in domain vocabulary without understanding survey statistics
-**Current focus:** Milestone v0.1.0 complete — all 7 phases executed, package ready for release
+**Current focus:** Planning next milestone (v0.2.0) — additional design types and estimation methods
 
 ## Current Position
 
-Phase: 7 of 7 (Polish & Documentation)
-Plan: 2 of 2 in current phase
-Status: Milestone complete ✓
-Last activity: 2026-02-09 — Completed Phase 7 (documentation + quality assurance), phase verified
+Milestone: v0.1.0 shipped ✓
+Status: Ready for next milestone
+Last activity: 2026-02-09 — v0.1.0 milestone archived, PROJECT.md evolved
 
-Progress: [██████████] 100%
+Next: `/gsd:new-milestone` for v0.2.0 planning
 
 ## Performance Metrics
 
@@ -48,13 +47,13 @@ Progress: [██████████] 100%
 
 ### Decisions
 
-Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
+Decisions are logged in PROJECT.md Key Decisions table with v0.1.0 outcomes.
 
-- Three-layer architecture (API → Orchestration → Survey): Separates domain translation from statistics
-- Design-centric API: Everything flows through creel_design object
-- Start from empty package: Clean slate faster than refactoring v1
-- Build instantaneous counts first: Simplest design type proves architecture
+All major architectural decisions validated during v0.1.0:
+- Three-layer architecture proven working end-to-end
+- Design-centric API operational and intuitive
+- Tidy selectors integration seamless
+- Progressive validation (Tier 1/2) working well
 
 **From 01-01:**
 - Minimal Phase 1 dependencies only (checkmate, cli, rlang) - other packages added incrementally
