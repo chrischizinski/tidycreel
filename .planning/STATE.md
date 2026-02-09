@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-30)
 
 **Core value:** Creel biologists work in domain vocabulary without understanding survey statistics
-**Current focus:** Phase 4 - Basic Estimation
+**Current focus:** Phase 5 - Grouped Estimation
 
 ## Current Position
 
-Phase: 4 of 7 (Basic Estimation)
+Phase: 5 of 7 (Grouped Estimation)
 Plan: 1 of 1 in current phase
-Status: Phase 4 complete
-Last activity: 2026-02-09 — Completed 04-01-PLAN.md (estimate_effort function)
+Status: Phase 5 complete
+Last activity: 2026-02-09 — Completed 05-01-PLAN.md (grouped estimation with by parameter)
 
-Progress: [███████░░░] 57%
+Progress: [████████░░] 64%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 8
-- Average duration: 113 min (note: 02-01 includes system pauses)
-- Total execution time: 15.2 hours
+- Total plans completed: 9
+- Average duration: 101 min (note: 02-01 includes system pauses)
+- Total execution time: 15.3 hours
 
 **By Phase:**
 
@@ -31,12 +31,13 @@ Progress: [███████░░░] 57%
 | 02 | 2 | 844 min* | 422 min |
 | 03 | 2 | 9 min | 4.5 min |
 | 04 | 1 | 11 min | 11 min |
+| 05 | 1 | 8 min | 8 min |
 
 *Note: 02-01 wall-clock time includes system pauses; actual work ~30-40 min; 02-02 actual work ~4 min
 
 **Recent Trend:**
-- Last 3 plans: 03-01 (5 min), 03-02 (4 min), 04-01 (11 min)
-- Trend: TDD plans with clear specs execute quickly; Phase 4 completed in 11 min
+- Last 3 plans: 03-02 (4 min), 04-01 (11 min), 05-01 (8 min)
+- Trend: TDD with comprehensive reference tests executes quickly; Phase 5 completed in 8 min
 
 *Updated after each plan completion*
 
@@ -104,6 +105,16 @@ Recent decisions affecting current work:
 - Phase 4 hardcodes Taylor linearization variance - bootstrap/jackknife deferred to Phase 6
 - Reference tests verify tidycreel estimates match manual survey::svytotal with tolerance = 1e-10
 
+**From 05-01:**
+- Grouped estimation uses survey::svyby() internally for correct domain variance (not naive subsetting)
+- by = parameter accepts tidy selectors: bare names, c(), starts_with() and other tidyselect helpers
+- Routing logic: quo_is_null(by_quo) → estimate_effort_total() vs estimate_effort_grouped()
+- Grouped results have group columns first, then estimate/se/ci_lower/ci_upper/n (dplyr-like structure)
+- keep.names = FALSE in svyby() produces consistent column names: se, ci_l, ci_u (not se.var_name)
+- Tier 2 validation extended for groups: warns if any group has < 3 observations (sparse groups)
+- Reference tests with tolerance = 1e-10 verify grouped estimates match manual survey::svyby() exactly
+- Phase 5 maintains perfect backward compatibility: estimate_effort(design) works identically to Phase 4
+
 ### Pending Todos
 
 None yet.
@@ -115,5 +126,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-09
-Stopped at: Completed 04-01-PLAN.md - estimate_effort() core estimation function with Tier 2 validation
+Stopped at: Completed 05-01-PLAN.md - grouped estimation with by parameter using survey::svyby()
 Resume file: None
