@@ -4,7 +4,7 @@
 \alias{estimate_effort}
 \title{Estimate total effort from a creel survey design}
 \usage{
-estimate_effort(design, by = NULL, conf_level = 0.95)
+estimate_effort(design, by = NULL, variance = "taylor", conf_level = 0.95)
 }
 \arguments{
 \item{design}{A creel_design object with counts attached via
@@ -16,6 +16,11 @@ names (e.g., \code{by = day_type}), multiple columns (e.g.,
 \code{by = starts_with("day")}). When NULL (default), computes a single
 total estimate across all observations.}
 
+\item{variance}{Character string specifying variance estimation method.
+Options: \code{"taylor"} (default, Taylor linearization),
+\code{"bootstrap"} (bootstrap resampling with 500 replicates), or
+\code{"jackknife"} (jackknife resampling, automatic JKn/JK1 selection).}
+
 \item{conf_level}{Numeric confidence level for confidence intervals (default:
 0.95 for 95\\% confidence intervals). Must be between 0 and 1.}
 }
@@ -23,9 +28,9 @@ total estimate across all observations.}
 A creel_estimates S3 object (list) with components: estimates
 (tibble with estimate, se, ci_lower, ci_upper, n columns, plus grouping
 columns if \code{by} is specified), method (character: "total"),
-variance_method (character: "taylor"), design (reference to source
-creel_design), conf_level (numeric), and by_vars (character vector of
-grouping variable names or NULL).
+variance_method (character: reflects the variance parameter value used),
+design (reference to source creel_design), conf_level (numeric), and
+by_vars (character vector of grouping variable names or NULL).
 }
 \description{
 Computes total effort estimates with standard errors and confidence intervals
@@ -44,11 +49,20 @@ Grouped estimation uses \code{survey::svyby()} internally, which correctly
 accounts for domain estimation variance. This is different from naive
 subsetting, which would underestimate variance.
 
-Phase 5 uses Taylor linearization variance estimation (default in survey
-package). Bootstrap and jackknife methods will be added in Phase 6.
+\strong{Variance estimation methods:}
+\itemize{
+\item \code{"taylor"} (default): Taylor linearization, computationally
+efficient and appropriate for most smooth statistics. This is the
+recommended default.
+\item \code{"bootstrap"}: Bootstrap resampling with 500 replicates.
+Appropriate for non-smooth statistics or verifying Taylor assumptions.
+More computationally intensive than Taylor.
+\item \code{"jackknife"}: Jackknife resampling (automatic JKn or JK1
+selection based on design). Alternative resampling method, deterministic
+unlike bootstrap.
+}
 }
 \examples{
-\dontrun{
 # Basic ungrouped usage
 calendar <- data.frame(
   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
@@ -75,6 +89,15 @@ result_multi <- estimate_effort(design_with_counts, by = c(day_type, location))
 
 # Custom confidence level
 result_90 <- estimate_effort(design_with_counts, conf_level = 0.90)
-}
 
+# Bootstrap variance estimation
+result_boot <- estimate_effort(design_with_counts, variance = "bootstrap")
+print(result_boot)
+
+# Jackknife variance estimation
+result_jk <- estimate_effort(design_with_counts, variance = "jackknife")
+print(result_jk)
+
+# Grouped estimation with bootstrap variance
+result_grouped_boot <- estimate_effort(design_with_counts, by = day_type, variance = "bootstrap")
 }

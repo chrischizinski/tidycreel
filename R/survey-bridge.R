@@ -87,6 +87,33 @@ as_survey_design <- function(design) {
 
 # Internal survey bridge functions ----
 
+#' Get survey design for specified variance method
+#'
+#' Internal helper that converts a survey design to use replicate weights for
+#' bootstrap or jackknife variance estimation. For Taylor linearization, returns
+#' the design unchanged.
+#'
+#' @param design Survey design object (survey.design2 from survey::svydesign)
+#' @param variance_method Character string: "taylor", "bootstrap", or "jackknife"
+#'
+#' @return Survey design object: original for Taylor, svrepdesign for bootstrap/jackknife
+#'
+#' @keywords internal
+#' @noRd
+get_variance_design <- function(design, variance_method) {
+  if (variance_method == "taylor") {
+    design
+  } else if (variance_method == "bootstrap") {
+    suppressWarnings(
+      survey::as.svrepdesign(design, type = "bootstrap", replicates = 500)
+    )
+  } else if (variance_method == "jackknife") {
+    suppressWarnings(
+      survey::as.svrepdesign(design, type = "auto")
+    )
+  }
+}
+
 #' Validate count data structure (Tier 1)
 #'
 #' Internal validator that checks count data matches the creel_design structure.

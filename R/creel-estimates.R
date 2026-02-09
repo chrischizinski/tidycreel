@@ -131,15 +131,19 @@ print.creel_estimates <- function(x, ...) {
 #'   \code{by = c(day_type, location)}), or tidyselect helpers (e.g.,
 #'   \code{by = starts_with("day")}). When NULL (default), computes a single
 #'   total estimate across all observations.
+#' @param variance Character string specifying variance estimation method.
+#'   Options: \code{"taylor"} (default, Taylor linearization),
+#'   \code{"bootstrap"} (bootstrap resampling with 500 replicates), or
+#'   \code{"jackknife"} (jackknife resampling, automatic JKn/JK1 selection).
 #' @param conf_level Numeric confidence level for confidence intervals (default:
 #'   0.95 for 95\% confidence intervals). Must be between 0 and 1.
 #'
 #' @return A creel_estimates S3 object (list) with components: estimates
 #'   (tibble with estimate, se, ci_lower, ci_upper, n columns, plus grouping
 #'   columns if \code{by} is specified), method (character: "total"),
-#'   variance_method (character: "taylor"), design (reference to source
-#'   creel_design), conf_level (numeric), and by_vars (character vector of
-#'   grouping variable names or NULL).
+#'   variance_method (character: reflects the variance parameter value used),
+#'   design (reference to source creel_design), conf_level (numeric), and
+#'   by_vars (character vector of grouping variable names or NULL).
 #'
 #' @details
 #' The function performs Tier 2 validation before estimation, issuing warnings
@@ -152,11 +156,20 @@ print.creel_estimates <- function(x, ...) {
 #' accounts for domain estimation variance. This is different from naive
 #' subsetting, which would underestimate variance.
 #'
-#' Phase 5 uses Taylor linearization variance estimation (default in survey
-#' package). Bootstrap and jackknife methods will be added in Phase 6.
+#' \strong{Variance estimation methods:}
+#' \itemize{
+#'   \item \code{"taylor"} (default): Taylor linearization, computationally
+#'     efficient and appropriate for most smooth statistics. This is the
+#'     recommended default.
+#'   \item \code{"bootstrap"}: Bootstrap resampling with 500 replicates.
+#'     Appropriate for non-smooth statistics or verifying Taylor assumptions.
+#'     More computationally intensive than Taylor.
+#'   \item \code{"jackknife"}: Jackknife resampling (automatic JKn or JK1
+#'     selection based on design). Alternative resampling method, deterministic
+#'     unlike bootstrap.
+#' }
 #'
 #' @examples
-#' \dontrun{
 #' # Basic ungrouped usage
 #' calendar <- data.frame(
 #'   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
@@ -183,12 +196,31 @@ print.creel_estimates <- function(x, ...) {
 #'
 #' # Custom confidence level
 #' result_90 <- estimate_effort(design_with_counts, conf_level = 0.90)
-#' }
 #'
+#' # Bootstrap variance estimation
+#' result_boot <- estimate_effort(design_with_counts, variance = "bootstrap")
+#' print(result_boot)
+#'
+#' # Jackknife variance estimation
+#' result_jk <- estimate_effort(design_with_counts, variance = "jackknife")
+#' print(result_jk)
+#'
+#' # Grouped estimation with bootstrap variance
+#' result_grouped_boot <- estimate_effort(design_with_counts, by = day_type, variance = "bootstrap")
 #' @export
-estimate_effort <- function(design, by = NULL, conf_level = 0.95) {
+estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level = 0.95) {
   # Capture by parameter BEFORE validation
   by_quo <- rlang::enquo(by)
+
+  # Validate variance parameter
+  valid_methods <- c("taylor", "bootstrap", "jackknife")
+  if (!variance %in% valid_methods) {
+    cli::cli_abort(c(
+      "Invalid variance method: {.val {variance}}",
+      "x" = "Must be one of: {.val {valid_methods}}",
+      "i" = "Default is {.val taylor} (Taylor linearization)"
+    ))
+  }
 
   # Validate input is creel_design
   if (!inherits(design, "creel_design")) {
@@ -214,7 +246,7 @@ estimate_effort <- function(design, by = NULL, conf_level = 0.95) {
   # Route to grouped or ungrouped estimation
   if (rlang::quo_is_null(by_quo)) {
     # Ungrouped estimation (Phase 4 behavior)
-    return(estimate_effort_total(design, conf_level)) # nolint: object_usage_linter
+    return(estimate_effort_total(design, variance, conf_level)) # nolint: object_usage_linter
   } else {
     # Grouped estimation (Phase 5 behavior)
     # Resolve by parameter to column names
@@ -227,7 +259,7 @@ estimate_effort <- function(design, by = NULL, conf_level = 0.95) {
     )
     by_vars <- names(by_cols)
 
-    return(estimate_effort_grouped(design, by_vars, conf_level)) # nolint: object_usage_linter
+    return(estimate_effort_grouped(design, by_vars, variance, conf_level)) # nolint: object_usage_linter
   }
 }
 
@@ -237,7 +269,7 @@ estimate_effort <- function(design, by = NULL, conf_level = 0.95) {
 #'
 #' @keywords internal
 #' @noRd
-estimate_effort_total <- function(design, conf_level) {
+estimate_effort_total <- function(design, variance_method, conf_level) {
   # Identify the count variable
   # Find first numeric column that is NOT design metadata
   counts_data <- design$counts
@@ -260,8 +292,11 @@ estimate_effort_total <- function(design, conf_level) {
   # Create formula
   count_formula <- stats::reformulate(count_var)
 
+  # Get appropriate survey design for variance method
+  svy_design <- get_variance_design(design$survey, variance_method) # nolint: object_usage_linter
+
   # Call survey::svytotal (suppress expected survey package warnings)
-  svy_result <- suppressWarnings(survey::svytotal(count_formula, design$survey))
+  svy_result <- suppressWarnings(survey::svytotal(count_formula, svy_design))
 
   # Extract estimates
   estimate <- as.numeric(coef(svy_result))
@@ -284,7 +319,7 @@ estimate_effort_total <- function(design, conf_level) {
   new_creel_estimates( # nolint: object_usage_linter
     estimates = estimates_df,
     method = "total",
-    variance_method = "taylor",
+    variance_method = variance_method,
     design = design,
     conf_level = conf_level,
     by_vars = NULL
@@ -295,7 +330,7 @@ estimate_effort_total <- function(design, conf_level) {
 #'
 #' @keywords internal
 #' @noRd
-estimate_effort_grouped <- function(design, by_vars, conf_level) {
+estimate_effort_grouped <- function(design, by_vars, variance_method, conf_level) {
   counts_data <- design$counts
 
   # Tier 2 validation for groups
@@ -322,11 +357,14 @@ estimate_effort_grouped <- function(design, by_vars, conf_level) {
   count_formula <- stats::reformulate(count_var)
   by_formula <- stats::reformulate(by_vars)
 
+  # Get appropriate survey design for variance method
+  svy_design <- get_variance_design(design$survey, variance_method) # nolint: object_usage_linter
+
   # Call survey::svyby (suppress expected survey package warnings)
   svy_result <- suppressWarnings(survey::svyby(
     formula = count_formula,
     by = by_formula,
-    design = design$survey,
+    design = svy_design,
     FUN = survey::svytotal,
     vartype = c("se", "ci"),
     ci.level = conf_level,
@@ -371,7 +409,7 @@ estimate_effort_grouped <- function(design, by_vars, conf_level) {
   new_creel_estimates( # nolint: object_usage_linter
     estimates = estimates_df,
     method = "total",
-    variance_method = "taylor",
+    variance_method = variance_method,
     design = design,
     conf_level = conf_level,
     by_vars = by_vars
