@@ -107,10 +107,10 @@ Plans:
   2. Bootstrap and jackknife variance methods produce reasonable estimates
   3. Integration tests verify full workflow from design creation through estimation
   4. Print methods show which variance method was used
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] TBD during planning
+- [ ] 06-01-PLAN.md -- Variance method selection with bootstrap and jackknife (TDD)
 
 ### Phase 7: Polish & Documentation
 **Goal**: Package is documented, tested, and ready for v0.1.0 release
@@ -141,5 +141,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 3. Survey Bridge Layer | 2/2 | ✓ Complete | 2026-02-08 |
 | 4. Basic Estimation | 1/1 | ✓ Complete | 2026-02-09 |
 | 5. Grouped Estimation | 1/1 | ✓ Complete | 2026-02-09 |
-| 6. Variance Methods | 0/TBD | Not started | - |
+| 6. Variance Methods | 0/1 | In progress | - |
 | 7. Polish & Documentation | 0/TBD | Not started | - |
