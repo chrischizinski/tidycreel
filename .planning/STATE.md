@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-30)
 
 **Core value:** Creel biologists work in domain vocabulary without understanding survey statistics
-**Current focus:** Phase 5 complete — ready for Phase 6 (Variance Methods)
+**Current focus:** Phase 6 Plan 1 complete — variance method selection implemented
 
 ## Current Position
 
-Phase: 5 of 7 (Grouped Estimation)
+Phase: 6 of 7 (Variance Methods)
 Plan: 1 of 1 in current phase
-Status: Phase 5 complete
-Last activity: 2026-02-09 — Completed 05-01-PLAN.md (grouped estimation with by parameter)
+Status: Phase 6 Plan 1 complete
+Last activity: 2026-02-09 — Completed 06-01-PLAN.md (variance method selection: bootstrap, jackknife)
 
-Progress: [████████░░] 64%
+Progress: [█████████░] 71%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 9
-- Average duration: 101 min (note: 02-01 includes system pauses)
-- Total execution time: 15.3 hours
+- Total plans completed: 10
+- Average duration: 93 min (note: 02-01 includes system pauses)
+- Total execution time: 15.5 hours
 
 **By Phase:**
 
@@ -32,12 +32,13 @@ Progress: [████████░░] 64%
 | 03 | 2 | 9 min | 4.5 min |
 | 04 | 1 | 11 min | 11 min |
 | 05 | 1 | 8 min | 8 min |
+| 06 | 1 | 14 min | 14 min |
 
 *Note: 02-01 wall-clock time includes system pauses; actual work ~30-40 min; 02-02 actual work ~4 min
 
 **Recent Trend:**
-- Last 3 plans: 03-02 (4 min), 04-01 (11 min), 05-01 (8 min)
-- Trend: TDD with comprehensive reference tests executes quickly; Phase 5 completed in 8 min
+- Last 3 plans: 04-01 (11 min), 05-01 (8 min), 06-01 (14 min)
+- Trend: TDD with comprehensive reference tests continues to execute efficiently; Phase 6 Plan 1 completed in 14 min
 
 *Updated after each plan completion*
 
@@ -115,6 +116,17 @@ Recent decisions affecting current work:
 - Reference tests with tolerance = 1e-10 verify grouped estimates match manual survey::svyby() exactly
 - Phase 5 maintains perfect backward compatibility: estimate_effort(design) works identically to Phase 4
 
+**From 06-01:**
+- estimate_effort() gains variance parameter with values "taylor" (default), "bootstrap", "jackknife"
+- get_variance_design() internal helper converts designs for bootstrap/jackknife via as.svrepdesign()
+- Bootstrap uses 500 replicates (fixed, no user-facing parameter) per research recommendation
+- Jackknife uses type="auto" (survey package selects JKn vs JK1 based on design)
+- Taylor remains default (appropriate for most smooth statistics, backward compatible)
+- variance_method parameter flows through estimate_effort() → internal functions → new_creel_estimates()
+- Bootstrap and jackknife work with grouped estimation (same svyby routing)
+- Reference tests verify bootstrap/jackknife match manual survey package calculations (tolerance 1e-10)
+- Pre-existing Rd warnings from Phase 4 persist (known issue, does not affect functionality)
+
 ### Pending Todos
 
 None yet.
@@ -126,5 +138,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-09
-Stopped at: Completed 05-01-PLAN.md - grouped estimation with by parameter using survey::svyby()
+Stopped at: Completed 06-01-PLAN.md - variance method selection (bootstrap, jackknife) via as.svrepdesign()
 Resume file: None
