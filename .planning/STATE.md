@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-30)
 
 **Core value:** Creel biologists work in domain vocabulary without understanding survey statistics
-**Current focus:** Phase 6 complete — ready for Phase 7 (Polish & Documentation)
+**Current focus:** Phase 7 Plan 1 complete — documentation ready for v0.1.0
 
 ## Current Position
 
-Phase: 6 of 7 (Variance Methods)
+Phase: 7 of 7 (Polish & Documentation)
 Plan: 1 of 1 in current phase
-Status: Phase 6 complete
-Last activity: 2026-02-09 — Completed Phase 6 (variance method selection with bootstrap/jackknife)
+Status: Phase 7 complete
+Last activity: 2026-02-09 — Completed Phase 7 Plan 1 (documentation with roxygen2, datasets, vignette)
 
-Progress: [█████████░] 86%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 10
-- Average duration: 93 min (note: 02-01 includes system pauses)
-- Total execution time: 15.5 hours
+- Total plans completed: 11
+- Average duration: 88 min (note: 02-01 includes system pauses)
+- Total execution time: 15.6 hours
 
 **By Phase:**
 
@@ -33,12 +33,13 @@ Progress: [█████████░] 86%
 | 04 | 1 | 11 min | 11 min |
 | 05 | 1 | 8 min | 8 min |
 | 06 | 1 | 14 min | 14 min |
+| 07 | 1 | 4 min | 4 min |
 
 *Note: 02-01 wall-clock time includes system pauses; actual work ~30-40 min; 02-02 actual work ~4 min
 
 **Recent Trend:**
-- Last 3 plans: 04-01 (11 min), 05-01 (8 min), 06-01 (14 min)
-- Trend: TDD with comprehensive reference tests continues to execute efficiently; Phase 6 Plan 1 completed in 14 min
+- Last 3 plans: 05-01 (8 min), 06-01 (14 min), 07-01 (4 min)
+- Trend: Documentation plans execute very efficiently; Phase 7 Plan 1 completed in 4 min
 
 *Updated after each plan completion*
 
@@ -127,6 +128,15 @@ Recent decisions affecting current work:
 - Reference tests verify bootstrap/jackknife match manual survey package calculations (tolerance 1e-10)
 - Pre-existing Rd warnings from Phase 4 persist (known issue, does not affect functionality)
 
+**From 07-01:**
+- Roxygen2 markdown mode handles percent literally (95% not 95\%) - fixed estimate_effort.Rd parsing
+- data-raw/ excluded from deps-in-desc pre-commit check (scripts only for dataset generation, not runtime)
+- Example datasets use June 2024 dates with realistic weekday/weekend patterns (weekends higher effort)
+- LazyData: true in DESCRIPTION enables automatic dataset loading via data() without explicit exports
+- Vignette name matches package name (tidycreel.Rmd) for pkgdown "Get started" link convention
+- Vignette demonstrates all three variance methods with set.seed() for reproducible bootstrap examples
+- All @examples blocks are self-contained and executable (removed non-existent column references)
+
 ### Pending Todos
 
 None yet.
@@ -138,5 +148,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-09
-Stopped at: Completed 06-01-PLAN.md - variance method selection (bootstrap, jackknife) via as.svrepdesign()
+Stopped at: Completed 07-01-PLAN.md - documentation complete (roxygen2, example datasets, Getting Started vignette)
 Resume file: None
