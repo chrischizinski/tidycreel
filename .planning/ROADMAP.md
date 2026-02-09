@@ -110,7 +110,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 06-01-PLAN.md -- Variance method selection with bootstrap and jackknife (TDD)
+- [x] 06-01-PLAN.md -- Variance method selection with bootstrap and jackknife (TDD)
 
 ### Phase 7: Polish & Documentation
 **Goal**: Package is documented, tested, and ready for v0.1.0 release
@@ -141,5 +141,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 3. Survey Bridge Layer | 2/2 | ✓ Complete | 2026-02-08 |
 | 4. Basic Estimation | 1/1 | ✓ Complete | 2026-02-09 |
 | 5. Grouped Estimation | 1/1 | ✓ Complete | 2026-02-09 |
-| 6. Variance Methods | 0/1 | In progress | - |
+| 6. Variance Methods | 1/1 | ✓ Complete | 2026-02-09 |
 | 7. Polish & Documentation | 0/TBD | Not started | - |

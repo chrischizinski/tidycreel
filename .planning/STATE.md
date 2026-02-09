@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-01-30)
 
 **Core value:** Creel biologists work in domain vocabulary without understanding survey statistics
-**Current focus:** Phase 6 Plan 1 complete — variance method selection implemented
+**Current focus:** Phase 6 complete — ready for Phase 7 (Polish & Documentation)
 
 ## Current Position
 
 Phase: 6 of 7 (Variance Methods)
 Plan: 1 of 1 in current phase
-Status: Phase 6 Plan 1 complete
-Last activity: 2026-02-09 — Completed 06-01-PLAN.md (variance method selection: bootstrap, jackknife)
+Status: Phase 6 complete
+Last activity: 2026-02-09 — Completed Phase 6 (variance method selection with bootstrap/jackknife)
 
-Progress: [█████████░] 71%
+Progress: [█████████░] 86%
 
 ## Performance Metrics
 
