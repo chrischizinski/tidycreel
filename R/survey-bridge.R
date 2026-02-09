@@ -290,3 +290,86 @@ construct_survey_design <- function(design) {
     }
   )
 }
+
+#' Validate data quality (Tier 2)
+#'
+#' Internal function that checks for data quality issues in a creel_design with
+#' attached counts. Issues warnings (not errors) for zero/negative count values
+#' and sparse strata (< 3 observations). These are Tier 2 checks - data quality
+#' issues that should be investigated but don't prevent estimation.
+#'
+#' @param design A creel_design object with counts attached
+#'
+#' @return NULL (invisible) - function called for side effects (warnings)
+#'
+#' @keywords internal
+#' @noRd
+warn_tier2_issues <- function(design) {
+  counts_data <- design$counts
+  date_col <- design$date_col
+  strata_cols <- design$strata_cols
+  psu_col <- design$psu_col
+
+  # Identify count variable(s): numeric columns that are not design metadata
+  excluded_cols <- c(date_col, strata_cols, psu_col)
+  numeric_cols <- names(counts_data)[sapply(counts_data, is.numeric)]
+  count_vars <- setdiff(numeric_cols, excluded_cols)
+
+  # Check each count variable for zero/negative values
+  for (count_var in count_vars) {
+    values <- counts_data[[count_var]]
+
+    # Check for zero values
+    n_zero <- sum(values == 0, na.rm = TRUE)
+    if (n_zero > 0) {
+      cli::cli_warn(c(
+        "Count variable {.field {count_var}} contains {n_zero} zero value{?s}.",
+        "i" = "Zero values may indicate days with no fishing activity or data collection issues.",
+        "i" = "Consider whether zeros are true zeros or missing data."
+      ))
+    }
+
+    # Check for negative values
+    n_negative <- sum(values < 0, na.rm = TRUE)
+    if (n_negative > 0) {
+      cli::cli_warn(c(
+        "Count variable {.field {count_var}} contains {n_negative} negative value{?s}.",
+        "!" = "Negative values indicate data entry errors or incorrect calculations.",
+        "i" = "Review and correct negative values before estimation."
+      ))
+    }
+  }
+
+  # Check for sparse strata (< 3 observations per stratum)
+  # Create the same strata variable used in survey design
+  if (length(strata_cols) == 1) {
+    strata_var <- counts_data[[strata_cols]]
+  } else {
+    strata_factors <- counts_data[strata_cols]
+    strata_var <- interaction(strata_factors, drop = TRUE)
+  }
+
+  # Count observations per stratum
+  strata_counts <- table(strata_var)
+  sparse_strata <- strata_counts[strata_counts < 3]
+
+  if (length(sparse_strata) > 0) {
+    # Build bullet items for each sparse stratum
+    bullet_items <- character(length(sparse_strata))
+    for (i in seq_along(sparse_strata)) {
+      stratum_name <- names(sparse_strata)[i]
+      n_obs <- sparse_strata[i]
+      bullet_items[i] <- sprintf("Stratum %s: %d observation%s", stratum_name, n_obs, ifelse(n_obs == 1, "", "s"))
+    }
+    names(bullet_items) <- rep("*", length(sparse_strata))
+
+    cli::cli_warn(c(
+      "{length(sparse_strata)} strat{?um/a} ha{?s/ve} fewer than 3 observations:",
+      bullet_items,
+      "!" = "Sparse strata produce unstable variance estimates.",
+      "i" = "Consider combining sparse strata or collecting more data."
+    ))
+  }
+
+  invisible(NULL)
+}
