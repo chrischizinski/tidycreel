@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-30)
 ## Current Position
 
 Phase: 4 of 7 (Basic Estimation)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-02-08 — Phase 3 complete and verified
+Plan: 1 of 1 in current phase
+Status: Phase 4 complete
+Last activity: 2026-02-09 — Completed 04-01-PLAN.md (estimate_effort function)
 
-Progress: [██████░░░░] 43%
+Progress: [███████░░░] 57%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 7
-- Average duration: 126 min (note: 02-01 includes system pauses)
-- Total execution time: 15.0 hours
+- Total plans completed: 8
+- Average duration: 113 min (note: 02-01 includes system pauses)
+- Total execution time: 15.2 hours
 
 **By Phase:**
 
@@ -30,12 +30,13 @@ Progress: [██████░░░░] 43%
 | 01 | 3 | 21 min | 7 min |
 | 02 | 2 | 844 min* | 422 min |
 | 03 | 2 | 9 min | 4.5 min |
+| 04 | 1 | 11 min | 11 min |
 
 *Note: 02-01 wall-clock time includes system pauses; actual work ~30-40 min; 02-02 actual work ~4 min
 
 **Recent Trend:**
-- Last 3 plans: 02-02 (4 min), 03-01 (5 min), 03-02 (4 min)
-- Trend: TDD plans with clear specs execute quickly; Phase 3 completed in 9 min total
+- Last 3 plans: 03-01 (5 min), 03-02 (4 min), 04-01 (11 min)
+- Trend: TDD plans with clear specs execute quickly; Phase 4 completed in 11 min
 
 *Updated after each plan completion*
 
@@ -96,6 +97,13 @@ Recent decisions affecting current work:
 - Escape hatches for power users include educational warnings about recommended alternatives
 - Integration tests compare tidycreel output with manual survey package construction to verify correctness
 
+**From 04-01:**
+- Count variable auto-detected as first numeric column excluding design metadata (date, strata, PSU)
+- Tier 2 validation issues warnings (not errors) for data quality problems: zero/negative values, sparse strata
+- Survey package "no weights" warnings suppressed - expected behavior for equal-probability-within-strata designs
+- Phase 4 hardcodes Taylor linearization variance - bootstrap/jackknife deferred to Phase 6
+- Reference tests verify tidycreel estimates match manual survey::svytotal with tolerance = 1e-10
+
 ### Pending Todos
 
 None yet.
@@ -107,5 +115,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-09
-Stopped at: Completed 03-02-PLAN.md - as_survey_design() escape hatch for power users
+Stopped at: Completed 04-01-PLAN.md - estimate_effort() core estimation function with Tier 2 validation
 Resume file: None
