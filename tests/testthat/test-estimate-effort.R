@@ -508,3 +508,255 @@ test_that("grouped estimate_effort matches manual svyby confidence intervals", {
     expect_equal(tidycreel_ci_upper, manual_ci_upper, tolerance = 1e-10)
   }
 })
+
+# Variance method selection tests ----
+
+# Variance parameter validation ----
+
+test_that("estimate_effort errors on invalid variance method", {
+  design <- make_test_design_with_counts()
+
+  expect_error(
+    estimate_effort(design, variance = "invalid"), # nolint: object_usage_linter
+    "Invalid variance method"
+  )
+})
+
+test_that("estimate_effort accepts variance = 'taylor' explicitly", {
+  design <- make_test_design_with_counts()
+
+  result <- suppressWarnings(estimate_effort(design, variance = "taylor")) # nolint: object_usage_linter
+
+  expect_s3_class(result, "creel_estimates")
+  expect_equal(result$variance_method, "taylor")
+})
+
+test_that("estimate_effort accepts variance = 'bootstrap'", {
+  design <- make_test_design_with_counts()
+
+  result <- suppressWarnings(estimate_effort(design, variance = "bootstrap")) # nolint: object_usage_linter
+
+  expect_s3_class(result, "creel_estimates")
+})
+
+# Bootstrap behavior ----
+
+test_that("bootstrap result has variance_method = 'bootstrap'", {
+  design <- make_test_design_with_counts()
+
+  result <- suppressWarnings(estimate_effort(design, variance = "bootstrap")) # nolint: object_usage_linter
+
+  expect_equal(result$variance_method, "bootstrap")
+})
+
+test_that("bootstrap point estimate is numeric and positive", {
+  design <- make_test_design_with_counts()
+
+  result <- suppressWarnings(estimate_effort(design, variance = "bootstrap")) # nolint: object_usage_linter
+
+  expect_true(is.numeric(result$estimates$estimate))
+  expect_true(result$estimates$estimate > 0)
+})
+
+test_that("bootstrap SE is numeric and positive", {
+  design <- make_test_design_with_counts()
+
+  result <- suppressWarnings(estimate_effort(design, variance = "bootstrap")) # nolint: object_usage_linter
+
+  expect_true(is.numeric(result$estimates$se))
+  expect_true(result$estimates$se > 0)
+})
+
+test_that("bootstrap point estimate is close to Taylor estimate", {
+  design <- make_test_design_with_counts()
+
+  result_taylor <- suppressWarnings(estimate_effort(design, variance = "taylor")) # nolint: object_usage_linter
+  result_bootstrap <- suppressWarnings(estimate_effort(design, variance = "bootstrap")) # nolint: object_usage_linter
+
+  # For smooth statistics, bootstrap and taylor should give similar point estimates
+  # Use 5% relative tolerance
+  expect_equal(
+    result_bootstrap$estimates$estimate,
+    result_taylor$estimates$estimate,
+    tolerance = 0.05 * result_taylor$estimates$estimate
+  )
+})
+
+# Jackknife behavior ----
+
+test_that("jackknife result has variance_method = 'jackknife'", {
+  design <- make_test_design_with_counts()
+
+  result <- suppressWarnings(estimate_effort(design, variance = "jackknife")) # nolint: object_usage_linter
+
+  expect_equal(result$variance_method, "jackknife")
+})
+
+test_that("jackknife point estimate is numeric and positive", {
+  design <- make_test_design_with_counts()
+
+  result <- suppressWarnings(estimate_effort(design, variance = "jackknife")) # nolint: object_usage_linter
+
+  expect_true(is.numeric(result$estimates$estimate))
+  expect_true(result$estimates$estimate > 0)
+})
+
+test_that("jackknife SE is numeric and positive", {
+  design <- make_test_design_with_counts()
+
+  result <- suppressWarnings(estimate_effort(design, variance = "jackknife")) # nolint: object_usage_linter
+
+  expect_true(is.numeric(result$estimates$se))
+  expect_true(result$estimates$se > 0)
+})
+
+test_that("jackknife point estimate is close to Taylor estimate", {
+  design <- make_test_design_with_counts()
+
+  result_taylor <- suppressWarnings(estimate_effort(design, variance = "taylor")) # nolint: object_usage_linter
+  result_jackknife <- suppressWarnings(estimate_effort(design, variance = "jackknife")) # nolint: object_usage_linter
+
+  # For smooth statistics, jackknife and taylor should give similar point estimates
+  # Use 5% relative tolerance
+  expect_equal(
+    result_jackknife$estimates$estimate,
+    result_taylor$estimates$estimate,
+    tolerance = 0.05 * result_taylor$estimates$estimate
+  )
+})
+
+# Backward compatibility ----
+
+test_that("estimate_effort() with no variance arg returns variance_method = 'taylor'", {
+  design <- make_test_design_with_counts()
+
+  result <- suppressWarnings(estimate_effort(design)) # nolint: object_usage_linter
+
+  expect_equal(result$variance_method, "taylor")
+})
+
+test_that("estimate_effort() with no variance arg identical to variance = 'taylor'", {
+  design <- make_test_design_with_counts()
+
+  result_default <- suppressWarnings(estimate_effort(design)) # nolint: object_usage_linter
+  result_taylor <- suppressWarnings(estimate_effort(design, variance = "taylor")) # nolint: object_usage_linter
+
+  expect_equal(result_default$estimates$estimate, result_taylor$estimates$estimate)
+  expect_equal(result_default$estimates$se, result_taylor$estimates$se)
+  expect_equal(result_default$estimates$ci_lower, result_taylor$estimates$ci_lower)
+  expect_equal(result_default$estimates$ci_upper, result_taylor$estimates$ci_upper)
+})
+
+# Grouped estimation with variance methods ----
+
+test_that("estimate_effort with by = and variance = 'bootstrap' returns grouped estimates", {
+  design <- make_test_design_with_groups()
+
+  result <- suppressWarnings(estimate_effort(design, by = day_type, variance = "bootstrap")) # nolint: object_usage_linter
+
+  expect_s3_class(result, "creel_estimates")
+  expect_equal(result$variance_method, "bootstrap")
+  expect_equal(result$by_vars, "day_type")
+  expect_equal(nrow(result$estimates), 2)
+})
+
+test_that("grouped bootstrap has correct column structure", {
+  design <- make_test_design_with_groups()
+
+  result <- suppressWarnings(estimate_effort(design, by = day_type, variance = "bootstrap")) # nolint: object_usage_linter
+
+  col_names <- names(result$estimates)
+  expect_equal(col_names[1], "day_type")
+  expect_true("estimate" %in% col_names)
+  expect_true("se" %in% col_names)
+  expect_true("ci_lower" %in% col_names)
+  expect_true("ci_upper" %in% col_names)
+  expect_true("n" %in% col_names)
+})
+
+test_that("grouped jackknife produces positive estimates for each group", {
+  design <- make_test_design_with_groups()
+
+  result <- suppressWarnings(estimate_effort(design, by = day_type, variance = "jackknife")) # nolint: object_usage_linter
+
+  expect_true(all(result$estimates$estimate > 0))
+  expect_true(all(result$estimates$se > 0))
+})
+
+# Reference tests for variance methods ----
+
+test_that("bootstrap estimate matches manual as.svrepdesign + svytotal", {
+  design <- make_test_design_with_counts()
+
+  # Set seed for reproducible bootstrap replicates
+  set.seed(20240609)
+  result <- suppressWarnings(estimate_effort(design, variance = "bootstrap")) # nolint: object_usage_linter
+
+  # Manual bootstrap calculation
+  set.seed(20240609)
+  rep_design <- suppressWarnings(survey::as.svrepdesign(
+    design$survey,
+    type = "bootstrap",
+    replicates = 500
+  ))
+  manual_result <- survey::svytotal(~effort_hours, rep_design)
+  manual_estimate <- as.numeric(coef(manual_result))
+  manual_se <- as.numeric(survey::SE(manual_result))
+
+  expect_equal(result$estimates$estimate, manual_estimate, tolerance = 1e-10)
+  expect_equal(result$estimates$se, manual_se, tolerance = 1e-10)
+})
+
+test_that("jackknife estimate matches manual as.svrepdesign + svytotal", {
+  design <- make_test_design_with_counts()
+
+  # Jackknife is deterministic (no seed needed)
+  result <- suppressWarnings(estimate_effort(design, variance = "jackknife")) # nolint: object_usage_linter
+
+  # Manual jackknife calculation
+  rep_design <- suppressWarnings(survey::as.svrepdesign(
+    design$survey,
+    type = "auto"
+  ))
+  manual_result <- survey::svytotal(~effort_hours, rep_design)
+  manual_estimate <- as.numeric(coef(manual_result))
+  manual_se <- as.numeric(survey::SE(manual_result))
+
+  expect_equal(result$estimates$estimate, manual_estimate, tolerance = 1e-10)
+  expect_equal(result$estimates$se, manual_se, tolerance = 1e-10)
+})
+
+test_that("grouped bootstrap matches manual as.svrepdesign + svyby", {
+  design <- make_test_design_with_groups()
+
+  # Set seed for reproducible bootstrap replicates
+  set.seed(20240610)
+  result <- suppressWarnings(estimate_effort(design, by = day_type, variance = "bootstrap")) # nolint: object_usage_linter
+
+  # Manual grouped bootstrap calculation
+  set.seed(20240610)
+  rep_design <- suppressWarnings(survey::as.svrepdesign(
+    design$survey,
+    type = "bootstrap",
+    replicates = 500
+  ))
+  manual_result <- survey::svyby(
+    ~effort_hours,
+    ~day_type,
+    rep_design,
+    survey::svytotal,
+    vartype = c("se", "ci")
+  )
+
+  # Match point estimates and SEs for each group
+  for (i in seq_len(nrow(result$estimates))) {
+    day <- result$estimates$day_type[i]
+    tidycreel_est <- result$estimates$estimate[i]
+    tidycreel_se <- result$estimates$se[i]
+    manual_est <- manual_result$effort_hours[manual_result$day_type == day]
+    manual_se <- manual_result$se[manual_result$day_type == day]
+
+    expect_equal(tidycreel_est, manual_est, tolerance = 1e-10)
+    expect_equal(tidycreel_se, manual_se, tolerance = 1e-10)
+  }
+})
