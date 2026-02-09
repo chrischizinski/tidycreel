@@ -33,6 +33,7 @@
 ^creel_effort_estimation_methods\.md$
 ^creel_foundations\.md$
 ^CRITICAL_BUGS_FIXED\.md$
+^data-raw$
 ^dev-notes$
 ^DEVELOPMENT_ROADMAP\.md$
 ^docker-compose\.yml$
