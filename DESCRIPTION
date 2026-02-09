@@ -19,6 +19,7 @@ Imports:
     checkmate,
     cli,
     rlang,
+    survey,
     tidyselect (>= 1.2.0)
 Suggests:
     covr,
