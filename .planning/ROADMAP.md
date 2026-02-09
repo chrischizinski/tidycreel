@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Project Setup & Foundation** - Initialize package structure with quality gates
 - [x] **Phase 2: Core Data Structures** - Implement creel_design and creel_estimates S3 classes
 - [x] **Phase 3: Survey Bridge Layer** - Build internal svydesign construction for instantaneous counts
-- [ ] **Phase 4: Basic Estimation** - Implement estimate_effort with total estimates
+- [x] **Phase 4: Basic Estimation** - Implement estimate_effort with total estimates
 - [ ] **Phase 5: Grouped Estimation** - Add grouped estimation with tidy selectors
 - [ ] **Phase 6: Variance Methods** - Enable variance method selection (Taylor, bootstrap, jackknife)
 - [ ] **Phase 7: Polish & Documentation** - Complete documentation, vignettes, and reference tests
@@ -83,7 +83,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 04-01-PLAN.md -- estimate_effort() with Tier 2 validation and reference tests (TDD)
+- [x] 04-01-PLAN.md -- estimate_effort() with Tier 2 validation and reference tests (TDD)
 
 ### Phase 5: Grouped Estimation
 **Goal**: Users can estimate effort by grouping variables using tidy selectors
@@ -139,7 +139,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 1. Project Setup & Foundation | 3/3 | ✓ Complete | 2026-02-01 |
 | 2. Core Data Structures | 2/2 | ✓ Complete | 2026-02-02 |
 | 3. Survey Bridge Layer | 2/2 | ✓ Complete | 2026-02-08 |
-| 4. Basic Estimation | 0/1 | In progress | - |
+| 4. Basic Estimation | 1/1 | ✓ Complete | 2026-02-09 |
 | 5. Grouped Estimation | 0/TBD | Not started | - |
 | 6. Variance Methods | 0/TBD | Not started | - |
 | 7. Polish & Documentation | 0/TBD | Not started | - |
