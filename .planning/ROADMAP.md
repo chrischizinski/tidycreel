@@ -124,10 +124,11 @@ Plans:
   5. Test coverage meets targets (85% overall, 95% for core estimation)
   6. All code passes lintr with project configuration
   7. R CMD check --as-cran passes with no issues
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] TBD during planning
+- [ ] 07-01-PLAN.md -- Documentation completion (fix roxygen2, example datasets, Getting Started vignette)
+- [ ] 07-02-PLAN.md -- Quality assurance and release validation (coverage, lintr, R CMD check)
 
 ## Progress
 
@@ -142,4 +143,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 4. Basic Estimation | 1/1 | ✓ Complete | 2026-02-09 |
 | 5. Grouped Estimation | 1/1 | ✓ Complete | 2026-02-09 |
 | 6. Variance Methods | 1/1 | ✓ Complete | 2026-02-09 |
-| 7. Polish & Documentation | 0/TBD | Not started | - |
+| 7. Polish & Documentation | 0/2 | Not started | - |
