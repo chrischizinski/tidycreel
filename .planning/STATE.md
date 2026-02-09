@@ -5,7 +5,7 @@
 See: .planning/PROJECT.md (updated 2026-01-30)
 
 **Core value:** Creel biologists work in domain vocabulary without understanding survey statistics
-**Current focus:** Phase 5 - Grouped Estimation
+**Current focus:** Phase 5 complete — ready for Phase 6 (Variance Methods)
 
 ## Current Position
 

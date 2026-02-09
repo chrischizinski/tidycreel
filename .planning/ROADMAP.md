@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Core Data Structures** - Implement creel_design and creel_estimates S3 classes
 - [x] **Phase 3: Survey Bridge Layer** - Build internal svydesign construction for instantaneous counts
 - [x] **Phase 4: Basic Estimation** - Implement estimate_effort with total estimates
-- [ ] **Phase 5: Grouped Estimation** - Add grouped estimation with tidy selectors
+- [x] **Phase 5: Grouped Estimation** - Add grouped estimation with tidy selectors
 - [ ] **Phase 6: Variance Methods** - Enable variance method selection (Taylor, bootstrap, jackknife)
 - [ ] **Phase 7: Polish & Documentation** - Complete documentation, vignettes, and reference tests
 
@@ -96,7 +96,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 05-01-PLAN.md -- Grouped estimation with by parameter (TDD)
+- [x] 05-01-PLAN.md -- Grouped estimation with by parameter (TDD)
 
 ### Phase 6: Variance Methods
 **Goal**: Users can control variance estimation method with clear defaults
@@ -140,6 +140,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 2. Core Data Structures | 2/2 | ✓ Complete | 2026-02-02 |
 | 3. Survey Bridge Layer | 2/2 | ✓ Complete | 2026-02-08 |
 | 4. Basic Estimation | 1/1 | ✓ Complete | 2026-02-09 |
-| 5. Grouped Estimation | 0/1 | In progress | - |
+| 5. Grouped Estimation | 1/1 | ✓ Complete | 2026-02-09 |
 | 6. Variance Methods | 0/TBD | Not started | - |
 | 7. Polish & Documentation | 0/TBD | Not started | - |
