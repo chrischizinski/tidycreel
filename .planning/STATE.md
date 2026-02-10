@@ -5,7 +5,7 @@
 See: .planning/PROJECT.md (updated 2026-02-09)
 
 **Core value:** Creel biologists can analyze survey data using creel vocabulary without understanding survey package internals
-**Current focus:** Phase 10 - Catch and Harvest Estimation (v0.2.0)
+**Current focus:** Phase 11 - Total Catch Estimation (v0.2.0)
 
 ## Current Position
 

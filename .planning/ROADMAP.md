@@ -151,8 +151,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 10-01-PLAN.md -- Ratio-of-means HPUE estimation with TDD, shared sample size validation, and reference tests
-- [ ] 10-02-PLAN.md -- HPUE format display, zero-effort filtering, NA harvest handling, variance method tests, and quality assurance
+- [x] 10-01-PLAN.md -- Ratio-of-means HPUE estimation with TDD, shared sample size validation, and reference tests
+- [x] 10-02-PLAN.md -- HPUE format display, zero-effort filtering, NA harvest handling, variance method tests, and quality assurance
 
 #### Phase 11: Total Catch Estimation
 **Goal**: Users can estimate total catch by combining effort and CPUE with correct variance propagation
@@ -202,10 +202,10 @@ Phases execute in numeric order: 8 → 9 → 10 → 11 → 12
 | 7. Documentation & QA | v0.1.0 | 2/2 | Complete | 2026-02-09 |
 | 8. Interview Data Integration | v0.2.0 | 2/2 | Complete | 2026-02-09 |
 | 9. CPUE Estimation | v0.2.0 | 2/2 | Complete | 2026-02-10 |
-| 10. Catch and Harvest Estimation | v0.2.0 | 0/TBD | Not started | - |
+| 10. Catch and Harvest Estimation | v0.2.0 | 2/2 | Complete | 2026-02-10 |
 | 11. Total Catch Estimation | v0.2.0 | 0/TBD | Not started | - |
 | 12. Documentation and Quality Assurance | v0.2.0 | 0/TBD | Not started | - |
 
 ---
 *Roadmap created: 2026-02-09*
-*Last updated: 2026-02-10 11:45 UTC*
+*Last updated: 2026-02-10 13:00 UTC*
