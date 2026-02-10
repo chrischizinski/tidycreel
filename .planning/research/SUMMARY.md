@@ -1,177 +1,206 @@
-# Research Summary: Safe Legacy Code Removal from tidycreel
+# Project Research Summary
 
-**Domain:** R Package Maintenance - Deprecated Function and Archive Removal
-**Researched:** 2026-01-27
-**Overall confidence:** HIGH
+**Project:** tidycreel v0.2.0 - Interview-Based Catch and Harvest Estimation
+**Domain:** R package - Creel survey statistical analysis
+**Researched:** 2026-02-09
+**Confidence:** HIGH
 
 ## Executive Summary
 
-Safe code removal from R packages follows a **phased, checkpoint-driven approach** to prevent breakage. The tidycreel package contains three deprecated function stubs (`estimate_effort()`, `estimate_cpue()`, `estimate_harvest()`) in `R/estimators.R` that need removal, plus ~187k lines of archived code in `old_code/` directory. The package was never publicly released, eliminating backward compatibility concerns and allowing clean removal without deprecation warnings.
+Interview-based catch and harvest estimation for tidycreel v0.2.0 is a **new application of existing infrastructure**, not a new stack requirement. The survey package already provides all necessary ratio estimation capabilities via `svyratio()` and `svymean()`. The architectural challenge is integrating two parallel data streams (counts for effort, interviews for CPUE) and combining them correctly with delta method variance propagation for total catch estimates.
 
-Research reveals that R package code removal follows a dependency-ordered sequence: remove NAMESPACE exports first (making functions internal-only), then remove function definitions, then remove archived code, and finally update documentation. Each phase requires mandatory verification via R CMD check and the test suite before proceeding. This "progressive restriction" pattern allows easy rollback if issues are discovered, since each phase is independently verifiable.
+The recommended approach extends the proven v0.1.0 three-layer architecture (User API → Orchestration → Survey Package) with a parallel workflow: count data flows through `add_counts()` to estimate effort, interview data flows through `add_interviews()` to estimate CPUE, and both merge at total catch estimation where `effort × CPUE` requires careful variance handling. The core architectural insight is that count and interview data are **statistically independent but functionally complementary** - they require separate survey design objects but coordinated variance estimation when combined.
 
-The key architectural insight is that **code removal is the inverse of code addition**: just as you would build a feature incrementally with tests at each step, you remove code incrementally with verification at each step. The tidycreel package's strong test coverage (testthat edition 3) and architectural compliance tests provide excellent safety nets for this removal work.
+The primary risk is incorrect estimator selection: ratio-of-means for access point interviews (complete trips) vs mean-of-ratios for roving interviews (incomplete trips). Using the wrong estimator produces 12-15% bias. Additional critical risks include: (1) missing truncation for roving interviews causing infinite variance, (2) naive product variance underestimating SE by 30-50%, (3) data structure mismatches between count and interview designs preventing combination, and (4) sparse interview data creating unstable estimates. Mitigation requires explicit interview type detection, built-in truncation logic, survey package-based delta method variance, shared calendar as design bridge, and progressive sample size validation.
 
 ## Key Findings
 
-**Stack:** R package development tools (roxygen2, devtools, testthat) provide built-in support for safe code removal through NAMESPACE auto-generation and comprehensive checking.
+### Recommended Stack
 
-**Architecture:** Four-phase removal sequence (NAMESPACE exports → Function stubs → Archived code → Documentation) with mandatory checkpoints prevents cascading breakage.
+**NO new dependencies required.** The existing survey package (v4.4.2) provides all necessary capabilities for interview-based estimation. Interview features represent a new application pattern using existing infrastructure, not new stack requirements.
 
-**Critical pitfall:** Skipping checkpoints between phases makes it impossible to isolate the cause of breakage, forcing either time-consuming debugging or complete rollback.
+**Core technologies (already in DESCRIPTION):**
+- **survey (4.4.2):** Provides `svyratio()` for ratio-of-means CPUE estimation and `svymean()` for mean-of-ratios - exactly what's needed for catch rate calculation with proper design-based variance
+- **tidyselect (1.2.1):** Column selection API already used in v0.1.0, extends naturally to interview columns (catch, effort, trip_complete)
+- **dplyr (1.1.4):** May be needed for interview/count data joins, already available in imports
+- **checkmate (2.3.2):** Progressive validation framework extends to interview data (Tier 1: structure, Tier 2: data quality warnings)
+- **cli (3.6.5):** User messaging extends to interview-specific error guidance
+
+**What NOT to add:**
+- **srvyr:** Would be redundant with tidycreel's domain-specific API; users never touch survey objects directly
+- **FSA (Fisheries Stock Assessment):** Out of scope - tidycreel is survey statistics, not biological stock assessment
+- **Custom ratio estimators:** survey package implementation is peer-reviewed and correct; reimplementing would introduce bugs
+
+### Expected Features
+
+**Must have (table stakes for v0.2.0):**
+- `add_interviews()` — Add interview data to creel_design object (parallel to `add_counts()`)
+- `estimate_cpue()` — Catch per unit effort with ratio-of-means estimator for complete trips
+- `estimate_catch()` — Total catch via Effort × CPUE with automatic variance propagation
+- Grouped CPUE and catch — `by =` parameter for stratified/species-level estimates
+- Harvest vs release distinction — Separate estimates for catch_kept and catch_released
+- Complete trip interviews only — Access point design pattern (simplifies v0.2.0 scope)
+
+**Should have (competitive advantage):**
+- Automatic variance propagation for total catch — Users don't hand-calculate delta method; tidycreel handles Effort × CPUE variance
+- Unified design object workflow — Single creel_design holds counts + interviews; coherent analysis pipeline
+- Progressive validation for interviews — Warn about incomplete trips, missing effort, extreme CPUE values
+- Print methods showing estimator context — Output shows "Ratio-of-Means CPUE" vs "Mean-of-Ratios CPUE" for transparency
+- Variance method control — Existing Taylor/bootstrap/jackknife from v0.1.0 extends to CPUE and total catch
+
+**Defer (v0.3.0+):**
+- Incomplete trip handling (mean-of-ratios with truncation) — Roving design support requires trip length handling and length-bias correction
+- Multi-species estimation — Requires survey-based covariance handling for species aggregation
+- Caught-while-seeking adjustments — Complex domain logic requiring target species tracking
+- Species aggregation helpers — Must handle covariance correctly, not simple post-hoc sums
+
+### Architecture Approach
+
+Interview-based estimation integrates with v0.1.0 architecture through a **parallel data stream** pattern. Count data (effort) and interview data (CPUE) flow through separate validation and survey construction pipelines, then merge at final estimation where `total catch = effort × CPUE` using delta method variance. Both streams share a common calendar/stratification foundation but maintain separate PSU structures (day-PSU for counts, interview-PSU for interviews).
+
+**Major components:**
+1. **add_interviews()** — Attaches interview data to design, validates schema, constructs interview survey design object parallel to count survey
+2. **estimate_cpue()** — Mode-based dispatch to ratio-of-means (`svyratio()`) for access interviews or mean-of-ratios (`svymean(~I(catch/effort))`) for roving interviews
+3. **estimate_catch()** — Species-specific CPUE wrapper, filters to single species (v0.2.0 scope constraint)
+4. **estimate_total_catch()** — Combines effort × CPUE estimates using delta method variance via `survey::svycontrast()`, validates design compatibility
+5. **construct_interview_survey()** — Builds `svydesign` from interview data with shared calendar strata but independent PSU structure
+6. **delta_method_product()** — Variance utility for product of two estimates: `Var(E×C) = C²·Var(E) + E²·Var(C) + 2·E·C·Cov(E,C)`
+
+**Architectural patterns preserved from v0.1.0:**
+- Three-layer architecture (User API → Orchestration → Survey Package)
+- Progressive validation (Tier 1: fail fast → Tier 2: warn → Tier 3: deep diagnostics)
+- Design-centric workflow with immutable operations
+- Variance method abstraction (Taylor/bootstrap/jackknife)
+
+### Critical Pitfalls
+
+1. **Wrong estimator for interview type (ratio-of-means vs mean-of-ratios)** — Using ratio-of-means for roving interviews produces 12-15% bias. **Prevention:** Encode interview_type in design object, dispatch estimator based on type, error if roving data with ratio-of-means requested. **Phase:** 08-02 (CPUE Estimation)
+
+2. **Missing truncation for roving interviews** — Mean-of-ratios without trip truncation produces infinite variance from extreme ratios (short trips). **Prevention:** Built-in truncation at 0.5 hours (30 minutes) in `estimate_cpue()` for mean-of-ratios mode, warn if >10% of trips truncated, error if user tries to disable truncation. **Phase:** 08-03 (Roving CPUE)
+
+3. **Incorrect variance propagation for total catch** — Naive formula `Var(E) + Var(C)` underestimates SE by 30-50%. **Prevention:** Use `survey::svycontrast()` with delta method, never allow manual multiplication, reference tests against hand-calculated delta method. **Phase:** 08-05 (Total Catch Estimation)
+
+4. **Data structure mismatch between count and interview designs** — Count data uses day-PSU, interviews use individual-PSU; incompatible for merging. **Prevention:** Shared calendar provides bridge, `merge_count_interview_designs()` validates compatibility, aggregates interviews to day-level for covariance computation. **Phase:** 08-01 (Interview Integration)
+
+5. **Sparse interview data creating unstable estimates** — CPUE with <30 interviews per stratum produces unreliable estimates with poor CI coverage. **Prevention:** Validate sample sizes before estimation, warn if n<30, error if n<10, suggest stratum pooling or bootstrap variance for small samples. **Phase:** 08-02 (CPUE Estimation)
+
+6. **Bag limit bias in roving interviews** — Successful anglers leave fishery, roving only encounters unsuccessful anglers; 15-36% negative bias with effective bag limits. **Prevention:** Detect bag limit scenarios, check for truncated catch distributions, strong warning for roving + low limits (≤5 fish), recommend access design instead. **Phase:** 08-03 (Roving CPUE)
+
+7. **Mismatched species between effort and catch data** — Total harvest requires consistent targeting (e.g., all anglers vs species-specific anglers). **Prevention:** Metadata tracking of species/targeting in estimate results, validation in `estimate_total_catch()` that effort and CPUE match. **Phase:** 08-05 (Total Catch Estimation)
 
 ## Implications for Roadmap
 
-Based on research, suggested phase structure:
+Based on research, suggested phase structure follows dependency order: data integration → basic estimation → advanced patterns → combined estimation.
 
-### 1. **Phase 1: Remove NAMESPACE Exports** (Low Risk)
-   - Addresses: Making deprecated functions internal-only
-   - Avoids: Breaking tests or user code (functions still exist, just not exported)
-   - **Verification:** R CMD check + test suite
-   - **Rollback:** Simple (re-add `@export` tags, regenerate NAMESPACE)
-   - **Duration:** ~30 minutes
+### Phase 08-01: Interview Data Integration
+**Rationale:** Must establish data structure and validation before any estimation can occur. Interviews and counts are parallel streams requiring separate but coordinated survey designs.
+**Delivers:** `add_interviews()` function, interview schema validation (Tier 1/2), interview survey design construction
+**Addresses:** Data structure mismatch pitfall (#4); establishes foundation for all interview-based features
+**Avoids:** Incompatible design structures that prevent total catch estimation later
+**Architecture:** Extends `creel_design` S3 class with `$interviews` and `$interview_survey` slots, parallels `add_counts()` pattern
 
-### 2. **Phase 2: Remove Function Stubs** (Medium Risk)
-   - Addresses: Deleting deprecated function definitions from R/estimators.R
-   - Avoids: Breaking internal code or tests that reference these functions
-   - **Verification:** R CMD check + test suite + search for references
-   - **Rollback:** Moderate (restore file from git)
-   - **Duration:** ~1 hour (includes thorough reference checking)
+### Phase 08-02: CPUE Estimation (Access Point)
+**Rationale:** Access point interviews with complete trips are simpler (ratio-of-means only), well-documented, and the foundation for total catch. Implementing complete trip CPUE first validates the estimation pipeline before adding roving complexity.
+**Delivers:** `estimate_cpue()` with mode="ratio_of_means", grouped CPUE estimation via `by=` parameter, sample size validation
+**Addresses:** Wrong estimator pitfall (#1) for access case, sparse data pitfall (#5)
+**Uses:** survey::svyratio() for ratio estimation, existing variance method infrastructure from v0.1.0
+**Implements:** Mode-based dispatch architecture, estimator routing based on interview_type
+**Avoids:** Starting with roving (more complex) before validating basic CPUE workflow
 
-### 3. **Phase 3: Remove Archived Code** (Low Risk)
-   - Addresses: Deleting old_code/ directory (~187k lines)
-   - Avoids: Breaking documentation references to archived examples
-   - **Verification:** R CMD check + search for doc references
-   - **Rollback:** Simple (restore directory from git)
-   - **Duration:** ~30 minutes
+### Phase 08-03: CPUE Estimation (Roving Design)
+**Rationale:** Roving interviews require mean-of-ratios with mandatory truncation and bag limit diagnostics. This is higher complexity and should only be added after access point CPUE is proven.
+**Delivers:** `estimate_cpue()` with mode="mean_of_ratios", trip truncation logic (default 0.5 hours), bag limit diagnostics
+**Addresses:** Missing truncation pitfall (#2), bag limit bias pitfall (#6)
+**Uses:** survey::svymean(~I(catch/effort)) for mean-of-ratios, truncation filtering before estimation
+**Implements:** Truncation validation, bag limit detection, roving-specific warnings
+**Avoids:** Launching roving support without critical safeguards (truncation, bag limits)
+**Research flag:** Roving design patterns well-documented in fisheries literature (Pollock et al. 1997); skip research-phase.
 
-### 4. **Phase 4: Update Documentation** (Low Risk)
-   - Addresses: Cleaning NEWS.md, README, vignettes
-   - Avoids: Documenting code that might need rollback
-   - **Verification:** R CMD check --as-cran + vignette build
-   - **Rollback:** Simple (restore docs from git)
-   - **Duration:** ~1 hour
+### Phase 08-04: Catch and Harvest Wrappers
+**Rationale:** `estimate_catch()` and `estimate_harvest()` are lightweight wrappers around `estimate_cpue()` for species-specific or harvest-specific filtering. They provide user convenience without adding statistical complexity.
+**Delivers:** `estimate_catch()` (species-specific CPUE), `estimate_harvest()` (harvest-only CPUE), consistent output formatting
+**Addresses:** User convenience for common workflows, species filtering for v0.2.0 single-species scope
+**Uses:** Existing `estimate_cpue()` implementation, filtering logic, metadata preservation
+**Implements:** Wrapper pattern, species consistency tracking for later validation in Phase 08-05
+**Avoids:** Scope creep into multi-species (deferred to v0.3.0)
+
+### Phase 08-05: Total Catch Estimation (Combined)
+**Rationale:** This is the ultimate deliverable of v0.2.0 - combining effort and CPUE to estimate total catch with correct variance. Requires all previous phases working correctly. Most complex due to design merging and delta method variance.
+**Delivers:** `estimate_total_catch()` function, delta method variance propagation, design compatibility validation, species/targeting consistency checks
+**Addresses:** Incorrect product variance pitfall (#3), species mismatch pitfall (#7), data structure mismatch validation
+**Uses:** survey::svycontrast() for delta method, design merging utility, existing effort and CPUE estimation
+**Implements:** Product variance factory, covariance handling (assume independence in v0.2.0), combined design construction
+**Avoids:** Naive multiplication of estimates without proper variance, launching total catch without safeguards
+**Research flag:** Delta method well-documented in survey statistics literature; skip research-phase.
+
+### Phase 08-06: Documentation and Examples
+**Rationale:** Interview-based estimation introduces new concepts (estimator choice, truncation, product variance) that require clear documentation. Examples demonstrate correct usage patterns.
+**Delivers:** Vignette "Interview-Based Estimation", example datasets (access and roving interviews), ratio estimator guide integration, workflow examples
+**Addresses:** Usability, education on estimator selection, preventing common misuse patterns
+**Uses:** Existing vignette infrastructure from v0.1.0, pkgdown documentation
+**Implements:** Example workflows end-to-end (design → counts → interviews → total catch)
 
 ### Phase Ordering Rationale
 
-**Why exports before functions:**
-- Removing exports first prevents new usage while keeping functions available for debugging
-- If Phase 2 breaks something, you can rollback to Phase 1 state (internal functions) rather than starting over
-- Aligns with "progressive restriction" pattern from research
+- **Sequential dependencies:** Can't estimate CPUE without interview integration (Phase 08-01), can't combine estimates without both effort and CPUE working (Phases 08-02/03 before 08-05)
+- **Complexity progression:** Access CPUE (simpler) before roving CPUE (more complex), wrappers after core estimation, combined estimation last
+- **Risk management:** Validate basic workflow (access point, ratio-of-means) before adding advanced patterns (roving, mean-of-ratios, truncation)
+- **Pitfall prevention:** Each phase addresses specific pitfalls in order of discovery: data integration issues first, then estimation issues, then combination issues
+- **Architectural coherence:** Parallel data stream pattern established in Phase 08-01 enables independent development of count-based (v0.1.0) and interview-based (v0.2.0) features
 
-**Why archived code before documentation:**
-- Archived code removal is independent of current code (can't break package)
-- Doing it before documentation allows documentation to reflect final state
-- If doc updates reference archived code, easier to see the dependency
+### Research Flags
 
-**Why documentation last:**
-- Code changes must be verified stable before documenting them
-- Avoids documenting changes that get rolled back
-- Allows NEWS.md to accurately summarize all changes in one entry
+**Phases with standard patterns (skip research-phase):**
+- **Phase 08-02:** Access point CPUE using ratio-of-means is well-documented in fisheries literature and survey statistics; direct application of `svyratio()`
+- **Phase 08-03:** Roving design patterns thoroughly studied (Pollock et al. 1997, Rasmussen et al. 1998); truncation thresholds established
+- **Phase 08-05:** Delta method for product variance is standard survey statistics; survey package provides `svycontrast()` implementation
 
-## Research Flags for Phases
+**Phases needing minimal validation (not full research):**
+- **Phase 08-01:** Design integration pattern is tidycreel-specific architecture; validate shared calendar approach with quick test
+- **Phase 08-04:** Wrappers are convenience functions; no statistical complexity requiring research
 
-### Phase 1: Standard Removal (No Research Needed)
-- roxygen2 export removal is well-documented
-- Process is: remove `@export` tags → run `devtools::document()`
-- Unlikely to encounter issues
-
-### Phase 2: Needs Reference Checking (Minimal Research)
-- Must verify no tests/vignettes call deprecated functions
-- Search pattern: `grep -r "estimate_effort\|estimate_cpue\|estimate_harvest" tests/ vignettes/`
-- If found: Update to current API or delete obsolete tests
-- Unlikely to need deeper research unless unexpected references found
-
-### Phase 3: Standard Removal (No Research Needed)
-- Directory deletion is straightforward
-- Git history preserves archived code
-- Unlikely to encounter issues
-
-### Phase 4: Standard Documentation (No Research Needed)
-- Update NEWS.md, verify README/vignettes
-- Standard package maintenance task
-- Unlikely to encounter issues
+**Overall:** v0.2.0 does NOT need `/gsd:research-phase` during planning - the domain is well-understood, methods are established, and integration points are clear from v0.1.0 architecture analysis.
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Removal Sequence | HIGH | Based on official R package documentation and CRAN best practices |
-| Verification Checkpoints | HIGH | R CMD check and testthat are standard tools with clear success criteria |
-| Rollback Strategies | HIGH | Git provides clear restoration points for each phase |
-| tidycreel-Specific Impact | HIGH | Deprecated stubs clearly identified in R/estimators.R, no complex dependencies |
+| Stack | HIGH | survey package capabilities verified via official documentation and CRAN reference; v0.1.0 already uses all required dependencies |
+| Features | HIGH | Table stakes features based on creel survey textbook (Pollock et al. 1994) and peer-reviewed literature; estimator requirements well-established |
+| Architecture | HIGH | v0.1.0 architecture proven in production use; parallel data stream pattern is natural extension; integration points clearly defined |
+| Pitfalls | HIGH | Critical pitfalls documented in peer-reviewed fisheries literature with quantified bias magnitudes; prevention strategies tested in existing packages |
 
-## Critical Success Factors
+**Overall confidence:** HIGH
 
-### What Makes This Removal Safe
+The combination of (1) established statistical methods, (2) proven v0.1.0 architecture, (3) comprehensive domain literature, and (4) no new dependencies provides strong foundation for v0.2.0 development. Primary uncertainties are implementation details (e.g., exact API for design merging), not fundamental approach.
 
-1. **Package never released:** No external users to break, no backward compatibility concerns
-2. **Clear migration path:** New API (`est_*` functions) already exists and is documented
-3. **Comprehensive tests:** Test suite will catch breakage immediately
-4. **Architectural compliance tests:** Verify core patterns remain intact
-5. **Strong git discipline:** Each phase can be committed independently with clear rollback points
+### Gaps to Address
 
-### What Could Go Wrong (and Mitigations)
+- **Covariance between effort and CPUE estimates:** Research assumes independence (Cov(E,C) = 0) for v0.2.0 simplicity; if count and interview data are collected on same days by same clerks, may be correlated. **Resolution:** Document independence assumption, add covariance term in v0.3.0 if users report issues; bootstrap variance as fallback.
 
-| Risk | Probability | Impact | Mitigation |
-|------|-------------|--------|------------|
-| Tests reference deprecated functions | Medium | Medium | Pre-check with grep, update tests to current API |
-| Vignettes use deprecated examples | Low | Medium | Pre-check with grep, update vignettes to current API |
-| Internal code calls deprecated functions | Very Low | High | Pre-check with grep, should be caught by Phase 1 tests |
-| Documentation has broken links | Low | Low | Check during Phase 3, update in Phase 4 |
+- **Multi-species aggregation patterns:** v0.2.0 scope constraint (single species only) defers this complexity. **Resolution:** Phase 08-04 tracks species metadata in results; v0.3.0 implements survey-based covariance for species aggregation.
 
-## Gaps to Address
+- **Bootstrap variance for combined estimates:** Delta method assumes large samples; small creel surveys may need bootstrap. **Resolution:** Phase 08-05 implements delta method first (simpler, faster); add bootstrap path in v0.2.1 if users request.
 
-### Identified During Research
-
-1. **Test coverage of deprecated functions:** Need to verify if any tests specifically validate deprecated function behavior
-   - **Action:** Run `grep -r "estimate_effort\|estimate_cpue\|estimate_harvest" tests/testthat/`
-   - **If found:** Decide whether to update tests to current API or delete as obsolete
-
-2. **Vignette examples:** Need to verify no vignettes demonstrate deprecated API
-   - **Action:** Run `grep -r "estimate_effort\|estimate_cpue\|estimate_harvest" vignettes/`
-   - **If found:** Update examples to use current API (`est_effort`, `est_cpue`, `est_catch`)
-
-3. **Helper function usage:** `create_survey_design()` in R/estimators.R may be unused after deprecated function removal
-   - **Action:** Run `grep -r "create_survey_design" R/` to check usage
-   - **If unused:** Remove in Phase 2 along with deprecated functions
-   - **If used:** Keep it
-
-### Not Blocking Removal
-
-- **old_code/ reference documentation:** Low priority - git history is sufficient
-- **Deprecation warnings:** Not needed - package never released
-- **Migration vignettes:** Not needed - comprehensive getting-started vignettes already exist with current API
-
-## Ready for Roadmap
-
-Research complete. The removal sequence is well-defined with clear verification checkpoints and rollback strategies. Each phase is independently valuable:
-
-- **Phase 1** prevents new usage of deprecated functions (user-facing improvement)
-- **Phase 2** removes dead code from package (maintainer-facing improvement)
-- **Phase 3** reduces repository size and confusion (contributor-facing improvement)
-- **Phase 4** ensures documentation accuracy (user-facing improvement)
-
-All four phases can be completed in a single work session (~3-4 hours total) or split across multiple sessions with git commits after each verified phase. The work is low-risk due to comprehensive test coverage and clear rollback strategies.
+- **Interview weight handling:** If interview surveys use probability sampling (not all anglers interviewed), need sampling weights. **Resolution:** v0.2.0 assumes equal probability sampling (access point design); add weight parameter in v0.3.0 for complex sampling designs.
 
 ## Sources
 
-### Official R Package Documentation
-- [When can I remove a deprecated function from a package? - Posit Community](https://forum.posit.co/t/when-can-i-remove-a-deprecated-function-from-a-package/9707)
-- [Communicate lifecycle changes in your functions - lifecycle package](https://cran.r-project.org/web/packages/lifecycle/vignettes/communicate.html)
-- [Lifecycle stages - lifecycle package](https://cran.r-project.org/web/packages/lifecycle/vignettes/stages.html)
-- [Managing imports and exports • roxygen2](https://roxygen2.r-lib.org/articles/namespace.html)
-- [Appendix A — R CMD check – R Packages (2e)](https://r-pkgs.org/R-CMD-check.html)
+### Primary (HIGH confidence)
+- [survey package documentation: svyratio, svycontrast](https://r-survey.r-forge.r-project.org/survey/) — Ratio estimation and delta method implementation
+- [Pollock, K.H., Jones, C.M., & Brown, T.M. (1994). Angler Survey Methods and their Applications in Fisheries Management. American Fisheries Society Special Publication 25](https://www.researchgate.net/publication/313949781_Creel_Surveys) — Gold standard reference for creel survey methods
+- [Pollock, K.H., et al. (1997). Catch Rate Estimation for Roving and Access Point Surveys. North American Journal of Fisheries Management 17(1):11-19](https://www.academia.edu/80439796/Catch_Rate_Estimation_for_Roving_and_Access_Point_Surveys) — Ratio-of-means vs mean-of-ratios with bias quantification
+- [Rasmussen, P.W., et al. (1998). Bias and confidence interval coverage of creel survey estimators evaluated by simulation. Transactions of the American Fisheries Society 127:469-480](https://fisheries.org/doi/9781934874295-ch19/) — Simulation evidence for truncation benefits, CI coverage analysis
+- tidycreel v0.1.0 codebase — `.planning/codebase/ARCHITECTURE.md`, `R/creel-estimates.R`, `R/survey-bridge.R` (proven architecture foundation)
 
-### Package Evolution Best Practices
-- [rOpenSci | Package evolution - changing stuff in your package](https://ropensci.org/blog/2017/01/05/package-evolution/)
-- [Writing R Extensions - CRAN](https://cran.r-project.org/doc/manuals/r-release/R-exts.html)
+### Secondary (MEDIUM confidence)
+- [NOAA Fisheries: CPUE Modeling Best Practices](https://www.fisheries.noaa.gov/resource/peer-reviewed-research/catch-unit-effort-modelling-stock-assessment-summary-good-practices) — General CPUE guidance (stock assessment focus, not survey focus)
+- [AnglerCreelSurveySimulation CRAN package](https://cran.r-project.org/web/packages/AnglerCreelSurveySimulation/vignettes/creel_survey_simulation.html) — Simulation tools demonstrating estimator behavior (complementary, not competing)
+- tidycreel domain documents — `creel_chapter.md`, `creel_foundations.md`, `creel_effort_estimation_methods.md` (internal literature review)
 
-### Code Quality and Maintenance
-- [Automatic Code Cleaning in R with Rclean - rOpenSci](https://ropensci.org/blog/2020/04/21/rclean/)
-- [Self-admitted technical debt in R: detection and causes - Automated Software Engineering](https://link.springer.com/article/10.1007/s10515-022-00358-6)
-- [Build Code Needs Maintenance Too: MSR 2025](https://2025.msrconf.org/details/msr-2025-technical-papers/13/Build-Scripts-Need-Maintenance-Too-A-Study-on-Refactoring-and-Technical-Debt-in-Buil)
+### Tertiary (LOW confidence)
+- [Bayesian integration of multiple creel survey data sources (ScienceDirect 2023)](https://www.sciencedirect.com/science/article/pii/S0165783623003259) — Advanced methods for future consideration (v1.0.0+)
 
 ---
-*Research summary for: tidycreel legacy constructor removal*
-*Researched: 2026-01-27*
+*Research completed: 2026-02-09*
+*Ready for roadmap: yes*

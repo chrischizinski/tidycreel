@@ -1,159 +1,414 @@
-# Pitfalls Research: R Package Legacy Code Removal
+# Pitfalls Research: Adding Interview-Based Catch/Harvest Estimation
 
-**Domain:** R package maintenance - removing deprecated functions and archived code
-**Researched:** 2026-01-27
+**Domain:** Creel survey interview-based estimation for catch and harvest
+**Researched:** 2026-02-09
 **Confidence:** HIGH
 
 ## Critical Pitfalls
 
-### Pitfall 1: NAMESPACE Desynchronization After Removing @export Tags
+### Pitfall 1: Wrong Estimator for Interview Type (Ratio-of-Means vs Mean-of-Ratios)
 
 **What goes wrong:**
-When you remove deprecated functions that have `@export` tags, running `devtools::document()` or `roxygen2::roxygenize()` may fail before regenerating NAMESPACE, leaving orphaned exports that reference non-existent functions. This creates a chicken-and-egg problem where the package can't be loaded to regenerate documentation because the NAMESPACE is broken.
+Using ratio-of-means estimator for roving interviews (incomplete trips) produces biased catch rate estimates, typically underestimating true catch by 12-15%. Conversely, using mean-of-ratios for access point interviews (complete trips) produces correct estimates but with unnecessarily high variance (20-30% higher standard errors).
 
 **Why it happens:**
-roxygen2 parses NAMESPACE during documentation generation. If the NAMESPACE references functions that no longer exist in R/ code, the package can't load, preventing NAMESPACE regeneration. This is especially common when removing multiple deprecated functions at once.
+Roving interviews sample anglers mid-trip with probability proportional to trip length. Longer trips are more likely to be sampled, creating length-biased sampling. The ratio-of-means estimator E(Σ catch / Σ effort) weights trips by their effort, amplifying this bias. Developers often apply the same estimator to both interview types because "they're both calculating catch rate" without understanding the sampling probability difference.
 
 **How to avoid:**
-1. **Manual NAMESPACE cleanup first**: Before running `devtools::document()`, manually edit NAMESPACE to remove the exports for deprecated functions you're deleting
-2. **Delete one function at a time**: Remove one deprecated function, regenerate NAMESPACE, verify R CMD check passes, then proceed to the next
-3. **Use the two-step approach**: First comment out the function body but keep `@export`, regenerate NAMESPACE to verify, then delete the entire function
+1. **Encode interview type in design object:** Add `interview_type` field to creel_design ("access" vs "roving")
+2. **Estimator dispatch on interview type:** `est_cpue()` should check interview_type and route to:
+   - `est_cpue_ratio_of_means()` for access interviews
+   - `est_cpue_mean_of_ratios()` for roving interviews
+3. **Explicit parameter with safe default:** If user must specify, default to ratio-of-means (safer choice) with warning
+4. **Validation check:** Error if roving data detected but ratio-of-means requested
 
 **Warning signs:**
-- `devtools::document()` errors with "object 'function_name' not found"
-- `R CMD check` fails with NAMESPACE errors before you can regenerate docs
-- `devtools::load_all()` fails due to missing exported functions
+- Catch rate estimates systematically lower than known population rates
+- Estimates vary dramatically when switching estimator
+- Variance estimates unstable or extremely large with mean-of-ratios
+- Simulations show 12-15% negative bias
 
 **Phase to address:**
-Phase 1 (Preparation) - Must be handled correctly before any function removal
+Phase 08-02 (CPUE Estimation) - Must implement correct estimator routing before any catch rate calculations
 
 ---
 
-### Pitfall 2: Breaking Internal Function Calls
+### Pitfall 2: Missing Truncation for Roving Interviews with Mean-of-Ratios
 
 **What goes wrong:**
-You remove a deprecated exported function, but internal package functions still call it. Since the function is exported, internal code may use it without explicit package prefix (`package:::`), causing silent breakage that only appears when the function is called.
+Mean-of-ratios estimator for roving interviews without truncation of short trips produces infinite or extremely large variance estimates. Short trips (e.g., 5 minutes = 0.083 hours) with any catch create extreme ratios (e.g., 2 fish / 0.083 hours = 24 fish/hour), which dominate variance calculations. Root mean squared error increases by 2-3x without truncation.
 
 **Why it happens:**
-In R packages, exported functions are available both to users AND to internal code. Developers may assume only user code calls deprecated functions, missing internal dependencies. Grep searches for the function name may miss it if called via `do.call()` or computed strings.
+The mean-of-ratios estimator computes mean(catch_i / effort_i). As effort_i → 0, the ratio → ∞ even for small catch values. These extreme outliers have huge influence on variance. Developers focus on point estimates (which may seem reasonable due to averaging) and miss the variance explosion. Literature recommends 20-30 minute minimum, but this is often overlooked during implementation.
 
 **How to avoid:**
-1. **Comprehensive code search**: Use `Grep` tool to search entire R/ directory for function name references, including:
-   - Direct calls: `function_name(`
-   - String references: `"function_name"`
-   - Dynamic calls: `do.call`, `match.fun`, `get()`
-2. **Check test files**: Search `tests/testthat/` for any tests calling the deprecated function
-3. **Check examples and vignettes**: Search `man/`, `vignettes/`, `README.md` for usage examples
-4. **Run tests BEFORE removal**: Ensure full test suite passes as baseline
+1. **Built-in truncation in est_cpue_mean_of_ratios():** Filter `hours_fished >= 0.5` (30 minutes) before estimation
+2. **Make truncation threshold configurable:** Parameter `min_trip_hours = 0.5` with documented default
+3. **Validation check:** Count and warn if >10% of trips would be truncated (may indicate data quality issue)
+4. **Document in output:** Record number of trips truncated in result metadata
+5. **Error if roving without truncation:** Block user from setting `min_trip_hours = 0`
+
+**How to avoid (continued):**
+```r
+est_cpue_mean_of_ratios <- function(design, min_trip_hours = 0.5, ...) {
+  # Validation
+  if (min_trip_hours <= 0) {
+    cli_abort("min_trip_hours must be > 0 for mean-of-ratios estimator")
+  }
+
+  # Count truncated trips
+  n_truncated <- sum(design$interviews$hours_fished < min_trip_hours)
+  pct_truncated <- n_truncated / nrow(design$interviews)
+
+  if (pct_truncated > 0.10) {
+    cli_warn(c(
+      "!" = "{n_truncated} trips ({scales::percent(pct_truncated)}) truncated (< {min_trip_hours} hours)",
+      "i" = "High truncation may indicate data quality issues",
+      "i" = "Verify interview data is from roving design"
+    ))
+  }
+
+  # Filter
+  interviews_filtered <- design$interviews %>%
+    filter(hours_fished >= min_trip_hours)
+
+  # Estimation continues...
+}
+```
 
 **Warning signs:**
-- Functions work in interactive testing but fail in specific scenarios
-- Tests fail with "could not find function" errors after removal
-- Examples in documentation stop working
+- Standard errors 2-5x larger than ratio-of-means estimates for same data
+- Confidence intervals include impossible values (e.g., negative catch rates)
+- Many small trip durations (<30 minutes) in roving interview data
+- Variance estimates fail to converge or produce NA values
 
 **Phase to address:**
-Phase 1 (Preparation) - Must identify all references before deletion
+Phase 08-03 (Roving CPUE) - Must implement truncation logic before roving catch rate estimation
 
 ---
 
-### Pitfall 3: Orphaned Test Files for Removed Functions
+### Pitfall 3: Incorrect Variance Propagation for Total Catch (Effort × CPUE)
 
 **What goes wrong:**
-Test files continue testing deprecated functions that have been removed, causing test suite failures. Worse, you might delete tests that actually test shared functionality, accidentally reducing coverage of active code paths.
+Calculating total catch as `effort_estimate × cpue_estimate` but variance as `var(effort) + var(cpue)` produces severely underestimated standard errors (30-50% too small). The correct formula requires the covariance term and cross-product terms from the delta method: `Var(E×C) ≈ E²·Var(C) + C²·Var(E) + 2·E·C·Cov(E,C)`. Ignoring correlation between effort and catch rate leads to false precision.
 
 **Why it happens:**
-Test file naming conventions (`test-function-name.R`) don't always map 1:1 to implementation files. A test file for `estimate_effort()` might also test helper functions or shared code paths used by the new `est_effort()` function. Blindly deleting test files based on name creates coverage gaps.
+Effort and CPUE are estimated from the same survey (overlapping sample), creating correlation. If more anglers are counted (high effort estimate), CPUE may be lower (congestion effect) or higher (better fishing attracts more anglers). Developers often treat them as independent because they're computed separately. The delta method for products is not intuitive and requires survey package internals knowledge.
 
 **How to avoid:**
-1. **Audit test files first**: Read test file contents before deleting - what does it actually test?
-2. **Check for shared helpers**: Look for tests of internal functions that both old and new APIs use
-3. **Run coverage before and after**: Use `covr::package_coverage()` to compare coverage metrics
-4. **Verify no coverage regression**: New API functions should maintain or exceed old coverage levels
-5. **For deprecated stubs that just error**: Keep minimal tests that verify the error message, then remove only when function is deleted
+1. **Use survey package product estimator:** Don't manually multiply; use `survey::svycontrast()` with formula
+2. **Dedicated total_catch function:** Create `est_total_catch()` that:
+   - Takes effort design + interview design (may share calendar)
+   - Computes effort and CPUE internally
+   - Uses delta method for product variance via `survey::svycontrast()`
+   - Returns total catch with correct SE
+3. **Don't expose manual multiplication:** Document that users should NOT compute total = effort × cpue themselves
+4. **Reference test against manual delta method:** Verify variance matches hand-calculated delta method formula
+
+**How to avoid (continued):**
+```r
+est_total_catch <- function(effort_design, interview_design, ...) {
+  # Estimate effort
+  effort_result <- est_effort(effort_design, ...)
+
+  # Estimate CPUE
+  cpue_result <- est_cpue(interview_design, ...)
+
+  # Create combined design for covariance
+  # (requires shared calendar/stratification)
+  combined_design <- merge_designs(effort_design, interview_design)
+
+  # Use delta method via survey package
+  total_catch <- survey::svycontrast(
+    combined_design,
+    quote(effort * cpue)
+  )
+
+  # Return with correct variance
+  return(tibble(
+    estimate = coef(total_catch),
+    se = SE(total_catch),
+    method = "product_delta_method"
+  ))
+}
+```
 
 **Warning signs:**
-- Code coverage percentage drops after cleanup
-- Specific code paths in new functions become untested
-- R CMD check shows "Examples with CPU time > 2.5 times elapsed time" (may indicate missing tests)
+- Confidence intervals for total catch narrower than expected
+- Standard errors scale linearly with estimate (should scale as sqrt)
+- Variance estimates don't change when correlation is non-zero
+- Simulation coverage of confidence intervals <90% (should be 95% for α=0.05)
 
 **Phase to address:**
-Phase 2 (Testing) - Must verify coverage before and after deletion
+Phase 08-05 (Total Catch Estimation) - Must implement correct product variance before any total catch calculations
 
 ---
 
-### Pitfall 4: Git History Contamination from old_code/ Directory
+### Pitfall 4: Data Structure Mismatch Between Count and Interview Data
 
 **What goes wrong:**
-You delete `old_code/` directory but it remains in git history. If old_code/ contained sensitive data, credentials, or very large files, the repository remains bloated and may expose sensitive information even after directory deletion.
+Count data (effort estimation) uses day-level PSUs with calendar stratification, but interview data uses individual-level observations with trip characteristics. When combining for total catch = effort × cpue, the survey designs are incompatible (different PSU structures, different strata definitions). Attempting to merge designs or compute covariance fails with obscure survey package errors about "mismatched strata" or "incompatible designs".
 
 **Why it happens:**
-Git tracks history forever. `git rm -r old_code/` removes the directory from the working tree and commits that removal, but all previous commits still contain the files. For packages never released, this is usually fine. But if old_code/ was accidentally committed with sensitive data, simple deletion doesn't help.
+The existing tidycreel architecture (v0.1.0) built effort estimation with day as PSU, which is correct for count surveys. Interview-based estimation needs individual interviews as observations. These operate at different aggregation levels. The architectural decision to use `creel_design` object for both conceals the incompatibility until users try to combine estimates for total catch.
 
 **How to avoid:**
-1. **For normal cleanup (no sensitive data)**: Just use `git rm -r old_code/` and commit - this is sufficient for unreleased packages
-2. **Verify no sensitive data first**: Check old_code/ contents for API keys, passwords, credentials, personal data
-3. **If sensitive data found**: Must use `git filter-branch` or `BFG Repo-Cleaner` to rewrite history (complex, requires force-push)
-4. **Add to .gitignore AFTER removal**: Prevent accidental re-addition by adding `old_code/` to `.gitignore`
-5. **For collaborative repos**: Communicate with all contributors before rewriting history
+1. **Separate design constructors:** Keep `add_counts()` (day-PSU) separate from `add_interviews()` (individual-PSU)
+2. **Shared calendar as bridge:** Both designs reference the same calendar tibble for stratum definitions
+3. **Design merging utility:** Create `merge_count_interview_designs()` that:
+   - Checks for calendar compatibility (same strata, same dates)
+   - Aggregates interview data to day-level for covariance computation
+   - Creates combined design with proper nesting structure
+4. **Document integration requirements:** Clearly state that total catch requires compatible stratification
+5. **Validation in est_total_catch():** Error early if designs have incompatible structure
+
+**How to avoid (continued):**
+```r
+add_interviews <- function(design, interviews, interview_type = c("access", "roving")) {
+  # Validate design already has calendar
+  if (is.null(design$calendar)) {
+    cli_abort("Design must have calendar before adding interviews")
+  }
+
+  # Validate interviews match calendar dates
+  interview_dates <- unique(interviews$date)
+  calendar_dates <- design$calendar$date
+
+  missing_dates <- setdiff(interview_dates, calendar_dates)
+  if (length(missing_dates) > 0) {
+    cli_abort(c(
+      "x" = "Interview data contains dates not in calendar",
+      "i" = "Missing dates: {paste(missing_dates, collapse=', ')}"
+    ))
+  }
+
+  # Join interviews with calendar strata
+  interviews_with_strata <- interviews %>%
+    left_join(design$calendar, by = "date")
+
+  # Store in design object
+  design$interviews <- interviews_with_strata
+  design$interview_type <- match.arg(interview_type)
+
+  # Build individual-level survey design
+  design$interview_svy <- survey::svydesign(
+    ids = ~1,  # Interviews are terminal units
+    strata = design$strata_formula,
+    data = interviews_with_strata,
+    weights = ~interview_weight  # If using probability sampling
+  )
+
+  return(design)
+}
+```
 
 **Warning signs:**
-- `.git` directory is larger than expected for project size
-- Old credentials or API keys found in old_code/
-- Multiple developers have cloned the repository (history rewrite requires coordination)
+- `survey::svycontrast()` errors with "designs must have same strata"
+- Covariance computation returns NA or Inf
+- Manual merging attempts fail due to incompatible nesting
+- Different number of strata in effort vs CPUE results
 
 **Phase to address:**
-Phase 3 (Cleanup) - Handle during old_code/ directory removal
+Phase 08-01 (Interview Design Integration) - Must establish data structure patterns before estimation
 
 ---
 
-### Pitfall 5: S3 Method Registration Issues
+### Pitfall 5: Sparse Interview Data Creating Unstable Estimates
 
 **What goes wrong:**
-When removing functions, you might have S3 methods that were registered via `@export`. roxygen2 7.3+ warns about S3 methods missing `@export` tags, but may generate incorrect NAMESPACE directives on first run if NAMESPACE file doesn't exist. This causes subtle method dispatch failures.
+CPUE estimation with <30 interviews per stratum produces unstable estimates with extremely wide confidence intervals or fails entirely. Ratio estimators are particularly sensitive to small samples - confidence interval coverage drops below 90% when n<50, and below 85% when n<30. In extreme cases (<10 interviews), estimates may be undefined or have infinite variance.
 
 **Why it happens:**
-S3 methods must be **registered** (not exported in the traditional sense), but roxygen2 uses `@export` for registration. When you remove deprecated generics or methods, the NAMESPACE needs `S3method()` directives, not `export()` directives. roxygen2 can generate wrong directives if NAMESPACE is missing/corrupted.
+Ratio estimators (both ratio-of-means and mean-of-ratios) are asymptotic - their properties hold as n→∞. With small samples, the normal approximation for confidence intervals breaks down. The delta method variance formula can produce negative variance estimates with extreme data. Creel surveys often have sparse interview data due to logistics (can't interview everyone) or low angler density on some days/locations.
 
 **How to avoid:**
-1. **Check for S3 methods**: Look for functions like `function.class` naming pattern
-2. **Verify NAMESPACE directives**: After regeneration, check that S3 methods use `S3method(generic, class)` not `export(function.class)`
-3. **Two-pass regeneration**: If NAMESPACE is corrupted, run `roxygen2::roxygenize()` twice - first run may generate wrong directives, second run corrects them
-4. **For deprecated S3 methods**: Remove `@export` tag and the method definition together
-5. **Check print/plot methods**: These are often S3 methods that get forgotten
+1. **Sample size validation:** Check n per stratum before estimation, warn if n<30, error if n<10
+2. **Pooling recommendation:** Suggest combining strata when sparse
+3. **Alternative estimators:** Offer bootstrap/jackknife variance for small samples (better coverage)
+4. **Bayesian option:** For advanced users, allow hierarchical models that borrow strength across strata
+5. **Document minimum sample sizes:** Vignette on "power and sample size for creel surveys"
+
+**How to avoid (continued):**
+```r
+est_cpue <- function(design, by = NULL, min_n_per_stratum = 30, ...) {
+  # Compute sample sizes
+  if (!is.null(by)) {
+    sample_sizes <- design$interviews %>%
+      group_by(across({{ by }})) %>%
+      summarize(n = n(), .groups = "drop")
+
+    sparse_strata <- sample_sizes %>%
+      filter(n < min_n_per_stratum)
+
+    if (nrow(sparse_strata) > 0) {
+      cli_warn(c(
+        "!" = "{nrow(sparse_strata)} strata have <{min_n_per_stratum} interviews",
+        "i" = "Estimates may be unstable",
+        "i" = "Consider: 1) Pooling strata, 2) Using bootstrap variance, 3) Collecting more data",
+        "i" = "Sparse strata: {paste(sparse_strata[[1]], collapse=', ')}"
+      ))
+    }
+
+    very_sparse_strata <- sample_sizes %>%
+      filter(n < 10)
+
+    if (nrow(very_sparse_strata) > 0) {
+      cli_abort(c(
+        "x" = "{nrow(very_sparse_strata)} strata have <10 interviews (insufficient for estimation)",
+        "i" = "Sparse strata: {paste(very_sparse_strata[[1]], collapse=', ')}",
+        "i" = "Pool strata or collect more data before estimation"
+      ))
+    }
+  } else {
+    # Overall estimation
+    n_total <- nrow(design$interviews)
+    if (n_total < 30) {
+      cli_warn("Only {n_total} interviews; consider bootstrap variance for better coverage")
+    }
+    if (n_total < 10) {
+      cli_abort("Only {n_total} interviews; insufficient for stable estimation")
+    }
+  }
+
+  # Estimation continues...
+}
+```
 
 **Warning signs:**
-- NAMESPACE has `export(print.myclass)` instead of `S3method(print, myclass)`
-- Generic methods don't dispatch correctly after cleanup
-- roxygen2 warnings about "S3 methods should be exported with @export"
+- Confidence intervals include impossible values (negative catch rates)
+- Standard errors larger than point estimates
+- Wildly different estimates when dropping 1-2 observations
+- Survey package warnings about "lonely PSUs" or "singleton strata"
 
 **Phase to address:**
-Phase 1 (Preparation) - Check during NAMESPACE regeneration planning
+Phase 08-02 (CPUE Estimation) - Must validate sample sizes before allowing estimation
 
 ---
 
-### Pitfall 6: Undocumented Internal Functions Warning
+### Pitfall 6: Bag Limit Bias in Roving Interviews
 
 **What goes wrong:**
-After removing deprecated functions, R CMD check produces "Undocumented code objects" WARNING because internal helper functions used by both old and new APIs are now exposed in NAMESPACE without documentation.
+Roving surveys severely underestimate catch when effective bag limits exist. Anglers who reach their limit leave the fishery, so roving clerks only encounter unsuccessful anglers still fishing. With a 2-fish bag limit, catch rate estimates can be biased low by 36%. With 5-fish limit, bias is 15%. This is NOT correctable by estimator choice - it's a fundamental design flaw.
 
 **Why it happens:**
-When deprecated wrappers are removed, their helpers may become the only remaining NAMESPACE entry for internal functions. If those helpers were never documented (because they were internal), R CMD check complains. This is especially common if the deprecated function was exported but called unexported helpers.
+The roving design assumes stationary catch rates over time, but bag limits create non-stationarity: successful anglers exit. This violates the probability sampling assumption that all anglers have positive probability of being sampled. Mean-of-ratios estimator is unbiased under length-biased sampling, but can't correct for anglers who are never observed (zero sampling probability).
 
 **How to avoid:**
-1. **Audit helper functions**: Identify all functions called by deprecated code
-2. **Check if helpers are exported**: Look for `@export` tags on helper functions
-3. **Document or un-export helpers**:
-   - If helper should be public: Add proper `@title`, `@description`, `@param`, `@return` documentation
-   - If helper should be internal: Remove `@export` tag or add `@keywords internal`
-4. **Run R CMD check frequently**: Catch documentation issues early
+1. **Detect bag limit scenarios:** Ask users if regulations include bag limits
+2. **Data diagnostics:** Check for truncated catch distributions (many observations at limit value)
+3. **Strong warning for roving + low limits:** If bag_limit ≤ 5 fish, warn that estimates are biased
+4. **Recommend access design instead:** For regulated fisheries, access interviews capture completed trips
+5. **Document limitation:** Be explicit that roving designs fail with effective bag limits
+
+**How to avoid (continued):**
+```r
+add_interviews <- function(design, interviews, interview_type, bag_limit = NULL) {
+  interview_type <- match.arg(interview_type, c("access", "roving"))
+
+  # Check for bag limit issues
+  if (interview_type == "roving" && !is.null(bag_limit)) {
+    # Detect if many catches at bag limit
+    catch_cols <- names(interviews)[grepl("^catch_", names(interviews))]
+
+    at_limit <- interviews %>%
+      rowwise() %>%
+      mutate(at_limit = any(c_across(all_of(catch_cols)) >= bag_limit)) %>%
+      pull(at_limit)
+
+    pct_at_limit <- mean(at_limit, na.rm = TRUE)
+
+    if (bag_limit <= 5) {
+      cli_abort(c(
+        "x" = "Roving interviews with low bag limits (≤5) produce severely biased estimates",
+        "i" = "Bag limit: {bag_limit} fish",
+        "i" = "{scales::percent(pct_at_limit)} of observed anglers at/near limit",
+        "i" = "Expected bias: -15% to -36%",
+        "!" = "Use access point interviews instead for this fishery"
+      ))
+    } else if (pct_at_limit > 0.20) {
+      cli_warn(c(
+        "!" = "{scales::percent(pct_at_limit)} of observed anglers at/near bag limit",
+        "i" = "Roving estimates may be biased low",
+        "i" = "Consider access point design for regulated fisheries"
+      ))
+    }
+  }
+
+  # Continue with design construction...
+}
+```
 
 **Warning signs:**
-- R CMD check WARNING: "Undocumented code objects: 'helper_function'"
-- Functions in NAMESPACE lack corresponding .Rd files in man/
-- `devtools::check()` documentation section shows warnings
+- Catch rate estimates much lower than creel census or access point surveys
+- Catch distributions truncated at regulation limits
+- Interviews show many anglers at exactly the bag limit
+- Estimates decrease as fishing season progresses (anglers learn limit)
 
 **Phase to address:**
-Phase 1 (Preparation) - Identify documentation needs before function removal
+Phase 08-03 (Roving CPUE) - Must implement bag limit diagnostics before roving estimation deployed
+
+---
+
+### Pitfall 7: Mismatched Species Between Effort and Catch Data
+
+**What goes wrong:**
+Total harvest estimation requires multiplying targeted effort (e.g., salmon fishing hours) by species-specific catch rate (salmon per hour). If effort is estimated for all anglers but CPUE is estimated only for salmon anglers, the product produces biased total catch. Conversely, if CPUE includes all species but effort is targeted, the estimate is wrong. This is especially insidious because the math "works" - you get a number - but it's answering the wrong question.
+
+**Why it happens:**
+Creel surveys often collect data on multiple species but estimate separately. Effort data (counts) may not distinguish species targeted, while interview data includes species caught. Developers multiply overall effort by species-specific CPUE without realizing the population bases differ. The tidycreel v0.2.0 milestone explicitly defers multi-species to v0.3.0, but single-species calculations must still handle targeting correctly.
+
+**How to avoid:**
+1. **Enforce consistency checking:** When creating total catch estimate, verify effort and CPUE are for same population
+2. **Metadata tracking:** Store `species` and `targeting` fields in estimate results
+3. **Validation in est_total_catch():** Check that effort result and CPUE result have matching species/target tags
+4. **Document targeting clearly:** User must specify if effort is "all anglers" vs "salmon anglers"
+5. **For v0.2.0 single-species:** Assume all anglers target the focal species, document this assumption
+
+**How to avoid (continued):**
+```r
+est_total_catch <- function(effort_result, cpue_result, ...) {
+  # Validate consistency
+  effort_species <- attr(effort_result, "species")
+  cpue_species <- attr(cpue_result, "species")
+
+  if (!is.null(effort_species) && !is.null(cpue_species)) {
+    if (effort_species != cpue_species) {
+      cli_abort(c(
+        "x" = "Effort and CPUE estimates are for different species",
+        "i" = "Effort species: {effort_species}",
+        "i" = "CPUE species: {cpue_species}",
+        "!" = "Total catch = effort × CPUE requires same species",
+        "i" = "Filter data or re-estimate with consistent species"
+      ))
+    }
+  }
+
+  effort_targeting <- attr(effort_result, "targeting")
+  cpue_targeting <- attr(cpue_result, "targeting")
+
+  if (!is.null(effort_targeting) && !is.null(cpue_targeting)) {
+    if (effort_targeting != cpue_targeting) {
+      cli_abort(c(
+        "x" = "Effort and CPUE estimates have different targeting assumptions",
+        "i" = "Effort targeting: {effort_targeting}",
+        "i" = "CPUE targeting: {cpue_targeting}",
+        "!" = "Total catch requires consistent targeting (e.g., both 'all anglers' or both 'species-specific')"
+      ))
+    }
+  }
+
+  # Computation continues...
+}
+```
+
+**Warning signs:**
+- Total catch estimates much higher/lower than known harvest
+- Estimates change dramatically when filtering for species in effort vs CPUE
+- Interview data shows multi-species catches but effort assumes single species
+- Domain estimates (by species) don't sum to overall estimate
+
+**Phase to address:**
+Phase 08-05 (Total Catch Estimation) - Must implement consistency checks before multiplying estimates
 
 ---
 
@@ -163,25 +418,25 @@ Shortcuts that seem reasonable but create long-term problems.
 
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
 |----------|-------------------|----------------|-----------------|
-| Skip running R CMD check after each removal | Faster iteration | Accumulates errors that are harder to debug later | Never - always run check after each change |
-| Remove functions without checking internal calls | Feels complete quickly | Silent runtime failures in untested code paths | Never - always grep for references first |
-| Delete test files by name matching | Cleans up test directory | May remove tests for shared functionality | Only if you've read the test file contents first |
-| Manually edit NAMESPACE instead of regenerating | Avoids roxygen2 issues | NAMESPACE diverges from @export tags, confusing future maintainers | Only temporarily during roxygen2 chicken-egg problems |
-| Commit old_code/ deletion without reviewing contents | Quick cleanup | Risk of deleting important historical context or exposing sensitive data | Only after verifying no sensitive data exists |
-| Skip updating .Rbuildignore | No immediate impact | old_code/ remnants may appear in built package tarball | Never - always update .Rbuildignore during cleanup |
+| Allow user to manually multiply effort × cpue | Flexible, simple API | Users compute wrong variance, no validation | Never - always use est_total_catch() |
+| Use same estimator for access and roving | Less code, simpler API | 12-15% bias for roving surveys | Never - interview type determines estimator |
+| Skip truncation for roving to "keep all data" | Higher sample size, no data loss | Infinite variance, unstable estimates | Never - truncation is required for roving |
+| Assume independence when computing product variance | Simpler math, faster | 30-50% underestimated SE | Never - covariance is often non-zero |
+| Skip sample size validation for sparse strata | Allows analysis to proceed | Unstable estimates, poor CI coverage | Only for exploratory analysis with explicit warnings |
+| Pool strata automatically when sparse | Convenient, no user intervention | May obscure real differences, reduces biological insight | Only with explicit user consent and documentation |
 
 ## Integration Gotchas
 
-Common mistakes when removing deprecated code that interfaces with other systems.
+Common mistakes when connecting interview estimation to existing count-based effort estimation.
 
 | Integration | Common Mistake | Correct Approach |
 |-------------|----------------|------------------|
-| roxygen2 NAMESPACE generation | Removing functions before running document() causes load failures | Manually edit NAMESPACE to remove exports BEFORE deleting function code |
-| devtools::check() | Running check without regenerating docs first | Always `devtools::document()` then `devtools::check()` in sequence |
-| testthat tests | Assuming test file names map 1:1 to function names | Read test file contents to understand what's actually being tested |
-| Git history | Using `git rm` and assuming sensitive data is gone | For sensitive data, must use git filter-branch or BFG Repo-Cleaner |
-| covr test coverage | Not establishing baseline coverage before removals | Run `covr::package_coverage()` before and after to verify no regression |
-| .Rbuildignore | Forgetting to add old_code/ to ignore patterns | Add `^old_code$` to .Rbuildignore when removing old_code/ directory |
+| Merging count and interview designs | Assuming same PSU structure | Use shared calendar, aggregate to compatible level |
+| Computing total catch variance | Treating effort and CPUE as independent | Use delta method via survey::svycontrast() with covariance |
+| Applying grouped estimation | Using different grouping variables in effort vs CPUE | Ensure by= parameter consistent across both estimates |
+| Handling stratification | Different strata definitions in counts vs interviews | Calendar provides shared strata for both |
+| Variance method selection | Mixing Taylor for effort with bootstrap for CPUE | Use same variance method for both (enables covariance) |
+| Interview filtering | Truncating in est_cpue() but not updating effort | Truncation only affects CPUE, effort is from counts |
 
 ## Performance Traps
 
@@ -189,31 +444,23 @@ Patterns that work at small scale but fail as usage grows.
 
 | Trap | Symptoms | Prevention | When It Breaks |
 |------|----------|------------|----------------|
-| Running full test suite after every small change | Slow iteration during cleanup | Use `devtools::test_active_file()` for individual test files, full suite only before commit | Not a performance trap for this project - test suites should always be run |
-| Not using `devtools::load_all()` before check | Repeated `R CMD check` runs take 2-5 minutes each | Use `load_all()` for quick iteration, `check()` for final validation | When making many small changes - check is too slow for iteration |
-| Git operations on large old_code/ directory | `git status` and `git add` become slow | Remove old_code/ in single atomic commit, don't iterate on partial removals | If old_code/ is >100MB (not applicable here - only 192KB) |
-
-## Security Mistakes
-
-Domain-specific security issues beyond general web security.
-
-| Mistake | Risk | Prevention |
-|---------|------|------------|
-| Leaving API keys or credentials in old_code/ directory | Sensitive data remains in git history forever | Audit old_code/ for sensitive patterns before deletion; use `git filter-branch` if found |
-| Removing authentication/validation from deprecated wrappers | New code paths might lack security checks that old wrappers provided | Verify new API functions have same validation logic as deprecated ones |
-| Deleting functions that enforce data access controls | Internal callers may bypass controls if wrapper is removed | Check if deprecated functions enforced permissions/quotas/limits |
+| No truncation caching for roving | Recompute filtered data every call | Cache truncated interview data in design object | >10,000 interviews with repeated estimates |
+| Pairwise covariance computation | O(n²) for many strata | Use survey package's internal covariance matrix | >50 strata |
+| Bootstrap for large datasets without parallelization | Estimation takes minutes | Use parallel processing or suggest Taylor | >1,000 bootstrap replicates with >5,000 observations |
+| Storing full interview data in every result | Memory bloat with grouped estimation | Store only aggregated summaries in results | >100 groups with >1,000 interviews each |
 
 ## "Looks Done But Isn't" Checklist
 
 Things that appear complete but are missing critical pieces.
 
-- [ ] **NAMESPACE regeneration**: Often missing verification that exports were actually removed - verify with `devtools::document()` and manual inspection
-- [ ] **Test coverage maintenance**: Often missing coverage comparison - verify with `covr::package_coverage()` before and after
-- [ ] **Internal reference cleanup**: Often missing checks for internal calls - verify with `Grep` search across R/, tests/, man/, vignettes/
-- [ ] **.Rbuildignore update**: Often missing old_code/ pattern - verify old_code/ doesn't appear in `R CMD build` tarball
-- [ ] **Git ignore patterns**: Often missing .gitignore entry to prevent re-adding - verify old_code/ won't be accidentally committed again
-- [ ] **Documentation cross-references**: Often missing updates to vignettes/README that mention old functions - verify with grep for function names in docs
-- [ ] **NEWS.md entry**: Often missing changelog entry for removal - verify breaking changes are documented (if package was released)
+- [ ] **Interview-based CPUE estimation**: Often missing estimator routing based on interview type - verify access uses ratio-of-means, roving uses mean-of-ratios
+- [ ] **Roving CPUE estimation**: Often missing truncation of short trips - verify min_trip_hours parameter exists and defaults to 0.5
+- [ ] **Total catch estimation**: Often missing proper variance propagation - verify uses delta method, not naive var(E) + var(C)
+- [ ] **Design integration**: Often missing compatibility checks - verify count design and interview design share calendar/strata
+- [ ] **Sample size validation**: Often missing warnings for sparse data - verify checks n per stratum, warns if <30, errors if <10
+- [ ] **Bag limit diagnostics**: Often missing bias warnings - verify detects low bag limits with roving design
+- [ ] **Species consistency**: Often missing validation - verify effort and CPUE are for same species/targeting
+- [ ] **Variance method consistency**: Often missing check that both estimates use same method - verify when computing products
 
 ## Recovery Strategies
 
@@ -221,12 +468,13 @@ When pitfalls occur despite prevention, how to recover.
 
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
-| Broken NAMESPACE from premature deletion | LOW | 1. Restore function from git history<br>2. Manually edit NAMESPACE to remove export<br>3. Run `devtools::document()`<br>4. Delete function again<br>5. Verify NAMESPACE is clean |
-| Missing internal function calls | MEDIUM | 1. Check test failures for "could not find function" errors<br>2. Restore deleted function temporarily<br>3. Update internal calls to use new API<br>4. Run tests to verify fix<br>5. Remove deprecated function again |
-| Lost test coverage | HIGH | 1. Run `covr::package_coverage()` to identify gaps<br>2. Restore deleted test file from git history<br>3. Extract tests for shared functionality<br>4. Migrate extracted tests to new API test files<br>5. Verify coverage restored |
-| Git history with sensitive data | HIGH | 1. Use `git filter-branch --force --index-filter 'git rm --cached --ignore-unmatch old_code/sensitive_file.R' --prune-empty --tag-name-filter cat -- --all`<br>2. Force-push to remote (WARNING: breaks all clones)<br>3. Notify all collaborators to re-clone<br>4. Add sensitive patterns to .gitignore |
-| S3 method dispatch broken | MEDIUM | 1. Check NAMESPACE for `export(print.class)` patterns<br>2. Manually edit to `S3method(print, class)`<br>3. Run `roxygen2::roxygenize()` again<br>4. If wrong directives persist, delete NAMESPACE and regenerate from scratch |
-| Undocumented functions warning | LOW | 1. Identify warning from R CMD check output<br>2. Add `@keywords internal` to function roxygen block<br>3. Or add full documentation with `@title`, `@description`, etc.<br>4. Run `devtools::document()` to regenerate |
+| Wrong estimator used | HIGH | 1. Identify interview type from data<br>2. Re-run estimation with correct estimator<br>3. Document bias magnitude if already published<br>4. Quantify difference via simulation<br>5. Issue correction if estimates were used for management |
+| Missing truncation in roving | MEDIUM | 1. Re-run with min_trip_hours=0.5<br>2. Compare estimates before/after<br>3. If variance reduced by >50%, original estimates were unstable<br>4. Document change in variance |
+| Naive product variance | MEDIUM | 1. Re-compute using est_total_catch()<br>2. Compare SE before/after<br>3. If new SE is >30% larger, original CIs were too narrow<br>4. Report corrected estimates with proper uncertainty |
+| Incompatible designs | MEDIUM | 1. Check calendar alignment<br>2. Rebuild interview design with same strata<br>3. Re-estimate CPUE<br>4. Verify merged design before est_total_catch() |
+| Sparse data not detected | LOW | 1. Add sample size checks<br>2. Re-run with warnings enabled<br>3. Pool strata if necessary<br>4. Consider bootstrap variance for small samples |
+| Bag limit bias undetected | HIGH | 1. Switch to access design if possible<br>2. If only roving data exists, document bias<br>3. Estimate bias magnitude via simulation<br>4. Apply correction factor with uncertainty (expert judgment) |
+| Species mismatch | HIGH | 1. Re-estimate effort for correct population<br>2. Or re-estimate CPUE for correct population<br>3. Verify consistency<br>4. Document original error and correction |
 
 ## Pitfall-to-Phase Mapping
 
@@ -234,63 +482,99 @@ How roadmap phases should address these pitfalls.
 
 | Pitfall | Prevention Phase | Verification |
 |---------|------------------|--------------|
-| NAMESPACE desynchronization | Phase 1 (Preparation) | Manual NAMESPACE edit before deletion, followed by successful `devtools::document()` |
-| Breaking internal calls | Phase 1 (Preparation) | Grep search shows no references to deprecated functions in R/ directory |
-| Orphaned test files | Phase 2 (Testing) | `covr::package_coverage()` shows no coverage regression |
-| Git history contamination | Phase 3 (Cleanup) | Verify old_code/ contains no sensitive data before `git rm` |
-| S3 method registration | Phase 1 (Preparation) | NAMESPACE contains only `S3method()` directives, no `export()` for methods |
-| Undocumented functions | Phase 1 (Preparation) | R CMD check passes with no "Undocumented code objects" warnings |
+| Wrong estimator choice | Phase 08-02 (CPUE Estimation) | Reference tests show ratio-of-means for access, mean-of-ratios for roving |
+| Missing truncation | Phase 08-03 (Roving CPUE) | Tests verify truncation applied, variance stable |
+| Incorrect product variance | Phase 08-05 (Total Catch) | Reference tests match delta method formula |
+| Data structure mismatch | Phase 08-01 (Interview Integration) | Tests verify designs merge cleanly |
+| Sparse data issues | Phase 08-02 (CPUE Estimation) | Tests verify sample size warnings trigger |
+| Bag limit bias | Phase 08-03 (Roving CPUE) | Tests verify warnings for low bag limits |
+| Species mismatch | Phase 08-05 (Total Catch) | Tests verify consistency checks error appropriately |
 
-## tidycreel-Specific Considerations
+## tidycreel-Specific Integration Concerns
 
-Based on the project context, here are package-specific issues to watch for:
+Based on v0.1.0 architecture and v0.2.0 goals:
 
-### Already Avoided
-- **No backward compatibility concerns**: Package never publicly released, so no users to migrate
-- **No deprecation cycle needed**: Can delete functions immediately without warnings
-- **Existing test coverage**: Comprehensive test suite already in place to catch breakage
+### Architectural Compatibility
 
-### Still Risky
-- **Three deprecated functions**: `estimate_effort()`, `estimate_cpue()`, `estimate_harvest()` - all must be removed together as they're in same file
-- **Survey design complexity**: Functions interact with complex `survey::svydesign()` objects - ensure new API functions handle all cases old ones did
-- **Helper function `create_survey_design()`**: Located in same file as deprecated functions - verify it's not called by old APIs only
-- **NAMESPACE has 96 entries**: Large NAMESPACE means higher risk of missing an orphaned export
+**Existing v0.1.0 patterns that enable interview features:**
+- Three-layer architecture (API → Orchestration → Survey) works for interview data
+- Progressive validation (fail fast → warn → deep diagnostics) applies to sample size checks
+- Design-centric API extends naturally: `creel_design %>% add_counts() %>% add_interviews()`
+- Variance method control already exists for effort, applies to CPUE/catch
 
-### Recommended Approach
-1. **Pre-removal audit**: Search codebase for all three deprecated function names
-2. **Verify test baseline**: Run full test suite and R CMD check before any changes
-3. **Manual NAMESPACE edit**: Remove exports for `estimate_effort`, `estimate_cpue`, `estimate_harvest` from NAMESPACE
-4. **Delete deprecated stubs**: Remove the three functions (lines 13-37 of R/estimators.R)
-5. **Regenerate NAMESPACE**: Run `devtools::document()` to verify regeneration works
-6. **Verify tests pass**: Run `devtools::test()` and `devtools::check()`
-7. **Remove old_code/ directory**: After function removal is verified working
-8. **Coverage check**: Run `covr::package_coverage()` to ensure no regression
+**Integration challenges:**
+- Day-PSU structure for counts vs individual-PSU for interviews requires careful merging
+- Shared calendar is bridge between count and interview designs
+- Product variance (effort × CPUE) needs combined design, not supported in v0.1.0
+- Grouped estimation must handle different grouping variables gracefully
+
+### Implementation Sequence
+
+**Phase 08-01 must establish:**
+- `add_interviews()` function that builds interview_svy design object
+- Validation that interviews match calendar dates/strata
+- Interview type detection/specification mechanism
+- Data structure for storing both count_svy and interview_svy in creel_design
+
+**Phase 08-02 must implement:**
+- Estimator dispatch based on interview type
+- Sample size validation before estimation
+- Reference tests for both ratio-of-means and mean-of-ratios
+- Backward compatibility: existing effort estimation unaffected
+
+**Phase 08-03 must handle:**
+- Truncation logic in mean-of-ratios path
+- Bag limit diagnostics in add_interviews()
+- Clear documentation of when roving design is appropriate
+- Warning/error system to prevent misuse
+
+**Phase 08-05 must solve:**
+- Design merging for covariance computation
+- Delta method variance via survey::svycontrast()
+- Species/targeting consistency validation
+- Integration testing of full pipeline: design → counts → interviews → total catch
+
+### Test Coverage Requirements
+
+**Critical coverage needs (95%+ for these):**
+- Estimator routing logic (access vs roving)
+- Truncation filtering for roving
+- Sample size validation thresholds
+- Variance propagation for products
+- Design compatibility checks
+
+**Integration test scenarios:**
+- Access interview → ratio-of-means → correct estimates
+- Roving interview → mean-of-ratios + truncation → correct estimates
+- Roving interview without truncation → error/warning
+- Total catch with incompatible designs → error
+- Total catch with compatible designs → correct variance
+- Sparse data → warnings at appropriate thresholds
+- Bag limits + roving → strong warnings
 
 ## Sources
 
-**Official R Package Development Documentation:**
-- [R Packages (2e): Lifecycle](https://r-pkgs.org/lifecycle.html) - Best practices for deprecation and removal
-- [rOpenSci Packages: Package Evolution](https://devguide.ropensci.org/maintenance_evolution.html) - Guidelines for changing code in packages
-- [Bioconductor: Deprecation Guidelines](https://contributions.bioconductor.org/deprecation.html) - Formal deprecation process
+### Creel Survey Methodology (HIGH confidence)
+- [Catch Rate Estimation for Roving and Access Point Surveys - Pollock et al. 1997](https://www.researchgate.net/publication/241729832_Catch_Rate_Estimation_for_Roving_and_Access_Point_Surveys) - Mathematical proof of ratio-of-means bias for roving surveys, mean-of-ratios unbiasedness
+- [Effect of Survey Design and Catch Rate Estimation on Total Catch Estimates - USGS](https://www.usgs.gov/publications/effect-survey-design-and-catch-rate-estimation-total-catch-estimates-chinook-salmon) - Comparison of estimators, bias quantification
+- [Measurement Error in Angler Creel Surveys - Hoenig et al. 2015](https://www.tandfonline.com/doi/full/10.1080/02755947.2014.996689) - Sources of bias and measurement error
+- [Simulating Creel Surveys - CRAN AnglerCreelSurveySimulation](https://cran.r-project.org/web/packages/AnglerCreelSurveySimulation/vignettes/creel_survey_simulation.html) - Simulation evidence for truncation benefits
 
-**roxygen2 and NAMESPACE:**
-- [roxygen2: Managing Imports and Exports](https://roxygen2.r-lib.org/articles/namespace.html) - NAMESPACE generation mechanics
-- [R-hub Blog: Internal Functions in R Packages](https://blog.r-hub.io/2019/12/12/internal-functions/) - Best practices for internal vs exported functions
-- [roxygen2 Issue #1144](https://github.com/r-lib/roxygen2/issues/1144) - NAMESPACE regeneration chicken-and-egg problem
-- [roxygen2 Issue #1613](https://github.com/r-lib/roxygen2/issues/1613) - S3 method export directive issues
+### Variance Estimation (HIGH confidence)
+- [Sample Size Estimation for On-Site Creel Surveys - McCormick 2017](https://afspubs.onlinelibrary.wiley.com/doi/full/10.1080/02755947.2017.1342723) - Sample size requirements, variance behavior
+- [Estimating Angler Effort and Catch Using Bayesian Methodology - ScienceDirect 2023](https://www.sciencedirect.com/science/article/pii/S0165783623003259) - Variance decomposition, hierarchical models
+- Project file: `/Users/cchizinski2/Dev/tidycreel/inst/RATIO_ESTIMATORS_GUIDE.md` - Internal documentation of ratio estimator properties
 
-**lifecycle Package:**
-- [lifecycle Package Documentation](https://lifecycle.r-lib.org/articles/communicate.html) - Official deprecation workflow (not needed for unreleased packages, but good reference)
-- [Posit Community: When to Remove Deprecated Functions](https://forum.posit.co/t/when-can-i-remove-a-deprecated-function-from-a-package/9707) - Community guidance
+### R Survey Package (HIGH confidence)
+- survey package documentation - Delta method implementation via svycontrast()
+- Project file: `/Users/cchizinski2/Dev/tidycreel/.planning/codebase/ARCHITECTURE.md` - v0.1.0 three-layer architecture
+- Project file: `/Users/cchizinski2/Dev/tidycreel/.planning/PROJECT.md` - v0.2.0 scope and constraints
 
-**Git History Management:**
-- [Git Documentation: git-rm](https://git-scm.com/docs/git-rm) - Official git rm documentation
-- [30 Seconds of Code: Purge File from Git History](https://www.30secondsofcode.org/git/s/purge-file/) - Git filter-branch usage
-
-**Test Coverage:**
-- [covr Package Documentation](https://covr.r-lib.org/) - Test coverage tools for R
+### Creel Survey Foundations (MEDIUM confidence - literature review)
+- Project file: `/Users/cchizinski2/Dev/tidycreel/creel_foundations.md` - Survey design types, table stakes features
+- Project file: `/Users/cchizinski2/Dev/tidycreel/creel_effort_estimation_methods.md` - Count-based methods (v0.1.0 foundation)
 
 ---
-*Pitfalls research for: tidycreel R package legacy code removal*
-*Researched: 2026-01-27*
-*Confidence: HIGH - Based on official R package development documentation, roxygen2 official docs, and community best practices*
+*Pitfalls research for: tidycreel v0.2.0 interview-based catch/harvest estimation*
+*Researched: 2026-02-09*
+*Confidence: HIGH - Based on peer-reviewed creel survey literature, USGS/fisheries agency technical reports, and project architecture analysis*

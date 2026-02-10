@@ -1,688 +1,565 @@
-# Architecture Research: Safe Code Removal from R Packages
+# Architecture Research: Interview-Based Catch/Harvest Estimation
 
-**Domain:** R Package Maintenance - Legacy Code Removal
-**Researched:** 2026-01-27
+**Domain:** Creel survey analysis - interview-based catch/harvest estimation
+**Researched:** 2026-02-09
 **Confidence:** HIGH
 
-## Standard Architecture for Safe Code Removal
+## Executive Summary
 
-### Removal Sequence Pattern
+Interview-based catch/harvest estimation integrates with the existing v0.1.0 instantaneous count architecture through a **parallel data stream** pattern. Count data flows through `add_counts()` to estimate effort; interview data will flow through `add_interviews()` to estimate CPUE. Both streams merge at the final estimation layer where **total catch = effort × CPUE** using delta method variance propagation.
 
-Safe code removal follows a **dependency-ordered sequence** to prevent breakage:
+**Key architectural insight:** Interview and count data are **statistically independent** but **functionally complementary**. They require separate survey design objects but coordinated variance estimation when combined.
+
+## Integration with v0.1.0 Architecture
+
+### Current v0.1.0 Flow (Effort Estimation)
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    PHASE 1: EXPORTS                          │
-│  Remove deprecated function exports from NAMESPACE          │
-│  (Functions still exist but are internal-only)              │
-├─────────────────────────────────────────────────────────────┤
-│                    PHASE 2: FUNCTION STUBS                   │
-│  Remove deprecated function definitions from R/ files        │
-│  (Functions no longer exist in package)                     │
-├─────────────────────────────────────────────────────────────┤
-│                    PHASE 3: ARCHIVED CODE                    │
-│  Remove archived code directories (old_code/, backups/)     │
-│  (Historical reference code removed)                        │
-├─────────────────────────────────────────────────────────────┤
-│                    PHASE 4: DOCUMENTATION                    │
-│  Clean up references in NEWS.md, README, vignettes          │
-│  (User-facing docs updated)                                 │
-└─────────────────────────────────────────────────────────────┘
+User API Layer:
+  creel_design(calendar) → add_counts(counts) → estimate_effort()
+
+Survey Bridge Layer:
+  construct_survey_design() → svydesign(day-PSU, stratified)
+
+Survey Package Layer:
+  svytotal() → Taylor variance
 ```
 
-### Why This Order?
+### New v0.2.0 Flow (Catch Estimation)
 
-1. **NAMESPACE first**: Removing exports prevents new usage while functions still exist (rollback-friendly)
-2. **Function code second**: Once exports are gone and tested, remove implementations
-3. **Archived code third**: Only after active code is clean, remove historical reference
-4. **Documentation last**: Update user-facing materials after code changes are stable
+```
+User API Layer:
+  creel_design(calendar) → add_interviews(interviews) → estimate_cpue()
+                                                      → estimate_catch()
+                                                      → estimate_harvest()
 
-## Verification Checkpoints
+Survey Bridge Layer:
+  construct_interview_survey() → svydesign(interview-PSU, stratified)
 
-Each phase has mandatory verification before proceeding to next phase.
+Survey Package Layer:
+  svyratio() or svymean() → Delta method variance
+```
 
-### Checkpoint 1: After NAMESPACE Cleanup
+### Combined Flow (Total Catch)
 
-| Check | Command | Success Criteria |
-|-------|---------|------------------|
-| **R CMD check** | `devtools::check()` | 0 errors, 0 warnings |
-| **Load package** | `devtools::load_all()` | Loads without errors |
-| **Test suite** | `devtools::test()` | All tests pass |
-| **NAMESPACE validity** | Inspect `NAMESPACE` file | No deprecated function exports present |
+```
+User API Layer:
+  design_with_counts ← add_counts(design, counts)
+  design_with_both   ← add_interviews(design_with_counts, interviews)
 
-**What to verify:**
-- Deprecated functions (`estimate_effort`, `estimate_cpue`, `estimate_harvest`) are NOT in NAMESPACE exports
-- All current API functions (`est_effort`, `est_cpue`, `est_catch`) ARE still exported
-- No "object not found" errors from test suite
-- No "undefined exports" warnings from R CMD check
+  total_catch ← estimate_total_catch(design_with_both)
 
-**Rollback strategy if failed:**
+Statistical Layer:
+  effort_estimate ← estimate_effort(design_with_both)
+  cpue_estimate   ← estimate_cpue(design_with_both)
+
+  total = effort × cpue
+  var(total) = cpue² × var(effort) + effort² × var(cpue)  # Delta method
+```
+
+## System Architecture
+
+### Component Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    USER API LAYER (Domain)                       │
+├─────────────────────────────────────────────────────────────────┤
+│  creel_design()  │  add_counts()  │  add_interviews()           │
+│                  │                 │                              │
+│  estimate_effort()  │  estimate_cpue()  │  estimate_catch()     │
+│  estimate_harvest() │  estimate_total_catch()                   │
+└────────┬──────────────────────┬────────────────────┬────────────┘
+         │                      │                    │
+┌────────┴──────────────────────┴────────────────────┴────────────┐
+│              ORCHESTRATION LAYER (Survey Bridge)                 │
+├─────────────────────────────────────────────────────────────────┤
+│  construct_survey_design()  │  construct_interview_survey()     │
+│  validate_counts_tier1()    │  validate_interviews_tier1()      │
+│  warn_tier2_issues()        │  warn_tier2_interview_issues()    │
+│  combine_variance()         │  delta_method_product()           │
+└────────┬──────────────────────┬────────────────────┬────────────┘
+         │                      │                    │
+┌────────┴──────────────────────┴────────────────────┴────────────┐
+│                 SURVEY PACKAGE LAYER (Statistics)                │
+├─────────────────────────────────────────────────────────────────┤
+│  svydesign()  │  svytotal()   │  svyratio()   │  svymean()     │
+│  as.svrepdesign()  │  delta variance propagation                │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Component Responsibilities
+
+| Component | Responsibility | Implementation |
+|-----------|----------------|----------------|
+| `add_interviews()` | Attach interview data to design, construct interview survey | Validates schema, creates survey.design2 for interviews |
+| `estimate_cpue()` | Estimate catch per unit effort | Dispatches to ratio-of-means (svyratio) or mean-of-ratios (svymean) |
+| `estimate_catch()` | Estimate total catch for a species | Calls estimate_cpue() for single species |
+| `estimate_harvest()` | Estimate harvest per unit effort and total harvest | Same pattern as catch, filters to harvested fish only |
+| `estimate_total_catch()` | Multiply effort × CPUE with variance | Combines estimates using delta method |
+| `construct_interview_survey()` | Build svydesign from interview data | Day-PSU or interview-PSU depending on design |
+| `delta_method_product()` | Variance of product of two estimates | var(E×C) = C²×var(E) + E²×var(C) |
+
+## Data Flow Patterns
+
+### Pattern 1: Parallel Data Streams
+
+**What happens:** Count and interview data flow through separate validation and survey construction pipelines.
+
+```
+calendar
+  ├─→ add_counts(counts)
+  │     └─→ effort_survey (day-PSU stratified)
+  │
+  └─→ add_interviews(interviews)
+        └─→ interview_survey (interview-PSU or day-PSU stratified)
+```
+
+**Why parallel:** Count and interview data have different structures, validation rules, and PSU definitions. Keeping streams separate until final estimation maintains clarity and allows independent use.
+
+**Storage pattern:** `creel_design` object stores both:
+- `$counts` and `$effort_survey` (from add_counts)
+- `$interviews` and `$interview_survey` (from add_interviews)
+
+### Pattern 2: Ratio Estimator Selection
+
+**Access Point Design (Complete Trips):**
+```
+estimate_cpue(mode = "ratio_of_means")
+  ↓
+svyratio(~catch, ~effort, design)
+  ↓
+Ratio = Σcatch / Σeffort
+var(Ratio) via delta method
+```
+
+**Roving Design (Incomplete Trips):**
+```
+interviews_truncated ← filter(interviews, effort >= 0.5)
+  ↓
+estimate_cpue(mode = "mean_of_ratios")
+  ↓
+svymean(~I(catch/effort), design)
+  ↓
+Mean = mean(catch/effort)
+var(Mean) = var(catch/effort) / n
+```
+
+**Decision logic:**
+- Access point (complete trips) → ratio-of-means (unbiased, lower variance)
+- Roving (incomplete trips) → mean-of-ratios with truncation (unbiased after truncation)
+
+**Statistical basis:**
+- Ratio-of-means is biased for roving because sampling probability ∝ trip length
+- Mean-of-ratios is unbiased but has infinite variance without truncation (extreme ratios from short trips)
+
+### Pattern 3: Variance Propagation for Products
+
+**Problem:** Total catch = Effort × CPUE, both are random variables with variance.
+
+**Solution:** Delta method for products of independent estimates.
+
 ```r
-# Restore @export tags to deprecated functions
-# Re-run devtools::document()
-# Investigate why removal broke tests
+# Effort estimate
+E_hat <- estimate_effort(design)
+E <- E_hat$estimate
+var_E <- E_hat$se^2
+
+# CPUE estimate
+C_hat <- estimate_cpue(design)
+C <- C_hat$estimate
+var_C <- C_hat$se^2
+
+# Total catch
+Total <- E * C
+var_Total <- (C^2 * var_E) + (E^2 * var_C)
+se_Total <- sqrt(var_Total)
 ```
 
-### Checkpoint 2: After Function Stub Removal
+**Independence assumption:** Count and interview data collected independently (different sampling processes). If not independent, add covariance term: `+ 2*E*C*cov(E,C)`.
 
-| Check | Command | Success Criteria |
-|-------|---------|------------------|
-| **R CMD check** | `devtools::check()` | 0 errors, 0 warnings |
-| **NAMESPACE regeneration** | `devtools::document()` | No deprecated exports created |
-| **Code references** | `grep -r "estimate_effort\\|estimate_cpue\\|estimate_harvest" R/` | No references to removed functions |
-| **Test suite** | `devtools::test()` | All tests still pass |
+### Pattern 4: Survey Design Coordination
 
-**What to verify:**
-- Functions `estimate_effort()`, `estimate_cpue()`, `estimate_harvest()` no longer exist in `R/estimators.R`
-- Helper function `create_survey_design()` removal validated (if it was only used by deprecated functions)
-- No test files call deprecated functions
-- NAMESPACE still contains all current API exports
+**Stratification must match** between count and interview surveys for valid combination:
 
-**Rollback strategy if failed:**
 ```r
-# Restore function definitions from git
-git checkout HEAD -- R/estimators.R
-# Run devtools::document() and retest
+# CORRECT: Same strata
+count_design <- svydesign(
+  ids = ~date,
+  strata = ~interaction(day_type, season),
+  data = counts
+)
+
+interview_design <- svydesign(
+  ids = ~interview_id,
+  strata = ~interaction(day_type, season),  # SAME strata definition
+  data = interviews
+)
 ```
 
-### Checkpoint 3: After Archived Code Removal
-
-| Check | Command | Success Criteria |
-|-------|---------|------------------|
-| **Directory gone** | `ls old_code/` | Directory does not exist |
-| **R CMD check** | `devtools::check()` | Still passes (archived code doesn't affect package) |
-| **Git status** | `git status` | old_code/ listed as deleted |
-| **Package size** | Compare `.tar.gz` size | Package size reduced |
-
-**What to verify:**
-- `old_code/` directory completely removed
-- No broken references in documentation pointing to old_code examples
-- Package still builds and checks cleanly
-
-**Rollback strategy if failed:**
-```bash
-# Restore old_code directory from git if needed for reference
-git checkout HEAD -- old_code/
-# But this should not affect R CMD check
-```
-
-### Checkpoint 4: After Documentation Cleanup
-
-| Check | Command | Success Criteria |
-|-------|---------|------------------|
-| **NEWS.md accuracy** | Review NEWS.md | No mentions of removed functions as current API |
-| **README accuracy** | Review README.md | No examples using removed functions |
-| **Vignette accuracy** | Build vignettes | No errors, no deprecated function calls |
-| **R CMD check --as-cran** | `devtools::check(cran = TRUE)` | 0 errors, 0 warnings, 0 notes |
-
-**What to verify:**
-- NEWS.md documents the removal in appropriate version section
-- README examples use current API only (`est_*` functions)
-- Vignettes render without errors
-- No "undocumented code objects" notes from R CMD check
-
-## Component Responsibilities
-
-### R/estimators.R (Primary Target)
-
-| Component | Current State | After Removal |
-|-----------|---------------|---------------|
-| `estimate_effort()` | Deprecated stub (lines 13-19) | REMOVED |
-| `estimate_cpue()` | Deprecated stub (lines 22-28) | REMOVED |
-| `estimate_harvest()` | Deprecated stub (lines 31-37) | REMOVED |
-| `est_effort()` | Current API (lines 86-141) | RETAINED |
-| `create_survey_design()` | Helper (lines 144-171) | EVALUATE - remove if unused by current API |
-
-**Implementation note:** Lines 13-37 contain three deprecated stub functions that immediately abort with migration messages. These are the **primary removal targets**.
-
-### NAMESPACE (Secondary Target)
-
-| Export | Current State | After Removal |
-|--------|---------------|---------------|
-| `export(estimate_effort)` | Line 31 | REMOVED |
-| `export(estimate_cpue)` | Line 30 | REMOVED |
-| `export(estimate_harvest)` | Line 32 | REMOVED |
-| All other exports | Lines 1-97 | RETAINED |
-
-**Implementation note:** NAMESPACE is auto-generated by roxygen2. Removal happens by:
-1. Deleting `#' @export` tags from function roxygen comments
-2. Running `devtools::document()` to regenerate NAMESPACE
-
-### old_code/ Directory (Tertiary Target)
-
-| File | Size | Purpose | Action |
-|------|------|---------|--------|
-| `CreelAnalysisFunctions.R` | 43k | Historical analysis code | DELETE |
-| `CreelAnalysisFunctionsCJCEDits.R` | 57k | Historical edited version | DELETE |
-| `CreelApiHelper.R` | 5.1k | Historical API helpers | DELETE |
-| `CreelConfigCheck.R` | 12k | Historical config code | DELETE |
-| `CreelDataAccess.R` | 57k | Historical data access code | DELETE |
-| `CreelDataAccess_CJCedits.R` | 6.5k | Historical edited version | DELETE |
-| `CreelEnvSetup.R` | 6.9k | Historical environment setup | DELETE |
-| **Total** | **~187k** | Historical archive | **DELETE ENTIRE DIRECTORY** |
-
-**Rationale for deletion:**
-- None of these files are referenced by current package code
-- All are dated 2024-2025, representing superseded approaches
-- Git history preserves this code if needed for reference
-- Keeping archived code confuses contributors about what's current
-
-## Safe Removal Sequence (Step-by-Step)
-
-### Phase 1: Remove NAMESPACE Exports
-
-**Objective:** Make deprecated functions internal-only (not exported to users)
-
-**Steps:**
-1. Open `R/estimators.R`
-2. Locate the three deprecated functions: `estimate_effort()`, `estimate_cpue()`, `estimate_harvest()`
-3. Remove the `#' @export` roxygen tag from each function's documentation block
-4. Run `devtools::document()` to regenerate NAMESPACE
-5. Verify NAMESPACE no longer contains `export(estimate_effort)`, `export(estimate_cpue)`, `export(estimate_harvest)`
-6. **CHECKPOINT 1**: Run R CMD check and test suite
-
-**Expected outcome:** Functions still exist in package but are not accessible to users via `tidycreel::estimate_effort()` notation.
-
-**Rollback if needed:** Add `#' @export` tags back and re-run `devtools::document()`
-
-### Phase 2: Remove Function Stubs
-
-**Objective:** Delete deprecated function definitions from package source
-
-**Steps:**
-1. **Pre-verification:**
-   ```r
-   # Ensure no current code calls these functions
-   grep -r "estimate_effort\\|estimate_cpue\\|estimate_harvest" R/ --exclude=estimators.R
-   # Should return no results
-   ```
-
-2. Open `R/estimators.R`
-3. Delete lines 13-37 (the three deprecated stub functions)
-4. Evaluate `create_survey_design()` helper (lines 144-171):
-   - Search for usage: `grep -r "create_survey_design" R/`
-   - If only used by deprecated functions, delete it too
-   - If used elsewhere, keep it
-5. Run `devtools::document()` to ensure NAMESPACE stays clean
-6. **CHECKPOINT 2**: Run R CMD check and test suite
-
-**Expected outcome:** Deprecated functions no longer exist in package. Attempting to call them results in "object not found" error.
-
-**Rollback if needed:**
-```bash
-git checkout HEAD -- R/estimators.R
-devtools::document()
-```
-
-### Phase 3: Remove Archived Code
-
-**Objective:** Delete `old_code/` directory and its contents
-
-**Steps:**
-1. **Pre-verification:**
-   ```r
-   # Ensure no documentation references old_code examples
-   grep -r "old_code" vignettes/ README.md CONTRIBUTING.md
-   # Should return no results or only historical mentions
-   ```
-
-2. Delete the directory:
-   ```bash
-   rm -rf old_code/
-   ```
-
-3. Verify deletion:
-   ```bash
-   ls old_code/  # Should fail with "No such file or directory"
-   ```
-
-4. **CHECKPOINT 3**: Run R CMD check (should still pass - archived code doesn't affect package)
-
-**Expected outcome:** Package size reduced by ~187k lines of historical code. Git history preserves the code.
-
-**Rollback if needed:**
-```bash
-git checkout HEAD -- old_code/
-```
-
-### Phase 4: Clean Documentation
-
-**Objective:** Update user-facing documentation to reflect removal
-
-**Steps:**
-1. **Update NEWS.md:**
-   ```markdown
-   # tidycreel (development version)
-
-   ## Breaking Changes
-
-   * Removed deprecated function stubs `estimate_effort()`, `estimate_cpue()`,
-     and `estimate_harvest()`. These functions have been superseded by the
-     survey-first API (`est_effort()`, `est_cpue()`, `est_catch()`) and were
-     never part of a public release. See vignettes for migration examples.
-
-   ## Internal Changes
-
-   * Removed `old_code/` directory containing ~187k lines of historical code.
-     Git history preserves this code for reference.
-   ```
-
-2. **Verify README.md:**
-   - Search for any examples using deprecated functions
-   - Replace with current API examples if found
-   - Ensure "Getting Started" uses `est_*` functions only
-
-3. **Verify vignettes:**
-   ```r
-   # Build all vignettes to check for deprecated function usage
-   devtools::build_vignettes()
-   ```
-   - If any vignette references deprecated functions, update to current API
-   - Check rendered output for broken examples
-
-4. **CHECKPOINT 4**: Run `devtools::check(cran = TRUE)` for final validation
-
-**Expected outcome:** All documentation reflects current API only. No mentions of removed functions except in NEWS.md removal notice.
-
-## Architectural Patterns for Safe Removal
-
-### Pattern 1: Progressive Export Restriction
-
-**What:** Remove public access before removing code
-
-**When to use:** When functions are already marked deprecated and have replacements
-
-**Trade-offs:**
-- **Pro:** Allows rollback if breaking changes discovered
-- **Pro:** Users can't accidentally use deprecated functions during transition
-- **Con:** Extra step vs. removing everything at once
-
-**Example:**
-```r
-# Step 1: Function exists but is internal-only (not exported)
-estimate_effort <- function(...) {
-  cli::cli_abort("Use est_effort() instead")
-}
-
-# Step 2: Function removed entirely
-# (nothing - function deleted from file)
-```
-
-**Why this works:** If removing the function breaks something, you can quickly restore it as internal-only to debug, without re-exposing it to users.
-
-### Pattern 2: Checkpoint-Driven Removal
-
-**What:** Mandatory verification after each phase before proceeding
-
-**When to use:** Any multi-step code removal process
-
-**Trade-offs:**
-- **Pro:** Catches breakage early (isolates cause to specific phase)
-- **Pro:** Clear rollback points
-- **Con:** More time-consuming than bulk removal
-
-**Example:**
-```r
-# After each phase:
-devtools::check()        # R CMD check
-devtools::test()         # Test suite
-devtools::load_all()     # Package loading
-git status               # Verify expected changes only
-```
-
-**Why this works:** If Phase 2 breaks tests but Phase 1 didn't, you know Phase 2 caused the breakage, not something earlier.
-
-### Pattern 3: Archived Code Quarantine
-
-**What:** Keep archived code in separate directory, remove only after current code is stable
-
-**When to use:** When old implementations might be needed for reference
-
-**Trade-offs:**
-- **Pro:** Historical reference available during migration
-- **Pro:** Can compare old vs. new implementations
-- **Con:** Takes up repository space
-- **Con:** Can confuse contributors about what's current
-
-**Example:**
-```
-R/
-  estimators.R          # Current implementation
-  est-effort-*.R        # Current implementation
-old_code/
-  CreelAnalysis*.R      # Historical implementation (DELETE LAST)
-```
-
-**Why this works:** Git already preserves history, so after current code is proven stable, archived code is redundant. Remove it last to avoid distracting from main removal work.
-
-### Pattern 4: Documentation-Last Cleanup
-
-**What:** Update user-facing docs only after code changes are verified
-
-**When to use:** Always - don't update docs until code is stable
-
-**Trade-offs:**
-- **Pro:** Docs stay accurate during development
-- **Pro:** Avoids documenting changes that get rolled back
-- **Con:** Requires remembering to update docs at end
-
-**Example:**
-```
-# WRONG ORDER:
-1. Update README to remove deprecated examples
-2. Remove deprecated functions
-3. Tests break, rollback
-4. README now inaccurate!
-
-# CORRECT ORDER:
-1. Remove deprecated functions
-2. Verify with checkpoints
-3. THEN update README
-```
-
-**Why this works:** If you have to rollback code changes, you don't have to also rollback documentation changes.
-
-## Anti-Patterns to Avoid
-
-### Anti-Pattern 1: Bulk Deletion Without Checkpoints
-
-**What people do:** Delete all deprecated code (exports, functions, archived files) in one commit
-
-**Why it's wrong:**
-- If tests break, can't isolate which deletion caused it
-- Makes rollback difficult (restore everything or nothing)
-- Violates architectural standard of checkpoint-driven work
-
-**Do this instead:** Follow phased removal with checkpoints after each phase
-
-### Anti-Pattern 2: Removing Documentation First
-
-**What people do:** Update README/NEWS before removing code, to "document intent"
-
-**Why it's wrong:**
-- If code removal breaks and needs rollback, docs are now inaccurate
-- Creates window where docs don't match code
-- R CMD check may complain about documented objects not existing
-
-**Do this instead:** Code changes first, documentation updates last (after verification)
-
-### Anti-Pattern 3: Skipping R CMD Check Between Phases
-
-**What people do:** Remove exports, remove functions, remove archived code all in sequence without running `devtools::check()` between steps
-
-**Why it's wrong:**
-- Can't isolate which phase broke the package
-- May not discover breakage until much later
-- Wastes time debugging when cause is unclear
-
-**Do this instead:** Run `devtools::check()` and `devtools::test()` after EVERY phase
-
-### Anti-Pattern 4: Deleting Functions Still Referenced in Tests
-
-**What people do:** Remove deprecated functions without checking if tests call them
-
-**Why it's wrong:**
-- Tests break with "object not found" errors
-- May indicate tests were validating deprecated behavior
-- Forces unplanned test updates during "simple" removal
-
-**Do this instead:**
-```r
-# Before removing functions, search for references:
-grep -r "estimate_effort" tests/
-grep -r "estimate_cpue" tests/
-grep -r "estimate_harvest" tests/
-
-# If found, either:
-# - Update tests to use current API (est_effort, est_cpue, est_catch)
-# - Delete obsolete tests that only validated deprecated behavior
-```
-
-### Anti-Pattern 5: Removing Archived Code That's Referenced in Docs
-
-**What people do:** Delete `old_code/` directory without checking for documentation links
-
-**Why it's wrong:**
-- Broken links in vignettes or README
-- Examples that reference old_code files fail to run
-- R CMD check may fail on vignette build
-
-**Do this instead:**
-```r
-# Before deleting old_code/, search for references:
-grep -r "old_code" vignettes/ README.md CONTRIBUTING.md
-
-# Update or remove any references found
-```
+**Validation:** `estimate_total_catch()` must verify strata alignment before combining.
 
 ## Integration Points
 
-### External Dependencies (R Package Ecosystem)
+### New Components for v0.2.0
 
-| Dependency | Integration Pattern | Notes for Removal |
-|------------|---------------------|-------------------|
-| **roxygen2** | `@export` tags control NAMESPACE | Remove `@export` → `devtools::document()` → NAMESPACE regenerated |
-| **testthat** | Test suite validates package | Must pass after each phase |
-| **devtools** | `check()`, `test()`, `document()` | Core tools for verification checkpoints |
-| **survey** | Current API dependency | Not affected by deprecated function removal |
-| **cli** | Error messaging | Used in deprecated stubs - can keep or remove with stubs |
+| Component | Purpose | Dependencies | Location |
+|-----------|---------|--------------|----------|
+| `add_interviews()` | Attach interview data to design | creel_design, validate_interview_schema | `R/creel-design.R` (extend) |
+| `estimate_cpue()` | Estimate catch per unit effort | survey::svyratio, survey::svymean | `R/creel-estimates-interviews.R` (new) |
+| `estimate_catch()` | Species-specific catch totals | estimate_cpue | `R/creel-estimates-interviews.R` (new) |
+| `estimate_harvest()` | Harvest totals | estimate_cpue | `R/creel-estimates-interviews.R` (new) |
+| `estimate_total_catch()` | Combine effort × CPUE | estimate_effort, estimate_cpue | `R/creel-estimates-combined.R` (new) |
+| `construct_interview_survey()` | Build interview svydesign | survey::svydesign | `R/survey-bridge.R` (extend) |
+| `validate_interview_schema()` | Tier 1 validation for interviews | validate_calendar_schema | `R/creel-validation.R` (extend) |
+| `delta_method_product()` | Variance of E × C | Base R | `R/variance-utils.R` (new) |
 
-**Critical integration:** roxygen2 auto-generates NAMESPACE. Manual NAMESPACE edits will be overwritten. Always remove `@export` tags from source and regenerate.
+### Modified Components from v0.1.0
 
-### Internal Boundaries (Within tidycreel Package)
+| Component | Modification | Why |
+|-----------|--------------|-----|
+| `creel_design` S3 class | Add `$interviews`, `$interview_survey` slots | Store interview data parallel to counts |
+| `print.creel_design()` | Show interview data summary | User visibility |
+| `validate_counts_tier1()` | No change | Counts and interviews validated separately |
+| `estimate_effort()` | No change | Works independently of interviews |
 
-| Boundary | Communication | Removal Considerations |
-|----------|---------------|------------------------|
-| **Deprecated API ↔ Current API** | None (deprecated stubs just abort) | Safe to remove - no calls from deprecated to current |
-| **Estimators ↔ Variance Engine** | `tc_compute_variance()` | Not affected by deprecated function removal |
-| **Tests ↔ Functions** | Direct function calls | CRITICAL: Must verify no tests call deprecated functions |
-| **Vignettes ↔ Functions** | Example code | CRITICAL: Must verify no vignettes use deprecated functions |
-| **old_code/ ↔ R/** | None (archived code is isolated) | Safe to remove - no references from current code |
+### No Changes Required
 
-**Critical boundary:** Tests and vignettes may reference deprecated functions in examples. Must search and update before removal.
+| Component | Reason |
+|-----------|--------|
+| `creel_design()` constructor | Only calendar needed at creation |
+| `construct_survey_design()` | Specific to count data |
+| Survey variance methods (bootstrap, jackknife) | Applied at individual estimate level |
+| `as_survey_design()` escape hatch | May need `which = c("counts", "interviews")` parameter |
 
-## Rollback Strategy
+## Recommended Build Order
 
-### If Checkpoint 1 Fails (After NAMESPACE Cleanup)
+Based on dependencies and v0.1.0 foundation:
 
-**Symptoms:**
-- R CMD check fails with "undefined exports"
-- Tests fail with "object not found" for exported function
-- Package won't load
+1. **Phase 1: Interview Schema and Validation**
+   - `validate_interview_schema()` (Tier 1)
+   - `warn_tier2_interview_issues()` (Tier 2)
+   - Tests: schema validation, NA detection, data quality warnings
 
-**Diagnosis:**
+2. **Phase 2: add_interviews() Integration**
+   - Extend `creel_design` S3 class with interview slots
+   - `add_interviews()` function (mirrors `add_counts()` pattern)
+   - `construct_interview_survey()` (survey bridge)
+   - Tests: interview attachment, survey construction, immutability
+
+3. **Phase 3: CPUE Estimation (Single Mode)**
+   - `estimate_cpue()` with `mode = "ratio_of_means"` only
+   - Survey bridge to `survey::svyratio()`
+   - Grouped estimation support (by parameter)
+   - Tests: reference tests vs manual svyratio, grouped estimation
+
+4. **Phase 4: CPUE Estimation (Both Modes)**
+   - Add `mode = "mean_of_ratios"` to `estimate_cpue()`
+   - Survey bridge to `survey::svymean(~I(catch/effort))`
+   - Documentation: when to use which mode, truncation warning
+   - Tests: both modes, truncation effects, reference tests
+
+5. **Phase 5: Catch and Harvest Wrappers**
+   - `estimate_catch()` (species-specific CPUE wrapper)
+   - `estimate_harvest()` (filters to harvested only)
+   - Tests: filtering logic, metadata preservation
+
+6. **Phase 6: Combined Estimation (Effort × CPUE)**
+   - `delta_method_product()` variance utility
+   - `estimate_total_catch()` combining effort and CPUE
+   - Strata alignment validation
+   - Tests: variance propagation, independence assumption, reference tests
+
+7. **Phase 7: Documentation and Examples**
+   - Vignette: "Interview-Based Estimation"
+   - Example datasets: access point and roving interviews
+   - Ratio estimator guide integration
+   - Tests: vignette rendering, examples run
+
+**Dependency reasoning:**
+- Can't estimate CPUE without interviews → Phase 2 before 3
+- Can't combine estimates without both working → Phases 3-5 before 6
+- Single mode before complexity → ratio-of-means (Phase 3) before mean-of-ratios (Phase 4)
+- Core functionality before wrappers → CPUE (Phases 3-4) before catch/harvest (Phase 5)
+
+## Architectural Patterns
+
+### Pattern 1: Dual Survey Object Storage
+
+**What:** Store separate survey.design2 objects for counts and interviews in the same creel_design container.
+
+**When to use:** When two data sources have different PSU structures but share calendar/strata.
+
+**Trade-offs:**
+- **Pro:** Clean separation, independent validation, can use either alone
+- **Pro:** Matches statistical reality (different sampling units)
+- **Con:** More complex object structure, must coordinate strata
+
+**Example:**
 ```r
-# Check NAMESPACE diff
-git diff NAMESPACE
+design <- creel_design(calendar, date = date, strata = day_type)
 
-# Check what was removed
-grep "export(estimate" NAMESPACE  # Should be empty after removal
+design2 <- design %>%
+  add_counts(counts, psu = "date") %>%
+  add_interviews(interviews, psu = "interview_id")
+
+# Two independent survey objects
+design2$effort_survey    # day-PSU design for counts
+design2$interview_survey # interview-PSU design for interviews
 ```
 
-**Rollback:**
+### Pattern 2: Mode-Based Dispatch
+
+**What:** Single function (`estimate_cpue`) with `mode` parameter that dispatches to different survey functions.
+
+**When to use:** When same statistical quantity (CPUE) has different estimators for different designs.
+
+**Trade-offs:**
+- **Pro:** User-friendly single entry point, mode documented in result
+- **Pro:** Forces explicit choice (no hidden defaults for critical decision)
+- **Con:** Function must handle two different return structures from survey package
+
+**Example:**
 ```r
-# Restore @export tags in R/estimators.R
-# Add back above each deprecated function:
-#' @export
+estimate_cpue <- function(design, mode = c("ratio_of_means", "mean_of_ratios")) {
+  mode <- match.arg(mode)
 
-# Regenerate NAMESPACE
-devtools::document()
+  if (mode == "ratio_of_means") {
+    # survey::svyratio() returns svyratio object
+    svy_result <- survey::svyratio(~catch, ~effort, design$interview_survey)
+    estimate <- coef(svy_result)
+    se <- SE(svy_result)
+  } else {
+    # survey::svymean() returns svystat object
+    design$interviews$cpue <- design$interviews$catch / design$interviews$effort
+    svy_result <- survey::svymean(~cpue, design$interview_survey)
+    estimate <- coef(svy_result)
+    se <- SE(svy_result)
+  }
 
-# Verify restoration
-grep "export(estimate" NAMESPACE  # Should show exports
+  # Normalize to common output format
+  new_creel_estimates(...)
+}
 ```
 
-**Root cause investigation:**
-- Were any current functions accidentally unmarked for export?
-- Did test suite rely on deprecated function being exported?
+### Pattern 3: Delta Method Variance Factory
 
-### If Checkpoint 2 Fails (After Function Stub Removal)
+**What:** Reusable utility function for variance of products/ratios using delta method.
 
-**Symptoms:**
-- R CMD check fails with "object not found"
-- Tests fail when calling removed functions
-- NAMESPACE regeneration creates unexpected exports
+**When to use:** Combining two independent estimates (effort × CPUE, catch / effort, etc.).
 
-**Diagnosis:**
+**Trade-offs:**
+- **Pro:** Single implementation, tested once, used everywhere
+- **Pro:** Documents statistical method explicitly
+- **Con:** Assumes independence (must validate)
+
+**Example:**
 ```r
-# Check what code still references removed functions
-grep -r "estimate_effort\|estimate_cpue\|estimate_harvest" R/ tests/
+delta_method_product <- function(est1, se1, est2, se2, covariance = 0) {
+  # Var(X*Y) = Y² Var(X) + X² Var(Y) + 2XY Cov(X,Y)
+  var1 <- se1^2
+  var2 <- se2^2
 
-# Check function diff
-git diff R/estimators.R
+  var_product <- (est2^2 * var1) + (est1^2 * var2) + (2 * est1 * est2 * covariance)
+  se_product <- sqrt(var_product)
+
+  list(estimate = est1 * est2, se = se_product)
+}
+
+# Usage
+effort <- estimate_effort(design)
+cpue <- estimate_cpue(design)
+
+total_catch <- delta_method_product(
+  effort$estimate, effort$se,
+  cpue$estimate, cpue$se
+)
 ```
 
-**Rollback:**
-```bash
-# Restore function definitions
-git checkout HEAD -- R/estimators.R
+### Pattern 4: Progressive Enhancement of creel_design
 
-# Regenerate documentation
-devtools::document()
+**What:** Design object gains capabilities as data is added, but never loses information.
 
-# Re-test
-devtools::test()
-```
+**When to use:** Workflow where users incrementally add data sources.
 
-**Root cause investigation:**
-- Which tests were calling removed functions?
-- Update tests to use current API (`est_*` functions) before re-attempting removal
-- Were the functions used by other internal functions?
+**Trade-offs:**
+- **Pro:** Supports exploratory workflow (add counts, check effort, add interviews, check CPUE)
+- **Pro:** Immutable operations (each addition returns new object)
+- **Con:** Multiple versions of design object in workspace
 
-### If Checkpoint 3 Fails (After Archived Code Removal)
-
-**Symptoms:**
-- Documentation build fails referencing old_code examples
-- Links broken in vignettes or README
-
-**Note:** R CMD check should NOT fail from old_code removal (it's not part of package structure)
-
-**Diagnosis:**
+**Example:**
 ```r
-# Check for references to old_code
-grep -r "old_code" vignettes/ README.md CONTRIBUTING.md
+# Start with calendar only
+design <- creel_design(calendar, date = date, strata = day_type)
 
-# Check vignette build
-devtools::build_vignettes()
+# Can't estimate yet
+try(estimate_effort(design))  # Error: no counts
+
+# Add counts → enables effort estimation
+design_with_counts <- add_counts(design, counts)
+estimate_effort(design_with_counts)  # ✓ Works
+
+# Can't estimate CPUE yet
+try(estimate_cpue(design_with_counts))  # Error: no interviews
+
+# Add interviews → enables CPUE and total catch
+design_complete <- add_interviews(design_with_counts, interviews)
+estimate_cpue(design_complete)  # ✓ Works
+estimate_total_catch(design_complete)  # ✓ Works
 ```
 
-**Rollback:**
-```bash
-# Restore old_code directory
-git checkout HEAD -- old_code/
-```
+## Anti-Patterns
 
-**Root cause investigation:**
-- Which documentation files reference old_code?
-- Remove or update those references before re-attempting removal
+### Anti-Pattern 1: Combining Incompatible Strata
 
-### If Checkpoint 4 Fails (After Documentation Cleanup)
+**What people might do:** Use different stratification for counts and interviews.
 
-**Symptoms:**
-- R CMD check fails with documentation errors
-- Vignettes don't build
-- Examples in README fail
+**Why it's wrong:** Total catch = Effort × CPUE requires estimates from same strata to multiply correctly. If effort is stratified by day_type and CPUE by season, the product is undefined.
 
-**Diagnosis:**
+**Do this instead:**
 ```r
-# Build vignettes to see errors
-devtools::build_vignettes()
+# CORRECT: Enforce same strata
+validate_strata_match <- function(design) {
+  if (!is.null(design$counts) && !is.null(design$interviews)) {
+    count_strata <- attr(design$effort_survey, "strata")
+    interview_strata <- attr(design$interview_survey, "strata")
 
-# Check R CMD check output
-devtools::check(cran = TRUE)
+    if (!identical(count_strata, interview_strata)) {
+      cli::cli_abort(c(
+        "Strata must match between counts and interviews",
+        "x" = "Count strata: {count_strata}",
+        "x" = "Interview strata: {interview_strata}"
+      ))
+    }
+  }
+}
 ```
 
-**Rollback:**
-```bash
-# Restore documentation files
-git checkout HEAD -- NEWS.md README.md vignettes/
-```
+### Anti-Pattern 2: Using ratio-of-means for Roving Interviews
 
-**Root cause investigation:**
-- Did documentation updates reference non-existent functions?
-- Were examples updated to use correct current API?
+**What people might do:** Default to ratio-of-means (simpler, lower variance) for all interview types.
 
-## tidycreel-Specific Considerations
+**Why it's wrong:** Roving interviews have sampling probability ∝ trip length. Ratio-of-means overweights long trips, causing -15% to -30% bias.
 
-### Current Architecture Constraints
-
-Based on `ARCHITECTURAL_STANDARDS.md`:
-
-1. **Single Source of Truth**: All variance calculations use `tc_compute_variance()`
-   - **Impact on removal:** Deprecated functions don't call variance engine, so removal is safe
-
-2. **No Wrapper Functions**: Features built-in to estimators
-   - **Impact on removal:** Deprecated stubs are NOT wrappers (they just abort), safe to remove
-
-3. **Replace, Don't Add**: When rebuilding, replace original
-   - **Impact on removal:** This removal is cleanup from previous replace operation (old API replaced with new)
-
-### Test Suite Coverage
-
-Package has comprehensive test coverage (testthat edition 3):
-- `test-architectural-compliance.R`: Enforces variance engine usage
-- `test-estimators-enhanced.R`: Tests enhanced features
-- `test-estimators-integration.R`: Tests integration points
-
-**Critical check before removal:**
+**Do this instead:**
 ```r
-# Search test files for deprecated function usage
-grep -r "estimate_effort\|estimate_cpue\|estimate_harvest" tests/testthat/
-
-# If found in test-estimators-*.R files:
-# - These may be testing deprecated functions
-# - Update to test current API (est_effort, est_cpue, est_catch)
-# - Or delete tests that only validated deprecated behavior
+# Enforce correct estimator based on design type
+estimate_cpue <- function(design, mode = NULL) {
+  if (is.null(mode)) {
+    # Auto-detect from design type
+    mode <- if (design$design_type == "roving") {
+      cli::cli_warn(c(
+        "Roving design detected",
+        "!" = "Using mean-of-ratios estimator",
+        "i" = "Truncate short trips (<30 min) before calling estimate_cpue()"
+      ))
+      "mean_of_ratios"
+    } else {
+      "ratio_of_means"
+    }
+  }
+  # ... rest of function
+}
 ```
 
-### Vignette Considerations
+### Anti-Pattern 3: Forgetting Trip Truncation
 
-Package has comprehensive vignettes demonstrating workflows:
-- `getting-started.Rmd`
-- `effort_design_based.Rmd`
-- `survey_creel_terms.Rmd`
+**What people might do:** Apply mean-of-ratios to unfiltered roving data.
 
-**Critical check before removal:**
+**Why it's wrong:** Very short incomplete trips create extreme catch/effort ratios (e.g., 1 fish / 0.1 hours = 10 fish/hour), leading to infinite variance and unstable estimates.
+
+**Do this instead:**
 ```r
-# Search vignettes for deprecated function usage
-grep -r "estimate_effort\|estimate_cpue\|estimate_harvest" vignettes/
-
-# Build vignettes to verify no errors
-devtools::build_vignettes()
+# Add validation in estimate_cpue()
+if (mode == "mean_of_ratios") {
+  min_effort <- min(design$interviews$effort, na.rm = TRUE)
+  if (min_effort < 0.3) {  # Less than ~20 minutes
+    cli::cli_warn(c(
+      "Very short trips detected (minimum: {round(min_effort, 2)} hours)",
+      "!" = "Mean-of-ratios estimator requires truncation of short trips",
+      "i" = "Filter trips <0.5 hours before estimation",
+      "i" = "Example: interviews %>% filter(effort >= 0.5)"
+    ))
+  }
+}
 ```
 
-### Branch Context
+### Anti-Pattern 4: Assuming Covariance = 0 Without Verification
 
-Working on `phase2/remove-legacy-constructors` branch:
-- Branch name suggests this is Phase 2 of a larger refactoring
-- Phase 1 likely introduced new API (`est_*` functions)
-- Phase 2 is cleanup (remove old API)
-- Merge to `main` is goal after cleanup complete
+**What people might do:** Always use `delta_method_product(cov = 0)` for effort × CPUE.
 
-**Implication:** This removal should be final - no planned deprecation cycle since package never released.
+**Why it's wrong:** If count and interview data are collected by the same clerk on the same days, they may be correlated (e.g., high effort days also have high CPUE due to weather).
+
+**Do this instead:**
+```r
+# Document independence assumption
+estimate_total_catch <- function(design) {
+  # Check if data sources are independent
+  count_dates <- unique(design$counts$date)
+  interview_dates <- unique(design$interviews$date)
+  overlap <- intersect(count_dates, interview_dates)
+
+  if (length(overlap) / length(union(count_dates, interview_dates)) > 0.7) {
+    cli::cli_warn(c(
+      "Substantial overlap between count and interview dates",
+      "!" = "Estimates may be correlated",
+      "i" = "Assuming independence (cov = 0) may underestimate variance",
+      "i" = "Consider bootstrap variance for combined estimate"
+    ))
+  }
+
+  # Proceed with delta method (independence assumption)
+  delta_method_product(effort, cpue, covariance = 0)
+}
+```
+
+## Scaling Considerations
+
+| Scale | Architecture Adjustments |
+|-------|--------------------------|
+| 0-100 interviews | Single species, simple strata (weekday/weekend) sufficient. In-memory processing. |
+| 100-1000 interviews | Multiple species, complex strata (day_type × season × location). Pre-filter by species before estimation. |
+| 1000+ interviews | Multi-site surveys, long time series. Consider data.table for aggregation before survey package. Cache survey objects. |
+
+### Performance Bottlenecks
+
+1. **First bottleneck:** `svyratio()` with bootstrap variance on large datasets (1000+ interviews).
+   - **Fix:** Default to Taylor variance, use bootstrap only when needed.
+   - **Warning:** Add message if nrow(interviews) > 500 and variance = "bootstrap".
+
+2. **Second bottleneck:** Multiple species estimation (looping over 10+ species).
+   - **Fix:** Vectorize where possible, use `by` parameter for species-grouped estimation.
+   - **Pattern:** `estimate_catch(design, by = c(day_type, species))`
+
+3. **Memory bottleneck:** Storing replicate weights for bootstrap with both count and interview surveys.
+   - **Fix:** Generate replicates on-demand rather than storing in object.
+   - **Pattern:** `get_variance_design()` creates svrepdesign when needed, not in add_interviews().
 
 ## Sources
 
-### R Package Management
-- [When can I remove a deprecated function from a package? - Posit Community](https://forum.posit.co/t/when-can-i-remove-a-deprecated-function-from-a-package/9707)
-- [Communicate lifecycle changes in your functions - lifecycle package](https://cran.r-project.org/web/packages/lifecycle/vignettes/communicate.html)
-- [rOpenSci | Package evolution - changing stuff in your package](https://ropensci.org/blog/2017/01/05/package-evolution/)
-- [Lifecycle stages - lifecycle package](https://cran.r-project.org/web/packages/lifecycle/vignettes/stages.html)
+**HIGH confidence sources:**
 
-### R CMD Check and NAMESPACE
-- [Appendix A — R CMD check – R Packages (2e)](https://r-pkgs.org/R-CMD-check.html)
-- [Managing imports and exports • roxygen2](https://roxygen2.r-lib.org/articles/namespace.html)
-- [Writing R Extensions - CRAN](https://cran.r-project.org/doc/manuals/r-release/R-exts.html)
+1. [Creel Survey Catch Rate Estimation](https://cran.r-project.org/web/packages/AnglerCreelSurveySimulation/vignettes/creel_survey_simulation.html) - Simulation package demonstrating CPUE methods
+2. [Measurement Error in Angler Creel Surveys](https://www.tandfonline.com/doi/full/10.1080/02755947.2014.996689) - Ratio estimator comparison
+3. [Effect of Survey Design on Catch Estimates](https://pubs.usgs.gov/publication/70038918) - Ratio-of-means vs mean-of-ratios evidence
+4. [Survey Package Ratio Estimation](https://r-survey.r-forge.r-project.org/survey/html/svyratio.html) - R implementation reference
+5. [Delta Method Tutorial](https://cran.r-project.org/web/packages/modmarg/vignettes/delta-method.html) - Variance of transformed parameters
+6. **tidycreel v0.1.0 architecture** - `/.planning/codebase/ARCHITECTURE.md` (existing foundation)
+7. **Creel foundations document** - `/creel_foundations.md` (domain knowledge)
+8. **Creel effort methods** - `/creel_effort_estimation_methods.md` (complementary designs)
+9. **Ratio estimators guide** - `/inst/RATIO_ESTIMATORS_GUIDE.md` (user-facing documentation)
+10. **Creel chapter** - `/creel_chapter.md` (peer-reviewed fisheries textbook)
 
-### Code Cleanup and Security
-- [Automatic Code Cleaning in R with Rclean - rOpenSci](https://ropensci.org/blog/2020/04/21/rclean/)
-- [Detecting Security Vulnerabilities in R Packages - Jumping Rivers](https://www.jumpingrivers.com/blog/r-package-vulnerabilities-security/)
+**MEDIUM confidence sources:**
 
-### Technical Debt Research
-- [Self-admitted technical debt in R: detection and causes - Automated Software Engineering](https://link.springer.com/article/10.1007/s10515-022-00358-6)
-- [Build Code Needs Maintenance Too: A Study on Refactoring and Technical Debt in Build Systems - MSR 2025](https://2025.msrconf.org/details/msr-2025-technical-papers/13/Build-Scripts-Need-Maintenance-Too-A-Study-on-Refactoring-and-Technical-Debt-in-Buil)
+- [Survey Package Covariances](https://www.practicalsignificance.com/posts/survey-covariances-using-influence-functions/) - Linearization methods for covariance
+
+**Research gaps:**
+- Covariance estimation between effort and CPUE when data sources overlap (assume independence for v0.2.0, document limitation)
+- Bootstrap variance for combined estimates (defer to later milestone)
+- Multi-species estimation patterns (defer to v0.3.0)
 
 ---
-*Architecture research for: tidycreel legacy code removal*
-*Researched: 2026-01-27*
-*Confidence: HIGH - Based on official R package documentation and CRAN best practices*
+*Architecture research for: tidycreel v0.2.0 interview-based estimation*
+*Researched: 2026-02-09*
+*Confidence: HIGH (survey package methods well-established, v0.1.0 patterns proven)*
