@@ -945,8 +945,49 @@ estimate_harvest_total <- function(design, variance_method, conf_level) {
   harvest_col <- design$harvest_col
   effort_col <- design$effort_col
 
-  # Get appropriate survey design for variance method
-  svy_design <- get_variance_design(design$interview_survey, variance_method) # nolint: object_usage_linter
+  # Filter out zero-effort interviews with warning
+  zero_effort <- !is.na(interviews_data[[effort_col]]) & interviews_data[[effort_col]] == 0
+  if (any(zero_effort)) {
+    n_zero <- sum(zero_effort) # nolint: object_usage_linter
+    cli::cli_warn(c(
+      "{n_zero} interview{?s} with zero effort excluded from harvest estimation.",
+      "i" = "HPUE requires effort > 0 (harvest/effort is undefined for effort = 0)."
+    ))
+    interviews_data <- interviews_data[!zero_effort, , drop = FALSE]
+  }
+
+  # Filter out NA harvest interviews with warning
+  na_harvest <- is.na(interviews_data[[harvest_col]])
+  if (any(na_harvest)) {
+    n_na <- sum(na_harvest) # nolint: object_usage_linter
+    cli::cli_warn(c(
+      "{n_na} interview{?s} with missing harvest excluded from harvest estimation.",
+      "i" = "Interviews must have non-NA harvest values for HPUE estimation."
+    ))
+    interviews_data <- interviews_data[!na_harvest, , drop = FALSE]
+  }
+
+  # Build temporary survey design from filtered data if filtering occurred
+  needs_rebuild <- any(zero_effort) || any(na_harvest)
+  if (needs_rebuild) {
+    strata_cols <- design$strata_cols
+    if (!is.null(strata_cols) && length(strata_cols) > 0) {
+      strata_formula <- stats::reformulate(strata_cols)
+      temp_survey <- survey::svydesign(
+        ids = ~1,
+        strata = strata_formula,
+        data = interviews_data
+      )
+    } else {
+      temp_survey <- survey::svydesign(
+        ids = ~1,
+        data = interviews_data
+      )
+    }
+    svy_design <- get_variance_design(temp_survey, variance_method) # nolint: object_usage_linter
+  } else {
+    svy_design <- get_variance_design(design$interview_survey, variance_method) # nolint: object_usage_linter
+  }
 
   # Create formulas for ratio estimation
   harvest_formula <- stats::reformulate(harvest_col)
@@ -994,8 +1035,49 @@ estimate_harvest_grouped <- function(design, by_vars, variance_method, conf_leve
   harvest_col <- design$harvest_col
   effort_col <- design$effort_col
 
-  # Get appropriate survey design for variance method
-  svy_design <- get_variance_design(design$interview_survey, variance_method) # nolint: object_usage_linter
+  # Filter out zero-effort interviews with warning
+  zero_effort <- !is.na(interviews_data[[effort_col]]) & interviews_data[[effort_col]] == 0
+  if (any(zero_effort)) {
+    n_zero <- sum(zero_effort) # nolint: object_usage_linter
+    cli::cli_warn(c(
+      "{n_zero} interview{?s} with zero effort excluded from harvest estimation.",
+      "i" = "HPUE requires effort > 0 (harvest/effort is undefined for effort = 0)."
+    ))
+    interviews_data <- interviews_data[!zero_effort, , drop = FALSE]
+  }
+
+  # Filter out NA harvest interviews with warning
+  na_harvest <- is.na(interviews_data[[harvest_col]])
+  if (any(na_harvest)) {
+    n_na <- sum(na_harvest) # nolint: object_usage_linter
+    cli::cli_warn(c(
+      "{n_na} interview{?s} with missing harvest excluded from harvest estimation.",
+      "i" = "Interviews must have non-NA harvest values for HPUE estimation."
+    ))
+    interviews_data <- interviews_data[!na_harvest, , drop = FALSE]
+  }
+
+  # Build temporary survey design from filtered data if filtering occurred
+  needs_rebuild <- any(zero_effort) || any(na_harvest)
+  if (needs_rebuild) {
+    strata_cols <- design$strata_cols
+    if (!is.null(strata_cols) && length(strata_cols) > 0) {
+      strata_formula <- stats::reformulate(strata_cols)
+      temp_survey <- survey::svydesign(
+        ids = ~1,
+        strata = strata_formula,
+        data = interviews_data
+      )
+    } else {
+      temp_survey <- survey::svydesign(
+        ids = ~1,
+        data = interviews_data
+      )
+    }
+    svy_design <- get_variance_design(temp_survey, variance_method) # nolint: object_usage_linter
+  } else {
+    svy_design <- get_variance_design(design$interview_survey, variance_method) # nolint: object_usage_linter
+  }
 
   # Build formulas for svyby
   harvest_formula <- stats::reformulate(harvest_col)
