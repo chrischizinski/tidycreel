@@ -133,11 +133,11 @@ Plans:
   4. System validates sufficient sample size (warns if n<30, errors if n<10 per group)
   5. User can control variance method (Taylor, bootstrap, jackknife) for CPUE estimation
   6. System output clearly indicates estimator used ("Ratio-of-Means CPUE")
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 09-01: TBD
-- [ ] 09-02: TBD
+- [ ] 09-01-PLAN.md -- Core estimate_cpue() with ratio-of-means estimation, sample size validation, grouped estimation, and reference tests (TDD)
+- [ ] 09-02-PLAN.md -- Format display update, variance method tests, zero-effort handling, integration tests, and quality assurance
 
 #### Phase 10: Catch and Harvest Estimation
 **Goal**: Users can estimate species-specific catch and harvest rates using CPUE infrastructure
