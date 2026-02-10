@@ -78,12 +78,19 @@ format.creel_estimates <- function(x, ...) {
   # Format confidence level as percentage
   conf_pct <- paste0(round(x$conf_level * 100), "%") # nolint: object_usage_linter
 
+  # Convert method to human-readable form
+  method_display <- switch(x$method, # nolint: object_usage_linter
+    total = "Total",
+    "ratio-of-means-cpue" = "Ratio-of-Means CPUE",
+    x$method
+  )
+
   # Build formatted output using cli
   output <- character()
 
   output <- c(output, cli::cli_format_method({
     cli::cli_h1("Creel Survey Estimates")
-    cli::cli_text("Method: {x$method}")
+    cli::cli_text("Method: {method_display}")
     cli::cli_text("Variance: {variance_display}")
     cli::cli_text("Confidence level: {conf_pct}")
 
@@ -573,12 +580,44 @@ estimate_cpue_total <- function(design, variance_method, conf_level) {
   catch_col <- design$catch_col
   effort_col <- design$effort_col
 
+  # Filter out zero-effort interviews with warning
+  zero_effort <- !is.na(interviews_data[[effort_col]]) & interviews_data[[effort_col]] == 0
+  if (any(zero_effort)) {
+    n_zero <- sum(zero_effort) # nolint: object_usage_linter
+    cli::cli_warn(c(
+      "{n_zero} interview{?s} with zero effort excluded from CPUE estimation.",
+      "i" = "CPUE requires effort > 0 (catch/effort is undefined for effort = 0)."
+    ))
+    interviews_data <- interviews_data[!zero_effort, , drop = FALSE]
+  }
+
+  # Build temporary survey design from filtered data if filtering occurred
+  if (any(zero_effort)) {
+    # Get strata column(s) from original design
+    strata_cols <- design$strata_cols
+    if (!is.null(strata_cols) && length(strata_cols) > 0) {
+      strata_formula <- stats::reformulate(strata_cols)
+      temp_survey <- survey::svydesign(
+        ids = ~1,
+        strata = strata_formula,
+        data = interviews_data
+      )
+    } else {
+      temp_survey <- survey::svydesign(
+        ids = ~1,
+        data = interviews_data
+      )
+    }
+    # Get variance design from temporary survey
+    svy_design <- get_variance_design(temp_survey, variance_method) # nolint: object_usage_linter
+  } else {
+    # No filtering needed - use original design
+    svy_design <- get_variance_design(design$interview_survey, variance_method) # nolint: object_usage_linter
+  }
+
   # Create formulas for ratio estimation
   catch_formula <- stats::reformulate(catch_col)
   effort_formula <- stats::reformulate(effort_col)
-
-  # Get appropriate survey design for variance method
-  svy_design <- get_variance_design(design$interview_survey, variance_method) # nolint: object_usage_linter
 
   # Call survey::svyratio (suppress expected survey package warnings)
   svy_result <- suppressWarnings(
@@ -622,13 +661,45 @@ estimate_cpue_grouped <- function(design, by_vars, variance_method, conf_level) 
   catch_col <- design$catch_col
   effort_col <- design$effort_col
 
+  # Filter out zero-effort interviews with warning
+  zero_effort <- !is.na(interviews_data[[effort_col]]) & interviews_data[[effort_col]] == 0
+  if (any(zero_effort)) {
+    n_zero <- sum(zero_effort) # nolint: object_usage_linter
+    cli::cli_warn(c(
+      "{n_zero} interview{?s} with zero effort excluded from CPUE estimation.",
+      "i" = "CPUE requires effort > 0 (catch/effort is undefined for effort = 0)."
+    ))
+    interviews_data <- interviews_data[!zero_effort, , drop = FALSE]
+  }
+
+  # Build temporary survey design from filtered data if filtering occurred
+  if (any(zero_effort)) {
+    # Get strata column(s) from original design
+    strata_cols <- design$strata_cols
+    if (!is.null(strata_cols) && length(strata_cols) > 0) {
+      strata_formula <- stats::reformulate(strata_cols)
+      temp_survey <- survey::svydesign(
+        ids = ~1,
+        strata = strata_formula,
+        data = interviews_data
+      )
+    } else {
+      temp_survey <- survey::svydesign(
+        ids = ~1,
+        data = interviews_data
+      )
+    }
+    # Get variance design from temporary survey
+    svy_design <- get_variance_design(temp_survey, variance_method) # nolint: object_usage_linter
+  } else {
+    # No filtering needed - use original design
+    svy_design <- get_variance_design(design$interview_survey, variance_method) # nolint: object_usage_linter
+  }
+
   # Build formulas for svyby
   catch_formula <- stats::reformulate(catch_col)
   effort_formula <- stats::reformulate(effort_col)
   by_formula <- stats::reformulate(by_vars)
-
-  # Get appropriate survey design for variance method
-  svy_design <- get_variance_design(design$interview_survey, variance_method) # nolint: object_usage_linter
 
   # Call survey::svyby with svyratio (suppress expected survey package warnings)
   svy_result <- suppressWarnings(survey::svyby(
