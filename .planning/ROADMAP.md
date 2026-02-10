@@ -6,13 +6,13 @@ Interview-based estimation extends tidycreel's proven v0.1.0 foundation (instant
 
 ## Milestones
 
-- ✅ **v0.1.0 Foundation** - Phases 1-7 (shipped 2026-02-09)
-- 🚧 **v0.2.0 Interview-Based Estimation** - Phases 8-12 (in progress)
+- v0.1.0 Foundation - Phases 1-7 (shipped 2026-02-09)
+- v0.2.0 Interview-Based Estimation - Phases 8-12 (in progress)
 
 ## Phases
 
 <details>
-<summary>✅ v0.1.0 Foundation (Phases 1-7) - SHIPPED 2026-02-09</summary>
+<summary>v0.1.0 Foundation (Phases 1-7) - SHIPPED 2026-02-09</summary>
 
 ### Phase 1: Package Foundation
 **Goal**: Package structure with CI/CD and quality gates
@@ -92,7 +92,7 @@ Plans:
 **Requirements**: Vignettes, examples, test coverage, R CMD check
 **Success Criteria**:
   1. Package passes R CMD check --as-cran with 0 errors/warnings
-  2. Test coverage ≥85% overall, ≥95% for core estimation
+  2. Test coverage >=85% overall, >=95% for core estimation
   3. Getting Started vignette demonstrates complete workflow
 **Plans**: 2 plans
 
@@ -102,7 +102,7 @@ Plans:
 
 </details>
 
-### 🚧 v0.2.0 Interview-Based Estimation (In Progress)
+### v0.2.0 Interview-Based Estimation (In Progress)
 
 **Milestone Goal:** Enable catch and harvest estimation by adding interview data analysis to existing instantaneous count design foundation.
 
@@ -147,7 +147,7 @@ Plans:
   1. User can estimate catch per unit effort for single species fisheries
   2. User can estimate harvest per unit effort (HPUE) separately from total catch
   3. System distinguishes between caught (total) and kept (harvest) fish
-  4. System validates catch_kept ≤ catch_total consistency
+  4. System validates catch_kept <= catch_total consistency
 **Plans**: 2 plans
 
 Plans:
@@ -159,26 +159,26 @@ Plans:
 **Depends on**: Phase 10
 **Requirements**: TCATCH-01, TCATCH-02, TCATCH-03, TCATCH-04, TCATCH-05
 **Success Criteria** (what must be TRUE):
-  1. User can estimate total catch by combining effort × CPUE estimates
+  1. User can estimate total catch by combining effort x CPUE estimates
   2. System propagates variance correctly using delta method (not naive product variance)
   3. System validates design compatibility between count and interview data
   4. User can estimate grouped total catch (by stratum or other variables)
   5. System handles single species fisheries (v0.2.0 scope constraint)
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 11-01: TBD
-- [ ] 11-02: TBD
+- [ ] 11-01-PLAN.md -- Core estimate_total_catch() and estimate_total_harvest() with delta method variance via svycontrast (TDD)
+- [ ] 11-02-PLAN.md -- Format display tests, variance method tests, integration tests, and quality assurance
 
 #### Phase 12: Documentation and Quality Assurance
 **Goal**: Production-ready interview estimation with comprehensive documentation and test coverage
 **Depends on**: Phase 11
 **Requirements**: QUAL-04, QUAL-05, QUAL-06, QUAL-07, QUAL-08
 **Success Criteria** (what must be TRUE):
-  1. Interview-based estimation vignette demonstrates complete workflow (counts → interviews → total catch)
+  1. Interview-based estimation vignette demonstrates complete workflow (counts -> interviews -> total catch)
   2. Example datasets include interview data for access point complete trips
   3. All functions pass R CMD check with 0 errors/warnings
-  4. Test coverage ≥85% overall, ≥95% for core CPUE and total catch estimation functions
+  4. Test coverage >=85% overall, >=95% for core CPUE and total catch estimation functions
   5. All code passes lintr with 0 issues
 **Plans**: TBD
 
@@ -189,7 +189,7 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 8 → 9 → 10 → 11 → 12
+Phases execute in numeric order: 8 -> 9 -> 10 -> 11 -> 12
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -203,7 +203,7 @@ Phases execute in numeric order: 8 → 9 → 10 → 11 → 12
 | 8. Interview Data Integration | v0.2.0 | 2/2 | Complete | 2026-02-09 |
 | 9. CPUE Estimation | v0.2.0 | 2/2 | Complete | 2026-02-10 |
 | 10. Catch and Harvest Estimation | v0.2.0 | 2/2 | Complete | 2026-02-10 |
-| 11. Total Catch Estimation | v0.2.0 | 0/TBD | Not started | - |
+| 11. Total Catch Estimation | v0.2.0 | 0/2 | Not started | - |
 | 12. Documentation and Quality Assurance | v0.2.0 | 0/TBD | Not started | - |
 
 ---
