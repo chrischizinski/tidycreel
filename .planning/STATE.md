@@ -5,15 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-09)
 
 **Core value:** Creel biologists work in domain vocabulary without understanding survey statistics
-**Current focus:** Planning next milestone (v0.2.0) — additional design types and estimation methods
+**Current focus:** v0.2.0 Interview-Based Estimation — adding catch and harvest analysis
 
 ## Current Position
 
-Milestone: v0.1.0 shipped ✓
-Status: Ready for next milestone
-Last activity: 2026-02-09 — v0.1.0 milestone archived, PROJECT.md evolved
-
-Next: `/gsd:new-milestone` for v0.2.0 planning
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements for v0.2.0
+Last activity: 2026-02-09 — Milestone v0.2.0 started
 
 ## Performance Metrics
 

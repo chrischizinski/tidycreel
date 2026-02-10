@@ -26,7 +26,27 @@ Creel biologists can analyze survey data using creel vocabulary without ever und
 
 ### Active
 
-**v0.2.0 - Next Milestone** (To be defined)
+**v0.2.0 - Interview-Based Estimation** (In progress)
+
+## Current Milestone: v0.2.0 Interview-Based Estimation
+
+**Goal:** Enable catch and harvest estimation by adding interview data analysis to the existing instantaneous count design foundation.
+
+**Target features:**
+- Interview data collection (completed trips, access point design)
+- CPUE estimation (catch per unit effort) with SE and CI
+- Total catch estimation (effort × CPUE) with SE and CI
+- Harvest estimation (HPUE and total harvest) with SE and CI
+- Grouped estimation support (by stratum or other variables)
+- Variance method control (Taylor, bootstrap, jackknife)
+- Later in milestone: incomplete trip handling for roving interviews
+
+**Scope boundaries:**
+- Single species fisheries only (multi-species deferred to v0.3.0)
+- Start with complete trip interviews (ratio of means estimator)
+- Add incomplete trip handling later (mean of ratios with truncation)
+- No caught-while-seeking tracking (deferred to v0.3.0)
+- No other count design types yet (roving/aerial/bus route deferred)
 
 ### Out of Scope
 
@@ -102,4 +122,4 @@ Creel biologists can analyze survey data using creel vocabulary without ever und
 | Accept unreachable error handlers coverage gap (Phase 7) | Pragmatic testing vs perfectionist coverage | ✓ Good — 88.75% overall coverage, test user behavior not implementation details |
 
 ---
-*Last updated: 2026-02-09 after v0.1.0 milestone completion*
+*Last updated: 2026-02-09 after starting v0.2.0 milestone*
