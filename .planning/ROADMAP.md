@@ -148,10 +148,11 @@ Plans:
   2. User can estimate harvest per unit effort (HPUE) separately from total catch
   3. System distinguishes between caught (total) and kept (harvest) fish
   4. System validates catch_kept ≤ catch_total consistency
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 10-01: TBD
+- [ ] 10-01-PLAN.md -- Ratio-of-means HPUE estimation with TDD, shared sample size validation, and reference tests
+- [ ] 10-02-PLAN.md -- HPUE format display, zero-effort filtering, NA harvest handling, variance method tests, and quality assurance
 
 #### Phase 11: Total Catch Estimation
 **Goal**: Users can estimate total catch by combining effort and CPUE with correct variance propagation
