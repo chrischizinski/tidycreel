@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-09)
 ## Current Position
 
 Phase: 8 of 12 (Interview Data Integration)
-Plan: Ready to plan
-Status: Not started
-Last activity: 2026-02-09 — v0.2.0 roadmap created (Phases 8-12)
+Plan: 2 of 2
+Status: In progress
+Last activity: 2026-02-10 — Completed 08-01-PLAN.md (add_interviews foundation)
 
 Progress: [███████░░░░░░░░░░░░] 58% (7 of 12 phases complete)
 
@@ -43,6 +43,7 @@ Progress: [███████░░░░░░░░░░░░] 58% (7 of 
 - Trend: Stable execution for v0.1.0; v0.2.0 starting
 
 *Updated after each plan completion*
+| Phase 08 P01 | 7 | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -61,6 +62,7 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - Start with complete trip interviews (access point design)
 - Defer incomplete trips (roving design) to v0.3.0
 - Single species only in v0.2.0 scope
+- [Phase 08-01]: Interview survey uses ids=~1 (terminal units) not ids=~psu (day-PSU) - interviews are individual observations, not clustered by day
 
 ### Pending Todos
 
@@ -72,6 +74,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-09
-Stopped at: v0.2.0 roadmap created (Phases 8-12), ready to plan Phase 8
+Last session: 2026-02-10
+Stopped at: Completed 08-01-PLAN.md (add_interviews foundation)
 Resume file: None
