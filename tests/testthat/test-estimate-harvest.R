@@ -424,3 +424,198 @@ test_that("estimate_harvest with conf_level = 0.90 produces narrower CI than 0.9
   expect_true(width_90 < width_95)
   expect_equal(result_90$conf_level, 0.90)
 })
+
+# Variance method tests ----
+
+test_that("estimate_harvest with bootstrap variance method produces valid results", {
+  design <- make_harvest_design()
+
+  result <- estimate_harvest(design, variance = "bootstrap") # nolint: object_usage_linter
+
+  expect_equal(result$variance_method, "bootstrap")
+  expect_true(is.numeric(result$estimates$se))
+  expect_true(result$estimates$se > 0)
+  expect_true(is.finite(result$estimates$se))
+  expect_false(is.na(result$estimates$se))
+})
+
+test_that("estimate_harvest with jackknife variance method produces valid results", {
+  design <- make_harvest_design()
+
+  result <- estimate_harvest(design, variance = "jackknife") # nolint: object_usage_linter
+
+  expect_equal(result$variance_method, "jackknife")
+  expect_true(is.numeric(result$estimates$se))
+  expect_true(result$estimates$se > 0)
+  expect_true(is.finite(result$estimates$se))
+  expect_false(is.na(result$estimates$se))
+})
+
+test_that("estimate_harvest grouped + bootstrap variance compose correctly", {
+  design <- make_harvest_design()
+
+  # Should work (may warn about small n per group, but should not error)
+  result <- suppressWarnings(estimate_harvest(design, by = day_type, variance = "bootstrap")) # nolint: object_usage_linter
+
+  expect_s3_class(result, "creel_estimates")
+  expect_equal(result$variance_method, "bootstrap")
+  expect_true(all(result$estimates$se > 0))
+  expect_true(all(is.finite(result$estimates$se)))
+})
+
+# Integration tests with example data ----
+
+test_that("estimate_harvest works end-to-end with example_calendar and example_interviews", {
+  # Load package data
+  data("example_calendar", package = "tidycreel")
+  data("example_interviews", package = "tidycreel")
+
+  # Create design
+  design <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
+
+  # Add interviews with harvest = catch_kept
+  design <- add_interviews(design, example_interviews, # nolint: object_usage_linter
+    catch = catch_total,
+    harvest = catch_kept,
+    effort = hours_fished
+  )
+
+  # Estimate harvest
+  result <- estimate_harvest(design) # nolint: object_usage_linter
+
+  # Verify result structure
+  expect_s3_class(result, "creel_estimates")
+  expect_equal(result$method, "ratio-of-means-hpue")
+
+  # Verify HPUE estimate is reasonable
+  expect_true(is.numeric(result$estimates$estimate))
+  expect_true(result$estimates$estimate > 0)
+  expect_true(is.finite(result$estimates$estimate))
+  expect_true(result$estimates$estimate < 100) # Reasonable range for fish per hour
+})
+
+test_that("HPUE <= CPUE with example data (harvest is subset of catch)", {
+  # Load package data
+  data("example_calendar", package = "tidycreel")
+  data("example_interviews", package = "tidycreel")
+
+  # Create design
+  design <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
+
+  # Add interviews
+  design <- add_interviews(design, example_interviews, # nolint: object_usage_linter
+    catch = catch_total,
+    harvest = catch_kept,
+    effort = hours_fished
+  )
+
+  # Estimate both HPUE and CPUE
+  result_hpue <- estimate_harvest(design) # nolint: object_usage_linter
+  result_cpue <- estimate_cpue(design) # nolint: object_usage_linter
+
+  # HPUE should be <= CPUE
+  expect_true(result_hpue$estimates$estimate <= result_cpue$estimates$estimate)
+})
+
+test_that("grouped harvest estimation with example data handles small groups appropriately", {
+  # Load package data
+  data("example_calendar", package = "tidycreel")
+  data("example_interviews", package = "tidycreel")
+
+  # Create design
+  design <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
+
+  # Add interviews
+  design <- add_interviews(design, example_interviews, # nolint: object_usage_linter
+    catch = catch_total,
+    harvest = catch_kept,
+    effort = hours_fished
+  )
+
+  # Check if weekend interviews < 10
+  n_weekend <- sum(example_interviews$day_type == "weekend")
+
+  if (n_weekend < 10) {
+    # Should error due to small group size
+    expect_error(
+      estimate_harvest(design, by = day_type), # nolint: object_usage_linter
+      "10"
+    )
+  } else {
+    # Should work (possibly with warning if n < 30)
+    result <- suppressWarnings(estimate_harvest(design, by = day_type)) # nolint: object_usage_linter
+    expect_s3_class(result, "creel_estimates")
+  }
+})
+
+# Zero-effort handling tests ----
+
+test_that("estimate_harvest filters zero-effort interviews with warning", {
+  design <- make_harvest_design()
+
+  # Inject 2 zero-effort interviews
+  design$interviews$hours_fished[1:2] <- 0
+
+  # Should warn about zero-effort
+  expect_warning(
+    result <- estimate_harvest(design), # nolint: object_usage_linter
+    "zero effort"
+  )
+
+  # Result should still be valid (from non-zero-effort data)
+  expect_s3_class(result, "creel_estimates")
+  expect_true(result$estimates$estimate > 0)
+  expect_true(is.finite(result$estimates$se))
+
+  # n should reflect filtered data (32 - 2 = 30)
+  expect_equal(result$estimates$n, 30)
+})
+
+test_that("estimate_harvest with all zero-effort errors on empty data", {
+  design <- make_harvest_design()
+
+  # Set all effort to zero
+  design$interviews$hours_fished <- 0
+
+  # After filtering, n = 0, which should error
+  expect_error(
+    estimate_harvest(design), # nolint: object_usage_linter
+    "No valid interviews"
+  )
+})
+
+# NA harvest handling tests ----
+
+test_that("estimate_harvest filters NA harvest interviews with warning", {
+  design <- make_harvest_design()
+
+  # Inject 2 NA harvest values
+  design$interviews$catch_kept[1:2] <- NA
+
+  # Should warn about missing harvest
+  expect_warning(
+    result <- estimate_harvest(design), # nolint: object_usage_linter
+    "missing harvest"
+  )
+
+  # Result should still be valid (from non-NA data)
+  expect_s3_class(result, "creel_estimates")
+  expect_true(result$estimates$estimate >= 0)
+  expect_true(is.finite(result$estimates$se))
+
+  # n should reflect filtered data (32 - 2 = 30)
+  expect_equal(result$estimates$n, 30)
+})
+
+test_that("estimate_harvest with all NA harvest errors on empty data", {
+  design <- make_harvest_design()
+
+  # Set all harvest to NA
+  design$interviews$catch_kept <- NA
+
+  # After filtering, n = 0, which should error
+  expect_error(
+    estimate_harvest(design), # nolint: object_usage_linter
+    "No valid interviews"
+  )
+})

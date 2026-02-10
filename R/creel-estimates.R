@@ -967,6 +967,15 @@ estimate_harvest_total <- function(design, variance_method, conf_level) {
     interviews_data <- interviews_data[!na_harvest, , drop = FALSE]
   }
 
+  # Check if any data remains after filtering
+  if (nrow(interviews_data) == 0) {
+    cli::cli_abort(c(
+      "No valid interviews remaining after filtering.",
+      "x" = "All interviews were excluded (zero effort or missing harvest).",
+      "i" = "Harvest estimation requires at least 10 interviews with non-zero effort and non-NA harvest."
+    ))
+  }
+
   # Build temporary survey design from filtered data if filtering occurred
   needs_rebuild <- any(zero_effort) || any(na_harvest)
   if (needs_rebuild) {
@@ -1055,6 +1064,15 @@ estimate_harvest_grouped <- function(design, by_vars, variance_method, conf_leve
       "i" = "Interviews must have non-NA harvest values for HPUE estimation."
     ))
     interviews_data <- interviews_data[!na_harvest, , drop = FALSE]
+  }
+
+  # Check if any data remains after filtering
+  if (nrow(interviews_data) == 0) {
+    cli::cli_abort(c(
+      "No valid interviews remaining after filtering.",
+      "x" = "All interviews were excluded (zero effort or missing harvest).",
+      "i" = "Harvest estimation requires at least 10 interviews with non-zero effort and non-NA harvest."
+    ))
   }
 
   # Build temporary survey design from filtered data if filtering occurred

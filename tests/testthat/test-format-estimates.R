@@ -29,3 +29,12 @@ test_that("format.creel_estimates displays unknown method strings as-is", {
 
   expect_true(any(grepl("unknown-method", output)))
 })
+
+test_that("format displays 'Ratio-of-Means HPUE' for harvest method", {
+  est <- tidycreel:::new_creel_estimates(
+    estimates = tibble::tibble(estimate = 1, se = 0.1, ci_lower = 0.8, ci_upper = 1.2, n = 20),
+    method = "ratio-of-means-hpue"
+  )
+  output <- format(est)
+  expect_true(any(grepl("Ratio-of-Means HPUE", output)))
+})
