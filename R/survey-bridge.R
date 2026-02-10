@@ -460,6 +460,117 @@ warn_tier2_group_issues <- function(design, by_vars) {
   invisible(NULL)
 }
 
+#' Validate interview data quality (Tier 2)
+#'
+#' Internal function that checks for data quality issues in interview data
+#' attached to a creel_design. Issues warnings (not errors) for suspicious
+#' values. These are Tier 2 checks - data quality issues that should be
+#' investigated but don't prevent estimation.
+#'
+#' @param design A creel_design object with interviews attached
+#'
+#' @return NULL (invisible) - function called for side effects (warnings)
+#'
+#' @keywords internal
+#' @noRd
+warn_tier2_interview_issues <- function(design) {
+  interviews <- design$interviews
+  catch_col <- design$catch_col
+  effort_col <- design$effort_col
+  strata_cols <- design$strata_cols
+
+  # Check for very short trips (effort < 0.1 hours = 6 minutes)
+  if (!is.null(effort_col)) {
+    n_short <- sum(interviews[[effort_col]] < 0.1, na.rm = TRUE)
+    if (n_short > 0) {
+      cli::cli_warn(c(
+        "{n_short} interview{?s} ha{?s/ve} effort < 0.1 hours (6 minutes).",
+        "i" = "Very short trips may indicate data entry errors."
+      ))
+    }
+  }
+
+  # Check for zero catch values
+  n_zero <- sum(interviews[[catch_col]] == 0, na.rm = TRUE)
+  if (n_zero > 0) {
+    cli::cli_warn(c(
+      "{n_zero} interview{?s} ha{?s/ve} zero catch.",
+      "i" = "Zero catch may be valid (skunked) or indicate missing data."
+    ))
+  }
+
+  # Check for negative catch values
+  n_neg_catch <- sum(interviews[[catch_col]] < 0, na.rm = TRUE)
+  if (n_neg_catch > 0) {
+    cli::cli_warn(c(
+      "{n_neg_catch} interview{?s} ha{?s/ve} negative catch values.",
+      "!" = "Negative catch indicates data entry errors.",
+      "i" = "Review and correct before estimation."
+    ))
+  }
+
+  # Check for negative effort values
+  if (!is.null(effort_col)) {
+    n_neg_effort <- sum(interviews[[effort_col]] < 0, na.rm = TRUE)
+    if (n_neg_effort > 0) {
+      cli::cli_warn(c(
+        "{n_neg_effort} interview{?s} ha{?s/ve} negative effort values.",
+        "!" = "Negative effort indicates data entry errors.",
+        "i" = "Review and correct before estimation."
+      ))
+    }
+  }
+
+  # Check for missing effort values (NA)
+  if (!is.null(effort_col)) {
+    n_na_effort <- sum(is.na(interviews[[effort_col]]))
+    if (n_na_effort > 0) {
+      cli::cli_warn(c(
+        "{n_na_effort} interview{?s} ha{?s/ve} missing effort values.",
+        "i" = "Missing effort limits CPUE estimation."
+      ))
+    }
+  }
+
+  # Check for sparse interview coverage per stratum (< 3 interviews per stratum)
+  # Create the same strata variable used in survey design
+  if (length(strata_cols) == 1) {
+    strata_var <- interviews[[strata_cols]]
+  } else {
+    strata_factors <- interviews[strata_cols]
+    strata_var <- interaction(strata_factors, drop = TRUE)
+  }
+
+  # Count interviews per stratum
+  strata_counts <- table(strata_var)
+  sparse_strata <- strata_counts[strata_counts < 3]
+
+  if (length(sparse_strata) > 0) {
+    # Build bullet items for each sparse stratum
+    bullet_items <- character(length(sparse_strata))
+    for (i in seq_along(sparse_strata)) {
+      stratum_name <- names(sparse_strata)[i]
+      n_obs <- sparse_strata[i]
+      bullet_items[i] <- sprintf(
+        "Stratum %s: %d interview%s",
+        stratum_name,
+        n_obs,
+        ifelse(n_obs == 1, "", "s")
+      )
+    }
+    names(bullet_items) <- rep("*", length(bullet_items))
+
+    cli::cli_warn(c(
+      "{length(sparse_strata)} strat{?um/a} ha{?s/ve} fewer than 3 interviews:",
+      bullet_items,
+      "!" = "Sparse strata produce unstable variance estimates.",
+      "i" = "Consider combining sparse strata or collecting more data."
+    ))
+  }
+
+  invisible(NULL)
+}
+
 #' Validate interview data structure (Tier 1)
 #'
 #' Internal validator that checks interview data matches the creel_design structure.
@@ -561,8 +672,7 @@ validate_interviews_tier1 <- function(interviews, design, catch_col, effort_col,
   }
 
   # Check 7: harvest <= catch consistency (if harvest_col provided)
-  if (!is.null(harvest_col) &&
-        catch_col %in% names(interviews) &&
+  if (!is.null(harvest_col) && catch_col %in% names(interviews) &&
         harvest_col %in% names(interviews)) {
     catch_vals <- interviews[[catch_col]]
     harvest_vals <- interviews[[harvest_col]]

@@ -595,6 +595,9 @@ add_interviews <- function(design, interviews,
   # Store validation results
   new_design$validation <- validation
 
+  # Warn for Tier 2 data quality issues
+  warn_tier2_interview_issues(new_design) # nolint: object_usage_linter
+
   # Preserve class
   class(new_design) <- "creel_design"
 
