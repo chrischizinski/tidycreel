@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-09)
 
 **Core value:** Creel biologists can analyze survey data using creel vocabulary without understanding survey package internals
-**Current focus:** Phase 9 - CPUE Estimation (v0.2.0)
+**Current focus:** Phase 10 - Catch and Harvest Estimation (v0.2.0)
 
 ## Current Position
 
-Phase: 9 of 12 (CPUE Estimation)
-Plan: Complete (2 of 2)
-Status: Complete
-Last activity: 2026-02-10 — Completed 09-02-PLAN.md (CPUE display, zero-effort handling, quality assurance)
+Phase: 10 of 12 (Catch and Harvest Estimation)
+Plan: 1 of 2
+Status: In Progress
+Last activity: 2026-02-10 — Completed 10-01-PLAN.md (estimate_harvest with ratio-of-means HPUE estimation)
 
-Progress: [█████████░░░░░░░░░░░] 75% (9 of 12 phases complete)
+Progress: [█████████░░░░░░░░░░░] 75% (9 of 12 phases complete, phase 10 in progress)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 17 (Phase 9 complete)
-- Average duration: 61 min (excluding 02-01 pauses)
-- Total execution time: 18.0 hours
+- Total plans completed: 18 (Phase 10 in progress)
+- Average duration: 60 min (excluding 02-01 pauses)
+- Total execution time: 18.2 hours
 
 **By Phase:**
 
@@ -36,19 +36,22 @@ Progress: [█████████░░░░░░░░░░░] 75% (9 
 | 07 | 2 | 15 min | 7.5 min |
 | 08 | 2 | 13 min | 6.5 min |
 | 09 | 2 | 61 min | 30.5 min |
+| 10 | 1 | 10 min | 10 min |
 
 *Note: 02-01 includes system pauses; actual work ~30-40 min
 
 **Recent Trend:**
-- Last 5 plans: 08-01 (7 min), 08-02 (6 min), 09-01 (16 min), 09-02 (45 min)
+- Last 5 plans: 08-02 (6 min), 09-01 (16 min), 09-02 (45 min), 10-01 (10 min)
 - Phase 9 complete: CPUE estimation with ratio-of-means, human-readable output, zero-effort handling
-- Trend: Quality assurance tasks longer (09-02: 45 min) due to comprehensive test coverage
+- Phase 10 started: Harvest (HPUE) estimation follows CPUE pattern - fast implementation due to shared architecture
+- Trend: First plans in pattern-following phases faster (10-01: 10 min vs 09-01: 16 min)
 
 *Updated after each plan completion*
 | Phase 08 P01 | 7 | 2 tasks | 7 files |
 | Phase 08 P02 | 6 | 2 tasks | 8 files |
 | Phase 09 P01 | 16 | 2 tasks | 8 files |
 | Phase 09 P02 | 45 | 2 tasks | 3 files |
+| Phase 10 P01 | 10 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -76,6 +79,9 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 09-02]: Human-readable method display via switch statement in format.creel_estimates() - user-friendly output without changing internal structure
 - [Phase 09-02]: Zero-effort interviews filtered with warning before ratio estimation - prevents division by zero, rebuilds temporary survey design for correct variance
 - [Phase 09-02]: Integration tests with example_calendar and example_interviews verify end-to-end workflow
+- [Phase 10-01]: Refactored validate_cpue_sample_size to validate_ratio_sample_size with type parameter - shared validation for all ratio estimators (CPUE, harvest) while maintaining context-aware error messages
+- [Phase 10-01]: HPUE method field "ratio-of-means-hpue" distinguishes harvest estimation from CPUE - same estimator, different numerator (harvest_col vs catch_col)
+- [Phase 10-01]: Reference tests match manual survey::svyratio within 1e-10 tolerance - proves numerical correctness
 
 ### Pending Todos
 
@@ -88,5 +94,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-10
-Stopped at: Completed 09-02-PLAN.md (CPUE display, zero-effort handling, quality assurance) - Phase 9 complete
+Stopped at: Completed 10-01-PLAN.md (estimate_harvest with ratio-of-means HPUE estimation)
 Resume file: None
