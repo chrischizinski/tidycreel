@@ -94,13 +94,41 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (Populated by roadmapper) | | |
+| INTV-01 | Phase 8 | Pending |
+| INTV-02 | Phase 8 | Pending |
+| INTV-03 | Phase 8 | Pending |
+| INTV-04 | Phase 8 | Pending |
+| INTV-05 | Phase 8 | Pending |
+| INTV-06 | Phase 8 | Pending |
+| CPUE-01 | Phase 9 | Pending |
+| CPUE-02 | Phase 9 | Pending |
+| CPUE-03 | Phase 9 | Pending |
+| CPUE-04 | Phase 9 | Pending |
+| CPUE-05 | Phase 9 | Pending |
+| CPUE-06 | Phase 9 | Pending |
+| HARV-01 | Phase 10 | Pending |
+| HARV-02 | Phase 10 | Pending |
+| HARV-03 | Phase 10 | Pending |
+| HARV-04 | Phase 10 | Pending |
+| TCATCH-01 | Phase 11 | Pending |
+| TCATCH-02 | Phase 11 | Pending |
+| TCATCH-03 | Phase 11 | Pending |
+| TCATCH-04 | Phase 11 | Pending |
+| TCATCH-05 | Phase 11 | Pending |
+| QUAL-01 | Phase 8 | Pending |
+| QUAL-02 | Phase 9 | Pending |
+| QUAL-03 | Phase 8 | Pending |
+| QUAL-04 | Phase 12 | Pending |
+| QUAL-05 | Phase 12 | Pending |
+| QUAL-06 | Phase 12 | Pending |
+| QUAL-07 | Phase 12 | Pending |
+| QUAL-08 | Phase 12 | Pending |
 
 **Coverage:**
-- v0.2.0 requirements: TBD total
-- Mapped to phases: TBD
-- Unmapped: TBD ⚠️
+- v0.2.0 requirements: 29 total
+- Mapped to phases: 29 (100%)
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-09*
-*Last updated: 2026-02-09 after initial definition*
+*Last updated: 2026-02-09 after roadmap creation*

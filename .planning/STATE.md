@@ -4,21 +4,23 @@
 
 See: .planning/PROJECT.md (updated 2026-02-09)
 
-**Core value:** Creel biologists work in domain vocabulary without understanding survey statistics
-**Current focus:** v0.2.0 Interview-Based Estimation — adding catch and harvest analysis
+**Core value:** Creel biologists can analyze survey data using creel vocabulary without understanding survey package internals
+**Current focus:** Phase 8 - Interview Data Integration (v0.2.0)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements for v0.2.0
-Last activity: 2026-02-09 — Milestone v0.2.0 started
+Phase: 8 of 12 (Interview Data Integration)
+Plan: Ready to plan
+Status: Not started
+Last activity: 2026-02-09 — v0.2.0 roadmap created (Phases 8-12)
+
+Progress: [███████░░░░░░░░░░░░] 58% (7 of 12 phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 12
-- Average duration: 84 min (note: 02-01 includes system pauses)
+- Total plans completed: 14 (v0.1.0 complete)
+- Average duration: 71 min (excluding 02-01 pauses)
 - Total execution time: 16.7 hours
 
 **By Phase:**
@@ -33,12 +35,12 @@ Last activity: 2026-02-09 — Milestone v0.2.0 started
 | 06 | 1 | 14 min | 14 min |
 | 07 | 2 | 15 min | 7.5 min |
 
-*Note: 02-01 wall-clock time includes system pauses; actual work ~30-40 min; 02-02 actual work ~4 min
+*Note: 02-01 includes system pauses; actual work ~30-40 min
 
 **Recent Trend:**
-- Last 3 plans: 06-01 (14 min), 07-01 (4 min), 07-02 (11 min)
-- Phase 7 executed efficiently with comprehensive test coverage and clean quality gates
-- Trend: Quality assurance plans take longer than documentation (coverage testing, R CMD check)
+- Last 5 plans: 05-01 (8 min), 06-01 (14 min), 07-01 (4 min), 07-02 (11 min)
+- v0.1.0 completed efficiently with comprehensive quality gates
+- Trend: Stable execution for v0.1.0; v0.2.0 starting
 
 *Updated after each plan completion*
 
@@ -46,106 +48,19 @@ Last activity: 2026-02-09 — Milestone v0.2.0 started
 
 ### Decisions
 
-Decisions are logged in PROJECT.md Key Decisions table with v0.1.0 outcomes.
+Decisions are logged in PROJECT.md Key Decisions table.
 
-All major architectural decisions validated during v0.1.0:
-- Three-layer architecture proven working end-to-end
+**v0.1.0 architectural decisions (proven working):**
+- Three-layer architecture validated end-to-end
 - Design-centric API operational and intuitive
-- Tidy selectors integration seamless
 - Progressive validation (Tier 1/2) working well
+- Variance method infrastructure extensible
 
-**From 01-01:**
-- Minimal Phase 1 dependencies only (checkmate, cli, rlang) - other packages added incrementally
-- Placeholder test prevents testthat errors in empty package
-- V1 development artifacts excluded via .Rbuildignore rather than deleted
-- Removed Maintainer field from DESCRIPTION (auto-generated from Authors@R)
-
-**From 01-02:**
-- Use main branch of lorenzwalthert/precommit to avoid digest 0.6.36 compilation errors
-- Exclude scripts/ and renv/ from pre-commit lint and dependency checks
-- Tidyverse style defaults with 120-char line length for all package code
-- GitHub Actions triggers on both main and v2-foundation branches for CI/CD
-
-**From 01-03:**
-- TDD pattern established (RED-GREEN commits) for tidycreel v2 development
-- Schema validators are internal (@keywords internal, @noRd) - not exported
-- Validators check structure/types only, not column names (tidy selectors in later phases)
-- checkmate::makeAssertCollection used to accumulate all errors before aborting
-- cli::cli_abort provides formatted error messages with bullets
-
-**From 02-01:**
-- Layered validation (schema → tidyselect → Tier 1) works correctly and catches errors at appropriate level
-- nolint comments needed for cli glue variables (false positives from lintr object_usage_linter)
-- tidyselect added to Imports for tidy column selection API
-- creel_design S3 class uses constructor/validator/helper pattern from Advanced R
-- cli::cli_format_method() provides rich formatted output for print methods
-
-**From 02-02:**
-- Internal constructors (new_*) marked @keywords internal @noRd - not user-facing yet
-- creel_validation$passed computed automatically - TRUE only when all checks have status="pass"
-- S3 class pattern: new_* constructor with stopifnot validation, format using cli, print calling format
-- TDD RED → GREEN → REFACTOR pattern produces clean, well-tested code efficiently
-
-**From 03-01:**
-- PSU column specified in add_counts() only, not creel_design() - PSU is meaningful only when count data present
-- Eager survey construction catches design errors when user has context about data being added
-- Lonely PSU errors deferred to estimation phase - survey::svydesign() only errors during variance computation
-- Multiple strata combined via interaction() to create single stratification factor
-- Domain error wrapping: survey package errors wrapped with cli::cli_abort and domain-specific guidance
-
-**From 03-02:**
-- Once-per-session warnings use rlang::warn with .frequency = "once" and .frequency_id for scoping
-- R's copy-on-modify semantics provide mutation protection without explicit deep copy
-- Escape hatches for power users include educational warnings about recommended alternatives
-- Integration tests compare tidycreel output with manual survey package construction to verify correctness
-
-**From 04-01:**
-- Count variable auto-detected as first numeric column excluding design metadata (date, strata, PSU)
-- Tier 2 validation issues warnings (not errors) for data quality problems: zero/negative values, sparse strata
-- Survey package "no weights" warnings suppressed - expected behavior for equal-probability-within-strata designs
-- Phase 4 hardcodes Taylor linearization variance - bootstrap/jackknife deferred to Phase 6
-- Reference tests verify tidycreel estimates match manual survey::svytotal with tolerance = 1e-10
-
-**From 05-01:**
-- Grouped estimation uses survey::svyby() internally for correct domain variance (not naive subsetting)
-- by = parameter accepts tidy selectors: bare names, c(), starts_with() and other tidyselect helpers
-- Routing logic: quo_is_null(by_quo) → estimate_effort_total() vs estimate_effort_grouped()
-- Grouped results have group columns first, then estimate/se/ci_lower/ci_upper/n (dplyr-like structure)
-- keep.names = FALSE in svyby() produces consistent column names: se, ci_l, ci_u (not se.var_name)
-- Tier 2 validation extended for groups: warns if any group has < 3 observations (sparse groups)
-- Reference tests with tolerance = 1e-10 verify grouped estimates match manual survey::svyby() exactly
-- Phase 5 maintains perfect backward compatibility: estimate_effort(design) works identically to Phase 4
-
-**From 06-01:**
-- estimate_effort() gains variance parameter with values "taylor" (default), "bootstrap", "jackknife"
-- get_variance_design() internal helper converts designs for bootstrap/jackknife via as.svrepdesign()
-- Bootstrap uses 500 replicates (fixed, no user-facing parameter) per research recommendation
-- Jackknife uses type="auto" (survey package selects JKn vs JK1 based on design)
-- Taylor remains default (appropriate for most smooth statistics, backward compatible)
-- variance_method parameter flows through estimate_effort() → internal functions → new_creel_estimates()
-- Bootstrap and jackknife work with grouped estimation (same svyby routing)
-- Reference tests verify bootstrap/jackknife match manual survey package calculations (tolerance 1e-10)
-- Pre-existing Rd warnings from Phase 4 persist (known issue, does not affect functionality)
-
-**From 07-01:**
-- Roxygen2 markdown mode handles percent literally (95% not 95\%) - fixed estimate_effort.Rd parsing
-- data-raw/ excluded from deps-in-desc pre-commit check (scripts only for dataset generation, not runtime)
-- Example datasets use June 2024 dates with realistic weekday/weekend patterns (weekends higher effort)
-- LazyData: true in DESCRIPTION enables automatic dataset loading via data() without explicit exports
-- Vignette name matches package name (tidycreel.Rmd) for pkgdown "Get started" link convention
-- Vignette demonstrates all three variance methods with set.seed() for reproducible bootstrap examples
-- All @examples blocks are self-contained and executable (removed non-existent column references)
-
-**From 07-02:**
-- Accept 88.75% overall coverage (exceeds 85% target) despite core files below 95% target
-- Core file coverage gaps are unreachable error handlers due to layered validation architecture
-- R/survey-bridge.R error handling (lonely PSU, missing columns) unreachable through normal API usage
-- Testing internal functions to hit 95% coverage would create brittle tests for unreachable code
-- qpdf system tool required for R CMD check PDF compression checks
-- data-raw/ added to .Rbuildignore (dataset generation scripts excluded from built package)
-- 253 tests provide comprehensive coverage of user-facing behavior
-- Zero lintr issues across all package code
-- R CMD check --as-cran passes with 0 errors, 0 warnings (1 non-actionable NOTE about system clock)
+**v0.2.0 architectural decisions:**
+- Interview data as parallel stream to count data
+- Start with complete trip interviews (access point design)
+- Defer incomplete trips (roving design) to v0.3.0
+- Single species only in v0.2.0 scope
 
 ### Pending Todos
 
@@ -158,5 +73,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-09
-Stopped at: Completed 07-02-PLAN.md - quality assurance complete (test coverage 88.75%, lintr clean, R CMD check passing)
+Stopped at: v0.2.0 roadmap created (Phases 8-12), ready to plan Phase 8
 Resume file: None
