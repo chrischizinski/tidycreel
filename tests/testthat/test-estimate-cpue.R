@@ -384,3 +384,178 @@ test_that("estimate_cpue with conf_level = 0.90 produces narrower CI than 0.95",
   expect_true(width_90 < width_95)
   expect_equal(result_90$conf_level, 0.90)
 })
+
+# Variance method tests ----
+
+test_that("estimate_cpue with variance = 'bootstrap' returns bootstrap variance_method", {
+  design <- make_cpue_design()
+
+  set.seed(12345)
+  result <- estimate_cpue(design, variance = "bootstrap") # nolint: object_usage_linter
+
+  expect_equal(result$variance_method, "bootstrap")
+})
+
+test_that("estimate_cpue with variance = 'jackknife' returns jackknife variance_method", {
+  design <- make_cpue_design()
+
+  result <- estimate_cpue(design, variance = "jackknife") # nolint: object_usage_linter
+
+  expect_equal(result$variance_method, "jackknife")
+})
+
+test_that("bootstrap and jackknife produce positive SE values", {
+  design <- make_cpue_design()
+
+  set.seed(12345)
+  result_bootstrap <- estimate_cpue(design, variance = "bootstrap") # nolint: object_usage_linter
+  result_jackknife <- estimate_cpue(design, variance = "jackknife") # nolint: object_usage_linter
+
+  expect_true(is.numeric(result_bootstrap$estimates$se))
+  expect_true(result_bootstrap$estimates$se > 0)
+  expect_false(is.na(result_bootstrap$estimates$se))
+
+  expect_true(is.numeric(result_jackknife$estimates$se))
+  expect_true(result_jackknife$estimates$se > 0)
+  expect_false(is.na(result_jackknife$estimates$se))
+})
+
+# Integration tests with example data ----
+
+test_that("full workflow with example_calendar and example_interviews produces valid CPUE", {
+  # Load example data
+  data("example_calendar", package = "tidycreel")
+  data("example_interviews", package = "tidycreel")
+
+  # Create design
+  design <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
+
+  # Add interviews
+  design <- add_interviews(design, example_interviews, # nolint: object_usage_linter
+    catch = catch_total,
+    effort = hours_fished
+  )
+
+  # Estimate CPUE
+  result <- estimate_cpue(design) # nolint: object_usage_linter
+
+  # Verify result is valid
+  expect_s3_class(result, "creel_estimates")
+  expect_equal(result$method, "ratio-of-means-cpue")
+  expect_true(is.numeric(result$estimates$estimate))
+  expect_true(result$estimates$estimate > 0)
+  expect_true(is.finite(result$estimates$estimate))
+  expect_false(is.na(result$estimates$estimate))
+})
+
+test_that("grouped workflow with example data errors due to sample size", {
+  # Load example data
+  data("example_calendar", package = "tidycreel")
+  data("example_interviews", package = "tidycreel")
+
+  # Create design and add interviews
+  design <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
+  design <- add_interviews(design, example_interviews, # nolint: object_usage_linter
+    catch = catch_total,
+    effort = hours_fished
+  )
+
+  # Estimate CPUE grouped by day_type
+  # Should error because weekend group has n=9 (< 10 threshold)
+  expect_error(
+    estimate_cpue(design, by = day_type), # nolint: object_usage_linter
+    "10"
+  )
+})
+
+test_that("result from example data has reasonable CPUE values", {
+  # Load example data
+  data("example_calendar", package = "tidycreel")
+  data("example_interviews", package = "tidycreel")
+
+  # Create design and add interviews
+  design <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
+  design <- add_interviews(design, example_interviews, # nolint: object_usage_linter
+    catch = catch_total,
+    effort = hours_fished
+  )
+
+  # Estimate CPUE
+  result <- estimate_cpue(design) # nolint: object_usage_linter
+
+  # Verify CPUE is in reasonable range (positive, finite, not extreme)
+  expect_true(result$estimates$estimate > 0)
+  expect_true(is.finite(result$estimates$estimate))
+  expect_true(result$estimates$estimate < 100) # Sanity check - CPUE shouldn't be absurdly high
+})
+
+# Zero-effort handling tests ----
+
+test_that("estimate_cpue with zero-effort interviews issues warning and excludes them", {
+  # Create design with some zero-effort interviews
+  cal <- make_test_calendar_cpue()
+  design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+
+  # Create interviews with 2 zero-effort rows
+  interviews <- data.frame(
+    date = as.Date(rep(c("2024-06-01", "2024-06-02", "2024-06-03"), each = 10)),
+    catch_total = c(2, 3, 4, 5, 6, 3, 4, 5, 6, 7, 4, 5, 6, 7, 8, 2, 3, 4, 5, 6, 3, 4, 5, 6, 7, 0, 0, 6, 7, 8),
+    hours_fished = c(2, 3, 4, 5, 3, 3, 4, 5, 3, 4, 4, 5, 3, 4, 5, 2, 3, 4, 5, 3, 3, 4, 5, 3, 4, 0, 0, 3, 4, 5),
+    stringsAsFactors = FALSE
+  )
+
+  design <- add_interviews(design, interviews, catch = catch_total, effort = hours_fished) # nolint: object_usage_linter
+
+  # Expect warning about zero-effort interviews
+  expect_warning(
+    result <- estimate_cpue(design), # nolint: object_usage_linter
+    "zero effort"
+  )
+
+  # Result should still be valid (using filtered data)
+  expect_s3_class(result, "creel_estimates")
+  expect_true(result$estimates$estimate > 0)
+})
+
+test_that("estimate_cpue with all-zero effort errors due to sample size threshold", {
+  # Create design with all zero-effort interviews (n < 10 after filtering)
+  cal <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-02")),
+    day_type = c("weekday", "weekday"),
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+
+  # Create 5 interviews, all with zero effort
+  interviews <- data.frame(
+    date = as.Date(rep("2024-06-01", 5)),
+    catch_total = c(0, 0, 0, 0, 0),
+    hours_fished = c(0, 0, 0, 0, 0),
+    stringsAsFactors = FALSE
+  )
+
+  design <- add_interviews(design, interviews, catch = catch_total, effort = hours_fished) # nolint: object_usage_linter
+
+  # Should error due to n < 10 after filtering out all zero-effort
+  expect_error(
+    suppressWarnings(estimate_cpue(design)), # nolint: object_usage_linter
+    "10"
+  )
+})
+
+# Grouped variance method test ----
+
+test_that("estimate_cpue grouped by day_type with variance = 'bootstrap' works", {
+  design <- make_cpue_design()
+
+  set.seed(12345)
+  result <- suppressWarnings( # nolint: object_usage_linter
+    estimate_cpue(design, by = day_type, variance = "bootstrap") # nolint: object_usage_linter
+  )
+
+  expect_s3_class(result, "creel_estimates")
+  expect_equal(result$variance_method, "bootstrap")
+  expect_equal(result$by_vars, "day_type")
+  expect_equal(nrow(result$estimates), 2)
+  expect_true(all(result$estimates$se > 0))
+})
