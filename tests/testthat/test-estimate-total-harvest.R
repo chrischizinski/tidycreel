@@ -261,3 +261,95 @@ test_that("total harvest estimate <= total catch estimate", {
   # Harvest should be <= catch (kept fish subset of total catch)
   expect_true(result_harvest$estimates$estimate <= result_catch$estimates$estimate)
 })
+
+# Variance method tests ----
+
+test_that("estimate_total_harvest with bootstrap variance returns correct method", {
+  design <- make_total_harvest_design()
+
+  result <- estimate_total_harvest(design, variance = "bootstrap") # nolint: object_usage_linter
+
+  expect_equal(result$variance_method, "bootstrap")
+  expect_true(is.finite(result$estimates$estimate))
+  expect_true(result$estimates$estimate > 0)
+  expect_true(is.finite(result$estimates$se))
+  expect_true(result$estimates$se > 0)
+})
+
+test_that("estimate_total_harvest with jackknife variance returns correct method", {
+  design <- make_total_harvest_design()
+
+  result <- estimate_total_harvest(design, variance = "jackknife") # nolint: object_usage_linter
+
+  expect_equal(result$variance_method, "jackknife")
+  expect_true(is.finite(result$estimates$estimate))
+  expect_true(result$estimates$estimate > 0)
+  expect_true(is.finite(result$estimates$se))
+  expect_true(result$estimates$se > 0)
+})
+
+test_that("estimate_total_harvest grouped with bootstrap works", {
+  design <- make_total_harvest_design()
+
+  # Skip if example data has groups with n < 10
+  skip_if(
+    any(table(design$interviews$day_type) < 10),
+    "Example data has groups with n < 10"
+  )
+
+  result <- estimate_total_harvest(design, by = day_type, variance = "bootstrap") # nolint: object_usage_linter
+
+  expect_s3_class(result, "creel_estimates")
+  expect_equal(result$variance_method, "bootstrap")
+  expect_true(!is.null(result$by_vars))
+  expect_true(all(is.finite(result$estimates$estimate)))
+  expect_true(all(result$estimates$estimate > 0))
+  expect_true(all(is.finite(result$estimates$se)))
+  expect_true(all(result$estimates$se > 0))
+})
+
+# Integration with example data ----
+
+test_that("full workflow with example data produces valid total harvest", {
+  # Load example data
+  data("example_calendar", package = "tidycreel")
+  data("example_counts", package = "tidycreel")
+  data("example_interviews", package = "tidycreel")
+
+  # Create complete design including harvest
+  design <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
+  design <- add_counts(design, example_counts) # nolint: object_usage_linter
+  design <- add_interviews(design, example_interviews, # nolint: object_usage_linter
+    catch = catch_total, # nolint: object_usage_linter
+    harvest = catch_kept, # nolint: object_usage_linter
+    effort = hours_fished # nolint: object_usage_linter
+  )
+
+  # Estimate total harvest
+  result <- estimate_total_harvest(design) # nolint: object_usage_linter
+
+  # Verify result structure and validity
+  expect_s3_class(result, "creel_estimates")
+  expect_true(is.numeric(result$estimates$estimate))
+  expect_true(result$estimates$estimate > 0)
+  expect_true(is.finite(result$estimates$estimate))
+  expect_true(is.numeric(result$estimates$se))
+  expect_true(result$estimates$se > 0)
+  expect_true(is.finite(result$estimates$se))
+})
+
+test_that("total harvest components are consistent", {
+  design <- make_total_harvest_design()
+
+  # Estimate all components
+  effort_est <- estimate_effort(design) # nolint: object_usage_linter
+  hpue_est <- estimate_harvest(design) # nolint: object_usage_linter
+  total_harvest_est <- estimate_total_harvest(design) # nolint: object_usage_linter
+
+  # Verify estimate consistency (product of components)
+  expected_estimate <- effort_est$estimates$estimate * hpue_est$estimates$estimate
+  expect_equal(total_harvest_est$estimates$estimate, expected_estimate, tolerance = 1e-10)
+
+  # Verify variance was propagated (SE should not be zero)
+  expect_true(total_harvest_est$estimates$se > 0)
+})
