@@ -77,8 +77,9 @@ interviews <- data.frame(
 )
 
 design_with_interviews <- add_interviews(design, interviews,
-                                         catch = catch_total,
-                                         effort = hours_fished)
+  catch = catch_total,
+  effort = hours_fished
+)
 result <- estimate_cpue(design_with_interviews)
 print(result)
 

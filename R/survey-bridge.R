@@ -922,3 +922,79 @@ construct_interview_survey <- function(design) {
     }
   )
 }
+
+#' Validate design compatibility for total catch/harvest estimation
+#'
+#' Checks that design has both count data (for effort) and interview data
+#' (for CPUE/HPUE) required to compute total catch/harvest as effort × rate.
+#'
+#' @param design A creel_design object
+#'
+#' @return NULL (invisible) - function called for side effects (errors)
+#'
+#' @keywords internal
+#' @noRd
+validate_design_compatibility <- function(design) {
+  # Check count data exists
+  if (is.null(design$counts) || is.null(design$survey)) {
+    cli::cli_abort(c(
+      "No count data available for effort estimation.",
+      "x" = "Total catch/harvest requires both effort (from counts) and catch rates (from interviews).",
+      "i" = "Call {.fn add_counts} before estimating total catch or harvest:",
+      "i" = "{.code design <- add_counts(design, count_data)}"
+    ))
+  }
+
+  # Check interview data exists
+  if (is.null(design$interviews) || is.null(design$interview_survey)) {
+    cli::cli_abort(c(
+      "No interview data available for catch rate estimation.",
+      "x" = "Total catch/harvest requires both effort (from counts) and catch rates (from interviews).",
+      "i" = "Call {.fn add_interviews} before estimating total catch or harvest:",
+      "i" = "{.code design <- add_interviews(design, interviews, catch = catch, effort = effort)}"
+    ))
+  }
+
+  invisible(NULL)
+}
+
+#' Validate grouping variable compatibility for total catch/harvest
+#'
+#' Checks that grouping variables specified in by parameter exist in both
+#' count data (for effort) and interview data (for CPUE/HPUE), enabling grouped
+#' total catch/harvest estimation.
+#'
+#' @param design A creel_design object
+#' @param by_vars Character vector of grouping variable names
+#'
+#' @return NULL (invisible) - function called for side effects (errors)
+#'
+#' @keywords internal
+#' @noRd
+validate_grouping_compatibility <- function(design, by_vars) { # nolint: object_length_linter
+  # Check grouping variables exist in count data
+  missing_in_counts <- setdiff(by_vars, names(design$counts))
+  if (length(missing_in_counts) > 0) {
+    n_missing_counts <- length(missing_in_counts) # nolint: object_usage_linter
+    cli::cli_abort(c(
+      "{n_missing_counts} grouping variable{?s} not found in count data:",
+      "x" = "Missing: {.val {missing_in_counts}}",
+      "i" = "Available in counts: {.val {names(design$counts)}}",
+      "i" = "Grouped total estimation requires variables present in both counts and interviews"
+    ))
+  }
+
+  # Check grouping variables exist in interview data
+  missing_in_interviews <- setdiff(by_vars, names(design$interviews))
+  if (length(missing_in_interviews) > 0) {
+    n_missing_interviews <- length(missing_in_interviews) # nolint: object_usage_linter
+    cli::cli_abort(c(
+      "{n_missing_interviews} grouping variable{?s} not found in interview data:",
+      "x" = "Missing: {.val {missing_in_interviews}}",
+      "i" = "Available in interviews: {.val {names(design$interviews)}}",
+      "i" = "Grouped total estimation requires variables present in both counts and interviews"
+    ))
+  }
+
+  invisible(NULL)
+}

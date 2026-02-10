@@ -2,33 +2,33 @@ Chapter 17
 
 Creel Surveys
 
- 
+
 
 Kevin L. Pope,
 
-U.S. Geological Survey—Nebraska Cooperative Fish and Wildlife Research Unit, and 
+U.S. Geological Survey—Nebraska Cooperative Fish and Wildlife Research Unit, and
 
 School of Natural Resources, University of Nebraska, Lincoln, Nebraska, USA
 
- 
+
 
 Christopher J. Chizinski,
 
 School of Natural Resources, University of Nebraska, Lincoln, Nebraska, USA
 
-Abigail J. Lynch, 
+Abigail J. Lynch,
 
 U.S. Geological Survey, National Climate Adaptation Science Center, Reston, Virginia, USA
 
-and 
+and
 
 John R. Post,
 
 Department of Biological Sciences, University of Calgary, Calgary, Alberta, Canada
 
- 
 
- 
+
+
 
 For submission to *Analysis and Interpretation of Freshwater Fisheries Data,* 2nd edition
 
@@ -36,13 +36,13 @@ For submission to *Analysis and Interpretation of Freshwater Fisheries Data,* 2n
 
 # 17.1 INTRODUCTION
 
-Though its namesake wicker basket may be a relict, the term ‘creel’ has now become synonymous with recreational catch, and creel surveys (Table 17.1) maintain an integral role in the monitoring and management of recreational fisheries.  Following a specified survey design, through a series of interview questions and often with complementary catch measurements, creel clerks gather information on recreational fishing effort, harvest, and population parameters for target species.  When biologists complete these surveys with robust methodologies over time, the survey data can illustrate trends in harvest, contribute to fish population assessments, and inform recreational fishing regulations. 
+Though its namesake wicker basket may be a relict, the term ‘creel’ has now become synonymous with recreational catch, and creel surveys (Table 17.1) maintain an integral role in the monitoring and management of recreational fisheries.  Following a specified survey design, through a series of interview questions and often with complementary catch measurements, creel clerks gather information on recreational fishing effort, harvest, and population parameters for target species.  When biologists complete these surveys with robust methodologies over time, the survey data can illustrate trends in harvest, contribute to fish population assessments, and inform recreational fishing regulations.
 
  	The importance of measuring recreational fishing effort and harvest cannot be overstated.  Recreational harvest drives population dynamics of many social, economic, and ecologically important fish species, and has caused the collapse of important fisheries (see Post et al. 2002).  To avoid collapses, there is an increasing emphasis on understanding and managing social-ecological feedbacks in recreational fisheries, and measures of effort and harvest are fundamental metrics of these processes (Ward et al. 2016).  Though fishery-independent assessment methods are highly valuable tools to monitor fish populations and help ensure sustainable fisheries, in many cases, they are impractical to implement due to financial, political, and logistical constraints.  Fishery-dependent methods, such as angler surveys, provide vital information on harvest preferences that managers can use to adjust angler regulations to maintain or restore sustainable fisheries.
 
- 	Creel surveys are a subset of angler surveys conducted as in-person, on-site interviews.  This is an intensive survey method, often requiring a coordinated effort to collect the data.  The longest running time series of creel data, such as the Lake Opeongo creel census in Ontario, date back to the 1930s, when there was a growing recognition that recreational fishing could have negative influences on fish populations.  Historically, creel surveys have been conducted as interviews at fishery access points such as boat ramps, parking lots, and piers.  Questions traditionally focused on angler activity (e.g., intensity, duration, location, gear, and target species) with the aim of getting an estimate of total fishing effort.  Biological measurements, such as length and weight, and tissue samples often accompany the interview questions to provide additional information for population assessments. 
+ 	Creel surveys are a subset of angler surveys conducted as in-person, on-site interviews.  This is an intensive survey method, often requiring a coordinated effort to collect the data.  The longest running time series of creel data, such as the Lake Opeongo creel census in Ontario, date back to the 1930s, when there was a growing recognition that recreational fishing could have negative influences on fish populations.  Historically, creel surveys have been conducted as interviews at fishery access points such as boat ramps, parking lots, and piers.  Questions traditionally focused on angler activity (e.g., intensity, duration, location, gear, and target species) with the aim of getting an estimate of total fishing effort.  Biological measurements, such as length and weight, and tissue samples often accompany the interview questions to provide additional information for population assessments.
 
- 	The value of creel surveys principally lies in the temporal proximity of the interview questions to the recreational fishing activity of interest.  Temporary recall is, for most, better than distant recollection.  The recall bias of creel survey participants, consequently, is much lower than participants of mail, phone, and internet surveys that may be asking about fishing events days, weeks, or even months prior.  In addition, creel surveys often have an element of secondary confirmation built in with collection of the biological data sampled from the catch.  As a result, data collected from creel surveys are often more reliable estimates of angler harvest than data collected by other angler survey methods.  Even so, there are important considerations when extrapolating creel survey information to harvest estimates and for population assessments.  In this chapter, we discuss creel survey questions, sampling design, analyses, and emerging applications.  
+ 	The value of creel surveys principally lies in the temporal proximity of the interview questions to the recreational fishing activity of interest.  Temporary recall is, for most, better than distant recollection.  The recall bias of creel survey participants, consequently, is much lower than participants of mail, phone, and internet surveys that may be asking about fishing events days, weeks, or even months prior.  In addition, creel surveys often have an element of secondary confirmation built in with collection of the biological data sampled from the catch.  As a result, data collected from creel surveys are often more reliable estimates of angler harvest than data collected by other angler survey methods.  Even so, there are important considerations when extrapolating creel survey information to harvest estimates and for population assessments.  In this chapter, we discuss creel survey questions, sampling design, analyses, and emerging applications.
 
 # 17.2 CREEL SURVEY FRAMING
 
@@ -70,9 +70,9 @@ Creel surveys comprise two separate, yet linked, processes: gathering informatio
 
 Angler counts are the key unit of information because counts are used to make estimates of fishing pressure and catch (Pollock et al. 1994).  The instantaneous count is theoretically a count of all anglers at an instant point in time for a given waterbody and a given time interval (Neuhold and Lu 1957; Lambou 1961; Malvestuto 1996).  It is only possible to obtain an instantaneous count on smaller waterbodies with unobstructed views.  On most waterbodies, a clerk must quickly move between vantage points (i.e., rove) to count all anglers within a short period; this functionally serves as an instantaneous count if no anglers entered or exited the fishery (Hoenig et al. 1993).  During this count period, the clerk does not interview anglers.  Times of instantaneous counts within a period should be random (often stratified random, with stratification across times, days, and seasons that are hypothesized to differ in effort) because extrapolation occurs to the entire period.
 
-The progressive count is a summation of instantaneous counts for subareas of a waterbody that are made as a clerk travels a predefined circuit around a waterbody (Hoenig et al. 1993).  The progressive count is useful when a clerk is unable to traverse multiple spots within a short period (\<1 hour) to see the entire waterbody.  The progressive count is necessary when it is likely that anglers are entering or leaving the waterbody during a count.  Again, the clerk does not interview anglers during the count period.  Starting location along the circuit and direction of travel (clockwise or counterclockwise) should be random.  
+The progressive count is a summation of instantaneous counts for subareas of a waterbody that are made as a clerk travels a predefined circuit around a waterbody (Hoenig et al. 1993).  The progressive count is useful when a clerk is unable to traverse multiple spots within a short period (\<1 hour) to see the entire waterbody.  The progressive count is necessary when it is likely that anglers are entering or leaving the waterbody during a count.  Again, the clerk does not interview anglers during the count period.  Starting location along the circuit and direction of travel (clockwise or counterclockwise) should be random.
 
-The bus route is a modification to the progressive count that allows interviews to be completed while the clerk is traversing around the circuit (McGlennon and Kinlock 1997).  In this case, the clerk completes counts and angler interviews at each survey area along the circuit.  Likewise, starting location along the circuit and direction of travel (clockwise or counterclockwise) should be random.  Duration spent at each survey area should be predetermined and should be constant across survey areas (to simplify calculations). 
+The bus route is a modification to the progressive count that allows interviews to be completed while the clerk is traversing around the circuit (McGlennon and Kinlock 1997).  In this case, the clerk completes counts and angler interviews at each survey area along the circuit.  Likewise, starting location along the circuit and direction of travel (clockwise or counterclockwise) should be random.  Duration spent at each survey area should be predetermined and should be constant across survey areas (to simplify calculations).
 
 The aerial count can be used for instantaneous counts or progressive counts, and is advantageous for extremely large areas (e.g., oceans and large lakes) that are not easily traversed by vehicle or boat (Fraidenburg and Bargmann 1982; Vølstad et al. 2006).  Aerial counts can be either instantaneous or progressive, depending on the size of the area covered.  However, unlike instantaneous and progressive counts, nonrandom sampling often is not feasible due to pilot and plane availability, restrictive flight path options, and weather conditions that may prevent flight or impair visibility (Askey et al. 2018).  Furthermore, sample size is often limited by cost of aircraft operation.  An important consideration of aerial counts is treatment of boats in transit, which determines whether one will ultimately estimate “on-the-water” pressure or “active-fishing” pressure (Soupir et al. 2006).  The difficulty with boats in transit is determining the recreational activity of the individuals on-board (i.e., whether they are fishing or participating in some other water-based recreational activity \[e.g., cruising, sunbathing, or water skiing\]).
 
@@ -98,7 +98,7 @@ The precision of angler effort estimates based on instantaneous counts is affect
 
 # 17.4.1 Strata Design
 
-Dividing time and space into smaller segments minimizes variance estimates when the segments correspond to biological phenomena that produce relatively large (e.g., an order of magnitude) differences in effort or catch among the segments.  Dividing time and space into smaller, more manageable segments also simplifies creel sampling by reducing the size of units for logistical reasons.  Creel surveys are often temporally stratified by years and months.  The year stratum generally corresponds with fiscal years of license and permit sales and facilitates comparisons among years with various economic indicators or years with different weather patterns (e.g., wet-dry cycles).  The month strata generally correspond to a calendar month and facilitates hiring of clerks.  The month strata also allow the investigator to bin seasonal changes in fish biology and ecology that often affect catch rates, and hence angler participation.  Historically, days for creel surveys were stratified into week and weekend days with holidays included in the weekend-day strata.  This stratification is justified by social norms of work and school days occurring on weekdays (Monday-Friday) and non-work and non-school days occurring on weekend days (Saturday-Sunday); we do note that social norms of work and school days are evolving, especially with many business operating seven days a week (some even 24 hours per day) and with many extracurricular activities occurring on weekends.  
+Dividing time and space into smaller segments minimizes variance estimates when the segments correspond to biological phenomena that produce relatively large (e.g., an order of magnitude) differences in effort or catch among the segments.  Dividing time and space into smaller, more manageable segments also simplifies creel sampling by reducing the size of units for logistical reasons.  Creel surveys are often temporally stratified by years and months.  The year stratum generally corresponds with fiscal years of license and permit sales and facilitates comparisons among years with various economic indicators or years with different weather patterns (e.g., wet-dry cycles).  The month strata generally correspond to a calendar month and facilitates hiring of clerks.  The month strata also allow the investigator to bin seasonal changes in fish biology and ecology that often affect catch rates, and hence angler participation.  Historically, days for creel surveys were stratified into week and weekend days with holidays included in the weekend-day strata.  This stratification is justified by social norms of work and school days occurring on weekdays (Monday-Friday) and non-work and non-school days occurring on weekend days (Saturday-Sunday); we do note that social norms of work and school days are evolving, especially with many business operating seven days a week (some even 24 hours per day) and with many extracurricular activities occurring on weekends.
 
 	It is unfeasible to complete on-site counts and interviews on all days in a fishing season; thus, we evoke a technique called subsampling (Cochran 1977\) in which we randomly select days within strata for completing on-site counts and interviews.  We further evoke a technique historically called *two-stage sampling* (Cochran 1977\) because our random sampling design for interviews within stratum is determined in two steps or stages, with the first stage being day and the second stage being shift (period) within the day.  Rasmussen et al. (1998) correctly noted that the sampling design historically used for creel surveys is actually three-stage sampling, with the third stage being count time within the shift (a two-stage survey design with count times as the second stage would require that count times be randomly selected from the entire day).  Each stage contains its own component of variance, and variances among stages are summed to produce the variance of the stratum (Cochran 1977).
 
@@ -114,7 +114,7 @@ At least two samples (measures) are needed within a stratum to obtain an estimat
 
 For creel surveys, anglers are frequently segmented based on variables such as age, gender, household income, preferred method of accessing a fishery (i.e., fishing from the bank versus fishing from a boat), species targeted on a given day, and frequency of participation in recreational fishing.  Segmentation is an important strategy that facilitates angler surveys and helps quantify non-response bias.  Segmentation is generally an inherent component of survey designs (discussed below).  Segmentation is also important for marketing fishing opportunities to prospective anglers.
 
-The research question always dictates the survey (experimental) approach and analytical interpretations.  Consideration of segmentations helps minimize variance estimates and facilitates analytical interpretations.  For example, “what is total effort of fishing on Lake Halleck, Nebraska (a 1.6-ha reservoir in the Omaha metropolitan area without a boat ramp)?” dictates that anglers be counted at random times, preferably within day-type strata to reduce overall variance.  The absence of a boat ramp perhaps suggests that anglers would be segmented into a single group based on behavior (i.e., bank anglers); thus, segmentation could be ignored in this survey.  Even if many anglers accessed Lake Halleck with kayaks, segmentation could still be ignored without introducing bias for the estimate of total effort.  However, ignoring segmentation in this example would preclude additional insights about which segment, boat or bank, of anglers comprises the greatest proportion of total effort. 
+The research question always dictates the survey (experimental) approach and analytical interpretations.  Consideration of segmentations helps minimize variance estimates and facilitates analytical interpretations.  For example, “what is total effort of fishing on Lake Halleck, Nebraska (a 1.6-ha reservoir in the Omaha metropolitan area without a boat ramp)?” dictates that anglers be counted at random times, preferably within day-type strata to reduce overall variance.  The absence of a boat ramp perhaps suggests that anglers would be segmented into a single group based on behavior (i.e., bank anglers); thus, segmentation could be ignored in this survey.  Even if many anglers accessed Lake Halleck with kayaks, segmentation could still be ignored without introducing bias for the estimate of total effort.  However, ignoring segmentation in this example would preclude additional insights about which segment, boat or bank, of anglers comprises the greatest proportion of total effort.
 
 Recreational fishing patterns (e.g., daily, seasonally, annually) affect encounter rates (detectability) of clerks with anglers.  If fishing patterns differ among angler segments, then detection probabilities are likely to differ among angler segments within many of the strata sampled.  If the sampling design incorporates segmentation of anglers in a manner that aligns with the angler segments that have different fishing patterns, then estimates of total effort, total catch and total harvest should be unbiased.  However, if the sampling design does not correctly incorporate segmentation of anglers, then estimates of total effort, total catch, and total harvest will likely be biased in an unknown direction.  Thus, correctly accounting for angler heterogeneity in sampling design is important.
 
@@ -122,11 +122,11 @@ Recreational fishing patterns (e.g., daily, seasonally, annually) affect encount
 
 # 17.5.1 Effort
 
-The most influential parameters calculated from creel surveys are total effort estimates.  Total effort or extrapolated angler effort, based on counts of anglers at a waterbody, is the estimate of the angler-hours expended at a waterbody given a specific time interval. Estimates important to fisheries managers (e.g., catch, harvest, release) are all calculated using the estimated total angler effort.  Thus, it is important to choose carefully the type of effort method and strata design to ensure accuracy and precision of the total effort estimates. 
+The most influential parameters calculated from creel surveys are total effort estimates.  Total effort or extrapolated angler effort, based on counts of anglers at a waterbody, is the estimate of the angler-hours expended at a waterbody given a specific time interval. Estimates important to fisheries managers (e.g., catch, harvest, release) are all calculated using the estimated total angler effort.  Thus, it is important to choose carefully the type of effort method and strata design to ensure accuracy and precision of the total effort estimates.
 
-	Fishing pressure for a time interval is estimated by multiplying the average of the counts of anglers by the duration (hours) of time interval.  This seems counterintuitive to some who want to multiply the count of anglers incorrectly by the average time that parties spent fishing on said day.  It is important to also note that counts are estimates of effort (hours), not angler trips (Hoening et al. 1993).  
+	Fishing pressure for a time interval is estimated by multiplying the average of the counts of anglers by the duration (hours) of time interval.  This seems counterintuitive to some who want to multiply the count of anglers incorrectly by the average time that parties spent fishing on said day.  It is important to also note that counts are estimates of effort (hours), not angler trips (Hoening et al. 1993).
 
-	It is advisable to have multiple counts during a creel shift; counts separated by ≥ 1 hour are generally required for logistical reasons.  
+	It is advisable to have multiple counts during a creel shift; counts separated by ≥ 1 hour are generally required for logistical reasons.
 
 	Another approach to calculate effort is the progressive count (Box 18.3), which attempts to count all the bank and boat anglers on a waterbody within a relatively longer timeframe than the instantaneous count.  This method is particularly useful on large waterbodies or waterbodies with many coves that make it difficult to count anglers from vantage points.  The progressive count method requires: 1\) route that covers the entire area of the lake, 2\) starting location along route is chosen at random, 3\) direction of travel along route is randomly determined among the alternatives (often clockwise and counterclockwise), and 4\) travel along route is at a constant speed and faster than movements by anglers on the waterbody.  The creel clerk keeps a running tally of the unique anglers observed en route.  The progressive count provides an unbiased estimate of effort if the count follows the four requirements specified above (see Robson \[1961\] for the proof).
 
@@ -135,7 +135,7 @@ The most influential parameters calculated from creel surveys are total effort e
 
 # 17.5.2 Catch
 
-  The importance of catch parameters calculated from creel surveys is illustrated in its name—creel.  Biologists frequently use catch parameters for recommending fishing regulations and fish stockings.  Catch is measured at either the individual level or the party level, and then total catch is extrapolated by multiplying the average catch rate by the total effort; thus, merging both components (interviews and counts) of creel surveys. 
+  The importance of catch parameters calculated from creel surveys is illustrated in its name—creel.  Biologists frequently use catch parameters for recommending fishing regulations and fish stockings.  Catch is measured at either the individual level or the party level, and then total catch is extrapolated by multiplying the average catch rate by the total effort; thus, merging both components (interviews and counts) of creel surveys.
 
 In general, access-point interviews comprise complete information about the days fishing for each party (though one must be careful to inquire, as some parties may depart a waterbody with intentions of returning later that day), whereas roving interviews comprise incomplete information about the days fishing for each party.  A hybrid approach to interviews may be employed when clerks are confined to the shoreline or when clerks are using a bus route for counts; this approach may produce complete information for anglers fishing from boats and incomplete information for anglers fishing from the shoreline.  Postcard interviews are generally assumed to comprise complete information about the days fishing for each party.
 
@@ -157,7 +157,7 @@ In aggregate, this series of studies that have combined approaches to estimating
 
 # 17.5.4 Technological Advancements for Passive Indices of Effort and Catch
 
-Technology creates new possibilities and alters the mix of choices (Mesthene 1968\) we have for assessing fishing effort and catch.  Drones (Schiffman 2014), time-lapse and motion-detection cameras (Kucera and Barrett 2011), and visitor (people or vehicles) counters (Cessford et al. 2002\) offer possibilities for continuous collection of effort data without the need for constant on-site clerks.  Angler apps (Venturelli et al. 2017), web crawlers (Dhenakaran and Thirugnana Sambanthan 2011; Wilde and Pope 2013), and social networks (Scott 1988\) offer opportunities to gather information directly from “diaries” of individual anglers. 
+Technology creates new possibilities and alters the mix of choices (Mesthene 1968\) we have for assessing fishing effort and catch.  Drones (Schiffman 2014), time-lapse and motion-detection cameras (Kucera and Barrett 2011), and visitor (people or vehicles) counters (Cessford et al. 2002\) offer possibilities for continuous collection of effort data without the need for constant on-site clerks.  Angler apps (Venturelli et al. 2017), web crawlers (Dhenakaran and Thirugnana Sambanthan 2011; Wilde and Pope 2013), and social networks (Scott 1988\) offer opportunities to gather information directly from “diaries” of individual anglers.
 
 Another approach involving technology involves random-stratified designs using email and internet surveys. For example, Dabrowska et al. (2017) and Carruthers et al. (2019) used fishing license databases with emails to design a random-stratified (by geographic location) design to assess fishing effort and stated behavior. The email invited participation in the survey and the survey was completed over the internet. A big advantage of this is the broad geographic coverage and large sample sizes – in the thousands to tens of thousands. The investment is upfront survey design and web costs.
 
@@ -165,9 +165,9 @@ Technology is exciting, with constant advancements and many new potential applic
 
 # 17.6 EMERGING APPLICATIONS
 
-Creel surveys have come a long way from the original wicker basket estimates of angler harvest.  New and emerging ways to conduct creel surveys and use their data are changing the landscape of recreational fisheries management.  For instance, network theory is the study of graphs as representation of relationships among discrete objects; that is, one can graph a network, such as that of a population of anglers, by connecting objects (nodes or vertices) with lines (edges).   The visual representation of interrelationships among objects provides opportunity for greater insights and understanding of complexities of recreational fisheries, especially useful for developing and conveying conceptual models of anglers.  As an example, Martin et al. (2017) used network theory to gain insights about substitute waterbodies within a regional fishery, and Chizinski et al. (2018) used network theory to gain insights about which fish species co-occurred in catch and harvest of various target-seeking groups of anglers.  
+Creel surveys have come a long way from the original wicker basket estimates of angler harvest.  New and emerging ways to conduct creel surveys and use their data are changing the landscape of recreational fisheries management.  For instance, network theory is the study of graphs as representation of relationships among discrete objects; that is, one can graph a network, such as that of a population of anglers, by connecting objects (nodes or vertices) with lines (edges).   The visual representation of interrelationships among objects provides opportunity for greater insights and understanding of complexities of recreational fisheries, especially useful for developing and conveying conceptual models of anglers.  As an example, Martin et al. (2017) used network theory to gain insights about substitute waterbodies within a regional fishery, and Chizinski et al. (2018) used network theory to gain insights about which fish species co-occurred in catch and harvest of various target-seeking groups of anglers.
 
-In an ever-expanding era of “big data,” there are opportunities to build across existing datasets to address broader scale questions (Hampton et al. 2013).  For creel survey data, crosswalking information between state agencies and fishery-independent data can help address transboundary research questions and even help address data gaps for regions with limited resources (Midway et al. 2016).  These applications do not come without major hurdles (e.g., data sharing, staff time, privacy issues), but regional and national coordination efforts can help address these concerns.  These novel approaches do require significant investment but can reap major rewards in terms of improving our understanding of angler effort, ultimately helping us ensure sustainable management of these important fisheries resources.   
+In an ever-expanding era of “big data,” there are opportunities to build across existing datasets to address broader scale questions (Hampton et al. 2013).  For creel survey data, crosswalking information between state agencies and fishery-independent data can help address transboundary research questions and even help address data gaps for regions with limited resources (Midway et al. 2016).  These applications do not come without major hurdles (e.g., data sharing, staff time, privacy issues), but regional and national coordination efforts can help address these concerns.  These novel approaches do require significant investment but can reap major rewards in terms of improving our understanding of angler effort, ultimately helping us ensure sustainable management of these important fisheries resources.
 
 Most data discussed in other chapters throughout this book can be collected via assistance from anglers (i.e., participatory science programs) — that is, creel surveys can serve as surrogate biology.  Angler surveys (including creel surveys, tournament data reporting, angler diaries, telephone surveys, and mail surveys) are often used as alternatives or complements to conventional data collection methods (De Jesus et al. 2009).  Creel surveys have been used to assess catch rates of fish, a surrogate to population density (Gabelhouse and Willis 1986), catch rates of trophy fish, a surrogate to production of large and rare fish (De Jesus et al. 2009), sex and reproductive characteristics of fish harvested, a surrogate to life-history characteristics of the fish population (Kearns et al. 2016), age and size structures of fish harvested, surrogates to age and size structures of the fish population (Weiss-Glanz and Stanley 1984; Ebbers 1987), stomach contents of captured fish, a surrogate to diets of the fish population (Stables et al. 1990), and condition (mass-length relationships) of harvested fish, a surrogate to condition of individual fish in the population (He et al. 2008).  Creel surveys also provide opportunities for landscape ecology (e.g., Kaemingk et al. 2018). Even so, caution on use of creel surveys for any assessment, including surrogate biology, is always warranted (Shuter et al. 1987; Novinger 1990; Roach et al. 1999; Bray and Schramm 2001).  There is no perfect sampling design or scheme; choice of sampling design is generally determined through consideration of pros and cons of the data collected within the logistical constraints provided.  Creel surveys for surrogate biology are directly affected by where and how anglers go fishing within and across seasons throughout a year.
 
@@ -245,7 +245,7 @@ Hartill, B. W., G. W. Payne, M. Rush, and R. Bian.  2016\.  Bridging the tempora
 
 Hartill, B. W., T. G. Watson, and R. Bian.  2011\.  Refining and applying a maximum-count aerial-access survey design to estimate the harvest take from New Zealand’s largest recreational fishery.  North American Journal of Fisheries Management 31:1197-1210.
 
-He, J. X., J. R. Bence, J. E. Johnson, D. F. Clapp, and M. P. Ebener.  2008\.  Modeling variation in mass-length relationships and condition indices of lake trout and Chinook salmon in Lake Huron:  a hierarchical Bayesian approach.  Transactions of the American Fisheries Society 137:801-817. 
+He, J. X., J. R. Bence, J. E. Johnson, D. F. Clapp, and M. P. Ebener.  2008\.  Modeling variation in mass-length relationships and condition indices of lake trout and Chinook salmon in Lake Huron:  a hierarchical Bayesian approach.  Transactions of the American Fisheries Society 137:801-817.
 
 Hoenig, J. M., D. S. Robson, C. M. Jones, and K. H. Pollock.  1993.  Scheduling counts in the instantaneous and progressive count methods for estimating sportfishing effort.  North American Journal of Fisheries Management 13:723-736.
 
@@ -495,7 +495,7 @@ Figure 17.1.  Infographic illustrating components (counts and interviews) and pr
 
 Figure 17.1.  A conceptual model of creel-survey design illustrating extrapolations for creel estimates.
 
- 
+
 
 Figure 17.3.  Conceptual diagram of integrating multiple creel survey approaches to improve accuracy of estimates (modified from Smallwood et al. 2012).
 
@@ -507,305 +507,305 @@ Let us consider a single launch site with a parking area for boaters to access a
 
 *Load libraries: tidyverse and lubridate.*
 
-library(tidyverse)  
+library(tidyverse)
 library(lubridate)
 
 *Generating a sequence of dates that represent the creel sampling period*
 
 calendar \<- tibble(date \= seq(ymd("2019-04-01"), ymd("2019-10-31"), by \= "1 day")) \# create a sequence of dates
 
-calendar %\>%   
-  mutate(month \= month(date, label \= TRUE), \#label months  
-         dayWeek \= wday(date,label \= TRUE), \#label day of week  
-         strata \= ifelse(dayWeek %in% c("Sat","Sun"),"weekend day","weekday"),  \# determine if day of the week is a weekend day or weekday  
-         group \= 1\) %\>%  \# group 1 for all  
+calendar %\>%
+  mutate(month \= month(date, label \= TRUE), \#label months
+         dayWeek \= wday(date,label \= TRUE), \#label day of week
+         strata \= ifelse(dayWeek %in% c("Sat","Sun"),"weekend day","weekday"),  \# determine if day of the week is a weekend day or weekday
+         group \= 1\) %\>%  \# group 1 for all
   expand\_grid(shift= c("morning","afternoon")) \-\> calendarFull \# expamnd to have both morning and afternoon shifts
 
 head(calendar) \# look at the calendar
 
-\#\# \# A tibble: 6 x 1  
-\#\#   date        
-\#\#   \<date\>      
-\#\# 1 2019-04-01  
-\#\# 2 2019-04-02  
-\#\# 3 2019-04-03  
-\#\# 4 2019-04-04  
-\#\# 5 2019-04-05  
+\#\# \# A tibble: 6 x 1
+\#\#   date
+\#\#   \<date\>
+\#\# 1 2019-04-01
+\#\# 2 2019-04-02
+\#\# 3 2019-04-03
+\#\# 4 2019-04-04
+\#\# 5 2019-04-05
 \#\# 6 2019-04-06
 
 *Define how you treat holidays or other high-use days.* There is the potential that some high-use periods (labor day weekend) that can span across a month. To address this, and keep the estimates within those periods and not split across months, we use **group**, which is just a way of identifying those different high-use periods across creel sampling year. For the below example, we are going to treat holidays in with the “weekend day” strata.
 
-\# Memorial day weekend  
-calendarFull$strata\[calendarFull$date %in% c(ymd("2019-05-25"),   
-                                             ymd("2019-05-26"),   
+\# Memorial day weekend
+calendarFull$strata\[calendarFull$date %in% c(ymd("2019-05-25"),
+                                             ymd("2019-05-26"),
                                              ymd("2019-05-27"))\] \<- "weekend day" \# convert these dates as a holiday
 
-calendarFull$group\[calendarFull$date %in% c(ymd("2019-05-25"),   
-                                            ymd("2019-05-26"),   
-                                            ymd("2019-05-27"))\] \<- 1 
+calendarFull$group\[calendarFull$date %in% c(ymd("2019-05-25"),
+                                            ymd("2019-05-26"),
+                                            ymd("2019-05-27"))\] \<- 1
 
-\# July 4th  
-calendarFull$strata\[calendarFull$date %in% c(ymd("2019-07-04"),   
-                                             ymd("2019-07-05"),   
-                                             ymd("2019-07-06"),   
+\# July 4th
+calendarFull$strata\[calendarFull$date %in% c(ymd("2019-07-04"),
+                                             ymd("2019-07-05"),
+                                             ymd("2019-07-06"),
                                              ymd("2019-07-06"))\] \<- "weekend day"
 
-calendarFull$group\[calendarFull$date %in% c(ymd("2019-07-04"),   
-                                            ymd("2019-07-05"),   
-                                            ymd("2019-07-06"),   
+calendarFull$group\[calendarFull$date %in% c(ymd("2019-07-04"),
+                                            ymd("2019-07-05"),
+                                            ymd("2019-07-06"),
                                             ymd("2019-07-06"))\] \<- 2
 
 head(calendarFull)
 
-\#\# \# A tibble: 6 x 6  
-\#\#   date       month dayWeek strata  group shift      
-\#\#   \<date\>     \<ord\> \<ord\>   \<chr\>   \<dbl\> \<chr\>      
-\#\# 1 2019-04-01 Apr   Mon     weekday     1 morning    
-\#\# 2 2019-04-01 Apr   Mon     weekday     1 afternoon  
-\#\# 3 2019-04-02 Apr   Tue     weekday     1 morning    
-\#\# 4 2019-04-02 Apr   Tue     weekday     1 afternoon  
-\#\# 5 2019-04-03 Apr   Wed     weekday     1 morning    
+\#\# \# A tibble: 6 x 6
+\#\#   date       month dayWeek strata  group shift
+\#\#   \<date\>     \<ord\> \<ord\>   \<chr\>   \<dbl\> \<chr\>
+\#\# 1 2019-04-01 Apr   Mon     weekday     1 morning
+\#\# 2 2019-04-01 Apr   Mon     weekday     1 afternoon
+\#\# 3 2019-04-02 Apr   Tue     weekday     1 morning
+\#\# 4 2019-04-02 Apr   Tue     weekday     1 afternoon
+\#\# 5 2019-04-03 Apr   Wed     weekday     1 morning
 \#\# 6 2019-04-03 Apr   Wed     weekday     1 afternoon
 
 *Randomly sampling dates from the full calendar using the purrr package (part of tidyverse).* For the below example, we are going to sample 6 weekend days and 10 week days in a month. Further, we are going to equally split the number of morning shifts and afternoon shifts for each of the strata. Setting the seed, ensures that we will get the same random selection of days.
 
-set.seed(1234) \# set random seed  
-numWeekends \= 6  
+set.seed(1234) \# set random seed
+numWeekends \= 6
 numWeekdays \= 10
 
-\# sample morning shift  
-calendarFull %\>%   
-  filter(shift \== "morning" ) %\>% \# filter out just mornings  
-  group\_by(month, strata,group, shift) %\>% \# group data  
-  nest() %\>% \# nest the days to sample by grouping data  
-  mutate(daystoSample \= ifelse(strata \== "weekend day",numWeekends/2,numWeekdays/2)) %\>% \# dividing by two, for mornign shift  
-  mutate(sampledDays \=  map2(data, daystoSample, sample\_n)) %\>% \# sample nested data  
-  select(month, shift, sampledDays, group, strata) %\>% \# select columns  
-  unnest(sampledDays) %\>% \# unnest the data  
-  ungroup() %\>% \# remove grouping   
-  select(date, month, dayWeek, shift, group, strata) %\>%   
+\# sample morning shift
+calendarFull %\>%
+  filter(shift \== "morning" ) %\>% \# filter out just mornings
+  group\_by(month, strata,group, shift) %\>% \# group data
+  nest() %\>% \# nest the days to sample by grouping data
+  mutate(daystoSample \= ifelse(strata \== "weekend day",numWeekends/2,numWeekdays/2)) %\>% \# dividing by two, for mornign shift
+  mutate(sampledDays \=  map2(data, daystoSample, sample\_n)) %\>% \# sample nested data
+  select(month, shift, sampledDays, group, strata) %\>% \# select columns
+  unnest(sampledDays) %\>% \# unnest the data
+  ungroup() %\>% \# remove grouping
+  select(date, month, dayWeek, shift, group, strata) %\>%
   mutate(month \= as.character(month)) \-\> CreelSchedule\_morning \# convert month to a character
 
-\# sample afternoon shifts (annotations similar as above)  
-calendarFull %\>%   
-  filter(shift \== "afternoon", \# filter out just afternoons  
-         \!date %in% CreelSchedule\_morning$date) %\>%   
-  group\_by(month, strata,group, shift) %\>%   
-  nest() %\>%   
-  mutate(daystoSample \= ifelse(strata \== "weekend day",numWeekends/2,numWeekdays/2)) %\>% \# dividing by two, for afternoon shift  
-  mutate(sampledDays \=  map2(data, daystoSample, sample\_n)) %\>%   
-  select(month, shift, sampledDays, group, strata) %\>%   
-  unnest(sampledDays) %\>%   
-  ungroup() %\>%   
-  select(date, month, dayWeek, shift, group, strata) %\>%   
+\# sample afternoon shifts (annotations similar as above)
+calendarFull %\>%
+  filter(shift \== "afternoon", \# filter out just afternoons
+         \!date %in% CreelSchedule\_morning$date) %\>%
+  group\_by(month, strata,group, shift) %\>%
+  nest() %\>%
+  mutate(daystoSample \= ifelse(strata \== "weekend day",numWeekends/2,numWeekdays/2)) %\>% \# dividing by two, for afternoon shift
+  mutate(sampledDays \=  map2(data, daystoSample, sample\_n)) %\>%
+  select(month, shift, sampledDays, group, strata) %\>%
+  unnest(sampledDays) %\>%
+  ungroup() %\>%
+  select(date, month, dayWeek, shift, group, strata) %\>%
   mutate(month \= as.character(month))  \-\> CreelSchedule\_afternoon
 
-\# combine the two into a single data frame  
-rbind(CreelSchedule\_morning, CreelSchedule\_afternoon) %\>%   
+\# combine the two into a single data frame
+rbind(CreelSchedule\_morning, CreelSchedule\_afternoon) %\>%
   arrange(date) \-\> creelSchedule
 
 head(creelSchedule)
 
-\#\# \# A tibble: 6 x 6  
-\#\#   date       month dayWeek shift     group strata       
-\#\#   \<date\>     \<chr\> \<ord\>   \<chr\>     \<dbl\> \<chr\>        
-\#\# 1 2019-04-02 Apr   Tue     afternoon     1 weekday      
-\#\# 2 2019-04-03 Apr   Wed     afternoon     1 weekday      
-\#\# 3 2019-04-05 Apr   Fri     morning       1 weekday      
-\#\# 4 2019-04-07 Apr   Sun     afternoon     1 weekend day  
-\#\# 5 2019-04-11 Apr   Thu     morning       1 weekday      
+\#\# \# A tibble: 6 x 6
+\#\#   date       month dayWeek shift     group strata
+\#\#   \<date\>     \<chr\> \<ord\>   \<chr\>     \<dbl\> \<chr\>
+\#\# 1 2019-04-02 Apr   Tue     afternoon     1 weekday
+\#\# 2 2019-04-03 Apr   Wed     afternoon     1 weekday
+\#\# 3 2019-04-05 Apr   Fri     morning       1 weekday
+\#\# 4 2019-04-07 Apr   Sun     afternoon     1 weekend day
+\#\# 5 2019-04-11 Apr   Thu     morning       1 weekday
 \#\# 6 2019-04-14 Apr   Sun     morning       1 weekend day
 
 *Create a function to sample count times during the creel shifts.* Generating count times during a creel shift has several complications. One, what time interval do you want to sample from (e.g., every minute, every 15 minutes)? Two, how much of a time interval do you want between counts? When having more than one count during a creel shift, requires that you remove some potential count times from the pool dependent on the time that is first selected. The easiest way to do this is using a while loop inside a function to sample your count times.
 
-count\_times \<- **function**(nCounts=3, timeInterval=15, timeBtwn \= 60, startTime, endTime){  
- seq(ymd\_hm(paste("2019-01-01",startTime)), \# create a sequence of times (NOTE: the date does not matter)  
-     ymd\_hm(paste("2019-01-01",endTime)),  
+count\_times \<- **function**(nCounts=3, timeInterval=15, timeBtwn \= 60, startTime, endTime){
+ seq(ymd\_hm(paste("2019-01-01",startTime)), \# create a sequence of times (NOTE: the date does not matter)
+     ymd\_hm(paste("2019-01-01",endTime)),
      by \= paste(timeInterval, "min")) \-\> timePeriod
 
-  countTimes \<- tibble(time \= mdy\_hms(rep(NA,nCounts))) \# a place to store times  
-   c \= 1 \# start out counter at 1  
-  **while**(c \<= nCounts){  
-    countTimes$time\[c\] \<- sample(timePeriod, 1\) \# sample one time from random times  
-    ind \<- which(abs(interval(timePeriod, countTimes$time\[c\]) / minutes(1)) \>= timeBtwn) \# remove times that fall with ing the time between counts  
-    timePeriod \<- timePeriod\[ind\]  
-    c \<- c \+ 1 \# advance counter  
-    }  
-  out \<- paste(format(sort(countTimes$time), "%T"), collapse \= ", ") \# collapse times into a single string  
-  return(out)  
+  countTimes \<- tibble(time \= mdy\_hms(rep(NA,nCounts))) \# a place to store times
+   c \= 1 \# start out counter at 1
+  **while**(c \<= nCounts){
+    countTimes$time\[c\] \<- sample(timePeriod, 1\) \# sample one time from random times
+    ind \<- which(abs(interval(timePeriod, countTimes$time\[c\]) / minutes(1)) \>= timeBtwn) \# remove times that fall with ing the time between counts
+    timePeriod \<- timePeriod\[ind\]
+    c \<- c \+ 1 \# advance counter
+    }
+  out \<- paste(format(sort(countTimes$time), "%T"), collapse \= ", ") \# collapse times into a single string
+  return(out)
   }
 
-set.seed(12345)  
+set.seed(12345)
 count\_times(startTime \= "06:00", endTime \="13:30") \# example of using the function
 
 \#\# \[1\] "09:15:00, 12:15:00, 13:15:00"
 
 *Shift start and end times for each month* The below creel shift start and end times are based on mean sunrise and sunset times in Kearney, Nebraska.
 
-rbind(  
-tibble(month \= c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"),  
-       shift \= "morning",  
-       startTime \= c("08:00","08:00","07:30","07:30","07:00","06:30","06:00","06:00","06:30","07:00","07:30","08:00"),  
-       endTime \= "13:30"),  
-tibble(month \= c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"),  
-       shift \= "afternoon",  
-       startTime \="13:30",  
-       endTime \= c("17:30","18:00","19:30","20:00","20:30","21:00","21:00","20:30","19:30","18:30","17:30","17:30"))  
+rbind(
+tibble(month \= c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"),
+       shift \= "morning",
+       startTime \= c("08:00","08:00","07:30","07:30","07:00","06:30","06:00","06:00","06:30","07:00","07:30","08:00"),
+       endTime \= "13:30"),
+tibble(month \= c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"),
+       shift \= "afternoon",
+       startTime \="13:30",
+       endTime \= c("17:30","18:00","19:30","20:00","20:30","21:00","21:00","20:30","19:30","18:30","17:30","17:30"))
 ) \-\> sunRisesunSet
 
 head(sunRisesunSet)
 
-\#\# \# A tibble: 6 x 4  
-\#\#   month shift   startTime endTime  
-\#\#   \<chr\> \<chr\>   \<chr\>     \<chr\>    
-\#\# 1 Jan   morning 08:00     13:30    
-\#\# 2 Feb   morning 08:00     13:30    
-\#\# 3 Mar   morning 07:30     13:30    
-\#\# 4 Apr   morning 07:30     13:30    
-\#\# 5 May   morning 07:00     13:30    
+\#\# \# A tibble: 6 x 4
+\#\#   month shift   startTime endTime
+\#\#   \<chr\> \<chr\>   \<chr\>     \<chr\>
+\#\# 1 Jan   morning 08:00     13:30
+\#\# 2 Feb   morning 08:00     13:30
+\#\# 3 Mar   morning 07:30     13:30
+\#\# 4 Apr   morning 07:30     13:30
+\#\# 5 May   morning 07:00     13:30
 \#\# 6 Jun   morning 06:30     13:30
 
 *Join start and stop times with the creel schedule and map the count\_times function for each creel shift*
 
-creelSchedule %\>%   
-  left\_join(sunRisesunSet, by \= c("month","shift")) %\>% \# join schedule with start and stop times  
+creelSchedule %\>%
+  left\_join(sunRisesunSet, by \= c("month","shift")) %\>% \# join schedule with start and stop times
   mutate(countTimes \= map2\_chr(startTime, endTime, \~count\_times(nCounts=3,startTime \= .x, endTime \= .y))) \-\> finalCreelSchedule
 
 *View the first ten lines of the schedule*
 
-\#\# \# A tibble: 10 x 9  
-\#\#    date       month dayWeek shift  group strata  startTime endTime countTimes     
-\#\#    \<date\>     \<chr\> \<ord\>   \<chr\>  \<dbl\> \<chr\>   \<chr\>     \<chr\>   \<chr\>          
-\#\#  1 2019-04-02 Apr   Tue     after…     1 weekday 13:30     20:00   16:00:00, 17…  
-\#\#  2 2019-04-03 Apr   Wed     after…     1 weekday 13:30     20:00   13:45:00, 17…  
-\#\#  3 2019-04-05 Apr   Fri     morni…     1 weekday 07:30     13:30   08:45:00, 10…  
-\#\#  4 2019-04-07 Apr   Sun     after…     1 weeken… 13:30     20:00   15:15:00, 17…  
-\#\#  5 2019-04-11 Apr   Thu     morni…     1 weekday 07:30     13:30   07:30:00, 08…  
-\#\#  6 2019-04-14 Apr   Sun     morni…     1 weeken… 07:30     13:30   09:15:00, 12…  
-\#\#  7 2019-04-15 Apr   Mon     after…     1 weekday 13:30     20:00   14:00:00, 16…  
-\#\#  8 2019-04-16 Apr   Tue     morni…     1 weekday 07:30     13:30   08:15:00, 10…  
-\#\#  9 2019-04-19 Apr   Fri     morni…     1 weekday 07:30     13:30   07:45:00, 09…  
+\#\# \# A tibble: 10 x 9
+\#\#    date       month dayWeek shift  group strata  startTime endTime countTimes
+\#\#    \<date\>     \<chr\> \<ord\>   \<chr\>  \<dbl\> \<chr\>   \<chr\>     \<chr\>   \<chr\>
+\#\#  1 2019-04-02 Apr   Tue     after…     1 weekday 13:30     20:00   16:00:00, 17…
+\#\#  2 2019-04-03 Apr   Wed     after…     1 weekday 13:30     20:00   13:45:00, 17…
+\#\#  3 2019-04-05 Apr   Fri     morni…     1 weekday 07:30     13:30   08:45:00, 10…
+\#\#  4 2019-04-07 Apr   Sun     after…     1 weeken… 13:30     20:00   15:15:00, 17…
+\#\#  5 2019-04-11 Apr   Thu     morni…     1 weekday 07:30     13:30   07:30:00, 08…
+\#\#  6 2019-04-14 Apr   Sun     morni…     1 weeken… 07:30     13:30   09:15:00, 12…
+\#\#  7 2019-04-15 Apr   Mon     after…     1 weekday 13:30     20:00   14:00:00, 16…
+\#\#  8 2019-04-16 Apr   Tue     morni…     1 weekday 07:30     13:30   08:15:00, 10…
+\#\#  9 2019-04-19 Apr   Fri     morni…     1 weekday 07:30     13:30   07:45:00, 09…
 \#\# 10 2019-04-20 Apr   Sat     morni…     1 weeken… 07:30     13:30   09:30:00, 11…
 
 *Using the “high-use” strata*
 
 First, we redefine the high use strata. Below we adapt the above code to a “high-use” strata and sample those separately from the weekend and weekday days.
 
-\# Memorial day weekend  
-calendarFull$strata\[calendarFull$date %in% c(ymd("2019-05-25"),   
-                                             ymd("2019-05-26"),   
+\# Memorial day weekend
+calendarFull$strata\[calendarFull$date %in% c(ymd("2019-05-25"),
+                                             ymd("2019-05-26"),
                                              ymd("2019-05-27"))\] \<- "highuse"
 
-calendarFull$group\[calendarFull$date %in% c(ymd("2019-05-25"),   
-                                            ymd("2019-05-26"),   
+calendarFull$group\[calendarFull$date %in% c(ymd("2019-05-25"),
+                                            ymd("2019-05-26"),
                                             ymd("2019-05-27"))\] \<- 1
 
-\# July 4th  
-calendarFull$strata\[calendarFull$date %in% c(ymd("2019-07-04"),   
-                                             ymd("2019-07-05"),   
-                                             ymd("2019-07-06"),   
+\# July 4th
+calendarFull$strata\[calendarFull$date %in% c(ymd("2019-07-04"),
+                                             ymd("2019-07-05"),
+                                             ymd("2019-07-06"),
                                              ymd("2019-07-06"))\] \<- "highuse"
 
-calendarFull$group\[calendarFull$date %in% c(ymd("2019-07-04"),   
-                                            ymd("2019-07-05"),   
-                                            ymd("2019-07-06"),   
+calendarFull$group\[calendarFull$date %in% c(ymd("2019-07-04"),
+                                            ymd("2019-07-05"),
+                                            ymd("2019-07-06"),
                                             ymd("2019-07-06"))\] \<- 2 \# use different group numbers for each high use period
 
 *Randomly sampling dates from the full calendar using the purrr package for weekend, weekday, and high-use days.*
 
-numWeekends \= 6  
-numWeekdays \= 8  
+numWeekends \= 6
+numWeekdays \= 8
 highusedays \= 2
 
-\# weekend morning shifts that are not high use (comments are similar to the non-high use approach)  
-calendarFull %\>%   
-  filter(strata \!= "highuse",  
-         shift \== "morning" ) %\>%   
-  group\_by(month, strata,group, shift) %\>%   
-  nest() %\>%   
-  mutate(daystoSample \= ifelse(strata \== "weekend day",numWeekends/2,numWeekdays/2)) %\>%   
-  mutate(sampledDays \=  map2(data, daystoSample, sample\_n)) %\>%   
-  select(month, shift, sampledDays, group, strata) %\>%   
-  unnest(sampledDays) %\>%   
-  ungroup() %\>%   
-  select(date, month, dayWeek, shift, group, strata) %\>%   
+\# weekend morning shifts that are not high use (comments are similar to the non-high use approach)
+calendarFull %\>%
+  filter(strata \!= "highuse",
+         shift \== "morning" ) %\>%
+  group\_by(month, strata,group, shift) %\>%
+  nest() %\>%
+  mutate(daystoSample \= ifelse(strata \== "weekend day",numWeekends/2,numWeekdays/2)) %\>%
+  mutate(sampledDays \=  map2(data, daystoSample, sample\_n)) %\>%
+  select(month, shift, sampledDays, group, strata) %\>%
+  unnest(sampledDays) %\>%
+  ungroup() %\>%
+  select(date, month, dayWeek, shift, group, strata) %\>%
   mutate(month \= as.character(month))  \-\> CreelSchedule\_morning
 
-\# weekend afternoon shifts that are not high use  
-calendarFull %\>%   
-  filter(strata \!= "highuse",  
-         shift \== "afternoon",  
-         \!date %in% CreelSchedule\_morning$date) %\>%   
-  group\_by(month, strata,group, shift) %\>%   
-  nest() %\>%   
-  mutate(daystoSample \= ifelse(strata \== "weekend day",numWeekends/2,numWeekdays/2)) %\>%   
-  mutate(sampledDays \=  map2(data, daystoSample, sample\_n)) %\>%   
-  select(month, shift, sampledDays, group, strata) %\>%   
-  unnest(sampledDays) %\>%   
-  ungroup() %\>%   
-  select(date, month, dayWeek, shift, group, strata) %\>%   
+\# weekend afternoon shifts that are not high use
+calendarFull %\>%
+  filter(strata \!= "highuse",
+         shift \== "afternoon",
+         \!date %in% CreelSchedule\_morning$date) %\>%
+  group\_by(month, strata,group, shift) %\>%
+  nest() %\>%
+  mutate(daystoSample \= ifelse(strata \== "weekend day",numWeekends/2,numWeekdays/2)) %\>%
+  mutate(sampledDays \=  map2(data, daystoSample, sample\_n)) %\>%
+  select(month, shift, sampledDays, group, strata) %\>%
+  unnest(sampledDays) %\>%
+  ungroup() %\>%
+  select(date, month, dayWeek, shift, group, strata) %\>%
   mutate(month \= as.character(month))  \-\> CreelSchedule\_afternoon
 
-\# high use morning shifts   
-calendarFull %\>%   
-  filter(strata \== "highuse",  
-         shift \== "morning" ) %\>%   
-  group\_by(month, strata,group, shift) %\>%   
-  nest() %\>%   
-  mutate(daystoSample \= highusedays/2) %\>%   
-  mutate(sampledDays \=  map2(data, daystoSample, sample\_n)) %\>%   
-  select(month, shift, sampledDays, group, strata) %\>%   
-  unnest(sampledDays) %\>%   
-  ungroup() %\>%   
-  select(date, month, dayWeek, shift, group, strata) %\>%   
+\# high use morning shifts
+calendarFull %\>%
+  filter(strata \== "highuse",
+         shift \== "morning" ) %\>%
+  group\_by(month, strata,group, shift) %\>%
+  nest() %\>%
+  mutate(daystoSample \= highusedays/2) %\>%
+  mutate(sampledDays \=  map2(data, daystoSample, sample\_n)) %\>%
+  select(month, shift, sampledDays, group, strata) %\>%
+  unnest(sampledDays) %\>%
+  ungroup() %\>%
+  select(date, month, dayWeek, shift, group, strata) %\>%
   mutate(month \= as.character(month)) \-\> highuse\_morning
 
-\# high use afternoon shifts   
-calendarFull %\>%   
-  filter(strata \== "highuse",  
-         shift \== "afternoon" ) %\>%   
-  group\_by(month, strata,group, shift) %\>%   
-  nest() %\>%   
-  mutate(daystoSample \= highusedays/2) %\>%   
-  mutate(sampledDays \=  map2(data, daystoSample, sample\_n)) %\>%   
-  select(month, shift, sampledDays, group, strata) %\>%   
-  unnest(sampledDays) %\>%   
-  ungroup() %\>%   
-  select(date, month, dayWeek, shift, group, strata) %\>%    
+\# high use afternoon shifts
+calendarFull %\>%
+  filter(strata \== "highuse",
+         shift \== "afternoon" ) %\>%
+  group\_by(month, strata,group, shift) %\>%
+  nest() %\>%
+  mutate(daystoSample \= highusedays/2) %\>%
+  mutate(sampledDays \=  map2(data, daystoSample, sample\_n)) %\>%
+  select(month, shift, sampledDays, group, strata) %\>%
+  unnest(sampledDays) %\>%
+  ungroup() %\>%
+  select(date, month, dayWeek, shift, group, strata) %\>%
   mutate(month \= as.character(month)) \-\> highuse\_afternoon
 
-rbind(CreelSchedule\_morning, CreelSchedule\_afternoon, highuse\_morning, highuse\_afternoon) %\>% \# combine all strata together  
+rbind(CreelSchedule\_morning, CreelSchedule\_afternoon, highuse\_morning, highuse\_afternoon) %\>% \# combine all strata together
   arrange(date) \-\> creelSchedule
 
 *Join start and stop times with the creel schedule and map the count\_times function for each creel shift*
 
-creelSchedule %\>%   
-  left\_join(sunRisesunSet, by \= c("month","shift")) %\>%   
+creelSchedule %\>%
+  left\_join(sunRisesunSet, by \= c("month","shift")) %\>%
   mutate(countTimes \= map2\_chr(startTime, endTime, \~count\_times(nCounts=3,startTime \= .x, endTime \= .y)))-\> finalCreelScheduleHU \# join data
 
 *View the first ten lines of the schedule with the high-use strata*
 
-\#\# \# A tibble: 10 x 9  
-\#\#    date       month dayWeek shift  group strata  startTime endTime countTimes     
-\#\#    \<date\>     \<chr\> \<ord\>   \<chr\>  \<dbl\> \<chr\>   \<chr\>     \<chr\>   \<chr\>          
-\#\#  1 2019-04-06 Apr   Sat     morni…     1 weeken… 07:30     13:30   08:45:00, 09…  
-\#\#  2 2019-04-07 Apr   Sun     after…     1 weeken… 13:30     20:00   15:15:00, 16…  
-\#\#  3 2019-04-10 Apr   Wed     morni…     1 weekday 07:30     13:30   07:30:00, 09…  
-\#\#  4 2019-04-12 Apr   Fri     morni…     1 weekday 07:30     13:30   09:30:00, 11…  
-\#\#  5 2019-04-13 Apr   Sat     morni…     1 weeken… 07:30     13:30   08:15:00, 09…  
-\#\#  6 2019-04-14 Apr   Sun     after…     1 weeken… 13:30     20:00   15:15:00, 16…  
-\#\#  7 2019-04-15 Apr   Mon     after…     1 weekday 13:30     20:00   14:00:00, 15…  
-\#\#  8 2019-04-19 Apr   Fri     after…     1 weekday 13:30     20:00   15:00:00, 18…  
-\#\#  9 2019-04-20 Apr   Sat     after…     1 weeken… 13:30     20:00   13:30:00, 14…  
+\#\# \# A tibble: 10 x 9
+\#\#    date       month dayWeek shift  group strata  startTime endTime countTimes
+\#\#    \<date\>     \<chr\> \<ord\>   \<chr\>  \<dbl\> \<chr\>   \<chr\>     \<chr\>   \<chr\>
+\#\#  1 2019-04-06 Apr   Sat     morni…     1 weeken… 07:30     13:30   08:45:00, 09…
+\#\#  2 2019-04-07 Apr   Sun     after…     1 weeken… 13:30     20:00   15:15:00, 16…
+\#\#  3 2019-04-10 Apr   Wed     morni…     1 weekday 07:30     13:30   07:30:00, 09…
+\#\#  4 2019-04-12 Apr   Fri     morni…     1 weekday 07:30     13:30   09:30:00, 11…
+\#\#  5 2019-04-13 Apr   Sat     morni…     1 weeken… 07:30     13:30   08:15:00, 09…
+\#\#  6 2019-04-14 Apr   Sun     after…     1 weeken… 13:30     20:00   15:15:00, 16…
+\#\#  7 2019-04-15 Apr   Mon     after…     1 weekday 13:30     20:00   14:00:00, 15…
+\#\#  8 2019-04-19 Apr   Fri     after…     1 weekday 13:30     20:00   15:00:00, 18…
+\#\#  9 2019-04-20 Apr   Sat     after…     1 weeken… 13:30     20:00   13:30:00, 14…
 \#\# 10 2019-04-24 Apr   Wed     morni…     1 weekday 07:30     13:30   07:45:00, 09…
 
 # Box 17.2. Difficulty of converting “experimental units” of interest.
 
-Let us consider a hypothetical day for a small impoundment with four fishing parties that fished 4, 4, 4, and 12 hours and comprised 3, 2, 2, and 1 anglers, respectively. 
+Let us consider a hypothetical day for a small impoundment with four fishing parties that fished 4, 4, 4, and 12 hours and comprised 3, 2, 2, and 1 anglers, respectively.
 
-If our “experimental unit” (i.e., level at which we are collected interview data) of interest is a party, then fishing effort for this hypothetical day would be 24 party-hours (undefined variance) with an average fishing time per party of 6 hours (variance \= 16\) and an average party size of 2 anglers (variance \= 0.7). Extrapolation of party information would provide an estimate of 48 hours of fishing effort (4 parties × 6 hours/party × 2 anglers/party) for this hypothetical day, but you note that the units in this extrapolation do not carry through (i.e., hours × angler/party does not equal hours)—an important indication that the extrapolation, or conversion in this case, does not jive with the actual effort of 40 hours of fishing (4 hours × 3 anglers \+ 4 hours × 2 anglers \+ 4 hours × 2 anglers \+ 12 hours × 1 angler) for this hypothetical day. 
+If our “experimental unit” (i.e., level at which we are collected interview data) of interest is a party, then fishing effort for this hypothetical day would be 24 party-hours (undefined variance) with an average fishing time per party of 6 hours (variance \= 16\) and an average party size of 2 anglers (variance \= 0.7). Extrapolation of party information would provide an estimate of 48 hours of fishing effort (4 parties × 6 hours/party × 2 anglers/party) for this hypothetical day, but you note that the units in this extrapolation do not carry through (i.e., hours × angler/party does not equal hours)—an important indication that the extrapolation, or conversion in this case, does not jive with the actual effort of 40 hours of fishing (4 hours × 3 anglers \+ 4 hours × 2 anglers \+ 4 hours × 2 anglers \+ 12 hours × 1 angler) for this hypothetical day.
 
-If our “experimental unit” of interest is an individual angler, then fishing effort for this hypothetical day would be 40 hours (undefined variance) with an average fishing time of 5 hours (variance \= 8\) for each of the 8 anglers. The conversion to parties is also difficult; that is, we would estimate the average time spent fishing for each party to be 5 hours compared to the actual average of 6 hours per party. 
+If our “experimental unit” of interest is an individual angler, then fishing effort for this hypothetical day would be 40 hours (undefined variance) with an average fishing time of 5 hours (variance \= 8\) for each of the 8 anglers. The conversion to parties is also difficult; that is, we would estimate the average time spent fishing for each party to be 5 hours compared to the actual average of 6 hours per party.
 
 Thus, it is imperative that the level at which data are collected is defined *a priori* and that this level is maintained throughout all assessments.
 
@@ -819,7 +819,7 @@ ft=CT
 
 For example, suppose a creel clerk was to work a morning creel shift from 06:00 to 14:00 with an instantaneous count occurring at 10:15. During the count, she counted 20 anglers fishing from boats and 18 fishing from the bank. The total number of anglers, C, was 38\. The creel shift, T, was 8 hours (14:00 – 06:00).
 
-numAnglersCounted \<- 38  
+numAnglersCounted \<- 38
 shiftTime \<- 8
 
 shiftPressure \<- numAnglersCounted \* shiftTime
@@ -834,14 +834,14 @@ where C is the count for each creel count, i, and m is the total number of count
 
 If the creel clerk had two counts during the shift rather than the one in the previous example, and these counts were C1 \= 0 anglers (during storm) and C2 \= 65,
 
-numAnglersCounted \<- c(0,65)  
+numAnglersCounted \<- c(0,65)
 shiftTime \<- 8
 
 shiftPressure2 \<- mean(numAnglersCounted) \* shiftTime
 
 The estimated effort would be 260 angler hours.
 
-*Extrapolating from shift to day* 
+*Extrapolating from shift to day*
 
 Suppose that the creel shift the clerk was working represented half of the day.
 
@@ -857,7 +857,7 @@ fp=C
 
 For example, suppose a creel clerk is working at Lake McConaughy, a 14,000-ha reservoir in western Nebraska. To travel around the reservoir (i.e., complete the circuit) takes 2 hours. During the count, he counted 21 anglers fishing from the bank and 213 anglers fishing from boats. The total number of anglers, C, is 234 anglers.
 
-numAnglersCounted \<- c(21,213)  
+numAnglersCounted \<- c(21,213)
 circuitTime \<- 2
 
 circuitEffort \<- sum(numAnglersCounted) \* circuitTime
@@ -868,8 +868,8 @@ Often, we would like to have an estimate for the creel shift, which is represent
 
 fp=C
 
-numAnglersCounted \<- c(21,213)  
-circuitTime \<- 2  
+numAnglersCounted \<- c(21,213)
+circuitTime \<- 2
 numCircuits \<- 4
 
 circuitEffort \<- sum(numAnglersCounted) \* circuitTime \* numCircuits
@@ -939,47 +939,47 @@ library(tidyverse)
 
 *Load data, and check data.*
 
-schedule \<- read\_csv("data/busroutescheduleExample.csv")  
+schedule \<- read\_csv("data/busroutescheduleExample.csv")
 head(schedule)
 
-\#\# \# A tibble: 6 x 4  
-\#\#    Site ScheduledTime WaitTime TravelTime  
-\#\#   \<dbl\> \<chr\>            \<dbl\>      \<dbl\>  
-\#\# 1     1 13:00 \- 14:00       60         30  
-\#\# 2     2 14:30 \- 15:30       60         30  
-\#\# 3     3 15:45 \- 16:45       60         15  
-\#\# 4     4 17:00 \- 18:00       60         15  
-\#\# 5     5 18:15 \- 19:15       60         15  
+\#\# \# A tibble: 6 x 4
+\#\#    Site ScheduledTime WaitTime TravelTime
+\#\#   \<dbl\> \<chr\>            \<dbl\>      \<dbl\>
+\#\# 1     1 13:00 \- 14:00       60         30
+\#\# 2     2 14:30 \- 15:30       60         30
+\#\# 3     3 15:45 \- 16:45       60         15
+\#\# 4     4 17:00 \- 18:00       60         15
+\#\# 5     5 18:15 \- 19:15       60         15
 \#\# 6     6 19:30 \- 20:30       60         15
 
-bsCounts  \<- read\_csv("data/busroutecountsExample.csv")  
+bsCounts  \<- read\_csv("data/busroutecountsExample.csv")
 head(bsCounts)
 
-\#\# \# A tibble: 6 x 5  
-\#\#   Date     Site boatTrailer arrivalTime departureTime  
-\#\#   \<chr\>   \<dbl\>       \<dbl\> \<time\>      \<time\>         
-\#\# 1 6/22/19     1           1 13:00       13:30          
-\#\# 2 6/22/19     1           2 13:00       13:35          
-\#\# 3 6/22/19     1           3 13:15       14:00          
-\#\# 4 6/22/19     1           4 13:20       14:00          
-\#\# 5 6/22/19     1           5 13:30       14:00          
+\#\# \# A tibble: 6 x 5
+\#\#   Date     Site boatTrailer arrivalTime departureTime
+\#\#   \<chr\>   \<dbl\>       \<dbl\> \<time\>      \<time\>
+\#\# 1 6/22/19     1           1 13:00       13:30
+\#\# 2 6/22/19     1           2 13:00       13:35
+\#\# 3 6/22/19     1           3 13:15       14:00
+\#\# 4 6/22/19     1           4 13:20       14:00
+\#\# 5 6/22/19     1           5 13:30       14:00
 \#\# 6 6/22/19     2           1 14:30       15:15
 
 *Calculate effort from bus route date*
 
 ttlTime \<- sum(schedule$WaitTime) \+ sum(schedule$TravelTime) \#calculate the total time of the shift (wait time and travel time)
 
-bsCounts %\>%   
-  mutate(timeDiff \= departureTime \- arrivalTime,  \# find difference in time  
-         timeDiff \= (as.numeric(timeDiff) / 60)/0.5) %\>% \# convert seconds to minutes and divide by the probability of sampling an evening shift  
-  group\_by(Date, Site) %\>% \# group by date and site  
-  summarise(ttlTime \= sum(timeDiff,na.rm \= TRUE)) %\>% \#calculate total time of all vehicles at each the site  
-  left\_join(schedule, by \= "Site") %\>% \# join the vehicle information with the schedule  
-  mutate(timeWait \= ttlTime\*(1/WaitTime)) %\>% \#multiply the total time by the inverse of the wait time  
-  group\_by(Date) %\>% \# group by day  
+bsCounts %\>%
+  mutate(timeDiff \= departureTime \- arrivalTime,  \# find difference in time
+         timeDiff \= (as.numeric(timeDiff) / 60)/0.5) %\>% \# convert seconds to minutes and divide by the probability of sampling an evening shift
+  group\_by(Date, Site) %\>% \# group by date and site
+  summarise(ttlTime \= sum(timeDiff,na.rm \= TRUE)) %\>% \#calculate total time of all vehicles at each the site
+  left\_join(schedule, by \= "Site") %\>% \# join the vehicle information with the schedule
+  mutate(timeWait \= ttlTime\*(1/WaitTime)) %\>% \#multiply the total time by the inverse of the wait time
+  group\_by(Date) %\>% \# group by day
   summarise(ttl \= sum(timeWait))-\> count \# then take the sum by the date
 
-count$Ehat \<- count$ttl \* ttlTime  
+count$Ehat \<- count$ttl \* ttlTime
 count$Ehat \* 2.0
 
 \#\# \[1\] 33212
@@ -988,39 +988,39 @@ count$Ehat \* 2.0
 
 *Load libraries: tidyverse and lubridate.*
 
-library(tidyverse)  
+library(tidyverse)
 library(lubridate)
 
 *Load count and interview data, check data structure, and limit the species in the interviews to a few species.*
 
-juneCount \<- read\_csv("out\_data/juneCount.csv")  
+juneCount \<- read\_csv("out\_data/juneCount.csv")
 head(juneCount)
 
-\#\# \# A tibble: 6 x 6  
-\#\#   date                period section countTime    bankAnglers boatAnglers  
-\#\#   \<dttm\>               \<dbl\>   \<dbl\> \<chr\>              \<dbl\>       \<dbl\>  
-\#\# 1 2018-06-08 00:00:00      2       0 13:30:00:000           4          50  
-\#\# 2 2018-06-08 00:00:00      2       0 20:15:00:000           1          30  
-\#\# 3 2018-06-09 00:00:00      1       0 08:00:00:000           5          86  
-\#\# 4 2018-06-09 00:00:00      1       0 11:45:00:000           7         100  
-\#\# 5 2018-06-10 00:00:00      1       0 06:15:00:000           2          46  
+\#\# \# A tibble: 6 x 6
+\#\#   date                period section countTime    bankAnglers boatAnglers
+\#\#   \<dttm\>               \<dbl\>   \<dbl\> \<chr\>              \<dbl\>       \<dbl\>
+\#\# 1 2018-06-08 00:00:00      2       0 13:30:00:000           4          50
+\#\# 2 2018-06-08 00:00:00      2       0 20:15:00:000           1          30
+\#\# 3 2018-06-09 00:00:00      1       0 08:00:00:000           5          86
+\#\# 4 2018-06-09 00:00:00      1       0 11:45:00:000           7         100
+\#\# 5 2018-06-10 00:00:00      1       0 06:15:00:000           2          46
 \#\# 6 2018-06-10 00:00:00      1       0 10:00:00:000           4          80
 
-juneInterviews \<- read\_csv("out\_data/juneInterviews.csv") %\>%   
-  filter(\!speciesCaught %in% c('Common Carp', 'Crappie', 'Muskellunge', 'Northern Pike', 'Striped Bass Hybrid (wiper)', 'Yellow Perch ')) \# remove these species   
+juneInterviews \<- read\_csv("out\_data/juneInterviews.csv") %\>%
+  filter(\!speciesCaught %in% c('Common Carp', 'Crappie', 'Muskellunge', 'Northern Pike', 'Striped Bass Hybrid (wiper)', 'Yellow Perch ')) \# remove these species
 head(juneInterviews)
 
-\#\# \# A tibble: 6 x 17  
-\#\#   date       period section numAnglers anglerType anglerMethod timeFishedHours  
-\#\#   \<date\>      \<dbl\>   \<dbl\>      \<dbl\> \<chr\>      \<chr\>                  \<dbl\>  
-\#\# 1 2018-06-08      2       0          1 Boat       Rod and Reel               4  
-\#\# 2 2018-06-08      2       0          1 Boat       Rod and Reel               4  
-\#\# 3 2018-06-08      2       0          2 Boat       Rod and Reel               6  
-\#\# 4 2018-06-08      2       0          2 Boat       Rod and Reel               6  
-\#\# 5 2018-06-08      2       0          2 Boat       Rod and Reel               6  
-\#\# 6 2018-06-08      2       0          2 Boat       Rod and Reel               6  
-\#\# \# … with 10 more variables: timeFishedMins \<dbl\>, tripType \<chr\>,  
-\#\# \#   numFish \<dbl\>, catchType \<chr\>, speciesCaught \<chr\>, speciesSought \<chr\>,  
+\#\# \# A tibble: 6 x 17
+\#\#   date       period section numAnglers anglerType anglerMethod timeFishedHours
+\#\#   \<date\>      \<dbl\>   \<dbl\>      \<dbl\> \<chr\>      \<chr\>                  \<dbl\>
+\#\# 1 2018-06-08      2       0          1 Boat       Rod and Reel               4
+\#\# 2 2018-06-08      2       0          1 Boat       Rod and Reel               4
+\#\# 3 2018-06-08      2       0          2 Boat       Rod and Reel               6
+\#\# 4 2018-06-08      2       0          2 Boat       Rod and Reel               6
+\#\# 5 2018-06-08      2       0          2 Boat       Rod and Reel               6
+\#\# 6 2018-06-08      2       0          2 Boat       Rod and Reel               6
+\#\# \# … with 10 more variables: timeFishedMins \<dbl\>, tripType \<chr\>,
+\#\# \#   numFish \<dbl\>, catchType \<chr\>, speciesCaught \<chr\>, speciesSought \<chr\>,
 \#\# \#   partyID \<chr\>, month \<chr\>, dayWeek \<chr\>, strata \<chr\>
 
 *Mean daily estimator*
@@ -1029,227 +1029,227 @@ The mean-daily estimator takes creel information and digests the effort and asso
 
 *Calculate the mean angler count for boat and bank anglers per shift*
 
-juneCount %\>%   
-  group\_by(date,period,section) %\>%   
-  summarise(meanBank \= mean(bankAnglers),  
+juneCount %\>%
+  group\_by(date,period,section) %\>%
+  summarise(meanBank \= mean(bankAnglers),
             meanBoat \= mean(boatAnglers)) \-\> dailyMeanCount
 
 head(dailyMeanCount)
 
-\#\# \# A tibble: 6 x 5  
-\#\# \# Groups:   date, period \[6\]  
-\#\#   date                period section meanBank meanBoat  
-\#\#   \<dttm\>               \<dbl\>   \<dbl\>    \<dbl\>    \<dbl\>  
-\#\# 1 2018-06-08 00:00:00      2       0      2.5       40  
-\#\# 2 2018-06-09 00:00:00      1       0      6         93  
-\#\# 3 2018-06-10 00:00:00      1       0      3         63  
-\#\# 4 2018-06-11 00:00:00      1       0      1         12  
-\#\# 5 2018-06-12 00:00:00      2       0      1         42  
+\#\# \# A tibble: 6 x 5
+\#\# \# Groups:   date, period \[6\]
+\#\#   date                period section meanBank meanBoat
+\#\#   \<dttm\>               \<dbl\>   \<dbl\>    \<dbl\>    \<dbl\>
+\#\# 1 2018-06-08 00:00:00      2       0      2.5       40
+\#\# 2 2018-06-09 00:00:00      1       0      6         93
+\#\# 3 2018-06-10 00:00:00      1       0      3         63
+\#\# 4 2018-06-11 00:00:00      1       0      1         12
+\#\# 5 2018-06-12 00:00:00      2       0      1         42
 \#\# 6 2018-06-13 00:00:00      1       0      0          6
 
 *Convert the mean angler counts per shift to angler effort per day*
 
-dailyMeanCount %\>%   
-  mutate(bankHours \= meanBank \* 8, \# creel shifts are 8 hrs long  
-         boatHours \= meanBoat \* 8,  
-         bankDayHours \= bankHours/0.5, \# morning and afternoon shifts represent half of the day  
+dailyMeanCount %\>%
+  mutate(bankHours \= meanBank \* 8, \# creel shifts are 8 hrs long
+         boatHours \= meanBoat \* 8,
+         bankDayHours \= bankHours/0.5, \# morning and afternoon shifts represent half of the day
          boatDayHours \= boatHours/0.5) \-\> dailyEffort
 
 head(dailyEffort)
 
-\#\# \# A tibble: 6 x 9  
-\#\# \# Groups:   date, period \[6\]  
-\#\#   date                period section meanBank meanBoat bankHours boatHours  
-\#\#   \<dttm\>               \<dbl\>   \<dbl\>    \<dbl\>    \<dbl\>     \<dbl\>     \<dbl\>  
-\#\# 1 2018-06-08 00:00:00      2       0      2.5       40        20       320  
-\#\# 2 2018-06-09 00:00:00      1       0      6         93        48       744  
-\#\# 3 2018-06-10 00:00:00      1       0      3         63        24       504  
-\#\# 4 2018-06-11 00:00:00      1       0      1         12         8        96  
-\#\# 5 2018-06-12 00:00:00      2       0      1         42         8       336  
-\#\# 6 2018-06-13 00:00:00      1       0      0          6         0        48  
+\#\# \# A tibble: 6 x 9
+\#\# \# Groups:   date, period \[6\]
+\#\#   date                period section meanBank meanBoat bankHours boatHours
+\#\#   \<dttm\>               \<dbl\>   \<dbl\>    \<dbl\>    \<dbl\>     \<dbl\>     \<dbl\>
+\#\# 1 2018-06-08 00:00:00      2       0      2.5       40        20       320
+\#\# 2 2018-06-09 00:00:00      1       0      6         93        48       744
+\#\# 3 2018-06-10 00:00:00      1       0      3         63        24       504
+\#\# 4 2018-06-11 00:00:00      1       0      1         12         8        96
+\#\# 5 2018-06-12 00:00:00      2       0      1         42         8       336
+\#\# 6 2018-06-13 00:00:00      1       0      0          6         0        48
 \#\# \# … with 2 more variables: bankDayHours \<dbl\>, boatDayHours \<dbl\>
 
 *Calculate the mean daily effort within each strata (weekdays, weekend days)*
 
-dailyEffort %\>%   
-  ungroup() %\>% \# remove the previous grouping  
-  pivot\_longer(bankDayHours:boatDayHours, names\_to \= "anglerType", values\_to \= "dailyEffort") %\>% \# move from wide format to long format  
-  mutate(anglerType \= case\_when(anglerType \== "bankDayHours" \~ "Bank", \# simplify angler type  
-                          anglerType \== "boatDayHours" \~ "Boat"),  
-         date \= ymd(date), \# use lubridate to convert date to a date object  
-         month \= month(date, label \= TRUE), \# get the month for each date  
-         strata \= ifelse(wday(date,label \= TRUE) %in% c("Sat","Sun"),"weekendday","weekday")) %\>% \# identify whether each day is a weekend day or week day  
-  group\_by(month, anglerType, strata) %\>%   
-  summarise(meanDailyEffort \= mean(dailyEffort), \# calculate mean daily effort  
-            varDailyEffort \= var(dailyEffort), \# calculate variance of effort  
+dailyEffort %\>%
+  ungroup() %\>% \# remove the previous grouping
+  pivot\_longer(bankDayHours:boatDayHours, names\_to \= "anglerType", values\_to \= "dailyEffort") %\>% \# move from wide format to long format
+  mutate(anglerType \= case\_when(anglerType \== "bankDayHours" \~ "Bank", \# simplify angler type
+                          anglerType \== "boatDayHours" \~ "Boat"),
+         date \= ymd(date), \# use lubridate to convert date to a date object
+         month \= month(date, label \= TRUE), \# get the month for each date
+         strata \= ifelse(wday(date,label \= TRUE) %in% c("Sat","Sun"),"weekendday","weekday")) %\>% \# identify whether each day is a weekend day or week day
+  group\_by(month, anglerType, strata) %\>%
+  summarise(meanDailyEffort \= mean(dailyEffort), \# calculate mean daily effort
+            varDailyEffort \= var(dailyEffort), \# calculate variance of effort
             nDaysSampled \= n()) \-\> meanDailyEffort \# calculate the actual number of days sampled
 
 *Calculate a weighted daily estimate*
 
-\# create a data frame that describes the number of weekdays, weekend days, and total days per month  
-tibble(month \= "Jun",  
-       strata \= c("weekday","weekendday"),  
-       nDays \= c(8,22),  
+\# create a data frame that describes the number of weekdays, weekend days, and total days per month
+tibble(month \= "Jun",
+       strata \= c("weekday","weekendday"),
+       nDays \= c(8,22),
        ttlDays \= 30\) \-\> daysPerMonth
 
-left\_join(meanDailyEffort, daysPerMonth, by \= c("month", "strata")) %\>%  \# join the days per month with the effort per strata data  
-  group\_by(month, anglerType) %\>%   
-  mutate(strataDailyEffort \= (nDays \* meanDailyEffort)/ ttlDays, \# calculate mean daily effort per strata  
-         strataDailyEffort \= ifelse(is.nan(strataDailyEffort), 0, strataDailyEffort), \# if variance is not-a-number (i.e., 0/0) convert to a zero  
-         strataWeight \= nDays/ttlDays, \# create a weight of the number of days within a strata to the total number in the month  
-         var1 \= (strataWeight^2 \* varDailyEffort)/nDaysSampled, \# variance calculations  
-         var2 \= (strataWeight \* varDailyEffort)/ttlDays) %\>%   
-  summarize(dailyEffortMean \= sum(strataDailyEffort), \# add the daily effort of the estimates  
-            dailyEffortVar \= sum(var1) \- sum(var2), \# caulate variances  
-            seEffort \= sqrt(dailyEffortVar), \# calculate square roots  
+left\_join(meanDailyEffort, daysPerMonth, by \= c("month", "strata")) %\>%  \# join the days per month with the effort per strata data
+  group\_by(month, anglerType) %\>%
+  mutate(strataDailyEffort \= (nDays \* meanDailyEffort)/ ttlDays, \# calculate mean daily effort per strata
+         strataDailyEffort \= ifelse(is.nan(strataDailyEffort), 0, strataDailyEffort), \# if variance is not-a-number (i.e., 0/0) convert to a zero
+         strataWeight \= nDays/ttlDays, \# create a weight of the number of days within a strata to the total number in the month
+         var1 \= (strataWeight^2 \* varDailyEffort)/nDaysSampled, \# variance calculations
+         var2 \= (strataWeight \* varDailyEffort)/ttlDays) %\>%
+  summarize(dailyEffortMean \= sum(strataDailyEffort), \# add the daily effort of the estimates
+            dailyEffortVar \= sum(var1) \- sum(var2), \# caulate variances
+            seEffort \= sqrt(dailyEffortVar), \# calculate square roots
             ttlDays \= mean(ttlDays)) \-\> overallDailyEffort \# carry forward the total days per month
 
 overallDailyEffort
 
-\#\# \# A tibble: 2 x 6  
-\#\# \# Groups:   month \[1\]  
-\#\#   month anglerType dailyEffortMean dailyEffortVar seEffort ttlDays  
-\#\#   \<chr\> \<chr\>                \<dbl\>          \<dbl\>    \<dbl\>   \<dbl\>  
-\#\# 1 Jun   Bank                  44.3           31.4     5.60      30  
+\#\# \# A tibble: 2 x 6
+\#\# \# Groups:   month \[1\]
+\#\#   month anglerType dailyEffortMean dailyEffortVar seEffort ttlDays
+\#\#   \<chr\> \<chr\>                \<dbl\>          \<dbl\>    \<dbl\>   \<dbl\>
+\#\# 1 Jun   Bank                  44.3           31.4     5.60      30
 \#\# 2 Jun   Boat                 694\.          9628\.     98.1       30
 
 *Extrapolate daily effort out to the entire month and calculate 95% confidence intervals around the estimate*
 
-overallDailyEffort %\>%   
-  mutate(ttlEffort \= dailyEffortMean \* ttlDays, \# monthly effort  
-         ttlVar \= ttlDays^2 \* dailyEffortVar,  \# monthly variance  
-         effortSE \= seEffort \* ttlDays, \# monthly standard error  
-         effortCIhi \= ttlEffort \+ 1.96\*seEffort, \# confidence interval high  
-         effortCIlo \= ttlEffort \- 1.96\*seEffort) %\>% \# confidence interval low  
+overallDailyEffort %\>%
+  mutate(ttlEffort \= dailyEffortMean \* ttlDays, \# monthly effort
+         ttlVar \= ttlDays^2 \* dailyEffortVar,  \# monthly variance
+         effortSE \= seEffort \* ttlDays, \# monthly standard error
+         effortCIhi \= ttlEffort \+ 1.96\*seEffort, \# confidence interval high
+         effortCIlo \= ttlEffort \- 1.96\*seEffort) %\>% \# confidence interval low
   select(-dailyEffortMean, \-dailyEffortVar, \-seEffort, \-ttlDays) \-\> meanDailyEstimator \# remove columns no longer needed
 
 meanDailyEstimator
 
-\#\# \# A tibble: 2 x 7  
-\#\# \# Groups:   month \[1\]  
-\#\#   month anglerType ttlEffort   ttlVar effortSE effortCIhi effortCIlo  
-\#\#   \<chr\> \<chr\>          \<dbl\>    \<dbl\>    \<dbl\>      \<dbl\>      \<dbl\>  
-\#\# 1 Jun   Bank           1328\.   28239\.     168\.      1339\.      1317\.  
+\#\# \# A tibble: 2 x 7
+\#\# \# Groups:   month \[1\]
+\#\#   month anglerType ttlEffort   ttlVar effortSE effortCIhi effortCIlo
+\#\#   \<chr\> \<chr\>          \<dbl\>    \<dbl\>    \<dbl\>      \<dbl\>      \<dbl\>
+\#\# 1 Jun   Bank           1328\.   28239\.     168\.      1339\.      1317\.
 \#\# 2 Jun   Boat          20827\. 8665510\.    2944\.     21020\.     20635\.
 
 *Strata estimator*
 
-The strata estimator is similar to the mean daily estimator but instead of creating a mean day, it retains the mean and variance of the estimates within the strata. To get monthly estimates, we extrapolate within strata and then add the estimates and variance. A good example of the strata approach for for both effort and catch can be found in Rasmussen et al. (1998). 
+The strata estimator is similar to the mean daily estimator but instead of creating a mean day, it retains the mean and variance of the estimates within the strata. To get monthly estimates, we extrapolate within strata and then add the estimates and variance. A good example of the strata approach for for both effort and catch can be found in Rasmussen et al. (1998).
 
-\# Caculate daily estimates of effort the same as in the above example  
-juneCount %\>%   
-  group\_by(date,period,section) %\>%   
-  summarise(meanBank \= mean(bankAnglers),   
-            meanBoat \= mean(boatAnglers),  
-            nCounts \= n()) %\>%   
-  mutate(bankHours \= meanBank \* 8,  
-         boatHours \= meanBoat \* 8,  
-         bankDayHours \= bankHours/0.5,  
+\# Caculate daily estimates of effort the same as in the above example
+juneCount %\>%
+  group\_by(date,period,section) %\>%
+  summarise(meanBank \= mean(bankAnglers),
+            meanBoat \= mean(boatAnglers),
+            nCounts \= n()) %\>%
+  mutate(bankHours \= meanBank \* 8,
+         boatHours \= meanBoat \* 8,
+         bankDayHours \= bankHours/0.5,
          boatDayHours \= boatHours/0.5) \-\> dailyEffort
 
 *Calculate mean strata effort estimates*
 
-dailyEffort %\>%   
-  ungroup() %\>%   
-  select(date, bankDayHours,boatDayHours) %\>% \# select specific comments  
-  pivot\_longer(bankDayHours:boatDayHours, names\_to \= "anglerType", values\_to \= "dailyEffort") %\>% \# wide to long format  
-  mutate(anglerType \= case\_when(anglerType \== "bankDayHours" \~ "Bank", \# simplify angler type  
-                          anglerType \== "boatDayHours" \~ "Boat"),  
-         date \= ymd(date), \# convert to date format  
-         month \= month(date, label \= TRUE), \# add month   
-         strata \= ifelse(wday(date,label \= TRUE) %in% c("Sat","Sun"),"weekendday","weekday")) %\>% \# add what kind of strata  
-  group\_by(month, strata, anglerType) %\>%   
-  summarise(meanStrataEffort \= mean(dailyEffort), \#mean effort  
-            sb2 \= var(dailyEffort), \# among day effort variance  
-            nSampled \= n\_distinct(date)) %\>%  \# number of days sampled  
-  left\_join(daysPerMonth, by \= c("month", "strata")) %\>% \# join to the number of days per month  
+dailyEffort %\>%
+  ungroup() %\>%
+  select(date, bankDayHours,boatDayHours) %\>% \# select specific comments
+  pivot\_longer(bankDayHours:boatDayHours, names\_to \= "anglerType", values\_to \= "dailyEffort") %\>% \# wide to long format
+  mutate(anglerType \= case\_when(anglerType \== "bankDayHours" \~ "Bank", \# simplify angler type
+                          anglerType \== "boatDayHours" \~ "Boat"),
+         date \= ymd(date), \# convert to date format
+         month \= month(date, label \= TRUE), \# add month
+         strata \= ifelse(wday(date,label \= TRUE) %in% c("Sat","Sun"),"weekendday","weekday")) %\>% \# add what kind of strata
+  group\_by(month, strata, anglerType) %\>%
+  summarise(meanStrataEffort \= mean(dailyEffort), \#mean effort
+            sb2 \= var(dailyEffort), \# among day effort variance
+            nSampled \= n\_distinct(date)) %\>%  \# number of days sampled
+  left\_join(daysPerMonth, by \= c("month", "strata")) %\>% \# join to the number of days per month
   mutate(strataEffort \= meanStrataEffort \* nDays) \-\> effort2 \# extrapolate effort within strata
 
 effort2
 
-\#\# \# A tibble: 4 x 9  
-\#\# \# Groups:   month, strata \[2\]  
-\#\#   month strata anglerType meanStrataEffort    sb2 nSampled nDays ttlDays  
-\#\#   \<chr\> \<chr\>  \<chr\>                 \<dbl\>  \<dbl\>    \<int\> \<dbl\>   \<dbl\>  
-\#\# 1 Jun   weekd… Bank                   15.2 2.20e2       10     8      30  
-\#\# 2 Jun   weekd… Boat                  328   6.20e4       10     8      30  
-\#\# 3 Jun   weeke… Bank                   54.9 6.06e2        7    22      30  
-\#\# 4 Jun   weeke… Boat                  827\.  1.86e5        7    22      30  
+\#\# \# A tibble: 4 x 9
+\#\# \# Groups:   month, strata \[2\]
+\#\#   month strata anglerType meanStrataEffort    sb2 nSampled nDays ttlDays
+\#\#   \<chr\> \<chr\>  \<chr\>                 \<dbl\>  \<dbl\>    \<int\> \<dbl\>   \<dbl\>
+\#\# 1 Jun   weekd… Bank                   15.2 2.20e2       10     8      30
+\#\# 2 Jun   weekd… Boat                  328   6.20e4       10     8      30
+\#\# 3 Jun   weeke… Bank                   54.9 6.06e2        7    22      30
+\#\# 4 Jun   weeke… Boat                  827\.  1.86e5        7    22      30
 \#\# \# … with 1 more variable: strataEffort \<dbl\>
 
 *The strata estimator and multiple counts per shift allows us to include within daily variance to estimates.* In this process, we broke the components of variance into different components as described in @.
 
-juneCount %\>%   
-  pivot\_longer(bankAnglers:boatAnglers, names\_to \= "anglerType", values\_to \= "effort") %\>%  
-  mutate(hours \= effort \* 8,  
-         dayHours \= hours/0.5) %\>% \# extrapolate effort out  
-  group\_by(date, anglerType) %\>%   
-  mutate(meanEffort \= mean(dayHours), \# mean effort  
-         diffSq \= (dayHours \- meanEffort)^2) %\>%  \# difference from mean squared  
-  summarise(sumDiff \= sum(diffSq), \# sum of the squared difference  
+juneCount %\>%
+  pivot\_longer(bankAnglers:boatAnglers, names\_to \= "anglerType", values\_to \= "effort") %\>%
+  mutate(hours \= effort \* 8,
+         dayHours \= hours/0.5) %\>% \# extrapolate effort out
+  group\_by(date, anglerType) %\>%
+  mutate(meanEffort \= mean(dayHours), \# mean effort
+         diffSq \= (dayHours \- meanEffort)^2) %\>%  \# difference from mean squared
+  summarise(sumDiff \= sum(diffSq), \# sum of the squared difference
             nCounts \= n()) \-\> dailyVar1 \# number of daily counts
 
-\# Within day variance  
-dailyVar1 %\>%   
-  ungroup() %\>%   
-  mutate(date \= ymd(date), \# date  
-         month \= month(date, label \= TRUE), \# month  
-         strata \= ifelse(wday(date,label \= TRUE) %in% c("Sat","Sun"),"weekendday","weekday")) %\>% \# strata  
-  \# left\_join(daysPerMonth, by \= c("month", "strata")) %\>%   
-  group\_by(month, strata, anglerType,nCounts) %\>%   
-  summarise(strataSum \= sum(sumDiff), \# sum of the difference   
-            nSampled \= n()) %\>% \# number of days sampled  
+\# Within day variance
+dailyVar1 %\>%
+  ungroup() %\>%
+  mutate(date \= ymd(date), \# date
+         month \= month(date, label \= TRUE), \# month
+         strata \= ifelse(wday(date,label \= TRUE) %in% c("Sat","Sun"),"weekendday","weekday")) %\>% \# strata
+  \# left\_join(daysPerMonth, by \= c("month", "strata")) %\>%
+  group\_by(month, strata, anglerType,nCounts) %\>%
+  summarise(strataSum \= sum(sumDiff), \# sum of the difference
+            nSampled \= n()) %\>% \# number of days sampled
   mutate(withinDayVar \= strataSum/(nSampled\*(nCounts-1))) \-\> withinDayVar \# caclulate within day variance
 
-dailyVar1 %\>%   
-  ungroup() %\>%   
-  mutate(date \= ymd(date), \# date  
-         month \= month(date, label \= TRUE), \# month  
-         strata \= ifelse(wday(date,label \= TRUE) %in% c("Sat","Sun"),"weekendday","weekday")) %\>%  \#strata  
-  group\_by(month, strata, anglerType,nCounts) %\>%   
-  summarise(strataSum \= sum(sumDiff), \# sum of the difference   
-            nSampled \= n()) %\>% \# number of days sampled  
-  ungroup() %\>%   
-  mutate(sw2 \= strataSum/(nSampled\*(nCounts-1)), \# component of variance  
-         anglerType \= case\_when(anglerType \== "bankAnglers" \~ "Bank", \# simplify angler type  
-                          anglerType \== "boatAnglers" \~ "Boat")) \-\> sw2  
-    
- sw2 %\>%   
-   select(month, strata, anglerType, sw2) %\>%   
-   full\_join(effort2) %\>% \# join with effort data  
-   mutate(var\_y2bar \= (((1-(nSampled/nDays))/nSampled)\*sb2) \+ (1/(2\*nDays))\*sw2, \# component of variance  
-          strataVar \= (nDays^2) \* var\_y2bar)  %\>%  \# strata variance  
-   select(month, strata, anglerType, strataEffort, strataVar)  %\>%    
-   group\_by(month, anglerType) %\>%   
-   summarise(ttlEffort \= sum(strataEffort), \# monthly effort  
-             ttlVar \= sum(strataVar)) %\>%  \# monthly variance  
-   mutate(effortSE \= sqrt(ttlVar), \# standard error  
-          effortCIlo \= ttlEffort \- 1.96 \* effortSE, \# confidence interval  
+dailyVar1 %\>%
+  ungroup() %\>%
+  mutate(date \= ymd(date), \# date
+         month \= month(date, label \= TRUE), \# month
+         strata \= ifelse(wday(date,label \= TRUE) %in% c("Sat","Sun"),"weekendday","weekday")) %\>%  \#strata
+  group\_by(month, strata, anglerType,nCounts) %\>%
+  summarise(strataSum \= sum(sumDiff), \# sum of the difference
+            nSampled \= n()) %\>% \# number of days sampled
+  ungroup() %\>%
+  mutate(sw2 \= strataSum/(nSampled\*(nCounts-1)), \# component of variance
+         anglerType \= case\_when(anglerType \== "bankAnglers" \~ "Bank", \# simplify angler type
+                          anglerType \== "boatAnglers" \~ "Boat")) \-\> sw2
+
+ sw2 %\>%
+   select(month, strata, anglerType, sw2) %\>%
+   full\_join(effort2) %\>% \# join with effort data
+   mutate(var\_y2bar \= (((1-(nSampled/nDays))/nSampled)\*sb2) \+ (1/(2\*nDays))\*sw2, \# component of variance
+          strataVar \= (nDays^2) \* var\_y2bar)  %\>%  \# strata variance
+   select(month, strata, anglerType, strataEffort, strataVar)  %\>%
+   group\_by(month, anglerType) %\>%
+   summarise(ttlEffort \= sum(strataEffort), \# monthly effort
+             ttlVar \= sum(strataVar)) %\>%  \# monthly variance
+   mutate(effortSE \= sqrt(ttlVar), \# standard error
+          effortCIlo \= ttlEffort \- 1.96 \* effortSE, \# confidence interval
           effortCIhi \= ttlEffort \+ 1.96 \* effortSE) \-\> strataEstimators
 
-\#\# Warning: Column \`month\` joining factor and character vector, coercing into  
+\#\# Warning: Column \`month\` joining factor and character vector, coercing into
 \#\# character vector
 
  strataEstimators
 
-\#\# \# A tibble: 2 x 7  
-\#\# \# Groups:   month \[1\]  
-\#\#   month anglerType ttlEffort    ttlVar effortSE effortCIlo effortCIhi  
-\#\#   \<chr\> \<chr\>          \<dbl\>     \<dbl\>    \<dbl\>      \<dbl\>      \<dbl\>  
-\#\# 1 Jun   Bank           1328\.    47520\.     218\.       901\.      1756\.  
+\#\# \# A tibble: 2 x 7
+\#\# \# Groups:   month \[1\]
+\#\#   month anglerType ttlEffort    ttlVar effortSE effortCIlo effortCIhi
+\#\#   \<chr\> \<chr\>          \<dbl\>     \<dbl\>    \<dbl\>      \<dbl\>      \<dbl\>
+\#\# 1 Jun   Bank           1328\.    47520\.     218\.       901\.      1756\.
 \#\# 2 Jun   Boat          20827\. 11730840\.    3425\.     14114\.     27540\.
 
 *Comparison of mean daily estimates and strata estimator method for assessing angler effort*
 
-rbind(data.frame(type \= "Strata", strataEstimators), \# combine strata and the mean daily estimator  
+rbind(data.frame(type \= "Strata", strataEstimators), \# combine strata and the mean daily estimator
       data.frame(type \= "MeanDaily", meanDailyEstimator)) \-\> effortEstimator
 
-ggplot(data \= effortEstimator, aes(x \= anglerType, y \= ttlEffort, ymin \= effortCIlo, ymax \= effortCIhi, color \= type) ) \+  
-  geom\_errorbar(position \= position\_dodge(0.9), width \= 0.5) \+  
-  geom\_point(aes(), size \= 2,position \= position\_dodge(0.9)) \+  
-  labs(y \= "Monthly Effort", y \= "Angler type") \+  
-  coord\_cartesian(xlim \= c(0.5,2.5), ylim \= c(0, 30000), expand \= FALSE) \+  
-  theme\_classic() \+  
+ggplot(data \= effortEstimator, aes(x \= anglerType, y \= ttlEffort, ymin \= effortCIlo, ymax \= effortCIhi, color \= type) ) \+
+  geom\_errorbar(position \= position\_dodge(0.9), width \= 0.5) \+
+  geom\_point(aes(), size \= 2,position \= position\_dodge(0.9)) \+
+  labs(y \= "Monthly Effort", y \= "Angler type") \+
+  coord\_cartesian(xlim \= c(0.5,2.5), ylim \= c(0, 30000), expand \= FALSE) \+
+  theme\_classic() \+
   theme(legend.position \= "bottom")
 
 ![][image3]
@@ -1260,47 +1260,47 @@ In this example, we can see that the point estimates are fairly consistent betwe
 
 *Load libraries: tidyverse and lubridate.*
 
-library(tidyverse)  
+library(tidyverse)
 library(lubridate)
 
 *Load interview data and strata effort data (from box 18.4), and check data.*
 
-juneStrataEffort \<- read\_csv("out\_data/juneStrataEffort.csv")   
+juneStrataEffort \<- read\_csv("out\_data/juneStrataEffort.csv")
 head(juneStrataEffort)
 
-\#\# \# A tibble: 4 x 5  
-\#\#   month strata     anglerType strataEffort strataVar  
-\#\#   \<chr\> \<chr\>      \<chr\>             \<dbl\>     \<dbl\>  
-\#\# 1 Jun   weekday    Bank               122\.      826\.  
-\#\# 2 Jun   weekday    Boat              2624     64899\.  
-\#\# 3 Jun   weekendday Bank              1207\.    46694\.  
+\#\# \# A tibble: 4 x 5
+\#\#   month strata     anglerType strataEffort strataVar
+\#\#   \<chr\> \<chr\>      \<chr\>             \<dbl\>     \<dbl\>
+\#\# 1 Jun   weekday    Bank               122\.      826\.
+\#\# 2 Jun   weekday    Boat              2624     64899\.
+\#\# 3 Jun   weekendday Bank              1207\.    46694\.
 \#\# 4 Jun   weekendday Boat             18203\. 11665941\.
 
-juneInterviews \<- read\_csv("out\_data/juneInterviews.csv")  
+juneInterviews \<- read\_csv("out\_data/juneInterviews.csv")
 head(juneInterviews)
 
-\#\# \# A tibble: 6 x 17  
-\#\#   date       period section numAnglers anglerType anglerMethod timeFishedHours  
-\#\#   \<date\>      \<dbl\>   \<dbl\>      \<dbl\> \<chr\>      \<chr\>                  \<dbl\>  
-\#\# 1 2018-06-08      2       0          1 Boat       Rod and Reel               4  
-\#\# 2 2018-06-08      2       0          1 Boat       Rod and Reel               4  
-\#\# 3 2018-06-08      2       0          2 Boat       Rod and Reel               6  
-\#\# 4 2018-06-08      2       0          2 Boat       Rod and Reel               6  
-\#\# 5 2018-06-08      2       0          2 Boat       Rod and Reel               6  
-\#\# 6 2018-06-08      2       0          2 Boat       Rod and Reel               6  
-\#\# \# … with 10 more variables: timeFishedMins \<dbl\>, tripType \<chr\>,  
-\#\# \#   numFish \<dbl\>, catchType \<chr\>, speciesCaught \<chr\>, speciesSought \<chr\>,  
+\#\# \# A tibble: 6 x 17
+\#\#   date       period section numAnglers anglerType anglerMethod timeFishedHours
+\#\#   \<date\>      \<dbl\>   \<dbl\>      \<dbl\> \<chr\>      \<chr\>                  \<dbl\>
+\#\# 1 2018-06-08      2       0          1 Boat       Rod and Reel               4
+\#\# 2 2018-06-08      2       0          1 Boat       Rod and Reel               4
+\#\# 3 2018-06-08      2       0          2 Boat       Rod and Reel               6
+\#\# 4 2018-06-08      2       0          2 Boat       Rod and Reel               6
+\#\# 5 2018-06-08      2       0          2 Boat       Rod and Reel               6
+\#\# 6 2018-06-08      2       0          2 Boat       Rod and Reel               6
+\#\# \# … with 10 more variables: timeFishedMins \<dbl\>, tripType \<chr\>,
+\#\# \#   numFish \<dbl\>, catchType \<chr\>, speciesCaught \<chr\>, speciesSought \<chr\>,
 \#\# \#   partyID \<chr\>, month \<chr\>, dayWeek \<chr\>, strata \<chr\>
 
 When we calculate the catch rates, we must take into account whether the interview was complete or incomplete. Pollock et al. (1997) identified important issues concerning the point estimates and variances when catches were estimated from roving (mostly incomplete surveys) or from access point (complete surveys). We will walk through an example of a hybrid approach that uses complete survey information and incomplete survey information.
 
 *Look at the data to identify the number of complete and incomplete interviews*
 
-ggplot(juneInterviews) \+   
-  geom\_histogram(aes(x \= tripType, fill \= tripType), stat \= "count",color \= "black") \+  
-  coord\_cartesian(xlim \= c(0.5, 2.5), ylim \= c(0, 200), expand \= FALSE) \+  
-  labs(x \= "Trip type", y \= "Number") \+  
-  theme\_classic() \+  
+ggplot(juneInterviews) \+
+  geom\_histogram(aes(x \= tripType, fill \= tripType), stat \= "count",color \= "black") \+
+  coord\_cartesian(xlim \= c(0.5, 2.5), ylim \= c(0, 200), expand \= FALSE) \+
+  labs(x \= "Trip type", y \= "Number") \+
+  theme\_classic() \+
   theme(legend.position \= "none")
 
 \#\# Warning: Ignoring unknown parameters: binwidth, bins, pad
@@ -1309,187 +1309,187 @@ ggplot(juneInterviews) \+
 
 *Keep individual party information separate from the catch information*
 
-juneInterviews %\>%   
-  distinct(partyID, .keep\_all \= TRUE) %\>%   
-  select(-numFish, \-speciesCaught, \-catchType) \-\> partyInfo  
+juneInterviews %\>%
+  distinct(partyID, .keep\_all \= TRUE) %\>%
+  select(-numFish, \-speciesCaught, \-catchType) \-\> partyInfo
 head(partyInfo)
 
-\#\# \# A tibble: 6 x 14  
-\#\#   date       period section numAnglers anglerType anglerMethod timeFishedHours  
-\#\#   \<date\>      \<dbl\>   \<dbl\>      \<dbl\> \<chr\>      \<chr\>                  \<dbl\>  
-\#\# 1 2018-06-08      2       0          1 Boat       Rod and Reel               4  
-\#\# 2 2018-06-08      2       0          2 Boat       Rod and Reel               6  
-\#\# 3 2018-06-08      2       0          2 Bank       Rod and Reel               0  
-\#\# 4 2018-06-08      2       0          2 Boat       Rod and Reel               4  
-\#\# 5 2018-06-08      2       0          2 Boat       Rod and Reel               5  
-\#\# 6 2018-06-08      2       0          3 Bank       Rod and Reel               5  
-\#\# \# … with 7 more variables: timeFishedMins \<dbl\>, tripType \<chr\>,  
-\#\# \#   speciesSought \<chr\>, partyID \<chr\>, month \<chr\>, dayWeek \<chr\>,  
+\#\# \# A tibble: 6 x 14
+\#\#   date       period section numAnglers anglerType anglerMethod timeFishedHours
+\#\#   \<date\>      \<dbl\>   \<dbl\>      \<dbl\> \<chr\>      \<chr\>                  \<dbl\>
+\#\# 1 2018-06-08      2       0          1 Boat       Rod and Reel               4
+\#\# 2 2018-06-08      2       0          2 Boat       Rod and Reel               6
+\#\# 3 2018-06-08      2       0          2 Bank       Rod and Reel               0
+\#\# 4 2018-06-08      2       0          2 Boat       Rod and Reel               4
+\#\# 5 2018-06-08      2       0          2 Boat       Rod and Reel               5
+\#\# 6 2018-06-08      2       0          3 Bank       Rod and Reel               5
+\#\# \# … with 7 more variables: timeFishedMins \<dbl\>, tripType \<chr\>,
+\#\# \#   speciesSought \<chr\>, partyID \<chr\>, month \<chr\>, dayWeek \<chr\>,
 \#\# \#   strata \<chr\>
 
 *Calculate the number caught per party for all species*
 
-juneInterviews %\>%   
-  select(partyID, speciesCaught,numFish, catchType) %\>%   
-    pivot\_wider(names\_from \= catchType, values\_from \= numFish, values\_fill \= list(numFish \= 0)) %\>% \# move from long format to long format, easy way to fill in missing species  
-  mutate(C \= H \+ R) %\>% \# calculate catch at the sum of fish harvested and fish released  
-  select(-\`NA\`) %\>% \# remove NAs  
-  pivot\_longer(H:C, names\_to \= "catchType", values\_to \= "numCaught") %\>% \#move from wide format to long format  
-  filter(\!is.na(speciesCaught)) %\>% \# remove missing species  
-  \# group\_by(partyID,  speciesCaught, catchType) %\>%   
+juneInterviews %\>%
+  select(partyID, speciesCaught,numFish, catchType) %\>%
+    pivot\_wider(names\_from \= catchType, values\_from \= numFish, values\_fill \= list(numFish \= 0)) %\>% \# move from long format to long format, easy way to fill in missing species
+  mutate(C \= H \+ R) %\>% \# calculate catch at the sum of fish harvested and fish released
+  select(-\`NA\`) %\>% \# remove NAs
+  pivot\_longer(H:C, names\_to \= "catchType", values\_to \= "numCaught") %\>% \#move from wide format to long format
+  filter(\!is.na(speciesCaught)) %\>% \# remove missing species
+  \# group\_by(partyID,  speciesCaught, catchType) %\>%
   inner\_join(partyInfo, by \= "partyID") \-\> partyCatch \# join to party information
 
 head(partyCatch)
 
-\#\# \# A tibble: 6 x 17  
-\#\#   partyID speciesCaught catchType numCaught date       period section numAnglers  
-\#\#   \<chr\>   \<chr\>         \<chr\>         \<dbl\> \<date\>      \<dbl\>   \<dbl\>      \<dbl\>  
-\#\# 1 7ee798… Yellow Perch  H                 6 2018-06-08      2       0          1  
-\#\# 2 7ee798… Yellow Perch  R                 0 2018-06-08      2       0          1  
-\#\# 3 7ee798… Yellow Perch  C                 6 2018-06-08      2       0          1  
-\#\# 4 7ee798… Walleye       H                 0 2018-06-08      2       0          1  
-\#\# 5 7ee798… Walleye       R                24 2018-06-08      2       0          1  
-\#\# 6 7ee798… Walleye       C                24 2018-06-08      2       0          1  
-\#\# \# … with 9 more variables: anglerType \<chr\>, anglerMethod \<chr\>,  
-\#\# \#   timeFishedHours \<dbl\>, timeFishedMins \<dbl\>, tripType \<chr\>,  
+\#\# \# A tibble: 6 x 17
+\#\#   partyID speciesCaught catchType numCaught date       period section numAnglers
+\#\#   \<chr\>   \<chr\>         \<chr\>         \<dbl\> \<date\>      \<dbl\>   \<dbl\>      \<dbl\>
+\#\# 1 7ee798… Yellow Perch  H                 6 2018-06-08      2       0          1
+\#\# 2 7ee798… Yellow Perch  R                 0 2018-06-08      2       0          1
+\#\# 3 7ee798… Yellow Perch  C                 6 2018-06-08      2       0          1
+\#\# 4 7ee798… Walleye       H                 0 2018-06-08      2       0          1
+\#\# 5 7ee798… Walleye       R                24 2018-06-08      2       0          1
+\#\# 6 7ee798… Walleye       C                24 2018-06-08      2       0          1
+\#\# \# … with 9 more variables: anglerType \<chr\>, anglerMethod \<chr\>,
+\#\# \#   timeFishedHours \<dbl\>, timeFishedMins \<dbl\>, tripType \<chr\>,
 \#\# \#   speciesSought \<chr\>, month \<chr\>, dayWeek \<chr\>, strata \<chr\>
 
 *Completed or access interviews*
 
-partyCatch %\>%   
-  filter(tripType \== "complete") %\>%   
-  mutate(partyEffort \= ((timeFishedHours\*60+timeFishedMins)/60)\*numAnglers) %\>% \# effort in decimal hours  
-  group\_by(month, strata, anglerType, speciesCaught, catchType) %\>%   
-  summarise(ttlNum \= sum(numCaught), \# total number caught  
-            ttlAnglers \= sum(numAnglers), \# total number of anglers  
-            ttlTime \= sum(partyEffort), \# tota effort  
-            varF \= var(numCaught), \#variance of fish caught  
-            varH \= var(partyEffort),\# variance of party effort  
-            fbar2 \= mean(numCaught)^2,   
-            hbar2 \= mean(partyEffort)^2,  
-            fhbar2 \= mean(numCaught\*partyEffort)^2,  
-            covfh \= cov(numCaught,partyEffort), \# covariance  
-            k \= n\_distinct(partyID)) %\>%   
-  mutate(rate \= (ttlNum/ttlAnglers)/(ttlTime), \# ratio of the means  
-         varRate \= ((1/k)\*rate^2)\*((varF/fbar2)+((varH/hbar2))+(covfh/fhbar2)), \# variance of the catch rates  
-         varRate \= ifelse(is.nan(varRate),0,varRate)) %\>% \# correct for is not a number  
+partyCatch %\>%
+  filter(tripType \== "complete") %\>%
+  mutate(partyEffort \= ((timeFishedHours\*60+timeFishedMins)/60)\*numAnglers) %\>% \# effort in decimal hours
+  group\_by(month, strata, anglerType, speciesCaught, catchType) %\>%
+  summarise(ttlNum \= sum(numCaught), \# total number caught
+            ttlAnglers \= sum(numAnglers), \# total number of anglers
+            ttlTime \= sum(partyEffort), \# tota effort
+            varF \= var(numCaught), \#variance of fish caught
+            varH \= var(partyEffort),\# variance of party effort
+            fbar2 \= mean(numCaught)^2,
+            hbar2 \= mean(partyEffort)^2,
+            fhbar2 \= mean(numCaught\*partyEffort)^2,
+            covfh \= cov(numCaught,partyEffort), \# covariance
+            k \= n\_distinct(partyID)) %\>%
+  mutate(rate \= (ttlNum/ttlAnglers)/(ttlTime), \# ratio of the means
+         varRate \= ((1/k)\*rate^2)\*((varF/fbar2)+((varH/hbar2))+(covfh/fhbar2)), \# variance of the catch rates
+         varRate \= ifelse(is.nan(varRate),0,varRate)) %\>% \# correct for is not a number
   select(-ttlAnglers, \-ttlTime, \-ttlNum, \-varF, \-varH, \-fbar2, \-hbar2, \-fhbar2, \-covfh, k) \-\> strataComplRates
 
 strataComplRates
 
-\#\# \# A tibble: 48 x 8  
-\#\# \# Groups:   month, strata, anglerType, speciesCaught \[16\]  
-\#\#    month strata  anglerType speciesCaught   catchType     k     rate     varRate  
-\#\#    \<chr\> \<chr\>   \<chr\>      \<chr\>           \<chr\>     \<int\>    \<dbl\>       \<dbl\>  
-\#\#  1 Jun   weekday Bank       Yellow Perch    C             2 0.225    0.00565      
-\#\#  2 Jun   weekday Bank       Yellow Perch    H             2 0        0            
-\#\#  3 Jun   weekday Bank       Yellow Perch    R             2 0.225    0.00565      
-\#\#  4 Jun   weekday Boat       Channel Catfish C             3 0.0175   0.000210     
-\#\#  5 Jun   weekday Boat       Channel Catfish H             3 0.0103   0.0000924    
-\#\#  6 Jun   weekday Boat       Channel Catfish R             3 0.00722  0.0000272    
-\#\#  7 Jun   weekday Boat       Freshwater Drum C            15 0.00586  0.00000254   
-\#\#  8 Jun   weekday Boat       Freshwater Drum H            15 0.000960 0.000000406  
-\#\#  9 Jun   weekday Boat       Freshwater Drum R            15 0.00490  0.00000263   
-\#\# 10 Jun   weekday Boat       Walleye         C            26 0.0145   0.0000136    
+\#\# \# A tibble: 48 x 8
+\#\# \# Groups:   month, strata, anglerType, speciesCaught \[16\]
+\#\#    month strata  anglerType speciesCaught   catchType     k     rate     varRate
+\#\#    \<chr\> \<chr\>   \<chr\>      \<chr\>           \<chr\>     \<int\>    \<dbl\>       \<dbl\>
+\#\#  1 Jun   weekday Bank       Yellow Perch    C             2 0.225    0.00565
+\#\#  2 Jun   weekday Bank       Yellow Perch    H             2 0        0
+\#\#  3 Jun   weekday Bank       Yellow Perch    R             2 0.225    0.00565
+\#\#  4 Jun   weekday Boat       Channel Catfish C             3 0.0175   0.000210
+\#\#  5 Jun   weekday Boat       Channel Catfish H             3 0.0103   0.0000924
+\#\#  6 Jun   weekday Boat       Channel Catfish R             3 0.00722  0.0000272
+\#\#  7 Jun   weekday Boat       Freshwater Drum C            15 0.00586  0.00000254
+\#\#  8 Jun   weekday Boat       Freshwater Drum H            15 0.000960 0.000000406
+\#\#  9 Jun   weekday Boat       Freshwater Drum R            15 0.00490  0.00000263
+\#\# 10 Jun   weekday Boat       Walleye         C            26 0.0145   0.0000136
 \#\# \# … with 38 more rows
 
 *Extrapolate the catch rates to the month*
 
-left\_join(strataComplRates, juneStrataEffort, by \= c("month", "strata", "anglerType")) %\>%   
-  mutate(strataFish \= rate \* strataEffort,  
-         strataFishVar \= (strataEffort^2 \*varRate) \+ (rate^2 \* strataVar) \- (varRate\*strataVar) ) %\>%   
+left\_join(strataComplRates, juneStrataEffort, by \= c("month", "strata", "anglerType")) %\>%
+  mutate(strataFish \= rate \* strataEffort,
+         strataFishVar \= (strataEffort^2 \*varRate) \+ (rate^2 \* strataVar) \- (varRate\*strataVar) ) %\>%
   select(month:catchType, strataFish, strataFishVar) \-\> completeFish
 
 head(completeFish)
 
-\#\# \# A tibble: 6 x 7  
-\#\# \# Groups:   month, strata, anglerType, speciesCaught \[2\]  
-\#\#   month strata  anglerType speciesCaught   catchType strataFish strataFishVar  
-\#\#   \<chr\> \<chr\>   \<chr\>      \<chr\>           \<chr\>          \<dbl\>         \<dbl\>  
-\#\# 1 Jun   weekday Bank       Yellow Perch    C               27.3          121\.  
-\#\# 2 Jun   weekday Bank       Yellow Perch    H                0              0   
-\#\# 3 Jun   weekday Bank       Yellow Perch    R               27.3          121\.  
-\#\# 4 Jun   weekday Boat       Channel Catfish C               46.0         1451\.  
-\#\# 5 Jun   weekday Boat       Channel Catfish H               27.1          637\.  
+\#\# \# A tibble: 6 x 7
+\#\# \# Groups:   month, strata, anglerType, speciesCaught \[2\]
+\#\#   month strata  anglerType speciesCaught   catchType strataFish strataFishVar
+\#\#   \<chr\> \<chr\>   \<chr\>      \<chr\>           \<chr\>          \<dbl\>         \<dbl\>
+\#\# 1 Jun   weekday Bank       Yellow Perch    C               27.3          121\.
+\#\# 2 Jun   weekday Bank       Yellow Perch    H                0              0
+\#\# 3 Jun   weekday Bank       Yellow Perch    R               27.3          121\.
+\#\# 4 Jun   weekday Boat       Channel Catfish C               46.0         1451\.
+\#\# 5 Jun   weekday Boat       Channel Catfish H               27.1          637\.
 \#\# 6 Jun   weekday Boat       Channel Catfish R               18.9          189\.
 
 *Roving or incomplete surveys*
 
-\# Mean of the ratios  
-partyCatch %\>%   
-  filter(tripType \== "incomplete", \# filter to incomplete surveys  
-         (timeFishedHours\*60+timeFishedMins)\>= 30\) %\>% \#truncate surveys to those more than 30 minutes  
-  group\_by(month,partyID, strata, anglerType, speciesCaught, catchType) %\>%  
-  mutate(partyEffort \= ((timeFishedHours\*60+timeFishedMins)/60)\*numAnglers, \# party effort  
-         rate \= numCaught/partyEffort) %\>% \# party catch rates  
-  group\_by(month, strata, anglerType, speciesCaught, catchType) %\>%  
-  summarise(sumRate2 \= sum(rate^2), \#sum of rate squared  
-            sumRate \= sum(rate), \# sum of rates  
-            k \= n\_distinct(partyID), \# number of parties  
-            meanRate \= mean(rate)) %\>%  \# mean rate  
-  mutate(varRate \= (sumRate2 \-((sumRate^2)/k))/(k\*(k-1)), \# variance of rates  
-         varRate \= ifelse(is.nan(varRate),0,varRate)) %\>%  \# correct rates for not-a-numbers  
+\# Mean of the ratios
+partyCatch %\>%
+  filter(tripType \== "incomplete", \# filter to incomplete surveys
+         (timeFishedHours\*60+timeFishedMins)\>= 30\) %\>% \#truncate surveys to those more than 30 minutes
+  group\_by(month,partyID, strata, anglerType, speciesCaught, catchType) %\>%
+  mutate(partyEffort \= ((timeFishedHours\*60+timeFishedMins)/60)\*numAnglers, \# party effort
+         rate \= numCaught/partyEffort) %\>% \# party catch rates
+  group\_by(month, strata, anglerType, speciesCaught, catchType) %\>%
+  summarise(sumRate2 \= sum(rate^2), \#sum of rate squared
+            sumRate \= sum(rate), \# sum of rates
+            k \= n\_distinct(partyID), \# number of parties
+            meanRate \= mean(rate)) %\>%  \# mean rate
+  mutate(varRate \= (sumRate2 \-((sumRate^2)/k))/(k\*(k-1)), \# variance of rates
+         varRate \= ifelse(is.nan(varRate),0,varRate)) %\>%  \# correct rates for not-a-numbers
     select(month, strata, anglerType, speciesCaught, catchType, k, meanRate, varRate) \-\> strataIncomplRates
 
 strataIncomplRates
 
-\#\# \# A tibble: 27 x 8  
-\#\# \# Groups:   month, strata, anglerType, speciesCaught \[9\]  
-\#\#    month strata  anglerType speciesCaught   catchType     k meanRate varRate  
-\#\#    \<chr\> \<chr\>   \<chr\>      \<chr\>           \<chr\>     \<int\>    \<dbl\>   \<dbl\>  
-\#\#  1 Jun   weekday Bank       Channel Catfish C             2   0.110  0.00190  
-\#\#  2 Jun   weekday Bank       Channel Catfish H             2   0.110  0.00190  
-\#\#  3 Jun   weekday Bank       Channel Catfish R             2   0      0        
-\#\#  4 Jun   weekday Bank       Freshwater Drum C             6   0.429  0.0152   
-\#\#  5 Jun   weekday Bank       Freshwater Drum H             6   0.0778 0.00309  
-\#\#  6 Jun   weekday Bank       Freshwater Drum R             6   0.352  0.0224   
-\#\#  7 Jun   weekday Bank       Walleye         C             1   0.299  0        
-\#\#  8 Jun   weekday Bank       Walleye         H             1   0      0        
-\#\#  9 Jun   weekday Bank       Walleye         R             1   0.299  0        
-\#\# 10 Jun   weekday Bank       White Bass      C             2   0.803  0.281    
+\#\# \# A tibble: 27 x 8
+\#\# \# Groups:   month, strata, anglerType, speciesCaught \[9\]
+\#\#    month strata  anglerType speciesCaught   catchType     k meanRate varRate
+\#\#    \<chr\> \<chr\>   \<chr\>      \<chr\>           \<chr\>     \<int\>    \<dbl\>   \<dbl\>
+\#\#  1 Jun   weekday Bank       Channel Catfish C             2   0.110  0.00190
+\#\#  2 Jun   weekday Bank       Channel Catfish H             2   0.110  0.00190
+\#\#  3 Jun   weekday Bank       Channel Catfish R             2   0      0
+\#\#  4 Jun   weekday Bank       Freshwater Drum C             6   0.429  0.0152
+\#\#  5 Jun   weekday Bank       Freshwater Drum H             6   0.0778 0.00309
+\#\#  6 Jun   weekday Bank       Freshwater Drum R             6   0.352  0.0224
+\#\#  7 Jun   weekday Bank       Walleye         C             1   0.299  0
+\#\#  8 Jun   weekday Bank       Walleye         H             1   0      0
+\#\#  9 Jun   weekday Bank       Walleye         R             1   0.299  0
+\#\# 10 Jun   weekday Bank       White Bass      C             2   0.803  0.281
 \#\# \# … with 17 more rows
 
 *Extrapolate the catch rates to the month*
 
-left\_join(strataIncomplRates, juneStrataEffort) %\>%   
-  mutate(strataFish \= meanRate \* strataEffort,  
-         strataFishVar \= (strataEffort^2 \*varRate) \+ (meanRate^2 \* strataVar) \- (varRate\*strataVar) ) %\>%   
+left\_join(strataIncomplRates, juneStrataEffort) %\>%
+  mutate(strataFish \= meanRate \* strataEffort,
+         strataFishVar \= (strataEffort^2 \*varRate) \+ (meanRate^2 \* strataVar) \- (varRate\*strataVar) ) %\>%
   select(month:catchType, strataFish, strataFishVar) \-\> incompleteFish
 
 head(incompleteFish)
 
-\#\# \# A tibble: 6 x 7  
-\#\# \# Groups:   month, strata, anglerType, speciesCaught \[2\]  
-\#\#   month strata  anglerType speciesCaught   catchType strataFish strataFishVar  
-\#\#   \<chr\> \<chr\>   \<chr\>      \<chr\>           \<chr\>          \<dbl\>         \<dbl\>  
-\#\# 1 Jun   weekday Bank       Channel Catfish C              13.4           36.6  
-\#\# 2 Jun   weekday Bank       Channel Catfish H              13.4           36.6  
-\#\# 3 Jun   weekday Bank       Channel Catfish R               0              0    
-\#\# 4 Jun   weekday Bank       Freshwater Drum C              52.2          364\.   
-\#\# 5 Jun   weekday Bank       Freshwater Drum H               9.46          48.1  
+\#\# \# A tibble: 6 x 7
+\#\# \# Groups:   month, strata, anglerType, speciesCaught \[2\]
+\#\#   month strata  anglerType speciesCaught   catchType strataFish strataFishVar
+\#\#   \<chr\> \<chr\>   \<chr\>      \<chr\>           \<chr\>          \<dbl\>         \<dbl\>
+\#\# 1 Jun   weekday Bank       Channel Catfish C              13.4           36.6
+\#\# 2 Jun   weekday Bank       Channel Catfish H              13.4           36.6
+\#\# 3 Jun   weekday Bank       Channel Catfish R               0              0
+\#\# 4 Jun   weekday Bank       Freshwater Drum C              52.2          364\.
+\#\# 5 Jun   weekday Bank       Freshwater Drum H               9.46          48.1
 \#\# 6 Jun   weekday Bank       Freshwater Drum R              42.8          415\.
 
 *Combine the incomplete and complete surveys*
 
-rbind(incompleteFish, completeFish) %\>%   
-  group\_by(month, strata, anglerType, speciesCaught, catchType) %\>%   
-  summarise(numFish \= sum(strataFish), \# add across strata  
-            fishVar \= sum(strataFish)) %\>%   
-  group\_by(month, anglerType, speciesCaught, catchType) %\>%   
-  summarise(monthFish \= sum(numFish),  \# total number  
-            monthVar \= sum(fishVar)) %\>% \# total variance  
-  mutate(monthSE \= sqrt(monthVar), \# standard error  
-         CIlo \= monthFish \- monthSE\*1.96, \#95% confidence interval  
+rbind(incompleteFish, completeFish) %\>%
+  group\_by(month, strata, anglerType, speciesCaught, catchType) %\>%
+  summarise(numFish \= sum(strataFish), \# add across strata
+            fishVar \= sum(strataFish)) %\>%
+  group\_by(month, anglerType, speciesCaught, catchType) %\>%
+  summarise(monthFish \= sum(numFish),  \# total number
+            monthVar \= sum(fishVar)) %\>% \# total variance
+  mutate(monthSE \= sqrt(monthVar), \# standard error
+         CIlo \= monthFish \- monthSE\*1.96, \#95% confidence interval
          CIhi \= monthFish \+ monthSE\*1.96) \-\> fishTotal
 
 *Create a graph of the number of species caught*
 
-ggplot(fishTotal %\>% filter(catchType \== "C"), aes(x \= speciesCaught, y \= monthFish, ymin \= CIlo, ymax= CIhi, fill \= anglerType)) \+   
-  geom\_col(color \= "black", position \= position\_dodge(0.9)) \+  
-  geom\_errorbar(position \= position\_dodge(0.9)) \+  
-  labs(x \= "Species", y \= "Number") \+  
-  coord\_cartesian(xlim \= c(0.5, 5.5), ylim \= c(0, 3000), expand \= FALSE) \+  
-  theme\_classic() \+  
+ggplot(fishTotal %\>% filter(catchType \== "C"), aes(x \= speciesCaught, y \= monthFish, ymin \= CIlo, ymax= CIhi, fill \= anglerType)) \+
+  geom\_col(color \= "black", position \= position\_dodge(0.9)) \+
+  geom\_errorbar(position \= position\_dodge(0.9)) \+
+  labs(x \= "Species", y \= "Number") \+
+  coord\_cartesian(xlim \= c(0.5, 5.5), ylim \= c(0, 3000), expand \= FALSE) \+
+  theme\_classic() \+
   theme(legend.position \= c(0.75,0.75))
 
 ![][image5]
@@ -1498,116 +1498,116 @@ ggplot(fishTotal %\>% filter(catchType \== "C"), aes(x \= speciesCaught, y \= mo
 
 *Load libraries: tidyverse and bipartite*
 
-library(tidyverse)  
+library(tidyverse)
 library(bipartite)
 
 *Load interview data and look at data.*
 
-juneInterviews \<- read\_csv("out\_data/juneInterviews.csv") 
+juneInterviews \<- read\_csv("out\_data/juneInterviews.csv")
 
 *Keep individual party information separate from the catch information*
 
-juneInterviews %\>%   
-  distinct(partyID, .keep\_all \= TRUE) %\>%   
+juneInterviews %\>%
+  distinct(partyID, .keep\_all \= TRUE) %\>%
   select(-numFish, \-speciesCaught, \-catchType) \-\> partyInfo
 
 *Calculate the number caught per party for all species*
 
-juneInterviews %\>%   
-  select(partyID, speciesCaught,numFish, catchType) %\>%   
-        pivot\_wider(names\_from \= catchType, values\_from \= numFish, values\_fill \= list(numFish \= 0)) %\>% \# move from long format to long format, easy way to fill in missing species  
-  mutate(C \= H \+ R) %\>% \# calculate catch at the sum of fish harvested and fish released  
-  select(-\`NA\`) %\>% \# remove NAs  
-  pivot\_longer(H:C, names\_to \= "catchType", values\_to \= "numCaught") %\>% \#move from wide format to long format  
-  filter(\!is.na(speciesCaught),  
-         catchType \== "R") %\>% \# keep only released information  
-  inner\_join(partyInfo, by \= "partyID") %\>% \#join with party information   
-  mutate(partyEffort \= ((timeFishedHours\*60+timeFishedMins)/60)\*numAnglers, \# party effort  
+juneInterviews %\>%
+  select(partyID, speciesCaught,numFish, catchType) %\>%
+        pivot\_wider(names\_from \= catchType, values\_from \= numFish, values\_fill \= list(numFish \= 0)) %\>% \# move from long format to long format, easy way to fill in missing species
+  mutate(C \= H \+ R) %\>% \# calculate catch at the sum of fish harvested and fish released
+  select(-\`NA\`) %\>% \# remove NAs
+  pivot\_longer(H:C, names\_to \= "catchType", values\_to \= "numCaught") %\>% \#move from wide format to long format
+  filter(\!is.na(speciesCaught),
+         catchType \== "R") %\>% \# keep only released information
+  inner\_join(partyInfo, by \= "partyID") %\>% \#join with party information
+  mutate(partyEffort \= ((timeFishedHours\*60+timeFishedMins)/60)\*numAnglers, \# party effort
          CPUE \= numCaught/partyEffort) \-\> partyCatch
 
 *Calculate the number of each species released (standardized to 3 hours of angling).*
 
-partyCatch %\>%   
-  group\_by(anglerMethod, speciesSought, speciesCaught) %\>%   
-  summarise(mCPUE \= mean(CPUE), \# mean catch per unit effort  
-            Catch3hr \= ceiling(mCPUE\*3)) %\>% \# number caught during three hours, rounded up to the nearest whole number  
-  ungroup() %\>%   
-  select(-anglerMethod, \-mCPUE) %\>%   
-  pivot\_wider(names\_from \= speciesSought, values\_from \= Catch3hr, values\_fill \= list(Catch3hr \= 0)) %\>% \# long to wide format  
+partyCatch %\>%
+  group\_by(anglerMethod, speciesSought, speciesCaught) %\>%
+  summarise(mCPUE \= mean(CPUE), \# mean catch per unit effort
+            Catch3hr \= ceiling(mCPUE\*3)) %\>% \# number caught during three hours, rounded up to the nearest whole number
+  ungroup() %\>%
+  select(-anglerMethod, \-mCPUE) %\>%
+  pivot\_wider(names\_from \= speciesSought, values\_from \= Catch3hr, values\_fill \= list(Catch3hr \= 0)) %\>% \# long to wide format
   as.data.frame() \-\> seekCaught \# convert to data.frame
 
 *Convert to a matrix*
 
-rownames(seekCaught) \<- seekCaught$speciesCaught \# species released as a row name  
-seekCaught \<- seekCaught\[,-1\] \# remove species released column  
-seekCaught \<- as.matrix(seekCaught) \#convert to a matrix  
+rownames(seekCaught) \<- seekCaught$speciesCaught \# species released as a row name
+seekCaught \<- seekCaught\[,-1\] \# remove species released column
+seekCaught \<- as.matrix(seekCaught) \#convert to a matrix
 seekCaught
 
-\#\#                 Anything Channel Catfish Walleye White Bass  
-\#\# Channel Catfish        1               1       1          0  
-\#\# Freshwater Drum        1               0       2          0  
-\#\# Walleye                1               1       4          0  
-\#\# White Bass             1               1       2          3  
+\#\#                 Anything Channel Catfish Walleye White Bass
+\#\# Channel Catfish        1               1       1          0
+\#\# Freshwater Drum        1               0       2          0
+\#\# Walleye                1               1       4          0
+\#\# White Bass             1               1       2          3
 \#\# Yellow Perch           1               0       1          0
 
 *View the bipartite network*
 
-plotweb(seekCaught,  
-        labsize=1,\#text.rot=90,  
-        col.high="\#d8b365",  
-        bor.col.high \="white",  
-        col.low="\#5ab4ac",  
-        bor.col.low="white",  
-        col.interaction="\#f5f5f5",  
-        text.high.col="black",  
-        text.low.col="black",  
-        bor.col.interaction \= "\#999999"  
+plotweb(seekCaught,
+        labsize=1,\#text.rot=90,
+        col.high="\#d8b365",
+        bor.col.high \="white",
+        col.low="\#5ab4ac",
+        bor.col.low="white",
+        col.interaction="\#f5f5f5",
+        text.high.col="black",
+        text.low.col="black",
+        bor.col.interaction \= "\#999999"
 )
 
 ![][image6]
 
 *Create a function to extract several network metrics*
 
-get\_the\_info\<-**function**(df){  
-  networklvl \<- networklevel(df)  
-  grouplvl \<- grouplevel(df)  
-    
- outDat \<-data.frame( HL.num=grouplvl\["number.of.species.HL"\],  
-                LL.num=grouplvl\["number.of.species.LL"\],  
-                connectance=networklvl\["connectance"\],  
-                shannon=networklvl\["Shannon diversity"\],  
-                cluster=networklvl\["cluster coefficient"\],  
-                w.nested=networklvl\["weighted nestedness"\],  
-                h2=networklvl\["H2"\],  
-                HL.links=grouplvl\["mean.number.of.links.HL"\],  
-                LL.links=grouplvl\["mean.number.of.links.LL"\],  
-                HL.C\_score=grouplvl\["C.score.HL"\],  
-                LL.C\_score=grouplvl\["C.score.LL"\],  
-                HL.togetherness=grouplvl\["togetherness.HL"\],  
-                LL.togetherness=grouplvl\["togetherness.LL"\])  
-   
+get\_the\_info\<-**function**(df){
+  networklvl \<- networklevel(df)
+  grouplvl \<- grouplevel(df)
+
+ outDat \<-data.frame( HL.num=grouplvl\["number.of.species.HL"\],
+                LL.num=grouplvl\["number.of.species.LL"\],
+                connectance=networklvl\["connectance"\],
+                shannon=networklvl\["Shannon diversity"\],
+                cluster=networklvl\["cluster coefficient"\],
+                w.nested=networklvl\["weighted nestedness"\],
+                h2=networklvl\["H2"\],
+                HL.links=grouplvl\["mean.number.of.links.HL"\],
+                LL.links=grouplvl\["mean.number.of.links.LL"\],
+                HL.C\_score=grouplvl\["C.score.HL"\],
+                LL.C\_score=grouplvl\["C.score.LL"\],
+                HL.togetherness=grouplvl\["togetherness.HL"\],
+                LL.togetherness=grouplvl\["togetherness.LL"\])
+
  return(outDat)
 
 }
 
-get\_the\_info(seekCaught) %\>%   
-  pivot\_longer(HL.num:LL.togetherness, names\_to \= "metric", values\_to \= "value") 
+get\_the\_info(seekCaught) %\>%
+  pivot\_longer(HL.num:LL.togetherness, names\_to \= "metric", values\_to \= "value")
 
-\#\# \# A tibble: 13 x 2  
-\#\#    metric           value  
-\#\#    \<chr\>            \<dbl\>  
-\#\#  1 HL.num          4       
-\#\#  2 LL.num          5       
-\#\#  3 connectance     0.7     
-\#\#  4 shannon         2.49    
-\#\#  5 cluster         0.8     
-\#\#  6 w.nested        0.730   
-\#\#  7 h2              0.133   
-\#\#  8 HL.links        4.14    
-\#\#  9 LL.links        3.10    
-\#\# 10 HL.C\_score      0       
-\#\# 11 LL.C\_score      0       
-\#\# 12 HL.togetherness 0.0556  
+\#\# \# A tibble: 13 x 2
+\#\#    metric           value
+\#\#    \<chr\>            \<dbl\>
+\#\#  1 HL.num          4
+\#\#  2 LL.num          5
+\#\#  3 connectance     0.7
+\#\#  4 shannon         2.49
+\#\#  5 cluster         0.8
+\#\#  6 w.nested        0.730
+\#\#  7 h2              0.133
+\#\#  8 HL.links        4.14
+\#\#  9 LL.links        3.10
+\#\# 10 HL.C\_score      0
+\#\# 11 LL.C\_score      0
+\#\# 12 HL.togetherness 0.0556
 \#\# 13 LL.togetherness 0.375
 
 [image1]: <data:image/png;base64,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>

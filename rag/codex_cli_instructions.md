@@ -1,4 +1,4 @@
-# 🧠 Codex CLI Instructions  
+# 🧠 Codex CLI Instructions
 ### Build a Local Scientific Knowledge-Base Assistant Using Claude + RAG
 
 ## 📌 Project Goal
@@ -15,8 +15,8 @@ Build a **local Python CLI tool** that allows me to:
 
 The CLI should support exactly **two workflows**:
 
-1. `codex ingest` – build/update the local knowledge base  
-2. `codex ask "<question>"` – query the knowledge base with Claude  
+1. `codex ingest` – build/update the local knowledge base
+2. `codex ask "<question>"` – query the knowledge base with Claude
 
 ---
 
@@ -29,7 +29,7 @@ The CLI should support exactly **two workflows**:
   - `langchain-text-splitters`
   - `chromadb`
   - `pypdf`
-  - `langchain-openai`  
+  - `langchain-openai`
 - Claude is accessed through an **OpenAI-compatible API endpoint**
   - Must use environment variables:
     - `OPENAI_API_KEY`
@@ -166,7 +166,7 @@ Create a simple `typer` or `argparse` CLI with commands:
 
 ### `codex ingest`
 
-- Runs the ingestion pipeline  
+- Runs the ingestion pipeline
 - Example:
 
 ```
@@ -175,7 +175,7 @@ codex ingest --data ./data
 
 ### `codex ask "<question>"`
 
-- Queries Claude with RAG  
+- Queries Claude with RAG
 - Example:
 
 ```
@@ -184,9 +184,9 @@ codex ask "How do these papers model detection probability in creel surveys?"
 
 Bundled results should:
 
-- Show answer  
-- Show sources used  
-- Indicate any missing contextual information  
+- Show answer
+- Show sources used
+- Indicate any missing contextual information
 
 ---
 
@@ -194,11 +194,11 @@ Bundled results should:
 
 Include:
 
-- Setup instructions  
-- Example usage  
-- Environment variable configuration  
-- How to add new PDFs/Markdown files  
-- Notes on chunking, retrieval quality, and citation format  
+- Setup instructions
+- Example usage
+- Environment variable configuration
+- How to add new PDFs/Markdown files
+- Notes on chunking, retrieval quality, and citation format
 
 ---
 
@@ -206,9 +206,9 @@ Include:
 
 Codex should generate:
 
-1. Full project folder with the structure above  
-2. Working ingestion script  
-3. Working query script  
-4. A CLI interface with `ingest` and `ask` commands  
-5. Prompts engineered for scientific + R development workflows  
-6. Clean, well-commented Python code  
+1. Full project folder with the structure above
+2. Working ingestion script
+3. Working query script
+4. A CLI interface with `ingest` and `ask` commands
+5. Prompts engineered for scientific + R development workflows
+6. Clean, well-commented Python code

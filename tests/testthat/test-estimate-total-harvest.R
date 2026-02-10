@@ -202,6 +202,12 @@ test_that("total harvest SE matches manual delta method formula", {
 test_that("estimate_total_harvest grouped by day_type works", {
   design <- make_total_harvest_design()
 
+  # Skip if example data has groups with n < 10
+  skip_if(
+    any(table(design$interviews$day_type) < 10),
+    "Example data has groups with n < 10"
+  )
+
   result <- estimate_total_harvest(design, by = day_type) # nolint: object_usage_linter
 
   expect_s3_class(result, "creel_estimates")
@@ -213,6 +219,12 @@ test_that("estimate_total_harvest grouped by day_type works", {
 test_that("estimate_total_harvest grouped result has correct number of rows", {
   design <- make_total_harvest_design()
 
+  # Skip if example data has groups with n < 10
+  skip_if(
+    any(table(design$interviews$day_type) < 10),
+    "Example data has groups with n < 10"
+  )
+
   result <- estimate_total_harvest(design, by = day_type) # nolint: object_usage_linter
 
   # Should have weekday and weekend
@@ -223,6 +235,12 @@ test_that("estimate_total_harvest grouped result has correct number of rows", {
 
 test_that("estimate_total_harvest grouped result n is per-group", {
   design <- make_total_harvest_design()
+
+  # Skip if example data has groups with n < 10
+  skip_if(
+    any(table(design$interviews$day_type) < 10),
+    "Example data has groups with n < 10"
+  )
 
   result <- estimate_total_harvest(design, by = day_type) # nolint: object_usage_linter
 

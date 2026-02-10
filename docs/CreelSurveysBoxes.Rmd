@@ -58,13 +58,14 @@ library(lubridate)
 ```{r createCalendar}
 calendar <- tibble(date = seq(ymd("2019-04-01"), ymd("2019-10-31"), by = "1 day"))
 
-calendar %>% 
-  mutate(month = month(date, label = TRUE),
-         dayWeek = wday(date,label = TRUE),
-         strata = ifelse(dayWeek %in% c("Sat","Sun"),"weekendday","weekday"),
-         group = 1) %>% 
-  expand_grid(shift= c("morning","afternoon")) -> calendarFull
-
+calendar %>%
+  mutate(
+    month = month(date, label = TRUE),
+    dayWeek = wday(date, label = TRUE),
+    strata = ifelse(dayWeek %in% c("Sat", "Sun"), "weekendday", "weekday"),
+    group = 1
+  ) %>%
+  expand_grid(shift = c("morning", "afternoon")) -> calendarFull
 ```
 
 ```{r echo = FALSE, message = FALSE}
@@ -77,29 +78,36 @@ There is the potential that some high-use periods (labor day weekend) that can s
 
 ```{r createCalendar2}
 # Memorial day weekend
-calendarFull$strata[calendarFull$date %in% c(ymd("2019-05-25"), 
-                                             ymd("2019-05-26"), 
-                                             ymd("2019-05-27"))] <- "weekendday"
+calendarFull$strata[calendarFull$date %in% c(
+  ymd("2019-05-25"),
+  ymd("2019-05-26"),
+  ymd("2019-05-27")
+)] <- "weekendday"
 
-calendarFull$group[calendarFull$date %in% c(ymd("2019-05-25"), 
-                                            ymd("2019-05-26"), 
-                                            ymd("2019-05-27"))] <- 1
+calendarFull$group[calendarFull$date %in% c(
+  ymd("2019-05-25"),
+  ymd("2019-05-26"),
+  ymd("2019-05-27")
+)] <- 1
 
 # July 4th
-calendarFull$strata[calendarFull$date %in% c(ymd("2019-07-04"), 
-                                             ymd("2019-07-05"), 
-                                             ymd("2019-07-06"), 
-                                             ymd("2019-07-06"))] <- "weekendday"
+calendarFull$strata[calendarFull$date %in% c(
+  ymd("2019-07-04"),
+  ymd("2019-07-05"),
+  ymd("2019-07-06"),
+  ymd("2019-07-06")
+)] <- "weekendday"
 
-calendarFull$group[calendarFull$date %in% c(ymd("2019-07-04"), 
-                                            ymd("2019-07-05"), 
-                                            ymd("2019-07-06"), 
-                                            ymd("2019-07-06"))] <- 2
-
+calendarFull$group[calendarFull$date %in% c(
+  ymd("2019-07-04"),
+  ymd("2019-07-05"),
+  ymd("2019-07-06"),
+  ymd("2019-07-06")
+)] <- 2
 ```
 
 ```{r echo = FALSE, message = FALSE}
-kable(calendarFull %>% filter(date %in% c(ymd("2019-05-23"),ymd("2019-05-24"),ymd("2019-05-25"), ymd("2019-05-26"), ymd("2019-05-27"),ymd("2019-05-28"),ymd("2019-05-29"))), caption = "The first six rows of a creel schedule showing how you might treat holidays or other special days.", col.names = c("Date","Month", "Day of the week","Strata", "Group","Shift"), booktabs = TRUE)
+kable(calendarFull %>% filter(date %in% c(ymd("2019-05-23"), ymd("2019-05-24"), ymd("2019-05-25"), ymd("2019-05-26"), ymd("2019-05-27"), ymd("2019-05-28"), ymd("2019-05-29"))), caption = "The first six rows of a creel schedule showing how you might treat holidays or other special days.", col.names = c("Date", "Month", "Day of the week", "Strata", "Group", "Shift"), booktabs = TRUE)
 ```
 
 
@@ -107,100 +115,104 @@ kable(calendarFull %>% filter(date %in% c(ymd("2019-05-23"),ymd("2019-05-24"),ym
 
 ```{r}
 set.seed(1234)
-numWeekends = 6
-numWeekdays = 10
+numWeekends <- 6
+numWeekdays <- 10
 
 # sample morning shift
-calendarFull %>% 
-  filter(shift == "morning" ) %>% 
-  group_by(month, strata,group, shift) %>% 
-  nest() %>% 
-  mutate(daystoSample = ifelse(strata == "weekendday",numWeekends/2,numWeekdays/2)) %>% # dividing by two, for mornign shift
-  mutate(sampledDays =  map2(data, daystoSample, sample_n)) %>% 
-  select(month, shift, sampledDays, group, strata) %>% 
-  unnest(sampledDays) %>% 
-  ungroup() %>% 
-  select(date, month, dayWeek, shift, group, strata) %>% 
+calendarFull %>%
+  filter(shift == "morning") %>%
+  group_by(month, strata, group, shift) %>%
+  nest() %>%
+  mutate(daystoSample = ifelse(strata == "weekendday", numWeekends / 2, numWeekdays / 2)) %>% # dividing by two, for mornign shift
+  mutate(sampledDays = map2(data, daystoSample, sample_n)) %>%
+  select(month, shift, sampledDays, group, strata) %>%
+  unnest(sampledDays) %>%
+  ungroup() %>%
+  select(date, month, dayWeek, shift, group, strata) %>%
   mutate(month = as.character(month)) -> CreelSchedule_morning
 
 
 # sample afternoon shifts
-calendarFull %>% 
-  filter(shift == "afternoon",
-         !date %in% CreelSchedule_morning$date) %>% 
-  group_by(month, strata,group, shift) %>% 
-  nest() %>% 
-  mutate(daystoSample = ifelse(strata == "weekendday",numWeekends/2,numWeekdays/2)) %>% # dividing by two, for afternoon shift
-  mutate(sampledDays =  map2(data, daystoSample, sample_n)) %>% 
-  select(month, shift, sampledDays, group, strata) %>% 
-  unnest(sampledDays) %>% 
-  ungroup() %>% 
-  select(date, month, dayWeek, shift, group, strata) %>% 
-  mutate(month = as.character(month))  -> CreelSchedule_afternoon
+calendarFull %>%
+  filter(
+    shift == "afternoon",
+    !date %in% CreelSchedule_morning$date
+  ) %>%
+  group_by(month, strata, group, shift) %>%
+  nest() %>%
+  mutate(daystoSample = ifelse(strata == "weekendday", numWeekends / 2, numWeekdays / 2)) %>% # dividing by two, for afternoon shift
+  mutate(sampledDays = map2(data, daystoSample, sample_n)) %>%
+  select(month, shift, sampledDays, group, strata) %>%
+  unnest(sampledDays) %>%
+  ungroup() %>%
+  select(date, month, dayWeek, shift, group, strata) %>%
+  mutate(month = as.character(month)) -> CreelSchedule_afternoon
 
 # combine the two into a single data frame
-rbind(CreelSchedule_morning, CreelSchedule_afternoon) %>% 
+rbind(CreelSchedule_morning, CreelSchedule_afternoon) %>%
   arrange(date) -> creelSchedule
-
-
 ```
 
 ```{r echo = FALSE, message = FALSE}
-kable(head(creelSchedule), caption = "The first six rows of a *randomized* creel schedule showing strata and creel shift.", col.names = c("Date","Month", "Day of the week","Strata", "Group","Shift"), booktabs = TRUE)
+kable(head(creelSchedule), caption = "The first six rows of a *randomized* creel schedule showing strata and creel shift.", col.names = c("Date", "Month", "Day of the week", "Strata", "Group", "Shift"), booktabs = TRUE)
 ```
 
 *Create a function to sample count times during the creel shifts* Generating count times during a creel shift has several complications. One, is at what time interval do you want to sample from (e.g., every minute, every 15 minutes)? Two, how much of a time interval do you want between counts? When having more than one count during a creel shift, requires that you remove some potential count times from the pool dependent on the time that is first selected. The easiest way to do this is using a `while` loop inside a function to sample your count times.
 
 ```{r generateCounttimes}
-count_times <- function(nCounts=3, timeInterval=15, timeBtwn = 60, startTime, endTime){
- seq(ymd_hm(paste("2019-01-01",startTime)),
-     ymd_hm(paste("2019-01-01",endTime)),
-     by = paste(timeInterval, "min")) -> timePeriod
+count_times <- function(nCounts = 3, timeInterval = 15, timeBtwn = 60, startTime, endTime) {
+  seq(ymd_hm(paste("2019-01-01", startTime)),
+    ymd_hm(paste("2019-01-01", endTime)),
+    by = paste(timeInterval, "min")
+  ) -> timePeriod
 
-  countTimes <- tibble(time = mdy_hms(rep(NA,nCounts)))
-   c = 1
-  while(c <= nCounts){
+  countTimes <- tibble(time = mdy_hms(rep(NA, nCounts)))
+  c <- 1
+  while (c <= nCounts) {
     countTimes$time[c] <- sample(timePeriod, 1)
     ind <- which(abs(interval(timePeriod, countTimes$time[c]) / minutes(1)) >= timeBtwn)
     timePeriod <- timePeriod[ind]
     c <- c + 1
-    }
+  }
   out <- paste(format(sort(countTimes$time), "%T"), collapse = ", ")
   return(out)
-  }
+}
 
 set.seed(12345)
-count_times(startTime = "06:00", endTime ="13:30") # example of using the function
+count_times(startTime = "06:00", endTime = "13:30") # example of using the function
 ```
 
 *Shift start and end times for each month* The below creel shift start and end times are based on mean sunrise and sunset times in Kearney, Nebraska.
 
 ```{r creelstartstop}
 rbind(
-tibble(month = c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"),
-       shift = "morning",
-       startTime = c("08:00","08:00","07:30","07:30","07:00","06:30","06:00","06:00","06:30","07:00","07:30","08:00"),
-       endTime = "13:30"),
-tibble(month = c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"),
-       shift = "afternoon",
-       startTime ="13:30",
-       endTime = c("17:30","18:00","19:30","20:00","20:30","21:00","21:00","20:30","19:30","18:30","17:30","17:30"))
+  tibble(
+    month = c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"),
+    shift = "morning",
+    startTime = c("08:00", "08:00", "07:30", "07:30", "07:00", "06:30", "06:00", "06:00", "06:30", "07:00", "07:30", "08:00"),
+    endTime = "13:30"
+  ),
+  tibble(
+    month = c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"),
+    shift = "afternoon",
+    startTime = "13:30",
+    endTime = c("17:30", "18:00", "19:30", "20:00", "20:30", "21:00", "21:00", "20:30", "19:30", "18:30", "17:30", "17:30")
+  )
 ) -> sunRisesunSet
-
 ```
 
 *Join start and stop times with the creel schedule and map the count\_times function for each creel shift*
 
 ```{r creelstartstop2}
-creelSchedule %>% 
-  left_join(sunRisesunSet, by = c("month","shift")) %>% 
-  mutate(countTimes = map2_chr(startTime, endTime, ~count_times(nCounts=3,startTime = .x, endTime = .y))) -> finalCreelSchedule
+creelSchedule %>%
+  left_join(sunRisesunSet, by = c("month", "shift")) %>%
+  mutate(countTimes = map2_chr(startTime, endTime, ~ count_times(nCounts = 3, startTime = .x, endTime = .y))) -> finalCreelSchedule
 ```
 
 *View the first ten lines of the schedule*
 
 ```{r viewSchedule, echo = FALSE}
-kable(head(finalCreelSchedule, n = 10), caption = "The first 10 rows of a *randomized* creel schedule showing strata and creel shift.", col.names = c("Date","Month", "Day of the week","Shift", "Group","Strata", "Shift start", "Shift end", "Count times"), booktabs = TRUE)
+kable(head(finalCreelSchedule, n = 10), caption = "The first 10 rows of a *randomized* creel schedule showing strata and creel shift.", col.names = c("Date", "Month", "Day of the week", "Shift", "Group", "Strata", "Shift start", "Shift end", "Count times"), booktabs = TRUE)
 ```
 
 *Using the "high-use" strata*
@@ -209,108 +221,123 @@ First we redefine the high use strata. Below we adapt the above code to a "high 
 
 ```{r highusedays}
 # Memorial day weekend
-calendarFull$strata[calendarFull$date %in% c(ymd("2019-05-25"), 
-                                             ymd("2019-05-26"), 
-                                             ymd("2019-05-27"))] <- "highuse"
+calendarFull$strata[calendarFull$date %in% c(
+  ymd("2019-05-25"),
+  ymd("2019-05-26"),
+  ymd("2019-05-27")
+)] <- "highuse"
 
-calendarFull$group[calendarFull$date %in% c(ymd("2019-05-25"), 
-                                            ymd("2019-05-26"), 
-                                            ymd("2019-05-27"))] <- 1
+calendarFull$group[calendarFull$date %in% c(
+  ymd("2019-05-25"),
+  ymd("2019-05-26"),
+  ymd("2019-05-27")
+)] <- 1
 
 # July 4th
-calendarFull$strata[calendarFull$date %in% c(ymd("2019-07-04"), 
-                                             ymd("2019-07-05"), 
-                                             ymd("2019-07-06"), 
-                                             ymd("2019-07-06"))] <- "highuse"
+calendarFull$strata[calendarFull$date %in% c(
+  ymd("2019-07-04"),
+  ymd("2019-07-05"),
+  ymd("2019-07-06"),
+  ymd("2019-07-06")
+)] <- "highuse"
 
-calendarFull$group[calendarFull$date %in% c(ymd("2019-07-04"), 
-                                            ymd("2019-07-05"), 
-                                            ymd("2019-07-06"), 
-                                            ymd("2019-07-06"))] <- 2
+calendarFull$group[calendarFull$date %in% c(
+  ymd("2019-07-04"),
+  ymd("2019-07-05"),
+  ymd("2019-07-06"),
+  ymd("2019-07-06")
+)] <- 2
 ```
 
 *Randomly sampling dates from the full calendar using the `purrr` package for weekend, weekday, and high-use days.*
 
 ```{r randomhigh use}
-
-numWeekends = 6
-numWeekdays = 8
-highusedays = 2
+numWeekends <- 6
+numWeekdays <- 8
+highusedays <- 2
 
 # weekend morning shifts that are not high use
-calendarFull %>% 
-  filter(strata != "highuse",
-         shift == "morning" ) %>% 
-  group_by(month, strata,group, shift) %>% 
-  nest() %>% 
-  mutate(daystoSample = ifelse(strata == "weekendday",numWeekends/2,numWeekdays/2)) %>% 
-  mutate(sampledDays =  map2(data, daystoSample, sample_n)) %>% 
-  select(month, shift, sampledDays, group, strata) %>% 
-  unnest(sampledDays) %>% 
-  ungroup() %>% 
-  select(date, month, dayWeek, shift, group, strata) %>% 
-  mutate(month = as.character(month))  -> CreelSchedule_morning
+calendarFull %>%
+  filter(
+    strata != "highuse",
+    shift == "morning"
+  ) %>%
+  group_by(month, strata, group, shift) %>%
+  nest() %>%
+  mutate(daystoSample = ifelse(strata == "weekendday", numWeekends / 2, numWeekdays / 2)) %>%
+  mutate(sampledDays = map2(data, daystoSample, sample_n)) %>%
+  select(month, shift, sampledDays, group, strata) %>%
+  unnest(sampledDays) %>%
+  ungroup() %>%
+  select(date, month, dayWeek, shift, group, strata) %>%
+  mutate(month = as.character(month)) -> CreelSchedule_morning
 
 
 # weekend afternoon shifts that are not high use
-calendarFull %>% 
-  filter(strata != "highuse",
-         shift == "afternoon",
-         !date %in% CreelSchedule_morning$date) %>% 
-  group_by(month, strata,group, shift) %>% 
-  nest() %>% 
-  mutate(daystoSample = ifelse(strata == "weekendday",numWeekends/2,numWeekdays/2)) %>% 
-  mutate(sampledDays =  map2(data, daystoSample, sample_n)) %>% 
-  select(month, shift, sampledDays, group, strata) %>% 
-  unnest(sampledDays) %>% 
-  ungroup() %>% 
-  select(date, month, dayWeek, shift, group, strata) %>% 
-  mutate(month = as.character(month))  -> CreelSchedule_afternoon
+calendarFull %>%
+  filter(
+    strata != "highuse",
+    shift == "afternoon",
+    !date %in% CreelSchedule_morning$date
+  ) %>%
+  group_by(month, strata, group, shift) %>%
+  nest() %>%
+  mutate(daystoSample = ifelse(strata == "weekendday", numWeekends / 2, numWeekdays / 2)) %>%
+  mutate(sampledDays = map2(data, daystoSample, sample_n)) %>%
+  select(month, shift, sampledDays, group, strata) %>%
+  unnest(sampledDays) %>%
+  ungroup() %>%
+  select(date, month, dayWeek, shift, group, strata) %>%
+  mutate(month = as.character(month)) -> CreelSchedule_afternoon
 
-# high use morning shifts 
-calendarFull %>% 
-  filter(strata == "highuse",
-         shift == "morning" ) %>% 
-  group_by(month, strata,group, shift) %>% 
-  nest() %>% 
-  mutate(daystoSample = highusedays/2) %>% 
-  mutate(sampledDays =  map2(data, daystoSample, sample_n)) %>% 
-  select(month, shift, sampledDays, group, strata) %>% 
-  unnest(sampledDays) %>% 
-  ungroup() %>% 
-  select(date, month, dayWeek, shift, group, strata) %>% 
+# high use morning shifts
+calendarFull %>%
+  filter(
+    strata == "highuse",
+    shift == "morning"
+  ) %>%
+  group_by(month, strata, group, shift) %>%
+  nest() %>%
+  mutate(daystoSample = highusedays / 2) %>%
+  mutate(sampledDays = map2(data, daystoSample, sample_n)) %>%
+  select(month, shift, sampledDays, group, strata) %>%
+  unnest(sampledDays) %>%
+  ungroup() %>%
+  select(date, month, dayWeek, shift, group, strata) %>%
   mutate(month = as.character(month)) -> highuse_morning
 
-# high use afternoon shifts 
-calendarFull %>% 
-  filter(strata == "highuse",
-         shift == "afternoon" ) %>% 
-  group_by(month, strata,group, shift) %>% 
-  nest() %>% 
-  mutate(daystoSample = highusedays/2) %>% 
-  mutate(sampledDays =  map2(data, daystoSample, sample_n)) %>% 
-  select(month, shift, sampledDays, group, strata) %>% 
-  unnest(sampledDays) %>% 
-  ungroup() %>% 
-  select(date, month, dayWeek, shift, group, strata) %>%  
+# high use afternoon shifts
+calendarFull %>%
+  filter(
+    strata == "highuse",
+    shift == "afternoon"
+  ) %>%
+  group_by(month, strata, group, shift) %>%
+  nest() %>%
+  mutate(daystoSample = highusedays / 2) %>%
+  mutate(sampledDays = map2(data, daystoSample, sample_n)) %>%
+  select(month, shift, sampledDays, group, strata) %>%
+  unnest(sampledDays) %>%
+  ungroup() %>%
+  select(date, month, dayWeek, shift, group, strata) %>%
   mutate(month = as.character(month)) -> highuse_afternoon
 
-rbind(CreelSchedule_morning, CreelSchedule_afternoon, highuse_morning, highuse_afternoon) %>% 
+rbind(CreelSchedule_morning, CreelSchedule_afternoon, highuse_morning, highuse_afternoon) %>%
   arrange(date) -> creelSchedule
 ```
 
 *Join start and stop times with the creel schedule and map the count\_times function for each creel shift*
 
 ```{r creelstartstop3}
-creelSchedule %>% 
-  left_join(sunRisesunSet, by = c("month","shift")) %>% 
-  mutate(countTimes = map2_chr(startTime, endTime, ~count_times(nCounts=3,startTime = .x, endTime = .y)))-> finalCreelScheduleHU
+creelSchedule %>%
+  left_join(sunRisesunSet, by = c("month", "shift")) %>%
+  mutate(countTimes = map2_chr(startTime, endTime, ~ count_times(nCounts = 3, startTime = .x, endTime = .y))) -> finalCreelScheduleHU
 ```
 
 *View the first ten lines of the schedule with the high-use strata*
 
 ```{r viewSchedule2, echo = FALSE}
-kable(head(finalCreelScheduleHU, n = 10), caption = "The first 10 rows of a *randomized* creel schedule with a 'high use' strata.", col.names = c("Date","Month", "Day of the week","Shift", "Group","Strata", "Shift start", "Shift end", "Count times"), booktabs = TRUE)
+kable(head(finalCreelScheduleHU, n = 10), caption = "The first 10 rows of a *randomized* creel schedule with a 'high use' strata.", col.names = c("Date", "Month", "Day of the week", "Shift", "Group", "Strata", "Shift start", "Shift end", "Count times"), booktabs = TRUE)
 ```
 
 \newpage
@@ -326,7 +353,6 @@ Let us consider a hypothetical day for a small impoundment with four fishing par
 *Load library: tidyverse*
 ```{r loadpackages, message=FALSE}
 library(tidyverse)
-
 ```
 
 
@@ -336,7 +362,7 @@ To calculate the effort from an instantaneous count is relatively simple.  If we
 
 $$ \hat{f_t} = C \times T$$
 
-For example, suppose a creel clerk was to work a morning creel shift from 06:00 to 14:00 with an instantaneous count occurring at 10:15.  During the count, she counted 20 anglers fishing from boats and 18 fishing from the bank.  The total number of anglers, C, was 38.  The creel shift, T, was 8 hours (14:00 – 06:00).  
+For example, suppose a creel clerk was to work a morning creel shift from 06:00 to 14:00 with an instantaneous count occurring at 10:15.  During the count, she counted 20 anglers fishing from boats and 18 fishing from the bank.  The total number of anglers, C, was 38.  The creel shift, T, was 8 hours (14:00 – 06:00).
 
 ```{r}
 numAnglersCounted <- 38
@@ -345,18 +371,18 @@ shiftTime <- 8
 shiftPressure <- numAnglersCounted * shiftTime
 ```
 
-The estimated angler effort for that shift is `r shiftPressure` angler hours. 
+The estimated angler effort for that shift is `r shiftPressure` angler hours.
 
 If multiple counts are conducted, we substitute the mean count, $\bar{C}$  into the equation above.
 
 $$ \hat{f_t} = \frac{\sum(C_i)}{m} \times T$$
 
-where C is the count for each creel count, i, and m is the total number of counts conducted.   
+where C is the count for each creel count, i, and m is the total number of counts conducted.
 
-If the creel clerk had two counts during the shift rather than the one in the previous example, and these counts were C1 = 0 anglers (during storm) and C2 = 65, 
+If the creel clerk had two counts during the shift rather than the one in the previous example, and these counts were C1 = 0 anglers (during storm) and C2 = 65,
 
 ```{r}
-numAnglersCounted <- c(0,65)
+numAnglersCounted <- c(0, 65)
 shiftTime <- 8
 
 shiftPressure2 <- mean(numAnglersCounted) * shiftTime
@@ -365,9 +391,9 @@ shiftPressure2 <- mean(numAnglersCounted) * shiftTime
 The estimated effort would be `r shiftPressure2` angler hours.
 
 *Extrapolating from shift to day*
-Suppose that the creel shift the clerk was working represented half of the day.  
+Suppose that the creel shift the clerk was working represented half of the day.
 ```{r}
-dayPressure <- (mean(numAnglersCounted) * shiftTime)/0.5
+dayPressure <- (mean(numAnglersCounted) * shiftTime) / 0.5
 ```
 The estimated effort for that day would be `r dayPressure` angler hours.
 
@@ -376,29 +402,29 @@ The estimated effort for that day would be `r dayPressure` angler hours.
 The calculation of effort from a progressive count is also relatively simple.  If we were to denote the number of anglers counted as C and the time interval to complete the circuit around the waterbody, $\tau$, then the estimated effort ($f_p$) is given by:
 $$ \hat{f_p} = C \times \tau$$
 
-For example, suppose a creel clerk is working at Lake McConaughy, a 14,000-ha reservoir in western Nebraska.  To travel around the reservoir (i.e., complete the circuit) takes 2 hours.  During the count, he counted 21 anglers fishing from the bank and 213 anglers fishing from boats.  The total number of anglers, C, is 234 anglers.  
+For example, suppose a creel clerk is working at Lake McConaughy, a 14,000-ha reservoir in western Nebraska.  To travel around the reservoir (i.e., complete the circuit) takes 2 hours.  During the count, he counted 21 anglers fishing from the bank and 213 anglers fishing from boats.  The total number of anglers, C, is 234 anglers.
 
 ```{r}
-numAnglersCounted <- c(21,213)
+numAnglersCounted <- c(21, 213)
 circuitTime <- 2
 
 circuitEffort <- sum(numAnglersCounted) * circuitTime
 ```
 
-The estimated angler effort for that circuit is `r circuitEffort` 468 angler hours.  
+The estimated angler effort for that circuit is `r circuitEffort` 468 angler hours.
 
 Often, we would like to have an estimate for the creel shift, which is representative of a stratum (e.g., morning or afternoon period) used in the creel design. Suppose that the creel shift at Lake McConaughy is 8-hours long (T = 14:00 – 06:00 = 8 hours) and the 2-hour circuit was randomly chosen during that period. During this creel shift there is the potential to complete four circuits ($\kappa$; 8-hour workday / 2-hour circuit).  The effort for the total creel shift can then be calculated as:
 $$ \hat{f_p} = C \times \tau \times \kappa$$
 
 ```{r}
-numAnglersCounted <- c(21,213)
+numAnglersCounted <- c(21, 213)
 circuitTime <- 2
 numCircuits <- 4
 
 circuitEffort <- sum(numAnglersCounted) * circuitTime * numCircuits
 ```
 
-The daily effort following this example would be `r circuitEffort` angler hours. 
+The daily effort following this example would be `r circuitEffort` angler hours.
 
 *Bus Route Counts*
 Estimating effort is a bit more complicated than the *instantaneous* or *progressive* counts.  For bus routes, we need information on the amount of time each vehicle or trailer is at each boat ramp, the total time (waiting and travel) to complete a circuit.
@@ -406,13 +432,13 @@ Estimating effort is a bit more complicated than the *instantaneous* or *progres
 $$
   \widehat{E} = T\sum\limits_{i=1}^n{\frac{1}{w_{i}}}\sum\limits_{j=1}^m{\frac{e_{ij}}{\pi_{j}}}
 $$
-  
-where  
+
+where
 
 * *E* = estimated total party-hours of effort,
 * *T* = total time to complete a full circuit of the route, including travelling and waiting,
 * *w~i~* = waiting time at the *i^th^* site (where *i* = 1, ..., *n* sites), and
-* *e~ij~* = total time that the *j^th^* car (or trailer) is parked at the *i^th^* site while the agent is at that site (where *j* = 1, ..., *n* sites).  
+* *e~ij~* = total time that the *j^th^* car (or trailer) is parked at the *i^th^* site while the agent is at that site (where *j* = 1, ..., *n* sites).
 
 
 As an example, suppose we have a survey at Branched Oak Lake (728 ha) in eastern Nebraska, where a creel shift starts at 12:30 and goes until 22:00 (7-hour and 45-minute shift) (Table 18.3.1).  There are 7 access points with travel times to each point ranging from 15 to 30 minutes.  Most of the time a clerk will spend 60 minutes at each access point, except for site 7, which is 75 minutes.
@@ -443,9 +469,8 @@ library(tidyverse)
 schedule <- read_csv("data/busroutescheduleExample.csv")
 head(schedule)
 
-bsCounts  <- read_csv("data/busroutecountsExample.csv")
+bsCounts <- read_csv("data/busroutecountsExample.csv")
 head(bsCounts)
-
 ```
 
 
@@ -455,28 +480,29 @@ kable(head(schedule), caption = "The first six rows of a bus-route creel schedul
 
 
 ```{r echo = FALSE, message = FALSE}
-kable(head(bsCounts), caption = "The first six rows of the counts from bus-route creel.", col.names = c("Date","Site","Boat trailers","Arrival time", "Departure time"), booktabs = TRUE)
+kable(head(bsCounts), caption = "The first six rows of the counts from bus-route creel.", col.names = c("Date", "Site", "Boat trailers", "Arrival time", "Departure time"), booktabs = TRUE)
 ```
 
 
 
 *Calculate effort from bus route date*
 ```{r}
-ttlTime <- sum(schedule$WaitTime) + sum(schedule$TravelTime) #calculate the total time of the shift (wait time and travel time)
+ttlTime <- sum(schedule$WaitTime) + sum(schedule$TravelTime) # calculate the total time of the shift (wait time and travel time)
 
-bsCounts %>% 
-  mutate(timeDiff = departureTime - arrivalTime,  # find difference in time
-         timeDiff = (as.numeric(timeDiff) / 60)/0.5) %>% # convert seconds to minutes and divide by the probability of sampling an evening shift
+bsCounts %>%
+  mutate(
+    timeDiff = departureTime - arrivalTime, # find difference in time
+    timeDiff = (as.numeric(timeDiff) / 60) / 0.5
+  ) %>% # convert seconds to minutes and divide by the probability of sampling an evening shift
   group_by(Date, Site) %>% # group by date and site
-  summarise(ttlTime = sum(timeDiff,na.rm = TRUE)) %>% #calculate total time of all vehicles at each the site
+  summarise(ttlTime = sum(timeDiff, na.rm = TRUE)) %>% # calculate total time of all vehicles at each the site
   left_join(schedule, by = "Site") %>% # join the vehicle information with the schedule
-  mutate(timeWait = ttlTime*(1/WaitTime)) %>% #multiply the total time by the inverse of the wait time
+  mutate(timeWait = ttlTime * (1 / WaitTime)) %>% # multiply the total time by the inverse of the wait time
   group_by(Date) %>% # group by day
-  summarise(ttl = sum(timeWait))-> count # then take the sum by the date
+  summarise(ttl = sum(timeWait)) -> count # then take the sum by the date
 
 count$Ehat <- count$ttl * ttlTime
 count$Ehat * 2.0
-
 ```
 
 \newpage
@@ -493,8 +519,8 @@ library(lubridate)
 ```{r loaddata4, message=FALSE}
 juneCount <- read_csv("data/juneCount.csv")
 
-juneInterviews <- read_csv("data/juneInterviews.csv") %>% 
-  filter(!speciesCaught %in% c('Common Carp', 'Crappie', 'Muskellunge', 'Northern Pike', 'Striped Bass Hybrid (wiper)', 'Yellow Perch ')) # remove these species 
+juneInterviews <- read_csv("data/juneInterviews.csv") %>%
+  filter(!speciesCaught %in% c("Common Carp", "Crappie", "Muskellunge", "Northern Pike", "Striped Bass Hybrid (wiper)", "Yellow Perch ")) # remove these species
 ```
 
 ```{r echo = FALSE}
@@ -511,97 +537,107 @@ The mean-daily estimator takes creel information and digests the effort and asso
 
 *Calculate the mean angler count for boat and bank anglers per shift*
 ```{r}
-
-juneCount %>% 
-  group_by(date,period,section) %>% 
-  summarise(meanBank = mean(bankAnglers),
-            meanBoat = mean(boatAnglers)) -> dailyMeanCount
+juneCount %>%
+  group_by(date, period, section) %>%
+  summarise(
+    meanBank = mean(bankAnglers),
+    meanBoat = mean(boatAnglers)
+  ) -> dailyMeanCount
 
 head(dailyMeanCount)
 ```
 
 ```{r echo = FALSE}
-kable(head(dailyMeanCount), caption = "Mean bank and boat anglers per creel day.", col.names = c("Date","Period", "Section","Mean bank anglers","Mean boat anglers"), booktabs = TRUE)
+kable(head(dailyMeanCount), caption = "Mean bank and boat anglers per creel day.", col.names = c("Date", "Period", "Section", "Mean bank anglers", "Mean boat anglers"), booktabs = TRUE)
 ```
 
 *Convert the mean angler counts per shift to angler effort per day*
 ```{r}
-
-dailyMeanCount %>% 
-  mutate(bankHours = meanBank * 8, # creel shifts are 8 hrs long
-         boatHours = meanBoat * 8,
-         bankDayHours = bankHours/0.5, # morning and afternoon shifts represent half of the day
-         boatDayHours = boatHours/0.5) -> dailyEffort
+dailyMeanCount %>%
+  mutate(
+    bankHours = meanBank * 8, # creel shifts are 8 hrs long
+    boatHours = meanBoat * 8,
+    bankDayHours = bankHours / 0.5, # morning and afternoon shifts represent half of the day
+    boatDayHours = boatHours / 0.5
+  ) -> dailyEffort
 
 head(dailyEffort)
-
 ```
 
 ```{r echo = FALSE}
-kable(head(dailyEffort), caption = "Mean effort per creel day.", col.names = c("Date","Period", "Section","Mean bank anglers","Mean boat anglers", "Bank effort per shift", "Boat effort per shift", "Bank effort per day", "Boat effort per day"), booktabs = TRUE)
+kable(head(dailyEffort), caption = "Mean effort per creel day.", col.names = c("Date", "Period", "Section", "Mean bank anglers", "Mean boat anglers", "Bank effort per shift", "Boat effort per shift", "Bank effort per day", "Boat effort per day"), booktabs = TRUE)
 ```
 
 *Calculate the mean daily effort within each strata (weekdays, weekend days)*
 ```{r}
-
-dailyEffort %>% 
+dailyEffort %>%
   ungroup() %>% # remove the previous grouping
   pivot_longer(bankDayHours:boatDayHours, names_to = "anglerType", values_to = "dailyEffort") %>% # move from wide format to long format
-  mutate(anglerType = case_when(anglerType == "bankDayHours" ~ "Bank", # simplify angler type
-                          anglerType == "boatDayHours" ~ "Boat"),
-         date = ymd(date), # use lubridate to convert date to a date object
-         month = month(date, label = TRUE), # get the month for each date
-         strata = ifelse(wday(date,label = TRUE) %in% c("Sat","Sun"),"weekendday","weekday")) %>% # identify whether each day is a weekend day or week day
-  group_by(month, anglerType, strata) %>% 
-  summarise(meanDailyEffort = mean(dailyEffort), # calculate mean daily effort
-            varDailyEffort = var(dailyEffort), # calculate variance of effort
-            nDaysSampled = n()) -> meanDailyEffort # calculate the actual number of days sampled
-
+  mutate(
+    anglerType = case_when(
+      anglerType == "bankDayHours" ~ "Bank", # simplify angler type
+      anglerType == "boatDayHours" ~ "Boat"
+    ),
+    date = ymd(date), # use lubridate to convert date to a date object
+    month = month(date, label = TRUE), # get the month for each date
+    strata = ifelse(wday(date, label = TRUE) %in% c("Sat", "Sun"), "weekendday", "weekday")
+  ) %>% # identify whether each day is a weekend day or week day
+  group_by(month, anglerType, strata) %>%
+  summarise(
+    meanDailyEffort = mean(dailyEffort), # calculate mean daily effort
+    varDailyEffort = var(dailyEffort), # calculate variance of effort
+    nDaysSampled = n()
+  ) -> meanDailyEffort # calculate the actual number of days sampled
 ```
 
 *Calculate a weighted daily estimate*
 ```{r warning = FALSE}
 # create a data frame that describes the number of weekdays, weekend days, and total days per month
-tibble(month = "Jun",
-       strata = c("weekday","weekendday"),
-       nDays = c(8,22),
-       ttlDays = 30) -> daysPerMonth
+tibble(
+  month = "Jun",
+  strata = c("weekday", "weekendday"),
+  nDays = c(8, 22),
+  ttlDays = 30
+) -> daysPerMonth
 
-left_join(meanDailyEffort, daysPerMonth, by = c("month", "strata")) %>%  # join the days per month with the effort per strata data
-  group_by(month, anglerType) %>% 
-  mutate(strataDailyEffort = (nDays * meanDailyEffort)/ ttlDays, # calculate mean daily effort per strata
-         strataDailyEffort = ifelse(is.nan(strataDailyEffort), 0, strataDailyEffort), # if variance is not-a-number (i.e., 0/0) convert to a zero
-         strataWeight = nDays/ttlDays, # create a weight of the number of days within a strata to the total number in the month
-         var1 = (strataWeight^2 * varDailyEffort)/nDaysSampled, # variance calculations
-         var2 = (strataWeight * varDailyEffort)/ttlDays) %>% 
-  summarize(dailyEffortMean = sum(strataDailyEffort), # add the daily effort of the estimates
-            dailyEffortVar = sum(var1) - sum(var2), # caulate variances
-            seEffort = sqrt(dailyEffortVar), # calculate square roots
-            ttlDays = mean(ttlDays)) -> overallDailyEffort # carry forward the total days per month
+left_join(meanDailyEffort, daysPerMonth, by = c("month", "strata")) %>% # join the days per month with the effort per strata data
+  group_by(month, anglerType) %>%
+  mutate(
+    strataDailyEffort = (nDays * meanDailyEffort) / ttlDays, # calculate mean daily effort per strata
+    strataDailyEffort = ifelse(is.nan(strataDailyEffort), 0, strataDailyEffort), # if variance is not-a-number (i.e., 0/0) convert to a zero
+    strataWeight = nDays / ttlDays, # create a weight of the number of days within a strata to the total number in the month
+    var1 = (strataWeight^2 * varDailyEffort) / nDaysSampled, # variance calculations
+    var2 = (strataWeight * varDailyEffort) / ttlDays
+  ) %>%
+  summarize(
+    dailyEffortMean = sum(strataDailyEffort), # add the daily effort of the estimates
+    dailyEffortVar = sum(var1) - sum(var2), # caulate variances
+    seEffort = sqrt(dailyEffortVar), # calculate square roots
+    ttlDays = mean(ttlDays)
+  ) -> overallDailyEffort # carry forward the total days per month
 ```
 
 ```{r echo = FALSE}
-kable(overallDailyEffort, caption = "Monthly effort.", col.names = c("Month","Angler type", "Mean daily effort","Variance daily effort","SE daily effort", "Total days"), booktabs = TRUE, digits = 1)
+kable(overallDailyEffort, caption = "Monthly effort.", col.names = c("Month", "Angler type", "Mean daily effort", "Variance daily effort", "SE daily effort", "Total days"), booktabs = TRUE, digits = 1)
 ```
 
 
 *Extrapolate daily effort out to the entire month and calculate 95% confidence intervals around the estimate*
 
 ```{r}
-
-overallDailyEffort %>% 
-  mutate(ttlEffort = dailyEffortMean * ttlDays, # monthly effort
-         ttlVar = ttlDays^2 * dailyEffortVar,  # monthly variance
-         effortSE = seEffort * ttlDays, # monthly standard error
-         effortCIhi = ttlEffort + 1.96*seEffort, # confidence interval high
-         effortCIlo = ttlEffort - 1.96*seEffort) %>% # confidence interval low
+overallDailyEffort %>%
+  mutate(
+    ttlEffort = dailyEffortMean * ttlDays, # monthly effort
+    ttlVar = ttlDays^2 * dailyEffortVar, # monthly variance
+    effortSE = seEffort * ttlDays, # monthly standard error
+    effortCIhi = ttlEffort + 1.96 * seEffort, # confidence interval high
+    effortCIlo = ttlEffort - 1.96 * seEffort
+  ) %>% # confidence interval low
   select(-dailyEffortMean, -dailyEffortVar, -seEffort, -ttlDays) -> meanDailyEstimator # remove columns no longer needed
-
-
 ```
 
 ```{r echo = FALSE}
-kable(meanDailyEstimator, caption = "Monthly effort.", col.names = c("Month","Angler type", "Total effort","Variance Effort","SE Effort","95% CI high", "95% CI low"), booktabs = TRUE, digits = 1)
+kable(meanDailyEstimator, caption = "Monthly effort.", col.names = c("Month", "Angler type", "Total effort", "Variance Effort", "SE Effort", "95% CI high", "95% CI low"), booktabs = TRUE, digits = 1)
 ```
 
 *Strata estimator*
@@ -610,121 +646,152 @@ The strata estimator is similar to the mean daily estimator but instead of creat
 
 ```{r rasmussen }
 # Caculate daily estimates of effort the same as in the above example
-juneCount %>% 
-  group_by(date,period,section) %>% 
-  summarise(meanBank = mean(bankAnglers), 
-            meanBoat = mean(boatAnglers),
-            nCounts = n()) %>% 
-  mutate(bankHours = meanBank * 8,
-         boatHours = meanBoat * 8,
-         bankDayHours = bankHours/0.5,
-         boatDayHours = boatHours/0.5) -> dailyEffort
-
+juneCount %>%
+  group_by(date, period, section) %>%
+  summarise(
+    meanBank = mean(bankAnglers),
+    meanBoat = mean(boatAnglers),
+    nCounts = n()
+  ) %>%
+  mutate(
+    bankHours = meanBank * 8,
+    boatHours = meanBoat * 8,
+    bankDayHours = bankHours / 0.5,
+    boatDayHours = boatHours / 0.5
+  ) -> dailyEffort
 ```
 
 *Calculate mean strata effort estimates*
 
 ```{r warning = FALSE}
-dailyEffort %>% 
-  ungroup() %>% 
-  select(date, bankDayHours,boatDayHours) %>% # select specific comments
+dailyEffort %>%
+  ungroup() %>%
+  select(date, bankDayHours, boatDayHours) %>% # select specific comments
   pivot_longer(bankDayHours:boatDayHours, names_to = "anglerType", values_to = "dailyEffort") %>% # wide to long format
-  mutate(anglerType = case_when(anglerType == "bankDayHours" ~ "Bank", # simplify angler type
-                          anglerType == "boatDayHours" ~ "Boat"),
-         date = ymd(date), # convert to date format
-         month = month(date, label = TRUE), # add month 
-         strata = ifelse(wday(date,label = TRUE) %in% c("Sat","Sun"),"weekendday","weekday")) %>% # add what kind of strata
-  group_by(month, strata, anglerType) %>% 
-  summarise(meanStrataEffort = mean(dailyEffort), #mean effort
-            sb2 = var(dailyEffort), # among day effort variance
-            nSampled = n_distinct(date)) %>%  # number of days sampled
+  mutate(
+    anglerType = case_when(
+      anglerType == "bankDayHours" ~ "Bank", # simplify angler type
+      anglerType == "boatDayHours" ~ "Boat"
+    ),
+    date = ymd(date), # convert to date format
+    month = month(date, label = TRUE), # add month
+    strata = ifelse(wday(date, label = TRUE) %in% c("Sat", "Sun"), "weekendday", "weekday")
+  ) %>% # add what kind of strata
+  group_by(month, strata, anglerType) %>%
+  summarise(
+    meanStrataEffort = mean(dailyEffort), # mean effort
+    sb2 = var(dailyEffort), # among day effort variance
+    nSampled = n_distinct(date)
+  ) %>% # number of days sampled
   left_join(daysPerMonth, by = c("month", "strata")) %>% # join to the number of days per month
   mutate(strataEffort = meanStrataEffort * nDays) -> effort2 # extrapolate effort within strata
-
-
 ```
 
 ```{r echo = FALSE}
-kable(effort2, caption = "Monthly effort by strata type.", col.names = c("Month","Strata", "Angler type", "Mean effort","Among day variance","Days sampled","Days in strata","Total days", "Total effort"), booktabs = TRUE, digits = 1)
+kable(effort2, caption = "Monthly effort by strata type.", col.names = c("Month", "Strata", "Angler type", "Mean effort", "Among day variance", "Days sampled", "Days in strata", "Total days", "Total effort"), booktabs = TRUE, digits = 1)
 ```
 
 *The strata estimator and multiple counts per shift allows us to include within daily variance to estimates*
-In this process, we broke the components of variance into different components as described in @.  
+In this process, we broke the components of variance into different components as described in @.
 ```{r}
-
-juneCount %>% 
+juneCount %>%
   pivot_longer(bankAnglers:boatAnglers, names_to = "anglerType", values_to = "effort") %>%
-  mutate(hours = effort * 8,
-         dayHours = hours/0.5) %>% # extrapolate effort out
-  group_by(date, anglerType) %>% 
-  mutate(meanEffort = mean(dayHours), # mean effort
-         diffSq = (dayHours - meanEffort)^2) %>%  # difference from mean squared
-  summarise(sumDiff = sum(diffSq), # sum of the squared difference
-            nCounts = n()) -> dailyVar1 # number of daily counts
+  mutate(
+    hours = effort * 8,
+    dayHours = hours / 0.5
+  ) %>% # extrapolate effort out
+  group_by(date, anglerType) %>%
+  mutate(
+    meanEffort = mean(dayHours), # mean effort
+    diffSq = (dayHours - meanEffort)^2
+  ) %>% # difference from mean squared
+  summarise(
+    sumDiff = sum(diffSq), # sum of the squared difference
+    nCounts = n()
+  ) -> dailyVar1 # number of daily counts
 
 # Within day variance
-dailyVar1 %>% 
-  ungroup() %>% 
-  mutate(date = ymd(date), # date
-         month = month(date, label = TRUE), # month
-         strata = ifelse(wday(date,label = TRUE) %in% c("Sat","Sun"),"weekendday","weekday")) %>% # strata
-  # left_join(daysPerMonth, by = c("month", "strata")) %>% 
-  group_by(month, strata, anglerType,nCounts) %>% 
-  summarise(strataSum = sum(sumDiff), # sum of the difference 
-            nSampled = n()) %>% # number of days sampled
-  mutate(withinDayVar = strataSum/(nSampled*(nCounts-1))) -> withinDayVar # caclulate within day variance
+dailyVar1 %>%
+  ungroup() %>%
+  mutate(
+    date = ymd(date), # date
+    month = month(date, label = TRUE), # month
+    strata = ifelse(wday(date, label = TRUE) %in% c("Sat", "Sun"), "weekendday", "weekday")
+  ) %>% # strata
+  # left_join(daysPerMonth, by = c("month", "strata")) %>%
+  group_by(month, strata, anglerType, nCounts) %>%
+  summarise(
+    strataSum = sum(sumDiff), # sum of the difference
+    nSampled = n()
+  ) %>% # number of days sampled
+  mutate(withinDayVar = strataSum / (nSampled * (nCounts - 1))) -> withinDayVar # caclulate within day variance
 
-dailyVar1 %>% 
-  ungroup() %>% 
-  mutate(date = ymd(date), # date
-         month = month(date, label = TRUE), # month
-         strata = ifelse(wday(date,label = TRUE) %in% c("Sat","Sun"),"weekendday","weekday")) %>%  #strata
-  group_by(month, strata, anglerType,nCounts) %>% 
-  summarise(strataSum = sum(sumDiff), # sum of the difference 
-            nSampled = n()) %>% # number of days sampled
-  ungroup() %>% 
-  mutate(sw2 = strataSum/(nSampled*(nCounts-1)), # component of variance
-         anglerType = case_when(anglerType == "bankAnglers" ~ "Bank", # simplify angler type
-                          anglerType == "boatAnglers" ~ "Boat")) -> sw2
-  
- sw2 %>% 
-   select(month, strata, anglerType, sw2) %>% 
-   full_join(effort2) %>% # join with effort data
-   mutate(var_y2bar = (((1-(nSampled/nDays))/nSampled)*sb2) + (1/(2*nDays))*sw2, # component of variance
-          strataVar = (nDays^2) * var_y2bar)  %>%  # strata variance
-   select(month, strata, anglerType, strataEffort, strataVar)  %>%  
-   group_by(month, anglerType) %>% 
-   summarise(ttlEffort = sum(strataEffort), # monthly effort
-             ttlVar = sum(strataVar)) %>%  # monthly variance
-   mutate(effortSE = sqrt(ttlVar), # standard error
-          effortCIlo = ttlEffort - 1.96 * effortSE, # confidence interval
-          effortCIhi = ttlEffort + 1.96 * effortSE) -> strataEstimators
- strataEstimators
+dailyVar1 %>%
+  ungroup() %>%
+  mutate(
+    date = ymd(date), # date
+    month = month(date, label = TRUE), # month
+    strata = ifelse(wday(date, label = TRUE) %in% c("Sat", "Sun"), "weekendday", "weekday")
+  ) %>% # strata
+  group_by(month, strata, anglerType, nCounts) %>%
+  summarise(
+    strataSum = sum(sumDiff), # sum of the difference
+    nSampled = n()
+  ) %>% # number of days sampled
+  ungroup() %>%
+  mutate(
+    sw2 = strataSum / (nSampled * (nCounts - 1)), # component of variance
+    anglerType = case_when(
+      anglerType == "bankAnglers" ~ "Bank", # simplify angler type
+      anglerType == "boatAnglers" ~ "Boat"
+    )
+  ) -> sw2
+
+sw2 %>%
+  select(month, strata, anglerType, sw2) %>%
+  full_join(effort2) %>% # join with effort data
+  mutate(
+    var_y2bar = (((1 - (nSampled / nDays)) / nSampled) * sb2) + (1 / (2 * nDays)) * sw2, # component of variance
+    strataVar = (nDays^2) * var_y2bar
+  ) %>% # strata variance
+  select(month, strata, anglerType, strataEffort, strataVar) %>%
+  group_by(month, anglerType) %>%
+  summarise(
+    ttlEffort = sum(strataEffort), # monthly effort
+    ttlVar = sum(strataVar)
+  ) %>% # monthly variance
+  mutate(
+    effortSE = sqrt(ttlVar), # standard error
+    effortCIlo = ttlEffort - 1.96 * effortSE, # confidence interval
+    effortCIhi = ttlEffort + 1.96 * effortSE
+  ) -> strataEstimators
+strataEstimators
 ```
 
 
 ```{r echo = FALSE}
-kable(strataEstimators, caption = "Monthly effort using a strata estimators.", col.names = c("Month","Angler type", "Total effort","Variance Effort","SE Effort","95% CI high", "95% CI low"), booktabs = TRUE, digits = 1)
+kable(strataEstimators, caption = "Monthly effort using a strata estimators.", col.names = c("Month", "Angler type", "Total effort", "Variance Effort", "SE Effort", "95% CI high", "95% CI low"), booktabs = TRUE, digits = 1)
 ```
 
 
 *Comparison of mean daily estimates and strata estimator method for assessing angler effort*
 ```{r comparisons, fig.cap = "Comparison of monthly efforts using a mean daily and a strata effort with different estimates of variation in a hypothetical bank and boat angler creel"}
+rbind(
+  data.frame(type = "Strata", strataEstimators), # combine strata and the mean daily estimator
+  data.frame(type = "MeanDaily", meanDailyEstimator)
+) -> effortEstimator
 
-rbind(data.frame(type = "Strata", strataEstimators), # combine strata and the mean daily estimator
-      data.frame(type = "MeanDaily", meanDailyEstimator)) -> effortEstimator
 
-
-ggplot(data = effortEstimator, aes(x = anglerType, y = ttlEffort, ymin = effortCIlo, ymax = effortCIhi, color = type) ) +
+ggplot(data = effortEstimator, aes(x = anglerType, y = ttlEffort, ymin = effortCIlo, ymax = effortCIhi, color = type)) +
   geom_errorbar(position = position_dodge(0.9), width = 0.5) +
-  geom_point(aes(), size = 2,position = position_dodge(0.9)) +
+  geom_point(aes(), size = 2, position = position_dodge(0.9)) +
   labs(y = "Monthly Effort", x = "Angler type") +
-  coord_cartesian(xlim = c(0.5,2.5), ylim = c(0, 30000), expand = FALSE) +
+  coord_cartesian(xlim = c(0.5, 2.5), ylim = c(0, 30000), expand = FALSE) +
   theme_classic() +
   theme(legend.position = "bottom")
 ```
 
-In this example, we can see that the point estimates are fairly consistent between the two methods.  The large difference is the amount of variance captured around the estimates.  There are a couple of reasons for this. The strata estimator included the within day variance and the mean daily did not.  
+In this example, we can see that the point estimates are fairly consistent between the two methods.  The large difference is the amount of variance captured around the estimates.  There are a couple of reasons for this. The strata estimator included the within day variance and the mean daily did not.
 
 \newpage
 
@@ -739,7 +806,7 @@ library(lubridate)
 *Load interview data and strata effort data (from box 18.4), and check data.*
 
 ```{r loaddata5}
-juneStrataEffort <- read_csv("data/juneStrataEffort.csv") 
+juneStrataEffort <- read_csv("data/juneStrataEffort.csv")
 head(juneStrataEffort)
 
 juneInterviews <- read_csv("data/juneInterviews.csv")
@@ -755,12 +822,12 @@ head(juneInterviews)
 # kable(head(juneInterviews), caption = "The first 6 rows of interviews from a creel survey.", col.names = c("Date","Period", "Section", "Number of anglers","Angler type", "Angler method","Time fished (hours)", "Time fished (mins)", "Trip type", "Num fish", "Catch type", "Species", "Species sought","Party ID", "Month", "Day of week", "Strata"), booktabs = TRUE)
 ```
 
-When we calculate the catch rates, we must take into account whether the interview was complete or incomplete.  @pollock1997catch identified important issues concerning the point estimates and variances when catches were estimated from roving (mostly incomplete surveys) or from access point (complete surveys).  We will walk through an example of a hybrid approach that uses complete survey information and incomplete survey information.  
+When we calculate the catch rates, we must take into account whether the interview was complete or incomplete.  @pollock1997catch identified important issues concerning the point estimates and variances when catches were estimated from roving (mostly incomplete surveys) or from access point (complete surveys).  We will walk through an example of a hybrid approach that uses complete survey information and incomplete survey information.
 
 *Look at the data to identify the number of complete and incomplete interviews*
 ```{r completedAccess, fig.cap = "The number of complete and incomplete intervals from a hypothetical creel survey"}
-ggplot(juneInterviews) + 
-  geom_histogram(aes(x = tripType, fill = tripType), stat = "count",color = "black") +
+ggplot(juneInterviews) +
+  geom_histogram(aes(x = tripType, fill = tripType), stat = "count", color = "black") +
   coord_cartesian(xlim = c(0.5, 2.5), ylim = c(0, 200), expand = FALSE) +
   labs(x = "Trip type", y = "Number") +
   theme_classic() +
@@ -769,10 +836,9 @@ ggplot(juneInterviews) +
 
 *Keep individual party information separate from the catch information*
 ```{r}
-juneInterviews %>% 
-  distinct(partyID, .keep_all = TRUE) %>% 
+juneInterviews %>%
+  distinct(partyID, .keep_all = TRUE) %>%
   select(-numFish, -speciesCaught, -catchType) -> partyInfo
-
 ```
 
 ```{r echo = FALSE}
@@ -781,14 +847,14 @@ juneInterviews %>%
 
 *Calculate the number caught per party for all species*
 ```{r}
-juneInterviews %>% 
-  select(partyID, speciesCaught,numFish, catchType) %>% 
-    pivot_wider(names_from = catchType, values_from = numFish, values_fill = list(numFish = 0)) %>% # move from long format to long format, easy way to fill in missing species
+juneInterviews %>%
+  select(partyID, speciesCaught, numFish, catchType) %>%
+  pivot_wider(names_from = catchType, values_from = numFish, values_fill = list(numFish = 0)) %>% # move from long format to long format, easy way to fill in missing species
   mutate(C = H + R) %>% # calculate catch at the sum of fish harvested and fish released
   select(-`NA`) %>% # remove NAs
-  pivot_longer(H:C, names_to = "catchType", values_to = "numCaught") %>% #move from wide format to long format
+  pivot_longer(H:C, names_to = "catchType", values_to = "numCaught") %>% # move from wide format to long format
   filter(!is.na(speciesCaught)) %>% # remove missing species
-  # group_by(partyID,  speciesCaught, catchType) %>% 
+  # group_by(partyID,  speciesCaught, catchType) %>%
   inner_join(partyInfo, by = "partyID") -> partyCatch # join to party information
 
 head(partyCatch)
@@ -802,111 +868,127 @@ head(partyCatch)
 *Completed or access interviews*
 
 ```{r}
-partyCatch %>% 
-  filter(tripType == "complete") %>% 
-  mutate(partyEffort = ((timeFishedHours*60+timeFishedMins)/60)*numAnglers) %>% # effort in decimal hours
-  group_by(month, strata, anglerType, speciesCaught, catchType) %>% 
-  summarise(ttlNum = sum(numCaught), # total number caught
-            ttlAnglers = sum(numAnglers), # total number of anglers
-            ttlTime = sum(partyEffort), # tota effort
-            varF = var(numCaught), #variance of fish caught
-            varH = var(partyEffort),# variance of party effort
-            fbar2 = mean(numCaught)^2, 
-            hbar2 = mean(partyEffort)^2,
-            fhbar2 = mean(numCaught*partyEffort)^2,
-            covfh = cov(numCaught,partyEffort), # covariance
-            k = n_distinct(partyID)) %>% 
-  mutate(rate = (ttlNum/ttlAnglers)/(ttlTime), # ratio of the means
-         varRate = ((1/k)*rate^2)*((varF/fbar2)+((varH/hbar2))+(covfh/fhbar2)), # variance of the catch rates
-         varRate = ifelse(is.nan(varRate),0,varRate)) %>% # correct for is not a number
+partyCatch %>%
+  filter(tripType == "complete") %>%
+  mutate(partyEffort = ((timeFishedHours * 60 + timeFishedMins) / 60) * numAnglers) %>% # effort in decimal hours
+  group_by(month, strata, anglerType, speciesCaught, catchType) %>%
+  summarise(
+    ttlNum = sum(numCaught), # total number caught
+    ttlAnglers = sum(numAnglers), # total number of anglers
+    ttlTime = sum(partyEffort), # tota effort
+    varF = var(numCaught), # variance of fish caught
+    varH = var(partyEffort), # variance of party effort
+    fbar2 = mean(numCaught)^2,
+    hbar2 = mean(partyEffort)^2,
+    fhbar2 = mean(numCaught * partyEffort)^2,
+    covfh = cov(numCaught, partyEffort), # covariance
+    k = n_distinct(partyID)
+  ) %>%
+  mutate(
+    rate = (ttlNum / ttlAnglers) / (ttlTime), # ratio of the means
+    varRate = ((1 / k) * rate^2) * ((varF / fbar2) + ((varH / hbar2)) + (covfh / fhbar2)), # variance of the catch rates
+    varRate = ifelse(is.nan(varRate), 0, varRate)
+  ) %>% # correct for is not a number
   select(-ttlAnglers, -ttlTime, -ttlNum, -varF, -varH, -fbar2, -hbar2, -fhbar2, -covfh, k) -> strataComplRates
-
 ```
 
 ```{r echo = FALSE}
-kable(strataComplRates, caption = "Party catch rates from complete trips", col.names = c("Month", "Strata", "Angler type","Species caught", "Catch type", "Number", "Rate", "Variance rate"), booktabs = TRUE, digits = 3)
+kable(strataComplRates, caption = "Party catch rates from complete trips", col.names = c("Month", "Strata", "Angler type", "Species caught", "Catch type", "Number", "Rate", "Variance rate"), booktabs = TRUE, digits = 3)
 ```
 
 
 *Extrapolate the catch rates to the month*
 
 ```{r}
-left_join(strataComplRates, juneStrataEffort, by = c("month", "strata", "anglerType")) %>% 
-  mutate(strataFish = rate * strataEffort,
-         strataFishVar = (strataEffort^2 *varRate) + (rate^2 * strataVar) - (varRate*strataVar) ) %>% 
+left_join(strataComplRates, juneStrataEffort, by = c("month", "strata", "anglerType")) %>%
+  mutate(
+    strataFish = rate * strataEffort,
+    strataFishVar = (strataEffort^2 * varRate) + (rate^2 * strataVar) - (varRate * strataVar)
+  ) %>%
   select(month:catchType, strataFish, strataFishVar) -> completeFish
-
-
 ```
 
 
 ```{r echo = FALSE}
-kable(completeFish %>% as.data.frame(), caption = "Monthly catches", col.names = c("Month", "Strata", "Angler type","Species caught", "Catch type", "Total number", "Number variance"), booktabs = TRUE, digits = 1)
+kable(completeFish %>% as.data.frame(), caption = "Monthly catches", col.names = c("Month", "Strata", "Angler type", "Species caught", "Catch type", "Total number", "Number variance"), booktabs = TRUE, digits = 1)
 ```
 
 *Roving or incomplete surveys*
 ```{r rovingRoving}
 # Mean of the ratios
-partyCatch %>% 
-  filter(tripType == "incomplete", # filter to incomplete surveys
-         (timeFishedHours*60+timeFishedMins)>= 30) %>% #truncate surveys to those more than 30 minutes
-  group_by(month,partyID, strata, anglerType, speciesCaught, catchType) %>%
-  mutate(partyEffort = ((timeFishedHours*60+timeFishedMins)/60)*numAnglers, # party effort
-         rate = numCaught/partyEffort) %>% # party catch rates
+partyCatch %>%
+  filter(
+    tripType == "incomplete", # filter to incomplete surveys
+    (timeFishedHours * 60 + timeFishedMins) >= 30
+  ) %>% # truncate surveys to those more than 30 minutes
+  group_by(month, partyID, strata, anglerType, speciesCaught, catchType) %>%
+  mutate(
+    partyEffort = ((timeFishedHours * 60 + timeFishedMins) / 60) * numAnglers, # party effort
+    rate = numCaught / partyEffort
+  ) %>% # party catch rates
   group_by(month, strata, anglerType, speciesCaught, catchType) %>%
-  summarise(sumRate2 = sum(rate^2), #sum of rate squared
-            sumRate = sum(rate), # sum of rates
-            k = n_distinct(partyID), # number of parties
-            meanRate = mean(rate)) %>%  # mean rate
-  mutate(varRate = (sumRate2 -((sumRate^2)/k))/(k*(k-1)), # variance of rates
-         varRate = ifelse(is.nan(varRate),0,varRate)) %>%  # correct rates for not-a-numbers
-    select(month, strata, anglerType, speciesCaught, catchType, k, meanRate, varRate) -> strataIncomplRates
-
-
+  summarise(
+    sumRate2 = sum(rate^2), # sum of rate squared
+    sumRate = sum(rate), # sum of rates
+    k = n_distinct(partyID), # number of parties
+    meanRate = mean(rate)
+  ) %>% # mean rate
+  mutate(
+    varRate = (sumRate2 - ((sumRate^2) / k)) / (k * (k - 1)), # variance of rates
+    varRate = ifelse(is.nan(varRate), 0, varRate)
+  ) %>% # correct rates for not-a-numbers
+  select(month, strata, anglerType, speciesCaught, catchType, k, meanRate, varRate) -> strataIncomplRates
 ```
 
 ```{r echo = FALSE}
-kable(strataIncomplRates, caption = "Party catch rates from incomplete trips", col.names = c("Month", "Strata", "Angler type","Species caught", "Catch type", "Number", "Rate", "Variance rate"), booktabs = TRUE, digits = 3)
+kable(strataIncomplRates, caption = "Party catch rates from incomplete trips", col.names = c("Month", "Strata", "Angler type", "Species caught", "Catch type", "Number", "Rate", "Variance rate"), booktabs = TRUE, digits = 3)
 ```
 
 *Extrapolate the catch rates to the month*
 ```{r rovingRoving2}
-left_join(strataIncomplRates, juneStrataEffort) %>% 
-  mutate(strataFish = meanRate * strataEffort,
-         strataFishVar = (strataEffort^2 *varRate) + (meanRate^2 * strataVar) - (varRate*strataVar) ) %>% 
+left_join(strataIncomplRates, juneStrataEffort) %>%
+  mutate(
+    strataFish = meanRate * strataEffort,
+    strataFishVar = (strataEffort^2 * varRate) + (meanRate^2 * strataVar) - (varRate * strataVar)
+  ) %>%
   select(month:catchType, strataFish, strataFishVar) -> incompleteFish
-
 ```
 
 
 
 ```{r echo = FALSE}
-kable(incompleteFish %>% as.data.frame(), caption = "Monthly catches from incompleted trips", col.names = c("Month", "Strata", "Angler type","Species caught", "Catch type", "Total number", "Number variance"), booktabs = TRUE, digits = 1)
+kable(incompleteFish %>% as.data.frame(), caption = "Monthly catches from incompleted trips", col.names = c("Month", "Strata", "Angler type", "Species caught", "Catch type", "Total number", "Number variance"), booktabs = TRUE, digits = 1)
 ```
 
 *Combine the incomplete and complete surveys*
 ```{r combinetypes}
-rbind(incompleteFish, completeFish) %>% 
-  group_by(month, strata, anglerType, speciesCaught, catchType) %>% 
-  summarise(numFish = sum(strataFish), # add across strata
-            fishVar = sum(strataFish)) %>% 
-  group_by(month, anglerType, speciesCaught, catchType) %>% 
-  summarise(monthFish = sum(numFish),  # total number
-            monthVar = sum(fishVar)) %>% # total variance
-  mutate(monthSE = sqrt(monthVar), # standard error
-         CIlo = monthFish - monthSE*1.96, #95% confidence interval
-         CIhi = monthFish + monthSE*1.96) -> fishTotal
+rbind(incompleteFish, completeFish) %>%
+  group_by(month, strata, anglerType, speciesCaught, catchType) %>%
+  summarise(
+    numFish = sum(strataFish), # add across strata
+    fishVar = sum(strataFish)
+  ) %>%
+  group_by(month, anglerType, speciesCaught, catchType) %>%
+  summarise(
+    monthFish = sum(numFish), # total number
+    monthVar = sum(fishVar)
+  ) %>% # total variance
+  mutate(
+    monthSE = sqrt(monthVar), # standard error
+    CIlo = monthFish - monthSE * 1.96, # 95% confidence interval
+    CIhi = monthFish + monthSE * 1.96
+  ) -> fishTotal
 ```
 
 *Create a graph of the number of species caught*
 ```{r combinetypesgraph, fig.cap = "The number and 95% confidence interval of several species caught by boat and bank anglers in a hypothetical creel "}
-ggplot(fishTotal %>% filter(catchType == "C"), aes(x = speciesCaught, y = monthFish, ymin = CIlo, ymax= CIhi, fill = anglerType)) + 
+ggplot(fishTotal %>% filter(catchType == "C"), aes(x = speciesCaught, y = monthFish, ymin = CIlo, ymax = CIhi, fill = anglerType)) +
   geom_col(color = "black", position = position_dodge(0.9)) +
   geom_errorbar(position = position_dodge(0.9)) +
   labs(x = "Species", y = "Number", fill = "Angler type") +
   coord_cartesian(xlim = c(0.5, 5.5), ylim = c(0, 3000), expand = FALSE) +
   theme_classic() +
-  theme(legend.position = c(0.75,0.75))
+  theme(legend.position = c(0.75, 0.75))
 ```
 
 
@@ -920,105 +1002,109 @@ library(bipartite)
 
 *Load interview data and look at data.*
 ```{r loaddata6, message=FALSE}
-juneInterviews <- read_csv("data/juneInterviews.csv") 
+juneInterviews <- read_csv("data/juneInterviews.csv")
 ```
 
 *Keep individual party information separate from the catch information*
 ```{r}
-juneInterviews %>% 
-  distinct(partyID, .keep_all = TRUE) %>% 
+juneInterviews %>%
+  distinct(partyID, .keep_all = TRUE) %>%
   select(-numFish, -speciesCaught, -catchType) -> partyInfo
 ```
 
 *Calculate the number caught per party for all species*
 ```{r partycatch}
-
-juneInterviews %>% 
-  select(partyID, speciesCaught,numFish, catchType) %>% 
-        pivot_wider(names_from = catchType, values_from = numFish, values_fill = list(numFish = 0)) %>% # move from long format to long format, easy way to fill in missing species
+juneInterviews %>%
+  select(partyID, speciesCaught, numFish, catchType) %>%
+  pivot_wider(names_from = catchType, values_from = numFish, values_fill = list(numFish = 0)) %>% # move from long format to long format, easy way to fill in missing species
   mutate(C = H + R) %>% # calculate catch at the sum of fish harvested and fish released
   select(-`NA`) %>% # remove NAs
-  pivot_longer(H:C, names_to = "catchType", values_to = "numCaught") %>% #move from wide format to long format
-  filter(!is.na(speciesCaught),
-         catchType == "R") %>% # keep only released information
-  inner_join(partyInfo, by = "partyID") %>% #join with party information 
-  mutate(partyEffort = ((timeFishedHours*60+timeFishedMins)/60)*numAnglers, # party effort
-         CPUE = numCaught/partyEffort) -> partyCatch
+  pivot_longer(H:C, names_to = "catchType", values_to = "numCaught") %>% # move from wide format to long format
+  filter(
+    !is.na(speciesCaught),
+    catchType == "R"
+  ) %>% # keep only released information
+  inner_join(partyInfo, by = "partyID") %>% # join with party information
+  mutate(
+    partyEffort = ((timeFishedHours * 60 + timeFishedMins) / 60) * numAnglers, # party effort
+    CPUE = numCaught / partyEffort
+  ) -> partyCatch
 ```
 
 *Calculate the number of each species released (standardized to 3 hours of angling).*
 ```{r seekingcatch}
-partyCatch %>% 
-  group_by(anglerMethod, speciesSought, speciesCaught) %>% 
-  summarise(mCPUE = mean(CPUE), # mean catch per unit effort
-            Catch3hr = ceiling(mCPUE*3)) %>% # number caught during three hours, rounded up to the nearest whole number
-  ungroup() %>% 
-  select(-anglerMethod, -mCPUE) %>% 
+partyCatch %>%
+  group_by(anglerMethod, speciesSought, speciesCaught) %>%
+  summarise(
+    mCPUE = mean(CPUE), # mean catch per unit effort
+    Catch3hr = ceiling(mCPUE * 3)
+  ) %>% # number caught during three hours, rounded up to the nearest whole number
+  ungroup() %>%
+  select(-anglerMethod, -mCPUE) %>%
   pivot_wider(names_from = speciesSought, values_from = Catch3hr, values_fill = list(Catch3hr = 0)) %>% # long to wide format
   as.data.frame() -> seekCaught # convert to data.frame
 ```
 
-*Convert to a matrix* 
+*Convert to a matrix*
 ```{r seekingcatch2}
 rownames(seekCaught) <- seekCaught$speciesCaught # species released as a row name
-seekCaught <- seekCaught[,-1] # remove species released column
-seekCaught <- as.matrix(seekCaught) #convert to a matrix
-
+seekCaught <- seekCaught[, -1] # remove species released column
+seekCaught <- as.matrix(seekCaught) # convert to a matrix
 ```
 
 
 ```{r echo = FALSE}
-kable(seekCaught, caption = "Species seeking and release matrix", col.names = c("Anything", "Channel Catfish", "Walleye","White Bass"), booktabs = TRUE, digits = 1)
+kable(seekCaught, caption = "Species seeking and release matrix", col.names = c("Anything", "Channel Catfish", "Walleye", "White Bass"), booktabs = TRUE, digits = 1)
 ```
 
 
 *View the bipartite network*
 ```{r seekingcatch3, fig.cap = "A bipartite network representing species seeking groups (top) and the species released (bottom).  The width of the bars represent the proportional number seeking and released."}
 plotweb(seekCaught,
-        labsize=1,#text.rot=90,
-        col.high="#d8b365",
-        bor.col.high ="white",
-        col.low="#5ab4ac",
-        bor.col.low="white",
-        col.interaction="#f5f5f5",
-        text.high.col="black",
-        text.low.col="black",
-        bor.col.interaction = "#999999"
+  labsize = 1, # text.rot=90,
+  col.high = "#d8b365",
+  bor.col.high = "white",
+  col.low = "#5ab4ac",
+  bor.col.low = "white",
+  col.interaction = "#f5f5f5",
+  text.high.col = "black",
+  text.low.col = "black",
+  bor.col.interaction = "#999999"
 )
 ```
 
 *Create a function to extract several network metrics*
 ```{r}
-get_the_info<-function(df){
+get_the_info <- function(df) {
   networklvl <- networklevel(df)
   grouplvl <- grouplevel(df)
-  
- outDat <-data.frame( HL.num=grouplvl["number.of.species.HL"],
-                LL.num=grouplvl["number.of.species.LL"],
-                connectance=networklvl["connectance"],
-                shannon=networklvl["Shannon diversity"],
-                cluster=networklvl["cluster coefficient"],
-                w.nested=networklvl["weighted nestedness"],
-                h2=networklvl["H2"],
-                HL.links=grouplvl["mean.number.of.links.HL"],
-                LL.links=grouplvl["mean.number.of.links.LL"],
-                HL.C_score=grouplvl["C.score.HL"],
-                LL.C_score=grouplvl["C.score.LL"],
-                HL.togetherness=grouplvl["togetherness.HL"],
-                LL.togetherness=grouplvl["togetherness.LL"])
- 
- return(outDat)
 
+  outDat <- data.frame(
+    HL.num = grouplvl["number.of.species.HL"],
+    LL.num = grouplvl["number.of.species.LL"],
+    connectance = networklvl["connectance"],
+    shannon = networklvl["Shannon diversity"],
+    cluster = networklvl["cluster coefficient"],
+    w.nested = networklvl["weighted nestedness"],
+    h2 = networklvl["H2"],
+    HL.links = grouplvl["mean.number.of.links.HL"],
+    LL.links = grouplvl["mean.number.of.links.LL"],
+    HL.C_score = grouplvl["C.score.HL"],
+    LL.C_score = grouplvl["C.score.LL"],
+    HL.togetherness = grouplvl["togetherness.HL"],
+    LL.togetherness = grouplvl["togetherness.LL"]
+  )
+
+  return(outDat)
 }
 
-get_the_info(seekCaught) %>% 
+get_the_info(seekCaught) %>%
   pivot_longer(HL.num:LL.togetherness, names_to = "metric", values_to = "value") -> networkVals
-
 ```
 
 
 ```{r echo = FALSE}
-kable(networkVals, caption = "Bipartite network metrics", col.names = c("Metric","Value"), booktabs = TRUE, digits = 1)
+kable(networkVals, caption = "Bipartite network metrics", col.names = c("Metric", "Value"), booktabs = TRUE, digits = 1)
 ```
 
 #### References

@@ -1,27 +1,29 @@
 pkgname <- "tidycreel"
 source(file.path(R.home("share"), "R", "examples-header.R"))
 options(warn = 1)
-base::assign(".ExTimings", "tidycreel-Ex.timings", pos = 'CheckExEnv')
-base::cat("name\tuser\tsystem\telapsed\n", file=base::get(".ExTimings", pos = 'CheckExEnv'))
+base::assign(".ExTimings", "tidycreel-Ex.timings", pos = "CheckExEnv")
+base::cat("name\tuser\tsystem\telapsed\n", file = base::get(".ExTimings", pos = "CheckExEnv"))
 base::assign(".format_ptime",
-function(x) {
-  if(!is.na(x[4L])) x[1L] <- x[1L] + x[4L]
-  if(!is.na(x[5L])) x[2L] <- x[2L] + x[5L]
-  options(OutDec = '.')
-  format(x[1L:3L], digits = 7L)
-},
-pos = 'CheckExEnv')
+  function(x) {
+    if (!is.na(x[4L])) x[1L] <- x[1L] + x[4L]
+    if (!is.na(x[5L])) x[2L] <- x[2L] + x[5L]
+    options(OutDec = ".")
+    format(x[1L:3L], digits = 7L)
+  },
+  pos = "CheckExEnv"
+)
 
 ### * </HEADER>
-library('tidycreel')
+library("tidycreel")
 
-base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
-base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+base::assign(".oldSearch", base::search(), pos = "CheckExEnv")
+base::assign(".old_wd", base::getwd(), pos = "CheckExEnv")
 cleanEx()
 nameEx("add_counts")
 ### * add_counts
 
-flush(stderr()); flush(stdout())
+flush(stderr())
+flush(stdout())
 
 base::assign(".ptime", proc.time(), pos = "CheckExEnv")
 ### Name: add_counts
@@ -60,12 +62,13 @@ design2 <- add_counts(design, counts_with_site_psu, psu = "site_day")
 
 
 base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
-base::cat("add_counts", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+base::cat("add_counts", base::get(".format_ptime", pos = "CheckExEnv")(get(".dptime", pos = "CheckExEnv")), "\n", file = base::get(".ExTimings", pos = "CheckExEnv"), append = TRUE, sep = "\t")
 cleanEx()
 nameEx("as_survey_design")
 ### * as_survey_design
 
-flush(stderr()); flush(stdout())
+flush(stderr())
+flush(stdout())
 
 base::assign(".ptime", proc.time(), pos = "CheckExEnv")
 ### Name: as_survey_design
@@ -101,12 +104,13 @@ survey::svymean(~count, svy)
 
 
 base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
-base::cat("as_survey_design", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+base::cat("as_survey_design", base::get(".format_ptime", pos = "CheckExEnv")(get(".dptime", pos = "CheckExEnv")), "\n", file = base::get(".ExTimings", pos = "CheckExEnv"), append = TRUE, sep = "\t")
 cleanEx()
 nameEx("creel_design")
 ### * creel_design
 
-flush(stderr()); flush(stdout())
+flush(stderr())
+flush(stdout())
 
 base::assign(".ptime", proc.time(), pos = "CheckExEnv")
 ### Name: creel_design
@@ -154,12 +158,13 @@ design <- creel_design(
 
 
 base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
-base::cat("creel_design", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+base::cat("creel_design", base::get(".format_ptime", pos = "CheckExEnv")(get(".dptime", pos = "CheckExEnv")), "\n", file = base::get(".ExTimings", pos = "CheckExEnv"), append = TRUE, sep = "\t")
 cleanEx()
 nameEx("estimate_effort")
 ### * estimate_effort
 
-flush(stderr()); flush(stdout())
+flush(stderr())
+flush(stdout())
 
 base::assign(".ptime", proc.time(), pos = "CheckExEnv")
 ### Name: estimate_effort
@@ -209,12 +214,13 @@ result_grouped_boot <- estimate_effort(design_with_counts, by = day_type, varian
 
 
 base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
-base::cat("estimate_effort", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+base::cat("estimate_effort", base::get(".format_ptime", pos = "CheckExEnv")(get(".dptime", pos = "CheckExEnv")), "\n", file = base::get(".ExTimings", pos = "CheckExEnv"), append = TRUE, sep = "\t")
 cleanEx()
 nameEx("example_calendar")
 ### * example_calendar
 
-flush(stderr()); flush(stdout())
+flush(stderr())
+flush(stdout())
 
 base::assign(".ptime", proc.time(), pos = "CheckExEnv")
 ### Name: example_calendar
@@ -236,12 +242,13 @@ print(design)
 
 
 base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
-base::cat("example_calendar", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+base::cat("example_calendar", base::get(".format_ptime", pos = "CheckExEnv")(get(".dptime", pos = "CheckExEnv")), "\n", file = base::get(".ExTimings", pos = "CheckExEnv"), append = TRUE, sep = "\t")
 cleanEx()
 nameEx("example_counts")
 ### * example_counts
 
-flush(stderr()); flush(stdout())
+flush(stderr())
+flush(stdout())
 
 base::assign(".ptime", proc.time(), pos = "CheckExEnv")
 ### Name: example_counts
@@ -264,16 +271,16 @@ print(result)
 
 
 base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
-base::cat("example_counts", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+base::cat("example_counts", base::get(".format_ptime", pos = "CheckExEnv")(get(".dptime", pos = "CheckExEnv")), "\n", file = base::get(".ExTimings", pos = "CheckExEnv"), append = TRUE, sep = "\t")
 ### * <FOOTER>
 ###
 cleanEx()
 options(digits = 7L)
-base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = "CheckExEnv"), "\n")
 grDevices::dev.off()
 ###
 ### Local variables: ***
 ### mode: outline-minor ***
 ### outline-regexp: "\\(> \\)?### [*]+" ***
 ### End: ***
-quit('no')
+quit("no")

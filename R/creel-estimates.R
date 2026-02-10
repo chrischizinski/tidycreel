@@ -83,6 +83,8 @@ format.creel_estimates <- function(x, ...) {
     total = "Total",
     "ratio-of-means-cpue" = "Ratio-of-Means CPUE",
     "ratio-of-means-hpue" = "Ratio-of-Means HPUE",
+    "product-total-catch" = "Total Catch (Effort \u00d7 CPUE)",
+    "product-total-harvest" = "Total Harvest (Effort \u00d7 HPUE)",
     x$method
   )
 

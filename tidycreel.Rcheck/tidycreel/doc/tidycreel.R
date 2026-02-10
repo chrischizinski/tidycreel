@@ -49,4 +49,3 @@ print(result_jk)
 set.seed(123)
 result_grouped_boot <- estimate_effort(design, by = day_type, variance = "bootstrap")
 print(result_grouped_boot)
-

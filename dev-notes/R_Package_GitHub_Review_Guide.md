@@ -1,6 +1,6 @@
 # 🧭 R Package GitHub Review & CI Guide
 
-This document provides a **GitHub-first code review framework** for R packages.  
+This document provides a **GitHub-first code review framework** for R packages.
 It emphasizes **API stability, correctness, testing, and documentation** for packages distributed via **GitHub (not CRAN)**.
 
 ---
@@ -9,49 +9,49 @@ It emphasizes **API stability, correctness, testing, and documentation** for pac
 
 > **Review this git diff for an R package, prioritizing GitHub delivery. Focus on:**
 >
-> 1. **Behavioral changes (user-visible):**  
->    - Messages via `cli`, errors via `rlang::abort()`.  
->    - Return types stable (`tibble` vs `data.frame`), attributes preserved.  
+> 1. **Behavioral changes (user-visible):**
+>    - Messages via `cli`, errors via `rlang::abort()`.
+>    - Return types stable (`tibble` vs `data.frame`), attributes preserved.
 >    - No unexpected side effects (options, RNG, locale, working dir, connections). Use `withr::` guards and `on.exit()`.
 >
-> 2. **API/contracts:**  
->    - Function signatures and defaults consistent (including `...`).  
->    - S3/S4/R6/Rcpp compatibility; stable classes.  
+> 2. **API/contracts:**
+>    - Function signatures and defaults consistent (including `...`).
+>    - S3/S4/R6/Rcpp compatibility; stable classes.
 >    - Deprecations noted in `lifecycle` (no CRAN policy needed).
 >
-> 3. **Edge cases:**  
->    - Handles length-0/1, recycling, NA/NaN/Inf/NULL, factors vs character, UTF-8, `Date`/`POSIXct` + TZ.  
->    - Tidy-eval safety (`{{ }}`, quosures).  
+> 3. **Edge cases:**
+>    - Handles length-0/1, recycling, NA/NaN/Inf/NULL, factors vs character, UTF-8, `Date`/`POSIXct` + TZ.
+>    - Tidy-eval safety (`{{ }}`, quosures).
 >    - File paths portable (`normalizePath()`, `tempfile()`).
 >
-> 4. **Potential bugs/perf:**  
->    - Avoid accidental copies (copy-on-modify).  
->    - Use preallocation.  
->    - `data.table` by-reference (`:=`) vs unintended copies.  
->    - Parallel code portable (PSOCK on Windows).  
+> 4. **Potential bugs/perf:**
+>    - Avoid accidental copies (copy-on-modify).
+>    - Use preallocation.
+>    - `data.table` by-reference (`:=`) vs unintended copies.
+>    - Parallel code portable (PSOCK on Windows).
 >    - Numeric tolerances appropriate.
 >
-> 5. **Data flow & state:**  
->    - Invariants (classes/attributes) preserved.  
->    - `.onLoad`/`.onAttach` do not mutate user state.  
+> 5. **Data flow & state:**
+>    - Invariants (classes/attributes) preserved.
+>    - `.onLoad`/`.onAttach` do not mutate user state.
 >    - Options/env vars namespaced.
 >
-> 6. **Testing gaps:**  
->    - Add/adjust tests for 0/1/NA/factors/TZ/locale/encoding.  
->    - Snapshot outputs (CLI, printing).  
->    - Error class assertions.  
+> 6. **Testing gaps:**
+>    - Add/adjust tests for 0/1/NA/factors/TZ/locale/encoding.
+>    - Snapshot outputs (CLI, printing).
+>    - Error class assertions.
 >    - Optional `vdiffr` for plots.
 >
-> 7. **Docs for GitHub users:**  
->    - `roxygen2` docs complete (`@param/@return/@examples/@export`).  
->    - `NAMESPACE` regenerated.  
->    - **README install section** (`pak`, `remotes`) current.  
->    - `NEWS.md` for tag changes.  
+> 7. **Docs for GitHub users:**
+>    - `roxygen2` docs complete (`@param/@return/@examples/@export`).
+>    - `NAMESPACE` regenerated.
+>    - **README install section** (`pak`, `remotes`) current.
+>    - `NEWS.md` for tag changes.
 >    - `pkgdown` builds.
 >
-> 8. **Repo hygiene:**  
->    - Minimal `DESCRIPTION`.  
->    - CI green across OSes.  
+> 8. **Repo hygiene:**
+>    - Minimal `DESCRIPTION`.
+>    - CI green across OSes.
 >    - Lints (`lintr`, `styler`) pass.
 
 ---
@@ -222,10 +222,10 @@ pak::pak("your-org/yourpkg@v1.2.3")
 
 ## 🧹 7. Repo Hygiene Notes
 
-- **Badges:** GitHub Actions (check), pkgdown site, optional coverage badge.  
-- **Code style:** Use `lintr` and `styler`; consider pre-commit hooks.  
-- **Versioning:** Semantic tags (`vX.Y.Z`) power releases and NEWS.  
-- **Dependencies:** Keep `Imports` minimal; heavy optional packages in `Suggests`.  
+- **Badges:** GitHub Actions (check), pkgdown site, optional coverage badge.
+- **Code style:** Use `lintr` and `styler`; consider pre-commit hooks.
+- **Versioning:** Semantic tags (`vX.Y.Z`) power releases and NEWS.
+- **Dependencies:** Keep `Imports` minimal; heavy optional packages in `Suggests`.
 - **Windows note:** If using Rcpp, mention RTools link in README.
 
 ---
