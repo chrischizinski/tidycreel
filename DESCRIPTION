@@ -19,7 +19,9 @@ Depends:
 Imports:
     checkmate,
     cli,
+    dplyr,
     rlang,
+    stats,
     survey,
     tibble,
     tidyselect (>= 1.2.0)

@@ -86,3 +86,47 @@ validate_count_schema <- function(data) {
 
   invisible(data)
 }
+
+#' Validate interview data schema
+#'
+#' Internal validator that checks if data frame has the required structure for
+#' interview data: at least one Date column and at least one numeric column
+#' (for catch/effort/harvest).
+#'
+#' @param data A data frame to validate
+#'
+#' @return Invisibly returns the input data frame on success. Aborts with
+#'   informative error message on validation failure.
+#'
+#' @keywords internal
+#' @noRd
+validate_interview_schema <- function(data) {
+  collection <- checkmate::makeAssertCollection()
+  checkmate::assert_data_frame(data, min.rows = 1, add = collection)
+
+  if (is.data.frame(data) && nrow(data) > 0) {
+    has_date <- any(vapply(data, inherits, logical(1), "Date"))
+    if (!has_date) {
+      collection$push("Must contain at least one Date column")
+    }
+
+    has_numeric <- any(vapply(data, is.numeric, logical(1)))
+    if (!has_numeric) {
+      collection$push("Must contain at least one numeric column")
+    }
+  }
+
+  if (!collection$isEmpty()) {
+    msgs <- collection$getMessages()
+    cli::cli_abort(c(
+      "Interview data validation failed:",
+      stats::setNames(msgs, rep("x", length(msgs))),
+      "i" = paste(
+        "Interview data must be a data frame with at least one Date column",
+        "and one numeric column."
+      )
+    ))
+  }
+
+  invisible(data)
+}

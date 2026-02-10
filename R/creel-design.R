@@ -403,6 +403,204 @@ add_counts <- function(design, counts, psu = NULL, allow_invalid = FALSE) {
   new_design
 }
 
+#' Attach interview data to a creel design
+#'
+#' @description
+#' Attaches interview data (catch, effort, and optionally harvest per completed
+#' fishing trip) to a creel_design object and constructs the internal interview
+#' survey design object eagerly. This enables catch rate and harvest rate
+#' estimation from angler interviews. Follows the same tidy selector API pattern
+#' as [add_counts()].
+#'
+#' @param design A creel_design object (created with [creel_design()])
+#' @param interviews Data frame containing interview data. Must have:
+#'   - A Date column matching the design's date_col
+#'   - Numeric catch column (total fish caught per trip)
+#'   - Numeric effort column (fishing time per trip, e.g., hours)
+#'   - Optional numeric harvest column (fish kept per trip)
+#' @param catch Tidy selector for total catch column (required). Use bare column
+#'   names (e.g., `catch = catch_total`) or tidyselect helpers.
+#' @param effort Tidy selector for fishing effort column (required, e.g.,
+#'   `effort = hours_fished`). Should represent time spent fishing per trip.
+#' @param harvest Tidy selector for harvest (kept fish) column (optional,
+#'   default NULL). If provided, will be validated for consistency (harvest <= catch).
+#' @param date_col Character name of date column in interviews (default NULL,
+#'   which uses the design's date_col). Specify explicitly if interview data
+#'   uses a different date column name than the design calendar.
+#' @param interview_type Character: "access" (complete trips at access point)
+#'   or "roving" (incomplete trips during fishing). Default is "access". This
+#'   affects how catch rates are calculated in estimation functions.
+#' @param allow_invalid Logical flag for validation behavior. If FALSE (default),
+#'   validation failures abort with detailed error messages. If TRUE, validation
+#'   failures generate warnings and attach interviews anyway (use with caution).
+#'
+#' @return A new creel_design object (list) with components:
+#'   \item{calendar}{Original calendar data frame}
+#'   \item{date_col}{Character name of date column}
+#'   \item{strata_cols}{Character vector of strata column names}
+#'   \item{site_col}{Character name of site column, or NULL}
+#'   \item{design_type}{Character design type}
+#'   \item{counts}{Count data frame (if previously attached, or NULL)}
+#'   \item{interviews}{The interview data frame (newly attached)}
+#'   \item{catch_col}{Character name of catch column}
+#'   \item{effort_col}{Character name of effort column}
+#'   \item{harvest_col}{Character name of harvest column, or NULL}
+#'   \item{interview_type}{Character interview type}
+#'   \item{interview_survey}{Internal survey.design2 object (newly constructed)}
+#'   \item{validation}{creel_validation object with Tier 1 results}
+#'
+#' @section Immutability:
+#' add_interviews() follows functional programming patterns and returns a new
+#' creel_design object. The original design object is not modified. This
+#' prevents accidental data loss and makes the workflow explicit:
+#' `design2 <- add_interviews(design, interviews, ...)` not `add_interviews(design, interviews, ...)`
+#'
+#' @section Validation:
+#' add_interviews() performs Tier 1 validation:
+#' - Interview data schema (Date column, numeric columns) via validate_interview_schema()
+#' - Design column presence (date_col exists in interview data)
+#' - No NA values in date column
+#' - Interview dates exist in design calendar
+#' - Catch and effort columns exist and are numeric
+#' - Harvest column exists and is numeric (if provided)
+#' - Harvest <= catch consistency (if harvest provided)
+#' - Interview survey construction (catches stratification issues)
+#'
+#' @section Calendar Integration:
+#' Interview dates are automatically linked to the design calendar via date
+#' matching. Strata from the calendar are inherited by the interview data,
+#' enabling stratified estimation of catch rates.
+#'
+#' @examples
+#' # Basic usage - catch and effort only
+#' calendar <- data.frame(
+#'   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
+#'   day_type = c("weekday", "weekday", "weekend", "weekend")
+#' )
+#' design <- creel_design(calendar, date = date, strata = day_type)
+#'
+#' interviews <- data.frame(
+#'   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
+#'   catch_total = c(5, 3, 7, 2),
+#'   hours_fished = c(2.0, 2.5, 3.0, 1.5)
+#' )
+#'
+#' design_with_interviews <- add_interviews(
+#'   design, interviews,
+#'   catch = catch_total,
+#'   effort = hours_fished
+#' )
+#' print(design_with_interviews)
+#'
+#' # With harvest column
+#' interviews2 <- data.frame(
+#'   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
+#'   catch_total = c(5, 3, 7, 2),
+#'   catch_kept = c(2, 1, 5, 2),
+#'   hours_fished = c(2.0, 2.5, 3.0, 1.5)
+#' )
+#'
+#' design2 <- add_interviews(
+#'   design, interviews2,
+#'   catch = catch_total,
+#'   effort = hours_fished,
+#'   harvest = catch_kept
+#' )
+#'
+#' @export
+add_interviews <- function(design, interviews,
+                           catch, effort, harvest = NULL,
+                           date_col = NULL,
+                           interview_type = c("access", "roving"),
+                           allow_invalid = FALSE) {
+  # Validate design is creel_design
+  if (!inherits(design, "creel_design")) {
+    cli::cli_abort(c(
+      "{.arg design} must be a {.cls creel_design} object.",
+      "x" = "{.arg design} is {.cls {class(design)[1]}}.",
+      "i" = "Create a design with {.fn creel_design}."
+    ))
+  }
+
+  # Check interviews not already attached
+  if (!is.null(design$interviews)) {
+    cli::cli_abort(c(
+      "Interviews already attached to design.",
+      "x" = "The design object already has interview data in the {.field $interviews} slot.",
+      "i" = "Create a new design with {.fn creel_design} to attach different interviews.",
+      "i" = "Use immutable workflow: {.code design2 <- add_interviews(design, interviews, ...)}"
+    ))
+  }
+
+  # Validate interview data schema (Date column, numeric column)
+  validate_interview_schema(interviews) # nolint: object_usage_linter
+
+  # Resolve tidy selectors
+  catch_col <- resolve_single_col(
+    rlang::enquo(catch),
+    interviews,
+    "catch",
+    rlang::caller_env()
+  )
+
+  effort_col <- resolve_single_col(
+    rlang::enquo(effort),
+    interviews,
+    "effort",
+    rlang::caller_env()
+  )
+
+  # Resolve harvest column (optional)
+  harvest_col <- NULL
+  harvest_quo <- rlang::enquo(harvest)
+  if (!rlang::quo_is_null(harvest_quo)) {
+    harvest_col <- resolve_single_col(
+      harvest_quo,
+      interviews,
+      "harvest",
+      rlang::caller_env()
+    )
+  }
+
+  # Set date_col (default to design$date_col)
+  if (is.null(date_col)) {
+    date_col <- design$date_col
+  }
+
+  # Match interview_type
+  interview_type <- match.arg(interview_type)
+
+  # Validate interviews structure (Tier 1)
+  validation <- validate_interviews_tier1(interviews, design, catch_col, effort_col, harvest_col, date_col, allow_invalid) # nolint: object_usage_linter
+
+  # Join interviews with calendar
+  interviews_joined <- dplyr::left_join(
+    interviews,
+    design$calendar,
+    by = stats::setNames(design$date_col, date_col),
+    suffix = c("", "_cal")
+  )
+
+  # Copy design and add interview fields
+  new_design <- design
+  new_design$interviews <- interviews_joined
+  new_design$catch_col <- catch_col
+  new_design$effort_col <- effort_col
+  new_design$harvest_col <- harvest_col
+  new_design$interview_type <- interview_type
+
+  # Construct interview survey eagerly
+  new_design$interview_survey <- construct_interview_survey(new_design) # nolint: object_usage_linter
+
+  # Store validation results
+  new_design$validation <- validation
+
+  # Preserve class
+  class(new_design) <- "creel_design"
+
+  new_design
+}
+
 #' Format a creel_design object
 #'
 #' @param x A creel_design object
@@ -444,6 +642,28 @@ format.creel_design <- function(x, ...) {
       }
     } else {
       cli::cli_text("Counts: {.val none}")
+    }
+
+    has_interviews <- !is.null(x$interviews) # nolint: object_usage_linter
+    if (has_interviews) {
+      n_interviews <- nrow(x$interviews) # nolint: object_usage_linter
+      interview_type <- x$interview_type # nolint: object_usage_linter
+      catch_col <- x$catch_col # nolint: object_usage_linter
+      effort_col <- x$effort_col # nolint: object_usage_linter
+      cli::cli_text("Interviews: {.val {n_interviews}} observation{?s}")
+      cli::cli_text("  Type: {.val {interview_type}}")
+      cli::cli_text("  Catch: {.field {catch_col}}")
+      cli::cli_text("  Effort: {.field {effort_col}}")
+      if (!is.null(x$harvest_col)) {
+        harvest_col <- x$harvest_col # nolint: object_usage_linter
+        cli::cli_text("  Harvest: {.field {harvest_col}}")
+      }
+      if (!is.null(x$interview_survey)) {
+        interview_survey_class <- class(x$interview_survey)[1] # nolint: object_usage_linter
+        cli::cli_text("  Survey: {.cls {interview_survey_class}} (constructed)")
+      }
+    } else {
+      cli::cli_text("Interviews: {.val none}")
     }
   })
 }

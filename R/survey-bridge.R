@@ -459,3 +459,244 @@ warn_tier2_group_issues <- function(design, by_vars) {
 
   invisible(NULL)
 }
+
+#' Validate interview data structure (Tier 1)
+#'
+#' Internal validator that checks interview data matches the creel_design structure.
+#' Verifies that design-critical columns exist in the interview data and contain no
+#' NA values. This is Tier 1 validation - structural checks that must pass before
+#' constructing a survey design object.
+#'
+#' @param interviews Data frame containing interview data
+#' @param design A creel_design object
+#' @param catch_col Character name of catch column in interviews data
+#' @param effort_col Character name of effort column in interviews data
+#' @param harvest_col Character name of harvest column in interviews data, or NULL
+#' @param date_col Character name of date column in interviews data
+#' @param allow_invalid Logical flag. If FALSE (default), validation failures
+#'   abort with cli error. If TRUE, failures generate warnings instead.
+#'
+#' @return A creel_validation object with tier = 1L
+#'
+#' @keywords internal
+#' @noRd
+validate_interviews_tier1 <- function(interviews, design, catch_col, effort_col,
+                                      harvest_col, date_col, allow_invalid = FALSE) {
+  collection <- checkmate::makeAssertCollection()
+
+  # Check 1: date_col exists in interviews
+  if (!date_col %in% names(interviews)) {
+    collection$push(sprintf(
+      "Date column '%s' not found in interview data",
+      date_col
+    ))
+  }
+
+  # Check 2: catch_col exists and is numeric
+  if (!catch_col %in% names(interviews)) {
+    collection$push(sprintf(
+      "Catch column '%s' not found in interview data",
+      catch_col
+    ))
+  } else if (!is.numeric(interviews[[catch_col]])) {
+    collection$push(sprintf(
+      "Catch column '%s' must be numeric, not %s",
+      catch_col,
+      class(interviews[[catch_col]])[1]
+    ))
+  }
+
+  # Check 3: effort_col exists and is numeric
+  if (!effort_col %in% names(interviews)) {
+    collection$push(sprintf(
+      "Effort column '%s' not found in interview data",
+      effort_col
+    ))
+  } else if (!is.numeric(interviews[[effort_col]])) {
+    collection$push(sprintf(
+      "Effort column '%s' must be numeric, not %s",
+      effort_col,
+      class(interviews[[effort_col]])[1]
+    ))
+  }
+
+  # Check 4: harvest_col exists and is numeric (only if not NULL)
+  if (!is.null(harvest_col)) {
+    if (!harvest_col %in% names(interviews)) {
+      collection$push(sprintf(
+        "Harvest column '%s' not found in interview data",
+        harvest_col
+      ))
+    } else if (!is.numeric(interviews[[harvest_col]])) {
+      collection$push(sprintf(
+        "Harvest column '%s' must be numeric, not %s",
+        harvest_col,
+        class(interviews[[harvest_col]])[1]
+      ))
+    }
+  }
+
+  # Check 5: No NA values in date_col
+  if (date_col %in% names(interviews)) {
+    na_count_date <- sum(is.na(interviews[[date_col]]))
+    if (na_count_date > 0) {
+      collection$push(sprintf(
+        "Date column '%s' contains %d NA value(s)",
+        date_col, na_count_date
+      ))
+    }
+  }
+
+  # Check 6: Interview dates all exist in design calendar
+  if (date_col %in% names(interviews)) {
+    interview_dates <- unique(interviews[[date_col]])
+    calendar_dates <- design$calendar[[design$date_col]]
+    missing_dates <- setdiff(interview_dates, calendar_dates)
+    if (length(missing_dates) > 0) {
+      collection$push(sprintf(
+        "Interview dates not found in design calendar: %s",
+        paste(as.character(missing_dates), collapse = ", ")
+      ))
+    }
+  }
+
+  # Check 7: harvest <= catch consistency (if harvest_col provided)
+  if (!is.null(harvest_col) &&
+        catch_col %in% names(interviews) &&
+        harvest_col %in% names(interviews)) {
+    catch_vals <- interviews[[catch_col]]
+    harvest_vals <- interviews[[harvest_col]]
+    # Check only non-NA rows
+    valid_rows <- !is.na(catch_vals) & !is.na(harvest_vals)
+    if (any(valid_rows)) {
+      violations <- sum(harvest_vals[valid_rows] > catch_vals[valid_rows])
+      if (violations > 0) {
+        collection$push(sprintf(
+          "Harvest exceeds catch in %d row(s) - harvest must be <= catch",
+          violations
+        ))
+      }
+    }
+  }
+
+  # Build validation results data frame
+  if (!collection$isEmpty()) {
+    msgs <- collection$getMessages()
+    results <- data.frame(
+      check = paste0("check_", seq_along(msgs)),
+      status = "fail",
+      message = msgs,
+      stringsAsFactors = FALSE
+    )
+
+    if (!allow_invalid) {
+      cli::cli_abort(c(
+        "Interview data validation failed (Tier 1):",
+        stats::setNames(paste0("{.var ", msgs, "}"), rep("x", length(msgs))),
+        "i" = "Interview data must have all design columns with no NA values."
+      ))
+    } else {
+      # Warn but continue
+      for (msg in msgs) {
+        cli::cli_warn(msg)
+      }
+    }
+  } else {
+    # All checks passed
+    results <- data.frame(
+      check = "all_checks",
+      status = "pass",
+      message = "All Tier 1 validation checks passed",
+      stringsAsFactors = FALSE
+    )
+  }
+
+  # Return validation object
+  new_creel_validation( # nolint: object_usage_linter
+    results = results,
+    tier = 1L,
+    context = "add_interviews validation"
+  )
+}
+
+#' Construct interview survey design object
+#'
+#' Internal function that wraps survey::svydesign() for interview data with
+#' domain-specific error handling. Constructs a stratified survey design from
+#' interview data using terminal sampling units (ids = ~1) since interviews
+#' are individual observations, not clustered by day.
+#'
+#' For multiple strata columns, creates an interaction variable to combine them
+#' into a single stratification factor before passing to svydesign.
+#'
+#' @param design A creel_design object with $interviews already populated
+#'
+#' @return An object of class "survey.design2" (from survey::svydesign)
+#'
+#' @keywords internal
+#' @noRd
+construct_interview_survey <- function(design) {
+  interviews_data <- design$interviews
+  strata_cols <- design$strata_cols
+
+  # Create strata variable
+  if (length(strata_cols) == 1) {
+    # Single stratum - use directly
+    interviews_data$.strata <- interviews_data[[strata_cols]]
+  } else {
+    # Multiple strata - create interaction
+    strata_factors <- interviews_data[strata_cols]
+    interviews_data$.strata <- interaction(strata_factors, drop = TRUE)
+  }
+
+  # Build formulas - use ~1 for ids (terminal sampling units)
+  strata_formula <- stats::reformulate(".strata")
+
+  # Attempt to construct survey design with error wrapping
+  tryCatch(
+    {
+      survey::svydesign(
+        ids = ~1,
+        strata = strata_formula,
+        data = interviews_data
+      )
+    },
+    error = function(e) {
+      # Detect specific error types and provide domain guidance
+      err_msg <- conditionMessage(e)
+
+      if (grepl("Stratum.*has only one PSU", err_msg, ignore.case = TRUE)) {
+        # Lonely PSU error (less likely for interviews but handle it)
+        cli::cli_abort(c(
+          "Interview survey construction failed: lonely PSU detected.",
+          "x" = paste(
+            "At least one stratum has only one observation.",
+            "Variance estimation requires 2+ observations per stratum."
+          ),
+          "i" = "Possible solutions:",
+          "*" = "Combine small strata with similar characteristics",
+          "*" = "Use a different stratification scheme",
+          "*" = "Collect more interview observations in sparse strata"
+        ))
+      } else if (grepl("variable.*not found", err_msg, ignore.case = TRUE)) {
+        # Column not found
+        required_cols <- strata_cols # nolint: object_usage_linter
+        cli::cli_abort(c(
+          "Interview survey construction failed: missing column.",
+          "x" = err_msg,
+          "i" = "Required columns: {.field {required_cols}}"
+        ))
+      } else {
+        # Generic survey error - wrap with guidance
+        cli::cli_abort(c(
+          "Interview survey construction failed.",
+          "x" = err_msg,
+          "i" = paste(
+            "Check that interview data has correct structure for",
+            "strata columns {.field {strata_cols}}."
+          )
+        ))
+      }
+    }
+  )
+}
