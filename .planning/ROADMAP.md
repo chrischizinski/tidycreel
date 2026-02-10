@@ -116,11 +116,11 @@ Plans:
   3. System constructs interview survey design object with shared calendar stratification
   4. System detects interview type (access point complete trips) and stores in design metadata
   5. System warns for interview data quality issues (missing effort, extreme values)
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 08-01: TBD
-- [ ] 08-02: TBD
+- [ ] 08-01-PLAN.md -- Core add_interviews() function, validation infrastructure, and interview survey construction
+- [ ] 08-02-PLAN.md -- Tier 2 data quality warnings, example interview dataset, and quality assurance
 
 #### Phase 9: CPUE Estimation
 **Goal**: Users can estimate catch per unit effort with ratio-of-means estimator for complete trip interviews
