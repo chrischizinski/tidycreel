@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-09)
 
 **Core value:** Creel biologists can analyze survey data using creel vocabulary without understanding survey package internals
-**Current focus:** Phase 8 - Interview Data Integration (v0.2.0)
+**Current focus:** Phase 9 - CPUE Estimation (v0.2.0)
 
 ## Current Position
 
-Phase: 8 of 12 (Interview Data Integration)
-Plan: Complete (2 of 2)
+Phase: 9 of 12 (CPUE Estimation)
+Plan: Complete (1 of 1)
 Status: Complete
-Last activity: 2026-02-10 — Completed 08-02-PLAN.md (Tier 2 warnings and example dataset)
+Last activity: 2026-02-10 — Completed 09-01-PLAN.md (Ratio-of-means CPUE estimation)
 
-Progress: [████████░░░░░░░░░░░] 67% (8 of 12 phases complete)
+Progress: [█████████░░░░░░░░░░░] 75% (9 of 12 phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 15 (Phase 8 complete)
-- Average duration: 64 min (excluding 02-01 pauses)
-- Total execution time: 17.0 hours
+- Total plans completed: 16 (Phase 9 complete)
+- Average duration: 62 min (excluding 02-01 pauses)
+- Total execution time: 17.3 hours
 
 **By Phase:**
 
@@ -35,17 +35,19 @@ Progress: [████████░░░░░░░░░░░] 67% (8 of 
 | 06 | 1 | 14 min | 14 min |
 | 07 | 2 | 15 min | 7.5 min |
 | 08 | 2 | 13 min | 6.5 min |
+| 09 | 1 | 16 min | 16 min |
 
 *Note: 02-01 includes system pauses; actual work ~30-40 min
 
 **Recent Trend:**
-- Last 5 plans: 07-01 (4 min), 07-02 (11 min), 08-01 (7 min), 08-02 (6 min)
-- Phase 8 complete: Interview data integration working end-to-end
-- Trend: Consistent execution speed across v0.2.0 phases
+- Last 5 plans: 07-02 (11 min), 08-01 (7 min), 08-02 (6 min), 09-01 (16 min)
+- Phase 9 complete: CPUE estimation with ratio-of-means working
+- Trend: Consistent execution speed, TDD tasks slightly longer due to test+implementation
 
 *Updated after each plan completion*
 | Phase 08 P01 | 7 | 2 tasks | 7 files |
 | Phase 08 P02 | 6 | 2 tasks | 8 files |
+| Phase 09 P01 | 16 | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -67,6 +69,9 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 08-01]: Interview survey uses ids=~1 (terminal units) not ids=~psu (day-PSU) - interviews are individual observations, not clustered by day
 - [Phase 08-02]: Tier 2 warnings for interviews check: short trips, zero/negative values, sparse strata - all non-blocking
 - [Phase 08-02]: example_interviews dataset provides realistic coverage pattern (22 interviews, some days have multiple, some have none)
+- [Phase 09-01]: Use survey::svyratio() for CPUE ratio-of-means estimation - correct variance accounting for catch/effort correlation
+- [Phase 09-01]: Sample size validation thresholds n<10 error, n<30 warning for ratio estimator stability
+- [Phase 09-01]: CPUE method field "ratio-of-means-cpue" distinguishes from "total" estimation
 
 ### Pending Todos
 
@@ -79,5 +84,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-10
-Stopped at: Completed 08-02-PLAN.md (Tier 2 warnings and example dataset) - Phase 8 complete
+Stopped at: Completed 09-01-PLAN.md (Ratio-of-means CPUE estimation) - Phase 9 complete
 Resume file: None
