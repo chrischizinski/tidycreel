@@ -53,3 +53,36 @@
 #' @seealso [example_calendar] for matching calendar data, [add_counts()] to
 #'   attach counts to a design
 "example_counts"
+
+#' Example interview data for creel survey
+#'
+#' Sample angler interview data demonstrating the structure required for
+#' [add_interviews()]. Contains 22 interviews from June 1-14, 2024,
+#' matching the [example_calendar] date range. Each row represents one
+#' completed angler interview with catch, harvest, and effort information.
+#'
+#' @format A data frame with 22 rows and 4 columns:
+#' \describe{
+#'   \item{date}{Interview date (Date class), matching [example_calendar] dates}
+#'   \item{hours_fished}{Numeric fishing effort in hours}
+#'   \item{catch_total}{Integer total fish caught (kept + released)}
+#'   \item{catch_kept}{Integer fish kept (harvest), always <= catch_total}
+#' }
+#'
+#' @source Simulated data for package examples
+#'
+#' @examples
+#' # Load and use with a creel design
+#' data(example_calendar)
+#' data(example_interviews)
+#'
+#' design <- creel_design(example_calendar, date = date, strata = day_type)
+#' design <- add_interviews(design, example_interviews,
+#'                          catch = catch_total,
+#'                          effort = hours_fished,
+#'                          harvest = catch_kept)
+#' print(design)
+#'
+#' @seealso [example_calendar] for matching calendar data, [add_interviews()] to
+#'   attach interviews to a design
+"example_interviews"

@@ -360,3 +360,44 @@ test_that("validation$tier is 1L (integer Tier 1)", {
 
   expect_identical(result$validation$tier, 1L)
 })
+
+# Example dataset integration tests ----
+
+test_that("example_interviews works with example_calendar in complete workflow", {
+  data(example_calendar, package = "tidycreel")
+  data(example_interviews, package = "tidycreel")
+
+  design <- creel_design(example_calendar, date = date, strata = day_type)
+  result <- suppressWarnings({
+    add_interviews(design, example_interviews,
+      catch = catch_total,
+      effort = hours_fished,
+      harvest = catch_kept
+    )
+  })
+
+  expect_s3_class(result, "creel_design")
+  expect_false(is.null(result$interviews))
+  expect_false(is.null(result$interview_survey))
+  expect_equal(result$catch_col, "catch_total")
+  expect_equal(result$effort_col, "hours_fished")
+  expect_equal(result$harvest_col, "catch_kept")
+  expect_equal(result$interview_type, "access")
+})
+
+test_that("example_interviews has expected structure", {
+  data(example_interviews, package = "tidycreel")
+
+  expect_s3_class(example_interviews, "data.frame")
+  expect_true(nrow(example_interviews) > 0)
+  expect_true("date" %in% names(example_interviews))
+  expect_true("hours_fished" %in% names(example_interviews))
+  expect_true("catch_total" %in% names(example_interviews))
+  expect_true("catch_kept" %in% names(example_interviews))
+  expect_true(inherits(example_interviews$date, "Date"))
+  expect_true(is.numeric(example_interviews$hours_fished))
+  expect_true(is.numeric(example_interviews$catch_total))
+  expect_true(is.numeric(example_interviews$catch_kept))
+  # Validate catch_kept <= catch_total
+  expect_true(all(example_interviews$catch_kept <= example_interviews$catch_total))
+})
