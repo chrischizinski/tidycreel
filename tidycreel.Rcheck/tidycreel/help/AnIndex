@@ -1,0 +1,15 @@
+tidycreel-package	tidycreel-package
+add_counts	add_counts
+as_survey_design	as_survey_design
+creel_design	creel_design
+estimate_effort	estimate_effort
+example_calendar	example_calendar
+example_counts	example_counts
+format.creel_design	format.creel_design
+format.creel_estimates	format.creel_estimates
+format.creel_validation	format.creel_validation
+print.creel_design	print.creel_design
+print.creel_estimates	print.creel_estimates
+print.creel_validation	print.creel_validation
+summary.creel_design	summary.creel_design
+tidycreel	tidycreel-package

@@ -114,7 +114,7 @@ test_that("estimate_cpue returns creel_estimates class object", {
 })
 
 test_that("estimate_cpue result has estimates tibble with correct columns", {
-  design <- make_test_design_with_interviews()
+  design <- make_cpue_design()
 
   result <- estimate_cpue(design) # nolint: object_usage_linter
 
@@ -128,7 +128,7 @@ test_that("estimate_cpue result has estimates tibble with correct columns", {
 })
 
 test_that("estimate_cpue result method is 'ratio-of-means-cpue'", {
-  design <- make_test_design_with_interviews()
+  design <- make_cpue_design()
 
   result <- estimate_cpue(design) # nolint: object_usage_linter
 
@@ -136,7 +136,7 @@ test_that("estimate_cpue result method is 'ratio-of-means-cpue'", {
 })
 
 test_that("estimate_cpue result variance_method is 'taylor' by default", {
-  design <- make_test_design_with_interviews()
+  design <- make_cpue_design()
 
   result <- estimate_cpue(design) # nolint: object_usage_linter
 
@@ -144,7 +144,7 @@ test_that("estimate_cpue result variance_method is 'taylor' by default", {
 })
 
 test_that("estimate_cpue result conf_level is 0.95 by default", {
-  design <- make_test_design_with_interviews()
+  design <- make_cpue_design()
 
   result <- estimate_cpue(design) # nolint: object_usage_linter
 
@@ -152,7 +152,7 @@ test_that("estimate_cpue result conf_level is 0.95 by default", {
 })
 
 test_that("estimate_cpue estimate is a positive numeric value", {
-  design <- make_test_design_with_interviews()
+  design <- make_cpue_design()
 
   result <- estimate_cpue(design) # nolint: object_usage_linter
 
@@ -182,7 +182,7 @@ test_that("estimate_cpue errors when design has no interview_survey", {
 })
 
 test_that("estimate_cpue errors for invalid variance method", {
-  design <- make_test_design_with_interviews()
+  design <- make_cpue_design()
 
   expect_error(
     estimate_cpue(design, variance = "invalid"), # nolint: object_usage_linter
@@ -257,7 +257,7 @@ test_that("estimate_cpue errors when any group has n < 10 in grouped estimation"
 # Grouped estimation tests ----
 
 test_that("estimate_cpue grouped by day_type returns creel_estimates with by_vars set", {
-  design <- make_test_design_with_interviews()
+  design <- make_cpue_design()
 
   result <- estimate_cpue(design, by = day_type) # nolint: object_usage_linter
 
@@ -267,7 +267,7 @@ test_that("estimate_cpue grouped by day_type returns creel_estimates with by_var
 })
 
 test_that("estimate_cpue grouped result estimates tibble has day_type column", {
-  design <- make_test_design_with_interviews()
+  design <- make_cpue_design()
 
   result <- estimate_cpue(design, by = day_type) # nolint: object_usage_linter
 
@@ -275,7 +275,7 @@ test_that("estimate_cpue grouped result estimates tibble has day_type column", {
 })
 
 test_that("estimate_cpue grouped result has one row per group level", {
-  design <- make_test_design_with_interviews()
+  design <- make_cpue_design()
 
   result <- estimate_cpue(design, by = day_type) # nolint: object_usage_linter
 
@@ -285,7 +285,7 @@ test_that("estimate_cpue grouped result has one row per group level", {
 })
 
 test_that("estimate_cpue grouped result has n column reflecting per-group sample sizes", {
-  design <- make_test_design_with_interviews()
+  design <- make_cpue_design()
 
   result <- estimate_cpue(design, by = day_type) # nolint: object_usage_linter
 
@@ -297,7 +297,7 @@ test_that("estimate_cpue grouped result has n column reflecting per-group sample
 # Reference tests ----
 
 test_that("ungrouped CPUE matches manual svyratio calculation", {
-  design <- make_test_design_with_interviews()
+  design <- make_cpue_design()
 
   # tidycreel estimate
   result <- estimate_cpue(design) # nolint: object_usage_linter
@@ -316,7 +316,7 @@ test_that("ungrouped CPUE matches manual svyratio calculation", {
 })
 
 test_that("grouped CPUE matches manual svyby+svyratio calculation", {
-  design <- make_test_design_with_interviews()
+  design <- make_cpue_design()
 
   # tidycreel grouped estimate
   result <- estimate_cpue(design, by = day_type) # nolint: object_usage_linter
@@ -356,7 +356,7 @@ test_that("grouped CPUE matches manual svyby+svyratio calculation", {
 })
 
 test_that("ungrouped CPUE SE^2 matches variance from manual vcov", {
-  design <- make_test_design_with_interviews()
+  design <- make_cpue_design()
 
   # tidycreel estimate
   result <- estimate_cpue(design) # nolint: object_usage_linter
@@ -372,7 +372,7 @@ test_that("ungrouped CPUE SE^2 matches variance from manual vcov", {
 # Custom confidence level test ----
 
 test_that("estimate_cpue with conf_level = 0.90 produces narrower CI than 0.95", {
-  design <- make_test_design_with_interviews()
+  design <- make_cpue_design()
 
   result_95 <- estimate_cpue(design, conf_level = 0.95) # nolint: object_usage_linter
   result_90 <- estimate_cpue(design, conf_level = 0.90) # nolint: object_usage_linter
