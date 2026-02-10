@@ -571,21 +571,25 @@ warn_tier2_interview_issues <- function(design) {
   invisible(NULL)
 }
 
-#' Validate CPUE sample size
+#' Validate ratio estimator sample size
 #'
-#' Internal function that checks sample size adequacy for CPUE ratio estimation.
-#' Errors if n < 10 (ungrouped or any group), warns if 10 <= n < 30. These
-#' thresholds follow best practices for ratio estimation stability.
+#' Internal function that checks sample size adequacy for ratio estimation (CPUE or
+#' harvest HPUE). Errors if n < 10 (ungrouped or any group), warns if 10 <= n < 30.
+#' These thresholds follow best practices for ratio estimation stability.
 #'
 #' @param design A creel_design object with interviews attached
 #' @param by_vars NULL for ungrouped, or character vector of grouping variable names
+#' @param type Character string: "cpue" (default) or "harvest" for error message context
 #'
 #' @return NULL (invisible) - function called for side effects (errors/warnings)
 #'
 #' @keywords internal
 #' @noRd
-validate_cpue_sample_size <- function(design, by_vars) {
+validate_ratio_sample_size <- function(design, by_vars, type = "cpue") {
   interviews <- design$interviews
+
+  # Set estimation type for messages
+  estimation_type <- if (type == "harvest") "harvest" else "CPUE" # nolint: object_usage_linter
 
   if (is.null(by_vars)) {
     # Ungrouped validation
@@ -593,15 +597,15 @@ validate_cpue_sample_size <- function(design, by_vars) {
 
     if (n < 10) {
       cli::cli_abort(c(
-        "Insufficient sample size for CPUE estimation.",
+        "Insufficient sample size for {estimation_type} estimation.",
         "x" = "Sample size is {n}, but ratio estimation requires n >= 10.",
-        "i" = "Collect more interview observations before estimating CPUE."
+        "i" = "Collect more interview observations before estimating {estimation_type}."
       ))
     }
 
     if (n >= 10 && n < 30) {
       cli::cli_warn(c(
-        "Small sample size for CPUE estimation.",
+        "Small sample size for {estimation_type} estimation.",
         "!" = "Sample size is {n}. Ratio estimates are more stable with n >= 30.",
         "i" = "Variance estimates may be unstable with n < 30."
       ))
@@ -779,8 +783,9 @@ validate_interviews_tier1 <- function(interviews, design, catch_col, effort_col,
   }
 
   # Check 7: harvest <= catch consistency (if harvest_col provided)
-  if (!is.null(harvest_col) && catch_col %in% names(interviews) &&
-    harvest_col %in% names(interviews)) {
+  harvest_col_present <- !is.null(harvest_col) && harvest_col %in% names(interviews)
+  catch_col_present <- catch_col %in% names(interviews)
+  if (harvest_col_present && catch_col_present) {
     catch_vals <- interviews[[catch_col]]
     harvest_vals <- interviews[[harvest_col]]
     # Check only non-NA rows
