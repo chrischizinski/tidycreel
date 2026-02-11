@@ -1,0 +1,197 @@
+---
+title: "Interview-Based Catch Estimation"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Interview-Based Catch Estimation}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Introduction
+
+This vignette extends the effort estimation workflow covered in "Getting Started with tidycreel" to interview-based catch and harvest estimation. The complete workflow involves five steps:
+
+1. **Design**: Define your survey calendar and stratification
+2. **Counts**: Attach instantaneous count observations
+3. **Interviews**: Attach complete trip interview data
+4. **CPUE**: Estimate catch per unit effort
+5. **Total Catch**: Combine effort and CPUE estimates
+
+The package uses ratio-of-means estimation for catch per unit effort (CPUE), which is appropriate for access point surveys with complete trip interviews. This estimator accounts for the correlation between catch and effort within each interview.
+
+## Survey Design and Count Data
+
+We start with the same design and count data workflow from the "Getting Started" vignette:
+
+```{r design_counts}
+library(tidycreel)
+
+# Load example calendar and counts
+data(example_calendar)
+data(example_counts)
+
+# Create design with counts
+design <- creel_design(example_calendar, date = date, strata = day_type)
+design <- add_counts(design, example_counts)
+
+# Estimate total effort
+effort_est <- estimate_effort(design)
+print(effort_est)
+```
+
+The effort estimate provides the total angler-hours for the survey period, which we'll combine with CPUE to estimate total catch.
+
+## Adding Interview Data
+
+Next, we attach interview data containing catch and effort for complete trips:
+
+```{r interviews}
+# Load example interview data
+data(example_interviews)
+head(example_interviews)
+
+# Attach interviews to the design
+design <- add_interviews(design, example_interviews,
+  catch = catch_total,
+  effort = hours_fished,
+  harvest = catch_kept
+)
+print(design)
+```
+
+The `add_interviews()` function maps the interview data columns to the design structure. The design now shows both count and interview data attached. Interview data is treated as a parallel data stream to count data—the two datasets do not need to align on specific dates.
+
+## Estimating CPUE
+
+With interview data attached, we can estimate catch per unit effort:
+
+```{r cpue}
+# Estimate CPUE
+cpue_est <- estimate_cpue(design)
+print(cpue_est)
+```
+
+The CPUE estimate uses a ratio-of-means estimator: total catch divided by total effort across all interviews. This estimator is appropriate for access point surveys because it accounts for the correlation between catch and effort within each trip. The variance is computed using the delta method, accounting for the covariance between numerator and denominator.
+
+For details on the ratio-of-means formula and variance calculation, see `?estimate_cpue`.
+
+## Estimating Total Catch
+
+We can combine the effort and CPUE estimates to compute total catch:
+
+```{r total_catch}
+# Estimate total catch
+total_catch_est <- estimate_total_catch(design)
+print(total_catch_est)
+```
+
+The total catch estimate multiplies the effort and CPUE estimates. The variance is computed using the delta method with the formula:
+
+Var(E × C) = E² Var(C) + C² Var(E)
+
+This formula assumes independence between the count and interview data streams, which is appropriate since they are collected through separate sampling processes. See `?estimate_total_catch` for more details on the variance propagation.
+
+## Estimating Harvest
+
+The package distinguishes between total catch (all fish caught) and harvest (fish kept). We can estimate harvest per unit effort (HPUE) and total harvest:
+
+```{r harvest}
+# Estimate HPUE
+hpue_est <- estimate_harvest(design)
+print(hpue_est)
+
+# Estimate total harvest
+total_harvest_est <- estimate_total_harvest(design)
+print(total_harvest_est)
+```
+
+Harvest estimation uses the same ratio-of-means approach as CPUE, but with the harvest column (`catch_kept`) as the numerator. As expected, total harvest is lower than total catch since not all caught fish are kept.
+
+## Grouped Estimation
+
+Like effort estimation, CPUE and total catch functions support grouped estimation using the `by` parameter:
+
+```{r grouped, eval=FALSE}
+# Estimate CPUE by day_type (not evaluated - example data too small)
+cpue_by_day <- estimate_cpue(design, by = day_type)
+
+# Estimate total catch by day_type
+total_catch_by_day <- estimate_total_catch(design, by = day_type)
+```
+
+Note: The example data has insufficient interview sample sizes for grouped estimation (weekend n=9, weekday n=13). Ratio estimation requires at least 10 observations per group for stability. In real surveys, aim for at least 30 interviews per stratum for reliable grouped estimates.
+
+## Variance Methods
+
+Like effort estimation, CPUE estimation supports multiple variance methods. The default is Taylor linearization, but bootstrap and jackknife are also available:
+
+```{r variance}
+# Bootstrap variance estimation
+set.seed(42) # For reproducibility
+cpue_boot <- estimate_cpue(design, variance = "bootstrap")
+
+# Jackknife variance estimation
+cpue_jk <- estimate_cpue(design, variance = "jackknife")
+```
+
+All three methods produce similar results for these data. Use bootstrap or jackknife when you want to verify Taylor linearization assumptions or when working with complex grouped estimates.
+
+**When to use each method:**
+
+- **Taylor linearization** (default): Computationally efficient and appropriate for most smooth statistics. This is the recommended default.
+- **Bootstrap**: Use when working with non-smooth statistics or when you want to verify Taylor linearization assumptions. More computationally intensive.
+- **Jackknife**: Alternative resampling method that is deterministic (unlike bootstrap). Useful for verification or when bootstrap is too slow.
+
+## Complete Workflow Example
+
+Here's the full pipeline in a single workflow:
+
+```{r complete}
+# Load data
+data(example_calendar)
+data(example_counts)
+data(example_interviews)
+
+# Build design and attach data
+complete_design <- creel_design(example_calendar, date = date, strata = day_type) |>
+  add_counts(example_counts) |>
+  add_interviews(example_interviews,
+    catch = catch_total,
+    effort = hours_fished,
+    harvest = catch_kept
+  )
+
+# Compute all estimates
+effort <- estimate_effort(complete_design)
+cpue <- estimate_cpue(complete_design)
+hpue <- estimate_harvest(complete_design)
+total_catch <- estimate_total_catch(complete_design)
+total_harvest <- estimate_total_harvest(complete_design)
+
+# Print key results
+print(effort)
+print(total_catch)
+print(total_harvest)
+```
+
+This demonstrates the complete v0.2.0 workflow from survey design through total catch and harvest estimation.
+
+## Next Steps
+
+For more details on interview-based estimation functions, see:
+
+- `?add_interviews` - Attach interview data to a design
+- `?estimate_cpue` - Estimate catch per unit effort
+- `?estimate_harvest` - Estimate harvest per unit effort
+- `?estimate_total_catch` - Estimate total catch
+- `?estimate_total_harvest` - Estimate total harvest
+- `?example_interviews` - Example interview dataset
+
+For the effort estimation workflow, see the "Getting Started with tidycreel" vignette.
