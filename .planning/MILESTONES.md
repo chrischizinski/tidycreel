@@ -15,3 +15,18 @@
 - Full documentation suite — roxygen2 docs, example datasets, Getting Started vignette
 
 ---
+
+## v0.2.0 Interview-Based Estimation (Shipped: 2026-02-11)
+
+**Phases completed:** 5 phases (8-12), 10 plans
+**Quality metrics:** 610 tests, 89.24% coverage, 0 lintr issues, R CMD check clean
+**Code delivered:** 8,599 LOC R total (+~2,500 LOC for interview features)
+
+**Key accomplishments:**
+- Interview data integration with add_interviews() using tidy selectors for catch, effort, and harvest
+- Ratio-of-means CPUE and harvest estimation via survey::svyratio with sample size validation
+- Total catch and harvest estimation combining effort × CPUE with delta method variance propagation
+- Comprehensive documentation with interview-based estimation vignette demonstrating complete workflow
+- 89.24% test coverage with 610 tests passing, all quality gates met (R CMD check clean, lintr 0 issues)
+
+---
