@@ -619,3 +619,105 @@ test_that("estimate_harvest with all NA harvest errors on empty data", {
     "No valid interviews"
   )
 })
+
+test_that("estimate_harvest grouped with zero-effort interviews excludes them with warning", {
+  # Create synthetic data with some zero-effort interviews in grouped estimation
+  cal <- data.frame(
+    date = as.Date(c(
+      "2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04",
+      "2024-06-08", "2024-06-09", "2024-06-15", "2024-06-16"
+    )),
+    day_type = rep(c("weekday", "weekend"), each = 4)
+  )
+
+  # Create interviews with sufficient samples per group but some zero-effort
+  interviews <- data.frame(
+    date = as.Date(c(
+      rep("2024-06-01", 6), rep("2024-06-02", 6),
+      rep("2024-06-08", 6), rep("2024-06-09", 6)
+    )),
+    catch_total = c(
+      2, 3, 4, 5, 6, 0,
+      3, 4, 5, 6, 7, 8,
+      7, 8, 9, 10, 11, 0,
+      8, 9, 10, 11, 12, 13
+    ),
+    catch_kept = c(
+      2, 3, 4, 5, 5, 0,
+      3, 4, 5, 6, 6, 7,
+      6, 7, 8, 9, 10, 0,
+      7, 8, 9, 10, 11, 12
+    ),
+    hours_fished = c(
+      2, 3, 4, 5, 3, 0, # one zero-effort
+      3, 4, 5, 3, 4, 5,
+      4, 5, 3, 5, 4, 0, # one zero-effort
+      4, 5, 5, 6, 5, 6
+    )
+  )
+
+  design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+  design <- add_interviews(design, interviews, catch = catch_total, harvest = catch_kept, effort = hours_fished) # nolint: object_usage_linter
+
+  # Grouped estimation should warn about zero-effort and exclude them
+  expect_warning(
+    result <- estimate_harvest(design, by = day_type), # nolint: object_usage_linter
+    "zero effort"
+  )
+
+  # Result should still be valid with 2 groups
+  expect_s3_class(result, "creel_estimates")
+  expect_equal(nrow(result$estimates), 2)
+  expect_true(all(result$estimates$estimate > 0))
+})
+
+test_that("estimate_harvest grouped with NA harvest excludes them with warning", {
+  # Create synthetic data with some NA harvest interviews in grouped estimation
+  cal <- data.frame(
+    date = as.Date(c(
+      "2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04",
+      "2024-06-08", "2024-06-09", "2024-06-15", "2024-06-16"
+    )),
+    day_type = rep(c("weekday", "weekend"), each = 4)
+  )
+
+  # Create interviews with sufficient samples per group but some NA harvest
+  interviews <- data.frame(
+    date = as.Date(c(
+      rep("2024-06-01", 6), rep("2024-06-02", 6),
+      rep("2024-06-08", 6), rep("2024-06-09", 6)
+    )),
+    catch_total = c(
+      2, 3, 4, 5, 6, 7,
+      3, 4, 5, 6, 7, 8,
+      7, 8, 9, 10, 11, 12,
+      8, 9, 10, 11, 12, 13
+    ),
+    catch_kept = c(
+      2, 3, 4, 5, 5, NA, # one NA harvest
+      3, 4, 5, 6, 6, 7,
+      6, 7, 8, 9, 10, NA, # one NA harvest
+      7, 8, 9, 10, 11, 12
+    ),
+    hours_fished = c(
+      2, 3, 4, 5, 3, 4,
+      3, 4, 5, 3, 4, 5,
+      4, 5, 3, 5, 4, 5,
+      4, 5, 5, 6, 5, 6
+    )
+  )
+
+  design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+  design <- add_interviews(design, interviews, catch = catch_total, harvest = catch_kept, effort = hours_fished) # nolint: object_usage_linter
+
+  # Grouped estimation should warn about NA harvest and exclude them
+  expect_warning(
+    result <- estimate_harvest(design, by = day_type), # nolint: object_usage_linter
+    "missing harvest"
+  )
+
+  # Result should still be valid with 2 groups
+  expect_s3_class(result, "creel_estimates")
+  expect_equal(nrow(result$estimates), 2)
+  expect_true(all(result$estimates$estimate >= 0))
+})

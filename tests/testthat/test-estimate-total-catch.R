@@ -193,16 +193,48 @@ test_that("total catch CI is finite and contains estimate", {
 
 # Grouped estimation tests ----
 
-test_that("estimate_total_catch grouped by day_type returns creel_estimates with by_vars set", {
-  design <- make_total_catch_design()
-
-  # Skip if example data has groups with n < 10 (weekend has only 9 interviews)
-  skip_if(
-    any(table(design$interviews$day_type) < 10),
-    "Example data has groups with n < 10"
+# Create synthetic data helper with larger sample sizes for grouped testing
+make_grouped_test_design <- function() {
+  # Create synthetic calendar with balanced groups (30 days each)
+  dates <- seq.Date(as.Date("2024-01-01"), by = "day", length.out = 60)
+  calendar <- data.frame(
+    date = dates,
+    day_type = rep(c("weekday", "weekend"), each = 30)
   )
 
-  result <- estimate_total_catch(design, by = day_type) # nolint: object_usage_linter
+  # Create synthetic counts (2 per day = 120 total) with day_type
+  counts <- data.frame(
+    date = rep(dates, each = 2),
+    day_type = rep(rep(c("weekday", "weekend"), each = 30), each = 2),
+    time = rep(c("AM", "PM"), 60),
+    count = rpois(120, lambda = 15)
+  )
+
+  # Create synthetic interviews with adequate samples per group (15 per group = 30 total)
+  interviews <- data.frame(
+    date = sample(dates, 30, replace = TRUE),
+    catch_total = rpois(30, lambda = 3),
+    hours_fished = runif(30, min = 1, max = 8)
+  )
+  # Ensure at least 15 in each group
+  interviews$date[1:15] <- sample(dates[1:30], 15, replace = TRUE) # weekday
+  interviews$date[16:30] <- sample(dates[31:60], 15, replace = TRUE) # weekend
+
+  # Create design
+  design <- creel_design(calendar, date = date, strata = day_type) # nolint: object_usage_linter
+  design <- add_counts(design, counts) # nolint: object_usage_linter
+  design <- add_interviews(design, interviews, # nolint: object_usage_linter
+    catch = catch_total, # nolint: object_usage_linter
+    effort = hours_fished # nolint: object_usage_linter
+  )
+
+  design
+}
+
+test_that("estimate_total_catch grouped by day_type returns creel_estimates with by_vars set", {
+  design <- make_grouped_test_design()
+
+  result <- suppressWarnings(estimate_total_catch(design, by = day_type)) # nolint: object_usage_linter
 
   expect_s3_class(result, "creel_estimates")
   expect_true(!is.null(result$by_vars))
@@ -210,29 +242,17 @@ test_that("estimate_total_catch grouped by day_type returns creel_estimates with
 })
 
 test_that("estimate_total_catch grouped result has day_type column", {
-  design <- make_total_catch_design()
+  design <- make_grouped_test_design()
 
-  # Skip if example data has groups with n < 10
-  skip_if(
-    any(table(design$interviews$day_type) < 10),
-    "Example data has groups with n < 10"
-  )
-
-  result <- estimate_total_catch(design, by = day_type) # nolint: object_usage_linter
+  result <- suppressWarnings(estimate_total_catch(design, by = day_type)) # nolint: object_usage_linter
 
   expect_true("day_type" %in% names(result$estimates))
 })
 
 test_that("estimate_total_catch grouped result has one row per group level", {
-  design <- make_total_catch_design()
+  design <- make_grouped_test_design()
 
-  # Skip if example data has groups with n < 10
-  skip_if(
-    any(table(design$interviews$day_type) < 10),
-    "Example data has groups with n < 10"
-  )
-
-  result <- estimate_total_catch(design, by = day_type) # nolint: object_usage_linter
+  result <- suppressWarnings(estimate_total_catch(design, by = day_type)) # nolint: object_usage_linter
 
   # Should have weekday and weekend
   expect_equal(nrow(result$estimates), 2)
@@ -241,15 +261,9 @@ test_that("estimate_total_catch grouped result has one row per group level", {
 })
 
 test_that("estimate_total_catch grouped result n reflects per-group interview sample sizes", {
-  design <- make_total_catch_design()
+  design <- make_grouped_test_design()
 
-  # Skip if example data has groups with n < 10
-  skip_if(
-    any(table(design$interviews$day_type) < 10),
-    "Example data has groups with n < 10"
-  )
-
-  result <- estimate_total_catch(design, by = day_type) # nolint: object_usage_linter
+  result <- suppressWarnings(estimate_total_catch(design, by = day_type)) # nolint: object_usage_linter
 
   expect_true("n" %in% names(result$estimates))
   expect_equal(sum(result$estimates$n), nrow(design$interviews))
@@ -325,15 +339,9 @@ test_that("estimate_total_catch with jackknife variance returns correct method",
 })
 
 test_that("estimate_total_catch grouped with bootstrap works", {
-  design <- make_total_catch_design()
+  design <- make_grouped_test_design()
 
-  # Skip if example data has groups with n < 10
-  skip_if(
-    any(table(design$interviews$day_type) < 10),
-    "Example data has groups with n < 10"
-  )
-
-  result <- estimate_total_catch(design, by = day_type, variance = "bootstrap") # nolint: object_usage_linter
+  result <- suppressWarnings(estimate_total_catch(design, by = day_type, variance = "bootstrap")) # nolint: object_usage_linter
 
   expect_s3_class(result, "creel_estimates")
   expect_equal(result$variance_method, "bootstrap")
