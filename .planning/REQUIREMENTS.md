@@ -1,92 +1,75 @@
-# Requirements: tidycreel
+# Requirements: tidycreel v0.3.0
 
-**Defined:** 2026-02-09
+**Defined:** 2026-02-14
 **Core Value:** Creel biologists can analyze survey data using creel vocabulary without understanding survey package internals
 
-## v0.2.0 Requirements - Interview-Based Estimation
+## v0.3.0 Requirements
 
-Requirements for interview-based catch and harvest estimation (single species, complete trips).
+Requirements for incomplete trip support with complete trip prioritization (roving-access design).
 
-### Interview Data Management
+### Trip Status Management
 
-- [ ] **INTV-01**: User can attach interview data to existing creel_design object
-- [ ] **INTV-02**: User specifies interview columns using tidy selectors (catch, effort, trip_complete)
-- [ ] **INTV-03**: System validates interview data structure (Tier 1: required columns, valid types)
-- [ ] **INTV-04**: System validates interview data quality (Tier 2: warnings for missing effort, extreme values)
-- [ ] **INTV-05**: System constructs interview survey design with shared calendar stratification
-- [ ] **INTV-06**: System detects interview type (access point complete trips for v0.2.0)
+- [ ] **TRIP-01**: User can specify trip completion status (complete vs. incomplete) in interview data
+- [ ] **TRIP-02**: User can provide trip start time and interview time (calculate duration)
+- [ ] **TRIP-03**: User can provide trip duration directly (alternative input format)
+- [ ] **TRIP-04**: Package correctly calculates trip duration for overnight trips spanning multiple days
+- [ ] **TRIP-05**: Package validates trip status field and warns about missing/invalid values
 
-### Catch Rate Estimation (CPUE)
+### Incomplete Trip Estimation (Mean-of-Ratios)
 
-- [ ] **CPUE-01**: User can estimate catch per unit effort (CPUE) with SE and CI
-- [ ] **CPUE-02**: System uses ratio-of-means estimator for complete trip interviews
-- [ ] **CPUE-03**: User can estimate grouped CPUE using `by =` parameter (by stratum or other variables)
-- [ ] **CPUE-04**: System validates sufficient sample size (warn if n<30, error if n<10 per group)
-- [ ] **CPUE-05**: User can control variance method (Taylor, bootstrap, jackknife) for CPUE estimation
-- [ ] **CPUE-06**: System output clearly indicates estimator used ("Ratio-of-Means CPUE")
+- [ ] **MOR-01**: User can estimate CPUE from incomplete trips using mean-of-ratios estimator
+- [ ] **MOR-02**: User can configure minimum trip duration threshold (default 20-30 min per Hoenig et al.)
+- [ ] **MOR-03**: Package truncates incomplete trips shorter than threshold with informative message
+- [ ] **MOR-04**: Package validates sample size for MOR estimation (error n<10, warn n<30)
+- [ ] **MOR-05**: User can select variance method for MOR (Taylor, bootstrap, jackknife)
+- [ ] **MOR-06**: Package computes variance correctly for MOR estimator with truncation
 
-### Total Catch Estimation
+### Diagnostic Validation
 
-- [ ] **TCATCH-01**: User can estimate total catch by combining effort and CPUE estimates
-- [ ] **TCATCH-02**: System propagates variance correctly using delta method (not naive addition)
-- [ ] **TCATCH-03**: System validates design compatibility between count and interview data
-- [ ] **TCATCH-04**: User can estimate grouped total catch (by stratum or other variables)
-- [ ] **TCATCH-05**: System handles single species fisheries (v0.2.0 scope constraint)
+- [ ] **VALID-01**: User can compare complete vs. incomplete trip estimates side-by-side
+- [ ] **VALID-02**: Package performs statistical test for difference between complete and incomplete estimates
+- [ ] **VALID-03**: User can generate validation plot (incomplete vs. complete scatter with y=x reference)
+- [ ] **VALID-04**: Package produces diagnostic report with interpretation guidance
 
-### Harvest Estimation
+### API Design & Defaults
 
-- [ ] **HARV-01**: User can estimate harvest per unit effort (HPUE) for fish kept
-- [ ] **HARV-02**: User can estimate total harvest by combining effort and HPUE
-- [ ] **HARV-03**: System distinguishes between caught (total) and kept (harvest) fish
-- [ ] **HARV-04**: System validates catch_kept ≤ catch_total consistency
+- [ ] **API-01**: `estimate_cpue()` uses complete trips only by default (roving-access design)
+- [ ] **API-02**: Package warns when < 10% of interviews are complete trips (Colorado C-SAP threshold)
+- [ ] **API-03**: User can explicitly specify `use_trips = "complete"/"incomplete"/"diagnostic"` parameter
+- [ ] **API-04**: Package messages reference Colorado C-SAP and Pollock et al. best practices
 
-### Quality & Usability
+### Documentation & Guidance
 
-- [ ] **QUAL-01**: System provides progressive validation (Tier 1 errors, Tier 2 warnings)
-- [ ] **QUAL-02**: System integrates with existing variance method infrastructure from v0.1.0
-- [ ] **QUAL-03**: System maintains design-centric API (everything through creel_design object)
-- [ ] **QUAL-04**: Documentation includes interview-based estimation vignette with examples
-- [ ] **QUAL-05**: Example datasets include interview data (access point complete trips)
-- [ ] **QUAL-06**: All functions pass R CMD check with 0 errors/warnings
-- [ ] **QUAL-07**: Test coverage ≥85% overall, ≥95% for core estimation functions
-- [ ] **QUAL-08**: All code passes lintr with 0 issues
+- [ ] **DOC-01**: Incomplete trips vignette explains when and how to use incomplete trip estimation
+- [ ] **DOC-02**: Example demonstrates Colorado C-SAP best practices (complete trips prioritized)
+- [ ] **DOC-03**: Documentation strongly warns against pooling complete + incomplete interviews
+- [ ] **DOC-04**: Step-by-step validation workflow guide for testing incomplete trip assumptions
 
-## v2 Requirements - Advanced Interview Features
+## Future Requirements (v0.4.0+)
 
-Deferred to future releases (v0.3.0+). Tracked but not in current roadmap.
+Deferred to future releases.
 
-### Incomplete Trip Handling
+### Bus-Route Design
 
-- **ROVING-01**: User can analyze incomplete trip interviews (roving design)
-- **ROVING-02**: System uses mean-of-ratios estimator with trip truncation (<30 min)
-- **ROVING-03**: System detects and warns about bag limit bias in roving surveys
-- **ROVING-04**: System handles mixed complete/incomplete trips in same survey
+- **BUS-01**: Bus-route design with systematic access point coverage
+- **BUS-02**: Time-scheduled routes with multiple access points
+- **BUS-03**: Bus-route specific estimation methods
 
 ### Multi-Species Support
 
-- **MULTI-01**: User can analyze multi-species fisheries with species-specific estimates
-- **MULTI-02**: System handles species aggregation with proper covariance
-- **MULTI-03**: User can estimate catch by target species (caught-while-seeking)
-
-### Advanced Features
-
-- **ADV-01**: System estimates covariance between effort and CPUE (when non-independent)
-- **ADV-02**: User can apply interview sampling weights for complex designs
-- **ADV-03**: System provides QA/QC diagnostics for interview data quality
+- **MULTI-01**: Multi-species catch data with species-specific CPUE
+- **MULTI-02**: Covariance between species catch rates
+- **MULTI-03**: Total catch across species with correct variance
 
 ## Out of Scope
 
-Explicitly excluded. Documented to prevent scope creep.
+Explicitly excluded from all versions.
 
 | Feature | Reason |
 |---------|--------|
-| Incomplete trip handling in v0.2.0 | Complexity of mean-of-ratios with truncation; defer to v0.3.0 after complete trips proven |
-| Multi-species fisheries in v0.2.0 | Requires covariance framework; single species sufficient for architecture validation |
-| Caught-while-seeking tracking | Complex domain logic; defer to v0.3.0 with multi-species support |
-| Other count design types (roving, aerial, bus route) | v0.2.0 focuses on interview layer only; count design expansion in separate milestone |
-| Backward compatibility with tidycreel v1 | Package never released; v2 is clean slate |
-| Stock assessment features (FSA integration) | Out of domain; tidycreel is survey statistics, not biological assessment |
-| Visualization/plotting functions | Deferred to v1.0.0 or separate package |
+| Auto-pooling complete + incomplete trips | Scientifically invalid per Pollock et al. - different sampling probabilities |
+| Roving-roving design (effort from roving) | Science shows 160x more bias than roving-access - not recommended |
+| Incomplete trips as default | Colorado C-SAP and best practice use complete trips; incomplete is diagnostic |
 
 ## Traceability
 
@@ -94,41 +77,35 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INTV-01 | Phase 8 | Pending |
-| INTV-02 | Phase 8 | Pending |
-| INTV-03 | Phase 8 | Pending |
-| INTV-04 | Phase 8 | Pending |
-| INTV-05 | Phase 8 | Pending |
-| INTV-06 | Phase 8 | Pending |
-| CPUE-01 | Phase 9 | Pending |
-| CPUE-02 | Phase 9 | Pending |
-| CPUE-03 | Phase 9 | Pending |
-| CPUE-04 | Phase 9 | Pending |
-| CPUE-05 | Phase 9 | Pending |
-| CPUE-06 | Phase 9 | Pending |
-| HARV-01 | Phase 10 | Pending |
-| HARV-02 | Phase 10 | Pending |
-| HARV-03 | Phase 10 | Pending |
-| HARV-04 | Phase 10 | Pending |
-| TCATCH-01 | Phase 11 | Pending |
-| TCATCH-02 | Phase 11 | Pending |
-| TCATCH-03 | Phase 11 | Pending |
-| TCATCH-04 | Phase 11 | Pending |
-| TCATCH-05 | Phase 11 | Pending |
-| QUAL-01 | Phase 8 | Pending |
-| QUAL-02 | Phase 9 | Pending |
-| QUAL-03 | Phase 8 | Pending |
-| QUAL-04 | Phase 12 | Pending |
-| QUAL-05 | Phase 12 | Pending |
-| QUAL-06 | Phase 12 | Pending |
-| QUAL-07 | Phase 12 | Pending |
-| QUAL-08 | Phase 12 | Pending |
+| TRIP-01 | TBD | Pending |
+| TRIP-02 | TBD | Pending |
+| TRIP-03 | TBD | Pending |
+| TRIP-04 | TBD | Pending |
+| TRIP-05 | TBD | Pending |
+| MOR-01 | TBD | Pending |
+| MOR-02 | TBD | Pending |
+| MOR-03 | TBD | Pending |
+| MOR-04 | TBD | Pending |
+| MOR-05 | TBD | Pending |
+| MOR-06 | TBD | Pending |
+| VALID-01 | TBD | Pending |
+| VALID-02 | TBD | Pending |
+| VALID-03 | TBD | Pending |
+| VALID-04 | TBD | Pending |
+| API-01 | TBD | Pending |
+| API-02 | TBD | Pending |
+| API-03 | TBD | Pending |
+| API-04 | TBD | Pending |
+| DOC-01 | TBD | Pending |
+| DOC-02 | TBD | Pending |
+| DOC-03 | TBD | Pending |
+| DOC-04 | TBD | Pending |
 
 **Coverage:**
-- v0.2.0 requirements: 29 total
-- Mapped to phases: 29 (100%)
-- Unmapped: 0
+- v0.3.0 requirements: 23 total
+- Mapped to phases: 0 (roadmap not yet created)
+- Unmapped: 23 ⚠️
 
 ---
-*Requirements defined: 2026-02-09*
-*Last updated: 2026-02-09 after roadmap creation*
+*Requirements defined: 2026-02-14*
+*Last updated: 2026-02-14 after initial definition*
