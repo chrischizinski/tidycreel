@@ -77,35 +77,45 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TRIP-01 | TBD | Pending |
-| TRIP-02 | TBD | Pending |
-| TRIP-03 | TBD | Pending |
-| TRIP-04 | TBD | Pending |
-| TRIP-05 | TBD | Pending |
-| MOR-01 | TBD | Pending |
-| MOR-02 | TBD | Pending |
-| MOR-03 | TBD | Pending |
-| MOR-04 | TBD | Pending |
-| MOR-05 | TBD | Pending |
-| MOR-06 | TBD | Pending |
-| VALID-01 | TBD | Pending |
-| VALID-02 | TBD | Pending |
-| VALID-03 | TBD | Pending |
-| VALID-04 | TBD | Pending |
-| API-01 | TBD | Pending |
-| API-02 | TBD | Pending |
-| API-03 | TBD | Pending |
-| API-04 | TBD | Pending |
-| DOC-01 | TBD | Pending |
-| DOC-02 | TBD | Pending |
-| DOC-03 | TBD | Pending |
-| DOC-04 | TBD | Pending |
+| TRIP-01 | Phase 13 | Pending |
+| TRIP-02 | Phase 13 | Pending |
+| TRIP-03 | Phase 13 | Pending |
+| TRIP-04 | Phase 14 | Pending |
+| TRIP-05 | Phase 13 | Pending |
+| MOR-01 | Phase 15 | Pending |
+| MOR-02 | Phase 16 | Pending |
+| MOR-03 | Phase 16 | Pending |
+| MOR-04 | Phase 15 | Pending |
+| MOR-05 | Phase 15 | Pending |
+| MOR-06 | Phase 16 | Pending |
+| VALID-01 | Phase 19 | Pending |
+| VALID-02 | Phase 19 | Pending |
+| VALID-03 | Phase 19 | Pending |
+| VALID-04 | Phase 19 | Pending |
+| API-01 | Phase 17 | Pending |
+| API-02 | Phase 18 | Pending |
+| API-03 | Phase 17 | Pending |
+| API-04 | Phase 18 | Pending |
+| DOC-01 | Phase 20 | Pending |
+| DOC-02 | Phase 20 | Pending |
+| DOC-03 | Phase 20 | Pending |
+| DOC-04 | Phase 20 | Pending |
 
 **Coverage:**
 - v0.3.0 requirements: 23 total
-- Mapped to phases: 0 (roadmap not yet created)
-- Unmapped: 23 ⚠️
+- Mapped to phases: 23/23 (100%)
+- Unmapped: 0
+
+**Phase distribution:**
+- Phase 13: 4 requirements (TRIP-01, TRIP-02, TRIP-03, TRIP-05)
+- Phase 14: 1 requirement (TRIP-04)
+- Phase 15: 3 requirements (MOR-01, MOR-04, MOR-05)
+- Phase 16: 3 requirements (MOR-02, MOR-03, MOR-06)
+- Phase 17: 2 requirements (API-01, API-03)
+- Phase 18: 2 requirements (API-02, API-04)
+- Phase 19: 4 requirements (VALID-01, VALID-02, VALID-03, VALID-04)
+- Phase 20: 4 requirements (DOC-01, DOC-02, DOC-03, DOC-04)
 
 ---
 *Requirements defined: 2026-02-14*
-*Last updated: 2026-02-14 after initial definition*
+*Last updated: 2026-02-14 after roadmap creation*

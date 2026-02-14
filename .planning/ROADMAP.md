@@ -8,7 +8,7 @@ tidycreel v2 is a ground-up redesign providing domain translation for creel surv
 
 - ✅ **v0.1.0 Foundation** — Phases 1-7 (shipped 2026-02-09)
 - ✅ **v0.2.0 Interview-Based Estimation** — Phases 8-12 (shipped 2026-02-11)
-- 📋 **v0.3.0 Advanced Interview Features** — (planned)
+- 🚧 **v0.3.0 Incomplete Trips & Validation** — Phases 13-20 (in progress)
 
 ## Phases
 
@@ -97,13 +97,142 @@ See: [.planning/milestones/v0.2.0-ROADMAP.md](milestones/v0.2.0-ROADMAP.md)
 
 </details>
 
-### 📋 v0.3.0 Advanced Interview Features (Planned)
+### 🚧 v0.3.0 Incomplete Trips & Validation (In Progress)
 
-**Scope:** Incomplete trip handling (roving design), multi-species support, advanced QA/QC diagnostics
+**Milestone Goal:** Enable scientifically valid incomplete trip estimation with complete trip focus, following Colorado C-SAP best practices and Pollock et al. roving-access design principles.
 
-- [ ] Phase 13: Incomplete trip estimation (mean-of-ratios with truncation)
-- [ ] Phase 14: Multi-species framework with covariance
-- [ ] Phase 15: QA/QC diagnostics for interview data
+- [ ] **Phase 13: Trip Status Infrastructure** - Handle trip completion status and duration inputs
+- [ ] **Phase 14: Overnight Trip Duration** - Calculate trip duration for multi-day trips
+- [ ] **Phase 15: Mean-of-Ratios Estimator Core** - MOR estimation with sample size validation
+- [ ] **Phase 16: Trip Truncation** - Threshold-based truncation for short trips
+- [ ] **Phase 17: Complete Trip Defaults** - Prioritize complete trips in API
+- [ ] **Phase 18: Sample Size Warnings** - Colorado C-SAP warnings and guidance
+- [ ] **Phase 19: Diagnostic Validation Framework** - Compare complete vs incomplete estimates
+- [ ] **Phase 20: Documentation & Guidance** - Vignette and best practices guide
+
+## Phase Details
+
+### Phase 13: Trip Status Infrastructure
+**Goal**: Users can specify trip completion status and duration in interview data
+**Depends on**: Phase 12 (Interview-Based Estimation complete)
+**Requirements**: TRIP-01, TRIP-02, TRIP-03, TRIP-05
+**Success Criteria** (what must be TRUE):
+  1. User can provide trip_status field (complete/incomplete) in add_interviews()
+  2. User can provide trip_start and interview_time to calculate duration automatically
+  3. User can provide trip_duration directly as alternative to calculated duration
+  4. Package validates trip_status field and warns about missing or invalid values
+  5. Interview data object stores trip metadata for downstream estimators
+**Plans**: TBD
+
+Plans:
+- [ ] 13-01: TBD
+- [ ] 13-02: TBD
+
+### Phase 14: Overnight Trip Duration
+**Goal**: Package correctly calculates trip duration for trips spanning multiple days
+**Depends on**: Phase 13
+**Requirements**: TRIP-04
+**Success Criteria** (what must be TRUE):
+  1. Package calculates correct duration for trips starting one day and ending the next
+  2. Package handles time zones correctly in duration calculation
+  3. Package validates that interview_time occurs after trip_start
+  4. Overnight trip durations appear correct in diagnostic output
+**Plans**: TBD
+
+Plans:
+- [ ] 14-01: TBD
+
+### Phase 15: Mean-of-Ratios Estimator Core
+**Goal**: Users can estimate CPUE from incomplete trips using mean-of-ratios estimator
+**Depends on**: Phase 14
+**Requirements**: MOR-01, MOR-04, MOR-05
+**Success Criteria** (what must be TRUE):
+  1. User can call estimate_cpue() with use_trips parameter to select incomplete trips
+  2. MOR estimator produces CPUE estimates with SE and CI for incomplete trips
+  3. Package validates sample size for MOR estimation (error if n<10, warn if n<30)
+  4. User can select variance method for MOR (Taylor, bootstrap, jackknife)
+  5. MOR estimates use survey::svyratio with appropriate design structure
+**Plans**: TBD
+
+Plans:
+- [ ] 15-01: TBD
+- [ ] 15-02: TBD
+
+### Phase 16: Trip Truncation
+**Goal**: Package truncates incomplete trips shorter than minimum threshold with correct variance
+**Depends on**: Phase 15
+**Requirements**: MOR-02, MOR-03, MOR-06
+**Success Criteria** (what must be TRUE):
+  1. User can configure minimum trip duration threshold via truncate_at parameter
+  2. Package defaults to 20-30 minute threshold per Hoenig et al. recommendations
+  3. Package excludes trips shorter than threshold from MOR estimation with informative message
+  4. Package computes variance correctly for MOR estimator with truncated sample
+  5. Truncation message reports number of trips excluded and threshold used
+**Plans**: TBD
+
+Plans:
+- [ ] 16-01: TBD
+- [ ] 16-02: TBD
+
+### Phase 17: Complete Trip Defaults
+**Goal**: estimate_cpue() prioritizes complete trips by default following roving-access design
+**Depends on**: Phase 16
+**Requirements**: API-01, API-03
+**Success Criteria** (what must be TRUE):
+  1. estimate_cpue() uses complete trips only by default (use_trips = "complete")
+  2. User can explicitly specify use_trips parameter ("complete", "incomplete", "diagnostic")
+  3. Package messages clearly indicate which trip type is being used
+  4. Existing estimate_cpue() behavior unchanged when trip_status not provided
+**Plans**: TBD
+
+Plans:
+- [ ] 17-01: TBD
+
+### Phase 18: Sample Size Warnings
+**Goal**: Package warns when complete trip sample size is insufficient per Colorado C-SAP guidance
+**Depends on**: Phase 17
+**Requirements**: API-02, API-04
+**Success Criteria** (what must be TRUE):
+  1. Package warns when <10% of interviews are complete trips (Colorado C-SAP threshold)
+  2. Warning messages reference Colorado C-SAP and Pollock et al. best practices
+  3. Warning includes counts of complete vs incomplete trips for transparency
+  4. Messages guide users toward diagnostic validation when complete sample is small
+**Plans**: TBD
+
+Plans:
+- [ ] 18-01: TBD
+
+### Phase 19: Diagnostic Validation Framework
+**Goal**: Users can compare complete vs incomplete trip estimates with statistical tests
+**Depends on**: Phase 18
+**Requirements**: VALID-01, VALID-02, VALID-03, VALID-04
+**Success Criteria** (what must be TRUE):
+  1. User can call validate_incomplete_trips() to compare complete vs incomplete estimates
+  2. Function performs statistical test for difference between estimate types
+  3. Function produces validation plot (incomplete vs complete scatter with y=x reference line)
+  4. Function returns diagnostic report with interpretation guidance and recommendation
+  5. Report explains when incomplete trips may be valid substitute for complete trips
+**Plans**: TBD
+
+Plans:
+- [ ] 19-01: TBD
+- [ ] 19-02: TBD
+
+### Phase 20: Documentation & Guidance
+**Goal**: Complete documentation explaining when and how to use incomplete trip estimation
+**Depends on**: Phase 19
+**Requirements**: DOC-01, DOC-02, DOC-03, DOC-04
+**Success Criteria** (what must be TRUE):
+  1. Incomplete trips vignette explains scientific rationale and when to use MOR estimator
+  2. Vignette demonstrates Colorado C-SAP best practices with complete trips prioritized
+  3. Documentation strongly warns against pooling complete and incomplete interviews
+  4. Step-by-step validation workflow guide shows how to test incomplete trip assumptions
+  5. Examples use realistic data demonstrating both valid and invalid incomplete trip scenarios
+**Plans**: TBD
+
+Plans:
+- [ ] 20-01: TBD
+- [ ] 20-02: TBD
 
 ## Progress Summary
 
@@ -111,10 +240,17 @@ See: [.planning/milestones/v0.2.0-ROADMAP.md](milestones/v0.2.0-ROADMAP.md)
 |-------|-----------|-------|--------|-----------|
 | 1-7 | v0.1.0 | 12/12 | ✅ Complete | 2026-02-09 |
 | 8-12 | v0.2.0 | 10/10 | ✅ Complete | 2026-02-11 |
-| 13+ | v0.3.0 | - | 📋 Planned | - |
+| 13. Trip Status Infrastructure | v0.3.0 | 0/TBD | Not started | - |
+| 14. Overnight Trip Duration | v0.3.0 | 0/TBD | Not started | - |
+| 15. Mean-of-Ratios Estimator Core | v0.3.0 | 0/TBD | Not started | - |
+| 16. Trip Truncation | v0.3.0 | 0/TBD | Not started | - |
+| 17. Complete Trip Defaults | v0.3.0 | 0/TBD | Not started | - |
+| 18. Sample Size Warnings | v0.3.0 | 0/TBD | Not started | - |
+| 19. Diagnostic Validation Framework | v0.3.0 | 0/TBD | Not started | - |
+| 20. Documentation & Guidance | v0.3.0 | 0/TBD | Not started | - |
 
-**Overall:** 2 milestones shipped, 22 plans completed, all quality gates met
+**Overall:** 2 milestones shipped (22 plans), v0.3.0 in progress (8 phases, 0 plans started)
 
 ---
-*Roadmap last updated: 2026-02-11 after v0.2.0 completion*
+*Roadmap last updated: 2026-02-14 for v0.3.0 milestone*
 *See .planning/MILESTONES.md for full milestone history*
