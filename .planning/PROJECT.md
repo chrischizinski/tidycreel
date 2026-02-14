@@ -8,6 +8,20 @@ A ground-up redesign of tidycreel as a domain-translator R package for creel sur
 
 Creel biologists can analyze survey data using creel vocabulary without ever understanding survey package internals (PSUs, FPCs, calibration weights) — while power users can access underlying survey objects when needed for advanced work.
 
+## Current Milestone: v0.3.0 Incomplete Trips & Validation
+
+**Goal:** Enable scientifically valid incomplete trip estimation with complete trip focus, following Colorado C-SAP best practices and Pollock et al. roving-access design principles.
+
+**Target features:**
+- Trip completion status tracking (complete vs. incomplete interviews)
+- Mean-of-ratios estimator for incomplete trips with configurable truncation threshold
+- Overnight trip duration calculation (time spans across multiple days)
+- Diagnostic validation framework (test if incomplete ≈ complete estimates)
+- Default to complete trips only for catch rate (roving-access design, Colorado C-SAP)
+- Sample size warnings when < 10% of interviews are complete trips (per Colorado C-SAP guidance)
+- Clear documentation on when to use complete vs. incomplete trip approaches
+- No auto-pooling of complete + incomplete (scientifically invalid per Pollock et al.)
+
 ## Requirements
 
 ### Validated
@@ -38,7 +52,7 @@ Creel biologists can analyze survey data using creel vocabulary without ever und
 
 ### Active
 
-**v0.3.0 - Advanced Interview Features** (Planned)
+**v0.3.0 - Incomplete Trips & Validation** (In planning)
 
 ### Out of Scope
 
@@ -84,10 +98,16 @@ Creel biologists can analyze survey data using creel vocabulary without ever und
 - GSD methodology with atomic commits and phase verification
 - Start from empty package structure (not refactoring existing code) ✓
 
-**Next milestone focus:**
-- Incomplete trip handling (roving design with mean-of-ratios estimator)
-- Multi-species support with covariance framework
-- Advanced QA/QC diagnostics for interview data quality
+**v0.3.0 milestone focus (current):**
+- Incomplete trip handling following Colorado C-SAP and Pollock et al. best practices
+- Complete trip prioritization (roving-access design) as default approach
+- Validation framework to test incomplete vs. complete trip comparability
+- Mean-of-ratios estimator with truncation for incomplete trips (research/diagnostic mode)
+
+**Future milestone focus:**
+- Multi-species support with covariance framework (v0.4.0 or later)
+- Bus-route design (systematic access point coverage) (v0.4.0 or later)
+- Advanced QA/QC diagnostics for interview data quality (v1.0.0)
 
 ## Constraints
 
@@ -121,4 +141,4 @@ Creel biologists can analyze survey data using creel vocabulary without ever und
 | Coverage deviation accepted at 93.8% (Phase 12) | Unreachable defensive error handling prevented by Tier 1 validation | ✓ Good — 33 lines are defensive guards that can't be reached, 89.24% overall exceeds 85% target |
 
 ---
-*Last updated: 2026-02-11 after v0.2.0 milestone completion*
+*Last updated: 2026-02-14 after starting v0.3.0 milestone*
