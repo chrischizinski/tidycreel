@@ -101,7 +101,7 @@ See: [.planning/milestones/v0.2.0-ROADMAP.md](milestones/v0.2.0-ROADMAP.md)
 
 **Milestone Goal:** Enable scientifically valid incomplete trip estimation with complete trip focus, following Colorado C-SAP best practices and Pollock et al. roving-access design principles.
 
-- [ ] **Phase 13: Trip Status Infrastructure** - Handle trip completion status and duration inputs
+- [x] **Phase 13: Trip Status Infrastructure** - Handle trip completion status and duration inputs (completed 2026-02-14)
 - [ ] **Phase 14: Overnight Trip Duration** - Calculate trip duration for multi-day trips
 - [ ] **Phase 15: Mean-of-Ratios Estimator Core** - MOR estimation with sample size validation
 - [ ] **Phase 16: Trip Truncation** - Threshold-based truncation for short trips
@@ -125,8 +125,8 @@ See: [.planning/milestones/v0.2.0-ROADMAP.md](milestones/v0.2.0-ROADMAP.md)
 **Plans**: 2 plans
 
 Plans:
-- [ ] 13-01-PLAN.md — Trip metadata parameters in add_interviews() with validation (TDD)
-- [ ] 13-02-PLAN.md — Example data update and summarize_trips() diagnostic function
+- [x] 13-01-PLAN.md — Trip metadata parameters in add_interviews() with validation (TDD)
+- [x] 13-02-PLAN.md — Example data update and summarize_trips() diagnostic function
 
 ### Phase 14: Overnight Trip Duration
 **Goal**: Package correctly calculates trip duration for trips spanning multiple days
@@ -240,7 +240,7 @@ Plans:
 |-------|-----------|-------|--------|-----------|
 | 1-7 | v0.1.0 | 12/12 | ✅ Complete | 2026-02-09 |
 | 8-12 | v0.2.0 | 10/10 | ✅ Complete | 2026-02-11 |
-| 13. Trip Status Infrastructure | v0.3.0 | 0/TBD | Not started | - |
+| 13. Trip Status Infrastructure | v0.3.0 | 2/2 | ✅ Complete | 2026-02-14 |
 | 14. Overnight Trip Duration | v0.3.0 | 0/TBD | Not started | - |
 | 15. Mean-of-Ratios Estimator Core | v0.3.0 | 0/TBD | Not started | - |
 | 16. Trip Truncation | v0.3.0 | 0/TBD | Not started | - |
@@ -249,7 +249,7 @@ Plans:
 | 19. Diagnostic Validation Framework | v0.3.0 | 0/TBD | Not started | - |
 | 20. Documentation & Guidance | v0.3.0 | 0/TBD | Not started | - |
 
-**Overall:** 2 milestones shipped (22 plans), v0.3.0 in progress (8 phases, 0 plans started)
+**Overall:** 2 milestones shipped (22 plans), v0.3.0 in progress (8 phases, 2 plans complete)
 
 ---
 *Roadmap last updated: 2026-02-14 for v0.3.0 milestone*
