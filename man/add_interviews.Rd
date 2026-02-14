@@ -10,6 +10,10 @@ add_interviews(
   catch,
   effort,
   harvest = NULL,
+  trip_status,
+  trip_duration = NULL,
+  trip_start = NULL,
+  interview_time = NULL,
   date_col = NULL,
   interview_type = c("access", "roving"),
   allow_invalid = FALSE
@@ -23,7 +27,9 @@ add_interviews(
 \item A Date column matching the design's date_col
 \item Numeric catch column (total fish caught per trip)
 \item Numeric effort column (fishing time per trip, e.g., hours)
+\item Character trip status column ("complete" or "incomplete")
 \item Optional numeric harvest column (fish kept per trip)
+\item Optional numeric trip duration column (hours) OR trip_start + interview_time columns (POSIXct)
 }}
 
 \item{catch}{Tidy selector for total catch column (required). Use bare column
@@ -34,6 +40,22 @@ names (e.g., \code{catch = catch_total}) or tidyselect helpers.}
 
 \item{harvest}{Tidy selector for harvest (kept fish) column (optional,
 default NULL). If provided, will be validated for consistency (harvest <= catch).}
+
+\item{trip_status}{Tidy selector for trip completion status column (required).
+Must contain "complete" or "incomplete" (case-insensitive). This is essential
+for downstream incomplete trip estimators.}
+
+\item{trip_duration}{Tidy selector for trip duration column in hours (optional,
+default NULL). Provide either trip_duration OR trip_start + interview_time,
+not both. Duration values must be positive and >= 1/60 hours (1 minute).}
+
+\item{trip_start}{Tidy selector for trip start time column (optional, default NULL).
+Must be POSIXct or POSIXlt. Requires interview_time to calculate duration.
+Use when duration needs to be calculated from timestamps.}
+
+\item{interview_time}{Tidy selector for interview time column (optional, default NULL).
+Must be POSIXct or POSIXlt. Requires trip_start to calculate duration.
+Duration is calculated as interview_time - trip_start in hours.}
 
 \item{date_col}{Character name of date column in interviews (default NULL,
 which uses the design's date_col). Specify explicitly if interview data
@@ -59,6 +81,10 @@ A new creel_design object (list) with components:
 \item{catch_col}{Character name of catch column}
 \item{effort_col}{Character name of effort column}
 \item{harvest_col}{Character name of harvest column, or NULL}
+\item{trip_status_col}{Character name of trip status column}
+\item{trip_duration_col}{Character name of trip duration column, or NULL}
+\item{trip_start_col}{Character name of trip start time column, or NULL}
+\item{interview_time_col}{Character name of interview time column, or NULL}
 \item{interview_type}{Character interview type}
 \item{interview_survey}{Internal survey.design2 object (newly constructed)}
 \item{validation}{creel_validation object with Tier 1 results}
@@ -89,6 +115,11 @@ add_interviews() performs Tier 1 validation:
 \item Catch and effort columns exist and are numeric
 \item Harvest column exists and is numeric (if provided)
 \item Harvest <= catch consistency (if harvest provided)
+\item Trip status valid ("complete" or "incomplete", case-insensitive)
+\item Trip status has no NA values
+\item Trip duration/time inputs are mutually exclusive (error if both provided)
+\item Trip duration is positive, >= 1 minute, warns if > 48 hours
+\item Trip start + interview_time are POSIXct/POSIXlt, calculate valid duration
 \item Interview survey construction (catches stratification issues)
 }
 }
@@ -101,7 +132,7 @@ enabling stratified estimation of catch rates.
 }
 
 \examples{
-# Basic usage - catch and effort only
+# Basic usage - with trip status and duration
 calendar <- data.frame(
   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
   day_type = c("weekday", "weekday", "weekend", "weekend")
@@ -111,29 +142,41 @@ design <- creel_design(calendar, date = date, strata = day_type)
 interviews <- data.frame(
   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
   catch_total = c(5, 3, 7, 2),
-  hours_fished = c(2.0, 2.5, 3.0, 1.5)
+  hours_fished = c(2.0, 2.5, 3.0, 1.5),
+  trip_status = c("complete", "complete", "incomplete", "complete"),
+  trip_duration = c(2.0, 2.5, 1.5, 1.5)
 )
 
 design_with_interviews <- add_interviews(
   design, interviews,
   catch = catch_total,
-  effort = hours_fished
+  effort = hours_fished,
+  trip_status = trip_status,
+  trip_duration = trip_duration
 )
 print(design_with_interviews)
 
-# With harvest column
+# With harvest column and calculated duration from timestamps
 interviews2 <- data.frame(
   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
   catch_total = c(5, 3, 7, 2),
   catch_kept = c(2, 1, 5, 2),
-  hours_fished = c(2.0, 2.5, 3.0, 1.5)
+  hours_fished = c(2.0, 2.5, 3.0, 1.5),
+  trip_status = c("complete", "incomplete", "complete", "complete"),
+  trip_start = as.POSIXct(c("2024-06-01 08:00", "2024-06-02 09:00",
+                            "2024-06-03 07:00", "2024-06-04 10:00")),
+  interview_time = as.POSIXct(c("2024-06-01 10:00", "2024-06-02 11:30",
+                                 "2024-06-03 10:00", "2024-06-04 11:30"))
 )
 
 design2 <- add_interviews(
   design, interviews2,
   catch = catch_total,
   effort = hours_fished,
-  harvest = catch_kept
+  harvest = catch_kept,
+  trip_status = trip_status,
+  trip_start = trip_start,
+  interview_time = interview_time
 )
 
 }

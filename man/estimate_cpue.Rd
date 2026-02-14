@@ -73,12 +73,16 @@ design <- creel_design(calendar, date = date, strata = day_type)
 interviews <- data.frame(
   date = as.Date(rep(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04"), each = 10)),
   catch_total = rpois(40, lambda = 3),
-  hours_fished = runif(40, min = 1, max = 6)
+  hours_fished = runif(40, min = 1, max = 6),
+  trip_status = rep(c("complete", "incomplete"), each = 20),
+  trip_duration = runif(40, min = 1, max = 6)
 )
 
 design_with_interviews <- add_interviews(design, interviews,
   catch = catch_total,
-  effort = hours_fished
+  effort = hours_fished,
+  trip_status = trip_status,
+  trip_duration = trip_duration
 )
 result <- estimate_cpue(design_with_interviews)
 print(result)

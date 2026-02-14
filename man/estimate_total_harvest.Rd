@@ -66,7 +66,8 @@ data(example_interviews)
 design <- creel_design(example_calendar, date = date, strata = day_type)
 design <- add_counts(design, example_counts)
 design <- add_interviews(design, example_interviews,
-  catch = catch_total, harvest = catch_kept, effort = hours_fished
+  catch = catch_total, harvest = catch_kept, effort = hours_fished,
+  trip_status = trip_status, trip_duration = trip_duration
 )
 
 # Estimate total harvest

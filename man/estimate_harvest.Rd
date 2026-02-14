@@ -79,7 +79,9 @@ set.seed(123)
 interviews <- data.frame(
   date = as.Date(rep(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04"), each = 10)),
   catch_total = rpois(40, lambda = 3),
-  hours_fished = runif(40, min = 1, max = 6)
+  hours_fished = runif(40, min = 1, max = 6),
+  trip_status = rep(c("complete", "incomplete"), each = 20),
+  trip_duration = runif(40, min = 1, max = 6)
 )
 # Harvest is subset of catch (kept fish)
 interviews$catch_kept <- pmax(0, interviews$catch_total - rbinom(40, size = 2, prob = 0.3))
@@ -87,7 +89,9 @@ interviews$catch_kept <- pmax(0, interviews$catch_total - rbinom(40, size = 2, p
 design_with_interviews <- add_interviews(design, interviews,
   catch = catch_total,
   harvest = catch_kept,
-  effort = hours_fished
+  effort = hours_fished,
+  trip_status = trip_status,
+  trip_duration = trip_duration
 )
 result <- estimate_harvest(design_with_interviews)
 print(result)

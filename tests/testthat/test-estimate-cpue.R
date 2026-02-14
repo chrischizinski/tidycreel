@@ -42,6 +42,12 @@ make_test_interviews <- function() {
       2, 4, 3, 1, 3, 5, 2, 2, 4, 6, 3, 2, 2, 5, 4, 3,
       5, 8, 5, 7, 6, 9, 6, 8, 7, 10, 5, 6, 8, 9, 7, 6
     ),
+    trip_status = rep(c("complete", "incomplete"), 16),
+    trip_duration = c(
+      # Trip durations matching hours_fished
+      2.5, 4.0, 3.5, 2.0, 3.0, 5.0, 2.5, 3.5, 4.5, 5.0, 3.5, 2.5, 3.0, 4.5, 4.0, 3.5,
+      4.0, 5.5, 3.5, 5.0, 4.5, 6.0, 4.5, 5.5, 5.0, 6.0, 4.0, 4.5, 5.5, 5.5, 5.0, 4.5
+    ),
     stringsAsFactors = FALSE
   )
 }
@@ -51,7 +57,7 @@ make_cpue_design <- function() {
   cal <- make_test_calendar_cpue()
   design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
   interviews <- make_test_interviews()
-  add_interviews(design, interviews, catch = catch_total, effort = hours_fished, harvest = catch_kept) # nolint: object_usage_linter
+  add_interviews(design, interviews, catch = catch_total, effort = hours_fished, harvest = catch_kept, trip_status = trip_status, trip_duration = trip_duration) # nolint: object_usage_linter
 }
 
 #' Create small design with n interviews
@@ -70,10 +76,12 @@ make_small_cpue_design <- function(n) {
     catch_total = rep(c(2, 3, 4, 5), length.out = n),
     hours_fished = rep(c(2.0, 3.0, 4.0, 2.5), length.out = n),
     catch_kept = rep(c(2, 2, 3, 4), length.out = n),
+    trip_status = rep("complete", n),
+    trip_duration = rep(c(2.0, 3.0, 4.0, 2.5), length.out = n),
     stringsAsFactors = FALSE
   )
 
-  add_interviews(design, interviews, catch = catch_total, effort = hours_fished, harvest = catch_kept) # nolint: object_usage_linter
+  add_interviews(design, interviews, catch = catch_total, effort = hours_fished, harvest = catch_kept, trip_status = trip_status, trip_duration = trip_duration) # nolint: object_usage_linter
 }
 
 #' Create unbalanced design (one stratum < 10)
@@ -97,10 +105,12 @@ make_unbalanced_cpue_design <- function() {
     catch_total = c(2, 3, 4, 5, 6, 3, 4, 5, 6, 7, 4, 5, 6, 7, 8, 8, 9, 10, 11, 12),
     hours_fished = c(2, 3, 4, 5, 3, 3, 4, 5, 3, 4, 4, 5, 3, 4, 5, 4, 5, 6, 5, 6),
     catch_kept = c(2, 2, 3, 4, 5, 2, 3, 4, 5, 6, 3, 4, 5, 6, 7, 6, 7, 8, 9, 10),
+    trip_status = rep("complete", 20),
+    trip_duration = c(2, 3, 4, 5, 3, 3, 4, 5, 3, 4, 4, 5, 3, 4, 5, 4, 5, 6, 5, 6),
     stringsAsFactors = FALSE
   )
 
-  add_interviews(design, interviews, catch = catch_total, effort = hours_fished, harvest = catch_kept) # nolint: object_usage_linter
+  add_interviews(design, interviews, catch = catch_total, effort = hours_fished, harvest = catch_kept, trip_status = trip_status, trip_duration = trip_duration) # nolint: object_usage_linter
 }
 
 # Basic behavior tests ----
@@ -433,7 +443,9 @@ test_that("full workflow with example_calendar and example_interviews produces v
   # Add interviews
   design <- add_interviews(design, example_interviews, # nolint: object_usage_linter
     catch = catch_total,
-    effort = hours_fished
+    effort = hours_fished,
+    trip_status = trip_status,
+    trip_duration = trip_duration
   )
 
   # Estimate CPUE
@@ -457,7 +469,9 @@ test_that("grouped workflow with example data errors due to sample size", {
   design <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
   design <- add_interviews(design, example_interviews, # nolint: object_usage_linter
     catch = catch_total,
-    effort = hours_fished
+    effort = hours_fished,
+    trip_status = trip_status,
+    trip_duration = trip_duration
   )
 
   # Estimate CPUE grouped by day_type
@@ -477,7 +491,9 @@ test_that("result from example data has reasonable CPUE values", {
   design <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
   design <- add_interviews(design, example_interviews, # nolint: object_usage_linter
     catch = catch_total,
-    effort = hours_fished
+    effort = hours_fished,
+    trip_status = trip_status,
+    trip_duration = trip_duration
   )
 
   # Estimate CPUE
@@ -501,10 +517,12 @@ test_that("estimate_cpue with zero-effort interviews issues warning and excludes
     date = as.Date(rep(c("2024-06-01", "2024-06-02", "2024-06-03"), each = 10)),
     catch_total = c(2, 3, 4, 5, 6, 3, 4, 5, 6, 7, 4, 5, 6, 7, 8, 2, 3, 4, 5, 6, 3, 4, 5, 6, 7, 0, 0, 6, 7, 8),
     hours_fished = c(2, 3, 4, 5, 3, 3, 4, 5, 3, 4, 4, 5, 3, 4, 5, 2, 3, 4, 5, 3, 3, 4, 5, 3, 4, 0, 0, 3, 4, 5),
+    trip_status = rep("complete", 30),
+    trip_duration = c(2, 3, 4, 5, 3, 3, 4, 5, 3, 4, 4, 5, 3, 4, 5, 2, 3, 4, 5, 3, 3, 4, 5, 3, 4, 2, 2, 3, 4, 5),
     stringsAsFactors = FALSE
   )
 
-  design <- add_interviews(design, interviews, catch = catch_total, effort = hours_fished) # nolint: object_usage_linter
+  design <- add_interviews(design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration) # nolint: object_usage_linter
 
   # Expect warning about zero-effort interviews
   expect_warning(
@@ -531,10 +549,12 @@ test_that("estimate_cpue with all-zero effort errors due to sample size threshol
     date = as.Date(rep("2024-06-01", 5)),
     catch_total = c(0, 0, 0, 0, 0),
     hours_fished = c(0, 0, 0, 0, 0),
+    trip_status = rep("complete", 5),
+    trip_duration = c(1, 1, 1, 1, 1),
     stringsAsFactors = FALSE
   )
 
-  design <- add_interviews(design, interviews, catch = catch_total, effort = hours_fished) # nolint: object_usage_linter
+  design <- add_interviews(design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration) # nolint: object_usage_linter
 
   # Should error due to n < 10 after filtering out all zero-effort
   expect_error(
@@ -570,11 +590,18 @@ test_that("estimate_cpue grouped with zero-effort interviews excludes them with 
       3, 4, 5, 3, 4, 5,
       4, 5, 3, 5, 4, 0, # weekend - one zero-effort
       4, 5, 5, 6, 5, 6
+    ),
+    trip_status = rep("complete", 24),
+    trip_duration = c(
+      2, 3, 4, 5, 3, 1, # weekday
+      3, 4, 5, 3, 4, 5,
+      4, 5, 3, 5, 4, 1, # weekend
+      4, 5, 5, 6, 5, 6
     )
   )
 
   design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
-  design <- add_interviews(design, interviews, catch = catch_total, effort = hours_fished) # nolint: object_usage_linter
+  design <- add_interviews(design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration) # nolint: object_usage_linter
 
   # Grouped estimation should warn about zero-effort and exclude them
   expect_warning(

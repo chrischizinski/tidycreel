@@ -841,6 +841,248 @@ validate_interviews_tier1 <- function(interviews, design, catch_col, effort_col,
   )
 }
 
+#' Validate trip metadata in interview data
+#'
+#' Internal function that validates trip completion status and duration fields
+#' in interview data. Enforces data quality rules for trip_status, trip_duration,
+#' trip_start, and interview_time columns.
+#'
+#' @param interviews Data frame containing interview data
+#' @param trip_status_col Character name of trip status column
+#' @param trip_duration_col Character name of trip duration column (hours), or NULL
+#' @param trip_start_col Character name of trip start time column (POSIXct), or NULL
+#' @param interview_time_col Character name of interview time column (POSIXct), or NULL
+#'
+#' @return invisible(NULL) on success; aborts on validation failure
+#'
+#' @keywords internal
+#' @noRd
+validate_trip_metadata <- function(interviews, trip_status_col, trip_duration_col,
+                                   trip_start_col, interview_time_col) {
+  collection <- checkmate::makeAssertCollection()
+
+  # Check 1: trip_status_col exists in interviews
+  if (!trip_status_col %in% names(interviews)) {
+    collection$push(sprintf(
+      "Trip status column '%s' not found in interview data",
+      trip_status_col
+    ))
+  } else {
+    # Check 2: trip_status_col values are valid
+    status_vals <- interviews[[trip_status_col]]
+    status_vals_lower <- tolower(status_vals)
+    valid_statuses <- c("complete", "incomplete")
+    invalid_mask <- !is.na(status_vals_lower) & !status_vals_lower %in% valid_statuses
+    if (any(invalid_mask)) {
+      invalid_vals <- unique(status_vals[invalid_mask])
+      collection$push(sprintf(
+        "Trip status column '%s' contains invalid value(s): %s. Must be 'complete' or 'incomplete' (case-insensitive)",
+        trip_status_col,
+        paste(invalid_vals, collapse = ", ")
+      ))
+    }
+
+    # Check 3: No NA in trip_status
+    na_count <- sum(is.na(status_vals))
+    if (na_count > 0) {
+      collection$push(sprintf(
+        "Trip status column '%s' contains %d NA value(s). Trip status is required for all interviews",
+        trip_status_col, na_count
+      ))
+    }
+  }
+
+  # Check 4: Mutually exclusive input - error if BOTH trip_duration_col AND (trip_start_col or interview_time_col)
+  has_duration <- !is.null(trip_duration_col)
+  has_start <- !is.null(trip_start_col)
+  has_interview_time <- !is.null(interview_time_col)
+
+  if (has_duration && (has_start || has_interview_time)) {
+    collection$push(
+      "Provide either trip_duration or trip_start/interview_time, not both"
+    )
+  }
+
+  # Check 5: trip_start requires interview_time
+  if (has_start && !has_interview_time) {
+    collection$push(
+      "trip_start requires interview_time to calculate duration"
+    )
+  }
+
+  # Check 6: interview_time requires trip_start
+  if (has_interview_time && !has_start) {
+    collection$push(
+      "interview_time requires trip_start to calculate duration"
+    )
+  }
+
+  # Check 7: Duration column validation (if trip_duration_col provided)
+  if (has_duration) {
+    if (!trip_duration_col %in% names(interviews)) {
+      collection$push(sprintf(
+        "Trip duration column '%s' not found in interview data",
+        trip_duration_col
+      ))
+    } else {
+      duration_vals <- interviews[[trip_duration_col]]
+
+      # Must be numeric
+      if (!is.numeric(duration_vals)) {
+        collection$push(sprintf(
+          "Trip duration column '%s' must be numeric, not %s",
+          trip_duration_col,
+          class(duration_vals)[1]
+        ))
+      } else {
+        # No NA values
+        na_count_duration <- sum(is.na(duration_vals))
+        if (na_count_duration > 0) {
+          collection$push(sprintf(
+            "Trip duration column '%s' contains %d NA value(s). Trip duration is required for all interviews",
+            trip_duration_col, na_count_duration
+          ))
+        }
+
+        # No negative values
+        if (any(duration_vals < 0, na.rm = TRUE)) {
+          collection$push(sprintf(
+            "Trip duration column '%s' contains negative values",
+            trip_duration_col
+          ))
+        }
+
+        # No values < 1/60 hours (1 minute)
+        min_duration <- 1 / 60
+        if (any(duration_vals < min_duration & duration_vals >= 0, na.rm = TRUE)) {
+          collection$push(sprintf( # nolint: line_length_linter
+            "Trip duration column '%s' contains values less than 1 minute (1/60 hours). Trip durations less than 1 minute are unrealistic",
+            trip_duration_col
+          ))
+        }
+
+        # Warn if any values > 48 hours
+        if (any(duration_vals > 48, na.rm = TRUE)) {
+          n_long <- sum(duration_vals > 48, na.rm = TRUE) # nolint: object_usage_linter
+          cli::cli_warn(c( # nolint: line_length_linter
+            "!" = "Trip duration column '{trip_duration_col}' contains {n_long} value{?s} > 48 hours",
+            "i" = "Multi-day trips are valid, but verify these are not data entry errors"
+          ))
+        }
+      }
+    }
+  }
+
+  # Check 8: Time column validation (if trip_start_col and interview_time_col provided)
+  if (has_start && has_interview_time) {
+    # Check trip_start_col exists
+    if (!trip_start_col %in% names(interviews)) {
+      collection$push(sprintf(
+        "Trip start column '%s' not found in interview data",
+        trip_start_col
+      ))
+    } else {
+      start_vals <- interviews[[trip_start_col]]
+
+      # Must be POSIXct or POSIXlt
+      if (!inherits(start_vals, "POSIXct") && !inherits(start_vals, "POSIXlt")) {
+        collection$push(sprintf(
+          "Trip start column '%s' must be POSIXct or POSIXlt, not %s",
+          trip_start_col,
+          class(start_vals)[1]
+        ))
+      }
+
+      # No NA values
+      na_count_start <- sum(is.na(start_vals))
+      if (na_count_start > 0) {
+        collection$push(sprintf(
+          "Trip start column '%s' contains %d NA value(s)",
+          trip_start_col, na_count_start
+        ))
+      }
+    }
+
+    # Check interview_time_col exists
+    if (!interview_time_col %in% names(interviews)) {
+      collection$push(sprintf(
+        "Interview time column '%s' not found in interview data",
+        interview_time_col
+      ))
+    } else {
+      interview_vals <- interviews[[interview_time_col]]
+
+      # Must be POSIXct or POSIXlt
+      if (!inherits(interview_vals, "POSIXct") && !inherits(interview_vals, "POSIXlt")) {
+        collection$push(sprintf(
+          "Interview time column '%s' must be POSIXct or POSIXlt, not %s",
+          interview_time_col,
+          class(interview_vals)[1]
+        ))
+      }
+
+      # No NA values
+      na_count_interview <- sum(is.na(interview_vals))
+      if (na_count_interview > 0) {
+        collection$push(sprintf(
+          "Interview time column '%s' contains %d NA value(s)",
+          interview_time_col, na_count_interview
+        ))
+      }
+    }
+
+    # If both columns exist and are time-like, check computed duration
+    if (trip_start_col %in% names(interviews) &&
+      interview_time_col %in% names(interviews)) {
+      start_vals <- interviews[[trip_start_col]]
+      interview_vals <- interviews[[interview_time_col]]
+
+      if ((inherits(start_vals, "POSIXct") || inherits(start_vals, "POSIXlt")) &&
+        (inherits(interview_vals, "POSIXct") || inherits(interview_vals, "POSIXlt"))) {
+        # Calculate duration in hours
+        computed_duration <- as.numeric(
+          difftime(interview_vals, start_vals, units = "hours")
+        )
+
+        # No negative durations
+        if (any(computed_duration < 0, na.rm = TRUE)) {
+          collection$push(sprintf(
+            "Computed duration (interview_time - trip_start) is negative for some interviews. Check that interview_time > trip_start"
+          ))
+        }
+
+        # No durations < 1 minute
+        min_duration <- 1 / 60
+        if (any(computed_duration < min_duration & computed_duration >= 0, na.rm = TRUE)) {
+          collection$push(sprintf(
+            "Computed duration (interview_time - trip_start) is less than 1 minute for some interviews. This is unrealistic"
+          ))
+        }
+
+        # Warn if any > 48 hours
+        if (any(computed_duration > 48, na.rm = TRUE)) {
+          n_long <- sum(computed_duration > 48, na.rm = TRUE) # nolint: object_usage_linter
+          cli::cli_warn(c( # nolint: line_length_linter
+            "!" = "Computed duration (interview_time - trip_start) > 48 hours for {n_long} interview{?s}",
+            "i" = "Multi-day trips are valid, but verify these are not data entry errors"
+          ))
+        }
+      }
+    }
+  }
+
+  # Abort if any validation errors
+  if (!collection$isEmpty()) {
+    msgs <- collection$getMessages()
+    cli::cli_abort(c(
+      "Trip metadata validation failed:",
+      stats::setNames(paste0("{.var ", msgs, "}"), rep("x", length(msgs)))
+    ))
+  }
+
+  invisible(NULL)
+}
+
 #' Construct interview survey design object
 #'
 #' Internal function that wraps survey::svydesign() for interview data with

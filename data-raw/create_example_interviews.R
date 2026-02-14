@@ -42,12 +42,34 @@ example_interviews <- data.frame(
     2, 3,
     5, 1, 8
   ),
+  trip_status = c(
+    "complete", "complete", "complete", "incomplete",
+    "complete", "complete", "complete",
+    "incomplete", "complete", "complete",
+    "complete", "incomplete", "complete",
+    "complete", "complete",
+    "incomplete", "complete",
+    "complete", "complete",
+    "complete", "incomplete", "complete"
+  ),
+  trip_duration = c(
+    2.0, 3.5, 1.5, 1.0,
+    2.5, 4.0, 1.0,
+    1.5, 2.5, 2.0,
+    4.0, 1.5, 2.5,
+    3.5, 2.0,
+    0.75, 3.0,
+    2.0, 2.5,
+    3.0, 0.5, 4.0
+  ),
   stringsAsFactors = FALSE
 )
 
 # Verify data quality
 stopifnot(all(example_interviews$catch_kept <= example_interviews$catch_total))
 stopifnot(all(example_interviews$hours_fished > 0))
+stopifnot(all(example_interviews$trip_status %in% c("complete", "incomplete")))
+stopifnot(all(example_interviews$trip_duration > 0))
 stopifnot(nrow(example_interviews) == 22)
 
 # Save the dataset

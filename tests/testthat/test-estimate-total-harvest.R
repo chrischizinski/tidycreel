@@ -13,7 +13,9 @@ make_total_harvest_design <- function() {
   design <- add_interviews(design, example_interviews, # nolint: object_usage_linter
     catch = catch_total, # nolint: object_usage_linter
     harvest = catch_kept, # nolint: object_usage_linter
-    effort = hours_fished # nolint: object_usage_linter
+    effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status, # nolint: object_usage_linter
+    trip_duration = trip_duration # nolint: object_usage_linter
   )
 
   design
@@ -30,7 +32,9 @@ make_design_no_harvest <- function() { # nolint: object_length_linter
   design <- add_counts(design, example_counts) # nolint: object_usage_linter
   design <- add_interviews(design, example_interviews, # nolint: object_usage_linter
     catch = catch_total, # nolint: object_usage_linter
-    effort = hours_fished # nolint: object_usage_linter
+    effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status, # nolint: object_usage_linter
+    trip_duration = trip_duration # nolint: object_usage_linter
     # Note: no harvest parameter
   )
 
@@ -114,7 +118,9 @@ test_that("estimate_total_harvest errors when design has no counts", {
   design <- add_interviews(design, example_interviews, # nolint: object_usage_linter
     catch = catch_total,
     harvest = catch_kept,
-    effort = hours_fished
+    effort = hours_fished,
+    trip_status = trip_status,
+    trip_duration = trip_duration
   )
 
   expect_error(
@@ -222,7 +228,9 @@ make_grouped_harvest_design <- function() {
     date = sample(dates, 30, replace = TRUE),
     catch_total = catch,
     catch_kept = pmin(rpois(30, lambda = 2), catch), # Ensure harvest <= catch
-    hours_fished = runif(30, min = 1, max = 8)
+    hours_fished = runif(30, min = 1, max = 8),
+    trip_status = rep(c("complete", "incomplete"), 15),
+    trip_duration = runif(30, min = 1, max = 8)
   )
   # Ensure at least 15 in each group
   interviews$date[1:15] <- sample(dates[1:30], 15, replace = TRUE) # weekday
@@ -234,7 +242,9 @@ make_grouped_harvest_design <- function() {
   design <- add_interviews(design, interviews, # nolint: object_usage_linter
     catch = catch_total, # nolint: object_usage_linter
     harvest = catch_kept, # nolint: object_usage_linter
-    effort = hours_fished # nolint: object_usage_linter
+    effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status, # nolint: object_usage_linter
+    trip_duration = trip_duration # nolint: object_usage_linter
   )
 
   design
@@ -339,7 +349,9 @@ test_that("full workflow with example data produces valid total harvest", {
   design <- add_interviews(design, example_interviews, # nolint: object_usage_linter
     catch = catch_total, # nolint: object_usage_linter
     harvest = catch_kept, # nolint: object_usage_linter
-    effort = hours_fished # nolint: object_usage_linter
+    effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status, # nolint: object_usage_linter
+    trip_duration = trip_duration # nolint: object_usage_linter
   )
 
   # Estimate total harvest

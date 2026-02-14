@@ -417,13 +417,27 @@ add_counts <- function(design, counts, psu = NULL, allow_invalid = FALSE) {
 #'   - A Date column matching the design's date_col
 #'   - Numeric catch column (total fish caught per trip)
 #'   - Numeric effort column (fishing time per trip, e.g., hours)
+#'   - Character trip status column ("complete" or "incomplete")
 #'   - Optional numeric harvest column (fish kept per trip)
+#'   - Optional numeric trip duration column (hours) OR trip_start + interview_time columns (POSIXct)
 #' @param catch Tidy selector for total catch column (required). Use bare column
 #'   names (e.g., `catch = catch_total`) or tidyselect helpers.
 #' @param effort Tidy selector for fishing effort column (required, e.g.,
 #'   `effort = hours_fished`). Should represent time spent fishing per trip.
 #' @param harvest Tidy selector for harvest (kept fish) column (optional,
 #'   default NULL). If provided, will be validated for consistency (harvest <= catch).
+#' @param trip_status Tidy selector for trip completion status column (required).
+#'   Must contain "complete" or "incomplete" (case-insensitive). This is essential
+#'   for downstream incomplete trip estimators.
+#' @param trip_duration Tidy selector for trip duration column in hours (optional,
+#'   default NULL). Provide either trip_duration OR trip_start + interview_time,
+#'   not both. Duration values must be positive and >= 1/60 hours (1 minute).
+#' @param trip_start Tidy selector for trip start time column (optional, default NULL).
+#'   Must be POSIXct or POSIXlt. Requires interview_time to calculate duration.
+#'   Use when duration needs to be calculated from timestamps.
+#' @param interview_time Tidy selector for interview time column (optional, default NULL).
+#'   Must be POSIXct or POSIXlt. Requires trip_start to calculate duration.
+#'   Duration is calculated as interview_time - trip_start in hours.
 #' @param date_col Character name of date column in interviews (default NULL,
 #'   which uses the design's date_col). Specify explicitly if interview data
 #'   uses a different date column name than the design calendar.
@@ -445,6 +459,10 @@ add_counts <- function(design, counts, psu = NULL, allow_invalid = FALSE) {
 #'   \item{catch_col}{Character name of catch column}
 #'   \item{effort_col}{Character name of effort column}
 #'   \item{harvest_col}{Character name of harvest column, or NULL}
+#'   \item{trip_status_col}{Character name of trip status column}
+#'   \item{trip_duration_col}{Character name of trip duration column, or NULL}
+#'   \item{trip_start_col}{Character name of trip start time column, or NULL}
+#'   \item{interview_time_col}{Character name of interview time column, or NULL}
 #'   \item{interview_type}{Character interview type}
 #'   \item{interview_survey}{Internal survey.design2 object (newly constructed)}
 #'   \item{validation}{creel_validation object with Tier 1 results}
@@ -464,6 +482,11 @@ add_counts <- function(design, counts, psu = NULL, allow_invalid = FALSE) {
 #' - Catch and effort columns exist and are numeric
 #' - Harvest column exists and is numeric (if provided)
 #' - Harvest <= catch consistency (if harvest provided)
+#' - Trip status valid ("complete" or "incomplete", case-insensitive)
+#' - Trip status has no NA values
+#' - Trip duration/time inputs are mutually exclusive (error if both provided)
+#' - Trip duration is positive, >= 1 minute, warns if > 48 hours
+#' - Trip start + interview_time are POSIXct/POSIXlt, calculate valid duration
 #' - Interview survey construction (catches stratification issues)
 #'
 #' @section Calendar Integration:
@@ -472,7 +495,7 @@ add_counts <- function(design, counts, psu = NULL, allow_invalid = FALSE) {
 #' enabling stratified estimation of catch rates.
 #'
 #' @examples
-#' # Basic usage - catch and effort only
+#' # Basic usage - with trip status and duration
 #' calendar <- data.frame(
 #'   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
 #'   day_type = c("weekday", "weekday", "weekend", "weekend")
@@ -482,34 +505,54 @@ add_counts <- function(design, counts, psu = NULL, allow_invalid = FALSE) {
 #' interviews <- data.frame(
 #'   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
 #'   catch_total = c(5, 3, 7, 2),
-#'   hours_fished = c(2.0, 2.5, 3.0, 1.5)
+#'   hours_fished = c(2.0, 2.5, 3.0, 1.5),
+#'   trip_status = c("complete", "complete", "incomplete", "complete"),
+#'   trip_duration = c(2.0, 2.5, 1.5, 1.5)
 #' )
 #'
 #' design_with_interviews <- add_interviews(
 #'   design, interviews,
 #'   catch = catch_total,
-#'   effort = hours_fished
+#'   effort = hours_fished,
+#'   trip_status = trip_status,
+#'   trip_duration = trip_duration
 #' )
 #' print(design_with_interviews)
 #'
-#' # With harvest column
+#' # With harvest column and calculated duration from timestamps
 #' interviews2 <- data.frame(
 #'   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
 #'   catch_total = c(5, 3, 7, 2),
 #'   catch_kept = c(2, 1, 5, 2),
-#'   hours_fished = c(2.0, 2.5, 3.0, 1.5)
+#'   hours_fished = c(2.0, 2.5, 3.0, 1.5),
+#'   trip_status = c("complete", "incomplete", "complete", "complete"),
+#'   trip_start = as.POSIXct(c(
+#'     "2024-06-01 08:00", "2024-06-02 09:00",
+#'     "2024-06-03 07:00", "2024-06-04 10:00"
+#'   )),
+#'   interview_time = as.POSIXct(c(
+#'     "2024-06-01 10:00", "2024-06-02 11:30",
+#'     "2024-06-03 10:00", "2024-06-04 11:30"
+#'   ))
 #' )
 #'
 #' design2 <- add_interviews(
 #'   design, interviews2,
 #'   catch = catch_total,
 #'   effort = hours_fished,
-#'   harvest = catch_kept
+#'   harvest = catch_kept,
+#'   trip_status = trip_status,
+#'   trip_start = trip_start,
+#'   interview_time = interview_time
 #' )
 #'
 #' @export
 add_interviews <- function(design, interviews,
                            catch, effort, harvest = NULL,
+                           trip_status,
+                           trip_duration = NULL,
+                           trip_start = NULL,
+                           interview_time = NULL,
                            date_col = NULL,
                            interview_type = c("access", "roving"),
                            allow_invalid = FALSE) {
@@ -562,6 +605,50 @@ add_interviews <- function(design, interviews,
     )
   }
 
+  # Resolve trip_status column (required)
+  trip_status_col <- resolve_single_col(
+    rlang::enquo(trip_status),
+    interviews,
+    "trip_status",
+    rlang::caller_env()
+  )
+
+  # Resolve trip duration input method
+  trip_duration_col <- NULL
+  trip_start_col <- NULL
+  interview_time_col <- NULL
+
+  trip_duration_quo <- rlang::enquo(trip_duration)
+  trip_start_quo <- rlang::enquo(trip_start)
+  interview_time_quo <- rlang::enquo(interview_time)
+
+  if (!rlang::quo_is_null(trip_duration_quo)) {
+    trip_duration_col <- resolve_single_col(
+      trip_duration_quo,
+      interviews,
+      "trip_duration",
+      rlang::caller_env()
+    )
+  }
+
+  if (!rlang::quo_is_null(trip_start_quo)) {
+    trip_start_col <- resolve_single_col(
+      trip_start_quo,
+      interviews,
+      "trip_start",
+      rlang::caller_env()
+    )
+  }
+
+  if (!rlang::quo_is_null(interview_time_quo)) {
+    interview_time_col <- resolve_single_col(
+      interview_time_quo,
+      interviews,
+      "interview_time",
+      rlang::caller_env()
+    )
+  }
+
   # Set date_col (default to design$date_col)
   if (is.null(date_col)) {
     date_col <- design$date_col
@@ -572,6 +659,20 @@ add_interviews <- function(design, interviews,
 
   # Validate interviews structure (Tier 1)
   validation <- validate_interviews_tier1(interviews, design, catch_col, effort_col, harvest_col, date_col, allow_invalid) # nolint: object_usage_linter
+
+  # Validate trip metadata
+  validate_trip_metadata(interviews, trip_status_col, trip_duration_col, trip_start_col, interview_time_col) # nolint: object_usage_linter
+
+  # Calculate duration if needed (from trip_start + interview_time)
+  if (!is.null(trip_start_col) && !is.null(interview_time_col) && is.null(trip_duration_col)) {
+    interviews[[".trip_duration_hrs"]] <- as.numeric(
+      difftime(interviews[[interview_time_col]], interviews[[trip_start_col]], units = "hours")
+    )
+    trip_duration_col <- ".trip_duration_hrs"
+  }
+
+  # Normalize trip_status to lowercase
+  interviews[[trip_status_col]] <- tolower(interviews[[trip_status_col]])
 
   # Join interviews with calendar
   interviews_joined <- dplyr::left_join(
@@ -588,6 +689,10 @@ add_interviews <- function(design, interviews,
   new_design$effort_col <- effort_col
   new_design$harvest_col <- harvest_col
   new_design$interview_type <- interview_type
+  new_design$trip_status_col <- trip_status_col
+  new_design$trip_duration_col <- trip_duration_col
+  new_design$trip_start_col <- trip_start_col
+  new_design$interview_time_col <- interview_time_col
 
   # Construct interview survey eagerly
   new_design$interview_survey <- construct_interview_survey(new_design) # nolint: object_usage_linter
@@ -597,6 +702,19 @@ add_interviews <- function(design, interviews,
 
   # Warn for Tier 2 data quality issues
   warn_tier2_interview_issues(new_design) # nolint: object_usage_linter
+
+  # Trip status summary
+  status_table <- table(tolower(new_design$interviews[[trip_status_col]]))
+  n_complete <- as.integer(status_table["complete"])
+  n_incomplete <- as.integer(status_table["incomplete"])
+  if (is.na(n_complete)) n_complete <- 0L
+  if (is.na(n_incomplete)) n_incomplete <- 0L
+  n_total <- n_complete + n_incomplete
+  pct_complete <- round(100 * n_complete / n_total, 0) # nolint: object_usage_linter
+  pct_incomplete <- round(100 * n_incomplete / n_total, 0) # nolint: object_usage_linter
+  cli::cli_inform(c( # nolint: line_length_linter
+    "i" = "Added {n_total} interview{?s}: {n_complete} complete ({pct_complete}%), {n_incomplete} incomplete ({pct_incomplete}%)"
+  ))
 
   # Preserve class
   class(new_design) <- "creel_design"
@@ -660,6 +778,15 @@ format.creel_design <- function(x, ...) {
       if (!is.null(x$harvest_col)) {
         harvest_col <- x$harvest_col # nolint: object_usage_linter
         cli::cli_text("  Harvest: {.field {harvest_col}}")
+      }
+      if (!is.null(x$trip_status_col)) {
+        trip_status_col <- x$trip_status_col # nolint: object_usage_linter
+        status_table <- table(tolower(x$interviews[[trip_status_col]])) # nolint: object_usage_linter
+        n_complete <- as.integer(status_table["complete"]) # nolint: object_usage_linter
+        n_incomplete <- as.integer(status_table["incomplete"]) # nolint: object_usage_linter
+        if (is.na(n_complete)) n_complete <- 0L
+        if (is.na(n_incomplete)) n_incomplete <- 0L
+        cli::cli_text("  Trip status: {n_complete} complete, {n_incomplete} incomplete")
       }
       if (!is.null(x$interview_survey)) {
         interview_survey_class <- class(x$interview_survey)[1] # nolint: object_usage_linter

@@ -12,7 +12,9 @@ make_total_catch_design <- function() {
   design <- add_counts(design, example_counts) # nolint: object_usage_linter
   design <- add_interviews(design, example_interviews, # nolint: object_usage_linter
     catch = catch_total, # nolint: object_usage_linter
-    effort = hours_fished # nolint: object_usage_linter
+    effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status, # nolint: object_usage_linter
+    trip_duration = trip_duration # nolint: object_usage_linter
   )
 
   design
@@ -37,7 +39,9 @@ make_interviews_only_design <- function() {
   design <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
   design <- add_interviews(design, example_interviews, # nolint: object_usage_linter
     catch = catch_total, # nolint: object_usage_linter
-    effort = hours_fished # nolint: object_usage_linter
+    effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status, # nolint: object_usage_linter
+    trip_duration = trip_duration # nolint: object_usage_linter
   )
 
   design
@@ -214,7 +218,9 @@ make_grouped_test_design <- function() {
   interviews <- data.frame(
     date = sample(dates, 30, replace = TRUE),
     catch_total = rpois(30, lambda = 3),
-    hours_fished = runif(30, min = 1, max = 8)
+    hours_fished = runif(30, min = 1, max = 8),
+    trip_status = rep(c("complete", "incomplete"), 15),
+    trip_duration = runif(30, min = 1, max = 8)
   )
   # Ensure at least 15 in each group
   interviews$date[1:15] <- sample(dates[1:30], 15, replace = TRUE) # weekday
@@ -225,7 +231,9 @@ make_grouped_test_design <- function() {
   design <- add_counts(design, counts) # nolint: object_usage_linter
   design <- add_interviews(design, interviews, # nolint: object_usage_linter
     catch = catch_total, # nolint: object_usage_linter
-    effort = hours_fished # nolint: object_usage_linter
+    effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status, # nolint: object_usage_linter
+    trip_duration = trip_duration # nolint: object_usage_linter
   )
 
   design
@@ -365,7 +373,9 @@ test_that("full workflow with example data produces valid result", {
   design <- add_counts(design, example_counts) # nolint: object_usage_linter
   design <- add_interviews(design, example_interviews, # nolint: object_usage_linter
     catch = catch_total, # nolint: object_usage_linter
-    effort = hours_fished # nolint: object_usage_linter
+    effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status, # nolint: object_usage_linter
+    trip_duration = trip_duration # nolint: object_usage_linter
   )
 
   # Estimate total catch
@@ -409,7 +419,9 @@ test_that("total harvest <= total catch for same design", {
   design <- add_interviews(design, example_interviews, # nolint: object_usage_linter
     catch = catch_total, # nolint: object_usage_linter
     harvest = catch_kept, # nolint: object_usage_linter
-    effort = hours_fished # nolint: object_usage_linter
+    effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status, # nolint: object_usage_linter
+    trip_duration = trip_duration # nolint: object_usage_linter
   )
 
   # Estimate both

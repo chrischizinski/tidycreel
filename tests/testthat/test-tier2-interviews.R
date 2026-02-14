@@ -28,6 +28,8 @@ test_that("no warnings for clean interview data", {
     )),
     hours_fished = c(2.0, 2.5, 3.0, 1.5, 2.0, 2.5, 3.0, 1.5),
     catch_total = c(5, 3, 7, 2, 6, 4, 8, 1),
+    trip_status = rep("complete", 8),
+    trip_duration = c(2.0, 2.5, 3.0, 1.5, 2.0, 2.5, 3.0, 1.5),
     stringsAsFactors = FALSE
   )
 
@@ -37,7 +39,9 @@ test_that("no warnings for clean interview data", {
   result <- suppressWarnings({
     add_interviews(design, clean_interviews,
       catch = catch_total,
-      effort = hours_fished
+      effort = hours_fished,
+      trip_status = trip_status,
+      trip_duration = trip_duration
     )
   })
 
@@ -52,13 +56,15 @@ test_that("warning for very short trips (effort < 0.1 hours)", {
     )),
     hours_fished = c(0.05, 2.0, 0.08, 2.5), # Two very short trips
     catch_total = c(1, 5, 1, 3),
+    trip_status = rep("complete", 4),
+    trip_duration = c(0.05, 2.0, 0.08, 2.5),
     stringsAsFactors = FALSE
   )
 
   expect_warning(
     add_interviews(design, short_trip_interviews,
       catch = catch_total,
-      effort = hours_fished
+      effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration
     ),
     "2 interviews have effort < 0.1 hours"
   )
@@ -72,13 +78,15 @@ test_that("warning for zero catch values", {
     )),
     hours_fished = c(2.0, 2.5, 3.0, 1.5),
     catch_total = c(0, 5, 0, 3), # Two zero catch
+    trip_status = rep("complete", 4),
+    trip_duration = c(2.0, 2.5, 3.0, 1.5),
     stringsAsFactors = FALSE
   )
 
   expect_warning(
     add_interviews(design, zero_catch_interviews,
       catch = catch_total,
-      effort = hours_fished
+      effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration
     ),
     "2 interviews have zero catch"
   )
@@ -92,13 +100,15 @@ test_that("warning for negative catch values", {
     )),
     hours_fished = c(2.0, 2.5, 3.0, 1.5),
     catch_total = c(-1, 5, 3, 2), # One negative catch
+    trip_status = rep("complete", 4),
+    trip_duration = c(2.0, 2.5, 3.0, 1.5),
     stringsAsFactors = FALSE
   )
 
   expect_warning(
     add_interviews(design, negative_catch_interviews,
       catch = catch_total,
-      effort = hours_fished
+      effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration
     ),
     "1 interview has negative catch"
   )
@@ -112,13 +122,15 @@ test_that("warning for negative effort values", {
     )),
     hours_fished = c(-0.5, 2.0, 2.5, 3.0), # One negative effort
     catch_total = c(5, 3, 7, 2),
+    trip_status = rep("complete", 4),
+    trip_duration = c(2.0, 2.0, 2.5, 3.0),
     stringsAsFactors = FALSE
   )
 
   expect_warning(
     add_interviews(design, negative_effort_interviews,
       catch = catch_total,
-      effort = hours_fished
+      effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration
     ),
     "1 interview has negative effort"
   )
@@ -132,13 +144,15 @@ test_that("warning for missing effort values (NA)", {
     )),
     hours_fished = c(NA, 2.0, NA, 2.5), # Two missing effort
     catch_total = c(5, 3, 7, 2),
+    trip_status = rep("complete", 4),
+    trip_duration = c(2.0, 2.0, 2.5, 2.5),
     stringsAsFactors = FALSE
   )
 
   expect_warning(
     add_interviews(design, missing_effort_interviews,
       catch = catch_total,
-      effort = hours_fished
+      effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration
     ),
     "2 interviews have missing effort"
   )
@@ -153,13 +167,15 @@ test_that("warning for sparse strata (< 3 interviews per stratum)", {
     )),
     hours_fished = c(2.0, 2.5, 3.0),
     catch_total = c(5, 3, 7),
+    trip_status = rep("complete", 3),
+    trip_duration = c(2.0, 2.5, 3.0),
     stringsAsFactors = FALSE
   )
 
   expect_warning(
     add_interviews(design, sparse_interviews,
       catch = catch_total,
-      effort = hours_fished
+      effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration
     ),
     "2 strata have fewer than 3 interviews"
   )
@@ -173,6 +189,8 @@ test_that("multiple warnings issued simultaneously", {
     )),
     hours_fished = c(0.05, -1.0, 2.0),
     catch_total = c(5, 0, -2),
+    trip_status = rep("complete", 3),
+    trip_duration = c(2.0, 2.0, 2.0),
     stringsAsFactors = FALSE
   )
 
@@ -180,7 +198,7 @@ test_that("multiple warnings issued simultaneously", {
   expect_warning(
     add_interviews(design, problematic_interviews,
       catch = catch_total,
-      effort = hours_fished
+      effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration
     ),
     "interview" # At least one warning will mention "interview"
   )
@@ -194,6 +212,8 @@ test_that("warnings do NOT prevent add_interviews() from succeeding", {
     )),
     hours_fished = c(0.05, NA, -1.0, 2.0), # Multiple issues
     catch_total = c(0, -1, 5, 2),
+    trip_status = rep("complete", 4),
+    trip_duration = c(2.0, 2.0, 2.0, 2.0),
     stringsAsFactors = FALSE
   )
 
@@ -201,7 +221,7 @@ test_that("warnings do NOT prevent add_interviews() from succeeding", {
   suppressWarnings({
     result <- add_interviews(design, problematic_interviews,
       catch = catch_total,
-      effort = hours_fished
+      effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration
     )
   })
 
