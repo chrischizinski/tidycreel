@@ -122,11 +122,11 @@ See: [.planning/milestones/v0.2.0-ROADMAP.md](milestones/v0.2.0-ROADMAP.md)
   3. User can provide trip_duration directly as alternative to calculated duration
   4. Package validates trip_status field and warns about missing or invalid values
   5. Interview data object stores trip metadata for downstream estimators
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 13-01: TBD
-- [ ] 13-02: TBD
+- [ ] 13-01-PLAN.md — Trip metadata parameters in add_interviews() with validation (TDD)
+- [ ] 13-02-PLAN.md — Example data update and summarize_trips() diagnostic function
 
 ### Phase 14: Overnight Trip Duration
 **Goal**: Package correctly calculates trip duration for trips spanning multiple days
