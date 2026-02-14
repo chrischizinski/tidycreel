@@ -34,11 +34,12 @@ data(example_interviews)
 
 design <- creel_design(example_calendar, date = date, strata = day_type)
 design <- add_interviews(design, example_interviews,
-                         catch = catch_total,
-                         effort = hours_fished,
-                         harvest = catch_kept,
-                         trip_status = trip_status,
-                         trip_duration = trip_duration)
+  catch = catch_total,
+  effort = hours_fished,
+  harvest = catch_kept,
+  trip_status = trip_status,
+  trip_duration = trip_duration
+)
 print(design)
 
 }

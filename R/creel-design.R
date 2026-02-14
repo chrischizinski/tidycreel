@@ -713,7 +713,7 @@ add_interviews <- function(design, interviews,
   pct_complete <- round(100 * n_complete / n_total, 0) # nolint: object_usage_linter
   pct_incomplete <- round(100 * n_incomplete / n_total, 0) # nolint: object_usage_linter
   cli::cli_inform(c( # nolint: line_length_linter
-    "i" = "Added {n_total} interview{?s}: {n_complete} complete ({pct_complete}%), {n_incomplete} incomplete ({pct_incomplete}%)"
+    "i" = "Added {n_total} interview{?s}: {n_complete} complete ({pct_complete}%), {n_incomplete} incomplete ({pct_incomplete}%)" # nolint: line_length_linter
   ))
 
   # Preserve class
@@ -822,4 +822,153 @@ print.creel_design <- function(x, ...) {
 summary.creel_design <- function(object, ...) {
   print(object, ...)
   invisible(object)
+}
+
+#' Summarize trip metadata for interview data
+#'
+#' Provides a diagnostic summary of trip completion status and duration
+#' statistics for interview data attached to a creel design. Useful for
+#' inspecting data quality before estimation.
+#'
+#' @param design A creel_design object with interviews attached via
+#'   [add_interviews()].
+#'
+#' @return A list (class "creel_trip_summary") with components:
+#'   \describe{
+#'     \item{n_total}{Total number of interviews}
+#'     \item{n_complete}{Number of complete trip interviews}
+#'     \item{n_incomplete}{Number of incomplete trip interviews}
+#'     \item{pct_complete}{Percentage of complete trips}
+#'     \item{pct_incomplete}{Percentage of incomplete trips}
+#'     \item{duration_stats}{Data frame with duration statistics by trip status}
+#'   }
+#'
+#' @examples
+#' data(example_calendar)
+#' data(example_interviews)
+#'
+#' design <- creel_design(example_calendar, date = date, strata = day_type)
+#' design <- add_interviews(design, example_interviews,
+#'   catch = catch_total,
+#'   effort = hours_fished,
+#'   harvest = catch_kept,
+#'   trip_status = trip_status,
+#'   trip_duration = trip_duration
+#' )
+#' summary <- summarize_trips(design)
+#' print(summary)
+#'
+#' @export
+summarize_trips <- function(design) {
+  # Validate design is creel_design
+  if (!inherits(design, "creel_design")) {
+    cli::cli_abort(c(
+      "{.arg design} must be a {.cls creel_design} object.",
+      "x" = "{.arg design} is {.cls {class(design)[1]}}.",
+      "i" = "Create a design with {.fn creel_design}."
+    ))
+  }
+
+  # Validate interviews are attached
+  if (is.null(design$interviews)) {
+    cli::cli_abort(c(
+      "No interviews found in design.",
+      "x" = "The design object has no interview data.",
+      "i" = "Attach interviews with {.fn add_interviews}."
+    ))
+  }
+
+  # Validate trip metadata exists
+  if (is.null(design$trip_status_col)) {
+    cli::cli_abort(c(
+      "No trip metadata found.",
+      "x" = "Did you provide {.arg trip_status} in {.fn add_interviews}?"
+    ))
+  }
+
+  # Extract trip metadata
+  trip_status <- design$interviews[[design$trip_status_col]]
+  trip_duration <- design$interviews[[design$trip_duration_col]]
+
+  # Compute counts
+  status_table <- table(trip_status)
+  n_complete <- as.integer(status_table["complete"])
+  n_incomplete <- as.integer(status_table["incomplete"])
+  if (is.na(n_complete)) n_complete <- 0L
+  if (is.na(n_incomplete)) n_incomplete <- 0L
+  n_total <- n_complete + n_incomplete
+
+  # Compute percentages
+  pct_complete <- round(100 * n_complete / n_total, 1)
+  pct_incomplete <- round(100 * n_incomplete / n_total, 1)
+
+  # Compute duration statistics by trip status
+  duration_stats <- data.frame(
+    status = character(),
+    n = integer(),
+    min = numeric(),
+    median = numeric(),
+    mean = numeric(),
+    max = numeric(),
+    sd = numeric(),
+    stringsAsFactors = FALSE
+  )
+
+  for (status_val in c("complete", "incomplete")) {
+    status_mask <- trip_status == status_val
+    if (sum(status_mask) > 0) {
+      durations <- trip_duration[status_mask]
+      duration_stats <- rbind(
+        duration_stats,
+        data.frame(
+          status = status_val,
+          n = sum(status_mask),
+          min = round(min(durations, na.rm = TRUE), 2),
+          median = round(stats::median(durations, na.rm = TRUE), 2),
+          mean = round(mean(durations, na.rm = TRUE), 2),
+          max = round(max(durations, na.rm = TRUE), 2),
+          sd = round(stats::sd(durations, na.rm = TRUE), 2),
+          stringsAsFactors = FALSE
+        )
+      )
+    }
+  }
+
+  # Return list with class
+  result <- list(
+    n_total = n_total,
+    n_complete = n_complete,
+    n_incomplete = n_incomplete,
+    pct_complete = pct_complete,
+    pct_incomplete = pct_incomplete,
+    duration_stats = duration_stats
+  )
+  class(result) <- "creel_trip_summary"
+  result
+}
+
+#' @export
+format.creel_trip_summary <- function(x, ...) {
+  lines <- character()
+  lines <- c(lines, cli::format_inline("Trip Status Summary"))
+  lines <- c(lines, cli::format_inline(""))
+  lines <- c(lines, cli::format_inline("Total interviews: {x$n_total}"))
+  lines <- c(lines, cli::format_inline("  Complete:   {x$n_complete} ({x$pct_complete}%)"))
+  lines <- c(lines, cli::format_inline("  Incomplete: {x$n_incomplete} ({x$pct_incomplete}%)"))
+  lines <- c(lines, cli::format_inline(""))
+  lines <- c(lines, cli::format_inline("Duration (hours) by status:"))
+  # Format duration_stats table
+  for (i in seq_len(nrow(x$duration_stats))) {
+    row <- x$duration_stats[i, ] # nolint: object_usage_linter
+    lines <- c(lines, cli::format_inline(
+      "  {row$status}: min={row$min}, median={row$median}, mean={row$mean}, max={row$max}"
+    ))
+  }
+  lines
+}
+
+#' @export
+print.creel_trip_summary <- function(x, ...) {
+  writeLines(format(x, ...))
+  invisible(x)
 }

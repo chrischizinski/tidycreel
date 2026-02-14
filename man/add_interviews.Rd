@@ -163,10 +163,14 @@ interviews2 <- data.frame(
   catch_kept = c(2, 1, 5, 2),
   hours_fished = c(2.0, 2.5, 3.0, 1.5),
   trip_status = c("complete", "incomplete", "complete", "complete"),
-  trip_start = as.POSIXct(c("2024-06-01 08:00", "2024-06-02 09:00",
-                            "2024-06-03 07:00", "2024-06-04 10:00")),
-  interview_time = as.POSIXct(c("2024-06-01 10:00", "2024-06-02 11:30",
-                                 "2024-06-03 10:00", "2024-06-04 11:30"))
+  trip_start = as.POSIXct(c(
+    "2024-06-01 08:00", "2024-06-02 09:00",
+    "2024-06-03 07:00", "2024-06-04 10:00"
+  )),
+  interview_time = as.POSIXct(c(
+    "2024-06-01 10:00", "2024-06-02 11:30",
+    "2024-06-03 10:00", "2024-06-04 11:30"
+  ))
 )
 
 design2 <- add_interviews(
