@@ -67,6 +67,8 @@ new_creel_estimates <- function(estimates,
 #' @inheritParams new_creel_estimates
 #' @param n_incomplete Number of incomplete trips used in estimation
 #' @param n_total Total number of interviews in dataset
+#' @param mor_truncate_at Truncation threshold used (hours)
+#' @param mor_n_truncated Number of trips excluded by truncation
 #'
 #' @return List of class c("creel_estimates_mor", "creel_estimates")
 #'
@@ -79,7 +81,9 @@ new_creel_estimates_mor <- function(estimates,
                                     conf_level = 0.95,
                                     by_vars = NULL,
                                     n_incomplete = NULL,
-                                    n_total = NULL) {
+                                    n_total = NULL,
+                                    mor_truncate_at = NULL,
+                                    mor_n_truncated = NULL) {
   # Call parent constructor
   result <- new_creel_estimates(
     estimates = estimates,
@@ -93,6 +97,8 @@ new_creel_estimates_mor <- function(estimates,
   # Add MOR-specific metadata
   result$n_incomplete <- n_incomplete
   result$n_total <- n_total
+  result$mor_truncate_at <- mor_truncate_at
+  result$mor_n_truncated <- mor_n_truncated
 
   # Add mor class BEFORE creel_estimates (S3 method dispatch priority)
   class(result) <- c("creel_estimates_mor", "creel_estimates")
@@ -341,6 +347,11 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
 #'   \code{"ratio-of-means"} (default, for complete trips) or \code{"mor"}
 #'   (mean-of-ratios, for incomplete trips). MOR requires trip_status field
 #'   and errors if no incomplete trips are available. See Details.
+#' @param truncate_at Numeric minimum trip duration (hours) for MOR estimation.
+#'   Default is 0.5 hours (30 minutes) per Hoenig et al. (1997) to prevent
+#'   unstable variance from very short trips. Trips with duration < truncate_at
+#'   are excluded before MOR estimation. Set to NULL to disable truncation
+#'   (research mode only). Ignored for ratio-of-means estimator.
 #'
 #' @return A creel_estimates S3 object (list) with components: estimates
 #'   (tibble with estimate, se, ci_lower, ci_upper, n columns, plus grouping
@@ -363,9 +374,19 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
 #' to incomplete trips only and requires the trip_status field. The function
 #' uses survey::svymean() on individual ratios.
 #'
+#' \strong{Trip Truncation:}
+#' Very short incomplete trips can produce extreme catch/effort ratios that
+#' dominate variance estimation. Following Hoenig et al. (1997), the default
+#' \code{truncate_at = 0.5} hours (30 minutes) excludes trips shorter than
+#' this threshold before MOR estimation. The survey design is rebuilt with
+#' the truncated sample for correct variance computation. Set \code{truncate_at = NULL}
+#' to disable truncation (research mode only). Truncation only applies to MOR
+#' estimator; ratio-of-means ignores this parameter.
+#'
 #' The function performs sample size validation before estimation: errors if
-#' n < 10 (ungrouped or any group), warns if 10 <= n < 30. This follows best
-#' practices for ratio estimation stability.
+#' n < 10 (ungrouped or any group), warns if 10 <= n < 30. For MOR, validation
+#' uses the post-truncation sample size. This follows best practices for ratio
+#' estimation stability.
 #'
 #' When grouped estimation is used (\code{by} is not NULL), survey::svyby()
 #' correctly accounts for domain estimation variance.
@@ -417,8 +438,16 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
 #'
 #' # Mean-of-ratios for incomplete trips
 #' result_mor <- estimate_cpue(design_with_interviews, estimator = "mor")
+#'
+#' # Mean-of-ratios with custom truncation threshold
+#' result_mor_1h <- estimate_cpue(design_with_interviews, estimator = "mor", truncate_at = 1.0)
 #' @export
-estimate_cpue <- function(design, by = NULL, variance = "taylor", conf_level = 0.95, estimator = "ratio-of-means") {
+estimate_cpue <- function(design,
+                          by = NULL,
+                          variance = "taylor",
+                          conf_level = 0.95,
+                          estimator = "ratio-of-means",
+                          truncate_at = 0.5) {
   # Capture by parameter BEFORE validation
   by_quo <- rlang::enquo(by)
 
@@ -439,6 +468,15 @@ estimate_cpue <- function(design, by = NULL, variance = "taylor", conf_level = 0
       "Invalid estimator: {.val {estimator}}",
       "x" = "Must be one of: {.val {valid_estimators}}",
       "i" = "{.val ratio-of-means} for complete trips, {.val mor} for incomplete trips"
+    ))
+  }
+
+  # Validate truncate_at parameter
+  if (!is.null(truncate_at) && (!is.numeric(truncate_at) || truncate_at <= 0)) {
+    cli::cli_abort(c(
+      "Invalid truncate_at: {.val {truncate_at}}",
+      "x" = "truncate_at must be positive or NULL",
+      "i" = "Default is 0.5 hours (30 minutes) per Hoenig et al. (1997)"
     ))
   }
 
@@ -481,6 +519,22 @@ estimate_cpue <- function(design, by = NULL, variance = "taylor", conf_level = 0
     # Filter interview data to incomplete trips only
     incomplete_interviews <- design$interviews[design$interviews[[design$trip_status_col]] == "incomplete", ]
 
+    # Apply truncation if specified
+    if (!is.null(truncate_at)) {
+      # Filter to trips >= threshold
+      truncated_interviews <- incomplete_interviews[
+        incomplete_interviews[[design$trip_duration_col]] >= truncate_at,
+      ]
+
+      # Count truncated trips
+      n_truncated <- nrow(incomplete_interviews) - nrow(truncated_interviews)
+
+      # Use truncated data
+      incomplete_interviews <- truncated_interviews
+    } else {
+      n_truncated <- 0
+    }
+
     # Create new interview survey design with incomplete trips only
     design_incomplete <- design
     design_incomplete$interviews <- incomplete_interviews
@@ -488,6 +542,10 @@ estimate_cpue <- function(design, by = NULL, variance = "taylor", conf_level = 0
     # Store trip counts for MOR constructor (before design replacement)
     design_incomplete$mor_n_incomplete <- n_incomplete
     design_incomplete$mor_n_total <- n_total
+
+    # Store truncation metadata for messaging (Phase 16-02)
+    design_incomplete$mor_truncate_at <- truncate_at
+    design_incomplete$mor_n_truncated <- n_truncated
 
     # Rebuild survey design for incomplete trips
     strata_cols <- design$strata_cols
@@ -970,7 +1028,7 @@ estimate_cpue_total <- function(design, variance_method, conf_level, estimator =
 
   # Return appropriate creel_estimates object (MOR or standard)
   if (estimator == "mor") {
-    # Get trip counts stored during MOR filtering
+    # Get trip counts and truncation metadata stored during MOR filtering
     new_creel_estimates_mor( # nolint: object_usage_linter
       estimates = estimates_df,
       method = method_name,
@@ -979,7 +1037,9 @@ estimate_cpue_total <- function(design, variance_method, conf_level, estimator =
       conf_level = conf_level,
       by_vars = NULL,
       n_incomplete = design$mor_n_incomplete,
-      n_total = design$mor_n_total
+      n_total = design$mor_n_total,
+      mor_truncate_at = design$mor_truncate_at,
+      mor_n_truncated = design$mor_n_truncated
     )
   } else {
     new_creel_estimates( # nolint: object_usage_linter
@@ -1122,7 +1182,7 @@ estimate_cpue_grouped <- function(design, by_vars, variance_method, conf_level, 
 
   # Return appropriate creel_estimates object (MOR or standard)
   if (estimator == "mor") {
-    # Get trip counts stored during MOR filtering
+    # Get trip counts and truncation metadata stored during MOR filtering
     new_creel_estimates_mor( # nolint: object_usage_linter
       estimates = estimates_df,
       method = method_name,
@@ -1131,7 +1191,9 @@ estimate_cpue_grouped <- function(design, by_vars, variance_method, conf_level, 
       conf_level = conf_level,
       by_vars = by_vars,
       n_incomplete = design$mor_n_incomplete,
-      n_total = design$mor_n_total
+      n_total = design$mor_n_total,
+      mor_truncate_at = design$mor_truncate_at,
+      mor_n_truncated = design$mor_n_truncated
     )
   } else {
     new_creel_estimates( # nolint: object_usage_linter

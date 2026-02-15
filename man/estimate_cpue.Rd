@@ -9,7 +9,8 @@ estimate_cpue(
   by = NULL,
   variance = "taylor",
   conf_level = 0.95,
-  estimator = "ratio-of-means"
+  estimator = "ratio-of-means",
+  truncate_at = 0.5
 )
 }
 \arguments{
@@ -35,6 +36,12 @@ Options: \code{"taylor"} (default, Taylor linearization),
 \code{"ratio-of-means"} (default, for complete trips) or \code{"mor"}
 (mean-of-ratios, for incomplete trips). MOR requires trip_status field
 and errors if no incomplete trips are available. See Details.}
+
+\item{truncate_at}{Numeric minimum trip duration (hours) for MOR estimation.
+Default is 0.5 hours (30 minutes) per Hoenig et al. (1997) to prevent
+unstable variance from very short trips. Trips with duration < truncate_at
+are excluded before MOR estimation. Set to NULL to disable truncation
+(research mode only). Ignored for ratio-of-means estimator.}
 }
 \value{
 A creel_estimates S3 object (list) with components: estimates
@@ -64,9 +71,19 @@ incomplete trip interviews (interview during trip). MOR automatically filters
 to incomplete trips only and requires the trip_status field. The function
 uses survey::svymean() on individual ratios.
 
+\strong{Trip Truncation:}
+Very short incomplete trips can produce extreme catch/effort ratios that
+dominate variance estimation. Following Hoenig et al. (1997), the default
+\code{truncate_at = 0.5} hours (30 minutes) excludes trips shorter than
+this threshold before MOR estimation. The survey design is rebuilt with
+the truncated sample for correct variance computation. Set \code{truncate_at = NULL}
+to disable truncation (research mode only). Truncation only applies to MOR
+estimator; ratio-of-means ignores this parameter.
+
 The function performs sample size validation before estimation: errors if
-n < 10 (ungrouped or any group), warns if 10 <= n < 30. This follows best
-practices for ratio estimation stability.
+n < 10 (ungrouped or any group), warns if 10 <= n < 30. For MOR, validation
+uses the post-truncation sample size. This follows best practices for ratio
+estimation stability.
 
 When grouped estimation is used (\code{by} is not NULL), survey::svyby()
 correctly accounts for domain estimation variance.
@@ -118,4 +135,7 @@ result_boot <- estimate_cpue(design_with_interviews, variance = "bootstrap")
 
 # Mean-of-ratios for incomplete trips
 result_mor <- estimate_cpue(design_with_interviews, estimator = "mor")
+
+# Mean-of-ratios with custom truncation threshold
+result_mor_1h <- estimate_cpue(design_with_interviews, estimator = "mor", truncate_at = 1.0)
 }
