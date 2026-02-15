@@ -1466,3 +1466,110 @@ test_that("grouped estimation with use_trips='incomplete' uses incomplete trips 
   expect_equal(nrow(result$estimates), 2)
   expect_true(all(result$estimates$n == 10))
 })
+
+# Diagnostic mode tests ----
+
+test_that("use_trips='diagnostic' returns creel_estimates_diagnostic class", {
+  design <- make_grouped_use_trips_design()
+
+  result <- suppressWarnings(estimate_cpue(design, use_trips = "diagnostic"))
+
+  expect_s3_class(result, "creel_estimates_diagnostic")
+  expect_true("creel_estimates_diagnostic" %in% class(result))
+})
+
+test_that("use_trips='diagnostic' returns comparison table with both estimates", {
+  design <- make_grouped_use_trips_design()
+
+  result <- suppressWarnings(estimate_cpue(design, use_trips = "diagnostic"))
+
+  # Should have comparison data frame
+  expect_true(!is.null(result$comparison))
+  expect_true(is.data.frame(result$comparison))
+
+  # Should have two rows (complete and incomplete)
+  expect_equal(nrow(result$comparison), 2)
+
+  # Should have trip_type column
+  expect_true("trip_type" %in% names(result$comparison))
+  expect_setequal(result$comparison$trip_type, c("complete", "incomplete"))
+
+  # Should have estimate columns
+  expect_true(all(c("estimate", "se", "ci_lower", "ci_upper", "n") %in% names(result$comparison)))
+})
+
+test_that("use_trips='diagnostic' calculates difference metrics", {
+  design <- make_grouped_use_trips_design()
+
+  result <- suppressWarnings(estimate_cpue(design, use_trips = "diagnostic"))
+
+  # Should have difference metrics
+  expect_true(!is.null(result$diff_estimate))
+  expect_true(is.numeric(result$diff_estimate))
+
+  expect_true(!is.null(result$ratio_estimate))
+  expect_true(is.numeric(result$ratio_estimate))
+})
+
+test_that("use_trips='diagnostic' includes interpretation guidance", {
+  design <- make_grouped_use_trips_design()
+
+  result <- suppressWarnings(estimate_cpue(design, use_trips = "diagnostic"))
+
+  # Should have interpretation text
+  expect_true(!is.null(result$interpretation))
+  expect_true(is.character(result$interpretation))
+  expect_true(length(result$interpretation) > 0)
+})
+
+test_that("use_trips='diagnostic' errors if no complete trips", {
+  design <- make_small_cpue_design(n = 15, n_incomplete = 15)
+
+  expect_error(
+    estimate_cpue(design, use_trips = "diagnostic"),
+    "complete trips"
+  )
+})
+
+test_that("use_trips='diagnostic' errors if no incomplete trips", {
+  design <- make_small_cpue_design(n = 15, n_incomplete = 0)
+
+  expect_error(
+    estimate_cpue(design, use_trips = "diagnostic"),
+    "incomplete trips"
+  )
+})
+
+test_that("use_trips='diagnostic' works with grouped estimation", {
+  design <- make_grouped_use_trips_design()
+
+  result <- suppressWarnings(estimate_cpue(design, by = day_type, use_trips = "diagnostic")) # nolint: object_usage_linter
+
+  # Should have comparison data frame with grouping columns
+  expect_true("day_type" %in% names(result$comparison))
+
+  # Should have 4 rows (2 groups × 2 trip types)
+  expect_equal(nrow(result$comparison), 4)
+
+  # Should have both trip types for each group
+  weekday_types <- result$comparison$trip_type[result$comparison$day_type == "weekday"]
+  expect_setequal(weekday_types, c("complete", "incomplete"))
+
+  weekend_types <- result$comparison$trip_type[result$comparison$day_type == "weekend"]
+  expect_setequal(weekend_types, c("complete", "incomplete"))
+})
+
+test_that("diagnostic comparison print method produces readable output", {
+  design <- make_grouped_use_trips_design()
+
+  result <- suppressWarnings(estimate_cpue(design, use_trips = "diagnostic"))
+
+  # Should be able to format and print without error
+  expect_no_error(format(result))
+  expect_no_error(print(result))
+
+  # Formatted output should contain diagnostic keywords
+  output <- format(result)
+  output_text <- paste(output, collapse = " ")
+  expect_match(output_text, "diagnostic|comparison", ignore.case = TRUE)
+})

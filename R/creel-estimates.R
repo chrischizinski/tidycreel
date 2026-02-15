@@ -349,12 +349,15 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
 #'   and errors if no incomplete trips are available. See Details.
 #' @param use_trips Character string specifying which trip type to use when
 #'   trip_status field is provided. Options: \code{"complete"} (default) uses
-#'   only complete trips with ratio-of-means estimator, or \code{"incomplete"}
-#'   uses only incomplete trips with mean-of-ratios estimator. Following
-#'   Colorado C-SAP and Pollock et al., complete trips are scientifically
-#'   preferred (no length-of-stay bias). Incomplete trip estimation is
-#'   diagnostic/research mode requiring validation. Parameter is ignored when
-#'   trip_status field is not provided (perfect backward compatibility). See Details.
+#'   only complete trips with ratio-of-means estimator, \code{"incomplete"}
+#'   uses only incomplete trips with mean-of-ratios estimator, or
+#'   \code{"diagnostic"} estimates CPUE using both trip types and returns a
+#'   comparison table. Following Colorado C-SAP and Pollock et al., complete
+#'   trips are scientifically preferred (no length-of-stay bias). Incomplete
+#'   trip estimation is diagnostic/research mode requiring validation.
+#'   Diagnostic mode requires both complete and incomplete trips to be present.
+#'   Parameter is ignored when trip_status field is not provided (perfect
+#'   backward compatibility). See Details.
 #' @param truncate_at Numeric minimum trip duration (hours) for MOR estimation.
 #'   Default is 0.5 hours (30 minutes) per Hoenig et al. (1997) to prevent
 #'   unstable variance from very short trips. Trips with duration < truncate_at
@@ -377,8 +380,11 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
 #' completion and avoid length-of-stay bias. Setting \code{use_trips = "incomplete"}
 #' filters to incomplete trips and automatically uses the MOR estimator.
 #' Incomplete trip estimation is diagnostic/research mode and requires validation
-#' (see Phase 19 validate_incomplete_trips). When trip_status is not provided,
-#' use_trips is ignored for perfect backward compatibility with v0.2.0.
+#' (see Phase 19 validate_incomplete_trips). Setting \code{use_trips = "diagnostic"}
+#' runs both complete and incomplete trip estimation and returns a comparison
+#' object with difference metrics and interpretation guidance. Diagnostic mode
+#' requires both trip types to be present in the data. When trip_status is not
+#' provided, use_trips is ignored for perfect backward compatibility with v0.2.0.
 #'
 #' \strong{Ratio-of-Means (default):}
 #' CPUE is estimated as the ratio of total catch to total effort. This is the
@@ -533,13 +539,136 @@ estimate_cpue <- function(design,
 
   if (has_trip_status) {
     # Validate use_trips parameter
-    valid_use_trips <- c("complete", "incomplete")
+    valid_use_trips <- c("complete", "incomplete", "diagnostic")
     if (!use_trips %in% valid_use_trips) {
       cli::cli_abort(c(
         "Invalid use_trips value: {.val {use_trips}}",
         "x" = "Must be one of: {.val {valid_use_trips}}",
-        "i" = "{.val complete} for complete trips (default), {.val incomplete} for incomplete trips"
+        "i" = paste(
+          "{.val complete} for complete trips (default),",
+          "{.val incomplete} for incomplete trips,",
+          "{.val diagnostic} for comparison"
+        )
       ))
+    }
+
+    # Handle diagnostic mode
+    if (use_trips == "diagnostic") {
+      # Diagnostic mode requires both complete and incomplete trips
+      trip_status_col <- design$trip_status_col
+      n_complete <- sum(design$interviews[[trip_status_col]] == "complete", na.rm = TRUE)
+      n_incomplete <- sum(design$interviews[[trip_status_col]] == "incomplete", na.rm = TRUE)
+
+      if (n_complete == 0) {
+        cli::cli_abort(c(
+          "Diagnostic mode requires complete trips",
+          "x" = "Dataset has 0 complete trips",
+          "i" = "Diagnostic mode compares complete vs incomplete trip estimates",
+          "i" = "Ensure trip_status includes complete trips in interview data"
+        ))
+      }
+
+      if (n_incomplete == 0) {
+        cli::cli_abort(c(
+          "Diagnostic mode requires incomplete trips",
+          "x" = "Dataset has 0 incomplete trips",
+          "i" = "Diagnostic mode compares complete vs incomplete trip estimates",
+          "i" = "Ensure trip_status includes incomplete trips in interview data"
+        ))
+      }
+
+      # Call estimate_cpue recursively for both trip types
+      complete_result <- estimate_cpue(
+        design = design,
+        by = !!by_quo,
+        variance = variance,
+        conf_level = conf_level,
+        estimator = "ratio-of-means",
+        use_trips = "complete",
+        truncate_at = truncate_at
+      )
+
+      incomplete_result <- suppressWarnings(
+        estimate_cpue(
+          design = design,
+          by = !!by_quo,
+          variance = variance,
+          conf_level = conf_level,
+          estimator = "mor",
+          use_trips = "incomplete",
+          truncate_at = truncate_at
+        )
+      )
+
+      # Build comparison data frame
+      if (rlang::quo_is_null(by_quo)) {
+        # Ungrouped: simple two-row comparison
+        comparison <- data.frame(
+          trip_type = c("complete", "incomplete"),
+          estimate = c(complete_result$estimates$estimate, incomplete_result$estimates$estimate),
+          se = c(complete_result$estimates$se, incomplete_result$estimates$se),
+          ci_lower = c(complete_result$estimates$ci_lower, incomplete_result$estimates$ci_lower),
+          ci_upper = c(complete_result$estimates$ci_upper, incomplete_result$estimates$ci_upper),
+          n = c(complete_result$estimates$n, incomplete_result$estimates$n),
+          stringsAsFactors = FALSE
+        )
+
+        # Calculate overall difference metrics
+        diff_estimate <- complete_result$estimates$estimate - incomplete_result$estimates$estimate
+        ratio_estimate <- complete_result$estimates$estimate / incomplete_result$estimates$estimate
+
+        # Interpretation guidance
+        threshold <- 0.1 * complete_result$estimates$estimate
+        if (abs(diff_estimate) < threshold) {
+          interpretation <- "Estimates are similar (difference < 10% of complete estimate)"
+        } else {
+          interpretation <- paste(
+            "Estimates differ substantially",
+            "(difference >= 10% of complete estimate) - investigate causes"
+          )
+        }
+      } else {
+        # Grouped: comparison within each group
+        # Add trip_type column to each result
+        complete_comparison <- complete_result$estimates
+        complete_comparison$trip_type <- "complete"
+
+        incomplete_comparison <- incomplete_result$estimates
+        incomplete_comparison$trip_type <- "incomplete"
+
+        # Combine into single comparison table
+        comparison <- rbind(complete_comparison, incomplete_comparison)
+
+        # Reorder columns to put trip_type first (after grouping columns)
+        by_vars <- complete_result$by_vars
+        other_cols <- setdiff(names(comparison), c(by_vars, "trip_type"))
+        comparison <- comparison[, c(by_vars, "trip_type", other_cols)]
+
+        # Calculate difference metrics per group
+        diff_estimate <- complete_comparison$estimate - incomplete_comparison$estimate
+        ratio_estimate <- complete_comparison$estimate / incomplete_comparison$estimate
+
+        # Interpretation guidance for grouped
+        interpretation <- paste(
+          "See comparison table for within-group differences.",
+          "Investigate groups with ratio_estimate far from 1.0"
+        )
+      }
+
+      # Return diagnostic object
+      result <- list(
+        comparison = comparison,
+        complete_result = complete_result,
+        incomplete_result = incomplete_result,
+        diff_estimate = diff_estimate,
+        ratio_estimate = ratio_estimate,
+        interpretation = interpretation,
+        conf_level = conf_level,
+        by_vars = complete_result$by_vars
+      )
+
+      class(result) <- c("creel_estimates_diagnostic", "list")
+      return(result)
     }
 
     # Validate use_trips + estimator combination

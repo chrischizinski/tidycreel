@@ -10,6 +10,7 @@ estimate_cpue(
   variance = "taylor",
   conf_level = 0.95,
   estimator = "ratio-of-means",
+  use_trips = "complete",
   truncate_at = 0.5
 )
 }
@@ -37,6 +38,15 @@ Options: \code{"taylor"} (default, Taylor linearization),
 (mean-of-ratios, for incomplete trips). MOR requires trip_status field
 and errors if no incomplete trips are available. See Details.}
 
+\item{use_trips}{Character string specifying which trip type to use when
+trip_status field is provided. Options: \code{"complete"} (default) uses
+only complete trips with ratio-of-means estimator, or \code{"incomplete"}
+uses only incomplete trips with mean-of-ratios estimator. Following
+Colorado C-SAP and Pollock et al., complete trips are scientifically
+preferred (no length-of-stay bias). Incomplete trip estimation is
+diagnostic/research mode requiring validation. Parameter is ignored when
+trip_status field is not provided (perfect backward compatibility). See Details.}
+
 \item{truncate_at}{Numeric minimum trip duration (hours) for MOR estimation.
 Default is 0.5 hours (30 minutes) per Hoenig et al. (1997) to prevent
 unstable variance from very short trips. Trips with duration < truncate_at
@@ -58,6 +68,17 @@ ratio-of-means (for complete trips) and mean-of-ratios (for incomplete trips)
 estimation methods.
 }
 \details{
+\strong{Trip Type Selection (use_trips):}
+When trip_status is provided, the \code{use_trips} parameter controls which
+trips are used for estimation. The default \code{use_trips = "complete"}
+filters to complete trips only, following roving-access design best practices
+(Colorado C-SAP, Pollock et al.). Complete trip interviews are taken at trip
+completion and avoid length-of-stay bias. Setting \code{use_trips = "incomplete"}
+filters to incomplete trips and automatically uses the MOR estimator.
+Incomplete trip estimation is diagnostic/research mode and requires validation
+(see Phase 19 validate_incomplete_trips). When trip_status is not provided,
+use_trips is ignored for perfect backward compatibility with v0.2.0.
+
 \strong{Ratio-of-Means (default):}
 CPUE is estimated as the ratio of total catch to total effort. This is the
 appropriate estimator for complete trip interviews (interview at trip end).
