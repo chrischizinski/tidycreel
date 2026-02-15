@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-14)
 ## Current Position
 
 Phase: 15 of 20 (Mean-of-Ratios Estimator Core)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-02-15 — Completed 15-01 MOR estimator core implementation
+Plan: 2 of 2 in current phase
+Status: Complete
+Last activity: 2026-02-15 — Completed 15-02 MOR diagnostic messaging
 
-Progress: [█████████████░░░░░░░] 71% (26/36.7 plans estimated)
+Progress: [█████████████░░░░░░░] 74% (27/36.7 plans estimated)
 
 ## Performance Metrics
 
@@ -30,10 +30,10 @@ Progress: [█████████████░░░░░░░] 71% (26
 |-----------|--------|-------|--------|-----------|
 | v0.1.0 | 1-7 | 12/12 | Complete | 2026-02-09 |
 | v0.2.0 | 8-12 | 10/10 | Complete | 2026-02-11 |
-| v0.3.0 | 13-20 | 3/TBD | In progress | - |
+| v0.3.0 | 13-20 | 5/TBD | In progress | - |
 
 **Quality Metrics (v0.3.0 current):**
-- Test coverage: TBD (713 tests)
+- Test coverage: TBD (718 tests)
 - R CMD check: 0 errors, 0 warnings
 - lintr: 0 issues
 
@@ -55,6 +55,7 @@ Progress: [█████████████░░░░░░░] 71% (26
 | Plan | Tasks | Duration | Tests Added | Files Modified | Completed |
 |------|-------|----------|-------------|----------------|-----------|
 | 15-01 | 2 | 11 min | 11 | 5 | 2026-02-15 |
+| 15-02 | 2 | 6 min | 8 | 6 | 2026-02-15 |
 
 ## Accumulated Context
 
@@ -75,6 +76,8 @@ Progress: [█████████████░░░░░░░] 71% (26
 
 ### Recent Decisions
 
+- **Phase 15-02**: MOR class added BEFORE creel_estimates in class vector — Ensures S3 dispatch priority for custom format/print methods
+- **Phase 15-02**: Warning issued on EVERY MOR call (not once-per-session) — Per CONTEXT.md locked decisions about diagnostic mode emphasis
 - **Phase 15-01**: MOR uses survey::svymean() on individual catch/effort ratios (not svyratio) — Statistically appropriate for incomplete trip estimation
 - **Phase 15-01**: MOR automatically filters to incomplete trips only — Ensures sample size validation and variance estimation use only incomplete trips
 - **Phase 14-01**: Timezone validation only errors on explicit timezone mismatch — POSIXct handles system default mixed with explicit timezone correctly
@@ -99,7 +102,7 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-02-15
-Stopped at: Completed 15-01-PLAN.md (MOR estimator core implementation)
+Stopped at: Completed 15-02-PLAN.md (MOR diagnostic messaging and S3 class infrastructure)
 Resume file: None
 
-**Next step:** Continue Phase 15 with plan 15-02 or pause for review
+**Next step:** Phase 15 complete - proceed to Phase 16 (trip truncation) or pause for review
