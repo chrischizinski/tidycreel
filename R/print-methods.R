@@ -19,6 +19,16 @@ format.creel_estimates_mor <- function(x, ...) {
     cli::cli_text(
       "This estimate uses incomplete trip interviews ({x$n_incomplete} of {x$n_total} total)."
     )
+
+    # Add truncation details if applicable
+    if (!is.null(x$mor_truncate_at)) {
+      if (x$mor_n_truncated > 0) {
+        cli::cli_text("Truncation: {x$mor_n_truncated} trip{?s} excluded (< {x$mor_truncate_at} hours)")
+      } else {
+        cli::cli_text("Truncation: 0 trips excluded (threshold: {x$mor_truncate_at} hours)")
+      }
+    }
+
     cli::cli_text(
       "Validate with {.fn validate_incomplete_trips} before use (Phase 19)."
     )
