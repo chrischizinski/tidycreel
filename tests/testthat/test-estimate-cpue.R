@@ -932,3 +932,160 @@ test_that("MOR warning references validation function", {
     "validate_incomplete_trips"
   )
 })
+
+# MOR Truncation Tests ----
+
+# Helper: create design with specific mix of trips above/below threshold
+make_truncation_test_design <- function(n_above, n_below, threshold) {
+  cal <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
+    day_type = rep("weekday", 4),
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+
+  n_total <- n_above + n_below
+
+  # All trips are incomplete for MOR testing
+  trip_status <- rep("incomplete", n_total)
+
+  # Create durations: n_above trips >= threshold, n_below trips < threshold
+  # Above threshold: spread between threshold and threshold + 2 hours
+  durations_above <- seq(threshold, threshold + 2, length.out = n_above)
+  # Below threshold: spread between 0.1 and threshold - 0.1
+  durations_below <- seq(0.1, threshold - 0.1, length.out = n_below)
+  trip_duration <- c(durations_above, durations_below)
+
+  interviews <- data.frame(
+    date = as.Date(rep("2024-06-01", n_total)),
+    catch_total = rep(c(2, 3, 4, 5, 6), length.out = n_total),
+    hours_fished = trip_duration, # Match effort to duration for simplicity
+    catch_kept = rep(c(2, 2, 3, 4, 5), length.out = n_total),
+    trip_status = trip_status,
+    trip_duration = trip_duration,
+    stringsAsFactors = FALSE
+  )
+
+  add_interviews(design, interviews, catch = catch_total, effort = hours_fished, harvest = catch_kept, trip_status = trip_status, trip_duration = trip_duration) # nolint: object_usage_linter
+}
+
+test_that("default truncate_at=0.5 filters trips below threshold", {
+  # Create design with 25 trips >= 0.5h, 5 trips < 0.5h
+  design <- make_truncation_test_design(n_above = 25, n_below = 5, threshold = 0.5)
+
+  result <- suppressWarnings(estimate_cpue(design, estimator = "mor")) # nolint: object_usage_linter
+
+  # Should use only the 25 trips >= 0.5h
+  expect_equal(result$estimates$n, 25)
+})
+
+test_that("custom truncate_at filters correctly", {
+  # Create design with 20 trips >= 1.0h, 10 trips < 1.0h
+  design <- make_truncation_test_design(n_above = 20, n_below = 10, threshold = 1.0)
+
+  result <- suppressWarnings(estimate_cpue(design, estimator = "mor", truncate_at = 1.0)) # nolint: object_usage_linter
+
+  # Should use only the 20 trips >= 1.0h
+  expect_equal(result$estimates$n, 20)
+})
+
+test_that("truncate_at=NULL uses all trips", {
+  # Create design with 15 trips >= 0.5h, 15 trips < 0.5h
+  design <- make_truncation_test_design(n_above = 15, n_below = 15, threshold = 0.5)
+
+  result <- suppressWarnings(estimate_cpue(design, estimator = "mor", truncate_at = NULL)) # nolint: object_usage_linter
+
+  # Should use all 30 trips (no truncation)
+  expect_equal(result$estimates$n, 30)
+})
+
+test_that("truncated sample count stored in metadata", {
+  # Create design with 25 trips >= 0.5h, 5 trips < 0.5h
+  design <- make_truncation_test_design(n_above = 25, n_below = 5, threshold = 0.5)
+
+  result <- suppressWarnings(estimate_cpue(design, estimator = "mor")) # nolint: object_usage_linter
+
+  # Should have truncation metadata stored
+  expect_true(!is.null(result$mor_n_truncated))
+  expect_equal(result$mor_n_truncated, 5)
+  expect_equal(result$mor_truncate_at, 0.5)
+})
+
+test_that("ratio-of-means ignores truncate_at parameter", {
+  # Create design with complete trips, some short durations
+  design <- make_truncation_test_design(n_above = 20, n_below = 10, threshold = 1.0)
+  # Override trip_status to complete
+  design$interviews$trip_status <- "complete"
+
+  result <- estimate_cpue(design, estimator = "ratio-of-means", truncate_at = 1.0) # nolint: object_usage_linter
+
+  # Should use all 30 trips (truncation ignored for ratio-of-means)
+  expect_equal(result$estimates$n, 30)
+})
+
+test_that("sample size validation uses post-truncation count", {
+  # Create design where post-truncation n = 15 (warning zone)
+  design <- make_truncation_test_design(n_above = 15, n_below = 10, threshold = 0.5)
+
+  # Should get sample size warning about n=15
+  expect_warning(
+    estimate_cpue(design, estimator = "mor"), # nolint: object_usage_linter
+    "15.*30"
+  )
+})
+
+test_that("error if post-truncation n < 10", {
+  # Create design where post-truncation n = 8
+  design <- make_truncation_test_design(n_above = 8, n_below = 12, threshold = 0.5)
+
+  expect_error(
+    suppressWarnings(estimate_cpue(design, estimator = "mor")), # nolint: object_usage_linter
+    "10"
+  )
+})
+
+test_that("warning if 10 <= post-truncation n < 30", {
+  # Create design where post-truncation n = 12
+  design <- make_truncation_test_design(n_above = 12, n_below = 8, threshold = 0.5)
+
+  expect_warning(
+    estimate_cpue(design, estimator = "mor"), # nolint: object_usage_linter
+    "12.*30"
+  )
+})
+
+test_that("MOR with truncation matches manual survey::svymean", {
+  # Create design with known data
+  design <- make_truncation_test_design(n_above = 25, n_below = 5, threshold = 0.5)
+
+  # tidycreel MOR with truncation
+  result <- suppressWarnings(estimate_cpue(design, estimator = "mor", truncate_at = 0.5)) # nolint: object_usage_linter
+
+  # Manual calculation: filter to incomplete AND >= 0.5h
+  truncated_interviews <- design$interviews[
+    design$interviews$trip_status == "incomplete" &
+      design$interviews$trip_duration >= 0.5,
+  ]
+
+  # Create survey design for truncated trips
+  truncated_svy <- survey::svydesign(
+    ids = ~1,
+    data = truncated_interviews
+  )
+
+  # Compute individual ratios
+  truncated_interviews$cpue_ratio <- truncated_interviews$catch_total / truncated_interviews$hours_fished
+
+  # Rebuild survey design with ratio column
+  truncated_svy <- survey::svydesign(
+    ids = ~1,
+    data = truncated_interviews
+  )
+
+  # Compute mean of ratios using svymean
+  manual_result <- survey::svymean(~cpue_ratio, truncated_svy)
+
+  # Compare estimates (tolerance 1e-10)
+  expect_equal(result$estimates$estimate, as.numeric(manual_result), tolerance = 1e-10)
+  expect_equal(result$estimates$se, as.numeric(survey::SE(manual_result)), tolerance = 1e-10)
+})
