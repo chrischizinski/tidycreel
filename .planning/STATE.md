@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-14)
 
 **Core value:** Creel biologists can analyze survey data using creel vocabulary without understanding survey package internals
-**Current focus:** Phase 14 - Overnight Trip Duration
+**Current focus:** Phase 15 - Mean-of-Ratios Estimator Core
 
 ## Current Position
 
-Phase: 14 of 20 (Overnight Trip Duration)
-Plan: 1 of 1 in current phase
-Status: Phase complete
-Last activity: 2026-02-15 — Completed 14-01 overnight trip duration and timezone validation
+Phase: 15 of 20 (Mean-of-Ratios Estimator Core)
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-02-15 — Completed 15-01 MOR estimator core implementation
 
-Progress: [█████████████░░░░░░░] 68% (25/36.7 plans estimated)
+Progress: [█████████████░░░░░░░] 71% (26/36.7 plans estimated)
 
 ## Performance Metrics
 
@@ -33,7 +33,7 @@ Progress: [█████████████░░░░░░░] 68% (25
 | v0.3.0 | 13-20 | 3/TBD | In progress | - |
 
 **Quality Metrics (v0.3.0 current):**
-- Test coverage: TBD (676 tests)
+- Test coverage: TBD (713 tests)
 - R CMD check: 0 errors, 0 warnings
 - lintr: 0 issues
 
@@ -49,6 +49,12 @@ Progress: [█████████████░░░░░░░] 68% (25
 | Plan | Tasks | Duration | Tests Added | Files Modified | Completed |
 |------|-------|----------|-------------|----------------|-----------|
 | 14-01 | 2 | 5 min | 7 | 2 | 2026-02-15 |
+
+**Phase 15 Metrics:**
+
+| Plan | Tasks | Duration | Tests Added | Files Modified | Completed |
+|------|-------|----------|-------------|----------------|-----------|
+| 15-01 | 2 | 11 min | 11 | 5 | 2026-02-15 |
 
 ## Accumulated Context
 
@@ -69,6 +75,8 @@ Progress: [█████████████░░░░░░░] 68% (25
 
 ### Recent Decisions
 
+- **Phase 15-01**: MOR uses survey::svymean() on individual catch/effort ratios (not svyratio) — Statistically appropriate for incomplete trip estimation
+- **Phase 15-01**: MOR automatically filters to incomplete trips only — Ensures sample size validation and variance estimation use only incomplete trips
 - **Phase 14-01**: Timezone validation only errors on explicit timezone mismatch — POSIXct handles system default mixed with explicit timezone correctly
 - **Phase 14-01**: No code changes needed for overnight duration calculation — POSIXct difftime already handles overnight trips correctly
 - **Phase 13-01**: trip_status is required parameter (breaking change) — Essential for downstream incomplete trip estimators
@@ -91,7 +99,7 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-02-15
-Stopped at: Completed 14-01-PLAN.md (overnight trip duration and timezone validation)
+Stopped at: Completed 15-01-PLAN.md (MOR estimator core implementation)
 Resume file: None
 
-**Next step:** Phase 14 complete - move to Phase 15 or next milestone planning
+**Next step:** Continue Phase 15 with plan 15-02 or pause for review
