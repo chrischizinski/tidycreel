@@ -61,7 +61,7 @@ make_cpue_design <- function() {
 }
 
 #' Create small design with n interviews
-make_small_cpue_design <- function(n) {
+make_small_cpue_design <- function(n, n_incomplete = 0) {
   # Single stratum to simplify
   cal <- data.frame(
     date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
@@ -71,12 +71,19 @@ make_small_cpue_design <- function(n) {
   design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
 
   # Generate exactly n interviews
+  # If n_incomplete specified, create mix of complete and incomplete
+  trip_status <- if (n_incomplete > 0 && n_incomplete <= n) {
+    c(rep("incomplete", n_incomplete), rep("complete", n - n_incomplete))
+  } else {
+    rep("complete", n)
+  }
+
   interviews <- data.frame(
     date = as.Date(rep("2024-06-01", n)),
     catch_total = rep(c(2, 3, 4, 5), length.out = n),
     hours_fished = rep(c(2.0, 3.0, 4.0, 2.5), length.out = n),
     catch_kept = rep(c(2, 2, 3, 4), length.out = n),
-    trip_status = rep("complete", n),
+    trip_status = trip_status,
     trip_duration = rep(c(2.0, 3.0, 4.0, 2.5), length.out = n),
     stringsAsFactors = FALSE
   )
@@ -630,4 +637,253 @@ test_that("estimate_cpue grouped by day_type with variance = 'bootstrap' works",
   expect_equal(result$by_vars, "day_type")
   expect_equal(nrow(result$estimates), 2)
   expect_true(all(result$estimates$se > 0))
+})
+
+# Mean-of-Ratios (MOR) Estimator Tests ----
+
+# Helper: create design with specific complete/incomplete trip mix
+make_mor_design <- function(n_complete = 15, n_incomplete = 25) {
+  cal <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
+    day_type = rep("weekday", 4),
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+
+  n_total <- n_complete + n_incomplete
+
+  # Create trip_status vector
+  trip_status <- c(
+    rep("complete", n_complete),
+    rep("incomplete", n_incomplete)
+  )
+
+  # Generate interview data
+  interviews <- data.frame(
+    date = as.Date(rep("2024-06-01", n_total)),
+    catch_total = rep(c(2, 3, 4, 5, 6), length.out = n_total),
+    hours_fished = rep(c(2.0, 3.0, 4.0, 2.5, 3.5), length.out = n_total),
+    catch_kept = rep(c(2, 2, 3, 4, 5), length.out = n_total),
+    trip_status = trip_status,
+    trip_duration = rep(c(2.0, 3.0, 4.0, 2.5, 3.5), length.out = n_total),
+    stringsAsFactors = FALSE
+  )
+
+  add_interviews(design, interviews, catch = catch_total, effort = hours_fished, harvest = catch_kept, trip_status = trip_status, trip_duration = trip_duration) # nolint: object_usage_linter
+}
+
+# Helper: create grouped design with incomplete trips in both groups
+make_mor_grouped_design <- function() {
+  cal <- data.frame(
+    date = as.Date(c(
+      "2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04",
+      "2024-06-08", "2024-06-09", "2024-06-15", "2024-06-16"
+    )),
+    day_type = rep(c("weekday", "weekend"), each = 4),
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+
+  # 32 interviews: 16 weekday (8 complete, 8 incomplete), 16 weekend (8 complete, 8 incomplete)
+  interviews <- data.frame(
+    date = as.Date(c(
+      rep("2024-06-01", 8), rep("2024-06-02", 8),
+      rep("2024-06-08", 8), rep("2024-06-09", 8)
+    )),
+    day_type = rep(c("weekday", "weekday", "weekend", "weekend"), each = 8),
+    catch_total = rep(c(2, 3, 4, 5, 6, 7, 8, 9), 4),
+    hours_fished = rep(c(2.0, 3.0, 4.0, 2.5, 3.5, 4.5, 5.0, 3.0), 4),
+    catch_kept = rep(c(2, 2, 3, 4, 5, 6, 7, 8), 4),
+    trip_status = rep(c("complete", "incomplete"), 16), # Alternating pattern
+    trip_duration = rep(c(2.0, 3.0, 4.0, 2.5, 3.5, 4.5, 5.0, 3.0), 4),
+    stringsAsFactors = FALSE
+  )
+
+  add_interviews(design, interviews, catch = catch_total, effort = hours_fished, harvest = catch_kept, trip_status = trip_status, trip_duration = trip_duration) # nolint: object_usage_linter
+}
+
+# Basic MOR functionality tests ----
+
+test_that("estimator='mor' uses incomplete trips only", {
+  design <- make_mor_design(n_complete = 15, n_incomplete = 25)
+
+  result <- estimate_cpue(design, estimator = "mor") # nolint: object_usage_linter
+
+  # Should use only the 25 incomplete trips
+  expect_equal(result$estimates$n, 25)
+  expect_equal(result$method, "mean-of-ratios-cpue")
+})
+
+test_that("estimator='mor' produces valid estimates with SE and CI", {
+  design <- make_mor_design(n_complete = 15, n_incomplete = 30)
+
+  result <- estimate_cpue(design, estimator = "mor") # nolint: object_usage_linter
+
+  expect_true(is.numeric(result$estimates$estimate))
+  expect_true(result$estimates$estimate > 0)
+  expect_true(is.numeric(result$estimates$se))
+  expect_true(result$estimates$se > 0)
+  expect_true(result$estimates$ci_lower < result$estimates$estimate)
+  expect_true(result$estimates$estimate < result$estimates$ci_upper)
+})
+
+test_that("estimator='mor' supports all variance methods", {
+  design <- make_mor_design(n_complete = 10, n_incomplete = 30)
+
+  # Test taylor
+  result_taylor <- estimate_cpue(design, estimator = "mor", variance = "taylor") # nolint: object_usage_linter
+  expect_equal(result_taylor$variance_method, "taylor")
+  expect_true(is.numeric(result_taylor$estimates$estimate))
+
+  # Test bootstrap
+  set.seed(12345)
+  result_bootstrap <- estimate_cpue(design, estimator = "mor", variance = "bootstrap") # nolint: object_usage_linter
+  expect_equal(result_bootstrap$variance_method, "bootstrap")
+  expect_true(is.numeric(result_bootstrap$estimates$estimate))
+
+  # Test jackknife
+  result_jackknife <- estimate_cpue(design, estimator = "mor", variance = "jackknife") # nolint: object_usage_linter
+  expect_equal(result_jackknife$variance_method, "jackknife")
+  expect_true(is.numeric(result_jackknife$estimates$estimate))
+})
+
+test_that("estimator='mor' supports grouped estimation", {
+  design <- make_mor_grouped_design()
+
+  result <- estimate_cpue(design, by = day_type, estimator = "mor") # nolint: object_usage_linter
+
+  # Should have one row per day_type
+  expect_equal(nrow(result$estimates), 2)
+  expect_true("weekday" %in% result$estimates$day_type)
+  expect_true("weekend" %in% result$estimates$day_type)
+
+  # Each group should use only incomplete trips (8 incomplete per group)
+  expect_true(all(result$estimates$n == 8))
+  expect_equal(result$method, "mean-of-ratios-cpue")
+})
+
+# Validation tests ----
+
+test_that("error when estimator='mor' and trip_status missing", {
+  # Create design without trip_status field
+  # Since trip_status is now required in add_interviews, we need to manually
+  # create a design object without trip_status_col set (simulating old data)
+  cal <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-02")),
+    day_type = c("weekday", "weekday"),
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+
+  # Create interviews with trip_status column
+  interviews <- data.frame(
+    date = as.Date(rep("2024-06-01", 30)),
+    catch_total = rep(c(2, 3, 4, 5), length.out = 30),
+    hours_fished = rep(c(2.0, 3.0, 4.0, 2.5), length.out = 30),
+    trip_status = rep("complete", 30),
+    trip_duration = rep(c(2.0, 3.0, 4.0, 2.5), length.out = 30),
+    stringsAsFactors = FALSE
+  )
+
+  design <- add_interviews(design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration) # nolint: object_usage_linter
+
+  # Manually remove trip_status_col to simulate missing field
+  design$trip_status_col <- NULL
+
+  # Should error about missing trip_status
+  expect_error(
+    estimate_cpue(design, estimator = "mor"), # nolint: object_usage_linter
+    "trip_status"
+  )
+})
+
+test_that("error when estimator='mor' with no incomplete trips", {
+  # Design with ONLY complete trips
+  design <- make_mor_design(n_complete = 30, n_incomplete = 0)
+
+  expect_error(
+    estimate_cpue(design, estimator = "mor"), # nolint: object_usage_linter
+    "incomplete"
+  )
+})
+
+test_that("error when estimator='mor' with complete trips in data but 0 incomplete", {
+  # Mix design but all trips are complete
+  design <- make_mor_design(n_complete = 40, n_incomplete = 0)
+
+  expect_error(
+    estimate_cpue(design, estimator = "mor"), # nolint: object_usage_linter
+    "incomplete"
+  )
+})
+
+test_that("estimator='mor' sample size validation: error when n<10", {
+  # Design with only 8 incomplete trips
+  design <- make_mor_design(n_complete = 20, n_incomplete = 8)
+
+  expect_error(
+    estimate_cpue(design, estimator = "mor"), # nolint: object_usage_linter
+    "10"
+  )
+})
+
+test_that("estimator='mor' sample size validation: warning when 10<=n<30", {
+  # Design with exactly 15 incomplete trips
+  design <- make_mor_design(n_complete = 10, n_incomplete = 15)
+
+  expect_warning(
+    estimate_cpue(design, estimator = "mor"), # nolint: object_usage_linter
+    "30"
+  )
+})
+
+test_that("estimator='mor' sample size validation: no warning when n>=30", {
+  # Design with 35 incomplete trips
+  design <- make_mor_design(n_complete = 10, n_incomplete = 35)
+
+  # Capture warnings
+  warnings <- character()
+  result <- withCallingHandlers(
+    estimate_cpue(design, estimator = "mor"), # nolint: object_usage_linter
+    warning = function(w) {
+      warnings <<- c(warnings, conditionMessage(w))
+    }
+  )
+
+  # Filter for sample size warnings only
+  sample_warnings <- grepl("sample|10|30", warnings, ignore.case = TRUE)
+
+  expect_false(any(sample_warnings))
+})
+
+# Reference test ----
+
+test_that("estimator='mor' matches manual survey::svymean calculation", {
+  # Create design with known incomplete trip data
+  design <- make_mor_design(n_complete = 15, n_incomplete = 30)
+
+  # tidycreel MOR estimate
+  result <- estimate_cpue(design, estimator = "mor") # nolint: object_usage_linter
+
+  # Manual calculation: filter to incomplete, create survey design, call svymean
+  incomplete_interviews <- design$interviews[design$interviews$trip_status == "incomplete", ]
+
+  # Create survey design for incomplete trips only
+  incomplete_svy <- survey::svydesign(
+    ids = ~1,
+    data = incomplete_interviews
+  )
+
+  # Calculate mean of individual catch/effort ratios
+  incomplete_interviews$cpue_ratio <- incomplete_interviews$catch_total / incomplete_interviews$hours_fished
+  incomplete_svy <- survey::svydesign(
+    ids = ~1,
+    data = incomplete_interviews
+  )
+
+  manual_result <- survey::svymean(~cpue_ratio, incomplete_svy)
+  manual_estimate <- as.numeric(coef(manual_result))
+
+  # Verify estimates match
+  expect_equal(result$estimates$estimate, manual_estimate, tolerance = 1e-10)
 })
