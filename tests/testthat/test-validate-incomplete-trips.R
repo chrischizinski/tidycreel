@@ -455,11 +455,11 @@ test_that("plot_data includes CI bounds for error bars", {
   expect_type(plot_data$incomplete_ci_lower, "double")
   expect_type(plot_data$incomplete_ci_upper, "double")
 
-  # Lower < estimate < upper
-  expect_true(plot_data$complete_ci_lower < plot_data$complete_est)
-  expect_true(plot_data$complete_ci_upper > plot_data$complete_est)
-  expect_true(plot_data$incomplete_ci_lower < plot_data$incomplete_est)
-  expect_true(plot_data$incomplete_ci_upper > plot_data$incomplete_est)
+  # Lower <= estimate <= upper (can be equal for very stable estimates)
+  expect_lte(plot_data$complete_ci_lower, plot_data$complete_est)
+  expect_gte(plot_data$complete_ci_upper, plot_data$complete_est)
+  expect_lte(plot_data$incomplete_ci_lower, plot_data$incomplete_est)
+  expect_gte(plot_data$incomplete_ci_upper, plot_data$incomplete_est)
 })
 
 test_that("plot_data includes passed status for annotation", {

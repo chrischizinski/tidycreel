@@ -264,6 +264,28 @@ validate_incomplete_trips <- function(design,
     # Overall passed = overall test passes AND all group tests pass
     passed <- overall_result$equivalence_passed && all(group_results$equivalence_passed)
 
+    # Build plot_data for grouped estimation
+    complete_df <- complete_result$estimates
+    incomplete_df <- incomplete_result$estimates
+
+    # Create group labels
+    group_labels <- character(nrow(complete_df))
+    for (i in seq_len(nrow(complete_df))) {
+      group_vals <- complete_df[i, by_vars, drop = FALSE]
+      group_labels[i] <- paste(by_vars, "=", group_vals[1, ], collapse = ", ")
+    }
+
+    plot_data <- list(
+      complete_est = complete_df$estimate,
+      incomplete_est = incomplete_df$estimate,
+      complete_ci_lower = complete_df$ci_lower,
+      complete_ci_upper = complete_df$ci_upper,
+      incomplete_ci_lower = incomplete_df$ci_lower,
+      incomplete_ci_upper = incomplete_df$ci_upper,
+      passed = group_results$equivalence_passed,
+      group_labels = group_labels
+    )
+
     # Build metadata
     metadata <- list(
       overall = list(
@@ -306,7 +328,8 @@ validate_incomplete_trips <- function(design,
       equivalence_threshold = threshold,
       passed = passed,
       recommendation = recommendation,
-      metadata = metadata
+      metadata = metadata,
+      plot_data = plot_data
     )
   } else {
     # Ungrouped validation: single TOST
@@ -348,6 +371,18 @@ validate_incomplete_trips <- function(design,
       )
     )
 
+    # Build plot_data for ungrouped estimation
+    plot_data <- list(
+      complete_est = complete_estimate,
+      incomplete_est = incomplete_estimate,
+      complete_ci_lower = complete_ci_lower,
+      complete_ci_upper = complete_ci_upper,
+      incomplete_ci_lower = incomplete_ci_lower,
+      incomplete_ci_upper = incomplete_ci_upper,
+      passed = tost_result$equivalence_passed,
+      group_labels = NULL
+    )
+
     # Recommendation
     if (tost_result$equivalence_passed) {
       recommendation <- "Validation passed: Safe to use incomplete trips for CPUE estimation in this dataset"
@@ -360,7 +395,8 @@ validate_incomplete_trips <- function(design,
       equivalence_threshold = threshold,
       passed = tost_result$equivalence_passed,
       recommendation = recommendation,
-      metadata = metadata
+      metadata = metadata,
+      plot_data = plot_data
     )
   }
 
