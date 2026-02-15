@@ -575,9 +575,6 @@ estimate_cpue <- function(design,
         ))
       }
 
-      # Filter to complete trips BEFORE creating survey design
-      complete_interviews <- design$interviews[design$interviews[[trip_status_col]] == "complete", ]
-
       # Check sample size for complete trips
       if (n_complete < 10) {
         cli::cli_abort(c(
@@ -589,28 +586,9 @@ estimate_cpue <- function(design,
         ))
       }
 
-      # Create new design with complete trips only
-      design_filtered <- design
-      design_filtered$interviews <- complete_interviews
-
-      # Rebuild survey design with filtered data
-      strata_cols <- design$strata_cols
-      if (!is.null(strata_cols) && length(strata_cols) > 0) {
-        strata_formula <- stats::reformulate(strata_cols)
-        design_filtered$interview_survey <- survey::svydesign(
-          ids = ~1,
-          strata = strata_formula,
-          data = complete_interviews
-        )
-      } else {
-        design_filtered$interview_survey <- survey::svydesign(
-          ids = ~1,
-          data = complete_interviews
-        )
-      }
-
-      # Replace design for estimation
-      design <- design_filtered
+      # Filter to complete trips and rebuild survey design
+      complete_interviews <- design$interviews[design$interviews[[trip_status_col]] == "complete", ]
+      design <- rebuild_interview_survey(design, complete_interviews) # nolint: object_usage_linter
     } else if (use_trips == "incomplete") {
       # Check incomplete trips available
       if (n_incomplete == 0) {
@@ -622,32 +600,10 @@ estimate_cpue <- function(design,
         ))
       }
 
-      # Filter to incomplete trips NOW (before MOR block)
+      # Filter to incomplete trips and rebuild survey design
       # This lets MOR's validate_mor_availability see incomplete-only data
       incomplete_interviews <- design$interviews[design$interviews[[trip_status_col]] == "incomplete", ]
-
-      # Create new design with incomplete trips only
-      design_incomplete <- design
-      design_incomplete$interviews <- incomplete_interviews
-
-      # Rebuild survey design with filtered data
-      strata_cols <- design$strata_cols
-      if (!is.null(strata_cols) && length(strata_cols) > 0) {
-        strata_formula <- stats::reformulate(strata_cols)
-        design_incomplete$interview_survey <- survey::svydesign(
-          ids = ~1,
-          strata = strata_formula,
-          data = incomplete_interviews
-        )
-      } else {
-        design_incomplete$interview_survey <- survey::svydesign(
-          ids = ~1,
-          data = incomplete_interviews
-        )
-      }
-
-      # Replace design for estimation
-      design <- design_incomplete
+      design <- rebuild_interview_survey(design, incomplete_interviews) # nolint: object_usage_linter
     }
   }
 
@@ -954,6 +910,43 @@ estimate_harvest <- function(design, by = NULL, variance = "taylor", conf_level 
     validate_ratio_sample_size(design, by_vars, type = "harvest") # nolint: object_usage_linter
     return(estimate_harvest_grouped(design, by_vars, variance, conf_level)) # nolint: object_usage_linter
   }
+}
+
+# Helper functions ----
+
+#' Rebuild interview survey design with filtered data
+#'
+#' Internal helper to rebuild survey design after filtering interviews
+#' by trip type. Handles both stratified and unstratified designs.
+#'
+#' @param design Original creel_design object
+#' @param filtered_interviews Data frame with filtered interview data
+#'
+#' @return Modified creel_design with updated interview_survey
+#'
+#' @keywords internal
+#' @noRd
+rebuild_interview_survey <- function(design, filtered_interviews) {
+  design_new <- design
+  design_new$interviews <- filtered_interviews
+
+  # Rebuild survey design with filtered data
+  strata_cols <- design$strata_cols
+  if (!is.null(strata_cols) && length(strata_cols) > 0) {
+    strata_formula <- stats::reformulate(strata_cols)
+    design_new$interview_survey <- survey::svydesign(
+      ids = ~1,
+      strata = strata_formula,
+      data = filtered_interviews
+    )
+  } else {
+    design_new$interview_survey <- survey::svydesign(
+      ids = ~1,
+      data = filtered_interviews
+    )
+  }
+
+  design_new
 }
 
 # Internal estimation functions ----
