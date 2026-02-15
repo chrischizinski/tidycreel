@@ -137,10 +137,10 @@ Plans:
   2. Package handles time zones correctly in duration calculation
   3. Package validates that interview_time occurs after trip_start
   4. Overnight trip durations appear correct in diagnostic output
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 14-01: TBD
+- [ ] 14-01-PLAN.md — Overnight trip duration tests and timezone validation (TDD)
 
 ### Phase 15: Mean-of-Ratios Estimator Core
 **Goal**: Users can estimate CPUE from incomplete trips using mean-of-ratios estimator
@@ -241,7 +241,7 @@ Plans:
 | 1-7 | v0.1.0 | 12/12 | ✅ Complete | 2026-02-09 |
 | 8-12 | v0.2.0 | 10/10 | ✅ Complete | 2026-02-11 |
 | 13. Trip Status Infrastructure | v0.3.0 | 2/2 | ✅ Complete | 2026-02-14 |
-| 14. Overnight Trip Duration | v0.3.0 | 0/TBD | Not started | - |
+| 14. Overnight Trip Duration | v0.3.0 | 0/1 | Not started | - |
 | 15. Mean-of-Ratios Estimator Core | v0.3.0 | 0/TBD | Not started | - |
 | 16. Trip Truncation | v0.3.0 | 0/TBD | Not started | - |
 | 17. Complete Trip Defaults | v0.3.0 | 0/TBD | Not started | - |
