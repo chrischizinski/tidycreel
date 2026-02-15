@@ -727,6 +727,183 @@ test_that("warning when trip_duration > 48 hours", {
   )
 })
 
+# Overnight trip duration tests ----
+
+test_that("overnight trip (start evening, interview next morning) calculates correct duration", {
+  design <- make_interview_test_design()
+  interviews <- make_test_interviews()
+
+  # Modify first interview to be overnight trip
+  interviews$trip_start <- as.POSIXct("2025-07-01 22:00:00")
+  interviews$trip_start[2:nrow(interviews)] <- as.POSIXct("2025-07-01 08:00:00")
+  interviews$interview_time <- as.POSIXct("2025-07-02 06:00:00")
+  interviews$interview_time[2:nrow(interviews)] <- as.POSIXct("2025-07-01 10:00:00")
+  interviews$trip_duration <- NULL # Force calculation from timestamps
+
+  result <- add_interviews(design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_start = trip_start, interview_time = interview_time
+  )
+
+  duration_col <- result$trip_duration_col
+  expect_equal(result$interviews[[duration_col]][1], 8.0)
+})
+
+test_that("multi-day trip calculates correct duration", {
+  design <- make_interview_test_design()
+  interviews <- make_test_interviews()
+
+  # Modify first interview to be multi-day trip (should trigger >48hr warning)
+  interviews$trip_start <- as.POSIXct("2025-07-01 08:00:00")
+  interviews$trip_start[2:nrow(interviews)] <- as.POSIXct("2025-07-01 08:00:00")
+  interviews$interview_time <- as.POSIXct("2025-07-03 14:00:00")
+  interviews$interview_time[2:nrow(interviews)] <- as.POSIXct("2025-07-01 10:00:00")
+  interviews$trip_duration <- NULL
+
+  expect_warning(
+    result <- add_interviews(design, interviews,
+      catch = catch_total, effort = hours_fished,
+      trip_status = trip_status, trip_start = trip_start, interview_time = interview_time
+    ),
+    "48 hours"
+  )
+
+  duration_col <- result$trip_duration_col
+  expect_equal(result$interviews[[duration_col]][1], 54.0)
+})
+
+test_that("overnight trip near midnight calculates correct duration", {
+  design <- make_interview_test_design()
+  interviews <- make_test_interviews()
+
+  # Trip crosses midnight with only 1 hour duration
+  interviews$trip_start <- as.POSIXct("2025-07-01 23:30:00")
+  interviews$trip_start[2:nrow(interviews)] <- as.POSIXct("2025-07-01 08:00:00")
+  interviews$interview_time <- as.POSIXct("2025-07-02 00:30:00")
+  interviews$interview_time[2:nrow(interviews)] <- as.POSIXct("2025-07-01 10:00:00")
+  interviews$trip_duration <- NULL
+
+  result <- add_interviews(design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_start = trip_start, interview_time = interview_time
+  )
+
+  duration_col <- result$trip_duration_col
+  expect_equal(result$interviews[[duration_col]][1], 1.0)
+})
+
+# Timezone validation tests ----
+
+test_that("error when trip_start and interview_time have different timezones", {
+  design <- make_interview_test_design()
+  interviews <- make_test_interviews()
+
+  interviews$trip_start <- as.POSIXct("2025-07-01 08:00:00", tz = "America/Denver")
+  interviews$interview_time <- as.POSIXct("2025-07-01 10:00:00", tz = "America/New_York")
+  interviews$trip_duration <- NULL
+
+  expect_error(
+    add_interviews(design, interviews,
+      catch = catch_total, effort = hours_fished,
+      trip_status = trip_status, trip_start = trip_start, interview_time = interview_time
+    ),
+    regex = "timezone",
+    ignore.case = TRUE
+  )
+})
+
+test_that("same explicit timezone produces correct duration", {
+  design <- make_interview_test_design()
+  interviews <- make_test_interviews()
+
+  interviews$trip_start <- as.POSIXct("2025-07-01 08:00:00", tz = "America/Denver")
+  interviews$interview_time <- as.POSIXct("2025-07-01 10:00:00", tz = "America/Denver")
+  interviews$trip_duration <- NULL
+
+  result <- add_interviews(design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_start = trip_start, interview_time = interview_time
+  )
+
+  duration_col <- result$trip_duration_col
+  expect_equal(result$interviews[[duration_col]][1], 2.0)
+})
+
+test_that("UTC timezone works correctly for overnight trips", {
+  design <- make_interview_test_design()
+  interviews <- make_test_interviews()
+
+  interviews$trip_start <- as.POSIXct("2025-07-01 23:00:00", tz = "UTC")
+  interviews$trip_start[2:nrow(interviews)] <- as.POSIXct("2025-07-01 08:00:00", tz = "UTC")
+  interviews$interview_time <- as.POSIXct("2025-07-02 03:00:00", tz = "UTC")
+  interviews$interview_time[2:nrow(interviews)] <- as.POSIXct("2025-07-01 10:00:00", tz = "UTC")
+  interviews$trip_duration <- NULL
+
+  result <- add_interviews(design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_start = trip_start, interview_time = interview_time
+  )
+
+  duration_col <- result$trip_duration_col
+  expect_equal(result$interviews[[duration_col]][1], 4.0)
+})
+
+test_that("summarize_trips shows correct statistics for overnight trip data", {
+  design <- make_interview_test_design()
+  interviews <- make_test_interviews()
+
+  # Create mix of same-day and overnight trips
+  interviews$trip_start <- c(
+    as.POSIXct("2025-07-01 22:00:00"), # Overnight: 8 hours
+    as.POSIXct("2025-07-02 08:00:00"), # Same-day: 2 hours
+    as.POSIXct("2025-07-03 08:00:00"), # Same-day: 3 hours
+    as.POSIXct("2025-07-04 21:00:00"), # Overnight: 10 hours
+    as.POSIXct("2025-07-05 08:00:00"), # Same-day: 2 hours
+    as.POSIXct("2025-07-06 08:00:00"), # Same-day: 2.5 hours
+    as.POSIXct("2025-07-07 08:00:00"), # Same-day: 3 hours
+    as.POSIXct("2025-07-08 08:00:00"), # Same-day: 1.5 hours
+    as.POSIXct("2025-07-09 08:00:00"), # Same-day: 2 hours
+    as.POSIXct("2025-07-10 08:00:00") # Same-day: 2.5 hours
+  )
+  interviews$interview_time <- c(
+    as.POSIXct("2025-07-02 06:00:00"), # 8 hours after 22:00
+    as.POSIXct("2025-07-02 10:00:00"), # 2 hours after 08:00
+    as.POSIXct("2025-07-03 11:00:00"), # 3 hours after 08:00
+    as.POSIXct("2025-07-05 07:00:00"), # 10 hours after 21:00
+    as.POSIXct("2025-07-05 10:00:00"), # 2 hours after 08:00
+    as.POSIXct("2025-07-06 10:30:00"), # 2.5 hours after 08:00
+    as.POSIXct("2025-07-07 11:00:00"), # 3 hours after 08:00
+    as.POSIXct("2025-07-08 09:30:00"), # 1.5 hours after 08:00
+    as.POSIXct("2025-07-09 10:00:00"), # 2 hours after 08:00
+    as.POSIXct("2025-07-10 10:30:00") # 2.5 hours after 08:00
+  )
+  interviews$trip_duration <- NULL
+
+  result <- add_interviews(design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_start = trip_start, interview_time = interview_time
+  )
+
+  # Call summarize_trips and check it runs without error
+  summary_output <- summarize_trips(result)
+
+  # Verify summary includes duration statistics
+  expect_true("duration_stats" %in% names(summary_output))
+  expect_true(nrow(summary_output$duration_stats) > 0)
+
+  # Check that max duration reflects overnight trip (10 hours is max)
+  # Should have both complete and incomplete trips in the stats
+  all_durations <- summary_output$duration_stats
+  max_duration <- max(all_durations$max, na.rm = TRUE)
+  expect_true(max_duration >= 10.0)
+
+  # Check that mean duration reflects mix of overnight and same-day
+  # Overall mean should be: (8 + 2 + 3 + 10 + 2 + 2.5 + 3 + 1.5 + 2 + 2.5) / 10 = 3.65
+  # The stats are broken down by status, so we need to compute weighted mean
+  weighted_mean <- sum(all_durations$mean * all_durations$n) / sum(all_durations$n)
+  expect_equal(weighted_mean, 3.65, tolerance = 0.01)
+})
+
 # Format display test ----
 
 test_that("format.creel_design() shows trip status summary when trip metadata present", {
