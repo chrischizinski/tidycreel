@@ -5,24 +5,24 @@
 See: .planning/PROJECT.md (updated 2026-02-14)
 
 **Core value:** Creel biologists can analyze survey data using creel vocabulary without understanding survey package internals
-**Current focus:** Phase 15 - Mean-of-Ratios Estimator Core
+**Current focus:** Phase 16 - Trip Truncation
 
 ## Current Position
 
-Phase: 15 of 20 (Mean-of-Ratios Estimator Core)
-Plan: 2 of 2 in current phase
+Phase: 16 of 20 (Trip Truncation)
+Plan: 1 of 2 in current phase
 Status: Complete
-Last activity: 2026-02-15 — Completed 15-02 MOR diagnostic messaging
+Last activity: 2026-02-15 — Completed 16-01 MOR trip truncation
 
-Progress: [█████████████░░░░░░░] 74% (27/36.7 plans estimated)
+Progress: [█████████████░░░░░░░] 75% (28/36.7 plans estimated)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 25
+- Total plans completed: 26
 - v0.1.0 (Phases 1-7): 12 plans
 - v0.2.0 (Phases 8-12): 10 plans
-- v0.3.0 (Phases 13-20): 3 plans (in progress)
+- v0.3.0 (Phases 13-20): 4 plans (in progress)
 
 **By Milestone:**
 
@@ -57,6 +57,12 @@ Progress: [█████████████░░░░░░░] 74% (27
 | 15-01 | 2 | 11 min | 11 | 5 | 2026-02-15 |
 | 15-02 | 2 | 6 min | 8 | 6 | 2026-02-15 |
 
+**Phase 16 Metrics:**
+
+| Plan | Tasks | Duration | Tests Added | Files Modified | Completed |
+|------|-------|----------|-------------|----------------|-----------|
+| 16-01 | 2 | 5 min | 9 | 2 | 2026-02-15 |
+
 ## Accumulated Context
 
 ### Research Summary (v0.3.0 Planning Session)
@@ -76,6 +82,9 @@ Progress: [█████████████░░░░░░░] 74% (27
 
 ### Recent Decisions
 
+- **Phase 16-01**: Default truncate_at = 0.5 hours (30 minutes) per Hoenig et al. (1997) — Prevents unstable variance from very short incomplete trips
+- **Phase 16-01**: Truncation applied AFTER incomplete filtering, BEFORE sample size validation — Ensures validation uses post-truncation counts
+- **Phase 16-01**: Survey design rebuilt with truncated data — Required for correct variance computation
 - **Phase 15-02**: MOR class added BEFORE creel_estimates in class vector — Ensures S3 dispatch priority for custom format/print methods
 - **Phase 15-02**: Warning issued on EVERY MOR call (not once-per-session) — Per CONTEXT.md locked decisions about diagnostic mode emphasis
 - **Phase 15-01**: MOR uses survey::svymean() on individual catch/effort ratios (not svyratio) — Statistically appropriate for incomplete trip estimation
@@ -102,7 +111,7 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-02-15
-Stopped at: Completed 15-02-PLAN.md (MOR diagnostic messaging and S3 class infrastructure)
+Stopped at: Completed 16-01-PLAN.md (MOR trip truncation with configurable threshold)
 Resume file: None
 
-**Next step:** Phase 15 complete - proceed to Phase 16 (trip truncation) or pause for review
+**Next step:** Continue Phase 16 with Plan 16-02 (truncation diagnostic messaging) or pause for review
