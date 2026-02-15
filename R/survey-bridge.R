@@ -1370,18 +1370,28 @@ mor_truncation_message <- function(n_truncated, n_incomplete_original, truncate_
 #' design best practices. Alerts users to insufficient complete trip samples
 #' for scientifically valid estimation.
 #'
+#' The threshold is controlled by the package option tidycreel.min_complete_pct
+#' (default 0.10 = 10%). Users can set a custom threshold for their session:
+#' options(tidycreel.min_complete_pct = 0.05)
+#'
 #' @param n_complete Number of complete trips (integer)
 #' @param n_total Total number of interviews (integer)
-#' @param threshold Minimum percentage threshold for complete trips (numeric, default 0.10)
+#' @param threshold Minimum percentage threshold for complete trips (numeric).
+#'   If NULL (default), uses getOption("tidycreel.min_complete_pct", 0.10)
 #'
 #' @return NULL (invisible) - function called for side effects (warnings)
 #'
 #' @keywords internal
 #' @noRd
-warn_low_complete_pct <- function(n_complete, n_total, threshold = 0.10) {
+warn_low_complete_pct <- function(n_complete, n_total, threshold = NULL) {
   # Handle edge case: n_total = 0
   if (n_total == 0) {
     return(invisible(NULL))
+  }
+
+  # Get threshold from package option if not provided
+  if (is.null(threshold)) {
+    threshold <- getOption("tidycreel.min_complete_pct", default = 0.10)
   }
 
   # Calculate percentage complete

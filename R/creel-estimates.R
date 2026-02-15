@@ -714,8 +714,35 @@ estimate_cpue <- function(design,
     n_incomplete <- sum(design$interviews[[trip_status_col]] == "incomplete", na.rm = TRUE)
     n_total <- n_complete + n_incomplete
 
-    # Warn if complete trip percentage is below threshold
-    warn_low_complete_pct(n_complete, n_total) # nolint: object_usage_linter
+    # Warn if complete trip percentage is below threshold (uses package option)
+    # Check if we're doing grouped estimation to provide per-group warnings
+    if (rlang::quo_is_null(by_quo)) {
+      # Ungrouped: overall warning
+      warn_low_complete_pct(n_complete, n_total) # nolint: object_usage_linter
+    } else {
+      # Grouped: per-group warnings (before filtering)
+      # Resolve by parameter to column names for grouping
+      by_cols <- tidyselect::eval_select(
+        by_quo,
+        data = design$interviews,
+        allow_rename = FALSE,
+        allow_empty = FALSE,
+        error_call = rlang::caller_env()
+      )
+      by_vars <- names(by_cols)
+
+      # Split data by groups and check each group
+      group_list <- split(design$interviews, design$interviews[by_vars], drop = TRUE)
+
+      for (group_name in names(group_list)) {
+        group_data <- group_list[[group_name]]
+        n_complete_group <- sum(group_data[[trip_status_col]] == "complete", na.rm = TRUE)
+        n_total_group <- sum(!is.na(group_data[[trip_status_col]]))
+
+        # Warn if this group has low complete trip percentage
+        warn_low_complete_pct(n_complete_group, n_total_group) # nolint: object_usage_linter
+      }
+    }
 
     if (use_trips == "complete") {
       # Check complete trips available

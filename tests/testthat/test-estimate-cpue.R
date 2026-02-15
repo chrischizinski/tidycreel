@@ -1737,3 +1737,251 @@ test_that("n_total=0 edge case produces no warning", {
     warn_low_complete_pct(0, 0)
   )
 })
+
+# Package option integration tests ----
+
+test_that("ungrouped estimation uses package option for threshold", {
+  # Create design with 10 complete out of 150 total (6.7%)
+  design <- make_small_cpue_design(n = 150, n_incomplete = 140)
+
+  # Set custom threshold to 5% (should not warn since 6.7% > 5%)
+  withr::local_options(tidycreel.min_complete_pct = 0.05)
+
+  # Capture warnings
+  warnings <- character()
+  result <- withCallingHandlers(
+    estimate_cpue(design),
+    warning = function(w) {
+      warnings <<- c(warnings, conditionMessage(w))
+    }
+  )
+
+  # Filter for complete trip percentage warnings only
+  pct_warnings <- grepl("Only.*% of interviews are complete trips", warnings, ignore.case = TRUE)
+
+  expect_false(any(pct_warnings))
+})
+
+test_that("ungrouped estimation respects package option threshold", {
+  # Create design with 10 complete out of 150 total (6.7%)
+  design <- make_small_cpue_design(n = 150, n_incomplete = 140)
+
+  # Set threshold to 8% (should warn since 6.7% < 8%)
+  withr::local_options(tidycreel.min_complete_pct = 0.08)
+
+  expect_warning(
+    estimate_cpue(design),
+    "Only.*% of interviews are complete trips"
+  )
+})
+
+# Note: trip_status is now required (Phase 13), so test for missing trip_status is not applicable
+
+# Grouped estimation warning tests ----
+
+test_that("grouped estimation warns per-group when below threshold", {
+  # Create grouped design with different complete trip percentages per group
+  cal <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-02")),
+    day_type = rep("weekday", 2),
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+
+  # Group A: 10 complete out of 150 (6.7%) - should warn (but has n>=10 for validation)
+  # Group B: 20 complete out of 150 (13.3%) - should not warn
+  interviews <- data.frame(
+    date = as.Date(rep("2024-06-01", 300)),
+    catch_total = rep(c(2, 3, 4, 5), 75),
+    hours_fished = rep(c(2.0, 3.0, 4.0, 2.5), 75),
+    trip_status = c(
+      # Group A: 10 complete, 140 incomplete
+      rep("incomplete", 140), rep("complete", 10),
+      # Group B: 20 complete, 130 incomplete
+      rep("incomplete", 130), rep("complete", 20)
+    ),
+    trip_duration = rep(c(2.0, 3.0, 4.0, 2.5), 75),
+    species = rep(c("A", "B"), each = 150),
+    stringsAsFactors = FALSE
+  )
+
+  design <- add_interviews(design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration) # nolint: object_usage_linter
+
+  # Should warn (at least once for group A)
+  expect_warning(
+    estimate_cpue(design, by = species),
+    "Only.*% of interviews are complete trips"
+  )
+})
+
+test_that("grouped estimation warning fires for specific low group only", {
+  # Create design where only one group has low percentage
+  cal <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-02")),
+    day_type = rep("weekday", 2),
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+
+  # Group A: 10 complete out of 100 (10%) - should not warn (at threshold)
+  # Group B: 50 complete out of 100 (50%) - should not warn
+  interviews <- data.frame(
+    date = as.Date(rep("2024-06-01", 200)),
+    catch_total = rep(c(2, 3, 4, 5), 50),
+    hours_fished = rep(c(2.0, 3.0, 4.0, 2.5), 50),
+    trip_status = c(
+      # Group A: 10 complete, 90 incomplete (10% - at threshold)
+      rep("incomplete", 90), rep("complete", 10),
+      # Group B: 50 complete, 50 incomplete (50%)
+      rep("incomplete", 50), rep("complete", 50)
+    ),
+    trip_duration = rep(c(2.0, 3.0, 4.0, 2.5), 50),
+    species = rep(c("A", "B"), each = 100),
+    stringsAsFactors = FALSE
+  )
+
+  design <- add_interviews(design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration) # nolint: object_usage_linter
+
+  # Capture warnings
+  warnings <- character()
+  result <- withCallingHandlers(
+    estimate_cpue(design, by = species),
+    warning = function(w) {
+      warnings <<- c(warnings, conditionMessage(w))
+    }
+  )
+
+  # Filter for complete trip percentage warnings
+  pct_warnings <- grepl("Only.*% of interviews are complete trips", warnings, ignore.case = TRUE)
+
+  # Should have no warnings (both groups at or above 10%)
+  expect_false(any(pct_warnings))
+})
+
+test_that("grouped estimation no warnings when all groups >= threshold", {
+  # Create design where all groups have adequate complete trips
+  cal <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-02")),
+    day_type = rep("weekday", 2),
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+
+  # Both groups: 20 complete out of 100 (20%) - should not warn
+  interviews <- data.frame(
+    date = as.Date(rep("2024-06-01", 200)),
+    catch_total = rep(c(2, 3, 4, 5), 50),
+    hours_fished = rep(c(2.0, 3.0, 4.0, 2.5), 50),
+    trip_status = c(
+      # Group A: 20 complete, 80 incomplete
+      rep("incomplete", 80), rep("complete", 20),
+      # Group B: 20 complete, 80 incomplete
+      rep("incomplete", 80), rep("complete", 20)
+    ),
+    trip_duration = rep(c(2.0, 3.0, 4.0, 2.5), 50),
+    species = rep(c("A", "B"), each = 100),
+    stringsAsFactors = FALSE
+  )
+
+  design <- add_interviews(design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration) # nolint: object_usage_linter
+
+  # Capture warnings
+  warnings <- character()
+  result <- withCallingHandlers(
+    estimate_cpue(design, by = species),
+    warning = function(w) {
+      warnings <<- c(warnings, conditionMessage(w))
+    }
+  )
+
+  # Filter for complete trip percentage warnings
+  pct_warnings <- grepl("Only.*% of interviews are complete trips", warnings, ignore.case = TRUE)
+
+  expect_false(any(pct_warnings))
+})
+
+test_that("grouped estimation respects package option threshold", {
+  # Create grouped design with 10 complete trips per group (but low percentage)
+  cal <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-02")),
+    day_type = rep("weekday", 2),
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+
+  # Both groups: 10 complete out of 150 (6.7%)
+  interviews <- data.frame(
+    date = as.Date(rep("2024-06-01", 300)),
+    catch_total = rep(c(2, 3, 4, 5), 75),
+    hours_fished = rep(c(2.0, 3.0, 4.0, 2.5), 75),
+    trip_status = c(
+      # Group A: 10 complete, 140 incomplete (6.7%)
+      rep("incomplete", 140), rep("complete", 10),
+      # Group B: 10 complete, 140 incomplete (6.7%)
+      rep("incomplete", 140), rep("complete", 10)
+    ),
+    trip_duration = rep(c(2.0, 3.0, 4.0, 2.5), 75),
+    species = rep(c("A", "B"), each = 150),
+    stringsAsFactors = FALSE
+  )
+
+  design <- add_interviews(design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration) # nolint: object_usage_linter
+
+  # Set threshold to 5% (6.7% > 5%, should not warn)
+  withr::local_options(tidycreel.min_complete_pct = 0.05)
+
+  # Capture warnings
+  warnings <- character()
+  result <- withCallingHandlers(
+    estimate_cpue(design, by = species),
+    warning = function(w) {
+      warnings <<- c(warnings, conditionMessage(w))
+    }
+  )
+
+  # Filter for complete trip percentage warnings
+  pct_warnings <- grepl("Only.*% of interviews are complete trips", warnings, ignore.case = TRUE)
+
+  expect_false(any(pct_warnings))
+})
+
+# Warning behavior tests ----
+
+test_that("warning fires every time condition is met", {
+  # Create design with low complete trip percentage
+  design <- make_small_cpue_design(n = 120, n_incomplete = 110)
+
+  # First call - should warn
+  expect_warning(
+    estimate_cpue(design),
+    "Only.*% of interviews are complete trips"
+  )
+
+  # Second call - should also warn (not suppressed)
+  expect_warning(
+    estimate_cpue(design),
+    "Only.*% of interviews are complete trips"
+  )
+})
+
+test_that("complete trip warning works alongside MOR warning", {
+  # Create design with low complete trips AND using MOR
+  design <- make_small_cpue_design(n = 120, n_incomplete = 110)
+
+  # Capture all warnings (use estimator='mor' with use_trips='incomplete')
+  warnings <- character()
+  result <- withCallingHandlers(
+    estimate_cpue(design, use_trips = "incomplete", estimator = "mor"),
+    warning = function(w) {
+      warnings <<- c(warnings, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    }
+  )
+
+  # Should have both complete trip percentage warning and MOR diagnostic warning
+  pct_warnings <- grepl("Only.*% of interviews are complete trips", warnings, ignore.case = TRUE)
+  mor_warnings <- grepl("Mean-of-ratios.*diagnostic|incomplete trip", warnings, ignore.case = TRUE)
+
+  expect_true(any(pct_warnings))
+  expect_true(any(mor_warnings))
+})
