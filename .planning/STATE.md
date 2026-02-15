@@ -9,20 +9,20 @@ See: .planning/PROJECT.md (updated 2026-02-14)
 
 ## Current Position
 
-Phase: 18 of 20 (Sample Size Warnings)
-Plan: 2 of 2 in current phase
-Status: Complete
-Last activity: 2026-02-15 — Completed 18-02 complete trip warning integration
+Phase: 19 of 20 (Diagnostic Validation Framework)
+Plan: 1 of 2 in current phase
+Status: In Progress
+Last activity: 2026-02-15 — Completed 19-01 TOST equivalence testing implementation
 
-Progress: [███████████████░░░░░] 87% (33/36.7 plans estimated)
+Progress: [████████████████░░░░] 90% (34/36.7 plans estimated)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 29
+- Total plans completed: 30
 - v0.1.0 (Phases 1-7): 12 plans
 - v0.2.0 (Phases 8-12): 10 plans
-- v0.3.0 (Phases 13-20): 7 plans (in progress)
+- v0.3.0 (Phases 13-20): 8 plans (in progress)
 
 **By Milestone:**
 
@@ -30,7 +30,7 @@ Progress: [███████████████░░░░░] 87% (33
 |-----------|--------|-------|--------|-----------|
 | v0.1.0 | 1-7 | 12/12 | Complete | 2026-02-09 |
 | v0.2.0 | 8-12 | 10/10 | Complete | 2026-02-11 |
-| v0.3.0 | 13-20 | 6/TBD | In progress | - |
+| v0.3.0 | 13-20 | 8/TBD | In progress | - |
 
 **Quality Metrics (v0.3.0 current):**
 - Test coverage: TBD (718 tests)
@@ -78,6 +78,12 @@ Progress: [███████████████░░░░░] 87% (33
 | 18-01 | 1 | 4 min | 8 | 3 | 2026-02-15 |
 | 18-02 | 2 | 10 min | 11 | 5 | 2026-02-15 |
 
+**Phase 19 Metrics:**
+
+| Plan | Tasks | Duration | Tests Added | Files Modified | Completed |
+|------|-------|----------|-------------|----------------|-----------|
+| 19-01 | 2 | 18 min | 58 | 6 | 2026-02-15 |
+
 ## Accumulated Context
 
 ### Research Summary (v0.3.0 Planning Session)
@@ -97,6 +103,10 @@ Progress: [███████████████░░░░░] 87% (33
 
 ### Recent Decisions
 
+- **Phase 19-01**: TOST (Two One-Sided Tests) chosen for equivalence testing — Statistically proves similarity rather than just failing to reject difference, standard approach for equivalence/bioequivalence studies
+- **Phase 19-01**: Default ±20% equivalence threshold appropriate for ecological field data — Balances rigor with realistic field variability, configurable via tidycreel.equivalence_threshold option
+- **Phase 19-01**: Grouped validation requires overall AND all groups to pass — Conservative approach prevents overlooking group-specific bias that could be masked by overall equivalence
+- **Phase 19-01**: creel_tost_validation class name avoids conflict with existing creel_validation — Tier 1-3 schema validation uses creel_validation, TOST validation needs separate class
 - **Phase 18-02**: Package option tidycreel.min_complete_pct provides flexible threshold configuration — Default 10% follows Pollock et al., allows override for special cases
 - **Phase 18-02**: Per-group warnings in grouped estimation — Each group checked independently for data quality (overall sample could be good but individual groups poor)
 - **Phase 18-02**: Added withr to Suggests — Required for withr::local_options() in tests for clean option management
@@ -140,7 +150,7 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-02-15
-Stopped at: Completed 18-02-PLAN.md (complete trip warning integration) - Phase 18 complete
+Stopped at: Completed 19-01-PLAN.md (TOST equivalence testing implementation)
 Resume file: None
 
-**Next step:** Phase 18 complete. Ready to begin Phase 19 (next phase in roadmap) or pause for review
+**Next step:** Continue Phase 19 with Plan 19-02 (diagnostic plots and visualization)
