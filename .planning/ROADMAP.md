@@ -190,13 +190,13 @@ Plans:
 - [ ] 17-02-PLAN.md — Diagnostic comparison mode and informative messaging
 
 ### Phase 18: Sample Size Warnings
-**Goal**: Package warns when complete trip sample size is insufficient per Colorado C-SAP guidance
+**Goal**: Package warns when complete trip sample size is insufficient per Pollock et al. roving-access design guidance
 **Depends on**: Phase 17
 **Requirements**: API-02, API-04
 **Success Criteria** (what must be TRUE):
-  1. Package warns when <10% of interviews are complete trips (Colorado C-SAP threshold)
-  2. Warning messages reference Colorado C-SAP and Pollock et al. best practices
-  3. Warning includes counts of complete vs incomplete trips for transparency
+  1. Package warns when <10% of interviews are complete trips (Pollock et al. threshold)
+  2. Warning messages reference Pollock et al. best practices for roving-access designs
+  3. Warning includes percentage of complete trips for transparency
   4. Messages guide users toward diagnostic validation when complete sample is small
 **Plans**: 2 plans
 
