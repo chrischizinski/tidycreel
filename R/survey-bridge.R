@@ -1032,13 +1032,26 @@ validate_trip_metadata <- function(interviews, trip_status_col, trip_duration_co
     }
 
     # If both columns exist and are time-like, check computed duration
-    if (trip_start_col %in% names(interviews) &&
-      interview_time_col %in% names(interviews)) {
+    if (trip_start_col %in% names(interviews) && # nolint: indentation_linter
+        interview_time_col %in% names(interviews)) {
       start_vals <- interviews[[trip_start_col]]
       interview_vals <- interviews[[interview_time_col]]
 
-      if ((inherits(start_vals, "POSIXct") || inherits(start_vals, "POSIXlt")) &&
-        (inherits(interview_vals, "POSIXct") || inherits(interview_vals, "POSIXlt"))) {
+      if ((inherits(start_vals, "POSIXct") || inherits(start_vals, "POSIXlt")) && # nolint: indentation_linter
+          (inherits(interview_vals, "POSIXct") || inherits(interview_vals, "POSIXlt"))) { # nolint: indentation_linter
+        # Check timezone consistency
+        tz_start <- attr(start_vals, "tzone")
+        tz_interview <- attr(interview_vals, "tzone")
+        # Only error if both explicitly set to different timezones
+        if (!is.null(tz_start) && !is.null(tz_interview) && # nolint: indentation_linter
+            nzchar(tz_start) && nzchar(tz_interview) && # nolint: indentation_linter
+            tz_start != tz_interview) {
+          collection$push(sprintf( # nolint: line_length_linter
+            "trip_start timezone '%s' differs from interview_time timezone '%s'. Use the same timezone for both columns", # nolint: line_length_linter
+            tz_start, tz_interview
+          ))
+        }
+
         # Calculate duration in hours
         computed_duration <- as.numeric(
           difftime(interview_vals, start_vals, units = "hours")
