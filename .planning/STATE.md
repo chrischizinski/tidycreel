@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-14)
 ## Current Position
 
 Phase: 18 of 20 (Sample Size Warnings)
-Plan: 1 of 1 in current phase
+Plan: 2 of 2 in current phase
 Status: Complete
-Last activity: 2026-02-15 — Completed 18-01 complete trip percentage warning
+Last activity: 2026-02-15 — Completed 18-02 complete trip warning integration
 
-Progress: [██████████████░░░░░░] 84% (32/36.7 plans estimated)
+Progress: [███████████████░░░░░] 87% (33/36.7 plans estimated)
 
 ## Performance Metrics
 
@@ -76,6 +76,7 @@ Progress: [██████████████░░░░░░] 84% (32
 | Plan | Tasks | Duration | Tests Added | Files Modified | Completed |
 |------|-------|----------|-------------|----------------|-----------|
 | 18-01 | 1 | 4 min | 8 | 3 | 2026-02-15 |
+| 18-02 | 2 | 10 min | 11 | 5 | 2026-02-15 |
 
 ## Accumulated Context
 
@@ -96,6 +97,9 @@ Progress: [██████████████░░░░░░] 84% (32
 
 ### Recent Decisions
 
+- **Phase 18-02**: Package option tidycreel.min_complete_pct provides flexible threshold configuration — Default 10% follows Pollock et al., allows override for special cases
+- **Phase 18-02**: Per-group warnings in grouped estimation — Each group checked independently for data quality (overall sample could be good but individual groups poor)
+- **Phase 18-02**: Added withr to Suggests — Required for withr::local_options() in tests for clean option management
 - **Phase 18-01**: Warning fires before sample size validation — Ensures visibility even when insufficient samples error occurs
 - **Phase 18-01**: Function name warn_low_complete_pct() — Shortened from complete_trip_percentage_warning() for 30-char linter limit
 - **Phase 17-02**: Use cli::cli_inform() for trip type messages — Informative level, not warning, follows tidyverse convention
@@ -136,7 +140,7 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-02-15
-Stopped at: Completed 18-01-PLAN.md (complete trip percentage warning) - Phase 18 complete
+Stopped at: Completed 18-02-PLAN.md (complete trip warning integration) - Phase 18 complete
 Resume file: None
 
-**Next step:** Begin Phase 19 (next phase in roadmap) or pause for review
+**Next step:** Phase 18 complete. Ready to begin Phase 19 (next phase in roadmap) or pause for review
