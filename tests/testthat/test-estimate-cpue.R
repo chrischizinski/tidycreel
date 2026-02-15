@@ -887,3 +887,48 @@ test_that("estimator='mor' matches manual survey::svymean calculation", {
   # Verify estimates match
   expect_equal(result$estimates$estimate, manual_estimate, tolerance = 1e-10)
 })
+
+# MOR warning tests ----
+
+test_that("MOR estimator warns on every call", {
+  design <- make_small_cpue_design(n = 30, n_incomplete = 30)
+
+  # First call warns
+  expect_warning(
+    estimate_cpue(design, estimator = "mor"),
+    "MOR estimator.*incomplete trips"
+  )
+
+  # Second call ALSO warns (not once-per-session)
+  expect_warning(
+    estimate_cpue(design, estimator = "mor"),
+    "MOR estimator.*incomplete trips"
+  )
+})
+
+test_that("MOR warning includes trip counts", {
+  design <- make_small_cpue_design(n = 40, n_incomplete = 25)
+
+  expect_warning(
+    estimate_cpue(design, estimator = "mor"),
+    "n=25.*40 total"
+  )
+})
+
+test_that("MOR warning emphasizes complete trip preference", {
+  design <- make_small_cpue_design(n = 30, n_incomplete = 30)
+
+  expect_warning(
+    result <- estimate_cpue(design, estimator = "mor"),
+    "Complete trips preferred"
+  )
+})
+
+test_that("MOR warning references validation function", {
+  design <- make_small_cpue_design(n = 30, n_incomplete = 30)
+
+  expect_warning(
+    estimate_cpue(design, estimator = "mor"),
+    "validate_incomplete_trips"
+  )
+})
