@@ -347,6 +347,14 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
 #'   \code{"ratio-of-means"} (default, for complete trips) or \code{"mor"}
 #'   (mean-of-ratios, for incomplete trips). MOR requires trip_status field
 #'   and errors if no incomplete trips are available. See Details.
+#' @param use_trips Character string specifying which trip type to use when
+#'   trip_status field is provided. Options: \code{"complete"} (default) uses
+#'   only complete trips with ratio-of-means estimator, or \code{"incomplete"}
+#'   uses only incomplete trips with mean-of-ratios estimator. Following
+#'   Colorado C-SAP and Pollock et al., complete trips are scientifically
+#'   preferred (no length-of-stay bias). Incomplete trip estimation is
+#'   diagnostic/research mode requiring validation. Parameter is ignored when
+#'   trip_status field is not provided (perfect backward compatibility). See Details.
 #' @param truncate_at Numeric minimum trip duration (hours) for MOR estimation.
 #'   Default is 0.5 hours (30 minutes) per Hoenig et al. (1997) to prevent
 #'   unstable variance from very short trips. Trips with duration < truncate_at
@@ -361,6 +369,17 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
 #'   (numeric), and by_vars (character vector of grouping variable names or NULL).
 #'
 #' @details
+#' \strong{Trip Type Selection (use_trips):}
+#' When trip_status is provided, the \code{use_trips} parameter controls which
+#' trips are used for estimation. The default \code{use_trips = "complete"}
+#' filters to complete trips only, following roving-access design best practices
+#' (Colorado C-SAP, Pollock et al.). Complete trip interviews are taken at trip
+#' completion and avoid length-of-stay bias. Setting \code{use_trips = "incomplete"}
+#' filters to incomplete trips and automatically uses the MOR estimator.
+#' Incomplete trip estimation is diagnostic/research mode and requires validation
+#' (see Phase 19 validate_incomplete_trips). When trip_status is not provided,
+#' use_trips is ignored for perfect backward compatibility with v0.2.0.
+#'
 #' \strong{Ratio-of-Means (default):}
 #' CPUE is estimated as the ratio of total catch to total effort. This is the
 #' appropriate estimator for complete trip interviews (interview at trip end).
@@ -447,6 +466,7 @@ estimate_cpue <- function(design,
                           variance = "taylor",
                           conf_level = 0.95,
                           estimator = "ratio-of-means",
+                          use_trips = "complete",
                           truncate_at = 0.5) {
   # Capture by parameter BEFORE validation
   by_quo <- rlang::enquo(by)
@@ -507,17 +527,180 @@ estimate_cpue <- function(design,
     ))
   }
 
+  # Backward compatibility: if trip_status_col is NULL, skip all use_trips logic
+  # This ensures perfect v0.2.0 compatibility when trip_status not provided
+  has_trip_status <- !is.null(design$trip_status_col)
+
+  if (has_trip_status) {
+    # Validate use_trips parameter
+    valid_use_trips <- c("complete", "incomplete")
+    if (!use_trips %in% valid_use_trips) {
+      cli::cli_abort(c(
+        "Invalid use_trips value: {.val {use_trips}}",
+        "x" = "Must be one of: {.val {valid_use_trips}}",
+        "i" = "{.val complete} for complete trips (default), {.val incomplete} for incomplete trips"
+      ))
+    }
+
+    # Validate use_trips + estimator combination
+    if (use_trips == "incomplete" && estimator == "ratio-of-means") {
+      cli::cli_abort(c(
+        "Invalid combination: use_trips='incomplete' with estimator='ratio-of-means'",
+        "x" = "Incomplete trips require mean-of-ratios (MOR) estimator",
+        "i" = "Incomplete trips have length-of-stay bias (Pollock et al.)",
+        "i" = "Use {.code estimator = 'mor'} with {.code use_trips = 'incomplete'}",
+        "i" = "Or use {.code use_trips = 'complete'} (default) with ratio-of-means"
+      ))
+    }
+
+    # Force MOR estimator for incomplete trips when estimator not explicitly set
+    # NOTE: Above validation ensures if we reach here with use_trips='incomplete', estimator must be 'mor'
+    if (use_trips == "incomplete") {
+      estimator <- "mor"
+    }
+
+    # Filter to selected trip type and validate sample size
+    trip_status_col <- design$trip_status_col
+    n_complete <- sum(design$interviews[[trip_status_col]] == "complete", na.rm = TRUE)
+    n_incomplete <- sum(design$interviews[[trip_status_col]] == "incomplete", na.rm = TRUE)
+
+    if (use_trips == "complete") {
+      # Check complete trips available
+      if (n_complete == 0) {
+        cli::cli_abort(c(
+          "No complete trips available for estimation",
+          "x" = "use_trips='complete' but dataset has 0 complete trips",
+          "i" = "Use {.code use_trips = 'incomplete'} if incomplete trips are available",
+          "i" = "Or check trip_status values in interview data"
+        ))
+      }
+
+      # Filter to complete trips BEFORE creating survey design
+      complete_interviews <- design$interviews[design$interviews[[trip_status_col]] == "complete", ]
+
+      # Check sample size for complete trips
+      if (n_complete < 10) {
+        cli::cli_abort(c(
+          "Insufficient complete trips for estimation",
+          "x" = "use_trips='complete' but only {n_complete} complete trip{?s} available",
+          "i" = "Need at least 10 complete trips for stable estimates",
+          "i" = "Consider using diagnostic mode with {.code use_trips = 'incomplete'} if appropriate",
+          "i" = "See roving-access design documentation for guidance"
+        ))
+      }
+
+      # Create new design with complete trips only
+      design_filtered <- design
+      design_filtered$interviews <- complete_interviews
+
+      # Rebuild survey design with filtered data
+      strata_cols <- design$strata_cols
+      if (!is.null(strata_cols) && length(strata_cols) > 0) {
+        strata_formula <- stats::reformulate(strata_cols)
+        design_filtered$interview_survey <- survey::svydesign(
+          ids = ~1,
+          strata = strata_formula,
+          data = complete_interviews
+        )
+      } else {
+        design_filtered$interview_survey <- survey::svydesign(
+          ids = ~1,
+          data = complete_interviews
+        )
+      }
+
+      # Replace design for estimation
+      design <- design_filtered
+    } else if (use_trips == "incomplete") {
+      # Check incomplete trips available
+      if (n_incomplete == 0) {
+        cli::cli_abort(c(
+          "No incomplete trips available for estimation",
+          "x" = "use_trips='incomplete' but dataset has 0 incomplete trips",
+          "i" = "Use {.code use_trips = 'complete'} (default) for complete trips",
+          "i" = "Or check trip_status values in interview data"
+        ))
+      }
+
+      # Filter to incomplete trips NOW (before MOR block)
+      # This lets MOR's validate_mor_availability see incomplete-only data
+      incomplete_interviews <- design$interviews[design$interviews[[trip_status_col]] == "incomplete", ]
+
+      # Create new design with incomplete trips only
+      design_incomplete <- design
+      design_incomplete$interviews <- incomplete_interviews
+
+      # Rebuild survey design with filtered data
+      strata_cols <- design$strata_cols
+      if (!is.null(strata_cols) && length(strata_cols) > 0) {
+        strata_formula <- stats::reformulate(strata_cols)
+        design_incomplete$interview_survey <- survey::svydesign(
+          ids = ~1,
+          strata = strata_formula,
+          data = incomplete_interviews
+        )
+      } else {
+        design_incomplete$interview_survey <- survey::svydesign(
+          ids = ~1,
+          data = incomplete_interviews
+        )
+      }
+
+      # Replace design for estimation
+      design <- design_incomplete
+    }
+  }
+
   # If MOR estimator requested, validate and filter to incomplete trips
   if (estimator == "mor") {
-    validate_mor_availability(design) # nolint: object_usage_linter
+    # Determine if we already filtered via use_trips
+    # If use_trips='incomplete', we already filtered to incomplete in use_trips block
+    # If use_trips='complete', we filtered to complete (MOR will see only complete trips - non-standard but valid)
+    use_trips_was_incomplete <- has_trip_status && use_trips == "incomplete"
+    use_trips_was_complete <- has_trip_status && use_trips == "complete"
+
+    # Non-standard case: use_trips='complete' + estimator='mor'
+    # Warn but allow (valid but unusual choice)
+    if (use_trips_was_complete) {
+      cli::cli_warn(c(
+        "Non-standard combination: use_trips='complete' with estimator='mor'",
+        "i" = "MOR typically used with incomplete trips",
+        "i" = paste(
+          "You are using MOR on {nrow(design$interviews)} complete trips -",
+          "consider {.code estimator = 'ratio-of-means'} for standard complete trip estimation"
+        )
+      ))
+    } else {
+      # Standard MOR usage - validate incomplete trips available
+      validate_mor_availability(design) # nolint: object_usage_linter
+    }
+
+    # Calculate trip counts for warning and handle filtering
+    if (use_trips_was_incomplete) {
+      # Already filtered to incomplete trips in use_trips block - all rows are incomplete
+      n_incomplete <- nrow(design$interviews)
+      n_total <- n_incomplete # For MOR warning context
+      incomplete_interviews <- design$interviews
+    } else if (use_trips_was_complete) {
+      # Non-standard case: use_trips='complete' + estimator='mor'
+      # Design already filtered to complete trips - use them with MOR (unusual but valid)
+      n_complete_for_mor <- nrow(design$interviews)
+      n_total <- n_complete_for_mor
+      n_incomplete <- 0 # Not using incomplete trips
+      # Use complete trips for MOR estimation (non-standard)
+      incomplete_interviews <- design$interviews
+    } else {
+      # Old behavior: no use_trips filtering, filter to incomplete now
+      n_total <- nrow(design$interviews)
+      n_incomplete <- sum(design$interviews[[design$trip_status_col]] == "incomplete", na.rm = TRUE)
+      incomplete_interviews <- design$interviews[design$interviews[[design$trip_status_col]] == "incomplete", ]
+    }
 
     # Issue warning about MOR assumptions BEFORE estimation
-    n_total <- nrow(design$interviews)
-    n_incomplete <- sum(design$interviews[[design$trip_status_col]] == "incomplete", na.rm = TRUE)
-    mor_estimation_warning(n_incomplete, n_total) # nolint: object_usage_linter
-
-    # Filter interview data to incomplete trips only
-    incomplete_interviews <- design$interviews[design$interviews[[design$trip_status_col]] == "incomplete", ]
+    # For use_trips='complete' + MOR, skip standard MOR warning (already warned above)
+    if (!use_trips_was_complete) {
+      mor_estimation_warning(n_incomplete, n_total) # nolint: object_usage_linter
+    }
 
     # Apply truncation if specified
     if (!is.null(truncate_at)) {

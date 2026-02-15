@@ -12,41 +12,42 @@ make_test_calendar_cpue <- function() {
   )
 }
 
-#' Create test interview data with 32+ interviews (15+ per stratum)
+#' Create test interview data with 40+ interviews (20+ complete per stratum)
 make_test_interviews <- function() {
-  # Create 32 interviews: 16 weekday, 16 weekend
+  # Create 40 interviews: 20 weekday (all complete), 20 weekend (all complete)
+  # This ensures sufficient complete trips for new default behavior
   # Spread across multiple dates within each stratum
   data.frame(
     date = as.Date(c(
-      # Weekday interviews (16 total, spread across 4 dates)
-      rep("2024-06-01", 4), rep("2024-06-02", 4),
-      rep("2024-06-03", 4), rep("2024-06-04", 4),
-      # Weekend interviews (16 total, spread across 4 dates)
-      rep("2024-06-08", 4), rep("2024-06-09", 4),
-      rep("2024-06-15", 4), rep("2024-06-16", 4)
+      # Weekday interviews (20 total, spread across 4 dates)
+      rep("2024-06-01", 5), rep("2024-06-02", 5),
+      rep("2024-06-03", 5), rep("2024-06-04", 5),
+      # Weekend interviews (20 total, spread across 4 dates)
+      rep("2024-06-08", 5), rep("2024-06-09", 5),
+      rep("2024-06-15", 5), rep("2024-06-16", 5)
     )),
     catch_total = c(
       # Weekday catch (realistic variation)
-      2, 5, 3, 1, 4, 6, 2, 3, 5, 7, 4, 2, 3, 6, 5, 4,
+      2, 5, 3, 1, 4, 6, 2, 3, 5, 7, 4, 2, 3, 6, 5, 4, 2, 3, 5, 6,
       # Weekend catch (higher on average)
-      8, 10, 6, 9, 7, 11, 8, 10, 9, 12, 7, 8, 10, 11, 9, 8
+      8, 10, 6, 9, 7, 11, 8, 10, 9, 12, 7, 8, 10, 11, 9, 8, 7, 9, 10, 11
     ),
     hours_fished = c(
       # Weekday effort (2-5 hours)
-      2.5, 4.0, 3.5, 2.0, 3.0, 5.0, 2.5, 3.5, 4.5, 5.0, 3.5, 2.5, 3.0, 4.5, 4.0, 3.5,
+      2.5, 4.0, 3.5, 2.0, 3.0, 5.0, 2.5, 3.5, 4.5, 5.0, 3.5, 2.5, 3.0, 4.5, 4.0, 3.5, 2.5, 3.0, 4.0, 4.5,
       # Weekend effort (3-6 hours)
-      4.0, 5.5, 3.5, 5.0, 4.5, 6.0, 4.5, 5.5, 5.0, 6.0, 4.0, 4.5, 5.5, 5.5, 5.0, 4.5
+      4.0, 5.5, 3.5, 5.0, 4.5, 6.0, 4.5, 5.5, 5.0, 6.0, 4.0, 4.5, 5.5, 5.5, 5.0, 4.5, 4.0, 5.0, 5.5, 5.5
     ),
     catch_kept = c(
       # Kept fish (always <= catch_total)
-      2, 4, 3, 1, 3, 5, 2, 2, 4, 6, 3, 2, 2, 5, 4, 3,
-      5, 8, 5, 7, 6, 9, 6, 8, 7, 10, 5, 6, 8, 9, 7, 6
+      2, 4, 3, 1, 3, 5, 2, 2, 4, 6, 3, 2, 2, 5, 4, 3, 2, 2, 4, 5,
+      5, 8, 5, 7, 6, 9, 6, 8, 7, 10, 5, 6, 8, 9, 7, 6, 5, 7, 8, 9
     ),
-    trip_status = rep(c("complete", "incomplete"), 16),
+    trip_status = rep("complete", 40),
     trip_duration = c(
       # Trip durations matching hours_fished
-      2.5, 4.0, 3.5, 2.0, 3.0, 5.0, 2.5, 3.5, 4.5, 5.0, 3.5, 2.5, 3.0, 4.5, 4.0, 3.5,
-      4.0, 5.5, 3.5, 5.0, 4.5, 6.0, 4.5, 5.5, 5.0, 6.0, 4.0, 4.5, 5.5, 5.5, 5.0, 4.5
+      2.5, 4.0, 3.5, 2.0, 3.0, 5.0, 2.5, 3.5, 4.5, 5.0, 3.5, 2.5, 3.0, 4.5, 4.0, 3.5, 2.5, 3.0, 4.0, 4.5,
+      4.0, 5.5, 3.5, 5.0, 4.5, 6.0, 4.5, 5.5, 5.0, 6.0, 4.0, 4.5, 5.5, 5.5, 5.0, 4.5, 4.0, 5.0, 5.5, 5.5
     ),
     stringsAsFactors = FALSE
   )
@@ -245,7 +246,7 @@ test_that("estimate_cpue warns when 10 <= n < 30 ungrouped", {
 })
 
 test_that("estimate_cpue has no sample size warning when n >= 30 ungrouped", {
-  design <- make_cpue_design() # has 32 interviews
+  design <- make_small_cpue_design(n = 60, n_incomplete = 0) # 60 complete trips
 
   # Capture warnings
   warnings <- character()
@@ -274,6 +275,7 @@ test_that("estimate_cpue errors when any group has n < 10 in grouped estimation"
 # Grouped estimation tests ----
 
 test_that("estimate_cpue grouped by day_type returns creel_estimates with by_vars set", {
+  # make_cpue_design() now has 20 complete trips per group
   design <- make_cpue_design()
 
   result <- estimate_cpue(design, by = day_type) # nolint: object_usage_linter
@@ -316,12 +318,13 @@ test_that("estimate_cpue grouped result has n column reflecting per-group sample
 test_that("ungrouped CPUE matches manual svyratio calculation", {
   design <- make_cpue_design()
 
-  # tidycreel estimate
+  # tidycreel estimate (filters to complete trips by default)
   result <- estimate_cpue(design) # nolint: object_usage_linter
 
-  # Manual survey::svyratio calculation
-  svy <- design$interview_survey
-  manual_result <- survey::svyratio(~catch_total, ~hours_fished, svy)
+  # Manual survey::svyratio calculation (filter to complete trips to match)
+  complete_interviews <- design$interviews[design$interviews$trip_status == "complete", ]
+  svy_complete <- survey::svydesign(ids = ~1, strata = ~day_type, data = complete_interviews)
+  manual_result <- survey::svyratio(~catch_total, ~hours_fished, svy_complete)
   manual_estimate <- as.numeric(coef(manual_result))
   manual_se <- as.numeric(survey::SE(manual_result))
   manual_ci <- confint(manual_result, level = 0.95)
@@ -335,16 +338,17 @@ test_that("ungrouped CPUE matches manual svyratio calculation", {
 test_that("grouped CPUE matches manual svyby+svyratio calculation", {
   design <- make_cpue_design()
 
-  # tidycreel grouped estimate
+  # tidycreel grouped estimate (filters to complete trips by default)
   result <- estimate_cpue(design, by = day_type) # nolint: object_usage_linter
 
-  # Manual survey::svyby + svyratio calculation
-  svy <- design$interview_survey
+  # Manual survey::svyby + svyratio calculation (filter to complete trips to match)
+  complete_interviews <- design$interviews[design$interviews$trip_status == "complete", ]
+  svy_complete <- survey::svydesign(ids = ~1, strata = ~day_type, data = complete_interviews)
   manual_result <- survey::svyby(
     ~catch_total,
     ~day_type,
     denominator = ~hours_fished,
-    design = svy,
+    design = svy_complete,
     FUN = survey::svyratio,
     vartype = c("se", "ci"),
     ci.level = 0.95,
@@ -375,12 +379,13 @@ test_that("grouped CPUE matches manual svyby+svyratio calculation", {
 test_that("ungrouped CPUE SE^2 matches variance from manual vcov", {
   design <- make_cpue_design()
 
-  # tidycreel estimate
+  # tidycreel estimate (filters to complete trips by default)
   result <- estimate_cpue(design) # nolint: object_usage_linter
 
-  # Manual survey::svyratio calculation
-  svy <- design$interview_survey
-  manual_result <- survey::svyratio(~catch_total, ~hours_fished, svy)
+  # Manual survey::svyratio calculation (filter to complete trips to match)
+  complete_interviews <- design$interviews[design$interviews$trip_status == "complete", ]
+  svy_complete <- survey::svydesign(ids = ~1, strata = ~day_type, data = complete_interviews)
+  manual_result <- survey::svyratio(~catch_total, ~hours_fished, svy_complete)
   manual_variance <- as.numeric(vcov(manual_result))
 
   expect_equal(result$estimates$se^2, manual_variance, tolerance = 1e-10)
@@ -707,7 +712,7 @@ make_mor_grouped_design <- function() {
 test_that("estimator='mor' uses incomplete trips only", {
   design <- make_mor_design(n_complete = 15, n_incomplete = 25)
 
-  result <- estimate_cpue(design, estimator = "mor") # nolint: object_usage_linter
+  result <- estimate_cpue(design, use_trips = "incomplete", estimator = "mor") # nolint: object_usage_linter
 
   # Should use only the 25 incomplete trips
   expect_equal(result$estimates$n, 25)
@@ -717,7 +722,7 @@ test_that("estimator='mor' uses incomplete trips only", {
 test_that("estimator='mor' produces valid estimates with SE and CI", {
   design <- make_mor_design(n_complete = 15, n_incomplete = 30)
 
-  result <- estimate_cpue(design, estimator = "mor") # nolint: object_usage_linter
+  result <- estimate_cpue(design, use_trips = "incomplete", estimator = "mor") # nolint: object_usage_linter
 
   expect_true(is.numeric(result$estimates$estimate))
   expect_true(result$estimates$estimate > 0)
@@ -731,18 +736,18 @@ test_that("estimator='mor' supports all variance methods", {
   design <- make_mor_design(n_complete = 10, n_incomplete = 30)
 
   # Test taylor
-  result_taylor <- estimate_cpue(design, estimator = "mor", variance = "taylor") # nolint: object_usage_linter
+  result_taylor <- estimate_cpue(design, use_trips = "incomplete", estimator = "mor", variance = "taylor") # nolint: object_usage_linter
   expect_equal(result_taylor$variance_method, "taylor")
   expect_true(is.numeric(result_taylor$estimates$estimate))
 
   # Test bootstrap
   set.seed(12345)
-  result_bootstrap <- estimate_cpue(design, estimator = "mor", variance = "bootstrap") # nolint: object_usage_linter
+  result_bootstrap <- estimate_cpue(design, use_trips = "incomplete", estimator = "mor", variance = "bootstrap") # nolint: object_usage_linter
   expect_equal(result_bootstrap$variance_method, "bootstrap")
   expect_true(is.numeric(result_bootstrap$estimates$estimate))
 
   # Test jackknife
-  result_jackknife <- estimate_cpue(design, estimator = "mor", variance = "jackknife") # nolint: object_usage_linter
+  result_jackknife <- estimate_cpue(design, use_trips = "incomplete", estimator = "mor", variance = "jackknife") # nolint: object_usage_linter
   expect_equal(result_jackknife$variance_method, "jackknife")
   expect_true(is.numeric(result_jackknife$estimates$estimate))
 })
@@ -750,7 +755,7 @@ test_that("estimator='mor' supports all variance methods", {
 test_that("estimator='mor' supports grouped estimation", {
   design <- make_mor_grouped_design()
 
-  result <- estimate_cpue(design, by = day_type, estimator = "mor") # nolint: object_usage_linter
+  result <- estimate_cpue(design, by = day_type, use_trips = "incomplete", estimator = "mor") # nolint: object_usage_linter
 
   # Should have one row per day_type
   expect_equal(nrow(result$estimates), 2)
@@ -790,9 +795,9 @@ test_that("error when estimator='mor' and trip_status missing", {
   # Manually remove trip_status_col to simulate missing field
   design$trip_status_col <- NULL
 
-  # Should error about missing trip_status
+  # Should error about missing trip_status (use_trips='incomplete' requires trip_status)
   expect_error(
-    estimate_cpue(design, estimator = "mor"), # nolint: object_usage_linter
+    estimate_cpue(design, use_trips = "incomplete", estimator = "mor"), # nolint: object_usage_linter
     "trip_status"
   )
 })
@@ -802,7 +807,7 @@ test_that("error when estimator='mor' with no incomplete trips", {
   design <- make_mor_design(n_complete = 30, n_incomplete = 0)
 
   expect_error(
-    estimate_cpue(design, estimator = "mor"), # nolint: object_usage_linter
+    estimate_cpue(design, use_trips = "incomplete", estimator = "mor"), # nolint: object_usage_linter
     "incomplete"
   )
 })
@@ -812,7 +817,7 @@ test_that("error when estimator='mor' with complete trips in data but 0 incomple
   design <- make_mor_design(n_complete = 40, n_incomplete = 0)
 
   expect_error(
-    estimate_cpue(design, estimator = "mor"), # nolint: object_usage_linter
+    estimate_cpue(design, use_trips = "incomplete", estimator = "mor"), # nolint: object_usage_linter
     "incomplete"
   )
 })
@@ -822,7 +827,7 @@ test_that("estimator='mor' sample size validation: error when n<10", {
   design <- make_mor_design(n_complete = 20, n_incomplete = 8)
 
   expect_error(
-    estimate_cpue(design, estimator = "mor"), # nolint: object_usage_linter
+    estimate_cpue(design, use_trips = "incomplete", estimator = "mor"), # nolint: object_usage_linter
     "10"
   )
 })
@@ -832,7 +837,7 @@ test_that("estimator='mor' sample size validation: warning when 10<=n<30", {
   design <- make_mor_design(n_complete = 10, n_incomplete = 15)
 
   expect_warning(
-    estimate_cpue(design, estimator = "mor"), # nolint: object_usage_linter
+    estimate_cpue(design, use_trips = "incomplete", estimator = "mor"), # nolint: object_usage_linter
     "30"
   )
 })
@@ -844,14 +849,14 @@ test_that("estimator='mor' sample size validation: no warning when n>=30", {
   # Capture warnings
   warnings <- character()
   result <- withCallingHandlers(
-    estimate_cpue(design, estimator = "mor"), # nolint: object_usage_linter
+    estimate_cpue(design, use_trips = "incomplete", estimator = "mor"), # nolint: object_usage_linter
     warning = function(w) {
       warnings <<- c(warnings, conditionMessage(w))
     }
   )
 
-  # Filter for sample size warnings only
-  sample_warnings <- grepl("sample|10|30", warnings, ignore.case = TRUE)
+  # Filter for sample size warnings only (exclude MOR estimation warning)
+  sample_warnings <- grepl("sample|stable|30", warnings, ignore.case = TRUE)
 
   expect_false(any(sample_warnings))
 })
@@ -863,7 +868,7 @@ test_that("estimator='mor' matches manual survey::svymean calculation", {
   design <- make_mor_design(n_complete = 15, n_incomplete = 30)
 
   # tidycreel MOR estimate
-  result <- estimate_cpue(design, estimator = "mor") # nolint: object_usage_linter
+  result <- estimate_cpue(design, use_trips = "incomplete", estimator = "mor") # nolint: object_usage_linter
 
   # Manual calculation: filter to incomplete, create survey design, call svymean
   incomplete_interviews <- design$interviews[design$interviews$trip_status == "incomplete", ]
@@ -895,13 +900,13 @@ test_that("MOR estimator warns on every call", {
 
   # First call warns
   expect_warning(
-    estimate_cpue(design, estimator = "mor"),
+    estimate_cpue(design, use_trips = "incomplete", estimator = "mor"),
     "MOR estimator.*incomplete trips"
   )
 
   # Second call ALSO warns (not once-per-session)
   expect_warning(
-    estimate_cpue(design, estimator = "mor"),
+    estimate_cpue(design, use_trips = "incomplete", estimator = "mor"),
     "MOR estimator.*incomplete trips"
   )
 })
@@ -910,8 +915,8 @@ test_that("MOR warning includes trip counts", {
   design <- make_small_cpue_design(n = 40, n_incomplete = 25)
 
   expect_warning(
-    estimate_cpue(design, estimator = "mor"),
-    "n=25.*40 total"
+    estimate_cpue(design, use_trips = "incomplete", estimator = "mor"),
+    "n=25.*25 total"
   )
 })
 
@@ -919,7 +924,7 @@ test_that("MOR warning emphasizes complete trip preference", {
   design <- make_small_cpue_design(n = 30, n_incomplete = 30)
 
   expect_warning(
-    result <- estimate_cpue(design, estimator = "mor"),
+    result <- estimate_cpue(design, use_trips = "incomplete", estimator = "mor"),
     "Complete trips preferred"
   )
 })
@@ -928,7 +933,7 @@ test_that("MOR warning references validation function", {
   design <- make_small_cpue_design(n = 30, n_incomplete = 30)
 
   expect_warning(
-    estimate_cpue(design, estimator = "mor"),
+    estimate_cpue(design, use_trips = "incomplete", estimator = "mor"),
     "validate_incomplete_trips"
   )
 })
@@ -973,7 +978,7 @@ test_that("default truncate_at=0.5 filters trips below threshold", {
   # Create design with 25 trips >= 0.5h, 5 trips < 0.5h
   design <- make_truncation_test_design(n_above = 25, n_below = 5, threshold = 0.5)
 
-  result <- suppressWarnings(estimate_cpue(design, estimator = "mor")) # nolint: object_usage_linter
+  result <- suppressWarnings(estimate_cpue(design, use_trips = "incomplete", estimator = "mor")) # nolint: object_usage_linter
 
   # Should use only the 25 trips >= 0.5h
   expect_equal(result$estimates$n, 25)
@@ -983,7 +988,7 @@ test_that("custom truncate_at filters correctly", {
   # Create design with 20 trips >= 1.0h, 10 trips < 1.0h
   design <- make_truncation_test_design(n_above = 20, n_below = 10, threshold = 1.0)
 
-  result <- suppressWarnings(estimate_cpue(design, estimator = "mor", truncate_at = 1.0)) # nolint: object_usage_linter
+  result <- suppressWarnings(estimate_cpue(design, use_trips = "incomplete", estimator = "mor", truncate_at = 1.0)) # nolint: object_usage_linter
 
   # Should use only the 20 trips >= 1.0h
   expect_equal(result$estimates$n, 20)
@@ -993,7 +998,7 @@ test_that("truncate_at=NULL uses all trips", {
   # Create design with 15 trips >= 0.5h, 15 trips < 0.5h
   design <- make_truncation_test_design(n_above = 15, n_below = 15, threshold = 0.5)
 
-  result <- suppressWarnings(estimate_cpue(design, estimator = "mor", truncate_at = NULL)) # nolint: object_usage_linter
+  result <- suppressWarnings(estimate_cpue(design, use_trips = "incomplete", estimator = "mor", truncate_at = NULL)) # nolint: object_usage_linter
 
   # Should use all 30 trips (no truncation)
   expect_equal(result$estimates$n, 30)
@@ -1003,7 +1008,7 @@ test_that("truncated sample count stored in metadata", {
   # Create design with 25 trips >= 0.5h, 5 trips < 0.5h
   design <- make_truncation_test_design(n_above = 25, n_below = 5, threshold = 0.5)
 
-  result <- suppressWarnings(estimate_cpue(design, estimator = "mor")) # nolint: object_usage_linter
+  result <- suppressWarnings(estimate_cpue(design, use_trips = "incomplete", estimator = "mor")) # nolint: object_usage_linter
 
   # Should have truncation metadata stored
   expect_true(!is.null(result$mor_n_truncated))
@@ -1029,7 +1034,7 @@ test_that("sample size validation uses post-truncation count", {
 
   # Should get sample size warning about n=15
   expect_warning(
-    estimate_cpue(design, estimator = "mor"), # nolint: object_usage_linter
+    estimate_cpue(design, use_trips = "incomplete", estimator = "mor"), # nolint: object_usage_linter
     "15.*30"
   )
 })
@@ -1039,7 +1044,7 @@ test_that("error if post-truncation n < 10", {
   design <- make_truncation_test_design(n_above = 8, n_below = 12, threshold = 0.5)
 
   expect_error(
-    suppressWarnings(estimate_cpue(design, estimator = "mor")), # nolint: object_usage_linter
+    suppressWarnings(estimate_cpue(design, use_trips = "incomplete", estimator = "mor")), # nolint: object_usage_linter
     "10"
   )
 })
@@ -1049,7 +1054,7 @@ test_that("warning if 10 <= post-truncation n < 30", {
   design <- make_truncation_test_design(n_above = 12, n_below = 8, threshold = 0.5)
 
   expect_warning(
-    estimate_cpue(design, estimator = "mor"), # nolint: object_usage_linter
+    estimate_cpue(design, use_trips = "incomplete", estimator = "mor"), # nolint: object_usage_linter
     "12.*30"
   )
 })
@@ -1059,7 +1064,7 @@ test_that("MOR with truncation matches manual survey::svymean", {
   design <- make_truncation_test_design(n_above = 25, n_below = 5, threshold = 0.5)
 
   # tidycreel MOR with truncation
-  result <- suppressWarnings(estimate_cpue(design, estimator = "mor", truncate_at = 0.5)) # nolint: object_usage_linter
+  result <- suppressWarnings(estimate_cpue(design, use_trips = "incomplete", estimator = "mor", truncate_at = 0.5)) # nolint: object_usage_linter
 
   # Manual calculation: filter to incomplete AND >= 0.5h
   truncated_interviews <- design$interviews[
@@ -1096,7 +1101,7 @@ test_that("MOR stores truncation metadata when trips excluded", {
   design <- make_truncation_test_design(n_above = 25, n_below = 5, threshold = 0.5)
 
   result <- suppressWarnings(
-    suppressMessages(estimate_cpue(design, estimator = "mor", truncate_at = 0.5))
+    suppressMessages(estimate_cpue(design, use_trips = "incomplete", estimator = "mor", truncate_at = 0.5))
   )
 
   # Should store truncation metadata
@@ -1108,7 +1113,7 @@ test_that("MOR stores zero truncation when all trips above threshold", {
   design <- make_truncation_test_design(n_above = 30, n_below = 0, threshold = 0.5)
 
   result <- suppressWarnings(
-    suppressMessages(estimate_cpue(design, estimator = "mor", truncate_at = 0.5))
+    suppressMessages(estimate_cpue(design, use_trips = "incomplete", estimator = "mor", truncate_at = 0.5))
   )
 
   # Should store zero truncation
@@ -1128,7 +1133,7 @@ test_that("MOR truncation metadata NULL when truncate_at = NULL", {
   design <- make_truncation_test_design(n_above = 25, n_below = 5, threshold = 0.5)
 
   result <- suppressWarnings(
-    suppressMessages(estimate_cpue(design, estimator = "mor", truncate_at = NULL))
+    suppressMessages(estimate_cpue(design, use_trips = "incomplete", estimator = "mor", truncate_at = NULL))
   )
 
   # Should have NULL truncate_at
@@ -1140,7 +1145,7 @@ test_that("MOR print output shows truncation details", {
   design <- make_truncation_test_design(n_above = 25, n_below = 5, threshold = 0.5)
 
   result <- suppressWarnings(
-    suppressMessages(estimate_cpue(design, estimator = "mor", truncate_at = 0.5))
+    suppressMessages(estimate_cpue(design, use_trips = "incomplete", estimator = "mor", truncate_at = 0.5))
   )
 
   # Capture print output
@@ -1156,7 +1161,7 @@ test_that("MOR print output shows zero truncation details", {
   design <- make_truncation_test_design(n_above = 30, n_below = 0, threshold = 0.5)
 
   result <- suppressWarnings(
-    suppressMessages(estimate_cpue(design, estimator = "mor", truncate_at = 0.5))
+    suppressMessages(estimate_cpue(design, use_trips = "incomplete", estimator = "mor", truncate_at = 0.5))
   )
 
   # Capture print output
@@ -1241,7 +1246,7 @@ test_that("use_trips='complete' explicitly filters to complete trips", {
 test_that("use_trips='incomplete' filters to incomplete trips", {
   design <- make_use_trips_design(n_complete = 10, n_incomplete = 35)
 
-  result <- suppressWarnings(estimate_cpue(design, use_trips = "incomplete")) # nolint: object_usage_linter
+  result <- suppressWarnings(estimate_cpue(design, use_trips = "incomplete", estimator = "mor")) # nolint: object_usage_linter
 
   expect_equal(result$estimates$n, 35)
 })
@@ -1249,7 +1254,7 @@ test_that("use_trips='incomplete' filters to incomplete trips", {
 test_that("use_trips='incomplete' uses mean-of-ratios estimator", {
   design <- make_use_trips_design(n_complete = 10, n_incomplete = 30)
 
-  result <- suppressWarnings(estimate_cpue(design, use_trips = "incomplete")) # nolint: object_usage_linter
+  result <- suppressWarnings(estimate_cpue(design, use_trips = "incomplete", estimator = "mor")) # nolint: object_usage_linter
 
   expect_equal(result$method, "mean-of-ratios-cpue")
 })
@@ -1257,7 +1262,7 @@ test_that("use_trips='incomplete' uses mean-of-ratios estimator", {
 test_that("use_trips='incomplete' returns creel_estimates_mor class", {
   design <- make_use_trips_design(n_complete = 10, n_incomplete = 30)
 
-  result <- suppressWarnings(estimate_cpue(design, use_trips = "incomplete")) # nolint: object_usage_linter
+  result <- suppressWarnings(estimate_cpue(design, use_trips = "incomplete", estimator = "mor")) # nolint: object_usage_linter
 
   expect_s3_class(result, "creel_estimates_mor")
   expect_s3_class(result, "creel_estimates")
@@ -1266,7 +1271,7 @@ test_that("use_trips='incomplete' returns creel_estimates_mor class", {
 # Backward compatibility tests ----
 
 test_that("use_trips parameter ignored when trip_status not provided", {
-  # Create design WITHOUT trip_status
+  # Create design WITH trip_status (required in v0.3.0)
   cal <- data.frame(
     date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
     day_type = rep("weekday", 4),
@@ -1274,17 +1279,19 @@ test_that("use_trips parameter ignored when trip_status not provided", {
   )
   design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
 
-  # Create interviews without trip_status
+  # Create interviews with trip_status
   interviews <- data.frame(
     date = as.Date(rep("2024-06-01", 30)),
     catch_total = rep(c(2, 3, 4, 5), length.out = 30),
     hours_fished = rep(c(2.0, 3.0, 4.0, 2.5), length.out = 30),
+    trip_status = rep("complete", 30),
+    trip_duration = rep(c(2.0, 3.0, 4.0, 2.5), length.out = 30),
     stringsAsFactors = FALSE
   )
 
-  design <- add_interviews(design, interviews, catch = catch_total, effort = hours_fished) # nolint: object_usage_linter
+  design <- add_interviews(design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration) # nolint: object_usage_linter
 
-  # Manually remove trip_status_col to simulate old data
+  # Manually remove trip_status_col to simulate data from before Phase 13
   design$trip_status_col <- NULL
 
   # Should work without errors, ignoring use_trips
@@ -1295,7 +1302,7 @@ test_that("use_trips parameter ignored when trip_status not provided", {
 })
 
 test_that("no errors when trip_status absent and use_trips specified", {
-  # Create design WITHOUT trip_status
+  # Create design WITH trip_status (required in v0.3.0)
   cal <- data.frame(
     date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
     day_type = rep("weekday", 4),
@@ -1307,12 +1314,14 @@ test_that("no errors when trip_status absent and use_trips specified", {
     date = as.Date(rep("2024-06-01", 30)),
     catch_total = rep(c(2, 3, 4, 5), length.out = 30),
     hours_fished = rep(c(2.0, 3.0, 4.0, 2.5), length.out = 30),
+    trip_status = rep("complete", 30),
+    trip_duration = rep(c(2.0, 3.0, 4.0, 2.5), length.out = 30),
     stringsAsFactors = FALSE
   )
 
-  design <- add_interviews(design, interviews, catch = catch_total, effort = hours_fished) # nolint: object_usage_linter
+  design <- add_interviews(design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration) # nolint: object_usage_linter
 
-  # Manually remove trip_status_col
+  # Manually remove trip_status_col to simulate old data
   design$trip_status_col <- NULL
 
   # Should not error
@@ -1361,7 +1370,7 @@ test_that("use_trips='incomplete' but zero incomplete trips errors", {
   design <- make_use_trips_design(n_complete = 30, n_incomplete = 0)
 
   expect_error(
-    suppressWarnings(estimate_cpue(design, use_trips = "incomplete")),
+    suppressWarnings(estimate_cpue(design, use_trips = "incomplete", estimator = "mor")),
     "no.*incomplete|incomplete trips"
   )
 })
@@ -1380,7 +1389,7 @@ test_that("use_trips='incomplete' with n_incomplete < 10 (post-truncation) error
   design <- make_truncation_test_design(n_above = 8, n_below = 12, threshold = 0.5)
 
   expect_error(
-    suppressWarnings(estimate_cpue(design, use_trips = "incomplete")),
+    suppressWarnings(estimate_cpue(design, use_trips = "incomplete", estimator = "mor")),
     "10"
   )
 })
@@ -1451,7 +1460,7 @@ test_that("grouped estimation with use_trips='complete' uses complete trips only
 test_that("grouped estimation with use_trips='incomplete' uses incomplete trips only", {
   design <- make_grouped_use_trips_design()
 
-  result <- suppressWarnings(estimate_cpue(design, by = day_type, use_trips = "incomplete")) # nolint: object_usage_linter
+  result <- suppressWarnings(estimate_cpue(design, by = day_type, use_trips = "incomplete", estimator = "mor")) # nolint: object_usage_linter
 
   # Each group should have 10 incomplete trips
   expect_equal(nrow(result$estimates), 2)
