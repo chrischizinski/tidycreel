@@ -378,3 +378,118 @@ test_that("metadata estimates are numeric and reasonable", {
   expect_lte(result$metadata$complete$ci_lower, result$metadata$complete$ci_upper)
   expect_lte(result$metadata$incomplete$ci_lower, result$metadata$incomplete$ci_upper)
 })
+
+# Test plot_data component ----
+
+test_that("validation object contains plot_data component", {
+  design <- make_validation_design(n_complete = 50, n_incomplete = 50)
+  result <- validate_incomplete_trips(design, catch = catch_total, effort = hours_fished)
+
+  expect_true("plot_data" %in% names(result))
+  expect_type(result$plot_data, "list")
+})
+
+test_that("plot_data has correct structure for ungrouped estimation", {
+  design <- make_validation_design(n_complete = 50, n_incomplete = 50)
+  result <- validate_incomplete_trips(design, catch = catch_total, effort = hours_fished)
+
+  plot_data <- result$plot_data
+
+  # Required fields for scatter plot
+  expect_true("complete_est" %in% names(plot_data))
+  expect_true("incomplete_est" %in% names(plot_data))
+  expect_true("complete_ci_lower" %in% names(plot_data))
+  expect_true("complete_ci_upper" %in% names(plot_data))
+  expect_true("incomplete_ci_lower" %in% names(plot_data))
+  expect_true("incomplete_ci_upper" %in% names(plot_data))
+  expect_true("passed" %in% names(plot_data))
+
+  # All should be length 1 for ungrouped
+  expect_length(plot_data$complete_est, 1)
+  expect_length(plot_data$incomplete_est, 1)
+  expect_length(plot_data$passed, 1)
+
+  # No group labels for ungrouped
+  expect_null(plot_data$group_labels)
+})
+
+test_that("plot_data has correct structure for grouped estimation", {
+  design <- make_grouped_validation_design(group_a_diff = 0, group_b_diff = 0)
+  result <- validate_incomplete_trips(design,
+    catch = catch_total,
+    effort = hours_fished,
+    by = location
+  )
+
+  plot_data <- result$plot_data
+
+  # Required fields
+  expect_true("complete_est" %in% names(plot_data))
+  expect_true("incomplete_est" %in% names(plot_data))
+  expect_true("complete_ci_lower" %in% names(plot_data))
+  expect_true("complete_ci_upper" %in% names(plot_data))
+  expect_true("incomplete_ci_lower" %in% names(plot_data))
+  expect_true("incomplete_ci_upper" %in% names(plot_data))
+  expect_true("passed" %in% names(plot_data))
+  expect_true("group_labels" %in% names(plot_data))
+
+  # Should have 2 groups (site_a, site_b)
+  expect_length(plot_data$complete_est, 2)
+  expect_length(plot_data$incomplete_est, 2)
+  expect_length(plot_data$passed, 2)
+  expect_length(plot_data$group_labels, 2)
+
+  # Group labels should be character
+  expect_type(plot_data$group_labels, "character")
+})
+
+test_that("plot_data includes CI bounds for error bars", {
+  design <- make_validation_design(n_complete = 50, n_incomplete = 50)
+  result <- validate_incomplete_trips(design, catch = catch_total, effort = hours_fished)
+
+  plot_data <- result$plot_data
+
+  # CI bounds should be numeric
+  expect_type(plot_data$complete_ci_lower, "double")
+  expect_type(plot_data$complete_ci_upper, "double")
+  expect_type(plot_data$incomplete_ci_lower, "double")
+  expect_type(plot_data$incomplete_ci_upper, "double")
+
+  # Lower < estimate < upper
+  expect_true(plot_data$complete_ci_lower < plot_data$complete_est)
+  expect_true(plot_data$complete_ci_upper > plot_data$complete_est)
+  expect_true(plot_data$incomplete_ci_lower < plot_data$incomplete_est)
+  expect_true(plot_data$incomplete_ci_upper > plot_data$incomplete_est)
+})
+
+test_that("plot_data includes passed status for annotation", {
+  # Design where validation passes
+  design_pass <- make_validation_design(n_complete = 50, n_incomplete = 50, cpue_diff = 0)
+  result_pass <- validate_incomplete_trips(design_pass, catch = catch_total, effort = hours_fished)
+
+  expect_type(result_pass$plot_data$passed, "logical")
+  expect_true(result_pass$plot_data$passed)
+
+  # Design where validation fails (large difference)
+  design_fail <- make_validation_design(n_complete = 50, n_incomplete = 50, cpue_diff = 1.0)
+  result_fail <- validate_incomplete_trips(design_fail, catch = catch_total, effort = hours_fished)
+
+  expect_type(result_fail$plot_data$passed, "logical")
+  expect_false(result_fail$plot_data$passed)
+})
+
+test_that("plot_data passed status matches per-group results for grouped estimation", {
+  # Mixed results: group A passes, group B fails
+  design <- make_grouped_validation_design(group_a_diff = 0, group_b_diff = 1.0)
+  result <- validate_incomplete_trips(design,
+    catch = catch_total,
+    effort = hours_fished,
+    by = location
+  )
+
+  plot_data <- result$plot_data
+
+  # Should have one passed, one failed
+  expect_equal(sum(plot_data$passed), 1)
+  expect_equal(sum(!plot_data$passed), 1)
+})
