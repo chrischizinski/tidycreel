@@ -198,10 +198,11 @@ Plans:
   2. Warning messages reference Colorado C-SAP and Pollock et al. best practices
   3. Warning includes counts of complete vs incomplete trips for transparency
   4. Messages guide users toward diagnostic validation when complete sample is small
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 18-01: TBD
+- [ ] 18-01-PLAN.md — Complete trip percentage warning function with tests (TDD)
+- [ ] 18-02-PLAN.md — Integration into estimate_cpue with package option and per-group warnings
 
 ### Phase 19: Diagnostic Validation Framework
 **Goal**: Users can compare complete vs incomplete trip estimates with statistical tests
@@ -246,7 +247,7 @@ Plans:
 | 15. Mean-of-Ratios Estimator Core | v0.3.0 | Complete    | 2026-02-15 | - |
 | 16. Trip Truncation | v0.3.0 | Complete    | 2026-02-15 | - |
 | 17. Complete Trip Defaults | v0.3.0 | Complete    | 2026-02-15 | - |
-| 18. Sample Size Warnings | v0.3.0 | 0/TBD | Not started | - |
+| 18. Sample Size Warnings | v0.3.0 | 0/2 | Planned | - |
 | 19. Diagnostic Validation Framework | v0.3.0 | 0/TBD | Not started | - |
 | 20. Documentation & Guidance | v0.3.0 | 0/TBD | Not started | - |
 
