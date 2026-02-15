@@ -102,7 +102,7 @@ See: [.planning/milestones/v0.2.0-ROADMAP.md](milestones/v0.2.0-ROADMAP.md)
 **Milestone Goal:** Enable scientifically valid incomplete trip estimation with complete trip focus, following Colorado C-SAP best practices and Pollock et al. roving-access design principles.
 
 - [x] **Phase 13: Trip Status Infrastructure** - Handle trip completion status and duration inputs (completed 2026-02-14)
-- [ ] **Phase 14: Overnight Trip Duration** - Calculate trip duration for multi-day trips
+- [x] **Phase 14: Overnight Trip Duration** - Calculate trip duration for multi-day trips (completed 2026-02-15)
 - [ ] **Phase 15: Mean-of-Ratios Estimator Core** - MOR estimation with sample size validation
 - [ ] **Phase 16: Trip Truncation** - Threshold-based truncation for short trips
 - [ ] **Phase 17: Complete Trip Defaults** - Prioritize complete trips in API
@@ -241,7 +241,7 @@ Plans:
 | 1-7 | v0.1.0 | 12/12 | ✅ Complete | 2026-02-09 |
 | 8-12 | v0.2.0 | 10/10 | ✅ Complete | 2026-02-11 |
 | 13. Trip Status Infrastructure | v0.3.0 | 2/2 | ✅ Complete | 2026-02-14 |
-| 14. Overnight Trip Duration | v0.3.0 | 0/1 | Not started | - |
+| 14. Overnight Trip Duration | v0.3.0 | Complete    | 2026-02-15 | - |
 | 15. Mean-of-Ratios Estimator Core | v0.3.0 | 0/TBD | Not started | - |
 | 16. Trip Truncation | v0.3.0 | 0/TBD | Not started | - |
 | 17. Complete Trip Defaults | v0.3.0 | 0/TBD | Not started | - |
