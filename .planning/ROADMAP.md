@@ -183,10 +183,11 @@ Plans:
   2. User can explicitly specify use_trips parameter ("complete", "incomplete", "diagnostic")
   3. Package messages clearly indicate which trip type is being used
   4. Existing estimate_cpue() behavior unchanged when trip_status not provided
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 17-01: TBD
+- [ ] 17-01-PLAN.md — Core use_trips parameter with complete/incomplete filtering and validation (TDD)
+- [ ] 17-02-PLAN.md — Diagnostic comparison mode and informative messaging
 
 ### Phase 18: Sample Size Warnings
 **Goal**: Package warns when complete trip sample size is insufficient per Colorado C-SAP guidance
@@ -244,7 +245,7 @@ Plans:
 | 14. Overnight Trip Duration | v0.3.0 | Complete    | 2026-02-15 | - |
 | 15. Mean-of-Ratios Estimator Core | v0.3.0 | Complete    | 2026-02-15 | - |
 | 16. Trip Truncation | v0.3.0 | Complete    | 2026-02-15 | - |
-| 17. Complete Trip Defaults | v0.3.0 | 0/TBD | Not started | - |
+| 17. Complete Trip Defaults | v0.3.0 | 0/2 | Not started | - |
 | 18. Sample Size Warnings | v0.3.0 | 0/TBD | Not started | - |
 | 19. Diagnostic Validation Framework | v0.3.0 | 0/TBD | Not started | - |
 | 20. Documentation & Guidance | v0.3.0 | 0/TBD | Not started | - |
