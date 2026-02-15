@@ -58,6 +58,48 @@ new_creel_estimates <- function(estimates,
   )
 }
 
+#' Create a creel_estimates_mor object for mean-of-ratios diagnostic estimates
+#'
+#' Internal constructor for MOR (mean-of-ratios) diagnostic estimates from
+#' incomplete trips. Inherits from creel_estimates but adds mor-specific class
+#' for custom printing and Phase 19 validation framework detection.
+#'
+#' @inheritParams new_creel_estimates
+#' @param n_incomplete Number of incomplete trips used in estimation
+#' @param n_total Total number of interviews in dataset
+#'
+#' @return List of class c("creel_estimates_mor", "creel_estimates")
+#'
+#' @keywords internal
+#' @noRd
+new_creel_estimates_mor <- function(estimates,
+                                    method = "mean-of-ratios-cpue",
+                                    variance_method = "taylor",
+                                    design = NULL,
+                                    conf_level = 0.95,
+                                    by_vars = NULL,
+                                    n_incomplete = NULL,
+                                    n_total = NULL) {
+  # Call parent constructor
+  result <- new_creel_estimates(
+    estimates = estimates,
+    method = method,
+    variance_method = variance_method,
+    design = design,
+    conf_level = conf_level,
+    by_vars = by_vars
+  )
+
+  # Add MOR-specific metadata
+  result$n_incomplete <- n_incomplete
+  result$n_total <- n_total
+
+  # Add mor class BEFORE creel_estimates (S3 method dispatch priority)
+  class(result) <- c("creel_estimates_mor", "creel_estimates")
+
+  result
+}
+
 #' Format creel_estimates for printing
 #'
 #' @param x A creel_estimates object
@@ -82,6 +124,7 @@ format.creel_estimates <- function(x, ...) {
   method_display <- switch(x$method, # nolint: object_usage_linter
     total = "Total",
     "ratio-of-means-cpue" = "Ratio-of-Means CPUE",
+    "mean-of-ratios-cpue" = "Mean-of-Ratios CPUE",
     "ratio-of-means-hpue" = "Ratio-of-Means HPUE",
     "product-total-catch" = "Total Catch (Effort \u00d7 CPUE)",
     "product-total-harvest" = "Total Harvest (Effort \u00d7 HPUE)",
@@ -430,12 +473,21 @@ estimate_cpue <- function(design, by = NULL, variance = "taylor", conf_level = 0
   if (estimator == "mor") {
     validate_mor_availability(design) # nolint: object_usage_linter
 
+    # Issue warning about MOR assumptions BEFORE estimation
+    n_total <- nrow(design$interviews)
+    n_incomplete <- sum(design$interviews[[design$trip_status_col]] == "incomplete", na.rm = TRUE)
+    mor_estimation_warning(n_incomplete, n_total) # nolint: object_usage_linter
+
     # Filter interview data to incomplete trips only
     incomplete_interviews <- design$interviews[design$interviews[[design$trip_status_col]] == "incomplete", ]
 
     # Create new interview survey design with incomplete trips only
     design_incomplete <- design
     design_incomplete$interviews <- incomplete_interviews
+
+    # Store trip counts for MOR constructor (before design replacement)
+    design_incomplete$mor_n_incomplete <- n_incomplete
+    design_incomplete$mor_n_total <- n_total
 
     # Rebuild survey design for incomplete trips
     strata_cols <- design$strata_cols
@@ -916,15 +968,29 @@ estimate_cpue_total <- function(design, variance_method, conf_level, estimator =
     n = n
   )
 
-  # Return creel_estimates object
-  new_creel_estimates( # nolint: object_usage_linter
-    estimates = estimates_df,
-    method = method_name,
-    variance_method = variance_method,
-    design = design,
-    conf_level = conf_level,
-    by_vars = NULL
-  )
+  # Return appropriate creel_estimates object (MOR or standard)
+  if (estimator == "mor") {
+    # Get trip counts stored during MOR filtering
+    new_creel_estimates_mor( # nolint: object_usage_linter
+      estimates = estimates_df,
+      method = method_name,
+      variance_method = variance_method,
+      design = design,
+      conf_level = conf_level,
+      by_vars = NULL,
+      n_incomplete = design$mor_n_incomplete,
+      n_total = design$mor_n_total
+    )
+  } else {
+    new_creel_estimates( # nolint: object_usage_linter
+      estimates = estimates_df,
+      method = method_name,
+      variance_method = variance_method,
+      design = design,
+      conf_level = conf_level,
+      by_vars = NULL
+    )
+  }
 }
 
 #' Grouped CPUE estimation using svyby + svyratio
@@ -1054,15 +1120,29 @@ estimate_cpue_grouped <- function(design, by_vars, variance_method, conf_level, 
   col_order <- c(by_vars, "estimate", "se", "ci_lower", "ci_upper", "n")
   estimates_df <- estimates_df[col_order]
 
-  # Return creel_estimates object
-  new_creel_estimates( # nolint: object_usage_linter
-    estimates = estimates_df,
-    method = method_name,
-    variance_method = variance_method,
-    design = design,
-    conf_level = conf_level,
-    by_vars = by_vars
-  )
+  # Return appropriate creel_estimates object (MOR or standard)
+  if (estimator == "mor") {
+    # Get trip counts stored during MOR filtering
+    new_creel_estimates_mor( # nolint: object_usage_linter
+      estimates = estimates_df,
+      method = method_name,
+      variance_method = variance_method,
+      design = design,
+      conf_level = conf_level,
+      by_vars = by_vars,
+      n_incomplete = design$mor_n_incomplete,
+      n_total = design$mor_n_total
+    )
+  } else {
+    new_creel_estimates( # nolint: object_usage_linter
+      estimates = estimates_df,
+      method = method_name,
+      variance_method = variance_method,
+      design = design,
+      conf_level = conf_level,
+      by_vars = by_vars
+    )
+  }
 }
 
 #' Ungrouped harvest (HPUE) estimation using ratio-of-means

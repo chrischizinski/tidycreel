@@ -729,6 +729,25 @@ validate_mor_availability <- function(design) {
   invisible(TRUE)
 }
 
+#' Issue warning about MOR estimator assumptions
+#'
+#' Every MOR estimation call warns user about incomplete trip assumptions
+#' and complete trip preference per CONTEXT.md locked decisions.
+#'
+#' @param n_incomplete Number of incomplete trips
+#' @param n_total Total interviews
+#'
+#' @keywords internal
+#' @noRd
+mor_estimation_warning <- function(n_incomplete, n_total) {
+  cli::cli_warn(c(
+    "!" = "MOR estimator for incomplete trips. Complete trips preferred.",
+    "i" = "Using MOR with n={n_incomplete} incomplete of {n_total} total interviews.",
+    "i" = "Incomplete trips may have length-of-stay bias (Pollock et al.).",
+    "i" = "Validate incomplete estimates with {.fn validate_incomplete_trips} (Phase 19)."
+  ))
+}
+
 #' Validate interview data structure (Tier 1)
 #'
 #' Internal validator that checks interview data matches the creel_design structure.
