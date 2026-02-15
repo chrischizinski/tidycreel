@@ -10,7 +10,7 @@ estimate_cpue(
   variance = "taylor",
   conf_level = 0.95,
   estimator = "ratio-of-means",
-  use_trips = "complete",
+  use_trips = NULL,
   truncate_at = 0.5
 )
 }
@@ -39,13 +39,17 @@ Options: \code{"taylor"} (default, Taylor linearization),
 and errors if no incomplete trips are available. See Details.}
 
 \item{use_trips}{Character string specifying which trip type to use when
-trip_status field is provided. Options: \code{"complete"} (default) uses
-only complete trips with ratio-of-means estimator, or \code{"incomplete"}
-uses only incomplete trips with mean-of-ratios estimator. Following
-Colorado C-SAP and Pollock et al., complete trips are scientifically
-preferred (no length-of-stay bias). Incomplete trip estimation is
-diagnostic/research mode requiring validation. Parameter is ignored when
-trip_status field is not provided (perfect backward compatibility). See Details.}
+trip_status field is provided. Options: \code{"complete"} (default when
+NULL) uses only complete trips with ratio-of-means estimator,
+\code{"incomplete"} uses only incomplete trips with mean-of-ratios
+estimator, or \code{"diagnostic"} estimates CPUE using both trip types and
+returns a comparison table. Following Colorado C-SAP and Pollock et al.,
+complete trips are scientifically preferred (no length-of-stay bias).
+Incomplete trip estimation is diagnostic/research mode requiring
+validation. Diagnostic mode requires both complete and incomplete trips to
+be present. Default is NULL which defaults to \code{"complete"}.
+Parameter is ignored when trip_status field is not provided (perfect
+backward compatibility). See Details.}
 
 \item{truncate_at}{Numeric minimum trip duration (hours) for MOR estimation.
 Default is 0.5 hours (30 minutes) per Hoenig et al. (1997) to prevent
@@ -76,8 +80,11 @@ filters to complete trips only, following roving-access design best practices
 completion and avoid length-of-stay bias. Setting \code{use_trips = "incomplete"}
 filters to incomplete trips and automatically uses the MOR estimator.
 Incomplete trip estimation is diagnostic/research mode and requires validation
-(see Phase 19 validate_incomplete_trips). When trip_status is not provided,
-use_trips is ignored for perfect backward compatibility with v0.2.0.
+(see Phase 19 validate_incomplete_trips). Setting \code{use_trips = "diagnostic"}
+runs both complete and incomplete trip estimation and returns a comparison
+object with difference metrics and interpretation guidance. Diagnostic mode
+requires both trip types to be present in the data. When trip_status is not
+provided, use_trips is ignored for perfect backward compatibility with v0.2.0.
 
 \strong{Ratio-of-Means (default):}
 CPUE is estimated as the ratio of total catch to total effort. This is the

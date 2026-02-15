@@ -1573,3 +1573,72 @@ test_that("diagnostic comparison print method produces readable output", {
   output_text <- paste(output, collapse = " ")
   expect_match(output_text, "diagnostic|comparison", ignore.case = TRUE)
 })
+
+# Informative messaging tests ----
+
+test_that("estimate_cpue shows informative message for default complete trip usage", {
+  design <- make_grouped_use_trips_design()
+
+  # Should show message about using complete trips (default)
+  expect_message(
+    estimate_cpue(design),
+    "complete.*default|default.*complete"
+  )
+})
+
+test_that("estimate_cpue message includes sample size and percentage", {
+  design <- make_grouped_use_trips_design()
+
+  # Should show n and percentage
+  expect_message(
+    estimate_cpue(design),
+    "n=|n ="
+  )
+
+  expect_message(
+    estimate_cpue(design),
+    "%"
+  )
+})
+
+test_that("estimate_cpue shows message for explicit use_trips='complete'", {
+  design <- make_grouped_use_trips_design()
+
+  # Should show message but NOT indicate [default]
+  output <- capture_messages(estimate_cpue(design, use_trips = "complete"))
+  output_text <- paste(output, collapse = " ")
+
+  expect_match(output_text, "complete")
+  expect_no_match(output_text, "\\[default\\]")
+})
+
+test_that("estimate_cpue shows message for use_trips='incomplete'", {
+  design <- make_grouped_use_trips_design()
+
+  # Should show message about using incomplete trips
+  expect_message(
+    suppressWarnings(estimate_cpue(design, use_trips = "incomplete", estimator = "mor")),
+    "incomplete"
+  )
+})
+
+test_that("estimate_cpue shows message for diagnostic mode", {
+  design <- make_grouped_use_trips_design()
+
+  # Should show message about diagnostic comparison
+  expect_message(
+    suppressWarnings(estimate_cpue(design, use_trips = "diagnostic")),
+    "diagnostic|comparison"
+  )
+})
+
+test_that("estimate_cpue message indicates default when use_trips not specified", {
+  design <- make_grouped_use_trips_design()
+
+  # Call without specifying use_trips (should use default)
+  messages <- capture_messages(estimate_cpue(design))
+  messages_text <- paste(messages, collapse = " ")
+
+  # Should indicate [default]
+  expect_match(messages_text, "\\[default\\]")
+})

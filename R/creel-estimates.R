@@ -348,14 +348,15 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
 #'   (mean-of-ratios, for incomplete trips). MOR requires trip_status field
 #'   and errors if no incomplete trips are available. See Details.
 #' @param use_trips Character string specifying which trip type to use when
-#'   trip_status field is provided. Options: \code{"complete"} (default) uses
-#'   only complete trips with ratio-of-means estimator, \code{"incomplete"}
-#'   uses only incomplete trips with mean-of-ratios estimator, or
-#'   \code{"diagnostic"} estimates CPUE using both trip types and returns a
-#'   comparison table. Following Colorado C-SAP and Pollock et al., complete
-#'   trips are scientifically preferred (no length-of-stay bias). Incomplete
-#'   trip estimation is diagnostic/research mode requiring validation.
-#'   Diagnostic mode requires both complete and incomplete trips to be present.
+#'   trip_status field is provided. Options: \code{"complete"} (default when
+#'   NULL) uses only complete trips with ratio-of-means estimator,
+#'   \code{"incomplete"} uses only incomplete trips with mean-of-ratios
+#'   estimator, or \code{"diagnostic"} estimates CPUE using both trip types and
+#'   returns a comparison table. Following Colorado C-SAP and Pollock et al.,
+#'   complete trips are scientifically preferred (no length-of-stay bias).
+#'   Incomplete trip estimation is diagnostic/research mode requiring
+#'   validation. Diagnostic mode requires both complete and incomplete trips to
+#'   be present. Default is NULL which defaults to \code{"complete"}.
 #'   Parameter is ignored when trip_status field is not provided (perfect
 #'   backward compatibility). See Details.
 #' @param truncate_at Numeric minimum trip duration (hours) for MOR estimation.
@@ -472,10 +473,16 @@ estimate_cpue <- function(design,
                           variance = "taylor",
                           conf_level = 0.95,
                           estimator = "ratio-of-means",
-                          use_trips = "complete",
+                          use_trips = NULL,
                           truncate_at = 0.5) {
   # Capture by parameter BEFORE validation
   by_quo <- rlang::enquo(by)
+
+  # Track whether use_trips was explicitly provided (for messaging)
+  use_trips_is_default <- is.null(use_trips)
+  if (is.null(use_trips)) {
+    use_trips <- "complete"
+  }
 
   # Validate variance parameter
   valid_methods <- c("taylor", "bootstrap", "jackknife")
@@ -576,6 +583,12 @@ estimate_cpue <- function(design,
           "i" = "Ensure trip_status includes incomplete trips in interview data"
         ))
       }
+
+      # Informative message about diagnostic comparison
+      cli::cli_inform(c(
+        "i" = "Running diagnostic comparison",
+        " " = "Complete trips (n={n_complete}) vs Incomplete trips (n={n_incomplete})"
+      ))
 
       # Call estimate_cpue recursively for both trip types
       complete_result <- estimate_cpue(
@@ -692,6 +705,7 @@ estimate_cpue <- function(design,
     trip_status_col <- design$trip_status_col
     n_complete <- sum(design$interviews[[trip_status_col]] == "complete", na.rm = TRUE)
     n_incomplete <- sum(design$interviews[[trip_status_col]] == "incomplete", na.rm = TRUE)
+    n_total <- n_complete + n_incomplete
 
     if (use_trips == "complete") {
       # Check complete trips available
@@ -715,6 +729,20 @@ estimate_cpue <- function(design,
         ))
       }
 
+      # Informative message about trip selection
+      pct_complete <- round(100 * n_complete / n_total, 1) # nolint: object_usage_linter
+      if (use_trips_is_default) {
+        cli::cli_inform(c(
+          "i" = "Using complete trips for CPUE estimation",
+          " " = "(n={n_complete}, {pct_complete}% of {n_total} interviews) [default]"
+        ))
+      } else {
+        cli::cli_inform(c(
+          "i" = "Using complete trips for CPUE estimation",
+          " " = "(n={n_complete}, {pct_complete}% of {n_total} interviews)"
+        ))
+      }
+
       # Filter to complete trips and rebuild survey design
       complete_interviews <- design$interviews[design$interviews[[trip_status_col]] == "complete", ]
       design <- rebuild_interview_survey(design, complete_interviews) # nolint: object_usage_linter
@@ -728,6 +756,13 @@ estimate_cpue <- function(design,
           "i" = "Or check trip_status values in interview data"
         ))
       }
+
+      # Informative message about trip selection
+      pct_incomplete <- round(100 * n_incomplete / n_total, 1) # nolint: object_usage_linter
+      cli::cli_inform(c(
+        "i" = "Using incomplete trips for CPUE estimation",
+        " " = "(n={n_incomplete}, {pct_incomplete}% of {n_total} interviews)"
+      ))
 
       # Filter to incomplete trips and rebuild survey design
       # This lets MOR's validate_mor_availability see incomplete-only data
