@@ -372,6 +372,22 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
 #'   parameter value used), design (reference to source creel_design), conf_level
 #'   (numeric), and by_vars (character vector of grouping variable names or NULL).
 #'
+#' @section Package Options:
+#' \strong{Complete Trip Percentage Threshold:}
+#' The package option \code{tidycreel.min_complete_pct} controls the threshold
+#' for complete trip percentage warnings (default: 0.10 = 10\%). When the
+#' percentage of complete trips falls below this threshold, a warning is issued
+#' referencing Pollock et al. roving-access design best practices. Users can
+#' set a custom threshold for their session:
+#'
+#' \code{options(tidycreel.min_complete_pct = 0.05)}
+#'
+#' The default 10\% threshold follows Pollock et al. recommendations for
+#' scientifically valid estimation. Lowering the threshold is appropriate only
+#' for special cases with documented justification. Warnings help ensure data
+#' quality and guide users toward diagnostic validation when complete trip
+#' samples are insufficient.
+#'
 #' @details
 #' \strong{Trip Type Selection (use_trips):}
 #' When trip_status is provided, the \code{use_trips} parameter controls which

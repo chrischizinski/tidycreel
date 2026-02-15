@@ -1985,3 +1985,74 @@ test_that("complete trip warning works alongside MOR warning", {
   expect_true(any(pct_warnings))
   expect_true(any(mor_warnings))
 })
+
+# End-to-end integration test ----
+
+test_that("end-to-end integration: realistic scenario with low complete trips", {
+  # Create realistic scenario: 200 interviews with only 5% complete trips
+  # Use simple single-stratum design to avoid survey design issues
+  cal <- data.frame(
+    date = as.Date(seq.Date(as.Date("2024-06-01"), as.Date("2024-06-07"), by = "day")),
+    day_type = rep("weekday", 7)
+  )
+  design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+
+  # 200 interviews: 10 complete (5%), 190 incomplete
+  # Spread evenly across dates to ensure adequate samples
+  set.seed(42) # Reproducible
+  interviews <- data.frame(
+    date = as.Date(rep(cal$date, length.out = 200)),
+    catch_total = rpois(200, lambda = 3),
+    hours_fished = runif(200, min = 0.5, max = 6),
+    trip_status = c(rep("complete", 10), rep("incomplete", 190)),
+    trip_duration = runif(200, min = 0.5, max = 6)
+  )
+
+  design <- add_interviews(design, interviews,
+    catch = catch_total,
+    effort = hours_fished,
+    trip_status = trip_status,
+    trip_duration = trip_duration
+  ) # nolint: object_usage_linter
+
+  # Capture warnings
+  warnings <- character()
+  result <- withCallingHandlers(
+    estimate_cpue(design),
+    warning = function(w) {
+      warnings <<- c(warnings, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    }
+  )
+
+  # Verify warning fired
+  pct_warnings <- grepl("Only.*% of interviews are complete trips", warnings, ignore.case = TRUE)
+  expect_true(any(pct_warnings))
+
+  # Verify warning content
+  warning_text <- paste(warnings[pct_warnings], collapse = " ")
+  expect_match(warning_text, "5\\.0%|5%") # 5% complete
+  expect_match(warning_text, "threshold: 10%") # Shows threshold
+  expect_match(warning_text, "Pollock") # References Pollock et al.
+  expect_match(warning_text, "diagnostic") # Suggests diagnostic mode
+
+  # Verify estimate still succeeds after warning
+  expect_s3_class(result, "creel_estimates")
+  expect_true(nrow(result$estimates) == 1)
+  expect_true(result$estimates$n == 10) # Used 10 complete trips
+
+  # Test with custom threshold
+  withr::local_options(tidycreel.min_complete_pct = 0.03) # 3% threshold
+
+  # Should NOT warn now (5% > 3%)
+  warnings2 <- character()
+  result2 <- withCallingHandlers(
+    estimate_cpue(design),
+    warning = function(w) {
+      warnings2 <<- c(warnings2, conditionMessage(w))
+    }
+  )
+
+  pct_warnings2 <- grepl("Only.*% of interviews are complete trips", warnings2, ignore.case = TRUE)
+  expect_false(any(pct_warnings2))
+})
