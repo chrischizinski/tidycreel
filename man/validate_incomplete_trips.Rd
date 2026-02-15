@@ -39,7 +39,7 @@ estimation. Default is 0.5 hours (30 minutes). Passed to
 \code{\link{estimate_cpue}} for MOR estimator.}
 }
 \value{
-A creel_validation S3 object (list) with components:
+A creel_tost_validation S3 object (list) with components:
 \itemize{
 \item \code{overall_test}: List with TOST results for overall comparison
 (p_lower, p_upper, equivalence_passed, diff_estimate, equivalence_bounds)
@@ -80,7 +80,7 @@ The package option \code{tidycreel.equivalence_threshold} controls the
 equivalence threshold (default: 0.20 = ±20\\%). This threshold defines the
 bounds for equivalence as ±threshold * complete_trip_estimate. For example,
 with the default 20\\% threshold and a complete trip CPUE of 2.0 fish/hour,
-equivalence bounds are \link{1.6, 2.4} fish/hour. Users can set a custom threshold:
+equivalence bounds are 1.6 to 2.4 fish/hour. Users can set a custom threshold:
 
 \code{options(tidycreel.equivalence_threshold = 0.15)}
 }

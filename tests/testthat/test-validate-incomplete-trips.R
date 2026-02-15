@@ -104,12 +104,12 @@ make_grouped_validation_design <- function(group_a_diff = 0, group_b_diff = 0) {
 
 # Basic functionality tests ----
 
-test_that("validate_incomplete_trips returns creel_validation S3 object", {
+test_that("validate_incomplete_trips returns creel_tost_validation S3 object", {
   design <- make_validation_design(n_complete = 50, n_incomplete = 50)
 
   result <- validate_incomplete_trips(design, catch = catch_total, effort = hours_fished)
 
-  expect_s3_class(result, "creel_validation")
+  expect_s3_class(result, "creel_tost_validation")
   expect_type(result, "list")
 })
 

@@ -22,7 +22,7 @@
 #'   estimation. Default is 0.5 hours (30 minutes). Passed to
 #'   \code{\link{estimate_cpue}} for MOR estimator.
 #'
-#' @return A creel_validation S3 object (list) with components:
+#' @return A creel_tost_validation S3 object (list) with components:
 #'   \itemize{
 #'     \item \code{overall_test}: List with TOST results for overall comparison
 #'       (p_lower, p_upper, equivalence_passed, diff_estimate, equivalence_bounds)
@@ -42,7 +42,7 @@
 #' equivalence threshold (default: 0.20 = ±20\%). This threshold defines the
 #' bounds for equivalence as ±threshold * complete_trip_estimate. For example,
 #' with the default 20\% threshold and a complete trip CPUE of 2.0 fish/hour,
-#' equivalence bounds are [1.6, 2.4] fish/hour. Users can set a custom threshold:
+#' equivalence bounds are 1.6 to 2.4 fish/hour. Users can set a custom threshold:
 #'
 #' \code{options(tidycreel.equivalence_threshold = 0.15)}
 #'
@@ -364,7 +364,7 @@ validate_incomplete_trips <- function(design,
     )
   }
 
-  class(result) <- "creel_validation"
+  class(result) <- "creel_tost_validation"
   result
 }
 
@@ -498,4 +498,86 @@ perform_tost <- function(complete_estimate, complete_se, incomplete_estimate,
     se_diff = se_diff,
     df = df
   )
+}
+
+#' Format creel_tost_validation for printing
+#'
+#' @param x A creel_tost_validation object
+#' @param ... Additional arguments (currently ignored)
+#'
+#' @return Character vector with formatted output
+#'
+#' @export
+format.creel_tost_validation <- function(x, ...) {
+  output <- character()
+
+  output <- c(output, cli::cli_format_method({
+    cli::cli_h1("TOST Equivalence Validation Results")
+    cli::cli_text("Threshold: \u00b1{round(x$equivalence_threshold * 100, 1)}% of complete trip estimate")
+
+    # Overall status
+    if (x$passed) {
+      cli::cli_alert_success("Validation PASSED")
+    } else {
+      cli::cli_alert_danger("Validation FAILED")
+    }
+
+    cli::cli_text("")
+    cli::cli_text("Recommendation: {x$recommendation}")
+    cli::cli_text("")
+
+    # Overall test results
+    cli::cli_h2("Overall Test")
+
+    # Handle both ungrouped (metadata$complete) and grouped (metadata$overall$complete) structures
+    if (!is.null(x$metadata$overall)) {
+      # Grouped validation
+      complete_meta <- x$metadata$overall$complete # nolint: object_usage_linter
+      incomplete_meta <- x$metadata$overall$incomplete # nolint: object_usage_linter
+    } else {
+      # Ungrouped validation
+      complete_meta <- x$metadata$complete # nolint: object_usage_linter
+      incomplete_meta <- x$metadata$incomplete # nolint: object_usage_linter
+    }
+
+    cli::cli_text("Complete trips: n = {complete_meta$n}, CPUE = {round(complete_meta$estimate, 3)}")
+    cli::cli_text("Incomplete trips: n = {incomplete_meta$n}, CPUE = {round(incomplete_meta$estimate, 3)}")
+    cli::cli_text("Difference: {round(x$overall_test$diff_estimate, 3)}")
+    equiv_lower <- round(x$overall_test$equivalence_lower, 3) # nolint: object_usage_linter
+    equiv_upper <- round(x$overall_test$equivalence_upper, 3) # nolint: object_usage_linter
+    p_lower <- round(x$overall_test$p_lower, 4) # nolint: object_usage_linter
+    p_upper <- round(x$overall_test$p_upper, 4) # nolint: object_usage_linter
+    cli::cli_text("Equivalence bounds: [{equiv_lower}, {equiv_upper}]")
+    cli::cli_text("TOST p-values: p_lower = {p_lower}, p_upper = {p_upper}")
+
+    if (x$overall_test$equivalence_passed) {
+      cli::cli_alert_success("Overall equivalence: PASSED")
+    } else {
+      cli::cli_alert_danger("Overall equivalence: FAILED")
+    }
+
+    # Group results if present
+    if (!is.null(x$group_tests)) {
+      cli::cli_text("")
+      cli::cli_h2("Per-Group Tests")
+      n_groups <- nrow(x$group_tests) # nolint: object_usage_linter
+      n_passed <- sum(x$group_tests$equivalence_passed) # nolint: object_usage_linter
+      cli::cli_text("{n_passed}/{n_groups} group{?s} passed equivalence")
+    }
+  }))
+
+  output
+}
+
+#' Print creel_tost_validation
+#'
+#' @param x A creel_tost_validation object
+#' @param ... Additional arguments passed to format
+#'
+#' @return The input object, invisibly
+#'
+#' @export
+print.creel_tost_validation <- function(x, ...) {
+  cat(format(x, ...), sep = "\n")
+  invisible(x)
 }
