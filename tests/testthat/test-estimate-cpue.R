@@ -684,18 +684,18 @@ make_mor_grouped_design <- function() {
   )
   design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
 
-  # 32 interviews: 16 weekday (8 complete, 8 incomplete), 16 weekend (8 complete, 8 incomplete)
+  # 40 interviews: 20 weekday (10 complete, 10 incomplete), 20 weekend (10 complete, 10 incomplete)
   interviews <- data.frame(
     date = as.Date(c(
-      rep("2024-06-01", 8), rep("2024-06-02", 8),
-      rep("2024-06-08", 8), rep("2024-06-09", 8)
+      rep("2024-06-01", 10), rep("2024-06-02", 10),
+      rep("2024-06-08", 10), rep("2024-06-09", 10)
     )),
-    day_type = rep(c("weekday", "weekday", "weekend", "weekend"), each = 8),
-    catch_total = rep(c(2, 3, 4, 5, 6, 7, 8, 9), 4),
-    hours_fished = rep(c(2.0, 3.0, 4.0, 2.5, 3.5, 4.5, 5.0, 3.0), 4),
-    catch_kept = rep(c(2, 2, 3, 4, 5, 6, 7, 8), 4),
-    trip_status = rep(c("complete", "incomplete"), 16), # Alternating pattern
-    trip_duration = rep(c(2.0, 3.0, 4.0, 2.5, 3.5, 4.5, 5.0, 3.0), 4),
+    day_type = rep(c("weekday", "weekday", "weekend", "weekend"), each = 10),
+    catch_total = rep(c(2, 3, 4, 5, 6, 7, 8, 9, 10, 11), 4),
+    hours_fished = rep(c(2.0, 3.0, 4.0, 2.5, 3.5, 4.5, 5.0, 3.0, 4.0, 5.0), 4),
+    catch_kept = rep(c(2, 2, 3, 4, 5, 6, 7, 8, 9, 10), 4),
+    trip_status = rep(c("complete", "incomplete"), 20), # Alternating pattern
+    trip_duration = rep(c(2.0, 3.0, 4.0, 2.5, 3.5, 4.5, 5.0, 3.0, 4.0, 5.0), 4),
     stringsAsFactors = FALSE
   )
 
@@ -757,8 +757,8 @@ test_that("estimator='mor' supports grouped estimation", {
   expect_true("weekday" %in% result$estimates$day_type)
   expect_true("weekend" %in% result$estimates$day_type)
 
-  # Each group should use only incomplete trips (8 incomplete per group)
-  expect_true(all(result$estimates$n == 8))
+  # Each group should use only incomplete trips (10 incomplete per group)
+  expect_true(all(result$estimates$n == 10))
   expect_equal(result$method, "mean-of-ratios-cpue")
 })
 

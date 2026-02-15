@@ -276,8 +276,9 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
 #' Estimate CPUE (Catch Per Unit Effort) from a creel survey design
 #'
 #' Computes CPUE estimates with standard errors and confidence intervals
-#' from a creel survey design with attached interview data. Uses ratio-of-means
-#' estimation via survey::svyratio() to properly account for ratio variance.
+#' from a creel survey design with attached interview data. Supports both
+#' ratio-of-means (for complete trips) and mean-of-ratios (for incomplete trips)
+#' estimation methods.
 #'
 #' @param design A creel_design object with interviews attached via
 #'   \code{\link{add_interviews}}. The design must have an interview survey object
@@ -293,27 +294,38 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
 #'   \code{"jackknife"} (jackknife resampling, automatic JKn/JK1 selection).
 #' @param conf_level Numeric confidence level for confidence intervals (default:
 #'   0.95 for 95% confidence intervals). Must be between 0 and 1.
+#' @param estimator Character string specifying estimation method. Options:
+#'   \code{"ratio-of-means"} (default, for complete trips) or \code{"mor"}
+#'   (mean-of-ratios, for incomplete trips). MOR requires trip_status field
+#'   and errors if no incomplete trips are available. See Details.
 #'
 #' @return A creel_estimates S3 object (list) with components: estimates
 #'   (tibble with estimate, se, ci_lower, ci_upper, n columns, plus grouping
-#'   columns if \code{by} is specified), method (character: "ratio-of-means-cpue"),
-#'   variance_method (character: reflects the variance parameter value used),
-#'   design (reference to source creel_design), conf_level (numeric), and
-#'   by_vars (character vector of grouping variable names or NULL).
+#'   columns if \code{by} is specified), method (character: "ratio-of-means-cpue"
+#'   or "mean-of-ratios-cpue"), variance_method (character: reflects the variance
+#'   parameter value used), design (reference to source creel_design), conf_level
+#'   (numeric), and by_vars (character vector of grouping variable names or NULL).
 #'
 #' @details
-#' CPUE is estimated as the ratio of total catch to total effort (ratio-of-means
-#' estimator). This is the appropriate estimator for average catch rates when
-#' trip lengths (effort) vary. The function uses survey::svyratio() internally,
-#' which correctly accounts for the correlation between catch and effort in
-#' variance estimation.
+#' \strong{Ratio-of-Means (default):}
+#' CPUE is estimated as the ratio of total catch to total effort. This is the
+#' appropriate estimator for complete trip interviews (interview at trip end).
+#' The function uses survey::svyratio() internally, which correctly accounts
+#' for the correlation between catch and effort in variance estimation.
+#'
+#' \strong{Mean-of-Ratios (MOR):}
+#' When \code{estimator = "mor"}, CPUE is estimated as the mean of individual
+#' catch/effort ratios. This is the statistically appropriate estimator for
+#' incomplete trip interviews (interview during trip). MOR automatically filters
+#' to incomplete trips only and requires the trip_status field. The function
+#' uses survey::svymean() on individual ratios.
 #'
 #' The function performs sample size validation before estimation: errors if
 #' n < 10 (ungrouped or any group), warns if 10 <= n < 30. This follows best
 #' practices for ratio estimation stability.
 #'
 #' When grouped estimation is used (\code{by} is not NULL), survey::svyby()
-#' with svyratio correctly accounts for domain estimation variance.
+#' correctly accounts for domain estimation variance.
 #'
 #' \strong{Variance estimation methods:}
 #' \itemize{
@@ -359,8 +371,11 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
 #'
 #' # Bootstrap variance estimation
 #' result_boot <- estimate_cpue(design_with_interviews, variance = "bootstrap")
+#'
+#' # Mean-of-ratios for incomplete trips
+#' result_mor <- estimate_cpue(design_with_interviews, estimator = "mor")
 #' @export
-estimate_cpue <- function(design, by = NULL, variance = "taylor", conf_level = 0.95) {
+estimate_cpue <- function(design, by = NULL, variance = "taylor", conf_level = 0.95, estimator = "ratio-of-means") {
   # Capture by parameter BEFORE validation
   by_quo <- rlang::enquo(by)
 
@@ -371,6 +386,16 @@ estimate_cpue <- function(design, by = NULL, variance = "taylor", conf_level = 0
       "Invalid variance method: {.val {variance}}",
       "x" = "Must be one of: {.val {valid_methods}}",
       "i" = "Default is {.val taylor} (Taylor linearization)"
+    ))
+  }
+
+  # Validate estimator parameter
+  valid_estimators <- c("ratio-of-means", "mor")
+  if (!estimator %in% valid_estimators) {
+    cli::cli_abort(c(
+      "Invalid estimator: {.val {estimator}}",
+      "x" = "Must be one of: {.val {valid_estimators}}",
+      "i" = "{.val ratio-of-means} for complete trips, {.val mor} for incomplete trips"
     ))
   }
 
@@ -401,12 +426,43 @@ estimate_cpue <- function(design, by = NULL, variance = "taylor", conf_level = 0
     ))
   }
 
+  # If MOR estimator requested, validate and filter to incomplete trips
+  if (estimator == "mor") {
+    validate_mor_availability(design) # nolint: object_usage_linter
+
+    # Filter interview data to incomplete trips only
+    incomplete_interviews <- design$interviews[design$interviews[[design$trip_status_col]] == "incomplete", ]
+
+    # Create new interview survey design with incomplete trips only
+    design_incomplete <- design
+    design_incomplete$interviews <- incomplete_interviews
+
+    # Rebuild survey design for incomplete trips
+    strata_cols <- design$strata_cols
+    if (!is.null(strata_cols) && length(strata_cols) > 0) {
+      strata_formula <- stats::reformulate(strata_cols)
+      design_incomplete$interview_survey <- survey::svydesign(
+        ids = ~1,
+        strata = strata_formula,
+        data = incomplete_interviews
+      )
+    } else {
+      design_incomplete$interview_survey <- survey::svydesign(
+        ids = ~1,
+        data = incomplete_interviews
+      )
+    }
+
+    # Use the incomplete-trip design for estimation
+    design <- design_incomplete
+  }
+
   # Route to grouped or ungrouped estimation
   if (rlang::quo_is_null(by_quo)) {
     # Ungrouped estimation
     # Validate sample size
     validate_ratio_sample_size(design, NULL, type = "cpue") # nolint: object_usage_linter
-    return(estimate_cpue_total(design, variance, conf_level)) # nolint: object_usage_linter
+    return(estimate_cpue_total(design, variance, conf_level, estimator)) # nolint: object_usage_linter
   } else {
     # Grouped estimation
     # Resolve by parameter to column names
@@ -421,7 +477,7 @@ estimate_cpue <- function(design, by = NULL, variance = "taylor", conf_level = 0
 
     # Validate sample size per group
     validate_ratio_sample_size(design, by_vars, type = "cpue") # nolint: object_usage_linter
-    return(estimate_cpue_grouped(design, by_vars, variance, conf_level)) # nolint: object_usage_linter
+    return(estimate_cpue_grouped(design, by_vars, variance, conf_level, estimator)) # nolint: object_usage_linter
   }
 }
 
@@ -761,7 +817,7 @@ estimate_effort_grouped <- function(design, by_vars, variance_method, conf_level
 #'
 #' @keywords internal
 #' @noRd
-estimate_cpue_total <- function(design, variance_method, conf_level) {
+estimate_cpue_total <- function(design, variance_method, conf_level, estimator = "ratio-of-means") {
   interviews_data <- design$interviews
   catch_col <- design$catch_col
   effort_col <- design$effort_col
@@ -801,14 +857,47 @@ estimate_cpue_total <- function(design, variance_method, conf_level) {
     svy_design <- get_variance_design(design$interview_survey, variance_method) # nolint: object_usage_linter
   }
 
-  # Create formulas for ratio estimation
-  catch_formula <- stats::reformulate(catch_col)
-  effort_formula <- stats::reformulate(effort_col)
+  # Determine method based on estimator
+  if (estimator == "mor") {
+    # Mean-of-ratios: compute individual ratios, then take mean
+    # Add ratio column to data
+    interviews_data$cpue_ratio <- interviews_data[[catch_col]] / interviews_data[[effort_col]]
 
-  # Call survey::svyratio (suppress expected survey package warnings)
-  svy_result <- suppressWarnings(
-    survey::svyratio(catch_formula, effort_formula, svy_design)
-  )
+    # Rebuild survey design with ratio column included
+    strata_cols <- design$strata_cols
+    if (!is.null(strata_cols) && length(strata_cols) > 0) {
+      strata_formula <- stats::reformulate(strata_cols)
+      temp_survey <- survey::svydesign(
+        ids = ~1,
+        strata = strata_formula,
+        data = interviews_data
+      )
+    } else {
+      temp_survey <- survey::svydesign(
+        ids = ~1,
+        data = interviews_data
+      )
+    }
+    svy_design <- get_variance_design(temp_survey, variance_method) # nolint: object_usage_linter
+
+    # Call survey::svymean on ratio (suppress expected survey package warnings)
+    svy_result <- suppressWarnings(
+      survey::svymean(~cpue_ratio, svy_design)
+    )
+
+    method_name <- "mean-of-ratios-cpue"
+  } else {
+    # Ratio-of-means: standard svyratio approach
+    catch_formula <- stats::reformulate(catch_col)
+    effort_formula <- stats::reformulate(effort_col)
+
+    # Call survey::svyratio (suppress expected survey package warnings)
+    svy_result <- suppressWarnings(
+      survey::svyratio(catch_formula, effort_formula, svy_design)
+    )
+
+    method_name <- "ratio-of-means-cpue"
+  }
 
   # Extract estimates
   estimate <- as.numeric(coef(svy_result))
@@ -830,7 +919,7 @@ estimate_cpue_total <- function(design, variance_method, conf_level) {
   # Return creel_estimates object
   new_creel_estimates( # nolint: object_usage_linter
     estimates = estimates_df,
-    method = "ratio-of-means-cpue",
+    method = method_name,
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
@@ -842,7 +931,7 @@ estimate_cpue_total <- function(design, variance_method, conf_level) {
 #'
 #' @keywords internal
 #' @noRd
-estimate_cpue_grouped <- function(design, by_vars, variance_method, conf_level) {
+estimate_cpue_grouped <- function(design, by_vars, variance_method, conf_level, estimator = "ratio-of-means") {
   interviews_data <- design$interviews
   catch_col <- design$catch_col
   effort_col <- design$effort_col
@@ -858,8 +947,17 @@ estimate_cpue_grouped <- function(design, by_vars, variance_method, conf_level) 
     interviews_data <- interviews_data[!zero_effort, , drop = FALSE]
   }
 
-  # Build temporary survey design from filtered data if filtering occurred
-  if (any(zero_effort)) {
+  # Determine method based on estimator
+  if (estimator == "mor") {
+    # Mean-of-ratios: add ratio column
+    interviews_data$cpue_ratio <- interviews_data[[catch_col]] / interviews_data[[effort_col]]
+    method_name <- "mean-of-ratios-cpue"
+  } else {
+    method_name <- "ratio-of-means-cpue"
+  }
+
+  # Build temporary survey design from filtered data (or with ratio column for MOR)
+  if (any(zero_effort) || estimator == "mor") {
     # Get strata column(s) from original design
     strata_cols <- design$strata_cols
     if (!is.null(strata_cols) && length(strata_cols) > 0) {
@@ -883,30 +981,51 @@ estimate_cpue_grouped <- function(design, by_vars, variance_method, conf_level) 
   }
 
   # Build formulas for svyby
-  catch_formula <- stats::reformulate(catch_col)
-  effort_formula <- stats::reformulate(effort_col)
   by_formula <- stats::reformulate(by_vars)
 
-  # Call survey::svyby with svyratio (suppress expected survey package warnings)
-  svy_result <- suppressWarnings(survey::svyby(
-    formula = catch_formula,
-    by = by_formula,
-    design = svy_design,
-    FUN = survey::svyratio,
-    denominator = effort_formula,
-    vartype = c("se", "ci"),
-    ci.level = conf_level,
-    keep.names = FALSE
-  ))
+  if (estimator == "mor") {
+    # MOR: use svyby with svymean on ratio
+    svy_result <- suppressWarnings(survey::svyby(
+      formula = ~cpue_ratio,
+      by = by_formula,
+      design = svy_design,
+      FUN = survey::svymean,
+      vartype = c("se", "ci"),
+      ci.level = conf_level,
+      keep.names = FALSE
+    ))
 
-  # Extract estimate columns from svyby result
-  # svyratio creates column named "catch_col/effort_col"
-  ratio_col <- paste0(catch_col, "/", effort_col)
-  se_col <- paste0("se.", ratio_col)
-  estimate <- svy_result[[ratio_col]]
-  se <- svy_result[[se_col]]
-  ci_lower <- svy_result[["ci_l"]]
-  ci_upper <- svy_result[["ci_u"]]
+    # Extract estimate columns from svyby result
+    # svymean uses simpler column names: cpue_ratio, se, ci_l, ci_u
+    estimate <- svy_result[["cpue_ratio"]]
+    se <- svy_result[["se"]]
+    ci_lower <- svy_result[["ci_l"]]
+    ci_upper <- svy_result[["ci_u"]]
+  } else {
+    # Ratio-of-means: use svyby with svyratio
+    catch_formula <- stats::reformulate(catch_col)
+    effort_formula <- stats::reformulate(effort_col)
+
+    svy_result <- suppressWarnings(survey::svyby(
+      formula = catch_formula,
+      by = by_formula,
+      design = svy_design,
+      FUN = survey::svyratio,
+      denominator = effort_formula,
+      vartype = c("se", "ci"),
+      ci.level = conf_level,
+      keep.names = FALSE
+    ))
+
+    # Extract estimate columns from svyby result
+    # svyratio creates column named "catch_col/effort_col"
+    ratio_col <- paste0(catch_col, "/", effort_col)
+    se_col <- paste0("se.", ratio_col)
+    estimate <- svy_result[[ratio_col]]
+    se <- svy_result[[se_col]]
+    ci_lower <- svy_result[["ci_l"]]
+    ci_upper <- svy_result[["ci_u"]]
+  }
 
   # Calculate per-group sample sizes
   # Use aggregate to count rows per group combination
@@ -938,7 +1057,7 @@ estimate_cpue_grouped <- function(design, by_vars, variance_method, conf_level) 
   # Return creel_estimates object
   new_creel_estimates( # nolint: object_usage_linter
     estimates = estimates_df,
-    method = "ratio-of-means-cpue",
+    method = method_name,
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,

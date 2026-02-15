@@ -4,7 +4,13 @@
 \alias{estimate_cpue}
 \title{Estimate CPUE (Catch Per Unit Effort) from a creel survey design}
 \usage{
-estimate_cpue(design, by = NULL, variance = "taylor", conf_level = 0.95)
+estimate_cpue(
+  design,
+  by = NULL,
+  variance = "taylor",
+  conf_level = 0.95,
+  estimator = "ratio-of-means"
+)
 }
 \arguments{
 \item{design}{A creel_design object with interviews attached via
@@ -24,33 +30,46 @@ Options: \code{"taylor"} (default, Taylor linearization),
 
 \item{conf_level}{Numeric confidence level for confidence intervals (default:
 0.95 for 95\% confidence intervals). Must be between 0 and 1.}
+
+\item{estimator}{Character string specifying estimation method. Options:
+\code{"ratio-of-means"} (default, for complete trips) or \code{"mor"}
+(mean-of-ratios, for incomplete trips). MOR requires trip_status field
+and errors if no incomplete trips are available. See Details.}
 }
 \value{
 A creel_estimates S3 object (list) with components: estimates
 (tibble with estimate, se, ci_lower, ci_upper, n columns, plus grouping
-columns if \code{by} is specified), method (character: "ratio-of-means-cpue"),
-variance_method (character: reflects the variance parameter value used),
-design (reference to source creel_design), conf_level (numeric), and
-by_vars (character vector of grouping variable names or NULL).
+columns if \code{by} is specified), method (character: "ratio-of-means-cpue"
+or "mean-of-ratios-cpue"), variance_method (character: reflects the variance
+parameter value used), design (reference to source creel_design), conf_level
+(numeric), and by_vars (character vector of grouping variable names or NULL).
 }
 \description{
 Computes CPUE estimates with standard errors and confidence intervals
-from a creel survey design with attached interview data. Uses ratio-of-means
-estimation via survey::svyratio() to properly account for ratio variance.
+from a creel survey design with attached interview data. Supports both
+ratio-of-means (for complete trips) and mean-of-ratios (for incomplete trips)
+estimation methods.
 }
 \details{
-CPUE is estimated as the ratio of total catch to total effort (ratio-of-means
-estimator). This is the appropriate estimator for average catch rates when
-trip lengths (effort) vary. The function uses survey::svyratio() internally,
-which correctly accounts for the correlation between catch and effort in
-variance estimation.
+\strong{Ratio-of-Means (default):}
+CPUE is estimated as the ratio of total catch to total effort. This is the
+appropriate estimator for complete trip interviews (interview at trip end).
+The function uses survey::svyratio() internally, which correctly accounts
+for the correlation between catch and effort in variance estimation.
+
+\strong{Mean-of-Ratios (MOR):}
+When \code{estimator = "mor"}, CPUE is estimated as the mean of individual
+catch/effort ratios. This is the statistically appropriate estimator for
+incomplete trip interviews (interview during trip). MOR automatically filters
+to incomplete trips only and requires the trip_status field. The function
+uses survey::svymean() on individual ratios.
 
 The function performs sample size validation before estimation: errors if
 n < 10 (ungrouped or any group), warns if 10 <= n < 30. This follows best
 practices for ratio estimation stability.
 
 When grouped estimation is used (\code{by} is not NULL), survey::svyby()
-with svyratio correctly accounts for domain estimation variance.
+correctly accounts for domain estimation variance.
 
 \strong{Variance estimation methods:}
 \itemize{
@@ -96,4 +115,7 @@ result_90 <- estimate_cpue(design_with_interviews, conf_level = 0.90)
 
 # Bootstrap variance estimation
 result_boot <- estimate_cpue(design_with_interviews, variance = "bootstrap")
+
+# Mean-of-ratios for incomplete trips
+result_mor <- estimate_cpue(design_with_interviews, estimator = "mor")
 }

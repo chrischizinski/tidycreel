@@ -682,6 +682,53 @@ validate_ratio_sample_size <- function(design, by_vars, type = "cpue") {
   invisible(NULL)
 }
 
+#' Validate MOR estimator availability
+#'
+#' Checks that trip_status field exists and incomplete trips are available
+#' for mean-of-ratios estimation.
+#'
+#' @param design creel_design object
+#'
+#' @keywords internal
+#' @noRd
+validate_mor_availability <- function(design) {
+  # Check trip_status_col exists
+  if (is.null(design$trip_status_col)) {
+    cli::cli_abort(c(
+      "MOR estimator requires trip_status field.",
+      "x" = "Design has no trip_status_col set.",
+      "i" = "Call {.fn add_interviews} with {.arg trip_status} parameter.",
+      "i" = "See {.code ?add_interviews} for trip status specification."
+    ))
+  }
+
+  # Check trip_status column exists in data
+  if (!design$trip_status_col %in% names(design$interviews)) {
+    cli::cli_abort(c(
+      "trip_status column missing from interview data.",
+      "x" = "Expected column: {.val {design$trip_status_col}}",
+      "i" = "This is an internal error - please report."
+    ))
+  }
+
+  # Count incomplete trips
+  trip_statuses <- design$interviews[[design$trip_status_col]]
+  n_incomplete <- sum(trip_statuses == "incomplete", na.rm = TRUE)
+  n_total <- length(trip_statuses) # nolint: object_usage_linter
+
+  # Error if no incomplete trips
+  if (n_incomplete == 0) {
+    cli::cli_abort(c(
+      "MOR estimator requires incomplete trips.",
+      "x" = "All {n_total} interviews are complete trips.",
+      "i" = "Use {.code estimator = 'ratio-of-means'} for complete trips.",
+      "i" = "MOR is only appropriate for incomplete trip interviews."
+    ))
+  }
+
+  invisible(TRUE)
+}
+
 #' Validate interview data structure (Tier 1)
 #'
 #' Internal validator that checks interview data matches the creel_design structure.
@@ -956,7 +1003,10 @@ validate_trip_metadata <- function(interviews, trip_status_col, trip_duration_co
         min_duration <- 1 / 60
         if (any(duration_vals < min_duration & duration_vals >= 0, na.rm = TRUE)) {
           collection$push(sprintf( # nolint: line_length_linter
-            "Trip duration column '%s' contains values less than 1 minute (1/60 hours). Trip durations less than 1 minute are unrealistic",
+            paste(
+              "Trip duration column '%s' contains values less than 1 minute (1/60 hours).",
+              "Trip durations less than 1 minute are unrealistic"
+            ),
             trip_duration_col
           ))
         }
@@ -1033,19 +1083,19 @@ validate_trip_metadata <- function(interviews, trip_status_col, trip_duration_co
 
     # If both columns exist and are time-like, check computed duration
     if (trip_start_col %in% names(interviews) && # nolint: indentation_linter
-        interview_time_col %in% names(interviews)) {
+      interview_time_col %in% names(interviews)) { # nolint: indentation_linter
       start_vals <- interviews[[trip_start_col]]
       interview_vals <- interviews[[interview_time_col]]
 
       if ((inherits(start_vals, "POSIXct") || inherits(start_vals, "POSIXlt")) && # nolint: indentation_linter
-          (inherits(interview_vals, "POSIXct") || inherits(interview_vals, "POSIXlt"))) { # nolint: indentation_linter
+        (inherits(interview_vals, "POSIXct") || inherits(interview_vals, "POSIXlt"))) { # nolint: indentation_linter
         # Check timezone consistency
         tz_start <- attr(start_vals, "tzone")
         tz_interview <- attr(interview_vals, "tzone")
         # Only error if both explicitly set to different timezones
         if (!is.null(tz_start) && !is.null(tz_interview) && # nolint: indentation_linter
-            nzchar(tz_start) && nzchar(tz_interview) && # nolint: indentation_linter
-            tz_start != tz_interview) {
+          nzchar(tz_start) && nzchar(tz_interview) && # nolint: indentation_linter
+          tz_start != tz_interview) {
           collection$push(sprintf( # nolint: line_length_linter
             "trip_start timezone '%s' differs from interview_time timezone '%s'. Use the same timezone for both columns", # nolint: line_length_linter
             tz_start, tz_interview
@@ -1060,7 +1110,10 @@ validate_trip_metadata <- function(interviews, trip_status_col, trip_duration_co
         # No negative durations
         if (any(computed_duration < 0, na.rm = TRUE)) {
           collection$push(sprintf(
-            "Computed duration (interview_time - trip_start) is negative for some interviews. Check that interview_time > trip_start"
+            paste(
+              "Computed duration (interview_time - trip_start) is negative for some interviews.",
+              "Check that interview_time > trip_start"
+            )
           ))
         }
 
@@ -1068,7 +1121,10 @@ validate_trip_metadata <- function(interviews, trip_status_col, trip_duration_co
         min_duration <- 1 / 60
         if (any(computed_duration < min_duration & computed_duration >= 0, na.rm = TRUE)) {
           collection$push(sprintf(
-            "Computed duration (interview_time - trip_start) is less than 1 minute for some interviews. This is unrealistic"
+            paste(
+              "Computed duration (interview_time - trip_start) is less than 1 minute",
+              "for some interviews. This is unrealistic"
+            )
           ))
         }
 
