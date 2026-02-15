@@ -607,6 +607,10 @@ format.creel_tost_validation <- function(x, ...) {
 
 #' Print creel_tost_validation
 #'
+#' Prints formatted validation results and displays scatter plot comparing
+#' complete vs incomplete trip CPUE estimates. Plot includes y=x reference
+#' line, confidence interval error bars, and annotations for failed groups.
+#'
 #' @param x A creel_tost_validation object
 #' @param ... Additional arguments passed to format
 #'
@@ -614,6 +618,113 @@ format.creel_tost_validation <- function(x, ...) {
 #'
 #' @export
 print.creel_tost_validation <- function(x, ...) {
+  # Print formatted text output
   cat(format(x, ...), sep = "\n")
+  cat("\n")
+
+  # Generate scatter plot using plot_data
+  plot_data <- x$plot_data
+
+  # Set up plot margins and layout
+  graphics::par(mar = c(5, 5, 4, 2) + 0.1)
+
+  # Determine axis ranges (include CI bounds)
+  x_range <- range(c(
+    plot_data$complete_est,
+    plot_data$complete_ci_lower,
+    plot_data$complete_ci_upper
+  ), na.rm = TRUE)
+
+  y_range <- range(c(
+    plot_data$incomplete_est,
+    plot_data$incomplete_ci_lower,
+    plot_data$incomplete_ci_upper
+  ), na.rm = TRUE)
+
+  # Ensure ranges are equal (square plot)
+  all_range <- range(c(x_range, y_range))
+  x_range <- all_range
+  y_range <- all_range
+
+  # Create color scheme: blue for passed, red for failed
+  point_colors <- ifelse(plot_data$passed, "#0066CC", "#CC0000")
+
+  # Create base plot
+  graphics::plot(
+    x = plot_data$complete_est,
+    y = plot_data$incomplete_est,
+    xlim = x_range,
+    ylim = y_range,
+    xlab = "Complete Trip CPUE",
+    ylab = "Incomplete Trip CPUE",
+    main = "Validation: Incomplete vs Complete Trip Estimates",
+    pch = 19,
+    col = point_colors,
+    cex = 1.5,
+    las = 1
+  )
+
+  # Add y=x reference line
+  graphics::abline(a = 0, b = 1, col = "gray50", lty = 2, lwd = 2)
+
+  # Add error bars for confidence intervals
+  n_points <- length(plot_data$complete_est)
+  for (i in seq_len(n_points)) {
+    # Horizontal error bars (complete trip CIs)
+    graphics::segments(
+      x0 = plot_data$complete_ci_lower[i],
+      y0 = plot_data$incomplete_est[i],
+      x1 = plot_data$complete_ci_upper[i],
+      y1 = plot_data$incomplete_est[i],
+      col = point_colors[i],
+      lwd = 1.5
+    )
+
+    # Vertical error bars (incomplete trip CIs)
+    graphics::segments(
+      x0 = plot_data$complete_est[i],
+      y0 = plot_data$incomplete_ci_lower[i],
+      x1 = plot_data$complete_est[i],
+      y1 = plot_data$incomplete_ci_upper[i],
+      col = point_colors[i],
+      lwd = 1.5
+    )
+  }
+
+  # Add text labels for failed points
+  if (any(!plot_data$passed)) {
+    failed_indices <- which(!plot_data$passed)
+    for (i in failed_indices) {
+      label_text <- if (!is.null(plot_data$group_labels)) {
+        plot_data$group_labels[i]
+      } else {
+        "FAILED"
+      }
+
+      # Position label above point
+      graphics::text(
+        x = plot_data$complete_est[i],
+        y = plot_data$incomplete_est[i],
+        labels = label_text,
+        pos = 3, # above
+        col = "#CC0000",
+        cex = 0.8,
+        font = 2 # bold
+      )
+    }
+  }
+
+  # Add legend
+  graphics::legend(
+    "topleft",
+    legend = c("Passed equivalence", "Failed equivalence", "y=x reference"),
+    col = c("#0066CC", "#CC0000", "gray50"),
+    pch = c(19, 19, NA),
+    lty = c(NA, NA, 2),
+    lwd = c(NA, NA, 2),
+    bty = "n",
+    cex = 0.9
+  )
+
   invisible(x)
 }
