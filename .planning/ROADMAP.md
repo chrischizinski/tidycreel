@@ -147,16 +147,16 @@ Plans:
 **Depends on**: Phase 14
 **Requirements**: MOR-01, MOR-04, MOR-05
 **Success Criteria** (what must be TRUE):
-  1. User can call estimate_cpue() with use_trips parameter to select incomplete trips
+  1. User can call estimate_cpue() with estimator="mor" parameter to use MOR estimation
   2. MOR estimator produces CPUE estimates with SE and CI for incomplete trips
   3. Package validates sample size for MOR estimation (error if n<10, warn if n<30)
   4. User can select variance method for MOR (Taylor, bootstrap, jackknife)
-  5. MOR estimates use survey::svyratio with appropriate design structure
-**Plans**: TBD
+  5. MOR estimates use survey::svymean with incomplete-trip-filtered design
+**Plans**: 2 plans
 
 Plans:
-- [ ] 15-01: TBD
-- [ ] 15-02: TBD
+- [ ] 15-01-PLAN.md — Core MOR implementation with estimator parameter and validation (TDD)
+- [ ] 15-02-PLAN.md — MOR S3 class and diagnostic messaging for Phase 19 integration
 
 ### Phase 16: Trip Truncation
 **Goal**: Package truncates incomplete trips shorter than minimum threshold with correct variance
