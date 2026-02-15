@@ -214,17 +214,20 @@ make_grouped_test_design <- function() {
     count = rpois(120, lambda = 15)
   )
 
-  # Create synthetic interviews with adequate samples per group (15 per group = 30 total)
+  # Create synthetic interviews with adequate samples per group
+  # Need >=10 COMPLETE trips per group (new default behavior filters to complete)
+  # Create 40 interviews total: 20 per group, with 10 complete + 10 incomplete each
   interviews <- data.frame(
-    date = sample(dates, 30, replace = TRUE),
-    catch_total = rpois(30, lambda = 3),
-    hours_fished = runif(30, min = 1, max = 8),
-    trip_status = rep(c("complete", "incomplete"), 15),
-    trip_duration = runif(30, min = 1, max = 8)
+    date = c(
+      sample(dates[1:30], 20, replace = TRUE), # weekday
+      sample(dates[31:60], 20, replace = TRUE) # weekend
+    ),
+    day_type = rep(c("weekday", "weekend"), each = 20),
+    catch_total = rpois(40, lambda = 3),
+    hours_fished = runif(40, min = 1, max = 8),
+    trip_status = rep(c("complete", "incomplete"), 20), # 10 complete, 10 incomplete per group
+    trip_duration = runif(40, min = 1, max = 8)
   )
-  # Ensure at least 15 in each group
-  interviews$date[1:15] <- sample(dates[1:30], 15, replace = TRUE) # weekday
-  interviews$date[16:30] <- sample(dates[31:60], 15, replace = TRUE) # weekend
 
   # Create design
   design <- creel_design(calendar, date = date, strata = day_type) # nolint: object_usage_linter
@@ -274,7 +277,9 @@ test_that("estimate_total_catch grouped result n reflects per-group interview sa
   result <- suppressWarnings(estimate_total_catch(design, by = day_type)) # nolint: object_usage_linter
 
   expect_true("n" %in% names(result$estimates))
-  expect_equal(sum(result$estimates$n), nrow(design$interviews))
+  # After Phase 17, defaults to complete trips only
+  n_complete <- sum(design$interviews$trip_status == "complete")
+  expect_equal(sum(result$estimates$n), n_complete)
   expect_true(all(result$estimates$n > 0))
 })
 

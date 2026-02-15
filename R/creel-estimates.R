@@ -695,6 +695,13 @@ estimate_cpue <- function(design,
       ))
     }
 
+    # Auto-adjust use_trips when estimator=mor requested with default use_trips
+    if (estimator == "mor" && use_trips_is_default) {
+      use_trips <- "incomplete"
+      # Clear the is_default flag since we're now explicitly using incomplete
+      use_trips_is_default <- FALSE
+    }
+
     # Force MOR estimator for incomplete trips when estimator not explicitly set
     # NOTE: Above validation ensures if we reach here with use_trips='incomplete', estimator must be 'mor'
     if (use_trips == "incomplete") {

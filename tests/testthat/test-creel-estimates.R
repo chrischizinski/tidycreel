@@ -170,8 +170,10 @@ test_that("creel_estimates_mor contains trip count metadata", {
   design <- make_mor_test_design(n_incomplete = 25, n_complete = 15)
   result <- suppressWarnings(estimate_cpue(design, estimator = "mor")) # nolint: object_usage_linter
 
+  # After Phase 17, estimator="mor" auto-switches to use_trips="incomplete"
+  # So we filter to incomplete trips first, then n_total = n_incomplete
   expect_equal(result$n_incomplete, 25)
-  expect_equal(result$n_total, 40)
+  expect_equal(result$n_total, 25)
 })
 
 test_that("creel_estimates_mor print shows diagnostic banner", {
@@ -195,5 +197,6 @@ test_that("creel_estimates_mor print includes trip counts", {
   output <- capture.output(print(result))
   output_text <- paste(output, collapse = "\n")
 
-  expect_match(output_text, "25.*40", perl = TRUE) # n_incomplete of n_total
+  # After Phase 17, auto-switch to incomplete trips means n_total = n_incomplete
+  expect_match(output_text, "25.*25", perl = TRUE) # n_incomplete of n_total
 })

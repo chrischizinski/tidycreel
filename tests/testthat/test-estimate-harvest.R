@@ -416,7 +416,12 @@ test_that("HPUE and CPUE use same n (sample size should match)", {
   result_hpue <- estimate_harvest(design) # nolint: object_usage_linter
   result_cpue <- estimate_cpue(design) # nolint: object_usage_linter
 
-  expect_equal(result_hpue$estimates$n, result_cpue$estimates$n)
+  # After Phase 17, estimate_cpue defaults to complete trips only
+  # estimate_harvest doesn't have use_trips parameter yet, uses all trips
+  # TODO: Update when estimate_harvest gets use_trips parameter
+  n_complete <- sum(design$interviews$trip_status == "complete")
+  expect_equal(result_cpue$estimates$n, n_complete)
+  expect_equal(result_hpue$estimates$n, nrow(design$interviews))
 })
 
 # Custom confidence level test ----
