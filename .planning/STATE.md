@@ -10,19 +10,19 @@ See: .planning/PROJECT.md (updated 2026-02-14)
 ## Current Position
 
 Phase: 17 of 20 (Complete Trip Defaults)
-Plan: 1 of 1 in current phase
+Plan: 2 of 2 in current phase
 Status: Complete
-Last activity: 2026-02-15 — Completed 17-01 use_trips parameter implementation
+Last activity: 2026-02-15 — Completed 17-02 diagnostic comparison and informative messaging
 
-Progress: [█████████████░░░░░░░] 78% (30/36.7 plans estimated)
+Progress: [██████████████░░░░░░] 81% (31/36.7 plans estimated)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 28
+- Total plans completed: 29
 - v0.1.0 (Phases 1-7): 12 plans
 - v0.2.0 (Phases 8-12): 10 plans
-- v0.3.0 (Phases 13-20): 6 plans (in progress)
+- v0.3.0 (Phases 13-20): 7 plans (in progress)
 
 **By Milestone:**
 
@@ -69,6 +69,7 @@ Progress: [█████████████░░░░░░░] 78% (30
 | Plan | Tasks | Duration | Tests Added | Files Modified | Completed |
 |------|-------|----------|-------------|----------------|-----------|
 | 17-01 | 3 | 7 min | 16 | 2 | 2026-02-15 |
+| 17-02 | 2 | 14 min | 29 | 6 | 2026-02-15 |
 
 ## Accumulated Context
 
@@ -89,6 +90,11 @@ Progress: [█████████████░░░░░░░] 78% (30
 
 ### Recent Decisions
 
+- **Phase 17-02**: Use cli::cli_inform() for trip type messages — Informative level, not warning, follows tidyverse convention
+- **Phase 17-02**: Diagnostic mode calls estimate_cpue() recursively — Clean implementation, reuses existing logic
+- **Phase 17-02**: 10% threshold for "substantial difference" interpretation — Reasonable heuristic for practical significance
+- **Phase 17-02**: estimator='mor' auto-switches to use_trips='incomplete' — Backward compatibility for existing code
+- **Phase 17-02**: use_trips default changed to NULL to detect explicit usage — Enables [default] indicator in messages
 - **Phase 17-01**: Option C: Accept breaking change with complete-trip default behavior — Aligns with Colorado C-SAP best practices
 - **Phase 17-01**: Allow use_trips='complete' + estimator='mor' with warning (non-standard but valid) — Provides user flexibility while flagging unusual combinations
 - **Phase 16-02**: Use cli::cli_warn() when >10% truncated — Data quality concern requiring user attention
@@ -122,7 +128,7 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-02-15
-Stopped at: Completed 17-01-PLAN.md (use_trips parameter with complete-trip default) - Phase 17 complete
+Stopped at: Completed 17-02-PLAN.md (diagnostic comparison and informative messaging) - Phase 17 complete
 Resume file: None
 
 **Next step:** Begin Phase 18 (next phase in roadmap) or pause for review
