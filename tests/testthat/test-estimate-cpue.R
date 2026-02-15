@@ -1089,3 +1089,81 @@ test_that("MOR with truncation matches manual survey::svymean", {
   expect_equal(result$estimates$estimate, as.numeric(manual_result), tolerance = 1e-10)
   expect_equal(result$estimates$se, as.numeric(survey::SE(manual_result)), tolerance = 1e-10)
 })
+
+# MOR truncation messaging tests ----
+
+test_that("MOR stores truncation metadata when trips excluded", {
+  design <- make_truncation_test_design(n_above = 25, n_below = 5, threshold = 0.5)
+
+  result <- suppressWarnings(
+    suppressMessages(estimate_cpue(design, estimator = "mor", truncate_at = 0.5))
+  )
+
+  # Should store truncation metadata
+  expect_equal(result$mor_truncate_at, 0.5)
+  expect_equal(result$mor_n_truncated, 5)
+})
+
+test_that("MOR stores zero truncation when all trips above threshold", {
+  design <- make_truncation_test_design(n_above = 30, n_below = 0, threshold = 0.5)
+
+  result <- suppressWarnings(
+    suppressMessages(estimate_cpue(design, estimator = "mor", truncate_at = 0.5))
+  )
+
+  # Should store zero truncation
+  expect_equal(result$mor_truncate_at, 0.5)
+  expect_equal(result$mor_n_truncated, 0)
+})
+
+test_that("MOR truncation function warns when >10% truncated", {
+  # Test the function directly
+  expect_warning(
+    mor_truncation_message(n_truncated = 15, n_incomplete_original = 30, truncate_at = 0.5),
+    "High truncation rate may indicate data quality issues"
+  )
+})
+
+test_that("MOR truncation metadata NULL when truncate_at = NULL", {
+  design <- make_truncation_test_design(n_above = 25, n_below = 5, threshold = 0.5)
+
+  result <- suppressWarnings(
+    suppressMessages(estimate_cpue(design, estimator = "mor", truncate_at = NULL))
+  )
+
+  # Should have NULL truncate_at
+  expect_null(result$mor_truncate_at)
+  expect_equal(result$mor_n_truncated, 0)
+})
+
+test_that("MOR print output shows truncation details", {
+  design <- make_truncation_test_design(n_above = 25, n_below = 5, threshold = 0.5)
+
+  result <- suppressWarnings(
+    suppressMessages(estimate_cpue(design, estimator = "mor", truncate_at = 0.5))
+  )
+
+  # Capture print output
+  output <- capture.output(print(result))
+  output_text <- paste(output, collapse = "\n")
+
+  # Should contain truncation info
+  expect_match(output_text, "Truncation: 5 trips excluded")
+  expect_match(output_text, "0.5 hours")
+})
+
+test_that("MOR print output shows zero truncation details", {
+  design <- make_truncation_test_design(n_above = 30, n_below = 0, threshold = 0.5)
+
+  result <- suppressWarnings(
+    suppressMessages(estimate_cpue(design, estimator = "mor", truncate_at = 0.5))
+  )
+
+  # Capture print output
+  output <- capture.output(print(result))
+  output_text <- paste(output, collapse = "\n")
+
+  # Should contain zero truncation info
+  expect_match(output_text, "Truncation: 0 trips excluded")
+  expect_match(output_text, "threshold: 0.5 hours")
+})
