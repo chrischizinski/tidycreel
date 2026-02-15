@@ -1362,3 +1362,46 @@ mor_truncation_message <- function(n_truncated, n_incomplete_original, truncate_
     ))
   }
 }
+
+#' Warn when complete trip percentage is below threshold
+#'
+#' Internal function that issues a warning when the percentage of complete trips
+#' is below the recommended threshold following Pollock et al. roving-access
+#' design best practices. Alerts users to insufficient complete trip samples
+#' for scientifically valid estimation.
+#'
+#' @param n_complete Number of complete trips (integer)
+#' @param n_total Total number of interviews (integer)
+#' @param threshold Minimum percentage threshold for complete trips (numeric, default 0.10)
+#'
+#' @return NULL (invisible) - function called for side effects (warnings)
+#'
+#' @keywords internal
+#' @noRd
+warn_low_complete_pct <- function(n_complete, n_total, threshold = 0.10) {
+  # Handle edge case: n_total = 0
+  if (n_total == 0) {
+    return(invisible(NULL))
+  }
+
+  # Calculate percentage complete
+  pct_complete <- n_complete / n_total
+
+  # Skip if percentage meets threshold
+  if (pct_complete >= threshold) {
+    return(invisible(NULL))
+  }
+
+  # Format percentages for display
+  pct_complete_display <- sprintf("%.1f", pct_complete * 100) # nolint: object_usage_linter
+  threshold_display <- sprintf("%.0f", threshold * 100) # nolint: object_usage_linter
+
+  # Issue warning with scientific rationale and guidance
+  cli::cli_warn(c(
+    "!" = "Only {pct_complete_display}% of interviews are complete trips (threshold: {threshold_display}%)",
+    "i" = "Pollock et al. recommends >=10% complete trips for valid estimation",
+    "i" = "Consider use_trips='diagnostic' to validate incomplete trip estimates"
+  ))
+
+  invisible(NULL)
+}

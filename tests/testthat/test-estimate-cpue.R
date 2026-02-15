@@ -1642,3 +1642,98 @@ test_that("estimate_cpue message indicates default when use_trips not specified"
   # Should indicate [default]
   expect_match(messages_text, "\\[default\\]")
 })
+
+# Complete trip percentage warning tests ----
+
+test_that("warning fires when complete trip percentage < 10%", {
+  # Create design with 10 complete out of 120 total (8.3%)
+  design <- make_small_cpue_design(n = 120, n_incomplete = 110)
+
+  expect_warning(
+    estimate_cpue(design),
+    "Only.*% of interviews are complete trips"
+  )
+})
+
+test_that("no warning when complete trip percentage >= 10%", {
+  # Create design with 20 complete out of 120 total (16.7%)
+  design <- make_small_cpue_design(n = 120, n_incomplete = 100)
+
+  # Capture warnings
+  warnings <- character()
+  result <- withCallingHandlers(
+    estimate_cpue(design),
+    warning = function(w) {
+      warnings <<- c(warnings, conditionMessage(w))
+    }
+  )
+
+  # Filter for complete trip percentage warnings only
+  pct_warnings <- grepl("Only.*% of interviews are complete trips", warnings, ignore.case = TRUE)
+
+  expect_false(any(pct_warnings))
+})
+
+test_that("warning includes percentage in message", {
+  # Create design with 10 complete out of 120 total (8.3%)
+  design <- make_small_cpue_design(n = 120, n_incomplete = 110)
+
+  expect_warning(
+    estimate_cpue(design),
+    "8\\.3%|8%"
+  )
+})
+
+test_that("warning references Pollock et al.", {
+  # Create design with 10 complete out of 120 total (8.3%)
+  design <- make_small_cpue_design(n = 120, n_incomplete = 110)
+
+  expect_warning(
+    estimate_cpue(design),
+    "Pollock"
+  )
+})
+
+test_that("warning mentions diagnostic validation", {
+  # Create design with 10 complete out of 120 total (8.3%)
+  design <- make_small_cpue_design(n = 120, n_incomplete = 110)
+
+  expect_warning(
+    estimate_cpue(design),
+    "diagnostic"
+  )
+})
+
+test_that("warning shows threshold", {
+  # Create design with 10 complete out of 120 total (8.3%)
+  design <- make_small_cpue_design(n = 120, n_incomplete = 110)
+
+  expect_warning(
+    estimate_cpue(design),
+    "10%|threshold"
+  )
+})
+
+test_that("custom threshold (5%) changes trigger point", {
+  # Create scenario with 3 complete out of 100 total (3%)
+  # Should warn with threshold=0.05 (3% < 5%)
+  # Should also warn with threshold=0.10 (3% < 10%)
+
+  # With custom threshold 0.05, should warn
+  expect_warning(
+    warn_low_complete_pct(3, 100, threshold = 0.05),
+    "Only.*% of interviews are complete trips"
+  )
+
+  # Verify with threshold 0.02, should NOT warn (3% >= 2%)
+  expect_no_warning(
+    warn_low_complete_pct(3, 100, threshold = 0.02)
+  )
+})
+
+test_that("n_total=0 edge case produces no warning", {
+  # Should not error or warn
+  expect_no_warning(
+    warn_low_complete_pct(0, 0)
+  )
+})

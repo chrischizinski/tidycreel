@@ -714,6 +714,9 @@ estimate_cpue <- function(design,
     n_incomplete <- sum(design$interviews[[trip_status_col]] == "incomplete", na.rm = TRUE)
     n_total <- n_complete + n_incomplete
 
+    # Warn if complete trip percentage is below threshold
+    warn_low_complete_pct(n_complete, n_total) # nolint: object_usage_linter
+
     if (use_trips == "complete") {
       # Check complete trips available
       if (n_complete == 0) {
