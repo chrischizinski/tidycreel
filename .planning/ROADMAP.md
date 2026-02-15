@@ -106,7 +106,7 @@ See: [.planning/milestones/v0.2.0-ROADMAP.md](milestones/v0.2.0-ROADMAP.md)
 - [x] **Phase 15: Mean-of-Ratios Estimator Core** - MOR estimation with sample size validation (completed 2026-02-15)
 - [x] **Phase 16: Trip Truncation** - Threshold-based truncation for short trips (completed 2026-02-15)
 - [x] **Phase 17: Complete Trip Defaults** - Prioritize complete trips in API (completed 2026-02-15)
-- [ ] **Phase 18: Sample Size Warnings** - Colorado C-SAP warnings and guidance
+- [x] **Phase 18: Sample Size Warnings** - Colorado C-SAP warnings and guidance (completed 2026-02-15)
 - [ ] **Phase 19: Diagnostic Validation Framework** - Compare complete vs incomplete estimates
 - [ ] **Phase 20: Documentation & Guidance** - Vignette and best practices guide
 
@@ -247,7 +247,7 @@ Plans:
 | 15. Mean-of-Ratios Estimator Core | v0.3.0 | Complete    | 2026-02-15 | - |
 | 16. Trip Truncation | v0.3.0 | Complete    | 2026-02-15 | - |
 | 17. Complete Trip Defaults | v0.3.0 | Complete    | 2026-02-15 | - |
-| 18. Sample Size Warnings | v0.3.0 | 0/2 | Planned | - |
+| 18. Sample Size Warnings | v0.3.0 | Complete    | 2026-02-15 | - |
 | 19. Diagnostic Validation Framework | v0.3.0 | 0/TBD | Not started | - |
 | 20. Documentation & Guidance | v0.3.0 | 0/TBD | Not started | - |
 
