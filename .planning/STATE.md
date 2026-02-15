@@ -9,20 +9,20 @@ See: .planning/PROJECT.md (updated 2026-02-14)
 
 ## Current Position
 
-Phase: 16 of 20 (Trip Truncation)
-Plan: 2 of 2 in current phase
+Phase: 17 of 20 (Complete Trip Defaults)
+Plan: 1 of 1 in current phase
 Status: Complete
-Last activity: 2026-02-15 — Completed 16-02 MOR truncation messaging
+Last activity: 2026-02-15 — Completed 17-01 use_trips parameter implementation
 
-Progress: [█████████████░░░░░░░] 76% (29/36.7 plans estimated)
+Progress: [█████████████░░░░░░░] 78% (30/36.7 plans estimated)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 27
+- Total plans completed: 28
 - v0.1.0 (Phases 1-7): 12 plans
 - v0.2.0 (Phases 8-12): 10 plans
-- v0.3.0 (Phases 13-20): 5 plans (in progress)
+- v0.3.0 (Phases 13-20): 6 plans (in progress)
 
 **By Milestone:**
 
@@ -30,7 +30,7 @@ Progress: [█████████████░░░░░░░] 76% (29
 |-----------|--------|-------|--------|-----------|
 | v0.1.0 | 1-7 | 12/12 | Complete | 2026-02-09 |
 | v0.2.0 | 8-12 | 10/10 | Complete | 2026-02-11 |
-| v0.3.0 | 13-20 | 5/TBD | In progress | - |
+| v0.3.0 | 13-20 | 6/TBD | In progress | - |
 
 **Quality Metrics (v0.3.0 current):**
 - Test coverage: TBD (718 tests)
@@ -64,6 +64,12 @@ Progress: [█████████████░░░░░░░] 76% (29
 | 16-01 | 2 | 5 min | 9 | 2 | 2026-02-15 |
 | 16-02 | 2 | 6 min | 6 | 5 | 2026-02-15 |
 
+**Phase 17 Metrics:**
+
+| Plan | Tasks | Duration | Tests Added | Files Modified | Completed |
+|------|-------|----------|-------------|----------------|-----------|
+| 17-01 | 3 | 7 min | 16 | 2 | 2026-02-15 |
+
 ## Accumulated Context
 
 ### Research Summary (v0.3.0 Planning Session)
@@ -83,6 +89,8 @@ Progress: [█████████████░░░░░░░] 76% (29
 
 ### Recent Decisions
 
+- **Phase 17-01**: Option C: Accept breaking change with complete-trip default behavior — Aligns with Colorado C-SAP best practices
+- **Phase 17-01**: Allow use_trips='complete' + estimator='mor' with warning (non-standard but valid) — Provides user flexibility while flagging unusual combinations
 - **Phase 16-02**: Use cli::cli_warn() when >10% truncated — Data quality concern requiring user attention
 - **Phase 16-02**: Display truncation details in every MOR print output — Ensures transparency about sample modifications
 - **Phase 16-01**: Default truncate_at = 0.5 hours (30 minutes) per Hoenig et al. (1997) — Prevents unstable variance from very short incomplete trips
@@ -114,7 +122,7 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-02-15
-Stopped at: Completed 16-02-PLAN.md (MOR truncation diagnostic messaging) - Phase 16 complete
+Stopped at: Completed 17-01-PLAN.md (use_trips parameter with complete-trip default) - Phase 17 complete
 Resume file: None
 
-**Next step:** Begin Phase 17 (next phase in roadmap) or pause for review
+**Next step:** Begin Phase 18 (next phase in roadmap) or pause for review
