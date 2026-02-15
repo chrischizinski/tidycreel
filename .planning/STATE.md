@@ -10,19 +10,19 @@ See: .planning/PROJECT.md (updated 2026-02-14)
 ## Current Position
 
 Phase: 16 of 20 (Trip Truncation)
-Plan: 1 of 2 in current phase
+Plan: 2 of 2 in current phase
 Status: Complete
-Last activity: 2026-02-15 — Completed 16-01 MOR trip truncation
+Last activity: 2026-02-15 — Completed 16-02 MOR truncation messaging
 
-Progress: [█████████████░░░░░░░] 75% (28/36.7 plans estimated)
+Progress: [█████████████░░░░░░░] 76% (29/36.7 plans estimated)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 26
+- Total plans completed: 27
 - v0.1.0 (Phases 1-7): 12 plans
 - v0.2.0 (Phases 8-12): 10 plans
-- v0.3.0 (Phases 13-20): 4 plans (in progress)
+- v0.3.0 (Phases 13-20): 5 plans (in progress)
 
 **By Milestone:**
 
@@ -62,6 +62,7 @@ Progress: [█████████████░░░░░░░] 75% (28
 | Plan | Tasks | Duration | Tests Added | Files Modified | Completed |
 |------|-------|----------|-------------|----------------|-----------|
 | 16-01 | 2 | 5 min | 9 | 2 | 2026-02-15 |
+| 16-02 | 2 | 6 min | 6 | 5 | 2026-02-15 |
 
 ## Accumulated Context
 
@@ -82,6 +83,8 @@ Progress: [█████████████░░░░░░░] 75% (28
 
 ### Recent Decisions
 
+- **Phase 16-02**: Use cli::cli_warn() when >10% truncated — Data quality concern requiring user attention
+- **Phase 16-02**: Display truncation details in every MOR print output — Ensures transparency about sample modifications
 - **Phase 16-01**: Default truncate_at = 0.5 hours (30 minutes) per Hoenig et al. (1997) — Prevents unstable variance from very short incomplete trips
 - **Phase 16-01**: Truncation applied AFTER incomplete filtering, BEFORE sample size validation — Ensures validation uses post-truncation counts
 - **Phase 16-01**: Survey design rebuilt with truncated data — Required for correct variance computation
@@ -111,7 +114,7 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-02-15
-Stopped at: Completed 16-01-PLAN.md (MOR trip truncation with configurable threshold)
+Stopped at: Completed 16-02-PLAN.md (MOR truncation diagnostic messaging) - Phase 16 complete
 Resume file: None
 
-**Next step:** Continue Phase 16 with Plan 16-02 (truncation diagnostic messaging) or pause for review
+**Next step:** Begin Phase 17 (next phase in roadmap) or pause for review
