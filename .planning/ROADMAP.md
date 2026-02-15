@@ -214,11 +214,11 @@ Plans:
   3. Function produces validation plot (incomplete vs complete scatter with y=x reference line)
   4. Function returns diagnostic report with interpretation guidance and recommendation
   5. Report explains when incomplete trips may be valid substitute for complete trips
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 19-01: TBD
-- [ ] 19-02: TBD
+- [ ] 19-01-PLAN.md — TOST equivalence testing framework with configurable threshold (TDD)
+- [ ] 19-02-PLAN.md — Validation plots and print methods with statistical detail
 
 ### Phase 20: Documentation & Guidance
 **Goal**: Complete documentation explaining when and how to use incomplete trip estimation
@@ -248,10 +248,10 @@ Plans:
 | 16. Trip Truncation | v0.3.0 | Complete    | 2026-02-15 | - |
 | 17. Complete Trip Defaults | v0.3.0 | Complete    | 2026-02-15 | - |
 | 18. Sample Size Warnings | v0.3.0 | Complete    | 2026-02-15 | - |
-| 19. Diagnostic Validation Framework | v0.3.0 | 0/TBD | Not started | - |
+| 19. Diagnostic Validation Framework | v0.3.0 | 0/2 | Ready to execute | - |
 | 20. Documentation & Guidance | v0.3.0 | 0/TBD | Not started | - |
 
-**Overall:** 2 milestones shipped (22 plans), v0.3.0 in progress (8 phases, 2 plans complete)
+**Overall:** 2 milestones shipped (22 plans), v0.3.0 in progress (8 phases, 6 phases complete)
 
 ---
 *Roadmap last updated: 2026-02-14 for v0.3.0 milestone*
