@@ -531,6 +531,9 @@ estimate_cpue <- function(design,
 
       # Use truncated data
       incomplete_interviews <- truncated_interviews
+
+      # Issue truncation message
+      mor_truncation_message(n_truncated, n_incomplete, truncate_at) # nolint: object_usage_linter
     } else {
       n_truncated <- 0
     }

@@ -1328,3 +1328,37 @@ validate_grouping_compatibility <- function(design, by_vars) { # nolint: object_
 
   invisible(NULL)
 }
+
+#' Issue truncation message for MOR estimation
+#'
+#' @param n_truncated Number of trips excluded by truncation
+#' @param n_incomplete_original Original incomplete trip count (before truncation)
+#' @param truncate_at Threshold used (hours)
+#'
+#' @importFrom scales percent
+#'
+#' @keywords internal
+#' @noRd
+mor_truncation_message <- function(n_truncated, n_incomplete_original, truncate_at) {
+  pct_truncated <- n_truncated / n_incomplete_original
+
+  if (n_truncated == 0) {
+    # No trips truncated - informative message
+    cli::cli_inform(c(
+      "i" = "MOR truncation: 0 trips excluded (all >= {truncate_at} hours)"
+    ))
+  } else if (pct_truncated > 0.10) {
+    # >10% truncated - data quality warning
+    cli::cli_warn(c(
+      "!" = "MOR truncation: {n_truncated} trip{?s} excluded ({scales::percent(pct_truncated, accuracy = 0.1)})",
+      "i" = "Trips < {truncate_at} hours excluded to prevent unstable variance",
+      "!" = "High truncation rate may indicate data quality issues",
+      "i" = "Consider reviewing trip duration data for errors"
+    ))
+  } else {
+    # Normal truncation - informative message
+    cli::cli_inform(c(
+      "i" = "MOR truncation: {n_truncated} trip{?s} excluded (< {truncate_at} hours)"
+    ))
+  }
+}
