@@ -168,11 +168,11 @@ Plans:
   3. Package excludes trips shorter than threshold from MOR estimation with informative message
   4. Package computes variance correctly for MOR estimator with truncated sample
   5. Truncation message reports number of trips excluded and threshold used
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 16-01: TBD
-- [ ] 16-02: TBD
+- [ ] 16-01-PLAN.md — Core truncation parameter and filtering (TDD)
+- [ ] 16-02-PLAN.md — Truncation messaging and variance verification
 
 ### Phase 17: Complete Trip Defaults
 **Goal**: estimate_cpue() prioritizes complete trips by default following roving-access design
