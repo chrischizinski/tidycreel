@@ -210,10 +210,10 @@ Plans:
 **Requirements**: VALID-01, VALID-02, VALID-03, VALID-04
 **Success Criteria** (what must be TRUE):
   1. User can call validate_incomplete_trips() to compare complete vs incomplete estimates
-  2. Function performs statistical test for difference between estimate types
+  2. Function performs TOST equivalence test for overall and per-group comparisons
   3. Function produces validation plot (incomplete vs complete scatter with y=x reference line)
-  4. Function returns diagnostic report with interpretation guidance and recommendation
-  5. Report explains when incomplete trips may be valid substitute for complete trips
+  4. Function returns diagnostic report with test statistics and actionable recommendation on failure
+  5. Report provides guidance on next steps when validation fails (detailed explanation of when incomplete trips are valid deferred to Phase 20 vignette)
 **Plans**: 2 plans
 
 Plans:
