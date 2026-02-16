@@ -8,7 +8,7 @@ tidycreel v2 is a ground-up redesign providing domain translation for creel surv
 
 - ✅ **v0.1.0 Foundation** — Phases 1-7 (shipped 2026-02-09)
 - ✅ **v0.2.0 Interview-Based Estimation** — Phases 8-12 (shipped 2026-02-11)
-- 🚧 **v0.3.0 Incomplete Trips & Validation** — Phases 13-20 (in progress)
+- ✅ **v0.3.0 Incomplete Trips & Validation** — Phases 13-20 (shipped 2026-02-16)
 
 ## Phases
 
@@ -233,8 +233,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 20-01-PLAN.md — Incomplete trips vignette with scientific rationale and validation workflow
-- [ ] 20-02-PLAN.md — Update existing documentation and mark v0.3.0 complete
+- [x] 20-01-PLAN.md — Incomplete trips vignette with scientific rationale and validation workflow
+- [x] 20-02-PLAN.md — Update existing documentation and mark v0.3.0 complete
 
 ## Progress Summary
 
@@ -249,9 +249,9 @@ Plans:
 | 17. Complete Trip Defaults | v0.3.0 | 2/2 | ✅ Complete | 2026-02-15 |
 | 18. Sample Size Warnings | v0.3.0 | 2/2 | ✅ Complete | 2026-02-15 |
 | 19. Diagnostic Validation Framework | v0.3.0 | 2/2 | ✅ Complete | 2026-02-15 |
-| 20. Documentation & Guidance | v0.3.0 | 2/2 | Not started | - |
+| 20. Documentation & Guidance | v0.3.0 | 2/2 | ✅ Complete | 2026-02-16 |
 
-**Overall:** 2 milestones shipped (22 plans), v0.3.0 in progress (8 phases, 7 phases complete, 14 plans complete)
+**Overall:** 3 milestones shipped (32 plans), v0.3.0 complete (8 phases, 8 phases complete)
 
 ---
 *Roadmap last updated: 2026-02-15 for Phase 20 planning*
