@@ -44,7 +44,11 @@ test_that("add_interviews returns creel_design S3 class", {
   design <- make_interview_test_design()
   interviews <- make_test_interviews()
 
-  result <- add_interviews(design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration)
+  result <- add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration
+  )
 
   expect_s3_class(result, "creel_design")
 })
@@ -53,7 +57,11 @@ test_that("add_interviews attaches interview data to $interviews slot", {
   design <- make_interview_test_design()
   interviews <- make_test_interviews()
 
-  result <- add_interviews(design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration)
+  result <- add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration
+  )
 
   expect_false(is.null(result$interviews))
   # Check that interviews have been joined with calendar data
@@ -64,7 +72,11 @@ test_that("add_interviews constructs interview survey.design2 object eagerly", {
   design <- make_interview_test_design()
   interviews <- make_test_interviews()
 
-  result <- add_interviews(design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration)
+  result <- add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration
+  )
 
   expect_false(is.null(result$interview_survey))
   expect_s3_class(result$interview_survey, "survey.design2")
@@ -74,7 +86,11 @@ test_that("add_interviews preserves immutability - original design unchanged", {
   design <- make_interview_test_design()
   interviews <- make_test_interviews()
 
-  result <- add_interviews(design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration)
+  result <- add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration
+  )
 
   expect_null(design$interviews)
   expect_null(design$interview_survey)
@@ -98,7 +114,11 @@ test_that("add_interviews retains all original design fields", {
   design <- make_interview_test_design()
   interviews <- make_test_interviews()
 
-  result <- add_interviews(design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration)
+  result <- add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration
+  )
 
   expect_identical(result$calendar, design$calendar)
   expect_identical(result$date_col, design$date_col)
@@ -111,7 +131,11 @@ test_that("add_interviews stores catch_col and effort_col correctly", {
   design <- make_interview_test_design()
   interviews <- make_test_interviews()
 
-  result <- add_interviews(design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration)
+  result <- add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration
+  )
 
   expect_equal(result$catch_col, "catch_total")
   expect_equal(result$effort_col, "hours_fished")
@@ -121,7 +145,11 @@ test_that("add_interviews stores interview_type correctly (defaults to access)",
   design <- make_interview_test_design()
   interviews <- make_test_interviews()
 
-  result <- add_interviews(design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration)
+  result <- add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration
+  )
 
   expect_equal(result$interview_type, "access")
 })
@@ -130,7 +158,11 @@ test_that("add_interviews works without harvest column (harvest = NULL)", {
   design <- make_interview_test_design()
   interviews <- make_test_interviews()
 
-  result <- add_interviews(design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration)
+  result <- add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration
+  )
 
   expect_null(result$harvest_col)
   expect_s3_class(result, "creel_design")
@@ -177,7 +209,11 @@ test_that("add_interviews joins interviews with calendar data (strata inherited)
   design <- make_interview_test_design()
   interviews <- make_test_interviews()
 
-  result <- add_interviews(design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration)
+  result <- add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration
+  )
 
   # Check that calendar strata are present in joined interviews
   expect_true("day_type" %in% names(result$interviews))
@@ -191,10 +227,18 @@ test_that("add_interviews errors when interviews already attached", {
   design <- make_interview_test_design()
   interviews <- make_test_interviews()
 
-  result <- add_interviews(design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration)
+  result <- add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration
+  )
 
   expect_error(
-    add_interviews(result, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration),
+    add_interviews(
+      result, interviews,
+      catch = catch_total, effort = hours_fished,
+      trip_status = trip_status, trip_duration = trip_duration
+    ),
     "already"
   )
 })
@@ -204,7 +248,11 @@ test_that("add_interviews errors when design is not creel_design class", {
   fake_design <- list(calendar = make_interview_test_calendar())
 
   expect_error(
-    add_interviews(fake_design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration),
+    add_interviews(
+      fake_design, interviews,
+      catch = catch_total, effort = hours_fished,
+      trip_status = trip_status, trip_duration = trip_duration
+    ),
     "creel_design"
   )
 })
@@ -218,7 +266,11 @@ test_that("add_interviews errors when interview data has no Date column", {
   )
 
   expect_error(
-    add_interviews(design, bad_interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration),
+    add_interviews(
+      design, bad_interviews,
+      catch = catch_total, effort = hours_fished,
+      trip_status = trip_status, trip_duration = trip_duration
+    ),
     "Date"
   )
 })
@@ -242,7 +294,11 @@ test_that("add_interviews errors when date_col from design not found in intervie
   names(bad_interviews)[names(bad_interviews) == "date"] <- "survey_date"
 
   expect_error(
-    add_interviews(design, bad_interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration),
+    add_interviews(
+      design, bad_interviews,
+      catch = catch_total, effort = hours_fished,
+      trip_status = trip_status, trip_duration = trip_duration
+    ),
     "date"
   )
 })
@@ -253,7 +309,11 @@ test_that("add_interviews errors when catch column not found in data", {
   names(bad_interviews)[names(bad_interviews) == "catch_total"] <- "total_catch"
 
   expect_error(
-    add_interviews(design, bad_interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration),
+    add_interviews(
+      design, bad_interviews,
+      catch = catch_total, effort = hours_fished,
+      trip_status = trip_status, trip_duration = trip_duration
+    ),
     "catch_total"
   )
 })
@@ -264,7 +324,11 @@ test_that("add_interviews errors when effort column not found in data", {
   names(bad_interviews)[names(bad_interviews) == "hours_fished"] <- "effort_hours"
 
   expect_error(
-    add_interviews(design, bad_interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration),
+    add_interviews(
+      design, bad_interviews,
+      catch = catch_total, effort = hours_fished,
+      trip_status = trip_status, trip_duration = trip_duration
+    ),
     "hours_fished"
   )
 })
@@ -275,7 +339,11 @@ test_that("add_interviews errors when date column contains NA values", {
   bad_interviews$date[2] <- NA
 
   expect_error(
-    add_interviews(design, bad_interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration),
+    add_interviews(
+      design, bad_interviews,
+      catch = catch_total, effort = hours_fished,
+      trip_status = trip_status, trip_duration = trip_duration
+    ),
     "NA"
   )
 })
@@ -287,7 +355,11 @@ test_that("add_interviews errors when interview dates not in calendar", {
   bad_interviews$date[1] <- as.Date("2025-08-01")
 
   expect_error(
-    add_interviews(design, bad_interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration),
+    add_interviews(
+      design, bad_interviews,
+      catch = catch_total, effort = hours_fished,
+      trip_status = trip_status, trip_duration = trip_duration
+    ),
     "not found in design calendar"
   )
 })
@@ -315,7 +387,11 @@ test_that("interview_survey has correct class (survey.design2)", {
   design <- make_interview_test_design()
   interviews <- make_test_interviews()
 
-  result <- add_interviews(design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration)
+  result <- add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration
+  )
 
   expect_s3_class(result$interview_survey, "survey.design2")
 })
@@ -324,7 +400,11 @@ test_that("interview_survey uses ~1 for ids (terminal units, no clustering)", {
   design <- make_interview_test_design()
   interviews <- make_test_interviews()
 
-  result <- add_interviews(design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration)
+  result <- add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration
+  )
 
   # Check that ids formula is ~1 (terminal sampling units)
   expect_equal(as.character(result$interview_survey$call$ids), c("~", "1"))
@@ -334,7 +414,11 @@ test_that("interview_survey has correct strata (from calendar join)", {
   design <- make_interview_test_design()
   interviews <- make_test_interviews()
 
-  result <- add_interviews(design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration)
+  result <- add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration
+  )
 
   # Survey object should have strata based on day_type
   expect_true(!is.null(result$interview_survey$strata))
@@ -346,7 +430,11 @@ test_that("add_interviews stores validation results in $validation slot", {
   design <- make_interview_test_design()
   interviews <- make_test_interviews()
 
-  result <- add_interviews(design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration)
+  result <- add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration
+  )
 
   expect_s3_class(result$validation, "creel_validation")
 })
@@ -355,7 +443,11 @@ test_that("validation$passed is TRUE when interviews are valid", {
   design <- make_interview_test_design()
   interviews <- make_test_interviews()
 
-  result <- add_interviews(design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration)
+  result <- add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration
+  )
 
   expect_true(result$validation$passed)
 })
@@ -364,7 +456,11 @@ test_that("validation$tier is 1L (integer Tier 1)", {
   design <- make_interview_test_design()
   interviews <- make_test_interviews()
 
-  result <- add_interviews(design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration)
+  result <- add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration
+  )
 
   expect_identical(result$validation$tier, 1L)
 })
@@ -418,7 +514,11 @@ test_that("add_interviews stores trip_status_col in design object", {
   design <- make_interview_test_design()
   interviews <- make_test_interviews()
 
-  result <- add_interviews(design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration)
+  result <- add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration
+  )
 
   expect_equal(result$trip_status_col, "trip_status")
 })
@@ -427,7 +527,11 @@ test_that("add_interviews stores trip_duration_col in design object", {
   design <- make_interview_test_design()
   interviews <- make_test_interviews()
 
-  result <- add_interviews(design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration)
+  result <- add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration
+  )
 
   expect_equal(result$trip_duration_col, "trip_duration")
 })
@@ -441,7 +545,11 @@ test_that("trip_status normalized to lowercase (uppercase input)", {
   )
 
   result <- suppressWarnings({
-    add_interviews(design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration)
+    add_interviews(
+      design, interviews,
+      catch = catch_total, effort = hours_fished,
+      trip_status = trip_status, trip_duration = trip_duration
+    )
   })
 
   # Check all values are lowercase
@@ -459,7 +567,11 @@ test_that("case-insensitive trip_status accepted (Complete, COMPLETE, complete)"
   # Should not error (message is expected informational output)
   expect_no_error({
     result <- suppressWarnings({
-      add_interviews(design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration)
+      add_interviews(
+        design, interviews,
+        catch = catch_total, effort = hours_fished,
+        trip_status = trip_status, trip_duration = trip_duration
+      )
     })
   })
 })
@@ -469,7 +581,11 @@ test_that("trip status summary message emitted", {
   interviews <- make_test_interviews()
 
   expect_message(
-    add_interviews(design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration),
+    add_interviews(
+      design, interviews,
+      catch = catch_total, effort = hours_fished,
+      trip_status = trip_status, trip_duration = trip_duration
+    ),
     "Added.*interview"
   )
 })
@@ -480,7 +596,11 @@ test_that("trip status summary message shows correct counts", {
 
   # 7 complete, 3 incomplete
   expect_message(
-    add_interviews(design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration),
+    add_interviews(
+      design, interviews,
+      catch = catch_total, effort = hours_fished,
+      trip_status = trip_status, trip_duration = trip_duration
+    ),
     "7 complete.*3 incomplete"
   )
 })
@@ -491,7 +611,11 @@ test_that("trip status summary message shows correct percentages", {
 
   # 7 complete (70%), 3 incomplete (30%)
   expect_message(
-    add_interviews(design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration),
+    add_interviews(
+      design, interviews,
+      catch = catch_total, effort = hours_fished,
+      trip_status = trip_status, trip_duration = trip_duration
+    ),
     "70%.*30%"
   )
 })
@@ -566,7 +690,11 @@ test_that("error when trip_status column has invalid values", {
   interviews$trip_status[1] <- "finished"
 
   expect_error(
-    add_interviews(design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration),
+    add_interviews(
+      design, interviews,
+      catch = catch_total, effort = hours_fished,
+      trip_status = trip_status, trip_duration = trip_duration
+    ),
     "invalid value.*finished"
   )
 })
@@ -577,7 +705,11 @@ test_that("error when trip_status column has NA values", {
   interviews$trip_status[1] <- NA
 
   expect_error(
-    add_interviews(design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration),
+    add_interviews(
+      design, interviews,
+      catch = catch_total, effort = hours_fished,
+      trip_status = trip_status, trip_duration = trip_duration
+    ),
     "NA value"
   )
 })
@@ -638,7 +770,11 @@ test_that("error when trip_duration has negative values", {
   interviews$trip_duration[1] <- -1.0
 
   expect_error(
-    add_interviews(design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration),
+    add_interviews(
+      design, interviews,
+      catch = catch_total, effort = hours_fished,
+      trip_status = trip_status, trip_duration = trip_duration
+    ),
     "negative values"
   )
 })
@@ -649,7 +785,11 @@ test_that("error when trip_duration < 1/60 hours (less than 1 minute)", {
   interviews$trip_duration[1] <- 0.01 # 0.6 minutes
 
   expect_error(
-    add_interviews(design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration),
+    add_interviews(
+      design, interviews,
+      catch = catch_total, effort = hours_fished,
+      trip_status = trip_status, trip_duration = trip_duration
+    ),
     "less than 1 minute"
   )
 })
@@ -660,7 +800,11 @@ test_that("error when trip_duration has NA values", {
   interviews$trip_duration[1] <- NA
 
   expect_error(
-    add_interviews(design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration),
+    add_interviews(
+      design, interviews,
+      catch = catch_total, effort = hours_fished,
+      trip_status = trip_status, trip_duration = trip_duration
+    ),
     "NA value"
   )
 })
@@ -722,7 +866,11 @@ test_that("warning when trip_duration > 48 hours", {
   interviews$trip_duration[1] <- 50.0 # 50 hours
 
   expect_warning(
-    add_interviews(design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration),
+    add_interviews(
+      design, interviews,
+      catch = catch_total, effort = hours_fished,
+      trip_status = trip_status, trip_duration = trip_duration
+    ),
     "48 hours"
   )
 })
@@ -911,7 +1059,11 @@ test_that("format.creel_design() shows trip status summary when trip metadata pr
   interviews <- make_test_interviews()
 
   result <- suppressWarnings({
-    add_interviews(design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration)
+    add_interviews(
+      design, interviews,
+      catch = catch_total, effort = hours_fished,
+      trip_status = trip_status, trip_duration = trip_duration
+    )
   })
 
   formatted <- format(result)
