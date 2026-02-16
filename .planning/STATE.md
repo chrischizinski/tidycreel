@@ -2,27 +2,27 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-14)
+See: .planning/PROJECT.md (updated 2026-02-16)
 
 **Core value:** Creel biologists can analyze survey data using creel vocabulary without understanding survey package internals
 **Current focus:** v0.4.0 Bus-Route Survey Support
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 21 of 27 (Bus-Route Design Foundation)
 Plan: —
-Status: Defining requirements for v0.4.0
-Last activity: 2026-02-16 — Milestone v0.4.0 started
+Status: Ready to plan Phase 21
+Last activity: 2026-02-16 — v0.4.0 roadmap created
 
-Progress: [░░░░░░░░░░░░░░░░░░░░] 0% (0 plans complete)
+Progress: [████████████░░░░░░░░] 59% (38/65+ plans complete across all milestones)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 32
+- Total plans completed: 38
 - v0.1.0 (Phases 1-7): 12 plans
 - v0.2.0 (Phases 8-12): 10 plans
-- v0.3.0 (Phases 13-20): 10 plans (complete)
+- v0.3.0 (Phases 13-20): 16 plans
 
 **By Milestone:**
 
@@ -30,125 +30,61 @@ Progress: [░░░░░░░░░░░░░░░░░░░░] 0% (0 p
 |-----------|--------|-------|--------|-----------|
 | v0.1.0 | 1-7 | 12/12 | Complete | 2026-02-09 |
 | v0.2.0 | 8-12 | 10/10 | Complete | 2026-02-11 |
-| v0.3.0 | 13-20 | 10/10 | Complete | 2026-02-16 |
+| v0.3.0 | 13-20 | 16/16 | Complete | 2026-02-16 |
+| v0.4.0 | 21-27 | 0/TBD | Planning | - |
 
-**Quality Metrics (v0.3.0 current):**
-- Test coverage: TBD (718 tests)
+**Quality Metrics (v0.3.0 shipped):**
+- Test coverage: ~90% (718 tests)
 - R CMD check: 0 errors, 0 warnings
 - lintr: 0 issues
 
-**Phase 13 Metrics:**
-
-| Plan | Tasks | Duration | Tests Added | Files Modified | Completed |
-|------|-------|----------|-------------|----------------|-----------|
-| 13-01 | 2 | 17 min | 23 | 22 | 2026-02-14 |
-| 13-02 | 2 | 6 min | 27 | 5 | 2026-02-14 |
-
-**Phase 14 Metrics:**
-
-| Plan | Tasks | Duration | Tests Added | Files Modified | Completed |
-|------|-------|----------|-------------|----------------|-----------|
-| 14-01 | 2 | 5 min | 7 | 2 | 2026-02-15 |
-
-**Phase 15 Metrics:**
-
-| Plan | Tasks | Duration | Tests Added | Files Modified | Completed |
-|------|-------|----------|-------------|----------------|-----------|
-| 15-01 | 2 | 11 min | 11 | 5 | 2026-02-15 |
-| 15-02 | 2 | 6 min | 8 | 6 | 2026-02-15 |
-
-**Phase 16 Metrics:**
-
-| Plan | Tasks | Duration | Tests Added | Files Modified | Completed |
-|------|-------|----------|-------------|----------------|-----------|
-| 16-01 | 2 | 5 min | 9 | 2 | 2026-02-15 |
-| 16-02 | 2 | 6 min | 6 | 5 | 2026-02-15 |
-
-**Phase 17 Metrics:**
-
-| Plan | Tasks | Duration | Tests Added | Files Modified | Completed |
-|------|-------|----------|-------------|----------------|-----------|
-| 17-01 | 3 | 7 min | 16 | 2 | 2026-02-15 |
-| 17-02 | 2 | 14 min | 29 | 6 | 2026-02-15 |
-
-**Phase 18 Metrics:**
-
-| Plan | Tasks | Duration | Tests Added | Files Modified | Completed |
-|------|-------|----------|-------------|----------------|-----------|
-| 18-01 | 1 | 4 min | 8 | 3 | 2026-02-15 |
-| 18-02 | 2 | 10 min | 11 | 5 | 2026-02-15 |
-
-**Phase 19 Metrics:**
-
-| Plan | Tasks | Duration | Tests Added | Files Modified | Completed |
-|------|-------|----------|-------------|----------------|-----------|
-| 19-01 | 2 | 18 min | 58 | 6 | 2026-02-15 |
-| 19-02 | 2 | 6 min | 9 | 3 | 2026-02-15 |
-
-**Phase 20 Metrics:**
-
-| Plan | Tasks | Duration | Tests Added | Files Modified | Completed |
-|------|-------|----------|-------------|----------------|-----------|
-| 20-01 | 2 | 6 min | 0 | 1 | 2026-02-15 |
-| 20-02 | 2 | 2 min | 0 | 4 | 2026-02-16 |
-
 ## Accumulated Context
 
-### Research Summary (v0.3.0 Planning Session)
+### v0.4.0 Bus-Route Survey Support
 
-**Key findings from literature and Colorado C-SAP:**
-- Roving-access design (counts + complete trips only) is scientifically validated approach (Pollock et al.)
-- Colorado C-SAP uses ONLY complete trips for estimation, requires ≥10% complete trip interviews
-- Pooling complete + incomplete trips is statistically invalid (different sampling probabilities)
-- Mean-of-ratios with truncation (20-30 min threshold) can work for incomplete trips BUT requires validation
-- Incomplete trip interviews suffer from length-of-stay bias (longer trips oversampled)
-- Nonstationary catch rates (catch rate changes during trip) cause bias in incomplete trip estimates
+**Milestone Goal:** Implement statistically correct bus-route (nonuniform probability) creel survey estimation based on primary source methodology from Jones & Pollock (2012) and Malvestuto et al. (1978).
 
-**Decision for v0.3.0:**
-- Default to complete trips only (follows Colorado C-SAP best practice)
-- Support incomplete trip estimation as diagnostic/research mode with clear warnings
-- Never auto-pool complete + incomplete (scientifically invalid)
+**Critical Insight from Primary Source Analysis:**
+All existing R implementations (Pope, AnglerCreelSurveySimulation, Su & Liu) fundamentally misunderstand what πᵢ (inclusion probability) represents. They treat it as "interview probability" or "site characteristics" when it is actually the inclusion probability determined by the sampling design.
+
+**Key Implementation Requirements:**
+1. πᵢ = p_site × p_period (from sampling design, NOT site characteristics)
+2. Enumeration expansion (n_counted / n_interviewed) — missing from ALL existing code
+3. Jones & Pollock (2012) Eq. 19.4-19.5 exact implementation
+4. Validation against Malvestuto (1996) Box 20.6 published examples
+
+**tidycreel will be the ONLY R package with correct bus-route estimation.**
+
+### Phase Structure (7 phases, 21 requirements)
+
+**Phase 21-22: Foundation (BUSRT-06, BUSRT-07, BUSRT-01, BUSRT-05, VALID-03)**
+- Bus-route design constructor with nonuniform probabilities
+- Correct πᵢ calculation from sampling design
+
+**Phase 23: Data Integration (BUSRT-08, BUSRT-02, VALID-04)**
+- Interview data with enumeration counts
+- Progressive validation
+
+**Phase 24-25: Estimation (BUSRT-03, BUSRT-04, BUSRT-09, BUSRT-10, BUSRT-11)**
+- Effort and harvest estimators following primary sources exactly
+- Dispatch logic for bus-route designs
+
+**Phase 26: Validation (VALID-01, VALID-02, VALID-05)**
+- Reproduce Malvestuto Box 20.6 exactly
+- Integration testing
+
+**Phase 27: Documentation (DOCS-01 to DOCS-05)**
+- Comprehensive vignette
+- Equation traceability mapping
 
 ### Recent Decisions
 
-- **Phase 19-02**: Base R graphics used for validation plots (no ggplot2 dependency) — Consistent with package patterns, sufficient for diagnostic plots, avoids additional dependencies
-- **Phase 19-02**: Blue/red color scheme for passed/failed validation — High contrast, standard meaning, avoids red-green colorblindness issues
-- **Phase 19-02**: Square plot with equal axis ranges — Ensures y=x reference line is truly 45 degrees for accurate visual equivalence assessment
-- **Phase 19-01**: TOST (Two One-Sided Tests) chosen for equivalence testing — Statistically proves similarity rather than just failing to reject difference, standard approach for equivalence/bioequivalence studies
-- **Phase 19-01**: Default ±20% equivalence threshold appropriate for ecological field data — Balances rigor with realistic field variability, configurable via tidycreel.equivalence_threshold option
-- **Phase 19-01**: Grouped validation requires overall AND all groups to pass — Conservative approach prevents overlooking group-specific bias that could be masked by overall equivalence
-- **Phase 19-01**: creel_tost_validation class name avoids conflict with existing creel_validation — Tier 1-3 schema validation uses creel_validation, TOST validation needs separate class
-- **Phase 18-02**: Package option tidycreel.min_complete_pct provides flexible threshold configuration — Default 10% follows Pollock et al., allows override for special cases
-- **Phase 18-02**: Per-group warnings in grouped estimation — Each group checked independently for data quality (overall sample could be good but individual groups poor)
-- **Phase 18-02**: Added withr to Suggests — Required for withr::local_options() in tests for clean option management
-- **Phase 18-01**: Warning fires before sample size validation — Ensures visibility even when insufficient samples error occurs
-- **Phase 18-01**: Function name warn_low_complete_pct() — Shortened from complete_trip_percentage_warning() for 30-char linter limit
-- **Phase 17-02**: Use cli::cli_inform() for trip type messages — Informative level, not warning, follows tidyverse convention
-- **Phase 17-02**: Diagnostic mode calls estimate_cpue() recursively — Clean implementation, reuses existing logic
-- **Phase 17-02**: 10% threshold for "substantial difference" interpretation — Reasonable heuristic for practical significance
-- **Phase 17-02**: estimator='mor' auto-switches to use_trips='incomplete' — Backward compatibility for existing code
-- **Phase 17-02**: use_trips default changed to NULL to detect explicit usage — Enables [default] indicator in messages
-- **Phase 17-01**: Option C: Accept breaking change with complete-trip default behavior — Aligns with Colorado C-SAP best practices
-- **Phase 17-01**: Allow use_trips='complete' + estimator='mor' with warning (non-standard but valid) — Provides user flexibility while flagging unusual combinations
-- **Phase 16-02**: Use cli::cli_warn() when >10% truncated — Data quality concern requiring user attention
-- **Phase 16-02**: Display truncation details in every MOR print output — Ensures transparency about sample modifications
-- **Phase 16-01**: Default truncate_at = 0.5 hours (30 minutes) per Hoenig et al. (1997) — Prevents unstable variance from very short incomplete trips
-- **Phase 16-01**: Truncation applied AFTER incomplete filtering, BEFORE sample size validation — Ensures validation uses post-truncation counts
-- **Phase 16-01**: Survey design rebuilt with truncated data — Required for correct variance computation
-- **Phase 15-02**: MOR class added BEFORE creel_estimates in class vector — Ensures S3 dispatch priority for custom format/print methods
-- **Phase 15-02**: Warning issued on EVERY MOR call (not once-per-session) — Per CONTEXT.md locked decisions about diagnostic mode emphasis
-- **Phase 15-01**: MOR uses survey::svymean() on individual catch/effort ratios (not svyratio) — Statistically appropriate for incomplete trip estimation
-- **Phase 15-01**: MOR automatically filters to incomplete trips only — Ensures sample size validation and variance estimation use only incomplete trips
-- **Phase 14-01**: Timezone validation only errors on explicit timezone mismatch — POSIXct handles system default mixed with explicit timezone correctly
-- **Phase 14-01**: No code changes needed for overnight duration calculation — POSIXct difftime already handles overnight trips correctly
-- **Phase 13-01**: trip_status is required parameter (breaking change) — Essential for downstream incomplete trip estimators
-- **Phase 13-01**: Case-insensitive trip_status normalized to lowercase — Improves usability while maintaining data quality
-- **Phase 13-01**: Mutually exclusive duration input methods — Prevents ambiguity and user error
-- **Phase 12**: Coverage deviation accepted at 89.24% — Unreachable defensive error handling prevented by Tier 1 validation
-- **Phase 11**: Manual delta method for product variance — Transparent formula Var(E×C) = E²·Var(C) + C²·Var(E)
-- **Phase 10**: Shared validation for ratio estimators — validate_ratio_sample_size serves CPUE and harvest
+See PROJECT.md Key Decisions table for complete history. Recent decisions from v0.3.0:
 
-See PROJECT.md Key Decisions table for complete history.
+- **Phase 19**: TOST equivalence testing chosen for incomplete trip validation (standard bioequivalence approach)
+- **Phase 17**: Complete trip defaults following Colorado C-SAP best practices
+- **Phase 15**: MOR uses survey::svymean on individual ratios (statistically appropriate for incomplete trips)
+- **Phase 13**: trip_status required parameter (breaking change for downstream estimators)
 
 ### Pending Todos
 
@@ -161,7 +97,10 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-02-16
-Stopped at: Completed Phase 20 (final v0.3.0 phase) with Plan 20-02 documentation updates
+Stopped at: v0.4.0 roadmap creation complete
 Resume file: None
 
-**Next step:** v0.3.0 milestone complete - ready for package release or v0.4.0 planning
+**Next step:** `/gsd:plan-phase 21` to create detailed plans for Bus-Route Design Foundation
+
+---
+*State last updated: 2026-02-16 after v0.4.0 roadmap creation*

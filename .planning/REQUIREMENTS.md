@@ -68,13 +68,42 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (To be populated by roadmapper) | | |
+| BUSRT-06 | Phase 21 | Pending |
+| BUSRT-07 | Phase 21 | Pending |
+| BUSRT-01 | Phase 22 | Pending |
+| BUSRT-05 | Phase 22 | Pending |
+| VALID-03 | Phase 22 | Pending |
+| BUSRT-08 | Phase 23 | Pending |
+| BUSRT-02 | Phase 23 | Pending |
+| VALID-04 | Phase 23 | Pending |
+| BUSRT-03 | Phase 24 | Pending |
+| BUSRT-09 | Phase 24 | Pending |
+| BUSRT-11 | Phase 24 | Pending |
+| BUSRT-04 | Phase 25 | Pending |
+| BUSRT-10 | Phase 25 | Pending |
+| VALID-01 | Phase 26 | Pending |
+| VALID-02 | Phase 26 | Pending |
+| VALID-05 | Phase 26 | Pending |
+| DOCS-01 | Phase 27 | Pending |
+| DOCS-02 | Phase 27 | Pending |
+| DOCS-03 | Phase 27 | Pending |
+| DOCS-04 | Phase 27 | Pending |
+| DOCS-05 | Phase 27 | Pending |
 
 **Coverage:**
 - v0.4.0 requirements: 21 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 21 ⚠️
+- Mapped to phases: 21 (100% coverage)
+- Unmapped: 0
+
+**Phase Distribution:**
+- Phase 21 (Bus-Route Design Foundation): 2 requirements
+- Phase 22 (Inclusion Probability Calculation): 3 requirements
+- Phase 23 (Data Integration): 3 requirements
+- Phase 24 (Bus-Route Effort Estimation): 3 requirements
+- Phase 25 (Bus-Route Harvest Estimation): 2 requirements
+- Phase 26 (Primary Source Validation): 3 requirements
+- Phase 27 (Documentation & Traceability): 5 requirements
 
 ---
 *Requirements defined: 2026-02-16*
-*Last updated: 2026-02-16 after initial definition*
+*Last updated: 2026-02-16 after roadmap creation with 100% coverage*
