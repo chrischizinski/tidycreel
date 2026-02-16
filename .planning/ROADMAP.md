@@ -140,7 +140,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 14-01-PLAN.md — Overnight trip duration tests and timezone validation (TDD)
+- [x] 14-01-PLAN.md — Overnight trip duration tests and timezone validation (TDD)
 
 ### Phase 15: Mean-of-Ratios Estimator Core
 **Goal**: Users can estimate CPUE from incomplete trips using mean-of-ratios estimator
@@ -155,8 +155,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 15-01-PLAN.md — Core MOR implementation with estimator parameter and validation (TDD)
-- [ ] 15-02-PLAN.md — MOR S3 class and diagnostic messaging for Phase 19 integration
+- [x] 15-01-PLAN.md — Core MOR implementation with estimator parameter and validation (TDD)
+- [x] 15-02-PLAN.md — MOR S3 class and diagnostic messaging for Phase 19 integration
 
 ### Phase 16: Trip Truncation
 **Goal**: Package truncates incomplete trips shorter than minimum threshold with correct variance
@@ -171,8 +171,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 16-01-PLAN.md — Core truncation parameter and filtering (TDD)
-- [ ] 16-02-PLAN.md — Truncation messaging and variance verification
+- [x] 16-01-PLAN.md — Core truncation parameter and filtering (TDD)
+- [x] 16-02-PLAN.md — Truncation messaging and variance verification
 
 ### Phase 17: Complete Trip Defaults
 **Goal**: estimate_cpue() prioritizes complete trips by default following roving-access design
@@ -186,8 +186,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 17-01-PLAN.md — Core use_trips parameter with complete/incomplete filtering and validation (TDD)
-- [ ] 17-02-PLAN.md — Diagnostic comparison mode and informative messaging
+- [x] 17-01-PLAN.md — Core use_trips parameter with complete/incomplete filtering and validation (TDD)
+- [x] 17-02-PLAN.md — Diagnostic comparison mode and informative messaging
 
 ### Phase 18: Sample Size Warnings
 **Goal**: Package warns when complete trip sample size is insufficient per Pollock et al. roving-access design guidance
@@ -201,8 +201,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 18-01-PLAN.md — Complete trip percentage warning function with tests (TDD)
-- [ ] 18-02-PLAN.md — Integration into estimate_cpue with package option and per-group warnings
+- [x] 18-01-PLAN.md — Complete trip percentage warning function with tests (TDD)
+- [x] 18-02-PLAN.md — Integration into estimate_cpue with package option and per-group warnings
 
 ### Phase 19: Diagnostic Validation Framework
 **Goal**: Users can compare complete vs incomplete trip estimates with statistical tests
@@ -217,8 +217,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 19-01-PLAN.md — TOST equivalence testing framework with configurable threshold (TDD)
-- [ ] 19-02-PLAN.md — Validation plots and print methods with statistical detail
+- [x] 19-01-PLAN.md — TOST equivalence testing framework with configurable threshold (TDD)
+- [x] 19-02-PLAN.md — Validation plots and print methods with statistical detail
 
 ### Phase 20: Documentation & Guidance
 **Goal**: Complete documentation explaining when and how to use incomplete trip estimation
@@ -230,11 +230,11 @@ Plans:
   3. Documentation strongly warns against pooling complete and incomplete interviews
   4. Step-by-step validation workflow guide shows how to test incomplete trip assumptions
   5. Examples use realistic data demonstrating both valid and invalid incomplete trip scenarios
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 20-01: TBD
-- [ ] 20-02: TBD
+- [ ] 20-01-PLAN.md — Incomplete trips vignette with scientific rationale and validation workflow
+- [ ] 20-02-PLAN.md — Update existing documentation and mark v0.3.0 complete
 
 ## Progress Summary
 
@@ -243,16 +243,16 @@ Plans:
 | 1-7 | v0.1.0 | 12/12 | ✅ Complete | 2026-02-09 |
 | 8-12 | v0.2.0 | 10/10 | ✅ Complete | 2026-02-11 |
 | 13. Trip Status Infrastructure | v0.3.0 | 2/2 | ✅ Complete | 2026-02-14 |
-| 14. Overnight Trip Duration | v0.3.0 | Complete    | 2026-02-15 | - |
-| 15. Mean-of-Ratios Estimator Core | v0.3.0 | Complete    | 2026-02-15 | - |
-| 16. Trip Truncation | v0.3.0 | Complete    | 2026-02-15 | - |
-| 17. Complete Trip Defaults | v0.3.0 | Complete    | 2026-02-15 | - |
-| 18. Sample Size Warnings | v0.3.0 | Complete    | 2026-02-15 | - |
-| 19. Diagnostic Validation Framework | v0.3.0 | Complete    | 2026-02-15 | - |
-| 20. Documentation & Guidance | v0.3.0 | 0/TBD | Not started | - |
+| 14. Overnight Trip Duration | v0.3.0 | 2/2 | ✅ Complete | 2026-02-15 |
+| 15. Mean-of-Ratios Estimator Core | v0.3.0 | 2/2 | ✅ Complete | 2026-02-15 |
+| 16. Trip Truncation | v0.3.0 | 2/2 | ✅ Complete | 2026-02-15 |
+| 17. Complete Trip Defaults | v0.3.0 | 2/2 | ✅ Complete | 2026-02-15 |
+| 18. Sample Size Warnings | v0.3.0 | 2/2 | ✅ Complete | 2026-02-15 |
+| 19. Diagnostic Validation Framework | v0.3.0 | 2/2 | ✅ Complete | 2026-02-15 |
+| 20. Documentation & Guidance | v0.3.0 | 2/2 | Not started | - |
 
-**Overall:** 2 milestones shipped (22 plans), v0.3.0 in progress (8 phases, 6 phases complete)
+**Overall:** 2 milestones shipped (22 plans), v0.3.0 in progress (8 phases, 7 phases complete, 14 plans complete)
 
 ---
-*Roadmap last updated: 2026-02-14 for v0.3.0 milestone*
+*Roadmap last updated: 2026-02-15 for Phase 20 planning*
 *See .planning/MILESTONES.md for full milestone history*
