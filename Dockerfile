@@ -37,7 +37,7 @@ COPY DESCRIPTION NAMESPACE ./
 RUN --mount=type=cache,target=/root/.cache/R,sharing=locked \
     Rscript -e 'options(repos = c(CRAN = "https://cloud.r-project.org"), pak.sysreqs = FALSE); install.packages("pak")' \
     && Rscript -e 'options(repos = c(CRAN = "https://cloud.r-project.org"), pak.sysreqs = FALSE); pak::local_install_deps(dependencies = c("Depends", "Imports", "LinkingTo"))' \
-    && Rscript -e 'options(repos = c(CRAN = "https://cloud.r-project.org")); pak::pkg_install(c("rcmdcheck", "testthat", "lintr", "styler", "readr"))'
+    && Rscript -e 'options(repos = c(CRAN = "https://cloud.r-project.org")); pak::pkg_install(c("devtools", "rcmdcheck", "testthat", "lintr", "styler", "readr"))'
 
 FROM base AS final
 
