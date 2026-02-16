@@ -108,7 +108,7 @@ See: [.planning/milestones/v0.2.0-ROADMAP.md](milestones/v0.2.0-ROADMAP.md)
 - [x] **Phase 17: Complete Trip Defaults** - Prioritize complete trips in API (completed 2026-02-15)
 - [x] **Phase 18: Sample Size Warnings** - Colorado C-SAP warnings and guidance (completed 2026-02-15)
 - [x] **Phase 19: Diagnostic Validation Framework** - Compare complete vs incomplete estimates (completed 2026-02-15)
-- [ ] **Phase 20: Documentation & Guidance** - Vignette and best practices guide
+- [x] **Phase 20: Documentation & Guidance** - Vignette and best practices guide (completed 2026-02-16)
 
 ## Phase Details
 
@@ -249,7 +249,7 @@ Plans:
 | 17. Complete Trip Defaults | v0.3.0 | 2/2 | ✅ Complete | 2026-02-15 |
 | 18. Sample Size Warnings | v0.3.0 | 2/2 | ✅ Complete | 2026-02-15 |
 | 19. Diagnostic Validation Framework | v0.3.0 | 2/2 | ✅ Complete | 2026-02-15 |
-| 20. Documentation & Guidance | v0.3.0 | 2/2 | ✅ Complete | 2026-02-16 |
+| 20. Documentation & Guidance | v0.3.0 | Complete    | 2026-02-16 | 2026-02-16 |
 
 **Overall:** 3 milestones shipped (32 plans), v0.3.0 complete (8 phases, 8 phases complete)
 
