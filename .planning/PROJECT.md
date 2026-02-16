@@ -8,19 +8,25 @@ A ground-up redesign of tidycreel as a domain-translator R package for creel sur
 
 Creel biologists can analyze survey data using creel vocabulary without ever understanding survey package internals (PSUs, FPCs, calibration weights) — while power users can access underlying survey objects when needed for advanced work.
 
-## Current Milestone: v0.3.0 Incomplete Trips & Validation
+## Current State
 
-**Goal:** Enable scientifically valid incomplete trip estimation with complete trip focus, following Colorado C-SAP best practices and Pollock et al. roving-access design principles.
+**Latest Release:** v0.3.0 Incomplete Trips & Validation (shipped 2026-02-16)
 
-**Target features:**
-- Trip completion status tracking (complete vs. incomplete interviews)
-- Mean-of-ratios estimator for incomplete trips with configurable truncation threshold
-- Overnight trip duration calculation (time spans across multiple days)
-- Diagnostic validation framework (test if incomplete ≈ complete estimates)
-- Default to complete trips only for catch rate (roving-access design, Colorado C-SAP)
-- Sample size warnings when < 10% of interviews are complete trips (per Colorado C-SAP guidance)
-- Clear documentation on when to use complete vs. incomplete trip approaches
-- No auto-pooling of complete + incomplete (scientifically invalid per Pollock et al.)
+**Package Capabilities:**
+- Effort estimation from instantaneous count data (v0.1.0)
+- CPUE and harvest estimation from interview data with ratio-of-means (v0.2.0)
+- Total catch/harvest estimation with delta method variance propagation (v0.2.0)
+- Trip completion status tracking with complete vs. incomplete trip handling (v0.3.0)
+- Mean-of-ratios estimator for incomplete trips with configurable truncation (v0.3.0)
+- TOST equivalence testing to validate incomplete trip assumptions (v0.3.0)
+- Complete trip defaults following Colorado C-SAP best practices (v0.3.0)
+
+## Next Milestone Goals
+
+**Future Focus Areas:**
+- Multi-species support with covariance framework (v0.4.0+)
+- Bus-route design with systematic access point coverage (v0.4.0+)
+- Advanced QA/QC diagnostics for interview data quality (v1.0.0)
 
 ## Requirements
 
@@ -50,9 +56,21 @@ Creel biologists can analyze survey data using creel vocabulary without ever und
 - ✓ Test coverage ≥85% overall, ≥95% core functions (89.24% achieved) — v0.2.0
 - ✓ All functions pass R CMD check with 0 errors/warnings — v0.2.0
 
+**v0.3.0 - Incomplete Trips & Validation** — Shipped 2026-02-16
+- ✓ Trip completion status tracking (trip_status parameter in add_interviews) — v0.3.0
+- ✓ Trip duration validation with overnight trip support (timezone handling) — v0.3.0
+- ✓ Mean-of-ratios estimator for incomplete trips (estimator="mor") — v0.3.0
+- ✓ Configurable trip truncation threshold (default 0.5 hours per Hoenig et al.) — v0.3.0
+- ✓ Complete trip defaults following Colorado C-SAP best practices (use_trips parameter) — v0.3.0
+- ✓ Sample size warnings when <10% complete trips (Pollock et al. threshold) — v0.3.0
+- ✓ TOST equivalence testing framework (validate_incomplete_trips) — v0.3.0
+- ✓ Diagnostic comparison mode for complete vs. incomplete estimates — v0.3.0
+- ✓ Comprehensive 794-line vignette with scientific rationale and validation workflow — v0.3.0
+- ✓ Test coverage maintained ~90% (718 tests total) — v0.3.0
+
 ### Active
 
-**v0.3.0 - Incomplete Trips & Validation** (In planning)
+(None - Next milestone requirements to be defined with `/gsd:new-milestone`)
 
 ### Out of Scope
 
@@ -68,16 +86,19 @@ Creel biologists can analyze survey data using creel vocabulary without ever und
 - Backward compatibility with v1 API — package never released, clean slate
 - Support for non-tidy workflows — committed to tidy selectors
 - Exposing survey objects in primary API — domain translation is core value
+- Auto-pooling complete + incomplete trips — scientifically invalid per Pollock et al. (different sampling probabilities) — v0.3.0
+- Incomplete trips as default — Colorado C-SAP and best practice use complete trips — v0.3.0
+- Roving-roving design (effort from roving) — 160x more bias than roving-access, not recommended — v0.3.0
 
 ## Context
 
-**Current State (v0.2.0 shipped 2026-02-11):**
-- Package structure: 8,599 LOC R total (instantaneous counts + interview-based estimation)
-- Test suite: 610 tests with 89.24% coverage
+**Current State (v0.3.0 shipped 2026-02-16):**
+- Package structure: 15,756 LOC R total (counts + interviews + incomplete trips)
+- Test suite: 718 tests with ~90% coverage
 - Quality: 0 lintr issues, R CMD check clean (0 errors, 0 warnings)
-- Documentation: Complete roxygen2 docs, example datasets, 2 vignettes (getting-started, interview-estimation)
+- Documentation: Complete roxygen2 docs, example datasets, 3 vignettes (getting-started, interview-estimation, incomplete-trips)
 - Tech stack: R (≥4.1.0), survey, tidyverse (tidyselect, dplyr, rlang), checkmate, cli
-- Capabilities: Effort estimation (counts), CPUE/harvest estimation (interviews), total catch/harvest (delta method)
+- Capabilities: Effort estimation (counts), CPUE/harvest estimation (interviews), total catch/harvest (delta method), incomplete trip validation (MOR + TOST)
 
 **Brownfield redesign:**
 - Existing tidycreel v1 codebase has ~40 R files covering estimators, variance, QA/QC
@@ -98,16 +119,10 @@ Creel biologists can analyze survey data using creel vocabulary without ever und
 - GSD methodology with atomic commits and phase verification
 - Start from empty package structure (not refactoring existing code) ✓
 
-**v0.3.0 milestone focus (current):**
-- Incomplete trip handling following Colorado C-SAP and Pollock et al. best practices
-- Complete trip prioritization (roving-access design) as default approach
-- Validation framework to test incomplete vs. complete trip comparability
-- Mean-of-ratios estimator with truncation for incomplete trips (research/diagnostic mode)
-
-**Future milestone focus:**
-- Multi-species support with covariance framework (v0.4.0 or later)
-- Bus-route design (systematic access point coverage) (v0.4.0 or later)
-- Advanced QA/QC diagnostics for interview data quality (v1.0.0)
+**Development Milestones Completed:**
+- ✅ v0.1.0 (2026-02-09): Foundation with instantaneous counts and effort estimation
+- ✅ v0.2.0 (2026-02-11): Interview-based CPUE/harvest estimation with delta method variance
+- ✅ v0.3.0 (2026-02-16): Incomplete trips with MOR estimator, TOST validation, Colorado C-SAP compliance
 
 ## Constraints
 
@@ -139,6 +154,11 @@ Creel biologists can analyze survey data using creel vocabulary without ever und
 | Manual delta method for product variance (Phase 11) | Simpler than svycontrast, transparent formula | ✓ Good — Var(E×C) = E²·Var(C) + C²·Var(E) implementation clear and verifiable |
 | Shared validation for ratio estimators (Phase 10) | validate_ratio_sample_size with type parameter serves CPUE and harvest | ✓ Good — Eliminates duplication, maintains context-aware messages |
 | Coverage deviation accepted at 93.8% (Phase 12) | Unreachable defensive error handling prevented by Tier 1 validation | ✓ Good — 33 lines are defensive guards that can't be reached, 89.24% overall exceeds 85% target |
+| trip_status required parameter (Phase 13) | Essential for downstream incomplete trip estimators | ✓ Good — Breaking change accepted, clear validation messaging guides users |
+| MOR uses survey::svymean not svyratio (Phase 15) | Statistically appropriate for incomplete trips | ✓ Good — Individual catch/effort ratios correctly represent incomplete trip data |
+| Complete-trip default (Phase 17) | Aligns with Colorado C-SAP and roving-access design | ✓ Good — Scientifically valid default, explicit use_trips parameter for flexibility |
+| TOST for equivalence testing (Phase 19) | Proves similarity vs. failing to reject difference | ✓ Good — Standard bioequivalence approach, ±20% threshold appropriate for field data |
+| Base R graphics for validation plots (Phase 19) | Avoids additional dependencies | ✓ Good — Sufficient for diagnostic plots, consistent with package design |
 
 ---
-*Last updated: 2026-02-14 after starting v0.3.0 milestone*
+*Last updated: 2026-02-16 after v0.3.0 milestone completion*

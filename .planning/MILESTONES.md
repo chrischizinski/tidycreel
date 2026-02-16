@@ -30,3 +30,19 @@
 - 89.24% test coverage with 610 tests passing, all quality gates met (R CMD check clean, lintr 0 issues)
 
 ---
+
+## v0.3.0 Incomplete Trips & Validation (Shipped: 2026-02-16)
+
+**Phases completed:** 8 phases (13-20), 16 plans
+**Quality metrics:** 718 tests, ~90% coverage, 0 lintr issues, R CMD check clean
+**Code delivered:** 15,756 LOC R total
+
+**Key accomplishments:**
+- Trip metadata infrastructure with trip_status and trip_duration validation following TDD
+- Mean-of-ratios (MOR) estimator for incomplete trips via survey::svymean on individual catch/effort ratios
+- Complete trip defaults prioritizing scientifically valid roving-access design (Colorado C-SAP)
+- TOST equivalence testing framework to statistically validate incomplete vs. complete trip comparability
+- Sample size warnings when <10% complete trips with Colorado C-SAP and Pollock et al. references
+- 794-line comprehensive vignette with scientific rationale, best practices, and validation workflow guide
+
+---
