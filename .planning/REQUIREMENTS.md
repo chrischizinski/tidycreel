@@ -1,75 +1,66 @@
-# Requirements: tidycreel v0.3.0
+# Requirements: tidycreel v0.4.0
 
-**Defined:** 2026-02-14
+**Defined:** 2026-02-16
 **Core Value:** Creel biologists can analyze survey data using creel vocabulary without understanding survey package internals
 
-## v0.3.0 Requirements
+## v0.4.0 Requirements - Bus-Route Survey Support
 
-Requirements for incomplete trip support with complete trip prioritization (roving-access design).
+Requirements for bus-route (nonuniform probability) creel survey estimation based on primary source methodology.
 
-### Trip Status Management
+### Bus-Route Core Functionality
 
-- [ ] **TRIP-01**: User can specify trip completion status (complete vs. incomplete) in interview data
-- [ ] **TRIP-02**: User can provide trip start time and interview time (calculate duration)
-- [ ] **TRIP-03**: User can provide trip duration directly (alternative input format)
-- [ ] **TRIP-04**: Package correctly calculates trip duration for overnight trips spanning multiple days
-- [ ] **TRIP-05**: Package validates trip status field and warns about missing/invalid values
+- [ ] **BUSRT-01**: System calculates inclusion probability πᵢ from sampling design (p_site × p_period), not site characteristics
+- [ ] **BUSRT-02**: System applies enumeration expansion (n_counted / n_interviewed) to account for uncounted parties at busy sites
+- [ ] **BUSRT-03**: System estimates effort using Jones & Pollock (2012) Eq. 19.4 general estimator
+- [ ] **BUSRT-04**: System estimates harvest using Jones & Pollock (2012) Eq. 19.5 general estimator
+- [ ] **BUSRT-05**: System supports nonuniform probability sampling where different sites/periods have different sampling probabilities
+- [ ] **BUSRT-06**: creel_design() constructor accepts survey_type = "bus_route" with site and circuit specifications
+- [ ] **BUSRT-07**: Design validation ensures site probabilities sum to 1.0 and all probabilities are in (0,1]
+- [ ] **BUSRT-08**: add_interviews() joins sampling probabilities to interview data for bus-route designs
+- [ ] **BUSRT-09**: estimate_effort() dispatches to bus-route estimator when design type is bus_route
+- [ ] **BUSRT-10**: estimate_harvest() dispatches to bus-route estimator when design type is bus_route
+- [ ] **BUSRT-11**: System provides variance estimation via survey package for bus-route estimates
 
-### Incomplete Trip Estimation (Mean-of-Ratios)
+### Validation & Correctness
 
-- [ ] **MOR-01**: User can estimate CPUE from incomplete trips using mean-of-ratios estimator
-- [ ] **MOR-02**: User can configure minimum trip duration threshold (default 20-30 min per Hoenig et al.)
-- [ ] **MOR-03**: Package truncates incomplete trips shorter than threshold with informative message
-- [ ] **MOR-04**: Package validates sample size for MOR estimation (error n<10, warn n<30)
-- [ ] **MOR-05**: User can select variance method for MOR (Taylor, bootstrap, jackknife)
-- [ ] **MOR-06**: Package computes variance correctly for MOR estimator with truncation
+- [ ] **VALID-01**: Implementation reproduces Malvestuto (1996) Box 20.6 Example 1 results exactly
+- [ ] **VALID-02**: Enumeration expansion calculations match published methodology
+- [ ] **VALID-03**: πᵢ calculation for two-stage sampling (site × period) produces correct values
+- [ ] **VALID-04**: Progressive validation catches missing enumeration counts at data input time
+- [ ] **VALID-05**: Integration tests verify complete bus-route workflow (design → data → estimation)
 
-### Diagnostic Validation
+### Documentation & Traceability
 
-- [ ] **VALID-01**: User can compare complete vs. incomplete trip estimates side-by-side
-- [ ] **VALID-02**: Package performs statistical test for difference between complete and incomplete estimates
-- [ ] **VALID-03**: User can generate validation plot (incomplete vs. complete scatter with y=x reference)
-- [ ] **VALID-04**: Package produces diagnostic report with interpretation guidance
+- [ ] **DOCS-01**: Vignette explains what bus-route surveys are and when to use them
+- [ ] **DOCS-02**: Vignette documents key concepts (inclusion probability, enumeration counts, two-stage sampling)
+- [ ] **DOCS-03**: Vignette provides step-by-step walkthrough of using tidycreel code to generate bus-route estimates
+- [ ] **DOCS-04**: Equation traceability document maps every line of code to source equation and page number
+- [ ] **DOCS-05**: Documentation explains why tidycreel implementation is correct vs. existing packages
 
-### API Design & Defaults
+## Future Requirements
 
-- [ ] **API-01**: `estimate_cpue()` uses complete trips only by default (roving-access design)
-- [ ] **API-02**: Package warns when < 10% of interviews are complete trips (Colorado C-SAP threshold)
-- [ ] **API-03**: User can explicitly specify `use_trips = "complete"/"incomplete"/"diagnostic"` parameter
-- [ ] **API-04**: Package messages reference Colorado C-SAP and Pollock et al. best practices
-
-### Documentation & Guidance
-
-- [ ] **DOC-01**: Incomplete trips vignette explains when and how to use incomplete trip estimation
-- [ ] **DOC-02**: Example demonstrates Colorado C-SAP best practices (complete trips prioritized)
-- [ ] **DOC-03**: Documentation strongly warns against pooling complete + incomplete interviews
-- [ ] **DOC-04**: Step-by-step validation workflow guide for testing incomplete trip assumptions
-
-## Future Requirements (v0.4.0+)
-
-Deferred to future releases.
-
-### Bus-Route Design
-
-- **BUS-01**: Bus-route design with systematic access point coverage
-- **BUS-02**: Time-scheduled routes with multiple access points
-- **BUS-03**: Bus-route specific estimation methods
+Deferred to v0.5.0+
 
 ### Multi-Species Support
 
-- **MULTI-01**: Multi-species catch data with species-specific CPUE
-- **MULTI-02**: Covariance between species catch rates
-- **MULTI-03**: Total catch across species with correct variance
+- **MULTI-01**: Support multi-species catch/harvest estimation with covariance framework
+- **MULTI-02**: Handle species-specific catch rates and correlations
+
+### Advanced QA/QC
+
+- **QA-01**: Diagnostic plots for interview data quality
+- **QA-02**: Outlier detection and handling recommendations
 
 ## Out of Scope
 
-Explicitly excluded from all versions.
+Explicitly excluded from v0.4.0
 
 | Feature | Reason |
 |---------|--------|
-| Auto-pooling complete + incomplete trips | Scientifically invalid per Pollock et al. - different sampling probabilities |
-| Roving-roving design (effort from roving) | Science shows 160x more bias than roving-access - not recommended |
-| Incomplete trips as default | Colorado C-SAP and best practice use complete trips; incomplete is diagnostic |
+| Hardcoded πᵢ values (like existing packages) | Statistically incorrect - defeats the purpose of correct implementation |
+| Roving-roving design for effort estimation | 160x more bias than roving-access, not scientifically recommended |
+| Backward compatibility with incorrect formulas | Breaking with incorrect methodology is intentional |
+| Multi-species covariance in this milestone | Focus on correct single-species bus-route first, defer to v0.5.0 |
 
 ## Traceability
 
@@ -77,46 +68,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TRIP-01 | Phase 13 | Complete |
-| TRIP-02 | Phase 13 | Complete |
-| TRIP-03 | Phase 13 | Complete |
-| TRIP-04 | Phase 14 | Complete |
-| TRIP-05 | Phase 13 | Complete |
-| MOR-01 | Phase 15 | Complete |
-| MOR-02 | Phase 16 | Complete |
-| MOR-03 | Phase 16 | Complete |
-| MOR-04 | Phase 15 | Complete |
-| MOR-05 | Phase 15 | Complete |
-| MOR-06 | Phase 16 | Complete |
-| VALID-01 | Phase 19 | Complete |
-| VALID-02 | Phase 19 | Complete |
-| VALID-03 | Phase 19 | Complete |
-| VALID-04 | Phase 19 | Complete |
-| API-01 | Phase 17 | Complete |
-| API-02 | Phase 18 | Complete |
-| API-03 | Phase 17 | Complete |
-| API-04 | Phase 18 | Complete |
-| DOC-01 | Phase 20 | Complete |
-| DOC-02 | Phase 20 | Complete |
-| DOC-03 | Phase 20 | Complete |
-| DOC-04 | Phase 20 | Complete |
+| (To be populated by roadmapper) | | |
 
 **Coverage:**
-- v0.3.0 requirements: 23 total
-- Mapped to phases: 23/23 (100%)
-- Unmapped: 0
-- **Completed: 23/23 (100%)**
-
-**Phase distribution:**
-- Phase 13: 4 requirements (TRIP-01, TRIP-02, TRIP-03, TRIP-05)
-- Phase 14: 1 requirement (TRIP-04)
-- Phase 15: 3 requirements (MOR-01, MOR-04, MOR-05)
-- Phase 16: 3 requirements (MOR-02, MOR-03, MOR-06)
-- Phase 17: 2 requirements (API-01, API-03)
-- Phase 18: 2 requirements (API-02, API-04)
-- Phase 19: 4 requirements (VALID-01, VALID-02, VALID-03, VALID-04)
-- Phase 20: 4 requirements (DOC-01, DOC-02, DOC-03, DOC-04)
+- v0.4.0 requirements: 21 total
+- Mapped to phases: 0 (pending roadmap)
+- Unmapped: 21 ⚠️
 
 ---
-*Requirements defined: 2026-02-14*
-*Last updated: 2026-02-14 after roadmap creation*
+*Requirements defined: 2026-02-16*
+*Last updated: 2026-02-16 after initial definition*
