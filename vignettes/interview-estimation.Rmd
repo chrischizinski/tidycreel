@@ -187,6 +187,27 @@ print(total_harvest)
 
 This demonstrates the complete v0.2.0 workflow from survey design through total catch and harvest estimation.
 
+## Working with Incomplete Trips
+
+This vignette demonstrates the default workflow using complete trips, which is
+the recommended approach following Colorado C-SAP best practices and
+Pollock et al. roving-access design principles.
+
+For situations where you have incomplete trip interviews and want to explore
+using them for estimation, see the **Incomplete Trip Estimation** vignette
+(`vignette("incomplete-trips", package = "tidycreel")`). That vignette covers:
+
+- When incomplete trip estimation is scientifically valid
+- How to validate incomplete trip estimates using TOST equivalence testing
+- Step-by-step workflow with `validate_incomplete_trips()`
+- Examples of passing and failing validation scenarios
+- Why you should NEVER pool complete and incomplete trips
+
+**Important:** The package defaults to complete trips only. Incomplete trip
+estimation requires explicit opt-in via the `use_trips` parameter in
+`estimate_cpue()` and should only be used after validation with
+`validate_incomplete_trips()`.
+
 ## Next Steps
 
 For more details on interview-based estimation functions, see:
