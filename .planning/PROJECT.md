@@ -21,11 +21,22 @@ Creel biologists can analyze survey data using creel vocabulary without ever und
 - TOST equivalence testing to validate incomplete trip assumptions (v0.3.0)
 - Complete trip defaults following Colorado C-SAP best practices (v0.3.0)
 
+## Current Milestone: v0.4.0 Bus-Route Survey Support
+
+**Goal:** Implement statistically correct bus-route (nonuniform probability) creel survey estimation based on primary source methodology, making tidycreel the ONLY R package with correct bus-route estimation.
+
+**Target features:**
+- Bus-route effort estimators with nonuniform probability sampling (πᵢ = p_site × p_period)
+- Bus-route harvest/catch estimators following Jones & Pollock (2012) Eq. 19.4-19.5
+- Enumeration expansion (n_counted / n_interviewed) - missing from all existing implementations
+- Validation against Malvestuto (1996) Box 20.6 published examples
+- Complete equation traceability to primary sources
+- Detailed walkthrough vignette demonstrating bus-route estimation workflow
+
 ## Next Milestone Goals
 
 **Future Focus Areas:**
-- Multi-species support with covariance framework (v0.4.0+)
-- Bus-route design with systematic access point coverage (v0.4.0+)
+- Multi-species support with covariance framework (v0.5.0+)
 - Advanced QA/QC diagnostics for interview data quality (v1.0.0)
 
 ## Requirements
@@ -161,4 +172,4 @@ Creel biologists can analyze survey data using creel vocabulary without ever und
 | Base R graphics for validation plots (Phase 19) | Avoids additional dependencies | ✓ Good — Sufficient for diagnostic plots, consistent with package design |
 
 ---
-*Last updated: 2026-02-16 after v0.3.0 milestone completion*
+*Last updated: 2026-02-16 after v0.4.0 milestone start*

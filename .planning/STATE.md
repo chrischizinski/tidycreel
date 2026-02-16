@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-14)
 
 **Core value:** Creel biologists can analyze survey data using creel vocabulary without understanding survey package internals
-**Current focus:** Phase 16 - Trip Truncation
+**Current focus:** v0.4.0 Bus-Route Survey Support
 
 ## Current Position
 
-Phase: 20 of 20 (Documentation & Guidance)
-Plan: 2 of 2 in current phase
-Status: Complete
-Last activity: 2026-02-16 — Completed Phase 20-02 documentation updates and marked v0.3.0 milestone shipped
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements for v0.4.0
+Last activity: 2026-02-16 — Milestone v0.4.0 started
 
-Progress: [████████████████████] 100% (32/32 plans complete)
+Progress: [░░░░░░░░░░░░░░░░░░░░] 0% (0 plans complete)
 
 ## Performance Metrics
 
