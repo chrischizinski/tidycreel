@@ -202,10 +202,11 @@ Plans:
   2. Enumeration counts (n_counted, n_interviewed) required for bus-route surveys
   3. Progressive validation catches missing enumeration counts at data input time
   4. Expansion factor (n_counted / n_interviewed) calculated correctly
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] TBD
+- [ ] 23-01-PLAN.md — Extend add_interviews() with n_counted/n_interviewed selectors, Tier 3 bus-route validation, pi_i join, .expansion computation
+- [ ] 23-02-PLAN.md — get_enumeration_counts() accessor, print Enumeration Counts section, comprehensive tests
 
 #### Phase 24: Bus-Route Effort Estimation
 **Goal**: Users can estimate fishing effort from bus-route surveys using Jones & Pollock Eq. 19.4
@@ -281,12 +282,12 @@ Plans:
 |-------|----------------|--------|-----------|
 | 21. Bus-Route Design Foundation | 0/2 | Complete    | 2026-02-17 |
 | 22. Inclusion Probability Calculation | 0/2 | Complete    | 2026-02-17 |
-| 23. Data Integration | 0/TBD | Not started | - |
+| 23. Data Integration | 0/2 | Planning    | - |
 | 24. Bus-Route Effort Estimation | 0/TBD | Not started | - |
 | 25. Bus-Route Harvest Estimation | 0/TBD | Not started | - |
 | 26. Primary Source Validation | 0/TBD | Not started | - |
 | 27. Documentation & Traceability | 0/TBD | Not started | - |
 
 ---
-*Roadmap last updated: 2026-02-16 after Phase 22 planning*
+*Roadmap last updated: 2026-02-17 after Phase 23 planning*
 *See .planning/MILESTONES.md for full milestone history*
