@@ -147,7 +147,7 @@ calendar_br <- data.frame(
   day_type = "weekday"
 )
 sf <- data.frame(
-  site   = c("A", "B", "C"),
+  site = c("A", "B", "C"),
   p_site = c(0.3, 0.4, 0.3),
   p_period = 0.5
 )

@@ -1000,6 +1000,38 @@ format.creel_design <- function(x, ...) {
     } else {
       cli::cli_text("Interviews: {.val none}")
     }
+
+    # Bus-Route section
+    if (!is.null(x$bus_route)) {
+      br <- x$bus_route$data
+      site_col <- x$bus_route$site_col # nolint: object_usage_linter
+      circ_col <- x$bus_route$circuit_col # nolint: object_usage_linter
+      ps_col <- x$bus_route$p_site_col # nolint: object_usage_linter
+      pp_col <- x$bus_route$p_period_col # nolint: object_usage_linter
+      pi_col <- x$bus_route$pi_i_col # nolint: object_usage_linter
+      n_sites <- length(unique(br[[site_col]])) # nolint: object_usage_linter
+      n_circs <- length(unique(br[[circ_col]])) # nolint: object_usage_linter
+      cli::cli_h2("Bus-Route Design")
+      cli::cli_text("Sites: {.val {n_sites}}, Circuits: {.val {n_circs}}")
+      cli::cli_text("Sampling probabilities (pi_i = p_site * p_period):")
+      # Display table rows — site | circuit | p_site | p_period | pi_i
+      # Show at most 10 rows to avoid overwhelming output; indicate truncation
+      max_rows <- min(nrow(br), 10L)
+      for (i in seq_len(max_rows)) {
+        site_val <- br[[site_col]][i] # nolint: object_usage_linter
+        circ_val <- br[[circ_col]][i] # nolint: object_usage_linter
+        ps_val <- round(br[[ps_col]][i], 4) # nolint: object_usage_linter
+        pp_val <- round(br[[pp_col]][i], 4) # nolint: object_usage_linter
+        pi_val <- round(br[[pi_col]][i], 4) # nolint: object_usage_linter
+        cli::cli_text(
+          "  {.field {site_val}} [{circ_val}]: p_site={ps_val}, p_period={pp_val}, pi_i={pi_val}"
+        )
+      }
+      if (nrow(br) > 10L) {
+        remaining <- nrow(br) - 10L # nolint: object_usage_linter
+        cli::cli_text("  ... and {remaining} more row{?s}")
+      }
+    }
   })
 }
 
@@ -1014,6 +1046,60 @@ format.creel_design <- function(x, ...) {
 print.creel_design <- function(x, ...) {
   cat(format(x, ...), sep = "\n")
   invisible(x)
+}
+
+#' Extract the sampling frame from a bus-route creel design
+#'
+#' @description
+#' Returns the sampling frame data frame stored in a bus-route `creel_design`
+#' object. The data frame contains the user's original columns plus a
+#' precomputed `.pi_i` column (pi_i = p_site * p_period). Aborts with an
+#' informative error for non-bus-route designs.
+#'
+#' @param design A `creel_design` object with `design_type = "bus_route"`.
+#'
+#' @return A data frame: the `sampling_frame` as stored in the design, with
+#'   the addition of a `.pi_i` column and (if circuit was omitted) a
+#'   `.circuit` column.
+#'
+#' @examples
+#' sf <- data.frame(
+#'   site     = c("A", "B", "C"),
+#'   p_site   = c(0.3, 0.4, 0.3),
+#'   p_period = 0.5
+#' )
+#' calendar <- data.frame(
+#'   date     = as.Date("2024-06-01"),
+#'   day_type = "weekday"
+#' )
+#' design <- creel_design(calendar,
+#'   date = date,
+#'   strata = day_type,
+#'   survey_type = "bus_route",
+#'   sampling_frame = sf,
+#'   site = site,
+#'   p_site = p_site,
+#'   p_period = p_period
+#' )
+#' get_sampling_frame(design)
+#'
+#' @export
+get_sampling_frame <- function(design) {
+  if (!inherits(design, "creel_design")) {
+    cli::cli_abort(c(
+      "{.arg design} must be a {.cls creel_design} object.",
+      "x" = "{.arg design} is {.cls {class(design)[1]}}.",
+      "i" = "Create a design with {.fn creel_design}."
+    ))
+  }
+  if (is.null(design$bus_route)) {
+    cli::cli_abort(c(
+      "{.fn get_sampling_frame} is only available for bus-route designs.",
+      "x" = "This design has {.field design_type} = {.val {design$design_type}}.",
+      "i" = "Create a bus-route design with {.code creel_design(..., survey_type = 'bus_route')}."
+    ))
+  }
+  design$bus_route$data
 }
 
 #' Summarize a creel_design object
