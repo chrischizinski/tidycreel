@@ -217,10 +217,11 @@ Plans:
   2. Effort calculated as sum(e_i / πᵢ) following Jones & Pollock (2012) Eq. 19.4 exactly
   3. Enumeration expansion applied before inverse probability weighting
   4. Variance estimation via survey package produces correct standard errors
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] TBD
+- [ ] 24-01-PLAN.md — Bus-route effort estimator core (estimate_effort_br) implementing Eq. 19.4; estimate_effort() dispatch + verbose= parameter
+- [ ] 24-02-PLAN.md — get_site_contributions() accessor; full bus-route effort estimation test suite
 
 #### Phase 25: Bus-Route Harvest Estimation
 **Goal**: Users can estimate harvest and catch from bus-route surveys using Jones & Pollock Eq. 19.5
