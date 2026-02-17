@@ -9,21 +9,21 @@ See: .planning/PROJECT.md (updated 2026-02-16)
 
 ## Current Position
 
-Phase: 22 of 27 (Inclusion Probability Calculation)
-Plan: 2 complete
-Status: In progress — Phase 22 Plan 02 complete
-Last activity: 2026-02-17 — Phase 22 Plan 02 (inclusion probability test section: 15 tests, golden pi_i, uniformity validation, get_inclusion_probs(), property tests) complete
+Phase: 23 of 27 (Data Integration)
+Plan: 1 complete
+Status: In progress — Phase 23 Plan 01 complete
+Last activity: 2026-02-17 — Phase 23 Plan 01 (add_interviews() extended with n_counted/n_interviewed selectors, Tier 3 validation, pi_i join, .expansion computation) complete
 
-Progress: [████████████░░░░░░░░] 63% (41/65+ plans complete across all milestones)
+Progress: [████████████░░░░░░░░] 64% (42/65+ plans complete across all milestones)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 40
+- Total plans completed: 42
 - v0.1.0 (Phases 1-7): 12 plans
 - v0.2.0 (Phases 8-12): 10 plans
 - v0.3.0 (Phases 13-20): 16 plans
-- v0.4.0 (Phases 21-27): 2 plans
+- v0.4.0 (Phases 21-27): 4 plans
 
 **By Milestone:**
 
@@ -93,6 +93,7 @@ v0.4.0 decisions:
 - **Phase 21-02**: Bus-Route section placed after Interviews block in format.creel_design(); 10-row truncation cap for print output; get_sampling_frame() placed after print.creel_design() for method grouping; test helpers make_br_sf/make_br_cal defined at section scope
 - **Phase 22-01**: p_period uniformity tolerance is 1e-10 (tighter than p_site sum 1e-6) because p_period within a circuit must be identical; get_inclusion_probs() returns only 3 columns (site, circuit, .pi_i) for clean minimal API; long cli_abort error messages split via inline variables for lint compliance
 - **Phase 22-02**: CLI {.cls} formatting adds angle brackets around class names in error messages — use partial "must be a" pattern not exact "must be a creel_design object" in expect_error(); make_br_sf_2circuit() defined at section scope for multi-circuit test helper locality
+- **Phase 23-01**: validate_br_interviews_tier3 shortened from validate_bus_route_interviews_tier3 (36 chars) to 28 chars for lintr object_length_linter compliance; n_interviewed = 0 rows produce NA expansion (not error), warn only when n_counted > 0 and n_interviewed = 0; unmatched site+circuit causes hard error listing specific combos
 
 ### Pending Todos
 
@@ -105,10 +106,10 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Phase 22 Plan 02 complete — inclusion probability calculation tests (15 test cases, BUSRT-05, VALID-03)
+Stopped at: Phase 23 Plan 01 complete — add_interviews() bus-route extension (n_counted, n_interviewed, Tier 3 validation, pi_i join, .expansion, BUSRT-08, BUSRT-02, VALID-04)
 Resume file: None
 
-**Next step:** Phase 23 (data integration)
+**Next step:** Phase 23 Plan 02 (get_enumeration_counts() accessor)
 
 ---
-*State last updated: 2026-02-17 after Phase 22 Plan 02 complete*
+*State last updated: 2026-02-17 after Phase 23 Plan 01 complete*
