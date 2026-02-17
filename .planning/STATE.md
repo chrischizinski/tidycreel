@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-16)
 
 ## Current Position
 
-Phase: 21 of 27 (Bus-Route Design Foundation)
-Plan: 2 complete
-Status: In progress — Phase 21 Plan 02 complete
-Last activity: 2026-02-17 — Phase 21 Plan 02 (format.creel_design Bus-Route section + get_sampling_frame + tests) complete
+Phase: 22 of 27 (Inclusion Probability Calculation)
+Plan: 1 complete
+Status: In progress — Phase 22 Plan 01 complete
+Last activity: 2026-02-17 — Phase 22 Plan 01 (p_period uniformity validation, pi_i range check, get_inclusion_probs()) complete
 
-Progress: [████████████░░░░░░░░] 60% (39/65+ plans complete across all milestones)
+Progress: [████████████░░░░░░░░] 62% (40/65+ plans complete across all milestones)
 
 ## Performance Metrics
 
@@ -32,7 +32,7 @@ Progress: [████████████░░░░░░░░] 60% (39
 | v0.1.0 | 1-7 | 12/12 | Complete | 2026-02-09 |
 | v0.2.0 | 8-12 | 10/10 | Complete | 2026-02-11 |
 | v0.3.0 | 13-20 | 16/16 | Complete | 2026-02-16 |
-| v0.4.0 | 21-27 | 2/TBD | In progress | - |
+| v0.4.0 | 21-27 | 3/TBD | In progress | - |
 
 **Quality Metrics (current):**
 - Test coverage: ~90% (972 tests)
@@ -91,6 +91,7 @@ v0.4.0 decisions:
 
 - **Phase 21-01**: survey_type defaults to design_type for backward compatibility; pi_i precomputed at construction time (not lazily); p_period resolved via tryCatch (column selector first, scalar fallback); circuit defaults to .default when omitted; bus_route slot is NULL for non-bus_route designs
 - **Phase 21-02**: Bus-Route section placed after Interviews block in format.creel_design(); 10-row truncation cap for print output; get_sampling_frame() placed after print.creel_design() for method grouping; test helpers make_br_sf/make_br_cal defined at section scope
+- **Phase 22-01**: p_period uniformity tolerance is 1e-10 (tighter than p_site sum 1e-6) because p_period within a circuit must be identical; get_inclusion_probs() returns only 3 columns (site, circuit, .pi_i) for clean minimal API; long cli_abort error messages split via inline variables for lint compliance
 
 ### Pending Todos
 
@@ -103,10 +104,10 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Phase 21 Plan 02 complete — format.creel_design Bus-Route section, get_sampling_frame(), and tests
+Stopped at: Phase 22 Plan 01 complete — p_period uniformity validation, pi_i range check, get_inclusion_probs()
 Resume file: None
 
-**Next step:** Continue Phase 21 Plan 03 (if exists) or Phase 22
+**Next step:** Continue Phase 22 Plan 02 (if exists) or Phase 23
 
 ---
-*State last updated: 2026-02-17 after Phase 21 Plan 02 complete*
+*State last updated: 2026-02-17 after Phase 22 Plan 01 complete*
