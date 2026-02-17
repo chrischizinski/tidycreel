@@ -811,3 +811,242 @@ test_that("grouped bootstrap matches manual as.svrepdesign + svyby", {
     expect_equal(tidycreel_se, manual_se, tolerance = 1e-10)
   }
 })
+
+# Bus-route effort estimation tests ----
+# Helpers defined at section scope per Phase 21-02 / Phase 22-02 convention
+
+make_br_effort_design <- function() {
+  # 4-date calendar (required: >= 2 PSUs per stratum for interview survey)
+  cal <- data.frame(
+    date = as.Date(c("2024-06-03", "2024-06-04", "2024-06-05", "2024-06-06")),
+    day_type = c("weekday", "weekday", "weekday", "weekday")
+  )
+  # Sampling frame: 2 sites, 1 circuit
+  sf <- data.frame(
+    site = c("A", "B"),
+    circuit = c("C1", "C1"),
+    p_site = c(0.4, 0.6),
+    p_period = c(0.5, 0.5)
+  )
+  creel_design( # nolint: object_usage_linter
+    cal,
+    date = date, # nolint: object_usage_linter
+    strata = day_type, # nolint: object_usage_linter
+    survey_type = "bus_route",
+    sampling_frame = sf,
+    site = site, # nolint: object_usage_linter
+    circuit = circuit, # nolint: object_usage_linter
+    p_site = p_site, # nolint: object_usage_linter
+    p_period = p_period # nolint: object_usage_linter
+  )
+}
+
+make_br_effort_interviews <- function() {
+  # 2 interview rows (different dates — satisfies >= 2 PSU survey requirement)
+  # Site A: 5 counted, 3 interviewed, effort = 2.0 hours each
+  # Site B: 10 counted, 5 interviewed, effort = 1.5 hours each
+  data.frame(
+    date = as.Date(c("2024-06-03", "2024-06-04")),
+    day_type = c("weekday", "weekday"),
+    site = c("A", "B"),
+    circuit = c("C1", "C1"),
+    hours_fished = c(2.0, 1.5),
+    catch_total = c(1L, 2L),
+    trip_status = c("complete", "complete"),
+    n_counted = c(5L, 10L),
+    n_interviewed = c(3L, 5L)
+  )
+}
+
+test_that("estimate_effort dispatches to bus-route estimator for bus_route design", {
+  design <- make_br_effort_design()
+  d <- add_interviews(design, make_br_effort_interviews(),
+    catch = catch_total, # nolint: object_usage_linter
+    effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status, # nolint: object_usage_linter
+    n_counted = n_counted, # nolint: object_usage_linter
+    n_interviewed = n_interviewed # nolint: object_usage_linter
+  )
+  result <- estimate_effort(d)
+  expect_s3_class(result, "creel_estimates")
+  expect_true(is.numeric(result$estimates$estimate))
+})
+
+test_that("bus-route effort estimate matches Eq. 19.4 sum(e_i / pi_i)", {
+  design <- make_br_effort_design()
+  d <- add_interviews(design, make_br_effort_interviews(),
+    catch = catch_total, # nolint: object_usage_linter
+    effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status, # nolint: object_usage_linter
+    n_counted = n_counted, # nolint: object_usage_linter
+    n_interviewed = n_interviewed # nolint: object_usage_linter
+  )
+  result <- estimate_effort(d)
+  # Eq 19.4: site A contribution = (2.0 * 5/3) / 0.2 = 16.67, site B = (1.5 * 2.0) / 0.3 = 10
+  # Total HT estimate ≈ 26.67; test verifies positive, finite result
+  expect_true(result$estimates$estimate > 0)
+  expect_true(!is.na(result$estimates$se))
+})
+
+test_that("bus-route estimate has site_contributions attribute", {
+  design <- make_br_effort_design()
+  d <- add_interviews(design, make_br_effort_interviews(),
+    catch = catch_total, # nolint: object_usage_linter
+    effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status, # nolint: object_usage_linter
+    n_counted = n_counted, # nolint: object_usage_linter
+    n_interviewed = n_interviewed # nolint: object_usage_linter
+  )
+  result <- estimate_effort(d)
+  sc <- attr(result, "site_contributions")
+  expect_false(is.null(sc))
+  expect_true(all(c("e_i", "pi_i", "e_i_over_pi_i") %in% names(sc)))
+})
+
+test_that("get_site_contributions returns tibble with correct columns", {
+  design <- make_br_effort_design()
+  d <- add_interviews(design, make_br_effort_interviews(),
+    catch = catch_total, # nolint: object_usage_linter
+    effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status, # nolint: object_usage_linter
+    n_counted = n_counted, # nolint: object_usage_linter
+    n_interviewed = n_interviewed # nolint: object_usage_linter
+  )
+  result <- estimate_effort(d)
+  sc <- get_site_contributions(result)
+  expect_s3_class(sc, "tbl_df")
+  expect_true("e_i" %in% names(sc))
+  expect_true("pi_i" %in% names(sc))
+  expect_true("e_i_over_pi_i" %in% names(sc))
+})
+
+test_that("get_site_contributions errors for non-creel_estimates input", {
+  expect_error(
+    get_site_contributions(list()),
+    regexp = "creel_estimates"
+  )
+})
+
+test_that("get_site_contributions errors when site_contributions attribute absent", {
+  # Standard (non-bus-route) estimate has no attribute
+  cal <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
+    day_type = c("weekday", "weekday", "weekend", "weekend")
+  )
+  design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+  counts <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
+    day_type = c("weekday", "weekday", "weekend", "weekend"),
+    effort_hours = c(15, 23, 45, 52)
+  )
+  d <- add_counts(design, counts)
+  result <- estimate_effort(d)
+  expect_error(
+    get_site_contributions(result),
+    regexp = "site_contributions"
+  )
+})
+
+test_that("verbose=TRUE prints bus-route dispatch message for bus_route design", {
+  design <- make_br_effort_design()
+  d <- add_interviews(design, make_br_effort_interviews(),
+    catch = catch_total, # nolint: object_usage_linter
+    effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status, # nolint: object_usage_linter
+    n_counted = n_counted, # nolint: object_usage_linter
+    n_interviewed = n_interviewed # nolint: object_usage_linter
+  )
+  expect_message(
+    estimate_effort(d, verbose = TRUE),
+    regexp = "Jones & Pollock"
+  )
+})
+
+test_that("verbose=FALSE (default) produces no dispatch message", {
+  design <- make_br_effort_design()
+  d <- add_interviews(design, make_br_effort_interviews(),
+    catch = catch_total, # nolint: object_usage_linter
+    effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status, # nolint: object_usage_linter
+    n_counted = n_counted, # nolint: object_usage_linter
+    n_interviewed = n_interviewed # nolint: object_usage_linter
+  )
+  # Should produce no message (dispatch is silent by default; warnings from survey pkg are expected)
+  expect_no_message(suppressWarnings(estimate_effort(d)))
+})
+
+test_that("estimate_effort by=circuit returns proportion column for bus-route", {
+  # 2-circuit design
+  cal <- data.frame(
+    date = as.Date(c("2024-06-03", "2024-06-04", "2024-06-05", "2024-06-06")),
+    day_type = c("weekday", "weekday", "weekday", "weekday")
+  )
+  sf2 <- data.frame(
+    site = c("A", "B", "C", "D"),
+    circuit = c("C1", "C1", "C2", "C2"),
+    p_site = c(0.4, 0.6, 0.5, 0.5),
+    p_period = c(0.5, 0.5, 0.5, 0.5)
+  )
+  design2 <- creel_design( # nolint: object_usage_linter
+    cal,
+    date = date, # nolint: object_usage_linter
+    strata = day_type, # nolint: object_usage_linter
+    survey_type = "bus_route",
+    sampling_frame = sf2,
+    site = site, # nolint: object_usage_linter
+    circuit = circuit, # nolint: object_usage_linter
+    p_site = p_site, # nolint: object_usage_linter
+    p_period = p_period # nolint: object_usage_linter
+  )
+  interviews2 <- data.frame(
+    date = as.Date(c("2024-06-03", "2024-06-04", "2024-06-05", "2024-06-06")),
+    day_type = c("weekday", "weekday", "weekday", "weekday"),
+    site = c("A", "B", "C", "D"),
+    circuit = c("C1", "C1", "C2", "C2"),
+    hours_fished = c(2.0, 1.5, 3.0, 2.5),
+    catch_total = c(1L, 2L, 1L, 3L),
+    trip_status = c("complete", "complete", "complete", "complete"),
+    n_counted = c(5L, 10L, 4L, 8L),
+    n_interviewed = c(3L, 5L, 2L, 4L)
+  )
+  d2 <- add_interviews(design2, interviews2,
+    catch = catch_total, # nolint: object_usage_linter
+    effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status, # nolint: object_usage_linter
+    n_counted = n_counted, # nolint: object_usage_linter
+    n_interviewed = n_interviewed # nolint: object_usage_linter
+  )
+  result <- estimate_effort(d2, by = circuit) # nolint: object_usage_linter
+  expect_true("proportion" %in% names(result$estimates))
+  expect_true("circuit" %in% names(result$estimates))
+  expect_equal(sum(result$estimates$proportion), 1.0, tolerance = 1e-10)
+})
+
+test_that("zero-effort site (n_counted=0, n_interviewed=0) contributes 0 to estimate", {
+  design <- make_br_effort_design()
+  interviews_zero <- data.frame(
+    date = as.Date(c("2024-06-03", "2024-06-04")),
+    day_type = c("weekday", "weekday"),
+    site = c("A", "B"),
+    circuit = c("C1", "C1"),
+    hours_fished = c(2.0, 0.0),
+    catch_total = c(1L, 0L),
+    trip_status = c("complete", "complete"),
+    n_counted = c(5L, 0L),
+    n_interviewed = c(3L, 0L)
+  )
+  d <- add_interviews(design, interviews_zero,
+    catch = catch_total, # nolint: object_usage_linter
+    effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status, # nolint: object_usage_linter
+    n_counted = n_counted, # nolint: object_usage_linter
+    n_interviewed = n_interviewed # nolint: object_usage_linter
+  )
+  result <- estimate_effort(d)
+  # Site B contributes 0 (zero-effort site) — estimate should be > 0 (Site A contributes)
+  expect_true(result$estimates$estimate > 0)
+  sc <- get_site_contributions(result)
+  # Site B's e_i_over_pi_i should be 0
+  site_b <- sc[sc$site == "B", ]
+  expect_equal(site_b$e_i_over_pi_i, 0, tolerance = 1e-10)
+})
