@@ -187,10 +187,11 @@ Plans:
   2. πᵢ varies by sampling design, not by site wait times or interview timing
   3. Two-stage sampling (site × period) produces correct probability products
   4. Implementation matches primary source definition from Jones & Pollock (2012)
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] TBD
+- [ ] 22-01-PLAN.md — p_period uniformity validation, defensive pi_i range check, get_inclusion_probs() accessor, @references
+- [ ] 22-02-PLAN.md — Golden tests (hand-computed pi_i), validation tests, get_inclusion_probs() unit tests, property tests
 
 #### Phase 23: Data Integration
 **Goal**: Interview data integrates with bus-route designs including enumeration counts and probability joins
@@ -279,7 +280,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 21. Bus-Route Design Foundation | 0/2 | Complete    | 2026-02-17 |
-| 22. Inclusion Probability Calculation | 0/TBD | Not started | - |
+| 22. Inclusion Probability Calculation | 0/2 | Not started | - |
 | 23. Data Integration | 0/TBD | Not started | - |
 | 24. Bus-Route Effort Estimation | 0/TBD | Not started | - |
 | 25. Bus-Route Harvest Estimation | 0/TBD | Not started | - |
@@ -287,5 +288,5 @@ Plans:
 | 27. Documentation & Traceability | 0/TBD | Not started | - |
 
 ---
-*Roadmap last updated: 2026-02-16 after Phase 21 planning*
+*Roadmap last updated: 2026-02-16 after Phase 22 planning*
 *See .planning/MILESTONES.md for full milestone history*
