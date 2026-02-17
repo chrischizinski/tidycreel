@@ -1073,3 +1073,307 @@ test_that("format.creel_design() shows trip status summary when trip metadata pr
   expect_true(any(grepl("complete", formatted)))
   expect_true(any(grepl("incomplete", formatted)))
 })
+
+# Bus-route add_interviews tests (Phase 23) ----
+
+#' Create a minimal bus-route design for testing
+#' Calendar has 4 weekday dates so interview survey construction has >= 2 PSUs per stratum
+make_bus_route_test_design <- function() {
+  cal <- data.frame(
+    date = as.Date(c("2024-06-03", "2024-06-04", "2024-06-05", "2024-06-06")),
+    day_type = "weekday",
+    stringsAsFactors = FALSE
+  )
+  sf <- data.frame(
+    site = c("A", "B", "C"),
+    circuit = c("am", "am", "am"),
+    p_site = c(0.3, 0.4, 0.3),
+    p_period = rep(0.5, 3),
+    stringsAsFactors = FALSE
+  )
+  creel_design( # nolint: object_usage_linter
+    cal,
+    date = date, strata = day_type, # nolint: object_usage_linter
+    survey_type = "bus_route", sampling_frame = sf,
+    site = site, circuit = circuit, # nolint: object_usage_linter
+    p_site = p_site, p_period = p_period # nolint: object_usage_linter
+  )
+}
+
+#' Create valid bus-route interview data (2 rows on different calendar dates)
+make_bus_route_interviews <- function() {
+  data.frame(
+    date = as.Date(c("2024-06-03", "2024-06-04")),
+    site = c("A", "B"),
+    circuit = c("am", "am"),
+    catch_total = c(3L, 2L),
+    hours_fished = c(2.0, 1.5),
+    trip_status = c("complete", "complete"),
+    trip_duration = c(2.0, 1.5),
+    n_counted = c(5L, 4L),
+    n_interviewed = c(3L, 2L),
+    stringsAsFactors = FALSE
+  )
+}
+
+# Happy path tests ----
+
+test_that("add_interviews joins pi_i to bus-route interview data", {
+  design <- make_bus_route_test_design()
+  interviews <- make_bus_route_interviews()
+  result <- add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration,
+    n_counted = n_counted, n_interviewed = n_interviewed
+  )
+  expect_true(".pi_i" %in% names(result$interviews))
+  # Site A: p_site=0.3, p_period=0.5 -> pi_i = 0.15
+  expect_equal(result$interviews$.pi_i[1], 0.15, tolerance = 1e-10)
+})
+
+test_that("add_interviews computes .expansion correctly", {
+  design <- make_bus_route_test_design()
+  interviews <- make_bus_route_interviews()
+  result <- add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration,
+    n_counted = n_counted, n_interviewed = n_interviewed
+  )
+  expect_true(".expansion" %in% names(result$interviews))
+  # n_counted=5, n_interviewed=3 -> expansion = 5/3
+  expect_equal(result$interviews$.expansion[1], 5 / 3, tolerance = 1e-10)
+})
+
+test_that("add_interviews sets n_counted_col and n_interviewed_col on design", {
+  design <- make_bus_route_test_design()
+  interviews <- make_bus_route_interviews()
+  result <- add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration,
+    n_counted = n_counted, n_interviewed = n_interviewed
+  )
+  expect_equal(result$n_counted_col, "n_counted")
+  expect_equal(result$n_interviewed_col, "n_interviewed")
+})
+
+test_that("n_interviewed = 0 produces NA .expansion without error", {
+  design <- make_bus_route_test_design()
+  interviews <- make_bus_route_interviews()
+  interviews$n_counted <- 0L
+  interviews$n_interviewed <- 0L
+  result <- add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration,
+    n_counted = n_counted, n_interviewed = n_interviewed
+  )
+  expect_true(is.na(result$interviews$.expansion[1]))
+})
+
+test_that("n_counted > 0 and n_interviewed = 0 issues a warning", {
+  design <- make_bus_route_test_design()
+  interviews <- make_bus_route_interviews()
+  interviews$n_counted <- 5L
+  interviews$n_interviewed <- 0L
+  expect_warning(
+    add_interviews(
+      design, interviews,
+      catch = catch_total, effort = hours_fished,
+      trip_status = trip_status, trip_duration = trip_duration,
+      n_counted = n_counted, n_interviewed = n_interviewed
+    ),
+    regexp = "n_counted > 0 but n_interviewed = 0"
+  )
+})
+
+test_that("non-bus-route design silently ignores n_counted and n_interviewed", {
+  design_std <- make_interview_test_design()
+  interviews <- make_test_interviews()
+  # Should complete without error
+  expect_no_error(
+    add_interviews(
+      design_std, interviews,
+      catch = catch_total, effort = hours_fished,
+      trip_status = trip_status, trip_duration = trip_duration
+    )
+  )
+})
+
+# Tier 3 validation error tests ----
+
+test_that("add_interviews errors when n_counted missing for bus-route design", {
+  design <- make_bus_route_test_design()
+  interviews <- make_bus_route_interviews()
+  expect_error(
+    add_interviews(
+      design, interviews,
+      catch = catch_total, effort = hours_fished,
+      trip_status = trip_status, trip_duration = trip_duration,
+      n_interviewed = n_interviewed
+      # n_counted omitted
+    ),
+    regexp = "n_counted is required for bus-route"
+  )
+})
+
+test_that("add_interviews errors when n_interviewed missing for bus-route design", {
+  design <- make_bus_route_test_design()
+  interviews <- make_bus_route_interviews()
+  expect_error(
+    add_interviews(
+      design, interviews,
+      catch = catch_total, effort = hours_fished,
+      trip_status = trip_status, trip_duration = trip_duration,
+      n_counted = n_counted
+      # n_interviewed omitted
+    ),
+    regexp = "n_interviewed is required for bus-route"
+  )
+})
+
+test_that("add_interviews errors when site column missing from interview data", {
+  design <- make_bus_route_test_design()
+  interviews <- make_bus_route_interviews()
+  interviews$site <- NULL
+  expect_error(
+    add_interviews(
+      design, interviews,
+      catch = catch_total, effort = hours_fished,
+      trip_status = trip_status, trip_duration = trip_duration,
+      n_counted = n_counted, n_interviewed = n_interviewed
+    ),
+    regexp = "missing site column"
+  )
+})
+
+test_that("add_interviews errors when circuit column missing from interview data", {
+  design <- make_bus_route_test_design()
+  interviews <- make_bus_route_interviews()
+  interviews$circuit <- NULL
+  expect_error(
+    add_interviews(
+      design, interviews,
+      catch = catch_total, effort = hours_fished,
+      trip_status = trip_status, trip_duration = trip_duration,
+      n_counted = n_counted, n_interviewed = n_interviewed
+    ),
+    regexp = "missing circuit column"
+  )
+})
+
+test_that("add_interviews errors when n_counted < n_interviewed", {
+  design <- make_bus_route_test_design()
+  interviews <- make_bus_route_interviews()
+  interviews$n_counted <- 2L # less than n_interviewed = 3
+  expect_error(
+    add_interviews(
+      design, interviews,
+      catch = catch_total, effort = hours_fished,
+      trip_status = trip_status, trip_duration = trip_duration,
+      n_counted = n_counted, n_interviewed = n_interviewed
+    ),
+    regexp = "n_counted must be >= n_interviewed"
+  )
+})
+
+test_that("add_interviews errors with site+circuit listing when interview unmatched in sampling frame", {
+  design <- make_bus_route_test_design()
+  interviews <- make_bus_route_interviews()
+  interviews$site <- "ZZZZ" # not in sampling frame
+  expect_error(
+    add_interviews(
+      design, interviews,
+      catch = catch_total, effort = hours_fished,
+      trip_status = trip_status, trip_duration = trip_duration,
+      n_counted = n_counted, n_interviewed = n_interviewed
+    ),
+    regexp = "not found in sampling frame"
+  )
+})
+
+# get_enumeration_counts() tests ----
+
+test_that("get_enumeration_counts returns data frame with required columns", {
+  design <- make_bus_route_test_design()
+  interviews <- make_bus_route_interviews()
+  d <- add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration,
+    n_counted = n_counted, n_interviewed = n_interviewed
+  )
+  ec <- get_enumeration_counts(d)
+  expect_s3_class(ec, "data.frame")
+  expect_true("site" %in% names(ec))
+  expect_true("circuit" %in% names(ec))
+  expect_true("n_counted" %in% names(ec))
+  expect_true("n_interviewed" %in% names(ec))
+  expect_true(".expansion" %in% names(ec))
+})
+
+test_that("get_enumeration_counts .expansion values are correct", {
+  design <- make_bus_route_test_design()
+  interviews <- make_bus_route_interviews()
+  d <- add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration,
+    n_counted = n_counted, n_interviewed = n_interviewed
+  )
+  ec <- get_enumeration_counts(d)
+  expect_equal(ec$.expansion[1], 5 / 3, tolerance = 1e-10)
+})
+
+test_that("get_enumeration_counts errors on non-bus-route design", {
+  cal <- data.frame(
+    date = as.Date("2024-06-01"),
+    day_type = "weekday",
+    stringsAsFactors = FALSE
+  )
+  design_std <- creel_design(cal, date = date, strata = day_type)
+  expect_error(
+    get_enumeration_counts(design_std),
+    regexp = "only available for bus-route"
+  )
+})
+
+test_that("get_enumeration_counts errors when interviews not attached", {
+  design <- make_bus_route_test_design()
+  expect_error(
+    get_enumeration_counts(design),
+    regexp = "requires interview data"
+  )
+})
+
+test_that("get_enumeration_counts errors when interviews lack enumeration columns", {
+  # This tests the case where add_interviews was called without n_counted/n_interviewed
+  # We simulate this by testing the guard condition
+  design <- make_bus_route_test_design()
+  # Manually create a state that would trigger the error
+  # (In practice this shouldn't happen through normal API, but guard is defensive)
+  design$interviews <- data.frame(x = 1)
+  design$n_counted_col <- NULL
+  design$n_interviewed_col <- NULL
+  expect_error(
+    get_enumeration_counts(design),
+    regexp = "requires enumeration columns"
+  )
+})
+
+# Print method test ----
+
+test_that("print includes Enumeration Counts section for bus-route with interviews", {
+  design <- make_bus_route_test_design()
+  interviews <- make_bus_route_interviews()
+  d <- add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration,
+    n_counted = n_counted, n_interviewed = n_interviewed
+  )
+  out <- capture.output(print(d))
+  expect_true(any(grepl("Enumeration Counts", out)))
+})

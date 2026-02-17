@@ -1385,7 +1385,10 @@ get_inclusion_probs <- function(design) {
 #'   [get_inclusion_probs()]
 #'
 #' @examples
-#' cal <- data.frame(date = as.Date("2024-06-01"), day_type = "weekday")
+#' cal <- data.frame(
+#'   date = as.Date(c("2024-06-03", "2024-06-04", "2024-06-05", "2024-06-06")),
+#'   day_type = "weekday"
+#' )
 #' sf <- data.frame(
 #'   site = c("A", "B"),
 #'   circuit = c("am", "am"),
@@ -1400,11 +1403,12 @@ get_inclusion_probs <- function(design) {
 #'   p_site = p_site, p_period = p_period
 #' )
 #' interviews <- data.frame(
-#'   date = as.Date("2024-06-01"),
-#'   site = "A", circuit = "am",
-#'   catch_total = 3L, hours_fished = 2.0,
-#'   trip_status = "complete", trip_duration = 2.0,
-#'   n_counted = 5L, n_interviewed = 3L
+#'   date = as.Date(c("2024-06-03", "2024-06-04")),
+#'   site = c("A", "B"), circuit = c("am", "am"),
+#'   catch_total = c(3L, 2L), hours_fished = c(2.0, 1.5),
+#'   trip_status = c("complete", "complete"),
+#'   trip_duration = c(2.0, 1.5),
+#'   n_counted = c(5L, 4L), n_interviewed = c(3L, 2L)
 #' )
 #' design2 <- add_interviews(
 #'   design_br, interviews,
