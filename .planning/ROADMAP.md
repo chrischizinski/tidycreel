@@ -282,7 +282,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 21. Bus-Route Design Foundation | 0/2 | Complete    | 2026-02-17 |
 | 22. Inclusion Probability Calculation | 0/2 | Complete    | 2026-02-17 |
-| 23. Data Integration | 0/2 | Planning    | - |
+| 23. Data Integration | 0/2 | Complete    | 2026-02-17 |
 | 24. Bus-Route Effort Estimation | 0/TBD | Not started | - |
 | 25. Bus-Route Harvest Estimation | 0/TBD | Not started | - |
 | 26. Primary Source Validation | 0/TBD | Not started | - |
