@@ -1140,6 +1140,74 @@ get_sampling_frame <- function(design) {
   design$bus_route$data
 }
 
+#' Get inclusion probabilities from a bus-route design
+#'
+#' Returns the computed inclusion probabilities
+#' (\eqn{\pi_i = p_{\text{site}} \times p_{\text{period}}}) for each
+#' site-circuit combination in a bus-route creel design. The inclusion
+#' probability represents the two-stage sampling probability: the probability
+#' that a particular site is visited during a particular sampling period,
+#' combining both the site selection probability within the circuit and the
+#' circuit (period) selection probability.
+#'
+#' @param design A [creel_design()] object created with
+#'   `survey_type = "bus_route"`.
+#'
+#' @return A data frame with three columns: the site identifier column, the
+#'   circuit identifier column, and `.pi_i` (the computed inclusion
+#'   probability \eqn{\pi_i = p_{\text{site}} \times p_{\text{period}}} for
+#'   each site-circuit unit). Column names for site and circuit match the
+#'   resolved column names from the original sampling frame (or `.circuit`
+#'   for designs without an explicit circuit column).
+#'
+#' @references
+#' Jones, C. M., & Pollock, K. H. (2012). Recreational survey methods:
+#' estimating effort, harvest, and abundance. In A. V. Zale, D. L. Parrish,
+#' & T. M. Sutton (Eds.), *Fisheries Techniques* (3rd ed., pp. 883--919).
+#' American Fisheries Society. Definition of \eqn{\pi_i} for two-stage
+#' bus-route sampling, used in Eq. 19.4 and 19.5.
+#'
+#' @seealso [creel_design()], [get_sampling_frame()]
+#'
+#' @examples
+#' sf <- data.frame(
+#'   site = c("A", "B", "C"),
+#'   p_site = c(0.3, 0.4, 0.3),
+#'   p_period = rep(0.5, 3),
+#'   stringsAsFactors = FALSE
+#' )
+#' cal <- data.frame(
+#'   date = as.Date("2024-06-01"),
+#'   day_type = "weekday",
+#'   stringsAsFactors = FALSE
+#' )
+#' design <- creel_design(cal,
+#'   date = date, strata = day_type,
+#'   survey_type = "bus_route", sampling_frame = sf,
+#'   site = site, p_site = p_site, p_period = p_period
+#' )
+#' get_inclusion_probs(design)
+#'
+#' @export
+get_inclusion_probs <- function(design) {
+  if (!inherits(design, "creel_design")) {
+    cli::cli_abort(c(
+      "{.arg design} must be a {.cls creel_design} object.",
+      "x" = "{.arg design} is {.cls {class(design)[1]}}.",
+      "i" = "Create a design with {.fn creel_design}."
+    ))
+  }
+  if (is.null(design$bus_route)) {
+    cli::cli_abort(c(
+      "{.fn get_inclusion_probs} is only available for bus-route designs.",
+      "x" = "This design has {.field design_type} = {.val {design$design_type}}.",
+      "i" = "Create a bus-route design with {.code creel_design(..., survey_type = 'bus_route')}."
+    ))
+  }
+  br <- design$bus_route
+  br$data[, c(br$site_col, br$circuit_col, br$pi_i_col)]
+}
+
 #' Summarize a creel_design object
 #'
 #' @param object A creel_design object
