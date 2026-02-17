@@ -520,3 +520,277 @@ test_that("get_sampling_frame() errors on non-bus-route design", {
 test_that("get_sampling_frame() errors on non-creel_design input", {
   expect_error(get_sampling_frame(list()), class = "rlang_error")
 })
+
+# Inclusion probability calculation ----
+
+# Helper for multi-circuit sampling frame (2 circuits, 2 sites each)
+make_br_sf_2circuit <- function() {
+  data.frame(
+    site = c("A", "B", "C", "D"),
+    route = c("R1", "R1", "R2", "R2"),
+    p_site = c(0.3, 0.7, 0.6, 0.4),
+    p_period = c(0.4, 0.4, 0.5, 0.5),
+    stringsAsFactors = FALSE
+  )
+}
+
+# Golden tests — pi_i arithmetic correctness (VALID-03) ----
+
+test_that("golden test 1: single-circuit scalar p_period pi_i = p_site * p_period", {
+  sf <- data.frame(
+    site = c("A", "B", "C"),
+    p_site = c(0.20, 0.50, 0.30),
+    stringsAsFactors = FALSE
+  )
+  d <- creel_design(make_br_cal(),
+    date = date, strata = day_type,
+    survey_type = "bus_route", sampling_frame = sf,
+    site = site, p_site = p_site, p_period = 0.30
+  )
+
+  expect_equal(d$bus_route$data$.pi_i, c(0.06, 0.15, 0.09), tolerance = 1e-10)
+})
+
+test_that("golden test 2: single-circuit column p_period pi_i = p_site * p_period", {
+  sf <- data.frame(
+    site = c("A", "B"),
+    p_site = c(0.40, 0.60),
+    p_period = c(0.25, 0.25),
+    stringsAsFactors = FALSE
+  )
+  d <- creel_design(make_br_cal(),
+    date = date, strata = day_type,
+    survey_type = "bus_route", sampling_frame = sf,
+    site = site, p_site = p_site, p_period = p_period
+  )
+
+  expect_equal(d$bus_route$data$.pi_i, c(0.10, 0.15), tolerance = 1e-10)
+})
+
+test_that("golden test 3: multi-circuit varying p_site and p_period", {
+  d <- creel_design(make_br_cal(),
+    date = date, strata = day_type,
+    survey_type = "bus_route", sampling_frame = make_br_sf_2circuit(),
+    site = site, p_site = p_site, circuit = route, p_period = p_period
+  )
+
+  expect_equal(d$bus_route$data$.pi_i, c(0.12, 0.28, 0.30, 0.20), tolerance = 1e-10)
+})
+
+test_that("golden test 4: boundary values p_site=1.0, p_period=1.0 -> pi_i=1.0 exactly", {
+  sf <- data.frame(
+    site = c("A"),
+    p_site = c(1.0),
+    p_period = c(1.0),
+    stringsAsFactors = FALSE
+  )
+  d <- creel_design(make_br_cal(),
+    date = date, strata = day_type,
+    survey_type = "bus_route", sampling_frame = sf,
+    site = site, p_site = p_site, p_period = p_period
+  )
+
+  expect_equal(d$bus_route$data$.pi_i, 1.0, tolerance = 1e-10)
+})
+
+# Validation tests — p_period uniformity constraint ----
+
+test_that("p_period varying within single circuit errors with 'constant within each circuit'", {
+  sf <- data.frame(
+    site = c("A", "B"),
+    p_site = c(0.5, 0.5),
+    p_period = c(0.3, 0.6),
+    stringsAsFactors = FALSE
+  )
+  expect_error(
+    creel_design(make_br_cal(),
+      date = date, strata = day_type,
+      survey_type = "bus_route", sampling_frame = sf,
+      site = site, p_site = p_site, p_period = p_period
+    ),
+    "constant within each circuit"
+  )
+})
+
+test_that("p_period varying within one of two circuits errors mentioning failing circuit name", {
+  sf <- data.frame(
+    site = c("A", "B", "C", "D"),
+    route = c("R1", "R1", "R2", "R2"),
+    p_site = c(0.5, 0.5, 0.5, 0.5),
+    p_period = c(0.4, 0.4, 0.3, 0.6), # R2 non-uniform
+    stringsAsFactors = FALSE
+  )
+  expect_error(
+    creel_design(make_br_cal(),
+      date = date, strata = day_type,
+      survey_type = "bus_route", sampling_frame = sf,
+      site = site, p_site = p_site, circuit = route, p_period = p_period
+    ),
+    "constant within each circuit"
+  )
+  expect_error(
+    creel_design(make_br_cal(),
+      date = date, strata = day_type,
+      survey_type = "bus_route", sampling_frame = sf,
+      site = site, p_site = p_site, circuit = route, p_period = p_period
+    ),
+    "R2"
+  )
+})
+
+test_that("different circuits with different but uniform p_period values succeed", {
+  # R1 has p_period=0.4, R2 has p_period=0.6 — each circuit is uniform
+  sf <- data.frame(
+    site = c("A", "B", "C", "D"),
+    route = c("R1", "R1", "R2", "R2"),
+    p_site = c(0.5, 0.5, 0.5, 0.5),
+    p_period = c(0.4, 0.4, 0.6, 0.6),
+    stringsAsFactors = FALSE
+  )
+  expect_no_error(
+    creel_design(make_br_cal(),
+      date = date, strata = day_type,
+      survey_type = "bus_route", sampling_frame = sf,
+      site = site, p_site = p_site, circuit = route, p_period = p_period
+    )
+  )
+})
+
+test_that("scalar p_period always passes uniformity check", {
+  sf <- data.frame(
+    site = c("A", "B", "C"),
+    p_site = c(0.2, 0.5, 0.3),
+    stringsAsFactors = FALSE
+  )
+  expect_no_error(
+    creel_design(make_br_cal(),
+      date = date, strata = day_type,
+      survey_type = "bus_route", sampling_frame = sf,
+      site = site, p_site = p_site, p_period = 0.45
+    )
+  )
+})
+
+# get_inclusion_probs() unit tests ----
+
+test_that("get_inclusion_probs() returns data frame with 3 correct columns for single-circuit design", {
+  d <- creel_design(make_br_cal(),
+    date = date, strata = day_type,
+    survey_type = "bus_route", sampling_frame = make_br_sf(),
+    site = site, p_site = p_site, p_period = p_period
+  )
+  out <- get_inclusion_probs(d)
+
+  expect_true(is.data.frame(out))
+  expect_equal(ncol(out), 3L)
+  expect_equal(names(out), c("site", ".circuit", ".pi_i"))
+})
+
+test_that("get_inclusion_probs() returns correct pi_i values matching bus_route$data$.pi_i", {
+  # Same setup as golden test 1 for value consistency check
+  sf <- data.frame(
+    site = c("A", "B", "C"),
+    p_site = c(0.20, 0.50, 0.30),
+    stringsAsFactors = FALSE
+  )
+  d <- creel_design(make_br_cal(),
+    date = date, strata = day_type,
+    survey_type = "bus_route", sampling_frame = sf,
+    site = site, p_site = p_site, p_period = 0.30
+  )
+  out <- get_inclusion_probs(d)
+
+  expect_equal(out$.pi_i, d$bus_route$data$.pi_i, tolerance = 1e-10)
+  expect_equal(out$.pi_i, c(0.06, 0.15, 0.09), tolerance = 1e-10)
+})
+
+test_that("get_inclusion_probs() multi-circuit returns correct site, circuit, and pi_i columns", {
+  d <- creel_design(make_br_cal(),
+    date = date, strata = day_type,
+    survey_type = "bus_route", sampling_frame = make_br_sf_2circuit(),
+    site = site, p_site = p_site, circuit = route, p_period = p_period
+  )
+  out <- get_inclusion_probs(d)
+
+  expect_equal(ncol(out), 3L)
+  expect_equal(names(out), c("site", "route", ".pi_i"))
+  expect_equal(out$.pi_i, c(0.12, 0.28, 0.30, 0.20), tolerance = 1e-10)
+  expect_equal(out$route, c("R1", "R1", "R2", "R2"))
+})
+
+test_that("get_inclusion_probs() on non-bus-route design errors with 'only available for bus-route'", {
+  cal <- data.frame(
+    date = as.Date("2024-06-01"), day_type = "weekday",
+    stringsAsFactors = FALSE
+  )
+  d <- creel_design(cal, date = date, strata = day_type)
+
+  expect_error(get_inclusion_probs(d), "only available for bus-route")
+})
+
+test_that("get_inclusion_probs() on plain list errors with 'must be a creel_design'", {
+  expect_error(
+    get_inclusion_probs(list()),
+    "must be a"
+  )
+  expect_error(
+    get_inclusion_probs(list()),
+    class = "rlang_error"
+  )
+})
+
+# Property tests — range invariant (BUSRT-05) ----
+
+test_that("range invariant: all pi_i values in (0,1] for edge-case probability combinations", {
+  # p_site=0.01, p_period=0.99 -> pi_i=0.0099 (near 0 but valid)
+  sf1 <- data.frame(
+    site = c("A", "B"),
+    p_site = c(0.01, 0.99),
+    p_period = c(0.99, 0.99),
+    stringsAsFactors = FALSE
+  )
+  d1 <- creel_design(make_br_cal(),
+    date = date, strata = day_type,
+    survey_type = "bus_route", sampling_frame = sf1,
+    site = site, p_site = p_site, p_period = p_period
+  )
+  pi_i_1 <- d1$bus_route$data$.pi_i
+  expect_true(all(pi_i_1 > 0))
+  expect_true(all(pi_i_1 <= 1))
+  expect_equal(pi_i_1[1], 0.01 * 0.99, tolerance = 1e-10)
+
+  # p_site=0.99, p_period=0.01 -> pi_i=0.0099 (same product, different factors)
+  sf2 <- data.frame(
+    site = c("A", "B"),
+    p_site = c(0.99, 0.01),
+    p_period = c(0.01, 0.01),
+    stringsAsFactors = FALSE
+  )
+  d2 <- creel_design(make_br_cal(),
+    date = date, strata = day_type,
+    survey_type = "bus_route", sampling_frame = sf2,
+    site = site, p_site = p_site, p_period = p_period
+  )
+  pi_i_2 <- d2$bus_route$data$.pi_i
+  expect_true(all(pi_i_2 > 0))
+  expect_true(all(pi_i_2 <= 1))
+  expect_equal(pi_i_2[1], 0.99 * 0.01, tolerance = 1e-10)
+})
+
+test_that("vectorization consistency: 5-site design with varying p_site and scalar p_period", {
+  p_sites <- c(0.1, 0.2, 0.3, 0.25, 0.15)
+  p_period_val <- 0.4
+  sf <- data.frame(
+    site = c("A", "B", "C", "D", "E"),
+    p_site = p_sites,
+    stringsAsFactors = FALSE
+  )
+  d <- creel_design(make_br_cal(),
+    date = date, strata = day_type,
+    survey_type = "bus_route", sampling_frame = sf,
+    site = site, p_site = p_site, p_period = p_period_val
+  )
+
+  expected_pi_i <- p_sites * p_period_val
+  expect_equal(d$bus_route$data$.pi_i, expected_pi_i, tolerance = 1e-10)
+})
