@@ -1163,6 +1163,59 @@ format.creel_design <- function(x, ...) {
         remaining <- nrow(br) - 10L # nolint: object_usage_linter
         cli::cli_text("  ... and {remaining} more row{?s}")
       }
+
+      # Enumeration Counts section (only if interviews are attached with counts)
+      if (!is.null(x$interviews) && !is.null(x$n_counted_col) && !is.null(x$n_interviewed_col)) {
+        nc_col <- x$n_counted_col
+        ni_col <- x$n_interviewed_col
+        site_col_br <- x$bus_route$site_col
+        circ_col_br <- x$bus_route$circuit_col
+        ivw <- x$interviews
+
+        cli::cli_h2("Enumeration Counts")
+        cli::cli_text("(n_counted observed, n_interviewed interviewed, expansion = n_counted/n_interviewed)")
+
+        # Summarize by site + circuit: sum n_counted, sum n_interviewed
+        grp_keys <- c(site_col_br, circ_col_br)
+        agg_nc <- stats::aggregate(
+          ivw[[nc_col]],
+          by = ivw[grp_keys],
+          FUN = sum, na.rm = TRUE
+        )
+        agg_ni <- stats::aggregate(
+          ivw[[ni_col]],
+          by = ivw[grp_keys],
+          FUN = sum, na.rm = TRUE
+        )
+        names(agg_nc)[length(agg_nc)] <- "nc_sum"
+        names(agg_ni)[length(agg_ni)] <- "ni_sum"
+        enum_summary <- merge(agg_nc, agg_ni, by = grp_keys)
+        enum_summary$expansion <- ifelse(
+          enum_summary$ni_sum == 0,
+          NA_real_,
+          enum_summary$nc_sum / enum_summary$ni_sum
+        )
+
+        max_rows_enum <- min(nrow(enum_summary), 10L)
+        for (i in seq_len(max_rows_enum)) {
+          sv <- enum_summary[[site_col_br]][i] # nolint: object_usage_linter
+          cv <- enum_summary[[circ_col_br]][i] # nolint: object_usage_linter
+          nc <- enum_summary$nc_sum[i] # nolint: object_usage_linter
+          ni <- enum_summary$ni_sum[i] # nolint: object_usage_linter
+          exp_val <- if (is.na(enum_summary$expansion[i])) { # nolint: object_usage_linter
+            "NA (0 interviewed)"
+          } else {
+            round(enum_summary$expansion[i], 2)
+          }
+          cli::cli_text(
+            "  {.field {sv}} [{cv}]: counted={nc}, interviewed={ni}, expansion={exp_val}"
+          )
+        }
+        if (nrow(enum_summary) > 10L) {
+          remaining_enum <- nrow(enum_summary) - 10L # nolint: object_usage_linter
+          cli::cli_text("  ... and {remaining_enum} more row{?s}")
+        }
+      }
     }
   })
 }
@@ -1300,6 +1353,106 @@ get_inclusion_probs <- function(design) {
   }
   br <- design$bus_route
   br$data[, c(br$site_col, br$circuit_col, br$pi_i_col)]
+}
+
+#' Get enumeration counts from a bus-route creel design with interviews
+#'
+#' @description
+#' Returns the enumeration count data (observed and interviewed angler counts,
+#' and the expansion factor) for each interview record in a bus-route
+#' \code{creel_design} with interviews attached via \code{\link{add_interviews}}.
+#'
+#' The expansion factor \eqn{n\_counted / n\_interviewed} accounts for anglers
+#' present at a site who were not interviewed. It is used during bus-route
+#' effort and harvest estimation (Jones & Pollock (2012) Eq. 19.4 and 19.5).
+#'
+#' @param design A \code{creel_design} object with \code{design_type = "bus_route"}
+#'   and interview data attached via \code{\link{add_interviews}}.
+#'
+#' @return A data frame with the site identifier column, the circuit identifier
+#'   column, \code{n_counted} (resolved column name), \code{n_interviewed}
+#'   (resolved column name), and \code{.expansion} (n_counted / n_interviewed,
+#'   NA when n_interviewed = 0).
+#'
+#' @references
+#' Jones, C. M., & Pollock, K. H. (2012). Recreational survey methods:
+#' estimating effort, harvest, and abundance. In A. V. Zale, D. L. Parrish,
+#' & T. M. Sutton (Eds.), \emph{Fisheries Techniques} (3rd ed., pp. 883--919).
+#' American Fisheries Society. Enumeration expansion factor used in Eq. 19.4
+#' and 19.5 for bus-route effort and harvest estimation.
+#'
+#' @seealso [creel_design()], [add_interviews()], [get_sampling_frame()],
+#'   [get_inclusion_probs()]
+#'
+#' @examples
+#' cal <- data.frame(date = as.Date("2024-06-01"), day_type = "weekday")
+#' sf <- data.frame(
+#'   site = c("A", "B"),
+#'   circuit = c("am", "am"),
+#'   p_site = c(0.6, 0.4),
+#'   p_period = rep(0.5, 2)
+#' )
+#' design_br <- creel_design(
+#'   cal,
+#'   date = date, strata = day_type,
+#'   survey_type = "bus_route", sampling_frame = sf,
+#'   site = site, circuit = circuit,
+#'   p_site = p_site, p_period = p_period
+#' )
+#' interviews <- data.frame(
+#'   date = as.Date("2024-06-01"),
+#'   site = "A", circuit = "am",
+#'   catch_total = 3L, hours_fished = 2.0,
+#'   trip_status = "complete", trip_duration = 2.0,
+#'   n_counted = 5L, n_interviewed = 3L
+#' )
+#' design2 <- add_interviews(
+#'   design_br, interviews,
+#'   catch = catch_total, effort = hours_fished,
+#'   trip_status = trip_status, trip_duration = trip_duration,
+#'   n_counted = n_counted, n_interviewed = n_interviewed
+#' )
+#' get_enumeration_counts(design2)
+#'
+#' @export
+get_enumeration_counts <- function(design) {
+  if (!inherits(design, "creel_design")) {
+    cli::cli_abort(c(
+      "{.arg design} must be a {.cls creel_design} object.",
+      "x" = "{.arg design} is {.cls {class(design)[1]}}.",
+      "i" = "Create a design with {.fn creel_design}."
+    ))
+  }
+  if (is.null(design$bus_route)) {
+    cli::cli_abort(c(
+      "{.fn get_enumeration_counts} is only available for bus-route designs.",
+      "x" = "This design has {.field design_type} = {.val {design$design_type}}.",
+      "i" = "Create a bus-route design with {.code creel_design(..., survey_type = 'bus_route')}."
+    ))
+  }
+  if (is.null(design$interviews)) {
+    hint_msg <- "Call {.fn add_interviews} with {.arg n_counted}" # nolint: object_usage_linter
+    cli::cli_abort(c(
+      "{.fn get_enumeration_counts} requires interview data.",
+      "x" = "No interviews found in design.",
+      "i" = "{hint_msg} and {.arg n_interviewed} before accessing enumeration counts."
+    ))
+  }
+  if (is.null(design$n_counted_col) || is.null(design$n_interviewed_col)) {
+    cli::cli_abort(c(
+      "{.fn get_enumeration_counts} requires enumeration columns.",
+      "x" = "Interviews were attached without {.arg n_counted} or {.arg n_interviewed}.",
+      "i" = "Re-attach interviews using {.fn add_interviews} with {.arg n_counted} and {.arg n_interviewed} specified."
+    ))
+  }
+
+  br <- design$bus_route
+  site_col <- br$site_col
+  circuit_col <- br$circuit_col
+  nc_col <- design$n_counted_col
+  ni_col <- design$n_interviewed_col
+
+  design$interviews[, c(site_col, circuit_col, nc_col, ni_col, ".expansion")]
 }
 
 #' Summarize a creel_design object
