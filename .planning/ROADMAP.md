@@ -172,10 +172,11 @@ See: [.planning/milestones/v0.3.0-ROADMAP.md](milestones/v0.3.0-ROADMAP.md)
   2. Site probabilities sum to 1.0 within each circuit (validated at design time)
   3. All sampling probabilities are in (0,1] range (validated at design time)
   4. Design validation fails fast with clear messages when probabilities invalid
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] TBD
+- [ ] 21-01-PLAN.md — Extend creel_design() with survey_type = "bus_route", sampling_frame validation, pi_i precomputation
+- [ ] 21-02-PLAN.md — Bus-Route print section, get_sampling_frame() helper, and comprehensive tests
 
 #### Phase 22: Inclusion Probability Calculation
 **Goal**: System correctly calculates inclusion probabilities (πᵢ) from sampling design, not site characteristics
@@ -277,7 +278,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 21. Bus-Route Design Foundation | 0/TBD | Not started | - |
+| 21. Bus-Route Design Foundation | 0/2 | Not started | - |
 | 22. Inclusion Probability Calculation | 0/TBD | Not started | - |
 | 23. Data Integration | 0/TBD | Not started | - |
 | 24. Bus-Route Effort Estimation | 0/TBD | Not started | - |
@@ -286,5 +287,5 @@ Plans:
 | 27. Documentation & Traceability | 0/TBD | Not started | - |
 
 ---
-*Roadmap last updated: 2026-02-16 after v0.4.0 roadmap creation*
+*Roadmap last updated: 2026-02-16 after Phase 21 planning*
 *See .planning/MILESTONES.md for full milestone history*
