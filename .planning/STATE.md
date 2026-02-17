@@ -10,19 +10,20 @@ See: .planning/PROJECT.md (updated 2026-02-16)
 ## Current Position
 
 Phase: 21 of 27 (Bus-Route Design Foundation)
-Plan: —
-Status: Ready to plan Phase 21
-Last activity: 2026-02-16 — v0.4.0 roadmap created
+Plan: 1 complete
+Status: In progress — Phase 21 Plan 01 complete
+Last activity: 2026-02-17 — Phase 21 Plan 01 (bus_route constructor) complete
 
-Progress: [████████████░░░░░░░░] 59% (38/65+ plans complete across all milestones)
+Progress: [████████████░░░░░░░░] 60% (39/65+ plans complete across all milestones)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 38
+- Total plans completed: 39
 - v0.1.0 (Phases 1-7): 12 plans
 - v0.2.0 (Phases 8-12): 10 plans
 - v0.3.0 (Phases 13-20): 16 plans
+- v0.4.0 (Phases 21-27): 1 plan
 
 **By Milestone:**
 
@@ -31,10 +32,10 @@ Progress: [████████████░░░░░░░░] 59% (38
 | v0.1.0 | 1-7 | 12/12 | Complete | 2026-02-09 |
 | v0.2.0 | 8-12 | 10/10 | Complete | 2026-02-11 |
 | v0.3.0 | 13-20 | 16/16 | Complete | 2026-02-16 |
-| v0.4.0 | 21-27 | 0/TBD | Planning | - |
+| v0.4.0 | 21-27 | 1/TBD | In progress | - |
 
-**Quality Metrics (v0.3.0 shipped):**
-- Test coverage: ~90% (718 tests)
+**Quality Metrics (current):**
+- Test coverage: ~90% (935 tests)
 - R CMD check: 0 errors, 0 warnings
 - lintr: 0 issues
 
@@ -86,6 +87,10 @@ See PROJECT.md Key Decisions table for complete history. Recent decisions from v
 - **Phase 15**: MOR uses survey::svymean on individual ratios (statistically appropriate for incomplete trips)
 - **Phase 13**: trip_status required parameter (breaking change for downstream estimators)
 
+v0.4.0 decisions:
+
+- **Phase 21-01**: survey_type defaults to design_type for backward compatibility; pi_i precomputed at construction time (not lazily); p_period resolved via tryCatch (column selector first, scalar fallback); circuit defaults to .default when omitted; bus_route slot is NULL for non-bus_route designs
+
 ### Pending Todos
 
 - #1: Simulation study for complete vs. incomplete trip pooling bias (post-v0.3.0)
@@ -96,11 +101,11 @@ None currently.
 
 ## Session Continuity
 
-Last session: 2026-02-16
-Stopped at: v0.4.0 roadmap creation complete
+Last session: 2026-02-17
+Stopped at: Phase 21 Plan 01 complete — creel_design() bus_route constructor
 Resume file: None
 
-**Next step:** `/gsd:plan-phase 21` to create detailed plans for Bus-Route Design Foundation
+**Next step:** Continue Phase 21 Plan 02 (tests for bus_route constructor)
 
 ---
-*State last updated: 2026-02-16 after v0.4.0 roadmap creation*
+*State last updated: 2026-02-17 after Phase 21 Plan 01 complete*
