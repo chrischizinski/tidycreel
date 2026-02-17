@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-16)
 
 ## Current Position
 
-Phase: 23 of 27 (Data Integration)
-Plan: 2 complete (phase complete)
-Status: In progress — Phase 23 complete, ready for Phase 24
-Last activity: 2026-02-17 — Phase 23 Plan 02 (get_enumeration_counts() accessor, Enumeration Counts print section, 17 bus-route tests) complete
+Phase: 24 of 27 (Bus-Route Effort Estimation)
+Plan: 1 complete (phase in progress)
+Status: In progress — Phase 24 Plan 01 complete, ready for Phase 24 Plan 02 (or next plan)
+Last activity: 2026-02-17 — Phase 24 Plan 01 (bus-route effort estimator estimate_effort_br(), dispatch in estimate_effort()) complete
 
-Progress: [████████████░░░░░░░░] 65% (43/65+ plans complete across all milestones)
+Progress: [████████████░░░░░░░░] 67% (44/65+ plans complete across all milestones)
 
 ## Performance Metrics
 
@@ -32,10 +32,10 @@ Progress: [████████████░░░░░░░░] 65% (43
 | v0.1.0 | 1-7 | 12/12 | Complete | 2026-02-09 |
 | v0.2.0 | 8-12 | 10/10 | Complete | 2026-02-11 |
 | v0.3.0 | 13-20 | 16/16 | Complete | 2026-02-16 |
-| v0.4.0 | 21-27 | 5/TBD | In progress | - |
+| v0.4.0 | 21-27 | 6/TBD | In progress | - |
 
 **Quality Metrics (current):**
-- Test coverage: ~90% (1023 tests)
+- Test coverage: ~90% (1026 tests)
 - R CMD check: 0 errors, 0 warnings
 - lintr: 0 issues
 
@@ -95,6 +95,7 @@ v0.4.0 decisions:
 - **Phase 22-02**: CLI {.cls} formatting adds angle brackets around class names in error messages — use partial "must be a" pattern not exact "must be a creel_design object" in expect_error(); make_br_sf_2circuit() defined at section scope for multi-circuit test helper locality
 - **Phase 23-01**: validate_br_interviews_tier3 shortened from validate_bus_route_interviews_tier3 (36 chars) to 28 chars for lintr object_length_linter compliance; n_interviewed = 0 rows produce NA expansion (not error), warn only when n_counted > 0 and n_interviewed = 0; unmatched site+circuit causes hard error listing specific combos
 - **Phase 23-02**: @examples and test helpers for bus-route interview tests require >= 4 calendar dates (>= 2 PSUs per stratum) for valid survey construction; bus-route accessor trio complete: get_sampling_frame() / get_inclusion_probs() / get_enumeration_counts()
+- **Phase 24-01**: Bus-route dispatch placed BEFORE design$survey NULL check (bus-route uses interviews not counts, so design$survey is NULL for bus-route designs); NA expansion (n_counted>0, n_interviewed=0) excluded by na.rm=TRUE in sum() — statistically appropriate, cannot estimate effort without interview data; zero-effort sites (n_counted=0, n_interviewed=0) contribute 0 to sum; site_contributions attribute stored for Phase 26 Malvestuto validation traceability
 
 ### Pending Todos
 
@@ -107,10 +108,10 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Phase 23 Plan 02 complete — get_enumeration_counts() accessor (BUSRT-08, BUSRT-02, VALID-04); Phase 23 complete
+Stopped at: Phase 24 Plan 01 complete — estimate_effort_br() bus-route effort estimator (BUSRT-03, BUSRT-09)
 Resume file: None
 
-**Next step:** Phase 24 — Bus-Route Effort Estimation
+**Next step:** Phase 24 Plan 02 (if exists) or Phase 25 — Bus-Route Harvest Estimation
 
 ---
-*State last updated: 2026-02-17 after Phase 23 Plan 02 complete*
+*State last updated: 2026-02-17 after Phase 24 Plan 01 complete*
