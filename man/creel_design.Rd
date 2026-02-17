@@ -9,7 +9,12 @@ creel_design(
   date,
   strata,
   site = NULL,
-  design_type = "instantaneous"
+  design_type = "instantaneous",
+  survey_type = design_type,
+  sampling_frame = NULL,
+  p_site = NULL,
+  p_period = NULL,
+  circuit = NULL
 )
 }
 \arguments{
@@ -25,13 +30,40 @@ column of class Date. Accepts bare column names or tidyselect helpers
 columns of class character or factor. Accepts bare column names or
 tidyselect helpers (e.g., \code{c(day_type, season)} or \code{starts_with("day")}).}
 
-\item{site}{Optional tidy selector for a site column. Must select exactly
-one column of class character or factor if provided. Use for multi-site
-surveys. Default is \code{NULL} (single-site survey).}
+\item{site}{Optional tidy selector for a site column. For instantaneous
+designs, selects from \code{calendar}. For bus-route designs
+(\code{survey_type = "bus_route"}), selects the site ID column from
+\code{sampling_frame}. Must select exactly one column of class character or
+factor. Default is \code{NULL} (single-site survey for instantaneous designs;
+required for bus-route designs).}
 
 \item{design_type}{Character string specifying the survey design type.
-Default is \code{"instantaneous"}. Future versions will support \code{"roving"},
-\code{"aerial"}, and \code{"bus_route"}.}
+Default is \code{"instantaneous"}. Kept for backward compatibility; use
+\code{survey_type} for new code.}
+
+\item{survey_type}{Character string specifying the survey type. Default
+inherits from \code{design_type} (\code{"instantaneous"}). Use \code{"bus_route"} for
+nonuniform probability bus-route surveys (BUSRT-06, BUSRT-07). Both
+\code{survey_type} and \code{design_type} refer to the same concept; \code{survey_type}
+is the canonical parameter for new designs.}
+
+\item{sampling_frame}{Data frame with site, circuit, and probability columns.
+Required when \code{survey_type = "bus_route"}. Each row represents one
+site-circuit sampling unit with its inclusion probability components
+(\code{p_site} and \code{p_period}).}
+
+\item{p_site}{Tidy selector for the site sampling probability column in
+\code{sampling_frame}. Required when \code{survey_type = "bus_route"}. Values must
+be in \verb{(0, 1]} and must sum to \code{1.0} within each circuit (tolerance 1e-6).}
+
+\item{p_period}{Tidy selector for the period sampling probability column in
+\code{sampling_frame}, OR a scalar numeric value in \verb{(0, 1]} that applies
+globally to all rows. Required when \code{survey_type = "bus_route"}.}
+
+\item{circuit}{Optional tidy selector for the circuit ID column in
+\code{sampling_frame}. A circuit is a route x period combination. If omitted,
+all rows are treated as belonging to a single unnamed circuit
+(\code{".default"}). Required only for multi-circuit designs.}
 }
 \value{
 A \code{creel_design} S3 object (list) with components:
@@ -42,6 +74,11 @@ A \code{creel_design} S3 object (list) with components:
 \item{design_type}{Character design type}
 \item{counts}{NULL (populated by \code{add_counts()} in future)}
 \item{survey}{NULL (populated internally during estimation)}
+\item{bus_route}{List with resolved sampling frame data and column
+mappings, or NULL for non-bus-route designs. Contains:
+\verb{$data} (sampling frame with \code{.pi_i} column added),
+\verb{$site_col}, \verb{$circuit_col}, \verb{$p_site_col}, \verb{$p_period_col},
+\verb{$pi_i_col} (always \code{".pi_i"}).}
 }
 \description{
 Constructs a \code{creel_design} object from calendar data with tidy column
@@ -49,6 +86,10 @@ selection. This is the entry point for all creel survey analysis workflows.
 The design object stores the survey structure (date, strata, optional site),
 validates input data (Tier 1 validation), and serves as the foundation for
 adding count data and estimating effort.
+
+For bus-route surveys with nonuniform site selection probabilities, use
+\code{survey_type = "bus_route"} and supply a \code{sampling_frame} data frame
+specifying sites, circuits, and their sampling probabilities.
 }
 \section{Tier 1 Validation}{
 
@@ -58,6 +99,9 @@ The constructor performs fail-fast validation:
 \item Date column contains no NA values
 \item Strata columns are character or factor (not numeric, logical)
 \item Site column (if provided) is character or factor
+\item (bus_route only) All \code{p_site} and \code{p_period} values are in \verb{(0, 1]}
+\item (bus_route only) \code{p_site} values sum to 1.0 within each circuit
+(tolerance 1e-6)
 }
 }
 
@@ -95,6 +139,27 @@ design <- creel_design(
   calendar,
   date = starts_with("survey"),
   strata = starts_with("day")
+)
+
+# Bus-route design with scalar p_period
+calendar_br <- data.frame(
+  date = as.Date("2024-06-01"),
+  day_type = "weekday"
+)
+sf <- data.frame(
+  site   = c("A", "B", "C"),
+  p_site = c(0.3, 0.4, 0.3),
+  p_period = 0.5
+)
+design_br <- creel_design(
+  calendar_br,
+  date = date,
+  strata = day_type,
+  survey_type = "bus_route",
+  sampling_frame = sf,
+  site = site,
+  p_site = p_site,
+  p_period = p_period
 )
 
 }

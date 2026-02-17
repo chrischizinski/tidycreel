@@ -7,6 +7,10 @@
 #' validates input data (Tier 1 validation), and serves as the foundation for
 #' adding count data and estimating effort.
 #'
+#' For bus-route surveys with nonuniform site selection probabilities, use
+#' `survey_type = "bus_route"` and supply a `sampling_frame` data frame
+#' specifying sites, circuits, and their sampling probabilities.
+#'
 #' @param calendar A data frame containing calendar data with date and strata
 #'   columns. Must have at least one Date column and one character/factor column
 #'   (validated via internal schema check).
@@ -16,12 +20,34 @@
 #' @param strata Tidy selector for strata columns. Can select one or more
 #'   columns of class character or factor. Accepts bare column names or
 #'   tidyselect helpers (e.g., `c(day_type, season)` or `starts_with("day")`).
-#' @param site Optional tidy selector for a site column. Must select exactly
-#'   one column of class character or factor if provided. Use for multi-site
-#'   surveys. Default is `NULL` (single-site survey).
+#' @param site Optional tidy selector for a site column. For instantaneous
+#'   designs, selects from `calendar`. For bus-route designs
+#'   (`survey_type = "bus_route"`), selects the site ID column from
+#'   `sampling_frame`. Must select exactly one column of class character or
+#'   factor. Default is `NULL` (single-site survey for instantaneous designs;
+#'   required for bus-route designs).
 #' @param design_type Character string specifying the survey design type.
-#'   Default is `"instantaneous"`. Future versions will support `"roving"`,
-#'   `"aerial"`, and `"bus_route"`.
+#'   Default is `"instantaneous"`. Kept for backward compatibility; use
+#'   `survey_type` for new code.
+#' @param survey_type Character string specifying the survey type. Default
+#'   inherits from `design_type` (`"instantaneous"`). Use `"bus_route"` for
+#'   nonuniform probability bus-route surveys (BUSRT-06, BUSRT-07). Both
+#'   `survey_type` and `design_type` refer to the same concept; `survey_type`
+#'   is the canonical parameter for new designs.
+#' @param sampling_frame Data frame with site, circuit, and probability columns.
+#'   Required when `survey_type = "bus_route"`. Each row represents one
+#'   site-circuit sampling unit with its inclusion probability components
+#'   (`p_site` and `p_period`).
+#' @param p_site Tidy selector for the site sampling probability column in
+#'   `sampling_frame`. Required when `survey_type = "bus_route"`. Values must
+#'   be in `(0, 1]` and must sum to `1.0` within each circuit (tolerance 1e-6).
+#' @param p_period Tidy selector for the period sampling probability column in
+#'   `sampling_frame`, OR a scalar numeric value in `(0, 1]` that applies
+#'   globally to all rows. Required when `survey_type = "bus_route"`.
+#' @param circuit Optional tidy selector for the circuit ID column in
+#'   `sampling_frame`. A circuit is a route x period combination. If omitted,
+#'   all rows are treated as belonging to a single unnamed circuit
+#'   (`".default"`). Required only for multi-circuit designs.
 #'
 #' @return A `creel_design` S3 object (list) with components:
 #'   \item{calendar}{The original calendar data frame}
@@ -31,6 +57,11 @@
 #'   \item{design_type}{Character design type}
 #'   \item{counts}{NULL (populated by `add_counts()` in future)}
 #'   \item{survey}{NULL (populated internally during estimation)}
+#'   \item{bus_route}{List with resolved sampling frame data and column
+#'     mappings, or NULL for non-bus-route designs. Contains:
+#'     `$data` (sampling frame with `.pi_i` column added),
+#'     `$site_col`, `$circuit_col`, `$p_site_col`, `$p_period_col`,
+#'     `$pi_i_col` (always `".pi_i"`).}
 #'
 #' @section Tier 1 Validation:
 #' The constructor performs fail-fast validation:
@@ -38,6 +69,9 @@
 #' - Date column contains no NA values
 #' - Strata columns are character or factor (not numeric, logical)
 #' - Site column (if provided) is character or factor
+#' - (bus_route only) All `p_site` and `p_period` values are in `(0, 1]`
+#' - (bus_route only) `p_site` values sum to 1.0 within each circuit
+#'   (tolerance 1e-6)
 #'
 #' @examples
 #' # Basic design with single stratum
@@ -75,12 +109,38 @@
 #'   strata = starts_with("day")
 #' )
 #'
+#' # Bus-route design with scalar p_period
+#' calendar_br <- data.frame(
+#'   date = as.Date("2024-06-01"),
+#'   day_type = "weekday"
+#' )
+#' sf <- data.frame(
+#'   site = c("A", "B", "C"),
+#'   p_site = c(0.3, 0.4, 0.3),
+#'   p_period = 0.5
+#' )
+#' design_br <- creel_design(
+#'   calendar_br,
+#'   date = date,
+#'   strata = day_type,
+#'   survey_type = "bus_route",
+#'   sampling_frame = sf,
+#'   site = site,
+#'   p_site = p_site,
+#'   p_period = p_period
+#' )
+#'
 #' @export
 creel_design <- function(calendar,
                          date,
                          strata,
                          site = NULL,
-                         design_type = "instantaneous") {
+                         design_type = "instantaneous",
+                         survey_type = design_type,
+                         sampling_frame = NULL,
+                         p_site = NULL,
+                         p_period = NULL,
+                         circuit = NULL) {
   # 1. Structural validation (Phase 1 validator)
   validate_calendar_schema(calendar) # nolint: object_usage_linter
 
@@ -101,12 +161,107 @@ creel_design <- function(calendar,
 
   site_col <- NULL
   site_quo <- rlang::enquo(site)
-  if (!rlang::quo_is_null(site_quo)) {
+  if (!identical(survey_type, "bus_route") && !rlang::quo_is_null(site_quo)) {
     site_col <- resolve_single_col(
       site_quo,
       calendar,
       "site",
       rlang::caller_env()
+    )
+  }
+
+  # --- Bus-Route branch ---
+  bus_route <- NULL
+  if (identical(survey_type, "bus_route")) {
+    if (is.null(sampling_frame) || !is.data.frame(sampling_frame)) {
+      cli::cli_abort(c(
+        "{.arg sampling_frame} must be a data frame when {.arg survey_type} is {.val bus_route}.",
+        "i" = "Provide a data frame with site, probability, and optional circuit columns."
+      ))
+    }
+
+    # Resolve p_site column (tidy selector, required)
+    p_site_quo <- rlang::enquo(p_site)
+    if (rlang::quo_is_null(p_site_quo)) {
+      cli::cli_abort(c(
+        "{.arg p_site} is required when {.arg survey_type} is {.val bus_route}.",
+        "i" = "Specify the column in {.arg sampling_frame} that holds site sampling probabilities."
+      ))
+    }
+    p_site_col <- resolve_single_col(p_site_quo, sampling_frame, "p_site", rlang::caller_env())
+
+    # Resolve site column in sampling_frame (tidy selector, required for bus_route)
+    site_frame_col <- NULL
+    if (!rlang::quo_is_null(site_quo)) {
+      site_frame_col <- resolve_single_col(site_quo, sampling_frame, "site", rlang::caller_env())
+    } else {
+      cli::cli_abort(c(
+        "{.arg site} is required when {.arg survey_type} is {.val bus_route}.",
+        "i" = "Specify the column in {.arg sampling_frame} that identifies sites."
+      ))
+    }
+
+    # Resolve circuit column (optional; if omitted, default to single circuit ".circuit")
+    circuit_col <- NULL
+    circuit_quo <- rlang::enquo(circuit)
+    if (!rlang::quo_is_null(circuit_quo)) {
+      circuit_col <- resolve_single_col(circuit_quo, sampling_frame, "circuit", rlang::caller_env())
+    }
+
+    # Resolve p_period: either a column in sampling_frame OR a scalar numeric argument
+    p_period_col <- NULL
+    p_period_scalar <- NULL
+    p_period_quo <- rlang::enquo(p_period)
+    if (!rlang::quo_is_null(p_period_quo)) {
+      # Try as column selector first; if it fails, evaluate as expression (scalar numeric)
+      tryCatch(
+        {
+          p_period_col <- resolve_single_col(p_period_quo, sampling_frame, "p_period", rlang::caller_env())
+        },
+        error = function(e) {
+          val <- rlang::eval_tidy(p_period_quo)
+          if (!is.numeric(val) || length(val) != 1) {
+            cli::cli_abort(c(
+              "{.arg p_period} must be a column name in {.arg sampling_frame} or a single numeric value.",
+              "x" = "Got {.cls {class(val)[1]}} of length {length(val)}."
+            ))
+          }
+          p_period_scalar <<- val
+        }
+      )
+    } else {
+      cli::cli_abort(c(
+        "{.arg p_period} is required when {.arg survey_type} is {.val bus_route}.",
+        "i" = "Supply a column name from {.arg sampling_frame} or a scalar numeric in (0, 1]."
+      ))
+    }
+
+    # Build internal bus_route data frame with standardized column names
+    br_df <- sampling_frame
+
+    # Add default circuit column if omitted
+    if (is.null(circuit_col)) {
+      br_df[[".circuit"]] <- ".default"
+      circuit_col <- ".circuit"
+    }
+
+    # Add p_period column if scalar was provided
+    if (!is.null(p_period_scalar)) {
+      br_df[[".p_period"]] <- p_period_scalar
+      p_period_col <- ".p_period"
+    }
+
+    # Compute pi_i = p_site * p_period
+    br_df[[".pi_i"]] <- br_df[[p_site_col]] * br_df[[p_period_col]]
+
+    # Store resolved column mappings alongside the data
+    bus_route <- list(
+      data         = br_df,
+      site_col     = site_frame_col,
+      circuit_col  = circuit_col,
+      p_site_col   = p_site_col,
+      p_period_col = p_period_col,
+      pi_i_col     = ".pi_i"
     )
   }
 
@@ -116,7 +271,8 @@ creel_design <- function(calendar,
     date_col    = date_col,
     strata_cols = strata_cols,
     site_col    = site_col,
-    design_type = design_type
+    design_type = survey_type,
+    bus_route   = bus_route
   )
   validate_creel_design(design)
 }
@@ -132,6 +288,8 @@ creel_design <- function(calendar,
 #' @param strata_cols Character vector of strata column names
 #' @param site_col Character name of site column, or NULL
 #' @param design_type Character design type
+#' @param bus_route Named list with resolved sampling frame and column mappings
+#'   for bus-route designs. NULL for non-bus-route designs.
 #'
 #' @return A creel_design object (list with class attribute)
 #'
@@ -141,12 +299,14 @@ new_creel_design <- function(calendar,
                              date_col,
                              strata_cols,
                              site_col = NULL,
-                             design_type = "instantaneous") {
+                             design_type = "instantaneous",
+                             bus_route = NULL) {
   stopifnot(is.data.frame(calendar))
   stopifnot(is.character(date_col), length(date_col) == 1)
   stopifnot(is.character(strata_cols), length(strata_cols) >= 1)
   stopifnot(is.null(site_col) || (is.character(site_col) && length(site_col) == 1))
   stopifnot(is.character(design_type), length(design_type) == 1)
+  stopifnot(is.null(bus_route) || is.list(bus_route))
 
   structure(
     list(
@@ -156,7 +316,8 @@ new_creel_design <- function(calendar,
       site_col    = site_col,
       design_type = design_type,
       counts      = NULL,
-      survey      = NULL
+      survey      = NULL,
+      bus_route   = bus_route # NULL for non-bus_route designs
     ),
     class = "creel_design"
   )
@@ -212,6 +373,50 @@ validate_creel_design <- function(x) {
         "Site column {.var {x$site_col}} must be character or factor.",
         "x" = "Column {.var {x$site_col}} is {.cls {class(cal[[x$site_col]])[1]}}."
       ))
+    }
+  }
+
+  # Tier 1: Bus-Route probability validation
+  if (!is.null(x$bus_route)) {
+    br <- x$bus_route$data
+    p_site_col <- x$bus_route$p_site_col
+    p_period_col <- x$bus_route$p_period_col
+    circuit_col <- x$bus_route$circuit_col
+
+    # All p_site values must be in (0, 1]
+    p_site_vals <- br[[p_site_col]]
+    if (any(is.na(p_site_vals)) || any(p_site_vals <= 0) || any(p_site_vals > 1)) {
+      bad <- which(is.na(p_site_vals) | p_site_vals <= 0 | p_site_vals > 1) # nolint: object_usage_linter
+      cli::cli_abort(c(
+        "All {.field p_site} values must be in the range (0, 1].",
+        "x" = "{length(bad)} value{?s} out of range at row{?s} {bad}.",
+        "i" = "Sampling probabilities must be positive and at most 1.0."
+      ))
+    }
+
+    # All p_period values must be in (0, 1]
+    p_period_vals <- br[[p_period_col]]
+    if (any(is.na(p_period_vals)) || any(p_period_vals <= 0) || any(p_period_vals > 1)) {
+      bad <- which(is.na(p_period_vals) | p_period_vals <= 0 | p_period_vals > 1) # nolint: object_usage_linter
+      cli::cli_abort(c(
+        "All {.field p_period} values must be in the range (0, 1].",
+        "x" = "{length(bad)} value{?s} out of range at row{?s} {bad}.",
+        "i" = "Sampling probabilities must be positive and at most 1.0."
+      ))
+    }
+
+    # p_site values must sum to 1.0 per circuit (tolerance 1e-6)
+    circuits <- unique(br[[circuit_col]])
+    for (circ in circuits) {
+      circ_rows <- br[[circuit_col]] == circ
+      circ_sum <- sum(br[[p_site_col]][circ_rows])
+      if (abs(circ_sum - 1.0) > 1e-6) {
+        cli::cli_abort(c(
+          "{.field p_site} values must sum to 1.0 within each circuit.",
+          "x" = "Circuit {.val {circ}}: sum = {round(circ_sum, 8)} (tolerance 1e-6).",
+          "i" = "Adjust {.field p_site} values so they sum to exactly 1.0 per circuit."
+        ))
+      }
     }
   }
 
