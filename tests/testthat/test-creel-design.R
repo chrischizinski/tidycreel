@@ -240,3 +240,283 @@ test_that("format.creel_design() shows count information when counts attached", 
   expect_true(any(grepl("PSU column:", formatted, fixed = TRUE)))
   expect_true(any(grepl("Survey:", formatted, fixed = TRUE)))
 })
+
+# Bus-Route design ----
+
+# Helper to build a minimal valid sampling_frame for bus-route tests
+make_br_sf <- function() {
+  data.frame(
+    site = c("A", "B", "C"),
+    p_site = c(0.3, 0.4, 0.3),
+    p_period = rep(0.5, 3),
+    stringsAsFactors = FALSE
+  )
+}
+
+make_br_cal <- function() {
+  data.frame(
+    date = as.Date("2024-06-01"),
+    day_type = "weekday",
+    stringsAsFactors = FALSE
+  )
+}
+
+test_that("creel_design() accepts survey_type = 'bus_route' with valid inputs", {
+  d <- creel_design(make_br_cal(),
+    date = date, strata = day_type,
+    survey_type = "bus_route", sampling_frame = make_br_sf(),
+    site = site, p_site = p_site, p_period = p_period
+  )
+
+  expect_s3_class(d, "creel_design")
+  expect_equal(d$design_type, "bus_route")
+  expect_false(is.null(d$bus_route))
+})
+
+test_that("bus_route slot contains data frame with .pi_i column", {
+  d <- creel_design(make_br_cal(),
+    date = date, strata = day_type,
+    survey_type = "bus_route", sampling_frame = make_br_sf(),
+    site = site, p_site = p_site, p_period = p_period
+  )
+
+  expect_true(is.data.frame(d$bus_route$data))
+  expect_true(".pi_i" %in% names(d$bus_route$data))
+  expect_equal(d$bus_route$data$.pi_i, c(0.15, 0.20, 0.15))
+})
+
+test_that("bus_route slot stores correct column mappings", {
+  d <- creel_design(make_br_cal(),
+    date = date, strata = day_type,
+    survey_type = "bus_route", sampling_frame = make_br_sf(),
+    site = site, p_site = p_site, p_period = p_period
+  )
+
+  expect_equal(d$bus_route$site_col, "site")
+  expect_equal(d$bus_route$p_site_col, "p_site")
+  expect_equal(d$bus_route$p_period_col, "p_period")
+  expect_equal(d$bus_route$pi_i_col, ".pi_i")
+})
+
+test_that("omitting circuit column defaults to single .default circuit", {
+  d <- creel_design(make_br_cal(),
+    date = date, strata = day_type,
+    survey_type = "bus_route", sampling_frame = make_br_sf(),
+    site = site, p_site = p_site, p_period = p_period
+  )
+
+  expect_equal(d$bus_route$circuit_col, ".circuit")
+  expect_true(all(d$bus_route$data$.circuit == ".default"))
+})
+
+test_that("circuit column is respected when provided", {
+  sf <- data.frame(
+    site = rep(c("A", "B", "C"), 2),
+    route = rep(c("morning", "evening"), each = 3),
+    p_site = rep(c(0.3, 0.4, 0.3), 2),
+    p_period = rep(c(0.4, 0.6), each = 3),
+    stringsAsFactors = FALSE
+  )
+  d <- creel_design(make_br_cal(),
+    date = date, strata = day_type,
+    survey_type = "bus_route", sampling_frame = sf,
+    site = site, p_site = p_site, circuit = route, p_period = p_period
+  )
+
+  expect_equal(d$bus_route$circuit_col, "route")
+  expect_setequal(unique(d$bus_route$data$route), c("morning", "evening"))
+})
+
+test_that("p_period as scalar applies to all rows", {
+  sf <- data.frame(
+    site = c("A", "B"), p_site = c(0.6, 0.4),
+    stringsAsFactors = FALSE
+  )
+  d <- creel_design(make_br_cal(),
+    date = date, strata = day_type,
+    survey_type = "bus_route", sampling_frame = sf,
+    site = site, p_site = p_site, p_period = 0.25
+  )
+
+  expect_true(all(d$bus_route$data$.p_period == 0.25))
+  expect_equal(d$bus_route$data$.pi_i, c(0.6 * 0.25, 0.4 * 0.25))
+})
+
+test_that("validation fails when p_site does not sum to 1.0 within circuit", {
+  sf <- data.frame(
+    site = c("A", "B"), p_site = c(0.3, 0.4), p_period = 0.5,
+    stringsAsFactors = FALSE
+  )
+  expect_error(
+    creel_design(make_br_cal(),
+      date = date, strata = day_type,
+      survey_type = "bus_route", sampling_frame = sf,
+      site = site, p_site = p_site, p_period = p_period
+    ),
+    class = "rlang_error"
+  )
+  expect_error(
+    creel_design(make_br_cal(),
+      date = date, strata = day_type,
+      survey_type = "bus_route", sampling_frame = sf,
+      site = site, p_site = p_site, p_period = p_period
+    ),
+    "sum to 1\\.0"
+  )
+})
+
+test_that("validation error message includes circuit name and actual sum", {
+  sf <- data.frame(
+    site = rep(c("A", "B", "C"), 2),
+    route = rep(c("AM", "PM"), each = 3),
+    p_site = c(0.3, 0.4, 0.2, 0.3, 0.4, 0.3), # AM sums to 0.9, PM sums to 1.0
+    p_period = rep(0.5, 6),
+    stringsAsFactors = FALSE
+  )
+  err <- tryCatch(
+    creel_design(make_br_cal(),
+      date = date, strata = day_type,
+      survey_type = "bus_route", sampling_frame = sf,
+      site = site, p_site = p_site, circuit = route, p_period = p_period
+    ),
+    error = function(e) conditionMessage(e)
+  )
+  expect_match(err, "AM")
+})
+
+test_that("validation fails when p_site value is zero", {
+  sf <- data.frame(
+    site = c("A", "B", "C"), p_site = c(0.3, 0.0, 0.7), p_period = 0.5,
+    stringsAsFactors = FALSE
+  )
+  expect_error(
+    creel_design(make_br_cal(),
+      date = date, strata = day_type,
+      survey_type = "bus_route", sampling_frame = sf,
+      site = site, p_site = p_site, p_period = p_period
+    ),
+    class = "rlang_error"
+  )
+})
+
+test_that("validation fails when p_site value exceeds 1", {
+  sf <- data.frame(
+    site = c("A"), p_site = c(1.1), p_period = 0.5,
+    stringsAsFactors = FALSE
+  )
+  expect_error(
+    creel_design(make_br_cal(),
+      date = date, strata = day_type,
+      survey_type = "bus_route", sampling_frame = sf,
+      site = site, p_site = p_site, p_period = p_period
+    ),
+    class = "rlang_error"
+  )
+})
+
+test_that("validation fails when p_period value exceeds 1", {
+  sf <- data.frame(
+    site = c("A", "B"), p_site = c(0.6, 0.4), p_period = c(0.5, 1.5),
+    stringsAsFactors = FALSE
+  )
+  expect_error(
+    creel_design(make_br_cal(),
+      date = date, strata = day_type,
+      survey_type = "bus_route", sampling_frame = sf,
+      site = site, p_site = p_site, p_period = p_period
+    ),
+    class = "rlang_error"
+  )
+})
+
+test_that("validation fails when sampling_frame is missing for bus_route", {
+  expect_error(
+    creel_design(make_br_cal(),
+      date = date, strata = day_type,
+      survey_type = "bus_route", site = site, p_site = p_site, p_period = 0.5
+    ),
+    class = "rlang_error"
+  )
+})
+
+test_that("p_site sums within 1e-6 tolerance are accepted", {
+  # Floating-point arithmetic: 0.1 + 0.2 + 0.7 may not be exactly 1.0
+  sf <- data.frame(
+    site = c("A", "B", "C"),
+    p_site = c(0.1, 0.2, 0.7),
+    p_period = 0.5,
+    stringsAsFactors = FALSE
+  )
+  # Should not error (sum is 1.0 within floating point)
+  expect_no_error(
+    creel_design(make_br_cal(),
+      date = date, strata = day_type,
+      survey_type = "bus_route", sampling_frame = sf,
+      site = site, p_site = p_site, p_period = p_period
+    )
+  )
+})
+
+test_that("existing instantaneous designs still work with bus_route = NULL", {
+  cal <- data.frame(
+    date = as.Date("2024-06-01"), day_type = "weekday",
+    stringsAsFactors = FALSE
+  )
+  d <- creel_design(cal, date = date, strata = day_type)
+
+  expect_null(d$bus_route)
+  expect_equal(d$design_type, "instantaneous")
+})
+
+test_that("format.creel_design() includes Bus-Route section for bus_route designs", {
+  d <- creel_design(make_br_cal(),
+    date = date, strata = day_type,
+    survey_type = "bus_route", sampling_frame = make_br_sf(),
+    site = site, p_site = p_site, p_period = p_period
+  )
+  out <- format(d)
+
+  expect_true(any(grepl("Bus-Route", out, fixed = TRUE)))
+  expect_true(any(grepl("p_site", out, fixed = TRUE)))
+  expect_true(any(grepl("pi_i", out, fixed = TRUE)))
+})
+
+test_that("format.creel_design() does not include Bus-Route section for instantaneous designs", {
+  cal <- data.frame(
+    date = as.Date("2024-06-01"), day_type = "weekday",
+    stringsAsFactors = FALSE
+  )
+  d <- creel_design(cal, date = date, strata = day_type)
+  out <- format(d)
+
+  expect_false(any(grepl("Bus-Route", out, fixed = TRUE)))
+})
+
+test_that("get_sampling_frame() returns the stored data frame", {
+  d <- creel_design(make_br_cal(),
+    date = date, strata = day_type,
+    survey_type = "bus_route", sampling_frame = make_br_sf(),
+    site = site, p_site = p_site, p_period = p_period
+  )
+  sf_out <- get_sampling_frame(d)
+
+  expect_true(is.data.frame(sf_out))
+  expect_true(".pi_i" %in% names(sf_out))
+  expect_true("site" %in% names(sf_out))
+  expect_true("p_site" %in% names(sf_out))
+})
+
+test_that("get_sampling_frame() errors on non-bus-route design", {
+  cal <- data.frame(
+    date = as.Date("2024-06-01"), day_type = "weekday",
+    stringsAsFactors = FALSE
+  )
+  d <- creel_design(cal, date = date, strata = day_type)
+
+  expect_error(get_sampling_frame(d), class = "rlang_error")
+  expect_error(get_sampling_frame(d), "only available for bus-route")
+})
+
+test_that("get_sampling_frame() errors on non-creel_design input", {
+  expect_error(get_sampling_frame(list()), class = "rlang_error")
+})
