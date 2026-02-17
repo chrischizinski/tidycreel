@@ -10,20 +10,20 @@ See: .planning/PROJECT.md (updated 2026-02-16)
 ## Current Position
 
 Phase: 24 of 27 (Bus-Route Effort Estimation)
-Plan: 1 complete (phase in progress)
-Status: In progress — Phase 24 Plan 01 complete, ready for Phase 24 Plan 02 (or next plan)
-Last activity: 2026-02-17 — Phase 24 Plan 01 (bus-route effort estimator estimate_effort_br(), dispatch in estimate_effort()) complete
+Plan: 2 complete (phase complete)
+Status: Phase 24 complete — both plans done; ready for Phase 25 (Bus-Route Harvest Estimation)
+Last activity: 2026-02-17 — Phase 24 Plan 02 (get_site_contributions() accessor + bus-route effort test suite) complete
 
-Progress: [████████████░░░░░░░░] 67% (44/65+ plans complete across all milestones)
+Progress: [████████████░░░░░░░░] 68% (45/65+ plans complete across all milestones)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 42
+- Total plans completed: 45
 - v0.1.0 (Phases 1-7): 12 plans
 - v0.2.0 (Phases 8-12): 10 plans
 - v0.3.0 (Phases 13-20): 16 plans
-- v0.4.0 (Phases 21-27): 5 plans
+- v0.4.0 (Phases 21-27): 7 plans
 
 **By Milestone:**
 
@@ -35,7 +35,7 @@ Progress: [████████████░░░░░░░░] 67% (44
 | v0.4.0 | 21-27 | 6/TBD | In progress | - |
 
 **Quality Metrics (current):**
-- Test coverage: ~90% (1026 tests)
+- Test coverage: ~90% (1045 tests)
 - R CMD check: 0 errors, 0 warnings
 - lintr: 0 issues
 
@@ -96,6 +96,7 @@ v0.4.0 decisions:
 - **Phase 23-01**: validate_br_interviews_tier3 shortened from validate_bus_route_interviews_tier3 (36 chars) to 28 chars for lintr object_length_linter compliance; n_interviewed = 0 rows produce NA expansion (not error), warn only when n_counted > 0 and n_interviewed = 0; unmatched site+circuit causes hard error listing specific combos
 - **Phase 23-02**: @examples and test helpers for bus-route interview tests require >= 4 calendar dates (>= 2 PSUs per stratum) for valid survey construction; bus-route accessor trio complete: get_sampling_frame() / get_inclusion_probs() / get_enumeration_counts()
 - **Phase 24-01**: Bus-route dispatch placed BEFORE design$survey NULL check (bus-route uses interviews not counts, so design$survey is NULL for bus-route designs); NA expansion (n_counted>0, n_interviewed=0) excluded by na.rm=TRUE in sum() — statistically appropriate, cannot estimate effort without interview data; zero-effort sites (n_counted=0, n_interviewed=0) contribute 0 to sum; site_contributions attribute stored for Phase 26 Malvestuto validation traceability
+- **Phase 24-02**: trip_duration omitted from bus-route test helpers (optional for add_interviews(); duration=0.0 fails Tier 2 validation); expect_no_message(suppressWarnings()) for verbose=FALSE test (survey::svydesign emits expected 'no weights' warning that is not a dispatch message); accessor quartet complete: get_sampling_frame() / get_inclusion_probs() / get_enumeration_counts() / get_site_contributions()
 
 ### Pending Todos
 
@@ -108,10 +109,10 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Phase 24 Plan 01 complete — estimate_effort_br() bus-route effort estimator (BUSRT-03, BUSRT-09)
+Stopped at: Phase 24 Plan 02 complete — get_site_contributions() accessor + bus-route effort test suite (BUSRT-11)
 Resume file: None
 
-**Next step:** Phase 24 Plan 02 (if exists) or Phase 25 — Bus-Route Harvest Estimation
+**Next step:** Phase 25 — Bus-Route Harvest Estimation
 
 ---
-*State last updated: 2026-02-17 after Phase 24 Plan 01 complete*
+*State last updated: 2026-02-17 after Phase 24 Plan 02 complete*
