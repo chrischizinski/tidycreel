@@ -278,7 +278,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 21. Bus-Route Design Foundation | 0/2 | Not started | - |
+| 21. Bus-Route Design Foundation | 0/2 | Complete    | 2026-02-17 |
 | 22. Inclusion Probability Calculation | 0/TBD | Not started | - |
 | 23. Data Integration | 0/TBD | Not started | - |
 | 24. Bus-Route Effort Estimation | 0/TBD | Not started | - |
