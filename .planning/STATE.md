@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-16)
 ## Current Position
 
 Phase: 23 of 27 (Data Integration)
-Plan: 1 complete
-Status: In progress — Phase 23 Plan 01 complete
-Last activity: 2026-02-17 — Phase 23 Plan 01 (add_interviews() extended with n_counted/n_interviewed selectors, Tier 3 validation, pi_i join, .expansion computation) complete
+Plan: 2 complete (phase complete)
+Status: In progress — Phase 23 complete, ready for Phase 24
+Last activity: 2026-02-17 — Phase 23 Plan 02 (get_enumeration_counts() accessor, Enumeration Counts print section, 17 bus-route tests) complete
 
-Progress: [████████████░░░░░░░░] 64% (42/65+ plans complete across all milestones)
+Progress: [████████████░░░░░░░░] 65% (43/65+ plans complete across all milestones)
 
 ## Performance Metrics
 
@@ -23,7 +23,7 @@ Progress: [████████████░░░░░░░░] 64% (42
 - v0.1.0 (Phases 1-7): 12 plans
 - v0.2.0 (Phases 8-12): 10 plans
 - v0.3.0 (Phases 13-20): 16 plans
-- v0.4.0 (Phases 21-27): 4 plans
+- v0.4.0 (Phases 21-27): 5 plans
 
 **By Milestone:**
 
@@ -32,10 +32,10 @@ Progress: [████████████░░░░░░░░] 64% (42
 | v0.1.0 | 1-7 | 12/12 | Complete | 2026-02-09 |
 | v0.2.0 | 8-12 | 10/10 | Complete | 2026-02-11 |
 | v0.3.0 | 13-20 | 16/16 | Complete | 2026-02-16 |
-| v0.4.0 | 21-27 | 4/TBD | In progress | - |
+| v0.4.0 | 21-27 | 5/TBD | In progress | - |
 
 **Quality Metrics (current):**
-- Test coverage: ~90% (1000 tests)
+- Test coverage: ~90% (1023 tests)
 - R CMD check: 0 errors, 0 warnings
 - lintr: 0 issues
 
@@ -94,6 +94,7 @@ v0.4.0 decisions:
 - **Phase 22-01**: p_period uniformity tolerance is 1e-10 (tighter than p_site sum 1e-6) because p_period within a circuit must be identical; get_inclusion_probs() returns only 3 columns (site, circuit, .pi_i) for clean minimal API; long cli_abort error messages split via inline variables for lint compliance
 - **Phase 22-02**: CLI {.cls} formatting adds angle brackets around class names in error messages — use partial "must be a" pattern not exact "must be a creel_design object" in expect_error(); make_br_sf_2circuit() defined at section scope for multi-circuit test helper locality
 - **Phase 23-01**: validate_br_interviews_tier3 shortened from validate_bus_route_interviews_tier3 (36 chars) to 28 chars for lintr object_length_linter compliance; n_interviewed = 0 rows produce NA expansion (not error), warn only when n_counted > 0 and n_interviewed = 0; unmatched site+circuit causes hard error listing specific combos
+- **Phase 23-02**: @examples and test helpers for bus-route interview tests require >= 4 calendar dates (>= 2 PSUs per stratum) for valid survey construction; bus-route accessor trio complete: get_sampling_frame() / get_inclusion_probs() / get_enumeration_counts()
 
 ### Pending Todos
 
@@ -106,10 +107,10 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Phase 23 Plan 01 complete — add_interviews() bus-route extension (n_counted, n_interviewed, Tier 3 validation, pi_i join, .expansion, BUSRT-08, BUSRT-02, VALID-04)
+Stopped at: Phase 23 Plan 02 complete — get_enumeration_counts() accessor (BUSRT-08, BUSRT-02, VALID-04); Phase 23 complete
 Resume file: None
 
-**Next step:** Phase 23 Plan 02 (get_enumeration_counts() accessor)
+**Next step:** Phase 24 — Bus-Route Effort Estimation
 
 ---
-*State last updated: 2026-02-17 after Phase 23 Plan 01 complete*
+*State last updated: 2026-02-17 after Phase 23 Plan 02 complete*
