@@ -681,6 +681,13 @@ add_counts <- function(design, counts, psu = NULL, allow_invalid = FALSE) {
 #' @param interview_time Tidy selector for interview time column (optional, default NULL).
 #'   Must be POSIXct or POSIXlt. Requires trip_start to calculate duration.
 #'   Duration is calculated as interview_time - trip_start in hours.
+#' @param n_counted Tidy selector for the count of all anglers observed at the
+#'   site during the sampling period (required for bus-route designs, ignored
+#'   for other designs). Values must be non-negative integers. Must satisfy
+#'   n_counted >= n_interviewed.
+#' @param n_interviewed Tidy selector for the count of anglers actually
+#'   interviewed at the site (required for bus-route designs, ignored for
+#'   other designs). Values of 0 are valid (no anglers came off the water).
 #' @param date_col Character name of date column in interviews (default NULL,
 #'   which uses the design's date_col). Specify explicitly if interview data
 #'   uses a different date column name than the design calendar.
@@ -796,6 +803,8 @@ add_interviews <- function(design, interviews,
                            trip_duration = NULL,
                            trip_start = NULL,
                            interview_time = NULL,
+                           n_counted = NULL,
+                           n_interviewed = NULL,
                            date_col = NULL,
                            interview_type = c("access", "roving"),
                            allow_invalid = FALSE) {
@@ -892,6 +901,24 @@ add_interviews <- function(design, interviews,
     )
   }
 
+  # Resolve n_counted column (optional; required for bus_route)
+  n_counted_col <- NULL
+  n_counted_quo <- rlang::enquo(n_counted)
+  if (!rlang::quo_is_null(n_counted_quo)) {
+    n_counted_col <- resolve_single_col(
+      n_counted_quo, interviews, "n_counted", rlang::caller_env()
+    )
+  }
+
+  # Resolve n_interviewed column (optional; required for bus_route)
+  n_interviewed_col <- NULL
+  n_interviewed_quo <- rlang::enquo(n_interviewed)
+  if (!rlang::quo_is_null(n_interviewed_quo)) {
+    n_interviewed_col <- resolve_single_col(
+      n_interviewed_quo, interviews, "n_interviewed", rlang::caller_env()
+    )
+  }
+
   # Set date_col (default to design$date_col)
   if (is.null(date_col)) {
     date_col <- design$date_col
@@ -905,6 +932,16 @@ add_interviews <- function(design, interviews,
 
   # Validate trip metadata
   validate_trip_metadata(interviews, trip_status_col, trip_duration_col, trip_start_col, interview_time_col) # nolint: object_usage_linter
+
+  # Tier 3: Bus-route specific validation
+  if (!is.null(design$bus_route)) {
+    validate_br_interviews_tier3(
+      interviews         = interviews,
+      design             = design,
+      n_counted_col      = n_counted_col,
+      n_interviewed_col  = n_interviewed_col
+    )
+  }
 
   # Calculate duration if needed (from trip_start + interview_time)
   if (!is.null(trip_start_col) && !is.null(interview_time_col) && is.null(trip_duration_col)) {
@@ -924,6 +961,59 @@ add_interviews <- function(design, interviews,
     by = stats::setNames(design$date_col, date_col),
     suffix = c("", "_cal")
   )
+
+  # Bus-route: join pi_i from sampling frame and compute expansion factor
+  if (!is.null(design$bus_route)) {
+    br <- design$bus_route
+    site_col <- br$site_col
+    circuit_col <- br$circuit_col
+    pi_i_col <- br$pi_i_col
+
+    # Extract site/circuit/pi_i lookup from sampling frame
+    sf_lookup <- br$data[, c(site_col, circuit_col, pi_i_col)]
+
+    # Join pi_i to interview rows; unmatched rows will have NA in .pi_i
+    interviews_joined <- dplyr::left_join(
+      interviews_joined,
+      sf_lookup,
+      by = stats::setNames(
+        c(site_col, circuit_col),
+        c(site_col, circuit_col)
+      )
+    )
+
+    # Error if any interview row could not be matched (NA in .pi_i after join)
+    unmatched <- is.na(interviews_joined[[pi_i_col]])
+    if (any(unmatched)) {
+      bad_rows <- interviews_joined[unmatched, c(site_col, circuit_col), drop = FALSE]
+      bad_combos <- unique(paste0(bad_rows[[site_col]], " / ", bad_rows[[circuit_col]])) # nolint: object_usage_linter
+      cli::cli_abort(c(
+        "Interview site+circuit combinations not found in sampling frame:",
+        stats::setNames(paste0("{.val ", bad_combos, "}"), rep("x", length(bad_combos))),
+        "i" = "Check that interview site and circuit values match the sampling frame exactly.",
+        "i" = "Sampling frame has {.val {nrow(br$data)}} site-circuit row{?s}."
+      ))
+    }
+
+    # Compute expansion factor: n_counted / n_interviewed
+    # n_interviewed = 0 treated as NA expansion (zero-interview observation; no expansion defined)
+    if (!is.null(n_counted_col) && !is.null(n_interviewed_col)) {
+      nc <- interviews_joined[[n_counted_col]]
+      ni <- interviews_joined[[n_interviewed_col]]
+      interviews_joined[[".expansion"]] <- ifelse(ni == 0L, NA_real_, nc / ni)
+
+      # Warn when n_counted > 0 and n_interviewed = 0 (anglers seen but none interviewed)
+      partial_zero <- nc > 0 & ni == 0
+      if (any(partial_zero, na.rm = TRUE)) {
+        n_partial <- sum(partial_zero, na.rm = TRUE) # nolint: object_usage_linter
+        cli::cli_warn(c(
+          "!" = "{n_partial} observation{?s} ha{?s/ve} n_counted > 0 but n_interviewed = 0.",
+          "i" = "Anglers were counted but none interviewed. These rows contribute no catch data.",
+          "i" = "Expansion factor (.expansion) is NA for these rows."
+        ))
+      }
+    }
+  }
 
   # Copy design and add interview fields
   new_design <- design
@@ -958,6 +1048,10 @@ add_interviews <- function(design, interviews,
   cli::cli_inform(c( # nolint: line_length_linter
     "i" = "Added {n_total} interview{?s}: {n_complete} complete ({pct_complete}%), {n_incomplete} incomplete ({pct_incomplete}%)" # nolint: line_length_linter
   ))
+
+  # Store bus-route enumeration column names
+  new_design$n_counted_col <- n_counted_col
+  new_design$n_interviewed_col <- n_interviewed_col
 
   # Preserve class
   class(new_design) <- "creel_design"
@@ -1368,4 +1462,125 @@ format.creel_trip_summary <- function(x, ...) {
 print.creel_trip_summary <- function(x, ...) {
   writeLines(format(x, ...))
   invisible(x)
+}
+
+#' Validate bus-route interview data structure (Tier 3)
+#'
+#' Internal validator for bus-route-specific requirements in interview data.
+#' Checks that enumeration columns are provided, that interview data has the
+#' join key columns (site and circuit), and that n_counted >= n_interviewed
+#' for all rows. These are Tier 3 checks - bus-route specific, fire
+#' immediately at add_interviews() time.
+#'
+#' @param interviews Data frame containing interview data
+#' @param design A creel_design object with bus_route slot populated
+#' @param n_counted_col Character name of n_counted column, or NULL
+#' @param n_interviewed_col Character name of n_interviewed column, or NULL
+#'
+#' @return invisible(NULL) on success; aborts on validation failure
+#'
+#' @keywords internal
+#' @noRd
+validate_br_interviews_tier3 <- function(interviews, design,
+                                         n_counted_col,
+                                         n_interviewed_col) {
+  collection <- checkmate::makeAssertCollection()
+  br <- design$bus_route
+  site_col <- br$site_col
+  circuit_col <- br$circuit_col
+
+  # Check 1: n_counted and n_interviewed must both be provided for bus-route
+  if (is.null(n_counted_col)) {
+    collection$push(
+      paste0(
+        "n_counted is required for bus-route designs. ",
+        "Specify the column containing the count of all observed anglers."
+      )
+    )
+  }
+  if (is.null(n_interviewed_col)) {
+    collection$push(
+      paste0(
+        "n_interviewed is required for bus-route designs. ",
+        "Specify the column containing the count of anglers interviewed."
+      )
+    )
+  }
+
+  # Check 2: site join key must exist in interview data
+  if (!site_col %in% names(interviews)) {
+    collection$push(sprintf(
+      "Interview data missing site column '%s' required for probability join.",
+      site_col
+    ))
+  }
+
+  # Check 3: circuit join key must exist in interview data
+  if (!circuit_col %in% names(interviews)) {
+    collection$push(sprintf(
+      "Interview data missing circuit column '%s' required for probability join.",
+      circuit_col
+    ))
+  }
+
+  if (!collection$isEmpty()) {
+    msgs <- collection$getMessages() # nolint: object_usage_linter
+    cli::cli_abort(c(
+      "Bus-route interview validation failed (Tier 3):",
+      stats::setNames(paste0("{.var ", msgs, "}"), rep("x", length(msgs))),
+      "i" = "Bus-route designs require enumeration counts and join key columns."
+    ))
+  }
+
+  # Check 4: n_counted >= n_interviewed for all rows (only if both cols exist)
+  if (!is.null(n_counted_col) && !is.null(n_interviewed_col)) {
+    nc <- interviews[[n_counted_col]]
+    ni <- interviews[[n_interviewed_col]]
+
+    # Check both are numeric/integer
+    if (!is.numeric(nc)) {
+      cli::cli_abort(c(
+        "n_counted column must be numeric.",
+        "x" = "Column {.field {n_counted_col}} is {.cls {class(nc)[1]}}."
+      ))
+    }
+    if (!is.numeric(ni)) {
+      cli::cli_abort(c(
+        "n_interviewed column must be numeric.",
+        "x" = "Column {.field {n_interviewed_col}} is {.cls {class(ni)[1]}}."
+      ))
+    }
+
+    # Check no negative values
+    n_neg_counted <- sum(nc < 0, na.rm = TRUE)
+    if (n_neg_counted > 0) {
+      cli::cli_abort(c(
+        "n_counted contains negative values.",
+        "x" = "{n_neg_counted} row{?s} ha{?s/ve} n_counted < 0.",
+        "i" = "Count of observed anglers must be non-negative."
+      ))
+    }
+    n_neg_interviewed <- sum(ni < 0, na.rm = TRUE)
+    if (n_neg_interviewed > 0) {
+      cli::cli_abort(c(
+        "n_interviewed contains negative values.",
+        "x" = "{n_neg_interviewed} row{?s} ha{?s/ve} n_interviewed < 0.",
+        "i" = "Count of interviewed anglers must be non-negative."
+      ))
+    }
+
+    # Check n_counted >= n_interviewed (ignore NA rows)
+    valid_rows <- !is.na(nc) & !is.na(ni)
+    violations <- sum(nc[valid_rows] < ni[valid_rows])
+    if (violations > 0) {
+      cli::cli_abort(c(
+        "n_counted must be >= n_interviewed for all rows.",
+        "x" = "{violations} row{?s} ha{?s/ve} n_counted < n_interviewed.",
+        "i" = "Cannot interview more anglers than were counted at the site.",
+        "i" = "The expansion factor (n_counted / n_interviewed) must be >= 1."
+      ))
+    }
+  }
+
+  invisible(NULL)
 }

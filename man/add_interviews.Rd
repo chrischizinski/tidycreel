@@ -14,6 +14,8 @@ add_interviews(
   trip_duration = NULL,
   trip_start = NULL,
   interview_time = NULL,
+  n_counted = NULL,
+  n_interviewed = NULL,
   date_col = NULL,
   interview_type = c("access", "roving"),
   allow_invalid = FALSE
@@ -56,6 +58,15 @@ Use when duration needs to be calculated from timestamps.}
 \item{interview_time}{Tidy selector for interview time column (optional, default NULL).
 Must be POSIXct or POSIXlt. Requires trip_start to calculate duration.
 Duration is calculated as interview_time - trip_start in hours.}
+
+\item{n_counted}{Tidy selector for the count of all anglers observed at the
+site during the sampling period (required for bus-route designs, ignored
+for other designs). Values must be non-negative integers. Must satisfy
+n_counted >= n_interviewed.}
+
+\item{n_interviewed}{Tidy selector for the count of anglers actually
+interviewed at the site (required for bus-route designs, ignored for
+other designs). Values of 0 are valid (no anglers came off the water).}
 
 \item{date_col}{Character name of date column in interviews (default NULL,
 which uses the design's date_col). Specify explicitly if interview data
