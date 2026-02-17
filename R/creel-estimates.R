@@ -196,13 +196,17 @@ print.creel_estimates <- function(x, ...) {
 #'   \code{"jackknife"} (jackknife resampling, automatic JKn/JK1 selection).
 #' @param conf_level Numeric confidence level for confidence intervals (default:
 #'   0.95 for 95% confidence intervals). Must be between 0 and 1.
+#' @param verbose Logical. If TRUE, prints an informational message identifying
+#'   which estimator path was used. Default FALSE for transparent dispatch.
 #'
 #' @return A creel_estimates S3 object (list) with components: estimates
 #'   (tibble with estimate, se, ci_lower, ci_upper, n columns, plus grouping
 #'   columns if \code{by} is specified), method (character: "total"),
 #'   variance_method (character: reflects the variance parameter value used),
 #'   design (reference to source creel_design), conf_level (numeric), and
-#'   by_vars (character vector of grouping variable names or NULL).
+#'   by_vars (character vector of grouping variable names or NULL). For
+#'   bus-route designs, a "site_contributions" attribute is also present
+#'   containing per-site e_i, pi_i, and e_i_over_pi_i columns.
 #'
 #' @details
 #' The function performs Tier 2 validation before estimation, issuing warnings
@@ -266,8 +270,11 @@ print.creel_estimates <- function(x, ...) {
 #'
 #' # Grouped estimation with bootstrap variance
 #' result_grouped_boot <- estimate_effort(design_with_counts, by = day_type, variance = "bootstrap")
+#'
+#' # Verbose dispatch message (shows which estimator was used for bus-route designs)
+#' result_verbose <- estimate_effort(design_with_counts, verbose = TRUE)
 #' @export
-estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level = 0.95) {
+estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level = 0.95, verbose = FALSE) {
   # Capture by parameter BEFORE validation
   by_quo <- rlang::enquo(by)
 
@@ -290,13 +297,49 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
     ))
   }
 
-  # Validate design$survey exists
-  if (is.null(design$survey)) {
+  # Validate design$survey exists (skip for bus-route: uses interviews not counts)
+  if (!identical(design$design_type, "bus_route") && is.null(design$survey)) {
     cli::cli_abort(c(
       "No survey design available.",
       "x" = "Call {.fn add_counts} before estimating effort.",
       "i" = "Example: {.code design <- add_counts(design, counts)}"
     ))
+  }
+
+  # Bus-route dispatch (after survey NULL check, before standard tier-2 validation)
+  if (!is.null(design$design_type) && design$design_type == "bus_route") {
+    if (verbose) {
+      cli::cli_inform(c(
+        "i" = "Using bus-route estimator (Jones & Pollock 2012, Eq. 19.4)"
+      ))
+    }
+
+    # Validate interview data exists
+    if (is.null(design$interviews)) {
+      cli::cli_abort(c(
+        "Bus-route effort estimation requires interview data.",
+        "x" = "No interview data found in design.",
+        "i" = paste0(
+          "Call {.fn add_interviews} with {.arg n_counted} and {.arg n_interviewed} parameters."
+        )
+      ))
+    }
+
+    # Resolve by_vars (same tidyselect pattern as standard path but against interviews)
+    if (rlang::quo_is_null(by_quo)) {
+      by_vars_br <- NULL
+    } else {
+      by_cols_br <- tidyselect::eval_select(
+        by_quo,
+        data = design$interviews,
+        allow_rename = FALSE,
+        allow_empty = FALSE,
+        error_call = rlang::caller_env()
+      )
+      by_vars_br <- names(by_cols_br)
+    }
+
+    return(estimate_effort_br(design, by_vars_br, variance, conf_level, verbose)) # nolint: object_usage_linter
   }
 
   # Tier 2 validation - data quality checks (warnings only)
