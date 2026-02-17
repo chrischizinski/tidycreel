@@ -72,6 +72,16 @@
 #' - (bus_route only) All `p_site` and `p_period` values are in `(0, 1]`
 #' - (bus_route only) `p_site` values sum to 1.0 within each circuit
 #'   (tolerance 1e-6)
+#' - (bus_route only) `p_period` values are constant within each circuit
+#'   (tolerance 1e-10)
+#'
+#' @references
+#' Jones, C. M., & Pollock, K. H. (2012). Recreational survey methods:
+#' estimating effort, harvest, and abundance. In A. V. Zale, D. L. Parrish,
+#' & T. M. Sutton (Eds.), *Fisheries Techniques* (3rd ed., pp. 883--919).
+#' American Fisheries Society. Eq. 19.4 and 19.5 define the bus-route
+#' estimators; pp. 883--884 define the inclusion probability
+#' \eqn{\pi_i = p_{\text{site}} \times p_{\text{period}}}.
 #'
 #' @examples
 #' # Basic design with single stratum
@@ -417,6 +427,34 @@ validate_creel_design <- function(x) {
           "i" = "Adjust {.field p_site} values so they sum to exactly 1.0 per circuit."
         ))
       }
+    }
+
+    # p_period must be uniform within each circuit
+    for (circ in circuits) {
+      circ_rows <- br[[circuit_col]] == circ
+      circ_p_period <- br[[p_period_col]][circ_rows]
+      circ_range <- max(circ_p_period) - min(circ_p_period) # nolint: object_usage_linter
+      if (circ_range > 1e-10) {
+        p_min <- round(min(circ_p_period), 8) # nolint: object_usage_linter
+        p_max <- round(max(circ_p_period), 8) # nolint: object_usage_linter
+        cli::cli_abort(c(
+          "p_period must be constant within each circuit.",
+          "x" = "Circuit {.val {circ}} has differing {.field p_period} values (min={p_min}, max={p_max}).",
+          "i" = "p_period is the probability of selecting the circuit's sampling period; it should not vary by site."
+        ))
+      }
+    }
+
+    # Defensive: pi_i values must be in (0, 1] after computation
+    pi_i_col <- x$bus_route$pi_i_col
+    pi_i_vals <- br[[pi_i_col]]
+    if (any(is.na(pi_i_vals)) || any(pi_i_vals <= 0) || any(pi_i_vals > 1)) {
+      bad <- which(is.na(pi_i_vals) | pi_i_vals <= 0 | pi_i_vals > 1) # nolint: object_usage_linter
+      cli::cli_abort(c(
+        "Computed inclusion probabilities ({.field .pi_i}) must be in the range (0, 1].",
+        "x" = "{length(bad)} value{?s} out of range at row{?s} {bad}.",
+        "i" = "pi_i = p_site * p_period must be a valid probability."
+      ))
     }
   }
 

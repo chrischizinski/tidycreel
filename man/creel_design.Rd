@@ -102,6 +102,8 @@ The constructor performs fail-fast validation:
 \item (bus_route only) All \code{p_site} and \code{p_period} values are in \verb{(0, 1]}
 \item (bus_route only) \code{p_site} values sum to 1.0 within each circuit
 (tolerance 1e-6)
+\item (bus_route only) \code{p_period} values are constant within each circuit
+(tolerance 1e-10)
 }
 }
 
@@ -162,4 +164,12 @@ design_br <- creel_design(
   p_period = p_period
 )
 
+}
+\references{
+Jones, C. M., & Pollock, K. H. (2012). Recreational survey methods:
+estimating effort, harvest, and abundance. In A. V. Zale, D. L. Parrish,
+& T. M. Sutton (Eds.), \emph{Fisheries Techniques} (3rd ed., pp. 883--919).
+American Fisheries Society. Eq. 19.4 and 19.5 define the bus-route
+estimators; pp. 883--884 define the inclusion probability
+\eqn{\pi_i = p_{\text{site}} \times p_{\text{period}}}.
 }
