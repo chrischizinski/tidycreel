@@ -756,3 +756,147 @@ test_that("estimate_harvest grouped with NA harvest excludes them with warning",
   expect_equal(nrow(result$estimates), 2)
   expect_true(all(result$estimates$estimate >= 0))
 })
+
+# Bus-route harvest estimation ----
+# Helpers defined at section scope per Phase 21-02 / Phase 22-02 convention
+
+make_br_harvest_design <- function() {
+  # Three sites A, B, C; one circuit c1
+  # p_site: A=0.2, B=0.5, C=0.3 (sums to 1.0)
+  # p_period: 0.8 for all sites in circuit c1
+  # pi_i = p_site * p_period: A=0.16, B=0.40, C=0.24
+  sf <- data.frame(
+    site = c("A", "B", "C"),
+    circuit = "c1",
+    p_site = c(0.2, 0.5, 0.3),
+    p_period = 0.8
+  )
+  cal <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
+    day_type = "weekday"
+  )
+  creel_design( # nolint: object_usage_linter
+    calendar = cal,
+    date = date, # nolint: object_usage_linter
+    strata = day_type, # nolint: object_usage_linter
+    survey_type = "bus_route",
+    sampling_frame = sf,
+    site = site, # nolint: object_usage_linter
+    circuit = circuit, # nolint: object_usage_linter
+    p_site = p_site, # nolint: object_usage_linter
+    p_period = p_period # nolint: object_usage_linter
+  )
+}
+
+make_br_harvest_interviews <- function(design, trip_status_col = FALSE) {
+  # Site A: 2 interviews (dates 01, 02), n_counted=6, n_interviewed=2 — expansion=3
+  # Site B: 2 interviews (dates 03, 04), n_counted=1, n_interviewed=1 — expansion=1
+  # Site C: 2 interviews (dates 01, 02), n_counted=3, n_interviewed=3 — expansion=1
+  # harvest per interview: A=2, A=4, B=1, B=0, C=3, C=2
+  # h_i (harvest * expansion): A=6, A=12, B=1, B=0, C=3, C=2
+  # pi_i: A=0.16, A=0.16, B=0.40, B=0.40, C=0.24, C=0.24
+  # h_i/pi_i: A=37.5, A=75.0, B=2.5, B=0, C=12.5, C=8.333...
+  # H_hat = sum = 135.833...
+  interviews_df <- data.frame(
+    date = as.Date(c(
+      "2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04",
+      "2024-06-01", "2024-06-02"
+    )),
+    site = c("A", "A", "B", "B", "C", "C"),
+    circuit = "c1",
+    n_counted = c(6L, 6L, 1L, 1L, 3L, 3L),
+    n_interviewed = c(2L, 2L, 1L, 1L, 3L, 3L),
+    hours_fished = c(2.0, 3.0, 1.5, 0.5, 2.0, 1.5),
+    fish_kept = c(2L, 4L, 1L, 0L, 3L, 2L),
+    fish_caught = c(3L, 5L, 2L, 1L, 4L, 3L),
+    trip_status = rep("complete", 6)
+  )
+  if (trip_status_col) {
+    # Spread incomplete trips across 2 dates to satisfy survey PSU requirement
+    interviews_df$trip_status <- c(
+      "complete", "incomplete",
+      "complete", "incomplete",
+      "complete", "complete"
+    )
+  }
+  add_interviews( # nolint: object_usage_linter
+    design,
+    interviews_df,
+    effort = hours_fished, # nolint: object_usage_linter
+    catch = fish_caught, # nolint: object_usage_linter
+    harvest = fish_kept, # nolint: object_usage_linter
+    n_counted = n_counted, # nolint: object_usage_linter
+    n_interviewed = n_interviewed, # nolint: object_usage_linter
+    trip_status = trip_status # nolint: object_usage_linter
+  )
+}
+
+test_that("estimate_harvest() dispatches to bus-route estimator for bus_route designs", {
+  d <- make_br_harvest_interviews(make_br_harvest_design())
+  result <- estimate_harvest(d)
+  expect_s3_class(result, "creel_estimates")
+})
+
+test_that("estimate_harvest() Eq. 19.5: H_hat = sum(h_i/pi_i) matches hand-computed value", {
+  d <- make_br_harvest_interviews(make_br_harvest_design())
+  result <- estimate_harvest(d)
+  # H_hat = 37.5 + 75.0 + 2.5 + 0 + 12.5 + 8.333... = 135.833...
+  expected_h_hat <- (2 * 3) / 0.16 + (4 * 3) / 0.16 + (1 * 1) / 0.40 +
+    (0 * 1) / 0.24 + (3 * 1) / 0.24 + (2 * 1) / 0.24
+  expect_equal(result$estimates$estimate, expected_h_hat, tolerance = 1e-6)
+})
+
+test_that("estimate_harvest() site_contributions attribute present with h_i and pi_i columns", {
+  d <- make_br_harvest_interviews(make_br_harvest_design())
+  result <- estimate_harvest(d)
+  sc <- attr(result, "site_contributions")
+  expect_false(is.null(sc))
+})
+
+test_that("get_site_contributions() returns tibble from bus-route harvest result", {
+  d <- make_br_harvest_interviews(make_br_harvest_design())
+  result <- estimate_harvest(d)
+  sc <- get_site_contributions(result)
+  expect_s3_class(sc, "tbl_df")
+  expect_true("pi_i" %in% names(sc))
+})
+
+test_that("estimate_harvest() verbose=TRUE prints bus-route dispatch message", {
+  d <- make_br_harvest_interviews(make_br_harvest_design())
+  expect_message(
+    estimate_harvest(d, verbose = TRUE),
+    "bus-route estimator"
+  )
+})
+
+test_that("estimate_harvest() verbose=FALSE produces no dispatch message", {
+  d <- make_br_harvest_interviews(make_br_harvest_design())
+  expect_no_message(suppressWarnings(estimate_harvest(d, verbose = FALSE)))
+})
+
+test_that("estimate_harvest() use_trips='complete' returns creel_estimates for bus-route", {
+  d <- make_br_harvest_interviews(make_br_harvest_design(), trip_status_col = TRUE)
+  result <- estimate_harvest(d, use_trips = "complete")
+  expect_s3_class(result, "creel_estimates")
+  expect_true(result$estimates$estimate > 0)
+})
+
+test_that("estimate_harvest() use_trips='incomplete' returns creel_estimates for bus-route", {
+  d <- make_br_harvest_interviews(make_br_harvest_design(), trip_status_col = TRUE)
+  result <- estimate_harvest(d, use_trips = "incomplete")
+  expect_s3_class(result, "creel_estimates")
+  expect_true(result$estimates$estimate >= 0)
+})
+
+test_that("estimate_harvest() use_trips='diagnostic' returns creel_estimates_diagnostic", {
+  d <- make_br_harvest_interviews(make_br_harvest_design(), trip_status_col = TRUE)
+  result <- estimate_harvest(d, use_trips = "diagnostic")
+  expect_s3_class(result, "creel_estimates_diagnostic")
+})
+
+test_that("estimate_harvest() by=circuit: proportion column present and sums to ~1", {
+  d <- make_br_harvest_interviews(make_br_harvest_design())
+  result <- estimate_harvest(d, by = circuit) # nolint: object_usage_linter
+  expect_true("proportion" %in% names(result$estimates))
+  expect_equal(sum(result$estimates$proportion), 1.0, tolerance = 1e-6)
+})
