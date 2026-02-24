@@ -192,3 +192,378 @@ estimate_effort_br <- function(design, by_vars, variance_method, conf_level, ver
     result
   }
 }
+
+# Bus-route harvest estimation ----
+# Implements Jones & Pollock (2012) Eq. 19.5: H_hat = sum(h_i / pi_i)
+# where h_i = harvest_col * .expansion (enumeration expansion factor)
+# Called by estimate_harvest() when design$design_type == "bus_route"
+
+#' Bus-route Horvitz-Thompson harvest estimator
+#'
+#' Internal function implementing Jones & Pollock (2012) Eq. 19.5.
+#' Called by estimate_harvest() after bus-route dispatch.
+#'
+#' @param design A creel_design object with bus-route interviews attached
+#' @param by_vars NULL or character vector of grouping variable names
+#' @param variance_method Character string: "taylor", "bootstrap", or "jackknife"
+#' @param conf_level Numeric confidence level (0-1)
+#' @param verbose Logical. If TRUE, prints informational message about estimator
+#' @param use_trips Character: "complete", "incomplete", or "diagnostic"
+#'
+#' @return A creel_estimates object with site_contributions attribute,
+#'   or creel_estimates_diagnostic for use_trips = "diagnostic"
+#'
+#' @keywords internal
+#' @noRd
+estimate_harvest_br <- function(
+  # nolint: object_usage_linter
+  design, by_vars, variance_method, conf_level, verbose, use_trips
+) {
+  if (verbose) {
+    cli::cli_inform(c(
+      "i" = "Using bus-route estimator (Jones & Pollock 2012, Eq. 19.5)"
+    ))
+  }
+
+  interviews <- design$interviews
+
+  # Defensive check: .expansion column must exist
+  if (!".expansion" %in% names(interviews)) {
+    msg <- paste0(
+      "Call {.fn add_interviews} with {.arg n_counted} and {.arg n_interviewed} parameters."
+    )
+    cli::cli_abort(c(
+      "Bus-route harvest estimation requires .expansion column.",
+      "x" = ".expansion not found in interview data.",
+      "i" = msg
+    ))
+  }
+
+  # Defensive check: .pi_i column must exist
+  if (!".pi_i" %in% names(interviews)) {
+    cli::cli_abort(c(
+      "Bus-route harvest estimation requires .pi_i column.",
+      "x" = ".pi_i not found in interview data.",
+      "i" = "Bus-route design must have inclusion probabilities computed via sampling frame."
+    ))
+  }
+
+  # Check for missing .pi_i values — hard error listing site+circuit combinations
+  if (any(is.na(interviews$.pi_i))) {
+    bad_rows <- interviews[is.na(interviews$.pi_i), ]
+    site_col <- design$bus_route$site_col
+    circuit_col <- design$bus_route$circuit_col
+    combos <- unique(bad_rows[c(site_col, circuit_col)])
+    n_combos <- nrow(combos) # nolint: object_usage_linter
+    combo_strs <- apply(combos, 1, function(r) {
+      paste0(site_col, "=", r[[site_col]], ", ", circuit_col, "=", r[[circuit_col]])
+    })
+    msg_parts <- stats::setNames(combo_strs, rep("*", length(combo_strs)))
+    cli::cli_abort(c(
+      "Missing .pi_i for {n_combos} site+circuit combination{?s}:",
+      msg_parts,
+      "x" = "All interview site+circuit combinations must appear in the sampling frame.",
+      "i" = "Check that interview data site and circuit values match sampling frame."
+    ))
+  }
+
+  # Diagnostic mode: run both complete and incomplete paths, return diagnostic
+  if (use_trips == "diagnostic") {
+    complete_result <- estimate_harvest_br(
+      design, by_vars, variance_method, conf_level,
+      verbose = FALSE, use_trips = "complete"
+    )
+    incomplete_result <- suppressWarnings(estimate_harvest_br(
+      design, by_vars, variance_method, conf_level,
+      verbose = FALSE, use_trips = "incomplete"
+    ))
+    result <- list(complete = complete_result, incomplete = incomplete_result)
+    class(result) <- c("creel_estimates_diagnostic", "list")
+    return(result)
+  }
+
+  harvest_col <- design$harvest_col
+  effort_col <- design$effort_col
+  site_col <- design$bus_route$site_col
+  circuit_col <- design$bus_route$circuit_col
+  trip_status_col <- design$trip_status_col
+  n_counted_col <- design$n_counted_col
+  n_interviewed_col <- design$n_interviewed_col
+
+  # Apply use_trips filtering
+  if (use_trips == "complete" && !is.null(trip_status_col)) {
+    is_complete <- tolower(interviews[[trip_status_col]]) == "complete"
+    interviews <- interviews[is_complete, , drop = FALSE]
+  } else if (use_trips == "incomplete") {
+    if (!is.null(trip_status_col)) {
+      is_incomplete <- tolower(interviews[[trip_status_col]]) == "incomplete"
+      interviews <- interviews[is_incomplete, , drop = FALSE]
+    }
+    # Incomplete path: pi_i-weighted MOR (h_ratio_i = harvest / effort)
+    interviews$.h_ratio_i <- interviews[[harvest_col]] / interviews[[effort_col]]
+    interviews$.contribution <- interviews$.h_ratio_i / interviews$.pi_i
+
+    # Build per-site breakdown table
+    site_table <- interviews[c(site_col, circuit_col, ".h_ratio_i", ".pi_i", ".contribution")]
+    names(site_table)[names(site_table) == ".h_ratio_i"] <- "h_ratio_i"
+    names(site_table)[names(site_table) == ".pi_i"] <- "pi_i"
+    names(site_table)[names(site_table) == ".contribution"] <- "h_ratio_i_over_pi_i"
+
+    return(br_build_estimates(
+      interviews, by_vars, variance_method, conf_level, design,
+      site_table, harvest_col
+    ))
+  }
+
+  # Complete trips path: Eq. 19.5 h_i = harvest_col * .expansion
+  interviews$.h_i <- interviews[[harvest_col]] * interviews$.expansion
+
+  # Zero-effort sites (n_counted=0, n_interviewed=0): set .h_i to 0
+  if (!is.null(n_counted_col) && !is.null(n_interviewed_col)) {
+    zero_mask <- !is.na(interviews[[n_counted_col]]) &
+      interviews[[n_counted_col]] == 0 &
+      !is.na(interviews[[n_interviewed_col]]) &
+      interviews[[n_interviewed_col]] == 0
+    interviews$.h_i[zero_mask] <- 0
+  }
+
+  # Compute h_i / pi_i (Eq. 19.5 site contribution)
+  interviews$.contribution <- interviews$.h_i / interviews$.pi_i
+
+  # Build per-site attribution table for site_contributions attribute
+  site_table <- interviews[c(site_col, circuit_col, ".h_i", ".pi_i", ".contribution")]
+  names(site_table)[names(site_table) == ".h_i"] <- "h_i"
+  names(site_table)[names(site_table) == ".pi_i"] <- "pi_i"
+  names(site_table)[names(site_table) == ".contribution"] <- "h_i_over_pi_i"
+
+  br_build_estimates(
+    interviews, by_vars, variance_method, conf_level, design,
+    site_table, harvest_col
+  )
+}
+
+# Bus-route total catch estimation ----
+# Implements Jones & Pollock (2012) Eq. 19.5 variant: C_hat = sum(c_i / pi_i)
+# where c_i = catch_col * .expansion (enumeration expansion factor)
+# Called by estimate_total_catch() when design$design_type == "bus_route"
+
+#' Bus-route Horvitz-Thompson total catch estimator
+#'
+#' Internal function implementing the catch-column variant of Jones & Pollock
+#' (2012) Eq. 19.5: C_hat = sum(c_i / pi_i) where c_i = catch_col * .expansion.
+#' Called by estimate_total_catch() after bus-route dispatch.
+#'
+#' @param design A creel_design object with bus-route interviews attached
+#' @param by_vars NULL or character vector of grouping variable names
+#' @param variance_method Character string: "taylor", "bootstrap", or "jackknife"
+#' @param conf_level Numeric confidence level (0-1)
+#' @param verbose Logical. If TRUE, prints informational message about estimator
+#'
+#' @return A creel_estimates object with site_contributions attribute
+#'
+#' @keywords internal
+#' @noRd
+estimate_total_catch_br <- function(
+  # nolint: object_usage_linter
+  design, by_vars, variance_method, conf_level, verbose
+) {
+  if (verbose) {
+    cli::cli_inform(c(
+      "i" = "Using bus-route estimator (Jones & Pollock 2012, Eq. 19.5)"
+    ))
+  }
+
+  interviews <- design$interviews
+
+  # Defensive check: .expansion column must exist
+  if (!".expansion" %in% names(interviews)) {
+    msg <- paste0(
+      "Call {.fn add_interviews} with {.arg n_counted} and {.arg n_interviewed} parameters."
+    )
+    cli::cli_abort(c(
+      "Bus-route total catch estimation requires .expansion column.",
+      "x" = ".expansion not found in interview data.",
+      "i" = msg
+    ))
+  }
+
+  # Defensive check: .pi_i column must exist
+  if (!".pi_i" %in% names(interviews)) {
+    cli::cli_abort(c(
+      "Bus-route total catch estimation requires .pi_i column.",
+      "x" = ".pi_i not found in interview data.",
+      "i" = "Bus-route design must have inclusion probabilities computed via sampling frame."
+    ))
+  }
+
+  # Check for missing .pi_i values — hard error listing site+circuit combinations
+  if (any(is.na(interviews$.pi_i))) {
+    bad_rows <- interviews[is.na(interviews$.pi_i), ]
+    site_col_name <- design$bus_route$site_col
+    circuit_col_name <- design$bus_route$circuit_col
+    combos <- unique(bad_rows[c(site_col_name, circuit_col_name)])
+    n_combos <- nrow(combos) # nolint: object_usage_linter
+    combo_strs <- apply(combos, 1, function(r) {
+      paste0(
+        site_col_name, "=", r[[site_col_name]], ", ",
+        circuit_col_name, "=", r[[circuit_col_name]]
+      )
+    })
+    msg_parts <- stats::setNames(combo_strs, rep("*", length(combo_strs)))
+    cli::cli_abort(c(
+      "Missing .pi_i for {n_combos} site+circuit combination{?s}:",
+      msg_parts,
+      "x" = "All interview site+circuit combinations must appear in the sampling frame.",
+      "i" = "Check that interview data site and circuit values match sampling frame."
+    ))
+  }
+
+  catch_col <- design$catch_col
+  site_col <- design$bus_route$site_col
+  circuit_col <- design$bus_route$circuit_col
+  n_counted_col <- design$n_counted_col
+  n_interviewed_col <- design$n_interviewed_col
+
+  # Compute c_i = catch_col * .expansion (Eq. 19.5 catch variant)
+  interviews$.c_i <- interviews[[catch_col]] * interviews$.expansion
+
+  # Zero-count sites (n_counted=0, n_interviewed=0): set .c_i to 0
+  if (!is.null(n_counted_col) && !is.null(n_interviewed_col)) {
+    zero_mask <- !is.na(interviews[[n_counted_col]]) &
+      interviews[[n_counted_col]] == 0 &
+      !is.na(interviews[[n_interviewed_col]]) &
+      interviews[[n_interviewed_col]] == 0
+    interviews$.c_i[zero_mask] <- 0
+  }
+
+  # Compute c_i / pi_i (Eq. 19.5 site contribution, catch variant)
+  interviews$.contribution <- interviews$.c_i / interviews$.pi_i
+
+  # Build per-site attribution table for site_contributions attribute
+  site_table <- interviews[c(site_col, circuit_col, ".c_i", ".pi_i", ".contribution")]
+  names(site_table)[names(site_table) == ".c_i"] <- "c_i"
+  names(site_table)[names(site_table) == ".pi_i"] <- "pi_i"
+  names(site_table)[names(site_table) == ".contribution"] <- "c_i_over_pi_i"
+
+  br_build_estimates(
+    interviews, by_vars, variance_method, conf_level, design,
+    site_table, catch_col
+  )
+}
+
+# Internal helper: build creel_estimates from .contribution column ----
+# Shared by estimate_harvest_br() and estimate_total_catch_br()
+
+#' Build creel_estimates from pre-computed .contribution column
+#'
+#' @param interviews Data frame with .contribution column
+#' @param by_vars NULL or character vector of grouping column names
+#' @param variance_method Character variance method
+#' @param conf_level Numeric confidence level
+#' @param design creel_design object
+#' @param site_table Data frame for site_contributions attribute
+#' @param key_col Name of the primary column (harvest_col or catch_col) for n
+#'
+#' @return A creel_estimates object with site_contributions attribute
+#'
+#' @keywords internal
+#' @noRd
+br_build_estimates <- function(
+  # nolint: object_usage_linter
+  interviews, by_vars, variance_method, conf_level, design, site_table, key_col
+) {
+  strata_cols <- design$strata_cols
+
+  if (is.null(by_vars)) {
+    total_estimate <- sum(interviews$.contribution, na.rm = TRUE) # nolint
+    n <- nrow(interviews) # nolint: object_usage_linter
+
+    if (!is.null(strata_cols) && length(strata_cols) > 0) {
+      strata_formula <- stats::reformulate(strata_cols)
+      svy_br <- survey::svydesign(ids = ~1, strata = strata_formula, data = interviews)
+    } else {
+      svy_br <- survey::svydesign(ids = ~1, data = interviews)
+    }
+    svy_br <- get_variance_design(svy_br, variance_method) # nolint: object_usage_linter
+    svy_result <- suppressWarnings(survey::svytotal(~.contribution, svy_br))
+    se <- as.numeric(survey::SE(svy_result)) # nolint: object_usage_linter
+    ci <- confint(svy_result, level = conf_level)
+    ci_lower <- ci[1, 1] # nolint: object_usage_linter
+    ci_upper <- ci[1, 2] # nolint: object_usage_linter
+
+    estimates_df <- tibble::tibble(
+      estimate = total_estimate,
+      se = se,
+      ci_lower = ci_lower,
+      ci_upper = ci_upper,
+      n = n
+    )
+
+    result <- new_creel_estimates( # nolint: object_usage_linter
+      estimates = estimates_df,
+      method = "total",
+      variance_method = variance_method,
+      design = design,
+      conf_level = conf_level,
+      by_vars = NULL
+    )
+    attr(result, "site_contributions") <- site_table
+    result
+  } else {
+    by_formula <- stats::reformulate(by_vars)
+
+    if (!is.null(strata_cols) && length(strata_cols) > 0) {
+      strata_formula <- stats::reformulate(strata_cols)
+      svy_br <- survey::svydesign(ids = ~1, strata = strata_formula, data = interviews)
+    } else {
+      svy_br <- survey::svydesign(ids = ~1, data = interviews)
+    }
+    svy_br <- get_variance_design(svy_br, variance_method) # nolint: object_usage_linter
+
+    svy_result <- suppressWarnings(survey::svyby(
+      formula = ~.contribution,
+      by = by_formula,
+      design = svy_br,
+      FUN = survey::svytotal,
+      vartype = c("se", "ci"),
+      ci.level = conf_level,
+      keep.names = FALSE
+    ))
+
+    estimate <- svy_result[[".contribution"]]
+    se <- svy_result[["se"]]
+    ci_lower <- svy_result[["ci_l"]]
+    ci_upper <- svy_result[["ci_u"]]
+
+    overall_total <- sum(interviews$.contribution, na.rm = TRUE)
+    proportion <- estimate / overall_total
+
+    group_data_for_n <- interviews[by_vars]
+    group_data_for_n$.count <- 1
+    n_by_group <- stats::aggregate(.count ~ ., data = group_data_for_n, FUN = sum)
+    names(n_by_group)[names(n_by_group) == ".count"] <- "n"
+
+    estimates_df <- svy_result[by_vars]
+    estimates_df$estimate <- estimate
+    estimates_df$se <- se
+    estimates_df$ci_lower <- ci_lower
+    estimates_df$ci_upper <- ci_upper
+    estimates_df$proportion <- proportion
+    estimates_df <- merge(estimates_df, n_by_group, by = by_vars, all.x = TRUE, sort = FALSE)
+    estimates_df <- tibble::as_tibble(estimates_df)
+
+    col_order <- c(by_vars, "estimate", "se", "ci_lower", "ci_upper", "proportion", "n")
+    estimates_df <- estimates_df[col_order]
+
+    result <- new_creel_estimates( # nolint: object_usage_linter
+      estimates = estimates_df,
+      method = "total",
+      variance_method = variance_method,
+      design = design,
+      conf_level = conf_level,
+      by_vars = by_vars
+    )
+    attr(result, "site_contributions") <- site_table
+    result
+  }
+}
