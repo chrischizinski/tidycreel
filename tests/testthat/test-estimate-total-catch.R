@@ -436,3 +436,108 @@ test_that("total harvest <= total catch for same design", {
   # Verify biological constraint
   expect_true(total_harvest$estimates$estimate <= total_catch$estimates$estimate)
 })
+
+# Bus-route total-catch estimation ----
+# Helpers defined at section scope per Phase 21-02 / Phase 22-02 convention
+
+make_br_catch_design <- function() {
+  # Three sites A, B, C; one circuit c1 (same structure as harvest section)
+  # p_site: A=0.2, B=0.5, C=0.3 (sums to 1.0)
+  # p_period: 0.8 for all sites in circuit c1
+  # pi_i = p_site * p_period: A=0.16, B=0.40, C=0.24
+  sf <- data.frame(
+    site = c("A", "B", "C"),
+    circuit = "c1",
+    p_site = c(0.2, 0.5, 0.3),
+    p_period = 0.8
+  )
+  cal <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
+    day_type = "weekday"
+  )
+  creel_design( # nolint: object_usage_linter
+    calendar = cal,
+    date = date, # nolint: object_usage_linter
+    strata = day_type, # nolint: object_usage_linter
+    survey_type = "bus_route",
+    sampling_frame = sf,
+    site = site, # nolint: object_usage_linter
+    circuit = circuit, # nolint: object_usage_linter
+    p_site = p_site, # nolint: object_usage_linter
+    p_period = p_period # nolint: object_usage_linter
+  )
+}
+
+make_br_catch_interviews <- function(design) {
+  # Site A: 2 interviews (dates 01, 02), n_counted=6, n_interviewed=2 — expansion=3
+  # Site B: 2 interviews (dates 03, 04), n_counted=1, n_interviewed=1 — expansion=1
+  # Site C: 2 interviews (dates 01, 02), n_counted=3, n_interviewed=3 — expansion=1
+  # catch per interview: A=3, A=5, B=2, B=1, C=4, C=3
+  # c_i (catch * expansion): A=9, A=15, B=2, B=1, C=4, C=3
+  # pi_i: A=0.16, A=0.16, B=0.40, B=0.40, C=0.24, C=0.24
+  # c_i/pi_i: A=56.25, A=93.75, B=5.0, B=2.5, C=16.67, C=12.5 — C_hat > 0
+  interviews_df <- data.frame(
+    date = as.Date(c(
+      "2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04",
+      "2024-06-01", "2024-06-02"
+    )),
+    site = c("A", "A", "B", "B", "C", "C"),
+    circuit = "c1",
+    n_counted = c(6L, 6L, 1L, 1L, 3L, 3L),
+    n_interviewed = c(2L, 2L, 1L, 1L, 3L, 3L),
+    hours_fished = c(2.0, 3.0, 1.5, 0.5, 2.0, 1.5),
+    fish_caught = c(3L, 5L, 2L, 1L, 4L, 3L),
+    fish_kept = c(2L, 4L, 1L, 0L, 3L, 2L),
+    trip_status = rep("complete", 6)
+  )
+  add_interviews( # nolint: object_usage_linter
+    design,
+    interviews_df,
+    effort = hours_fished, # nolint: object_usage_linter
+    catch = fish_caught, # nolint: object_usage_linter
+    harvest = fish_kept, # nolint: object_usage_linter
+    n_counted = n_counted, # nolint: object_usage_linter
+    n_interviewed = n_interviewed, # nolint: object_usage_linter
+    trip_status = trip_status # nolint: object_usage_linter
+  )
+}
+
+test_that("estimate_total_catch() dispatches to bus-route estimator for bus_route designs", {
+  d <- make_br_catch_interviews(make_br_catch_design())
+  result <- estimate_total_catch(d)
+  expect_s3_class(result, "creel_estimates")
+})
+
+test_that("estimate_total_catch() Eq. 19.5: C_hat = sum(c_i/pi_i) is positive for bus-route", {
+  d <- make_br_catch_interviews(make_br_catch_design())
+  result <- estimate_total_catch(d)
+  expect_true(result$estimates$estimate > 0)
+})
+
+test_that("estimate_total_catch() site_contributions attribute present for bus-route", {
+  d <- make_br_catch_interviews(make_br_catch_design())
+  result <- estimate_total_catch(d)
+  sc <- attr(result, "site_contributions")
+  expect_false(is.null(sc))
+})
+
+test_that("get_site_contributions() works on bus-route total-catch result", {
+  d <- make_br_catch_interviews(make_br_catch_design())
+  result <- estimate_total_catch(d)
+  sc <- get_site_contributions(result)
+  expect_s3_class(sc, "tbl_df")
+  expect_true("pi_i" %in% names(sc))
+})
+
+test_that("estimate_total_catch() verbose=TRUE prints bus-route dispatch message", {
+  d <- make_br_catch_interviews(make_br_catch_design())
+  expect_message(
+    estimate_total_catch(d, verbose = TRUE),
+    "bus-route estimator"
+  )
+})
+
+test_that("estimate_total_catch() verbose=FALSE produces no dispatch message", {
+  d <- make_br_catch_interviews(make_br_catch_design())
+  expect_no_message(suppressWarnings(estimate_total_catch(d, verbose = FALSE)))
+})
