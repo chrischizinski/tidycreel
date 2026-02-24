@@ -10,20 +10,20 @@ See: .planning/PROJECT.md (updated 2026-02-16)
 ## Current Position
 
 Phase: 25 of 27 (Bus-Route Harvest Estimation)
-Plan: 1 complete
-Status: Phase 25 Plan 01 complete — harvest + total-catch bus-route dispatch implemented
-Last activity: 2026-02-24 — Phase 25 Plan 01 (estimate_harvest_br, estimate_total_catch_br, dispatch) complete
+Plan: 2 complete
+Status: Phase 25 Plan 02 complete — bus-route harvest and total-catch test suites complete
+Last activity: 2026-02-24 — Phase 25 Plan 02 (16 tests: harvest + total-catch bus-route) complete
 
-Progress: [████████████░░░░░░░░] 70% (46/65+ plans complete across all milestones)
+Progress: [████████████░░░░░░░░] 71% (47/65+ plans complete across all milestones)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 45
+- Total plans completed: 47
 - v0.1.0 (Phases 1-7): 12 plans
 - v0.2.0 (Phases 8-12): 10 plans
 - v0.3.0 (Phases 13-20): 16 plans
-- v0.4.0 (Phases 21-27): 7 plans
+- v0.4.0 (Phases 21-27): 9 plans
 
 **By Milestone:**
 
@@ -32,10 +32,10 @@ Progress: [████████████░░░░░░░░] 70% (46
 | v0.1.0 | 1-7 | 12/12 | Complete | 2026-02-09 |
 | v0.2.0 | 8-12 | 10/10 | Complete | 2026-02-11 |
 | v0.3.0 | 13-20 | 16/16 | Complete | 2026-02-16 |
-| v0.4.0 | 21-27 | 7/TBD | In progress | - |
+| v0.4.0 | 21-27 | 9/TBD | In progress | - |
 
 **Quality Metrics (current):**
-- Test coverage: ~90% (1045 tests)
+- Test coverage: ~90% (1066 tests)
 - R CMD check: 0 errors, 0 warnings
 - lintr: 0 issues
 
@@ -98,6 +98,7 @@ v0.4.0 decisions:
 - **Phase 24-01**: Bus-route dispatch placed BEFORE design$survey NULL check (bus-route uses interviews not counts, so design$survey is NULL for bus-route designs); NA expansion (n_counted>0, n_interviewed=0) excluded by na.rm=TRUE in sum() — statistically appropriate, cannot estimate effort without interview data; zero-effort sites (n_counted=0, n_interviewed=0) contribute 0 to sum; site_contributions attribute stored for Phase 26 Malvestuto validation traceability
 - **Phase 24-02**: trip_duration omitted from bus-route test helpers (optional for add_interviews(); duration=0.0 fails Tier 2 validation); expect_no_message(suppressWarnings()) for verbose=FALSE test (survey::svydesign emits expected 'no weights' warning that is not a dispatch message); accessor quartet complete: get_sampling_frame() / get_inclusion_probs() / get_enumeration_counts() / get_site_contributions()
 - **Phase 25-01**: Bus-route dispatch for estimate_harvest() placed BEFORE interview_survey NULL check (bus-route uses design$interviews not design$interview_survey); bus-route dispatch for estimate_total_catch() placed BEFORE validate_design_compatibility() (checks design$survey which is NULL for bus-route); verbose=FALSE passed to internal estimator after dispatch block emits message (prevents double-printing); br_build_estimates() shared helper eliminates duplication between harvest and catch estimators; incomplete trip path uses pi_i-weighted MOR (h_ratio_i = harvest/effort, contribution_i = h_ratio_i/pi_i)
+- **Phase 25-02**: Interview dates spread across 4 calendar dates (not same date) so use_trips=incomplete filtering leaves >= 2 PSUs per stratum for survey::svydesign(); trip_status always included in interview data and always passed to add_interviews() (required parameter); make_br_harvest_design() requires date= and strata= args per creel_design() API
 
 ### Pending Todos
 
@@ -110,10 +111,10 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: Phase 25 Plan 01 complete — estimate_harvest_br(), estimate_total_catch_br(), dispatch (BUSRT-04, BUSRT-10)
+Stopped at: Phase 25 Plan 02 complete — bus-route harvest + total-catch test suites (BUSRT-04, BUSRT-10)
 Resume file: None
 
-**Next step:** Phase 25 Plan 02 — Bus-Route Harvest Test Suite (if planned), or Phase 26 — Malvestuto Validation
+**Next step:** Phase 26 — Malvestuto Box 20.6 Validation
 
 ---
-*State last updated: 2026-02-24 after Phase 25 Plan 01 complete*
+*State last updated: 2026-02-24 after Phase 25 Plan 02 complete*
