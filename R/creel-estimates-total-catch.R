@@ -17,8 +17,12 @@
 #'   "taylor" (default), "bootstrap", or "jackknife". Applied to BOTH effort
 #'   and CPUE estimation, then combined via delta method.
 #' @param conf_level Numeric confidence level (default: 0.95)
+#' @param verbose Logical. If TRUE, prints an informational message identifying
+#'   which estimator path was used. Default FALSE.
 #'
-#' @return A creel_estimates S3 object with method = "product-total-catch"
+#' @return A creel_estimates S3 object with method = "product-total-catch".
+#'   For bus-route designs, returns a bus-route HT estimate with method = "total"
+#'   and a "site_contributions" attribute.
 #'
 #' @details
 #' Total catch is computed as Effort × CPUE. Variance is propagated using the
@@ -66,9 +70,18 @@
 #' # table(design$interviews$day_type)
 #' # total_catch_by_type <- estimate_total_catch(design, by = day_type)
 #'
+#' # Verbose dispatch message (shows which estimator was used for bus-route designs)
+#' # result_verbose <- estimate_total_catch(design, verbose = TRUE)
+#'
 #' @seealso \code{\link{estimate_effort}}, \code{\link{estimate_cpue}}
 #' @export
-estimate_total_catch <- function(design, by = NULL, variance = "taylor", conf_level = 0.95) {
+estimate_total_catch <- function(
+  design,
+  by = NULL,
+  variance = "taylor",
+  conf_level = 0.95,
+  verbose = FALSE
+) {
   # Capture by parameter BEFORE validation
   by_quo <- rlang::enquo(by)
 
@@ -88,6 +101,31 @@ estimate_total_catch <- function(design, by = NULL, variance = "taylor", conf_le
       "{.arg design} must be a {.cls creel_design} object.",
       "x" = "{.arg design} is {.cls {class(design)[1]}}.",
       "i" = "Create a design with {.fn creel_design}."
+    ))
+  }
+
+  # Bus-route dispatch (before standard survey NULL check)
+  if (!is.null(design$design_type) && design$design_type == "bus_route") {
+    if (verbose) {
+      cli::cli_inform(c(
+        "i" = "Using bus-route estimator (Jones & Pollock 2012, Eq. 19.5)"
+      ))
+    }
+    if (rlang::quo_is_null(by_quo)) {
+      by_vars_br <- NULL
+    } else {
+      by_cols_br <- tidyselect::eval_select(
+        by_quo,
+        data = design$interviews,
+        allow_rename = FALSE,
+        allow_empty = FALSE,
+        error_call = rlang::caller_env()
+      )
+      by_vars_br <- names(by_cols_br)
+    }
+    return(estimate_total_catch_br( # nolint: object_usage_linter
+      design, by_vars_br, variance, conf_level,
+      verbose = FALSE
     ))
   }
 

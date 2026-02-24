@@ -4,7 +4,14 @@
 \alias{estimate_harvest}
 \title{Estimate harvest (HPUE: Harvest Per Unit Effort) from a creel survey design}
 \usage{
-estimate_harvest(design, by = NULL, variance = "taylor", conf_level = 0.95)
+estimate_harvest(
+  design,
+  by = NULL,
+  variance = "taylor",
+  conf_level = 0.95,
+  verbose = FALSE,
+  use_trips = NULL
+)
 }
 \arguments{
 \item{design}{A creel_design object with interviews attached via
@@ -24,6 +31,14 @@ Options: \code{"taylor"} (default, Taylor linearization),
 
 \item{conf_level}{Numeric confidence level for confidence intervals (default:
 0.95 for 95\% confidence intervals). Must be between 0 and 1.}
+
+\item{verbose}{Logical. If TRUE, prints an informational message identifying
+which estimator path was used. Default FALSE.}
+
+\item{use_trips}{Character string specifying which trip type to use for
+bus-route estimation. One of \code{"complete"} (default),
+\code{"incomplete"} (pi_i-weighted MOR), or \code{"diagnostic"} (both).
+Ignored for non-bus-route designs.}
 }
 \value{
 A creel_estimates S3 object (list) with components: estimates
@@ -32,6 +47,7 @@ columns if \code{by} is specified), method (character: "ratio-of-means-hpue"),
 variance_method (character: reflects the variance parameter value used),
 design (reference to source creel_design), conf_level (numeric), and
 by_vars (character vector of grouping variable names or NULL).
+For bus-route designs, a "site_contributions" attribute is also present.
 }
 \description{
 Computes HPUE estimates with standard errors and confidence intervals
@@ -105,6 +121,9 @@ result_90 <- estimate_harvest(design_with_interviews, conf_level = 0.90)
 
 # Bootstrap variance estimation
 result_boot <- estimate_harvest(design_with_interviews, variance = "bootstrap")
+
+# Verbose dispatch message (shows which estimator was used for bus-route designs)
+# result_verbose <- estimate_harvest(design, verbose = TRUE)
 }
 \seealso{
 \code{\link{estimate_cpue}} for total catch rate estimation

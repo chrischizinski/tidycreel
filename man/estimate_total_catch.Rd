@@ -4,7 +4,13 @@
 \alias{estimate_total_catch}
 \title{Estimate total catch by combining effort and CPUE}
 \usage{
-estimate_total_catch(design, by = NULL, variance = "taylor", conf_level = 0.95)
+estimate_total_catch(
+  design,
+  by = NULL,
+  variance = "taylor",
+  conf_level = 0.95,
+  verbose = FALSE
+)
 }
 \arguments{
 \item{design}{A creel_design object with both counts (via
@@ -21,9 +27,14 @@ tidyselect helpers.}
 and CPUE estimation, then combined via delta method.}
 
 \item{conf_level}{Numeric confidence level (default: 0.95)}
+
+\item{verbose}{Logical. If TRUE, prints an informational message identifying
+which estimator path was used. Default FALSE.}
 }
 \value{
-A creel_estimates S3 object with method = "product-total-catch"
+A creel_estimates S3 object with method = "product-total-catch".
+For bus-route designs, returns a bus-route HT estimate with method = "total"
+and a "site_contributions" attribute.
 }
 \description{
 Computes total catch estimates by multiplying effort × CPUE with variance
@@ -75,6 +86,9 @@ cpue_est <- estimate_cpue(design)
 # Check sample sizes before grouping:
 # table(design$interviews$day_type)
 # total_catch_by_type <- estimate_total_catch(design, by = day_type)
+
+# Verbose dispatch message (shows which estimator was used for bus-route designs)
+# result_verbose <- estimate_total_catch(design, verbose = TRUE)
 
 }
 \seealso{

@@ -1015,6 +1015,12 @@ estimate_cpue <- function(design,
 #'   \code{"jackknife"} (jackknife resampling, automatic JKn/JK1 selection).
 #' @param conf_level Numeric confidence level for confidence intervals (default:
 #'   0.95 for 95% confidence intervals). Must be between 0 and 1.
+#' @param verbose Logical. If TRUE, prints an informational message identifying
+#'   which estimator path was used. Default FALSE.
+#' @param use_trips Character string specifying which trip type to use for
+#'   bus-route estimation. One of \code{"complete"} (default),
+#'   \code{"incomplete"} (pi_i-weighted MOR), or \code{"diagnostic"} (both).
+#'   Ignored for non-bus-route designs.
 #'
 #' @return A creel_estimates S3 object (list) with components: estimates
 #'   (tibble with estimate, se, ci_lower, ci_upper, n columns, plus grouping
@@ -1022,6 +1028,7 @@ estimate_cpue <- function(design,
 #'   variance_method (character: reflects the variance parameter value used),
 #'   design (reference to source creel_design), conf_level (numeric), and
 #'   by_vars (character vector of grouping variable names or NULL).
+#'   For bus-route designs, a "site_contributions" attribute is also present.
 #'
 #' @details
 #' HPUE is estimated as the ratio of total harvest (kept fish) to total effort
@@ -1090,8 +1097,18 @@ estimate_cpue <- function(design,
 #'
 #' # Bootstrap variance estimation
 #' result_boot <- estimate_harvest(design_with_interviews, variance = "bootstrap")
+#'
+#' # Verbose dispatch message (shows which estimator was used for bus-route designs)
+#' # result_verbose <- estimate_harvest(design, verbose = TRUE)
 #' @export
-estimate_harvest <- function(design, by = NULL, variance = "taylor", conf_level = 0.95) {
+estimate_harvest <- function(
+  design,
+  by = NULL,
+  variance = "taylor",
+  conf_level = 0.95,
+  verbose = FALSE,
+  use_trips = NULL
+) {
   # Capture by parameter BEFORE validation
   by_quo <- rlang::enquo(by)
 
@@ -1114,8 +1131,8 @@ estimate_harvest <- function(design, by = NULL, variance = "taylor", conf_level 
     ))
   }
 
-  # Validate design$interview_survey exists
-  if (is.null(design$interview_survey)) {
+  # Validate design$interview_survey exists (skip for bus-route: uses interviews not counts)
+  if (!identical(design$design_type, "bus_route") && is.null(design$interview_survey)) {
     cli::cli_abort(c(
       "No interview survey design available.",
       "x" = "Call {.fn add_interviews} before estimating harvest.",
@@ -1123,6 +1140,34 @@ estimate_harvest <- function(design, by = NULL, variance = "taylor", conf_level 
         "Example: {.code design <- add_interviews(design, interviews,",
         "catch = catch_total, harvest = catch_kept, effort = hours_fished)}"
       )
+    ))
+  }
+
+  # Bus-route dispatch (before standard tier-2 validation)
+  if (!is.null(design$design_type) && design$design_type == "bus_route") {
+    if (verbose) {
+      cli::cli_inform(c(
+        "i" = "Using bus-route estimator (Jones & Pollock 2012, Eq. 19.5)"
+      ))
+    }
+
+    # Resolve by parameter to column names for bus-route
+    if (rlang::quo_is_null(by_quo)) {
+      by_vars_br <- NULL
+    } else {
+      by_cols_br <- tidyselect::eval_select(
+        by_quo,
+        data = design$interviews,
+        allow_rename = FALSE,
+        allow_empty = FALSE,
+        error_call = rlang::caller_env()
+      )
+      by_vars_br <- names(by_cols_br)
+    }
+    use_trips_br <- if (is.null(use_trips)) "complete" else use_trips
+    return(estimate_harvest_br( # nolint: object_usage_linter
+      design, by_vars_br, variance, conf_level,
+      verbose = FALSE, use_trips = use_trips_br
     ))
   }
 
