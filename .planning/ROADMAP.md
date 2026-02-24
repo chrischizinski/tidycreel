@@ -232,10 +232,11 @@ Plans:
   2. Harvest calculated as sum(h_i / πᵢ) following Jones & Pollock (2012) Eq. 19.5 exactly
   3. Incomplete trip handling works correctly for bus-route surveys
   4. Grouped estimation (by species, stratum) produces correct stratified estimates
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] TBD
+- [ ] 25-01-PLAN.md — estimate_harvest_br() and estimate_total_catch_br() core; estimate_harvest() and estimate_total_catch() bus-route dispatch with verbose= and use_trips=
+- [ ] 25-02-PLAN.md — Full bus-route harvest and total-catch test suites (harvest: 10 tests, total-catch: 6 tests)
 
 #### Phase 26: Primary Source Validation
 **Goal**: Implementation reproduces published examples from primary sources exactly
@@ -285,10 +286,10 @@ Plans:
 | 22. Inclusion Probability Calculation | 0/2 | Complete    | 2026-02-17 |
 | 23. Data Integration | 0/2 | Complete    | 2026-02-17 |
 | 24. Bus-Route Effort Estimation | 0/TBD | Not started | - |
-| 25. Bus-Route Harvest Estimation | 0/TBD | Not started | - |
+| 25. Bus-Route Harvest Estimation | 0/2 | Not started | - |
 | 26. Primary Source Validation | 0/TBD | Not started | - |
 | 27. Documentation & Traceability | 0/TBD | Not started | - |
 
 ---
-*Roadmap last updated: 2026-02-17 after Phase 23 planning*
+*Roadmap last updated: 2026-02-24 after Phase 25 planning*
 *See .planning/MILESTONES.md for full milestone history*
