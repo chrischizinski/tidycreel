@@ -326,3 +326,153 @@ test_that(
     }
   }
 )
+
+# Integration tests ----
+# Verify the complete bus-route workflow wiring: design -> add_interviews -> estimate_*
+# These tests catch ordering errors (expansion before weighting, wrong column propagation)
+# that unit tests on individual functions cannot detect.
+# VALID-05: complete workflow integration tests.
+
+test_that(
+  "Complete bus-route workflow: design -> data -> effort estimation succeeds (VALID-05)",
+  {
+    d <- make_box20_6_example2()
+    result <- suppressWarnings(estimate_effort(d))
+    # VALID-05: complete workflow integration
+    expect_s3_class(result, "creel_estimates")
+    expect_true(is.finite(result$estimates$estimate))
+    expect_true(result$estimates$estimate > 0)
+    expect_true(is.finite(result$estimates$se))
+    expect_true(result$estimates$se > 0)
+  }
+)
+
+test_that(
+  "Complete bus-route workflow: design -> data -> harvest estimation succeeds (VALID-05)",
+  {
+    d <- make_box20_6_example2()
+    result <- suppressWarnings(estimate_harvest(d))
+    expect_s3_class(result, "creel_estimates")
+    expect_true(is.finite(result$estimates$estimate))
+    expect_true(result$estimates$estimate > 0)
+    expect_true(is.finite(result$estimates$se))
+  }
+)
+
+test_that(
+  "Bus-route total-catch estimation succeeds with Box 20.6 data (VALID-05)",
+  {
+    d <- make_box20_6_example2()
+    result <- suppressWarnings(estimate_total_catch(d))
+    expect_s3_class(result, "creel_estimates")
+    expect_true(is.finite(result$estimates$estimate))
+    expect_true(result$estimates$estimate > 0)
+  }
+)
+
+test_that(
+  "Grouped effort estimation by day_type returns one row (all weekday data)",
+  {
+    d <- make_box20_6_example2()
+    result <- suppressWarnings(estimate_effort(d, by = day_type))
+    expect_s3_class(result, "creel_estimates")
+    # All dates are weekday so one group
+    expect_equal(nrow(result$estimates), 1L)
+  }
+)
+
+# Survey package cross-validation ----
+# Verify inverse probability weighting by replicating the HT estimator manually
+# using survey::svydesign() + survey::svytotal() on the same contribution column.
+#
+# Approach: the implementation computes .contribution = e_i * expansion / pi_i
+# and then calls svytotal(~.contribution, svydesign(ids=~1, strata=~day_type)).
+# We replicate the same computation manually and compare outputs.
+# This proves the variance machinery is correctly wired (Eq. 19.4-19.5).
+#
+# Use Example 1 (no expansion, expansion=1) for transparency: hand arithmetic is exact.
+# Point estimate tolerance: 1e-6 (exact match expected)
+# SE tolerance: 1e-3 (per CONTEXT.md decision)
+
+test_that(
+  "Effort estimate matches manual survey::svydesign + svytotal (point estimate, tol 1e-6)",
+  {
+    d <- make_box20_6_example1()
+    int_data <- d$interviews
+    # Compute HT contribution per row: effort * expansion / pi_i
+    # (expansion = 1 for Example 1, so this is effort / pi_i)
+    # Proves inverse probability weighting correctly implements Eq. 19.4
+    int_data$.effort_contrib <- int_data$hours_fished * int_data$.expansion / int_data$.pi_i
+    svy_manual <- suppressWarnings(
+      survey::svydesign(ids = ~1, strata = ~day_type, data = int_data)
+    )
+    manual_result <- survey::svytotal(~.effort_contrib, svy_manual)
+    tidycreel_result <- suppressWarnings(estimate_effort(d))
+    expect_equal(
+      tidycreel_result$estimates$estimate,
+      as.numeric(coef(manual_result)),
+      tolerance = 1e-6
+    )
+  }
+)
+
+test_that(
+  "Effort SE matches manual survey::svydesign + svytotal (tol 1e-3)",
+  {
+    d <- make_box20_6_example1()
+    int_data <- d$interviews
+    int_data$.effort_contrib <- int_data$hours_fished * int_data$.expansion / int_data$.pi_i
+    svy_manual <- suppressWarnings(
+      survey::svydesign(ids = ~1, strata = ~day_type, data = int_data)
+    )
+    manual_result <- survey::svytotal(~.effort_contrib, svy_manual)
+    tidycreel_result <- suppressWarnings(estimate_effort(d))
+    # Per CONTEXT.md: SE tolerance 1e-3 (FPC differences acceptable)
+    expect_equal(
+      tidycreel_result$estimates$se,
+      as.numeric(survey::SE(manual_result)),
+      tolerance = 1e-3
+    )
+  }
+)
+
+test_that(
+  "Harvest estimate matches manual survey::svydesign + svytotal (point estimate, tol 1e-6)",
+  {
+    d <- make_box20_6_example1()
+    int_data <- d$interviews
+    # Compute HT harvest contribution per row: harvest * expansion / pi_i
+    # (expansion = 1 for Example 1)
+    int_data$.harvest_contrib <- int_data$fish_kept * int_data$.expansion / int_data$.pi_i
+    svy_manual <- suppressWarnings(
+      survey::svydesign(ids = ~1, strata = ~day_type, data = int_data)
+    )
+    manual_result <- survey::svytotal(~.harvest_contrib, svy_manual)
+    tidycreel_result <- suppressWarnings(estimate_harvest(d))
+    expect_equal(
+      tidycreel_result$estimates$estimate,
+      as.numeric(coef(manual_result)),
+      tolerance = 1e-6
+    )
+  }
+)
+
+test_that(
+  "Harvest SE matches manual survey::svydesign + svytotal (tol 1e-3)",
+  {
+    d <- make_box20_6_example1()
+    int_data <- d$interviews
+    int_data$.harvest_contrib <- int_data$fish_kept * int_data$.expansion / int_data$.pi_i
+    svy_manual <- suppressWarnings(
+      survey::svydesign(ids = ~1, strata = ~day_type, data = int_data)
+    )
+    manual_result <- survey::svytotal(~.harvest_contrib, svy_manual)
+    tidycreel_result <- suppressWarnings(estimate_harvest(d))
+    # Per CONTEXT.md: SE tolerance 1e-3 (FPC differences acceptable)
+    expect_equal(
+      tidycreel_result$estimates$se,
+      as.numeric(survey::SE(manual_result)),
+      tolerance = 1e-3
+    )
+  }
+)
