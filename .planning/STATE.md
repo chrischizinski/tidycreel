@@ -9,21 +9,21 @@ See: .planning/PROJECT.md (updated 2026-02-16)
 
 ## Current Position
 
-Phase: 25 of 27 (Bus-Route Harvest Estimation)
-Plan: 2 complete
-Status: Phase 25 Plan 02 complete — bus-route harvest and total-catch test suites complete
-Last activity: 2026-02-24 — Phase 25 Plan 02 (16 tests: harvest + total-catch bus-route) complete
+Phase: 26 of 27 (Primary Source Validation)
+Plan: 1 complete
+Status: Phase 26 Plan 01 complete — Malvestuto Box 20.6 primary source validation tests
+Last activity: 2026-02-25 — Phase 26 Plan 01 (14 tests: VALID-01 + VALID-02 correctness proofs) complete
 
-Progress: [████████████░░░░░░░░] 71% (47/65+ plans complete across all milestones)
+Progress: [████████████░░░░░░░░] 74% (48/65+ plans complete across all milestones)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 47
+- Total plans completed: 48
 - v0.1.0 (Phases 1-7): 12 plans
 - v0.2.0 (Phases 8-12): 10 plans
 - v0.3.0 (Phases 13-20): 16 plans
-- v0.4.0 (Phases 21-27): 9 plans
+- v0.4.0 (Phases 21-27): 10 plans
 
 **By Milestone:**
 
@@ -35,7 +35,7 @@ Progress: [████████████░░░░░░░░] 71% (47
 | v0.4.0 | 21-27 | 9/TBD | In progress | - |
 
 **Quality Metrics (current):**
-- Test coverage: ~90% (1066 tests)
+- Test coverage: ~90% (1080 tests)
 - R CMD check: 0 errors, 0 warnings
 - lintr: 0 issues
 
@@ -99,6 +99,7 @@ v0.4.0 decisions:
 - **Phase 24-02**: trip_duration omitted from bus-route test helpers (optional for add_interviews(); duration=0.0 fails Tier 2 validation); expect_no_message(suppressWarnings()) for verbose=FALSE test (survey::svydesign emits expected 'no weights' warning that is not a dispatch message); accessor quartet complete: get_sampling_frame() / get_inclusion_probs() / get_enumeration_counts() / get_site_contributions()
 - **Phase 25-01**: Bus-route dispatch for estimate_harvest() placed BEFORE interview_survey NULL check (bus-route uses design$interviews not design$interview_survey); bus-route dispatch for estimate_total_catch() placed BEFORE validate_design_compatibility() (checks design$survey which is NULL for bus-route); verbose=FALSE passed to internal estimator after dispatch block emits message (prevents double-printing); br_build_estimates() shared helper eliminates duplication between harvest and catch estimators; incomplete trip path uses pi_i-weighted MOR (h_ratio_i = harvest/effort, contribution_i = h_ratio_i/pi_i)
 - **Phase 25-02**: Interview dates spread across 4 calendar dates (not same date) so use_trips=incomplete filtering leaves >= 2 PSUs per stratum for survey::svydesign(); trip_status always included in interview data and always passed to add_interviews() (required parameter); make_br_harvest_design() requires date= and strata= args per creel_design() API
+- **Phase 26-01**: site_contributions column is "e_i_over_pi_i" (not "ratio"); bus-route effort method="total" (Horvitz-Thompson total, not "bus.route"/"horvitz"); Site D requires 2 interview rows to match n_interviewed=2; 15-row Box 20.6 helpers satisfy >= 2 PSU per stratum; VALID-01 golden value 287.5 and 847.5 verified to 1e-6
 
 ### Pending Todos
 
@@ -110,11 +111,11 @@ None currently.
 
 ## Session Continuity
 
-Last session: 2026-02-24
-Stopped at: Phase 25 Plan 02 complete — bus-route harvest + total-catch test suites (BUSRT-04, BUSRT-10)
+Last session: 2026-02-25
+Stopped at: Phase 26 Plan 01 complete — Malvestuto Box 20.6 primary source validation (VALID-01, VALID-02)
 Resume file: None
 
-**Next step:** Phase 26 — Malvestuto Box 20.6 Validation
+**Next step:** Phase 26 Plan 02 — Integration testing (VALID-05)
 
 ---
-*State last updated: 2026-02-24 after Phase 25 Plan 02 complete*
+*State last updated: 2026-02-25 after Phase 26 Plan 01 complete*

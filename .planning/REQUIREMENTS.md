@@ -12,19 +12,19 @@ Requirements for bus-route (nonuniform probability) creel survey estimation base
 - [ ] **BUSRT-01**: System calculates inclusion probability πᵢ from sampling design (p_site × p_period), not site characteristics
 - [ ] **BUSRT-02**: System applies enumeration expansion (n_counted / n_interviewed) to account for uncounted parties at busy sites
 - [ ] **BUSRT-03**: System estimates effort using Jones & Pollock (2012) Eq. 19.4 general estimator
-- [ ] **BUSRT-04**: System estimates harvest using Jones & Pollock (2012) Eq. 19.5 general estimator
+- [x] **BUSRT-04**: System estimates harvest using Jones & Pollock (2012) Eq. 19.5 general estimator
 - [ ] **BUSRT-05**: System supports nonuniform probability sampling where different sites/periods have different sampling probabilities
 - [ ] **BUSRT-06**: creel_design() constructor accepts survey_type = "bus_route" with site and circuit specifications
 - [ ] **BUSRT-07**: Design validation ensures site probabilities sum to 1.0 and all probabilities are in (0,1]
 - [ ] **BUSRT-08**: add_interviews() joins sampling probabilities to interview data for bus-route designs
 - [ ] **BUSRT-09**: estimate_effort() dispatches to bus-route estimator when design type is bus_route
-- [ ] **BUSRT-10**: estimate_harvest() dispatches to bus-route estimator when design type is bus_route
+- [x] **BUSRT-10**: estimate_harvest() dispatches to bus-route estimator when design type is bus_route
 - [ ] **BUSRT-11**: System provides variance estimation via survey package for bus-route estimates
 
 ### Validation & Correctness
 
-- [ ] **VALID-01**: Implementation reproduces Malvestuto (1996) Box 20.6 Example 1 results exactly
-- [ ] **VALID-02**: Enumeration expansion calculations match published methodology
+- [x] **VALID-01**: Implementation reproduces Malvestuto (1996) Box 20.6 Example 1 results exactly
+- [x] **VALID-02**: Enumeration expansion calculations match published methodology
 - [ ] **VALID-03**: πᵢ calculation for two-stage sampling (site × period) produces correct values
 - [ ] **VALID-04**: Progressive validation catches missing enumeration counts at data input time
 - [ ] **VALID-05**: Integration tests verify complete bus-route workflow (design → data → estimation)
@@ -79,10 +79,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BUSRT-03 | Phase 24 | Pending |
 | BUSRT-09 | Phase 24 | Pending |
 | BUSRT-11 | Phase 24 | Pending |
-| BUSRT-04 | Phase 25 | Pending |
-| BUSRT-10 | Phase 25 | Pending |
-| VALID-01 | Phase 26 | Pending |
-| VALID-02 | Phase 26 | Pending |
+| BUSRT-04 | Phase 25 | Complete |
+| BUSRT-10 | Phase 25 | Complete |
+| VALID-01 | Phase 26 | Complete |
+| VALID-02 | Phase 26 | Complete |
 | VALID-05 | Phase 26 | Pending |
 | DOCS-01 | Phase 27 | Pending |
 | DOCS-02 | Phase 27 | Pending |
