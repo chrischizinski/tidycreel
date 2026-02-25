@@ -247,10 +247,11 @@ Plans:
   2. Enumeration expansion calculations match published methodology
   3. Integration tests verify complete workflow (design → data → estimation)
   4. Reference tests prove estimates match manual survey package calculations
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] TBD
+- [ ] 26-01-PLAN.md — Box 20.6 Example 1 (no expansion) and Example 2 (enumeration expansion) primary source correctness tests
+- [ ] 26-02-PLAN.md — Integration tests (complete workflow) and survey package cross-validation for effort and harvest
 
 #### Phase 27: Documentation & Traceability
 **Goal**: Users understand when and how to use bus-route surveys correctly with full equation traceability
@@ -287,9 +288,9 @@ Plans:
 | 23. Data Integration | 0/2 | Complete    | 2026-02-17 |
 | 24. Bus-Route Effort Estimation | 0/TBD | Not started | - |
 | 25. Bus-Route Harvest Estimation | 2/2 | Complete    | 2026-02-24 |
-| 26. Primary Source Validation | 0/TBD | Not started | - |
+| 26. Primary Source Validation | 0/2 | Planning    | - |
 | 27. Documentation & Traceability | 0/TBD | Not started | - |
 
 ---
-*Roadmap last updated: 2026-02-24 after Phase 25 planning*
+*Roadmap last updated: 2026-02-25 after Phase 26 planning*
 *See .planning/MILESTONES.md for full milestone history*
