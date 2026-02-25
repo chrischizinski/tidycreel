@@ -27,7 +27,7 @@ Requirements for bus-route (nonuniform probability) creel survey estimation base
 - [x] **VALID-02**: Enumeration expansion calculations match published methodology
 - [ ] **VALID-03**: πᵢ calculation for two-stage sampling (site × period) produces correct values
 - [ ] **VALID-04**: Progressive validation catches missing enumeration counts at data input time
-- [ ] **VALID-05**: Integration tests verify complete bus-route workflow (design → data → estimation)
+- [x] **VALID-05**: Integration tests verify complete bus-route workflow (design → data → estimation)
 
 ### Documentation & Traceability
 
@@ -83,7 +83,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BUSRT-10 | Phase 25 | Complete |
 | VALID-01 | Phase 26 | Complete |
 | VALID-02 | Phase 26 | Complete |
-| VALID-05 | Phase 26 | Pending |
+| VALID-05 | Phase 26 | Complete |
 | DOCS-01 | Phase 27 | Pending |
 | DOCS-02 | Phase 27 | Pending |
 | DOCS-03 | Phase 27 | Pending |

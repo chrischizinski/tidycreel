@@ -288,7 +288,7 @@ Plans:
 | 23. Data Integration | 0/2 | Complete    | 2026-02-17 |
 | 24. Bus-Route Effort Estimation | 0/TBD | Not started | - |
 | 25. Bus-Route Harvest Estimation | 2/2 | Complete    | 2026-02-24 |
-| 26. Primary Source Validation | 1/2 | In Progress|  |
+| 26. Primary Source Validation | 2/2 | Complete   | 2026-02-25 |
 | 27. Documentation & Traceability | 0/TBD | Not started | - |
 
 ---

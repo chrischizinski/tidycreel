@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-16)
 ## Current Position
 
 Phase: 26 of 27 (Primary Source Validation)
-Plan: 1 complete
-Status: Phase 26 Plan 01 complete — Malvestuto Box 20.6 primary source validation tests
-Last activity: 2026-02-25 — Phase 26 Plan 01 (14 tests: VALID-01 + VALID-02 correctness proofs) complete
+Plan: 2 complete
+Status: Phase 26 Plan 02 complete — Integration and cross-validation tests (VALID-05)
+Last activity: 2026-02-25 — Phase 26 Plan 02 (8 tests: 4 integration + 4 survey cross-validation) complete
 
-Progress: [████████████░░░░░░░░] 74% (48/65+ plans complete across all milestones)
+Progress: [████████████░░░░░░░░] 75% (49/65+ plans complete across all milestones)
 
 ## Performance Metrics
 
@@ -35,7 +35,7 @@ Progress: [████████████░░░░░░░░] 74% (48
 | v0.4.0 | 21-27 | 9/TBD | In progress | - |
 
 **Quality Metrics (current):**
-- Test coverage: ~90% (1080 tests)
+- Test coverage: ~90% (1098 tests)
 - R CMD check: 0 errors, 0 warnings
 - lintr: 0 issues
 
@@ -100,6 +100,7 @@ v0.4.0 decisions:
 - **Phase 25-01**: Bus-route dispatch for estimate_harvest() placed BEFORE interview_survey NULL check (bus-route uses design$interviews not design$interview_survey); bus-route dispatch for estimate_total_catch() placed BEFORE validate_design_compatibility() (checks design$survey which is NULL for bus-route); verbose=FALSE passed to internal estimator after dispatch block emits message (prevents double-printing); br_build_estimates() shared helper eliminates duplication between harvest and catch estimators; incomplete trip path uses pi_i-weighted MOR (h_ratio_i = harvest/effort, contribution_i = h_ratio_i/pi_i)
 - **Phase 25-02**: Interview dates spread across 4 calendar dates (not same date) so use_trips=incomplete filtering leaves >= 2 PSUs per stratum for survey::svydesign(); trip_status always included in interview data and always passed to add_interviews() (required parameter); make_br_harvest_design() requires date= and strata= args per creel_design() API
 - **Phase 26-01**: site_contributions column is "e_i_over_pi_i" (not "ratio"); bus-route effort method="total" (Horvitz-Thompson total, not "bus.route"/"horvitz"); Site D requires 2 interview rows to match n_interviewed=2; 15-row Box 20.6 helpers satisfy >= 2 PSU per stratum; VALID-01 golden value 287.5 and 847.5 verified to 1e-6
+- **Phase 26-02**: Cross-validation uses ids=~1, strata=~day_type (mirrors implementation); HT contribution pre-computed as effort * .expansion / .pi_i before svydesign call; plan's ids=~site weights=~1/.pi_i approach was incorrect (gave 18.625 not 847.5); VALID-05 integration tests prove complete workflow
 
 ### Pending Todos
 
@@ -112,10 +113,10 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-02-25
-Stopped at: Phase 26 Plan 01 complete — Malvestuto Box 20.6 primary source validation (VALID-01, VALID-02)
+Stopped at: Phase 26 Plan 02 complete — Integration and cross-validation tests (VALID-05)
 Resume file: None
 
-**Next step:** Phase 26 Plan 02 — Integration testing (VALID-05)
+**Next step:** Phase 27 — Documentation (DOCS-01 to DOCS-05)
 
 ---
-*State last updated: 2026-02-25 after Phase 26 Plan 01 complete*
+*State last updated: 2026-02-25 after Phase 26 Plan 02 complete*
