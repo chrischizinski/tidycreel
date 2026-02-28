@@ -280,7 +280,7 @@ exactly.
 
 ```{r harvest}
 # Estimate total fish kept (harvest)
-harvest_est <- estimate_harvest(design, harvest = fish_kept)
+harvest_est <- estimate_harvest(design)
 print(harvest_est)
 
 # Estimate total catch (kept + released)
