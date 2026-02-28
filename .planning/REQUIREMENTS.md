@@ -31,11 +31,11 @@ Requirements for bus-route (nonuniform probability) creel survey estimation base
 
 ### Documentation & Traceability
 
-- [ ] **DOCS-01**: Vignette explains what bus-route surveys are and when to use them
-- [ ] **DOCS-02**: Vignette documents key concepts (inclusion probability, enumeration counts, two-stage sampling)
-- [ ] **DOCS-03**: Vignette provides step-by-step walkthrough of using tidycreel code to generate bus-route estimates
+- [x] **DOCS-01**: Vignette explains what bus-route surveys are and when to use them
+- [x] **DOCS-02**: Vignette documents key concepts (inclusion probability, enumeration counts, two-stage sampling)
+- [x] **DOCS-03**: Vignette provides step-by-step walkthrough of using tidycreel code to generate bus-route estimates
 - [ ] **DOCS-04**: Equation traceability document maps every line of code to source equation and page number
-- [ ] **DOCS-05**: Documentation explains why tidycreel implementation is correct vs. existing packages
+- [x] **DOCS-05**: Documentation explains why tidycreel implementation is correct vs. existing packages
 
 ## Future Requirements
 
@@ -84,11 +84,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | VALID-01 | Phase 26 | Complete |
 | VALID-02 | Phase 26 | Complete |
 | VALID-05 | Phase 26 | Complete |
-| DOCS-01 | Phase 27 | Pending |
-| DOCS-02 | Phase 27 | Pending |
-| DOCS-03 | Phase 27 | Pending |
+| DOCS-01 | Phase 27 | Complete |
+| DOCS-02 | Phase 27 | Complete |
+| DOCS-03 | Phase 27 | Complete |
 | DOCS-04 | Phase 27 | Pending |
-| DOCS-05 | Phase 27 | Pending |
+| DOCS-05 | Phase 27 | Complete |
 
 **Coverage:**
 - v0.4.0 requirements: 21 total

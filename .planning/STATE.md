@@ -8,7 +8,7 @@ progress:
   total_phases: 28
   completed_phases: 26
   total_plans: 49
-  completed_plans: 49
+  completed_plans: 50
 ---
 
 # Project State
@@ -22,21 +22,21 @@ See: .planning/PROJECT.md (updated 2026-02-16)
 
 ## Current Position
 
-Phase: 26 of 27 (Primary Source Validation)
-Plan: 2 complete
-Status: Phase 26 Plan 02 complete — Integration and cross-validation tests (VALID-05)
-Last activity: 2026-02-25 — Phase 26 Plan 02 (8 tests: 4 integration + 4 survey cross-validation) complete
+Phase: 27 of 27 (Documentation & Traceability)
+Plan: 1 complete
+Status: Phase 27 Plan 01 complete — Bus-route surveys vignette (DOCS-01, DOCS-02, DOCS-03, DOCS-05)
+Last activity: 2026-02-28 — Phase 27 Plan 01 (vignette: bus-route-surveys.Rmd, E_hat=847.5 validated) complete
 
-Progress: [████████████░░░░░░░░] 75% (49/65+ plans complete across all milestones)
+Progress: [█████████████░░░░░░░] 77% (50/65+ plans complete across all milestones)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 48
+- Total plans completed: 50
 - v0.1.0 (Phases 1-7): 12 plans
 - v0.2.0 (Phases 8-12): 10 plans
 - v0.3.0 (Phases 13-20): 16 plans
-- v0.4.0 (Phases 21-27): 10 plans
+- v0.4.0 (Phases 21-27): 11 plans
 
 **By Milestone:**
 
@@ -114,6 +114,7 @@ v0.4.0 decisions:
 - **Phase 25-02**: Interview dates spread across 4 calendar dates (not same date) so use_trips=incomplete filtering leaves >= 2 PSUs per stratum for survey::svydesign(); trip_status always included in interview data and always passed to add_interviews() (required parameter); make_br_harvest_design() requires date= and strata= args per creel_design() API
 - **Phase 26-01**: site_contributions column is "e_i_over_pi_i" (not "ratio"); bus-route effort method="total" (Horvitz-Thompson total, not "bus.route"/"horvitz"); Site D requires 2 interview rows to match n_interviewed=2; 15-row Box 20.6 helpers satisfy >= 2 PSU per stratum; VALID-01 golden value 287.5 and 847.5 verified to 1e-6
 - **Phase 26-02**: Cross-validation uses ids=~1, strata=~day_type (mirrors implementation); HT contribution pre-computed as effort * .expansion / .pi_i before svydesign call; plan's ids=~site weights=~1/.pi_i approach was incorrect (gave 18.625 not 847.5); VALID-05 integration tests prove complete workflow
+- **Phase 27-01**: trip_status="complete" required even for bus-route designs in add_interviews() call; vignette data row ordering matches validated test helper make_box20_6_example1() to produce E_hat=847.5; inline data (15 rows) cleaner than package dataset for this small example
 
 ### Pending Todos
 
@@ -125,11 +126,11 @@ None currently.
 
 ## Session Continuity
 
-Last session: 2026-02-25
-Stopped at: Phase 26 Plan 02 complete — Integration and cross-validation tests (VALID-05)
+Last session: 2026-02-28
+Stopped at: Phase 27 Plan 01 complete — Bus-route surveys vignette (DOCS-01, DOCS-02, DOCS-03, DOCS-05)
 Resume file: None
 
-**Next step:** Phase 27 — Documentation (DOCS-01 to DOCS-05)
+**Next step:** Phase 27 Plan 02 — Equation traceability vignette (DOCS-04, DOCS-05 complete)
 
 ---
-*State last updated: 2026-02-25 after Phase 26 Plan 02 complete*
+*State last updated: 2026-02-28 after Phase 27 Plan 01 complete*
