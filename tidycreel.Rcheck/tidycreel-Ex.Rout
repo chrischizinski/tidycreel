@@ -1,0 +1,450 @@
+
+R version 4.5.2 (2025-10-31) -- "[Not] Part in a Rumble"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: aarch64-apple-darwin25.0.0
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "tidycreel"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> base::assign(".ExTimings", "tidycreel-Ex.timings", pos = 'CheckExEnv')
+> base::cat("name\tuser\tsystem\telapsed\n", file=base::get(".ExTimings", pos = 'CheckExEnv'))
+> base::assign(".format_ptime",
++ function(x) {
++   if(!is.na(x[4L])) x[1L] <- x[1L] + x[4L]
++   if(!is.na(x[5L])) x[2L] <- x[2L] + x[5L]
++   options(OutDec = '.')
++   format(x[1L:3L], digits = 7L)
++ },
++ pos = 'CheckExEnv')
+>
+> ### * </HEADER>
+> library('tidycreel')
+>
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("add_counts")
+> ### * add_counts
+>
+> flush(stderr()); flush(stdout())
+>
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: add_counts
+> ### Title: Attach count data to a creel design
+> ### Aliases: add_counts
+>
+> ### ** Examples
+>
+> # Basic usage - day as PSU (default)
+> calendar <- data.frame(
++   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
++   day_type = c("weekday", "weekday", "weekend", "weekend")
++ )
+> design <- creel_design(calendar, date = date, strata = day_type)
+>
+> counts <- data.frame(
++   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
++   day_type = c("weekday", "weekday", "weekend", "weekend"),
++   count = c(15, 23, 45, 52)
++ )
+>
+> design_with_counts <- add_counts(design, counts)
+Warning in svydesign.default(ids = psu_formula, strata = strata_formula,  :
+  No weights or probabilities supplied, assuming equal probability
+> print(design_with_counts)
+
+── Creel Survey Design ─────────────────────────────────────────────────────────
+Type: "instantaneous"
+Date column: date
+Strata: day_type
+Calendar: 4 days (2024-06-01 to 2024-06-04)
+day_type: 2 levels
+Counts: 4 observations
+PSU column: date
+Survey: <survey.design2> (constructed)
+>
+> # Custom PSU column
+> counts_with_site_psu <- data.frame(
++   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
++   day_type = c("weekday", "weekday", "weekend", "weekend"),
++   site_day = paste0("site_", 1:4),
++   count = c(15, 23, 45, 52)
++ )
+>
+> design2 <- add_counts(design, counts_with_site_psu, psu = "site_day")
+Warning in svydesign.default(ids = psu_formula, strata = strata_formula,  :
+  No weights or probabilities supplied, assuming equal probability
+>
+>
+>
+>
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("add_counts", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("as_survey_design")
+> ### * as_survey_design
+>
+> flush(stderr()); flush(stdout())
+>
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: as_survey_design
+> ### Title: Extract internal survey design object for advanced use
+> ### Aliases: as_survey_design
+>
+> ### ** Examples
+>
+> # Basic workflow
+> library(survey)
+Loading required package: grid
+Loading required package: Matrix
+Loading required package: survival
+
+Attaching package: ‘survey’
+
+The following object is masked from ‘package:graphics’:
+
+    dotchart
+
+> cal <- data.frame(
++   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
++   day_type = c("weekday", "weekday", "weekend", "weekend")
++ )
+> design <- creel_design(cal, date = date, strata = day_type)
+>
+> counts <- data.frame(
++   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
++   day_type = c("weekday", "weekday", "weekend", "weekend"),
++   count = c(15, 23, 45, 52)
++ )
+>
+> design2 <- add_counts(design, counts)
+Warning in svydesign.default(ids = psu_formula, strata = strata_formula,  :
+  No weights or probabilities supplied, assuming equal probability
+>
+> # Extract survey object for advanced use
+> svy <- as_survey_design(design2)
+Warning: Accessing internal survey design object.
+ℹ This is an advanced feature. Most users should use {.fn estimate_effort} instead.
+! Modifying the survey design may produce incorrect variance estimates.
+This warning is displayed once per session.
+>
+> # Use with survey package functions
+> survey::svytotal(~count, svy)
+      total    SE
+count   135 10.63
+> survey::svymean(~count, svy)
+       mean     SE
+count 33.75 2.6575
+>
+>
+>
+>
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("as_survey_design", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+
+detaching ‘package:survey’, ‘package:survival’, ‘package:Matrix’,
+  ‘package:grid’
+
+> nameEx("creel_design")
+> ### * creel_design
+>
+> flush(stderr()); flush(stdout())
+>
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: creel_design
+> ### Title: Create a creel survey design
+> ### Aliases: creel_design
+>
+> ### ** Examples
+>
+> # Basic design with single stratum
+> calendar <- data.frame(
++   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03")),
++   day_type = c("weekday", "weekend", "weekend")
++ )
+> design <- creel_design(calendar, date = date, strata = day_type)
+>
+> # Multiple strata
+> calendar <- data.frame(
++   date = as.Date(c("2024-06-01", "2024-06-02")),
++   day_type = c("weekday", "weekend"),
++   season = c("summer", "summer")
++ )
+> design <- creel_design(calendar, date = date, strata = c(day_type, season))
+>
+> # With site column for multi-site survey
+> calendar <- data.frame(
++   date = as.Date(c("2024-06-01", "2024-06-02")),
++   day_type = c("weekday", "weekend"),
++   lake = c("lake_a", "lake_b")
++ )
+> design <- creel_design(calendar, date = date, strata = day_type, site = lake)
+>
+> # Using tidyselect helpers
+> calendar <- data.frame(
++   survey_date = as.Date(c("2024-06-01", "2024-06-02")),
++   day_type = c("weekday", "weekend"),
++   day_period = c("morning", "evening")
++ )
+> design <- creel_design(
++   calendar,
++   date = starts_with("survey"),
++   strata = starts_with("day")
++ )
+>
+>
+>
+>
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("creel_design", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("estimate_effort")
+> ### * estimate_effort
+>
+> flush(stderr()); flush(stdout())
+>
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: estimate_effort
+> ### Title: Estimate total effort from a creel survey design
+> ### Aliases: estimate_effort
+>
+> ### ** Examples
+>
+> # Basic ungrouped usage
+> calendar <- data.frame(
++   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
++   day_type = c("weekday", "weekday", "weekend", "weekend")
++ )
+> design <- creel_design(calendar, date = date, strata = day_type)
+>
+> counts <- data.frame(
++   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
++   day_type = c("weekday", "weekday", "weekend", "weekend"),
++   effort_hours = c(15, 23, 45, 52)
++ )
+>
+> design_with_counts <- add_counts(design, counts)
+Warning in svydesign.default(ids = psu_formula, strata = strata_formula,  :
+  No weights or probabilities supplied, assuming equal probability
+> result <- estimate_effort(design_with_counts)
+Warning: 2 strata have fewer than 3 observations:
+• Stratum weekday: 2 observations
+• Stratum weekend: 2 observations
+! Sparse strata produce unstable variance estimates.
+ℹ Consider combining sparse strata or collecting more data.
+> print(result)
+
+── Creel Survey Estimates ──────────────────────────────────────────────────────
+Method: total
+Variance: Taylor linearization
+Confidence level: 95%
+
+# A tibble: 1 × 5
+  estimate    se ci_lower ci_upper     n
+     <dbl> <dbl>    <dbl>    <dbl> <int>
+1      135  10.6     114.     156.     4
+>
+> # Grouped by day_type
+> result_grouped <- estimate_effort(design_with_counts, by = day_type)
+Warning: 2 strata have fewer than 3 observations:
+• Stratum weekday: 2 observations
+• Stratum weekend: 2 observations
+! Sparse strata produce unstable variance estimates.
+ℹ Consider combining sparse strata or collecting more data.
+Warning: 2 groups have fewer than 3 observations:
+• Group day_type=weekday: 2 observations
+• Group day_type=weekend: 2 observations
+! Sparse groups produce unstable variance estimates.
+ℹ Consider combining sparse groups or collecting more data.
+> print(result_grouped)
+
+── Creel Survey Estimates ──────────────────────────────────────────────────────
+Method: total
+Variance: Taylor linearization
+Confidence level: 95%
+Grouped by: day_type
+
+# A tibble: 2 × 6
+  day_type estimate    se ci_lower ci_upper     n
+  <chr>       <dbl> <dbl>    <dbl>    <dbl> <dbl>
+1 weekday        38     8     22.3     53.7     2
+2 weekend        97     7     83.3    111.      2
+>
+> # Note: Multiple grouping variables are supported if present in the data
+> # For example: by = c(day_type, location)
+>
+> # Custom confidence level
+> result_90 <- estimate_effort(design_with_counts, conf_level = 0.90)
+Warning: 2 strata have fewer than 3 observations:
+• Stratum weekday: 2 observations
+• Stratum weekend: 2 observations
+! Sparse strata produce unstable variance estimates.
+ℹ Consider combining sparse strata or collecting more data.
+>
+> # Bootstrap variance estimation
+> result_boot <- estimate_effort(design_with_counts, variance = "bootstrap")
+Warning: 2 strata have fewer than 3 observations:
+• Stratum weekday: 2 observations
+• Stratum weekend: 2 observations
+! Sparse strata produce unstable variance estimates.
+ℹ Consider combining sparse strata or collecting more data.
+> print(result_boot)
+
+── Creel Survey Estimates ──────────────────────────────────────────────────────
+Method: total
+Variance: Bootstrap
+Confidence level: 95%
+
+# A tibble: 1 × 5
+  estimate    se ci_lower ci_upper     n
+     <dbl> <dbl>    <dbl>    <dbl> <int>
+1      135  11.2     113.     157.     4
+>
+> # Jackknife variance estimation
+> result_jk <- estimate_effort(design_with_counts, variance = "jackknife")
+Warning: 2 strata have fewer than 3 observations:
+• Stratum weekday: 2 observations
+• Stratum weekend: 2 observations
+! Sparse strata produce unstable variance estimates.
+ℹ Consider combining sparse strata or collecting more data.
+> print(result_jk)
+
+── Creel Survey Estimates ──────────────────────────────────────────────────────
+Method: total
+Variance: Jackknife
+Confidence level: 95%
+
+# A tibble: 1 × 5
+  estimate    se ci_lower ci_upper     n
+     <dbl> <dbl>    <dbl>    <dbl> <int>
+1      135  10.6     114.     156.     4
+>
+> # Grouped estimation with bootstrap variance
+> result_grouped_boot <- estimate_effort(design_with_counts, by = day_type, variance = "bootstrap")
+Warning: 2 strata have fewer than 3 observations:
+• Stratum weekday: 2 observations
+• Stratum weekend: 2 observations
+! Sparse strata produce unstable variance estimates.
+ℹ Consider combining sparse strata or collecting more data.
+Warning: 2 groups have fewer than 3 observations:
+• Group day_type=weekday: 2 observations
+• Group day_type=weekend: 2 observations
+! Sparse groups produce unstable variance estimates.
+ℹ Consider combining sparse groups or collecting more data.
+>
+>
+>
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("estimate_effort", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("example_calendar")
+> ### * example_calendar
+>
+> flush(stderr()); flush(stdout())
+>
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: example_calendar
+> ### Title: Example calendar data for creel survey
+> ### Aliases: example_calendar
+> ### Keywords: datasets
+>
+> ### ** Examples
+>
+> # Load and inspect
+> data(example_calendar)
+> head(example_calendar)
+        date day_type
+1 2024-06-01  weekend
+2 2024-06-02  weekend
+3 2024-06-03  weekday
+4 2024-06-04  weekday
+5 2024-06-05  weekday
+6 2024-06-06  weekday
+>
+> # Create a creel design
+> design <- creel_design(example_calendar, date = date, strata = day_type)
+> print(design)
+
+── Creel Survey Design ─────────────────────────────────────────────────────────
+Type: "instantaneous"
+Date column: date
+Strata: day_type
+Calendar: 14 days (2024-06-01 to 2024-06-14)
+day_type: 2 levels
+Counts: "none"
+>
+>
+>
+>
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("example_calendar", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("example_counts")
+> ### * example_counts
+>
+> flush(stderr()); flush(stdout())
+>
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: example_counts
+> ### Title: Example count data for creel survey
+> ### Aliases: example_counts
+> ### Keywords: datasets
+>
+> ### ** Examples
+>
+> # Load and use with a creel design
+> data(example_calendar)
+> data(example_counts)
+>
+> design <- creel_design(example_calendar, date = date, strata = day_type)
+> design <- add_counts(design, example_counts)
+Warning in svydesign.default(ids = psu_formula, strata = strata_formula,  :
+  No weights or probabilities supplied, assuming equal probability
+> result <- estimate_effort(design)
+> print(result)
+
+── Creel Survey Estimates ──────────────────────────────────────────────────────
+Method: total
+Variance: Taylor linearization
+Confidence level: 95%
+
+# A tibble: 1 × 5
+  estimate    se ci_lower ci_upper     n
+     <dbl> <dbl>    <dbl>    <dbl> <int>
+1     372.  13.2     347.     398.    14
+>
+>
+>
+>
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("example_counts", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> ### * <FOOTER>
+> ###
+> cleanEx()
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  1.406 0.074 1.911 0 0
+> grDevices::dev.off()
+null device
+          1
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')

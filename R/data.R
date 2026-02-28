@@ -1,80 +1,93 @@
-#' Example Roving Survey Interview Data
+#' Example calendar data for creel survey
 #'
-#' Simulated roving creel survey data with incomplete trip interviews.
-#' Designed to demonstrate `est_cpue_roving()` with length-bias correction.
+#' A sample survey calendar dataset demonstrating the structure required for
+#' [creel_design()]. Contains 14 days (June 1-14, 2024) with weekday/weekend
+#' strata, representing a two-week survey period.
 #'
-#' @format A tibble with 50 rows and 7 columns:
+#' @format A data frame with 14 rows and 2 columns:
 #' \describe{
-#'   \item{interview_id}{Unique interview identifier (1-50)}
-#'   \item{location}{Fishing location: "River" or "Lake"}
-#'   \item{target_species}{Target species: "Trout" or "Bass"}
-#'   \item{catch_total}{Total fish caught at time of interview (count)}
-#'   \item{catch_kept}{Fish kept at time of interview (count, <= catch_total)}
-#'   \item{hours_fished}{Observed effort at interview time (hours, 0.5-8.0)}
-#'   \item{total_hours_planned}{Total planned trip effort (hours, >= hours_fished)}
+#'   \item{date}{Survey date (Date class), June 1-14, 2024}
+#'   \item{day_type}{Day type stratum: "weekday" or "weekend"}
 #' }
 #'
-#' @details
-#' This dataset simulates 50 roving (on-site) interviews conducted during
-#' incomplete fishing trips. Key features:
-#'
-#' - **Incomplete trips**: All interviews occurred while anglers were still fishing,
-#'   so `hours_fished` represents effort-to-date, not complete trip effort.
-#' - **Length-bias sampling**: Longer trips have higher probability of being sampled
-#'   (Robson 1961). The Pollock et al. (1997) correction uses `total_hours_planned`
-#'   to adjust for this bias.
-#' - **Realistic variation**: Catch rates vary by location (River: ~1 fish/hr,
-#'   Lake: ~1.5 fish/hr) with natural Poisson variation.
-#'
-#' @section Usage:
-#' Use with `est_cpue_roving()` to estimate CPUE accounting for incomplete trips:
-#'
-#' ```r
-#' library(survey)
-#'
-#' # Basic CPUE estimate without length-bias correction
-#' svy <- svydesign(ids = ~1, data = roving_survey)
-#' est_cpue_roving(svy, length_bias_correction = "none")
-#'
-#' # CPUE with Pollock correction for length-bias
-#' est_cpue_roving(
-#'   svy,
-#'   length_bias_correction = "pollock",
-#'   total_trip_effort_col = "total_hours_planned"
-#' )
-#'
-#' # Grouped estimates by location
-#' est_cpue_roving(
-#'   svy,
-#'   by = "location",
-#'   length_bias_correction = "pollock",
-#'   total_trip_effort_col = "total_hours_planned"
-#' )
-#' ```
-#'
-#' @source Simulated data generated in `data-raw/roving_survey.R`
-#'
-#' @references
-#' Pollock, K. H., C. M. Jones, and T. L. Brown. 1997. Angler survey methods
-#' and their applications in fisheries management. American Fisheries Society,
-#' Special Publication 25, Bethesda, Maryland.
-#'
-#' Robson, D. S. 1961. On the statistical theory of a roving creel census of
-#' fishermen. Biometrics 17:415-437.
-#'
-#' @seealso [est_cpue_roving()] for estimation from roving survey data.
+#' @source Simulated data for package examples
 #'
 #' @examples
-#' # Load and examine the data
-#' data(roving_survey)
-#' head(roving_survey)
+#' # Load and inspect
+#' data(example_calendar)
+#' head(example_calendar)
 #'
-#' # Summary statistics
-#' summary(roving_survey)
+#' # Create a creel design
+#' design <- creel_design(example_calendar, date = date, strata = day_type)
+#' print(design)
 #'
-#' # Basic CPUE estimation
-#' library(survey)
-#' svy <- svydesign(ids = ~1, data = roving_survey)
-#' est_cpue_roving(svy, length_bias_correction = "none")
+#' @seealso [example_counts] for matching count data, [creel_design()] to
+#'   create a design from calendar data
+"example_calendar"
+
+#' Example count data for creel survey
 #'
-"roving_survey"
+#' Sample instantaneous count observations matching [example_calendar].
+#' Contains effort measurements for each survey date, suitable for use
+#' with [add_counts()] and [estimate_effort()].
+#'
+#' @format A data frame with 14 rows and 3 columns:
+#' \describe{
+#'   \item{date}{Survey date (Date class), matching [example_calendar] dates}
+#'   \item{day_type}{Day type stratum: "weekday" or "weekend", matching calendar}
+#'   \item{effort_hours}{Numeric count variable: total angler-hours observed}
+#' }
+#'
+#' @source Simulated data for package examples
+#'
+#' @examples
+#' # Load and use with a creel design
+#' data(example_calendar)
+#' data(example_counts)
+#'
+#' design <- creel_design(example_calendar, date = date, strata = day_type)
+#' design <- add_counts(design, example_counts)
+#' result <- estimate_effort(design)
+#' print(result)
+#'
+#' @seealso [example_calendar] for matching calendar data, [add_counts()] to
+#'   attach counts to a design
+"example_counts"
+
+#' Example interview data for creel survey
+#'
+#' Sample angler interview data demonstrating the structure required for
+#' [add_interviews()]. Contains 22 interviews from June 1-14, 2024,
+#' matching the [example_calendar] date range. Each row represents one
+#' angler interview with catch, harvest, effort, and trip metadata.
+#'
+#' @format A data frame with 22 rows and 6 columns:
+#' \describe{
+#'   \item{date}{Interview date (Date class), matching [example_calendar] dates}
+#'   \item{hours_fished}{Numeric fishing effort in hours}
+#'   \item{catch_total}{Integer total fish caught (kept + released)}
+#'   \item{catch_kept}{Integer fish kept (harvest), always <= catch_total}
+#'   \item{trip_status}{Character trip completion status ("complete" or "incomplete")}
+#'   \item{trip_duration}{Numeric trip duration in hours}
+#' }
+#'
+#' @source Simulated data for package examples
+#'
+#' @examples
+#' # Load and use with a creel design
+#' data(example_calendar)
+#' data(example_interviews)
+#'
+#' design <- creel_design(example_calendar, date = date, strata = day_type)
+#' design <- add_interviews(design, example_interviews,
+#'   catch = catch_total,
+#'   effort = hours_fished,
+#'   harvest = catch_kept,
+#'   trip_status = trip_status,
+#'   trip_duration = trip_duration
+#' )
+#' print(design)
+#'
+#' @seealso [example_calendar] for matching calendar data, [add_interviews()] to
+#'   attach interviews to a design
+"example_interviews"
