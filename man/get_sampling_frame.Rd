@@ -31,13 +31,13 @@ calendar <- data.frame(
   day_type = "weekday"
 )
 design <- creel_design(calendar,
-  date          = date,
-  strata        = day_type,
-  survey_type   = "bus_route",
+  date = date,
+  strata = day_type,
+  survey_type = "bus_route",
   sampling_frame = sf,
-  site          = site,
-  p_site        = p_site,
-  p_period      = p_period
+  site = site,
+  p_site = p_site,
+  p_period = p_period
 )
 get_sampling_frame(design)
 

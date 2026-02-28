@@ -39,9 +39,11 @@ cal <- data.frame(
   day_type = "weekday",
   stringsAsFactors = FALSE
 )
-design <- creel_design(cal, date = date, strata = day_type,
+design <- creel_design(cal,
+  date = date, strata = day_type,
   survey_type = "bus_route", sampling_frame = sf,
-  site = site, p_site = p_site, p_period = p_period)
+  site = site, p_site = p_site, p_period = p_period
+)
 get_inclusion_probs(design)
 
 }

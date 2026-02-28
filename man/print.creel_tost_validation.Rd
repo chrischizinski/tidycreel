@@ -15,5 +15,7 @@
 The input object, invisibly
 }
 \description{
-Print creel_tost_validation
+Prints formatted validation results and displays scatter plot comparing
+complete vs incomplete trip CPUE estimates. Plot includes y=x reference
+line, confidence interval error bars, and annotations for failed groups.
 }

@@ -4,7 +4,13 @@
 \alias{estimate_effort}
 \title{Estimate total effort from a creel survey design}
 \usage{
-estimate_effort(design, by = NULL, variance = "taylor", conf_level = 0.95)
+estimate_effort(
+  design,
+  by = NULL,
+  variance = "taylor",
+  conf_level = 0.95,
+  verbose = FALSE
+)
 }
 \arguments{
 \item{design}{A creel_design object with counts attached via
@@ -23,6 +29,9 @@ Options: \code{"taylor"} (default, Taylor linearization),
 
 \item{conf_level}{Numeric confidence level for confidence intervals (default:
 0.95 for 95\% confidence intervals). Must be between 0 and 1.}
+
+\item{verbose}{Logical. If TRUE, prints an informational message identifying
+which estimator path was used. Default FALSE for transparent dispatch.}
 }
 \value{
 A creel_estimates S3 object (list) with components: estimates
@@ -30,7 +39,9 @@ A creel_estimates S3 object (list) with components: estimates
 columns if \code{by} is specified), method (character: "total"),
 variance_method (character: reflects the variance parameter value used),
 design (reference to source creel_design), conf_level (numeric), and
-by_vars (character vector of grouping variable names or NULL).
+by_vars (character vector of grouping variable names or NULL). For
+bus-route designs, a "site_contributions" attribute is also present
+containing per-site e_i, pi_i, and e_i_over_pi_i columns.
 }
 \description{
 Computes total effort estimates with standard errors and confidence intervals
@@ -100,4 +111,7 @@ print(result_jk)
 
 # Grouped estimation with bootstrap variance
 result_grouped_boot <- estimate_effort(design_with_counts, by = day_type, variance = "bootstrap")
+
+# Verbose dispatch message (shows which estimator was used for bus-route designs)
+result_verbose <- estimate_effort(design_with_counts, verbose = TRUE)
 }
