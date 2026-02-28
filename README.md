@@ -4,6 +4,10 @@ output: github_document
 
 # tidycreel
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/chrischizinski/tidycreel/main/man/figures/tidycreel-hex.png" alt="tidycreel hex sticker" width="250"/>
+</p>
+
 Tidy Interface for Creel Survey Design and Analysis
 
 ## Installation
