@@ -1,14 +1,28 @@
-# .pre-commit-config.yaml
 minimum_pre_commit_version: "3.0.0"
 default_stages: [pre-commit]
-default_language_version:
-  python: python3
 
 repos:
+  - repo: https://github.com/lorenzwalthert/precommit
+    rev: main
+    hooks:
+      - id: style-files
+        args: [--style_pkg=styler, --style_fun=tidyverse_style]
+        exclude: ^scripts/
+      - id: lintr
+        exclude: ^scripts/
+      - id: parsable-R
+      - id: no-browser-statement
+      - id: no-debug-statement
+      - id: readme-rmd-rendered
+      - id: use-tidy-description
+      - id: deps-in-desc
+        exclude: ^(scripts/|renv/|data-raw/)
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v6.0.0
+    rev: v4.6.0
     hooks:
       - id: trailing-whitespace
         exclude: ^(renv/|\.lintr$)
       - id: end-of-file-fixer
         exclude: ^(renv/|\.lintr$)
+      - id: check-yaml
+      - id: check-added-large-files

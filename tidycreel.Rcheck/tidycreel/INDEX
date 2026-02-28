@@ -1,0 +1,18 @@
+add_counts              Attach count data to a creel design
+as_survey_design        Extract internal survey design object for
+                        advanced use
+creel_design            Create a creel survey design
+estimate_effort         Estimate total effort from a creel survey
+                        design
+example_calendar        Example calendar data for creel survey
+example_counts          Example count data for creel survey
+format.creel_design     Format a creel_design object
+format.creel_estimates
+                        Format creel_estimates for printing
+format.creel_validation
+                        Format creel_validation for printing
+print.creel_design      Print a creel_design object
+print.creel_estimates   Print creel_estimates
+print.creel_validation
+                        Print creel_validation
+summary.creel_design    Summarize a creel_design object

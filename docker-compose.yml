@@ -1,0 +1,43 @@
+services:
+  tidycreel-dev:
+    build: .
+    container_name: tidycreel-dev
+    volumes:
+      - .:/home/tidycreel
+    working_dir: /home/tidycreel
+    environment:
+      - _R_CHECK_FORCE_SUGGESTS_=false
+      - _R_CHECK_CRAN_INCOMING_REMOTE_=false
+      - R_DEFAULT_INTERNET_TIMEOUT=20
+      - LC_ALL=C.UTF-8
+    command: R
+    stdin_open: true
+    tty: true
+
+  # Service for running tests
+  tidycreel-test:
+    build: .
+    volumes:
+      - .:/home/tidycreel
+    working_dir: /home/tidycreel
+    environment:
+      - _R_CHECK_FORCE_SUGGESTS_=false
+      - _R_CHECK_CRAN_INCOMING_REMOTE_=false
+      - R_DEFAULT_INTERNET_TIMEOUT=20
+      - LC_ALL=C.UTF-8
+    command: Rscript -e "devtools::test()"
+
+  # Service for running R CMD check
+  tidycreel-check:
+    build: .
+    volumes:
+      - .:/home/tidycreel
+    working_dir: /home/tidycreel
+    environment:
+      - _R_CHECK_FORCE_SUGGESTS_=false
+      - _R_CHECK_CRAN_INCOMING_REMOTE_=false
+      - R_DEFAULT_INTERNET_TIMEOUT=20
+      - LC_ALL=C.UTF-8
+    command: Rscript -e "rcmdcheck::rcmdcheck(args = c('--no-manual', '--as-cran'), error_on='error', check_dir='check')"
+
+volumes: {}
