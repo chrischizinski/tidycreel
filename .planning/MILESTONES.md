@@ -1,5 +1,14 @@
 # Milestones
 
+## v0.4.0 Bus-Route Survey Support (Shipped: 2026-02-28)
+
+**Phases completed:** 29 phases, 51 plans, 14 tasks
+
+**Key accomplishments:**
+- (none recorded)
+
+---
+
 ## v0.1.0 Foundation - Instantaneous Counts (Shipped: 2026-02-09)
 
 **Phases completed:** 7 phases, 12 plans

@@ -10,7 +10,7 @@ Creel biologists can analyze survey data using creel vocabulary without ever und
 
 ## Current State
 
-**Latest Release:** v0.3.0 Incomplete Trips & Validation (shipped 2026-02-16)
+**Latest Release:** v0.4.0 Bus-Route Survey Support (shipped 2026-02-28)
 
 **Package Capabilities:**
 - Effort estimation from instantaneous count data (v0.1.0)
@@ -20,20 +20,15 @@ Creel biologists can analyze survey data using creel vocabulary without ever und
 - Mean-of-ratios estimator for incomplete trips with configurable truncation (v0.3.0)
 - TOST equivalence testing to validate incomplete trip assumptions (v0.3.0)
 - Complete trip defaults following Colorado C-SAP best practices (v0.3.0)
-
-## Current Milestone: v0.4.0 Bus-Route Survey Support
-
-**Goal:** Implement statistically correct bus-route (nonuniform probability) creel survey estimation based on primary source methodology, making tidycreel the ONLY R package with correct bus-route estimation.
-
-**Target features:**
-- Bus-route effort estimators with nonuniform probability sampling (πᵢ = p_site × p_period)
-- Bus-route harvest/catch estimators following Jones & Pollock (2012) Eq. 19.4-19.5
-- Enumeration expansion (n_counted / n_interviewed) - missing from all existing implementations
-- Validation against Malvestuto (1996) Box 20.6 published examples
-- Complete equation traceability to primary sources
-- Detailed walkthrough vignette demonstrating bus-route estimation workflow
+- Bus-route survey designs with nonuniform sampling probabilities (πᵢ = p_site × p_period) (v0.4.0)
+- Bus-route effort estimation implementing Jones & Pollock (2012) Eq. 19.4 with enumeration expansion (v0.4.0)
+- Bus-route harvest/catch estimation implementing Jones & Pollock (2012) Eq. 19.5 (v0.4.0)
+- Primary source validation: Malvestuto (1996) Box 20.6 reproduced exactly (E_hat = 847.5) (v0.4.0)
+- Equation traceability documentation mapping all bus-route computations to published sources (v0.4.0)
 
 ## Next Milestone Goals
+
+*To be defined with `/gsd:new-milestone`*
 
 **Future Focus Areas:**
 - Multi-species support with covariance framework (v0.5.0+)
@@ -79,6 +74,21 @@ Creel biologists can analyze survey data using creel vocabulary without ever und
 - ✓ Comprehensive 794-line vignette with scientific rationale and validation workflow — v0.3.0
 - ✓ Test coverage maintained ~90% (718 tests total) — v0.3.0
 
+**v0.4.0 - Bus-Route Survey Support** — Shipped 2026-02-28
+- ✓ Bus-route design constructor (`creel_design(survey_type = "bus_route")`) with sampling frame and probability validation — v0.4.0
+- ✓ Inclusion probability calculation: πᵢ = p_site × p_period from sampling design (not site characteristics) — v0.4.0
+- ✓ `add_interviews()` extended with enumeration counts (n_counted/n_interviewed) and automatic πᵢ join — v0.4.0
+- ✓ `estimate_effort()` bus-route dispatch implementing Jones & Pollock (2012) Eq. 19.4 — v0.4.0
+- ✓ `estimate_harvest()`/`estimate_total_catch()` bus-route dispatch implementing Jones & Pollock (2012) Eq. 19.5 — v0.4.0
+- ✓ Variance estimation via survey package (svydesign + svytotal) — v0.4.0
+- ✓ Accessor quartet: `get_sampling_frame()`, `get_inclusion_probs()`, `get_enumeration_counts()`, `get_site_contributions()` — v0.4.0
+- ✓ Primary source validation: Malvestuto (1996) Box 20.6 reproduced exactly (E_hat = 847.5 angler-hours, 1e-6 tolerance) — v0.4.0
+- ✓ Integration tests proving complete bus-route workflow wiring — v0.4.0
+- ✓ Bus-route surveys vignette: step-by-step walkthrough with educational πᵢ explanation — v0.4.0
+- ✓ Equation traceability vignette: all formulas mapped to Jones & Pollock (2012) and Malvestuto (1996) — v0.4.0
+- ✓ Test coverage maintained ~90% (1,098 tests total) — v0.4.0
+- ✓ R CMD check: 0 errors, 0 warnings; lintr: 0 issues — v0.4.0
+
 ### Active
 
 (None - Next milestone requirements to be defined with `/gsd:new-milestone`)
@@ -103,13 +113,13 @@ Creel biologists can analyze survey data using creel vocabulary without ever und
 
 ## Context
 
-**Current State (v0.3.0 shipped 2026-02-16):**
-- Package structure: 15,756 LOC R total (counts + interviews + incomplete trips)
-- Test suite: 718 tests with ~90% coverage
+**Current State (v0.4.0 shipped 2026-02-28):**
+- Package structure: 7,449 LOC R (counts + interviews + incomplete trips + bus-route)
+- Test suite: 1,098 tests with ~90% coverage
 - Quality: 0 lintr issues, R CMD check clean (0 errors, 0 warnings)
-- Documentation: Complete roxygen2 docs, example datasets, 3 vignettes (getting-started, interview-estimation, incomplete-trips)
+- Documentation: Complete roxygen2 docs, example datasets, 5 vignettes (getting-started, interview-estimation, incomplete-trips, bus-route-surveys, bus-route-equations)
 - Tech stack: R (≥4.1.0), survey, tidyverse (tidyselect, dplyr, rlang), checkmate, cli
-- Capabilities: Effort estimation (counts), CPUE/harvest estimation (interviews), total catch/harvest (delta method), incomplete trip validation (MOR + TOST)
+- Capabilities: Effort estimation (counts + bus-route), CPUE/harvest estimation (interviews), total catch/harvest (delta method + bus-route), incomplete trip validation (MOR + TOST), bus-route nonuniform probability estimation
 
 **Brownfield redesign:**
 - Existing tidycreel v1 codebase has ~40 R files covering estimators, variance, QA/QC
@@ -134,6 +144,7 @@ Creel biologists can analyze survey data using creel vocabulary without ever und
 - ✅ v0.1.0 (2026-02-09): Foundation with instantaneous counts and effort estimation
 - ✅ v0.2.0 (2026-02-11): Interview-based CPUE/harvest estimation with delta method variance
 - ✅ v0.3.0 (2026-02-16): Incomplete trips with MOR estimator, TOST validation, Colorado C-SAP compliance
+- ✅ v0.4.0 (2026-02-28): Bus-route nonuniform probability estimation (the ONLY correct R implementation), primary source validated against Malvestuto (1996)
 
 ## Constraints
 
@@ -170,6 +181,12 @@ Creel biologists can analyze survey data using creel vocabulary without ever und
 | Complete-trip default (Phase 17) | Aligns with Colorado C-SAP and roving-access design | ✓ Good — Scientifically valid default, explicit use_trips parameter for flexibility |
 | TOST for equivalence testing (Phase 19) | Proves similarity vs. failing to reject difference | ✓ Good — Standard bioequivalence approach, ±20% threshold appropriate for field data |
 | Base R graphics for validation plots (Phase 19) | Avoids additional dependencies | ✓ Good — Sufficient for diagnostic plots, consistent with package design |
+| πᵢ precomputed at construction time (Phase 21) | Validates probabilities fail-fast; not lazily | ✓ Good — Errors surface when user has context, not at estimation time |
+| p_period uniformity tolerance 1e-10 (Phase 22) | Tighter than p_site sum (1e-6) because p_period must be identical within circuit | ✓ Good — Catches floating point drift from probability calculations |
+| Bus-route dispatch BEFORE survey NULL check (Phase 24) | Bus-route uses design$interviews not design$survey (survey slot is NULL for bus-route) | ✓ Good — Correct dispatch order avoids false "no survey" errors |
+| Cross-validation uses ids=~1, strata=~day_type (Phase 26) | Mirrors implementation; plan's ids=~site weights=~1/.pi_i approach gave wrong answer (18.625 not 847.5) | ✓ Good — Discovered during Phase 26; corrected before shipping |
+| Two-vignette documentation approach (Phase 27) | Workflow vignette teaches HOW; equation traceability teaches WHY | ✓ Good — Separation serves both practitioner and statistician audiences |
+| Pure Markdown traceability vignette (Phase 27) | No executable R chunks in equation doc — reference document not tutorial | ✓ Good — Faster rendering, stable as reference material |
 
 ---
-*Last updated: 2026-02-16 after v0.4.0 milestone start*
+*Last updated: 2026-02-28 after v0.4.0 milestone completion*
