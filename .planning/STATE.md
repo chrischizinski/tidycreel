@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: unknown
-last_updated: "2026-02-26T20:19:40.872Z"
+last_updated: "2026-02-28T21:11:09.226Z"
 progress:
-  total_phases: 28
-  completed_phases: 26
-  total_plans: 49
-  completed_plans: 50
+  total_phases: 29
+  completed_phases: 27
+  total_plans: 51
+  completed_plans: 51
 ---
 
 # Project State
@@ -22,12 +22,12 @@ See: .planning/PROJECT.md (updated 2026-02-16)
 
 ## Current Position
 
-Phase: 27 of 27 (Documentation & Traceability)
-Plan: 1 complete
-Status: Phase 27 Plan 01 complete — Bus-route surveys vignette (DOCS-01, DOCS-02, DOCS-03, DOCS-05)
-Last activity: 2026-02-28 — Phase 27 Plan 01 (vignette: bus-route-surveys.Rmd, E_hat=847.5 validated) complete
+Phase: 27 of 27 (Documentation & Traceability) — PHASE COMPLETE
+Plan: 2 complete (ALL PLANS COMPLETE)
+Status: Phase 27 Plan 02 complete — Equation traceability vignette (DOCS-04) + all 21 v0.4.0 requirements [x] in REQUIREMENTS.md
+Last activity: 2026-02-28 — Phase 27 Plan 02 (vignette: bus-route-equations.Rmd, all 21 requirements complete) — v0.4.0 MILESTONE COMPLETE
 
-Progress: [█████████████░░░░░░░] 77% (50/65+ plans complete across all milestones)
+Progress: [████████████████████] 100% (51/51 plans complete across v0.4.0 milestone)
 
 ## Performance Metrics
 
@@ -45,12 +45,13 @@ Progress: [█████████████░░░░░░░] 77% (50
 | v0.1.0 | 1-7 | 12/12 | Complete | 2026-02-09 |
 | v0.2.0 | 8-12 | 10/10 | Complete | 2026-02-11 |
 | v0.3.0 | 13-20 | 16/16 | Complete | 2026-02-16 |
-| v0.4.0 | 21-27 | 9/TBD | In progress | - |
+| v0.4.0 | 21-27 | 12/12 | Complete | 2026-02-28 |
 
 **Quality Metrics (current):**
 - Test coverage: ~90% (1098 tests)
 - R CMD check: 0 errors, 0 warnings
 - lintr: 0 issues
+| Phase 27 P02 | 7 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -115,6 +116,7 @@ v0.4.0 decisions:
 - **Phase 26-01**: site_contributions column is "e_i_over_pi_i" (not "ratio"); bus-route effort method="total" (Horvitz-Thompson total, not "bus.route"/"horvitz"); Site D requires 2 interview rows to match n_interviewed=2; 15-row Box 20.6 helpers satisfy >= 2 PSU per stratum; VALID-01 golden value 287.5 and 847.5 verified to 1e-6
 - **Phase 26-02**: Cross-validation uses ids=~1, strata=~day_type (mirrors implementation); HT contribution pre-computed as effort * .expansion / .pi_i before svydesign call; plan's ids=~site weights=~1/.pi_i approach was incorrect (gave 18.625 not 847.5); VALID-05 integration tests prove complete workflow
 - **Phase 27-01**: trip_status="complete" required even for bus-route designs in add_interviews() call; vignette data row ordering matches validated test helper make_box20_6_example1() to produce E_hat=847.5; inline data (15 rows) cleaner than package dataset for this small example
+- **Phase 27-02**: DOCS-04 satisfied by 8-section pure-markdown vignette with LaTeX math (no executable R chunks); all 21 v0.4.0 requirements marked complete in REQUIREMENTS.md after Phase 27 completion
 
 ### Pending Todos
 
@@ -127,10 +129,10 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-02-28
-Stopped at: Phase 27 Plan 01 complete — Bus-route surveys vignette (DOCS-01, DOCS-02, DOCS-03, DOCS-05)
+Stopped at: Phase 27 Plan 02 complete — v0.4.0 milestone (Bus-Route Survey Support) fully complete
 Resume file: None
 
-**Next step:** Phase 27 Plan 02 — Equation traceability vignette (DOCS-04, DOCS-05 complete)
+**Next step:** v0.4.0 is complete. All 21 requirements satisfied. Ready for v0.5.0 planning or release preparation.
 
 ---
-*State last updated: 2026-02-28 after Phase 27 Plan 01 complete*
+*State last updated: 2026-02-28 after Phase 27 Plan 02 complete — v0.4.0 MILESTONE COMPLETE*
