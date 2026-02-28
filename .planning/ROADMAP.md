@@ -289,7 +289,7 @@ Plans:
 | 24. Bus-Route Effort Estimation | 0/TBD | Not started | - |
 | 25. Bus-Route Harvest Estimation | 2/2 | Complete    | 2026-02-24 |
 | 26. Primary Source Validation | 2/2 | Complete    | 2026-02-25 |
-| 27. Documentation & Traceability | 2/2 | Complete   | 2026-02-28 |
+| 27. Documentation & Traceability | 2/2 | Complete    | 2026-02-28 |
 
 ---
 *Roadmap last updated: 2026-02-25 after Phase 26 planning*
