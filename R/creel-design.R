@@ -688,6 +688,22 @@ add_counts <- function(design, counts, psu = NULL, allow_invalid = FALSE) {
 #' @param n_interviewed Tidy selector for the count of anglers actually
 #'   interviewed at the site (required for bus-route designs, ignored for
 #'   other designs). Values of 0 are valid (no anglers came off the water).
+#' @param angler_type Tidy selector for angler type column (optional, default
+#'   NULL). Use bare column names (e.g., `angler_type = angler_type`). Common
+#'   values are "bank" and "boat". Not validated in Phase 28; downstream summary
+#'   functions use this field.
+#' @param angler_method Tidy selector for angler method column (optional, default
+#'   NULL). Use bare column names (e.g., `angler_method = method_code`). Records
+#'   the fishing technique employed (e.g., "fly", "spin", "bait").
+#' @param species_sought Tidy selector for species sought column (optional, default
+#'   NULL). Use bare column names (e.g., `species_sought = target_species`).
+#'   Records the species the angler was targeting during the interview.
+#' @param n_anglers Tidy selector for the number of anglers in the party (optional,
+#'   default NULL). Use bare column names (e.g., `n_anglers = party_size`).
+#'   Values should be positive integers.
+#' @param refused Tidy selector for the refused interview flag column (optional,
+#'   default NULL). Use bare column names (e.g., `refused = refused_flag`).
+#'   Values should be logical (TRUE/FALSE) or coercible to logical.
 #' @param date_col Character name of date column in interviews (default NULL,
 #'   which uses the design's date_col). Specify explicitly if interview data
 #'   uses a different date column name than the design calendar.
@@ -805,6 +821,11 @@ add_interviews <- function(design, interviews,
                            interview_time = NULL,
                            n_counted = NULL,
                            n_interviewed = NULL,
+                           angler_type = NULL,
+                           angler_method = NULL,
+                           species_sought = NULL,
+                           n_anglers = NULL,
+                           refused = NULL,
                            date_col = NULL,
                            interview_type = c("access", "roving"),
                            allow_invalid = FALSE) {
@@ -916,6 +937,51 @@ add_interviews <- function(design, interviews,
   if (!rlang::quo_is_null(n_interviewed_quo)) {
     n_interviewed_col <- resolve_single_col(
       n_interviewed_quo, interviews, "n_interviewed", rlang::caller_env()
+    )
+  }
+
+  # Resolve angler_type column (optional)
+  angler_type_col <- NULL
+  angler_type_quo <- rlang::enquo(angler_type)
+  if (!rlang::quo_is_null(angler_type_quo)) {
+    angler_type_col <- resolve_single_col(
+      angler_type_quo, interviews, "angler_type", rlang::caller_env()
+    )
+  }
+
+  # Resolve angler_method column (optional)
+  angler_method_col <- NULL
+  angler_method_quo <- rlang::enquo(angler_method)
+  if (!rlang::quo_is_null(angler_method_quo)) {
+    angler_method_col <- resolve_single_col(
+      angler_method_quo, interviews, "angler_method", rlang::caller_env()
+    )
+  }
+
+  # Resolve species_sought column (optional)
+  species_sought_col <- NULL
+  species_sought_quo <- rlang::enquo(species_sought)
+  if (!rlang::quo_is_null(species_sought_quo)) {
+    species_sought_col <- resolve_single_col(
+      species_sought_quo, interviews, "species_sought", rlang::caller_env()
+    )
+  }
+
+  # Resolve n_anglers column (optional)
+  n_anglers_col <- NULL
+  n_anglers_quo <- rlang::enquo(n_anglers)
+  if (!rlang::quo_is_null(n_anglers_quo)) {
+    n_anglers_col <- resolve_single_col(
+      n_anglers_quo, interviews, "n_anglers", rlang::caller_env()
+    )
+  }
+
+  # Resolve refused column (optional)
+  refused_col <- NULL
+  refused_quo <- rlang::enquo(refused)
+  if (!rlang::quo_is_null(refused_quo)) {
+    refused_col <- resolve_single_col(
+      refused_quo, interviews, "refused", rlang::caller_env()
     )
   }
 
@@ -1053,6 +1119,13 @@ add_interviews <- function(design, interviews,
   new_design$n_counted_col <- n_counted_col
   new_design$n_interviewed_col <- n_interviewed_col
 
+  # Store extended interview fields
+  new_design$angler_type_col <- angler_type_col
+  new_design$angler_method_col <- angler_method_col
+  new_design$species_sought_col <- species_sought_col
+  new_design$n_anglers_col <- n_anglers_col
+  new_design$refused_col <- refused_col
+
   # Preserve class
   class(new_design) <- "creel_design"
 
@@ -1124,6 +1197,26 @@ format.creel_design <- function(x, ...) {
         if (is.na(n_complete)) n_complete <- 0L
         if (is.na(n_incomplete)) n_incomplete <- 0L
         cli::cli_text("  Trip status: {n_complete} complete, {n_incomplete} incomplete")
+      }
+      if (!is.null(x$angler_type_col)) {
+        angler_type_col <- x$angler_type_col # nolint: object_usage_linter
+        cli::cli_text("  Angler type: {.field {angler_type_col}}")
+      }
+      if (!is.null(x$angler_method_col)) {
+        angler_method_col <- x$angler_method_col # nolint: object_usage_linter
+        cli::cli_text("  Angler method: {.field {angler_method_col}}")
+      }
+      if (!is.null(x$species_sought_col)) {
+        species_sought_col <- x$species_sought_col # nolint: object_usage_linter
+        cli::cli_text("  Species sought: {.field {species_sought_col}}")
+      }
+      if (!is.null(x$n_anglers_col)) {
+        n_anglers_col <- x$n_anglers_col # nolint: object_usage_linter
+        cli::cli_text("  Party size: {.field {n_anglers_col}}")
+      }
+      if (!is.null(x$refused_col)) {
+        refused_col <- x$refused_col # nolint: object_usage_linter
+        cli::cli_text("  Refused: {.field {refused_col}}")
       }
       if (!is.null(x$interview_survey)) {
         interview_survey_class <- class(x$interview_survey)[1] # nolint: object_usage_linter
