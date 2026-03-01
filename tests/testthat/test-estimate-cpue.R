@@ -2056,3 +2056,145 @@ test_that("end-to-end integration: realistic scenario with low complete trips", 
   pct_warnings2 <- grepl("Only.*% of interviews are complete trips", warnings2, ignore.case = TRUE)
   expect_false(any(pct_warnings2))
 })
+
+# normalize_by_anglers tests ----
+
+#' Create CPUE design with n_anglers column (all party_size = 2)
+make_cpue_design_anglers_constant <- function(party_size = 2L) { # nolint: object_length_linter
+  cal <- make_test_calendar_cpue()
+  design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+  itvs <- make_test_interviews()
+  itvs$party_size <- party_size
+  add_interviews(design, itvs, catch = catch_total, effort = hours_fished, harvest = catch_kept, trip_status = trip_status, trip_duration = trip_duration, n_anglers = party_size) # nolint: object_usage_linter
+}
+
+#' Create CPUE design with n_anglers (mixed party sizes, with some NAs)
+make_cpue_design_anglers_mixed <- function() {
+  cal <- make_test_calendar_cpue()
+  design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+  itvs <- make_test_interviews()
+  # 38 valid, 2 NA (rows 1 and 21)
+  itvs$party_size <- c(NA_integer_, rep(2L, 19), NA_integer_, rep(2L, 19))
+  add_interviews(design, itvs, catch = catch_total, effort = hours_fished, harvest = catch_kept, trip_status = trip_status, trip_duration = trip_duration, n_anglers = party_size) # nolint: object_usage_linter
+}
+
+#' Create CPUE design with MOR-compatible data and n_anglers
+make_cpue_design_anglers_mor <- function() {
+  cal <- make_test_calendar_cpue()
+  design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+  itvs <- make_test_interviews()
+  # Override trip_status so we have incomplete trips for MOR
+  n <- nrow(itvs)
+  itvs$trip_status <- rep(c("incomplete", "complete"), length.out = n)
+  itvs$party_size <- rep(2L, n)
+  add_interviews(design, itvs, catch = catch_total, effort = hours_fished, harvest = catch_kept, trip_status = trip_status, trip_duration = trip_duration, n_anglers = party_size) # nolint: object_usage_linter
+}
+
+test_that("normalize_by_anglers = TRUE errors when n_anglers not in design", {
+  design <- make_cpue_design() # no n_anglers param passed to add_interviews
+
+  expect_error(
+    estimate_cpue(design, normalize_by_anglers = TRUE),
+    regexp = "n_anglers.*column"
+  )
+})
+
+test_that("normalize_by_anglers = TRUE errors when any n_anglers <= 0", {
+  cal <- make_test_calendar_cpue()
+  design_base <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+  itvs <- make_test_interviews()
+  itvs$party_size <- rep(1L, nrow(itvs))
+  itvs$party_size[1] <- 0L # one zero
+
+  d <- add_interviews(design_base, itvs, catch = catch_total, effort = hours_fished, harvest = catch_kept, trip_status = trip_status, trip_duration = trip_duration, n_anglers = party_size) # nolint: object_usage_linter
+
+  expect_error(
+    estimate_cpue(d, normalize_by_anglers = TRUE),
+    regexp = "n_anglers <= 0"
+  )
+})
+
+test_that("normalize_by_anglers = TRUE errors when any n_anglers < 0", {
+  cal <- make_test_calendar_cpue()
+  design_base <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+  itvs <- make_test_interviews()
+  itvs$party_size <- rep(2L, nrow(itvs))
+  itvs$party_size[3] <- -1L # one negative
+
+  d <- add_interviews(design_base, itvs, catch = catch_total, effort = hours_fished, harvest = catch_kept, trip_status = trip_status, trip_duration = trip_duration, n_anglers = party_size) # nolint: object_usage_linter
+
+  expect_error(
+    estimate_cpue(d, normalize_by_anglers = TRUE),
+    regexp = "n_anglers <= 0"
+  )
+})
+
+test_that("normalize_by_anglers = TRUE warns and excludes NA n_anglers rows", {
+  design <- make_cpue_design_anglers_mixed() # 2 NA party_size rows
+
+  expect_warning(
+    result <- estimate_cpue(design, normalize_by_anglers = TRUE),
+    regexp = "NA n_anglers"
+  )
+
+  # Sample size should be 38 (40 - 2 NAs excluded)
+  expect_equal(result$estimates$n, 38)
+})
+
+test_that("normalize_by_anglers = TRUE with n_anglers = 1 gives same estimate as unnormalized", {
+  design <- make_cpue_design_anglers_constant(party_size = 1L)
+
+  result_raw <- estimate_cpue(design)
+  result_norm <- estimate_cpue(design, normalize_by_anglers = TRUE)
+
+  expect_equal(result_raw$estimates$estimate, result_norm$estimates$estimate, tolerance = 1e-10)
+})
+
+test_that("normalize_by_anglers = TRUE with constant n_anglers = k gives estimate / k", {
+  design <- make_cpue_design_anglers_constant(party_size = 2L)
+
+  result_raw <- estimate_cpue(design)
+  result_norm <- estimate_cpue(design, normalize_by_anglers = TRUE)
+
+  # effort_adj = effort * 2, so CPUE per angler = CPUE per party / 2
+  ratio <- result_raw$estimates$estimate / result_norm$estimates$estimate
+  expect_equal(ratio, 2, tolerance = 1e-10)
+})
+
+test_that("normalize_by_anglers = TRUE sets method to ratio-of-means-cpue-per-angler", {
+  design <- make_cpue_design_anglers_constant()
+
+  result <- estimate_cpue(design, normalize_by_anglers = TRUE)
+
+  expect_equal(result$method, "ratio-of-means-cpue-per-angler")
+})
+
+test_that("normalize_by_anglers = TRUE with MOR estimator sets method to mean-of-ratios-cpue-per-angler", {
+  design <- make_cpue_design_anglers_mor()
+
+  result <- estimate_cpue(design,
+    normalize_by_anglers = TRUE, estimator = "mor",
+    use_trips = "incomplete"
+  )
+
+  expect_equal(result$method, "mean-of-ratios-cpue-per-angler")
+})
+
+test_that("normalize_by_anglers = TRUE format output shows normalization note", {
+  design <- make_cpue_design_anglers_constant()
+
+  result <- estimate_cpue(design, normalize_by_anglers = TRUE)
+  out <- paste(format(result), collapse = "\n")
+
+  expect_match(out, "normalized by party size")
+  expect_match(out, "per angler")
+})
+
+test_that("normalize_by_anglers = TRUE works with grouped estimation", {
+  design <- make_cpue_design_anglers_constant()
+
+  result <- estimate_cpue(design, by = day_type, normalize_by_anglers = TRUE) # nolint: object_usage_linter
+
+  expect_equal(result$method, "ratio-of-means-cpue-per-angler")
+  expect_equal(nrow(result$estimates), 2) # one row per stratum
+})
