@@ -11,7 +11,8 @@ estimate_cpue(
   conf_level = 0.95,
   estimator = "ratio-of-means",
   use_trips = NULL,
-  truncate_at = 0.5
+  truncate_at = 0.5,
+  normalize_by_anglers = FALSE
 )
 }
 \arguments{
@@ -56,14 +57,23 @@ Default is 0.5 hours (30 minutes) per Hoenig et al. (1997) to prevent
 unstable variance from very short trips. Trips with duration < truncate_at
 are excluded before MOR estimation. Set to NULL to disable truncation
 (research mode only). Ignored for ratio-of-means estimator.}
+
+\item{normalize_by_anglers}{Logical. If \code{TRUE}, scales effort by party
+size (\code{effort × n_anglers}) before estimation, producing catch per
+angler-hour instead of catch per party-hour. Requires \code{n_anglers} to
+have been provided to \code{\link{add_interviews}}. Errors if
+\code{n_anglers_col} is NULL, if any \code{n_anglers} value is <= 0, or
+warns and excludes rows where \code{n_anglers} is NA. Default \code{FALSE}
+preserves existing behavior (backward compatible).}
 }
 \value{
 A creel_estimates S3 object (list) with components: estimates
 (tibble with estimate, se, ci_lower, ci_upper, n columns, plus grouping
 columns if \code{by} is specified), method (character: "ratio-of-means-cpue"
-or "mean-of-ratios-cpue"), variance_method (character: reflects the variance
-parameter value used), design (reference to source creel_design), conf_level
-(numeric), and by_vars (character vector of grouping variable names or NULL).
+or "mean-of-ratios-cpue", with "-per-angler" suffix when normalized),
+variance_method (character: reflects the variance parameter value used),
+design (reference to source creel_design), conf_level (numeric), and
+by_vars (character vector of grouping variable names or NULL).
 }
 \description{
 Computes CPUE estimates with standard errors and confidence intervals

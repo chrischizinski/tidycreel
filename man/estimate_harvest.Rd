@@ -10,7 +10,8 @@ estimate_harvest(
   variance = "taylor",
   conf_level = 0.95,
   verbose = FALSE,
-  use_trips = NULL
+  use_trips = NULL,
+  normalize_by_anglers = FALSE
 )
 }
 \arguments{
@@ -39,14 +40,23 @@ which estimator path was used. Default FALSE.}
 bus-route estimation. One of \code{"complete"} (default),
 \code{"incomplete"} (pi_i-weighted MOR), or \code{"diagnostic"} (both).
 Ignored for non-bus-route designs.}
+
+\item{normalize_by_anglers}{Logical. If \code{TRUE}, scales effort by party
+size (\code{effort × n_anglers}) before estimation, producing harvest per
+angler-hour instead of harvest per party-hour. Requires \code{n_anglers} to
+have been provided to \code{\link{add_interviews}}. Errors if
+\code{n_anglers_col} is NULL, if any \code{n_anglers} value is <= 0, or
+warns and excludes rows where \code{n_anglers} is NA. Default \code{FALSE}
+preserves existing behavior (backward compatible).}
 }
 \value{
 A creel_estimates S3 object (list) with components: estimates
 (tibble with estimate, se, ci_lower, ci_upper, n columns, plus grouping
-columns if \code{by} is specified), method (character: "ratio-of-means-hpue"),
-variance_method (character: reflects the variance parameter value used),
-design (reference to source creel_design), conf_level (numeric), and
-by_vars (character vector of grouping variable names or NULL).
+columns if \code{by} is specified), method (character: "ratio-of-means-hpue",
+with "-per-angler" suffix when normalized), variance_method (character:
+reflects the variance parameter value used), design (reference to source
+creel_design), conf_level (numeric), and by_vars (character vector of
+grouping variable names or NULL).
 For bus-route designs, a "site_contributions" attribute is also present.
 }
 \description{
