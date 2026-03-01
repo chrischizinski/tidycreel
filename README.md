@@ -8,11 +8,9 @@ output: github_document
   <img src="https://raw.githubusercontent.com/chrischizinski/tidycreel/main/man/figures/tidycreel-hex.png" alt="tidycreel hex sticker" width="200"/>
 </p>
 
-<p align="center">
 [![R-CMD-check](https://github.com/chrischizinski/tidycreel/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/chrischizinski/tidycreel/actions/workflows/R-CMD-check.yaml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
-</p>
 
 **Tidy Interface for Creel Survey Design and Analysis**
 

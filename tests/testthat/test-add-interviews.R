@@ -1377,3 +1377,221 @@ test_that("print includes Enumeration Counts section for bus-route with intervie
   out <- capture.output(print(d))
   expect_true(any(grepl("Enumeration Counts", out)))
 })
+
+# Extended interview fields (Phase 28) ----
+
+#' Create test interview data with extended party-level fields
+#' Extends make_test_interviews() with the five new Phase 28 columns.
+make_extended_interviews <- function() {
+  df <- make_test_interviews()
+  df$angler_type <- rep(c("bank", "boat"), length.out = nrow(df))
+  df$angler_method <- rep(c("fly", "spin", "bait"), length.out = nrow(df))
+  df$species_sought <- rep(c("trout", "bass"), length.out = nrow(df))
+  df$n_anglers <- c(1L, 2L, 1L, 3L, 1L, 2L, 1L, 1L, 2L, 1L)
+  df$refused <- c(FALSE, FALSE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE)
+  df
+}
+
+# NULL-default tests (INTV-06: backward compatibility) ----
+
+test_that("add_interviews stores angler_type_col as NULL when angler_type not provided", {
+  design <- make_interview_test_design()
+  interviews <- make_test_interviews()
+  result <- add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration
+  )
+  expect_null(result$angler_type_col)
+})
+
+test_that("add_interviews stores angler_method_col as NULL when angler_method not provided", {
+  design <- make_interview_test_design()
+  interviews <- make_test_interviews()
+  result <- add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration
+  )
+  expect_null(result$angler_method_col)
+})
+
+test_that("add_interviews stores species_sought_col as NULL when species_sought not provided", {
+  design <- make_interview_test_design()
+  interviews <- make_test_interviews()
+  result <- add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration
+  )
+  expect_null(result$species_sought_col)
+})
+
+test_that("add_interviews stores n_anglers_col as NULL when n_anglers not provided", {
+  design <- make_interview_test_design()
+  interviews <- make_test_interviews()
+  result <- add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration
+  )
+  expect_null(result$n_anglers_col)
+})
+
+test_that("add_interviews stores refused_col as NULL when refused not provided", {
+  design <- make_interview_test_design()
+  interviews <- make_test_interviews()
+  result <- add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration
+  )
+  expect_null(result$refused_col)
+})
+
+# Stored-when-provided tests (INTV-01 through INTV-05) ----
+
+test_that("add_interviews stores angler_type_col when angler_type provided", {
+  design <- make_interview_test_design()
+  interviews <- make_extended_interviews()
+  result <- add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration,
+    angler_type = angler_type
+  )
+  expect_equal(result$angler_type_col, "angler_type")
+})
+
+test_that("add_interviews stores angler_method_col when angler_method provided", {
+  design <- make_interview_test_design()
+  interviews <- make_extended_interviews()
+  result <- add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration,
+    angler_method = angler_method
+  )
+  expect_equal(result$angler_method_col, "angler_method")
+})
+
+test_that("add_interviews stores species_sought_col when species_sought provided", {
+  design <- make_interview_test_design()
+  interviews <- make_extended_interviews()
+  result <- add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration,
+    species_sought = species_sought
+  )
+  expect_equal(result$species_sought_col, "species_sought")
+})
+
+test_that("add_interviews stores n_anglers_col when n_anglers provided", {
+  design <- make_interview_test_design()
+  interviews <- make_extended_interviews()
+  result <- add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration,
+    n_anglers = n_anglers
+  )
+  expect_equal(result$n_anglers_col, "n_anglers")
+})
+
+test_that("add_interviews stores refused_col when refused provided", {
+  design <- make_interview_test_design()
+  interviews <- make_extended_interviews()
+  result <- add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration,
+    refused = refused
+  )
+  expect_equal(result$refused_col, "refused")
+})
+
+# Print method tests ----
+
+test_that("format.creel_design shows angler_type_col when present", {
+  design <- make_interview_test_design()
+  interviews <- make_extended_interviews()
+  result <- add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration,
+    angler_type = angler_type
+  )
+  output <- paste(format(result), collapse = "\n")
+  expect_match(output, "Angler type")
+})
+
+test_that("format.creel_design shows angler_method_col when present", {
+  design <- make_interview_test_design()
+  interviews <- make_extended_interviews()
+  result <- add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration,
+    angler_method = angler_method
+  )
+  output <- paste(format(result), collapse = "\n")
+  expect_match(output, "Angler method")
+})
+
+test_that("format.creel_design shows species_sought_col when present", {
+  design <- make_interview_test_design()
+  interviews <- make_extended_interviews()
+  result <- add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration,
+    species_sought = species_sought
+  )
+  output <- paste(format(result), collapse = "\n")
+  expect_match(output, "Species sought")
+})
+
+test_that("format.creel_design shows n_anglers_col when present", {
+  design <- make_interview_test_design()
+  interviews <- make_extended_interviews()
+  result <- add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration,
+    n_anglers = n_anglers
+  )
+  output <- paste(format(result), collapse = "\n")
+  expect_match(output, "Party size")
+})
+
+test_that("format.creel_design shows refused_col when present", {
+  design <- make_interview_test_design()
+  interviews <- make_extended_interviews()
+  result <- add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration,
+    refused = refused
+  )
+  output <- paste(format(result), collapse = "\n")
+  expect_match(output, "Refused")
+})
+
+# Backward-compatibility regression test (INTV-06) ----
+
+test_that("add_interviews with no new params is backward-compatible with pre-Phase-28 calls", {
+  design <- make_interview_test_design()
+  interviews <- make_test_interviews()
+  result <- add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration
+  )
+  expect_null(result$angler_type_col)
+  expect_null(result$angler_method_col)
+  expect_null(result$species_sought_col)
+  expect_null(result$n_anglers_col)
+  expect_null(result$refused_col)
+  expect_s3_class(result, "creel_design")
+})
