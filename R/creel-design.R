@@ -688,6 +688,22 @@ add_counts <- function(design, counts, psu = NULL, allow_invalid = FALSE) {
 #' @param n_interviewed Tidy selector for the count of anglers actually
 #'   interviewed at the site (required for bus-route designs, ignored for
 #'   other designs). Values of 0 are valid (no anglers came off the water).
+#' @param angler_type Tidy selector for angler type column (optional, default
+#'   NULL). Use bare column names (e.g., `angler_type = angler_type`). Common
+#'   values are "bank" and "boat". Not validated in Phase 28; downstream summary
+#'   functions use this field.
+#' @param angler_method Tidy selector for angler method column (optional, default
+#'   NULL). Use bare column names (e.g., `angler_method = method_code`). Records
+#'   the fishing technique employed (e.g., "fly", "spin", "bait").
+#' @param species_sought Tidy selector for species sought column (optional, default
+#'   NULL). Use bare column names (e.g., `species_sought = target_species`).
+#'   Records the species the angler was targeting during the interview.
+#' @param n_anglers Tidy selector for the number of anglers in the party (optional,
+#'   default NULL). Use bare column names (e.g., `n_anglers = party_size`).
+#'   Values should be positive integers.
+#' @param refused Tidy selector for the refused interview flag column (optional,
+#'   default NULL). Use bare column names (e.g., `refused = refused_flag`).
+#'   Values should be logical (TRUE/FALSE) or coercible to logical.
 #' @param date_col Character name of date column in interviews (default NULL,
 #'   which uses the design's date_col). Specify explicitly if interview data
 #'   uses a different date column name than the design calendar.
@@ -805,6 +821,11 @@ add_interviews <- function(design, interviews,
                            interview_time = NULL,
                            n_counted = NULL,
                            n_interviewed = NULL,
+                           angler_type = NULL,
+                           angler_method = NULL,
+                           species_sought = NULL,
+                           n_anglers = NULL,
+                           refused = NULL,
                            date_col = NULL,
                            interview_type = c("access", "roving"),
                            allow_invalid = FALSE) {
