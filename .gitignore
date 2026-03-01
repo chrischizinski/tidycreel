@@ -12,6 +12,9 @@ Thumbs.db
 # Build artifacts
 /doc/
 /Meta/
+/check/
+/*.Rcheck/
+/*.tar.gz
 *.html
 *.pdf
 
