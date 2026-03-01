@@ -26,6 +26,15 @@ inst/doc
 .idea/
 .claude/
 .roo/
+.serena/
+.mcp.json
+.python-version
+.yamllint
+.markdownlint.json
+
+# AI workflow planning (local use only)
+.planning/
+.planning-legacy-work/
 
 # Logs
 *.log
