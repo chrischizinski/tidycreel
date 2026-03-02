@@ -1894,3 +1894,230 @@ validate_br_interviews_tier3 <- function(interviews, design,
 
   invisible(NULL)
 }
+
+
+#' Attach species-level catch data to a creel design
+#'
+#' Attaches a long-format data frame of species-level catch data to a
+#' \code{creel_design} object. Each row in \code{data} represents a
+#' species-catch-type combination for a single interview. Data is
+#' validated at attach time and stored on the design for use by downstream
+#' summary and estimation functions.
+#'
+#' @param design A \code{creel_design} object created by \code{\link{creel_design}}.
+#' @param data A data frame in long format: one row per species per catch type per interview.
+#' @param catch_uid <\link[tidyselect]{tidyselect}> Column in \code{data} containing
+#'   interview IDs (the catch-side join key).
+#' @param interview_uid <\link[tidyselect]{tidyselect}> Column in
+#'   \code{design$interviews} containing the matching interview IDs.
+#' @param species <\link[tidyselect]{tidyselect}> Column in \code{data} containing
+#'   species names or codes.
+#' @param count <\link[tidyselect]{tidyselect}> Column in \code{data} containing
+#'   fish counts (non-negative integer or numeric).
+#' @param catch_type <\link[tidyselect]{tidyselect}> Column in \code{data} containing
+#'   catch fate: one of \code{"caught"}, \code{"harvested"}, or \code{"released"}.
+#'   Values are normalized to lowercase before validation.
+#'
+#' @details
+#' \strong{Catch type model:} Each species-interview row carries one of three
+#' catch types. \code{"caught"} is the total; \code{"harvested"} and
+#' \code{"released"} are subsets. A \code{"caught"} row is optional — when
+#' absent, total catch is inferred as \code{harvested + released}. When a
+#' \code{"caught"} row is present, \code{caught >= harvested + released} is
+#' enforced (CATCH-04).
+#'
+#' \strong{Interview ID validation:} Every interview ID appearing in \code{data}
+#' must appear in \code{design$interviews[[interview_uid]]}. Interviews with no
+#' catch rows are valid (anglers who caught nothing need not appear in catch
+#' data).
+#'
+#' \strong{Immutability:} Returns a new \code{creel_design} — the input is not
+#' modified. Calling \code{add_catch()} on a design that already has
+#' \code{$catch} is an error.
+#'
+#' @return A new \code{creel_design} object with \code{$catch} and associated
+#'   \code{$catch_*_col} fields attached.
+#'
+#' @examples
+#' \dontrun{
+#' data(example_calendar)
+#' data(example_interviews)
+#' data(example_catch)
+#'
+#' design <- creel_design(example_calendar, date = date, strata = day_type)
+#' design <- add_interviews(design, example_interviews,
+#'   catch = catch_total, effort = hours_fished, harvest = catch_kept,
+#'   trip_status = trip_status, trip_duration = trip_duration
+#' )
+#' design <- add_catch(design, example_catch,
+#'   catch_uid = interview_id,
+#'   interview_uid = interview_id,
+#'   species = species,
+#'   count = count,
+#'   catch_type = catch_type
+#' )
+#' print(design)
+#' }
+#'
+#' @export
+add_catch <- function(design, data,
+                      catch_uid,
+                      interview_uid,
+                      species,
+                      count,
+                      catch_type) {
+  # Guard: must be a creel_design
+  if (!inherits(design, "creel_design")) {
+    cli::cli_abort(
+      "{.arg design} must be a {.cls creel_design} object."
+    )
+  }
+
+  # Guard: immutability — catch already attached
+  # Use [[ for exact matching (avoids partial match of $catch against $catch_col etc.)
+  if (!is.null(design[["catch"]])) {
+    cli::cli_abort(c(
+      "This design already has catch data attached.",
+      "i" = "Use immutable workflow: {.code design2 <- add_catch(design, data, ...)}"
+    ))
+  }
+
+  # Guard: interviews must exist before catch
+  if (is.null(design$interviews)) {
+    cli::cli_abort(c(
+      "Interviews must be attached before catch data.",
+      "i" = "Call {.fn add_interviews} first, then {.fn add_catch}."
+    ))
+  }
+
+  # Resolve tidy selectors
+  catch_uid_col <- resolve_single_col(
+    rlang::enquo(catch_uid), data, "catch_uid", rlang::caller_env()
+  )
+  interview_uid_col <- resolve_single_col(
+    rlang::enquo(interview_uid), design$interviews, "interview_uid", rlang::caller_env()
+  )
+  species_col <- resolve_single_col(
+    rlang::enquo(species), data, "species", rlang::caller_env()
+  )
+  count_col <- resolve_single_col(
+    rlang::enquo(count), data, "count", rlang::caller_env()
+  )
+  catch_type_col <- resolve_single_col(
+    rlang::enquo(catch_type), data, "catch_type", rlang::caller_env()
+  )
+
+  # Normalize catch_type to lowercase
+  data[[catch_type_col]] <- tolower(data[[catch_type_col]])
+
+  # Validate catch_type values
+  valid_types <- c("caught", "harvested", "released")
+  bad_types <- setdiff(unique(data[[catch_type_col]]), valid_types)
+  if (length(bad_types) > 0) {
+    cli::cli_abort(c(
+      "Invalid {.field catch_type} value{?s}: {.val {bad_types}}",
+      "i" = "Accepted values: {.val {valid_types}}"
+    ))
+  }
+
+  # Validate interview ID join (CATCH-02)
+  catch_ids <- unique(data[[catch_uid_col]])
+  interview_ids <- design$interviews[[interview_uid_col]]
+  unmatched <- setdiff(catch_ids, interview_ids)
+  if (length(unmatched) > 0) {
+    cli::cli_abort(c(
+      "{length(unmatched)} interview ID{?s} in catch data not found in design interviews:",
+      stats::setNames(
+        paste0("{.val ", unmatched, "}"),
+        rep("x", length(unmatched))
+      ),
+      "i" = "Every catch row must reference an interview in the design."
+    ))
+  }
+
+  # Validate caught >= harvested + released per species-interview (CATCH-04)
+  caught_rows <- data[data[[catch_type_col]] == "caught", ]
+  if (nrow(caught_rows) > 0) {
+    sub_rows <- data[data[[catch_type_col]] %in% c("harvested", "released"), ]
+    if (nrow(sub_rows) > 0) {
+      sub_agg <- stats::aggregate(
+        sub_rows[[count_col]],
+        by = list(uid = sub_rows[[catch_uid_col]], species = sub_rows[[species_col]]),
+        FUN = sum
+      )
+      names(sub_agg)[3] <- "sub_total"
+    } else {
+      sub_agg <- data.frame(uid = character(0), species = character(0), sub_total = numeric(0))
+    }
+    caught_agg <- stats::aggregate(
+      caught_rows[[count_col]],
+      by = list(uid = caught_rows[[catch_uid_col]], species = caught_rows[[species_col]]),
+      FUN = sum
+    )
+    names(caught_agg)[3] <- "caught_total"
+    combined <- merge(caught_agg, sub_agg, by = c("uid", "species"), all.x = TRUE)
+    combined$sub_total[is.na(combined$sub_total)] <- 0L
+    violations <- combined[combined$caught_total < combined$sub_total, ]
+    if (nrow(violations) > 0) {
+      bad_pairs <- paste0(violations$uid, "/", violations$species) # nolint: object_usage_linter
+      cli::cli_abort(c(
+        "Harvest + release exceeds catch for {nrow(violations)} species-interview pair{?s}:",
+        stats::setNames(
+          paste0("{.val ", bad_pairs, "}"),
+          rep("x", length(bad_pairs))
+        ),
+        "i" = paste0(
+          "caught must be >= harvested + released for each species-interview combination."
+        )
+      ))
+    }
+  }
+
+  # Consistency check against interview-level catch_col (warning only)
+  if (!is.null(design$catch_col) && design$catch_col %in% names(design$interviews)) {
+    caught_only <- data[data[[catch_type_col]] == "caught", ]
+    if (nrow(caught_only) > 0) {
+      totals_from_catch <- stats::aggregate(
+        caught_only[[count_col]],
+        by = list(uid = caught_only[[catch_uid_col]]),
+        FUN = sum
+      )
+    } else {
+      sub_data <- data[data[[catch_type_col]] %in% c("harvested", "released"), ]
+      totals_from_catch <- stats::aggregate(
+        sub_data[[count_col]],
+        by = list(uid = sub_data[[catch_uid_col]]),
+        FUN = sum
+      )
+    }
+    names(totals_from_catch)[2] <- "catch_implied"
+    intv_totals <- design$interviews[, c(interview_uid_col, design$catch_col), drop = FALSE]
+    names(intv_totals) <- c("uid", "catch_intv")
+    check <- merge(totals_from_catch, intv_totals, by = "uid", all.x = TRUE)
+    diverged <- check[!is.na(check$catch_intv) & check$catch_implied != check$catch_intv, ]
+    if (nrow(diverged) > 0) {
+      n_div <- nrow(diverged) # nolint: object_usage_linter
+      cli::cli_warn(c(
+        "!" = paste0(
+          "Catch totals in catch data diverge from interview-level ",
+          "{.field {design$catch_col}} for {n_div} interview{?s}."
+        ),
+        "i" = paste0(
+          "This is advisory. Real creel data may differ legitimately ",
+          "(partial species recording)."
+        )
+      ))
+    }
+  }
+
+  # Build new design and store (immutable copy)
+  new_design <- design
+  new_design$catch <- data
+  new_design$catch_uid_col <- catch_uid_col
+  new_design$catch_interview_uid_col <- interview_uid_col
+  new_design$catch_species_col <- species_col
+  new_design$catch_count_col <- count_col
+  new_design$catch_type_col <- catch_type_col
+  class(new_design) <- "creel_design"
+  new_design
+}
