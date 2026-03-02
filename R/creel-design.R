@@ -1239,6 +1239,34 @@ format.creel_design <- function(x, ...) {
       cli::cli_text("  {paste(type_parts, collapse = ', ')}")
     }
 
+    # Length Data section
+    has_lengths <- !is.null(x[["lengths"]]) # nolint: object_usage_linter
+    if (has_lengths) {
+      n_length_rows <- nrow(x[["lengths"]]) # nolint: object_usage_linter
+      n_length_species <- length(unique(x[["lengths"]][[x$lengths_species_col]])) # nolint: object_usage_linter
+      harvest_len_rows <- x[["lengths"]][x[["lengths"]][[x$lengths_type_col]] == "harvest", ]
+      release_len_rows <- x[["lengths"]][x[["lengths"]][[x$lengths_type_col]] == "release", ]
+      n_harvest <- nrow(harvest_len_rows) # nolint: object_usage_linter
+      n_release <- nrow(release_len_rows) # nolint: object_usage_linter
+      numeric_lengths <- suppressWarnings(as.numeric(harvest_len_rows[[x$lengths_length_col]]))
+      rel_fmt <- if (!is.null(x$lengths_release_format)) x$lengths_release_format else "individual"
+      if (rel_fmt == "individual" && nrow(release_len_rows) > 0) {
+        rel_lengths <- suppressWarnings(as.numeric(release_len_rows[[x$lengths_length_col]]))
+        numeric_lengths <- c(numeric_lengths, rel_lengths[!is.na(rel_lengths)])
+      }
+      len_min <- min(numeric_lengths, na.rm = TRUE) # nolint: object_usage_linter
+      len_max <- max(numeric_lengths, na.rm = TRUE) # nolint: object_usage_linter
+      cli::cli_text(
+        "Length Data: {.val {n_length_rows}} row{?s}, {.val {n_length_species}} species, length: {len_min}\u2013{len_max} mm" # nolint: line_length_linter
+      )
+      cli::cli_text("  harvest: {n_harvest} individual")
+      if (n_release > 0) {
+        cli::cli_text("  release: {n_release} {rel_fmt}")
+      } else {
+        cli::cli_text("  release: none")
+      }
+    }
+
     # Bus-Route section
     if (!is.null(x$bus_route)) {
       br <- x$bus_route$data
@@ -2131,6 +2159,241 @@ add_catch <- function(design, data,
   new_design$catch_species_col <- species_col
   new_design$catch_count_col <- count_col
   new_design$catch_type_col <- catch_type_col
+  class(new_design) <- "creel_design"
+  new_design
+}
+
+#' Attach fish length frequency data to a creel design
+#'
+#' Attaches a long-format data frame of fish length measurements to a
+#' \code{creel_design} object. Supports both individual measurements (harvest)
+#' and binned counts (release). Data is validated at attach time and stored
+#' on the design for use by downstream summary and estimation functions.
+#'
+#' @param design A \code{creel_design} object created by \code{\link{creel_design}}.
+#' @param data A data frame in long format: one row per fish measurement or
+#'   length bin per species per interview.
+#' @param length_uid <\link[tidyselect]{tidyselect}> Column in \code{data}
+#'   containing interview IDs (the length-side join key).
+#' @param interview_uid <\link[tidyselect]{tidyselect}> Column in
+#'   \code{design$interviews} containing the matching interview IDs.
+#' @param species <\link[tidyselect]{tidyselect}> Column in \code{data}
+#'   containing species names or codes.
+#' @param length <\link[tidyselect]{tidyselect}> Column in \code{data}
+#'   containing length values. For harvest rows (when
+#'   \code{release_format = "individual"}), must be numeric (mm). For release
+#'   rows when \code{release_format = "binned"}, may be a character bin label
+#'   such as \code{"300-350"}.
+#' @param length_type <\link[tidyselect]{tidyselect}> Column in \code{data}
+#'   containing the measurement fate: one of \code{"harvest"} or
+#'   \code{"release"}. Values are normalized to lowercase before validation.
+#' @param count <\link[tidyselect]{tidyselect}> Optional. Column in \code{data}
+#'   containing fish counts for binned release rows. Required when
+#'   \code{release_format = "binned"} and release rows are present. Harvest
+#'   rows should have \code{NA} in this column. Omit (or pass \code{NULL})
+#'   when all length data are individual measurements.
+#' @param release_format Character scalar: \code{"individual"} (default) or
+#'   \code{"binned"}. Controls how release rows are validated and how the
+#'   length range is computed for display.
+#'
+#' @details
+#' \strong{Mixed column type footgun:} The \code{length} column may contain
+#' both numeric values (harvest rows) and character bin labels (release rows).
+#' R will coerce the entire column to character when mixing types in a
+#' \code{data.frame}. \code{add_lengths()} validates harvest row lengths by
+#' subsetting to harvest rows first, then attempting \code{as.numeric()}
+#' coercion, to avoid errors from the mixed-type column.
+#'
+#' \strong{Interview ID validation:} Every interview ID appearing in \code{data}
+#' must appear in \code{design$interviews[[interview_uid]]}. Interviews with no
+#' length rows are valid.
+#'
+#' \strong{Immutability:} Returns a new \code{creel_design} — the input is not
+#' modified. Calling \code{add_lengths()} on a design that already has
+#' \code{$lengths} is an error.
+#'
+#' @return A new \code{creel_design} object with \code{$lengths} and associated
+#'   \code{$lengths_*_col} fields attached.
+#'
+#' @examples
+#' \dontrun{
+#' data(example_calendar)
+#' data(example_interviews)
+#' data(example_lengths)
+#'
+#' design <- creel_design(example_calendar, date = date, strata = day_type)
+#' design <- add_interviews(design, example_interviews,
+#'   catch = catch_total, effort = hours_fished, harvest = catch_kept,
+#'   trip_status = trip_status, trip_duration = trip_duration
+#' )
+#' design <- add_lengths(design, example_lengths,
+#'   length_uid = interview_id,
+#'   interview_uid = interview_id,
+#'   species = species,
+#'   length = length,
+#'   length_type = length_type,
+#'   count = count,
+#'   release_format = "binned"
+#' )
+#' print(design)
+#' }
+#'
+#' @export
+add_lengths <- function(design, data,
+                        length_uid,
+                        interview_uid,
+                        species,
+                        length,
+                        length_type,
+                        count = NULL,
+                        release_format = "individual") {
+  # Guard: must be a creel_design
+  if (!inherits(design, "creel_design")) {
+    cli::cli_abort("{.arg design} must be a {.cls creel_design} object.")
+  }
+
+  # Guard: immutability — use [[ to avoid partial matching $lengths_uid_col etc.
+  if (!is.null(design[["lengths"]])) {
+    cli::cli_abort(c(
+      "This design already has length data attached.",
+      "i" = "Use immutable workflow: {.code design2 <- add_lengths(design, data, ...)}"
+    ))
+  }
+
+  # Guard: interviews must exist first
+  if (is.null(design$interviews)) {
+    cli::cli_abort(c(
+      "Interviews must be attached before length data.",
+      "i" = "Call {.fn add_interviews} before {.fn add_lengths}."
+    ))
+  }
+
+  # Validate release_format
+  valid_formats <- c("individual", "binned")
+  if (!release_format %in% valid_formats) {
+    cli::cli_abort(c(
+      "Invalid {.arg release_format}: {.val {release_format}}",
+      "i" = "Accepted values: {.val {valid_formats}}"
+    ))
+  }
+
+  # Resolve tidy selectors
+  length_uid_col <- resolve_single_col(
+    rlang::enquo(length_uid), data, "length_uid", rlang::caller_env()
+  )
+  interview_uid_col <- resolve_single_col(
+    rlang::enquo(interview_uid), design$interviews, "interview_uid", rlang::caller_env()
+  )
+  species_col <- resolve_single_col(
+    rlang::enquo(species), data, "species", rlang::caller_env()
+  )
+  length_col <- resolve_single_col(
+    rlang::enquo(length), data, "length", rlang::caller_env()
+  )
+  type_col <- resolve_single_col(
+    rlang::enquo(length_type), data, "length_type", rlang::caller_env()
+  )
+
+  # Handle optional count argument — check enexpr BEFORE enquo
+  count_supplied <- !is.null(rlang::enexpr(count))
+  if (count_supplied) {
+    count_col <- resolve_single_col(rlang::enquo(count), data, "count", rlang::caller_env())
+  } else {
+    count_col <- NULL
+  }
+
+  # Normalize length_type to lowercase silently
+  data[[type_col]] <- tolower(data[[type_col]])
+
+  # Validate length_type values
+  valid_types <- c("harvest", "release")
+  bad_types <- setdiff(unique(data[[type_col]]), valid_types)
+  if (length(bad_types) > 0) {
+    cli::cli_abort(c(
+      "Invalid {.field length_type} value{?s}: {.val {bad_types}}",
+      "i" = "Accepted values: {.val {valid_types}}"
+    ))
+  }
+
+  # Validate interview ID join (LEN-03)
+  length_ids <- unique(data[[length_uid_col]])
+  interview_ids <- design$interviews[[interview_uid_col]]
+  unmatched <- setdiff(length_ids, interview_ids)
+  if (length(unmatched) > 0) {
+    cli::cli_abort(c(
+      "{length(unmatched)} interview ID{?s} in length data not found in design interviews:",
+      stats::setNames(paste0("{.val ", unmatched, "}"), rep("x", length(unmatched))),
+      "i" = "Every length row must reference an interview in the design."
+    ))
+  }
+
+  # Validate harvest length values (LEN-04) — subset first to avoid mixed-type coercion
+  harvest_rows <- data[data[[type_col]] == "harvest", ]
+  if (nrow(harvest_rows) > 0) {
+    harvest_lengths <- suppressWarnings(as.numeric(harvest_rows[[length_col]]))
+    if (any(is.na(harvest_lengths))) {
+      cli::cli_abort(c(
+        "Harvest {.field length} values must be numeric (mm).",
+        "i" = "Non-numeric or NA length found in harvest rows."
+      ))
+    }
+    if (any(harvest_lengths <= 0)) {
+      cli::cli_abort(c(
+        "Harvest {.field length} values must be positive.",
+        "i" = "All harvest lengths must be > 0 mm."
+      ))
+    }
+  }
+
+  # Validate release rows (LEN-04)
+  release_rows <- data[data[[type_col]] == "release", ]
+  if (nrow(release_rows) > 0 && release_format == "binned") {
+    if (is.null(count_col)) {
+      cli::cli_abort(c(
+        "{.arg count} is required when {.arg release_format} is {.val \"binned\"} and release rows are present.",
+        "i" = "Supply the column containing per-bin fish counts."
+      ))
+    }
+    release_counts <- release_rows[[count_col]]
+    if (any(is.na(release_counts))) {
+      cli::cli_abort(c(
+        "Release {.field count} values must not be NA.",
+        "i" = "Every release row must have a positive integer count."
+      ))
+    }
+    if (any(as.numeric(release_counts) <= 0)) {
+      cli::cli_abort(c(
+        "Release {.field count} values must be positive.",
+        "i" = "All release row counts must be > 0."
+      ))
+    }
+  }
+  if (nrow(release_rows) > 0 && release_format == "individual") {
+    release_lengths <- suppressWarnings(as.numeric(release_rows[[length_col]]))
+    if (any(is.na(release_lengths))) {
+      cli::cli_abort(c(
+        "Release {.field length} values must be numeric when {.arg release_format} is {.val \"individual\"}.",
+        "i" = "Non-numeric or NA length found in release rows."
+      ))
+    }
+    if (any(release_lengths <= 0)) {
+      cli::cli_abort(c(
+        "Release {.field length} values must be positive when {.arg release_format} is {.val \"individual\"}.",
+        "i" = "All release lengths must be > 0 mm."
+      ))
+    }
+  }
+
+  # Build new design (immutable copy)
+  new_design <- design
+  new_design$lengths <- data
+  new_design$lengths_uid_col <- length_uid_col
+  new_design$lengths_interview_uid_col <- interview_uid_col
+  new_design$lengths_species_col <- species_col
+  new_design$lengths_length_col <- length_col
+  new_design$lengths_type_col <- type_col
+  new_design$lengths_count_col <- count_col
+  new_design$lengths_release_format <- release_format
   class(new_design) <- "creel_design"
   new_design
 }

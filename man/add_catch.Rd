@@ -67,11 +67,11 @@ design <- add_interviews(design, example_interviews,
   trip_status = trip_status, trip_duration = trip_duration
 )
 design <- add_catch(design, example_catch,
-  catch_uid    = interview_id,
+  catch_uid = interview_id,
   interview_uid = interview_id,
-  species      = species,
-  count        = count,
-  catch_type   = catch_type
+  species = species,
+  count = count,
+  catch_type = catch_type
 )
 print(design)
 }
