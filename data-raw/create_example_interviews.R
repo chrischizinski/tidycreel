@@ -62,15 +62,63 @@ example_interviews <- data.frame(
     2.0, 2.5,
     3.0, 0.5, 4.0
   ),
+  interview_id = 1L:22L,
+  angler_type = c(
+    "bank", "boat", "bank", "bank",
+    "boat", "boat", "bank",
+    "bank", "boat", "bank",
+    "boat", "boat", "bank",
+    "bank", "boat",
+    "bank", "bank",
+    "boat", "bank",
+    "bank", "boat", "bank"
+  ),
+  angler_method = c(
+    "bait", "artificial", "bait", "fly",
+    "artificial", "bait", "bait",
+    "fly", "artificial", "bait",
+    "artificial", "bait", "fly",
+    "bait", "artificial",
+    "bait", "fly",
+    "artificial", "bait",
+    "fly", "artificial", "bait"
+  ),
+  species_sought = c(
+    "walleye", "walleye", "bass", "panfish",
+    "walleye", "bass", "panfish",
+    "panfish", "walleye", "bass",
+    "walleye", "walleye", "bass",
+    "walleye", "panfish",
+    "bass", "walleye",
+    "walleye", "bass",
+    "walleye", "panfish", "walleye"
+  ),
+  n_anglers = c(
+    2L, 1L, 3L, 2L,
+    1L, 4L, 1L,
+    2L, 2L, 1L,
+    3L, 2L, 1L,
+    4L, 2L,
+    1L, 2L,
+    3L, 1L,
+    2L, 1L, 4L
+  ),
+  refused = rep(FALSE, 22L),
   stringsAsFactors = FALSE
 )
 
-# Verify data quality
+# Verify data quality — original checks
 stopifnot(all(example_interviews$catch_kept <= example_interviews$catch_total))
 stopifnot(all(example_interviews$hours_fished > 0))
 stopifnot(all(example_interviews$trip_status %in% c("complete", "incomplete")))
 stopifnot(all(example_interviews$trip_duration > 0))
 stopifnot(nrow(example_interviews) == 22)
+
+# Verify new columns
+stopifnot(all(example_interviews$interview_id == 1L:22L))
+stopifnot(all(example_interviews$angler_type %in% c("bank", "boat")))
+stopifnot(all(!example_interviews$refused))
+stopifnot(ncol(example_interviews) == 12L)
 
 # Save the dataset
 usethis::use_data(example_interviews, overwrite = TRUE)
