@@ -44,12 +44,12 @@ design <- add_interviews(design, example_interviews,
   trip_status = trip_status, trip_duration = trip_duration
 )
 design <- add_lengths(design, example_lengths,
-  length_uid    = interview_id,
+  length_uid = interview_id,
   interview_uid = interview_id,
-  species       = species,
-  length        = length,
-  length_type   = length_type,
-  count         = count,
+  species = species,
+  length = length,
+  length_type = length_type,
+  count = count,
   release_format = "binned"
 )
 print(design)
