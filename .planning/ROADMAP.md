@@ -95,8 +95,8 @@ See: [.planning/milestones/v0.4.0-ROADMAP.md](milestones/v0.4.0-ROADMAP.md)
 
 - [x] **Phase 28: Extended Interview Data Model** — Extend `add_interviews()` with angler type, method, species sought, party size, and refusal flag (completed 2026-03-01)
 - [x] **Phase 29: Species Catch Data** — New `add_catch()` function for long-format species-level catch data (completed 2026-03-02)
-- [ ] **Phase 30: Length Frequency Data** — New `add_lengths()` function for individual and binned fish length data
-- [ ] **Phase 31: Interview-Level Unextrapolated Summaries** — Raw tabulation functions: refusals, day type, angler type, method, species sought, successful parties, trip length
+- [x] **Phase 30: Length Frequency Data** — New `add_lengths()` function for individual and binned fish length data (completed 2026-03-02)
+- [ ] **Phase 31: Interview-Level Unextrapolated Summaries** — Raw tabulation functions: refusals, day type, angler type, method, species sought, successful parties, trip length (planned 2026-03-02)
 - [ ] **Phase 32: CWS/HWS Rates** — Caught-while-sought and harvested-while-sought rate functions from raw interview data
 - [ ] **Phase 33: Length Frequency Summaries** — Length distribution functions for catch, harvest, and release
 - [ ] **Phase 34: Species-Level Extrapolated Estimates** — Extend `estimate_cpue()`, `estimate_total_catch()`, `estimate_total_harvest()` to species groupings; add `estimate_total_release()` and `estimate_release_rate()`
@@ -155,7 +155,10 @@ Plans:
   3. `add_lengths()` throws an informative error when interview IDs in length data do not match interviews in the design
   4. `add_lengths()` throws an informative error when length values are non-positive or non-numeric
   5. `print.creel_design()` summary shows attached length data (format, species count, row count)
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+- [x] 30-01-PLAN.md — example_lengths dataset, add_lengths() implementation, Length Data print section, test-add-lengths.R (completed 2026-03-02)
 
 ### Phase 31: Interview-Level Unextrapolated Summaries
 **Goal**: Users can tabulate raw interview records into the seven standard unextrapolated summary tables (refusals, day type, angler type, method, species sought, successful parties, trip length), each returning a tidy tibble with consistent column names
