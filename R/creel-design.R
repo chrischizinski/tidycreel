@@ -1226,6 +1226,19 @@ format.creel_design <- function(x, ...) {
       cli::cli_text("Interviews: {.val none}")
     }
 
+    # Catch Data section
+    has_catch <- !is.null(x[["catch"]]) # nolint: object_usage_linter
+    if (has_catch) {
+      n_catch_rows <- nrow(x$catch) # nolint: object_usage_linter
+      n_catch_species <- length(unique(x$catch[[x$catch_species_col]])) # nolint: object_usage_linter
+      type_counts <- table(x$catch[[x$catch_type_col]])
+      type_parts <- paste0(names(type_counts), ": ", as.integer(type_counts)) # nolint: object_usage_linter
+      cli::cli_text(
+        "Catch Data: {.val {n_catch_rows}} row{?s}, {.val {n_catch_species}} species"
+      )
+      cli::cli_text("  {paste(type_parts, collapse = ', ')}")
+    }
+
     # Bus-Route section
     if (!is.null(x$bus_route)) {
       br <- x$bus_route$data
