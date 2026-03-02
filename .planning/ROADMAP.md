@@ -96,7 +96,7 @@ See: [.planning/milestones/v0.4.0-ROADMAP.md](milestones/v0.4.0-ROADMAP.md)
 - [x] **Phase 28: Extended Interview Data Model** — Extend `add_interviews()` with angler type, method, species sought, party size, and refusal flag (completed 2026-03-01)
 - [x] **Phase 29: Species Catch Data** — New `add_catch()` function for long-format species-level catch data (completed 2026-03-02)
 - [x] **Phase 30: Length Frequency Data** — New `add_lengths()` function for individual and binned fish length data (completed 2026-03-02)
-- [ ] **Phase 31: Interview-Level Unextrapolated Summaries** — Raw tabulation functions: refusals, day type, angler type, method, species sought, successful parties, trip length (planned 2026-03-02)
+- [x] **Phase 31: Interview-Level Unextrapolated Summaries** — Raw tabulation functions: refusals, day type, angler type, method, species sought, successful parties, trip length (completed 2026-03-02)
 - [ ] **Phase 32: CWS/HWS Rates** — Caught-while-sought and harvested-while-sought rate functions from raw interview data
 - [ ] **Phase 33: Length Frequency Summaries** — Length distribution functions for catch, harvest, and release
 - [ ] **Phase 34: Species-Level Extrapolated Estimates** — Extend `estimate_cpue()`, `estimate_total_catch()`, `estimate_total_harvest()` to species groupings; add `estimate_total_release()` and `estimate_release_rate()`
@@ -173,8 +173,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 31-01-PLAN.md — Create R/creel-summaries.R with all 7 summarize_*() functions, roxygen2 docs, NAMESPACE exports
-- [ ] 31-02-PLAN.md — Write tests/testthat/test-creel-summaries.R with ~35-40 tests for all 7 functions
+- [x] 31-01-PLAN.md — Create R/creel-summaries.R with all 7 summarize_*() functions, roxygen2 docs, NAMESPACE exports (completed 2026-03-02)
+- [x] 31-02-PLAN.md — Write tests/testthat/test-creel-summaries.R with 41 tests for all 7 functions (completed 2026-03-02)
 
 ### Phase 32: CWS/HWS Rates
 **Goal**: Users can compute caught-while-sought (CWS) and harvested-while-sought (HWS) rates from raw interview data, collapsed to three levels of grouping, with documented limitations about interview-weighted (not pressure-weighted) interpretation
