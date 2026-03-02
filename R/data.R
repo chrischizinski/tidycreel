@@ -59,9 +59,10 @@
 #' Sample angler interview data demonstrating the structure required for
 #' [add_interviews()]. Contains 22 interviews from June 1-14, 2024,
 #' matching the [example_calendar] date range. Each row represents one
-#' angler interview with catch, harvest, effort, and trip metadata.
+#' angler interview with catch, harvest, effort, trip metadata, and extended
+#' interview attributes added in v0.5.0.
 #'
-#' @format A data frame with 22 rows and 6 columns:
+#' @format A data frame with 22 rows and 12 columns:
 #' \describe{
 #'   \item{date}{Interview date (Date class), matching [example_calendar] dates}
 #'   \item{hours_fished}{Numeric fishing effort in hours}
@@ -69,6 +70,16 @@
 #'   \item{catch_kept}{Integer fish kept (harvest), always <= catch_total}
 #'   \item{trip_status}{Character trip completion status ("complete" or "incomplete")}
 #'   \item{trip_duration}{Numeric trip duration in hours}
+#'   \item{interview_id}{Integer interview identifier (1 to 22), primary join key
+#'     for \code{add_catch()} and future species-level data functions}
+#'   \item{angler_type}{Angler party type: \code{"bank"} or \code{"boat"}}
+#'   \item{angler_method}{Fishing method: \code{"bait"}, \code{"artificial"}, or
+#'     \code{"fly"}}
+#'   \item{species_sought}{Primary target species: \code{"walleye"}, \code{"bass"},
+#'     or \code{"panfish"}}
+#'   \item{n_anglers}{Integer number of anglers in party (1 to 4)}
+#'   \item{refused}{Logical flag indicating a refused interview
+#'     (\code{FALSE} for all 22 accepted interviews)}
 #' }
 #'
 #' @source Simulated data for package examples
@@ -84,10 +95,60 @@
 #'   effort = hours_fished,
 #'   harvest = catch_kept,
 #'   trip_status = trip_status,
-#'   trip_duration = trip_duration
+#'   trip_duration = trip_duration,
+#'   angler_type = angler_type,
+#'   angler_method = angler_method,
+#'   species_sought = species_sought,
+#'   n_anglers = n_anglers,
+#'   refused = refused
 #' )
 #' print(design)
 #'
-#' @seealso [example_calendar] for matching calendar data, [add_interviews()] to
-#'   attach interviews to a design
+#' @seealso [example_calendar] for matching calendar data, [example_catch] for
+#'   species-level catch data, [add_interviews()] to attach interviews to a design
 "example_interviews"
+
+#' Example species catch data for creel survey
+#'
+#' Long-format species-level catch data linked to [example_interviews]. Contains
+#' catch, harvest, and release counts per species per interview for 12 of the 22
+#' interviews. Suitable for use with \code{add_catch()} once that function is
+#' available (Phase 29 Plan 02). Interviews with zero total catch have no rows
+#' in this dataset (zero-catch anglers are represented by absence).
+#'
+#' @format A data frame with columns:
+#' \describe{
+#'   \item{interview_id}{Integer, foreign key to [example_interviews]\code{$interview_id}}
+#'   \item{species}{Character species name: \code{"walleye"}, \code{"bass"}, or
+#'     \code{"panfish"}}
+#'   \item{count}{Integer fish count for this species and catch type}
+#'   \item{catch_type}{Character catch disposition: \code{"caught"} (total observed),
+#'     \code{"harvested"} (kept), or \code{"released"}}
+#' }
+#'
+#' @source Simulated data for package examples
+#'
+#' @examples
+#' \dontrun{
+#' # Requires add_catch() from Phase 29 Plan 02
+#' data(example_interviews)
+#' data(example_catch)
+#'
+#' design <- creel_design(example_calendar, date = date, strata = day_type)
+#' design <- add_interviews(design, example_interviews,
+#'   catch = catch_total,
+#'   effort = hours_fished,
+#'   harvest = catch_kept
+#' )
+#' design <- add_catch(design, example_catch,
+#'   catch_uid = interview_id,
+#'   interview_uid = interview_id,
+#'   species = species,
+#'   count = count,
+#'   catch_type = catch_type
+#' )
+#' }
+#'
+#' @seealso [example_interviews] for the corresponding interview-level data,
+#'   \code{add_catch()} to attach species catch to a design
+"example_catch"
