@@ -984,19 +984,15 @@ estimate_cpue <- function(design,
 
     # Rebuild survey design for incomplete trips
     strata_cols <- design$strata_cols
-    if (!is.null(strata_cols) && length(strata_cols) > 0) {
-      strata_formula <- stats::reformulate(strata_cols)
-      design_incomplete$interview_survey <- survey::svydesign(
-        ids = ~1,
-        strata = strata_formula,
-        data = incomplete_interviews
-      )
+    strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0) {
+      stats::reformulate(strata_cols)
     } else {
-      design_incomplete$interview_survey <- survey::svydesign(
-        ids = ~1,
-        data = incomplete_interviews
-      )
+      NULL
     }
+    design_incomplete$interview_survey <- build_interview_survey( # nolint: object_usage_linter
+      incomplete_interviews,
+      strata = strata_formula
+    )
 
     # Use the incomplete-trip design for estimation
     design <- design_incomplete
@@ -1295,19 +1291,15 @@ rebuild_interview_survey <- function(design, filtered_interviews) {
 
   # Rebuild survey design with filtered data
   strata_cols <- design$strata_cols
-  if (!is.null(strata_cols) && length(strata_cols) > 0) {
-    strata_formula <- stats::reformulate(strata_cols)
-    design_new$interview_survey <- survey::svydesign(
-      ids = ~1,
-      strata = strata_formula,
-      data = filtered_interviews
-    )
+  strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0) {
+    stats::reformulate(strata_cols)
   } else {
-    design_new$interview_survey <- survey::svydesign(
-      ids = ~1,
-      data = filtered_interviews
-    )
+    NULL
   }
+  design_new$interview_survey <- build_interview_survey( # nolint: object_usage_linter
+    filtered_interviews,
+    strata = strata_formula
+  )
 
   design_new
 }
@@ -1522,19 +1514,12 @@ estimate_cpue_total <- function(design, variance_method, conf_level,
   if (any(zero_effort) || normalize_by_anglers) {
     # Get strata column(s) from original design
     strata_cols <- design$strata_cols
-    if (!is.null(strata_cols) && length(strata_cols) > 0) {
-      strata_formula <- stats::reformulate(strata_cols)
-      temp_survey <- survey::svydesign(
-        ids = ~1,
-        strata = strata_formula,
-        data = interviews_data
-      )
+    strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0) {
+      stats::reformulate(strata_cols)
     } else {
-      temp_survey <- survey::svydesign(
-        ids = ~1,
-        data = interviews_data
-      )
+      NULL
     }
+    temp_survey <- build_interview_survey(interviews_data, strata = strata_formula) # nolint: object_usage_linter
     # Get variance design from temporary survey
     svy_design <- get_variance_design(temp_survey, variance_method) # nolint: object_usage_linter
   } else {
@@ -1550,19 +1535,12 @@ estimate_cpue_total <- function(design, variance_method, conf_level,
 
     # Rebuild survey design with ratio column included
     strata_cols <- design$strata_cols
-    if (!is.null(strata_cols) && length(strata_cols) > 0) {
-      strata_formula <- stats::reformulate(strata_cols)
-      temp_survey <- survey::svydesign(
-        ids = ~1,
-        strata = strata_formula,
-        data = interviews_data
-      )
+    strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0) {
+      stats::reformulate(strata_cols)
     } else {
-      temp_survey <- survey::svydesign(
-        ids = ~1,
-        data = interviews_data
-      )
+      NULL
     }
+    temp_survey <- build_interview_survey(interviews_data, strata = strata_formula) # nolint: object_usage_linter
     svy_design <- get_variance_design(temp_survey, variance_method) # nolint: object_usage_linter
 
     # Call survey::svymean on ratio (suppress expected survey package warnings)
@@ -1699,19 +1677,12 @@ estimate_cpue_grouped <- function(design, by_vars, variance_method, conf_level,
   if (any(zero_effort) || estimator == "mor" || normalize_by_anglers) {
     # Get strata column(s) from original design
     strata_cols <- design$strata_cols
-    if (!is.null(strata_cols) && length(strata_cols) > 0) {
-      strata_formula <- stats::reformulate(strata_cols)
-      temp_survey <- survey::svydesign(
-        ids = ~1,
-        strata = strata_formula,
-        data = interviews_data
-      )
+    strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0) {
+      stats::reformulate(strata_cols)
     } else {
-      temp_survey <- survey::svydesign(
-        ids = ~1,
-        data = interviews_data
-      )
+      NULL
     }
+    temp_survey <- build_interview_survey(interviews_data, strata = strata_formula) # nolint: object_usage_linter
     # Get variance design from temporary survey
     svy_design <- get_variance_design(temp_survey, variance_method) # nolint: object_usage_linter
   } else {
@@ -1901,19 +1872,12 @@ estimate_harvest_total <- function(design, variance_method, conf_level, normaliz
   needs_rebuild <- any(zero_effort) || any(na_harvest) || normalize_by_anglers
   if (needs_rebuild) {
     strata_cols <- design$strata_cols
-    if (!is.null(strata_cols) && length(strata_cols) > 0) {
-      strata_formula <- stats::reformulate(strata_cols)
-      temp_survey <- survey::svydesign(
-        ids = ~1,
-        strata = strata_formula,
-        data = interviews_data
-      )
+    strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0) {
+      stats::reformulate(strata_cols)
     } else {
-      temp_survey <- survey::svydesign(
-        ids = ~1,
-        data = interviews_data
-      )
+      NULL
     }
+    temp_survey <- build_interview_survey(interviews_data, strata = strata_formula) # nolint: object_usage_linter
     svy_design <- get_variance_design(temp_survey, variance_method) # nolint: object_usage_linter
   } else {
     svy_design <- get_variance_design(design$interview_survey, variance_method) # nolint: object_usage_linter
@@ -2032,19 +1996,12 @@ estimate_harvest_grouped <- function(design, by_vars, variance_method, conf_leve
   needs_rebuild <- any(zero_effort) || any(na_harvest) || normalize_by_anglers
   if (needs_rebuild) {
     strata_cols <- design$strata_cols
-    if (!is.null(strata_cols) && length(strata_cols) > 0) {
-      strata_formula <- stats::reformulate(strata_cols)
-      temp_survey <- survey::svydesign(
-        ids = ~1,
-        strata = strata_formula,
-        data = interviews_data
-      )
+    strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0) {
+      stats::reformulate(strata_cols)
     } else {
-      temp_survey <- survey::svydesign(
-        ids = ~1,
-        data = interviews_data
-      )
+      NULL
     }
+    temp_survey <- build_interview_survey(interviews_data, strata = strata_formula) # nolint: object_usage_linter
     svy_design <- get_variance_design(temp_survey, variance_method) # nolint: object_usage_linter
   } else {
     svy_design <- get_variance_design(design$interview_survey, variance_method) # nolint: object_usage_linter
