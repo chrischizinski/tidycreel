@@ -415,13 +415,6 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
 #'   unstable variance from very short trips. Trips with duration < truncate_at
 #'   are excluded before MOR estimation. Set to NULL to disable truncation
 #'   (research mode only). Ignored for ratio-of-means estimator.
-#' @param normalize_by_anglers Logical. If \code{TRUE}, scales effort by party
-#'   size (\code{effort × n_anglers}) before estimation, producing catch per
-#'   angler-hour instead of catch per party-hour. Requires \code{n_anglers} to
-#'   have been provided to \code{\link{add_interviews}}. Errors if
-#'   \code{n_anglers_col} is NULL, if any \code{n_anglers} value is <= 0, or
-#'   warns and excludes rows where \code{n_anglers} is NA. Default \code{FALSE}
-#'   preserves existing behavior (backward compatible).
 #'
 #' @return A creel_estimates S3 object (list) with components: estimates
 #'   (tibble with estimate, se, ci_lower, ci_upper, n columns, plus grouping
@@ -549,8 +542,7 @@ estimate_cpue <- function(design,
                           conf_level = 0.95,
                           estimator = "ratio-of-means",
                           use_trips = NULL,
-                          truncate_at = 0.5,
-                          normalize_by_anglers = FALSE) {
+                          truncate_at = 0.5) {
   # Capture by parameter BEFORE validation
   by_quo <- rlang::enquo(by)
 
@@ -586,22 +578,6 @@ estimate_cpue <- function(design,
       "Invalid truncate_at: {.val {truncate_at}}",
       "x" = "truncate_at must be positive or NULL",
       "i" = "Default is 0.5 hours (30 minutes) per Hoenig et al. (1997)"
-    ))
-  }
-
-  # Validate normalize_by_anglers parameter
-  if (!isTRUE(normalize_by_anglers) && !isFALSE(normalize_by_anglers)) {
-    cli::cli_abort(c(
-      "{.arg normalize_by_anglers} must be TRUE or FALSE.",
-      "x" = "Got: {.val {normalize_by_anglers}}"
-    ))
-  }
-
-  if (normalize_by_anglers && is.null(design$n_anglers_col)) {
-    cli::cli_abort(c(
-      "{.arg normalize_by_anglers = TRUE} requires {.arg n_anglers} to be provided to {.fn add_interviews}.",
-      "x" = "No {.arg n_anglers} column found on design object.",
-      "i" = "Call {.fn add_interviews} with {.code n_anglers = <column>} first."
     ))
   }
 
@@ -1003,7 +979,7 @@ estimate_cpue <- function(design,
     # Ungrouped estimation
     # Validate sample size
     validate_ratio_sample_size(design, NULL, type = "cpue") # nolint: object_usage_linter
-    return(estimate_cpue_total(design, variance, conf_level, estimator, normalize_by_anglers)) # nolint: object_usage_linter
+    return(estimate_cpue_total(design, variance, conf_level, estimator)) # nolint: object_usage_linter
   } else {
     # Grouped estimation
     # Resolve by parameter to column names
@@ -1018,7 +994,7 @@ estimate_cpue <- function(design,
 
     # Validate sample size per group
     validate_ratio_sample_size(design, by_vars, type = "cpue") # nolint: object_usage_linter
-    return(estimate_cpue_grouped(design, by_vars, variance, conf_level, estimator, normalize_by_anglers)) # nolint: object_usage_linter
+    return(estimate_cpue_grouped(design, by_vars, variance, conf_level, estimator)) # nolint: object_usage_linter
   }
 }
 
@@ -1050,14 +1026,6 @@ estimate_cpue <- function(design,
 #'   bus-route estimation. One of \code{"complete"} (default),
 #'   \code{"incomplete"} (pi_i-weighted MOR), or \code{"diagnostic"} (both).
 #'   Ignored for non-bus-route designs.
-#' @param normalize_by_anglers Logical. If \code{TRUE}, scales effort by party
-#'   size (\code{effort × n_anglers}) before estimation, producing harvest per
-#'   angler-hour instead of harvest per party-hour. Requires \code{n_anglers} to
-#'   have been provided to \code{\link{add_interviews}}. Errors if
-#'   \code{n_anglers_col} is NULL, if any \code{n_anglers} value is <= 0, or
-#'   warns and excludes rows where \code{n_anglers} is NA. Default \code{FALSE}
-#'   preserves existing behavior (backward compatible).
-#'
 #' @return A creel_estimates S3 object (list) with components: estimates
 #'   (tibble with estimate, se, ci_lower, ci_upper, n columns, plus grouping
 #'   columns if \code{by} is specified), method (character: "ratio-of-means-hpue",
@@ -1144,8 +1112,7 @@ estimate_harvest <- function(
   variance = "taylor",
   conf_level = 0.95,
   verbose = FALSE,
-  use_trips = NULL,
-  normalize_by_anglers = FALSE
+  use_trips = NULL
 ) {
   # Capture by parameter BEFORE validation
   by_quo <- rlang::enquo(by)
@@ -1209,22 +1176,6 @@ estimate_harvest <- function(
     ))
   }
 
-  # Validate normalize_by_anglers parameter
-  if (!isTRUE(normalize_by_anglers) && !isFALSE(normalize_by_anglers)) {
-    cli::cli_abort(c(
-      "{.arg normalize_by_anglers} must be TRUE or FALSE.",
-      "x" = "Got: {.val {normalize_by_anglers}}"
-    ))
-  }
-
-  if (normalize_by_anglers && is.null(design$n_anglers_col)) {
-    cli::cli_abort(c(
-      "{.arg normalize_by_anglers = TRUE} requires {.arg n_anglers} to be provided to {.fn add_interviews}.",
-      "x" = "No {.arg n_anglers} column found on design object.",
-      "i" = "Call {.fn add_interviews} with {.code n_anglers = <column>} first."
-    ))
-  }
-
   # Validate design$harvest_col exists
   if (is.null(design$harvest_col)) {
     cli::cli_abort(c(
@@ -1252,7 +1203,7 @@ estimate_harvest <- function(
     # Ungrouped estimation
     # Validate sample size
     validate_ratio_sample_size(design, NULL, type = "harvest") # nolint: object_usage_linter
-    return(estimate_harvest_total(design, variance, conf_level, normalize_by_anglers)) # nolint: object_usage_linter
+    return(estimate_harvest_total(design, variance, conf_level)) # nolint: object_usage_linter
   } else {
     # Grouped estimation
     # Resolve by parameter to column names
@@ -1267,7 +1218,7 @@ estimate_harvest <- function(
 
     # Validate sample size per group
     validate_ratio_sample_size(design, by_vars, type = "harvest") # nolint: object_usage_linter
-    return(estimate_harvest_grouped(design, by_vars, variance, conf_level, normalize_by_anglers)) # nolint: object_usage_linter
+    return(estimate_harvest_grouped(design, by_vars, variance, conf_level)) # nolint: object_usage_linter
   }
 }
 
@@ -1462,10 +1413,10 @@ estimate_effort_grouped <- function(design, by_vars, variance_method, conf_level
 #' @keywords internal
 #' @noRd
 estimate_cpue_total <- function(design, variance_method, conf_level,
-                                estimator = "ratio-of-means", normalize_by_anglers = FALSE) {
+                                estimator = "ratio-of-means") {
   interviews_data <- design$interviews
   catch_col <- design$catch_col
-  effort_col <- design$effort_col
+  effort_col <- design$angler_effort_col
 
   # Filter out zero-effort interviews with warning
   zero_effort <- !is.na(interviews_data[[effort_col]]) & interviews_data[[effort_col]] == 0
@@ -1478,40 +1429,8 @@ estimate_cpue_total <- function(design, variance_method, conf_level,
     interviews_data <- interviews_data[!zero_effort, , drop = FALSE]
   }
 
-  # Normalize effort by party size (if requested)
-  if (normalize_by_anglers) {
-    n_anglers_col_name <- design$n_anglers_col
-    anglers <- interviews_data[[n_anglers_col_name]]
-
-    # Hard error: zero or negative n_anglers is physically impossible
-    invalid_anglers <- !is.na(anglers) & anglers <= 0
-    if (any(invalid_anglers)) {
-      n_invalid <- sum(invalid_anglers) # nolint: object_usage_linter
-      cli::cli_abort(c(
-        "{n_invalid} interview{?s} have n_anglers <= 0.",
-        "x" = "Zero or negative party size is physically impossible.",
-        "i" = "Review {.field {n_anglers_col_name}} values in interview data."
-      ))
-    }
-
-    # Warn + exclude: NA n_anglers
-    na_anglers <- is.na(anglers)
-    if (any(na_anglers)) {
-      n_na <- sum(na_anglers) # nolint: object_usage_linter
-      cli::cli_warn(c(
-        "{n_na} interview{?s} with NA n_anglers excluded from normalized CPUE estimation."
-      ))
-      interviews_data <- interviews_data[!na_anglers, , drop = FALSE]
-    }
-
-    # Scale effort: angler-hours = effort × n_anglers
-    interviews_data$.effort_adj <-
-      interviews_data[[effort_col]] * interviews_data[[n_anglers_col_name]]
-    effort_col <- ".effort_adj"
-  }
-
   # Build temporary survey design from filtered data if filtering occurred
-  if (any(zero_effort) || normalize_by_anglers) {
+  if (any(zero_effort)) {
     # Get strata column(s) from original design
     strata_cols <- design$strata_cols
     strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0) {
@@ -1579,11 +1498,6 @@ estimate_cpue_total <- function(design, variance_method, conf_level,
     n = n
   )
 
-  # Append per-angler suffix to method name if effort was normalized
-  if (normalize_by_anglers) {
-    method_name <- paste0(method_name, "-per-angler")
-  }
-
   # Return appropriate creel_estimates object (MOR or standard)
   if (estimator == "mor") {
     # Get trip counts and truncation metadata stored during MOR filtering
@@ -1616,10 +1530,10 @@ estimate_cpue_total <- function(design, variance_method, conf_level,
 #' @keywords internal
 #' @noRd
 estimate_cpue_grouped <- function(design, by_vars, variance_method, conf_level,
-                                  estimator = "ratio-of-means", normalize_by_anglers = FALSE) {
+                                  estimator = "ratio-of-means") {
   interviews_data <- design$interviews
   catch_col <- design$catch_col
-  effort_col <- design$effort_col
+  effort_col <- design$angler_effort_col
 
   # Filter out zero-effort interviews with warning
   zero_effort <- !is.na(interviews_data[[effort_col]]) & interviews_data[[effort_col]] == 0
@@ -1632,38 +1546,6 @@ estimate_cpue_grouped <- function(design, by_vars, variance_method, conf_level,
     interviews_data <- interviews_data[!zero_effort, , drop = FALSE]
   }
 
-  # Normalize effort by party size (if requested)
-  if (normalize_by_anglers) {
-    n_anglers_col_name <- design$n_anglers_col
-    anglers <- interviews_data[[n_anglers_col_name]]
-
-    # Hard error: zero or negative n_anglers is physically impossible
-    invalid_anglers <- !is.na(anglers) & anglers <= 0
-    if (any(invalid_anglers)) {
-      n_invalid <- sum(invalid_anglers) # nolint: object_usage_linter
-      cli::cli_abort(c(
-        "{n_invalid} interview{?s} have n_anglers <= 0.",
-        "x" = "Zero or negative party size is physically impossible.",
-        "i" = "Review {.field {n_anglers_col_name}} values in interview data."
-      ))
-    }
-
-    # Warn + exclude: NA n_anglers
-    na_anglers <- is.na(anglers)
-    if (any(na_anglers)) {
-      n_na <- sum(na_anglers) # nolint: object_usage_linter
-      cli::cli_warn(c(
-        "{n_na} interview{?s} with NA n_anglers excluded from normalized CPUE estimation."
-      ))
-      interviews_data <- interviews_data[!na_anglers, , drop = FALSE]
-    }
-
-    # Scale effort: angler-hours = effort × n_anglers
-    interviews_data$.effort_adj <-
-      interviews_data[[effort_col]] * interviews_data[[n_anglers_col_name]]
-    effort_col <- ".effort_adj"
-  }
-
   # Determine method based on estimator
   if (estimator == "mor") {
     # Mean-of-ratios: add ratio column
@@ -1674,7 +1556,7 @@ estimate_cpue_grouped <- function(design, by_vars, variance_method, conf_level,
   }
 
   # Build temporary survey design from filtered data (or with ratio column for MOR)
-  if (any(zero_effort) || estimator == "mor" || normalize_by_anglers) {
+  if (any(zero_effort) || estimator == "mor") {
     # Get strata column(s) from original design
     strata_cols <- design$strata_cols
     strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0) {
@@ -1764,11 +1646,6 @@ estimate_cpue_grouped <- function(design, by_vars, variance_method, conf_level,
   col_order <- c(by_vars, "estimate", "se", "ci_lower", "ci_upper", "n")
   estimates_df <- estimates_df[col_order]
 
-  # Append per-angler suffix to method name if effort was normalized
-  if (normalize_by_anglers) {
-    method_name <- paste0(method_name, "-per-angler")
-  }
-
   # Return appropriate creel_estimates object (MOR or standard)
   if (estimator == "mor") {
     # Get trip counts and truncation metadata stored during MOR filtering
@@ -1800,10 +1677,10 @@ estimate_cpue_grouped <- function(design, by_vars, variance_method, conf_level,
 #'
 #' @keywords internal
 #' @noRd
-estimate_harvest_total <- function(design, variance_method, conf_level, normalize_by_anglers = FALSE) {
+estimate_harvest_total <- function(design, variance_method, conf_level) {
   interviews_data <- design$interviews
   harvest_col <- design$harvest_col
-  effort_col <- design$effort_col
+  effort_col <- design$angler_effort_col
 
   # Filter out zero-effort interviews with warning
   zero_effort <- !is.na(interviews_data[[effort_col]]) & interviews_data[[effort_col]] == 0
@@ -1836,40 +1713,8 @@ estimate_harvest_total <- function(design, variance_method, conf_level, normaliz
     ))
   }
 
-  # Normalize effort by party size (if requested)
-  if (normalize_by_anglers) {
-    n_anglers_col_name <- design$n_anglers_col
-    anglers <- interviews_data[[n_anglers_col_name]]
-
-    # Hard error: zero or negative n_anglers is physically impossible
-    invalid_anglers <- !is.na(anglers) & anglers <= 0
-    if (any(invalid_anglers)) {
-      n_invalid <- sum(invalid_anglers) # nolint: object_usage_linter
-      cli::cli_abort(c(
-        "{n_invalid} interview{?s} have n_anglers <= 0.",
-        "x" = "Zero or negative party size is physically impossible.",
-        "i" = "Review {.field {n_anglers_col_name}} values in interview data."
-      ))
-    }
-
-    # Warn + exclude: NA n_anglers
-    na_anglers <- is.na(anglers)
-    if (any(na_anglers)) {
-      n_na <- sum(na_anglers) # nolint: object_usage_linter
-      cli::cli_warn(c(
-        "{n_na} interview{?s} with NA n_anglers excluded from normalized harvest estimation."
-      ))
-      interviews_data <- interviews_data[!na_anglers, , drop = FALSE]
-    }
-
-    # Scale effort: angler-hours = effort × n_anglers
-    interviews_data$.effort_adj <-
-      interviews_data[[effort_col]] * interviews_data[[n_anglers_col_name]]
-    effort_col <- ".effort_adj"
-  }
-
   # Build temporary survey design from filtered data if filtering occurred
-  needs_rebuild <- any(zero_effort) || any(na_harvest) || normalize_by_anglers
+  needs_rebuild <- any(zero_effort) || any(na_harvest)
   if (needs_rebuild) {
     strata_cols <- design$strata_cols
     strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0) {
@@ -1912,7 +1757,7 @@ estimate_harvest_total <- function(design, variance_method, conf_level, normaliz
   # Return creel_estimates object
   new_creel_estimates( # nolint: object_usage_linter
     estimates = estimates_df,
-    method = if (normalize_by_anglers) "ratio-of-means-hpue-per-angler" else "ratio-of-means-hpue",
+    method = "ratio-of-means-hpue",
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
@@ -1924,10 +1769,10 @@ estimate_harvest_total <- function(design, variance_method, conf_level, normaliz
 #'
 #' @keywords internal
 #' @noRd
-estimate_harvest_grouped <- function(design, by_vars, variance_method, conf_level, normalize_by_anglers = FALSE) {
+estimate_harvest_grouped <- function(design, by_vars, variance_method, conf_level) {
   interviews_data <- design$interviews
   harvest_col <- design$harvest_col
-  effort_col <- design$effort_col
+  effort_col <- design$angler_effort_col
 
   # Filter out zero-effort interviews with warning
   zero_effort <- !is.na(interviews_data[[effort_col]]) & interviews_data[[effort_col]] == 0
@@ -1960,40 +1805,8 @@ estimate_harvest_grouped <- function(design, by_vars, variance_method, conf_leve
     ))
   }
 
-  # Normalize effort by party size (if requested)
-  if (normalize_by_anglers) {
-    n_anglers_col_name <- design$n_anglers_col
-    anglers <- interviews_data[[n_anglers_col_name]]
-
-    # Hard error: zero or negative n_anglers is physically impossible
-    invalid_anglers <- !is.na(anglers) & anglers <= 0
-    if (any(invalid_anglers)) {
-      n_invalid <- sum(invalid_anglers) # nolint: object_usage_linter
-      cli::cli_abort(c(
-        "{n_invalid} interview{?s} have n_anglers <= 0.",
-        "x" = "Zero or negative party size is physically impossible.",
-        "i" = "Review {.field {n_anglers_col_name}} values in interview data."
-      ))
-    }
-
-    # Warn + exclude: NA n_anglers
-    na_anglers <- is.na(anglers)
-    if (any(na_anglers)) {
-      n_na <- sum(na_anglers) # nolint: object_usage_linter
-      cli::cli_warn(c(
-        "{n_na} interview{?s} with NA n_anglers excluded from normalized harvest estimation."
-      ))
-      interviews_data <- interviews_data[!na_anglers, , drop = FALSE]
-    }
-
-    # Scale effort: angler-hours = effort × n_anglers
-    interviews_data$.effort_adj <-
-      interviews_data[[effort_col]] * interviews_data[[n_anglers_col_name]]
-    effort_col <- ".effort_adj"
-  }
-
   # Build temporary survey design from filtered data if filtering occurred
-  needs_rebuild <- any(zero_effort) || any(na_harvest) || normalize_by_anglers
+  needs_rebuild <- any(zero_effort) || any(na_harvest)
   if (needs_rebuild) {
     strata_cols <- design$strata_cols
     strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0) {
@@ -2063,7 +1876,7 @@ estimate_harvest_grouped <- function(design, by_vars, variance_method, conf_leve
   # Return creel_estimates object
   new_creel_estimates( # nolint: object_usage_linter
     estimates = estimates_df,
-    method = if (normalize_by_anglers) "ratio-of-means-hpue-per-angler" else "ratio-of-means-hpue",
+    method = "ratio-of-means-hpue",
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
