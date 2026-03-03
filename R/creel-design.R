@@ -776,9 +776,9 @@ add_counts <- function(design, counts, psu = NULL, allow_invalid = FALSE) {
 #' @param species_sought Tidy selector for species sought column (optional, default
 #'   NULL). Use bare column names (e.g., `species_sought = target_species`).
 #'   Records the species the angler was targeting during the interview.
-#' @param n_anglers Tidy selector for the number of anglers in the party (optional,
-#'   default NULL). Use bare column names (e.g., `n_anglers = party_size`).
-#'   Values should be positive integers.
+#' @param n_anglers Tidy selector for the number of anglers in the party (default 1L --
+#'   individual-level interviews). When omitted, a \code{cli_inform()} message notes the
+#'   assumption. Use bare column names (e.g., \code{n_anglers = party_size}).
 #' @param refused Tidy selector for the refused interview flag column (optional,
 #'   default NULL). Use bare column names (e.g., `refused = refused_flag`).
 #'   Values should be logical (TRUE/FALSE) or coercible to logical.
@@ -902,11 +902,14 @@ add_interviews <- function(design, interviews,
                            angler_type = NULL,
                            angler_method = NULL,
                            species_sought = NULL,
-                           n_anglers = NULL,
+                           n_anglers = 1L,
                            refused = NULL,
                            date_col = NULL,
                            interview_type = c("access", "roving"),
                            allow_invalid = FALSE) {
+  # Capture missing status before any default resolution
+  n_anglers_missing <- missing(n_anglers)
+
   # Validate design is creel_design
   if (!inherits(design, "creel_design")) {
     cli::cli_abort(c(
@@ -1045,13 +1048,15 @@ add_interviews <- function(design, interviews,
     )
   }
 
-  # Resolve n_anglers column (optional)
+  # Resolve n_anglers column (optional; skip resolution when using integer default)
   n_anglers_col <- NULL
-  n_anglers_quo <- rlang::enquo(n_anglers)
-  if (!rlang::quo_is_null(n_anglers_quo)) {
-    n_anglers_col <- resolve_single_col(
-      n_anglers_quo, interviews, "n_anglers", rlang::caller_env()
-    )
+  if (!n_anglers_missing) {
+    n_anglers_quo <- rlang::enquo(n_anglers)
+    if (!rlang::quo_is_null(n_anglers_quo)) {
+      n_anglers_col <- resolve_single_col(
+        n_anglers_quo, interviews, "n_anglers", rlang::caller_env()
+      )
+    }
   }
 
   # Resolve refused column (optional)
@@ -1170,6 +1175,27 @@ add_interviews <- function(design, interviews,
   new_design$trip_duration_col <- trip_duration_col
   new_design$trip_start_col <- trip_start_col
   new_design$interview_time_col <- interview_time_col
+
+  # Emit inform when n_anglers was not explicitly provided
+  if (n_anglers_missing) {
+    cli::cli_inform(c(
+      "i" = "No {.arg n_anglers} provided \u2014 assuming 1 angler per interview.",
+      "i" = paste(
+        "Pass {.code n_anglers = <column>} to use actual party sizes",
+        "for angler-hour normalization."
+      )
+    ))
+  }
+
+  # Compute angler effort (effort x n_anglers) -- always set for downstream functions
+  if (!is.null(n_anglers_col)) {
+    new_design$interviews[[".angler_effort"]] <-
+      new_design$interviews[[effort_col]] * new_design$interviews[[n_anglers_col]]
+  } else {
+    # n_anglers defaults to 1L -- angler_effort equals raw effort
+    new_design$interviews[[".angler_effort"]] <- new_design$interviews[[effort_col]]
+  }
+  new_design$angler_effort_col <- ".angler_effort"
 
   # Construct interview survey eagerly
   new_design$interview_survey <- construct_interview_survey(new_design) # nolint: object_usage_linter
