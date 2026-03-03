@@ -1,3 +1,81 @@
+#' Resolve fishing effort from timestamps or self-reported time
+#'
+#' @description
+#' Computes fishing effort (hours) for each interview row using a conditional
+#' rule: if the \code{time_fished} column is present and non-NA for a row, use
+#' that value (angler self-reported hours, e.g. after a break); otherwise
+#' compute from timestamps as
+#' \code{difftime(interview_time, trip_start, units = "hours")}.
+#'
+#' This function can be called standalone on raw data before entering the
+#' \code{\link{add_interviews}} workflow, or used to preprocess a column that
+#' will be passed as the \code{effort} argument to \code{add_interviews()}.
+#'
+#' @param data A data frame containing the interview records.
+#' @param trip_start Tidy selector for the trip start timestamp column (POSIXct).
+#' @param interview_time Tidy selector for the interview timestamp column (POSIXct).
+#' @param time_fished Optional tidy selector for a self-reported hours column.
+#'   When a row has a non-NA value here, it overrides the timestamp calculation.
+#'   Default is \code{NULL} (always compute from timestamps).
+#'
+#' @return The input data frame with an added \code{.effort} column (numeric,
+#'   hours). Existing columns are preserved.
+#'
+#' @seealso [compute_angler_effort()], [add_interviews()]
+#' @export
+compute_effort <- function(data, trip_start, interview_time, time_fished = NULL) {
+  ts_quo <- rlang::enquo(trip_start)
+  it_quo <- rlang::enquo(interview_time)
+  tf_quo <- rlang::enquo(time_fished)
+
+  ts_col <- names(tidyselect::eval_select(ts_quo, data))
+  it_col <- names(tidyselect::eval_select(it_quo, data))
+
+  ts_vals <- data[[ts_col]]
+  it_vals <- data[[it_col]]
+  ts_effort <- as.numeric(difftime(it_vals, ts_vals, units = "hours"))
+
+  if (!rlang::quo_is_null(tf_quo)) {
+    tf_col <- names(tidyselect::eval_select(tf_quo, data))
+    tf_vals <- data[[tf_col]]
+    data[[".effort"]] <- ifelse(!is.na(tf_vals), tf_vals, ts_effort)
+  } else {
+    data[[".effort"]] <- ts_effort
+  }
+  data
+}
+
+#' Normalize fishing effort to angler-hours
+#'
+#' @description
+#' Multiplies per-trip effort (hours) by party size (number of anglers) to
+#' produce angler-hours. This converts party-level effort records to
+#' individual-angler units, which are required for CPUE and harvest-rate
+#' computations.
+#'
+#' This function can be called standalone on a raw data frame or is called
+#' internally by \code{\link{add_interviews}} when constructing the design object.
+#'
+#' @param data A data frame containing the interview records.
+#' @param effort Tidy selector for the effort column (numeric, hours per trip).
+#' @param n_anglers Tidy selector for the number-of-anglers column (positive integer).
+#'
+#' @return The input data frame with an added \code{.angler_effort} column
+#'   (numeric, angler-hours). Existing columns are preserved.
+#'
+#' @seealso [compute_effort()], [add_interviews()]
+#' @export
+compute_angler_effort <- function(data, effort, n_anglers) {
+  e_quo <- rlang::enquo(effort)
+  na_quo <- rlang::enquo(n_anglers)
+
+  e_col <- names(tidyselect::eval_select(e_quo, data))
+  na_col <- names(tidyselect::eval_select(na_quo, data))
+
+  data[[".angler_effort"]] <- data[[e_col]] * data[[na_col]]
+  data
+}
+
 #' Create a creel survey design
 #'
 #' @description
