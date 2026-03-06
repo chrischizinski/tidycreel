@@ -21,6 +21,12 @@ Counts the number of refused and accepted interviews in each calendar
 month. Refusals are recorded as \code{TRUE} in the refused column set
 via \code{\link{add_interviews}}.
 }
+\details{
+\strong{Interview-based summary, not pressure-weighted.} This function
+tabulates raw interview records without applying survey weighting by sampling
+effort or effort stratum. For pressure-weighted extrapolated estimates, use
+\code{\link{estimate_cpue}} or \code{\link{estimate_harvest}}.
+}
 \examples{
 \dontrun{
 data(example_calendar)

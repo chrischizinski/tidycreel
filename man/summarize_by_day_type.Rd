@@ -20,6 +20,12 @@ weekend) within each calendar month. Day type is taken from the first
 strata column (\code{design$strata_cols[1]}), which is always present
 after \code{\link{creel_design}} is called.
 }
+\details{
+\strong{Interview-based summary, not pressure-weighted.} This function
+tabulates raw interview records without applying survey weighting by sampling
+effort or effort stratum. For pressure-weighted extrapolated estimates, use
+\code{\link{estimate_cpue}} or \code{\link{estimate_harvest}}.
+}
 \examples{
 \dontrun{
 data(example_calendar)

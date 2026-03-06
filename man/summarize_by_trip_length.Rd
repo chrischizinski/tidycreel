@@ -22,6 +22,12 @@ Bins trip durations (in hours) into 1-hour intervals from 0 to 10 hours,
 with a final bin for trips 10+ hours. Returns counts and percentages for
 each bin.
 }
+\details{
+\strong{Interview-based summary, not pressure-weighted.} This function
+tabulates raw interview records without applying survey weighting by sampling
+effort or effort stratum. For pressure-weighted extrapolated estimates, use
+\code{\link{estimate_cpue}} or \code{\link{estimate_harvest}}.
+}
 \examples{
 \dontrun{
 data(example_calendar)

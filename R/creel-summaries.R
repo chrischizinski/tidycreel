@@ -11,6 +11,12 @@
 #' month. Refusals are recorded as \code{TRUE} in the refused column set
 #' via \code{\link{add_interviews}}.
 #'
+#' @details
+#' \strong{Interview-based summary, not pressure-weighted.} This function
+#' tabulates raw interview records without applying survey weighting by sampling
+#' effort or effort stratum. For pressure-weighted extrapolated estimates, use
+#' \code{\link{estimate_cpue}} or \code{\link{estimate_harvest}}.
+#'
 #' @param design A \code{creel_design} object with interviews attached and
 #'   \code{refused} column set via \code{add_interviews(refused = ...)}.
 #'
@@ -104,6 +110,12 @@ summarize_refusals <- function(design) {
 #' strata column (\code{design$strata_cols[1]}), which is always present
 #' after \code{\link{creel_design}} is called.
 #'
+#' @details
+#' \strong{Interview-based summary, not pressure-weighted.} This function
+#' tabulates raw interview records without applying survey weighting by sampling
+#' effort or effort stratum. For pressure-weighted extrapolated estimates, use
+#' \code{\link{estimate_cpue}} or \code{\link{estimate_harvest}}.
+#'
 #' @param design A \code{creel_design} object with interviews attached.
 #'
 #' @return A \code{data.frame} with class \code{c("creel_summary_day_type",
@@ -186,6 +198,12 @@ summarize_by_day_type <- function(design) {
 #' Counts the number of interviews for each angler type within each calendar
 #' month. Angler type is taken from the column set via
 #' \code{add_interviews(angler_type = ...)}.
+#'
+#' @details
+#' \strong{Interview-based summary, not pressure-weighted.} This function
+#' tabulates raw interview records without applying survey weighting by sampling
+#' effort or effort stratum. For pressure-weighted extrapolated estimates, use
+#' \code{\link{estimate_cpue}} or \code{\link{estimate_harvest}}.
 #'
 #' @param design A \code{creel_design} object with interviews attached and
 #'   \code{angler_type} column set via \code{add_interviews(angler_type = ...)}.
@@ -276,6 +294,12 @@ summarize_by_angler_type <- function(design) {
 #' Counts the number of interviews for each fishing method within each calendar
 #' month. Method is taken from the column set via
 #' \code{add_interviews(angler_method = ...)}.
+#'
+#' @details
+#' \strong{Interview-based summary, not pressure-weighted.} This function
+#' tabulates raw interview records without applying survey weighting by sampling
+#' effort or effort stratum. For pressure-weighted extrapolated estimates, use
+#' \code{\link{estimate_cpue}} or \code{\link{estimate_harvest}}.
 #'
 #' @param design A \code{creel_design} object with interviews attached and
 #'   \code{angler_method} column set via
@@ -368,6 +392,12 @@ summarize_by_method <- function(design) {
 #' month. Species sought is taken from the column set via
 #' \code{add_interviews(species_sought = ...)}.
 #'
+#' @details
+#' \strong{Interview-based summary, not pressure-weighted.} This function
+#' tabulates raw interview records without applying survey weighting by sampling
+#' effort or effort stratum. For pressure-weighted extrapolated estimates, use
+#' \code{\link{estimate_cpue}} or \code{\link{estimate_harvest}}.
+#'
 #' @param design A \code{creel_design} object with interviews attached and
 #'   \code{species_sought} column set via
 #'   \code{add_interviews(species_sought = ...)}.
@@ -459,6 +489,12 @@ summarize_by_species_sought <- function(design) {
 #' \code{catch_type == "caught"} and \code{count > 0} for the species the
 #' party was seeking (\code{species_sought}). Returns counts of successful
 #' and total parties for each angler type x species sought combination.
+#'
+#' @details
+#' \strong{Interview-based summary, not pressure-weighted.} This function
+#' tabulates raw interview records without applying survey weighting by sampling
+#' effort or effort stratum. For pressure-weighted extrapolated estimates, use
+#' \code{\link{estimate_cpue}} or \code{\link{estimate_harvest}}.
 #'
 #' @param design A \code{creel_design} object with interviews attached
 #'   (including \code{angler_type} and \code{species_sought} columns) and
@@ -600,6 +636,12 @@ summarize_successful_parties <- function(design) {
 #' with a final bin for trips 10+ hours. Returns counts and percentages for
 #' each bin.
 #'
+#' @details
+#' \strong{Interview-based summary, not pressure-weighted.} This function
+#' tabulates raw interview records without applying survey weighting by sampling
+#' effort or effort stratum. For pressure-weighted extrapolated estimates, use
+#' \code{\link{estimate_cpue}} or \code{\link{estimate_harvest}}.
+#'
 #' @param design A \code{creel_design} object with interviews attached and
 #'   \code{trip_duration} column set via
 #'   \code{add_interviews(trip_duration = ...)}.
@@ -669,4 +711,428 @@ summarize_by_trip_length <- function(design) {
 
   class(counts) <- c("creel_summary_trip_length", "data.frame")
   counts
+}
+
+#' Compute caught-while-sought (CWS) rates by group
+#'
+#' @description
+#' Computes mean caught-while-sought rates (fish per angler-hour) for anglers
+#' targeting each species. For each interview, the rate is:
+#' \code{caught_count / angler_effort} where \code{caught_count} is the total
+#' number of fish caught of the species the angler was seeking, and
+#' \code{angler_effort} is angler-hours (effort x n_anglers, standardized at
+#' design time by \code{\link{add_interviews}}).
+#'
+#' @details
+#' \strong{Interview-based summary, not pressure-weighted.} This function
+#' computes a simple arithmetic mean over sampled interviews. It does NOT apply
+#' survey weighting by sampling effort or effort stratum. For pressure-weighted
+#' extrapolated estimates use \code{\link{estimate_cpue}}.
+#'
+#' The catch filter ensures only species the angler was targeting are counted
+#' (i.e., rows in \code{design$catch} where \code{catch_type == "caught"} and
+#' \code{species == species_sought}).
+#'
+#' @param design A \code{creel_design} object with interviews attached via
+#'   \code{\link{add_interviews}} (with \code{species_sought}) and species
+#'   catch data attached via \code{\link{add_catch}}.
+#' @param by Optional tidy selector for grouping columns from
+#'   \code{design$interviews}. Common choices:
+#'   \code{by = species_sought} (CWS-03),
+#'   \code{by = c(month, species_sought)} (CWS-02),
+#'   \code{by = c(month, angler_type, species_sought)} (CWS-01).
+#'   When \code{NULL}, returns a single overall rate across all interviews.
+#' @param conf_level Numeric confidence level for the t-interval.
+#'   Default 0.95.
+#'
+#' @return A \code{data.frame} with class
+#'   \code{c("creel_summary_cws_rates", "data.frame")} and columns:
+#'   grouping columns (if any), \code{N} (integer, interviews per group),
+#'   \code{mean_rate} (numeric, mean fish/angler-hour),
+#'   \code{se} (numeric, standard error), \code{ci_lower}, \code{ci_upper}.
+#'
+#' @seealso [summarize_hws_rates()], [estimate_cpue()]
+#'
+#' @examples
+#' \dontrun{
+#' data(example_calendar)
+#' data(example_interviews)
+#' data(example_catch)
+#' d <- creel_design(example_calendar, date = date, strata = day_type)
+#' d <- add_interviews(d, example_interviews,
+#'   catch = catch_total, effort = hours_fished, harvest = catch_kept,
+#'   trip_status = trip_status, species_sought = species_sought
+#' )
+#' d <- add_catch(d, example_catch,
+#'   catch_uid = interview_id, interview_uid = interview_id,
+#'   species = species, count = count, catch_type = catch_type
+#' )
+#' summarize_cws_rates(d, by = species_sought)
+#' }
+#'
+#' @export
+summarize_cws_rates <- function(design, by = NULL, conf_level = 0.95) {
+  # Capture by before validation
+  by_quo <- rlang::enquo(by)
+
+  # Guard 1: type check
+  if (!inherits(design, "creel_design")) {
+    cli::cli_abort(c(
+      "{.arg design} must be a {.cls creel_design} object.",
+      "x" = "{.arg design} is {.cls {class(design)[1]}}.",
+      "i" = "Create a design with {.fn creel_design}."
+    ))
+  }
+
+  # Guard 2: interviews attached
+  if (is.null(design$interviews)) {
+    cli::cli_abort(c(
+      "No interviews found in design.",
+      "x" = "The design object has no interview data.",
+      "i" = "Attach interviews with {.fn add_interviews}."
+    ))
+  }
+
+  # Guard 3a: angler_effort_col
+  if (is.null(design$angler_effort_col)) {
+    cli::cli_abort(c(
+      "No angler_effort column found in design.",
+      "x" = "This should be set automatically by {.fn add_interviews}.",
+      "i" = "Re-attach interviews with {.fn add_interviews}."
+    ))
+  }
+
+  # Guard 3b: species_sought_col
+  if (is.null(design$species_sought_col)) {
+    cli::cli_abort(c(
+      "No species_sought column found in design.",
+      "x" = "Did you provide {.arg species_sought} in {.fn add_interviews}?"
+    ))
+  }
+
+  # Guard 3c: catch data (double-bracket, exact match)
+  if (is.null(design[["catch"]])) {
+    cli::cli_abort(c(
+      "No catch data found in design.",
+      "i" = "Attach species catch data with {.fn add_catch} before calling this function."
+    ))
+  }
+
+  # Extract field names from design
+  interviews <- design$interviews
+  catch_data <- design[["catch"]]
+  uid_col <- design$catch_interview_uid_col
+  species_col <- design$catch_species_col
+  count_col <- design$catch_count_col
+  type_col <- design$catch_type_col
+  ss_col <- design$species_sought_col
+  ae_col <- design$angler_effort_col
+
+  # Step 1: Resolve by columns from interviews
+  if (!rlang::quo_is_null(by_quo)) {
+    by_cols <- tidyselect::eval_select( # nolint: object_usage_linter
+      by_quo,
+      data = interviews,
+      allow_rename = FALSE,
+      allow_empty = FALSE,
+      error_call = rlang::caller_env()
+    )
+    by_vars <- names(by_cols)
+  } else {
+    by_vars <- character(0)
+  }
+
+  # Step 2: Filter catch to target type (caught for CWS)
+  target_catch <- catch_data[catch_data[[type_col]] == "caught", ]
+
+  # Merge to get species_sought on each catch row
+  sought_map <- interviews[, c(uid_col, ss_col), drop = FALSE]
+  catch_merged <- merge(
+    target_catch, sought_map,
+    by.x = uid_col, by.y = uid_col, all.x = FALSE
+  )
+
+  # Filter to rows where catch species == species_sought
+  target_rows <- catch_merged[
+    !is.na(catch_merged[[species_col]]) &
+      catch_merged[[species_col]] == catch_merged[[ss_col]], ,
+    drop = FALSE
+  ]
+
+  # Aggregate: sum catch per interview UID
+  if (nrow(target_rows) > 0) {
+    agg <- stats::aggregate(
+      target_rows[[count_col]],
+      by = list(.uid = target_rows[[uid_col]]),
+      FUN = sum
+    )
+    names(agg)[2] <- ".target_count"
+  } else {
+    agg <- data.frame(.uid = character(0), .target_count = numeric(0))
+  }
+
+  # Step 3: Join back to ALL interviews to preserve zeros
+  interview_base <- interviews[, unique(c(uid_col, ss_col, ae_col, by_vars)), drop = FALSE]
+  interview_base <- merge(
+    interview_base, agg,
+    by.x = uid_col, by.y = ".uid", all.x = TRUE
+  )
+  interview_base$.target_count[is.na(interview_base$.target_count)] <- 0
+
+  # Step 4: Exclude zero-effort interviews
+  zero_eff <- !is.na(interview_base[[ae_col]]) & interview_base[[ae_col]] <= 0
+  if (any(zero_eff)) {
+    interview_base <- interview_base[!zero_eff, , drop = FALSE]
+  }
+
+  # Step 5: Compute per-interview rate
+  interview_base$.rate <- interview_base$.target_count / interview_base[[ae_col]]
+
+  # Step 6: Group and compute summary statistics
+  group_cols <- if (length(by_vars) > 0) {
+    lapply(by_vars, function(v) interview_base[[v]])
+  } else {
+    list(rep("all", nrow(interview_base)))
+  }
+  names(group_cols) <- if (length(by_vars) > 0) by_vars else ".group"
+
+  n_agg <- stats::aggregate(interview_base$.rate, by = group_cols, FUN = length)
+  mean_agg <- stats::aggregate(interview_base$.rate, by = group_cols, FUN = mean)
+  sd_agg <- stats::aggregate(interview_base$.rate, by = group_cols, FUN = stats::sd)
+
+  names(n_agg)[ncol(n_agg)] <- "N"
+  names(mean_agg)[ncol(mean_agg)] <- "mean_rate"
+  names(sd_agg)[ncol(sd_agg)] <- "sd_rate"
+
+  merge_by <- if (length(by_vars) > 0) by_vars else ".group"
+  result <- merge(n_agg, mean_agg, by = merge_by)
+  result <- merge(result, sd_agg, by = merge_by)
+
+  # Step 7: SE and CI via t-distribution
+  result$se <- result$sd_rate / sqrt(result$N)
+  t_crit <- stats::qt((1 + conf_level) / 2, df = pmax(result$N - 1, 1))
+  result$ci_lower <- result$mean_rate - t_crit * result$se
+  result$ci_upper <- result$mean_rate + t_crit * result$se
+  result$sd_rate <- NULL
+
+  # Drop .group column when no by variables
+  if (length(by_vars) == 0) result$.group <- NULL
+
+  result$N <- as.integer(result$N)
+  row.names(result) <- NULL
+
+  class(result) <- c("creel_summary_cws_rates", "data.frame")
+  result
+}
+
+#' Compute harvested-while-sought (HWS) rates by group
+#'
+#' @description
+#' Computes mean harvested-while-sought rates (fish per angler-hour) for
+#' anglers targeting each species. For each interview, the rate is:
+#' \code{harvested_count / angler_effort} where \code{harvested_count} is the
+#' total number of fish harvested (kept) of the species the angler was seeking,
+#' and \code{angler_effort} is angler-hours (effort x n_anglers, standardized
+#' at design time by \code{\link{add_interviews}}).
+#'
+#' @details
+#' \strong{Interview-based summary, not pressure-weighted.} This function
+#' computes a simple arithmetic mean over sampled interviews. It does NOT apply
+#' survey weighting by sampling effort or effort stratum. For pressure-weighted
+#' extrapolated estimates use \code{\link{estimate_harvest}}.
+#'
+#' The catch filter ensures only species the angler was targeting are counted
+#' (i.e., rows in \code{design$catch} where \code{catch_type == "harvested"}
+#' and \code{species == species_sought}).
+#'
+#' @param design A \code{creel_design} object with interviews attached via
+#'   \code{\link{add_interviews}} (with \code{species_sought}) and species
+#'   catch data attached via \code{\link{add_catch}}.
+#' @param by Optional tidy selector for grouping columns from
+#'   \code{design$interviews}. Common choices:
+#'   \code{by = species_sought} (HWS-03),
+#'   \code{by = c(month, species_sought)} (HWS-02),
+#'   \code{by = c(month, angler_type, species_sought)} (HWS-01).
+#'   When \code{NULL}, returns a single overall rate across all interviews.
+#' @param conf_level Numeric confidence level for the t-interval.
+#'   Default 0.95.
+#'
+#' @return A \code{data.frame} with class
+#'   \code{c("creel_summary_hws_rates", "data.frame")} and columns:
+#'   grouping columns (if any), \code{N} (integer, interviews per group),
+#'   \code{mean_rate} (numeric, mean fish/angler-hour),
+#'   \code{se} (numeric, standard error), \code{ci_lower}, \code{ci_upper}.
+#'
+#' @seealso [summarize_cws_rates()], [estimate_harvest()]
+#'
+#' @examples
+#' \dontrun{
+#' data(example_calendar)
+#' data(example_interviews)
+#' data(example_catch)
+#' d <- creel_design(example_calendar, date = date, strata = day_type)
+#' d <- add_interviews(d, example_interviews,
+#'   catch = catch_total, effort = hours_fished, harvest = catch_kept,
+#'   trip_status = trip_status, species_sought = species_sought
+#' )
+#' d <- add_catch(d, example_catch,
+#'   catch_uid = interview_id, interview_uid = interview_id,
+#'   species = species, count = count, catch_type = catch_type
+#' )
+#' summarize_hws_rates(d, by = species_sought)
+#' }
+#'
+#' @export
+summarize_hws_rates <- function(design, by = NULL, conf_level = 0.95) {
+  # Capture by before validation
+  by_quo <- rlang::enquo(by)
+
+  # Guard 1: type check
+  if (!inherits(design, "creel_design")) {
+    cli::cli_abort(c(
+      "{.arg design} must be a {.cls creel_design} object.",
+      "x" = "{.arg design} is {.cls {class(design)[1]}}.",
+      "i" = "Create a design with {.fn creel_design}."
+    ))
+  }
+
+  # Guard 2: interviews attached
+  if (is.null(design$interviews)) {
+    cli::cli_abort(c(
+      "No interviews found in design.",
+      "x" = "The design object has no interview data.",
+      "i" = "Attach interviews with {.fn add_interviews}."
+    ))
+  }
+
+  # Guard 3a: angler_effort_col
+  if (is.null(design$angler_effort_col)) {
+    cli::cli_abort(c(
+      "No angler_effort column found in design.",
+      "x" = "This should be set automatically by {.fn add_interviews}.",
+      "i" = "Re-attach interviews with {.fn add_interviews}."
+    ))
+  }
+
+  # Guard 3b: species_sought_col
+  if (is.null(design$species_sought_col)) {
+    cli::cli_abort(c(
+      "No species_sought column found in design.",
+      "x" = "Did you provide {.arg species_sought} in {.fn add_interviews}?"
+    ))
+  }
+
+  # Guard 3c: catch data (double-bracket, exact match)
+  if (is.null(design[["catch"]])) {
+    cli::cli_abort(c(
+      "No catch data found in design.",
+      "i" = "Attach species catch data with {.fn add_catch} before calling this function."
+    ))
+  }
+
+  # Extract field names from design
+  interviews <- design$interviews
+  catch_data <- design[["catch"]]
+  uid_col <- design$catch_interview_uid_col
+  species_col <- design$catch_species_col
+  count_col <- design$catch_count_col
+  type_col <- design$catch_type_col
+  ss_col <- design$species_sought_col
+  ae_col <- design$angler_effort_col
+
+  # Step 1: Resolve by columns from interviews
+  if (!rlang::quo_is_null(by_quo)) {
+    by_cols <- tidyselect::eval_select( # nolint: object_usage_linter
+      by_quo,
+      data = interviews,
+      allow_rename = FALSE,
+      allow_empty = FALSE,
+      error_call = rlang::caller_env()
+    )
+    by_vars <- names(by_cols)
+  } else {
+    by_vars <- character(0)
+  }
+
+  # Step 2: Filter catch to target type (harvested for HWS)
+  target_catch <- catch_data[catch_data[[type_col]] == "harvested", ]
+
+  # Merge to get species_sought on each catch row
+  sought_map <- interviews[, c(uid_col, ss_col), drop = FALSE]
+  catch_merged <- merge(
+    target_catch, sought_map,
+    by.x = uid_col, by.y = uid_col, all.x = FALSE
+  )
+
+  # Filter to rows where catch species == species_sought
+  target_rows <- catch_merged[
+    !is.na(catch_merged[[species_col]]) &
+      catch_merged[[species_col]] == catch_merged[[ss_col]], ,
+    drop = FALSE
+  ]
+
+  # Aggregate: sum catch per interview UID
+  if (nrow(target_rows) > 0) {
+    agg <- stats::aggregate(
+      target_rows[[count_col]],
+      by = list(.uid = target_rows[[uid_col]]),
+      FUN = sum
+    )
+    names(agg)[2] <- ".target_count"
+  } else {
+    agg <- data.frame(.uid = character(0), .target_count = numeric(0))
+  }
+
+  # Step 3: Join back to ALL interviews to preserve zeros
+  interview_base <- interviews[, unique(c(uid_col, ss_col, ae_col, by_vars)), drop = FALSE]
+  interview_base <- merge(
+    interview_base, agg,
+    by.x = uid_col, by.y = ".uid", all.x = TRUE
+  )
+  interview_base$.target_count[is.na(interview_base$.target_count)] <- 0
+
+  # Step 4: Exclude zero-effort interviews
+  zero_eff <- !is.na(interview_base[[ae_col]]) & interview_base[[ae_col]] <= 0
+  if (any(zero_eff)) {
+    interview_base <- interview_base[!zero_eff, , drop = FALSE]
+  }
+
+  # Step 5: Compute per-interview rate
+  interview_base$.rate <- interview_base$.target_count / interview_base[[ae_col]]
+
+  # Step 6: Group and compute summary statistics
+  group_cols <- if (length(by_vars) > 0) {
+    lapply(by_vars, function(v) interview_base[[v]])
+  } else {
+    list(rep("all", nrow(interview_base)))
+  }
+  names(group_cols) <- if (length(by_vars) > 0) by_vars else ".group"
+
+  n_agg <- stats::aggregate(interview_base$.rate, by = group_cols, FUN = length)
+  mean_agg <- stats::aggregate(interview_base$.rate, by = group_cols, FUN = mean)
+  sd_agg <- stats::aggregate(interview_base$.rate, by = group_cols, FUN = stats::sd)
+
+  names(n_agg)[ncol(n_agg)] <- "N"
+  names(mean_agg)[ncol(mean_agg)] <- "mean_rate"
+  names(sd_agg)[ncol(sd_agg)] <- "sd_rate"
+
+  merge_by <- if (length(by_vars) > 0) by_vars else ".group"
+  result <- merge(n_agg, mean_agg, by = merge_by)
+  result <- merge(result, sd_agg, by = merge_by)
+
+  # Step 7: SE and CI via t-distribution
+  result$se <- result$sd_rate / sqrt(result$N)
+  t_crit <- stats::qt((1 + conf_level) / 2, df = pmax(result$N - 1, 1))
+  result$ci_lower <- result$mean_rate - t_crit * result$se
+  result$ci_upper <- result$mean_rate + t_crit * result$se
+  result$sd_rate <- NULL
+
+  # Drop .group column when no by variables
+  if (length(by_vars) == 0) result$.group <- NULL
+
+  result$N <- as.integer(result$N)
+  row.names(result) <- NULL
+
+  class(result) <- c("creel_summary_hws_rates", "data.frame")
+  result
 }

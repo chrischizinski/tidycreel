@@ -23,6 +23,12 @@ A party is "successful" if any row in the attached catch data has
 party was seeking (\code{species_sought}). Returns counts of successful
 and total parties for each angler type x species sought combination.
 }
+\details{
+\strong{Interview-based summary, not pressure-weighted.} This function
+tabulates raw interview records without applying survey weighting by sampling
+effort or effort stratum. For pressure-weighted extrapolated estimates, use
+\code{\link{estimate_cpue}} or \code{\link{estimate_harvest}}.
+}
 \examples{
 \dontrun{
 data(example_calendar)

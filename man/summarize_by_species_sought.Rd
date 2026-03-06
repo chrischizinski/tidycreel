@@ -21,6 +21,12 @@ Counts the number of interviews for each species sought within each calendar
 month. Species sought is taken from the column set via
 \code{add_interviews(species_sought = ...)}.
 }
+\details{
+\strong{Interview-based summary, not pressure-weighted.} This function
+tabulates raw interview records without applying survey weighting by sampling
+effort or effort stratum. For pressure-weighted extrapolated estimates, use
+\code{\link{estimate_cpue}} or \code{\link{estimate_harvest}}.
+}
 \examples{
 \dontrun{
 data(example_calendar)
