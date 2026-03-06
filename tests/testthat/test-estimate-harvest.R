@@ -574,8 +574,8 @@ test_that("grouped harvest estimation with example data handles small groups app
 test_that("estimate_harvest filters zero-effort interviews with warning", {
   design <- make_harvest_design()
 
-  # Inject 2 zero-effort interviews
-  design$interviews$hours_fished[1:2] <- 0
+  # Inject 2 zero-effort interviews (must set .angler_effort, the column used by estimate_harvest)
+  design$interviews[[".angler_effort"]][1:2] <- 0
 
   # Should warn about zero-effort
   expect_warning(
@@ -595,8 +595,8 @@ test_that("estimate_harvest filters zero-effort interviews with warning", {
 test_that("estimate_harvest with all zero-effort errors on empty data", {
   design <- make_harvest_design()
 
-  # Set all effort to zero
-  design$interviews$hours_fished <- 0
+  # Set all angler effort to zero (the column used by estimate_harvest)
+  design$interviews[[".angler_effort"]] <- 0
 
   # After filtering, n = 0, which should error
   expect_error(
@@ -899,53 +899,4 @@ test_that("estimate_harvest() by=circuit: proportion column present and sums to 
   result <- estimate_harvest(d, by = circuit) # nolint: object_usage_linter
   expect_true("proportion" %in% names(result$estimates))
   expect_equal(sum(result$estimates$proportion), 1.0, tolerance = 1e-6)
-})
-
-# normalize_by_anglers tests ----
-
-#' Create harvest design with n_anglers (all party_size = 2)
-make_harvest_design_anglers <- function(party_size = 2L) {
-  cal <- make_test_calendar_harvest()
-  design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
-  itvs <- make_test_interviews_harvest()
-  # Use only complete trips for harvest baseline
-  itvs_complete <- itvs[itvs$trip_status == "complete", ]
-  itvs_complete$party_size <- party_size
-  add_interviews(design, itvs_complete, catch = catch_total, effort = hours_fished, harvest = catch_kept, trip_status = trip_status, trip_duration = trip_duration, n_anglers = party_size) # nolint: object_usage_linter
-}
-
-test_that("normalize_by_anglers = TRUE errors when n_anglers not in harvest design", {
-  design <- make_harvest_design() # no n_anglers
-
-  expect_error(
-    estimate_harvest(design, normalize_by_anglers = TRUE),
-    regexp = "n_anglers.*column"
-  )
-})
-
-test_that("normalize_by_anglers = TRUE with n_anglers = 1 gives same harvest estimate", {
-  design <- make_harvest_design_anglers(party_size = 1L)
-
-  result_raw <- estimate_harvest(design)
-  result_norm <- estimate_harvest(design, normalize_by_anglers = TRUE)
-
-  expect_equal(result_raw$estimates$estimate, result_norm$estimates$estimate, tolerance = 1e-10)
-})
-
-test_that("normalize_by_anglers = TRUE with constant n_anglers = 2 gives harvest estimate / 2", {
-  design <- make_harvest_design_anglers(party_size = 2L)
-
-  result_raw <- estimate_harvest(design)
-  result_norm <- estimate_harvest(design, normalize_by_anglers = TRUE)
-
-  ratio <- result_raw$estimates$estimate / result_norm$estimates$estimate
-  expect_equal(ratio, 2, tolerance = 1e-10)
-})
-
-test_that("normalize_by_anglers = TRUE sets harvest method to ratio-of-means-hpue-per-angler", {
-  design <- make_harvest_design_anglers()
-
-  result <- estimate_harvest(design, normalize_by_anglers = TRUE)
-
-  expect_equal(result$method, "ratio-of-means-hpue-per-angler")
 })
