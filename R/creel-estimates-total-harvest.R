@@ -98,6 +98,33 @@ estimate_total_harvest <- function(design, by = NULL, variance = "taylor", conf_
   # Validate design compatibility (counts AND interviews required)
   validate_design_compatibility(design) # nolint: object_usage_linter
 
+  # Detect species-level grouping
+  by_info <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
+
+  if (!is.null(by_info$species_var)) {
+    if (is.null(design[["catch"]])) {
+      cli::cli_abort(c(
+        "Species-level total harvest requires catch data.",
+        "x" = "Call {.fn add_catch} before using species grouping in {.fn estimate_total_harvest}."
+      ))
+    }
+    estimates_df <- estimate_total_harvest_species( # nolint: object_usage_linter
+      design,
+      species_col       = by_info$species_var,
+      interview_by_vars = by_info$interview_vars,
+      variance_method   = variance,
+      conf_level        = conf_level
+    )
+    return(new_creel_estimates( # nolint: object_usage_linter
+      estimates       = tibble::as_tibble(estimates_df),
+      method          = "product-total-harvest",
+      variance_method = variance,
+      design          = design,
+      conf_level      = conf_level,
+      by_vars         = by_info$all_vars
+    ))
+  }
+
   # Validate design$harvest_col exists
   if (is.null(design$harvest_col)) {
     cli::cli_abort(c(
@@ -267,4 +294,92 @@ estimate_total_harvest_grouped <- function(design, by_vars, variance_method, con
     conf_level = conf_level,
     by_vars = by_vars
   )
+}
+
+#' Species-level total harvest estimation
+#'
+#' @keywords internal
+#' @noRd
+estimate_total_harvest_species <- function(design, species_col, interview_by_vars,
+                                           variance_method, conf_level) {
+  all_species <- sort(unique(design[["catch"]][[species_col]]))
+  results_list <- vector("list", length(all_species))
+
+  # Get all-species HPUE in one call
+  all_hpue_df <- estimate_hpue_species( # nolint: object_usage_linter
+    design,
+    species_col       = species_col,
+    interview_by_vars = interview_by_vars,
+    variance_method   = variance_method,
+    conf_level        = conf_level
+  )
+
+  # Get effort estimate (not species-grouped)
+  if (is.null(interview_by_vars)) {
+    effort_result <- estimate_effort(design, variance = variance_method, conf_level = conf_level) # nolint: object_usage_linter
+  } else {
+    by_sym <- if (length(interview_by_vars) == 1L) {
+      rlang::sym(interview_by_vars)
+    } else {
+      rlang::syms(interview_by_vars)
+    }
+    effort_result <- estimate_effort(design, by = !!by_sym, variance = variance_method, conf_level = conf_level) # nolint: object_usage_linter
+  }
+  effort_df <- effort_result$estimates
+
+  for (i in seq_along(all_species)) {
+    sp <- all_species[[i]]
+
+    hpue_sp_df <- all_hpue_df[all_hpue_df[[species_col]] == sp, , drop = FALSE]
+
+    if (is.null(interview_by_vars)) {
+      effort_est <- effort_df$estimate
+      hpue_est <- hpue_sp_df$estimate
+      effort_se <- effort_df$se
+      hpue_se <- hpue_sp_df$se
+      estimate <- effort_est * hpue_est
+      pv <- (effort_est^2 * hpue_se^2) + (hpue_est^2 * effort_se^2)
+      se <- sqrt(pv)
+      z <- stats::qnorm(1 - (1 - conf_level) / 2)
+      sp_result <- data.frame(
+        estimate = estimate, se = se,
+        ci_lower = estimate - z * se, ci_upper = estimate + z * se,
+        n = hpue_sp_df$n, stringsAsFactors = FALSE
+      )
+    } else {
+      hpue_no_sp <- hpue_sp_df[, setdiff(names(hpue_sp_df), species_col), drop = FALSE]
+      merged <- merge(
+        effort_df, hpue_no_sp,
+        by = interview_by_vars, suffixes = c("_effort", "_hpue"), sort = FALSE
+      )
+      n_groups <- nrow(merged)
+      estimates_list <- vector("list", n_groups)
+      for (j in seq_len(n_groups)) {
+        e_est <- merged$estimate_effort[j]
+        h_est <- merged$estimate_hpue[j]
+        e_se <- merged$se_effort[j]
+        h_se <- merged$se_hpue[j]
+        est <- e_est * h_est
+        pv <- (e_est^2 * h_se^2) + (h_est^2 * e_se^2)
+        z <- stats::qnorm(1 - (1 - conf_level) / 2)
+        estimates_list[[j]] <- list(
+          estimate = est, se = sqrt(pv),
+          ci_lower = est - z * sqrt(pv), ci_upper = est + z * sqrt(pv),
+          n = merged$n_hpue[j]
+        )
+      }
+      sp_result <- tibble::as_tibble(merged[interview_by_vars])
+      sp_result$estimate <- sapply(estimates_list, `[[`, "estimate")
+      sp_result$se <- sapply(estimates_list, `[[`, "se")
+      sp_result$ci_lower <- sapply(estimates_list, `[[`, "ci_lower")
+      sp_result$ci_upper <- sapply(estimates_list, `[[`, "ci_upper")
+      sp_result$n <- sapply(estimates_list, `[[`, "n")
+    }
+
+    sp_result[[species_col]] <- sp
+    sp_result <- sp_result[c(species_col, setdiff(names(sp_result), species_col))]
+    results_list[[i]] <- sp_result
+  }
+
+  do.call(rbind, results_list)
 }

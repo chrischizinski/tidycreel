@@ -99,7 +99,7 @@ See: [.planning/milestones/v0.4.0-ROADMAP.md](milestones/v0.4.0-ROADMAP.md)
 - [x] **Phase 31: Interview-Level Unextrapolated Summaries** — Raw tabulation functions: refusals, day type, angler type, method, species sought, successful parties, trip length (completed 2026-03-02)
 - [x] **Phase 32: CWS/HWS Rates** — Caught-while-sought and harvested-while-sought rate functions from raw interview data (completed 2026-03-07)
 - [x] **Phase 33: Length Frequency Summaries** — Length distribution functions for catch, harvest, and release (completed 2026-03-07)
-- [ ] **Phase 34: Species-Level Extrapolated Estimates** — Extend `estimate_cpue()`, `estimate_total_catch()`, `estimate_total_harvest()` to species groupings; add `estimate_total_release()` and `estimate_release_rate()`
+- [ ] **Phase 34: Species-Level Extrapolated Estimates** — Extend `estimate_cpue()`, `estimate_total_catch()`, `estimate_total_harvest()` to species groupings; add `estimate_total_release()` and `estimate_release_rate()` (planned 2026-03-07)
 - [ ] **Phase 35: Documentation & Quality Assurance** — Unextrapolated summaries vignette, extended example datasets, complete roxygen2 docs
 
 ## Phase Details
@@ -210,7 +210,11 @@ Plans:
   3. `estimate_total_release(design)` and `estimate_release_rate(design)` exist and return results analogous to their harvest counterparts, supporting species-level grouping
   4. All new grouping combinations produce tibbles with consistent columns (estimate, SE, lower_ci, upper_ci) matching existing function output structure
   5. R CMD check passes and all tests pass; existing estimator calls without species grouping continue to produce identical results (backward compatibility preserved)
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 34-01-PLAN.md — resolve_species_by() helper, make_species_catch_for_interviews(), estimate_cpue() species extension, estimate_release_rate() new function with normalize_by_anglers
+- [ ] 34-02-PLAN.md — estimate_total_release() new file, estimate_total_catch/harvest() species extensions, estimate_hpue_species(), ~50 tests in test-estimate-species.R
 
 ### Phase 35: Documentation & Quality Assurance
 **Goal**: All new v0.5.0 functions are fully documented with roxygen2, extended example datasets support species-level examples, and a new vignette demonstrates the complete unextrapolated workflow end-to-end
@@ -236,5 +240,5 @@ Plans:
 **Overall:** 4 milestones shipped, 32 phases complete, 54 plans executed; 8 phases planned for v0.5.0
 
 ---
-*Roadmap last updated: 2026-03-07 — Phase 33 complete (summarize_length_freq(), 47 tests, handles individual + pre-binned release formats)*
+*Roadmap last updated: 2026-03-07 — Phase 34 planned (2 plans: species CPUE + release rate + total species estimates, ~50 tests)*
 *See .planning/MILESTONES.md for full milestone history*
