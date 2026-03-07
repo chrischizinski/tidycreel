@@ -114,6 +114,37 @@ get_variance_design <- function(design, variance_method) {
   }
 }
 
+#' Build interview survey design with explicit equal-probability weights
+#'
+#' Internal helper that constructs a \code{survey.design2} object for interview
+#' data. Creel interview designs assume equal probability of selection within
+#' each stratum: interviewers contact all available anglers encountered during a
+#' survey period. Passing \code{weights = rep(1, nrow(data))} makes this
+#' assumption explicit and suppresses the survey package diagnostic
+#' "No weights or probabilities supplied, assuming equal probability", which
+#' would otherwise appear on every \code{add_interviews()} call.
+#'
+#' Equal-probability weights do not affect downstream means or ratios
+#' (\code{svymean}, \code{svyratio}), nor variance estimates from Taylor
+#' linearization, bootstrap, or jackknife when all weights are identical.
+#'
+#' @param data Data frame of interview records.
+#' @param strata A one-sided formula (e.g. \code{~.strata}) or \code{NULL} for
+#'   no stratification.
+#'
+#' @return A \code{survey.design2} object.
+#'
+#' @keywords internal
+#' @noRd
+build_interview_survey <- function(data, strata = NULL) {
+  survey::svydesign(
+    ids = ~1,
+    strata = strata,
+    weights = rep(1, nrow(data)),
+    data = data
+  )
+}
+
 #' Validate count data structure (Tier 1)
 #'
 #' Internal validator that checks count data matches the creel_design structure.
@@ -1207,11 +1238,7 @@ construct_interview_survey <- function(design) {
   # Attempt to construct survey design with error wrapping
   tryCatch(
     {
-      survey::svydesign(
-        ids = ~1,
-        strata = strata_formula,
-        data = interviews_data
-      )
+      build_interview_survey(interviews_data, strata = strata_formula)
     },
     error = function(e) {
       # Detect specific error types and provide domain guidance

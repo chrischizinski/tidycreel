@@ -98,12 +98,12 @@ estimate_effort_br <- function(design, by_vars, variance_method, conf_level, ver
 
     # Variance via survey package using svytotal on .contribution column
     strata_cols <- design$strata_cols
-    if (!is.null(strata_cols) && length(strata_cols) > 0) {
-      strata_formula <- stats::reformulate(strata_cols)
-      svy_br <- survey::svydesign(ids = ~1, strata = strata_formula, data = interviews)
+    strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0) {
+      stats::reformulate(strata_cols)
     } else {
-      svy_br <- survey::svydesign(ids = ~1, data = interviews)
+      NULL
     }
+    svy_br <- build_interview_survey(interviews, strata = strata_formula) # nolint: object_usage_linter
     svy_br <- get_variance_design(svy_br, variance_method) # nolint: object_usage_linter
     svy_result <- suppressWarnings(survey::svytotal(~.contribution, svy_br))
     se <- as.numeric(survey::SE(svy_result)) # nolint: object_usage_linter
@@ -134,12 +134,12 @@ estimate_effort_br <- function(design, by_vars, variance_method, conf_level, ver
     # For by="circuit": compute per-group total, then add proportion of overall
     by_formula <- stats::reformulate(by_vars)
     strata_cols <- design$strata_cols
-    if (!is.null(strata_cols) && length(strata_cols) > 0) {
-      strata_formula <- stats::reformulate(strata_cols)
-      svy_br <- survey::svydesign(ids = ~1, strata = strata_formula, data = interviews)
+    strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0) {
+      stats::reformulate(strata_cols)
     } else {
-      svy_br <- survey::svydesign(ids = ~1, data = interviews)
+      NULL
     }
+    svy_br <- build_interview_survey(interviews, strata = strata_formula) # nolint: object_usage_linter
     svy_br <- get_variance_design(svy_br, variance_method) # nolint: object_usage_linter
 
     svy_result <- suppressWarnings(survey::svyby(
@@ -478,12 +478,12 @@ br_build_estimates <- function(
     total_estimate <- sum(interviews$.contribution, na.rm = TRUE) # nolint
     n <- nrow(interviews) # nolint: object_usage_linter
 
-    if (!is.null(strata_cols) && length(strata_cols) > 0) {
-      strata_formula <- stats::reformulate(strata_cols)
-      svy_br <- survey::svydesign(ids = ~1, strata = strata_formula, data = interviews)
+    strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0) {
+      stats::reformulate(strata_cols)
     } else {
-      svy_br <- survey::svydesign(ids = ~1, data = interviews)
+      NULL
     }
+    svy_br <- build_interview_survey(interviews, strata = strata_formula) # nolint: object_usage_linter
     svy_br <- get_variance_design(svy_br, variance_method) # nolint: object_usage_linter
     svy_result <- suppressWarnings(survey::svytotal(~.contribution, svy_br))
     se <- as.numeric(survey::SE(svy_result)) # nolint: object_usage_linter
@@ -512,12 +512,12 @@ br_build_estimates <- function(
   } else {
     by_formula <- stats::reformulate(by_vars)
 
-    if (!is.null(strata_cols) && length(strata_cols) > 0) {
-      strata_formula <- stats::reformulate(strata_cols)
-      svy_br <- survey::svydesign(ids = ~1, strata = strata_formula, data = interviews)
+    strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0) {
+      stats::reformulate(strata_cols)
     } else {
-      svy_br <- survey::svydesign(ids = ~1, data = interviews)
+      NULL
     }
+    svy_br <- build_interview_survey(interviews, strata = strata_formula) # nolint: object_usage_linter
     svy_br <- get_variance_design(svy_br, variance_method) # nolint: object_usage_linter
 
     svy_result <- suppressWarnings(survey::svyby(

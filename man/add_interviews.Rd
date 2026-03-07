@@ -19,7 +19,7 @@ add_interviews(
   angler_type = NULL,
   angler_method = NULL,
   species_sought = NULL,
-  n_anglers = NULL,
+  n_anglers = 1L,
   refused = NULL,
   date_col = NULL,
   interview_type = c("access", "roving"),
@@ -86,9 +86,9 @@ the fishing technique employed (e.g., "fly", "spin", "bait").}
 NULL). Use bare column names (e.g., \code{species_sought = target_species}).
 Records the species the angler was targeting during the interview.}
 
-\item{n_anglers}{Tidy selector for the number of anglers in the party (optional,
-default NULL). Use bare column names (e.g., \code{n_anglers = party_size}).
-Values should be positive integers.}
+\item{n_anglers}{Tidy selector for the number of anglers in the party (default 1L --
+individual-level interviews). When omitted, a \code{cli_inform()} message notes the
+assumption. Use bare column names (e.g., \code{n_anglers = party_size}).}
 
 \item{refused}{Tidy selector for the refused interview flag column (optional,
 default NULL). Use bare column names (e.g., \code{refused = refused_flag}).

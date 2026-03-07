@@ -574,8 +574,8 @@ test_that("grouped harvest estimation with example data handles small groups app
 test_that("estimate_harvest filters zero-effort interviews with warning", {
   design <- make_harvest_design()
 
-  # Inject 2 zero-effort interviews
-  design$interviews$hours_fished[1:2] <- 0
+  # Inject 2 zero-effort interviews (must set .angler_effort, the column used by estimate_harvest)
+  design$interviews[[".angler_effort"]][1:2] <- 0
 
   # Should warn about zero-effort
   expect_warning(
@@ -595,8 +595,8 @@ test_that("estimate_harvest filters zero-effort interviews with warning", {
 test_that("estimate_harvest with all zero-effort errors on empty data", {
   design <- make_harvest_design()
 
-  # Set all effort to zero
-  design$interviews$hours_fished <- 0
+  # Set all angler effort to zero (the column used by estimate_harvest)
+  design$interviews[[".angler_effort"]] <- 0
 
   # After filtering, n = 0, which should error
   expect_error(

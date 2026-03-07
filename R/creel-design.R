@@ -1,3 +1,81 @@
+#' Resolve fishing effort from timestamps or self-reported time
+#'
+#' @description
+#' Computes fishing effort (hours) for each interview row using a conditional
+#' rule: if the \code{time_fished} column is present and non-NA for a row, use
+#' that value (angler self-reported hours, e.g. after a break); otherwise
+#' compute from timestamps as
+#' \code{difftime(interview_time, trip_start, units = "hours")}.
+#'
+#' This function can be called standalone on raw data before entering the
+#' \code{\link{add_interviews}} workflow, or used to preprocess a column that
+#' will be passed as the \code{effort} argument to \code{add_interviews()}.
+#'
+#' @param data A data frame containing the interview records.
+#' @param trip_start Tidy selector for the trip start timestamp column (POSIXct).
+#' @param interview_time Tidy selector for the interview timestamp column (POSIXct).
+#' @param time_fished Optional tidy selector for a self-reported hours column.
+#'   When a row has a non-NA value here, it overrides the timestamp calculation.
+#'   Default is \code{NULL} (always compute from timestamps).
+#'
+#' @return The input data frame with an added \code{.effort} column (numeric,
+#'   hours). Existing columns are preserved.
+#'
+#' @seealso [compute_angler_effort()], [add_interviews()]
+#' @export
+compute_effort <- function(data, trip_start, interview_time, time_fished = NULL) {
+  ts_quo <- rlang::enquo(trip_start)
+  it_quo <- rlang::enquo(interview_time)
+  tf_quo <- rlang::enquo(time_fished)
+
+  ts_col <- names(tidyselect::eval_select(ts_quo, data))
+  it_col <- names(tidyselect::eval_select(it_quo, data))
+
+  ts_vals <- data[[ts_col]]
+  it_vals <- data[[it_col]]
+  ts_effort <- as.numeric(difftime(it_vals, ts_vals, units = "hours"))
+
+  if (!rlang::quo_is_null(tf_quo)) {
+    tf_col <- names(tidyselect::eval_select(tf_quo, data))
+    tf_vals <- data[[tf_col]]
+    data[[".effort"]] <- ifelse(!is.na(tf_vals), tf_vals, ts_effort)
+  } else {
+    data[[".effort"]] <- ts_effort
+  }
+  data
+}
+
+#' Normalize fishing effort to angler-hours
+#'
+#' @description
+#' Multiplies per-trip effort (hours) by party size (number of anglers) to
+#' produce angler-hours. This converts party-level effort records to
+#' individual-angler units, which are required for CPUE and harvest-rate
+#' computations.
+#'
+#' This function can be called standalone on a raw data frame or is called
+#' internally by \code{\link{add_interviews}} when constructing the design object.
+#'
+#' @param data A data frame containing the interview records.
+#' @param effort Tidy selector for the effort column (numeric, hours per trip).
+#' @param n_anglers Tidy selector for the number-of-anglers column (positive integer).
+#'
+#' @return The input data frame with an added \code{.angler_effort} column
+#'   (numeric, angler-hours). Existing columns are preserved.
+#'
+#' @seealso [compute_effort()], [add_interviews()]
+#' @export
+compute_angler_effort <- function(data, effort, n_anglers) {
+  e_quo <- rlang::enquo(effort)
+  na_quo <- rlang::enquo(n_anglers)
+
+  e_col <- names(tidyselect::eval_select(e_quo, data))
+  na_col <- names(tidyselect::eval_select(na_quo, data))
+
+  data[[".angler_effort"]] <- data[[e_col]] * data[[na_col]]
+  data
+}
+
 #' Create a creel survey design
 #'
 #' @description
@@ -698,9 +776,9 @@ add_counts <- function(design, counts, psu = NULL, allow_invalid = FALSE) {
 #' @param species_sought Tidy selector for species sought column (optional, default
 #'   NULL). Use bare column names (e.g., `species_sought = target_species`).
 #'   Records the species the angler was targeting during the interview.
-#' @param n_anglers Tidy selector for the number of anglers in the party (optional,
-#'   default NULL). Use bare column names (e.g., `n_anglers = party_size`).
-#'   Values should be positive integers.
+#' @param n_anglers Tidy selector for the number of anglers in the party (default 1L --
+#'   individual-level interviews). When omitted, a \code{cli_inform()} message notes the
+#'   assumption. Use bare column names (e.g., \code{n_anglers = party_size}).
 #' @param refused Tidy selector for the refused interview flag column (optional,
 #'   default NULL). Use bare column names (e.g., `refused = refused_flag`).
 #'   Values should be logical (TRUE/FALSE) or coercible to logical.
@@ -824,11 +902,14 @@ add_interviews <- function(design, interviews,
                            angler_type = NULL,
                            angler_method = NULL,
                            species_sought = NULL,
-                           n_anglers = NULL,
+                           n_anglers = 1L,
                            refused = NULL,
                            date_col = NULL,
                            interview_type = c("access", "roving"),
                            allow_invalid = FALSE) {
+  # Capture missing status before any default resolution
+  n_anglers_missing <- missing(n_anglers)
+
   # Validate design is creel_design
   if (!inherits(design, "creel_design")) {
     cli::cli_abort(c(
@@ -967,13 +1048,15 @@ add_interviews <- function(design, interviews,
     )
   }
 
-  # Resolve n_anglers column (optional)
+  # Resolve n_anglers column (optional; skip resolution when using integer default)
   n_anglers_col <- NULL
-  n_anglers_quo <- rlang::enquo(n_anglers)
-  if (!rlang::quo_is_null(n_anglers_quo)) {
-    n_anglers_col <- resolve_single_col(
-      n_anglers_quo, interviews, "n_anglers", rlang::caller_env()
-    )
+  if (!n_anglers_missing) {
+    n_anglers_quo <- rlang::enquo(n_anglers)
+    if (!rlang::quo_is_null(n_anglers_quo)) {
+      n_anglers_col <- resolve_single_col(
+        n_anglers_quo, interviews, "n_anglers", rlang::caller_env()
+      )
+    }
   }
 
   # Resolve refused column (optional)
@@ -1092,6 +1175,27 @@ add_interviews <- function(design, interviews,
   new_design$trip_duration_col <- trip_duration_col
   new_design$trip_start_col <- trip_start_col
   new_design$interview_time_col <- interview_time_col
+
+  # Emit inform when n_anglers was not explicitly provided
+  if (n_anglers_missing) {
+    cli::cli_inform(c(
+      "i" = "No {.arg n_anglers} provided \u2014 assuming 1 angler per interview.",
+      "i" = paste(
+        "Pass {.code n_anglers = <column>} to use actual party sizes",
+        "for angler-hour normalization."
+      )
+    ))
+  }
+
+  # Compute angler effort (effort x n_anglers) -- always set for downstream functions
+  if (!is.null(n_anglers_col)) {
+    new_design$interviews[[".angler_effort"]] <-
+      new_design$interviews[[effort_col]] * new_design$interviews[[n_anglers_col]]
+  } else {
+    # n_anglers defaults to 1L -- angler_effort equals raw effort
+    new_design$interviews[[".angler_effort"]] <- new_design$interviews[[effort_col]]
+  }
+  new_design$angler_effort_col <- ".angler_effort"
 
   # Construct interview survey eagerly
   new_design$interview_survey <- construct_interview_survey(new_design) # nolint: object_usage_linter
@@ -1224,6 +1328,47 @@ format.creel_design <- function(x, ...) {
       }
     } else {
       cli::cli_text("Interviews: {.val none}")
+    }
+
+    # Catch Data section
+    has_catch <- !is.null(x[["catch"]]) # nolint: object_usage_linter
+    if (has_catch) {
+      n_catch_rows <- nrow(x$catch) # nolint: object_usage_linter
+      n_catch_species <- length(unique(x$catch[[x$catch_species_col]])) # nolint: object_usage_linter
+      type_counts <- table(x$catch[[x$catch_type_col]])
+      type_parts <- paste0(names(type_counts), ": ", as.integer(type_counts)) # nolint: object_usage_linter
+      cli::cli_text(
+        "Catch Data: {.val {n_catch_rows}} row{?s}, {.val {n_catch_species}} species"
+      )
+      cli::cli_text("  {paste(type_parts, collapse = ', ')}")
+    }
+
+    # Length Data section
+    has_lengths <- !is.null(x[["lengths"]]) # nolint: object_usage_linter
+    if (has_lengths) {
+      n_length_rows <- nrow(x[["lengths"]]) # nolint: object_usage_linter
+      n_length_species <- length(unique(x[["lengths"]][[x$lengths_species_col]])) # nolint: object_usage_linter
+      harvest_len_rows <- x[["lengths"]][x[["lengths"]][[x$lengths_type_col]] == "harvest", ]
+      release_len_rows <- x[["lengths"]][x[["lengths"]][[x$lengths_type_col]] == "release", ]
+      n_harvest <- nrow(harvest_len_rows) # nolint: object_usage_linter
+      n_release <- nrow(release_len_rows) # nolint: object_usage_linter
+      numeric_lengths <- suppressWarnings(as.numeric(harvest_len_rows[[x$lengths_length_col]]))
+      rel_fmt <- if (!is.null(x$lengths_release_format)) x$lengths_release_format else "individual"
+      if (rel_fmt == "individual" && nrow(release_len_rows) > 0) {
+        rel_lengths <- suppressWarnings(as.numeric(release_len_rows[[x$lengths_length_col]]))
+        numeric_lengths <- c(numeric_lengths, rel_lengths[!is.na(rel_lengths)])
+      }
+      len_min <- min(numeric_lengths, na.rm = TRUE) # nolint: object_usage_linter
+      len_max <- max(numeric_lengths, na.rm = TRUE) # nolint: object_usage_linter
+      cli::cli_text(
+        "Length Data: {.val {n_length_rows}} row{?s}, {.val {n_length_species}} species, length: {len_min}\u2013{len_max} mm" # nolint: line_length_linter
+      )
+      cli::cli_text("  harvest: {n_harvest} individual")
+      if (n_release > 0) {
+        cli::cli_text("  release: {n_release} {rel_fmt}")
+      } else {
+        cli::cli_text("  release: none")
+      }
     }
 
     # Bus-Route section
@@ -1893,4 +2038,466 @@ validate_br_interviews_tier3 <- function(interviews, design,
   }
 
   invisible(NULL)
+}
+
+
+#' Attach species-level catch data to a creel design
+#'
+#' Attaches a long-format data frame of species-level catch data to a
+#' \code{creel_design} object. Each row in \code{data} represents a
+#' species-catch-type combination for a single interview. Data is
+#' validated at attach time and stored on the design for use by downstream
+#' summary and estimation functions.
+#'
+#' @param design A \code{creel_design} object created by \code{\link{creel_design}}.
+#' @param data A data frame in long format: one row per species per catch type per interview.
+#' @param catch_uid <\link[tidyselect]{tidyselect}> Column in \code{data} containing
+#'   interview IDs (the catch-side join key).
+#' @param interview_uid <\link[tidyselect]{tidyselect}> Column in
+#'   \code{design$interviews} containing the matching interview IDs.
+#' @param species <\link[tidyselect]{tidyselect}> Column in \code{data} containing
+#'   species names or codes.
+#' @param count <\link[tidyselect]{tidyselect}> Column in \code{data} containing
+#'   fish counts (non-negative integer or numeric).
+#' @param catch_type <\link[tidyselect]{tidyselect}> Column in \code{data} containing
+#'   catch fate: one of \code{"caught"}, \code{"harvested"}, or \code{"released"}.
+#'   Values are normalized to lowercase before validation.
+#'
+#' @details
+#' \strong{Catch type model:} Each species-interview row carries one of three
+#' catch types. \code{"caught"} is the total; \code{"harvested"} and
+#' \code{"released"} are subsets. A \code{"caught"} row is optional — when
+#' absent, total catch is inferred as \code{harvested + released}. When a
+#' \code{"caught"} row is present, \code{caught >= harvested + released} is
+#' enforced (CATCH-04).
+#'
+#' \strong{Interview ID validation:} Every interview ID appearing in \code{data}
+#' must appear in \code{design$interviews[[interview_uid]]}. Interviews with no
+#' catch rows are valid (anglers who caught nothing need not appear in catch
+#' data).
+#'
+#' \strong{Immutability:} Returns a new \code{creel_design} — the input is not
+#' modified. Calling \code{add_catch()} on a design that already has
+#' \code{$catch} is an error.
+#'
+#' @return A new \code{creel_design} object with \code{$catch} and associated
+#'   \code{$catch_*_col} fields attached.
+#'
+#' @examples
+#' \dontrun{
+#' data(example_calendar)
+#' data(example_interviews)
+#' data(example_catch)
+#'
+#' design <- creel_design(example_calendar, date = date, strata = day_type)
+#' design <- add_interviews(design, example_interviews,
+#'   catch = catch_total, effort = hours_fished, harvest = catch_kept,
+#'   trip_status = trip_status, trip_duration = trip_duration
+#' )
+#' design <- add_catch(design, example_catch,
+#'   catch_uid = interview_id,
+#'   interview_uid = interview_id,
+#'   species = species,
+#'   count = count,
+#'   catch_type = catch_type
+#' )
+#' print(design)
+#' }
+#'
+#' @export
+add_catch <- function(design, data,
+                      catch_uid,
+                      interview_uid,
+                      species,
+                      count,
+                      catch_type) {
+  # Guard: must be a creel_design
+  if (!inherits(design, "creel_design")) {
+    cli::cli_abort(
+      "{.arg design} must be a {.cls creel_design} object."
+    )
+  }
+
+  # Guard: immutability — catch already attached
+  # Use [[ for exact matching (avoids partial match of $catch against $catch_col etc.)
+  if (!is.null(design[["catch"]])) {
+    cli::cli_abort(c(
+      "This design already has catch data attached.",
+      "i" = "Use immutable workflow: {.code design2 <- add_catch(design, data, ...)}"
+    ))
+  }
+
+  # Guard: interviews must exist before catch
+  if (is.null(design$interviews)) {
+    cli::cli_abort(c(
+      "Interviews must be attached before catch data.",
+      "i" = "Call {.fn add_interviews} first, then {.fn add_catch}."
+    ))
+  }
+
+  # Resolve tidy selectors
+  catch_uid_col <- resolve_single_col(
+    rlang::enquo(catch_uid), data, "catch_uid", rlang::caller_env()
+  )
+  interview_uid_col <- resolve_single_col(
+    rlang::enquo(interview_uid), design$interviews, "interview_uid", rlang::caller_env()
+  )
+  species_col <- resolve_single_col(
+    rlang::enquo(species), data, "species", rlang::caller_env()
+  )
+  count_col <- resolve_single_col(
+    rlang::enquo(count), data, "count", rlang::caller_env()
+  )
+  catch_type_col <- resolve_single_col(
+    rlang::enquo(catch_type), data, "catch_type", rlang::caller_env()
+  )
+
+  # Normalize catch_type to lowercase
+  data[[catch_type_col]] <- tolower(data[[catch_type_col]])
+
+  # Validate catch_type values
+  valid_types <- c("caught", "harvested", "released")
+  bad_types <- setdiff(unique(data[[catch_type_col]]), valid_types)
+  if (length(bad_types) > 0) {
+    cli::cli_abort(c(
+      "Invalid {.field catch_type} value{?s}: {.val {bad_types}}",
+      "i" = "Accepted values: {.val {valid_types}}"
+    ))
+  }
+
+  # Validate interview ID join (CATCH-02)
+  catch_ids <- unique(data[[catch_uid_col]])
+  interview_ids <- design$interviews[[interview_uid_col]]
+  unmatched <- setdiff(catch_ids, interview_ids)
+  if (length(unmatched) > 0) {
+    cli::cli_abort(c(
+      "{length(unmatched)} interview ID{?s} in catch data not found in design interviews:",
+      stats::setNames(
+        paste0("{.val ", unmatched, "}"),
+        rep("x", length(unmatched))
+      ),
+      "i" = "Every catch row must reference an interview in the design."
+    ))
+  }
+
+  # Validate caught >= harvested + released per species-interview (CATCH-04)
+  caught_rows <- data[data[[catch_type_col]] == "caught", ]
+  if (nrow(caught_rows) > 0) {
+    sub_rows <- data[data[[catch_type_col]] %in% c("harvested", "released"), ]
+    if (nrow(sub_rows) > 0) {
+      sub_agg <- stats::aggregate(
+        sub_rows[[count_col]],
+        by = list(uid = sub_rows[[catch_uid_col]], species = sub_rows[[species_col]]),
+        FUN = sum
+      )
+      names(sub_agg)[3] <- "sub_total"
+    } else {
+      sub_agg <- data.frame(uid = character(0), species = character(0), sub_total = numeric(0))
+    }
+    caught_agg <- stats::aggregate(
+      caught_rows[[count_col]],
+      by = list(uid = caught_rows[[catch_uid_col]], species = caught_rows[[species_col]]),
+      FUN = sum
+    )
+    names(caught_agg)[3] <- "caught_total"
+    combined <- merge(caught_agg, sub_agg, by = c("uid", "species"), all.x = TRUE)
+    combined$sub_total[is.na(combined$sub_total)] <- 0L
+    violations <- combined[combined$caught_total < combined$sub_total, ]
+    if (nrow(violations) > 0) {
+      bad_pairs <- paste0(violations$uid, "/", violations$species) # nolint: object_usage_linter
+      cli::cli_abort(c(
+        "Harvest + release exceeds catch for {nrow(violations)} species-interview pair{?s}:",
+        stats::setNames(
+          paste0("{.val ", bad_pairs, "}"),
+          rep("x", length(bad_pairs))
+        ),
+        "i" = paste0(
+          "caught must be >= harvested + released for each species-interview combination."
+        )
+      ))
+    }
+  }
+
+  # Consistency check against interview-level catch_col (warning only)
+  if (!is.null(design$catch_col) && design$catch_col %in% names(design$interviews)) {
+    caught_only <- data[data[[catch_type_col]] == "caught", ]
+    if (nrow(caught_only) > 0) {
+      totals_from_catch <- stats::aggregate(
+        caught_only[[count_col]],
+        by = list(uid = caught_only[[catch_uid_col]]),
+        FUN = sum
+      )
+    } else {
+      sub_data <- data[data[[catch_type_col]] %in% c("harvested", "released"), ]
+      totals_from_catch <- stats::aggregate(
+        sub_data[[count_col]],
+        by = list(uid = sub_data[[catch_uid_col]]),
+        FUN = sum
+      )
+    }
+    names(totals_from_catch)[2] <- "catch_implied"
+    intv_totals <- design$interviews[, c(interview_uid_col, design$catch_col), drop = FALSE]
+    names(intv_totals) <- c("uid", "catch_intv")
+    check <- merge(totals_from_catch, intv_totals, by = "uid", all.x = TRUE)
+    diverged <- check[!is.na(check$catch_intv) & check$catch_implied != check$catch_intv, ]
+    if (nrow(diverged) > 0) {
+      n_div <- nrow(diverged) # nolint: object_usage_linter
+      cli::cli_warn(c(
+        "!" = paste0(
+          "Catch totals in catch data diverge from interview-level ",
+          "{.field {design$catch_col}} for {n_div} interview{?s}."
+        ),
+        "i" = paste0(
+          "This is advisory. Real creel data may differ legitimately ",
+          "(partial species recording)."
+        )
+      ))
+    }
+  }
+
+  # Build new design and store (immutable copy)
+  new_design <- design
+  new_design$catch <- data
+  new_design$catch_uid_col <- catch_uid_col
+  new_design$catch_interview_uid_col <- interview_uid_col
+  new_design$catch_species_col <- species_col
+  new_design$catch_count_col <- count_col
+  new_design$catch_type_col <- catch_type_col
+  class(new_design) <- "creel_design"
+  new_design
+}
+
+#' Attach fish length frequency data to a creel design
+#'
+#' Attaches a long-format data frame of fish length measurements to a
+#' \code{creel_design} object. Supports both individual measurements (harvest)
+#' and binned counts (release). Data is validated at attach time and stored
+#' on the design for use by downstream summary and estimation functions.
+#'
+#' @param design A \code{creel_design} object created by \code{\link{creel_design}}.
+#' @param data A data frame in long format: one row per fish measurement or
+#'   length bin per species per interview.
+#' @param length_uid <\link[tidyselect]{tidyselect}> Column in \code{data}
+#'   containing interview IDs (the length-side join key).
+#' @param interview_uid <\link[tidyselect]{tidyselect}> Column in
+#'   \code{design$interviews} containing the matching interview IDs.
+#' @param species <\link[tidyselect]{tidyselect}> Column in \code{data}
+#'   containing species names or codes.
+#' @param length <\link[tidyselect]{tidyselect}> Column in \code{data}
+#'   containing length values. For harvest rows (when
+#'   \code{release_format = "individual"}), must be numeric (mm). For release
+#'   rows when \code{release_format = "binned"}, may be a character bin label
+#'   such as \code{"300-350"}.
+#' @param length_type <\link[tidyselect]{tidyselect}> Column in \code{data}
+#'   containing the measurement fate: one of \code{"harvest"} or
+#'   \code{"release"}. Values are normalized to lowercase before validation.
+#' @param count <\link[tidyselect]{tidyselect}> Optional. Column in \code{data}
+#'   containing fish counts for binned release rows. Required when
+#'   \code{release_format = "binned"} and release rows are present. Harvest
+#'   rows should have \code{NA} in this column. Omit (or pass \code{NULL})
+#'   when all length data are individual measurements.
+#' @param release_format Character scalar: \code{"individual"} (default) or
+#'   \code{"binned"}. Controls how release rows are validated and how the
+#'   length range is computed for display.
+#'
+#' @details
+#' \strong{Mixed column type footgun:} The \code{length} column may contain
+#' both numeric values (harvest rows) and character bin labels (release rows).
+#' R will coerce the entire column to character when mixing types in a
+#' \code{data.frame}. \code{add_lengths()} validates harvest row lengths by
+#' subsetting to harvest rows first, then attempting \code{as.numeric()}
+#' coercion, to avoid errors from the mixed-type column.
+#'
+#' \strong{Interview ID validation:} Every interview ID appearing in \code{data}
+#' must appear in \code{design$interviews[[interview_uid]]}. Interviews with no
+#' length rows are valid.
+#'
+#' \strong{Immutability:} Returns a new \code{creel_design} — the input is not
+#' modified. Calling \code{add_lengths()} on a design that already has
+#' \code{$lengths} is an error.
+#'
+#' @return A new \code{creel_design} object with \code{$lengths} and associated
+#'   \code{$lengths_*_col} fields attached.
+#'
+#' @examples
+#' \dontrun{
+#' data(example_calendar)
+#' data(example_interviews)
+#' data(example_lengths)
+#'
+#' design <- creel_design(example_calendar, date = date, strata = day_type)
+#' design <- add_interviews(design, example_interviews,
+#'   catch = catch_total, effort = hours_fished, harvest = catch_kept,
+#'   trip_status = trip_status, trip_duration = trip_duration
+#' )
+#' design <- add_lengths(design, example_lengths,
+#'   length_uid = interview_id,
+#'   interview_uid = interview_id,
+#'   species = species,
+#'   length = length,
+#'   length_type = length_type,
+#'   count = count,
+#'   release_format = "binned"
+#' )
+#' print(design)
+#' }
+#'
+#' @export
+add_lengths <- function(design, data,
+                        length_uid,
+                        interview_uid,
+                        species,
+                        length,
+                        length_type,
+                        count = NULL,
+                        release_format = "individual") {
+  # Guard: must be a creel_design
+  if (!inherits(design, "creel_design")) {
+    cli::cli_abort("{.arg design} must be a {.cls creel_design} object.")
+  }
+
+  # Guard: immutability — use [[ to avoid partial matching $lengths_uid_col etc.
+  if (!is.null(design[["lengths"]])) {
+    cli::cli_abort(c(
+      "This design already has length data attached.",
+      "i" = "Use immutable workflow: {.code design2 <- add_lengths(design, data, ...)}"
+    ))
+  }
+
+  # Guard: interviews must exist first
+  if (is.null(design$interviews)) {
+    cli::cli_abort(c(
+      "Interviews must be attached before length data.",
+      "i" = "Call {.fn add_interviews} before {.fn add_lengths}."
+    ))
+  }
+
+  # Validate release_format
+  valid_formats <- c("individual", "binned")
+  if (!release_format %in% valid_formats) {
+    cli::cli_abort(c(
+      "Invalid {.arg release_format}: {.val {release_format}}",
+      "i" = "Accepted values: {.val {valid_formats}}"
+    ))
+  }
+
+  # Resolve tidy selectors
+  length_uid_col <- resolve_single_col(
+    rlang::enquo(length_uid), data, "length_uid", rlang::caller_env()
+  )
+  interview_uid_col <- resolve_single_col(
+    rlang::enquo(interview_uid), design$interviews, "interview_uid", rlang::caller_env()
+  )
+  species_col <- resolve_single_col(
+    rlang::enquo(species), data, "species", rlang::caller_env()
+  )
+  length_col <- resolve_single_col(
+    rlang::enquo(length), data, "length", rlang::caller_env()
+  )
+  type_col <- resolve_single_col(
+    rlang::enquo(length_type), data, "length_type", rlang::caller_env()
+  )
+
+  # Handle optional count argument — check enexpr BEFORE enquo
+  count_supplied <- !is.null(rlang::enexpr(count))
+  if (count_supplied) {
+    count_col <- resolve_single_col(rlang::enquo(count), data, "count", rlang::caller_env())
+  } else {
+    count_col <- NULL
+  }
+
+  # Normalize length_type to lowercase silently
+  data[[type_col]] <- tolower(data[[type_col]])
+
+  # Validate length_type values
+  valid_types <- c("harvest", "release")
+  bad_types <- setdiff(unique(data[[type_col]]), valid_types)
+  if (length(bad_types) > 0) {
+    cli::cli_abort(c(
+      "Invalid {.field length_type} value{?s}: {.val {bad_types}}",
+      "i" = "Accepted values: {.val {valid_types}}"
+    ))
+  }
+
+  # Validate interview ID join (LEN-03)
+  length_ids <- unique(data[[length_uid_col]])
+  interview_ids <- design$interviews[[interview_uid_col]]
+  unmatched <- setdiff(length_ids, interview_ids)
+  if (length(unmatched) > 0) {
+    cli::cli_abort(c(
+      "{length(unmatched)} interview ID{?s} in length data not found in design interviews:",
+      stats::setNames(paste0("{.val ", unmatched, "}"), rep("x", length(unmatched))),
+      "i" = "Every length row must reference an interview in the design."
+    ))
+  }
+
+  # Validate harvest length values (LEN-04) — subset first to avoid mixed-type coercion
+  harvest_rows <- data[data[[type_col]] == "harvest", ]
+  if (nrow(harvest_rows) > 0) {
+    harvest_lengths <- suppressWarnings(as.numeric(harvest_rows[[length_col]]))
+    if (any(is.na(harvest_lengths))) {
+      cli::cli_abort(c(
+        "Harvest {.field length} values must be numeric (mm).",
+        "i" = "Non-numeric or NA length found in harvest rows."
+      ))
+    }
+    if (any(harvest_lengths <= 0)) {
+      cli::cli_abort(c(
+        "Harvest {.field length} values must be positive.",
+        "i" = "All harvest lengths must be > 0 mm."
+      ))
+    }
+  }
+
+  # Validate release rows (LEN-04)
+  release_rows <- data[data[[type_col]] == "release", ]
+  if (nrow(release_rows) > 0 && release_format == "binned") {
+    if (is.null(count_col)) {
+      cli::cli_abort(c(
+        "{.arg count} is required when {.arg release_format} is {.val \"binned\"} and release rows are present.",
+        "i" = "Supply the column containing per-bin fish counts."
+      ))
+    }
+    release_counts <- release_rows[[count_col]]
+    if (any(is.na(release_counts))) {
+      cli::cli_abort(c(
+        "Release {.field count} values must not be NA.",
+        "i" = "Every release row must have a positive integer count."
+      ))
+    }
+    if (any(as.numeric(release_counts) <= 0)) {
+      cli::cli_abort(c(
+        "Release {.field count} values must be positive.",
+        "i" = "All release row counts must be > 0."
+      ))
+    }
+  }
+  if (nrow(release_rows) > 0 && release_format == "individual") {
+    release_lengths <- suppressWarnings(as.numeric(release_rows[[length_col]]))
+    if (any(is.na(release_lengths))) {
+      cli::cli_abort(c(
+        "Release {.field length} values must be numeric when {.arg release_format} is {.val \"individual\"}.",
+        "i" = "Non-numeric or NA length found in release rows."
+      ))
+    }
+    if (any(release_lengths <= 0)) {
+      cli::cli_abort(c(
+        "Release {.field length} values must be positive when {.arg release_format} is {.val \"individual\"}.",
+        "i" = "All release lengths must be > 0 mm."
+      ))
+    }
+  }
+
+  # Build new design (immutable copy)
+  new_design <- design
+  new_design$lengths <- data
+  new_design$lengths_uid_col <- length_uid_col
+  new_design$lengths_interview_uid_col <- interview_uid_col
+  new_design$lengths_species_col <- species_col
+  new_design$lengths_length_col <- length_col
+  new_design$lengths_type_col <- type_col
+  new_design$lengths_count_col <- count_col
+  new_design$lengths_release_format <- release_format
+  class(new_design) <- "creel_design"
+  new_design
 }
