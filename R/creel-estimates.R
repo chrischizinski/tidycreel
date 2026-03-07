@@ -132,6 +132,9 @@ format.creel_estimates <- function(x, ...) {
     "ratio-of-means-cpue" = "Ratio-of-Means CPUE",
     "mean-of-ratios-cpue" = "Mean-of-Ratios CPUE",
     "ratio-of-means-hpue" = "Ratio-of-Means HPUE",
+    "ratio-of-means-cpue-per-angler" = "Ratio-of-Means CPUE (per angler)",
+    "mean-of-ratios-cpue-per-angler" = "Mean-of-Ratios CPUE (per angler)",
+    "ratio-of-means-hpue-per-angler" = "Ratio-of-Means HPUE (per angler)",
     "product-total-catch" = "Total Catch (Effort \u00d7 CPUE)",
     "product-total-harvest" = "Total Harvest (Effort \u00d7 HPUE)",
     x$method
@@ -145,6 +148,11 @@ format.creel_estimates <- function(x, ...) {
     cli::cli_text("Method: {method_display}")
     cli::cli_text("Variance: {variance_display}")
     cli::cli_text("Confidence level: {conf_pct}")
+
+    # Show normalization note if effort was normalized by party size
+    if (endsWith(x$method, "-per-angler")) {
+      cli::cli_text("Note: Effort normalized by party size (n_anglers)")
+    }
 
     # Show grouping variables if present
     if (!is.null(x$by_vars)) {
@@ -411,9 +419,10 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
 #' @return A creel_estimates S3 object (list) with components: estimates
 #'   (tibble with estimate, se, ci_lower, ci_upper, n columns, plus grouping
 #'   columns if \code{by} is specified), method (character: "ratio-of-means-cpue"
-#'   or "mean-of-ratios-cpue"), variance_method (character: reflects the variance
-#'   parameter value used), design (reference to source creel_design), conf_level
-#'   (numeric), and by_vars (character vector of grouping variable names or NULL).
+#'   or "mean-of-ratios-cpue", with "-per-angler" suffix when normalized),
+#'   variance_method (character: reflects the variance parameter value used),
+#'   design (reference to source creel_design), conf_level (numeric), and
+#'   by_vars (character vector of grouping variable names or NULL).
 #'
 #' @section Package Options:
 #' \strong{Complete Trip Percentage Threshold:}
@@ -951,19 +960,15 @@ estimate_cpue <- function(design,
 
     # Rebuild survey design for incomplete trips
     strata_cols <- design$strata_cols
-    if (!is.null(strata_cols) && length(strata_cols) > 0) {
-      strata_formula <- stats::reformulate(strata_cols)
-      design_incomplete$interview_survey <- survey::svydesign(
-        ids = ~1,
-        strata = strata_formula,
-        data = incomplete_interviews
-      )
+    strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0) {
+      stats::reformulate(strata_cols)
     } else {
-      design_incomplete$interview_survey <- survey::svydesign(
-        ids = ~1,
-        data = incomplete_interviews
-      )
+      NULL
     }
+    design_incomplete$interview_survey <- build_interview_survey( # nolint: object_usage_linter
+      incomplete_interviews,
+      strata = strata_formula
+    )
 
     # Use the incomplete-trip design for estimation
     design <- design_incomplete
@@ -1021,13 +1026,13 @@ estimate_cpue <- function(design,
 #'   bus-route estimation. One of \code{"complete"} (default),
 #'   \code{"incomplete"} (pi_i-weighted MOR), or \code{"diagnostic"} (both).
 #'   Ignored for non-bus-route designs.
-#'
 #' @return A creel_estimates S3 object (list) with components: estimates
 #'   (tibble with estimate, se, ci_lower, ci_upper, n columns, plus grouping
-#'   columns if \code{by} is specified), method (character: "ratio-of-means-hpue"),
-#'   variance_method (character: reflects the variance parameter value used),
-#'   design (reference to source creel_design), conf_level (numeric), and
-#'   by_vars (character vector of grouping variable names or NULL).
+#'   columns if \code{by} is specified), method (character: "ratio-of-means-hpue",
+#'   with "-per-angler" suffix when normalized), variance_method (character:
+#'   reflects the variance parameter value used), design (reference to source
+#'   creel_design), conf_level (numeric), and by_vars (character vector of
+#'   grouping variable names or NULL).
 #'   For bus-route designs, a "site_contributions" attribute is also present.
 #'
 #' @details
@@ -1237,19 +1242,15 @@ rebuild_interview_survey <- function(design, filtered_interviews) {
 
   # Rebuild survey design with filtered data
   strata_cols <- design$strata_cols
-  if (!is.null(strata_cols) && length(strata_cols) > 0) {
-    strata_formula <- stats::reformulate(strata_cols)
-    design_new$interview_survey <- survey::svydesign(
-      ids = ~1,
-      strata = strata_formula,
-      data = filtered_interviews
-    )
+  strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0) {
+    stats::reformulate(strata_cols)
   } else {
-    design_new$interview_survey <- survey::svydesign(
-      ids = ~1,
-      data = filtered_interviews
-    )
+    NULL
   }
+  design_new$interview_survey <- build_interview_survey( # nolint: object_usage_linter
+    filtered_interviews,
+    strata = strata_formula
+  )
 
   design_new
 }
@@ -1411,10 +1412,11 @@ estimate_effort_grouped <- function(design, by_vars, variance_method, conf_level
 #'
 #' @keywords internal
 #' @noRd
-estimate_cpue_total <- function(design, variance_method, conf_level, estimator = "ratio-of-means") {
+estimate_cpue_total <- function(design, variance_method, conf_level,
+                                estimator = "ratio-of-means") {
   interviews_data <- design$interviews
   catch_col <- design$catch_col
-  effort_col <- design$effort_col
+  effort_col <- design$angler_effort_col
 
   # Filter out zero-effort interviews with warning
   zero_effort <- !is.na(interviews_data[[effort_col]]) & interviews_data[[effort_col]] == 0
@@ -1431,19 +1433,12 @@ estimate_cpue_total <- function(design, variance_method, conf_level, estimator =
   if (any(zero_effort)) {
     # Get strata column(s) from original design
     strata_cols <- design$strata_cols
-    if (!is.null(strata_cols) && length(strata_cols) > 0) {
-      strata_formula <- stats::reformulate(strata_cols)
-      temp_survey <- survey::svydesign(
-        ids = ~1,
-        strata = strata_formula,
-        data = interviews_data
-      )
+    strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0) {
+      stats::reformulate(strata_cols)
     } else {
-      temp_survey <- survey::svydesign(
-        ids = ~1,
-        data = interviews_data
-      )
+      NULL
     }
+    temp_survey <- build_interview_survey(interviews_data, strata = strata_formula) # nolint: object_usage_linter
     # Get variance design from temporary survey
     svy_design <- get_variance_design(temp_survey, variance_method) # nolint: object_usage_linter
   } else {
@@ -1459,19 +1454,12 @@ estimate_cpue_total <- function(design, variance_method, conf_level, estimator =
 
     # Rebuild survey design with ratio column included
     strata_cols <- design$strata_cols
-    if (!is.null(strata_cols) && length(strata_cols) > 0) {
-      strata_formula <- stats::reformulate(strata_cols)
-      temp_survey <- survey::svydesign(
-        ids = ~1,
-        strata = strata_formula,
-        data = interviews_data
-      )
+    strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0) {
+      stats::reformulate(strata_cols)
     } else {
-      temp_survey <- survey::svydesign(
-        ids = ~1,
-        data = interviews_data
-      )
+      NULL
     }
+    temp_survey <- build_interview_survey(interviews_data, strata = strata_formula) # nolint: object_usage_linter
     svy_design <- get_variance_design(temp_survey, variance_method) # nolint: object_usage_linter
 
     # Call survey::svymean on ratio (suppress expected survey package warnings)
@@ -1541,10 +1529,11 @@ estimate_cpue_total <- function(design, variance_method, conf_level, estimator =
 #'
 #' @keywords internal
 #' @noRd
-estimate_cpue_grouped <- function(design, by_vars, variance_method, conf_level, estimator = "ratio-of-means") {
+estimate_cpue_grouped <- function(design, by_vars, variance_method, conf_level,
+                                  estimator = "ratio-of-means") {
   interviews_data <- design$interviews
   catch_col <- design$catch_col
-  effort_col <- design$effort_col
+  effort_col <- design$angler_effort_col
 
   # Filter out zero-effort interviews with warning
   zero_effort <- !is.na(interviews_data[[effort_col]]) & interviews_data[[effort_col]] == 0
@@ -1570,19 +1559,12 @@ estimate_cpue_grouped <- function(design, by_vars, variance_method, conf_level, 
   if (any(zero_effort) || estimator == "mor") {
     # Get strata column(s) from original design
     strata_cols <- design$strata_cols
-    if (!is.null(strata_cols) && length(strata_cols) > 0) {
-      strata_formula <- stats::reformulate(strata_cols)
-      temp_survey <- survey::svydesign(
-        ids = ~1,
-        strata = strata_formula,
-        data = interviews_data
-      )
+    strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0) {
+      stats::reformulate(strata_cols)
     } else {
-      temp_survey <- survey::svydesign(
-        ids = ~1,
-        data = interviews_data
-      )
+      NULL
     }
+    temp_survey <- build_interview_survey(interviews_data, strata = strata_formula) # nolint: object_usage_linter
     # Get variance design from temporary survey
     svy_design <- get_variance_design(temp_survey, variance_method) # nolint: object_usage_linter
   } else {
@@ -1698,7 +1680,7 @@ estimate_cpue_grouped <- function(design, by_vars, variance_method, conf_level, 
 estimate_harvest_total <- function(design, variance_method, conf_level) {
   interviews_data <- design$interviews
   harvest_col <- design$harvest_col
-  effort_col <- design$effort_col
+  effort_col <- design$angler_effort_col
 
   # Filter out zero-effort interviews with warning
   zero_effort <- !is.na(interviews_data[[effort_col]]) & interviews_data[[effort_col]] == 0
@@ -1735,19 +1717,12 @@ estimate_harvest_total <- function(design, variance_method, conf_level) {
   needs_rebuild <- any(zero_effort) || any(na_harvest)
   if (needs_rebuild) {
     strata_cols <- design$strata_cols
-    if (!is.null(strata_cols) && length(strata_cols) > 0) {
-      strata_formula <- stats::reformulate(strata_cols)
-      temp_survey <- survey::svydesign(
-        ids = ~1,
-        strata = strata_formula,
-        data = interviews_data
-      )
+    strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0) {
+      stats::reformulate(strata_cols)
     } else {
-      temp_survey <- survey::svydesign(
-        ids = ~1,
-        data = interviews_data
-      )
+      NULL
     }
+    temp_survey <- build_interview_survey(interviews_data, strata = strata_formula) # nolint: object_usage_linter
     svy_design <- get_variance_design(temp_survey, variance_method) # nolint: object_usage_linter
   } else {
     svy_design <- get_variance_design(design$interview_survey, variance_method) # nolint: object_usage_linter
@@ -1797,7 +1772,7 @@ estimate_harvest_total <- function(design, variance_method, conf_level) {
 estimate_harvest_grouped <- function(design, by_vars, variance_method, conf_level) {
   interviews_data <- design$interviews
   harvest_col <- design$harvest_col
-  effort_col <- design$effort_col
+  effort_col <- design$angler_effort_col
 
   # Filter out zero-effort interviews with warning
   zero_effort <- !is.na(interviews_data[[effort_col]]) & interviews_data[[effort_col]] == 0
@@ -1834,19 +1809,12 @@ estimate_harvest_grouped <- function(design, by_vars, variance_method, conf_leve
   needs_rebuild <- any(zero_effort) || any(na_harvest)
   if (needs_rebuild) {
     strata_cols <- design$strata_cols
-    if (!is.null(strata_cols) && length(strata_cols) > 0) {
-      strata_formula <- stats::reformulate(strata_cols)
-      temp_survey <- survey::svydesign(
-        ids = ~1,
-        strata = strata_formula,
-        data = interviews_data
-      )
+    strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0) {
+      stats::reformulate(strata_cols)
     } else {
-      temp_survey <- survey::svydesign(
-        ids = ~1,
-        data = interviews_data
-      )
+      NULL
     }
+    temp_survey <- build_interview_survey(interviews_data, strata = strata_formula) # nolint: object_usage_linter
     svy_design <- get_variance_design(temp_survey, variance_method) # nolint: object_usage_linter
   } else {
     svy_design <- get_variance_design(design$interview_survey, variance_method) # nolint: object_usage_linter

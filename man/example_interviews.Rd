@@ -5,7 +5,7 @@
 \alias{example_interviews}
 \title{Example interview data for creel survey}
 \format{
-A data frame with 22 rows and 6 columns:
+A data frame with 22 rows and 12 columns:
 \describe{
 \item{date}{Interview date (Date class), matching \link{example_calendar} dates}
 \item{hours_fished}{Numeric fishing effort in hours}
@@ -13,6 +13,16 @@ A data frame with 22 rows and 6 columns:
 \item{catch_kept}{Integer fish kept (harvest), always <= catch_total}
 \item{trip_status}{Character trip completion status ("complete" or "incomplete")}
 \item{trip_duration}{Numeric trip duration in hours}
+\item{interview_id}{Integer interview identifier (1 to 22), primary join key
+for \code{add_catch()} and future species-level data functions}
+\item{angler_type}{Angler party type: \code{"bank"} or \code{"boat"}}
+\item{angler_method}{Fishing method: \code{"bait"}, \code{"artificial"}, or
+\code{"fly"}}
+\item{species_sought}{Primary target species: \code{"walleye"}, \code{"bass"},
+or \code{"panfish"}}
+\item{n_anglers}{Integer number of anglers in party (1 to 4)}
+\item{refused}{Logical flag indicating a refused interview
+(\code{FALSE} for all 22 accepted interviews)}
 }
 }
 \source{
@@ -25,7 +35,8 @@ example_interviews
 Sample angler interview data demonstrating the structure required for
 \code{\link[=add_interviews]{add_interviews()}}. Contains 22 interviews from June 1-14, 2024,
 matching the \link{example_calendar} date range. Each row represents one
-angler interview with catch, harvest, effort, and trip metadata.
+angler interview with catch, harvest, effort, trip metadata, and extended
+interview attributes added in v0.5.0.
 }
 \examples{
 # Load and use with a creel design
@@ -38,13 +49,18 @@ design <- add_interviews(design, example_interviews,
   effort = hours_fished,
   harvest = catch_kept,
   trip_status = trip_status,
-  trip_duration = trip_duration
+  trip_duration = trip_duration,
+  angler_type = angler_type,
+  angler_method = angler_method,
+  species_sought = species_sought,
+  n_anglers = n_anglers,
+  refused = refused
 )
 print(design)
 
 }
 \seealso{
-\link{example_calendar} for matching calendar data, \code{\link[=add_interviews]{add_interviews()}} to
-attach interviews to a design
+\link{example_calendar} for matching calendar data, \link{example_catch} for
+species-level catch data, \code{\link[=add_interviews]{add_interviews()}} to attach interviews to a design
 }
 \keyword{datasets}

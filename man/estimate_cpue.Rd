@@ -61,9 +61,10 @@ are excluded before MOR estimation. Set to NULL to disable truncation
 A creel_estimates S3 object (list) with components: estimates
 (tibble with estimate, se, ci_lower, ci_upper, n columns, plus grouping
 columns if \code{by} is specified), method (character: "ratio-of-means-cpue"
-or "mean-of-ratios-cpue"), variance_method (character: reflects the variance
-parameter value used), design (reference to source creel_design), conf_level
-(numeric), and by_vars (character vector of grouping variable names or NULL).
+or "mean-of-ratios-cpue", with "-per-angler" suffix when normalized),
+variance_method (character: reflects the variance parameter value used),
+design (reference to source creel_design), conf_level (numeric), and
+by_vars (character vector of grouping variable names or NULL).
 }
 \description{
 Computes CPUE estimates with standard errors and confidence intervals
