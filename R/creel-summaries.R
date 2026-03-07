@@ -1136,3 +1136,284 @@ summarize_hws_rates <- function(design, by = NULL, conf_level = 0.95) {
   class(result) <- c("creel_summary_hws_rates", "data.frame")
   result
 }
+
+
+#' Compute length frequency distribution from creel interview data
+#'
+#' @description
+#' Computes length frequency distributions (count, percent, cumulative percent)
+#' from fish length data attached via \code{\link{add_lengths}}.
+#' Supports all fish (\code{type = "catch"}), harvested fish
+#' (\code{type = "harvest"}), and released fish (\code{type = "release"}).
+#'
+#' @details
+#' \strong{Interview-based summary, not pressure-weighted.} This function
+#' tabulates raw length measurements from sampled interviews without applying
+#' survey weighting by sampling effort or effort stratum. For pressure-weighted
+#' extrapolated estimates use \code{\link{estimate_cpue}} or
+#' \code{\link{estimate_harvest}}.
+#'
+#' \strong{Pre-binned release format:} When length data was attached with
+#' \code{release_format = "binned"}, release rows have character bin labels
+#' (e.g., \code{"350-400"}) and a count column. This function parses each bin
+#' label into a numeric midpoint and expands by count before applying
+#' \code{bin_width} binning. This allows a consistent \code{bin_width} to be
+#' applied to both individual and pre-binned data.
+#'
+#' @param design A \code{creel_design} object with length data attached via
+#'   \code{\link{add_lengths}}.
+#' @param type Character string specifying which fish to include. One of
+#'   \code{"catch"} (all fish, harvest + release combined), \code{"harvest"}
+#'   (kept fish only), or \code{"release"} (released fish only).
+#'   Default \code{"catch"}.
+#' @param by Optional tidy selector for grouping columns from
+#'   \code{design$lengths}. Common choice: \code{by = species}.
+#'   When \code{NULL}, returns a single overall distribution.
+#' @param bin_width Positive numeric specifying the width of each length bin
+#'   in the same units as the length data (typically mm). Default \code{1}.
+#'
+#' @return A \code{data.frame} with class
+#'   \code{c("creel_summary_length_freq", "data.frame")} and columns:
+#'   grouping columns (if any), \code{length_bin} (ordered factor),
+#'   \code{N} (integer, fish count per bin), \code{percent} (numeric,
+#'   percent of group total), \code{cumulative_percent} (numeric, within group).
+#'   Only bins with N > 0 are returned. Percent values are rounded to 1
+#'   decimal place.
+#'
+#' @seealso [add_lengths()], [summarize_cws_rates()], [summarize_hws_rates()]
+#'
+#' @examples
+#' \dontrun{
+#' data(example_calendar)
+#' data(example_interviews)
+#' data(example_lengths)
+#' d <- creel_design(example_calendar, date = date, strata = day_type)
+#' d <- add_interviews(d, example_interviews,
+#'   catch = catch_total, effort = hours_fished, harvest = catch_kept,
+#'   trip_status = trip_status
+#' )
+#' d <- add_lengths(d, example_lengths,
+#'   length_uid = interview_id, interview_uid = interview_id,
+#'   species = species, length = length,
+#'   length_type = length_type, count = count,
+#'   release_format = "binned"
+#' )
+#' summarize_length_freq(d, type = "harvest", by = species, bin_width = 25)
+#' summarize_length_freq(d, type = "release", by = species)
+#' summarize_length_freq(d, type = "catch")
+#' }
+#'
+#' @export
+summarize_length_freq <- function(design, type = "catch", by = NULL, bin_width = 1) {
+  by_quo <- rlang::enquo(by)
+
+  # Guard 1: type check
+  if (!inherits(design, "creel_design")) {
+    cli::cli_abort(c(
+      "{.arg design} must be a {.cls creel_design} object.",
+      "x" = "{.arg design} is {.cls {class(design)[1]}}.",
+      "i" = "Create a design with {.fn creel_design}."
+    ))
+  }
+
+  # Guard 2: lengths attached (double-bracket avoids partial match against lengths_*)
+  if (is.null(design[["lengths"]])) {
+    cli::cli_abort(c(
+      "No length data found in design.",
+      "x" = "The design object has no length data.",
+      "i" = "Attach length data with {.fn add_lengths}."
+    ))
+  }
+
+  # Guard 3: bin_width validation
+  if (!is.numeric(bin_width) || length(bin_width) != 1L || bin_width <= 0) {
+    cli::cli_abort(c(
+      "{.arg bin_width} must be a single positive number.",
+      "x" = "{.arg bin_width} is {.val {bin_width}}."
+    ))
+  }
+
+  # Validate type argument
+  type <- match.arg(type, choices = c("catch", "harvest", "release"))
+
+  # Extract design fields
+  lengths_data <- design$lengths
+  length_col <- design$lengths_length_col
+  type_col <- design$lengths_type_col
+  count_col <- design$lengths_count_col
+  rel_format <- design$lengths_release_format
+
+  # Resolve by columns from lengths data
+  if (!rlang::quo_is_null(by_quo)) {
+    by_cols <- tidyselect::eval_select(
+      by_quo,
+      data = lengths_data,
+      allow_rename = FALSE, allow_empty = FALSE,
+      error_call = rlang::caller_env()
+    )
+    by_vars <- names(by_cols)
+  } else {
+    by_vars <- character(0)
+  }
+
+  # Filter to requested type
+  if (type == "harvest") {
+    lengths_data <- lengths_data[lengths_data[[type_col]] == "harvest", , drop = FALSE]
+  } else if (type == "release") {
+    lengths_data <- lengths_data[lengths_data[[type_col]] == "release", , drop = FALSE]
+  }
+  # type == "catch": use all rows
+
+  if (nrow(lengths_data) == 0) {
+    cli::cli_abort(c(
+      "No length data found for {.arg type} = {.val {type}}.",
+      "i" = "Check that {.fn add_lengths} included rows of this type."
+    ))
+  }
+
+  # Build numeric lengths + weights (accounting for binned release format)
+  harvest_rows <- lengths_data[lengths_data[[type_col]] == "harvest", , drop = FALSE]
+  release_rows <- lengths_data[lengths_data[[type_col]] == "release", , drop = FALSE]
+
+  # Helper: build numeric_lengths and weights vectors plus corresponding by-group values
+  build_records <- function(rows, is_binned_release) {
+    if (nrow(rows) == 0) {
+      out <- list(
+        lengths = numeric(0),
+        weights = integer(0)
+      )
+      for (v in by_vars) out[[v]] <- character(0)
+      return(out)
+    }
+
+    if (is_binned_release) {
+      # Parse bin labels to midpoints; weight = count
+      raw_labels <- as.character(rows[[length_col]])
+      parts <- strsplit(raw_labels, "-")
+      lower_bounds <- suppressWarnings(
+        as.numeric(vapply(parts, function(p) p[[1]], character(1)))
+      )
+      upper_bounds <- suppressWarnings(
+        as.numeric(vapply(parts, function(p) p[[2]], character(1)))
+      )
+      if (any(is.na(lower_bounds)) || any(is.na(upper_bounds))) {
+        cli::cli_abort(c(
+          "Could not parse bin labels in release length data.",
+          "i" = "Expected format: {.val \"350-400\"} (lower-upper separated by {.code -}).",
+          "x" = "Check the {.arg length} column in your lengths data."
+        ))
+      }
+      midpoints <- (lower_bounds + upper_bounds) / 2
+      counts <- as.integer(rows[[count_col]])
+      # Expand: rep each midpoint by its count; repeat by-group values similarly
+      lengths <- rep(midpoints, times = counts)
+      weights <- rep(1L, times = length(lengths))
+      out <- list(lengths = lengths, weights = weights)
+      for (v in by_vars) out[[v]] <- rep(rows[[v]], times = counts)
+    } else {
+      # Individual format: one fish per row, weight = 1
+      lengths <- as.numeric(rows[[length_col]])
+      weights <- rep(1L, times = length(lengths))
+      out <- list(lengths = lengths, weights = weights)
+      for (v in by_vars) out[[v]] <- rows[[v]]
+    }
+    out
+  }
+
+  harvest_records <- build_records(harvest_rows, is_binned_release = FALSE)
+  release_records <- build_records(
+    release_rows,
+    is_binned_release = (rel_format == "binned" && nrow(release_rows) > 0)
+  )
+
+  # Combine harvest and release record lists
+  all_lengths <- c(harvest_records$lengths, release_records$lengths)
+  all_weights <- c(harvest_records$weights, release_records$weights)
+  group_lists <- list()
+  for (v in by_vars) {
+    group_lists[[v]] <- c(harvest_records[[v]], release_records[[v]])
+  }
+
+  # Validate all_lengths after parsing
+  if (any(is.na(all_lengths))) {
+    cli::cli_abort(c(
+      "Non-numeric length values found after parsing.",
+      "i" = "Check that harvest lengths are numeric and bin labels are parseable."
+    ))
+  }
+
+  # Apply cut() binning
+  max_len <- ceiling(max(all_lengths) / bin_width) * bin_width
+  breaks <- seq(0, max_len + bin_width, by = bin_width)
+  labels <- paste0("[", breaks[-length(breaks)], ",", breaks[-1], ")")
+  bins <- cut(all_lengths,
+    breaks = breaks, labels = labels,
+    right = FALSE, include.lowest = TRUE
+  )
+
+  # Build a data frame of all records
+  records_df <- data.frame(
+    .length_bin = as.character(bins),
+    .lower = breaks[as.integer(bins)],
+    .weight = all_weights,
+    stringsAsFactors = FALSE
+  )
+  for (v in by_vars) records_df[[v]] <- group_lists[[v]]
+
+  # Aggregate: N = sum(weight) per (by_vars + .length_bin)
+  agg_by <- c(by_vars, ".length_bin", ".lower")
+  agg_groups <- lapply(agg_by, function(v) records_df[[v]])
+  names(agg_groups) <- agg_by
+
+  n_agg <- stats::aggregate(records_df$.weight, by = agg_groups, FUN = sum)
+  names(n_agg)[ncol(n_agg)] <- "N"
+
+  # Sort ascending within each group: by lower bound then by-vars
+  sort_cols <- c(by_vars, ".lower")
+  n_agg <- n_agg[do.call(order, lapply(sort_cols, function(v) n_agg[[v]])), , drop = FALSE]
+
+  # Keep only non-zero bins
+  n_agg <- n_agg[n_agg$N > 0, , drop = FALSE]
+
+  # Restore ordered factor for length_bin
+  occupied_labels <- unique(n_agg$.length_bin)
+  # Order occupied labels by .lower bound
+  lower_map <- unique(n_agg[, c(".length_bin", ".lower"), drop = FALSE])
+  lower_map <- lower_map[order(lower_map$.lower), ]
+  ordered_labs <- lower_map$.length_bin[lower_map$.length_bin %in% occupied_labels]
+  n_agg$.length_bin <- factor(n_agg$.length_bin,
+    levels = ordered_labs,
+    ordered = TRUE
+  )
+
+  # Compute percent and cumulative_percent within each group
+  if (length(by_vars) > 0) {
+    group_key <- do.call(paste, c(lapply(by_vars, function(v) n_agg[[v]]), sep = "\x1f"))
+  } else {
+    group_key <- rep("all", nrow(n_agg))
+  }
+  group_totals <- tapply(n_agg$N, group_key, sum)
+  n_agg$percent <- round(n_agg$N / group_totals[group_key] * 100, 1)
+
+  # cumulative_percent: cumsum within each group key (for-loop avoids ordering subtlety)
+  n_agg$cumulative_percent <- NA_real_
+  for (gk in unique(group_key)) {
+    idx <- which(group_key == gk)
+    n_agg$cumulative_percent[idx] <- cumsum(n_agg$percent[idx])
+  }
+
+  # Rename .length_bin -> length_bin and drop internal columns
+  n_agg$length_bin <- n_agg$.length_bin
+  n_agg$.length_bin <- NULL
+  n_agg$.lower <- NULL
+
+  # Final column order: by_vars, length_bin, N, percent, cumulative_percent
+  result <- n_agg[, c(by_vars, "length_bin", "N", "percent", "cumulative_percent"),
+    drop = FALSE
+  ]
+  result$N <- as.integer(result$N)
+  row.names(result) <- NULL
+
+  class(result) <- c("creel_summary_length_freq", "data.frame")
+  result
+}

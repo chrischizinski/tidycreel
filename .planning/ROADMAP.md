@@ -97,8 +97,8 @@ See: [.planning/milestones/v0.4.0-ROADMAP.md](milestones/v0.4.0-ROADMAP.md)
 - [x] **Phase 29: Species Catch Data** — New `add_catch()` function for long-format species-level catch data (completed 2026-03-02)
 - [x] **Phase 30: Length Frequency Data** — New `add_lengths()` function for individual and binned fish length data (completed 2026-03-02)
 - [x] **Phase 31: Interview-Level Unextrapolated Summaries** — Raw tabulation functions: refusals, day type, angler type, method, species sought, successful parties, trip length (completed 2026-03-02)
-- [ ] **Phase 32: CWS/HWS Rates** — Caught-while-sought and harvested-while-sought rate functions from raw interview data
-- [ ] **Phase 33: Length Frequency Summaries** — Length distribution functions for catch, harvest, and release
+- [x] **Phase 32: CWS/HWS Rates** — Caught-while-sought and harvested-while-sought rate functions from raw interview data (completed 2026-03-07)
+- [x] **Phase 33: Length Frequency Summaries** — Length distribution functions for catch, harvest, and release (completed 2026-03-07)
 - [ ] **Phase 34: Species-Level Extrapolated Estimates** — Extend `estimate_cpue()`, `estimate_total_catch()`, `estimate_total_harvest()` to species groupings; add `estimate_total_release()` and `estimate_release_rate()`
 - [ ] **Phase 35: Documentation & Quality Assurance** — Unextrapolated summaries vignette, extended example datasets, complete roxygen2 docs
 
@@ -233,8 +233,8 @@ Plans:
 | v0.4.0 Bus-Route Survey Support | 21-27 | 14/14 | ✅ Complete | 2026-02-28 |
 | v0.5.0 Interview Data Model and Unextrapolated Summaries | 28-35 | 1/TBD | 🚧 In progress | - |
 
-**Overall:** 4 milestones shipped, 27 phases complete, 52 plans executed; 8 phases planned for v0.5.0
+**Overall:** 4 milestones shipped, 32 phases complete, 54 plans executed; 8 phases planned for v0.5.0
 
 ---
-*Roadmap last updated: 2026-03-02 — Phase 31 planned (2 plans: implementation in R/creel-summaries.R, test suite in test-creel-summaries.R)*
+*Roadmap last updated: 2026-03-07 — Phase 33 complete (summarize_length_freq(), 47 tests, handles individual + pre-binned release formats)*
 *See .planning/MILESTONES.md for full milestone history*
