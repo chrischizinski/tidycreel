@@ -327,3 +327,83 @@ test_that("add_counts errors gracefully when strata column missing from count da
     "day_type|strata|column"
   )
 })
+
+# Multiple counts per PSU (Phase 36) ----
+
+test_that("add_counts() accepts count_time_col without error (CNT-02)", {
+  counts_am <- example_counts
+  counts_am$count_time <- "am"
+  counts_pm <- example_counts
+  counts_pm$count_time <- "pm"
+  multi_counts <- rbind(counts_am, counts_pm)
+  design <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
+  expect_no_error(
+    add_counts(design, multi_counts, count_time_col = count_time) # nolint: object_usage_linter
+  )
+})
+
+test_that("add_counts() with count_time_col reduces counts to one row per PSU (EFF-03)", {
+  # Build two-count-per-day data
+  counts_am <- example_counts
+  counts_am$count_time <- "am"
+  counts_pm <- example_counts
+  counts_pm$count_time <- "pm"
+  counts_pm$effort_hours <- counts_pm$effort_hours + 2 # different values per count
+  multi_counts <- rbind(counts_am, counts_pm)
+
+  design <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
+  d <- add_counts(design, multi_counts, count_time_col = count_time) # nolint: object_usage_linter
+
+  # After aggregation: one row per unique PSU (date x strata)
+  expect_equal(nrow(d$counts), nrow(example_counts))
+})
+
+test_that("add_counts() stores within_day_var slot with ss_d and k_d columns", {
+  counts_am <- example_counts
+  counts_am$count_time <- "am"
+  counts_pm <- example_counts
+  counts_pm$count_time <- "pm"
+  counts_pm$effort_hours <- counts_pm$effort_hours + 4
+  multi_counts <- rbind(counts_am, counts_pm)
+
+  design <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
+  d <- add_counts(design, multi_counts, count_time_col = count_time) # nolint: object_usage_linter
+
+  expect_false(is.null(d$within_day_var))
+  expect_true(all(c("ss_d", "k_d") %in% names(d$within_day_var)))
+  expect_equal(nrow(d$within_day_var), nrow(example_counts))
+  expect_true(all(d$within_day_var$k_d == 2L))
+})
+
+test_that("add_counts() single-count path produces NULL within_day_var (CNT-04)", {
+  design <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
+  d <- add_counts(design, example_counts)
+
+  expect_null(d$within_day_var)
+  expect_null(d$count_time_col)
+})
+
+test_that("add_counts() warns on duplicate PSU rows when count_time_col = NULL (CNT-06)", {
+  # Duplicate every row to simulate forgotten count_time_col
+  dup_counts <- rbind(example_counts, example_counts)
+
+  design <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
+  expect_warning(
+    add_counts(design, dup_counts),
+    regexp = "Duplicate PSU values"
+  )
+})
+
+test_that("add_counts() sets count_type slot to 'instantaneous' by default", {
+  design <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
+  d <- add_counts(design, example_counts)
+  expect_equal(d$count_type, "instantaneous")
+})
+
+test_that("add_counts() aborts when count_type = 'progressive' (not yet implemented)", {
+  design <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
+  expect_error(
+    add_counts(design, example_counts, count_type = "progressive"),
+    regexp = "not yet implemented"
+  )
+})

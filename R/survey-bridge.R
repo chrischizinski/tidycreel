@@ -265,6 +265,94 @@ validate_counts_tier1 <- function(counts, design, psu, allow_invalid = FALSE) {
   )
 }
 
+#' Detect duplicate PSU rows in count data
+#'
+#' @param counts Data frame containing count data
+#' @param psu Character name of PSU column
+#' @param call Caller environment for error reporting
+#'
+#' @keywords internal
+#' @noRd
+detect_duplicate_psus <- function(counts, psu, call = rlang::caller_env()) {
+  dup_psus <- counts[[psu]][duplicated(counts[[psu]])]
+  if (length(dup_psus) > 0) {
+    cli::cli_warn(
+      c(
+        "Duplicate PSU values detected in count data.",
+        "i" = "Found {length(dup_psus)} duplicate value(s) in column {.field {psu}}.",
+        "i" = "If multiple counts were taken per day, specify {.arg count_time_col}.",
+        "i" = "Example: {.code add_counts(design, counts, count_time_col = count_time)}"
+      ),
+      call = call
+    )
+  }
+}
+
+#' Aggregate within-day count observations to PSU-level means
+#'
+#' Groups multiple count rows per PSU into a single-row mean, storing the
+#' within-day sum of squared deviations (SS_d) and count (K_d) needed for
+#' Rasmussen two-stage variance estimation.
+#'
+#' @param counts Data frame of count data (multiple rows per PSU allowed)
+#' @param psu_col Character name of PSU column (e.g. "date")
+#' @param count_var Character name of the numeric count column
+#' @param count_time_col Character name of the column identifying sub-PSU
+#'   observations (used for grouping only -- not ordered or weighted)
+#' @param key_cols Character vector of all grouping key columns
+#'   (psu_col + strata_cols). These define a unique PSU.
+#'
+#' @return A list with elements:
+#'   \describe{
+#'     \item{aggregated}{Data frame with one row per PSU; count_var replaced by C-bar_d}
+#'     \item{within_day_var}{Data frame with columns: key_cols + ss_d + k_d}
+#'   }
+#'
+#' @keywords internal
+#' @noRd
+aggregate_within_day <- function(counts, psu_col, count_var, count_time_col, key_cols) {
+  # Create grouping key as character for split()
+  if (length(key_cols) == 1) {
+    group_key <- as.character(counts[[key_cols]])
+  } else {
+    group_key <- do.call(paste, c(counts[key_cols], sep = "\u001f"))
+  }
+
+  groups <- split(seq_len(nrow(counts)), group_key)
+
+  agg_rows <- vector("list", length(groups))
+  var_rows <- vector("list", length(groups))
+
+  for (i in seq_along(groups)) {
+    idx <- groups[[i]]
+    g <- counts[idx, , drop = FALSE]
+    vals <- g[[count_var]]
+
+    c_mean <- mean(vals)
+    ss_d <- sum((vals - c_mean)^2)
+    k_d <- length(vals)
+
+    # Build one aggregated row: take first row, replace count_var with mean
+    row <- g[1L, , drop = FALSE]
+    row[[count_var]] <- c_mean
+    # Drop the count_time_col column -- no longer meaningful after aggregation
+    row[[count_time_col]] <- NULL
+
+    # Build within-day stats row
+    var_row <- g[1L, key_cols, drop = FALSE]
+    var_row$ss_d <- ss_d
+    var_row$k_d <- k_d
+
+    agg_rows[[i]] <- row
+    var_rows[[i]] <- var_row
+  }
+
+  list(
+    aggregated     = do.call(rbind, agg_rows),
+    within_day_var = do.call(rbind, var_rows)
+  )
+}
+
 #' Construct survey design object
 #'
 #' Internal function that wraps survey::svydesign() with domain-specific error

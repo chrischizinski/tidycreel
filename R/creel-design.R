@@ -614,6 +614,16 @@ resolve_multi_cols <- function(expr, data, arg_name, error_call = rlang::caller_
 #'   in the count data. Defaults to NULL, which uses the design's date_col as
 #'   the PSU (day-as-PSU is the most common creel design). For other designs,
 #'   specify the PSU column explicitly (e.g., "site_day" for day-site PSUs).
+#' @param count_time_col Tidy selector for a column that identifies distinct
+#'   sub-PSU count observations (e.g., `count_time_col = count_time` where
+#'   count_time contains "am" / "pm"). When supplied, multiple rows per PSU are
+#'   aggregated to a single PSU-level mean (C-bar_d) and within-day variance
+#'   components (SS_d, K_d) are stored in `design$within_day_var`. When NULL
+#'   (default), a single row per PSU is expected; duplicate PSU rows emit a
+#'   CNT-06 warning.
+#' @param count_type Character string specifying the count method. Must be
+#'   `"instantaneous"` (default) or `"progressive"`. `"progressive"` is not
+#'   yet implemented and will abort with an informative error.
 #' @param allow_invalid Logical flag for validation behavior. If FALSE (default),
 #'   validation failures abort with detailed error messages. If TRUE, validation
 #'   failures generate warnings and attach counts anyway (use with caution).
@@ -676,7 +686,8 @@ resolve_multi_cols <- function(expr, data, arg_name, error_call = rlang::caller_
 #' design2 <- add_counts(design, counts_with_site_psu, psu = "site_day")
 #'
 #' @export
-add_counts <- function(design, counts, psu = NULL, allow_invalid = FALSE) {
+add_counts <- function(design, counts, psu = NULL, count_time_col = NULL,
+                       count_type = "instantaneous", allow_invalid = FALSE) {
   # Validate design is creel_design
   if (!inherits(design, "creel_design")) {
     cli::cli_abort(c(
@@ -704,13 +715,77 @@ add_counts <- function(design, counts, psu = NULL, allow_invalid = FALSE) {
     psu <- design$date_col
   }
 
+  # Validate count_type
+  valid_count_types <- c("instantaneous", "progressive")
+  if (!count_type %in% valid_count_types) {
+    cli::cli_abort(c(
+      "{.arg count_type} must be {.or {.val {valid_count_types}}}.",
+      "x" = "Got {.val {count_type}}."
+    ))
+  }
+  if (count_type == "progressive") {
+    cli::cli_abort(c(
+      "{.arg count_type = 'progressive'} is not yet implemented.",
+      "i" = "Only {.val instantaneous} counts are supported in this version.",
+      "i" = "See the package roadmap for progressive count support (CNT-01/EFF-02)."
+    ))
+  }
+
+  # Resolve count_time_col tidy selector to character name (or NULL)
+  count_time_col_quo <- rlang::enquo(count_time_col)
+  count_time_col_name <- if (rlang::quo_is_null(count_time_col_quo)) {
+    NULL
+  } else {
+    count_time_col_sel <- tidyselect::eval_select(
+      count_time_col_quo,
+      data = counts,
+      error_call = rlang::current_env()
+    )
+    names(count_time_col_sel)
+  }
+
   # Validate counts structure (Tier 1)
   validation <- validate_counts_tier1(counts, design, psu, allow_invalid) # nolint: object_usage_linter
+
+  # CNT-06: warn if duplicate PSU rows detected without count_time_col
+  if (is.null(count_time_col_name)) {
+    detect_duplicate_psus(counts, psu) # nolint: object_usage_linter
+  }
+
+  # Aggregate multiple counts per day to single PSU-level rows
+  within_day_var <- NULL
+  if (!is.null(count_time_col_name)) {
+    key_cols <- unique(c(psu, design$strata_cols))
+    # Identify the count variable (first numeric column not in key_cols or count_time_col)
+    excluded <- c(key_cols, count_time_col_name, design$date_col)
+    numeric_cols <- names(counts)[sapply(counts, is.numeric)]
+    count_var <- setdiff(numeric_cols, excluded)[1L]
+
+    agg_result <- aggregate_within_day( # nolint: object_usage_linter
+      counts         = counts,
+      psu_col        = psu,
+      count_var      = count_var,
+      count_time_col = count_time_col_name,
+      key_cols       = key_cols
+    )
+    counts <- agg_result$aggregated
+    within_day_var <- agg_result$within_day_var
+  }
 
   # Copy design and add counts + PSU
   new_design <- design
   new_design$counts <- counts
   new_design$psu_col <- psu
+
+  # Store new slots before survey construction
+  new_design$count_type <- count_type
+  new_design$count_time_col <- count_time_col_name
+  new_design$within_day_var <- within_day_var
+  new_design$n_counts_per_psu <- if (!is.null(within_day_var)) {
+    within_day_var$k_d
+  } else {
+    NULL
+  }
 
   # Construct survey design eagerly
   new_design$survey <- construct_survey_design(new_design) # nolint: object_usage_linter

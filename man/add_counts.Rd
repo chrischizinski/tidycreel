@@ -4,7 +4,14 @@
 \alias{add_counts}
 \title{Attach count data to a creel design}
 \usage{
-add_counts(design, counts, psu = NULL, allow_invalid = FALSE)
+add_counts(
+  design,
+  counts,
+  psu = NULL,
+  count_time_col = NULL,
+  count_type = "instantaneous",
+  allow_invalid = FALSE
+)
 }
 \arguments{
 \item{design}{A creel_design object (created with \code{\link[=creel_design]{creel_design()}})}
@@ -21,6 +28,18 @@ add_counts(design, counts, psu = NULL, allow_invalid = FALSE)
 in the count data. Defaults to NULL, which uses the design's date_col as
 the PSU (day-as-PSU is the most common creel design). For other designs,
 specify the PSU column explicitly (e.g., "site_day" for day-site PSUs).}
+
+\item{count_time_col}{Tidy selector for a column that identifies distinct
+sub-PSU count observations (e.g., \code{count_time_col = count_time} where
+count_time contains "am" / "pm"). When supplied, multiple rows per PSU are
+aggregated to a single PSU-level mean (C-bar_d) and within-day variance
+components (SS_d, K_d) are stored in \code{design$within_day_var}. When NULL
+(default), a single row per PSU is expected; duplicate PSU rows emit a
+CNT-06 warning.}
+
+\item{count_type}{Character string specifying the count method. Must be
+\code{"instantaneous"} (default) or \code{"progressive"}. \code{"progressive"} is not
+yet implemented and will abort with an informative error.}
 
 \item{allow_invalid}{Logical flag for validation behavior. If FALSE (default),
 validation failures abort with detailed error messages. If TRUE, validation
