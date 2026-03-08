@@ -1625,6 +1625,133 @@ estimate_release_build_data <- function(design, species = NULL) {
 
 # Internal estimation functions ----
 
+#' Compute within-day variance contribution (Rasmussen 1998)
+#'
+#' Adds the within-day (sub-PSU) variance component to the between-day survey
+#' variance. Called from estimate_effort_total() and estimate_effort_grouped()
+#' when design$within_day_var is non-NULL.
+#'
+#' Formula (per stratum s):
+#'   S2_within_s  = sum(SS_d) / (n_s * (K_bar_s - 1))
+#'   V_within_s   = (N_s / K_bar_s) * S2_within_s
+#'
+#' where:
+#'   n_s    = sampled days in stratum s
+#'   N_s    = total available days in stratum s (from design$calendar)
+#'   K_bar_s = mean counts per day in stratum s
+#'   SS_d   = within-day sum of squared deviations for day d
+#'
+#' Source: Rasmussen, P.W., Staggs, M.D., Beard, T.D., and Newman, S.P. 1998.
+#' Transactions of the American Fisheries Society 127(3):469-480.
+#'
+#' @param design A creel_design object with design$within_day_var populated
+#' @param by_vars Character vector of grouping column names, or NULL for total
+#'
+#' @return Named numeric vector of within-day variance contributions (in total
+#'   scale, matching svytotal() output). Names match group combinations when
+#'   by_vars is not NULL. Returns 0 (or named zeros) when K_bar <= 1.
+#'
+#' @keywords internal
+#' @noRd
+compute_within_day_var_contribution <- function(design, by_vars = NULL) { # nolint: object_length_linter
+  wdv <- design$within_day_var
+  if (is.null(wdv)) {
+    return(0)
+  }
+
+  counts_data <- design$counts
+  strata_cols <- design$strata_cols
+
+  # Get n_avail (available days per stratum) from design$calendar
+  cal <- design$calendar
+  if (length(strata_cols) == 1) {
+    cal$.strata_key <- as.character(cal[[strata_cols]])
+  } else {
+    cal$.strata_key <- do.call(paste, c(cal[strata_cols], sep = "\u001f"))
+  }
+  available_by_strata <- table(cal$.strata_key)
+
+  # Build a combined data frame: counts_data + within_day_var (joined by PSU key)
+  key_cols <- unique(c(design$psu_col, strata_cols))
+  combined <- merge(counts_data, wdv, by = key_cols, all.x = TRUE, sort = FALSE)
+
+  # Days with k_d = 1 -> ss_d = 0 (VAR-03: within-day term is 0 for those days)
+  combined$ss_d[is.na(combined$ss_d)] <- 0
+  combined$k_d[is.na(combined$k_d)] <- 1L
+
+  # VAR-03: emit informational message if mixed k_d
+  mixed_days <- sum(combined$k_d == 1L)
+  if (mixed_days > 0 && mixed_days < nrow(combined)) {
+    cli::cli_inform(
+      c(
+        "i" = paste0(
+          mixed_days,
+          " day(s) had nC = 1 (single count); within-day variance set to 0 for those days."
+        ),
+        "i" = "Total variance includes within-day component only for days with nC >= 2 (VAR-03)."
+      )
+    )
+  }
+
+  # Create stratum key on combined data (matches cal$.strata_key)
+  if (length(strata_cols) == 1) {
+    combined$.strata_key <- as.character(combined[[strata_cols]])
+  } else {
+    combined$.strata_key <- do.call(paste, c(combined[strata_cols], sep = "\u001f"))
+  }
+
+  # Determine grouping: by_vars or strata alone
+  if (is.null(by_vars)) {
+    # Ungrouped: sum within-day variance across strata
+    strata_keys <- unique(combined$.strata_key)
+    v_within_total <- 0
+    for (sk in strata_keys) {
+      rows <- combined$.strata_key == sk
+      n_sampled <- sum(rows)
+      n_avail <- as.integer(available_by_strata[sk])
+      k_d <- combined$k_d[rows]
+      ss_d <- combined$ss_d[rows]
+      k_bar <- mean(k_d)
+      if (k_bar <= 1) next # no within-day component when k_bar = 1
+      s2_within <- sum(ss_d) / (n_sampled * (k_bar - 1))
+      v_within <- (n_avail / k_bar) * s2_within
+      v_within_total <- v_within_total + v_within
+    }
+    v_within_total
+  } else {
+    # Grouped: return named vector matching svyby() row order
+    if (length(by_vars) == 1) {
+      combined$.group_key <- as.character(combined[[by_vars]])
+    } else {
+      combined$.group_key <- do.call(paste, c(combined[by_vars], sep = "\u001f"))
+    }
+    group_keys <- unique(combined$.group_key)
+    v_within_by_group <- stats::setNames(
+      numeric(length(group_keys)), group_keys
+    )
+    for (gk in group_keys) {
+      g_rows <- combined$.group_key == gk
+      g_data <- combined[g_rows, , drop = FALSE]
+      strata_keys_g <- unique(g_data$.strata_key)
+      v_g <- 0
+      for (sk in strata_keys_g) {
+        s_rows <- g_data$.strata_key == sk
+        n_sampled <- sum(s_rows)
+        n_avail <- as.integer(available_by_strata[sk])
+        k_d <- g_data$k_d[s_rows]
+        ss_d <- g_data$ss_d[s_rows]
+        k_bar <- mean(k_d)
+        if (k_bar <= 1) next
+        s2_within <- sum(ss_d) / (n_sampled * (k_bar - 1))
+        v_within <- (n_avail / k_bar) * s2_within
+        v_g <- v_g + v_within
+      }
+      v_within_by_group[gk] <- v_g
+    }
+    v_within_by_group
+  }
+}
+
 #' Ungrouped total estimation (Phase 4 logic)
 #'
 #' @keywords internal
@@ -1657,19 +1784,35 @@ estimate_effort_total <- function(design, variance_method, conf_level) {
 
   # Call survey::svytotal (suppress expected survey package warnings)
   svy_result <- suppressWarnings(survey::svytotal(count_formula, svy_design))
-
-  # Extract estimates
   estimate <- as.numeric(coef(svy_result))
-  se <- as.numeric(survey::SE(svy_result))
-  ci <- confint(svy_result, level = conf_level)
-  ci_lower <- ci[1, 1]
-  ci_upper <- ci[1, 2]
+
+  # Between-day variance (from survey package)
+  var_between <- as.numeric(survey::SE(svy_result))^2
+  se_between <- sqrt(var_between)
+
+  # Within-day variance contribution (Rasmussen 1998; 0 when K_bar = 1)
+  var_within <- compute_within_day_var_contribution(design, by_vars = NULL) # nolint: object_usage_linter
+  se_within <- sqrt(var_within)
+
+  # Combined SE and CI (recomputed from total variance)
+  total_var <- var_between + var_within
+  se <- sqrt(total_var)
+
+  # Degrees of freedom: use survey package df (Taylor series linearization)
+  df <- as.numeric(survey::degf(svy_design))
+  alpha <- 1 - conf_level
+  t_crit <- qt(1 - alpha / 2, df = df)
+  ci_lower <- estimate - t_crit * se
+  ci_upper <- estimate + t_crit * se
+
   n <- nrow(counts_data)
 
   # Build estimates tibble
   estimates_df <- tibble::tibble(
     estimate = estimate,
     se = se,
+    se_between = se_between,
+    se_within = se_within,
     ci_lower = ci_lower,
     ci_upper = ci_upper,
     n = n
@@ -1734,9 +1877,41 @@ estimate_effort_grouped <- function(design, by_vars, variance_method, conf_level
   # Extract estimate columns from svyby result
   # When keep.names = FALSE, svyby returns: count_var, "se", "ci_l", "ci_u"
   estimate <- svy_result[[count_var]]
-  se <- svy_result[["se"]]
-  ci_lower <- svy_result[["ci_l"]]
-  ci_upper <- svy_result[["ci_u"]]
+
+  # Between-day variance per group (from svyby "se" column)
+  se_between_vec <- svy_result[["se"]]
+  var_between_vec <- se_between_vec^2
+
+  # Within-day variance per group (Rasmussen 1998; named vector keyed by group)
+  var_within_named <- compute_within_day_var_contribution(design, by_vars = by_vars) # nolint: object_usage_linter
+
+  # Build group keys for the svyby result rows to match var_within_named names
+  if (length(by_vars) == 1) {
+    result_group_keys <- as.character(svy_result[[by_vars]])
+  } else {
+    result_group_keys <- do.call(paste, c(svy_result[by_vars], sep = "\u001f"))
+  }
+
+  # Match within-day variance to svyby row order
+  if (length(var_within_named) >= 1 && !is.null(names(var_within_named))) {
+    var_within_vec <- as.numeric(var_within_named[result_group_keys])
+  } else {
+    var_within_vec <- rep(as.numeric(var_within_named), length(estimate))
+  }
+  var_within_vec[is.na(var_within_vec)] <- 0
+
+  # Combined SE per group
+  total_var_vec <- var_between_vec + var_within_vec
+  se <- sqrt(total_var_vec)
+  se_between <- se_between_vec
+  se_within <- sqrt(var_within_vec)
+
+  # Recompute CI from combined variance (not from svyby ci_l/ci_u)
+  df_val <- as.numeric(survey::degf(svy_design))
+  alpha <- 1 - conf_level
+  t_crit <- qt(1 - alpha / 2, df = df_val)
+  ci_lower <- estimate - t_crit * se
+  ci_upper <- estimate + t_crit * se
 
   # Calculate per-group sample sizes
   # Use aggregate to count rows per group combination
@@ -1754,6 +1929,8 @@ estimate_effort_grouped <- function(design, by_vars, variance_method, conf_level
   estimates_df <- svy_result[by_vars]
   estimates_df$estimate <- estimate
   estimates_df$se <- se
+  estimates_df$se_between <- se_between
+  estimates_df$se_within <- se_within
   estimates_df$ci_lower <- ci_lower
   estimates_df$ci_upper <- ci_upper
 
@@ -1762,7 +1939,7 @@ estimate_effort_grouped <- function(design, by_vars, variance_method, conf_level
 
   # Convert to tibble and reorder columns (group cols, then estimate cols, then n)
   estimates_df <- tibble::as_tibble(estimates_df)
-  col_order <- c(by_vars, "estimate", "se", "ci_lower", "ci_upper", "n")
+  col_order <- c(by_vars, "estimate", "se", "se_between", "se_within", "ci_lower", "ci_upper", "n")
   estimates_df <- estimates_df[col_order]
 
   # Return creel_estimates object

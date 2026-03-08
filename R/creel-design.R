@@ -1346,6 +1346,12 @@ format.creel_design <- function(x, ...) {
       psu_col <- x$psu_col # nolint: object_usage_linter
       cli::cli_text("Counts: {.val {n_counts}} observation{?s}")
       cli::cli_text("  PSU column: {.field {psu_col}}")
+      if (!is.null(x$count_time_col)) {
+        cli::cli_text("  Count time column: {.field {x$count_time_col}}")
+      }
+      if (!is.null(x$count_type)) {
+        cli::cli_text("  Count type: {.val {x$count_type}}")
+      }
       if (has_survey) {
         survey_class <- class(x$survey)[1] # nolint: object_usage_linter
         cli::cli_text("  Survey: {.cls {survey_class}} (constructed)")
