@@ -213,7 +213,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 34-01-PLAN.md — resolve_species_by() helper, make_species_catch_for_interviews(), estimate_cpue() species extension, estimate_release_rate() new function with normalize_by_anglers
+- [ ] 34-01-PLAN.md — resolve_species_by() helper, make_species_catch_for_interviews(), estimate_cpue() species extension, estimate_release_rate() new function (normalize_by_anglers removed post-34 to match cpue/harvest consistency)
 - [ ] 34-02-PLAN.md — estimate_total_release() new file, estimate_total_catch/harvest() species extensions, estimate_hpue_species(), ~50 tests in test-estimate-species.R
 
 ### Phase 35: Documentation & Quality Assurance

@@ -2084,7 +2084,6 @@ validate_br_interviews_tier3 <- function(interviews, design,
 #'   \code{$catch_*_col} fields attached.
 #'
 #' @examples
-#' \dontrun{
 #' data(example_calendar)
 #' data(example_interviews)
 #' data(example_catch)
@@ -2102,7 +2101,6 @@ validate_br_interviews_tier3 <- function(interviews, design,
 #'   catch_type = catch_type
 #' )
 #' print(design)
-#' }
 #'
 #' @export
 add_catch <- function(design, data,
@@ -2320,7 +2318,6 @@ add_catch <- function(design, data,
 #'   \code{$lengths_*_col} fields attached.
 #'
 #' @examples
-#' \dontrun{
 #' data(example_calendar)
 #' data(example_interviews)
 #' data(example_lengths)
@@ -2340,7 +2337,6 @@ add_catch <- function(design, data,
 #'   release_format = "binned"
 #' )
 #' print(design)
-#' }
 #'
 #' @export
 add_lengths <- function(design, data,

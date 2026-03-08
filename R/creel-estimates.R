@@ -1266,10 +1266,6 @@ estimate_harvest <- function(
 #'   Options: \code{"taylor"} (default), \code{"bootstrap"}, or
 #'   \code{"jackknife"}.
 #' @param conf_level Numeric confidence level (default: 0.95).
-#' @param normalize_by_anglers Logical. If \code{TRUE}, multiplies effort by
-#'   \code{n_anglers} to convert party-hours to angler-hours, yielding fish
-#'   released per angler per hour. Default \code{FALSE}. Requires
-#'   \code{n_anglers} to be set via \code{add_interviews()}.
 #'
 #' @return A creel_estimates S3 object with method = "ratio-of-means-rpue".
 #'   Estimates tibble has columns: estimate, se, ci_lower, ci_upper, n (plus
@@ -1316,8 +1312,7 @@ estimate_release_rate <- function(
   design,
   by = NULL,
   variance = "taylor",
-  conf_level = 0.95,
-  normalize_by_anglers = FALSE
+  conf_level = 0.95
 ) {
   by_quo <- rlang::enquo(by)
 
@@ -1358,21 +1353,6 @@ estimate_release_rate <- function(
     ))
   }
 
-  # Validate normalize_by_anglers
-  if (!is.logical(normalize_by_anglers) || length(normalize_by_anglers) != 1L) {
-    cli::cli_abort(c(
-      "{.arg normalize_by_anglers} must be a single logical value.",
-      "x" = "Got: {.val {normalize_by_anglers}}"
-    ))
-  }
-  if (normalize_by_anglers && is.null(design$n_anglers_col)) {
-    cli::cli_abort(c(
-      "{.arg normalize_by_anglers = TRUE} requires {.field n_anglers} data.",
-      "x" = "Design does not have {.field n_anglers_col} set.",
-      "i" = "Call {.fn add_interviews} with the {.arg n_anglers} parameter."
-    ))
-  }
-
   # Detect species-level grouping
   by_info <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
 
@@ -1383,13 +1363,11 @@ estimate_release_rate <- function(
       species_col = by_info$species_var,
       interview_by_vars = by_info$interview_vars,
       variance_method = variance,
-      conf_level = conf_level,
-      normalize_by_anglers = normalize_by_anglers
+      conf_level = conf_level
     )
-    method_name <- if (normalize_by_anglers) "ratio-of-means-rpue-per-angler" else "ratio-of-means-rpue"
     return(new_creel_estimates( # nolint: object_usage_linter
       estimates       = tibble::as_tibble(estimates_df),
-      method          = method_name,
+      method          = "ratio-of-means-rpue",
       variance_method = variance,
       design          = design,
       conf_level      = conf_level,
@@ -1400,16 +1378,7 @@ estimate_release_rate <- function(
   # Standard (non-species) path: aggregate all released counts per interview
   release_data <- estimate_release_build_data(design, species = NULL) # nolint: object_usage_linter
 
-  # Apply normalize_by_anglers scaling if requested
-  if (normalize_by_anglers) {
-    n_ang_col <- design$n_anglers_col
-    release_data$.release_effort <- release_data[[design$angler_effort_col]] *
-      release_data[[n_ang_col]]
-  } else {
-    release_data$.release_effort <- release_data[[design$angler_effort_col]]
-  }
-
-  method_name <- if (normalize_by_anglers) "ratio-of-means-rpue-per-angler" else "ratio-of-means-rpue"
+  release_data$.release_effort <- release_data[[design$angler_effort_col]]
 
   # Build temporary design with release count and effort
   design_rel <- design
@@ -1431,7 +1400,7 @@ estimate_release_rate <- function(
   if (rlang::quo_is_null(by_quo)) {
     validate_ratio_sample_size(design_rel, NULL, type = "cpue") # nolint: object_usage_linter
     result <- estimate_cpue_total(design_rel, variance, conf_level) # nolint: object_usage_linter
-    result$method <- method_name
+    result$method <- "ratio-of-means-rpue"
     result # nolint: return_linter
   } else {
     by_cols <- tidyselect::eval_select(
@@ -1444,7 +1413,7 @@ estimate_release_rate <- function(
     by_vars <- names(by_cols)
     validate_ratio_sample_size(design_rel, by_vars, type = "cpue") # nolint: object_usage_linter
     result <- estimate_cpue_grouped(design_rel, by_vars, variance, conf_level) # nolint: object_usage_linter
-    result$method <- method_name
+    result$method <- "ratio-of-means-rpue"
     result # nolint: return_linter
   }
 }
@@ -2138,8 +2107,7 @@ estimate_cpue_species <- function(design, species_col, interview_by_vars,
 #' @keywords internal
 #' @noRd
 estimate_release_rate_species <- function(design, species_col, interview_by_vars,
-                                          variance_method, conf_level,
-                                          normalize_by_anglers = FALSE) {
+                                          variance_method, conf_level) {
   all_species <- sort(unique(design[["catch"]][[species_col]]))
 
   results_list <- vector("list", length(all_species))
@@ -2150,13 +2118,7 @@ estimate_release_rate_species <- function(design, species_col, interview_by_vars
     # Build per-species release interview data (zero-filled)
     sp_data <- estimate_release_build_data(design, species = sp) # nolint: object_usage_linter
 
-    # Apply normalization
-    if (normalize_by_anglers) {
-      n_ang_col <- design$n_anglers_col
-      sp_data$.release_effort <- sp_data[[design$angler_effort_col]] * sp_data[[n_ang_col]]
-    } else {
-      sp_data$.release_effort <- sp_data[[design$angler_effort_col]]
-    }
+    sp_data$.release_effort <- sp_data[[design$angler_effort_col]]
 
     design_sp <- design
     design_sp$interviews <- sp_data

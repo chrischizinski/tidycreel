@@ -8,8 +8,7 @@ estimate_release_rate(
   design,
   by = NULL,
   variance = "taylor",
-  conf_level = 0.95,
-  normalize_by_anglers = FALSE
+  conf_level = 0.95
 )
 }
 \arguments{
@@ -27,11 +26,6 @@ Options: \code{"taylor"} (default), \code{"bootstrap"}, or
 \code{"jackknife"}.}
 
 \item{conf_level}{Numeric confidence level (default: 0.95).}
-
-\item{normalize_by_anglers}{Logical. If \code{TRUE}, multiplies effort by
-\code{n_anglers} to convert party-hours to angler-hours, yielding fish
-released per angler per hour. Default \code{FALSE}. Requires
-\code{n_anglers} to be set via \code{add_interviews()}.}
 }
 \value{
 A creel_estimates S3 object with method = "ratio-of-means-rpue".

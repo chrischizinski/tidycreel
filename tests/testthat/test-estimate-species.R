@@ -230,14 +230,6 @@ test_that("estimate_release_rate errors when no interview survey", {
   expect_error(estimate_release_rate(d), "add_interviews")
 })
 
-test_that("estimate_release_rate normalize_by_anglers=TRUE errors without n_anglers", {
-  d <- make_test_design_with_catch()
-  expect_error(
-    estimate_release_rate(d, normalize_by_anglers = TRUE),
-    "n_anglers"
-  )
-})
-
 # ---------------------------------------------------------------------------
 # 4. estimate_total_release() tests (~8 tests)
 # ---------------------------------------------------------------------------

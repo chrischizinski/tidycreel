@@ -78,7 +78,6 @@ modified. Calling \code{add_lengths()} on a design that already has
 \code{$lengths} is an error.
 }
 \examples{
-\dontrun{
 data(example_calendar)
 data(example_interviews)
 data(example_lengths)
@@ -98,6 +97,5 @@ design <- add_lengths(design, example_lengths,
   release_format = "binned"
 )
 print(design)
-}
 
 }

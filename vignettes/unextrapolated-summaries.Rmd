@@ -226,6 +226,12 @@ estimate_cpue(design, by = species)
 estimate_total_catch(design, by = species)
 ```
 
+### Total Harvest by Species
+
+```{r total-harvest-species, message = FALSE}
+estimate_total_harvest(design, by = species)
+```
+
 ### Release Rate and Total Releases by Species
 
 ```{r release-species, message = FALSE}

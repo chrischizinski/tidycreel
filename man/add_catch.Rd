@@ -56,7 +56,6 @@ modified. Calling \code{add_catch()} on a design that already has
 \code{$catch} is an error.
 }
 \examples{
-\dontrun{
 data(example_calendar)
 data(example_interviews)
 data(example_catch)
@@ -74,6 +73,5 @@ design <- add_catch(design, example_catch,
   catch_type = catch_type
 )
 print(design)
-}
 
 }
