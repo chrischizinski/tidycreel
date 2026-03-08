@@ -52,7 +52,6 @@ label into a numeric midpoint and expands by count before applying
 applied to both individual and pre-binned data.
 }
 \examples{
-\dontrun{
 data(example_calendar)
 data(example_interviews)
 data(example_lengths)
@@ -70,7 +69,6 @@ d <- add_lengths(d, example_lengths,
 summarize_length_freq(d, type = "harvest", by = species, bin_width = 25)
 summarize_length_freq(d, type = "release", by = species)
 summarize_length_freq(d, type = "catch")
-}
 
 }
 \seealso{

@@ -1556,7 +1556,7 @@ resolve_species_by <- function(by_quo, design) {
 #' did not catch this species receive count = 0. This zero-fill is statistically
 #' required so the effort denominator includes all interviews.
 #'
-#' @param design A creel_design object with design[["catch"]] non-NULL
+#' @param design A creel_design object with catch data attached
 #' @param species_val Character(1). The species value to filter on.
 #' @param catch_type_val Character(1). One of "caught", "harvested", "released".
 #'
@@ -1614,7 +1614,7 @@ make_species_catch_for_interviews <- function(design, species_val, catch_type_va
 #' Aggregates design$catch (released rows) to one row per interview.
 #' Zero-fills interviews with no releases.
 #'
-#' @param design creel_design with design[["catch"]] non-NULL
+#' @param design A creel_design object with catch data attached
 #' @param species Character(1) or NULL. If non-NULL, filter to this species only.
 #'
 #' @return data.frame: all design$interviews rows + ".release_count" column

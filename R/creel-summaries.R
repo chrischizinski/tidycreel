@@ -26,7 +26,6 @@
 #'   \code{percent} (numeric, rounded to 1 decimal, percent within month).
 #'
 #' @examples
-#' \dontrun{
 #' data(example_calendar)
 #' data(example_interviews)
 #' d <- creel_design(example_calendar, date = date, strata = day_type)
@@ -35,7 +34,6 @@
 #'   trip_status = trip_status, refused = refused
 #' )
 #' summarize_refusals(d)
-#' }
 #'
 #' @export
 summarize_refusals <- function(design) {
@@ -123,7 +121,6 @@ summarize_refusals <- function(design) {
 #'   \code{percent}.
 #'
 #' @examples
-#' \dontrun{
 #' data(example_calendar)
 #' data(example_interviews)
 #' d <- creel_design(example_calendar, date = date, strata = day_type)
@@ -132,7 +129,6 @@ summarize_refusals <- function(design) {
 #'   trip_status = trip_status
 #' )
 #' summarize_by_day_type(d)
-#' }
 #'
 #' @export
 summarize_by_day_type <- function(design) {
@@ -213,7 +209,6 @@ summarize_by_day_type <- function(design) {
 #'   \code{percent}.
 #'
 #' @examples
-#' \dontrun{
 #' data(example_calendar)
 #' data(example_interviews)
 #' d <- creel_design(example_calendar, date = date, strata = day_type)
@@ -222,7 +217,6 @@ summarize_by_day_type <- function(design) {
 #'   trip_status = trip_status, angler_type = angler_type
 #' )
 #' summarize_by_angler_type(d)
-#' }
 #'
 #' @export
 summarize_by_angler_type <- function(design) {
@@ -310,7 +304,6 @@ summarize_by_angler_type <- function(design) {
 #'   \code{percent}.
 #'
 #' @examples
-#' \dontrun{
 #' data(example_calendar)
 #' data(example_interviews)
 #' d <- creel_design(example_calendar, date = date, strata = day_type)
@@ -319,7 +312,6 @@ summarize_by_angler_type <- function(design) {
 #'   trip_status = trip_status, angler_method = angler_method
 #' )
 #' summarize_by_method(d)
-#' }
 #'
 #' @export
 summarize_by_method <- function(design) {
@@ -407,7 +399,6 @@ summarize_by_method <- function(design) {
 #'   \code{percent}.
 #'
 #' @examples
-#' \dontrun{
 #' data(example_calendar)
 #' data(example_interviews)
 #' d <- creel_design(example_calendar, date = date, strata = day_type)
@@ -416,7 +407,6 @@ summarize_by_method <- function(design) {
 #'   trip_status = trip_status, species_sought = species_sought
 #' )
 #' summarize_by_species_sought(d)
-#' }
 #'
 #' @export
 summarize_by_species_sought <- function(design) {
@@ -506,7 +496,6 @@ summarize_by_species_sought <- function(design) {
 #'   \code{N_total} (integer), \code{percent} (numeric, 1 decimal).
 #'
 #' @examples
-#' \dontrun{
 #' data(example_calendar)
 #' data(example_interviews)
 #' data(example_catch)
@@ -521,7 +510,6 @@ summarize_by_species_sought <- function(design) {
 #'   species = species, count = count, catch_type = catch_type
 #' )
 #' summarize_successful_parties(d)
-#' }
 #'
 #' @export
 summarize_successful_parties <- function(design) {
@@ -652,7 +640,6 @@ summarize_successful_parties <- function(design) {
 #'   Bins: "[0,1)", "[1,2)", ..., "[9,10)", "10+".
 #'
 #' @examples
-#' \dontrun{
 #' data(example_calendar)
 #' data(example_interviews)
 #' d <- creel_design(example_calendar, date = date, strata = day_type)
@@ -661,7 +648,6 @@ summarize_successful_parties <- function(design) {
 #'   trip_status = trip_status, trip_duration = trip_duration
 #' )
 #' summarize_by_trip_length(d)
-#' }
 #'
 #' @export
 summarize_by_trip_length <- function(design) {
@@ -754,7 +740,6 @@ summarize_by_trip_length <- function(design) {
 #' @seealso [summarize_hws_rates()], [estimate_cpue()]
 #'
 #' @examples
-#' \dontrun{
 #' data(example_calendar)
 #' data(example_interviews)
 #' data(example_catch)
@@ -768,7 +753,6 @@ summarize_by_trip_length <- function(design) {
 #'   species = species, count = count, catch_type = catch_type
 #' )
 #' summarize_cws_rates(d, by = species_sought)
-#' }
 #'
 #' @export
 summarize_cws_rates <- function(design, by = NULL, conf_level = 0.95) {
@@ -966,7 +950,6 @@ summarize_cws_rates <- function(design, by = NULL, conf_level = 0.95) {
 #' @seealso [summarize_cws_rates()], [estimate_harvest()]
 #'
 #' @examples
-#' \dontrun{
 #' data(example_calendar)
 #' data(example_interviews)
 #' data(example_catch)
@@ -980,7 +963,6 @@ summarize_cws_rates <- function(design, by = NULL, conf_level = 0.95) {
 #'   species = species, count = count, catch_type = catch_type
 #' )
 #' summarize_hws_rates(d, by = species_sought)
-#' }
 #'
 #' @export
 summarize_hws_rates <- function(design, by = NULL, conf_level = 0.95) {
@@ -1183,7 +1165,6 @@ summarize_hws_rates <- function(design, by = NULL, conf_level = 0.95) {
 #' @seealso [add_lengths()], [summarize_cws_rates()], [summarize_hws_rates()]
 #'
 #' @examples
-#' \dontrun{
 #' data(example_calendar)
 #' data(example_interviews)
 #' data(example_lengths)
@@ -1201,7 +1182,6 @@ summarize_hws_rates <- function(design, by = NULL, conf_level = 0.95) {
 #' summarize_length_freq(d, type = "harvest", by = species, bin_width = 25)
 #' summarize_length_freq(d, type = "release", by = species)
 #' summarize_length_freq(d, type = "catch")
-#' }
 #'
 #' @export
 summarize_length_freq <- function(design, type = "catch", by = NULL, bin_width = 1) {
