@@ -23,9 +23,9 @@ See: .planning/PROJECT.md (updated 2026-02-28)
 ## Current Position
 
 Phase: 36-multiple-counts-per-day
-Plan: 36-01 complete; 36-02 next
-Status: Phase 36 Plan 01 complete
-Last activity: 2026-03-08 — Phase 36 Plan 01 complete (count_time_col, within-day aggregation, CNT-06 guard)
+Plan: 36-02 complete; Phase 36 complete
+Status: Phase 36 complete
+Last activity: 2026-03-08 — Phase 36 Plan 02 complete (Rasmussen two-stage variance, se_between/se_within columns, qt() CI)
 
 ## Performance Metrics
 
@@ -46,7 +46,7 @@ Last activity: 2026-03-08 — Phase 36 Plan 01 complete (count_time_col, within-
 | v0.4.0 | 21-27 | 14/14 | Complete | 2026-02-28 |
 
 **Quality Metrics (current):**
-- Test coverage: ~90% (1,372 tests — v0.5.0 complete as of 2026-03-08)
+- Test coverage: ~90% (1,395 tests — Phase 36 complete as of 2026-03-08)
 - R CMD check: 0 errors, 0 warnings
 - lintr: 0 issues
 | Phase 28.1 P02 | 12m | 2 tasks | 2 files |
@@ -122,7 +122,7 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-03-08
-Stopped at: Completed Phase 36 Plan 01 — count_time_col, within-day aggregation (aggregate_within_day), CNT-06 duplicate PSU guard (detect_duplicate_psus), 7 new TDD tests, 1383 total tests
+Stopped at: Completed Phase 36 Plan 02 — Rasmussen two-stage variance in estimate_effort(), se_between/se_within columns, qt(degf) CI, format.creel_design() count_time_col display, 7 new TDD tests, 1395 total tests
 Resume file: None
 
 ### Decisions (31-planning)
@@ -145,4 +145,11 @@ Resume file: None
 - object_usage_linter suppressed on suppressWarnings() line — lintr cannot resolve NSE tidy-select args; same pattern as test-add-catch.R
 - Catch guard test for summarize_successful_parties() uses design with angler_type + species_sought but no add_catch() — required to reach Guard 3c (catch) rather than Guard 3a (angler_type)
 
-**Next step:** Plan and execute Phase 33 (Length Frequency Summaries)
+### Decisions (36-02)
+
+- CI recomputed from `qt(1 - alpha/2, df = survey::degf())` instead of `confint(svy_result)` (qnorm); gives wider, more conservative CIs — two reference tests updated accordingly
+- `compute_within_day_var_contribution()` returns variance in total scale (multiplied by N_s); lintr object_length_linter suppressed on function definition line (34 chars)
+- Variable names use snake_case throughout (`n_avail`, `k_bar`, `s2_within`, `v_within`) to satisfy object_name_linter — formula symbols documented in roxygen comment only
+- `se_between` and `se_within` always present in output tibble; `se_within = 0` for single-count designs avoids conditional column schemas
+
+**Next step:** Plan 36-03 or next phase
