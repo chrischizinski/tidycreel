@@ -1,0 +1,253 @@
+---
+title: "Unextrapolated Interview Summaries"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Unextrapolated Interview Summaries}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Introduction
+
+Creel surveys produce two types of summary products: **unextrapolated summaries** and
+**extrapolated estimates**. This vignette covers unextrapolated summaries — raw tabulations
+of interview records that describe the composition of interviewed parties without applying
+survey-design weighting.
+
+**When to use unextrapolated summaries:**
+
+- Describing who was interviewed (angler type, method, species sought)
+- Checking for refusals and participation rates
+- Examining trip-length distributions
+- Computing catch-while-sought and harvest-while-sought rates as quality indicators
+
+**Important caveat:** All unextrapolated functions are *interview-weighted*, not
+*pressure-weighted*. A day with many anglers and few interviews has the same weight
+as a day with few anglers and many interviews. For pressure-weighted, design-correct
+estimates, use `estimate_cpue()`, `estimate_total_catch()`, and related functions
+described in the "Interview-Based Catch Estimation" vignette.
+
+## Build the Design
+
+Start by assembling a complete design using all v0.5.0 data layers:
+
+```{r build-design, message = FALSE}
+library(tidycreel)
+
+# Load example datasets
+data(example_calendar)
+data(example_counts)
+data(example_interviews)
+data(example_catch)
+data(example_lengths)
+
+# Step 1: Define the survey calendar and stratification
+design <- creel_design(example_calendar, date = date, strata = day_type)
+
+# Step 2: Attach instantaneous count observations
+design <- add_counts(design, example_counts)
+
+# Step 3: Attach interview records (all extended v0.5.0 fields)
+design <- add_interviews(design, example_interviews,
+  catch          = catch_total,
+  effort         = hours_fished,
+  harvest        = catch_kept,
+  trip_status    = trip_status,
+  trip_duration  = trip_duration,
+  angler_type    = angler_type,
+  angler_method  = angler_method,
+  species_sought = species_sought,
+  n_anglers      = n_anglers,
+  refused        = refused
+)
+
+# Step 4: Attach species-level catch data
+design <- add_catch(design, example_catch,
+  catch_uid     = interview_id,
+  interview_uid = interview_id,
+  species       = species,
+  count         = count,
+  catch_type    = catch_type
+)
+
+# Step 5: Attach fish length data (individual harvest + binned release)
+design <- add_lengths(design, example_lengths,
+  length_uid     = interview_id,
+  interview_uid  = interview_id,
+  species        = species,
+  length         = length,
+  length_type    = length_type,
+  count          = count,
+  release_format = "binned"
+)
+
+print(design)
+```
+
+The `print()` output shows all five data layers: calendar, counts, interviews, catch, and lengths.
+
+## Interview Participation
+
+Use `summarize_refusals()` to understand how many potential interviewees declined to
+participate. High refusal rates can bias estimates if refusers differ systematically
+from participants.
+
+```{r refusals}
+summarize_refusals(design)
+```
+
+All 22 interviews in `example_interviews` were accepted (no refusals). In field surveys,
+a refusal rate above 20% warrants investigation.
+
+## Interview Composition
+
+Seven tabulation functions describe the composition of the interview sample.
+
+### Day Type
+
+```{r day-type}
+summarize_by_day_type(design)
+```
+
+### Angler Type
+
+```{r angler-type}
+summarize_by_angler_type(design)
+```
+
+### Fishing Method
+
+```{r method}
+summarize_by_method(design)
+```
+
+### Species Sought
+
+```{r species-sought}
+summarize_by_species_sought(design)
+```
+
+### Successful Parties
+
+`summarize_successful_parties()` counts parties that caught at least one fish of their
+target species (as recorded in catch data), broken down by angler type and species sought.
+
+```{r successful}
+summarize_successful_parties(design)
+```
+
+### Trip Length Distribution
+
+```{r trip-length}
+summarize_by_trip_length(design)
+```
+
+The trip-length distribution is useful for detecting outliers and understanding effort
+patterns.
+
+## Catch-While-Sought (CWS) and Harvest-While-Sought (HWS) Rates
+
+CWS and HWS rates measure the proportion of interviews where anglers targeting a species
+actually caught (CWS) or kept (HWS) that species. These are useful quality indicators and
+input parameters for population models, but should **not** be treated as pressure-weighted
+catch rates for management use — they reflect the interview sample composition, not fishing
+pressure across the survey period.
+
+### CWS Rates by Species Sought
+
+```{r cws}
+summarize_cws_rates(design, by = species_sought)
+```
+
+### CWS Rates Collapsed Across All Groupings
+
+```{r cws-collapsed}
+summarize_cws_rates(design, by = NULL)
+```
+
+### HWS Rates
+
+```{r hws}
+summarize_hws_rates(design, by = species_sought)
+```
+
+**Interpretation guidance:** CWS and HWS rates > 1.0 are possible when anglers catch
+multiple fish of the target species in a single interview. A CWS rate of 0.6 means
+60% of interviews targeting that species resulted in at least one catch.
+
+## Length Frequency Distributions
+
+Length data attached via `add_lengths()` can be summarized by catch type and species.
+
+### Harvest Lengths
+
+```{r lfreq-harvest}
+summarize_length_freq(design, type = "harvest", by = species, bin_width = 25)
+```
+
+### Release Lengths
+
+Release lengths in `example_lengths` are stored in pre-binned format.
+`summarize_length_freq()` handles this automatically:
+
+```{r lfreq-release}
+summarize_length_freq(design, type = "release", by = species)
+```
+
+### All-Catch Lengths
+
+```{r lfreq-catch}
+summarize_length_freq(design, type = "catch", by = species, bin_width = 25)
+```
+
+## Extrapolated Species-Level Estimates
+
+For design-correct, pressure-weighted estimates broken down by species, use the
+extrapolated estimators. These combine effort estimates (from count data) with
+species-specific catch rates (from interview + catch data) using the ratio-of-means
+estimator.
+
+### Catch Per Unit Effort by Species
+
+```{r cpue-species, message = FALSE}
+estimate_cpue(design, by = species)
+```
+
+### Total Catch by Species
+
+```{r total-catch-species, message = FALSE}
+estimate_total_catch(design, by = species)
+```
+
+### Release Rate and Total Releases by Species
+
+```{r release-species, message = FALSE}
+estimate_release_rate(design, by = species)
+estimate_total_release(design, by = species)
+```
+
+For grouped estimates combining calendar strata with species, use
+`by = c(day_type, species)`. See `vignette("interview-estimation")` for the complete
+extrapolated estimation workflow.
+
+## Summary
+
+| Function | Data required | Output |
+|----------|---------------|--------|
+| `summarize_refusals()` | refused field | month × participation × N × % |
+| `summarize_by_day_type()` | strata | month × day_type × N × % |
+| `summarize_by_angler_type()` | angler_type | month × angler_type × N × % |
+| `summarize_by_method()` | angler_method | month × method × N × % |
+| `summarize_by_species_sought()` | species_sought | month × species × N × % |
+| `summarize_successful_parties()` | catch + angler_type + species_sought | angler_type × species × success rate |
+| `summarize_by_trip_length()` | trip_duration | bin × N × % |
+| `summarize_cws_rates()` | catch + species_sought | CWS rate ± SE by grouping |
+| `summarize_hws_rates()` | catch + species_sought | HWS rate ± SE by grouping |
+| `summarize_length_freq()` | lengths | bin × N × % × cumulative % |

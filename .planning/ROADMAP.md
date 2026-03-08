@@ -99,8 +99,8 @@ See: [.planning/milestones/v0.4.0-ROADMAP.md](milestones/v0.4.0-ROADMAP.md)
 - [x] **Phase 31: Interview-Level Unextrapolated Summaries** — Raw tabulation functions: refusals, day type, angler type, method, species sought, successful parties, trip length (completed 2026-03-02)
 - [x] **Phase 32: CWS/HWS Rates** — Caught-while-sought and harvested-while-sought rate functions from raw interview data (completed 2026-03-07)
 - [x] **Phase 33: Length Frequency Summaries** — Length distribution functions for catch, harvest, and release (completed 2026-03-07)
-- [ ] **Phase 34: Species-Level Extrapolated Estimates** — Extend `estimate_cpue()`, `estimate_total_catch()`, `estimate_total_harvest()` to species groupings; add `estimate_total_release()` and `estimate_release_rate()` (planned 2026-03-07)
-- [ ] **Phase 35: Documentation & Quality Assurance** — Unextrapolated summaries vignette, extended example datasets, complete roxygen2 docs
+- [x] **Phase 34: Species-Level Extrapolated Estimates** — Extend `estimate_cpue()`, `estimate_total_catch()`, `estimate_total_harvest()` to species groupings; add `estimate_total_release()` and `estimate_release_rate()` (completed 2026-03-07)
+- [x] **Phase 35: Documentation & Quality Assurance** — Unextrapolated summaries vignette, extended example datasets, complete roxygen2 docs (completed 2026-03-08)
 
 ## Phase Details
 
@@ -225,7 +225,11 @@ Plans:
   2. Package example datasets include species-level catch data and fish length data sufficient to run all new function examples
   3. All new functions (`add_catch()`, `add_lengths()`, all `summarize_*()` functions) have complete roxygen2 docs with `@param`, `@return`, `@examples` that pass `R CMD check --as-cran`
   4. R CMD check 0 errors, 0 warnings; lintr 0 issues; test coverage at or above ~90% (~1,200+ tests total)
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [x] 35-01-PLAN.md — Fix all \dontrun{} @examples in creel-summaries.R + data.R; audit v0.5.0 doc completeness; devtools::document() (completed 2026-03-08)
+- [x] 35-02-PLAN.md — New "Unextrapolated Summaries" vignette; final R CMD check / lintr / coverage gate (completed 2026-03-08)
 
 ## Progress Summary
 
@@ -235,10 +239,16 @@ Plans:
 | v0.2.0 Interview-Based Estimation | 8-12 | 10/10 | ✅ Complete | 2026-02-11 |
 | v0.3.0 Incomplete Trips & Validation | 13-20 | 16/16 | ✅ Complete | 2026-02-16 |
 | v0.4.0 Bus-Route Survey Support | 21-27 | 14/14 | ✅ Complete | 2026-02-28 |
-| v0.5.0 Interview Data Model and Unextrapolated Summaries | 28-35 | 1/TBD | 🚧 In progress | - |
+| v0.5.0 Interview Data Model and Unextrapolated Summaries | 28-35 | TBD/TBD | ✅ Complete | 2026-03-08 |
 
-**Overall:** 4 milestones shipped, 32 phases complete, 54 plans executed; 8 phases planned for v0.5.0
+**v0.5.0 Phase 35 progress:**
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 35. Documentation & Quality Assurance | 2/2 | ✅ Complete | 2026-03-08 |
+
+**Overall:** 4 milestones shipped, 35 phases complete; v0.5.0 all phases complete
 
 ---
-*Roadmap last updated: 2026-03-07 — Phase 34 planned (2 plans: species CPUE + release rate + total species estimates, ~50 tests)*
+*Roadmap last updated: 2026-03-08 — Phase 35 complete; v0.5.0 all phases done*
 *See .planning/MILESTONES.md for full milestone history*
