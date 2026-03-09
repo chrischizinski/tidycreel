@@ -930,6 +930,185 @@ add_counts <- function(design, counts, psu = NULL, count_time_col = NULL,
   new_design
 }
 
+#' Register spatial sections for a creel survey design
+#'
+#' @description
+#' Attaches a sections registry to a `creel_design` object. Once sections are
+#' registered, all subsequent calls to [add_counts()] and [add_interviews()]
+#' validate that every row's section value matches a registered section name.
+#' Unrecognised section values abort with an informative error identifying the
+#' bad values and listing valid options.
+#'
+#' `add_sections()` is optional for single-section surveys. Call it when your
+#' survey covers multiple named sections and you want early detection of
+#' mislabelled data (e.g. "NRTH" instead of "NORTH").
+#'
+#' @param design A `creel_design` object (created with [creel_design()]).
+#' @param sections A data frame with one row per section. Must contain the
+#'   column identified by `section_col`. Optional metadata columns are
+#'   identified by `description_col`, `area_col`, and `shoreline_col`.
+#' @param section_col Tidy selector for the column in `sections` that holds
+#'   section names or IDs. Must be character or factor. No duplicate values
+#'   are permitted.
+#' @param description_col Optional tidy selector for a free-text description
+#'   column (e.g. "North inlet", "Main basin"). Stored for reporting only.
+#' @param area_col Optional tidy selector for a surface area column (numeric,
+#'   ha). All values must be strictly positive. Stored now; used in v0.8.0
+#'   aerial survey estimation.
+#' @param shoreline_col Optional tidy selector for a shoreline length column
+#'   (numeric, km). All values must be strictly positive. Stored now; used
+#'   in v0.8.0 aerial survey estimation.
+#'
+#' @return A new `creel_design` object with `$sections` and `$section_col`
+#'   populated. The input `design` is not modified.
+#'
+#' @section Validation performed by downstream functions:
+#' After `add_sections()` is called, [add_counts()] and [add_interviews()]
+#' check that every row's section value is present in
+#' `design$sections[[design$section_col]]`. An unrecognised value produces a
+#' `cli_abort()` naming the bad values and listing valid section names.
+#'
+#' @seealso [creel_design()], [add_counts()], [add_interviews()]
+#'
+#' @examples
+#' cal <- data.frame(
+#'   date = as.Date(c(
+#'     "2024-06-01", "2024-06-02",
+#'     "2024-06-03", "2024-06-04"
+#'   )),
+#'   day_type = c("weekday", "weekday", "weekend", "weekend")
+#' )
+#' design <- creel_design(cal, date = date, strata = day_type)
+#'
+#' my_sections <- data.frame(
+#'   section      = c("North Inlet", "Main Basin", "South Outlet"),
+#'   description  = c("Tributary inlet", "Open water", "Dam outlet"),
+#'   area_ha      = c(45.0, 820.0, 12.0),
+#'   shoreline_km = c(8.2, 62.1, 3.4)
+#' )
+#'
+#' design2 <- add_sections(design, my_sections,
+#'   section_col     = section,
+#'   description_col = description,
+#'   area_col        = area_ha,
+#'   shoreline_col   = shoreline_km
+#' )
+#'
+#' @export
+add_sections <- function(design,
+                         sections,
+                         section_col,
+                         description_col = NULL,
+                         area_col = NULL,
+                         shoreline_col = NULL) {
+  # Guard: design must be creel_design
+  if (!inherits(design, "creel_design")) {
+    cli::cli_abort(c(
+      "{.arg design} must be a {.cls creel_design} object.",
+      "x" = "{.arg design} is {.cls {class(design)[1]}}.",
+      "i" = "Create a design with {.fn creel_design}."
+    ))
+  }
+
+  # Guard: sections not already registered (immutability)
+  if (!is.null(design[["sections"]])) {
+    cli::cli_abort(c(
+      "Sections already registered on this design.",
+      "x" = "The design object already has sections in the {.field $sections} slot.",
+      "i" = "Create a new design with {.fn creel_design} to register different sections.",
+      "i" = "Use immutable workflow: {.code design2 <- add_sections(design, sections, ...)}"
+    ))
+  }
+
+  # Guard: sections must be a data frame
+  if (!is.data.frame(sections)) {
+    cli::cli_abort(c(
+      "{.arg sections} must be a data frame.",
+      "x" = "{.arg sections} is {.cls {class(sections)[1]}}.",
+      "i" = "Supply a data frame with one row per section."
+    ))
+  }
+
+  # Resolve section_col (required)
+  section_col_name <- resolve_single_col(
+    rlang::enquo(section_col),
+    sections,
+    "section_col",
+    rlang::caller_env()
+  )
+
+  # Validate section_col is character or factor
+  sec_vals <- sections[[section_col_name]]
+  if (!is.character(sec_vals) && !is.factor(sec_vals)) {
+    cli::cli_abort(c(
+      "Section column {.field {section_col_name}} must be character or factor.",
+      "x" = "Got {.cls {class(sec_vals)[1]}}."
+    ))
+  }
+
+  # Validate no duplicate section names
+  dupes <- sec_vals[duplicated(sec_vals)]
+  if (length(dupes) > 0) {
+    cli::cli_abort(c(
+      "Section names must be unique; found duplicate value{?s}.",
+      "x" = "Duplicate{?s}: {.val {unique(dupes)}}.",
+      "i" = "Each section must appear exactly once in {.arg sections}."
+    ))
+  }
+
+  # Resolve optional description_col
+  desc_col_quo <- rlang::enquo(description_col)
+  section_description_col <- if (rlang::quo_is_null(desc_col_quo)) {
+    NULL
+  } else {
+    resolve_single_col(desc_col_quo, sections, "description_col", rlang::caller_env())
+  }
+
+  # Resolve optional area_col and validate values
+  area_col_quo <- rlang::enquo(area_col)
+  section_area_col <- if (rlang::quo_is_null(area_col_quo)) {
+    NULL
+  } else {
+    col <- resolve_single_col(area_col_quo, sections, "area_col", rlang::caller_env())
+    vals <- sections[[col]]
+    if (!is.numeric(vals) || any(!is.finite(vals)) || any(vals <= 0)) {
+      cli::cli_abort(c(
+        "{.field {col}} must contain positive finite numeric values (ha).",
+        "x" = "Found {sum(!is.finite(vals) | vals <= 0)} non-positive or non-finite value(s)."
+      ))
+    }
+    col
+  }
+
+  # Resolve optional shoreline_col and validate values
+  shoreline_col_quo <- rlang::enquo(shoreline_col)
+  section_shoreline_col <- if (rlang::quo_is_null(shoreline_col_quo)) {
+    NULL
+  } else {
+    col <- resolve_single_col(
+      shoreline_col_quo, sections, "shoreline_col", rlang::caller_env()
+    )
+    vals <- sections[[col]]
+    if (!is.numeric(vals) || any(!is.finite(vals)) || any(vals <= 0)) {
+      cli::cli_abort(c(
+        "{.field {col}} must contain positive finite numeric values (km).",
+        "x" = "Found {sum(!is.finite(vals) | vals <= 0)} non-positive or non-finite value(s)."
+      ))
+    }
+    col
+  }
+
+  # Build new design with sections populated
+  new_design <- design
+  new_design$sections <- sections
+  new_design$section_col <- section_col_name
+  new_design$section_description_col <- section_description_col
+  new_design$section_area_col <- section_area_col
+  new_design$section_shoreline_col <- section_shoreline_col
+
+  new_design
+}
+
 #' Attach interview data to a creel design
 #'
 #' @description
