@@ -794,3 +794,14 @@ test_that("vectorization consistency: 5-site design with varying p_site and scal
   expected_pi_i <- p_sites * p_period_val
   expect_equal(d$bus_route$data$.pi_i, expected_pi_i, tolerance = 1e-10)
 })
+
+test_that("new creel_design has NULL sections and section_col by default", {
+  cal <- data.frame(
+    date = as.Date("2024-06-01"),
+    day_type = "weekday",
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+  expect_null(design$sections)
+  expect_null(design$section_col)
+})

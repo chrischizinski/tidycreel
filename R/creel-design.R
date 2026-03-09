@@ -405,7 +405,9 @@ new_creel_design <- function(calendar,
       design_type = design_type,
       counts      = NULL,
       survey      = NULL,
-      bus_route   = bus_route # NULL for non-bus_route designs
+      bus_route   = bus_route, # NULL for non-bus_route designs
+      sections    = NULL,
+      section_col = NULL
     ),
     class = "creel_design"
   )
