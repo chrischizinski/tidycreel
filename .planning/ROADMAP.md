@@ -94,6 +94,7 @@ See: [.planning/milestones/v0.4.0-ROADMAP.md](milestones/v0.4.0-ROADMAP.md)
 - 🚧 **v0.6.0 Multiple Counts per PSU** — Phases 36+ (in progress)
   - [x] Phase 36 Plan 01: Multiple counts infrastructure — count_time_col, within-day aggregation, CNT-06 guard (2/2 plans complete)
   - [x] Phase 36 Plan 02: Within-day variance in estimate_effort() — Rasmussen two-stage formula, se_between/se_within columns (2/2 plans complete)
+  - [x] Phase 37 Plan 01: Progressive count estimator — circuit_time, Ê_d computation, CNT-01/03/05/EFF-02 (1/1 plans complete)
 
 ## Progress Summary
 
@@ -104,10 +105,10 @@ See: [.planning/milestones/v0.4.0-ROADMAP.md](milestones/v0.4.0-ROADMAP.md)
 | v0.3.0 Incomplete Trips & Validation | 13-20 | 16/16 | ✅ Complete | 2026-02-16 |
 | v0.4.0 Bus-Route Survey Support | 21-27 | 14/14 | ✅ Complete | 2026-02-28 |
 | v0.5.0 Interview Data Model and Unextrapolated Summaries | 28-35 | 18/18 | ✅ Complete | 2026-03-08 |
-| v0.6.0 Multiple Counts per PSU | 36+ | 2/2+ | 🚧 In Progress | — |
+| v0.6.0 Multiple Counts per PSU | 36+ | 3/3+ | 🚧 In Progress | — |
 
-**Overall:** 5 milestones shipped, 35 phases complete; Phase 36 in progress (2 plans complete)
+**Overall:** 5 milestones shipped, 37 phases complete (through Phase 37 Plan 01); Phase 37 complete
 
 ---
-*Roadmap last updated: 2026-03-08 — Phase 36 Plan 02 complete*
+*Roadmap last updated: 2026-03-09 — Phase 37 Plan 01 complete*
 *See .planning/milestones/ for full milestone archives*

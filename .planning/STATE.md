@@ -22,10 +22,10 @@ See: .planning/PROJECT.md (updated 2026-02-28)
 
 ## Current Position
 
-Phase: 36-multiple-counts-per-day
-Plan: 36-02 complete; Phase 36 complete
-Status: Phase 36 complete
-Last activity: 2026-03-08 — Phase 36 Plan 02 complete (Rasmussen two-stage variance, se_between/se_within columns, qt() CI)
+Phase: 37-progressive-count-estimator
+Plan: 37-01 complete; Phase 37 complete
+Status: Phase 37 complete
+Last activity: 2026-03-09 — Phase 37 Plan 01 complete (progressive count estimator, Ê_d computation, circuit_time/period_length_col params, CNT-01/03/05/EFF-02)
 
 ## Performance Metrics
 
@@ -46,7 +46,7 @@ Last activity: 2026-03-08 — Phase 36 Plan 02 complete (Rasmussen two-stage var
 | v0.4.0 | 21-27 | 14/14 | Complete | 2026-02-28 |
 
 **Quality Metrics (current):**
-- Test coverage: ~90% (1,395 tests — Phase 36 complete as of 2026-03-08)
+- Test coverage: ~90% (1,409 tests — Phase 37 complete as of 2026-03-09)
 - R CMD check: 0 errors, 0 warnings
 - lintr: 0 issues
 | Phase 28.1 P02 | 12m | 2 tasks | 2 files |
@@ -121,8 +121,8 @@ None currently.
 
 ## Session Continuity
 
-Last session: 2026-03-08
-Stopped at: Completed Phase 36 Plan 02 — Rasmussen two-stage variance in estimate_effort(), se_between/se_within columns, qt(degf) CI, format.creel_design() count_time_col display, 7 new TDD tests, 1395 total tests
+Last session: 2026-03-09
+Stopped at: Completed Phase 37 Plan 01 — progressive count estimator (Ê_d = C × T_d), circuit_time + period_length_col params, 9 new TDD tests, 1409 total tests
 Resume file: None
 
 ### Decisions (31-planning)
@@ -152,4 +152,10 @@ Resume file: None
 - Variable names use snake_case throughout (`n_avail`, `k_bar`, `s2_within`, `v_within`) to satisfy object_name_linter — formula symbols documented in roxygen comment only
 - `se_between` and `se_within` always present in output tibble; `se_within = 0` for single-count designs avoids conditional column schemas
 
-**Next step:** Plan 36-03 or next phase
+### Decisions (37-01)
+
+- Pope et al. formula Ê_d = C × τ × κ simplifies to C × T_d (κ cancels), but τ × κ form kept in code for traceability to literature
+- Two-PSU helper required for `estimate_effort()` test — single-PSU strata hard-error in survey package variance computation
+- `period_length_col` dropped from `design$counts` after Ê_d computation to prevent misidentification as count variable by downstream estimators
+
+**Next step:** Phase 38 or next planned milestone
