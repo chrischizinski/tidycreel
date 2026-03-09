@@ -1799,6 +1799,39 @@ format.creel_design <- function(x, ...) {
       }
     }
 
+    # Sections block
+    has_sections <- !is.null(x[["sections"]]) # nolint: object_usage_linter
+    if (has_sections) {
+      n_sections <- nrow(x[["sections"]]) # nolint: object_usage_linter
+      sec_col <- x[["section_col"]] # nolint: object_usage_linter
+      sec_names <- x[["sections"]][[sec_col]] # nolint: object_usage_linter
+      cli::cli_text("Sections: {.val {n_sections}} registered")
+      for (i in seq_len(n_sections)) {
+        nm <- sec_names[i] # nolint: object_usage_linter
+        meta_parts <- character(0)
+        if (!is.null(x[["section_area_col"]])) {
+          area_val <- x[["sections"]][[x[["section_area_col"]]]][i] # nolint: object_usage_linter
+          meta_parts <- c(meta_parts, paste0(round(area_val, 1), " ha"))
+        }
+        if (!is.null(x[["section_shoreline_col"]])) {
+          sl_val <- x[["sections"]][[x[["section_shoreline_col"]]]][i] # nolint: object_usage_linter
+          meta_parts <- c(meta_parts, paste0(round(sl_val, 1), " km shoreline"))
+        }
+        if (!is.null(x[["section_description_col"]])) {
+          desc_val <- x[["sections"]][[x[["section_description_col"]]]][i] # nolint: object_usage_linter
+          meta_parts <- c(meta_parts, desc_val)
+        }
+        if (length(meta_parts) > 0) {
+          meta_str <- paste(meta_parts, collapse = ", ") # nolint: object_usage_linter
+          cli::cli_text("  {.field {nm}} ({meta_str})")
+        } else {
+          cli::cli_text("  {.field {nm}}")
+        }
+      }
+    } else {
+      cli::cli_text("Sections: {.val none}")
+    }
+
     # Bus-Route section
     if (!is.null(x$bus_route)) {
       br <- x$bus_route$data

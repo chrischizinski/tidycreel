@@ -805,3 +805,51 @@ test_that("new creel_design has NULL sections and section_col by default", {
   expect_null(design$sections)
   expect_null(design$section_col)
 })
+
+test_that("format.creel_design() shows 'Sections: none' when no sections registered", {
+  cal <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-02")),
+    day_type = c("weekday", "weekend"),
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+  output <- format(design)
+  expect_true(any(grepl("none", output)))
+})
+
+test_that("format.creel_design() shows section count when sections registered", {
+  cal <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-02")),
+    day_type = c("weekday", "weekend"),
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+  secs <- data.frame(
+    section = c("North", "South"),
+    stringsAsFactors = FALSE
+  )
+  design2 <- add_sections(design, secs, section_col = section) # nolint: object_usage_linter
+  output <- format(design2)
+  expect_true(any(grepl("2", output)))
+  expect_true(any(grepl("[Ss]ection", output)))
+})
+
+test_that("format.creel_design() shows area when area_col registered", {
+  cal <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-02")),
+    day_type = c("weekday", "weekend"),
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+  secs <- data.frame(
+    section = c("North", "South"),
+    area_ha = c(100.0, 200.0),
+    stringsAsFactors = FALSE
+  )
+  design2 <- add_sections(design, secs,
+    section_col = section, # nolint: object_usage_linter
+    area_col    = area_ha # nolint: object_usage_linter
+  )
+  output <- format(design2)
+  expect_true(any(grepl("ha", output)))
+})
