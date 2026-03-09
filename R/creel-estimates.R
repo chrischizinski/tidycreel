@@ -208,13 +208,20 @@ print.creel_estimates <- function(x, ...) {
 #'   which estimator path was used. Default FALSE for transparent dispatch.
 #'
 #' @return A creel_estimates S3 object (list) with components: estimates
-#'   (tibble with estimate, se, ci_lower, ci_upper, n columns, plus grouping
-#'   columns if \code{by} is specified), method (character: "total"),
+#'   (tibble with estimate, se, se_between, se_within, ci_lower, ci_upper, n
+#'   columns, plus grouping columns if \code{by} is specified),
+#'   method (character: "total"),
 #'   variance_method (character: reflects the variance parameter value used),
 #'   design (reference to source creel_design), conf_level (numeric), and
-#'   by_vars (character vector of grouping variable names or NULL). For
-#'   bus-route designs, a "site_contributions" attribute is also present
-#'   containing per-site e_i, pi_i, and e_i_over_pi_i columns.
+#'   by_vars (character vector of grouping variable names or NULL).
+#'   \code{se_between} is the between-day standard error from
+#'   \code{survey::svytotal()} (equals \code{se} when a single count is
+#'   recorded per PSU). \code{se_within} is the within-day standard error from
+#'   the Rasmussen two-stage formula; it is zero when a single count is
+#'   recorded per PSU and nonzero when \code{count_time_col} is supplied to
+#'   \code{add_counts()}. For bus-route designs, a "site_contributions"
+#'   attribute is also present containing per-site e_i, pi_i, and
+#'   e_i_over_pi_i columns.
 #'
 #' @details
 #' The function performs Tier 2 validation before estimation, issuing warnings

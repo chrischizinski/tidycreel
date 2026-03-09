@@ -132,4 +132,42 @@ counts_with_site_psu <- data.frame(
 
 design2 <- add_counts(design, counts_with_site_psu, psu = "site_day")
 
+# Multiple counts per day (within-day variance via count_time_col)
+# Two circuits per day: "am" and "pm"
+calendar2 <- data.frame(
+  date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
+  day_type = c("weekday", "weekday", "weekend", "weekend")
+)
+design3 <- creel_design(calendar2, date = date, strata = day_type)
+
+multi_counts <- data.frame(
+  date = as.Date(rep(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04"), each = 2)),
+  day_type = rep(c("weekday", "weekday", "weekend", "weekend"), each = 2),
+  count_time = rep(c("am", "pm"), 4),
+  n_anglers = c(12, 18, 20, 26, 40, 50, 48, 56)
+)
+design_multi <- add_counts(design3, multi_counts,
+  count_time_col = count_time # nolint: object_usage_linter
+)
+
+# Progressive count type (Ê_d = C x circuit_time x kappa)
+calendar3 <- data.frame(
+  date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
+  day_type = c("weekday", "weekday", "weekend", "weekend")
+)
+design4 <- creel_design(calendar3, date = date, strata = day_type)
+
+prog_counts <- data.frame(
+  date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
+  day_type = c("weekday", "weekday", "weekend", "weekend"),
+  n_anglers = c(15L, 23L, 45L, 52L),
+  shift_hours = rep(8, 4)
+)
+design_prog <- add_counts(
+  design4, prog_counts,
+  count_type = "progressive",
+  circuit_time = 2,
+  period_length_col = shift_hours # nolint: object_usage_linter
+)
+
 }
