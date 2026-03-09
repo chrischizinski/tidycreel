@@ -23,9 +23,9 @@ See: .planning/PROJECT.md (updated 2026-02-28)
 ## Current Position
 
 Phase: 38-documentation-quality-assurance
-Plan: 38-02 planned
-Status: Phase 38 in progress (1/2 plans executed)
-Last activity: 2026-03-08 — Phase 38 Plan 01 complete (roxygen fixes: add_counts() @examples, estimate_effort() @return for se_between/se_within)
+Plan: 38-02 complete
+Status: Phase 38 complete (2/2 plans executed); v0.6.0 shipped
+Last activity: 2026-03-09 — Phase 38 Plan 02 complete (flexible-count-estimation vignette; R CMD check 0E/0W; lintr 0 issues; 1409 tests)
 
 ## Performance Metrics
 
@@ -122,7 +122,7 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-03-08
-Stopped at: Phase 38 Plan 01 complete — roxygen docs fixed (add_counts() examples + estimate_effort() @return); 38-02 (vignette) next
+Stopped at: Phase 38 Plan 02 complete — flexible-count-estimation vignette; v0.6.0 all gates passed
 Resume file: None
 
 ### Decisions (31-planning)
@@ -158,4 +158,9 @@ Resume file: None
 - Two-PSU helper required for `estimate_effort()` test — single-PSU strata hard-error in survey package variance computation
 - `period_length_col` dropped from `design$counts` after Ê_d computation to prevent misidentification as count variable by downstream estimators
 
-**Next step:** Phase 38 or next planned milestone
+### Decisions (38-02)
+
+- Pope et al. vignette example uses 2-day weekday design; per-day Ê_d = 1,872 shown via `design$counts` slot — single-PSU stratum errors in survey package variance computation
+- Coverage 86.54% is pre-existing gap from Phase 37 progressive-count code paths; vignette does not affect coverage
+
+**Next step:** v0.6.0 shipped; next milestone planning
