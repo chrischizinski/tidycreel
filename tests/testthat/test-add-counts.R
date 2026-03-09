@@ -400,10 +400,116 @@ test_that("add_counts() sets count_type slot to 'instantaneous' by default", {
   expect_equal(d$count_type, "instantaneous")
 })
 
-test_that("add_counts() aborts when count_type = 'progressive' (not yet implemented)", {
+test_that("add_counts() aborts when count_type = 'progressive' and circuit_time = NULL (CNT-05)", {
   design <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
   expect_error(
     add_counts(design, example_counts, count_type = "progressive"),
-    regexp = "not yet implemented"
+    regexp = "circuit_time"
+  )
+})
+
+#' Create progressive count data (raw angler counts + shift duration)
+make_progressive_counts <- function() {
+  data.frame(
+    date = as.Date(c(
+      "2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04",
+      "2024-06-08", "2024-06-09", "2024-06-15", "2024-06-16"
+    )),
+    day_type = rep(c("weekday", "weekend"), each = 4),
+    n_anglers = c(15L, 23L, 18L, 21L, 45L, 52L, 48L, 51L),
+    shift_hours = rep(8, 8),
+    stringsAsFactors = FALSE
+  )
+}
+
+test_that("add_counts() accepts count_type = 'progressive' with required args (CNT-01)", {
+  design <- creel_design(make_test_calendar(), date = date, strata = day_type)
+  prog_counts <- make_progressive_counts()
+  expect_no_error(
+    add_counts(
+      design, prog_counts,
+      count_type = "progressive",
+      circuit_time = 2,
+      period_length_col = shift_hours # nolint: object_usage_linter
+    )
+  )
+})
+
+test_that("add_counts() aborts when count_type = 'progressive' and period_length_col = NULL (CNT-05)", {
+  design <- creel_design(make_test_calendar(), date = date, strata = day_type)
+  prog_counts <- make_progressive_counts()
+  expect_error(
+    add_counts(design, prog_counts, count_type = "progressive", circuit_time = 2),
+    regexp = "period_length_col"
+  )
+})
+
+test_that("add_counts() replaces raw counts with Ê_d = count × period_length for progressive (EFF-02)", {
+  design <- creel_design(make_test_calendar(), date = date, strata = day_type)
+  prog_counts <- make_progressive_counts()
+  # κ = 8 / 2 = 4; Ê_d = n_anglers × circuit_time × κ = n_anglers × shift_hours
+  expected_effort <- prog_counts$n_anglers * prog_counts$shift_hours
+
+  d <- add_counts(
+    design, prog_counts,
+    count_type = "progressive",
+    circuit_time = 2,
+    period_length_col = shift_hours # nolint: object_usage_linter
+  )
+
+  expect_equal(d$counts$n_anglers, expected_effort, tolerance = 1e-10)
+})
+
+test_that("add_counts() drops period_length_col from design$counts after progressive computation", {
+  design <- creel_design(make_test_calendar(), date = date, strata = day_type)
+  d <- add_counts(
+    design, make_progressive_counts(),
+    count_type = "progressive",
+    circuit_time = 2,
+    period_length_col = shift_hours # nolint: object_usage_linter
+  )
+  expect_false("shift_hours" %in% names(d$counts))
+})
+
+test_that("add_counts() stores circuit_time and period_length_col slots (CNT-03)", {
+  design <- creel_design(make_test_calendar(), date = date, strata = day_type)
+  d <- add_counts(
+    design, make_progressive_counts(),
+    count_type = "progressive",
+    circuit_time = 2,
+    period_length_col = shift_hours # nolint: object_usage_linter
+  )
+  expect_equal(d$circuit_time, 2)
+  expect_equal(d$period_length_col, "shift_hours")
+})
+
+test_that("add_counts() aborts when count_time_col and count_type = 'progressive' combined", {
+  design <- creel_design(make_test_calendar(), date = date, strata = day_type)
+  prog_counts <- make_progressive_counts()
+  prog_counts$circuit_id <- rep(c("am", "pm"), length.out = nrow(prog_counts))
+  expect_error(
+    add_counts(
+      design, prog_counts,
+      count_time_col = circuit_id, # nolint: object_usage_linter
+      count_type = "progressive",
+      circuit_time = 2,
+      period_length_col = shift_hours # nolint: object_usage_linter
+    ),
+    regexp = "count_time_col.*progressive|progressive.*count_time_col"
+  )
+})
+
+test_that("add_counts() aborts when period_length column contains non-positive values", {
+  design <- creel_design(make_test_calendar(), date = date, strata = day_type)
+  bad_counts <- make_progressive_counts()
+  bad_counts$shift_hours[1] <- 0
+  expect_error(
+    add_counts(
+      design, bad_counts,
+      count_type = "progressive",
+      circuit_time = 2,
+      period_length_col = shift_hours # nolint: object_usage_linter
+    ),
+    regexp = "positive"
   )
 })

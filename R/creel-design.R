@@ -622,8 +622,18 @@ resolve_multi_cols <- function(expr, data, arg_name, error_call = rlang::caller_
 #'   (default), a single row per PSU is expected; duplicate PSU rows emit a
 #'   CNT-06 warning.
 #' @param count_type Character string specifying the count method. Must be
-#'   `"instantaneous"` (default) or `"progressive"`. `"progressive"` is not
-#'   yet implemented and will abort with an informative error.
+#'   `"instantaneous"` (default) or `"progressive"`. When `"progressive"`,
+#'   `circuit_time` and `period_length_col` are required.
+#' @param circuit_time Numeric. Circuit duration τ in hours — the time required
+#'   to complete one roving count circuit of the water body. Required when
+#'   `count_type = "progressive"` (CNT-05). Used to compute
+#'   κ = T_d / τ and Ê_d = C × τ × κ. Ignored (with a warning) when
+#'   `count_type = "instantaneous"`.
+#' @param period_length_col Tidy selector for the column containing T_d — the
+#'   total fishable shift duration in hours for each PSU. Required when
+#'   `count_type = "progressive"` (CNT-05). Values must be positive and finite.
+#'   The column is dropped from `design$counts` after Ê_d is computed (it
+#'   must not be passed to `estimate_effort()` as a count variable).
 #' @param allow_invalid Logical flag for validation behavior. If FALSE (default),
 #'   validation failures abort with detailed error messages. If TRUE, validation
 #'   failures generate warnings and attach counts anyway (use with caution).
@@ -687,7 +697,10 @@ resolve_multi_cols <- function(expr, data, arg_name, error_call = rlang::caller_
 #'
 #' @export
 add_counts <- function(design, counts, psu = NULL, count_time_col = NULL,
-                       count_type = "instantaneous", allow_invalid = FALSE) {
+                       count_type = "instantaneous",
+                       circuit_time = NULL,
+                       period_length_col = NULL,
+                       allow_invalid = FALSE) {
   # Validate design is creel_design
   if (!inherits(design, "creel_design")) {
     cli::cli_abort(c(
@@ -723,11 +736,74 @@ add_counts <- function(design, counts, psu = NULL, count_time_col = NULL,
       "x" = "Got {.val {count_type}}."
     ))
   }
+  # Resolve period_length_col tidy selector to character name (or NULL)
+  # Uses the same enquo() + quo_is_null() pattern as count_time_col below.
+  period_length_col_quo <- rlang::enquo(period_length_col)
+  period_length_col_name <- if (rlang::quo_is_null(period_length_col_quo)) {
+    NULL
+  } else {
+    period_length_col_sel <- tidyselect::eval_select(
+      period_length_col_quo,
+      data = counts,
+      error_call = rlang::current_env()
+    )
+    names(period_length_col_sel)
+  }
+
+  # Progressive-specific validation (CNT-03, CNT-05)
   if (count_type == "progressive") {
-    cli::cli_abort(c(
-      "{.arg count_type = 'progressive'} is not yet implemented.",
-      "i" = "Only {.val instantaneous} counts are supported in this version.",
-      "i" = "See the package roadmap for progressive count support (CNT-01/EFF-02)."
+    # Guard: count_time_col + progressive is not supported (deferred to future phase)
+    if (!rlang::quo_is_null(rlang::enquo(count_time_col))) {
+      cli::cli_abort(c(
+        "Combining {.arg count_time_col} with {.code count_type = 'progressive'} is not yet supported.",
+        "i" = "Use {.arg count_time_col} only with {.val instantaneous} counts.",
+        "i" = "Multiple progressive circuits per day will be supported in a future version."
+      ))
+    }
+    # Guard: circuit_time required (CNT-05)
+    if (is.null(circuit_time)) {
+      cli::cli_abort(c(
+        "{.arg circuit_time} is required when {.code count_type = 'progressive'}.",
+        "i" = "{.arg circuit_time} (\u03c4) is the time in hours to complete one circuit.",
+        "i" = "Example: {.code add_counts(design, counts, count_type = 'progressive', circuit_time = 2, ...)}"
+      ))
+    }
+    if (!is.numeric(circuit_time) || length(circuit_time) != 1L || circuit_time <= 0) {
+      cli::cli_abort(c(
+        "{.arg circuit_time} must be a single positive number (hours).",
+        "x" = "Got {.val {circuit_time}}."
+      ))
+    }
+    # Guard: period_length_col required (CNT-05)
+    if (is.null(period_length_col_name)) {
+      cli::cli_abort(c(
+        "{.arg period_length_col} is required when {.code count_type = 'progressive'}.",
+        "i" = "{.arg period_length_col} identifies the column with shift duration T_d (hours).",
+        "i" = "Example: add_counts(design, counts, count_type = 'progressive', circuit_time = 2, period_length_col = <col>)" # nolint: line_length_linter
+      ))
+    }
+    # Guard: period_length values must be positive
+    period_vals <- counts[[period_length_col_name]]
+    if (any(!is.finite(period_vals)) || any(period_vals <= 0)) {
+      cli::cli_abort(c(
+        "{.field {period_length_col_name}} must contain positive finite values (hours).",
+        "x" = "Found {sum(period_vals <= 0 | !is.finite(period_vals))} non-positive or non-finite value(s)."
+      ))
+    }
+    # Advisory: period_length < circuit_time means κ < 1 (unusual)
+    if (any(period_vals < circuit_time)) {
+      n_short <- sum(period_vals < circuit_time) # nolint: object_usage_linter
+      cli::cli_warn(c(
+        "{n_short} day(s) have shift duration shorter than {.arg circuit_time} ({circuit_time} hours).",
+        "i" = "This gives \u03ba < 1 (less than one full circuit possible in the shift).",
+        "i" = "Verify that {.field {period_length_col_name}} and {.arg circuit_time} are in the same units."
+      ))
+    }
+  }
+  if (count_type == "instantaneous" && !is.null(circuit_time)) {
+    cli::cli_warn(c(
+      "{.arg circuit_time} is ignored when {.code count_type = 'instantaneous'}.",
+      "i" = "Only used with {.val progressive} count type."
     ))
   }
 
@@ -772,6 +848,19 @@ add_counts <- function(design, counts, psu = NULL, count_time_col = NULL,
     within_day_var <- agg_result$within_day_var
   }
 
+  # Compute progressive daily effort Ê_d = C × τ × κ (EFF-02)
+  if (count_type == "progressive") {
+    excluded_prog <- c(psu, design$strata_cols, design$date_col)
+    numeric_cols_prog <- names(counts)[sapply(counts, is.numeric)]
+    count_var_prog <- setdiff(numeric_cols_prog, c(excluded_prog, period_length_col_name))[1L]
+    counts <- compute_progressive_effort( # nolint: object_usage_linter
+      counts            = counts,
+      count_var         = count_var_prog,
+      period_length_col = period_length_col_name,
+      circuit_time      = circuit_time
+    )
+  }
+
   # Copy design and add counts + PSU
   new_design <- design
   new_design$counts <- counts
@@ -786,6 +875,8 @@ add_counts <- function(design, counts, psu = NULL, count_time_col = NULL,
   } else {
     NULL
   }
+  new_design$circuit_time <- circuit_time
+  new_design$period_length_col <- period_length_col_name
 
   # Construct survey design eagerly
   new_design$survey <- construct_survey_design(new_design) # nolint: object_usage_linter
@@ -1351,6 +1442,9 @@ format.creel_design <- function(x, ...) {
       }
       if (!is.null(x$count_type)) {
         cli::cli_text("  Count type: {.val {x$count_type}}")
+      }
+      if (!is.null(x$circuit_time)) {
+        cli::cli_text("  Circuit time (\u03c4): {x$circuit_time} hours")
       }
       if (has_survey) {
         survey_class <- class(x$survey)[1] # nolint: object_usage_linter

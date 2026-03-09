@@ -1158,3 +1158,43 @@ test_that("estimate_effort() grouped output has se_between and se_within columns
   expect_true("se_between" %in% names(result$estimates))
   expect_true("se_within" %in% names(result$estimates))
 })
+
+# Helper: two-PSU progressive design (Pope et al. worked example + second PSU for variance)
+make_pope_progressive_design <- function() {
+  # Pope et al. Ch. 17: C = 234, τ = 2h, T_d = 8h → Ê_d = 1872 angler-hours
+  # Two PSUs sampled so estimate_effort() can compute between-PSU variance
+  cal <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-08")),
+    day_type = c("weekend", "weekend"),
+    stringsAsFactors = FALSE
+  )
+  cts <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-08")),
+    day_type = c("weekend", "weekend"),
+    n_anglers = c(234L, 100L),
+    shift_hours = c(8, 8),
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+  add_counts( # nolint: object_usage_linter
+    design, cts,
+    count_type = "progressive",
+    circuit_time = 2,
+    period_length_col = shift_hours # nolint: object_usage_linter
+  )
+}
+
+test_that("progressive Ê_d computation matches Pope et al. worked example (EFF-02)", {
+  d <- make_pope_progressive_design()
+  # First PSU: Ê_d = 234 × 2 × (8/2) = 1872 angler-hours stored in count column
+  expect_equal(d$counts$n_anglers[d$counts$date == as.Date("2024-06-01")], 1872, tolerance = 1e-10)
+  # Second PSU: Ê_d = 100 × 8 = 800
+  expect_equal(d$counts$n_anglers[d$counts$date == as.Date("2024-06-08")], 800, tolerance = 1e-10)
+  # estimate_effort() runs without error (both PSUs sampled → variance computable)
+  result <- suppressWarnings(estimate_effort(d))
+  expect_true(is.numeric(result$estimates$estimate))
+  expect_gt(result$estimates$estimate, 0)
+  # se_between and se_within always present (Phase 36 guarantee)
+  expect_true("se_between" %in% names(result$estimates))
+  expect_true("se_within" %in% names(result$estimates))
+})

@@ -353,6 +353,41 @@ aggregate_within_day <- function(counts, psu_col, count_var, count_time_col, key
   )
 }
 
+#' Compute progressive daily effort estimates (Ê_d = C × τ × κ)
+#'
+#' Replaces raw count values with per-PSU daily effort estimates following the
+#' progressive count formula from Hoenig et al. (1993) and Pope et al. Ch. 17:
+#'
+#'   Ê_d = C × τ × κ = C × τ × (T_d / τ) = C × T_d
+#'
+#' where C is the raw angler count, τ is circuit_time (hours), and T_d is the
+#' period length (hours). The count column is replaced in-place with Ê_d values
+#' and period_length_col is dropped (to prevent it being treated as a second
+#' count variable by estimate_effort_total()).
+#'
+#' @param counts Data frame of count data (one row per PSU after aggregation)
+#' @param count_var Character name of the raw count column (replaced with Ê_d)
+#' @param period_length_col Character name of the T_d column (hours, dropped after)
+#' @param circuit_time Numeric circuit duration τ (hours)
+#'
+#' @return Modified counts data frame with count_var replaced by Ê_d values
+#'   and period_length_col removed
+#'
+#' @references Hoenig, Robson, Jones, Pollock (1993). Scheduling counts in the
+#'   instantaneous and progressive count methods. NAJFM 13:723-736.
+#'   Pope et al. (draft) Ch. 17 Creel Surveys, p. 39.
+#'
+#' @keywords internal
+#' @noRd
+compute_progressive_effort <- function(counts, count_var, period_length_col, circuit_time) {
+  period_length <- counts[[period_length_col]]
+  kappa <- period_length / circuit_time
+  effort_d <- counts[[count_var]] * circuit_time * kappa
+  counts[[count_var]] <- effort_d
+  counts[[period_length_col]] <- NULL
+  counts
+}
+
 #' Construct survey design object
 #'
 #' Internal function that wraps survey::svydesign() with domain-specific error

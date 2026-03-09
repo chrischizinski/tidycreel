@@ -10,6 +10,8 @@ add_counts(
   psu = NULL,
   count_time_col = NULL,
   count_type = "instantaneous",
+  circuit_time = NULL,
+  period_length_col = NULL,
   allow_invalid = FALSE
 )
 }
@@ -38,8 +40,20 @@ components (SS_d, K_d) are stored in \code{design$within_day_var}. When NULL
 CNT-06 warning.}
 
 \item{count_type}{Character string specifying the count method. Must be
-\code{"instantaneous"} (default) or \code{"progressive"}. \code{"progressive"} is not
-yet implemented and will abort with an informative error.}
+\code{"instantaneous"} (default) or \code{"progressive"}. When \code{"progressive"},
+\code{circuit_time} and \code{period_length_col} are required.}
+
+\item{circuit_time}{Numeric. Circuit duration τ in hours — the time required
+to complete one roving count circuit of the water body. Required when
+\code{count_type = "progressive"} (CNT-05). Used to compute
+κ = T_d / τ and Ê_d = C × τ × κ. Ignored (with a warning) when
+\code{count_type = "instantaneous"}.}
+
+\item{period_length_col}{Tidy selector for the column containing T_d — the
+total fishable shift duration in hours for each PSU. Required when
+\code{count_type = "progressive"} (CNT-05). Values must be positive and finite.
+The column is dropped from \code{design$counts} after Ê_d is computed (it
+must not be passed to \code{estimate_effort()} as a count variable).}
 
 \item{allow_invalid}{Logical flag for validation behavior. If FALSE (default),
 validation failures abort with detailed error messages. If TRUE, validation
