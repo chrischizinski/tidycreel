@@ -763,6 +763,23 @@ add_counts <- function(design, counts, psu = NULL, count_time_col = NULL,
   # Validate count data schema (Date column, numeric column)
   validate_count_schema(counts) # nolint: object_usage_linter
 
+  # Guard: validate section values against registered sections (SEC-01)
+  if (!is.null(design[["sections"]]) && !is.null(design[["section_col"]])) {
+    sec_col <- design[["section_col"]]
+    if (sec_col %in% names(counts)) {
+      valid_sections <- design[["sections"]][[sec_col]]
+      bad_vals <- setdiff(unique(counts[[sec_col]]), valid_sections)
+      if (length(bad_vals) > 0) {
+        cli::cli_abort(c(
+          "Count data contains {length(bad_vals)} unregistered section value{?s}.",
+          "x" = "{length(bad_vals)} unknown section{?s}: {.val {bad_vals}}.",
+          "i" = "Registered sections: {.val {valid_sections}}.",
+          "i" = "Check for typos or register the section with {.fn add_sections}."
+        ))
+      }
+    }
+  }
+
   # Set PSU column (default to date_col for day-as-PSU)
   if (is.null(psu)) {
     psu <- design$date_col
@@ -1047,11 +1064,11 @@ add_sections <- function(design,
   }
 
   # Validate no duplicate section names
-  dupes <- sec_vals[duplicated(sec_vals)]
+  dupes <- unique(sec_vals[duplicated(sec_vals)])
   if (length(dupes) > 0) {
     cli::cli_abort(c(
-      "Section names must be unique; found duplicate value{?s}.",
-      "x" = "Duplicate{?s}: {.val {unique(dupes)}}.",
+      "Section names must be unique; found {length(dupes)} duplicate value{?s}.",
+      "x" = "{length(dupes)} duplicate{?s}: {.val {dupes}}.",
       "i" = "Each section must appear exactly once in {.arg sections}."
     ))
   }
