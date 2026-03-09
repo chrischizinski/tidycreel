@@ -1334,6 +1334,23 @@ add_interviews <- function(design, interviews,
   # Validate interview data schema (Date column, numeric column)
   validate_interview_schema(interviews) # nolint: object_usage_linter
 
+  # Guard: validate section values against registered sections (SEC-01)
+  if (!is.null(design[["sections"]]) && !is.null(design[["section_col"]])) {
+    sec_col <- design[["section_col"]]
+    if (sec_col %in% names(interviews)) {
+      valid_sections <- design[["sections"]][[sec_col]]
+      bad_vals <- setdiff(unique(interviews[[sec_col]]), valid_sections)
+      if (length(bad_vals) > 0) {
+        cli::cli_abort(c(
+          "Interview data contains {length(bad_vals)} unregistered section value{?s}.",
+          "x" = "{length(bad_vals)} unknown section{?s}: {.val {bad_vals}}.",
+          "i" = "Registered sections: {.val {valid_sections}}.",
+          "i" = "Check for typos or register the section with {.fn add_sections}."
+        ))
+      }
+    }
+  }
+
   # Resolve tidy selectors
   catch_col <- resolve_single_col(
     rlang::enquo(catch),
