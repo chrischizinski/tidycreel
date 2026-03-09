@@ -22,10 +22,10 @@ See: .planning/PROJECT.md (updated 2026-02-28)
 
 ## Current Position
 
-Phase: 37-progressive-count-estimator
-Plan: 37-01 complete; Phase 37 complete
-Status: Phase 37 complete
-Last activity: 2026-03-09 — Phase 37 Plan 01 complete (progressive count estimator, Ê_d computation, circuit_time/period_length_col params, CNT-01/03/05/EFF-02)
+Phase: 38-documentation-quality-assurance
+Plan: 38-02 planned
+Status: Phase 38 in progress (1/2 plans executed)
+Last activity: 2026-03-08 — Phase 38 Plan 01 complete (roxygen fixes: add_counts() @examples, estimate_effort() @return for se_between/se_within)
 
 ## Performance Metrics
 
@@ -121,8 +121,8 @@ None currently.
 
 ## Session Continuity
 
-Last session: 2026-03-09
-Stopped at: Completed Phase 37 Plan 01 — progressive count estimator (Ê_d = C × T_d), circuit_time + period_length_col params, 9 new TDD tests, 1409 total tests
+Last session: 2026-03-08
+Stopped at: Phase 38 Plan 01 complete — roxygen docs fixed (add_counts() examples + estimate_effort() @return); 38-02 (vignette) next
 Resume file: None
 
 ### Decisions (31-planning)
