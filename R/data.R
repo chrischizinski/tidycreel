@@ -112,9 +112,8 @@
 #'
 #' Long-format species-level catch data linked to [example_interviews]. Contains
 #' catch, harvest, and release counts per species per interview for 12 of the 22
-#' interviews. Suitable for use with \code{add_catch()} once that function is
-#' available (Phase 29 Plan 02). Interviews with zero total catch have no rows
-#' in this dataset (zero-catch anglers are represented by absence).
+#' interviews. Interviews with zero total catch have no rows in this dataset
+#' (zero-catch anglers are represented by absence).
 #'
 #' @format A data frame with columns:
 #' \describe{
@@ -129,8 +128,7 @@
 #' @source Simulated data for package examples
 #'
 #' @examples
-#' \dontrun{
-#' # Requires add_catch() from Phase 29 Plan 02
+#' data(example_calendar)
 #' data(example_interviews)
 #' data(example_catch)
 #'
@@ -138,7 +136,9 @@
 #' design <- add_interviews(design, example_interviews,
 #'   catch = catch_total,
 #'   effort = hours_fished,
-#'   harvest = catch_kept
+#'   harvest = catch_kept,
+#'   trip_status = trip_status,
+#'   trip_duration = trip_duration
 #' )
 #' design <- add_catch(design, example_catch,
 #'   catch_uid = interview_id,
@@ -147,7 +147,7 @@
 #'   count = count,
 #'   catch_type = catch_type
 #' )
-#' }
+#' print(design)
 #'
 #' @seealso [example_interviews] for the corresponding interview-level data,
 #'   \code{add_catch()} to attach species catch to a design
@@ -181,7 +181,6 @@
 #'   \code{\link{add_lengths}}
 #'
 #' @examples
-#' \dontrun{
 #' data(example_calendar)
 #' data(example_interviews)
 #' data(example_lengths)
@@ -201,5 +200,4 @@
 #'   release_format = "binned"
 #' )
 #' print(design)
-#' }
 "example_lengths"

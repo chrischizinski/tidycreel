@@ -239,19 +239,24 @@ test_that("estimate_effort SE matches manual SE() extraction", {
   expect_equal(result$estimates$se, manual_se, tolerance = 1e-10)
 })
 
-test_that("estimate_effort CI bounds match manual confint()", {
+test_that("estimate_effort CI bounds use qt() with survey degf", {
   design <- make_test_design_with_counts()
 
   # tidycreel estimate
   result <- suppressWarnings(estimate_effort(design)) # nolint: object_usage_linter
 
-  # Manual survey package calculation
+  # Manual CI using qt() + survey::degf() (two-stage formula from Plan 36-02/D1)
   svy <- design$survey
   manual_result <- survey::svytotal(~effort_hours, svy)
-  manual_ci <- confint(manual_result, level = 0.95)
+  manual_se <- as.numeric(survey::SE(manual_result))
+  manual_est <- as.numeric(coef(manual_result))
+  df <- as.numeric(survey::degf(svy))
+  t_crit <- qt(0.975, df = df)
+  manual_ci_lower <- manual_est - t_crit * manual_se
+  manual_ci_upper <- manual_est + t_crit * manual_se
 
-  expect_equal(result$estimates$ci_lower, manual_ci[1, 1], tolerance = 1e-10)
-  expect_equal(result$estimates$ci_upper, manual_ci[1, 2], tolerance = 1e-10)
+  expect_equal(result$estimates$ci_lower, manual_ci_lower, tolerance = 1e-10)
+  expect_equal(result$estimates$ci_upper, manual_ci_upper, tolerance = 1e-10)
 })
 
 test_that("estimate_effort variance matches manual vcov() diagonal", {
@@ -530,30 +535,33 @@ test_that("grouped estimate_effort matches manual svyby standard errors", {
   }
 })
 
-test_that("grouped estimate_effort matches manual svyby confidence intervals", {
+test_that("grouped estimate_effort CI bounds use qt() with survey degf", {
   design <- make_test_design_with_groups()
 
   # tidycreel grouped estimate
   result <- suppressWarnings(estimate_effort(design, by = day_type)) # nolint: object_usage_linter
 
-  # Manual survey::svyby calculation
+  # Manual CI using qt() + survey::degf() (two-stage formula from Plan 36-02/D1)
   svy <- design$survey
   manual_result <- survey::svyby(
     ~effort_hours,
     ~day_type,
     svy,
     survey::svytotal,
-    vartype = c("se", "ci"),
-    ci.level = 0.95
+    vartype = "se"
   )
+  df <- as.numeric(survey::degf(svy))
+  t_crit <- qt(0.975, df = df)
 
   # Match CI bounds for each group
   for (i in seq_len(nrow(result$estimates))) {
     day <- result$estimates$day_type[i]
     tidycreel_ci_lower <- result$estimates$ci_lower[i]
     tidycreel_ci_upper <- result$estimates$ci_upper[i]
-    manual_ci_lower <- manual_result$ci_l[manual_result$day_type == day]
-    manual_ci_upper <- manual_result$ci_u[manual_result$day_type == day]
+    manual_est <- manual_result$effort_hours[manual_result$day_type == day]
+    manual_se <- manual_result$se[manual_result$day_type == day]
+    manual_ci_lower <- manual_est - t_crit * manual_se
+    manual_ci_upper <- manual_est + t_crit * manual_se
 
     expect_equal(tidycreel_ci_lower, manual_ci_lower, tolerance = 1e-10)
     expect_equal(tidycreel_ci_upper, manual_ci_upper, tolerance = 1e-10)
@@ -1049,4 +1057,144 @@ test_that("zero-effort site (n_counted=0, n_interviewed=0) contributes 0 to esti
   # Site B's e_i_over_pi_i should be 0
   site_b <- sc[sc$site == "B", ]
   expect_equal(site_b$e_i_over_pi_i, 0, tolerance = 1e-10)
+})
+
+# Within-day variance (Rasmussen two-stage) tests ----
+# Plan 36-02: VAR-01, VAR-02, VAR-03, VAR-04
+
+# Helper: build a creel_design with two counts per day
+make_multi_count_design <- function() {
+  data(example_calendar, envir = environment()) # nolint: object_usage_linter
+  data(example_counts, envir = environment()) # nolint: object_usage_linter
+  counts_am <- example_counts # nolint: object_usage_linter
+  counts_am$count_time <- "am"
+  counts_pm <- example_counts # nolint: object_usage_linter
+  counts_pm$count_time <- "pm"
+  # Ensure within-day variance is non-zero: pm counts differ from am
+  counts_pm$effort_hours <- counts_pm$effort_hours + 4
+  multi_counts <- rbind(counts_am, counts_pm)
+
+  design <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
+  add_counts(design, multi_counts, count_time_col = count_time) # nolint: object_usage_linter
+}
+
+test_that("estimate_effort() SE unchanged for single-count-per-day data (VAR-01)", {
+  data(example_calendar, envir = environment()) # nolint: object_usage_linter
+  data(example_counts, envir = environment()) # nolint: object_usage_linter
+  design_single <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
+  design_single <- add_counts(design_single, example_counts) # nolint: object_usage_linter
+
+  result_single <- suppressWarnings(estimate_effort(design_single)) # nolint: object_usage_linter
+  # VAR-01: within_day_var is NULL -> se_within = 0, se_between = se (total)
+  expect_equal(result_single$estimates$se_between, result_single$estimates$se)
+  expect_equal(result_single$estimates$se_within, 0)
+})
+
+test_that("estimate_effort() SE is larger with within-day variance (VAR-02)", {
+  data(example_calendar, envir = environment()) # nolint: object_usage_linter
+  data(example_counts, envir = environment()) # nolint: object_usage_linter
+  design_multi <- make_multi_count_design()
+  design_single <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
+  design_single <- add_counts(design_single, example_counts) # nolint: object_usage_linter
+
+  result_multi <- suppressWarnings(estimate_effort(design_multi)) # nolint: object_usage_linter
+  result_single <- suppressWarnings(estimate_effort(design_single)) # nolint: object_usage_linter
+
+  # Two-stage SE must be >= between-day-only SE (within-day adds variance when counts vary)
+  expect_gte(result_multi$estimates$se, result_multi$estimates$se_between)
+
+  # se_within > 0 when K_d >= 2 and counts differ within day
+  expect_gt(result_multi$estimates$se_within, 0)
+})
+
+test_that("estimate_effort() output includes se_between and se_within columns (VAR-04)", {
+  design_multi <- make_multi_count_design()
+  result <- suppressWarnings(estimate_effort(design_multi)) # nolint: object_usage_linter
+  expect_true("se_between" %in% names(result$estimates))
+  expect_true("se_within" %in% names(result$estimates))
+})
+
+test_that("se_between and se_within present in output even for single-count design", {
+  data(example_calendar, envir = environment()) # nolint: object_usage_linter
+  data(example_counts, envir = environment()) # nolint: object_usage_linter
+  design_single <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
+  design_single <- add_counts(design_single, example_counts) # nolint: object_usage_linter
+  result <- suppressWarnings(estimate_effort(design_single)) # nolint: object_usage_linter
+  expect_true("se_between" %in% names(result$estimates))
+  expect_true("se_within" %in% names(result$estimates))
+})
+
+test_that("estimate_effort() total se equals sqrt(se_between^2 + se_within^2)", {
+  design_multi <- make_multi_count_design()
+  result <- suppressWarnings(estimate_effort(design_multi)) # nolint: object_usage_linter
+  est <- result$estimates
+  expected_se <- sqrt(est$se_between^2 + est$se_within^2)
+  expect_equal(est$se, expected_se, tolerance = 1e-10)
+})
+
+test_that("estimate_effort() emits informational message for mixed K_d (VAR-03)", {
+  data(example_calendar, envir = environment()) # nolint: object_usage_linter
+  data(example_counts, envir = environment()) # nolint: object_usage_linter
+  # Build design where some days have K_d = 2 and one day has K_d = 1
+  counts_am <- example_counts # nolint: object_usage_linter
+  counts_am$count_time <- "am"
+  counts_pm <- example_counts[-1L, ] # nolint: object_usage_linter; drop first day -- creates mixed K_d
+  counts_pm$count_time <- "pm"
+  mixed_counts <- rbind(counts_am, counts_pm)
+
+  design <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
+  d <- add_counts(design, mixed_counts, count_time_col = count_time) # nolint: object_usage_linter
+
+  # VAR-03: informational message about days with nC = 1
+  expect_message(
+    suppressWarnings(estimate_effort(d)), # nolint: object_usage_linter
+    regexp = "nC = 1"
+  )
+})
+
+test_that("estimate_effort() grouped output has se_between and se_within columns", {
+  design_multi <- make_multi_count_design()
+  result <- suppressWarnings(estimate_effort(design_multi, by = day_type)) # nolint: object_usage_linter
+  expect_true("se_between" %in% names(result$estimates))
+  expect_true("se_within" %in% names(result$estimates))
+})
+
+# Helper: two-PSU progressive design (Pope et al. worked example + second PSU for variance)
+make_pope_progressive_design <- function() {
+  # Pope et al. Ch. 17: C = 234, τ = 2h, T_d = 8h → Ê_d = 1872 angler-hours
+  # Two PSUs sampled so estimate_effort() can compute between-PSU variance
+  cal <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-08")),
+    day_type = c("weekend", "weekend"),
+    stringsAsFactors = FALSE
+  )
+  cts <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-08")),
+    day_type = c("weekend", "weekend"),
+    n_anglers = c(234L, 100L),
+    shift_hours = c(8, 8),
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+  add_counts( # nolint: object_usage_linter
+    design, cts,
+    count_type = "progressive",
+    circuit_time = 2,
+    period_length_col = shift_hours # nolint: object_usage_linter
+  )
+}
+
+test_that("progressive Ê_d computation matches Pope et al. worked example (EFF-02)", {
+  d <- make_pope_progressive_design()
+  # First PSU: Ê_d = 234 × 2 × (8/2) = 1872 angler-hours stored in count column
+  expect_equal(d$counts$n_anglers[d$counts$date == as.Date("2024-06-01")], 1872, tolerance = 1e-10)
+  # Second PSU: Ê_d = 100 × 8 = 800
+  expect_equal(d$counts$n_anglers[d$counts$date == as.Date("2024-06-08")], 800, tolerance = 1e-10)
+  # estimate_effort() runs without error (both PSUs sampled → variance computable)
+  result <- suppressWarnings(estimate_effort(d))
+  expect_true(is.numeric(result$estimates$estimate))
+  expect_gt(result$estimates$estimate, 0)
+  # se_between and se_within always present (Phase 36 guarantee)
+  expect_true("se_between" %in% names(result$estimates))
+  expect_true("se_within" %in% names(result$estimates))
 })

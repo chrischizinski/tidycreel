@@ -33,7 +33,6 @@ in mm) and binned release counts (character bin labels) linked to
 \code{\link{add_lengths}}.
 }
 \examples{
-\dontrun{
 data(example_calendar)
 data(example_interviews)
 data(example_lengths)
@@ -53,7 +52,6 @@ design <- add_lengths(design, example_lengths,
   release_format = "binned"
 )
 print(design)
-}
 }
 \seealso{
 \code{\link{example_interviews}}, \code{\link{example_catch}},

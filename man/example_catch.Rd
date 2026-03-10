@@ -24,13 +24,11 @@ example_catch
 \description{
 Long-format species-level catch data linked to \link{example_interviews}. Contains
 catch, harvest, and release counts per species per interview for 12 of the 22
-interviews. Suitable for use with \code{add_catch()} once that function is
-available (Phase 29 Plan 02). Interviews with zero total catch have no rows
-in this dataset (zero-catch anglers are represented by absence).
+interviews. Interviews with zero total catch have no rows in this dataset
+(zero-catch anglers are represented by absence).
 }
 \examples{
-\dontrun{
-# Requires add_catch() from Phase 29 Plan 02
+data(example_calendar)
 data(example_interviews)
 data(example_catch)
 
@@ -38,7 +36,9 @@ design <- creel_design(example_calendar, date = date, strata = day_type)
 design <- add_interviews(design, example_interviews,
   catch = catch_total,
   effort = hours_fished,
-  harvest = catch_kept
+  harvest = catch_kept,
+  trip_status = trip_status,
+  trip_duration = trip_duration
 )
 design <- add_catch(design, example_catch,
   catch_uid = interview_id,
@@ -47,7 +47,7 @@ design <- add_catch(design, example_catch,
   count = count,
   catch_type = catch_type
 )
-}
+print(design)
 
 }
 \seealso{

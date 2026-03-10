@@ -30,7 +30,6 @@ effort or effort stratum. For pressure-weighted extrapolated estimates, use
 \code{\link{estimate_cpue}} or \code{\link{estimate_harvest}}.
 }
 \examples{
-\dontrun{
 data(example_calendar)
 data(example_interviews)
 data(example_catch)
@@ -45,6 +44,5 @@ d <- add_catch(d, example_catch,
   species = species, count = count, catch_type = catch_type
 )
 summarize_successful_parties(d)
-}
 
 }
