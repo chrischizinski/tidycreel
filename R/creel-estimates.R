@@ -1458,6 +1458,80 @@ rebuild_interview_survey <- function(design, filtered_interviews) {
   design_new
 }
 
+#' Rebuild counts survey design for a single section
+#'
+#' Internal helper: filters design$counts to a single section and rebuilds the
+#' svydesign using construct_survey_design(). Ensures per-section SE uses only
+#' that section's PSUs as the denominator (not the full-lake PSU pool).
+#' Analogous to rebuild_interview_survey() but operates on the counts slot.
+#'
+#' @param design A creel_design object with design$section_col set
+#' @param section_name Character(1) — the section identifier to filter to
+#'
+#' @return Modified creel_design with counts and survey filtered to section_name
+#'
+#' @keywords internal
+#' @noRd
+rebuild_counts_survey <- function(design, section_name) {
+  sec_col <- design[["section_col"]]
+  filtered_counts <- design$counts[design$counts[[sec_col]] == section_name, ]
+  design_new <- design
+  design_new$counts <- filtered_counts
+  design_new$survey <- construct_survey_design(design_new) # nolint: object_usage_linter
+  design_new
+}
+
+#' Aggregate per-section estimates to a covariance-aware lake-wide total
+#'
+#' Internal helper: computes the lake-wide effort total using either
+#' svyby(covmat=TRUE) + svycontrast() (method="correlated") or
+#' Cochran 5.2 sqrt(sum(SE_h^2)) (method="independent").
+#'
+#' @param by_formula A formula for the section grouping variable (e.g. ~section)
+#' @param full_design_svy A survey.design2 or svyrep.design built from the full design
+#' @param count_formula A formula for the count variable (e.g. ~effort_hours)
+#' @param method Character(1) — "correlated" or "independent"
+#'
+#' @return Named list with components:
+#'   \item{estimate}{Numeric — lake-wide total estimate}
+#'   \item{se}{Numeric — lake-wide total SE}
+#'
+#' @keywords internal
+#' @noRd
+aggregate_section_totals <- function(by_formula, full_design_svy, count_formula, method) {
+  method <- match.arg(method, c("correlated", "independent"))
+  if (method == "correlated") {
+    by_result <- survey::svyby(
+      formula = count_formula,
+      by      = by_formula,
+      design  = full_design_svy,
+      FUN     = survey::svytotal,
+      covmat  = TRUE
+    )
+    contrast_vec <- setNames(rep(1, nrow(by_result)), rownames(vcov(by_result)))
+    lake_contrast <- survey::svycontrast(by_result, list(lake_total = contrast_vec))
+    list(
+      estimate = as.numeric(coef(lake_contrast)),
+      se       = as.numeric(survey::SE(lake_contrast))
+    )
+  } else {
+    # Cochran 5.2 — documented approximation for independent section designs
+    by_result_ind <- survey::svyby(
+      formula = count_formula,
+      by      = by_formula,
+      design  = full_design_svy,
+      FUN     = survey::svytotal,
+      covmat  = FALSE
+    )
+    section_ests <- as.numeric(coef(by_result_ind))
+    section_ses <- as.numeric(survey::SE(by_result_ind))
+    list(
+      estimate = sum(section_ests),
+      se       = sqrt(sum(section_ses^2))
+    )
+  }
+}
+
 #' Resolve by= selector across both interviews and catch (species) data
 #'
 #' Internal helper: splits a by= quosure into interview-level variables and the
