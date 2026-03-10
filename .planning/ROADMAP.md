@@ -98,7 +98,122 @@ See: [.planning/milestones/v0.4.0-ROADMAP.md](milestones/v0.4.0-ROADMAP.md)
   - [x] Phase 38 Plan 01: Roxygen fixes — add_counts() @examples for count_time_col and progressive, estimate_effort() @return for se_between/se_within (1/2 plans complete)
   - [x] Phase 38 Plan 02: flexible-count-estimation vignette — all three workflows, Pope et al. worked example, se_between/se_within interpretation table (1/1 plans complete)
 
+- 🚧 **v0.7.0 Spatially Stratified Estimation** — Phases 39–42 (in progress — started 2026-03-10)
+  - [x] Phase 39 Plan 01: add_sections() infrastructure — COMPLETE 2026-03-10
+  - [ ] Phase 39 Plan 02: Section test fixtures and failing stubs (SECT-01..05)
+  - [ ] Phase 39 Plan 03: estimate_effort() section dispatch — rebuild_counts_survey, estimate_effort_sections, aggregate_section_totals
+  - [ ] **Phase 40: Interview-Based Rate Estimators**
+  - [ ] **Phase 41: Product Estimators**
+  - [ ] **Phase 42: Example Data and Vignette**
+
+## Phase Details
+
+### Phase 39: Section Effort Estimation
+
+**Goal:** Users can call estimate_effort() on a sectioned design and receive per-section rows plus a correctly aggregated lake-wide total that accounts for cross-section covariance arising from shared day-level PSUs.
+
+**Depends on:** Plan 39-01 (complete — add_sections() infrastructure shipped)
+
+**Requirements:** SECT-01, SECT-02, SECT-03, SECT-04, SECT-05
+
+**Plans:** 1/2 plans executed
+
+Plans:
+- [x] 39-01-PLAN.md — add_sections() infrastructure (COMPLETE)
+- [ ] 39-02-PLAN.md — section test fixtures + failing stubs for SECT-01..05
+- [ ] 39-03-PLAN.md — estimate_effort() section dispatch implementation
+
+**Architectural notes:**
+- `aggregate_section_totals()` must implement `svyby(covmat=TRUE)` + `svycontrast()` as the default path — NOT naive Cochran 5.2 additivity. Cochran 5.2 (`method = "independent"`) is available only for genuinely independent section designs where sections share no day-level PSUs.
+- `rebuild_counts_survey()` helper (new, analogous to existing `rebuild_interview_survey()`) filters counts to one section and rebuilds a fresh svydesign so per-section SE uses that section's own PSU count as denominator.
+- Every section-aware code path begins with `if (is.null(design$sections))` to leave all existing designs unchanged.
+- Missing sections produce an NA row with `data_available = FALSE` and a `cli_warn()` before estimation begins.
+- `prop_of_lake_total` derived from full-design `svytotal`, not from `sum(section_estimates)`.
+
+**Success Criteria** (what must be TRUE):
+  1. User calls `estimate_effort(design)` on a 3-section design and receives one row per section plus one `.lake_total` row, all in a single tibble
+  2. The `.lake_total` SE is computed via `svyby(covmat=TRUE)` + `svycontrast()`, not by summing squared per-section SEs
+  3. A design without `add_sections()` produces results byte-for-byte identical to pre-v0.7.0 behavior (zero regressions in 1,400+ existing tests)
+  4. Calling `estimate_effort()` when a registered section has no observations produces an NA row with `data_available = FALSE` and a warning message
+  5. Each section row includes a `prop_of_lake_total` column derived from the full-design lake estimate
+
+---
+
+### Phase 40: Interview-Based Rate Estimators
+
+**Goal:** Users can call estimate_cpue(), estimate_harvest(), and estimate_release_rate() on a sectioned design and receive per-section rate rows, with the explicit design constraint that CPUE produces no lake-total row because rates are not additive.
+
+**Depends on:** Phase 39 (shared infrastructure helpers — rebuild_counts_survey, aggregate_section_totals, bind_section_results, validate_section_estimation_prerequisites)
+
+**Requirements:** RATE-01, RATE-02, RATE-03
+
+**Architectural notes:**
+- `estimate_cpue()` with section dispatch MUST NOT produce a `.lake_total` row. CPUE is a rate, not additive. Lake-wide CPUE requires a separate unpooled call on the full design. This is enforced by design, not convention.
+- `rebuild_interview_survey()` already exists and is reused directly for per-section interview subsetting — same pattern as Phase 39's `rebuild_counts_survey()`.
+- `missing_sections` guard applies to interview data: registered sections absent from interview data produce an NA row and a `cli_warn()` before estimation.
+
+**Success Criteria** (what must be TRUE):
+  1. User calls `estimate_cpue(design)` on a 3-section design and receives exactly three per-section rows — no `.lake_total` row — with a doc-referenced explanation that lake-wide CPUE requires a separate unpooled call
+  2. User calls `estimate_harvest(design)` on a sectioned design and receives one row per registered section
+  3. User calls `estimate_release_rate(design)` on a sectioned design and receives one row per registered section
+  4. A registered section absent from interview data produces an NA row with `data_available = FALSE` and a warning for all three rate estimators
+
+**Plans:** TBD
+
+---
+
+### Phase 41: Product Estimators
+
+**Goal:** Users can call estimate_total_catch(), estimate_total_harvest(), and estimate_total_release() on a sectioned design and receive per-section totals plus a lake-wide aggregate row computed as the sum of per-section products, not as effort-total times pooled-CPUE.
+
+**Depends on:** Phase 39 (per-section effort), Phase 40 (per-section rates)
+
+**Requirements:** PROD-01, PROD-02
+
+**Architectural notes:**
+- Lake-wide aggregate = `sum(TC_i)` where `TC_i = E_i * CPUE_i` per section. Never `E_total * CPUE_pooled`.
+- Delta method variance is unchanged from the existing lake-level implementation — only the inputs change (section-filtered designs).
+- Cross-design covariance between the count-based effort design and the interview-based CPUE design is not identified; zero-covariance assumption applies (same as lake-level estimator) and must be documented explicitly.
+- `prop_of_lake_total` uses the lake-wide estimate from the full-design `svytotal` as denominator, not `sum(section_estimates)`.
+
+**Success Criteria** (what must be TRUE):
+  1. User calls `estimate_total_catch(design)` on a 3-section design and receives one row per section plus one `.lake_total` row
+  2. The `.lake_total` catch estimate equals `sum(E_i * CPUE_i)` across sections — not `E_total * CPUE_pooled` — and matches hand-calculation within floating point tolerance
+  3. User calls `estimate_total_harvest(design)` and `estimate_total_release(design)` on a sectioned design and each returns per-section rows plus a correctly aggregated `.lake_total` row
+
+**Plans:** TBD
+
+---
+
+### Phase 42: Example Data and Vignette
+
+**Goal:** Users have a realistic 3-section example dataset showing material variation across sections, and a vignette explaining the complete spatially stratified workflow including the correlated-domains vs. independent-strata variance decision.
+
+**Depends on:** Phase 39, Phase 40, Phase 41 (all estimation functions must work before documenting them)
+
+**Requirements:** DOCS-01, DOCS-02
+
+**Architectural notes:**
+- Dataset must show material variation across sections (different effort levels, different catch rates) to exercise the aggregation path and the missing-section warning path — not uniform sections that provide no meaningful coverage.
+- Vignette must explain the variance aggregation decision in terms biologists understand (not just survey-package internals): why `method = "correlated"` is the default for standard NGPC shared-calendar designs, and when `method = "independent"` is appropriate.
+
+**Success Criteria** (what must be TRUE):
+  1. `data(example_sections_creel)` (or equivalent) loads a 3-section example dataset with materially different effort levels and catch rates across sections
+  2. The vignette runs end-to-end with `devtools::build_vignettes()` and demonstrates: per-section effort, per-section CPUE (no lake-total row), per-section and lake-total catch, and the missing-section warning path
+  3. The vignette explains in plain language why `method = "correlated"` is the correct default for shared-calendar field crew designs and what `method = "independent"` means
+
+**Plans:** TBD
+
+---
+
 ## Progress Summary
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 39. Section Effort Estimation | 1/2 | In Progress|  |
+| 40. Interview-Based Rate Estimators | 0/? | Not started | — |
+| 41. Product Estimators | 0/? | Not started | — |
+| 42. Example Data and Vignette | 0/? | Not started | — |
 
 | Milestone | Phases | Plans | Status | Completed |
 |-----------|--------|-------|--------|-----------|
@@ -108,9 +223,10 @@ See: [.planning/milestones/v0.4.0-ROADMAP.md](milestones/v0.4.0-ROADMAP.md)
 | v0.4.0 Bus-Route Survey Support | 21-27 | 14/14 | ✅ Complete | 2026-02-28 |
 | v0.5.0 Interview Data Model and Unextrapolated Summaries | 28-35 | 18/18 | ✅ Complete | 2026-03-08 |
 | v0.6.0 Multiple Counts per PSU | 36–38 | 5/5 | ✅ Complete | 2026-03-09 |
+| v0.7.0 Spatially Stratified Estimation | 39–42 | 1/? | 🚧 In progress | — |
 
-**Overall:** 6 milestones shipped, 38 phases complete
+**Overall:** 6 milestones shipped, 38 phases complete; v0.7.0 Phase 39 in progress
 
 ---
-*Roadmap last updated: 2026-03-09 — Phase 38 Plan 02 complete; v0.6.0 shipped*
+*Roadmap last updated: 2026-03-10 — Phase 39 Plans 02-03 created*
 *See .planning/milestones/ for full milestone archives*

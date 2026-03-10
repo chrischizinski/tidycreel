@@ -1,36 +1,47 @@
 ---
 gsd_state_version: 1.0
-milestone: v0.7.0
-milestone_name: Spatially Stratified Estimation
-status: in_progress
-last_updated: "2026-03-10T00:00:00.000Z"
+milestone: v0.1
+milestone_name: milestone
+status: planning
+stopped_at: 39-02-PLAN.md complete — RED stubs for SECT-01..05 committed
+last_updated: "2026-03-10T23:48:05.919Z"
+last_activity: 2026-03-10 — v0.7.0 roadmap created (Phases 39-42)
 progress:
-  total_phases: 0
+  total_phases: 4
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 2
+  completed_plans: 1
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-28)
+See: .planning/PROJECT.md (updated 2026-03-10)
 
 **Core value:** Creel biologists can analyze survey data using creel vocabulary without understanding survey package internals
 **Current focus:** v0.7.0 — Spatially Stratified Estimation
 
 ## Current Position
 
-Phase: Phase 39 in progress (Plan 01 complete — add_sections() infrastructure)
-Plan: 39-01 done; awaiting per-section estimation plans
-Status: Defining requirements and roadmap
-Last activity: 2026-03-10 — Milestone v0.7.0 requirements and roadmap being formalized
+Phase: Phase 39 — Section Effort Estimation (in progress)
+Plan: 39-01 complete (add_sections() infrastructure); remaining plans cover SECT-01 through SECT-05
+Status: Roadmap created; ready to plan Phase 39 remaining work
+Last activity: 2026-03-10 — v0.7.0 roadmap created (Phases 39-42)
+
+### Progress Bar
+
+```
+Phase 39 [==--------] Plan 01/? complete
+Phase 40 [----------] Not started
+Phase 41 [----------] Not started
+Phase 42 [----------] Not started
+```
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 52
+- Total plans completed: 52 (through v0.6.0) + 1 (Phase 39-01) = 53
 - v0.1.0 (Phases 1-7): 12 plans
 - v0.2.0 (Phases 8-12): 10 plans
 - v0.3.0 (Phases 13-20): 16 plans
@@ -44,19 +55,63 @@ Last activity: 2026-03-10 — Milestone v0.7.0 requirements and roadmap being fo
 | v0.2.0 | 8-12 | 10/10 | Complete | 2026-02-11 |
 | v0.3.0 | 13-20 | 16/16 | Complete | 2026-02-16 |
 | v0.4.0 | 21-27 | 14/14 | Complete | 2026-02-28 |
+| v0.5.0 | 28-35 | 18/18 | Complete | 2026-03-08 |
+| v0.6.0 | 36-38 | 5/5 | Complete | 2026-03-09 |
+| v0.7.0 | 39-42 | 1/? | In progress | — |
 
 **Quality Metrics (current):**
 - Test coverage: ~90% (1,409 tests — Phase 37 complete as of 2026-03-09)
 - R CMD check: 0 errors, 0 warnings
 - lintr: 0 issues
-| Phase 28.1 P02 | 12m | 2 tasks | 2 files |
-| Phase 29-species-catch-data P01 | 5 | 3 tasks | 7 files |
-| Phase 29-species-catch-data P02 | 5 | 2 tasks | 3 files |
-| Phase 29-species-catch-data P03 | 9m | 2 tasks | 2 files |
-| Phase 31 P01 | 8m | 2 tasks | 10 files |
-| Phase 31 P02 | 12m | 1 task | 1 file |
+| Phase 39-section-effort-estimation P02 | 5 | 2 tasks | 1 files |
 
 ## Accumulated Context
+
+### v0.7.0 Phase Dependency Order
+
+39 (Section effort + shared infrastructure) → 40 (Interview-based rates — CPUE, harvest, release) → 41 (Product estimators — total catch/harvest/release; requires 39+40) → 42 (Example data + vignette; requires 39+40+41)
+
+### v0.7.0 Architectural Decisions (locked)
+
+**Variance aggregation for lake-wide totals:**
+- DEFAULT (`method = "correlated"`): `svyby(covmat=TRUE)` + `svycontrast()` — correct for NGPC shared-calendar designs where sections share day-level PSUs and cross-section covariance is non-zero (empirically negative)
+- ALTERNATIVE (`method = "independent"`): Cochran 5.2 `SE_total = sqrt(sum(SE_h^2))` — documented approximation for genuinely independent section designs only; not the default
+- Naive Cochran 5.2 additivity as default was explicitly evaluated and rejected: overstates lake-wide SE for shared-PSU designs
+
+**CPUE is not additive:**
+- `estimate_cpue()` with section dispatch produces NO `.lake_total` row — enforced by design, not convention
+- Lake-wide CPUE requires a separate unpooled call on the full design
+- This must be documented in `?estimate_cpue` help page and the vignette
+
+**Product estimator aggregation:**
+- Lake-wide total = `sum(TC_i)` where `TC_i = E_i * CPUE_i` per section
+- Never `E_total * CPUE_pooled`
+- Cross-design covariance (count-based effort vs. interview-based CPUE) is not identified; zero-covariance assumption applies (same as lake-level) and must be documented
+
+**`prop_of_lake_total` denominator:**
+- Always use the lake-wide estimate from the full-design `svytotal`, not `sum(section_estimates)`
+- The two differ because they come from different estimation paths; section proportions summed against actual lake total must equal 1.0
+
+**Per-section svydesign construction:**
+- Build a fresh `svydesign` from filtered counts via `rebuild_counts_survey()` (new, analogous to `rebuild_interview_survey()`)
+- Do NOT use `subset(design$survey, section == "A")` — produces domain-estimate variance with wrong PSU denominator
+
+**`aggregate_sections` default:**
+- `TRUE` — matches biologist mental model and legacy NGPC report template
+- `FALSE` suppresses the `.lake_total` row for power users
+
+### Phase 39 Plan 01 — Already shipped
+
+`add_sections()` with full validation, `format.creel_design()` sections block, section guards in `add_counts()` and `add_interviews()`. See commit history for implementation details.
+
+### Key Architectural Constraints
+
+- New parameters in `add_interviews()` must be optional (INTV-06 backward compatibility)
+- Catch data in long format: one row per species per interview (matches DB schema)
+- Release lengths: handle both individual measurements AND pre-binned length-group format
+- All new summary functions return tidy tibbles with consistent column naming + class attribute
+- Existing estimator APIs unchanged — section dispatch added via optional args, not breaking changes
+- Section-aware code paths MUST begin with `if (is.null(design$sections))` NULL guard
 
 ### v0.5.0 Phase Dependency Order
 
@@ -67,14 +122,6 @@ Last activity: 2026-03-10 — Milestone v0.7.0 requirements and roadmap being fo
 - Phase 28.1 inserted after Phase 28: Normalize CPUE/HPUE by angler count (URGENT) — `normalize_by_anglers` arg added to existing estimators so party-hours → angler-hours when `n_anglers_col` is set; literature-backed (Hoenig, Jones et al.) — party size confounds per-party-hour rates
 - Phase 32 removed `normalize_by_anglers` from `estimate_cpue()` and `estimate_harvest()` — replaced by unconditional `design$angler_effort_col` (add_interviews defaults n_anglers=1)
 - Phase 34 inconsistently re-added `normalize_by_anglers` to `estimate_release_rate()` only; resolved 2026-03-08 by removing it to match cpue/harvest — all three rate functions now use `design$angler_effort_col` unconditionally
-
-### Key Architectural Constraints
-
-- New parameters in `add_interviews()` must be optional (INTV-06 backward compatibility)
-- Catch data in long format: one row per species per interview (matches DB schema)
-- Release lengths: handle both individual measurements AND pre-binned length-group format
-- All new summary functions return tidy tibbles with consistent column naming + class attribute
-- Existing estimator APIs unchanged — species grouping added via tidy selectors, not breaking changes
 
 ### Decisions (28-01)
 
@@ -121,9 +168,17 @@ None currently.
 
 ## Session Continuity
 
-Last session: 2026-03-08
-Stopped at: Phase 38 Plan 02 complete — flexible-count-estimation vignette; v0.6.0 all gates passed
+Last session: 2026-03-10T23:48:05.916Z
+Stopped at: 39-02-PLAN.md complete — RED stubs for SECT-01..05 committed
 Resume file: None
+Next step: `/gsd:plan-phase 39` to plan remaining Phase 39 work (SECT-01 through SECT-05)
+
+### Decisions (39-02)
+
+- `add_sections()` requires explicit `section_col = section` (unquoted tidy-select arg, no default); fixtures use `section_col = section`
+- SECT-04 regression guard passes GREEN immediately — confirms backward compatibility of non-sectioned designs; intentional correct behavior
+- SECT-03b (`expect_error` for `missing_sections="error"`) passes GREEN because `estimate_effort()` throws "unused argument" error — acceptable temporary false-green, will become stricter once 39-03 implements the parameter
+- Function names > 30 chars suppress `object_length_linter` inline per project convention (same pattern as Phase 31-02)
 
 ### Decisions (31-planning)
 
@@ -162,5 +217,3 @@ Resume file: None
 
 - Pope et al. vignette example uses 2-day weekday design; per-day Ê_d = 1,872 shown via `design$counts` slot — single-PSU stratum errors in survey package variance computation
 - Coverage 86.54% is pre-existing gap from Phase 37 progressive-count code paths; vignette does not affect coverage
-
-**Next step:** v0.6.0 shipped; next milestone planning
