@@ -34,6 +34,102 @@ make_test_design_with_counts <- function() {
   add_counts(design, counts) # nolint: object_usage_linter
 }
 
+#' Create 3-section creel_design with counts (SECT fixtures)
+#'
+#' Produces a creel_design with sections "North", "Central", "South".
+#' Each section has counts across both "weekday" and "weekend" strata
+#' with 2 PSUs (dates) per stratum per section (12 dates total, 36 count rows).
+make_3section_design_with_counts <- function() { # nolint: object_length_linter
+  # 12-date calendar: 6 weekday + 6 weekend (2 per stratum per section)
+  cal <- data.frame(
+    date = as.Date(c(
+      "2024-06-03", "2024-06-04", "2024-06-05", "2024-06-06",
+      "2024-06-07", "2024-06-10",
+      "2024-06-08", "2024-06-09", "2024-06-14", "2024-06-15",
+      "2024-06-16", "2024-06-21"
+    )),
+    day_type = c(
+      "weekday", "weekday", "weekday", "weekday", "weekday", "weekday",
+      "weekend", "weekend", "weekend", "weekend", "weekend", "weekend"
+    ),
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+
+  sections_df <- data.frame(
+    section = c("North", "Central", "South"),
+    stringsAsFactors = FALSE
+  )
+  design <- add_sections(design, sections_df, section_col = section) # nolint: object_usage_linter
+
+  # 36-row counts: each of the 12 dates repeated for each of 3 sections
+  # Effort values vary materially across sections
+  counts <- data.frame(
+    date = rep(cal$date, times = 3),
+    day_type = rep(cal$day_type, times = 3),
+    section = rep(c("North", "Central", "South"), each = nrow(cal)),
+    effort_hours = c(
+      # North: weekday ~15-25, weekend ~20-28
+      20, 22, 18, 25, 15, 24,
+      21, 26, 23, 28, 20, 27,
+      # Central: weekday ~30-45, weekend ~35-48
+      35, 38, 32, 42, 30, 45,
+      37, 44, 40, 48, 35, 46,
+      # South: weekday ~5-12, weekend ~6-13
+      8, 10, 5, 12, 6, 11,
+      7, 9, 6, 13, 8, 10
+    ),
+    stringsAsFactors = FALSE
+  )
+
+  suppressWarnings(add_counts(design, counts)) # nolint: object_usage_linter
+}
+
+#' Create 3-section creel_design with "South" section missing from counts
+#'
+#' Registered sections: "North", "Central", "South".
+#' Counts data contains only "North" and "Central" rows — "South" is absent.
+make_section_design_with_missing_section <- function() { # nolint: object_length_linter
+  cal <- data.frame(
+    date = as.Date(c(
+      "2024-06-03", "2024-06-04", "2024-06-05", "2024-06-06",
+      "2024-06-07", "2024-06-10",
+      "2024-06-08", "2024-06-09", "2024-06-14", "2024-06-15",
+      "2024-06-16", "2024-06-21"
+    )),
+    day_type = c(
+      "weekday", "weekday", "weekday", "weekday", "weekday", "weekday",
+      "weekend", "weekend", "weekend", "weekend", "weekend", "weekend"
+    ),
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+
+  sections_df <- data.frame(
+    section = c("North", "Central", "South"),
+    stringsAsFactors = FALSE
+  )
+  design <- add_sections(design, sections_df, section_col = section) # nolint: object_usage_linter
+
+  # Counts for North and Central only — South is absent
+  counts <- data.frame(
+    date = rep(cal$date, times = 2),
+    day_type = rep(cal$day_type, times = 2),
+    section = rep(c("North", "Central"), each = nrow(cal)),
+    effort_hours = c(
+      # North
+      20, 22, 18, 25, 15, 24,
+      21, 26, 23, 28, 20, 27,
+      # Central
+      35, 38, 32, 42, 30, 45,
+      37, 44, 40, 48, 35, 46
+    ),
+    stringsAsFactors = FALSE
+  )
+
+  suppressWarnings(add_counts(design, counts)) # nolint: object_usage_linter
+}
+
 # Basic behavior tests ----
 
 test_that("estimate_effort returns creel_estimates class object", {
