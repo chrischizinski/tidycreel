@@ -100,7 +100,7 @@ See: [.planning/milestones/v0.4.0-ROADMAP.md](milestones/v0.4.0-ROADMAP.md)
 
 - 🚧 **v0.7.0 Spatially Stratified Estimation** — Phases 39–42 (in progress — started 2026-03-10)
   - [x] Phase 39 Plan 01: add_sections() infrastructure — COMPLETE 2026-03-10
-  - [ ] Phase 39 Plan 02: Section test fixtures and failing stubs (SECT-01..05)
+  - [x] Phase 39 Plan 02: Section test fixtures and failing stubs (SECT-01..05) (completed 2026-03-10)
   - [ ] Phase 39 Plan 03: estimate_effort() section dispatch — rebuild_counts_survey, estimate_effort_sections, aggregate_section_totals
   - [ ] **Phase 40: Interview-Based Rate Estimators**
   - [ ] **Phase 41: Product Estimators**
@@ -116,7 +116,7 @@ See: [.planning/milestones/v0.4.0-ROADMAP.md](milestones/v0.4.0-ROADMAP.md)
 
 **Requirements:** SECT-01, SECT-02, SECT-03, SECT-04, SECT-05
 
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [x] 39-01-PLAN.md — add_sections() infrastructure (COMPLETE)
@@ -210,7 +210,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 39. Section Effort Estimation | 1/2 | In Progress|  |
+| 39. Section Effort Estimation | 2/2 | Complete   | 2026-03-10 |
 | 40. Interview-Based Rate Estimators | 0/? | Not started | — |
 | 41. Product Estimators | 0/? | Not started | — |
 | 42. Example Data and Vignette | 0/? | Not started | — |
