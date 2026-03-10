@@ -29,7 +29,6 @@ effort or effort stratum. For pressure-weighted extrapolated estimates, use
 \code{\link{estimate_cpue}} or \code{\link{estimate_harvest}}.
 }
 \examples{
-\dontrun{
 data(example_calendar)
 data(example_interviews)
 d <- creel_design(example_calendar, date = date, strata = day_type)
@@ -38,6 +37,5 @@ d <- add_interviews(d, example_interviews,
   trip_status = trip_status, trip_duration = trip_duration
 )
 summarize_by_trip_length(d)
-}
 
 }

@@ -405,7 +405,9 @@ new_creel_design <- function(calendar,
       design_type = design_type,
       counts      = NULL,
       survey      = NULL,
-      bus_route   = bus_route # NULL for non-bus_route designs
+      bus_route   = bus_route, # NULL for non-bus_route designs
+      sections    = NULL,
+      section_col = NULL
     ),
     class = "creel_design"
   )
@@ -614,6 +616,26 @@ resolve_multi_cols <- function(expr, data, arg_name, error_call = rlang::caller_
 #'   in the count data. Defaults to NULL, which uses the design's date_col as
 #'   the PSU (day-as-PSU is the most common creel design). For other designs,
 #'   specify the PSU column explicitly (e.g., "site_day" for day-site PSUs).
+#' @param count_time_col Tidy selector for a column that identifies distinct
+#'   sub-PSU count observations (e.g., `count_time_col = count_time` where
+#'   count_time contains "am" / "pm"). When supplied, multiple rows per PSU are
+#'   aggregated to a single PSU-level mean (C-bar_d) and within-day variance
+#'   components (SS_d, K_d) are stored in `design$within_day_var`. When NULL
+#'   (default), a single row per PSU is expected; duplicate PSU rows emit a
+#'   CNT-06 warning.
+#' @param count_type Character string specifying the count method. Must be
+#'   `"instantaneous"` (default) or `"progressive"`. When `"progressive"`,
+#'   `circuit_time` and `period_length_col` are required.
+#' @param circuit_time Numeric. Circuit duration τ in hours — the time required
+#'   to complete one roving count circuit of the water body. Required when
+#'   `count_type = "progressive"` (CNT-05). Used to compute
+#'   κ = T_d / τ and Ê_d = C × τ × κ. Ignored (with a warning) when
+#'   `count_type = "instantaneous"`.
+#' @param period_length_col Tidy selector for the column containing T_d — the
+#'   total fishable shift duration in hours for each PSU. Required when
+#'   `count_type = "progressive"` (CNT-05). Values must be positive and finite.
+#'   The column is dropped from `design$counts` after Ê_d is computed (it
+#'   must not be passed to `estimate_effort()` as a count variable).
 #' @param allow_invalid Logical flag for validation behavior. If FALSE (default),
 #'   validation failures abort with detailed error messages. If TRUE, validation
 #'   failures generate warnings and attach counts anyway (use with caution).
@@ -675,8 +697,50 @@ resolve_multi_cols <- function(expr, data, arg_name, error_call = rlang::caller_
 #'
 #' design2 <- add_counts(design, counts_with_site_psu, psu = "site_day")
 #'
+#' # Multiple counts per day (within-day variance via count_time_col)
+#' # Two circuits per day: "am" and "pm"
+#' calendar2 <- data.frame(
+#'   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
+#'   day_type = c("weekday", "weekday", "weekend", "weekend")
+#' )
+#' design3 <- creel_design(calendar2, date = date, strata = day_type)
+#'
+#' multi_counts <- data.frame(
+#'   date = as.Date(rep(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04"), each = 2)),
+#'   day_type = rep(c("weekday", "weekday", "weekend", "weekend"), each = 2),
+#'   count_time = rep(c("am", "pm"), 4),
+#'   n_anglers = c(12, 18, 20, 26, 40, 50, 48, 56)
+#' )
+#' design_multi <- add_counts(design3, multi_counts,
+#'   count_time_col = count_time # nolint: object_usage_linter
+#' )
+#'
+#' # Progressive count type (Ê_d = C x circuit_time x kappa)
+#' calendar3 <- data.frame(
+#'   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
+#'   day_type = c("weekday", "weekday", "weekend", "weekend")
+#' )
+#' design4 <- creel_design(calendar3, date = date, strata = day_type)
+#'
+#' prog_counts <- data.frame(
+#'   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
+#'   day_type = c("weekday", "weekday", "weekend", "weekend"),
+#'   n_anglers = c(15L, 23L, 45L, 52L),
+#'   shift_hours = rep(8, 4)
+#' )
+#' design_prog <- add_counts(
+#'   design4, prog_counts,
+#'   count_type = "progressive",
+#'   circuit_time = 2,
+#'   period_length_col = shift_hours # nolint: object_usage_linter
+#' )
+#'
 #' @export
-add_counts <- function(design, counts, psu = NULL, allow_invalid = FALSE) {
+add_counts <- function(design, counts, psu = NULL, count_time_col = NULL,
+                       count_type = "instantaneous",
+                       circuit_time = NULL,
+                       period_length_col = NULL,
+                       allow_invalid = FALSE) {
   # Validate design is creel_design
   if (!inherits(design, "creel_design")) {
     cli::cli_abort(c(
@@ -699,18 +763,177 @@ add_counts <- function(design, counts, psu = NULL, allow_invalid = FALSE) {
   # Validate count data schema (Date column, numeric column)
   validate_count_schema(counts) # nolint: object_usage_linter
 
+  # Guard: validate section values against registered sections (SEC-01)
+  if (!is.null(design[["sections"]]) && !is.null(design[["section_col"]])) {
+    sec_col <- design[["section_col"]]
+    if (sec_col %in% names(counts)) {
+      valid_sections <- design[["sections"]][[sec_col]]
+      bad_vals <- setdiff(unique(counts[[sec_col]]), valid_sections)
+      if (length(bad_vals) > 0) {
+        cli::cli_abort(c(
+          "Count data contains {length(bad_vals)} unregistered section value{?s}.",
+          "x" = "{length(bad_vals)} unknown section{?s}: {.val {bad_vals}}.",
+          "i" = "Registered sections: {.val {valid_sections}}.",
+          "i" = "Check for typos or register the section with {.fn add_sections}."
+        ))
+      }
+    }
+  }
+
   # Set PSU column (default to date_col for day-as-PSU)
   if (is.null(psu)) {
     psu <- design$date_col
   }
 
+  # Validate count_type
+  valid_count_types <- c("instantaneous", "progressive")
+  if (!count_type %in% valid_count_types) {
+    cli::cli_abort(c(
+      "{.arg count_type} must be {.or {.val {valid_count_types}}}.",
+      "x" = "Got {.val {count_type}}."
+    ))
+  }
+  # Resolve period_length_col tidy selector to character name (or NULL)
+  # Uses the same enquo() + quo_is_null() pattern as count_time_col below.
+  period_length_col_quo <- rlang::enquo(period_length_col)
+  period_length_col_name <- if (rlang::quo_is_null(period_length_col_quo)) {
+    NULL
+  } else {
+    period_length_col_sel <- tidyselect::eval_select(
+      period_length_col_quo,
+      data = counts,
+      error_call = rlang::current_env()
+    )
+    names(period_length_col_sel)
+  }
+
+  # Progressive-specific validation (CNT-03, CNT-05)
+  if (count_type == "progressive") {
+    # Guard: count_time_col + progressive is not supported (deferred to future phase)
+    if (!rlang::quo_is_null(rlang::enquo(count_time_col))) {
+      cli::cli_abort(c(
+        "Combining {.arg count_time_col} with {.code count_type = 'progressive'} is not yet supported.",
+        "i" = "Use {.arg count_time_col} only with {.val instantaneous} counts.",
+        "i" = "Multiple progressive circuits per day will be supported in a future version."
+      ))
+    }
+    # Guard: circuit_time required (CNT-05)
+    if (is.null(circuit_time)) {
+      cli::cli_abort(c(
+        "{.arg circuit_time} is required when {.code count_type = 'progressive'}.",
+        "i" = "{.arg circuit_time} (\u03c4) is the time in hours to complete one circuit.",
+        "i" = "Example: {.code add_counts(design, counts, count_type = 'progressive', circuit_time = 2, ...)}"
+      ))
+    }
+    if (!is.numeric(circuit_time) || length(circuit_time) != 1L || circuit_time <= 0) {
+      cli::cli_abort(c(
+        "{.arg circuit_time} must be a single positive number (hours).",
+        "x" = "Got {.val {circuit_time}}."
+      ))
+    }
+    # Guard: period_length_col required (CNT-05)
+    if (is.null(period_length_col_name)) {
+      cli::cli_abort(c(
+        "{.arg period_length_col} is required when {.code count_type = 'progressive'}.",
+        "i" = "{.arg period_length_col} identifies the column with shift duration T_d (hours).",
+        "i" = "Example: add_counts(design, counts, count_type = 'progressive', circuit_time = 2, period_length_col = <col>)" # nolint: line_length_linter
+      ))
+    }
+    # Guard: period_length values must be positive
+    period_vals <- counts[[period_length_col_name]]
+    if (any(!is.finite(period_vals)) || any(period_vals <= 0)) {
+      cli::cli_abort(c(
+        "{.field {period_length_col_name}} must contain positive finite values (hours).",
+        "x" = "Found {sum(period_vals <= 0 | !is.finite(period_vals))} non-positive or non-finite value(s)."
+      ))
+    }
+    # Advisory: period_length < circuit_time means κ < 1 (unusual)
+    if (any(period_vals < circuit_time)) {
+      n_short <- sum(period_vals < circuit_time) # nolint: object_usage_linter
+      cli::cli_warn(c(
+        "{n_short} day(s) have shift duration shorter than {.arg circuit_time} ({circuit_time} hours).",
+        "i" = "This gives \u03ba < 1 (less than one full circuit possible in the shift).",
+        "i" = "Verify that {.field {period_length_col_name}} and {.arg circuit_time} are in the same units."
+      ))
+    }
+  }
+  if (count_type == "instantaneous" && !is.null(circuit_time)) {
+    cli::cli_warn(c(
+      "{.arg circuit_time} is ignored when {.code count_type = 'instantaneous'}.",
+      "i" = "Only used with {.val progressive} count type."
+    ))
+  }
+
+  # Resolve count_time_col tidy selector to character name (or NULL)
+  count_time_col_quo <- rlang::enquo(count_time_col)
+  count_time_col_name <- if (rlang::quo_is_null(count_time_col_quo)) {
+    NULL
+  } else {
+    count_time_col_sel <- tidyselect::eval_select(
+      count_time_col_quo,
+      data = counts,
+      error_call = rlang::current_env()
+    )
+    names(count_time_col_sel)
+  }
+
   # Validate counts structure (Tier 1)
   validation <- validate_counts_tier1(counts, design, psu, allow_invalid) # nolint: object_usage_linter
+
+  # CNT-06: warn if duplicate PSU rows detected without count_time_col
+  if (is.null(count_time_col_name)) {
+    detect_duplicate_psus(counts, psu) # nolint: object_usage_linter
+  }
+
+  # Aggregate multiple counts per day to single PSU-level rows
+  within_day_var <- NULL
+  if (!is.null(count_time_col_name)) {
+    key_cols <- unique(c(psu, design$strata_cols))
+    # Identify the count variable (first numeric column not in key_cols or count_time_col)
+    excluded <- c(key_cols, count_time_col_name, design$date_col)
+    numeric_cols <- names(counts)[sapply(counts, is.numeric)]
+    count_var <- setdiff(numeric_cols, excluded)[1L]
+
+    agg_result <- aggregate_within_day( # nolint: object_usage_linter
+      counts         = counts,
+      psu_col        = psu,
+      count_var      = count_var,
+      count_time_col = count_time_col_name,
+      key_cols       = key_cols
+    )
+    counts <- agg_result$aggregated
+    within_day_var <- agg_result$within_day_var
+  }
+
+  # Compute progressive daily effort Ê_d = C × τ × κ (EFF-02)
+  if (count_type == "progressive") {
+    excluded_prog <- c(psu, design$strata_cols, design$date_col)
+    numeric_cols_prog <- names(counts)[sapply(counts, is.numeric)]
+    count_var_prog <- setdiff(numeric_cols_prog, c(excluded_prog, period_length_col_name))[1L]
+    counts <- compute_progressive_effort( # nolint: object_usage_linter
+      counts            = counts,
+      count_var         = count_var_prog,
+      period_length_col = period_length_col_name,
+      circuit_time      = circuit_time
+    )
+  }
 
   # Copy design and add counts + PSU
   new_design <- design
   new_design$counts <- counts
   new_design$psu_col <- psu
+
+  # Store new slots before survey construction
+  new_design$count_type <- count_type
+  new_design$count_time_col <- count_time_col_name
+  new_design$within_day_var <- within_day_var
+  new_design$n_counts_per_psu <- if (!is.null(within_day_var)) {
+    within_day_var$k_d
+  } else {
+    NULL
+  }
+  new_design$circuit_time <- circuit_time
+  new_design$period_length_col <- period_length_col_name
 
   # Construct survey design eagerly
   new_design$survey <- construct_survey_design(new_design) # nolint: object_usage_linter
@@ -720,6 +943,185 @@ add_counts <- function(design, counts, psu = NULL, allow_invalid = FALSE) {
 
   # Preserve class
   class(new_design) <- "creel_design"
+
+  new_design
+}
+
+#' Register spatial sections for a creel survey design
+#'
+#' @description
+#' Attaches a sections registry to a `creel_design` object. Once sections are
+#' registered, all subsequent calls to [add_counts()] and [add_interviews()]
+#' validate that every row's section value matches a registered section name.
+#' Unrecognised section values abort with an informative error identifying the
+#' bad values and listing valid options.
+#'
+#' `add_sections()` is optional for single-section surveys. Call it when your
+#' survey covers multiple named sections and you want early detection of
+#' mislabelled data (e.g. "NRTH" instead of "NORTH").
+#'
+#' @param design A `creel_design` object (created with [creel_design()]).
+#' @param sections A data frame with one row per section. Must contain the
+#'   column identified by `section_col`. Optional metadata columns are
+#'   identified by `description_col`, `area_col`, and `shoreline_col`.
+#' @param section_col Tidy selector for the column in `sections` that holds
+#'   section names or IDs. Must be character or factor. No duplicate values
+#'   are permitted.
+#' @param description_col Optional tidy selector for a free-text description
+#'   column (e.g. "North inlet", "Main basin"). Stored for reporting only.
+#' @param area_col Optional tidy selector for a surface area column (numeric,
+#'   ha). All values must be strictly positive. Stored now; used in v0.8.0
+#'   aerial survey estimation.
+#' @param shoreline_col Optional tidy selector for a shoreline length column
+#'   (numeric, km). All values must be strictly positive. Stored now; used
+#'   in v0.8.0 aerial survey estimation.
+#'
+#' @return A new `creel_design` object with `$sections` and `$section_col`
+#'   populated. The input `design` is not modified.
+#'
+#' @section Validation performed by downstream functions:
+#' After `add_sections()` is called, [add_counts()] and [add_interviews()]
+#' check that every row's section value is present in
+#' `design$sections[[design$section_col]]`. An unrecognised value produces a
+#' `cli_abort()` naming the bad values and listing valid section names.
+#'
+#' @seealso [creel_design()], [add_counts()], [add_interviews()]
+#'
+#' @examples
+#' cal <- data.frame(
+#'   date = as.Date(c(
+#'     "2024-06-01", "2024-06-02",
+#'     "2024-06-03", "2024-06-04"
+#'   )),
+#'   day_type = c("weekday", "weekday", "weekend", "weekend")
+#' )
+#' design <- creel_design(cal, date = date, strata = day_type)
+#'
+#' my_sections <- data.frame(
+#'   section      = c("North Inlet", "Main Basin", "South Outlet"),
+#'   description  = c("Tributary inlet", "Open water", "Dam outlet"),
+#'   area_ha      = c(45.0, 820.0, 12.0),
+#'   shoreline_km = c(8.2, 62.1, 3.4)
+#' )
+#'
+#' design2 <- add_sections(design, my_sections,
+#'   section_col     = section,
+#'   description_col = description,
+#'   area_col        = area_ha,
+#'   shoreline_col   = shoreline_km
+#' )
+#'
+#' @export
+add_sections <- function(design,
+                         sections,
+                         section_col,
+                         description_col = NULL,
+                         area_col = NULL,
+                         shoreline_col = NULL) {
+  # Guard: design must be creel_design
+  if (!inherits(design, "creel_design")) {
+    cli::cli_abort(c(
+      "{.arg design} must be a {.cls creel_design} object.",
+      "x" = "{.arg design} is {.cls {class(design)[1]}}.",
+      "i" = "Create a design with {.fn creel_design}."
+    ))
+  }
+
+  # Guard: sections not already registered (immutability)
+  if (!is.null(design[["sections"]])) {
+    cli::cli_abort(c(
+      "Sections already registered on this design.",
+      "x" = "The design object already has sections in the {.field $sections} slot.",
+      "i" = "Create a new design with {.fn creel_design} to register different sections.",
+      "i" = "Use immutable workflow: {.code design2 <- add_sections(design, sections, ...)}"
+    ))
+  }
+
+  # Guard: sections must be a data frame
+  if (!is.data.frame(sections)) {
+    cli::cli_abort(c(
+      "{.arg sections} must be a data frame.",
+      "x" = "{.arg sections} is {.cls {class(sections)[1]}}.",
+      "i" = "Supply a data frame with one row per section."
+    ))
+  }
+
+  # Resolve section_col (required)
+  section_col_name <- resolve_single_col(
+    rlang::enquo(section_col),
+    sections,
+    "section_col",
+    rlang::caller_env()
+  )
+
+  # Validate section_col is character or factor
+  sec_vals <- sections[[section_col_name]]
+  if (!is.character(sec_vals) && !is.factor(sec_vals)) {
+    cli::cli_abort(c(
+      "Section column {.field {section_col_name}} must be character or factor.",
+      "x" = "Got {.cls {class(sec_vals)[1]}}."
+    ))
+  }
+
+  # Validate no duplicate section names
+  dupes <- unique(sec_vals[duplicated(sec_vals)])
+  if (length(dupes) > 0) {
+    cli::cli_abort(c(
+      "Section names must be unique; found {length(dupes)} duplicate value{?s}.",
+      "x" = "{length(dupes)} duplicate{?s}: {.val {dupes}}.",
+      "i" = "Each section must appear exactly once in {.arg sections}."
+    ))
+  }
+
+  # Resolve optional description_col
+  desc_col_quo <- rlang::enquo(description_col)
+  section_description_col <- if (rlang::quo_is_null(desc_col_quo)) {
+    NULL
+  } else {
+    resolve_single_col(desc_col_quo, sections, "description_col", rlang::caller_env())
+  }
+
+  # Resolve optional area_col and validate values
+  area_col_quo <- rlang::enquo(area_col)
+  section_area_col <- if (rlang::quo_is_null(area_col_quo)) {
+    NULL
+  } else {
+    col <- resolve_single_col(area_col_quo, sections, "area_col", rlang::caller_env())
+    vals <- sections[[col]]
+    if (!is.numeric(vals) || any(!is.finite(vals)) || any(vals <= 0)) {
+      cli::cli_abort(c(
+        "{.field {col}} must contain positive finite numeric values (ha).",
+        "x" = "Found {sum(!is.finite(vals) | vals <= 0)} non-positive or non-finite value(s)."
+      ))
+    }
+    col
+  }
+
+  # Resolve optional shoreline_col and validate values
+  shoreline_col_quo <- rlang::enquo(shoreline_col)
+  section_shoreline_col <- if (rlang::quo_is_null(shoreline_col_quo)) {
+    NULL
+  } else {
+    col <- resolve_single_col(
+      shoreline_col_quo, sections, "shoreline_col", rlang::caller_env()
+    )
+    vals <- sections[[col]]
+    if (!is.numeric(vals) || any(!is.finite(vals)) || any(vals <= 0)) {
+      cli::cli_abort(c(
+        "{.field {col}} must contain positive finite numeric values (km).",
+        "x" = "Found {sum(!is.finite(vals) | vals <= 0)} non-positive or non-finite value(s)."
+      ))
+    }
+    col
+  }
+
+  # Build new design with sections populated
+  new_design <- design
+  new_design$sections <- sections
+  new_design$section_col <- section_col_name
+  new_design$section_description_col <- section_description_col
+  new_design$section_area_col <- section_area_col
+  new_design$section_shoreline_col <- section_shoreline_col
 
   new_design
 }
@@ -931,6 +1333,23 @@ add_interviews <- function(design, interviews,
 
   # Validate interview data schema (Date column, numeric column)
   validate_interview_schema(interviews) # nolint: object_usage_linter
+
+  # Guard: validate section values against registered sections (SEC-01)
+  if (!is.null(design[["sections"]]) && !is.null(design[["section_col"]])) {
+    sec_col <- design[["section_col"]]
+    if (sec_col %in% names(interviews)) {
+      valid_sections <- design[["sections"]][[sec_col]]
+      bad_vals <- setdiff(unique(interviews[[sec_col]]), valid_sections)
+      if (length(bad_vals) > 0) {
+        cli::cli_abort(c(
+          "Interview data contains {length(bad_vals)} unregistered section value{?s}.",
+          "x" = "{length(bad_vals)} unknown section{?s}: {.val {bad_vals}}.",
+          "i" = "Registered sections: {.val {valid_sections}}.",
+          "i" = "Check for typos or register the section with {.fn add_sections}."
+        ))
+      }
+    }
+  }
 
   # Resolve tidy selectors
   catch_col <- resolve_single_col(
@@ -1271,6 +1690,15 @@ format.creel_design <- function(x, ...) {
       psu_col <- x$psu_col # nolint: object_usage_linter
       cli::cli_text("Counts: {.val {n_counts}} observation{?s}")
       cli::cli_text("  PSU column: {.field {psu_col}}")
+      if (!is.null(x$count_time_col)) {
+        cli::cli_text("  Count time column: {.field {x$count_time_col}}")
+      }
+      if (!is.null(x$count_type)) {
+        cli::cli_text("  Count type: {.val {x$count_type}}")
+      }
+      if (!is.null(x$circuit_time)) {
+        cli::cli_text("  Circuit time (\u03c4): {x$circuit_time} hours")
+      }
       if (has_survey) {
         survey_class <- class(x$survey)[1] # nolint: object_usage_linter
         cli::cli_text("  Survey: {.cls {survey_class}} (constructed)")
@@ -1369,6 +1797,39 @@ format.creel_design <- function(x, ...) {
       } else {
         cli::cli_text("  release: none")
       }
+    }
+
+    # Sections block
+    has_sections <- !is.null(x[["sections"]]) # nolint: object_usage_linter
+    if (has_sections) {
+      n_sections <- nrow(x[["sections"]]) # nolint: object_usage_linter
+      sec_col <- x[["section_col"]] # nolint: object_usage_linter
+      sec_names <- x[["sections"]][[sec_col]] # nolint: object_usage_linter
+      cli::cli_text("Sections: {.val {n_sections}} registered")
+      for (i in seq_len(n_sections)) {
+        nm <- sec_names[i] # nolint: object_usage_linter
+        meta_parts <- character(0)
+        if (!is.null(x[["section_area_col"]])) {
+          area_val <- x[["sections"]][[x[["section_area_col"]]]][i] # nolint: object_usage_linter
+          meta_parts <- c(meta_parts, paste0(round(area_val, 1), " ha"))
+        }
+        if (!is.null(x[["section_shoreline_col"]])) {
+          sl_val <- x[["sections"]][[x[["section_shoreline_col"]]]][i] # nolint: object_usage_linter
+          meta_parts <- c(meta_parts, paste0(round(sl_val, 1), " km shoreline"))
+        }
+        if (!is.null(x[["section_description_col"]])) {
+          desc_val <- x[["sections"]][[x[["section_description_col"]]]][i] # nolint: object_usage_linter
+          meta_parts <- c(meta_parts, desc_val)
+        }
+        if (length(meta_parts) > 0) {
+          meta_str <- paste(meta_parts, collapse = ", ") # nolint: object_usage_linter
+          cli::cli_text("  {.field {nm}} ({meta_str})")
+        } else {
+          cli::cli_text("  {.field {nm}}")
+        }
+      }
+    } else {
+      cli::cli_text("Sections: {.val none}")
     }
 
     # Bus-Route section
@@ -2084,7 +2545,6 @@ validate_br_interviews_tier3 <- function(interviews, design,
 #'   \code{$catch_*_col} fields attached.
 #'
 #' @examples
-#' \dontrun{
 #' data(example_calendar)
 #' data(example_interviews)
 #' data(example_catch)
@@ -2102,7 +2562,6 @@ validate_br_interviews_tier3 <- function(interviews, design,
 #'   catch_type = catch_type
 #' )
 #' print(design)
-#' }
 #'
 #' @export
 add_catch <- function(design, data,
@@ -2320,7 +2779,6 @@ add_catch <- function(design, data,
 #'   \code{$lengths_*_col} fields attached.
 #'
 #' @examples
-#' \dontrun{
 #' data(example_calendar)
 #' data(example_interviews)
 #' data(example_lengths)
@@ -2340,7 +2798,6 @@ add_catch <- function(design, data,
 #'   release_format = "binned"
 #' )
 #' print(design)
-#' }
 #'
 #' @export
 add_lengths <- function(design, data,

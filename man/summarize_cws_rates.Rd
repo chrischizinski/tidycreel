@@ -47,7 +47,6 @@ The catch filter ensures only species the angler was targeting are counted
 \code{species == species_sought}).
 }
 \examples{
-\dontrun{
 data(example_calendar)
 data(example_interviews)
 data(example_catch)
@@ -61,7 +60,6 @@ d <- add_catch(d, example_catch,
   species = species, count = count, catch_type = catch_type
 )
 summarize_cws_rates(d, by = species_sought)
-}
 
 }
 \seealso{

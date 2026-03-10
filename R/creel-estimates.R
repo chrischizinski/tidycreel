@@ -208,13 +208,20 @@ print.creel_estimates <- function(x, ...) {
 #'   which estimator path was used. Default FALSE for transparent dispatch.
 #'
 #' @return A creel_estimates S3 object (list) with components: estimates
-#'   (tibble with estimate, se, ci_lower, ci_upper, n columns, plus grouping
-#'   columns if \code{by} is specified), method (character: "total"),
+#'   (tibble with estimate, se, se_between, se_within, ci_lower, ci_upper, n
+#'   columns, plus grouping columns if \code{by} is specified),
+#'   method (character: "total"),
 #'   variance_method (character: reflects the variance parameter value used),
 #'   design (reference to source creel_design), conf_level (numeric), and
-#'   by_vars (character vector of grouping variable names or NULL). For
-#'   bus-route designs, a "site_contributions" attribute is also present
-#'   containing per-site e_i, pi_i, and e_i_over_pi_i columns.
+#'   by_vars (character vector of grouping variable names or NULL).
+#'   \code{se_between} is the between-day standard error from
+#'   \code{survey::svytotal()} (equals \code{se} when a single count is
+#'   recorded per PSU). \code{se_within} is the within-day standard error from
+#'   the Rasmussen two-stage formula; it is zero when a single count is
+#'   recorded per PSU and nonzero when \code{count_time_col} is supplied to
+#'   \code{add_counts()}. For bus-route designs, a "site_contributions"
+#'   attribute is also present containing per-site e_i, pi_i, and
+#'   e_i_over_pi_i columns.
 #'
 #' @details
 #' The function performs Tier 2 validation before estimation, issuing warnings
@@ -789,26 +796,25 @@ estimate_cpue <- function(design,
       warn_low_complete_pct(n_complete, n_total) # nolint: object_usage_linter
     } else {
       # Grouped: per-group warnings (before filtering)
-      # Resolve by parameter to column names for grouping
-      by_cols <- tidyselect::eval_select(
-        by_quo,
-        data = design$interviews,
-        allow_rename = FALSE,
-        allow_empty = FALSE,
-        error_call = rlang::caller_env()
-      )
-      by_vars <- names(by_cols)
+      # Resolve by parameter to column names for grouping, handling species col
+      warn_by_info <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
+      warn_by_vars <- warn_by_info$interview_vars # only interview-level vars for grouping
 
-      # Split data by groups and check each group
-      group_list <- split(design$interviews, design$interviews[by_vars], drop = TRUE)
+      if (!is.null(warn_by_vars)) {
+        # Split data by interview-level groups and check each group
+        group_list <- split(design$interviews, design$interviews[warn_by_vars], drop = TRUE)
 
-      for (group_name in names(group_list)) {
-        group_data <- group_list[[group_name]]
-        n_complete_group <- sum(group_data[[trip_status_col]] == "complete", na.rm = TRUE)
-        n_total_group <- sum(!is.na(group_data[[trip_status_col]]))
+        for (group_name in names(group_list)) {
+          group_data <- group_list[[group_name]]
+          n_complete_group <- sum(group_data[[trip_status_col]] == "complete", na.rm = TRUE)
+          n_total_group <- sum(!is.na(group_data[[trip_status_col]]))
 
-        # Warn if this group has low complete trip percentage
-        warn_low_complete_pct(n_complete_group, n_total_group) # nolint: object_usage_linter
+          # Warn if this group has low complete trip percentage
+          warn_low_complete_pct(n_complete_group, n_total_group) # nolint: object_usage_linter
+        }
+      } else {
+        # Only species in by= (no interview grouping) — warn overall
+        warn_low_complete_pct(n_complete, n_total) # nolint: object_usage_linter
       }
     }
 
@@ -974,15 +980,44 @@ estimate_cpue <- function(design,
     design <- design_incomplete
   }
 
-  # Route to grouped or ungrouped estimation
+  # Detect species-level grouping
+  by_info <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
+
+  # Route to species-level or standard estimation
+  if (!is.null(by_info$species_var)) {
+    # Species-level CPUE: requires design$catch
+    if (is.null(design[["catch"]])) {
+      cli::cli_abort(c(
+        "Species-level CPUE requires catch data.",
+        "x" = "{.field species} found in {.arg by} but {.fn add_catch} has not been called.",
+        "i" = "Call {.fn add_catch} before using species grouping in {.fn estimate_cpue}."
+      ))
+    }
+
+    estimates_df <- estimate_cpue_species( # nolint: object_usage_linter
+      design,
+      species_col       = by_info$species_var,
+      interview_by_vars = by_info$interview_vars,
+      variance_method   = variance,
+      conf_level        = conf_level,
+      estimator         = estimator
+    )
+
+    return(new_creel_estimates( # nolint: object_usage_linter
+      estimates       = tibble::as_tibble(estimates_df),
+      method          = "ratio-of-means-cpue-species",
+      variance_method = variance,
+      design          = design,
+      conf_level      = conf_level,
+      by_vars         = by_info$all_vars
+    ))
+  }
+
+  # Standard (non-species) routing
   if (rlang::quo_is_null(by_quo)) {
-    # Ungrouped estimation
-    # Validate sample size
     validate_ratio_sample_size(design, NULL, type = "cpue") # nolint: object_usage_linter
     return(estimate_cpue_total(design, variance, conf_level, estimator)) # nolint: object_usage_linter
   } else {
-    # Grouped estimation
-    # Resolve by parameter to column names
     by_cols <- tidyselect::eval_select(
       by_quo,
       data = design$interviews,
@@ -991,8 +1026,6 @@ estimate_cpue <- function(design,
       error_call = rlang::caller_env()
     )
     by_vars <- names(by_cols)
-
-    # Validate sample size per group
     validate_ratio_sample_size(design, by_vars, type = "cpue") # nolint: object_usage_linter
     return(estimate_cpue_grouped(design, by_vars, variance, conf_level, estimator)) # nolint: object_usage_linter
   }
@@ -1222,6 +1255,176 @@ estimate_harvest <- function(
   }
 }
 
+#' Estimate release rate (RPUE: Released fish Per Unit Effort) from a creel survey design
+#'
+#' Computes release rate estimates with standard errors and confidence intervals
+#' from a creel survey design with attached interview and catch data. Uses
+#' ratio-of-means estimation via survey::svyratio(). RPUE measures the rate of
+#' released fish per unit effort, analogous to HPUE for harvested fish.
+#'
+#' @param design A creel_design object with interviews (via \code{\link{add_interviews}})
+#'   and catch data (via \code{\link{add_catch}}) attached. The catch data must
+#'   include records with \code{catch_type = "released"}.
+#' @param by Optional tidy selector for grouping variables. Accepts bare column
+#'   names (e.g., \code{by = day_type}, \code{by = species}), multiple columns,
+#'   or tidyselect helpers. When species grouping is used, per-species release
+#'   rates are estimated.
+#' @param variance Character string specifying variance estimation method.
+#'   Options: \code{"taylor"} (default), \code{"bootstrap"}, or
+#'   \code{"jackknife"}.
+#' @param conf_level Numeric confidence level (default: 0.95).
+#'
+#' @return A creel_estimates S3 object with method = "ratio-of-means-rpue".
+#'   Estimates tibble has columns: estimate, se, ci_lower, ci_upper, n (plus
+#'   any grouping columns).
+#'
+#' @details
+#' RPUE is estimated as the ratio of total released fish to total effort
+#' (ratio-of-means). Release data comes from \code{add_catch()} records with
+#' \code{catch_type = "released"}. Interviews with no releases contribute 0
+#' to the numerator (zero-fill), ensuring the effort denominator is correct.
+#'
+#' @seealso \code{\link{estimate_harvest}} for harvest rate, \code{\link{add_catch}}
+#'
+#' @examples
+#' library(tidycreel)
+#' data(example_calendar)
+#' data(example_counts)
+#' data(example_interviews)
+#' data(example_catch)
+#'
+#' design <- creel_design(example_calendar, date = date, strata = day_type)
+#' design <- add_counts(design, example_counts)
+#' design <- add_interviews(design, example_interviews,
+#'   catch = catch_total, effort = hours_fished,
+#'   trip_status = trip_status, trip_duration = trip_duration
+#' )
+#' design <- add_catch(design, example_catch,
+#'   catch_uid = interview_id,
+#'   interview_uid = interview_id,
+#'   species = species,
+#'   count = count,
+#'   catch_type = catch_type
+#' )
+#'
+#' # Overall release rate (all species combined)
+#' rpue <- estimate_release_rate(design)
+#' print(rpue)
+#'
+#' # Per-species release rates
+#' rpue_by_species <- estimate_release_rate(design, by = species)
+#' print(rpue_by_species)
+#' @export
+estimate_release_rate <- function(
+  design,
+  by = NULL,
+  variance = "taylor",
+  conf_level = 0.95
+) {
+  by_quo <- rlang::enquo(by)
+
+  # Validate variance parameter
+  valid_methods <- c("taylor", "bootstrap", "jackknife")
+  if (!variance %in% valid_methods) {
+    cli::cli_abort(c(
+      "Invalid variance method: {.val {variance}}",
+      "x" = "Must be one of: {.val {valid_methods}}",
+      "i" = "Default is {.val taylor} (Taylor linearization)"
+    ))
+  }
+
+  # Validate input is creel_design
+  if (!inherits(design, "creel_design")) {
+    cli::cli_abort(c(
+      "{.arg design} must be a {.cls creel_design} object.",
+      "x" = "{.arg design} is {.cls {class(design)[1]}}.",
+      "i" = "Create a design with {.fn creel_design}."
+    ))
+  }
+
+  # Validate catch data exists
+  if (is.null(design[["catch"]])) {
+    cli::cli_abort(c(
+      "No catch data available.",
+      "x" = "Call {.fn add_catch} before estimating release rate.",
+      "i" = "Release data comes from catch records with catch_type = 'released'."
+    ))
+  }
+
+  # Validate interview survey exists
+  if (is.null(design$interview_survey)) {
+    cli::cli_abort(c(
+      "No interview survey design available.",
+      "x" = "Call {.fn add_interviews} before estimating release rate.",
+      "i" = "Release rate requires effort data from interviews."
+    ))
+  }
+
+  # Detect species-level grouping
+  by_info <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
+
+  if (!is.null(by_info$species_var)) {
+    # Species-level release rate: loop over species
+    estimates_df <- estimate_release_rate_species( # nolint: object_usage_linter
+      design,
+      species_col = by_info$species_var,
+      interview_by_vars = by_info$interview_vars,
+      variance_method = variance,
+      conf_level = conf_level
+    )
+    return(new_creel_estimates( # nolint: object_usage_linter
+      estimates       = tibble::as_tibble(estimates_df),
+      method          = "ratio-of-means-rpue",
+      variance_method = variance,
+      design          = design,
+      conf_level      = conf_level,
+      by_vars         = by_info$all_vars
+    ))
+  }
+
+  # Standard (non-species) path: aggregate all released counts per interview
+  release_data <- estimate_release_build_data(design, species = NULL) # nolint: object_usage_linter
+
+  release_data$.release_effort <- release_data[[design$angler_effort_col]]
+
+  # Build temporary design with release count and effort
+  design_rel <- design
+  design_rel$interviews <- release_data
+  design_rel$catch_col <- ".release_count"
+  design_rel$angler_effort_col <- ".release_effort"
+
+  strata_cols <- design$strata_cols
+  strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0L) {
+    stats::reformulate(strata_cols)
+  } else {
+    NULL
+  }
+  design_rel$interview_survey <- build_interview_survey( # nolint: object_usage_linter
+    release_data,
+    strata = strata_formula
+  )
+
+  if (rlang::quo_is_null(by_quo)) {
+    validate_ratio_sample_size(design_rel, NULL, type = "cpue") # nolint: object_usage_linter
+    result <- estimate_cpue_total(design_rel, variance, conf_level) # nolint: object_usage_linter
+    result$method <- "ratio-of-means-rpue"
+    result # nolint: return_linter
+  } else {
+    by_cols <- tidyselect::eval_select(
+      by_quo,
+      data = release_data,
+      allow_rename = FALSE,
+      allow_empty = FALSE,
+      error_call = rlang::caller_env()
+    )
+    by_vars <- names(by_cols)
+    validate_ratio_sample_size(design_rel, by_vars, type = "cpue") # nolint: object_usage_linter
+    result <- estimate_cpue_grouped(design_rel, by_vars, variance, conf_level) # nolint: object_usage_linter
+    result$method <- "ratio-of-means-rpue"
+    result # nolint: return_linter
+  }
+}
+
 # Helper functions ----
 
 #' Rebuild interview survey design with filtered data
@@ -1255,7 +1458,306 @@ rebuild_interview_survey <- function(design, filtered_interviews) {
   design_new
 }
 
+#' Resolve by= selector across both interviews and catch (species) data
+#'
+#' Internal helper: splits a by= quosure into interview-level variables and the
+#' species variable (from design$catch). Returns a named list so callers know
+#' whether to route to species-level estimation.
+#'
+#' @param by_quo A quosure from enquo(by)
+#' @param design A creel_design object
+#'
+#' @return Named list with:
+#'   \item{all_vars}{character vector of all resolved variable names}
+#'   \item{species_var}{character(1) or NULL -- the catch species column name}
+#'   \item{interview_vars}{character vector of non-species variables}
+#'
+#' @keywords internal
+#' @noRd
+resolve_species_by <- function(by_quo, design) {
+  # If no catch data, cannot have species -- resolve normally against interviews
+  if (is.null(design[["catch"]])) {
+    if (rlang::quo_is_null(by_quo)) {
+      return(list(all_vars = NULL, species_var = NULL, interview_vars = NULL))
+    }
+    by_cols <- tidyselect::eval_select(
+      by_quo,
+      data = design$interviews,
+      allow_rename = FALSE,
+      allow_empty = FALSE,
+      error_call = rlang::caller_env()
+    )
+    return(list(
+      all_vars = names(by_cols),
+      species_var = NULL,
+      interview_vars = names(by_cols)
+    ))
+  }
+
+  if (rlang::quo_is_null(by_quo)) {
+    return(list(all_vars = NULL, species_var = NULL, interview_vars = NULL))
+  }
+
+  # Build prototype data frame: interviews columns + species column
+  # This allows eval_select to resolve species names without error
+  species_col_name <- design$catch_species_col
+  prototype <- design$interviews[0L, , drop = FALSE]
+  prototype[[species_col_name]] <- character(0L)
+
+  by_cols <- tidyselect::eval_select(
+    by_quo,
+    data = prototype,
+    allow_rename = FALSE,
+    allow_empty = FALSE,
+    error_call = rlang::caller_env()
+  )
+  all_vars <- names(by_cols)
+
+  # Split: species_var vs interview_vars
+  species_var <- if (species_col_name %in% all_vars) species_col_name else NULL
+  interview_vars <- setdiff(all_vars, species_col_name)
+  if (length(interview_vars) == 0L) interview_vars <- NULL
+
+  list(
+    all_vars = all_vars,
+    species_var = species_var,
+    interview_vars = interview_vars
+  )
+}
+
+#' Build per-species interview data for species-level estimation
+#'
+#' Joins design$catch (filtered to a specific catch_type) to design$interviews
+#' for a single species. Every interview appears in the result; interviews that
+#' did not catch this species receive count = 0. This zero-fill is statistically
+#' required so the effort denominator includes all interviews.
+#'
+#' @param design A creel_design object with catch data attached
+#' @param species_val Character(1). The species value to filter on.
+#' @param catch_type_val Character(1). One of "caught", "harvested", "released".
+#'
+#' @return data.frame with all columns from design$interviews plus a
+#'   ".species_count" column (integer, 0-filled). The interview FK column
+#'   is used for matching.
+#'
+#' @keywords internal
+#' @noRd
+make_species_catch_for_interviews <- function(design, species_val, catch_type_val) { # nolint: object_length_linter
+  catch_df <- design[["catch"]]
+  interviews <- design$interviews
+
+  uid_col <- design$catch_interview_uid_col
+  species_col <- design$catch_species_col
+  count_col <- design$catch_count_col
+  type_col <- design$catch_type_col
+
+  # Filter catch to this species + catch_type
+  species_catch <- catch_df[
+    catch_df[[species_col]] == species_val & catch_df[[type_col]] == catch_type_val,
+    c(uid_col, count_col),
+    drop = FALSE
+  ]
+
+  # Aggregate: sum counts per interview (handles multiple rows same species)
+  if (nrow(species_catch) > 0L) {
+    agg <- stats::aggregate(
+      species_catch[[count_col]],
+      by = list(uid = species_catch[[uid_col]]),
+      FUN = sum
+    )
+    names(agg) <- c(uid_col, ".species_count")
+  } else {
+    agg <- data.frame(
+      stats::setNames(list(integer(0L), integer(0L)), c(uid_col, ".species_count"))
+    )
+  }
+
+  # Left-join to interviews (all interviews appear, 0 for missing)
+  result <- merge(
+    interviews,
+    agg,
+    by = uid_col,
+    all.x = TRUE,
+    sort = FALSE
+  )
+  result$.species_count[is.na(result$.species_count)] <- 0L
+
+  result
+}
+
+#' Build per-interview release count data
+#'
+#' Aggregates design$catch (released rows) to one row per interview.
+#' Zero-fills interviews with no releases.
+#'
+#' @param design A creel_design object with catch data attached
+#' @param species Character(1) or NULL. If non-NULL, filter to this species only.
+#'
+#' @return data.frame: all design$interviews rows + ".release_count" column
+#'
+#' @keywords internal
+#' @noRd
+estimate_release_build_data <- function(design, species = NULL) {
+  catch_df <- design[["catch"]]
+  uid_col <- design$catch_interview_uid_col
+  count_col <- design$catch_count_col
+  type_col <- design$catch_type_col
+  species_col <- design$catch_species_col
+
+  # Filter to released rows (and optionally to a species)
+  released <- catch_df[catch_df[[type_col]] == "released", , drop = FALSE]
+  if (!is.null(species)) {
+    released <- released[released[[species_col]] == species, , drop = FALSE]
+  }
+
+  # Aggregate count per interview
+  if (nrow(released) > 0L) {
+    agg <- stats::aggregate(
+      released[[count_col]],
+      by = list(uid = released[[uid_col]]),
+      FUN = sum
+    )
+    names(agg) <- c(uid_col, ".release_count")
+  } else {
+    agg <- data.frame(
+      stats::setNames(list(integer(0L), integer(0L)), c(uid_col, ".release_count"))
+    )
+  }
+
+  # Left-join to all interviews
+  result <- merge(design$interviews, agg, by = uid_col, all.x = TRUE, sort = FALSE)
+  result$.release_count[is.na(result$.release_count)] <- 0L
+  result
+}
+
 # Internal estimation functions ----
+
+#' Compute within-day variance contribution (Rasmussen 1998)
+#'
+#' Adds the within-day (sub-PSU) variance component to the between-day survey
+#' variance. Called from estimate_effort_total() and estimate_effort_grouped()
+#' when design$within_day_var is non-NULL.
+#'
+#' Formula (per stratum s):
+#'   S2_within_s  = sum(SS_d) / (n_s * (K_bar_s - 1))
+#'   V_within_s   = (N_s / K_bar_s) * S2_within_s
+#'
+#' where:
+#'   n_s    = sampled days in stratum s
+#'   N_s    = total available days in stratum s (from design$calendar)
+#'   K_bar_s = mean counts per day in stratum s
+#'   SS_d   = within-day sum of squared deviations for day d
+#'
+#' Source: Rasmussen, P.W., Staggs, M.D., Beard, T.D., and Newman, S.P. 1998.
+#' Transactions of the American Fisheries Society 127(3):469-480.
+#'
+#' @param design A creel_design object with design$within_day_var populated
+#' @param by_vars Character vector of grouping column names, or NULL for total
+#'
+#' @return Named numeric vector of within-day variance contributions (in total
+#'   scale, matching svytotal() output). Names match group combinations when
+#'   by_vars is not NULL. Returns 0 (or named zeros) when K_bar <= 1.
+#'
+#' @keywords internal
+#' @noRd
+compute_within_day_var_contribution <- function(design, by_vars = NULL) { # nolint: object_length_linter
+  wdv <- design$within_day_var
+  if (is.null(wdv)) {
+    return(0)
+  }
+
+  counts_data <- design$counts
+  strata_cols <- design$strata_cols
+
+  # Get n_avail (available days per stratum) from design$calendar
+  cal <- design$calendar
+  if (length(strata_cols) == 1) {
+    cal$.strata_key <- as.character(cal[[strata_cols]])
+  } else {
+    cal$.strata_key <- do.call(paste, c(cal[strata_cols], sep = "\u001f"))
+  }
+  available_by_strata <- table(cal$.strata_key)
+
+  # Build a combined data frame: counts_data + within_day_var (joined by PSU key)
+  key_cols <- unique(c(design$psu_col, strata_cols))
+  combined <- merge(counts_data, wdv, by = key_cols, all.x = TRUE, sort = FALSE)
+
+  # Days with k_d = 1 -> ss_d = 0 (VAR-03: within-day term is 0 for those days)
+  combined$ss_d[is.na(combined$ss_d)] <- 0
+  combined$k_d[is.na(combined$k_d)] <- 1L
+
+  # VAR-03: emit informational message if mixed k_d
+  mixed_days <- sum(combined$k_d == 1L)
+  if (mixed_days > 0 && mixed_days < nrow(combined)) {
+    cli::cli_inform(
+      c(
+        "i" = paste0(
+          mixed_days,
+          " day(s) had nC = 1 (single count); within-day variance set to 0 for those days."
+        ),
+        "i" = "Total variance includes within-day component only for days with nC >= 2 (VAR-03)."
+      )
+    )
+  }
+
+  # Create stratum key on combined data (matches cal$.strata_key)
+  if (length(strata_cols) == 1) {
+    combined$.strata_key <- as.character(combined[[strata_cols]])
+  } else {
+    combined$.strata_key <- do.call(paste, c(combined[strata_cols], sep = "\u001f"))
+  }
+
+  # Determine grouping: by_vars or strata alone
+  if (is.null(by_vars)) {
+    # Ungrouped: sum within-day variance across strata
+    strata_keys <- unique(combined$.strata_key)
+    v_within_total <- 0
+    for (sk in strata_keys) {
+      rows <- combined$.strata_key == sk
+      n_sampled <- sum(rows)
+      n_avail <- as.integer(available_by_strata[sk])
+      k_d <- combined$k_d[rows]
+      ss_d <- combined$ss_d[rows]
+      k_bar <- mean(k_d)
+      if (k_bar <= 1) next # no within-day component when k_bar = 1
+      s2_within <- sum(ss_d) / (n_sampled * (k_bar - 1))
+      v_within <- (n_avail / k_bar) * s2_within
+      v_within_total <- v_within_total + v_within
+    }
+    v_within_total
+  } else {
+    # Grouped: return named vector matching svyby() row order
+    if (length(by_vars) == 1) {
+      combined$.group_key <- as.character(combined[[by_vars]])
+    } else {
+      combined$.group_key <- do.call(paste, c(combined[by_vars], sep = "\u001f"))
+    }
+    group_keys <- unique(combined$.group_key)
+    v_within_by_group <- stats::setNames(
+      numeric(length(group_keys)), group_keys
+    )
+    for (gk in group_keys) {
+      g_rows <- combined$.group_key == gk
+      g_data <- combined[g_rows, , drop = FALSE]
+      strata_keys_g <- unique(g_data$.strata_key)
+      v_g <- 0
+      for (sk in strata_keys_g) {
+        s_rows <- g_data$.strata_key == sk
+        n_sampled <- sum(s_rows)
+        n_avail <- as.integer(available_by_strata[sk])
+        k_d <- g_data$k_d[s_rows]
+        ss_d <- g_data$ss_d[s_rows]
+        k_bar <- mean(k_d)
+        if (k_bar <= 1) next
+        s2_within <- sum(ss_d) / (n_sampled * (k_bar - 1))
+        v_within <- (n_avail / k_bar) * s2_within
+        v_g <- v_g + v_within
+      }
+      v_within_by_group[gk] <- v_g
+    }
+    v_within_by_group
+  }
+}
 
 #' Ungrouped total estimation (Phase 4 logic)
 #'
@@ -1289,19 +1791,35 @@ estimate_effort_total <- function(design, variance_method, conf_level) {
 
   # Call survey::svytotal (suppress expected survey package warnings)
   svy_result <- suppressWarnings(survey::svytotal(count_formula, svy_design))
-
-  # Extract estimates
   estimate <- as.numeric(coef(svy_result))
-  se <- as.numeric(survey::SE(svy_result))
-  ci <- confint(svy_result, level = conf_level)
-  ci_lower <- ci[1, 1]
-  ci_upper <- ci[1, 2]
+
+  # Between-day variance (from survey package)
+  var_between <- as.numeric(survey::SE(svy_result))^2
+  se_between <- sqrt(var_between)
+
+  # Within-day variance contribution (Rasmussen 1998; 0 when K_bar = 1)
+  var_within <- compute_within_day_var_contribution(design, by_vars = NULL) # nolint: object_usage_linter
+  se_within <- sqrt(var_within)
+
+  # Combined SE and CI (recomputed from total variance)
+  total_var <- var_between + var_within
+  se <- sqrt(total_var)
+
+  # Degrees of freedom: use survey package df (Taylor series linearization)
+  df <- as.numeric(survey::degf(svy_design))
+  alpha <- 1 - conf_level
+  t_crit <- qt(1 - alpha / 2, df = df)
+  ci_lower <- estimate - t_crit * se
+  ci_upper <- estimate + t_crit * se
+
   n <- nrow(counts_data)
 
   # Build estimates tibble
   estimates_df <- tibble::tibble(
     estimate = estimate,
     se = se,
+    se_between = se_between,
+    se_within = se_within,
     ci_lower = ci_lower,
     ci_upper = ci_upper,
     n = n
@@ -1366,9 +1884,41 @@ estimate_effort_grouped <- function(design, by_vars, variance_method, conf_level
   # Extract estimate columns from svyby result
   # When keep.names = FALSE, svyby returns: count_var, "se", "ci_l", "ci_u"
   estimate <- svy_result[[count_var]]
-  se <- svy_result[["se"]]
-  ci_lower <- svy_result[["ci_l"]]
-  ci_upper <- svy_result[["ci_u"]]
+
+  # Between-day variance per group (from svyby "se" column)
+  se_between_vec <- svy_result[["se"]]
+  var_between_vec <- se_between_vec^2
+
+  # Within-day variance per group (Rasmussen 1998; named vector keyed by group)
+  var_within_named <- compute_within_day_var_contribution(design, by_vars = by_vars) # nolint: object_usage_linter
+
+  # Build group keys for the svyby result rows to match var_within_named names
+  if (length(by_vars) == 1) {
+    result_group_keys <- as.character(svy_result[[by_vars]])
+  } else {
+    result_group_keys <- do.call(paste, c(svy_result[by_vars], sep = "\u001f"))
+  }
+
+  # Match within-day variance to svyby row order
+  if (length(var_within_named) >= 1 && !is.null(names(var_within_named))) {
+    var_within_vec <- as.numeric(var_within_named[result_group_keys])
+  } else {
+    var_within_vec <- rep(as.numeric(var_within_named), length(estimate))
+  }
+  var_within_vec[is.na(var_within_vec)] <- 0
+
+  # Combined SE per group
+  total_var_vec <- var_between_vec + var_within_vec
+  se <- sqrt(total_var_vec)
+  se_between <- se_between_vec
+  se_within <- sqrt(var_within_vec)
+
+  # Recompute CI from combined variance (not from svyby ci_l/ci_u)
+  df_val <- as.numeric(survey::degf(svy_design))
+  alpha <- 1 - conf_level
+  t_crit <- qt(1 - alpha / 2, df = df_val)
+  ci_lower <- estimate - t_crit * se
+  ci_upper <- estimate + t_crit * se
 
   # Calculate per-group sample sizes
   # Use aggregate to count rows per group combination
@@ -1386,6 +1936,8 @@ estimate_effort_grouped <- function(design, by_vars, variance_method, conf_level
   estimates_df <- svy_result[by_vars]
   estimates_df$estimate <- estimate
   estimates_df$se <- se
+  estimates_df$se_between <- se_between
+  estimates_df$se_within <- se_within
   estimates_df$ci_lower <- ci_lower
   estimates_df$ci_upper <- ci_upper
 
@@ -1394,7 +1946,7 @@ estimate_effort_grouped <- function(design, by_vars, variance_method, conf_level
 
   # Convert to tibble and reorder columns (group cols, then estimate cols, then n)
   estimates_df <- tibble::as_tibble(estimates_df)
-  col_order <- c(by_vars, "estimate", "se", "ci_lower", "ci_upper", "n")
+  col_order <- c(by_vars, "estimate", "se", "se_between", "se_within", "ci_lower", "ci_upper", "n")
   estimates_df <- estimates_df[col_order]
 
   # Return creel_estimates object
@@ -1671,6 +2223,168 @@ estimate_cpue_grouped <- function(design, by_vars, variance_method, conf_level,
       by_vars = by_vars
     )
   }
+}
+
+#' Species-level CPUE estimation (loops over species)
+#'
+#' @param design A creel_design with non-NULL catch slot.
+#' @param species_col Character(1). Name of species column in design$catch.
+#' @param interview_by_vars Character vector or NULL. Calendar/interview grouping vars.
+#' @param variance_method Character. Variance method.
+#' @param conf_level Numeric.
+#' @param estimator Character. "ratio-of-means" or "mor".
+#'
+#' @return tibble with species column first, then interview_by_vars, then estimate/se/ci/n.
+#'
+#' @keywords internal
+#' @noRd
+estimate_cpue_species <- function(design, species_col, interview_by_vars,
+                                  variance_method, conf_level,
+                                  estimator = "ratio-of-means") {
+  all_species <- sort(unique(design[["catch"]][[species_col]]))
+
+  results_list <- vector("list", length(all_species))
+
+  for (i in seq_along(all_species)) {
+    sp <- all_species[[i]]
+
+    # Build per-species interview data (zero-filled)
+    sp_data <- make_species_catch_for_interviews(design, sp, "caught") # nolint: object_usage_linter
+
+    # Modify a temporary design with .species_count as catch column
+    design_sp <- design
+    design_sp$interviews <- sp_data
+    design_sp$catch_col <- ".species_count"
+
+    # Rebuild survey design for this species' data
+    strata_cols <- design$strata_cols
+    strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0L) {
+      stats::reformulate(strata_cols)
+    } else {
+      NULL
+    }
+    design_sp$interview_survey <- build_interview_survey( # nolint: object_usage_linter
+      sp_data,
+      strata = strata_formula
+    )
+
+    validate_ratio_sample_size(design_sp, interview_by_vars, type = "cpue") # nolint: object_usage_linter
+
+    if (is.null(interview_by_vars)) {
+      result <- estimate_cpue_total(design_sp, variance_method, conf_level, estimator) # nolint: object_usage_linter
+    } else {
+      result <- estimate_cpue_grouped(design_sp, interview_by_vars, variance_method, conf_level, estimator) # nolint: object_usage_linter
+    }
+
+    sp_df <- result$estimates
+    sp_df[[species_col]] <- sp
+    sp_df <- sp_df[c(species_col, setdiff(names(sp_df), species_col))]
+
+    results_list[[i]] <- sp_df
+  }
+
+  do.call(rbind, results_list)
+}
+
+#' Species-level release rate estimation (loops over species)
+#'
+#' @keywords internal
+#' @noRd
+estimate_release_rate_species <- function(design, species_col, interview_by_vars,
+                                          variance_method, conf_level) {
+  all_species <- sort(unique(design[["catch"]][[species_col]]))
+
+  results_list <- vector("list", length(all_species))
+
+  for (i in seq_along(all_species)) {
+    sp <- all_species[[i]]
+
+    # Build per-species release interview data (zero-filled)
+    sp_data <- estimate_release_build_data(design, species = sp) # nolint: object_usage_linter
+
+    sp_data$.release_effort <- sp_data[[design$angler_effort_col]]
+
+    design_sp <- design
+    design_sp$interviews <- sp_data
+    design_sp$catch_col <- ".release_count"
+    design_sp$angler_effort_col <- ".release_effort"
+
+    strata_cols <- design$strata_cols
+    strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0L) {
+      stats::reformulate(strata_cols)
+    } else {
+      NULL
+    }
+    design_sp$interview_survey <- build_interview_survey( # nolint: object_usage_linter
+      sp_data,
+      strata = strata_formula
+    )
+
+    validate_ratio_sample_size(design_sp, interview_by_vars, type = "cpue") # nolint: object_usage_linter
+
+    if (is.null(interview_by_vars)) {
+      result <- estimate_cpue_total(design_sp, variance_method, conf_level) # nolint: object_usage_linter
+    } else {
+      result <- estimate_cpue_grouped(design_sp, interview_by_vars, variance_method, conf_level) # nolint: object_usage_linter
+    }
+
+    sp_df <- result$estimates
+    sp_df[[species_col]] <- sp
+    sp_df <- sp_df[c(species_col, setdiff(names(sp_df), species_col))]
+
+    results_list[[i]] <- sp_df
+  }
+
+  do.call(rbind, results_list)
+}
+
+#' Species-level harvest rate estimation (loops over species, uses "harvested" catch_type)
+#'
+#' @keywords internal
+#' @noRd
+estimate_hpue_species <- function(design, species_col, interview_by_vars,
+                                  variance_method, conf_level) {
+  all_species <- sort(unique(design[["catch"]][[species_col]]))
+  results_list <- vector("list", length(all_species))
+
+  for (i in seq_along(all_species)) {
+    sp <- all_species[[i]]
+
+    # Build per-species harvest interview data (zero-filled, harvested only)
+    sp_data <- make_species_catch_for_interviews(design, sp, "harvested") # nolint: object_usage_linter
+
+    design_sp <- design
+    design_sp$interviews <- sp_data
+    design_sp$catch_col <- ".species_count"
+    design_sp$harvest_col <- ".species_count"
+
+    strata_cols <- design$strata_cols
+    strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0L) {
+      stats::reformulate(strata_cols)
+    } else {
+      NULL
+    }
+    design_sp$interview_survey <- build_interview_survey( # nolint: object_usage_linter
+      sp_data,
+      strata = strata_formula
+    )
+
+    validate_ratio_sample_size(design_sp, interview_by_vars, type = "harvest") # nolint: object_usage_linter
+
+    if (is.null(interview_by_vars)) {
+      result <- estimate_harvest_total(design_sp, variance_method, conf_level) # nolint: object_usage_linter
+    } else {
+      result <- estimate_harvest_grouped(design_sp, interview_by_vars, variance_method, conf_level) # nolint: object_usage_linter
+    }
+
+    sp_df <- result$estimates
+    sp_df[[species_col]] <- sp
+    sp_df <- sp_df[c(species_col, setdiff(names(sp_df), species_col))]
+
+    results_list[[i]] <- sp_df
+  }
+
+  do.call(rbind, results_list)
 }
 
 #' Ungrouped harvest (HPUE) estimation using ratio-of-means

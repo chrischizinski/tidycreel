@@ -132,7 +132,34 @@ estimate_total_catch <- function(
   # Validate design compatibility (counts AND interviews required)
   validate_design_compatibility(design) # nolint: object_usage_linter
 
-  # Route to grouped or ungrouped estimation
+  # Detect species-level grouping
+  by_info <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
+
+  if (!is.null(by_info$species_var)) {
+    if (is.null(design[["catch"]])) {
+      cli::cli_abort(c(
+        "Species-level total catch requires catch data.",
+        "x" = "Call {.fn add_catch} before using species grouping in {.fn estimate_total_catch}."
+      ))
+    }
+    estimates_df <- estimate_total_catch_species( # nolint: object_usage_linter
+      design,
+      species_col       = by_info$species_var,
+      interview_by_vars = by_info$interview_vars,
+      variance_method   = variance,
+      conf_level        = conf_level
+    )
+    return(new_creel_estimates( # nolint: object_usage_linter
+      estimates       = tibble::as_tibble(estimates_df),
+      method          = "product-total-catch",
+      variance_method = variance,
+      design          = design,
+      conf_level      = conf_level,
+      by_vars         = by_info$all_vars
+    ))
+  }
+
+  # Standard (non-species) routing
   if (rlang::quo_is_null(by_quo)) {
     # Ungrouped estimation
     return(estimate_total_catch_ungrouped(design, variance, conf_level)) # nolint: object_usage_linter
@@ -288,4 +315,92 @@ estimate_total_catch_grouped <- function(design, by_vars, variance_method, conf_
     conf_level = conf_level,
     by_vars = by_vars
   )
+}
+
+#' Species-level total catch estimation
+#'
+#' @keywords internal
+#' @noRd
+estimate_total_catch_species <- function(design, species_col, interview_by_vars,
+                                         variance_method, conf_level) {
+  all_species <- sort(unique(design[["catch"]][[species_col]]))
+  results_list <- vector("list", length(all_species))
+
+  # Get all-species CPUE in one call (covers all species in one loop)
+  all_cpue_df <- estimate_cpue_species( # nolint: object_usage_linter
+    design,
+    species_col       = species_col,
+    interview_by_vars = interview_by_vars,
+    variance_method   = variance_method,
+    conf_level        = conf_level
+  )
+
+  # Get effort estimate (not species-grouped)
+  if (is.null(interview_by_vars)) {
+    effort_result <- estimate_effort(design, variance = variance_method, conf_level = conf_level) # nolint: object_usage_linter
+  } else {
+    by_sym <- if (length(interview_by_vars) == 1L) {
+      rlang::sym(interview_by_vars)
+    } else {
+      rlang::syms(interview_by_vars)
+    }
+    effort_result <- estimate_effort(design, by = !!by_sym, variance = variance_method, conf_level = conf_level) # nolint: object_usage_linter
+  }
+  effort_df <- effort_result$estimates
+
+  for (i in seq_along(all_species)) {
+    sp <- all_species[[i]]
+
+    cpue_sp_df <- all_cpue_df[all_cpue_df[[species_col]] == sp, , drop = FALSE]
+
+    if (is.null(interview_by_vars)) {
+      effort_est <- effort_df$estimate
+      cpue_est <- cpue_sp_df$estimate
+      effort_se <- effort_df$se
+      cpue_se <- cpue_sp_df$se
+      estimate <- effort_est * cpue_est
+      pv <- (effort_est^2 * cpue_se^2) + (cpue_est^2 * effort_se^2)
+      se <- sqrt(pv)
+      z <- stats::qnorm(1 - (1 - conf_level) / 2)
+      sp_result <- data.frame(
+        estimate = estimate, se = se,
+        ci_lower = estimate - z * se, ci_upper = estimate + z * se,
+        n = cpue_sp_df$n, stringsAsFactors = FALSE
+      )
+    } else {
+      cpue_no_sp <- cpue_sp_df[, setdiff(names(cpue_sp_df), species_col), drop = FALSE]
+      merged <- merge(
+        effort_df, cpue_no_sp,
+        by = interview_by_vars, suffixes = c("_effort", "_cpue"), sort = FALSE
+      )
+      n_groups <- nrow(merged)
+      estimates_list <- vector("list", n_groups)
+      for (j in seq_len(n_groups)) {
+        e_est <- merged$estimate_effort[j]
+        c_est <- merged$estimate_cpue[j]
+        e_se <- merged$se_effort[j]
+        c_se <- merged$se_cpue[j]
+        est <- e_est * c_est
+        pv <- (e_est^2 * c_se^2) + (c_est^2 * e_se^2)
+        z <- stats::qnorm(1 - (1 - conf_level) / 2)
+        estimates_list[[j]] <- list(
+          estimate = est, se = sqrt(pv),
+          ci_lower = est - z * sqrt(pv), ci_upper = est + z * sqrt(pv),
+          n = merged$n_cpue[j]
+        )
+      }
+      sp_result <- tibble::as_tibble(merged[interview_by_vars])
+      sp_result$estimate <- sapply(estimates_list, `[[`, "estimate")
+      sp_result$se <- sapply(estimates_list, `[[`, "se")
+      sp_result$ci_lower <- sapply(estimates_list, `[[`, "ci_lower")
+      sp_result$ci_upper <- sapply(estimates_list, `[[`, "ci_upper")
+      sp_result$n <- sapply(estimates_list, `[[`, "n")
+    }
+
+    sp_result[[species_col]] <- sp
+    sp_result <- sp_result[c(species_col, setdiff(names(sp_result), species_col))]
+    results_list[[i]] <- sp_result
+  }
+
+  do.call(rbind, results_list)
 }
