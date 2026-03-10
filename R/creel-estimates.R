@@ -1,6 +1,6 @@
 # Imports ----
 
-#' @importFrom stats coef confint reformulate
+#' @importFrom stats coef confint qt reformulate setNames vcov
 NULL
 
 # creel_estimates S3 class ----
@@ -206,6 +206,21 @@ print.creel_estimates <- function(x, ...) {
 #'   0.95 for 95% confidence intervals). Must be between 0 and 1.
 #' @param verbose Logical. If TRUE, prints an informational message identifying
 #'   which estimator path was used. Default FALSE for transparent dispatch.
+#' @param aggregate_sections Logical. If TRUE (default), a \code{.lake_total}
+#'   row is appended aggregating across all sections. Ignored for non-sectioned
+#'   designs.
+#' @param method Character string specifying how the lake-wide total SE is
+#'   computed when \code{aggregate_sections = TRUE}. \code{"correlated"}
+#'   (default) uses \code{svyby(covmat=TRUE)} + \code{svycontrast()} for
+#'   covariance-aware aggregation (recommended for shared-calendar NGPC
+#'   designs). \code{"independent"} uses Cochran 5.2 \code{sqrt(sum(SE_h^2))}
+#'   as a documented approximation for genuinely independent section designs.
+#'   Ignored for non-sectioned designs.
+#' @param missing_sections Character string controlling behavior when a
+#'   registered section has no count observations. \code{"warn"} (default)
+#'   emits a \code{cli_warn()} and inserts an NA row with
+#'   \code{data_available = FALSE}. \code{"error"} aborts with
+#'   \code{cli_abort()}. Ignored for non-sectioned designs.
 #'
 #' @return A creel_estimates S3 object (list) with components: estimates
 #'   (tibble with estimate, se, se_between, se_within, ci_lower, ci_upper, n
@@ -289,7 +304,9 @@ print.creel_estimates <- function(x, ...) {
 #' # Verbose dispatch message (shows which estimator was used for bus-route designs)
 #' result_verbose <- estimate_effort(design_with_counts, verbose = TRUE)
 #' @export
-estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level = 0.95, verbose = FALSE) {
+estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level = 0.95,
+                            verbose = FALSE, aggregate_sections = TRUE,
+                            method = "correlated", missing_sections = "warn") {
   # Capture by parameter BEFORE validation
   by_quo <- rlang::enquo(by)
 
@@ -355,6 +372,13 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
     }
 
     return(estimate_effort_br(design, by_vars_br, variance, conf_level, verbose)) # nolint: object_usage_linter
+  }
+
+  # Section dispatch (v0.7.0+ — only fires when add_sections() was called)
+  if (!is.null(design[["sections"]])) {
+    return(estimate_effort_sections( # nolint: object_usage_linter
+      design, variance, conf_level, aggregate_sections, method, missing_sections
+    ))
   }
 
   # Tier 2 validation - data quality checks (warnings only)
@@ -1831,6 +1855,167 @@ compute_within_day_var_contribution <- function(design, by_vars = NULL) { # noli
     }
     v_within_by_group
   }
+}
+
+#' Per-section effort estimation orchestrator (Phase 39 logic)
+#'
+#' Dispatched from estimate_effort() when design$sections is non-NULL.
+#' Loops over registered sections, calls rebuild_counts_survey() + estimate_effort_total()
+#' per section, handles missing sections, aggregates to lake total via
+#' aggregate_section_totals(), and returns a creel_estimates object.
+#'
+#' @param design A creel_design object with sections slot set by add_sections()
+#' @param variance_method Character(1) — "taylor", "bootstrap", or "jackknife"
+#' @param conf_level Numeric confidence level
+#' @param aggregate_sections Logical — append .lake_total row?
+#' @param method Character(1) — "correlated" or "independent"
+#' @param missing_sections Character(1) — "warn" or "error"
+#'
+#' @return A creel_estimates S3 object with method = "total-sections"
+#'
+#' @keywords internal
+#' @noRd
+estimate_effort_sections <- function(design, variance_method, conf_level,
+                                     aggregate_sections, method, missing_sections) {
+  # NULL guard (defensive; dispatch should prevent this firing)
+  if (is.null(design[["sections"]])) {
+    stop("sections dispatch called on non-section design")
+  }
+
+  section_col <- design[["section_col"]]
+  registered_sections <- design$sections[[section_col]]
+  present_sections <- unique(design$counts[[section_col]])
+  absent_sections <- setdiff(registered_sections, present_sections)
+
+  # Handle missing sections
+  if (length(absent_sections) > 0) {
+    n_absent <- length(absent_sections) # nolint: object_usage_linter
+    if (missing_sections == "error") {
+      cli::cli_abort(c(
+        "{n_absent} missing section(s) in count data.",
+        "x" = "Section(s) not found: {.val {absent_sections}}",
+        "i" = "All registered sections must have count observations, or use {.arg missing_sections = 'warn'}."
+      ))
+    } else {
+      cli::cli_warn(c(
+        "{n_absent} missing section(s) in count data.",
+        "!" = "Section(s) not found: {.val {absent_sections}}",
+        "i" = "Inserting NA row(s) with {.field data_available = FALSE}."
+      ))
+    }
+  }
+
+  # Identify count variable (same logic as estimate_effort_total)
+  counts_data <- design$counts
+  excluded_cols <- c(design$date_col, design$strata_cols, design$psu_col, section_col)
+  numeric_cols <- names(counts_data)[sapply(counts_data, is.numeric)]
+  count_vars <- setdiff(numeric_cols, excluded_cols)
+
+  if (length(count_vars) == 0) {
+    cli::cli_abort(c(
+      "No count variable found in count data.",
+      "x" = "Count data must have at least one numeric column.",
+      "i" = "Numeric columns found: {.field {numeric_cols}}",
+      "i" = "Design metadata columns: {.field {excluded_cols}}"
+    ))
+  }
+  count_var <- count_vars[1]
+  count_formula <- stats::reformulate(count_var)
+  section_formula <- stats::reformulate(section_col)
+
+  # Full-design survey for lake total denominator (prop_of_lake_total)
+  full_svy_design <- get_variance_design(design$survey, variance_method) # nolint: object_usage_linter
+  lake_total_svy <- suppressWarnings(survey::svytotal(count_formula, full_svy_design))
+  lake_total_est <- as.numeric(coef(lake_total_svy))
+
+  # Loop over registered sections
+  section_rows <- vector("list", length(registered_sections))
+  names(section_rows) <- registered_sections
+
+  for (sec in registered_sections) {
+    if (sec %in% absent_sections) {
+      # Build NA row for missing section
+      section_rows[[sec]] <- tibble::tibble(
+        section = sec,
+        estimate = NA_real_,
+        se = NA_real_,
+        se_between = NA_real_,
+        se_within = NA_real_,
+        ci_lower = NA_real_,
+        ci_upper = NA_real_,
+        n = 0L,
+        prop_of_lake_total = NA_real_,
+        data_available = FALSE
+      )
+    } else {
+      # Build filtered section design and estimate
+      sec_design <- suppressWarnings(rebuild_counts_survey(design, sec)) # nolint: object_usage_linter
+      sec_result <- estimate_effort_total(sec_design, variance_method, conf_level) # nolint: object_usage_linter
+      row <- sec_result$estimates
+      prop <- row$estimate / lake_total_est
+      section_rows[[sec]] <- tibble::tibble(
+        section = sec,
+        estimate = row$estimate,
+        se = row$se,
+        se_between = row$se_between,
+        se_within = row$se_within,
+        ci_lower = row$ci_lower,
+        ci_upper = row$ci_upper,
+        n = row$n,
+        prop_of_lake_total = prop,
+        data_available = TRUE
+      )
+    }
+  }
+
+  # Combine section rows
+  result_df <- dplyr::bind_rows(section_rows)
+
+  # Append .lake_total row if requested
+  if (aggregate_sections) {
+    # Use only present sections for aggregation
+    present_design_svy <- full_svy_design
+    # Filter to present sections only for the section formula (absent sections skipped)
+    agg <- suppressWarnings(aggregate_section_totals( # nolint: object_usage_linter
+      by_formula      = section_formula,
+      full_design_svy = present_design_svy,
+      count_formula   = count_formula,
+      method          = method
+    ))
+    lake_est <- agg$estimate
+    lake_se <- agg$se
+
+    # CI for lake total using full-design df
+    df <- as.numeric(survey::degf(full_svy_design))
+    alpha <- 1 - conf_level
+    t_crit <- qt(1 - alpha / 2, df = df)
+    lake_ci_lower <- lake_est - t_crit * lake_se
+    lake_ci_upper <- lake_est + t_crit * lake_se
+
+    lake_row <- tibble::tibble(
+      section = ".lake_total",
+      estimate = lake_est,
+      se = lake_se,
+      se_between = NA_real_,
+      se_within = NA_real_,
+      ci_lower = lake_ci_lower,
+      ci_upper = lake_ci_upper,
+      n = nrow(design$counts),
+      prop_of_lake_total = 1.0,
+      data_available = TRUE
+    )
+    result_df <- dplyr::bind_rows(result_df, lake_row)
+  }
+
+  # Return creel_estimates object
+  new_creel_estimates( # nolint: object_usage_linter
+    estimates = result_df,
+    method = "total-sections",
+    variance_method = variance_method,
+    design = design,
+    conf_level = conf_level,
+    by_vars = NULL
+  )
 }
 
 #' Ungrouped total estimation (Phase 4 logic)

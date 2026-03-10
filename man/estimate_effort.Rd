@@ -9,7 +9,10 @@ estimate_effort(
   by = NULL,
   variance = "taylor",
   conf_level = 0.95,
-  verbose = FALSE
+  verbose = FALSE,
+  aggregate_sections = TRUE,
+  method = "correlated",
+  missing_sections = "warn"
 )
 }
 \arguments{
@@ -32,6 +35,24 @@ Options: \code{"taylor"} (default, Taylor linearization),
 
 \item{verbose}{Logical. If TRUE, prints an informational message identifying
 which estimator path was used. Default FALSE for transparent dispatch.}
+
+\item{aggregate_sections}{Logical. If TRUE (default), a \code{.lake_total}
+row is appended aggregating across all sections. Ignored for non-sectioned
+designs.}
+
+\item{method}{Character string specifying how the lake-wide total SE is
+computed when \code{aggregate_sections = TRUE}. \code{"correlated"}
+(default) uses \code{svyby(covmat=TRUE)} + \code{svycontrast()} for
+covariance-aware aggregation (recommended for shared-calendar NGPC
+designs). \code{"independent"} uses Cochran 5.2 \code{sqrt(sum(SE_h^2))}
+as a documented approximation for genuinely independent section designs.
+Ignored for non-sectioned designs.}
+
+\item{missing_sections}{Character string controlling behavior when a
+registered section has no count observations. \code{"warn"} (default)
+emits a \code{cli_warn()} and inserts an NA row with
+\code{data_available = FALSE}. \code{"error"} aborts with
+\code{cli_abort()}. Ignored for non-sectioned designs.}
 }
 \value{
 A creel_estimates S3 object (list) with components: estimates

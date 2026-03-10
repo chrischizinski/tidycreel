@@ -1340,14 +1340,22 @@ test_that("SECT-02b: method='independent' SE equals Cochran 5.2 sqrt(sum(section
 
 test_that("SECT-03a: missing section produces NA row with data_available=FALSE and cli_warn", {
   design <- make_section_design_with_missing_section()
-  expect_warning(
-    result <- suppressWarnings(estimate_effort( # nolint: object_usage_linter
+  # Capture warnings: outer handler sees all; muffles survey pkg warnings
+  warns <- character(0)
+  result <- withCallingHandlers(
+    estimate_effort( # nolint: object_usage_linter
       design,
       aggregate_sections = TRUE,
       missing_sections = "warn"
-    )),
-    regexp = "South|missing|section"
+    ),
+    warning = function(w) {
+      warns <<- c(warns, conditionMessage(w))
+      # Muffle all — we only care about the captured messages
+      invokeRestart("muffleWarning")
+    }
   )
+  # Confirm cli_warn fired for missing section
+  expect_true(any(grepl("South|missing|section", warns, ignore.case = TRUE)))
   south_row <- result$estimates[result$estimates$section == "South", ]
   expect_equal(nrow(south_row), 1L)
   expect_true(is.na(south_row$estimate))
