@@ -1294,3 +1294,96 @@ test_that("progressive Ê_d computation matches Pope et al. worked example (EFF-
   expect_true("se_between" %in% names(result$estimates))
   expect_true("se_within" %in% names(result$estimates))
 })
+
+# Section effort estimation tests (SECT-01 through SECT-05) ----
+
+test_that("SECT-01: estimate_effort on 3-section design returns 4-row tibble with section column", {
+  design <- make_3section_design_with_counts()
+  result <- suppressWarnings(estimate_effort(
+    design, # nolint: object_usage_linter
+    aggregate_sections = TRUE,
+    method = "correlated",
+    missing_sections = "warn"
+  ))
+  expect_equal(nrow(result$estimates), 4L)
+  expect_true("section" %in% names(result$estimates))
+  expect_true(".lake_total" %in% result$estimates$section)
+})
+
+test_that("SECT-02a: .lake_total SE from method='correlated' differs from naive sqrt(sum(section_se^2))", {
+  design <- make_3section_design_with_counts()
+  result_corr <- suppressWarnings(estimate_effort(
+    design, # nolint: object_usage_linter
+    aggregate_sections = TRUE,
+    method = "correlated"
+  ))
+  # Extract section rows (not .lake_total) and compute naive SE
+  section_rows <- result_corr$estimates[result_corr$estimates$section != ".lake_total", ]
+  naive_se <- sqrt(sum(section_rows$se^2))
+  lake_se_corr <- result_corr$estimates$se[result_corr$estimates$section == ".lake_total"]
+  # Correlated SE != naive (cross-section covariance adjusts the total)
+  expect_false(isTRUE(all.equal(lake_se_corr, naive_se, tolerance = 1e-10)))
+})
+
+test_that("SECT-02b: method='independent' SE equals Cochran 5.2 sqrt(sum(section_se^2))", {
+  design <- make_3section_design_with_counts()
+  result_ind <- suppressWarnings(estimate_effort(
+    design, # nolint: object_usage_linter
+    aggregate_sections = TRUE,
+    method = "independent"
+  ))
+  section_rows <- result_ind$estimates[result_ind$estimates$section != ".lake_total", ]
+  naive_se <- sqrt(sum(section_rows$se^2))
+  lake_se_ind <- result_ind$estimates$se[result_ind$estimates$section == ".lake_total"]
+  expect_equal(lake_se_ind, naive_se, tolerance = 1e-10)
+})
+
+test_that("SECT-03a: missing section produces NA row with data_available=FALSE and cli_warn", {
+  design <- make_section_design_with_missing_section()
+  expect_warning(
+    result <- suppressWarnings(estimate_effort( # nolint: object_usage_linter
+      design,
+      aggregate_sections = TRUE,
+      missing_sections = "warn"
+    )),
+    regexp = "South|missing|section"
+  )
+  south_row <- result$estimates[result$estimates$section == "South", ]
+  expect_equal(nrow(south_row), 1L)
+  expect_true(is.na(south_row$estimate))
+  expect_false(south_row$data_available)
+})
+
+test_that("SECT-03b: missing_sections='error' aborts with cli_abort when section absent", {
+  design <- make_section_design_with_missing_section()
+  expect_error(
+    estimate_effort( # nolint: object_usage_linter
+      design,
+      missing_sections = "error"
+    ),
+    regexp = "South|missing|section"
+  )
+})
+
+test_that("SECT-04: non-sectioned design produces identical results (zero regression)", {
+  design <- make_test_design_with_counts()
+  result <- suppressWarnings(estimate_effort(design)) # nolint: object_usage_linter
+  # Byte-for-byte: method = "total", no section column
+  expect_equal(result$method, "total")
+  expect_false("section" %in% names(result$estimates))
+  expect_true(is.numeric(result$estimates$estimate))
+  expect_true(is.numeric(result$estimates$se))
+})
+
+test_that("SECT-05: prop_of_lake_total column present and sums to 1.0 across present sections", {
+  design <- make_3section_design_with_counts()
+  result <- suppressWarnings(estimate_effort(
+    design, # nolint: object_usage_linter
+    aggregate_sections = TRUE,
+    method = "correlated"
+  ))
+  expect_true("prop_of_lake_total" %in% names(result$estimates))
+  # Present section rows only (not .lake_total) should sum to 1.0
+  section_rows <- result$estimates[result$estimates$section != ".lake_total", ]
+  expect_equal(sum(section_rows$prop_of_lake_total), 1.0, tolerance = 1e-6)
+})
