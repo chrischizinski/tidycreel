@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: completed
-stopped_at: Completed 40-01-PLAN.md (rename estimate_cpue/estimate_harvest)
-last_updated: "2026-03-11T17:12:14.952Z"
-last_activity: 2026-03-10 — Phase 39 Plan 03 complete (estimate_effort_sections)
+stopped_at: Completed 40-02-PLAN.md (section dispatch for rate estimators)
+last_updated: "2026-03-11T17:28:05.070Z"
+last_activity: 2026-03-11 — Phase 40 Plan 01 complete (rename estimate_cpue/estimate_harvest)
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 4
-  completed_plans: 3
+  completed_plans: 4
 ---
 
 # Project State
@@ -24,16 +24,16 @@ See: .planning/PROJECT.md (updated 2026-03-10)
 
 ## Current Position
 
-Phase: Phase 40 — Interview-Based Rate Estimators (in progress)
-Plan: 40-01 complete (rename); 40-02 pending (section dispatch)
-Status: Phase 40 Plan 01 complete; estimate_catch_rate and estimate_harvest_rate exported
-Last activity: 2026-03-11 — Phase 40 Plan 01 complete (rename estimate_cpue/estimate_harvest)
+Phase: Phase 41 — Product Estimators (pending)
+Plan: Phase 40 complete (2/2 plans done); Phase 41 pending
+Status: Phase 40 complete; all rate estimators section-aware (RATE-01, RATE-02, RATE-03 done)
+Last activity: 2026-03-11 — Phase 40 Plan 02 complete (section dispatch for rate estimators)
 
 ### Progress Bar
 
 ```
 Phase 39 [==========] Complete (39-01, 39-02, 39-03 all done)
-Phase 40 [=====-----] Plan 01/2 complete
+Phase 40 [==========] Complete (40-01, 40-02 done)
 Phase 41 [----------] Not started
 Phase 42 [----------] Not started
 ```
@@ -66,6 +66,7 @@ Phase 42 [----------] Not started
 | Phase 39-section-effort-estimation P02 | 5 | 2 tasks | 1 files |
 | Phase 39-section-effort-estimation P03 | 13 | 2 tasks | 4 files |
 | Phase 40-interview-based-rate-estimators P01 | 18 | 2 tasks | 26 files |
+| Phase 40-interview-based-rate-estimators P02 | 45 | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -170,8 +171,8 @@ None currently.
 
 ## Session Continuity
 
-Last session: 2026-03-11T17:12:14.949Z
-Stopped at: Completed 40-01-PLAN.md (rename estimate_cpue/estimate_harvest)
+Last session: 2026-03-11T17:28:05.067Z
+Stopped at: Completed 40-02-PLAN.md (section dispatch for rate estimators)
 Resume file: None
 Next step: `/gsd:plan-phase 39` to plan remaining Phase 39 work (SECT-01 through SECT-05)
 
@@ -234,3 +235,11 @@ Next step: `/gsd:plan-phase 39` to plan remaining Phase 39 work (SECT-01 through
 - `merged$estimate_cpue` column name preserved in creel-estimates-total-catch.R — derives from `merge(suffixes=c("_effort","_cpue"))` applied to the `estimate` column, not from the public function name; renaming it would break delta-method computation
 - Unexported helpers keep their current names (estimate_cpue_total, estimate_cpue_grouped, estimate_cpue_species, estimate_harvest_total, estimate_harvest_grouped) per locked design decision; only public-API functions were renamed
 - bus-route-surveys.Rmd required update not listed in plan's file list — auto-fixed (Rule 1) during Task 2 R CMD check run
+
+### Decisions (40-02)
+
+- No .lake_total row from rate section helpers — catch/harvest/release rates are not additive (ratios, not sums); lake total requires separate unsectioned call
+- Species + section dispatch deferred to v0.8.0 for harvest/release rate; catch rate supports species + section in v0.7.0 via estimate_cpue_species()
+- Section dispatch guard placed after trip-status filtering block in all three public functions — uses post-filtered design so sections operate on correct interview subset
+- Fixtures duplicated across test files (not shared helper-*.R) — consistent with existing project pattern; 3 files are self-contained
+- n_absent uses # nolint: object_usage_linter in cli_warn NSE string interpolation — same pattern as Phase 39-03 (n_absent in estimate_effort_sections)

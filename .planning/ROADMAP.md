@@ -102,7 +102,7 @@ See: [.planning/milestones/v0.4.0-ROADMAP.md](milestones/v0.4.0-ROADMAP.md)
   - [x] Phase 39 Plan 01: add_sections() infrastructure — COMPLETE 2026-03-10
   - [x] Phase 39 Plan 02: Section test fixtures and failing stubs (SECT-01..05) (completed 2026-03-10)
   - [x] Phase 39 Plan 03: estimate_effort() section dispatch — rebuild_counts_survey, estimate_effort_sections, aggregate_section_totals (completed 2026-03-11)
-  - [ ] **Phase 40: Interview-Based Rate Estimators**
+  - [x] **Phase 40: Interview-Based Rate Estimators** (completed 2026-03-11)
   - [ ] **Phase 41: Product Estimators**
   - [ ] **Phase 42: Example Data and Vignette**
 
@@ -160,7 +160,7 @@ Plans:
   4. User calls `estimate_release_rate(design)` on a sectioned design and receives one row per registered section
   5. A registered section absent from interview data produces an NA row with `data_available = FALSE` and a warning for all three rate estimators
 
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [x] 40-01-PLAN.md — function rename: estimate_cpue() → estimate_catch_rate(), estimate_harvest() → estimate_harvest_rate() (complete)
@@ -217,7 +217,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 39. Section Effort Estimation | 2/2 | Complete    | 2026-03-11 |
-| 40. Interview-Based Rate Estimators | 1/2 | In Progress|  |
+| 40. Interview-Based Rate Estimators | 2/2 | Complete   | 2026-03-11 |
 | 41. Product Estimators | 0/? | Not started | — |
 | 42. Example Data and Vignette | 0/? | Not started | — |
 
