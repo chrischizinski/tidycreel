@@ -155,7 +155,7 @@ make_mor_test_design <- function(n_incomplete = 30, n_complete = 0) {
 test_that("creel_estimates_mor has correct class structure", {
   # Create MOR result
   design <- make_mor_test_design(n_incomplete = 30)
-  result <- suppressWarnings(estimate_cpue(design, estimator = "mor")) # nolint: object_usage_linter
+  result <- suppressWarnings(estimate_catch_rate(design, estimator = "mor")) # nolint: object_usage_linter
 
   # Verify class inheritance
   expect_s3_class(result, "creel_estimates_mor")
@@ -168,7 +168,7 @@ test_that("creel_estimates_mor has correct class structure", {
 
 test_that("creel_estimates_mor contains trip count metadata", {
   design <- make_mor_test_design(n_incomplete = 25, n_complete = 15)
-  result <- suppressWarnings(estimate_cpue(design, estimator = "mor")) # nolint: object_usage_linter
+  result <- suppressWarnings(estimate_catch_rate(design, estimator = "mor")) # nolint: object_usage_linter
 
   # After Phase 17, estimator="mor" auto-switches to use_trips="incomplete"
   # So we filter to incomplete trips first, then n_total = n_incomplete
@@ -178,7 +178,7 @@ test_that("creel_estimates_mor contains trip count metadata", {
 
 test_that("creel_estimates_mor print shows diagnostic banner", {
   design <- make_mor_test_design(n_incomplete = 30)
-  result <- suppressWarnings(estimate_cpue(design, estimator = "mor")) # nolint: object_usage_linter
+  result <- suppressWarnings(estimate_catch_rate(design, estimator = "mor")) # nolint: object_usage_linter
 
   output <- capture.output(print(result))
   output_text <- paste(output, collapse = "\n")
@@ -192,7 +192,7 @@ test_that("creel_estimates_mor print shows diagnostic banner", {
 
 test_that("creel_estimates_mor print includes trip counts", {
   design <- make_mor_test_design(n_incomplete = 25, n_complete = 15)
-  result <- suppressWarnings(estimate_cpue(design, estimator = "mor")) # nolint: object_usage_linter
+  result <- suppressWarnings(estimate_catch_rate(design, estimator = "mor")) # nolint: object_usage_linter
 
   output <- capture.output(print(result))
   output_text <- paste(output, collapse = "\n")

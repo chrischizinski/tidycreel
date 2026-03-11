@@ -101,7 +101,7 @@ See: [.planning/milestones/v0.4.0-ROADMAP.md](milestones/v0.4.0-ROADMAP.md)
 - 🚧 **v0.7.0 Spatially Stratified Estimation** — Phases 39–42 (in progress — started 2026-03-10)
   - [x] Phase 39 Plan 01: add_sections() infrastructure — COMPLETE 2026-03-10
   - [x] Phase 39 Plan 02: Section test fixtures and failing stubs (SECT-01..05) (completed 2026-03-10)
-  - [ ] Phase 39 Plan 03: estimate_effort() section dispatch — rebuild_counts_survey, estimate_effort_sections, aggregate_section_totals
+  - [x] Phase 39 Plan 03: estimate_effort() section dispatch — rebuild_counts_survey, estimate_effort_sections, aggregate_section_totals (completed 2026-03-11)
   - [ ] **Phase 40: Interview-Based Rate Estimators**
   - [ ] **Phase 41: Product Estimators**
   - [ ] **Phase 42: Example Data and Vignette**
@@ -141,24 +141,30 @@ Plans:
 
 ### Phase 40: Interview-Based Rate Estimators
 
-**Goal:** Users can call estimate_cpue(), estimate_harvest(), and estimate_release_rate() on a sectioned design and receive per-section rate rows, with the explicit design constraint that CPUE produces no lake-total row because rates are not additive.
+**Goal:** Rename `estimate_cpue()` → `estimate_catch_rate()` and `estimate_harvest()` → `estimate_harvest_rate()` for API consistency, then add section dispatch to all three rate estimators (`estimate_catch_rate()`, `estimate_harvest_rate()`, `estimate_release_rate()`) so users receive per-section rate rows. No lake-total row is produced — rates are not additive across sections.
 
 **Depends on:** Phase 39 (shared infrastructure helpers — rebuild_counts_survey, aggregate_section_totals, bind_section_results, validate_section_estimation_prerequisites)
 
 **Requirements:** RATE-01, RATE-02, RATE-03
 
 **Architectural notes:**
-- `estimate_cpue()` with section dispatch MUST NOT produce a `.lake_total` row. CPUE is a rate, not additive. Lake-wide CPUE requires a separate unpooled call on the full design. This is enforced by design, not convention.
+- `estimate_cpue()` renamed to `estimate_catch_rate()` and `estimate_harvest()` renamed to `estimate_harvest_rate()` — hard breaking change in v0.7.0, no deprecated wrappers.
+- All three rate estimators with section dispatch MUST NOT produce a `.lake_total` row. Rates are not additive. Lake-wide rates require a separate unsectioned call. This is enforced by design, not convention.
 - `rebuild_interview_survey()` already exists and is reused directly for per-section interview subsetting — same pattern as Phase 39's `rebuild_counts_survey()`.
 - `missing_sections` guard applies to interview data: registered sections absent from interview data produce an NA row and a `cli_warn()` before estimation.
 
 **Success Criteria** (what must be TRUE):
-  1. User calls `estimate_cpue(design)` on a 3-section design and receives exactly three per-section rows — no `.lake_total` row — with a doc-referenced explanation that lake-wide CPUE requires a separate unpooled call
-  2. User calls `estimate_harvest(design)` on a sectioned design and receives one row per registered section
-  3. User calls `estimate_release_rate(design)` on a sectioned design and receives one row per registered section
-  4. A registered section absent from interview data produces an NA row with `data_available = FALSE` and a warning for all three rate estimators
+  1. `estimate_cpue()` and `estimate_harvest()` no longer exist; `estimate_catch_rate()` and `estimate_harvest_rate()` are exported and documented
+  2. User calls `estimate_catch_rate(design)` on a 3-section design and receives exactly three per-section rows — no `.lake_total` row — with a doc-referenced explanation that lake-wide catch rate requires a separate unpooled call
+  3. User calls `estimate_harvest_rate(design)` on a sectioned design and receives one row per registered section
+  4. User calls `estimate_release_rate(design)` on a sectioned design and receives one row per registered section
+  5. A registered section absent from interview data produces an NA row with `data_available = FALSE` and a warning for all three rate estimators
 
-**Plans:** TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 40-01-PLAN.md — function rename: estimate_cpue() → estimate_catch_rate(), estimate_harvest() → estimate_harvest_rate()
+- [ ] 40-02-PLAN.md — section dispatch for all three rate estimators (estimate_catch_rate, estimate_harvest_rate, estimate_release_rate)
 
 ---
 
@@ -210,8 +216,8 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 39. Section Effort Estimation | 2/2 | Complete   | 2026-03-10 |
-| 40. Interview-Based Rate Estimators | 0/? | Not started | — |
+| 39. Section Effort Estimation | 2/2 | Complete    | 2026-03-11 |
+| 40. Interview-Based Rate Estimators | 0/2 | Not started | — |
 | 41. Product Estimators | 0/? | Not started | — |
 | 42. Example Data and Vignette | 0/? | Not started | — |
 
@@ -228,5 +234,5 @@ Plans:
 **Overall:** 6 milestones shipped, 38 phases complete; v0.7.0 Phase 39 in progress
 
 ---
-*Roadmap last updated: 2026-03-10 — Phase 39 Plans 02-03 created*
+*Roadmap last updated: 2026-03-11 — Phase 40 plans created*
 *See .planning/milestones/ for full milestone archives*

@@ -152,7 +152,7 @@ test_that("total catch estimate equals effort * cpue exactly", {
 
   # Get component estimates
   effort <- estimate_effort(design) # nolint: object_usage_linter
-  cpue <- estimate_cpue(design) # nolint: object_usage_linter
+  cpue <- estimate_catch_rate(design) # nolint: object_usage_linter
 
   # Product should match exactly
   expected <- effort$estimates$estimate * cpue$estimates$estimate
@@ -168,7 +168,7 @@ test_that("total catch SE matches manual delta method formula", {
 
   # Get component estimates
   effort <- estimate_effort(design) # nolint: object_usage_linter
-  cpue <- estimate_cpue(design) # nolint: object_usage_linter
+  cpue <- estimate_catch_rate(design) # nolint: object_usage_linter
 
   # Extract components
   effort_est <- effort$estimates$estimate # nolint: object_name_linter
@@ -401,7 +401,7 @@ test_that("total catch components are consistent", {
 
   # Estimate all components
   effort_est <- estimate_effort(design) # nolint: object_usage_linter
-  cpue_est <- estimate_cpue(design) # nolint: object_usage_linter
+  cpue_est <- estimate_catch_rate(design) # nolint: object_usage_linter
   total_catch_est <- estimate_total_catch(design) # nolint: object_usage_linter
 
   # Verify estimate consistency (product of components)

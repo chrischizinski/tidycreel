@@ -62,7 +62,7 @@
 #'
 #' # Compare components
 #' effort_est <- estimate_effort(design)
-#' cpue_est <- estimate_cpue(design)
+#' cpue_est <- estimate_catch_rate(design)
 #' # total_catch$estimates$estimate approximately equals effort_est * cpue_est
 #'
 #' # Note: Grouped estimation requires n >= 10 per group
@@ -73,7 +73,7 @@
 #' # Verbose dispatch message (shows which estimator was used for bus-route designs)
 #' # result_verbose <- estimate_total_catch(design, verbose = TRUE)
 #'
-#' @seealso \code{\link{estimate_effort}}, \code{\link{estimate_cpue}}
+#' @seealso \code{\link{estimate_effort}}, \code{\link{estimate_catch_rate}}
 #' @export
 estimate_total_catch <- function(
   design,
@@ -187,9 +187,9 @@ estimate_total_catch <- function(
 #' @keywords internal
 #' @noRd
 estimate_total_catch_ungrouped <- function(design, variance_method, conf_level) {
-  # Call estimate_effort() and estimate_cpue() with specified variance method
+  # Call estimate_effort() and estimate_catch_rate() with specified variance method
   effort_result <- estimate_effort(design, variance = variance_method, conf_level = conf_level) # nolint: object_usage_linter
-  cpue_result <- estimate_cpue(design, variance = variance_method, conf_level = conf_level) # nolint: object_usage_linter
+  cpue_result <- estimate_catch_rate(design, variance = variance_method, conf_level = conf_level) # nolint: object_usage_linter
 
   # Extract estimates
   effort_est <- effort_result$estimates$estimate
@@ -250,7 +250,7 @@ estimate_total_catch_grouped <- function(design, by_vars, variance_method, conf_
 
   # Call grouped estimation for both effort and CPUE
   effort_result <- estimate_effort(design, by = !!by_sym, variance = variance_method, conf_level = conf_level) # nolint: object_usage_linter
-  cpue_result <- estimate_cpue(design, by = !!by_sym, variance = variance_method, conf_level = conf_level) # nolint: object_usage_linter
+  cpue_result <- estimate_catch_rate(design, by = !!by_sym, variance = variance_method, conf_level = conf_level) # nolint: object_usage_linter
 
   # Extract estimates data frames (include group columns)
   effort_df <- effort_result$estimates

@@ -196,12 +196,12 @@ estimate_effort_br <- function(design, by_vars, variance_method, conf_level, ver
 # Bus-route harvest estimation ----
 # Implements Jones & Pollock (2012) Eq. 19.5: H_hat = sum(h_i / pi_i)
 # where h_i = harvest_col * .expansion (enumeration expansion factor)
-# Called by estimate_harvest() when design$design_type == "bus_route"
+# Called by estimate_harvest_rate() when design$design_type == "bus_route"
 
 #' Bus-route Horvitz-Thompson harvest estimator
 #'
 #' Internal function implementing Jones & Pollock (2012) Eq. 19.5.
-#' Called by estimate_harvest() after bus-route dispatch.
+#' Called by estimate_harvest_rate() after bus-route dispatch.
 #'
 #' @param design A creel_design object with bus-route interviews attached
 #' @param by_vars NULL or character vector of grouping variable names

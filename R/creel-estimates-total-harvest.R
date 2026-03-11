@@ -61,7 +61,7 @@
 #'
 #' # Compare components
 #' effort_est <- estimate_effort(design)
-#' hpue_est <- estimate_harvest(design)
+#' hpue_est <- estimate_harvest_rate(design)
 #' # total_harvest$estimates$estimate approximately equals effort_est * hpue_est
 #'
 #' # Note: Grouped estimation requires n >= 10 per group
@@ -69,7 +69,7 @@
 #' # table(design$interviews$day_type)
 #' # total_harvest_by_type <- estimate_total_harvest(design, by = day_type)
 #'
-#' @seealso \code{\link{estimate_effort}}, \code{\link{estimate_harvest}},
+#' @seealso \code{\link{estimate_effort}}, \code{\link{estimate_harvest_rate}},
 #'   \code{\link{estimate_total_catch}}
 #' @export
 estimate_total_harvest <- function(design, by = NULL, variance = "taylor", conf_level = 0.95) {
@@ -166,9 +166,9 @@ estimate_total_harvest <- function(design, by = NULL, variance = "taylor", conf_
 #' @keywords internal
 #' @noRd
 estimate_total_harvest_ungrouped <- function(design, variance_method, conf_level) { # nolint: object_length_linter
-  # Call estimate_effort() and estimate_harvest() with specified variance method
+  # Call estimate_effort() and estimate_harvest_rate() with specified variance method
   effort_result <- estimate_effort(design, variance = variance_method, conf_level = conf_level) # nolint: object_usage_linter
-  hpue_result <- estimate_harvest(design, variance = variance_method, conf_level = conf_level) # nolint: object_usage_linter
+  hpue_result <- estimate_harvest_rate(design, variance = variance_method, conf_level = conf_level) # nolint: object_usage_linter
 
   # Extract estimates
   effort_est <- effort_result$estimates$estimate
@@ -229,7 +229,7 @@ estimate_total_harvest_grouped <- function(design, by_vars, variance_method, con
 
   # Call grouped estimation for both effort and HPUE
   effort_result <- estimate_effort(design, by = !!by_sym, variance = variance_method, conf_level = conf_level) # nolint: object_usage_linter
-  hpue_result <- estimate_harvest(design, by = !!by_sym, variance = variance_method, conf_level = conf_level) # nolint: object_usage_linter
+  hpue_result <- estimate_harvest_rate(design, by = !!by_sym, variance = variance_method, conf_level = conf_level) # nolint: object_usage_linter
 
   # Extract estimates data frames (include group columns)
   effort_df <- effort_result$estimates

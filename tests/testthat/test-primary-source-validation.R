@@ -158,7 +158,7 @@ test_that(
   {
     # Harvest uses fish_kept column with no expansion (n_counted = n_interviewed).
     # Per CONTEXT.md: effort validation alongside harvest/catch.
-    result <- estimate_harvest(make_box20_6_example1())
+    result <- estimate_harvest_rate(make_box20_6_example1())
     expect_s3_class(result, "creel_estimates")
     # H_hat should be positive and finite
     expect_true(is.numeric(result$estimates$estimate))
@@ -351,7 +351,7 @@ test_that(
   "Complete bus-route workflow: design -> data -> harvest estimation succeeds (VALID-05)",
   {
     d <- make_box20_6_example2()
-    result <- suppressWarnings(estimate_harvest(d))
+    result <- suppressWarnings(estimate_harvest_rate(d))
     expect_s3_class(result, "creel_estimates")
     expect_true(is.finite(result$estimates$estimate))
     expect_true(result$estimates$estimate > 0)
@@ -448,7 +448,7 @@ test_that(
       survey::svydesign(ids = ~1, strata = ~day_type, data = int_data)
     )
     manual_result <- survey::svytotal(~.harvest_contrib, svy_manual)
-    tidycreel_result <- suppressWarnings(estimate_harvest(d))
+    tidycreel_result <- suppressWarnings(estimate_harvest_rate(d))
     expect_equal(
       tidycreel_result$estimates$estimate,
       as.numeric(coef(manual_result)),
@@ -467,7 +467,7 @@ test_that(
       survey::svydesign(ids = ~1, strata = ~day_type, data = int_data)
     )
     manual_result <- survey::svytotal(~.harvest_contrib, svy_manual)
-    tidycreel_result <- suppressWarnings(estimate_harvest(d))
+    tidycreel_result <- suppressWarnings(estimate_harvest_rate(d))
     # Per CONTEXT.md: SE tolerance 1e-3 (FPC differences acceptable)
     expect_equal(
       tidycreel_result$estimates$se,

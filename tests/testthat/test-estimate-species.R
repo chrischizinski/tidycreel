@@ -1,5 +1,5 @@
 # Tests for Phase 34: Species-Level Extrapolated Estimates
-# Covers: estimate_cpue with species grouping, resolve_species_by helper,
+# Covers: estimate_catch_rate with species grouping, resolve_species_by helper,
 # estimate_release_rate, estimate_total_release,
 # estimate_total_catch and estimate_total_harvest with species grouping
 
@@ -47,84 +47,84 @@ make_test_design_no_catch <- function() {
 }
 
 # ---------------------------------------------------------------------------
-# 1. estimate_cpue() species-level (~12 tests)
+# 1. estimate_catch_rate() species-level (~12 tests)
 # ---------------------------------------------------------------------------
 
-test_that("estimate_cpue with by=species returns creel_estimates object", {
+test_that("estimate_catch_rate with by=species returns creel_estimates object", {
   d <- make_test_design_with_catch()
-  result <- suppressWarnings(suppressMessages(estimate_cpue(d, by = species)))
+  result <- suppressWarnings(suppressMessages(estimate_catch_rate(d, by = species)))
   expect_s3_class(result, "creel_estimates")
 })
 
-test_that("estimate_cpue species returns tibble with species column", {
+test_that("estimate_catch_rate species returns tibble with species column", {
   d <- make_test_design_with_catch()
-  result <- suppressWarnings(suppressMessages(estimate_cpue(d, by = species)))
+  result <- suppressWarnings(suppressMessages(estimate_catch_rate(d, by = species)))
   expect_true("species" %in% names(result$estimates))
 })
 
-test_that("estimate_cpue species returns one row per species", {
+test_that("estimate_catch_rate species returns one row per species", {
   d <- make_test_design_with_catch()
-  result <- suppressWarnings(suppressMessages(estimate_cpue(d, by = species)))
+  result <- suppressWarnings(suppressMessages(estimate_catch_rate(d, by = species)))
   expect_equal(nrow(result$estimates), 3L)
 })
 
-test_that("estimate_cpue species returns walleye, bass, panfish", {
+test_that("estimate_catch_rate species returns walleye, bass, panfish", {
   d <- make_test_design_with_catch()
-  result <- suppressWarnings(suppressMessages(estimate_cpue(d, by = species)))
+  result <- suppressWarnings(suppressMessages(estimate_catch_rate(d, by = species)))
   expect_setequal(result$estimates$species, c("bass", "panfish", "walleye"))
 })
 
-test_that("estimate_cpue species estimates have expected columns", {
+test_that("estimate_catch_rate species estimates have expected columns", {
   d <- make_test_design_with_catch()
-  result <- suppressWarnings(suppressMessages(estimate_cpue(d, by = species)))
+  result <- suppressWarnings(suppressMessages(estimate_catch_rate(d, by = species)))
   expect_true(all(
     c("species", "estimate", "se", "ci_lower", "ci_upper", "n") %in% names(result$estimates)
   ))
 })
 
-test_that("estimate_cpue species all estimates are non-negative", {
+test_that("estimate_catch_rate species all estimates are non-negative", {
   d <- make_test_design_with_catch()
-  result <- suppressWarnings(suppressMessages(estimate_cpue(d, by = species)))
+  result <- suppressWarnings(suppressMessages(estimate_catch_rate(d, by = species)))
   expect_true(all(result$estimates$estimate >= 0))
 })
 
-test_that("estimate_cpue species n equals total interview count (zero-fill correct)", {
+test_that("estimate_catch_rate species n equals total interview count (zero-fill correct)", {
   d <- make_test_design_with_catch()
-  result <- suppressWarnings(suppressMessages(estimate_cpue(d, by = species)))
+  result <- suppressWarnings(suppressMessages(estimate_catch_rate(d, by = species)))
   # n should be same for all species (17 complete trips, zero-filled)
   expect_true(all(result$estimates$n == result$estimates$n[1]))
 })
 
-test_that("estimate_cpue species method attribute is 'ratio-of-means-cpue-species'", {
+test_that("estimate_catch_rate species method attribute is 'ratio-of-means-cpue-species'", {
   d <- make_test_design_with_catch()
-  result <- suppressWarnings(suppressMessages(estimate_cpue(d, by = species)))
+  result <- suppressWarnings(suppressMessages(estimate_catch_rate(d, by = species)))
   expect_equal(result$method, "ratio-of-means-cpue-species")
 })
 
-test_that("estimate_cpue ungrouped unchanged when no catch data", {
+test_that("estimate_catch_rate ungrouped unchanged when no catch data", {
   d <- make_test_design_no_catch()
-  result <- suppressWarnings(suppressMessages(estimate_cpue(d)))
+  result <- suppressWarnings(suppressMessages(estimate_catch_rate(d)))
   expect_equal(result$method, "ratio-of-means-cpue")
   expect_equal(nrow(result$estimates), 1L)
 })
 
-test_that("estimate_cpue species errors when species in by but catch not attached", {
+test_that("estimate_catch_rate species errors when species in by but catch not attached", {
   d <- make_test_design_no_catch()
   expect_error(
-    suppressWarnings(suppressMessages(estimate_cpue(d, by = species))),
+    suppressWarnings(suppressMessages(estimate_catch_rate(d, by = species))),
     "species"
   )
 })
 
-test_that("estimate_cpue species per-species CPUE is ordered alphabetically", {
+test_that("estimate_catch_rate species per-species CPUE is ordered alphabetically", {
   d <- make_test_design_with_catch()
-  result <- suppressWarnings(suppressMessages(estimate_cpue(d, by = species)))
+  result <- suppressWarnings(suppressMessages(estimate_catch_rate(d, by = species)))
   expect_equal(result$estimates$species, sort(result$estimates$species))
 })
 
-test_that("estimate_cpue species: estimates differ across species (non-identical)", {
+test_that("estimate_catch_rate species: estimates differ across species (non-identical)", {
   d <- make_test_design_with_catch()
-  result <- suppressWarnings(suppressMessages(estimate_cpue(d, by = species)))
+  result <- suppressWarnings(suppressMessages(estimate_catch_rate(d, by = species)))
   # At least two species should have different estimates
   expect_false(length(unique(result$estimates$estimate)) == 1L)
 })

@@ -548,32 +548,32 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
 #'   trip_status = trip_status,
 #'   trip_duration = trip_duration
 #' )
-#' result <- estimate_cpue(design_with_interviews)
+#' result <- estimate_catch_rate(design_with_interviews)
 #' print(result)
 #'
 #' # Grouped by day_type
-#' result_grouped <- estimate_cpue(design_with_interviews, by = day_type)
+#' result_grouped <- estimate_catch_rate(design_with_interviews, by = day_type)
 #' print(result_grouped)
 #'
 #' # Custom confidence level
-#' result_90 <- estimate_cpue(design_with_interviews, conf_level = 0.90)
+#' result_90 <- estimate_catch_rate(design_with_interviews, conf_level = 0.90)
 #'
 #' # Bootstrap variance estimation
-#' result_boot <- estimate_cpue(design_with_interviews, variance = "bootstrap")
+#' result_boot <- estimate_catch_rate(design_with_interviews, variance = "bootstrap")
 #'
 #' # Mean-of-ratios for incomplete trips
-#' result_mor <- estimate_cpue(design_with_interviews, estimator = "mor")
+#' result_mor <- estimate_catch_rate(design_with_interviews, estimator = "mor")
 #'
 #' # Mean-of-ratios with custom truncation threshold
-#' result_mor_1h <- estimate_cpue(design_with_interviews, estimator = "mor", truncate_at = 1.0)
+#' result_mor_1h <- estimate_catch_rate(design_with_interviews, estimator = "mor", truncate_at = 1.0)
 #' @export
-estimate_cpue <- function(design,
-                          by = NULL,
-                          variance = "taylor",
-                          conf_level = 0.95,
-                          estimator = "ratio-of-means",
-                          use_trips = NULL,
-                          truncate_at = 0.5) {
+estimate_catch_rate <- function(design,
+                                by = NULL,
+                                variance = "taylor",
+                                conf_level = 0.95,
+                                estimator = "ratio-of-means",
+                                use_trips = NULL,
+                                truncate_at = 0.5) {
   # Capture by parameter BEFORE validation
   by_quo <- rlang::enquo(by)
 
@@ -689,8 +689,8 @@ estimate_cpue <- function(design,
         " " = "Complete trips (n={n_complete}) vs Incomplete trips (n={n_incomplete})"
       ))
 
-      # Call estimate_cpue recursively for both trip types
-      complete_result <- estimate_cpue(
+      # Call estimate_catch_rate recursively for both trip types
+      complete_result <- estimate_catch_rate(
         design = design,
         by = !!by_quo,
         variance = variance,
@@ -701,7 +701,7 @@ estimate_cpue <- function(design,
       )
 
       incomplete_result <- suppressWarnings(
-        estimate_cpue(
+        estimate_catch_rate(
           design = design,
           by = !!by_quo,
           variance = variance,
@@ -1014,7 +1014,7 @@ estimate_cpue <- function(design,
       cli::cli_abort(c(
         "Species-level CPUE requires catch data.",
         "x" = "{.field species} found in {.arg by} but {.fn add_catch} has not been called.",
-        "i" = "Call {.fn add_catch} before using species grouping in {.fn estimate_cpue}."
+        "i" = "Call {.fn add_catch} before using species grouping in {.fn estimate_catch_rate}."
       ))
     }
 
@@ -1119,7 +1119,7 @@ estimate_cpue <- function(design,
 #'     selection based on design). Alternative resampling method.
 #' }
 #'
-#' @seealso \code{\link{estimate_cpue}} for total catch rate estimation
+#' @seealso \code{\link{estimate_catch_rate}} for total catch rate estimation
 #'
 #' @examples
 #' # Basic ungrouped HPUE
@@ -1147,23 +1147,23 @@ estimate_cpue <- function(design,
 #'   trip_status = trip_status,
 #'   trip_duration = trip_duration
 #' )
-#' result <- estimate_harvest(design_with_interviews)
+#' result <- estimate_harvest_rate(design_with_interviews)
 #' print(result)
 #'
 #' # Grouped by day_type
-#' result_grouped <- estimate_harvest(design_with_interviews, by = day_type)
+#' result_grouped <- estimate_harvest_rate(design_with_interviews, by = day_type)
 #' print(result_grouped)
 #'
 #' # Custom confidence level
-#' result_90 <- estimate_harvest(design_with_interviews, conf_level = 0.90)
+#' result_90 <- estimate_harvest_rate(design_with_interviews, conf_level = 0.90)
 #'
 #' # Bootstrap variance estimation
-#' result_boot <- estimate_harvest(design_with_interviews, variance = "bootstrap")
+#' result_boot <- estimate_harvest_rate(design_with_interviews, variance = "bootstrap")
 #'
 #' # Verbose dispatch message (shows which estimator was used for bus-route designs)
-#' # result_verbose <- estimate_harvest(design, verbose = TRUE)
+#' # result_verbose <- estimate_harvest_rate(design, verbose = TRUE)
 #' @export
-estimate_harvest <- function(
+estimate_harvest_rate <- function(
   design,
   by = NULL,
   variance = "taylor",
@@ -1308,7 +1308,7 @@ estimate_harvest <- function(
 #' \code{catch_type = "released"}. Interviews with no releases contribute 0
 #' to the numerator (zero-fill), ensuring the effort denominator is correct.
 #'
-#' @seealso \code{\link{estimate_harvest}} for harvest rate, \code{\link{add_catch}}
+#' @seealso \code{\link{estimate_harvest_rate}} for harvest rate, \code{\link{add_catch}}
 #'
 #' @examples
 #' library(tidycreel)

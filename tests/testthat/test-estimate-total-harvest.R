@@ -171,7 +171,7 @@ test_that("total harvest estimate equals effort * hpue exactly", {
 
   # Get component estimates
   effort <- estimate_effort(design) # nolint: object_usage_linter
-  hpue <- estimate_harvest(design) # nolint: object_usage_linter
+  hpue <- estimate_harvest_rate(design) # nolint: object_usage_linter
 
   # Product should match exactly
   expected <- effort$estimates$estimate * hpue$estimates$estimate
@@ -187,7 +187,7 @@ test_that("total harvest SE matches manual delta method formula", {
 
   # Get component estimates
   effort <- estimate_effort(design) # nolint: object_usage_linter
-  hpue <- estimate_harvest(design) # nolint: object_usage_linter
+  hpue <- estimate_harvest_rate(design) # nolint: object_usage_linter
 
   # Extract components
   effort_est <- effort$estimates$estimate # nolint: object_name_linter
@@ -372,7 +372,7 @@ test_that("total harvest components are consistent", {
 
   # Estimate all components
   effort_est <- estimate_effort(design) # nolint: object_usage_linter
-  hpue_est <- estimate_harvest(design) # nolint: object_usage_linter
+  hpue_est <- estimate_harvest_rate(design) # nolint: object_usage_linter
   total_harvest_est <- estimate_total_harvest(design) # nolint: object_usage_linter
 
   # Verify estimate consistency (product of components)
