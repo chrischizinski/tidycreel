@@ -148,7 +148,7 @@ Plans:
 **Requirements:** RATE-01, RATE-02, RATE-03
 
 **Architectural notes:**
-- `estimate_cpue()` renamed to `estimate_catch_rate()` and `estimate_harvest()` renamed to `estimate_harvest_rate()` — hard breaking change in v0.7.0, no deprecated wrappers.
+- `estimate_cpue()` renamed to `estimate_catch_rate()` and `estimate_harvest()` renamed to `estimate_harvest_rate()` — breaking change in v0.7.0, no deprecated wrappers (Plan 40-01 complete).
 - All three rate estimators with section dispatch MUST NOT produce a `.lake_total` row. Rates are not additive. Lake-wide rates require a separate unsectioned call. This is enforced by design, not convention.
 - `rebuild_interview_survey()` already exists and is reused directly for per-section interview subsetting — same pattern as Phase 39's `rebuild_counts_survey()`.
 - `missing_sections` guard applies to interview data: registered sections absent from interview data produce an NA row and a `cli_warn()` before estimation.
@@ -160,10 +160,10 @@ Plans:
   4. User calls `estimate_release_rate(design)` on a sectioned design and receives one row per registered section
   5. A registered section absent from interview data produces an NA row with `data_available = FALSE` and a warning for all three rate estimators
 
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
-- [ ] 40-01-PLAN.md — function rename: estimate_cpue() → estimate_catch_rate(), estimate_harvest() → estimate_harvest_rate()
+- [x] 40-01-PLAN.md — function rename: estimate_cpue() → estimate_catch_rate(), estimate_harvest() → estimate_harvest_rate() (complete)
 - [ ] 40-02-PLAN.md — section dispatch for all three rate estimators (estimate_catch_rate, estimate_harvest_rate, estimate_release_rate)
 
 ---
@@ -217,7 +217,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 39. Section Effort Estimation | 2/2 | Complete    | 2026-03-11 |
-| 40. Interview-Based Rate Estimators | 0/2 | Not started | — |
+| 40. Interview-Based Rate Estimators | 1/2 | In Progress|  |
 | 41. Product Estimators | 0/? | Not started | — |
 | 42. Example Data and Vignette | 0/? | Not started | — |
 

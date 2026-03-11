@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: completed
-stopped_at: Completed 39-03-PLAN.md (estimate_effort_sections implementation)
-last_updated: "2026-03-11T13:48:27.595Z"
+stopped_at: Completed 40-01-PLAN.md (rename estimate_cpue/estimate_harvest)
+last_updated: "2026-03-11T17:12:14.952Z"
 last_activity: 2026-03-10 — Phase 39 Plan 03 complete (estimate_effort_sections)
 progress:
   total_phases: 4
   completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
+  total_plans: 4
+  completed_plans: 3
 ---
 
 # Project State
@@ -24,16 +24,16 @@ See: .planning/PROJECT.md (updated 2026-03-10)
 
 ## Current Position
 
-Phase: Phase 39 — Section Effort Estimation (complete)
-Plan: 39-01, 39-02, 39-03 all complete; SECT-01 through SECT-05 all passing
-Status: Phase 39 complete; ready for Phase 40 (interview-based rates)
-Last activity: 2026-03-10 — Phase 39 Plan 03 complete (estimate_effort_sections)
+Phase: Phase 40 — Interview-Based Rate Estimators (in progress)
+Plan: 40-01 complete (rename); 40-02 pending (section dispatch)
+Status: Phase 40 Plan 01 complete; estimate_catch_rate and estimate_harvest_rate exported
+Last activity: 2026-03-11 — Phase 40 Plan 01 complete (rename estimate_cpue/estimate_harvest)
 
 ### Progress Bar
 
 ```
-Phase 39 [==--------] Plan 01/? complete
-Phase 40 [----------] Not started
+Phase 39 [==========] Complete (39-01, 39-02, 39-03 all done)
+Phase 40 [=====-----] Plan 01/2 complete
 Phase 41 [----------] Not started
 Phase 42 [----------] Not started
 ```
@@ -65,6 +65,7 @@ Phase 42 [----------] Not started
 - lintr: 0 issues
 | Phase 39-section-effort-estimation P02 | 5 | 2 tasks | 1 files |
 | Phase 39-section-effort-estimation P03 | 13 | 2 tasks | 4 files |
+| Phase 40-interview-based-rate-estimators P01 | 18 | 2 tasks | 26 files |
 
 ## Accumulated Context
 
@@ -169,8 +170,8 @@ None currently.
 
 ## Session Continuity
 
-Last session: 2026-03-10T23:57:12.581Z
-Stopped at: Completed 39-03-PLAN.md (estimate_effort_sections implementation)
+Last session: 2026-03-11T17:12:14.949Z
+Stopped at: Completed 40-01-PLAN.md (rename estimate_cpue/estimate_harvest)
 Resume file: None
 Next step: `/gsd:plan-phase 39` to plan remaining Phase 39 work (SECT-01 through SECT-05)
 
@@ -227,3 +228,9 @@ Next step: `/gsd:plan-phase 39` to plan remaining Phase 39 work (SECT-01 through
 
 - Pope et al. vignette example uses 2-day weekday design; per-day Ê_d = 1,872 shown via `design$counts` slot — single-PSU stratum errors in survey package variance computation
 - Coverage 86.54% is pre-existing gap from Phase 37 progressive-count code paths; vignette does not affect coverage
+
+### Decisions (40-01)
+
+- `merged$estimate_cpue` column name preserved in creel-estimates-total-catch.R — derives from `merge(suffixes=c("_effort","_cpue"))` applied to the `estimate` column, not from the public function name; renaming it would break delta-method computation
+- Unexported helpers keep their current names (estimate_cpue_total, estimate_cpue_grouped, estimate_cpue_species, estimate_harvest_total, estimate_harvest_grouped) per locked design decision; only public-API functions were renamed
+- bus-route-surveys.Rmd required update not listed in plan's file list — auto-fixed (Rule 1) during Task 2 R CMD check run
