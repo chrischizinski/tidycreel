@@ -76,7 +76,7 @@ print(total_harvest)
 
 # Compare components
 effort_est <- estimate_effort(design)
-hpue_est <- estimate_harvest(design)
+hpue_est <- estimate_harvest_rate(design)
 # total_harvest$estimates$estimate approximately equals effort_est * hpue_est
 
 # Note: Grouped estimation requires n >= 10 per group
@@ -86,6 +86,6 @@ hpue_est <- estimate_harvest(design)
 
 }
 \seealso{
-\code{\link{estimate_effort}}, \code{\link{estimate_harvest}},
+\code{\link{estimate_effort}}, \code{\link{estimate_harvest_rate}},
 \code{\link{estimate_total_catch}}
 }

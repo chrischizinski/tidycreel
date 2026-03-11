@@ -79,7 +79,7 @@ print(total_catch)
 
 # Compare components
 effort_est <- estimate_effort(design)
-cpue_est <- estimate_cpue(design)
+cpue_est <- estimate_catch_rate(design)
 # total_catch$estimates$estimate approximately equals effort_est * cpue_est
 
 # Note: Grouped estimation requires n >= 10 per group
@@ -92,5 +92,5 @@ cpue_est <- estimate_cpue(design)
 
 }
 \seealso{
-\code{\link{estimate_effort}}, \code{\link{estimate_cpue}}
+\code{\link{estimate_effort}}, \code{\link{estimate_catch_rate}}
 }

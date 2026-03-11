@@ -74,5 +74,5 @@ rpue_by_species <- estimate_release_rate(design, by = species)
 print(rpue_by_species)
 }
 \seealso{
-\code{\link{estimate_harvest}} for harvest rate, \code{\link{add_catch}}
+\code{\link{estimate_harvest_rate}} for harvest rate, \code{\link{add_catch}}
 }

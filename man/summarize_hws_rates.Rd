@@ -40,7 +40,7 @@ at design time by \code{\link{add_interviews}}).
 \strong{Interview-based summary, not pressure-weighted.} This function
 computes a simple arithmetic mean over sampled interviews. It does NOT apply
 survey weighting by sampling effort or effort stratum. For pressure-weighted
-extrapolated estimates use \code{\link{estimate_harvest}}.
+extrapolated estimates use \code{\link{estimate_harvest_rate}}.
 
 The catch filter ensures only species the angler was targeting are counted
 (i.e., rows in \code{design$catch} where \code{catch_type == "harvested"}
@@ -63,5 +63,5 @@ summarize_hws_rates(d, by = species_sought)
 
 }
 \seealso{
-\code{\link[=summarize_cws_rates]{summarize_cws_rates()}}, \code{\link[=estimate_harvest]{estimate_harvest()}}
+\code{\link[=summarize_cws_rates]{summarize_cws_rates()}}, \code{\link[=estimate_harvest_rate]{estimate_harvest_rate()}}
 }
