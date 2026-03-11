@@ -11,7 +11,8 @@ estimate_catch_rate(
   conf_level = 0.95,
   estimator = "ratio-of-means",
   use_trips = NULL,
-  truncate_at = 0.5
+  truncate_at = 0.5,
+  missing_sections = "warn"
 )
 }
 \arguments{
@@ -56,6 +57,12 @@ Default is 0.5 hours (30 minutes) per Hoenig et al. (1997) to prevent
 unstable variance from very short trips. Trips with duration < truncate_at
 are excluded before MOR estimation. Set to NULL to disable truncation
 (research mode only). Ignored for ratio-of-means estimator.}
+
+\item{missing_sections}{Character string controlling behavior when a
+registered section has no interview observations. \code{"warn"} (default)
+emits a \code{cli_warn()} and inserts an NA row with
+\code{data_available = FALSE}. \code{"error"} aborts with
+\code{cli_abort()}. Ignored for non-sectioned designs.}
 }
 \value{
 A creel_estimates S3 object (list) with components: estimates
@@ -126,6 +133,13 @@ Appropriate for verifying Taylor assumptions.
 \item \code{"jackknife"}: Jackknife resampling (automatic JKn or JK1
 selection based on design). Alternative resampling method.
 }
+}
+\note{
+When called on a sectioned design, no \code{.lake_total} row is
+produced. Catch rates (fish per angler-hour) are not additive across
+sections. Lake-wide catch rate requires a separate unsectioned call on
+the full design. See \code{estimate_total_catch()} for lake-wide total
+catch estimation.
 }
 \section{Package Options}{
 

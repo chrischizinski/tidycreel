@@ -10,7 +10,8 @@ estimate_harvest_rate(
   variance = "taylor",
   conf_level = 0.95,
   verbose = FALSE,
-  use_trips = NULL
+  use_trips = NULL,
+  missing_sections = "warn"
 )
 }
 \arguments{
@@ -39,6 +40,12 @@ which estimator path was used. Default FALSE.}
 bus-route estimation. One of \code{"complete"} (default),
 \code{"incomplete"} (pi_i-weighted MOR), or \code{"diagnostic"} (both).
 Ignored for non-bus-route designs.}
+
+\item{missing_sections}{Character string controlling behavior when a
+registered section has no interview observations. \code{"warn"} (default)
+emits a \code{cli_warn()} and inserts an NA row with
+\code{data_available = FALSE}. \code{"error"} aborts with
+\code{cli_abort()}. Ignored for non-sectioned designs.}
 }
 \value{
 A creel_estimates S3 object (list) with components: estimates
@@ -83,6 +90,11 @@ Appropriate for verifying Taylor assumptions.
 \item \code{"jackknife"}: Jackknife resampling (automatic JKn or JK1
 selection based on design). Alternative resampling method.
 }
+}
+\note{
+When called on a sectioned design, no \code{.lake_total} row is
+produced. Harvest rates (fish per angler-hour) are not additive across
+sections. Lake-wide harvest rate requires a separate unsectioned call.
 }
 \examples{
 # Basic ungrouped HPUE
