@@ -217,7 +217,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 39. Section Effort Estimation | 2/2 | Complete    | 2026-03-11 |
-| 40. Interview-Based Rate Estimators | 2/2 | Complete   | 2026-03-11 |
+| 40. Interview-Based Rate Estimators | 2/2 | Complete    | 2026-03-12 |
 | 41. Product Estimators | 0/? | Not started | — |
 | 42. Example Data and Vignette | 0/? | Not started | — |
 
