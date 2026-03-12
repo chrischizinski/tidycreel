@@ -19,8 +19,8 @@
 ### Interview-Based Rate Estimators
 
 - [x] **RATE-01**: `estimate_cpue()` renamed to `estimate_catch_rate()` and `estimate_harvest()` renamed to `estimate_harvest_rate()` — breaking change in v0.7.0, no deprecated wrappers; user can call `estimate_catch_rate()` on a sectioned design and receive per-section catch rate rows only — no `.lake_total` row (rate is not additive; documented behavior)
-- [ ] **RATE-02**: User can call `estimate_harvest_rate()` and `estimate_release_rate()` on a sectioned design and receive per-section rate rows
-- [ ] **RATE-03**: Missing sections in interview data follow the same `missing_sections` guard as effort
+- [x] **RATE-02**: User can call `estimate_harvest_rate()` and `estimate_release_rate()` on a sectioned design and receive per-section rate rows
+- [x] **RATE-03**: Missing sections in interview data follow the same `missing_sections` guard as effort
 
 ### Product Estimators
 
@@ -63,8 +63,8 @@
 | SECT-04 | Phase 39 | In progress |
 | SECT-05 | Phase 39 | In progress |
 | RATE-01 | Phase 40 | Complete |
-| RATE-02 | Phase 40 | Pending |
-| RATE-03 | Phase 40 | Pending |
+| RATE-02 | Phase 40 | Complete |
+| RATE-03 | Phase 40 | Complete |
 | PROD-01 | Phase 41 | Pending |
 | PROD-02 | Phase 41 | Pending |
 | DOCS-01 | Phase 42 | Pending |

@@ -187,7 +187,11 @@ Plans:
   2. The `.lake_total` catch estimate equals `sum(E_i * CPUE_i)` across sections — not `E_total * CPUE_pooled` — and matches hand-calculation within floating point tolerance
   3. User calls `estimate_total_harvest(design)` and `estimate_total_release(design)` on a sectioned design and each returns per-section rows plus a correctly aggregated `.lake_total` row
 
-**Plans:** TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 41-01-PLAN.md — section test fixtures and failing stubs (PROD-01/02)
+- [ ] 41-02-PLAN.md — section dispatch implementation for all three product estimators
 
 ---
 
@@ -218,7 +222,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 39. Section Effort Estimation | 2/2 | Complete    | 2026-03-11 |
 | 40. Interview-Based Rate Estimators | 2/2 | Complete    | 2026-03-12 |
-| 41. Product Estimators | 0/? | Not started | — |
+| 41. Product Estimators | 0/2 | Not started | — |
 | 42. Example Data and Vignette | 0/? | Not started | — |
 
 | Milestone | Phases | Plans | Status | Completed |
@@ -234,5 +238,5 @@ Plans:
 **Overall:** 6 milestones shipped, 38 phases complete; v0.7.0 Phase 39 in progress
 
 ---
-*Roadmap last updated: 2026-03-11 — Phase 40 plans created*
+*Roadmap last updated: 2026-03-12 — Phase 41 plans created*
 *See .planning/milestones/ for full milestone archives*
