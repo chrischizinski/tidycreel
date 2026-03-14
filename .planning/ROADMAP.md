@@ -212,7 +212,7 @@ Plans:
   2. The vignette runs end-to-end with `devtools::build_vignettes()` and demonstrates: per-section effort, per-section CPUE (no lake-total row), per-section and lake-total catch, and the missing-section warning path
   3. The vignette explains in plain language why `method = "correlated"` is the correct default for shared-calendar field crew designs and what `method = "independent"` means
 
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 - [ ] 42-01-PLAN.md — example datasets (example_sections_calendar, example_sections_counts, example_sections_interviews) + R/data.R documentation + test stub
@@ -227,7 +227,7 @@ Plans:
 | 39. Section Effort Estimation | 2/2 | Complete    | 2026-03-11 |
 | 40. Interview-Based Rate Estimators | 2/2 | Complete    | 2026-03-12 |
 | 41. Product Estimators | 2/2 | Complete    | 2026-03-14 |
-| 42. Example Data and Vignette | 0/2 | Not started | — |
+| 42. Example Data and Vignette | 1/2 | In Progress|  |
 
 | Milestone | Phases | Plans | Status | Completed |
 |-----------|--------|-------|--------|-----------|

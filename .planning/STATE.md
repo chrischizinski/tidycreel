@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: completed
-stopped_at: Completed 41-02-PLAN.md
-last_updated: "2026-03-14T17:03:02.245Z"
+stopped_at: Completed 42-01-PLAN.md
+last_updated: "2026-03-14T21:17:14.600Z"
 last_activity: 2026-03-14 — Phase 41 Plan 02 complete (section dispatch for product estimators)
 progress:
   total_phases: 4
   completed_phases: 3
-  total_plans: 6
-  completed_plans: 6
+  total_plans: 8
+  completed_plans: 7
 ---
 
 # Project State
@@ -24,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-03-10)
 
 ## Current Position
 
-Phase: Phase 41 — Product Estimators (complete)
-Plan: Phase 41 Plan 02 complete (2/2 plans done)
-Status: Phase 41 complete — all 19 PROD-01/PROD-02 stubs GREEN; 1555 total tests passing
-Last activity: 2026-03-14 — Phase 41 Plan 02 complete (section dispatch for product estimators)
+Phase: Phase 42 — Example Data and Vignette (in progress)
+Plan: Phase 42 Plan 01 complete (1/2 plans done)
+Status: Phase 42-01 complete — 27 new tests GREEN; 1582 total tests passing; 3 example_sections_* datasets created
+Last activity: 2026-03-14 — Phase 42 Plan 01 complete (example sections datasets)
 
 ### Progress Bar
 
@@ -35,7 +35,7 @@ Last activity: 2026-03-14 — Phase 41 Plan 02 complete (section dispatch for pr
 Phase 39 [==========] Complete (39-01, 39-02, 39-03 all done)
 Phase 40 [==========] Complete (40-01, 40-02 done)
 Phase 41 [==========] Complete (41-01, 41-02 done)
-Phase 42 [----------] Not started
+Phase 42 [=====-----] In progress (42-01 done, 42-02 pending)
 ```
 
 ## Performance Metrics
@@ -69,6 +69,7 @@ Phase 42 [----------] Not started
 | Phase 40-interview-based-rate-estimators P02 | 45 | 2 tasks | 7 files |
 | Phase 41-product-estimators P01 | 11 | 1 tasks | 3 files |
 | Phase 41-product-estimators P02 | 32 | 1 tasks | 6 files |
+| Phase 42 P01 | 168 | 2 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -173,8 +174,8 @@ None currently.
 
 ## Session Continuity
 
-Last session: 2026-03-14T16:52:11.426Z
-Stopped at: Completed 41-02-PLAN.md
+Last session: 2026-03-14T21:17:14.598Z
+Stopped at: Completed 42-01-PLAN.md
 Resume file: None
 Next step: `/gsd:plan-phase 39` to plan remaining Phase 39 work (SECT-01 through SECT-05)
 
@@ -261,3 +262,10 @@ Next step: `/gsd:plan-phase 39` to plan remaining Phase 39 work (SECT-01 through
 - `prop_of_lake_total` denominator = `sum(TC_i)` (present sections only), not full-design svytotal — guarantees proportions sum to exactly 1.0 per plan spec
 - `.lake_total` SE = `sqrt(sum(se_i^2))` zero-covariance; CI uses `qt()` from `survey::degf(full_svy)` for consistency with rate section helpers
 - `line_length_linter` suppressed on 121-char missing-sections error message in all three helpers
+
+### Decisions (42-01)
+
+- `result$estimates` slot access required in integration tests — `creel_estimates` is a list object with an `estimates` tibble slot; calling `nrow(result)` returns NULL (Rule 1 auto-fix applied)
+- Datasets mirror canonical `make_3section_total_catch_design()` fixture values so vignette numbers are consistent with the test suite
+- `catch_kept` column included in `example_sections_interviews` for `estimate_total_harvest()` compatibility
+- `interview_id` column (1L:27L) included in `example_sections_interviews` to support future `add_catch()` use in vignette
