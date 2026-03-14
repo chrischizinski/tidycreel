@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: completed
-stopped_at: Phase 41 Plan 01 complete (TDD RED stubs for PROD-01/02)
-last_updated: "2026-03-14T16:15:10.459Z"
-last_activity: 2026-03-11 — Phase 40 Plan 02 complete (section dispatch for rate estimators)
+stopped_at: Completed 41-02-PLAN.md
+last_updated: "2026-03-14T16:52:11.428Z"
+last_activity: 2026-03-14 — Phase 41 Plan 01 complete (TDD RED stubs for product estimator section dispatch)
 progress:
   total_phases: 4
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 6
-  completed_plans: 5
+  completed_plans: 6
 ---
 
 # Project State
@@ -24,17 +24,17 @@ See: .planning/PROJECT.md (updated 2026-03-10)
 
 ## Current Position
 
-Phase: Phase 41 — Product Estimators (in progress)
-Plan: Phase 41 Plan 01 complete (1/2 plans done); Plan 02 pending
-Status: Phase 41 Plan 01 complete — PROD-01/02 TDD RED stubs in place; 19 section stubs RED, 175 pre-existing GREEN
-Last activity: 2026-03-14 — Phase 41 Plan 01 complete (TDD RED stubs for product estimator section dispatch)
+Phase: Phase 41 — Product Estimators (complete)
+Plan: Phase 41 Plan 02 complete (2/2 plans done)
+Status: Phase 41 complete — all 19 PROD-01/PROD-02 stubs GREEN; 1555 total tests passing
+Last activity: 2026-03-14 — Phase 41 Plan 02 complete (section dispatch for product estimators)
 
 ### Progress Bar
 
 ```
 Phase 39 [==========] Complete (39-01, 39-02, 39-03 all done)
 Phase 40 [==========] Complete (40-01, 40-02 done)
-Phase 41 [=====-----] In Progress (41-01 done, 41-02 pending)
+Phase 41 [==========] Complete (41-01, 41-02 done)
 Phase 42 [----------] Not started
 ```
 
@@ -68,6 +68,7 @@ Phase 42 [----------] Not started
 | Phase 40-interview-based-rate-estimators P01 | 18 | 2 tasks | 26 files |
 | Phase 40-interview-based-rate-estimators P02 | 45 | 2 tasks | 7 files |
 | Phase 41-product-estimators P01 | 11 | 1 tasks | 3 files |
+| Phase 41-product-estimators P02 | 32 | 1 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -172,8 +173,8 @@ None currently.
 
 ## Session Continuity
 
-Last session: 2026-03-14T16:15:10.455Z
-Stopped at: Phase 41 Plan 01 complete (TDD RED stubs for PROD-01/02)
+Last session: 2026-03-14T16:52:11.426Z
+Stopped at: Completed 41-02-PLAN.md
 Resume file: None
 Next step: `/gsd:plan-phase 39` to plan remaining Phase 39 work (SECT-01 through SECT-05)
 
@@ -251,3 +252,12 @@ Next step: `/gsd:plan-phase 39` to plan remaining Phase 39 work (SECT-01 through
 - test-estimate-total-release.R fixture uses add_catch() with released records — estimate_total_release() mandates add_catch() with catch_type="released"; harvest fixtures use interview-level catch_kept instead
 - Harvest and release fixtures include catch_kept column — required for estimate_total_harvest() and release rate dispatch to work correctly per section
 - 19 RED stubs fail with "unused argument (aggregate_sections)" — correct RED behavior confirming dispatch not yet implemented; all 175 pre-existing tests remain GREEN
+
+### Decisions (41-02)
+
+- Set `sec_counts_design[["sections"]] <- NULL` after `rebuild_counts_survey()` in all three section helpers — prevents recursive section dispatch when sub-design is passed to `estimate_effort()` (which would fire `estimate_effort_sections()` and fail on single-section vcov)
+- Use internal helpers (`estimate_effort_total()` + `estimate_cpue_total()` / `estimate_harvest_total()`) inline in the section loop rather than calling public `_ungrouped` wrappers — bypasses `validate_ratio_sample_size()` abort on n=9 per-section interviews
+- Release section helper builds release data inline (mirrors `estimate_release_rate_sections()` pattern), then calls `estimate_cpue_total()` directly
+- `prop_of_lake_total` denominator = `sum(TC_i)` (present sections only), not full-design svytotal — guarantees proportions sum to exactly 1.0 per plan spec
+- `.lake_total` SE = `sqrt(sum(se_i^2))` zero-covariance; CI uses `qt()` from `survey::degf(full_svy)` for consistency with rate section helpers
+- `line_length_linter` suppressed on 121-char missing-sections error message in all three helpers

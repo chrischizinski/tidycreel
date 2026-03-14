@@ -103,7 +103,7 @@ See: [.planning/milestones/v0.4.0-ROADMAP.md](milestones/v0.4.0-ROADMAP.md)
   - [x] Phase 39 Plan 02: Section test fixtures and failing stubs (SECT-01..05) (completed 2026-03-10)
   - [x] Phase 39 Plan 03: estimate_effort() section dispatch — rebuild_counts_survey, estimate_effort_sections, aggregate_section_totals (completed 2026-03-11)
   - [x] **Phase 40: Interview-Based Rate Estimators** (completed 2026-03-11)
-  - [ ] **Phase 41: Product Estimators**
+  - [x] **Phase 41: Product Estimators** (completed 2026-03-14)
   - [ ] **Phase 42: Example Data and Vignette**
 
 ## Phase Details
@@ -187,7 +187,7 @@ Plans:
   2. The `.lake_total` catch estimate equals `sum(E_i * CPUE_i)` across sections — not `E_total * CPUE_pooled` — and matches hand-calculation within floating point tolerance
   3. User calls `estimate_total_harvest(design)` and `estimate_total_release(design)` on a sectioned design and each returns per-section rows plus a correctly aggregated `.lake_total` row
 
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 41-01-PLAN.md — section test fixtures and failing stubs (PROD-01/02)
@@ -222,7 +222,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 39. Section Effort Estimation | 2/2 | Complete    | 2026-03-11 |
 | 40. Interview-Based Rate Estimators | 2/2 | Complete    | 2026-03-12 |
-| 41. Product Estimators | 1/2 | In Progress|  |
+| 41. Product Estimators | 2/2 | Complete   | 2026-03-14 |
 | 42. Example Data and Vignette | 0/? | Not started | — |
 
 | Milestone | Phases | Plans | Status | Completed |
