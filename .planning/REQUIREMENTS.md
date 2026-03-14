@@ -29,8 +29,8 @@
 
 ### Example Data and Documentation
 
-- [ ] **DOCS-01**: A 3-section example dataset is included showing material variation across sections (different effort levels and catch rates across sections)
-- [ ] **DOCS-02**: A vignette "Spatially stratified estimation with sections" demonstrates the full workflow and explains the correlated-domains vs. independent-strata variance decision
+- [x] **DOCS-01**: A 3-section example dataset is included showing material variation across sections (different effort levels and catch rates across sections)
+- [x] **DOCS-02**: A vignette "Spatially stratified estimation with sections" demonstrates the full workflow and explains the correlated-domains vs. independent-strata variance decision
 
 ---
 
@@ -67,8 +67,8 @@
 | RATE-03 | Phase 40 | Complete |
 | PROD-01 | Phase 41 | Complete |
 | PROD-02 | Phase 41 | Complete |
-| DOCS-01 | Phase 42 | Pending |
-| DOCS-02 | Phase 42 | Pending |
+| DOCS-01 | Phase 42 | Complete |
+| DOCS-02 | Phase 42 | Complete |
 
 **Coverage:**
 - v0.7.0 requirements: 12 total

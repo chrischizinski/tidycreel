@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: completed
-stopped_at: Completed 42-01-PLAN.md
-last_updated: "2026-03-14T21:17:14.600Z"
-last_activity: 2026-03-14 — Phase 41 Plan 02 complete (section dispatch for product estimators)
+stopped_at: "Completed 42-02-PLAN.md (checkpoint:human-verify pending)"
+last_updated: "2026-03-14T21:27:11.717Z"
+last_activity: 2026-03-14 — Phase 42 Plan 01 complete (example sections datasets)
 progress:
   total_phases: 4
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 8
-  completed_plans: 7
+  completed_plans: 8
 ---
 
 # Project State
@@ -24,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-03-10)
 
 ## Current Position
 
-Phase: Phase 42 — Example Data and Vignette (in progress)
-Plan: Phase 42 Plan 01 complete (1/2 plans done)
-Status: Phase 42-01 complete — 27 new tests GREEN; 1582 total tests passing; 3 example_sections_* datasets created
-Last activity: 2026-03-14 — Phase 42 Plan 01 complete (example sections datasets)
+Phase: Phase 42 — Example Data and Vignette (complete — awaiting checkpoint:human-verify)
+Plan: Phase 42 Plan 02 complete (2/2 plans done)
+Status: Phase 42-02 complete — section-estimation.Rmd vignette builds clean; 1582 total tests passing; DOCS-02 satisfied
+Last activity: 2026-03-14 — Phase 42 Plan 02 complete (section-estimation vignette)
 
 ### Progress Bar
 
@@ -35,7 +35,7 @@ Last activity: 2026-03-14 — Phase 42 Plan 01 complete (example sections datase
 Phase 39 [==========] Complete (39-01, 39-02, 39-03 all done)
 Phase 40 [==========] Complete (40-01, 40-02 done)
 Phase 41 [==========] Complete (41-01, 41-02 done)
-Phase 42 [=====-----] In progress (42-01 done, 42-02 pending)
+Phase 42 [==========] Complete (42-01, 42-02 done — checkpoint:human-verify pending)
 ```
 
 ## Performance Metrics
@@ -174,8 +174,8 @@ None currently.
 
 ## Session Continuity
 
-Last session: 2026-03-14T21:17:14.598Z
-Stopped at: Completed 42-01-PLAN.md
+Last session: 2026-03-14T21:27:11.715Z
+Stopped at: Completed 42-02-PLAN.md (checkpoint:human-verify pending)
 Resume file: None
 Next step: `/gsd:plan-phase 39` to plan remaining Phase 39 work (SECT-01 through SECT-05)
 
@@ -269,3 +269,10 @@ Next step: `/gsd:plan-phase 39` to plan remaining Phase 39 work (SECT-01 through
 - Datasets mirror canonical `make_3section_total_catch_design()` fixture values so vignette numbers are consistent with the test suite
 - `catch_kept` column included in `example_sections_interviews` for `estimate_total_harvest()` compatibility
 - `interview_id` column (1L:27L) included in `example_sections_interviews` to support future `add_catch()` use in vignette
+
+### Decisions (42-02)
+
+- `aggregate_sections = TRUE` passed explicitly in vignette `estimate_total_catch()` / `estimate_total_harvest()` calls to make the parameter visible to readers even though TRUE is the default
+- `warning = FALSE` on add_counts/add_interviews chunks suppresses svydesign no-weights noise; `warning = TRUE` on missing-section chunk exposes cli_warn() output in rendered HTML
+- Separate `design_nosections` object used for lake-wide CPUE demonstration — shows unsectioned workflow and explains why sectioned design produces no lake-wide CPUE row
+- `aggregate_sections` parameter confirmed present in dev version signature (R/creel-estimates-total-catch.R line 104); vignette built via devtools::build_vignettes() uses dev source
