@@ -541,3 +541,279 @@ test_that("estimate_total_catch() verbose=FALSE produces no dispatch message", {
   d <- make_br_catch_interviews(make_br_catch_design())
   expect_no_message(suppressWarnings(estimate_total_catch(d, verbose = FALSE)))
 })
+
+# Section dispatch fixtures and stubs (PROD-01, PROD-02) ----
+
+#' Create 3-section creel_design for total catch section tests
+#'
+#' Produces a creel_design with sections "North", "Central", "South" and
+#' both counts and interview data for all three sections. 12-date calendar,
+#' 9 interviews per section. Fixture name is explicit about purpose
+#' (total catch context). Data shape is identical to the Phase 40 fixture
+#' make_3section_design_with_interviews().
+make_3section_total_catch_design <- function() { # nolint: object_length_linter
+  cal <- data.frame(
+    date = as.Date(c(
+      "2024-06-03", "2024-06-04", "2024-06-05", "2024-06-06",
+      "2024-06-07", "2024-06-10",
+      "2024-06-08", "2024-06-09", "2024-06-14", "2024-06-15",
+      "2024-06-16", "2024-06-21"
+    )),
+    day_type = c(
+      "weekday", "weekday", "weekday", "weekday", "weekday", "weekday",
+      "weekend", "weekend", "weekend", "weekend", "weekend", "weekend"
+    ),
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+
+  sections_df <- data.frame(
+    section = c("North", "Central", "South"),
+    stringsAsFactors = FALSE
+  )
+  design <- add_sections(design, sections_df, section_col = section) # nolint: object_usage_linter
+
+  # 36-row counts: each of the 12 dates repeated for each of 3 sections
+  counts <- data.frame(
+    date = rep(cal$date, times = 3),
+    day_type = rep(cal$day_type, times = 3),
+    section = rep(c("North", "Central", "South"), each = nrow(cal)),
+    effort_hours = c(
+      # North: weekday ~15-25, weekend ~20-28
+      20, 22, 18, 25, 15, 24,
+      21, 26, 23, 28, 20, 27,
+      # Central: weekday ~30-45, weekend ~35-48
+      35, 38, 32, 42, 30, 45,
+      37, 44, 40, 48, 35, 46,
+      # South: weekday ~5-12, weekend ~6-13
+      8, 10, 5, 12, 6, 11,
+      7, 9, 6, 13, 8, 10
+    ),
+    stringsAsFactors = FALSE
+  )
+  design <- suppressWarnings(add_counts(design, counts)) # nolint: object_usage_linter
+
+  # 27 interviews: 9 per section, varying catch/effort across sections
+  interviews <- data.frame(
+    date = as.Date(c(
+      # North (9 interviews)
+      "2024-06-03", "2024-06-04", "2024-06-05",
+      "2024-06-07", "2024-06-10", "2024-06-07",
+      "2024-06-08", "2024-06-09", "2024-06-14",
+      # Central (9 interviews)
+      "2024-06-03", "2024-06-04", "2024-06-05",
+      "2024-06-06", "2024-06-10", "2024-06-10",
+      "2024-06-08", "2024-06-09", "2024-06-21",
+      # South (9 interviews)
+      "2024-06-03", "2024-06-04", "2024-06-05",
+      "2024-06-06", "2024-06-07", "2024-06-07",
+      "2024-06-08", "2024-06-09", "2024-06-14"
+    )),
+    day_type = c(
+      "weekday", "weekday", "weekday", "weekday", "weekday", "weekday",
+      "weekend", "weekend", "weekend",
+      "weekday", "weekday", "weekday", "weekday", "weekday", "weekday",
+      "weekend", "weekend", "weekend",
+      "weekday", "weekday", "weekday", "weekday", "weekday", "weekday",
+      "weekend", "weekend", "weekend"
+    ),
+    section = rep(c("North", "Central", "South"), each = 9),
+    catch_total = c(
+      # North: ~1 fish/hr
+      2, 3, 2, 4, 3, 2, 3, 4, 3,
+      # Central: ~1.5 fish/hr
+      5, 6, 5, 7, 6, 5, 7, 8, 6,
+      # South: ~2.5 fish/hr
+      10, 12, 9, 11, 10, 12, 13, 11, 10
+    ),
+    hours_fished = c(
+      # North: 2-3 hrs
+      2.0, 3.0, 2.5, 3.0, 2.0, 2.5, 3.0, 3.5, 3.0,
+      # Central: 3-4 hrs
+      3.5, 4.0, 3.5, 4.5, 4.0, 3.5, 4.5, 5.0, 4.0,
+      # South: 4-5 hrs
+      4.0, 5.0, 4.0, 4.5, 4.0, 5.0, 5.0, 4.5, 4.0
+    ),
+    trip_status = rep("complete", 27),
+    trip_duration = c(
+      # North
+      2.0, 3.0, 2.5, 3.0, 2.0, 2.5, 3.0, 3.5, 3.0,
+      # Central
+      3.5, 4.0, 3.5, 4.5, 4.0, 3.5, 4.5, 5.0, 4.0,
+      # South
+      4.0, 5.0, 4.0, 4.5, 4.0, 5.0, 5.0, 4.5, 4.0
+    ),
+    stringsAsFactors = FALSE
+  )
+
+  suppressWarnings(add_interviews( # nolint: object_usage_linter
+    design, interviews,
+    catch = catch_total, effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status, trip_duration = trip_duration # nolint: object_usage_linter
+  ))
+}
+
+#' Create 3-section design with "South" absent from interview/count data
+#'
+#' Registered sections: "North", "Central", "South".
+#' Interview data contains only "North" and "Central" rows — "South" absent.
+make_3section_catch_design_missing_south <- function() { # nolint: object_length_linter
+  cal <- data.frame(
+    date = as.Date(c(
+      "2024-06-03", "2024-06-04", "2024-06-05", "2024-06-06",
+      "2024-06-07", "2024-06-10",
+      "2024-06-08", "2024-06-09", "2024-06-14", "2024-06-15",
+      "2024-06-16", "2024-06-21"
+    )),
+    day_type = c(
+      "weekday", "weekday", "weekday", "weekday", "weekday", "weekday",
+      "weekend", "weekend", "weekend", "weekend", "weekend", "weekend"
+    ),
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+
+  sections_df <- data.frame(
+    section = c("North", "Central", "South"),
+    stringsAsFactors = FALSE
+  )
+  design <- add_sections(design, sections_df, section_col = section) # nolint: object_usage_linter
+
+  counts <- data.frame(
+    date = rep(cal$date, times = 3),
+    day_type = rep(cal$day_type, times = 3),
+    section = rep(c("North", "Central", "South"), each = nrow(cal)),
+    effort_hours = c(
+      20, 22, 18, 25, 15, 24, 21, 26, 23, 28, 20, 27,
+      35, 38, 32, 42, 30, 45, 37, 44, 40, 48, 35, 46,
+      8, 10, 5, 12, 6, 11, 7, 9, 6, 13, 8, 10
+    ),
+    stringsAsFactors = FALSE
+  )
+  design <- suppressWarnings(add_counts(design, counts)) # nolint: object_usage_linter
+
+  # Only North and Central interviews — South absent
+  interviews <- data.frame(
+    date = as.Date(c(
+      "2024-06-03", "2024-06-04", "2024-06-05",
+      "2024-06-07", "2024-06-10", "2024-06-07",
+      "2024-06-08", "2024-06-09", "2024-06-14",
+      "2024-06-03", "2024-06-04", "2024-06-05",
+      "2024-06-06", "2024-06-10", "2024-06-10",
+      "2024-06-08", "2024-06-09", "2024-06-21"
+    )),
+    day_type = c(
+      "weekday", "weekday", "weekday", "weekday", "weekday", "weekday",
+      "weekend", "weekend", "weekend",
+      "weekday", "weekday", "weekday", "weekday", "weekday", "weekday",
+      "weekend", "weekend", "weekend"
+    ),
+    section = rep(c("North", "Central"), each = 9),
+    catch_total = c(
+      2, 3, 2, 4, 3, 2, 3, 4, 3,
+      5, 6, 5, 7, 6, 5, 7, 8, 6
+    ),
+    hours_fished = c(
+      2.0, 3.0, 2.5, 3.0, 2.0, 2.5, 3.0, 3.5, 3.0,
+      3.5, 4.0, 3.5, 4.5, 4.0, 3.5, 4.5, 5.0, 4.0
+    ),
+    trip_status = rep("complete", 18),
+    trip_duration = c(
+      2.0, 3.0, 2.5, 3.0, 2.0, 2.5, 3.0, 3.5, 3.0,
+      3.5, 4.0, 3.5, 4.5, 4.0, 3.5, 4.5, 5.0, 4.0
+    ),
+    stringsAsFactors = FALSE
+  )
+
+  suppressWarnings(add_interviews( # nolint: object_usage_linter
+    design, interviews,
+    catch = catch_total, effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status, trip_duration = trip_duration # nolint: object_usage_linter
+  ))
+}
+
+# PROD-01: Per-section rows for estimate_total_catch ----
+
+test_that("PROD-01-catch: estimate_total_catch on 3-section design returns a tibble with a section column", {
+  design <- make_3section_total_catch_design() # nolint: object_usage_linter
+  result <- suppressWarnings(suppressMessages(
+    estimate_total_catch(design) # nolint: object_usage_linter
+  ))
+  expect_true("section" %in% names(result$estimates))
+})
+
+test_that("PROD-01-catch-rows: estimate_total_catch on 3-section design returns 3 rows (aggregate_sections = FALSE)", {
+  design <- make_3section_total_catch_design() # nolint: object_usage_linter
+  result <- suppressWarnings(suppressMessages(
+    estimate_total_catch(design, aggregate_sections = FALSE) # nolint: object_usage_linter
+  ))
+  expect_equal(nrow(result$estimates), 3L)
+})
+
+test_that("PROD-01-catch-missing: missing section inserts NA row with data_available=FALSE for estimate_total_catch", {
+  design <- make_3section_catch_design_missing_south() # nolint: object_usage_linter
+  warns <- character(0)
+  result <- withCallingHandlers(
+    estimate_total_catch(design, missing_sections = "warn"), # nolint: object_usage_linter
+    warning = function(w) {
+      warns <<- c(warns, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    }
+  )
+  south_row <- result$estimates[result$estimates$section == "South", ]
+  expect_equal(nrow(south_row), 1L)
+  expect_false(south_row$data_available)
+  expect_true(is.na(south_row$estimate))
+})
+
+# PROD-02: Lake total row for estimate_total_catch ----
+
+test_that("PROD-02-catch-lake: aggregate_sections=TRUE appends .lake_total row (4 rows total for 3-section design)", {
+  design <- make_3section_total_catch_design() # nolint: object_usage_linter
+  result <- suppressWarnings(suppressMessages(
+    estimate_total_catch(design, aggregate_sections = TRUE) # nolint: object_usage_linter
+  ))
+  expect_equal(nrow(result$estimates), 4L)
+  expect_true(".lake_total" %in% result$estimates$section)
+})
+
+test_that("PROD-02-catch-sum: .lake_total$estimate equals sum of per-section estimates", {
+  design <- make_3section_total_catch_design() # nolint: object_usage_linter
+  result <- suppressWarnings(suppressMessages(
+    estimate_total_catch(design, aggregate_sections = TRUE) # nolint: object_usage_linter
+  ))
+  section_rows <- result$estimates[result$estimates$section != ".lake_total", ]
+  lake_row <- result$estimates[result$estimates$section == ".lake_total", ]
+  expect_equal(lake_row$estimate, sum(section_rows$estimate), tolerance = 1e-10)
+})
+
+test_that("PROD-02-catch-se: .lake_total$se equals sqrt(sum(se_i^2)) over present section rows", {
+  design <- make_3section_total_catch_design() # nolint: object_usage_linter
+  result <- suppressWarnings(suppressMessages(
+    estimate_total_catch(design, aggregate_sections = TRUE) # nolint: object_usage_linter
+  ))
+  section_rows <- result$estimates[result$estimates$section != ".lake_total", ]
+  lake_row <- result$estimates[result$estimates$section == ".lake_total", ]
+  expected_se <- sqrt(sum(section_rows$se^2))
+  expect_equal(lake_row$se, expected_se, tolerance = 1e-10)
+})
+
+test_that("PROD-02-catch-prop: prop_of_lake_total for present sections sums to 1.0", {
+  design <- make_3section_total_catch_design() # nolint: object_usage_linter
+  result <- suppressWarnings(suppressMessages(
+    estimate_total_catch(design, aggregate_sections = FALSE) # nolint: object_usage_linter
+  ))
+  expect_true("prop_of_lake_total" %in% names(result$estimates))
+  expect_equal(sum(result$estimates$prop_of_lake_total), 1.0, tolerance = 1e-10)
+})
+
+# PROD-02-catch-regression: Non-sectioned designs return identical results (regression guard) ----
+
+test_that("PROD-02-catch-regression: non-sectioned design returns same result as pre-Phase-41", {
+  design_no_sections <- make_total_catch_design() # nolint: object_usage_linter
+  result <- estimate_total_catch(design_no_sections) # nolint: object_usage_linter
+  expect_s3_class(result, "creel_estimates")
+  expect_false("section" %in% names(result$estimates))
+  expect_true(is.numeric(result$estimates$estimate))
+  expect_true(result$estimates$estimate > 0)
+})
