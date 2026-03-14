@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: completed
-stopped_at: "Completed 42-02-PLAN.md — v0.7.0 Spatially Stratified Estimation milestone complete"
-last_updated: "2026-03-14T21:27:11.717Z"
-last_activity: 2026-03-14 — Phase 42 Plan 01 complete (example sections datasets)
+stopped_at: Completed 42-02-PLAN.md — v0.7.0 Spatially Stratified Estimation milestone complete
+last_updated: "2026-03-14T23:44:26.215Z"
+last_activity: 2026-03-14 — Phase 42 Plan 02 complete (section-estimation vignette)
 progress:
   total_phases: 4
   completed_phases: 4
