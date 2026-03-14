@@ -9,6 +9,8 @@ estimate_total_catch(
   by = NULL,
   variance = "taylor",
   conf_level = 0.95,
+  aggregate_sections = TRUE,
+  missing_sections = "warn",
   verbose = FALSE
 )
 }
@@ -28,6 +30,16 @@ and CPUE estimation, then combined via delta method.}
 
 \item{conf_level}{Numeric confidence level (default: 0.95)}
 
+\item{aggregate_sections}{Logical. When the design was created with
+\code{\link{add_sections}}, should a \code{.lake_total} row be appended
+that sums the per-section estimates? Default \code{TRUE}. Set to
+\code{FALSE} to return only the per-section rows without the lake total.}
+
+\item{missing_sections}{Character(1). Action when a registered section is
+absent from either count data or interview data: \code{"warn"} (default)
+inserts an NA row with \code{data_available = FALSE}, \code{"error"}
+raises a hard error.}
+
 \item{verbose}{Logical. If TRUE, prints an informational message identifying
 which estimator path was used. Default FALSE.}
 }
@@ -35,6 +47,9 @@ which estimator path was used. Default FALSE.}
 A creel_estimates S3 object with method = "product-total-catch".
 For bus-route designs, returns a bus-route HT estimate with method = "total"
 and a "site_contributions" attribute.
+For sectioned designs, returns per-section rows plus (by default) a
+\code{.lake_total} row. The lake-wide total is computed as
+\code{sum(TC_i)} over sections, never as \code{E_total * CPUE_pooled}.
 }
 \description{
 Computes total catch estimates by multiplying effort × CPUE with variance
@@ -50,6 +65,16 @@ for independent estimates is approximately:
 
 The function uses survey::svycontrast() to compute variance automatically
 via symbolic differentiation and Taylor series approximation.
+
+\strong{Sectioned designs:}
+When \code{\link{add_sections}} has been called on the design, each section
+is estimated independently using its own count survey (via
+\code{rebuild_counts_survey}) and interview survey (via
+\code{rebuild_interview_survey}). The lake-wide total is the arithmetic sum
+\code{sum(TC_i)}, not \code{E_total * CPUE_pooled}. The lake-wide SE uses
+the zero-covariance assumption: \code{sqrt(sum(se_i^2))}. Cross-section
+covariance between count-based effort and interview-based CPUE designs is not
+identified and is therefore assumed zero.
 
 \strong{Design compatibility requirements:}
 \itemize{

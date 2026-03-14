@@ -19,6 +19,14 @@
 #'   "taylor" (default), "bootstrap", or "jackknife". Applied to BOTH effort
 #'   and HPUE estimation, then combined via delta method.
 #' @param conf_level Numeric confidence level (default: 0.95)
+#' @param aggregate_sections Logical. When the design was created with
+#'   \code{\link{add_sections}}, should a \code{.lake_total} row be appended
+#'   that sums the per-section estimates? Default \code{TRUE}. Set to
+#'   \code{FALSE} to return only the per-section rows without the lake total.
+#' @param missing_sections Character(1). Action when a registered section is
+#'   absent from either count data or interview data: \code{"warn"} (default)
+#'   inserts an NA row with \code{data_available = FALSE}, \code{"error"}
+#'   raises a hard error.
 #'
 #' @return A creel_estimates S3 object with method = "product-total-harvest"
 #'
@@ -31,6 +39,12 @@
 #'
 #' The function uses survey::svycontrast() to compute variance automatically
 #' via symbolic differentiation and Taylor series approximation.
+#'
+#' \strong{Sectioned designs:}
+#' When \code{\link{add_sections}} has been called on the design, each section
+#' is estimated independently. The lake-wide total is \code{sum(TH_i)}, not
+#' \code{E_total * HPUE_pooled}. The lake-wide SE uses the zero-covariance
+#' assumption: \code{sqrt(sum(se_i^2))}.
 #'
 #' \strong{Design compatibility requirements:}
 #' \itemize{
@@ -72,7 +86,14 @@
 #' @seealso \code{\link{estimate_effort}}, \code{\link{estimate_harvest_rate}},
 #'   \code{\link{estimate_total_catch}}
 #' @export
-estimate_total_harvest <- function(design, by = NULL, variance = "taylor", conf_level = 0.95) {
+estimate_total_harvest <- function(
+  design,
+  by = NULL,
+  variance = "taylor",
+  conf_level = 0.95,
+  aggregate_sections = TRUE,
+  missing_sections = "warn"
+) {
   # Capture by parameter BEFORE validation
   by_quo <- rlang::enquo(by)
 
@@ -135,6 +156,13 @@ estimate_total_harvest <- function(design, by = NULL, variance = "taylor", conf_
         "Example: {.code design <- add_interviews(design, interviews,",
         "catch = catch_total, harvest = catch_kept, effort = hours_fished)}"
       )
+    ))
+  }
+
+  # Section dispatch guard (v0.7.0+ — only fires when add_sections() was called)
+  if (!is.null(design[["sections"]])) {
+    return(estimate_total_harvest_sections( # nolint: object_usage_linter
+      design, by_quo, variance, conf_level, aggregate_sections, missing_sections
     ))
   }
 
@@ -382,4 +410,155 @@ estimate_total_harvest_species <- function(design, species_col, interview_by_var
   }
 
   do.call(rbind, results_list)
+}
+
+#' Per-section total harvest estimation (product estimator)
+#'
+#' @keywords internal
+#' @noRd
+estimate_total_harvest_sections <- function(design, by_quo, variance_method, # nolint: object_length_linter
+                                            conf_level, aggregate_sections,
+                                            missing_sections) {
+  section_col <- design[["section_col"]]
+  registered_sections <- design$sections[[section_col]]
+  present_count_sections <- unique(design$counts[[section_col]])
+  present_interview_sections <- unique(design$interviews[[section_col]])
+  absent_sections <- setdiff(
+    registered_sections,
+    intersect(present_count_sections, present_interview_sections)
+  )
+
+  # Handle missing sections
+  if (length(absent_sections) > 0) {
+    n_absent <- length(absent_sections) # nolint: object_usage_linter
+    if (missing_sections == "error") {
+      cli::cli_abort(c(
+        "{n_absent} missing section(s) in count or interview data.",
+        "x" = "Section(s) not found: {.val {absent_sections}}",
+        "i" = "All registered sections must have both count and interview data, or use {.arg missing_sections = 'warn'}." # nolint: line_length_linter
+      ))
+    } else {
+      cli::cli_warn(c(
+        "{n_absent} missing section(s) in count or interview data.",
+        "!" = "Section(s) not found: {.val {absent_sections}}",
+        "i" = "Inserting NA row(s) with {.field data_available = FALSE}."
+      ))
+    }
+  }
+
+  # Resolve by= ONCE before the section loop
+  if (rlang::quo_is_null(by_quo)) {
+    by_vars <- NULL
+  } else {
+    by_cols <- tidyselect::eval_select(
+      by_quo,
+      data = design$counts,
+      allow_rename = FALSE,
+      allow_empty = FALSE,
+      error_call = rlang::caller_env()
+    )
+    by_vars <- names(by_cols)
+  }
+
+  section_rows <- vector("list", length(registered_sections))
+  names(section_rows) <- registered_sections
+
+  for (sec in registered_sections) {
+    if (sec %in% absent_sections) {
+      na_row <- tibble::tibble(
+        section = sec,
+        estimate = NA_real_,
+        se = NA_real_,
+        ci_lower = NA_real_,
+        ci_upper = NA_real_,
+        n = 0L,
+        prop_of_lake_total = NA_real_,
+        data_available = FALSE
+      )
+      section_rows[[sec]] <- na_row
+    } else {
+      # Build per-section designs — dual rebuild for product estimators.
+      # Remove sections slot so the sub-design does not re-trigger section dispatch.
+      sec_counts_design <- suppressWarnings(rebuild_counts_survey(design, sec)) # nolint: object_usage_linter
+      sec_counts_design[["sections"]] <- NULL
+      filtered_interviews <- design$interviews[design$interviews[[section_col]] == sec, ]
+      sec_design <- rebuild_interview_survey(sec_counts_design, filtered_interviews) # nolint: object_usage_linter
+
+      if (!is.null(by_vars)) {
+        # Grouped path: delegates to existing grouped helper
+        result <- estimate_total_harvest_grouped( # nolint: object_usage_linter
+          sec_design, by_vars, variance_method, conf_level
+        )
+        row_df <- tibble::add_column(result$estimates, section = sec, .before = 1)
+        row_df$data_available <- TRUE
+        section_rows[[sec]] <- row_df
+      } else {
+        # Ungrouped path: call internal helpers directly to bypass sample-size validation
+        effort_res <- estimate_effort_total(sec_design, variance_method, conf_level) # nolint: object_usage_linter
+        hpue_res <- estimate_harvest_total(sec_design, variance_method, conf_level) # nolint: object_usage_linter
+        effort_est <- effort_res$estimates$estimate
+        hpue_est <- hpue_res$estimates$estimate
+        effort_se <- effort_res$estimates$se
+        hpue_se <- hpue_res$estimates$se
+        sec_estimate <- effort_est * hpue_est
+        sec_var <- (effort_est^2 * hpue_se^2) + (hpue_est^2 * effort_se^2)
+        sec_se <- sqrt(sec_var)
+        z_val <- stats::qnorm(1 - (1 - conf_level) / 2)
+        section_rows[[sec]] <- tibble::tibble(
+          section = sec,
+          estimate = sec_estimate,
+          se = sec_se,
+          ci_lower = sec_estimate - z_val * sec_se,
+          ci_upper = sec_estimate + z_val * sec_se,
+          n = hpue_res$estimates$n,
+          prop_of_lake_total = NA_real_,
+          data_available = TRUE
+        )
+      }
+    }
+  }
+
+  result_df <- dplyr::bind_rows(section_rows)
+
+  # Compute prop_of_lake_total (ungrouped path only; denominator = sum(TH_i))
+  if (is.null(by_vars)) {
+    present_rows <- result_df[!is.na(result_df$estimate), ]
+    lake_sum <- sum(present_rows$estimate)
+    result_df$prop_of_lake_total <- result_df$estimate / lake_sum
+  }
+
+  # Append .lake_total row if requested (ungrouped path only)
+  if (aggregate_sections && is.null(by_vars)) {
+    present_rows <- result_df[!is.na(result_df$estimate), ]
+    lake_est <- sum(present_rows$estimate)
+    lake_se <- sqrt(sum(present_rows$se^2))
+
+    full_svy <- get_variance_design(design$survey, variance_method) # nolint: object_usage_linter
+    df <- as.numeric(survey::degf(full_svy))
+    alpha <- 1 - conf_level
+    t_crit <- qt(1 - alpha / 2, df = df)
+    lake_ci_lower <- lake_est - t_crit * lake_se
+    lake_ci_upper <- lake_est + t_crit * lake_se
+
+    lake_row <- tibble::tibble(
+      section = ".lake_total",
+      estimate = lake_est,
+      se = lake_se,
+      ci_lower = lake_ci_lower,
+      ci_upper = lake_ci_upper,
+      n = nrow(present_rows),
+      prop_of_lake_total = 1.0,
+      data_available = TRUE
+    )
+    result_df <- dplyr::bind_rows(result_df, lake_row)
+  }
+
+  new_creel_estimates( # nolint: object_usage_linter
+    estimates       = result_df,
+    method          = "product-total-harvest-sections",
+    variance_method = variance_method,
+    design          = design,
+    conf_level      = conf_level,
+    by_vars         = if (!is.null(by_vars)) c("section", by_vars) else "section"
+  )
 }
