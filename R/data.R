@@ -201,3 +201,114 @@
 #' )
 #' print(design)
 "example_lengths"
+
+#' Example calendar for spatially stratified creel survey
+#'
+#' A 12-day survey calendar used to demonstrate the spatially stratified
+#' workflow with [add_sections()]. Contains 6 weekdays and 6 weekends from
+#' June 2024. Matches the date range of [example_sections_counts] and
+#' [example_sections_interviews].
+#'
+#' @format A data frame with 12 rows and 2 columns:
+#' \describe{
+#'   \item{date}{Survey date (Date class), June 2024}
+#'   \item{day_type}{Day type stratum: \code{"weekday"} or \code{"weekend"}}
+#' }
+#'
+#' @source Simulated data for package examples
+#'
+#' @examples
+#' data(example_sections_calendar)
+#' head(example_sections_calendar)
+#'
+#' design <- creel_design(example_sections_calendar, date = date, strata = day_type)
+#' print(design)
+#'
+#' @seealso [example_sections_counts], [example_sections_interviews],
+#'   [add_sections()], [creel_design()]
+"example_sections_calendar"
+
+#' Example effort counts for spatially stratified creel survey
+#'
+#' Instantaneous count observations for a 3-section lake (North, Central, South)
+#' covering 12 survey dates. Each section has one count row per date (36 rows
+#' total). Effort varies materially by section: Central has the highest angler
+#' traffic, South the lowest. Use with [add_sections()] and [add_counts()].
+#'
+#' @format A data frame with 36 rows and 4 columns:
+#' \describe{
+#'   \item{date}{Survey date (Date class), matching [example_sections_calendar]}
+#'   \item{day_type}{Day type stratum: \code{"weekday"} or \code{"weekend"}}
+#'   \item{section}{Section identifier: \code{"North"}, \code{"Central"}, or
+#'     \code{"South"}}
+#'   \item{effort_hours}{Numeric instantaneous count of angler-hours observed}
+#' }
+#'
+#' @source Simulated data for package examples
+#'
+#' @examples
+#' data(example_sections_calendar)
+#' data(example_sections_counts)
+#'
+#' sections_df <- data.frame(
+#'   section = c("North", "Central", "South"),
+#'   stringsAsFactors = FALSE
+#' )
+#' design <- creel_design(example_sections_calendar, date = date, strata = day_type)
+#' design <- add_sections(design, sections_df, section_col = section)
+#' design <- suppressWarnings(add_counts(design, example_sections_counts))
+#' estimate_effort(design)
+#'
+#' @seealso [example_sections_calendar], [example_sections_interviews],
+#'   [add_counts()], [add_sections()], [estimate_effort()]
+"example_sections_counts"
+
+#' Example interview data for spatially stratified creel survey
+#'
+#' Angler interview data for a 3-section lake (North, Central, South) with
+#' 9 interviews per section (27 total). Catch rates differ materially across
+#' sections: South has approximately 2.5x the catch rate of North, making this
+#' dataset suitable for demonstrating spatially stratified estimation. The
+#' \code{catch_kept} column enables [estimate_total_harvest()] in addition to
+#' [estimate_catch_rate()] and [estimate_total_catch()].
+#'
+#' @format A data frame with 27 rows and 9 columns:
+#' \describe{
+#'   \item{date}{Interview date (Date class), matching [example_sections_calendar]}
+#'   \item{day_type}{Day type stratum: \code{"weekday"} or \code{"weekend"}}
+#'   \item{section}{Section identifier: \code{"North"}, \code{"Central"}, or
+#'     \code{"South"}}
+#'   \item{catch_total}{Integer total fish caught per interview}
+#'   \item{catch_kept}{Integer fish harvested (kept); always
+#'     \code{<= catch_total}}
+#'   \item{hours_fished}{Numeric fishing effort in hours}
+#'   \item{trip_status}{Character trip completion status; \code{"complete"}
+#'     for all 27 interviews}
+#'   \item{trip_duration}{Numeric trip duration in hours}
+#'   \item{interview_id}{Integer interview identifier (1 to 27)}
+#' }
+#'
+#' @source Simulated data for package examples
+#'
+#' @examples
+#' data(example_sections_calendar)
+#' data(example_sections_counts)
+#' data(example_sections_interviews)
+#'
+#' sections_df <- data.frame(
+#'   section = c("North", "Central", "South"),
+#'   stringsAsFactors = FALSE
+#' )
+#' design <- creel_design(example_sections_calendar, date = date, strata = day_type)
+#' design <- add_sections(design, sections_df, section_col = section)
+#' design <- suppressWarnings(add_counts(design, example_sections_counts))
+#' design <- suppressWarnings(add_interviews(design, example_sections_interviews,
+#'   catch = catch_total, effort = hours_fished,
+#'   harvest = catch_kept,
+#'   trip_status = trip_status, trip_duration = trip_duration
+#' ))
+#' estimate_total_catch(design, aggregate_sections = TRUE)
+#'
+#' @seealso [example_sections_calendar], [example_sections_counts],
+#'   [add_interviews()], [estimate_catch_rate()], [estimate_total_catch()]
+"example_sections_interviews"

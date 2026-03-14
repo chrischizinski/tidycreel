@@ -117,8 +117,8 @@ test_that("creel design built from example_sections datasets succeeds and estima
   ))
 
   result <- estimate_effort(design)
-  expect_equal(nrow(result), 4L)
-  expect_true(".lake_total" %in% result$section)
+  expect_equal(nrow(result$estimates), 4L)
+  expect_true(".lake_total" %in% result$estimates$section)
 })
 
 test_that("estimate_catch_rate on example_sections design returns exactly 3 rows (no .lake_total)", {
@@ -147,8 +147,8 @@ test_that("estimate_catch_rate on example_sections design returns exactly 3 rows
   ))
 
   result <- estimate_catch_rate(design)
-  expect_equal(nrow(result), 3L)
-  expect_false(".lake_total" %in% result$section)
+  expect_equal(nrow(result$estimates), 3L)
+  expect_false(".lake_total" %in% result$estimates$section)
 })
 
 test_that("estimate_total_catch with aggregate_sections = TRUE returns 4 rows", {
@@ -177,6 +177,6 @@ test_that("estimate_total_catch with aggregate_sections = TRUE returns 4 rows", 
   ))
 
   result <- estimate_total_catch(design, aggregate_sections = TRUE)
-  expect_equal(nrow(result), 4L)
-  expect_true(".lake_total" %in% result$section)
+  expect_equal(nrow(result$estimates), 4L)
+  expect_true(".lake_total" %in% result$estimates$section)
 })
