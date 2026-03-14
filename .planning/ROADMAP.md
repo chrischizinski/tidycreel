@@ -208,11 +208,15 @@ Plans:
 - Vignette must explain the variance aggregation decision in terms biologists understand (not just survey-package internals): why `method = "correlated"` is the default for standard NGPC shared-calendar designs, and when `method = "independent"` is appropriate.
 
 **Success Criteria** (what must be TRUE):
-  1. `data(example_sections_creel)` (or equivalent) loads a 3-section example dataset with materially different effort levels and catch rates across sections
+  1. `data(example_sections_calendar)`, `data(example_sections_counts)`, `data(example_sections_interviews)` load 3-section example datasets with materially different effort levels and catch rates across sections
   2. The vignette runs end-to-end with `devtools::build_vignettes()` and demonstrates: per-section effort, per-section CPUE (no lake-total row), per-section and lake-total catch, and the missing-section warning path
   3. The vignette explains in plain language why `method = "correlated"` is the correct default for shared-calendar field crew designs and what `method = "independent"` means
 
-**Plans:** TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 42-01-PLAN.md — example datasets (example_sections_calendar, example_sections_counts, example_sections_interviews) + R/data.R documentation + test stub
+- [ ] 42-02-PLAN.md — section-estimation.Rmd vignette (7 required sections) + human review checkpoint
 
 ---
 
@@ -223,7 +227,7 @@ Plans:
 | 39. Section Effort Estimation | 2/2 | Complete    | 2026-03-11 |
 | 40. Interview-Based Rate Estimators | 2/2 | Complete    | 2026-03-12 |
 | 41. Product Estimators | 2/2 | Complete    | 2026-03-14 |
-| 42. Example Data and Vignette | 0/? | Not started | — |
+| 42. Example Data and Vignette | 0/2 | Not started | — |
 
 | Milestone | Phases | Plans | Status | Completed |
 |-----------|--------|-------|--------|-----------|
@@ -238,5 +242,5 @@ Plans:
 **Overall:** 6 milestones shipped, 38 phases complete; v0.7.0 Phase 39 in progress
 
 ---
-*Roadmap last updated: 2026-03-12 — Phase 41 plans created*
+*Roadmap last updated: 2026-03-14 — Phase 42 plans created*
 *See .planning/milestones/ for full milestone archives*
