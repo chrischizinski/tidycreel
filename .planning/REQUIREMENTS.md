@@ -24,8 +24,8 @@
 
 ### Product Estimators
 
-- [ ] **PROD-01**: User can call `estimate_total_catch()`, `estimate_total_harvest()`, `estimate_total_release()` on a sectioned design and receive per-section totals with delta-method SE
-- [ ] **PROD-02**: `aggregate_sections = TRUE` produces a `.lake_total` row by summing `TC_i = E_i × CPUE_i` per section — not `E_total × CPUE_pooled`
+- [x] **PROD-01**: User can call `estimate_total_catch()`, `estimate_total_harvest()`, `estimate_total_release()` on a sectioned design and receive per-section totals with delta-method SE
+- [x] **PROD-02**: `aggregate_sections = TRUE` produces a `.lake_total` row by summing `TC_i = E_i × CPUE_i` per section — not `E_total × CPUE_pooled`
 
 ### Example Data and Documentation
 
@@ -65,8 +65,8 @@
 | RATE-01 | Phase 40 | Complete |
 | RATE-02 | Phase 40 | Complete |
 | RATE-03 | Phase 40 | Complete |
-| PROD-01 | Phase 41 | Pending |
-| PROD-02 | Phase 41 | Pending |
+| PROD-01 | Phase 41 | Complete |
+| PROD-02 | Phase 41 | Complete |
 | DOCS-01 | Phase 42 | Pending |
 | DOCS-02 | Phase 42 | Pending |
 

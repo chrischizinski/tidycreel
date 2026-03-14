@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: completed
-stopped_at: Completed 40-02-PLAN.md (section dispatch for rate estimators)
-last_updated: "2026-03-12T13:55:44.543Z"
+stopped_at: Phase 41 Plan 01 complete (TDD RED stubs for PROD-01/02)
+last_updated: "2026-03-14T16:15:10.459Z"
 last_activity: 2026-03-11 — Phase 40 Plan 02 complete (section dispatch for rate estimators)
 progress:
   total_phases: 4
   completed_phases: 2
-  total_plans: 4
-  completed_plans: 4
+  total_plans: 6
+  completed_plans: 5
 ---
 
 # Project State
@@ -24,17 +24,17 @@ See: .planning/PROJECT.md (updated 2026-03-10)
 
 ## Current Position
 
-Phase: Phase 41 — Product Estimators (pending)
-Plan: Phase 40 complete (2/2 plans done); Phase 41 pending
-Status: Phase 40 complete; all rate estimators section-aware (RATE-01, RATE-02, RATE-03 done)
-Last activity: 2026-03-11 — Phase 40 Plan 02 complete (section dispatch for rate estimators)
+Phase: Phase 41 — Product Estimators (in progress)
+Plan: Phase 41 Plan 01 complete (1/2 plans done); Plan 02 pending
+Status: Phase 41 Plan 01 complete — PROD-01/02 TDD RED stubs in place; 19 section stubs RED, 175 pre-existing GREEN
+Last activity: 2026-03-14 — Phase 41 Plan 01 complete (TDD RED stubs for product estimator section dispatch)
 
 ### Progress Bar
 
 ```
 Phase 39 [==========] Complete (39-01, 39-02, 39-03 all done)
 Phase 40 [==========] Complete (40-01, 40-02 done)
-Phase 41 [----------] Not started
+Phase 41 [=====-----] In Progress (41-01 done, 41-02 pending)
 Phase 42 [----------] Not started
 ```
 
@@ -67,6 +67,7 @@ Phase 42 [----------] Not started
 | Phase 39-section-effort-estimation P03 | 13 | 2 tasks | 4 files |
 | Phase 40-interview-based-rate-estimators P01 | 18 | 2 tasks | 26 files |
 | Phase 40-interview-based-rate-estimators P02 | 45 | 2 tasks | 7 files |
+| Phase 41-product-estimators P01 | 11 | 1 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -171,8 +172,8 @@ None currently.
 
 ## Session Continuity
 
-Last session: 2026-03-11T17:28:05.067Z
-Stopped at: Completed 40-02-PLAN.md (section dispatch for rate estimators)
+Last session: 2026-03-14T16:15:10.455Z
+Stopped at: Phase 41 Plan 01 complete (TDD RED stubs for PROD-01/02)
 Resume file: None
 Next step: `/gsd:plan-phase 39` to plan remaining Phase 39 work (SECT-01 through SECT-05)
 
@@ -243,3 +244,10 @@ Next step: `/gsd:plan-phase 39` to plan remaining Phase 39 work (SECT-01 through
 - Section dispatch guard placed after trip-status filtering block in all three public functions — uses post-filtered design so sections operate on correct interview subset
 - Fixtures duplicated across test files (not shared helper-*.R) — consistent with existing project pattern; 3 files are self-contained
 - n_absent uses # nolint: object_usage_linter in cli_warn NSE string interpolation — same pattern as Phase 39-03 (n_absent in estimate_effort_sections)
+
+### Decisions (41-01)
+
+- make_3section_total_catch_design() fixture used in all three product estimator test files — identical data shape to Phase 40 make_3section_design_with_interviews(), explicit name for product context
+- test-estimate-total-release.R fixture uses add_catch() with released records — estimate_total_release() mandates add_catch() with catch_type="released"; harvest fixtures use interview-level catch_kept instead
+- Harvest and release fixtures include catch_kept column — required for estimate_total_harvest() and release rate dispatch to work correctly per section
+- 19 RED stubs fail with "unused argument (aggregate_sections)" — correct RED behavior confirming dispatch not yet implemented; all 175 pre-existing tests remain GREEN
