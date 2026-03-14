@@ -98,7 +98,7 @@ See: [.planning/milestones/v0.4.0-ROADMAP.md](milestones/v0.4.0-ROADMAP.md)
   - [x] Phase 38 Plan 01: Roxygen fixes — add_counts() @examples for count_time_col and progressive, estimate_effort() @return for se_between/se_within (1/2 plans complete)
   - [x] Phase 38 Plan 02: flexible-count-estimation vignette — all three workflows, Pope et al. worked example, se_between/se_within interpretation table (1/1 plans complete)
 
-- 🚧 **v0.7.0 Spatially Stratified Estimation** — Phases 39–42 (in progress — started 2026-03-10)
+- ✅ **v0.7.0 Spatially Stratified Estimation** — Phases 39–42 (shipped 2026-03-14)
   - [x] Phase 39 Plan 01: add_sections() infrastructure — COMPLETE 2026-03-10
   - [x] Phase 39 Plan 02: Section test fixtures and failing stubs (SECT-01..05) (completed 2026-03-10)
   - [x] Phase 39 Plan 03: estimate_effort() section dispatch — rebuild_counts_survey, estimate_effort_sections, aggregate_section_totals (completed 2026-03-11)
@@ -237,10 +237,10 @@ Plans:
 | v0.4.0 Bus-Route Survey Support | 21-27 | 14/14 | ✅ Complete | 2026-02-28 |
 | v0.5.0 Interview Data Model and Unextrapolated Summaries | 28-35 | 18/18 | ✅ Complete | 2026-03-08 |
 | v0.6.0 Multiple Counts per PSU | 36–38 | 5/5 | ✅ Complete | 2026-03-09 |
-| v0.7.0 Spatially Stratified Estimation | 39–42 | 1/? | 🚧 In progress | — |
+| v0.7.0 Spatially Stratified Estimation | 39–42 | 8/8 | ✅ Complete | 2026-03-14 |
 
-**Overall:** 6 milestones shipped, 38 phases complete; v0.7.0 Phase 39 in progress
+**Overall:** 7 milestones shipped, 42 phases complete; v0.7.0 Spatially Stratified Estimation shipped 2026-03-14
 
 ---
-*Roadmap last updated: 2026-03-14 — Phase 42 plans created*
+*Roadmap last updated: 2026-03-14 — v0.7.0 milestone complete, human review approved*
 *See .planning/milestones/ for full milestone archives*
