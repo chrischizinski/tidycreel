@@ -145,7 +145,7 @@ See: [.planning/milestones/v0.7.0-ROADMAP.md](milestones/v0.7.0-ROADMAP.md)
 
 **Milestone Goal:** Extend tidycreel to support ice fishing, remote camera, and aerial creel survey designs as first-class `survey_type` values within the existing `creel_design()` entry point and three-layer architecture.
 
-- [ ] **Phase 44: Design Type Enum and Validation** - Lock dispatch enum with cli_abort() guard; register ice, camera, and aerial as valid survey_type values with Tier 1 validation
+- [x] **Phase 44: Design Type Enum and Validation** - Lock dispatch enum with cli_abort() guard; register ice, camera, and aerial as valid survey_type values with Tier 1 validation (completed 2026-03-15)
 - [ ] **Phase 45: Ice Fishing Survey Support** - Complete ice fishing design with p_site = 1.0 enforcement, effort definition flexibility, shelter-mode stratification, and interview-based estimation
 - [ ] **Phase 46: Remote Camera Survey Support** - Counter and ingress-egress modes, camera_status gap handling, interview-based estimation, and documented example dataset
 - [ ] **Phase 47: Aerial Survey Support** - estimate_effort_aerial() with ratio estimator and delta method variance, visibility correction, Malvestuto validation, and vignette
@@ -207,7 +207,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 44. Design Type Enum and Validation | 1/2 | In Progress|  |
+| 44. Design Type Enum and Validation | 2/2 | Complete   | 2026-03-15 |
 | 45. Ice Fishing Survey Support | 0/TBD | Not started | - |
 | 46. Remote Camera Survey Support | 0/TBD | Not started | - |
 | 47. Aerial Survey Support | 0/TBD | Not started | - |

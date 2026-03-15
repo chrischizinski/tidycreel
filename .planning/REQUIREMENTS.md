@@ -11,7 +11,7 @@ Requirements for v0.8.0 — Non-Traditional Creel Designs. Each maps to roadmap 
 
 - [x] **INFRA-01**: User can create a creel design with `survey_type = "ice"`, `"camera"`, or `"aerial"`, with type-specific Tier 1 validation
 - [x] **INFRA-02**: An unrecognized `design_type` aborts with a clear `cli_abort()` message — no silent fall-through to wrong estimators
-- [ ] **INFRA-03**: All existing tests pass after each new design type dispatch block is added
+- [x] **INFRA-03**: All existing tests pass after each new design type dispatch block is added
 
 ### Ice Fishing
 
@@ -63,7 +63,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | INFRA-01 | Phase 44 | Complete |
 | INFRA-02 | Phase 44 | Complete |
-| INFRA-03 | Phase 44 | Pending |
+| INFRA-03 | Phase 44 | Complete |
 | ICE-01 | Phase 45 | Pending |
 | ICE-02 | Phase 45 | Pending |
 | ICE-03 | Phase 45 | Pending |
