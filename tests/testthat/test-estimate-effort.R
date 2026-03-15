@@ -1395,3 +1395,86 @@ test_that("SECT-05: prop_of_lake_total column present and sums to 1.0 across pre
   section_rows <- result$estimates[result$estimates$section != ".lake_total", ]
   expect_equal(sum(section_rows$prop_of_lake_total), 1.0, tolerance = 1e-6)
 })
+
+# ICE dispatch tests (ICE-01, ICE-02, ICE-03) ----
+
+make_ice_design <- function(effort_type = "time_on_ice") {
+  cal <- data.frame(
+    date = as.Date(c("2024-01-10", "2024-01-11", "2024-01-12", "2024-01-13")),
+    day_type = c("weekday", "weekday", "weekend", "weekend"),
+    stringsAsFactors = FALSE
+  )
+  creel_design(cal, # nolint: object_usage_linter
+    date = date, strata = day_type, # nolint: object_usage_linter
+    survey_type = "ice",
+    effort_type = effort_type,
+    p_period = 0.5
+  )
+}
+
+make_ice_interviews <- function() {
+  data.frame(
+    date = as.Date(c("2024-01-10", "2024-01-11", "2024-01-12", "2024-01-13")),
+    day_type = c("weekday", "weekday", "weekend", "weekend"),
+    hours_fished = c(2.0, 1.5, 3.0, 2.5),
+    catch_total = c(1L, 2L, 0L, 3L),
+    trip_status = c("complete", "complete", "complete", "complete"),
+    n_counted = c(5L, 8L, 10L, 7L),
+    n_interviewed = c(3L, 4L, 5L, 4L),
+    shelter_mode = c("sheltered", "open", "sheltered", "open"),
+    stringsAsFactors = FALSE
+  )
+}
+
+test_that("ICE-01: estimate_effort on ice design dispatches without error", {
+  design <- make_ice_design()
+  d <- suppressMessages(add_interviews(design, make_ice_interviews(),
+    catch = catch_total, # nolint: object_usage_linter
+    effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status, # nolint: object_usage_linter
+    n_counted = n_counted, # nolint: object_usage_linter
+    n_interviewed = n_interviewed # nolint: object_usage_linter
+  ))
+  result <- suppressWarnings(estimate_effort(d))
+  expect_s3_class(result, "creel_estimates")
+})
+
+test_that("ICE-01: estimate_effort on ice(time_on_ice) returns column total_effort_hr_on_ice", {
+  design <- make_ice_design(effort_type = "time_on_ice")
+  d <- suppressMessages(add_interviews(design, make_ice_interviews(),
+    catch = catch_total, # nolint: object_usage_linter
+    effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status, # nolint: object_usage_linter
+    n_counted = n_counted, # nolint: object_usage_linter
+    n_interviewed = n_interviewed # nolint: object_usage_linter
+  ))
+  result <- suppressWarnings(estimate_effort(d))
+  expect_true("total_effort_hr_on_ice" %in% names(result$estimates))
+})
+
+test_that("ICE-02: estimate_effort on ice(active_fishing_time) returns column total_effort_hr_active", {
+  design <- make_ice_design(effort_type = "active_fishing_time")
+  d <- suppressMessages(add_interviews(design, make_ice_interviews(),
+    catch = catch_total, # nolint: object_usage_linter
+    effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status, # nolint: object_usage_linter
+    n_counted = n_counted, # nolint: object_usage_linter
+    n_interviewed = n_interviewed # nolint: object_usage_linter
+  ))
+  result <- suppressWarnings(estimate_effort(d))
+  expect_true("total_effort_hr_active" %in% names(result$estimates))
+})
+
+test_that("ICE-03: estimate_effort(by=shelter_mode) on ice design returns grouped estimates", {
+  design <- make_ice_design()
+  d <- suppressMessages(add_interviews(design, make_ice_interviews(),
+    catch = catch_total, # nolint: object_usage_linter
+    effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status, # nolint: object_usage_linter
+    n_counted = n_counted, # nolint: object_usage_linter
+    n_interviewed = n_interviewed # nolint: object_usage_linter
+  ))
+  result <- suppressWarnings(estimate_effort(d, by = shelter_mode)) # nolint: object_usage_linter
+  expect_true("shelter_mode" %in% names(result$estimates))
+  expect_gte(nrow(result$estimates), 2L)
+})

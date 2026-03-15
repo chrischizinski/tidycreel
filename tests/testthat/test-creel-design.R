@@ -884,10 +884,12 @@ test_that("enum guard error message names the bad survey_type value", {
   )
 })
 
-test_that("creel_design() accepts survey_type = 'ice' and returns creel_design", {
+test_that("creel_design() accepts survey_type = 'ice' with effort_type and returns creel_design", {
   d <- creel_design(make_enum_cal(),
     date = date, strata = day_type,
-    survey_type = "ice"
+    survey_type = "ice",
+    effort_type = "time_on_ice",
+    p_period = 0.5
   )
   expect_s3_class(d, "creel_design")
   expect_equal(d$design_type, "ice")
@@ -909,4 +911,116 @@ test_that("creel_design() accepts survey_type = 'aerial' and returns creel_desig
   )
   expect_s3_class(d, "creel_design")
   expect_equal(d$design_type, "aerial")
+})
+
+# ICE-01: Ice constructor and p_site=1.0 enforcement ----
+
+make_ice_cal <- function() {
+  data.frame(
+    date = as.Date(c("2024-01-10", "2024-01-11", "2024-01-12", "2024-01-13")),
+    day_type = c("weekday", "weekday", "weekend", "weekend"),
+    stringsAsFactors = FALSE
+  )
+}
+
+test_that("ICE-01: creel_design(ice, effort_type='time_on_ice', p_period=0.5) constructs non-NULL ice slot", {
+  d <- creel_design(make_ice_cal(),
+    date = date, strata = day_type,
+    survey_type = "ice",
+    effort_type = "time_on_ice",
+    p_period = 0.5
+  )
+  expect_false(is.null(d$ice))
+  expect_equal(d$ice$effort_type, "time_on_ice")
+})
+
+test_that("ICE-01: design$ice$effort_type stores 'active_fishing_time' when supplied", {
+  d <- creel_design(make_ice_cal(),
+    date = date, strata = day_type,
+    survey_type = "ice",
+    effort_type = "active_fishing_time",
+    p_period = 0.5
+  )
+  expect_equal(d$ice$effort_type, "active_fishing_time")
+})
+
+test_that("ICE-01: creel_design(ice) with valid sampling_frame (all p_site==1.0) constructs", {
+  sf <- data.frame(
+    location = c("site_A", "site_B"),
+    p_site = c(1.0, 1.0),
+    p_period = 0.5,
+    stringsAsFactors = FALSE
+  )
+  d <- creel_design(make_ice_cal(),
+    date = date, strata = day_type,
+    survey_type = "ice",
+    effort_type = "time_on_ice",
+    sampling_frame = sf,
+    p_period = 0.5
+  )
+  expect_s3_class(d, "creel_design")
+  expect_false(is.null(d$ice))
+})
+
+test_that("ICE-01: creel_design(ice) aborts with cli_abort when any p_site != 1.0", {
+  sf_bad <- data.frame(
+    location = c("site_A", "site_B"),
+    p_site = c(1.0, 0.8),
+    p_period = 0.5,
+    stringsAsFactors = FALSE
+  )
+  expect_error(
+    creel_design(make_ice_cal(),
+      date = date, strata = day_type,
+      survey_type = "ice",
+      effort_type = "time_on_ice",
+      sampling_frame = sf_bad,
+      p_period = 0.5
+    ),
+    class = "rlang_error"
+  )
+})
+
+test_that("ICE-01: p_site enforcement error message names offending row indices", {
+  sf_bad <- data.frame(
+    location = c("site_A", "site_B", "site_C"),
+    p_site = c(1.0, 0.8, 1.0),
+    p_period = 0.5,
+    stringsAsFactors = FALSE
+  )
+  expect_error(
+    creel_design(make_ice_cal(),
+      date = date, strata = day_type,
+      survey_type = "ice",
+      effort_type = "time_on_ice",
+      sampling_frame = sf_bad,
+      p_period = 0.5
+    ),
+    regexp = "2"
+  )
+})
+
+# ICE-02: effort_type validation ----
+
+test_that("ICE-02: creel_design(ice) without effort_type aborts with cli_abort", {
+  expect_error(
+    creel_design(make_ice_cal(),
+      date = date, strata = day_type,
+      survey_type = "ice",
+      p_period = 0.5
+    ),
+    class = "rlang_error"
+  )
+})
+
+test_that("ICE-02: creel_design(ice) with unknown effort_type aborts with informative message", {
+  expect_error(
+    creel_design(make_ice_cal(),
+      date = date, strata = day_type,
+      survey_type = "ice",
+      effort_type = "unknown_type",
+      p_period = 0.5
+    ),
+    regexp = "time_on_ice|active_fishing_time"
+  )
 })
