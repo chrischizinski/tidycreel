@@ -76,6 +76,9 @@ compute_angler_effort <- function(data, effort, n_anglers) {
   data
 }
 
+# Valid survey types accepted by creel_design()
+VALID_SURVEY_TYPES <- c("instantaneous", "bus_route", "ice", "camera", "aerial") # nolint: object_name_linter
+
 #' Create a creel survey design
 #'
 #' @description
@@ -258,6 +261,15 @@ creel_design <- function(calendar,
     )
   }
 
+  # --- Enum guard: reject unknown survey types ---
+  if (!survey_type %in% VALID_SURVEY_TYPES) {
+    cli::cli_abort(c(
+      "{.arg survey_type} {.val {survey_type}} is not recognized.",
+      "x" = "Unknown survey type: {.val {survey_type}}.",
+      "i" = "Valid types are: {.val {VALID_SURVEY_TYPES}}."
+    ))
+  }
+
   # --- Bus-Route branch ---
   bus_route <- NULL
   if (identical(survey_type, "bus_route")) {
@@ -353,6 +365,27 @@ creel_design <- function(calendar,
     )
   }
 
+  # --- Ice branch ---
+  ice <- NULL
+  if (identical(survey_type, "ice")) {
+    ice <- list(survey_type = "ice")
+    # Phase 45 will inject p_site = 1.0 enforcement and effort-type checks here
+  }
+
+  # --- Camera branch ---
+  camera <- NULL
+  if (identical(survey_type, "camera")) {
+    camera <- list(survey_type = "camera")
+    # Phase 46 will inject camera_status checks here
+  }
+
+  # --- Aerial branch ---
+  aerial <- NULL
+  if (identical(survey_type, "aerial")) {
+    aerial <- list(survey_type = "aerial")
+    # Phase 47 will inject visibility_correction checks here
+  }
+
   # 3. Construct and validate
   design <- new_creel_design(
     calendar    = calendar,
@@ -360,7 +393,10 @@ creel_design <- function(calendar,
     strata_cols = strata_cols,
     site_col    = site_col,
     design_type = survey_type,
-    bus_route   = bus_route
+    bus_route   = bus_route,
+    ice         = ice,
+    camera      = camera,
+    aerial      = aerial
   )
   validate_creel_design(design)
 }
@@ -388,13 +424,19 @@ new_creel_design <- function(calendar,
                              strata_cols,
                              site_col = NULL,
                              design_type = "instantaneous",
-                             bus_route = NULL) {
+                             bus_route = NULL,
+                             ice = NULL,
+                             camera = NULL,
+                             aerial = NULL) {
   stopifnot(is.data.frame(calendar))
   stopifnot(is.character(date_col), length(date_col) == 1)
   stopifnot(is.character(strata_cols), length(strata_cols) >= 1)
   stopifnot(is.null(site_col) || (is.character(site_col) && length(site_col) == 1))
   stopifnot(is.character(design_type), length(design_type) == 1)
   stopifnot(is.null(bus_route) || is.list(bus_route))
+  stopifnot(is.null(ice) || is.list(ice))
+  stopifnot(is.null(camera) || is.list(camera))
+  stopifnot(is.null(aerial) || is.list(aerial))
 
   structure(
     list(
@@ -406,6 +448,9 @@ new_creel_design <- function(calendar,
       counts      = NULL,
       survey      = NULL,
       bus_route   = bus_route, # NULL for non-bus_route designs
+      ice         = ice, # NULL for non-ice designs
+      camera      = camera, # NULL for non-camera designs
+      aerial      = aerial, # NULL for non-aerial designs
       sections    = NULL,
       section_col = NULL
     ),
