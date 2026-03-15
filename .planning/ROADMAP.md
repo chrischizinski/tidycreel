@@ -207,7 +207,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 44. Design Type Enum and Validation | 0/2 | Not started | - |
+| 44. Design Type Enum and Validation | 1/2 | In Progress|  |
 | 45. Ice Fishing Survey Support | 0/TBD | Not started | - |
 | 46. Remote Camera Survey Support | 0/TBD | Not started | - |
 | 47. Aerial Survey Support | 0/TBD | Not started | - |

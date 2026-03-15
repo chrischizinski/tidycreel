@@ -1,0 +1,90 @@
+# Requirements: tidycreel
+
+**Defined:** 2026-03-15
+**Core Value:** Creel biologists can analyze survey data using creel vocabulary without understanding survey package internals.
+
+## v0.8.0 Requirements
+
+Requirements for v0.8.0 — Non-Traditional Creel Designs. Each maps to roadmap phases.
+
+### Design Infrastructure
+
+- [x] **INFRA-01**: User can create a creel design with `survey_type = "ice"`, `"camera"`, or `"aerial"`, with type-specific Tier 1 validation
+- [x] **INFRA-02**: An unrecognized `design_type` aborts with a clear `cli_abort()` message — no silent fall-through to wrong estimators
+- [ ] **INFRA-03**: All existing tests pass after each new design type dispatch block is added
+
+### Ice Fishing
+
+- [ ] **ICE-01**: Ice fishing effort estimation routes through bus-route infrastructure with `p_site = 1.0` enforced automatically
+- [ ] **ICE-02**: User can supply an effort definition distinguishing time-on-ice from active-fishing-time
+- [ ] **ICE-03**: User can stratify estimates by shelter mode using the existing `by =` grouping mechanism
+- [ ] **ICE-04**: User can attach interview data and estimate catch rates and total catch/harvest on an ice fishing design
+
+### Remote Camera
+
+- [ ] **CAM-01**: User can estimate effort from daily ingress counts (counter mode) routed through the existing access-point path
+- [ ] **CAM-02**: User can estimate effort from timestamp pairs (ingress-egress mode) accumulated to daily effort via `difftime()` preprocessing
+- [ ] **CAM-03**: User can classify camera gaps as non-random failures (`camera_status`) separate from random missingness handled by `missing_sections`
+- [ ] **CAM-04**: User can attach interview data and estimate catch rates and total catch/harvest on a camera design
+- [ ] **CAM-05**: Camera survey support documented with example dataset covering both sub-modes and gap handling
+
+### Aerial
+
+- [ ] **AIR-01**: User can estimate effort from aerial angler counts using the expansion formula `N_counted × H_open × mean_trip_duration`
+- [ ] **AIR-02**: Aerial effort estimate includes delta method variance correctly propagating count and mean trip duration uncertainty
+- [ ] **AIR-03**: User can supply a visibility correction factor as a calibration parameter
+- [ ] **AIR-04**: Aerial estimator is verified against Malvestuto (1996) worked example before shipping
+- [ ] **AIR-05**: User can attach interview data and estimate catch rates and total catch/harvest on an aerial design
+- [ ] **AIR-06**: Aerial survey support documented with example dataset and vignette
+
+## Future Requirements
+
+### Model-Based Extensions (v0.9.0+)
+
+- GLMM-based aerial temporal expansion for non-random flight timing bias (Askey 2018) — requires `lme4`
+- Zero-inflated negative binomial camera count modeling for structural zeros — requires `glmmTMB`
+- Bayesian integration approach for multi-method designs (Su & Liu 2025)
+
+## Out of Scope
+
+| Feature | Reason |
+|---------|--------|
+| Detection probability estimation for cameras | Model-based; users supply calibration factor from external validation study |
+| Aerial transect/strip design (moving aircraft) | Instantaneous (single-pass) counts only in v0.8.0; transect requires Distance-like detection functions |
+| Drone-specific imagery processing | Pre-processing is out of package scope; users supply counts |
+| Real-time API data pull | Package is data-model agnostic; users pull data themselves |
+| Full report rendering | Tidy tibbles are the deliverable |
+
+## Traceability
+
+Which phases cover which requirements. Updated during roadmap creation.
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| INFRA-01 | Phase 44 | Complete |
+| INFRA-02 | Phase 44 | Complete |
+| INFRA-03 | Phase 44 | Pending |
+| ICE-01 | Phase 45 | Pending |
+| ICE-02 | Phase 45 | Pending |
+| ICE-03 | Phase 45 | Pending |
+| ICE-04 | Phase 45 | Pending |
+| CAM-01 | Phase 46 | Pending |
+| CAM-02 | Phase 46 | Pending |
+| CAM-03 | Phase 46 | Pending |
+| CAM-04 | Phase 46 | Pending |
+| CAM-05 | Phase 46 | Pending |
+| AIR-01 | Phase 47 | Pending |
+| AIR-02 | Phase 47 | Pending |
+| AIR-03 | Phase 47 | Pending |
+| AIR-04 | Phase 47 | Pending |
+| AIR-05 | Phase 47 | Pending |
+| AIR-06 | Phase 47 | Pending |
+
+**Coverage:**
+- v0.8.0 requirements: 18 total
+- Mapped to phases: 18
+- Unmapped: 0 ✓
+
+---
+*Requirements defined: 2026-03-15*
+*Last updated: 2026-03-15 — traceability filled in after roadmap creation*
