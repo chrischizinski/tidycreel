@@ -218,6 +218,28 @@ Plans:
 - [ ] 42-01-PLAN.md — example datasets (example_sections_calendar, example_sections_counts, example_sections_interviews) + R/data.R documentation + test stub
 - [ ] 42-02-PLAN.md — section-estimation.Rmd vignette (7 required sections) + human review checkpoint
 
+### Phase 43: v0.7.0 Tech Debt Cleanup
+
+**Goal:** Close all tech debt identified in the v0.7.0 milestone audit — add missing test coverage for harvest/release missing-section guards, fill Nyquist VALIDATION.md drafts for phases 39–42, and fix stale documentation references.
+
+**Depends on:** Phase 42 (all v0.7.0 implementation complete)
+
+**Requirements:** None (tech debt — no new requirements satisfied)
+
+**Gap Closure:** Closes all 5 tech debt items from v0.7.0-MILESTONE-AUDIT.md
+
+**Success Criteria** (what must be TRUE):
+  1. `test-estimate-total-harvest.R` and `test-estimate-total-release.R` each have a `make_3section_*_missing_south` fixture and an NA-row / `data_available = FALSE` assertion matching the existing pattern in `test-estimate-total-catch.R`
+  2. VALIDATION.md files for phases 39, 40, 41, 42 are `nyquist_compliant: true` and `wave_0_complete: true` with tests generated
+  3. SUMMARY frontmatter in 41-01, 41-02, 42-01 includes `requirements-completed:` field
+  4. REQUIREMENTS.md traceability SECT-01..05 rows show `Complete` (not `In progress`)
+  5. `bus-route-equations.Rmd:169` updated to current function name
+
+**Plans:** 0/1 plans complete
+
+Plans:
+- [ ] 43-01-PLAN.md — all 5 tech debt items (tests, Nyquist fills, doc fixes)
+
 ---
 
 ## Progress Summary
@@ -228,6 +250,7 @@ Plans:
 | 40. Interview-Based Rate Estimators | 2/2 | Complete    | 2026-03-12 |
 | 41. Product Estimators | 2/2 | Complete    | 2026-03-14 |
 | 42. Example Data and Vignette | 2/2 | Complete    | 2026-03-14 |
+| 43. v0.7.0 Tech Debt Cleanup | 0/1 | Pending | — |
 
 | Milestone | Phases | Plans | Status | Completed |
 |-----------|--------|-------|--------|-----------|

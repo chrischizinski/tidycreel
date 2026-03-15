@@ -570,3 +570,104 @@ test_that("PROD-02-harvest-regression: non-sectioned design returns same result 
   expect_true(is.numeric(result$estimates$estimate))
   expect_true(result$estimates$estimate > 0)
 })
+
+# PROD-01-harvest-missing: Missing section inserts NA row with data_available=FALSE ----
+
+#' Create 3-section harvest design with "South" absent from interview data
+#'
+#' Registered sections: "North", "Central", "South".
+#' Interview data contains only "North" and "Central" rows — "South" absent.
+make_3section_harvest_design_missing_south <- function() { # nolint: object_length_linter
+  cal <- data.frame(
+    date = as.Date(c(
+      "2024-06-03", "2024-06-04", "2024-06-05", "2024-06-06",
+      "2024-06-07", "2024-06-10",
+      "2024-06-08", "2024-06-09", "2024-06-14", "2024-06-15",
+      "2024-06-16", "2024-06-21"
+    )),
+    day_type = c(
+      "weekday", "weekday", "weekday", "weekday", "weekday", "weekday",
+      "weekend", "weekend", "weekend", "weekend", "weekend", "weekend"
+    ),
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+
+  sections_df <- data.frame(
+    section = c("North", "Central", "South"),
+    stringsAsFactors = FALSE
+  )
+  design <- add_sections(design, sections_df, section_col = section) # nolint: object_usage_linter
+
+  counts <- data.frame(
+    date = rep(cal$date, times = 3),
+    day_type = rep(cal$day_type, times = 3),
+    section = rep(c("North", "Central", "South"), each = nrow(cal)),
+    effort_hours = c(
+      20, 22, 18, 25, 15, 24, 21, 26, 23, 28, 20, 27,
+      35, 38, 32, 42, 30, 45, 37, 44, 40, 48, 35, 46,
+      8, 10, 5, 12, 6, 11, 7, 9, 6, 13, 8, 10
+    ),
+    stringsAsFactors = FALSE
+  )
+  design <- suppressWarnings(add_counts(design, counts)) # nolint: object_usage_linter
+
+  # Only North and Central interviews — South absent
+  interviews <- data.frame(
+    date = as.Date(c(
+      "2024-06-03", "2024-06-04", "2024-06-05",
+      "2024-06-07", "2024-06-10", "2024-06-07",
+      "2024-06-08", "2024-06-09", "2024-06-14",
+      "2024-06-03", "2024-06-04", "2024-06-05",
+      "2024-06-06", "2024-06-10", "2024-06-10",
+      "2024-06-08", "2024-06-09", "2024-06-21"
+    )),
+    day_type = c(
+      "weekday", "weekday", "weekday", "weekday", "weekday", "weekday",
+      "weekend", "weekend", "weekend",
+      "weekday", "weekday", "weekday", "weekday", "weekday", "weekday",
+      "weekend", "weekend", "weekend"
+    ),
+    section = rep(c("North", "Central"), each = 9),
+    catch_total = c(
+      2, 3, 2, 4, 3, 2, 3, 4, 3,
+      5, 6, 5, 7, 6, 5, 7, 8, 6
+    ),
+    catch_kept = c(
+      1, 2, 1, 3, 2, 1, 2, 3, 2,
+      3, 4, 3, 5, 4, 3, 5, 6, 4
+    ),
+    hours_fished = c(
+      2.0, 3.0, 2.5, 3.0, 2.0, 2.5, 3.0, 3.5, 3.0,
+      3.5, 4.0, 3.5, 4.5, 4.0, 3.5, 4.5, 5.0, 4.0
+    ),
+    trip_status = rep("complete", 18),
+    trip_duration = c(
+      2.0, 3.0, 2.5, 3.0, 2.0, 2.5, 3.0, 3.5, 3.0,
+      3.5, 4.0, 3.5, 4.5, 4.0, 3.5, 4.5, 5.0, 4.0
+    ),
+    stringsAsFactors = FALSE
+  )
+
+  suppressWarnings(add_interviews( # nolint: object_usage_linter
+    design, interviews,
+    catch = catch_total, harvest = catch_kept, effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status, trip_duration = trip_duration # nolint: object_usage_linter
+  ))
+}
+
+test_that("PROD-01-harvest-missing: missing section inserts NA row with data_available=FALSE for estimate_total_harvest", { # nolint: line_length_linter
+  design <- make_3section_harvest_design_missing_south() # nolint: object_usage_linter
+  warns <- character(0)
+  result <- withCallingHandlers(
+    estimate_total_harvest(design, missing_sections = "warn"), # nolint: object_usage_linter
+    warning = function(w) {
+      warns <<- c(warns, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    }
+  )
+  south_row <- result$estimates[result$estimates$section == "South", ]
+  expect_equal(nrow(south_row), 1L)
+  expect_false(south_row$data_available)
+  expect_true(is.na(south_row$estimate))
+})
