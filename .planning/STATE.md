@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: completed
-stopped_at: Completed 42-02-PLAN.md — v0.7.0 Spatially Stratified Estimation milestone complete
-last_updated: "2026-03-14T23:44:26.215Z"
-last_activity: 2026-03-14 — Phase 42 Plan 02 complete (section-estimation vignette)
+stopped_at: Completed 43-01-PLAN.md — v0.7.0 tech debt closed
+last_updated: "2026-03-15T03:33:46.589Z"
+last_activity: 2026-03-14 — Phase 43 Plan 01 complete (v0.7.0 tech debt closed)
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 8
-  completed_plans: 8
+  total_phases: 5
+  completed_phases: 5
+  total_plans: 9
+  completed_plans: 9
 ---
 
 # Project State
@@ -24,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-03-10)
 
 ## Current Position
 
-Phase: Phase 42 — Example Data and Vignette (complete — human review approved)
-Plan: Phase 42 Plan 02 complete (2/2 plans done)
-Status: Phase 42-02 complete — section-estimation.Rmd vignette builds clean; 1582 total tests passing; DOCS-02 satisfied
-Last activity: 2026-03-14 — Phase 42 Plan 02 complete (section-estimation vignette)
+Phase: Phase 43 — v0.7.0 Tech Debt (complete)
+Plan: Phase 43 Plan 01 complete (1/1 plans done)
+Status: Phase 43-01 complete — PROD-01-harvest-missing and PROD-01-release-missing guard tests added; all 5 audit items resolved; 1588 tests passing
+Last activity: 2026-03-14 — Phase 43 Plan 01 complete (v0.7.0 tech debt closed)
 
 ### Progress Bar
 
@@ -36,6 +36,7 @@ Phase 39 [==========] Complete (39-01, 39-02, 39-03 all done)
 Phase 40 [==========] Complete (40-01, 40-02 done)
 Phase 41 [==========] Complete (41-01, 41-02 done)
 Phase 42 [==========] Complete (42-01, 42-02 done — human review approved 2026-03-14)
+Phase 43 [==========] Complete (43-01 done — v0.7.0 tech debt closed 2026-03-14)
 ```
 
 ## Performance Metrics
@@ -70,6 +71,7 @@ Phase 42 [==========] Complete (42-01, 42-02 done — human review approved 2026
 | Phase 41-product-estimators P01 | 11 | 1 tasks | 3 files |
 | Phase 41-product-estimators P02 | 32 | 1 tasks | 6 files |
 | Phase 42 P01 | 168 | 2 tasks | 11 files |
+| Phase 43-v070-tech-debt P01 | 20 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -174,8 +176,8 @@ None currently.
 
 ## Session Continuity
 
-Last session: 2026-03-14T22:00:00.000Z
-Stopped at: Completed 42-02-PLAN.md — v0.7.0 Spatially Stratified Estimation milestone complete
+Last session: 2026-03-15T03:33:46.587Z
+Stopped at: Completed 43-01-PLAN.md — v0.7.0 tech debt closed
 Resume file: None
 Next step: v0.7.0 milestone complete. Ready to plan v0.8.0 or cut release tag.
 
@@ -276,3 +278,9 @@ Next step: v0.7.0 milestone complete. Ready to plan v0.8.0 or cut release tag.
 - `warning = FALSE` on add_counts/add_interviews chunks suppresses svydesign no-weights noise; `warning = TRUE` on missing-section chunk exposes cli_warn() output in rendered HTML
 - Separate `design_nosections` object used for lake-wide CPUE demonstration — shows unsectioned workflow and explains why sectioned design produces no lake-wide CPUE row
 - `aggregate_sections` parameter confirmed present in dev version signature (R/creel-estimates-total-catch.R line 104); vignette built via devtools::build_vignettes() uses dev source
+
+### Decisions (43-01)
+
+- Planning docs (`.planning/`) are gitignored — VALIDATION.md, REQUIREMENTS.md, and SUMMARY.md edits are local-only and do not appear in git commits
+- `withCallingHandlers(invokeRestart("muffleWarning"))` used in missing-section guard tests — `cli_warn()` is consumed by `suppressWarnings()` before `expect_warning()` can capture it (same pattern as 39-03 and 40-02)
+- Release missing-section fixture filters `catch_df` to `interview_id 1..18` only — South absent from BOTH interviews AND catch ensures `data_available=FALSE` guard path fires correctly

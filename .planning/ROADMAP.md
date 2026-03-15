@@ -235,7 +235,7 @@ Plans:
   4. REQUIREMENTS.md traceability SECT-01..05 rows show `Complete` (not `In progress`)
   5. `bus-route-equations.Rmd:169` updated to current function name
 
-**Plans:** 0/1 plans complete
+**Plans:** 1/1 plans complete
 
 Plans:
 - [ ] 43-01-PLAN.md — all 5 tech debt items (tests, Nyquist fills, doc fixes)
@@ -250,7 +250,7 @@ Plans:
 | 40. Interview-Based Rate Estimators | 2/2 | Complete    | 2026-03-12 |
 | 41. Product Estimators | 2/2 | Complete    | 2026-03-14 |
 | 42. Example Data and Vignette | 2/2 | Complete    | 2026-03-14 |
-| 43. v0.7.0 Tech Debt Cleanup | 0/1 | Pending | — |
+| 43. v0.7.0 Tech Debt Cleanup | 1/1 | Complete   | 2026-03-15 |
 
 | Milestone | Phases | Plans | Status | Completed |
 |-----------|--------|-------|--------|-----------|
