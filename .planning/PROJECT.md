@@ -39,9 +39,14 @@ Creel biologists can analyze survey data using creel vocabulary without understa
 - ✓ `missing_sections` guard — NA row + cli_warn() for registered sections absent from data — v0.7.0
 - ✓ `example_sections_*` datasets and section-estimation vignette — v0.7.0
 
-### Active (v0.8.0 — planning)
+### Active (v0.8.0 — Non-Traditional Creel Designs)
 
-*(To be defined during /gsd:new-milestone)*
+<!-- Aerial, remote camera, and ice fishing survey support — to be defined during milestone planning. -->
+
+- [ ] Aerial survey support — effort/angler estimation from air (plane/drone)
+- [ ] Remote camera survey support — access-point counts and/or continuous effort at a site
+- [ ] Ice fishing survey support — fixed-location angler design, statistically characterized
+- [ ] All three extend `creel_design()` as the single entry point
 
 ### Out of Scope
 
@@ -50,6 +55,15 @@ Creel biologists can analyze survey data using creel vocabulary without understa
 - Geographic summaries (zip/county tabulation via external lookup) — deferred
 - Full report rendering (Rmd/PDF template reproducing NGPC report structure) — deferred
 - Supplemental question tabulation — deferred
+
+## Current Milestone: v0.8.0 Non-Traditional Creel Designs
+
+**Goal:** Extend tidycreel to support aerial, remote camera, and ice fishing survey designs within the existing `creel_design()` entry point and three-layer architecture.
+
+**Target features:**
+- Aerial surveys — effort estimation from plane/drone angler counts
+- Remote camera surveys — access-point ingress/egress counts and continuous site-level effort
+- Ice fishing surveys — fixed-location angler design with statistically appropriate estimators
 
 ## Current State (v0.7.0 — shipped 2026-03-15)
 
@@ -133,4 +147,4 @@ Three-layer: API → Orchestration → Survey package. The dispatch pattern (che
 | Breaking rename: `estimate_cpue()` → `estimate_catch_rate()`, `estimate_harvest()` → `estimate_harvest_rate()` | v0.7.0 API consistency; no deprecated wrappers | ✓ Good — clean break, documented in NEWS.md |
 
 ---
-*Last updated: 2026-03-15 — v0.7.0 milestone archived*
+*Last updated: 2026-03-15 — v0.8.0 milestone started*

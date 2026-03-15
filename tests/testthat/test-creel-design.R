@@ -853,3 +853,60 @@ test_that("format.creel_design() shows area when area_col registered", {
   output <- format(design2)
   expect_true(any(grepl("ha", output)))
 })
+
+# Enum guard (INFRA-02) and ice/camera/aerial stubs (INFRA-01) ----
+
+make_enum_cal <- function() {
+  data.frame(
+    date = as.Date("2024-06-01"),
+    day_type = "weekday",
+    stringsAsFactors = FALSE
+  )
+}
+
+test_that("creel_design() aborts with rlang_error for unknown survey_type", {
+  expect_error(
+    creel_design(make_enum_cal(),
+      date = date, strata = day_type,
+      survey_type = "unknown_type"
+    ),
+    class = "rlang_error"
+  )
+})
+
+test_that("enum guard error message names the bad survey_type value", {
+  expect_error(
+    creel_design(make_enum_cal(),
+      date = date, strata = day_type,
+      survey_type = "unknown_type"
+    ),
+    "unknown_type"
+  )
+})
+
+test_that("creel_design() accepts survey_type = 'ice' and returns creel_design", {
+  d <- creel_design(make_enum_cal(),
+    date = date, strata = day_type,
+    survey_type = "ice"
+  )
+  expect_s3_class(d, "creel_design")
+  expect_equal(d$design_type, "ice")
+})
+
+test_that("creel_design() accepts survey_type = 'camera' and returns creel_design", {
+  d <- creel_design(make_enum_cal(),
+    date = date, strata = day_type,
+    survey_type = "camera"
+  )
+  expect_s3_class(d, "creel_design")
+  expect_equal(d$design_type, "camera")
+})
+
+test_that("creel_design() accepts survey_type = 'aerial' and returns creel_design", {
+  d <- creel_design(make_enum_cal(),
+    date = date, strata = day_type,
+    survey_type = "aerial"
+  )
+  expect_s3_class(d, "creel_design")
+  expect_equal(d$design_type, "aerial")
+})

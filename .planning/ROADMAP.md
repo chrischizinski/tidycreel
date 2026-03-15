@@ -13,7 +13,7 @@ tidycreel v2 is a ground-up redesign providing domain translation for creel surv
 - ✅ **v0.5.0 Interview Data Model and Unextrapolated Summaries** — Phases 28-35 (shipped 2026-03-08)
 - ✅ **v0.6.0 Multiple Counts per PSU** — Phases 36-38 (shipped 2026-03-09)
 - ✅ **v0.7.0 Spatially Stratified Estimation** — Phases 39-43 (shipped 2026-03-15)
-- 📋 **v0.8.0** — TBD (planning next)
+- 📋 **v0.8.0 Non-Traditional Creel Designs** — Phases 44-47 (in progress)
 
 ## Phases
 
@@ -141,20 +141,79 @@ See: [.planning/milestones/v0.7.0-ROADMAP.md](milestones/v0.7.0-ROADMAP.md)
 
 </details>
 
+### v0.8.0 Non-Traditional Creel Designs (Phases 44-47)
+
+**Milestone Goal:** Extend tidycreel to support ice fishing, remote camera, and aerial creel survey designs as first-class `survey_type` values within the existing `creel_design()` entry point and three-layer architecture.
+
+- [ ] **Phase 44: Design Type Enum and Validation** - Lock dispatch enum with cli_abort() guard; register ice, camera, and aerial as valid survey_type values with Tier 1 validation
+- [ ] **Phase 45: Ice Fishing Survey Support** - Complete ice fishing design with p_site = 1.0 enforcement, effort definition flexibility, shelter-mode stratification, and interview-based estimation
+- [ ] **Phase 46: Remote Camera Survey Support** - Counter and ingress-egress modes, camera_status gap handling, interview-based estimation, and documented example dataset
+- [ ] **Phase 47: Aerial Survey Support** - estimate_effort_aerial() with ratio estimator and delta method variance, visibility correction, Malvestuto validation, and vignette
+
+## Phase Details
+
+### Phase 44: Design Type Enum and Validation
+**Goal**: The dispatch layer is closed against unknown survey types — any unrecognized `survey_type` aborts with a clear error, and ice, camera, and aerial are registered with type-specific Tier 1 validation before any estimation code is written
+**Depends on**: Phase 43 (v0.7.0 shipped)
+**Requirements**: INFRA-01, INFRA-02, INFRA-03
+**Success Criteria** (what must be TRUE):
+  1. `creel_design(survey_type = "ice")`, `"camera"`, and `"aerial"` each construct without error when required parameters are supplied
+  2. `creel_design(survey_type = "unknown_type")` aborts immediately with a `cli_abort()` message naming the unrecognized type — no silent fall-through to wrong estimators
+  3. All 1,588 existing tests pass after enum registration blocks are added
+  4. Each new survey type enforces its Tier 1 required parameters at construction time — missing required columns abort at `creel_design()`, not at estimation time
+**Plans**: 2 plans
+
+Plans:
+- [ ] 44-01-PLAN.md — TDD: VALID_SURVEY_TYPES enum guard and ice/camera/aerial constructor stubs (INFRA-01, INFRA-02)
+- [ ] 44-02-PLAN.md — Full regression suite and quality gates (INFRA-03)
+
+### Phase 45: Ice Fishing Survey Support
+**Goal**: Biologists can run a complete ice fishing creel survey analysis — from design construction through effort estimation and catch rate / total catch estimation — using the existing `creel_design()` entry point and interview workflow
+**Depends on**: Phase 44
+**Requirements**: ICE-01, ICE-02, ICE-03, ICE-04
+**Success Criteria** (what must be TRUE):
+  1. `estimate_effort()` on an ice fishing design routes through the bus-route infrastructure with `p_site = 1.0` enforced automatically — no manual inclusion probability calculation needed
+  2. A biologist can supply either time-on-ice or active-fishing-time as the effort column and obtain correctly labeled estimates — the distinction is enforced by documentation and the `angler_effort_col` parameter
+  3. `estimate_effort(by = shelter_mode)` (or equivalent grouping variable) produces per-shelter stratum effort estimates using the existing `by =` mechanism
+  4. After `add_interviews()`, `estimate_catch_rate()` and `estimate_total_catch()` produce valid estimates on an ice fishing design, confirming interview compatibility
+**Plans**: TBD
+
+### Phase 46: Remote Camera Survey Support
+**Goal**: Biologists can estimate effort from camera-based access-point data in either counter mode or ingress-egress mode, handle non-random camera failures as informative gaps rather than missing data, and run the full interview-based estimation workflow on a camera design
+**Depends on**: Phase 44
+**Requirements**: CAM-01, CAM-02, CAM-03, CAM-04, CAM-05
+**Success Criteria** (what must be TRUE):
+  1. Counter mode: daily ingress counts route through the existing access-point effort path and produce effort estimates equivalent to what a human-counted access-point survey would produce
+  2. Ingress-egress mode: timestamp pairs are accumulated to daily effort via `difftime()` preprocessing before entering the estimation path — users supply raw timestamp pairs and receive effort estimates
+  3. A `camera_status` column classifies non-random failures (battery, memory, occlusion) separately from random missingness handled by `missing_sections` — informative gaps are not imputed as zero effort
+  4. After `add_interviews()`, `estimate_catch_rate()` and `estimate_total_catch()` produce valid estimates on a camera design, confirming interview compatibility
+  5. An example dataset covering both counter and ingress-egress sub-modes and at least one non-random gap is documented and ships with the package
+**Plans**: TBD
+
+### Phase 47: Aerial Survey Support
+**Goal**: Biologists can estimate total angler effort from aerial instantaneous counts using the correct expansion formula, with delta method variance, an optional visibility correction factor, and verification against the Malvestuto (1996) worked example — and can run the full interview-based estimation workflow on an aerial design
+**Depends on**: Phase 44
+**Requirements**: AIR-01, AIR-02, AIR-03, AIR-04, AIR-05, AIR-06
+**Success Criteria** (what must be TRUE):
+  1. `estimate_effort()` on an aerial design applies the expansion formula `N_counted × H_open × mean_trip_duration` — the raw angler count is never returned as effort without expansion
+  2. The effort estimate includes delta method variance that correctly propagates uncertainty from both the angler count and the mean trip duration components
+  3. A biologist can supply a visibility correction factor (e.g., 0.85) as a calibration parameter and receive corrected effort estimates — the correction is applied before variance propagation
+  4. The aerial estimator reproduces the Malvestuto (1996) Box 20.6 worked example within numerical tolerance (same validation strategy used for bus-route in Phase 26)
+  5. After `add_interviews()`, `estimate_catch_rate()` and `estimate_total_catch()` produce valid estimates on an aerial design, confirming interview compatibility
+  6. An example dataset and vignette ship with the package demonstrating the complete aerial workflow from design construction through total catch estimation
+**Plans**: TBD
+
 ## Progress Summary
 
-| Milestone | Phases | Plans | Status | Completed |
-|-----------|--------|-------|--------|-----------|
-| v0.1.0 Foundation | 1-7 | 12/12 | ✅ Complete | 2026-02-09 |
-| v0.2.0 Interview-Based Estimation | 8-12 | 10/10 | ✅ Complete | 2026-02-11 |
-| v0.3.0 Incomplete Trips & Validation | 13-20 | 16/16 | ✅ Complete | 2026-02-16 |
-| v0.4.0 Bus-Route Survey Support | 21-27 | 14/14 | ✅ Complete | 2026-02-28 |
-| v0.5.0 Interview Data Model | 28-35 | 18/18 | ✅ Complete | 2026-03-08 |
-| v0.6.0 Multiple Counts per PSU | 36-38 | 5/5 | ✅ Complete | 2026-03-09 |
-| v0.7.0 Spatially Stratified Estimation | 39-43 | 9/9 | ✅ Complete | 2026-03-15 |
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 44. Design Type Enum and Validation | 0/2 | Not started | - |
+| 45. Ice Fishing Survey Support | 0/TBD | Not started | - |
+| 46. Remote Camera Survey Support | 0/TBD | Not started | - |
+| 47. Aerial Survey Support | 0/TBD | Not started | - |
 
-**Overall:** 7 milestones shipped, 43 phases complete, 84 plans complete
+**Overall (v0.8.0):** 0/4 phases complete
 
 ---
-*Roadmap last updated: 2026-03-15 — v0.7.0 milestone archived*
-*See .planning/milestones/ for full milestone archives*
+*Roadmap last updated: 2026-03-15 — Phase 44 planned (2 plans)*
+*See .planning/milestones/ for archived milestone roadmaps*

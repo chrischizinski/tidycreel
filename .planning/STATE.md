@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v0.7.0
-milestone_name: Spatially Stratified Estimation
-status: archived
-stopped_at: v0.7.0 milestone archived — ready for v0.8.0 planning
+milestone: v0.8.0
+milestone_name: Non-Traditional Creel Designs
+status: defining_requirements
+stopped_at: —
 last_updated: "2026-03-15"
-last_activity: 2026-03-15 — v0.7.0 milestone archived
+last_activity: 2026-03-15 — Milestone v0.8.0 started
 progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 9
-  completed_plans: 9
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
@@ -24,8 +24,10 @@ See: .planning/PROJECT.md (updated 2026-03-15)
 
 ## Current Position
 
-All 7 milestones shipped. v0.7.0 archived 2026-03-15.
-Status: Between milestones — ready for v0.8.0 requirements definition.
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-15 — Milestone v0.8.0 started
 
 ## Performance Metrics
 
