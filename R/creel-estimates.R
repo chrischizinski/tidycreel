@@ -329,8 +329,8 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
     ))
   }
 
-  # Validate design$survey exists (skip for bus-route: uses interviews not counts)
-  if (!identical(design$design_type, "bus_route") && is.null(design$survey)) {
+  # Validate design$survey exists (skip for bus-route and ice: use interviews not counts)
+  if (!design$design_type %in% c("bus_route", "ice") && is.null(design$survey)) {
     cli::cli_abort(c(
       "No survey design available.",
       "x" = "Call {.fn add_counts} before estimating effort.",
@@ -338,8 +338,8 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
     ))
   }
 
-  # Bus-route dispatch (after survey NULL check, before standard tier-2 validation)
-  if (!is.null(design$design_type) && design$design_type == "bus_route") {
+  # Bus-route and ice dispatch (after survey NULL check, before standard tier-2 validation)
+  if (!is.null(design$design_type) && design$design_type %in% c("bus_route", "ice")) {
     if (verbose) {
       cli::cli_inform(c(
         "i" = "Using bus-route estimator (Jones & Pollock 2012, Eq. 19.4)"
@@ -371,7 +371,19 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
       by_vars_br <- names(by_cols_br)
     }
 
-    return(estimate_effort_br(design, by_vars_br, variance, conf_level, verbose)) # nolint: object_usage_linter
+    result <- estimate_effort_br(design, by_vars_br, variance, conf_level, verbose) # nolint: object_usage_linter
+
+    # Ice-specific: rename 'estimate' column to reflect effort_type
+    if (identical(design$design_type, "ice")) {
+      col_name <- switch(design$ice$effort_type,
+        time_on_ice = "total_effort_hr_on_ice",
+        active_fishing_time = "total_effort_hr_active",
+        "estimate"
+      )
+      names(result$estimates)[names(result$estimates) == "estimate"] <- col_name
+    }
+
+    return(result)
   }
 
   # Section dispatch (v0.7.0+ — only fires when add_sections() was called)

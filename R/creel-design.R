@@ -231,7 +231,8 @@ creel_design <- function(calendar,
                          sampling_frame = NULL,
                          p_site = NULL,
                          p_period = NULL,
-                         circuit = NULL) {
+                         circuit = NULL,
+                         effort_type = NULL) {
   # 1. Structural validation (Phase 1 validator)
   validate_calendar_schema(calendar) # nolint: object_usage_linter
 
@@ -368,8 +369,143 @@ creel_design <- function(calendar,
   # --- Ice branch ---
   ice <- NULL
   if (identical(survey_type, "ice")) {
-    ice <- list(survey_type = "ice")
-    # Phase 45 will inject p_site = 1.0 enforcement and effort-type checks here
+    # (a) Validate effort_type: required, must be one of the two valid values
+    valid_ice_effort_types <- c("time_on_ice", "active_fishing_time")
+    if (is.null(effort_type) || !effort_type %in% valid_ice_effort_types) {
+      cli::cli_abort(c(
+        "{.arg effort_type} is required for {.val ice} survey designs.",
+        "x" = if (is.null(effort_type)) {
+          "No {.arg effort_type} supplied."
+        } else {
+          "Unknown {.arg effort_type}: {.val {effort_type}}."
+        },
+        "i" = "Valid values: {.val {valid_ice_effort_types}}."
+      ))
+    }
+
+    # (b) If sampling_frame is supplied, validate all p_site == 1.0 (floating-point safe)
+    # Resolve p_site column: use tidy selector if provided, otherwise look for "p_site" by name
+    if (!is.null(sampling_frame) && is.data.frame(sampling_frame)) {
+      p_site_quo_ice <- rlang::enquo(p_site)
+      p_site_col_ice <- NULL
+      if (!rlang::quo_is_null(p_site_quo_ice)) {
+        p_site_col_ice <- resolve_single_col(p_site_quo_ice, sampling_frame, "p_site", rlang::caller_env())
+      } else if ("p_site" %in% names(sampling_frame)) {
+        p_site_col_ice <- "p_site"
+      }
+      if (!is.null(p_site_col_ice)) {
+        p_site_vals_ice <- sampling_frame[[p_site_col_ice]]
+        bad <- which(abs(p_site_vals_ice - 1.0) > 1e-9) # nolint: object_usage_linter
+        if (length(bad) > 0) {
+          cli::cli_abort(c(
+            "All {.field p_site} values must equal 1.0 for ice surveys (p_site is fixed at 1).",
+            "x" = "{length(bad)} value{?s} not equal to 1.0 at row{?s} {bad}.",
+            "i" = "Ice surveys assume all sites are sampled with certainty (p_site = 1.0)."
+          ))
+        }
+      }
+    }
+
+    # Resolve p_period for ice: scalar numeric or column in sampling_frame
+    p_period_ice_col <- NULL
+    p_period_ice_scalar <- NULL
+    p_period_quo_ice <- rlang::enquo(p_period)
+    if (!rlang::quo_is_null(p_period_quo_ice)) {
+      if (!is.null(sampling_frame) && is.data.frame(sampling_frame)) {
+        tryCatch(
+          {
+            p_period_ice_col <- resolve_single_col(
+              p_period_quo_ice, sampling_frame, "p_period", rlang::caller_env()
+            )
+          },
+          error = function(e) {
+            val <- rlang::eval_tidy(p_period_quo_ice)
+            if (is.numeric(val) && length(val) == 1L) {
+              p_period_ice_scalar <<- val
+            }
+          }
+        )
+      } else {
+        val <- rlang::eval_tidy(p_period_quo_ice)
+        if (is.numeric(val) && length(val) == 1L) {
+          p_period_ice_scalar <- val
+        }
+      }
+    }
+
+    # (c) Build a synthetic bus_route slot so add_interviews() can join .pi_i
+    # For ice: p_site = 1.0, so pi_i = p_site * p_period = p_period
+    # We use a single synthetic site (".ice_site") and circuit (".default")
+    if (!is.null(sampling_frame) && is.data.frame(sampling_frame)) {
+      # Build from sampling_frame: resolve site column (optional for ice)
+      ice_sf <- sampling_frame
+      ice_sf[[".circuit"]] <- ".default"
+      circuit_col_ice <- ".circuit"
+
+      # Resolve site col if provided (optional for ice)
+      site_frame_col_ice <- NULL
+      if (!rlang::quo_is_null(site_quo)) {
+        tryCatch(
+          {
+            site_frame_col_ice <- resolve_single_col(
+              site_quo, sampling_frame, "site", rlang::caller_env()
+            )
+          },
+          error = function(e) NULL
+        )
+      }
+      if (is.null(site_frame_col_ice)) {
+        ice_sf[[".ice_site"]] <- seq_len(nrow(ice_sf))
+        site_frame_col_ice <- ".ice_site"
+      }
+
+      # Add p_period column if scalar
+      if (!is.null(p_period_ice_scalar)) {
+        ice_sf[[".p_period"]] <- p_period_ice_scalar
+        p_period_ice_col <- ".p_period"
+      }
+
+      # Compute pi_i = 1.0 * p_period = p_period
+      ice_sf[[".pi_i"]] <- ice_sf[[p_period_ice_col]]
+
+      bus_route <- list(
+        data         = ice_sf,
+        site_col     = site_frame_col_ice,
+        circuit_col  = circuit_col_ice,
+        p_site_col   = NULL,
+        p_period_col = p_period_ice_col,
+        pi_i_col     = ".pi_i"
+      )
+    } else {
+      # No sampling_frame: build single-site synthetic bus_route frame
+      p_period_val <- if (!is.null(p_period_ice_scalar)) p_period_ice_scalar else 1.0
+      ice_sf <- data.frame(
+        .ice_site = ".all",
+        .circuit = ".default",
+        .p_period = p_period_val,
+        .pi_i = p_period_val,
+        stringsAsFactors = FALSE
+      )
+      bus_route <- list(
+        data         = ice_sf,
+        site_col     = ".ice_site",
+        circuit_col  = ".circuit",
+        p_site_col   = NULL,
+        p_period_col = ".p_period",
+        pi_i_col     = ".pi_i"
+      )
+    }
+
+    # (d) Build ice slot
+    ice <- list(
+      survey_type    = "ice",
+      effort_type    = effort_type,
+      p_period_col   = if (!is.null(p_period_ice_col)) p_period_ice_col else ".p_period",
+      pi_i_col       = ".pi_i"
+    )
+    if (!is.null(p_period_ice_scalar)) {
+      ice$p_period_scalar <- p_period_ice_scalar
+    }
   }
 
   # --- Camera branch ---
@@ -511,8 +647,8 @@ validate_creel_design <- function(x) {
     }
   }
 
-  # Tier 1: Bus-Route probability validation
-  if (!is.null(x$bus_route)) {
+  # Tier 1: Bus-Route probability validation (skip for ice — p_site is always 1.0)
+  if (!is.null(x$bus_route) && !identical(x$design_type, "ice")) {
     br <- x$bus_route$data
     p_site_col <- x$bus_route$p_site_col
     p_period_col <- x$bus_route$p_period_col
@@ -1546,8 +1682,8 @@ add_interviews <- function(design, interviews,
   # Validate trip metadata
   validate_trip_metadata(interviews, trip_status_col, trip_duration_col, trip_start_col, interview_time_col) # nolint: object_usage_linter
 
-  # Tier 3: Bus-route specific validation
-  if (!is.null(design$bus_route)) {
+  # Tier 3: Bus-route specific validation (skip for ice — synthetic bus_route slot)
+  if (!is.null(design$bus_route) && !identical(design$design_type, "ice")) {
     validate_br_interviews_tier3(
       interviews         = interviews,
       design             = design,
@@ -1575,37 +1711,64 @@ add_interviews <- function(design, interviews,
     suffix = c("", "_cal")
   )
 
-  # Bus-route: join pi_i from sampling frame and compute expansion factor
+  # Bus-route / ice: attach pi_i and compute expansion factor
   if (!is.null(design$bus_route)) {
     br <- design$bus_route
-    site_col <- br$site_col
-    circuit_col <- br$circuit_col
     pi_i_col <- br$pi_i_col
 
-    # Extract site/circuit/pi_i lookup from sampling frame
-    sf_lookup <- br$data[, c(site_col, circuit_col, pi_i_col)]
+    if (identical(design$design_type, "ice")) {
+      # Ice: p_site = 1.0 always; pi_i = p_period (scalar or per-row from sampling frame)
+      # If ice has a scalar p_period, assign it uniformly; otherwise join from sampling frame
+      if (!is.null(design$ice$p_period_scalar)) {
+        interviews_joined[[pi_i_col]] <- design$ice$p_period_scalar
+      } else {
+        # Ice with a real sampling_frame: join .pi_i by the ice site column
+        site_col_ice <- br$site_col
+        circuit_col_ice <- br$circuit_col
+        sf_lookup_ice <- br$data[, c(site_col_ice, circuit_col_ice, pi_i_col)]
+        interviews_joined <- dplyr::left_join(
+          interviews_joined,
+          sf_lookup_ice,
+          by = stats::setNames(
+            c(site_col_ice, circuit_col_ice),
+            c(site_col_ice, circuit_col_ice)
+          )
+        )
+        unmatched_ice <- is.na(interviews_joined[[pi_i_col]])
+        if (any(unmatched_ice)) {
+          interviews_joined[[pi_i_col]][unmatched_ice] <- design$ice$p_period_scalar
+        }
+      }
+    } else {
+      # Standard bus-route: join pi_i from sampling frame by site + circuit
+      site_col <- br$site_col
+      circuit_col <- br$circuit_col
 
-    # Join pi_i to interview rows; unmatched rows will have NA in .pi_i
-    interviews_joined <- dplyr::left_join(
-      interviews_joined,
-      sf_lookup,
-      by = stats::setNames(
-        c(site_col, circuit_col),
-        c(site_col, circuit_col)
+      # Extract site/circuit/pi_i lookup from sampling frame
+      sf_lookup <- br$data[, c(site_col, circuit_col, pi_i_col)]
+
+      # Join pi_i to interview rows; unmatched rows will have NA in .pi_i
+      interviews_joined <- dplyr::left_join(
+        interviews_joined,
+        sf_lookup,
+        by = stats::setNames(
+          c(site_col, circuit_col),
+          c(site_col, circuit_col)
+        )
       )
-    )
 
-    # Error if any interview row could not be matched (NA in .pi_i after join)
-    unmatched <- is.na(interviews_joined[[pi_i_col]])
-    if (any(unmatched)) {
-      bad_rows <- interviews_joined[unmatched, c(site_col, circuit_col), drop = FALSE]
-      bad_combos <- unique(paste0(bad_rows[[site_col]], " / ", bad_rows[[circuit_col]])) # nolint: object_usage_linter
-      cli::cli_abort(c(
-        "Interview site+circuit combinations not found in sampling frame:",
-        stats::setNames(paste0("{.val ", bad_combos, "}"), rep("x", length(bad_combos))),
-        "i" = "Check that interview site and circuit values match the sampling frame exactly.",
-        "i" = "Sampling frame has {.val {nrow(br$data)}} site-circuit row{?s}."
-      ))
+      # Error if any interview row could not be matched (NA in .pi_i after join)
+      unmatched <- is.na(interviews_joined[[pi_i_col]])
+      if (any(unmatched)) {
+        bad_rows <- interviews_joined[unmatched, c(site_col, circuit_col), drop = FALSE]
+        bad_combos <- unique(paste0(bad_rows[[site_col]], " / ", bad_rows[[circuit_col]])) # nolint: object_usage_linter
+        cli::cli_abort(c(
+          "Interview site+circuit combinations not found in sampling frame:",
+          stats::setNames(paste0("{.val ", bad_combos, "}"), rep("x", length(bad_combos))),
+          "i" = "Check that interview site and circuit values match the sampling frame exactly.",
+          "i" = "Sampling frame has {.val {nrow(br$data)}} site-circuit row{?s}."
+        ))
+      }
     }
 
     # Compute expansion factor: n_counted / n_interviewed
@@ -1878,7 +2041,17 @@ format.creel_design <- function(x, ...) {
     }
 
     # Bus-Route section
-    if (!is.null(x$bus_route)) {
+    if (!is.null(x$ice)) {
+      cli::cli_h2("Ice Fishing Design")
+      cli::cli_text("Effort type: {.field {x$ice$effort_type}}")
+      if (!is.null(x$ice$p_period_scalar)) {
+        cli::cli_text("p_period (global): {.val {x$ice$p_period_scalar}}")
+      } else {
+        cli::cli_text("p_period column: {.field {x$ice$p_period_col}}")
+      }
+    }
+
+    if (!is.null(x$bus_route) && !identical(x$design_type, "ice")) {
       br <- x$bus_route$data
       site_col <- x$bus_route$site_col # nolint: object_usage_linter
       circ_col <- x$bus_route$circuit_col # nolint: object_usage_linter

@@ -83,9 +83,12 @@ estimate_effort_br <- function(design, by_vars, variance_method, conf_level, ver
   interviews$.contribution <- interviews$.e_i / interviews$.pi_i
 
   # Build per-site attribution table for attribute storage
+  # For ice designs the synthetic site/circuit columns are not in interviews — use row index
   site_col <- design$bus_route$site_col
   circuit_col <- design$bus_route$circuit_col
-  site_table <- interviews[c(site_col, circuit_col, ".e_i", ".pi_i", ".contribution")]
+  avail_cols <- intersect(c(site_col, circuit_col), names(interviews))
+  site_table_cols <- c(avail_cols, ".e_i", ".pi_i", ".contribution")
+  site_table <- interviews[site_table_cols]
   names(site_table)[names(site_table) == ".e_i"] <- "e_i"
   names(site_table)[names(site_table) == ".pi_i"] <- "pi_i"
   names(site_table)[names(site_table) == ".contribution"] <- "e_i_over_pi_i"
