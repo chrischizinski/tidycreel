@@ -57,11 +57,11 @@
 
 | REQ-ID | Phase | Status |
 |--------|-------|--------|
-| SECT-01 | Phase 39 | In progress |
-| SECT-02 | Phase 39 | In progress |
-| SECT-03 | Phase 39 | In progress |
-| SECT-04 | Phase 39 | In progress |
-| SECT-05 | Phase 39 | In progress |
+| SECT-01 | Phase 39 | Complete |
+| SECT-02 | Phase 39 | Complete |
+| SECT-03 | Phase 39 | Complete |
+| SECT-04 | Phase 39 | Complete |
+| SECT-05 | Phase 39 | Complete |
 | RATE-01 | Phase 40 | Complete |
 | RATE-02 | Phase 40 | Complete |
 | RATE-03 | Phase 40 | Complete |
@@ -77,4 +77,4 @@
 
 ---
 *Requirements defined: 2026-03-10*
-*Last updated: 2026-03-10 — traceability filled by roadmapper*
+*Last updated: 2026-03-14 — SECT-01..05 marked Complete after v0.7.0 ship*

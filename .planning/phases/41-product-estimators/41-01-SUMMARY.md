@@ -3,6 +3,7 @@ phase: 41-product-estimators
 plan: "01"
 subsystem: tests
 tags: [tdd, section-dispatch, total-catch, total-harvest, total-release, PROD-01, PROD-02]
+requirements-completed: [PROD-01, PROD-02]
 dependency_graph:
   requires: [40-02-SUMMARY.md]
   provides: [PROD-01 RED stubs, PROD-02 RED stubs, test-estimate-total-release.R]

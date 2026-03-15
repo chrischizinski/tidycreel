@@ -3,6 +3,7 @@ phase: 42-example-data-and-vignette
 plan: "01"
 subsystem: example-data
 tags: [example-data, datasets, documentation, tdd]
+requirements-completed: [DOCS-01]
 dependency_graph:
   requires: [41-02]
   provides: [example_sections_calendar, example_sections_counts, example_sections_interviews]

@@ -3,6 +3,7 @@ phase: 41-product-estimators
 plan: 02
 subsystem: estimation
 tags: [tdd, section-dispatch, product-estimators, delta-method]
+requirements-completed: [PROD-01, PROD-02]
 dependency_graph:
   requires: [41-01, 40-02, 39-03]
   provides: [section-dispatch-total-catch, section-dispatch-total-harvest, section-dispatch-total-release]
