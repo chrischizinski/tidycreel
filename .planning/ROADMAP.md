@@ -176,7 +176,12 @@ Plans:
   2. A biologist can supply either time-on-ice or active-fishing-time as the effort column and obtain correctly labeled estimates — the distinction is enforced by documentation and the `angler_effort_col` parameter
   3. `estimate_effort(by = shelter_mode)` (or equivalent grouping variable) produces per-shelter stratum effort estimates using the existing `by =` mechanism
   4. After `add_interviews()`, `estimate_catch_rate()` and `estimate_total_catch()` produce valid estimates on an ice fishing design, confirming interview compatibility
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 45-01-PLAN.md — TDD: Ice constructor, effort_type validation, p_site=1.0 enforcement, estimate_effort() dispatch (ICE-01, ICE-02, ICE-03)
+- [ ] 45-02-PLAN.md — TDD: add_interviews() ice path, pi_i broadcast, estimate_total_catch() dispatch (ICE-04)
+- [ ] 45-03-PLAN.md — Example datasets (example_ice_sampling_frame, example_ice_interviews) and ice-fishing vignette (ICE-01..04)
 
 ### Phase 46: Remote Camera Survey Support
 **Goal**: Biologists can estimate effort from camera-based access-point data in either counter mode or ingress-egress mode, handle non-random camera failures as informative gaps rather than missing data, and run the full interview-based estimation workflow on a camera design
@@ -207,13 +212,13 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 44. Design Type Enum and Validation | 2/2 | Complete   | 2026-03-15 |
-| 45. Ice Fishing Survey Support | 0/TBD | Not started | - |
+| 44. Design Type Enum and Validation | 2/2 | Complete    | 2026-03-15 |
+| 45. Ice Fishing Survey Support | 0/3 | Not started | - |
 | 46. Remote Camera Survey Support | 0/TBD | Not started | - |
 | 47. Aerial Survey Support | 0/TBD | Not started | - |
 
 **Overall (v0.8.0):** 0/4 phases complete
 
 ---
-*Roadmap last updated: 2026-03-15 — Phase 44 planned (2 plans)*
+*Roadmap last updated: 2026-03-15 — Phase 45 planned (3 plans)*
 *See .planning/milestones/ for archived milestone roadmaps*
