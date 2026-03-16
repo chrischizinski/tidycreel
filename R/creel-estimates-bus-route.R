@@ -443,7 +443,9 @@ estimate_total_catch_br <- function(
   interviews$.contribution <- interviews$.c_i / interviews$.pi_i
 
   # Build per-site attribution table for site_contributions attribute
-  site_table <- interviews[c(site_col, circuit_col, ".c_i", ".pi_i", ".contribution")]
+  # Use intersect() to skip synthetic site/circuit cols absent in ice interviews
+  avail_site_cols <- intersect(c(site_col, circuit_col), names(interviews))
+  site_table <- interviews[c(avail_site_cols, ".c_i", ".pi_i", ".contribution")]
   names(site_table)[names(site_table) == ".c_i"] <- "c_i"
   names(site_table)[names(site_table) == ".pi_i"] <- "pi_i"
   names(site_table)[names(site_table) == ".contribution"] <- "c_i_over_pi_i"

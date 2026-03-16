@@ -1688,13 +1688,21 @@ add_interviews <- function(design, interviews,
   # Validate trip metadata
   validate_trip_metadata(interviews, trip_status_col, trip_duration_col, trip_start_col, interview_time_col) # nolint: object_usage_linter
 
-  # Tier 3: Bus-route specific validation (skip for ice — synthetic bus_route slot)
+  # Tier 3: Bus-route specific validation (skip site/circuit checks for ice)
   if (!is.null(design$bus_route) && !identical(design$design_type, "ice")) {
     validate_br_interviews_tier3(
       interviews         = interviews,
       design             = design,
       n_counted_col      = n_counted_col,
       n_interviewed_col  = n_interviewed_col
+    )
+  }
+
+  # Tier 3: Ice-specific validation — n_counted and n_interviewed required
+  if (identical(design$design_type, "ice")) {
+    validate_ice_interviews_tier3(
+      n_counted_col     = n_counted_col,
+      n_interviewed_col = n_interviewed_col
     )
   }
 
@@ -2720,6 +2728,52 @@ validate_br_interviews_tier3 <- function(interviews, design,
         "i" = "The expansion factor (n_counted / n_interviewed) must be >= 1."
       ))
     }
+  }
+
+  invisible(NULL)
+}
+
+
+#' Validate interview data for ice designs (Tier 3)
+#'
+#' Checks that n_counted and n_interviewed columns are both provided for an
+#' ice design. Site/circuit join-key checks are skipped (ice has no sampling
+#' frame join requirement).
+#'
+#' @param n_counted_col Character name of n_counted column, or NULL
+#' @param n_interviewed_col Character name of n_interviewed column, or NULL
+#'
+#' @return invisible(NULL) on success; aborts on validation failure
+#'
+#' @keywords internal
+#' @noRd
+validate_ice_interviews_tier3 <- function(n_counted_col, n_interviewed_col) {
+  collection <- checkmate::makeAssertCollection()
+
+  if (is.null(n_counted_col)) {
+    collection$push(
+      paste0(
+        "n_counted is required for ice designs. ",
+        "Specify the column containing the count of all observed anglers."
+      )
+    )
+  }
+  if (is.null(n_interviewed_col)) {
+    collection$push(
+      paste0(
+        "n_interviewed is required for ice designs. ",
+        "Specify the column containing the count of anglers interviewed."
+      )
+    )
+  }
+
+  if (!collection$isEmpty()) {
+    msgs <- collection$getMessages() # nolint: object_usage_linter
+    cli::cli_abort(c(
+      "Ice design interview validation failed (Tier 3):",
+      stats::setNames(paste0("{.var ", msgs, "}"), rep("x", length(msgs))),
+      "i" = "Ice designs require enumeration counts to compute the expansion factor."
+    ))
   }
 
   invisible(NULL)

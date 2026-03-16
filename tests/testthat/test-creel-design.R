@@ -1086,7 +1086,7 @@ test_that("ICE-04: add_interviews(ice) without n_interviewed aborts with informa
 test_that("ICE-04: add_interviews(ice) with valid inputs attaches non-NULL interview_survey", {
   design <- make_ice_design_no_sf()
   interviews <- make_ice_interviews_valid()
-  result <- add_interviews(
+  result <- suppressWarnings(add_interviews(
     design,
     interviews,
     catch = walleye_catch,
@@ -1094,14 +1094,14 @@ test_that("ICE-04: add_interviews(ice) with valid inputs attaches non-NULL inter
     n_counted = n_counted,
     n_interviewed = n_interviewed,
     trip_status = trip_status
-  )
+  ))
   expect_false(is.null(result$interview_survey))
 })
 
 test_that("ICE-04: add_interviews(ice) broadcasts p_period_scalar to .pi_i on all rows", {
   design <- make_ice_design_no_sf()
   interviews <- make_ice_interviews_valid()
-  result <- add_interviews(
+  result <- suppressWarnings(add_interviews(
     design,
     interviews,
     catch = walleye_catch,
@@ -1109,7 +1109,7 @@ test_that("ICE-04: add_interviews(ice) broadcasts p_period_scalar to .pi_i on al
     n_counted = n_counted,
     n_interviewed = n_interviewed,
     trip_status = trip_status
-  )
-  expect_true(".pi_i" %in% names(result$interview_survey))
-  expect_true(all(result$interview_survey$.pi_i == 0.5))
+  ))
+  expect_true(".pi_i" %in% names(result$interviews))
+  expect_true(all(result$interviews$.pi_i == 0.5))
 })

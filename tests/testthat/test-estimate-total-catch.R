@@ -821,9 +821,10 @@ test_that("PROD-02-catch-regression: non-sectioned design returns same result as
 # ICE-04: estimate_total_catch() ice compatibility ----
 
 make_ice_total_catch_design <- function() {
+  # Four days — 2 weekday, 2 weekend — ensures each stratum has >= 2 interviews
   cal <- data.frame(
-    date = as.Date(c("2024-01-10", "2024-01-11", "2024-01-12")),
-    day_type = c("weekday", "weekday", "weekend"),
+    date = as.Date(c("2024-01-10", "2024-01-11", "2024-01-12", "2024-01-13")),
+    day_type = c("weekday", "weekday", "weekend", "weekend"),
     stringsAsFactors = FALSE
   )
   design <- creel_design( # nolint: object_usage_linter
@@ -834,15 +835,15 @@ make_ice_total_catch_design <- function() {
     p_period = 0.5
   )
   interviews_df <- data.frame(
-    date = as.Date(c("2024-01-10", "2024-01-11", "2024-01-12")),
-    n_counted = c(10L, 8L, 12L),
-    n_interviewed = c(3L, 2L, 4L),
-    hours_fished = c(2.0, 1.5, 3.0),
-    walleye_catch = c(1L, 0L, 2L),
-    trip_status = rep("complete", 3L),
+    date = as.Date(c("2024-01-10", "2024-01-11", "2024-01-12", "2024-01-13")),
+    n_counted = c(10L, 8L, 12L, 9L),
+    n_interviewed = c(3L, 2L, 4L, 3L),
+    hours_fished = c(2.0, 1.5, 3.0, 2.5),
+    walleye_catch = c(1L, 0L, 2L, 1L),
+    trip_status = rep("complete", 4L),
     stringsAsFactors = FALSE
   )
-  add_interviews( # nolint: object_usage_linter
+  suppressWarnings(add_interviews( # nolint: object_usage_linter
     design,
     interviews_df,
     catch = walleye_catch, # nolint: object_usage_linter
@@ -850,7 +851,7 @@ make_ice_total_catch_design <- function() {
     n_counted = n_counted, # nolint: object_usage_linter
     n_interviewed = n_interviewed, # nolint: object_usage_linter
     trip_status = trip_status # nolint: object_usage_linter
-  )
+  ))
 }
 
 test_that("ICE-04: estimate_total_catch() on ice design returns valid estimates tibble", {

@@ -127,8 +127,8 @@ estimate_total_catch <- function(
     ))
   }
 
-  # Bus-route dispatch (before standard survey NULL check)
-  if (!is.null(design$design_type) && design$design_type == "bus_route") {
+  # Bus-route / ice dispatch (before standard survey NULL check)
+  if (!is.null(design$design_type) && design$design_type %in% c("bus_route", "ice")) {
     if (verbose) {
       cli::cli_inform(c(
         "i" = "Using bus-route estimator (Jones & Pollock 2012, Eq. 19.5)"
