@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
-status: completed
-stopped_at: Completed 45-02-PLAN.md — ICE-04 satisfied
-last_updated: "2026-03-16T00:19:38Z"
+status: executing
+stopped_at: Completed 45-03-PLAN.md — ICE-01 through ICE-04 verified via R CMD check
+last_updated: "2026-03-16T01:03:17.928Z"
 last_activity: 2026-03-16 — 45-02 add_interviews ice path, estimate_total_catch dispatch widened
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 5
-  completed_plans: 3
+  completed_plans: 5
   percent: 100
 ---
 
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-03-15)
 
 ## Current Position
 
-Phase: 45 (Ice Fishing Survey Support) — 2/3 plans complete
-Plan: 02 complete
-Status: Phase 45 in progress — ICE-01, ICE-02, ICE-03, ICE-04 satisfied
-Last activity: 2026-03-16 — 45-02 add_interviews ice path, estimate_total_catch dispatch widened
+Phase: 45 (Ice Fishing Survey Support) — COMPLETE (3/3 plans)
+Plan: 03 complete
+Status: Phase 45 complete — ICE-01, ICE-02, ICE-03, ICE-04 satisfied and verified via R CMD check
+Last activity: 2026-03-16 — 45-03 example datasets, ice-fishing vignette, R CMD check 0 errors 0 warnings
 
 Progress: [██████████] 100%
 
@@ -56,6 +56,7 @@ Progress: [██████████] 100%
 | Phase 44 P02 | 4min | 1 tasks | 0 files |
 | Phase 45-ice-fishing-survey-support P01 | 14min | 3 tasks | 6 files |
 | Phase 45-ice-fishing-survey-support P02 | 12min | 2 tasks | 6 files |
+| Phase 45-ice-fishing-survey-support P03 | 20min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -72,6 +73,11 @@ Progress: [██████████] 100%
 - p_site=1.0 enforcement auto-detects 'p_site' column by name in sampling_frame; floating-point safe check abs(val-1.0)>1e-9
 - validate_creel_design() and validate_br_interviews_tier3() skip p_site/site_col checks for ice (synthetic bus_route slot)
 - estimate_effort_br() site_table uses intersect() to skip synthetic .ice_site/.circuit cols not in ice interviews
+
+### Decisions (v0.8.0 Phase 45-03)
+
+- Vignette demonstrates both effort_type values (time_on_ice and active_fishing_time) side-by-side to document total_effort_hr_on_ice vs total_effort_hr_active column label distinction
+- Dataset @examples use scalar p_period values to avoid R CMD check vector-recycling notes
 
 ### Decisions (v0.8.0 Phase 45-02)
 
@@ -106,6 +112,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-16T00:19:38Z
-Stopped at: Completed 45-02-PLAN.md — ICE-04 satisfied
-Next step: Phase 45-03 — Ice quality gate
+Last session: 2026-03-16T01:03:17.925Z
+Stopped at: Completed 45-03-PLAN.md — ICE-01 through ICE-04 verified via R CMD check
+Next step: Phase 46 — Camera survey support (next in ice → camera → aerial build order)
