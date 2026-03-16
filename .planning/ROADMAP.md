@@ -211,7 +211,12 @@ Plans:
   4. The aerial estimator reproduces the Malvestuto (1996) Box 20.6 worked example within numerical tolerance (same validation strategy used for bus-route in Phase 26)
   5. After `add_interviews()`, `estimate_catch_rate()` and `estimate_total_catch()` produce valid estimates on an aerial design, confirming interview compatibility
   6. An example dataset and vignette ship with the package demonstrating the complete aerial workflow from design construction through total catch estimation
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 47-01-PLAN.md — TDD: aerial constructor fill (h_open/visibility_correction), estimate_effort_aerial() with delta method variance, aerial dispatch in estimate_effort(), Malvestuto Box 20.6 validation (AIR-01, AIR-02, AIR-03, AIR-04)
+- [ ] 47-02-PLAN.md — TDD: add_interviews() aerial path, estimate_catch_rate(), estimate_total_catch() compatibility (AIR-05)
+- [ ] 47-03-PLAN.md — Example datasets (example_aerial_counts, example_aerial_interviews) and aerial-surveys vignette (AIR-06)
 
 ## Progress Summary
 
@@ -219,11 +224,11 @@ Plans:
 |-------|----------------|--------|-----------|
 | 44. Design Type Enum and Validation | 2/2 | Complete    | 2026-03-15 |
 | 45. Ice Fishing Survey Support | 3/3 | Complete    | 2026-03-16 |
-| 46. Remote Camera Survey Support | 3/3 | Complete   | 2026-03-16 |
-| 47. Aerial Survey Support | 0/TBD | Not started | - |
+| 46. Remote Camera Survey Support | 3/3 | Complete    | 2026-03-16 |
+| 47. Aerial Survey Support | 0/3 | Not started | - |
 
 **Overall (v0.8.0):** 0/4 phases complete
 
 ---
-*Roadmap last updated: 2026-03-16 — Phase 46 planned (3 plans)*
+*Roadmap last updated: 2026-03-16 — Phase 47 planned (3 plans)*
 *See .planning/milestones/ for archived milestone roadmaps*
