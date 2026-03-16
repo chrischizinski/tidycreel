@@ -312,3 +312,99 @@
 #' @seealso [example_sections_calendar], [example_sections_counts],
 #'   [add_interviews()], [estimate_catch_rate()], [estimate_total_catch()]
 "example_sections_interviews"
+
+#' Example sampling frame for ice fishing creel survey
+#'
+#' A minimal sampling frame for a Nebraska ice fishing creel survey at Lake
+#' McConaughy. Contains 12 weekend sampling days across January-February 2024.
+#' Ice fishing surveys are a degenerate bus-route design where all access points
+#' are sampled with certainty (\code{p_site = 1.0}), so only the period
+#' sampling probability (\code{p_period}) is specified.
+#'
+#' @format A data frame with 12 rows and 3 columns:
+#' \describe{
+#'   \item{date}{Survey date (Date class), January-February 2024}
+#'   \item{day_type}{Day type stratum: \code{"weekday"} or \code{"weekend"}}
+#'   \item{p_period}{Numeric period sampling probability in \code{(0, 1]}.
+#'     The probability that a given period is included in the sample.}
+#' }
+#'
+#' @source Simulated data based on Nebraska ice fishing survey protocols.
+#'
+#' @examples
+#' data(example_ice_sampling_frame)
+#' head(example_ice_sampling_frame)
+#'
+#' design <- creel_design(
+#'   example_ice_sampling_frame,
+#'   date = date,
+#'   strata = day_type,
+#'   survey_type = "ice",
+#'   effort_type = "time_on_ice",
+#'   p_period = p_period
+#' )
+#' print(design)
+#'
+#' @seealso [example_ice_interviews] for matching interview data,
+#'   [creel_design()] for ice survey design construction
+"example_ice_sampling_frame"
+
+#' Example interview data for ice fishing creel survey
+#'
+#' Angler interview data for an ice fishing creel survey at Lake McConaughy,
+#' Nebraska. Contains 72 interviews across 12 sampling days in January-February
+#' 2024. Anglers fish from both open-air setups and enclosed dark-house shelters,
+#' targeting walleye and yellow perch. Dates match [example_ice_sampling_frame].
+#'
+#' @format A data frame with 72 rows and 10 columns:
+#' \describe{
+#'   \item{date}{Interview date (Date class), matching [example_ice_sampling_frame]}
+#'   \item{n_counted}{Integer total number of angler parties counted at the
+#'     access point during the sampling period}
+#'   \item{n_interviewed}{Integer number of parties actually interviewed;
+#'     always \code{<= n_counted}}
+#'   \item{hours_on_ice}{Numeric hours the angler party was physically on the
+#'     ice (total time-on-ice effort)}
+#'   \item{active_fishing_hours}{Numeric hours spent actively fishing, excluding
+#'     travel, setup, and breaks; always \code{<= hours_on_ice}}
+#'   \item{walleye_catch}{Integer total walleye caught (kept + released)}
+#'   \item{perch_catch}{Integer total yellow perch caught (kept + released)}
+#'   \item{walleye_kept}{Integer walleye harvested; always \code{<= walleye_catch}}
+#'   \item{perch_kept}{Integer yellow perch harvested; always \code{<= perch_catch}}
+#'   \item{trip_status}{Character trip completion status: \code{"complete"} or
+#'     \code{"incomplete"}}
+#'   \item{shelter_mode}{Character shelter type used by the angler party:
+#'     \code{"open"} (no shelter) or \code{"dark_house"} (enclosed shelter).
+#'     Used to stratify effort estimates by shelter type.}
+#' }
+#'
+#' @source Simulated data based on Nebraska ice fishing survey protocols.
+#'
+#' @examples
+#' data(example_ice_sampling_frame)
+#' data(example_ice_interviews)
+#'
+#' design <- creel_design(
+#'   example_ice_sampling_frame,
+#'   date = date,
+#'   strata = day_type,
+#'   survey_type = "ice",
+#'   effort_type = "time_on_ice",
+#'   p_period = p_period
+#' )
+#'
+#' design <- add_interviews(
+#'   design,
+#'   example_ice_interviews,
+#'   catch = walleye_catch,
+#'   effort = hours_on_ice,
+#'   harvest = walleye_kept,
+#'   trip_status = trip_status,
+#'   n_counted = n_counted,
+#'   n_interviewed = n_interviewed
+#' )
+#' estimate_effort(design)
+#'
+#' @seealso [example_ice_sampling_frame] for the matching sampling frame,
+#'   [creel_design()], [add_interviews()], [estimate_effort()]
+"example_ice_interviews"
