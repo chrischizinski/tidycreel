@@ -238,7 +238,8 @@ creel_design <- function(calendar,
                          p_site = NULL,
                          p_period = NULL,
                          circuit = NULL,
-                         effort_type = NULL) {
+                         effort_type = NULL,
+                         camera_mode = NULL) {
   # 1. Structural validation (Phase 1 validator)
   validate_calendar_schema(calendar) # nolint: object_usage_linter
 
@@ -517,8 +518,19 @@ creel_design <- function(calendar,
   # --- Camera branch ---
   camera <- NULL
   if (identical(survey_type, "camera")) {
-    camera <- list(survey_type = "camera")
-    # Phase 46 will inject camera_status checks here
+    valid_camera_modes <- c("counter", "ingress_egress")
+    if (is.null(camera_mode) || !camera_mode %in% valid_camera_modes) {
+      cli::cli_abort(c(
+        "{.arg camera_mode} is required for {.val camera} survey designs.",
+        "x" = if (is.null(camera_mode)) {
+          "No {.arg camera_mode} supplied."
+        } else {
+          "Unknown {.arg camera_mode}: {.val {camera_mode}}."
+        },
+        "i" = "Valid values: {.val {valid_camera_modes}}."
+      ))
+    }
+    camera <- list(survey_type = "camera", camera_mode = camera_mode)
   }
 
   # --- Aerial branch ---
@@ -2065,6 +2077,11 @@ format.creel_design <- function(x, ...) {
       }
     }
 
+    if (!is.null(x$camera)) {
+      cli::cli_h2("Camera Survey Design")
+      cli::cli_text("Camera mode: {.val {x$camera$camera_mode}}")
+    }
+
     if (!is.null(x$bus_route) && !identical(x$design_type, "ice")) {
       br <- x$bus_route$data
       site_col <- x$bus_route$site_col # nolint: object_usage_linter
@@ -3235,4 +3252,82 @@ add_lengths <- function(design, data,
   new_design$lengths_release_format <- release_format
   class(new_design) <- "creel_design"
   new_design
+}
+
+# Camera preprocessing ----
+
+#' Preprocess camera ingress-egress timestamps to daily effort hours
+#'
+#' @title Preprocess camera ingress-egress timestamps
+#'
+#' @description
+#' Converts paired ingress and egress POSIXct timestamps into a data frame of
+#' daily angler-effort hours, suitable for passing to \code{\link{add_counts}}.
+#' Duration for each pair is computed as
+#' \code{difftime(egress_col, ingress_col, units = "hours")}. Pairs where
+#' egress precedes ingress (negative duration) are flagged with
+#' \code{\link[cli]{cli_warn}} and excluded from the daily sum (set to
+#' \code{NA}).
+#'
+#' @param timestamps A data frame containing the ingress-egress records.
+#' @param date_col Tidy selector for the date column (Date or POSIXct).
+#' @param ingress_col Tidy selector for the ingress timestamp column (POSIXct).
+#' @param egress_col Tidy selector for the egress timestamp column (POSIXct).
+#'
+#' @return A data frame with columns \code{date} and \code{daily_effort_hours}
+#'   (one row per unique date, effort hours summed across all valid pairs for
+#'   that date).
+#'
+#' @export
+preprocess_camera_timestamps <- function(timestamps,
+                                         date_col,
+                                         ingress_col,
+                                         egress_col) {
+  if (!is.data.frame(timestamps)) {
+    cli::cli_abort(c(
+      "{.arg timestamps} must be a data frame.",
+      "x" = "Got {.cls {class(timestamps)[1]}}."
+    ))
+  }
+
+  date_name <- rlang::as_name(rlang::enquo(date_col))
+  ingress_name <- rlang::as_name(rlang::enquo(ingress_col))
+  egress_name <- rlang::as_name(rlang::enquo(egress_col))
+
+  missing_cols <- setdiff(
+    c(date_name, ingress_name, egress_name),
+    names(timestamps)
+  )
+  if (length(missing_cols) > 0L) {
+    cli::cli_abort(c(
+      "Required columns not found in {.arg timestamps}.",
+      "x" = "Missing: {.field {missing_cols}}."
+    ))
+  }
+
+  duration_hours <- as.numeric(
+    difftime(timestamps[[egress_name]], timestamps[[ingress_name]], units = "hours")
+  )
+
+  neg <- !is.na(duration_hours) & duration_hours < 0
+  if (any(neg, na.rm = TRUE)) {
+    n_neg <- sum(neg) # nolint: object_usage_linter
+    cli::cli_warn(c(
+      "{n_neg} ingress-egress pair{?s} had negative duration and {?was/were} excluded.",
+      "i" = "Negative durations occur when egress precedes ingress.",
+      "i" = "Affected rows have been set to {.val NA} and excluded from the daily sum."
+    ))
+    duration_hours[neg] <- NA_real_
+  }
+
+  agg <- stats::aggregate(
+    duration_hours ~ date,
+    data = data.frame(
+      date = timestamps[[date_name]],
+      duration_hours = duration_hours
+    ),
+    FUN = function(x) sum(x, na.rm = TRUE)
+  )
+  names(agg) <- c("date", "daily_effort_hours")
+  agg
 }

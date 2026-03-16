@@ -898,7 +898,8 @@ test_that("creel_design() accepts survey_type = 'ice' with effort_type and retur
 test_that("creel_design() accepts survey_type = 'camera' and returns creel_design", {
   d <- creel_design(make_enum_cal(),
     date = date, strata = day_type,
-    survey_type = "camera"
+    survey_type = "camera",
+    camera_mode = "counter"
   )
   expect_s3_class(d, "creel_design")
   expect_equal(d$design_type, "camera")

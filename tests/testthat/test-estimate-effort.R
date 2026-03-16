@@ -1498,11 +1498,8 @@ make_cam_counts <- function() {
       "2024-06-01", "2024-06-02", "2024-06-03",
       "2024-06-04", "2024-06-05", "2024-06-06"
     )),
+    day_type = c("weekday", "weekday", "weekday", "weekend", "weekend", "weekend"),
     angler_count = c(12L, 15L, 10L, 20L, 18L, 14L),
-    camera_status = c(
-      "operational", "operational", "operational",
-      "operational", "operational", "operational"
-    ),
     stringsAsFactors = FALSE
   )
 }
@@ -1519,7 +1516,7 @@ make_cam_design_counter <- function() {
 
 test_that("CAM-01: counter-mode camera + add_counts() + estimate_effort() returns valid estimate", {
   design <- make_cam_design_counter()
-  d <- add_counts(design, make_cam_counts(), count = angler_count) # nolint: object_usage_linter
+  d <- add_counts(design, make_cam_counts()) # nolint: object_usage_linter
   result <- suppressWarnings(estimate_effort(d))
   expect_s3_class(result, "creel_estimates")
   expect_true(is.numeric(result$estimates$estimate))
@@ -1534,6 +1531,7 @@ make_cam_daily_effort <- function() {
       "2024-06-01", "2024-06-02", "2024-06-03",
       "2024-06-04", "2024-06-05", "2024-06-06"
     )),
+    day_type = c("weekday", "weekday", "weekday", "weekend", "weekend", "weekend"),
     daily_effort_hours = c(4.0, 5.5, 3.0, 6.0, 4.5, 5.0),
     stringsAsFactors = FALSE
   )
@@ -1546,7 +1544,7 @@ test_that("CAM-02: ingress-egress camera with preprocessed daily_effort_hours fl
     camera_mode = "ingress_egress"
   )
   daily_effort <- make_cam_daily_effort()
-  d <- add_counts(design, daily_effort, count = daily_effort_hours) # nolint: object_usage_linter
+  d <- add_counts(design, daily_effort) # nolint: object_usage_linter
   result <- suppressWarnings(estimate_effort(d))
   expect_s3_class(result, "creel_estimates")
   expect_true(is.numeric(result$estimates$estimate))
@@ -1560,6 +1558,7 @@ make_cam_counts_with_gap <- function() {
       "2024-06-01", "2024-06-02", "2024-06-03",
       "2024-06-04", "2024-06-05", "2024-06-06"
     )),
+    day_type = c("weekday", "weekday", "weekday", "weekend", "weekend", "weekend"),
     angler_count = c(12L, NA_integer_, 10L, 20L, 18L, 14L),
     camera_status = c(
       "operational", "offline", "operational",
@@ -1573,7 +1572,7 @@ test_that("CAM-03: filtering camera_status == 'operational' before add_counts() 
   design <- make_cam_design_counter()
   counts_gap <- make_cam_counts_with_gap()
   operational <- counts_gap[counts_gap$camera_status == "operational", ]
-  d <- add_counts(design, operational, count = angler_count) # nolint: object_usage_linter
+  d <- add_counts(design, operational) # nolint: object_usage_linter
   result <- suppressWarnings(estimate_effort(d))
   expect_s3_class(result, "creel_estimates")
   expect_true(is.numeric(result$estimates$estimate))
