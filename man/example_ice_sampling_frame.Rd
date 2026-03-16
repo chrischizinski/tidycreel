@@ -30,13 +30,14 @@ sampling probability (\code{p_period}) is specified.
 data(example_ice_sampling_frame)
 head(example_ice_sampling_frame)
 
+# Build an ice fishing design with scalar period sampling probability
 design <- creel_design(
   example_ice_sampling_frame,
   date = date,
   strata = day_type,
   survey_type = "ice",
   effort_type = "time_on_ice",
-  p_period = p_period
+  p_period = 0.5
 )
 print(design)
 

@@ -335,13 +335,14 @@
 #' data(example_ice_sampling_frame)
 #' head(example_ice_sampling_frame)
 #'
+#' # Build an ice fishing design with scalar period sampling probability
 #' design <- creel_design(
 #'   example_ice_sampling_frame,
 #'   date = date,
 #'   strata = day_type,
 #'   survey_type = "ice",
 #'   effort_type = "time_on_ice",
-#'   p_period = p_period
+#'   p_period = 0.5
 #' )
 #' print(design)
 #'
@@ -384,16 +385,17 @@
 #' data(example_ice_sampling_frame)
 #' data(example_ice_interviews)
 #'
+#' # Build an ice fishing design with scalar period sampling probability
 #' design <- creel_design(
 #'   example_ice_sampling_frame,
 #'   date = date,
 #'   strata = day_type,
 #'   survey_type = "ice",
 #'   effort_type = "time_on_ice",
-#'   p_period = p_period
+#'   p_period = 0.5
 #' )
 #'
-#' design <- add_interviews(
+#' design <- suppressMessages(add_interviews(
 #'   design,
 #'   example_ice_interviews,
 #'   catch = walleye_catch,
@@ -402,8 +404,8 @@
 #'   trip_status = trip_status,
 #'   n_counted = n_counted,
 #'   n_interviewed = n_interviewed
-#' )
-#' estimate_effort(design)
+#' ))
+#' suppressWarnings(estimate_effort(design))
 #'
 #' @seealso [example_ice_sampling_frame] for the matching sampling frame,
 #'   [creel_design()], [add_interviews()], [estimate_effort()]
