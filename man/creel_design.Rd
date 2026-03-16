@@ -14,7 +14,8 @@ creel_design(
   sampling_frame = NULL,
   p_site = NULL,
   p_period = NULL,
-  circuit = NULL
+  circuit = NULL,
+  effort_type = NULL
 )
 }
 \arguments{
@@ -64,6 +65,13 @@ globally to all rows. Required when \code{survey_type = "bus_route"}.}
 \code{sampling_frame}. A circuit is a route x period combination. If omitted,
 all rows are treated as belonging to a single unnamed circuit
 (\code{".default"}). Required only for multi-circuit designs.}
+
+\item{effort_type}{Character string specifying the type of effort measured
+in ice fishing surveys. Required when \code{survey_type = "ice"}. Must be one
+of \code{"time_on_ice"} (total hours the angler was on the ice) or
+\code{"active_fishing_time"} (hours actively fishing, excluding travel/setup).
+The value controls the column name in \code{estimate_effort()} output:
+\code{total_effort_hr_on_ice} or \code{total_effort_hr_active}.}
 }
 \value{
 A \code{creel_design} S3 object (list) with components:

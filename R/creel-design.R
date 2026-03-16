@@ -129,6 +129,12 @@ VALID_SURVEY_TYPES <- c("instantaneous", "bus_route", "ice", "camera", "aerial")
 #'   `sampling_frame`. A circuit is a route x period combination. If omitted,
 #'   all rows are treated as belonging to a single unnamed circuit
 #'   (`".default"`). Required only for multi-circuit designs.
+#' @param effort_type Character string specifying the type of effort measured
+#'   in ice fishing surveys. Required when `survey_type = "ice"`. Must be one
+#'   of `"time_on_ice"` (total hours the angler was on the ice) or
+#'   `"active_fishing_time"` (hours actively fishing, excluding travel/setup).
+#'   The value controls the column name in `estimate_effort()` output:
+#'   `total_effort_hr_on_ice` or `total_effort_hr_active`.
 #'
 #' @return A `creel_design` S3 object (list) with components:
 #'   \item{calendar}{The original calendar data frame}
