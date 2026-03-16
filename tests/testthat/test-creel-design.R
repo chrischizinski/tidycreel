@@ -1024,3 +1024,92 @@ test_that("ICE-02: creel_design(ice) with unknown effort_type aborts with inform
     regexp = "time_on_ice|active_fishing_time"
   )
 })
+
+# ICE-04: add_interviews() ice path ----
+
+make_ice_design_no_sf <- function() {
+  creel_design( # nolint: object_usage_linter
+    make_ice_cal(),
+    date = date, strata = day_type, # nolint: object_usage_linter
+    survey_type = "ice",
+    effort_type = "time_on_ice",
+    p_period = 0.5
+  )
+}
+
+make_ice_interviews_valid <- function() {
+  data.frame(
+    date = as.Date(c("2024-01-10", "2024-01-11", "2024-01-12")),
+    n_counted = c(10L, 8L, 12L),
+    n_interviewed = c(3L, 2L, 4L),
+    hours_fished = c(2.0, 1.5, 3.0),
+    walleye_catch = c(1L, 0L, 2L),
+    trip_status = rep("complete", 3L),
+    stringsAsFactors = FALSE
+  )
+}
+
+test_that("ICE-04: add_interviews(ice) without n_counted aborts with informative error", {
+  design <- make_ice_design_no_sf()
+  interviews <- make_ice_interviews_valid()
+  expect_error(
+    add_interviews(
+      design,
+      interviews,
+      catch = walleye_catch,
+      effort = hours_fished,
+      n_interviewed = n_interviewed,
+      trip_status = trip_status
+    ),
+    regexp = "n_counted",
+    class = "rlang_error"
+  )
+})
+
+test_that("ICE-04: add_interviews(ice) without n_interviewed aborts with informative error", {
+  design <- make_ice_design_no_sf()
+  interviews <- make_ice_interviews_valid()
+  expect_error(
+    add_interviews(
+      design,
+      interviews,
+      catch = walleye_catch,
+      effort = hours_fished,
+      n_counted = n_counted,
+      trip_status = trip_status
+    ),
+    regexp = "n_interviewed",
+    class = "rlang_error"
+  )
+})
+
+test_that("ICE-04: add_interviews(ice) with valid inputs attaches non-NULL interview_survey", {
+  design <- make_ice_design_no_sf()
+  interviews <- make_ice_interviews_valid()
+  result <- add_interviews(
+    design,
+    interviews,
+    catch = walleye_catch,
+    effort = hours_fished,
+    n_counted = n_counted,
+    n_interviewed = n_interviewed,
+    trip_status = trip_status
+  )
+  expect_false(is.null(result$interview_survey))
+})
+
+test_that("ICE-04: add_interviews(ice) broadcasts p_period_scalar to .pi_i on all rows", {
+  design <- make_ice_design_no_sf()
+  interviews <- make_ice_interviews_valid()
+  result <- add_interviews(
+    design,
+    interviews,
+    catch = walleye_catch,
+    effort = hours_fished,
+    n_counted = n_counted,
+    n_interviewed = n_interviewed,
+    trip_status = trip_status
+  )
+  expect_true(".pi_i" %in% names(result$interview_survey))
+  expect_true(all(result$interview_survey$.pi_i == 0.5))
+})

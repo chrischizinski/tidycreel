@@ -2323,3 +2323,45 @@ test_that("RATE-03-catch-error: missing_sections='error' triggers cli_abort for 
     ignore.case = TRUE
   )
 })
+
+# ICE-04: estimate_catch_rate() ice compatibility ----
+
+make_ice_catch_rate_design <- function() {
+  cal <- data.frame(
+    date = as.Date(c("2024-01-10", "2024-01-11", "2024-01-12")),
+    day_type = c("weekday", "weekday", "weekend"),
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design( # nolint: object_usage_linter
+    cal,
+    date = date, strata = day_type, # nolint: object_usage_linter
+    survey_type = "ice",
+    effort_type = "time_on_ice",
+    p_period = 0.5
+  )
+  interviews_df <- data.frame(
+    date = as.Date(c("2024-01-10", "2024-01-11", "2024-01-12")),
+    n_counted = c(10L, 8L, 12L),
+    n_interviewed = c(3L, 2L, 4L),
+    hours_fished = c(2.0, 1.5, 3.0),
+    walleye_catch = c(1L, 0L, 2L),
+    trip_status = rep("complete", 3L),
+    stringsAsFactors = FALSE
+  )
+  add_interviews( # nolint: object_usage_linter
+    design,
+    interviews_df,
+    catch = walleye_catch, # nolint: object_usage_linter
+    effort = hours_fished, # nolint: object_usage_linter
+    n_counted = n_counted, # nolint: object_usage_linter
+    n_interviewed = n_interviewed, # nolint: object_usage_linter
+    trip_status = trip_status # nolint: object_usage_linter
+  )
+}
+
+test_that("ICE-04: estimate_catch_rate() on ice design returns valid estimates tibble", {
+  design <- make_ice_catch_rate_design() # nolint: object_usage_linter
+  result <- estimate_catch_rate(design) # nolint: object_usage_linter
+  expect_s3_class(result, "creel_estimates")
+  expect_true(all(c("estimate", "se", "lower", "upper") %in% names(result$estimates)))
+})
