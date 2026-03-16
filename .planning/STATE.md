@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: completed
-stopped_at: Completed 45-01-PLAN.md — ICE-01, ICE-02, ICE-03 satisfied
-last_updated: "2026-03-16T00:06:02.214Z"
-last_activity: 2026-03-15 — 44-02 full regression suite and quality gate confirmation
+stopped_at: Completed 45-02-PLAN.md — ICE-04 satisfied
+last_updated: "2026-03-16T00:19:38Z"
+last_activity: 2026-03-16 — 45-02 add_interviews ice path, estimate_total_catch dispatch widened
 progress:
   total_phases: 4
   completed_phases: 1
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-03-15)
 
 ## Current Position
 
-Phase: 45 (Ice Fishing Survey Support) — 1/3 plans complete
-Plan: 01 complete
-Status: Phase 45 in progress — ICE-01, ICE-02, ICE-03 satisfied
-Last activity: 2026-03-15 — 45-01 ice constructor, dispatch, and column labeling
+Phase: 45 (Ice Fishing Survey Support) — 2/3 plans complete
+Plan: 02 complete
+Status: Phase 45 in progress — ICE-01, ICE-02, ICE-03, ICE-04 satisfied
+Last activity: 2026-03-16 — 45-02 add_interviews ice path, estimate_total_catch dispatch widened
 
 Progress: [██████████] 100%
 
@@ -45,9 +45,9 @@ Progress: [██████████] 100%
 | v0.7.0 | 39-43 | 9/9 | ✅ Complete | 2026-03-15 |
 | v0.8.0 | 44-47 | 0/TBD | In progress | - |
 
-**Quality Metrics (v0.8.0 after Phase 45-01):**
-- Tests: 1610 total passing (net +14 from 45-01 ice constructor/dispatch)
-- R CMD check: 0 errors, 0 warnings (1 pre-existing NOTE about hidden files)
+**Quality Metrics (v0.8.0 after Phase 45-02):**
+- Tests: 1622 total passing (net +12 from 45-02 ICE-04 interview pipeline tests)
+- R CMD check: 0 errors, 0 warnings (2 pre-existing NOTEs about hidden files/examples)
 - lintr: 0 issues
 
 | Plan | Duration | Tasks | Files |
@@ -55,6 +55,7 @@ Progress: [██████████] 100%
 | Phase 44 P01 | 3 min | 2 tasks | 2 files |
 | Phase 44 P02 | 4min | 1 tasks | 0 files |
 | Phase 45-ice-fishing-survey-support P01 | 14min | 3 tasks | 6 files |
+| Phase 45-ice-fishing-survey-support P02 | 12min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -71,6 +72,12 @@ Progress: [██████████] 100%
 - p_site=1.0 enforcement auto-detects 'p_site' column by name in sampling_frame; floating-point safe check abs(val-1.0)>1e-9
 - validate_creel_design() and validate_br_interviews_tier3() skip p_site/site_col checks for ice (synthetic bus_route slot)
 - estimate_effort_br() site_table uses intersect() to skip synthetic .ice_site/.circuit cols not in ice interviews
+
+### Decisions (v0.8.0 Phase 45-02)
+
+- Ice Tier 3 validation is a new helper (validate_ice_interviews_tier3) that enforces n_counted/n_interviewed presence without site/circuit join-key checks
+- estimate_total_catch_br() site_table uses intersect() for synthetic column guard — same pattern as estimate_effort_br(); now canonical for all bus_route-path functions
+- estimate_total_catch() dispatch widened from == "bus_route" to %in% c("bus_route", "ice"); ice uses identical HT total catch path with no other changes
 
 ### Architecture Decisions (v0.8.0)
 
@@ -99,6 +106,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-16T00:06:02.211Z
-Stopped at: Completed 45-01-PLAN.md — ICE-01, ICE-02, ICE-03 satisfied
-Next step: Phase 45-02 — Camera Survey Support
+Last session: 2026-03-16T00:19:38Z
+Stopped at: Completed 45-02-PLAN.md — ICE-04 satisfied
+Next step: Phase 45-03 — Ice quality gate

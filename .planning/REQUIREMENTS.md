@@ -18,7 +18,7 @@ Requirements for v0.8.0 — Non-Traditional Creel Designs. Each maps to roadmap 
 - [x] **ICE-01**: Ice fishing effort estimation routes through bus-route infrastructure with `p_site = 1.0` enforced automatically
 - [x] **ICE-02**: User can supply an effort definition distinguishing time-on-ice from active-fishing-time
 - [x] **ICE-03**: User can stratify estimates by shelter mode using the existing `by =` grouping mechanism
-- [ ] **ICE-04**: User can attach interview data and estimate catch rates and total catch/harvest on an ice fishing design
+- [x] **ICE-04**: User can attach interview data and estimate catch rates and total catch/harvest on an ice fishing design
 
 ### Remote Camera
 
@@ -67,7 +67,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ICE-01 | Phase 45 | Complete |
 | ICE-02 | Phase 45 | Complete |
 | ICE-03 | Phase 45 | Complete |
-| ICE-04 | Phase 45 | Pending |
+| ICE-04 | Phase 45 | Complete |
 | CAM-01 | Phase 46 | Pending |
 | CAM-02 | Phase 46 | Pending |
 | CAM-03 | Phase 46 | Pending |
