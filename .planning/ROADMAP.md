@@ -219,7 +219,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 44. Design Type Enum and Validation | 2/2 | Complete    | 2026-03-15 |
 | 45. Ice Fishing Survey Support | 3/3 | Complete    | 2026-03-16 |
-| 46. Remote Camera Survey Support | 0/3 | Not started | - |
+| 46. Remote Camera Survey Support | 1/3 | In Progress|  |
 | 47. Aerial Survey Support | 0/TBD | Not started | - |
 
 **Overall (v0.8.0):** 0/4 phases complete

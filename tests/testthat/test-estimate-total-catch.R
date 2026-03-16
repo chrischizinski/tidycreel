@@ -861,3 +861,66 @@ test_that("ICE-04: estimate_total_catch() on ice design returns valid estimates 
   expect_true("estimate" %in% names(result$estimates))
   expect_true(is.numeric(result$estimates$estimate))
 })
+
+# Phase 46: Camera interview pipeline (CAM-04) — estimate_total_catch() ----
+
+#' Build a camera design with counts and interviews for total catch estimation
+make_camera_total_catch_design <- function() {
+  data("example_calendar", package = "tidycreel")
+  cal <- example_calendar # nolint: object_usage_linter
+  dates <- unique(cal$date)[1:4]
+  day_types <- cal$day_type[match(dates, cal$date)]
+
+  design <- creel_design( # nolint: object_usage_linter
+    cal,
+    date = date, strata = day_type, # nolint: object_usage_linter
+    survey_type = "camera",
+    camera_mode = "counter"
+  )
+  counts <- data.frame(
+    date = dates,
+    day_type = day_types,
+    n_counted = c(30L, 25L, 55L, 48L),
+    stringsAsFactors = FALSE
+  )
+  design <- suppressWarnings(add_counts(design, counts)) # nolint: object_usage_linter
+
+  interviews <- data.frame(
+    date = rep(dates, each = 3),
+    day_type = rep(day_types, each = 3),
+    trip_status = rep("complete", 12),
+    hours_fished = c(1.5, 2.0, 3.0, 1.0, 2.5, 1.5, 2.0, 3.5, 2.5, 1.5, 2.0, 3.0),
+    walleye = c(1L, 2L, 0L, 0L, 3L, 1L, 2L, 1L, 3L, 0L, 2L, 1L),
+    walleye_kept = c(1L, 1L, 0L, 0L, 2L, 0L, 1L, 0L, 2L, 0L, 1L, 1L),
+    stringsAsFactors = FALSE
+  )
+  suppressWarnings(add_interviews( # nolint: object_usage_linter
+    design, interviews,
+    catch = walleye, # nolint: object_usage_linter
+    effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status # nolint: object_usage_linter
+  ))
+}
+
+test_that("CAM-04: estimate_total_catch() on camera design returns valid creel_estimates", {
+  design <- make_camera_total_catch_design() # nolint: object_usage_linter
+  result <- suppressWarnings(estimate_total_catch(design)) # nolint: object_usage_linter
+  expect_s3_class(result, "creel_estimates")
+  expect_true("estimate" %in% names(result$estimates))
+  expect_true("se" %in% names(result$estimates))
+})
+
+test_that("CAM-04: estimate_total_catch() on camera design returns finite positive estimate", {
+  design <- make_camera_total_catch_design() # nolint: object_usage_linter
+  result <- suppressWarnings(estimate_total_catch(design)) # nolint: object_usage_linter
+  expect_true(is.numeric(result$estimates$estimate))
+  expect_true(is.finite(result$estimates$estimate))
+  expect_true(result$estimates$estimate > 0)
+})
+
+test_that("CAM-04: estimate_total_catch() on camera routes through standard (non-bus_route, non-ice) path", {
+  design <- make_camera_total_catch_design() # nolint: object_usage_linter
+  result <- suppressWarnings(estimate_total_catch(design)) # nolint: object_usage_linter
+  # Standard path produces method = "product-total-catch" (not bus-route or HT path)
+  expect_equal(result$method, "product-total-catch")
+})

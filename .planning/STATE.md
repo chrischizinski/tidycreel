@@ -4,13 +4,13 @@ milestone: v0.1
 milestone_name: milestone
 status: verifying
 stopped_at: Completed 45-03-PLAN.md — ICE-01 through ICE-04 verified via R CMD check
-last_updated: "2026-03-16T01:24:16.850Z"
+last_updated: "2026-03-16T02:06:29.274Z"
 last_activity: 2026-03-16 — 45-03 example datasets, ice-fishing vignette, R CMD check 0 errors 0 warnings
 progress:
   total_phases: 4
   completed_phases: 2
-  total_plans: 5
-  completed_plans: 5
+  total_plans: 8
+  completed_plans: 6
   percent: 100
 ---
 
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-03-15)
 
 ## Current Position
 
-Phase: 45 (Ice Fishing Survey Support) — COMPLETE (3/3 plans)
-Plan: 03 complete
-Status: Phase 45 complete — ICE-01, ICE-02, ICE-03, ICE-04 satisfied and verified via R CMD check
-Last activity: 2026-03-16 — 45-03 example datasets, ice-fishing vignette, R CMD check 0 errors 0 warnings
+Phase: 46 (Remote Camera Survey Support) — IN PROGRESS (1/3 plans)
+Plan: 01 complete
+Status: 46-01 complete — CAM-01, CAM-02, CAM-03 camera constructor and preprocessing implemented and verified
+Last activity: 2026-03-16 — 46-01 camera_mode validation, preprocess_camera_timestamps(), 1645 tests passing
 
 Progress: [██████████] 100%
 
@@ -45,8 +45,8 @@ Progress: [██████████] 100%
 | v0.7.0 | 39-43 | 9/9 | ✅ Complete | 2026-03-15 |
 | v0.8.0 | 44-47 | 0/TBD | In progress | - |
 
-**Quality Metrics (v0.8.0 after Phase 45-02):**
-- Tests: 1622 total passing (net +12 from 45-02 ICE-04 interview pipeline tests)
+**Quality Metrics (v0.8.0 after Phase 46-01):**
+- Tests: 1645 total passing (net +23 from 46-01 camera constructor + effort dispatch tests)
 - R CMD check: 0 errors, 0 warnings (2 pre-existing NOTEs about hidden files/examples)
 - lintr: 0 issues
 
@@ -57,8 +57,16 @@ Progress: [██████████] 100%
 | Phase 45-ice-fishing-survey-support P01 | 14min | 3 tasks | 6 files |
 | Phase 45-ice-fishing-survey-support P02 | 12min | 2 tasks | 6 files |
 | Phase 45-ice-fishing-survey-support P03 | 20min | 3 tasks | 8 files |
+| Phase 46-remote-camera-survey-support P01 | 6min | 2 tasks | 3 files |
 
 ## Accumulated Context
+
+### Decisions (v0.8.0 Phase 46-01)
+
+- camera_mode required (no default) for camera surveys — omitting aborts with informative message naming valid values (counter, ingress_egress); mirrors ice effort_type pattern
+- Camera uses standard instantaneous add_counts() + estimate_effort() path — NOT added to bus_route/ice special dispatch branch; design$survey populated by add_counts() then standard path
+- preprocess_camera_timestamps() uses rlang::as_name(rlang::enquo()) NSE — consistent with existing compute_effort() pattern in creel-design.R
+- Count data fixtures require all design strata columns (validate_counts_tier1 enforces strata alignment)
 
 ### Decisions (v0.8.0 Phase 44)
 
@@ -112,6 +120,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-16T01:03:17.925Z
-Stopped at: Completed 45-03-PLAN.md — ICE-01 through ICE-04 verified via R CMD check
-Next step: Phase 46 — Camera survey support (next in ice → camera → aerial build order)
+Last session: 2026-03-16T02:05:32Z
+Stopped at: Completed 46-01-PLAN.md — CAM-01/CAM-02/CAM-03 camera constructor, camera_mode validation, preprocess_camera_timestamps() verified
+Next step: Phase 46 Plan 02 — Camera vignette and example datasets

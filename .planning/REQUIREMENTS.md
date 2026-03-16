@@ -22,9 +22,9 @@ Requirements for v0.8.0 — Non-Traditional Creel Designs. Each maps to roadmap 
 
 ### Remote Camera
 
-- [ ] **CAM-01**: User can estimate effort from daily ingress counts (counter mode) routed through the existing access-point path
-- [ ] **CAM-02**: User can estimate effort from timestamp pairs (ingress-egress mode) accumulated to daily effort via `difftime()` preprocessing
-- [ ] **CAM-03**: User can classify camera gaps as non-random failures (`camera_status`) separate from random missingness handled by `missing_sections`
+- [x] **CAM-01**: User can estimate effort from daily ingress counts (counter mode) routed through the existing access-point path
+- [x] **CAM-02**: User can estimate effort from timestamp pairs (ingress-egress mode) accumulated to daily effort via `difftime()` preprocessing
+- [x] **CAM-03**: User can classify camera gaps as non-random failures (`camera_status`) separate from random missingness handled by `missing_sections`
 - [ ] **CAM-04**: User can attach interview data and estimate catch rates and total catch/harvest on a camera design
 - [ ] **CAM-05**: Camera survey support documented with example dataset covering both sub-modes and gap handling
 
@@ -68,9 +68,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ICE-02 | Phase 45 | Complete |
 | ICE-03 | Phase 45 | Complete |
 | ICE-04 | Phase 45 | Complete |
-| CAM-01 | Phase 46 | Pending |
-| CAM-02 | Phase 46 | Pending |
-| CAM-03 | Phase 46 | Pending |
+| CAM-01 | Phase 46 | Complete |
+| CAM-02 | Phase 46 | Complete |
+| CAM-03 | Phase 46 | Complete |
 | CAM-04 | Phase 46 | Pending |
 | CAM-05 | Phase 46 | Pending |
 | AIR-01 | Phase 47 | Pending |
