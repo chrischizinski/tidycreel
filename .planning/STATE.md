@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: completed
-stopped_at: Completed 44-02-PLAN.md
-last_updated: "2026-03-15T20:44:43.639Z"
+stopped_at: Completed 45-01-PLAN.md — ICE-01, ICE-02, ICE-03 satisfied
+last_updated: "2026-03-16T00:06:02.214Z"
 last_activity: 2026-03-15 — 44-02 full regression suite and quality gate confirmation
 progress:
   total_phases: 4
   completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
+  total_plans: 5
+  completed_plans: 3
   percent: 100
 ---
 
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-03-15)
 
 ## Current Position
 
-Phase: 44 (Design Type Enum and Validation) — 2/2 plans complete
-Plan: 02 complete
-Status: Phase 44 complete — INFRA-03 satisfied, all quality gates green
-Last activity: 2026-03-15 — 44-02 full regression suite and quality gate confirmation
+Phase: 45 (Ice Fishing Survey Support) — 1/3 plans complete
+Plan: 01 complete
+Status: Phase 45 in progress — ICE-01, ICE-02, ICE-03 satisfied
+Last activity: 2026-03-15 — 45-01 ice constructor, dispatch, and column labeling
 
 Progress: [██████████] 100%
 
@@ -45,15 +45,16 @@ Progress: [██████████] 100%
 | v0.7.0 | 39-43 | 9/9 | ✅ Complete | 2026-03-15 |
 | v0.8.0 | 44-47 | 0/TBD | In progress | - |
 
-**Quality Metrics (v0.8.0 after Phase 44):**
-- Tests: 1596 total passing (net +6 from 44-01 enum guard/stubs)
-- R CMD check: 0 errors, 0 warnings (2 pre-existing NOTEs, not Phase 44 related)
+**Quality Metrics (v0.8.0 after Phase 45-01):**
+- Tests: 1610 total passing (net +14 from 45-01 ice constructor/dispatch)
+- R CMD check: 0 errors, 0 warnings (1 pre-existing NOTE about hidden files)
 - lintr: 0 issues
 
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
 | Phase 44 P01 | 3 min | 2 tasks | 2 files |
 | Phase 44 P02 | 4min | 1 tasks | 0 files |
+| Phase 45-ice-fishing-survey-support P01 | 14min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -62,6 +63,14 @@ Progress: [██████████] 100%
 - VALID_SURVEY_TYPES constant (SCREAMING_SNAKE_CASE with nolint) locks enum before Phases 45-47 — guard uses cli_abort() before bus_route branch
 - Ice/camera/aerial stubs are minimal list(survey_type='x') — Phases 45-47 inject estimation parameters
 - Enum guard placed before bus_route branch — identical() dispatch pattern maintained for each type
+
+### Decisions (v0.8.0 Phase 45-01)
+
+- Ice dispatch reuses estimate_effort_br() via synthetic bus_route slot; effort_type controls output column name (total_effort_hr_on_ice or total_effort_hr_active)
+- effort_type required (no default) for ice surveys — omitting aborts with informative message naming valid values
+- p_site=1.0 enforcement auto-detects 'p_site' column by name in sampling_frame; floating-point safe check abs(val-1.0)>1e-9
+- validate_creel_design() and validate_br_interviews_tier3() skip p_site/site_col checks for ice (synthetic bus_route slot)
+- estimate_effort_br() site_table uses intersect() to skip synthetic .ice_site/.circuit cols not in ice interviews
 
 ### Architecture Decisions (v0.8.0)
 
@@ -90,6 +99,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-15T20:40:11.145Z
-Stopped at: Completed 44-02-PLAN.md
-Next step: Phase 45 — Ice Fishing Design (depends on Phase 44 complete)
+Last session: 2026-03-16T00:06:02.211Z
+Stopped at: Completed 45-01-PLAN.md — ICE-01, ICE-02, ICE-03 satisfied
+Next step: Phase 45-02 — Camera Survey Support
