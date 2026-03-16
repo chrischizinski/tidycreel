@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: verifying
-stopped_at: Completed 45-03-PLAN.md — ICE-01 through ICE-04 verified via R CMD check
-last_updated: "2026-03-16T02:06:29.274Z"
-last_activity: 2026-03-16 — 45-03 example datasets, ice-fishing vignette, R CMD check 0 errors 0 warnings
+stopped_at: Completed 46-02-PLAN.md — CAM-04 camera interview pipeline compatibility verified (add_interviews, estimate_catch_rate, estimate_total_catch)
+last_updated: "2026-03-16T02:12:51.742Z"
+last_activity: 2026-03-16 — 46-01 camera_mode validation, preprocess_camera_timestamps(), 1645 tests passing
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 8
-  completed_plans: 6
+  completed_plans: 7
   percent: 100
 ---
 
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-03-15)
 
 ## Current Position
 
-Phase: 46 (Remote Camera Survey Support) — IN PROGRESS (1/3 plans)
-Plan: 01 complete
-Status: 46-01 complete — CAM-01, CAM-02, CAM-03 camera constructor and preprocessing implemented and verified
-Last activity: 2026-03-16 — 46-01 camera_mode validation, preprocess_camera_timestamps(), 1645 tests passing
+Phase: 46 (Remote Camera Survey Support) — IN PROGRESS (2/3 plans)
+Plan: 02 complete
+Status: 46-02 complete — CAM-04 camera interview pipeline compatibility verified (add_interviews, estimate_catch_rate, estimate_total_catch)
+Last activity: 2026-03-16 — 46-02 camera interview pipeline tests, 1661 tests passing
 
 Progress: [██████████] 100%
 
@@ -58,8 +58,14 @@ Progress: [██████████] 100%
 | Phase 45-ice-fishing-survey-support P02 | 12min | 2 tasks | 6 files |
 | Phase 45-ice-fishing-survey-support P03 | 20min | 3 tasks | 8 files |
 | Phase 46-remote-camera-survey-support P01 | 6min | 2 tasks | 3 files |
+| Phase 46-remote-camera-survey-support P02 | 3min | 2 tasks | 3 files |
 
 ## Accumulated Context
+
+### Decisions (v0.8.0 Phase 46-02)
+
+- No production code changes required for CAM-04 — camera bypasses all bus_route and ice dispatch guards; routes through standard instantaneous interview_survey path without modification
+- Camera interview fixture omits n_counted/n_interviewed — those are ice/bus_route-only; standard instantaneous add_interviews() uses catch, effort, trip_status only
 
 ### Decisions (v0.8.0 Phase 46-01)
 
@@ -120,6 +126,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-16T02:05:32Z
-Stopped at: Completed 46-01-PLAN.md — CAM-01/CAM-02/CAM-03 camera constructor, camera_mode validation, preprocess_camera_timestamps() verified
-Next step: Phase 46 Plan 02 — Camera vignette and example datasets
+Last session: 2026-03-16T02:12:51.739Z
+Stopped at: Completed 46-02-PLAN.md — CAM-04 camera interview pipeline compatibility verified (add_interviews, estimate_catch_rate, estimate_total_catch)
+Next step: Phase 46 Plan 03 — Camera vignette and example datasets
