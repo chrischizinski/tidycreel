@@ -193,7 +193,12 @@ Plans:
   3. A `camera_status` column classifies non-random failures (battery, memory, occlusion) separately from random missingness handled by `missing_sections` — informative gaps are not imputed as zero effort
   4. After `add_interviews()`, `estimate_catch_rate()` and `estimate_total_catch()` produce valid estimates on a camera design, confirming interview compatibility
   5. An example dataset covering both counter and ingress-egress sub-modes and at least one non-random gap is documented and ships with the package
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 46-01-PLAN.md — TDD: camera constructor fill, camera_mode validation, preprocess_camera_timestamps(), counter/ingress-egress effort path (CAM-01, CAM-02, CAM-03)
+- [ ] 46-02-PLAN.md — TDD: add_interviews() camera path, estimate_catch_rate(), estimate_total_catch() compatibility (CAM-04)
+- [ ] 46-03-PLAN.md — Example datasets (example_camera_counts, example_camera_timestamps, example_camera_interviews) and camera-surveys vignette (CAM-05)
 
 ### Phase 47: Aerial Survey Support
 **Goal**: Biologists can estimate total angler effort from aerial instantaneous counts using the correct expansion formula, with delta method variance, an optional visibility correction factor, and verification against the Malvestuto (1996) worked example — and can run the full interview-based estimation workflow on an aerial design
@@ -213,12 +218,12 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 44. Design Type Enum and Validation | 2/2 | Complete    | 2026-03-15 |
-| 45. Ice Fishing Survey Support | 3/3 | Complete   | 2026-03-16 |
-| 46. Remote Camera Survey Support | 0/TBD | Not started | - |
+| 45. Ice Fishing Survey Support | 3/3 | Complete    | 2026-03-16 |
+| 46. Remote Camera Survey Support | 0/3 | Not started | - |
 | 47. Aerial Survey Support | 0/TBD | Not started | - |
 
 **Overall (v0.8.0):** 0/4 phases complete
 
 ---
-*Roadmap last updated: 2026-03-15 — Phase 45 planned (3 plans)*
+*Roadmap last updated: 2026-03-16 — Phase 46 planned (3 plans)*
 *See .planning/milestones/ for archived milestone roadmaps*
