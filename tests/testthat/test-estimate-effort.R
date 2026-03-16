@@ -1478,3 +1478,103 @@ test_that("ICE-03: estimate_effort(by=shelter_mode) on ice design returns groupe
   expect_true("shelter_mode" %in% names(result$estimates))
   expect_gte(nrow(result$estimates), 2L)
 })
+
+# Phase 46: Camera effort dispatch tests (CAM-01, CAM-02, CAM-03) ----
+
+make_cam_effort_cal <- function() {
+  data.frame(
+    date = as.Date(c(
+      "2024-06-01", "2024-06-02", "2024-06-03",
+      "2024-06-04", "2024-06-05", "2024-06-06"
+    )),
+    day_type = c("weekday", "weekday", "weekday", "weekend", "weekend", "weekend"),
+    stringsAsFactors = FALSE
+  )
+}
+
+make_cam_counts <- function() {
+  data.frame(
+    date = as.Date(c(
+      "2024-06-01", "2024-06-02", "2024-06-03",
+      "2024-06-04", "2024-06-05", "2024-06-06"
+    )),
+    angler_count = c(12L, 15L, 10L, 20L, 18L, 14L),
+    camera_status = c(
+      "operational", "operational", "operational",
+      "operational", "operational", "operational"
+    ),
+    stringsAsFactors = FALSE
+  )
+}
+
+make_cam_design_counter <- function() {
+  creel_design(make_cam_effort_cal(), # nolint: object_usage_linter
+    date = date, strata = day_type, # nolint: object_usage_linter
+    survey_type = "camera",
+    camera_mode = "counter"
+  )
+}
+
+# CAM-01: counter mode effort estimate ----
+
+test_that("CAM-01: counter-mode camera + add_counts() + estimate_effort() returns valid estimate", {
+  design <- make_cam_design_counter()
+  d <- add_counts(design, make_cam_counts(), count = angler_count) # nolint: object_usage_linter
+  result <- suppressWarnings(estimate_effort(d))
+  expect_s3_class(result, "creel_estimates")
+  expect_true(is.numeric(result$estimates$estimate))
+  expect_false(any(is.na(result$estimates$estimate)))
+})
+
+# CAM-02: ingress-egress mode effort estimate ----
+
+make_cam_daily_effort <- function() {
+  data.frame(
+    date = as.Date(c(
+      "2024-06-01", "2024-06-02", "2024-06-03",
+      "2024-06-04", "2024-06-05", "2024-06-06"
+    )),
+    daily_effort_hours = c(4.0, 5.5, 3.0, 6.0, 4.5, 5.0),
+    stringsAsFactors = FALSE
+  )
+}
+
+test_that("CAM-02: ingress-egress camera with preprocessed daily_effort_hours flows through estimate_effort()", {
+  design <- creel_design(make_cam_effort_cal(), # nolint: object_usage_linter
+    date = date, strata = day_type, # nolint: object_usage_linter
+    survey_type = "camera",
+    camera_mode = "ingress_egress"
+  )
+  daily_effort <- make_cam_daily_effort()
+  d <- add_counts(design, daily_effort, count = daily_effort_hours) # nolint: object_usage_linter
+  result <- suppressWarnings(estimate_effort(d))
+  expect_s3_class(result, "creel_estimates")
+  expect_true(is.numeric(result$estimates$estimate))
+})
+
+# CAM-03: camera_status gap handling ----
+
+make_cam_counts_with_gap <- function() {
+  data.frame(
+    date = as.Date(c(
+      "2024-06-01", "2024-06-02", "2024-06-03",
+      "2024-06-04", "2024-06-05", "2024-06-06"
+    )),
+    angler_count = c(12L, NA_integer_, 10L, 20L, 18L, 14L),
+    camera_status = c(
+      "operational", "offline", "operational",
+      "operational", "operational", "operational"
+    ),
+    stringsAsFactors = FALSE
+  )
+}
+
+test_that("CAM-03: filtering camera_status == 'operational' before add_counts() gives valid estimate", {
+  design <- make_cam_design_counter()
+  counts_gap <- make_cam_counts_with_gap()
+  operational <- counts_gap[counts_gap$camera_status == "operational", ]
+  d <- add_counts(design, operational, count = angler_count) # nolint: object_usage_linter
+  result <- suppressWarnings(estimate_effort(d))
+  expect_s3_class(result, "creel_estimates")
+  expect_true(is.numeric(result$estimates$estimate))
+})

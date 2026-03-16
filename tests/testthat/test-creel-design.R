@@ -1113,3 +1113,130 @@ test_that("ICE-04: add_interviews(ice) broadcasts p_period_scalar to .pi_i on al
   expect_true(".pi_i" %in% names(result$interviews))
   expect_true(all(result$interviews$.pi_i == 0.5))
 })
+
+# Phase 46: Camera constructor and preprocessing (CAM-01, CAM-02, CAM-03) ----
+
+make_cam_cal <- function() {
+  data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
+    day_type = c("weekday", "weekday", "weekend", "weekend"),
+    stringsAsFactors = FALSE
+  )
+}
+
+# CAM-01: counter mode construction ----
+
+test_that("CAM-01: creel_design(camera, counter) constructs without error", {
+  d <- creel_design(make_cam_cal(),
+    date = date, strata = day_type,
+    survey_type = "camera",
+    camera_mode = "counter"
+  )
+  expect_s3_class(d, "creel_design")
+  expect_equal(d$design_type, "camera")
+  expect_equal(d$camera$camera_mode, "counter")
+})
+
+test_that("CAM-01: creel_design(camera) without camera_mode aborts with cli_abort", {
+  expect_error(
+    creel_design(make_cam_cal(),
+      date = date, strata = day_type,
+      survey_type = "camera"
+    ),
+    class = "rlang_error"
+  )
+})
+
+test_that("CAM-01: camera_mode absent error message names valid values", {
+  expect_error(
+    creel_design(make_cam_cal(),
+      date = date, strata = day_type,
+      survey_type = "camera"
+    ),
+    regexp = "counter|ingress_egress"
+  )
+})
+
+test_that("CAM-01: creel_design(camera, bad_mode) aborts naming the bad value", {
+  expect_error(
+    creel_design(make_cam_cal(),
+      date = date, strata = day_type,
+      survey_type = "camera",
+      camera_mode = "unknown_mode"
+    ),
+    regexp = "unknown_mode"
+  )
+})
+
+# CAM-02: ingress_egress mode construction ----
+
+test_that("CAM-02: creel_design(camera, ingress_egress) constructs without error", {
+  d <- creel_design(make_cam_cal(),
+    date = date, strata = day_type,
+    survey_type = "camera",
+    camera_mode = "ingress_egress"
+  )
+  expect_s3_class(d, "creel_design")
+  expect_equal(d$camera$camera_mode, "ingress_egress")
+})
+
+# CAM-02: preprocess_camera_timestamps() ----
+
+make_cam_timestamps <- function() {
+  base_date <- as.Date("2024-06-01")
+  data.frame(
+    survey_date = rep(c(base_date, base_date + 1), each = 2L),
+    ingress_time = as.POSIXct(c(
+      "2024-06-01 06:00:00", "2024-06-01 09:00:00",
+      "2024-06-02 07:00:00", "2024-06-02 10:30:00"
+    ), tz = "UTC"),
+    egress_time = as.POSIXct(c(
+      "2024-06-01 08:00:00", "2024-06-01 11:00:00",
+      "2024-06-02 09:00:00", "2024-06-02 13:00:00"
+    ), tz = "UTC"),
+    stringsAsFactors = FALSE
+  )
+}
+
+test_that("CAM-02: preprocess_camera_timestamps() returns data frame with date + daily_effort_hours", {
+  ts <- make_cam_timestamps()
+  result <- preprocess_camera_timestamps(ts,
+    date_col = survey_date,
+    ingress_col = ingress_time,
+    egress_col = egress_time
+  )
+  expect_s3_class(result, "data.frame")
+  expect_true("date" %in% names(result))
+  expect_true("daily_effort_hours" %in% names(result))
+  expect_equal(nrow(result), 2L)
+})
+
+test_that("CAM-02: preprocess_camera_timestamps() aggregates hours correctly", {
+  ts <- make_cam_timestamps()
+  result <- preprocess_camera_timestamps(ts,
+    date_col = survey_date,
+    ingress_col = ingress_time,
+    egress_col = egress_time
+  )
+  # Date 1: 2h + 2h = 4h; Date 2: 2h + 2.5h = 4.5h
+  result_sorted <- result[order(result$date), ]
+  expect_equal(result_sorted$daily_effort_hours[1L], 4.0, tolerance = 1e-6)
+  expect_equal(result_sorted$daily_effort_hours[2L], 4.5, tolerance = 1e-6)
+})
+
+test_that("CAM-02: preprocess_camera_timestamps() warns on egress < ingress and sets duration to NA", {
+  ts <- make_cam_timestamps()
+  # Make one row have egress before ingress
+  ts$egress_time[2L] <- ts$ingress_time[2L] - 3600
+  expect_warning(
+    result <- preprocess_camera_timestamps(ts,
+      date_col = survey_date,
+      ingress_col = ingress_time,
+      egress_col = egress_time
+    ),
+    regexp = "negative|duration|invalid"
+  )
+  # Date 1 should only sum the valid row (2h), not the negative-duration row
+  result_sorted <- result[order(result$date), ]
+  expect_equal(result_sorted$daily_effort_hours[1L], 2.0, tolerance = 1e-6)
+})
