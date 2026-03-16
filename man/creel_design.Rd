@@ -15,7 +15,8 @@ creel_design(
   p_site = NULL,
   p_period = NULL,
   circuit = NULL,
-  effort_type = NULL
+  effort_type = NULL,
+  camera_mode = NULL
 )
 }
 \arguments{

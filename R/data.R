@@ -410,3 +410,125 @@
 #' @seealso [example_ice_sampling_frame] for the matching sampling frame,
 #'   [creel_design()], [add_interviews()], [estimate_effort()]
 "example_ice_interviews"
+
+#' Example camera counts dataset (counter mode)
+#'
+#' A dataset of daily ingress counts from a remote camera at a boat launch.
+#' Contains 10 rows covering non-consecutive sampling days in June 2024.
+#' Includes one row with \code{camera_status = "battery_failure"} and
+#' \code{ingress_count = NA} demonstrating informative gap handling.
+#'
+#' @format A data frame with 10 rows and 4 variables:
+#' \describe{
+#'   \item{date}{Survey date (Date class), non-consecutive days in June 2024.}
+#'   \item{day_type}{Day type stratum: \code{"weekday"} or \code{"weekend"}.}
+#'   \item{ingress_count}{Daily ingress angler count (integer).
+#'     \code{NA} when the camera was not operational.}
+#'   \item{camera_status}{Camera operational status. One of
+#'     \code{"operational"}, \code{"battery_failure"}, \code{"memory_full"},
+#'     or \code{"occlusion"}.}
+#' }
+#'
+#' @source Simulated for package documentation.
+#'
+#' @examples
+#' data(example_camera_counts)
+#' head(example_camera_counts)
+#'
+#' # Filter to operational rows before adding to a camera design
+#' data(example_calendar)
+#' design <- creel_design(
+#'   example_calendar,
+#'   date = date, strata = day_type,
+#'   survey_type = "camera",
+#'   camera_mode = "counter"
+#' )
+#' counts_clean <- subset(example_camera_counts, camera_status == "operational")
+#' design <- suppressWarnings(add_counts(design, counts_clean))
+#'
+#' @seealso [example_camera_timestamps], [example_camera_interviews],
+#'   [creel_design()], [add_counts()]
+"example_camera_counts"
+
+#' Example camera timestamps dataset (ingress-egress mode)
+#'
+#' A dataset of raw ingress and egress timestamps recorded by a remote camera
+#' at a boat launch. Contains 14 rows spanning 4 sampling days in June 2024
+#' (3-4 anglers per day). Suitable for use with
+#' \code{\link{preprocess_camera_timestamps}}.
+#' One row has a trip duration greater than 8 hours (an unusually long fishing
+#' day); all other durations are between 1.5 and 5.5 hours.
+#'
+#' @format A data frame with 14 rows and 4 variables:
+#' \describe{
+#'   \item{date}{Survey date (Date class), June 2024.}
+#'   \item{day_type}{Day type stratum: \code{"weekday"} or \code{"weekend"}.}
+#'   \item{ingress_time}{Angler arrival time (POSIXct, America/Chicago timezone).}
+#'   \item{egress_time}{Angler departure time (POSIXct, America/Chicago timezone).
+#'     Always later than \code{ingress_time}.}
+#' }
+#'
+#' @source Simulated for package documentation.
+#'
+#' @examples
+#' data(example_camera_timestamps)
+#' head(example_camera_timestamps)
+#'
+#' # Preprocess to daily effort hours
+#' daily_effort <- preprocess_camera_timestamps(
+#'   example_camera_timestamps,
+#'   date_col = date,
+#'   ingress_col = ingress_time,
+#'   egress_col = egress_time
+#' )
+#' head(daily_effort)
+#'
+#' @seealso [example_camera_counts], [example_camera_interviews],
+#'   [preprocess_camera_timestamps()]
+"example_camera_timestamps"
+
+#' Example interview data for camera-monitored creel survey
+#'
+#' Angler interview data for a summer creel survey at a camera-monitored boat
+#' launch. Contains 40 interviews across 8 sampling days in June 2024,
+#' targeting walleye and bass. All interviews are complete trips. Dates match
+#' the date range in \code{\link{example_camera_counts}}.
+#'
+#' @format A data frame with 40 rows and 8 variables:
+#' \describe{
+#'   \item{date}{Interview date (Date class), June 2024.}
+#'   \item{day_type}{Day type stratum: \code{"weekday"} or \code{"weekend"}.}
+#'   \item{trip_status}{Trip completion status: \code{"complete"} for all 40
+#'     interviews.}
+#'   \item{hours_fished}{Numeric fishing effort in hours (range 0.5-5.0).}
+#'   \item{walleye}{Integer total walleye caught (kept + released).}
+#'   \item{walleye_kept}{Integer walleye harvested; always
+#'     \code{<= walleye}.}
+#'   \item{bass}{Integer total bass caught (kept + released).}
+#'   \item{bass_kept}{Integer bass harvested; always \code{<= bass}.}
+#' }
+#'
+#' @source Simulated for package documentation.
+#'
+#' @examples
+#' data(example_calendar)
+#' data(example_camera_counts)
+#' data(example_camera_interviews)
+#'
+#' design <- creel_design(
+#'   example_calendar,
+#'   date = date, strata = day_type,
+#'   survey_type = "camera",
+#'   camera_mode = "counter"
+#' )
+#' counts_clean <- subset(example_camera_counts, camera_status == "operational")
+#' design <- suppressWarnings(add_counts(design, counts_clean))
+#' design <- suppressWarnings(add_interviews(
+#'   design, example_camera_interviews,
+#'   catch = walleye, effort = hours_fished, trip_status = trip_status
+#' ))
+#' suppressWarnings(estimate_catch_rate(design))
+#'
+#' @seealso [example_camera_counts], [example_camera_timestamps],
+#'   [add_interviews()], [estimate_catch_rate()], [estimate_total_catch()]
+"example_camera_interviews"
