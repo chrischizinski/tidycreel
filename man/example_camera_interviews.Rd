@@ -32,12 +32,24 @@ targeting walleye and bass. All interviews are complete trips. Dates match
 the date range in \code{\link{example_camera_counts}}.
 }
 \examples{
-data(example_calendar)
 data(example_camera_counts)
 data(example_camera_interviews)
 
+# Build a calendar that spans all camera dataset dates
+cam_dates <- sort(unique(c(
+  example_camera_counts$date,
+  example_camera_interviews$date
+)))
+cam_cal <- data.frame(
+  date     = cam_dates,
+  day_type = ifelse(
+    weekdays(cam_dates) \%in\% c("Saturday", "Sunday"),
+    "weekend", "weekday"
+  ),
+  stringsAsFactors = FALSE
+)
 design <- creel_design(
-  example_calendar,
+  cam_cal,
   date = date, strata = day_type,
   survey_type = "camera",
   camera_mode = "counter"

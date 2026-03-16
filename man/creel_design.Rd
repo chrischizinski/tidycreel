@@ -73,6 +73,13 @@ of \code{"time_on_ice"} (total hours the angler was on the ice) or
 \code{"active_fishing_time"} (hours actively fishing, excluding travel/setup).
 The value controls the column name in \code{estimate_effort()} output:
 \code{total_effort_hr_on_ice} or \code{total_effort_hr_active}.}
+
+\item{camera_mode}{Character string specifying the camera sub-mode.
+Required when \code{survey_type = "camera"}. Must be one of \code{"counter"}
+(camera records a daily ingress total) or \code{"ingress_egress"} (camera
+records individual arrival/departure timestamps, which should be
+preprocessed with \code{preprocess_camera_timestamps()} before calling
+\code{add_counts()}).}
 }
 \value{
 A \code{creel_design} S3 object (list) with components:

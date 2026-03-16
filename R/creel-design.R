@@ -135,6 +135,12 @@ VALID_SURVEY_TYPES <- c("instantaneous", "bus_route", "ice", "camera", "aerial")
 #'   `"active_fishing_time"` (hours actively fishing, excluding travel/setup).
 #'   The value controls the column name in `estimate_effort()` output:
 #'   `total_effort_hr_on_ice` or `total_effort_hr_active`.
+#' @param camera_mode Character string specifying the camera sub-mode.
+#'   Required when `survey_type = "camera"`. Must be one of `"counter"`
+#'   (camera records a daily ingress total) or `"ingress_egress"` (camera
+#'   records individual arrival/departure timestamps, which should be
+#'   preprocessed with `preprocess_camera_timestamps()` before calling
+#'   `add_counts()`).
 #'
 #' @return A `creel_design` S3 object (list) with components:
 #'   \item{calendar}{The original calendar data frame}

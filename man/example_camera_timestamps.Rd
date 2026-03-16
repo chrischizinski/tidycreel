@@ -35,9 +35,9 @@ head(example_camera_timestamps)
 # Preprocess to daily effort hours
 daily_effort <- preprocess_camera_timestamps(
   example_camera_timestamps,
-  date_col  = date,
+  date_col = date,
   ingress_col = ingress_time,
-  egress_col  = egress_time
+  egress_col = egress_time
 )
 head(daily_effort)
 
