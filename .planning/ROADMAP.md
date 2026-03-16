@@ -147,7 +147,7 @@ See: [.planning/milestones/v0.7.0-ROADMAP.md](milestones/v0.7.0-ROADMAP.md)
 
 - [x] **Phase 44: Design Type Enum and Validation** - Lock dispatch enum with cli_abort() guard; register ice, camera, and aerial as valid survey_type values with Tier 1 validation (completed 2026-03-15)
 - [x] **Phase 45: Ice Fishing Survey Support** - Complete ice fishing design with p_site = 1.0 enforcement, effort definition flexibility, shelter-mode stratification, and interview-based estimation (completed 2026-03-16)
-- [ ] **Phase 46: Remote Camera Survey Support** - Counter and ingress-egress modes, camera_status gap handling, interview-based estimation, and documented example dataset
+- [x] **Phase 46: Remote Camera Survey Support** - Counter and ingress-egress modes, camera_status gap handling, interview-based estimation, and documented example dataset (completed 2026-03-16)
 - [ ] **Phase 47: Aerial Survey Support** - estimate_effort_aerial() with ratio estimator and delta method variance, visibility correction, Malvestuto validation, and vignette
 
 ## Phase Details
@@ -219,7 +219,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 44. Design Type Enum and Validation | 2/2 | Complete    | 2026-03-15 |
 | 45. Ice Fishing Survey Support | 3/3 | Complete    | 2026-03-16 |
-| 46. Remote Camera Survey Support | 2/3 | In Progress|  |
+| 46. Remote Camera Survey Support | 3/3 | Complete   | 2026-03-16 |
 | 47. Aerial Survey Support | 0/TBD | Not started | - |
 
 **Overall (v0.8.0):** 0/4 phases complete

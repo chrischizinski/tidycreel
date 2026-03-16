@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
-status: verifying
-stopped_at: Completed 46-02-PLAN.md — CAM-04 camera interview pipeline compatibility verified (add_interviews, estimate_catch_rate, estimate_total_catch)
-last_updated: "2026-03-16T02:12:51.742Z"
-last_activity: 2026-03-16 — 46-01 camera_mode validation, preprocess_camera_timestamps(), 1645 tests passing
+status: complete
+stopped_at: Completed 46-03-PLAN.md — CAM-05 example datasets and camera-surveys vignette
+last_updated: "2026-03-16T02:36:41.000Z"
+last_activity: 2026-03-16 — 46-03 example_camera_counts/timestamps/interviews + vignette, 1661 tests passing
 progress:
   total_phases: 4
   completed_phases: 2
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-03-15)
 
 ## Current Position
 
-Phase: 46 (Remote Camera Survey Support) — IN PROGRESS (2/3 plans)
-Plan: 02 complete
-Status: 46-02 complete — CAM-04 camera interview pipeline compatibility verified (add_interviews, estimate_catch_rate, estimate_total_catch)
-Last activity: 2026-03-16 — 46-02 camera interview pipeline tests, 1661 tests passing
+Phase: 46 (Remote Camera Survey Support) — COMPLETE (3/3 plans)
+Plan: 03 complete
+Status: 46-03 complete — CAM-05 example datasets (counter/timestamps/interviews) + camera-surveys vignette; Phase 46 done
+Last activity: 2026-03-16 — 46-03 example_camera_counts/timestamps/interviews + camera-surveys vignette, 1661 tests passing
 
 Progress: [██████████] 100%
 
@@ -45,9 +45,9 @@ Progress: [██████████] 100%
 | v0.7.0 | 39-43 | 9/9 | ✅ Complete | 2026-03-15 |
 | v0.8.0 | 44-47 | 0/TBD | In progress | - |
 
-**Quality Metrics (v0.8.0 after Phase 46-01):**
-- Tests: 1645 total passing (net +23 from 46-01 camera constructor + effort dispatch tests)
-- R CMD check: 0 errors, 0 warnings (2 pre-existing NOTEs about hidden files/examples)
+**Quality Metrics (v0.8.0 after Phase 46-03):**
+- Tests: 1661 total passing (net +16 from 46-02, stable through 46-03 dataset/vignette plan)
+- R CMD check: 0 errors, 0 warnings (1 pre-existing NOTE about hidden files)
 - lintr: 0 issues
 
 | Plan | Duration | Tasks | Files |
@@ -59,8 +59,16 @@ Progress: [██████████] 100%
 | Phase 45-ice-fishing-survey-support P03 | 20min | 3 tasks | 8 files |
 | Phase 46-remote-camera-survey-support P01 | 6min | 2 tasks | 3 files |
 | Phase 46-remote-camera-survey-support P02 | 3min | 2 tasks | 3 files |
+| Phase 46-remote-camera-survey-support P03 | 11min | 2 tasks | 14 files |
 
 ## Accumulated Context
+
+### Decisions (v0.8.0 Phase 46-03)
+
+- Vignette calendar built from unique(c(counts$date, interviews$date)) + weekdays() — avoids reusing example_calendar which ends June 14 (camera data includes June 15)
+- knitr::kable() cannot coerce creel_estimates to data.frame — vignettes use print() for estimation results (consistent with ice-fishing.Rmd)
+- Ingress-egress workflow requires explicit merge of day_type strata into preprocess_camera_timestamps() output before add_counts()
+- @param camera_mode added to creel_design() roxygen — was missing, caused R CMD check WARNING
 
 ### Decisions (v0.8.0 Phase 46-02)
 
@@ -126,6 +134,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-16T02:12:51.739Z
-Stopped at: Completed 46-02-PLAN.md — CAM-04 camera interview pipeline compatibility verified (add_interviews, estimate_catch_rate, estimate_total_catch)
-Next step: Phase 46 Plan 03 — Camera vignette and example datasets
+Last session: 2026-03-16T02:36:41.000Z
+Stopped at: Completed 46-03-PLAN.md — CAM-05 example datasets and camera-surveys vignette; Phase 46 complete
+Next step: Phase 47 (Aerial Survey Support) — Plan 01
