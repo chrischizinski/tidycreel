@@ -41,7 +41,7 @@ cam_dates <- sort(unique(c(
   example_camera_interviews$date
 )))
 cam_cal <- data.frame(
-  date     = cam_dates,
+  date = cam_dates,
   day_type = ifelse(
     weekdays(cam_dates) \%in\% c("Saturday", "Sunday"),
     "weekend", "weekday"

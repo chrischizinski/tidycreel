@@ -544,3 +544,102 @@
 #' @seealso [example_camera_counts], [example_camera_timestamps],
 #'   [add_interviews()], [estimate_catch_rate()], [estimate_total_catch()]
 "example_camera_interviews"
+
+#' Example aerial angler count dataset
+#'
+#' A dataset of instantaneous angler counts from aerial overflights of a
+#' Nebraska reservoir, used to demonstrate aerial survey effort estimation.
+#' Contains 16 rows representing one overflight per sampling day across an
+#' 8-week summer season (June-July 2024). Weekday and weekend counts vary
+#' realistically to produce non-trivial between-day variance in the effort
+#' estimate.
+#'
+#' @format A data frame with 16 rows and 3 variables:
+#' \describe{
+#'   \item{date}{Survey date (Date class), June-July 2024.}
+#'   \item{day_type}{Day type stratum: \code{"weekday"} or \code{"weekend"}.}
+#'   \item{n_anglers}{Instantaneous angler count from one aerial overflight
+#'     (integer). Weekday counts range 15-40; weekend counts range 40-80.}
+#' }
+#'
+#' @source Simulated for package documentation.
+#'
+#' @examples
+#' data(example_aerial_counts)
+#' head(example_aerial_counts)
+#'
+#' # Build a calendar from count dates and construct an aerial design
+#' aerial_cal <- data.frame(
+#'   date = example_aerial_counts$date,
+#'   day_type = example_aerial_counts$day_type,
+#'   stringsAsFactors = FALSE
+#' )
+#' design <- creel_design(
+#'   aerial_cal,
+#'   date = date,
+#'   strata = day_type,
+#'   survey_type = "aerial",
+#'   h_open = 14
+#' )
+#' print(design)
+#'
+#' @seealso [example_aerial_interviews] for matching interview data,
+#'   [creel_design()], [add_counts()], [estimate_effort()]
+"example_aerial_counts"
+
+#' Example angler interview data for aerial creel survey
+#'
+#' Angler interview data for an aerial creel survey at a Nebraska reservoir.
+#' Contains 48 interviews across 16 sampling days in June-July 2024, with
+#' 3 interviews per sampling day. Anglers target walleye and bass. All
+#' interviews are complete trips. Dates match \code{\link{example_aerial_counts}}.
+#'
+#' @format A data frame with 48 rows and 8 variables:
+#' \describe{
+#'   \item{date}{Interview date (Date class), June-July 2024.}
+#'   \item{day_type}{Day type stratum: \code{"weekday"} or \code{"weekend"}.}
+#'   \item{trip_status}{Trip completion status: \code{"complete"} for all 48
+#'     interviews.}
+#'   \item{hours_fished}{Numeric trip duration in hours (range 1.0-5.0).
+#'     This column feeds the mean trip duration (\eqn{\bar{L}}) used in
+#'     \code{\link{estimate_catch_rate}}.}
+#'   \item{walleye_catch}{Integer total walleye caught (kept + released).}
+#'   \item{walleye_kept}{Integer walleye harvested; always
+#'     \code{<= walleye_catch}.}
+#'   \item{bass_catch}{Integer total bass caught (kept + released).}
+#'   \item{bass_kept}{Integer bass harvested; always \code{<= bass_catch}.}
+#' }
+#'
+#' @source Simulated for package documentation.
+#'
+#' @examples
+#' data(example_aerial_counts)
+#' data(example_aerial_interviews)
+#'
+#' # Build an aerial design and add interview data
+#' aerial_cal <- data.frame(
+#'   date = example_aerial_counts$date,
+#'   day_type = example_aerial_counts$day_type,
+#'   stringsAsFactors = FALSE
+#' )
+#' design <- creel_design(
+#'   aerial_cal,
+#'   date = date,
+#'   strata = day_type,
+#'   survey_type = "aerial",
+#'   h_open = 14
+#' )
+#' design <- add_counts(design, example_aerial_counts, count = n_anglers)
+#' design <- suppressWarnings(add_interviews(
+#'   design,
+#'   example_aerial_interviews,
+#'   catch = walleye_catch,
+#'   effort = hours_fished,
+#'   trip_status = trip_status
+#' ))
+#' suppressWarnings(estimate_catch_rate(design))
+#'
+#' @seealso [example_aerial_counts] for matching count data,
+#'   [creel_design()], [add_interviews()], [estimate_catch_rate()],
+#'   [estimate_total_catch()]
+"example_aerial_interviews"
