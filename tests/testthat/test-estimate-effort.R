@@ -1577,3 +1577,103 @@ test_that("CAM-03: filtering camera_status == 'operational' before add_counts() 
   expect_s3_class(result, "creel_estimates")
   expect_true(is.numeric(result$estimates$estimate))
 })
+
+# Phase 47: Aerial effort estimation ----
+
+make_aerial_design <- function(h_open = 14, visibility_correction = NULL) {
+  cal <- data.frame(
+    date = as.Date(c(
+      "2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04",
+      "2024-06-08", "2024-06-09", "2024-06-15", "2024-06-16"
+    )),
+    day_type = rep(c("weekday", "weekend"), each = 4L),
+    stringsAsFactors = FALSE
+  )
+  creel_design(cal, # nolint: object_usage_linter
+    date = date,
+    strata = day_type, # nolint: object_usage_linter
+    survey_type = "aerial",
+    h_open = h_open,
+    visibility_correction = visibility_correction
+  )
+}
+
+make_aerial_counts <- function() {
+  data.frame(
+    date = as.Date(c(
+      "2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04",
+      "2024-06-08", "2024-06-09", "2024-06-15", "2024-06-16"
+    )),
+    day_type = rep(c("weekday", "weekend"), each = 4L),
+    n_counted = c(5L, 8L, 6L, 7L, 12L, 15L, 11L, 13L),
+    stringsAsFactors = FALSE
+  )
+}
+
+describe("Phase 47: Aerial effort", {
+  it("AIR-01: estimate_effort() on aerial design returns creel_estimates", {
+    d <- add_counts(make_aerial_design(), make_aerial_counts()) # nolint: object_usage_linter
+    result <- suppressWarnings(estimate_effort(d))
+    expect_s3_class(result, "creel_estimates")
+    expect_true(is.numeric(result$estimates$estimate))
+  })
+
+  it("AIR-01: effort equals svytotal(counts) x (h_open / v) — no interview needed", {
+    d <- add_counts(make_aerial_design(h_open = 14), make_aerial_counts()) # nolint: object_usage_linter
+    result <- suppressWarnings(estimate_effort(d))
+    # Manual svytotal
+    svy_raw <- suppressWarnings(
+      survey::svytotal(~n_counted, d$survey)
+    )
+    expected <- as.numeric(coef(svy_raw)) * (14 / 1.0)
+    expect_equal(result$estimates$estimate, expected, tolerance = 1e-9)
+  })
+
+  it("AIR-01: no counts guard — estimate_effort() before add_counts() aborts", {
+    expect_error(
+      estimate_effort(make_aerial_design()),
+      regexp = "count|add_counts"
+    )
+  })
+
+  it("AIR-02: SE is non-zero with multiple count observations", {
+    d <- add_counts(make_aerial_design(), make_aerial_counts()) # nolint: object_usage_linter
+    result <- suppressWarnings(estimate_effort(d))
+    expect_gt(result$estimates$se, 0)
+  })
+
+  it("AIR-02: SE equals survey::SE(svytotal(counts)) x (h_open/v)", {
+    d <- add_counts(make_aerial_design(h_open = 14), make_aerial_counts()) # nolint: object_usage_linter
+    result <- suppressWarnings(estimate_effort(d))
+    svy_raw <- suppressWarnings(
+      survey::svytotal(~n_counted, d$survey)
+    )
+    se_between_expected <- as.numeric(survey::SE(svy_raw)) * (14 / 1.0)
+    # se_between is the between-day component; total se may include within-day variance
+    expect_equal(result$estimates$se_between, se_between_expected, tolerance = 1e-9)
+  })
+
+  it("AIR-03: visibility_correction = 0.85 produces effort / 0.85 relative to v = 1", {
+    d_no_v <- add_counts(make_aerial_design(h_open = 14, visibility_correction = NULL), make_aerial_counts()) # nolint: object_usage_linter
+    d_v085 <- add_counts(make_aerial_design(h_open = 14, visibility_correction = 0.85), make_aerial_counts()) # nolint: object_usage_linter
+    result_no_v <- suppressWarnings(estimate_effort(d_no_v))
+    result_v085 <- suppressWarnings(estimate_effort(d_v085))
+    expect_equal(
+      result_v085$estimates$estimate,
+      result_no_v$estimates$estimate / 0.85,
+      tolerance = 1e-9
+    )
+  })
+
+  it("AIR-03: SE with visibility_correction = 0.85 equals SE without correction / 0.85", {
+    d_no_v <- add_counts(make_aerial_design(h_open = 14, visibility_correction = NULL), make_aerial_counts()) # nolint: object_usage_linter
+    d_v085 <- add_counts(make_aerial_design(h_open = 14, visibility_correction = 0.85), make_aerial_counts()) # nolint: object_usage_linter
+    result_no_v <- suppressWarnings(estimate_effort(d_no_v))
+    result_v085 <- suppressWarnings(estimate_effort(d_v085))
+    expect_equal(
+      result_v085$estimates$se_between,
+      result_no_v$estimates$se_between / 0.85,
+      tolerance = 1e-9
+    )
+  })
+})

@@ -476,3 +476,28 @@ test_that(
     )
   }
 )
+
+# AIR-04: Malvestuto (1996) Box 20.6 aerial worked example ----
+# NOTE: Skip until Malvestuto (1996) Box 20.6 aerial values are confirmed.
+# See Phase 47 SUMMARY.md for checkpoint details.
+
+#' Aerial worked example fixture — Malvestuto (1996) Box 20.6
+#'
+#' FILL_* placeholders must be replaced with exact published values once
+#' the Malvestuto (1996) Box 20.6 aerial example values are confirmed.
+#' See Phase 47 checkpoint (AIR-04).
+#'
+#' @keywords internal
+make_aerial_box20_6 <- function() {
+  # Placeholder: replace with exact Malvestuto (1996) Box 20.6 aerial values
+  # after the human checkpoint (Phase 47 AIR-04) supplies the real numbers.
+  # Structure needed: calendar, counts (N_counted per date), h_open, v, E_hat_published.
+  stop("AIR-04: make_aerial_box20_6() requires Malvestuto (1996) Box 20.6 aerial values — see Phase 47 SUMMARY.md for checkpoint details") # nolint: line_length_linter
+}
+
+test_that("AIR-04: estimate_effort() reproduces Malvestuto (1996) Box 20.6 aerial E_hat within tolerance 1e-6", {
+  skip("AIR-04: obtain Malvestuto (1996) Box 20.6 aerial values before enabling this test — see Phase 47 SUMMARY")
+  fixture <- make_aerial_box20_6()
+  result <- suppressWarnings(estimate_effort(fixture))
+  expect_equal(result$estimates$estimate, fixture$E_hat_published, tolerance = 1e-6)
+})

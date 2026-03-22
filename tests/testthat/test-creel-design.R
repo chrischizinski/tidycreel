@@ -1241,3 +1241,93 @@ test_that("CAM-02: preprocess_camera_timestamps() warns on egress < ingress and 
   result_sorted <- result[order(result$date), ]
   expect_equal(result_sorted$daily_effort_hours[1L], 2.0, tolerance = 1e-6)
 })
+
+# Phase 47: Aerial constructor ----
+
+make_aerial_cal <- function() {
+  data.frame(
+    date = as.Date(c(
+      "2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04",
+      "2024-06-08", "2024-06-09", "2024-06-15", "2024-06-16"
+    )),
+    day_type = rep(c("weekday", "weekend"), each = 4L),
+    stringsAsFactors = FALSE
+  )
+}
+
+describe("Phase 47: Aerial constructor", {
+  it("AIR-01: creel_design(survey_type = 'aerial', h_open = 14) constructs; design$aerial$h_open == 14", {
+    d <- creel_design(make_aerial_cal(),
+      date = date, strata = day_type,
+      survey_type = "aerial",
+      h_open = 14
+    )
+    expect_s3_class(d, "creel_design")
+    expect_equal(d$design_type, "aerial")
+    expect_equal(d$aerial$h_open, 14)
+  })
+
+  it("AIR-01: creel_design(survey_type = 'aerial') without h_open aborts with cli_abort()", {
+    expect_error(
+      creel_design(make_aerial_cal(),
+        date = date, strata = day_type,
+        survey_type = "aerial"
+      ),
+      regexp = "h_open"
+    )
+  })
+
+  it("AIR-01: creel_design(survey_type = 'aerial', h_open = -1) aborts with informative message", {
+    expect_error(
+      creel_design(make_aerial_cal(),
+        date = date, strata = day_type,
+        survey_type = "aerial",
+        h_open = -1
+      ),
+      regexp = "h_open"
+    )
+  })
+
+  it("AIR-03: creel_design(survey_type = 'aerial', h_open = 14, visibility_correction = 0.85) constructs", {
+    d <- creel_design(make_aerial_cal(),
+      date = date, strata = day_type,
+      survey_type = "aerial",
+      h_open = 14,
+      visibility_correction = 0.85
+    )
+    expect_equal(d$aerial$visibility_correction, 0.85)
+  })
+
+  it("AIR-03: visibility_correction = 1.5 aborts (outside (0, 1])", {
+    expect_error(
+      creel_design(make_aerial_cal(),
+        date = date, strata = day_type,
+        survey_type = "aerial",
+        h_open = 14,
+        visibility_correction = 1.5
+      ),
+      regexp = "visibility_correction"
+    )
+  })
+
+  it("AIR-03: visibility_correction = 0 aborts (not > 0)", {
+    expect_error(
+      creel_design(make_aerial_cal(),
+        date = date, strata = day_type,
+        survey_type = "aerial",
+        h_open = 14,
+        visibility_correction = 0
+      ),
+      regexp = "visibility_correction"
+    )
+  })
+
+  it("AIR-01: design$design_type == 'aerial' after construction", {
+    d <- creel_design(make_aerial_cal(),
+      date = date, strata = day_type,
+      survey_type = "aerial",
+      h_open = 14
+    )
+    expect_equal(d$design_type, "aerial")
+  })
+})
