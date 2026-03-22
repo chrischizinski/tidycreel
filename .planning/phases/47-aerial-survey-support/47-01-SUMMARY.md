@@ -14,7 +14,7 @@ provides:
   - creel_design(survey_type = "aerial", h_open = N) constructor with h_open required and visibility_correction optional
   - estimate_effort_aerial() internal function using svytotal x h_over_v (no delta method)
   - aerial dispatch block in estimate_effort() after bus_route/ice path
-  - AIR-04 test fixture skeleton (skipped, awaiting Malvestuto Box 20.6 values)
+  - AIR-04 constructed numeric validation test (svytotal x h_open = 111 x 14 = 1554 angler-hours)
 affects:
   - 47-02 (catch rate / interview path for aerial — uses design$aerial slot)
   - 47-03 (aerial example datasets and vignette)
@@ -43,7 +43,7 @@ key-decisions:
   - "L_bar (mean trip duration) does NOT appear in aerial effort formula — interviews not required for effort; L_bar is only used in catch rate estimation (AIR-05, Plan 02)"
   - "visibility_correction defaults to 1.0 (NULL treated as no correction) — consistent with Pollock et al. 1994 sec.15.6.1"
   - "estimate_effort_aerial() mirrors estimate_effort_total() with h_over_v multiplier — within-day Rasmussen component scaled by h_over_v^2"
-  - "AIR-04 Malvestuto Box 20.6 validation test remains skipped pending human checkpoint; fixture skeleton committed with stop() placeholder"
+  - "AIR-04 uses constructed numeric example (not primary source values); Malvestuto (1996) Box 20.6 confirmed to have no aerial example; Delaware River 2002 uses PPS design incompatible with instantaneous count x h_open estimator"
 
 patterns-established:
   - "Aerial dispatch: add design type to NULL-survey guard exclusion list, then insert dedicated dispatch block after bus_route/ice return"
@@ -53,6 +53,7 @@ requirements-completed:
   - AIR-01
   - AIR-02
   - AIR-03
+  - AIR-04
 
 # Metrics
 duration: 8min
@@ -61,15 +62,15 @@ completed: 2026-03-22
 
 # Phase 47 Plan 01: Aerial Constructor and Effort Estimator Summary
 
-**Aerial effort estimation via svytotal x (h_open / v) with h_open required constructor validation and visibility_correction in (0, 1]; AIR-04 fixture skeleton skipped pending Malvestuto Box 20.6 human checkpoint**
+**Aerial effort estimation via svytotal x (h_open / v) with h_open required constructor validation and visibility_correction in (0, 1]; AIR-04 validated with constructed numeric example (svytotal x h_open = 111 x 14 = 1554); Malvestuto Box 20.6 confirmed aerial-free; 1680 tests passing**
 
 ## Performance
 
 - **Duration:** ~8 min
 - **Started:** 2026-03-22T14:53:44Z
 - **Completed:** 2026-03-22T15:01:17Z
-- **Tasks:** TDD cycle (WAVE 0 RED + GREEN) completed; 1 checkpoint reached
-- **Files modified:** 5
+- **Tasks:** TDD cycle (WAVE 0 RED + GREEN) + AIR-04 continuation completed
+- **Files modified:** 6
 
 ## Accomplishments
 
@@ -77,8 +78,8 @@ completed: 2026-03-22
 - New R/creel-estimates-aerial.R with estimate_effort_aerial() using survey::svytotal() scaled by h_over_v — no delta method
 - Aerial dispatch block added in estimate_effort() after bus_route/ice path; 'aerial' added to NULL-survey guard exclusion list
 - 17 new tests for AIR-01/02/03 (constructor validation, effort dispatch, SE formula, visibility correction scaling) — all passing
-- AIR-04 test skeleton with skip() and FILL_* placeholder committed; awaiting Malvestuto (1996) Box 20.6 aerial values
-- 1678 total tests passing (1 skip)
+- AIR-04: constructed numeric validation test (svytotal x h_open = 111 x 14 = 1554 angler-hours) — passing; Malvestuto (1996) Box 20.6 confirmed to have no aerial example; Delaware River 2002 report uses PPS design incompatible with this estimator
+- 1680 total tests passing (0 skips)
 
 ## Task Commits
 
@@ -94,7 +95,7 @@ TDD cycle with per-phase commits:
 - `R/creel-estimates.R` — Added 'aerial' to NULL-survey guard; inserted aerial dispatch block after bus_route/ice block
 - `tests/testthat/test-creel-design.R` — 7 new AIR-01/02/03 constructor tests; updated existing aerial test to supply h_open = 14
 - `tests/testthat/test-estimate-effort.R` — 6 new AIR-01/02/03 effort estimation tests
-- `tests/testthat/test-primary-source-validation.R` — AIR-04 make_aerial_box20_6() skeleton with skip() placeholder
+- `tests/testthat/test-primary-source-validation.R` — AIR-04 make_aerial_box20_6() constructed numeric fixture; skip() removed; passing
 
 ## Decisions Made
 
@@ -105,25 +106,30 @@ TDD cycle with per-phase commits:
 
 ## Deviations from Plan
 
-None — plan executed exactly as written (with corrections from project_phase47_aerial_correction.md applied).
+**1. [Rule 1 - Alternate Strategy] AIR-04 uses constructed numeric example instead of Malvestuto (1996) Box 20.6 aerial values**
+- **Found during:** Task 1 (AIR-04 continuation)
+- **Issue:** Malvestuto (1996) Box 20.6 confirmed to contain no aerial worked example; Delaware River 2002 uses PPS design incompatible with this estimator
+- **Fix:** Constructed hand-verifiable numeric example — 7-day survey (5 weekday + 2 weekend), all days counted, E_hat = sum(counts) x h_open = 111 x 14 = 1554 angler-hours
+- **Files modified:** tests/testthat/test-primary-source-validation.R
 
 ## Issues Encountered
 
 - styler and lintr disagreed on indentation in multi-condition if() in aerial constructor; resolved by extracting condition into a named boolean variable (vc_bad)
 
-## Checkpoint: AIR-04 Malvestuto Box 20.6
+## AIR-04 Resolution
 
-**Status:** REACHED — awaiting human input
+**Status:** COMPLETE — constructed numeric example, not primary source values
 
-The aerial estimator (AIR-01/AIR-02/AIR-03) is fully implemented and tested. The AIR-04 primary source validation test is skipped with a stop() placeholder in make_aerial_box20_6().
+**Malvestuto (1996) Box 20.6:** Confirmed to have NO aerial worked example. Box 20.6 only contains the bus-route (roving creel) worked example already used in existing tests (AIR-01 through AIR-03 primary source validation).
 
-**To complete AIR-04:**
-1. Obtain Malvestuto (1996) Box 20.6 aerial example values (N_counted, H_open, v, E_hat)
-2. Replace the stop() placeholder in make_aerial_box20_6() with the real fixture
-3. Remove the skip() from the test_that block
-4. Run devtools::test(filter = "primary-source") to confirm E_hat matches within 1e-6
+**Delaware River Creel Survey 2002:** Also reviewed but uses probability-proportional-to-size (PPS) design with pi_ik expansion factors, incompatible with the simple instantaneous count x h_open estimator implemented here.
 
-**If Box 20.6 has no aerial example:** Report that and provide alternate primary source values (Pollock et al. 1994 or constructed numeric example from formula).
+**Alternate strategy used:** Constructed numeric example verified by hand from formula E = svytotal(counts) x h_open (Pollock et al. 1994, Ch. 12).
+- Calendar: 5 weekdays + 2 weekends; all days surveyed
+- Counts: weekday = c(10, 15, 12, 8, 11), weekend = c(25, 30)
+- svytotal = sum(counts) = 56 + 55 = 111 anglers
+- E_hat = 111 x 14 = 1554 angler-hours (exact, no rounding)
+- Test passes with tolerance 1e-4
 
 ## Next Phase Readiness
 
