@@ -82,6 +82,17 @@ Required when \code{survey_type = "camera"}. Must be one of \code{"counter"}
 records individual arrival/departure timestamps, which should be
 preprocessed with \code{preprocess_camera_timestamps()} before calling
 \code{add_counts()}).}
+
+\item{h_open}{Positive numeric scalar specifying the number of hours the
+fishery is open per day. Required when \code{survey_type = "aerial"}. Used as
+the expansion factor in the aerial effort estimator:
+\eqn{\hat{E} = N_{obs} \times h_{open} / v}.}
+
+\item{visibility_correction}{Optional numeric scalar in \verb{(0, 1]} specifying
+the proportion of anglers on the water that are detectable from the
+aircraft. Used only when \code{survey_type = "aerial"}. Defaults to \code{1.0}
+(all anglers visible) when \code{NULL}. A value of 0.85 means 85\% of anglers
+are detected; the effort estimate is scaled up by \eqn{1 / 0.85}.}
 }
 \value{
 A \code{creel_design} S3 object (list) with components:

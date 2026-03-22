@@ -50,7 +50,7 @@ design <- creel_design(
   survey_type = "aerial",
   h_open = 14
 )
-design <- add_counts(design, example_aerial_counts, count = n_anglers)
+design <- add_counts(design, example_aerial_counts)
 design <- suppressWarnings(add_interviews(
   design,
   example_aerial_interviews,

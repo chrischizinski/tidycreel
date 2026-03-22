@@ -141,6 +141,15 @@ VALID_SURVEY_TYPES <- c("instantaneous", "bus_route", "ice", "camera", "aerial")
 #'   records individual arrival/departure timestamps, which should be
 #'   preprocessed with `preprocess_camera_timestamps()` before calling
 #'   `add_counts()`).
+#' @param h_open Positive numeric scalar specifying the number of hours the
+#'   fishery is open per day. Required when `survey_type = "aerial"`. Used as
+#'   the expansion factor in the aerial effort estimator:
+#'   \eqn{\hat{E} = N_{obs} \times h_{open} / v}.
+#' @param visibility_correction Optional numeric scalar in `(0, 1]` specifying
+#'   the proportion of anglers on the water that are detectable from the
+#'   aircraft. Used only when `survey_type = "aerial"`. Defaults to `1.0`
+#'   (all anglers visible) when `NULL`. A value of 0.85 means 85% of anglers
+#'   are detected; the effort estimate is scaled up by \eqn{1 / 0.85}.
 #'
 #' @return A `creel_design` S3 object (list) with components:
 #'   \item{calendar}{The original calendar data frame}
