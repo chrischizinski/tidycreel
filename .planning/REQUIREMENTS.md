@@ -30,9 +30,9 @@ Requirements for v0.8.0 — Non-Traditional Creel Designs. Each maps to roadmap 
 
 ### Aerial
 
-- [ ] **AIR-01**: User can estimate effort from aerial angler counts using the expansion formula `N_counted × H_open × mean_trip_duration`
-- [ ] **AIR-02**: Aerial effort estimate includes delta method variance correctly propagating count and mean trip duration uncertainty
-- [ ] **AIR-03**: User can supply a visibility correction factor as a calibration parameter
+- [x] **AIR-01**: User can estimate effort from aerial angler counts using the expansion formula `N_counted × H_open × mean_trip_duration`
+- [x] **AIR-02**: Aerial effort estimate includes delta method variance correctly propagating count and mean trip duration uncertainty
+- [x] **AIR-03**: User can supply a visibility correction factor as a calibration parameter
 - [ ] **AIR-04**: Aerial estimator is verified against Malvestuto (1996) worked example before shipping
 - [ ] **AIR-05**: User can attach interview data and estimate catch rates and total catch/harvest on an aerial design
 - [ ] **AIR-06**: Aerial survey support documented with example dataset and vignette
@@ -73,9 +73,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CAM-03 | Phase 46 | Complete |
 | CAM-04 | Phase 46 | Complete |
 | CAM-05 | Phase 46 | Complete |
-| AIR-01 | Phase 47 | Pending |
-| AIR-02 | Phase 47 | Pending |
-| AIR-03 | Phase 47 | Pending |
+| AIR-01 | Phase 47 | Complete |
+| AIR-02 | Phase 47 | Complete |
+| AIR-03 | Phase 47 | Complete |
 | AIR-04 | Phase 47 | Pending |
 | AIR-05 | Phase 47 | Pending |
 | AIR-06 | Phase 47 | Pending |

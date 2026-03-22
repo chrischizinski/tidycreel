@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
-status: complete
-stopped_at: Completed 46-03-PLAN.md — CAM-05 example datasets and camera-surveys vignette
-last_updated: "2026-03-16T02:36:41.000Z"
-last_activity: 2026-03-16 — 46-03 example_camera_counts/timestamps/interviews + vignette, 1661 tests passing
+status: completed
+stopped_at: Reached checkpoint in 47-01-PLAN.md — aerial constructor + estimate_effort_aerial() implemented (AIR-01/02/03); AIR-04 blocked on Malvestuto Box 20.6 values
+last_updated: "2026-03-22T15:02:37.914Z"
+last_activity: 2026-03-16 — 46-03 example_camera_counts/timestamps/interviews + camera-surveys vignette, 1661 tests passing
 progress:
   total_phases: 4
-  completed_phases: 2
-  total_plans: 8
-  completed_plans: 7
+  completed_phases: 3
+  total_plans: 11
+  completed_plans: 9
   percent: 100
 ---
 
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-03-15)
 
 ## Current Position
 
-Phase: 46 (Remote Camera Survey Support) — COMPLETE (3/3 plans)
-Plan: 03 complete
-Status: 46-03 complete — CAM-05 example datasets (counter/timestamps/interviews) + camera-surveys vignette; Phase 46 done
-Last activity: 2026-03-16 — 46-03 example_camera_counts/timestamps/interviews + camera-surveys vignette, 1661 tests passing
+Phase: 47 (Aerial Survey Support) — In Progress (1/3 plans at checkpoint)
+Plan: 01 at checkpoint — aerial constructor + estimate_effort_aerial() done (AIR-01/02/03); AIR-04 blocked on Malvestuto Box 20.6 values
+Status: 47-01 checkpoint reached — 1678 tests passing; awaiting Malvestuto (1996) Box 20.6 aerial values to enable AIR-04 validation test
+Last activity: 2026-03-22 — 47-01 aerial constructor h_open/visibility_correction + estimate_effort_aerial() svytotal x h_over_v, 1678 tests passing
 
 Progress: [██████████] 100%
 
@@ -60,8 +60,16 @@ Progress: [██████████] 100%
 | Phase 46-remote-camera-survey-support P01 | 6min | 2 tasks | 3 files |
 | Phase 46-remote-camera-survey-support P02 | 3min | 2 tasks | 3 files |
 | Phase 46-remote-camera-survey-support P03 | 11min | 2 tasks | 14 files |
+| Phase 47-aerial-survey-support P01 | 8min | 2 tasks | 5 files |
 
 ## Accumulated Context
+
+### Decisions (v0.8.0 Phase 47-01)
+
+- Aerial effort = svytotal x h_over_v (linear scaling, not delta method); SE(E) = SE(svytotal) x h_over_v exactly because h_open and v are fixed calibration constants, not sample estimates
+- L_bar not used in aerial effort — interviews not required for estimate_effort() on aerial designs; L_bar only needed for catch rate in AIR-05 (Plan 02)
+- visibility_correction defaults to 1.0 (NULL treated as no correction); estimate_effort_aerial() mirrors estimate_effort_total() with within-day Rasmussen variance scaled by h_over_v^2
+- AIR-04 test remains skipped pending Malvestuto (1996) Box 20.6 aerial values — fixture skeleton committed with stop() placeholder
 
 ### Decisions (v0.8.0 Phase 46-03)
 
@@ -134,6 +142,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-16T02:36:41.000Z
-Stopped at: Completed 46-03-PLAN.md — CAM-05 example datasets and camera-surveys vignette; Phase 46 complete
+Last session: 2026-03-22T15:02:37.911Z
+Stopped at: Reached checkpoint in 47-01-PLAN.md — aerial constructor + estimate_effort_aerial() implemented (AIR-01/02/03); AIR-04 blocked on Malvestuto Box 20.6 values
 Next step: Phase 47 (Aerial Survey Support) — Plan 01
