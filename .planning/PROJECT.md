@@ -39,38 +39,36 @@ Creel biologists can analyze survey data using creel vocabulary without understa
 - ✓ `missing_sections` guard — NA row + cli_warn() for registered sections absent from data — v0.7.0
 - ✓ `example_sections_*` datasets and section-estimation vignette — v0.7.0
 
-### Active (v0.8.0 — Non-Traditional Creel Designs)
+### Active (v0.9.0 — TBD)
 
-<!-- Aerial, remote camera, and ice fishing survey support — to be defined during milestone planning. -->
+<!-- To be defined during next milestone planning. Run /gsd:new-milestone to define. -->
 
-- [ ] Aerial survey support — effort/angler estimation from air (plane/drone)
-- [ ] Remote camera survey support — access-point counts and/or continuous effort at a site
-- [ ] Ice fishing survey support — fixed-location angler design, statistically characterized
-- [ ] All three extend `creel_design()` as the single entry point
+### Validated (v0.8.0 — Non-Traditional Creel Designs)
+
+<!-- Shipped and confirmed working in v0.8.0 -->
+
+- ✓ Aerial survey support — `estimate_effort_aerial()` using `svytotal × (h_open / visibility_correction)`, numeric validation, interview pipeline — v0.8.0
+- ✓ Remote camera survey support — counter mode (access-point path) + ingress-egress mode (`preprocess_camera_timestamps()`), `camera_status` gap handling — v0.8.0
+- ✓ Ice fishing survey support — degenerate bus-route with `p_site = 1.0`, `effort_type` distinction, `shelter_mode` stratification — v0.8.0
+- ✓ All three extend `creel_design()` as the single entry point — confirmed zero changes to rate/product estimators — v0.8.0
 
 ### Out of Scope
 
 - Real-time/online data pull from creel API — package is data-model agnostic; users pull data themselves
-- Aerial survey support (area_ha / shoreline_km used in estimation) — deferred, not yet scoped
+- GLMM-based aerial temporal expansion for non-random flight timing bias (Askey 2018) — model-based, requires `lme4`, deferred to v0.9.0+
+- Zero-inflated negative binomial camera count modeling — model-based, requires `glmmTMB`, deferred
+- Bayesian integration for multi-method designs (Su & Liu 2025) — deferred
 - Geographic summaries (zip/county tabulation via external lookup) — deferred
 - Full report rendering (Rmd/PDF template reproducing NGPC report structure) — deferred
 - Supplemental question tabulation — deferred
 
-## Current Milestone: v0.8.0 Non-Traditional Creel Designs
+## Current State (v0.8.0 — shipped 2026-03-22)
 
-**Goal:** Extend tidycreel to support aerial, remote camera, and ice fishing survey designs within the existing `creel_design()` entry point and three-layer architecture.
-
-**Target features:**
-- Aerial surveys — effort estimation from plane/drone angler counts
-- Remote camera surveys — access-point ingress/egress counts and continuous site-level effort
-- Ice fishing surveys — fixed-location angler design with statistically appropriate estimators
-
-## Current State (v0.7.0 — shipped 2026-03-15)
-
-**Package status:** 7 milestones shipped, 43 phases, 84 plans, 1588 tests passing
+**Package status:** 8 milestones shipped, 47 phases, 95 plans, 1696 tests passing
 **Stack:** R package, survey package for all design-based inference, tidy API with tidyselect
-**Architecture:** Three-layer (API → Orchestration → Survey) proven through spatially stratified designs
-**Next milestone:** v0.8.0 — TBD (run `/gsd:new-milestone` to define)
+**Architecture:** Three-layer (API → Orchestration → Survey) proven through instantaneous, bus-route, ice, camera, and aerial designs
+**Survey types supported:** `instantaneous`, `bus_route`, `ice`, `camera`, `aerial`
+**Next milestone:** v0.9.0 — TBD (run `/gsd:new-milestone` to define)
 
 ## Context
 
@@ -145,6 +143,11 @@ Three-layer: API → Orchestration → Survey package. The dispatch pattern (che
 | Rate estimators produce no `.lake_total` row | Rates are not additive — lake-wide rate requires separate unpooled call | ✓ Good — enforced by design, documented in vignette |
 | `sum(TC_i)` not `E_total × CPUE_pooled` for product lake total | Section-specific effort and CPUE interact; pooled estimator conflates spatial variation | ✓ Good — matches standard spatially stratified survey literature |
 | Breaking rename: `estimate_cpue()` → `estimate_catch_rate()`, `estimate_harvest()` → `estimate_harvest_rate()` | v0.7.0 API consistency; no deprecated wrappers | ✓ Good — clean break, documented in NEWS.md |
+| Ice as degenerate bus-route (`p_site = 1.0`) | Reuses HT estimator path without a new code branch; synthetic bus_route slot enables add_interviews() | ✓ Good — confirmed in v0.8.0; intersect() guard pattern established |
+| Camera uses standard instantaneous path (not bus-route) | counter/ingress-egress both feed add_counts() → estimate_effort() without special dispatch | ✓ Good — no estimator changes required for CAM-04 |
+| `preprocess_camera_timestamps()` as preprocessing step | Converts POSIXct pairs to daily effort before estimation entry; keeps estimators clean | ✓ Good — NSE via rlang::as_name(rlang::enquo()) consistent with existing compute_effort() pattern |
+| Aerial effort = `svytotal × (h_open / v)` (linear, no delta method) | h_open and v are fixed calibration constants, not sample estimates — SE scales linearly | ✓ Good — confirmed by constructed numeric example (111 × 14 = 1554 angler-hours) |
+| `visibility_correction` defaults to 1.0 (no correction) when NULL | Maintains backward compatibility; user opt-in for calibration | ✓ Good — mirrors effort_type required pattern for ice |
 
 ---
-*Last updated: 2026-03-15 — v0.8.0 milestone started*
+*Last updated: 2026-03-22 after v0.8.0 milestone*

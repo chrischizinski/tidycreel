@@ -4,8 +4,8 @@ milestone: v0.1
 milestone_name: milestone
 status: completed
 stopped_at: Completed 47-03-PLAN.md — AIR-06 aerial datasets and vignette; 1696 tests passing; R CMD check 0 errors 0 warnings
-last_updated: "2026-03-22T19:32:59.188Z"
-last_activity: 2026-03-22 — 47-02 AIR-05 aerial interview pipeline tests (add_interviews, estimate_catch_rate, estimate_total_catch), 1696 tests passing
+last_updated: "2026-03-22T22:33:19.481Z"
+last_activity: 2026-03-22 — 47-03 aerial datasets (example_aerial_counts, example_aerial_interviews) + aerial-surveys vignette + creel_design roxygen fix for h_open/visibility_correction
 progress:
   total_phases: 4
   completed_phases: 4
@@ -18,10 +18,10 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-15)
+See: .planning/PROJECT.md (updated 2026-03-22)
 
 **Core value:** Creel biologists can analyze survey data using creel vocabulary without understanding survey package internals
-**Current focus:** v0.8.0 — Non-Traditional Creel Designs (phases 44-47)
+**Current focus:** v0.8.0 archived — planning next milestone (run /gsd:new-milestone)
 
 ## Current Position
 

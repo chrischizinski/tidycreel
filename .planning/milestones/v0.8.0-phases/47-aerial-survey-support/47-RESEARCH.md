@@ -1,8 +1,9 @@
 # Phase 47: Aerial Survey Support - Research
 
 **Researched:** 2026-03-16
-**Domain:** R package extension — creel survey aerial design with ratio estimator and delta method variance
-**Confidence:** HIGH (architecture patterns from direct code inspection); MEDIUM (Malvestuto Box 20.6 aerial numbers — primary source not directly accessible; formula derivation verified via Hoenig et al. 1993 and Pollock et al. 1994 framework)
+**Domain:** R package extension — creel survey aerial design with svytotal-based effort estimator
+**Confidence:** HIGH (architecture patterns from direct code inspection; formula corrected 2026-03-22 — confirmed by Pollock et al. 1994 §15.6.1 eq.15.4 and Pope et al. Ch.17); MEDIUM (Malvestuto Box 20.6 aerial numbers — primary source not directly accessible)
+**Correction applied 2026-03-22:** Original research described a delta method estimator using L_bar (mean trip duration). Correct approach is svytotal(counts) × (h_open/v) — linear scaling, no delta method needed. See correction details below.
 
 ---
 
@@ -11,8 +12,8 @@
 
 | ID | Description | Research Support |
 |----|-------------|-----------------|
-| AIR-01 | User can estimate effort from aerial angler counts using the expansion formula `N_counted × H_open × mean_trip_duration` | New `estimate_effort_aerial()` internal function; aerial dispatch in `estimate_effort()` at existing bus_route/ice guard location; formula confirmed by Hoenig et al. (1993) instantaneous count theory |
-| AIR-02 | Aerial effort estimate includes delta method variance correctly propagating count and mean trip duration uncertainty | Delta method for product of two random variables: `Var(Ê) ≈ H_open² × [L̄² × Var(N̂) + N̂² × Var(L̄)]`; both components estimated from interviews |
+| AIR-01 | User can estimate effort from aerial angler counts using `svytotal(counts) × (h_open / v)` | New `estimate_effort_aerial()` mirrors `estimate_effort_total()` with h_over_v scalar applied; confirmed by Pollock et al. 1994 §15.6.1 eq.15.4; L_bar NOT used in effort |
+| AIR-02 | Aerial effort estimate SE equals `survey::SE(svytotal) × (h_open/v)` — exact linear scaling, no delta method | h_open and v are fixed calibration constants so SE(a×X) = a×SE(X) exactly; Taylor/bootstrap/jackknife all work via get_variance_design() |
 | AIR-03 | User can supply a visibility correction factor as a calibration parameter | `visibility_correction` stored in `design$aerial$visibility_correction`; applied as `N_adj = N_counted / v` before effort calculation; variance propagated with adjusted count |
 | AIR-04 | Aerial estimator is verified against Malvestuto (1996) worked example before shipping | Test in `test-primary-source-validation.R` using exact numbers from the reference; tolerance 1e-6; same gate pattern as bus-route VALID-01 through VALID-05 |
 | AIR-05 | User can attach interview data and estimate catch rates and total catch/harvest on an aerial design | Aerial uses standard instantaneous `interview_survey` path (same as camera); no dispatch guard changes needed for `estimate_catch_rate()` or `estimate_total_catch()` |
@@ -23,15 +24,19 @@
 
 ## Summary
 
-Phase 47 is architecturally the most self-contained of the three non-traditional survey types. Unlike ice (a degenerate bus-route dispatching to `estimate_effort_br()`) and camera (a standard instantaneous design with preprocessing), aerial requires a genuinely new internal estimator function `estimate_effort_aerial()`. The estimator implements a ratio estimator that converts an instantaneous aerial angler count to total effort by multiplying by hours-open (`H_open`) and mean trip duration (`L̄`). Both of those quantities carry uncertainty, so delta method variance propagation is required.
+Phase 47 is architecturally the most self-contained of the three non-traditional survey types. Unlike ice (a degenerate bus-route dispatching to `estimate_effort_br()`) and camera (a standard instantaneous design with preprocessing), aerial requires a new internal estimator function `estimate_effort_aerial()`.
 
-The formula derivation follows directly from Hoenig et al. (1993): an instantaneous count at a randomly selected time within a fishing day is an unbiased estimate of the mean number of anglers present; the product of that mean count times the day length equals expected total angler-hours. When mean count is estimated from a sample of counts across days, and mean trip duration `L̄` is estimated from interview data, both contribute to the variance of the effort estimate. The delta method gives the first-order variance approximation for this product-of-ratio-estimators structure.
+**CORRECTED ESTIMATOR (2026-03-22):** The estimator is `Ê = svytotal(counts) × (h_open / v)`, not `N̂ × h_open × L̄`. Mean trip duration (L̄) is NOT part of the aerial effort formula. Sources: Pollock et al. 1994 §15.6.1 eq.15.4; Pope et al. Ch.17 (`Ê = C × T`); Hoenig et al. 1993.
 
-The visibility correction factor (`v`) is a user-supplied calibration scalar (e.g., 0.85 when aerial observers detect 85% of anglers). The correction is applied to the count before calculating effort: `N_adj = N_counted / v`. Variance of the adjusted count is `Var(N_counted) / v²` — no additional variance from `v` itself, since it is a calibration parameter with no uncertainty in the model (it comes from an external validation study outside the package).
+**Why no delta method:** `h_open` and `v` are fixed calibration constants — they come from study design and external validation, not from the same sample as the counts. The transform `Ê = svytotal × (h_open/v)` is a linear scaling, so `SE(Ê) = SE(svytotal) × (h_open/v)` exactly. No delta method approximation needed. This also means Taylor/bootstrap/jackknife variance all work automatically via `get_variance_design()` — zero extra code.
 
-Malvestuto (1996) Box 20.6 contains both bus-route and aerial worked examples on the same page spread. The bus-route example (Example 1) is already validated in `test-primary-source-validation.R`. The aerial validation should reproduce the aerial-specific numbers from the same box using `make_aerial_box20_6()` fixture function, parallel to the existing `make_box20_6_example1()` pattern.
+The visibility correction factor (`v`) is a user-supplied calibration scalar (e.g., 0.85 when aerial observers detect 85% of anglers). Because v is a constant (not a sample estimate), it enters purely as a multiplier: `Ê = svytotal × (h_open/v)` and `SE(Ê) = SE(svytotal) × (h_open/v)`.
 
-**Primary recommendation:** Write `estimate_effort_aerial()` in a new `R/creel-estimates-aerial.R` file; add aerial dispatch block in `estimate_effort()` between the bus-route/ice block and the sections block; fill the aerial constructor stub with `visibility_correction` and `h_open` parameters; validate against Malvestuto (1996) in a new test block appended to `test-primary-source-validation.R`.
+**L̄ is used only in catch estimation (AIR-05).** In the standard interview path (`estimate_catch_rate`, `estimate_total_catch`), the design's `interview_survey` uses trip duration from interviews — but that is a separate path from effort, and Plan 02 handles it unchanged.
+
+Malvestuto (1996) Box 20.6 contains both bus-route and aerial worked examples on the same page spread. The bus-route example (Example 1) is already validated in `test-primary-source-validation.R`. The aerial validation should reproduce the aerial-specific numbers from the same box using `make_aerial_box20_6()` fixture function, parallel to the existing `make_box20_6_example1()` pattern. Note: for the simple `Ê = N × h_open` formula (no L̄, no interviews), AIR-04 only needs N_counted, h_open, and E_hat from the box.
+
+**Primary recommendation:** Write `estimate_effort_aerial()` mirroring `estimate_effort_total()` in a new `R/creel-estimates-aerial.R` file; add aerial dispatch block in `estimate_effort()` (no interviews guard); fill the aerial constructor stub with `h_open` and `visibility_correction` parameters; validate against Malvestuto (1996) in a new test block appended to `test-primary-source-validation.R`.
 
 ---
 

@@ -1,5 +1,22 @@
 # Milestones
 
+## v0.8.0 Non-Traditional Creel Designs (Shipped: 2026-03-22)
+
+**Phases completed:** 4 phases (44-47), 11 plans
+**Quality metrics:** 1696 tests passing, R CMD check 0 errors 0 warnings, 0 lintr issues
+**Code delivered:** ~78,500 LOC R total; 64 files changed, 8,772 insertions
+
+**Key accomplishments:**
+- `VALID_SURVEY_TYPES` enum guard locks dispatch surface — unknown `survey_type` values abort with `cli_abort()` before any estimation runs (Phase 44)
+- Ice fishing survey support: degenerate bus-route with `p_site = 1.0` enforcement, `effort_type` distinction (time-on-ice / active-fishing-time), `shelter_mode` stratification (Phase 45)
+- Remote camera counter mode: daily ingress counts route through existing access-point effort path with `camera_status` gap handling for non-random failures (Phase 46)
+- Remote camera ingress-egress mode: `preprocess_camera_timestamps()` converts POSIXct timestamp pairs to daily effort hours before estimation (Phase 46)
+- Aerial survey support: `estimate_effort_aerial()` using `svytotal × (h_open / visibility_correction)`, AIR-04 numeric validation, optional visibility correction factor (Phase 47)
+- All three survey types carry full interview pipelines (`add_interviews()` → `estimate_catch_rate()` → `estimate_total_catch()`) with zero changes to rate/product estimators
+- Six example datasets (`example_ice_*`, `example_camera_*`, `example_aerial_*`) and three end-to-end workflow vignettes shipped
+
+---
+
 ## v0.7.0 Spatially Stratified Estimation (Shipped: 2026-03-15)
 
 **Phases completed:** 5 phases, 9 plans, 0 tasks

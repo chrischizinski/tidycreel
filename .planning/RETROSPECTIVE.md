@@ -106,6 +106,57 @@
 
 ---
 
+## Milestone: v0.8.0 — Non-Traditional Creel Designs
+
+**Shipped:** 2026-03-22
+**Phases:** 4 (44-47) | **Plans:** 11 | **Commits:** 34 | **Timeline:** 7 days (2026-03-15 → 2026-03-22)
+
+### What Was Built
+
+- `VALID_SURVEY_TYPES` enum guard — `cli_abort()` closes dispatch surface before any estimation runs (Phase 44)
+- Ice fishing: `creel_design(survey_type = "ice", effort_type = ...)` with `p_site = 1.0` enforcement, synthetic bus_route slot, `shelter_mode` stratification via `by =`, full interview pipeline (Phase 45)
+- Remote camera (counter): daily ingress counts route through existing access-point path with `camera_status` gap classification (Phase 46)
+- Remote camera (ingress-egress): `preprocess_camera_timestamps()` converts POSIXct timestamp pairs to daily effort hours before estimation (Phase 46)
+- Aerial: `estimate_effort_aerial()` using `svytotal × (h_open / visibility_correction)`, AIR-04 constructed numeric validation (111 counts × 14 h = 1554 angler-hours), optional visibility correction factor (Phase 47)
+- All three types: complete interview pipeline (`add_interviews()` → `estimate_catch_rate()` → `estimate_total_catch()`) with zero changes to rate/product estimators
+- Six example datasets and three end-to-end workflow vignettes (`ice-fishing.Rmd`, `camera-surveys.Rmd`, `aerial-surveys.Rmd`)
+- 1696 tests; R CMD check 0 errors 0 warnings throughout
+
+### What Worked
+
+- **Ice-as-degenerate-bus-route architecture:** Using `p_site = 1.0` with a synthetic bus_route slot to reuse `estimate_effort_br()` unchanged was the right call — no new estimator path, no regressions. The `intersect()` guard pattern for synthetic column names is now canonical
+- **Build order (ice → camera → aerial):** Each type progressively increased complexity. Ice established the constructor validation pattern; camera added preprocessing; aerial added the new internal estimator. No type needed to be revisited once completed
+- **Camera uses standard instantaneous path:** Counter and ingress-egress modes both feed `add_counts()` → `estimate_effort()` without special dispatch. This means CAM-04 (interview compatibility) required zero production code changes — only tests
+- **Aerial uses linear scaling (not delta method):** `h_open` and `visibility_correction` are fixed calibration constants, not sample estimates, so SE scales exactly as `SE(svytotal) × h_over_v`. This insight eliminated the planned delta method implementation and made the code simpler and more correct
+- **Numeric validation for AIR-04:** Constructing a hand-verified example (111 counted anglers × 14 h open / 1.0 visibility = 1554 angler-hours) when Malvestuto (1996) Box 20.6 had no aerial worked example was an effective substitute for primary-source validation
+
+### What Was Inefficient
+
+- **Missing roxygen @param documentation caught by R CMD check:** Both `effort_type` (ice), `camera_mode` (camera), and `h_open`/`visibility_correction` (aerial) were added to `creel_design()` without corresponding roxygen entries, causing R CMD check WARNINGs that required fix commits. Checking "does this new parameter have a @param?" should be part of the RED→GREEN task definition
+- **Vignette knitr::kable() incompatibility discovered late:** `creel_estimates` objects can't be coerced to data.frame by `knitr::kable()` — discovered during vignette writing for camera (46-03) and then again for aerial (47-03). A shared vignette pattern established in 45-03 would have prevented rediscovery
+
+### Patterns Established
+
+- **`intersect()` guard for synthetic columns:** Any survey type that reuses the bus-route estimator path with synthetic slot columns (`.ice_site`, `.circuit`) must use `intersect(c(site_col, circuit_col), names(interviews))` for site_table construction. Now canonical in `estimate_effort_br()` and `estimate_total_catch_br()`
+- **New survey type constructor validation:** Required params abort with `cli_abort()` naming valid values (mirrors `match.arg()` ergonomics); optional params default to safe values (e.g., `visibility_correction` → 1.0)
+- **`print()` for creel_estimates in vignettes:** `knitr::kable()` cannot coerce `creel_estimates` — all vignettes use `print()` for estimation results. Document this in the contributing guide
+- **Preprocessing functions as explicit user step:** `preprocess_camera_timestamps()` is called by the user before `add_counts()` rather than auto-detected inside `add_counts()` — keeps the main pipeline clean and makes the data transformation transparent
+
+### Key Lessons
+
+1. **Check new function parameters have roxygen @param before R CMD check:** Three separate R CMD check WARNINGs for missing @param entries across the milestone. A simple "did I document all new parameters?" checklist item in the GREEN task would eliminate these entirely
+2. **Calibration constants use linear SE scaling, not delta method:** When expansion factors are user-supplied calibration constants (not estimated from data), propagating uncertainty through them is just multiplication — no delta method needed. This distinction simplifies implementation and is more statistically defensible
+3. **A constructed numeric example is a valid alternative to a published worked example:** Malvestuto (1996) Box 20.6 has no aerial data. A hand-verified calculation against known inputs (AIR-04) satisfies the same correctness guarantee as a published example, provided the inputs are chosen to test the full formula
+4. **Design types that reuse estimators need to guard synthetic columns:** The `intersect()` pattern needed in both `estimate_effort_br()` and `estimate_total_catch_br()` is a consequence of ice reusing bus-route slots. Future bus-route-path reuse must always add this guard
+
+### Cost Observations
+
+- Model mix: ~100% sonnet (balanced profile)
+- Sessions: ~6-7 sessions across 7 days
+- Notable: Phase 47 plan 03 (vignette + datasets) took 34 min — longest single plan in the milestone, consistent with documentation plans being ~2× the implementation plans
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -119,6 +170,7 @@
 | v0.5.0 | 8 | 18 | Extended interview data model; unextrapolated summaries; species-level estimation |
 | v0.6.0 | 3 | 5 | Smallest milestone; targeted feature addition (multiple counts, progressive estimator) |
 | v0.7.0 | 5 | 9 | Spatial stratification; most complex math to date; breaking API rename |
+| v0.8.0 | 4 | 11 | Three new survey types; ice reuses bus-route; camera adds preprocessing; aerial uses linear SE scaling |
 
 ### Cumulative Quality
 
@@ -131,6 +183,7 @@
 | v0.5.0 | ~1,300 | ~90% | 5 (no new vignettes) |
 | v0.6.0 | ~1,400 | ~90% | 6 (+flexible-count-estimation) |
 | v0.7.0 | 1,588 | ~90% | 7 (+section-estimation) |
+| v0.8.0 | 1,696 | ~90% | 10 (+ice-fishing, +camera-surveys, +aerial-surveys) |
 
 ### Top Lessons (Verified Across Milestones)
 
@@ -141,4 +194,4 @@
 5. **Human review gates have value for domain documentation:** Vignettes explaining statistical decisions in domain vocabulary need practitioner sign-off that automated tests cannot provide
 
 ---
-*Last updated: 2026-03-15 after v0.7.0 milestone*
+*Last updated: 2026-03-22 after v0.8.0 milestone*
