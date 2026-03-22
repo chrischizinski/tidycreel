@@ -245,7 +245,9 @@ creel_design <- function(calendar,
                          p_period = NULL,
                          circuit = NULL,
                          effort_type = NULL,
-                         camera_mode = NULL) {
+                         camera_mode = NULL,
+                         h_open = NULL,
+                         visibility_correction = NULL) {
   # 1. Structural validation (Phase 1 validator)
   validate_calendar_schema(calendar) # nolint: object_usage_linter
 
@@ -542,8 +544,37 @@ creel_design <- function(calendar,
   # --- Aerial branch ---
   aerial <- NULL
   if (identical(survey_type, "aerial")) {
-    aerial <- list(survey_type = "aerial")
-    # Phase 47 will inject visibility_correction checks here
+    # h_open validation: required positive numeric scalar
+    if (is.null(h_open) || !is.numeric(h_open) || length(h_open) != 1L || h_open <= 0) {
+      cli::cli_abort(c(
+        "{.arg h_open} is required for {.val aerial} survey designs.",
+        "x" = if (is.null(h_open)) {
+          "No {.arg h_open} supplied."
+        } else {
+          "Invalid {.arg h_open}: {.val {h_open}}. Must be a positive numeric scalar."
+        },
+        "i" = "Example: {.code h_open = 14}"
+      ))
+    }
+    # visibility_correction validation: optional, must be in (0, 1] if supplied
+    vc_bad <- !is.null(visibility_correction) && (
+      !is.numeric(visibility_correction) ||
+        length(visibility_correction) != 1L ||
+        visibility_correction <= 0 ||
+        visibility_correction > 1
+    )
+    if (vc_bad) {
+      cli::cli_abort(c(
+        "{.arg visibility_correction} must be a single numeric value in (0, 1].",
+        "x" = "Supplied value {.val {visibility_correction}} is outside the valid range.",
+        "i" = "Valid range: 0 < {.arg visibility_correction} <= 1."
+      ))
+    }
+    aerial <- list(
+      survey_type           = "aerial",
+      h_open                = h_open,
+      visibility_correction = visibility_correction
+    )
   }
 
   # 3. Construct and validate
@@ -2086,6 +2117,14 @@ format.creel_design <- function(x, ...) {
     if (!is.null(x$camera)) {
       cli::cli_h2("Camera Survey Design")
       cli::cli_text("Camera mode: {.val {x$camera$camera_mode}}")
+    }
+
+    if (!is.null(x$aerial)) {
+      cli::cli_h2("Aerial Survey Design")
+      cli::cli_text("Hours open (h_open): {.field {x$aerial$h_open}}")
+      if (!is.null(x$aerial$visibility_correction)) {
+        cli::cli_text("Visibility correction: {.field {x$aerial$visibility_correction}}")
+      }
     }
 
     if (!is.null(x$bus_route) && !identical(x$design_type, "ice")) {

@@ -329,8 +329,8 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
     ))
   }
 
-  # Validate design$survey exists (skip for bus-route and ice: use interviews not counts)
-  if (!design$design_type %in% c("bus_route", "ice") && is.null(design$survey)) {
+  # Validate design$survey exists (skip for bus-route, ice, and aerial: custom dispatch below)
+  if (!design$design_type %in% c("bus_route", "ice", "aerial") && is.null(design$survey)) {
     cli::cli_abort(c(
       "No survey design available.",
       "x" = "Call {.fn add_counts} before estimating effort.",
@@ -384,6 +384,18 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
     }
 
     return(result)
+  }
+
+  # Aerial dispatch — svytotal scaled by h_open/v (Pollock et al. 1994 sec.15.6.1)
+  if (!is.null(design$design_type) && identical(design$design_type, "aerial")) {
+    if (is.null(design$counts)) {
+      cli::cli_abort(c(
+        "Aerial effort estimation requires count data.",
+        "x" = "No count data found in design.",
+        "i" = "Call {.fn add_counts} before estimating aerial effort."
+      ))
+    }
+    return(estimate_effort_aerial(design, variance, conf_level, verbose)) # nolint: object_usage_linter
   }
 
   # Section dispatch (v0.7.0+ — only fires when add_sections() was called)
