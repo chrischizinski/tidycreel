@@ -924,3 +924,70 @@ test_that("CAM-04: estimate_total_catch() on camera routes through standard (non
   # Standard path produces method = "product-total-catch" (not bus-route or HT path)
   expect_equal(result$method, "product-total-catch")
 })
+
+# Phase 47: Aerial interview pipeline (AIR-05) — estimate_total_catch() ----
+
+#' Build an aerial design with counts and interviews for total catch estimation
+#'
+#' Aerial design using a 4-date calendar (weekday/weekend strata, h_open = 14)
+#' with add_counts() and add_interviews() applied. Aerial is NOT in
+#' c("bus_route", "ice") so falls through to the standard interview_survey path.
+make_aerial_total_catch_design <- function() {
+  cal <- data.frame(
+    date = as.Date(c("2024-07-01", "2024-07-02", "2024-07-03", "2024-07-04")),
+    day_type = c("weekday", "weekday", "weekend", "weekend"),
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design( # nolint: object_usage_linter
+    cal,
+    date = date, strata = day_type, # nolint: object_usage_linter
+    survey_type = "aerial",
+    h_open = 14
+  )
+  counts <- data.frame(
+    date = as.Date(c("2024-07-01", "2024-07-02", "2024-07-03", "2024-07-04")),
+    day_type = c("weekday", "weekday", "weekend", "weekend"),
+    n_anglers = c(22L, 18L, 45L, 38L),
+    stringsAsFactors = FALSE
+  )
+  design <- add_counts(design, counts) # nolint: object_usage_linter
+
+  interviews <- data.frame(
+    date = rep(as.Date(c("2024-07-01", "2024-07-02", "2024-07-03", "2024-07-04")), each = 4),
+    day_type = rep(c("weekday", "weekday", "weekend", "weekend"), each = 4),
+    trip_status = rep("complete", 16),
+    hours_fished = c(2.5, 3.0, 1.5, 4.0, 2.0, 3.5, 1.0, 2.5, 3.0, 4.5, 2.0, 3.5, 4.0, 3.0, 2.5, 1.5),
+    walleye = c(0L, 1L, 2L, 0L, 1L, 0L, 3L, 1L, 0L, 2L, 1L, 0L, 3L, 1L, 0L, 2L),
+    walleye_kept = c(0L, 1L, 1L, 0L, 1L, 0L, 2L, 1L, 0L, 1L, 1L, 0L, 2L, 1L, 0L, 1L),
+    stringsAsFactors = FALSE
+  )
+  suppressWarnings(add_interviews( # nolint: object_usage_linter
+    design, interviews,
+    catch = walleye, # nolint: object_usage_linter
+    effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status # nolint: object_usage_linter
+  ))
+}
+
+test_that("AIR-05: estimate_total_catch() on aerial design returns valid creel_estimates", {
+  design <- make_aerial_total_catch_design() # nolint: object_usage_linter
+  result <- suppressWarnings(estimate_total_catch(design)) # nolint: object_usage_linter
+  expect_s3_class(result, "creel_estimates")
+  expect_true("estimate" %in% names(result$estimates))
+  expect_true("se" %in% names(result$estimates))
+})
+
+test_that("AIR-05: estimate_total_catch() on aerial design returns finite positive estimate", {
+  design <- make_aerial_total_catch_design() # nolint: object_usage_linter
+  result <- suppressWarnings(estimate_total_catch(design)) # nolint: object_usage_linter
+  expect_true(is.numeric(result$estimates$estimate))
+  expect_true(is.finite(result$estimates$estimate))
+  expect_true(result$estimates$estimate > 0)
+})
+
+test_that("AIR-05: estimate_total_catch() on aerial routes through standard (non-bus_route, non-ice) path", {
+  design <- make_aerial_total_catch_design() # nolint: object_usage_linter
+  result <- suppressWarnings(estimate_total_catch(design)) # nolint: object_usage_linter
+  # Aerial is NOT in c("bus_route", "ice") — standard path produces "product-total-catch"
+  expect_equal(result$method, "product-total-catch")
+})

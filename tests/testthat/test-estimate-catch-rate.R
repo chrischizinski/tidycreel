@@ -2434,3 +2434,63 @@ test_that("CAM-04: estimate_catch_rate() on camera design returns finite numeric
   expect_true(is.finite(result$estimates$estimate))
   expect_true(is.numeric(result$estimates$se))
 })
+
+# Phase 47: Aerial interview pipeline (AIR-05) — estimate_catch_rate() ----
+
+#' Build an aerial design with counts and interviews for catch rate estimation
+#'
+#' Aerial design using a 4-date calendar (weekday/weekend strata, h_open = 14)
+#' with add_counts() and add_interviews() applied. Aerial uses the standard
+#' instantaneous interview_survey path — no n_counted/n_interviewed needed.
+make_aerial_catch_rate_design <- function() {
+  cal <- data.frame(
+    date = as.Date(c("2024-07-01", "2024-07-02", "2024-07-03", "2024-07-04")),
+    day_type = c("weekday", "weekday", "weekend", "weekend"),
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design( # nolint: object_usage_linter
+    cal,
+    date = date, strata = day_type, # nolint: object_usage_linter
+    survey_type = "aerial",
+    h_open = 14
+  )
+  counts <- data.frame(
+    date = as.Date(c("2024-07-01", "2024-07-02", "2024-07-03", "2024-07-04")),
+    day_type = c("weekday", "weekday", "weekend", "weekend"),
+    n_anglers = c(22L, 18L, 45L, 38L),
+    stringsAsFactors = FALSE
+  )
+  design <- add_counts(design, counts) # nolint: object_usage_linter
+
+  interviews <- data.frame(
+    date = rep(as.Date(c("2024-07-01", "2024-07-02", "2024-07-03", "2024-07-04")), each = 4),
+    day_type = rep(c("weekday", "weekday", "weekend", "weekend"), each = 4),
+    trip_status = rep("complete", 16),
+    hours_fished = c(2.5, 3.0, 1.5, 4.0, 2.0, 3.5, 1.0, 2.5, 3.0, 4.5, 2.0, 3.5, 4.0, 3.0, 2.5, 1.5),
+    walleye = c(0L, 1L, 2L, 0L, 1L, 0L, 3L, 1L, 0L, 2L, 1L, 0L, 3L, 1L, 0L, 2L),
+    walleye_kept = c(0L, 1L, 1L, 0L, 1L, 0L, 2L, 1L, 0L, 1L, 1L, 0L, 2L, 1L, 0L, 1L),
+    stringsAsFactors = FALSE
+  )
+  suppressWarnings(add_interviews( # nolint: object_usage_linter
+    design, interviews,
+    catch = walleye, # nolint: object_usage_linter
+    effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status # nolint: object_usage_linter
+  ))
+}
+
+test_that("AIR-05: estimate_catch_rate() on aerial design returns valid creel_estimates", {
+  design <- make_aerial_catch_rate_design() # nolint: object_usage_linter
+  result <- suppressWarnings(estimate_catch_rate(design)) # nolint: object_usage_linter
+  expect_s3_class(result, "creel_estimates")
+  expect_true("estimate" %in% names(result$estimates))
+  expect_true("se" %in% names(result$estimates))
+})
+
+test_that("AIR-05: estimate_catch_rate() on aerial design returns finite numeric estimate", {
+  design <- make_aerial_catch_rate_design() # nolint: object_usage_linter
+  result <- suppressWarnings(estimate_catch_rate(design)) # nolint: object_usage_linter
+  expect_true(is.numeric(result$estimates$estimate))
+  expect_true(is.finite(result$estimates$estimate))
+  expect_true(is.numeric(result$estimates$se))
+})
