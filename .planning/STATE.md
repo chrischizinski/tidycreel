@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
-status: completed
-stopped_at: Reached checkpoint in 47-01-PLAN.md — aerial constructor + estimate_effort_aerial() implemented (AIR-01/02/03); AIR-04 blocked on Malvestuto Box 20.6 values
-last_updated: "2026-03-22T15:02:37.914Z"
-last_activity: 2026-03-16 — 46-03 example_camera_counts/timestamps/interviews + camera-surveys vignette, 1661 tests passing
+status: in-progress
+stopped_at: Completed 47-02-PLAN.md — AIR-05 aerial interview pipeline compatibility verified; 1696 tests passing
+last_updated: "2026-03-22T18:55:49.990Z"
+last_activity: 2026-03-22 — 47-01 aerial constructor h_open/visibility_correction + estimate_effort_aerial() svytotal x h_over_v, 1678 tests passing
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 11
-  completed_plans: 9
+  completed_plans: 10
   percent: 100
 ---
 
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-03-15)
 
 ## Current Position
 
-Phase: 47 (Aerial Survey Support) — In Progress (1/3 plans at checkpoint)
-Plan: 01 at checkpoint — aerial constructor + estimate_effort_aerial() done (AIR-01/02/03); AIR-04 blocked on Malvestuto Box 20.6 values
-Status: 47-01 checkpoint reached — 1678 tests passing; awaiting Malvestuto (1996) Box 20.6 aerial values to enable AIR-04 validation test
-Last activity: 2026-03-22 — 47-01 aerial constructor h_open/visibility_correction + estimate_effort_aerial() svytotal x h_over_v, 1678 tests passing
+Phase: 47 (Aerial Survey Support) — In Progress (2/3 plans complete)
+Plan: 02 complete — AIR-05 aerial interview pipeline compatibility verified; 1696 tests passing
+Status: 47-02 complete — aerial uses standard interview_survey path; no production code changes needed
+Last activity: 2026-03-22 — 47-02 AIR-05 aerial interview pipeline tests (add_interviews, estimate_catch_rate, estimate_total_catch), 1696 tests passing
 
 Progress: [██████████] 100%
 
@@ -61,8 +61,15 @@ Progress: [██████████] 100%
 | Phase 46-remote-camera-survey-support P02 | 3min | 2 tasks | 3 files |
 | Phase 46-remote-camera-survey-support P03 | 11min | 2 tasks | 14 files |
 | Phase 47-aerial-survey-support P01 | 8min | 2 tasks | 5 files |
+| Phase 47 P02 | 12min | 1 tasks | 3 files |
 
 ## Accumulated Context
+
+### Decisions (v0.8.0 Phase 47-02)
+
+- No production source changes required for AIR-05 — aerial interview pipeline uses standard interview_survey path (same as CAM-04 in Phase 46-02)
+- AIR-05 fixture: 4-date calendar, 16 interviews (4 per date), walleye + walleye_kept — no n_counted/n_interviewed (ice/bus_route only)
+- estimate_total_catch() method='product-total-catch' confirmed for aerial — aerial is NOT in c('bus_route','ice') dispatch guard
 
 ### Decisions (v0.8.0 Phase 47-01)
 
@@ -142,6 +149,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-22T15:02:37.911Z
-Stopped at: Reached checkpoint in 47-01-PLAN.md — aerial constructor + estimate_effort_aerial() implemented (AIR-01/02/03); AIR-04 blocked on Malvestuto Box 20.6 values
+Last session: 2026-03-22T18:55:49.988Z
+Stopped at: Completed 47-02-PLAN.md — AIR-05 aerial interview pipeline compatibility verified; 1696 tests passing
 Next step: Phase 47 (Aerial Survey Support) — Plan 01
