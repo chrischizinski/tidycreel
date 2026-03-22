@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v0.1
-milestone_name: milestone
-status: completed
-stopped_at: Completed 47-03-PLAN.md — AIR-06 aerial datasets and vignette; 1696 tests passing; R CMD check 0 errors 0 warnings
-last_updated: "2026-03-22T22:33:19.481Z"
-last_activity: 2026-03-22 — 47-03 aerial datasets (example_aerial_counts, example_aerial_interviews) + aerial-surveys vignette + creel_design roxygen fix for h_open/visibility_correction
+milestone: v0.9.0
+milestone_name: Survey Planning & Quality of Life
+status: defining requirements
+stopped_at: —
+last_updated: "2026-03-22T00:00:00.000Z"
+last_activity: 2026-03-22 — Milestone v0.9.0 started; requirements defined; roadmap pending
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 11
-  completed_plans: 11
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-03-22)
 
 ## Current Position
 
-Phase: 47 (Aerial Survey Support) — COMPLETE (3/3 plans complete)
-Plan: 03 complete — AIR-06 aerial example datasets and vignette; 1696 tests passing; R CMD check 0 errors 0 warnings
-Status: Phase 47 complete — all aerial survey support (AIR-01 through AIR-06) delivered
-Last activity: 2026-03-22 — 47-03 aerial datasets (example_aerial_counts, example_aerial_interviews) + aerial-surveys vignette + creel_design roxygen fix for h_open/visibility_correction
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-22 — Milestone v0.9.0 started; 10 requirements defined across SCHED/POWER/VALID/QUAL/REPT categories
 
-Progress: [██████████] 100%
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 

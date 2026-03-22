@@ -1,59 +1,55 @@
-# Requirements: tidycreel
+# Requirements: tidycreel v0.9.0
 
-**Defined:** 2026-03-15
+**Defined:** 2026-03-22
 **Core Value:** Creel biologists can analyze survey data using creel vocabulary without understanding survey package internals.
 
-## v0.8.0 Requirements
+## v0.9.0 Requirements
 
-Requirements for v0.8.0 — Non-Traditional Creel Designs. Each maps to roadmap phases.
+### Schedule Generation
 
-### Design Infrastructure
+- [ ] **SCHED-01**: User can generate a sampling calendar given season start/end dates, weekday/weekend day split, number of periods per day, and sampling intensity (total days or %) as a tidy tibble
+- [ ] **SCHED-02**: User can generate a bus-route schedule given a sampling calendar plus circuit definitions, sites per circuit, crew size, and randomization seed — output is a tibble with `inclusion_prob` columns ready for `creel_design(survey_type = "bus_route")`
+- [ ] **SCHED-03**: User can export any schedule tibble to CSV (base R) or xlsx (writexl, optional) for field use
 
-- [x] **INFRA-01**: User can create a creel design with `survey_type = "ice"`, `"camera"`, or `"aerial"`, with type-specific Tier 1 validation
-- [x] **INFRA-02**: An unrecognized `design_type` aborts with a clear `cli_abort()` message — no silent fall-through to wrong estimators
-- [x] **INFRA-03**: All existing tests pass after each new design type dispatch block is added
+### Power and Sample Size
 
-### Ice Fishing
+- [ ] **POWER-01**: User can calculate the number of sampling days required to achieve a target CV on effort estimates using the stratified McCormick & Quist (2017) formula
+- [ ] **POWER-02**: User can calculate the number of interviews required to achieve a target CV on CPUE estimates using the Cochran (1977) ratio estimator variance formula
+- [ ] **POWER-03**: User can calculate the statistical power to detect a specified percentage change in CPUE between two seasons given alpha, historical CV, and sample size
+- [ ] **POWER-04**: User can calculate the expected CV given a known sample size (inverse of POWER-01 and POWER-02)
 
-- [x] **ICE-01**: Ice fishing effort estimation routes through bus-route infrastructure with `p_site = 1.0` enforced automatically
-- [x] **ICE-02**: User can supply an effort definition distinguishing time-on-ice from active-fishing-time
-- [x] **ICE-03**: User can stratify estimates by shelter mode using the existing `by =` grouping mechanism
-- [x] **ICE-04**: User can attach interview data and estimate catch rates and total catch/harvest on an ice fishing design
+### Design Validation
 
-### Remote Camera
+- [ ] **VALID-01**: User can run a pre-season design check that returns a pass/warn/fail status per stratum by calling `creel_n_effort()` and `creel_n_cpue()` internally against a proposed sampling frame
 
-- [x] **CAM-01**: User can estimate effort from daily ingress counts (counter mode) routed through the existing access-point path
-- [x] **CAM-02**: User can estimate effort from timestamp pairs (ingress-egress mode) accumulated to daily effort via `difftime()` preprocessing
-- [x] **CAM-03**: User can classify camera gaps as non-random failures (`camera_status`) separate from random missingness handled by `missing_sections`
-- [x] **CAM-04**: User can attach interview data and estimate catch rates and total catch/harvest on a camera design
-- [x] **CAM-05**: Camera survey support documented with example dataset covering both sub-modes and gap handling
+### Data Quality
 
-### Aerial
+- [ ] **QUAL-01**: User can check post-season data completeness in a single call that reports missing sampling days, low-sample strata (below user-specified n threshold), and refusal rates — dispatched by survey type to avoid false positives on aerial/ice designs
 
-- [x] **AIR-01**: User can estimate effort from aerial angler counts using `svytotal(counts) × (h_open / v)` — L_bar (mean trip duration) is NOT used in effort estimation
-- [x] **AIR-02**: Aerial effort SE equals `survey::SE(svytotal) × (h_open/v)` — exact linear scaling, no delta method (h_open and v are fixed calibration constants)
-- [x] **AIR-03**: User can supply a visibility correction factor as a calibration parameter
-- [x] **AIR-04**: Aerial estimator verified against constructed numeric example (E_hat = 111 anglers × 14h = 1554 angler-hours, hand-verified); Malvestuto (1996) Box 20.6 has no aerial worked example; theoretical basis: Pollock et al. (1994) Ch. 12
-- [x] **AIR-05**: User can attach interview data and estimate catch rates and total catch/harvest on an aerial design
-- [x] **AIR-06**: Aerial survey support documented with example dataset and vignette
+### Season Reporting
+
+- [ ] **REPT-01**: User can assemble a named list of pre-computed `creel_estimates` outputs into a single report-ready wide tibble containing effort, catch rate, and total catch/harvest columns
 
 ## Future Requirements
 
-### Model-Based Extensions (v0.9.0+)
+### Schedule Generation
 
-- GLMM-based aerial temporal expansion for non-random flight timing bias (Askey 2018) — requires `lme4`
-- Zero-inflated negative binomial camera count modeling for structural zeros — requires `glmmTMB`
-- Bayesian integration approach for multi-method designs (Su & Liu 2025)
+- **SCHED-F01**: User can generate a large-lake schedule with multi-section routing and paired crew allocation (equal-probability rotating design only) — deferred to v1.0+
+
+### Power and Sample Size
+
+- **POWER-F01**: User can calculate Neyman optimal stratum allocation given per-stratum variance estimates and total sample size budget — deferred until base planning tools prove adoptable
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| Detection probability estimation for cameras | Model-based; users supply calibration factor from external validation study |
-| Aerial transect/strip design (moving aircraft) | Instantaneous (single-pass) counts only in v0.8.0; transect requires Distance-like detection functions |
-| Drone-specific imagery processing | Pre-processing is out of package scope; users supply counts |
-| Real-time API data pull | Package is data-model agnostic; users pull data themselves |
-| Full report rendering | Tidy tibbles are the deliverable |
+| Full PDF/Word report rendering | Opinionated template with high maintenance burden; `season_summary()` tibble is the deliverable — users render |
+| Automatic pilot data extraction from current season | Circular: same-season data to size same-season sample produces invalid CV estimates |
+| Interactive Shiny scheduler | Out of scope; tidy tibble output is pipe-friendly and can feed any user-built Shiny app |
+| Monte Carlo simulation | Duplicates `AnglerCreelSurveySimulation` (CRAN); analytical calculators are more direct for target users |
+| Large-lake scheduler (constraint optimization) | NP-hard assignment problem; not v0.9.0 scope — bounded equal-probability design only when eventually built |
+| `pointblank` / `pwr` as Imports | Unnecessary dependency footprint; `dplyr` + `cli` cover completeness; `stats::` covers power |
 
 ## Traceability
 
@@ -61,30 +57,22 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INFRA-01 | Phase 44 | Complete |
-| INFRA-02 | Phase 44 | Complete |
-| INFRA-03 | Phase 44 | Complete |
-| ICE-01 | Phase 45 | Complete |
-| ICE-02 | Phase 45 | Complete |
-| ICE-03 | Phase 45 | Complete |
-| ICE-04 | Phase 45 | Complete |
-| CAM-01 | Phase 46 | Complete |
-| CAM-02 | Phase 46 | Complete |
-| CAM-03 | Phase 46 | Complete |
-| CAM-04 | Phase 46 | Complete |
-| CAM-05 | Phase 46 | Complete |
-| AIR-01 | Phase 47 | Complete |
-| AIR-02 | Phase 47 | Complete |
-| AIR-03 | Phase 47 | Complete |
-| AIR-04 | Phase 47 | Complete |
-| AIR-05 | Phase 47 | Complete |
-| AIR-06 | Phase 47 | Complete |
+| SCHED-01 | — | Pending |
+| SCHED-02 | — | Pending |
+| SCHED-03 | — | Pending |
+| POWER-01 | — | Pending |
+| POWER-02 | — | Pending |
+| POWER-03 | — | Pending |
+| POWER-04 | — | Pending |
+| VALID-01 | — | Pending |
+| QUAL-01  | — | Pending |
+| REPT-01  | — | Pending |
 
 **Coverage:**
-- v0.8.0 requirements: 18 total
-- Mapped to phases: 18
-- Unmapped: 0 ✓
+- v0.9.0 requirements: 10 total
+- Mapped to phases: 0
+- Unmapped: 10 ⚠️
 
 ---
-*Requirements defined: 2026-03-15*
-*Last updated: 2026-03-15 — traceability filled in after roadmap creation*
+*Requirements defined: 2026-03-22*
+*Last updated: 2026-03-22 after initial definition*
