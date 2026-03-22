@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
-status: in-progress
-stopped_at: Completed 47-02-PLAN.md — AIR-05 aerial interview pipeline compatibility verified; 1696 tests passing
-last_updated: "2026-03-22T18:55:49.990Z"
-last_activity: 2026-03-22 — 47-01 aerial constructor h_open/visibility_correction + estimate_effort_aerial() svytotal x h_over_v, 1678 tests passing
+status: completed
+stopped_at: Completed 47-03-PLAN.md — AIR-06 aerial datasets and vignette; 1696 tests passing; R CMD check 0 errors 0 warnings
+last_updated: "2026-03-22T19:32:59.188Z"
+last_activity: 2026-03-22 — 47-02 AIR-05 aerial interview pipeline tests (add_interviews, estimate_catch_rate, estimate_total_catch), 1696 tests passing
 progress:
   total_phases: 4
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 11
-  completed_plans: 10
+  completed_plans: 11
   percent: 100
 ---
 
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-03-15)
 
 ## Current Position
 
-Phase: 47 (Aerial Survey Support) — In Progress (2/3 plans complete)
-Plan: 02 complete — AIR-05 aerial interview pipeline compatibility verified; 1696 tests passing
-Status: 47-02 complete — aerial uses standard interview_survey path; no production code changes needed
-Last activity: 2026-03-22 — 47-02 AIR-05 aerial interview pipeline tests (add_interviews, estimate_catch_rate, estimate_total_catch), 1696 tests passing
+Phase: 47 (Aerial Survey Support) — COMPLETE (3/3 plans complete)
+Plan: 03 complete — AIR-06 aerial example datasets and vignette; 1696 tests passing; R CMD check 0 errors 0 warnings
+Status: Phase 47 complete — all aerial survey support (AIR-01 through AIR-06) delivered
+Last activity: 2026-03-22 — 47-03 aerial datasets (example_aerial_counts, example_aerial_interviews) + aerial-surveys vignette + creel_design roxygen fix for h_open/visibility_correction
 
 Progress: [██████████] 100%
 
@@ -62,8 +62,15 @@ Progress: [██████████] 100%
 | Phase 46-remote-camera-survey-support P03 | 11min | 2 tasks | 14 files |
 | Phase 47-aerial-survey-support P01 | 8min | 2 tasks | 5 files |
 | Phase 47 P02 | 12min | 1 tasks | 3 files |
+| Phase 47-aerial-survey-support P03 | 34 | 2 tasks | 11 files |
 
 ## Accumulated Context
+
+### Decisions (v0.8.0 Phase 47-03)
+
+- add_counts() auto-detects n_anglers column by name; vignette and examples use add_counts(design, counts) without count= arg — plan's count=n_anglers syntax conflicts with add_counts formal args
+- @param h_open and @param visibility_correction added to creel_design() roxygen — were absent from Phase 47-01 implementation, caused R CMD check WARNING
+- estimate[[1]] needed in cat() because estimate_effort() returns a tibble and $estimate is a list-column, not a bare numeric scalar
 
 ### Decisions (v0.8.0 Phase 47-02)
 
@@ -149,6 +156,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-22T18:55:49.988Z
-Stopped at: Completed 47-02-PLAN.md — AIR-05 aerial interview pipeline compatibility verified; 1696 tests passing
+Last session: 2026-03-22T19:32:59.184Z
+Stopped at: Completed 47-03-PLAN.md — AIR-06 aerial datasets and vignette; 1696 tests passing; R CMD check 0 errors 0 warnings
 Next step: Phase 47 (Aerial Survey Support) — Plan 01

@@ -35,7 +35,7 @@ Requirements for v0.8.0 — Non-Traditional Creel Designs. Each maps to roadmap 
 - [x] **AIR-03**: User can supply a visibility correction factor as a calibration parameter
 - [ ] **AIR-04**: Aerial estimator is verified against Malvestuto (1996) worked example before shipping
 - [x] **AIR-05**: User can attach interview data and estimate catch rates and total catch/harvest on an aerial design
-- [ ] **AIR-06**: Aerial survey support documented with example dataset and vignette
+- [x] **AIR-06**: Aerial survey support documented with example dataset and vignette
 
 ## Future Requirements
 
@@ -78,7 +78,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AIR-03 | Phase 47 | Complete |
 | AIR-04 | Phase 47 | Pending |
 | AIR-05 | Phase 47 | Complete |
-| AIR-06 | Phase 47 | Pending |
+| AIR-06 | Phase 47 | Complete |
 
 **Coverage:**
 - v0.8.0 requirements: 18 total
