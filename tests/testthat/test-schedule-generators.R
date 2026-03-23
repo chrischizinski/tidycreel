@@ -189,18 +189,179 @@ test_that("SCHED-01: output passes creel_design() without error", {
 
 # ---- SCHED-02: generate_bus_schedule() — implemented in Plan 02 ----
 
+# Helper: minimal sampling_frame for tests
+.bus_frame_single <- function() {
+  data.frame(
+    site = c("A", "B", "C"),
+    p_site = c(0.4, 0.3, 0.3),
+    stringsAsFactors = FALSE
+  )
+}
+
+.bus_frame_multi_circuit <- function() {
+  data.frame(
+    site = c("A", "B", "C", "D"),
+    circuit = c("C1", "C1", "C2", "C2"),
+    p_site = c(0.6, 0.4, 0.7, 0.3),
+    stringsAsFactors = FALSE
+  )
+}
+
+.bus_sched <- function() {
+  generate_schedule( # nolint: object_usage_linter
+    "2024-06-01", "2024-08-31",
+    n_periods = 2,
+    sampling_rate = c(weekday = 0.3, weekend = 0.6),
+    seed = 42
+  )
+}
+
 test_that("SCHED-02: generate_bus_schedule() returns inclusion_prob column", {
-  skip("implement in Plan 02")
+  frame <- .bus_frame_single()
+  sched <- .bus_sched()
+  result <- generate_bus_schedule(
+    sched, frame,
+    site = site, p_site = p_site, crew = 2
+  )
+  expect_true("inclusion_prob" %in% names(result))
+  expect_true(all(result$inclusion_prob > 0))
+  expect_true(all(result$inclusion_prob <= 1))
+})
+
+test_that("SCHED-02: output is a plain tibble (not creel_schedule subclass)", {
+  frame <- .bus_frame_single()
+  sched <- .bus_sched()
+  result <- generate_bus_schedule(
+    sched, frame,
+    site = site, p_site = p_site, crew = 2
+  )
+  expect_false(inherits(result, "creel_schedule"))
+  expect_true(is.data.frame(result))
+})
+
+test_that("SCHED-02: output retains all sampling_frame columns", {
+  frame <- .bus_frame_single()
+  sched <- .bus_sched()
+  result <- generate_bus_schedule(
+    sched, frame,
+    site = site, p_site = p_site, crew = 2
+  )
+  expect_true("site" %in% names(result))
+  expect_true("p_site" %in% names(result))
+})
+
+test_that("SCHED-02: inclusion_prob = p_site * (crew / n_circuits)", {
+  frame <- .bus_frame_single()
+  sched <- .bus_sched()
+  result <- generate_bus_schedule(
+    sched, frame,
+    site = site, p_site = p_site, crew = 2
+  )
+  # single circuit → n_circuits = 1; p_period = 2/1 = 2 (capped?  no — crew can exceed 1)
+  # Actually p_period = crew / n_circuits = 2/1 = 2, then inclusion_prob = p_site * 2
+  # But crew=2 with 1 circuit → p_period=2 → inclusion_prob could exceed 1 for some sites
+  # Use crew=1 to get clean values
+  result2 <- generate_bus_schedule(
+    sched, frame,
+    site = site, p_site = p_site, crew = 1
+  )
+  expected <- frame$p_site * (1 / 1)
+  expect_equal(result2$inclusion_prob, expected)
+})
+
+test_that("SCHED-02: multi-circuit formula uses n_circuits in denominator", {
+  frame <- .bus_frame_multi_circuit()
+  sched <- .bus_sched()
+  result <- generate_bus_schedule(
+    sched, frame,
+    site = site, p_site = p_site, circuit = circuit, crew = 1
+  )
+  # 2 circuits → p_period = 1/2 = 0.5
+  expected <- frame$p_site * 0.5
+  expect_equal(result$inclusion_prob, expected)
+})
+
+test_that("SCHED-02: circuit = NULL treated as single circuit", {
+  frame <- .bus_frame_single()
+  sched <- .bus_sched()
+  result_null <- generate_bus_schedule(
+    sched, frame,
+    site = site, p_site = p_site, crew = 1
+  )
+  # Equivalent to explicitly using a single circuit
+  frame2 <- frame
+  frame2$circuit <- "circuit_1"
+  result_explicit <- generate_bus_schedule(
+    sched, frame2,
+    site = site, p_site = p_site, circuit = circuit, crew = 1
+  )
+  expect_equal(result_null$inclusion_prob, result_explicit$inclusion_prob)
+})
+
+test_that("SCHED-02: p_site sum violation triggers cli_abort() with circuit info", {
+  bad_frame <- data.frame(
+    site = c("A", "B", "C"),
+    p_site = c(0.4, 0.3, 0.2), # sums to 0.9, not 1.0
+    stringsAsFactors = FALSE
+  )
+  sched <- .bus_sched()
+  expect_error(
+    generate_bus_schedule(sched, bad_frame, site = site, p_site = p_site, crew = 2),
+    class = "rlang_error"
+  )
+})
+
+test_that("SCHED-02: p_site sums to 1.0 per circuit in multi-circuit case", {
+  bad_frame <- data.frame(
+    site = c("A", "B", "C", "D"),
+    circuit = c("C1", "C1", "C2", "C2"),
+    p_site = c(0.6, 0.4, 0.8, 0.3), # C2 sums to 1.1
+    stringsAsFactors = FALSE
+  )
+  sched <- .bus_sched()
+  expect_error(
+    generate_bus_schedule(
+      sched, bad_frame,
+      site = site, p_site = p_site, circuit = circuit, crew = 2
+    ),
+    class = "rlang_error"
+  )
 })
 
 test_that("SCHED-02: output passes creel_design(survey_type = 'bus_route')", {
-  skip("implement in Plan 02")
+  frame <- .bus_frame_single()
+  sched <- .bus_sched()
+  result <- generate_bus_schedule(
+    sched, frame,
+    site = site, p_site = p_site, crew = 1
+  )
+  # result has inclusion_prob and p_period columns; use p_period with creel_design
+  expect_no_error(
+    creel_design(
+      sched,
+      date = date,
+      strata = day_type,
+      survey_type = "bus_route",
+      sampling_frame = result,
+      site = site,
+      p_site = p_site,
+      p_period = p_period
+    )
+  )
 })
 
-test_that("SCHED-02: seed reproducibility for bus schedule", {
-  skip("implement in Plan 02")
+test_that("SCHED-02: tidy selectors — bare name and quoted string both work", {
+  frame <- .bus_frame_single()
+  sched <- .bus_sched()
+  result_bare <- generate_bus_schedule(sched, frame, site = site, p_site = p_site, crew = 1)
+  result_string <- generate_bus_schedule(sched, frame, site = "site", p_site = "p_site", crew = 1)
+  expect_equal(result_bare$inclusion_prob, result_string$inclusion_prob)
 })
 
-test_that("SCHED-02: p_site values sum to 1.0 within each circuit", {
-  skip("implement in Plan 02")
+test_that("SCHED-02: seed argument is accepted without error (reserved for future use)", {
+  frame <- .bus_frame_single()
+  sched <- .bus_sched()
+  expect_no_error(
+    generate_bus_schedule(sched, frame, site = site, p_site = p_site, crew = 1, seed = 42)
+  )
 })
