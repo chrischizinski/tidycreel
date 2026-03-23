@@ -294,3 +294,90 @@ generate_schedule <- function(
 
   new_creel_schedule(base)
 }
+
+#' Generate a bus-route sampling frame
+#'
+#' @description
+#' Converts a creel schedule calendar and circuit definitions into a
+#' sampling frame tibble with `inclusion_prob` and `p_period` columns
+#' ready for `creel_design(survey_type = "bus_route")`.
+#'
+#' Inclusion probability formula: `inclusion_prob = p_site * p_period`
+#' where `p_period = crew / n_circuits`.
+#'
+#' `n_circuits` is the number of distinct circuit values in `sampling_frame`
+#' (or 1 when `circuit` is `NULL`). `crew` is the number of field crews
+#' deployed simultaneously.
+#'
+#' @param schedule A `creel_schedule` tibble from [generate_schedule()].
+#'   Currently unused in computation but required to ensure the caller
+#'   has built a valid schedule before constructing the sampling frame.
+#' @param sampling_frame A data frame with site and p_site columns (and
+#'   optionally circuit).
+#' @param site Column in `sampling_frame` giving site identifiers
+#'   (tidy selector: bare name, quoted string, or tidyselect helper).
+#' @param p_site Column in `sampling_frame` giving per-site selection
+#'   probability within the circuit. Values must sum to 1.0 per circuit
+#'   (tolerance 1e-6).
+#' @param circuit Optional column giving circuit assignment. If `NULL`,
+#'   all sites are treated as a single circuit.
+#' @param crew Integer scalar: number of crews in the field simultaneously.
+#' @param seed Optional integer seed (reserved for future randomised
+#'   designs; currently unused as the function is deterministic).
+#'
+#' @return A tibble: `sampling_frame` columns plus `p_period` and
+#'   `inclusion_prob`. `inclusion_prob = p_site * p_period`.
+#'
+#' @export
+generate_bus_schedule <- function(schedule, sampling_frame, site, p_site,
+                                  circuit = NULL, crew, seed = NULL) {
+  # Capture tidy selectors
+  site_quo <- rlang::enquo(site)
+  p_site_quo <- rlang::enquo(p_site)
+  circuit_quo <- rlang::enquo(circuit)
+
+  # Resolve required column names (site_col validates presence; p_site_col used for indexing)
+  site_col <- resolve_single_col(site_quo, sampling_frame, "site", rlang::caller_env()) # nolint: object_usage_linter
+  p_site_col <- resolve_single_col(p_site_quo, sampling_frame, "p_site", rlang::caller_env()) # nolint: object_usage_linter
+
+  # Build working copy
+  result <- tibble::as_tibble(sampling_frame)
+
+  # Resolve or synthesise circuit column
+  if (rlang::quo_is_null(circuit_quo)) {
+    result[[".circuit_synth"]] <- "circuit_1"
+    circuit_col <- ".circuit_synth"
+  } else {
+    circuit_col <- resolve_single_col(circuit_quo, sampling_frame, "circuit", rlang::caller_env()) # nolint: object_usage_linter
+  }
+
+  # Validate p_site sums to 1.0 within each circuit
+  circuit_vals <- result[[circuit_col]]
+  p_site_vals <- result[[p_site_col]]
+
+  circuit_sums <- tapply(p_site_vals, circuit_vals, sum)
+  violating <- names(circuit_sums[abs(circuit_sums - 1.0) > 1e-6])
+
+  if (length(violating) > 0) {
+    cli::cli_abort(c(
+      "{.arg p_site} values must sum to 1.0 within each circuit (tolerance 1e-6).",
+      "x" = "{length(violating)} circuit{?s} with invalid sums: {.val {violating}}.",
+      "i" = "Sums: {paste(paste0(violating, '=', round(circuit_sums[violating], 6)), collapse = ', ')}"
+    ))
+  }
+
+  # Compute n_circuits and p_period
+  n_circuits <- length(unique(circuit_vals))
+  p_period <- crew / n_circuits
+
+  # Add columns to output
+  result[["p_period"]] <- p_period
+  result[["inclusion_prob"]] <- p_site_vals * p_period
+
+  # Drop synthetic circuit column
+  if (rlang::quo_is_null(circuit_quo)) {
+    result[[".circuit_synth"]] <- NULL
+  }
+
+  tibble::as_tibble(result)
+}

@@ -76,8 +76,8 @@ ready to pass to \code{\link[=creel_design]{creel_design()}}.
 # Basic schedule with stratified sampling rates
 sched <- generate_schedule(
   start_date = "2024-06-01",
-  end_date   = "2024-08-31",
-  n_periods  = 2,
+  end_date = "2024-08-31",
+  n_periods = 2,
   sampling_rate = c(weekday = 0.3, weekend = 0.6),
   seed = 42
 )
