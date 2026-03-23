@@ -8,7 +8,7 @@
 ### Schedule Generation
 
 - [ ] **SCHED-01**: User can generate a sampling calendar given season start/end dates, weekday/weekend day split, number of periods per day, and sampling intensity (total days or %) as a tidy tibble
-- [ ] **SCHED-02**: User can generate a bus-route schedule given a sampling calendar plus circuit definitions, sites per circuit, crew size, and randomization seed — output is a tibble with `inclusion_prob` columns ready for `creel_design(survey_type = "bus_route")`
+- [x] **SCHED-02**: User can generate a bus-route schedule given a sampling calendar plus circuit definitions, sites per circuit, crew size, and randomization seed — output is a tibble with `inclusion_prob` columns ready for `creel_design(survey_type = "bus_route")`
 - [x] **SCHED-03**: User can export any schedule tibble to CSV (base R) or xlsx (writexl, optional) for field use
 - [x] **SCHED-04**: User can read a previously saved schedule file back into R as a validated `creel_schedule` object with correct column types, ready to pass to `creel_design()`
 
@@ -57,7 +57,7 @@
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | SCHED-01 | Phase 48 | Pending |
-| SCHED-02 | Phase 48 | Pending |
+| SCHED-02 | Phase 48 | Complete |
 | SCHED-03 | Phase 48 | Complete |
 | SCHED-04 | Phase 48 | Complete |
 | POWER-01 | Phase 49 | Pending |
