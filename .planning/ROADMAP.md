@@ -14,6 +14,7 @@ tidycreel v2 is a ground-up redesign providing domain translation for creel surv
 - ✅ **v0.6.0 Multiple Counts per PSU** — Phases 36-38 (shipped 2026-03-09)
 - ✅ **v0.7.0 Spatially Stratified Estimation** — Phases 39-43 (shipped 2026-03-15)
 - ✅ **v0.8.0 Non-Traditional Creel Designs** — Phases 44-47 (shipped 2026-03-22)
+- 🚧 **v0.9.0 Survey Planning & Quality of Life** — Phases 48-51 (in progress)
 
 ## Phases
 
@@ -157,7 +158,58 @@ See: [.planning/milestones/v0.8.0-ROADMAP.md](milestones/v0.8.0-ROADMAP.md)
 
 </details>
 
-## Progress Summary
+### 🚧 v0.9.0 Survey Planning & Quality of Life (In Progress)
+
+**Milestone Goal:** Add pre-season planning tools (schedule generators, sample size calculators, design validator) and post-season diagnostics (completeness checker, season summary) around the existing five-survey-type estimation pipeline.
+
+## Phase Details
+
+### Phase 48: Schedule Generators
+**Goal**: Biologists can generate a verified sampling calendar and bus-route schedule from season parameters, then export either for field use
+**Depends on**: Nothing (no dependency on other v0.9.0 phases; all downstream planning tools depend on this)
+**Requirements**: SCHED-01, SCHED-02, SCHED-03
+**Success Criteria** (what must be TRUE):
+  1. User can call `generate_schedule()` with season dates, day-type split, period count, and sampling intensity and receive a tidy tibble with `date`, `day_type`, and `period_id` columns
+  2. User can pipe a schedule tibble into `generate_bus_schedule()` with circuit definitions and crew size and receive a tibble with `inclusion_prob` columns that passes directly to `creel_design(survey_type = "bus_route")`
+  3. User can call `write_schedule()` on any schedule tibble and produce a CSV file (base R, no dependencies) or xlsx file (writexl, when installed)
+  4. A schedule tibble round-trips through `creel_design()` without column name or type errors
+**Plans**: TBD
+
+### Phase 49: Power and Sample Size
+**Goal**: Biologists can calculate required sample sizes and statistical power from survey design parameters using published creel survey formulas, before any data collection begins
+**Depends on**: Nothing (analytically independent; no creel_design dependency)
+**Requirements**: POWER-01, POWER-02, POWER-03, POWER-04
+**Success Criteria** (what must be TRUE):
+  1. User can call `creel_n_effort()` with a target CV and stratum parameters and receive the number of sampling days required, reproducing McCormick & Quist (2017) Table 2 benchmark values numerically
+  2. User can call `creel_n_cpue()` with a target CV and ratio estimator variance inputs and receive the number of interviews required, using the Cochran (1977) eq. 6.13 formula
+  3. User can call `creel_power()` with alpha, historical CV, sample size, and a target percent CPUE change and receive estimated statistical power for detecting that change between two seasons
+  4. User can call `cv_from_n()` with a known sample size and receive the expected CV — the inverse calculation of both effort and CPUE sample size functions
+**Plans**: TBD
+
+### Phase 50: Design Validator and Completeness Checker
+**Goal**: Biologists can validate a proposed design before the season starts and diagnose data gaps after the season ends, both in a single function call
+**Depends on**: Phase 49 (validate_design calls creel_n_effort() and creel_n_cpue() internally)
+**Requirements**: VALID-01, QUAL-01
+**Success Criteria** (what must be TRUE):
+  1. User can call `validate_design()` with a proposed sampling frame and receive a tibble with pass/warn/fail status per stratum — no duplication of the CV formula from Phase 49
+  2. User can call `check_completeness()` on a completed creel_design and receive a report of missing sampling days, strata below a user-specified n threshold, and refusal rates — dispatched by survey_type so aerial and ice designs produce zero false-positive flags
+  3. All five survey types (instantaneous, bus_route, ice, camera, aerial) pass through `check_completeness()` without triggering warnings on legitimate survey-type-specific NA patterns
+**Plans**: TBD
+
+### Phase 51: Season Summary
+**Goal**: Biologists can assemble a full season's pre-computed estimates into a single report-ready wide tibble without re-deriving any values from raw data
+**Depends on**: Phase 50 (print method conventions established in Phase 50 inform the companion season summary print method)
+**Requirements**: REPT-01
+**Success Criteria** (what must be TRUE):
+  1. User can call `season_summary()` with a named list of pre-computed `creel_estimates` objects and receive a single wide tibble containing effort, catch rate, and total catch/harvest columns
+  2. The wide tibble values match numerically the individual `estimate_*()` outputs that were passed in — no re-estimation from raw data
+  3. The season summary tibble exports correctly to CSV and xlsx via `write_schedule()` with numeric column types preserved on round-trip read
+**Plans**: TBD
+
+## Progress
+
+**Execution Order:**
+Phases 48 and 49 are parallel-capable (no mutual dependency). Phase 50 follows Phase 49. Phase 51 follows Phase 50.
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -165,7 +217,11 @@ See: [.planning/milestones/v0.8.0-ROADMAP.md](milestones/v0.8.0-ROADMAP.md)
 | 45. Ice Fishing Survey Support | v0.8.0 | 3/3 | Complete | 2026-03-16 |
 | 46. Remote Camera Survey Support | v0.8.0 | 3/3 | Complete | 2026-03-16 |
 | 47. Aerial Survey Support | v0.8.0 | 3/3 | Complete | 2026-03-22 |
+| 48. Schedule Generators | v0.9.0 | 0/TBD | Not started | - |
+| 49. Power and Sample Size | v0.9.0 | 0/TBD | Not started | - |
+| 50. Design Validator and Completeness Checker | v0.9.0 | 0/TBD | Not started | - |
+| 51. Season Summary | v0.9.0 | 0/TBD | Not started | - |
 
 ---
-*Roadmap last updated: 2026-03-22 — v0.8.0 shipped*
+*Roadmap last updated: 2026-03-22 — v0.9.0 phases 48-51 added*
 *See .planning/milestones/ for archived milestone roadmaps*

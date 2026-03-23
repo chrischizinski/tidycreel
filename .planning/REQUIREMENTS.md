@@ -53,26 +53,24 @@
 
 ## Traceability
 
-Which phases cover which requirements. Updated during roadmap creation.
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SCHED-01 | — | Pending |
-| SCHED-02 | — | Pending |
-| SCHED-03 | — | Pending |
-| POWER-01 | — | Pending |
-| POWER-02 | — | Pending |
-| POWER-03 | — | Pending |
-| POWER-04 | — | Pending |
-| VALID-01 | — | Pending |
-| QUAL-01  | — | Pending |
-| REPT-01  | — | Pending |
+| SCHED-01 | Phase 48 | Pending |
+| SCHED-02 | Phase 48 | Pending |
+| SCHED-03 | Phase 48 | Pending |
+| POWER-01 | Phase 49 | Pending |
+| POWER-02 | Phase 49 | Pending |
+| POWER-03 | Phase 49 | Pending |
+| POWER-04 | Phase 49 | Pending |
+| VALID-01 | Phase 50 | Pending |
+| QUAL-01  | Phase 50 | Pending |
+| REPT-01  | Phase 51 | Pending |
 
 **Coverage:**
 - v0.9.0 requirements: 10 total
-- Mapped to phases: 0
-- Unmapped: 10 ⚠️
+- Mapped to phases: 10
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-03-22*
-*Last updated: 2026-03-22 after initial definition*
+*Last updated: 2026-03-22 — traceability complete after roadmap creation*
