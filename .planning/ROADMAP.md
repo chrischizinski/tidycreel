@@ -190,7 +190,11 @@ Plans:
   2. User can call `creel_n_cpue()` with a target CV and ratio estimator variance inputs and receive the number of interviews required, using the Cochran (1977) eq. 6.13 formula
   3. User can call `creel_power()` with alpha, historical CV, sample size, and a target percent CPUE change and receive estimated statistical power for detecting that change between two seasons
   4. User can call `cv_from_n()` with a known sample size and receive the expected CV — the inverse calculation of both effort and CPUE sample size functions
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 49-01-PLAN.md — Test scaffold, creel_n_effort(), creel_n_cpue() (POWER-01, POWER-02)
+- [ ] 49-02-PLAN.md — creel_power(), cv_from_n() (POWER-03, POWER-04)
 
 ### Phase 50: Design Validator and Completeness Checker
 **Goal**: Biologists can validate a proposed design before the season starts and diagnose data gaps after the season ends, both in a single function call
@@ -224,10 +228,10 @@ Phases 48 and 49 are parallel-capable (no mutual dependency). Phase 50 follows P
 | 46. Remote Camera Survey Support | v0.8.0 | 3/3 | Complete | 2026-03-16 |
 | 47. Aerial Survey Support | v0.8.0 | 3/3 | Complete | 2026-03-22 |
 | 48. Schedule Generators | 3/3 | Complete    | 2026-03-23 | - |
-| 49. Power and Sample Size | v0.9.0 | 0/TBD | Not started | - |
+| 49. Power and Sample Size | v0.9.0 | 0/2 | Not started | - |
 | 50. Design Validator and Completeness Checker | v0.9.0 | 0/TBD | Not started | - |
 | 51. Season Summary | v0.9.0 | 0/TBD | Not started | - |
 
 ---
-*Roadmap last updated: 2026-03-23 — Phase 48 planned (3 plans)*
+*Roadmap last updated: 2026-03-23 — Phase 49 planned (2 plans)*
 *See .planning/milestones/ for archived milestone roadmaps*
