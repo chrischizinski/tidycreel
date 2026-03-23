@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v0.9.0
-milestone_name: Survey Planning & Quality of Life
-status: ready to plan
-stopped_at: roadmap created — 4 phases (48-51), 10 requirements mapped
-last_updated: "2026-03-22T00:00:00.000Z"
-last_activity: 2026-03-22 — ROADMAP.md created for v0.9.0; 10/10 requirements mapped to phases 48-51
+milestone: v0.1
+milestone_name: milestone
+status: planning
+stopped_at: Completed 48-03-PLAN.md — write_schedule() and read_schedule() implemented
+last_updated: "2026-03-23T21:01:46.657Z"
+last_activity: 2026-03-22 — Roadmap created; phases 48-51 defined; all 10 v0.9.0 requirements mapped
 progress:
   total_phases: 4
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 3
+  completed_plans: 2
   percent: 0
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-22)
 ## Current Position
 
 Phase: 48 of 51 (Schedule Generators)
-Plan: — (not yet planned)
-Status: Ready to plan
-Last activity: 2026-03-22 — Roadmap created; phases 48-51 defined; all 10 v0.9.0 requirements mapped
+Plan: 03 complete (SCHED-03, SCHED-04)
+Status: In progress — Plans 48-01 and 48-03 complete; 48-02 in Wave 2
+Last activity: 2026-03-23 — Plans 48-01 and 48-03 complete; write_schedule/read_schedule implemented
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -44,9 +44,15 @@ Progress: [░░░░░░░░░░] 0%
 | v0.6.0 | 36-38 | 5/5 | ✅ Complete | 2026-03-09 |
 | v0.7.0 | 39-43 | 9/9 | ✅ Complete | 2026-03-15 |
 | v0.8.0 | 44-47 | 11/11 | ✅ Complete | 2026-03-22 |
-| v0.9.0 | 48-51 | 0/TBD | In progress | - |
+| v0.9.0 | 48-51 | 2/TBD | In progress | - |
 
 ## Accumulated Context
+
+### Decisions (v0.9.0 — Phase 48-03)
+
+- coerce_to_date(): detects pure-digit character strings (Excel serials from readxl col_types='text') via grepl before ISO parse — avoids charToDate errors
+- coerce_schedule_columns(): normalises literal 'NA' strings back to NA_character_ for date and day_type (write.csv artifact)
+- # nolint: object_usage_linter applied to cross-file internal calls in schedule-io.R — same pattern as creel-design.R
 
 ### Decisions (v0.9.0 Roadmap)
 
@@ -68,6 +74,6 @@ Progress: [░░░░░░░░░░] 0%
 
 ## Session Continuity
 
-Last session: 2026-03-22
-Stopped at: ROADMAP.md and STATE.md written for v0.9.0 — roadmap created, ready to plan Phase 48
+Last session: 2026-03-23T21:01:46.653Z
+Stopped at: Completed 48-03-PLAN.md — write_schedule() and read_schedule() implemented
 Resume file: None
