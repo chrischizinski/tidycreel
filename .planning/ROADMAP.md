@@ -174,7 +174,12 @@ See: [.planning/milestones/v0.8.0-ROADMAP.md](milestones/v0.8.0-ROADMAP.md)
   3. User can call `write_schedule()` on any schedule tibble and produce a CSV file (base R, no dependencies) or xlsx file (writexl, when installed)
   4. User can call `read_schedule()` on a previously saved CSV or xlsx file and receive a validated `creel_schedule` object with correct column types (Date, character day_type, etc.) ready to pass to `creel_design()`
   5. A schedule tibble round-trips through write → read → `creel_design()` without column name or type errors
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 48-01-PLAN.md — DESCRIPTION updates, test scaffolds, generate_schedule() (SCHED-01)
+- [ ] 48-02-PLAN.md — generate_bus_schedule() (SCHED-02)
+- [ ] 48-03-PLAN.md — write_schedule() + read_schedule() + round-trip (SCHED-03, SCHED-04)
 
 ### Phase 49: Power and Sample Size
 **Goal**: Biologists can calculate required sample sizes and statistical power from survey design parameters using published creel survey formulas, before any data collection begins
@@ -218,11 +223,11 @@ Phases 48 and 49 are parallel-capable (no mutual dependency). Phase 50 follows P
 | 45. Ice Fishing Survey Support | v0.8.0 | 3/3 | Complete | 2026-03-16 |
 | 46. Remote Camera Survey Support | v0.8.0 | 3/3 | Complete | 2026-03-16 |
 | 47. Aerial Survey Support | v0.8.0 | 3/3 | Complete | 2026-03-22 |
-| 48. Schedule Generators | v0.9.0 | 0/TBD | Not started | - |
+| 48. Schedule Generators | v0.9.0 | 0/3 | Not started | - |
 | 49. Power and Sample Size | v0.9.0 | 0/TBD | Not started | - |
 | 50. Design Validator and Completeness Checker | v0.9.0 | 0/TBD | Not started | - |
 | 51. Season Summary | v0.9.0 | 0/TBD | Not started | - |
 
 ---
-*Roadmap last updated: 2026-03-22 — v0.9.0 phases 48-51 added*
+*Roadmap last updated: 2026-03-23 — Phase 48 planned (3 plans)*
 *See .planning/milestones/ for archived milestone roadmaps*
