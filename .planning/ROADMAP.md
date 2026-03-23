@@ -167,12 +167,13 @@ See: [.planning/milestones/v0.8.0-ROADMAP.md](milestones/v0.8.0-ROADMAP.md)
 ### Phase 48: Schedule Generators
 **Goal**: Biologists can generate a verified sampling calendar and bus-route schedule from season parameters, then export either for field use
 **Depends on**: Nothing (no dependency on other v0.9.0 phases; all downstream planning tools depend on this)
-**Requirements**: SCHED-01, SCHED-02, SCHED-03
+**Requirements**: SCHED-01, SCHED-02, SCHED-03, SCHED-04
 **Success Criteria** (what must be TRUE):
   1. User can call `generate_schedule()` with season dates, day-type split, period count, and sampling intensity and receive a tidy tibble with `date`, `day_type`, and `period_id` columns
   2. User can pipe a schedule tibble into `generate_bus_schedule()` with circuit definitions and crew size and receive a tibble with `inclusion_prob` columns that passes directly to `creel_design(survey_type = "bus_route")`
   3. User can call `write_schedule()` on any schedule tibble and produce a CSV file (base R, no dependencies) or xlsx file (writexl, when installed)
-  4. A schedule tibble round-trips through `creel_design()` without column name or type errors
+  4. User can call `read_schedule()` on a previously saved CSV or xlsx file and receive a validated `creel_schedule` object with correct column types (Date, character day_type, etc.) ready to pass to `creel_design()`
+  5. A schedule tibble round-trips through write → read → `creel_design()` without column name or type errors
 **Plans**: TBD
 
 ### Phase 49: Power and Sample Size

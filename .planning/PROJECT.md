@@ -46,6 +46,7 @@ Creel biologists can analyze survey data using creel vocabulary without understa
 - [ ] `generate_schedule()` — sampling calendar generator (date range, weekday/weekend split, periods, intensity → creel_schedule tibble)
 - [ ] `generate_bus_schedule()` — bus-route circuit/site/crew assignment with inclusion_prob columns for creel_design()
 - [ ] `write_schedule()` — export schedule tibble to CSV or xlsx (writexl, Suggests)
+- [ ] `read_schedule()` — read a saved schedule back in as a validated `creel_schedule` object with correct column types
 - [ ] `creel_n_effort()` — days required to achieve target CV on effort (McCormick & Quist 2017)
 - [ ] `creel_n_cpue()` — interviews required to achieve target CV on CPUE (Cochran ratio estimator)
 - [ ] `creel_power()` — change-detection power calculator (% CPUE shift between seasons)
@@ -78,7 +79,7 @@ Creel biologists can analyze survey data using creel vocabulary without understa
 **Goal:** Add pre-season planning tools (schedule generators, sample size calculators, design validator) and post-season diagnostics (completeness checker, season summary) around the existing five-survey-type estimation pipeline.
 
 **Target features:**
-- Schedule generators: `generate_schedule()`, `generate_bus_schedule()`, `write_schedule()`
+- Schedule generators: `generate_schedule()`, `generate_bus_schedule()`, `write_schedule()`, `read_schedule()`
 - Sample size & power: `creel_n_effort()`, `creel_n_cpue()`, `creel_power()`, `cv_from_n()`
 - Design validation: `validate_design()`
 - Data quality: `check_completeness()`
