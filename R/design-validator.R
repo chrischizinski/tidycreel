@@ -279,3 +279,65 @@ check_completeness <- function(design, n_min = 10L) {
     survey_type  = survey_type
   )
 }
+
+# ---- S3 methods for creel_completeness_report --------------------------------
+
+#' Format creel_completeness_report for printing
+#'
+#' @param x A creel_completeness_report object
+#' @param ... Additional arguments (currently ignored)
+#' @return Character vector with formatted output
+#' @export
+format.creel_completeness_report <- function(x, ...) {
+  cli::cli_format_method({
+    cli::cli_h1("Completeness Report")
+    cli::cli_text("Survey type: {x$survey_type} | n_min threshold: {x$n_min}")
+    if (x$passed) {
+      cli::cli_alert_success("No completeness issues detected")
+    } else {
+      cli::cli_alert_danger("Completeness issues found")
+    }
+    cli::cli_text("")
+
+    # Missing days section
+    cli::cli_h2("Missing Days")
+    if (nrow(x$missing_days) == 0L) {
+      cli::cli_alert_success("No missing sampling days")
+    } else {
+      n_miss <- nrow(x$missing_days) # nolint: object_usage_linter
+      cli::cli_alert_warning("{n_miss} calendar day(s) with no count data")
+    }
+
+    # Low-n strata section
+    cli::cli_h2("Low-n Strata (threshold: {x$n_min})")
+    if (is.null(x$low_n_strata)) {
+      stype <- x$survey_type # nolint: object_usage_linter
+      cli::cli_text("(not applicable for {stype} design)")
+    } else if (nrow(x$low_n_strata) == 0L) {
+      cli::cli_alert_success("All strata meet n_min threshold")
+    } else {
+      n_low <- nrow(x$low_n_strata) # nolint: object_usage_linter
+      nmin <- x$n_min # nolint: object_usage_linter
+      cli::cli_alert_warning("{n_low} stratum/strata below n_min={nmin}")
+    }
+
+    # Refusals section
+    cli::cli_h2("Refusal Rates")
+    if (is.null(x$refusals)) {
+      cli::cli_text("(not recorded or not applicable)")
+    } else {
+      cli::cli_text("Refusal data available — use $refusals for full breakdown")
+    }
+  })
+}
+
+#' Print creel_completeness_report
+#'
+#' @param x A creel_completeness_report object
+#' @param ... Additional arguments passed to format
+#' @return The input object, invisibly
+#' @export
+print.creel_completeness_report <- function(x, ...) {
+  cat(format(x, ...), sep = "\n")
+  invisible(x)
+}

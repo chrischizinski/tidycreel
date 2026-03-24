@@ -15,8 +15,8 @@ as low-n. Default 10L.}
 \value{
 A creel_completeness_report object (S3 list) with:
 \describe{
-\item{$missing_days}{tibble of calendar rows with no count data}
-\item{$low_n_strata}{tibble of strata below n_min, or NULL for aerial/camera}
+\item{$missing_days}{data.frame of calendar rows with no count data}
+\item{$low_n_strata}{data.frame of strata below n_min, or NULL for aerial/camera}
 \item{$refusals}{creel_summary_refusals object or NULL}
 \item{$n_min}{integer threshold used}
 \item{$survey_type}{character}

@@ -58,11 +58,15 @@ round-trip property is \verb{cv_from_n(type, n = creel_n_*(cv, ...), ...) <= cv}
 }
 \examples{
 # Effort round-trip
-n_days <- creel_n_effort(0.20, N_h = c(weekday = 65, weekend = 28),
-                         ybar_h = c(50, 60), s2_h = c(400, 500))
-cv_from_n("effort", n = n_days[["total"]],
-           N_h = c(weekday = 65, weekend = 28),
-           ybar_h = c(50, 60), s2_h = c(400, 500))
+n_days <- creel_n_effort(0.20,
+  N_h = c(weekday = 65, weekend = 28),
+  ybar_h = c(50, 60), s2_h = c(400, 500)
+)
+cv_from_n("effort",
+  n = n_days[["total"]],
+  N_h = c(weekday = 65, weekend = 28),
+  ybar_h = c(50, 60), s2_h = c(400, 500)
+)
 
 # CPUE round-trip
 n_int <- creel_n_cpue(cv_catch = 0.8, cv_effort = 0.5, rho = 0, cv_target = 0.20)
