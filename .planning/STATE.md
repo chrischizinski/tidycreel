@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 49-02-PLAN.md -- creel_power() and cv_from_n() implemented
-last_updated: "2026-03-24T00:18:45.190Z"
+stopped_at: Completed 50-01-PLAN.md — failing stubs and NULL skeletons for validate_design() and check_completeness()
+last_updated: "2026-03-24T01:12:42.308Z"
 last_activity: 2026-03-24 — Plan 49-02 complete; creel_power() and cv_from_n() implemented; four-function suite complete
 progress:
   total_phases: 4
   completed_phases: 2
-  total_plans: 5
-  completed_plans: 5
+  total_plans: 8
+  completed_plans: 6
   percent: 100
 ---
 
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-03-22)
 
 ## Current Position
 
-Phase: 49 of 51 (Power and Sample Size)
-Plan: 02 complete (POWER-01 through POWER-04 — all four functions shipped)
-Status: In progress — Plans 49-01 and 49-02 complete; Plans 49-03 and 49-04 already covered (stubs implemented in 49-02)
-Last activity: 2026-03-24 — Plan 49-02 complete; creel_power() and cv_from_n() implemented; four-function suite complete
+Phase: 50 of 51 (Design Validator and Completeness Checker)
+Plan: 01 complete (VALID-01 / QUAL-01 — failing stubs and NULL skeletons)
+Status: In progress — Plan 50-01 complete; Plans 50-02 (validate_design) and 50-03 (check_completeness) pending
+Last activity: 2026-03-24 — Plan 50-01 complete; test scaffold and source skeleton created; RED state confirmed (20 failing stubs)
 
 Progress: [██████████] 100%
 
@@ -48,8 +48,15 @@ Progress: [██████████] 100%
 | Phase 48 P02 | 87 | 1 tasks | 4 files |
 | Phase 49 P01 | 24 | 2 tasks | 5 files |
 | Phase 49 P02 | 22 | 2 tasks | 5 files |
+| Phase 50 P01 | 3 | 2 tasks | 5 files |
 
 ## Accumulated Context
+
+### Decisions (v0.9.0 — Phase 50-01)
+
+- 20 failing stubs (8 VALID-01 + 12 QUAL-01) in describe()/it() blocks; plan target ~19 — extra stub added for $passed FALSE case to make spec unambiguous
+- WARN_CV_BUFFER constant (1.2) placed in skeleton but not enforced until Plan 02 — gives Plan 02 a named constant to reference
+- expect_error() stubs for cli_abort guards correctly enter RED once NULL stubs exist (return NULL rather than error on function-not-found)
 
 ### Decisions (v0.9.0 — Phase 49-02)
 
@@ -91,6 +98,6 @@ Progress: [██████████] 100%
 
 ## Session Continuity
 
-Last session: 2026-03-24T00:16:22.375Z
-Stopped at: Completed 49-02-PLAN.md -- creel_power() and cv_from_n() implemented
+Last session: 2026-03-24T01:12:42.305Z
+Stopped at: Completed 50-01-PLAN.md — failing stubs and NULL skeletons for validate_design() and check_completeness()
 Resume file: None

@@ -21,11 +21,11 @@
 
 ### Design Validation
 
-- [ ] **VALID-01**: User can run a pre-season design check that returns a pass/warn/fail status per stratum by calling `creel_n_effort()` and `creel_n_cpue()` internally against a proposed sampling frame
+- [x] **VALID-01**: User can run a pre-season design check that returns a pass/warn/fail status per stratum by calling `creel_n_effort()` and `creel_n_cpue()` internally against a proposed sampling frame
 
 ### Data Quality
 
-- [ ] **QUAL-01**: User can check post-season data completeness in a single call that reports missing sampling days, low-sample strata (below user-specified n threshold), and refusal rates — dispatched by survey type to avoid false positives on aerial/ice designs
+- [x] **QUAL-01**: User can check post-season data completeness in a single call that reports missing sampling days, low-sample strata (below user-specified n threshold), and refusal rates — dispatched by survey type to avoid false positives on aerial/ice designs
 
 ### Season Reporting
 
@@ -64,8 +64,8 @@
 | POWER-02 | Phase 49 | Complete |
 | POWER-03 | Phase 49 | Complete |
 | POWER-04 | Phase 49 | Complete |
-| VALID-01 | Phase 50 | Pending |
-| QUAL-01  | Phase 50 | Pending |
+| VALID-01 | Phase 50 | Complete |
+| QUAL-01  | Phase 50 | Complete |
 | REPT-01  | Phase 51 | Pending |
 
 **Coverage:**
