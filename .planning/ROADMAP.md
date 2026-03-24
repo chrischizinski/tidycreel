@@ -234,7 +234,7 @@ Phases 48 and 49 are parallel-capable (no mutual dependency). Phase 50 follows P
 | 47. Aerial Survey Support | v0.8.0 | 3/3 | Complete | 2026-03-22 |
 | 48. Schedule Generators | 3/3 | Complete    | 2026-03-23 | - |
 | 49. Power and Sample Size | 2/2 | Complete    | 2026-03-24 | - |
-| 50. Design Validator and Completeness Checker | 2/3 | In Progress|  | - |
+| 50. Design Validator and Completeness Checker | 3/3 | Complete   | 2026-03-24 | - |
 | 51. Season Summary | v0.9.0 | 0/TBD | Not started | - |
 
 ---
