@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 50-01-PLAN.md — failing stubs and NULL skeletons for validate_design() and check_completeness()
-last_updated: "2026-03-24T01:12:42.308Z"
-last_activity: 2026-03-24 — Plan 49-02 complete; creel_power() and cv_from_n() implemented; four-function suite complete
+stopped_at: Completed 50-02-PLAN.md — validate_design() and creel_design_report S3 class with print methods
+last_updated: "2026-03-24T01:19:50.853Z"
+last_activity: 2026-03-24 — Plan 50-01 complete; test scaffold and source skeleton created; RED state confirmed (20 failing stubs)
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 8
-  completed_plans: 6
+  completed_plans: 7
   percent: 100
 ---
 
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-03-22)
 ## Current Position
 
 Phase: 50 of 51 (Design Validator and Completeness Checker)
-Plan: 01 complete (VALID-01 / QUAL-01 — failing stubs and NULL skeletons)
-Status: In progress — Plan 50-01 complete; Plans 50-02 (validate_design) and 50-03 (check_completeness) pending
-Last activity: 2026-03-24 — Plan 50-01 complete; test scaffold and source skeleton created; RED state confirmed (20 failing stubs)
+Plan: 02 complete (VALID-01 — validate_design() implemented; creel_design_report S3 class with print methods)
+Status: In progress — Plans 50-01 and 50-02 complete; Plan 50-03 (check_completeness) pending
+Last activity: 2026-03-24 — Plan 50-02 complete; validate_design() fully implemented; 9 VALID-01 tests GREEN; 12 QUAL-01 stubs still RED awaiting Plan 03
 
 Progress: [██████████] 100%
 
@@ -49,8 +49,16 @@ Progress: [██████████] 100%
 | Phase 49 P01 | 24 | 2 tasks | 5 files |
 | Phase 49 P02 | 22 | 2 tasks | 5 files |
 | Phase 50 P01 | 3 | 2 tasks | 5 files |
+| Phase 50 P02 | 4 | 2 tasks | 5 files |
 
 ## Accumulated Context
+
+### Decisions (v0.9.0 — Phase 50-02)
+
+- validate_design() delegates entirely to Phase 49 functions — no CV formula embedded locally; cv_actual = cv_from_n() per stratum, n_required = creel_n_effort()[stratum]
+- Test fixtures corrected: creel_n_effort() with these pilot params gives weekday=3, weekend=2 (not 18/8 as Plan 01 comment stated); N_PROPOSED_FAIL updated to weekday=1, weekend=1
+- $passed uses all(status == "pass") semantics — "warn" stratum returns $passed = FALSE (strict pre-season safety)
+- cli glue variables need # nolint: object_usage_linter — linter cannot detect usage inside cli {} glue strings
 
 ### Decisions (v0.9.0 — Phase 50-01)
 
@@ -98,6 +106,6 @@ Progress: [██████████] 100%
 
 ## Session Continuity
 
-Last session: 2026-03-24T01:12:42.305Z
-Stopped at: Completed 50-01-PLAN.md — failing stubs and NULL skeletons for validate_design() and check_completeness()
+Last session: 2026-03-24T01:19:50.850Z
+Stopped at: Completed 50-02-PLAN.md — validate_design() and creel_design_report S3 class with print methods
 Resume file: None
