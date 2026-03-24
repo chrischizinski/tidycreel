@@ -46,9 +46,9 @@ Because each stratum is ceiling-ed independently, \code{sum(n_h)} may exceed
 # Two-stratum weekday/weekend example
 creel_n_effort(
   cv_target = 0.20,
-  N_h    = c(weekday = 65, weekend = 28),
+  N_h = c(weekday = 65, weekend = 28),
   ybar_h = c(50, 60),
-  s2_h   = c(400, 500)
+  s2_h = c(400, 500)
 )
 }
 \references{
