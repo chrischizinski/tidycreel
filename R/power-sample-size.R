@@ -133,3 +133,77 @@ creel_n_cpue <- function(cv_catch, cv_effort, rho = 0, cv_target) {
   storage.mode(n) <- "integer"
   n
 }
+
+
+#' Estimate statistical power to detect a change in CPUE between seasons
+#'
+#' Calculates the probability of detecting a fractional change in CPUE given a
+#' target sample size per season, a historical CV, and a significance level.
+#' Uses a two-sample normal approximation with equal group sizes.
+#'
+#' @param n Integerish scalar (>= 1). Number of interviews per season.
+#' @param cv_historical Numeric scalar (> 0). Coefficient of variation of CPUE
+#'   from historical or pilot data.
+#' @param delta_pct Numeric scalar (> 0). Fractional change to detect, expressed
+#'   as a proportion — e.g., 0.20 for a 20 percent change. Note: this is a
+#'   fraction, not a percentage point.
+#' @param alpha Numeric scalar in (0, 0.5]. Type I error rate. Default is 0.05.
+#' @param alternative Character. Either `"two.sided"` (default) or `"one.sided"`.
+#'
+#' @details
+#' Implements the two-sample normal approximation for power under equal group
+#' sizes, parameterised in terms of the CV:
+#'
+#' \deqn{ncp = |\delta| \cdot \sqrt{n/2} \, / \, CV_{historical}}
+#'
+#' For `alternative = "two.sided"`:
+#' \deqn{power = \Phi(ncp - z_{\alpha/2}) + \Phi(-ncp - z_{\alpha/2})}
+#'
+#' For `alternative = "one.sided"`:
+#' \deqn{power = \Phi(ncp - z_{\alpha})}
+#'
+#' where `delta` is the fractional effect size (`delta_pct`), `n` is the number
+#' of interviews per season, and `CV_historical` is the pilot CV of CPUE.
+#'
+#' A warning is issued when `delta_pct > 5` because values greater than 5 are
+#' almost certainly input in percentage-point form rather than fractional form
+#' (e.g., 20 instead of 0.20).
+#'
+#' @return A numeric scalar in (0, 1): estimated statistical power.
+#'
+#' @references
+#' Cohen, J. 1988. Statistical Power Analysis for the Behavioral Sciences, 2nd
+#' ed. Lawrence Erlbaum Associates, Hillsdale, NJ.
+#'
+#' @export
+#'
+#' @examples
+#' # Two-sided power at n = 100, CV = 0.5, 20 percent change
+#' creel_power(n = 100, cv_historical = 0.5, delta_pct = 0.20)
+#'
+#' # One-sided test (higher power for same inputs)
+#' creel_power(n = 100, cv_historical = 0.5, delta_pct = 0.20, alternative = "one.sided")
+creel_power <- function(n, cv_historical, delta_pct, alpha = 0.05, # nolint: object_name_linter
+                        alternative = c("two.sided", "one.sided")) {
+  checkmate::assert_integerish(n, lower = 1, len = 1)
+  checkmate::assert_number(cv_historical, lower = 1e-6) # nolint: object_name_linter
+  checkmate::assert_number(delta_pct, lower = 1e-6)
+  checkmate::assert_number(alpha, lower = 1e-6, upper = 0.5)
+  alternative <- match.arg(alternative)
+
+  if (delta_pct > 5) {
+    cli::cli_warn("delta_pct > 5 is unusually large; did you mean {delta_pct / 100}?")
+  }
+
+  ncp <- abs(delta_pct) * sqrt(n / 2) / cv_historical # nolint: object_name_linter
+
+  if (alternative == "two.sided") {
+    z_crit <- stats::qnorm(1 - alpha / 2)
+    power <- stats::pnorm(ncp - z_crit) + stats::pnorm(-ncp - z_crit)
+  } else {
+    z_crit <- stats::qnorm(1 - alpha)
+    power <- stats::pnorm(ncp - z_crit)
+  }
+
+  power
+}
