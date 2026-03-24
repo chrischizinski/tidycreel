@@ -39,21 +39,25 @@ Creel biologists can analyze survey data using creel vocabulary without understa
 - ✓ `missing_sections` guard — NA row + cli_warn() for registered sections absent from data — v0.7.0
 - ✓ `example_sections_*` datasets and section-estimation vignette — v0.7.0
 
-### Active (v0.9.0 — Survey Planning & Quality of Life)
+### Active
 
-<!-- Building pre-season planning tools and post-season diagnostics around the existing estimation pipeline. -->
+<!-- No active requirements — planning next milestone. -->
 
-- [ ] `generate_schedule()` — sampling calendar generator (date range, weekday/weekend split, periods, intensity → creel_schedule tibble)
-- [ ] `generate_bus_schedule()` — bus-route circuit/site/crew assignment with inclusion_prob columns for creel_design()
-- [ ] `write_schedule()` — export schedule tibble to CSV or xlsx (writexl, Suggests)
-- [ ] `read_schedule()` — read a saved schedule back in as a validated `creel_schedule` object with correct column types
-- [ ] `creel_n_effort()` — days required to achieve target CV on effort (McCormick & Quist 2017)
-- [ ] `creel_n_cpue()` — interviews required to achieve target CV on CPUE (Cochran ratio estimator)
-- [ ] `creel_power()` — change-detection power calculator (% CPUE shift between seasons)
-- [ ] `cv_from_n()` — expected CV given sample size (inverse of effort/CPUE calculators)
-- [ ] `validate_design()` — pre-season pass/warn/fail per stratum (calls n calculators internally)
-- [ ] `check_completeness()` — post-season: missing days, low-sample strata, refusal rates (survey-type-aware)
-- [ ] `season_summary()` — assemble pre-computed creel_estimates into report-ready wide tibble
+### Validated (v0.9.0 — Survey Planning & Quality of Life)
+
+<!-- Shipped in v0.9.0 -->
+
+- ✓ `generate_schedule()` — sampling calendar generator (date range, weekday/weekend split, periods, intensity → creel_schedule tibble) — v0.9.0
+- ✓ `generate_bus_schedule()` — bus-route circuit/site/crew assignment with inclusion_prob columns for creel_design() — v0.9.0
+- ✓ `write_schedule()` — export schedule tibble to CSV or xlsx (writexl, Suggests) — v0.9.0
+- ✓ `read_schedule()` — read a saved schedule back in as a validated `creel_schedule` object with correct column types — v0.9.0
+- ✓ `creel_n_effort()` — days required to achieve target CV on effort (McCormick & Quist 2017) — v0.9.0
+- ✓ `creel_n_cpue()` — interviews required to achieve target CV on CPUE (Cochran ratio estimator) — v0.9.0
+- ✓ `creel_power()` — change-detection power calculator (% CPUE shift between seasons) — v0.9.0
+- ✓ `cv_from_n()` — expected CV given sample size (inverse of effort/CPUE calculators) — v0.9.0
+- ✓ `validate_design()` — pre-season pass/warn/fail per stratum (calls n calculators internally) — v0.9.0
+- ✓ `check_completeness()` — post-season: missing days, low-sample strata, refusal rates (survey-type-aware) — v0.9.0
+- ✓ `season_summary()` — assemble pre-computed creel_estimates into report-ready wide tibble — v0.9.0
 
 ### Validated (v0.8.0 — Non-Traditional Creel Designs)
 
@@ -74,24 +78,14 @@ Creel biologists can analyze survey data using creel vocabulary without understa
 - Full report rendering (Rmd/PDF template reproducing NGPC report structure) — deferred
 - Supplemental question tabulation — deferred
 
-## Current Milestone: v0.9.0 — Survey Planning & Quality of Life
+## Current State (v0.9.0 — shipped 2026-03-24)
 
-**Goal:** Add pre-season planning tools (schedule generators, sample size calculators, design validator) and post-season diagnostics (completeness checker, season summary) around the existing five-survey-type estimation pipeline.
-
-**Target features:**
-- Schedule generators: `generate_schedule()`, `generate_bus_schedule()`, `write_schedule()`, `read_schedule()`
-- Sample size & power: `creel_n_effort()`, `creel_n_cpue()`, `creel_power()`, `cv_from_n()`
-- Design validation: `validate_design()`
-- Data quality: `check_completeness()`
-- Reporting: `season_summary()`
-
-## Current State (v0.8.0 — shipped 2026-03-22)
-
-**Package status:** 8 milestones shipped, 47 phases, 95 plans, 1696 tests passing
+**Package status:** 9 milestones shipped, 51 phases, 105 plans, ~1800 tests passing
 **Stack:** R package, survey package for all design-based inference, tidy API with tidyselect
-**Architecture:** Three-layer (API → Orchestration → Survey) proven through instantaneous, bus-route, ice, camera, and aerial designs
+**Architecture:** Three-layer (API → Orchestration → Survey) proven; planning layer added as independent module
 **Survey types supported:** `instantaneous`, `bus_route`, `ice`, `camera`, `aerial`
-**Next milestone:** v0.9.0 — Survey Planning & Quality of Life (in progress)
+**Planning suite:** `generate_schedule()`, `generate_bus_schedule()`, `write_schedule()`, `read_schedule()`, `creel_n_effort()`, `creel_n_cpue()`, `creel_power()`, `cv_from_n()`, `validate_design()`, `check_completeness()`, `season_summary()`
+**Next milestone:** Planning — `/gsd:new-milestone`
 
 ## Context
 
@@ -171,6 +165,12 @@ Three-layer: API → Orchestration → Survey package. The dispatch pattern (che
 | `preprocess_camera_timestamps()` as preprocessing step | Converts POSIXct pairs to daily effort before estimation entry; keeps estimators clean | ✓ Good — NSE via rlang::as_name(rlang::enquo()) consistent with existing compute_effort() pattern |
 | Aerial effort = `svytotal × (h_open / v)` (linear, no delta method) | h_open and v are fixed calibration constants, not sample estimates — SE scales linearly | ✓ Good — confirmed by constructed numeric example (111 × 14 = 1554 angler-hours) |
 | `visibility_correction` defaults to 1.0 (no correction) when NULL | Maintains backward compatibility; user opt-in for calibration | ✓ Good — mirrors effort_type required pattern for ice |
+| Planning layer is design-independent (no `creel_design` dependency) | `creel_n_effort()` / `creel_n_cpue()` work from parameters alone; `validate_design()` calls them internally — avoids circular coupling | ✓ Good — confirmed in v0.9.0; pure-function approach |
+| `validate_design()` delegates to `creel_n_effort()` / `creel_n_cpue()` (no local CV formula) | Single source of truth for sample-size math; WARN_CV_BUFFER (1.2) is the only additional constant | ✓ Good — DRY design, easy to audit |
+| `check_completeness()` uses `intersect()` guard on strata_cols | Avoids false-positive flags for synthetic ice columns (`.ice_site`, `.circuit`) present in the design but not in interview data | ✓ Good — consistent with ice degenerate bus-route pattern |
+| `season_summary()` uses by_vars consistency guard before wide assembly | Uniform stratification contract across all creel_estimates in the named list; fails fast with clear error if strata differ | ✓ Good — prevents silently misaligned wide tibble |
+| Schedule I/O reads all columns as text first, then coerces | Identical coercion path for CSV and xlsx; avoids format-specific type inference bugs (e.g., Excel serial dates) | ✓ Good — coerce_schedule_columns() is the single coercion layer |
+| Statistical notation kept as-is with `nolint: object_name_linter` | N_h, E_total, V_0 match textbook formulas exactly; renaming would destroy readability against Cochran (1977) | ✓ Good — documented convention, not an oversight |
 
 ---
-*Last updated: 2026-03-22 after v0.9.0 milestone start*
+*Last updated: 2026-03-24 after v0.9.0 milestone completion*

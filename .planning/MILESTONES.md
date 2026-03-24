@@ -1,5 +1,14 @@
 # Milestones
 
+## v0.9.0 Survey Planning and Quality of Life (Shipped: 2026-03-24)
+
+**Phases completed:** 4 phases, 10 plans, 0 tasks
+
+**Key accomplishments:**
+- (none recorded)
+
+---
+
 ## v0.8.0 Non-Traditional Creel Designs (Shipped: 2026-03-22)
 
 **Phases completed:** 4 phases (44-47), 11 plans

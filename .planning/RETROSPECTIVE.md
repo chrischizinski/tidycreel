@@ -157,6 +157,54 @@
 
 ---
 
+## Milestone: v0.9.0 — Survey Planning & Quality of Life
+
+**Shipped:** 2026-03-24
+**Phases:** 4 (48-51) | **Plans:** 10 | **Timeline:** 1 day (2026-03-23 → 2026-03-24)
+
+### What Was Built
+
+- `generate_schedule()` + `generate_bus_schedule()` — sampling frame generators with validated `creel_schedule` S3 class; `write_schedule()` / `read_schedule()` with CSV/xlsx round-trip I/O and robust date coercion (Phase 48)
+- `creel_n_effort()` + `creel_n_cpue()` — Cochran (1977) stratified sample-size calculators, biologist-friendly CV/correlation parameterisation, McCormick & Quist (2017) benchmark validation (Phase 49)
+- `creel_power()` + `cv_from_n()` — two-sample normal approximation power calculator and algebraic inverse; completes four-function pre-season planning suite (POWER-01–04) (Phase 49)
+- `validate_design()` — pre-season pass/warn/fail per stratum; delegates entirely to Phase 49 functions, no CV formula duplication; `creel_design_report` S3 class with cli table (Phase 50)
+- `check_completeness()` — post-season data quality checker with survey-type dispatch via `intersect()` guard; zero false-positive flags across all five survey types (Phase 50)
+- `season_summary()` — wide-tibble assembler from named list of `creel_estimates`; by_vars consistency guard enforces uniform stratification contract; `creel_season_summary` S3 class (Phase 51)
+
+### What Worked
+
+- **Planning layer as independent module:** All sample-size functions are pure computations from parameters — no `creel_design` dependency. `validate_design()` calls them internally for DRY CV math. This architecture made testing trivial and kept concerns separated
+- **Delegation pattern for validate_design():** Requiring Phase 49 before Phase 50 and forbidding local CV formula duplication in `validate_design()` was the right constraint. The WARN_CV_BUFFER (1.2) is the only constant added; all math lives in `creel_n_effort()` / `creel_n_cpue()`
+- **`intersect()` guard re-used from v0.8.0:** The pattern established for ice fishing in Phase 45 carried directly into `check_completeness()` for Phase 50's synthetic column problem. Canonical patterns from prior milestones paid off
+- **Statistical notation preserved with nolint:** Keeping `N_h`, `E_total`, `V_0` as-is (with `# nolint: object_name_linter`) made the Cochran (1977) formula correspondence auditable. This was a deliberate documentation choice, not an oversight
+- **Schedule I/O read-as-text pattern:** Reading all columns as character first, then coercing through a shared `coerce_schedule_columns()` function, eliminated format-specific type inference bugs (especially Excel serial date strings from `readxl` with `col_types = "text"`)
+
+### What Was Inefficient
+
+- **Test fixtures in Plan 50-01 were wrong:** The skeleton Plan 01 test stubs had incorrect `creel_n_effort()` expected values (stated weekday=18, weekend=8; actual values were weekday=3, weekend=2 for the pilot parameters). Re-deriving these in Plan 02 added friction. Stub comments in Plan 01 should not guess expected values — leave them as NA or document they need computing
+- **cli glue variables and `nolint` are now a recurring pattern:** Every plan that uses `cli_abort()` or `cli_inform()` with glue variables ends up adding `# nolint: object_usage_linter` to extracted locals. This is now boilerplate and could be documented in the contributing guide as "how cli glue variables are handled in this package"
+- **Phase 51 by_vars assembly approach:** The two-path assembly (bind_cols for ungrouped vs. iterative `Reduce(left_join)` for grouped) was needed because `left_join` on `character(0)` produces a cross join not identity. This was discovered during implementation rather than planning — a note in the plan about character(0) join behaviour would have prevented the deviation
+
+### Patterns Established
+
+- **Planning functions as pure computations:** Pre-season calculators take primitive parameters (CV target, stratum counts) and return numeric answers — no design objects involved. This keeps them testable, reusable, and composable (validators call them, vignettes call them independently)
+- **by_vars consistency guard before wide assembly:** Any function that assembles multiple `creel_estimates` objects into a single tibble must check that all inputs share the same stratification before attempting column alignment
+- **`intersect()` guard is the canonical synthetic column pattern:** Now used in `estimate_effort_br()`, `estimate_total_catch_br()`, and `check_completeness()`. Any future function that works with design columns that may or may not exist in interview data should use this pattern
+
+### Key Lessons
+
+1. **Pure-function planning tools compose better than design-coupled ones:** The decision to make `creel_n_effort()` / `creel_n_cpue()` parameter-only functions (not `creel_design` methods) made `validate_design()` simple to implement and made the planning tools independently usable in non-tidy contexts (e.g., a Shiny app, a standalone script)
+2. **Stub comments that guess expected values create rework:** Plan 50-01 stubs with guessed test expectations had to be corrected in Plan 50-02. Stub comments should say "compute from creel_n_effort() with these parameters" not state a specific number — the actual value is only reliable when the function exists
+3. **Document `character(0)` join behavior once, globally:** The `left_join(character(0))` cross-join gotcha will recur any time strata-aware assembly is added. The contributing guide should have one canonical note: "join on character(0) columns produces a cross join — use bind_cols for the no-strata case"
+
+### Cost Observations
+
+- Model mix: ~100% sonnet (balanced profile)
+- Sessions: 1 day of execution (~6-8 sessions)
+- Notable: Fastest milestone to date by calendar time (1 day); the planning layer was structurally simpler than the spatial/design-type milestones because it added no new estimator paths — only pure-function tools and wrappers
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -171,6 +219,7 @@
 | v0.6.0 | 3 | 5 | Smallest milestone; targeted feature addition (multiple counts, progressive estimator) |
 | v0.7.0 | 5 | 9 | Spatial stratification; most complex math to date; breaking API rename |
 | v0.8.0 | 4 | 11 | Three new survey types; ice reuses bus-route; camera adds preprocessing; aerial uses linear SE scaling |
+| v0.9.0 | 4 | 10 | Planning layer added as independent module; pure-function tools; `intersect()` guard reused; fastest milestone (1 day) |
 
 ### Cumulative Quality
 
@@ -184,6 +233,7 @@
 | v0.6.0 | ~1,400 | ~90% | 6 (+flexible-count-estimation) |
 | v0.7.0 | 1,588 | ~90% | 7 (+section-estimation) |
 | v0.8.0 | 1,696 | ~90% | 10 (+ice-fishing, +camera-surveys, +aerial-surveys) |
+| v0.9.0 | ~1,838 | ~90% | 10 (no new vignettes) |
 
 ### Top Lessons (Verified Across Milestones)
 
@@ -194,4 +244,4 @@
 5. **Human review gates have value for domain documentation:** Vignettes explaining statistical decisions in domain vocabulary need practitioner sign-off that automated tests cannot provide
 
 ---
-*Last updated: 2026-03-22 after v0.8.0 milestone*
+*Last updated: 2026-03-24 after v0.9.0 milestone*
