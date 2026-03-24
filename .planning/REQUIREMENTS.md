@@ -29,7 +29,7 @@
 
 ### Season Reporting
 
-- [ ] **REPT-01**: User can assemble a named list of pre-computed `creel_estimates` outputs into a single report-ready wide tibble containing effort, catch rate, and total catch/harvest columns
+- [x] **REPT-01**: User can assemble a named list of pre-computed `creel_estimates` outputs into a single report-ready wide tibble containing effort, catch rate, and total catch/harvest columns
 
 ## Future Requirements
 
@@ -66,7 +66,7 @@
 | POWER-04 | Phase 49 | Complete |
 | VALID-01 | Phase 50 | Complete |
 | QUAL-01  | Phase 50 | Complete |
-| REPT-01  | Phase 51 | Pending |
+| REPT-01  | Phase 51 | Complete |
 
 **Coverage:**
 - v0.9.0 requirements: 11 total
@@ -75,4 +75,4 @@
 
 ---
 *Requirements defined: 2026-03-22*
-*Last updated: 2026-03-22 — traceability complete after roadmap creation*
+*Last updated: 2026-03-23 — REPT-01 marked complete after Phase 51 Plan 02*

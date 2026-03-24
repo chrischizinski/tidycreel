@@ -239,7 +239,7 @@ Phases 48 and 49 are parallel-capable (no mutual dependency). Phase 50 follows P
 | 48. Schedule Generators | 3/3 | Complete    | 2026-03-23 | - |
 | 49. Power and Sample Size | 2/2 | Complete    | 2026-03-24 | - |
 | 50. Design Validator and Completeness Checker | 3/3 | Complete    | 2026-03-24 | - |
-| 51. Season Summary | 1/2 | In Progress|  | - |
+| 51. Season Summary | 2/2 | Complete   | 2026-03-24 | - |
 
 ---
 *Roadmap last updated: 2026-03-23 — Phase 51 planned (2 plans)*
