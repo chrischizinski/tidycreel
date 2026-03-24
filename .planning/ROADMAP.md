@@ -219,7 +219,11 @@ Plans:
   1. User can call `season_summary()` with a named list of pre-computed `creel_estimates` objects and receive a single wide tibble containing effort, catch rate, and total catch/harvest columns
   2. The wide tibble values match numerically the individual `estimate_*()` outputs that were passed in — no re-estimation from raw data
   3. The season summary tibble exports correctly to CSV and xlsx via `write_schedule()` with numeric column types preserved on round-trip read
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 51-01-PLAN.md — Test scaffold + NULL stub skeleton (REPT-01)
+- [ ] 51-02-PLAN.md — season_summary() implementation + creel_season_summary S3 class + format/print (REPT-01)
 
 ## Progress
 
@@ -234,9 +238,9 @@ Phases 48 and 49 are parallel-capable (no mutual dependency). Phase 50 follows P
 | 47. Aerial Survey Support | v0.8.0 | 3/3 | Complete | 2026-03-22 |
 | 48. Schedule Generators | 3/3 | Complete    | 2026-03-23 | - |
 | 49. Power and Sample Size | 2/2 | Complete    | 2026-03-24 | - |
-| 50. Design Validator and Completeness Checker | 3/3 | Complete   | 2026-03-24 | - |
-| 51. Season Summary | v0.9.0 | 0/TBD | Not started | - |
+| 50. Design Validator and Completeness Checker | 3/3 | Complete    | 2026-03-24 | - |
+| 51. Season Summary | v0.9.0 | 0/2 | Not started | - |
 
 ---
-*Roadmap last updated: 2026-03-23 — Phase 50 planned (3 plans)*
+*Roadmap last updated: 2026-03-23 — Phase 51 planned (2 plans)*
 *See .planning/milestones/ for archived milestone roadmaps*
