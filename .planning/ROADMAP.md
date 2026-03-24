@@ -204,7 +204,12 @@ Plans:
   1. User can call `validate_design()` with a proposed sampling frame and receive a tibble with pass/warn/fail status per stratum — no duplication of the CV formula from Phase 49
   2. User can call `check_completeness()` on a completed creel_design and receive a report of missing sampling days, strata below a user-specified n threshold, and refusal rates — dispatched by survey_type so aerial and ice designs produce zero false-positive flags
   3. All five survey types (instantaneous, bus_route, ice, camera, aerial) pass through `check_completeness()` without triggering warnings on legitimate survey-type-specific NA patterns
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 50-01-PLAN.md — Test scaffold and source skeleton (VALID-01, QUAL-01)
+- [ ] 50-02-PLAN.md — validate_design() + creel_design_report S3 class (VALID-01)
+- [ ] 50-03-PLAN.md — check_completeness() + survey-type dispatch + creel_completeness_report (QUAL-01)
 
 ### Phase 51: Season Summary
 **Goal**: Biologists can assemble a full season's pre-computed estimates into a single report-ready wide tibble without re-deriving any values from raw data
@@ -229,9 +234,9 @@ Phases 48 and 49 are parallel-capable (no mutual dependency). Phase 50 follows P
 | 47. Aerial Survey Support | v0.8.0 | 3/3 | Complete | 2026-03-22 |
 | 48. Schedule Generators | 3/3 | Complete    | 2026-03-23 | - |
 | 49. Power and Sample Size | 2/2 | Complete    | 2026-03-24 | - |
-| 50. Design Validator and Completeness Checker | v0.9.0 | 0/TBD | Not started | - |
+| 50. Design Validator and Completeness Checker | v0.9.0 | 0/3 | In progress | - |
 | 51. Season Summary | v0.9.0 | 0/TBD | Not started | - |
 
 ---
-*Roadmap last updated: 2026-03-23 — Phase 49 planned (2 plans)*
+*Roadmap last updated: 2026-03-23 — Phase 50 planned (3 plans)*
 *See .planning/milestones/ for archived milestone roadmaps*
