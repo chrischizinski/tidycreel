@@ -149,14 +149,71 @@ test_that("creel_n_cpue returns at least 1 when formula result rounds down", {
   expect_true(result >= 1L)
 })
 
-# POWER-03: creel_power stub ----
+# POWER-03: creel_power ----
 
-test_that("creel_power stub covered in Plan 49-03", {
-  skip("POWER-03 implemented in Plan 49-03")
+test_that("creel_power returns ~0.807 for known inputs (n=100, cv=0.5, delta=0.20)", {
+  # ncp = 0.20 * sqrt(100/2) / 0.5 = 0.20 * 7.071 / 0.5 = 2.828 # nolint: commented_code_linter
+  # z_crit = qnorm(0.975) = 1.96 # nolint: commented_code_linter
+  # power = pnorm(2.828 - 1.96) + pnorm(-2.828 - 1.96) = 0.807 + ~0 = 0.807 # nolint: commented_code_linter
+  result <- creel_power(n = 100, cv_historical = 0.5, delta_pct = 0.20)
+  expect_equal(result, 0.807, tolerance = 0.001)
 })
 
-# POWER-04: cv_from_n stub ----
+test_that("creel_power one-sided power > two-sided power for same inputs", {
+  pwr_two <- creel_power(n = 50, cv_historical = 0.5, delta_pct = 0.20, alternative = "two.sided")
+  pwr_one <- creel_power(n = 50, cv_historical = 0.5, delta_pct = 0.20, alternative = "one.sided")
+  expect_true(pwr_one > pwr_two)
+})
 
-test_that("cv_from_n stub covered in Plan 49-04", {
-  skip("POWER-04 implemented in Plan 49-04")
+test_that("creel_power errors on n < 1", {
+  expect_error(creel_power(n = 0, cv_historical = 0.5, delta_pct = 0.20))
+  expect_error(creel_power(n = -5, cv_historical = 0.5, delta_pct = 0.20))
+})
+
+test_that("creel_power warns when delta_pct > 5", {
+  expect_warning(
+    creel_power(n = 100, cv_historical = 0.5, delta_pct = 6),
+    regexp = "delta_pct > 5"
+  )
+})
+
+test_that("creel_power returns a numeric scalar in (0, 1)", {
+  result <- creel_power(n = 30, cv_historical = 0.6, delta_pct = 0.30)
+  expect_true(is.numeric(result))
+  expect_length(result, 1L)
+  expect_true(result > 0 && result < 1)
+})
+
+# POWER-04: cv_from_n ----
+
+test_that("cv_from_n effort round-trip: recovered CV <= target CV", {
+  N_h <- c(weekday = 65L, weekend = 28L) # nolint: object_name_linter
+  ybar_h <- c(weekday = 50, weekend = 60)
+  s2_h <- c(weekday = 400, weekend = 500)
+  cv_target <- 0.20
+
+  n_required <- creel_n_effort(cv_target, N_h = N_h, ybar_h = ybar_h, s2_h = s2_h) # nolint: object_name_linter
+  cv_back <- cv_from_n("effort", n = n_required[["total"]], N_h = N_h, ybar_h = ybar_h, s2_h = s2_h) # nolint: object_name_linter
+  expect_lte(cv_back, cv_target)
+})
+
+test_that("cv_from_n cpue round-trip: recovered CV <= target CV", {
+  cv_target <- 0.20
+  n_req <- creel_n_cpue(cv_catch = 0.8, cv_effort = 0.5, rho = 0, cv_target = cv_target)
+  cv_back <- cv_from_n("cpue", n = n_req, cv_catch = 0.8, cv_effort = 0.5, rho = 0)
+  expect_lte(cv_back, cv_target)
+})
+
+test_that("cv_from_n errors on n < 1", {
+  N_h <- c(weekday = 65L) # nolint: object_name_linter
+  expect_error(cv_from_n("effort", n = 0, N_h = N_h, ybar_h = 50, s2_h = 400)) # nolint: object_name_linter
+  expect_error(cv_from_n("cpue", n = 0, cv_catch = 0.8, cv_effort = 0.5))
+})
+
+test_that("cv_from_n returns numeric scalar > 0", {
+  N_h <- c(weekday = 65L) # nolint: object_name_linter
+  result <- cv_from_n("effort", n = 10L, N_h = N_h, ybar_h = 50, s2_h = 400) # nolint: object_name_linter
+  expect_true(is.numeric(result))
+  expect_length(result, 1L)
+  expect_true(result > 0)
 })
