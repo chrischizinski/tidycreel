@@ -166,6 +166,56 @@ print.creel_design_report <- function(x, ...) {
   invisible(x)
 }
 
+# ---- check_completeness internals -------------------------------------------
+
+new_creel_completeness_report <- function(missing_days, low_n_strata, refusals,
+                                          n_min, survey_type) {
+  passed <- (nrow(missing_days) == 0L) &&
+    (is.null(low_n_strata) || nrow(low_n_strata) == 0L)
+  structure(
+    list(
+      missing_days = missing_days,
+      low_n_strata = low_n_strata,
+      refusals     = refusals,
+      n_min        = n_min,
+      survey_type  = survey_type,
+      passed       = passed
+    ),
+    class = "creel_completeness_report"
+  )
+}
+
+find_missing_days <- function(design) {
+  cal_dates <- unique(design$calendar[[design$date_col]])
+  keep_cols <- intersect(c(design$date_col, design$strata_cols), names(design$calendar))
+  if (is.null(design$counts)) {
+    return(design$calendar[keep_cols])
+  }
+  count_dates <- unique(design$counts[[design$date_col]])
+  missing <- cal_dates[!cal_dates %in% count_dates]
+  design$calendar[design$calendar[[design$date_col]] %in% missing,
+    keep_cols,
+    drop = FALSE
+  ]
+}
+
+find_low_n_strata <- function(design, n_min) {
+  interviews <- design$interviews
+  strata_cols <- intersect(design$strata_cols, names(interviews))
+  if (length(strata_cols) == 0L) {
+    return(data.frame(
+      key = character(0), n_observed = integer(0),
+      stringsAsFactors = FALSE
+    ))
+  }
+  # Build composite stratum key across all strata columns (multi-stratum safe)
+  key <- do.call(paste, c(interviews[strata_cols], sep = "|"))
+  n_per_stratum <- as.data.frame(table(key = key), stringsAsFactors = FALSE)
+  names(n_per_stratum)[names(n_per_stratum) == "Freq"] <- "n_observed"
+  n_per_stratum$n_observed <- as.integer(n_per_stratum$n_observed)
+  n_per_stratum[n_per_stratum$n_observed < n_min, , drop = FALSE]
+}
+
 # ---- check_completeness -----------------------------------------------------
 
 #' Check post-season data completeness for a creel design
@@ -179,8 +229,8 @@ print.creel_design_report <- function(x, ...) {
 #'
 #' @return A creel_completeness_report object (S3 list) with:
 #'   \describe{
-#'     \item{$missing_days}{tibble of calendar rows with no count data}
-#'     \item{$low_n_strata}{tibble of strata below n_min, or NULL for aerial/camera}
+#'     \item{$missing_days}{data.frame of calendar rows with no count data}
+#'     \item{$low_n_strata}{data.frame of strata below n_min, or NULL for aerial/camera}
 #'     \item{$refusals}{creel_summary_refusals object or NULL}
 #'     \item{$n_min}{integer threshold used}
 #'     \item{$survey_type}{character}
@@ -189,5 +239,43 @@ print.creel_design_report <- function(x, ...) {
 #'
 #' @export
 check_completeness <- function(design, n_min = 10L) {
-  NULL
+  # Guard 1: type check
+  if (!inherits(design, "creel_design")) {
+    cli::cli_abort(c(
+      "{.arg design} must be a {.cls creel_design} object.",
+      "x" = "{.arg design} is {.cls {class(design)[1]}}.",
+      "i" = "Create a design with {.fn creel_design} and attach data."
+    ))
+  }
+  # Guard 2/3: n_min range
+  checkmate::assert_integerish(n_min, lower = 1L, len = 1L)
+  n_min <- as.integer(n_min)
+
+  # Missing days: all survey types
+  missing_days <- find_missing_days(design)
+
+  # Interview-based checks: NOT for aerial or camera
+  # Guard: design$interview_survey is NULL for aerial and camera
+  low_n_strata <- NULL
+  if (!is.null(design$interview_survey) && !is.null(design$interviews)) {
+    low_n_strata <- find_low_n_strata(design, n_min)
+  }
+
+  # Refusal rates: only if refused_col recorded AND interviews present
+  refusals <- NULL
+  has_interviews_for_refusals <- !is.null(design$interview_survey) && !is.null(design$interviews)
+  if (!is.null(design$refused_col) && has_interviews_for_refusals) {
+    refusals <- summarize_refusals(design) # nolint: object_usage_linter
+  }
+
+  survey_type <- design$design_type
+  if (is.null(survey_type)) survey_type <- "instantaneous"
+
+  new_creel_completeness_report(
+    missing_days = missing_days,
+    low_n_strata = low_n_strata,
+    refusals     = refusals,
+    n_min        = n_min,
+    survey_type  = survey_type
+  )
 }
