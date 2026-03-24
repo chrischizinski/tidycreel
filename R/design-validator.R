@@ -119,6 +119,53 @@ validate_design <- function(
   )
 }
 
+# ---- S3 methods for creel_design_report -------------------------------------
+
+#' Format creel_design_report for printing
+#'
+#' @param x A creel_design_report object
+#' @param ... Additional arguments (currently ignored)
+#' @return Character vector with formatted output
+#' @export
+format.creel_design_report <- function(x, ...) {
+  cli::cli_format_method({
+    cli::cli_h1("Design Validation Report")
+    cli::cli_text("Type: {x$survey_type}")
+    if (x$passed) {
+      cli::cli_alert_success("All strata PASSED")
+    } else {
+      cli::cli_alert_danger("One or more strata FAILED or WARNED")
+    }
+    cli::cli_text("")
+    for (i in seq_len(nrow(x$results))) {
+      r <- x$results[i, ]
+      cv_a <- round(r$cv_actual, 3) # nolint: object_usage_linter
+      cv_t <- r$cv_target # nolint: object_usage_linter
+      n_p <- r$n_proposed # nolint: object_usage_linter
+      n_r <- r$n_required # nolint: object_usage_linter
+      s <- r$stratum # nolint: object_usage_linter
+      if (r$status == "pass") {
+        cli::cli_alert_success("{s}: n={n_p} >= {n_r} required (CV {cv_a} vs target {cv_t})")
+      } else if (r$status == "warn") {
+        cli::cli_alert_warning("{s}: n={n_p} < {n_r} required but CV {cv_a} near target {cv_t}")
+      } else {
+        cli::cli_alert_danger("{s}: n={n_p} << {n_r} required (CV {cv_a} vs target {cv_t})")
+      }
+    }
+  })
+}
+
+#' Print creel_design_report
+#'
+#' @param x A creel_design_report object
+#' @param ... Additional arguments passed to format
+#' @return The input object, invisibly
+#' @export
+print.creel_design_report <- function(x, ...) {
+  cat(format(x, ...), sep = "\n")
+  invisible(x)
+}
+
 # ---- check_completeness -----------------------------------------------------
 
 #' Check post-season data completeness for a creel design
