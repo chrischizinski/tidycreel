@@ -16,8 +16,8 @@
 
 - [x] **POWER-01**: User can calculate the number of sampling days required to achieve a target CV on effort estimates using the stratified McCormick & Quist (2017) formula
 - [x] **POWER-02**: User can calculate the number of interviews required to achieve a target CV on CPUE estimates using the Cochran (1977) ratio estimator variance formula
-- [ ] **POWER-03**: User can calculate the statistical power to detect a specified percentage change in CPUE between two seasons given alpha, historical CV, and sample size
-- [ ] **POWER-04**: User can calculate the expected CV given a known sample size (inverse of POWER-01 and POWER-02)
+- [x] **POWER-03**: User can calculate the statistical power to detect a specified percentage change in CPUE between two seasons given alpha, historical CV, and sample size
+- [x] **POWER-04**: User can calculate the expected CV given a known sample size (inverse of POWER-01 and POWER-02)
 
 ### Design Validation
 
@@ -62,8 +62,8 @@
 | SCHED-04 | Phase 48 | Complete |
 | POWER-01 | Phase 49 | Complete |
 | POWER-02 | Phase 49 | Complete |
-| POWER-03 | Phase 49 | Pending |
-| POWER-04 | Phase 49 | Pending |
+| POWER-03 | Phase 49 | Complete |
+| POWER-04 | Phase 49 | Complete |
 | VALID-01 | Phase 50 | Pending |
 | QUAL-01  | Phase 50 | Pending |
 | REPT-01  | Phase 51 | Pending |

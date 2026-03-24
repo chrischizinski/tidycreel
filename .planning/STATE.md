@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 49-01-PLAN.md -- creel_n_effort() and creel_n_cpue() implemented
-last_updated: "2026-03-24T00:07:09.074Z"
-last_activity: 2026-03-23 — Plans 48-01 and 48-03 complete; write_schedule/read_schedule implemented
+stopped_at: Completed 49-02-PLAN.md -- creel_power() and cv_from_n() implemented
+last_updated: "2026-03-24T00:16:22.377Z"
+last_activity: 2026-03-23 — Plan 49-01 complete; creel_n_effort() and creel_n_cpue() implemented
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 5
-  completed_plans: 4
+  completed_plans: 5
   percent: 100
 ---
 
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-03-22)
 ## Current Position
 
 Phase: 49 of 51 (Power and Sample Size)
-Plan: 01 complete (POWER-01, POWER-02)
-Status: In progress — Plan 49-01 complete; Plans 49-02 through 49-04 pending
-Last activity: 2026-03-23 — Plan 49-01 complete; creel_n_effort() and creel_n_cpue() implemented
+Plan: 02 complete (POWER-01 through POWER-04 — all four functions shipped)
+Status: In progress — Plans 49-01 and 49-02 complete; Plans 49-03 and 49-04 already covered (stubs implemented in 49-02)
+Last activity: 2026-03-24 — Plan 49-02 complete; creel_power() and cv_from_n() implemented; four-function suite complete
 
 Progress: [██████████] 100%
 
@@ -47,8 +47,16 @@ Progress: [██████████] 100%
 | v0.9.0 | 48-51 | 2/TBD | In progress | - |
 | Phase 48 P02 | 87 | 1 tasks | 4 files |
 | Phase 49 P01 | 24 | 2 tasks | 5 files |
+| Phase 49 P02 | 22 | 2 tasks | 5 files |
 
 ## Accumulated Context
+
+### Decisions (v0.9.0 — Phase 49-02)
+
+- creel_power() uses two-sample normal approximation: ncp = delta_pct * sqrt(n/2) / cv_historical; validated against known value n=100/cv=0.5/delta=0.20 -> 0.807
+- cv_from_n() dispatches on type='effort'/'cpue' via match.arg -- single entry point, algebraic inverse of both creel_n_effort() and creel_n_cpue()
+- delta_pct > 5 triggers cli_warn not error -- biologists may pass percentage points (6) instead of fractions (0.06); still computes but warns
+- Round-trip tests use expect_lte not expect_equal -- ceiling() in forward functions guarantees recovered CV is at or below target
 
 ### Decisions (v0.9.0 — Phase 49-01)
 
@@ -83,6 +91,6 @@ Progress: [██████████] 100%
 
 ## Session Continuity
 
-Last session: 2026-03-24T00:07:09.071Z
-Stopped at: Completed 49-01-PLAN.md -- creel_n_effort() and creel_n_cpue() implemented
+Last session: 2026-03-24T00:16:22.375Z
+Stopped at: Completed 49-02-PLAN.md -- creel_power() and cv_from_n() implemented
 Resume file: None
