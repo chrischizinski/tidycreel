@@ -4,6 +4,15 @@
 # Internal threshold constants (documented, not yet enforced until Plan 02)
 WARN_CV_BUFFER <- 1.2 # nolint: object_name_linter — warn if cv_actual <= cv_target * WARN_CV_BUFFER but n < n_required
 
+# ---- internal constructors --------------------------------------------------
+
+new_creel_design_report <- function(results, passed, survey_type) {
+  structure(
+    list(results = results, passed = passed, survey_type = survey_type),
+    class = "creel_design_report"
+  )
+}
+
 # ---- validate_design --------------------------------------------------------
 
 #' Validate a proposed creel survey design against sample size targets
@@ -36,7 +45,78 @@ validate_design <- function(
   type = c("effort", "cpue"),
   cv_catch = NULL, cv_effort = NULL, rho = 0
 ) {
-  NULL
+  type <- match.arg(type)
+
+  # Input validation
+  checkmate::assert_numeric(N_h, lower = 1, min.len = 1, names = "named") # nolint: object_name_linter
+  checkmate::assert_numeric(ybar_h, lower = 0, len = length(N_h)) # nolint: object_name_linter
+  checkmate::assert_numeric(s2_h, lower = 0, len = length(N_h)) # nolint: object_name_linter
+  checkmate::assert_integerish(n_proposed, lower = 1, len = length(N_h)) # nolint: object_name_linter
+  checkmate::assert_number(cv_target, lower = 1e-6, upper = 1.0)
+
+  # CPUE-specific argument validation
+  if (type == "cpue") {
+    checkmate::assert_number(cv_catch, lower = 1e-6)
+    checkmate::assert_number(cv_effort, lower = 1e-6)
+    checkmate::assert_number(rho, lower = -1.0, upper = 1.0)
+  }
+
+  strata_names <- names(N_h)
+
+  # Per-stratum calculations — delegate entirely to Phase 49 functions
+  if (type == "effort") {
+    n_req_all <- creel_n_effort( # nolint: object_usage_linter
+      cv_target = cv_target, # nolint: object_name_linter
+      N_h = N_h, ybar_h = ybar_h, s2_h = s2_h
+    )
+    n_required_vec <- n_req_all[strata_names]
+    cv_actual_vec <- vapply(seq_along(N_h), function(i) {
+      cv_from_n("effort", # nolint: object_usage_linter
+        n = n_proposed[[i]],
+        N_h = N_h[i], ybar_h = ybar_h[i], s2_h = s2_h[i]
+      )
+    }, numeric(1))
+  } else {
+    # CPUE: single overall n (no per-stratum breakdown in creel_n_cpue)
+    n_required_scalar <- creel_n_cpue( # nolint: object_usage_linter
+      cv_catch = cv_catch, cv_effort = cv_effort,
+      rho = rho, cv_target = cv_target
+    )
+    n_required_vec <- rep(n_required_scalar, length(N_h))
+    cv_actual_vec <- vapply(n_proposed, function(n) {
+      cv_from_n("cpue", n = n, cv_catch = cv_catch, cv_effort = cv_effort, rho = rho) # nolint: object_usage_linter
+    }, numeric(1))
+  }
+
+  # Status logic: pass / warn / fail
+  status_vec <- dplyr::case_when(
+    n_proposed >= n_required_vec ~ "pass",
+    cv_actual_vec <= cv_target * WARN_CV_BUFFER ~ "warn",
+    TRUE ~ "fail"
+  )
+
+  # Build results tibble
+  results <- tibble::tibble(
+    stratum = strata_names,
+    status = status_vec,
+    n_proposed = as.integer(n_proposed),
+    n_required = as.integer(n_required_vec),
+    cv_actual = round(cv_actual_vec, 4),
+    cv_target = cv_target,
+    message = dplyr::case_when(
+      status_vec == "pass" ~ paste0("Proposed n meets or exceeds required n (", n_required_vec, ")"),
+      status_vec == "warn" ~ paste0(
+        "Proposed n below required (", n_required_vec, ") but CV within ", WARN_CV_BUFFER, "x target"
+      ),
+      TRUE ~ paste0("Proposed n well below required (", n_required_vec, ")")
+    )
+  )
+
+  new_creel_design_report(
+    results      = results,
+    passed       = all(status_vec == "pass"),
+    survey_type  = type
+  )
 }
 
 # ---- check_completeness -----------------------------------------------------

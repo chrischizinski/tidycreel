@@ -120,10 +120,10 @@ YBAR_H <- c(weekday = 50, weekend = 60) # nolint: object_name_linter
 S2_H <- c(weekday = 400, weekend = 500) # nolint: object_name_linter
 CV_TARGET <- 0.20 # nolint: object_name_linter
 # n_required from Phase 49 benchmark (cv_target = 0.20):
-#   creel_n_effort gives weekday = 18, weekend = 8 (approximate)
-N_PROPOSED_PASS <- c(weekday = 30L, weekend = 15L) # both strata pass  # nolint: object_name_linter
-N_PROPOSED_FAIL <- c(weekday = 5L, weekend = 3L) # both strata fail  # nolint: object_name_linter
-N_PROPOSED_MIXED <- c(weekday = 30L, weekend = 3L) # weekday pass, weekend fail  # nolint: object_name_linter
+#   creel_n_effort gives weekday = 3, weekend = 2 (verified 2026-03-24)
+N_PROPOSED_PASS <- c(weekday = 10L, weekend = 5L) # both strata pass  # nolint: object_name_linter
+N_PROPOSED_FAIL <- c(weekday = 1L, weekend = 1L) # both strata warn/fail  # nolint: object_name_linter
+N_PROPOSED_MIXED <- c(weekday = 10L, weekend = 1L) # weekday pass, weekend warn/fail  # nolint: object_name_linter
 
 # ==============================================================================
 # Block 1: validate_design() — VALID-01
@@ -131,32 +131,73 @@ N_PROPOSED_MIXED <- c(weekday = 30L, weekend = 3L) # weekday pass, weekend fail 
 
 describe("validate_design() — VALID-01", {
   it("returns an object of class creel_design_report", {
-    expect_true(FALSE, label = "stub: implement in Plan 02")
+    r <- validate_design(
+      N_h = N_H, ybar_h = YBAR_H, s2_h = S2_H, # nolint: object_name_linter
+      n_proposed = N_PROPOSED_PASS, cv_target = CV_TARGET # nolint: object_name_linter
+    )
+    expect_s3_class(r, "creel_design_report")
   })
 
   it("$results tibble has required columns", {
     # columns: stratum, status, n_proposed, n_required, cv_actual, cv_target, message
-    expect_true(FALSE, label = "stub: implement in Plan 02")
+    r <- validate_design(
+      N_h = N_H, ybar_h = YBAR_H, s2_h = S2_H, # nolint: object_name_linter
+      n_proposed = N_PROPOSED_PASS, cv_target = CV_TARGET # nolint: object_name_linter
+    )
+    expect_named(r$results,
+      c("stratum", "status", "n_proposed", "n_required", "cv_actual", "cv_target", "message"),
+      ignore.order = FALSE
+    )
+    expect_equal(nrow(r$results), length(N_H)) # nolint: object_name_linter
   })
 
   it("stratum with n_proposed >= n_required gets status == 'pass'", {
-    expect_true(FALSE, label = "stub: implement in Plan 02")
+    r <- validate_design(
+      N_h = N_H, ybar_h = YBAR_H, s2_h = S2_H, # nolint: object_name_linter
+      n_proposed = N_PROPOSED_PASS, cv_target = CV_TARGET # nolint: object_name_linter
+    )
+    expect_true(all(r$results$status == "pass"))
   })
 
   it("stratum with n_proposed < n_required gets status 'fail' or 'warn'", {
-    expect_true(FALSE, label = "stub: implement in Plan 02")
+    r <- validate_design(
+      N_h = N_H, ybar_h = YBAR_H, s2_h = S2_H, # nolint: object_name_linter
+      n_proposed = N_PROPOSED_FAIL, cv_target = CV_TARGET # nolint: object_name_linter
+    )
+    expect_true(all(r$results$status %in% c("fail", "warn")))
   })
 
   it("cv_actual matches cv_from_n() output exactly (no duplicate formula)", {
-    expect_true(FALSE, label = "stub: implement in Plan 02")
+    r <- validate_design(
+      N_h = N_H, ybar_h = YBAR_H, s2_h = S2_H, # nolint: object_name_linter
+      n_proposed = N_PROPOSED_PASS, cv_target = CV_TARGET # nolint: object_name_linter
+    )
+    # Check weekday stratum cv_actual matches direct cv_from_n() call
+    expected_cv_weekday <- cv_from_n(
+      "effort",
+      n = N_PROPOSED_PASS[["weekday"]], # nolint: object_name_linter
+      N_h = N_H["weekday"], ybar_h = YBAR_H["weekday"], s2_h = S2_H["weekday"] # nolint: object_name_linter
+    )
+    expect_equal(
+      r$results$cv_actual[r$results$stratum == "weekday"],
+      round(expected_cv_weekday, 4)
+    )
   })
 
   it("$passed is TRUE when all strata pass", {
-    expect_true(FALSE, label = "stub: implement in Plan 02")
+    r <- validate_design(
+      N_h = N_H, ybar_h = YBAR_H, s2_h = S2_H, # nolint: object_name_linter
+      n_proposed = N_PROPOSED_PASS, cv_target = CV_TARGET # nolint: object_name_linter
+    )
+    expect_true(r$passed)
   })
 
   it("$passed is FALSE when any stratum fails", {
-    expect_true(FALSE, label = "stub: implement in Plan 02")
+    r <- validate_design(
+      N_h = N_H, ybar_h = YBAR_H, s2_h = S2_H, # nolint: object_name_linter
+      n_proposed = N_PROPOSED_FAIL, cv_target = CV_TARGET # nolint: object_name_linter
+    )
+    expect_false(r$passed)
   })
 
   it("non-data-frame sampling_frame input triggers cli_abort()", {
