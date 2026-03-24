@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 48-02-PLAN.md — generate_bus_schedule() implemented
-last_updated: "2026-03-23T21:10:07.762Z"
+stopped_at: Completed 49-01-PLAN.md -- creel_n_effort() and creel_n_cpue() implemented
+last_updated: "2026-03-24T00:07:09.074Z"
 last_activity: 2026-03-23 — Plans 48-01 and 48-03 complete; write_schedule/read_schedule implemented
 progress:
   total_phases: 4
   completed_phases: 1
-  total_plans: 3
-  completed_plans: 3
+  total_plans: 5
+  completed_plans: 4
   percent: 100
 ---
 
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-03-22)
 
 ## Current Position
 
-Phase: 48 of 51 (Schedule Generators)
-Plan: 03 complete (SCHED-03, SCHED-04)
-Status: In progress — Plans 48-01 and 48-03 complete; 48-02 in Wave 2
-Last activity: 2026-03-23 — Plans 48-01 and 48-03 complete; write_schedule/read_schedule implemented
+Phase: 49 of 51 (Power and Sample Size)
+Plan: 01 complete (POWER-01, POWER-02)
+Status: In progress — Plan 49-01 complete; Plans 49-02 through 49-04 pending
+Last activity: 2026-03-23 — Plan 49-01 complete; creel_n_effort() and creel_n_cpue() implemented
 
 Progress: [██████████] 100%
 
@@ -46,8 +46,16 @@ Progress: [██████████] 100%
 | v0.8.0 | 44-47 | 11/11 | ✅ Complete | 2026-03-22 |
 | v0.9.0 | 48-51 | 2/TBD | In progress | - |
 | Phase 48 P02 | 87 | 1 tasks | 4 files |
+| Phase 49 P01 | 24 | 2 tasks | 5 files |
 
 ## Accumulated Context
+
+### Decisions (v0.9.0 — Phase 49-01)
+
+- FPC omitted in creel_n_effort() -- pre-season planning convention, not a survey precision estimate; documented in @details
+- creel_n_cpue() parameterised as cv_catch/cv_effort/rho (not raw variances) -- biologist-friendly interface per research recommendation
+- Statistical notation (N_h, E_total, V_0, s_h, w_h, n_h) preserved with nolint:object_name_linter -- renaming would destroy readability against Cochran (1977) formula
+- \% in roxygen @param escapes as \\% in Rd causing comment stripping -- use "percent" in prose instead
 
 ### Decisions (v0.9.0 — Phase 48-03)
 
@@ -75,6 +83,6 @@ Progress: [██████████] 100%
 
 ## Session Continuity
 
-Last session: 2026-03-23T21:05:05.045Z
-Stopped at: Completed 48-02-PLAN.md — generate_bus_schedule() implemented
+Last session: 2026-03-24T00:07:09.071Z
+Stopped at: Completed 49-01-PLAN.md -- creel_n_effort() and creel_n_cpue() implemented
 Resume file: None
