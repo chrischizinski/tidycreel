@@ -226,7 +226,10 @@ Plans:
   2. A feature highlights section lists the five supported survey types and three to five key capabilities visible above the fold on a standard laptop screen
   3. The reference index page groups functions under named topic headers (e.g., "Survey Design", "Estimation", "Planning & Diagnostics")
   4. Every exported function appears in at least one reference group — `pkgdown::check_pkgdown()` reports no orphaned functions
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 54-01-PLAN.md — README.md home page polish (badges, Survey Types, Key Capabilities, corrected Quick Start) + extra.css hero/badge CSS
+- [ ] 54-02-PLAN.md — _pkgdown.yml reference block (all 46 exports + 15 datasets in named topic groups)
 
 ### Phase 55: Navigation & Articles
 **Goal**: A visitor navigates the entire site using workflow-driven top-level links without hitting dead ends or blank pages
