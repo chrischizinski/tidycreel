@@ -256,7 +256,7 @@ Plans:
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 52. Hex Sticker | v1.0.0 | 0/1 | Planning | - |
-| 53. Foundation & Theme | v1.0.0 | 0/TBD | Not started | - |
+| 53. Foundation & Theme | 1/2 | In Progress|  | - |
 | 54. Home Page & Reference | v1.0.0 | 0/TBD | Not started | - |
 | 55. Navigation & Articles | v1.0.0 | 0/TBD | Not started | - |
 | 56. Deployment | v1.0.0 | 0/TBD | Not started | - |
