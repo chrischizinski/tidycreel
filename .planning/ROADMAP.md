@@ -182,7 +182,7 @@ See: [.planning/milestones/v0.9.0-ROADMAP.md](milestones/v0.9.0-ROADMAP.md)
 **Milestone Goal:** Ship a polished, workflow-driven pkgdown website with a refreshed hex sticker, custom Bootstrap 5 theme, and automated GitHub Pages deployment. No new R functions; all work is infrastructure and presentation.
 
 - [ ] **Phase 52: Hex Sticker** - Reproducible R script produces a retina-quality PNG with a professional palette
-- [ ] **Phase 53: Foundation & Theme** - pkgdown + Bootstrap 5 bslib configured; `pkgdown::check_pkgdown()` passes clean
+- [x] **Phase 53: Foundation & Theme** - pkgdown + Bootstrap 5 bslib configured; `pkgdown::check_pkgdown()` passes clean (completed 2026-03-26)
 - [ ] **Phase 54: Home Page & Reference** - Polished README home page with badges and feature highlights; reference index fully grouped
 - [ ] **Phase 55: Navigation & Articles** - Workflow-driven navbar, reference link, and NEWS changelog wired into site structure
 - [ ] **Phase 56: Deployment** - GitHub Actions auto-deploys to gh-pages on push; PR builds catch errors before merge
@@ -256,7 +256,7 @@ Plans:
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 52. Hex Sticker | v1.0.0 | 0/1 | Planning | - |
-| 53. Foundation & Theme | 1/2 | In Progress|  | - |
+| 53. Foundation & Theme | 2/2 | Complete    | 2026-03-26 | - |
 | 54. Home Page & Reference | v1.0.0 | 0/TBD | Not started | - |
 | 55. Navigation & Articles | v1.0.0 | 0/TBD | Not started | - |
 | 56. Deployment | v1.0.0 | 0/TBD | Not started | - |
