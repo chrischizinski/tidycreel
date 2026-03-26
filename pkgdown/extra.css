@@ -1,0 +1,49 @@
+/* =============================================================
+   tidycreel extra.css — Phase 53: Structural/Non-content CSS
+   Phase 54 additions: hero section, badge styling (see bottom)
+   ============================================================= */
+
+/* ---- Navbar ---- */
+/* Belt-and-suspenders supplement to navbar.bg: primary in _pkgdown.yml */
+.navbar {
+  background-color: #1B4F72 !important;
+}
+
+.navbar .nav-link,
+.navbar .navbar-brand {
+  color: #ffffff !important;
+}
+
+.navbar .nav-link:hover,
+.navbar .nav-link:focus {
+  color: #5DADE2 !important;
+}
+
+/* ---- Code Blocks ---- */
+/* Dark navy-tinted background for professional look matching brand palette */
+pre,
+pre.sourceCode {
+  background-color: #1a2a3a !important;
+  color: #e8f4f8 !important;
+  border-radius: 0.375rem;
+  padding: 1rem;
+}
+
+/* ---- Callout / Note Accent ---- */
+/* Gold left-border stripe: callback to creel basket in the hex sticker */
+.callout,
+div.bs-callout,
+.alert-note,
+.alert-info {
+  border-left: 4px solid #F39C12;
+}
+
+/* ---- Typography Overrides ---- */
+h1, h2, h3, h4, h5, h6 {
+  color: #1B4F72;
+}
+
+/* =============================================================
+   PHASE 54 ADDITIONS BELOW THIS LINE
+   (hero section spacing, badge styling)
+   ============================================================= */
