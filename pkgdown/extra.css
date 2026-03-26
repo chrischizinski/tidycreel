@@ -68,3 +68,42 @@ h1, h2, h3, h4, h5, h6 {
    PHASE 54 ADDITIONS BELOW THIS LINE
    (hero section spacing, badge styling)
    ============================================================= */
+
+/* ============================================================= */
+/*   PHASE 54: Hero section & badge styling                      */
+/* ============================================================= */
+
+/* ---- Feature Grid Cards ---- */
+/* Bootstrap 5 card grid for the Survey Types section on the home page */
+.card.border-0.bg-light {
+  border-radius: 0.375rem;
+  box-shadow: 0 1px 4px rgba(27, 79, 114, 0.12);
+  transition: box-shadow 0.2s ease;
+}
+
+.card.border-0.bg-light:hover {
+  box-shadow: 0 4px 12px rgba(27, 79, 114, 0.22);
+}
+
+.card.border-0.bg-light h5.text-primary {
+  color: #1B4F72 !important;
+  font-size: 1rem;
+  margin-bottom: 0.4rem;
+}
+
+/* ---- Badge Block ---- */
+/* pkgdown extracts badges from the sentinel block and places them in the sidebar */
+.sidebar .badge-block img,
+.sidebar p img[alt*="badge"],
+.sidebar p img[src*="shields.io"],
+.sidebar p img[src*="github.com/chrischizinski"] {
+  display: inline-block;
+  margin: 2px 2px 2px 0;
+}
+
+/* ---- Home Page Spacing ---- */
+/* Breathing room above first section heading on the home page */
+.template-home main > h2:first-of-type,
+.template-home main > h3:first-of-type {
+  margin-top: 1.5rem;
+}
