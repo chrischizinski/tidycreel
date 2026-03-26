@@ -3,6 +3,7 @@ title: tidycreel
 
 template:
   bootstrap: 5
+  logo: logo.png
   bslib:
     primary: "#1B4F72"
     link-color: "#5DADE2"
