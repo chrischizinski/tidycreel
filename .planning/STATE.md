@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: planning
-stopped_at: Completed 53-foundation-theme-01-PLAN.md
-last_updated: "2026-03-26T21:24:23.185Z"
+stopped_at: "Completed 54-home-page-reference-01 (checkpoint:human-verify)"
+last_updated: "2026-03-26T21:44:03.836Z"
 last_activity: 2026-03-24 — Roadmap created; 5 phases (52-56), 20 requirements mapped 20/20
 progress:
   total_phases: 5
   completed_phases: 1
-  total_plans: 3
-  completed_plans: 2
+  total_plans: 5
+  completed_plans: 3
   percent: 0
 ---
 
@@ -57,6 +57,8 @@ Progress: [░░░░░░░░░░] 0%
 - `docs/` excluded from `main` branch via `.gitignore`; deploy target is `gh-pages` orphan branch
 - Brand color palette must match between sticker (`h_fill` in `inst/hex/sticker.R`) and site theme (`template.bslib.primary` in `_pkgdown.yml`) — set Phase 52 first so the value is established before Phase 53 reads it
 - [Phase 53-foundation-theme]: pkgdown in DESCRIPTION Suggests (not Imports); docs/ excluded via .gitignore; Pages URL appended to DESCRIPTION URL field for check_pkgdown() URL validation
+- [Phase 54-home-page-reference]: pkgdown deploy badge added with grey/no-status acceptable — workflow (pkgdown.yaml) does not exist until Phase 56
+- [Phase 54-home-page-reference]: estimate_cpue() removed from README examples; replaced with estimate_catch_rate() which is an actual exported function
 
 ### Pending Todos
 
@@ -68,6 +70,6 @@ Progress: [░░░░░░░░░░] 0%
 
 ## Session Continuity
 
-Last session: 2026-03-26T14:05:31.566Z
-Stopped at: Completed 53-foundation-theme-01-PLAN.md
+Last session: 2026-03-26T21:44:00.607Z
+Stopped at: Completed 54-home-page-reference-01 (checkpoint:human-verify)
 Resume file: None

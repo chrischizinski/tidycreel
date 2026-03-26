@@ -260,7 +260,7 @@ Plans:
 |-------|-----------|----------------|--------|-----------|
 | 52. Hex Sticker | v1.0.0 | 0/1 | Planning | - |
 | 53. Foundation & Theme | 2/2 | Complete    | 2026-03-26 | - |
-| 54. Home Page & Reference | v1.0.0 | 0/TBD | Not started | - |
+| 54. Home Page & Reference | 1/2 | In Progress|  | - |
 | 55. Navigation & Articles | v1.0.0 | 0/TBD | Not started | - |
 | 56. Deployment | v1.0.0 | 0/TBD | Not started | - |
 
