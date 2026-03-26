@@ -15,6 +15,7 @@ tidycreel v2 is a ground-up redesign providing domain translation for creel surv
 - ✅ **v0.7.0 Spatially Stratified Estimation** — Phases 39-43 (shipped 2026-03-15)
 - ✅ **v0.8.0 Non-Traditional Creel Designs** — Phases 44-47 (shipped 2026-03-22)
 - ✅ **v0.9.0 Survey Planning & Quality of Life** — Phases 48-51 (shipped 2026-03-24)
+- 🚧 **v1.0.0 Package Website** — Phases 52-56 (in progress)
 
 ## Phases
 
@@ -175,5 +176,91 @@ See: [.planning/milestones/v0.9.0-ROADMAP.md](milestones/v0.9.0-ROADMAP.md)
 </details>
 
 ---
-*Roadmap last updated: 2026-03-24 after v0.9.0 milestone completion*
+
+### v1.0.0 Package Website (In Progress)
+
+**Milestone Goal:** Ship a polished, workflow-driven pkgdown website with a refreshed hex sticker, custom Bootstrap 5 theme, and automated GitHub Pages deployment. No new R functions; all work is infrastructure and presentation.
+
+- [ ] **Phase 52: Hex Sticker** - Reproducible R script produces a retina-quality PNG with a professional palette
+- [ ] **Phase 53: Foundation & Theme** - pkgdown + Bootstrap 5 bslib configured; `pkgdown::check_pkgdown()` passes clean
+- [ ] **Phase 54: Home Page & Reference** - Polished README home page with badges and feature highlights; reference index fully grouped
+- [ ] **Phase 55: Navigation & Articles** - Workflow-driven navbar, reference link, and NEWS changelog wired into site structure
+- [ ] **Phase 56: Deployment** - GitHub Actions auto-deploys to gh-pages on push; PR builds catch errors before merge
+
+## Phase Details
+
+### Phase 52: Hex Sticker
+**Goal**: A refreshed, professionally styled hex sticker is produced by a reproducible R script and committed as the package logo
+**Depends on**: Nothing (no pkgdown infrastructure needed to render a PNG)
+**Requirements**: STICKER-01, STICKER-02, STICKER-03
+**Success Criteria** (what must be TRUE):
+  1. `inst/hex/sticker.R` runs without error and writes `man/figures/logo.png`
+  2. The output PNG is 1200x1390px at 300dpi (retina quality)
+  3. The sticker color palette matches the brand colors used in the website theme (same primary hex value)
+  4. Running `source("inst/hex/sticker.R")` at a clean checkout re-creates an identical logo without manual steps
+**Plans**: 1 plan
+Plans:
+- [ ] 52-01-PLAN.md — Asset acquisition, sticker.R authoring, and visual verification of logo.png
+
+### Phase 53: Foundation & Theme
+**Goal**: pkgdown is installed and configured with a Bootstrap 5 custom theme so the site builds locally without warnings
+**Depends on**: Phase 52 (logo.png must exist at the standard path before pkgdown detects it)
+**Requirements**: FOUND-01, FOUND-02, FOUND-03, THEME-01, THEME-02, THEME-03
+**Success Criteria** (what must be TRUE):
+  1. `pkgdown::check_pkgdown()` returns 0 warnings from the project root
+  2. `pkgdown::build_site()` completes and opens a site showing the hex logo in the navbar
+  3. The site uses a non-default professional color palette (primary brand color visible in links, buttons, and active nav state)
+  4. Body text, headings, and code blocks render in distinct Google Fonts (Lato / Raleway / Fira Code or equivalent)
+  5. `pkgdown` appears in DESCRIPTION `Suggests`; `docs/` is listed in `.gitignore`
+**Plans**: 2 plans
+Plans:
+- [ ] 53-01-PLAN.md — DESCRIPTION/gitignore prerequisites (pkgdown in Suggests, Pages URL, docs/ excluded)
+- [ ] 53-02-PLAN.md — _pkgdown.yml full configuration, pkgdown/extra.css structural CSS, visual verification
+
+### Phase 54: Home Page & Reference
+**Goal**: The site home page compels a first-time visitor to install the package, and every exported function appears in a named reference group
+**Depends on**: Phase 53 (site must build before content can be evaluated)
+**Requirements**: HOME-01, HOME-02, HOME-03, REF-01, REF-02
+**Success Criteria** (what must be TRUE):
+  1. The home page displays R CMD check and pkgdown deploy status badges that link to the correct CI runs
+  2. A feature highlights section lists the five supported survey types and three to five key capabilities visible above the fold on a standard laptop screen
+  3. The reference index page groups functions under named topic headers (e.g., "Survey Design", "Estimation", "Planning & Diagnostics")
+  4. Every exported function appears in at least one reference group — `pkgdown::check_pkgdown()` reports no orphaned functions
+**Plans**: TBD
+
+### Phase 55: Navigation & Articles
+**Goal**: A visitor navigates the entire site using workflow-driven top-level links without hitting dead ends or blank pages
+**Depends on**: Phase 54 (home page and reference must exist before navbar links are wired to them)
+**Requirements**: NAV-01, NAV-02, NAV-03
+**Success Criteria** (what must be TRUE):
+  1. The top navbar contains at minimum four workflow article groups: Get Started, Survey Types, Estimation, and Reporting & Planning
+  2. A Reference link in the top navbar navigates directly to the grouped function index
+  3. A Changelog page renders NEWS.md as a browsable version history page on the site
+  4. Every navbar link resolves to an existing page — no 404s on a freshly built local site
+**Plans**: TBD
+
+### Phase 56: Deployment
+**Goal**: Every push to `main` automatically rebuilds and deploys the site; every PR triggers a build-only check that catches `_pkgdown.yml` errors before merge
+**Depends on**: Phase 55 (complete site structure must exist before CI deploys something meaningful)
+**Requirements**: DEPLOY-01, DEPLOY-02, DEPLOY-03
+**Success Criteria** (what must be TRUE):
+  1. `.github/workflows/pkgdown.yaml` exists and a push to `main` triggers a successful site build and deploy visible at the GitHub Pages URL
+  2. The `gh-pages` orphan branch exists and GitHub Pages is configured to serve from it
+  3. Opening a pull request triggers a build-only workflow run (no deploy step) and the run either passes or reports a `_pkgdown.yml` error that would be invisible without CI
+**Plans**: TBD
+
+## Progress
+
+**Execution Order:** 52 → 53 → 54 → 55 → 56
+
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|----------------|--------|-----------|
+| 52. Hex Sticker | v1.0.0 | 0/1 | Planning | - |
+| 53. Foundation & Theme | v1.0.0 | 0/TBD | Not started | - |
+| 54. Home Page & Reference | v1.0.0 | 0/TBD | Not started | - |
+| 55. Navigation & Articles | v1.0.0 | 0/TBD | Not started | - |
+| 56. Deployment | v1.0.0 | 0/TBD | Not started | - |
+
+---
+*Roadmap last updated: 2026-03-24 after Phase 52 plan created*
 *See .planning/milestones/ for archived milestone roadmaps*

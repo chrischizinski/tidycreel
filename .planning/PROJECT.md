@@ -39,9 +39,21 @@ Creel biologists can analyze survey data using creel vocabulary without understa
 - ✓ `missing_sections` guard — NA row + cli_warn() for registered sections absent from data — v0.7.0
 - ✓ `example_sections_*` datasets and section-estimation vignette — v0.7.0
 
+## Current Milestone: v1.0.0 Package Website
+
+**Goal:** Ship a polished, workflow-driven pkgdown website with a refreshed hex sticker, custom professional theme, and automated GitHub Pages deployment.
+
+**Target features:**
+- Refreshed hex sticker with professional palette matching website theme
+- pkgdown configured with Bootstrap 5 custom theme (clean & professional)
+- Workflow-driven article/navbar structure (Design → Collect → Estimate → Report → Plan)
+- Reference section with functions grouped by topic
+- Home page with hero content, installation instructions, and feature highlights
+- GitHub Actions CI/CD for automated pkgdown deploy to GitHub Pages
+
 ### Active
 
-<!-- No active requirements — planning next milestone. -->
+<!-- v1.0.0 — Package Website -->
 
 ### Validated (v0.9.0 — Survey Planning & Quality of Life)
 
@@ -173,4 +185,4 @@ Three-layer: API → Orchestration → Survey package. The dispatch pattern (che
 | Statistical notation kept as-is with `nolint: object_name_linter` | N_h, E_total, V_0 match textbook formulas exactly; renaming would destroy readability against Cochran (1977) | ✓ Good — documented convention, not an oversight |
 
 ---
-*Last updated: 2026-03-24 after v0.9.0 milestone completion*
+*Last updated: 2026-03-24 after v1.0.0 milestone start*
