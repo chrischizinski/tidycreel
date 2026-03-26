@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: planning
-stopped_at: "Completed 54-home-page-reference-01 (checkpoint:human-verify)"
-last_updated: "2026-03-26T21:44:03.836Z"
+stopped_at: Completed 54-02-PLAN.md
+last_updated: "2026-03-26T21:57:30.619Z"
 last_activity: 2026-03-24 — Roadmap created; 5 phases (52-56), 20 requirements mapped 20/20
 progress:
   total_phases: 5
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 5
-  completed_plans: 3
+  completed_plans: 4
   percent: 0
 ---
 
@@ -47,6 +47,7 @@ Progress: [░░░░░░░░░░] 0%
 | v0.9.0 | 48-51 | 10/10 | Complete | 2026-03-24 |
 | v1.0.0 | 52-56 | TBD | In Progress | — |
 | Phase 53-foundation-theme P01 | 1 | 2 tasks | 2 files |
+| Phase 54-home-page-reference P02 | 2 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -59,6 +60,7 @@ Progress: [░░░░░░░░░░] 0%
 - [Phase 53-foundation-theme]: pkgdown in DESCRIPTION Suggests (not Imports); docs/ excluded via .gitignore; Pages URL appended to DESCRIPTION URL field for check_pkgdown() URL validation
 - [Phase 54-home-page-reference]: pkgdown deploy badge added with grey/no-status acceptable — workflow (pkgdown.yaml) does not exist until Phase 56
 - [Phase 54-home-page-reference]: estimate_cpue() removed from README examples; replaced with estimate_catch_rate() which is an actual exported function
+- [Phase 54-home-page-reference]: S3 methods captured with starts_with() selectors in title: internal section to suppress from public reference index
 
 ### Pending Todos
 
@@ -70,6 +72,6 @@ Progress: [░░░░░░░░░░] 0%
 
 ## Session Continuity
 
-Last session: 2026-03-26T21:44:00.607Z
-Stopped at: Completed 54-home-page-reference-01 (checkpoint:human-verify)
+Last session: 2026-03-26T21:57:30.617Z
+Stopped at: Completed 54-02-PLAN.md
 Resume file: None

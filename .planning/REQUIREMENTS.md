@@ -24,13 +24,13 @@ Requirements for the Package Website milestone. Each maps to roadmap phases.
 - [x] **THEME-01**: Professional color palette set via `template.bslib` variables in `_pkgdown.yml`
 - [x] **THEME-02**: Custom Google Fonts configured for heading, body, and code text
 - [x] **THEME-03**: `pkgdown/extra.css` created with structural CSS (navbar, code blocks, callout accent, typography)
-- [ ] **THEME-04**: `pkgdown/extra.css` extended with hero section spacing and badge styling
+- [x] **THEME-04**: `pkgdown/extra.css` extended with hero section spacing and badge styling
 
 ### Home Page (HOME)
 
-- [ ] **HOME-01**: README.md polished to serve as a compelling home page (description, install, quick example)
-- [ ] **HOME-02**: Status badges displayed (R CMD check, pkgdown deploy status)
-- [ ] **HOME-03**: Feature highlights section showing survey types and key capabilities
+- [x] **HOME-01**: README.md polished to serve as a compelling home page (description, install, quick example)
+- [x] **HOME-02**: Status badges displayed (R CMD check, pkgdown deploy status)
+- [x] **HOME-03**: Feature highlights section showing survey types and key capabilities
 
 ### Navigation (NAV)
 
@@ -40,8 +40,8 @@ Requirements for the Package Website milestone. Each maps to roadmap phases.
 
 ### Reference (REF)
 
-- [ ] **REF-01**: Reference index with all functions grouped by logical topic
-- [ ] **REF-02**: Every exported function appears in at least one reference group (no orphans)
+- [x] **REF-01**: Reference index with all functions grouped by logical topic
+- [x] **REF-02**: Every exported function appears in at least one reference group (no orphans)
 
 ### Deployment (DEPLOY)
 
@@ -82,12 +82,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | THEME-01 | Phase 53 | Complete |
 | THEME-02 | Phase 53 | Complete |
 | THEME-03 | Phase 53 | Complete |
-| THEME-04 | Phase 54 | Pending |
-| HOME-01 | Phase 54 | Pending |
-| HOME-02 | Phase 54 | Pending |
-| HOME-03 | Phase 54 | Pending |
-| REF-01 | Phase 54 | Pending |
-| REF-02 | Phase 54 | Pending |
+| THEME-04 | Phase 54 | Complete |
+| HOME-01 | Phase 54 | Complete |
+| HOME-02 | Phase 54 | Complete |
+| HOME-03 | Phase 54 | Complete |
+| REF-01 | Phase 54 | Complete |
+| REF-02 | Phase 54 | Complete |
 | NAV-01 | Phase 55 | Pending |
 | NAV-02 | Phase 55 | Pending |
 | NAV-03 | Phase 55 | Pending |
