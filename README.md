@@ -1,7 +1,3 @@
----
-output: github_document
----
-
 # tidycreel
 
 <p align="center">
@@ -10,7 +6,7 @@ output: github_document
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/chrischizinski/tidycreel/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/chrischizinski/tidycreel/actions/workflows/R-CMD-check.yaml)
-[![pkgdown](https://github.com/chrischizinski/tidycreel/actions/workflows/pkgdown.yaml/badge.svg)](https://github.com/chrischizinski/tidycreel/actions/workflows/pkgdown.yaml)
+[![pkgdown](https://img.shields.io/badge/pkgdown-pending-lightgrey)](https://chrischizinski.github.io/tidycreel/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 <!-- badges: end -->
@@ -33,38 +29,44 @@ devtools::install_github("chrischizinski/tidycreel")
 
 ## Survey Types
 
-<div class="row mt-4 mb-4">
-  <div class="col-md-4 mb-3">
-    <div class="card h-100 border-0 bg-light p-3">
-      <h5 class="text-primary">Instantaneous Count</h5>
-      <p class="small">Stratified effort estimation from periodic angler counts.</p>
-    </div>
-  </div>
-  <div class="col-md-4 mb-3">
-    <div class="card h-100 border-0 bg-light p-3">
-      <h5 class="text-primary">Bus-Route</h5>
-      <p class="small">PPS site selection with Horvitz-Thompson estimators (Malvestuto 1978).</p>
-    </div>
-  </div>
-  <div class="col-md-4 mb-3">
-    <div class="card h-100 border-0 bg-light p-3">
-      <h5 class="text-primary">Ice Fishing</h5>
-      <p class="small">Degenerate bus-route design with certainty site sampling.</p>
-    </div>
-  </div>
-  <div class="col-md-4 mb-3">
-    <div class="card h-100 border-0 bg-light p-3">
-      <h5 class="text-primary">Camera-Monitored</h5>
-      <p class="small">Counter and ingress-egress timestamp preprocessing.</p>
-    </div>
-  </div>
-  <div class="col-md-4 mb-3">
-    <div class="card h-100 border-0 bg-light p-3">
-      <h5 class="text-primary">Aerial Survey</h5>
-      <p class="small">Single-overflight effort with calibrated open-hours scaling.</p>
-    </div>
-  </div>
-</div>
+::: {.row .mt-4 .mb-4}
+
+::: {.col-md-4 .mb-3}
+::: {.card .h-100 .border-0 .bg-light .p-3}
+##### [Instantaneous Count]{.text-primary}
+Stratified effort estimation from periodic angler counts.
+:::
+:::
+
+::: {.col-md-4 .mb-3}
+::: {.card .h-100 .border-0 .bg-light .p-3}
+##### [Bus-Route]{.text-primary}
+PPS site selection with Horvitz-Thompson estimators (Malvestuto 1978).
+:::
+:::
+
+::: {.col-md-4 .mb-3}
+::: {.card .h-100 .border-0 .bg-light .p-3}
+##### [Ice Fishing]{.text-primary}
+Degenerate bus-route design with certainty site sampling.
+:::
+:::
+
+::: {.col-md-4 .mb-3}
+::: {.card .h-100 .border-0 .bg-light .p-3}
+##### [Camera-Monitored]{.text-primary}
+Counter and ingress-egress timestamp preprocessing.
+:::
+:::
+
+::: {.col-md-4 .mb-3}
+::: {.card .h-100 .border-0 .bg-light .p-3}
+##### [Aerial Survey]{.text-primary}
+Single-overflight effort with calibrated open-hours scaling.
+:::
+:::
+
+:::
 
 ## Key Capabilities
 
