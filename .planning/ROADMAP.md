@@ -240,7 +240,9 @@ Plans:
   2. A Reference link in the top navbar navigates directly to the grouped function index
   3. A Changelog page renders NEWS.md as a browsable version history page on the site
   4. Every navbar link resolves to an existing page — no 404s on a freshly built local site
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 55-01-PLAN.md — Replace stale navbar articles stub with native articles: sections, add news component, visual verification
 
 ### Phase 56: Deployment
 **Goal**: Every push to `main` automatically rebuilds and deploys the site; every PR triggers a build-only check that catches `_pkgdown.yml` errors before merge
@@ -261,9 +263,9 @@ Plans:
 | 52. Hex Sticker | v1.0.0 | 0/1 | Planning | - |
 | 53. Foundation & Theme | 2/2 | Complete    | 2026-03-26 | - |
 | 54. Home Page & Reference | 2/2 | Complete    | 2026-03-27 | - |
-| 55. Navigation & Articles | v1.0.0 | 0/TBD | Not started | - |
+| 55. Navigation & Articles | v1.0.0 | 0/1 | Not started | - |
 | 56. Deployment | v1.0.0 | 0/TBD | Not started | - |
 
 ---
-*Roadmap last updated: 2026-03-24 after Phase 52 plan created*
+*Roadmap last updated: 2026-03-27 after Phase 55 plan created*
 *See .planning/milestones/ for archived milestone roadmaps*

@@ -26,20 +26,8 @@ navbar:
   bg: primary
   type: dark
   structure:
-    left: [home, reference, articles]
+    left: [intro, reference, articles, news]
     right: [github]
-  components:
-    articles:
-      text: Articles
-      menu:
-        - text: Effort (Survey-First)
-          href: articles/effort_survey_first.html
-        - text: Aerial Effort
-          href: articles/aerial.html
-        - text: Survey Terms → Creel Translator
-          href: articles/survey_creel_terms.html
-        - text: Replicate Designs for Creel
-          href: articles/replicate_designs_creel.html
 
 reference:
   - title: "Survey Design"
@@ -153,3 +141,47 @@ reference:
       - starts_with("format.")
       - starts_with("print.")
       - starts_with("summary.")
+
+articles:
+- title: "Get Started"
+  desc: >
+    Introduction to creel survey analysis with tidycreel.
+  contents:
+  - tidycreel
+
+- title: "Survey Types"
+  navbar: "Survey Types"
+  desc: >
+    Workflow vignettes for each supported creel survey design.
+  contents:
+  - bus-route-surveys
+  - ice-fishing
+  - camera-surveys
+  - aerial-surveys
+
+- title: "Estimation"
+  navbar: "Estimation"
+  desc: >
+    Catch rate, harvest, effort, and spatially stratified estimation techniques.
+  contents:
+  - interview-estimation
+  - incomplete-trips
+  - flexible-count-estimation
+  - section-estimation
+
+- title: "Reporting & Planning"
+  navbar: "Reporting & Planning"
+  desc: >
+    Interview summaries, diagnostics, and pre-season survey planning.
+  contents:
+  - unextrapolated-summaries
+
+- title: "Reference & Equations"
+  desc: >
+    Technical equation derivations for advanced users.
+  contents:
+  - bus-route-equations
+
+news:
+  one_page: true
+  cran_dates: false
