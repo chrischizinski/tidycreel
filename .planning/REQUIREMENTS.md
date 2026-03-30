@@ -34,9 +34,9 @@ Requirements for the Package Website milestone. Each maps to roadmap phases.
 
 ### Navigation (NAV)
 
-- [ ] **NAV-01**: Workflow-driven articles navbar: Get Started | Survey Types | Estimation | Reporting & Planning
-- [ ] **NAV-02**: Reference link in top navbar for direct function access
-- [ ] **NAV-03**: NEWS.md rendered as a Changelog page on the site
+- [x] **NAV-01**: Workflow-driven articles navbar: Get Started | Survey Types | Estimation | Reporting & Planning
+- [x] **NAV-02**: Reference link in top navbar for direct function access
+- [x] **NAV-03**: NEWS.md rendered as a Changelog page on the site
 
 ### Reference (REF)
 
@@ -88,9 +88,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | HOME-03 | Phase 54 | Complete |
 | REF-01 | Phase 54 | Complete |
 | REF-02 | Phase 54 | Complete |
-| NAV-01 | Phase 55 | Pending |
-| NAV-02 | Phase 55 | Pending |
-| NAV-03 | Phase 55 | Pending |
+| NAV-01 | Phase 55 | Complete |
+| NAV-02 | Phase 55 | Complete |
+| NAV-03 | Phase 55 | Complete |
 | DEPLOY-01 | Phase 56 | Pending |
 | DEPLOY-02 | Phase 56 | Pending |
 | DEPLOY-03 | Phase 56 | Pending |
