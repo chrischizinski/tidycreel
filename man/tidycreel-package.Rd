@@ -6,12 +6,15 @@
 \alias{tidycreel-package}
 \title{tidycreel: Tidy Interface for Creel Survey Design and Analysis}
 \description{
+\if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
+
 Provides a tidy, pipe-friendly interface for creel survey design, data management, estimation, and reporting. Built on the 'survey' package for robust design-based inference with support for access-point, roving, and hybrid survey designs.
 }
 \seealso{
 Useful links:
 \itemize{
   \item \url{https://github.com/chrischizinski/tidycreel}
+  \item \url{https://chrischizinski.github.io/tidycreel}
   \item Report bugs at \url{https://github.com/chrischizinski/tidycreel/issues}
 }
 

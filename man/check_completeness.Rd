@@ -20,7 +20,7 @@ A creel_completeness_report object (S3 list) with:
 \item{$refusals}{creel_summary_refusals object or NULL}
 \item{$n_min}{integer threshold used}
 \item{$survey_type}{character}
-\item{$passed}{logical — TRUE if no missing days and no low-n strata}
+\item{$passed}{logical -- TRUE if no missing days and no low-n strata}
 }
 }
 \description{

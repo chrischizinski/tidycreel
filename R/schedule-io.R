@@ -137,7 +137,7 @@ write_schedule <- function(schedule, path, format = c("csv", "xlsx")) {
 #' for use with [creel_design()].
 #'
 #' The format is detected from the file extension. All columns are read as text
-#' first, then [coerce_schedule_columns()] applies type coercion — the same
+#' first, then `coerce_schedule_columns()` applies type coercion -- the same
 #' logic runs regardless of format so that Excel-reformatted dates and serial
 #' numbers are handled consistently.
 #'

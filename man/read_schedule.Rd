@@ -26,7 +26,7 @@ for use with \code{\link[=creel_design]{creel_design()}}.
 }
 \details{
 The format is detected from the file extension. All columns are read as text
-first, then \code{\link[=coerce_schedule_columns]{coerce_schedule_columns()}} applies type coercion — the same
+first, then \code{coerce_schedule_columns()} applies type coercion -- the same
 logic runs regardless of format so that Excel-reformatted dates and serial
 numbers are handled consistently.
 }

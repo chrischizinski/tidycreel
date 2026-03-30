@@ -1,8 +1,8 @@
-# design-validator.R — Pre-season design validation and post-season completeness checking
+# design-validator.R -- Pre-season design validation and post-season completeness checking
 # Phase 50: VALID-01 (validate_design) and QUAL-01 (check_completeness)
 
 # Internal threshold constants (documented, not yet enforced until Plan 02)
-WARN_CV_BUFFER <- 1.2 # nolint: object_name_linter — warn if cv_actual <= cv_target * WARN_CV_BUFFER but n < n_required
+WARN_CV_BUFFER <- 1.2 # nolint: object_name_linter -- warn if cv_actual <= cv_target * WARN_CV_BUFFER but n < n_required
 
 # ---- internal constructors --------------------------------------------------
 
@@ -34,7 +34,7 @@ new_creel_design_report <- function(results, passed, survey_type) {
 #'   \describe{
 #'     \item{$results}{tibble with columns stratum, status, n_proposed,
 #'       n_required, cv_actual, cv_target, message}
-#'     \item{$passed}{logical — TRUE if all strata status == "pass"}
+#'     \item{$passed}{logical -- TRUE if all strata status == "pass"}
 #'     \item{$survey_type}{character}
 #'   }
 #'
@@ -63,7 +63,7 @@ validate_design <- function(
 
   strata_names <- names(N_h)
 
-  # Per-stratum calculations — delegate entirely to Phase 49 functions
+  # Per-stratum calculations -- delegate entirely to Phase 49 functions
   if (type == "effort") {
     n_req_all <- creel_n_effort( # nolint: object_usage_linter
       cv_target = cv_target, # nolint: object_name_linter
@@ -234,7 +234,7 @@ find_low_n_strata <- function(design, n_min) {
 #'     \item{$refusals}{creel_summary_refusals object or NULL}
 #'     \item{$n_min}{integer threshold used}
 #'     \item{$survey_type}{character}
-#'     \item{$passed}{logical — TRUE if no missing days and no low-n strata}
+#'     \item{$passed}{logical -- TRUE if no missing days and no low-n strata}
 #'   }
 #'
 #' @export
@@ -326,7 +326,7 @@ format.creel_completeness_report <- function(x, ...) {
     if (is.null(x$refusals)) {
       cli::cli_text("(not recorded or not applicable)")
     } else {
-      cli::cli_text("Refusal data available — use $refusals for full breakdown")
+      cli::cli_text("Refusal data available \u2014 use $refusals for full breakdown")
     }
   })
 }

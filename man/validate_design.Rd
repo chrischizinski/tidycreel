@@ -40,7 +40,7 @@ A creel_design_report object (S3 list) with:
 \describe{
 \item{$results}{tibble with columns stratum, status, n_proposed,
 n_required, cv_actual, cv_target, message}
-\item{$passed}{logical — TRUE if all strata status == "pass"}
+\item{$passed}{logical -- TRUE if all strata status == "pass"}
 \item{$survey_type}{character}
 }
 }
