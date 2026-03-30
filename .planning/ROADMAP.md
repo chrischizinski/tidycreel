@@ -252,7 +252,10 @@ Plans:
   1. `.github/workflows/pkgdown.yaml` exists and a push to `main` triggers a successful site build and deploy visible at the GitHub Pages URL
   2. The `gh-pages` orphan branch exists and GitHub Pages is configured to serve from it
   3. Opening a pull request triggers a build-only workflow run (no deploy step) and the run either passes or reports a `_pkgdown.yml` error that would be invisible without CI
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 56-01-PLAN.md — Create pkgdown.yaml workflow (r-lib/actions v2 canonical template) and push to main to trigger first CI run
+- [ ] 56-02-PLAN.md — Activate GitHub Pages from gh-pages branch and verify live site returns HTTP 200
 
 ## Progress
 
@@ -263,9 +266,9 @@ Plans:
 | 52. Hex Sticker | v1.0.0 | 1/1 | Complete (skipped) | 2026-03-30 |
 | 53. Foundation & Theme | 2/2 | Complete    | 2026-03-26 | - |
 | 54. Home Page & Reference | 2/2 | Complete    | 2026-03-27 | - |
-| 55. Navigation & Articles | 1/1 | Complete   | 2026-03-30 | - |
-| 56. Deployment | v1.0.0 | 0/TBD | Not started | - |
+| 55. Navigation & Articles | 1/1 | Complete    | 2026-03-30 | - |
+| 56. Deployment | v1.0.0 | 0/2 | Not started | - |
 
 ---
-*Roadmap last updated: 2026-03-27 after Phase 55 plan created*
+*Roadmap last updated: 2026-03-30 after Phase 56 plans created*
 *See .planning/milestones/ for archived milestone roadmaps*
