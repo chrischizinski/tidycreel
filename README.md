@@ -1,19 +1,31 @@
+
+<!-- Generated from README.Rmd — do not edit README.md directly -->
+
 # tidycreel
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/chrischizinski/tidycreel/main/man/figures/logo.png" alt="tidycreel hex sticker" width="200"/>
+
+<img src="https://raw.githubusercontent.com/chrischizinski/tidycreel/main/man/figures/logo.png" alt="tidycreel hex sticker" width="200"/>
 </p>
 
 <!-- badges: start -->
+
 [![R-CMD-check](https://github.com/chrischizinski/tidycreel/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/chrischizinski/tidycreel/actions/workflows/R-CMD-check.yaml)
 [![pkgdown](https://img.shields.io/badge/pkgdown-pending-lightgrey)](https://chrischizinski.github.io/tidycreel/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+[![License:
+MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Lifecycle:
+experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 <!-- badges: end -->
 
 **Tidy Interface for Creel Survey Design and Analysis**
 
-tidycreel provides a pipe-friendly interface for creel survey design, data management, estimation, and reporting. Built on the [`survey`](https://cran.r-project.org/package=survey) package for robust design-based inference, it lets fisheries biologists work in domain vocabulary — dates, strata, counts, effort — without managing survey design internals directly.
+tidycreel provides a pipe-friendly interface for creel survey design,
+data management, estimation, and reporting. Built on the
+[`survey`](https://cran.r-project.org/package=survey) package for robust
+design-based inference, it lets fisheries biologists work in domain
+vocabulary — dates, strata, counts, effort — without managing survey
+design internals directly.
 
 ## Installation
 
@@ -29,52 +41,112 @@ devtools::install_github("chrischizinski/tidycreel")
 
 ## Survey Types
 
-::: {.row .mt-4 .mb-4}
+<div class="row mt-4 mb-4">
 
-::: {.col-md-4 .mb-3}
-::: {.card .h-100 .border-0 .bg-light .p-3}
-##### [Instantaneous Count]{.text-primary}
+<div class="col-md-4 mb-3">
+
+<div class="card h-100 border-0 bg-light p-3">
+
+<h5 class="text-primary">
+
+Instantaneous Count
+</h5>
+
+<p class="small">
+
 Stratified effort estimation from periodic angler counts.
-:::
-:::
+</p>
 
-::: {.col-md-4 .mb-3}
-::: {.card .h-100 .border-0 .bg-light .p-3}
-##### [Bus-Route]{.text-primary}
+</div>
+
+</div>
+
+<div class="col-md-4 mb-3">
+
+<div class="card h-100 border-0 bg-light p-3">
+
+<h5 class="text-primary">
+
+Bus-Route
+</h5>
+
+<p class="small">
+
 PPS site selection with Horvitz-Thompson estimators (Malvestuto 1978).
-:::
-:::
+</p>
 
-::: {.col-md-4 .mb-3}
-::: {.card .h-100 .border-0 .bg-light .p-3}
-##### [Ice Fishing]{.text-primary}
+</div>
+
+</div>
+
+<div class="col-md-4 mb-3">
+
+<div class="card h-100 border-0 bg-light p-3">
+
+<h5 class="text-primary">
+
+Ice Fishing
+</h5>
+
+<p class="small">
+
 Degenerate bus-route design with certainty site sampling.
-:::
-:::
+</p>
 
-::: {.col-md-4 .mb-3}
-::: {.card .h-100 .border-0 .bg-light .p-3}
-##### [Camera-Monitored]{.text-primary}
+</div>
+
+</div>
+
+<div class="col-md-4 mb-3">
+
+<div class="card h-100 border-0 bg-light p-3">
+
+<h5 class="text-primary">
+
+Camera-Monitored
+</h5>
+
+<p class="small">
+
 Counter and ingress-egress timestamp preprocessing.
-:::
-:::
+</p>
 
-::: {.col-md-4 .mb-3}
-::: {.card .h-100 .border-0 .bg-light .p-3}
-##### [Aerial Survey]{.text-primary}
+</div>
+
+</div>
+
+<div class="col-md-4 mb-3">
+
+<div class="card h-100 border-0 bg-light p-3">
+
+<h5 class="text-primary">
+
+Aerial Survey
+</h5>
+
+<p class="small">
+
 Single-overflight effort with calibrated open-hours scaling.
-:::
-:::
+</p>
 
-:::
+</div>
+
+</div>
+
+</div>
 
 ## Key Capabilities
 
-- **Design-based inference** — wraps the `survey` package; biologists write creel vocabulary, not survey package internals
-- **Single entry point** — `creel_design()` dispatches to the correct estimator for each survey type
-- **Incomplete trip handling** — TOST equivalence testing validates whether incomplete trips can be pooled
-- **Sample size and power** — `creel_n_effort()`, `creel_n_cpue()`, and `creel_power()` plan surveys before data collection
-- **Season summaries** — `season_summary()` assembles estimates across strata or survey periods into a wide tibble
+- **Design-based inference** — wraps the `survey` package; biologists
+  write creel vocabulary, not survey package internals
+- **Single entry point** — `creel_design()` dispatches to the correct
+  estimator for each survey type
+- **Incomplete trip handling** — TOST equivalence testing validates
+  whether incomplete trips can be pooled
+- **Sample size and power** — `creel_n_effort()`, `creel_n_cpue()`, and
+  `creel_power()` plan surveys before data collection
+- **Season summaries** — `season_summary()` assembles estimates across
+  strata or survey periods into a wide tibble
 
 ## Quick Start
 
@@ -118,25 +190,37 @@ estimate_catch_rate(design)
 ## Functions at a Glance
 
 ### Survey Design
-- **`creel_design()`** — single entry point; dispatches on `survey_type` (instantaneous, bus_route, ice, camera, aerial)
-- **`add_counts()`**, **`add_interviews()`**, **`add_catch()`**, **`add_lengths()`**, **`add_sections()`** — attach observation data
+
+- **`creel_design()`** — single entry point; dispatches on `survey_type`
+  (instantaneous, bus_route, ice, camera, aerial)
+- **`add_counts()`**, **`add_interviews()`**, **`add_catch()`**,
+  **`add_lengths()`**, **`add_sections()`** — attach observation data
 
 ### Estimation
-- **`estimate_effort()`** — total effort with Taylor linearization, bootstrap, or jackknife variance
-- **`estimate_catch_rate()`** / **`estimate_harvest_rate()`** — ratio-based rates from interview data
-- **`estimate_total_catch()`** / **`estimate_total_harvest()`** — totals via delta method variance propagation
+
+- **`estimate_effort()`** — total effort with Taylor linearization,
+  bootstrap, or jackknife variance
+- **`estimate_catch_rate()`** / **`estimate_harvest_rate()`** —
+  ratio-based rates from interview data
+- **`estimate_total_catch()`** / **`estimate_total_harvest()`** — totals
+  via delta method variance propagation
 
 ### Planning
-- **`creel_n_effort()`**, **`creel_n_cpue()`**, **`creel_power()`** — sample size and power analysis
-- **`generate_schedule()`**, **`generate_bus_schedule()`** — sampling frame generators
+
+- **`creel_n_effort()`**, **`creel_n_cpue()`**, **`creel_power()`** —
+  sample size and power analysis
+- **`generate_schedule()`**, **`generate_bus_schedule()`** — sampling
+  frame generators
 
 ### Diagnostics
-- **`validate_design()`**, **`check_completeness()`**, **`season_summary()`** — pre- and post-season QA
+
+- **`validate_design()`**, **`check_completeness()`**,
+  **`season_summary()`** — pre- and post-season QA
 
 ## Vignettes
 
 | Vignette | Description |
-|---|---|
+|----|----|
 | [Getting Started](https://chrischizinski.github.io/tidycreel/articles/tidycreel.html) | Core workflow: design → counts → effort estimation |
 | [Bus-Route Surveys](https://chrischizinski.github.io/tidycreel/articles/bus-route-surveys.html) | PPS site selection, enumeration expansion, HT estimators |
 | [Bus-Route Equations](https://chrischizinski.github.io/tidycreel/articles/bus-route-equations.html) | Statistical derivations and formulas |

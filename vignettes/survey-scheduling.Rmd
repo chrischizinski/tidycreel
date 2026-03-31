@@ -1,0 +1,225 @@
+---
+title: "Survey Scheduling: Count and Interview Periods"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Survey Scheduling}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Overview
+
+A well-structured sampling schedule ensures that creel survey estimates of effort, catch,
+and CPUE are unbiased and representative of the full survey season. `generate_schedule()`
+builds a stratified random sampling calendar from season boundaries and a target sampling
+intensity — producing the count-period framework that drives the tidycreel estimation
+pipeline.
+
+## The Count Period Framework
+
+Every tidycreel design rests on a calendar of **count periods** — the discrete time slots
+during which field crews collect data. A count period is defined by:
+
+- **Date**: the survey date
+- **Period**: the time-of-day window (e.g., "Morning", "Afternoon")
+- **Stratum**: the day type (weekday vs. weekend)
+
+Interviews and angler counts are both collected during count periods. The schedule you
+generate defines exactly which days and periods will be sampled.
+
+## Building a Basic Schedule
+
+The minimal inputs are season boundaries, the number of periods per day, and sampling
+intensity. The example below builds a schedule for a May–September creel season with
+morning and afternoon count periods, sampling 30% of weekdays and 50% of weekends.
+
+```{r basic-schedule, message = FALSE}
+library(tidycreel)
+
+sched <- generate_schedule(
+  start_date    = "2024-05-01",
+  end_date      = "2024-09-30",
+  n_periods     = 2,
+  period_labels = c("Morning", "Afternoon"),
+  sampling_rate = c(weekday = 0.30, weekend = 0.50),
+  seed          = 42
+)
+
+head(sched, 8)
+```
+
+The result is a `creel_schedule` object with `date`, `day_type`, and `period_id` columns.
+Period labels replace integer IDs with human-readable names.
+
+```{r schedule-summary}
+# Counts of scheduled days by stratum
+table(sched$day_type)
+```
+
+## Visualising Sampled vs. Unsampled Days
+
+Pass `include_all = TRUE` to return every day of the season with a `sampled` indicator.
+This is useful for checking seasonal coverage and communicating the design to stakeholders.
+
+```{r include-all, message = FALSE}
+sched_full <- generate_schedule(
+  start_date    = "2024-05-01",
+  end_date      = "2024-09-30",
+  n_periods     = 1,
+  sampling_rate = c(weekday = 0.30, weekend = 0.50),
+  include_all   = TRUE,
+  seed          = 42
+)
+
+# Sampled proportion by stratum
+table(sched_full$day_type, sched_full$sampled)
+```
+
+The sampled days are drawn by stratified random sampling within each stratum, so weekday
+and weekend sampling fractions match the requested rates.
+
+## Three-Period Schedules
+
+Some surveys divide the day into three periods — morning, midday, and evening — to capture
+temporal patterns in angler activity (e.g., a morning and evening peak with low midday use).
+
+```{r three-periods, message = FALSE}
+sched3 <- generate_schedule(
+  start_date    = "2024-06-01",
+  end_date      = "2024-08-31",
+  n_periods     = 3,
+  period_labels = c("Morning", "Midday", "Evening"),
+  sampling_rate = c(weekday = 0.40, weekend = 0.60),
+  seed          = 101
+)
+
+head(sched3, 9)
+```
+
+## Reproducibility with `seed`
+
+The `seed` argument ensures that the same calendar is produced every time. This is
+important when the schedule is pre-printed for field use and must match what the
+estimators will use.
+
+```{r seed}
+sched_a <- generate_schedule("2024-06-01", "2024-06-30",
+  n_periods = 1,
+  sampling_rate = 0.4, seed = 99
+)
+sched_b <- generate_schedule("2024-06-01", "2024-06-30",
+  n_periods = 1,
+  sampling_rate = 0.4, seed = 99
+)
+
+identical(sched_a, sched_b)
+```
+
+## Saving and Sharing the Schedule
+
+`write_schedule()` exports to CSV (for any spreadsheet application) or xlsx (for direct
+field printing). `read_schedule()` reloads the file with correct column types, so the
+schedule round-trips without type coercion issues.
+
+```{r io, eval = FALSE}
+# Save for field crews
+write_schedule(sched, "count_schedule_2024.csv")
+write_schedule(sched, "count_schedule_2024.xlsx")
+
+# Reload — column types are preserved automatically
+sched_reload <- read_schedule("count_schedule_2024.csv")
+identical(sched, sched_reload)
+```
+
+## Linking the Schedule to a Design
+
+Pass the schedule directly to `creel_design()`. The schedule's stratum structure informs
+the survey weights used by all downstream estimators.
+
+```{r design, message = FALSE}
+design <- creel_design(sched, date = date, strata = day_type)
+design
+```
+
+## Count Period Scheduling vs. Interview Scheduling
+
+In standard access-point creel surveys, **interviews happen during count periods** — the
+same field crew that counts anglers also approaches them for interviews. The count schedule
+therefore governs both collection activities.
+
+There is no separate "interview schedule." The set of available interviews is the set of
+interviews collected on sampled count-period days.
+
+## Bus-Route Scheduling
+
+For bus-route designs, `generate_bus_schedule()` converts a count schedule and a
+site-level sampling frame into a complete bus-route sampling frame with inclusion
+probabilities. Each site's probability of being visited in a given period is:
+
+$$\pi_i = p_{site} \times p_{period} \quad \text{where} \quad p_{period} = \frac{\text{crew}}{n_{circuits}}$$
+
+```{r bus-schedule, message = FALSE}
+# Site-level selection probabilities (must sum to 1.0)
+site_frame <- data.frame(
+  site_id = c("North Bay", "South Cove", "Dock Area", "Main Channel"),
+  p_site  = c(0.35, 0.25, 0.25, 0.15)
+)
+
+# Build bus-route sampling frame using the count schedule
+bus_frame <- generate_bus_schedule(
+  schedule       = sched,
+  sampling_frame = site_frame,
+  site           = site_id,
+  p_site         = p_site,
+  crew           = 1
+)
+
+bus_frame
+```
+
+The `inclusion_prob` column is the per-site overall inclusion probability across the
+season. This frame passes directly to `creel_design(survey_type = "bus_route", ...)`.
+
+## Sampling Rate Guidance
+
+The right sampling intensity depends on the target precision for the survey. As a
+starting point:
+
+| Survey length | Typical weekday rate | Typical weekend rate |
+|---------------|---------------------|---------------------|
+| Short (< 8 weeks) | 0.40–0.60 | 0.60–0.80 |
+| Standard (8–20 weeks) | 0.25–0.40 | 0.40–0.60 |
+| Long (> 20 weeks) | 0.15–0.25 | 0.25–0.40 |
+
+Higher rates on weekends reflect greater angler activity and higher stratum variance.
+Use `creel_n_effort()` or `creel_power()` to select rates based on a CV target rather
+than rule of thumb.
+
+```{r sample-size, message = FALSE}
+# Effort sample size to achieve CV ≤ 0.15
+# N_h: total days per stratum in a 184-day season
+# ybar_h: pilot mean daily effort (angler-hours) per stratum
+# s2_h: pilot variance of daily effort per stratum
+creel_n_effort(
+  cv_target = 0.15,
+  N_h = c(weekday = 132, weekend = 52),
+  ybar_h = c(weekday = 280, weekend = 550),
+  s2_h = c(weekday = 14400, weekend = 32400)
+)
+```
+
+## References
+
+- Hoenig, J. M., Robson, D. S., Jones, C. M., and Pollock, K. H. (1993). Scheduling
+  counts in the instantaneous and progressive count methods for estimating sportfishing
+  effort. *North American Journal of Fisheries Management*, 13, 723–736.
+
+- Pollock, K. H., Jones, C. M., and Brown, T. L. (1994). *Angler Survey Methods and Their
+  Applications in Fisheries Management*. American Fisheries Society, Bethesda, MD.
