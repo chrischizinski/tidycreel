@@ -185,7 +185,7 @@ See: [.planning/milestones/v0.9.0-ROADMAP.md](milestones/v0.9.0-ROADMAP.md)
 - [x] **Phase 53: Foundation & Theme** - pkgdown + Bootstrap 5 bslib configured; `pkgdown::check_pkgdown()` passes clean (completed 2026-03-26)
 - [x] **Phase 54: Home Page & Reference** - Polished README home page with badges and feature highlights; reference index fully grouped (completed 2026-03-26)
 - [x] **Phase 55: Navigation & Articles** - Workflow-driven navbar, reference link, and NEWS changelog wired into site structure (completed 2026-03-30)
-- [ ] **Phase 56: Deployment** - GitHub Actions auto-deploys to gh-pages on push; PR builds catch errors before merge
+- [x] **Phase 56: Deployment** - GitHub Actions auto-deploys to gh-pages on push; PR builds catch errors before merge (completed 2026-03-31)
 
 ## Phase Details
 
@@ -267,7 +267,7 @@ Plans:
 | 53. Foundation & Theme | 2/2 | Complete    | 2026-03-26 | - |
 | 54. Home Page & Reference | 2/2 | Complete    | 2026-03-27 | - |
 | 55. Navigation & Articles | 1/1 | Complete    | 2026-03-30 | - |
-| 56. Deployment | v1.0.0 | 0/2 | Not started | - |
+| 56. Deployment | v1.0.0 | Complete    | 2026-03-31 | - |
 
 ---
 *Roadmap last updated: 2026-03-30 after Phase 56 plans created*

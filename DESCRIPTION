@@ -1,6 +1,6 @@
 Package: tidycreel
 Title: Tidy Interface for Creel Survey Design and Analysis
-Version: 0.0.0.9000
+Version: 1.0.0
 Authors@R:
     person(given = "Christopher", family = "Chizinski", role = c("aut", "cre"),
            email = "chris.chizinski@unl.edu",
