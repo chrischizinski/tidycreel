@@ -203,7 +203,7 @@ monthly_catch <- lapply(seq_along(months), function(i) {
   )
 
   effort_est <- estimate_effort(des_m)
-  catch_est <- estimate_total_catch(des_m, effort = effort_est)
+  catch_est <- estimate_total_catch(des_m)
 
   cbind(month = month_labels[i], catch_est$estimates)
 })
@@ -256,7 +256,7 @@ for (i in seq_along(months)) {
   )
 
   effort_list[[label]] <- estimate_effort(des_m)
-  catch_list[[label]] <- estimate_total_catch(des_m, effort = effort_list[[label]])
+  catch_list[[label]] <- estimate_total_catch(des_m)
 }
 
 # Assemble effort report

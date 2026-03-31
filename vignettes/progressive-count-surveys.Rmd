@@ -185,7 +185,7 @@ design <- add_interviews(
 cpue <- estimate_catch_rate(design)
 cpue$estimates
 
-total_catch <- estimate_total_catch(design, effort = effort)
+total_catch <- estimate_total_catch(design)
 total_catch$estimates
 ```
 
@@ -199,7 +199,7 @@ a combined standard error.
 harvest_rate <- estimate_harvest_rate(design)
 harvest_rate$estimates
 
-total_harvest <- estimate_total_harvest(design, effort = effort)
+total_harvest <- estimate_total_harvest(design)
 total_harvest$estimates
 ```
 
