@@ -167,15 +167,17 @@ interviews, then multiply by monthly effort. First, generate synthetic interview
 ```{r interview-data, message = FALSE}
 set.seed(2024)
 
-# One interview per sampled day (simplified)
-catch_total <- rpois(nrow(sampled_calendar), lambda = 1.8)
+# Three interviews per sampled day (ensures ≥10 complete trips per month)
+n_per_day <- 3L
+n_int <- nrow(sampled_calendar) * n_per_day
+catch_total <- rpois(n_int, lambda = 1.8)
 interviews <- data.frame(
-  date         = sampled_calendar$date,
-  day_type     = sampled_calendar$day_type,
+  date         = rep(sampled_calendar$date, each = n_per_day),
+  day_type     = rep(sampled_calendar$day_type, each = n_per_day),
   trip_status  = "complete",
-  hours_fished = round(rnorm(nrow(sampled_calendar), mean = 3.5, sd = 1.2), 1),
+  hours_fished = round(rnorm(n_int, mean = 3.5, sd = 1.2), 1),
   catch_total  = catch_total,
-  catch_kept   = pmin(rpois(nrow(sampled_calendar), lambda = 0.6), catch_total)
+  catch_kept   = pmin(rpois(n_int, lambda = 0.6), catch_total)
 )
 interviews$hours_fished <- pmax(interviews$hours_fished, 0.5)
 ```
