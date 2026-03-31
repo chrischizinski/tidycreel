@@ -174,7 +174,7 @@ interviews <- data.frame(
   trip_status  = "complete",
   hours_fished = round(rnorm(nrow(sampled_calendar), mean = 3.5, sd = 1.2), 1),
   catch_total  = rpois(nrow(sampled_calendar), lambda = 1.8),
-  catch_kept   = rpois(nrow(sampled_calendar), lambda = 0.6)
+  catch_kept   = pmin(rpois(nrow(sampled_calendar), lambda = 0.6), catch_total)
 )
 interviews$hours_fished <- pmax(interviews$hours_fished, 0.5)
 ```

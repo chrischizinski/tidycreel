@@ -166,7 +166,7 @@ interviews <- data.frame(
   trip_status = "complete",
   hours_fished = round(pmax(rnorm(n_int, mean = 3.8, sd = 1.3), 0.5), 1),
   catch_total = rpois(n_int, lambda = 2.1),
-  catch_kept = rpois(n_int, lambda = 0.7)
+  catch_kept = pmin(rpois(n_int, lambda = 0.7), catch_total)
 )
 
 design <- add_interviews(
