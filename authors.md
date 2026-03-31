@@ -11,13 +11,13 @@ Source:
 [`DESCRIPTION`](https://github.com/chrischizinski/tidycreel/blob/main/DESCRIPTION)
 
 Chizinski C (2026). *tidycreel: Tidy Interface for Creel Survey Design
-and Analysis*. R package version 0.0.0.9000,
+and Analysis*. R package version 1.0.0,
 <https://github.com/chrischizinski/tidycreel>.
 
     @Manual{,
       title = {tidycreel: Tidy Interface for Creel Survey Design and Analysis},
       author = {Christopher Chizinski},
       year = {2026},
-      note = {R package version 0.0.0.9000},
+      note = {R package version 1.0.0},
       url = {https://github.com/chrischizinski/tidycreel},
     }
