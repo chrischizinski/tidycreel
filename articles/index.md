@@ -31,15 +31,22 @@ techniques.
   Estimation](https://chrischizinski.github.io/tidycreel/articles/incomplete-trips.md):
 - [Flexible Count
   Estimation](https://chrischizinski.github.io/tidycreel/articles/flexible-count-estimation.md):
+- [Progressive Count
+  Surveys](https://chrischizinski.github.io/tidycreel/articles/progressive-count-surveys.md):
 - [Spatially Stratified Estimation with
   Sections](https://chrischizinski.github.io/tidycreel/articles/section-estimation.md):
+- [Temporal Extrapolation: Monthly, Seasonal, and Annual
+  Estimates](https://chrischizinski.github.io/tidycreel/articles/temporal-extrapolation.md):
 
 ### Reporting & Planning
 
-Interview summaries, diagnostics, and pre-season survey planning.
+Interview summaries, diagnostics, scheduling, and pre-season survey
+planning.
 
 - [Unextrapolated Interview
   Summaries](https://chrischizinski.github.io/tidycreel/articles/unextrapolated-summaries.md):
+- [Survey Scheduling: Count and Interview
+  Periods](https://chrischizinski.github.io/tidycreel/articles/survey-scheduling.md):
 
 ### Reference & Equations
 
