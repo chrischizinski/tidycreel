@@ -20,6 +20,7 @@ Imports:
     checkmate,
     cli,
     dplyr,
+    lubridate (>= 1.9.5),
     rlang,
     scales,
     stats,
@@ -28,13 +29,20 @@ Imports:
     tidyselect (>= 1.2.0)
 Suggests:
     covr,
+    hexSticker,
     knitr,
     lintr,
+    magick,
+    pkgdown,
+    readxl (>= 1.4.0),
     rmarkdown,
+    showtext,
     styler,
+    sysfonts,
     testthat (>= 3.0.0),
-    withr
+    withr,
+    writexl (>= 1.5.4)
 VignetteBuilder: knitr
 Config/testthat/edition: 3
-URL: https://github.com/chrischizinski/tidycreel
+URL: https://github.com/chrischizinski/tidycreel, https://chrischizinski.github.io/tidycreel
 BugReports: https://github.com/chrischizinski/tidycreel/issues

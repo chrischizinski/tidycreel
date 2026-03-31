@@ -43,6 +43,74 @@ validate_calendar_schema <- function(data) {
   invisible(data)
 }
 
+#' Validate a creel_schedule object
+#'
+#' Checks that a `creel_schedule` (or plain data frame intended for use with
+#' [creel_design()]) has the required columns, correct types, and sensible
+#' values. Called by [read_schedule()] after coercion and available for users
+#' to validate hand-constructed schedules.
+#'
+#' @param data A data frame to validate.
+#'
+#' @return Invisibly returns the input data frame on success. Aborts with an
+#'   informative error message on validation failure.
+#'
+#' @export
+validate_creel_schedule <- function(data) {
+  collection <- checkmate::makeAssertCollection()
+  checkmate::assert_data_frame(data, min.rows = 1, add = collection)
+
+  if (is.data.frame(data) && nrow(data) > 0) {
+    # Required columns
+    if (!"date" %in% names(data)) {
+      collection$push("Required column 'date' is missing")
+    } else if (!inherits(data$date, "Date")) {
+      collection$push("Column 'date' must be class Date")
+    } else {
+      bad_dates <- data$date < as.Date("1970-01-01") | data$date > as.Date("2100-12-31")
+      if (any(bad_dates, na.rm = TRUE)) {
+        collection$push("Column 'date' contains values outside plausible range 1970-2100")
+      }
+    }
+
+    if (!"day_type" %in% names(data)) {
+      collection$push("Required column 'day_type' is missing")
+    } else if (!is.character(data$day_type)) {
+      collection$push("Column 'day_type' must be character (not factor or other type)")
+    } else {
+      # Value-level checks: reject NA and empty string
+      if (any(is.na(data$day_type))) {
+        collection$push("Column 'day_type' contains NA values")
+      }
+      if (any(!is.na(data$day_type) & nchar(data$day_type) == 0L)) {
+        collection$push("Column 'day_type' contains empty string values")
+      }
+    }
+
+    # period_id is optional (absent when expand_periods = FALSE), but if present must be positive
+    if ("period_id" %in% names(data)) {
+      pid <- data$period_id
+      if (is.integer(pid) || is.numeric(pid)) {
+        if (any(!is.na(pid) & pid <= 0)) {
+          collection$push("Column 'period_id' must contain only positive values")
+        }
+      }
+      # character and factor period_id are always valid — no further checks
+    }
+  }
+
+  if (!collection$isEmpty()) {
+    msgs <- collection$getMessages()
+    cli::cli_abort(c(
+      "creel_schedule validation failed:",
+      stats::setNames(msgs, rep("x", length(msgs))),
+      "i" = "Ensure 'date' is Date class, 'day_type' is non-NA non-empty character."
+    ))
+  }
+
+  invisible(data)
+}
+
 #' Validate count data schema
 #'
 #' Internal validator that checks if data frame has the required structure for

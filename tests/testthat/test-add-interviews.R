@@ -1595,3 +1595,151 @@ test_that("add_interviews with no new params is backward-compatible with pre-Pha
   expect_null(result$refused_col)
   expect_s3_class(result, "creel_design")
 })
+
+# Phase 46: Camera interview pipeline (CAM-04) ----
+
+#' Build a camera design with counts, ready for add_interviews()
+#'
+#' Counter-mode camera design using example_calendar dates 1-4 with
+#' matching day_type strata. Designed to be minimal but structurally
+#' valid for all camera interview pipeline tests.
+make_camera_counts_design <- function() {
+  data("example_calendar", package = "tidycreel")
+  cal <- example_calendar # nolint: object_usage_linter
+  dates <- unique(cal$date)[1:4]
+  day_types <- cal$day_type[match(dates, cal$date)]
+
+  design <- creel_design( # nolint: object_usage_linter
+    cal,
+    date = date, strata = day_type, # nolint: object_usage_linter
+    survey_type = "camera",
+    camera_mode = "counter"
+  )
+  counts <- data.frame(
+    date = dates,
+    day_type = day_types,
+    n_counted = c(30L, 25L, 55L, 48L),
+    stringsAsFactors = FALSE
+  )
+  add_counts(design, counts) # nolint: object_usage_linter
+}
+
+#' Build camera interview data frame for 4 dates (3 interviews per date)
+make_camera_interviews_df <- function() {
+  data("example_calendar", package = "tidycreel")
+  cal <- example_calendar # nolint: object_usage_linter
+  dates <- unique(cal$date)[1:4]
+  day_types <- cal$day_type[match(dates, cal$date)]
+
+  data.frame(
+    date = rep(dates, each = 3),
+    day_type = rep(day_types, each = 3),
+    trip_status = rep("complete", 12),
+    hours_fished = c(1.5, 2.0, 3.0, 1.0, 2.5, 1.5, 2.0, 3.5, 2.5, 1.5, 2.0, 3.0),
+    walleye = c(1L, 2L, 0L, 0L, 3L, 1L, 2L, 1L, 3L, 0L, 2L, 1L),
+    walleye_kept = c(1L, 1L, 0L, 0L, 2L, 0L, 1L, 0L, 2L, 0L, 1L, 1L),
+    stringsAsFactors = FALSE
+  )
+}
+
+test_that("CAM-04: add_interviews() on camera design produces non-NULL interview_survey", {
+  design <- make_camera_counts_design() # nolint: object_usage_linter
+  interviews <- make_camera_interviews_df() # nolint: object_usage_linter
+
+  result <- add_interviews( # nolint: object_usage_linter
+    design, interviews,
+    catch = walleye, # nolint: object_usage_linter
+    effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status # nolint: object_usage_linter
+  )
+
+  expect_false(is.null(result$interview_survey))
+})
+
+test_that("CAM-04: add_interviews() on camera design returns creel_design with interviews slot", {
+  design <- make_camera_counts_design() # nolint: object_usage_linter
+  interviews <- make_camera_interviews_df() # nolint: object_usage_linter
+
+  result <- add_interviews( # nolint: object_usage_linter
+    design, interviews,
+    catch = walleye, # nolint: object_usage_linter
+    effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status # nolint: object_usage_linter
+  )
+
+  expect_s3_class(result, "creel_design")
+  expect_false(is.null(result$interviews))
+})
+
+# Phase 47: Aerial interview pipeline (AIR-05) — add_interviews() ----
+
+#' Build an aerial design with counts, ready for add_interviews()
+#'
+#' Aerial design using a 4-date calendar with weekday/weekend strata and
+#' h_open = 14. Minimal but structurally valid for aerial interview pipeline
+#' tests. No n_counted/n_interviewed — aerial uses standard instantaneous path.
+make_aerial_counts_design <- function() {
+  cal <- data.frame(
+    date = as.Date(c("2024-07-01", "2024-07-02", "2024-07-03", "2024-07-04")),
+    day_type = c("weekday", "weekday", "weekend", "weekend"),
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design( # nolint: object_usage_linter
+    cal,
+    date = date, strata = day_type, # nolint: object_usage_linter
+    survey_type = "aerial",
+    h_open = 14
+  )
+  counts <- data.frame(
+    date = as.Date(c("2024-07-01", "2024-07-02", "2024-07-03", "2024-07-04")),
+    day_type = c("weekday", "weekday", "weekend", "weekend"),
+    n_anglers = c(22L, 18L, 45L, 38L),
+    stringsAsFactors = FALSE
+  )
+  add_counts(design, counts) # nolint: object_usage_linter
+}
+
+#' Build aerial interview data frame (4 interviews per date, 16 total)
+#'
+#' Standard instantaneous columns only — no n_counted/n_interviewed (those
+#' are ice/bus_route columns). Aerial uses the standard interview_survey path.
+make_aerial_interviews_df <- function() {
+  data.frame(
+    date = rep(as.Date(c("2024-07-01", "2024-07-02", "2024-07-03", "2024-07-04")), each = 4),
+    day_type = rep(c("weekday", "weekday", "weekend", "weekend"), each = 4),
+    trip_status = rep("complete", 16),
+    hours_fished = c(2.5, 3.0, 1.5, 4.0, 2.0, 3.5, 1.0, 2.5, 3.0, 4.5, 2.0, 3.5, 4.0, 3.0, 2.5, 1.5),
+    walleye = c(0L, 1L, 2L, 0L, 1L, 0L, 3L, 1L, 0L, 2L, 1L, 0L, 3L, 1L, 0L, 2L),
+    walleye_kept = c(0L, 1L, 1L, 0L, 1L, 0L, 2L, 1L, 0L, 1L, 1L, 0L, 2L, 1L, 0L, 1L),
+    stringsAsFactors = FALSE
+  )
+}
+
+test_that("AIR-05: add_interviews() on aerial design produces non-NULL interview_survey", {
+  design <- make_aerial_counts_design() # nolint: object_usage_linter
+  interviews <- make_aerial_interviews_df() # nolint: object_usage_linter
+
+  result <- add_interviews( # nolint: object_usage_linter
+    design, interviews,
+    catch = walleye, # nolint: object_usage_linter
+    effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status # nolint: object_usage_linter
+  )
+
+  expect_false(is.null(result$interview_survey))
+})
+
+test_that("AIR-05: add_interviews() on aerial design returns creel_design with interviews slot", {
+  design <- make_aerial_counts_design() # nolint: object_usage_linter
+  interviews <- make_aerial_interviews_df() # nolint: object_usage_linter
+
+  result <- add_interviews( # nolint: object_usage_linter
+    design, interviews,
+    catch = walleye, # nolint: object_usage_linter
+    effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status # nolint: object_usage_linter
+  )
+
+  expect_s3_class(result, "creel_design")
+  expect_false(is.null(result$interviews))
+})

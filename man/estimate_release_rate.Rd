@@ -8,7 +8,8 @@ estimate_release_rate(
   design,
   by = NULL,
   variance = "taylor",
-  conf_level = 0.95
+  conf_level = 0.95,
+  missing_sections = "warn"
 )
 }
 \arguments{
@@ -26,6 +27,12 @@ Options: \code{"taylor"} (default), \code{"bootstrap"}, or
 \code{"jackknife"}.}
 
 \item{conf_level}{Numeric confidence level (default: 0.95).}
+
+\item{missing_sections}{Character string controlling behavior when a
+registered section has no interview observations. \code{"warn"} (default)
+emits a \code{cli_warn()} and inserts an NA row with
+\code{data_available = FALSE}. \code{"error"} aborts with
+\code{cli_abort()}. Ignored for non-sectioned designs.}
 }
 \value{
 A creel_estimates S3 object with method = "ratio-of-means-rpue".
@@ -43,6 +50,11 @@ RPUE is estimated as the ratio of total released fish to total effort
 (ratio-of-means). Release data comes from \code{add_catch()} records with
 \code{catch_type = "released"}. Interviews with no releases contribute 0
 to the numerator (zero-fill), ensuring the effort denominator is correct.
+}
+\note{
+When called on a sectioned design, no \code{.lake_total} row is
+produced. Release rates (fish per angler-hour) are not additive across
+sections. Lake-wide release rate requires a separate unsectioned call.
 }
 \examples{
 library(tidycreel)
@@ -74,5 +86,5 @@ rpue_by_species <- estimate_release_rate(design, by = species)
 print(rpue_by_species)
 }
 \seealso{
-\code{\link{estimate_harvest}} for harvest rate, \code{\link{add_catch}}
+\code{\link{estimate_harvest_rate}} for harvest rate, \code{\link{add_catch}}
 }

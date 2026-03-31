@@ -5,5 +5,6 @@ exclusions: list(
     "data-raw",
     "inst",
     "scripts",
-    "renv"
+    "renv",
+    "tests/testthat/_problems"
   )

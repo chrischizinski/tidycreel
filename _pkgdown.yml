@@ -1,19 +1,187 @@
-url: ~
+url: https://chrischizinski.github.io/tidycreel
+title: tidycreel
+
 template:
   bootstrap: 5
+  logo: logo.png
+  bslib:
+    primary: "#1B4F72"
+    link-color: "#5DADE2"
+    headings-color: "#1B4F72"
+    font-size-base: "1rem"
+    border-radius: "0.375rem"
+    base_font: {google: "Lato"}
+    heading_font: {google: "Raleway"}
+    code_font: {google: "Fira Code"}
+
+home:
+  title: "tidycreel"
+  description: "Tidy interface for creel survey design and estimation in R."
+
+authors:
+  Chris Chizinski:
+    href: https://github.com/chrischizinski
+
 navbar:
+  bg: primary
+  type: dark
   structure:
-    left: [home, reference, articles]
+    left: [intro, reference, articles, news]
     right: [github]
-  components:
-    articles:
-      text: Articles
-      menu:
-        - text: Effort (Survey-First)
-          href: articles/effort_survey_first.html
-        - text: Aerial Effort
-          href: articles/aerial.html
-        - text: Survey Terms → Creel Translator
-          href: articles/survey_creel_terms.html
-        - text: Replicate Designs for Creel
-          href: articles/replicate_designs_creel.html
+
+reference:
+  - title: "Survey Design"
+    desc: >
+      Build a creel survey design object and attach observational data.
+      All estimation functions accept a `creel_design` object as their first argument.
+    contents:
+      - creel_design
+      - add_counts
+      - add_interviews
+      - add_catch
+      - add_lengths
+      - add_sections
+      - as_survey_design
+      - compute_effort
+      - compute_angler_effort
+
+  - title: "Estimation"
+    desc: >
+      Design-based estimators for effort, catch rates, and totals.
+      Functions dispatch automatically on survey type.
+    contents:
+      - estimate_effort
+      - estimate_catch_rate
+      - estimate_harvest_rate
+      - estimate_release_rate
+      - estimate_total_catch
+      - estimate_total_harvest
+      - estimate_total_release
+
+  - title: "Reporting & Diagnostics"
+    desc: >
+      Summarize interview data by angler characteristics, validate designs,
+      and check data completeness.
+    contents:
+      - summarize_trips
+      - summarize_refusals
+      - summarize_by_day_type
+      - summarize_by_angler_type
+      - summarize_by_method
+      - summarize_by_species_sought
+      - summarize_by_trip_length
+      - summarize_cws_rates
+      - summarize_hws_rates
+      - summarize_length_freq
+      - summarize_successful_parties
+      - season_summary
+      - validate_incomplete_trips
+      - validate_design
+      - check_completeness
+
+  - title: "Planning & Sample Size"
+    desc: >
+      Pre-survey tools for sample size determination and power analysis.
+    contents:
+      - creel_n_effort
+      - creel_n_cpue
+      - creel_power
+      - cv_from_n
+
+  - title: "Scheduling"
+    desc: >
+      Generate, validate, read, and write creel survey schedules.
+    contents:
+      - generate_schedule
+      - generate_bus_schedule
+      - new_creel_schedule
+      - validate_creel_schedule
+      - read_schedule
+      - write_schedule
+
+  - title: "Bus-Route Helpers"
+    desc: >
+      Exported helpers for bus-route Horvitz-Thompson estimation components.
+      For advanced users who need direct access to enumeration values.
+    contents:
+      - get_enumeration_counts
+      - get_inclusion_probs
+      - get_sampling_frame
+      - get_site_contributions
+
+  - title: "Camera Survey"
+    desc: >
+      Preprocessing for camera-monitored creel surveys.
+    contents:
+      - preprocess_camera_timestamps
+
+  - title: "Example Datasets"
+    desc: >
+      Simulated datasets illustrating each supported survey type.
+      Used in vignettes and function examples.
+    contents:
+      - example_calendar
+      - example_counts
+      - example_interviews
+      - example_catch
+      - example_lengths
+      - example_sections_calendar
+      - example_sections_counts
+      - example_sections_interviews
+      - example_ice_sampling_frame
+      - example_ice_interviews
+      - example_camera_counts
+      - example_camera_timestamps
+      - example_camera_interviews
+      - example_aerial_counts
+      - example_aerial_interviews
+
+  - title: internal
+    contents:
+      - starts_with("format.")
+      - starts_with("print.")
+      - starts_with("summary.")
+
+articles:
+- title: "Get Started"
+  desc: >
+    Introduction to creel survey analysis with tidycreel.
+  contents:
+  - tidycreel
+
+- title: "Survey Types"
+  navbar: "Survey Types"
+  desc: >
+    Workflow vignettes for each supported creel survey design.
+  contents:
+  - bus-route-surveys
+  - ice-fishing
+  - camera-surveys
+  - aerial-surveys
+
+- title: "Estimation"
+  navbar: "Estimation"
+  desc: >
+    Catch rate, harvest, effort, and spatially stratified estimation techniques.
+  contents:
+  - interview-estimation
+  - incomplete-trips
+  - flexible-count-estimation
+  - section-estimation
+
+- title: "Reporting & Planning"
+  navbar: "Reporting & Planning"
+  desc: >
+    Interview summaries, diagnostics, and pre-season survey planning.
+  contents:
+  - unextrapolated-summaries
+
+- title: "Reference & Equations"
+  desc: >
+    Technical equation derivations for advanced users.
+  contents:
+  - bus-route-equations
+
+news:
+  one_page: true
+  cran_dates: false

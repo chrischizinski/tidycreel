@@ -1,3 +1,13 @@
+# tidycreel (development version)
+
+## Breaking changes
+
+* `estimate_cpue()` has been renamed to `estimate_catch_rate()`. No deprecated
+  wrapper is provided. Update all calls to use the new name.
+
+* `estimate_harvest()` has been renamed to `estimate_harvest_rate()`. No deprecated
+  wrapper is provided. Update all calls to use the new name.
+
 # tidycreel 0.0.0.9000 (development)
 
 - Survey-first refactor: Estimation relies on day-PSU designs from

@@ -24,7 +24,7 @@ month. Angler type is taken from the column set via
 \strong{Interview-based summary, not pressure-weighted.} This function
 tabulates raw interview records without applying survey weighting by sampling
 effort or effort stratum. For pressure-weighted extrapolated estimates, use
-\code{\link{estimate_cpue}} or \code{\link{estimate_harvest}}.
+\code{\link{estimate_catch_rate}} or \code{\link{estimate_harvest_rate}}.
 }
 \examples{
 data(example_calendar)

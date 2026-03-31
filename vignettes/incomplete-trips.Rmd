@@ -108,7 +108,7 @@ CPUE = mean(Catch_i / Effort_i)
 
 This estimator treats each incomplete trip's catch rate as an independent observation. It's used for incomplete trips because trip duration is unknown (trip not complete), making ratio-of-means inappropriate. The mean-of-ratios has higher variance but can be unbiased under stationarity assumptions.
 
-For details on variance estimation, see `?estimate_cpue`.
+For details on variance estimation, see `?estimate_catch_rate`.
 
 ## Colorado C-SAP Best Practices
 
@@ -135,7 +135,7 @@ design <- creel_design(example_calendar, date = date, strata = day_type) |>
   )
 
 # Estimate CPUE using complete trips only (default)
-cpue <- estimate_cpue(design)
+cpue <- estimate_catch_rate(design)
 print(cpue)
 
 # Estimate total catch
@@ -176,7 +176,7 @@ Complete and incomplete trips have **different sampling probabilities** in rovin
 ```{r anti_pattern, eval=FALSE}
 # WRONG: Do not manually pool trip types
 all_interviews <- rbind(complete_data, incomplete_data)
-estimate_cpue(design_with_all_data) # INVALID!
+estimate_catch_rate(design_with_all_data) # INVALID!
 
 # WRONG: Do not use custom weights to combine
 weighted_mean(c(complete_cpue, incomplete_cpue)) # INVALID!
@@ -406,11 +406,11 @@ print(validation_pass)
 
 ```{r after_pass, eval=FALSE}
 # Now safe to use incomplete trips
-cpue_incomplete <- estimate_cpue(design, use_trips = "incomplete")
+cpue_incomplete <- estimate_catch_rate(design, use_trips = "incomplete")
 print(cpue_incomplete)
 
 # Or use diagnostic mode to compare
-cpue_diagnostic <- estimate_cpue(design, use_trips = "diagnostic")
+cpue_diagnostic <- estimate_catch_rate(design, use_trips = "diagnostic")
 print(cpue_diagnostic)
 ```
 
@@ -498,7 +498,7 @@ print(validation_fail)
 ```{r after_fail, eval=FALSE}
 # DO NOT use incomplete trips
 # Stick with default complete trip estimation
-cpue_complete <- estimate_cpue(design_biased) # Uses complete trips (default)
+cpue_complete <- estimate_catch_rate(design_biased) # Uses complete trips (default)
 print(cpue_complete)
 
 # Investigate why estimates differ
@@ -515,7 +515,7 @@ For research purposes or to understand your survey dynamics, use **diagnostic co
 
 ```{r diagnostic_mode, eval=FALSE}
 # Compare complete vs incomplete estimates
-cpue_diagnostic <- estimate_cpue(design,
+cpue_diagnostic <- estimate_catch_rate(design,
   catch = catch_total,
   effort = hours_fished,
   use_trips = "diagnostic"
@@ -674,21 +674,21 @@ Incomplete trips with very short durations (<30 minutes) can inflate variance an
 
 ```{r truncation, eval=FALSE}
 # Default: truncate incomplete trips <0.5 hours (30 minutes)
-cpue_incomplete <- estimate_cpue(design,
+cpue_incomplete <- estimate_catch_rate(design,
   use_trips = "incomplete",
   estimator = "mor",
   truncate_at = 0.5 # Default
 )
 
 # Custom truncation threshold
-cpue_truncated <- estimate_cpue(design,
+cpue_truncated <- estimate_catch_rate(design,
   use_trips = "incomplete",
   estimator = "mor",
   truncate_at = 1.0 # More conservative: only trips ≥1 hour
 )
 
 # Disable truncation (not recommended)
-cpue_no_truncation <- estimate_cpue(design,
+cpue_no_truncation <- estimate_catch_rate(design,
   use_trips = "incomplete",
   estimator = "mor",
   truncate_at = 0 # Includes all incomplete trips
@@ -702,7 +702,7 @@ Truncation: 8 of 120 incomplete trips removed (<0.5 hours)
 Warning: 7% of incomplete trips truncated (>5% threshold)
 ```
 
-For details on truncation methodology, see `?estimate_cpue` and Phase 16 documentation.
+For details on truncation methodology, see `?estimate_catch_rate` and Phase 16 documentation.
 
 ### Mean-of-Ratios Variance
 
@@ -772,7 +772,7 @@ This differs from ratio-of-means which uses delta method variance accounting for
 For detailed documentation, see:
 
 - `?validate_incomplete_trips` — TOST equivalence testing
-- `?estimate_cpue` — CPUE estimation with use_trips parameter
+- `?estimate_catch_rate` — CPUE estimation with use_trips parameter
 - `?add_interviews` — Attach interview data with trip_status
 - `?example_interviews` — Example data with complete/incomplete trips
 
