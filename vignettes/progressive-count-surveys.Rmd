@@ -160,12 +160,13 @@ set.seed(7)
 n_int <- 120 # interviews collected across the season
 
 int_dates <- sample(calendar$date, n_int, replace = TRUE)
+catch_total <- rpois(n_int, lambda = 2.1)
 interviews <- data.frame(
   date = int_dates,
   day_type = calendar$day_type[match(int_dates, calendar$date)],
   trip_status = "complete",
   hours_fished = round(pmax(rnorm(n_int, mean = 3.8, sd = 1.3), 0.5), 1),
-  catch_total = rpois(n_int, lambda = 2.1),
+  catch_total = catch_total,
   catch_kept = pmin(rpois(n_int, lambda = 0.7), catch_total)
 )
 
