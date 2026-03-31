@@ -167,14 +167,17 @@ articles:
   - interview-estimation
   - incomplete-trips
   - flexible-count-estimation
+  - progressive-count-surveys
   - section-estimation
+  - temporal-extrapolation
 
 - title: "Reporting & Planning"
   navbar: "Reporting & Planning"
   desc: >
-    Interview summaries, diagnostics, and pre-season survey planning.
+    Interview summaries, diagnostics, scheduling, and pre-season survey planning.
   contents:
   - unextrapolated-summaries
+  - survey-scheduling
 
 - title: "Reference & Equations"
   desc: >
