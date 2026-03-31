@@ -204,7 +204,15 @@ than rule of thumb.
 
 ```{r sample-size, message = FALSE}
 # Effort sample size to achieve CV ≤ 0.15
-creel_n_effort(cv = 0.15, mean_effort = 80, sd_effort = 45)
+# N_h: total days per stratum in a 184-day season
+# ybar_h: pilot mean daily effort (angler-hours) per stratum
+# s2_h: pilot variance of daily effort per stratum
+creel_n_effort(
+  cv_target = 0.15,
+  N_h = c(weekday = 132, weekend = 52),
+  ybar_h = c(weekday = 280, weekend = 550),
+  s2_h = c(weekday = 14400, weekend = 32400)
+)
 ```
 
 ## References

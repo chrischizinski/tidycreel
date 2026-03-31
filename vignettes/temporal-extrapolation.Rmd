@@ -195,8 +195,9 @@ monthly_catch <- lapply(seq_along(months), function(i) {
   des_m <- creel_design(cal_m, date = date, strata = day_type)
   des_m <- add_counts(des_m, cnt_m)
   des_m <- add_interviews(des_m, int_m,
-    catch   = catch_total,
-    effort  = hours_fished,
+    trip_status = trip_status,
+    catch = catch_total,
+    effort = hours_fished,
     harvest = catch_kept
   )
 
@@ -247,8 +248,9 @@ for (i in seq_along(months)) {
   des_m <- creel_design(cal_m, date = date, strata = day_type)
   des_m <- add_counts(des_m, cnt_m)
   des_m <- add_interviews(des_m, int_m,
-    catch   = catch_total,
-    effort  = hours_fished,
+    trip_status = trip_status,
+    catch = catch_total,
+    effort = hours_fished,
     harvest = catch_kept
   )
 
