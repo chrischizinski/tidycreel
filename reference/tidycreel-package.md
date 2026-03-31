@@ -1,12 +1,17 @@
-# tidycreel: Tools for creel survey design, estimation, and reporting
+# tidycreel: Tidy Interface for Creel Survey Design and Analysis
 
-(One-sentence summary goes here.)
+Provides a tidy, pipe-friendly interface for creel survey design, data
+management, estimation, and reporting. Built on the 'survey' package for
+robust design-based inference with support for access-point, roving, and
+hybrid survey designs.
 
 ## See also
 
 Useful links:
 
 - <https://github.com/chrischizinski/tidycreel>
+
+- <https://chrischizinski.github.io/tidycreel>
 
 - Report bugs at <https://github.com/chrischizinski/tidycreel/issues>
 

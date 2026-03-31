@@ -6,8 +6,8 @@ development standards and contribution process.
 ## Code of Conduct
 
 Please note that this project is released with a [Contributor Code of
-Conduct](CODE_OF_CONDUCT.md). By participating in this project you agree
-to abide by its terms.
+Conduct](https://chrischizinski.github.io/tidycreel/CODE_OF_CONDUCT.md).
+By participating in this project you agree to abide by its terms.
 
 ## Development Principles
 
@@ -161,7 +161,7 @@ boundary conditions (DST, leap years)
 \] Package passes R CMD check (`devtools::check()`) - \[ \]
 Documentation is complete and accurate - \[ \] NEWS.md updated for
 user-facing changes - \[ \] Code follows tidyverse style (verified with
-`styler::style_pkg()`)
+[`styler::style_pkg()`](https://styler.r-lib.org/reference/style_pkg.html))
 
 **PR Description should include:** - Summary of changes and motivation -
 Links to relevant issues - Breaking changes (if any) - Example usage for

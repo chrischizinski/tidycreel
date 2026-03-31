@@ -1,10 +1,15 @@
-# Extract survey design object from a creel_design
+# Extract internal survey design object for advanced use
 
-This helper bridges tidycreel design objects to the survey package. It
-returns the embedded
-[`survey::svydesign`](https://rdrr.io/pkg/survey/man/svydesign.html) or
-[`survey::svrepdesign`](https://rdrr.io/pkg/survey/man/svrepdesign.html)
-object for downstream analysis.
+Provides power users with direct access to the internal survey.design2
+object for advanced analysis using survey package functions. This is an
+escape hatch for workflows not yet wrapped by tidycreel. Most users
+should use
+[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+instead.
+
+The function issues a once-per-session warning to educate users that
+this is an advanced feature with risks if the returned object is
+modified incorrectly.
 
 ## Usage
 
@@ -16,42 +21,67 @@ as_survey_design(design)
 
 - design:
 
-  A `creel_design` object (or subclass)
+  A creel_design object with counts attached via
+  [`add_counts`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
 
 ## Value
 
-A [`survey::svydesign`](https://rdrr.io/pkg/survey/man/svydesign.html)
-or
-[`survey::svrepdesign`](https://rdrr.io/pkg/survey/man/svrepdesign.html)
-object
+A survey.design2 object (from survey::svydesign). Due to R's
+copy-on-modify semantics, modifications to the returned object will not
+affect the internal design\$survey object.
 
-## Details
+## Warning
 
-This function provides a clear, pipe-friendly way to access the
-underlying survey design object created by tidycreel constructors. Use
-this for analysis with survey or srvyr functions.
+This function issues a once-per-session warning explaining:
 
-- For access-point, roving, and bus route designs, returns a
-  [`survey::svydesign`](https://rdrr.io/pkg/survey/man/svydesign.html).
+- This is an advanced feature for power users
 
-- For replicate weights designs, returns a
-  [`survey::svrepdesign`](https://rdrr.io/pkg/survey/man/svrepdesign.html).
+- Most users should use
+  [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+  instead
 
-- Raises an error if no embedded survey design is found.
+- Modifying the survey design may produce incorrect variance estimates
 
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-access_design <- design_access(
-  interviews = utils::read.csv(system.file("extdata", "toy_interviews.csv",
-    package = "tidycreel"
-  )),
-  calendar = utils::read.csv(system.file("extdata", "toy_calendar.csv",
-    package = "tidycreel"
-  ))
+# Basic workflow
+library(survey)
+#> Loading required package: grid
+#> Loading required package: Matrix
+#> Loading required package: survival
+#> 
+#> Attaching package: ‘survey’
+#> The following object is masked from ‘package:graphics’:
+#> 
+#>     dotchart
+cal <- data.frame(
+  date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
+  day_type = c("weekday", "weekday", "weekend", "weekend")
 )
-svy <- as_survey_design(access_design)
-summary(svy)
-} # }
+design <- creel_design(cal, date = date, strata = day_type)
+
+counts <- data.frame(
+  date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
+  day_type = c("weekday", "weekday", "weekend", "weekend"),
+  count = c(15, 23, 45, 52)
+)
+
+design2 <- add_counts(design, counts)
+#> Warning: No weights or probabilities supplied, assuming equal probability
+
+# Extract survey object for advanced use
+svy <- as_survey_design(design2)
+#> Warning: Accessing internal survey design object.
+#> ℹ This is an advanced feature. Most users should use {.fn estimate_effort} instead.
+#> ! Modifying the survey design may produce incorrect variance estimates.
+#> This warning is displayed once per session.
+
+# Use with survey package functions
+survey::svytotal(~count, svy)
+#>       total    SE
+#> count   135 10.63
+survey::svymean(~count, svy)
+#>        mean     SE
+#> count 33.75 2.6575
 ```

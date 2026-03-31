@@ -1,16 +1,49 @@
 # Articles
 
-### All vignettes
+### Get Started
 
-- [Aerial Effort Estimation with survey](aerial.md):
-- [CPUE and Catch Estimation](cpue_catch.md):
-- [Aerial Survey Effort Estimation Example](effort_aerial.md):
-- [Effort Estimation in Creel Surveys: Design-Based
-  Methods](effort_design_based.md):
-- [Effort Estimation: Extended Examples](effort_examples.md):
-- [Effort Estimation (Survey-First)](effort_survey_first.md):
-- [Getting Started with tidycreel](getting-started.md):
-- [Ratio Estimators](ratio-estimators-guide.md):
-- [Replicate Designs for Creel Inference](replicate_designs_creel.md):
-- [Roving Survey CPUE Estimation](roving-surveys.md):
-- [Survey Package to Creel: A Translator](survey_creel_terms.md):
+Introduction to creel survey analysis with tidycreel.
+
+- [Getting Started with
+  tidycreel](https://chrischizinski.github.io/tidycreel/articles/tidycreel.md):
+
+### Survey Types
+
+Workflow vignettes for each supported creel survey design.
+
+- [Bus-Route
+  Surveys](https://chrischizinski.github.io/tidycreel/articles/bus-route-surveys.md):
+- [Ice Fishing Survey
+  Analysis](https://chrischizinski.github.io/tidycreel/articles/ice-fishing.md):
+- [Camera Survey Analysis with
+  tidycreel](https://chrischizinski.github.io/tidycreel/articles/camera-surveys.md):
+- [Aerial Survey Analysis with
+  tidycreel](https://chrischizinski.github.io/tidycreel/articles/aerial-surveys.md):
+
+### Estimation
+
+Catch rate, harvest, effort, and spatially stratified estimation
+techniques.
+
+- [Interview-Based Catch
+  Estimation](https://chrischizinski.github.io/tidycreel/articles/interview-estimation.md):
+- [Incomplete Trip
+  Estimation](https://chrischizinski.github.io/tidycreel/articles/incomplete-trips.md):
+- [Flexible Count
+  Estimation](https://chrischizinski.github.io/tidycreel/articles/flexible-count-estimation.md):
+- [Spatially Stratified Estimation with
+  Sections](https://chrischizinski.github.io/tidycreel/articles/section-estimation.md):
+
+### Reporting & Planning
+
+Interview summaries, diagnostics, and pre-season survey planning.
+
+- [Unextrapolated Interview
+  Summaries](https://chrischizinski.github.io/tidycreel/articles/unextrapolated-summaries.md):
+
+### Reference & Equations
+
+Technical equation derivations for advanced users.
+
+- [Bus-Route Survey: Equation
+  Traceability](https://chrischizinski.github.io/tidycreel/articles/bus-route-equations.md):

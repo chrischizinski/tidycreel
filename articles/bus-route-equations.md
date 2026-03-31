@@ -1,0 +1,296 @@
+# Bus-Route Survey: Equation Traceability
+
+## Overview
+
+This document maps every formula used in tidycreel’s bus-route
+estimation to its published primary source, including the specific
+equation number and page number. It is intended as an auditable record
+for reviewers, developers, and users who want to verify that the
+implementation matches the statistical theory.
+
+The bus-route estimation framework in tidycreel follows two primary
+sources:
+
+- **Jones & Pollock (2012)**: Chapter 19 of *Fisheries Techniques* (3rd
+  ed.), pp. 883–919. This chapter provides the general nonuniform
+  probability creel survey estimators.
+- **Malvestuto (1996)**: Chapter 20 of *Fisheries Techniques* (2nd ed.),
+  pp. 591–623. Box 20.6 provides a worked numerical example that
+  tidycreel reproduces exactly.
+
+The four key computations are: inclusion probability (πᵢ), enumeration
+expansion, expanded effort per interview, and the Horvitz-Thompson total
+estimators for effort and harvest. Each is documented in a section
+below.
+
+------------------------------------------------------------------------
+
+## 1. Inclusion Probability (πᵢ)
+
+**Published source:** Jones & Pollock (2012), p. 912
+
+**Formula:**
+
+$$\pi_{i} = p\_ site_{i} \times p\_ period$$
+
+where $p\_ site_{i}$ is the probability of selecting site $i$ during a
+given circuit pass, and $p\_ period$ is the probability that the
+sampling period is included in the survey. For uniform period sampling
+(all periods equally likely), $p\_ period$ is the same for all sites and
+circuits.
+
+**Statistical meaning:** $\pi_{i}$ is the *inclusion probability* — the
+marginal probability that unit $i$ is included in the sample under the
+two-stage design (stage 1: select a period; stage 2: traverse the
+circuit). Jones & Pollock (2012) treat this as the product of the two
+independent selection probabilities.
+
+**R implementation:**
+
+- [`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md)
+  in `R/creel-design.R`: accepts `p_site` and `p_period` columns from
+  the `sampling_frame` argument and precomputes
+  `pi_i = p_site * p_period` for each site×circuit combination. The
+  result is stored in `design$bus_route$sampling_frame`.
+- [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)
+  in `R/creel-design.R`: joins the precomputed `pi_i` value from the
+  sampling frame to each interview row, storing it as the `.pi_i`
+  column.
+
+**Malvestuto (1996) Box 20.6 values:**
+
+| Site | p_site | p_period | πᵢ    |
+|------|--------|----------|-------|
+| A    | 0.30   | 0.50     | 0.150 |
+| B    | 0.25   | 0.50     | 0.125 |
+| C    | 0.40   | 0.50     | 0.200 |
+| D    | 0.05   | 0.50     | 0.025 |
+
+------------------------------------------------------------------------
+
+## 2. Enumeration Expansion
+
+**Published source:** Malvestuto (1996), Box 20.6, p. 614
+
+**Formula:**
+
+$$\text{expansion}_{i} = \frac{n\_ counted_{i}}{n\_ interviewed_{i}}$$
+
+where $n\_ counted_{i}$ is the total number of angler parties observed
+at site $i$ during the visit, and $n\_ interviewed_{i}$ is the number of
+those parties actually interviewed.
+
+**Statistical meaning:** When not all parties at a site are interviewed,
+the expansion factor rescales the interviewed sample to represent the
+full party count. If all parties are interviewed
+($n\_ counted = n\_ interviewed$), the expansion is 1 and no adjustment
+is needed. This is the case in Box 20.6 Example 1.
+
+**R implementation:**
+
+- [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)
+  in `R/creel-design.R`: computes
+  `.expansion = n_counted / n_interviewed` for each interview row. When
+  `n_counted = 0` and `n_interviewed = 0` (zero-effort site),
+  `.expansion` is set to `NA`; the effort estimator treats this as zero
+  contribution.
+
+------------------------------------------------------------------------
+
+## 3. Effort Estimator (Jones & Pollock Eq. 19.4)
+
+**Published source:** Jones & Pollock (2012), Eq. 19.4, p. 911
+
+**Formula:**
+
+$$\widehat{E} = \sum\limits_{i = 1}^{n}\frac{e_{i}}{\pi_{i}}$$
+
+where $e_{i}$ is the enumeration-expanded effort for interview $i$ (see
+Section 4 below), $\pi_{i}$ is the inclusion probability, and the sum
+runs over all interview records.
+
+**Statistical meaning:** This is a Horvitz-Thompson (HT) total
+estimator. Dividing by $\pi_{i}$ is the HT inverse-probability weight:
+if a unit is sampled with probability $\pi_{i}$, it represents
+$1/\pi_{i}$ units in the population. Summing the weighted contributions
+gives an unbiased estimator of the population total (under the design).
+
+**R implementation:**
+
+- `estimate_effort_br()` in `R/creel-estimates-bus-route.R`, lines
+  21–215:
+  - Line 69:
+    `interviews$.e_i <- interviews[[effort_col]] * interviews$.expansion`
+    (computes expanded effort; see Section 4)
+  - Line 83:
+    `interviews$.contribution <- interviews$.e_i / interviews$.pi_i`
+    (computes $e_{i}/\pi_{i}$ for each row)
+  - Line 96:
+    `total_estimate <- sum(interviews$.contribution, na.rm = TRUE)`
+    (sums to produce $\widehat{E}$)
+- [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+  in `R/creel-estimates.R`, line 310: dispatches to
+  `estimate_effort_br()` when `design$design_type == "bus_route"`.
+
+------------------------------------------------------------------------
+
+## 4. Expanded Effort per Interview (eᵢ)
+
+**Published source:** Malvestuto (1996), Box 20.6, p. 614 (implicit in
+the expansion step)
+
+**Formula:**
+
+$$e_{i} = \text{hours\_fished}_{i} \times \text{expansion}_{i}$$
+
+**Statistical meaning:** The effort recorded in an interview represents
+only the fishing party interviewed. Multiplying by the expansion factor
+scales that effort to represent all $n\_ counted$ parties at the site,
+not just the $n\_ interviewed$ parties.
+
+**R implementation:**
+
+- `estimate_effort_br()` in `R/creel-estimates-bus-route.R`:
+  - Line 69:
+    `interviews$.e_i <- interviews[[effort_col]] * interviews$.expansion`
+
+When expansion = 1 (all parties interviewed, as in Box 20.6 Example 1),
+$e_{i}$ equals the raw effort. For example, Site C has 6 interviews each
+with `hours_fished = 57.5 / 6`:
+
+$$e_{C} = (57.5/6) \times (6/6) = 57.5{\mspace{6mu}\text{h per interview row}}$$
+
+Wait — more precisely, each of the 6 Site C rows contributes
+$e_{i} = (57.5/6) \times 1$, and these sum to 57.5 h before the
+$1/\pi_{C} = 5$ weight is applied, yielding the site contribution of
+287.5 angler-hours.
+
+------------------------------------------------------------------------
+
+## 5. Harvest Estimator (Jones & Pollock Eq. 19.5)
+
+**Published source:** Jones & Pollock (2012), Eq. 19.5, p. 912
+
+**Formula:**
+
+$$\widehat{H} = \sum\limits_{i = 1}^{n}\frac{h_{i}}{\pi_{i}}$$
+
+where $h_{i} = \text{harvest}_{i} \times \text{expansion}_{i}$ is the
+enumeration-expanded harvest for interview $i$.
+
+**Statistical meaning:** Structurally identical to the effort estimator
+(Eq. 19.4) with harvest substituted for effort. Both are HT totals over
+the same sampling design.
+
+**R implementation:**
+
+- `estimate_harvest_br()` in `R/creel-estimates-bus-route.R`, lines
+  218–470: computes `.h_i = harvest * .expansion` and
+  `.contribution = .h_i / .pi_i`, then sums via
+  `survey::svytotal(~.contribution, ...)`.
+- [`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md)
+  in `R/creel-estimates.R`: dispatches to `estimate_harvest_br()` when
+  `design$design_type == "bus_route"`.
+
+------------------------------------------------------------------------
+
+## 6. Variance Estimation
+
+**Published source:** Horvitz & Thompson (1952); implemented via Taylor
+linearization in the R `survey` package (Lumley 2010).
+
+**Method:** tidycreel uses `survey::svytotal(~.contribution, svy_br)`
+where `svy_br` is an `svydesign` object constructed from the interview
+data. The `.contribution` column holds $e_{i}/\pi_{i}$ (or
+$h_{i}/\pi_{i}$). The `survey` package applies Taylor linearization to
+compute the standard error of this total.
+
+**R implementation:**
+
+- `estimate_effort_br()`, lines 99–112: constructs `svy_br` via
+  `survey::svydesign(ids = ~1, ...)`, applies `get_variance_design()`
+  for the selected variance method, and calls
+  `survey::svytotal(~.contribution, svy_br)`.
+- Phase 26 cross-validation (`tests/testthat/test-cross-validation.R`)
+  confirms that the
+  [`survey::svytotal`](https://rdrr.io/pkg/survey/man/surveysummary.html)
+  variance matches a manually constructed `svydesign` calculation to
+  tolerance 1e-6.
+
+Bootstrap (`variance = "bootstrap"`) and jackknife
+(`variance = "jackknife"`) alternatives are available via
+`get_variance_design()`, consistent with all other tidycreel estimators.
+
+------------------------------------------------------------------------
+
+## 7. Summary Traceability Table
+
+| Quantity              | Formula                               | Source                          | Page   | R Location                                                                                                                                                                                               |
+|-----------------------|---------------------------------------|---------------------------------|--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Inclusion probability | πᵢ = p_site × p_period                | Jones & Pollock (2012)          | p. 912 | `creel-design.R`: [`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md), [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md) |
+| Enumeration expansion | expansion = n_counted / n_interviewed | Malvestuto (1996) Box 20.6      | p. 614 | `creel-design.R`: [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)                                                                                           |
+| Expanded effort       | eᵢ = hours_fished × expansion         | Malvestuto (1996) Box 20.6      | p. 614 | `creel-estimates-bus-route.R` line 69                                                                                                                                                                    |
+| HT effort total       | Ê = Σ(eᵢ/πᵢ)                          | Jones & Pollock (2012) Eq. 19.4 | p. 911 | `creel-estimates-bus-route.R` lines 83, 96                                                                                                                                                               |
+| Expanded harvest      | hᵢ = harvest × expansion              | Malvestuto (1996) Box 20.6      | p. 614 | `creel-estimates-bus-route.R` (harvest branch)                                                                                                                                                           |
+| HT harvest total      | Ĥ = Σ(hᵢ/πᵢ)                          | Jones & Pollock (2012) Eq. 19.5 | p. 912 | `creel-estimates-bus-route.R` lines 218–470                                                                                                                                                              |
+| Variance              | Taylor linearization on Σ(eᵢ/πᵢ)      | Lumley (2010)                   | —      | `survey::svytotal(~.contribution, svy_br)`                                                                                                                                                               |
+
+------------------------------------------------------------------------
+
+## 8. Why πᵢ Matters: A Quantitative Example
+
+Some implementations use a fixed value such as $\pi_{i} = 0.5$ for all
+sites, or compute $\pi_{i}$ from interview timing data (e.g., wait time
+/ circuit time). Both approaches are statistically incorrect: neither is
+the inclusion probability of the sampling design.
+
+The bias can be large and heterogeneous across sites. Using the
+Malvestuto (1996) Box 20.6 data, here is the effect of substituting
+$\pi_{i} = 0.5$ for the correct design-based values:
+
+| Site      | Correct πᵢ | eᵢ (h) | Correct eᵢ/πᵢ | Incorrect (π=0.5) eᵢ/πᵢ | Error    |
+|-----------|------------|--------|---------------|-------------------------|----------|
+| A         | 0.150      | 30.0   | 200.0         | 60.0                    | −70%     |
+| B         | 0.125      | 20.0   | 160.0         | 40.0                    | −75%     |
+| C         | 0.200      | 57.5   | 287.5         | 115.0                   | −60%     |
+| D         | 0.025      | 5.0    | 200.0         | 10.0                    | −95%     |
+| **Total** |            |        | **847.5**     | **225.0**               | **−73%** |
+
+With $\pi_{i} = 0.5$, the total effort estimate would be 225.0
+angler-hours — a 73% underestimate of the correct 847.5. The bias is not
+uniform: Site D is underestimated by 95% because it has the lowest
+correct $\pi_{i}$ (0.025) but the incorrect formula assigns it the same
+weight as Site C (π = 0.5).
+
+The direction and magnitude of bias depend entirely on the distribution
+of site probabilities in the actual design. The only way to avoid bias
+is to use the design-specified inclusion probabilities — which is what
+tidycreel does.
+
+For the specific Site C example cited in the design documents: correct
+contribution = 57.5 / 0.20 = **287.5**; with π = 0.5 it would be 57.5 /
+0.5 = **115.0** — a 2.5× underestimate for that site alone.
+
+------------------------------------------------------------------------
+
+## References
+
+- Horvitz, D. G., & Thompson, D. J. (1952). A generalization of sampling
+  without replacement from a finite universe. *Journal of the American
+  Statistical Association*, 47(260), 663–685.
+
+- Jones, C. M., & Pollock, K. H. (2012). Recreational survey methods:
+  estimation of effort, harvest, and abundance. Chapter 19 in *Fisheries
+  Techniques* (3rd ed.), pp. 883–919. American Fisheries Society.
+
+- Lumley, T. (2010). *Complex Surveys: A Guide to Analysis Using R*.
+  Wiley.
+
+- Malvestuto, S. P. (1996). Sampling the recreational angler. Chapter 20
+  in *Fisheries Techniques* (2nd ed.), pp. 591–623. American Fisheries
+  Society.
+
+- Malvestuto, S. P., Davies, W. D., & Shelton, W. L. (1978). An
+  evaluation of the roving creel survey with nonuniform probability
+  sampling. *Transactions of the American Fisheries Society*, 107(2),
+  255–262.
