@@ -29,14 +29,14 @@ only if overall test AND all group tests pass equivalence.}
 
 \item{variance}{Character string specifying variance estimation method.
 Options: \code{"taylor"} (default), \code{"bootstrap"}, or
-\code{"jackknife"}. Passed to \code{\link{estimate_cpue}}.}
+\code{"jackknife"}. Passed to \code{\link{estimate_catch_rate}}.}
 
 \item{conf_level}{Numeric confidence level for confidence intervals
-(default: 0.95). Passed to \code{\link{estimate_cpue}}.}
+(default: 0.95). Passed to \code{\link{estimate_catch_rate}}.}
 
 \item{truncate_at}{Numeric minimum trip duration (hours) for incomplete trip
 estimation. Default is 0.5 hours (30 minutes). Passed to
-\code{\link{estimate_cpue}} for MOR estimator.}
+\code{\link{estimate_catch_rate}} for MOR estimator.}
 }
 \value{
 A creel_tost_validation S3 object (list) with components:
@@ -62,7 +62,7 @@ whether incomplete trips are appropriate for estimation in the given dataset.
 }
 \details{
 The function estimates CPUE separately for complete trips (using ratio-of-means)
-and incomplete trips (using mean-of-ratios) via \code{\link{estimate_cpue}}.
+and incomplete trips (using mean-of-ratios) via \code{\link{estimate_catch_rate}}.
 It then performs TOST to test equivalence within the specified threshold.
 
 Equivalence bounds are calculated as ±threshold * complete_trip_estimate.

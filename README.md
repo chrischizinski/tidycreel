@@ -1,16 +1,15 @@
----
-output: github_document
----
-
 # tidycreel
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/chrischizinski/tidycreel/main/man/figures/tidycreel-hex.png" alt="tidycreel hex sticker" width="200"/>
+  <img src="https://raw.githubusercontent.com/chrischizinski/tidycreel/main/man/figures/logo.png" alt="tidycreel hex sticker" width="200"/>
 </p>
 
+<!-- badges: start -->
 [![R-CMD-check](https://github.com/chrischizinski/tidycreel/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/chrischizinski/tidycreel/actions/workflows/R-CMD-check.yaml)
+[![pkgdown](https://img.shields.io/badge/pkgdown-pending-lightgrey)](https://chrischizinski.github.io/tidycreel/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+<!-- badges: end -->
 
 **Tidy Interface for Creel Survey Design and Analysis**
 
@@ -27,6 +26,55 @@ pak::pak("chrischizinski/tidycreel")
 # or with devtools
 devtools::install_github("chrischizinski/tidycreel")
 ```
+
+## Survey Types
+
+::: {.row .mt-4 .mb-4}
+
+::: {.col-md-4 .mb-3}
+::: {.card .h-100 .border-0 .bg-light .p-3}
+##### [Instantaneous Count]{.text-primary}
+Stratified effort estimation from periodic angler counts.
+:::
+:::
+
+::: {.col-md-4 .mb-3}
+::: {.card .h-100 .border-0 .bg-light .p-3}
+##### [Bus-Route]{.text-primary}
+PPS site selection with Horvitz-Thompson estimators (Malvestuto 1978).
+:::
+:::
+
+::: {.col-md-4 .mb-3}
+::: {.card .h-100 .border-0 .bg-light .p-3}
+##### [Ice Fishing]{.text-primary}
+Degenerate bus-route design with certainty site sampling.
+:::
+:::
+
+::: {.col-md-4 .mb-3}
+::: {.card .h-100 .border-0 .bg-light .p-3}
+##### [Camera-Monitored]{.text-primary}
+Counter and ingress-egress timestamp preprocessing.
+:::
+:::
+
+::: {.col-md-4 .mb-3}
+::: {.card .h-100 .border-0 .bg-light .p-3}
+##### [Aerial Survey]{.text-primary}
+Single-overflight effort with calibrated open-hours scaling.
+:::
+:::
+
+:::
+
+## Key Capabilities
+
+- **Design-based inference** — wraps the `survey` package; biologists write creel vocabulary, not survey package internals
+- **Single entry point** — `creel_design()` dispatches to the correct estimator for each survey type
+- **Incomplete trip handling** — TOST equivalence testing validates whether incomplete trips can be pooled
+- **Sample size and power** — `creel_n_effort()`, `creel_n_cpue()`, and `creel_power()` plan surveys before data collection
+- **Season summaries** — `season_summary()` assembles estimates across strata or survey periods into a wide tibble
 
 ## Quick Start
 
@@ -64,39 +112,26 @@ design <- add_interviews(design, interview_data,
   harvest = catch_kept
 )
 
-estimate_cpue(design)
+estimate_catch_rate(design)
 ```
 
-## Features
+## Functions at a Glance
 
 ### Survey Design
-
-- **`creel_design()`** — single entry point with tidy selectors; supports instantaneous count and bus-route survey types
-- **`add_counts()`** — attach instantaneous count observations with data validation against the design
-- **`add_interviews()`** — attach angler interview data with tidy selectors for catch, effort, harvest, and trip metadata
+- **`creel_design()`** — single entry point; dispatches on `survey_type` (instantaneous, bus_route, ice, camera, aerial)
+- **`add_counts()`**, **`add_interviews()`**, **`add_catch()`**, **`add_lengths()`**, **`add_sections()`** — attach observation data
 
 ### Estimation
+- **`estimate_effort()`** — total effort with Taylor linearization, bootstrap, or jackknife variance
+- **`estimate_catch_rate()`** / **`estimate_harvest_rate()`** — ratio-based rates from interview data
+- **`estimate_total_catch()`** / **`estimate_total_harvest()`** — totals via delta method variance propagation
 
-- **`estimate_effort()`** — total and grouped effort with Taylor linearization, bootstrap, or jackknife variance
-- **`estimate_cpue()`** — CPUE via ratio-of-means (default) or mean-of-ratios (for incomplete trips)
-- **`estimate_harvest()`** — harvest rate estimation from interview data
-- **`estimate_total_catch()`** / **`estimate_total_harvest()`** — expansion to totals with delta method variance propagation
+### Planning
+- **`creel_n_effort()`**, **`creel_n_cpue()`**, **`creel_power()`** — sample size and power analysis
+- **`generate_schedule()`**, **`generate_bus_schedule()`** — sampling frame generators
 
-### Bus-Route Surveys
-
-- Horvitz-Thompson estimators following Malvestuto et al. (1978) and Jones & Pollock (2012, Ch. 19)
-- Enumeration expansion that scales interviewed catch/effort to all anglers at each site
-- Helpers: `get_enumeration_counts()`, `get_inclusion_probs()`, `get_sampling_frame()`, `get_site_contributions()`
-
-### Incomplete Trips & Validation
-
-- **`summarize_trips()`** — summarize trip status, duration, and completeness across interviews
-- **`validate_incomplete_trips()`** — TOST equivalence testing to validate incomplete vs. complete trip comparability
-- Sample size warnings when \< 10% of interviews are complete trips, following Colorado C-SAP best practices
-
-### Survey Package Integration
-
-- **`as_survey_design()`** — extract the underlying `survey` design object for advanced use
+### Diagnostics
+- **`validate_design()`**, **`check_completeness()`**, **`season_summary()`** — pre- and post-season QA
 
 ## Vignettes
 

@@ -8,7 +8,9 @@ estimate_total_harvest(
   design,
   by = NULL,
   variance = "taylor",
-  conf_level = 0.95
+  conf_level = 0.95,
+  aggregate_sections = TRUE,
+  missing_sections = "warn"
 )
 }
 \arguments{
@@ -28,6 +30,16 @@ tidyselect helpers.}
 and HPUE estimation, then combined via delta method.}
 
 \item{conf_level}{Numeric confidence level (default: 0.95)}
+
+\item{aggregate_sections}{Logical. When the design was created with
+\code{\link{add_sections}}, should a \code{.lake_total} row be appended
+that sums the per-section estimates? Default \code{TRUE}. Set to
+\code{FALSE} to return only the per-section rows without the lake total.}
+
+\item{missing_sections}{Character(1). Action when a registered section is
+absent from either count data or interview data: \code{"warn"} (default)
+inserts an NA row with \code{data_available = FALSE}, \code{"error"}
+raises a hard error.}
 }
 \value{
 A creel_estimates S3 object with method = "product-total-harvest"
@@ -46,6 +58,12 @@ for independent estimates is approximately:
 
 The function uses survey::svycontrast() to compute variance automatically
 via symbolic differentiation and Taylor series approximation.
+
+\strong{Sectioned designs:}
+When \code{\link{add_sections}} has been called on the design, each section
+is estimated independently. The lake-wide total is \code{sum(TH_i)}, not
+\code{E_total * HPUE_pooled}. The lake-wide SE uses the zero-covariance
+assumption: \code{sqrt(sum(se_i^2))}.
 
 \strong{Design compatibility requirements:}
 \itemize{
@@ -76,7 +94,7 @@ print(total_harvest)
 
 # Compare components
 effort_est <- estimate_effort(design)
-hpue_est <- estimate_harvest(design)
+hpue_est <- estimate_harvest_rate(design)
 # total_harvest$estimates$estimate approximately equals effort_est * hpue_est
 
 # Note: Grouped estimation requires n >= 10 per group
@@ -86,6 +104,6 @@ hpue_est <- estimate_harvest(design)
 
 }
 \seealso{
-\code{\link{estimate_effort}}, \code{\link{estimate_harvest}},
+\code{\link{estimate_effort}}, \code{\link{estimate_harvest_rate}},
 \code{\link{estimate_total_catch}}
 }

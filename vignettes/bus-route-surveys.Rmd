@@ -276,11 +276,11 @@ exactly.
 
 ### Step 4: Estimate Harvest
 
-`estimate_harvest()` applies the same Horvitz-Thompson logic to fish kept.
+`estimate_harvest_rate()` applies the same Horvitz-Thompson logic to fish kept.
 
 ```{r harvest}
 # Estimate total fish kept (harvest)
-harvest_est <- estimate_harvest(design)
+harvest_est <- estimate_harvest_rate(design)
 print(harvest_est)
 
 # Estimate total catch (kept + released)

@@ -8,7 +8,9 @@ estimate_total_release(
   design,
   by = NULL,
   variance = "taylor",
-  conf_level = 0.95
+  conf_level = 0.95,
+  aggregate_sections = TRUE,
+  missing_sections = "warn"
 )
 }
 \arguments{
@@ -26,6 +28,16 @@ or tidyselect helpers.}
 and release rate estimation, then combined via delta method.}
 
 \item{conf_level}{Numeric confidence level (default: 0.95).}
+
+\item{aggregate_sections}{Logical. When the design was created with
+\code{\link{add_sections}}, should a \code{.lake_total} row be appended
+that sums the per-section estimates? Default \code{TRUE}. Set to
+\code{FALSE} to return only the per-section rows without the lake total.}
+
+\item{missing_sections}{Character(1). Action when a registered section is
+absent from either count data or interview data: \code{"warn"} (default)
+inserts an NA row with \code{data_available = FALSE}, \code{"error"}
+raises a hard error.}
 }
 \value{
 A creel_estimates S3 object with method = "product-total-release".
@@ -41,6 +53,12 @@ propagation via the delta method. Requires a creel design with count data
 \details{
 Total release is computed as Effort x RPUE. Variance is propagated using the
 delta method: Var(E x R) = E^2 * Var(R) + R^2 * Var(E).
+
+\strong{Sectioned designs:}
+When \code{\link{add_sections}} has been called on the design, each section
+is estimated independently. The lake-wide total is \code{sum(TR_i)}, not
+\code{E_total * RPUE_pooled}. The lake-wide SE uses the zero-covariance
+assumption: \code{sqrt(sum(se_i^2))}.
 }
 \examples{
 library(tidycreel)

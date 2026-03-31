@@ -158,7 +158,7 @@ test_that(
   {
     # Harvest uses fish_kept column with no expansion (n_counted = n_interviewed).
     # Per CONTEXT.md: effort validation alongside harvest/catch.
-    result <- estimate_harvest(make_box20_6_example1())
+    result <- estimate_harvest_rate(make_box20_6_example1())
     expect_s3_class(result, "creel_estimates")
     # H_hat should be positive and finite
     expect_true(is.numeric(result$estimates$estimate))
@@ -351,7 +351,7 @@ test_that(
   "Complete bus-route workflow: design -> data -> harvest estimation succeeds (VALID-05)",
   {
     d <- make_box20_6_example2()
-    result <- suppressWarnings(estimate_harvest(d))
+    result <- suppressWarnings(estimate_harvest_rate(d))
     expect_s3_class(result, "creel_estimates")
     expect_true(is.finite(result$estimates$estimate))
     expect_true(result$estimates$estimate > 0)
@@ -448,7 +448,7 @@ test_that(
       survey::svydesign(ids = ~1, strata = ~day_type, data = int_data)
     )
     manual_result <- survey::svytotal(~.harvest_contrib, svy_manual)
-    tidycreel_result <- suppressWarnings(estimate_harvest(d))
+    tidycreel_result <- suppressWarnings(estimate_harvest_rate(d))
     expect_equal(
       tidycreel_result$estimates$estimate,
       as.numeric(coef(manual_result)),
@@ -467,12 +467,91 @@ test_that(
       survey::svydesign(ids = ~1, strata = ~day_type, data = int_data)
     )
     manual_result <- survey::svytotal(~.harvest_contrib, svy_manual)
-    tidycreel_result <- suppressWarnings(estimate_harvest(d))
+    tidycreel_result <- suppressWarnings(estimate_harvest_rate(d))
     # Per CONTEXT.md: SE tolerance 1e-3 (FPC differences acceptable)
     expect_equal(
       tidycreel_result$estimates$se,
       as.numeric(survey::SE(manual_result)),
       tolerance = 1e-3
     )
+  }
+)
+
+# AIR-04: Aerial effort — constructed numeric validation example ----
+# Malvestuto (1996) Box 20.6 has no aerial worked example (only bus-route).
+# A Delaware River Creel Survey 2002 report uses PPS design (pi_ik expansion
+# factors), which is not compatible with the simple instantaneous count x h_open
+# estimator implemented here.
+#
+# Alternate strategy: hand-calculable constructed example verified from
+# the formula E = svytotal(counts) x h_open (Pollock et al. 1994, Ch. 12).
+#
+# Design: 5 weekdays + 2 weekend days, ALL counted on every day. h_open = 14 h.
+# Weekday counts: 10, 15, 12, 8, 11 (sum = 56).
+# Weekend counts: 25, 30 (sum = 55).
+#
+# Hand calculation (no FPC; all PSUs observed):
+#   svytotal = sum(counts) = 56 + 55 = 111 anglers
+#   E_hat = 111 x 14 = 1554 angler-hours
+#
+# Primary source: Pollock et al. (1994) Ch. 12 provides theoretical basis;
+# Malvestuto (1996) Box 20.6 has no aerial worked example.
+
+make_aerial_box20_6 <- function() {
+  # Calendar: 5 weekdays + 2 weekend days in the study period.
+  # All days are surveyed (every calendar date has a count row).
+  cal <- data.frame(
+    date = as.Date(c(
+      "2024-06-03", "2024-06-04", "2024-06-05", "2024-06-06", "2024-06-07",
+      "2024-06-08", "2024-06-09"
+    )),
+    day_type = c(
+      "weekday", "weekday", "weekday", "weekday", "weekday",
+      "weekend", "weekend"
+    ),
+    stringsAsFactors = FALSE
+  )
+  # Counts: one observation per calendar day.
+  # Weekday sums to 56 anglers; weekend sums to 55. Total = 111.
+  # E_hat = 111 x 14 = 1554 angler-hours (exact, no rounding).
+  counts <- data.frame(
+    date = as.Date(c(
+      "2024-06-03", "2024-06-04", "2024-06-05", "2024-06-06", "2024-06-07",
+      "2024-06-08", "2024-06-09"
+    )),
+    day_type = c(
+      "weekday", "weekday", "weekday", "weekday", "weekday",
+      "weekend", "weekend"
+    ),
+    n_anglers = c(10L, 15L, 12L, 8L, 11L, 25L, 30L),
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design( # nolint: object_usage_linter
+    calendar = cal,
+    date = date, # nolint: object_usage_linter
+    strata = day_type, # nolint: object_usage_linter
+    survey_type = "aerial",
+    h_open = 14
+  )
+  add_counts( # nolint: object_usage_linter
+    design,
+    counts
+  )
+}
+
+test_that(
+  "AIR-04: estimate_effort() matches hand-calculated svytotal x h_open = 111 x 14 = 1554 angler-hours", # nolint: line_length_linter
+  {
+    # Constructed numeric example verified against hand-calculated formula:
+    # svytotal equals sum of all counts (111 anglers) because all calendar
+    # days are observed (no partial sampling, no FPC). E_hat = 111 x 14 = 1554.
+    # Weekday sum is 56 (10+15+12+8+11); weekend sum is 55 (25+30).
+    # Primary source: Pollock et al. (1994) Ch. 12 provides theoretical basis;
+    # Malvestuto (1996) Box 20.6 has no aerial worked example.
+    fixture <- make_aerial_box20_6()
+    result <- suppressWarnings(estimate_effort(fixture))
+    # E_hat = 111 x 14 = 1554 angler-hours (exact integer result)
+    expect_equal(result$estimates$estimate, 1554, tolerance = 1e-4)
+    expect_true(result$estimates$se > 0)
   }
 )

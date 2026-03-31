@@ -76,13 +76,13 @@ With interview data attached, we can estimate catch per unit effort:
 
 ```{r cpue}
 # Estimate CPUE
-cpue_est <- estimate_cpue(design)
+cpue_est <- estimate_catch_rate(design)
 print(cpue_est)
 ```
 
 The CPUE estimate uses a ratio-of-means estimator: total catch divided by total effort across all interviews. This estimator is appropriate for access point surveys because it accounts for the correlation between catch and effort within each trip. The variance is computed using the delta method, accounting for the covariance between numerator and denominator.
 
-For details on the ratio-of-means formula and variance calculation, see `?estimate_cpue`.
+For details on the ratio-of-means formula and variance calculation, see `?estimate_catch_rate`.
 
 ## Estimating Total Catch
 
@@ -106,7 +106,7 @@ The package distinguishes between total catch (all fish caught) and harvest (fis
 
 ```{r harvest}
 # Estimate HPUE
-hpue_est <- estimate_harvest(design)
+hpue_est <- estimate_harvest_rate(design)
 print(hpue_est)
 
 # Estimate total harvest
@@ -122,7 +122,7 @@ Like effort estimation, CPUE and total catch functions support grouped estimatio
 
 ```{r grouped, eval=FALSE}
 # Estimate CPUE by day_type (not evaluated - example data too small)
-cpue_by_day <- estimate_cpue(design, by = day_type)
+cpue_by_day <- estimate_catch_rate(design, by = day_type)
 
 # Estimate total catch by day_type
 total_catch_by_day <- estimate_total_catch(design, by = day_type)
@@ -137,10 +137,10 @@ Like effort estimation, CPUE estimation supports multiple variance methods. The 
 ```{r variance}
 # Bootstrap variance estimation
 set.seed(42) # For reproducibility
-cpue_boot <- estimate_cpue(design, variance = "bootstrap")
+cpue_boot <- estimate_catch_rate(design, variance = "bootstrap")
 
 # Jackknife variance estimation
-cpue_jk <- estimate_cpue(design, variance = "jackknife")
+cpue_jk <- estimate_catch_rate(design, variance = "jackknife")
 ```
 
 All three methods produce similar results for these data. Use bootstrap or jackknife when you want to verify Taylor linearization assumptions or when working with complex grouped estimates.
@@ -174,8 +174,8 @@ complete_design <- creel_design(example_calendar, date = date, strata = day_type
 
 # Compute all estimates
 effort <- estimate_effort(complete_design)
-cpue <- estimate_cpue(complete_design)
-hpue <- estimate_harvest(complete_design)
+cpue <- estimate_catch_rate(complete_design)
+hpue <- estimate_harvest_rate(complete_design)
 total_catch <- estimate_total_catch(complete_design)
 total_harvest <- estimate_total_harvest(complete_design)
 
@@ -205,7 +205,7 @@ using them for estimation, see the **Incomplete Trip Estimation** vignette
 
 **Important:** The package defaults to complete trips only. Incomplete trip
 estimation requires explicit opt-in via the `use_trips` parameter in
-`estimate_cpue()` and should only be used after validation with
+`estimate_catch_rate()` and should only be used after validation with
 `validate_incomplete_trips()`.
 
 ## Next Steps
@@ -213,8 +213,8 @@ estimation requires explicit opt-in via the `use_trips` parameter in
 For more details on interview-based estimation functions, see:
 
 - `?add_interviews` - Attach interview data to a design
-- `?estimate_cpue` - Estimate catch per unit effort
-- `?estimate_harvest` - Estimate harvest per unit effort
+- `?estimate_catch_rate` - Estimate catch per unit effort
+- `?estimate_harvest_rate` - Estimate harvest per unit effort
 - `?estimate_total_catch` - Estimate total catch
 - `?estimate_total_harvest` - Estimate total harvest
 - `?example_interviews` - Example interview dataset

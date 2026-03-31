@@ -853,3 +853,482 @@ test_that("format.creel_design() shows area when area_col registered", {
   output <- format(design2)
   expect_true(any(grepl("ha", output)))
 })
+
+# Enum guard (INFRA-02) and ice/camera/aerial stubs (INFRA-01) ----
+
+make_enum_cal <- function() {
+  data.frame(
+    date = as.Date("2024-06-01"),
+    day_type = "weekday",
+    stringsAsFactors = FALSE
+  )
+}
+
+test_that("creel_design() aborts with rlang_error for unknown survey_type", {
+  expect_error(
+    creel_design(make_enum_cal(),
+      date = date, strata = day_type,
+      survey_type = "unknown_type"
+    ),
+    class = "rlang_error"
+  )
+})
+
+test_that("enum guard error message names the bad survey_type value", {
+  expect_error(
+    creel_design(make_enum_cal(),
+      date = date, strata = day_type,
+      survey_type = "unknown_type"
+    ),
+    "unknown_type"
+  )
+})
+
+test_that("creel_design() accepts survey_type = 'ice' with effort_type and returns creel_design", {
+  d <- creel_design(make_enum_cal(),
+    date = date, strata = day_type,
+    survey_type = "ice",
+    effort_type = "time_on_ice",
+    p_period = 0.5
+  )
+  expect_s3_class(d, "creel_design")
+  expect_equal(d$design_type, "ice")
+})
+
+test_that("creel_design() accepts survey_type = 'camera' and returns creel_design", {
+  d <- creel_design(make_enum_cal(),
+    date = date, strata = day_type,
+    survey_type = "camera",
+    camera_mode = "counter"
+  )
+  expect_s3_class(d, "creel_design")
+  expect_equal(d$design_type, "camera")
+})
+
+test_that("creel_design() accepts survey_type = 'aerial' and returns creel_design", {
+  d <- creel_design(make_enum_cal(),
+    date = date, strata = day_type,
+    survey_type = "aerial",
+    h_open = 14
+  )
+  expect_s3_class(d, "creel_design")
+  expect_equal(d$design_type, "aerial")
+})
+
+# ICE-01: Ice constructor and p_site=1.0 enforcement ----
+
+make_ice_cal <- function() {
+  data.frame(
+    date = as.Date(c("2024-01-10", "2024-01-11", "2024-01-12", "2024-01-13")),
+    day_type = c("weekday", "weekday", "weekend", "weekend"),
+    stringsAsFactors = FALSE
+  )
+}
+
+test_that("ICE-01: creel_design(ice, effort_type='time_on_ice', p_period=0.5) constructs non-NULL ice slot", {
+  d <- creel_design(make_ice_cal(),
+    date = date, strata = day_type,
+    survey_type = "ice",
+    effort_type = "time_on_ice",
+    p_period = 0.5
+  )
+  expect_false(is.null(d$ice))
+  expect_equal(d$ice$effort_type, "time_on_ice")
+})
+
+test_that("ICE-01: design$ice$effort_type stores 'active_fishing_time' when supplied", {
+  d <- creel_design(make_ice_cal(),
+    date = date, strata = day_type,
+    survey_type = "ice",
+    effort_type = "active_fishing_time",
+    p_period = 0.5
+  )
+  expect_equal(d$ice$effort_type, "active_fishing_time")
+})
+
+test_that("ICE-01: creel_design(ice) with valid sampling_frame (all p_site==1.0) constructs", {
+  sf <- data.frame(
+    location = c("site_A", "site_B"),
+    p_site = c(1.0, 1.0),
+    p_period = 0.5,
+    stringsAsFactors = FALSE
+  )
+  d <- creel_design(make_ice_cal(),
+    date = date, strata = day_type,
+    survey_type = "ice",
+    effort_type = "time_on_ice",
+    sampling_frame = sf,
+    p_period = 0.5
+  )
+  expect_s3_class(d, "creel_design")
+  expect_false(is.null(d$ice))
+})
+
+test_that("ICE-01: creel_design(ice) aborts with cli_abort when any p_site != 1.0", {
+  sf_bad <- data.frame(
+    location = c("site_A", "site_B"),
+    p_site = c(1.0, 0.8),
+    p_period = 0.5,
+    stringsAsFactors = FALSE
+  )
+  expect_error(
+    creel_design(make_ice_cal(),
+      date = date, strata = day_type,
+      survey_type = "ice",
+      effort_type = "time_on_ice",
+      sampling_frame = sf_bad,
+      p_period = 0.5
+    ),
+    class = "rlang_error"
+  )
+})
+
+test_that("ICE-01: p_site enforcement error message names offending row indices", {
+  sf_bad <- data.frame(
+    location = c("site_A", "site_B", "site_C"),
+    p_site = c(1.0, 0.8, 1.0),
+    p_period = 0.5,
+    stringsAsFactors = FALSE
+  )
+  expect_error(
+    creel_design(make_ice_cal(),
+      date = date, strata = day_type,
+      survey_type = "ice",
+      effort_type = "time_on_ice",
+      sampling_frame = sf_bad,
+      p_period = 0.5
+    ),
+    regexp = "2"
+  )
+})
+
+# ICE-02: effort_type validation ----
+
+test_that("ICE-02: creel_design(ice) without effort_type aborts with cli_abort", {
+  expect_error(
+    creel_design(make_ice_cal(),
+      date = date, strata = day_type,
+      survey_type = "ice",
+      p_period = 0.5
+    ),
+    class = "rlang_error"
+  )
+})
+
+test_that("ICE-02: creel_design(ice) with unknown effort_type aborts with informative message", {
+  expect_error(
+    creel_design(make_ice_cal(),
+      date = date, strata = day_type,
+      survey_type = "ice",
+      effort_type = "unknown_type",
+      p_period = 0.5
+    ),
+    regexp = "time_on_ice|active_fishing_time"
+  )
+})
+
+# ICE-04: add_interviews() ice path ----
+
+make_ice_design_no_sf <- function() {
+  creel_design( # nolint: object_usage_linter
+    make_ice_cal(),
+    date = date, strata = day_type, # nolint: object_usage_linter
+    survey_type = "ice",
+    effort_type = "time_on_ice",
+    p_period = 0.5
+  )
+}
+
+make_ice_interviews_valid <- function() {
+  data.frame(
+    date = as.Date(c("2024-01-10", "2024-01-11", "2024-01-12")),
+    n_counted = c(10L, 8L, 12L),
+    n_interviewed = c(3L, 2L, 4L),
+    hours_fished = c(2.0, 1.5, 3.0),
+    walleye_catch = c(1L, 0L, 2L),
+    trip_status = rep("complete", 3L),
+    stringsAsFactors = FALSE
+  )
+}
+
+test_that("ICE-04: add_interviews(ice) without n_counted aborts with informative error", {
+  design <- make_ice_design_no_sf()
+  interviews <- make_ice_interviews_valid()
+  expect_error(
+    add_interviews(
+      design,
+      interviews,
+      catch = walleye_catch,
+      effort = hours_fished,
+      n_interviewed = n_interviewed,
+      trip_status = trip_status
+    ),
+    regexp = "n_counted",
+    class = "rlang_error"
+  )
+})
+
+test_that("ICE-04: add_interviews(ice) without n_interviewed aborts with informative error", {
+  design <- make_ice_design_no_sf()
+  interviews <- make_ice_interviews_valid()
+  expect_error(
+    add_interviews(
+      design,
+      interviews,
+      catch = walleye_catch,
+      effort = hours_fished,
+      n_counted = n_counted,
+      trip_status = trip_status
+    ),
+    regexp = "n_interviewed",
+    class = "rlang_error"
+  )
+})
+
+test_that("ICE-04: add_interviews(ice) with valid inputs attaches non-NULL interview_survey", {
+  design <- make_ice_design_no_sf()
+  interviews <- make_ice_interviews_valid()
+  result <- suppressWarnings(add_interviews(
+    design,
+    interviews,
+    catch = walleye_catch,
+    effort = hours_fished,
+    n_counted = n_counted,
+    n_interviewed = n_interviewed,
+    trip_status = trip_status
+  ))
+  expect_false(is.null(result$interview_survey))
+})
+
+test_that("ICE-04: add_interviews(ice) broadcasts p_period_scalar to .pi_i on all rows", {
+  design <- make_ice_design_no_sf()
+  interviews <- make_ice_interviews_valid()
+  result <- suppressWarnings(add_interviews(
+    design,
+    interviews,
+    catch = walleye_catch,
+    effort = hours_fished,
+    n_counted = n_counted,
+    n_interviewed = n_interviewed,
+    trip_status = trip_status
+  ))
+  expect_true(".pi_i" %in% names(result$interviews))
+  expect_true(all(result$interviews$.pi_i == 0.5))
+})
+
+# Phase 46: Camera constructor and preprocessing (CAM-01, CAM-02, CAM-03) ----
+
+make_cam_cal <- function() {
+  data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
+    day_type = c("weekday", "weekday", "weekend", "weekend"),
+    stringsAsFactors = FALSE
+  )
+}
+
+# CAM-01: counter mode construction ----
+
+test_that("CAM-01: creel_design(camera, counter) constructs without error", {
+  d <- creel_design(make_cam_cal(),
+    date = date, strata = day_type,
+    survey_type = "camera",
+    camera_mode = "counter"
+  )
+  expect_s3_class(d, "creel_design")
+  expect_equal(d$design_type, "camera")
+  expect_equal(d$camera$camera_mode, "counter")
+})
+
+test_that("CAM-01: creel_design(camera) without camera_mode aborts with cli_abort", {
+  expect_error(
+    creel_design(make_cam_cal(),
+      date = date, strata = day_type,
+      survey_type = "camera"
+    ),
+    class = "rlang_error"
+  )
+})
+
+test_that("CAM-01: camera_mode absent error message names valid values", {
+  expect_error(
+    creel_design(make_cam_cal(),
+      date = date, strata = day_type,
+      survey_type = "camera"
+    ),
+    regexp = "counter|ingress_egress"
+  )
+})
+
+test_that("CAM-01: creel_design(camera, bad_mode) aborts naming the bad value", {
+  expect_error(
+    creel_design(make_cam_cal(),
+      date = date, strata = day_type,
+      survey_type = "camera",
+      camera_mode = "unknown_mode"
+    ),
+    regexp = "unknown_mode"
+  )
+})
+
+# CAM-02: ingress_egress mode construction ----
+
+test_that("CAM-02: creel_design(camera, ingress_egress) constructs without error", {
+  d <- creel_design(make_cam_cal(),
+    date = date, strata = day_type,
+    survey_type = "camera",
+    camera_mode = "ingress_egress"
+  )
+  expect_s3_class(d, "creel_design")
+  expect_equal(d$camera$camera_mode, "ingress_egress")
+})
+
+# CAM-02: preprocess_camera_timestamps() ----
+
+make_cam_timestamps <- function() {
+  base_date <- as.Date("2024-06-01")
+  data.frame(
+    survey_date = rep(c(base_date, base_date + 1), each = 2L),
+    ingress_time = as.POSIXct(c(
+      "2024-06-01 06:00:00", "2024-06-01 09:00:00",
+      "2024-06-02 07:00:00", "2024-06-02 10:30:00"
+    ), tz = "UTC"),
+    egress_time = as.POSIXct(c(
+      "2024-06-01 08:00:00", "2024-06-01 11:00:00",
+      "2024-06-02 09:00:00", "2024-06-02 13:00:00"
+    ), tz = "UTC"),
+    stringsAsFactors = FALSE
+  )
+}
+
+test_that("CAM-02: preprocess_camera_timestamps() returns data frame with date + daily_effort_hours", {
+  ts <- make_cam_timestamps()
+  result <- preprocess_camera_timestamps(ts,
+    date_col = survey_date,
+    ingress_col = ingress_time,
+    egress_col = egress_time
+  )
+  expect_s3_class(result, "data.frame")
+  expect_true("date" %in% names(result))
+  expect_true("daily_effort_hours" %in% names(result))
+  expect_equal(nrow(result), 2L)
+})
+
+test_that("CAM-02: preprocess_camera_timestamps() aggregates hours correctly", {
+  ts <- make_cam_timestamps()
+  result <- preprocess_camera_timestamps(ts,
+    date_col = survey_date,
+    ingress_col = ingress_time,
+    egress_col = egress_time
+  )
+  # Date 1: 2h + 2h = 4h; Date 2: 2h + 2.5h = 4.5h
+  result_sorted <- result[order(result$date), ]
+  expect_equal(result_sorted$daily_effort_hours[1L], 4.0, tolerance = 1e-6)
+  expect_equal(result_sorted$daily_effort_hours[2L], 4.5, tolerance = 1e-6)
+})
+
+test_that("CAM-02: preprocess_camera_timestamps() warns on egress < ingress and sets duration to NA", {
+  ts <- make_cam_timestamps()
+  # Make one row have egress before ingress
+  ts$egress_time[2L] <- ts$ingress_time[2L] - 3600
+  expect_warning(
+    result <- preprocess_camera_timestamps(ts,
+      date_col = survey_date,
+      ingress_col = ingress_time,
+      egress_col = egress_time
+    ),
+    regexp = "negative|duration|invalid"
+  )
+  # Date 1 should only sum the valid row (2h), not the negative-duration row
+  result_sorted <- result[order(result$date), ]
+  expect_equal(result_sorted$daily_effort_hours[1L], 2.0, tolerance = 1e-6)
+})
+
+# Phase 47: Aerial constructor ----
+
+make_aerial_cal <- function() {
+  data.frame(
+    date = as.Date(c(
+      "2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04",
+      "2024-06-08", "2024-06-09", "2024-06-15", "2024-06-16"
+    )),
+    day_type = rep(c("weekday", "weekend"), each = 4L),
+    stringsAsFactors = FALSE
+  )
+}
+
+describe("Phase 47: Aerial constructor", {
+  it("AIR-01: creel_design(survey_type = 'aerial', h_open = 14) constructs; design$aerial$h_open == 14", {
+    d <- creel_design(make_aerial_cal(),
+      date = date, strata = day_type,
+      survey_type = "aerial",
+      h_open = 14
+    )
+    expect_s3_class(d, "creel_design")
+    expect_equal(d$design_type, "aerial")
+    expect_equal(d$aerial$h_open, 14)
+  })
+
+  it("AIR-01: creel_design(survey_type = 'aerial') without h_open aborts with cli_abort()", {
+    expect_error(
+      creel_design(make_aerial_cal(),
+        date = date, strata = day_type,
+        survey_type = "aerial"
+      ),
+      regexp = "h_open"
+    )
+  })
+
+  it("AIR-01: creel_design(survey_type = 'aerial', h_open = -1) aborts with informative message", {
+    expect_error(
+      creel_design(make_aerial_cal(),
+        date = date, strata = day_type,
+        survey_type = "aerial",
+        h_open = -1
+      ),
+      regexp = "h_open"
+    )
+  })
+
+  it("AIR-03: creel_design(survey_type = 'aerial', h_open = 14, visibility_correction = 0.85) constructs", {
+    d <- creel_design(make_aerial_cal(),
+      date = date, strata = day_type,
+      survey_type = "aerial",
+      h_open = 14,
+      visibility_correction = 0.85
+    )
+    expect_equal(d$aerial$visibility_correction, 0.85)
+  })
+
+  it("AIR-03: visibility_correction = 1.5 aborts (outside (0, 1])", {
+    expect_error(
+      creel_design(make_aerial_cal(),
+        date = date, strata = day_type,
+        survey_type = "aerial",
+        h_open = 14,
+        visibility_correction = 1.5
+      ),
+      regexp = "visibility_correction"
+    )
+  })
+
+  it("AIR-03: visibility_correction = 0 aborts (not > 0)", {
+    expect_error(
+      creel_design(make_aerial_cal(),
+        date = date, strata = day_type,
+        survey_type = "aerial",
+        h_open = 14,
+        visibility_correction = 0
+      ),
+      regexp = "visibility_correction"
+    )
+  })
+
+  it("AIR-01: design$design_type == 'aerial' after construction", {
+    d <- creel_design(make_aerial_cal(),
+      date = date, strata = day_type,
+      survey_type = "aerial",
+      h_open = 14
+    )
+    expect_equal(d$design_type, "aerial")
+  })
+})

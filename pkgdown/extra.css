@@ -1,0 +1,109 @@
+/* =============================================================
+   tidycreel extra.css — Phase 53: Structural/Non-content CSS
+   Phase 54 additions: hero section, badge styling (see bottom)
+   ============================================================= */
+
+/* ---- Navbar ---- */
+/* Belt-and-suspenders supplement to navbar.bg: primary in _pkgdown.yml */
+.navbar {
+  background-color: #1B4F72 !important;
+}
+
+.navbar .nav-link,
+.navbar .navbar-brand {
+  color: #ffffff !important;
+}
+
+.navbar .nav-link:hover,
+.navbar .nav-link:focus {
+  color: #5DADE2 !important;
+}
+
+/* ---- Code Blocks ---- */
+/* Dark navy-tinted background for professional look matching brand palette */
+pre,
+pre.sourceCode {
+  background-color: #1a2a3a !important;
+  color: #e8f4f8 !important;
+  border-radius: 0.375rem;
+  padding: 1rem;
+}
+
+/* Pandoc syntax token colors for dark background.
+   Default pandoc tokens are styled for light backgrounds; override for legibility. */
+.sourceCode span,
+.sourceCode code {
+  color: #e8f4f8 !important;  /* default token: light blue-white */
+}
+.sourceCode .fu { color: #7ec8e3 !important; }  /* functions: sky blue */
+.sourceCode .kw { color: #f0b429 !important; }  /* keywords: amber */
+.sourceCode .st { color: #a8d8a8 !important; }  /* strings: soft green */
+.sourceCode .co { color: #8899aa !important; }  /* comments: muted blue-grey */
+.sourceCode .dv,
+.sourceCode .fl { color: #f4a261 !important; }  /* numbers: warm orange */
+.sourceCode .op { color: #e8f4f8 !important; }  /* operators: default light */
+.sourceCode .va { color: #e8f4f8 !important; }  /* variables: default light */
+.sourceCode .at { color: #c3e88d !important; }  /* attributes: light green */
+/* R example output tokens */
+.sourceCode .r-out { color: #aac8e0 !important; }
+.sourceCode .r-msg { color: #8899aa !important; }
+.sourceCode .r-wrn { color: #f0b429 !important; }
+.sourceCode .r-err { color: #ff6b6b !important; }
+
+/* ---- Callout / Note Accent ---- */
+/* Gold left-border stripe: callback to creel basket in the hex sticker */
+.callout,
+div.bs-callout,
+.alert-note,
+.alert-info {
+  border-left: 4px solid #F39C12;
+}
+
+/* ---- Typography Overrides ---- */
+h1, h2, h3, h4, h5, h6 {
+  color: #1B4F72;
+}
+
+/* =============================================================
+   PHASE 54 ADDITIONS BELOW THIS LINE
+   (hero section spacing, badge styling)
+   ============================================================= */
+
+/* ============================================================= */
+/*   PHASE 54: Hero section & badge styling                      */
+/* ============================================================= */
+
+/* ---- Feature Grid Cards ---- */
+/* Bootstrap 5 card grid for the Survey Types section on the home page */
+.card.border-0.bg-light {
+  border-radius: 0.375rem;
+  box-shadow: 0 1px 4px rgba(27, 79, 114, 0.12);
+  transition: box-shadow 0.2s ease;
+}
+
+.card.border-0.bg-light:hover {
+  box-shadow: 0 4px 12px rgba(27, 79, 114, 0.22);
+}
+
+.card.border-0.bg-light h5.text-primary {
+  color: #1B4F72 !important;
+  font-size: 1rem;
+  margin-bottom: 0.4rem;
+}
+
+/* ---- Badge Block ---- */
+/* pkgdown extracts badges from the sentinel block and places them in the sidebar */
+.sidebar .badge-block img,
+.sidebar p img[alt*="badge"],
+.sidebar p img[src*="shields.io"],
+.sidebar p img[src*="github.com/chrischizinski"] {
+  display: inline-block;
+  margin: 2px 2px 2px 0;
+}
+
+/* ---- Home Page Spacing ---- */
+/* Breathing room above first section heading on the home page */
+.template-home main > h2:first-of-type,
+.template-home main > h3:first-of-type {
+  margin-top: 1.5rem;
+}

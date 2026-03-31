@@ -1,6 +1,6 @@
 # Imports ----
 
-#' @importFrom stats coef confint reformulate
+#' @importFrom stats coef confint qt reformulate setNames vcov
 NULL
 
 # creel_estimates S3 class ----
@@ -206,6 +206,21 @@ print.creel_estimates <- function(x, ...) {
 #'   0.95 for 95% confidence intervals). Must be between 0 and 1.
 #' @param verbose Logical. If TRUE, prints an informational message identifying
 #'   which estimator path was used. Default FALSE for transparent dispatch.
+#' @param aggregate_sections Logical. If TRUE (default), a \code{.lake_total}
+#'   row is appended aggregating across all sections. Ignored for non-sectioned
+#'   designs.
+#' @param method Character string specifying how the lake-wide total SE is
+#'   computed when \code{aggregate_sections = TRUE}. \code{"correlated"}
+#'   (default) uses \code{svyby(covmat=TRUE)} + \code{svycontrast()} for
+#'   covariance-aware aggregation (recommended for shared-calendar NGPC
+#'   designs). \code{"independent"} uses Cochran 5.2 \code{sqrt(sum(SE_h^2))}
+#'   as a documented approximation for genuinely independent section designs.
+#'   Ignored for non-sectioned designs.
+#' @param missing_sections Character string controlling behavior when a
+#'   registered section has no count observations. \code{"warn"} (default)
+#'   emits a \code{cli_warn()} and inserts an NA row with
+#'   \code{data_available = FALSE}. \code{"error"} aborts with
+#'   \code{cli_abort()}. Ignored for non-sectioned designs.
 #'
 #' @return A creel_estimates S3 object (list) with components: estimates
 #'   (tibble with estimate, se, se_between, se_within, ci_lower, ci_upper, n
@@ -289,7 +304,9 @@ print.creel_estimates <- function(x, ...) {
 #' # Verbose dispatch message (shows which estimator was used for bus-route designs)
 #' result_verbose <- estimate_effort(design_with_counts, verbose = TRUE)
 #' @export
-estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level = 0.95, verbose = FALSE) {
+estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level = 0.95,
+                            verbose = FALSE, aggregate_sections = TRUE,
+                            method = "correlated", missing_sections = "warn") {
   # Capture by parameter BEFORE validation
   by_quo <- rlang::enquo(by)
 
@@ -312,8 +329,8 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
     ))
   }
 
-  # Validate design$survey exists (skip for bus-route: uses interviews not counts)
-  if (!identical(design$design_type, "bus_route") && is.null(design$survey)) {
+  # Validate design$survey exists (skip for bus-route, ice, and aerial: custom dispatch below)
+  if (!design$design_type %in% c("bus_route", "ice", "aerial") && is.null(design$survey)) {
     cli::cli_abort(c(
       "No survey design available.",
       "x" = "Call {.fn add_counts} before estimating effort.",
@@ -321,8 +338,8 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
     ))
   }
 
-  # Bus-route dispatch (after survey NULL check, before standard tier-2 validation)
-  if (!is.null(design$design_type) && design$design_type == "bus_route") {
+  # Bus-route and ice dispatch (after survey NULL check, before standard tier-2 validation)
+  if (!is.null(design$design_type) && design$design_type %in% c("bus_route", "ice")) {
     if (verbose) {
       cli::cli_inform(c(
         "i" = "Using bus-route estimator (Jones & Pollock 2012, Eq. 19.4)"
@@ -354,7 +371,38 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
       by_vars_br <- names(by_cols_br)
     }
 
-    return(estimate_effort_br(design, by_vars_br, variance, conf_level, verbose)) # nolint: object_usage_linter
+    result <- estimate_effort_br(design, by_vars_br, variance, conf_level, verbose) # nolint: object_usage_linter
+
+    # Ice-specific: rename 'estimate' column to reflect effort_type
+    if (identical(design$design_type, "ice")) {
+      col_name <- switch(design$ice$effort_type,
+        time_on_ice = "total_effort_hr_on_ice",
+        active_fishing_time = "total_effort_hr_active",
+        "estimate"
+      )
+      names(result$estimates)[names(result$estimates) == "estimate"] <- col_name
+    }
+
+    return(result)
+  }
+
+  # Aerial dispatch — svytotal scaled by h_open/v (Pollock et al. 1994 sec.15.6.1)
+  if (!is.null(design$design_type) && identical(design$design_type, "aerial")) {
+    if (is.null(design$counts)) {
+      cli::cli_abort(c(
+        "Aerial effort estimation requires count data.",
+        "x" = "No count data found in design.",
+        "i" = "Call {.fn add_counts} before estimating aerial effort."
+      ))
+    }
+    return(estimate_effort_aerial(design, variance, conf_level, verbose)) # nolint: object_usage_linter
+  }
+
+  # Section dispatch (v0.7.0+ — only fires when add_sections() was called)
+  if (!is.null(design[["sections"]])) {
+    return(estimate_effort_sections( # nolint: object_usage_linter
+      design, variance, conf_level, aggregate_sections, method, missing_sections
+    ))
   }
 
   # Tier 2 validation - data quality checks (warnings only)
@@ -422,6 +470,17 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
 #'   unstable variance from very short trips. Trips with duration < truncate_at
 #'   are excluded before MOR estimation. Set to NULL to disable truncation
 #'   (research mode only). Ignored for ratio-of-means estimator.
+#' @param missing_sections Character string controlling behavior when a
+#'   registered section has no interview observations. \code{"warn"} (default)
+#'   emits a \code{cli_warn()} and inserts an NA row with
+#'   \code{data_available = FALSE}. \code{"error"} aborts with
+#'   \code{cli_abort()}. Ignored for non-sectioned designs.
+#'
+#' @note When called on a sectioned design, no \code{.lake_total} row is
+#'   produced. Catch rates (fish per angler-hour) are not additive across
+#'   sections. Lake-wide catch rate requires a separate unsectioned call on
+#'   the full design. See \code{estimate_total_catch()} for lake-wide total
+#'   catch estimation.
 #'
 #' @return A creel_estimates S3 object (list) with components: estimates
 #'   (tibble with estimate, se, ci_lower, ci_upper, n columns, plus grouping
@@ -524,32 +583,33 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
 #'   trip_status = trip_status,
 #'   trip_duration = trip_duration
 #' )
-#' result <- estimate_cpue(design_with_interviews)
+#' result <- estimate_catch_rate(design_with_interviews)
 #' print(result)
 #'
 #' # Grouped by day_type
-#' result_grouped <- estimate_cpue(design_with_interviews, by = day_type)
+#' result_grouped <- estimate_catch_rate(design_with_interviews, by = day_type)
 #' print(result_grouped)
 #'
 #' # Custom confidence level
-#' result_90 <- estimate_cpue(design_with_interviews, conf_level = 0.90)
+#' result_90 <- estimate_catch_rate(design_with_interviews, conf_level = 0.90)
 #'
 #' # Bootstrap variance estimation
-#' result_boot <- estimate_cpue(design_with_interviews, variance = "bootstrap")
+#' result_boot <- estimate_catch_rate(design_with_interviews, variance = "bootstrap")
 #'
 #' # Mean-of-ratios for incomplete trips
-#' result_mor <- estimate_cpue(design_with_interviews, estimator = "mor")
+#' result_mor <- estimate_catch_rate(design_with_interviews, estimator = "mor")
 #'
 #' # Mean-of-ratios with custom truncation threshold
-#' result_mor_1h <- estimate_cpue(design_with_interviews, estimator = "mor", truncate_at = 1.0)
+#' result_mor_1h <- estimate_catch_rate(design_with_interviews, estimator = "mor", truncate_at = 1.0)
 #' @export
-estimate_cpue <- function(design,
-                          by = NULL,
-                          variance = "taylor",
-                          conf_level = 0.95,
-                          estimator = "ratio-of-means",
-                          use_trips = NULL,
-                          truncate_at = 0.5) {
+estimate_catch_rate <- function(design,
+                                by = NULL,
+                                variance = "taylor",
+                                conf_level = 0.95,
+                                estimator = "ratio-of-means",
+                                use_trips = NULL,
+                                truncate_at = 0.5,
+                                missing_sections = "warn") {
   # Capture by parameter BEFORE validation
   by_quo <- rlang::enquo(by)
 
@@ -665,8 +725,8 @@ estimate_cpue <- function(design,
         " " = "Complete trips (n={n_complete}) vs Incomplete trips (n={n_incomplete})"
       ))
 
-      # Call estimate_cpue recursively for both trip types
-      complete_result <- estimate_cpue(
+      # Call estimate_catch_rate recursively for both trip types
+      complete_result <- estimate_catch_rate(
         design = design,
         by = !!by_quo,
         variance = variance,
@@ -677,7 +737,7 @@ estimate_cpue <- function(design,
       )
 
       incomplete_result <- suppressWarnings(
-        estimate_cpue(
+        estimate_catch_rate(
           design = design,
           by = !!by_quo,
           variance = variance,
@@ -980,6 +1040,13 @@ estimate_cpue <- function(design,
     design <- design_incomplete
   }
 
+  # Section dispatch guard — fires AFTER trip filtering, BEFORE standard dispatch
+  if (!is.null(design[["sections"]])) {
+    return(estimate_catch_rate_sections( # nolint: object_usage_linter
+      design, by_quo, variance, conf_level, missing_sections, estimator
+    ))
+  }
+
   # Detect species-level grouping
   by_info <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
 
@@ -990,7 +1057,7 @@ estimate_cpue <- function(design,
       cli::cli_abort(c(
         "Species-level CPUE requires catch data.",
         "x" = "{.field species} found in {.arg by} but {.fn add_catch} has not been called.",
-        "i" = "Call {.fn add_catch} before using species grouping in {.fn estimate_cpue}."
+        "i" = "Call {.fn add_catch} before using species grouping in {.fn estimate_catch_rate}."
       ))
     }
 
@@ -1059,6 +1126,16 @@ estimate_cpue <- function(design,
 #'   bus-route estimation. One of \code{"complete"} (default),
 #'   \code{"incomplete"} (pi_i-weighted MOR), or \code{"diagnostic"} (both).
 #'   Ignored for non-bus-route designs.
+#' @param missing_sections Character string controlling behavior when a
+#'   registered section has no interview observations. \code{"warn"} (default)
+#'   emits a \code{cli_warn()} and inserts an NA row with
+#'   \code{data_available = FALSE}. \code{"error"} aborts with
+#'   \code{cli_abort()}. Ignored for non-sectioned designs.
+#'
+#' @note When called on a sectioned design, no \code{.lake_total} row is
+#'   produced. Harvest rates (fish per angler-hour) are not additive across
+#'   sections. Lake-wide harvest rate requires a separate unsectioned call.
+#'
 #' @return A creel_estimates S3 object (list) with components: estimates
 #'   (tibble with estimate, se, ci_lower, ci_upper, n columns, plus grouping
 #'   columns if \code{by} is specified), method (character: "ratio-of-means-hpue",
@@ -1095,7 +1172,7 @@ estimate_cpue <- function(design,
 #'     selection based on design). Alternative resampling method.
 #' }
 #'
-#' @seealso \code{\link{estimate_cpue}} for total catch rate estimation
+#' @seealso \code{\link{estimate_catch_rate}} for total catch rate estimation
 #'
 #' @examples
 #' # Basic ungrouped HPUE
@@ -1123,29 +1200,30 @@ estimate_cpue <- function(design,
 #'   trip_status = trip_status,
 #'   trip_duration = trip_duration
 #' )
-#' result <- estimate_harvest(design_with_interviews)
+#' result <- estimate_harvest_rate(design_with_interviews)
 #' print(result)
 #'
 #' # Grouped by day_type
-#' result_grouped <- estimate_harvest(design_with_interviews, by = day_type)
+#' result_grouped <- estimate_harvest_rate(design_with_interviews, by = day_type)
 #' print(result_grouped)
 #'
 #' # Custom confidence level
-#' result_90 <- estimate_harvest(design_with_interviews, conf_level = 0.90)
+#' result_90 <- estimate_harvest_rate(design_with_interviews, conf_level = 0.90)
 #'
 #' # Bootstrap variance estimation
-#' result_boot <- estimate_harvest(design_with_interviews, variance = "bootstrap")
+#' result_boot <- estimate_harvest_rate(design_with_interviews, variance = "bootstrap")
 #'
 #' # Verbose dispatch message (shows which estimator was used for bus-route designs)
-#' # result_verbose <- estimate_harvest(design, verbose = TRUE)
+#' # result_verbose <- estimate_harvest_rate(design, verbose = TRUE)
 #' @export
-estimate_harvest <- function(
+estimate_harvest_rate <- function(
   design,
   by = NULL,
   variance = "taylor",
   conf_level = 0.95,
   verbose = FALSE,
-  use_trips = NULL
+  use_trips = NULL,
+  missing_sections = "warn"
 ) {
   # Capture by parameter BEFORE validation
   by_quo <- rlang::enquo(by)
@@ -1231,6 +1309,13 @@ estimate_harvest <- function(
     ))
   }
 
+  # Section dispatch guard — fires AFTER validation, BEFORE standard dispatch
+  if (!is.null(design[["sections"]])) {
+    return(estimate_harvest_rate_sections( # nolint: object_usage_linter
+      design, by_quo, variance, conf_level, missing_sections
+    ))
+  }
+
   # Route to grouped or ungrouped estimation
   if (rlang::quo_is_null(by_quo)) {
     # Ungrouped estimation
@@ -1273,6 +1358,15 @@ estimate_harvest <- function(
 #'   Options: \code{"taylor"} (default), \code{"bootstrap"}, or
 #'   \code{"jackknife"}.
 #' @param conf_level Numeric confidence level (default: 0.95).
+#' @param missing_sections Character string controlling behavior when a
+#'   registered section has no interview observations. \code{"warn"} (default)
+#'   emits a \code{cli_warn()} and inserts an NA row with
+#'   \code{data_available = FALSE}. \code{"error"} aborts with
+#'   \code{cli_abort()}. Ignored for non-sectioned designs.
+#'
+#' @note When called on a sectioned design, no \code{.lake_total} row is
+#'   produced. Release rates (fish per angler-hour) are not additive across
+#'   sections. Lake-wide release rate requires a separate unsectioned call.
 #'
 #' @return A creel_estimates S3 object with method = "ratio-of-means-rpue".
 #'   Estimates tibble has columns: estimate, se, ci_lower, ci_upper, n (plus
@@ -1284,7 +1378,7 @@ estimate_harvest <- function(
 #' \code{catch_type = "released"}. Interviews with no releases contribute 0
 #' to the numerator (zero-fill), ensuring the effort denominator is correct.
 #'
-#' @seealso \code{\link{estimate_harvest}} for harvest rate, \code{\link{add_catch}}
+#' @seealso \code{\link{estimate_harvest_rate}} for harvest rate, \code{\link{add_catch}}
 #'
 #' @examples
 #' library(tidycreel)
@@ -1319,7 +1413,8 @@ estimate_release_rate <- function(
   design,
   by = NULL,
   variance = "taylor",
-  conf_level = 0.95
+  conf_level = 0.95,
+  missing_sections = "warn"
 ) {
   by_quo <- rlang::enquo(by)
 
@@ -1357,6 +1452,13 @@ estimate_release_rate <- function(
       "No interview survey design available.",
       "x" = "Call {.fn add_interviews} before estimating release rate.",
       "i" = "Release rate requires effort data from interviews."
+    ))
+  }
+
+  # Section dispatch guard — fires AFTER validation, BEFORE standard dispatch
+  if (!is.null(design[["sections"]])) {
+    return(estimate_release_rate_sections( # nolint: object_usage_linter
+      design, by_quo, variance, conf_level, missing_sections
     ))
   }
 
@@ -1456,6 +1558,80 @@ rebuild_interview_survey <- function(design, filtered_interviews) {
   )
 
   design_new
+}
+
+#' Rebuild counts survey design for a single section
+#'
+#' Internal helper: filters design$counts to a single section and rebuilds the
+#' svydesign using construct_survey_design(). Ensures per-section SE uses only
+#' that section's PSUs as the denominator (not the full-lake PSU pool).
+#' Analogous to rebuild_interview_survey() but operates on the counts slot.
+#'
+#' @param design A creel_design object with design$section_col set
+#' @param section_name Character(1) — the section identifier to filter to
+#'
+#' @return Modified creel_design with counts and survey filtered to section_name
+#'
+#' @keywords internal
+#' @noRd
+rebuild_counts_survey <- function(design, section_name) {
+  sec_col <- design[["section_col"]]
+  filtered_counts <- design$counts[design$counts[[sec_col]] == section_name, ]
+  design_new <- design
+  design_new$counts <- filtered_counts
+  design_new$survey <- construct_survey_design(design_new) # nolint: object_usage_linter
+  design_new
+}
+
+#' Aggregate per-section estimates to a covariance-aware lake-wide total
+#'
+#' Internal helper: computes the lake-wide effort total using either
+#' svyby(covmat=TRUE) + svycontrast() (method="correlated") or
+#' Cochran 5.2 sqrt(sum(SE_h^2)) (method="independent").
+#'
+#' @param by_formula A formula for the section grouping variable (e.g. ~section)
+#' @param full_design_svy A survey.design2 or svyrep.design built from the full design
+#' @param count_formula A formula for the count variable (e.g. ~effort_hours)
+#' @param method Character(1) — "correlated" or "independent"
+#'
+#' @return Named list with components:
+#'   \item{estimate}{Numeric — lake-wide total estimate}
+#'   \item{se}{Numeric — lake-wide total SE}
+#'
+#' @keywords internal
+#' @noRd
+aggregate_section_totals <- function(by_formula, full_design_svy, count_formula, method) {
+  method <- match.arg(method, c("correlated", "independent"))
+  if (method == "correlated") {
+    by_result <- survey::svyby(
+      formula = count_formula,
+      by      = by_formula,
+      design  = full_design_svy,
+      FUN     = survey::svytotal,
+      covmat  = TRUE
+    )
+    contrast_vec <- setNames(rep(1, nrow(by_result)), rownames(vcov(by_result)))
+    lake_contrast <- survey::svycontrast(by_result, list(lake_total = contrast_vec))
+    list(
+      estimate = as.numeric(coef(lake_contrast)),
+      se       = as.numeric(survey::SE(lake_contrast))
+    )
+  } else {
+    # Cochran 5.2 — documented approximation for independent section designs
+    by_result_ind <- survey::svyby(
+      formula = count_formula,
+      by      = by_formula,
+      design  = full_design_svy,
+      FUN     = survey::svytotal,
+      covmat  = FALSE
+    )
+    section_ests <- as.numeric(coef(by_result_ind))
+    section_ses <- as.numeric(survey::SE(by_result_ind))
+    list(
+      estimate = sum(section_ests),
+      se       = sqrt(sum(section_ses^2))
+    )
+  }
 }
 
 #' Resolve by= selector across both interviews and catch (species) data
@@ -1757,6 +1933,167 @@ compute_within_day_var_contribution <- function(design, by_vars = NULL) { # noli
     }
     v_within_by_group
   }
+}
+
+#' Per-section effort estimation orchestrator (Phase 39 logic)
+#'
+#' Dispatched from estimate_effort() when design$sections is non-NULL.
+#' Loops over registered sections, calls rebuild_counts_survey() + estimate_effort_total()
+#' per section, handles missing sections, aggregates to lake total via
+#' aggregate_section_totals(), and returns a creel_estimates object.
+#'
+#' @param design A creel_design object with sections slot set by add_sections()
+#' @param variance_method Character(1) — "taylor", "bootstrap", or "jackknife"
+#' @param conf_level Numeric confidence level
+#' @param aggregate_sections Logical — append .lake_total row?
+#' @param method Character(1) — "correlated" or "independent"
+#' @param missing_sections Character(1) — "warn" or "error"
+#'
+#' @return A creel_estimates S3 object with method = "total-sections"
+#'
+#' @keywords internal
+#' @noRd
+estimate_effort_sections <- function(design, variance_method, conf_level,
+                                     aggregate_sections, method, missing_sections) {
+  # NULL guard (defensive; dispatch should prevent this firing)
+  if (is.null(design[["sections"]])) {
+    stop("sections dispatch called on non-section design")
+  }
+
+  section_col <- design[["section_col"]]
+  registered_sections <- design$sections[[section_col]]
+  present_sections <- unique(design$counts[[section_col]])
+  absent_sections <- setdiff(registered_sections, present_sections)
+
+  # Handle missing sections
+  if (length(absent_sections) > 0) {
+    n_absent <- length(absent_sections) # nolint: object_usage_linter
+    if (missing_sections == "error") {
+      cli::cli_abort(c(
+        "{n_absent} missing section(s) in count data.",
+        "x" = "Section(s) not found: {.val {absent_sections}}",
+        "i" = "All registered sections must have count observations, or use {.arg missing_sections = 'warn'}."
+      ))
+    } else {
+      cli::cli_warn(c(
+        "{n_absent} missing section(s) in count data.",
+        "!" = "Section(s) not found: {.val {absent_sections}}",
+        "i" = "Inserting NA row(s) with {.field data_available = FALSE}."
+      ))
+    }
+  }
+
+  # Identify count variable (same logic as estimate_effort_total)
+  counts_data <- design$counts
+  excluded_cols <- c(design$date_col, design$strata_cols, design$psu_col, section_col)
+  numeric_cols <- names(counts_data)[sapply(counts_data, is.numeric)]
+  count_vars <- setdiff(numeric_cols, excluded_cols)
+
+  if (length(count_vars) == 0) {
+    cli::cli_abort(c(
+      "No count variable found in count data.",
+      "x" = "Count data must have at least one numeric column.",
+      "i" = "Numeric columns found: {.field {numeric_cols}}",
+      "i" = "Design metadata columns: {.field {excluded_cols}}"
+    ))
+  }
+  count_var <- count_vars[1]
+  count_formula <- stats::reformulate(count_var)
+  section_formula <- stats::reformulate(section_col)
+
+  # Full-design survey for lake total denominator (prop_of_lake_total)
+  full_svy_design <- get_variance_design(design$survey, variance_method) # nolint: object_usage_linter
+  lake_total_svy <- suppressWarnings(survey::svytotal(count_formula, full_svy_design))
+  lake_total_est <- as.numeric(coef(lake_total_svy))
+
+  # Loop over registered sections
+  section_rows <- vector("list", length(registered_sections))
+  names(section_rows) <- registered_sections
+
+  for (sec in registered_sections) {
+    if (sec %in% absent_sections) {
+      # Build NA row for missing section
+      section_rows[[sec]] <- tibble::tibble(
+        section = sec,
+        estimate = NA_real_,
+        se = NA_real_,
+        se_between = NA_real_,
+        se_within = NA_real_,
+        ci_lower = NA_real_,
+        ci_upper = NA_real_,
+        n = 0L,
+        prop_of_lake_total = NA_real_,
+        data_available = FALSE
+      )
+    } else {
+      # Build filtered section design and estimate
+      sec_design <- suppressWarnings(rebuild_counts_survey(design, sec)) # nolint: object_usage_linter
+      sec_result <- estimate_effort_total(sec_design, variance_method, conf_level) # nolint: object_usage_linter
+      row <- sec_result$estimates
+      prop <- row$estimate / lake_total_est
+      section_rows[[sec]] <- tibble::tibble(
+        section = sec,
+        estimate = row$estimate,
+        se = row$se,
+        se_between = row$se_between,
+        se_within = row$se_within,
+        ci_lower = row$ci_lower,
+        ci_upper = row$ci_upper,
+        n = row$n,
+        prop_of_lake_total = prop,
+        data_available = TRUE
+      )
+    }
+  }
+
+  # Combine section rows
+  result_df <- dplyr::bind_rows(section_rows)
+
+  # Append .lake_total row if requested
+  if (aggregate_sections) {
+    # Use only present sections for aggregation
+    present_design_svy <- full_svy_design
+    # Filter to present sections only for the section formula (absent sections skipped)
+    agg <- suppressWarnings(aggregate_section_totals( # nolint: object_usage_linter
+      by_formula      = section_formula,
+      full_design_svy = present_design_svy,
+      count_formula   = count_formula,
+      method          = method
+    ))
+    lake_est <- agg$estimate
+    lake_se <- agg$se
+
+    # CI for lake total using full-design df
+    df <- as.numeric(survey::degf(full_svy_design))
+    alpha <- 1 - conf_level
+    t_crit <- qt(1 - alpha / 2, df = df)
+    lake_ci_lower <- lake_est - t_crit * lake_se
+    lake_ci_upper <- lake_est + t_crit * lake_se
+
+    lake_row <- tibble::tibble(
+      section = ".lake_total",
+      estimate = lake_est,
+      se = lake_se,
+      se_between = NA_real_,
+      se_within = NA_real_,
+      ci_lower = lake_ci_lower,
+      ci_upper = lake_ci_upper,
+      n = nrow(design$counts),
+      prop_of_lake_total = 1.0,
+      data_available = TRUE
+    )
+    result_df <- dplyr::bind_rows(result_df, lake_row)
+  }
+
+  # Return creel_estimates object
+  new_creel_estimates( # nolint: object_usage_linter
+    estimates = result_df,
+    method = "total-sections",
+    variance_method = variance_method,
+    design = design,
+    conf_level = conf_level,
+    by_vars = NULL
+  )
 }
 
 #' Ungrouped total estimation (Phase 4 logic)
@@ -2595,5 +2932,348 @@ estimate_harvest_grouped <- function(design, by_vars, variance_method, conf_leve
     design = design,
     conf_level = conf_level,
     by_vars = by_vars
+  )
+}
+
+# Section dispatch helpers for rate estimators ----
+
+#' Per-section catch rate (CPUE) estimation
+#'
+#' @keywords internal
+#' @noRd
+estimate_catch_rate_sections <- function(design, by_quo, variance_method, # nolint: object_length_linter
+                                         conf_level, missing_sections,
+                                         estimator) {
+  section_col <- design[["section_col"]]
+  registered_sections <- design$sections[[section_col]]
+  present_sections <- unique(design$interviews[[section_col]])
+  absent_sections <- setdiff(registered_sections, present_sections)
+
+  # Handle missing sections
+  if (length(absent_sections) > 0) {
+    n_absent <- length(absent_sections) # nolint: object_usage_linter
+    if (missing_sections == "error") {
+      cli::cli_abort(c(
+        "{n_absent} missing section(s) in interview data.",
+        "x" = "Section(s) not found: {.val {absent_sections}}",
+        "i" = "All registered sections must have interview data, or use {.arg missing_sections = 'warn'}."
+      ))
+    } else {
+      cli::cli_warn(c(
+        "{n_absent} missing section(s) in interview data.",
+        "!" = "Section(s) not found: {.val {absent_sections}}",
+        "i" = "Inserting NA row(s) with {.field data_available = FALSE}."
+      ))
+    }
+  }
+
+  # Resolve by= ONCE before the section loop
+  by_info <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
+
+  section_rows <- vector("list", length(registered_sections))
+  names(section_rows) <- registered_sections
+
+  for (sec in registered_sections) {
+    if (sec %in% absent_sections) {
+      # Build NA row — include by= columns set to NA if present
+      na_row <- tibble::tibble(
+        section        = sec,
+        estimate       = NA_real_,
+        se             = NA_real_,
+        ci_lower       = NA_real_,
+        ci_upper       = NA_real_,
+        n              = 0L,
+        data_available = FALSE
+      )
+      if (!is.null(by_info$all_vars)) {
+        for (v in by_info$all_vars) {
+          na_row[[v]] <- NA_character_
+        }
+      }
+      section_rows[[sec]] <- na_row
+    } else {
+      # Filter interviews to this section and rebuild survey
+      filtered <- design$interviews[design$interviews[[section_col]] == sec, ]
+      sec_design <- rebuild_interview_survey(design, filtered) # nolint: object_usage_linter
+
+      if (!is.null(by_info$species_var)) {
+        # Species by= path
+        sp_df <- estimate_cpue_species( # nolint: object_usage_linter
+          sec_design,
+          species_col       = by_info$species_var,
+          interview_by_vars = by_info$interview_vars,
+          variance_method   = variance_method,
+          conf_level        = conf_level,
+          estimator         = estimator
+        )
+        sp_df <- tibble::add_column(tibble::as_tibble(sp_df), section = sec, .before = 1)
+        sp_df$data_available <- TRUE
+        section_rows[[sec]] <- sp_df
+      } else if (!is.null(by_info$interview_vars)) {
+        # Grouped (non-species) by= path
+        result <- estimate_cpue_grouped( # nolint: object_usage_linter
+          sec_design,
+          by_vars         = by_info$interview_vars,
+          variance_method = variance_method,
+          conf_level      = conf_level,
+          estimator       = estimator
+        )
+        row_df <- tibble::add_column(result$estimates, section = sec, .before = 1)
+        row_df$data_available <- TRUE
+        section_rows[[sec]] <- row_df
+      } else {
+        # Ungrouped (total) path
+        result <- estimate_cpue_total( # nolint: object_usage_linter
+          sec_design, variance_method, conf_level, estimator
+        )
+        row <- result$estimates
+        section_rows[[sec]] <- tibble::tibble(
+          section        = sec,
+          estimate       = row$estimate,
+          se             = row$se,
+          ci_lower       = row$ci_lower,
+          ci_upper       = row$ci_upper,
+          n              = row$n,
+          data_available = TRUE
+        )
+      }
+    }
+  }
+
+  result_df <- dplyr::bind_rows(section_rows)
+
+  new_creel_estimates( # nolint: object_usage_linter
+    estimates       = result_df,
+    method          = "ratio-of-means-cpue-sections",
+    variance_method = variance_method,
+    design          = design,
+    conf_level      = conf_level,
+    by_vars         = if (!is.null(by_info$all_vars)) c("section", by_info$all_vars) else "section"
+  )
+}
+
+#' Per-section harvest rate (HPUE) estimation
+#'
+#' @keywords internal
+#' @noRd
+estimate_harvest_rate_sections <- function(design, by_quo, variance_method, # nolint: object_length_linter
+                                           conf_level, missing_sections) {
+  section_col <- design[["section_col"]]
+  registered_sections <- design$sections[[section_col]]
+  present_sections <- unique(design$interviews[[section_col]])
+  absent_sections <- setdiff(registered_sections, present_sections)
+
+  # Handle missing sections
+  if (length(absent_sections) > 0) {
+    n_absent <- length(absent_sections) # nolint: object_usage_linter
+    if (missing_sections == "error") {
+      cli::cli_abort(c(
+        "{n_absent} missing section(s) in interview data.",
+        "x" = "Section(s) not found: {.val {absent_sections}}",
+        "i" = "All registered sections must have interview data, or use {.arg missing_sections = 'warn'}."
+      ))
+    } else {
+      cli::cli_warn(c(
+        "{n_absent} missing section(s) in interview data.",
+        "!" = "Section(s) not found: {.val {absent_sections}}",
+        "i" = "Inserting NA row(s) with {.field data_available = FALSE}."
+      ))
+    }
+  }
+
+  # Resolve by= ONCE before the section loop (no species dispatch for harvest in v0.7.0)
+  if (rlang::quo_is_null(by_quo)) {
+    by_vars <- NULL
+  } else {
+    by_cols <- tidyselect::eval_select(
+      by_quo,
+      data = design$interviews,
+      allow_rename = FALSE,
+      allow_empty = FALSE,
+      error_call = rlang::caller_env()
+    )
+    by_vars <- names(by_cols)
+  }
+
+  section_rows <- vector("list", length(registered_sections))
+  names(section_rows) <- registered_sections
+
+  for (sec in registered_sections) {
+    if (sec %in% absent_sections) {
+      na_row <- tibble::tibble(
+        section        = sec,
+        estimate       = NA_real_,
+        se             = NA_real_,
+        ci_lower       = NA_real_,
+        ci_upper       = NA_real_,
+        n              = 0L,
+        data_available = FALSE
+      )
+      if (!is.null(by_vars)) {
+        for (v in by_vars) {
+          na_row[[v]] <- NA_character_
+        }
+      }
+      section_rows[[sec]] <- na_row
+    } else {
+      filtered <- design$interviews[design$interviews[[section_col]] == sec, ]
+      sec_design <- rebuild_interview_survey(design, filtered) # nolint: object_usage_linter
+
+      if (!is.null(by_vars)) {
+        result <- estimate_harvest_grouped( # nolint: object_usage_linter
+          sec_design, by_vars, variance_method, conf_level
+        )
+        row_df <- tibble::add_column(result$estimates, section = sec, .before = 1)
+        row_df$data_available <- TRUE
+        section_rows[[sec]] <- row_df
+      } else {
+        result <- estimate_harvest_total( # nolint: object_usage_linter
+          sec_design, variance_method, conf_level
+        )
+        row <- result$estimates
+        section_rows[[sec]] <- tibble::tibble(
+          section        = sec,
+          estimate       = row$estimate,
+          se             = row$se,
+          ci_lower       = row$ci_lower,
+          ci_upper       = row$ci_upper,
+          n              = row$n,
+          data_available = TRUE
+        )
+      }
+    }
+  }
+
+  result_df <- dplyr::bind_rows(section_rows)
+
+  new_creel_estimates( # nolint: object_usage_linter
+    estimates       = result_df,
+    method          = "ratio-of-means-hpue-sections",
+    variance_method = variance_method,
+    design          = design,
+    conf_level      = conf_level,
+    by_vars         = if (!is.null(by_vars)) c("section", by_vars) else "section"
+  )
+}
+
+#' Per-section release rate (RPUE) estimation
+#'
+#' @keywords internal
+#' @noRd
+estimate_release_rate_sections <- function(design, by_quo, variance_method, # nolint: object_length_linter
+                                           conf_level, missing_sections) {
+  section_col <- design[["section_col"]]
+  registered_sections <- design$sections[[section_col]]
+  present_sections <- unique(design$interviews[[section_col]])
+  absent_sections <- setdiff(registered_sections, present_sections)
+
+  # Handle missing sections
+  if (length(absent_sections) > 0) {
+    n_absent <- length(absent_sections) # nolint: object_usage_linter
+    if (missing_sections == "error") {
+      cli::cli_abort(c(
+        "{n_absent} missing section(s) in interview data.",
+        "x" = "Section(s) not found: {.val {absent_sections}}",
+        "i" = "All registered sections must have interview data, or use {.arg missing_sections = 'warn'}."
+      ))
+    } else {
+      cli::cli_warn(c(
+        "{n_absent} missing section(s) in interview data.",
+        "!" = "Section(s) not found: {.val {absent_sections}}",
+        "i" = "Inserting NA row(s) with {.field data_available = FALSE}."
+      ))
+    }
+  }
+
+  # Resolve by= ONCE before the section loop (no species dispatch for release in v0.7.0)
+  if (rlang::quo_is_null(by_quo)) {
+    by_vars <- NULL
+  } else {
+    by_cols <- tidyselect::eval_select(
+      by_quo,
+      data = design$interviews,
+      allow_rename = FALSE,
+      allow_empty = FALSE,
+      error_call = rlang::caller_env()
+    )
+    by_vars <- names(by_cols)
+  }
+
+  section_rows <- vector("list", length(registered_sections))
+  names(section_rows) <- registered_sections
+
+  for (sec in registered_sections) {
+    if (sec %in% absent_sections) {
+      na_row <- tibble::tibble(
+        section        = sec,
+        estimate       = NA_real_,
+        se             = NA_real_,
+        ci_lower       = NA_real_,
+        ci_upper       = NA_real_,
+        n              = 0L,
+        data_available = FALSE
+      )
+      if (!is.null(by_vars)) {
+        for (v in by_vars) {
+          na_row[[v]] <- NA_character_
+        }
+      }
+      section_rows[[sec]] <- na_row
+    } else {
+      filtered <- design$interviews[design$interviews[[section_col]] == sec, ]
+      sec_design <- rebuild_interview_survey(design, filtered) # nolint: object_usage_linter
+
+      # Build release data for this section's filtered design
+      release_data <- estimate_release_build_data(sec_design, species = NULL) # nolint: object_usage_linter
+      release_data$.release_effort <- release_data[[sec_design$angler_effort_col]]
+
+      design_rel <- sec_design
+      design_rel$interviews <- release_data
+      design_rel$catch_col <- ".release_count"
+      design_rel$angler_effort_col <- ".release_effort"
+
+      strata_cols <- sec_design$strata_cols
+      strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0L) {
+        stats::reformulate(strata_cols)
+      } else {
+        NULL
+      }
+      design_rel$interview_survey <- build_interview_survey( # nolint: object_usage_linter
+        release_data,
+        strata = strata_formula
+      )
+
+      if (!is.null(by_vars)) {
+        result <- estimate_cpue_grouped( # nolint: object_usage_linter
+          design_rel, by_vars, variance_method, conf_level
+        )
+        row_df <- tibble::add_column(result$estimates, section = sec, .before = 1)
+        row_df$data_available <- TRUE
+        section_rows[[sec]] <- row_df
+      } else {
+        result <- estimate_cpue_total(design_rel, variance_method, conf_level) # nolint: object_usage_linter
+        row <- result$estimates
+        section_rows[[sec]] <- tibble::tibble(
+          section        = sec,
+          estimate       = row$estimate,
+          se             = row$se,
+          ci_lower       = row$ci_lower,
+          ci_upper       = row$ci_upper,
+          n              = row$n,
+          data_available = TRUE
+        )
+      }
+    }
+  }
+
+  result_df <- dplyr::bind_rows(section_rows)
+
+  new_creel_estimates( # nolint: object_usage_linter
+    estimates       = result_df,
+    method          = "ratio-of-means-rpue-sections",
+    variance_method = variance_method,
+    design          = design,
+    conf_level      = conf_level,
+    by_vars         = if (!is.null(by_vars)) c("section", by_vars) else "section"
   )
 }

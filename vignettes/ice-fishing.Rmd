@@ -1,0 +1,233 @@
+---
+title: "Ice Fishing Survey Analysis"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Ice Fishing Survey Analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Overview
+
+Ice fishing creel surveys share the same structure as bus-route surveys, but
+with one important simplification: all access points are sampled with
+certainty. Every angler leaving the lake must pass through the single ice
+access point (the boat ramp area or designated ice-access site), so there is
+no site-level subsampling. This means the site inclusion probability is always
+`p_site = 1.0`, and the overall inclusion probability reduces to just the
+period sampling probability:
+
+$$\pi_i = p\_site \times p\_period = 1.0 \times p\_period = p\_period$$
+
+Because of this, ice fishing surveys are implemented as a *degenerate*
+bus-route design. All the bus-route Horvitz-Thompson estimators apply
+unchanged — only the probability structure is simplified.
+
+### Effort type distinction
+
+Ice fishing surveys collect two distinct effort measures:
+
+- **time_on_ice** — total hours the angler party was physically on the ice,
+  including travel to the fishing hole, breaks, and social time. This is the
+  easiest to record and most commonly used.
+- **active_fishing_time** — hours spent with lines in the water, excluding
+  travel, setup, and breaks. This captures actual fishing pressure more
+  precisely but requires more careful interviewing.
+
+The `effort_type` argument to `creel_design()` controls which measure the
+design tracks and how the output column is labeled in `estimate_effort()`:
+`total_effort_hr_on_ice` for `"time_on_ice"` and `total_effort_hr_active`
+for `"active_fishing_time"`.
+
+### Shelter mode stratification
+
+Ice anglers fish from open-air setups or enclosed dark-house shelters. Catch
+rates and effort patterns differ between these groups — dark-house anglers
+often target specific species and fish longer hours. The `estimate_effort()`
+function accepts a `by` argument to produce separate estimates for each
+shelter type.
+
+## Example Data
+
+This vignette uses two built-in datasets representing a hypothetical Nebraska
+ice fishing creel survey at Lake McConaughy in January-February 2024. All
+12 sampling days are weekends — a common design choice since ice fishing
+pressure is concentrated on Saturday and Sunday.
+
+```{r data}
+library(tidycreel)
+
+data(example_ice_sampling_frame)
+data(example_ice_interviews)
+
+head(example_ice_sampling_frame)
+head(example_ice_interviews)
+```
+
+The sampling frame records the survey calendar and the period sampling
+probability (`p_period = 0.5` means each day had a 50% chance of being
+sampled). The interview data contains 72 interviews with walleye and perch
+catch, both effort measures, and the shelter type (`shelter_mode`) for each
+angler party.
+
+## Design Construction
+
+Build an ice fishing design using `creel_design()` with
+`survey_type = "ice"`. The `effort_type` argument is required and determines
+the column label in downstream output. We use `p_period = 0.5` as a scalar
+(uniform period sampling probability across all days).
+
+```{r design}
+design <- creel_design(
+  example_ice_sampling_frame,
+  date = date,
+  strata = day_type,
+  survey_type = "ice",
+  effort_type = "time_on_ice",
+  p_period = 0.5
+)
+print(design)
+```
+
+Omitting `effort_type` or supplying an unrecognized value produces an
+informative error:
+
+```{r design-error, error = TRUE}
+creel_design(
+  example_ice_sampling_frame,
+  date = date,
+  strata = day_type,
+  survey_type = "ice"
+)
+```
+
+## Attaching Interview Data
+
+Use `add_interviews()` to attach the survey data to the design. For ice
+surveys, `n_counted` and `n_interviewed` are required — they record how many
+parties were counted at the access point versus how many were actually
+interviewed during each visit, providing the enumeration expansion factor.
+
+```{r interviews}
+design <- add_interviews(
+  design,
+  example_ice_interviews,
+  catch         = walleye_catch,
+  effort        = hours_on_ice,
+  harvest       = walleye_kept,
+  trip_status   = trip_status,
+  n_counted     = n_counted,
+  n_interviewed = n_interviewed
+)
+```
+
+## Effort Estimation
+
+`estimate_effort()` dispatches through the bus-route Horvitz-Thompson
+estimator and returns the total angler-hours with a standard error and
+confidence interval. The output column is labeled `total_effort_hr_on_ice`
+because the design was built with `effort_type = "time_on_ice"`.
+
+```{r effort}
+effort_est <- estimate_effort(design)
+print(effort_est)
+```
+
+To demonstrate the column-naming distinction, rebuild the design using
+`effort_type = "active_fishing_time"` and the `active_fishing_hours`
+column from the interview data. The output column is then labeled
+`total_effort_hr_active`.
+
+```{r effort-active}
+design_aft <- creel_design(
+  example_ice_sampling_frame,
+  date        = date,
+  strata      = day_type,
+  survey_type = "ice",
+  effort_type = "active_fishing_time",
+  p_period    = 0.5
+)
+
+design_aft <- suppressMessages(add_interviews(
+  design_aft,
+  example_ice_interviews,
+  catch         = walleye_catch,
+  effort        = active_fishing_hours,
+  harvest       = walleye_kept,
+  trip_status   = trip_status,
+  n_counted     = n_counted,
+  n_interviewed = n_interviewed
+))
+
+effort_aft <- estimate_effort(design_aft)
+print(effort_aft)
+```
+
+Active fishing hours are shorter than time-on-ice because they exclude travel,
+setup, and breaks. The difference between the two estimates reflects the
+non-fishing portion of each trip.
+
+## Shelter Mode Stratification
+
+Pass `by = shelter_mode` to `estimate_effort()` to produce separate effort
+estimates for open-air anglers and dark-house anglers. This uses the same
+Horvitz-Thompson framework with the interview data split by the grouping
+variable.
+
+```{r effort-by-shelter}
+effort_by_shelter <- estimate_effort(design, by = shelter_mode)
+print(effort_by_shelter)
+```
+
+The `proportion` column shows each shelter group's share of total effort.
+Dark-house anglers tend to fish longer hours on average, which can make their
+proportional effort contribution larger than their share of party counts alone
+would suggest.
+
+## Catch Rate Estimation
+
+`estimate_catch_rate()` computes the ratio-of-means CPUE (fish per
+angler-hour) using the catch and effort columns specified in
+`add_interviews()`. By default, only complete trips are used to avoid
+the well-known incomplete-trip bias in effort-based catch rates.
+
+```{r catch-rate}
+cpue_est <- estimate_catch_rate(design)
+print(cpue_est)
+```
+
+The `estimate` column is walleye per hour-on-ice, with a standard error and
+95% confidence interval. The `n` column counts the number of complete
+interviews used in the ratio.
+
+## Total Catch Estimation
+
+`estimate_total_catch()` multiplies the CPUE estimate by the total effort
+estimate to produce a total fish catch estimate. It uses all interviews
+(complete and incomplete) for the effort component and only complete trips
+for the catch rate, following standard creel survey methodology.
+
+```{r total-catch}
+total_catch_est <- estimate_total_catch(design)
+print(total_catch_est)
+```
+
+The `estimate` column is the projected total walleye catch across the entire
+survey period, with a standard error and 95% confidence interval computed via
+the delta method.
+
+## References
+
+- Jones, C. M., & Pollock, K. H. (2012). Recreational survey methods:
+  estimation of effort, harvest, and abundance. Chapter 19 in *Fisheries
+  Techniques* (3rd ed.), pp. 883-919. American Fisheries Society.
+
+- Malvestuto, S. P. (1996). Sampling the recreational angler. Chapter 20 in
+  *Fisheries Techniques* (2nd ed.), pp. 591-623. American Fisheries Society.

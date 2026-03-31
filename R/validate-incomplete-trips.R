@@ -15,12 +15,12 @@
 #'   only if overall test AND all group tests pass equivalence.
 #' @param variance Character string specifying variance estimation method.
 #'   Options: \code{"taylor"} (default), \code{"bootstrap"}, or
-#'   \code{"jackknife"}. Passed to \code{\link{estimate_cpue}}.
+#'   \code{"jackknife"}. Passed to \code{\link{estimate_catch_rate}}.
 #' @param conf_level Numeric confidence level for confidence intervals
-#'   (default: 0.95). Passed to \code{\link{estimate_cpue}}.
+#'   (default: 0.95). Passed to \code{\link{estimate_catch_rate}}.
 #' @param truncate_at Numeric minimum trip duration (hours) for incomplete trip
 #'   estimation. Default is 0.5 hours (30 minutes). Passed to
-#'   \code{\link{estimate_cpue}} for MOR estimator.
+#'   \code{\link{estimate_catch_rate}} for MOR estimator.
 #'
 #' @return A creel_tost_validation S3 object (list) with components:
 #'   \itemize{
@@ -70,7 +70,7 @@
 #'
 #' @details
 #' The function estimates CPUE separately for complete trips (using ratio-of-means)
-#' and incomplete trips (using mean-of-ratios) via \code{\link{estimate_cpue}}.
+#' and incomplete trips (using mean-of-ratios) via \code{\link{estimate_catch_rate}}.
 #' It then performs TOST to test equivalence within the specified threshold.
 #'
 #' Equivalence bounds are calculated as ±threshold * complete_trip_estimate.
@@ -204,7 +204,7 @@ validate_incomplete_trips <- function(design,
 
   # Estimate CPUE for complete trips (ratio-of-means)
   complete_result <- suppressMessages(
-    estimate_cpue( # nolint: object_usage_linter
+    estimate_catch_rate( # nolint: object_usage_linter
       design,
       by = !!by_quo,
       variance = variance,
@@ -217,7 +217,7 @@ validate_incomplete_trips <- function(design,
 
   # Estimate CPUE for incomplete trips (mean-of-ratios)
   incomplete_result <- suppressMessages(suppressWarnings(
-    estimate_cpue( # nolint: object_usage_linter
+    estimate_catch_rate( # nolint: object_usage_linter
       design,
       by = !!by_quo,
       variance = variance,
@@ -415,7 +415,7 @@ perform_overall_tost <- function(design, catch_quo, effort_quo, variance,
                                  conf_level, truncate_at, threshold) {
   # Estimate ungrouped complete CPUE
   complete_overall <- suppressMessages(
-    estimate_cpue( # nolint: object_usage_linter
+    estimate_catch_rate( # nolint: object_usage_linter
       design,
       variance = variance,
       conf_level = conf_level,
@@ -427,7 +427,7 @@ perform_overall_tost <- function(design, catch_quo, effort_quo, variance,
 
   # Estimate ungrouped incomplete CPUE
   incomplete_overall <- suppressMessages(suppressWarnings(
-    estimate_cpue( # nolint: object_usage_linter
+    estimate_catch_rate( # nolint: object_usage_linter
       design,
       variance = variance,
       conf_level = conf_level,

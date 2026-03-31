@@ -1,5 +1,177 @@
 # Test helpers ----
 
+#' Create 3-section creel_design with interview data (RATE section fixtures)
+#'
+#' Sections: "North", "Central", "South". All three sections have interview data.
+#' Duplicated from test-estimate-catch-rate.R for self-contained test file.
+make_3section_design_with_interviews <- function() { # nolint: object_length_linter
+  cal <- data.frame(
+    date = as.Date(c(
+      "2024-06-03", "2024-06-04", "2024-06-05", "2024-06-06",
+      "2024-06-07", "2024-06-10",
+      "2024-06-08", "2024-06-09", "2024-06-14", "2024-06-15",
+      "2024-06-16", "2024-06-21"
+    )),
+    day_type = c(
+      "weekday", "weekday", "weekday", "weekday", "weekday", "weekday",
+      "weekend", "weekend", "weekend", "weekend", "weekend", "weekend"
+    ),
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+
+  sections_df <- data.frame(
+    section = c("North", "Central", "South"),
+    stringsAsFactors = FALSE
+  )
+  design <- add_sections(design, sections_df, section_col = section) # nolint: object_usage_linter
+
+  counts <- data.frame(
+    date = rep(cal$date, times = 3),
+    day_type = rep(cal$day_type, times = 3),
+    section = rep(c("North", "Central", "South"), each = nrow(cal)),
+    effort_hours = c(
+      20, 22, 18, 25, 15, 24, 21, 26, 23, 28, 20, 27,
+      35, 38, 32, 42, 30, 45, 37, 44, 40, 48, 35, 46,
+      8, 10, 5, 12, 6, 11, 7, 9, 6, 13, 8, 10
+    ),
+    stringsAsFactors = FALSE
+  )
+  design <- suppressWarnings(add_counts(design, counts)) # nolint: object_usage_linter
+
+  interviews <- data.frame(
+    date = as.Date(c(
+      "2024-06-03", "2024-06-04", "2024-06-05",
+      "2024-06-07", "2024-06-10", "2024-06-07",
+      "2024-06-08", "2024-06-09", "2024-06-14",
+      "2024-06-03", "2024-06-04", "2024-06-05",
+      "2024-06-06", "2024-06-10", "2024-06-10",
+      "2024-06-08", "2024-06-09", "2024-06-21",
+      "2024-06-03", "2024-06-04", "2024-06-05",
+      "2024-06-06", "2024-06-07", "2024-06-07",
+      "2024-06-08", "2024-06-09", "2024-06-14"
+    )),
+    day_type = c(
+      "weekday", "weekday", "weekday", "weekday", "weekday", "weekday",
+      "weekend", "weekend", "weekend",
+      "weekday", "weekday", "weekday", "weekday", "weekday", "weekday",
+      "weekend", "weekend", "weekend",
+      "weekday", "weekday", "weekday", "weekday", "weekday", "weekday",
+      "weekend", "weekend", "weekend"
+    ),
+    section = rep(c("North", "Central", "South"), each = 9),
+    catch_total = c(
+      2, 3, 2, 4, 3, 2, 3, 4, 3,
+      5, 6, 5, 7, 6, 5, 7, 8, 6,
+      10, 12, 9, 11, 10, 12, 13, 11, 10
+    ),
+    hours_fished = c(
+      2.0, 3.0, 2.5, 3.0, 2.0, 2.5, 3.0, 3.5, 3.0,
+      3.5, 4.0, 3.5, 4.5, 4.0, 3.5, 4.5, 5.0, 4.0,
+      4.0, 5.0, 4.0, 4.5, 4.0, 5.0, 5.0, 4.5, 4.0
+    ),
+    catch_kept = c(
+      1, 2, 1, 3, 2, 1, 2, 3, 2,
+      3, 4, 3, 5, 4, 3, 5, 6, 4,
+      7, 9, 6, 8, 7, 9, 10, 8, 7
+    ),
+    trip_status = rep("complete", 27),
+    trip_duration = c(
+      2.0, 3.0, 2.5, 3.0, 2.0, 2.5, 3.0, 3.5, 3.0,
+      3.5, 4.0, 3.5, 4.5, 4.0, 3.5, 4.5, 5.0, 4.0,
+      4.0, 5.0, 4.0, 4.5, 4.0, 5.0, 5.0, 4.5, 4.0
+    ),
+    stringsAsFactors = FALSE
+  )
+
+  suppressWarnings(add_interviews( # nolint: object_usage_linter
+    design, interviews,
+    catch = catch_total, effort = hours_fished, harvest = catch_kept, # nolint: object_usage_linter
+    trip_status = trip_status, trip_duration = trip_duration # nolint: object_usage_linter
+  ))
+}
+
+#' Create 3-section design with "South" absent from interview data
+#'
+#' Duplicated from test-estimate-catch-rate.R for self-contained test file.
+make_section_design_with_missing_interview_section <- function() { # nolint: object_length_linter
+  cal <- data.frame(
+    date = as.Date(c(
+      "2024-06-03", "2024-06-04", "2024-06-05", "2024-06-06",
+      "2024-06-07", "2024-06-10",
+      "2024-06-08", "2024-06-09", "2024-06-14", "2024-06-15",
+      "2024-06-16", "2024-06-21"
+    )),
+    day_type = c(
+      "weekday", "weekday", "weekday", "weekday", "weekday", "weekday",
+      "weekend", "weekend", "weekend", "weekend", "weekend", "weekend"
+    ),
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+
+  sections_df <- data.frame(
+    section = c("North", "Central", "South"),
+    stringsAsFactors = FALSE
+  )
+  design <- add_sections(design, sections_df, section_col = section) # nolint: object_usage_linter
+
+  counts <- data.frame(
+    date = rep(cal$date, times = 3),
+    day_type = rep(cal$day_type, times = 3),
+    section = rep(c("North", "Central", "South"), each = nrow(cal)),
+    effort_hours = c(
+      20, 22, 18, 25, 15, 24, 21, 26, 23, 28, 20, 27,
+      35, 38, 32, 42, 30, 45, 37, 44, 40, 48, 35, 46,
+      8, 10, 5, 12, 6, 11, 7, 9, 6, 13, 8, 10
+    ),
+    stringsAsFactors = FALSE
+  )
+  design <- suppressWarnings(add_counts(design, counts)) # nolint: object_usage_linter
+
+  interviews <- data.frame(
+    date = as.Date(c(
+      "2024-06-03", "2024-06-04", "2024-06-05",
+      "2024-06-07", "2024-06-10", "2024-06-07",
+      "2024-06-08", "2024-06-09", "2024-06-14",
+      "2024-06-03", "2024-06-04", "2024-06-05",
+      "2024-06-06", "2024-06-10", "2024-06-10",
+      "2024-06-08", "2024-06-09", "2024-06-21"
+    )),
+    day_type = c(
+      "weekday", "weekday", "weekday", "weekday", "weekday", "weekday",
+      "weekend", "weekend", "weekend",
+      "weekday", "weekday", "weekday", "weekday", "weekday", "weekday",
+      "weekend", "weekend", "weekend"
+    ),
+    section = rep(c("North", "Central"), each = 9),
+    catch_total = c(
+      2, 3, 2, 4, 3, 2, 3, 4, 3,
+      5, 6, 5, 7, 6, 5, 7, 8, 6
+    ),
+    hours_fished = c(
+      2.0, 3.0, 2.5, 3.0, 2.0, 2.5, 3.0, 3.5, 3.0,
+      3.5, 4.0, 3.5, 4.5, 4.0, 3.5, 4.5, 5.0, 4.0
+    ),
+    catch_kept = c(
+      1, 2, 1, 3, 2, 1, 2, 3, 2,
+      3, 4, 3, 5, 4, 3, 5, 6, 4
+    ),
+    trip_status = rep("complete", 18),
+    trip_duration = c(
+      2.0, 3.0, 2.5, 3.0, 2.0, 2.5, 3.0, 3.5, 3.0,
+      3.5, 4.0, 3.5, 4.5, 4.0, 3.5, 4.5, 5.0, 4.0
+    ),
+    stringsAsFactors = FALSE
+  )
+
+  suppressWarnings(add_interviews( # nolint: object_usage_linter
+    design, interviews,
+    catch = catch_total, effort = hours_fished, harvest = catch_kept, # nolint: object_usage_linter
+    trip_status = trip_status, trip_duration = trip_duration # nolint: object_usage_linter
+  ))
+}
+
 #' Create test calendar data with 8 dates (4 weekday, 4 weekend)
 make_test_calendar_harvest <- function() {
   data.frame(
@@ -125,18 +297,18 @@ make_unbalanced_harvest_design <- function() {
 
 # Basic behavior tests ----
 
-test_that("estimate_harvest returns creel_estimates class object", {
+test_that("estimate_harvest_rate returns creel_estimates class object", {
   design <- make_harvest_design()
 
-  result <- estimate_harvest(design) # nolint: object_usage_linter
+  result <- estimate_harvest_rate(design) # nolint: object_usage_linter
 
   expect_s3_class(result, "creel_estimates")
 })
 
-test_that("estimate_harvest result has estimates tibble with correct columns", {
+test_that("estimate_harvest_rate result has estimates tibble with correct columns", {
   design <- make_harvest_design()
 
-  result <- estimate_harvest(design) # nolint: object_usage_linter
+  result <- estimate_harvest_rate(design) # nolint: object_usage_linter
 
   expect_true(!is.null(result$estimates))
   expect_true(is.data.frame(result$estimates))
@@ -147,34 +319,34 @@ test_that("estimate_harvest result has estimates tibble with correct columns", {
   expect_true("n" %in% names(result$estimates))
 })
 
-test_that("estimate_harvest result method is 'ratio-of-means-hpue'", {
+test_that("estimate_harvest_rate result method is 'ratio-of-means-hpue'", {
   design <- make_harvest_design()
 
-  result <- estimate_harvest(design) # nolint: object_usage_linter
+  result <- estimate_harvest_rate(design) # nolint: object_usage_linter
 
   expect_equal(result$method, "ratio-of-means-hpue")
 })
 
-test_that("estimate_harvest result variance_method is 'taylor' by default", {
+test_that("estimate_harvest_rate result variance_method is 'taylor' by default", {
   design <- make_harvest_design()
 
-  result <- estimate_harvest(design) # nolint: object_usage_linter
+  result <- estimate_harvest_rate(design) # nolint: object_usage_linter
 
   expect_equal(result$variance_method, "taylor")
 })
 
-test_that("estimate_harvest result conf_level is 0.95 by default", {
+test_that("estimate_harvest_rate result conf_level is 0.95 by default", {
   design <- make_harvest_design()
 
-  result <- estimate_harvest(design) # nolint: object_usage_linter
+  result <- estimate_harvest_rate(design) # nolint: object_usage_linter
 
   expect_equal(result$conf_level, 0.95)
 })
 
-test_that("estimate_harvest estimate is a positive numeric value", {
+test_that("estimate_harvest_rate estimate is a positive numeric value", {
   design <- make_harvest_design()
 
-  result <- estimate_harvest(design) # nolint: object_usage_linter
+  result <- estimate_harvest_rate(design) # nolint: object_usage_linter
 
   expect_true(is.numeric(result$estimates$estimate))
   expect_true(result$estimates$estimate >= 0)
@@ -182,35 +354,35 @@ test_that("estimate_harvest estimate is a positive numeric value", {
 
 # Input validation tests ----
 
-test_that("estimate_harvest errors when design is not creel_design", {
+test_that("estimate_harvest_rate errors when design is not creel_design", {
   fake_design <- list(interviews = data.frame(catch_kept = 1:10, hours_fished = 1:10))
 
   expect_error(
-    estimate_harvest(fake_design), # nolint: object_usage_linter
+    estimate_harvest_rate(fake_design), # nolint: object_usage_linter
     "creel_design"
   )
 })
 
-test_that("estimate_harvest errors when design has no interview_survey", {
+test_that("estimate_harvest_rate errors when design has no interview_survey", {
   cal <- make_test_calendar_harvest()
   design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
 
   expect_error(
-    estimate_harvest(design), # nolint: object_usage_linter
+    estimate_harvest_rate(design), # nolint: object_usage_linter
     "add_interviews"
   )
 })
 
-test_that("estimate_harvest errors for invalid variance method", {
+test_that("estimate_harvest_rate errors for invalid variance method", {
   design <- make_harvest_design()
 
   expect_error(
-    estimate_harvest(design, variance = "invalid"), # nolint: object_usage_linter
+    estimate_harvest_rate(design, variance = "invalid"), # nolint: object_usage_linter
     "Invalid variance method"
   )
 })
 
-test_that("estimate_harvest errors when design missing effort_col", {
+test_that("estimate_harvest_rate errors when design missing effort_col", {
   cal <- make_test_calendar_harvest()
   design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
 
@@ -222,47 +394,47 @@ test_that("estimate_harvest errors when design missing effort_col", {
   # deliberately omit effort_col
 
   expect_error(
-    estimate_harvest(design), # nolint: object_usage_linter
+    estimate_harvest_rate(design), # nolint: object_usage_linter
     "effort"
   )
 })
 
-test_that("estimate_harvest errors when design has no harvest_col", {
+test_that("estimate_harvest_rate errors when design has no harvest_col", {
   design <- make_design_without_harvest()
 
   expect_error(
-    estimate_harvest(design), # nolint: object_usage_linter
+    estimate_harvest_rate(design), # nolint: object_usage_linter
     "harvest"
   )
 })
 
 # Sample size validation tests ----
 
-test_that("estimate_harvest errors when n < 10 ungrouped", {
+test_that("estimate_harvest_rate errors when n < 10 ungrouped", {
   design <- make_small_harvest_design(5)
 
   expect_error(
-    estimate_harvest(design), # nolint: object_usage_linter
+    estimate_harvest_rate(design), # nolint: object_usage_linter
     "10"
   )
 })
 
-test_that("estimate_harvest warns when 10 <= n < 30 ungrouped", {
+test_that("estimate_harvest_rate warns when 10 <= n < 30 ungrouped", {
   design <- make_small_harvest_design(15)
 
   expect_warning(
-    estimate_harvest(design), # nolint: object_usage_linter
+    estimate_harvest_rate(design), # nolint: object_usage_linter
     "30"
   )
 })
 
-test_that("estimate_harvest has no sample size warning when n >= 30 ungrouped", {
+test_that("estimate_harvest_rate has no sample size warning when n >= 30 ungrouped", {
   design <- make_harvest_design() # has 32 interviews
 
   # Capture warnings
   warnings <- character()
   result <- withCallingHandlers(
-    estimate_harvest(design), # nolint: object_usage_linter
+    estimate_harvest_rate(design), # nolint: object_usage_linter
     warning = function(w) {
       warnings <<- c(warnings, conditionMessage(w))
     }
@@ -274,49 +446,49 @@ test_that("estimate_harvest has no sample size warning when n >= 30 ungrouped", 
   expect_false(any(sample_warnings))
 })
 
-test_that("estimate_harvest errors when any group has n < 10 in grouped estimation", {
+test_that("estimate_harvest_rate errors when any group has n < 10 in grouped estimation", {
   design <- make_unbalanced_harvest_design() # weekend has only 5
 
   expect_error(
-    estimate_harvest(design, by = day_type), # nolint: object_usage_linter
+    estimate_harvest_rate(design, by = day_type), # nolint: object_usage_linter
     "10"
   )
 })
 
 # Grouped estimation tests ----
 
-test_that("estimate_harvest grouped by day_type returns creel_estimates with by_vars set", {
+test_that("estimate_harvest_rate grouped by day_type returns creel_estimates with by_vars set", {
   design <- make_harvest_design()
 
-  result <- estimate_harvest(design, by = day_type) # nolint: object_usage_linter
+  result <- estimate_harvest_rate(design, by = day_type) # nolint: object_usage_linter
 
   expect_s3_class(result, "creel_estimates")
   expect_true(!is.null(result$by_vars))
   expect_equal(result$by_vars, "day_type")
 })
 
-test_that("estimate_harvest grouped result estimates tibble has day_type column", {
+test_that("estimate_harvest_rate grouped result estimates tibble has day_type column", {
   design <- make_harvest_design()
 
-  result <- estimate_harvest(design, by = day_type) # nolint: object_usage_linter
+  result <- estimate_harvest_rate(design, by = day_type) # nolint: object_usage_linter
 
   expect_true("day_type" %in% names(result$estimates))
 })
 
-test_that("estimate_harvest grouped result has one row per group level", {
+test_that("estimate_harvest_rate grouped result has one row per group level", {
   design <- make_harvest_design()
 
-  result <- estimate_harvest(design, by = day_type) # nolint: object_usage_linter
+  result <- estimate_harvest_rate(design, by = day_type) # nolint: object_usage_linter
 
   expect_equal(nrow(result$estimates), 2)
   expect_true("weekday" %in% result$estimates$day_type)
   expect_true("weekend" %in% result$estimates$day_type)
 })
 
-test_that("estimate_harvest grouped result has n column reflecting per-group sample sizes", {
+test_that("estimate_harvest_rate grouped result has n column reflecting per-group sample sizes", {
   design <- make_harvest_design()
 
-  result <- estimate_harvest(design, by = day_type) # nolint: object_usage_linter
+  result <- estimate_harvest_rate(design, by = day_type) # nolint: object_usage_linter
 
   expect_true("n" %in% names(result$estimates))
   expect_equal(sum(result$estimates$n), nrow(design$interviews))
@@ -329,7 +501,7 @@ test_that("ungrouped HPUE matches manual svyratio calculation", {
   design <- make_harvest_design()
 
   # tidycreel estimate
-  result <- estimate_harvest(design) # nolint: object_usage_linter
+  result <- estimate_harvest_rate(design) # nolint: object_usage_linter
 
   # Manual survey::svyratio calculation
   svy <- design$interview_survey
@@ -348,7 +520,7 @@ test_that("grouped HPUE matches manual svyby+svyratio calculation", {
   design <- make_harvest_design()
 
   # tidycreel grouped estimate
-  result <- estimate_harvest(design, by = day_type) # nolint: object_usage_linter
+  result <- estimate_harvest_rate(design, by = day_type) # nolint: object_usage_linter
 
   # Manual survey::svyby + svyratio calculation
   svy <- design$interview_survey
@@ -388,7 +560,7 @@ test_that("ungrouped HPUE SE^2 matches variance from manual vcov", {
   design <- make_harvest_design()
 
   # tidycreel estimate
-  result <- estimate_harvest(design) # nolint: object_usage_linter
+  result <- estimate_harvest_rate(design) # nolint: object_usage_linter
 
   # Manual survey::svyratio calculation
   svy <- design$interview_survey
@@ -403,8 +575,8 @@ test_that("ungrouped HPUE SE^2 matches variance from manual vcov", {
 test_that("HPUE estimate <= CPUE estimate (harvest is subset of catch)", {
   design <- make_harvest_design()
 
-  result_hpue <- estimate_harvest(design) # nolint: object_usage_linter
-  result_cpue <- estimate_cpue(design) # nolint: object_usage_linter
+  result_hpue <- estimate_harvest_rate(design) # nolint: object_usage_linter
+  result_cpue <- estimate_catch_rate(design) # nolint: object_usage_linter
 
   # HPUE should be <= CPUE since harvest <= catch
   expect_true(result_hpue$estimates$estimate <= result_cpue$estimates$estimate)
@@ -413,12 +585,12 @@ test_that("HPUE estimate <= CPUE estimate (harvest is subset of catch)", {
 test_that("HPUE and CPUE use same n (sample size should match)", {
   design <- make_harvest_design()
 
-  result_hpue <- estimate_harvest(design) # nolint: object_usage_linter
-  result_cpue <- estimate_cpue(design) # nolint: object_usage_linter
+  result_hpue <- estimate_harvest_rate(design) # nolint: object_usage_linter
+  result_cpue <- estimate_catch_rate(design) # nolint: object_usage_linter
 
-  # After Phase 17, estimate_cpue defaults to complete trips only
-  # estimate_harvest doesn't have use_trips parameter yet, uses all trips
-  # TODO: Update when estimate_harvest gets use_trips parameter
+  # After Phase 17, estimate_catch_rate defaults to complete trips only
+  # estimate_harvest_rate doesn't have use_trips parameter yet, uses all trips
+  # TODO: Update when estimate_harvest_rate gets use_trips parameter
   n_complete <- sum(design$interviews$trip_status == "complete")
   expect_equal(result_cpue$estimates$n, n_complete)
   expect_equal(result_hpue$estimates$n, nrow(design$interviews))
@@ -426,11 +598,11 @@ test_that("HPUE and CPUE use same n (sample size should match)", {
 
 # Custom confidence level test ----
 
-test_that("estimate_harvest with conf_level = 0.90 produces narrower CI than 0.95", {
+test_that("estimate_harvest_rate with conf_level = 0.90 produces narrower CI than 0.95", {
   design <- make_harvest_design()
 
-  result_95 <- estimate_harvest(design, conf_level = 0.95) # nolint: object_usage_linter
-  result_90 <- estimate_harvest(design, conf_level = 0.90) # nolint: object_usage_linter
+  result_95 <- estimate_harvest_rate(design, conf_level = 0.95) # nolint: object_usage_linter
+  result_90 <- estimate_harvest_rate(design, conf_level = 0.90) # nolint: object_usage_linter
 
   # CI width should be narrower for 90% than 95%
   width_95 <- result_95$estimates$ci_upper - result_95$estimates$ci_lower
@@ -442,10 +614,10 @@ test_that("estimate_harvest with conf_level = 0.90 produces narrower CI than 0.9
 
 # Variance method tests ----
 
-test_that("estimate_harvest with bootstrap variance method produces valid results", {
+test_that("estimate_harvest_rate with bootstrap variance method produces valid results", {
   design <- make_harvest_design()
 
-  result <- estimate_harvest(design, variance = "bootstrap") # nolint: object_usage_linter
+  result <- estimate_harvest_rate(design, variance = "bootstrap") # nolint: object_usage_linter
 
   expect_equal(result$variance_method, "bootstrap")
   expect_true(is.numeric(result$estimates$se))
@@ -454,10 +626,10 @@ test_that("estimate_harvest with bootstrap variance method produces valid result
   expect_false(is.na(result$estimates$se))
 })
 
-test_that("estimate_harvest with jackknife variance method produces valid results", {
+test_that("estimate_harvest_rate with jackknife variance method produces valid results", {
   design <- make_harvest_design()
 
-  result <- estimate_harvest(design, variance = "jackknife") # nolint: object_usage_linter
+  result <- estimate_harvest_rate(design, variance = "jackknife") # nolint: object_usage_linter
 
   expect_equal(result$variance_method, "jackknife")
   expect_true(is.numeric(result$estimates$se))
@@ -466,11 +638,11 @@ test_that("estimate_harvest with jackknife variance method produces valid result
   expect_false(is.na(result$estimates$se))
 })
 
-test_that("estimate_harvest grouped + bootstrap variance compose correctly", {
+test_that("estimate_harvest_rate grouped + bootstrap variance compose correctly", {
   design <- make_harvest_design()
 
   # Should work (may warn about small n per group, but should not error)
-  result <- suppressWarnings(estimate_harvest(design, by = day_type, variance = "bootstrap")) # nolint: object_usage_linter
+  result <- suppressWarnings(estimate_harvest_rate(design, by = day_type, variance = "bootstrap")) # nolint: object_usage_linter
 
   expect_s3_class(result, "creel_estimates")
   expect_equal(result$variance_method, "bootstrap")
@@ -480,7 +652,7 @@ test_that("estimate_harvest grouped + bootstrap variance compose correctly", {
 
 # Integration tests with example data ----
 
-test_that("estimate_harvest works end-to-end with example_calendar and example_interviews", {
+test_that("estimate_harvest_rate works end-to-end with example_calendar and example_interviews", {
   # Load package data
   data("example_calendar", package = "tidycreel")
   data("example_interviews", package = "tidycreel")
@@ -498,7 +670,7 @@ test_that("estimate_harvest works end-to-end with example_calendar and example_i
   )
 
   # Estimate harvest
-  result <- estimate_harvest(design) # nolint: object_usage_linter
+  result <- estimate_harvest_rate(design) # nolint: object_usage_linter
 
   # Verify result structure
   expect_s3_class(result, "creel_estimates")
@@ -529,8 +701,8 @@ test_that("HPUE <= CPUE with example data (harvest is subset of catch)", {
   )
 
   # Estimate both HPUE and CPUE
-  result_hpue <- estimate_harvest(design) # nolint: object_usage_linter
-  result_cpue <- estimate_cpue(design) # nolint: object_usage_linter
+  result_hpue <- estimate_harvest_rate(design) # nolint: object_usage_linter
+  result_cpue <- estimate_catch_rate(design) # nolint: object_usage_linter
 
   # HPUE should be <= CPUE
   expect_true(result_hpue$estimates$estimate <= result_cpue$estimates$estimate)
@@ -559,27 +731,27 @@ test_that("grouped harvest estimation with example data handles small groups app
   if (n_weekend < 10) {
     # Should error due to small group size
     expect_error(
-      estimate_harvest(design, by = day_type), # nolint: object_usage_linter
+      estimate_harvest_rate(design, by = day_type), # nolint: object_usage_linter
       "10"
     )
   } else {
     # Should work (possibly with warning if n < 30)
-    result <- suppressWarnings(estimate_harvest(design, by = day_type)) # nolint: object_usage_linter
+    result <- suppressWarnings(estimate_harvest_rate(design, by = day_type)) # nolint: object_usage_linter
     expect_s3_class(result, "creel_estimates")
   }
 })
 
 # Zero-effort handling tests ----
 
-test_that("estimate_harvest filters zero-effort interviews with warning", {
+test_that("estimate_harvest_rate filters zero-effort interviews with warning", {
   design <- make_harvest_design()
 
-  # Inject 2 zero-effort interviews (must set .angler_effort, the column used by estimate_harvest)
+  # Inject 2 zero-effort interviews (must set .angler_effort, the column used by estimate_harvest_rate)
   design$interviews[[".angler_effort"]][1:2] <- 0
 
   # Should warn about zero-effort
   expect_warning(
-    result <- estimate_harvest(design), # nolint: object_usage_linter
+    result <- estimate_harvest_rate(design), # nolint: object_usage_linter
     "zero effort"
   )
 
@@ -592,22 +764,22 @@ test_that("estimate_harvest filters zero-effort interviews with warning", {
   expect_equal(result$estimates$n, 30)
 })
 
-test_that("estimate_harvest with all zero-effort errors on empty data", {
+test_that("estimate_harvest_rate with all zero-effort errors on empty data", {
   design <- make_harvest_design()
 
-  # Set all angler effort to zero (the column used by estimate_harvest)
+  # Set all angler effort to zero (the column used by estimate_harvest_rate)
   design$interviews[[".angler_effort"]] <- 0
 
   # After filtering, n = 0, which should error
   expect_error(
-    estimate_harvest(design), # nolint: object_usage_linter
+    estimate_harvest_rate(design), # nolint: object_usage_linter
     "No valid interviews"
   )
 })
 
 # NA harvest handling tests ----
 
-test_that("estimate_harvest filters NA harvest interviews with warning", {
+test_that("estimate_harvest_rate filters NA harvest interviews with warning", {
   design <- make_harvest_design()
 
   # Inject 2 NA harvest values
@@ -615,7 +787,7 @@ test_that("estimate_harvest filters NA harvest interviews with warning", {
 
   # Should warn about missing harvest
   expect_warning(
-    result <- estimate_harvest(design), # nolint: object_usage_linter
+    result <- estimate_harvest_rate(design), # nolint: object_usage_linter
     "missing harvest"
   )
 
@@ -628,7 +800,7 @@ test_that("estimate_harvest filters NA harvest interviews with warning", {
   expect_equal(result$estimates$n, 30)
 })
 
-test_that("estimate_harvest with all NA harvest errors on empty data", {
+test_that("estimate_harvest_rate with all NA harvest errors on empty data", {
   design <- make_harvest_design()
 
   # Set all harvest to NA
@@ -636,12 +808,12 @@ test_that("estimate_harvest with all NA harvest errors on empty data", {
 
   # After filtering, n = 0, which should error
   expect_error(
-    estimate_harvest(design), # nolint: object_usage_linter
+    estimate_harvest_rate(design), # nolint: object_usage_linter
     "No valid interviews"
   )
 })
 
-test_that("estimate_harvest grouped with zero-effort interviews excludes them with warning", {
+test_that("estimate_harvest_rate grouped with zero-effort interviews excludes them with warning", {
   # Create synthetic data with some zero-effort interviews in grouped estimation
   cal <- data.frame(
     date = as.Date(c(
@@ -689,7 +861,7 @@ test_that("estimate_harvest grouped with zero-effort interviews excludes them wi
 
   # Grouped estimation should warn about zero-effort and exclude them
   expect_warning(
-    result <- estimate_harvest(design, by = day_type), # nolint: object_usage_linter
+    result <- estimate_harvest_rate(design, by = day_type), # nolint: object_usage_linter
     "zero effort"
   )
 
@@ -699,7 +871,7 @@ test_that("estimate_harvest grouped with zero-effort interviews excludes them wi
   expect_true(all(result$estimates$estimate > 0))
 })
 
-test_that("estimate_harvest grouped with NA harvest excludes them with warning", {
+test_that("estimate_harvest_rate grouped with NA harvest excludes them with warning", {
   # Create synthetic data with some NA harvest interviews in grouped estimation
   cal <- data.frame(
     date = as.Date(c(
@@ -747,7 +919,7 @@ test_that("estimate_harvest grouped with NA harvest excludes them with warning",
 
   # Grouped estimation should warn about NA harvest and exclude them
   expect_warning(
-    result <- estimate_harvest(design, by = day_type), # nolint: object_usage_linter
+    result <- estimate_harvest_rate(design, by = day_type), # nolint: object_usage_linter
     "missing harvest"
   )
 
@@ -831,72 +1003,101 @@ make_br_harvest_interviews <- function(design, trip_status_col = FALSE) {
   )
 }
 
-test_that("estimate_harvest() dispatches to bus-route estimator for bus_route designs", {
+test_that("estimate_harvest_rate() dispatches to bus-route estimator for bus_route designs", {
   d <- make_br_harvest_interviews(make_br_harvest_design())
-  result <- estimate_harvest(d)
+  result <- estimate_harvest_rate(d)
   expect_s3_class(result, "creel_estimates")
 })
 
-test_that("estimate_harvest() Eq. 19.5: H_hat = sum(h_i/pi_i) matches hand-computed value", {
+test_that("estimate_harvest_rate() Eq. 19.5: H_hat = sum(h_i/pi_i) matches hand-computed value", {
   d <- make_br_harvest_interviews(make_br_harvest_design())
-  result <- estimate_harvest(d)
+  result <- estimate_harvest_rate(d)
   # H_hat = 37.5 + 75.0 + 2.5 + 0 + 12.5 + 8.333... = 135.833...
   expected_h_hat <- (2 * 3) / 0.16 + (4 * 3) / 0.16 + (1 * 1) / 0.40 +
     (0 * 1) / 0.24 + (3 * 1) / 0.24 + (2 * 1) / 0.24
   expect_equal(result$estimates$estimate, expected_h_hat, tolerance = 1e-6)
 })
 
-test_that("estimate_harvest() site_contributions attribute present with h_i and pi_i columns", {
+test_that("estimate_harvest_rate() site_contributions attribute present with h_i and pi_i columns", {
   d <- make_br_harvest_interviews(make_br_harvest_design())
-  result <- estimate_harvest(d)
+  result <- estimate_harvest_rate(d)
   sc <- attr(result, "site_contributions")
   expect_false(is.null(sc))
 })
 
 test_that("get_site_contributions() returns tibble from bus-route harvest result", {
   d <- make_br_harvest_interviews(make_br_harvest_design())
-  result <- estimate_harvest(d)
+  result <- estimate_harvest_rate(d)
   sc <- get_site_contributions(result)
   expect_s3_class(sc, "tbl_df")
   expect_true("pi_i" %in% names(sc))
 })
 
-test_that("estimate_harvest() verbose=TRUE prints bus-route dispatch message", {
+test_that("estimate_harvest_rate() verbose=TRUE prints bus-route dispatch message", {
   d <- make_br_harvest_interviews(make_br_harvest_design())
   expect_message(
-    estimate_harvest(d, verbose = TRUE),
+    estimate_harvest_rate(d, verbose = TRUE),
     "bus-route estimator"
   )
 })
 
-test_that("estimate_harvest() verbose=FALSE produces no dispatch message", {
+test_that("estimate_harvest_rate() verbose=FALSE produces no dispatch message", {
   d <- make_br_harvest_interviews(make_br_harvest_design())
-  expect_no_message(suppressWarnings(estimate_harvest(d, verbose = FALSE)))
+  expect_no_message(suppressWarnings(estimate_harvest_rate(d, verbose = FALSE)))
 })
 
-test_that("estimate_harvest() use_trips='complete' returns creel_estimates for bus-route", {
+test_that("estimate_harvest_rate() use_trips='complete' returns creel_estimates for bus-route", {
   d <- make_br_harvest_interviews(make_br_harvest_design(), trip_status_col = TRUE)
-  result <- estimate_harvest(d, use_trips = "complete")
+  result <- estimate_harvest_rate(d, use_trips = "complete")
   expect_s3_class(result, "creel_estimates")
   expect_true(result$estimates$estimate > 0)
 })
 
-test_that("estimate_harvest() use_trips='incomplete' returns creel_estimates for bus-route", {
+test_that("estimate_harvest_rate() use_trips='incomplete' returns creel_estimates for bus-route", {
   d <- make_br_harvest_interviews(make_br_harvest_design(), trip_status_col = TRUE)
-  result <- estimate_harvest(d, use_trips = "incomplete")
+  result <- estimate_harvest_rate(d, use_trips = "incomplete")
   expect_s3_class(result, "creel_estimates")
   expect_true(result$estimates$estimate >= 0)
 })
 
-test_that("estimate_harvest() use_trips='diagnostic' returns creel_estimates_diagnostic", {
+test_that("estimate_harvest_rate() use_trips='diagnostic' returns creel_estimates_diagnostic", {
   d <- make_br_harvest_interviews(make_br_harvest_design(), trip_status_col = TRUE)
-  result <- estimate_harvest(d, use_trips = "diagnostic")
+  result <- estimate_harvest_rate(d, use_trips = "diagnostic")
   expect_s3_class(result, "creel_estimates_diagnostic")
 })
 
-test_that("estimate_harvest() by=circuit: proportion column present and sums to ~1", {
+test_that("estimate_harvest_rate() by=circuit: proportion column present and sums to ~1", {
   d <- make_br_harvest_interviews(make_br_harvest_design())
-  result <- estimate_harvest(d, by = circuit) # nolint: object_usage_linter
+  result <- estimate_harvest_rate(d, by = circuit) # nolint: object_usage_linter
   expect_true("proportion" %in% names(result$estimates))
   expect_equal(sum(result$estimates$proportion), 1.0, tolerance = 1e-6)
+})
+
+# Section dispatch tests (RATE-02a, RATE-03) ----
+
+test_that("RATE-02a: estimate_harvest_rate on 3-section design returns exactly 3 rows", {
+  design <- make_3section_design_with_interviews() # nolint: object_usage_linter
+  result <- suppressWarnings(suppressMessages(
+    estimate_harvest_rate(design, missing_sections = "warn") # nolint: object_usage_linter
+  ))
+  expect_equal(nrow(result$estimates), 3L)
+  expect_true("section" %in% names(result$estimates))
+  expect_false(".lake_total" %in% result$estimates$section)
+})
+
+test_that("RATE-03-harvest: missing section produces NA row + cli_warn for estimate_harvest_rate", {
+  design <- make_section_design_with_missing_interview_section() # nolint: object_usage_linter
+  warns <- character(0)
+  result <- withCallingHandlers(
+    estimate_harvest_rate(design, missing_sections = "warn"), # nolint: object_usage_linter
+    warning = function(w) {
+      warns <<- c(warns, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    }
+  )
+  expect_true(any(grepl("missing|section|South", warns, ignore.case = TRUE)))
+  south_row <- result$estimates[result$estimates$section == "South", ]
+  expect_equal(nrow(south_row), 1L)
+  expect_false(south_row$data_available)
+  expect_true(is.na(south_row$estimate))
 })

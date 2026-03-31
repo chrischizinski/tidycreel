@@ -1,0 +1,282 @@
+---
+title: "Camera Survey Analysis with tidycreel"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Camera Survey Analysis with tidycreel}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Overview
+
+Remote cameras mounted at boat launches or trail heads record angler arrivals
+with no observer present. This enables 24-hour coverage of access points that
+would otherwise require continuous staffing. The `tidycreel` package supports
+two camera-based sub-modes:
+
+- **Counter mode** — the camera records a single daily total of incoming
+  anglers (e.g., a passive infrared counter). The data arrive as one row per
+  sampling day with a numeric ingress count.
+- **Ingress-egress mode** — the camera records individual arrival and
+  departure timestamps for each angler or party. The raw data are paired
+  POSIXct timestamps that are preprocessed with
+  `preprocess_camera_timestamps()` before entering the standard effort
+  estimation workflow.
+
+Both modes share a key concept: the `camera_status` column. Unlike random
+missed observations (modeled via `missing_sections`), a camera failure is an
+**informative gap** — the number of anglers that passed during the outage is
+unknown and cannot be estimated from the surrounding data. These rows must be
+removed before calling `add_counts()`.
+
+## Example Data
+
+This vignette uses three built-in datasets representing a hypothetical summer
+creel survey at a Nebraska reservoir boat launch in June 2024.
+
+```{r data}
+library(tidycreel)
+
+data(example_camera_counts)
+data(example_camera_timestamps)
+data(example_camera_interviews)
+
+head(example_camera_counts)
+head(example_camera_timestamps)
+head(example_camera_interviews)
+```
+
+The `example_camera_counts` dataset contains 10 rows: nine operational days
+plus one battery failure gap. The `example_camera_timestamps` dataset has 14
+raw arrival/departure pairs across four sampling days. The
+`example_camera_interviews` dataset has 40 complete angler interviews
+targeting walleye and bass across eight sampling days.
+
+## Counter Mode
+
+### Build a Survey Calendar
+
+Counter-mode surveys require a calendar that covers the sampling frame. Here
+we build one from the unique dates in the counts and interview data.
+
+```{r counter-calendar}
+# Collect all unique sampling dates across datasets
+all_dates <- sort(unique(c(
+  example_camera_counts$date,
+  example_camera_interviews$date
+)))
+
+# Assign day type for each date (weekday = Mon-Fri, weekend = Sat-Sun)
+cam_calendar <- data.frame(
+  date = all_dates,
+  day_type = ifelse(
+    weekdays(all_dates) %in% c("Saturday", "Sunday"),
+    "weekend", "weekday"
+  ),
+  stringsAsFactors = FALSE
+)
+
+head(cam_calendar)
+```
+
+### Design Construction
+
+Build a camera design using `creel_design()` with `survey_type = "camera"`.
+The `camera_mode` argument is required. Omitting it produces an informative
+error:
+
+```{r counter-error, error = TRUE}
+creel_design(
+  cam_calendar,
+  date = date, strata = day_type,
+  survey_type = "camera"
+)
+```
+
+Build the correct design with `camera_mode = "counter"`:
+
+```{r counter-design}
+design_counter <- creel_design(
+  cam_calendar,
+  date        = date,
+  strata      = day_type,
+  survey_type = "camera",
+  camera_mode = "counter"
+)
+print(design_counter)
+```
+
+## Handling Informative Gaps
+
+The battery failure row on 2024-06-11 has `ingress_count = NA`. This is not
+a random unsampled day — the camera was physically unable to record. Including
+it in `add_counts()` would silently propagate a missing value into the
+Horvitz-Thompson estimator.
+
+```{r gap-row}
+# The gap row
+subset(example_camera_counts, camera_status != "operational")
+```
+
+The correct approach is to **filter to operational rows** before calling
+`add_counts()`. This is fundamentally different from `missing_sections`, which
+models probabilistic non-coverage within a sampled period. A camera failure
+means no data exist — the effort during that period is unknown.
+
+```{r counter-filter}
+# Keep only days when the camera was working
+counts_clean <- subset(example_camera_counts, camera_status == "operational")
+nrow(counts_clean) # 9 operational rows
+```
+
+### Effort Estimation
+
+```{r counter-effort}
+design_counter <- add_counts(design_counter, counts_clean)
+effort_counter <- suppressWarnings(estimate_effort(design_counter))
+print(effort_counter)
+```
+
+The `estimate` column is the Horvitz-Thompson estimate of total ingress angler
+visits across the full survey period, with a 95% confidence interval.
+
+## Ingress-Egress Mode
+
+When the camera records individual arrival and departure timestamps, use
+`preprocess_camera_timestamps()` to aggregate the raw pairs into daily effort
+hours before calling `add_counts()`.
+
+### Preprocess Timestamps
+
+```{r ie-preprocess}
+daily_effort <- preprocess_camera_timestamps(
+  example_camera_timestamps,
+  date_col    = date,
+  ingress_col = ingress_time,
+  egress_col  = egress_time
+)
+print(daily_effort)
+```
+
+`preprocess_camera_timestamps()` sums all valid trip durations within each day
+and returns a data frame with `date` and `daily_effort_hours`. A warning is
+issued for any rows where `egress_time < ingress_time` (negative durations);
+those rows are set to `NA` and excluded from the daily sum.
+
+Because `add_counts()` requires all design strata columns, merge the day type
+back in from the raw timestamps:
+
+```{r ie-merge-strata}
+day_type_key <- unique(example_camera_timestamps[, c("date", "day_type")])
+daily_effort <- merge(daily_effort, day_type_key, by = "date")
+print(daily_effort)
+```
+
+### Build the Design and Estimate Effort
+
+```{r ie-design}
+ie_calendar <- data.frame(
+  date = daily_effort$date,
+  day_type = daily_effort$day_type,
+  stringsAsFactors = FALSE
+)
+
+design_ie <- creel_design(
+  ie_calendar,
+  date        = date,
+  strata      = day_type,
+  survey_type = "camera",
+  camera_mode = "ingress_egress"
+)
+
+design_ie <- add_counts(design_ie, daily_effort)
+effort_ie <- suppressWarnings(estimate_effort(design_ie))
+print(effort_ie)
+```
+
+## Interview-Based Catch Estimation
+
+Camera designs support the same interview workflow as standard instantaneous
+designs. Use the counter-mode design (which spans all eight interview dates)
+and attach the interview data with `add_interviews()`.
+
+```{r catch-interviews}
+design_catch <- add_interviews(
+  design_counter,
+  example_camera_interviews,
+  catch       = walleye,
+  effort      = hours_fished,
+  trip_status = trip_status
+)
+```
+
+### Catch Rate
+
+`estimate_catch_rate()` computes the ratio-of-means CPUE (walleye per
+angler-hour) using only complete trips.
+
+```{r catch-rate}
+catch_rate <- suppressWarnings(estimate_catch_rate(design_catch))
+print(catch_rate)
+```
+
+### Total Catch
+
+`estimate_total_catch()` multiplies the CPUE estimate by the total effort
+estimate to produce a projected total walleye catch over the survey period.
+
+```{r total-catch}
+total_catch <- suppressWarnings(estimate_total_catch(design_catch))
+print(total_catch)
+```
+
+## Summary
+
+The table below contrasts the two camera sub-modes:
+
+```{r summary-table, echo = FALSE}
+knitr::kable(data.frame(
+  Feature = c(
+    "Input data",
+    "Preprocessing step",
+    "Effort unit",
+    "Gap handling",
+    "camera_mode value"
+  ),
+  `Counter mode` = c(
+    "One count per day",
+    "None (counts used directly)",
+    "Daily ingress count",
+    "Exclude camera_status != 'operational' rows",
+    '"counter"'
+  ),
+  `Ingress-egress mode` = c(
+    "POSIXct arrival/departure pairs",
+    "preprocess_camera_timestamps()",
+    "Daily effort-hours",
+    "Negative durations warned and excluded",
+    '"ingress_egress"'
+  ),
+  check.names = FALSE
+), caption = "Comparison of camera survey sub-modes in tidycreel")
+```
+
+Both sub-modes feed into the same `estimate_effort()`, `add_interviews()`,
+`estimate_catch_rate()`, and `estimate_total_catch()` pipeline — no changes
+to downstream code are required when switching modes.
+
+## References
+
+- Jones, C. M., & Pollock, K. H. (2012). Recreational survey methods:
+  estimation of effort, harvest, and abundance. Chapter 19 in *Fisheries
+  Techniques* (3rd ed.), pp. 883-919. American Fisheries Society.
+
+- Malvestuto, S. P. (1996). Sampling the recreational angler. Chapter 20 in
+  *Fisheries Techniques* (2nd ed.), pp. 591-623. American Fisheries Society.

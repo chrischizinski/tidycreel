@@ -15,7 +15,7 @@
 #' \strong{Interview-based summary, not pressure-weighted.} This function
 #' tabulates raw interview records without applying survey weighting by sampling
 #' effort or effort stratum. For pressure-weighted extrapolated estimates, use
-#' \code{\link{estimate_cpue}} or \code{\link{estimate_harvest}}.
+#' \code{\link{estimate_catch_rate}} or \code{\link{estimate_harvest_rate}}.
 #'
 #' @param design A \code{creel_design} object with interviews attached and
 #'   \code{refused} column set via \code{add_interviews(refused = ...)}.
@@ -112,7 +112,7 @@ summarize_refusals <- function(design) {
 #' \strong{Interview-based summary, not pressure-weighted.} This function
 #' tabulates raw interview records without applying survey weighting by sampling
 #' effort or effort stratum. For pressure-weighted extrapolated estimates, use
-#' \code{\link{estimate_cpue}} or \code{\link{estimate_harvest}}.
+#' \code{\link{estimate_catch_rate}} or \code{\link{estimate_harvest_rate}}.
 #'
 #' @param design A \code{creel_design} object with interviews attached.
 #'
@@ -199,7 +199,7 @@ summarize_by_day_type <- function(design) {
 #' \strong{Interview-based summary, not pressure-weighted.} This function
 #' tabulates raw interview records without applying survey weighting by sampling
 #' effort or effort stratum. For pressure-weighted extrapolated estimates, use
-#' \code{\link{estimate_cpue}} or \code{\link{estimate_harvest}}.
+#' \code{\link{estimate_catch_rate}} or \code{\link{estimate_harvest_rate}}.
 #'
 #' @param design A \code{creel_design} object with interviews attached and
 #'   \code{angler_type} column set via \code{add_interviews(angler_type = ...)}.
@@ -293,7 +293,7 @@ summarize_by_angler_type <- function(design) {
 #' \strong{Interview-based summary, not pressure-weighted.} This function
 #' tabulates raw interview records without applying survey weighting by sampling
 #' effort or effort stratum. For pressure-weighted extrapolated estimates, use
-#' \code{\link{estimate_cpue}} or \code{\link{estimate_harvest}}.
+#' \code{\link{estimate_catch_rate}} or \code{\link{estimate_harvest_rate}}.
 #'
 #' @param design A \code{creel_design} object with interviews attached and
 #'   \code{angler_method} column set via
@@ -388,7 +388,7 @@ summarize_by_method <- function(design) {
 #' \strong{Interview-based summary, not pressure-weighted.} This function
 #' tabulates raw interview records without applying survey weighting by sampling
 #' effort or effort stratum. For pressure-weighted extrapolated estimates, use
-#' \code{\link{estimate_cpue}} or \code{\link{estimate_harvest}}.
+#' \code{\link{estimate_catch_rate}} or \code{\link{estimate_harvest_rate}}.
 #'
 #' @param design A \code{creel_design} object with interviews attached and
 #'   \code{species_sought} column set via
@@ -484,7 +484,7 @@ summarize_by_species_sought <- function(design) {
 #' \strong{Interview-based summary, not pressure-weighted.} This function
 #' tabulates raw interview records without applying survey weighting by sampling
 #' effort or effort stratum. For pressure-weighted extrapolated estimates, use
-#' \code{\link{estimate_cpue}} or \code{\link{estimate_harvest}}.
+#' \code{\link{estimate_catch_rate}} or \code{\link{estimate_harvest_rate}}.
 #'
 #' @param design A \code{creel_design} object with interviews attached
 #'   (including \code{angler_type} and \code{species_sought} columns) and
@@ -628,7 +628,7 @@ summarize_successful_parties <- function(design) {
 #' \strong{Interview-based summary, not pressure-weighted.} This function
 #' tabulates raw interview records without applying survey weighting by sampling
 #' effort or effort stratum. For pressure-weighted extrapolated estimates, use
-#' \code{\link{estimate_cpue}} or \code{\link{estimate_harvest}}.
+#' \code{\link{estimate_catch_rate}} or \code{\link{estimate_harvest_rate}}.
 #'
 #' @param design A \code{creel_design} object with interviews attached and
 #'   \code{trip_duration} column set via
@@ -713,7 +713,7 @@ summarize_by_trip_length <- function(design) {
 #' \strong{Interview-based summary, not pressure-weighted.} This function
 #' computes a simple arithmetic mean over sampled interviews. It does NOT apply
 #' survey weighting by sampling effort or effort stratum. For pressure-weighted
-#' extrapolated estimates use \code{\link{estimate_cpue}}.
+#' extrapolated estimates use \code{\link{estimate_catch_rate}}.
 #'
 #' The catch filter ensures only species the angler was targeting are counted
 #' (i.e., rows in \code{design$catch} where \code{catch_type == "caught"} and
@@ -737,7 +737,7 @@ summarize_by_trip_length <- function(design) {
 #'   \code{mean_rate} (numeric, mean fish/angler-hour),
 #'   \code{se} (numeric, standard error), \code{ci_lower}, \code{ci_upper}.
 #'
-#' @seealso [summarize_hws_rates()], [estimate_cpue()]
+#' @seealso [summarize_hws_rates()], [estimate_catch_rate()]
 #'
 #' @examples
 #' data(example_calendar)
@@ -923,7 +923,7 @@ summarize_cws_rates <- function(design, by = NULL, conf_level = 0.95) {
 #' \strong{Interview-based summary, not pressure-weighted.} This function
 #' computes a simple arithmetic mean over sampled interviews. It does NOT apply
 #' survey weighting by sampling effort or effort stratum. For pressure-weighted
-#' extrapolated estimates use \code{\link{estimate_harvest}}.
+#' extrapolated estimates use \code{\link{estimate_harvest_rate}}.
 #'
 #' The catch filter ensures only species the angler was targeting are counted
 #' (i.e., rows in \code{design$catch} where \code{catch_type == "harvested"}
@@ -947,7 +947,7 @@ summarize_cws_rates <- function(design, by = NULL, conf_level = 0.95) {
 #'   \code{mean_rate} (numeric, mean fish/angler-hour),
 #'   \code{se} (numeric, standard error), \code{ci_lower}, \code{ci_upper}.
 #'
-#' @seealso [summarize_cws_rates()], [estimate_harvest()]
+#' @seealso [summarize_cws_rates()], [estimate_harvest_rate()]
 #'
 #' @examples
 #' data(example_calendar)
@@ -1132,8 +1132,8 @@ summarize_hws_rates <- function(design, by = NULL, conf_level = 0.95) {
 #' \strong{Interview-based summary, not pressure-weighted.} This function
 #' tabulates raw length measurements from sampled interviews without applying
 #' survey weighting by sampling effort or effort stratum. For pressure-weighted
-#' extrapolated estimates use \code{\link{estimate_cpue}} or
-#' \code{\link{estimate_harvest}}.
+#' extrapolated estimates use \code{\link{estimate_catch_rate}} or
+#' \code{\link{estimate_harvest_rate}}.
 #'
 #' \strong{Pre-binned release format:} When length data was attached with
 #' \code{release_format = "binned"}, release rows have character bin labels

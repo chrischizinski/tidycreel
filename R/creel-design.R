@@ -76,6 +76,9 @@ compute_angler_effort <- function(data, effort, n_anglers) {
   data
 }
 
+# Valid survey types accepted by creel_design()
+VALID_SURVEY_TYPES <- c("instantaneous", "bus_route", "ice", "camera", "aerial") # nolint: object_name_linter
+
 #' Create a creel survey design
 #'
 #' @description
@@ -126,6 +129,27 @@ compute_angler_effort <- function(data, effort, n_anglers) {
 #'   `sampling_frame`. A circuit is a route x period combination. If omitted,
 #'   all rows are treated as belonging to a single unnamed circuit
 #'   (`".default"`). Required only for multi-circuit designs.
+#' @param effort_type Character string specifying the type of effort measured
+#'   in ice fishing surveys. Required when `survey_type = "ice"`. Must be one
+#'   of `"time_on_ice"` (total hours the angler was on the ice) or
+#'   `"active_fishing_time"` (hours actively fishing, excluding travel/setup).
+#'   The value controls the column name in `estimate_effort()` output:
+#'   `total_effort_hr_on_ice` or `total_effort_hr_active`.
+#' @param camera_mode Character string specifying the camera sub-mode.
+#'   Required when `survey_type = "camera"`. Must be one of `"counter"`
+#'   (camera records a daily ingress total) or `"ingress_egress"` (camera
+#'   records individual arrival/departure timestamps, which should be
+#'   preprocessed with `preprocess_camera_timestamps()` before calling
+#'   `add_counts()`).
+#' @param h_open Positive numeric scalar specifying the number of hours the
+#'   fishery is open per day. Required when `survey_type = "aerial"`. Used as
+#'   the expansion factor in the aerial effort estimator:
+#'   \eqn{\hat{E} = N_{obs} \times h_{open} / v}.
+#' @param visibility_correction Optional numeric scalar in `(0, 1]` specifying
+#'   the proportion of anglers on the water that are detectable from the
+#'   aircraft. Used only when `survey_type = "aerial"`. Defaults to `1.0`
+#'   (all anglers visible) when `NULL`. A value of 0.85 means 85% of anglers
+#'   are detected; the effort estimate is scaled up by \eqn{1 / 0.85}.
 #'
 #' @return A `creel_design` S3 object (list) with components:
 #'   \item{calendar}{The original calendar data frame}
@@ -228,7 +252,11 @@ creel_design <- function(calendar,
                          sampling_frame = NULL,
                          p_site = NULL,
                          p_period = NULL,
-                         circuit = NULL) {
+                         circuit = NULL,
+                         effort_type = NULL,
+                         camera_mode = NULL,
+                         h_open = NULL,
+                         visibility_correction = NULL) {
   # 1. Structural validation (Phase 1 validator)
   validate_calendar_schema(calendar) # nolint: object_usage_linter
 
@@ -256,6 +284,15 @@ creel_design <- function(calendar,
       "site",
       rlang::caller_env()
     )
+  }
+
+  # --- Enum guard: reject unknown survey types ---
+  if (!survey_type %in% VALID_SURVEY_TYPES) {
+    cli::cli_abort(c(
+      "{.arg survey_type} {.val {survey_type}} is not recognized.",
+      "x" = "Unknown survey type: {.val {survey_type}}.",
+      "i" = "Valid types are: {.val {VALID_SURVEY_TYPES}}."
+    ))
   }
 
   # --- Bus-Route branch ---
@@ -353,6 +390,202 @@ creel_design <- function(calendar,
     )
   }
 
+  # --- Ice branch ---
+  ice <- NULL
+  if (identical(survey_type, "ice")) {
+    # (a) Validate effort_type: required, must be one of the two valid values
+    valid_ice_effort_types <- c("time_on_ice", "active_fishing_time")
+    if (is.null(effort_type) || !effort_type %in% valid_ice_effort_types) {
+      cli::cli_abort(c(
+        "{.arg effort_type} is required for {.val ice} survey designs.",
+        "x" = if (is.null(effort_type)) {
+          "No {.arg effort_type} supplied."
+        } else {
+          "Unknown {.arg effort_type}: {.val {effort_type}}."
+        },
+        "i" = "Valid values: {.val {valid_ice_effort_types}}."
+      ))
+    }
+
+    # (b) If sampling_frame is supplied, validate all p_site == 1.0 (floating-point safe)
+    # Resolve p_site column: use tidy selector if provided, otherwise look for "p_site" by name
+    if (!is.null(sampling_frame) && is.data.frame(sampling_frame)) {
+      p_site_quo_ice <- rlang::enquo(p_site)
+      p_site_col_ice <- NULL
+      if (!rlang::quo_is_null(p_site_quo_ice)) {
+        p_site_col_ice <- resolve_single_col(p_site_quo_ice, sampling_frame, "p_site", rlang::caller_env())
+      } else if ("p_site" %in% names(sampling_frame)) {
+        p_site_col_ice <- "p_site"
+      }
+      if (!is.null(p_site_col_ice)) {
+        p_site_vals_ice <- sampling_frame[[p_site_col_ice]]
+        bad <- which(abs(p_site_vals_ice - 1.0) > 1e-9) # nolint: object_usage_linter
+        if (length(bad) > 0) {
+          cli::cli_abort(c(
+            "All {.field p_site} values must equal 1.0 for ice surveys (p_site is fixed at 1).",
+            "x" = "{length(bad)} value{?s} not equal to 1.0 at row{?s} {bad}.",
+            "i" = "Ice surveys assume all sites are sampled with certainty (p_site = 1.0)."
+          ))
+        }
+      }
+    }
+
+    # Resolve p_period for ice: scalar numeric or column in sampling_frame
+    p_period_ice_col <- NULL
+    p_period_ice_scalar <- NULL
+    p_period_quo_ice <- rlang::enquo(p_period)
+    if (!rlang::quo_is_null(p_period_quo_ice)) {
+      if (!is.null(sampling_frame) && is.data.frame(sampling_frame)) {
+        tryCatch(
+          {
+            p_period_ice_col <- resolve_single_col(
+              p_period_quo_ice, sampling_frame, "p_period", rlang::caller_env()
+            )
+          },
+          error = function(e) {
+            val <- rlang::eval_tidy(p_period_quo_ice)
+            if (is.numeric(val) && length(val) == 1L) {
+              p_period_ice_scalar <<- val
+            }
+          }
+        )
+      } else {
+        val <- rlang::eval_tidy(p_period_quo_ice)
+        if (is.numeric(val) && length(val) == 1L) {
+          p_period_ice_scalar <- val
+        }
+      }
+    }
+
+    # (c) Build a synthetic bus_route slot so add_interviews() can join .pi_i
+    # For ice: p_site = 1.0, so pi_i = p_site * p_period = p_period
+    # We use a single synthetic site (".ice_site") and circuit (".default")
+    if (!is.null(sampling_frame) && is.data.frame(sampling_frame)) {
+      # Build from sampling_frame: resolve site column (optional for ice)
+      ice_sf <- sampling_frame
+      ice_sf[[".circuit"]] <- ".default"
+      circuit_col_ice <- ".circuit"
+
+      # Resolve site col if provided (optional for ice)
+      site_frame_col_ice <- NULL
+      if (!rlang::quo_is_null(site_quo)) {
+        tryCatch(
+          {
+            site_frame_col_ice <- resolve_single_col(
+              site_quo, sampling_frame, "site", rlang::caller_env()
+            )
+          },
+          error = function(e) NULL
+        )
+      }
+      if (is.null(site_frame_col_ice)) {
+        ice_sf[[".ice_site"]] <- seq_len(nrow(ice_sf))
+        site_frame_col_ice <- ".ice_site"
+      }
+
+      # Add p_period column if scalar
+      if (!is.null(p_period_ice_scalar)) {
+        ice_sf[[".p_period"]] <- p_period_ice_scalar
+        p_period_ice_col <- ".p_period"
+      }
+
+      # Compute pi_i = 1.0 * p_period = p_period
+      ice_sf[[".pi_i"]] <- ice_sf[[p_period_ice_col]]
+
+      bus_route <- list(
+        data         = ice_sf,
+        site_col     = site_frame_col_ice,
+        circuit_col  = circuit_col_ice,
+        p_site_col   = NULL,
+        p_period_col = p_period_ice_col,
+        pi_i_col     = ".pi_i"
+      )
+    } else {
+      # No sampling_frame: build single-site synthetic bus_route frame
+      p_period_val <- if (!is.null(p_period_ice_scalar)) p_period_ice_scalar else 1.0
+      ice_sf <- data.frame(
+        .ice_site = ".all",
+        .circuit = ".default",
+        .p_period = p_period_val,
+        .pi_i = p_period_val,
+        stringsAsFactors = FALSE
+      )
+      bus_route <- list(
+        data         = ice_sf,
+        site_col     = ".ice_site",
+        circuit_col  = ".circuit",
+        p_site_col   = NULL,
+        p_period_col = ".p_period",
+        pi_i_col     = ".pi_i"
+      )
+    }
+
+    # (d) Build ice slot
+    ice <- list(
+      survey_type    = "ice",
+      effort_type    = effort_type,
+      p_period_col   = if (!is.null(p_period_ice_col)) p_period_ice_col else ".p_period",
+      pi_i_col       = ".pi_i"
+    )
+    if (!is.null(p_period_ice_scalar)) {
+      ice$p_period_scalar <- p_period_ice_scalar
+    }
+  }
+
+  # --- Camera branch ---
+  camera <- NULL
+  if (identical(survey_type, "camera")) {
+    valid_camera_modes <- c("counter", "ingress_egress")
+    if (is.null(camera_mode) || !camera_mode %in% valid_camera_modes) {
+      cli::cli_abort(c(
+        "{.arg camera_mode} is required for {.val camera} survey designs.",
+        "x" = if (is.null(camera_mode)) {
+          "No {.arg camera_mode} supplied."
+        } else {
+          "Unknown {.arg camera_mode}: {.val {camera_mode}}."
+        },
+        "i" = "Valid values: {.val {valid_camera_modes}}."
+      ))
+    }
+    camera <- list(survey_type = "camera", camera_mode = camera_mode)
+  }
+
+  # --- Aerial branch ---
+  aerial <- NULL
+  if (identical(survey_type, "aerial")) {
+    # h_open validation: required positive numeric scalar
+    if (is.null(h_open) || !is.numeric(h_open) || length(h_open) != 1L || h_open <= 0) {
+      cli::cli_abort(c(
+        "{.arg h_open} is required for {.val aerial} survey designs.",
+        "x" = if (is.null(h_open)) {
+          "No {.arg h_open} supplied."
+        } else {
+          "Invalid {.arg h_open}: {.val {h_open}}. Must be a positive numeric scalar."
+        },
+        "i" = "Example: {.code h_open = 14}"
+      ))
+    }
+    # visibility_correction validation: optional, must be in (0, 1] if supplied
+    vc_bad <- !is.null(visibility_correction) && (
+      !is.numeric(visibility_correction) ||
+        length(visibility_correction) != 1L ||
+        visibility_correction <= 0 ||
+        visibility_correction > 1
+    )
+    if (vc_bad) {
+      cli::cli_abort(c(
+        "{.arg visibility_correction} must be a single numeric value in (0, 1].",
+        "x" = "Supplied value {.val {visibility_correction}} is outside the valid range.",
+        "i" = "Valid range: 0 < {.arg visibility_correction} <= 1."
+      ))
+    }
+    aerial <- list(
+      survey_type           = "aerial",
+      h_open                = h_open,
+      visibility_correction = visibility_correction
+    )
+  }
+
   # 3. Construct and validate
   design <- new_creel_design(
     calendar    = calendar,
@@ -360,7 +593,10 @@ creel_design <- function(calendar,
     strata_cols = strata_cols,
     site_col    = site_col,
     design_type = survey_type,
-    bus_route   = bus_route
+    bus_route   = bus_route,
+    ice         = ice,
+    camera      = camera,
+    aerial      = aerial
   )
   validate_creel_design(design)
 }
@@ -388,13 +624,19 @@ new_creel_design <- function(calendar,
                              strata_cols,
                              site_col = NULL,
                              design_type = "instantaneous",
-                             bus_route = NULL) {
+                             bus_route = NULL,
+                             ice = NULL,
+                             camera = NULL,
+                             aerial = NULL) {
   stopifnot(is.data.frame(calendar))
   stopifnot(is.character(date_col), length(date_col) == 1)
   stopifnot(is.character(strata_cols), length(strata_cols) >= 1)
   stopifnot(is.null(site_col) || (is.character(site_col) && length(site_col) == 1))
   stopifnot(is.character(design_type), length(design_type) == 1)
   stopifnot(is.null(bus_route) || is.list(bus_route))
+  stopifnot(is.null(ice) || is.list(ice))
+  stopifnot(is.null(camera) || is.list(camera))
+  stopifnot(is.null(aerial) || is.list(aerial))
 
   structure(
     list(
@@ -406,6 +648,9 @@ new_creel_design <- function(calendar,
       counts      = NULL,
       survey      = NULL,
       bus_route   = bus_route, # NULL for non-bus_route designs
+      ice         = ice, # NULL for non-ice designs
+      camera      = camera, # NULL for non-camera designs
+      aerial      = aerial, # NULL for non-aerial designs
       sections    = NULL,
       section_col = NULL
     ),
@@ -466,8 +711,8 @@ validate_creel_design <- function(x) {
     }
   }
 
-  # Tier 1: Bus-Route probability validation
-  if (!is.null(x$bus_route)) {
+  # Tier 1: Bus-Route probability validation (skip for ice — p_site is always 1.0)
+  if (!is.null(x$bus_route) && !identical(x$design_type, "ice")) {
     br <- x$bus_route$data
     p_site_col <- x$bus_route$p_site_col
     p_period_col <- x$bus_route$p_period_col
@@ -1501,13 +1746,21 @@ add_interviews <- function(design, interviews,
   # Validate trip metadata
   validate_trip_metadata(interviews, trip_status_col, trip_duration_col, trip_start_col, interview_time_col) # nolint: object_usage_linter
 
-  # Tier 3: Bus-route specific validation
-  if (!is.null(design$bus_route)) {
+  # Tier 3: Bus-route specific validation (skip site/circuit checks for ice)
+  if (!is.null(design$bus_route) && !identical(design$design_type, "ice")) {
     validate_br_interviews_tier3(
       interviews         = interviews,
       design             = design,
       n_counted_col      = n_counted_col,
       n_interviewed_col  = n_interviewed_col
+    )
+  }
+
+  # Tier 3: Ice-specific validation — n_counted and n_interviewed required
+  if (identical(design$design_type, "ice")) {
+    validate_ice_interviews_tier3(
+      n_counted_col     = n_counted_col,
+      n_interviewed_col = n_interviewed_col
     )
   }
 
@@ -1530,37 +1783,64 @@ add_interviews <- function(design, interviews,
     suffix = c("", "_cal")
   )
 
-  # Bus-route: join pi_i from sampling frame and compute expansion factor
+  # Bus-route / ice: attach pi_i and compute expansion factor
   if (!is.null(design$bus_route)) {
     br <- design$bus_route
-    site_col <- br$site_col
-    circuit_col <- br$circuit_col
     pi_i_col <- br$pi_i_col
 
-    # Extract site/circuit/pi_i lookup from sampling frame
-    sf_lookup <- br$data[, c(site_col, circuit_col, pi_i_col)]
+    if (identical(design$design_type, "ice")) {
+      # Ice: p_site = 1.0 always; pi_i = p_period (scalar or per-row from sampling frame)
+      # If ice has a scalar p_period, assign it uniformly; otherwise join from sampling frame
+      if (!is.null(design$ice$p_period_scalar)) {
+        interviews_joined[[pi_i_col]] <- design$ice$p_period_scalar
+      } else {
+        # Ice with a real sampling_frame: join .pi_i by the ice site column
+        site_col_ice <- br$site_col
+        circuit_col_ice <- br$circuit_col
+        sf_lookup_ice <- br$data[, c(site_col_ice, circuit_col_ice, pi_i_col)]
+        interviews_joined <- dplyr::left_join(
+          interviews_joined,
+          sf_lookup_ice,
+          by = stats::setNames(
+            c(site_col_ice, circuit_col_ice),
+            c(site_col_ice, circuit_col_ice)
+          )
+        )
+        unmatched_ice <- is.na(interviews_joined[[pi_i_col]])
+        if (any(unmatched_ice)) {
+          interviews_joined[[pi_i_col]][unmatched_ice] <- design$ice$p_period_scalar
+        }
+      }
+    } else {
+      # Standard bus-route: join pi_i from sampling frame by site + circuit
+      site_col <- br$site_col
+      circuit_col <- br$circuit_col
 
-    # Join pi_i to interview rows; unmatched rows will have NA in .pi_i
-    interviews_joined <- dplyr::left_join(
-      interviews_joined,
-      sf_lookup,
-      by = stats::setNames(
-        c(site_col, circuit_col),
-        c(site_col, circuit_col)
+      # Extract site/circuit/pi_i lookup from sampling frame
+      sf_lookup <- br$data[, c(site_col, circuit_col, pi_i_col)]
+
+      # Join pi_i to interview rows; unmatched rows will have NA in .pi_i
+      interviews_joined <- dplyr::left_join(
+        interviews_joined,
+        sf_lookup,
+        by = stats::setNames(
+          c(site_col, circuit_col),
+          c(site_col, circuit_col)
+        )
       )
-    )
 
-    # Error if any interview row could not be matched (NA in .pi_i after join)
-    unmatched <- is.na(interviews_joined[[pi_i_col]])
-    if (any(unmatched)) {
-      bad_rows <- interviews_joined[unmatched, c(site_col, circuit_col), drop = FALSE]
-      bad_combos <- unique(paste0(bad_rows[[site_col]], " / ", bad_rows[[circuit_col]])) # nolint: object_usage_linter
-      cli::cli_abort(c(
-        "Interview site+circuit combinations not found in sampling frame:",
-        stats::setNames(paste0("{.val ", bad_combos, "}"), rep("x", length(bad_combos))),
-        "i" = "Check that interview site and circuit values match the sampling frame exactly.",
-        "i" = "Sampling frame has {.val {nrow(br$data)}} site-circuit row{?s}."
-      ))
+      # Error if any interview row could not be matched (NA in .pi_i after join)
+      unmatched <- is.na(interviews_joined[[pi_i_col]])
+      if (any(unmatched)) {
+        bad_rows <- interviews_joined[unmatched, c(site_col, circuit_col), drop = FALSE]
+        bad_combos <- unique(paste0(bad_rows[[site_col]], " / ", bad_rows[[circuit_col]])) # nolint: object_usage_linter
+        cli::cli_abort(c(
+          "Interview site+circuit combinations not found in sampling frame:",
+          stats::setNames(paste0("{.val ", bad_combos, "}"), rep("x", length(bad_combos))),
+          "i" = "Check that interview site and circuit values match the sampling frame exactly.",
+          "i" = "Sampling frame has {.val {nrow(br$data)}} site-circuit row{?s}."
+        ))
+      }
     }
 
     # Compute expansion factor: n_counted / n_interviewed
@@ -1833,7 +2113,30 @@ format.creel_design <- function(x, ...) {
     }
 
     # Bus-Route section
-    if (!is.null(x$bus_route)) {
+    if (!is.null(x$ice)) {
+      cli::cli_h2("Ice Fishing Design")
+      cli::cli_text("Effort type: {.field {x$ice$effort_type}}")
+      if (!is.null(x$ice$p_period_scalar)) {
+        cli::cli_text("p_period (global): {.val {x$ice$p_period_scalar}}")
+      } else {
+        cli::cli_text("p_period column: {.field {x$ice$p_period_col}}")
+      }
+    }
+
+    if (!is.null(x$camera)) {
+      cli::cli_h2("Camera Survey Design")
+      cli::cli_text("Camera mode: {.val {x$camera$camera_mode}}")
+    }
+
+    if (!is.null(x$aerial)) {
+      cli::cli_h2("Aerial Survey Design")
+      cli::cli_text("Hours open (h_open): {.field {x$aerial$h_open}}")
+      if (!is.null(x$aerial$visibility_correction)) {
+        cli::cli_text("Visibility correction: {.field {x$aerial$visibility_correction}}")
+      }
+    }
+
+    if (!is.null(x$bus_route) && !identical(x$design_type, "ice")) {
       br <- x$bus_route$data
       site_col <- x$bus_route$site_col # nolint: object_usage_linter
       circ_col <- x$bus_route$circuit_col # nolint: object_usage_linter
@@ -2502,6 +2805,52 @@ validate_br_interviews_tier3 <- function(interviews, design,
 }
 
 
+#' Validate interview data for ice designs (Tier 3)
+#'
+#' Checks that n_counted and n_interviewed columns are both provided for an
+#' ice design. Site/circuit join-key checks are skipped (ice has no sampling
+#' frame join requirement).
+#'
+#' @param n_counted_col Character name of n_counted column, or NULL
+#' @param n_interviewed_col Character name of n_interviewed column, or NULL
+#'
+#' @return invisible(NULL) on success; aborts on validation failure
+#'
+#' @keywords internal
+#' @noRd
+validate_ice_interviews_tier3 <- function(n_counted_col, n_interviewed_col) {
+  collection <- checkmate::makeAssertCollection()
+
+  if (is.null(n_counted_col)) {
+    collection$push(
+      paste0(
+        "n_counted is required for ice designs. ",
+        "Specify the column containing the count of all observed anglers."
+      )
+    )
+  }
+  if (is.null(n_interviewed_col)) {
+    collection$push(
+      paste0(
+        "n_interviewed is required for ice designs. ",
+        "Specify the column containing the count of anglers interviewed."
+      )
+    )
+  }
+
+  if (!collection$isEmpty()) {
+    msgs <- collection$getMessages() # nolint: object_usage_linter
+    cli::cli_abort(c(
+      "Ice design interview validation failed (Tier 3):",
+      stats::setNames(paste0("{.var ", msgs, "}"), rep("x", length(msgs))),
+      "i" = "Ice designs require enumeration counts to compute the expansion factor."
+    ))
+  }
+
+  invisible(NULL)
+}
+
+
 #' Attach species-level catch data to a creel design
 #'
 #' Attaches a long-format data frame of species-level catch data to a
@@ -2957,4 +3306,82 @@ add_lengths <- function(design, data,
   new_design$lengths_release_format <- release_format
   class(new_design) <- "creel_design"
   new_design
+}
+
+# Camera preprocessing ----
+
+#' Preprocess camera ingress-egress timestamps to daily effort hours
+#'
+#' @title Preprocess camera ingress-egress timestamps
+#'
+#' @description
+#' Converts paired ingress and egress POSIXct timestamps into a data frame of
+#' daily angler-effort hours, suitable for passing to \code{\link{add_counts}}.
+#' Duration for each pair is computed as
+#' \code{difftime(egress_col, ingress_col, units = "hours")}. Pairs where
+#' egress precedes ingress (negative duration) are flagged with
+#' \code{\link[cli]{cli_warn}} and excluded from the daily sum (set to
+#' \code{NA}).
+#'
+#' @param timestamps A data frame containing the ingress-egress records.
+#' @param date_col Tidy selector for the date column (Date or POSIXct).
+#' @param ingress_col Tidy selector for the ingress timestamp column (POSIXct).
+#' @param egress_col Tidy selector for the egress timestamp column (POSIXct).
+#'
+#' @return A data frame with columns \code{date} and \code{daily_effort_hours}
+#'   (one row per unique date, effort hours summed across all valid pairs for
+#'   that date).
+#'
+#' @export
+preprocess_camera_timestamps <- function(timestamps,
+                                         date_col,
+                                         ingress_col,
+                                         egress_col) {
+  if (!is.data.frame(timestamps)) {
+    cli::cli_abort(c(
+      "{.arg timestamps} must be a data frame.",
+      "x" = "Got {.cls {class(timestamps)[1]}}."
+    ))
+  }
+
+  date_name <- rlang::as_name(rlang::enquo(date_col))
+  ingress_name <- rlang::as_name(rlang::enquo(ingress_col))
+  egress_name <- rlang::as_name(rlang::enquo(egress_col))
+
+  missing_cols <- setdiff(
+    c(date_name, ingress_name, egress_name),
+    names(timestamps)
+  )
+  if (length(missing_cols) > 0L) {
+    cli::cli_abort(c(
+      "Required columns not found in {.arg timestamps}.",
+      "x" = "Missing: {.field {missing_cols}}."
+    ))
+  }
+
+  duration_hours <- as.numeric(
+    difftime(timestamps[[egress_name]], timestamps[[ingress_name]], units = "hours")
+  )
+
+  neg <- !is.na(duration_hours) & duration_hours < 0
+  if (any(neg, na.rm = TRUE)) {
+    n_neg <- sum(neg) # nolint: object_usage_linter
+    cli::cli_warn(c(
+      "{n_neg} ingress-egress pair{?s} had negative duration and {?was/were} excluded.",
+      "i" = "Negative durations occur when egress precedes ingress.",
+      "i" = "Affected rows have been set to {.val NA} and excluded from the daily sum."
+    ))
+    duration_hours[neg] <- NA_real_
+  }
+
+  agg <- stats::aggregate(
+    duration_hours ~ date,
+    data = data.frame(
+      date = timestamps[[date_name]],
+      duration_hours = duration_hours
+    ),
+    FUN = function(x) sum(x, na.rm = TRUE)
+  )
+  names(agg) <- c("date", "daily_effort_hours")
+  agg
 }

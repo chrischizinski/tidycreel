@@ -41,8 +41,8 @@ Supports all fish (\code{type = "catch"}), harvested fish
 \strong{Interview-based summary, not pressure-weighted.} This function
 tabulates raw length measurements from sampled interviews without applying
 survey weighting by sampling effort or effort stratum. For pressure-weighted
-extrapolated estimates use \code{\link{estimate_cpue}} or
-\code{\link{estimate_harvest}}.
+extrapolated estimates use \code{\link{estimate_catch_rate}} or
+\code{\link{estimate_harvest_rate}}.
 
 \strong{Pre-binned release format:} When length data was attached with
 \code{release_format = "binned"}, release rows have character bin labels

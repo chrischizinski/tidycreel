@@ -36,6 +36,9 @@ inst/doc
 .planning/
 .planning-legacy-work/
 
+# pkgdown built site (deployed via gh-pages, not committed to main)
+docs/
+
 # Logs
 *.log
 .worktrees/

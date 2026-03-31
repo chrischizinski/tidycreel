@@ -34,6 +34,102 @@ make_test_design_with_counts <- function() {
   add_counts(design, counts) # nolint: object_usage_linter
 }
 
+#' Create 3-section creel_design with counts (SECT fixtures)
+#'
+#' Produces a creel_design with sections "North", "Central", "South".
+#' Each section has counts across both "weekday" and "weekend" strata
+#' with 2 PSUs (dates) per stratum per section (12 dates total, 36 count rows).
+make_3section_design_with_counts <- function() { # nolint: object_length_linter
+  # 12-date calendar: 6 weekday + 6 weekend (2 per stratum per section)
+  cal <- data.frame(
+    date = as.Date(c(
+      "2024-06-03", "2024-06-04", "2024-06-05", "2024-06-06",
+      "2024-06-07", "2024-06-10",
+      "2024-06-08", "2024-06-09", "2024-06-14", "2024-06-15",
+      "2024-06-16", "2024-06-21"
+    )),
+    day_type = c(
+      "weekday", "weekday", "weekday", "weekday", "weekday", "weekday",
+      "weekend", "weekend", "weekend", "weekend", "weekend", "weekend"
+    ),
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+
+  sections_df <- data.frame(
+    section = c("North", "Central", "South"),
+    stringsAsFactors = FALSE
+  )
+  design <- add_sections(design, sections_df, section_col = section) # nolint: object_usage_linter
+
+  # 36-row counts: each of the 12 dates repeated for each of 3 sections
+  # Effort values vary materially across sections
+  counts <- data.frame(
+    date = rep(cal$date, times = 3),
+    day_type = rep(cal$day_type, times = 3),
+    section = rep(c("North", "Central", "South"), each = nrow(cal)),
+    effort_hours = c(
+      # North: weekday ~15-25, weekend ~20-28
+      20, 22, 18, 25, 15, 24,
+      21, 26, 23, 28, 20, 27,
+      # Central: weekday ~30-45, weekend ~35-48
+      35, 38, 32, 42, 30, 45,
+      37, 44, 40, 48, 35, 46,
+      # South: weekday ~5-12, weekend ~6-13
+      8, 10, 5, 12, 6, 11,
+      7, 9, 6, 13, 8, 10
+    ),
+    stringsAsFactors = FALSE
+  )
+
+  suppressWarnings(add_counts(design, counts)) # nolint: object_usage_linter
+}
+
+#' Create 3-section creel_design with "South" section missing from counts
+#'
+#' Registered sections: "North", "Central", "South".
+#' Counts data contains only "North" and "Central" rows — "South" is absent.
+make_section_design_with_missing_section <- function() { # nolint: object_length_linter
+  cal <- data.frame(
+    date = as.Date(c(
+      "2024-06-03", "2024-06-04", "2024-06-05", "2024-06-06",
+      "2024-06-07", "2024-06-10",
+      "2024-06-08", "2024-06-09", "2024-06-14", "2024-06-15",
+      "2024-06-16", "2024-06-21"
+    )),
+    day_type = c(
+      "weekday", "weekday", "weekday", "weekday", "weekday", "weekday",
+      "weekend", "weekend", "weekend", "weekend", "weekend", "weekend"
+    ),
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+
+  sections_df <- data.frame(
+    section = c("North", "Central", "South"),
+    stringsAsFactors = FALSE
+  )
+  design <- add_sections(design, sections_df, section_col = section) # nolint: object_usage_linter
+
+  # Counts for North and Central only — South is absent
+  counts <- data.frame(
+    date = rep(cal$date, times = 2),
+    day_type = rep(cal$day_type, times = 2),
+    section = rep(c("North", "Central"), each = nrow(cal)),
+    effort_hours = c(
+      # North
+      20, 22, 18, 25, 15, 24,
+      21, 26, 23, 28, 20, 27,
+      # Central
+      35, 38, 32, 42, 30, 45,
+      37, 44, 40, 48, 35, 46
+    ),
+    stringsAsFactors = FALSE
+  )
+
+  suppressWarnings(add_counts(design, counts)) # nolint: object_usage_linter
+}
+
 # Basic behavior tests ----
 
 test_that("estimate_effort returns creel_estimates class object", {
@@ -1197,4 +1293,387 @@ test_that("progressive Ê_d computation matches Pope et al. worked example (EFF-
   # se_between and se_within always present (Phase 36 guarantee)
   expect_true("se_between" %in% names(result$estimates))
   expect_true("se_within" %in% names(result$estimates))
+})
+
+# Section effort estimation tests (SECT-01 through SECT-05) ----
+
+test_that("SECT-01: estimate_effort on 3-section design returns 4-row tibble with section column", {
+  design <- make_3section_design_with_counts()
+  result <- suppressWarnings(estimate_effort(
+    design, # nolint: object_usage_linter
+    aggregate_sections = TRUE,
+    method = "correlated",
+    missing_sections = "warn"
+  ))
+  expect_equal(nrow(result$estimates), 4L)
+  expect_true("section" %in% names(result$estimates))
+  expect_true(".lake_total" %in% result$estimates$section)
+})
+
+test_that("SECT-02a: .lake_total SE from method='correlated' differs from naive sqrt(sum(section_se^2))", {
+  design <- make_3section_design_with_counts()
+  result_corr <- suppressWarnings(estimate_effort(
+    design, # nolint: object_usage_linter
+    aggregate_sections = TRUE,
+    method = "correlated"
+  ))
+  # Extract section rows (not .lake_total) and compute naive SE
+  section_rows <- result_corr$estimates[result_corr$estimates$section != ".lake_total", ]
+  naive_se <- sqrt(sum(section_rows$se^2))
+  lake_se_corr <- result_corr$estimates$se[result_corr$estimates$section == ".lake_total"]
+  # Correlated SE != naive (cross-section covariance adjusts the total)
+  expect_false(isTRUE(all.equal(lake_se_corr, naive_se, tolerance = 1e-10)))
+})
+
+test_that("SECT-02b: method='independent' SE equals Cochran 5.2 sqrt(sum(section_se^2))", {
+  design <- make_3section_design_with_counts()
+  result_ind <- suppressWarnings(estimate_effort(
+    design, # nolint: object_usage_linter
+    aggregate_sections = TRUE,
+    method = "independent"
+  ))
+  section_rows <- result_ind$estimates[result_ind$estimates$section != ".lake_total", ]
+  naive_se <- sqrt(sum(section_rows$se^2))
+  lake_se_ind <- result_ind$estimates$se[result_ind$estimates$section == ".lake_total"]
+  expect_equal(lake_se_ind, naive_se, tolerance = 1e-10)
+})
+
+test_that("SECT-03a: missing section produces NA row with data_available=FALSE and cli_warn", {
+  design <- make_section_design_with_missing_section()
+  # Capture warnings: outer handler sees all; muffles survey pkg warnings
+  warns <- character(0)
+  result <- withCallingHandlers(
+    estimate_effort( # nolint: object_usage_linter
+      design,
+      aggregate_sections = TRUE,
+      missing_sections = "warn"
+    ),
+    warning = function(w) {
+      warns <<- c(warns, conditionMessage(w))
+      # Muffle all — we only care about the captured messages
+      invokeRestart("muffleWarning")
+    }
+  )
+  # Confirm cli_warn fired for missing section
+  expect_true(any(grepl("South|missing|section", warns, ignore.case = TRUE)))
+  south_row <- result$estimates[result$estimates$section == "South", ]
+  expect_equal(nrow(south_row), 1L)
+  expect_true(is.na(south_row$estimate))
+  expect_false(south_row$data_available)
+})
+
+test_that("SECT-03b: missing_sections='error' aborts with cli_abort when section absent", {
+  design <- make_section_design_with_missing_section()
+  expect_error(
+    estimate_effort( # nolint: object_usage_linter
+      design,
+      missing_sections = "error"
+    ),
+    regexp = "South|missing|section"
+  )
+})
+
+test_that("SECT-04: non-sectioned design produces identical results (zero regression)", {
+  design <- make_test_design_with_counts()
+  result <- suppressWarnings(estimate_effort(design)) # nolint: object_usage_linter
+  # Byte-for-byte: method = "total", no section column
+  expect_equal(result$method, "total")
+  expect_false("section" %in% names(result$estimates))
+  expect_true(is.numeric(result$estimates$estimate))
+  expect_true(is.numeric(result$estimates$se))
+})
+
+test_that("SECT-05: prop_of_lake_total column present and sums to 1.0 across present sections", {
+  design <- make_3section_design_with_counts()
+  result <- suppressWarnings(estimate_effort(
+    design, # nolint: object_usage_linter
+    aggregate_sections = TRUE,
+    method = "correlated"
+  ))
+  expect_true("prop_of_lake_total" %in% names(result$estimates))
+  # Present section rows only (not .lake_total) should sum to 1.0
+  section_rows <- result$estimates[result$estimates$section != ".lake_total", ]
+  expect_equal(sum(section_rows$prop_of_lake_total), 1.0, tolerance = 1e-6)
+})
+
+# ICE dispatch tests (ICE-01, ICE-02, ICE-03) ----
+
+make_ice_design <- function(effort_type = "time_on_ice") {
+  cal <- data.frame(
+    date = as.Date(c("2024-01-10", "2024-01-11", "2024-01-12", "2024-01-13")),
+    day_type = c("weekday", "weekday", "weekend", "weekend"),
+    stringsAsFactors = FALSE
+  )
+  creel_design(cal, # nolint: object_usage_linter
+    date = date, strata = day_type, # nolint: object_usage_linter
+    survey_type = "ice",
+    effort_type = effort_type,
+    p_period = 0.5
+  )
+}
+
+make_ice_interviews <- function() {
+  data.frame(
+    date = as.Date(c("2024-01-10", "2024-01-11", "2024-01-12", "2024-01-13")),
+    day_type = c("weekday", "weekday", "weekend", "weekend"),
+    hours_fished = c(2.0, 1.5, 3.0, 2.5),
+    catch_total = c(1L, 2L, 0L, 3L),
+    trip_status = c("complete", "complete", "complete", "complete"),
+    n_counted = c(5L, 8L, 10L, 7L),
+    n_interviewed = c(3L, 4L, 5L, 4L),
+    shelter_mode = c("sheltered", "open", "sheltered", "open"),
+    stringsAsFactors = FALSE
+  )
+}
+
+test_that("ICE-01: estimate_effort on ice design dispatches without error", {
+  design <- make_ice_design()
+  d <- suppressMessages(add_interviews(design, make_ice_interviews(),
+    catch = catch_total, # nolint: object_usage_linter
+    effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status, # nolint: object_usage_linter
+    n_counted = n_counted, # nolint: object_usage_linter
+    n_interviewed = n_interviewed # nolint: object_usage_linter
+  ))
+  result <- suppressWarnings(estimate_effort(d))
+  expect_s3_class(result, "creel_estimates")
+})
+
+test_that("ICE-01: estimate_effort on ice(time_on_ice) returns column total_effort_hr_on_ice", {
+  design <- make_ice_design(effort_type = "time_on_ice")
+  d <- suppressMessages(add_interviews(design, make_ice_interviews(),
+    catch = catch_total, # nolint: object_usage_linter
+    effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status, # nolint: object_usage_linter
+    n_counted = n_counted, # nolint: object_usage_linter
+    n_interviewed = n_interviewed # nolint: object_usage_linter
+  ))
+  result <- suppressWarnings(estimate_effort(d))
+  expect_true("total_effort_hr_on_ice" %in% names(result$estimates))
+})
+
+test_that("ICE-02: estimate_effort on ice(active_fishing_time) returns column total_effort_hr_active", {
+  design <- make_ice_design(effort_type = "active_fishing_time")
+  d <- suppressMessages(add_interviews(design, make_ice_interviews(),
+    catch = catch_total, # nolint: object_usage_linter
+    effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status, # nolint: object_usage_linter
+    n_counted = n_counted, # nolint: object_usage_linter
+    n_interviewed = n_interviewed # nolint: object_usage_linter
+  ))
+  result <- suppressWarnings(estimate_effort(d))
+  expect_true("total_effort_hr_active" %in% names(result$estimates))
+})
+
+test_that("ICE-03: estimate_effort(by=shelter_mode) on ice design returns grouped estimates", {
+  design <- make_ice_design()
+  d <- suppressMessages(add_interviews(design, make_ice_interviews(),
+    catch = catch_total, # nolint: object_usage_linter
+    effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status, # nolint: object_usage_linter
+    n_counted = n_counted, # nolint: object_usage_linter
+    n_interviewed = n_interviewed # nolint: object_usage_linter
+  ))
+  result <- suppressWarnings(estimate_effort(d, by = shelter_mode)) # nolint: object_usage_linter
+  expect_true("shelter_mode" %in% names(result$estimates))
+  expect_gte(nrow(result$estimates), 2L)
+})
+
+# Phase 46: Camera effort dispatch tests (CAM-01, CAM-02, CAM-03) ----
+
+make_cam_effort_cal <- function() {
+  data.frame(
+    date = as.Date(c(
+      "2024-06-01", "2024-06-02", "2024-06-03",
+      "2024-06-04", "2024-06-05", "2024-06-06"
+    )),
+    day_type = c("weekday", "weekday", "weekday", "weekend", "weekend", "weekend"),
+    stringsAsFactors = FALSE
+  )
+}
+
+make_cam_counts <- function() {
+  data.frame(
+    date = as.Date(c(
+      "2024-06-01", "2024-06-02", "2024-06-03",
+      "2024-06-04", "2024-06-05", "2024-06-06"
+    )),
+    day_type = c("weekday", "weekday", "weekday", "weekend", "weekend", "weekend"),
+    angler_count = c(12L, 15L, 10L, 20L, 18L, 14L),
+    stringsAsFactors = FALSE
+  )
+}
+
+make_cam_design_counter <- function() {
+  creel_design(make_cam_effort_cal(), # nolint: object_usage_linter
+    date = date, strata = day_type, # nolint: object_usage_linter
+    survey_type = "camera",
+    camera_mode = "counter"
+  )
+}
+
+# CAM-01: counter mode effort estimate ----
+
+test_that("CAM-01: counter-mode camera + add_counts() + estimate_effort() returns valid estimate", {
+  design <- make_cam_design_counter()
+  d <- add_counts(design, make_cam_counts()) # nolint: object_usage_linter
+  result <- suppressWarnings(estimate_effort(d))
+  expect_s3_class(result, "creel_estimates")
+  expect_true(is.numeric(result$estimates$estimate))
+  expect_false(any(is.na(result$estimates$estimate)))
+})
+
+# CAM-02: ingress-egress mode effort estimate ----
+
+make_cam_daily_effort <- function() {
+  data.frame(
+    date = as.Date(c(
+      "2024-06-01", "2024-06-02", "2024-06-03",
+      "2024-06-04", "2024-06-05", "2024-06-06"
+    )),
+    day_type = c("weekday", "weekday", "weekday", "weekend", "weekend", "weekend"),
+    daily_effort_hours = c(4.0, 5.5, 3.0, 6.0, 4.5, 5.0),
+    stringsAsFactors = FALSE
+  )
+}
+
+test_that("CAM-02: ingress-egress camera with preprocessed daily_effort_hours flows through estimate_effort()", {
+  design <- creel_design(make_cam_effort_cal(), # nolint: object_usage_linter
+    date = date, strata = day_type, # nolint: object_usage_linter
+    survey_type = "camera",
+    camera_mode = "ingress_egress"
+  )
+  daily_effort <- make_cam_daily_effort()
+  d <- add_counts(design, daily_effort) # nolint: object_usage_linter
+  result <- suppressWarnings(estimate_effort(d))
+  expect_s3_class(result, "creel_estimates")
+  expect_true(is.numeric(result$estimates$estimate))
+})
+
+# CAM-03: camera_status gap handling ----
+
+make_cam_counts_with_gap <- function() {
+  data.frame(
+    date = as.Date(c(
+      "2024-06-01", "2024-06-02", "2024-06-03",
+      "2024-06-04", "2024-06-05", "2024-06-06"
+    )),
+    day_type = c("weekday", "weekday", "weekday", "weekend", "weekend", "weekend"),
+    angler_count = c(12L, NA_integer_, 10L, 20L, 18L, 14L),
+    camera_status = c(
+      "operational", "offline", "operational",
+      "operational", "operational", "operational"
+    ),
+    stringsAsFactors = FALSE
+  )
+}
+
+test_that("CAM-03: filtering camera_status == 'operational' before add_counts() gives valid estimate", {
+  design <- make_cam_design_counter()
+  counts_gap <- make_cam_counts_with_gap()
+  operational <- counts_gap[counts_gap$camera_status == "operational", ]
+  d <- add_counts(design, operational) # nolint: object_usage_linter
+  result <- suppressWarnings(estimate_effort(d))
+  expect_s3_class(result, "creel_estimates")
+  expect_true(is.numeric(result$estimates$estimate))
+})
+
+# Phase 47: Aerial effort estimation ----
+
+make_aerial_design <- function(h_open = 14, visibility_correction = NULL) {
+  cal <- data.frame(
+    date = as.Date(c(
+      "2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04",
+      "2024-06-08", "2024-06-09", "2024-06-15", "2024-06-16"
+    )),
+    day_type = rep(c("weekday", "weekend"), each = 4L),
+    stringsAsFactors = FALSE
+  )
+  creel_design(cal, # nolint: object_usage_linter
+    date = date,
+    strata = day_type, # nolint: object_usage_linter
+    survey_type = "aerial",
+    h_open = h_open,
+    visibility_correction = visibility_correction
+  )
+}
+
+make_aerial_counts <- function() {
+  data.frame(
+    date = as.Date(c(
+      "2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04",
+      "2024-06-08", "2024-06-09", "2024-06-15", "2024-06-16"
+    )),
+    day_type = rep(c("weekday", "weekend"), each = 4L),
+    n_counted = c(5L, 8L, 6L, 7L, 12L, 15L, 11L, 13L),
+    stringsAsFactors = FALSE
+  )
+}
+
+describe("Phase 47: Aerial effort", {
+  it("AIR-01: estimate_effort() on aerial design returns creel_estimates", {
+    d <- add_counts(make_aerial_design(), make_aerial_counts()) # nolint: object_usage_linter
+    result <- suppressWarnings(estimate_effort(d))
+    expect_s3_class(result, "creel_estimates")
+    expect_true(is.numeric(result$estimates$estimate))
+  })
+
+  it("AIR-01: effort equals svytotal(counts) x (h_open / v) — no interview needed", {
+    d <- add_counts(make_aerial_design(h_open = 14), make_aerial_counts()) # nolint: object_usage_linter
+    result <- suppressWarnings(estimate_effort(d))
+    # Manual svytotal
+    svy_raw <- suppressWarnings(
+      survey::svytotal(~n_counted, d$survey)
+    )
+    expected <- as.numeric(coef(svy_raw)) * (14 / 1.0)
+    expect_equal(result$estimates$estimate, expected, tolerance = 1e-9)
+  })
+
+  it("AIR-01: no counts guard — estimate_effort() before add_counts() aborts", {
+    expect_error(
+      estimate_effort(make_aerial_design()),
+      regexp = "count|add_counts"
+    )
+  })
+
+  it("AIR-02: SE is non-zero with multiple count observations", {
+    d <- add_counts(make_aerial_design(), make_aerial_counts()) # nolint: object_usage_linter
+    result <- suppressWarnings(estimate_effort(d))
+    expect_gt(result$estimates$se, 0)
+  })
+
+  it("AIR-02: SE equals survey::SE(svytotal(counts)) x (h_open/v)", {
+    d <- add_counts(make_aerial_design(h_open = 14), make_aerial_counts()) # nolint: object_usage_linter
+    result <- suppressWarnings(estimate_effort(d))
+    svy_raw <- suppressWarnings(
+      survey::svytotal(~n_counted, d$survey)
+    )
+    se_between_expected <- as.numeric(survey::SE(svy_raw)) * (14 / 1.0)
+    # se_between is the between-day component; total se may include within-day variance
+    expect_equal(result$estimates$se_between, se_between_expected, tolerance = 1e-9)
+  })
+
+  it("AIR-03: visibility_correction = 0.85 produces effort / 0.85 relative to v = 1", {
+    d_no_v <- add_counts(make_aerial_design(h_open = 14, visibility_correction = NULL), make_aerial_counts()) # nolint: object_usage_linter
+    d_v085 <- add_counts(make_aerial_design(h_open = 14, visibility_correction = 0.85), make_aerial_counts()) # nolint: object_usage_linter
+    result_no_v <- suppressWarnings(estimate_effort(d_no_v))
+    result_v085 <- suppressWarnings(estimate_effort(d_v085))
+    expect_equal(
+      result_v085$estimates$estimate,
+      result_no_v$estimates$estimate / 0.85,
+      tolerance = 1e-9
+    )
+  })
+
+  it("AIR-03: SE with visibility_correction = 0.85 equals SE without correction / 0.85", {
+    d_no_v <- add_counts(make_aerial_design(h_open = 14, visibility_correction = NULL), make_aerial_counts()) # nolint: object_usage_linter
+    d_v085 <- add_counts(make_aerial_design(h_open = 14, visibility_correction = 0.85), make_aerial_counts()) # nolint: object_usage_linter
+    result_no_v <- suppressWarnings(estimate_effort(d_no_v))
+    result_v085 <- suppressWarnings(estimate_effort(d_v085))
+    expect_equal(
+      result_v085$estimates$se_between,
+      result_no_v$estimates$se_between / 0.85,
+      tolerance = 1e-9
+    )
+  })
 })

@@ -166,7 +166,7 @@ harvest substituted for effort. Both are HT totals over the same sampling design
 - `estimate_harvest_br()` in `R/creel-estimates-bus-route.R`, lines 218–470:
   computes `.h_i = harvest * .expansion` and `.contribution = .h_i / .pi_i`, then
   sums via `survey::svytotal(~.contribution, ...)`.
-- `estimate_harvest()` in `R/creel-estimates.R`: dispatches to `estimate_harvest_br()`
+- `estimate_harvest_rate()` in `R/creel-estimates.R`: dispatches to `estimate_harvest_br()`
   when `design$design_type == "bus_route"`.
 
 ---

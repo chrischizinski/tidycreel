@@ -31,7 +31,7 @@ survey-design weighting.
 **Important caveat:** All unextrapolated functions are *interview-weighted*, not
 *pressure-weighted*. A day with many anglers and few interviews has the same weight
 as a day with few anglers and many interviews. For pressure-weighted, design-correct
-estimates, use `estimate_cpue()`, `estimate_total_catch()`, and related functions
+estimates, use `estimate_catch_rate()`, `estimate_total_catch()`, and related functions
 described in the "Interview-Based Catch Estimation" vignette.
 
 ## Build the Design
@@ -217,7 +217,7 @@ estimator.
 ### Catch Per Unit Effort by Species
 
 ```{r cpue-species, message = FALSE}
-estimate_cpue(design, by = species)
+estimate_catch_rate(design, by = species)
 ```
 
 ### Total Catch by Species
