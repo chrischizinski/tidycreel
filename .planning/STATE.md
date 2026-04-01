@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v0.1
-milestone_name: milestone
-status: planning
-stopped_at: Completed 55-01-PLAN.md (visual verification approved)
-last_updated: "2026-03-31T17:21:58.857Z"
-last_activity: 2026-03-24 — Roadmap created; 5 phases (52-56), 20 requirements mapped 20/20
+milestone: v1.1.0
+milestone_name: Planning Suite Completeness & Community Health
+status: in_progress
+stopped_at: Defining requirements
+last_updated: "2026-04-01T00:00:00.000Z"
+last_activity: 2026-04-01 — Milestone v1.1.0 started
 progress:
-  total_phases: 5
-  completed_phases: 4
-  total_plans: 8
-  completed_plans: 7
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
   percent: 0
 ---
 
@@ -18,17 +18,17 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-24)
+See: .planning/PROJECT.md (updated 2026-03-31)
 
 **Core value:** Creel biologists can analyze survey data using creel vocabulary without understanding survey package internals
-**Current focus:** v1.0.0 — Package Website (Phase 52: Hex Sticker)
+**Current focus:** v1.1.0 Planning Suite Completeness & Community Health — defining requirements
 
 ## Current Position
 
-Phase: 52 of 56 (Hex Sticker)
+Phase: Not started (defining requirements)
 Plan: —
-Status: Ready to plan
-Last activity: 2026-03-24 — Roadmap created; 5 phases (52-56), 20 requirements mapped 20/20
+Status: Defining requirements
+Last activity: 2026-04-01 — Milestone v1.1.0 started
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -45,26 +45,13 @@ Progress: [░░░░░░░░░░] 0%
 | v0.7.0 | 39-43 | 9/9 | Complete | 2026-03-15 |
 | v0.8.0 | 44-47 | 11/11 | Complete | 2026-03-22 |
 | v0.9.0 | 48-51 | 10/10 | Complete | 2026-03-24 |
-| v1.0.0 | 52-56 | TBD | In Progress | — |
-| Phase 53-foundation-theme P01 | 1 | 2 tasks | 2 files |
-| Phase 54-home-page-reference P02 | 2 | 1 tasks | 1 files |
-| Phase 55-navigation-articles P01 | 10 | 2 tasks | 1 files |
+| v1.0.0 | 52-56 | 8/8 | Complete | 2026-03-31 |
 
 ## Accumulated Context
 
 ### Decisions
 
-- This milestone adds zero R functions and zero tests — all work is infrastructure (pkgdown, hexSticker, GitHub Actions)
-- `pkgdown` goes in DESCRIPTION `Suggests` (never `Imports`) — build tool, not runtime dependency
-- `docs/` excluded from `main` branch via `.gitignore`; deploy target is `gh-pages` orphan branch
-- Brand color palette must match between sticker (`h_fill` in `inst/hex/sticker.R`) and site theme (`template.bslib.primary` in `_pkgdown.yml`) — set Phase 52 first so the value is established before Phase 53 reads it
-- [Phase 53-foundation-theme]: pkgdown in DESCRIPTION Suggests (not Imports); docs/ excluded via .gitignore; Pages URL appended to DESCRIPTION URL field for check_pkgdown() URL validation
-- [Phase 54-home-page-reference]: pkgdown deploy badge added with grey/no-status acceptable — workflow (pkgdown.yaml) does not exist until Phase 56
-- [Phase 54-home-page-reference]: estimate_cpue() removed from README examples; replaced with estimate_catch_rate() which is an actual exported function
-- [Phase 54-home-page-reference]: S3 methods captured with starts_with() selectors in title: internal section to suppress from public reference index
-- [Phase 55-navigation-articles]: tidycreel.Rmd auto-promoted via intro component; placed in index-only Get Started section to avoid duplicate navbar entry
-- [Phase 55-navigation-articles]: bus-route-equations placed in index-only Reference & Equations section — technical derivation, not a workflow guide
-- [Phase 55-navigation-articles]: news: block uses one_page: true so all changelog entries appear on a single scrollable page without CRAN dates
+(v1.0.0 decisions archived to PROJECT.md Key Decisions table)
 
 ### Pending Todos
 
@@ -76,6 +63,6 @@ Progress: [░░░░░░░░░░] 0%
 
 ## Session Continuity
 
-Last session: 2026-03-30T16:17:09.497Z
-Stopped at: Completed 55-01-PLAN.md (visual verification approved)
+Last session: 2026-03-31T22:00:00.000Z
+Stopped at: v1.0.0 milestone archived; ready for `/gsd:new-milestone`
 Resume file: None

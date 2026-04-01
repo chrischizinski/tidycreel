@@ -46,7 +46,7 @@ Requirements for the Package Website milestone. Each maps to roadmap phases.
 ### Deployment (DEPLOY)
 
 - [ ] **DEPLOY-01**: `.github/workflows/pkgdown.yaml` auto-builds and deploys on push to `main`
-- [ ] **DEPLOY-02**: `gh-pages` orphan branch initialized and GitHub Pages configured to serve from it
+- [x] **DEPLOY-02**: `gh-pages` orphan branch initialized and GitHub Pages configured to serve from it
 - [ ] **DEPLOY-03**: PRs trigger a build (no deploy) to catch `_pkgdown.yml` errors before merge
 
 ## Future Requirements
@@ -92,7 +92,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | NAV-02 | Phase 55 | Complete |
 | NAV-03 | Phase 55 | Complete |
 | DEPLOY-01 | Phase 56 | Pending |
-| DEPLOY-02 | Phase 56 | Pending |
+| DEPLOY-02 | Phase 56 | Complete |
 | DEPLOY-03 | Phase 56 | Pending |
 
 **Coverage:**

@@ -15,7 +15,8 @@ tidycreel v2 is a ground-up redesign providing domain translation for creel surv
 - ✅ **v0.7.0 Spatially Stratified Estimation** — Phases 39-43 (shipped 2026-03-15)
 - ✅ **v0.8.0 Non-Traditional Creel Designs** — Phases 44-47 (shipped 2026-03-22)
 - ✅ **v0.9.0 Survey Planning & Quality of Life** — Phases 48-51 (shipped 2026-03-24)
-- 🚧 **v1.0.0 Package Website** — Phases 52-56 (in progress)
+- ✅ **v1.0.0 Package Website** — Phases 52-56 (shipped 2026-03-31)
+- 🚧 **v1.1.0 Planning Suite Completeness & Community Health** — Phases 57-59 (in progress)
 
 ## Phases
 
@@ -175,100 +176,138 @@ See: [.planning/milestones/v0.9.0-ROADMAP.md](milestones/v0.9.0-ROADMAP.md)
 
 </details>
 
+<details>
+<summary>✅ v1.0.0 Package Website (Phases 52-56) — SHIPPED 2026-03-31</summary>
+
+**Milestone Goal:** Ship a polished, workflow-driven pkgdown website with a custom Bootstrap 5 theme and automated GitHub Pages deployment. No new R functions; all work is infrastructure and presentation.
+
+- [x] Phase 52: Hex Sticker (1/1 plan) — completed 2026-03-30
+- [x] Phase 53: Foundation & Theme (2/2 plans) — completed 2026-03-26
+- [x] Phase 54: Home Page & Reference (2/2 plans) — completed 2026-03-27
+- [x] Phase 55: Navigation & Articles (1/1 plan) — completed 2026-03-30
+- [x] Phase 56: Deployment (2/2 plans) — completed 2026-03-31
+
+**Delivered:** Bootstrap 5 pkgdown theme (bslib + Google Fonts + custom extra.css), polished README home page with badges and feature highlights, grouped reference index (46 exports + 15 datasets), workflow-driven navbar (5 sections), GitHub Actions CI/CD auto-deploy to GitHub Pages, live site at https://chrischizinski.github.io/tidycreel
+
+See: [.planning/milestones/v1.0.0-ROADMAP.md](milestones/v1.0.0-ROADMAP.md)
+
+</details>
+
 ---
 
-### v1.0.0 Package Website (In Progress)
+### 🚧 v1.1.0 Planning Suite Completeness & Community Health (In Progress)
 
-**Milestone Goal:** Ship a polished, workflow-driven pkgdown website with a refreshed hex sticker, custom Bootstrap 5 theme, and automated GitHub Pages deployment. No new R functions; all work is infrastructure and presentation.
+**Milestone Goal:** Extend the planning suite with within-day count time generation, close the v0.9.0 vignette gap, and add structured community contribution tooling so external contributors know how to engage with the project.
 
-- [x] **Phase 52: Hex Sticker** - Existing logo.png retained; sticker assets committed (skipped re-generation) (completed 2026-03-30)
-- [x] **Phase 53: Foundation & Theme** - pkgdown + Bootstrap 5 bslib configured; `pkgdown::check_pkgdown()` passes clean (completed 2026-03-26)
-- [x] **Phase 54: Home Page & Reference** - Polished README home page with badges and feature highlights; reference index fully grouped (completed 2026-03-26)
-- [x] **Phase 55: Navigation & Articles** - Workflow-driven navbar, reference link, and NEWS changelog wired into site structure (completed 2026-03-30)
-- [x] **Phase 56: Deployment** - GitHub Actions auto-deploys to gh-pages on push; PR builds catch errors before merge (completed 2026-03-31)
+- [ ] **Phase 57: Count Time Generator** — implement `generate_count_times()` with random/systematic/fixed strategies
+- [ ] **Phase 58: Survey Scheduling Vignette** — extend `survey-scheduling.Rmd` to cover the full pre/post-season workflow
+- [ ] **Phase 59: Community Health Files** — issue templates, `config.yml`, `CONTRIBUTING.md`, and Discussions config
 
 ## Phase Details
 
-### Phase 52: Hex Sticker
-**Goal**: A refreshed, professionally styled hex sticker is produced by a reproducible R script and committed as the package logo
-**Depends on**: Nothing (no pkgdown infrastructure needed to render a PNG)
-**Requirements**: STICKER-01, STICKER-02, STICKER-03
+### Phase 57: Count Time Generator
+**Goal**: Biologists can generate within-day count time windows programmatically as part of survey planning
+**Depends on**: Phase 56 (v1.0.0 complete)
+**Requirements**: PLAN-01
 **Success Criteria** (what must be TRUE):
-  1. `inst/hex/sticker.R` runs without error and writes `man/figures/logo.png`
-  2. The output PNG is 1200x1390px at 300dpi (retina quality)
-  3. The sticker color palette matches the brand colors used in the website theme (same primary hex value)
-  4. Running `source("inst/hex/sticker.R")` at a clean checkout re-creates an identical logo without manual steps
+  1. User can call `generate_count_times()` with a start time, end time, and strategy (random/systematic/fixed) and receive a data frame of count time windows
+  2. The returned data frame is compatible with `creel_schedule` and can be passed to `write_schedule()` for export
+  3. User receives an informative error if required arguments are missing or time window is invalid (end before start, zero-length window)
+  4. All three strategies (random, systematic, fixed) produce non-overlapping windows within the specified day bounds
 **Plans**: 1 plan
 Plans:
-- [ ] 52-01-PLAN.md — Asset acquisition, sticker.R authoring, and visual verification of logo.png
+- [ ] 57-01-PLAN.md — implement generate_count_times() with random/systematic/fixed strategies, tests, and documentation
 
-### Phase 53: Foundation & Theme
-**Goal**: pkgdown is installed and configured with a Bootstrap 5 custom theme so the site builds locally without warnings
-**Depends on**: Phase 52 (logo.png must exist at the standard path before pkgdown detects it)
-**Requirements**: FOUND-01, FOUND-02, FOUND-03, THEME-01, THEME-02, THEME-03
+### Phase 58: Survey Scheduling Vignette
+**Goal**: Biologists can read a single vignette that walks through the complete pre-season and post-season planning workflow without gaps
+**Depends on**: Phase 57
+**Requirements**: PLAN-02
 **Success Criteria** (what must be TRUE):
-  1. `pkgdown::check_pkgdown()` returns 0 warnings from the project root
-  2. `pkgdown::build_site()` completes and opens a site showing the hex logo in the navbar
-  3. The site uses a non-default professional color palette (primary brand color visible in links, buttons, and active nav state)
-  4. Body text, headings, and code blocks render in distinct Google Fonts (Lato / Raleway / Fira Code or equivalent)
-  5. `pkgdown` appears in DESCRIPTION `Suggests`; `docs/` is listed in `.gitignore`
-**Plans**: 2 plans
-Plans:
-- [ ] 53-01-PLAN.md — DESCRIPTION/gitignore prerequisites (pkgdown in Suggests, Pages URL, docs/ excluded)
-- [ ] 53-02-PLAN.md — _pkgdown.yml full configuration, pkgdown/extra.css structural CSS, visual verification
+  1. User can open `survey-scheduling.Rmd` and find a worked example of `generate_count_times()` showing all three strategy options
+  2. User can follow a continuous narrative from schedule generation through `validate_design()`, `check_completeness()`, and `season_summary()` without needing to consult other vignettes
+  3. Each planning function in the vignette includes reproducible example code that runs without errors using bundled example data
+**Plans**: TBD
 
-### Phase 54: Home Page & Reference
-**Goal**: The site home page compels a first-time visitor to install the package, and every exported function appears in a named reference group
-**Depends on**: Phase 53 (site must build before content can be evaluated)
-**Requirements**: HOME-01, HOME-02, HOME-03, REF-01, REF-02
+### Phase 59: Community Health Files
+**Goal**: External contributors can find clear guidance on how to report bugs, request features, ask questions, and submit pull requests
+**Depends on**: Phase 56 (v1.0.0 complete; no dependency on Phases 57-58)
+**Requirements**: COMM-01, COMM-02, COMM-03, COMM-04, COMM-05
 **Success Criteria** (what must be TRUE):
-  1. The home page displays R CMD check and pkgdown deploy status badges that link to the correct CI runs
-  2. A feature highlights section lists the five supported survey types and three to five key capabilities visible above the fold on a standard laptop screen
-  3. The reference index page groups functions under named topic headers (e.g., "Survey Design", "Estimation", "Planning & Diagnostics")
-  4. Every exported function appears in at least one reference group — `pkgdown::check_pkgdown()` reports no orphaned functions
-**Plans**: 2 plans
-Plans:
-- [ ] 54-01-PLAN.md — README.md home page polish (badges, Survey Types, Key Capabilities, corrected Quick Start) + extra.css hero/badge CSS
-- [ ] 54-02-PLAN.md — _pkgdown.yml reference block (all 46 exports + 15 datasets in named topic groups)
+  1. User filing a bug report on GitHub sees a form with a survey_type dropdown (instantaneous/bus_route/ice/camera/aerial), tidycreel version field, and expected vs. actual behavior sections (COMM-01)
+  2. User filing a feature request sees a form with problem statement, proposed solution, use case, and survey types affected fields (COMM-02)
+  3. User visiting the Issues tab sees a `config.yml` contact link directing how-to questions to GitHub Discussions and bugs/features to the appropriate form (COMM-03)
+  4. User wanting to contribute finds `CONTRIBUTING.md` at the repo root explaining issue filing, reprex writing, PR submission, and coding standards (COMM-04)
+  5. `CONTRIBUTING.md` and `config.yml` both reference GitHub Discussions as the canonical place for how-to questions; enabling Discussions in repository Settings requires a manual step by the repo owner (COMM-05)
+**Plans**: TBD
 
-### Phase 55: Navigation & Articles
-**Goal**: A visitor navigates the entire site using workflow-driven top-level links without hitting dead ends or blank pages
-**Depends on**: Phase 54 (home page and reference must exist before navbar links are wired to them)
-**Requirements**: NAV-01, NAV-02, NAV-03
-**Success Criteria** (what must be TRUE):
-  1. The top navbar contains at minimum four workflow article groups: Get Started, Survey Types, Estimation, and Reporting & Planning
-  2. A Reference link in the top navbar navigates directly to the grouped function index
-  3. A Changelog page renders NEWS.md as a browsable version history page on the site
-  4. Every navbar link resolves to an existing page — no 404s on a freshly built local site
-**Plans**: 1 plan
-Plans:
-- [ ] 55-01-PLAN.md — Replace stale navbar articles stub with native articles: sections, add news component, visual verification
-
-### Phase 56: Deployment
-**Goal**: Every push to `main` automatically rebuilds and deploys the site; every PR triggers a build-only check that catches `_pkgdown.yml` errors before merge
-**Depends on**: Phase 55 (complete site structure must exist before CI deploys something meaningful)
-**Requirements**: DEPLOY-01, DEPLOY-02, DEPLOY-03
-**Success Criteria** (what must be TRUE):
-  1. `.github/workflows/pkgdown.yaml` exists and a push to `main` triggers a successful site build and deploy visible at the GitHub Pages URL
-  2. The `gh-pages` orphan branch exists and GitHub Pages is configured to serve from it
-  3. Opening a pull request triggers a build-only workflow run (no deploy step) and the run either passes or reports a `_pkgdown.yml` error that would be invisible without CI
-**Plans**: 2 plans
-Plans:
-- [ ] 56-01-PLAN.md — Create pkgdown.yaml workflow (r-lib/actions v2 canonical template) and push to main to trigger first CI run
-- [ ] 56-02-PLAN.md — Activate GitHub Pages from gh-pages branch and verify live site returns HTTP 200
+---
 
 ## Progress
 
-**Execution Order:** 52 → 53 → 54 → 55 → 56
-
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 52. Hex Sticker | v1.0.0 | 1/1 | Complete (skipped) | 2026-03-30 |
-| 53. Foundation & Theme | 2/2 | Complete    | 2026-03-26 | - |
-| 54. Home Page & Reference | 2/2 | Complete    | 2026-03-27 | - |
-| 55. Navigation & Articles | 1/1 | Complete    | 2026-03-30 | - |
-| 56. Deployment | v1.0.0 | Complete    | 2026-03-31 | - |
+| 1. Package Foundation | v0.1.0 | 3/3 | Complete | 2026-02-09 |
+| 2. Design Constructor | v0.1.0 | 2/2 | Complete | 2026-02-09 |
+| 3. Count Data Integration | v0.1.0 | 2/2 | Complete | 2026-02-09 |
+| 4. Basic Effort Estimation | v0.1.0 | 2/2 | Complete | 2026-02-09 |
+| 5. Grouped Estimation | v0.1.0 | 1/1 | Complete | 2026-02-09 |
+| 6. Variance Methods | v0.1.0 | 2/2 | Complete | 2026-02-09 |
+| 7. Documentation & QA | v0.1.0 | 2/2 | Complete | 2026-02-09 |
+| 8. Interview Data Integration | v0.2.0 | 2/2 | Complete | 2026-02-11 |
+| 9. CPUE Estimation | v0.2.0 | 2/2 | Complete | 2026-02-11 |
+| 10. Catch and Harvest Estimation | v0.2.0 | 2/2 | Complete | 2026-02-11 |
+| 11. Total Catch Estimation | v0.2.0 | 2/2 | Complete | 2026-02-11 |
+| 12. Documentation and QA | v0.2.0 | 2/2 | Complete | 2026-02-11 |
+| 13. Trip Status Infrastructure | v0.3.0 | 2/2 | Complete | 2026-02-16 |
+| 14. Overnight Trip Duration | v0.3.0 | 1/1 | Complete | 2026-02-16 |
+| 15. Mean-of-Ratios Estimator Core | v0.3.0 | 2/2 | Complete | 2026-02-16 |
+| 16. Trip Truncation | v0.3.0 | 2/2 | Complete | 2026-02-16 |
+| 17. Complete Trip Defaults | v0.3.0 | 2/2 | Complete | 2026-02-16 |
+| 18. Sample Size Warnings | v0.3.0 | 2/2 | Complete | 2026-02-16 |
+| 19. Diagnostic Validation Framework | v0.3.0 | 2/2 | Complete | 2026-02-16 |
+| 20. Documentation & Guidance | v0.3.0 | 2/2 | Complete | 2026-02-16 |
+| 21. Bus-Route Design Foundation | v0.4.0 | 2/2 | Complete | 2026-02-17 |
+| 22. Inclusion Probability Calculation | v0.4.0 | 2/2 | Complete | 2026-02-17 |
+| 23. Data Integration | v0.4.0 | 2/2 | Complete | 2026-02-17 |
+| 24. Bus-Route Effort Estimation | v0.4.0 | 2/2 | Complete | 2026-02-24 |
+| 25. Bus-Route Harvest Estimation | v0.4.0 | 2/2 | Complete | 2026-02-28 |
+| 26. Primary Source Validation | v0.4.0 | 2/2 | Complete | 2026-02-25 |
+| 27. Documentation & Traceability | v0.4.0 | 2/2 | Complete | 2026-02-28 |
+| 28. Extended Interview Data Model | v0.5.0 | 2/2 | Complete | 2026-03-08 |
+| 28.1. Normalize CPUE/HPUE | v0.5.0 | 2/2 | Complete | 2026-03-08 |
+| 29. Species Catch Data | v0.5.0 | 3/3 | Complete | 2026-03-08 |
+| 30. Length Frequency Data | v0.5.0 | 1/1 | Complete | 2026-03-08 |
+| 31. Interview-Level Summaries | v0.5.0 | 2/2 | Complete | 2026-03-08 |
+| 32. CWS/HWS Rates | v0.5.0 | 2/2 | Complete | 2026-03-08 |
+| 33. Length Frequency Summaries | v0.5.0 | 2/2 | Complete | 2026-03-08 |
+| 34. Species-Level Estimates | v0.5.0 | 2/2 | Complete | 2026-03-08 |
+| 35. Documentation & QA | v0.5.0 | 2/2 | Complete | 2026-03-08 |
+| 36. Multiple Counts per Day | v0.6.0 | 2/2 | Complete | 2026-03-09 |
+| 37. Progressive Count Estimator | v0.6.0 | 1/1 | Complete | 2026-03-09 |
+| 38. Documentation & QA | v0.6.0 | 2/2 | Complete | 2026-03-09 |
+| 39. Section Effort Estimation | v0.7.0 | 3/3 | Complete | 2026-03-11 |
+| 40. Interview-Based Rate Estimators | v0.7.0 | 2/2 | Complete | 2026-03-11 |
+| 41. Product Estimators | v0.7.0 | 2/2 | Complete | 2026-03-14 |
+| 42. Example Data and Vignette | v0.7.0 | 2/2 | Complete | 2026-03-14 |
+| 43. v0.7.0 Tech Debt Cleanup | v0.7.0 | 1/1 | Complete | 2026-03-15 |
+| 44. Design Type Enum and Validation | v0.8.0 | 2/2 | Complete | 2026-03-15 |
+| 45. Ice Fishing Survey Support | v0.8.0 | 3/3 | Complete | 2026-03-16 |
+| 46. Remote Camera Survey Support | v0.8.0 | 3/3 | Complete | 2026-03-16 |
+| 47. Aerial Survey Support | v0.8.0 | 3/3 | Complete | 2026-03-22 |
+| 48. Schedule Generators | v0.9.0 | 3/3 | Complete | 2026-03-23 |
+| 49. Power and Sample Size | v0.9.0 | 2/2 | Complete | 2026-03-24 |
+| 50. Design Validator and Completeness Checker | v0.9.0 | 3/3 | Complete | 2026-03-24 |
+| 51. Season Summary | v0.9.0 | 2/2 | Complete | 2026-03-24 |
+| 52. Hex Sticker | v1.0.0 | 1/1 | Complete | 2026-03-30 |
+| 53. Foundation & Theme | v1.0.0 | 2/2 | Complete | 2026-03-26 |
+| 54. Home Page & Reference | v1.0.0 | 2/2 | Complete | 2026-03-27 |
+| 55. Navigation & Articles | v1.0.0 | 1/1 | Complete | 2026-03-30 |
+| 56. Deployment | v1.0.0 | 2/2 | Complete | 2026-03-31 |
+| 57. Count Time Generator | v1.1.0 | 0/1 | In progress | - |
+| 58. Survey Scheduling Vignette | v1.1.0 | 0/TBD | Not started | - |
+| 59. Community Health Files | v1.1.0 | 0/TBD | Not started | - |
 
 ---
-*Roadmap last updated: 2026-03-30 after Phase 56 plans created*
+
+*Roadmap last updated: 2026-04-01 after v1.1.0 roadmap created*
 *See .planning/milestones/ for archived milestone roadmaps*
