@@ -295,6 +295,262 @@ generate_schedule <- function(
   new_creel_schedule(base)
 }
 
+#' Convert HH:MM string to integer minutes since midnight
+#'
+#' @param hhmm A character scalar matching "HH:MM".
+#' @return Integer minutes since midnight.
+#' @noRd
+parse_hhmm_to_min <- function(hhmm) {
+  parts <- strsplit(hhmm, ":", fixed = TRUE)[[1]]
+  as.integer(parts[1]) * 60L + as.integer(parts[2])
+}
+
+#' Convert integer minutes since midnight to HH:MM string
+#'
+#' @param mins Integer vector of minutes since midnight.
+#' @return Character vector of "HH:MM" strings.
+#' @noRd
+format_min_to_hhmm <- function(mins) {
+  h <- mins %/% 60L
+  m <- mins %% 60L
+  sprintf("%02d:%02d", h, m)
+}
+
+#' Generate within-day count time windows
+#'
+#' Generates count time windows for a creel survey day using one of three
+#' strategies: random (stratified random placement within equal-width strata),
+#' systematic (random start in first stratum with fixed spacing thereafter,
+#' preferred per Pollock et al. 1994 and Colorado CPW 2012), or fixed
+#' (user-supplied non-overlapping windows).
+#'
+#' Output is a `creel_schedule` data frame compatible with [write_schedule()].
+#'
+#' @param start_time Character. Survey-day start time in `"HH:MM"` format.
+#'   Required for `strategy = "random"` and `"systematic"`.
+#' @param end_time Character. Survey-day end time in `"HH:MM"` format.
+#'   Required for `strategy = "random"` and `"systematic"`.
+#' @param strategy Character scalar. One of `"random"`, `"systematic"`, or
+#'   `"fixed"`.
+#' @param n_windows Positive integer. Number of count time windows. Required
+#'   for `strategy = "random"` and `"systematic"`. The total span
+#'   (`end_time - start_time` in minutes) must be evenly divisible by
+#'   `n_windows`.
+#' @param window_size Positive integer. Duration of each count window in
+#'   minutes. Required for `strategy = "random"` and `"systematic"`.
+#' @param min_gap Non-negative integer. Minimum gap (minutes) between windows.
+#'   Required for `strategy = "random"` and `"systematic"`.
+#'   `window_size + min_gap` must not exceed the stratum width
+#'   (`total_span / n_windows`).
+#' @param fixed_windows A data frame with `start_time` and `end_time` columns
+#'   (character `"HH:MM"`). Required for `strategy = "fixed"`. Windows must be
+#'   non-overlapping.
+#' @param seed Integer seed for reproducible window placement. Passed to
+#'   [withr::with_seed()]. Applies to `"random"` and `"systematic"` strategies.
+#'   Has no effect for `"fixed"` strategy.
+#'
+#' @return A `creel_schedule` data frame with columns:
+#'   - `start_time` (character `"HH:MM"`): Window start time.
+#'   - `end_time`   (character `"HH:MM"`): Window end time.
+#'   - `window_id`  (integer, 1-based, ordered by start time): Window index.
+#'
+#' @details
+#' **Random strategy:** Each of the `n_windows` strata of equal length
+#' `k = total_span / n_windows` receives one window with a uniformly random
+#' start within `[stratum_start, stratum_start + k - window_size]`.
+#'
+#' **Systematic strategy (recommended):** A single random start `t1` is drawn
+#' from `[start_min, start_min + k - window_size]`; all subsequent windows
+#' begin at `t1 + (i-1) * k` for `i = 1, ..., n_windows`. This is the
+#' design described in Pollock et al. (1994) and recommended by Colorado CPW
+#' (2012).
+#'
+#' **Fixed strategy:** Windows are taken exactly as supplied after sorting by
+#' start time. Overlapping windows trigger an error.
+#'
+#' @examples
+#' # Random strategy
+#' generate_count_times(
+#'   start_time = "06:00", end_time = "14:00",
+#'   strategy = "random", n_windows = 4, window_size = 30, min_gap = 10,
+#'   seed = 42
+#' )
+#'
+#' # Systematic strategy (preferred; Pollock et al. 1994)
+#' generate_count_times(
+#'   start_time = "06:00", end_time = "14:00",
+#'   strategy = "systematic", n_windows = 4, window_size = 30, min_gap = 10,
+#'   seed = 42
+#' )
+#'
+#' # Fixed strategy
+#' fw <- data.frame(
+#'   start_time = c("07:00", "09:00", "11:00"),
+#'   end_time = c("07:30", "09:30", "11:30"),
+#'   stringsAsFactors = FALSE
+#' )
+#' generate_count_times(strategy = "fixed", fixed_windows = fw)
+#'
+#' @export
+generate_count_times <- function(
+  start_time = NULL,
+  end_time = NULL,
+  strategy,
+  n_windows = NULL,
+  window_size = NULL,
+  min_gap = NULL,
+  fixed_windows = NULL,
+  seed = NULL
+) {
+  # Validate strategy
+  valid_strategies <- c("random", "systematic", "fixed")
+  if (missing(strategy)) {
+    cli::cli_abort(c(
+      "Unknown strategy.",
+      "x" = "{.arg strategy} is required.",
+      "i" = "Must be one of: {.val {valid_strategies}}"
+    ))
+  }
+  if (!strategy %in% valid_strategies) {
+    cli::cli_abort(c(
+      "Unknown strategy.",
+      "x" = "{.val {strategy}} is not a valid strategy.",
+      "i" = "Must be one of: {.val {valid_strategies}}"
+    ))
+  }
+
+  # Fixed strategy path
+  if (strategy == "fixed") {
+    if (is.null(fixed_windows) || !is.data.frame(fixed_windows)) {
+      cli::cli_abort(c(
+        "{.arg fixed_windows} must be a data frame when {.arg strategy} is {.val fixed}.",
+        "x" = "{.arg fixed_windows} is {.cls {class(fixed_windows)}}."
+      ))
+    }
+    missing_cols <- setdiff(c("start_time", "end_time"), names(fixed_windows))
+    if (length(missing_cols) > 0) {
+      cli::cli_abort(c(
+        "{.arg fixed_windows} is missing required columns.",
+        "x" = "Missing: {.val {missing_cols}}"
+      ))
+    }
+
+    fw_starts <- vapply(fixed_windows$start_time, parse_hhmm_to_min, integer(1))
+    fw_ends <- vapply(fixed_windows$end_time, parse_hhmm_to_min, integer(1))
+
+    # Sort by start time
+    ord <- order(fw_starts)
+    fw_starts <- fw_starts[ord]
+    fw_ends <- fw_ends[ord]
+    fw_sorted <- fixed_windows[ord, , drop = FALSE]
+
+    # Check non-overlapping
+    if (length(fw_ends) > 1) {
+      overlap_idx <- which(fw_ends[-length(fw_ends)] > fw_starts[-1])
+      if (length(overlap_idx) > 0) {
+        i1 <- overlap_idx[1] # nolint: object_usage_linter
+        cli::cli_abort(c(
+          "Windows in {.arg fixed_windows} must not overlap.",
+          "x" = "Overlap between window {i1} and window {i1 + 1L}.",
+          "i" = "Window {i1}: {fw_sorted$start_time[i1]}--{fw_sorted$end_time[i1]}",
+          "i" = "Window {i1 + 1L}: {fw_sorted$start_time[i1 + 1L]}--{fw_sorted$end_time[i1 + 1L]}"
+        ))
+      }
+    }
+
+    result <- data.frame(
+      start_time = fw_sorted$start_time,
+      end_time = fw_sorted$end_time,
+      window_id = seq_len(nrow(fw_sorted)),
+      stringsAsFactors = FALSE
+    )
+    return(new_creel_schedule(result))
+  }
+
+  # Random / systematic — validate time inputs
+  hhmm_re <- "^[0-2][0-9]:[0-5][0-9]$"
+  if (!grepl(hhmm_re, start_time) || !grepl(hhmm_re, end_time)) {
+    cli::cli_abort(c(
+      "start_time and end_time must be in HH:MM format.",
+      "x" = "Received start_time={.val {start_time}}, end_time={.val {end_time}}."
+    ))
+  }
+
+  start_min <- parse_hhmm_to_min(start_time)
+  end_min <- parse_hhmm_to_min(end_time)
+
+  if (end_min <= start_min) {
+    cli::cli_abort(c(
+      "end_time must be after start_time.",
+      "x" = "{.val {end_time}} is not after {.val {start_time}}."
+    ))
+  }
+
+  # Validate required args
+  for (arg_name in c("n_windows", "window_size", "min_gap")) {
+    val <- get(arg_name)
+    if (is.null(val)) {
+      cli::cli_abort(
+        c("{.arg {arg_name}} is required for strategy {.val {strategy}}."),
+        call = rlang::caller_env()
+      )
+    }
+  }
+
+  n_windows <- as.integer(n_windows)
+  window_size <- as.integer(window_size)
+  min_gap <- as.integer(min_gap)
+
+  total_min <- end_min - start_min
+
+  # Validate even divisibility
+  if (total_min %% n_windows != 0L) {
+    cli::cli_abort(c(
+      "Span must divide evenly by n_windows.",
+      "x" = "{total_min} min / {n_windows} = {total_min / n_windows} — must be a whole number.",
+      "i" = "Adjust n_windows or start/end time so the span divides evenly."
+    ))
+  }
+
+  k <- total_min %/% n_windows
+
+  # Validate window fits in stratum
+  if (window_size + min_gap > k) {
+    cli::cli_abort(c(
+      "window_size + min_gap exceeds stratum length.",
+      "x" = "Stratum is {k} min, but window_size + min_gap = {window_size + min_gap} min.",
+      "i" = "Reduce n_windows, window_size, or min_gap."
+    ))
+  }
+
+  # Generate windows
+  t_starts <- withr::with_seed(seed, {
+    if (strategy == "random") {
+      vapply(seq_len(n_windows) - 1L, function(i) {
+        stratum_start <- start_min + i * k
+        sample(stratum_start:(stratum_start + k - window_size), 1L)
+      }, integer(1))
+    } else {
+      # systematic
+      t1 <- sample(start_min:(start_min + k - window_size), 1L)
+      t1 + (seq_len(n_windows) - 1L) * k
+    }
+  })
+
+  t_ends <- t_starts + window_size
+
+  # Defensive check: all windows within bounds
+  stopifnot(all(t_starts >= start_min), all(t_ends <= end_min))
+
+  result <- data.frame(
+    start_time = format_min_to_hhmm(t_starts),
+    end_time = format_min_to_hhmm(t_ends),
+    window_id = seq_len(n_windows),
+    stringsAsFactors = FALSE
+  )
+  new_creel_schedule(result)
+}
+
 #' Generate a bus-route sampling frame
 #'
 #' @description

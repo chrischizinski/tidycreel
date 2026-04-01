@@ -370,7 +370,7 @@ test_that("SCHED-02: seed argument is accepted without error (reserved for futur
 
 # Canonical valid inputs: 480 min span (06:00–14:00), 4 windows of 30 min with 10 min gap
 # stratum = 480/4 = 120 min; window_size + min_gap = 40 < 120 — valid
-.ct_valid <- function(...) {
+.ct_valid <- function(seed = 42L) {
   generate_count_times( # nolint: object_usage_linter
     start_time  = "06:00",
     end_time    = "14:00",
@@ -378,8 +378,7 @@ test_that("SCHED-02: seed argument is accepted without error (reserved for futur
     n_windows   = 4L,
     window_size = 30L,
     min_gap     = 10L,
-    seed        = 42L,
-    ...
+    seed        = seed
   )
 }
 
