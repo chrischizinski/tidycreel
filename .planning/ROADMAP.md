@@ -200,7 +200,7 @@ See: [.planning/milestones/v1.0.0-ROADMAP.md](milestones/v1.0.0-ROADMAP.md)
 **Milestone Goal:** Extend the planning suite with within-day count time generation, close the v0.9.0 vignette gap, and add structured community contribution tooling so external contributors know how to engage with the project.
 
 - [x] **Phase 57: Count Time Generator** — implement `generate_count_times()` with random/systematic/fixed strategies (completed 2026-04-02)
-- [ ] **Phase 58: Survey Scheduling Vignette** — extend `survey-scheduling.Rmd` to cover the full pre/post-season workflow
+- [x] **Phase 58: Survey Scheduling Vignette** — extend `survey-scheduling.Rmd` to cover the full pre/post-season workflow (completed 2026-04-02)
 - [ ] **Phase 59: Community Health Files** — issue templates, `config.yml`, `CONTRIBUTING.md`, and Discussions config
 
 ## Phase Details
@@ -306,7 +306,7 @@ Plans:
 | 55. Navigation & Articles | v1.0.0 | 1/1 | Complete | 2026-03-30 |
 | 56. Deployment | v1.0.0 | 2/2 | Complete | 2026-03-31 |
 | 57. Count Time Generator | 1/1 | Complete    | 2026-04-02 | - |
-| 58. Survey Scheduling Vignette | v1.1.0 | 0/1 | Not started | - |
+| 58. Survey Scheduling Vignette | 1/1 | Complete   | 2026-04-02 | - |
 | 59. Community Health Files | v1.1.0 | 0/TBD | Not started | - |
 
 ---

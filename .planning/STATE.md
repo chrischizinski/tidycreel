@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: planning
-stopped_at: Phase 57 context gathered
-last_updated: "2026-04-02T14:15:53.750Z"
+stopped_at: Completed 58-01-PLAN.md
+last_updated: "2026-04-02T14:57:26.049Z"
 last_activity: 2026-04-01 — v1.1.0 roadmap created (Phases 57-59)
 progress:
   total_phases: 3
-  completed_phases: 1
-  total_plans: 1
-  completed_plans: 1
+  completed_phases: 2
+  total_plans: 2
+  completed_plans: 2
   percent: 0
 ---
 
@@ -47,12 +47,14 @@ Progress: [░░░░░░░░░░] 0%
 | v0.9.0 | 48-51 | 10/10 | Complete | 2026-03-24 |
 | v1.0.0 | 52-56 | 8/8 | Complete | 2026-03-31 |
 | v1.1.0 | 57-59 | 0/TBD | In progress | - |
+| Phase 58-survey-scheduling-vignette P01 | 2 | 2 tasks | 1 files |
 
 ## Accumulated Context
 
 ### Decisions
 
 (v1.0.0 decisions archived to PROJECT.md Key Decisions table)
+- [Phase 58-survey-scheduling-vignette]: season_summary() chunk marked eval=FALSE — estimation pipeline belongs in main vignette
 
 ### Pending Todos
 
@@ -64,6 +66,6 @@ Progress: [░░░░░░░░░░] 0%
 
 ## Session Continuity
 
-Last session: 2026-04-01T15:35:49.013Z
-Stopped at: Phase 57 context gathered
-Resume file: .planning/phases/57-count-time-generator/57-CONTEXT.md
+Last session: 2026-04-02T14:57:26.047Z
+Stopped at: Completed 58-01-PLAN.md
+Resume file: None
