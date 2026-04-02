@@ -4,15 +4,9 @@
 
 tidycreel is an R package providing a tidy, pipe-friendly interface for creel survey design, data management, estimation, and reporting. Built on the `survey` package for robust design-based inference, it lets fisheries biologists work in domain vocabulary — dates, strata, counts, effort, catch, species — without managing survey design internals directly. The package targets creel biologists using Nebraska Game and Parks' SQL Server creel database (accessible via REST API or direct connection) and anyone with similarly structured interview/catch/length data.
 
-## Current Milestone: v1.1.0 Planning Suite Completeness & Community Health
+## Current State: v1.1.0 Shipped (2026-04-02)
 
-**Goal:** Extend the planning suite with within-day count time generation, close the v0.9.0 vignette gap, and add structured community contribution tooling.
-
-**Target features:**
-- `generate_count_times()` — within-day count time window generator (random/systematic/fixed)
-- `survey-scheduling.Rmd` extended to cover `generate_count_times()`, `validate_design()`, `check_completeness()`, `season_summary()`
-- GitHub issue templates upgraded (bug report) and added (feature request, config)
-- `CONTRIBUTING.md` — contribution guide for external contributors
+**Shipped:** Planning suite completeness and community health infrastructure — `generate_count_times()`, extended `survey-scheduling.Rmd`, structured GitHub issue forms, `CONTRIBUTING.md` rewrite
 
 ## Core Value
 
@@ -48,6 +42,16 @@ Creel biologists can analyze survey data using creel vocabulary without understa
 - ✓ Section dispatch for all estimators — SECT-01..05, RATE-01..03, PROD-01..02 — v0.7.0
 - ✓ `missing_sections` guard — NA row + cli_warn() for registered sections absent from data — v0.7.0
 - ✓ `example_sections_*` datasets and section-estimation vignette — v0.7.0
+
+### Validated (v1.1.0 — Planning Suite Completeness & Community Health)
+
+<!-- Shipped in v1.1.0 -->
+
+- ✓ `generate_count_times()` — within-day count time window generator with random, systematic, and fixed strategies; seed reproducibility; returns `creel_schedule` compatible with `write_schedule()` — v1.1.0
+- ✓ `survey-scheduling.Rmd` extended with full pre/post-season narrative: `generate_count_times()` → `validate_design()` → `check_completeness()` → `season_summary()` — v1.1.0
+- ✓ GitHub structured issue forms: bug report with survey_type dropdown (5 types + "not applicable/unsure"); feature request with problem/solution/use-case/survey-types fields — v1.1.0
+- ✓ `config.yml` with `blank_issues_enabled: false` routing how-to questions to GitHub Discussions — v1.1.0
+- ✓ `CONTRIBUTING.md` rewritten with Getting Help (Discussions first), Filing Issues, PR Guidelines, and tidycreel coding standards — v1.1.0
 
 ### Validated (v1.0.0 — Package Website)
 
@@ -95,13 +99,13 @@ Creel biologists can analyze survey data using creel vocabulary without understa
 - Full report rendering (Rmd/PDF template reproducing NGPC report structure) — deferred
 - Supplemental question tabulation — deferred
 
-## Current State (v1.0.0 — shipped 2026-03-31)
+## Current State (v1.1.0 — shipped 2026-04-02)
 
-**Package status:** 10 milestones shipped, 56 phases, 8 R-code plans + 5 infrastructure plans; ~1696 tests passing (no new tests added in v1.0.0 — website-only milestone)
-**Stack:** R package, survey package for all design-based inference, tidy API with tidyselect; pkgdown website with Bootstrap 5
-**Architecture:** Three-layer (API → Orchestration → Survey) proven; planning layer added as independent module; website layer added as infrastructure module
+**Package status:** 11 milestones shipped, 59 phases, 4 new plans (3 R/docs + 1 community); ~1,864 tests passing (72 schedule-generator tests, including 26 new COUNT-TIME tests)
+**Stack:** R package, survey package for all design-based inference, tidy API with tidyselect; pkgdown website with Bootstrap 5; GitHub issue forms (YAML schema)
+**Architecture:** Three-layer (API → Orchestration → Survey) proven; planning layer as independent module; website + community health as infrastructure modules
 **Survey types supported:** `instantaneous`, `bus_route`, `ice`, `camera`, `aerial`
-**Planning suite:** `generate_schedule()`, `generate_bus_schedule()`, `write_schedule()`, `read_schedule()`, `creel_n_effort()`, `creel_n_cpue()`, `creel_power()`, `cv_from_n()`, `validate_design()`, `check_completeness()`, `season_summary()`
+**Planning suite:** `generate_schedule()`, `generate_bus_schedule()`, `generate_count_times()`, `write_schedule()`, `read_schedule()`, `creel_n_effort()`, `creel_n_cpue()`, `creel_power()`, `cv_from_n()`, `validate_design()`, `check_completeness()`, `season_summary()`
 **Website:** https://chrischizinski.github.io/tidycreel (pkgdown, auto-deployed via GitHub Actions)
 **Next milestone:** Planning — `/gsd:new-milestone`
 
@@ -194,6 +198,11 @@ Three-layer: API → Orchestration → Survey package. The dispatch pattern (che
 | Brand color `#1B4F72` set in Phase 52 sticker before Phase 53 reads it | Single source of truth for palette; sticker and site theme use same primary hex value | ✓ Good — established dependency ordering that prevents color drift |
 | Phase 52 (Hex Sticker) skipped — existing logo.png retained | Existing PNG and sticker.R were already committed and sufficient; re-generation would add no value | ✓ Good — user decision; STICKER requirements satisfied by existing assets |
 | PR deploy step guarded by `github.event_name != 'pull_request'` | Build always runs on PRs; deploy only on push to main — catches config errors before merge | ✓ Good — standard r-lib/actions v2 pattern |
+| `generate_count_times()` returns `creel_schedule` S3 class (not plain tibble) | Consistent with `generate_schedule()` output; `write_schedule()` compatibility guaranteed by shared class | ✓ Good — planning functions share a uniform output contract |
+| Fixed-strategy `generate_count_times()` accepts user-supplied windows data frame | Allows pre-specified windows without forcing a generator algorithm; consistent with systematic/random strategies being procedural | ✓ Good — three-strategy design covers random, systematic, and deterministic scheduling |
+| `survey-scheduling.Rmd` `season_summary()` chunk marked `eval=FALSE` | Estimation pipeline (estimate_effort etc.) belongs in main vignette; scheduling vignette covers planning only | ✓ Good — clean separation of planning vs. estimation documentation |
+| `blank_issues_enabled: false` in `config.yml` | Forces template selection; reduces low-context issue noise; how-to questions routed to Discussions | ✓ Good — structured issue forms produce better bug reports |
+| Getting Help moved to top of `CONTRIBUTING.md` | First-time contributors see community channels before technical standards; reduces friction for non-coders | ✓ Good — onboarding order matters for contributor experience |
 
 ---
-*Last updated: 2026-03-31 after v1.0.0 milestone*
+*Last updated: 2026-04-02 after v1.1.0 milestone*
