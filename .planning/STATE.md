@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: planning
-stopped_at: Completed 59-02-PLAN.md
-last_updated: "2026-04-02T19:08:06.795Z"
+stopped_at: "Completed 59-01-PLAN.md (checkpoint:human-verify pending)"
+last_updated: "2026-04-02T19:09:01.587Z"
 last_activity: 2026-04-01 — v1.1.0 roadmap created (Phases 57-59)
 progress:
   total_phases: 3
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 4
-  completed_plans: 3
+  completed_plans: 4
   percent: 0
 ---
 
@@ -49,6 +49,7 @@ Progress: [░░░░░░░░░░] 0%
 | v1.1.0 | 57-59 | 0/TBD | In progress | - |
 | Phase 58-survey-scheduling-vignette P01 | 2 | 2 tasks | 1 files |
 | Phase 59-community-health-files P02 | 68s | 1 tasks | 1 files |
+| Phase 59-community-health-files P01 | 2min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -58,6 +59,8 @@ Progress: [░░░░░░░░░░] 0%
 - [Phase 58-survey-scheduling-vignette]: season_summary() chunk marked eval=FALSE — estimation pipeline belongs in main vignette
 - [Phase 59-community-health-files]: Getting Help moved to top of CONTRIBUTING.md so first-time visitors see it before technical standards
 - [Phase 59-community-health-files]: reprex code example uses tidycreel function call with NA data to model a realistic minimal bug report
+- [Phase 59-01]: survey_type dropdown includes 'not applicable / unsure' sixth option for non-domain bugs
+- [Phase 59-01]: blank_issues_enabled: false forces template selection; config.yml was pre-committed in 59-02 run
 
 ### Pending Todos
 
@@ -69,6 +72,6 @@ Progress: [░░░░░░░░░░] 0%
 
 ## Session Continuity
 
-Last session: 2026-04-02T19:08:06.792Z
-Stopped at: Completed 59-02-PLAN.md
+Last session: 2026-04-02T19:09:01.584Z
+Stopped at: Completed 59-01-PLAN.md (checkpoint:human-verify pending)
 Resume file: None

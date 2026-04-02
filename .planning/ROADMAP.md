@@ -201,7 +201,7 @@ See: [.planning/milestones/v1.0.0-ROADMAP.md](milestones/v1.0.0-ROADMAP.md)
 
 - [x] **Phase 57: Count Time Generator** — implement `generate_count_times()` with random/systematic/fixed strategies (completed 2026-04-02)
 - [x] **Phase 58: Survey Scheduling Vignette** — extend `survey-scheduling.Rmd` to cover the full pre/post-season workflow (completed 2026-04-02)
-- [ ] **Phase 59: Community Health Files** — issue templates, `config.yml`, `CONTRIBUTING.md`, and Discussions config
+- [x] **Phase 59: Community Health Files** — issue templates, `config.yml`, `CONTRIBUTING.md`, and Discussions config (completed 2026-04-02)
 
 ## Phase Details
 
@@ -310,7 +310,7 @@ Plans:
 | 56. Deployment | v1.0.0 | 2/2 | Complete | 2026-03-31 |
 | 57. Count Time Generator | 1/1 | Complete    | 2026-04-02 | - |
 | 58. Survey Scheduling Vignette | 1/1 | Complete    | 2026-04-02 | - |
-| 59. Community Health Files | 1/2 | In Progress|  | - |
+| 59. Community Health Files | 2/2 | Complete   | 2026-04-02 | - |
 
 ---
 

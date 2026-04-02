@@ -12,9 +12,9 @@
 
 ### Community Health
 
-- [ ] **COMM-01**: User filing a bug report sees a structured form with survey_type dropdown (instantaneous/bus_route/ice/camera/aerial), tidycreel version, and expected vs actual behavior fields
-- [ ] **COMM-02**: User filing a feature request sees a structured form with problem statement, proposed solution, use case, and survey types affected fields
-- [ ] **COMM-03**: User visiting the Issues tab is guided to the right channel — Discussions for questions, bug form for bugs, feature form for requests — via `config.yml`
+- [x] **COMM-01**: User filing a bug report sees a structured form with survey_type dropdown (instantaneous/bus_route/ice/camera/aerial), tidycreel version, and expected vs actual behavior fields
+- [x] **COMM-02**: User filing a feature request sees a structured form with problem statement, proposed solution, use case, and survey types affected fields
+- [x] **COMM-03**: User visiting the Issues tab is guided to the right channel — Discussions for questions, bug form for bugs, feature form for requests — via `config.yml`
 - [x] **COMM-04**: User wanting to contribute finds a `CONTRIBUTING.md` explaining how to file issues, write reprexes, submit PRs, and follow coding standards
 - [x] **COMM-05**: GitHub Discussions is enabled and linked from `config.yml` and `CONTRIBUTING.md` as the canonical place for how-to questions
 
@@ -38,9 +38,9 @@
 |-------------|-------|--------|
 | PLAN-01 | Phase 57 | Pending |
 | PLAN-02 | Phase 58 | Complete |
-| COMM-01 | Phase 59 | Pending |
-| COMM-02 | Phase 59 | Pending |
-| COMM-03 | Phase 59 | Pending |
+| COMM-01 | Phase 59 | Complete |
+| COMM-02 | Phase 59 | Complete |
+| COMM-03 | Phase 59 | Complete |
 | COMM-04 | Phase 59 | Complete |
 | COMM-05 | Phase 59 | Complete |
 
