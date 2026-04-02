@@ -240,7 +240,10 @@ Plans:
   3. User visiting the Issues tab sees a `config.yml` contact link directing how-to questions to GitHub Discussions and bugs/features to the appropriate form (COMM-03)
   4. User wanting to contribute finds `CONTRIBUTING.md` at the repo root explaining issue filing, reprex writing, PR submission, and coding standards (COMM-04)
   5. `CONTRIBUTING.md` and `config.yml` both reference GitHub Discussions as the canonical place for how-to questions; enabling Discussions in repository Settings requires a manual step by the repo owner (COMM-05)
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 59-01-PLAN.md — replace bug-report.yml with survey_type form, add feature-request.yml and config.yml with Discussions routing
+- [ ] 59-02-PLAN.md — rewrite CONTRIBUTING.md with issue filing, reprex, PR, and Discussions guidance
 
 ---
 
