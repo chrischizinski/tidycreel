@@ -226,7 +226,9 @@ Plans:
   1. User can open `survey-scheduling.Rmd` and find a worked example of `generate_count_times()` showing all three strategy options
   2. User can follow a continuous narrative from schedule generation through `validate_design()`, `check_completeness()`, and `season_summary()` without needing to consult other vignettes
   3. Each planning function in the vignette includes reproducible example code that runs without errors using bundled example data
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 58-01-PLAN.md — extend survey-scheduling.Rmd with generate_count_times(), validate_design(), check_completeness(), and season_summary() sections
 
 ### Phase 59: Community Health Files
 **Goal**: External contributors can find clear guidance on how to report bugs, request features, ask questions, and submit pull requests
@@ -304,7 +306,7 @@ Plans:
 | 55. Navigation & Articles | v1.0.0 | 1/1 | Complete | 2026-03-30 |
 | 56. Deployment | v1.0.0 | 2/2 | Complete | 2026-03-31 |
 | 57. Count Time Generator | 1/1 | Complete    | 2026-04-02 | - |
-| 58. Survey Scheduling Vignette | v1.1.0 | 0/TBD | Not started | - |
+| 58. Survey Scheduling Vignette | v1.1.0 | 0/1 | Not started | - |
 | 59. Community Health Files | v1.1.0 | 0/TBD | Not started | - |
 
 ---
