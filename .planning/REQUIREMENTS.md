@@ -8,15 +8,15 @@
 ### Planning Suite
 
 - [ ] **PLAN-01**: User can generate within-day count time windows via `generate_count_times()` using random, systematic, or fixed strategies, returning a data frame compatible with `creel_schedule`
-- [ ] **PLAN-02**: User can read a complete survey scheduling workflow in `survey-scheduling.Rmd` — covering `generate_count_times()`, `validate_design()`, `check_completeness()`, and `season_summary()` in a coherent pre/post-season narrative
+- [x] **PLAN-02**: User can read a complete survey scheduling workflow in `survey-scheduling.Rmd` — covering `generate_count_times()`, `validate_design()`, `check_completeness()`, and `season_summary()` in a coherent pre/post-season narrative
 
 ### Community Health
 
 - [ ] **COMM-01**: User filing a bug report sees a structured form with survey_type dropdown (instantaneous/bus_route/ice/camera/aerial), tidycreel version, and expected vs actual behavior fields
 - [ ] **COMM-02**: User filing a feature request sees a structured form with problem statement, proposed solution, use case, and survey types affected fields
 - [ ] **COMM-03**: User visiting the Issues tab is guided to the right channel — Discussions for questions, bug form for bugs, feature form for requests — via `config.yml`
-- [ ] **COMM-04**: User wanting to contribute finds a `CONTRIBUTING.md` explaining how to file issues, write reprexes, submit PRs, and follow coding standards
-- [ ] **COMM-05**: GitHub Discussions is enabled and linked from `config.yml` and `CONTRIBUTING.md` as the canonical place for how-to questions
+- [x] **COMM-04**: User wanting to contribute finds a `CONTRIBUTING.md` explaining how to file issues, write reprexes, submit PRs, and follow coding standards
+- [x] **COMM-05**: GitHub Discussions is enabled and linked from `config.yml` and `CONTRIBUTING.md` as the canonical place for how-to questions
 
 ## Future Requirements
 
@@ -37,12 +37,12 @@
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | PLAN-01 | Phase 57 | Pending |
-| PLAN-02 | Phase 58 | Pending |
+| PLAN-02 | Phase 58 | Complete |
 | COMM-01 | Phase 59 | Pending |
 | COMM-02 | Phase 59 | Pending |
 | COMM-03 | Phase 59 | Pending |
-| COMM-04 | Phase 59 | Pending |
-| COMM-05 | Phase 59 | Pending |
+| COMM-04 | Phase 59 | Complete |
+| COMM-05 | Phase 59 | Complete |
 
 **Coverage:**
 - v1.1.0 requirements: 7 total
