@@ -95,7 +95,7 @@ generate_count_times(
 # Fixed strategy
 fw <- data.frame(
   start_time = c("07:00", "09:00", "11:00"),
-  end_time   = c("07:30", "09:30", "11:30"),
+  end_time = c("07:30", "09:30", "11:30"),
   stringsAsFactors = FALSE
 )
 generate_count_times(strategy = "fixed", fixed_windows = fw)
