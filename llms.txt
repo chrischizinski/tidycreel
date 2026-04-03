@@ -274,6 +274,8 @@ Generate, validate, read, and write creel survey schedules.
   : Generate a creel survey sampling schedule
 - [`generate_bus_schedule()`](https://chrischizinski.github.io/tidycreel/reference/generate_bus_schedule.md)
   : Generate a bus-route sampling frame
+- [`generate_count_times()`](https://chrischizinski.github.io/tidycreel/reference/generate_count_times.md)
+  : Generate within-day count time windows
 - [`new_creel_schedule()`](https://chrischizinski.github.io/tidycreel/reference/new_creel_schedule.md)
   : Create a creel_schedule S3 object
 - [`validate_creel_schedule()`](https://chrischizinski.github.io/tidycreel/reference/validate_creel_schedule.md)

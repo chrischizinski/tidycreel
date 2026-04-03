@@ -1,13 +1,78 @@
 # Contributing to tidycreel
 
-We welcome contributions to tidycreel! This document outlines our
-development standards and contribution process.
+We welcome contributions to tidycreel! This document covers where to ask
+questions, how to file bug reports and feature requests, and the
+development standards and workflow for pull requests.
 
 ## Code of Conduct
 
 Please note that this project is released with a [Contributor Code of
 Conduct](https://chrischizinski.github.io/tidycreel/CODE_OF_CONDUCT.md).
 By participating in this project you agree to abide by its terms.
+
+## Getting Help
+
+For questions about how to use tidycreel — choosing survey types,
+interpreting estimates, structuring your data — open a thread in [GitHub
+Discussions](https://github.com/chrischizinski/tidycreel/discussions).
+Please search existing threads before posting.
+
+GitHub Issues is for bugs and feature requests only. How-to questions
+filed as issues will be redirected to Discussions.
+
+## Filing Issues
+
+### Bug Reports
+
+Click **Bug report** on the [New
+Issue](https://github.com/chrischizinski/tidycreel/issues/new/choose)
+page to open the structured form. The form asks for:
+
+- **Survey type:** which design you are using (`instantaneous`,
+  `bus_route`, `ice`, `camera`, or `aerial`)
+- **tidycreel version:** from `packageVersion("tidycreel")`
+- **Expected vs actual behavior:** what you expected to happen and what
+  actually happened
+- **A reprex:** a minimal reproducible example (see below)
+
+**Writing a reprex**
+
+A minimal reproducible example is a self-contained R snippet that
+demonstrates the problem using only tidycreel and base R (or
+dplyr/tidyr). Use `reprex::reprex()` to render and share it.
+
+A good reprex looks like this:
+
+``` r
+library(tidycreel)
+
+# Minimal data that triggers the problem
+trips <- data.frame(
+  trip_id   = 1:3,
+  effort_hr = c(2.5, NA, 1.0),
+  catch     = c(4L, 2L, 0L)
+)
+
+# The failing call
+estimate_catch(trips, survey_type = "instantaneous")
+#> Error in ...
+```
+
+The snippet should be copy-paste runnable and produce the error without
+any additional setup. Avoid including your full dataset; reduce to the
+smallest example that still fails.
+
+### Feature Requests
+
+Click **Feature request** on the [New
+Issue](https://github.com/chrischizinski/tidycreel/issues/new/choose)
+page. The form asks for:
+
+- **Problem statement:** what limitation or gap you are hitting
+- **Proposed solution:** how you would like it to work
+- **Use case:** a concrete scenario where this would be useful
+- **Survey types affected:** which designs (`instantaneous`,
+  `bus_route`, `ice`, `camera`, `aerial`) are relevant
 
 ## Development Principles
 
@@ -31,15 +96,15 @@ performance and scalability:
 **Examples:**
 
 ``` r
-# ✅ Good: Vectorized approach
+# Good: Vectorized approach
 effort_total <- sum(design_data$effort * design_data$weights, na.rm = TRUE)
 
-# ✅ Good: Grouped vectorized approach
+# Good: Grouped vectorized approach
 strata_totals <- design_data %>%
   group_by(stratum_id) %>%
   summarise(effort = sum(effort * weights, na.rm = TRUE))
 
-# ❌ Avoid: Explicit loops
+# Avoid: Explicit loops
 effort_total <- 0
 for (i in seq_len(nrow(design_data))) {
   effort_total <- effort_total + design_data$effort[i] * design_data$weights[i]
@@ -157,6 +222,10 @@ boundary conditions (DST, leap years)
 
 ### Pull Request Guidelines
 
+Before opening a PR for a non-trivial change, file an issue first so the
+approach can be discussed. This avoids duplication of effort and ensures
+the change aligns with the project direction.
+
 **Before submitting:** - \[ \] All tests pass (`devtools::test()`) - \[
 \] Package passes R CMD check (`devtools::check()`) - \[ \]
 Documentation is complete and accurate - \[ \] NEWS.md updated for
@@ -193,12 +262,6 @@ programming tools
 
 **Suggested dependencies** (for specific features): - `cli` - user
 messaging - `lifecycle` - deprecation management
-
-## Getting Help
-
-- **GitHub Issues:** Bug reports and feature requests
-- **GitHub Discussions:** Questions and community support
-- **Code Review:** All maintainers provide feedback on PRs
 
 ## Recognition
 

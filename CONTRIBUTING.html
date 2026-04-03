@@ -55,10 +55,60 @@
 
 <div id="contributing-to-tidycreel" class="section level1">
 
-<p>We welcome contributions to tidycreel! This document outlines our development standards and contribution process.</p>
+<p>We welcome contributions to tidycreel! This document covers where to ask questions, how to file bug reports and feature requests, and the development standards and workflow for pull requests.</p>
 <div class="section level2">
 <h2 id="code-of-conduct">Code of Conduct<a class="anchor" aria-label="anchor" href="#code-of-conduct"></a></h2>
 <p>Please note that this project is released with a <a href="CODE_OF_CONDUCT.html">Contributor Code of Conduct</a>. By participating in this project you agree to abide by its terms.</p>
+</div>
+<div class="section level2">
+<h2 id="getting-help">Getting Help<a class="anchor" aria-label="anchor" href="#getting-help"></a></h2>
+<p>For questions about how to use tidycreel — choosing survey types, interpreting estimates, structuring your data — open a thread in <a href="https://github.com/chrischizinski/tidycreel/discussions" class="external-link">GitHub Discussions</a>. Please search existing threads before posting.</p>
+<p>GitHub Issues is for bugs and feature requests only. How-to questions filed as issues will be redirected to Discussions.</p>
+</div>
+<div class="section level2">
+<h2 id="filing-issues">Filing Issues<a class="anchor" aria-label="anchor" href="#filing-issues"></a></h2>
+<div class="section level3">
+<h3 id="bug-reports">Bug Reports<a class="anchor" aria-label="anchor" href="#bug-reports"></a></h3>
+<p>Click <strong>Bug report</strong> on the <a href="https://github.com/chrischizinski/tidycreel/issues/new/choose" class="external-link">New Issue</a> page to open the structured form. The form asks for:</p>
+<ul><li>
+<strong>Survey type:</strong> which design you are using (<code>instantaneous</code>, <code>bus_route</code>, <code>ice</code>, <code>camera</code>, or <code>aerial</code>)</li>
+<li>
+<strong>tidycreel version:</strong> from <code>packageVersion("tidycreel")</code>
+</li>
+<li>
+<strong>Expected vs actual behavior:</strong> what you expected to happen and what actually happened</li>
+<li>
+<strong>A reprex:</strong> a minimal reproducible example (see below)</li>
+</ul><p><strong>Writing a reprex</strong></p>
+<p>A minimal reproducible example is a self-contained R snippet that demonstrates the problem using only tidycreel and base R (or dplyr/tidyr). Use <code>reprex::reprex()</code> to render and share it.</p>
+<p>A good reprex looks like this:</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/chrischizinski/tidycreel" class="external-link">tidycreel</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Minimal data that triggers the problem</span></span>
+<span><span class="va">trips</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  trip_id   <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">3</span>,</span>
+<span>  effort_hr <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2.5</span>, <span class="cn">NA</span>, <span class="fl">1.0</span><span class="op">)</span>,</span>
+<span>  catch     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4L</span>, <span class="fl">2L</span>, <span class="fl">0L</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># The failing call</span></span>
+<span><span class="fu">estimate_catch</span><span class="op">(</span><span class="va">trips</span>, survey_type <span class="op">=</span> <span class="st">"instantaneous"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error in ...</span></span></code></pre></div>
+<p>The snippet should be copy-paste runnable and produce the error without any additional setup. Avoid including your full dataset; reduce to the smallest example that still fails.</p>
+</div>
+<div class="section level3">
+<h3 id="feature-requests">Feature Requests<a class="anchor" aria-label="anchor" href="#feature-requests"></a></h3>
+<p>Click <strong>Feature request</strong> on the <a href="https://github.com/chrischizinski/tidycreel/issues/new/choose" class="external-link">New Issue</a> page. The form asks for:</p>
+<ul><li>
+<strong>Problem statement:</strong> what limitation or gap you are hitting</li>
+<li>
+<strong>Proposed solution:</strong> how you would like it to work</li>
+<li>
+<strong>Use case:</strong> a concrete scenario where this would be useful</li>
+<li>
+<strong>Survey types affected:</strong> which designs (<code>instantaneous</code>, <code>bus_route</code>, <code>ice</code>, <code>camera</code>, <code>aerial</code>) are relevant</li>
+</ul></div>
 </div>
 <div class="section level2">
 <h2 id="development-principles">Development Principles<a class="anchor" aria-label="anchor" href="#development-principles"></a></h2>
@@ -76,16 +126,16 @@
 <li>
 <strong>Profile performance</strong> for functions processing large datasets (&gt;10^5 rows)</li>
 </ul><p><strong>Examples:</strong></p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># ✅ Good: Vectorized approach</span></span>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Good: Vectorized approach</span></span>
 <span><span class="va">effort_total</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">design_data</span><span class="op">$</span><span class="va">effort</span> <span class="op">*</span> <span class="va">design_data</span><span class="op">$</span><span class="va">weights</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># ✅ Good: Grouped vectorized approach</span></span>
+<span><span class="co"># Good: Grouped vectorized approach</span></span>
 <span><span class="va">strata_totals</span> <span class="op">&lt;-</span> <span class="va">design_data</span> <span class="op">%&gt;%</span></span>
 <span>  <span class="fu">group_by</span><span class="op">(</span><span class="va">stratum_id</span><span class="op">)</span> <span class="op">%&gt;%</span></span>
 <span>  <span class="fu">summarise</span><span class="op">(</span>effort <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">effort</span> <span class="op">*</span> <span class="va">weights</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># ❌ Avoid: Explicit loops</span></span>
+<span><span class="co"># Avoid: Explicit loops</span></span>
 <span><span class="va">effort_total</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">design_data</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">effort_total</span> <span class="op">&lt;-</span> <span class="va">effort_total</span> <span class="op">+</span> <span class="va">design_data</span><span class="op">$</span><span class="va">effort</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">*</span> <span class="va">design_data</span><span class="op">$</span><span class="va">weights</span><span class="op">[</span><span class="va">i</span><span class="op">]</span></span>
@@ -138,7 +188,7 @@
 <div class="section level3">
 <h3 id="testing-requirements">Testing Requirements<a class="anchor" aria-label="anchor" href="#testing-requirements"></a></h3>
 <p><strong>Every contribution must include tests:</strong></p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">test_that</span><span class="op">(</span><span class="st">"estimate_effort returns proper structure"</span>, <span class="op">{</span></span>
 <span>  <span class="co"># Arrange</span></span>
 <span>  <span class="va">design</span> <span class="op">&lt;-</span> <span class="fu">create_test_design</span><span class="op">(</span><span class="op">)</span></span>
@@ -174,7 +224,7 @@
 <li><p><strong>Create a feature branch:</strong> <code>git checkout -b feature/descriptive-name</code></p></li>
 <li>
 <p><strong>Set up development environment:</strong></p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">renv</span><span class="fu">::</span><span class="fu">restore</span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">load_all</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </li>
@@ -186,7 +236,7 @@
 <li><p><strong>Update documentation</strong> including function docs and vignettes if needed</p></li>
 <li>
 <p><strong>Run comprehensive checks:</strong></p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">document</span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">test</span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">check</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
@@ -195,6 +245,7 @@
 </ol></div>
 <div class="section level3">
 <h3 id="pull-request-guidelines">Pull Request Guidelines<a class="anchor" aria-label="anchor" href="#pull-request-guidelines"></a></h3>
+<p>Before opening a PR for a non-trivial change, file an issue first so the approach can be discussed. This avoids duplication of effort and ensures the change aligns with the project direction.</p>
 <p><strong>Before submitting:</strong> - [ ] All tests pass (<code>devtools::test()</code>) - [ ] Package passes R CMD check (<code>devtools::check()</code>) - [ ] Documentation is complete and accurate - [ ] NEWS.md updated for user-facing changes - [ ] Code follows tidyverse style (verified with <code><a href="https://styler.r-lib.org/reference/style_pkg.html" class="external-link">styler::style_pkg()</a></code>)</p>
 <p><strong>PR Description should include:</strong> - Summary of changes and motivation - Links to relevant issues - Breaking changes (if any) - Example usage for new features</p>
 </div>
@@ -231,15 +282,6 @@
 <p><strong>Suggested dependencies</strong> (for specific features): - <code>cli</code> - user messaging - <code>lifecycle</code> - deprecation management</p>
 </div>
 </div>
-<div class="section level2">
-<h2 id="getting-help">Getting Help<a class="anchor" aria-label="anchor" href="#getting-help"></a></h2>
-<ul><li>
-<strong>GitHub Issues:</strong> Bug reports and feature requests</li>
-<li>
-<strong>GitHub Discussions:</strong> Questions and community support</li>
-<li>
-<strong>Code Review:</strong> All maintainers provide feedback on PRs</li>
-</ul></div>
 <div class="section level2">
 <h2 id="recognition">Recognition<a class="anchor" aria-label="anchor" href="#recognition"></a></h2>
 <p>Contributors are recognized in: - Package DESCRIPTION file - NEWS.md release notes - Annual contributor acknowledgments</p>

@@ -269,6 +269,241 @@ creel_n_effort(
 #>       6       2       7
 ```
 
+## Within-Day Count Time Scheduling
+
+Counts are the primary effort estimator in creel surveys: the number of
+anglers observed during each count window is used to estimate total
+angler-hours. When those count windows fall in the day matters —
+clustered or poorly spaced windows can introduce bias into effort
+estimates. Pollock et al. (1994) describe three strategies for placing
+count time windows within the survey day: random, systematic, and fixed.
+[`generate_count_times()`](https://chrischizinski.github.io/tidycreel/reference/generate_count_times.md)
+implements all three.
+
+### Random Strategy
+
+With the random strategy, `n_windows` non-overlapping windows are drawn
+uniformly at random from the available survey hours. `window_size` sets
+the duration (minutes) of each window and `min_gap` enforces a minimum
+separation (minutes) between consecutive windows to prevent back-to-back
+counts.
+
+``` r
+library(tidycreel)
+ct_random <- generate_count_times(
+  start_time  = "06:00",
+  end_time    = "14:00",
+  strategy    = "random",
+  n_windows   = 4,
+  window_size = 30,
+  min_gap     = 10,
+  seed        = 42
+)
+ct_random
+#>   start_time end_time window_id
+#> 1      06:48    07:18         1
+#> 2      09:04    09:34         2
+#> 3      10:24    10:54         3
+#> 4      13:13    13:43         4
+```
+
+`n_windows` is the total number of count windows to place in the day,
+`window_size` is how long each window lasts in minutes, and `min_gap` is
+the minimum idle time between the end of one window and the start of the
+next.
+
+### Systematic Strategy
+
+The systematic strategy uses the Pollock et al. (1994) model: the day is
+divided into `n_windows` equal-length strata and one window is placed at
+a random start within the first stratum; subsequent windows begin at
+t₁+k, t₁+2k, and so on, where k is the stratum length. This ensures even
+spacing across the day. Systematic sampling is preferred by many
+agencies (Colorado CPW 2012) because it avoids the clustered count times
+that can occur by chance under random placement.
+
+``` r
+ct_systematic <- generate_count_times(
+  start_time  = "06:00",
+  end_time    = "14:00",
+  strategy    = "systematic",
+  n_windows   = 4,
+  window_size = 30,
+  min_gap     = 10,
+  seed        = 42
+)
+ct_systematic
+#>   start_time end_time window_id
+#> 1      06:48    07:18         1
+#> 2      08:48    09:18         2
+#> 3      10:48    11:18         3
+#> 4      12:48    13:18         4
+```
+
+### Fixed Strategy
+
+Use the fixed strategy when count time windows are defined by
+regulation, permit conditions, or a prior-season protocol that must be
+replicated exactly. Supply a `data.frame` with `start_time` and
+`end_time` columns and
+[`generate_count_times()`](https://chrischizinski.github.io/tidycreel/reference/generate_count_times.md)
+wraps them in a `creel_schedule` object without any random placement.
+
+``` r
+fw <- data.frame(
+  start_time = c("07:00", "09:30", "12:00"),
+  end_time = c("07:30", "10:00", "12:30"),
+  stringsAsFactors = FALSE
+)
+ct_fixed <- generate_count_times(strategy = "fixed", fixed_windows = fw)
+ct_fixed
+#>   start_time end_time window_id
+#> 1      07:00    07:30         1
+#> 2      09:30    10:00         2
+#> 3      12:00    12:30         3
+```
+
+### Exporting Count Time Schedules
+
+[`generate_count_times()`](https://chrischizinski.github.io/tidycreel/reference/generate_count_times.md)
+returns a `creel_schedule` object, the same class returned by
+[`generate_schedule()`](https://chrischizinski.github.io/tidycreel/reference/generate_schedule.md).
+It therefore passes directly to
+[`write_schedule()`](https://chrischizinski.github.io/tidycreel/reference/write_schedule.md)
+for field printing without any conversion step.
+
+``` r
+write_schedule(ct_systematic, "count_times_2024.csv")
+```
+
+## Validating the Design Before the Season
+
+After building a schedule,
+[`validate_design()`](https://chrischizinski.github.io/tidycreel/reference/validate_design.md)
+checks whether the proposed sampling intensity is sufficient to meet a
+target coefficient of variation (CV) — catching under-sampling problems
+before the season starts rather than discovering them in the post-season
+analysis. It uses the same pilot mean and variance inputs as
+[`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md)
+and compares the proposed day counts against the minimum required sample
+size per stratum.
+
+``` r
+report <- validate_design(
+  N_h        = c(weekday = 132, weekend = 52),
+  ybar_h     = c(weekday = 280, weekend = 550),
+  s2_h       = c(weekday = 14400, weekend = 32400),
+  n_proposed = c(weekday = 40L, weekend = 26L),
+  cv_target  = 0.15
+)
+report
+#> 
+#> ── Design Validation Report ────────────────────────────────────────────────────
+#> Type: effort
+#> ✔ All strata PASSED
+#> 
+#> ✔ weekday: n=40 >= 6 required (CV 0.006 vs target 0.15)
+#> ✔ weekend: n=26 >= 2 required (CV 0.009 vs target 0.15)
+```
+
+`report$results` shows the per-stratum status (pass / warn / fail), the
+proposed sample size, the required sample size, and the achieved CV at
+the proposed intensity. `report$passed` is `TRUE` only when all strata
+pass — use this as a go/no-go gate before printing field schedules.
+
+``` r
+report$results
+#> # A tibble: 2 × 7
+#>   stratum status n_proposed n_required cv_actual cv_target message              
+#>   <chr>   <chr>       <int>      <int>     <dbl>     <dbl> <chr>                
+#> 1 weekday pass           40          6    0.0059      0.15 Proposed n meets or …
+#> 2 weekend pass           26          2    0.0089      0.15 Proposed n meets or …
+```
+
+## Checking Data Completeness After the Season
+
+[`check_completeness()`](https://chrischizinski.github.io/tidycreel/reference/check_completeness.md)
+runs post-season on a `creel_design` with survey data attached, flagging
+missing sampling days and strata with too few interviews to produce
+reliable estimates. It is the first diagnostic step before running
+estimators — resolving completeness issues early avoids propagating gaps
+into effort or CPUE estimates.
+
+``` r
+data(example_calendar)
+data(example_counts)
+data(example_interviews)
+
+design <- creel_design(example_calendar, date = date, strata = day_type)
+design <- add_counts(design, example_counts)
+#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
+#> weights or probabilities supplied, assuming equal probability
+design <- add_interviews(design, example_interviews,
+  catch        = catch_total,
+  effort       = hours_fished,
+  trip_status  = trip_status
+)
+comp <- check_completeness(design)
+comp
+#> 
+#> ── Completeness Report ─────────────────────────────────────────────────────────
+#> Survey type: instantaneous | n_min threshold: 10
+#> ✖ Completeness issues found
+#> 
+#> 
+#> ── Missing Days ──
+#> 
+#> ✔ No missing sampling days
+#> 
+#> ── Low-n Strata (threshold: 10) ──
+#> 
+#> ! 1 stratum/strata below n_min=10
+#> 
+#> ── Refusal Rates ──
+#> 
+#> (not recorded or not applicable)
+```
+
+`comp$passed` returns `TRUE` if no issues were found. When `FALSE`,
+`comp$missing_days` identifies dates that appear in the schedule but
+have no count data, and `comp$low_n_strata` identifies strata where the
+interview count is below the minimum threshold (`n_min`, default 10).
+
+## Assembling the Season Summary
+
+[`season_summary()`](https://chrischizinski.github.io/tidycreel/reference/season_summary.md)
+accepts a named list of `creel_estimates` objects — the outputs of
+[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),
+[`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md),
+and related functions — and joins them into a single wide tibble for
+reporting or export. It performs no re-estimation; it is purely an
+assembly step that makes it easy to view all key metrics side by side.
+
+``` r
+# Run estimators first (see the tidycreel workflow vignette)
+effort <- estimate_effort(design)
+cpue <- estimate_catch_rate(design)
+
+# Assemble the season summary
+summary_tbl <- season_summary(list(effort = effort, cpue = cpue))
+summary_tbl$table
+```
+
+The full estimation workflow — building the design, attaching counts and
+interviews, and running the estimators — is covered in the main
+tidycreel vignette.
+[`season_summary()`](https://chrischizinski.github.io/tidycreel/reference/season_summary.md)
+is the final step that wraps pre-computed results for export or
+reporting.
+
+``` r
+write_schedule(summary_tbl$table, "season_2024_summary.xlsx")
+```
+
+[`write_schedule()`](https://chrischizinski.github.io/tidycreel/reference/write_schedule.md)
+accepts any data frame or tibble, so the season summary table exports to
+CSV or xlsx with a single call.
+
 ## References
 
 - Hoenig, J. M., Robson, D. S., Jones, C. M., and Pollock, K. H. (1993).
