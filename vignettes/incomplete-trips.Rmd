@@ -167,16 +167,26 @@ For details, see `?warn_low_complete_pct` and Phase 18 documentation.
 
 ## Strong Warning: Never Pool Complete + Incomplete
 
-**CRITICAL: Pooling complete and incomplete trips is scientifically invalid.**
+**CRITICAL: Pooling complete and incomplete trips is scientifically invalid — regardless of whether validation passes.**
 
 Complete and incomplete trips have **different sampling probabilities** in roving-access designs. Longer trips have higher probability of being sampled during their incomplete phase, creating systematic bias if pooled with complete trips.
+
+### Pooling vs. Substitution — a critical distinction
+
+Passing the TOST equivalence test does **not** mean you may pool complete and incomplete trips. It means something different:
+
+- **Pooling** — combining raw complete and incomplete records into one dataset and estimating as if they are the same type. This is **always invalid**, because the differential sampling probabilities create bias that no equivalence test removes. TOST only tells you whether the resulting CPUE estimates happen to agree; it says nothing about the compatibility of the underlying sampling mechanisms.
+
+- **Substitution** — choosing to use incomplete trip estimates *instead of* complete trip estimates as your sole estimation basis. This is what validation unlocks. If TOST passes, you can run `use_trips = "incomplete"` and obtain a trustworthy estimate; you are not combining trip types, you are selecting one.
+
+In short: validation **passes** → you may substitute; you may never pool.
 
 ### What NOT to Do
 
 ```{r anti_pattern, eval=FALSE}
 # WRONG: Do not manually pool trip types
 all_interviews <- rbind(complete_data, incomplete_data)
-estimate_catch_rate(design_with_all_data) # INVALID!
+estimate_catch_rate(design_with_all_data) # INVALID — always, even after validation passes
 
 # WRONG: Do not use custom weights to combine
 weighted_mean(c(complete_cpue, incomplete_cpue)) # INVALID!
@@ -187,7 +197,7 @@ weighted_mean(c(complete_cpue, incomplete_cpue)) # INVALID!
 tidycreel **never auto-pools** complete and incomplete trips:
 
 - Default behavior: use complete trips only
-- Explicit option: `use_trips = "incomplete"` for incomplete only
+- Explicit option: `use_trips = "incomplete"` for incomplete only (valid after passing validation)
 - Diagnostic mode: `use_trips = "diagnostic"` for side-by-side comparison (not pooling)
 
 There is no `use_trips = "both"` option because pooling is invalid.
