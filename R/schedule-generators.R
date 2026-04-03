@@ -467,7 +467,7 @@ generate_count_times <- function(
     return(new_creel_schedule(result))
   }
 
-  # Random / systematic — validate time inputs
+  # Random / systematic -- validate time inputs
   hhmm_re <- "^[0-2][0-9]:[0-5][0-9]$"
   if (!grepl(hhmm_re, start_time) || !grepl(hhmm_re, end_time)) {
     cli::cli_abort(c(
@@ -507,7 +507,7 @@ generate_count_times <- function(
   if (total_min %% n_windows != 0L) {
     cli::cli_abort(c(
       "Span must divide evenly by n_windows.",
-      "x" = "{total_min} min / {n_windows} = {total_min / n_windows} — must be a whole number.",
+      "x" = "{total_min} min / {n_windows} = {total_min / n_windows} -- must be a whole number.",
       "i" = "Adjust n_windows or start/end time so the span divides evenly."
     ))
   }
