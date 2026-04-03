@@ -1,5 +1,35 @@
 # Milestones
 
+## v1.1.0 Planning Suite Completeness & Community Health (Shipped: 2026-04-02)
+
+**Phases completed:** 3 phases (57-59), 4 plans
+**Code delivered:** `generate_count_times()` + 26 tests; extended `survey-scheduling.Rmd`; GitHub issue templates + `CONTRIBUTING.md` — 19 files, +1,764/-223 lines
+
+**Key accomplishments:**
+- `generate_count_times()` — within-day count time window generator with random, systematic, and fixed strategies; seed reproducibility; returns `creel_schedule` compatible with `write_schedule()` (Phase 57)
+- 26 new COUNT-TIME tests (COUNT-TIME-01–03); all 72 schedule-generator tests passing (Phase 57)
+- `survey-scheduling.Rmd` extended with full pre/post-season narrative: `generate_count_times()` → `validate_design()` → `check_completeness()` → `season_summary()` — closes v0.9.0 vignette gap (Phase 58)
+- Bug report form upgraded with survey_type single-select dropdown (5 types + "not applicable/unsure"), version field, structured expected/actual behavior textareas (Phase 59)
+- Feature request form created; `config.yml` with `blank_issues_enabled: false` routes how-to questions to GitHub Discussions (Phase 59)
+- `CONTRIBUTING.md` rewritten (189→233 lines): Getting Help (Discussions first) → Filing Issues → PR Guidelines (Phase 59)
+
+---
+
+## v1.0.0 Package Website (Shipped: 2026-03-31)
+
+**Phases completed:** 5 phases (52-56), 8 plans
+**Infrastructure delivered:** pkgdown site, Bootstrap 5 theme, GitHub Actions CI/CD, GitHub Pages deployment
+**Known gaps:** STICKER-01/02/03 checkboxes not updated — Phase 52 intentionally skipped (existing `man/figures/logo.png` and `inst/hex/sticker.R` retained; brand color `#1B4F72` confirmed carried into pkgdown theme)
+
+**Key accomplishments:**
+- Hex sticker assets (`inst/hex/sticker.R`, `man/figures/logo.png`) retained and committed; brand color `#1B4F72` established as primary pkgdown theme color (Phase 52)
+- Full Bootstrap 5 pkgdown theme: bslib palette, Google Fonts (Raleway/Lato/Fira Code), `pkgdown/extra.css` with dark code blocks and pandoc syntax token overrides; `pkgdown::check_pkgdown()` 0 warnings (Phase 53)
+- README polished as compelling home page with R CMD check and deploy badges, five survey types, and feature highlights; all 46 exports + 15 datasets in 9 named reference topic groups (Phase 54)
+- Workflow-driven navbar: Get Started, Survey Types dropdown, Estimation dropdown, Reporting & Planning dropdown, Reference link, NEWS Changelog page (Phase 55)
+- `.github/workflows/pkgdown.yaml` auto-deploys to `gh-pages` on push to main; PR build-only guard skips deploy step; live site at https://chrischizinski.github.io/tidycreel — 5 successful CI runs confirmed (Phase 56)
+
+---
+
 ## v0.9.0 Survey Planning and Quality of Life (Shipped: 2026-03-24)
 
 **Phases completed:** 4 phases, 10 plans, 0 tasks

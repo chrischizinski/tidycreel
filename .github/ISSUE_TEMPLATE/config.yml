@@ -1,0 +1,7 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Ask a question (GitHub Discussions)
+    url: https://github.com/chrischizinski/tidycreel/discussions
+    about: >
+      Have a question about how to use tidycreel? Ask in GitHub Discussions —
+      it keeps answers searchable for everyone.
