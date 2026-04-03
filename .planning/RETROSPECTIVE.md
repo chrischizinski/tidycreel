@@ -205,6 +205,99 @@
 
 ---
 
+## Milestone: v1.0.0 — Package Website
+
+**Shipped:** 2026-03-31
+**Phases:** 5 (52-56) | **Plans:** 8 | **Timeline:** 2 days (2026-03-30 → 2026-03-31)
+
+### What Was Built
+
+- Bootstrap 5 pkgdown theme: bslib palette (`primary: #1B4F72`), Google Fonts (Raleway/Lato/Fira Code), `pkgdown/extra.css` with dark code blocks and explicit pandoc syntax token color overrides
+- Polished README home page with R CMD check and deploy status badges, five survey type callouts, and feature highlights section
+- Grouped reference index: 46 exports + 15 example datasets in 9 named topic sections; S3 methods hidden with `starts_with()` selectors in `title: internal`
+- Workflow-driven navbar: Get Started, Survey Types, Estimation, Reporting & Planning article dropdowns; Reference link; NEWS Changelog
+- `.github/workflows/pkgdown.yaml`: auto-deploys to `gh-pages` on push to main; PR build-only guard (`if: github.event_name != 'pull_request'`); 5 successful CI runs on main; live site at https://chrischizinski.github.io/tidycreel
+
+### What Worked
+
+- **`pkgdown::check_pkgdown()` as continuous validation gate:** Running after every change caught orphaned functions and YAML errors before they accumulated. Zero warnings at ship time.
+- **Phase dependency chain (52 → 53 → 54 → 55 → 56):** Each phase had a well-defined output consumed by the next. Theme established before content; content finalized before navbar wired; navbar complete before CI deployed. No back-tracking.
+- **`starts_with()` selectors for S3 methods:** Using `contents: [starts_with("print."), starts_with("format.")]` under `title: internal` cleanly hides all S3 methods from the rendered reference index — no manual list to maintain.
+- **r-lib/actions v2 canonical template for pkgdown.yaml:** The established r-lib template handled all complexity (R setup, cache, GITHUB_TOKEN permissions) with zero custom code. The only project-specific addition was the `if:` guard on the deploy step.
+- **Phase 52 skip decision:** Recognizing that the existing `man/figures/logo.png` and `inst/hex/sticker.R` were already production-quality saved a full phase with no quality loss.
+
+### What Was Inefficient
+
+- **Pandoc syntax token colors required a second CSS pass:** The initial `pre.sourceCode color` override was insufficient — pandoc injects per-token `<span>` elements (`.fu`, `.kw`, `.st`, `.co`) with their own dark-background-incompatible colors. Adding explicit per-token overrides could have been anticipated at plan time by examining a built HTML page before writing `extra.css`.
+- **Phase 52 was formally planned then skipped:** The skip decision was made during execution rather than in the plan. If the existing logo was known to be sufficient at planning time, Phase 52 could have been a one-task "verify existing assets" rather than a full generation plan.
+- **REQUIREMENTS.md STICKER checkboxes not updated at phase completion:** STICKER-01/02/03 remain `[ ]` because Phase 52 was skipped. The requirements file should have been updated to mark these as satisfied-by-existing-assets at the time the skip decision was made.
+
+### Patterns Established
+
+- **`pkgdown` in DESCRIPTION `Suggests` (not `Imports`):** Build tool, not runtime dependency. This is the standard pattern for all development-only packages.
+- **`docs/` in `.gitignore`, deploy to `gh-pages` orphan branch:** Built HTML stays out of main branch history; gh-pages is the deploy target, not the source. This is the canonical GitHub Pages + pkgdown setup.
+- **PR deploy guard:** `if: github.event_name != 'pull_request'` on the deploy step — build always runs (catches `_pkgdown.yml` errors); deploy only on push to main. Standard pattern for pkgdown CI/CD.
+- **Brand color established in Phase 1 of any UI milestone:** The primary hex value (`#1B4F72`) was set in the sticker phase so every subsequent phase could read it. For future UI work, establishing brand constants before building components prevents color drift.
+
+### Key Lessons
+
+1. **Infrastructure milestones need their own success metrics:** "Site builds" is not the same as "site is useful." A clear visitor journey test (can a biologist find the bus-route vignette in under 3 clicks?) would have made Phase 55 verification more concrete than checking for 404s.
+2. **Examine built HTML before writing CSS overrides:** Pandoc's per-token `<span>` classes require explicit CSS rules — a pattern not visible in the source Rmd. Opening a locally built page before writing `extra.css` would have revealed this on the first pass.
+3. **Skip decisions should update requirements files immediately:** When Phase 52 was skipped, STICKER-01/02/03 should have been updated in `REQUIREMENTS.md` at that moment. Deferred checkbox updates accumulate into known-gap debt that must be resolved at milestone completion.
+4. **Website milestones require no tests but benefit from explicit acceptance criteria:** No automated tests validate visual rendering, navbar interaction, or deploy behavior. Writing explicit human acceptance criteria (e.g., "navigate to Survey Types > Ice Fishing in a browser") in the verification file is the correct substitute.
+
+### Cost Observations
+
+- Model mix: ~100% sonnet (balanced profile)
+- Sessions: ~4-5 sessions across 2 days
+- Notable: Fastest infrastructure milestone; pkgdown configuration is well-documented and the r-lib/actions templates eliminate most CI boilerplate. The shortest GSD milestone by calendar time.
+
+---
+
+## Milestone: v1.1.0 — Planning Suite Completeness & Community Health
+
+**Shipped:** 2026-04-02
+**Phases:** 3 (57-59) | **Plans:** 4 | **Commits:** 17 | **Timeline:** 1 day (2026-04-01 → 2026-04-02)
+
+### What Was Built
+
+- `generate_count_times()` — within-day count window generator with random, systematic, and fixed strategies; seed reproducibility; 26 new COUNT-TIME tests (Phase 57)
+- `survey-scheduling.Rmd` extended with four new sections: Within-Day Count Time Scheduling (3 strategies), Validating the Design Before the Season, Checking Data Completeness After the Season, Assembling the Season Summary (Phase 58)
+- Bug report form upgraded with survey_type dropdown + structured behavior textareas; feature request form created; `config.yml` with `blank_issues_enabled: false` routing to Discussions (Phase 59)
+- `CONTRIBUTING.md` rewritten (189→233 lines): Getting Help moved to top, Filing Issues section with reprex example, PR Guidelines updated (Phase 59)
+
+### What Worked
+
+- **Parallel phase design (57+58 sequential, 59 independent):** Phase 59 had no dependency on 57-58, allowing it to be planned and executed independently. The decoupling meant a config.yml from a 59-02 run pre-committed cleanly into 59-01 without conflict
+- **Fastest milestone by phase count:** 3 phases in 1 day — documentation + community work has lower implementation variance than estimator work; no test-driven complexity, no survey math
+- **Stale checkbox audited before archival:** The PLAN-01 `[ ]` checkbox was caught by the pre-completion audit and documented as a stale documentation artifact (not a code gap). Correcting it in the archive prevents future confusion
+- **`eval=FALSE` pattern for cross-vignette dependencies:** Marking the `season_summary()` chunk `eval=FALSE` with a narrative pointer to the main vignette keeps the scheduling vignette self-contained without duplicating the estimation pipeline
+
+### What Was Inefficient
+
+- **config.yml committed in the wrong plan:** config.yml was created during a 59-02 run before 59-01 executed, producing a commit labeled `feat(59-02)` that logically belonged to 59-01. Harmless in practice but creates confusing git history. Plan ordering within a phase should be enforced at plan time, not discovered during execution
+- **Nyquist VALIDATION.md gap across all 3 phases:** All three phases shipped without VALIDATION.md files. This was identified in the audit but accepted as tech debt. For documentation-only phases, VALIDATION.md may be lower value, but the pattern should be consistent
+
+### Patterns Established
+
+- **Community health as milestone-level infrastructure:** GitHub issue forms, `config.yml`, and `CONTRIBUTING.md` are milestone-scope investments — they don't belong in individual feature phases. Grouping them into a dedicated community health phase (Phase 59) keeps them coherent and reviewable
+- **Survey-type-aware issue forms:** Including the `survey_type` field as a structured dropdown in the bug report form ensures that incoming bug reports contain the context needed to triage without back-and-forth. Domain-specific issue forms reduce diagnostic friction
+- **`Getting Help` before technical standards in `CONTRIBUTING.md`:** For domain-expert users who are not experienced open-source contributors, the community entry point (Discussions, issue filing) is more immediately useful than coding standards. Ordering matters for contributor onboarding
+
+### Key Lessons
+
+1. **Documentation milestones ship fast but leave Nyquist debt:** v1.0.0 and v1.1.0 both had missing VALIDATION.md files across all phases. Consider whether "documentation-only" phases warrant a lighter VALIDATION.md format (e.g., "rendered without error, content reviewed by human") rather than skipping entirely
+2. **Plan ordering within a phase should match commit history:** config.yml appearing in a `feat(59-02)` commit before 59-01 ran is a GSD process artifact. Plans in a phase should be numbered in the order they are expected to run to keep commit history interpretable
+3. **Audit immediately before milestone completion (confirmed again):** The v1.1.0 audit was run the same day as milestone completion, making it current. The PLAN-01 stale checkbox was caught and resolved. Same lesson as v0.4.0 — audit freshness matters
+
+### Cost Observations
+
+- Model mix: ~100% sonnet (balanced profile)
+- Sessions: 2-3 sessions across 1 day
+- Notable: Fastest milestone by calendar time (tied with or faster than v1.0.0); community health work has deterministic scope (form fields, markdown sections) unlike statistical estimation work
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -220,6 +313,8 @@
 | v0.7.0 | 5 | 9 | Spatial stratification; most complex math to date; breaking API rename |
 | v0.8.0 | 4 | 11 | Three new survey types; ice reuses bus-route; camera adds preprocessing; aerial uses linear SE scaling |
 | v0.9.0 | 4 | 10 | Planning layer added as independent module; pure-function tools; `intersect()` guard reused; fastest milestone (1 day) |
+| v1.0.0 | 5 | 8 | First infrastructure-only milestone; zero R functions; pkgdown + GitHub Actions; skip decision on Phase 52 |
+| v1.1.0 | 3 | 4 | Planning suite completeness + first community health milestone; `generate_count_times()` + vignette extension + GitHub issue forms; fastest milestone (1 day) |
 
 ### Cumulative Quality
 
@@ -234,14 +329,17 @@
 | v0.7.0 | 1,588 | ~90% | 7 (+section-estimation) |
 | v0.8.0 | 1,696 | ~90% | 10 (+ice-fishing, +camera-surveys, +aerial-surveys) |
 | v0.9.0 | ~1,838 | ~90% | 10 (no new vignettes) |
+| v1.0.0 | ~1,838 | ~90% | 10 (no new vignettes; website-only milestone) |
+| v1.1.0 | ~1,864 | ~90% | 10 (no new vignettes; scheduling vignette extended) |
 
 ### Top Lessons (Verified Across Milestones)
 
 1. **Primary sources beat existing implementations:** All existing R bus-route packages had wrong πᵢ. Reading the primary source (Jones & Pollock 2012) before implementation prevented propagating those errors
-2. **lintr at every commit prevents cleanup phases:** Zero linting debt across all 7 milestones — pre-commit enforcement works
+2. **lintr at every commit prevents cleanup phases:** Zero linting debt across all milestones — pre-commit enforcement works
 3. **Golden tests from known answers:** Box 20.6 (v0.4.0), TOST reference values (v0.3.0), manual survey calculations (v0.1.0), svycontrast cross-checks (v0.7.0) — reference tests are the strongest quality signal
 4. **Dispatch order is architectural:** Multi-strategy estimators (bus-route, ROM, standard, sectioned) require careful ordering of dispatch checks relative to design slot availability
 5. **Human review gates have value for domain documentation:** Vignettes explaining statistical decisions in domain vocabulary need practitioner sign-off that automated tests cannot provide
+6. **Skip decisions should update requirements files immediately:** Phase 52 skip created checkbox debt resolved only at milestone completion — update requirements at decision time, not archive time
 
 ---
-*Last updated: 2026-03-24 after v0.9.0 milestone*
+*Last updated: 2026-04-02 after v1.1.0 milestone*

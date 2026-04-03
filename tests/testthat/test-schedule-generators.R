@@ -365,3 +365,187 @@ test_that("SCHED-02: seed argument is accepted without error (reserved for futur
     generate_bus_schedule(sched, frame, site = site, p_site = p_site, crew = 1, seed = 42)
   )
 })
+
+# ---- COUNT-TIME: generate_count_times() — implemented in Plan 57-01 ----
+
+# Canonical valid inputs: 480 min span (06:00–14:00), 4 windows of 30 min with 10 min gap
+# stratum = 480/4 = 120 min; window_size + min_gap = 40 < 120 — valid
+.ct_valid <- function(seed = 42L) {
+  generate_count_times( # nolint: object_usage_linter
+    start_time  = "06:00",
+    end_time    = "14:00",
+    strategy    = "random",
+    n_windows   = 4L,
+    window_size = 30L,
+    min_gap     = 10L,
+    seed        = seed
+  )
+}
+
+test_that("COUNT-TIME-01: random strategy returns creel_schedule with required columns", {
+  result <- .ct_valid()
+  expect_s3_class(result, "creel_schedule")
+  expect_s3_class(result, "data.frame")
+  expect_true("start_time" %in% names(result))
+  expect_true("end_time" %in% names(result))
+  expect_true("window_id" %in% names(result))
+  expect_type(result$start_time, "character")
+  expect_type(result$end_time, "character")
+  expect_type(result$window_id, "integer")
+})
+
+test_that("COUNT-TIME-01: systematic strategy — windows spaced exactly k apart", {
+  result <- generate_count_times(
+    start_time  = "06:00",
+    end_time    = "14:00",
+    strategy    = "systematic",
+    n_windows   = 4L,
+    window_size = 30L,
+    min_gap     = 10L,
+    seed        = 42L
+  )
+  expect_s3_class(result, "creel_schedule")
+  # Convert start_time to minutes and check spacing
+  to_min <- function(hhmm) {
+    parts <- strsplit(hhmm, ":")[[1]]
+    as.integer(parts[1]) * 60L + as.integer(parts[2])
+  }
+  starts <- vapply(result$start_time, to_min, integer(1))
+  k <- 480L / 4L # 120 min
+  diffs <- diff(starts)
+  expect_true(all(diffs == k))
+})
+
+test_that("COUNT-TIME-01: fixed strategy — returned rows match fixed_windows input", {
+  fw <- data.frame(
+    start_time = c("06:00", "08:00", "10:00"),
+    end_time = c("06:30", "08:30", "10:30"),
+    stringsAsFactors = FALSE
+  )
+  result <- generate_count_times(strategy = "fixed", fixed_windows = fw)
+  expect_s3_class(result, "creel_schedule")
+  expect_equal(result$start_time, fw$start_time)
+  expect_equal(result$end_time, fw$end_time)
+})
+
+test_that("COUNT-TIME-01: seed reproducibility — same seed + inputs produce identical output", {
+  r1 <- .ct_valid(seed = 7L)
+  r2 <- .ct_valid(seed = 7L)
+  expect_equal(r1, r2)
+  # Systematic too
+  s1 <- generate_count_times("06:00", "14:00", "systematic", 4L, 30L, 10L, seed = 7L)
+  s2 <- generate_count_times("06:00", "14:00", "systematic", 4L, 30L, 10L, seed = 7L)
+  expect_equal(s1, s2)
+})
+
+test_that("COUNT-TIME-01: different seeds produce different random results", {
+  r1 <- .ct_valid(seed = 1L)
+  r2 <- .ct_valid(seed = 2L)
+  expect_false(identical(r1$start_time, r2$start_time))
+})
+
+test_that("COUNT-TIME-02: output passes write_schedule() without error", {
+  result <- .ct_valid()
+  tmp <- tempfile(fileext = ".csv")
+  expect_no_error(write_schedule(result, tmp))
+  expect_true(file.exists(tmp))
+})
+
+test_that("COUNT-TIME-03: missing strategy argument throws cli_abort()", {
+  expect_error(
+    generate_count_times(
+      start_time = "06:00", end_time = "14:00",
+      n_windows = 4L, window_size = 30L, min_gap = 10L, seed = 42L
+    ),
+    class = "rlang_error"
+  )
+})
+
+test_that("COUNT-TIME-03: unknown strategy throws cli_abort()", {
+  expect_error(
+    generate_count_times("06:00", "14:00", "badstrat", 4L, 30L, 10L, seed = 42L),
+    class = "rlang_error"
+  )
+})
+
+test_that("COUNT-TIME-03: end_time <= start_time throws cli_abort()", {
+  expect_error(
+    generate_count_times("14:00", "06:00", "random", 4L, 30L, 10L, seed = 42L),
+    class = "rlang_error"
+  )
+  expect_error(
+    generate_count_times("06:00", "06:00", "random", 4L, 30L, 10L, seed = 42L),
+    class = "rlang_error"
+  )
+})
+
+test_that("COUNT-TIME-03: n_windows does not evenly divide span throws cli_abort()", {
+  # 480 / 7 is non-integer
+  expect_error(
+    generate_count_times("06:00", "14:00", "random", 7L, 30L, 10L, seed = 42L),
+    class = "rlang_error"
+  )
+})
+
+test_that("COUNT-TIME-03: window_size + min_gap > stratum_length throws cli_abort()", {
+  expect_error(
+    generate_count_times("06:00", "14:00", "random", 4L, 100L, 30L, seed = 42L),
+    class = "rlang_error"
+  )
+})
+
+test_that("COUNT-TIME-04: random strategy — all windows within [start_time, end_time]", {
+  result <- .ct_valid()
+  to_min <- function(hhmm) {
+    parts <- strsplit(hhmm, ":")[[1]]
+    as.integer(parts[1]) * 60L + as.integer(parts[2])
+  }
+  start_min <- 6L * 60L # 360
+  end_min <- 14L * 60L # 840
+  starts <- vapply(result$start_time, to_min, integer(1))
+  ends <- vapply(result$end_time, to_min, integer(1))
+  expect_true(all(starts >= start_min))
+  expect_true(all(ends <= end_min))
+})
+
+test_that("COUNT-TIME-04: systematic strategy — all windows within [start_time, end_time]", {
+  result <- generate_count_times(
+    "06:00", "14:00", "systematic", 4L, 30L, 10L,
+    seed = 42L
+  )
+  to_min <- function(hhmm) {
+    parts <- strsplit(hhmm, ":")[[1]]
+    as.integer(parts[1]) * 60L + as.integer(parts[2])
+  }
+  start_min <- 6L * 60L
+  end_min <- 14L * 60L
+  starts <- vapply(result$start_time, to_min, integer(1))
+  ends <- vapply(result$end_time, to_min, integer(1))
+  expect_true(all(starts >= start_min))
+  expect_true(all(ends <= end_min))
+})
+
+test_that("COUNT-TIME-04: random strategy — no windows overlap", {
+  result <- .ct_valid()
+  to_min <- function(hhmm) {
+    parts <- strsplit(hhmm, ":")[[1]]
+    as.integer(parts[1]) * 60L + as.integer(parts[2])
+  }
+  starts <- sort(vapply(result$start_time, to_min, integer(1)))
+  ends <- sort(vapply(result$end_time, to_min, integer(1)))
+  if (length(ends) > 1) {
+    expect_true(all(ends[-length(ends)] <= starts[-1]))
+  }
+})
+
+test_that("COUNT-TIME-04: fixed strategy — overlapping fixed_windows throws cli_abort()", {
+  fw_overlap <- data.frame(
+    start_time = c("06:00", "06:20"),
+    end_time = c("06:30", "06:50"), # 06:20 < 06:30 — overlap
+    stringsAsFactors = FALSE
+  )
+  expect_error(
+    generate_count_times(strategy = "fixed", fixed_windows = fw_overlap),
+    class = "rlang_error"
+  )
+})

@@ -1,0 +1,53 @@
+name: Feature request
+description: "Propose a new feature or enhancement"
+labels: ["enhancement"]
+assignees: []
+body:
+  - type: textarea
+    id: problem_statement
+    attributes:
+      label: Problem statement
+      description: "What problem does this feature solve? Describe the workflow gap or limitation you are experiencing."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: Proposed solution
+      description: "Describe the feature you would like. Include function names, argument names, or return value shapes if you have ideas."
+    validations:
+      required: true
+
+  - type: textarea
+    id: use_case
+    attributes:
+      label: Use case
+      description: "Provide a concrete example — a brief R snippet showing how you would use the feature if it existed."
+      render: r
+    validations:
+      required: false
+
+  - type: dropdown
+    id: survey_types
+    attributes:
+      label: Survey types affected
+      description: Which survey types would benefit from this feature?
+      multiple: true
+      options:
+        - instantaneous
+        - bus_route
+        - ice
+        - camera
+        - aerial
+        - "all / not type-specific"
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: "Have you worked around this limitation? What did you try?"
+    validations:
+      required: false
