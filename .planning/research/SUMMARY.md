@@ -1,197 +1,203 @@
 # Project Research Summary
 
-**Project:** tidycreel v0.9.0 — Survey Planning, Power Analysis, and Data Quality Tools
-**Domain:** R package quality-of-life utilities wrapping an existing design-based creel estimation pipeline
-**Researched:** 2026-03-22
+**Project:** tidycreel v1.3.0 — Generic DB Interface
+**Domain:** R package DB interface layer — creel_schema S3 contract + tidycreel.connect companion package
+**Researched:** 2026-04-06
 **Confidence:** HIGH
 
 ## Executive Summary
 
-tidycreel v0.9.0 is a support-tooling milestone that wraps around the five-survey-type estimation pipeline shipped in v0.8.0. The target features are the tools biologists use before and after estimation: schedule generation, sample-size calculations, design validation, data completeness diagnostics, and season summary assembly. Research confirms that the underlying statistical methods (McCormick & Quist 2017 for CV-based sample sizes; Cohen two-sample t-test for change detection; Neyman allocation for stratified designs) are well-established, analytically expressible using the existing `stats` import, and require only two net-new package imports — `lubridate` (date arithmetic, Imports) and `writexl` (optional xlsx export, Suggests only). No new estimation machinery is needed; every new function either produces input for `creel_design()` or consumes its output.
+tidycreel v1.3.0 adds a config-driven database loading layer to an existing three-layer R package that already ships 1,864+ passing tests and five validated survey types. The architecture splits into two concerns: a `creel_schema` S3 class (column mapping contract) added to tidycreel core, and a new `tidycreel.connect` companion package that wraps DBI connections and CSV paths behind a uniform `creel_connect()` + `fetch_*()` API. The closest ecosystem precedents are CDMConnector (OMOP CDM) and easydb; the key architectural divergence from CDMConnector is that all fetches are eager (not lazy) because creel datasets fit in memory and the existing `survey::` estimation pipeline requires it. No existing tidycreel functions change their signatures.
 
-The recommended build strategy is four independent but sequentially testable components, each delivered as one new R source file: schedule generators (`creel-schedule.R`), power and sample-size tools (`creel-power.R`), completeness checkers (`creel-completeness.R`), and export utilities / season summary (`creel-export.R`). The first two components have no internal dependencies and can proceed in parallel. The third reads only stable, long-standing slots of the existing `creel_design` S3 object. The fourth consumes estimator outputs that are unchanged since v0.5.0. Regression risk on the existing 1,696 tests is effectively zero for all four components.
+The recommended approach is a four-phase build sequence driven by the dependency graph: `creel_schema` in tidycreel first (no external deps), then the tidycreel.connect package skeleton and YAML config layer, then the CSV backend (fully testable without a database), then the SQL Server ODBC backend last. This order keeps the existing 1,864-test suite green throughout and allows the companion package's CI to verify the entire fetch-to-estimation pipeline against fixture CSVs before any live database is involved.
 
-The dominant implementation risk is integration correctness, not statistical complexity. Schedule column names and types must round-trip cleanly through `creel_design()`; power calculations must use the stratified variance formula (not SRS); completeness checks must dispatch by `survey_type` to avoid false-positive NA flags on aerial and ice designs; and the season summary must assemble existing estimator outputs rather than re-deriving values from raw data. Each failure mode is recoverable but expensive after tests are written against the wrong behavior. These guards must be addressed at the start of each component phase, not retrofitted later.
-
----
+The primary risk area is the SQL Server ODBC backend: platform-specific driver names, Windows-only integrated authentication, SQL DATE returning as character, and credential exposure in YAML config files are all high-impact pitfalls with silent failure modes. Every one of these pitfalls is addressed at the YAML config validation layer and the `fetch_*()` coercion layer — both of which must be implemented before the SQL Server backend is considered done. The flat file backend has its own traps (UTF-8 BOM from Excel exports, readr type-guessing of species codes), but these are lower-stakes and fully testable without infrastructure.
 
 ## Key Findings
 
 ### Recommended Stack
 
-The existing package Imports cover nearly all new functionality. Only two additions are needed. `lubridate >= 1.9.5` supplies `wday()`, period arithmetic, and DST-safe interval math required for season-spanning schedule generation; base R `seq()` with `by = "week"` is insufficient for this use case. `writexl >= 1.5.4` covers the xlsx schedule export requirement with zero transitive R dependencies (pure C binding) and belongs in `Suggests`, not `Imports`. All power and sample-size calculations use `stats::qnorm()`, `stats::qt()`, and `stats::power.t.test()` already available. All completeness checks use `dplyr::anti_join()` and `cli::cli_warn()` already in Imports. Adding `pointblank`, `pwr`, `openxlsx`, or `openxlsx2` to Imports is explicitly not recommended.
+tidycreel itself requires no new `Imports` entries — `creel_schema` is implemented with base R plus the packages already in Imports (checkmate, cli, rlang). The companion package `tidycreel.connect` adds: `DBI >= 1.3.0` (generic DB interface, in Imports), `yaml >= 2.3.12` (YAML config parsing, in Imports), and the same supporting packages already used by tidycreel (dplyr, tibble, cli, rlang, checkmate). Both `odbc` and `readr` belong in `Suggests` — odbc because it requires system-level ODBC drivers that CSV-only users should not be forced to install, readr because base `read.csv()` is an acceptable fallback. Test infrastructure uses RSQLite as a DBI-compliant in-memory backend, withr for temp files and env vars, and mockery sparingly.
 
 **Core technologies:**
-- `lubridate >= 1.9.5` (Imports): Date arithmetic for schedule generators — `seq()` alone cannot handle DST, period labels, and `wday()` classification required for stratified calendar output. Published 2026-02-04; 2 small transitive dependencies.
-- `writexl >= 1.5.4` (Suggests): xlsx export for schedule and results output — zero-dependency C implementation; optional, graceful failure path via `rlang::check_installed()` when absent. Published 2025-04-15; 0 transitive dependencies.
-- `stats` (existing Imports): All analytical power and sample-size formulas — `qnorm()`, `qt()`, `power.t.test()` cover every required calculation without a domain-general effect-size package.
-- `dplyr` + `cli` (existing Imports): All completeness diagnostics — `anti_join()` + `cli_warn()` pattern matches the existing missing-sections guard established in v0.7.0.
+- DBI >= 1.3.0 (Imports): generic DB interface — every backend implements its generics; enables backend-agnostic `fetch_*()` code
+- yaml >= 2.3.12 (Imports): YAML config parsing — maps naturally to creel_schema named-list structure; no hidden filename conventions
+- odbc >= 1.6.4 (Suggests): SQL Server ODBC driver — DBI-compliant, ~10x faster than RODBC; system deps make it Suggests-only
+- readr >= 2.1.6 (Suggests): flat-file backend — vroom engine, tibble output, handles UTF-8 BOM correctly; Suggests allows CSV-only installs without system deps
+- RSQLite >= 2.3.0 (Suggests/test): in-memory DBI test backend — eliminates SQL Server dependency from CI
 
-**What not to add:**
-- `pointblank` (Imports): 19 hard Imports including unrelated HTML/email packages; triples dependency footprint for `is.na()` logic achievable with `dplyr`.
-- `pwr` (Imports): Cohen's d vocabulary requires user translation of creel domain inputs; `stats::power.t.test()` accepts native creel inputs directly.
-- `openxlsx` / `openxlsx2` (Imports): Unmaintained or heavyweight for write-only use; `writexl` in Suggests covers the requirement.
-- `samplesize4surveys` (Imports): Last updated 2020; social survey design assumptions; TeachingSampling dependency; misaligned with HT estimators in tidycreel.
+**Do not use:** RODBC (not DBI-compliant), dbplyr in `fetch_*()` (lazy eval incompatible with survey design pipeline), pool (Shiny-oriented connection management), `:::` access to tidycreel internals.
 
 ### Expected Features
 
-All confirmed features are wrappers or assembly layers over existing functionality; none require new estimation logic.
+The MVP that enables a complete NGPC workflow is: `creel_schema` S3 class + validator in tidycreel, `ngpc_default_schema()` convenience constructor, `creel_connect()` for both SQL Server and flat-file backends, and all five `fetch_*()` loaders. Everything else — YAML-from-file constructor, print methods, DuckDB backend, survey type attribute tagging — is P2/P3 to add after the core path is validated.
 
-**Must have (table stakes) — v0.9.0 launch:**
-- `creel_schedule()` / `generate_schedule()` — sampling calendar generator returning a tidy tibble with `date`, `day_type`, `period_id`; foundational input for all downstream planning tools.
-- `creel_n_effort()` — CV-target sample size for effort using Cochran (1977) §2.2 / McCormick (2017); most-requested pre-season calculation in agency workflows.
-- `creel_n_cpue()` — CV-target sample size for CPUE using ratio estimator variance (Cochran 1977 eq. 6.13); paired with effort calculator, distinct formula.
-- `validate_design()` — pre-season go/no-go check that calls the two calculators per stratum and returns a pass/warn/fail tibble per stratum.
-- `check_completeness()` — post-season QA combining missing-days detection and low-sample strata flag in one call; mirrors the `missing_sections` guard pattern from v0.7.0.
-- `season_summary()` / `summarize_season()` — assembles existing `estimate_*()` outputs into a single report-ready wide tibble; does not re-estimate.
+**Must have (table stakes):**
+- `creel_schema` S3 class with `new_creel_schema()` + `validate_creel_schema()` — required by every downstream function; CDMConnector ecosystem precedent
+- `ngpc_default_schema()` — zero-configuration path for primary user group; removes all boilerplate
+- `creel_connect()` — fundamental entry point accepting DBI connection or CSV paths plus a `creel_schema`
+- `fetch_interviews()`, `fetch_counts()`, `fetch_catch()`, `fetch_harvest_lengths()`, `fetch_release_lengths()` — five loaders block the estimation pipeline if missing
+- SQL Server backend via odbc + Windows Authentication — NGPC production requirement
+- Flat-file / CSV backend via readr — general-purpose viability and testability without live DB
+- Validation on load (`validate_fetch_result()`) — catches schema mismatches at fetch time, not buried in estimator calls
 
-**Should have (differentiators) — v0.9.x after validation:**
-- `schedule_bus_route()` — executable circuit/site/crew assignment tibble with `inclusion_prob` columns fed directly to `creel_design(survey_type="bus_route")`; absent from all CRAN competitors including AnglerCreelSurveySimulation.
-- `creel_power()` — change detection power calculator using two-sample t-test framework (Schmitt 2001, Georgia DNR 2025 NAJFM); creel-vocabulary inputs (% CPUE change, alpha, desired power).
-- `write_schedule()` — thin `writexl::write_xlsx()` / `readr::write_csv()` wrapper; defer until schedule tibble format is stable.
-- `check_refusal_threshold()` — one-liner wrapper over existing `summarize_refusals()` (v0.5.0) with pass/warn/fail status column.
+**Should have (competitive):**
+- `creel_connect_from_yaml()` — reduces connection boilerplate; add once core API is stable
+- `print.creel_schema()` / `print.creel_connection()` — consistent with existing tidycreel print methods
+- Survey type tag as `.survey_type` attribute on `fetch_*()` output — enables `creel_design()` dispatch without user re-specifying
 
-**Defer (v1.0+):**
-- `schedule_large_lake()` — highest complexity; requires section workflows and design validator proven in active use first; scope must be strictly bounded to equal-probability rotating design, never a constraint solver.
-- Neyman stratum allocation helper — straightforward formula but requires pilot variance estimates that new-fishery users often lack; defer until base planning tools prove adoptable.
+**Defer (v2+):**
+- Additional agency schemas (Wisconsin DNR, Minnesota DNR) — requires agency contribution
+- Schema versioning — premature until schema drift is observed in practice
+- `creel_schema` export to YAML (round-trip serialization)
+- DuckDB flat-file backend — add only if users report CSV loading is slow
+- REST API backend — out of scope; users should use existing CreelApiHelper.R
 
-**Anti-features (do not build):**
-- Full report rendering (PDF/Word/Rmd) — opinionated template, high maintenance burden; return the `season_summary()` tibble and let users render.
-- Automatic pilot data extraction from current season — circular: using same-season data to size same-season sample produces invalid CV estimates.
-- Interactive Shiny scheduler — out of scope; tibble output is pipe-friendly and can feed any user-built Shiny app.
+**Anti-features to reject explicitly:** auto-discover column mapping, plaintext credentials in YAML, `fetch_all()` mega-loader, dbplyr/lazy evaluation for fetch, SQL dialect translation, S4/R6 for `creel_schema`.
 
 ### Architecture Approach
 
-The three-layer architecture (API → Orchestration/Dispatch → `survey::`) is unchanged. All new components attach as peers or consumers at the edges of the existing diagram. No changes to `creel-design.R`, any estimation file, or any existing `summarize_*()` function. `print-methods.R` is the only existing file that changes (two new `format.*` methods added). DESCRIPTION changes: add `lubridate` to Imports, `writexl` to Suggests.
+The design adds two new layers below the existing tidycreel API layer without touching any of the 22 existing R source files (except `R/print-methods.R` and `R/data.R` for additive extensions only). The dependency direction is strictly one-way: `tidycreel.connect` imports `tidycreel`; `tidycreel` has no dependency on `tidycreel.connect`. `creel_schema` belongs in `tidycreel` (not in the companion package) because it is a contract about what `add_interviews()` etc. expect, and placing it in the companion package would create a circular dependency. The `fetch_*()` functions are thin adapters — they rename columns from source names to canonical names expected by `add_*()` and perform type coercion; no scientific logic lives in them.
 
-**Major components (four new R files):**
-1. `R/creel-schedule.R` — `generate_schedule()` and `generate_bus_schedule()`; returns plain `data.frame` with canonical column schema validated at construction before passing to `creel_design()`. Pattern: Pre-Design Generator (no survey package dependency; testable with zero mock design objects).
-2. `R/creel-power.R` — `n_days_required()`, `power_creel()`, `cv_from_n()`; standalone analytical calculators; no `creel_design` dependency; verify against McCormick & Quist (2017) Table 2 benchmarks.
-3. `R/creel-completeness.R` — `check_completeness()`; guard-first, read-only, `survey_type`-dispatched; returns `creel_completeness_check` S3; mirrors `creel_tost_validation` pattern from `validate_incomplete_trips()`.
-4. `R/creel-export.R` — `write_creel_csv()`, `export_creel()`, `summarize_season()`; terminal functions; CSV path uses base R `write.csv()`; xlsx path requires `writexl` in Suggests with `rlang::check_installed()` guard.
-
-**Key data flow properties confirmed by architecture research:**
-- Schedule generators are fully upstream; no circular dependencies possible.
-- Power calculators are orthogonal; can be called before any design exists.
-- Completeness checkers are read-only; design passes through unchanged.
-- Export utilities are terminal; consume estimates tibbles, produce files, return nothing for further computation.
-- `summarize_season()` is a collator, not an estimator; must not call any `estimate_*()` function internally.
+**Major components:**
+1. `creel_schema` S3 class (tidycreel, `R/creel-schema.R`) — stateless column/table mapping contract; carries `col_map`, `table_map`, `survey_type`, `version`; validates required columns for each survey type
+2. `creel_connection` S3 object (tidycreel.connect) — carries live DBI connection or NULL (CSV), embedded `creel_schema`, backend tag; returned by `creel_connect()`; consumed by all `fetch_*()` functions
+3. `fetch_*()` loaders (tidycreel.connect, one file per table) — dispatch on backend tag; apply column map; coerce types; return plain tibbles ready for `add_*()` without further renaming
+4. YAML config layer (tidycreel.connect, `R/yaml-config.R`) — validates all required keys immediately after `read_yaml()`; never lets NULL propagate to `DBI::dbConnect()`
+5. Backend internals (tidycreel.connect) — `.fetch_sqlserver()` and `.fetch_csv()` are separate internal helpers; adding a third backend requires only a new helper and a new dispatch branch in `fetch_*()`
 
 ### Critical Pitfalls
 
-1. **Schedule output incompatible with `creel_design()` input (S-1, HIGH cost)** — Column names, date types (`Date` not `POSIXct`), and day-type string values must match the existing pipeline exactly. Define a `creel_schedule` class with a documented schema before writing any generator. Require a round-trip test (`generate_schedule() |> creel_design() |> get_sampling_frame()`) as the first test in Phase A. Recovery cost is HIGH if discovered after tests are written.
+1. **ODBC driver name is platform-specific (DB-1)** — never hard-code; require `driver:` as a YAML key; document `odbc::odbcListDrivers()` for discovery; provide `creel_check_driver()` diagnostic. Prevents silent failures on macOS/Linux.
 
-2. **Weekday/weekend encoding mismatch (S-2, HIGH cost)** — String comparison is case-sensitive in R; `"Weekday"` silently fails to join against `"weekday"` in interview data, producing NA inclusion probabilities. Use a single package-level constant for both the schedule generator and the existing pipeline. Verify with an explicit join test.
+2. **Windows Integrated Authentication fails on macOS/Linux (DB-2)** — YAML must support separate `auth: windows_integrated` vs `auth: sql_password` modes; `creel_connect()` detects platform and aborts with a clear message when `windows_integrated` is requested on non-Windows.
 
-3. **SRS power formula applied to stratified designs (P-1, MEDIUM cost)** — Using the unstratified formula with overall CV underestimates required sample size when strata are effective. The calculator must accept a `strata` argument and use Cochran (1977) §5.25 stratified variance by default. SRS approximation must be documented as such and behind an explicit option.
+3. **YAML implicit type coercion silently corrupts config values (YML-1)** — `trusted_connection: yes` is parsed as logical `TRUE`, not the string `"yes"`; validate types of every config key immediately after `read_yaml()` using `cli_abort()` that names the offending key and its actual R type.
 
-4. **CV of effort conflated with CV of catch rate (P-2, MEDIUM cost)** — Effort CV and CPUE CV respond to different variance components; McCormick (2017) benchmarks: CV=0.20 requires ~16 days for effort but ~43 days for CPUE with the daily estimator. The `estimator` argument must be required, and both estimator paths must be tested.
+4. **SQL DATE columns return as character from odbc, not as R Date (DB-4)** — documented long-standing issue in r-dbi/odbc; `fetch_*()` loaders must explicitly coerce all date columns with `as.Date()` after retrieval; tests must assert `is(result$cd_Date, "Date")`, not just non-null.
 
-5. **Completeness checker false positives for survey-type-specific NAs (SC-3, MEDIUM cost)** — Aerial surveys have no `bus_route` slot; ice surveys have synthetic-only bus_route data; camera surveys have maintenance-window gaps. A generic `anyNA()` check fires on every legitimate non-instantaneous design. The checker must dispatch by `design$survey_type` using the `intersect()` guard pattern established in v0.7.0/v0.8.0. Test all five survey type fixtures.
+5. **odbc in Imports forces system ODBC library install for all users (S3-3)** — `odbc` must be in `Suggests`; use `rlang::check_installed("odbc")` at the top of the SQL Server backend path; flat-file-only users install without any system dependencies.
 
-6. **Season summary re-deriving values from raw data (SC-4, HIGH cost)** — Summing raw catch or averaging raw CPUE bypasses the design-based pipeline and produces wrong answers for stratified and bus-route designs. `summarize_season()` must accept a named list of pre-computed `creel_estimates` objects. Test by numeric equality against individual `estimate_*()` outputs.
+6. **tidycreel.connect using `:::` to access tidycreel internals (S3-4)** — `creel_schema` constructor must be a fully exported public API in tidycreel; companion package uses `@importFrom tidycreel creel_schema`; never uses `:::`.
 
----
+7. **readr type-guessing misclassifies species codes and zero-padded identifiers (FF-3)** — always pass explicit `col_types` to `read_csv()`; `creel_schema` must carry a column-type mapping alongside the column-name mapping; test with leading-zero fixtures.
 
 ## Implications for Roadmap
 
-Based on research, the dependency graph suggests four phases with Phases A and B independent (parallel-capable), followed by Phase C (requires Phase B outputs), followed by Phase D (terminal consumer):
+Based on research, suggested phase structure:
 
-### Phase A: Schedule Generators
+### Phase A: creel_schema S3 Class in tidycreel
 
-**Rationale:** `creel_schedule()` is the foundational input for the design validator, bus-route scheduler, large-lake scheduler, and completeness checker. Building this first forces definition of the canonical `creel_schedule` schema, which prevents the highest-cost pitfall (S-1) from cascading into later phases. All downstream planning tools need the schedule tibble; Phase A is the single dependency no other phase can resolve.
-**Delivers:** `generate_schedule()` for instantaneous/access designs; `generate_bus_schedule()` with `inclusion_prob` columns; `write_schedule()` thin export wrapper; canonical `creel_schedule` S3 class with validated schema.
-**Addresses features:** `creel_schedule()` (P1), `schedule_bus_route()` (P2), `write_schedule()` (P2).
-**Avoids pitfalls:** S-1 (schema definition before any code), S-2 (shared day-type constants), S-3 (programmatic `p_site`/`p_period` from schedule, never hardcoded).
-**Research flag:** Needs phase-level confirmation of the exact column names and types required by `creel_design()` at construction — inspect `R/creel-design.R` and the `$calendar` slot documentation before writing any generator code. This is the one gap that was not resolvable from research alone.
+**Rationale:** `creel_schema` is the foundational dependency for all other phases. It must exist in tidycreel before tidycreel.connect can be created. It has no external dependencies (uses only base R + existing Imports). Completing this phase independently ships value to flat-file users who want schema validation without the companion package.
 
-### Phase B: Power and Sample-Size Calculators
+**Delivers:** `new_creel_schema()`, `creel_schema()`, `validate_creel_schema()`, `is_creel_schema()`, `CANONICAL_COLUMNS` constant, `ngpc_default_schema()`, `print.creel_schema()`. Tests for construction, validation errors, survey type tagging, print output.
 
-**Rationale:** Independent of the schedule tibble and `creel_design`; can proceed in parallel with Phase A. Completing these analytical functions establishes the calculation engine that `validate_design()` calls internally in Phase C. Building Phase B before Phase C prevents pitfall SC-2 (design validator duplicating calculator logic).
-**Delivers:** `creel_n_effort()`, `creel_n_cpue()`, `creel_power()`, `cv_from_n()`; no new dependencies (pure `stats`); vignette reproducing McCormick & Quist (2017) Table 2 benchmarks.
-**Uses stack:** `stats` (existing Imports only); no new Imports or Suggests needed.
-**Implements architecture:** Pattern 2 (Standalone Power Calculator — no `creel_design` dependency; accepts raw variance inputs from any source).
-**Avoids pitfalls:** P-1 (stratified formula required, SRS approximation documented), P-2 (explicit `estimator` argument required, both paths tested), P-3 (change detection accepts `creel_estimates` SE, not re-derived from raw data), P-4 (document pilot variance provenance; `trip_adjustment` parameter optional).
-**Research flag:** Well-documented analytical formulas from primary literature; no deeper research needed. Verification target: reproduce McCormick & Quist (2017) Table 2 numerically.
+**Addresses:** creel_schema S3 class (table stakes), validate_creel_schema(), ngpc_default_schema(), print.creel_schema()
 
-### Phase C: Design Validator and Completeness Checkers
+**Avoids:** Circular dependency (creel_schema lives in tidycreel, not companion package); API breakage (plain S3 list, never applied as class on fetch_*() return values)
 
-**Rationale:** Depends on Phase B (validator calls `creel_n_effort()`/`creel_n_cpue()` internally; building the validator before the calculators forces duplication of the CV formula, which is pitfall SC-2). The `creel_design` API is stable since v0.4.0 and requires no changes here.
-**Delivers:** `validate_design()` (pre-season pass/warn/fail report per stratum); `check_completeness()` (post-season missing-days + low-sample strata in one call); `check_refusal_threshold()` (thin wrapper over `summarize_refusals()`); `creel_completeness_check` S3 class with print method.
-**Addresses features:** `validate_design()` (P1), `check_completeness()` (P1), `check_refusal_threshold()` (P2).
-**Avoids pitfalls:** SC-2 (validator calls constructor in `tryCatch`, no duplicated validation logic), SC-3 (survey-type dispatch before column checks; test all five survey type fixtures), P-3 (change detection uses SE from `creel_estimates`).
-**Research flag:** Standard patterns from existing validation architecture (`creel_tost_validation`, `validate_incomplete_trips()`); no deeper research needed. Critical test requirement: all five survey type fixtures (instantaneous, bus_route, ice, camera, aerial) must produce zero false-positive flags.
+**Research flag:** Standard patterns — no research phase needed. Wickham AdvR §13 three-function S3 pattern is well-documented; existing `creel_design` and `creel_estimates` constructors in the codebase are direct models. Gap: canonical column names in `CANONICAL_COLUMNS` must be verified against live `add_interviews()`, `add_counts()`, `add_catch()`, `add_lengths()` signatures before implementation.
 
-### Phase D: Export Utilities and Season Summary
+### Phase B: tidycreel.connect Package Skeleton + YAML Config Layer
 
-**Rationale:** Terminal consumers of estimator outputs; have no new dependencies on Phases A-C except that the end-to-end vignette tests benefit from the full pipeline (schedule → design → estimates) being established. `summarize_season()` depends only on the stability of `estimate_*()` function outputs, which have been stable since v0.5.0.
-**Delivers:** `write_creel_csv()` (base R, zero new dependencies); `export_creel()` (xlsx via `writexl` in Suggests, graceful failure when absent); `summarize_season()` with `creel_season_summary` S3 class; `format.creel_season_summary` and `format.creel_completeness_check` print methods added to `print-methods.R`.
-**Uses stack:** `writexl >= 1.5.4` (Suggests, one-line DESCRIPTION change); base R `write.csv()` for CSV path.
-**Implements architecture:** Pattern 4 (Post-Estimation Export, thin wrapper with optional Suggests dependency).
-**Avoids pitfalls:** D-1 (`writexl` in Suggests, never Imports; `rlang::check_installed()` guard on xlsx path), D-2 (export from underlying numeric tibble, not S3 print-formatted strings), SC-4 (season summary accepts named list of pre-computed estimates, never re-derives from raw data).
-**Research flag:** Well-documented patterns; no deeper research needed. Key test: exported CSV/xlsx round-trip must preserve numeric column types (`class(re_read_column) == "numeric"`).
+**Rationale:** The YAML config format and its validation logic are where the most dangerous pitfalls live (credential exposure, NULL propagation, implicit type coercion). These must be designed and validated as a separate deliverable before any backend code is written — catching config errors at load time is the core UX promise of the package.
+
+**Delivers:** Package scaffold (DESCRIPTION, NAMESPACE, testthat structure), `creel_connect()`, `new_creel_connection()`, `print.creel_connection()`, `.read_config()`, `.validate_config_keys()`. Tests for YAML parsing with temp files, missing key errors, type validation, credential env-var preference, backend tag assignment.
+
+**Addresses:** creel_connect() constructor, creel_connect_from_yaml() (stub), fail-fast config validation, credential security
+
+**Avoids:** YML-1 (implicit type coercion), YML-2 (NULL propagation), YML-3 (credential in YAML), S3-3 (odbc in Imports — DESCRIPTION must be correct before any backend code), S3-4 (circular dependency — one-way import direction established here), S3-2 (DBI S4 dispatch — NAMESPACE must be correct before any DBI method is written)
+
+**Research flag:** Review rstudio/config `!expr` credential injection pattern during planning — the yaml package (not the config package) handles tag evaluation differently and the mechanism for R expression evaluation in YAML keys needs verification.
+
+### Phase C: CSV Backend + fetch_*() Loaders
+
+**Rationale:** The CSV backend is fully testable without network access or ODBC drivers, making it the right target for validating the entire fetch → rename → type-coerce → add_*() pipeline. Once CSV backend tests confirm that `fetch_interviews()` output flows into `add_interviews()` without modification, the SQL Server backend only needs to substitute the data source — the coercion and rename logic is already proven.
+
+**Delivers:** `.fetch_csv()` internal helper, all five `fetch_*()` functions (CSV dispatch path), `validate_fetch_result()` internal, BOM-strip column name cleanup, explicit `col_types` specification, column-type map in `creel_schema`. Tests against fixture CSV files. Round-trip integration test: CSV fixture → `fetch_interviews()` → `add_interviews()`.
+
+**Addresses:** fetch_interviews(), fetch_counts(), fetch_catch(), fetch_harvest_lengths(), fetch_release_lengths(), validation on load, flat-file backend (all table-stakes features)
+
+**Avoids:** FF-1 (column name variants — column mapping is core, not add-on), FF-2 (BOM corruption — readr + defensive BOM-strip), FF-3 (readr type guessing — explicit col_types), S3-1 (creel_schema class never applied to fetch_*() return values)
+
+**Research flag:** Standard patterns — no research phase needed. readr `col_types` specification is thoroughly documented; BOM handling is a known solved problem.
+
+### Phase D: SQL Server ODBC Backend
+
+**Rationale:** SQL Server is the production requirement for NGPC but depends on external infrastructure (ODBC driver, network, credentials). Building it last means all SQL-specific pitfalls are addressed in a contained phase with a fully locked public API. Integration tests are the only ones requiring external infrastructure.
+
+**Delivers:** `.fetch_sqlserver()` internal helper, driver detection logic, creel_uid WHERE clause injection, explicit `as.Date()` coercion for all date columns, platform check for Windows auth mode, `creel_check_driver()` diagnostic function. Tests skipped when DB unreachable via `testthat::skip_if()`. Full integration test: YAML → `creel_connect()` → `fetch_interviews()` → `add_interviews()` against NGPC test DB.
+
+**Addresses:** SQL Server backend (table stakes), Windows Authentication, creel_uid filtering
+
+**Avoids:** DB-1 (driver name hard-coding), DB-2 (Windows auth on macOS/Linux), DB-3 (connection leaks in tests), DB-4 (SQL DATE as character), DB-5 (DATETIMEOFFSET), DB-6 (encoding/Latin1 collation)
+
+**Research flag:** Needs planning attention — CI matrix for macOS/Linux SQL Server testing requires ODBC driver install steps that must be specified before implementation. NGPC database collation (Latin1 vs UTF-8) must be confirmed with NGPC DBA before the encoding coercion layer is written. creel_uid WHERE clause field name must be verified against live NGPC view schema.
+
+### Phase E: Polish, Documentation, Getting-Started Vignette
+
+**Rationale:** P2 features (YAML-from-file constructor, print method refinement, `.survey_type` attribute tagging) add convenience after the core path is validated. The getting-started vignette requires all four phases to be complete.
+
+**Delivers:** `creel_connect_from_yaml()`, credential env-var documentation in README, `.survey_type` attribute on fetch_*() output, getting-started vignette (YAML → connect → fetch → add_*() workflow), README with platform-specific ODBC install instructions.
+
+**Addresses:** creel_connect_from_yaml() (P2), survey type tagging (P2), print.creel_connection() refinement
+
+**Research flag:** Standard documentation patterns — no research phase needed.
 
 ### Phase Ordering Rationale
 
-- **Phases A and B are parallel** because neither depends on the other; both have zero internal package dependencies. Builds can proceed on separate branches or sequentially — either is fine.
-- **Phase C follows Phase B** because `validate_design()` calls `creel_n_effort()` and `creel_n_cpue()` internally. Building the validator before the calculators forces duplication of the CV formula (pitfall SC-2: two diverging implementations).
-- **Phase D is last** because `summarize_season()` integration tests benefit from the full workflow being established, and the print methods for `creel_completeness_check` (Phase C) should be finalized before the companion `creel_season_summary` method is written in `print-methods.R` to ensure consistent formatting conventions.
-- **`schedule_large_lake()` is explicitly deferred to v1.0+** by all four research documents. When eventually planned, its scope must be bounded to equal-probability rotating designs; constraint-solver logic (pitfall SC-1) is out of scope.
-
-### Research Flags
-
-Phases likely needing deeper research during planning:
-- **Phase A (Schedule Generators):** The canonical `creel_schedule` schema — column names, types, and allowed `day_type` values required by `creel_design()` at construction — must be confirmed from direct inspection of `R/creel-design.R` and any test fixtures that populate `$calendar` before the Phase A plan is written. This is the one concrete gap identified across all four research files.
-
-Phases with standard patterns (research-phase not needed):
-- **Phase B (Power Calculators):** Formulas are direct from primary literature (McCormick & Quist 2017; Cochran 1977); only `stats` needed; verification against known Table 2 values is sufficient.
-- **Phase C (Validators/Completeness):** Mirrors existing `creel_tost_validation` and `validate_incomplete_trips()` patterns exactly; no new statistical machinery.
-- **Phase D (Export/Summary):** Thin wrappers over base R and existing estimators; `writexl` in Suggests is a one-line DESCRIPTION change.
-
----
+- Phase A before everything: `creel_schema` is a compile-time dependency for tidycreel.connect and cannot be deferred
+- Phase B before backends: YAML validation must be in place before any connection attempt is made; the config layer is the security and correctness boundary
+- Phase C before Phase D: CSV backend validates the full fetch → rename → add_*() pipeline without infrastructure; SQL Server backend then substitutes only the data source
+- Phase E last: polish and documentation require the entire API to be stable
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | All packages verified on CRAN with current versions; alternatives explicitly evaluated and rejected with documented rationale; writexl Suggests vs. Imports position consistent across all research files |
-| Features | HIGH | Formulas from primary literature (McCormick & Quist 2017, Cochran 1977); competitor analysis confirms gap against AnglerCreelSurveySimulation, creelr, and legacy NGPC scripts; agency report structure confirmed from Wisconsin/Minnesota DNR 2024-2025 |
-| Architecture | HIGH | Grounded in direct codebase inspection of all 15 R source files, NAMESPACE, and DESCRIPTION; integration points confirmed against existing S3 class slots; build order derives from confirmed dependency direction |
-| Pitfalls | HIGH for integration pitfalls (grounded in existing dispatch patterns and guard conventions); MEDIUM for stratified power design (primary literature verified but not yet confirmed against the specific stratification approach to be chosen in Phase B) |
+| Stack | HIGH | All package versions verified on CRAN; DBI/odbc ecosystem is well-documented; version compatibility confirmed; odbc vs RODBC performance verified at odbc.r-dbi.org |
+| Features | HIGH | CDMConnector and easydb as direct ecosystem precedents; feature set derived from clear dependency analysis; gap: canonical column names need verification against live add_*() signatures |
+| Architecture | HIGH | Grounded in direct codebase inspection of all 22 R source files; dependency direction and component boundaries have no ambiguity; build order follows hard dependency graph |
+| Pitfalls | HIGH | DB/ODBC pitfalls verified against odbc GitHub issues and Microsoft Learn; YAML coercion verified against yaml package docs; S3 contract pitfalls verified against r-pkgs.org 2e |
 
 **Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- **`creel_schedule` schema definition:** The exact column names and types required by `creel_design()` are the single most important pre-implementation decision for Phase A. Inspect `R/creel-design.R` and `$calendar` slot documentation — or an existing test fixture — before writing any generator code. This gap must be closed at the start of Phase A planning.
-- **Day-type string constants:** The canonical values `"weekday"` and `"weekend"` are confirmed by PITFALLS.md as the correct encoding derived from the NGPC database. Verify by inspecting the `$calendar` slot of any existing `creel_design` test fixture before committing to package-level constants in Phase A.
-- **Stratified vs. SRS power interface:** Research recommends the stratified variance formula as the default and SRS as a documented approximation. The exact interface design (whether `strata` is required with a hard error when omitted, or optional with a warning) should be decided in the Phase B plan rather than during implementation.
-- **`writexl` Imports vs. Suggests discrepancy:** ARCHITECTURE.md initially lists `writexl` under Imports in one location; STACK.md and PITFALLS.md both explicitly recommend Suggests. Suggests is the correct decision. Confirm placement in DESCRIPTION before Phase D begins — the ARCHITECTURE.md Imports mention appears to be a documentation inconsistency, not a recommendation.
+- **Canonical column names in add_*() signatures:** FEATURES.md explicitly flags this as "the single most important implementation verification step." The column names listed are based on PROJECT.md descriptions, not confirmed against live source code. Phase A plan must read the actual `add_interviews()`, `add_counts()`, `add_catch()`, and `add_lengths()` function signatures before specifying `CANONICAL_COLUMNS`.
 
----
+- **YAML `!expr` support in the yaml package:** The rstudio/config `!expr Sys.getenv()` pattern is documented for the config package. The yaml package may handle custom YAML tags differently. Verify during Phase B planning whether `yaml::read_yaml()` supports `!expr` tags natively or whether credential injection must use a different mechanism.
+
+- **NGPC database collation and encoding:** PITFALLS.md DB-6 notes the NGPC database may use Latin1/Windows-1252 collation. Actual collation must be confirmed with the NGPC DBA before the SQL Server backend is considered complete.
+
+- **creel_uid WHERE clause field name:** ARCHITECTURE.md shows `creel_uids` as a list of UUIDs injected into SQL WHERE clauses, but the actual view column name (`cd_CreelUID`?) needs verification against live NGPC view schema before Phase D implementation.
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- McCormick, J. L. & Quist, M. C. (2017). Sample Size Estimation for On-Site Creel Surveys. *NAJFM* 37(5):970-980 — CV-target formulas for effort and CPUE; benchmark sample sizes (16 days / 43 days at CV=0.20)
-- Cochran, W. G. (1977). *Sampling Techniques* (3rd ed.). Wiley — ratio estimator variance (eq. 6.13); Neyman allocation (§5.5); stratified sample size (§5.25)
-- Jones, C. M. & Pollock, K. H. (2012). Recreational survey methods. In *Fisheries Techniques* 3rd ed., AFS, pp. 883-919 — `pi_i = p_site × p_period` bus-route formula; canonical reference for tidycreel since v0.4.0
-- CRAN: writexl 1.5.4 (2025-04-15) — zero-dependency xlsx writer; rOpenSci maintained; no transitive R dependencies
-- CRAN: lubridate 1.9.5 (2026-02-04) — date arithmetic for schedule generation; 2 small transitive dependencies
-- tidycreel NAMESPACE and DESCRIPTION (verified 2026-03-22) — full public API and current dependency footprint
-- tidycreel R/ source files (verified 2026-03-22) — `creel_design` S3 slot structure, validation patterns, dispatch conventions, `intersect()` guard pattern
+
+- tidycreel v1.2.0 source — all 22 R files inspected; existing S3 patterns, add_*() signatures, creel_design constructor
+- [DBI 1.3.0 CRAN](https://cran.r-project.org/package=DBI) — version confirmed 2026-02-25
+- [odbc 1.6.4 CRAN](https://cran.r-project.org/web/packages/odbc/index.html) — version confirmed 2025-12-06; DBI compliance and SQL Server performance confirmed
+- [odbc official site](https://odbc.r-dbi.org/) — connection patterns, driver issues
+- [readr 2.1.6 CRAN](https://cran.r-project.org/package=readr) — version confirmed 2026-02-19
+- [yaml 2.3.12 CRAN](https://cran.r-project.org/package=yaml) — version confirmed December 2025
+- [Advanced R §13 S3 (Wickham)](https://adv-r.hadley.nz/s3.html) — three-function S3 constructor pattern
+- [rstudio/config GitHub](https://github.com/rstudio/config) — YAML credential injection pattern
+- [DBI Introduction vignette](https://cran.r-project.org/web/packages/DBI/vignettes/DBI.html) — dbConnect/dbGetQuery/dbDisconnect pattern
+- [R for Data Science 2e §21 Databases](https://r4ds.hadley.nz/databases.html) — lazy vs. eager collect() decision
+- [R Packages 2e §7](https://r-pkgs.org/dependencies-mindset-background.html) — companion package dependency direction
+- Legacy CreelDataAccess.R / CreelDataAccess_CJCedits.R — five SQL view names confirmed; DBI+odbc connection pattern; env-var password handling
 
 ### Secondary (MEDIUM confidence)
-- Estimating power of standardized monitoring program for sport fish in Georgia, USA. *NAJFM* 2025 — change detection power approach; confirms two-sample t-test as standard for creel monitoring programs
-- Alaska DFG Special Publication 98-1: The Mechanics of Onsite Creel Surveys — schedule and completeness conventions
-- Wisconsin DNR and Minnesota DNR open-water creel survey reports (2024-2025) — season summary table structure confirmed from multiple agency reports
-- Evaluation of bus-route creel survey method (ScienceDirect, two-part series) — optimal allocation for bus-route designs; informs bus-route scheduler inclusion probability calculation
-- CreelCat data validation framework (*Scientific Data* 2023) — creel survey completeness and quality validation standards; informs SC-3 prevention strategy
 
-### Tertiary (MEDIUM-LOW confidence)
-- AnglerCreelSurveySimulation CRAN vignette (version 1.0.3, 2024-05-14) — competitor feature analysis; confirms simulation-only scope (no schedule generation, no analytical CV calculators, no completeness checking)
-- pwr package CRAN documentation — `pwr.t.test()` capability confirmed; rejected for Imports due to Cohen's d vocabulary mismatch with creel domain inputs
+- [CDMConnector Getting Started vignette](https://cran.r-project.org/web/packages/CDMConnector/vignettes/a01_getting-started.html) — cdm_reference S3 pattern; validate_cdm(); lazy vs. eager divergence
+- [Securing Credentials — db.rstudio.com](https://edgararuiz.github.io/db.rstudio.com/best-practices/managing-credentials.html) — credential management hierarchy
+- [easydb GitHub](https://github.com/EricEdwardBryant/easydb) — YAML config → connection object → pipeline pattern
+- [OHDSI DatabaseConnector](https://github.com/OHDSI/DatabaseConnector) — uniform DBI surface across backends
+- r-dbi/odbc GitHub issues #11, #61, #207, #67, #437 — SQL DATE character return; DATETIMEOFFSET; encoding issues
+- readr GitHub issues #500, #263 — UTF-8 BOM handling in Excel-exported CSVs
 
 ---
-*Research completed: 2026-03-22*
+*Research completed: 2026-04-06*
 *Ready for roadmap: yes*

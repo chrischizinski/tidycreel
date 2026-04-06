@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.2.0
-milestone_name: Documentation, Visual Calendar & GLMM Aerial
-status: milestone_complete
-stopped_at: v1.2.0 milestone archived
+milestone: v1.3.0
+milestone_name: Generic DB Interface
+status: defining_requirements
+stopped_at: Milestone v1.3.0 started
 last_updated: "2026-04-06"
-last_activity: 2026-04-06 — v1.2.0 milestone archived
+last_activity: 2026-04-06 — Milestone v1.3.0 started
 progress:
-  total_phases: 7
-  completed_phases: 7
-  total_plans: 9
-  completed_plans: 9
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -21,12 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-06)
 
 **Core value:** Creel biologists can analyze survey data using creel vocabulary without understanding survey package internals
-**Current focus:** Planning next milestone — `/gsd:new-milestone`
+**Current focus:** v1.3.0 Generic DB Interface
 
 ## Current Position
 
-Milestone v1.2.0 complete — all 7 phases, 9 plans archived.
-Ready to start v1.3.0 planning.
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-04-06 — Milestone v1.3.0 started
 
 ## Performance Metrics
 

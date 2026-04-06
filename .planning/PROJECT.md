@@ -106,6 +106,14 @@ Creel biologists can analyze survey data using creel vocabulary without understa
 - ✓ Ice fishing survey support — degenerate bus-route with `p_site = 1.0`, `effort_type` distinction, `shelter_mode` stratification — v0.8.0
 - ✓ All three extend `creel_design()` as the single entry point — confirmed zero changes to rate/product estimators — v0.8.0
 
+### Active
+
+<!-- v1.3.0 scope — building toward these. -->
+
+- [ ] `creel_schema` S3 class in tidycreel with column mapping, table identity, validation, survey type tagging
+- [ ] `tidycreel.connect` package with YAML config, `creel_connect()`, `fetch_*()` loaders
+- [ ] SQL Server (NGPC) and flat file/CSV backends
+
 ### Out of Scope
 
 - Real-time/online data pull from creel API — package is data-model agnostic; users pull data themselves
@@ -114,6 +122,17 @@ Creel biologists can analyze survey data using creel vocabulary without understa
 - Geographic summaries (zip/county tabulation via external lookup) — deferred
 - Full report rendering (Rmd/PDF template reproducing NGPC report structure) — deferred
 - Supplemental question tabulation — deferred
+
+## Current Milestone: v1.3.0 Generic DB Interface
+
+**Goal:** Define a `creel_schema` S3 contract in tidycreel and bootstrap a companion package `tidycreel.connect` that loads data from any backend into tidycreel-ready form via a YAML config file.
+
+**Target features:**
+- `creel_schema` S3 class in tidycreel (column mapping, table identity, validation, survey type tagging)
+- `tidycreel.connect` package skeleton with YAML config format
+- `creel_connect()` returning a connection object
+- `fetch_*()` loaders for all 5 creel tables
+- SQL Server (NGPC production) and flat file/CSV backends
 
 ## Current State (v1.2.0 — shipped 2026-04-06)
 
@@ -125,7 +144,7 @@ Creel biologists can analyze survey data using creel vocabulary without understa
 **Planning suite:** `generate_schedule()`, `generate_bus_schedule()`, `generate_count_times()`, `attach_count_times()`, `write_schedule()`, `read_schedule()`, `creel_n_effort()`, `creel_n_cpue()`, `creel_power()`, `cv_from_n()`, `validate_design()`, `check_completeness()`, `season_summary()`
 **Documentation:** 8 vignettes (Get Started, survey-scheduling, survey-tidycreel, effort-pipeline, catch-pipeline, section-estimation, aerial-GLMM × 3 survey-type vignettes); pkgdown reference index complete
 **Website:** https://chrischizinski.github.io/tidycreel (pkgdown, auto-deployed via GitHub Actions)
-**Next milestone:** Planning — `/gsd:new-milestone`
+**Next milestone:** v1.3.0 Generic DB Interface (planning in progress)
 
 ## Context
 
