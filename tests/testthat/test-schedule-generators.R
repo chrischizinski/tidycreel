@@ -549,3 +549,92 @@ test_that("COUNT-TIME-04: fixed strategy — overlapping fixed_windows throws cl
     class = "rlang_error"
   )
 })
+
+# ---- ACT: attach_count_times() — implemented in Phase 63.1 Plan 01 ----
+
+# Helpers for ACT tests
+.act_sched <- function() {
+  generate_schedule( # nolint: object_usage_linter
+    start_date = "2024-06-01", end_date = "2024-06-07",
+    n_periods = 2, sampling_rate = 0.5, seed = 1
+  )
+}
+
+.act_ct <- function() {
+  generate_count_times( # nolint: object_usage_linter
+    start_time = "06:00", end_time = "14:00",
+    strategy = "fixed",
+    fixed_windows = data.frame(
+      start_time = c("07:00", "10:00", "13:00"),
+      end_time = c("07:30", "10:30", "13:30"),
+      stringsAsFactors = FALSE
+    )
+  )
+}
+
+test_that("ACT-01: attach_count_times() returns a creel_schedule", {
+  result <- attach_count_times(.act_sched(), .act_ct())
+  expect_s3_class(result, "creel_schedule")
+})
+
+test_that("ACT-02: returned object has nrow == nrow(schedule) * nrow(count_times)", {
+  sched <- .act_sched()
+  ct <- .act_ct()
+  result <- attach_count_times(sched, ct)
+  expect_equal(nrow(result), nrow(sched) * nrow(ct))
+})
+
+test_that("ACT-03: returned object has all original schedule columns plus start_time, end_time, window_id", {
+  sched <- .act_sched()
+  ct <- .act_ct()
+  result <- attach_count_times(sched, ct)
+  # All original schedule columns present
+  for (col in names(sched)) {
+    expect_true(col %in% names(result), info = paste("Missing column:", col))
+  }
+  # New columns from count_times present
+  expect_true("start_time" %in% names(result))
+  expect_true("end_time" %in% names(result))
+  expect_true("window_id" %in% names(result))
+})
+
+test_that("ACT-04: schedule lacking a 'date' column triggers cli_abort()", {
+  no_date <- data.frame(day_type = "weekday", period_id = 1L, stringsAsFactors = FALSE)
+  expect_error(
+    attach_count_times(no_date, .act_ct()),
+    class = "rlang_error"
+  )
+})
+
+test_that("ACT-05: count_times lacking required columns triggers cli_abort()", {
+  bad_ct <- data.frame(start_time = "07:00", stringsAsFactors = FALSE) # missing end_time, window_id
+  expect_error(
+    attach_count_times(.act_sched(), bad_ct),
+    class = "rlang_error"
+  )
+})
+
+test_that("ACT-06: result inherits from both 'creel_schedule' and 'data.frame'", {
+  result <- attach_count_times(.act_sched(), .act_ct())
+  expect_true(inherits(result, "creel_schedule"))
+  expect_true(inherits(result, "data.frame"))
+})
+
+test_that("ACT-07: count_times from generate_count_times(strategy='fixed') works correctly", {
+  sched <- generate_schedule(
+    start_date = "2024-06-01", end_date = "2024-06-07",
+    n_periods = 2, sampling_rate = 0.5, seed = 1
+  )
+  ct <- generate_count_times(
+    strategy = "fixed",
+    fixed_windows = data.frame(
+      start_time = c("06:00", "10:00"),
+      end_time = c("06:30", "10:30"),
+      stringsAsFactors = FALSE
+    )
+  )
+  result <- attach_count_times(sched, ct)
+  expect_s3_class(result, "creel_schedule")
+  expect_equal(nrow(result), nrow(sched) * nrow(ct))
+  expect_equal(nrow(ct), 2L)
+})

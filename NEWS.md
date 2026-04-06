@@ -1,36 +1,31 @@
-# tidycreel (development version)
+# tidycreel 1.1.0 (2026-04-02)
 
-## Breaking changes
+## New features
 
-* `estimate_cpue()` has been renamed to `estimate_catch_rate()`. No deprecated
-  wrapper is provided. Update all calls to use the new name.
+* `generate_count_times()` adds three sampling strategies for allocating
+  interview periods within a survey day: random, systematic, and
+  fixed-interval. Supports a `seed` argument for reproducibility; returns a
+  `creel_schedule` object compatible with `write_schedule()`.
 
-* `estimate_harvest()` has been renamed to `estimate_harvest_rate()`. No deprecated
-  wrapper is provided. Update all calls to use the new name.
+* The `survey-scheduling` vignette now covers the full pre- and post-season
+  planning workflow: `generate_count_times()` through `validate_design()`,
+  `check_completeness()`, and `season_summary()`.
 
-# tidycreel 0.0.0.9000 (development)
+## Documentation
 
-- Survey-first refactor: Estimation relies on day-PSU designs from
-  `as_day_svydesign()` and interview-level `svydesign`; legacy constructors
-  (`design_access`, `design_roving`, `design_repweights`) removed.
-- New effort estimators (survey-first):
-  `est_effort.instantaneous`, `est_effort.progressive`, `est_effort.aerial`,
-  and `est_effort.busroute_design` with design-based variance (supports
-  `svydesign` and `svrepdesign`).
-- Aerial enhancements: visibility/calibration adjustments; optional post-stratification and calibration via `survey`.
-- Deprecations (breaking):
-  - `estimate_effort()`, `estimate_cpue()`, `estimate_harvest()` now error with guidance to the new APIs.
-  - Replicate-weight helpers removed; use `survey::as.svrepdesign()` on day-PSU designs when needed.
-- Vignettes:
-  - Added “Survey Package to Creel: A Translator”.
-  - Added “Replicate Designs for Creel Inference”.
-  - Updated “Getting Started”, “Effort (Survey-First)”, and aerial examples to
-    use `as_day_svydesign()` and new estimators.
-- Docs/DevEx: Updated README, pkgdown navbar, and AGENTS.md conventions;
-  modernized CI workflows (R CMD check, lintr, pkgdown).
+* GitHub issue templates now use structured forms with
+  `blank_issues_enabled: false`, routing how-to questions to GitHub Discussions
+  to keep answers searchable for all users.
 
-# tidycreel 0.0.0.9000 (2025-08-22)
-- Added survey-first CPUE and Catch estimators: `est_cpue()` (ratio-of-means
-  default; mean-of-ratios option) and `est_catch()` (totals via
-  svytotal/svyby).
-- Updated README and Getting Started vignette with CPUE/Catch examples; exported new functions; added minimal tests.
+* `CONTRIBUTING.md` has been rewritten with current workflow guidance,
+  contribution types, and community norms for the v1.x release line.
+
+# tidycreel 1.0.0 (2026-03-31)
+
+* Launched the pkgdown documentation site at
+  https://chrischizinski.github.io/tidycreel with a custom Bootstrap 5 theme,
+  full function reference index (46 exports + 15 datasets), and a
+  workflow-driven navbar.
+
+* Added a GitHub Actions CI/CD workflow to deploy the pkgdown site
+  automatically on every push to main.

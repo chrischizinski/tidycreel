@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1.0
-milestone_name: Planning Suite Completeness & Community Health
-status: complete
-stopped_at: "v1.1.0 milestone archived"
-last_updated: "2026-04-02"
-last_activity: 2026-04-02 — v1.1.0 milestone shipped and archived
+milestone: v1.2.0
+milestone_name: Documentation, Visual Calendar & GLMM Aerial
+status: milestone_complete
+stopped_at: v1.2.0 milestone archived
+last_updated: "2026-04-06"
+last_activity: 2026-04-06 — v1.2.0 milestone archived
 progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 4
-  completed_plans: 4
+  total_phases: 7
+  completed_phases: 7
+  total_plans: 9
+  completed_plans: 9
   percent: 100
 ---
 
@@ -18,19 +18,15 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-04-02)
+See: .planning/PROJECT.md (updated 2026-04-06)
 
 **Core value:** Creel biologists can analyze survey data using creel vocabulary without understanding survey package internals
 **Current focus:** Planning next milestone — `/gsd:new-milestone`
 
 ## Current Position
 
-Phase: 59 of 59 (Community Health Files)
-Plan: —
-Status: Milestone complete — ready for next milestone planning
-Last activity: 2026-04-02 — v1.1.0 milestone shipped and archived
-
-Progress: [██████████] 100%
+Milestone v1.2.0 complete — all 7 phases, 9 plans archived.
+Ready to start v1.3.0 planning.
 
 ## Performance Metrics
 
@@ -47,12 +43,13 @@ Progress: [██████████] 100%
 | v0.9.0 | 48-51 | 10/10 | Complete | 2026-03-24 |
 | v1.0.0 | 52-56 | 8/8 | Complete | 2026-03-31 |
 | v1.1.0 | 57-59 | 4/4 | Complete | 2026-04-02 |
+| v1.2.0 | 60-65 (incl. 63.1) | 9/9 | Complete | 2026-04-06 |
 
 ## Accumulated Context
 
 ### Decisions
 
-(v1.1.0 decisions archived to PROJECT.md Key Decisions table)
+(v1.2.0 decisions archived to PROJECT.md Key Decisions table)
 
 ### Pending Todos
 
@@ -60,10 +57,10 @@ Progress: [██████████] 100%
 
 ### Blockers/Concerns
 
-- COMM-05: Enabling GitHub Discussions requires a manual step in repository Settings by the repo owner; `config.yml` contact link + `CONTRIBUTING.md` reference in place — feature is inert until repo owner confirms the toggle
+(none)
 
 ## Session Continuity
 
-Last session: 2026-04-02
-Stopped at: v1.1.0 milestone archived
+Last session: 2026-04-06
+Stopped at: v1.2.0 milestone archived
 Resume file: None

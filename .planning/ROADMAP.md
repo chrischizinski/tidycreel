@@ -17,6 +17,7 @@ tidycreel v2 is a ground-up redesign providing domain translation for creel surv
 - ✅ **v0.9.0 Survey Planning & Quality of Life** — Phases 48-51 (shipped 2026-03-24)
 - ✅ **v1.0.0 Package Website** — Phases 52-56 (shipped 2026-03-31)
 - ✅ **v1.1.0 Planning Suite Completeness & Community Health** — Phases 57-59 (shipped 2026-04-02)
+- ✅ **v1.2.0 Documentation, Visual Calendar & GLMM Aerial** — Phases 60-65 (shipped 2026-04-06)
 
 ## Phases
 
@@ -208,74 +209,26 @@ See: [.planning/milestones/v1.1.0-ROADMAP.md](milestones/v1.1.0-ROADMAP.md)
 
 </details>
 
----
+<details>
+<summary>✅ v1.2.0 Documentation, Visual Calendar & GLMM Aerial (Phases 60-65) — SHIPPED 2026-04-06</summary>
 
-## Progress
+**Milestone Goal:** Deliver four concept-first vignettes, document-embeddable schedule calendar output, and a GLMM-based aerial effort estimator for non-random flight timing.
 
-| Phase | Milestone | Plans Complete | Status | Completed |
-|-------|-----------|----------------|--------|-----------|
-| 1. Package Foundation | v0.1.0 | 3/3 | Complete | 2026-02-09 |
-| 2. Design Constructor | v0.1.0 | 2/2 | Complete | 2026-02-09 |
-| 3. Count Data Integration | v0.1.0 | 2/2 | Complete | 2026-02-09 |
-| 4. Basic Effort Estimation | v0.1.0 | 2/2 | Complete | 2026-02-09 |
-| 5. Grouped Estimation | v0.1.0 | 1/1 | Complete | 2026-02-09 |
-| 6. Variance Methods | v0.1.0 | 2/2 | Complete | 2026-02-09 |
-| 7. Documentation & QA | v0.1.0 | 2/2 | Complete | 2026-02-09 |
-| 8. Interview Data Integration | v0.2.0 | 2/2 | Complete | 2026-02-11 |
-| 9. CPUE Estimation | v0.2.0 | 2/2 | Complete | 2026-02-11 |
-| 10. Catch and Harvest Estimation | v0.2.0 | 2/2 | Complete | 2026-02-11 |
-| 11. Total Catch Estimation | v0.2.0 | 2/2 | Complete | 2026-02-11 |
-| 12. Documentation and QA | v0.2.0 | 2/2 | Complete | 2026-02-11 |
-| 13. Trip Status Infrastructure | v0.3.0 | 2/2 | Complete | 2026-02-16 |
-| 14. Overnight Trip Duration | v0.3.0 | 1/1 | Complete | 2026-02-16 |
-| 15. Mean-of-Ratios Estimator Core | v0.3.0 | 2/2 | Complete | 2026-02-16 |
-| 16. Trip Truncation | v0.3.0 | 2/2 | Complete | 2026-02-16 |
-| 17. Complete Trip Defaults | v0.3.0 | 2/2 | Complete | 2026-02-16 |
-| 18. Sample Size Warnings | v0.3.0 | 2/2 | Complete | 2026-02-16 |
-| 19. Diagnostic Validation Framework | v0.3.0 | 2/2 | Complete | 2026-02-16 |
-| 20. Documentation & Guidance | v0.3.0 | 2/2 | Complete | 2026-02-16 |
-| 21. Bus-Route Design Foundation | v0.4.0 | 2/2 | Complete | 2026-02-17 |
-| 22. Inclusion Probability Calculation | v0.4.0 | 2/2 | Complete | 2026-02-17 |
-| 23. Data Integration | v0.4.0 | 2/2 | Complete | 2026-02-17 |
-| 24. Bus-Route Effort Estimation | v0.4.0 | 2/2 | Complete | 2026-02-24 |
-| 25. Bus-Route Harvest Estimation | v0.4.0 | 2/2 | Complete | 2026-02-28 |
-| 26. Primary Source Validation | v0.4.0 | 2/2 | Complete | 2026-02-25 |
-| 27. Documentation & Traceability | v0.4.0 | 2/2 | Complete | 2026-02-28 |
-| 28. Extended Interview Data Model | v0.5.0 | 2/2 | Complete | 2026-03-08 |
-| 28.1. Normalize CPUE/HPUE | v0.5.0 | 2/2 | Complete | 2026-03-08 |
-| 29. Species Catch Data | v0.5.0 | 3/3 | Complete | 2026-03-08 |
-| 30. Length Frequency Data | v0.5.0 | 1/1 | Complete | 2026-03-08 |
-| 31. Interview-Level Summaries | v0.5.0 | 2/2 | Complete | 2026-03-08 |
-| 32. CWS/HWS Rates | v0.5.0 | 2/2 | Complete | 2026-03-08 |
-| 33. Length Frequency Summaries | v0.5.0 | 2/2 | Complete | 2026-03-08 |
-| 34. Species-Level Estimates | v0.5.0 | 2/2 | Complete | 2026-03-08 |
-| 35. Documentation & QA | v0.5.0 | 2/2 | Complete | 2026-03-08 |
-| 36. Multiple Counts per Day | v0.6.0 | 2/2 | Complete | 2026-03-09 |
-| 37. Progressive Count Estimator | v0.6.0 | 1/1 | Complete | 2026-03-09 |
-| 38. Documentation & QA | v0.6.0 | 2/2 | Complete | 2026-03-09 |
-| 39. Section Effort Estimation | v0.7.0 | 3/3 | Complete | 2026-03-11 |
-| 40. Interview-Based Rate Estimators | v0.7.0 | 2/2 | Complete | 2026-03-11 |
-| 41. Product Estimators | v0.7.0 | 2/2 | Complete | 2026-03-14 |
-| 42. Example Data and Vignette | v0.7.0 | 2/2 | Complete | 2026-03-14 |
-| 43. v0.7.0 Tech Debt Cleanup | v0.7.0 | 1/1 | Complete | 2026-03-15 |
-| 44. Design Type Enum and Validation | v0.8.0 | 2/2 | Complete | 2026-03-15 |
-| 45. Ice Fishing Survey Support | v0.8.0 | 3/3 | Complete | 2026-03-16 |
-| 46. Remote Camera Survey Support | v0.8.0 | 3/3 | Complete | 2026-03-16 |
-| 47. Aerial Survey Support | v0.8.0 | 3/3 | Complete | 2026-03-22 |
-| 48. Schedule Generators | v0.9.0 | 3/3 | Complete | 2026-03-23 |
-| 49. Power and Sample Size | v0.9.0 | 2/2 | Complete | 2026-03-24 |
-| 50. Design Validator and Completeness Checker | v0.9.0 | 3/3 | Complete | 2026-03-24 |
-| 51. Season Summary | v0.9.0 | 2/2 | Complete | 2026-03-24 |
-| 52. Hex Sticker | v1.0.0 | 1/1 | Complete | 2026-03-30 |
-| 53. Foundation & Theme | v1.0.0 | 2/2 | Complete | 2026-03-26 |
-| 54. Home Page & Reference | v1.0.0 | 2/2 | Complete | 2026-03-27 |
-| 55. Navigation & Articles | v1.0.0 | 1/1 | Complete | 2026-03-30 |
-| 56. Deployment | v1.0.0 | 2/2 | Complete | 2026-03-31 |
-| 57. Count Time Generator | v1.1.0 | 1/1 | Complete | 2026-04-02 |
-| 58. Survey Scheduling Vignette | v1.1.0 | 1/1 | Complete | 2026-04-02 |
-| 59. Community Health Files | v1.1.0 | 2/2 | Complete | 2026-04-02 |
+- [x] Phase 60: Housekeeping (1/1 plan) — completed 2026-04-03
+- [x] Phase 61: survey ↔ tidycreel Vignette (1/1 plan) — completed 2026-04-04
+- [x] Phase 62: Estimation Pipeline Vignettes (2/2 plans) — completed 2026-04-05
+- [x] Phase 63: Visual Calendar (1/1 plan) — completed 2026-04-05
+- [x] Phase 63.1: Attach Count Times to Daily Schedule (1/1 plan) — completed 2026-04-05
+- [x] Phase 64: GLMM Aerial Estimator (2/2 plans) — completed 2026-04-05
+- [x] Phase 65: pkgdown Reference Completeness & GLMM Documentation Polish (1/1 plan) — completed 2026-04-06
+
+**Delivered:** 4 vignettes (survey-tidycreel, effort-pipeline, catch-pipeline, aerial-glmm), `print.creel_schedule()` + `knit_print.creel_schedule()` S3 methods, `attach_count_times()`, `estimate_effort_aerial_glmm()` (lme4, Askey 2018), `example_aerial_glmm_counts` dataset, complete pkgdown reference index — 45 files, +5,496/-84 lines
+
+See: [.planning/milestones/v1.2.0-ROADMAP.md](milestones/v1.2.0-ROADMAP.md)
+
+</details>
 
 ---
 
-*Roadmap last updated: 2026-04-02 after v1.1.0 milestone shipped*
+*Roadmap last updated: 2026-04-06 after v1.2.0 milestone archived*
 *See .planning/milestones/ for archived milestone roadmaps*

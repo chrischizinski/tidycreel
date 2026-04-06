@@ -298,6 +298,54 @@
 
 ---
 
+## Milestone: v1.2.0 — Documentation, Visual Calendar & GLMM Aerial
+
+**Shipped:** 2026-04-06
+**Phases:** 7 (60-65 incl. 63.1) | **Plans:** 9 | **Commits:** 38 | **Timeline:** 3 days (2026-04-03 → 2026-04-06)
+
+### What Was Built
+
+- 4 vignettes: `survey-tidycreel.Rmd` (side-by-side comparison), `effort-pipeline.Rmd` (counts → effort with Rasmussen variance), `catch-pipeline.Rmd` (ROM vs MOR + delta method), `aerial-glmm.Rmd` (decision guide + worked example + full E2E pipeline)
+- `print.creel_schedule()` — ASCII monthly calendar grid with dynamic abbreviation collision resolution (WEEKD/WEEKE at k=5)
+- `knit_print.creel_schedule()` — pandoc pipe-table calendar auto-loaded in knitr documents via `.onLoad()` `registerS3method()`
+- `attach_count_times()` — cross-join helper producing one row per (date × period × count_window)
+- `estimate_effort_aerial_glmm()` — GLMM aerial estimator (`lme4::glmer.nb()`, Askey 2018 quadratic diurnal, delta method + bootstrap SE, returns `creel_estimates` with `se_within = NA`)
+- `example_aerial_glmm_counts` — companion dataset for GLMM vignette
+- pkgdown reference index gap closure: 3 missing entries added (`attach_count_times`, `estimate_effort_aerial_glmm`, `example_aerial_glmm_counts`)
+- 13/13 v1.2.0 requirements satisfied; DOC-01 closed retroactively via Phase 65 audit gap closure
+
+### What Worked
+
+- **Audit → gap-closure phase pattern:** Running `gsd:audit-milestone` before completion surfaced 4 pkgdown reference gaps and 1 DOC-01 tracking gap. A single Phase 65 gap-closure plan addressed all 5 atomically — clean, traceable, no rework
+- **`requirements-completed` frontmatter on SUMMARY.md:** Adding this field retroactively to Phase 61's summary gave cross-phase requirement traceability without re-reading the entire phase — a good addition to the pattern library
+- **Concept-first vignettes with annotated LaTeX + by-hand numerics:** Biologists confirmed the effort-pipeline and catch-pipeline vignettes are readable because formulas are immediately grounded by computed numbers they can reproduce by hand
+- **lme4 in Suggests (not Imports):** Correct optional-dependency pattern; `cli_abort()` fail-fast is clear and discoverable without making lme4 a hard dependency for all users
+
+### What Was Inefficient
+
+- **Audit done at Phase 64 completion, not Phase 65:** The audit ran after Phase 64 and correctly identified pkgdown gaps. But those gaps were always going to be fixed in Phase 65 (the gap-closure phase was already planned). Running the audit earlier would have served as a planning check rather than a reactive verification step
+- **Accomplishments not auto-extractable by gsd-tools:** The CLI `milestone complete` returned zero accomplishments because SUMMARY.md files don't have a consistent `one_liner` frontmatter field. The summaries were excellent, but in the wrong format for the tool — manual fill-in required. Adding `one_liner:` to the SUMMARY.md template would fix this permanently
+
+### Patterns Established
+
+- **Gap-closure phases use a single plan covering all audit findings atomically** — Phase 65 confirms this works; the single plan boundary kept git history clean and traceability tight
+- **`requirements-completed: [REQ-ID, ...]` frontmatter field on SUMMARY.md** — enables retrospective requirement mapping across phases without parsing prose
+- **Concept-first vignette structure:** Problem statement → statistical formula with annotation → by-hand numeric → tidycreel call confirming the number — this sequence is now the template for statistical pipeline vignettes
+
+### Key Lessons
+
+1. **Audit as planning check, not just post-hoc verification:** Phase 65 gap closure was reactive (audit caught what Phase 64 missed). Running a mini-audit of pkgdown completeness as part of Phase 64 planning would have prevented the need for a separate gap-closure phase
+2. **Documentation milestones are fast but require human verification signals:** All 9 plans completed in 3 days — the work is deterministic when the statistical content is already proven. But concept vignettes need practitioner sign-off (human_needed in audit) for domain accuracy that automated tests cannot cover
+3. **GLMM aerial adds model-based inference alongside design-based inference:** The estimator follows the same `creel_estimates` return contract but changes the variance source from survey design to model predictions. This is a new pattern — future Bayesian or spatial model-based estimators should follow the same contract
+
+### Cost Observations
+
+- Model mix: ~100% sonnet (balanced profile)
+- Sessions: 4 sessions across 3 days
+- Notable: Fastest multi-vignette milestone; documentation work has more predictable scope than statistical estimation work
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -315,6 +363,7 @@
 | v0.9.0 | 4 | 10 | Planning layer added as independent module; pure-function tools; `intersect()` guard reused; fastest milestone (1 day) |
 | v1.0.0 | 5 | 8 | First infrastructure-only milestone; zero R functions; pkgdown + GitHub Actions; skip decision on Phase 52 |
 | v1.1.0 | 3 | 4 | Planning suite completeness + first community health milestone; `generate_count_times()` + vignette extension + GitHub issue forms; fastest milestone (1 day) |
+| v1.2.0 | 7 | 9 | Documentation-first milestone; 4 vignettes, 2 S3 print methods, GLMM aerial estimator; audit → gap-closure phase pattern validated |
 
 ### Cumulative Quality
 
@@ -331,6 +380,7 @@
 | v0.9.0 | ~1,838 | ~90% | 10 (no new vignettes) |
 | v1.0.0 | ~1,838 | ~90% | 10 (no new vignettes; website-only milestone) |
 | v1.1.0 | ~1,864 | ~90% | 10 (no new vignettes; scheduling vignette extended) |
+| v1.2.0 | ~1,864+ | ~90% | 14 (+survey-tidycreel, +effort-pipeline, +catch-pipeline, +aerial-glmm) |
 
 ### Top Lessons (Verified Across Milestones)
 

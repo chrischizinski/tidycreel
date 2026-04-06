@@ -29,6 +29,14 @@ pre.sourceCode {
   padding: 1rem;
 }
 
+/* Bootstrap 5 sets --bs-code-color on <code> directly, overriding inherited
+   color from <pre>. Force plain output blocks to read from the parent pre. */
+pre code,
+pre.sourceCode code {
+  color: inherit !important;
+  background-color: transparent !important;
+}
+
 /* Pandoc syntax token colors for dark background.
    Default pandoc tokens are styled for light backgrounds; override for legibility. */
 .sourceCode span,

@@ -4,9 +4,10 @@
 
 tidycreel is an R package providing a tidy, pipe-friendly interface for creel survey design, data management, estimation, and reporting. Built on the `survey` package for robust design-based inference, it lets fisheries biologists work in domain vocabulary — dates, strata, counts, effort, catch, species — without managing survey design internals directly. The package targets creel biologists using Nebraska Game and Parks' SQL Server creel database (accessible via REST API or direct connection) and anyone with similarly structured interview/catch/length data.
 
-## Current State: v1.1.0 Shipped (2026-04-02)
+## Previous Milestones Shipped
 
-**Shipped:** Planning suite completeness and community health infrastructure — `generate_count_times()`, extended `survey-scheduling.Rmd`, structured GitHub issue forms, `CONTRIBUTING.md` rewrite
+- **v1.2.0** (2026-04-06): Documentation, Visual Calendar & GLMM Aerial — 4 vignettes, `print.creel_schedule()` + `knit_print.creel_schedule()`, `attach_count_times()`, `estimate_effort_aerial_glmm()` (Askey 2018, lme4)
+- **v1.1.0** (2026-04-02): Planning Suite Completeness & Community Health — `generate_count_times()`, extended `survey-scheduling.Rmd`, structured GitHub issue forms, `CONTRIBUTING.md` rewrite
 
 ## Core Value
 
@@ -42,6 +43,22 @@ Creel biologists can analyze survey data using creel vocabulary without understa
 - ✓ Section dispatch for all estimators — SECT-01..05, RATE-01..03, PROD-01..02 — v0.7.0
 - ✓ `missing_sections` guard — NA row + cli_warn() for registered sections absent from data — v0.7.0
 - ✓ `example_sections_*` datasets and section-estimation vignette — v0.7.0
+
+### Validated (v1.2.0 — Documentation, Visual Calendar & GLMM Aerial)
+
+<!-- Shipped in v1.2.0 -->
+
+- ✓ `print.creel_schedule()` — ASCII monthly calendar grid with day-type and circuit assignment per date cell; dynamic abbreviation collision resolution — v1.2.0
+- ✓ `knit_print.creel_schedule()` — pandoc pipe-table monthly calendar for R Markdown/Quarto; auto-loads via knitr — v1.2.0
+- ✓ `attach_count_times()` — cross-join `generate_schedule()` and `generate_count_times()` outputs into one row per (date × period × count_window) — v1.2.0
+- ✓ `estimate_effort_aerial_glmm()` — GLMM-based aerial effort estimator (`lme4::glmer.nb()`, Askey 2018 quadratic diurnal correction, delta method + bootstrap SE); returns `creel_estimates` compatible with all downstream estimators — v1.2.0
+- ✓ `example_aerial_glmm_counts` — example dataset for GLMM aerial estimator — v1.2.0
+- ✓ survey-tidycreel vignette — side-by-side `survey` package vs. tidycreel comparison for effort + catch rate + total catch workflow — v1.2.0
+- ✓ effort-pipeline vignette — conceptual walkthrough of PSU construction, Rasmussen two-stage variance, progressive count estimator with annotated LaTeX — v1.2.0
+- ✓ catch-pipeline vignette — ROM vs MOR estimator choice and delta method variance decomposition — v1.2.0
+- ✓ aerial-glmm vignette — decision guide, worked example, full aerial E2E pipeline (effort → catch rate → total catch), simple vs. GLMM comparison — v1.2.0
+- ✓ DESCRIPTION version backfilled to 1.1.0; NEWS.md rewritten with dated changelog for v1.0.0 and v1.1.0 — v1.2.0
+- ✓ pkgdown reference index complete: all v1.2.0 exports and datasets in named topic sections — v1.2.0
 
 ### Validated (v1.1.0 — Planning Suite Completeness & Community Health)
 
@@ -92,20 +109,21 @@ Creel biologists can analyze survey data using creel vocabulary without understa
 ### Out of Scope
 
 - Real-time/online data pull from creel API — package is data-model agnostic; users pull data themselves
-- GLMM-based aerial temporal expansion for non-random flight timing bias (Askey 2018) — model-based, requires `lme4`, deferred to v0.9.0+
 - Zero-inflated negative binomial camera count modeling — model-based, requires `glmmTMB`, deferred
 - Bayesian integration for multi-method designs (Su & Liu 2025) — deferred
 - Geographic summaries (zip/county tabulation via external lookup) — deferred
 - Full report rendering (Rmd/PDF template reproducing NGPC report structure) — deferred
 - Supplemental question tabulation — deferred
 
-## Current State (v1.1.0 — shipped 2026-04-02)
+## Current State (v1.2.0 — shipped 2026-04-06)
 
-**Package status:** 11 milestones shipped, 59 phases, 4 new plans (3 R/docs + 1 community); ~1,864 tests passing (72 schedule-generator tests, including 26 new COUNT-TIME tests)
-**Stack:** R package, survey package for all design-based inference, tidy API with tidyselect; pkgdown website with Bootstrap 5; GitHub issue forms (YAML schema)
-**Architecture:** Three-layer (API → Orchestration → Survey) proven; planning layer as independent module; website + community health as infrastructure modules
-**Survey types supported:** `instantaneous`, `bus_route`, `ice`, `camera`, `aerial`
-**Planning suite:** `generate_schedule()`, `generate_bus_schedule()`, `generate_count_times()`, `write_schedule()`, `read_schedule()`, `creel_n_effort()`, `creel_n_cpue()`, `creel_power()`, `cv_from_n()`, `validate_design()`, `check_completeness()`, `season_summary()`
+**Package status:** 12 milestones shipped, 65 phases; ~1,864+ tests; DESCRIPTION version 1.1.0 (backfilled in v1.2.0)
+**Stack:** R package, survey + lme4 (Suggests) for inference; tidy API with tidyselect; pkgdown Bootstrap 5 site; GitHub issue forms + Discussions
+**Architecture:** Three-layer (API → Orchestration → Survey) proven across all 5 survey types; planning layer independent; GLMM aerial estimator follows same creel_estimates return contract
+**Survey types supported:** `instantaneous`, `bus_route`, `ice`, `camera`, `aerial` (simple + GLMM)
+**Estimation API:** effort, catch rate, harvest rate, release rate, total catch/harvest/release, species-level; aerial GLMM; section dispatch with correlated-domain variance
+**Planning suite:** `generate_schedule()`, `generate_bus_schedule()`, `generate_count_times()`, `attach_count_times()`, `write_schedule()`, `read_schedule()`, `creel_n_effort()`, `creel_n_cpue()`, `creel_power()`, `cv_from_n()`, `validate_design()`, `check_completeness()`, `season_summary()`
+**Documentation:** 8 vignettes (Get Started, survey-scheduling, survey-tidycreel, effort-pipeline, catch-pipeline, section-estimation, aerial-GLMM × 3 survey-type vignettes); pkgdown reference index complete
 **Website:** https://chrischizinski.github.io/tidycreel (pkgdown, auto-deployed via GitHub Actions)
 **Next milestone:** Planning — `/gsd:new-milestone`
 
@@ -204,5 +222,14 @@ Three-layer: API → Orchestration → Survey package. The dispatch pattern (che
 | `blank_issues_enabled: false` in `config.yml` | Forces template selection; reduces low-context issue noise; how-to questions routed to Discussions | ✓ Good — structured issue forms produce better bug reports |
 | Getting Help moved to top of `CONTRIBUTING.md` | First-time contributors see community channels before technical standards; reduces friction for non-coders | ✓ Good — onboarding order matters for contributor experience |
 
+| `print.creel_schedule()` uses dynamic k-length abbreviations with collision detection | Day-type/circuit labels can collide at default lengths; truncate-and-extend to k=5 as fallback | ✓ Good — WEEKD/WEEKE collision pattern established |
+| `knit_print.creel_schedule()` auto-activates via `registerS3method()` in `.onLoad()` | Eliminates `library(knitr)` dependency in user vignette preamble | ✓ Good — consistent with R package knitr integration convention |
+| `attach_count_times()` cross-join returns `creel_schedule` S3 class | Output feeds directly into `write_schedule()` without class coercion step | ✓ Good — uniform planning function output contract |
+| GLMM aerial estimator uses `lme4` in `Suggests`, not `Imports` | lme4 is optional; simple aerial covers most users; fail-fast `cli_abort()` if missing | ✓ Good — consistent with pkgdown/writexl optional-dependency pattern |
+| Bootstrap SE path (`bootMer`) tested only via integration test; delta method is primary | Bootstrap is computationally expensive; delta method covers the default path; bootMer path tested by existence | ✓ Good — documented as known test gap in audit |
+| Concept-first vignettes use annotated LaTeX + by-hand confirmed numerics | Biologists learn by connecting formulas to computed numbers; abstract formula alone is insufficient | ✓ Good — confirmed approach by Phase 62 vignette structure |
+| Gap-closure phases use a single plan covering all audit findings atomically | Avoids multiple tiny plans for related fixes; keeps audit → closure traceability clear | ✓ Good — Phase 65 pattern established |
+| `requirements-completed` frontmatter field added to SUMMARY.md when requirement verified post-hoc | Enables cross-phase requirement traceability without re-reading full phase | ✓ Good — Phase 65 retroactively tagged Phase 61 summary |
+
 ---
-*Last updated: 2026-04-02 after v1.1.0 milestone*
+*Last updated: 2026-04-06 after v1.2.0 milestone archived*
