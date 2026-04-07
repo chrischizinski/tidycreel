@@ -2,7 +2,7 @@
 # Returns a named list of file paths (interviews, counts, catch, harvest_lengths, release_lengths)
 
 make_test_csv <- function() {
-  dir <- withr::local_tempdir()
+  dir <- withr::local_tempdir(.local_envir = parent.frame())
 
   interviews <- data.frame(
     date = as.Date(c("2024-06-01", "2024-06-02")),
