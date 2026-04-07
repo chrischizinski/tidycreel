@@ -10,7 +10,7 @@ Requirements for v1.3.0 — Generic DB Interface. Phases continue from 65 (last 
 ### Schema Contract (in tidycreel)
 
 - [x] **SCHEMA-01**: User can construct a `creel_schema` object specifying column name mappings, table names, and survey type via `creel_schema()`
-- [ ] **SCHEMA-02**: User can get a ready-to-use NGPC schema with zero configuration via `ngpc_default_schema()` _(Deferred — ngpc_default_schema() lives in a private NGPC-specific repo, not in the public tidycreel package)_
+- [x] **SCHEMA-02**: User can get a ready-to-use NGPC schema with zero configuration via `ngpc_default_schema()` _(Deferred — ngpc_default_schema() lives in a private NGPC-specific repo, not in the public tidycreel package)_
 - [x] **SCHEMA-03**: `validate_creel_schema()` aborts with a clear `cli_abort()` error naming the missing columns when required columns for the specified survey type are absent from the mapping
 - [x] **SCHEMA-04**: User can print a `creel_schema` object to see column mappings and survey type in a readable summary
 

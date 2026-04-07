@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: planning
-stopped_at: Completed 66-creel-schema-s3-class/66-01-PLAN.md
-last_updated: "2026-04-07T13:33:20.533Z"
+stopped_at: Completed 66-creel-schema-s3-class/66-02-PLAN.md
+last_updated: "2026-04-07T13:50:33.833Z"
 last_activity: 2026-04-06 — v1.3.0 roadmap written; 22/22 requirements mapped across Phases 66-70
 progress:
   total_phases: 5
   completed_phases: 1
-  total_plans: 1
-  completed_plans: 1
+  total_plans: 2
+  completed_plans: 2
   percent: 0
 ---
 
@@ -50,6 +50,7 @@ Progress: [░░░░░░░░░░] 0% (0/5 phases complete)
 | v1.2.0 | 60-65 (incl. 63.1) | 9/9 | Complete | 2026-04-06 |
 | v1.3.0 | 66-70 | 0/TBD | In progress | - |
 | Phase 66-creel-schema-s3-class P01 | 5 | 3 tasks | 4 files |
+| Phase 66-creel-schema-s3-class P02 | 1 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -63,6 +64,7 @@ Key v1.3.0 architectural decisions (pre-implementation):
 - odbc in Suggests (not Imports): CSV-only users install without system ODBC libraries
 - All fetch_*() fetches are eager (not lazy): survey:: pipeline requires data in memory; no dbplyr
 - [Phase 66-creel-schema-s3-class]: creel_schema uses *_table/*_col field naming; permissive construction + strict validate_creel_schema(); camera/aerial require only counts columns; duckdb in Suggests
+- [Phase 66-creel-schema-s3-class]: SCHEMA-02 (ngpc_default_schema) deferred to private NGPC repo — REQUIREMENTS.md corrected to reflect this, consistent with CONTEXT.md and ROADMAP.md
 
 ### Pending Todos
 
@@ -77,6 +79,6 @@ Key v1.3.0 architectural decisions (pre-implementation):
 
 ## Session Continuity
 
-Last session: 2026-04-07T13:33:20.530Z
-Stopped at: Completed 66-creel-schema-s3-class/66-01-PLAN.md
+Last session: 2026-04-07T13:50:33.830Z
+Stopped at: Completed 66-creel-schema-s3-class/66-02-PLAN.md
 Resume file: None
