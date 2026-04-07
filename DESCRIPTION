@@ -29,6 +29,8 @@ Imports:
     tidyselect (>= 1.2.0)
 Suggests:
     covr,
+    DBI,
+    duckdb,
     hexSticker,
     knitr,
     lintr,
