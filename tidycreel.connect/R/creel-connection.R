@@ -3,12 +3,13 @@
 
 #' @noRd
 #' @keywords internal
-new_creel_connection <- function(backend, con, schema, status) {
+new_creel_connection <- function(backend, con, schema, status, subclass = NULL) {
   stopifnot(is.character(backend), length(backend) == 1L)
   stopifnot(inherits(schema, "creel_schema"))
+  cls <- if (!is.null(subclass)) c(subclass, "creel_connection") else "creel_connection"
   structure(
     list(backend = backend, con = con, schema = schema, status = status),
-    class = "creel_connection"
+    class = cls
   )
 }
 
@@ -71,10 +72,11 @@ creel_connect <- function(con, schema) {
 #' @noRd
 .creel_connect_dbi <- function(con, schema) {
   new_creel_connection(
-    backend = "dbi",
-    con     = con,
-    schema  = schema,
-    status  = "open" # dynamic: print method re-checks via DBI::dbIsValid()
+    backend  = "dbi",
+    con      = con,
+    schema   = schema,
+    status   = "open", # dynamic: print method re-checks via DBI::dbIsValid()
+    subclass = "creel_connection_sqlserver"
   )
 }
 
@@ -92,9 +94,10 @@ creel_connect <- function(con, schema) {
     ))
   }
   new_creel_connection(
-    backend = "csv",
-    con     = paths,
-    schema  = schema,
-    status  = "ready"
+    backend  = "csv",
+    con      = paths,
+    schema   = schema,
+    status   = "ready",
+    subclass = "creel_connection_csv"
   )
 }
