@@ -288,7 +288,7 @@ Plans:
   3. CSV files exported from Excel (with UTF-8 BOM) load correctly without corrupted column names or misclassified species codes
   4. When required columns are absent or have wrong type after loading, `fetch_*()` aborts with a clear error naming the missing or mistyped column
   5. Users who only need the flat-file backend can install tidycreel.connect without system ODBC libraries
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 Plans:
 - [ ] 68-01-PLAN.md — DESCRIPTION + S3 subclasses + Wave 0 test stubs (BACKEND-04)
 - [ ] 68-02-PLAN.md — fetch-validators.R + fetch-loaders.R, all five fetch_*() functions (FETCH-01–06, BACKEND-01)
@@ -323,7 +323,7 @@ Plans:
 | 1-65 | v0.1.0–v1.2.0 | 126/126 | Complete | 2026-04-06 |
 | 66. creel_schema S3 Class | 2/2 | Complete   | 2026-04-07 | - |
 | 67. tidycreel.connect Package + Connection Layer | 4/4 | Complete    | 2026-04-07 | - |
-| 68. CSV Backend + fetch_*() Loaders | v1.3.0 | 0/2 | Not started | - |
+| 68. CSV Backend + fetch_*() Loaders | 1/2 | In Progress|  | - |
 | 69. SQL Server ODBC Backend | v1.3.0 | 0/TBD | Not started | - |
 | 70. Documentation | v1.3.0 | 0/TBD | Not started | - |
 

@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: planning
-stopped_at: Completed 67-04-PLAN.md
-last_updated: "2026-04-07T17:39:48.538Z"
+stopped_at: Completed 68-csv-backend-fetch-loaders-01-PLAN.md
+last_updated: "2026-04-07T18:23:29.068Z"
 last_activity: 2026-04-06 — v1.3.0 roadmap written; 22/22 requirements mapped across Phases 66-70
 progress:
   total_phases: 5
   completed_phases: 2
-  total_plans: 6
-  completed_plans: 6
+  total_plans: 8
+  completed_plans: 7
   percent: 0
 ---
 
@@ -54,6 +54,7 @@ Progress: [░░░░░░░░░░] 0% (0/5 phases complete)
 | Phase 67 P01 | 8 | 2 tasks | 15 files |
 | Phase 67 P02 | 525617 | 1 tasks | 7 files |
 | Phase 67 P04 | 25 | 1 tasks | 5 files |
+| Phase 68-csv-backend-fetch-loaders P01 | 9min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -74,6 +75,9 @@ Key v1.3.0 architectural decisions (pre-implementation):
 - [Phase 67]: withr::local_tempdir() in test helpers must use parent.frame() to bind temp dir lifetime to test block
 - [Phase 67]: deps-in-desc pre-commit hook checks root DESCRIPTION only; tidycreel.connect/ excluded from hook to avoid false positives on Suggests packages
 - [Phase 67]: creel_check_driver() requireNamespace guard + tryCatch pattern for Suggests package usage and OS-level ODBC manager absence
+- [Phase 68-csv-backend-fetch-loaders]: readr in Imports (not Suggests) so CSV-only users install without ODBC system libs
+- [Phase 68-csv-backend-fetch-loaders]: new_creel_connection() subclass arg enables UseMethod() dispatch to creel_connection_csv / creel_connection_sqlserver
+- [Phase 68-csv-backend-fetch-loaders]: skip() stubs preferred over expect_error() — clearly signals pending Wave 2 work
 
 ### Pending Todos
 
@@ -88,6 +92,6 @@ Key v1.3.0 architectural decisions (pre-implementation):
 
 ## Session Continuity
 
-Last session: 2026-04-07T16:48:54.730Z
-Stopped at: Completed 67-04-PLAN.md
+Last session: 2026-04-07T18:23:29.066Z
+Stopped at: Completed 68-csv-backend-fetch-loaders-01-PLAN.md
 Resume file: None
