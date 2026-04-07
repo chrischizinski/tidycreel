@@ -16,12 +16,12 @@ Requirements for v1.3.0 — Generic DB Interface. Phases continue from 65 (last 
 
 ### Connection & Config (in tidycreel.connect)
 
-- [ ] **CONNECT-01**: User can create a `creel_connection` by passing a DBI connection + `creel_schema` to `creel_connect()`
-- [ ] **CONNECT-02**: User can create a `creel_connection` by passing CSV file paths + `creel_schema` to `creel_connect()`
-- [ ] **CONNECT-03**: User can create a `creel_connection` from a YAML config file via `creel_connect_from_yaml()` with fail-fast validation of all keys and types before any connection attempt
-- [ ] **CONNECT-04**: YAML config credentials are loaded from environment variables, never stored as plain text
-- [ ] **CONNECT-05**: User can print a `creel_connection` to see backend type, schema summary, and connection status
-- [ ] **CONNECT-06**: User can check available ODBC drivers and verify SQL Server driver presence via `creel_check_driver()`
+- [x] **CONNECT-01**: User can create a `creel_connection` by passing a DBI connection + `creel_schema` to `creel_connect()`
+- [x] **CONNECT-02**: User can create a `creel_connection` by passing CSV file paths + `creel_schema` to `creel_connect()`
+- [x] **CONNECT-03**: User can create a `creel_connection` from a YAML config file via `creel_connect_from_yaml()` with fail-fast validation of all keys and types before any connection attempt
+- [x] **CONNECT-04**: YAML config credentials are loaded from environment variables, never stored as plain text
+- [x] **CONNECT-05**: User can print a `creel_connection` to see backend type, schema summary, and connection status
+- [x] **CONNECT-06**: User can check available ODBC drivers and verify SQL Server driver presence via `creel_check_driver()`
 
 ### Fetch Loaders (in tidycreel.connect)
 
@@ -84,12 +84,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SCHEMA-02 | Private repo (deferred) | Deferred |
 | SCHEMA-03 | Phase 66 | Complete |
 | SCHEMA-04 | Phase 66 | Complete |
-| CONNECT-01 | Phase 67 | Pending |
-| CONNECT-02 | Phase 67 | Pending |
-| CONNECT-03 | Phase 67 | Pending |
-| CONNECT-04 | Phase 67 | Pending |
-| CONNECT-05 | Phase 67 | Pending |
-| CONNECT-06 | Phase 67 | Pending |
+| CONNECT-01 | Phase 67 | Complete |
+| CONNECT-02 | Phase 67 | Complete |
+| CONNECT-03 | Phase 67 | Complete |
+| CONNECT-04 | Phase 67 | Complete |
+| CONNECT-05 | Phase 67 | Complete |
+| CONNECT-06 | Phase 67 | Complete |
 | FETCH-01 | Phase 68 | Pending |
 | FETCH-02 | Phase 68 | Pending |
 | FETCH-03 | Phase 68 | Pending |

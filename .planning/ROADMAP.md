@@ -270,7 +270,7 @@ Plans:
   4. YAML config never stores credentials as plain text; credentials are read from environment variables
   5. User can print a `creel_connection` and see backend type, schema summary, and connection status
   6. User can call `creel_check_driver()` to see available ODBC drivers and verify SQL Server driver presence
-**Plans:** 4 plans
+**Plans:** 1/4 plans executed
 Plans:
 - [ ] 67-01-PLAN.md — Package scaffold, stub R files, failing test stubs (Wave 0)
 - [ ] 67-02-PLAN.md — creel_connect() DBI+CSV backends, print.creel_connection() (CONNECT-01, 02, 05)
@@ -319,7 +319,7 @@ Plans:
 |-------|-----------|----------------|--------|-----------|
 | 1-65 | v0.1.0–v1.2.0 | 126/126 | Complete | 2026-04-06 |
 | 66. creel_schema S3 Class | 2/2 | Complete   | 2026-04-07 | - |
-| 67. tidycreel.connect Package + Connection Layer | v1.3.0 | 0/4 | Not started | - |
+| 67. tidycreel.connect Package + Connection Layer | 1/4 | In Progress|  | - |
 | 68. CSV Backend + fetch_*() Loaders | v1.3.0 | 0/TBD | Not started | - |
 | 69. SQL Server ODBC Backend | v1.3.0 | 0/TBD | Not started | - |
 | 70. Documentation | v1.3.0 | 0/TBD | Not started | - |
