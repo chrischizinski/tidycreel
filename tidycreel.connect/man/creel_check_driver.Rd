@@ -6,6 +6,20 @@
 \usage{
 creel_check_driver()
 }
+\value{
+\code{invisible(NULL)} — called for side-effect cli output only.
+}
 \description{
-Check available ODBC drivers
+\code{creel_check_driver()} lists all ODBC drivers registered on the current
+system and reports whether a SQL Server-compatible driver is present.
+This is a diagnostic function intended for setup verification — it does not
+create a connection.
+
+Requires the \code{odbc} package and an OS-level ODBC driver manager
+(unixODBC on macOS/Linux, or the Windows ODBC Data Source Administrator).
+}
+\examples{
+\dontrun{
+creel_check_driver()
+}
 }

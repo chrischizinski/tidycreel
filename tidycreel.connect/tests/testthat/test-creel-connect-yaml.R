@@ -25,7 +25,8 @@ schema_inst <- function() {
 make_csv_yaml <- function(paths) {
   # Write a valid CSV YAML config referencing `paths` (named list)
   # Returns path to temp YAML file
-  yaml_path <- withr::local_tempfile(fileext = ".yml")
+  # .local_envir = parent.frame() binds temp file lifetime to the calling test block
+  yaml_path <- withr::local_tempfile(fileext = ".yml", .local_envir = parent.frame())
   writeLines(c(
     "default:",
     "  backend: csv",
