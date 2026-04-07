@@ -1,10 +1,30 @@
 # Helper: write temporary CSV fixtures for CSV backend tests
 # Returns a named list of file paths (interviews, counts, catch, harvest_lengths, release_lengths)
 
+make_test_schema <- function() {
+  tidycreel::creel_schema(
+    survey_type       = "instantaneous",
+    interview_uid_col = "interview_uid",
+    date_col          = "date",
+    catch_col         = "catch_count",
+    effort_col        = "effort_hours",
+    trip_status_col   = "trip_status",
+    count_col         = "angler_count",
+    catch_uid_col     = "catch_uid",
+    species_col       = "species",
+    catch_count_col   = "catch_count",
+    catch_type_col    = "catch_type",
+    length_uid_col    = "length_uid",
+    length_mm_col     = "length_mm",
+    length_type_col   = "length_type"
+  )
+}
+
 make_test_csv <- function() {
   dir <- withr::local_tempdir(.local_envir = parent.frame())
 
   interviews <- data.frame(
+    interview_uid = 1L:2L,
     date = as.Date(c("2024-06-01", "2024-06-02")),
     catch_count = c(3L, 0L),
     effort_hours = c(2.5, 1.0),
@@ -62,6 +82,7 @@ make_test_csv_bom <- function() {
   dir <- withr::local_tempdir(.local_envir = parent.frame())
 
   interviews <- data.frame(
+    interview_uid = 1L:2L,
     date = as.Date(c("2024-06-01", "2024-06-02")),
     catch_count = c(3L, 0L),
     effort_hours = c(2.5, 1.0),
@@ -123,6 +144,7 @@ make_test_csv_numeric_species <- function() {
   dir <- withr::local_tempdir(.local_envir = parent.frame())
 
   interviews <- data.frame(
+    interview_uid = 1L:2L,
     date = as.Date(c("2024-06-01", "2024-06-02")),
     catch_count = c(3L, 0L),
     effort_hours = c(2.5, 1.0),
