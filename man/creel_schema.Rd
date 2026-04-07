@@ -4,7 +4,37 @@
 \alias{creel_schema}
 \title{Column-mapping contract for tidycreel data sources}
 \usage{
-creel_schema(...)
+creel_schema(
+  survey_type = c("instantaneous", "bus_route", "ice", "camera", "aerial"),
+  interviews_table = NULL,
+  counts_table = NULL,
+  catch_table = NULL,
+  lengths_table = NULL,
+  date_col = NULL,
+  catch_col = NULL,
+  effort_col = NULL,
+  trip_status_col = NULL,
+  count_col = NULL,
+  catch_uid_col = NULL,
+  interview_uid_col = NULL,
+  species_col = NULL,
+  catch_count_col = NULL,
+  catch_type_col = NULL,
+  length_uid_col = NULL,
+  length_mm_col = NULL,
+  length_type_col = NULL,
+  harvest_col = NULL,
+  trip_duration_col = NULL,
+  trip_start_col = NULL,
+  interview_time_col = NULL,
+  n_anglers_col = NULL,
+  n_counted_col = NULL,
+  n_interviewed_col = NULL,
+  angler_type_col = NULL,
+  angler_method_col = NULL,
+  species_sought_col = NULL,
+  refused_col = NULL
+)
 }
 \arguments{
 \item{survey_type}{Survey type. One of \code{"instantaneous"}, \code{"bus_route"},
@@ -35,7 +65,7 @@ creel_schema(...)
 
 \item{species_col}{Column name for species.}
 
-\item{catch_count_col}{Column name for catch count in catch table.}
+\item{catch_count_col}{Column name for catch count in the catch table.}
 
 \item{catch_type_col}{Column name for catch type (harvest/release).}
 
@@ -82,14 +112,14 @@ survey type are mapped.
 }
 \examples{
 s <- creel_schema(
-  survey_type = "instantaneous",
+  survey_type      = "instantaneous",
   interviews_table = "vwInterviews",
-  counts_table = "vwCounts",
-  date_col = "SurveyDate",
-  catch_col = "TotalCatch",
-  effort_col = "EffortHours",
-  trip_status_col = "TripStatus",
-  count_col = "AnglerCount"
+  counts_table     = "vwCounts",
+  date_col         = "SurveyDate",
+  catch_col        = "TotalCatch",
+  effort_col       = "EffortHours",
+  trip_status_col  = "TripStatus",
+  count_col        = "AnglerCount"
 )
 print(s)
 }
