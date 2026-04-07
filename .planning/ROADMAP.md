@@ -237,7 +237,7 @@ See: [.planning/milestones/v1.2.0-ROADMAP.md](milestones/v1.2.0-ROADMAP.md)
 
 **Packages:** Phases 66 modifies **tidycreel**. Phases 67-70 create and modify **tidycreel.connect**.
 
-- [ ] **Phase 66: creel_schema S3 Class** - `creel_schema()`, `validate_creel_schema()`, `print.creel_schema()` in tidycreel
+- [x] **Phase 66: creel_schema S3 Class** - `creel_schema()`, `validate_creel_schema()`, `print.creel_schema()` in tidycreel (completed 2026-04-07)
 - [ ] **Phase 67: tidycreel.connect Package + Connection Layer** - Package scaffold, `creel_connect()`, `creel_connect_from_yaml()`, YAML config validation, `creel_check_driver()`
 - [ ] **Phase 68: CSV Backend + fetch_*() Loaders** - Flat-file backend, all five `fetch_*()` functions, `validate_fetch_result()`, BOM handling, explicit column types
 - [ ] **Phase 69: SQL Server ODBC Backend** - `.fetch_sqlserver()`, platform auth guard, `as.Date()` coercion, driver detection
@@ -254,7 +254,7 @@ See: [.planning/milestones/v1.2.0-ROADMAP.md](milestones/v1.2.0-ROADMAP.md)
   1. User can construct a `creel_schema` object via `creel_schema()` specifying column mappings, table names, and survey type
   2. When required columns are missing from a schema, `validate_creel_schema()` aborts with a `cli_abort()` error naming the missing columns by name
   3. User can print a `creel_schema` object and see column mappings and survey type in a readable summary
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 Plans:
 - [ ] 66-01-PLAN.md — creel_schema() constructor, validate_creel_schema(), print/format methods, make_test_db() DuckDB fixture
 
@@ -313,7 +313,7 @@ Plans:
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 1-65 | v0.1.0–v1.2.0 | 126/126 | Complete | 2026-04-06 |
-| 66. creel_schema S3 Class | v1.3.0 | 0/1 | Planned | - |
+| 66. creel_schema S3 Class | 1/1 | Complete   | 2026-04-07 | - |
 | 67. tidycreel.connect Package + Connection Layer | v1.3.0 | 0/TBD | Not started | - |
 | 68. CSV Backend + fetch_*() Loaders | v1.3.0 | 0/TBD | Not started | - |
 | 69. SQL Server ODBC Backend | v1.3.0 | 0/TBD | Not started | - |

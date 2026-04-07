@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.3.0
-milestone_name: Generic DB Interface
-status: defining_requirements
-stopped_at: Milestone v1.3.0 started
-last_updated: "2026-04-06"
-last_activity: 2026-04-06 — Milestone v1.3.0 started
+milestone: v0.1
+milestone_name: milestone
+status: planning
+stopped_at: Completed 66-creel-schema-s3-class/66-01-PLAN.md
+last_updated: "2026-04-07T13:33:20.533Z"
+last_activity: 2026-04-06 — v1.3.0 roadmap written; 22/22 requirements mapped across Phases 66-70
 progress:
-  total_phases: 0
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_phases: 5
+  completed_phases: 1
+  total_plans: 1
+  completed_plans: 1
   percent: 0
 ---
 
@@ -21,14 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-06)
 
 **Core value:** Creel biologists can analyze survey data using creel vocabulary without understanding survey package internals
-**Current focus:** v1.3.0 Generic DB Interface
+**Current focus:** v1.3.0 Generic DB Interface — Phase 66: creel_schema S3 Class
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-04-06 — Milestone v1.3.0 started
+Phase: 66 of 70 (creel_schema S3 Class)
+Plan: — (not yet planned)
+Status: Ready to plan
+Last activity: 2026-04-06 — v1.3.0 roadmap written; 22/22 requirements mapped across Phases 66-70
+
+Progress: [░░░░░░░░░░] 0% (0/5 phases complete)
 
 ## Performance Metrics
 
@@ -46,6 +48,8 @@ Last activity: 2026-04-06 — Milestone v1.3.0 started
 | v1.0.0 | 52-56 | 8/8 | Complete | 2026-03-31 |
 | v1.1.0 | 57-59 | 4/4 | Complete | 2026-04-02 |
 | v1.2.0 | 60-65 (incl. 63.1) | 9/9 | Complete | 2026-04-06 |
+| v1.3.0 | 66-70 | 0/TBD | In progress | - |
+| Phase 66-creel-schema-s3-class P01 | 5 | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -53,16 +57,26 @@ Last activity: 2026-04-06 — Milestone v1.3.0 started
 
 (v1.2.0 decisions archived to PROJECT.md Key Decisions table)
 
+Key v1.3.0 architectural decisions (pre-implementation):
+- Phase 66 (tidycreel): creel_schema S3 uses plain list + base R; consistent with creel_design/creel_estimates patterns
+- Phases 67-70 (tidycreel.connect): new companion package; one-way dependency (connect imports tidycreel, never reverse)
+- odbc in Suggests (not Imports): CSV-only users install without system ODBC libraries
+- All fetch_*() fetches are eager (not lazy): survey:: pipeline requires data in memory; no dbplyr
+- [Phase 66-creel-schema-s3-class]: creel_schema uses *_table/*_col field naming; permissive construction + strict validate_creel_schema(); camera/aerial require only counts columns; duckdb in Suggests
+
 ### Pending Todos
 
 - #1: Simulation study for complete vs. incomplete trip pooling bias (post-v0.3.0, deferred)
 
 ### Blockers/Concerns
 
-(none)
+- Phase 66 plan must verify canonical column names against live add_interviews(), add_counts(), add_catch(), add_lengths() signatures before specifying CANONICAL_COLUMNS
+- Phase 67 plan must verify yaml package !expr tag handling vs. rstudio/config package before writing YAML credential injection
+- Phase 69 plan must confirm NGPC database collation (Latin1 vs UTF-8) with NGPC DBA before encoding coercion layer
+- Phase 69 plan must verify creel_uid WHERE clause field name against live NGPC view schema
 
 ## Session Continuity
 
-Last session: 2026-04-06
-Stopped at: v1.2.0 milestone archived
+Last session: 2026-04-07T13:33:20.530Z
+Stopped at: Completed 66-creel-schema-s3-class/66-01-PLAN.md
 Resume file: None
