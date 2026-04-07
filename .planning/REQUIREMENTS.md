@@ -25,19 +25,19 @@ Requirements for v1.3.0 — Generic DB Interface. Phases continue from 65 (last 
 
 ### Fetch Loaders (in tidycreel.connect)
 
-- [ ] **FETCH-01**: User can load interview data ready for `add_interviews()` via `fetch_interviews(conn)`
-- [ ] **FETCH-02**: User can load count data ready for `add_counts()` via `fetch_counts(conn)`
-- [ ] **FETCH-03**: User can load catch data ready for `add_catch()` via `fetch_catch(conn)`
-- [ ] **FETCH-04**: User can load harvest length data ready for `add_lengths()` via `fetch_harvest_lengths(conn)`
-- [ ] **FETCH-05**: User can load release length data ready for `add_lengths()` via `fetch_release_lengths(conn)`
-- [ ] **FETCH-06**: `fetch_*()` functions abort with a clear error naming the missing or mistyped columns when required columns are absent or wrong type after loading
+- [x] **FETCH-01**: User can load interview data ready for `add_interviews()` via `fetch_interviews(conn)`
+- [x] **FETCH-02**: User can load count data ready for `add_counts()` via `fetch_counts(conn)`
+- [x] **FETCH-03**: User can load catch data ready for `add_catch()` via `fetch_catch(conn)`
+- [x] **FETCH-04**: User can load harvest length data ready for `add_lengths()` via `fetch_harvest_lengths(conn)`
+- [x] **FETCH-05**: User can load release length data ready for `add_lengths()` via `fetch_release_lengths(conn)`
+- [x] **FETCH-06**: `fetch_*()` functions abort with a clear error naming the missing or mistyped columns when required columns are absent or wrong type after loading
 
 ### Backends (in tidycreel.connect)
 
-- [ ] **BACKEND-01**: Flat file backend loads data from CSV files with explicit column types, stripping UTF-8 BOM and preventing species codes from being misclassified as numeric
+- [x] **BACKEND-01**: Flat file backend loads data from CSV files with explicit column types, stripping UTF-8 BOM and preventing species codes from being misclassified as numeric
 - [ ] **BACKEND-02**: SQL Server backend detects platform and aborts with a clear error when Windows integrated auth is requested on macOS/Linux
 - [ ] **BACKEND-03**: SQL Server backend explicitly coerces all date columns to R `Date` type after retrieval
-- [ ] **BACKEND-04**: `odbc` package is only required at runtime for SQL Server backend; flat-file-only users can install and use tidycreel.connect without system ODBC libraries
+- [x] **BACKEND-04**: `odbc` package is only required at runtime for SQL Server backend; flat-file-only users can install and use tidycreel.connect without system ODBC libraries
 
 ### Documentation (tidycreel.connect)
 
@@ -90,16 +90,16 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CONNECT-04 | Phase 67 | Complete |
 | CONNECT-05 | Phase 67 | Complete |
 | CONNECT-06 | Phase 67 | Complete |
-| FETCH-01 | Phase 68 | Pending |
-| FETCH-02 | Phase 68 | Pending |
-| FETCH-03 | Phase 68 | Pending |
-| FETCH-04 | Phase 68 | Pending |
-| FETCH-05 | Phase 68 | Pending |
-| FETCH-06 | Phase 68 | Pending |
-| BACKEND-01 | Phase 68 | Pending |
+| FETCH-01 | Phase 68 | Complete |
+| FETCH-02 | Phase 68 | Complete |
+| FETCH-03 | Phase 68 | Complete |
+| FETCH-04 | Phase 68 | Complete |
+| FETCH-05 | Phase 68 | Complete |
+| FETCH-06 | Phase 68 | Complete |
+| BACKEND-01 | Phase 68 | Complete |
 | BACKEND-02 | Phase 69 | Pending |
 | BACKEND-03 | Phase 69 | Pending |
-| BACKEND-04 | Phase 68 | Pending |
+| BACKEND-04 | Phase 68 | Complete |
 | DOCS-01 | Phase 70 | Pending |
 | DOCS-02 | Phase 70 | Pending |
 

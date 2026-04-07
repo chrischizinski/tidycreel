@@ -239,7 +239,7 @@ See: [.planning/milestones/v1.2.0-ROADMAP.md](milestones/v1.2.0-ROADMAP.md)
 
 - [x] **Phase 66: creel_schema S3 Class** - `creel_schema()`, `validate_creel_schema()`, `print.creel_schema()` in tidycreel (completed 2026-04-07)
 - [x] **Phase 67: tidycreel.connect Package + Connection Layer** - Package scaffold, `creel_connect()`, `creel_connect_from_yaml()`, YAML config validation, `creel_check_driver()` (completed 2026-04-07)
-- [ ] **Phase 68: CSV Backend + fetch_*() Loaders** - Flat-file backend, all five `fetch_*()` functions, `validate_fetch_result()`, BOM handling, explicit column types
+- [x] **Phase 68: CSV Backend + fetch_*() Loaders** - Flat-file backend, all five `fetch_*()` functions, `validate_fetch_result()`, BOM handling, explicit column types (completed 2026-04-07)
 - [ ] **Phase 69: SQL Server ODBC Backend** - `.fetch_sqlserver()`, platform auth guard, `as.Date()` coercion, driver detection
 - [ ] **Phase 70: Documentation** - Getting-started vignette + platform ODBC install instructions in README
 
@@ -288,7 +288,7 @@ Plans:
   3. CSV files exported from Excel (with UTF-8 BOM) load correctly without corrupted column names or misclassified species codes
   4. When required columns are absent or have wrong type after loading, `fetch_*()` aborts with a clear error naming the missing or mistyped column
   5. Users who only need the flat-file backend can install tidycreel.connect without system ODBC libraries
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 Plans:
 - [ ] 68-01-PLAN.md — DESCRIPTION + S3 subclasses + Wave 0 test stubs (BACKEND-04)
 - [ ] 68-02-PLAN.md — fetch-validators.R + fetch-loaders.R, all five fetch_*() functions (FETCH-01–06, BACKEND-01)
@@ -323,7 +323,7 @@ Plans:
 | 1-65 | v0.1.0–v1.2.0 | 126/126 | Complete | 2026-04-06 |
 | 66. creel_schema S3 Class | 2/2 | Complete   | 2026-04-07 | - |
 | 67. tidycreel.connect Package + Connection Layer | 4/4 | Complete    | 2026-04-07 | - |
-| 68. CSV Backend + fetch_*() Loaders | 1/2 | In Progress|  | - |
+| 68. CSV Backend + fetch_*() Loaders | 2/2 | Complete   | 2026-04-07 | - |
 | 69. SQL Server ODBC Backend | v1.3.0 | 0/TBD | Not started | - |
 | 70. Documentation | v1.3.0 | 0/TBD | Not started | - |
 
