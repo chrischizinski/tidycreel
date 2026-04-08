@@ -26,11 +26,8 @@ created by tidycreel constructors. Use this for analysis with survey or srvyr fu
 }
 }
 \examples{
-access_design <- design_access(
-  interviews = read.csv("sample_data/toy_interviews.csv"),
-  calendar = read.csv("sample_data/toy_calendar.csv")
-)
-svy <- as_survey_design(access_design)
+calendar <- read.csv("sample_data/toy_calendar.csv")
+svy <- as_day_svydesign(calendar, day_id = "date", strata_vars = c("day_type"))
 summary(svy)
 
 }

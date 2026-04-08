@@ -17,7 +17,8 @@ as_day_svydesign(
 \item{day_id}{Column name identifying the day PSU (default \code{date}).}
 
 \item{strata_vars}{Character vector of calendar columns defining strata
-(e.g., \code{c("day_type","month")}). Missing columns are ignored with a warning.}
+(e.g., \code{c("day_type","month")}). Missing columns are ignored with a
+warning.}
 }
 \value{
 A \code{survey::svydesign} object with one row per sampled day.

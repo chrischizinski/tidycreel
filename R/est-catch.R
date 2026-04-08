@@ -51,7 +51,7 @@ est_catch <- function(design,
         rep(NA_real_, nrow(out))
       }
     }
-    z <- stats::qnorm(1 - (1 - conf_level)/2)
+    z <- stats::qnorm(1 - (1 - conf_level) / 2)
     out$ci_low <- out$estimate - z * out$se
     out$ci_high <- out$estimate + z * out$se
     n_by <- vars |>
@@ -78,7 +78,7 @@ est_catch <- function(design,
       na.rm = TRUE
     )
     estimate <- as.numeric(total_est[1])
-    se <- sqrt(as.numeric(survey::vcov(total_est)))
+    se <- sqrt(as.numeric(vcov(total_est)))
     ci <- tc_confint(estimate, se, level = conf_level)
     n <- nrow(vars)
     return(tibble::tibble(

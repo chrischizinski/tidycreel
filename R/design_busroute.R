@@ -32,19 +32,29 @@
 design_busroute <- function(interviews, counts, calendar, route_schedule,
                             strata_vars = c("date", "location")) {
   # Validate core inputs (be permissive for tests: allow empty/minimal inputs)
-  if (!is.data.frame(interviews)) cli::cli_abort("`interviews` must be a data.frame/tibble.")
+  if (!is.data.frame(interviews)) {
+    cli::cli_abort("`interviews` must be a data.frame/tibble.")
+  }
   if (nrow(interviews) > 0) {
     interviews <- validate_interviews(interviews)
   }
-  if (!is.data.frame(counts)) cli::cli_abort("`counts` must be a data.frame/tibble.")
+  if (!is.data.frame(counts)) {
+    cli::cli_abort("`counts` must be a data.frame/tibble.")
+  }
   if (nrow(counts) > 0) {
     counts <- validate_counts(counts)
   }
   # Minimal calendar requirements for bus-route tests (day_id + samples)
-  tc_abort_missing_cols(calendar, c("target_sample", "actual_sample"), context = "design_busroute calendar")
+  tc_abort_missing_cols(
+    calendar,
+    c("target_sample", "actual_sample"),
+    context = "design_busroute calendar"
+  )
 
   # Validate route schedule minimally
-  if (!is.data.frame(route_schedule)) cli::cli_abort("`route_schedule` must be a data.frame/tibble.")
+  if (!is.data.frame(route_schedule)) {
+    cli::cli_abort("`route_schedule` must be a data.frame/tibble.")
+  }
   required_route_cols <- c("route_stop", "time")
   missing_cols <- setdiff(required_route_cols, names(route_schedule))
   if (length(missing_cols) > 0) {
@@ -66,7 +76,10 @@ design_busroute <- function(interviews, counts, calendar, route_schedule,
     strata_vars = strata_vars,
     metadata = list(
       creation_time = Sys.time(),
-      package_version = tryCatch(as.character(utils::packageVersion("tidycreel")), error = function(e) NA_character_)
+      package_version = tryCatch(
+        as.character(utils::packageVersion("tidycreel")),
+        error = function(e) NA_character_
+      )
     )
   )
   class(design) <- c("busroute_design", "creel_design", "list")

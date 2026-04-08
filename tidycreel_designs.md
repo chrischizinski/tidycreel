@@ -11,145 +11,123 @@ All tidycreel survey constructors rely on key statistical and operational assump
 - **Replicate weights reflect true sampling variability:** For variance estimation, the survey builds replicate weights (bootstrap, jackknife, BRR) to mimic the actual sampling process.
 
 Review and document assumptions for each survey design. If you find violations, adjust the design, run sensitivity analyses, or apply explicit bias correction.
-# tidycreel Design Constructors: Architecture & Usage
+# tidycreel Survey-First Architecture & Usage
 ---
 
-## Survey Design Conversion
-- **Accessing Data:**
-	- Use `svy$variables` (not `svy$data`) to access the data in survey design objects.
-	- Example:
-		```r
-		svy <- as_survey_design(design)
-		head(svy$variables)
-		```
-- **Object Structure:**
-	- Survey design objects contain slots for clusters, strata, probabilities, and variables.
-	- Use `str(svy)` to inspect the full structure.
+## Survey-First Approach
 
-## Diagnostics and Robustness
-- **Test Diagnostics:**
-	- Unit tests print diagnostics for NA weights and dropped rows.
-	- If all or most weights are NA, tests will fail with a clear message.
-- **Constructor Warnings:**
-	- `design_access()` and `design_roving()` issue warnings if all or most weights are NA.
-	- Warnings help catch mismatches in strata, locations, or calendar data early.
+The tidycreel package has evolved to a survey-first framework where day-PSU survey designs (`svydesign`) are the primary interface for statistical analysis.
 
-## Best Practices
-- Always check for NA weights after constructing a design object.
-- Use summary and print methods to verify design integrity.
-- If you see warnings about NA weights, review your strata variables and input data for mismatches.
+### Key Changes
+- Legacy design constructors (`design_access`, `design_roving`, `design_repweights`) have been **removed**
+- Primary workflow now uses `as_day_svydesign()` to create survey designs from sampling calendars
+- Estimators work directly with survey designs and data tables
+- All variance estimation handled through the survey package backbone
 
-## Edge Cases & Troubleshooting
-- **All weights NA:**
-		- This typically means interview strata do not match calendar strata.
-	- Check that all required columns and values are present and aligned.
-- **Partial NA weights:**
-		- This can show incomplete overlap between interview and calendar data.
-	- Review stratification variables and data sources.
-- **Survey design object has zero rows:**
-		- Check for NA weights, missing stratification columns, or filtering in the survey package.
+## Survey Design Workflow
+- **Day-PSU Designs:** Use `as_day_svydesign(calendar, day_id, strata_vars)` to create the statistical foundation
+- **Data Integration:** Pass survey designs and data tables directly to estimators
+- **Accessing Data:** Use `svy$variables` to access data in survey design objects
+- **Object Structure:** Survey design objects contain slots for clusters, strata, probabilities, and variables
 
 ## Example Usage
 ```r
-interviews <- readr::read_csv("inst/extdata/toy_interviews.csv")
+library(tidycreel)
 calendar <- readr::read_csv("inst/extdata/toy_calendar.csv")
-design <- design_access(interviews, calendar)
-svy <- as_survey_design(design)
-summary(design)
-head(svy$variables)
+interviews <- readr::read_csv("inst/extdata/toy_interviews.csv")
+
+# Create day-PSU survey design
+svy_day <- as_day_svydesign(calendar, day_id = "date", strata_vars = c("day_type", "month"))
+summary(svy_day)
+
+# Use with estimators
+cpue_estimates <- est_cpue(svy_day, interviews = interviews, by = c("target_species"))
 ```
 
 ---
 
-_Last updated: 2025-08-20_
+_Last updated: 2025-08-27_
 
-This living document explains the architecture, principles, and usage of design constructors in the tidycreel package. We actively maintain and expand it as the project evolves.
+This living document explains the survey-first architecture in the tidycreel package. We actively maintain and expand it as the project evolves.
 
 ## Core Principle
-All design constructors in tidycreel build on the survey package (`survey::svydesign` or `survey::svrepdesign`) to ensure design-based inference, statistical rigor, and compatibility with established survey analysis workflows.
+The survey-first approach builds on the survey package (`survey::svydesign` or `survey::svrepdesign`) to ensure design-based inference, statistical rigor, and compatibility with established survey analysis workflows.
 
-## Constructors
+## Current Design Functions
 
-### Access-Point Design (`design_access`)
-
-### Roving Design (`design_roving`)
-
-### Replicate Weights Design (`design_repweights`)
+### Day-PSU Survey Design (`as_day_svydesign`)
+- Creates day-level survey designs from sampling calendars
+- Handles stratification, clustering, and sampling weights
+- Provides statistical foundation for all downstream estimation
 
 ### Bus Route Design (`design_busroute`)
-### Bus Route Design (`design_busroute`)
-- Checks and preprocesses interview, count, calendar, and route schedule data.
-- Merges interview data with route schedule to link probabilities and frame sizes.
-- Builds and stores a `survey::svydesign` object using unequal probability weights and strata.
-- Returns a list with metadata, weights, probabilities, frame sizes, and the survey design object.
+- Specialized design for bus route sampling methodology
+- Checks and preprocesses interview, count, calendar, and route schedule data
+- Builds and stores a `survey::svydesign` object using unequal probability weights and strata
+- Returns a list with metadata, weights, probabilities, frame sizes, and the survey design object
 
-## Consistency
-All design constructors:
-All design constructors:
-- Check input data using schema functions.
-- Calculate or merge appropriate weights and probabilities.
-- Build and store a survey design object for downstream analysis.
-- Return a list with metadata, input data, and the survey design object.
-
-## Next Steps
+## Survey Design Integration
+The survey-first approach:
+- Creates robust statistical foundations using established survey methodology
+- Integrates seamlessly with survey and srvyr packages
+- Provides consistent variance estimation across all estimators
+- Supports complex sampling designs and weighting schemes
 ## Usage Examples
 
-### Visualizing Survey Design Coverage
+### Creating Day-PSU Survey Designs
 ```r
 library(tidycreel)
-access_design <- design_access(
-	interviews = read.csv("sample_data/toy_interviews.csv"),
-	calendar = read.csv("sample_data/toy_calendar.csv")
+calendar <- readr::read_csv("inst/extdata/toy_calendar.csv")
+
+# Basic day-PSU survey design
+svy_day <- as_day_svydesign(
+  calendar,
+  day_id = "date",
+  strata_vars = c("day_type", "month")
 )
-plot_design(access_design) # Shows interviews by date/shift, faceted by location
+summary(svy_day)
 ```
 
-
-### Access-Point Design
+### Effort Estimation with Survey Designs
 ```r
-	interviews = read.csv("sample_data/toy_interviews.csv"),
-	calendar = read.csv("sample_data/toy_calendar.csv")
-library(tidycreel)
-interviews <- readr::read_csv("inst/extdata/toy_interviews.csv")
-calendar <- readr::read_csv("inst/extdata/toy_calendar.csv")
-design <- design_access(interviews, calendar)
-print(design) # S3 print method for creel_design
-summary(design) # S3 summary method for creel_design
-plot_design(design)
-svy <- as_survey_design(design)
-head(svy$variables)
+# Instantaneous counts with survey design
+counts_inst <- readr::read_csv("inst/extdata/toy_counts.csv")
+effort_est <- est_effort.instantaneous(
+  counts_inst,
+  by = c("location"),
+  minutes_col = "count_duration",
+  total_minutes_col = "total_day_minutes",
+  day_id = "date",
+  svy = svy_day
+)
 ```
 
-### Roving Design
+### CPUE and Catch Estimation
 ```r
-	interviews = read.csv("sample_data/toy_interviews.csv"),
-	counts = read.csv("sample_data/toy_counts.csv"),
-	calendar = read.csv("sample_data/toy_calendar.csv")
-library(tidycreel)
 interviews <- readr::read_csv("inst/extdata/toy_interviews.csv")
-counts <- readr::read_csv("inst/extdata/toy_counts.csv")
-calendar <- readr::read_csv("inst/extdata/toy_calendar.csv")
-design <- design_roving(interviews, counts, calendar)
-print(design) # S3 print method for creel_design
-summary(design) # S3 summary method for creel_design
-plot_design(design)
-svy <- as_survey_design(design)
-head(svy$variables)
+
+# CPUE estimation with survey design
+cpue_est <- est_cpue(
+  svy_day,
+  interviews = interviews,
+  by = c("target_species"),
+  response = "catch_total"
+)
+
+# Catch estimation
+catch_est <- est_catch(
+  svy_day,
+  interviews = interviews,
+  by = c("target_species"),
+  response = "catch_kept"
+)
 ```
 
-### Replicate Weights Design
+### Replicate Weight Designs
 ```r
-	base_design = access_design,
-	method = "bootstrap"
-library(tidycreel)
-interviews <- readr::read_csv("inst/extdata/toy_interviews.csv")
-calendar <- readr::read_csv("inst/extdata/toy_calendar.csv")
-base_design <- design_access(interviews, calendar)
-rep_design <- design_repweights(base_design, replicates = 50, method = "bootstrap")
-print(rep_design) # S3 print method for creel_design
-summary(rep_design) # S3 summary method for creel_design
-svyrep <- as_svrep_design(rep_design)
-head(svyrep$variables)
+# Create bootstrap replicate design for robust variance estimation
+svy_rep <- survey::as.svrepdesign(svy_day, type = "bootstrap", replicates = 50, mse = TRUE)
+summary(svy_rep)
 ```
 
 ### Bus Route Design
@@ -165,37 +143,20 @@ print(busroute_design) # S3 print method for creel_design
 summary(busroute_design) # S3 summary method for creel_design
 ```
 
-## Bridging tidycreel and survey: Conversion Helpers
+## Working with Survey Designs
 
-All tidycreel design objects (access-point, roving, replicate weights, bus route) embed a survey design object (`survey::svydesign` or `survey::svrepdesign`).
+The survey-first approach uses standard survey package objects directly, eliminating the need for conversion helpers.
 
-### Why Conversion Helpers?
-- The survey package is powerful but complex; tidycreel provides a tidy, pipe-friendly interface and stores the survey design for you.
-- Use `as_survey_design()` to extract the embedded survey design for analysis with survey or srvyr functions.
-- Use `as_svrep_design()` for advanced resampling-based inference (bootstrap, jackknife, BRR).
-
-### Usage Examples
-```r
-library(tidycreel)
-access_design <- design_access(
-  interviews = read.csv("sample_data/toy_interviews.csv"),
-  calendar = read.csv("sample_data/toy_calendar.csv")
-)
-svy <- as_survey_design(access_design)
-summary(svy)
-
-rep_design <- design_repweights(
-  base_design = access_design,
-  method = "bootstrap"
-)
-svyrep <- as_svrep_design(rep_design)
-summary(svyrep)
-```
+### Survey Package Integration
+- Survey designs (`svydesign` and `svrepdesign`) are the primary objects for statistical analysis
+- All tidycreel estimators accept survey designs directly
+- Full compatibility with survey and srvyr package functions for advanced analysis
 
 ### Best Practices
-- Always validate input data before constructing a design object.
-- Use conversion helpers for downstream analysis, variance estimation, and domain estimation.
-- Document assumptions and edge cases in code and in this file.
+- Always validate calendar data before creating survey designs
+- Use `summary()` to inspect survey design structure and weights
+- Consider replicate weight designs for robust variance estimation
+- Document stratification decisions and sampling assumptions
 - See also: [creel_foundations.md](creel_foundations.md), [creel_chapter.md](creel_chapter.md)
 
-_Last updated: 2025-08-20_
+_Last updated: 2025-08-27_

@@ -119,7 +119,7 @@ est_effort.instantaneous <- function(
 
     ids_formula <- stats::as.formula(paste("~", day_id))
     if (inherits(svy, "svyrep.design")) {
-      repmat <- survey::repweights(svy)
+      repmat <- svy$repweights
       rep_df <- tibble::as_tibble(repmat)
       rep_df[[day_id]] <- svy_vars[[day_id]]
       day_group <- dplyr::left_join(day_group, rep_df, by = day_id)
@@ -148,9 +148,15 @@ est_effort.instantaneous <- function(
       )
       out <- tibble::as_tibble(est)
       names(out)[names(out) == "effort_day"] <- "estimate"
-      V <- attr(est, "var")
-      out$se <- if (!is.null(V) && length(V) > 0) sqrt(diag(V)) else rep(NA_real_, nrow(out))
-      z <- stats::qnorm(1 - (1 - conf_level)/2)
+      # Standard error via survey::SE if available, else var attribute
+      se_try <- try(suppressWarnings(as.numeric(survey::SE(est))), silent = TRUE)
+      if (!inherits(se_try, "try-error") && length(se_try) == nrow(out)) {
+        out$se <- se_try
+      } else {
+        V <- attr(est, "var")
+        out$se <- if (!is.null(V) && length(V) > 0) sqrt(diag(V)) else rep(NA_real_, nrow(out))
+      }
+      z <- stats::qnorm(1 - (1 - conf_level) / 2)
       out$ci_low <- out$estimate - z * out$se
       out$ci_high <- out$estimate + z * out$se
       out$n <- NA_integer_
@@ -160,7 +166,7 @@ est_effort.instantaneous <- function(
     } else {
       total_est <- survey::svytotal(~effort_day, design_eff, na.rm = TRUE)
       estimate <- as.numeric(total_est[1])
-      se <- sqrt(as.numeric(survey::vcov(total_est)))
+      se <- sqrt(as.numeric(vcov(total_est)))
       ci <- tc_confint(estimate, se, level = conf_level)
       return(tibble::tibble(
         estimate = estimate,

@@ -6,7 +6,7 @@
 \alias{tidycreel-package}
 \title{tidycreel: Tools for creel survey design, estimation, and reporting}
 \description{
-(One-sentence summary goes here.)
+Survey-first framework for creel survey analysis with tidy APIs.
 }
 \seealso{
 Useful links:

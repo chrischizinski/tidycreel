@@ -75,7 +75,7 @@ est_cpue <- function(design,
         V <- attr(est, "var")
         out$se <- if (!is.null(V) && length(V) > 0) sqrt(diag(V)) else rep(NA_real_, nrow(out))
       }
-      z <- stats::qnorm(1 - (1 - conf_level)/2)
+      z <- stats::qnorm(1 - (1 - conf_level) / 2)
       out$ci_low <- out$estimate - z * out$se
       out$ci_high <- out$estimate + z * out$se
       # n by group (unweighted count)
@@ -104,7 +104,7 @@ est_cpue <- function(design,
     }
   } else {
     # mean_of_ratios: define per-trip CPUE
-    svy2 <- survey::update(svy, .cpue = vars[[response]] / vars[[effort_col]])
+    svy2 <- update(svy, .cpue = vars[[response]] / vars[[effort_col]])
     if (length(by) > 0) {
       by_formula <- stats::as.formula(paste("~", paste(by, collapse = "+")))
       est <- survey::svyby(
@@ -124,7 +124,7 @@ est_cpue <- function(design,
         V <- attr(est, "var")
         out$se <- if (!is.null(V) && length(V) > 0) sqrt(diag(V)) else rep(NA_real_, nrow(out))
       }
-      z <- stats::qnorm(1 - (1 - conf_level)/2)
+      z <- stats::qnorm(1 - (1 - conf_level) / 2)
       out$ci_low <- out$estimate - z * out$se
       out$ci_high <- out$estimate + z * out$se
       n_by <- vars |>

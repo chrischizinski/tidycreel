@@ -17,7 +17,7 @@ test_that("tc_guess_cols renames synonyms", {
 
 test_that("tc_group_warn drops missing grouping columns with warning", {
   df <- data.frame(a = 1, b = 2)
-  expect_warning(tc_group_warn(c("a", "c"), names(df)), "Grouping columns dropped")
+  expect_warning(tc_group_warn(c("a", "c"), names(df)), "Grouping columns not found and will be ignored")
 })
 
 test_that("tc_diag_drop returns correct diagnostics", {

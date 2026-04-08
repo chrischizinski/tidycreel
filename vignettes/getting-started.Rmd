@@ -19,6 +19,7 @@ library(tidycreel)
 library(dplyr)
 library(ggplot2)
 library(lubridate)
+library(survey)
 ```
 
 ## Introduction
@@ -55,33 +56,33 @@ head(counts)
 head(calendar)
 ```
 
-## Creating an Access-Point Survey Container
+## Creating a Day-PSU Survey Design
 
-Access-point designs are used when interviews are conducted at fixed locations where anglers exit the fishery. This constructor validates and stores inputs for downstream estimation.
+In the survey-first approach, we create a day-level survey design from the sampling calendar. This provides the statistical foundation for variance estimation.
 
-```{r access-design}
-# Create access-point survey design
-access_design <- design_access(
-  interviews = interviews,
-  calendar = calendar,
-  strata_vars = c("date", "shift_block")
+```{r day-design}
+# Create day-PSU survey design
+svy_day <- as_day_svydesign(
+  calendar,
+  day_id = "date",
+  strata_vars = c("day_type", "month")
 )
 
 # Examine the design object
-class(access_design)
-names(access_design)
+class(svy_day)
+summary(svy_day)
 ```
 
-## Creating a Roving Survey Container
+## Working with Count Data
 
-Roving designs are used when interviewers move between locations to conduct interviews. This constructor stores interview/count data and the calendar for downstream estimation.
+For progressive (roving) counts, we work directly with the count data and survey design without need for intermediate containers.
 
-```{r roving-design}
-# Minimal counts table matching the validation schema
-counts_rov <- tibble::tibble(
+```{r count-data}
+# Minimal counts table for progressive estimation
+counts_prog <- tibble::tibble(
   count_id = c("C001","C002","C003"),
-  date = as.Date(c("2025-08-20","2025-08-20","2025-08-21")),
-  time = as.POSIXct(c("2025-08-20 09:00:00","2025-08-20 11:00:00","2025-08-21 10:00:00"), tz = "UTC"),
+  date = as.Date(c("2024-01-01","2024-01-01","2024-01-02")),
+  time = as.POSIXct(c("2024-01-01 09:00:00","2024-01-01 11:00:00","2024-01-02 10:00:00"), tz = "UTC"),
   location = c("A","B","A"),
   mode = c("boat","bank","boat"),
   anglers_count = c(10L, 12L, 8L),
@@ -93,26 +94,15 @@ counts_rov <- tibble::tibble(
   count_duration = c(60L, 60L, 60L)
 )
 
-# Create roving survey design
-roving_design <- design_roving(
-  interviews = interviews,
-  counts = counts_rov,
-  calendar = calendar,
-  strata_vars = c("date", "shift_block", "location")
-)
-
-# Examine the design object
-class(roving_design)
-names(roving_design)
+# Preview the count data
+head(counts_prog)
 ```
 
-## Day-PSU Designs and Replicate Variance
+## Replicate Variance Estimation
 
-Build a day-level survey design from the calendar and (optionally) convert to a replicate-weight design for robust SEs.
+You can convert the survey design to a replicate-weight design for robust standard errors.
 
 ```{r replicate-weights}
-svy_day <- as_day_svydesign(calendar, day_id = "date", strata_vars = c("day_type", "month"))
-
 # Bootstrap replicate design with 50 reps (keep small in examples)
 svy_rep <- survey::as.svrepdesign(svy_day, type = "bootstrap", replicates = 50, mse = TRUE)
 class(svy_rep)
@@ -147,24 +137,26 @@ CPUE is estimated design-based from interview data. Prefer the ratio-of-means
 form for incomplete trips; use mean-of-ratios for complete trips.
 
 ```{r cpue-catch}
-# Access container; CPUE/Catch accept a svydesign/svrepdesign or a creel_design.
-design <- design_access(interviews = interviews, calendar = calendar)
+# CPUE/Catch estimation requires a survey design built on interview data
+
+# Create survey design from interview data
+interview_design <- survey::svydesign(ids = ~1, weights = ~1, data = interviews)
 
 # CPUE by species (ratio-of-means)
 suppressWarnings({
-  cpue_species <- est_cpue(design, by = c("target_species"), response = "catch_total")
+  cpue_species <- est_cpue(interview_design, by = c("target_species"), response = "catch_total")
 })
 cpue_species
 
 # CPUE (mean-of-ratios) — for complete trips
 suppressWarnings({
-  cpue_mor <- est_cpue(design, by = c("target_species"), response = "catch_total", mode = "mean_of_ratios")
+  cpue_mor <- est_cpue(interview_design, by = c("target_species"), response = "catch_total", mode = "mean_of_ratios")
 })
 cpue_mor
 
 # Harvest totals by species
 suppressWarnings({
-  harvest_species <- est_catch(design, by = c("target_species"), response = "catch_kept")
+  harvest_species <- est_catch(interview_design, by = c("target_species"), response = "catch_kept")
 })
 harvest_species
 ```
@@ -176,19 +168,15 @@ harvest_species
 You can specify custom stratification variables based on your survey design:
 
 ```{r custom-stratification}
-## Diagnostics: check structure before design creation
-str(calendar)
-str(interviews)
-# Create design with custom stratification
-custom_design <- design_access(
-  interviews = interviews,
-  calendar = calendar,
-  strata_vars = c("date")
+# Create survey design with custom stratification
+custom_svy <- as_day_svydesign(
+  calendar,
+  day_id = "date",
+  strata_vars = c("day_type")  # Simplified stratification
 )
 
-# Check stratification
-str(custom_design$interviews)
-dplyr::count(custom_design$interviews, date, shift_block)
+# Check stratification in the survey design
+summary(custom_svy)
 ```
 
 ### Handling Missing Data
@@ -198,8 +186,8 @@ The validation functions will catch missing required columns:
 ```{r validation}
 # This will produce an error due to missing columns
 tryCatch({
-  bad_interviews <- interviews[, -1]  # Remove first column
-  design_access(bad_interviews, calendar)
+  bad_calendar <- calendar[, -1]  # Remove first column
+  as_day_svydesign(bad_calendar, day_id = "date", strata_vars = c("day_type"))
 }, error = function(e) {
   message("Validation error: ", e$message)
 })
@@ -207,7 +195,7 @@ tryCatch({
 
 ## Next Steps
 
-Now that you have lean survey containers and a day-PSU design, you can:
+Now that you have a day-PSU survey design, you can:
 
 1. **Estimate effort and CPUE** with survey-first estimators and `svydesign`
 2. **Calculate population totals** with appropriate variance estimates

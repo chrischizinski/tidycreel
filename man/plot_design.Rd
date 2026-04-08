@@ -14,7 +14,8 @@ plot_design(
 \arguments{
 \item{design}{A creel_design object or data frame with survey structure.}
 
-\item{by}{Character vector of grouping variables (e.g., date, shift_block, location, stratum).}
+\item{by}{Character vector of grouping variables (e.g., date, shift_block,
+location, stratum).}
 
 \item{type}{Plot type: "bar", "facet", "interactive".}
 
@@ -24,11 +25,13 @@ plot_design(
 A ggplot or plotly object.
 }
 \description{
-Visualize survey design by date, shift, location, stratum, or other grouping variables.
-Supports bar plots, faceted plots, and interactive plots (via plotly if available).
+Visualize survey design by date, shift, location, stratum, or other grouping
+variables. Supports bar plots, faceted plots, and interactive plots (via
+plotly if available).
 }
 \details{
-Visualizes survey design structure and effort estimates. Supports bar, facet, and interactive plots. See vignettes for usage examples.
+Visualizes survey design structure and effort estimates. Supports bar, facet,
+and interactive plots. See vignettes for usage examples.
 }
 \examples{
 # Plot survey design structure

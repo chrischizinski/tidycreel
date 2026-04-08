@@ -11,5 +11,6 @@ A tibble with the following columns:
 }
 }
 \description{
-Defines the expected structure for reference tables (species, waterbody, etc.).
+Defines the expected structure for reference tables (species, waterbody,
+etc.).
 }

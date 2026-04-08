@@ -1,0 +1,1000 @@
+---
+title: "Ratio Estimators: When to Use Ratio-of-Means vs Mean-of-Ratios"
+format:
+  html:
+    embed-resources: true
+    toc: true
+    toc-depth: 3
+    toc-location: left
+    number-sections: false
+    code-fold: false
+    code-tools: true
+    df-print: paged
+execute:
+  warning: false
+  message: false
+  cache: false
+---
+
+## Introduction
+
+When estimating catch per unit effort (CPUE) in creel surveys, we often need to compute ratios—specifically, the ratio of total catch to total effort. However, there are **two fundamentally different ways** to estimate this ratio from sample data:
+
+1. **Ratio-of-means** (ratio estimator): Calculate the ratio of total catch to total effort across all observations
+2. **Mean-of-ratios**: Calculate the individual catch rate for each trip, then average those individual rates
+
+While these may seem similar at first glance, they have **fundamentally different statistical properties** and answer subtly different research questions:
+
+- **Ratio-of-means** estimates: *"What is the overall catch rate across all fishing effort in the population?"*
+- **Mean-of-ratios** estimates: *"What is the average catch rate experienced by a typical angler?"*
+
+### Why This Matters in Creel Surveys
+
+In typical creel surveys, we encounter several challenges:
+
+1. **Incomplete trips**: Many anglers are interviewed while still fishing (access-point, roving surveys)
+2. **Variable trip duration**: Some anglers fish 1 hour, others fish 8+ hours
+3. **Zero values**: Some trips have zero catch, and occasionally zero effort
+4. **Survey weights**: Different trips may have different sampling probabilities
+
+These challenges affect the two estimators differently, making the choice between them critically important for valid inference.
+
+### What You'll Learn
+
+This vignette demonstrates:
+
+- The mathematical and conceptual difference between the two estimators
+- When each estimator is appropriate (with practical examples)
+- How they perform under different data conditions (complete vs incomplete trips, variable effort)
+- Special cases and edge cases (zeros, extreme variability)
+- Practical recommendations for common creel survey designs
+
+By the end, you'll understand when to use `mode = "ratio_of_means"` (the default) versus `mode = "mean_of_ratios"` in the `est_cpue()` function.
+
+```{r}
+#| label: setup
+#| message: false
+#| output: false
+
+# Load tidycreel (development version if needed)
+if (!requireNamespace("tidycreel", quietly = TRUE)) {
+  # If package not installed, try loading from development
+  if (file.exists("../DESCRIPTION")) {
+    devtools::load_all("..")
+  } else {
+    stop("tidycreel package not available")
+  }
+} else {
+  library(tidycreel)
+}
+
+library(dplyr)
+library(ggplot2)
+library(survey)
+```
+
+## The Two Estimators
+
+### Ratio-of-Means
+
+The ratio-of-means estimator computes:
+
+$$
+\text{CPUE}_{\text{RM}} = \frac{\bar{Y}}{\bar{X}} = \frac{\sum_{i=1}^n w_i y_i}{\sum_{i=1}^n w_i x_i}
+$$
+
+where $y_i$ is catch, $x_i$ is effort, and $w_i$ are survey weights.
+
+In `tidycreel`, this is implemented using `survey::svyratio()`:
+
+```{r}
+#| label: ratio-of-means-code
+#| eval: false
+
+est_cpue(design, mode = "ratio_of_means")
+```
+
+### Mean-of-Ratios
+
+The mean-of-ratios estimator computes:
+
+$$
+\text{CPUE}_{\text{MR}} = \frac{1}{n}\sum_{i=1}^n w_i \left(\frac{y_i}{x_i}\right)
+$$
+
+In `tidycreel`, this is implemented by first computing individual ratios, then using `survey::svymean()`:
+
+```{r}
+#| label: mean-of-ratios-code
+#| eval: false
+
+est_cpue(design, mode = "mean_of_ratios")
+```
+
+## When to Use Each Estimator
+
+### Use Ratio-of-Means When:
+
+1. **Incomplete trips are common** - Many interviews are conducted while anglers are still fishing
+2. **Trip duration varies widely** - Effort is highly heterogeneous
+3. **Zero catch is common** - Some trips have zero catch but non-zero effort
+4. **Interest is in population-level rate** - You want to estimate the overall catch rate across all fishing effort
+
+**Why?** The ratio-of-means is more robust to zero values and incomplete trips. It naturally weights longer trips more heavily, which is appropriate when estimating total population catch rates.
+
+### Use Mean-of-Ratios When:
+
+1. **All trips are complete** - Interviews are only conducted at trip completion
+2. **Trip duration is relatively uniform** - Effort is homogeneous across trips
+3. **Interest is in average angler experience** - You want to estimate what a typical angler catches per hour
+4. **Zero catch is rare** - Most trips have some catch
+
+**Why?** The mean-of-ratios gives equal weight to each trip regardless of duration, making it appropriate when you want to understand the typical angler's experience.
+
+## Practical Example: Complete vs Incomplete Trips
+
+Let's demonstrate the difference with simulated data representing two scenarios.
+
+### Scenario 1: Complete Trips
+
+First, let's create data where all trips are complete and effort is relatively uniform:
+
+```{r}
+#| label: complete-trips
+
+set.seed(123)  # Set seed for reproducibility
+n <- 100
+
+# ============================================================================
+# Step 1: Simulate complete trip data
+# ============================================================================
+# This represents ALL trips complete (e.g., exit interviews, mail surveys)
+# and effort is relatively uniform across trips.
+
+complete_trips <- tibble(
+  trip_id = 1:n,
+  # Effort: uniformly distributed between 2-6 hours (relatively homogeneous)
+  hours_fished = runif(n, min = 2, max = 6),
+  catch_total = rpois(n, lambda = 3)  # Initial placeholder
+) |>
+  mutate(
+    # Overwrite catch to create realistic catch-effort relationship
+    # True CPUE ≈ 0.7 fish/hour with individual variation (SD = 0.2)
+    # This creates positive correlation between catch and effort
+    catch_total = round(hours_fished * rnorm(n, mean = 0.7, sd = 0.2))
+  )
+
+# ============================================================================
+# Step 2: Create survey design object
+# ============================================================================
+# Simple random sample design with:
+# - ids = ~1: no clustering (simple random sample)
+# - weights = ~1: equal probability for all observations
+# This design accounts for survey structure in variance estimation
+
+svy_complete <- svydesign(ids = ~1, weights = ~1, data = complete_trips)
+
+# ============================================================================
+# Step 3: Estimate CPUE using both methods
+# ============================================================================
+
+# Ratio-of-Means: total catch / total effort
+# Formula: (Σ catch) / (Σ effort)
+rom_complete <- est_cpue(
+  svy_complete,
+  mode = "ratio_of_means",
+  response = "catch_total"
+)
+
+# Mean-of-Ratios: average individual catch rate for each trip
+mor_complete <- est_cpue(
+  svy_complete,
+  mode = "mean_of_ratios",
+  response = "catch_total"
+)
+
+# ============================================================================
+# Step 4: Compare the two estimators side-by-side
+# ============================================================================
+# Build comparison table showing estimates, standard errors, and CIs
+
+comparison_complete <- tibble(
+  method = c("Ratio-of-Means", "Mean-of-Ratios"),
+  estimate = c(rom_complete$estimate, mor_complete$estimate),
+  se = c(rom_complete$se, mor_complete$se)
+) |>
+  mutate(
+    # Calculate 95% Wald confidence intervals
+    ci_low = estimate - 1.96 * se,
+    ci_high = estimate + 1.96 * se
+  )
+
+print(comparison_complete)
+```
+
+**Interpretation**: With complete trips and relatively uniform effort, both estimators produce similar results. The estimates are close, the standard errors are comparable, and the confidence intervals overlap substantially. In this scenario, the choice between estimators matters less.
+
+**Key takeaway**: When trips are complete and effort is homogeneous, either estimator works well. The slight differences you see are due to random sampling variation.
+
+### Scenario 2: Incomplete Trips with Variable Effort
+
+Now let's simulate incomplete trips where some anglers have just started fishing:
+
+```{r}
+#| label: incomplete-trips
+
+set.seed(456)  # Different seed for different scenario
+n <- 100
+
+# ============================================================================
+# Step 1: Simulate incomplete trip data with variable effort
+# ============================================================================
+# This represents a typical access-point or roving survey where:
+# - Anglers are interviewed at random times during their trip
+# - Some anglers have just started (short effort so far)
+# - Some are mid-trip
+# - Some are finishing up
+# This creates HIGHLY VARIABLE effort (0.5 to 8 hours, 16x range!)
+
+incomplete_trips <- tibble(
+  trip_id = 1:n,
+  hours_fished = c(
+    runif(30, min = 0.5, max = 2),   # Early in trip: 30% of sample
+    runif(40, min = 2, max = 5),     # Mid-trip: 40% of sample
+    runif(30, min = 5, max = 8)      # Late in trip: 30% of sample
+  ),
+  # Generate catch with true population CPUE = 0.8 fish/hour
+  # Poisson distribution reflects count nature of fish catch
+  # Expected catch = hours_fished × 0.8
+  catch_total = rpois(n, lambda = hours_fished * 0.8)
+)
+
+# ============================================================================
+# Step 2: Create survey design
+# ============================================================================
+# Same simple random sample design as before
+# In practice, this might have stratification by time of day, day type, etc.
+
+svy_incomplete <- svydesign(ids = ~1, weights = ~1, data = incomplete_trips)
+
+# ============================================================================
+# Step 3: Estimate CPUE using both methods
+# ============================================================================
+
+# Ratio-of-Means approach
+# This weights all fishing effort equally, regardless of trip completion
+# A 6-hour trip contributes 6x as much to denominator as a 1-hour trip
+rom_incomplete <- est_cpue(
+  svy_incomplete,
+  mode = "ratio_of_means",
+  response = "catch_total"
+)
+
+# Mean-of-Ratios approach
+# This gives equal weight to each TRIP, regardless of duration
+# A 6-hour trip and a 1-hour trip each count equally
+mor_incomplete <- est_cpue(
+  svy_incomplete,
+  mode = "mean_of_ratios",
+  response = "catch_total"
+)
+
+# ============================================================================
+# Step 4: Compare the estimators
+# ============================================================================
+# With incomplete trips and variable effort, these estimators may diverge!
+
+comparison_incomplete <- tibble(
+  method = c("Ratio-of-Means", "Mean-of-Ratios"),
+  estimate = c(rom_incomplete$estimate, mor_incomplete$estimate),
+  se = c(rom_incomplete$se, mor_incomplete$se)
+) |>
+  mutate(
+    # 95% confidence intervals
+    ci_low = estimate - 1.96 * se,
+    ci_high = estimate + 1.96 * se
+  )
+
+print(comparison_incomplete)
+```
+
+**Interpretation**: With incomplete trips and highly variable effort, the two estimators can produce meaningfully different results. The differences you observe depend on:
+
+1. **Sampling variability**: Random chance in which trips were sampled
+2. **Effort distribution**: How effort is distributed across the sample
+3. **Correlation structure**: The relationship between catch and effort
+
+**Key insights**:
+
+- The **ratio-of-means** weights fishing effort proportionally. A trip with 6 hours of effort contributes 6× as much to the denominator as a trip with 1 hour. This makes it more robust for estimating the population-level catch rate.
+
+- The **mean-of-ratios** weights each trip equally. A 1-hour trip and a 6-hour trip both count the same, which can lead to bias when effort varies systematically with the stage of the trip (incomplete trips).
+
+**Which is correct?** For incomplete trips, ratio-of-means is generally preferred because it:
+- Properly accounts for the amount of fishing effort observed
+- Avoids bias from sampling trips at different stages of completion
+- Provides the best estimate of the population catch rate across all effort
+
+## Visualizing the Difference
+
+To understand why these estimators can differ, let's visualize how individual trip CPUE varies with trip duration:
+
+```{r}
+#| label: visualize-difference
+#| fig-height: 6
+#| fig-width: 7
+
+# ============================================================================
+# Create synthetic data across a range of trip durations
+# ============================================================================
+# This demonstrates how individual trip CPUE (catch/effort) can vary
+# with trip duration, even when the true population CPUE is constant
+
+trip_scenarios <- expand.grid(
+  scenario = 1:50,  # 50 replicates per trip type
+  trip_type = c("Short (0.5-2h)", "Medium (2-5h)", "Long (5-8h)")
+) |>
+  mutate(
+    # Generate effort values within each trip type category
+    hours_fished = case_when(
+      trip_type == "Short (0.5-2h)" ~ runif(n(), 0.5, 2),
+      trip_type == "Medium (2-5h)" ~ runif(n(), 2, 5),
+      trip_type == "Long (5-8h)" ~ runif(n(), 5, 8)
+    ),
+    # Generate catch assuming TRUE population CPUE = 0.75 fish/hour
+    # Poisson variability means individual CPUEs will vary around this value
+    catch_total = rpois(n(), lambda = hours_fished * 0.75),
+
+    # Calculate individual CPUE for each trip
+    # THIS is what mean-of-ratios averages
+    individual_cpue = catch_total / hours_fished
+  )
+
+# ============================================================================
+# Visualize how individual CPUE relates to trip duration
+# ============================================================================
+# Key insights from this plot:
+# 1. Individual CPUEs scatter around true value (0.75)
+# 2. Shorter trips have MORE variable individual CPUEs (wider spread)
+# 3. Longer trips have MORE stable individual CPUEs (less spread)
+# This is why mean-of-ratios can be biased with incomplete trips!
+
+ggplot(trip_scenarios, aes(x = hours_fished, y = individual_cpue,
+                           color = trip_type)) +
+  geom_point(alpha = 0.5, size = 2) +  # Individual trip observations
+  geom_smooth(method = "lm", se = FALSE, linewidth = 1.2) +  # Trend lines
+  geom_hline(yintercept = 0.75, linetype = "dashed",
+             linewidth = 1, color = "black") +  # True population CPUE
+  labs(
+    title = "Individual CPUE vs Trip Duration",
+    subtitle = "Dashed line shows true population CPUE (0.75 fish/hour)",
+    x = "Hours Fished (Effort)",
+    y = "Individual CPUE (catch/effort)",
+    color = "Trip Type",
+    caption = "Note: Shorter trips show higher variability in individual CPUE"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+```
+
+**What This Plot Shows**:
+
+This visualization reveals a critical pattern in individual trip CPUE:
+
+1. **Increased variability with shorter trips**: Shorter trips (0.5-2 hours) show much wider scatter in individual CPUE values. This is due to small sample sizes within each trip—with only 1-2 hours of fishing, random chance plays a larger role.
+
+2. **Stabilization with longer trips**: Longer trips (5-8 hours) show individual CPUEs clustering more tightly around the true value (0.75). More fishing time averages out the random variation.
+
+3. **Why this matters for mean-of-ratios**: The mean-of-ratios estimator averages individual trip CPUEs, giving equal weight to the highly variable short-trip estimates and the more stable long-trip estimates. This can introduce bias.
+
+4. **Why ratio-of-means is more stable**: The ratio-of-means implicitly down-weights the noisy short-trip observations by giving them less influence in the total effort denominator.
+
+**Practical implication**: When you have a mix of incomplete trips with varying durations (typical in access-point and roving surveys), ratio-of-means provides more reliable population-level estimates.
+
+## Variance Estimation Considerations
+
+Beyond point estimates, the two estimators also differ fundamentally in their **variance properties** and how standard errors are calculated. Understanding these differences helps explain why ratio-of-means often has smaller standard errors in practice.
+
+### Statistical Framework
+
+The two estimators also differ in their variance properties:
+
+### Ratio-of-Means Variance
+
+The variance of the ratio-of-means estimator uses the **Taylor linearization** method (delta method):
+
+$$
+\text{Var}(\text{CPUE}_{\text{RM}}) \approx \frac{1}{\bar{X}^2}\left[\text{Var}(\bar{Y}) + R^2\text{Var}(\bar{X}) - 2R\text{Cov}(\bar{Y}, \bar{X})\right]
+$$
+
+where $R = \bar{Y}/\bar{X}$.
+
+### Mean-of-Ratios Variance
+
+The variance of the mean-of-ratios is simpler:
+
+$$
+\text{Var}(\text{CPUE}_{\text{MR}}) = \text{Var}\left(\frac{1}{n}\sum_{i=1}^n \frac{y_i}{x_i}\right)
+$$
+
+**Important Differences**:
+
+1. **Correlation matters**: The ratio-of-means variance accounts for the correlation between catch and effort (the $2R\text{Cov}(\bar{Y}, \bar{X})$ term). In creel surveys, catch and effort are typically **positively correlated**—longer trips tend to have more catch. This positive covariance reduces the variance of the ratio estimator.
+
+2. **Efficiency gain**: When catch and effort are strongly positively correlated, the ratio-of-means can have substantially smaller standard errors than mean-of-ratios. This is because the correlation term provides information that improves precision.
+
+3. **Survey package implementation**: The `survey::svyratio()` function uses Taylor linearization to compute these variances correctly, accounting for complex survey designs (stratification, clustering, unequal weights).
+
+**Practical implication**: The ratio-of-means estimator often provides **more precise** estimates (smaller standard errors) in addition to being more robust to incomplete trips. This is a win-win in most creel survey scenarios.
+
+## Special Cases and Edge Cases
+
+The theoretical differences between estimators become even more apparent in edge cases. Let's examine two common scenarios that can cause problems in practice.
+
+### Zero Effort
+
+Mean-of-ratios is **undefined** when any observation has zero effort (division by zero). Ratio-of-means handles this gracefully:
+
+```{r}
+#| label: zero-effort
+
+# ============================================================================
+# Edge Case: Zero effort observations
+# ============================================================================
+# This can occur when:
+# - Anglers arrive but haven't started fishing yet
+# - Equipment problems prevent fishing
+# - Bad weather stops fishing immediately
+# - Data entry errors
+
+trips_with_zeros <- tibble(
+  trip_id = 1:50,
+  # First 5 observations have ZERO effort (problematic for mean-of-ratios)
+  # Remaining 45 have normal effort (1-5 hours)
+  hours_fished = c(rep(0, 5), runif(45, 1, 5)),
+  # Zero effort → zero catch for those trips
+  catch_total = c(rep(0, 5), rpois(45, lambda = 3))
+)
+
+svy_zeros <- svydesign(ids = ~1, weights = ~1, data = trips_with_zeros)
+
+# ============================================================================
+# Test 1: Ratio-of-Means handles zeros gracefully
+# ============================================================================
+# Zero-effort trips contribute:
+# - Zero to numerator (total catch)
+# - Zero to denominator (total effort)
+# The ratio is still well-defined: (Σ catch) / (Σ effort)
+
+rom_zeros <- est_cpue(
+  svy_zeros, mode = "ratio_of_means", response = "catch_total"
+)
+print(rom_zeros)
+
+# ============================================================================
+# Test 2: Mean-of-Ratios fails with zero effort
+# ============================================================================
+# Zero-effort trips create division by zero:
+# - Individual CPUE = catch / 0 = Inf or NaN
+# - The mean becomes undefined or infinite
+# This is a FUNDAMENTAL limitation of mean-of-ratios
+
+tryCatch({
+  mor_zeros <- est_cpue(
+    svy_zeros, mode = "mean_of_ratios", response = "catch_total"
+  )
+  print(mor_zeros)
+}, warning = function(w) {
+  message("Warning with mean-of-ratios: ", w$message)
+})
+```
+
+### High Variability in Effort
+
+When effort varies greatly (e.g., 10x differences between shortest and longest trips), ratio-of-means is generally more stable:
+
+```{r}
+#| label: high-variability
+
+# ============================================================================
+# Edge Case: Extremely variable effort distribution
+# ============================================================================
+# Exponential distribution creates realistic highly-skewed effort:
+# - Many short trips
+# - Few very long trips
+# - This is common in real creel surveys!
+
+trips_variable <- tibble(
+  trip_id = 1:100,
+  # Exponential distribution with rate = 0.5
+  # Mean ≈ 2 hours, but range can be 0.1 to 10+ hours
+  # This creates 100x variation between shortest and longest trips!
+  hours_fished = rexp(100, rate = 0.5),
+
+  # True CPUE = 0.6 fish/hour
+  # Catch follows the effort, with Poisson variability
+  catch_total = rpois(100, lambda = hours_fished * 0.6)
+)
+
+svy_variable <- svydesign(ids = ~1, weights = ~1, data = trips_variable)
+
+# ============================================================================
+# Compare estimator performance with highly variable effort
+# ============================================================================
+
+# Ratio-of-Means: robust to extreme effort variation
+# Long trips contribute proportionally to their effort
+rom_variable <- est_cpue(
+  svy_variable,
+  mode = "ratio_of_means",
+  response = "catch_total"
+)
+
+# Mean-of-Ratios: can be unstable with variable effort
+# Each trip weighted equally regardless of duration
+mor_variable <- est_cpue(
+  svy_variable,
+  mode = "mean_of_ratios",
+  response = "catch_total"
+)
+
+# ============================================================================
+# Evaluate precision using coefficient of variation (CV)
+# ============================================================================
+# CV = SE / Estimate (lower is more precise)
+# Ratio-of-means typically has lower CV with variable effort
+
+comparison_variable <- tibble(
+  method = c("Ratio-of-Means", "Mean-of-Ratios"),
+  estimate = c(rom_variable$estimate, mor_variable$estimate),
+  se = c(rom_variable$se, mor_variable$se),
+  cv = se / estimate  # Coefficient of variation (relative precision)
+) |>
+  mutate(
+    # Add percent format for CV
+    cv_percent = paste0(round(cv * 100, 1), "%")
+  )
+
+print(comparison_variable)
+```
+
+**Key Observations from Edge Cases**:
+
+1. **Robustness to zeros**: Ratio-of-means handles zero effort gracefully, while mean-of-ratios breaks down completely. This is a practical advantage in real surveys where equipment failures, weather interruptions, or data errors can create zero-effort observations.
+
+2. **Precision with variable effort**: The coefficient of variation (CV) shows that ratio-of-means typically provides more precise estimates when effort is highly variable. Lower CV = more precise estimates.
+
+3. **Stability**: Ratio-of-means is less sensitive to outliers and extreme values in the effort distribution, making it more stable for inference.
+
+**Bottom line**: These edge cases demonstrate that ratio-of-means is not just theoretically preferred for incomplete trips—it's also more robust and precise in challenging real-world data situations.
+
+## Recommendations for Creel Surveys
+
+Now that we understand the statistical properties and behavior of each estimator, let's provide concrete recommendations for common creel survey designs.
+
+### Access-Point Surveys (Incomplete Trips)
+
+**Recommended: Ratio-of-Means**
+
+```{r}
+#| label: access-point
+
+# Typical access-point survey scenario
+# - Anglers interviewed at random times
+# - Mix of trip start, middle, and end
+# - Incomplete trips common
+
+# Use ratio-of-means (default)
+est_cpue(svy_incomplete, mode = "ratio_of_means", response = "catch_total")
+```
+
+**Why?** Access-point surveys inevitably include many incomplete trips. The ratio-of-means naturally handles this and provides the best estimate of the population-level catch rate.
+
+### Roving Surveys (Incomplete Trips)
+
+**Recommended: Ratio-of-Means**
+
+```{r}
+#| label: roving
+
+# Similar to access-point
+# Use ratio-of-means
+est_cpue(svy_incomplete, mode = "ratio_of_means", response = "catch_total")
+```
+
+### Complete-Trip Surveys (Mail, Phone, or Exit Only)
+
+**Consider: Mean-of-Ratios**
+
+```{r}
+#| label: complete-trip-survey
+
+# When all trips are complete:
+# - Mail surveys
+# - Phone surveys
+# - Exit interviews only
+
+# Mean-of-ratios may be appropriate
+est_cpue(svy_complete, mode = "mean_of_ratios", response = "catch_total")
+```
+
+**Why?** If you're specifically interested in the average angler's experience (typical CPUE per trip), and all trips are complete, mean-of-ratios may better represent this quantity.
+
+### Default Recommendation
+
+**When in doubt, use ratio-of-means.** It is:
+
+- More robust to incomplete trips
+- More stable with variable effort
+- Better for population-level inference
+- The standard in fisheries literature
+- Default behavior in major survey software (SPSS, SAS, Stata, R survey package)
+
+This is why `est_cpue()` defaults to `mode = "ratio_of_means"`.
+
+### Mixed Survey Designs: Complete + Incomplete Trips
+
+**Real-World Scenario**: Many creel surveys include BOTH complete and incomplete trips in the same dataset. For example:
+
+- Exit interviews (complete trips) conducted at boat ramps
+- Roving/access-point interviews (incomplete trips) conducted on the water or at fishing sites
+- Mail surveys (complete trips) combined with on-site intercepts (incomplete trips)
+
+**Which estimator should you use?**
+
+```{r}
+#| label: mixed-design
+
+# ============================================================================
+# Simulate a mixed survey design
+# ============================================================================
+# Realistic scenario: 60% incomplete trips, 40% complete trips
+
+set.seed(789)
+n_incomplete <- 60
+n_complete <- 40
+
+mixed_trips <- tibble(
+  trip_id = 1:(n_incomplete + n_complete),
+
+  # Trip status indicator
+  trip_complete = c(rep(FALSE, n_incomplete), rep(TRUE, n_complete)),
+
+  # Survey method
+  survey_method = c(rep("roving", n_incomplete), rep("exit", n_complete)),
+
+  # Effort varies by completion status
+  hours_fished = c(
+    # Incomplete trips: highly variable (0.5-6 hours observed so far)
+    runif(n_incomplete, min = 0.5, max = 6),
+    # Complete trips: full range (1-8 hours total trip length)
+    runif(n_complete, min = 1, max = 8)
+  )
+) |>
+  mutate(
+    # True population CPUE = 0.8 fish/hour for both groups
+    catch_total = rpois(n(), lambda = hours_fished * 0.8)
+  )
+
+# ============================================================================
+# Compare estimators on mixed data
+# ============================================================================
+
+svy_mixed <- svydesign(ids = ~1, weights = ~1, data = mixed_trips)
+
+# Ratio-of-Means: Handles mixed data appropriately
+rom_mixed <- est_cpue(
+  svy_mixed,
+  mode = "ratio_of_means",
+  response = "catch_total"
+)
+
+# Mean-of-Ratios: Biased with incomplete trips present
+mor_mixed <- est_cpue(
+  svy_mixed,
+  mode = "mean_of_ratios",
+  response = "catch_total"
+)
+
+# Compare results
+comparison_mixed <- tibble(
+  method = c("Ratio-of-Means", "Mean-of-Ratios"),
+  estimate = c(rom_mixed$estimate, mor_mixed$estimate),
+  se = c(rom_mixed$se, mor_mixed$se)
+) |>
+  mutate(
+    ci_low = estimate - 1.96 * se,
+    ci_high = estimate + 1.96 * se,
+    cv_percent = paste0(round((se / estimate) * 100, 1), "%")
+  )
+
+print(comparison_mixed)
+
+# ============================================================================
+# Examine the data mixture
+# ============================================================================
+
+cat("\nData Composition:\n")
+mixed_summary <- mixed_trips |>
+  group_by(trip_complete, survey_method) |>
+  summarise(
+    n = n(),
+    mean_hours = mean(hours_fished),
+    mean_catch = mean(catch_total),
+    individual_cpue = mean(catch_total / hours_fished),
+    .groups = "drop"
+  )
+
+print(mixed_summary)
+```
+
+**Interpretation**:
+
+When you have a mixture of complete and incomplete trips:
+
+1. **Ratio-of-Means is Required**: The presence of ANY incomplete trips means you should use ratio-of-means. It correctly handles the mixture by weighting all effort appropriately.
+
+2. **Mean-of-Ratios is Biased**: Even if only 20-30% of trips are incomplete, mean-of-ratios can be biased because it gives equal weight to:
+   - Short incomplete trips (highly variable individual CPUE)
+   - Long complete trips (more stable individual CPUE)
+
+3. **No Stratification Needed**: You don't need to separate complete vs incomplete trips and estimate separately. Ratio-of-means handles the mixture appropriately in a single analysis.
+
+**Visual Comparison of Mixed Data**:
+
+```{r}
+#| label: mixed-design-plot
+#| fig-height: 6
+#| fig-width: 8
+
+# ============================================================================
+# Visualize the mixture of complete and incomplete trips
+# ============================================================================
+
+mixed_trips |>
+  mutate(
+    individual_cpue = catch_total / hours_fished,
+    trip_status = ifelse(trip_complete,
+                         "Complete (Exit Interview)",
+                         "Incomplete (Roving)")
+  ) |>
+  ggplot(aes(x = hours_fished, y = individual_cpue,
+             color = trip_status, shape = trip_status)) +
+  geom_point(size = 3, alpha = 0.6) +
+  geom_hline(yintercept = 0.8, linetype = "dashed",
+             linewidth = 1, color = "black") +
+  geom_smooth(aes(group = trip_status), method = "loess",
+              se = FALSE, linewidth = 1.2) +
+  labs(
+    title = "Mixed Survey Design: Complete and Incomplete Trips",
+    subtitle = "Dashed line shows true population CPUE (0.8 fish/hour)",
+    x = "Hours Fished (Observed Effort)",
+    y = "Individual CPUE (catch/effort)",
+    color = "Trip Status",
+    shape = "Trip Status",
+    caption = paste0(
+      "Sample: ", n_incomplete, " incomplete trips (roving), ",
+      n_complete, " complete trips (exit)"
+    )
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  scale_color_manual(values = c("Complete (Exit Interview)" = "#2E86AB",
+                                "Incomplete (Roving)" = "#A23B72"))
+```
+
+**Key Observations from Mixed Design**:
+
+1. **Different effort distributions**: Incomplete trips tend to have shorter observed effort (captured mid-trip), while complete trips show the full effort range.
+
+2. **Overlapping domains**: Both groups fish in the same population with the same true CPUE (0.8 fish/hour), but we observe them at different stages.
+
+3. **Combined inference**: Ratio-of-means pools all the effort and catch appropriately, providing a single population-level CPUE estimate that's valid for the entire fishing population.
+
+**Practical Recommendation for Mixed Designs**:
+
+```r
+# ============================================================================
+# Best practice with mixed survey data
+# ============================================================================
+
+# 1. Use ratio-of-means (always correct for mixed data)
+cpue_estimate <- est_cpue(
+  design = your_survey_design,
+  mode = "ratio_of_means",  # Required with any incomplete trips
+  response = "catch_total"
+)
+
+# 2. Optionally, examine estimates by survey method for diagnostics
+cpue_by_method <- est_cpue(
+  design = your_survey_design,
+  by = "survey_method",  # Compare roving vs exit vs mail, etc.
+  mode = "ratio_of_means",
+  response = "catch_total"
+)
+
+# If estimates differ substantially by method, investigate:
+# - Are incomplete trips being interviewed at representative times?
+# - Is there systematic bias in when roving interviews occur?
+# - Should you adjust sampling to ensure better coverage?
+```
+
+**Advanced: Should You Weight Survey Methods Differently?**
+
+If you have different sampling rates for complete vs incomplete trips, use survey weights:
+
+```{r}
+#| label: weighted-mixed-design
+#| eval: false
+
+# Example: You sampled 1 in 10 roving trips, but 1 in 5 exit interviews
+mixed_trips_weighted <- mixed_trips |>
+  mutate(
+    sampling_weight = case_when(
+      survey_method == "roving" ~ 10,  # Represents 10 trips
+      survey_method == "exit" ~ 5,      # Represents 5 trips
+      TRUE ~ 1
+    )
+  )
+
+# Create weighted survey design
+svy_weighted <- svydesign(
+  ids = ~1,
+  weights = ~sampling_weight,
+  data = mixed_trips_weighted
+)
+
+# Estimate CPUE accounting for different sampling rates
+cpue_weighted <- est_cpue(
+  svy_weighted,
+  mode = "ratio_of_means",
+  response = "catch_total"
+)
+```
+
+**Bottom Line for Mixed Designs**:
+
+- **Use ratio-of-means** - It's the only valid estimator when incomplete trips are present
+- **Don't separate groups** - Analyze all trips together (ratio-of-means handles the mixture)
+- **Use survey weights** - If different methods have different sampling rates
+- **Check diagnostics** - Compare estimates by method to detect potential sampling bias
+
+### Decision Framework: A Quick Reference
+
+Here's a practical decision tree for choosing between estimators:
+
+```
+START: Do I need to estimate CPUE?
+  ↓
+  Do you have ANY incomplete trips in your data?
+    ↓ YES → Use ratio-of-means (REQUIRED)
+    |       (This includes mixed designs with both complete and incomplete)
+    ↓ NO (ALL trips are complete)
+    ↓
+    Is effort relatively uniform across trips?
+      ↓ YES → Either estimator acceptable
+      |       → Use ratio-of-means (default, more efficient)
+      ↓ NO (effort highly variable)
+      ↓
+      Use ratio-of-means (more stable, more precise)
+```
+
+**Special considerations**:
+
+- **Research question matters**: If you specifically want to characterize "typical angler experience" rather than "population catch rate," mean-of-ratios *may* be appropriate—but only with complete trips and homogeneous effort.
+
+- **Zero effort in data**: If your data contains any zero-effort observations, you *must* use ratio-of-means (mean-of-ratios will fail).
+
+- **Highly variable effort**: When effort varies by 5× or more (common in creel surveys), ratio-of-means provides more stable, precise estimates.
+
+- **Publication standards**: Most fisheries journals expect ratio-of-means for CPUE estimation, following Pollock et al. (1994) and Malvestuto (1996) guidance.
+
+### Diagnosing Your Data
+
+Before choosing an estimator, examine your data characteristics:
+
+```{r}
+#| label: data-diagnostics
+#| eval: false
+
+# Check effort variability
+effort_summary <- your_data |>
+  summarise(
+    min_effort = min(hours_fished, na.rm = TRUE),
+    max_effort = max(hours_fished, na.rm = TRUE),
+    mean_effort = mean(hours_fished, na.rm = TRUE),
+    cv_effort = sd(hours_fished, na.rm = TRUE) /
+      mean(hours_fished, na.rm = TRUE),
+    range_ratio = max_effort / min_effort,
+    any_zeros = any(hours_fished == 0, na.rm = TRUE)
+  )
+
+print(effort_summary)
+
+# Diagnostic interpretation:
+# - cv_effort > 0.5: High variability → prefer ratio-of-means
+# - range_ratio > 5: Wide range → prefer ratio-of-means
+# - any_zeros = TRUE: Zero effort present → MUST use ratio-of-means
+# - If all three are FALSE and trips complete → either estimator OK
+
+# Check catch-effort correlation
+cor_check <- cor(your_data$catch_total, your_data$hours_fished,
+                 use = "complete.obs")
+print(paste("Catch-effort correlation:", round(cor_check, 3)))
+
+# Strong positive correlation (>0.5) → ratio-of-means will be more efficient
+```
+
+**What to look for**:
+
+1. **Coefficient of variation (CV) > 0.5**: High effort variability favors ratio-of-means
+2. **Range ratio > 5**: Wide effort range favors ratio-of-means
+3. **Any zeros present**: Must use ratio-of-means
+4. **Strong correlation (>0.5)**: Ratio-of-means will be more precise
+
+## Comparison with Survey Sampling Literature
+
+The choice between these estimators aligns with classical survey sampling theory:
+
+- **Ratio estimator** (ratio-of-means): Used when $Y$ and $X$ are positively correlated and the regression through the origin is appropriate. Common in ratio estimation for totals.
+
+- **Mean of ratios**: Appropriate when each ratio $y_i/x_i$ is a meaningful quantity itself and you want to estimate the average of those individual ratios.
+
+In creel surveys, catch and effort are typically positively correlated (longer trips = more catch), making ratio-of-means the natural choice for estimating population CPUE.
+
+## Summary Table
+
+| Characteristic | Ratio-of-Means | Mean-of-Ratios |
+|---------------|----------------|----------------|
+| **Incomplete trips** | ✅ Robust | ⚠️ Can be biased |
+| **Mixed designs** | ✅ Handles both | ❌ Biased |
+| **Variable effort** | ✅ Stable | ⚠️ Less stable |
+| **Zero effort** | ✅ Handles well | ❌ Undefined |
+| **Zero catch** | ✅ Handles well | ✅ Handles well |
+| **Population rate** | ✅ Best choice | ⚠️ May not represent |
+| **Average angler** | ⚠️ Weights long trips | ✅ Equal weighting |
+| **Small samples** | ✅ More efficient | ⚠️ Higher variance |
+| **Complete trips** | ✅ Still valid | ✅ Valid |
+
+## Additional Resources
+
+### Key References
+
+1. **Cochran, W.G. (1977).** *Sampling Techniques* (3rd ed.). Wiley. Chapter 6: Ratio Estimators.
+
+2. **Pollock, K.H., Jones, C.M., & Brown, T.L. (1994).** *Angler Survey Methods and Their Applications in Fisheries Management*. American Fisheries Society Special Publication 25. Section on CPUE estimation.
+
+3. **Malvestuto, S.P. (1996).** Sampling the recreational creel. In Murphy & Willis (Eds.), *Fisheries Techniques* (2nd ed., pp. 591-623). Discusses ratio estimators for incomplete trips.
+
+### See Also
+
+- Getting started vignette for basic usage
+- `?est_cpue` for function documentation
+- `?survey::svyratio` for ratio estimation details
+- `?survey::svymean` for mean estimation details
+
+## Conclusion
+
+Choosing between ratio-of-means and mean-of-ratios depends on:
+
+1. **Survey design**: Incomplete vs complete trips
+2. **Effort variability**: High vs low variability
+3. **Research question**: Population rate vs average experience
+4. **Data quality**: Presence of zeros or outliers
+
+For most creel surveys with incomplete trips and variable effort, **ratio-of-means is the recommended default**. Use mean-of-ratios only when you have complete trips and specifically want to characterize the average angler's experience.
+
+The `tidycreel` package makes it easy to try both approaches and compare results, allowing you to make an informed choice based on your specific survey context.
+
+---
+
+## Session Information
+
+For reproducibility, here's information about the R session used to create this document:
+
+```{r}
+#| label: session-info
+#| echo: true
+
+sessionInfo()
+```

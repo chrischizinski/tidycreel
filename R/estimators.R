@@ -16,8 +16,8 @@ NULL
 #' and overall, using the survey design weights. Supports both access-point
 #' and roving survey designs.
 #'
-#' @param design A creel design object created by \code{\link{design_access}},
-#'   \code{\link{design_roving}}, or \code{\link{design_repweights}}.
+#' @param design A survey design object created by \code{\link{as_day_svydesign}}
+#'   or from the survey package (deprecated parameter).
 #' @param by Character vector of variables to group estimates by. Default
 #'   is the strata variables defined in the design.
 #' @param total Logical, whether to include overall total estimate in addition
@@ -48,7 +48,7 @@ NULL
 #'   package = "tidycreel"
 #' ))
 #'
-#' design <- design_access(interviews = interviews, calendar = calendar)
+#' svy_day <- as_day_svydesign(calendar, day_id = "date", strata_vars = c("day_type"))
 #'
 #' # Estimate effort by date
 #' effort_by_date <- estimate_effort(design, by = "date")
@@ -69,8 +69,8 @@ estimate_effort <- function(design, by = NULL, total = TRUE, level = 0.95) {
 #' Estimates catch per unit effort by species, mode, or other grouping variables.
 #' Supports both number-based (fish per hour) and weight-based (kg per hour) CPUE.
 #'
-#' @param design A creel design object created by \code{\link{design_access}},
-#'   \code{\link{design_roving}}, or \code{\link{design_repweights}}.
+#' @param design A survey design object created by \code{\link{as_day_svydesign}}
+#'   or from the survey package (deprecated parameter).
 #' @param by Character vector of variables to group estimates by. Default
 #'   is to estimate overall CPUE.
 #' @param species Character vector of species to include. If NULL, includes
@@ -114,8 +114,8 @@ estimate_cpue <- function(design, by = NULL, species = NULL, type = c("number", 
 #' Estimates total harvest (catch kept) by species, mode, or other grouping
 #' variables. Supports both number-based (count) and weight-based (kg) harvest.
 #'
-#' @param design A creel design object created by \code{\link{design_access}},
-#'   \code{\link{design_roving}}, or \code{\link{design_repweights}}.
+#' @param design A survey design object created by \code{\link{as_day_svydesign}}
+#'   or from the survey package (deprecated parameter).
 #' @param by Character vector of variables to group estimates by. Default
 #'   is to estimate overall harvest.
 #' @param species Character vector of species to include. If NULL, includes

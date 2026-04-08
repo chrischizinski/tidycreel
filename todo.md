@@ -90,20 +90,28 @@ Pause Checkpoint — 2025-08-22
   - CPUE/Catch: grouped `svyratio` uses `stats::coef()`/`survey::SE()`; ungrouped SE via `stats::vcov()`.
   - README updated; tests no longer call legacy constructors.
 - On-resume high-priority tasks:
-  1) Docs cleanup: remove/replace legacy references (`design_access`, `design_roving`, `design_repweights`). Files to scrub:
-     - `vignettes/getting-started.Rmd`
-     - `tidycreel_designs.md`
-     - `README.Rmd` (CPUE/Catch already updated)
-     - any vignette/article linking old constructors
-  2) Regenerate docs and namespace: run `devtools::document()` then `devtools::test()` and `devtools::check()`; remove orphaned man pages for deleted exports if any.
-  3) pkgdown: ensure `_pkgdown.yml` navbar reflects survey-first pages (Effort, Aerial, CPUE/Catch), and remove links to removed topics.
-  4) Add a short CPUE/Catch vignette with toy data example; cross-link from README.
-  5) Confirm no remaining exports for removed constructors (`NAMESPACE` is trimmed; verify after roxygen).
-  6) Optional: AGENTS.md update to note constructor removal and survey-first backbone.
+  1) [x] Docs cleanup: remove/replace legacy references (`design_access`, `design_roving`, `design_repweights`). Files to scrub:
+     - [x] `vignettes/getting-started.Rmd`
+     - [x] `tidycreel_designs.md`
+     - [x] `README.Rmd` (CPUE/Catch already updated)
+     - [x] any vignette/article linking old constructors
+  2) [x] Regenerate docs and namespace: run `devtools::document()` then `devtools::test()` and `devtools::check()`; remove orphaned man pages for deleted exports if any.
+  3) [x] pkgdown: ensure `_pkgdown.yml` navbar reflects survey-first pages (Effort, Aerial, CPUE/Catch), and remove links to removed topics.
+  4) [ ] Add a short CPUE/Catch vignette with toy data example; cross-link from README.
+  5) [x] Confirm no remaining exports for removed constructors (`NAMESPACE` is trimmed; verify after roxygen).
+  6) [x] Optional: AGENTS.md update to note constructor removal and survey-first backbone.
 - Handy commands after resuming:
   - `devtools::document(); devtools::test()`
   - `devtools::check()`
   - `pkgdown::build_site()` (optional)
+
+Changelog (2025-08-27)
+- Completed documentation cleanup for survey-first architecture
+- Fixed test failures in instantaneous/progressive estimators (SE extraction)
+- Updated vignettes/getting-started.Rmd to use correct est_cpue() API
+- Fixed survey package function calls (repweights, vcov)
+- Added missing stats imports; updated NAMESPACE
+- All 45 tests passing; package integrity restored
 
 Changelog (2025-08-21)
 - Completed survey-first refactor for effort (instantaneous/progressive/aerial/bus-route)

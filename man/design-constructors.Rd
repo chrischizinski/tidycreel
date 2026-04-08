@@ -2,12 +2,10 @@
 % Please edit documentation in R/design-constructors.R
 \name{design-constructors}
 \alias{design-constructors}
-\alias{design_access}
-\alias{design_roving}
-\alias{design_repweights}
-\title{Survey Design Constructors for Access-Point Creel Surveys}
+\alias{design_busroute}
+\title{Survey Design Functions for Creel Surveys}
 \description{
-These functions create survey design objects for different types of
-access-point creel surveys, including standard access designs, roving
-designs, and designs with replicate weights.
+Functions for creating and working with survey designs in the tidycreel package.
+The primary function for creating survey designs is now \code{\link{as_day_svydesign}}.
+Legacy design constructors have been removed in favor of the survey-first approach.
 }

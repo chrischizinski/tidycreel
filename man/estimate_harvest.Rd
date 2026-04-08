@@ -13,8 +13,8 @@ estimate_harvest(
 )
 }
 \arguments{
-\item{design}{A creel design object created by \code{\link{design_access}},
-\code{\link{design_roving}}, or \code{\link{design_repweights}}.}
+\item{design}{A survey design object created by \code{\link{as_day_svydesign}}
+or from the survey package (deprecated parameter).}
 
 \item{by}{Character vector of variables to group estimates by. Default
 is to estimate overall harvest.}

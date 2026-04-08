@@ -172,7 +172,7 @@ est_effort.busroute_design <- function(
       V <- attr(est, "var")
       out$se <- if (!is.null(V) && length(V) > 0) sqrt(diag(V)) else rep(NA_real_, nrow(out))
     }
-    z <- stats::qnorm(1 - (1 - conf_level)/2)
+    z <- stats::qnorm(1 - (1 - conf_level) / 2)
     out$ci_low <- out$estimate - z * out$se
     out$ci_high <- out$estimate + z * out$se
     out$n <- NA_integer_
@@ -182,7 +182,7 @@ est_effort.busroute_design <- function(
   } else {
     total_est <- survey::svytotal(~effort_day, design_eff, na.rm = TRUE)
     estimate <- as.numeric(total_est[1])
-    se <- sqrt(as.numeric(survey::vcov(total_est)))
+    se <- sqrt(as.numeric(vcov(total_est)))
     ci <- tc_confint(estimate, se, level = conf_level)
     return(tibble::tibble(
       estimate = estimate,

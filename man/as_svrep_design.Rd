@@ -20,11 +20,8 @@ Use this helper for advanced variance estimation and resampling-based inference.
 Raises an error if no embedded svrepdesign is found.
 }
 \examples{
-rep_design <- design_repweights(
-  base_design = access_design,
-  method = "bootstrap"
-)
-svyrep <- as_svrep_design(rep_design)
+svy_day <- as_day_svydesign(calendar, day_id = "date", strata_vars = c("day_type"))
+svyrep <- survey::as.svrepdesign(svy_day, type = "bootstrap", replicates = 50)
 summary(svyrep)
 
 }

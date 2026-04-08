@@ -1,8 +1,9 @@
 #' tidycreel: Tools for creel survey design, estimation, and reporting
 #'
-#' (One-sentence summary goes here.)
+#' Survey-first framework for creel survey analysis with tidy APIs.
 #'
 #' @keywords internal
+#' @importFrom stats as.formula qnorm qt update vcov
 "_PACKAGE"
 
 # Suppress R CMD check notes
@@ -11,6 +12,8 @@ if (getRversion() >= "2.15.1") {
     ".", "catch_total", "catch_kept", "catch_released", "hours_fished",
     "party_size", "effort_expansion", "anglers_count", "parties_count",
     "target_sample", "actual_sample", "date", "time_start", "time_end",
-    "location", "mode", "shift_block", "stratum_id", "weekend", "holiday"
+    "location", "mode", "shift_block", "stratum_id", "weekend", "holiday",
+    "adj_count", "sd_count", "mean_count", "total_minutes", "n_counts",
+    "effort_day", ".w", ".target", ".actual", ".cpue"
   ))
 }

@@ -95,14 +95,14 @@ print.summary.creel_design <- function(x, ...) {
   }
   invisible(x)
 }
-#' Survey Design Constructors for Access-Point Creel Surveys
+#' Survey Design Functions for Creel Surveys
 #'
-#' These functions create survey design objects for different types of
-#' access-point creel surveys, including standard access designs, roving
-#' designs, and designs with replicate weights.
+#' Functions for creating and working with survey designs in the tidycreel package.
+#' The primary function for creating survey designs is now \code{\link{as_day_svydesign}}.
+#' Legacy design constructors have been removed in favor of the survey-first approach.
 #'
 #' @name design-constructors
-#' @aliases design_access design_roving design_repweights
+#' @aliases design_busroute
 NULL
 
 #' Create Access-Point Survey Design (lean container)
@@ -477,11 +477,8 @@ design_repweights <- function(base_design, method = c("bootstrap", "jackknife", 
 #' - Raises an error if no embedded survey design is found.
 #'
 #' @examples
-#' access_design <- design_access(
-#'   interviews = read.csv("sample_data/toy_interviews.csv"),
-#'   calendar = read.csv("sample_data/toy_calendar.csv")
-#' )
-#' svy <- as_survey_design(access_design)
+#' calendar <- read.csv("sample_data/toy_calendar.csv")
+#' svy <- as_day_svydesign(calendar, day_id = "date", strata_vars = c("day_type"))
 #' summary(svy)
 #'
 #' @export
@@ -511,11 +508,8 @@ as_survey_design <- function(design) {
 #' Raises an error if no embedded svrepdesign is found.
 #'
 #' @examples
-#' rep_design <- design_repweights(
-#'   base_design = access_design,
-#'   method = "bootstrap"
-#' )
-#' svyrep <- as_svrep_design(rep_design)
+#' svy_day <- as_day_svydesign(calendar, day_id = "date", strata_vars = c("day_type"))
+#' svyrep <- survey::as.svrepdesign(svy_day, type = "bootstrap", replicates = 50)
 #' summary(svyrep)
 #'
 #' @export

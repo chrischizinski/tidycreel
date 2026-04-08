@@ -7,8 +7,8 @@
 estimate_effort(design, by = NULL, total = TRUE, level = 0.95)
 }
 \arguments{
-\item{design}{A creel design object created by \code{\link{design_access}},
-\code{\link{design_roving}}, or \code{\link{design_repweights}}.}
+\item{design}{A survey design object created by \code{\link{as_day_svydesign}}
+or from the survey package (deprecated parameter).}
 
 \item{by}{Character vector of variables to group estimates by. Default
 is the strata variables defined in the design.}
@@ -46,7 +46,7 @@ calendar <- readr::read_csv(system.file("extdata/toy_calendar.csv",
   package = "tidycreel"
 ))
 
-design <- design_access(interviews = interviews, calendar = calendar)
+svy_day <- as_day_svydesign(calendar, day_id = "date", strata_vars = c("day_type"))
 
 # Estimate effort by date
 effort_by_date <- estimate_effort(design, by = "date")
