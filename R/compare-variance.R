@@ -1,6 +1,6 @@
 #' Compare Taylor linearization vs. replicate variance for creel estimates
 #'
-#' Takes a \code{\link{creel_estimates}} object produced with
+#' Takes a \code{creel_estimates} object produced with
 #' \code{variance = "taylor"} and re-estimates using replicate weights
 #' (bootstrap or jackknife) to produce a side-by-side comparison of standard
 #' errors. A \code{cli_warn()} is issued for any row where the two SEs diverge

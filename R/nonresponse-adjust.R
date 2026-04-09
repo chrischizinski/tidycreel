@@ -30,9 +30,9 @@
 #'   \code{response_rates} (default: \code{"stratum"}).
 #'
 #' @return The input \code{creel_design} with adjusted weights. The updated
-#'   design includes an attribute \code{"nonresponse_diagnostics"} — a tibble
+#'   design includes an attribute \code{"nonresponse_diagnostics"} (a tibble
 #'   with columns \code{stratum}, \code{n_sampled}, \code{n_responded},
-#'   \code{response_rate}, \code{weight_adjustment} — that can be retrieved
+#'   \code{response_rate}, \code{weight_adjustment}) that can be retrieved
 #'   with \code{attr(result, "nonresponse_diagnostics")}.
 #'
 #' @section Adjustment method:
@@ -43,13 +43,13 @@
 #' The original weights are multiplied by \code{weight_adjustment_h}, which
 #' upweights respondents to represent non-respondents (Armstrong & Overton 1977).
 #' This assumes that respondents and non-respondents are exchangeable within
-#' strata — a missing-at-random assumption. When this is implausible, a
+#' strata (a missing-at-random assumption). When this is implausible, a
 #' sensitivity analysis comparing pre- and post-adjustment estimates is
 #' recommended.
 #'
 #' @references
 #' Armstrong, B.G. and Overton, W.S. 1977. Estimating nonresponse bias in
-#' mail surveys. Journal of Marketing Research 14:396–402.
+#' mail surveys. Journal of Marketing Research 14:396--402.
 #'
 #' Pollock, K.H., Jones, C.M. and Brown, T.L. 1994. Angler Survey Methods
 #' and Their Applications in Fisheries Management. American Fisheries Society,
@@ -132,7 +132,7 @@ adjust_nonresponse <- function(design,
   zero_resp <- n_responded == 0L
   if (any(zero_resp, na.rm = TRUE)) {
     cli::cli_abort(c(
-      "Zero-response strata detected — adjustment is undefined.",
+      "Zero-response strata detected: adjustment is undefined.",
       "x" = paste0(
         "Strata with zero responses: ",
         "{.val {strata_vals[zero_resp]}}."
