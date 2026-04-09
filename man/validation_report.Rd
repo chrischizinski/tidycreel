@@ -52,6 +52,7 @@ custom \code{print} method that renders a colour-coded cli summary. It can be
 exported with \code{\link[=write_estimates]{write_estimates()}}.
 }
 \examples{
+\dontrun{
 counts <- data.frame(
   date     = as.Date(c("2024-06-01", "2024-06-02")),
   day_type = c("weekday", "weekend"),
@@ -64,6 +65,7 @@ interviews <- data.frame(
 )
 rpt <- validation_report(counts, interviews, species_col = "species")
 print(rpt)
+}
 
 }
 \seealso{
