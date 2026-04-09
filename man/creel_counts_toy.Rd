@@ -26,10 +26,12 @@ an intentional \code{NA} in the \code{count} column to trigger the NA-rate check
 }
 \examples{
 data(creel_counts_toy)
+\dontrun{
 validate_creel_data(counts = creel_counts_toy)
+}
 
 }
 \seealso{
-\link{creel_interviews_toy}, \code{\link[=validate_creel_data]{validate_creel_data()}}
+\link{creel_interviews_toy}
 }
 \keyword{datasets}

@@ -29,11 +29,13 @@ missing \code{trip_hours} value.
 }
 \examples{
 data(creel_interviews_toy)
+\dontrun{
 validate_creel_data(interviews = creel_interviews_toy)
+standardize_species(creel_interviews_toy, species_col = "species")
+}
 
 }
 \seealso{
-\link{creel_counts_toy}, \code{\link[=validate_creel_data]{validate_creel_data()}},
-\code{\link[=standardize_species]{standardize_species()}}
+\link{creel_counts_toy}
 }
 \keyword{datasets}

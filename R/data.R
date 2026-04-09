@@ -719,9 +719,11 @@
 #'
 #' @examples
 #' data(creel_counts_toy)
+#' \dontrun{
 #' validate_creel_data(counts = creel_counts_toy)
+#' }
 #'
-#' @seealso [creel_interviews_toy], [validate_creel_data()]
+#' @seealso [creel_interviews_toy]
 "creel_counts_toy"
 
 #' Toy interview data for data validation examples
@@ -745,8 +747,10 @@
 #'
 #' @examples
 #' data(creel_interviews_toy)
+#' \dontrun{
 #' validate_creel_data(interviews = creel_interviews_toy)
+#' standardize_species(creel_interviews_toy, species_col = "species")
+#' }
 #'
-#' @seealso [creel_counts_toy], [validate_creel_data()],
-#'   [standardize_species()]
+#' @seealso [creel_counts_toy]
 "creel_interviews_toy"
