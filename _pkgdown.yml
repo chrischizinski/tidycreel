@@ -84,6 +84,8 @@ reference:
       - validate_incomplete_trips
       - validate_design
       - check_completeness
+      - compare_variance
+      - adjust_nonresponse
 
   - title: "Planning & Sample Size"
     desc: >
@@ -157,6 +159,7 @@ reference:
     contents:
       - starts_with("format.")
       - starts_with("print.")
+      - starts_with("as.data.frame.")
 
 articles:
 - title: "Get Started"
