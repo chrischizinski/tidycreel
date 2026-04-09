@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidycreel</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -61,6 +61,24 @@
       <small>Source: <a href="https://github.com/chrischizinski/tidycreel/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="1.3.0" id="tidycreel-130-2026-04-08">tidycreel 1.3.0 (2026-04-08)<a class="anchor" aria-label="anchor" href="#tidycreel-130-2026-04-08"></a></h2>
+<div class="section level3">
+<h3 id="new-features-1-3-0">New features<a class="anchor" aria-label="anchor" href="#new-features-1-3-0"></a></h3>
+<ul><li>
+<code><a href="../reference/estimate_catch_rate.html">estimate_catch_rate()</a></code> now accepts <code>estimator = "mortr"</code> for truncated mean-of-ratios (MORtr), which applies <code>truncate_at</code> as a mandatory threshold and labels the method <code>"mean-of-ratios-truncated-cpue"</code>. This makes the truncation behaviour explicit and distinguishable from plain MOR.</li>
+<li>
+<code><a href="../reference/estimate_catch_rate.html">estimate_catch_rate()</a></code> gains a <code>targeted</code> argument (default <code>TRUE</code>). Setting <code>targeted = FALSE</code> excludes zero-catch trips before MOR/MORtr estimation — the statistically appropriate approach for non-targeted (incidental) species where most trips have zero catch. A <code>cli_warn()</code> fires when <code>targeted = TRUE</code> and &gt;70% of trips have zero catch.</li>
+<li>
+<code><a href="../reference/compare_variance.html">compare_variance()</a></code> computes Taylor linearization vs. replicate (bootstrap or jackknife) standard errors side-by-side for any <code>creel_estimates</code> object, with a divergence flag and <code>cli_warn()</code> when the two SEs differ by more than a configurable threshold (default 10%).</li>
+<li>
+<code><a href="../reference/adjust_nonresponse.html">adjust_nonresponse()</a></code> applies nonresponse weighting to a <code>creel_design</code> by scaling stratum weights by the inverse of observed response rates. Returns an adjusted <code>creel_design</code> with a <code>nonresponse_diagnostics</code> attribute detailing per-stratum rates and adjustments (Armstrong &amp; Overton 1977; Pollock et al. 1994).</li>
+</ul></div>
+<div class="section level3">
+<h3 id="tests-1-3-0">Tests<a class="anchor" aria-label="anchor" href="#tests-1-3-0"></a></h3>
+<ul><li>+56 new tests covering <code>mortr</code>, <code>targeted</code>, <code><a href="../reference/compare_variance.html">compare_variance()</a></code>, and <code><a href="../reference/adjust_nonresponse.html">adjust_nonresponse()</a></code>. Total: 2132 PASS.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.2.0" id="tidycreel-120-2026-04-08">tidycreel 1.2.0 (2026-04-08)<a class="anchor" aria-label="anchor" href="#tidycreel-120-2026-04-08"></a></h2>
 <div class="section level3">

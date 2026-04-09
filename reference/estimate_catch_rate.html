@@ -13,7 +13,7 @@ estimation methods."><meta property="og:image" content="https://chrischizinski.g
 
     <a class="navbar-brand me-2" href="../index.html">tidycreel</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -85,6 +85,7 @@ estimation methods.</p>
 <span>  estimator <span class="op">=</span> <span class="st">"ratio-of-means"</span>,</span>
 <span>  use_trips <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  truncate_at <span class="op">=</span> <span class="fl">0.5</span>,</span>
+<span>  targeted <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  missing_sections <span class="op">=</span> <span class="st">"warn"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -121,9 +122,11 @@ Options: <code>"taylor"</code> (default, Taylor linearization),
 
 <dt id="arg-estimator">estimator<a class="anchor" aria-label="anchor" href="#arg-estimator"></a></dt>
 <dd><p>Character string specifying estimation method. Options:
-<code>"ratio-of-means"</code> (default, for complete trips) or <code>"mor"</code>
-(mean-of-ratios, for incomplete trips). MOR requires trip_status field
-and errors if no incomplete trips are available. See Details.</p></dd>
+<code>"ratio-of-means"</code> (default, for complete trips), <code>"mor"</code>
+(mean-of-ratios, for incomplete trips), or <code>"mortr"</code> (truncated
+mean-of-ratios — same as <code>"mor"</code> but <code>truncate_at</code> is
+mandatory and defaults to 0.5 h). MOR and MORtr require the trip_status
+field and error if no incomplete trips are available. See Details.</p></dd>
 
 
 <dt id="arg-use-trips">use_trips<a class="anchor" aria-label="anchor" href="#arg-use-trips"></a></dt>
@@ -147,6 +150,15 @@ Default is 0.5 hours (30 minutes) per Hoenig et al. (1997) to prevent
 unstable variance from very short trips. Trips with duration &lt; truncate_at
 are excluded before MOR estimation. Set to NULL to disable truncation
 (research mode only). Ignored for ratio-of-means estimator.</p></dd>
+
+
+<dt id="arg-targeted">targeted<a class="anchor" aria-label="anchor" href="#arg-targeted"></a></dt>
+<dd><p>Logical. When <code>TRUE</code> (default), all trips are used.
+When <code>FALSE</code>, zero-effort trips are excluded before MOR/MORtr
+estimation — appropriate for non-targeted species where most trips have
+zero catch. A <code>cli_warn()</code> is emitted when more than 70\<!-- % of trips -->
+have zero catch and <code>targeted = TRUE</code> (possible mis-specification).
+Ignored for <code>ratio-of-means</code> estimator.</p></dd>
 
 
 <dt id="arg-missing-sections">missing_sections<a class="anchor" aria-label="anchor" href="#arg-missing-sections"></a></dt>
@@ -285,7 +297,7 @@ samples are insufficient.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 5</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   estimate    se ci_lower ci_upper     n</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>    0.673 0.119    0.440    0.907    20</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>     1.06 0.171    0.722     1.39    20</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Grouped by day_type</span></span></span>
 <span class="r-in"><span><span class="va">result_grouped</span> <span class="op">&lt;-</span> <span class="fu">estimate_catch_rate</span><span class="op">(</span><span class="va">design_with_interviews</span>, by <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span></span>
@@ -309,7 +321,7 @@ samples are insufficient.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 6</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   day_type estimate    se ci_lower ci_upper     n</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> weekday     0.673 0.119    0.440    0.907    20</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> weekday      1.06 0.171    0.722     1.39    20</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Custom confidence level</span></span></span>
 <span class="r-in"><span><span class="va">result_90</span> <span class="op">&lt;-</span> <span class="fu">estimate_catch_rate</span><span class="op">(</span><span class="va">design_with_interviews</span>, conf_level <span class="op">=</span> <span class="fl">0.90</span><span class="op">)</span></span></span>

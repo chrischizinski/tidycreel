@@ -1,5 +1,40 @@
 # Changelog
 
+## tidycreel 1.3.0 (2026-04-08)
+
+### New features
+
+- [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
+  now accepts `estimator = "mortr"` for truncated mean-of-ratios
+  (MORtr), which applies `truncate_at` as a mandatory threshold and
+  labels the method `"mean-of-ratios-truncated-cpue"`. This makes the
+  truncation behaviour explicit and distinguishable from plain MOR.
+- [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
+  gains a `targeted` argument (default `TRUE`). Setting
+  `targeted = FALSE` excludes zero-catch trips before MOR/MORtr
+  estimation — the statistically appropriate approach for non-targeted
+  (incidental) species where most trips have zero catch. A `cli_warn()`
+  fires when `targeted = TRUE` and \>70% of trips have zero catch.
+- [`compare_variance()`](https://chrischizinski.github.io/tidycreel/reference/compare_variance.md)
+  computes Taylor linearization vs. replicate (bootstrap or jackknife)
+  standard errors side-by-side for any `creel_estimates` object, with a
+  divergence flag and `cli_warn()` when the two SEs differ by more than
+  a configurable threshold (default 10%).
+- [`adjust_nonresponse()`](https://chrischizinski.github.io/tidycreel/reference/adjust_nonresponse.md)
+  applies nonresponse weighting to a `creel_design` by scaling stratum
+  weights by the inverse of observed response rates. Returns an adjusted
+  `creel_design` with a `nonresponse_diagnostics` attribute detailing
+  per-stratum rates and adjustments (Armstrong & Overton 1977; Pollock
+  et al. 1994).
+
+### Tests
+
+- +56 new tests covering `mortr`, `targeted`,
+  [`compare_variance()`](https://chrischizinski.github.io/tidycreel/reference/compare_variance.md),
+  and
+  [`adjust_nonresponse()`](https://chrischizinski.github.io/tidycreel/reference/adjust_nonresponse.md).
+  Total: 2132 PASS.
+
 ## tidycreel 1.2.0 (2026-04-08)
 
 ### New features

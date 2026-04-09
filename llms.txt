@@ -263,6 +263,11 @@ check data completeness, and inspect estimate output.
   : Validate a proposed creel survey design against sample size targets
 - [`check_completeness()`](https://chrischizinski.github.io/tidycreel/reference/check_completeness.md)
   : Check post-season data completeness for a creel design
+- [`compare_variance()`](https://chrischizinski.github.io/tidycreel/reference/compare_variance.md)
+  : Compare Taylor linearization vs. replicate variance for creel
+  estimates
+- [`adjust_nonresponse()`](https://chrischizinski.github.io/tidycreel/reference/adjust_nonresponse.md)
+  : Adjust a creel design for nonresponse bias
 
 ## Planning & Sample Size
 

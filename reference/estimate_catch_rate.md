@@ -16,6 +16,7 @@ estimate_catch_rate(
   estimator = "ratio-of-means",
   use_trips = NULL,
   truncate_at = 0.5,
+  targeted = TRUE,
   missing_sections = "warn"
 )
 ```
@@ -52,9 +53,11 @@ estimate_catch_rate(
 - estimator:
 
   Character string specifying estimation method. Options:
-  `"ratio-of-means"` (default, for complete trips) or `"mor"`
-  (mean-of-ratios, for incomplete trips). MOR requires trip_status field
-  and errors if no incomplete trips are available. See Details.
+  `"ratio-of-means"` (default, for complete trips), `"mor"`
+  (mean-of-ratios, for incomplete trips), or `"mortr"` (truncated
+  mean-of-ratios — same as `"mor"` but `truncate_at` is mandatory and
+  defaults to 0.5 h). MOR and MORtr require the trip_status field and
+  error if no incomplete trips are available. See Details.
 
 - use_trips:
 
@@ -78,6 +81,15 @@ estimate_catch_rate(
   variance from very short trips. Trips with duration \< truncate_at are
   excluded before MOR estimation. Set to NULL to disable truncation
   (research mode only). Ignored for ratio-of-means estimator.
+
+- targeted:
+
+  Logical. When `TRUE` (default), all trips are used. When `FALSE`,
+  zero-effort trips are excluded before MOR/MORtr estimation —
+  appropriate for non-targeted species where most trips have zero catch.
+  A `cli_warn()` is emitted when more than 70\\ have zero catch and
+  `targeted = TRUE` (possible mis-specification). Ignored for
+  `ratio-of-means` estimator.
 
 - missing_sections:
 
@@ -225,7 +237,7 @@ print(result)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1    0.673 0.119    0.440    0.907    20
+#> 1     1.06 0.171    0.722     1.39    20
 
 # Grouped by day_type
 result_grouped <- estimate_catch_rate(design_with_interviews, by = day_type)
@@ -249,7 +261,7 @@ print(result_grouped)
 #> # A tibble: 1 × 6
 #>   day_type estimate    se ci_lower ci_upper     n
 #>   <chr>       <dbl> <dbl>    <dbl>    <dbl> <dbl>
-#> 1 weekday     0.673 0.119    0.440    0.907    20
+#> 1 weekday      1.06 0.171    0.722     1.39    20
 
 # Custom confidence level
 result_90 <- estimate_catch_rate(design_with_interviews, conf_level = 0.90)
