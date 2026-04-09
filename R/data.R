@@ -700,3 +700,53 @@
 #'   [estimate_effort_aerial_glmm()] for the GLMM-based estimator,
 #'   [creel_design()], [add_counts()]
 "example_aerial_glmm_counts"
+
+#' Toy count data for data validation examples
+#'
+#' A small creel count data frame designed for demonstrating
+#' `validate_creel_data()` and related data-cleaning functions. Contains
+#' an intentional `NA` in the `count` column to trigger the NA-rate check.
+#'
+#' @format A data frame with 6 rows and 4 columns:
+#' \describe{
+#'   \item{date}{Survey date (Date class).}
+#'   \item{day_type}{Day type stratum: `"weekday"` or `"weekend"`.}
+#'   \item{section}{Survey section: `"A"` or `"B"`.}
+#'   \item{count}{Instantaneous angler count; one row is intentionally `NA`.}
+#' }
+#'
+#' @source Simulated data for package examples and vignettes.
+#'
+#' @examples
+#' data(creel_counts_toy)
+#' validate_creel_data(counts = creel_counts_toy)
+#'
+#' @seealso [creel_interviews_toy], [validate_creel_data()]
+"creel_counts_toy"
+
+#' Toy interview data for data validation examples
+#'
+#' A small creel interview data frame with intentional data quality issues
+#' for demonstrating `validate_creel_data()` and `standardize_species()`.
+#' Includes an empty species string, a negative `fish_kept` value, and a
+#' missing `trip_hours` value.
+#'
+#' @format A data frame with 6 rows and 5 columns:
+#' \describe{
+#'   \item{date}{Interview date (Date class).}
+#'   \item{day_type}{Day type stratum: `"weekday"` or `"weekend"`.}
+#'   \item{species}{Free-text species name; includes empty string and
+#'     unrecognised value to demonstrate `standardize_species()` behaviour.}
+#'   \item{fish_kept}{Number of fish kept; one row is intentionally negative.}
+#'   \item{trip_hours}{Trip duration in hours; one row is intentionally `NA`.}
+#' }
+#'
+#' @source Simulated data for package examples and vignettes.
+#'
+#' @examples
+#' data(creel_interviews_toy)
+#' validate_creel_data(interviews = creel_interviews_toy)
+#'
+#' @seealso [creel_counts_toy], [validate_creel_data()],
+#'   [standardize_species()]
+"creel_interviews_toy"
