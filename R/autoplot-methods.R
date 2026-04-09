@@ -338,12 +338,31 @@ plot_design <- function(design, title = NULL, ...) { # nolint: object_usage_lint
     ))
   }
 
-  strata_col <- design$strata_cols[1]
+  strata_cols <- design$strata_cols
+
+  # Build a combined stratum label when multiple strata columns are present
+  .make_stratum <- function(df, cols) {
+    if (length(cols) == 1L) {
+      as.character(df[[cols]])
+    } else {
+      as.character(
+        interaction(df[cols], sep = " / ", drop = TRUE)
+      )
+    }
+  }
+
+  strata_label <- if (length(strata_cols) == 1L) {
+    strata_cols
+  } else {
+    paste(strata_cols, collapse = " / ")
+  }
 
   if (is.null(design$counts)) {
     # ---- No counts: stratum sample-size bar chart ---------------------------
     cal <- design$calendar
-    n_per_strat <- as.data.frame(table(cal[[strata_col]]),
+    cal$stratum <- .make_stratum(cal, strata_cols)
+    n_per_strat <- as.data.frame(
+      table(cal[["stratum"]]),
       stringsAsFactors = FALSE
     )
     names(n_per_strat) <- c("stratum", "n_days")
@@ -368,9 +387,9 @@ plot_design <- function(design, title = NULL, ...) { # nolint: object_usage_lint
       ggplot2::scale_fill_brewer(palette = "Set2") +
       ggplot2::labs(
         title = plot_title,
-        x     = "Stratum",
+        x     = strata_label,
         y     = "Sampled days",
-        fill  = "Stratum"
+        fill  = strata_label
       ) +
       ggplot2::theme_bw() +
       ggplot2::theme(
@@ -389,7 +408,7 @@ plot_design <- function(design, title = NULL, ...) { # nolint: object_usage_lint
     count_var <- setdiff(num_cols, excluded)[1]
 
     plot_df <- data.frame(
-      stratum = counts[[strata_col]],
+      stratum = .make_stratum(counts, strata_cols),
       count = counts[[count_var]],
       stringsAsFactors = FALSE
     )
@@ -423,9 +442,9 @@ plot_design <- function(design, title = NULL, ...) { # nolint: object_usage_lint
       ggplot2::scale_colour_brewer(palette = "Set2") +
       ggplot2::labs(
         title  = plot_title,
-        x      = "Stratum",
+        x      = strata_label,
         y      = count_var,
-        colour = "Stratum"
+        colour = strata_label
       ) +
       ggplot2::theme_bw() +
       ggplot2::theme(

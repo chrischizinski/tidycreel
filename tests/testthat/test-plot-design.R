@@ -74,3 +74,60 @@ test_that("PLTD-08: no-counts plot n_days matches calendar", {
   expect_equal(wday_n, 2L)
   expect_equal(wend_n, 2L)
 })
+
+# ---- Multi-strata helpers ---------------------------------------------------
+
+make_design_two_strata <- function(with_counts = FALSE) {
+  cal <- data.frame(
+    date     = as.Date(c(
+      "2024-06-01", "2024-06-02", "2024-06-08", "2024-06-09",
+      "2024-06-15", "2024-06-16", "2024-06-22", "2024-06-23"
+    )),
+    day_type = rep(c("weekday", "weekend"), 4),
+    season   = c(rep("early", 4), rep("late", 4)),
+    stringsAsFactors = FALSE
+  )
+  d <- suppressWarnings(
+    creel_design(cal, date = date, strata = c(day_type, season)) # nolint
+  )
+  if (with_counts) {
+    counts <- data.frame(
+      date     = cal$date,
+      day_type = cal$day_type,
+      season   = cal$season,
+      count    = c(5L, 10L, 8L, 20L, 6L, 12L, 9L, 22L)
+    )
+    d <- suppressWarnings(add_counts(d, counts))
+  }
+  d
+}
+
+test_that("PLTD-09: multi-strata no-counts returns ggplot", {
+  d <- make_design_two_strata()
+  p <- plot_design(d)
+  expect_s3_class(p, "ggplot")
+})
+
+test_that("PLTD-10: multi-strata no-counts has combined stratum labels", {
+  d <- make_design_two_strata()
+  p <- plot_design(d)
+  # x-axis label should reflect both strata columns
+  expect_match(p$labels$x, "day_type.*season|season.*day_type", perl = TRUE)
+  # plot data should have one row per unique combination
+  expect_true(nrow(p$data) >= 2L)
+})
+
+test_that("PLTD-11: multi-strata with-counts returns ggplot", {
+  d <- make_design_two_strata(with_counts = TRUE)
+  p <- suppressWarnings(plot_design(d))
+  expect_s3_class(p, "ggplot")
+})
+
+test_that("PLTD-12: multi-strata with-counts colour label reflects both strata", {
+  d <- make_design_two_strata(with_counts = TRUE)
+  p <- suppressWarnings(plot_design(d))
+  expect_match(
+    p$labels$colour, "day_type.*season|season.*day_type",
+    perl = TRUE
+  )
+})
