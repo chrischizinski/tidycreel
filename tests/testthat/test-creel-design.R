@@ -1332,3 +1332,59 @@ describe("Phase 47: Aerial constructor", {
     expect_equal(d$design_type, "aerial")
   })
 })
+
+# ---- NA-weight diagnostics: bus-route inclusion probabilities ----------------
+
+test_that("DIAG-WGHT-01: bus-route design with NA p_site aborts naming p_site", {
+  sf_na <- data.frame(
+    site = c("A", "B", "C"),
+    p_site = c(0.3, NA, 0.3),
+    p_period = rep(0.5, 3),
+    stringsAsFactors = FALSE
+  )
+  expect_error(
+    creel_design(
+      make_br_cal(),
+      date = date, strata = day_type,
+      survey_type = "bus_route", sampling_frame = sf_na,
+      site = site, p_site = p_site, p_period = p_period
+    ),
+    regexp = "p_site"
+  )
+})
+
+test_that("DIAG-WGHT-02: bus-route design with NA p_period aborts naming p_period", {
+  sf_na <- data.frame(
+    site = c("A", "B", "C"),
+    p_site = c(0.3, 0.4, 0.3),
+    p_period = c(0.5, NA, 0.5),
+    stringsAsFactors = FALSE
+  )
+  expect_error(
+    creel_design(
+      make_br_cal(),
+      date = date, strata = day_type,
+      survey_type = "bus_route", sampling_frame = sf_na,
+      site = site, p_site = p_site, p_period = p_period
+    ),
+    regexp = "p_period"
+  )
+})
+
+test_that("DIAG-WGHT-03: bus-route design with p_site = 0 aborts (zero probability invalid)", {
+  sf_zero <- data.frame(
+    site = c("A", "B", "C"),
+    p_site = c(0.3, 0.0, 0.3),
+    p_period = rep(0.5, 3),
+    stringsAsFactors = FALSE
+  )
+  expect_error(
+    creel_design(
+      make_br_cal(),
+      date = date, strata = day_type,
+      survey_type = "bus_route", sampling_frame = sf_zero,
+      site = site, p_site = p_site, p_period = p_period
+    ),
+    regexp = "p_site"
+  )
+})

@@ -17,6 +17,8 @@ tidycreel v2 is a ground-up redesign providing domain translation for creel surv
 - ✅ **v0.9.0 Survey Planning & Quality of Life** — Phases 48-51 (shipped 2026-03-24)
 - ✅ **v1.0.0 Package Website** — Phases 52-56 (shipped 2026-03-31)
 - ✅ **v1.1.0 Planning Suite Completeness & Community Health** — Phases 57-59 (shipped 2026-04-02)
+- ✅ **v1.2.0 Documentation, Visual Calendar & GLMM Aerial** — Phases 60-65 (shipped 2026-04-06)
+- 🚧 **v1.3.0 Generic DB Interface** — Phases 66-70 (in progress)
 
 ## Phases
 
@@ -208,74 +210,124 @@ See: [.planning/milestones/v1.1.0-ROADMAP.md](milestones/v1.1.0-ROADMAP.md)
 
 </details>
 
+<details>
+<summary>✅ v1.2.0 Documentation, Visual Calendar & GLMM Aerial (Phases 60-65) — SHIPPED 2026-04-06</summary>
+
+**Milestone Goal:** Deliver four concept-first vignettes, document-embeddable schedule calendar output, and a GLMM-based aerial effort estimator for non-random flight timing.
+
+- [x] Phase 60: Housekeeping (1/1 plan) — completed 2026-04-03
+- [x] Phase 61: survey <-> tidycreel Vignette (1/1 plan) — completed 2026-04-04
+- [x] Phase 62: Estimation Pipeline Vignettes (2/2 plans) — completed 2026-04-05
+- [x] Phase 63: Visual Calendar (1/1 plan) — completed 2026-04-05
+- [x] Phase 63.1: Attach Count Times to Daily Schedule (1/1 plan) — completed 2026-04-05
+- [x] Phase 64: GLMM Aerial Estimator (2/2 plans) — completed 2026-04-05
+- [x] Phase 65: pkgdown Reference Completeness & GLMM Documentation Polish (1/1 plan) — completed 2026-04-06
+
+**Delivered:** 4 vignettes (survey-tidycreel, effort-pipeline, catch-pipeline, aerial-glmm), `print.creel_schedule()` + `knit_print.creel_schedule()` S3 methods, `attach_count_times()`, `estimate_effort_aerial_glmm()` (lme4, Askey 2018), `example_aerial_glmm_counts` dataset, complete pkgdown reference index — 45 files, +5,496/-84 lines
+
+See: [.planning/milestones/v1.2.0-ROADMAP.md](milestones/v1.2.0-ROADMAP.md)
+
+</details>
+
 ---
+
+### 🚧 v1.3.0 Generic DB Interface (In Progress)
+
+**Milestone Goal:** Define a `creel_schema` S3 contract in tidycreel and bootstrap a companion package `tidycreel.connect` that loads data from any backend into tidycreel-ready form via a YAML config file.
+
+**Packages:** Phases 66 modifies **tidycreel**. Phases 67-70 create and modify **tidycreel.connect**.
+
+- [x] **Phase 66: creel_schema S3 Class** - `creel_schema()`, `validate_creel_schema()`, `print.creel_schema()` in tidycreel (completed 2026-04-07)
+- [x] **Phase 67: tidycreel.connect Package + Connection Layer** - Package scaffold, `creel_connect()`, `creel_connect_from_yaml()`, YAML config validation, `creel_check_driver()` (completed 2026-04-07)
+- [x] **Phase 68: CSV Backend + fetch_*() Loaders** - Flat-file backend, all five `fetch_*()` functions, `validate_fetch_result()`, BOM handling, explicit column types (completed 2026-04-07)
+- [ ] **Phase 69: SQL Server ODBC Backend** - `.fetch_sqlserver()`, platform auth guard, `as.Date()` coercion, driver detection
+- [ ] **Phase 70: Documentation** - Getting-started vignette + platform ODBC install instructions in README
+
+## Phase Details
+
+### Phase 66: creel_schema S3 Class
+**Package:** tidycreel
+**Goal:** Users can define and validate a column-mapping contract that connects any data source to the tidycreel estimation API
+**Depends on:** Nothing (no external deps; uses only existing tidycreel Imports)
+**Requirements:** SCHEMA-01, SCHEMA-03, SCHEMA-04 (SCHEMA-02 removed — ngpc_default_schema() deferred to private repo)
+**Success Criteria** (what must be TRUE):
+  1. User can construct a `creel_schema` object via `creel_schema()` specifying column mappings, table names, and survey type
+  2. When required columns are missing from a schema, `validate_creel_schema()` aborts with a `cli_abort()` error naming the missing columns by name
+  3. User can print a `creel_schema` object and see column mappings and survey type in a readable summary
+**Plans:** 2/2 plans complete
+Plans:
+- [ ] 66-01-PLAN.md — creel_schema() constructor, validate_creel_schema(), print/format methods, make_test_db() DuckDB fixture
+
+### Phase 67: tidycreel.connect Package + Connection Layer
+**Package:** tidycreel.connect (new)
+**Goal:** Users can create a validated database connection from either programmatic arguments or a YAML config file, with credentials loaded from environment variables and fail-fast validation before any connection is attempted
+**Depends on:** Phase 66 (creel_schema must exist as a public API before tidycreel.connect can import it)
+**Requirements:** CONNECT-01, CONNECT-02, CONNECT-03, CONNECT-04, CONNECT-05, CONNECT-06
+**Success Criteria** (what must be TRUE):
+  1. User can create a `creel_connection` by passing a DBI connection + `creel_schema` to `creel_connect()`
+  2. User can create a `creel_connection` by passing CSV file paths + `creel_schema` to `creel_connect()`
+  3. User can create a `creel_connection` from a YAML config file via `creel_connect_from_yaml()`, with all config keys and types validated before any connection is attempted
+  4. YAML config never stores credentials as plain text; credentials are read from environment variables
+  5. User can print a `creel_connection` and see backend type, schema summary, and connection status
+  6. User can call `creel_check_driver()` to see available ODBC drivers and verify SQL Server driver presence
+**Plans:** 4/4 plans complete
+Plans:
+- [ ] 67-01-PLAN.md — Package scaffold, stub R files, failing test stubs (Wave 0)
+- [ ] 67-02-PLAN.md — creel_connect() DBI+CSV backends, print.creel_connection() (CONNECT-01, 02, 05)
+- [ ] 67-03-PLAN.md — creel_connect_from_yaml(), YAML pre-validation (CONNECT-03, 04)
+- [ ] 67-04-PLAN.md — creel_check_driver() ODBC diagnostic (CONNECT-06)
+
+### Phase 68: CSV Backend + fetch_*() Loaders
+**Package:** tidycreel.connect
+**Goal:** Users can load all five creel tables from CSV files into tibbles that flow directly into `add_interviews()`, `add_counts()`, `add_catch()`, and `add_lengths()` without modification, with clear errors when columns are missing or mistyped
+**Depends on:** Phase 67 (creel_connection object must exist before fetch_*() can dispatch on it)
+**Requirements:** FETCH-01, FETCH-02, FETCH-03, FETCH-04, FETCH-05, FETCH-06, BACKEND-01, BACKEND-04
+**Success Criteria** (what must be TRUE):
+  1. User can call `fetch_interviews(conn)` with a CSV-backed connection and get a tibble ready for `add_interviews()` with correct column names and types
+  2. User can call `fetch_counts(conn)`, `fetch_catch(conn)`, `fetch_harvest_lengths(conn)`, and `fetch_release_lengths(conn)` with a CSV-backed connection and get tibbles ready for the corresponding `add_*()` functions
+  3. CSV files exported from Excel (with UTF-8 BOM) load correctly without corrupted column names or misclassified species codes
+  4. When required columns are absent or have wrong type after loading, `fetch_*()` aborts with a clear error naming the missing or mistyped column
+  5. Users who only need the flat-file backend can install tidycreel.connect without system ODBC libraries
+**Plans:** 2/2 plans complete
+Plans:
+- [ ] 68-01-PLAN.md — DESCRIPTION + S3 subclasses + Wave 0 test stubs (BACKEND-04)
+- [ ] 68-02-PLAN.md — fetch-validators.R + fetch-loaders.R, all five fetch_*() functions (FETCH-01–06, BACKEND-01)
+
+### Phase 69: SQL Server ODBC Backend
+**Package:** tidycreel.connect
+**Goal:** Users with access to the NGPC SQL Server creel database can load all five creel tables using Windows Authentication or SQL password auth, with correct R types on all columns
+**Depends on:** Phase 68 (fetch_*() loaders and validate_fetch_result() must exist; SQL Server backend adds a new dispatch branch to existing functions)
+**Requirements:** BACKEND-02, BACKEND-03
+**Success Criteria** (what must be TRUE):
+  1. User can call `fetch_interviews(conn)` with a SQL Server-backed connection and get a tibble with date columns typed as R `Date` (not character)
+  2. When Windows integrated authentication is requested on macOS or Linux, `creel_connect()` aborts immediately with a clear error message before attempting any connection
+  3. SQL Server backend integration tests are skipped automatically when the NGPC database is unreachable, so CI passes without live database access
+**Plans:** TBD
+
+### Phase 70: Documentation
+**Package:** tidycreel.connect
+**Goal:** Users new to tidycreel.connect can follow a single vignette to go from YAML config to a complete creel analysis, and users on any platform can find OS-specific ODBC driver install instructions in the README
+**Depends on:** Phase 69 (full API must be stable before documentation can demonstrate the complete workflow)
+**Requirements:** DOCS-01, DOCS-02
+**Success Criteria** (what must be TRUE):
+  1. The getting-started vignette demonstrates a complete end-to-end workflow: YAML config → `creel_connect_from_yaml()` → `fetch_interviews()` → `add_interviews()` with a runnable example using fixture data
+  2. The README includes platform-specific ODBC driver installation instructions for Windows, macOS, and Linux
+**Plans:** TBD
 
 ## Progress
 
+**Execution Order:** 66 → 67 → 68 → 69 → 70
+
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 1. Package Foundation | v0.1.0 | 3/3 | Complete | 2026-02-09 |
-| 2. Design Constructor | v0.1.0 | 2/2 | Complete | 2026-02-09 |
-| 3. Count Data Integration | v0.1.0 | 2/2 | Complete | 2026-02-09 |
-| 4. Basic Effort Estimation | v0.1.0 | 2/2 | Complete | 2026-02-09 |
-| 5. Grouped Estimation | v0.1.0 | 1/1 | Complete | 2026-02-09 |
-| 6. Variance Methods | v0.1.0 | 2/2 | Complete | 2026-02-09 |
-| 7. Documentation & QA | v0.1.0 | 2/2 | Complete | 2026-02-09 |
-| 8. Interview Data Integration | v0.2.0 | 2/2 | Complete | 2026-02-11 |
-| 9. CPUE Estimation | v0.2.0 | 2/2 | Complete | 2026-02-11 |
-| 10. Catch and Harvest Estimation | v0.2.0 | 2/2 | Complete | 2026-02-11 |
-| 11. Total Catch Estimation | v0.2.0 | 2/2 | Complete | 2026-02-11 |
-| 12. Documentation and QA | v0.2.0 | 2/2 | Complete | 2026-02-11 |
-| 13. Trip Status Infrastructure | v0.3.0 | 2/2 | Complete | 2026-02-16 |
-| 14. Overnight Trip Duration | v0.3.0 | 1/1 | Complete | 2026-02-16 |
-| 15. Mean-of-Ratios Estimator Core | v0.3.0 | 2/2 | Complete | 2026-02-16 |
-| 16. Trip Truncation | v0.3.0 | 2/2 | Complete | 2026-02-16 |
-| 17. Complete Trip Defaults | v0.3.0 | 2/2 | Complete | 2026-02-16 |
-| 18. Sample Size Warnings | v0.3.0 | 2/2 | Complete | 2026-02-16 |
-| 19. Diagnostic Validation Framework | v0.3.0 | 2/2 | Complete | 2026-02-16 |
-| 20. Documentation & Guidance | v0.3.0 | 2/2 | Complete | 2026-02-16 |
-| 21. Bus-Route Design Foundation | v0.4.0 | 2/2 | Complete | 2026-02-17 |
-| 22. Inclusion Probability Calculation | v0.4.0 | 2/2 | Complete | 2026-02-17 |
-| 23. Data Integration | v0.4.0 | 2/2 | Complete | 2026-02-17 |
-| 24. Bus-Route Effort Estimation | v0.4.0 | 2/2 | Complete | 2026-02-24 |
-| 25. Bus-Route Harvest Estimation | v0.4.0 | 2/2 | Complete | 2026-02-28 |
-| 26. Primary Source Validation | v0.4.0 | 2/2 | Complete | 2026-02-25 |
-| 27. Documentation & Traceability | v0.4.0 | 2/2 | Complete | 2026-02-28 |
-| 28. Extended Interview Data Model | v0.5.0 | 2/2 | Complete | 2026-03-08 |
-| 28.1. Normalize CPUE/HPUE | v0.5.0 | 2/2 | Complete | 2026-03-08 |
-| 29. Species Catch Data | v0.5.0 | 3/3 | Complete | 2026-03-08 |
-| 30. Length Frequency Data | v0.5.0 | 1/1 | Complete | 2026-03-08 |
-| 31. Interview-Level Summaries | v0.5.0 | 2/2 | Complete | 2026-03-08 |
-| 32. CWS/HWS Rates | v0.5.0 | 2/2 | Complete | 2026-03-08 |
-| 33. Length Frequency Summaries | v0.5.0 | 2/2 | Complete | 2026-03-08 |
-| 34. Species-Level Estimates | v0.5.0 | 2/2 | Complete | 2026-03-08 |
-| 35. Documentation & QA | v0.5.0 | 2/2 | Complete | 2026-03-08 |
-| 36. Multiple Counts per Day | v0.6.0 | 2/2 | Complete | 2026-03-09 |
-| 37. Progressive Count Estimator | v0.6.0 | 1/1 | Complete | 2026-03-09 |
-| 38. Documentation & QA | v0.6.0 | 2/2 | Complete | 2026-03-09 |
-| 39. Section Effort Estimation | v0.7.0 | 3/3 | Complete | 2026-03-11 |
-| 40. Interview-Based Rate Estimators | v0.7.0 | 2/2 | Complete | 2026-03-11 |
-| 41. Product Estimators | v0.7.0 | 2/2 | Complete | 2026-03-14 |
-| 42. Example Data and Vignette | v0.7.0 | 2/2 | Complete | 2026-03-14 |
-| 43. v0.7.0 Tech Debt Cleanup | v0.7.0 | 1/1 | Complete | 2026-03-15 |
-| 44. Design Type Enum and Validation | v0.8.0 | 2/2 | Complete | 2026-03-15 |
-| 45. Ice Fishing Survey Support | v0.8.0 | 3/3 | Complete | 2026-03-16 |
-| 46. Remote Camera Survey Support | v0.8.0 | 3/3 | Complete | 2026-03-16 |
-| 47. Aerial Survey Support | v0.8.0 | 3/3 | Complete | 2026-03-22 |
-| 48. Schedule Generators | v0.9.0 | 3/3 | Complete | 2026-03-23 |
-| 49. Power and Sample Size | v0.9.0 | 2/2 | Complete | 2026-03-24 |
-| 50. Design Validator and Completeness Checker | v0.9.0 | 3/3 | Complete | 2026-03-24 |
-| 51. Season Summary | v0.9.0 | 2/2 | Complete | 2026-03-24 |
-| 52. Hex Sticker | v1.0.0 | 1/1 | Complete | 2026-03-30 |
-| 53. Foundation & Theme | v1.0.0 | 2/2 | Complete | 2026-03-26 |
-| 54. Home Page & Reference | v1.0.0 | 2/2 | Complete | 2026-03-27 |
-| 55. Navigation & Articles | v1.0.0 | 1/1 | Complete | 2026-03-30 |
-| 56. Deployment | v1.0.0 | 2/2 | Complete | 2026-03-31 |
-| 57. Count Time Generator | v1.1.0 | 1/1 | Complete | 2026-04-02 |
-| 58. Survey Scheduling Vignette | v1.1.0 | 1/1 | Complete | 2026-04-02 |
-| 59. Community Health Files | v1.1.0 | 2/2 | Complete | 2026-04-02 |
+| 1-65 | v0.1.0–v1.2.0 | 126/126 | Complete | 2026-04-06 |
+| 66. creel_schema S3 Class | 2/2 | Complete   | 2026-04-07 | - |
+| 67. tidycreel.connect Package + Connection Layer | 4/4 | Complete    | 2026-04-07 | - |
+| 68. CSV Backend + fetch_*() Loaders | 2/2 | Complete   | 2026-04-07 | - |
+| 69. SQL Server ODBC Backend | v1.3.0 | 0/TBD | Not started | - |
+| 70. Documentation | v1.3.0 | 0/TBD | Not started | - |
 
 ---
 
-*Roadmap last updated: 2026-04-02 after v1.1.0 milestone shipped*
+*Roadmap last updated: 2026-04-07 — Phase 68 planned (2 plans)*
 *See .planning/milestones/ for archived milestone roadmaps*

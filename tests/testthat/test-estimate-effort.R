@@ -1677,3 +1677,78 @@ describe("Phase 47: Aerial effort", {
     )
   })
 })
+
+# ---- Estimator boundary: zero-count and all-NA --------------------------------
+
+test_that("EDGE-01: all-zero count stratum returns numeric estimate without error", {
+  counts <- data.frame(
+    date     = as.Date(c("2024-06-01", "2024-06-02", "2024-06-08", "2024-06-09")),
+    day_type = c("weekday", "weekday", "weekend", "weekend"),
+    count    = c(0L, 0L, 5L, 8L)
+  )
+  cal <- unique(counts[, c("date", "day_type")])
+  d <- creel_design(cal, date = date, strata = day_type, survey_type = "instantaneous")
+  d <- suppressWarnings(add_counts(d, counts))
+  result <- suppressWarnings(estimate_effort(d))
+  expect_s3_class(result, "creel_estimates")
+  est <- result$estimates$estimate
+  expect_true(is.numeric(est))
+  # Zero-count weekday strat + non-zero weekend => total > 0
+  expect_gte(est, 0)
+})
+
+test_that("EDGE-02: all-NA count column emits cli_warn and returns NA estimate", {
+  counts <- data.frame(
+    date     = as.Date(c("2024-06-01", "2024-06-02", "2024-06-08", "2024-06-09")),
+    day_type = c("weekday", "weekday", "weekend", "weekend"),
+    count    = NA_integer_
+  )
+  cal <- unique(counts[, c("date", "day_type")])
+  d <- creel_design(cal, date = date, strata = day_type, survey_type = "instantaneous")
+  d <- suppressWarnings(add_counts(d, counts))
+
+  # Capture all warnings and check one matches; also capture the return value
+  warnings_seen <- character(0)
+  result <- withCallingHandlers(
+    estimate_effort(d),
+    warning = function(w) {
+      warnings_seen <<- c(warnings_seen, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    }
+  )
+  expect_true(
+    any(grepl("All values in count column", warnings_seen)),
+    info = paste("Warnings emitted:", paste(warnings_seen, collapse = " | "))
+  )
+  expect_true(is.na(result$estimates$estimate))
+})
+
+test_that("EDGE-03: single sampled day per stratum raises rlang_error naming the stratum", {
+  counts <- data.frame(
+    date     = as.Date(c("2024-06-01", "2024-06-08")),
+    day_type = c("weekday", "weekend"),
+    count    = c(10L, 15L)
+  )
+  cal <- unique(counts[, c("date", "day_type")])
+  d <- creel_design(cal, date = date, strata = day_type, survey_type = "instantaneous")
+  d <- suppressWarnings(add_counts(d, counts))
+  expect_error(
+    estimate_effort(d),
+    class = "rlang_error"
+  )
+})
+
+test_that("EDGE-04: single sampled day error message names the stratum", {
+  counts <- data.frame(
+    date     = as.Date(c("2024-06-01", "2024-06-08")),
+    day_type = c("weekday", "weekend"),
+    count    = c(10L, 15L)
+  )
+  cal <- unique(counts[, c("date", "day_type")])
+  d <- creel_design(cal, date = date, strata = day_type, survey_type = "instantaneous")
+  d <- suppressWarnings(add_counts(d, counts))
+  expect_error(
+    estimate_effort(d),
+    regexp = "only 1 PSU"
+  )
+})

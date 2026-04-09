@@ -108,8 +108,38 @@ get_variance_design <- function(design, variance_method) {
       survey::as.svrepdesign(design, type = "bootstrap", replicates = 500)
     )
   } else if (variance_method == "jackknife") {
-    suppressWarnings(
-      survey::as.svrepdesign(design, type = "auto")
+    tryCatch(
+      suppressWarnings(survey::as.svrepdesign(design, type = "auto")),
+      error = function(e) {
+        msg <- conditionMessage(e)
+        if (grepl("has only one PSU", msg, fixed = TRUE)) {
+          # survey encodes: "Stratum<name>has only one PSU" (no spaces)
+          strat <- regmatches(
+            msg,
+            regexpr("(?<=Stratum)(.+?)(?=has only one PSU)", msg, perl = TRUE)
+          )
+          strat_label <- if (length(strat) > 0L && nzchar(strat)) { # nolint: object_usage_linter
+            strat
+          } else {
+            "unknown"
+          }
+          cli::cli_abort(c(
+            paste0(
+              "Stratum {.val {strat_label}} has only 1 PSU \u2014 ",
+              "jackknife variance cannot be estimated."
+            ),
+            "x" = paste0(
+              "A stratum must have at least 2 PSUs for jackknife ",
+              "resampling."
+            ),
+            "i" = paste0(
+              "Increase the sampling rate for stratum ",
+              "{.val {strat_label}}, or use {.code variance = 'taylor'}."
+            )
+          ))
+        }
+        stop(e)
+      }
     )
   }
 }

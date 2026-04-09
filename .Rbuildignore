@@ -61,3 +61,7 @@
 ^todo\.md$
 ^TOTAL_HARVEST_DESIGN\.md$
 ^\.mcp\.json$
+^\.continue-here\.md$
+^\.bg-shell$
+^tidycreel\.connect$
+^\.serena$

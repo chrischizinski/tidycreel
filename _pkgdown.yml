@@ -44,6 +44,8 @@ reference:
       - as_survey_design
       - compute_effort
       - compute_angler_effort
+      - creel_schema
+      - validate_creel_schema
 
   - title: "Estimation"
     desc: >
@@ -51,6 +53,7 @@ reference:
       Functions dispatch automatically on survey type.
     contents:
       - estimate_effort
+      - estimate_effort_aerial_glmm
       - estimate_catch_rate
       - estimate_harvest_rate
       - estimate_release_rate
@@ -61,7 +64,7 @@ reference:
   - title: "Reporting & Diagnostics"
     desc: >
       Summarize interview data by angler characteristics, validate designs,
-      and check data completeness.
+      check data completeness, and inspect estimate output.
     contents:
       - summarize_trips
       - summarize_refusals
@@ -75,6 +78,9 @@ reference:
       - summarize_length_freq
       - summarize_successful_parties
       - season_summary
+      - summary.creel_estimates
+      - flag_outliers
+      - write_estimates
       - validate_incomplete_trips
       - validate_design
       - check_completeness
@@ -95,6 +101,7 @@ reference:
       - generate_schedule
       - generate_bus_schedule
       - generate_count_times
+      - attach_count_times
       - new_creel_schedule
       - validate_creel_schedule
       - read_schedule
@@ -116,6 +123,14 @@ reference:
     contents:
       - preprocess_camera_timestamps
 
+  - title: "Visualisation"
+    desc: >
+      ggplot2-based plotting methods for creel designs, estimates, and schedules.
+    contents:
+      - plot_design
+      - autoplot.creel_estimates
+      - autoplot.creel_schedule
+
   - title: "Example Datasets"
     desc: >
       Simulated datasets illustrating each supported survey type.
@@ -136,12 +151,12 @@ reference:
       - example_camera_interviews
       - example_aerial_counts
       - example_aerial_interviews
+      - example_aerial_glmm_counts
 
   - title: internal
     contents:
       - starts_with("format.")
       - starts_with("print.")
-      - starts_with("summary.")
 
 articles:
 - title: "Get Started"
@@ -159,12 +174,14 @@ articles:
   - ice-fishing
   - camera-surveys
   - aerial-surveys
+  - aerial-glmm
 
 - title: "Estimation"
   navbar: "Estimation"
   desc: >
     Catch rate, harvest, effort, and spatially stratified estimation techniques.
   contents:
+  - survey-tidycreel
   - interview-estimation
   - incomplete-trips
   - flexible-count-estimation
@@ -179,6 +196,16 @@ articles:
   contents:
   - unextrapolated-summaries
   - survey-scheduling
+  - visualisation
+
+- title: "Statistical Methods"
+  navbar: "Statistical Methods"
+  desc: >
+    Conceptual walkthroughs of the statistical mechanics behind effort and catch estimation pipelines.
+  contents:
+  - effort-pipeline
+  - catch-pipeline
+  - replicate-designs
 
 - title: "Reference & Equations"
   desc: >

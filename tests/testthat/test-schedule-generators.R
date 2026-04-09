@@ -549,3 +549,198 @@ test_that("COUNT-TIME-04: fixed strategy — overlapping fixed_windows throws cl
     class = "rlang_error"
   )
 })
+
+# ---- ACT: attach_count_times() — implemented in Phase 63.1 Plan 01 ----
+
+# Helpers for ACT tests
+.act_sched <- function() {
+  generate_schedule( # nolint: object_usage_linter
+    start_date = "2024-06-01", end_date = "2024-06-07",
+    n_periods = 2, sampling_rate = 0.5, seed = 1
+  )
+}
+
+.act_ct <- function() {
+  generate_count_times( # nolint: object_usage_linter
+    start_time = "06:00", end_time = "14:00",
+    strategy = "fixed",
+    fixed_windows = data.frame(
+      start_time = c("07:00", "10:00", "13:00"),
+      end_time = c("07:30", "10:30", "13:30"),
+      stringsAsFactors = FALSE
+    )
+  )
+}
+
+test_that("ACT-01: attach_count_times() returns a creel_schedule", {
+  result <- attach_count_times(.act_sched(), .act_ct())
+  expect_s3_class(result, "creel_schedule")
+})
+
+test_that("ACT-02: returned object has nrow == nrow(schedule) * nrow(count_times)", {
+  sched <- .act_sched()
+  ct <- .act_ct()
+  result <- attach_count_times(sched, ct)
+  expect_equal(nrow(result), nrow(sched) * nrow(ct))
+})
+
+test_that("ACT-03: returned object has all original schedule columns plus start_time, end_time, window_id", {
+  sched <- .act_sched()
+  ct <- .act_ct()
+  result <- attach_count_times(sched, ct)
+  # All original schedule columns present
+  for (col in names(sched)) {
+    expect_true(col %in% names(result), info = paste("Missing column:", col))
+  }
+  # New columns from count_times present
+  expect_true("start_time" %in% names(result))
+  expect_true("end_time" %in% names(result))
+  expect_true("window_id" %in% names(result))
+})
+
+test_that("ACT-04: schedule lacking a 'date' column triggers cli_abort()", {
+  no_date <- data.frame(day_type = "weekday", period_id = 1L, stringsAsFactors = FALSE)
+  expect_error(
+    attach_count_times(no_date, .act_ct()),
+    class = "rlang_error"
+  )
+})
+
+test_that("ACT-05: count_times lacking required columns triggers cli_abort()", {
+  bad_ct <- data.frame(start_time = "07:00", stringsAsFactors = FALSE) # missing end_time, window_id
+  expect_error(
+    attach_count_times(.act_sched(), bad_ct),
+    class = "rlang_error"
+  )
+})
+
+test_that("ACT-06: result inherits from both 'creel_schedule' and 'data.frame'", {
+  result <- attach_count_times(.act_sched(), .act_ct())
+  expect_true(inherits(result, "creel_schedule"))
+  expect_true(inherits(result, "data.frame"))
+})
+
+test_that("ACT-07: count_times from generate_count_times(strategy='fixed') works correctly", {
+  sched <- generate_schedule(
+    start_date = "2024-06-01", end_date = "2024-06-07",
+    n_periods = 2, sampling_rate = 0.5, seed = 1
+  )
+  ct <- generate_count_times(
+    strategy = "fixed",
+    fixed_windows = data.frame(
+      start_time = c("06:00", "10:00"),
+      end_time = c("06:30", "10:30"),
+      stringsAsFactors = FALSE
+    )
+  )
+  result <- attach_count_times(sched, ct)
+  expect_s3_class(result, "creel_schedule")
+  expect_equal(nrow(result), nrow(sched) * nrow(ct))
+  expect_equal(nrow(ct), 2L)
+})
+
+# ---- DST and leap-year edge cases -------------------------------------------
+
+test_that("SCHED-DST-01: spring-forward season (2024-03-08 to 2024-03-12) has 5 dates", {
+  sched <- generate_schedule(
+    n_periods = 1,
+    expand_periods = FALSE,
+    start_date = "2024-03-08",
+    end_date = "2024-03-12",
+    sampling_rate = 1,
+    seed = 42L,
+    include_all = TRUE
+  )
+  expect_equal(nrow(sched), 5L)
+  expect_equal(range(sched$date), as.Date(c("2024-03-08", "2024-03-12")))
+})
+
+test_that("SCHED-DST-02: fall-back season (2024-11-01 to 2024-11-05) has 5 dates", {
+  sched <- generate_schedule(
+    n_periods = 1,
+    expand_periods = FALSE,
+    start_date = "2024-11-01",
+    end_date = "2024-11-05",
+    sampling_rate = 1,
+    seed = 42L,
+    include_all = TRUE
+  )
+  expect_equal(nrow(sched), 5L)
+  expect_equal(range(sched$date), as.Date(c("2024-11-01", "2024-11-05")))
+})
+
+test_that("SCHED-DST-03: 2024-03-10 (spring-forward Sunday) classified as weekend", {
+  sched <- generate_schedule(
+    n_periods = 1,
+    expand_periods = FALSE,
+    start_date = "2024-03-08",
+    end_date = "2024-03-12",
+    sampling_rate = 1,
+    seed = 42L,
+    include_all = TRUE
+  )
+  mar10_type <- sched$day_type[sched$date == as.Date("2024-03-10")]
+  expect_equal(mar10_type, "weekend")
+})
+
+test_that("SCHED-LEAP-01: leap-year season includes 2024-02-29 and has 6 dates", {
+  sched <- generate_schedule(
+    n_periods = 1,
+    expand_periods = FALSE,
+    start_date = "2024-02-26",
+    end_date = "2024-03-02",
+    sampling_rate = 1,
+    seed = 42L,
+    include_all = TRUE
+  )
+  expect_equal(nrow(sched), 6L)
+  expect_true(as.Date("2024-02-29") %in% sched$date)
+})
+
+test_that("SCHED-LEAP-02: 2024-02-29 classified as weekday (Thursday)", {
+  sched <- generate_schedule(
+    n_periods = 1,
+    expand_periods = FALSE,
+    start_date = "2024-02-26",
+    end_date = "2024-03-02",
+    sampling_rate = 1,
+    seed = 42L,
+    include_all = TRUE
+  )
+  feb29_type <- sched$day_type[sched$date == as.Date("2024-02-29")]
+  expect_equal(feb29_type, "weekday")
+})
+
+test_that("SCHED-LEAP-03: non-leap year 2023-02-26 to 2023-03-02 has 5 dates (no Feb 29)", {
+  sched <- generate_schedule(
+    n_periods = 1,
+    expand_periods = FALSE,
+    start_date = "2023-02-26",
+    end_date = "2023-03-02",
+    sampling_rate = 1,
+    seed = 42L,
+    include_all = TRUE
+  )
+  expect_equal(nrow(sched), 5L)
+  expect_false(any(format(sched$date, "%m-%d") == "02-29"))
+})
+
+test_that("SCHED-LEAP-04: creel_design() accepts calendar with 2024-02-29 without error", {
+  cal <- data.frame(
+    date     = as.Date(c("2024-02-29", "2024-03-01", "2024-03-02")),
+    day_type = c("weekday", "weekend", "weekend")
+  )
+  expect_no_error(
+    creel_design(cal, date = date, strata = day_type)
+  )
+})
+
+test_that("SCHED-LEAP-05: creel_design() Feb 29 calendar date round-trips correctly", {
+  cal <- data.frame(
+    date     = as.Date(c("2024-02-28", "2024-02-29", "2024-03-01")),
+    day_type = c("weekday", "weekday", "weekend")
+  )
+  d <- creel_design(cal, date = date, strata = day_type)
+  expect_equal(nrow(d$calendar), 3L)
+  expect_equal(d$calendar$date, cal$date)
+})
