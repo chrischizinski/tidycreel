@@ -44,6 +44,8 @@ reference:
       - as_survey_design
       - compute_effort
       - compute_angler_effort
+      - creel_schema
+      - validate_creel_schema
 
   - title: "Estimation"
     desc: >

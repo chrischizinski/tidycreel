@@ -171,6 +171,7 @@ print.creel_summary <- function(x, ...) {
 #'
 #' @return A `data.frame` with human-readable estimate columns.
 #'
+#' @keywords internal
 #' @export
 as.data.frame.creel_summary <- function(x, ...) {
   x$table

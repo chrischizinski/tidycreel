@@ -17,3 +17,4 @@ A \code{data.frame} with human-readable estimate columns.
 \description{
 Coerce a creel_summary to a data.frame
 }
+\keyword{internal}

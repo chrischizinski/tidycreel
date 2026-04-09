@@ -300,6 +300,8 @@ print.creel_schedule <- function(x, ...) {
 #'
 #' @return A `knitr::asis_output()` object containing raw markdown.
 #'
+#' @keywords internal
+#'
 #' @examples
 #' \dontrun{
 #' sched <- generate_schedule(
