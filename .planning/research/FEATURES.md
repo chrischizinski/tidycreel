@@ -1,22 +1,24 @@
 # Feature Research
 
-**Domain:** Creel survey quality-of-life utility tools — schedule generation, power/sample-size analysis, and data quality diagnostics for an existing R estimation package
-**Researched:** 2026-03-22
-**Confidence:** HIGH (methodologies are well-established in fisheries literature and agency practice; formula sources are primary literature; tidycreel integration points confirmed from codebase inspection)
+**Domain:** Config-driven DB loader with schema-column mapping for an R domain estimation package (tidycreel v1.3.0)
+**Researched:** 2026-04-06
+**Confidence:** HIGH for DBI/S3 ecosystem patterns (well-documented in official sources); MEDIUM for specific design decisions around creel_schema contract (no direct precedent; derived from CDMConnector + OHDSI OMOP patterns)
 
 ---
 
 ## Background: What This Milestone Is
 
-tidycreel v0.8.0 shipped a complete estimation pipeline for five survey types. v0.9.0 adds the tools that wrap around the estimation pipeline: plan the survey before the season, check adequacy before the field crew leaves, and diagnose completeness and power after the season. These are quality-of-life tools, not new estimators.
+tidycreel v1.3.0 splits the existing monolith into two concerns:
 
-The three workflow phases addressed:
+1. **`creel_schema` S3 class** (lives in `tidycreel`) — a portable contract object that carries: a named column-mapping vector (raw DB names → tidycreel canonical names), table identity strings (view/table names per backend), a survey_type tag, and validation rules checked at load time.
 
-| Phase | Question | Tools |
-|-------|----------|-------|
-| Pre-season planning | How many days do I need? Which days? Who goes where? | Calendar generator, CV calculators, bus-route scheduler, large-lake scheduler, design validator |
-| Post-season QA | Did we collect enough? What is missing? | Data completeness checker, refusal rate threshold check |
-| Reporting | What happened this season? | Season summary table |
+2. **`tidycreel.connect` companion package** — wraps a DBI connection (or CSV path) behind `creel_connect()`, providing `fetch_*()` loaders that apply the `creel_schema` contract and return data already renamed and validated so it can be handed directly to `creel_design()`.
+
+The closest ecosystem precedents are:
+- **CDMConnector** (OMOP CDM) — named list of lazy table references behind a `cdm_reference` S3 object; schema/table mapping via `cdmSchema` argument; `validate_cdm()` for structural checks
+- **OHDSI DatabaseConnector** — uniform DBI-like surface across SQL Server, PostgreSQL, Oracle; SqlRender for dialect translation
+- **easydb** — YAML config → `dbcnf` object → pipeline of `db_*()` functions with pipe-chaining
+- **rstudio/config** — `config.yml` with `default:` block and `!expr Sys.getenv()` for credential injection; `config::get()` accessor
 
 ---
 
@@ -24,103 +26,121 @@ The three workflow phases addressed:
 
 ### Table Stakes (Users Expect These)
 
-Features that any agency creel biologist expects from a planning/QA toolkit. Missing these makes the milestone feel incomplete.
+Features any R data-access companion package must provide. Missing these makes the package feel incomplete relative to CDMConnector, DatabaseConnector, and easydb.
 
 | Feature | Why Expected | Complexity | Notes |
 |---------|--------------|------------|-------|
-| Sampling calendar generator — basic | Pre-season scheduling is the first task every biologist does; a tidy tibble of sampled days with weekday/weekend day-type codes and period IDs is the expected output | MEDIUM | Inputs: `start_date`, `end_date`, `n_weekdays` (or `pct_weekdays`), `n_weekends` (or `pct_weekends`), `n_periods`, optional `holidays` vector; output: tibble with `date`, `day_type`, `period_id`; ready to feed `creel_design()` |
-| CSV / Excel export of schedule | Crew coordinators want a spreadsheet to email; biologists want a file to archive | LOW | Thin `write_schedule()` wrapper around `readr::write_csv()` and `writexl::write_xlsx()`; output format controlled by file extension |
-| CV-target sample size calculator — effort | McCormick (2017) showed effort CV = 0.2 requires ~16 days (range 7–40); biologists quote CV targets in grant proposals and agency protocols | MEDIUM | Formula: `n = (s / (CV_target * mean))^2`; inputs: `pilot_mean`, `pilot_sd`, `cv_target` (default 0.20); output: named list with `n_required`, `achieved_cv_at_n`, `method = "effort_SRS"` |
-| CV-target sample size calculator — CPUE | Same literature — CPUE requires ~43 days with the daily estimator (range 8–95); NOAA marine creel standard is CV = 0.10 | MEDIUM | Ratio estimator variance (Cochran 1977 eq. 6.13); inputs: `pilot_mean_effort`, `pilot_sd_effort`, `pilot_mean_catch`, `pilot_sd_catch`, `pilot_cor` (default 0), `cv_target`; returns `n_required` per season |
-| Data completeness checker — missing sampling days | Post-season: which planned days have no interview or count records? Biologists discover missing data entries before reporting | LOW | Anti-join between schedule tibble and actual data (date × day_type × period); returns missing combinations; `cli_warn()` for each gap; consistent with existing `missing_sections` guard pattern (v0.7.0) |
-| Refusal rate threshold check | `summarize_refusals()` exists (v0.5.0); a pass/fail wrapper that flags strata exceeding acceptable refusal rate is standard QA | LOW | Thin wrapper over existing `summarize_refusals()`; inputs: creel object, `threshold` (default 0.10); returns tibble with `stratum`, `refusal_rate`, `threshold`, `status` ("pass"/"warn"/"fail") |
-| Season summary table | Wisconsin DNR, Minnesota DNR, and most agency reports produce a standard synopsis table: effort, catch/harvest/release by species, CPUE — pre-formatted for reports | MEDIUM | Assembles output of existing `estimate_effort()`, `estimate_catch_rate()`, `estimate_total_catch()`, `estimate_total_harvest()`, `estimate_total_release()` into a single wide tibble; does not re-estimate; columns: `species`, `stratum`, `effort_est`, `effort_se`, `n_interviews`, `catch_rate`, `catch_rate_se`, `total_catch`, `total_catch_se`, `total_harvest`, `total_harvest_se`, `total_release`, `total_release_se` |
+| `creel_schema()` constructor | Every domain package with DB integration needs a schema contract object; CDMConnector uses `cdm_reference`, OMOP uses `omop_cdm`; users expect to instantiate one and pass it around | MEDIUM | Returns an S3 object of class `creel_schema`; slots: `col_map` (named character vector, raw→canonical), `table_map` (named character vector, canonical_table→view_name), `survey_type`, `backend` tag; uses `new_creel_schema()` + `validate_creel_schema()` pattern per Wickham AdvR §13 |
+| `validate_creel_schema()` | Column mapping and table identity must be verified before any data fetch; CDMConnector's `validate_cdm()` is the ecosystem precedent | LOW | Checks: all required canonical columns present in `col_map`; all required tables present in `table_map`; `survey_type` is one of the five tidycreel types; no duplicate raw names; returns structured list of pass/warn/fail items |
+| `creel_connect()` constructor | Users need a single call to bind a connection to a schema contract; equivalent to `cdmFromCon()` in CDMConnector; both raw DBI and flat-file paths should work through the same interface | MEDIUM | Accepts: DBI connection OR directory path (flat-file), a `creel_schema` object; returns `creel_connection` S3 object; backend is tagged automatically (sql_server, flat_file); re-validates schema at construction |
+| YAML config loading (`creel_connect_from_yaml()`) | The easydb and rstudio/config patterns show users expect YAML to replace argument lists for credentials and table names; config files also enable environment-specific production vs. test credentials | MEDIUM | Reads `creel.yml` via `yaml::read_yaml()`; top-level keys: `backend:`, `connection:`, `tables:`, `column_map:`, `survey_type:`; `!r` or raw R expressions evaluated for credentials (matching `config::get()` `!expr` convention); returns `creel_connection` object same as `creel_connect()` |
+| `fetch_interviews()` | Interviews is the primary analysis table; every existing `add_interviews()` call needs this data; users expect a direct named fetch | MEDIUM | Queries the `interviews` view/table; applies `col_map` rename; returns a plain `tibble`; no class attached — output goes directly into `add_interviews()`; validates required canonical columns present after rename |
+| `fetch_counts()` | Instantaneous counts drive effort estimation; missing this breaks the estimation pipeline | MEDIUM | Same pattern as `fetch_interviews()`; queries counts view; renames via `col_map`; validates required columns |
+| `fetch_catch()` | Catch is a separate long-format table; required for `add_catch()` | MEDIUM | Same pattern; long format (one row per species per interview) is the expected output shape |
+| `fetch_harvest_lengths()` | Individual fish lengths; required for `add_lengths(harvest_lengths = ...)` | MEDIUM | One row per fish format; individual length column required |
+| `fetch_release_lengths()` | Release lengths; both individual and binned formats exist in NGPC DB; `add_lengths()` handles both | MEDIUM | Both individual and binned formats must work; detect format automatically and pass through as-is (format detection is already in `add_lengths()`) |
+| SQL Server backend | NGPC production database is SQL Server; without this backend the package is useless for the primary user | HIGH | Uses `odbc::odbc()` + Windows Authentication (Trusted_Connection=yes) as the default NGPC connection mode; `DBI::dbGetQuery()` for fetch; view names are the NGPC defaults but overridable via `table_map` |
+| Flat-file / CSV backend | Users working outside NGPC (other agencies, academic) will have CSV files; a flat-file backend makes the package viable as a general-purpose tool | MEDIUM | Uses `readr::read_csv()` or `data.table::fread()` for each table; `table_map` maps canonical table names to file paths; column rename applied identically to SQL backend |
 
 ### Differentiators (Competitive Advantage)
 
-Features that go beyond what agencies currently script by hand, providing genuine time savings or analytical capability absent from competing tools (AnglerCreelSurveySimulation, creelr, legacy NGPC scripts).
+Features that go beyond what agencies currently do (hand-crafted SQL queries, `RODBC::sqlQuery()` calls, legacy `CreelDataAccess.R` scripts) or what CRAN creel packages offer.
 
 | Feature | Value Proposition | Complexity | Notes |
 |---------|-------------------|------------|-------|
-| Bus-route scheduler | `AnglerCreelSurveySimulation` simulates but never generates a concrete routing plan; a function that produces an executable day-by-day circuit assignment that feeds directly into `creel_design(survey_type="bus_route")` is absent from CRAN | HIGH | Inputs: `access_points` (character vector), `sites_per_circuit`, `n_circuits`, `crew_size`, date scaffold from `creel_schedule()`, `seed`; output: tibble with `date`, `period`, `circuit_id`, `site_id`, `crew_id`, `inclusion_prob`; `inclusion_prob` feeds `creel_design()` directly |
-| Large-lake multi-section scheduler | Large lakes (> 10,000 ha) require paired-crew allocation across sections with guaranteed minimum coverage per section; no CRAN package automates this with section-aware output | HIGH | Inputs: section registry from `add_sections()`, `access_points_per_section`, `crew_size`, date scaffold, `seed`; output: schedule tibble with `section_id`, `date`, `period`, `crew_id`; validates that each section achieves minimum sampled days |
-| Design validator — pre-season | Cross-checks a proposed schedule against stated CV targets before any field work begins; produces a structured go/no-go report | MEDIUM | Calls `creel_n_effort()` and `creel_n_cpue()` internally; inputs: schedule tibble, `pilot_mean`, `pilot_sd`, `cv_target`; output: tibble per stratum with `n_proposed`, `n_required_effort`, `n_required_cpue`, `status` ("pass"/"warn"/"fail"); mirrors existing `validate_incomplete_trips()` design |
-| Change detection / power calculator | Whether current survey intensity has power to detect a management-relevant % change in CPUE or effort between two seasons; analytically absent from all existing creel tools | MEDIUM | Two-sample t-test approach (Schmitt 2001, Lester et al. 1991, Georgia DNR 2025): Cohen's d = delta / sigma_pooled; wraps `stats::power.t.test()`; inputs: `baseline_mean`, `baseline_sd`, `pct_change` (e.g., 0.25), `alpha` (default 0.05), `desired_power` (default 0.80); outputs: `n_required`, `power_at_current_n`, `n_current` |
-| Low-sample strata flag in completeness checker | Post-season: strata with fewer than a minimum interview count inflate variance and may need collapsing; not detectable from raw data without the planned schedule | LOW | Extension of missing-days check; joins interview counts per stratum cell against `min_interviews` threshold (default = 3); returns `n_interviews`, `n_threshold`, `pass` columns per stratum |
-| Neyman-optimal stratum allocation helper | Given pilot variance estimates per day-type stratum, recommends optimal weekday/weekend day allocation — commonly needed but rarely automated in creel workflows | MEDIUM | Formula: `n_h = n × (N_h × s_h) / sum(N_j × s_j)` (Neyman 1934); inputs: strata size vector `N_h` (computed from date range), pilot SD vector `s_h`, total budget `n`; output: named vector of recommended days per stratum |
+| Schema portability — `creel_schema` travels with data | NGPC users can pass a `creel_schema` object to collaborators who have the same DB structure; they instantiate a `creel_connection` and the fetch just works; no environment-specific column renaming in analysis scripts | MEDIUM | `creel_schema` is a plain named-list S3 object with no connection state; serializable with `saveRDS()`; can be shipped as package-level data (e.g., `ngpc_schema`) |
+| Built-in NGPC default schema | Providing `ngpc_default_schema()` as a built-in creel_schema removes all boilerplate for the primary user group; they call `creel_connect(con, ngpc_default_schema())` and fetch immediately | LOW | Hard-codes the NGPC view names and column name mappings documented in PROJECT.md; wrap in `ngpc_default_schema()` constructor; update path when NGPC view names change |
+| Survey type tagging propagates through fetch | Every `fetch_*()` call knows the survey type from the `creel_schema`; returned tibble carries a `.survey_type` attribute; `creel_design()` can use it for dispatch without the user re-specifying | LOW | `.survey_type` attr is set on the tibble returned by each `fetch_*()`; does not add a column (avoids polluting data); consistent with existing R package pattern of S3 attributes as metadata |
+| Validation on load, not at estimation time | Column validation at `fetch_*()` time produces a clear error message ("column `cd_Period` not found in col_map for table interviews") before the user is deep in an estimation call; better UX than a cryptic dplyr error 10 calls later | MEDIUM | `validate_fetch_result()` internal helper; checks required canonical columns present after rename; uses `cli_abort()` with column-level detail; consistent with existing tidycreel guard patterns |
+| DuckDB flat-file path via `duckdb::duckdb_read_csv()` | DuckDB provides high-performance CSV reading with SQL query support; for large flat files it is substantially faster than `readr::read_csv()` and enables the same `DBI::dbGetQuery()` code path as SQL Server | MEDIUM (optional) | DuckDB in `Suggests`; use only when `backend = "duckdb_csv"`; enables SELECT/WHERE on flat files without loading the whole table; avoids a separate code path for large-file users |
+| `print.creel_schema()` | Users need to inspect the schema before connecting; a structured print method showing survey_type, backend, table_map, and col_map summary is expected given tidycreel already has `print.creel_schedule()` | LOW | Shows: survey_type, backend, n tables in table_map, n columns in col_map; lists tables with canonical vs. mapped names; uses cli formatting consistent with tidycreel conventions |
 
 ### Anti-Features (Commonly Requested, Often Problematic)
 
 | Feature | Why Requested | Why Problematic | Alternative |
 |---------|---------------|-----------------|-------------|
-| Full report rendering (PDF/Word/Rmd) | Biologists want one-button NGPC-style report | Requires `rmarkdown`/`officer` dependency; template is opinionated and varies by agency; breaks when users rename columns; maintenance burden is high | Produce the `season_summary()` tibble; let users render with their own template; pair with `write_schedule()` for CSV output |
-| Automatic pilot data extraction from current season | Compute pilot mean/SD from the loaded creel object to avoid requiring the user to supply them | Circular: using the same season's data to size the same season's sample produces invalid CV estimates; hides the epistemological problem from the user | Require explicit `pilot_mean` and `pilot_sd` arguments; return a clear error if omitted; document that previous-season estimates are the correct input |
-| Full Monte Carlo simulation of survey performance | `AnglerCreelSurveySimulation` does this already; users sometimes ask tidycreel for the same | Requires deep fishery parameters (trip length distribution, angler arrival rate) not stored in the creel object; duplicates an existing CRAN tool; slow | Analytical power formula via `power.t.test()` is sufficient and fast for the common management question; document that `AnglerCreelSurveySimulation` handles the Monte Carlo case |
-| Interactive Shiny scheduler | Point-and-click calendar UI | Out of scope for an estimation package; substantial maintenance burden; breaks R CMD check conventions for CRAN submission | Tidy tibble output is pipe-friendly; pairs naturally with any Shiny app the user builds independently |
-| Automatic holiday detection by jurisdiction | Detect state-specific holidays for weekday/weekend re-classification | Holiday rules vary by state and change annually; no authoritative R package covers all US state holidays reliably | Accept `holidays` as a user-supplied `Date` vector; document `timeDate` or `bizdays` as optional helpers for generating it |
-| Optimization solver for survey allocation | Use LP/IP solver to minimize cost subject to CV constraint | Overkill for typical creel survey scales (weeks, not thousands of strata); adds `ROI` or `lpSolve` dependency; Neyman allocation is sufficient for two-stratum weekday/weekend designs | Implement Neyman allocation helper; document its assumptions; flag LP solvers in vignette for multi-stratum power users |
+| Auto-discover column mapping from DB | Users want zero-configuration setup; "just connect and it works" | Column names vary between NGPC instances and other agency DBs; auto-discovery builds in assumptions that break silently on schema drift; defeats the purpose of the explicit `creel_schema` contract | Provide `ngpc_default_schema()` for the common case; make the mapping explicit and versioned so schema changes are caught at validation time, not estimation time |
+| Credential storage in YAML | Convenience — one file with everything | Plain-text passwords in config files get committed to git; CRAN policy and security best practices both discourage it | Accept `!expr Sys.getenv("DB_PASSWORD")` and `!expr keyring::key_get("creel_db")` in YAML; document both approaches; never store literal passwords |
+| `fetch_all()` mega-loader | One call to get all tables at once | Hides which tables are actually needed; pulls large length tables even for effort-only analyses; makes it impossible to add pre-fetch filters per table | Keep fetch functions separate; document the sequence `fetch_interviews() |> add_interviews()`, etc.; a wrapper is easy to write in user code |
+| dbplyr / lazy evaluation for fetch | Familiar tidyverse pattern; "work at scale without loading into memory" | Creel analysis requires all data in memory for `survey::svydesign()`; lazy tables have no path to `creel_design()`; adds `dbplyr` dependency for no benefit; CDMConnector uses lazy eval because OMOP datasets are orders of magnitude larger than creel surveys | Use `DBI::dbGetQuery()` → `collect()` immediately; creel datasets (hundreds to thousands of rows) fit in memory trivially; keep the fetch simple |
+| REST API backend | NGPC has a REST endpoint; some users will ask for it | REST authentication changes without notice; paging logic is fragile; the existing `CreelApiHelper.R` is already maintained separately; adding REST to `tidycreel.connect` creates a maintenance surface that competes with a dedicated API wrapper | Document that REST users should pull data with their existing `CreelApiHelper.R` and supply the resulting data frame to `add_interviews()` etc. directly |
+| Multiple language / DBMS SQL dialect translation (SqlRender approach) | Portability across Oracle, PostgreSQL, SQL Server | NGPC is SQL Server; the only other backend needed is flat file; dialect translation (a la OHDSI SqlRender) is overkill for two backends; adds a Java dependency (RJDBC) or a translation layer | SQL Server via `odbc`; CSV/flat-file via `readr`; two backends, two code paths, no translation layer needed |
+| S4 or R5/R6 class for `creel_schema` | R6 provides reference semantics and active bindings for "live" schema objects | S3 is sufficient for a stateless contract object; reference semantics add complexity without benefit when the schema does not change after construction; inconsistent with the rest of tidycreel (all S3) | Plain S3 list with `new_creel_schema()` + `validate_creel_schema()` per Wickham AdvR pattern; attributes carry all metadata; class vector enables dispatch |
 
 ---
 
 ## Feature Dependencies
 
 ```
-[creel_schedule()]  ── date scaffold ──> [schedule_bus_route()]
-                    ── date scaffold ──> [schedule_large_lake()]
-                    ── date scaffold ──> [validate_design()]
-                    ── reference set ──> [check_completeness()]
+[ngpc_default_schema()]
+    └──produces──> [creel_schema S3 object]
+                       └──validates via──> [validate_creel_schema()]
+                       └──required by──> [creel_connect()]
+                       └──required by──> [creel_connect_from_yaml()]
 
-[creel_n_effort()]  ──────────────────> [validate_design()]  (called internally)
-[creel_n_cpue()]    ──────────────────> [validate_design()]  (called internally)
+[creel_connect() / creel_connect_from_yaml()]
+    └──produces──> [creel_connection S3 object]
+                       └──required by──> [fetch_interviews()]
+                       └──required by──> [fetch_counts()]
+                       └──required by──> [fetch_catch()]
+                       └──required by──> [fetch_harvest_lengths()]
+                       └──required by──> [fetch_release_lengths()]
 
-[existing add_sections()]  ───────────> [schedule_large_lake()]  (section registry is the input)
-[existing creel_design()]  ───────────> [schedule_bus_route() output]  (schedule feeds creel_design)
-[existing summarize_refusals()]  ─────> [check_refusal_threshold()]  (thin wrapper; no re-computation)
-[existing estimate_*() functions]  ───> [season_summary()]  (assembles outputs; no re-estimation)
+[fetch_interviews()]  ── tibble ──> [add_interviews()]  (existing tidycreel API)
+[fetch_counts()]      ── tibble ──> [add_counts()]      (existing tidycreel API)
+[fetch_catch()]       ── tibble ──> [add_catch()]       (existing tidycreel API)
+[fetch_harvest_lengths()]   ── tibble ──> [add_lengths()]  (existing tidycreel API)
+[fetch_release_lengths()]   ── tibble ──> [add_lengths()]  (existing tidycreel API)
 
-[check_completeness()]
-    └──enhances──> [low-sample strata flag]  (same function, two diagnostics)
+[creel_schema col_map]  ── rename ──> [all fetch_*() outputs]
+[creel_schema table_map] ── view name resolution ──> [all fetch_*() SQL queries]
+[creel_schema survey_type] ── .survey_type attr ──> [all fetch_*() tibble outputs]
 
-[creel_n_effort() / creel_n_cpue()]
-    └──feeds into──> [creel_power()]  (power calc uses same variance inputs; different question)
-    └──independent of──> [creel_power()]  (n sizing vs. trend detection are separate concerns)
+[validate_creel_schema()]  ── prerequisite ──> [creel_connect()]
+[validate_fetch_result()]  ── postcondition ──> [fetch_*() return value]
 ```
 
 ### Dependency Notes
 
-- **`creel_schedule()` is the foundation:** All pre-season tools (bus-route scheduler, large-lake scheduler, design validator) and all post-season diagnostics (completeness checker) need the planned schedule as a reference tibble. This is phase 1 of any v0.9.0 implementation.
-- **CV calculators are prerequisites for the design validator:** The validator is "run the CV calculator per stratum and compare proposed n against required n." It must call `creel_n_effort()` / `creel_n_cpue()` internally rather than re-implementing the formula.
-- **`add_sections()` (v0.7.0) feeds the large-lake scheduler:** The scheduler respects registered section boundaries and generates per-section crew assignments. The section registry from the creel object is the canonical input.
-- **Season summary is an assembly layer, not a new estimator:** It consumes the output of all existing `estimate_*()` functions. It must not re-estimate. This keeps the season summary consistent with whatever variance formula the user selected.
-- **Refusal rate threshold check wraps `summarize_refusals()` (v0.5.0):** Do not recompute refusal rates; call the existing function and add a threshold comparison. Keeps logic in one place and eliminates drift between implementations.
-- **Low-sample strata flag and missing-days check are bundled:** Both are post-season diagnostics that examine the same reference schedule against the same data. A single `check_completeness()` function should return both diagnostics rather than requiring two separate calls.
+- **`creel_schema` is stateless and must exist before any connection:** It carries no DB credentials or connection state. It is the schema contract, not the connection. Construction order is always: schema first, then connection.
+- **`creel_connect()` validates the schema at construction time:** This is the correct place for the DBI table existence check (`DBI::dbExistsTable()`), not at fetch time, consistent with CDMConnector's `cdmFromCon()` approach.
+- **All `fetch_*()` functions depend on `col_map` from the schema:** The rename step (`dplyr::rename_with()` or `setNames()`) is the only place column translation happens. Downstream tidycreel functions (`add_interviews()` etc.) must not know about or accept raw DB column names.
+- **`add_interviews()` / `add_counts()` / `add_catch()` / `add_lengths()` are unchanged:** v1.3.0 adds a data loading layer in front of the existing estimation API. The existing API must not require modification to accept `fetch_*()` output. If columns in the fetch output do not match what `add_interviews()` expects, the `col_map` is wrong — fix it in the schema, not in `add_interviews()`.
+- **Flat-file and SQL backends share the same `fetch_*()` function signatures:** Backend dispatch happens inside `fetch_*()` via the `backend` tag on the `creel_connection`; the user sees the same API regardless.
 
 ---
 
 ## MVP Definition
 
-### Launch With (v0.9.0)
+### Launch With (v1.3.0)
 
-Minimum set that delivers end-to-end value: plan a survey, check it pre-season, diagnose it post-season, produce the report table.
+Minimum that enables a complete NGPC workflow: connect → fetch all five tables → pipe into `creel_design()`.
 
-- [ ] `creel_schedule()` — sampling calendar generator; without this, downstream tools have no date scaffold
-- [ ] `creel_n_effort()` — CV-target sample size for effort; most-requested planning calculation; McCormick (2017) provides the formula directly
-- [ ] `creel_n_cpue()` — CV-target sample size for CPUE; paired with effort calculator; distinct formula
-- [ ] `validate_design()` — pre-season go/no-go check; depends only on the two calculators above
-- [ ] `check_completeness()` — post-season QA; covers missing days + low-sample strata in one call
-- [ ] `season_summary()` — assembles existing estimate outputs into a report-ready wide tibble; delivers the table biologists produce every season
+- [ ] `creel_schema` S3 class with `new_creel_schema()` + `validate_creel_schema()` in tidycreel core — without the schema contract, the companion package has no anchor
+- [ ] `ngpc_default_schema()` convenience constructor — primary user group needs zero-configuration path
+- [ ] `creel_connect()` accepting a DBI connection + `creel_schema` — fundamental entry point for SQL Server users
+- [ ] `fetch_interviews()` — primary analysis table; estimation pipeline is blocked without it
+- [ ] `fetch_counts()` — effort estimation blocked without it
+- [ ] `fetch_catch()` — catch/harvest/release estimation blocked without it
+- [ ] `fetch_harvest_lengths()` — length analysis blocked without it
+- [ ] `fetch_release_lengths()` — release length analysis blocked without it
+- [ ] SQL Server backend via `odbc::odbc()` with Windows Authentication — NGPC production requirement
+- [ ] Flat-file / CSV backend via `readr::read_csv()` — general-purpose viability; also needed for testing without a live DB
 
-### Add After Validation (v0.9.x)
+### Add After Validation (v1.3.x)
 
-- [ ] `schedule_bus_route()` — higher complexity; validate that calendar and design validator are useful before investing in routing detail
-- [ ] `creel_power()` — analytically distinct from CV sizing; add once sample-size tools are confirmed in use
-- [ ] `write_schedule()` — trivial to add; defer until schedule tibble format is stable from user feedback
-- [ ] `check_refusal_threshold()` — one-liner wrapper; add alongside `check_completeness()` in practice
+Features to add once the core fetch-and-rename loop is confirmed working.
 
-### Future Consideration (v1.0+)
+- [ ] `creel_connect_from_yaml()` — reduces boilerplate; add once core API is stable and YAML schema is defined from real usage
+- [ ] `print.creel_schema()` / `print.creel_connection()` — polish; add once classes are stable
+- [ ] DuckDB flat-file backend — performance optimization; add only if users report CSV loading is slow
+- [ ] Survey type tagging via `.survey_type` attribute on `fetch_*()` output — convenience feature; add after core fetch path is validated
 
-- [ ] `schedule_large_lake()` — highest complexity; needs section workflows and design validator in active use first
-- [ ] Neyman stratum allocation helper — technically straightforward but requires pilot variance estimates that many users will not have from a new fishery; defer until base planning tools prove adoptable
+### Future Consideration (v2+)
+
+- [ ] Additional agency schemas (Wisconsin DNR, Minnesota DNR) — defer; requires those agencies to contribute or confirm their column names
+- [ ] Schema versioning (creel_schema v1 vs v2) — defer; premature until schema drift is observed in practice
+- [ ] `creel_schema` export to YAML (round-trip serialization) — defer; useful for sharing schemas but not needed for core workflow
 
 ---
 
@@ -128,18 +148,20 @@ Minimum set that delivers end-to-end value: plan a survey, check it pre-season, 
 
 | Feature | User Value | Implementation Cost | Priority |
 |---------|------------|---------------------|----------|
-| `creel_schedule()` — calendar generator | HIGH | MEDIUM | P1 |
-| `creel_n_effort()` — CV sample size, effort | HIGH | MEDIUM | P1 |
-| `creel_n_cpue()` — CV sample size, CPUE | HIGH | MEDIUM | P1 |
-| `validate_design()` — pre-season check | HIGH | MEDIUM | P1 |
-| `check_completeness()` — missing days + thin strata | HIGH | LOW | P1 |
-| `season_summary()` — report table | HIGH | MEDIUM | P1 |
-| `schedule_bus_route()` — circuit scheduler | HIGH | HIGH | P2 |
-| `creel_power()` — change detection power | MEDIUM | MEDIUM | P2 |
-| `write_schedule()` — CSV/Excel export | MEDIUM | LOW | P2 |
-| `check_refusal_threshold()` — refusal QA | MEDIUM | LOW | P2 |
-| Neyman stratum allocation helper | MEDIUM | MEDIUM | P3 |
-| `schedule_large_lake()` — multi-section scheduler | HIGH | HIGH | P3 |
+| `creel_schema` S3 class + constructor + validator | HIGH | MEDIUM | P1 |
+| `ngpc_default_schema()` | HIGH | LOW | P1 |
+| `creel_connect()` — SQL Server + flat file | HIGH | MEDIUM | P1 |
+| `fetch_interviews()` | HIGH | LOW | P1 |
+| `fetch_counts()` | HIGH | LOW | P1 |
+| `fetch_catch()` | HIGH | LOW | P1 |
+| `fetch_harvest_lengths()` | HIGH | LOW | P1 |
+| `fetch_release_lengths()` | HIGH | LOW | P1 |
+| Validation on load (`validate_fetch_result()`) | HIGH | LOW | P1 |
+| `creel_connect_from_yaml()` | MEDIUM | MEDIUM | P2 |
+| `print.creel_schema()` / `print.creel_connection()` | MEDIUM | LOW | P2 |
+| Survey type tag on `fetch_*()` output | LOW | LOW | P2 |
+| DuckDB flat-file backend | LOW | MEDIUM | P3 |
+| Additional agency default schemas | MEDIUM | LOW (per schema) | P3 |
 
 **Priority key:**
 - P1: Must have for launch
@@ -148,153 +170,108 @@ Minimum set that delivers end-to-end value: plan a survey, check it pre-season, 
 
 ---
 
-## Competitor Feature Analysis
+## Ecosystem Pattern Analysis
 
-| Feature | AnglerCreelSurveySimulation (CRAN, updated May 2024) | creelr (Poisson Consulting) | Legacy NGPC Scripts | Our Approach |
-|---------|-----------------------------------------------------|------------------------------|---------------------|--------------|
-| Schedule generation | None — simulation only; no concrete date plan | None | Manual Excel calendars | Tidy tibble; pipe into `creel_design()` |
-| CV / sample size calculator | RSE from repeated Monte Carlo simulations — indirect | None | Rule of thumb (16 days) | Explicit analytical formula; returns tibble with target vs. achieved |
-| Bus-route scheduling | Simulates roving surveys; no executable routing plan | None | Manual day-of assignments | Circuit + site + crew assignment tibble with `inclusion_prob` columns |
-| Pre-season design validation | Evaluate RSE by running hundreds of simulations | None | None | Single-call `validate_design()` against CV target |
-| Change detection / power | None | None | None | `creel_power()` wrapping `power.t.test()`; uses creel vocabulary (% change in CPUE) |
-| Post-season completeness check | None | None | Ad hoc SQL queries against DB | `check_completeness()` anti-joins schedule vs. data; structured pass/fail output |
-| Season summary table | None | Partial (Bayesian estimates only) | Rmd template tightly coupled to DB | `season_summary()` assembles existing `estimate_*()` outputs; DB-agnostic |
-| Tidy API | No | Partial | No | Yes — core value proposition |
+### CDMConnector Pattern (OMOP Common Data Model) — PRIMARY REFERENCE
+
+CDMConnector is the closest ecosystem precedent. Key patterns to adopt:
+
+| Pattern | CDMConnector | tidycreel.connect adaptation |
+|---------|--------------|------------------------------|
+| Connection constructor | `cdmFromCon(con, cdmSchema, writeSchema, cdmName)` | `creel_connect(con, schema)` — no write schema needed |
+| Schema object | `cdm_reference` S3 (named list of lazy tbls + metadata) | `creel_connection` S3 (DBI connection + creel_schema + backend tag) |
+| Table access | `cdm$person`, `cdm$observation` via `$` | `fetch_interviews(conn)`, `fetch_counts(conn)` via explicit functions |
+| Validation | `validate_cdm()` returns structured report | `validate_creel_schema()` returns pass/warn/fail list |
+| Multi-backend | DuckDB, PostgreSQL, SQL Server, Snowflake, Redshift | SQL Server, flat file (DuckDB optional) |
+| Lazy vs. eager | Lazy — designed for million-row clinical datasets | Eager — creel datasets are small; `DBI::dbGetQuery()` immediately |
+
+Key divergence from CDMConnector: tidycreel.connect uses **eager fetch** (not lazy `tbl(con, "tablename")`). Creel datasets are hundreds to thousands of rows. Eager fetch simplifies the code path, eliminates the `dbplyr` dependency, and returns plain tibbles that flow directly into existing `add_*()` functions.
+
+### rstudio/config YAML Pattern
+
+The `config` package YAML format is the R ecosystem standard for environment-specific credentials. Adopt its conventions exactly:
+
+```yaml
+# creel.yml — example structure
+default:
+  backend: flat_file
+  tables:
+    interviews: data/interviews.csv
+    counts: data/counts.csv
+    catch: data/catch.csv
+    harvest_lengths: data/harvest_lengths.csv
+    release_lengths: data/release_lengths.csv
+  survey_type: instantaneous
+
+production:
+  backend: sql_server
+  connection:
+    driver: "ODBC Driver 17 for SQL Server"
+    server: !expr Sys.getenv("CREEL_DB_SERVER")
+    database: !expr Sys.getenv("CREEL_DB_NAME")
+    trusted_connection: "yes"
+  tables:
+    interviews: vwCombinedR_InterviewData_wSupplemental
+    counts: vwCombinedR_CountData
+    catch: vwCombinedR_CatchData
+    harvest_lengths: vwCombinedR_HarvestLengthData
+    release_lengths: vwCombinedR_ReleasedLengthData
+  survey_type: instantaneous
+```
+
+Active environment controlled by `R_CONFIG_ACTIVE` env var (default = "default"); `production` activates on deployment. Credentials via `!expr Sys.getenv()` or `!expr keyring::key_get()` — never literal passwords.
+
+### S3 Contract Pattern (Wickham AdvR §13)
+
+The `creel_schema` S3 class should follow the three-function canonical pattern:
+
+```
+new_creel_schema(col_map, table_map, survey_type, backend = "unknown")
+    → bare constructor; no input coercion; checks types only
+
+validate_creel_schema(schema)
+    → full structural check; returns schema invisibly on success; cli_abort() on failure
+
+creel_schema(col_map, table_map, survey_type, backend = "unknown")
+    → user-facing helper; calls new_ then validate_; coerces character vectors
+```
+
+`col_map` is a named character vector: `c(raw_col_name = "canonical_tidycreel_name", ...)`. Direction is raw → canonical (same direction as `dplyr::rename()`). This is the same direction as `setNames(x, new_names)` and `rename_with()` lookup tables.
 
 ---
 
-## Methodological Notes
+## Integration Points with Existing tidycreel API
 
-### CV and Sample Size Formulas
+The following existing functions are the downstream consumers of `fetch_*()` output. Their expected column names define the required canonical names in `creel_schema$col_map`:
 
-**For effort** (simple random sampling within stratum — the common case before stratification):
+| Fetch function | Feeds | Required canonical columns |
+|----------------|-------|---------------------------|
+| `fetch_interviews()` | `add_interviews()` | `date`, `period`, `section`, `n_anglers`, `trip_type`, `time_fished_hours`, `refused`, `interview_id` |
+| `fetch_counts()` | `add_counts()` | `date`, `period`, `section`, `count`, `angler_type` |
+| `fetch_catch()` | `add_catch()` | `interview_id`, `species`, `n`, `catch_type` |
+| `fetch_harvest_lengths()` | `add_lengths()` | `interview_id`, `species`, `length_mm` |
+| `fetch_release_lengths()` | `add_lengths()` | `interview_id`, `species`, `length_group` OR `length_mm`, `n` |
 
-```r
-# Cochran (1977) §2.2; McCormick (2017) NAJFM 37:970-980
-n_required <- ceiling((pilot_sd / (cv_target * pilot_mean))^2)
-```
+The exact canonical column names must be confirmed by reading the current `add_interviews()`, `add_counts()`, `add_catch()`, and `add_lengths()` function signatures from the tidycreel source before implementing. These may differ from the names listed above, which are based on the data model description in PROJECT.md.
 
-For stratified weekday/weekend designs, compute per-stratum and combine using Neyman or proportional allocation. McCormick (2017) benchmarks: CV = 0.20 (95% CI = ±40%) requires mean of 16 days for effort, 43 days for CPUE with the daily estimator. NOAA marine creel programs target CV = 0.10.
-
-**For CPUE** (ratio estimator variance, Cochran 1977 eq. 6.13):
-
-```r
-# R_hat = C_bar / E_bar  (ratio of means — ROM estimator)
-# Var(R_hat) ≈ (1/E_bar^2) * [Var(C) + R^2 * Var(E) - 2*R*Cov(C,E)]
-# Simplification with correlation rho:
-# Var(R_hat) ≈ (R^2 / n) * [CV_C^2 + CV_E^2 - 2*rho*CV_C*CV_E]
-# Solve for n given CV_R target:
-n_required <- ceiling(
-  (pilot_cpue^2 * (cv_effort^2 + cv_catch^2 - 2*pilot_cor*cv_effort*cv_catch)) /
-  cv_target^2
-)
-```
-
-Inputs: `pilot_mean_effort`, `pilot_sd_effort`, `pilot_mean_catch`, `pilot_sd_catch`, `pilot_cor` (correlation between daily catch and effort; default 0 is conservative).
-
-### Power / Change Detection Formula
-
-Two-sample t-test is the standard approach in fisheries monitoring programs (Schmitt 2001; Lester et al. 1991; Georgia DNR 2025 NAJFM):
-
-```r
-# Cohen's d for a pct_change change from baseline
-delta      <- baseline_mean * pct_change
-cohen_d    <- delta / baseline_sd          # pooled SD assumed equal
-result     <- stats::power.t.test(
-  n          = NULL,          # solve for n
-  delta      = delta,
-  sd         = baseline_sd,
-  sig.level  = alpha,         # default 0.05
-  power      = desired_power, # default 0.80
-  type       = "two.sample"
-)
-n_required <- ceiling(result$n)
-```
-
-The `pwr` package (`pwr::pwr.t.test()`) provides the same calculation with Cohen's d as direct input and is the preferred implementation to avoid replicating the non-central t distribution internally. Important calibration from literature: most reservoirs reach power = 0.80 at a 50% decline in CPUE over 10 years; detecting a 25% change typically requires > 10 seasons of data given the high natural variability inherent in recreational fishery CPUE.
-
-### Design Validation Logic
-
-Pre-season check algorithm:
-
-1. Parse proposed schedule tibble into per-stratum counts (`n_weekday`, `n_weekend` per period).
-2. Call `creel_n_effort()` and `creel_n_cpue()` with user-supplied pilot parameters.
-3. Compare `n_proposed` vs. `n_required` per stratum.
-4. Return tibble: `stratum | n_proposed | n_required_effort | n_required_cpue | cv_target | status`.
-5. Status codes: `"pass"` (n_proposed >= max(n_required_effort, n_required_cpue)), `"warn"` (n_proposed >= 0.75 × required), `"fail"` (n_proposed < 0.75 × required).
-6. Issue `cli_warn()` for each "fail" stratum; consistent with existing guard patterns.
-
-### Post-Season Completeness Check
-
-Two diagnostics in one `check_completeness()` call:
-
-1. **Missing days:**
-   ```r
-   missing <- dplyr::anti_join(schedule, data, by = c("date", "day_type", "period_id"))
-   ```
-   Returns rows in the planned schedule with no corresponding records in the actual data. Issues `cli_warn()` per missing combination.
-
-2. **Low-sample strata:**
-   ```r
-   counts <- dplyr::count(data, date, day_type, period_id, name = "n_interviews")
-   thin   <- dplyr::left_join(schedule, counts) |>
-             dplyr::filter(is.na(n_interviews) | n_interviews < min_interviews)
-   ```
-   Default `min_interviews = 3` per stratum cell (below which variance estimates are unreliable).
-
-Both diagnostics mirror the `missing_sections` guard pattern established in v0.7.0: return a diagnostic tibble, issue `cli_warn()`, never silently drop data.
-
-### Season Summary Table Structure
-
-Standard structure matching Wisconsin DNR, Minnesota DNR, and NGPC report conventions (confirmed from agency reports 2024–2025):
-
-```
-species | stratum | effort_est | effort_se | n_interviews |
-catch_rate | catch_rate_se | total_catch | total_catch_se |
-total_harvest | total_harvest_se | total_release | total_release_se
-```
-
-`season_summary()` joins the outputs of:
-- `estimate_effort()` → effort columns
-- `estimate_catch_rate()` → catch_rate columns
-- `estimate_total_catch()` → total_catch columns
-- `estimate_total_harvest()` → total_harvest columns
-- `estimate_total_release()` → total_release columns
-
-Join keys: `species × stratum`. Does not re-estimate. Returns `NA` gracefully where a species has no catch/harvest/release data (e.g., a count-only period). This is an assembly function, not an estimator.
-
-### Bus-Route Scheduler Design
-
-The scheduler must produce `inclusion_prob` values compatible with `creel_design(survey_type = "bus_route")`, which uses `pi_i = p_site × p_period` (Jones & Pollock 2012; confirmed correct in v0.4.0):
-
-```r
-# p_site    = n_circuits_sampled / n_circuits_total per period
-# p_period  = n_periods_sampled / n_periods_total per day
-# inclusion_prob = p_site * p_period per site × period combination
-```
-
-The scheduler allocates circuits to sampled days using a randomized complete block design (RCB): within each day, circuits are randomly assigned to available time periods. The randomization seed ensures reproducibility for both scheduling and any simulation-based review. Output includes `p_site` and `p_period` so the user can verify the inclusion probabilities before passing to `creel_design()`.
+**This is the single most important implementation verification step for v1.3.0.** Getting the canonical column names wrong means every fetch silently fails validation or produces wrong joins.
 
 ---
 
 ## Sources
 
-- [McCormick, J. L. & Quist, M. C. (2017). Sample Size Estimation for On-Site Creel Surveys. *North American Journal of Fisheries Management* 37(5):970–980](https://afspubs.onlinelibrary.wiley.com/doi/full/10.1080/02755947.2017.1342723)
-- [AnglerCreelSurveySimulation CRAN vignette — Simulating Creel Surveys](https://cran.r-project.org/web/packages/AnglerCreelSurveySimulation/vignettes/creel_survey_simulation.html)
-- [Evaluation of bus-route creel survey method in a large Australian marine recreational fishery I: Survey design](https://www.sciencedirect.com/science/article/abs/pii/S0165783697000684)
-- [Evaluation of bus-route creel survey method II: Pilot surveys and optimal sampling allocation](https://www.sciencedirect.com/science/article/abs/pii/S0165783697000672)
-- [Estimating power of standardized monitoring program for sport fish in Georgia, USA — *NAJFM* 2025](https://doi.org/10.1093/najfmt/vqaf117)
-- [Power and Sample Size Estimation Techniques for Fisheries Management — ResearchGate](https://www.researchgate.net/publication/233445683_Power_and_Sample_Size_Estimation_Techniques_for_Fisheries_Management_Assessment_and_a_New_Computational_Tool)
-- [Optimizing Creel Surveys — Springer Nature Link 2025](https://link.springer.com/chapter/10.1007/978-3-031-99739-6_13)
-- [Alaska DFG Special Publication 98-1: The Mechanics of Onsite Creel Surveys](https://www.adfg.alaska.gov/fedaidpdfs/sp98-01.pdf)
-- [Using balanced sampling in creel surveys — Statistics Canada, *Survey Methodology* 2018](https://www150.statcan.gc.ca/n1/pub/12-001-x/2018002/article/54954/01-eng.htm)
-- Cochran, W. G. (1977). *Sampling Techniques* (3rd ed.). Wiley. — ratio estimator variance formula (eq. 6.13); Neyman allocation (§5.5)
-- Pollock, K. H., Jones, C. M., Brown, T. L. (1994). *Angler Survey Methods and their Applications in Fisheries Management*. AFS Special Publication 25. — foundational reference for bus-route inclusion probabilities already implemented in tidycreel v0.4.0
-- Jones, C. M. & Pollock, K. H. (2012). Recreational survey methods. In Zale et al. (eds.), *Fisheries Techniques* 3rd ed., AFS, pp. 883–919. — pi_i = p_site × p_period confirmed correct
-- [pwr package CRAN documentation](https://cran.r-project.org/web/packages/pwr/pwr.pdf) — `pwr.t.test()` for two-sample power calculations
-- Wisconsin DNR open-water creel survey reports 2024–2025 — season summary table structure confirmed from multiple reports
+- [CDMConnector Getting Started vignette](https://cran.r-project.org/web/packages/CDMConnector/vignettes/a01_getting-started.html) — cdm_reference S3 object; cdmFromCon() pattern; validate_cdm() approach
+- [CDMConnector GitHub (darwin-eu)](https://github.com/darwin-eu/CDMConnector) — named list of table references as connection contract; MEDIUM confidence (observed from vignette; source not fully read)
+- [Advanced R §13 S3 (Wickham)](https://adv-r.hadley.nz/s3.html) — new_/validate_/helper() three-function pattern; constructor attributes; HIGH confidence
+- [rstudio/config GitHub](https://github.com/rstudio/config) — YAML environment config with !expr for credentials; R_CONFIG_ACTIVE env var; HIGH confidence
+- [Securing Credentials — db.rstudio.com](https://edgararuiz.github.io/db.rstudio.com/best-practices/managing-credentials.html) — credential management hierarchy; keyring + config + envvar patterns; MEDIUM confidence
+- [DBI Introduction vignette](https://cran.r-project.org/web/packages/DBI/vignettes/DBI.html) — dbConnect / dbGetQuery / dbDisconnect pattern; HIGH confidence
+- [easydb GitHub (EricEdwardBryant)](https://github.com/EricEdwardBryant/easydb) — YAML config → dbcnf object → db_* pipeline; pipe-chaining pattern; MEDIUM confidence
+- [OHDSI DatabaseConnector](https://github.com/OHDSI/DatabaseConnector) — uniform DBI surface across SQL Server / PostgreSQL / Oracle; schema-agnostic fetch pattern; MEDIUM confidence
+- [R for Data Science 2e §21 Databases](https://r4ds.hadley.nz/databases.html) — lazy vs. eager collect() decision; DBI backend pattern; HIGH confidence
+- tidycreel PROJECT.md — NGPC view names, column names, table structure; HIGH confidence (primary source)
 
 ---
 
-*Feature research for: tidycreel v0.9.0 — survey planning, power analysis, and data quality tools*
-*Researched: 2026-03-22*
+*Feature research for: tidycreel v1.3.0 — Generic DB interface (creel_schema S3 + tidycreel.connect)*
+*Researched: 2026-04-06*

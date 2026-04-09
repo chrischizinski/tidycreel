@@ -44,7 +44,7 @@ trip_status field is provided. Options: \code{"complete"} (default when
 NULL) uses only complete trips with ratio-of-means estimator,
 \code{"incomplete"} uses only incomplete trips with mean-of-ratios
 estimator, or \code{"diagnostic"} estimates CPUE using both trip types and
-returns a comparison table. Following Colorado C-SAP and Pollock et al.,
+returns a comparison table. Following Pollock et al. (1994),
 complete trips are scientifically preferred (no length-of-stay bias).
 Incomplete trip estimation is diagnostic/research mode requiring
 validation. Diagnostic mode requires both complete and incomplete trips to
@@ -84,7 +84,7 @@ estimation methods.
 When trip_status is provided, the \code{use_trips} parameter controls which
 trips are used for estimation. The default \code{use_trips = "complete"}
 filters to complete trips only, following roving-access design best practices
-(Colorado C-SAP, Pollock et al.). Complete trip interviews are taken at trip
+(Pollock et al. 1994). Complete trip interviews are taken at trip
 completion and avoid length-of-stay bias. Setting \code{use_trips = "incomplete"}
 filters to incomplete trips and automatically uses the MOR estimator.
 Incomplete trip estimation is diagnostic/research mode and requires validation

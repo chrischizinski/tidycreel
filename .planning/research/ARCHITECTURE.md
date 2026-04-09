@@ -1,405 +1,704 @@
 # Architecture Research
 
-**Domain:** tidycreel v0.9.0 — Quality-of-Life Utility Tools integration into existing R package
-**Researched:** 2026-03-22
-**Confidence:** HIGH (grounded in direct codebase inspection; existing architecture verified against all 15 R source files, NAMESPACE, and DESCRIPTION)
+**Domain:** tidycreel v1.3.0 — Generic DB Interface (creel_schema S3 + tidycreel.connect companion package)
+**Researched:** 2026-04-06
+**Confidence:** HIGH (grounded in direct codebase inspection of all 22 R source files, legacy CreelDataAccess scripts, DESCRIPTION, and the established v0.9.0 architecture baseline)
 
 ---
 
-## Existing Architecture (v0.8.0 Baseline)
+## Existing Architecture (v1.2.0 Baseline)
 
-The three-layer architecture is established and proven through five survey types over 47 phases.
+The three-layer architecture is proven across 65 phases and all five survey types.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                         API Layer                                │
+│                         API Layer  (tidycreel)                   │
 │                                                                  │
 │  creel_design()   add_counts()   add_interviews()               │
 │  add_catch()      add_lengths()  add_sections()                 │
 │  compute_effort() preprocess_camera_timestamps()                │
-│                                                                  │
 │  summarize_*()    validate_incomplete_trips()                   │
-│  summarize_trips()                                               │
+│  generate_schedule()  creel_n_effort()  validate_design()       │
 └──────────────────────────┬──────────────────────────────────────┘
                            │  creel_design S3 object
 ┌──────────────────────────▼──────────────────────────────────────┐
-│                    Orchestration Layer                           │
+│                    Orchestration Layer  (tidycreel)              │
 │                                                                  │
-│  estimate_effort()         dispatch on survey_type              │
-│  estimate_catch_rate()     dispatch on species / sections       │
-│  estimate_harvest_rate()   dispatch on species / sections       │
-│  estimate_release_rate()   dispatch on species / sections       │
-│  estimate_total_catch()    delta method product                 │
-│  estimate_total_harvest()  delta method product                 │
-│  estimate_total_release()  delta method product                 │
-│                                                                  │
-│  Internal: estimate_effort_br(), estimate_effort_aerial()       │
-│  Internal: estimate_effort_sections(), aggregate_section_totals()│
+│  estimate_effort()      estimate_catch_rate()                   │
+│  estimate_total_catch() estimate_total_harvest()                │
+│  estimate_effort_aerial_glmm()  section dispatch                │
 └──────────────────────────┬──────────────────────────────────────┘
                            │  survey.design2 / svydesign objects
 ┌──────────────────────────▼──────────────────────────────────────┐
-│                      Survey Layer                                │
+│                      Survey Layer  (survey package)              │
 │                                                                  │
 │  survey::svydesign()   survey::svytotal()   survey::svyratio()  │
 │  survey::svyby()       survey::svycontrast()                    │
-│  as_survey_design() escape hatch for power users                │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### Current S3 Classes and Their Slots
-
-**`creel_design`** (the central object):
-- `$calendar` — sampling frame data frame
-- `$date_col`, `$strata_cols`, `$site_col` — resolved column names
-- `$design_type` / `$survey_type` — dispatch key
-- `$counts` — NULL until `add_counts()` called
-- `$survey` — NULL until first estimation; holds `survey.design2`
-- `$interviews`, `$refused_col`, `$trip_status_col` — set by `add_interviews()`
-- `$catch`, `$lengths` — set by `add_catch()`, `add_lengths()`
-- `$sections` — set by `add_sections()`
-- `$bus_route` — list with sampling frame data (bus_route/ice only)
-- `$aerial` — list with `h_open`, `visibility_correction` (aerial only)
-- `$camera` — list with `camera_mode` (camera only)
-
-**`creel_estimates`**, **`creel_estimates_mor`** — tibble wrappers returned by estimation functions
-
-**`creel_validation`**, **`creel_tost_validation`** — returned by validation functions
-
-**`creel_trip_summary`** — returned by `summarize_trips()`
+The package is currently **data-model agnostic**: users load data from any source and pass
+plain data frames to `creel_design()`, `add_counts()`, `add_interviews()`, etc. Column
+mapping is the user's responsibility on every call.
 
 ---
 
-## New Components for v0.9.0
+## New Architecture: v1.3.0 DB Interface Layer
 
-The four new QoL feature families attach at different points in the workflow. None require changes to the three-layer model or to `creel_design`.
+Two new components extend the architecture without touching the existing three layers.
 
-### Integration Map
+### System Overview
 
 ```
-PRE-DESIGN                                     POST-ESTIMATION
-     │                                               │
-Schedule Generators    Power Calculators    Completeness   Season
-                       (independent)        Checkers       Summary
-     │                       │                  │            │
-     ▼                       ▼                  ▼            ▼
-returns plain          takes numerics    takes creel_design  takes named
-data.frame             returns data.frame  returns S3 check   list of estimates
-     │                                         │            │
-     ▼                                         │            ▼
-creel_design()                                 │       export_creel()
-(unchanged)                                    │       write_creel_csv()
-                                               │
-                               (read-only; design unchanged)
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                    YAML Config File  (user-authored)                          │
+│  creel.yml: backend, connection params, table names, column maps, survey type │
+└─────────────────────────────────┬────────────────────────────────────────────┘
+                                  │  parsed by creel_connect()
+┌─────────────────────────────────▼────────────────────────────────────────────┐
+│              tidycreel.connect  (standalone companion package)                │
+│                                                                              │
+│  creel_connect(config_path)  →  creel_connection S3 object                  │
+│    $backend     "sqlserver" | "csv"                                          │
+│    $con         DBI connection (sqlserver) | NULL (csv)                      │
+│    $schema      creel_schema object (from tidycreel)                         │
+│    $config      raw parsed YAML list                                         │
+│                                                                              │
+│  fetch_counts(conn)      →  plain data.frame (canonical column names)        │
+│  fetch_interviews(conn)  →  plain data.frame (canonical column names)        │
+│  fetch_catch(conn)       →  plain data.frame (canonical column names)        │
+│  fetch_harvest_lengths(conn)  →  plain data.frame (canonical column names)   │
+│  fetch_release_lengths(conn)  →  plain data.frame (canonical column names)   │
+└─────────────────────────────────┬────────────────────────────────────────────┘
+                                  │  plain data.frames (column-renamed)
+┌─────────────────────────────────▼────────────────────────────────────────────┐
+│              creel_schema S3 class  (tidycreel)                              │
+│                                                                              │
+│  new_creel_schema(tables, column_map, survey_type)                           │
+│  validate_schema(schema)                                                     │
+│  is_creel_schema(x)                                                          │
+│                                                                              │
+│  Defines the contract: canonical column names expected by add_*() functions  │
+│  Lives in tidycreel.  tidycreel.connect imports it.                          │
+└─────────────────────────────────┬────────────────────────────────────────────┘
+                                  │  creel_schema (carried inside creel_connection)
+┌─────────────────────────────────▼────────────────────────────────────────────┐
+│              Existing tidycreel API Layer  (unchanged)                        │
+│                                                                              │
+│  creel_design()   add_counts()   add_interviews()                            │
+│  add_catch()      add_lengths()  add_sections()                              │
+└──────────────────────────────────────────────────────────────────────────────┘
 ```
-
-### Component Boundaries for New Features
-
-| Component | Responsibility | Layer Position | Interface |
-|-----------|----------------|----------------|-----------|
-| `generate_schedule()` family | Build a calendar data frame (dates, strata, sites) from season parameters | Pre-design utility; API layer peer to `creel_design()` | Returns plain `data.frame` fed into `creel_design()` |
-| `power_creel()` / `n_days_required()` | Compute CV, required days given variance inputs; standalone calculators | API layer; no `creel_design` dependency | Takes numerics, returns data frame or scalar |
-| `check_completeness()` | Inspect attached data in `creel_design` for missing dates, strata, sites; report coverage | Post-construction diagnostic; reads `creel_design` slots | Returns new `creel_completeness_check` S3 class |
-| `export_creel()` / `write_creel_csv()` | Serialize estimation outputs to CSV or xlsx | Post-estimation; takes named list of data frames | Side-effect function; thin wrapper over `write.csv()` and optionally `writexl::write_xlsx()` |
-| `summarize_season()` | Collate user-supplied estimation outputs for a season into one structured list | Post-estimation; takes named list of estimates | Returns `creel_season_summary` S3 class |
 
 ---
 
-## Recommended Package Structure for New Files
+## Component Boundaries
+
+| Component | Package | Responsibility | Communicates With |
+|-----------|---------|----------------|-------------------|
+| `creel_schema` S3 | tidycreel | Defines canonical column names, table identity, survey type tagging, validation | Used by tidycreel.connect; validates data before add_*() calls |
+| `creel_connection` S3 | tidycreel.connect | Carries live connection (or NULL for CSV), parsed schema, backend tag | Returned by creel_connect(); consumed by fetch_*() functions |
+| `creel_connect()` | tidycreel.connect | Reads YAML config, constructs DBI connection (SQL Server) or records CSV paths, wraps in creel_connection | Calls new_creel_schema() from tidycreel |
+| `fetch_counts()` | tidycreel.connect | Executes query or reads CSV; applies column map from schema; returns plain data.frame | Reads creel_connection$schema; feeds add_counts() |
+| `fetch_interviews()` | tidycreel.connect | Same pattern as fetch_counts | Feeds add_interviews() |
+| `fetch_catch()` | tidycreel.connect | Same pattern | Feeds add_catch() |
+| `fetch_harvest_lengths()` | tidycreel.connect | Same pattern | Feeds add_lengths() |
+| `fetch_release_lengths()` | tidycreel.connect | Same pattern | Feeds add_lengths() |
+
+---
+
+## Dependency Direction (Circular Dependency Resolution)
+
+The circular dependency risk is real: if tidycreel imports tidycreel.connect, and
+tidycreel.connect imports tidycreel, R CMD check fails.
+
+**Resolution: creel_schema lives in tidycreel. tidycreel.connect imports tidycreel. tidycreel does NOT import tidycreel.connect.**
+
+```
+tidycreel  (defines creel_schema, all add_*() functions)
+    ▲
+    │  Imports (one-way only)
+    │
+tidycreel.connect  (defines creel_connect, fetch_*())
+```
+
+This means:
+- tidycreel can be installed and used standalone (current behavior preserved exactly).
+- tidycreel.connect requires tidycreel as a dependency.
+- No function in tidycreel calls any function in tidycreel.connect.
+- The user wires the two packages together in their analysis script.
+
+---
+
+## Where creel_schema Lives
+
+`creel_schema` belongs in **tidycreel**, not in tidycreel.connect, for three reasons:
+
+1. The schema is a contract about what `add_interviews()`, `add_counts()`, `add_catch()`,
+   and `add_lengths()` expect. It belongs next to those functions.
+2. Users who never use a database (flat file, manual data prep) may still want
+   `creel_schema` to document their column layout and validate it before passing to
+   `add_interviews()`. Putting it in tidycreel makes it available without installing
+   tidycreel.connect.
+3. If creel_schema were in tidycreel.connect, then tidycreel would need to import
+   tidycreel.connect to access it for validation — causing the circular dependency.
+
+**Implementation in tidycreel:**
+- `R/creel-schema.R` — new file
+- `new_creel_schema(tables, column_map, survey_type)` — S3 constructor (internal)
+- `creel_schema(...)` — user-facing constructor with validation
+- `validate_schema(schema)` — checks column_map covers all required columns for the survey type
+- `is_creel_schema(x)` — type predicate
+- `print.creel_schema()` — in `R/print-methods.R`
+
+---
+
+## YAML Config Format
+
+The config file is the user-facing interface to tidycreel.connect. It decouples connection
+parameters from analysis code (reproducibility, security, portability).
+
+```yaml
+# creel.yml
+backend: sqlserver          # "sqlserver" | "csv"
+
+connection:
+  server: "129.93.168.13"
+  port: 1433
+  database: "CreelData"
+  uid: "CreelAnalysisBot"
+  # pwd: sourced from CREEL_DB_PASS environment variable (never store in YAML)
+  driver: "ODBC Driver 18 for SQL Server"
+  encrypt: true
+  trust_server_cert: true
+
+survey_type: instantaneous   # passed to creel_schema()
+
+tables:
+  counts:     vwCombinedR_CountData
+  interviews: vwCombinedR_InterviewData_wSupplemental
+  catch:      vwCombinedR_CatchData
+  harvest_lengths:  vwCombinedR_HarvestLengthData
+  release_lengths:  vwCombinedR_ReleasedLengthData
+
+creel_uids:
+  - "90f5375c-afe0-e511-80bf-0050568372f9"
+
+column_map:
+  counts:
+    date:    cd_Date
+    period:  cd_Period
+    section: cd_Section
+    count:   cd_BoatAnglers       # or whatever the count column is
+  interviews:
+    date:          cd_Date
+    period:        cd_Period
+    section:       cd_Section
+    catch:         ii_TotalCatch
+    effort:        ii_TimeFishedHours
+    trip_status:   ii_TripType
+    n_anglers:     ii_NumberAnglers
+    interview_uid: ii_UID
+    refused:       ii_Refused
+  catch:
+    interview_uid: ii_UID
+    species:       ir_Species
+    count:         Num
+    catch_type:    CatchType
+  harvest_lengths:
+    interview_uid: ii_UID
+    species:       ih_Species
+    length:        ihl_Length
+  release_lengths:
+    interview_uid: ii_UID
+    species:       ir_Species
+    length:        ir_LengthGroup
+    count:         ir_Count
+```
+
+For the CSV backend, `tables` maps to file paths instead of SQL view names:
+
+```yaml
+backend: csv
+
+tables:
+  counts:           data/counts.csv
+  interviews:       data/interviews.csv
+  catch:            data/catch.csv
+  harvest_lengths:  data/harvest_lengths.csv
+  release_lengths:  data/release_lengths.csv
+```
+
+The `creel_uids` key applies only to the SQL Server backend (filters by `cd_CreelUID`).
+CSV backend ignores it.
+
+---
+
+## Data Flow: YAML Config to add_*()
+
+```
+creel.yml
+    │
+    ▼
+creel_connect("creel.yml")
+    │  reads YAML
+    │  validates required keys present
+    │  if backend == "sqlserver":
+    │    calls DBI::dbConnect(odbc::odbc(), ...) using connection block
+    │  if backend == "csv":
+    │    records file paths; $con <- NULL
+    │  calls new_creel_schema(tables, column_map, survey_type)
+    │
+    └──▶ returns creel_connection S3:
+           $backend  "sqlserver" | "csv"
+           $con      DBI connection | NULL
+           $schema   creel_schema object
+           $config   raw YAML list (for debugging)
+
+fetch_interviews(conn, ...)
+    │  reads conn$schema$column_map$interviews
+    │  reads conn$schema$tables$interviews (view name or file path)
+    │  if backend == "sqlserver":
+    │    builds SQL: SELECT [cols] FROM [view] WHERE cd_CreelUID IN (...)
+    │    executes via DBI::dbGetQuery(conn$con, sql)
+    │  if backend == "csv":
+    │    calls readr::read_csv() or read.csv() on the path
+    │  renames columns according to column_map (source name → canonical name)
+    │  returns plain data.frame with canonical column names
+    │
+    └──▶ plain data.frame ready for add_interviews()
+
+add_interviews(design,
+               interviews = fetch_interviews(conn),
+               catch      = <column name in data>,
+               effort     = <column name in data>,
+               trip_status = <column name in data>,
+               ...)
+    │  (unchanged — receives a plain data.frame, uses tidy selectors)
+    └──▶ creel_design with interviews attached
+```
+
+The fetch_*() functions are **thin adapters**. They do not transform data values —
+they only rename columns from source names to canonical names expected by add_*(). All
+scientific logic remains in tidycreel.
+
+---
+
+## How the Connection Object Carries the Schema
+
+`creel_connection` holds `$schema` (a `creel_schema` object) rather than just the
+column map. This design enables:
+
+1. `fetch_*()` functions look up their column map from `conn$schema$column_map[[table]]`
+   without the caller passing anything extra.
+2. `validate_schema()` can be called on `conn$schema` before any fetch to catch
+   config errors early (missing required column mappings).
+3. The schema is self-documenting: `print(conn$schema)` shows the user exactly what
+   canonical names will be produced and what survey type the schema was tagged for.
+4. Future `tidycreel.connect` extensions (REST API backend) add a new backend key
+   without changing the schema contract.
+
+---
+
+## How fetch_*() Output Feeds add_*()
+
+All five `add_*()` functions take a plain `data.frame` and use tidy selectors to
+identify columns. The fetch_*() contract is: **return a data.frame with canonical
+column names matching the selectors the user will pass to add_*()**.
+
+Column name mapping is established in the YAML config and applied by fetch_*(). After
+fetch_*() returns, the data frame is ready to pass without any further renaming.
+
+### Canonical Names per Table
+
+| fetch_*() function | Canonical output columns | Consumed by |
+|-------------------|--------------------------|-------------|
+| fetch_counts() | date, period, section, count (+ any extras) | add_counts(design, counts, psu=period, ...) |
+| fetch_interviews() | date, period, section, catch, effort, trip_status, n_anglers, interview_uid, refused | add_interviews(design, interviews, catch=catch, effort=effort, trip_status=trip_status, ...) |
+| fetch_catch() | interview_uid, species, count, catch_type | add_catch(design, data, catch_uid=..., interview_uid=interview_uid, species=species, count=count, catch_type=catch_type) |
+| fetch_harvest_lengths() | interview_uid, species, length | add_lengths(design, data, ..., length_type="harvest") |
+| fetch_release_lengths() | interview_uid, species, length, count | add_lengths(design, data, ..., length_type="release", release_format="binned"/"individual") |
+
+The `catch_uid` required by `add_catch()` is a unique key on the catch table; fetch_catch()
+can generate it via `seq_len(nrow(data))` if the source table has no natural row key, or
+map from a source column via the column_map.
+
+---
+
+## Package Structure
+
+### tidycreel (existing package — minimal changes)
 
 ```
 R/
 ├── creel-design.R             # UNCHANGED
-├── creel-estimates.R          # UNCHANGED
-├── creel-estimates-aerial.R   # UNCHANGED
-├── creel-estimates-bus-route.R # UNCHANGED
-├── creel-estimates-total-*.R  # UNCHANGED
+├── creel-estimates*.R         # UNCHANGED
 ├── creel-summaries.R          # UNCHANGED
 ├── creel-validation.R         # UNCHANGED
 ├── survey-bridge.R            # UNCHANGED
-├── validate-incomplete-trips.R # UNCHANGED
 ├── validate-schemas.R         # UNCHANGED
-├── print-methods.R            # EXTEND — add print/format for new S3 classes
-├── data.R                     # EXTEND — document any new example datasets
+├── print-methods.R            # EXTEND — add print.creel_schema
+├── data.R                     # EXTEND — document example schema if provided
 │
-├── creel-schedule.R           # NEW — generate_schedule(), generate_bus_schedule()
-├── creel-power.R              # NEW — power_creel(), n_days_required(), cv_from_n()
-├── creel-completeness.R       # NEW — check_completeness(), creel_completeness_check S3
-└── creel-export.R             # NEW — export_creel(), write_creel_csv(), summarize_season()
+└── creel-schema.R             # NEW — creel_schema S3 class
+                               #   new_creel_schema()    (internal constructor)
+                               #   creel_schema()        (user-facing)
+                               #   validate_schema()
+                               #   is_creel_schema()
+                               #   CANONICAL_COLUMNS     (named list constant)
 ```
 
-**Rationale:** One new file per feature family follows the existing 15-file convention (kebab-case, `creel-` prefix). `print-methods.R` is the only existing file that changes. No changes to `creel-design.R` or any estimation file.
+**DESCRIPTION changes:** No new `Imports`. `creel_schema` uses only base R.
+
+### tidycreel.connect (new standalone package)
+
+```
+tidycreel.connect/
+├── DESCRIPTION                # Imports: tidycreel, DBI, yaml, cli, rlang
+│                              # Suggests: odbc, readr, testthat
+├── NAMESPACE                  # roxygen2-generated
+├── R/
+│   ├── creel-connect.R        # creel_connect(), new_creel_connection(),
+│   │                          #   is_creel_connection(), print.creel_connection()
+│   ├── fetch-counts.R         # fetch_counts()
+│   ├── fetch-interviews.R     # fetch_interviews()
+│   ├── fetch-catch.R          # fetch_catch()
+│   ├── fetch-lengths.R        # fetch_harvest_lengths(), fetch_release_lengths()
+│   ├── backends-sqlserver.R   # .fetch_sqlserver() internal; driver detection
+│   ├── backends-csv.R         # .fetch_csv() internal; read.csv / readr dispatch
+│   ├── yaml-config.R          # .read_config(), .validate_config_keys()
+│   └── tidycreel.connect-package.R
+├── tests/
+│   └── testthat/
+│       ├── test-creel-connect.R       # YAML parsing, schema construction
+│       ├── test-fetch-csv.R           # CSV backend (no DB required)
+│       ├── test-fetch-sqlserver.R     # skipped if DB not available
+│       └── helper-fixtures.R          # temp YAML files, example CSVs
+└── vignettes/
+    └── getting-started.Rmd    # YAML → creel_connect() → fetch_*() → add_*() workflow
+```
+
+**Dependency rationale:**
+- `DBI` — in `Imports` (required for SQL path; harmless when backend is csv)
+- `yaml` — in `Imports` (YAML config parsing; no alternatives considered)
+- `odbc` — in `Suggests` (SQL Server ODBC driver; absent for CSV-only users)
+- `readr` — in `Suggests` (faster CSV read; graceful fallback to read.csv if absent)
+- `tidycreel` — in `Imports` (for `creel_schema`; one-way dependency)
+
+---
+
+## Build Order
+
+Build order follows the dependency graph: creel_schema must exist in tidycreel before
+tidycreel.connect can use it.
+
+### Phase Sequence
+
+**Phase A — creel_schema S3 in tidycreel** (no external dependencies)
+
+- `R/creel-schema.R`: `creel_schema()`, `new_creel_schema()`, `validate_schema()`,
+  `is_creel_schema()`, `CANONICAL_COLUMNS` constant
+- `R/print-methods.R`: `print.creel_schema()`
+- Tests: schema construction, validation (missing required columns → abort), survey type
+  tagging, print output
+- This phase completes and ships in tidycreel; tidycreel.connect can then depend on it
+
+**Phase B — tidycreel.connect package skeleton + YAML config layer**
+
+- Package creation: `usethis::create_package("tidycreel.connect")`
+- `R/yaml-config.R`: `.read_config()`, `.validate_config_keys()` with clear error messages
+  for missing required keys
+- `R/creel-connect.R`: `creel_connect()`, `new_creel_connection()`, `print.creel_connection()`
+- Tests: YAML parsing with temp files; missing key errors; CSV and sqlserver backend tags
+  from config; schema embedded in connection object
+
+**Phase C — CSV backend fetch_*() functions**
+
+- `R/backends-csv.R`: `.fetch_csv()` dispatch
+- `R/fetch-*.R`: all five fetch functions, CSV path only
+- Tests: use fixture CSV files in `tests/testthat/fixtures/`; verify column renaming;
+  verify output is a plain data.frame; verify add_interviews() accepts fetch_interviews()
+  output without further modification
+- This phase can be verified without any database connection
+
+**Phase D — SQL Server backend**
+
+- `R/backends-sqlserver.R`: driver detection, DBI::dbGetQuery path, creel_uid filter
+  injection into WHERE clause
+- Tests: skipped automatically when DB is unreachable (use `testthat::skip_if()` + a
+  connectivity check)
+- Integration test: full YAML → creel_connect() → fetch_interviews() → add_interviews()
+  round trip using the NGPC test database
+
+**Why this order:**
+
+- Phase A delivers creel_schema to tidycreel independently; biologists using flat files
+  gain schema validation before the connect package exists.
+- Phase B builds the package skeleton and YAML layer before any fetch logic, so config
+  errors are caught at a well-defined boundary.
+- Phase C (CSV) comes before SQL Server because it can be tested without network access or
+  ODBC drivers; it validates the full fetch → rename → add_*() pipeline.
+- Phase D adds the SQL Server backend last; its integration tests are the only ones that
+  require external infrastructure.
 
 ---
 
 ## Architectural Patterns
 
-### Pattern 1: Pre-Design Generator (schedule tools)
+### Pattern 1: Schema-First Column Mapping
 
-**What:** A standalone function that takes scalar season parameters (start/end date, survey days per stratum, optional site list) and returns a plain `data.frame` suitable as the `calendar` argument to `creel_design()`.
+**What:** All column renaming happens inside fetch_*(). The rest of the pipeline
+(add_*() functions, estimators) never see source column names.
 
-**When to use:** All schedule generation functions.
+**When to use:** Every fetch_*() function.
 
-**Trade-offs:** Returning a plain `data.frame` means schedule generators have no survey package dependency. They are testable with zero mock design objects. The risk is that biologists pass the result directly to downstream functions without calling `creel_design()` first — guard against this with clear `@section Workflow` documentation pointing to `creel_design()` as the mandatory next step.
+**Trade-offs:** The schema is the single point of translation. Users debug one YAML
+file, not scattered rename calls across their analysis scripts. The downside is that
+the YAML column_map must be complete; fetch_*() should abort with an informative error
+if a required canonical column has no mapping.
 
 **Example:**
+
 ```r
-# PRE-DESIGN: schedule generator returns calendar data.frame
-cal <- generate_schedule(
-  start      = as.Date("2025-05-01"),
-  end        = as.Date("2025-08-31"),
-  n_weekday  = 2L,
-  n_weekend  = 1L
-)
-# Normal workflow resumes unchanged
-design <- creel_design(cal, date = date, strata = day_type)
+# Internal logic inside fetch_interviews()
+col_map <- conn$schema$column_map$interviews
+raw <- .fetch_sqlserver(conn$con,
+                        conn$schema$tables$interviews,
+                        conn$config$creel_uids,
+                        names(col_map))   # only fetch mapped source columns
+dplyr::rename(raw, !!!setNames(names(col_map), unlist(col_map)))
+# Result: data.frame with canonical names (date, period, catch, effort, ...)
 ```
 
-### Pattern 2: Standalone Power Calculator (no creel_design dependency)
+### Pattern 2: Backend Dispatch Inside fetch_*()
 
-**What:** Pure functions that take variance parameters derived from historical data or pilot surveys and return required sample sizes or expected CVs. No `creel_design` object is read or constructed.
+**What:** Each fetch_*() function checks `conn$backend` and dispatches to an internal
+helper (`.fetch_sqlserver()` or `.fetch_csv()`). The public function signature is
+identical regardless of backend.
 
-**When to use:** `power_creel()`, `n_days_required()`, `cv_from_n()`.
+**When to use:** All five fetch_*() functions.
 
-**Trade-offs:** Decoupling from `creel_design` means these functions work with pilot data summaries from any source (published tables, past surveys in Excel). An optional helper `extract_power_inputs(design)` can extract variance components from a completed design for retrospective power assessment, but the core calculators remain independent.
+**Trade-offs:** Callers never need to know which backend is active. Adding a third
+backend (REST API, Parquet) only requires adding a new `.fetch_rest()` helper and a
+new dispatch branch — no changes to public API.
 
-**Key variance inputs** (from McCormick & Quist 2017 creel-specific sample size framework):
-- `cv_target` — desired relative precision (e.g., 0.20 for ±20% CI width)
-- `sigma2` — variance of daily effort counts from pilot data
-- `mu` — mean daily effort from pilot data
-- `n_strata` — number of sampling strata (typically 2: weekday/weekend)
-- `season_days` — total days in the season
-
-**Example:**
 ```r
-result <- n_days_required(
-  cv_target   = 0.20,
-  sigma2      = 120.5,
-  mu          = 45.3,
-  n_strata    = 2L,
-  season_days = 120L
-)
-# Returns data.frame: stratum, n_required, achieved_cv
+fetch_interviews <- function(conn, ...) {
+  validate_connection(conn)
+  if (conn$backend == "sqlserver") {
+    raw <- .fetch_sqlserver(conn$con,
+                            conn$schema$tables$interviews,
+                            conn$config$creel_uids,
+                            ...)
+  } else if (conn$backend == "csv") {
+    raw <- .fetch_csv(conn$schema$tables$interviews, ...)
+  } else {
+    cli::cli_abort("Unknown backend: {.val {conn$backend}}")
+  }
+  .apply_column_map(raw, conn$schema$column_map$interviews)
+}
 ```
 
-### Pattern 3: Post-Construction Diagnostic (completeness checkers)
+### Pattern 3: Fail-Fast Config Validation
 
-**What:** Functions that accept a `creel_design` object (with data attached) and return a structured diagnostic S3 object. Pattern mirrors `validate_incomplete_trips()` — guard-first, structured S3 return, no mutation of the input.
+**What:** `creel_connect()` validates the YAML config completely before constructing
+any connection. If required keys are missing or backend is unknown, it aborts with a
+`cli_abort()` listing exactly which keys are missing.
 
-**When to use:** `check_completeness()`, any data gap diagnostic.
+**When to use:** `creel_connect()` only. Do not re-validate inside each fetch_*() call.
 
-**Trade-offs:** Taking `creel_design` as input provides access to the calendar, strata, sections, and all attached data frames for cross-referencing coverage gaps. The guard-first pattern (`if (!inherits(design, "creel_design")) cli_abort(...)`) is canonical across 10 existing functions — apply identically here.
+**Trade-offs:** Users see config errors immediately on `creel_connect()`, not buried
+inside a fetch call. The connection object is either fully valid or does not exist.
 
-**Example:**
-```r
-chk <- check_completeness(design)
-# Returns creel_completeness_check S3:
-#   $calendar_coverage: n sampled vs total days per stratum
-#   $count_gaps: dates in calendar missing from counts data
-#   $interview_gaps: count days missing interview records
-#   $passed: logical
-print(chk)  # dispatches to format.creel_completeness_check in print-methods.R
+### Pattern 4: Password via Environment Variable Only
+
+**What:** Passwords are never stored in the YAML file. `creel_connect()` reads
+`CREEL_DB_PASS` from the environment (or prompts interactively via getPass if the
+env var is absent and an interactive session is detected). If neither is available and
+the session is non-interactive, `creel_connect()` aborts.
+
+**When to use:** SQL Server backend always.
+
+**Trade-offs:** Prevents accidental credential commit. Consistent with
+`CreelDataAccess_CJCedits.R` precedent. Documented prominently in the getting-started
+vignette.
+
+---
+
+## Data Flow Diagram: Full Season Analysis with DB Backend
+
 ```
-
-### Pattern 4: Post-Estimation Export (thin wrapper, Suggests dependency)
-
-**What:** Functions that take a named list of data frames (estimation outputs) and write them to disk. CSV path uses `write.csv()` from base R — zero new dependencies. Excel path uses `writexl::write_xlsx()` — one `Suggests` addition.
-
-**When to use:** `export_creel()`, `write_creel_csv()`.
-
-**Trade-offs:** `writexl` is zero-dependency C code (rOpenSci, actively maintained 2025), twice as fast as `openxlsx`, and produces smaller files. As `Suggests`, it is optional — if absent, CSV path works and Excel path fails with an informative `rlang::check_installed("writexl")` message. This keeps `Imports` clean.
-
-**Example:**
-```r
-results <- list(
-  effort  = estimate_effort(design),
-  catch   = estimate_total_catch(design, species = species),
-  harvest = estimate_total_harvest(design, species = species)
-)
-# CSV: base R only, no new dependencies
-write_creel_csv(results, dir = "output/", prefix = "lake_a_2025")
-# Excel: requires writexl in Suggests
-export_creel(results, path = "output/lake_a_2025.xlsx")
+creel.yml  (YAML config)
+    │
+    ▼
+creel_connect("creel.yml")          # tidycreel.connect
+    │                               # returns creel_connection
+    ├──▶ fetch_counts(conn)         # plain data.frame, canonical cols
+    ├──▶ fetch_interviews(conn)     # plain data.frame, canonical cols
+    ├──▶ fetch_catch(conn)          # plain data.frame, canonical cols
+    ├──▶ fetch_harvest_lengths(conn)# plain data.frame, canonical cols
+    └──▶ fetch_release_lengths(conn)# plain data.frame, canonical cols
+              │
+              │  (all plain data.frames; no creel_design yet)
+              ▼
+creel_design(calendar, date=date, strata=day_type)   # tidycreel (unchanged)
+    │
+add_counts(design, counts=fetch_counts(conn))
+    │
+add_sections(design, sections_df)
+    │
+add_interviews(design,
+               interviews = fetch_interviews(conn),
+               catch      = catch,
+               effort     = effort,
+               trip_status = trip_status,
+               n_anglers  = n_anglers)
+    │
+add_catch(design,
+          data           = fetch_catch(conn),
+          interview_uid  = interview_uid,
+          species        = species,
+          count          = count,
+          catch_type     = catch_type)
+    │
+add_lengths(design,
+            data           = fetch_harvest_lengths(conn),
+            interview_uid  = interview_uid,
+            species        = species,
+            length         = length,
+            length_type    = "harvest")
+    │
+add_lengths(design2,
+            data           = fetch_release_lengths(conn),
+            interview_uid  = interview_uid,
+            species        = species,
+            length         = length,
+            count          = count,
+            length_type    = "release",
+            release_format = "binned")
+    │
+    ▼
+estimate_effort()   estimate_catch_rate()   estimate_total_catch()
+    │                        (tidycreel — all unchanged)
+    ▼
+season_summary() / write_schedule() / etc.
 ```
 
 ---
 
-## Data Flow
+## Integration Points: New vs Modified Components
 
-### Full Season Workflow with New Tools
-
-```
-generate_schedule()          # NEW — returns plain data.frame
-    │
-    ▼
-creel_design()               # UNCHANGED — constructs creel_design S3
-    │
-add_counts() → add_interviews() → add_catch() → add_sections()
-    │
-    ▼
-check_completeness()         # NEW — diagnostic, read-only, returns creel_completeness_check
-    │ (user fixes data gaps, re-attaches if needed)
-    ▼
-estimate_effort()            # UNCHANGED
-estimate_total_catch()       # UNCHANGED
-estimate_catch_rate()        # UNCHANGED
-    │ named list of creel_estimates
-    ▼
-summarize_season()           # NEW — collates into creel_season_summary
-    │
-export_creel() / write_creel_csv()  # NEW — side-effect: writes files
-```
-
-### Power Calculator Flow (independent)
-
-```
-Pilot data (numeric inputs or past survey data.frame)
-    │
-n_days_required() / power_creel() / cv_from_n()   # NEW, standalone
-    │
-data.frame of sample size recommendations
-    │ (user uses this to plan the season calendar — manual step)
-    ▼
-generate_schedule() → creel_design() → ...
-```
-
-### Key Data Flow Properties
-
-1. **Schedule generators are fully upstream.** They produce the calendar; `creel_design()` consumes it. No circular dependencies possible.
-2. **Power calculators are orthogonal.** They do not read or modify `creel_design`. They can be called before any design exists.
-3. **Completeness checkers are read-only.** They inspect `creel_design` slots but never modify the object. The design passes through unchanged.
-4. **Export utilities are terminal.** They consume estimates tibbles and produce files. They do not return data for further computation.
-5. **`summarize_season()` is a collator, not an estimator.** It assembles pre-computed results. It does not call any estimation function internally.
-
----
-
-## Integration Points
-
-### New vs. Modified Components
-
-| Component | Status | Files Touched | Regression Risk |
-|-----------|--------|---------------|-----------------|
-| `generate_schedule()`, `generate_bus_schedule()` | NEW | `R/creel-schedule.R` (new file) | None — additive |
-| `power_creel()`, `n_days_required()`, `cv_from_n()` | NEW | `R/creel-power.R` (new file) | None — additive |
-| `check_completeness()`, `creel_completeness_check` S3 | NEW | `R/creel-completeness.R` (new file) | None — read-only |
-| `export_creel()`, `write_creel_csv()`, `summarize_season()` | NEW | `R/creel-export.R` (new file) | None — terminal |
-| `print-methods.R` | MODIFIED | Add `format.creel_completeness_check`, `format.creel_season_summary` | Low — additive S3 methods |
-| `DESCRIPTION` | MODIFIED | Add `writexl` to `Suggests` | None |
-| `NAMESPACE` | MODIFIED | roxygen2 regenerates; ~8 new exports | None |
-| `creel-design.R` | UNCHANGED | No parameter changes, no dispatch changes | None |
-| All estimation files | UNCHANGED | QoL tools do not alter estimation logic | None |
-| All `summarize_*()` functions | UNCHANGED | Existing summaries are not replaced | None |
-
-### DESCRIPTION Changes Required
-
-```
-Suggests:
-    writexl          # zero-dependency xlsx export (rOpenSci, actively maintained 2025)
-```
-
-No `Imports` additions are needed. The CSV export path uses `write.csv()` from base R. The schedule and power tools use only base R arithmetic and `stats`. The completeness checker uses only base R and existing `cli` (already in `Imports`).
-
----
-
-## Suggested Build Order
-
-Build order is driven by dependency direction: schedule generators and power calculators have no internal dependencies and can be built first (or in parallel). Completeness checkers depend on `creel_design` slot stability (stable since v0.4.0). Export utilities depend on estimation outputs being stable (they are).
-
-### Phase Sequence
-
-**Phase A — Schedule generators** (no internal dependencies)
-
-- `R/creel-schedule.R`: `generate_schedule()` for instantaneous/access designs; `generate_bus_schedule()` that also generates a companion sampling frame data frame
-- Tests: verify date range, stratum assignment, no-NA calendar, bus-route `p_site` sum-to-1
-- Vignette stub: show `generate_schedule() |> creel_design()` workflow
-
-**Phase B — Power and sample size tools** (no internal dependencies, parallel with A)
-
-- `R/creel-power.R`: `n_days_required()`, `power_creel()`, `cv_from_n()`
-- Verification target: reproduce McCormick & Quist (2017) Table 2 worked example
-- Tests: unit tests with known analytic solutions; boundary checks (cv_target at 0.05, 0.40)
-- Vignette: show pre-season planning workflow; connect to `generate_schedule()`
-
-**Phase C — Completeness checkers** (depends on `creel_design` API — already stable)
-
-- `R/creel-completeness.R`: `check_completeness()`; `creel_completeness_check` S3 constructor
-- `R/print-methods.R`: add `format.creel_completeness_check`
-- Tests: designs with deliberate calendar coverage gaps; verify `$count_gaps`, `$interview_gaps` slots; verify `$passed` logic; verify guard-first abort on non-`creel_design` input
-
-**Phase D — Export utilities and season summary** (depends on estimators — already stable)
-
-- `R/creel-export.R`: `write_creel_csv()` (base R path); `export_creel()` (writexl path); `summarize_season()`; `creel_season_summary` S3 constructor
-- `R/print-methods.R`: add `format.creel_season_summary`
-- `DESCRIPTION`: add `writexl` to `Suggests`
-- Tests: write to `tempfile()`, verify CSV structure; verify xlsx path fails gracefully when writexl absent; verify `summarize_season()` with partial estimate list
-
-**Why this order:**
-
-- Phases A and B are independent and can proceed in parallel.
-- Phase C must come after the `creel_design` API is confirmed stable for v0.9.0. It is confirmed — no changes to `creel-design.R` are planned.
-- Phase D comes last because `summarize_season()` integration tests benefit from having the schedule (Phase A) and completeness diagnostics (Phase C) established, so end-to-end workflow tests cover the full pipeline in one vignette.
-- No phase requires modifying estimation logic. Regression risk on existing 1696 tests is effectively zero for all four phases.
+| Component | Status | Package | Files | Regression Risk |
+|-----------|--------|---------|-------|-----------------|
+| `creel_schema` S3 | NEW | tidycreel | `R/creel-schema.R` (new) | None — additive |
+| `print.creel_schema()` | NEW | tidycreel | `R/print-methods.R` (extend) | None — additive S3 method |
+| tidycreel.connect package | NEW | tidycreel.connect | entire new package | None — separate package |
+| `creel_connect()` | NEW | tidycreel.connect | `R/creel-connect.R` | None |
+| `fetch_counts()` | NEW | tidycreel.connect | `R/fetch-counts.R` | None |
+| `fetch_interviews()` | NEW | tidycreel.connect | `R/fetch-interviews.R` | None |
+| `fetch_catch()` | NEW | tidycreel.connect | `R/fetch-catch.R` | None |
+| `fetch_harvest_lengths()` | NEW | tidycreel.connect | `R/fetch-lengths.R` | None |
+| `fetch_release_lengths()` | NEW | tidycreel.connect | `R/fetch-lengths.R` | None |
+| `creel-design.R` | UNCHANGED | tidycreel | — | None |
+| All estimation files | UNCHANGED | tidycreel | — | None |
+| `add_interviews()` signature | UNCHANGED | tidycreel | — | None — fetch_*() feeds existing params |
+| DESCRIPTION (tidycreel) | UNCHANGED | tidycreel | — | None — no new Imports needed |
 
 ---
 
 ## Anti-Patterns
 
-### Anti-Pattern 1: Schedule Generator Returns `creel_design`
+### Anti-Pattern 1: creel_schema in tidycreel.connect
 
-**What people do:** Have `generate_schedule()` call `creel_design()` internally and return the design object.
+**What people do:** Put creel_schema in the companion package because "it's a DB
+interface concern."
 
-**Why it's wrong:** Couples schedule generation to survey design construction. Users cannot inspect or modify the calendar before building the design. Conflates schedule errors with design validation errors at construction time.
+**Why it's wrong:** Creates a circular dependency. tidycreel's add_*() functions would
+need to import tidycreel.connect for schema validation. Also means standalone tidycreel
+users (flat file workflows) cannot use creel_schema for their own column validation.
 
-**Do this instead:** Return a plain `data.frame`. Let the user call `creel_design()` explicitly. Document the two-step workflow in vignette.
+**Do this instead:** creel_schema belongs in tidycreel. It is a contract about what
+add_*() expects. tidycreel.connect imports it one-way.
 
-### Anti-Pattern 2: Power Calculator Reads `creel_design$survey`
+### Anti-Pattern 2: fetch_*() Calls add_*() Internally
 
-**What people do:** Accept a `creel_design` object and extract variance estimates from the fitted survey design.
+**What people do:** Have `fetch_and_load_interviews(conn, design)` call `add_interviews()`
+internally and return a new creel_design.
 
-**Why it's wrong:** Power analysis is a planning-time activity; `creel_design$survey` is NULL until `add_counts()` and a first estimation call complete. If `power_creel()` requires a fitted design, it cannot be used for prospective planning — the primary use case.
+**Why it's wrong:** Removes the user's ability to inspect, filter, or transform the
+raw data frame before attaching it. Also couples tidycreel.connect to the creel_design
+constructor arguments (which are tidy selectors, not strings), making the API fragile.
 
-**Do this instead:** Accept raw variance inputs (`sigma2`, `mu`, `n_strata`). Optionally provide a separate `extract_power_inputs(design)` helper for retrospective assessment. Keep the core calculator independent.
+**Do this instead:** fetch_*() returns a plain data.frame. The user calls add_*() with
+the tidy selectors they want. The separation is explicit and testable.
 
-### Anti-Pattern 3: Completeness Checker Modifies `creel_design`
+### Anti-Pattern 3: Column Renaming Inside add_*()
 
-**What people do:** Have `check_completeness()` fill gap rows, impute missing data, or append a `$completeness` slot to the design object.
+**What people do:** Accept a `creel_schema` argument in `add_interviews()` and do
+column renaming inside the add function.
 
-**Why it's wrong:** All existing `add_*()` functions return a new design object — none modify in place. Side effects on `creel_design` are invisible to the user and untestable.
+**Why it's wrong:** Breaks the existing API (every current caller would break). The
+add_*() functions are stable across 65 phases. Changing their signatures now introduces
+unnecessary regression risk for users not using the DB interface.
 
-**Do this instead:** Return a new `creel_completeness_check` S3 object. Mirror the `creel_tost_validation` pattern from `validate_incomplete_trips()`.
+**Do this instead:** Renaming happens exclusively in fetch_*(). By the time data reaches
+add_*(), column names are already canonical.
 
-### Anti-Pattern 4: Adding `openxlsx` or `openxlsx2` to Imports
+### Anti-Pattern 4: Storing Password in YAML
 
-**What people do:** Use `openxlsx` for its multi-sheet, formatted output capabilities.
+**What people do:** Add a `password:` key to creel.yml for convenience.
 
-**Why it's wrong:** `openxlsx` is no longer under active development as of 2025 (maintainer-confirmed). `openxlsx2` is a heavier API than needed for simple tabular export. Either adds an `Imports` dependency for a convenience feature that not all users need.
+**Why it's wrong:** The config file is typically committed to version control or shared.
+A plaintext password in YAML is a credential exposure risk.
 
-**Do this instead:** Use `writexl` in `Suggests`. It is zero-dependency C code (rOpenSci), twice as fast as `openxlsx`, and actively maintained. For CSV, use `write.csv()` from base R.
+**Do this instead:** Document the environment variable (`CREEL_DB_PASS`) in the
+getting-started vignette. creel_connect() prompts interactively for a password when
+the env var is absent and the session is interactive. Fail fast with a clear message
+in non-interactive sessions.
 
-### Anti-Pattern 5: `summarize_season()` Calls Estimators Internally
+### Anti-Pattern 5: tidycreel.connect Imports odbc Unconditionally
 
-**What people do:** Have `summarize_season(design)` call `estimate_effort()`, `estimate_total_catch()`, etc. internally.
+**What people do:** Add `odbc` to `Imports` in DESCRIPTION.
 
-**Why it's wrong:** Buries variance method choices, `by =` groupings, and species selections inside the function with no user control. Impossible to test without a fully configured design with all data attached.
+**Why it's wrong:** odbc requires platform-specific ODBC drivers installed at the OS
+level. Users using only the CSV backend (e.g., biologists without network access to the
+SQL Server) would be forced to install odbc and its drivers needlessly, and R CMD check
+would warn on systems without those drivers.
 
-**Do this instead:** `summarize_season(design, estimates)` accepts a named list of pre-computed estimates from the user. It collates, labels, and structures for output. The user controls all estimation parameters.
+**Do this instead:** Put `odbc` in `Suggests`. Use `rlang::check_installed("odbc")`
+inside `.fetch_sqlserver()`. CSV backend users are unaffected.
+
+---
+
+## Scaling Considerations
+
+This package ecosystem serves single-season creel analyses by individual biologists.
+Scale in the web-service sense is irrelevant. The relevant scaling axes are:
+
+| Concern | Current (1 creel, 1 season) | Multi-creel (5-10 at once) | Production automation (scheduled) |
+|---------|----------------------------|---------------------------|-----------------------------------|
+| Connection management | creel_connect() creates one connection per call | Re-use conn across multiple fetch_*() calls; avoid reconnecting per fetch | Add creel_disconnect() that calls DBI::dbDisconnect(); use on.exit() guard |
+| creel_uid filtering | Single UUID in config | List of UUIDs supported in YAML already | No change needed |
+| Column map complexity | One map per 5 tables | Config file grows; YAML anchors (&alias) can reduce duplication | yaml package handles YAML anchors transparently |
+| CSV backend performance | read.csv adequate for creel data volumes (thousands of rows) | readr::read_csv faster; already in Suggests | No architectural change |
 
 ---
 
 ## Sources
 
-- tidycreel NAMESPACE (verified 2026-03-22) — full public API enumeration
-- tidycreel DESCRIPTION (verified 2026-03-22) — current dependency footprint
-- `R/creel-design.R` — `creel_design` S3 slots, Tier 1 validation pattern, tidy selector conventions
-- `R/creel-summaries.R` — three-guard pattern for functions taking `creel_design`
-- `R/validate-incomplete-trips.R` — `creel_tost_validation` S3 return pattern; guard-first discipline
-- `R/creel-validation.R` — `creel_validation` S3 constructor internals
-- `R/survey-bridge.R` — `as_survey_design()` escape hatch, once-per-session warning pattern
-- `R/creel-estimates-aerial.R` — survey_type dispatch pattern for internal functions
-- McCormick, S.L. & Quist, M.C. (2017). Sample size estimation for on-site creel surveys. *North American Journal of Fisheries Management*. https://afspubs.onlinelibrary.wiley.com/doi/full/10.1080/02755947.2017.1342723
-- rOpenSci writexl release post (2017, package actively maintained 2025). https://ropensci.org/blog/2017/09/08/writexl-release/
-- AnglerCreelSurveySimulation CRAN vignette — simulation-based power analysis approach for creel surveys. https://cran.r-project.org/web/packages/AnglerCreelSurveySimulation/vignettes/creel_survey_simulation.html
+- tidycreel v1.2.0 source: all 22 R files inspected directly (2026-04-06)
+- tidycreel DESCRIPTION (verified 2026-04-06) — current Imports/Suggests footprint
+- `R/creel-design.R` — creel_design S3 slots; add_interviews(), add_catch(), add_lengths() signatures with tidy selector conventions (lines 1541-1556, 2916-2921, 3152-3160)
+- `R/validate-schemas.R` — existing S3 validation pattern (guard-first with checkmate collection)
+- `R/creel-estimates.R` — new_creel_estimates() constructor as model for new_creel_schema()
+- Legacy `CreelDataAccess.R` — five SQL views: vwCombinedR_CountData, vwCombinedR_InterviewData_wSupplemental, vwCombinedR_CatchData, vwCombinedR_HarvestLengthData, vwCombinedR_ReleasedLengthData; source column names confirmed
+- Legacy `CreelDataAccess_CJCedits.R` — DBI + odbc connection pattern; driver detection; env-var password handling (verified 2026-04-06)
+- Legacy `CreelApiHelper.R` — five data endpoints for REST backend (future reference only)
+- DBI package: https://dbi.r-dbi.org/ — standard interface for R database connections
+- yaml package (CRAN): https://cran.r-project.org/package=yaml — YAML parsing in R; no significant alternatives for this use case
+- R Packages (2e) ch. 7 — companion package / dependency direction conventions: https://r-pkgs.org/dependencies-mindset-background.html
 
 ---
 
-*Architecture research for: tidycreel v0.9.0 QoL utility tools integration*
-*Researched: 2026-03-22*
+*Architecture research for: tidycreel v1.3.0 Generic DB Interface*
+*Researched: 2026-04-06*

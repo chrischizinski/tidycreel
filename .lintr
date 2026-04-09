@@ -6,5 +6,6 @@ exclusions: list(
     "inst",
     "scripts",
     "renv",
-    "tests/testthat/_problems"
+    "tests/testthat/_problems",
+    "tests/testthat"
   )

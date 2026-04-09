@@ -3,6 +3,41 @@
 #' @importFrom stats coef confint qt reformulate setNames vcov
 NULL
 
+# Internal helpers ----
+
+#' Wrap a survey package call and re-raise single-PSU errors as cli_abort
+#'
+#' @param expr An expression that calls a survey function (svytotal, svyby, etc.)
+#' @return The result of the expression, or a structured cli_abort on single-PSU
+#' @keywords internal
+#' @noRd
+wrap_survey_call <- function(expr) {
+  tryCatch(
+    suppressWarnings(expr),
+    error = function(e) {
+      msg <- conditionMessage(e)
+      if (grepl("has only one PSU at stage", msg, fixed = TRUE)) {
+        # Extract stratum name from: "Stratum (X) has only one PSU at stage 1"
+        strat <- regmatches(msg, regexpr("(?<=Stratum \\()([^)]+)", msg, perl = TRUE))
+        strat_label <- if (length(strat) > 0L && nzchar(strat)) strat else "unknown" # nolint: object_usage_linter
+        cli::cli_abort(c(
+          "Stratum {.val {strat_label}} has only 1 PSU \u2014 \\
+          variance cannot be estimated.",
+          "x" = paste0(
+            "A stratum must have at least 2 PSUs (e.g., 2 sampled days) \\
+            for variance estimation."
+          ),
+          "i" = paste0(
+            "Increase the sampling rate for stratum {.val {strat_label}}, \\
+            or combine sparse strata before estimation."
+          )
+        ))
+      }
+      stop(e)
+    }
+  )
+}
+
 # creel_estimates S3 class ----
 
 #' Create a creel_estimates object
@@ -458,7 +493,7 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
 #'   NULL) uses only complete trips with ratio-of-means estimator,
 #'   \code{"incomplete"} uses only incomplete trips with mean-of-ratios
 #'   estimator, or \code{"diagnostic"} estimates CPUE using both trip types and
-#'   returns a comparison table. Following Colorado C-SAP and Pollock et al.,
+#'   returns a comparison table. Following Pollock et al. (1994),
 #'   complete trips are scientifically preferred (no length-of-stay bias).
 #'   Incomplete trip estimation is diagnostic/research mode requiring
 #'   validation. Diagnostic mode requires both complete and incomplete trips to
@@ -511,7 +546,7 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
 #' When trip_status is provided, the \code{use_trips} parameter controls which
 #' trips are used for estimation. The default \code{use_trips = "complete"}
 #' filters to complete trips only, following roving-access design best practices
-#' (Colorado C-SAP, Pollock et al.). Complete trip interviews are taken at trip
+#' (Pollock et al. 1994). Complete trip interviews are taken at trip
 #' completion and avoid length-of-stay bias. Setting \code{use_trips = "incomplete"}
 #' filters to incomplete trips and automatically uses the MOR estimator.
 #' Incomplete trip estimation is diagnostic/research mode and requires validation
@@ -2003,7 +2038,7 @@ estimate_effort_sections <- function(design, variance_method, conf_level,
 
   # Full-design survey for lake total denominator (prop_of_lake_total)
   full_svy_design <- get_variance_design(design$survey, variance_method) # nolint: object_usage_linter
-  lake_total_svy <- suppressWarnings(survey::svytotal(count_formula, full_svy_design))
+  lake_total_svy <- wrap_survey_call(survey::svytotal(count_formula, full_svy_design))
   lake_total_est <- as.numeric(coef(lake_total_svy))
 
   # Loop over registered sections
@@ -2120,6 +2155,18 @@ estimate_effort_total <- function(design, variance_method, conf_level) {
   # Use first count variable
   count_var <- count_vars[1]
 
+  # Warn (not abort) if all count values are NA — result will be NA
+  if (all(is.na(counts_data[[count_var]]))) {
+    cli::cli_warn(c(
+      "All values in count column {.field {count_var}} are {.val NA}.",
+      "i" = "The effort estimate will be {.val NA}.",
+      "i" = paste0(
+        "Check that counts were attached correctly via ",
+        "{.fn add_counts}."
+      )
+    ))
+  }
+
   # Create formula
   count_formula <- stats::reformulate(count_var)
 
@@ -2127,12 +2174,30 @@ estimate_effort_total <- function(design, variance_method, conf_level) {
   svy_design <- get_variance_design(design$survey, variance_method) # nolint: object_usage_linter
 
   # Call survey::svytotal (suppress expected survey package warnings)
-  svy_result <- suppressWarnings(survey::svytotal(count_formula, svy_design))
+  svy_result <- wrap_survey_call(survey::svytotal(count_formula, svy_design))
   estimate <- as.numeric(coef(svy_result))
 
   # Between-day variance (from survey package)
   var_between <- as.numeric(survey::SE(svy_result))^2
   se_between <- sqrt(var_between)
+
+  # Detect degenerate bootstrap replicate design (single-PSU strata)
+  if (is.nan(se_between) && variance_method == "bootstrap") {
+    cli::cli_abort(c(
+      paste0(
+        "Bootstrap variance is {.val NaN} \u2014 one or more strata have ",
+        "only 1 PSU."
+      ),
+      "x" = paste0(
+        "Bootstrap resampling requires at least 2 PSUs ",
+        "(sampled days) per stratum."
+      ),
+      "i" = paste0(
+        "Increase the sampling rate or use ",
+        "{.code variance = 'taylor'} for single-PSU strata."
+      )
+    ))
+  }
 
   # Within-day variance contribution (Rasmussen 1998; 0 when K_bar = 1)
   var_within <- compute_within_day_var_contribution(design, by_vars = NULL) # nolint: object_usage_linter
@@ -2208,7 +2273,7 @@ estimate_effort_grouped <- function(design, by_vars, variance_method, conf_level
   svy_design <- get_variance_design(design$survey, variance_method) # nolint: object_usage_linter
 
   # Call survey::svyby (suppress expected survey package warnings)
-  svy_result <- suppressWarnings(survey::svyby(
+  svy_result <- wrap_survey_call(survey::svyby(
     formula = count_formula,
     by = by_formula,
     design = svy_design,
@@ -2466,7 +2531,7 @@ estimate_cpue_grouped <- function(design, by_vars, variance_method, conf_level,
 
   if (estimator == "mor") {
     # MOR: use svyby with svymean on ratio
-    svy_result <- suppressWarnings(survey::svyby(
+    svy_result <- wrap_survey_call(survey::svyby(
       formula = ~cpue_ratio,
       by = by_formula,
       design = svy_design,
@@ -2487,7 +2552,7 @@ estimate_cpue_grouped <- function(design, by_vars, variance_method, conf_level,
     catch_formula <- stats::reformulate(catch_col)
     effort_formula <- stats::reformulate(effort_col)
 
-    svy_result <- suppressWarnings(survey::svyby(
+    svy_result <- wrap_survey_call(survey::svyby(
       formula = catch_formula,
       by = by_formula,
       design = svy_design,
@@ -2877,7 +2942,7 @@ estimate_harvest_grouped <- function(design, by_vars, variance_method, conf_leve
   by_formula <- stats::reformulate(by_vars)
 
   # Call survey::svyby with svyratio (suppress expected survey package warnings)
-  svy_result <- suppressWarnings(survey::svyby(
+  svy_result <- wrap_survey_call(survey::svyby(
     formula = harvest_formula,
     by = by_formula,
     design = svy_design,

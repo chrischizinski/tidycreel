@@ -35,6 +35,11 @@ inst/doc
 # AI workflow planning (local use only)
 .planning/
 .planning-legacy-work/
+.gsd/
+.bg-shell/
+
+# Test artifacts
+tests/testthat/_problems/
 
 # pkgdown built site (deployed via gh-pages, not committed to main)
 docs/

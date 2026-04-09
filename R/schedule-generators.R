@@ -15,26 +15,6 @@ new_creel_schedule <- function(data) {
   data
 }
 
-#' Print method for creel_schedule objects
-#'
-#' Prints a one-line summary showing row count, column count, number of sampled
-#' days, and number of periods before delegating to `NextMethod()`.
-#'
-#' @param x A `creel_schedule` object.
-#' @param ... Additional arguments passed to `NextMethod()`.
-#'
-#' @return Invisibly returns `x`.
-#'
-#' @export
-print.creel_schedule <- function(x, ...) {
-  cli::cli_text(
-    "# A creel_schedule: {nrow(x)} rows x {ncol(x)} cols ",
-    "({if ('date' %in% names(x)) length(unique(x$date)) else NA_integer_} days, ",
-    "{if ('period_id' %in% names(x)) length(unique(x$period_id)) else 1L} periods)"
-  )
-  NextMethod()
-  invisible(x)
-}
 
 #' Select sampled days using stratified random sampling
 #'
@@ -636,4 +616,63 @@ generate_bus_schedule <- function(schedule, sampling_frame, site, p_site,
   }
 
   tibble::as_tibble(result)
+}
+
+#' Attach count time windows to a daily sampling schedule
+#'
+#' Cross-joins a daily schedule produced by [generate_schedule()] with a
+#' count-time template produced by [generate_count_times()], returning a
+#' `creel_schedule` with one row per (date x period x count_window).
+#'
+#' @param schedule A `creel_schedule` from [generate_schedule()]. Must have a
+#'   `date` column.
+#' @param count_times A `creel_schedule` from [generate_count_times()]. Must
+#'   have `start_time`, `end_time`, and `window_id` columns.
+#'
+#' @return A `creel_schedule` data frame with all columns from `schedule` plus
+#'   `start_time`, `end_time`, and `window_id` from `count_times`.
+#'   Row count equals `nrow(schedule) * nrow(count_times)`.
+#'
+#' @examples
+#' sched <- generate_schedule(
+#'   start_date = "2024-06-01", end_date = "2024-06-07",
+#'   n_periods = 2, sampling_rate = 0.5, seed = 1
+#' )
+#' ct <- generate_count_times(
+#'   start_time = "06:00", end_time = "14:00",
+#'   strategy = "systematic", n_windows = 3,
+#'   window_size = 30, min_gap = 10, seed = 1
+#' )
+#' attach_count_times(sched, ct)
+#'
+#' @export
+attach_count_times <- function(schedule, count_times) {
+  # Validate schedule
+  if (!is.data.frame(schedule) || !"date" %in% names(schedule)) {
+    cli::cli_abort(c(
+      "{.arg schedule} must be a data frame with a {.col date} column.",
+      "i" = "Use {.fn generate_schedule} to produce a valid schedule."
+    ))
+  }
+  # Validate count_times
+  required_ct <- c("start_time", "end_time", "window_id")
+  missing_ct <- setdiff(required_ct, names(count_times))
+  if (!is.data.frame(count_times) || length(missing_ct) > 0) {
+    cli::cli_abort(c(
+      "{.arg count_times} must be a data frame with columns {.val {required_ct}}.",
+      "x" = "Missing: {.val {missing_ct}}",
+      "i" = "Use {.fn generate_count_times} to produce a valid count-time template."
+    ))
+  }
+  # Cross-join: each schedule row gets one copy per count window
+  # merge() with no by columns performs a full cross-join
+  result <- merge(schedule, count_times, by = NULL)
+  # Restore intuitive row order: schedule rows primary, windows secondary
+  result <- result[order(
+    result$date,
+    if ("period_id" %in% names(result)) result$period_id else seq_len(nrow(result)),
+    result$window_id
+  ), ]
+  rownames(result) <- NULL
+  new_creel_schedule(result)
 }

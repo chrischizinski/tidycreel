@@ -2528,6 +2528,7 @@ get_site_contributions <- function(x) {
 #'
 #' @return Invisibly returns the input object
 #'
+#' @keywords internal
 #' @export
 summary.creel_design <- function(object, ...) {
   print(object, ...)

@@ -1,5 +1,23 @@
 # Milestones
 
+## v1.2.0 Documentation, Visual Calendar & GLMM Aerial (Shipped: 2026-04-06)
+
+**Phases completed:** 7 phases (60-65 incl. 63.1), 9 plans
+**Code delivered:** 4 vignettes, 2 S3 print methods, 2 new functions, 1 new dataset, pkgdown polish — 45 files, +5,496/-84 lines
+
+**Key accomplishments:**
+- DESCRIPTION bumped to 1.1.0; NEWS.md rewritten with dated changelog entries for v1.0.0 and v1.1.0 (Phase 60)
+- `survey-tidycreel.Rmd` vignette — side-by-side comparison of raw `survey` calls vs. tidycreel for full effort + catch rate + total catch workflow (Phase 61)
+- `effort-pipeline.Rmd` — conceptual walkthrough of PSU construction, Rasmussen two-stage variance (se_between/se_within), and progressive count estimator with annotated LaTeX (Phase 62)
+- `catch-pipeline.Rmd` — ROM vs MOR estimator choice and delta method variance decomposition with confirmed numeric examples (Phase 62)
+- `print.creel_schedule()` ASCII monthly calendar grid + `knit_print.creel_schedule()` pandoc pipe-table S3 methods with dynamic day-type abbreviation collision resolution (Phase 63)
+- `attach_count_times()` cross-join of `generate_schedule()` and `generate_count_times()` outputs into one row per (date × period × count_window) (Phase 63.1)
+- `estimate_effort_aerial_glmm()` — GLMM-based aerial effort estimator using `lme4::glmer.nb()` with Askey (2018) quadratic diurnal correction, delta method and bootstrap SE, returning `creel_estimates` with `se_within = NA` (Phase 64)
+- `aerial-glmm.Rmd` vignette with decision guide, worked example using `example_aerial_glmm_counts`, full aerial pipeline (effort → catch rate → total catch), and simple vs. GLMM comparison (Phase 64-65)
+- pkgdown reference index completed: `attach_count_times`, `estimate_effort_aerial_glmm`, `example_aerial_glmm_counts` added; all v1.2.0 audit gaps closed (Phase 65)
+
+---
+
 ## v1.1.0 Planning Suite Completeness & Community Health (Shipped: 2026-04-02)
 
 **Phases completed:** 3 phases (57-59), 4 plans

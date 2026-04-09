@@ -17,3 +17,4 @@ Invisibly returns the input object
 \description{
 Summarize a creel_design object
 }
+\keyword{internal}

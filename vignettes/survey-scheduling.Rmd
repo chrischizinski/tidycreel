@@ -298,6 +298,34 @@ printing without any conversion step.
 write_schedule(ct_systematic, "count_times_2024.csv")
 ```
 
+## Combining the Daily Schedule with Count Time Windows
+
+`generate_schedule()` and `generate_count_times()` each return a separate `creel_schedule`.
+Before field dispatch, biologists need a single table — one row per (date x period x count
+window) — that tells each crew exactly when to count. `attach_count_times()` performs the
+cross-join in one step.
+
+```{r attach-count-times, message = FALSE}
+sched <- generate_schedule(
+  start_date = "2024-06-01", end_date = "2024-06-07",
+  n_periods = 2,
+  sampling_rate = c(weekday = 0.5, weekend = 0.8),
+  seed = 42
+)
+ct <- generate_count_times(
+  start_time = "06:00", end_time = "14:00",
+  strategy = "systematic", n_windows = 3,
+  window_size = 30, min_gap = 10,
+  seed = 42
+)
+field_schedule <- attach_count_times(sched, ct)
+field_schedule
+```
+
+The result has `nrow(sched) * nrow(ct)` rows — every sampled day-period combination
+appears once per count window. Pass `field_schedule` directly to `write_schedule()` to
+produce a printable field dispatch sheet.
+
 ## Validating the Design Before the Season
 
 After building a schedule, `validate_design()` checks whether the proposed sampling
