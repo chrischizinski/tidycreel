@@ -7,7 +7,7 @@
 #' check type), and optionally detects unrecognised species values via
 #' `standardize_species()`.
 #'
-#' The returned object is a `creel_validation_report` — a data frame with a
+#' The returned object is a `creel_validation_report` - a data frame with a
 #' custom `print` method that renders a colour-coded cli summary. It can be
 #' exported with [write_estimates()].
 #'
@@ -21,7 +21,7 @@
 #' @param date_range Passed to `validate_creel_data()`. Default
 #'   `c(as.Date("1970-01-01"), as.Date("2100-12-31"))`.
 #'
-#' @return An object of class `creel_validation_report` — a data frame with
+#' @return An object of class `creel_validation_report` - a data frame with
 #'   columns:
 #'   \describe{
 #'     \item{`table`}{Source table: `"counts"`, `"interviews"`, or

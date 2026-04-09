@@ -28,7 +28,7 @@ to an AFS code. Default \code{NULL} (no species check).}
 \code{c(as.Date("1970-01-01"), as.Date("2100-12-31"))}.}
 }
 \value{
-An object of class \code{creel_validation_report} — a data frame with
+An object of class \code{creel_validation_report} - a data frame with
 columns:
 \describe{
 \item{\code{table}}{Source table: \code{"counts"}, \code{"interviews"}, or
@@ -47,7 +47,7 @@ check type), and optionally detects unrecognised species values via
 \code{standardize_species()}.
 }
 \details{
-The returned object is a \code{creel_validation_report} — a data frame with a
+The returned object is a \code{creel_validation_report} - a data frame with a
 custom \code{print} method that renders a colour-coded cli summary. It can be
 exported with \code{\link[=write_estimates]{write_estimates()}}.
 }
