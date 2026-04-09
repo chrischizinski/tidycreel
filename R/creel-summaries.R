@@ -1397,3 +1397,84 @@ summarize_length_freq <- function(design, type = "catch", by = NULL, bin_width =
   class(result) <- c("creel_summary_length_freq", "data.frame")
   result
 }
+
+# ---- summary.creel_estimates -------------------------------------------------
+
+#' Summarise creel survey estimates as a formatted table
+#'
+#' @description
+#' `summary.creel_estimates()` converts a `creel_estimates` object into a
+#' `creel_summary` table with human-readable column names, suitable for
+#' display or export.
+#'
+#' @param object A `creel_estimates` object returned by `estimate_effort()`,
+#'   `estimate_catch_rate()`, `estimate_harvest_rate()`,
+#'   `estimate_total_catch()`, or `estimate_total_harvest()`.
+#' @param digits Integer number of significant digits for numeric columns
+#'   (default: 4).
+#' @param ... Additional arguments (currently ignored).
+#'
+#' @return A `creel_summary` S3 object (a list) with components:
+#'   \item{table}{A `data.frame` with columns: any grouping variables,
+#'     `Estimate`, `SE`, `CI Lower`, `CI Upper`, `N`.}
+#'   \item{method}{Character string — the estimation method.}
+#'   \item{variance_method}{Character string — the variance method.}
+#'   \item{conf_level}{Numeric confidence level (e.g. 0.95).}
+#'
+#' @seealso [estimate_effort()], [estimate_catch_rate()],
+#'   [estimate_harvest_rate()]
+#'
+#' @examples
+#' \dontrun{
+#' est <- estimate_effort(design)
+#' summary(est)
+#' as.data.frame(summary(est))
+#' }
+#'
+#' @export
+summary.creel_estimates <- function(object, digits = 4L, ...) {
+  est <- object$estimates
+
+  # Identify group columns (everything except the estimate columns)
+  est_cols <- c(
+    "estimate", "se", "ci_lower", "ci_upper", "n",
+    "se_between", "se_within"
+  )
+  group_cols <- setdiff(names(est), est_cols)
+
+  # Build the human-readable table
+  tbl <- data.frame(row.names = seq_len(nrow(est)))
+
+  # Prepend group columns
+  for (gc in group_cols) {
+    tbl[[gc]] <- est[[gc]]
+  }
+
+  # Round numeric estimate columns
+  fmt <- function(x) signif(x, digits = digits)
+  tbl[["Estimate"]] <- fmt(est[["estimate"]])
+  tbl[["SE"]] <- fmt(est[["se"]])
+  tbl[["CI Lower"]] <- fmt(est[["ci_lower"]])
+  tbl[["CI Upper"]] <- fmt(est[["ci_upper"]])
+  tbl[["N"]] <- est[["n"]]
+
+  new_creel_summary(
+    table = tbl,
+    method = object$method,
+    variance_method = object$variance_method,
+    conf_level = object$conf_level
+  )
+}
+
+#' @noRd
+new_creel_summary <- function(table, method, variance_method, conf_level) {
+  structure(
+    list(
+      table           = table,
+      method          = method,
+      variance_method = variance_method,
+      conf_level      = conf_level
+    ),
+    class = "creel_summary"
+  )
+}

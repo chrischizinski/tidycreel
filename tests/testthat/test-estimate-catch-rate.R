@@ -2494,3 +2494,23 @@ test_that("AIR-05: estimate_catch_rate() on aerial design returns finite numeric
   expect_true(is.finite(result$estimates$estimate))
   expect_true(is.numeric(result$estimates$se))
 })
+
+# ---- Estimator boundary: zero catch ------------------------------------------
+
+test_that("EDGE-CR-01: estimate_catch_rate() with all-zero catch returns estimate=0 SE=0", {
+  data("example_counts", package = "tidycreel")
+  data("example_interviews", package = "tidycreel")
+  cal <- unique(example_counts[, c("date", "day_type")])
+  d <- creel_design(cal, date = date, strata = day_type, survey_type = "instantaneous")
+  d <- suppressWarnings(add_counts(d, example_counts))
+  interviews_zero <- example_interviews
+  interviews_zero$walleye_catch <- 0L
+  d <- suppressWarnings(
+    add_interviews(d, interviews_zero,
+      catch = walleye_catch, effort = hours_fished, trip_status = trip_status
+    )
+  )
+  result <- suppressWarnings(estimate_catch_rate(d))
+  expect_equal(result$estimates$estimate, 0)
+  expect_equal(result$estimates$se, 0)
+})

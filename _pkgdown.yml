@@ -62,7 +62,7 @@ reference:
   - title: "Reporting & Diagnostics"
     desc: >
       Summarize interview data by angler characteristics, validate designs,
-      and check data completeness.
+      check data completeness, and inspect estimate output.
     contents:
       - summarize_trips
       - summarize_refusals
@@ -76,6 +76,9 @@ reference:
       - summarize_length_freq
       - summarize_successful_parties
       - season_summary
+      - summary.creel_estimates
+      - flag_outliers
+      - write_estimates
       - validate_incomplete_trips
       - validate_design
       - check_completeness
@@ -118,6 +121,14 @@ reference:
     contents:
       - preprocess_camera_timestamps
 
+  - title: "Visualisation"
+    desc: >
+      ggplot2-based plotting methods for creel designs, estimates, and schedules.
+    contents:
+      - plot_design
+      - autoplot.creel_estimates
+      - autoplot.creel_schedule
+
   - title: "Example Datasets"
     desc: >
       Simulated datasets illustrating each supported survey type.
@@ -144,7 +155,6 @@ reference:
     contents:
       - starts_with("format.")
       - starts_with("print.")
-      - starts_with("summary.")
 
 articles:
 - title: "Get Started"
@@ -184,6 +194,7 @@ articles:
   contents:
   - unextrapolated-summaries
   - survey-scheduling
+  - visualisation
 
 - title: "Statistical Methods"
   navbar: "Statistical Methods"
@@ -192,6 +203,7 @@ articles:
   contents:
   - effort-pipeline
   - catch-pipeline
+  - replicate-designs
 
 - title: "Reference & Equations"
   desc: >

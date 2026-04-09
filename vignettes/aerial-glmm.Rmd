@@ -133,11 +133,27 @@ Attach interview data and call `estimate_catch_rate()` and
 `estimate_total_catch()` on the same design object.
 
 ```{r downstream}
-design <- add_interviews(design, example_aerial_interviews)
-catch_rate <- estimate_catch_rate(design)
+# Build a complementary design with matching interview dates
+aerial_int_cal <- unique(example_aerial_counts[, c("date", "day_type")])
+aerial_int_cal <- aerial_int_cal[order(aerial_int_cal$date), ]
+
+design_int <- creel_design(
+  aerial_int_cal,
+  date        = date,
+  strata      = day_type,
+  survey_type = "aerial",
+  h_open      = 14
+)
+design_int <- add_counts(design_int, example_aerial_counts)
+design_int <- add_interviews(design_int, example_aerial_interviews,
+  catch       = walleye_catch,
+  effort      = hours_fished,
+  trip_status = trip_status
+)
+catch_rate <- estimate_catch_rate(design_int)
 print(catch_rate)
 
-total_catch <- estimate_total_catch(design)
+total_catch <- estimate_total_catch(design_int)
 print(total_catch)
 ```
 

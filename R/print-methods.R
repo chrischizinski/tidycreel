@@ -121,3 +121,57 @@ print.creel_estimates_diagnostic <- function(x, ...) {
   cat(format(x, ...), sep = "\n")
   invisible(x)
 }
+
+# ---- creel_summary print / as.data.frame -------------------------------------
+
+#' Print a creel_summary object
+#'
+#' @param x A `creel_summary` object from [summary.creel_estimates()].
+#' @param ... Additional arguments (currently ignored).
+#'
+#' @return The input object, invisibly.
+#'
+#' @export
+print.creel_summary <- function(x, ...) {
+  method_display <- switch(x$method,
+    total = "Total",
+    "ratio-of-means-cpue" = "Ratio-of-Means CPUE",
+    "mean-of-ratios-cpue" = "Mean-of-Ratios CPUE",
+    "ratio-of-means-hpue" = "Ratio-of-Means HPUE",
+    "ratio-of-means-cpue-per-angler" =
+      "Ratio-of-Means CPUE (per angler)",
+    "mean-of-ratios-cpue-per-angler" =
+      "Mean-of-Ratios CPUE (per angler)",
+    "ratio-of-means-hpue-per-angler" =
+      "Ratio-of-Means HPUE (per angler)",
+    "product-total-catch" = "Total Catch (Effort x CPUE)",
+    "product-total-harvest" = "Total Harvest (Effort x HPUE)",
+    x$method
+  )
+  variance_display <- switch(x$variance_method,
+    taylor    = "Taylor linearization",
+    bootstrap = "Bootstrap",
+    jackknife = "Jackknife",
+    x$variance_method
+  )
+  conf_pct <- paste0(round(x$conf_level * 100L), "%")
+
+  cat(sprintf(
+    "-- Creel Survey Summary (%s | %s | %s) --\n",
+    method_display, variance_display, conf_pct
+  ))
+  print(x$table, row.names = FALSE, ...)
+  invisible(x)
+}
+
+#' Coerce a creel_summary to a data.frame
+#'
+#' @param x A `creel_summary` object.
+#' @param ... Additional arguments (currently ignored).
+#'
+#' @return A `data.frame` with human-readable estimate columns.
+#'
+#' @export
+as.data.frame.creel_summary <- function(x, ...) {
+  x$table
+}

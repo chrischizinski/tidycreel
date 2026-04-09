@@ -638,3 +638,109 @@ test_that("ACT-07: count_times from generate_count_times(strategy='fixed') works
   expect_equal(nrow(result), nrow(sched) * nrow(ct))
   expect_equal(nrow(ct), 2L)
 })
+
+# ---- DST and leap-year edge cases -------------------------------------------
+
+test_that("SCHED-DST-01: spring-forward season (2024-03-08 to 2024-03-12) has 5 dates", {
+  sched <- generate_schedule(
+    n_periods = 1,
+    expand_periods = FALSE,
+    start_date = "2024-03-08",
+    end_date = "2024-03-12",
+    sampling_rate = 1,
+    seed = 42L,
+    include_all = TRUE
+  )
+  expect_equal(nrow(sched), 5L)
+  expect_equal(range(sched$date), as.Date(c("2024-03-08", "2024-03-12")))
+})
+
+test_that("SCHED-DST-02: fall-back season (2024-11-01 to 2024-11-05) has 5 dates", {
+  sched <- generate_schedule(
+    n_periods = 1,
+    expand_periods = FALSE,
+    start_date = "2024-11-01",
+    end_date = "2024-11-05",
+    sampling_rate = 1,
+    seed = 42L,
+    include_all = TRUE
+  )
+  expect_equal(nrow(sched), 5L)
+  expect_equal(range(sched$date), as.Date(c("2024-11-01", "2024-11-05")))
+})
+
+test_that("SCHED-DST-03: 2024-03-10 (spring-forward Sunday) classified as weekend", {
+  sched <- generate_schedule(
+    n_periods = 1,
+    expand_periods = FALSE,
+    start_date = "2024-03-08",
+    end_date = "2024-03-12",
+    sampling_rate = 1,
+    seed = 42L,
+    include_all = TRUE
+  )
+  mar10_type <- sched$day_type[sched$date == as.Date("2024-03-10")]
+  expect_equal(mar10_type, "weekend")
+})
+
+test_that("SCHED-LEAP-01: leap-year season includes 2024-02-29 and has 6 dates", {
+  sched <- generate_schedule(
+    n_periods = 1,
+    expand_periods = FALSE,
+    start_date = "2024-02-26",
+    end_date = "2024-03-02",
+    sampling_rate = 1,
+    seed = 42L,
+    include_all = TRUE
+  )
+  expect_equal(nrow(sched), 6L)
+  expect_true(as.Date("2024-02-29") %in% sched$date)
+})
+
+test_that("SCHED-LEAP-02: 2024-02-29 classified as weekday (Thursday)", {
+  sched <- generate_schedule(
+    n_periods = 1,
+    expand_periods = FALSE,
+    start_date = "2024-02-26",
+    end_date = "2024-03-02",
+    sampling_rate = 1,
+    seed = 42L,
+    include_all = TRUE
+  )
+  feb29_type <- sched$day_type[sched$date == as.Date("2024-02-29")]
+  expect_equal(feb29_type, "weekday")
+})
+
+test_that("SCHED-LEAP-03: non-leap year 2023-02-26 to 2023-03-02 has 5 dates (no Feb 29)", {
+  sched <- generate_schedule(
+    n_periods = 1,
+    expand_periods = FALSE,
+    start_date = "2023-02-26",
+    end_date = "2023-03-02",
+    sampling_rate = 1,
+    seed = 42L,
+    include_all = TRUE
+  )
+  expect_equal(nrow(sched), 5L)
+  expect_false(any(format(sched$date, "%m-%d") == "02-29"))
+})
+
+test_that("SCHED-LEAP-04: creel_design() accepts calendar with 2024-02-29 without error", {
+  cal <- data.frame(
+    date     = as.Date(c("2024-02-29", "2024-03-01", "2024-03-02")),
+    day_type = c("weekday", "weekend", "weekend")
+  )
+  expect_no_error(
+    creel_design(cal, date = date, strata = day_type)
+  )
+})
+
+test_that("SCHED-LEAP-05: creel_design() Feb 29 calendar date round-trips correctly", {
+  cal <- data.frame(
+    date     = as.Date(c("2024-02-28", "2024-02-29", "2024-03-01")),
+    day_type = c("weekday", "weekday", "weekend")
+  )
+  d <- creel_design(cal, date = date, strata = day_type)
+  expect_equal(nrow(d$calendar), 3L)
+  expect_equal(d$calendar$date, cal$date)
+})

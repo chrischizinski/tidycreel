@@ -1,6 +1,6 @@
 Package: tidycreel
 Title: Tidy Interface for Creel Survey Design and Analysis
-Version: 1.1.0
+Version: 1.2.0
 Authors@R:
     person(given = "Christopher", family = "Chizinski", role = c("aut", "cre"),
            email = "chris.chizinski@unl.edu",
@@ -20,7 +20,8 @@ Imports:
     checkmate,
     cli,
     dplyr,
-    lubridate (>= 1.9.5),
+    ggplot2,
+    lubridate (>= 1.9.0),
     rlang,
     scales,
     stats,

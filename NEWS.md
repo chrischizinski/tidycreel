@@ -1,3 +1,44 @@
+# tidycreel 1.2.0 (2026-04-08)
+
+## New features
+
+* `summary.creel_estimates()` converts any estimate object to a `creel_summary`
+  with human-readable column names (`Estimate`, `SE`, `CI Lower`, `CI Upper`,
+  `N`). Includes `print.creel_summary()` and `as.data.frame.creel_summary()`
+  methods. Works for effort, CPUE, harvest rate, total catch, and grouped
+  variants.
+
+* `flag_outliers()` identifies extreme values in a numeric column using
+  Tukey's IQR fence (`k = 1.5` default). Returns the input data frame with
+  `is_outlier`, `outlier_reason`, `fence_low`, and `fence_high` columns
+  appended, and emits a `cli` summary of flagged rows. Handles `n < 4`,
+  empty input, and zero-row data frames gracefully.
+
+* `ggplot2::autoplot.creel_estimates()` produces a point-and-errorbar plot
+  from any `creel_estimates` object. Ungrouped estimates show a single point
+  with confidence interval; grouped estimates show one point per group level,
+  colour-coded.
+
+* `ggplot2::autoplot.creel_schedule()` produces a monthly tile calendar from
+  a `creel_schedule` object. Sampled dates are coloured by day type (weekday
+  blue / weekend red); unsampled dates are shown in grey. Multiple months are
+  displayed as vertically stacked facet panels.
+
+## Improvements
+
+* Single-PSU strata now produce a structured, actionable error instead of an
+  opaque `survey:::onestrat` message. The error names the problematic stratum
+  and suggests increasing the sampling rate or combining sparse strata.
+
+* Fixed a bug in the `aerial-glmm` vignette downstream estimation chunk where
+  `example_aerial_interviews` was paired with the GLMM design (built from
+  `example_aerial_glmm_counts`). The chunk now uses the correct matching
+  dataset (`example_aerial_counts` + `example_aerial_interviews`).
+
+## Dependencies
+
+* **ggplot2** added to `Imports` to support the new `autoplot.*` methods.
+
 # tidycreel 1.1.0 (2026-04-02)
 
 ## New features
