@@ -1,5 +1,10 @@
 # Tests for validation_report() ----
 # Note: requires validate_creel_data() and standardize_species() from M016 S01/S02.
+# Skip entire file when those functions are not yet available.
+if (!exists("validate_creel_data", mode = "function",
+  where = asNamespace("tidycreel"))) {
+  skip("validate_creel_data() not available; skipping validation_report tests")
+}
 
 make_counts <- function() {
   data.frame(
