@@ -24,7 +24,7 @@ above this threshold receive a \code{"warn"} status. Default \code{0.10}.}
 plausible dates. Default \code{c(as.Date("1970-01-01"), as.Date("2100-12-31"))}.}
 }
 \value{
-An object of class \code{creel_data_validation} — a tibble with columns:
+An object of class \code{creel_data_validation} - a tibble with columns:
 \describe{
 \item{\code{table}}{Which input was checked: \code{"counts"} or \code{"interviews"}.}
 \item{\code{column}}{Column name.}
@@ -42,18 +42,18 @@ column check.  A \code{print} method renders a colour-coded \code{cli} summary.
 \details{
 Checks performed for \strong{every} column:
 \itemize{
-\item Type check — column class is reported.
-\item NA rate — warns if \eqn{>} \code{na_threshold} (default 0.10) of values
+\item Type check - column class is reported.
+\item NA rate - warns if \eqn{>} \code{na_threshold} (default 0.10) of values
 are \code{NA}.
 }
 
 Additional checks based on detected column role:
 \itemize{
-\item \strong{Date columns} — values must fall within \code{date_range} (defaults to
-1970-01-01 – 2100-12-31); warns on future dates.
-\item \strong{Numeric columns} — warns if any value is negative (effort/count
+\item \strong{Date columns} - values must fall within \code{date_range} (defaults to
+1970-01-01 - 2100-12-31); warns on future dates.
+\item \strong{Numeric columns} - warns if any value is negative (effort/count
 should be \eqn{\ge 0}).
-\item \strong{Character/factor columns} — warns if any value is an empty string.
+\item \strong{Character/factor columns} - warns if any value is an empty string.
 }
 }
 \examples{

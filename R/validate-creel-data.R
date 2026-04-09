@@ -8,18 +8,18 @@
 #'
 #' Checks performed for **every** column:
 #' \itemize{
-#'   \item Type check — column class is reported.
-#'   \item NA rate — warns if \eqn{>} `na_threshold` (default 0.10) of values
+#'   \item Type check - column class is reported.
+#'   \item NA rate - warns if \eqn{>} `na_threshold` (default 0.10) of values
 #'     are `NA`.
 #' }
 #'
 #' Additional checks based on detected column role:
 #' \itemize{
-#'   \item **Date columns** — values must fall within `date_range` (defaults to
-#'     1970-01-01 – 2100-12-31); warns on future dates.
-#'   \item **Numeric columns** — warns if any value is negative (effort/count
+#'   \item **Date columns** - values must fall within `date_range` (defaults to
+#'     1970-01-01 - 2100-12-31); warns on future dates.
+#'   \item **Numeric columns** - warns if any value is negative (effort/count
 #'     should be \eqn{\ge 0}).
-#'   \item **Character/factor columns** — warns if any value is an empty string.
+#'   \item **Character/factor columns** - warns if any value is an empty string.
 #' }
 #'
 #' @param counts A data frame of count (effort) observations, or `NULL` to
@@ -30,7 +30,7 @@
 #' @param date_range A length-2 `Date` vector giving the earliest and latest
 #'   plausible dates. Default `c(as.Date("1970-01-01"), as.Date("2100-12-31"))`.
 #'
-#' @return An object of class `creel_data_validation` — a tibble with columns:
+#' @return An object of class `creel_data_validation` - a tibble with columns:
 #'   \describe{
 #'     \item{`table`}{Which input was checked: `"counts"` or `"interviews"`.}
 #'     \item{`column`}{Column name.}
@@ -160,14 +160,14 @@ validate_creel_data <- function(
         table_name, col, "date_range", range_status,
         if (any(out_of_range)) {
           sprintf(
-            "%d value(s) outside %s – %s",
+            "%d value(s) outside %s - %s",
             sum(out_of_range),
             format(date_range[1]),
             format(date_range[2])
           )
         } else {
           sprintf(
-            "all within %s – %s",
+            "all within %s - %s",
             format(date_range[1]),
             format(date_range[2])
           )
