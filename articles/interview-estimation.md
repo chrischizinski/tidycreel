@@ -388,8 +388,8 @@ through total catch and harvest estimation.
 ## Working with Incomplete Trips
 
 This vignette demonstrates the default workflow using complete trips,
-which is the recommended approach following Colorado C-SAP best
-practices and Pollock et al. roving-access design principles.
+which is the recommended approach following Pollock et al. (1994)
+roving-access design principles.
 
 For situations where you have incomplete trip interviews and want to
 explore using them for estimation, see the **Incomplete Trip

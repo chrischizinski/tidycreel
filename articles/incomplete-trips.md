@@ -4,15 +4,15 @@
 
 This vignette explains when and how to use incomplete trip interviews
 for catch estimation in roving-access creel surveys. Roving-access
-designs traditionally use complete trip interviews only (Pollock et
-al. 1994), following the best practice established by Colorado’s
-Coldwater Stream Angler Program (C-SAP). However, incomplete trip
-estimates can be valid under certain conditions when properly validated.
+designs traditionally use complete trip interviews only, following the
+best practices established in Pollock et al. (1994). However, incomplete
+trip estimates can be valid under certain conditions when properly
+validated.
 
 **Key principles:**
 
-- **Default to complete trips** — tidycreel follows Colorado C-SAP best
-  practice
+- **Default to complete trips** — tidycreel follows Pollock et
+  al. (1994) best practice
 - **Validate before using incomplete trips** — statistical testing
   required
 - **Never pool complete + incomplete** — scientifically invalid due to
@@ -24,7 +24,7 @@ estimates can be valid under certain conditions when properly validated.
 This vignette shows:
 
 1.  Scientific rationale for complete trip preference
-2.  Colorado C-SAP best practices
+2.  Recommended best practices
 3.  When incomplete trip estimation might be considered
 4.  Step-by-step validation workflow
 5.  Realistic examples of passing and failing validation
@@ -65,7 +65,7 @@ incomplete trip estimates will be biased.
 - Pooling complete and incomplete trips is invalid (different sampling
   probabilities)
 
-**Colorado C-SAP best practices:**
+**Roving-access survey best practices (Pollock et al. 1994):**
 
 - Default to complete trips only
 - Require ≥10% of interviews to be complete trips
@@ -93,8 +93,8 @@ Common scenarios for considering incomplete trips:
 
 **Prerequisites before considering incomplete trips:**
 
-- Sufficient complete trip baseline (≥10% of interviews per Colorado
-  C-SAP)
+- Sufficient complete trip baseline (≥10% of interviews; Pollock et
+  al. 1994)
 - Adequate incomplete sample size (n ≥ 30 for stable estimates)
 - Statistical validation using
   [`validate_incomplete_trips()`](https://chrischizinski.github.io/tidycreel/reference/validate_incomplete_trips.md)
@@ -125,10 +125,10 @@ unbiased under stationarity assumptions.
 For details on variance estimation, see
 [`?estimate_catch_rate`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md).
 
-## Colorado C-SAP Best Practices
+## Recommended Best Practices
 
-The Colorado Coldwater Stream Angler Program (C-SAP) established
-scientifically rigorous standards for roving-access surveys:
+Scientifically rigorous standards for roving-access surveys include
+(Pollock et al. 1994):
 
 ### Default Workflow: Complete Trips Only
 
@@ -167,13 +167,13 @@ message:
 
 ### Sample Size Requirements
 
-Colorado C-SAP requires **≥10% of interviews to be complete trips**.
-tidycreel enforces this automatically:
+Best practices require **≥10% of interviews to be complete trips**
+(Pollock et al. 1994). tidycreel enforces this automatically:
 
 ``` r
 # If complete trip percentage drops below 10%, you'll see:
 # Warning: Only 8% of interviews (n=5) are complete trips
-# Colorado C-SAP recommends ≥10% complete trip interviews
+# Best practice: ≥10% of interviews should be complete trips
 # Consider extending survey hours or sampling more trips to completion
 ```
 
@@ -185,19 +185,40 @@ For details, see `?warn_low_complete_pct` and Phase 18 documentation.
 ## Strong Warning: Never Pool Complete + Incomplete
 
 **CRITICAL: Pooling complete and incomplete trips is scientifically
-invalid.**
+invalid — regardless of whether validation passes.**
 
 Complete and incomplete trips have **different sampling probabilities**
 in roving-access designs. Longer trips have higher probability of being
 sampled during their incomplete phase, creating systematic bias if
 pooled with complete trips.
 
+### Pooling vs. Substitution — a critical distinction
+
+Passing the TOST equivalence test does **not** mean you may pool
+complete and incomplete trips. It means something different:
+
+- **Pooling** — combining raw complete and incomplete records into one
+  dataset and estimating as if they are the same type. This is **always
+  invalid**, because the differential sampling probabilities create bias
+  that no equivalence test removes. TOST only tells you whether the
+  resulting CPUE estimates happen to agree; it says nothing about the
+  compatibility of the underlying sampling mechanisms.
+
+- **Substitution** — choosing to use incomplete trip estimates *instead
+  of* complete trip estimates as your sole estimation basis. This is
+  what validation unlocks. If TOST passes, you can run
+  `use_trips = "incomplete"` and obtain a trustworthy estimate; you are
+  not combining trip types, you are selecting one.
+
+In short: validation **passes** → you may substitute; you may never
+pool.
+
 ### What NOT to Do
 
 ``` r
 # WRONG: Do not manually pool trip types
 all_interviews <- rbind(complete_data, incomplete_data)
-estimate_catch_rate(design_with_all_data) # INVALID!
+estimate_catch_rate(design_with_all_data) # INVALID — always, even after validation passes
 
 # WRONG: Do not use custom weights to combine
 weighted_mean(c(complete_cpue, incomplete_cpue)) # INVALID!
@@ -208,7 +229,8 @@ weighted_mean(c(complete_cpue, incomplete_cpue)) # INVALID!
 tidycreel **never auto-pools** complete and incomplete trips:
 
 - Default behavior: use complete trips only
-- Explicit option: `use_trips = "incomplete"` for incomplete only
+- Explicit option: `use_trips = "incomplete"` for incomplete only (valid
+  after passing validation)
 - Diagnostic mode: `use_trips = "diagnostic"` for side-by-side
   comparison (not pooling)
 
@@ -234,7 +256,7 @@ library(tidycreel)
 table(your_interviews$trip_status)
 
 # Ensure you have:
-# - At least 10% complete trips (Colorado C-SAP)
+# - At least 10% complete trips (Pollock et al. 1994)
 # - At least 30 incomplete trips (for stable estimates)
 # - At least 10 complete trips (for ratio estimation)
 ```
@@ -316,7 +338,7 @@ within a threshold.
     Equivalence: NO (at least one p >= 0.05)
 
     Recommendation: Incomplete trip estimates are NOT equivalent to complete
-    trip estimates. Stick with complete trips only (Colorado C-SAP best practice).
+    trip estimates. Stick with complete trips only (Pollock et al. 1994).
 
 ### Step 5: View Validation Plot
 
@@ -841,7 +863,7 @@ accounting for catch-effort covariance.
 **For most creel surveys:**
 
 - Use complete trips only (default behavior)
-- Follow Colorado C-SAP best practices
+- Follow Pollock et al. (1994) best practices
 - Aim for ≥10% complete trip interviews
 - Sample size goal: n ≥ 30 complete trips per stratum
 
@@ -887,8 +909,6 @@ Estimation” vignette.
 - Hoenig, J.M., C.M. Jones, K.H. Pollock, D.S. Robson, and D.L.
   Wade. 1997. Calculation of Catch Rate and Total Catch in Roving
   Surveys of Anglers. Biometrics 53:306-317.
-- Colorado Parks and Wildlife. Coldwater Stream Angler Program (C-SAP)
-  protocols and best practices.
 
 **Related package documentation:**
 

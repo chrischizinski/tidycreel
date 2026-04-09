@@ -6,6 +6,11 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Survey Scheduling: Count and Interview Periods • tidycreel</title>
+<!-- favicons --><link rel="icon" type="image/png" sizes="96x96" href="../favicon-96x96.png">
+<link rel="icon" type="”image/svg+xml”" href="../favicon.svg">
+<link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
+<link rel="icon" sizes="any" href="../favicon.ico">
+<link rel="manifest" href="../site.webmanifest">
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/Lato-0.4.10/font.css" rel="stylesheet">
@@ -24,7 +29,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidycreel</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -44,8 +49,10 @@
     <li><a class="dropdown-item" href="../articles/ice-fishing.html">Ice Fishing Survey Analysis</a></li>
     <li><a class="dropdown-item" href="../articles/camera-surveys.html">Camera Survey Analysis with tidycreel</a></li>
     <li><a class="dropdown-item" href="../articles/aerial-surveys.html">Aerial Survey Analysis with tidycreel</a></li>
+    <li><a class="dropdown-item" href="../articles/aerial-glmm.html">GLMM Aerial Effort Estimation</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Estimation</h6></li>
+    <li><a class="dropdown-item" href="../articles/survey-tidycreel.html">tidycreel and the survey Package: A Side-by-Side Guide</a></li>
     <li><a class="dropdown-item" href="../articles/interview-estimation.html">Interview-Based Catch Estimation</a></li>
     <li><a class="dropdown-item" href="../articles/incomplete-trips.html">Incomplete Trip Estimation</a></li>
     <li><a class="dropdown-item" href="../articles/flexible-count-estimation.html">Flexible Count Estimation</a></li>
@@ -56,6 +63,12 @@
     <li><h6 class="dropdown-header" data-toc-skip>Reporting &amp; Planning</h6></li>
     <li><a class="dropdown-item" href="../articles/unextrapolated-summaries.html">Unextrapolated Interview Summaries</a></li>
     <li><a class="dropdown-item" href="../articles/survey-scheduling.html">Survey Scheduling: Count and Interview Periods</a></li>
+    <li><a class="dropdown-item" href="../articles/visualisation.html">Visualising Creel Survey Designs and Results</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Statistical Methods</h6></li>
+    <li><a class="dropdown-item" href="../articles/effort-pipeline.html">Counts to Effort: Statistical Pipeline</a></li>
+    <li><a class="dropdown-item" href="../articles/catch-pipeline.html">Interviews to Catch: Statistical Pipeline</a></li>
+    <li><a class="dropdown-item" href="../articles/replicate-designs.html">Variance Methods: Taylor, Bootstrap, and Jackknife</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><a class="dropdown-item" href="../articles/index.html">More articles...</a></li>
   </ul>
@@ -133,16 +146,68 @@ sampling 30% of weekdays and 50% of weekends.</p>
 <span>  seed          <span class="op">=</span> <span class="fl">42</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">sched</span>, <span class="fl">8</span><span class="op">)</span></span>
-<span><span class="co">#&gt;         date day_type period_id</span></span>
-<span><span class="co">#&gt; 1 2024-05-03  weekday   Morning</span></span>
-<span><span class="co">#&gt; 2 2024-05-03  weekday Afternoon</span></span>
-<span><span class="co">#&gt; 3 2024-05-05  weekend   Morning</span></span>
-<span><span class="co">#&gt; 4 2024-05-05  weekend Afternoon</span></span>
-<span><span class="co">#&gt; 5 2024-05-07  weekday   Morning</span></span>
-<span><span class="co">#&gt; 6 2024-05-07  weekday Afternoon</span></span>
-<span><span class="co">#&gt; 7 2024-05-10  weekday   Morning</span></span>
-<span><span class="co">#&gt; 8 2024-05-10  weekday Afternoon</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">sched</span>, <span class="fl">8</span><span class="op">)</span></span></code></pre></div>
+<div class="section level3">
+<h3 id="may-2024">May 2024<a class="anchor" aria-label="anchor" href="#may-2024"></a>
+</h3>
+<table class="table">
+<thead><tr class="header">
+<th>Sun</th>
+<th>Mon</th>
+<th>Tue</th>
+<th>Wed</th>
+<th>Thu</th>
+<th>Fri</th>
+<th>Sat</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td></td>
+<td></td>
+<td></td>
+<td>01</td>
+<td>02</td>
+<td>WEEKD</td>
+<td>04</td>
+</tr>
+<tr class="even">
+<td>WEEKE</td>
+<td>06</td>
+<td>WEEKD</td>
+<td>08</td>
+<td>09</td>
+<td>WEEKD</td>
+<td>11</td>
+</tr>
+<tr class="odd">
+<td>12</td>
+<td>13</td>
+<td>14</td>
+<td>15</td>
+<td>16</td>
+<td>17</td>
+<td>18</td>
+</tr>
+<tr class="even">
+<td>19</td>
+<td>20</td>
+<td>21</td>
+<td>22</td>
+<td>23</td>
+<td>24</td>
+<td>25</td>
+</tr>
+<tr class="odd">
+<td>26</td>
+<td>27</td>
+<td>28</td>
+<td>29</td>
+<td>30</td>
+<td>31</td>
+<td></td>
+</tr>
+</tbody>
+</table>
 <p>The result is a <code>creel_schedule</code> object with
 <code>date</code>, <code>day_type</code>, and <code>period_id</code>
 columns. Period labels replace integer IDs with human-readable
@@ -153,6 +218,7 @@ names.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; weekday weekend </span></span>
 <span><span class="co">#&gt;      66      44</span></span></code></pre></div>
+</div>
 </div>
 <div class="section level2">
 <h2 id="visualising-sampled-vs--unsampled-days">Visualising Sampled vs. Unsampled Days<a class="anchor" aria-label="anchor" href="#visualising-sampled-vs--unsampled-days"></a>
@@ -197,17 +263,78 @@ morning and evening peak with low midday use).</p>
 <span>  seed          <span class="op">=</span> <span class="fl">101</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">sched3</span>, <span class="fl">9</span><span class="op">)</span></span>
-<span><span class="co">#&gt;         date day_type period_id</span></span>
-<span><span class="co">#&gt; 1 2024-06-02  weekend   Morning</span></span>
-<span><span class="co">#&gt; 2 2024-06-02  weekend    Midday</span></span>
-<span><span class="co">#&gt; 3 2024-06-02  weekend   Evening</span></span>
-<span><span class="co">#&gt; 4 2024-06-08  weekend   Morning</span></span>
-<span><span class="co">#&gt; 5 2024-06-08  weekend    Midday</span></span>
-<span><span class="co">#&gt; 6 2024-06-08  weekend   Evening</span></span>
-<span><span class="co">#&gt; 7 2024-06-09  weekend   Morning</span></span>
-<span><span class="co">#&gt; 8 2024-06-09  weekend    Midday</span></span>
-<span><span class="co">#&gt; 9 2024-06-09  weekend   Evening</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">sched3</span>, <span class="fl">9</span><span class="op">)</span></span></code></pre></div>
+<div class="section level3">
+<h3 id="june-2024">June 2024<a class="anchor" aria-label="anchor" href="#june-2024"></a>
+</h3>
+<table class="table">
+<thead><tr class="header">
+<th>Sun</th>
+<th>Mon</th>
+<th>Tue</th>
+<th>Wed</th>
+<th>Thu</th>
+<th>Fri</th>
+<th>Sat</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>01</td>
+</tr>
+<tr class="even">
+<td>WE</td>
+<td>03</td>
+<td>04</td>
+<td>05</td>
+<td>06</td>
+<td>07</td>
+<td>WE</td>
+</tr>
+<tr class="odd">
+<td>WE</td>
+<td>10</td>
+<td>11</td>
+<td>12</td>
+<td>13</td>
+<td>14</td>
+<td>15</td>
+</tr>
+<tr class="even">
+<td>16</td>
+<td>17</td>
+<td>18</td>
+<td>19</td>
+<td>20</td>
+<td>21</td>
+<td>22</td>
+</tr>
+<tr class="odd">
+<td>23</td>
+<td>24</td>
+<td>25</td>
+<td>26</td>
+<td>27</td>
+<td>28</td>
+<td>29</td>
+</tr>
+<tr class="even">
+<td>30</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</div>
 </div>
 <div class="section level2">
 <h2 id="reproducibility-with-seed">Reproducibility with <code>seed</code><a class="anchor" aria-label="anchor" href="#reproducibility-with-seed"></a>
@@ -387,12 +514,8 @@ consecutive windows to prevent back-to-back counts.</p>
 <span>  min_gap     <span class="op">=</span> <span class="fl">10</span>,</span>
 <span>  seed        <span class="op">=</span> <span class="fl">42</span></span>
 <span><span class="op">)</span></span>
-<span><span class="va">ct_random</span></span>
-<span><span class="co">#&gt;   start_time end_time window_id</span></span>
-<span><span class="co">#&gt; 1      06:48    07:18         1</span></span>
-<span><span class="co">#&gt; 2      09:04    09:34         2</span></span>
-<span><span class="co">#&gt; 3      10:24    10:54         3</span></span>
-<span><span class="co">#&gt; 4      13:13    13:43         4</span></span></code></pre></div>
+<span><span class="va">ct_random</span></span></code></pre></div>
+<p><em>(no date column to render calendar)</em></p>
 <p><code>n_windows</code> is the total number of count windows to place
 in the day, <code>window_size</code> is how long each window lasts in
 minutes, and <code>min_gap</code> is the minimum idle time between the
@@ -419,12 +542,8 @@ placement.</p>
 <span>  min_gap     <span class="op">=</span> <span class="fl">10</span>,</span>
 <span>  seed        <span class="op">=</span> <span class="fl">42</span></span>
 <span><span class="op">)</span></span>
-<span><span class="va">ct_systematic</span></span>
-<span><span class="co">#&gt;   start_time end_time window_id</span></span>
-<span><span class="co">#&gt; 1      06:48    07:18         1</span></span>
-<span><span class="co">#&gt; 2      08:48    09:18         2</span></span>
-<span><span class="co">#&gt; 3      10:48    11:18         3</span></span>
-<span><span class="co">#&gt; 4      12:48    13:18         4</span></span></code></pre></div>
+<span><span class="va">ct_systematic</span></span></code></pre></div>
+<p><em>(no date column to render calendar)</em></p>
 </div>
 <div class="section level3">
 <h3 id="fixed-strategy">Fixed Strategy<a class="anchor" aria-label="anchor" href="#fixed-strategy"></a>
@@ -442,11 +561,8 @@ replicated exactly. Supply a <code>data.frame</code> with
 <span>  stringsAsFactors <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">ct_fixed</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generate_count_times.html">generate_count_times</a></span><span class="op">(</span>strategy <span class="op">=</span> <span class="st">"fixed"</span>, fixed_windows <span class="op">=</span> <span class="va">fw</span><span class="op">)</span></span>
-<span><span class="va">ct_fixed</span></span>
-<span><span class="co">#&gt;   start_time end_time window_id</span></span>
-<span><span class="co">#&gt; 1      07:00    07:30         1</span></span>
-<span><span class="co">#&gt; 2      09:30    10:00         2</span></span>
-<span><span class="co">#&gt; 3      12:00    12:30         3</span></span></code></pre></div>
+<span><span class="va">ct_fixed</span></span></code></pre></div>
+<p><em>(no date column to render calendar)</em></p>
 </div>
 <div class="section level3">
 <h3 id="exporting-count-time-schedules">Exporting Count Time Schedules<a class="anchor" aria-label="anchor" href="#exporting-count-time-schedules"></a>
@@ -461,6 +577,106 @@ step.</p>
 </div>
 </div>
 <div class="section level2">
+<h2 id="combining-the-daily-schedule-with-count-time-windows">Combining the Daily Schedule with Count Time Windows<a class="anchor" aria-label="anchor" href="#combining-the-daily-schedule-with-count-time-windows"></a>
+</h2>
+<p><code><a href="../reference/generate_schedule.html">generate_schedule()</a></code> and
+<code><a href="../reference/generate_count_times.html">generate_count_times()</a></code> each return a separate
+<code>creel_schedule</code>. Before field dispatch, biologists need a
+single table — one row per (date x period x count window) — that tells
+each crew exactly when to count. <code><a href="../reference/attach_count_times.html">attach_count_times()</a></code>
+performs the cross-join in one step.</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">sched</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generate_schedule.html">generate_schedule</a></span><span class="op">(</span></span>
+<span>  start_date <span class="op">=</span> <span class="st">"2024-06-01"</span>, end_date <span class="op">=</span> <span class="st">"2024-06-07"</span>,</span>
+<span>  n_periods <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>  sampling_rate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>weekday <span class="op">=</span> <span class="fl">0.5</span>, weekend <span class="op">=</span> <span class="fl">0.8</span><span class="op">)</span>,</span>
+<span>  seed <span class="op">=</span> <span class="fl">42</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">ct</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generate_count_times.html">generate_count_times</a></span><span class="op">(</span></span>
+<span>  start_time <span class="op">=</span> <span class="st">"06:00"</span>, end_time <span class="op">=</span> <span class="st">"14:00"</span>,</span>
+<span>  strategy <span class="op">=</span> <span class="st">"systematic"</span>, n_windows <span class="op">=</span> <span class="fl">3</span>,</span>
+<span>  window_size <span class="op">=</span> <span class="fl">30</span>, min_gap <span class="op">=</span> <span class="fl">10</span>,</span>
+<span>  seed <span class="op">=</span> <span class="fl">42</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">field_schedule</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/attach_count_times.html">attach_count_times</a></span><span class="op">(</span><span class="va">sched</span>, <span class="va">ct</span><span class="op">)</span></span>
+<span><span class="va">field_schedule</span></span></code></pre></div>
+<div class="section level3">
+<h3 id="june-2024-1">June 2024<a class="anchor" aria-label="anchor" href="#june-2024-1"></a>
+</h3>
+<table class="table">
+<thead><tr class="header">
+<th>Sun</th>
+<th>Mon</th>
+<th>Tue</th>
+<th>Wed</th>
+<th>Thu</th>
+<th>Fri</th>
+<th>Sat</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>WEEKE</td>
+</tr>
+<tr class="even">
+<td>WEEKE</td>
+<td>WEEKD</td>
+<td>04</td>
+<td>05</td>
+<td>06</td>
+<td>WEEKD</td>
+<td>08</td>
+</tr>
+<tr class="odd">
+<td>09</td>
+<td>10</td>
+<td>11</td>
+<td>12</td>
+<td>13</td>
+<td>14</td>
+<td>15</td>
+</tr>
+<tr class="even">
+<td>16</td>
+<td>17</td>
+<td>18</td>
+<td>19</td>
+<td>20</td>
+<td>21</td>
+<td>22</td>
+</tr>
+<tr class="odd">
+<td>23</td>
+<td>24</td>
+<td>25</td>
+<td>26</td>
+<td>27</td>
+<td>28</td>
+<td>29</td>
+</tr>
+<tr class="even">
+<td>30</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>The result has <code>nrow(sched) * nrow(ct)</code> rows — every
+sampled day-period combination appears once per count window. Pass
+<code>field_schedule</code> directly to <code><a href="../reference/write_schedule.html">write_schedule()</a></code> to
+produce a printable field dispatch sheet.</p>
+</div>
+</div>
+<div class="section level2">
 <h2 id="validating-the-design-before-the-season">Validating the Design Before the Season<a class="anchor" aria-label="anchor" href="#validating-the-design-before-the-season"></a>
 </h2>
 <p>After building a schedule, <code><a href="../reference/validate_design.html">validate_design()</a></code> checks
@@ -470,7 +686,7 @@ the season starts rather than discovering them in the post-season
 analysis. It uses the same pilot mean and variance inputs as
 <code><a href="../reference/creel_n_effort.html">creel_n_effort()</a></code> and compares the proposed day counts
 against the minimum required sample size per stratum.</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">report</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/validate_design.html">validate_design</a></span><span class="op">(</span></span>
 <span>  N_h        <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>weekday <span class="op">=</span> <span class="fl">132</span>, weekend <span class="op">=</span> <span class="fl">52</span><span class="op">)</span>,</span>
 <span>  ybar_h     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>weekday <span class="op">=</span> <span class="fl">280</span>, weekend <span class="op">=</span> <span class="fl">550</span><span class="op">)</span>,</span>
@@ -491,7 +707,7 @@ against the minimum required sample size per stratum.</p>
 achieved CV at the proposed intensity. <code>report$passed</code> is
 <code>TRUE</code> only when all strata pass — use this as a go/no-go
 gate before printing field schedules.</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">report</span><span class="op">$</span><span class="va">results</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 7</span></span></span>
 <span><span class="co">#&gt;   stratum status n_proposed n_required cv_actual cv_target message              </span></span>
@@ -508,7 +724,7 @@ sampling days and strata with too few interviews to produce reliable
 estimates. It is the first diagnostic step before running estimators —
 resolving completeness issues early avoids propagating gaps into effort
 or CPUE estimates.</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_calendar</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_counts</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_interviews</span><span class="op">)</span></span>
@@ -558,7 +774,7 @@ related functions — and joins them into a single wide tibble for
 reporting or export. It performs no re-estimation; it is purely an
 assembly step that makes it easy to view all key metrics side by
 side.</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Run estimators first (see the tidycreel workflow vignette)</span></span>
 <span><span class="va">effort</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
 <span><span class="va">cpue</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
@@ -570,7 +786,7 @@ side.</p>
 and interviews, and running the estimators — is covered in the main
 tidycreel vignette. <code><a href="../reference/season_summary.html">season_summary()</a></code> is the final step that
 wraps pre-computed results for export or reporting.</p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/write_schedule.html">write_schedule</a></span><span class="op">(</span><span class="va">summary_tbl</span><span class="op">$</span><span class="va">table</span>, <span class="st">"season_2024_summary.xlsx"</span><span class="op">)</span></span></code></pre></div>
 <p><code><a href="../reference/write_schedule.html">write_schedule()</a></code> accepts any data frame or tibble, so
 the season summary table exports to CSV or xlsx with a single call.</p>

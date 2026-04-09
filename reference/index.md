@@ -24,6 +24,10 @@ argument.
   : Resolve fishing effort from timestamps or self-reported time
 - [`compute_angler_effort()`](https://chrischizinski.github.io/tidycreel/reference/compute_angler_effort.md)
   : Normalize fishing effort to angler-hours
+- [`creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/creel_schema.md)
+  : Column-mapping contract for tidycreel data sources
+- [`validate_creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/validate_creel_schema.md)
+  : Validate a creel_schema object
 
 ## Estimation
 
@@ -32,6 +36,8 @@ dispatch automatically on survey type.
 
 - [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
   : Estimate total effort from a creel survey design
+- [`estimate_effort_aerial_glmm()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort_aerial_glmm.md)
+  : GLMM-based aerial effort estimation with diurnal correction
 - [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
   : Estimate CPUE (Catch Per Unit Effort) from a creel survey design
 - [`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md)
@@ -51,7 +57,7 @@ dispatch automatically on survey type.
 ## Reporting & Diagnostics
 
 Summarize interview data by angler characteristics, validate designs,
-and check data completeness.
+check data completeness, and inspect estimate output.
 
 - [`summarize_trips()`](https://chrischizinski.github.io/tidycreel/reference/summarize_trips.md)
   : Summarize trip metadata for interview data
@@ -78,6 +84,12 @@ and check data completeness.
 - [`season_summary()`](https://chrischizinski.github.io/tidycreel/reference/season_summary.md)
   : Assemble pre-computed creel estimates into a report-ready wide
   tibble
+- [`summary(`*`<creel_estimates>`*`)`](https://chrischizinski.github.io/tidycreel/reference/summary.creel_estimates.md)
+  : Summarise creel survey estimates as a formatted table
+- [`flag_outliers()`](https://chrischizinski.github.io/tidycreel/reference/flag_outliers.md)
+  : Flag outliers in a creel interview data column
+- [`write_estimates()`](https://chrischizinski.github.io/tidycreel/reference/write_estimates.md)
+  : Export creel survey estimates to a file
 - [`validate_incomplete_trips()`](https://chrischizinski.github.io/tidycreel/reference/validate_incomplete_trips.md)
   : Validate incomplete trip estimates using TOST equivalence testing
 - [`validate_design()`](https://chrischizinski.github.io/tidycreel/reference/validate_design.md)
@@ -109,6 +121,8 @@ Generate, validate, read, and write creel survey schedules.
   : Generate a bus-route sampling frame
 - [`generate_count_times()`](https://chrischizinski.github.io/tidycreel/reference/generate_count_times.md)
   : Generate within-day count time windows
+- [`attach_count_times()`](https://chrischizinski.github.io/tidycreel/reference/attach_count_times.md)
+  : Attach count time windows to a daily sampling schedule
 - [`new_creel_schedule()`](https://chrischizinski.github.io/tidycreel/reference/new_creel_schedule.md)
   : Create a creel_schedule S3 object
 - [`validate_creel_schedule()`](https://chrischizinski.github.io/tidycreel/reference/validate_creel_schedule.md)
@@ -138,6 +152,18 @@ Preprocessing for camera-monitored creel surveys.
 
 - [`preprocess_camera_timestamps()`](https://chrischizinski.github.io/tidycreel/reference/preprocess_camera_timestamps.md)
   : Preprocess camera ingress-egress timestamps
+
+## Visualisation
+
+ggplot2-based plotting methods for creel designs, estimates, and
+schedules.
+
+- [`plot_design()`](https://chrischizinski.github.io/tidycreel/reference/plot_design.md)
+  : Plot a creel survey design
+- [`autoplot(`*`<creel_estimates>`*`)`](https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_estimates.md)
+  : Plot creel survey estimates with ggplot2
+- [`autoplot(`*`<creel_schedule>`*`)`](https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_schedule.md)
+  : Plot a creel schedule as a ggplot2 tile calendar
 
 ## Example Datasets
 
@@ -174,3 +200,5 @@ vignettes and function examples.
   : Example aerial angler count dataset
 - [`example_aerial_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_aerial_interviews.md)
   : Example angler interview data for aerial creel survey
+- [`example_aerial_glmm_counts`](https://chrischizinski.github.io/tidycreel/reference/example_aerial_glmm_counts.md)
+  : Example multi-flight aerial count data for GLMM effort estimation

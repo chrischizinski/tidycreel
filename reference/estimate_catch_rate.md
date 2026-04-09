@@ -63,13 +63,13 @@ estimate_catch_rate(
   complete trips with ratio-of-means estimator, `"incomplete"` uses only
   incomplete trips with mean-of-ratios estimator, or `"diagnostic"`
   estimates CPUE using both trip types and returns a comparison table.
-  Following Colorado C-SAP and Pollock et al., complete trips are
-  scientifically preferred (no length-of-stay bias). Incomplete trip
-  estimation is diagnostic/research mode requiring validation.
-  Diagnostic mode requires both complete and incomplete trips to be
-  present. Default is NULL which defaults to `"complete"`. Parameter is
-  ignored when trip_status field is not provided (perfect backward
-  compatibility). See Details.
+  Following Pollock et al. (1994), complete trips are scientifically
+  preferred (no length-of-stay bias). Incomplete trip estimation is
+  diagnostic/research mode requiring validation. Diagnostic mode
+  requires both complete and incomplete trips to be present. Default is
+  NULL which defaults to `"complete"`. Parameter is ignored when
+  trip_status field is not provided (perfect backward compatibility).
+  See Details.
 
 - truncate_at:
 
@@ -101,8 +101,8 @@ by_vars (character vector of grouping variable names or NULL).
 **Trip Type Selection (use_trips):** When trip_status is provided, the
 `use_trips` parameter controls which trips are used for estimation. The
 default `use_trips = "complete"` filters to complete trips only,
-following roving-access design best practices (Colorado C-SAP, Pollock
-et al.). Complete trip interviews are taken at trip completion and avoid
+following roving-access design best practices (Pollock et al. 1994).
+Complete trip interviews are taken at trip completion and avoid
 length-of-stay bias. Setting `use_trips = "incomplete"` filters to
 incomplete trips and automatically uses the MOR estimator. Incomplete
 trip estimation is diagnostic/research mode and requires validation (see

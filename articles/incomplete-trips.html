@@ -6,6 +6,11 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Incomplete Trip Estimation • tidycreel</title>
+<!-- favicons --><link rel="icon" type="image/png" sizes="96x96" href="../favicon-96x96.png">
+<link rel="icon" type="”image/svg+xml”" href="../favicon.svg">
+<link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
+<link rel="icon" sizes="any" href="../favicon.ico">
+<link rel="manifest" href="../site.webmanifest">
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/Lato-0.4.10/font.css" rel="stylesheet">
@@ -24,7 +29,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidycreel</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -44,8 +49,10 @@
     <li><a class="dropdown-item" href="../articles/ice-fishing.html">Ice Fishing Survey Analysis</a></li>
     <li><a class="dropdown-item" href="../articles/camera-surveys.html">Camera Survey Analysis with tidycreel</a></li>
     <li><a class="dropdown-item" href="../articles/aerial-surveys.html">Aerial Survey Analysis with tidycreel</a></li>
+    <li><a class="dropdown-item" href="../articles/aerial-glmm.html">GLMM Aerial Effort Estimation</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Estimation</h6></li>
+    <li><a class="dropdown-item" href="../articles/survey-tidycreel.html">tidycreel and the survey Package: A Side-by-Side Guide</a></li>
     <li><a class="dropdown-item" href="../articles/interview-estimation.html">Interview-Based Catch Estimation</a></li>
     <li><a class="dropdown-item" href="../articles/incomplete-trips.html">Incomplete Trip Estimation</a></li>
     <li><a class="dropdown-item" href="../articles/flexible-count-estimation.html">Flexible Count Estimation</a></li>
@@ -56,6 +63,12 @@
     <li><h6 class="dropdown-header" data-toc-skip>Reporting &amp; Planning</h6></li>
     <li><a class="dropdown-item" href="../articles/unextrapolated-summaries.html">Unextrapolated Interview Summaries</a></li>
     <li><a class="dropdown-item" href="../articles/survey-scheduling.html">Survey Scheduling: Count and Interview Periods</a></li>
+    <li><a class="dropdown-item" href="../articles/visualisation.html">Visualising Creel Survey Designs and Results</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Statistical Methods</h6></li>
+    <li><a class="dropdown-item" href="../articles/effort-pipeline.html">Counts to Effort: Statistical Pipeline</a></li>
+    <li><a class="dropdown-item" href="../articles/catch-pipeline.html">Interviews to Catch: Statistical Pipeline</a></li>
+    <li><a class="dropdown-item" href="../articles/replicate-designs.html">Variance Methods: Taylor, Bootstrap, and Jackknife</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><a class="dropdown-item" href="../articles/index.html">More articles...</a></li>
   </ul>
@@ -90,16 +103,15 @@
 </h2>
 <p>This vignette explains when and how to use incomplete trip interviews
 for catch estimation in roving-access creel surveys. Roving-access
-designs traditionally use complete trip interviews only (Pollock et
-al. 1994), following the best practice established by Colorado’s
-Coldwater Stream Angler Program (C-SAP). However, incomplete trip
-estimates can be valid under certain conditions when properly
+designs traditionally use complete trip interviews only, following the
+best practices established in Pollock et al. (1994). However, incomplete
+trip estimates can be valid under certain conditions when properly
 validated.</p>
 <p><strong>Key principles:</strong></p>
 <ul>
 <li>
 <strong>Default to complete trips</strong> — tidycreel follows
-Colorado C-SAP best practice</li>
+Pollock et al. (1994) best practice</li>
 <li>
 <strong>Validate before using incomplete trips</strong> —
 statistical testing required</li>
@@ -114,7 +126,7 @@ estimates</li>
 <p>This vignette shows:</p>
 <ol style="list-style-type: decimal">
 <li>Scientific rationale for complete trip preference</li>
-<li>Colorado C-SAP best practices</li>
+<li>Recommended best practices</li>
 <li>When incomplete trip estimation might be considered</li>
 <li>Step-by-step validation workflow</li>
 <li>Realistic examples of passing and failing validation</li>
@@ -163,7 +175,8 @@ are stationary</li>
 <li>Pooling complete and incomplete trips is invalid (different sampling
 probabilities)</li>
 </ul>
-<p><strong>Colorado C-SAP best practices:</strong></p>
+<p><strong>Roving-access survey best practices (Pollock et
+al. 1994):</strong></p>
 <ul>
 <li>Default to complete trips only</li>
 <li>Require ≥10% of interviews to be complete trips</li>
@@ -200,8 +213,8 @@ confirms similarity</li>
 <p><strong>Prerequisites before considering incomplete
 trips:</strong></p>
 <ul>
-<li>Sufficient complete trip baseline (≥10% of interviews per Colorado
-C-SAP)</li>
+<li>Sufficient complete trip baseline (≥10% of interviews; Pollock et
+al. 1994)</li>
 <li>Adequate incomplete sample size (n ≥ 30 for stable estimates)</li>
 <li>Statistical validation using
 <code><a href="../reference/validate_incomplete_trips.html">validate_incomplete_trips()</a></code>
@@ -231,10 +244,10 @@ unbiased under stationarity assumptions.</p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="colorado-c-sap-best-practices">Colorado C-SAP Best Practices<a class="anchor" aria-label="anchor" href="#colorado-c-sap-best-practices"></a>
+<h2 id="recommended-best-practices">Recommended Best Practices<a class="anchor" aria-label="anchor" href="#recommended-best-practices"></a>
 </h2>
-<p>The Colorado Coldwater Stream Angler Program (C-SAP) established
-scientifically rigorous standards for roving-access surveys:</p>
+<p>Scientifically rigorous standards for roving-access surveys include
+(Pollock et al. 1994):</p>
 <div class="section level3">
 <h3 id="default-workflow-complete-trips-only">Default Workflow: Complete Trips Only<a class="anchor" aria-label="anchor" href="#default-workflow-complete-trips-only"></a>
 </h3>
@@ -271,12 +284,13 @@ message:</p>
 <div class="section level3">
 <h3 id="sample-size-requirements">Sample Size Requirements<a class="anchor" aria-label="anchor" href="#sample-size-requirements"></a>
 </h3>
-<p>Colorado C-SAP requires <strong>≥10% of interviews to be complete
-trips</strong>. tidycreel enforces this automatically:</p>
+<p>Best practices require <strong>≥10% of interviews to be complete
+trips</strong> (Pollock et al. 1994). tidycreel enforces this
+automatically:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># If complete trip percentage drops below 10%, you'll see:</span></span>
 <span><span class="co"># Warning: Only 8% of interviews (n=5) are complete trips</span></span>
-<span><span class="co"># Colorado C-SAP recommends ≥10% complete trip interviews</span></span>
+<span><span class="co"># Best practice: ≥10% of interviews should be complete trips</span></span>
 <span><span class="co"># Consider extending survey hours or sampling more trips to completion</span></span></code></pre></div>
 <p>This warning appears before sample size validation, ensuring
 visibility even when insufficient samples cause errors.</p>
@@ -288,18 +302,43 @@ documentation.</p>
 <h2 id="strong-warning-never-pool-complete-incomplete">Strong Warning: Never Pool Complete + Incomplete<a class="anchor" aria-label="anchor" href="#strong-warning-never-pool-complete-incomplete"></a>
 </h2>
 <p><strong>CRITICAL: Pooling complete and incomplete trips is
-scientifically invalid.</strong></p>
+scientifically invalid — regardless of whether validation
+passes.</strong></p>
 <p>Complete and incomplete trips have <strong>different sampling
 probabilities</strong> in roving-access designs. Longer trips have
 higher probability of being sampled during their incomplete phase,
 creating systematic bias if pooled with complete trips.</p>
+<div class="section level3">
+<h3 id="pooling-vs--substitution-a-critical-distinction">Pooling vs. Substitution — a critical distinction<a class="anchor" aria-label="anchor" href="#pooling-vs--substitution-a-critical-distinction"></a>
+</h3>
+<p>Passing the TOST equivalence test does <strong>not</strong> mean you
+may pool complete and incomplete trips. It means something
+different:</p>
+<ul>
+<li><p><strong>Pooling</strong> — combining raw complete and incomplete
+records into one dataset and estimating as if they are the same type.
+This is <strong>always invalid</strong>, because the differential
+sampling probabilities create bias that no equivalence test removes.
+TOST only tells you whether the resulting CPUE estimates happen to
+agree; it says nothing about the compatibility of the underlying
+sampling mechanisms.</p></li>
+<li><p><strong>Substitution</strong> — choosing to use incomplete trip
+estimates <em>instead of</em> complete trip estimates as your sole
+estimation basis. This is what validation unlocks. If TOST passes, you
+can run <code>use_trips = "incomplete"</code> and obtain a trustworthy
+estimate; you are not combining trip types, you are selecting
+one.</p></li>
+</ul>
+<p>In short: validation <strong>passes</strong> → you may substitute;
+you may never pool.</p>
+</div>
 <div class="section level3">
 <h3 id="what-not-to-do">What NOT to Do<a class="anchor" aria-label="anchor" href="#what-not-to-do"></a>
 </h3>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># WRONG: Do not manually pool trip types</span></span>
 <span><span class="va">all_interviews</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="va">complete_data</span>, <span class="va">incomplete_data</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">design_with_all_data</span><span class="op">)</span> <span class="co"># INVALID!</span></span>
+<span><span class="fu"><a href="../reference/estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">design_with_all_data</span><span class="op">)</span> <span class="co"># INVALID — always, even after validation passes</span></span>
 <span></span>
 <span><span class="co"># WRONG: Do not use custom weights to combine</span></span>
 <span><span class="fu">weighted_mean</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">complete_cpue</span>, <span class="va">incomplete_cpue</span><span class="op">)</span><span class="op">)</span> <span class="co"># INVALID!</span></span></code></pre></div>
@@ -312,7 +351,7 @@ trips:</p>
 <ul>
 <li>Default behavior: use complete trips only</li>
 <li>Explicit option: <code>use_trips = "incomplete"</code> for
-incomplete only</li>
+incomplete only (valid after passing validation)</li>
 <li>Diagnostic mode: <code>use_trips = "diagnostic"</code> for
 side-by-side comparison (not pooling)</li>
 </ul>
@@ -340,7 +379,7 @@ workflow:</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">your_interviews</span><span class="op">$</span><span class="va">trip_status</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Ensure you have:</span></span>
-<span><span class="co"># - At least 10% complete trips (Colorado C-SAP)</span></span>
+<span><span class="co"># - At least 10% complete trips (Pollock et al. 1994)</span></span>
 <span><span class="co"># - At least 30 incomplete trips (for stable estimates)</span></span>
 <span><span class="co"># - At least 10 complete trips (for ratio estimation)</span></span></code></pre></div>
 </div>
@@ -417,7 +456,7 @@ TOST p-values: p1 = 0.234, p2 = 0.891
 Equivalence: NO (at least one p &gt;= 0.05)
 
 Recommendation: Incomplete trip estimates are NOT equivalent to complete
-trip estimates. Stick with complete trips only (Colorado C-SAP best practice).</code></pre>
+trip estimates. Stick with complete trips only (Pollock et al. 1994).</code></pre>
 </div>
 <div class="section level3">
 <h3 id="step-5-view-validation-plot">Step 5: View Validation Plot<a class="anchor" aria-label="anchor" href="#step-5-view-validation-plot"></a>
@@ -959,7 +998,7 @@ estimation</strong></li>
 <p><strong>For most creel surveys:</strong></p>
 <ul>
 <li>Use complete trips only (default behavior)</li>
-<li>Follow Colorado C-SAP best practices</li>
+<li>Follow Pollock et al. (1994) best practices</li>
 <li>Aim for ≥10% complete trip interviews</li>
 <li>Sample size goal: n ≥ 30 complete trips per stratum</li>
 </ul>
@@ -1011,8 +1050,6 @@ Fisheries Society Special Publication 25.</li>
 <li>Hoenig, J.M., C.M. Jones, K.H. Pollock, D.S. Robson, and D.L. Wade.
 1997. Calculation of Catch Rate and Total Catch in Roving Surveys of
 Anglers. Biometrics 53:306-317.</li>
-<li>Colorado Parks and Wildlife. Coldwater Stream Angler Program (C-SAP)
-protocols and best practices.</li>
 </ul>
 <p><strong>Related package documentation:</strong></p>
 <ul>

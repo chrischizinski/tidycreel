@@ -1,61 +1,62 @@
-# Plot survey design structure
+# Plot a creel survey design
 
-Visualize survey design by date, shift, location, stratum, or other
-grouping variables. Supports bar plots, faceted plots, and interactive
-plots (via plotly if available).
+Produces a quick visual summary of a `creel_design` object:
+
+- **Without counts attached** (`design$counts` is `NULL`): a bar chart
+  showing the number of sampled days per stratum.
+
+- **With counts attached**: a jitter + crossbar chart showing the
+  distribution of count values per stratum.
+
+Both variants colour bars/points by stratum for easy differentiation.
 
 ## Usage
 
 ``` r
-plot_design(
-  design,
-  by = c("date", "shift_block", "location", "stratum"),
-  type = c("bar", "facet", "interactive"),
-  ...
-)
+plot_design(design, title = NULL, ...)
 ```
 
 ## Arguments
 
 - design:
 
-  A creel_design object or data frame with survey structure.
+  A `creel_design` object created by
+  [`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md).
 
-- by:
+- title:
 
-  Character vector of grouping variables (e.g., date, shift_block,
-  location, stratum).
-
-- type:
-
-  Plot type: "bar", "facet", "interactive".
+  Optional character title. Defaults to `"Creel Design Summary"` (no
+  counts) or `"Count Distribution by Stratum"` (with counts).
 
 - ...:
 
-  Additional arguments passed to ggplot2 or plotly.
+  Additional arguments (currently ignored).
 
 ## Value
 
-A ggplot or plotly object.
+A `ggplot` object.
 
-## Details
+## See also
 
-Visualizes survey design structure and effort estimates. Supports bar,
-facet, and interactive plots. See vignettes for usage examples.
-
-## References
-
-Wickham, H. (2016). ggplot2: Elegant Graphics for Data Analysis.
-Springer-Verlag New York.
+[`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md),
+[`autoplot.creel_schedule()`](https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_schedule.md)
 
 ## Examples
 
 ``` r
 if (FALSE) { # \dontrun{
-# Create a design first
-design <- design_access(interviews, calendar)
+# Without counts — stratum sample sizes
+cal <- data.frame(
+  date = as.Date(c(
+    "2024-06-01", "2024-06-02", "2024-06-08", "2024-06-09"
+  )),
+  day_type = c("weekday", "weekday", "weekend", "weekend")
+)
+design <- creel_design(cal, date = date, strata = day_type)
+plot_design(design)
 
-# Plot survey design structure
-plot_design(design, by = c("date", "shift_block"), type = "bar")
+# With counts — count distribution per stratum
+design_with_counts <- add_counts(design, counts_df)
+plot_design(design_with_counts)
 } # }
 ```

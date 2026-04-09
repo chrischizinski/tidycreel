@@ -106,11 +106,7 @@ generate_count_times(
   seed = 42
 )
 #> # A creel_schedule: 4 rows x 3 cols (NA days, 1 periods)
-#>   start_time end_time window_id
-#> 1      06:48    07:18         1
-#> 2      09:04    09:34         2
-#> 3      10:24    10:54         3
-#> 4      13:13    13:43         4
+#> (no date column to render calendar)
 
 # Systematic strategy (preferred; Pollock et al. 1994)
 generate_count_times(
@@ -119,11 +115,7 @@ generate_count_times(
   seed = 42
 )
 #> # A creel_schedule: 4 rows x 3 cols (NA days, 1 periods)
-#>   start_time end_time window_id
-#> 1      06:48    07:18         1
-#> 2      08:48    09:18         2
-#> 3      10:48    11:18         3
-#> 4      12:48    13:18         4
+#> (no date column to render calendar)
 
 # Fixed strategy
 fw <- data.frame(
@@ -133,8 +125,5 @@ fw <- data.frame(
 )
 generate_count_times(strategy = "fixed", fixed_windows = fw)
 #> # A creel_schedule: 3 rows x 3 cols (NA days, 1 periods)
-#>   start_time end_time window_id
-#> 1      07:00    07:30         1
-#> 2      09:00    09:30         2
-#> 3      11:00    11:30         3
+#> (no date column to render calendar)
 ```

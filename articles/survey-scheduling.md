@@ -44,16 +44,17 @@ sched <- generate_schedule(
 )
 
 head(sched, 8)
-#>         date day_type period_id
-#> 1 2024-05-03  weekday   Morning
-#> 2 2024-05-03  weekday Afternoon
-#> 3 2024-05-05  weekend   Morning
-#> 4 2024-05-05  weekend Afternoon
-#> 5 2024-05-07  weekday   Morning
-#> 6 2024-05-07  weekday Afternoon
-#> 7 2024-05-10  weekday   Morning
-#> 8 2024-05-10  weekday Afternoon
 ```
+
+### May 2024
+
+| Sun   | Mon | Tue   | Wed | Thu | Fri   | Sat |
+|-------|-----|-------|-----|-----|-------|-----|
+|       |     |       | 01  | 02  | WEEKD | 04  |
+| WEEKE | 06  | WEEKD | 08  | 09  | WEEKD | 11  |
+| 12    | 13  | 14    | 15  | 16  | 17    | 18  |
+| 19    | 20  | 21    | 22  | 23  | 24    | 25  |
+| 26    | 27  | 28    | 29  | 30  | 31    |     |
 
 The result is a `creel_schedule` object with `date`, `day_type`, and
 `period_id` columns. Period labels replace integer IDs with
@@ -112,17 +113,18 @@ sched3 <- generate_schedule(
 )
 
 head(sched3, 9)
-#>         date day_type period_id
-#> 1 2024-06-02  weekend   Morning
-#> 2 2024-06-02  weekend    Midday
-#> 3 2024-06-02  weekend   Evening
-#> 4 2024-06-08  weekend   Morning
-#> 5 2024-06-08  weekend    Midday
-#> 6 2024-06-08  weekend   Evening
-#> 7 2024-06-09  weekend   Morning
-#> 8 2024-06-09  weekend    Midday
-#> 9 2024-06-09  weekend   Evening
 ```
+
+### June 2024
+
+| Sun | Mon | Tue | Wed | Thu | Fri | Sat |
+|-----|-----|-----|-----|-----|-----|-----|
+|     |     |     |     |     |     | 01  |
+| WE  | 03  | 04  | 05  | 06  | 07  | WE  |
+| WE  | 10  | 11  | 12  | 13  | 14  | 15  |
+| 16  | 17  | 18  | 19  | 20  | 21  | 22  |
+| 23  | 24  | 25  | 26  | 27  | 28  | 29  |
+| 30  |     |     |     |     |     |     |
 
 ## Reproducibility with `seed`
 
@@ -300,12 +302,9 @@ ct_random <- generate_count_times(
   seed        = 42
 )
 ct_random
-#>   start_time end_time window_id
-#> 1      06:48    07:18         1
-#> 2      09:04    09:34         2
-#> 3      10:24    10:54         3
-#> 4      13:13    13:43         4
 ```
+
+*(no date column to render calendar)*
 
 `n_windows` is the total number of count windows to place in the day,
 `window_size` is how long each window lasts in minutes, and `min_gap` is
@@ -333,12 +332,9 @@ ct_systematic <- generate_count_times(
   seed        = 42
 )
 ct_systematic
-#>   start_time end_time window_id
-#> 1      06:48    07:18         1
-#> 2      08:48    09:18         2
-#> 3      10:48    11:18         3
-#> 4      12:48    13:18         4
 ```
+
+*(no date column to render calendar)*
 
 ### Fixed Strategy
 
@@ -357,11 +353,9 @@ fw <- data.frame(
 )
 ct_fixed <- generate_count_times(strategy = "fixed", fixed_windows = fw)
 ct_fixed
-#>   start_time end_time window_id
-#> 1      07:00    07:30         1
-#> 2      09:30    10:00         2
-#> 3      12:00    12:30         3
 ```
+
+*(no date column to render calendar)*
 
 ### Exporting Count Time Schedules
 
@@ -375,6 +369,51 @@ for field printing without any conversion step.
 ``` r
 write_schedule(ct_systematic, "count_times_2024.csv")
 ```
+
+## Combining the Daily Schedule with Count Time Windows
+
+[`generate_schedule()`](https://chrischizinski.github.io/tidycreel/reference/generate_schedule.md)
+and
+[`generate_count_times()`](https://chrischizinski.github.io/tidycreel/reference/generate_count_times.md)
+each return a separate `creel_schedule`. Before field dispatch,
+biologists need a single table — one row per (date x period x count
+window) — that tells each crew exactly when to count.
+[`attach_count_times()`](https://chrischizinski.github.io/tidycreel/reference/attach_count_times.md)
+performs the cross-join in one step.
+
+``` r
+sched <- generate_schedule(
+  start_date = "2024-06-01", end_date = "2024-06-07",
+  n_periods = 2,
+  sampling_rate = c(weekday = 0.5, weekend = 0.8),
+  seed = 42
+)
+ct <- generate_count_times(
+  start_time = "06:00", end_time = "14:00",
+  strategy = "systematic", n_windows = 3,
+  window_size = 30, min_gap = 10,
+  seed = 42
+)
+field_schedule <- attach_count_times(sched, ct)
+field_schedule
+```
+
+### June 2024
+
+| Sun   | Mon   | Tue | Wed | Thu | Fri   | Sat   |
+|-------|-------|-----|-----|-----|-------|-------|
+|       |       |     |     |     |       | WEEKE |
+| WEEKE | WEEKD | 04  | 05  | 06  | WEEKD | 08    |
+| 09    | 10    | 11  | 12  | 13  | 14    | 15    |
+| 16    | 17    | 18  | 19  | 20  | 21    | 22    |
+| 23    | 24    | 25  | 26  | 27  | 28    | 29    |
+| 30    |       |     |     |     |       |       |
+
+The result has `nrow(sched) * nrow(ct)` rows — every sampled day-period
+combination appears once per count window. Pass `field_schedule`
+directly to
+[`write_schedule()`](https://chrischizinski.github.io/tidycreel/reference/write_schedule.md)
+to produce a printable field dispatch sheet.
 
 ## Validating the Design Before the Season
 

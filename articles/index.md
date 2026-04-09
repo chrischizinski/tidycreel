@@ -19,12 +19,16 @@ Workflow vignettes for each supported creel survey design.
   tidycreel](https://chrischizinski.github.io/tidycreel/articles/camera-surveys.md):
 - [Aerial Survey Analysis with
   tidycreel](https://chrischizinski.github.io/tidycreel/articles/aerial-surveys.md):
+- [GLMM Aerial Effort
+  Estimation](https://chrischizinski.github.io/tidycreel/articles/aerial-glmm.md):
 
 ### Estimation
 
 Catch rate, harvest, effort, and spatially stratified estimation
 techniques.
 
+- [tidycreel and the survey Package: A Side-by-Side
+  Guide](https://chrischizinski.github.io/tidycreel/articles/survey-tidycreel.md):
 - [Interview-Based Catch
   Estimation](https://chrischizinski.github.io/tidycreel/articles/interview-estimation.md):
 - [Incomplete Trip
@@ -47,6 +51,20 @@ planning.
   Summaries](https://chrischizinski.github.io/tidycreel/articles/unextrapolated-summaries.md):
 - [Survey Scheduling: Count and Interview
   Periods](https://chrischizinski.github.io/tidycreel/articles/survey-scheduling.md):
+- [Visualising Creel Survey Designs and
+  Results](https://chrischizinski.github.io/tidycreel/articles/visualisation.md):
+
+### Statistical Methods
+
+Conceptual walkthroughs of the statistical mechanics behind effort and
+catch estimation pipelines.
+
+- [Counts to Effort: Statistical
+  Pipeline](https://chrischizinski.github.io/tidycreel/articles/effort-pipeline.md):
+- [Interviews to Catch: Statistical
+  Pipeline](https://chrischizinski.github.io/tidycreel/articles/catch-pipeline.md):
+- [Variance Methods: Taylor, Bootstrap, and
+  Jackknife](https://chrischizinski.github.io/tidycreel/articles/replicate-designs.md):
 
 ### Reference & Equations
 

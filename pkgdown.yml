@@ -2,21 +2,27 @@ pandoc: 3.1.11
 pkgdown: 2.2.0
 pkgdown_sha: ~
 articles:
+  aerial-glmm: aerial-glmm.html
   aerial-surveys: aerial-surveys.html
   bus-route-equations: bus-route-equations.html
   bus-route-surveys: bus-route-surveys.html
   camera-surveys: camera-surveys.html
+  catch-pipeline: catch-pipeline.html
+  effort-pipeline: effort-pipeline.html
   flexible-count-estimation: flexible-count-estimation.html
   ice-fishing: ice-fishing.html
   incomplete-trips: incomplete-trips.html
   interview-estimation: interview-estimation.html
   progressive-count-surveys: progressive-count-surveys.html
+  replicate-designs: replicate-designs.html
   section-estimation: section-estimation.html
   survey-scheduling: survey-scheduling.html
+  survey-tidycreel: survey-tidycreel.html
   temporal-extrapolation: temporal-extrapolation.html
   tidycreel: tidycreel.html
   unextrapolated-summaries: unextrapolated-summaries.html
-last_built: 2026-04-03T15:50Z
+  visualisation: visualisation.html
+last_built: 2026-04-09T16:52Z
 urls:
   reference: https://chrischizinski.github.io/tidycreel/reference
   article: https://chrischizinski.github.io/tidycreel/articles
