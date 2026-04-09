@@ -12,6 +12,7 @@ estimate_catch_rate(
   estimator = "ratio-of-means",
   use_trips = NULL,
   truncate_at = 0.5,
+  targeted = TRUE,
   missing_sections = "warn"
 )
 }
@@ -35,9 +36,11 @@ Options: \code{"taylor"} (default, Taylor linearization),
 0.95 for 95\% confidence intervals). Must be between 0 and 1.}
 
 \item{estimator}{Character string specifying estimation method. Options:
-\code{"ratio-of-means"} (default, for complete trips) or \code{"mor"}
-(mean-of-ratios, for incomplete trips). MOR requires trip_status field
-and errors if no incomplete trips are available. See Details.}
+\code{"ratio-of-means"} (default, for complete trips), \code{"mor"}
+(mean-of-ratios, for incomplete trips), or \code{"mortr"} (truncated
+mean-of-ratios — same as \code{"mor"} but \code{truncate_at} is
+mandatory and defaults to 0.5 h). MOR and MORtr require the trip_status
+field and error if no incomplete trips are available. See Details.}
 
 \item{use_trips}{Character string specifying which trip type to use when
 trip_status field is provided. Options: \code{"complete"} (default when
@@ -57,6 +60,13 @@ Default is 0.5 hours (30 minutes) per Hoenig et al. (1997) to prevent
 unstable variance from very short trips. Trips with duration < truncate_at
 are excluded before MOR estimation. Set to NULL to disable truncation
 (research mode only). Ignored for ratio-of-means estimator.}
+
+\item{targeted}{Logical. When \code{TRUE} (default), all trips are used.
+When \code{FALSE}, zero-effort trips are excluded before MOR/MORtr
+estimation — appropriate for non-targeted species where most trips have
+zero catch. A \code{cli_warn()} is emitted when more than 70\\% of trips
+have zero catch and \code{targeted = TRUE} (possible mis-specification).
+Ignored for \code{ratio-of-means} estimator.}
 
 \item{missing_sections}{Character string controlling behavior when a
 registered section has no interview observations. \code{"warn"} (default)

@@ -2514,3 +2514,175 @@ test_that("EDGE-CR-01: estimate_catch_rate() with all-zero catch returns estimat
   expect_equal(result$estimates$estimate, 0)
   expect_equal(result$estimates$se, 0)
 })
+
+# ---- M013 S01: mortr estimator and targeted argument -------------------------
+
+make_mortr_design <- function(n_complete = 20, n_incomplete = 30,
+                              zero_catch_fraction = 0) {
+  cal <- data.frame(
+    date = as.Date(c(
+      "2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04",
+      "2024-06-08", "2024-06-09"
+    )),
+    day_type = rep(c("weekday", "weekend"), each = 3),
+    stringsAsFactors = FALSE
+  )
+  design <- suppressMessages(
+    creel_design(cal, date = date, strata = day_type)
+  )
+
+  n_total <- n_complete + n_incomplete
+  n_zero  <- round(n_incomplete * zero_catch_fraction)
+
+  catches <- c(
+    sample(4:8, n_complete, replace = TRUE),
+    c(
+      rep(0L, n_zero),
+      sample(3:7, n_incomplete - n_zero, replace = TRUE)
+    )
+  )
+  durations <- c(
+    rep(3.0, n_complete),
+    c(
+      rep(0.3, 5),           # short trips below default 0.5h threshold
+      rep(2.0, n_incomplete - 5)
+    )
+  )
+
+  interviews <- data.frame(
+    date          = as.Date(rep(c("2024-06-01", "2024-06-02",
+                                  "2024-06-03", "2024-06-04"),
+                                length.out = n_total)),
+    catch_total   = catches,
+    hours_fished  = durations,
+    trip_status   = c(rep("complete", n_complete),
+                      rep("incomplete", n_incomplete)),
+    trip_duration = durations,
+    stringsAsFactors = FALSE
+  )
+
+  suppressMessages(suppressWarnings(
+    add_interviews(design, interviews,
+      catch        = catch_total,
+      effort       = hours_fished,
+      trip_status  = trip_status,
+      trip_duration = trip_duration
+    )
+  ))
+}
+
+test_that("M013-MORTR-01: estimator='mortr' returns method='mean-of-ratios-truncated-cpue'", {
+  design <- make_mortr_design()
+  result <- suppressWarnings(
+    estimate_catch_rate(design, estimator = "mortr")
+  )
+  expect_equal(result$method, "mean-of-ratios-truncated-cpue")
+})
+
+test_that("M013-MORTR-02: estimator='mortr' returns valid numeric SE and CI", {
+  design <- make_mortr_design()
+  result <- suppressWarnings(
+    estimate_catch_rate(design, estimator = "mortr")
+  )
+  est <- result$estimates
+  expect_true(is.finite(est$estimate))
+  expect_true(is.finite(est$se))
+  expect_true(est$se >= 0)
+  expect_true(est$ci_lower <= est$estimate)
+  expect_true(est$ci_upper >= est$estimate)
+})
+
+test_that("M013-MORTR-03: estimator='mortr' excludes short trips (truncation active)", {
+  design <- make_mortr_design()  # 5 trips with duration 0.3h (below 0.5h default)
+  result_mortr <- suppressWarnings(
+    estimate_catch_rate(design, estimator = "mortr")
+  )
+  result_mor <- suppressWarnings(
+    estimate_catch_rate(design, estimator = "mor", truncate_at = NULL)
+  )
+  # After truncation, mortr uses fewer trips => n may differ
+  expect_true(result_mortr$mor_n_truncated >= 5L)
+})
+
+test_that("M013-MORTR-04: estimator='mortr' with custom truncate_at works", {
+  design <- make_mortr_design()
+  result <- suppressWarnings(
+    estimate_catch_rate(design, estimator = "mortr", truncate_at = 1.0)
+  )
+  expect_equal(result$method, "mean-of-ratios-truncated-cpue")
+  expect_true(is.finite(result$estimates$estimate))
+})
+
+test_that("M013-MORTR-05: mortr is backward-compat with 'mor' + truncate_at", {
+  design <- make_mortr_design()
+  res_mortr <- suppressWarnings(
+    estimate_catch_rate(design, estimator = "mortr", truncate_at = 0.5)
+  )
+  res_mor <- suppressWarnings(
+    estimate_catch_rate(design, estimator = "mor", truncate_at = 0.5)
+  )
+  # Same estimate value; method name differs
+  expect_equal(res_mortr$estimates$estimate, res_mor$estimates$estimate,
+               tolerance = 1e-8)
+  expect_equal(res_mortr$method,
+               "mean-of-ratios-truncated-cpue")
+  expect_equal(res_mor$method, "mean-of-ratios-cpue")
+})
+
+test_that("M013-TARGETED-01: targeted=FALSE excludes zero-catch trips", {
+  design <- make_mortr_design(zero_catch_fraction = 0.5)
+  result_targeted_true  <- suppressWarnings(
+    estimate_catch_rate(design, estimator = "mor",
+                        truncate_at = NULL, targeted = TRUE)
+  )
+  result_targeted_false <- suppressWarnings(
+    estimate_catch_rate(design, estimator = "mor",
+                        truncate_at = NULL, targeted = FALSE)
+  )
+  # FALSE removes zero-catch trips -> smaller n
+  expect_lt(result_targeted_false$estimates$n,
+            result_targeted_true$estimates$n)
+})
+
+test_that("M013-TARGETED-02: targeted=FALSE emits cli_warn with exclusion count", {
+  design <- make_mortr_design(zero_catch_fraction = 0.5)
+  expect_warning(
+    estimate_catch_rate(design, estimator = "mor",
+                        truncate_at = NULL, targeted = FALSE),
+    regexp = "zero-catch"
+  )
+})
+
+test_that("M013-TARGETED-03: targeted=TRUE (default) emits warn when >70% zero-catch", {
+  design <- make_mortr_design(n_incomplete = 40, zero_catch_fraction = 0.8)
+  expect_warning(
+    estimate_catch_rate(design, estimator = "mor",
+                        truncate_at = NULL, targeted = TRUE),
+    regexp = "non-targeted|zero catch"
+  )
+})
+
+test_that("M013-TARGETED-04: targeted=FALSE with all zero-catch aborts", {
+  design <- make_mortr_design(zero_catch_fraction = 1.0)
+  expect_error(
+    suppressWarnings(
+      estimate_catch_rate(design, estimator = "mor",
+                          truncate_at = NULL, targeted = FALSE)
+    ),
+    regexp = "No trips remain"
+  )
+})
+
+test_that("M013-TARGETED-05: targeted=TRUE default preserves backward compatibility", {
+  design <- make_mortr_design()
+  result_default <- suppressWarnings(
+    estimate_catch_rate(design, estimator = "mor", truncate_at = NULL)
+  )
+  result_targeted <- suppressWarnings(
+    estimate_catch_rate(design, estimator = "mor",
+                        truncate_at = NULL, targeted = TRUE)
+  )
+  expect_equal(result_default$estimates$estimate,
+               result_targeted$estimates$estimate,
+               tolerance = 1e-8)
+})

@@ -485,9 +485,11 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
 #' @param conf_level Numeric confidence level for confidence intervals (default:
 #'   0.95 for 95% confidence intervals). Must be between 0 and 1.
 #' @param estimator Character string specifying estimation method. Options:
-#'   \code{"ratio-of-means"} (default, for complete trips) or \code{"mor"}
-#'   (mean-of-ratios, for incomplete trips). MOR requires trip_status field
-#'   and errors if no incomplete trips are available. See Details.
+#'   \code{"ratio-of-means"} (default, for complete trips), \code{"mor"}
+#'   (mean-of-ratios, for incomplete trips), or \code{"mortr"} (truncated
+#'   mean-of-ratios — same as \code{"mor"} but \code{truncate_at} is
+#'   mandatory and defaults to 0.5 h). MOR and MORtr require the trip_status
+#'   field and error if no incomplete trips are available. See Details.
 #' @param use_trips Character string specifying which trip type to use when
 #'   trip_status field is provided. Options: \code{"complete"} (default when
 #'   NULL) uses only complete trips with ratio-of-means estimator,
@@ -505,6 +507,12 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
 #'   unstable variance from very short trips. Trips with duration < truncate_at
 #'   are excluded before MOR estimation. Set to NULL to disable truncation
 #'   (research mode only). Ignored for ratio-of-means estimator.
+#' @param targeted Logical. When \code{TRUE} (default), all trips are used.
+#'   When \code{FALSE}, zero-effort trips are excluded before MOR/MORtr
+#'   estimation — appropriate for non-targeted species where most trips have
+#'   zero catch. A \code{cli_warn()} is emitted when more than 70\% of trips
+#'   have zero catch and \code{targeted = TRUE} (possible mis-specification).
+#'   Ignored for \code{ratio-of-means} estimator.
 #' @param missing_sections Character string controlling behavior when a
 #'   registered section has no interview observations. \code{"warn"} (default)
 #'   emits a \code{cli_warn()} and inserts an NA row with
@@ -644,6 +652,7 @@ estimate_catch_rate <- function(design,
                                 estimator = "ratio-of-means",
                                 use_trips = NULL,
                                 truncate_at = 0.5,
+                                targeted = TRUE,
                                 missing_sections = "warn") {
   # Capture by parameter BEFORE validation
   by_quo <- rlang::enquo(by)
@@ -665,13 +674,28 @@ estimate_catch_rate <- function(design,
   }
 
   # Validate estimator parameter
-  valid_estimators <- c("ratio-of-means", "mor")
+  valid_estimators <- c("ratio-of-means", "mor", "mortr")
   if (!estimator %in% valid_estimators) {
     cli::cli_abort(c(
       "Invalid estimator: {.val {estimator}}",
       "x" = "Must be one of: {.val {valid_estimators}}",
-      "i" = "{.val ratio-of-means} for complete trips, {.val mor} for incomplete trips"
+      "i" = paste(
+        "{.val ratio-of-means} for complete trips,",
+        "{.val mor} for incomplete trips,",
+        "{.val mortr} for truncated mean-of-ratios"
+      )
     ))
+  }
+
+  # Normalise mortr -> mor with mandatory truncation
+  if (estimator == "mortr") {
+    if (is.null(truncate_at)) {
+      truncate_at <- 0.5
+    }
+    estimator <- "mor"
+    mortr_active <- TRUE
+  } else {
+    mortr_active <- FALSE
   }
 
   # Validate truncate_at parameter
@@ -978,7 +1002,7 @@ estimate_catch_rate <- function(design,
   }
 
   # If MOR estimator requested, validate and filter to incomplete trips
-  if (estimator == "mor") {
+  if (estimator %in% c("mor", "mortr")) {
     # Determine if we already filtered via use_trips
     # If use_trips='incomplete', we already filtered to incomplete in use_trips block
     # If use_trips='complete', we filtered to complete (MOR will see only complete trips - non-standard but valid)
@@ -1026,6 +1050,57 @@ estimate_catch_rate <- function(design,
     # For use_trips='complete' + MOR, skip standard MOR warning (already warned above)
     if (!use_trips_was_complete) {
       mor_estimation_warning(n_incomplete, n_total) # nolint: object_usage_linter
+    }
+
+    # targeted = FALSE: exclude zero-catch trips (non-targeted species)
+    if (!targeted) {
+      catch_col_local <- design$catch_col
+      n_before_target <- nrow(incomplete_interviews)
+      zero_catch_rows <- incomplete_interviews[[catch_col_local]] == 0 |
+        is.na(incomplete_interviews[[catch_col_local]])
+      n_zero <- sum(zero_catch_rows, na.rm = TRUE)
+      incomplete_interviews <- incomplete_interviews[!zero_catch_rows, ]
+      if (n_zero > 0) {
+        pct_excluded <- round(100 * n_zero / n_before_target) # nolint: object_usage_linter
+        cli::cli_warn(c(
+          "{n_zero} zero-catch trip{?s} excluded ({pct_excluded}% of trips).",
+          "i" = "Set {.code targeted = TRUE} to include zero-catch trips."
+        ))
+      }
+      if (nrow(incomplete_interviews) == 0) {
+        cli::cli_abort(c(
+          "No trips remain after zero-catch exclusion.",
+          "x" = "All trips had zero catch with {.code targeted = FALSE}.",
+          "i" = "Set {.code targeted = TRUE} or check catch data."
+        ))
+      }
+    } else {
+      # Warn when targeted = TRUE but most trips are zero-catch
+      # (possible mis-specification for a non-targeted species)
+      catch_col_local <- design$catch_col
+      if (!is.null(catch_col_local) &&
+            catch_col_local %in% names(incomplete_interviews)) {
+        n_total_trips <- nrow(incomplete_interviews)
+        n_zero_catch <- sum(
+          incomplete_interviews[[catch_col_local]] == 0 |
+            is.na(incomplete_interviews[[catch_col_local]]),
+          na.rm = TRUE
+        )
+        if (n_total_trips > 0 &&
+              (n_zero_catch / n_total_trips) > 0.70) {
+          cli::cli_warn(c(
+            paste0(
+              round(100 * n_zero_catch / n_total_trips),
+              "% of trips have zero catch."
+            ),
+            "i" = paste0(
+              "For non-targeted species, consider ",
+              "{.code targeted = FALSE} to exclude zero-catch trips ",
+              "before MOR estimation."
+            )
+          ))
+        }
+      }
     }
 
     # Apply truncation if specified
@@ -1116,9 +1191,11 @@ estimate_catch_rate <- function(design,
   }
 
   # Standard (non-species) routing
+  # Restore mortr estimator string for downstream method labelling
+  dispatch_estimator <- if (mortr_active) "mortr" else estimator
   if (rlang::quo_is_null(by_quo)) {
     validate_ratio_sample_size(design, NULL, type = "cpue") # nolint: object_usage_linter
-    return(estimate_cpue_total(design, variance, conf_level, estimator)) # nolint: object_usage_linter
+    return(estimate_cpue_total(design, variance, conf_level, dispatch_estimator)) # nolint: object_usage_linter
   } else {
     by_cols <- tidyselect::eval_select(
       by_quo,
@@ -1129,7 +1206,9 @@ estimate_catch_rate <- function(design,
     )
     by_vars <- names(by_cols)
     validate_ratio_sample_size(design, by_vars, type = "cpue") # nolint: object_usage_linter
-    return(estimate_cpue_grouped(design, by_vars, variance, conf_level, estimator)) # nolint: object_usage_linter
+    return(estimate_cpue_grouped( # nolint: object_usage_linter
+      design, by_vars, variance, conf_level, dispatch_estimator
+    ))
   }
 }
 
@@ -2401,7 +2480,7 @@ estimate_cpue_total <- function(design, variance_method, conf_level,
   }
 
   # Determine method based on estimator
-  if (estimator == "mor") {
+  if (estimator %in% c("mor", "mortr")) {
     # Mean-of-ratios: compute individual ratios, then take mean
     # Add ratio column to data
     interviews_data$cpue_ratio <- interviews_data[[catch_col]] / interviews_data[[effort_col]]
@@ -2421,7 +2500,11 @@ estimate_cpue_total <- function(design, variance_method, conf_level,
       survey::svymean(~cpue_ratio, svy_design)
     )
 
-    method_name <- "mean-of-ratios-cpue"
+    method_name <- if (estimator == "mortr") {
+      "mean-of-ratios-truncated-cpue"
+    } else {
+      "mean-of-ratios-cpue"
+    }
   } else {
     # Ratio-of-means: standard svyratio approach
     catch_formula <- stats::reformulate(catch_col)
@@ -2453,7 +2536,7 @@ estimate_cpue_total <- function(design, variance_method, conf_level,
   )
 
   # Return appropriate creel_estimates object (MOR or standard)
-  if (estimator == "mor") {
+  if (estimator %in% c("mor", "mortr")) {
     # Get trip counts and truncation metadata stored during MOR filtering
     new_creel_estimates_mor( # nolint: object_usage_linter
       estimates = estimates_df,
@@ -2501,16 +2584,20 @@ estimate_cpue_grouped <- function(design, by_vars, variance_method, conf_level,
   }
 
   # Determine method based on estimator
-  if (estimator == "mor") {
+  if (estimator %in% c("mor", "mortr")) {
     # Mean-of-ratios: add ratio column
     interviews_data$cpue_ratio <- interviews_data[[catch_col]] / interviews_data[[effort_col]]
-    method_name <- "mean-of-ratios-cpue"
+    method_name <- if (estimator == "mortr") {
+      "mean-of-ratios-truncated-cpue"
+    } else {
+      "mean-of-ratios-cpue"
+    }
   } else {
     method_name <- "ratio-of-means-cpue"
   }
 
   # Build temporary survey design from filtered data (or with ratio column for MOR)
-  if (any(zero_effort) || estimator == "mor") {
+  if (any(zero_effort) || estimator %in% c("mor", "mortr")) {
     # Get strata column(s) from original design
     strata_cols <- design$strata_cols
     strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0) {
@@ -2529,7 +2616,7 @@ estimate_cpue_grouped <- function(design, by_vars, variance_method, conf_level,
   # Build formulas for svyby
   by_formula <- stats::reformulate(by_vars)
 
-  if (estimator == "mor") {
+  if (estimator %in% c("mor", "mortr")) {
     # MOR: use svyby with svymean on ratio
     svy_result <- wrap_survey_call(survey::svyby(
       formula = ~cpue_ratio,
@@ -2601,7 +2688,7 @@ estimate_cpue_grouped <- function(design, by_vars, variance_method, conf_level,
   estimates_df <- estimates_df[col_order]
 
   # Return appropriate creel_estimates object (MOR or standard)
-  if (estimator == "mor") {
+  if (estimator %in% c("mor", "mortr")) {
     # Get trip counts and truncation metadata stored during MOR filtering
     new_creel_estimates_mor( # nolint: object_usage_linter
       estimates = estimates_df,
