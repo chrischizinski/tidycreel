@@ -109,6 +109,12 @@ check data completeness, and inspect estimate output.
   : Coerce a creel_data_validation to a plain data frame
 - [`standardize_species()`](https://chrischizinski.github.io/tidycreel/reference/standardize_species.md)
   : Standardize species names to AFS codes
+- [`validation_report()`](https://chrischizinski.github.io/tidycreel/reference/validation_report.md)
+  : Generate a validation summary report
+- [`print(`*`<creel_validation_report>`*`)`](https://chrischizinski.github.io/tidycreel/reference/print.creel_validation_report.md)
+  : Print a creel_validation_report
+- [`as.data.frame(`*`<creel_validation_report>`*`)`](https://chrischizinski.github.io/tidycreel/reference/as.data.frame.creel_validation_report.md)
+  : Coerce a creel_validation_report to a plain data frame
 
 ## Planning & Sample Size
 

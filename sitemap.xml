@@ -36,6 +36,7 @@
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/adjust_nonresponse.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/as.data.frame.creel_data_validation.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/as.data.frame.creel_summary.html</loc></url>
+<url><loc>https://chrischizinski.github.io/tidycreel/reference/as.data.frame.creel_validation_report.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/as.data.frame.creel_variance_comparison.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/as_survey_design.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/attach_count_times.html</loc></url>
@@ -115,6 +116,7 @@
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/print.creel_summary.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/print.creel_tost_validation.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/print.creel_validation.html</loc></url>
+<url><loc>https://chrischizinski.github.io/tidycreel/reference/print.creel_validation_report.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/print.creel_variance_comparison.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/read_schedule.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/season_summary.html</loc></url>
@@ -138,6 +140,7 @@
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/validate_creel_schema.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/validate_design.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/validate_incomplete_trips.html</loc></url>
+<url><loc>https://chrischizinski.github.io/tidycreel/reference/validation_report.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/write_estimates.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/write_schedule.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/review_prompt.html</loc></url>
