@@ -96,13 +96,18 @@ reference:
 
   - title: "Planning & Sample Size"
     desc: >
-      Pre-survey tools for sample size determination and power analysis.
+      Pre-survey tools for sample size determination, power analysis, and
+      design comparison.
     contents:
       - power_creel
       - creel_n_effort
       - creel_n_cpue
       - creel_power
       - cv_from_n
+      - compare_designs
+      - print.creel_design_comparison
+      - autoplot.creel_design_comparison
+      - as.data.frame.creel_design_comparison
 
   - title: "Scheduling"
     desc: >
