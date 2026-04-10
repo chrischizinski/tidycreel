@@ -39,6 +39,7 @@
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/as.data.frame.creel_summary.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/as.data.frame.creel_validation_report.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/as.data.frame.creel_variance_comparison.html</loc></url>
+<url><loc>https://chrischizinski.github.io/tidycreel/reference/as_hybrid_svydesign.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/as_survey_design.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/attach_count_times.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_design_comparison.html</loc></url>
@@ -114,6 +115,7 @@
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/print.creel_estimates.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/print.creel_estimates_diagnostic.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/print.creel_estimates_mor.html</loc></url>
+<url><loc>https://chrischizinski.github.io/tidycreel/reference/print.creel_hybrid_svydesign.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/print.creel_schedule.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/print.creel_schema.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/print.creel_season_summary.html</loc></url>

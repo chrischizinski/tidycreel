@@ -187,6 +187,10 @@ argument.
   : Register spatial sections for a creel survey design
 - [`as_survey_design()`](https://chrischizinski.github.io/tidycreel/reference/as_survey_design.md)
   : Extract internal survey design object for advanced use
+- [`as_hybrid_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_hybrid_svydesign.md)
+  : Construct a hybrid access + roving survey design
+- [`print(`*`<creel_hybrid_svydesign>`*`)`](https://chrischizinski.github.io/tidycreel/reference/print.creel_hybrid_svydesign.md)
+  : Print a creel_hybrid_svydesign
 - [`compute_effort()`](https://chrischizinski.github.io/tidycreel/reference/compute_effort.md)
   : Resolve fishing effort from timestamps or self-reported time
 - [`compute_angler_effort()`](https://chrischizinski.github.io/tidycreel/reference/compute_angler_effort.md)
