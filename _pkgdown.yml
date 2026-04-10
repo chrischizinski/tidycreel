@@ -95,6 +95,7 @@ reference:
     desc: >
       Pre-survey tools for sample size determination and power analysis.
     contents:
+      - power_creel
       - creel_n_effort
       - creel_n_cpue
       - creel_power
