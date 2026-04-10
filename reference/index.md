@@ -101,6 +101,12 @@ check data completeness, and inspect estimate output.
   estimates
 - [`adjust_nonresponse()`](https://chrischizinski.github.io/tidycreel/reference/adjust_nonresponse.md)
   : Adjust a creel design for nonresponse bias
+- [`validate_creel_data()`](https://chrischizinski.github.io/tidycreel/reference/validate_creel_data.md)
+  : Validate creel survey data frames
+- [`print(`*`<creel_data_validation>`*`)`](https://chrischizinski.github.io/tidycreel/reference/print.creel_data_validation.md)
+  : Print a creel_data_validation result
+- [`as.data.frame(`*`<creel_data_validation>`*`)`](https://chrischizinski.github.io/tidycreel/reference/as.data.frame.creel_data_validation.md)
+  : Coerce a creel_data_validation to a plain data frame
 
 ## Planning & Sample Size
 

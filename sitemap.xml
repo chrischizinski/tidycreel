@@ -34,6 +34,7 @@
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/add_lengths.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/add_sections.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/adjust_nonresponse.html</loc></url>
+<url><loc>https://chrischizinski.github.io/tidycreel/reference/as.data.frame.creel_data_validation.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/as.data.frame.creel_summary.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/as.data.frame.creel_variance_comparison.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/as_survey_design.html</loc></url>
@@ -99,6 +100,7 @@
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/plot_design.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/preprocess_camera_timestamps.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/print.creel_completeness_report.html</loc></url>
+<url><loc>https://chrischizinski.github.io/tidycreel/reference/print.creel_data_validation.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/print.creel_design.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/print.creel_design_report.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/print.creel_estimates.html</loc></url>
@@ -127,6 +129,7 @@
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/summary.creel_design.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/summary.creel_estimates.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/tidycreel-package.html</loc></url>
+<url><loc>https://chrischizinski.github.io/tidycreel/reference/validate_creel_data.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/validate_creel_schedule.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/validate_creel_schema.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/validate_design.html</loc></url>
