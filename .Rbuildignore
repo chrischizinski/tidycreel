@@ -65,3 +65,5 @@
 ^\.bg-shell$
 ^tidycreel\.connect$
 ^\.serena$
+^\.gsd$
+^\.gsd-id$
