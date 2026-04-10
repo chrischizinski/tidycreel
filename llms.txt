@@ -285,7 +285,8 @@ check data completeness, and inspect estimate output.
 
 ## Planning & Sample Size
 
-Pre-survey tools for sample size determination and power analysis.
+Pre-survey tools for sample size determination, power analysis, and
+design comparison.
 
 - [`power_creel()`](https://chrischizinski.github.io/tidycreel/reference/power_creel.md)
   : Unified sample-size and power interface for creel surveys
@@ -298,6 +299,14 @@ Pre-survey tools for sample size determination and power analysis.
   seasons
 - [`cv_from_n()`](https://chrischizinski.github.io/tidycreel/reference/cv_from_n.md)
   : Compute the expected CV achievable with a known sample size
+- [`compare_designs()`](https://chrischizinski.github.io/tidycreel/reference/compare_designs.md)
+  : Compare multiple survey design estimates side by side
+- [`print(`*`<creel_design_comparison>`*`)`](https://chrischizinski.github.io/tidycreel/reference/print.creel_design_comparison.md)
+  : Print a creel_design_comparison
+- [`autoplot(`*`<creel_design_comparison>`*`)`](https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_design_comparison.md)
+  : Autoplot a creel_design_comparison as a forest plot
+- [`as.data.frame(`*`<creel_design_comparison>`*`)`](https://chrischizinski.github.io/tidycreel/reference/as.data.frame.creel_design_comparison.md)
+  : Coerce a creel_design_comparison to a plain data frame
 
 ## Scheduling
 
