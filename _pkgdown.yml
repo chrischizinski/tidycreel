@@ -89,6 +89,7 @@ reference:
       - validate_creel_data
       - print.creel_data_validation
       - as.data.frame.creel_data_validation
+      - standardize_species
 
   - title: "Planning & Sample Size"
     desc: >
