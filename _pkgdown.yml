@@ -42,6 +42,7 @@ reference:
       - add_lengths
       - add_sections
       - as_survey_design
+      - est_effort_camera
       - compute_effort
       - compute_angler_effort
       - creel_schema
