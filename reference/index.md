@@ -20,6 +20,8 @@ argument.
   : Register spatial sections for a creel survey design
 - [`as_survey_design()`](https://chrischizinski.github.io/tidycreel/reference/as_survey_design.md)
   : Extract internal survey design object for advanced use
+- [`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md)
+  : Estimate angler effort from camera/time-lapse count data
 - [`as_hybrid_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_hybrid_svydesign.md)
   : Construct a hybrid access + roving survey design
 - [`print(`*`<creel_hybrid_svydesign>`*`)`](https://chrischizinski.github.io/tidycreel/reference/print.creel_hybrid_svydesign.md)
