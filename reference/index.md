@@ -114,6 +114,8 @@ check data completeness, and inspect estimate output.
 
 Pre-survey tools for sample size determination and power analysis.
 
+- [`power_creel()`](https://chrischizinski.github.io/tidycreel/reference/power_creel.md)
+  : Unified sample-size and power interface for creel surveys
 - [`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md)
   : Calculate sampling days required to achieve a target CV on effort
 - [`creel_n_cpue()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_cpue.md)
