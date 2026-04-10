@@ -86,6 +86,9 @@ reference:
       - check_completeness
       - compare_variance
       - adjust_nonresponse
+      - validate_creel_data
+      - print.creel_data_validation
+      - as.data.frame.creel_data_validation
 
   - title: "Planning & Sample Size"
     desc: >
