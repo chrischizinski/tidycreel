@@ -158,6 +158,8 @@ reference:
       - example_aerial_counts
       - example_aerial_interviews
       - example_aerial_glmm_counts
+      - creel_counts_toy
+      - creel_interviews_toy
 
   - title: internal
     contents:
