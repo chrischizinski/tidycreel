@@ -42,6 +42,8 @@ reference:
       - add_lengths
       - add_sections
       - as_survey_design
+      - as_hybrid_svydesign
+      - print.creel_hybrid_svydesign
       - compute_effort
       - compute_angler_effort
       - creel_schema
