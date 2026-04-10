@@ -382,6 +382,10 @@ vignettes and function examples.
   : Example angler interview data for aerial creel survey
 - [`example_aerial_glmm_counts`](https://chrischizinski.github.io/tidycreel/reference/example_aerial_glmm_counts.md)
   : Example multi-flight aerial count data for GLMM effort estimation
+- [`creel_counts_toy`](https://chrischizinski.github.io/tidycreel/reference/creel_counts_toy.md)
+  : Toy count data for data validation examples
+- [`creel_interviews_toy`](https://chrischizinski.github.io/tidycreel/reference/creel_interviews_toy.md)
+  : Toy interview data for data validation examples
 
 # Articles
 
