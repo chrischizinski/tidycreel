@@ -1,6 +1,8 @@
 ---
 title: "Bus-Route Survey: Equation Traceability"
-output: rmarkdown::html_vignette
+output:
+  rmarkdown::html_vignette:
+    highlight: null
 vignette: >
   %\VignetteIndexEntry{Bus-Route Survey: Equation Traceability}
   %\VignetteEngine{knitr::rmarkdown}

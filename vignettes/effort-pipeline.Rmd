@@ -1,6 +1,8 @@
 ---
 title: "Counts to Effort: Statistical Pipeline"
-output: rmarkdown::html_vignette
+output:
+  rmarkdown::html_vignette:
+    highlight: null
 vignette: >
   %\VignetteIndexEntry{Counts to Effort: Statistical Pipeline}
   %\VignetteEngine{knitr::rmarkdown}
