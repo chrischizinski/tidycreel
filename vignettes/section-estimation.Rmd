@@ -1,6 +1,8 @@
 ---
 title: "Spatially Stratified Estimation with Sections"
-output: rmarkdown::html_vignette
+output:
+  rmarkdown::html_vignette:
+    highlight: null
 vignette: >
   %\VignetteIndexEntry{Spatially Stratified Estimation with Sections}
   %\VignetteEngine{knitr::rmarkdown}

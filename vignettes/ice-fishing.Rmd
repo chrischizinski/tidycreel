@@ -1,6 +1,8 @@
 ---
 title: "Ice Fishing Survey Analysis"
-output: rmarkdown::html_vignette
+output:
+  rmarkdown::html_vignette:
+    highlight: null
 vignette: >
   %\VignetteIndexEntry{Ice Fishing Survey Analysis}
   %\VignetteEngine{knitr::rmarkdown}

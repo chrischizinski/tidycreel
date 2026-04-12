@@ -16,7 +16,7 @@ template:
 
 home:
   title: "tidycreel"
-  description: "Tidy interface for creel survey design and estimation in R."
+  description: "Tidy interface for creel survey design, estimation, visualisation, and reporting in R."
 
 authors:
   Chris Chizinski:
@@ -63,6 +63,7 @@ reference:
       - estimate_total_catch
       - estimate_total_harvest
       - estimate_total_release
+      - est_length_distribution
 
   - title: "Reporting & Diagnostics"
     desc: >
@@ -147,7 +148,10 @@ reference:
     contents:
       - plot_design
       - autoplot.creel_estimates
+      - autoplot.creel_length_distribution
       - autoplot.creel_schedule
+      - theme_creel
+      - creel_palette
 
   - title: "Example Datasets"
     desc: >
@@ -185,6 +189,7 @@ articles:
     Introduction to creel survey analysis with tidycreel.
   contents:
   - tidycreel
+  - glossary
 
 - title: "Survey Types"
   navbar: "Survey Types"
@@ -217,6 +222,7 @@ articles:
   contents:
   - unextrapolated-summaries
   - survey-scheduling
+  - survey-design-toolbox
   - visualisation
 
 - title: "Statistical Methods"

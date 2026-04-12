@@ -1,6 +1,8 @@
 ---
 title: "Bus-Route Surveys"
-output: rmarkdown::html_vignette
+output:
+  rmarkdown::html_vignette:
+    highlight: null
 vignette: >
   %\VignetteIndexEntry{Bus-Route Surveys}
   %\VignetteEngine{knitr::rmarkdown}

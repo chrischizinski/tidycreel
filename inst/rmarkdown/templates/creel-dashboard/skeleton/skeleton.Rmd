@@ -1,0 +1,137 @@
+---
+title: "Creel Dashboard"
+output:
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: fill
+    highlight: null
+runtime: shiny_prerendered
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE
+)
+
+library(tidycreel)
+library(ggplot2)
+
+data(example_calendar)
+data(example_counts)
+data(example_interviews)
+data(example_lengths)
+
+design <- creel_design(example_calendar, date = date, strata = day_type)
+design <- add_counts(design, example_counts)
+design <- add_interviews(
+  design,
+  example_interviews,
+  catch = catch_total,
+  effort = hours_fished,
+  harvest = catch_kept,
+  trip_status = trip_status,
+  trip_duration = trip_duration,
+  species_sought = species_sought,
+  n_anglers = n_anglers
+)
+design <- add_lengths(
+  design,
+  example_lengths,
+  length_uid = interview_id,
+  interview_uid = interview_id,
+  species = species,
+  length = length,
+  length_type = length_type,
+  count = count,
+  release_format = "binned"
+)
+
+effort_total <- estimate_effort(design)
+effort_by_day <- estimate_effort(design, by = day_type)
+length_dist <- est_length_distribution(design, by = species, bin_width = 25)
+report_tbl <- data.frame(
+  Metric = c(
+    "Total effort",
+    "SE",
+    "Lower CI",
+    "Upper CI"
+  ),
+  Value = c(
+    round(effort_total$estimates$estimate, 1),
+    round(effort_total$estimates$se, 1),
+    round(effort_total$estimates$ci_lower, 1),
+    round(effort_total$estimates$ci_upper, 1)
+  )
+)
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Overview
+
+The template starts from tidycreel's bundled example data and shows one simple
+pattern for turning a `creel_design` into a dashboard-style report.
+
+```{r overview-table}
+knitr::kable(
+  data.frame(
+    Metric = c(
+      "Survey days",
+      "Interview records",
+      "Estimated total effort",
+      "Length-distribution groups"
+    ),
+    Value = c(
+      nrow(example_calendar),
+      nrow(example_interviews),
+      round(effort_total$estimates$estimate, 1),
+      length(unique(length_dist$species))
+    )
+  ),
+  col.names = c("Metric", "Value")
+)
+```
+
+### Total Effort
+
+```{r effort-plot}
+ggplot2::autoplot(effort_total, title = "Estimated total effort", theme = "creel")
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Effort by Day Type
+
+```{r effort-day-type}
+ggplot2::autoplot(effort_by_day, title = "Effort by day type", theme = "creel")
+```
+
+### Weighted Length Distribution
+
+```{r length-plot}
+ggplot2::autoplot(
+  length_dist,
+  title = "Weighted length distribution by species",
+  theme = "creel"
+)
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Report Table
+
+```{r report-table}
+knitr::kable(report_tbl)
+```
+
+### Notes
+
+- Replace the example datasets with your own design, interview, and length data.
+- Use `theme = "creel"` in `autoplot()` calls for package-standard styling.
+- Extend this skeleton with additional estimates, tables, and narrative sections
+  as your reporting needs grow.

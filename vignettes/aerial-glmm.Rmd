@@ -1,6 +1,8 @@
 ---
 title: "GLMM Aerial Effort Estimation"
-output: rmarkdown::html_vignette
+output:
+  rmarkdown::html_vignette:
+    highlight: null
 vignette: >
   %\VignetteIndexEntry{GLMM Aerial Effort Estimation}
   %\VignetteEngine{knitr::rmarkdown}

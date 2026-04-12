@@ -11,21 +11,21 @@
 <!-- badges: start -->
 
 [![R-CMD-check](https://github.com/chrischizinski/tidycreel/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/chrischizinski/tidycreel/actions/workflows/R-CMD-check.yaml)
-[![pkgdown](https://img.shields.io/badge/pkgdown-pending-lightgrey)](https://chrischizinski.github.io/tidycreel/)
+[![pkgdown](https://img.shields.io/badge/pkgdown-live-1B4F72)](https://chrischizinski.github.io/tidycreel/)
 [![License:
 MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Lifecycle:
 experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 <!-- badges: end -->
 
-**Tidy Interface for Creel Survey Design and Analysis**
+**Tidy Interface for Creel Survey Design, Estimation, and Reporting**
 
 tidycreel provides a pipe-friendly interface for creel survey design,
-data management, estimation, and reporting. Built on the
-[`survey`](https://cran.r-project.org/package=survey) package for robust
-design-based inference, it lets fisheries biologists work in domain
-vocabulary — dates, strata, counts, effort — without managing survey
-design internals directly.
+data management, estimation, visualisation, and reporting. Built on the
+[`survey`](https://cran.r-project.org/package=survey) package for
+design-based inference, it lets fisheries biologists work in creel
+vocabulary — dates, strata, counts, effort, catch, lengths, schedules —
+without managing survey-package internals directly.
 
 ## Installation
 
@@ -72,7 +72,8 @@ Bus-Route
 
 <p class="small">
 
-PPS site selection with Horvitz-Thompson estimators (Malvestuto 1978).
+PPS site selection with Horvitz-Thompson estimators and enumeration
+expansion.
 </p>
 
 </div>
@@ -108,7 +109,7 @@ Camera-Monitored
 
 <p class="small">
 
-Counter and ingress-egress timestamp preprocessing.
+Counter and ingress-egress preprocessing plus camera effort indexing.
 </p>
 
 </div>
@@ -126,7 +127,7 @@ Aerial Survey
 
 <p class="small">
 
-Single-overflight effort with calibrated open-hours scaling.
+Single-overflight effort estimation with calibrated open-hours scaling.
 </p>
 
 </div>
@@ -138,15 +139,23 @@ Single-overflight effort with calibrated open-hours scaling.
 ## Key Capabilities
 
 - **Design-based inference** — wraps the `survey` package; biologists
-  write creel vocabulary, not survey package internals
-- **Single entry point** — `creel_design()` dispatches to the correct
-  estimator for each survey type
-- **Incomplete trip handling** — TOST equivalence testing validates
-  whether incomplete trips can be pooled
-- **Sample size and power** — `creel_n_effort()`, `creel_n_cpue()`, and
-  `creel_power()` plan surveys before data collection
-- **Season summaries** — `season_summary()` assembles estimates across
-  strata or survey periods into a wide tibble
+  write creel vocabulary, not survey-package internals.
+- **Single design entry point** — `creel_design()` dispatches to the
+  correct workflow for each survey type.
+- **Core estimation surface** — effort, catch rate, harvest rate,
+  release rate, and total-catch estimators share a common API.
+- **Extended estimation methods** — includes camera effort indexing,
+  weighted length distributions, and variance comparison helpers.
+- **Validation and cleaning** — field-level validation, species
+  standardisation, data-validation summaries, and toy datasets for
+  examples.
+- **Planning and QA** — schedule generation, count-window planning,
+  completeness checks, sample-size tools, and power calculators.
+- **Visualisation and reporting** — `autoplot()` methods,
+  `theme_creel()`, `creel_palette()`, and a flexdashboard report
+  template scaffold.
+- **Documentation and onboarding** — glossary, workflow vignettes,
+  statistical-method articles, and a pkgdown site.
 
 ## Quick Start
 
@@ -187,45 +196,70 @@ design <- add_interviews(design, interview_data,
 estimate_catch_rate(design)
 ```
 
+## Where to Start
+
+| If you want to… | Start here |
+|----|----|
+| Learn the package vocabulary | [Glossary](https://chrischizinski.github.io/tidycreel/articles/glossary.html) |
+| See the main end-to-end workflow | [Getting Started](https://chrischizinski.github.io/tidycreel/articles/tidycreel.html) |
+| Plan a season before sampling starts | [Survey Design Toolbox](https://chrischizinski.github.io/tidycreel/articles/survey-design-toolbox.html) |
+| Understand plotting and output styling | [Visualisation](https://chrischizinski.github.io/tidycreel/articles/visualisation.html) and `theme_creel()` |
+| Build a report/dashboard | Install the package, then open **R Markdown \> From Template \> Creel Dashboard** in RStudio |
+
 ## Functions at a Glance
 
 ### Survey Design
 
-- **`creel_design()`** — single entry point; dispatches on `survey_type`
-  (instantaneous, bus_route, ice, camera, aerial)
+- **`creel_design()`** — single entry point; dispatches on
+  `survey_type`.
 - **`add_counts()`**, **`add_interviews()`**, **`add_catch()`**,
-  **`add_lengths()`**, **`add_sections()`** — attach observation data
+  **`add_lengths()`**, **`add_sections()`** — attach observation data.
 
 ### Estimation
 
 - **`estimate_effort()`** — total effort with Taylor linearization,
-  bootstrap, or jackknife variance
-- **`estimate_catch_rate()`** / **`estimate_harvest_rate()`** —
-  ratio-based rates from interview data
-- **`estimate_total_catch()`** / **`estimate_total_harvest()`** — totals
-  via delta method variance propagation
+  bootstrap, or jackknife variance.
+- **`estimate_catch_rate()`**, **`estimate_harvest_rate()`**,
+  **`estimate_release_rate()`** — ratio-based interview estimators.
+- **`estimate_total_catch()`**, **`estimate_total_harvest()`**,
+  **`estimate_total_release()`** — totals via delta-method propagation.
+- **`est_effort_camera()`**, **`est_length_distribution()`** — camera
+  effort indexing and weighted size-structure estimation.
 
-### Planning
+### Validation and Diagnostics
 
-- **`creel_n_effort()`**, **`creel_n_cpue()`**, **`creel_power()`** —
-  sample size and power analysis
-- **`generate_schedule()`**, **`generate_bus_schedule()`** — sampling
-  frame generators
+- **`validate_creel_data()`**, **`validation_report()`**,
+  **`standardize_species()`** — clean and validate real-world creel
+  inputs.
+- **`validate_incomplete_trips()`**, **`validate_design()`**,
+  **`check_completeness()`**, **`compare_variance()`**,
+  **`adjust_nonresponse()`** — QA and estimator diagnostics.
 
-### Diagnostics
+### Planning and Reporting
 
-- **`validate_design()`**, **`check_completeness()`**,
-  **`season_summary()`** — pre- and post-season QA
+- **`generate_schedule()`**, **`generate_bus_schedule()`**,
+  **`generate_count_times()`**, **`attach_count_times()`** —
+  planning/scheduling helpers.
+- **`creel_n_effort()`**, **`creel_n_cpue()`**, **`creel_power()`**,
+  **`cv_from_n()`** — sample-size and power tools.
+- **`season_summary()`**, **`summary.creel_estimates()`**,
+  **`write_estimates()`** — report-ready summary/export helpers.
+- **`autoplot.creel_estimates()`**, **`autoplot.creel_schedule()`**,
+  **`autoplot.creel_length_distribution()`**, **`theme_creel()`**,
+  **`creel_palette()`** — visualisation helpers.
 
-## Vignettes
+## Selected Vignettes
 
 | Vignette | Description |
 |----|----|
 | [Getting Started](https://chrischizinski.github.io/tidycreel/articles/tidycreel.html) | Core workflow: design → counts → effort estimation |
-| [Bus-Route Surveys](https://chrischizinski.github.io/tidycreel/articles/bus-route-surveys.html) | PPS site selection, enumeration expansion, HT estimators |
-| [Bus-Route Equations](https://chrischizinski.github.io/tidycreel/articles/bus-route-equations.html) | Statistical derivations and formulas |
+| [Glossary](https://chrischizinski.github.io/tidycreel/articles/glossary.html) | Plain-language guide to tidycreel terms and concepts |
+| [Survey Design Toolbox](https://chrischizinski.github.io/tidycreel/articles/survey-design-toolbox.html) | Sample-size, power, scheduling, and pre-season planning tools |
+| [Survey Scheduling](https://chrischizinski.github.io/tidycreel/articles/survey-scheduling.html) | Count windows, schedules, validation, and completeness checks |
+| [Visualisation](https://chrischizinski.github.io/tidycreel/articles/visualisation.html) | Plotting patterns and output styling |
 | [Interview Estimation](https://chrischizinski.github.io/tidycreel/articles/interview-estimation.html) | CPUE, catch, and harvest from interview data |
-| [Incomplete Trips](https://chrischizinski.github.io/tidycreel/articles/incomplete-trips.html) | When and how to use mean-of-ratios; TOST validation |
+| [Incomplete Trips](https://chrischizinski.github.io/tidycreel/articles/incomplete-trips.html) | When and how to use mean-of-ratios and TOST validation |
+| [Replicate Designs](https://chrischizinski.github.io/tidycreel/articles/replicate-designs.html) | Variance workflows and replicate-design reasoning |
 
 ## License
 

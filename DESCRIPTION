@@ -6,9 +6,9 @@ Authors@R:
            email = "chris.chizinski@unl.edu",
            comment = c(ORCID = "0000-0001-9294-2588"))
 Description: Provides a tidy, pipe-friendly interface for creel survey
-    design, data management, estimation, and reporting. Built on the 'survey'
-    package for robust design-based inference with support for access-point,
-    roving, and hybrid survey designs.
+    design, data management, estimation, visualisation, and reporting. Built
+    on the 'survey' package for robust design-based inference with support for
+    instantaneous, bus-route, ice, camera, and aerial survey workflows.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
@@ -32,6 +32,7 @@ Suggests:
     covr,
     DBI,
     duckdb,
+    flexdashboard,
     hexSticker,
     knitr,
     lintr,
@@ -48,5 +49,5 @@ Suggests:
     writexl (>= 1.5.4)
 VignetteBuilder: knitr
 Config/testthat/edition: 3
-URL: https://github.com/chrischizinski/tidycreel, https://chrischizinski.github.io/tidycreel
+URL: https://github.com/chrischizinski/tidycreel, https://chrischizinski.github.io/tidycreel/
 BugReports: https://github.com/chrischizinski/tidycreel/issues

@@ -20,6 +20,9 @@ NULL
 #' @param object A `creel_estimates` object.
 #' @param title Optional character string for the plot title. Defaults to
 #'   a human-readable description of the estimation method.
+#' @param theme Character string selecting the plot theme. Use `"default"`
+#'   (default) to preserve the current ggplot styling or `"creel"` to apply
+#'   [theme_creel()] and package-standard colours.
 #' @param ... Additional arguments (currently unused).
 #'
 #' @return A `ggplot` object.
@@ -37,7 +40,10 @@ NULL
 #' }
 #'
 #' @export
-autoplot.creel_estimates <- function(object, title = NULL, ...) {
+autoplot.creel_estimates <- function(object, title = NULL,
+                                     theme = c("default", "creel"), ...) {
+  theme <- match.arg(theme)
+  theme_obj <- if (theme == "creel") theme_creel() else ggplot2::theme_bw() # nolint: object_usage_linter
   # Human-readable method label
   method_label <- switch(object$method,
     total = "Total Effort",
@@ -69,6 +75,7 @@ autoplot.creel_estimates <- function(object, title = NULL, ...) {
 
   if (length(group_cols) == 0L) {
     # Ungrouped: single point
+    point_colour <- if (theme == "creel") creel_palette()[["primary"]] else "black" # nolint: object_usage_linter
     plot_df <- data.frame(
       label     = method_label,
       estimate  = est$estimate,
@@ -84,15 +91,15 @@ autoplot.creel_estimates <- function(object, title = NULL, ...) {
         ymax = .data[["ci_upper"]]
       )
     ) +
-      ggplot2::geom_point(size = 3L) +
-      ggplot2::geom_errorbar(width = 0.2) +
+      ggplot2::geom_point(size = 3L, colour = point_colour) +
+      ggplot2::geom_errorbar(width = 0.2, colour = point_colour) +
       ggplot2::labs(
         x = NULL,
         y = method_label,
         title = title,
         caption = conf_pct
       ) +
-      ggplot2::theme_bw()
+      theme_obj
   } else {
     # Grouped: one point per group row
     grp_col <- group_cols[[1L]]
@@ -121,8 +128,137 @@ autoplot.creel_estimates <- function(object, title = NULL, ...) {
         title = title,
         caption = conf_pct
       ) +
-      ggplot2::theme_bw() +
       ggplot2::theme(legend.position = "none")
+
+    if (theme == "creel") {
+      p <- p +
+        ggplot2::scale_colour_manual(
+          values = unname(creel_palette(length(unique(plot_df$group)))) # nolint: object_usage_linter
+        ) +
+        theme_obj
+    } else {
+      p <- p +
+        ggplot2::scale_colour_brewer(palette = "Set2") +
+        theme_obj
+    }
+  }
+
+  p
+}
+
+#' Plot a weighted length distribution with ggplot2
+#'
+#' @description
+#' `autoplot.creel_length_distribution()` renders weighted length-frequency
+#' estimates as a histogram-style bar chart. Ungrouped results are shown as a
+#' single distribution; grouped results are faceted by the grouping variables.
+#'
+#' @param object A `creel_length_distribution` object returned by
+#'   [est_length_distribution()].
+#' @param title Optional plot title. Defaults to a title derived from the
+#'   estimated fish type (`catch`, `harvest`, or `release`).
+#' @param theme Character string selecting the plot theme. Use `"default"`
+#'   (default) to preserve the current ggplot styling or `"creel"` to apply
+#'   [theme_creel()] and package-standard colours.
+#' @param ... Additional arguments (currently unused).
+#'
+#' @return A `ggplot` object.
+#'
+#' @seealso [est_length_distribution()]
+#'
+#' @examples
+#' \dontrun{
+#' ld <- est_length_distribution(design, by = species, bin_width = 25)
+#' ggplot2::autoplot(ld)
+#' }
+#'
+#' @export
+autoplot.creel_length_distribution <- function(object, title = NULL,
+                                               theme = c("default", "creel"), ...) {
+  theme <- match.arg(theme)
+  theme_obj <- if (theme == "creel") theme_creel() else ggplot2::theme_bw() # nolint: object_usage_linter
+  type_label <- switch(attr(object, "type"),
+    catch = "Catch",
+    harvest = "Harvest",
+    release = "Release",
+    "Length"
+  )
+
+  if (is.null(title)) {
+    title <- paste(type_label, "Length Distribution")
+  }
+
+  conf_level <- attr(object, "conf_level")
+  conf_pct <- if (!is.null(conf_level)) {
+    paste0(round(conf_level * 100L), "% CI")
+  } else {
+    NULL
+  }
+
+  by_vars <- attr(object, "by_vars")
+  plot_df <- as.data.frame(object)
+  plot_df$length_bin <- factor(
+    plot_df$length_bin,
+    levels = levels(object$length_bin),
+    ordered = TRUE
+  )
+
+  if (is.null(by_vars) || length(by_vars) == 0L) {
+    fill_colour <- if (theme == "creel") creel_palette()[["accent"]] else "#2c7fb8" # nolint: object_usage_linter
+    p <- ggplot2::ggplot(
+      plot_df,
+      ggplot2::aes(
+        x = .data[["length_bin"]], # nolint: object_usage_linter
+        y = .data[["estimate"]]
+      )
+    ) +
+      ggplot2::geom_col(fill = fill_colour, alpha = 0.9) +
+      ggplot2::labs(
+        x = "Length bin",
+        y = "Weighted frequency",
+        title = title,
+        caption = conf_pct
+      ) +
+      theme_obj +
+      ggplot2::theme(
+        axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)
+      )
+  } else {
+    plot_df$.group_label <- do.call(
+      paste,
+      c(lapply(by_vars, function(v) plot_df[[v]]), sep = " / ")
+    )
+
+    p <- ggplot2::ggplot(
+      plot_df,
+      ggplot2::aes(
+        x = .data[["length_bin"]], # nolint: object_usage_linter
+        y = .data[["estimate"]],
+        fill = .data[[".group_label"]]
+      )
+    ) +
+      ggplot2::geom_col(show.legend = FALSE, alpha = 0.9) +
+      ggplot2::facet_wrap(
+        ggplot2::vars(.data[[".group_label"]]),
+        scales = "free_y"
+      ) +
+      ggplot2::labs(
+        x = "Length bin",
+        y = "Weighted frequency",
+        title = title,
+        caption = conf_pct
+      ) +
+      theme_obj +
+      ggplot2::theme(
+        axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)
+      )
+
+    if (theme == "creel") {
+      p <- p +
+        ggplot2::scale_fill_manual(
+          values = unname(creel_palette(length(unique(plot_df$.group_label)))) # nolint: object_usage_linter
+        )
+    }
   }
 
   p

@@ -1,6 +1,8 @@
 ---
 title: "Progressive Count Surveys"
-output: rmarkdown::html_vignette
+output:
+  rmarkdown::html_vignette:
+    highlight: null
 vignette: >
   %\VignetteIndexEntry{Progressive Count Surveys}
   %\VignetteEngine{knitr::rmarkdown}

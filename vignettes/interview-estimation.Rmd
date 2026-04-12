@@ -1,6 +1,8 @@
 ---
 title: "Interview-Based Catch Estimation"
-output: rmarkdown::html_vignette
+output:
+  rmarkdown::html_vignette:
+    highlight: null
 vignette: >
   %\VignetteIndexEntry{Interview-Based Catch Estimation}
   %\VignetteEngine{knitr::rmarkdown}

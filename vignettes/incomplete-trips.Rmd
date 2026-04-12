@@ -1,6 +1,8 @@
 ---
 title: "Incomplete Trip Estimation"
-output: rmarkdown::html_vignette
+output:
+  rmarkdown::html_vignette:
+    highlight: null
 vignette: >
   %\VignetteIndexEntry{Incomplete Trip Estimation}
   %\VignetteEngine{knitr::rmarkdown}

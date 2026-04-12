@@ -1,6 +1,8 @@
 ---
 title: "Visualising Creel Survey Designs and Results"
-output: rmarkdown::html_vignette
+output:
+  rmarkdown::html_vignette:
+    highlight: null
 vignette: >
   %\VignetteIndexEntry{Visualising Creel Survey Designs and Results}
   %\VignetteEngine{knitr::rmarkdown}
