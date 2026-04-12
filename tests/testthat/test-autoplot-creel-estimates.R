@@ -115,3 +115,17 @@ test_that("ggplot2::autoplot dispatches to autoplot.creel_estimates", {
   # The method should have been dispatched -- result is a ggplot
   expect_s3_class(p, "ggplot")
 })
+
+test_that("autoplot() accepts theme = 'creel' for ungrouped estimates", {
+  est <- make_effort_est()
+  p <- ggplot2::autoplot(est, theme = "creel")
+  expect_s3_class(p, "ggplot")
+  expect_no_error(ggplot2::ggplot_build(p))
+})
+
+test_that("autoplot() accepts theme = 'creel' for grouped estimates", {
+  est <- make_grouped_est()
+  p <- ggplot2::autoplot(est, theme = "creel")
+  expect_s3_class(p, "ggplot")
+  expect_no_error(ggplot2::ggplot_build(p))
+})

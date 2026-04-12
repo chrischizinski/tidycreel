@@ -1,6 +1,8 @@
 ---
 title: "Aerial Survey Analysis with tidycreel"
-output: rmarkdown::html_vignette
+output:
+  rmarkdown::html_vignette:
+    highlight: null
 vignette: >
   %\VignetteIndexEntry{Aerial Survey Analysis with tidycreel}
   %\VignetteEngine{knitr::rmarkdown}

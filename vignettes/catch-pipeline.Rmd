@@ -1,6 +1,8 @@
 ---
 title: "Interviews to Catch: Statistical Pipeline"
-output: rmarkdown::html_vignette
+output:
+  rmarkdown::html_vignette:
+    highlight: null
 vignette: >
   %\VignetteIndexEntry{Interviews to Catch: Statistical Pipeline}
   %\VignetteEngine{knitr::rmarkdown}

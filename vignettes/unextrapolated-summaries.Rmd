@@ -1,6 +1,8 @@
 ---
 title: "Unextrapolated Interview Summaries"
-output: rmarkdown::html_vignette
+output:
+  rmarkdown::html_vignette:
+    highlight: null
 vignette: >
   %\VignetteIndexEntry{Unextrapolated Interview Summaries}
   %\VignetteEngine{knitr::rmarkdown}

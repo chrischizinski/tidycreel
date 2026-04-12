@@ -4,13 +4,17 @@
 \alias{autoplot.creel_estimates}
 \title{Plot creel survey estimates with ggplot2}
 \usage{
-\method{autoplot}{creel_estimates}(object, title = NULL, ...)
+\method{autoplot}{creel_estimates}(object, title = NULL, theme = c("default", "creel"), ...)
 }
 \arguments{
 \item{object}{A \code{creel_estimates} object.}
 
 \item{title}{Optional character string for the plot title. Defaults to
 a human-readable description of the estimation method.}
+
+\item{theme}{Character string selecting the plot theme. Use \code{"default"}
+(default) to preserve the current ggplot styling or \code{"creel"} to apply
+\code{\link[=theme_creel]{theme_creel()}} and package-standard colours.}
 
 \item{...}{Additional arguments (currently unused).}
 }

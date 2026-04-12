@@ -1,6 +1,8 @@
 ---
 title: "Variance Methods: Taylor, Bootstrap, and Jackknife"
-output: rmarkdown::html_vignette
+output:
+  rmarkdown::html_vignette:
+    highlight: null
 vignette: >
   %\VignetteIndexEntry{Variance Methods: Taylor, Bootstrap, and Jackknife}
   %\VignetteEngine{knitr::rmarkdown}

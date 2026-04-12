@@ -1,6 +1,8 @@
 ---
-title: "Survey Scheduling: Count and Interview Periods"
-output: rmarkdown::html_vignette
+title: "Survey Scheduling"
+output:
+  rmarkdown::html_vignette:
+    highlight: null
 vignette: >
   %\VignetteIndexEntry{Survey Scheduling}
   %\VignetteEngine{knitr::rmarkdown}
