@@ -13,7 +13,7 @@ Requires the **ggplot2** package (listed in `Suggests`). Install it with
 
 ``` r
 # S3 method for class 'creel_estimates'
-autoplot(object, title = NULL, ...)
+autoplot(object, title = NULL, theme = c("default", "creel"), ...)
 ```
 
 ## Arguments
@@ -26,6 +26,13 @@ autoplot(object, title = NULL, ...)
 
   Optional character string for the plot title. Defaults to a
   human-readable description of the estimation method.
+
+- theme:
+
+  Character string selecting the plot theme. Use `"default"` (default)
+  to preserve the current ggplot styling or `"creel"` to apply
+  [`theme_creel()`](https://chrischizinski.github.io/tidycreel/reference/theme_creel.md)
+  and package-standard colours.
 
 - ...:
 

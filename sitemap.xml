@@ -12,6 +12,7 @@
 <url><loc>https://chrischizinski.github.io/tidycreel/articles/catch-pipeline.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/articles/effort-pipeline.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/articles/flexible-count-estimation.html</loc></url>
+<url><loc>https://chrischizinski.github.io/tidycreel/articles/glossary.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/articles/ice-fishing.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/articles/incomplete-trips.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/articles/index.html</loc></url>
@@ -19,6 +20,7 @@
 <url><loc>https://chrischizinski.github.io/tidycreel/articles/progressive-count-surveys.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/articles/replicate-designs.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/articles/section-estimation.html</loc></url>
+<url><loc>https://chrischizinski.github.io/tidycreel/articles/survey-design-toolbox.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/articles/survey-scheduling.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/articles/survey-tidycreel.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/articles/temporal-extrapolation.html</loc></url>
@@ -44,6 +46,7 @@
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/attach_count_times.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_design_comparison.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_estimates.html</loc></url>
+<url><loc>https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_length_distribution.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_schedule.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/check_completeness.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/compare_designs.html</loc></url>
@@ -55,10 +58,12 @@
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/creel_interviews_toy.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/creel_n_cpue.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.html</loc></url>
+<url><loc>https://chrischizinski.github.io/tidycreel/reference/creel_palette.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/creel_power.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/creel_schema.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/cv_from_n.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.html</loc></url>
+<url><loc>https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/estimate_effort.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/estimate_effort_aerial_glmm.html</loc></url>
@@ -141,6 +146,7 @@
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/summarize_trips.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/summary.creel_design.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/summary.creel_estimates.html</loc></url>
+<url><loc>https://chrischizinski.github.io/tidycreel/reference/theme_creel.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/tidycreel-package.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/validate_creel_data.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/validate_creel_schedule.html</loc></url>

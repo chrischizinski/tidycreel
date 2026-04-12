@@ -20,8 +20,8 @@
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><link href="extra.css" rel="stylesheet">
 <meta property="og:title" content="tidycreel">
-<meta name="description" content="Tidy interface for creel survey design and estimation in R.">
-<meta property="og:description" content="Tidy interface for creel survey design and estimation in R.">
+<meta name="description" content="Tidy interface for creel survey design, estimation, visualisation, and reporting in R.">
+<meta property="og:description" content="Tidy interface for creel survey design, estimation, visualisation, and reporting in R.">
 <meta property="og:image" content="https://chrischizinski.github.io/tidycreel/logo.png">
 </head>
 <body>
@@ -61,11 +61,12 @@
     <li><a class="dropdown-item" href="articles/flexible-count-estimation.html">Flexible Count Estimation</a></li>
     <li><a class="dropdown-item" href="articles/progressive-count-surveys.html">Progressive Count Surveys</a></li>
     <li><a class="dropdown-item" href="articles/section-estimation.html">Spatially Stratified Estimation with Sections</a></li>
-    <li><a class="dropdown-item" href="articles/temporal-extrapolation.html">Temporal Extrapolation: Monthly, Seasonal, and Annual Estimates</a></li>
+    <li><a class="dropdown-item" href="articles/temporal-extrapolation.html">Temporal Extrapolation</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Reporting &amp; Planning</h6></li>
     <li><a class="dropdown-item" href="articles/unextrapolated-summaries.html">Unextrapolated Interview Summaries</a></li>
-    <li><a class="dropdown-item" href="articles/survey-scheduling.html">Survey Scheduling: Count and Interview Periods</a></li>
+    <li><a class="dropdown-item" href="articles/survey-scheduling.html">Survey Scheduling</a></li>
+    <li><a class="dropdown-item" href="articles/survey-design-toolbox.html">Survey Design Toolbox: Planning, Comparing, and Combining Designs</a></li>
     <li><a class="dropdown-item" href="articles/visualisation.html">Visualising Creel Survey Designs and Results</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Statistical Methods</h6></li>
@@ -96,8 +97,8 @@
 <img src="https://raw.githubusercontent.com/chrischizinski/tidycreel/main/man/figures/logo.png" alt="tidycreel hex sticker" width="200"></p>
 <!-- badges: start -->
 
-<p><strong>Tidy Interface for Creel Survey Design and Analysis</strong></p>
-<p>tidycreel provides a pipe-friendly interface for creel survey design, data management, estimation, and reporting. Built on the <a href="https://cran.r-project.org/package=survey" class="external-link"><code>survey</code></a> package for robust design-based inference, it lets fisheries biologists work in domain vocabulary — dates, strata, counts, effort — without managing survey design internals directly.</p>
+<p><strong>Tidy Interface for Creel Survey Design, Estimation, and Reporting</strong></p>
+<p>tidycreel provides a pipe-friendly interface for creel survey design, data management, estimation, visualisation, and reporting. Built on the <a href="https://cran.r-project.org/package=survey" class="external-link"><code>survey</code></a> package for design-based inference, it lets fisheries biologists work in creel vocabulary — dates, strata, counts, effort, catch, lengths, schedules — without managing survey-package internals directly.</p>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
@@ -129,7 +130,7 @@ Stratified effort estimation from periodic angler counts.
 Bus-Route
 </h5>
 <p class="small">
-PPS site selection with Horvitz-Thompson estimators (Malvestuto 1978).
+PPS site selection with Horvitz-Thompson estimators and enumeration expansion.
 </p>
 </div>
 </div>
@@ -149,7 +150,7 @@ Degenerate bus-route design with certainty site sampling.
 Camera-Monitored
 </h5>
 <p class="small">
-Counter and ingress-egress timestamp preprocessing.
+Counter and ingress-egress preprocessing plus camera effort indexing.
 </p>
 </div>
 </div>
@@ -159,7 +160,7 @@ Counter and ingress-egress timestamp preprocessing.
 Aerial Survey
 </h5>
 <p class="small">
-Single-overflight effort with calibrated open-hours scaling.
+Single-overflight effort estimation with calibrated open-hours scaling.
 </p>
 </div>
 </div>
@@ -170,15 +171,21 @@ Single-overflight effort with calibrated open-hours scaling.
 </h2>
 <ul>
 <li>
-<strong>Design-based inference</strong> — wraps the <code>survey</code> package; biologists write creel vocabulary, not survey package internals</li>
+<strong>Design-based inference</strong> — wraps the <code>survey</code> package; biologists write creel vocabulary, not survey-package internals.</li>
 <li>
-<strong>Single entry point</strong> — <code><a href="reference/creel_design.html">creel_design()</a></code> dispatches to the correct estimator for each survey type</li>
+<strong>Single design entry point</strong> — <code><a href="reference/creel_design.html">creel_design()</a></code> dispatches to the correct workflow for each survey type.</li>
 <li>
-<strong>Incomplete trip handling</strong> — TOST equivalence testing validates whether incomplete trips can be pooled</li>
+<strong>Core estimation surface</strong> — effort, catch rate, harvest rate, release rate, and total-catch estimators share a common API.</li>
 <li>
-<strong>Sample size and power</strong> — <code><a href="reference/creel_n_effort.html">creel_n_effort()</a></code>, <code><a href="reference/creel_n_cpue.html">creel_n_cpue()</a></code>, and <code><a href="reference/creel_power.html">creel_power()</a></code> plan surveys before data collection</li>
+<strong>Extended estimation methods</strong> — includes camera effort indexing, weighted length distributions, and variance comparison helpers.</li>
 <li>
-<strong>Season summaries</strong> — <code><a href="reference/season_summary.html">season_summary()</a></code> assembles estimates across strata or survey periods into a wide tibble</li>
+<strong>Validation and cleaning</strong> — field-level validation, species standardisation, data-validation summaries, and toy datasets for examples.</li>
+<li>
+<strong>Planning and QA</strong> — schedule generation, count-window planning, completeness checks, sample-size tools, and power calculators.</li>
+<li>
+<strong>Visualisation and reporting</strong> — <code>autoplot()</code> methods, <code><a href="reference/theme_creel.html">theme_creel()</a></code>, <code><a href="reference/creel_palette.html">creel_palette()</a></code>, and a flexdashboard report template scaffold.</li>
+<li>
+<strong>Documentation and onboarding</strong> — glossary, workflow vignettes, statistical-method articles, and a pkgdown site.</li>
 </ul>
 </div>
 <div class="section level2">
@@ -223,6 +230,44 @@ Single-overflight effort with calibrated open-hours scaling.
 </div>
 </div>
 <div class="section level2">
+<h2 id="where-to-start">Where to Start<a class="anchor" aria-label="anchor" href="#where-to-start"></a>
+</h2>
+<table class="table">
+<colgroup>
+<col width="50%">
+<col width="50%">
+</colgroup>
+<thead><tr class="header">
+<th>If you want to…</th>
+<th>Start here</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>Learn the package vocabulary</td>
+<td><a href="https://chrischizinski.github.io/tidycreel/articles/glossary.html">Glossary</a></td>
+</tr>
+<tr class="even">
+<td>See the main end-to-end workflow</td>
+<td><a href="https://chrischizinski.github.io/tidycreel/articles/tidycreel.html">Getting Started</a></td>
+</tr>
+<tr class="odd">
+<td>Plan a season before sampling starts</td>
+<td><a href="https://chrischizinski.github.io/tidycreel/articles/survey-design-toolbox.html">Survey Design Toolbox</a></td>
+</tr>
+<tr class="even">
+<td>Understand plotting and output styling</td>
+<td>
+<a href="https://chrischizinski.github.io/tidycreel/articles/visualisation.html">Visualisation</a> and <code><a href="reference/theme_creel.html">theme_creel()</a></code>
+</td>
+</tr>
+<tr class="odd">
+<td>Build a report/dashboard</td>
+<td>Install the package, then open <strong>R Markdown &gt; From Template &gt; Creel Dashboard</strong> in RStudio</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section level2">
 <h2 id="functions-at-a-glance">Functions at a Glance<a class="anchor" aria-label="anchor" href="#functions-at-a-glance"></a>
 </h2>
 <div class="section level3">
@@ -230,9 +275,9 @@ Single-overflight effort with calibrated open-hours scaling.
 </h3>
 <ul>
 <li>
-<strong><code><a href="reference/creel_design.html">creel_design()</a></code></strong> — single entry point; dispatches on <code>survey_type</code> (instantaneous, bus_route, ice, camera, aerial)</li>
+<strong><code><a href="reference/creel_design.html">creel_design()</a></code></strong> — single entry point; dispatches on <code>survey_type</code>.</li>
 <li>
-<strong><code><a href="reference/add_counts.html">add_counts()</a></code></strong>, <strong><code><a href="reference/add_interviews.html">add_interviews()</a></code></strong>, <strong><code><a href="reference/add_catch.html">add_catch()</a></code></strong>, <strong><code><a href="reference/add_lengths.html">add_lengths()</a></code></strong>, <strong><code><a href="reference/add_sections.html">add_sections()</a></code></strong> — attach observation data</li>
+<strong><code><a href="reference/add_counts.html">add_counts()</a></code></strong>, <strong><code><a href="reference/add_interviews.html">add_interviews()</a></code></strong>, <strong><code><a href="reference/add_catch.html">add_catch()</a></code></strong>, <strong><code><a href="reference/add_lengths.html">add_lengths()</a></code></strong>, <strong><code><a href="reference/add_sections.html">add_sections()</a></code></strong> — attach observation data.</li>
 </ul>
 </div>
 <div class="section level3">
@@ -240,34 +285,42 @@ Single-overflight effort with calibrated open-hours scaling.
 </h3>
 <ul>
 <li>
-<strong><code><a href="reference/estimate_effort.html">estimate_effort()</a></code></strong> — total effort with Taylor linearization, bootstrap, or jackknife variance</li>
+<strong><code><a href="reference/estimate_effort.html">estimate_effort()</a></code></strong> — total effort with Taylor linearization, bootstrap, or jackknife variance.</li>
 <li>
-<strong><code><a href="reference/estimate_catch_rate.html">estimate_catch_rate()</a></code></strong> / <strong><code><a href="reference/estimate_harvest_rate.html">estimate_harvest_rate()</a></code></strong> — ratio-based rates from interview data</li>
+<strong><code><a href="reference/estimate_catch_rate.html">estimate_catch_rate()</a></code></strong>, <strong><code><a href="reference/estimate_harvest_rate.html">estimate_harvest_rate()</a></code></strong>, <strong><code><a href="reference/estimate_release_rate.html">estimate_release_rate()</a></code></strong> — ratio-based interview estimators.</li>
 <li>
-<strong><code><a href="reference/estimate_total_catch.html">estimate_total_catch()</a></code></strong> / <strong><code><a href="reference/estimate_total_harvest.html">estimate_total_harvest()</a></code></strong> — totals via delta method variance propagation</li>
+<strong><code><a href="reference/estimate_total_catch.html">estimate_total_catch()</a></code></strong>, <strong><code><a href="reference/estimate_total_harvest.html">estimate_total_harvest()</a></code></strong>, <strong><code><a href="reference/estimate_total_release.html">estimate_total_release()</a></code></strong> — totals via delta-method propagation.</li>
+<li>
+<strong><code><a href="reference/est_effort_camera.html">est_effort_camera()</a></code></strong>, <strong><code><a href="reference/est_length_distribution.html">est_length_distribution()</a></code></strong> — camera effort indexing and weighted size-structure estimation.</li>
 </ul>
 </div>
 <div class="section level3">
-<h3 id="planning">Planning<a class="anchor" aria-label="anchor" href="#planning"></a>
+<h3 id="validation-and-diagnostics">Validation and Diagnostics<a class="anchor" aria-label="anchor" href="#validation-and-diagnostics"></a>
 </h3>
 <ul>
 <li>
-<strong><code><a href="reference/creel_n_effort.html">creel_n_effort()</a></code></strong>, <strong><code><a href="reference/creel_n_cpue.html">creel_n_cpue()</a></code></strong>, <strong><code><a href="reference/creel_power.html">creel_power()</a></code></strong> — sample size and power analysis</li>
+<strong><code><a href="reference/validate_creel_data.html">validate_creel_data()</a></code></strong>, <strong><code><a href="reference/validation_report.html">validation_report()</a></code></strong>, <strong><code><a href="reference/standardize_species.html">standardize_species()</a></code></strong> — clean and validate real-world creel inputs.</li>
 <li>
-<strong><code><a href="reference/generate_schedule.html">generate_schedule()</a></code></strong>, <strong><code><a href="reference/generate_bus_schedule.html">generate_bus_schedule()</a></code></strong> — sampling frame generators</li>
+<strong><code><a href="reference/validate_incomplete_trips.html">validate_incomplete_trips()</a></code></strong>, <strong><code><a href="reference/validate_design.html">validate_design()</a></code></strong>, <strong><code><a href="reference/check_completeness.html">check_completeness()</a></code></strong>, <strong><code><a href="reference/compare_variance.html">compare_variance()</a></code></strong>, <strong><code><a href="reference/adjust_nonresponse.html">adjust_nonresponse()</a></code></strong> — QA and estimator diagnostics.</li>
 </ul>
 </div>
 <div class="section level3">
-<h3 id="diagnostics">Diagnostics<a class="anchor" aria-label="anchor" href="#diagnostics"></a>
+<h3 id="planning-and-reporting">Planning and Reporting<a class="anchor" aria-label="anchor" href="#planning-and-reporting"></a>
 </h3>
 <ul>
 <li>
-<strong><code><a href="reference/validate_design.html">validate_design()</a></code></strong>, <strong><code><a href="reference/check_completeness.html">check_completeness()</a></code></strong>, <strong><code><a href="reference/season_summary.html">season_summary()</a></code></strong> — pre- and post-season QA</li>
+<strong><code><a href="reference/generate_schedule.html">generate_schedule()</a></code></strong>, <strong><code><a href="reference/generate_bus_schedule.html">generate_bus_schedule()</a></code></strong>, <strong><code><a href="reference/generate_count_times.html">generate_count_times()</a></code></strong>, <strong><code><a href="reference/attach_count_times.html">attach_count_times()</a></code></strong> — planning/scheduling helpers.</li>
+<li>
+<strong><code><a href="reference/creel_n_effort.html">creel_n_effort()</a></code></strong>, <strong><code><a href="reference/creel_n_cpue.html">creel_n_cpue()</a></code></strong>, <strong><code><a href="reference/creel_power.html">creel_power()</a></code></strong>, <strong><code><a href="reference/cv_from_n.html">cv_from_n()</a></code></strong> — sample-size and power tools.</li>
+<li>
+<strong><code><a href="reference/season_summary.html">season_summary()</a></code></strong>, <strong><code><a href="reference/summary.creel_estimates.html">summary.creel_estimates()</a></code></strong>, <strong><code><a href="reference/write_estimates.html">write_estimates()</a></code></strong> — report-ready summary/export helpers.</li>
+<li>
+<strong><code><a href="reference/autoplot.creel_estimates.html">autoplot.creel_estimates()</a></code></strong>, <strong><code><a href="reference/autoplot.creel_schedule.html">autoplot.creel_schedule()</a></code></strong>, <strong><code><a href="reference/autoplot.creel_length_distribution.html">autoplot.creel_length_distribution()</a></code></strong>, <strong><code><a href="reference/theme_creel.html">theme_creel()</a></code></strong>, <strong><code><a href="reference/creel_palette.html">creel_palette()</a></code></strong> — visualisation helpers.</li>
 </ul>
 </div>
 </div>
 <div class="section level2">
-<h2 id="vignettes">Vignettes<a class="anchor" aria-label="anchor" href="#vignettes"></a>
+<h2 id="selected-vignettes">Selected Vignettes<a class="anchor" aria-label="anchor" href="#selected-vignettes"></a>
 </h2>
 <table class="table">
 <colgroup>
@@ -284,12 +337,20 @@ Single-overflight effort with calibrated open-hours scaling.
 <td>Core workflow: design → counts → effort estimation</td>
 </tr>
 <tr class="even">
-<td><a href="https://chrischizinski.github.io/tidycreel/articles/bus-route-surveys.html">Bus-Route Surveys</a></td>
-<td>PPS site selection, enumeration expansion, HT estimators</td>
+<td><a href="https://chrischizinski.github.io/tidycreel/articles/glossary.html">Glossary</a></td>
+<td>Plain-language guide to tidycreel terms and concepts</td>
 </tr>
 <tr class="odd">
-<td><a href="https://chrischizinski.github.io/tidycreel/articles/bus-route-equations.html">Bus-Route Equations</a></td>
-<td>Statistical derivations and formulas</td>
+<td><a href="https://chrischizinski.github.io/tidycreel/articles/survey-design-toolbox.html">Survey Design Toolbox</a></td>
+<td>Sample-size, power, scheduling, and pre-season planning tools</td>
+</tr>
+<tr class="even">
+<td><a href="https://chrischizinski.github.io/tidycreel/articles/survey-scheduling.html">Survey Scheduling</a></td>
+<td>Count windows, schedules, validation, and completeness checks</td>
+</tr>
+<tr class="odd">
+<td><a href="https://chrischizinski.github.io/tidycreel/articles/visualisation.html">Visualisation</a></td>
+<td>Plotting patterns and output styling</td>
 </tr>
 <tr class="even">
 <td><a href="https://chrischizinski.github.io/tidycreel/articles/interview-estimation.html">Interview Estimation</a></td>
@@ -297,7 +358,11 @@ Single-overflight effort with calibrated open-hours scaling.
 </tr>
 <tr class="odd">
 <td><a href="https://chrischizinski.github.io/tidycreel/articles/incomplete-trips.html">Incomplete Trips</a></td>
-<td>When and how to use mean-of-ratios; TOST validation</td>
+<td>When and how to use mean-of-ratios and TOST validation</td>
+</tr>
+<tr class="even">
+<td><a href="https://chrischizinski.github.io/tidycreel/articles/replicate-designs.html">Replicate Designs</a></td>
+<td>Variance workflows and replicate-design reasoning</td>
 </tr>
 </tbody>
 </table>
@@ -350,7 +415,7 @@ Single-overflight effort with calibrated open-hours scaling.
 <h2 data-toc-skip>Dev status</h2>
 <ul class="list-unstyled">
 <li><a href="https://github.com/chrischizinski/tidycreel/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/chrischizinski/tidycreel/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a></li>
-<li><a href="https://chrischizinski.github.io/tidycreel/"><img src="https://img.shields.io/badge/pkgdown-pending-lightgrey" alt="pkgdown"></a></li>
+<li><a href="https://chrischizinski.github.io/tidycreel/"><img src="https://img.shields.io/badge/pkgdown-live-1B4F72" alt="pkgdown"></a></li>
 <li><a href="https://opensource.org/licenses/MIT" class="external-link"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a></li>
 <li><a href="https://lifecycle.r-lib.org/articles/stages.html#experimental" class="external-link"><img src="https://img.shields.io/badge/lifecycle-experimental-orange.svg" alt="Lifecycle: experimental"></a></li>
 </ul>

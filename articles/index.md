@@ -6,6 +6,8 @@ Introduction to creel survey analysis with tidycreel.
 
 - [Getting Started with
   tidycreel](https://chrischizinski.github.io/tidycreel/articles/tidycreel.md):
+- [Glossary of Creel Survey
+  Terms](https://chrischizinski.github.io/tidycreel/articles/glossary.md):
 
 ### Survey Types
 
@@ -39,8 +41,8 @@ techniques.
   Surveys](https://chrischizinski.github.io/tidycreel/articles/progressive-count-surveys.md):
 - [Spatially Stratified Estimation with
   Sections](https://chrischizinski.github.io/tidycreel/articles/section-estimation.md):
-- [Temporal Extrapolation: Monthly, Seasonal, and Annual
-  Estimates](https://chrischizinski.github.io/tidycreel/articles/temporal-extrapolation.md):
+- [Temporal
+  Extrapolation](https://chrischizinski.github.io/tidycreel/articles/temporal-extrapolation.md):
 
 ### Reporting & Planning
 
@@ -49,8 +51,10 @@ planning.
 
 - [Unextrapolated Interview
   Summaries](https://chrischizinski.github.io/tidycreel/articles/unextrapolated-summaries.md):
-- [Survey Scheduling: Count and Interview
-  Periods](https://chrischizinski.github.io/tidycreel/articles/survey-scheduling.md):
+- [Survey
+  Scheduling](https://chrischizinski.github.io/tidycreel/articles/survey-scheduling.md):
+- [Survey Design Toolbox: Planning, Comparing, and Combining
+  Designs](https://chrischizinski.github.io/tidycreel/articles/survey-design-toolbox.md):
 - [Visualising Creel Survey Designs and
   Results](https://chrischizinski.github.io/tidycreel/articles/visualisation.md):
 

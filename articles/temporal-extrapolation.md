@@ -1,4 +1,4 @@
-# Temporal Extrapolation: Monthly, Seasonal, and Annual Estimates
+# Temporal Extrapolation
 
 ## Overview
 

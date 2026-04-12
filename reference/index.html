@@ -34,11 +34,12 @@
     <li><a class="dropdown-item" href="../articles/flexible-count-estimation.html">Flexible Count Estimation</a></li>
     <li><a class="dropdown-item" href="../articles/progressive-count-surveys.html">Progressive Count Surveys</a></li>
     <li><a class="dropdown-item" href="../articles/section-estimation.html">Spatially Stratified Estimation with Sections</a></li>
-    <li><a class="dropdown-item" href="../articles/temporal-extrapolation.html">Temporal Extrapolation: Monthly, Seasonal, and Annual Estimates</a></li>
+    <li><a class="dropdown-item" href="../articles/temporal-extrapolation.html">Temporal Extrapolation</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Reporting &amp; Planning</h6></li>
     <li><a class="dropdown-item" href="../articles/unextrapolated-summaries.html">Unextrapolated Interview Summaries</a></li>
-    <li><a class="dropdown-item" href="../articles/survey-scheduling.html">Survey Scheduling: Count and Interview Periods</a></li>
+    <li><a class="dropdown-item" href="../articles/survey-scheduling.html">Survey Scheduling</a></li>
+    <li><a class="dropdown-item" href="../articles/survey-design-toolbox.html">Survey Design Toolbox: Planning, Comparing, and Combining Designs</a></li>
     <li><a class="dropdown-item" href="../articles/visualisation.html">Visualising Creel Survey Designs and Results</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Statistical Methods</h6></li>
@@ -232,6 +233,13 @@
 
         </dt>
         <dd>Estimate total extrapolated release by combining effort and release rate</dd>
+
+        <dt>
+
+          <code><a href="est_length_distribution.html">est_length_distribution()</a></code>
+
+        </dt>
+        <dd>Estimate a weighted length distribution from creel interview data</dd>
       </dl></div><div class="section level2">
       <h2 id="reporting-diagnostics">Reporting &amp; Diagnostics<a class="anchor" aria-label="anchor" href="#reporting-diagnostics"></a></h2>
 
@@ -646,10 +654,31 @@
 
         <dt>
 
+          <code><a href="autoplot.creel_length_distribution.html">autoplot(<i>&lt;creel_length_distribution&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Plot a weighted length distribution with ggplot2</dd>
+
+        <dt>
+
           <code><a href="autoplot.creel_schedule.html">autoplot(<i>&lt;creel_schedule&gt;</i>)</a></code>
 
         </dt>
         <dd>Plot a creel schedule as a ggplot2 tile calendar</dd>
+
+        <dt>
+
+          <code><a href="theme_creel.html">theme_creel()</a></code>
+
+        </dt>
+        <dd>Package-standard ggplot2 theme for tidycreel plots</dd>
+
+        <dt>
+
+          <code><a href="creel_palette.html">creel_palette()</a></code>
+
+        </dt>
+        <dd>Package-standard colour palette for tidycreel plots</dd>
       </dl></div><div class="section level2">
       <h2 id="example-datasets">Example Datasets<a class="anchor" aria-label="anchor" href="#example-datasets"></a></h2>
 

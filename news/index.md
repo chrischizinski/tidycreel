@@ -1,39 +1,85 @@
 # Changelog
 
-## tidycreel 1.3.0 (2026-04-08)
+## tidycreel 1.3.0
 
 ### New features
 
 - [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
   now accepts `estimator = "mortr"` for truncated mean-of-ratios
   (MORtr), which applies `truncate_at` as a mandatory threshold and
-  labels the method `"mean-of-ratios-truncated-cpue"`. This makes the
-  truncation behaviour explicit and distinguishable from plain MOR.
+  labels the method `"mean-of-ratios-truncated-cpue"`.
 - [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
   gains a `targeted` argument (default `TRUE`). Setting
   `targeted = FALSE` excludes zero-catch trips before MOR/MORtr
-  estimation — the statistically appropriate approach for non-targeted
-  (incidental) species where most trips have zero catch. A `cli_warn()`
-  fires when `targeted = TRUE` and \>70% of trips have zero catch.
+  estimation for incidental species workflows.
 - [`compare_variance()`](https://chrischizinski.github.io/tidycreel/reference/compare_variance.md)
   computes Taylor linearization vs. replicate (bootstrap or jackknife)
-  standard errors side-by-side for any `creel_estimates` object, with a
-  divergence flag and `cli_warn()` when the two SEs differ by more than
-  a configurable threshold (default 10%).
+  standard errors side-by-side for any `creel_estimates` object.
 - [`adjust_nonresponse()`](https://chrischizinski.github.io/tidycreel/reference/adjust_nonresponse.md)
-  applies nonresponse weighting to a `creel_design` by scaling stratum
-  weights by the inverse of observed response rates. Returns an adjusted
-  `creel_design` with a `nonresponse_diagnostics` attribute detailing
-  per-stratum rates and adjustments (Armstrong & Overton 1977; Pollock
-  et al. 1994).
+  applies nonresponse weighting to a `creel_design` and records
+  per-stratum diagnostics.
+- [`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md)
+  adds ratio-calibrated camera/time-lapse effort indexing.
+- [`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md)
+  adds weighted catch-at-length / size-structure estimation from
+  attached length data.
+- [`autoplot.creel_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_length_distribution.md)
+  adds a plotting surface for weighted size-structure estimates.
+- [`theme_creel()`](https://chrischizinski.github.io/tidycreel/reference/theme_creel.md)
+  and
+  [`creel_palette()`](https://chrischizinski.github.io/tidycreel/reference/creel_palette.md)
+  add package-standard plot styling.
+
+### Data validation and cleaning
+
+- [`validate_creel_data()`](https://chrischizinski.github.io/tidycreel/reference/validate_creel_data.md)
+  adds field-level schema validation for creel inputs.
+- [`standardize_species()`](https://chrischizinski.github.io/tidycreel/reference/standardize_species.md)
+  adds canonical species-code standardisation helpers.
+- [`validation_report()`](https://chrischizinski.github.io/tidycreel/reference/validation_report.md)
+  adds formatted validation summaries that can be exported alongside
+  other report-ready outputs.
+- `creel_counts_toy` and `creel_interviews_toy` are now bundled example
+  datasets for examples, tests, and documentation.
+
+### Documentation and reporting
+
+- Added a glossary vignette for package terminology and workflow
+  language.
+- Added a survey design toolbox vignette covering planning and
+  pre-season tools.
+- Added a flexdashboard report template scaffold under
+  `inst/rmarkdown/templates/creel-dashboard/`.
+- Expanded pkgdown/reference discoverability for the newer estimation,
+  visualisation, and reporting surfaces.
+- The full pkgdown site now rebuilds cleanly after normalizing older
+  vignette header/title inconsistencies.
+
+### Improvements
+
+- [`plot_design()`](https://chrischizinski.github.io/tidycreel/reference/plot_design.md)
+  now supports multi-strata designs.
+- Main estimator
+  [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
+  methods now support opt-in `theme = "creel"` styling without changing
+  default behavior.
+- Single-PSU strata produce a structured, actionable error instead of an
+  opaque `survey:::onestrat` message.
+- Fixed a bug in the `aerial-glmm` vignette downstream estimation chunk
+  where `example_aerial_interviews` was paired with the wrong design
+  object.
+
+### Dependencies
+
+- **ggplot2** added to `Imports` to support the `autoplot.*` methods.
+- **flexdashboard** added to `Suggests` for the optional report
+  template.
 
 ### Tests
 
-- +56 new tests covering `mortr`, `targeted`,
-  [`compare_variance()`](https://chrischizinski.github.io/tidycreel/reference/compare_variance.md),
-  and
-  [`adjust_nonresponse()`](https://chrischizinski.github.io/tidycreel/reference/adjust_nonresponse.md).
-  Total: 2132 PASS.
+- Expanded test coverage for the newer estimation, validation, plotting,
+  and reporting surfaces shipped through the current 1.3.0 development
+  line.
 
 ## tidycreel 1.2.0 (2026-04-08)
 

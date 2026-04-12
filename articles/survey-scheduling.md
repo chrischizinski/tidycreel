@@ -1,4 +1,4 @@
-# Survey Scheduling: Count and Interview Periods
+# Survey Scheduling
 
 ## Overview
 

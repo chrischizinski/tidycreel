@@ -59,6 +59,8 @@ dispatch automatically on survey type.
 - [`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
   : Estimate total extrapolated release by combining effort and release
   rate
+- [`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md)
+  : Estimate a weighted length distribution from creel interview data
 
 ## Reporting & Diagnostics
 
@@ -198,8 +200,14 @@ schedules.
   : Plot a creel survey design
 - [`autoplot(`*`<creel_estimates>`*`)`](https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_estimates.md)
   : Plot creel survey estimates with ggplot2
+- [`autoplot(`*`<creel_length_distribution>`*`)`](https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_length_distribution.md)
+  : Plot a weighted length distribution with ggplot2
 - [`autoplot(`*`<creel_schedule>`*`)`](https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_schedule.md)
   : Plot a creel schedule as a ggplot2 tile calendar
+- [`theme_creel()`](https://chrischizinski.github.io/tidycreel/reference/theme_creel.md)
+  : Package-standard ggplot2 theme for tidycreel plots
+- [`creel_palette()`](https://chrischizinski.github.io/tidycreel/reference/creel_palette.md)
+  : Package-standard colour palette for tidycreel plots
 
 ## Example Datasets
 
