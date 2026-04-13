@@ -1,5 +1,6 @@
 # Helper: build minimal creel_estimates objects for testing
-make_est <- function(estimate_val, se_val = 1.0, by_vars = NULL) {
+make_est <- function(estimate_val, se_val = 1.0, by_vars = NULL,
+                     effort_target = NULL) {
   tbl <- tibble::tibble(estimate = estimate_val, se = se_val)
   tidycreel:::new_creel_estimates(
     estimates       = tbl,
@@ -7,7 +8,8 @@ make_est <- function(estimate_val, se_val = 1.0, by_vars = NULL) {
     variance_method = "taylor",
     design          = NULL,
     conf_level      = 0.95,
-    by_vars         = by_vars
+    by_vars         = by_vars,
+    effort_target   = effort_target
   )
 }
 
@@ -73,4 +75,21 @@ test_that("print.creel_season_summary returns result invisibly (REPT-01g)", {
   ret <- withVisible(print(result))
   expect_false(ret$visible)
   expect_identical(ret$value, result)
+})
+
+test_that("season_summary carries effort target metadata from inputs", {
+  e <- make_est(1000.0, effort_target = "period_total")
+  c_est <- make_est(2.5)
+  result <- season_summary(list(effort = e, cpue = c_est))
+  expect_equal(unname(result$effort_targets[["effort"]]), "period_total")
+  expect_true(is.na(result$effort_targets[["cpue"]]))
+})
+
+test_that("format.creel_season_summary shows effort target metadata when present", {
+  e <- make_est(1000.0, effort_target = "period_total")
+  c_est <- make_est(2.5)
+  result <- season_summary(list(effort = e, cpue = c_est))
+  out <- paste(format(result), collapse = "\n")
+  expect_match(out, "Effort targets", ignore.case = FALSE)
+  expect_match(out, "effort=period_total", ignore.case = FALSE)
 })

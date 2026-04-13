@@ -119,24 +119,26 @@ write_estimates <- function(
   method_label <- x$method %||% "Unknown"
   var_label <- x$variance_method %||% "Unknown"
   conf_label <- paste0(round((x$conf_level %||% 0.95) * 100), "%")
+  effort_target <- x$effort_target %||% NULL
   ts <- format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z")
 
   # ---- Write ------------------------------------------------------------------
   if (format == "csv") {
     con <- file(path, open = "wt")
     on.exit(close(con), add = TRUE)
-    writeLines(
-      c(
-        "# Survey estimates \u2014 tidycreel",
-        paste0(
-          "# Method: ", method_label,
-          " | ", var_label,
-          " | ", conf_label, " CI"
-        ),
-        paste0("# Generated: ", ts)
-      ),
-      con = con
+    header_lines <- c(
+      "# Survey estimates — tidycreel",
+      paste0(
+        "# Method: ", method_label,
+        " | ", var_label,
+        " | ", conf_label, " CI"
+      )
     )
+    if (!is.null(effort_target) && nzchar(effort_target)) {
+      header_lines <- c(header_lines, paste0("# Effort target: ", effort_target))
+    }
+    header_lines <- c(header_lines, paste0("# Generated: ", ts))
+    writeLines(header_lines, con = con)
     utils::write.csv(df, file = con, row.names = FALSE)
   } else {
     rlang::check_installed(

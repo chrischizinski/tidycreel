@@ -61,9 +61,21 @@ autoplot.creel_estimates <- function(object, title = NULL,
     object$method
   )
 
-  if (is.null(title)) title <- method_label
+  effort_target <- object$effort_target %||% NULL
+  if (!is.null(title)) {
+    plot_title <- title
+  } else if (!is.null(effort_target) && method_label %in% c("Total Effort", "Total Catch", "Total Harvest")) {
+    plot_title <- paste0(method_label, " (", effort_target, ")")
+  } else {
+    plot_title <- method_label
+  }
 
   conf_pct <- paste0(round(object$conf_level * 100L), "% CI")
+  caption_text <- if (!is.null(effort_target) && nzchar(effort_target)) {
+    paste0(conf_pct, " • Effort target: ", effort_target)
+  } else {
+    conf_pct
+  }
   est <- object$estimates
 
   # Identify group columns
@@ -96,8 +108,8 @@ autoplot.creel_estimates <- function(object, title = NULL,
       ggplot2::labs(
         x = NULL,
         y = method_label,
-        title = title,
-        caption = conf_pct
+        title = plot_title,
+        caption = caption_text
       ) +
       theme_obj
   } else {
@@ -125,8 +137,8 @@ autoplot.creel_estimates <- function(object, title = NULL,
         x = grp_col,
         y = method_label,
         color = grp_col,
-        title = title,
-        caption = conf_pct
+        title = plot_title,
+        caption = caption_text
       ) +
       ggplot2::theme(legend.position = "none")
 
