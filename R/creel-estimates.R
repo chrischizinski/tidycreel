@@ -2832,6 +2832,62 @@ estimate_cpue_grouped <- function(design, by_vars, variance_method, conf_level,
   }
 }
 
+#' Warn when effort strata have no matching species-rate rows
+#'
+#' Species/product totals are computed from stratum-level effort × rate products.
+#' If the rate table lacks one or more effort strata, the merge in
+#' `compute_stratum_product_sum()` drops those strata and the resulting total is
+#' necessarily conditioned on the covered strata only. That may be the intended
+#' estimator behavior, but it should not happen silently.
+#'
+#' @param effort_df Tibble of per-stratum effort estimates.
+#' @param rate_df Tibble of per-stratum rate estimates.
+#' @param stratum_by_vars Character vector of join columns.
+#' @param context Short human-readable label for the warning.
+#'
+#' @keywords internal
+#' @noRd
+warn_missing_rate_strata <- function(effort_df, rate_df, stratum_by_vars, context) {
+  if (length(stratum_by_vars) == 0L) {
+    return(invisible(NULL))
+  }
+
+  effort_keys <- unique(effort_df[, c(stratum_by_vars, "estimate"), drop = FALSE])
+  rate_keys <- unique(rate_df[, stratum_by_vars, drop = FALSE])
+
+  missing_rate <- dplyr::anti_join(effort_keys, rate_keys, by = stratum_by_vars)
+  if (nrow(missing_rate) == 0L) {
+    return(invisible(NULL))
+  }
+
+  omitted_effort <- sum(missing_rate$estimate, na.rm = TRUE)
+  total_effort <- sum(effort_df$estimate, na.rm = TRUE)
+  omitted_pct_text <- if (is.finite(total_effort) && total_effort > 0) {
+    paste0(format(round(100 * omitted_effort / total_effort, 1), trim = TRUE), "%")
+  } else {
+    "NA%"
+  }
+
+  cli::cli_warn(c(
+    "Missing rate strata detected during {.val {context}} aggregation.",
+    "!" = paste(
+      nrow(missing_rate),
+      "effort stratum row(s) had no matching rate estimate and will be excluded from the product sum."
+    ),
+    "i" = paste(
+      "Excluded effort total:",
+      format(round(omitted_effort, 3), trim = TRUE),
+      paste0("(", omitted_pct_text, " of grouped effort).")
+    ),
+    "i" = paste(
+      "This usually means count strata were observed without corresponding",
+      "interview coverage for the requested grouping."
+    )
+  ))
+
+  invisible(NULL)
+}
+
 #' Stratum-sum product helper for species total estimators
 #'
 #' Merges per-stratum effort and rate estimates, computes delta-method products

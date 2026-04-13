@@ -393,6 +393,13 @@ estimate_total_catch_species <- function(design, species_col, interview_by_vars,
   }
   effort_df <- effort_result$estimates
 
+  warn_missing_rate_strata( # nolint: object_usage_linter
+    effort_df = effort_df,
+    rate_df = all_rate_df[, setdiff(names(all_rate_df), species_col), drop = FALSE],
+    stratum_by_vars = stratum_by_vars,
+    context = "species total catch"
+  )
+
   all_species <- sort(unique(design[["catch"]][[species_col]]))
   results_list <- vector("list", length(all_species))
 
