@@ -41,6 +41,83 @@ make_design_no_harvest <- function() { # nolint: object_length_linter
   design
 }
 
+make_total_harvest_species_design <- function() {
+  # Synthetic data: 10+ interviews per day_type stratum to satisfy n >= 10 check
+  set.seed(42)
+  cal <- data.frame(
+    date = as.Date(c(
+      "2024-06-03", "2024-06-04", "2024-06-05", "2024-06-06",
+      "2024-06-07", "2024-06-10", "2024-06-11", "2024-06-12",
+      "2024-06-08", "2024-06-09", "2024-06-15", "2024-06-16",
+      "2024-06-22", "2024-06-23", "2024-06-29", "2024-06-30"
+    )),
+    day_type = c(rep("weekday", 8), rep("weekend", 8)),
+    stringsAsFactors = FALSE
+  )
+  counts <- data.frame(
+    date = cal$date,
+    day_type = cal$day_type,
+    effort_hours = c(rep(15, 8), rep(30, 8)),
+    stringsAsFactors = FALSE
+  )
+  # 12 interviews per stratum (24 total), each a completed trip
+  iview_dates <- c(
+    rep(as.Date(c(
+      "2024-06-03", "2024-06-04", "2024-06-05",
+      "2024-06-06", "2024-06-07", "2024-06-10"
+    )), 2),
+    rep(as.Date(c(
+      "2024-06-08", "2024-06-09", "2024-06-15",
+      "2024-06-16", "2024-06-22", "2024-06-23"
+    )), 2)
+  )
+  iview_dtype <- c(rep("weekday", 12), rep("weekend", 12))
+  catch_total <- sample(1:5, 24, replace = TRUE)
+  interviews <- data.frame(
+    date = iview_dates,
+    day_type = iview_dtype,
+    interview_id = seq_len(24),
+    catch_total = catch_total,
+    catch_kept = pmin(sample(0:3, 24, replace = TRUE), catch_total),
+    hours_fished = runif(24, 0.5, 4),
+    trip_status = "complete",
+    trip_duration = runif(24, 1, 6),
+    stringsAsFactors = FALSE
+  )
+  # catch data: 2 species per interview
+  catch_df <- data.frame(
+    interview_id = rep(seq_len(24), 2),
+    species = rep(c("bass", "bluegill"), each = 24),
+    count = sample(0:3, 48, replace = TRUE),
+    catch_type = "caught",
+    stringsAsFactors = FALSE
+  )
+  # Add harvested rows
+  catch_h <- catch_df
+  catch_h$catch_type <- "harvested"
+  catch_h$count <- pmin(catch_h$count, sample(0:2, 48, replace = TRUE))
+  catch_df <- rbind(catch_df, catch_h)
+
+  design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+  design <- add_counts(design, counts) # nolint: object_usage_linter
+  design <- add_interviews(design, interviews, # nolint: object_usage_linter
+    catch = catch_total,
+    harvest = catch_kept,
+    effort = hours_fished,
+    trip_status = trip_status,
+    trip_duration = trip_duration
+  )
+  design <- add_catch(design, catch_df, # nolint: object_usage_linter
+    catch_uid     = interview_id,
+    interview_uid = interview_id,
+    species       = species,
+    count         = count,
+    catch_type    = catch_type
+  )
+
+  design
+}
+
 # Basic behavior tests ----
 
 test_that("estimate_total_harvest returns creel_estimates class object", {
@@ -87,6 +164,24 @@ test_that("estimate_total_harvest result conf_level is 0.95 by default", {
   result <- estimate_total_harvest(design) # nolint: object_usage_linter
 
   expect_equal(result$conf_level, 0.95)
+})
+
+test_that("estimate_total_harvest defaults effort_target to sampled_days", {
+  design <- make_total_harvest_design()
+
+  result <- estimate_total_harvest(design) # nolint: object_usage_linter
+
+  expect_equal(result$effort_target, "sampled_days")
+})
+
+test_that("estimate_total_harvest species path accepts target = 'period_total'", {
+  design <- make_total_harvest_species_design()
+
+  result <- estimate_total_harvest(design, by = species, target = "period_total") # nolint: object_usage_linter
+
+  expect_s3_class(result, "creel_estimates")
+  expect_equal(result$effort_target, "period_total")
+  expect_true("species" %in% names(result$estimates))
 })
 
 test_that("estimate_total_harvest estimate is a positive numeric value", {

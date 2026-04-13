@@ -19,6 +19,11 @@
 #'   "taylor" (default), "bootstrap", or "jackknife". Applied to BOTH effort
 #'   and HPUE estimation, then combined via delta method.
 #' @param conf_level Numeric confidence level (default: 0.95)
+#' @param target Character string specifying the effort domain supplied to
+#'   [estimate_effort()]. Options are `"sampled_days"` (default),
+#'   `"stratum_total"`, or `"period_total"`. This controls which effort domain
+#'   is multiplied by HPUE so total harvest stays aligned with the requested
+#'   temporal target.
 #' @param aggregate_sections Logical. When the design was created with
 #'   \code{\link{add_sections}}, should a \code{.lake_total} row be appended
 #'   that sums the per-section estimates? Default \code{TRUE}. Set to
@@ -91,11 +96,13 @@ estimate_total_harvest <- function(
   by = NULL,
   variance = "taylor",
   conf_level = 0.95,
+  target = c("sampled_days", "stratum_total", "period_total"),
   aggregate_sections = TRUE,
   missing_sections = "warn"
 ) {
   # Capture by parameter BEFORE validation
   by_quo <- rlang::enquo(by)
+  target <- match.arg(target)
 
   # Validate variance parameter
   valid_methods <- c("taylor", "bootstrap", "jackknife")
@@ -134,7 +141,8 @@ estimate_total_harvest <- function(
       species_col       = by_info$species_var,
       interview_by_vars = by_info$interview_vars,
       variance_method   = variance,
-      conf_level        = conf_level
+      conf_level        = conf_level,
+      target            = target
     )
     return(new_creel_estimates( # nolint: object_usage_linter
       estimates       = tibble::as_tibble(estimates_df),
@@ -142,7 +150,8 @@ estimate_total_harvest <- function(
       variance_method = variance,
       design          = design,
       conf_level      = conf_level,
-      by_vars         = by_info$all_vars
+      by_vars         = by_info$all_vars,
+      effort_target   = target
     ))
   }
 
@@ -169,7 +178,7 @@ estimate_total_harvest <- function(
   # Route to grouped or ungrouped estimation
   if (rlang::quo_is_null(by_quo)) {
     # Ungrouped estimation
-    return(estimate_total_harvest_ungrouped(design, variance, conf_level)) # nolint: object_usage_linter
+    return(estimate_total_harvest_ungrouped(design, variance, conf_level, target = target)) # nolint: object_usage_linter
   } else {
     # Grouped estimation
     # Resolve by parameter to column names
@@ -185,7 +194,7 @@ estimate_total_harvest <- function(
     # Validate grouping compatibility
     validate_grouping_compatibility(design, by_vars) # nolint: object_usage_linter
 
-    return(estimate_total_harvest_grouped(design, by_vars, variance, conf_level)) # nolint: object_usage_linter
+    return(estimate_total_harvest_grouped(design, by_vars, variance, conf_level, target = target)) # nolint: object_usage_linter
   }
 }
 
@@ -193,9 +202,9 @@ estimate_total_harvest <- function(
 #'
 #' @keywords internal
 #' @noRd
-estimate_total_harvest_ungrouped <- function(design, variance_method, conf_level) { # nolint: object_length_linter
+estimate_total_harvest_ungrouped <- function(design, variance_method, conf_level, target = "sampled_days") { # nolint: object_length_linter
   # Call estimate_effort() and estimate_harvest_rate() with specified variance method
-  effort_result <- estimate_effort(design, variance = variance_method, conf_level = conf_level) # nolint: object_usage_linter
+  effort_result <- estimate_effort(design, variance = variance_method, conf_level = conf_level, target = target) # nolint: object_usage_linter
   hpue_result <- estimate_harvest_rate(design, variance = variance_method, conf_level = conf_level) # nolint: object_usage_linter
 
   # Extract estimates
@@ -239,7 +248,8 @@ estimate_total_harvest_ungrouped <- function(design, variance_method, conf_level
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
-    by_vars = NULL
+    by_vars = NULL,
+    effort_target = target
   )
 }
 
@@ -247,7 +257,7 @@ estimate_total_harvest_ungrouped <- function(design, variance_method, conf_level
 #'
 #' @keywords internal
 #' @noRd
-estimate_total_harvest_grouped <- function(design, by_vars, variance_method, conf_level) {
+estimate_total_harvest_grouped <- function(design, by_vars, variance_method, conf_level, target = "sampled_days") {
   # Convert by_vars to symbols for NSE
   if (length(by_vars) == 1) {
     by_sym <- rlang::sym(by_vars)
@@ -256,7 +266,7 @@ estimate_total_harvest_grouped <- function(design, by_vars, variance_method, con
   }
 
   # Call grouped estimation for both effort and HPUE
-  effort_result <- estimate_effort(design, by = !!by_sym, variance = variance_method, conf_level = conf_level) # nolint: object_usage_linter
+  effort_result <- estimate_effort(design, by = !!by_sym, variance = variance_method, conf_level = conf_level, target = target) # nolint: object_usage_linter
   hpue_result <- estimate_harvest_rate(design, by = !!by_sym, variance = variance_method, conf_level = conf_level) # nolint: object_usage_linter
 
   # Extract estimates data frames (include group columns)
@@ -320,7 +330,8 @@ estimate_total_harvest_grouped <- function(design, by_vars, variance_method, con
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
-    by_vars = by_vars
+    by_vars = by_vars,
+    effort_target = target
   )
 }
 
@@ -329,80 +340,45 @@ estimate_total_harvest_grouped <- function(design, by_vars, variance_method, con
 #' @keywords internal
 #' @noRd
 estimate_total_harvest_species <- function(design, species_col, interview_by_vars,
-                                           variance_method, conf_level) {
-  all_species <- sort(unique(design[["catch"]][[species_col]]))
-  results_list <- vector("list", length(all_species))
+                                           variance_method, conf_level,
+                                           target = "sampled_days") {
+  strata_cols <- design$strata_cols %||% character(0)
+  stratum_by_vars <- unique(c(strata_cols, interview_by_vars))
 
-  # Get all-species HPUE in one call
-  all_hpue_df <- estimate_hpue_species( # nolint: object_usage_linter
+  # Per-stratum species HPUE
+  rate_by <- if (length(stratum_by_vars) > 0L) stratum_by_vars else NULL
+  all_rate_df <- estimate_hpue_species( # nolint: object_usage_linter
     design,
     species_col       = species_col,
-    interview_by_vars = interview_by_vars,
+    interview_by_vars = rate_by,
     variance_method   = variance_method,
     conf_level        = conf_level
   )
 
-  # Get effort estimate (not species-grouped)
-  if (is.null(interview_by_vars)) {
-    effort_result <- estimate_effort(design, variance = variance_method, conf_level = conf_level) # nolint: object_usage_linter
+  # Per-stratum effort
+  if (length(stratum_by_vars) == 0L) {
+    effort_result <- estimate_effort_total(design, variance_method, conf_level, target = target) # nolint: object_usage_linter
   } else {
-    by_sym <- if (length(interview_by_vars) == 1L) {
-      rlang::sym(interview_by_vars)
-    } else {
-      rlang::syms(interview_by_vars)
-    }
-    effort_result <- estimate_effort(design, by = !!by_sym, variance = variance_method, conf_level = conf_level) # nolint: object_usage_linter
+    effort_result <- estimate_effort_grouped(design, stratum_by_vars, variance_method, conf_level, target = target) # nolint: object_usage_linter
   }
   effort_df <- effort_result$estimates
 
+  all_species <- sort(unique(design[["catch"]][[species_col]]))
+  results_list <- vector("list", length(all_species))
+
   for (i in seq_along(all_species)) {
     sp <- all_species[[i]]
+    rate_sp_df <- all_rate_df[all_rate_df[[species_col]] == sp, , drop = FALSE]
+    rate_no_sp <- rate_sp_df[, setdiff(names(rate_sp_df), species_col), drop = FALSE]
 
-    hpue_sp_df <- all_hpue_df[all_hpue_df[[species_col]] == sp, , drop = FALSE]
-
-    if (is.null(interview_by_vars)) {
-      effort_est <- effort_df$estimate
-      hpue_est <- hpue_sp_df$estimate
-      effort_se <- effort_df$se
-      hpue_se <- hpue_sp_df$se
-      estimate <- effort_est * hpue_est
-      pv <- (effort_est^2 * hpue_se^2) + (hpue_est^2 * effort_se^2)
-      se <- sqrt(pv)
-      z <- stats::qnorm(1 - (1 - conf_level) / 2)
-      sp_result <- data.frame(
-        estimate = estimate, se = se,
-        ci_lower = estimate - z * se, ci_upper = estimate + z * se,
-        n = hpue_sp_df$n, stringsAsFactors = FALSE
-      )
-    } else {
-      hpue_no_sp <- hpue_sp_df[, setdiff(names(hpue_sp_df), species_col), drop = FALSE]
-      merged <- merge(
-        effort_df, hpue_no_sp,
-        by = interview_by_vars, suffixes = c("_effort", "_hpue"), sort = FALSE
-      )
-      n_groups <- nrow(merged)
-      estimates_list <- vector("list", n_groups)
-      for (j in seq_len(n_groups)) {
-        e_est <- merged$estimate_effort[j]
-        h_est <- merged$estimate_hpue[j]
-        e_se <- merged$se_effort[j]
-        h_se <- merged$se_hpue[j]
-        est <- e_est * h_est
-        pv <- (e_est^2 * h_se^2) + (h_est^2 * e_se^2)
-        z <- stats::qnorm(1 - (1 - conf_level) / 2)
-        estimates_list[[j]] <- list(
-          estimate = est, se = sqrt(pv),
-          ci_lower = est - z * sqrt(pv), ci_upper = est + z * sqrt(pv),
-          n = merged$n_hpue[j]
-        )
-      }
-      sp_result <- tibble::as_tibble(merged[interview_by_vars])
-      sp_result$estimate <- sapply(estimates_list, `[[`, "estimate")
-      sp_result$se <- sapply(estimates_list, `[[`, "se")
-      sp_result$ci_lower <- sapply(estimates_list, `[[`, "ci_lower")
-      sp_result$ci_upper <- sapply(estimates_list, `[[`, "ci_upper")
-      sp_result$n <- sapply(estimates_list, `[[`, "n")
-    }
+    sp_result <- compute_stratum_product_sum( # nolint: object_usage_linter
+      effort_df         = effort_df,
+      rate_df           = rate_no_sp,
+      stratum_by_vars   = stratum_by_vars,
+      interview_by_vars = interview_by_vars,
+      conf_level        = conf_level,
+      rate_suffix       = "hpue"
+    )
 
     sp_result[[species_col]] <- sp
     sp_result <- sp_result[c(species_col, setdiff(names(sp_result), species_col))]

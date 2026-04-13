@@ -100,6 +100,14 @@ test_that("estimate_total_release result conf_level is 0.95 by default", {
   expect_equal(result$conf_level, 0.95)
 })
 
+test_that("estimate_total_release defaults effort_target to sampled_days", {
+  design <- make_total_release_design()
+
+  result <- suppressWarnings(estimate_total_release(design)) # nolint: object_usage_linter
+
+  expect_equal(result$effort_target, "sampled_days")
+})
+
 test_that("estimate_total_release estimate is a non-negative numeric value", {
   design <- make_total_release_design()
 

@@ -19,7 +19,7 @@ test_that("new_creel_estimates() creates creel_estimates S3 object", {
 
   expect_s3_class(result, "creel_estimates")
   expect_type(result, "list")
-  expect_named(result, c("estimates", "method", "variance_method", "design", "conf_level", "by_vars"))
+  expect_named(result, c("estimates", "method", "variance_method", "design", "conf_level", "by_vars", "effort_target"))
 })
 
 test_that("new_creel_estimates() uses correct defaults", {

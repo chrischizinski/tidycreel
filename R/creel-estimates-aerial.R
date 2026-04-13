@@ -21,7 +21,8 @@
 #'
 #' @keywords internal
 #' @noRd
-estimate_effort_aerial <- function(design, variance_method, conf_level, verbose) { # nolint: object_usage_linter
+estimate_effort_aerial <- function(design, variance_method, conf_level, verbose,
+                                   effort_target = "sampled_days") { # nolint: object_usage_linter
   # Calibration constant: h_open / visibility_correction (v defaults to 1.0)
   h_over_v <- design$aerial$h_open / (design$aerial$visibility_correction %||% 1.0)
 
@@ -84,6 +85,7 @@ estimate_effort_aerial <- function(design, variance_method, conf_level, verbose)
     variance_method = variance_method,
     design          = design,
     conf_level      = conf_level,
-    by_vars         = NULL
+    by_vars         = NULL,
+    effort_target   = effort_target
   )
 }

@@ -47,6 +47,45 @@ make_interviews_only_design <- function() {
   design
 }
 
+#' Create partial-sample design where product totals change with effort target
+make_total_catch_partial_sample_design <- function() {
+  calendar <- data.frame(
+    date = as.Date(c(
+      "2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04",
+      "2024-06-08", "2024-06-09", "2024-06-15", "2024-06-16"
+    )),
+    day_type = rep(c("weekday", "weekend"), each = 4),
+    stringsAsFactors = FALSE
+  )
+
+  counts <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-03", "2024-06-08", "2024-06-15")),
+    day_type = c("weekday", "weekday", "weekend", "weekend"),
+    effort_hours = c(10, 14, 20, 24),
+    stringsAsFactors = FALSE
+  )
+
+  interviews <- data.frame(
+    date = rep(counts$date, each = 3),
+    catch_total = c(5, 5, 5, 7, 7, 7, 10, 10, 10, 12, 12, 12),
+    hours_fished = c(2, 2, 2, 2, 2, 2, 4, 4, 4, 4, 4, 4),
+    trip_status = rep("complete", 12),
+    trip_duration = c(2, 2, 2, 2, 2, 2, 4, 4, 4, 4, 4, 4),
+    stringsAsFactors = FALSE
+  )
+
+  design <- creel_design(calendar, date = date, strata = day_type) # nolint: object_usage_linter
+  design <- add_counts(design, counts) # nolint: object_usage_linter
+  design <- add_interviews(design, interviews, # nolint: object_usage_linter
+    catch = catch_total,
+    effort = hours_fished,
+    trip_status = trip_status,
+    trip_duration = trip_duration
+  )
+
+  design
+}
+
 # Basic behavior tests ----
 
 test_that("estimate_total_catch returns creel_estimates class object", {
@@ -93,6 +132,24 @@ test_that("estimate_total_catch result conf_level is 0.95 by default", {
   result <- estimate_total_catch(design) # nolint: object_usage_linter
 
   expect_equal(result$conf_level, 0.95)
+})
+
+test_that("estimate_total_catch defaults effort_target to sampled_days", {
+  design <- make_total_catch_design()
+
+  result <- estimate_total_catch(design) # nolint: object_usage_linter
+
+  expect_equal(result$effort_target, "sampled_days")
+})
+
+test_that("estimate_total_catch target='period_total' propagates expanded effort domain", {
+  design <- make_total_catch_partial_sample_design()
+
+  sampled <- estimate_total_catch(design, target = "sampled_days") # nolint: object_usage_linter
+  expanded <- estimate_total_catch(design, target = "period_total") # nolint: object_usage_linter
+
+  expect_equal(expanded$estimates$estimate, 2 * sampled$estimates$estimate)
+  expect_equal(expanded$effort_target, "period_total")
 })
 
 test_that("estimate_total_catch estimate is a positive numeric value", {

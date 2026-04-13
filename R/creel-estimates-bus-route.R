@@ -18,7 +18,8 @@
 #'
 #' @keywords internal
 #' @noRd
-estimate_effort_br <- function(design, by_vars, variance_method, conf_level, verbose) { # nolint: object_usage_linter
+estimate_effort_br <- function(design, by_vars, variance_method, conf_level, verbose,
+                               effort_target = "sampled_days") { # nolint: object_usage_linter
   # Retrieve interview data (contains .pi_i and .expansion from add_interviews())
   interviews <- design$interviews
 
@@ -128,7 +129,8 @@ estimate_effort_br <- function(design, by_vars, variance_method, conf_level, ver
       variance_method = variance_method,
       design = design,
       conf_level = conf_level,
-      by_vars = NULL
+      by_vars = NULL,
+      effort_target = effort_target
     )
     attr(result, "site_contributions") <- site_table
     result
@@ -189,7 +191,8 @@ estimate_effort_br <- function(design, by_vars, variance_method, conf_level, ver
       variance_method = variance_method,
       design = design,
       conf_level = conf_level,
-      by_vars = by_vars
+      by_vars = by_vars,
+      effort_target = effort_target
     )
     attr(result, "site_contributions") <- site_table
     result

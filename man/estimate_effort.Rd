@@ -9,6 +9,7 @@ estimate_effort(
   by = NULL,
   variance = "taylor",
   conf_level = 0.95,
+  target = c("sampled_days", "stratum_total", "period_total"),
   verbose = FALSE,
   aggregate_sections = TRUE,
   method = "correlated",
@@ -32,6 +33,17 @@ Options: \code{"taylor"} (default, Taylor linearization),
 
 \item{conf_level}{Numeric confidence level for confidence intervals (default:
 0.95 for 95\% confidence intervals). Must be between 0 and 1.}
+
+\item{target}{Character string specifying the temporal effort target.
+Options: \code{"sampled_days"} (default, current behavior: total across
+sampled PSU rows only), \code{"stratum_total"} (expand sampled-day means
+within calendar strata before combining), or \code{"period_total"}
+(full calendar-period total after stratum expansion). For standard
+stratified count designs, \code{"stratum_total"} and \code{"period_total"}
+use the same weighted expansion engine; the distinction is semantic and is
+recorded on the returned object as \code{effort_target}. Expanded targets
+are currently limited to the standard count-design path and are not yet
+supported for bus-route, ice, aerial, or sectioned designs.}
 
 \item{verbose}{Logical. If TRUE, prints an informational message identifying
 which estimator path was used. Default FALSE for transparent dispatch.}
