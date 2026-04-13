@@ -72,7 +72,7 @@ autoplot.creel_estimates <- function(object, title = NULL,
 
   conf_pct <- paste0(round(object$conf_level * 100L), "% CI")
   caption_text <- if (!is.null(effort_target) && nzchar(effort_target)) {
-    paste0(conf_pct, " • Effort target: ", effort_target)
+    paste0(conf_pct, " | Effort target: ", effort_target)
   } else {
     conf_pct
   }

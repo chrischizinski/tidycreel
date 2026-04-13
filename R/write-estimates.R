@@ -127,7 +127,7 @@ write_estimates <- function(
     con <- file(path, open = "wt")
     on.exit(close(con), add = TRUE)
     header_lines <- c(
-      "# Survey estimates — tidycreel",
+      "# Survey estimates - tidycreel",
       paste0(
         "# Method: ", method_label,
         " | ", var_label,
