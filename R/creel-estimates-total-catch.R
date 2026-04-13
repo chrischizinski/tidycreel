@@ -380,7 +380,8 @@ estimate_total_catch_species <- function(design, species_col, interview_by_vars,
     species_col       = species_col,
     interview_by_vars = rate_by,
     variance_method   = variance_method,
-    conf_level        = conf_level
+    conf_level        = conf_level,
+    validate          = FALSE
   )
 
   # Per-stratum effort (grouped by same vars)

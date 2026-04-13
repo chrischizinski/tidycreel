@@ -2932,7 +2932,8 @@ compute_stratum_product_sum <- function(effort_df, rate_df, stratum_by_vars,
 #' @noRd
 estimate_cpue_species <- function(design, species_col, interview_by_vars,
                                   variance_method, conf_level,
-                                  estimator = "ratio-of-means") {
+                                  estimator = "ratio-of-means",
+                                  validate = TRUE) {
   all_species <- sort(unique(design[["catch"]][[species_col]]))
 
   results_list <- vector("list", length(all_species))
@@ -2960,7 +2961,9 @@ estimate_cpue_species <- function(design, species_col, interview_by_vars,
       strata = strata_formula
     )
 
-    validate_ratio_sample_size(design_sp, interview_by_vars, type = "cpue") # nolint: object_usage_linter
+    if (validate) {
+      validate_ratio_sample_size(design_sp, interview_by_vars, type = "cpue") # nolint: object_usage_linter
+    }
 
     if (is.null(interview_by_vars)) {
       result <- estimate_cpue_total(design_sp, variance_method, conf_level, estimator) # nolint: object_usage_linter
@@ -2983,7 +2986,8 @@ estimate_cpue_species <- function(design, species_col, interview_by_vars,
 #' @keywords internal
 #' @noRd
 estimate_release_rate_species <- function(design, species_col, interview_by_vars,
-                                          variance_method, conf_level) {
+                                          variance_method, conf_level,
+                                          validate = TRUE) {
   all_species <- sort(unique(design[["catch"]][[species_col]]))
 
   results_list <- vector("list", length(all_species))
@@ -3012,7 +3016,9 @@ estimate_release_rate_species <- function(design, species_col, interview_by_vars
       strata = strata_formula
     )
 
-    validate_ratio_sample_size(design_sp, interview_by_vars, type = "cpue") # nolint: object_usage_linter
+    if (validate) {
+      validate_ratio_sample_size(design_sp, interview_by_vars, type = "cpue") # nolint: object_usage_linter
+    }
 
     if (is.null(interview_by_vars)) {
       result <- estimate_cpue_total(design_sp, variance_method, conf_level) # nolint: object_usage_linter
@@ -3035,7 +3041,8 @@ estimate_release_rate_species <- function(design, species_col, interview_by_vars
 #' @keywords internal
 #' @noRd
 estimate_hpue_species <- function(design, species_col, interview_by_vars,
-                                  variance_method, conf_level) {
+                                  variance_method, conf_level,
+                                  validate = TRUE) {
   all_species <- sort(unique(design[["catch"]][[species_col]]))
   results_list <- vector("list", length(all_species))
 
@@ -3061,7 +3068,9 @@ estimate_hpue_species <- function(design, species_col, interview_by_vars,
       strata = strata_formula
     )
 
-    validate_ratio_sample_size(design_sp, interview_by_vars, type = "harvest") # nolint: object_usage_linter
+    if (validate) {
+      validate_ratio_sample_size(design_sp, interview_by_vars, type = "harvest") # nolint: object_usage_linter
+    }
 
     if (is.null(interview_by_vars)) {
       result <- estimate_harvest_total(design_sp, variance_method, conf_level) # nolint: object_usage_linter

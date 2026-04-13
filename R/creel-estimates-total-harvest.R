@@ -352,7 +352,8 @@ estimate_total_harvest_species <- function(design, species_col, interview_by_var
     species_col       = species_col,
     interview_by_vars = rate_by,
     variance_method   = variance_method,
-    conf_level        = conf_level
+    conf_level        = conf_level,
+    validate          = FALSE
   )
 
   # Per-stratum effort
