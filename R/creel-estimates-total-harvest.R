@@ -171,7 +171,8 @@ estimate_total_harvest <- function(
   # Section dispatch guard (v0.7.0+ — only fires when add_sections() was called)
   if (!is.null(design[["sections"]])) {
     return(estimate_total_harvest_sections( # nolint: object_usage_linter
-      design, by_quo, variance, conf_level, aggregate_sections, missing_sections
+      design, by_quo, variance, conf_level, aggregate_sections, missing_sections,
+      target = target
     ))
   }
 
@@ -395,7 +396,8 @@ estimate_total_harvest_species <- function(design, species_col, interview_by_var
 #' @noRd
 estimate_total_harvest_sections <- function(design, by_quo, variance_method, # nolint: object_length_linter
                                             conf_level, aggregate_sections,
-                                            missing_sections) {
+                                            missing_sections,
+                                            target = "sampled_days") {
   section_col <- design[["section_col"]]
   registered_sections <- design$sections[[section_col]]
   present_count_sections <- unique(design$counts[[section_col]])
@@ -464,14 +466,15 @@ estimate_total_harvest_sections <- function(design, by_quo, variance_method, # n
       if (!is.null(by_vars)) {
         # Grouped path: delegates to existing grouped helper
         result <- estimate_total_harvest_grouped( # nolint: object_usage_linter
-          sec_design, by_vars, variance_method, conf_level
+          sec_design, by_vars, variance_method, conf_level,
+          target = target
         )
         row_df <- tibble::add_column(result$estimates, section = sec, .before = 1)
         row_df$data_available <- TRUE
         section_rows[[sec]] <- row_df
       } else {
         # Ungrouped path: call internal helpers directly to bypass sample-size validation
-        effort_res <- estimate_effort_total(sec_design, variance_method, conf_level) # nolint: object_usage_linter
+        effort_res <- estimate_effort_total(sec_design, variance_method, conf_level, target = target) # nolint: object_usage_linter
         hpue_res <- estimate_harvest_total(sec_design, variance_method, conf_level) # nolint: object_usage_linter
         effort_est <- effort_res$estimates$estimate
         hpue_est <- hpue_res$estimates$estimate
@@ -536,6 +539,7 @@ estimate_total_harvest_sections <- function(design, by_quo, variance_method, # n
     variance_method = variance_method,
     design          = design,
     conf_level      = conf_level,
-    by_vars         = if (!is.null(by_vars)) c("section", by_vars) else "section"
+    by_vars         = if (!is.null(by_vars)) c("section", by_vars) else "section",
+    effort_target   = target
   )
 }

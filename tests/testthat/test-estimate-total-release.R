@@ -420,6 +420,14 @@ test_that("PROD-02-release-regression: non-sectioned design returns same result 
   expect_true(result$estimates$estimate > 0)
 })
 
+test_that("PROD-02-release-target: section path preserves requested effort target", {
+  design <- make_3section_total_catch_design() # nolint: object_usage_linter
+  result <- suppressWarnings(suppressMessages(
+    estimate_total_release(design, target = "period_total", aggregate_sections = FALSE) # nolint: object_usage_linter
+  ))
+  expect_equal(result$effort_target, "period_total")
+})
+
 # PROD-01-release-missing: Missing section inserts NA row with data_available=FALSE ----
 
 #' Create 3-section release design with "South" absent from interview and catch data
