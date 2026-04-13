@@ -59,7 +59,7 @@ catch_ready <- prep_interview_catch(example_catch,
 )
 design <- add_catch(design, catch_ready,
   catch_uid = interview_uid,
-  interview_uid = interview_id,
+  interview_uid = interview_uid,
   species = species,
   count = count,
   catch_type = catch_type
