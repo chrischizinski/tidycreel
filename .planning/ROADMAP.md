@@ -1,0 +1,60 @@
+# Roadmap — M022: Comprehensive Project Evaluation and Future Planning
+
+**Milestone version:** M022
+**Goal:** Conduct a comprehensive evaluation of tidycreel to identify completeness gaps and produce planning artifacts for high-priority future work.
+
+---
+
+## Phase 70: Core Estimator Completeness — Bus-route, Aerial, Ice
+
+**Goal:** Fix bus-route/ice harvest-rate dispatch, implement total-harvest/total-release HT estimators for bus-route and ice designs, and expand test/vignette coverage for all core estimators.
+
+**Depends on:** —
+**Delivers:** All core estimators (effort, catch-rate, harvest-rate, total-harvest, total-release) dispatch and estimate correctly for bus-route and ice designs, with 100+ targeted tests and updated vignettes.
+
+---
+
+## Phase 71: Future Analytical Needs — Multi-species & Beyond
+
+**Goal:** Produce a design proposal for multi-species estimation and a research summary for spatial, temporal, and mark-recapture extensions.
+
+**Depends on:** —
+**Delivers:** Design proposal document for multi-species support; research summary for spatial/temporal/mark-recapture.
+
+---
+
+## Phase 72: Architectural Principles & Dependency Review
+
+**Goal:** Review current package architecture for layering violations, coupling issues, and dependency risk; document findings and recommendations.
+
+**Depends on:** —
+**Delivers:** Architectural review report; dependency review report.
+
+---
+
+## Phase 73: Error Handling Strategy & creel.connect Investigation
+
+**Goal:** Define a consistent error-handling strategy (rlang/cli patterns) and investigate the creel.connect integration surface.
+
+**Depends on:** —
+**Delivers:** Error handling strategy document; creel.connect investigation report.
+
+---
+
+## Phase 74: Quality Bar Assessment — Tidyverse Quality & Testing Strategy
+
+**Goal:** Audit package against tidyverse quality checklist; define external testing strategy.
+
+**Depends on:** —
+**Delivers:** Quality checklist/audit report; external testing strategy document.
+
+---
+
+## Phase 75: Performance Optimization — Rcpp Opportunity Identification
+
+**Goal:** Profile computational hot spots and identify where Rcpp could provide material gains.
+
+**Depends on:** —
+**Delivers:** Performance analysis report with Rcpp recommendations.
+
+---
