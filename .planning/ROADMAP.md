@@ -35,7 +35,7 @@ Plans:
 **Depends on:** —
 **Delivers:** Architectural review report; dependency review report.
 
-**Plans:** 1/2 plans complete
+**Plans:** 2/2 plans complete
 
 Plans:
 - [x] 72-01-PLAN.md — Write architectural review report (layer violations, S3 class audit, positive findings, recommendations)

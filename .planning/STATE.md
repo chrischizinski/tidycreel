@@ -3,24 +3,24 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 current_phase: 72 — Architectural Review
-current_plan: 72-01 complete
+current_plan: 72-02 complete
 status: in_progress
-last_updated: "2026-04-15T20:47:46Z"
+last_updated: "2026-04-15T20:48:45Z"
 progress:
   total_phases: 6
   completed_phases: 2
-  total_plans: 3
-  completed_plans: 3
+  total_plans: 4
+  completed_plans: 4
 ---
 
 # GSD State
 
 **Milestone:** M022 — Comprehensive Project Evaluation and Future Planning
 **Current phase:** 72 — Architectural Review
-**Phase status:** in progress — plan 72-01 complete
+**Phase status:** in progress — plan 72-02 complete
 
-**Current Plan:** 72-01 complete
-**Last session:** 2026-04-15T20:47:46Z
+**Current Plan:** 72-02 complete
+**Last session:** 2026-04-15T20:48:45Z
 
 ## Decisions
 
@@ -31,6 +31,7 @@ progress:
 - Phases 71-75 are evaluation/research phases — they produce documents, not code.
 - Phase 71-01: research document is purely a planning artifact; no design decisions or implementation commitments were made. Mark-recapture scoped to v1.5+. Multi-species joint variance requires prototype before interface commitment. Exploitation rate estimator is a genuine build candidate (no clean existing R wrapper).
 - Phase 72-01: architectural review is complete. All four findings are low/medium severity — package architecture is structurally sound. get_site_contributions() file placement (A1, medium) is the only actionable structural fix. creel_summary_* subclasses without S3 methods (A4) require a commit-to-one-direction decision. Six positive findings (P1-P6) document patterns to preserve.
+- Phase 72-02: dependency review is complete. scales is a DROP candidate (one-line sprintf replacement for single call-site in survey-bridge.R). lubridate is a DEMOTE candidate (all 15 call-sites in scheduling/viz; fold removal into next scheduling refactor). ggplot2 demotion requires an explicit architectural decision (is visualisation core or optional?). checkmate mixed-validation pattern is intentional batch-collection semantics — document for contributors.
 
 ## Blockers
 
