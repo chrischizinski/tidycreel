@@ -1101,3 +1101,78 @@ test_that("RATE-03-harvest: missing section produces NA row + cli_warn for estim
   expect_false(south_row$data_available)
   expect_true(is.na(south_row$estimate))
 })
+
+# Ice dispatch tests for estimate_harvest_rate() ----
+
+#' Create ice design with harvest data for dispatch tests
+make_ice_hr_design <- function() {
+  cal <- data.frame(
+    date = as.Date(c("2024-01-10", "2024-01-11", "2024-01-12", "2024-01-13")),
+    day_type = c("weekday", "weekday", "weekend", "weekend"),
+    stringsAsFactors = FALSE
+  )
+  creel_design( # nolint: object_usage_linter
+    cal,
+    date = date, # nolint: object_usage_linter
+    strata = day_type, # nolint: object_usage_linter
+    survey_type = "ice",
+    effort_type = "time_on_ice",
+    p_period = 0.5
+  )
+}
+
+make_ice_hr_interviews <- function(design) {
+  iw <- data.frame(
+    date = as.Date(c("2024-01-10", "2024-01-11", "2024-01-12", "2024-01-13")),
+    day_type = c("weekday", "weekday", "weekend", "weekend"),
+    hours_fished = c(2.0, 1.5, 3.0, 2.5),
+    catch_total = c(1L, 2L, 0L, 3L),
+    fish_kept = c(0L, 1L, 0L, 2L),
+    trip_status = rep("complete", 4),
+    n_counted = c(5L, 8L, 10L, 7L),
+    n_interviewed = c(3L, 4L, 5L, 4L),
+    stringsAsFactors = FALSE
+  )
+  suppressWarnings(add_interviews( # nolint: object_usage_linter
+    design,
+    iw,
+    effort = hours_fished, # nolint: object_usage_linter
+    catch = catch_total, # nolint: object_usage_linter
+    harvest = fish_kept, # nolint: object_usage_linter
+    n_counted = n_counted, # nolint: object_usage_linter
+    n_interviewed = n_interviewed, # nolint: object_usage_linter
+    trip_status = trip_status # nolint: object_usage_linter
+  ))
+}
+
+test_that("estimate_harvest_rate() dispatches ice designs to HT estimator", {
+  d <- make_ice_hr_interviews(make_ice_hr_design())
+  result <- estimate_harvest_rate(d)
+  expect_s3_class(result, "creel_estimates")
+})
+
+test_that("estimate_harvest_rate() ice: H_hat = sum(h_i/pi_i) matches hand-computed value", {
+  d <- make_ice_hr_interviews(make_ice_hr_design())
+  result <- estimate_harvest_rate(d)
+  # h_i = fish_kept * (n_counted/n_interviewed): 0*(5/3), 1*(8/4), 0*(10/5), 2*(7/4)
+  # pi_i = 0.5 for all rows
+  h_i <- c(0 * (5 / 3), 1 * (8 / 4), 0 * (10 / 5), 2 * (7 / 4))
+  expected <- sum(h_i / 0.5)
+  expect_equal(result$estimates$estimate, expected, tolerance = 1e-6)
+})
+
+test_that("estimate_harvest_rate() ice result has finite estimate and SE", {
+  d <- make_ice_hr_interviews(make_ice_hr_design())
+  result <- estimate_harvest_rate(d)
+  expect_true(is.finite(result$estimates$estimate))
+  expect_true(is.finite(result$estimates$se))
+})
+
+test_that("estimate_harvest_rate() ice returns site_contributions attribute", {
+  d <- make_ice_hr_interviews(make_ice_hr_design())
+  result <- estimate_harvest_rate(d)
+  sc <- attr(result, "site_contributions")
+  expect_false(is.null(sc))
+  expect_true("h_i" %in% names(sc))
+  expect_true("pi_i" %in% names(sc))
+})
