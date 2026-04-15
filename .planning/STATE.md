@@ -2,25 +2,25 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 70 — Core Estimator Completeness (Bus-route, Aerial, Ice)
-current_plan: Not started
-status: unknown
-last_updated: "2026-04-15T02:55:54.689Z"
+current_phase: 71 — Future Analytical Needs
+current_plan: 71-01 complete
+status: in_progress
+last_updated: "2026-04-15T18:34:01Z"
 progress:
   total_phases: 6
-  completed_phases: 1
-  total_plans: 1
-  completed_plans: 1
+  completed_phases: 2
+  total_plans: 3
+  completed_plans: 3
 ---
 
 # GSD State
 
 **Milestone:** M022 — Comprehensive Project Evaluation and Future Planning
-**Current phase:** 70 — Core Estimator Completeness (Bus-route, Aerial, Ice)
-**Phase status:** in_progress — plan 70-01 complete
+**Current phase:** 71 — Future Analytical Needs
+**Phase status:** complete — plan 71-01 complete
 
-**Current Plan:** Not started
-**Last session:** 2026-04-15 — Stopped at: Completed 70-01-PLAN.md
+**Current Plan:** 71-01 complete
+**Last session:** 2026-04-15T18:34:01Z
 
 ## Decisions
 
@@ -29,6 +29,7 @@ progress:
 - intersect() guard applied consistently for synthetic ice columns in all site_table constructions.
 - estimate_total_release_br() reuses estimate_release_build_data() to join .release_count to interviews.
 - Phases 71-75 are evaluation/research phases — they produce documents, not code.
+- Phase 71-01: research document is purely a planning artifact; no design decisions or implementation commitments were made. Mark-recapture scoped to v1.5+. Multi-species joint variance requires prototype before interface commitment. Exploitation rate estimator is a genuine build candidate (no clean existing R wrapper).
 
 ## Blockers
 

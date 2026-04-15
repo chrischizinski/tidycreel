@@ -21,6 +21,11 @@
 **Depends on:** —
 **Delivers:** Design proposal document for multi-species support; research summary for spatial/temporal/mark-recapture.
 
+**Plans:** 1/1 plans complete
+
+Plans:
+- [x] 71-01-PLAN.md — Write combined analytical extensions research document (multi-species, spatial, temporal, mark-recapture)
+
 ---
 
 ## Phase 72: Architectural Principles & Dependency Review
