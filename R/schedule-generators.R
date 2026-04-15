@@ -28,14 +28,20 @@ new_creel_schedule <- function(data) {
 #'   Scalar is expanded uniformly across strata.
 #' @param sampling_rate Named numeric vector of sampling fractions per stratum,
 #'   or scalar. Scalar is expanded uniformly across strata.
+#' @param valid_strata Optional character vector of allowed stratum labels for
+#'   validating named `n_days` / `sampling_rate` inputs. Defaults to the actual
+#'   observed strata in `day_types`.
 #'
 #' @return A logical vector of the same length as `all_dates` indicating
 #'   sampled days.
 #'
 #' @noRd
 select_sampled_days <- function(all_dates, day_types, n_days = NULL,
-                                sampling_rate = NULL) {
+                                sampling_rate = NULL, valid_strata = NULL) {
   strata <- unique(day_types)
+  if (is.null(valid_strata)) {
+    valid_strata <- strata
+  }
 
   # Expand scalar to named vector over strata
   if (!is.null(n_days) && is.null(names(n_days))) {
@@ -47,22 +53,22 @@ select_sampled_days <- function(all_dates, day_types, n_days = NULL,
 
   # Validate that named vector keys match actual day types
   if (!is.null(n_days)) {
-    bad <- setdiff(names(n_days), strata)
+    bad <- setdiff(names(n_days), valid_strata)
     if (length(bad) > 0) {
       cli::cli_abort(c(
         "Names in {.arg n_days} do not match day types in the season.",
         "x" = "Unmatched names: {.val {bad}}",
-        "i" = "Season has day types: {.val {strata}}"
+        "i" = "Season has day types: {.val {valid_strata}}"
       ))
     }
   }
   if (!is.null(sampling_rate)) {
-    bad <- setdiff(names(sampling_rate), strata)
+    bad <- setdiff(names(sampling_rate), valid_strata)
     if (length(bad) > 0) {
       cli::cli_abort(c(
         "Names in {.arg sampling_rate} do not match day types in the season.",
         "x" = "Unmatched names: {.val {bad}}",
-        "i" = "Season has day types: {.val {strata}}"
+        "i" = "Season has day types: {.val {valid_strata}}"
       ))
     }
   }
@@ -139,6 +145,190 @@ expand_periods_impl <- function(base_df, n_periods, period_labels = NULL,
   expanded
 }
 
+#' Resolve calendar-defined special periods to day-level stratum assignments
+#'
+#' @param all_dates Date vector for the full schedule season.
+#' @param day_types Character vector of baseline day-type labels.
+#' @param special_periods NULL or data frame with start_date, end_date, label,
+#'   and optional reason columns.
+#'
+#' @return List with final_stratum, special_period_reason, and audit data.
+#' @noRd
+resolve_special_periods <- function(all_dates, day_types, special_periods = NULL) {
+  if (is.null(special_periods)) {
+    return(list(
+      final_stratum = day_types,
+      special_period_reason = rep(NA_character_, length(all_dates)),
+      audit = NULL,
+      allocation = NULL,
+      baseline_allocation = NULL,
+      diagnostics = NULL
+    ))
+  }
+
+  if (!is.data.frame(special_periods)) {
+    cli::cli_abort(c(
+      "{.arg special_periods} must be a data frame or NULL.",
+      "x" = "Received {.cls {class(special_periods)}}."
+    ))
+  }
+
+  required_cols <- c("start_date", "end_date", "label")
+  missing_cols <- setdiff(required_cols, names(special_periods))
+  if (length(missing_cols) > 0) {
+    cli::cli_abort(c(
+      "{.arg special_periods} is missing required columns.",
+      "x" = "Missing: {.val {missing_cols}}"
+    ))
+  }
+
+  if (!"reason" %in% names(special_periods)) {
+    special_periods$reason <- NA_character_
+  }
+
+  starts <- as.Date(special_periods$start_date)
+  ends <- as.Date(special_periods$end_date)
+  if (any(is.na(starts)) || any(is.na(ends))) {
+    cli::cli_abort(c(
+      "{.arg special_periods} contains invalid dates.",
+      "x" = "All {.col start_date} and {.col end_date} values must coerce to Date."
+    ))
+  }
+
+  bad_range <- which(ends < starts)
+  if (length(bad_range) > 0) {
+    i <- bad_range[[1]] # nolint: object_usage_linter
+    cli::cli_abort(c(
+      "Special period end_date must be on or after start_date.",
+      "x" = "Row {i}: {.val {starts[[i]]}} to {.val {ends[[i]]}} is invalid."
+    ))
+  }
+
+  expanded_list <- vector("list", nrow(special_periods))
+  for (i in seq_len(nrow(special_periods))) {
+    expanded_dates <- seq(starts[[i]], ends[[i]], by = "1 day")
+    expanded_list[[i]] <- data.frame(
+      date = expanded_dates,
+      label = as.character(special_periods$label[[i]]),
+      reason = as.character(special_periods$reason[[i]]),
+      source_start_date = starts[[i]],
+      source_end_date = ends[[i]],
+      stringsAsFactors = FALSE
+    )
+  }
+
+  expanded <- do.call(rbind, expanded_list)
+  expanded <- expanded[expanded$date %in% all_dates, , drop = FALSE]
+
+  baseline_allocation <- as.data.frame(table(day_types), stringsAsFactors = FALSE)
+  names(baseline_allocation) <- c("stratum", "baseline_days")
+
+  if (nrow(expanded) == 0) {
+    allocation <- baseline_allocation
+    names(allocation) <- c("final_stratum", "available_days")
+    return(list(
+      final_stratum = day_types,
+      special_period_reason = rep(NA_character_, length(all_dates)),
+      audit = data.frame(),
+      allocation = allocation,
+      baseline_allocation = baseline_allocation,
+      diagnostics = data.frame(
+        severity = character(),
+        issue = character(),
+        stratum = character(),
+        baseline_days = integer(),
+        final_days = integer(),
+        stringsAsFactors = FALSE
+      )
+    ))
+  }
+
+  dup_dates <- unique(expanded$date[duplicated(expanded$date)])
+  if (length(dup_dates) > 0) {
+    for (dup_date in dup_dates) {
+      rows <- expanded[expanded$date == dup_date, , drop = FALSE]
+      if (length(unique(rows$label)) > 1) {
+        cli::cli_abort(c(
+          "Special periods overlap on the same civil date.",
+          "x" = "Date {.val {dup_date}} resolves to multiple labels: {.val {unique(rows$label)}}.",
+          "i" = "Each civil date must resolve to exactly one final stratum label."
+        ))
+      }
+    }
+    expanded <- expanded[!duplicated(expanded$date), , drop = FALSE]
+  }
+
+  final_stratum <- day_types
+  special_reason <- rep(NA_character_, length(all_dates))
+  match_idx <- match(expanded$date, all_dates)
+  final_stratum[match_idx] <- expanded$label
+  special_reason[match_idx] <- expanded$reason
+
+  audit <- data.frame(
+    date = all_dates[match_idx],
+    label = expanded$label,
+    reason = expanded$reason,
+    source_start_date = expanded$source_start_date,
+    source_end_date = expanded$source_end_date,
+    stringsAsFactors = FALSE
+  )
+  audit$crosses_boundary <- format(audit$source_start_date, "%Y-%m") != format(audit$source_end_date, "%Y-%m")
+
+  allocation <- as.data.frame(table(final_stratum), stringsAsFactors = FALSE)
+  names(allocation) <- c("final_stratum", "available_days")
+
+  diag_rows <- list()
+  all_strata <- unique(c(as.character(baseline_allocation$stratum), as.character(allocation$final_stratum)))
+  for (stratum_name in all_strata) {
+    baseline_days <- baseline_allocation$baseline_days[match(stratum_name, baseline_allocation$stratum)]
+    final_days <- allocation$available_days[match(stratum_name, allocation$final_stratum)]
+    baseline_days[is.na(baseline_days)] <- 0L
+    final_days[is.na(final_days)] <- 0L
+
+    if (baseline_days > 0L && final_days == 0L) {
+      diag_rows[[length(diag_rows) + 1L]] <- data.frame(
+        severity = "error",
+        issue = "baseline stratum fully consumed by special-period assignments",
+        stratum = stratum_name,
+        baseline_days = as.integer(baseline_days),
+        final_days = as.integer(final_days),
+        stringsAsFactors = FALSE
+      )
+    } else if (final_days <= 1L) {
+      diag_rows[[length(diag_rows) + 1L]] <- data.frame(
+        severity = "warning",
+        issue = "fragile stratum with only one available day after special-period assignment",
+        stratum = stratum_name,
+        baseline_days = as.integer(baseline_days),
+        final_days = as.integer(final_days),
+        stringsAsFactors = FALSE
+      )
+    }
+  }
+
+  diagnostics <- if (length(diag_rows) > 0L) {
+    do.call(rbind, diag_rows)
+  } else {
+    data.frame(
+      severity = character(),
+      issue = character(),
+      stratum = character(),
+      baseline_days = integer(),
+      final_days = integer(),
+      stringsAsFactors = FALSE
+    )
+  }
+
+  list(
+    final_stratum = final_stratum,
+    special_period_reason = special_reason,
+    audit = audit,
+    allocation = allocation,
+    baseline_allocation = baseline_allocation,
+    diagnostics = diagnostics
+  )
+}
+
 #' Generate a creel survey sampling schedule
 #'
 #' Generates a stratified random sampling calendar for a creel survey season.
@@ -172,10 +362,18 @@ expand_periods_impl <- function(base_df, n_periods, period_labels = NULL,
 #' @param period_intensity Not yet implemented. Must be `NULL`.
 #' @param seed Integer seed for reproducible random day selection. Uses
 #'   [withr::with_seed()] to avoid mutating global RNG state.
+#' @param special_periods Optional data frame declaring calendar-defined special
+#'   periods. Must contain `start_date`, `end_date`, and `label` columns, with
+#'   optional `reason`. Periods are expanded to day-level assignments before
+#'   sampling so boundary-crossing periods are split by civil date.
 #'
 #' @return A `creel_schedule` data frame with columns:
 #'   - `date` (Date): Sampled (or all) dates.
-#'   - `day_type` (character): "weekday" or "weekend".
+#'   - `day_type` (character): Baseline "weekday" or "weekend" classification.
+#'   - `final_stratum` (character): Present when `special_periods` is supplied;
+#'     gives the final stratum used for day selection.
+#'   - `special_period_reason` (character): Present when `special_periods` is
+#'     supplied; gives the optional reason for the special-period assignment.
 #'   - `period_id` (integer, character, or ordered factor): Period within day.
 #'     Absent when `expand_periods = FALSE`.
 #'   - `sampled` (logical): Present only when `include_all = TRUE`.
@@ -205,7 +403,8 @@ generate_schedule <- function(
   include_all = FALSE,
   ordered_periods = FALSE,
   period_intensity = NULL,
-  seed
+  seed,
+  special_periods = NULL
 ) {
   # Validate mutually-exclusive intensity args
   if (!is.null(n_days) && !is.null(sampling_rate)) {
@@ -245,10 +444,86 @@ generate_schedule <- function(
     "weekday"
   )
 
+  # Apply calendar-defined special-period assignments before sampling
+  special_info <- resolve_special_periods(all_dates, day_types, special_periods)
+  strata_for_sampling <- special_info$final_stratum
+
+  requested_strata <- NULL
+  if (!is.null(n_days) && !is.null(names(n_days))) {
+    requested_strata <- names(n_days)
+  }
+  if (!is.null(sampling_rate) && !is.null(names(sampling_rate))) {
+    requested_strata <- unique(c(requested_strata, names(sampling_rate)))
+  }
+
+  diagnostics <- special_info$diagnostics
+  if (!is.null(special_periods) && nrow(diagnostics) > 0L) {
+    baseline_labels <- unique(day_types)
+    final_labels <- unique(strata_for_sampling)
+    season_fully_rewritten <- !any(final_labels %in% baseline_labels)
+
+    blocking <- diagnostics[
+      diagnostics$severity == "error" &
+        diagnostics$stratum %in% requested_strata &
+        season_fully_rewritten, ,
+      drop = FALSE
+    ]
+    if (nrow(blocking) > 0L) {
+      b1 <- blocking[1, , drop = FALSE]
+      cli::cli_abort(c(
+        "Special-period declarations consumed a baseline stratum still requested for sampling.",
+        "x" = paste0(
+          "Stratum ", b1$stratum,
+          " had ", b1$baseline_days, " baseline day(s) and ",
+          b1$final_days, " remaining final day(s)."
+        ),
+        "i" = paste0(
+          "Update {.arg n_days} or {.arg sampling_rate} to match",
+          " the final strata after applying {.arg special_periods}."
+        )
+      ))
+    }
+
+    warnings <- diagnostics[
+      diagnostics$severity == "warning" |
+        (diagnostics$severity == "error" & diagnostics$stratum %in% requested_strata), ,
+      drop = FALSE
+    ]
+    if (nrow(warnings) > 0L) {
+      warn_labels <- paste0( # nolint: object_usage_linter.
+        warnings$stratum,
+        " (baseline=", warnings$baseline_days,
+        ", final=", warnings$final_days, ")"
+      )
+      cli::cli_warn(c(
+        "Special-period declarations produced a fragile schedule design.",
+        "i" = "Affected strata: {.val {warn_labels}}",
+        "i" = paste0(
+          "Inspect the {.val special_period_diagnostics} attribute",
+          " or print the schedule for details."
+        )
+      ))
+    }
+  }
+
+  active_sampling_strata <- unique(strata_for_sampling)
+  if (!is.null(n_days) && !is.null(names(n_days))) {
+    n_days <- n_days[names(n_days) %in% active_sampling_strata]
+  }
+  if (!is.null(sampling_rate) && !is.null(names(sampling_rate))) {
+    sampling_rate <- sampling_rate[names(sampling_rate) %in% active_sampling_strata]
+  }
+
   # Stratified random sampling inside scoped RNG (no global mutation)
   sampled <- withr::with_seed(
     seed,
-    select_sampled_days(all_dates, day_types, n_days, sampling_rate)
+    select_sampled_days(
+      all_dates,
+      strata_for_sampling,
+      n_days,
+      sampling_rate,
+      valid_strata = active_sampling_strata
+    )
   )
 
   # Build base tibble with all season dates
@@ -257,6 +532,11 @@ generate_schedule <- function(
     day_type = day_types,
     sampled  = sampled
   )
+
+  if (!is.null(special_periods)) {
+    base$final_stratum <- special_info$final_stratum
+    base$special_period_reason <- special_info$special_period_reason
+  }
 
   if (!include_all) {
     base <- base[base$sampled, ]
@@ -272,7 +552,22 @@ generate_schedule <- function(
     base$sampled <- NULL
   }
 
-  new_creel_schedule(base)
+  result <- new_creel_schedule(base)
+
+  if (!is.null(special_periods)) {
+    audit <- special_info$audit
+    if (nrow(audit) > 0) {
+      audit$sampled <- sampled[match(audit$date, all_dates)]
+    } else {
+      audit$sampled <- logical(0)
+    }
+    attr(result, "special_period_audit") <- audit
+    attr(result, "special_period_allocation") <- special_info$allocation
+    attr(result, "special_period_baseline_allocation") <- special_info$baseline_allocation
+    attr(result, "special_period_diagnostics") <- special_info$diagnostics
+  }
+
+  result
 }
 
 #' Convert HH:MM string to integer minutes since midnight

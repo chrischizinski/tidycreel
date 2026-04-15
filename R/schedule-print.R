@@ -229,8 +229,21 @@ format.creel_schedule <- function(x, ...) {
     )
   })
 
+  diagnostics <- attr(x, "special_period_diagnostics")
+  diag_lines <- character(0)
+  if (is.data.frame(diagnostics) && nrow(diagnostics) > 0L) {
+    summary_lines <- apply(diagnostics, 1, function(row) {
+      paste0(
+        "- ", row[["severity"]], ": ", row[["stratum"]],
+        " — ", row[["issue"]],
+        " (baseline=", row[["baseline_days"]], ", final=", row[["final_days"]], ")"
+      )
+    })
+    diag_lines <- c("Special-period diagnostics", unname(summary_lines), "")
+  }
+
   if (!"date" %in% names(x)) {
-    return(c(header, "(no date column to render calendar)"))
+    return(c(header, diag_lines, "(no date column to render calendar)"))
   }
 
   abbrev_map <- make_day_abbrevs(unique(x$day_type))
@@ -250,7 +263,7 @@ format.creel_schedule <- function(x, ...) {
     grid_lines <- c(grid_lines, month_label, month_grid)
   }
 
-  c(header, grid_lines)
+  c(header, diag_lines, grid_lines)
 }
 
 # ---------------------------------------------------------------------------

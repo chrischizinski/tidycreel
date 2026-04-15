@@ -218,6 +218,32 @@ test_that("creel_design() defaults design_type to instantaneous", {
   expect_equal(design$design_type, "instantaneous")
 })
 
+test_that("creel_design() can use scheduler final_stratum as the analysis stratum", {
+  special_periods <- data.frame(
+    start_date = as.Date("2027-07-31"),
+    end_date = as.Date("2027-08-01"),
+    label = "high_use",
+    reason = "opener",
+    stringsAsFactors = FALSE
+  )
+
+  sched <- suppressWarnings(generate_schedule(
+    start_date = "2027-07-30",
+    end_date = "2027-08-03",
+    n_periods = 1,
+    sampling_rate = c(weekday = 1, weekend = 1, high_use = 1),
+    seed = 42,
+    include_all = TRUE,
+    expand_periods = FALSE,
+    special_periods = special_periods
+  ))
+
+  design <- creel_design(sched, date = date, strata = final_stratum)
+
+  expect_equal(design$strata_cols, "final_stratum")
+  expect_true("final_stratum" %in% names(design$calendar))
+})
+
 # Format/print with counts attached ----
 
 test_that("format.creel_design() shows count information when counts attached", {

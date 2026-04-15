@@ -68,6 +68,31 @@ test_that("estimate_effort() single-PSU error contains actionable guidance", {
   )
 })
 
+test_that("estimate_effort() single-PSU error names a special stratum explicitly", {
+  cal <- data.frame(
+    date = as.Date(c("2027-07-30", "2027-07-31", "2027-08-01")),
+    analysis_stratum = c("weekday", "high_use", "weekday"),
+    stringsAsFactors = FALSE
+  )
+  design <- suppressWarnings(creel_design(
+    cal,
+    date = date, strata = analysis_stratum, # nolint: object_usage_linter
+    survey_type = "instantaneous"
+  ))
+  counts <- data.frame(
+    date = cal$date,
+    analysis_stratum = cal$analysis_stratum,
+    n_counted = c(4L, 9L, 5L)
+  )
+  design <- suppressWarnings(add_counts(design, counts))
+
+  expect_error(
+    suppressWarnings(estimate_effort(design)),
+    regexp = "high_use",
+    ignore.case = TRUE
+  )
+})
+
 # ---- DIAG-02: grouped estimate_effort ----
 
 test_that("estimate_effort(by=...) single-PSU error is an rlang_error", {

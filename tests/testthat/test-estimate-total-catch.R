@@ -136,6 +136,78 @@ make_species_missing_rate_strata_design <- function() {
   )
 }
 
+#' Create design where schedule-defined special strata carry through effort and catch estimation
+make_total_catch_special_strata_design <- function() {
+  special_periods <- data.frame(
+    start_date = as.Date(c("2027-07-24", "2027-08-01")),
+    end_date = as.Date(c("2027-07-27", "2027-08-04")),
+    label = c("high_use_july", "high_use_aug"),
+    reason = c("opener", "opener"),
+    stringsAsFactors = FALSE
+  )
+
+  sched <- generate_schedule(
+    start_date = "2027-07-24",
+    end_date = "2027-08-04",
+    n_periods = 1,
+    sampling_rate = 0.5,
+    seed = 42,
+    include_all = TRUE,
+    expand_periods = FALSE,
+    special_periods = special_periods
+  )
+
+  calendar <- sched[, c("date", "final_stratum")]
+  calendar$analysis_stratum <- ifelse(
+    grepl("^high_use", calendar$final_stratum),
+    calendar$final_stratum,
+    "regular"
+  )
+  calendar <- calendar[, c("date", "analysis_stratum")]
+
+  sampled_days <- calendar[sched$sampled, , drop = FALSE]
+  counts <- data.frame(
+    date = sampled_days$date,
+    analysis_stratum = sampled_days$analysis_stratum,
+    effort_hours = c(28, 32, 35, 39, 14, 18),
+    stringsAsFactors = FALSE
+  )
+
+  interviews <- data.frame(
+    date = rep(sampled_days$date, each = 6),
+    analysis_stratum = rep(sampled_days$analysis_stratum, each = 6),
+    catch_total = c(
+      5, 6, 5, 6, 5, 6,
+      6, 7, 6, 7, 6, 7,
+      7, 8, 7, 8, 7, 8,
+      8, 9, 8, 9, 8, 9,
+      2, 3, 2, 3, 2, 3,
+      3, 4, 3, 4, 3, 4
+    ),
+    hours_fished = c(
+      rep(3, 12),
+      rep(3.5, 12),
+      rep(2, 12)
+    ),
+    trip_status = rep("complete", 36),
+    trip_duration = c(
+      rep(3, 12),
+      rep(3.5, 12),
+      rep(2, 12)
+    ),
+    stringsAsFactors = FALSE
+  )
+
+  design <- creel_design(calendar, date = date, strata = analysis_stratum) # nolint: object_usage_linter
+  design <- add_counts(design, counts) # nolint: object_usage_linter
+  add_interviews(design, interviews, # nolint: object_usage_linter
+    catch = catch_total,
+    effort = hours_fished,
+    trip_status = trip_status,
+    trip_duration = trip_duration
+  )
+}
+
 # Basic behavior tests ----
 
 test_that("estimate_total_catch returns creel_estimates class object", {
@@ -218,6 +290,27 @@ test_that("estimate_total_catch estimate is a positive numeric value", {
 
   expect_true(is.numeric(result$estimates$estimate))
   expect_true(result$estimates$estimate >= 0)
+})
+
+test_that("estimate_total_catch target='period_total' works with schedule-defined special strata", {
+  design <- make_total_catch_special_strata_design()
+
+  sampled <- estimate_total_catch(design, target = "sampled_days") # nolint: object_usage_linter
+  expanded <- estimate_total_catch(design, target = "period_total") # nolint: object_usage_linter
+
+  expect_s3_class(expanded, "creel_estimates")
+  expect_equal(expanded$effort_target, "period_total")
+  expect_true(expanded$estimates$estimate > sampled$estimates$estimate)
+  expect_true(is.finite(expanded$estimates$se))
+})
+
+test_that("estimate_total_catch can group by schedule-defined special strata", {
+  design <- make_total_catch_special_strata_design()
+
+  result <- estimate_total_catch(design, by = analysis_stratum, target = "period_total") # nolint: object_usage_linter
+
+  expect_true("analysis_stratum" %in% names(result$estimates))
+  expect_true(all(c("high_use_july", "high_use_aug", "regular") %in% result$estimates$analysis_stratum))
 })
 
 # Input validation tests ----

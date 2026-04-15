@@ -1,5 +1,45 @@
 # Tests for creel_estimates S3 class
 
+make_special_strata_effort_design <- function() {
+  special_periods <- data.frame(
+    start_date = as.Date(c("2027-07-24", "2027-08-01")),
+    end_date = as.Date(c("2027-07-27", "2027-08-04")),
+    label = c("high_use_july", "high_use_aug"),
+    reason = c("opener", "opener"),
+    stringsAsFactors = FALSE
+  )
+
+  sched <- generate_schedule(
+    start_date = "2027-07-24",
+    end_date = "2027-08-04",
+    n_periods = 1,
+    sampling_rate = 0.5,
+    seed = 42,
+    include_all = TRUE,
+    expand_periods = FALSE,
+    special_periods = special_periods
+  )
+
+  cal <- sched[, c("date", "final_stratum")]
+  cal$analysis_stratum <- ifelse(
+    grepl("^high_use", cal$final_stratum),
+    cal$final_stratum,
+    "regular"
+  )
+  cal <- cal[, c("date", "analysis_stratum")]
+
+  sampled_days <- cal[sched$sampled, , drop = FALSE]
+  counts <- data.frame(
+    date = sampled_days$date,
+    analysis_stratum = sampled_days$analysis_stratum,
+    effort_hours = c(28, 32, 35, 39, 14, 18),
+    stringsAsFactors = FALSE
+  )
+
+  design <- creel_design(cal, date = date, strata = analysis_stratum) # nolint: object_usage_linter
+  add_counts(design, counts) # nolint: object_usage_linter
+}
+
 # Test data fixtures ----
 test_estimates_df <- function() {
   data.frame(
@@ -11,6 +51,18 @@ test_estimates_df <- function() {
     stringsAsFactors = FALSE
   )
 }
+
+test_that("estimate_effort target='period_total' works on schedule-defined special strata", {
+  design <- make_special_strata_effort_design()
+
+  sampled <- estimate_effort(design, target = "sampled_days") # nolint: object_usage_linter
+  expanded <- estimate_effort(design, target = "period_total") # nolint: object_usage_linter
+
+  expect_s3_class(expanded, "creel_estimates")
+  expect_equal(expanded$effort_target, "period_total")
+  expect_true(expanded$estimates$estimate > sampled$estimates$estimate)
+  expect_true(is.finite(expanded$estimates$se))
+})
 
 # Constructor tests ----
 test_that("new_creel_estimates() creates creel_estimates S3 object", {
