@@ -1426,8 +1426,9 @@ estimate_harvest_rate <- function(
     ))
   }
 
-  # Bus-route dispatch (before standard tier-2 validation)
-  if (!is.null(design$design_type) && design$design_type == "bus_route") {
+  # Bus-route / ice dispatch (before standard tier-2 validation)
+  # Ice is a degenerate bus-route (p_site = 1.0); both use the HT estimator.
+  if (!is.null(design$design_type) && design$design_type %in% c("bus_route", "ice")) {
     if (verbose) {
       cli::cli_inform(c(
         "i" = "Using bus-route estimator (Jones & Pollock 2012, Eq. 19.5)"

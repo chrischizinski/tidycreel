@@ -310,7 +310,9 @@ estimate_harvest_br <- function(
     interviews$.contribution <- interviews$.h_ratio_i / interviews$.pi_i
 
     # Build per-site breakdown table
-    site_table <- interviews[c(site_col, circuit_col, ".h_ratio_i", ".pi_i", ".contribution")]
+    # Use intersect() to skip synthetic site/circuit cols absent in ice interviews
+    avail_site_cols_inc <- intersect(c(site_col, circuit_col), names(interviews))
+    site_table <- interviews[c(avail_site_cols_inc, ".h_ratio_i", ".pi_i", ".contribution")]
     names(site_table)[names(site_table) == ".h_ratio_i"] <- "h_ratio_i"
     names(site_table)[names(site_table) == ".pi_i"] <- "pi_i"
     names(site_table)[names(site_table) == ".contribution"] <- "h_ratio_i_over_pi_i"
@@ -337,7 +339,9 @@ estimate_harvest_br <- function(
   interviews$.contribution <- interviews$.h_i / interviews$.pi_i
 
   # Build per-site attribution table for site_contributions attribute
-  site_table <- interviews[c(site_col, circuit_col, ".h_i", ".pi_i", ".contribution")]
+  # Use intersect() to skip synthetic site/circuit cols absent in ice interviews
+  avail_site_cols <- intersect(c(site_col, circuit_col), names(interviews))
+  site_table <- interviews[c(avail_site_cols, ".h_i", ".pi_i", ".contribution")]
   names(site_table)[names(site_table) == ".h_i"] <- "h_i"
   names(site_table)[names(site_table) == ".pi_i"] <- "pi_i"
   names(site_table)[names(site_table) == ".contribution"] <- "h_i_over_pi_i"
