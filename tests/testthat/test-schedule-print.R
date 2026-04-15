@@ -107,6 +107,29 @@ test_that("print.creel_schedule() returns the object invisibly", {
   expect_identical(result$value, sched_2mo)
 })
 
+test_that("format.creel_schedule() includes special-period diagnostics summary when present", {
+  sched_special <- generate_schedule(
+    start_date = "2027-08-01",
+    end_date = "2027-08-08",
+    n_periods = 1,
+    sampling_rate = c(weekday = 1, weekend = 1, high_use = 1),
+    seed = 42,
+    include_all = TRUE,
+    expand_periods = FALSE,
+    special_periods = data.frame(
+      start_date = as.Date("2027-08-07"),
+      end_date = as.Date("2027-08-07"),
+      label = "high_use",
+      reason = "opener",
+      stringsAsFactors = FALSE
+    )
+  )
+
+  out <- format(sched_special)
+  expect_true(any(grepl("Special-period diagnostics", out, fixed = TRUE)))
+  expect_true(any(grepl("warning|fragile|tiny|residual", out, ignore.case = TRUE)))
+})
+
 # ---------------------------------------------------------------------------
 # CAL-02: Document knit_print output
 # ---------------------------------------------------------------------------

@@ -9,6 +9,7 @@ estimate_total_catch(
   by = NULL,
   variance = "taylor",
   conf_level = 0.95,
+  target = c("sampled_days", "stratum_total", "period_total"),
   aggregate_sections = TRUE,
   missing_sections = "warn",
   verbose = FALSE
@@ -29,6 +30,12 @@ tidyselect helpers.}
 and CPUE estimation, then combined via delta method.}
 
 \item{conf_level}{Numeric confidence level (default: 0.95)}
+
+\item{target}{Character string specifying the effort domain supplied to
+\code{\link[=estimate_effort]{estimate_effort()}}. Options are \code{"sampled_days"} (default),
+\code{"stratum_total"}, or \code{"period_total"}. This controls which effort domain
+is multiplied by CPUE so total catch stays aligned with the requested
+temporal target.}
 
 \item{aggregate_sections}{Logical. When the design was created with
 \code{\link{add_sections}}, should a \code{.lake_total} row be appended

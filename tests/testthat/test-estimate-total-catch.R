@@ -47,6 +47,167 @@ make_interviews_only_design <- function() {
   design
 }
 
+#' Create partial-sample design where product totals change with effort target
+make_total_catch_partial_sample_design <- function() {
+  calendar <- data.frame(
+    date = as.Date(c(
+      "2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04",
+      "2024-06-08", "2024-06-09", "2024-06-15", "2024-06-16"
+    )),
+    day_type = rep(c("weekday", "weekend"), each = 4),
+    stringsAsFactors = FALSE
+  )
+
+  counts <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-03", "2024-06-08", "2024-06-15")),
+    day_type = c("weekday", "weekday", "weekend", "weekend"),
+    effort_hours = c(10, 14, 20, 24),
+    stringsAsFactors = FALSE
+  )
+
+  interviews <- data.frame(
+    date = rep(counts$date, each = 3),
+    catch_total = c(5, 5, 5, 7, 7, 7, 10, 10, 10, 12, 12, 12),
+    hours_fished = c(2, 2, 2, 2, 2, 2, 4, 4, 4, 4, 4, 4),
+    trip_status = rep("complete", 12),
+    trip_duration = c(2, 2, 2, 2, 2, 2, 4, 4, 4, 4, 4, 4),
+    stringsAsFactors = FALSE
+  )
+
+  design <- creel_design(calendar, date = date, strata = day_type) # nolint: object_usage_linter
+  design <- add_counts(design, counts) # nolint: object_usage_linter
+  design <- add_interviews(design, interviews, # nolint: object_usage_linter
+    catch = catch_total,
+    effort = hours_fished,
+    trip_status = trip_status,
+    trip_duration = trip_duration
+  )
+
+  design
+}
+
+#' Create species design where one effort stratum has no interview coverage
+make_species_missing_rate_strata_design <- function() {
+  calendar <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-08", "2024-06-09")),
+    day_type = c("weekday", "weekday", "weekend", "weekend"),
+    stringsAsFactors = FALSE
+  )
+
+  counts <- data.frame(
+    date = calendar$date,
+    day_type = calendar$day_type,
+    effort_hours = c(10, 12, 20, 24),
+    stringsAsFactors = FALSE
+  )
+
+  interviews <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-01", "2024-06-02", "2024-06-02")),
+    interview_id = 1:4,
+    catch_total = c(2, 1, 3, 2),
+    hours_fished = c(2, 3, 2, 3),
+    trip_status = rep("complete", 4),
+    trip_duration = c(2, 3, 2, 3),
+    stringsAsFactors = FALSE
+  )
+
+  catch_df <- data.frame(
+    interview_id = 1:4,
+    species = rep("walleye", 4),
+    count = c(2, 1, 3, 2),
+    catch_type = rep("caught", 4),
+    stringsAsFactors = FALSE
+  )
+
+  design <- creel_design(calendar, date = date, strata = day_type) # nolint: object_usage_linter
+  design <- add_counts(design, counts) # nolint: object_usage_linter
+  design <- add_interviews(design, interviews, # nolint: object_usage_linter
+    catch = catch_total,
+    effort = hours_fished,
+    trip_status = trip_status,
+    trip_duration = trip_duration
+  )
+  add_catch(design, catch_df, # nolint: object_usage_linter
+    catch_uid = interview_id,
+    interview_uid = interview_id,
+    species = species,
+    count = count,
+    catch_type = catch_type
+  )
+}
+
+#' Create design where schedule-defined special strata carry through effort and catch estimation
+make_total_catch_special_strata_design <- function() {
+  special_periods <- data.frame(
+    start_date = as.Date(c("2027-07-24", "2027-08-01")),
+    end_date = as.Date(c("2027-07-27", "2027-08-04")),
+    label = c("high_use_july", "high_use_aug"),
+    reason = c("opener", "opener"),
+    stringsAsFactors = FALSE
+  )
+
+  sched <- generate_schedule(
+    start_date = "2027-07-24",
+    end_date = "2027-08-04",
+    n_periods = 1,
+    sampling_rate = 0.5,
+    seed = 42,
+    include_all = TRUE,
+    expand_periods = FALSE,
+    special_periods = special_periods
+  )
+
+  calendar <- sched[, c("date", "final_stratum")]
+  calendar$analysis_stratum <- ifelse(
+    grepl("^high_use", calendar$final_stratum),
+    calendar$final_stratum,
+    "regular"
+  )
+  calendar <- calendar[, c("date", "analysis_stratum")]
+
+  sampled_days <- calendar[sched$sampled, , drop = FALSE]
+  counts <- data.frame(
+    date = sampled_days$date,
+    analysis_stratum = sampled_days$analysis_stratum,
+    effort_hours = c(28, 32, 35, 39, 14, 18),
+    stringsAsFactors = FALSE
+  )
+
+  interviews <- data.frame(
+    date = rep(sampled_days$date, each = 6),
+    analysis_stratum = rep(sampled_days$analysis_stratum, each = 6),
+    catch_total = c(
+      5, 6, 5, 6, 5, 6,
+      6, 7, 6, 7, 6, 7,
+      7, 8, 7, 8, 7, 8,
+      8, 9, 8, 9, 8, 9,
+      2, 3, 2, 3, 2, 3,
+      3, 4, 3, 4, 3, 4
+    ),
+    hours_fished = c(
+      rep(3, 12),
+      rep(3.5, 12),
+      rep(2, 12)
+    ),
+    trip_status = rep("complete", 36),
+    trip_duration = c(
+      rep(3, 12),
+      rep(3.5, 12),
+      rep(2, 12)
+    ),
+    stringsAsFactors = FALSE
+  )
+
+  design <- creel_design(calendar, date = date, strata = analysis_stratum) # nolint: object_usage_linter
+  design <- add_counts(design, counts) # nolint: object_usage_linter
+  add_interviews(design, interviews, # nolint: object_usage_linter
+    catch = catch_total,
+    effort = hours_fished,
+    trip_status = trip_status,
+    trip_duration = trip_duration
+  )
+}
+
 # Basic behavior tests ----
 
 test_that("estimate_total_catch returns creel_estimates class object", {
@@ -95,6 +256,33 @@ test_that("estimate_total_catch result conf_level is 0.95 by default", {
   expect_equal(result$conf_level, 0.95)
 })
 
+test_that("estimate_total_catch defaults effort_target to sampled_days", {
+  design <- make_total_catch_design()
+
+  result <- estimate_total_catch(design) # nolint: object_usage_linter
+
+  expect_equal(result$effort_target, "sampled_days")
+})
+
+test_that("estimate_total_catch target='period_total' propagates expanded effort domain", {
+  design <- make_total_catch_partial_sample_design()
+
+  sampled <- estimate_total_catch(design, target = "sampled_days") # nolint: object_usage_linter
+  expanded <- estimate_total_catch(design, target = "period_total") # nolint: object_usage_linter
+
+  expect_equal(expanded$estimates$estimate, 2 * sampled$estimates$estimate)
+  expect_equal(expanded$effort_target, "period_total")
+})
+
+test_that("estimate_total_catch species path warns when effort strata lack rate coverage", {
+  design <- make_species_missing_rate_strata_design()
+
+  expect_warning(
+    estimate_total_catch(design, by = species, target = "period_total"), # nolint: object_usage_linter
+    "no matching rate estimate"
+  )
+})
+
 test_that("estimate_total_catch estimate is a positive numeric value", {
   design <- make_total_catch_design()
 
@@ -102,6 +290,27 @@ test_that("estimate_total_catch estimate is a positive numeric value", {
 
   expect_true(is.numeric(result$estimates$estimate))
   expect_true(result$estimates$estimate >= 0)
+})
+
+test_that("estimate_total_catch target='period_total' works with schedule-defined special strata", {
+  design <- make_total_catch_special_strata_design()
+
+  sampled <- estimate_total_catch(design, target = "sampled_days") # nolint: object_usage_linter
+  expanded <- estimate_total_catch(design, target = "period_total") # nolint: object_usage_linter
+
+  expect_s3_class(expanded, "creel_estimates")
+  expect_equal(expanded$effort_target, "period_total")
+  expect_true(expanded$estimates$estimate > sampled$estimates$estimate)
+  expect_true(is.finite(expanded$estimates$se))
+})
+
+test_that("estimate_total_catch can group by schedule-defined special strata", {
+  design <- make_total_catch_special_strata_design()
+
+  result <- estimate_total_catch(design, by = analysis_stratum, target = "period_total") # nolint: object_usage_linter
+
+  expect_true("analysis_stratum" %in% names(result$estimates))
+  expect_true(all(c("high_use_july", "high_use_aug", "regular") %in% result$estimates$analysis_stratum))
 })
 
 # Input validation tests ----
@@ -816,6 +1025,14 @@ test_that("PROD-02-catch-regression: non-sectioned design returns same result as
   expect_false("section" %in% names(result$estimates))
   expect_true(is.numeric(result$estimates$estimate))
   expect_true(result$estimates$estimate > 0)
+})
+
+test_that("PROD-02-catch-target: section path preserves requested effort target", {
+  design <- make_3section_total_catch_design() # nolint: object_usage_linter
+  result <- suppressWarnings(suppressMessages(
+    estimate_total_catch(design, target = "period_total", aggregate_sections = FALSE) # nolint: object_usage_linter
+  ))
+  expect_equal(result$effort_target, "period_total")
 })
 
 # ICE-04: estimate_total_catch() ice compatibility ----

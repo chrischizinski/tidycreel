@@ -15,7 +15,8 @@ generate_schedule(
   include_all = FALSE,
   ordered_periods = FALSE,
   period_intensity = NULL,
-  seed
+  seed,
+  special_periods = NULL
 )
 }
 \arguments{
@@ -55,12 +56,21 @@ label order.}
 
 \item{seed}{Integer seed for reproducible random day selection. Uses
 \code{\link[withr:with_seed]{withr::with_seed()}} to avoid mutating global RNG state.}
+
+\item{special_periods}{Optional data frame declaring calendar-defined special
+periods. Must contain \code{start_date}, \code{end_date}, and \code{label} columns, with
+optional \code{reason}. Periods are expanded to day-level assignments before
+sampling so boundary-crossing periods are split by civil date.}
 }
 \value{
 A \code{creel_schedule} data frame with columns:
 \itemize{
 \item \code{date} (Date): Sampled (or all) dates.
-\item \code{day_type} (character): "weekday" or "weekend".
+\item \code{day_type} (character): Baseline "weekday" or "weekend" classification.
+\item \code{final_stratum} (character): Present when \code{special_periods} is supplied;
+gives the final stratum used for day selection.
+\item \code{special_period_reason} (character): Present when \code{special_periods} is
+supplied; gives the optional reason for the special-period assignment.
 \item \code{period_id} (integer, character, or ordered factor): Period within day.
 Absent when \code{expand_periods = FALSE}.
 \item \code{sampled} (logical): Present only when \code{include_all = TRUE}.

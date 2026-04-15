@@ -41,6 +41,134 @@ make_design_no_harvest <- function() { # nolint: object_length_linter
   design
 }
 
+make_total_harvest_species_design <- function() {
+  # Synthetic data: 10+ interviews per day_type stratum to satisfy n >= 10 check
+  set.seed(42)
+  cal <- data.frame(
+    date = as.Date(c(
+      "2024-06-03", "2024-06-04", "2024-06-05", "2024-06-06",
+      "2024-06-07", "2024-06-10", "2024-06-11", "2024-06-12",
+      "2024-06-08", "2024-06-09", "2024-06-15", "2024-06-16",
+      "2024-06-22", "2024-06-23", "2024-06-29", "2024-06-30"
+    )),
+    day_type = c(rep("weekday", 8), rep("weekend", 8)),
+    stringsAsFactors = FALSE
+  )
+  counts <- data.frame(
+    date = cal$date,
+    day_type = cal$day_type,
+    effort_hours = c(rep(15, 8), rep(30, 8)),
+    stringsAsFactors = FALSE
+  )
+  # 12 interviews per stratum (24 total), each a completed trip
+  iview_dates <- c(
+    rep(as.Date(c(
+      "2024-06-03", "2024-06-04", "2024-06-05",
+      "2024-06-06", "2024-06-07", "2024-06-10"
+    )), 2),
+    rep(as.Date(c(
+      "2024-06-08", "2024-06-09", "2024-06-15",
+      "2024-06-16", "2024-06-22", "2024-06-23"
+    )), 2)
+  )
+  iview_dtype <- c(rep("weekday", 12), rep("weekend", 12))
+  catch_total <- sample(1:5, 24, replace = TRUE)
+  interviews <- data.frame(
+    date = iview_dates,
+    day_type = iview_dtype,
+    interview_id = seq_len(24),
+    catch_total = catch_total,
+    catch_kept = pmin(sample(0:3, 24, replace = TRUE), catch_total),
+    hours_fished = runif(24, 0.5, 4),
+    trip_status = "complete",
+    trip_duration = runif(24, 1, 6),
+    stringsAsFactors = FALSE
+  )
+  # catch data: 2 species per interview
+  catch_df <- data.frame(
+    interview_id = rep(seq_len(24), 2),
+    species = rep(c("bass", "bluegill"), each = 24),
+    count = sample(0:3, 48, replace = TRUE),
+    catch_type = "caught",
+    stringsAsFactors = FALSE
+  )
+  # Add harvested rows
+  catch_h <- catch_df
+  catch_h$catch_type <- "harvested"
+  catch_h$count <- pmin(catch_h$count, sample(0:2, 48, replace = TRUE))
+  catch_df <- rbind(catch_df, catch_h)
+
+  design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+  design <- add_counts(design, counts) # nolint: object_usage_linter
+  design <- add_interviews(design, interviews, # nolint: object_usage_linter
+    catch = catch_total,
+    harvest = catch_kept,
+    effort = hours_fished,
+    trip_status = trip_status,
+    trip_duration = trip_duration
+  )
+  design <- add_catch(design, catch_df, # nolint: object_usage_linter
+    catch_uid     = interview_id,
+    interview_uid = interview_id,
+    species       = species,
+    count         = count,
+    catch_type    = catch_type
+  )
+
+  design
+}
+
+make_total_harvest_missing_rate_strata_design <- function() {
+  calendar <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-08", "2024-06-09")),
+    day_type = c("weekday", "weekday", "weekend", "weekend"),
+    stringsAsFactors = FALSE
+  )
+
+  counts <- data.frame(
+    date = calendar$date,
+    day_type = calendar$day_type,
+    effort_hours = c(10, 12, 20, 24),
+    stringsAsFactors = FALSE
+  )
+
+  interviews <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-01", "2024-06-02", "2024-06-02")),
+    interview_id = 1:4,
+    catch_total = c(2, 1, 3, 2),
+    catch_kept = c(1, 1, 2, 1),
+    hours_fished = c(2, 3, 2, 3),
+    trip_status = rep("complete", 4),
+    trip_duration = c(2, 3, 2, 3),
+    stringsAsFactors = FALSE
+  )
+
+  catch_df <- data.frame(
+    interview_id = c(1, 2, 3, 4, 1, 2, 3, 4),
+    species = rep("walleye", 8),
+    count = c(2, 1, 3, 2, 1, 1, 2, 1),
+    catch_type = c(rep("caught", 4), rep("harvested", 4)),
+    stringsAsFactors = FALSE
+  )
+
+  design <- creel_design(calendar, date = date, strata = day_type) # nolint: object_usage_linter
+  design <- add_counts(design, counts) # nolint: object_usage_linter
+  design <- add_interviews(design, interviews, # nolint: object_usage_linter
+    catch = catch_total,
+    harvest = catch_kept,
+    effort = hours_fished,
+    trip_status = trip_status,
+    trip_duration = trip_duration
+  )
+  add_catch(design, catch_df, # nolint: object_usage_linter
+    catch_uid = interview_id,
+    interview_uid = interview_id,
+    species = species,
+    count = count,
+    catch_type = catch_type
+  )
+}
+
 # Basic behavior tests ----
 
 test_that("estimate_total_harvest returns creel_estimates class object", {
@@ -87,6 +215,33 @@ test_that("estimate_total_harvest result conf_level is 0.95 by default", {
   result <- estimate_total_harvest(design) # nolint: object_usage_linter
 
   expect_equal(result$conf_level, 0.95)
+})
+
+test_that("estimate_total_harvest defaults effort_target to sampled_days", {
+  design <- make_total_harvest_design()
+
+  result <- estimate_total_harvest(design) # nolint: object_usage_linter
+
+  expect_equal(result$effort_target, "sampled_days")
+})
+
+test_that("estimate_total_harvest species path accepts target = 'period_total'", {
+  design <- make_total_harvest_species_design()
+
+  result <- estimate_total_harvest(design, by = species, target = "period_total") # nolint: object_usage_linter
+
+  expect_s3_class(result, "creel_estimates")
+  expect_equal(result$effort_target, "period_total")
+  expect_true("species" %in% names(result$estimates))
+})
+
+test_that("estimate_total_harvest species path warns when effort strata lack rate coverage", {
+  design <- make_total_harvest_missing_rate_strata_design()
+
+  expect_warning(
+    estimate_total_harvest(design, by = species, target = "period_total"), # nolint: object_usage_linter
+    "no matching rate estimate"
+  )
 })
 
 test_that("estimate_total_harvest estimate is a positive numeric value", {
@@ -569,6 +724,14 @@ test_that("PROD-02-harvest-regression: non-sectioned design returns same result 
   expect_false("section" %in% names(result$estimates))
   expect_true(is.numeric(result$estimates$estimate))
   expect_true(result$estimates$estimate > 0)
+})
+
+test_that("PROD-02-harvest-target: section path preserves requested effort target", {
+  design <- make_3section_total_catch_design() # nolint: object_usage_linter
+  result <- suppressWarnings(suppressMessages(
+    estimate_total_harvest(design, target = "period_total", aggregate_sections = FALSE) # nolint: object_usage_linter
+  ))
+  expect_equal(result$effort_target, "period_total")
 })
 
 # PROD-01-harvest-missing: Missing section inserts NA row with data_available=FALSE ----

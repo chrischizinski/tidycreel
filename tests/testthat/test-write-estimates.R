@@ -29,20 +29,29 @@ test_that("WRITE-01: write_estimates() creates a file at the given path", {
   expect_true(file.exists(tmp))
 })
 
-test_that("WRITE-02: CSV output has three comment lines", {
+test_that("WRITE-02: CSV output has survey metadata comment lines", {
   eff <- .make_eff()
   tmp <- tempfile(fileext = ".csv")
   write_estimates(eff, tmp)
-  lines <- readLines(tmp, n = 5L)
+  lines <- readLines(tmp, n = 6L)
   comment_lines <- grep("^#", lines)
-  expect_equal(length(comment_lines), 3L)
+  expect_gte(length(comment_lines), 3L)
+})
+
+test_that("WRITE-02b: CSV output includes effort target when present", {
+  eff <- .make_eff()
+  tmp <- tempfile(fileext = ".csv")
+  write_estimates(eff, tmp)
+  header <- paste(readLines(tmp, n = 6L), collapse = " ")
+  expect_match(header, "Effort target", ignore.case = FALSE)
+  expect_match(header, "sampled_days", ignore.case = FALSE)
 })
 
 test_that("WRITE-03: CSV comment lines mention method and CI", {
   eff <- .make_eff()
   tmp <- tempfile(fileext = ".csv")
   write_estimates(eff, tmp)
-  header <- paste(readLines(tmp, n = 3L), collapse = " ")
+  header <- paste(readLines(tmp, n = 6L), collapse = " ")
   expect_match(header, "CI", ignore.case = FALSE)
   expect_match(header, "Generated")
 })
