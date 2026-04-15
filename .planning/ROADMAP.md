@@ -35,6 +35,12 @@ Plans:
 **Depends on:** —
 **Delivers:** Architectural review report; dependency review report.
 
+**Plans:** 2 plans
+
+Plans:
+- [ ] 72-01-PLAN.md — Write architectural review report (layer violations, S3 class audit, positive findings, recommendations)
+- [ ] 72-02-PLAN.md — Write dependency review report (Imports risk ratings, drop/demote analysis, recommendations)
+
 ---
 
 ## Phase 73: Error Handling Strategy & creel.connect Investigation
