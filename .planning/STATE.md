@@ -2,25 +2,25 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 71 — Future Analytical Needs
-current_plan: Not started
-status: unknown
-last_updated: "2026-04-15T20:00:44.077Z"
+current_phase: 72 — Architectural Review
+current_plan: 72-01 complete
+status: in_progress
+last_updated: "2026-04-15T20:47:46Z"
 progress:
   total_phases: 6
   completed_phases: 2
-  total_plans: 2
-  completed_plans: 2
+  total_plans: 3
+  completed_plans: 3
 ---
 
 # GSD State
 
 **Milestone:** M022 — Comprehensive Project Evaluation and Future Planning
-**Current phase:** 71 — Future Analytical Needs
-**Phase status:** complete — plan 71-01 complete
+**Current phase:** 72 — Architectural Review
+**Phase status:** in progress — plan 72-01 complete
 
-**Current Plan:** Not started
-**Last session:** 2026-04-15T18:34:01Z
+**Current Plan:** 72-01 complete
+**Last session:** 2026-04-15T20:47:46Z
 
 ## Decisions
 
@@ -30,6 +30,7 @@ progress:
 - estimate_total_release_br() reuses estimate_release_build_data() to join .release_count to interviews.
 - Phases 71-75 are evaluation/research phases — they produce documents, not code.
 - Phase 71-01: research document is purely a planning artifact; no design decisions or implementation commitments were made. Mark-recapture scoped to v1.5+. Multi-species joint variance requires prototype before interface commitment. Exploitation rate estimator is a genuine build candidate (no clean existing R wrapper).
+- Phase 72-01: architectural review is complete. All four findings are low/medium severity — package architecture is structurally sound. get_site_contributions() file placement (A1, medium) is the only actionable structural fix. creel_summary_* subclasses without S3 methods (A4) require a commit-to-one-direction decision. Six positive findings (P1-P6) document patterns to preserve.
 
 ## Blockers
 
