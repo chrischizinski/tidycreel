@@ -115,6 +115,27 @@ estimate_total_release <- function(
     ))
   }
 
+  # Bus-route / ice dispatch (before standard survey NULL check)
+  # Ice is a degenerate bus-route; both use the HT estimator (Eq. 19.5).
+  if (!is.null(design$design_type) && design$design_type %in% c("bus_route", "ice")) {
+    if (rlang::quo_is_null(by_quo)) {
+      by_vars_br <- NULL
+    } else {
+      by_cols_br <- tidyselect::eval_select(
+        by_quo,
+        data = design$interviews,
+        allow_rename = FALSE,
+        allow_empty = FALSE,
+        error_call = rlang::caller_env()
+      )
+      by_vars_br <- names(by_cols_br)
+    }
+    return(estimate_total_release_br( # nolint: object_usage_linter
+      design, by_vars_br, variance, conf_level,
+      verbose = FALSE
+    ))
+  }
+
   # Validate design compatibility (counts AND interviews required for effort)
   validate_design_compatibility(design) # nolint: object_usage_linter
 
