@@ -90,10 +90,27 @@
 #' data(example_interviews)
 #'
 #' design <- creel_design(example_calendar, date = date, strata = day_type)
-#' design <- add_interviews(design, example_interviews,
+#'
+#' interviews_ready <- prep_interviews_trips(
+#'   example_interviews,
+#'   date = date,
+#'   interview_uid = interview_id,
+#'   effort_hours = hours_fished,
+#'   trip_status = trip_status,
+#'   trip_duration = trip_duration,
+#'   catch_total = catch_total,
+#'   harvest_total = catch_kept,
+#'   angler_type = angler_type,
+#'   angler_method = angler_method,
+#'   species_sought = species_sought,
+#'   n_anglers = n_anglers,
+#'   refused = refused
+#' )
+#'
+#' design <- add_interviews(design, interviews_ready,
 #'   catch = catch_total,
-#'   effort = hours_fished,
-#'   harvest = catch_kept,
+#'   effort = effort_hours,
+#'   harvest = harvest_total,
 #'   trip_status = trip_status,
 #'   trip_duration = trip_duration,
 #'   angler_type = angler_type,
@@ -105,7 +122,8 @@
 #' print(design)
 #'
 #' @seealso [example_calendar] for matching calendar data, [example_catch] for
-#'   species-level catch data, [add_interviews()] to attach interviews to a design
+#'   species-level catch data, [prep_interviews_trips()] to standardize interview rows,
+#'   [add_interviews()] to attach interviews to a design
 "example_interviews"
 
 #' Example species catch data for creel survey
@@ -133,16 +151,33 @@
 #' data(example_catch)
 #'
 #' design <- creel_design(example_calendar, date = date, strata = day_type)
-#' design <- add_interviews(design, example_interviews,
+#' interviews_ready <- prep_interviews_trips(
+#'   example_interviews,
+#'   date = date,
+#'   interview_uid = interview_id,
+#'   effort_hours = hours_fished,
+#'   trip_status = trip_status,
+#'   trip_duration = trip_duration,
+#'   catch_total = catch_total,
+#'   harvest_total = catch_kept
+#' )
+#' design <- add_interviews(design, interviews_ready,
 #'   catch = catch_total,
-#'   effort = hours_fished,
-#'   harvest = catch_kept,
+#'   effort = effort_hours,
+#'   harvest = harvest_total,
 #'   trip_status = trip_status,
 #'   trip_duration = trip_duration
 #' )
-#' design <- add_catch(design, example_catch,
-#'   catch_uid = interview_id,
+#'
+#' catch_ready <- prep_interview_catch(example_catch,
 #'   interview_uid = interview_id,
+#'   species = species,
+#'   count = count,
+#'   catch_type = catch_type
+#' )
+#' design <- add_catch(design, catch_ready,
+#'   catch_uid = interview_uid,
+#'   interview_uid = interview_uid,
 #'   species = species,
 #'   count = count,
 #'   catch_type = catch_type
@@ -150,7 +185,8 @@
 #' print(design)
 #'
 #' @seealso [example_interviews] for the corresponding interview-level data,
-#'   \code{add_catch()} to attach species catch to a design
+#'   [prep_interview_catch()] to standardize species catch, and
+#'   `add_catch()` to attach species catch to a design
 "example_catch"
 
 #' Example fish length data for creel survey

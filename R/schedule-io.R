@@ -1,6 +1,6 @@
 #' Coerce a value to Date
 #'
-#' Internal helper used by [coerce_schedule_columns()] to convert dates read
+#' Internal helper used by `coerce_schedule_columns()` to convert dates read
 #' from CSV or xlsx into class `Date`. Handles pass-through for `Date`,
 #' conversion from `POSIXct`/`POSIXlt`, numeric Excel serial numbers
 #' (origin `"1899-12-30"`), and ISO 8601 character strings.

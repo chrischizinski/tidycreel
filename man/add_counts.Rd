@@ -18,13 +18,15 @@ add_counts(
 \arguments{
 \item{design}{A creel_design object (created with \code{\link[=creel_design]{creel_design()}})}
 
-\item{counts}{Data frame containing count data. Must have:
-\itemize{
-\item A Date column matching the design's date_col
-\item All strata columns from the design's strata_cols
-\item At least one numeric column (the count variable)
-\item A PSU column (specified via psu argument, defaults to date_col)
-}}
+\item{counts}{Data frame containing count-side effort data. Preferred input:
+sampled-day effort rows that already have a Date column matching the
+design's date_col, all strata columns from the design's strata_cols, at
+least one numeric effort column, and a PSU column (specified via \code{psu},
+defaults to date_col). Use \code{\link[=prep_counts_daily_effort]{prep_counts_daily_effort()}} to build this form
+from raw source data.
+
+Compatibility input paths remain available for raw-ish count workflows with
+multiple within-day observations or progressive counts.}
 
 \item{psu}{Character string naming the PSU (Primary Sampling Unit) column
 in the count data. Defaults to NULL, which uses the design's date_col as
@@ -72,11 +74,18 @@ A new creel_design object (list) with components:
 \item{validation}{creel_validation object with Tier 1 results}
 }
 \description{
-Attaches instantaneous count data to a creel_design object and constructs
-the internal survey design object eagerly. This is the core of the survey
-bridge layer - translating domain vocabulary (creel counts) into statistical
-machinery (survey::svydesign). Eager construction catches design errors at
-add_counts() time when users have context about what data they are adding.
+Attaches count-side effort data to a creel_design object and constructs the
+internal survey design object eagerly. The preferred workflow is to
+standardize raw count-process data into sampled-day effort rows with
+\code{\link[=prep_counts_daily_effort]{prep_counts_daily_effort()}} (or another \verb{prep_counts_*()} helper) before
+calling \code{add_counts()}. This keeps survey-specific count reconstruction logic
+out of the core estimator path.
+
+Compatibility paths for raw-ish count inputs remain supported: \code{add_counts()}
+can still aggregate multiple within-day observations via \code{count_time_col} and
+can still compute progressive-count daily effort from \code{circuit_time} and
+\code{period_length_col}. Eager construction catches design errors at add_counts()
+time when users have context about what data they are adding.
 }
 \section{Immutability}{
 
@@ -106,23 +115,32 @@ allows the same creel_design calendar to be used with different PSU structures.
 }
 
 \examples{
-# Basic usage - day as PSU (default)
+# Preferred workflow: standardize sampled-day effort before attachment
 calendar <- data.frame(
   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
   day_type = c("weekday", "weekday", "weekend", "weekend")
 )
 design <- creel_design(calendar, date = date, strata = day_type)
 
-counts <- data.frame(
-  date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
+raw_counts <- data.frame(
+  sample_date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
   day_type = c("weekday", "weekday", "weekend", "weekend"),
-  count = c(15, 23, 45, 52)
+  effort_kind = c("bank", "bank", "bank", "bank"),
+  effort_value = c(15, 23, 45, 52)
 )
 
-design_with_counts <- add_counts(design, counts)
+counts_ready <- prep_counts_daily_effort(
+  raw_counts,
+  date = sample_date,
+  strata = day_type,
+  effort_type = effort_kind,
+  daily_effort = effort_value
+)
+
+design_with_counts <- add_counts(design, counts_ready)
 print(design_with_counts)
 
-# Custom PSU column
+# Compatibility path: raw count rows with a custom PSU column
 counts_with_site_psu <- data.frame(
   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
   day_type = c("weekday", "weekday", "weekend", "weekend"),
@@ -132,7 +150,7 @@ counts_with_site_psu <- data.frame(
 
 design2 <- add_counts(design, counts_with_site_psu, psu = "site_day")
 
-# Multiple counts per day (within-day variance via count_time_col)
+# Compatibility path: multiple counts per day (within-day variance via count_time_col)
 # Two circuits per day: "am" and "pm"
 calendar2 <- data.frame(
   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
@@ -150,7 +168,7 @@ design_multi <- add_counts(design3, multi_counts,
   count_time_col = count_time # nolint: object_usage_linter
 )
 
-# Progressive count type (Ê_d = C x circuit_time x kappa)
+# Compatibility path: progressive count type (Ê_d = C x circuit_time x kappa)
 calendar3 <- data.frame(
   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
   day_type = c("weekday", "weekday", "weekend", "weekend")

@@ -34,6 +34,28 @@ make_test_design_with_counts <- function() {
   add_counts(design, counts) # nolint: object_usage_linter
 }
 
+#' Create partial-sample design where period expansion differs from sampled-day sum
+make_partial_sample_design_with_counts <- function() {
+  cal <- data.frame(
+    date = as.Date(c(
+      "2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04",
+      "2024-06-08", "2024-06-09", "2024-06-15", "2024-06-16"
+    )),
+    day_type = rep(c("weekday", "weekend"), each = 4),
+    stringsAsFactors = FALSE
+  )
+
+  counts <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-03", "2024-06-08", "2024-06-15")),
+    day_type = c("weekday", "weekday", "weekend", "weekend"),
+    effort_hours = c(10, 14, 20, 24),
+    stringsAsFactors = FALSE
+  )
+
+  design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+  add_counts(design, counts) # nolint: object_usage_linter
+}
+
 #' Create 3-section creel_design with counts (SECT fixtures)
 #'
 #' Produces a creel_design with sections "North", "Central", "South".
@@ -176,6 +198,35 @@ test_that("estimate_effort result has conf_level == 0.95 by default", {
   result <- estimate_effort(design) # nolint: object_usage_linter
 
   expect_equal(result$conf_level, 0.95)
+})
+
+test_that("estimate_effort defaults effort_target to sampled_days", {
+  design <- make_test_design_with_counts()
+
+  result <- estimate_effort(design) # nolint: object_usage_linter
+
+  expect_equal(result$effort_target, "sampled_days")
+})
+
+test_that("estimate_effort target='period_total' expands sampled-day totals", {
+  design <- make_partial_sample_design_with_counts()
+
+  sampled <- suppressWarnings(estimate_effort(design, target = "sampled_days")) # nolint: object_usage_linter
+  expanded <- suppressWarnings(estimate_effort(design, target = "period_total")) # nolint: object_usage_linter
+
+  expect_equal(sampled$estimates$estimate, 68)
+  expect_equal(expanded$estimates$estimate, 136)
+  expect_equal(expanded$effort_target, "period_total")
+})
+
+test_that("estimate_effort target='stratum_total' expands grouped strata totals", {
+  design <- make_partial_sample_design_with_counts()
+
+  result <- suppressWarnings(estimate_effort(design, by = day_type, target = "stratum_total")) # nolint: object_usage_linter
+
+  expect_equal(result$effort_target, "stratum_total")
+  expect_equal(result$estimates$estimate[result$estimates$day_type == "weekday"], 48)
+  expect_equal(result$estimates$estimate[result$estimates$day_type == "weekend"], 88)
 })
 
 test_that("estimate_effort with custom conf_level = 0.90 produces different CI bounds", {
@@ -976,6 +1027,19 @@ test_that("estimate_effort dispatches to bus-route estimator for bus_route desig
   expect_true(is.numeric(result$estimates$estimate))
 })
 
+test_that("bus-route effort results carry effort_target metadata", {
+  design <- make_br_effort_design()
+  d <- add_interviews(design, make_br_effort_interviews(),
+    catch = catch_total, # nolint: object_usage_linter
+    effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status, # nolint: object_usage_linter
+    n_counted = n_counted, # nolint: object_usage_linter
+    n_interviewed = n_interviewed # nolint: object_usage_linter
+  )
+  result <- estimate_effort(d)
+  expect_equal(result$effort_target, "sampled_days")
+})
+
 test_that("bus-route effort estimate matches Eq. 19.4 sum(e_i / pi_i)", {
   design <- make_br_effort_design()
   d <- add_interviews(design, make_br_effort_interviews(),
@@ -1310,6 +1374,12 @@ test_that("SECT-01: estimate_effort on 3-section design returns 4-row tibble wit
   expect_true(".lake_total" %in% result$estimates$section)
 })
 
+test_that("SECT-01: section effort results carry effort_target metadata", {
+  design <- make_3section_design_with_counts()
+  result <- suppressWarnings(estimate_effort(design, aggregate_sections = TRUE)) # nolint: object_usage_linter
+  expect_equal(result$effort_target, "sampled_days")
+})
+
 test_that("SECT-02a: .lake_total SE from method='correlated' differs from naive sqrt(sum(section_se^2))", {
   design <- make_3section_design_with_counts()
   result_corr <- suppressWarnings(estimate_effort(
@@ -1437,6 +1507,19 @@ test_that("ICE-01: estimate_effort on ice design dispatches without error", {
   ))
   result <- suppressWarnings(estimate_effort(d))
   expect_s3_class(result, "creel_estimates")
+})
+
+test_that("ICE-01: ice effort results carry effort_target metadata", {
+  design <- make_ice_design()
+  d <- suppressMessages(add_interviews(design, make_ice_interviews(),
+    catch = catch_total, # nolint: object_usage_linter
+    effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status, # nolint: object_usage_linter
+    n_counted = n_counted, # nolint: object_usage_linter
+    n_interviewed = n_interviewed # nolint: object_usage_linter
+  ))
+  result <- suppressWarnings(estimate_effort(d))
+  expect_equal(result$effort_target, "sampled_days")
 })
 
 test_that("ICE-01: estimate_effort on ice(time_on_ice) returns column total_effort_hr_on_ice", {
@@ -1616,6 +1699,12 @@ describe("Phase 47: Aerial effort", {
     result <- suppressWarnings(estimate_effort(d))
     expect_s3_class(result, "creel_estimates")
     expect_true(is.numeric(result$estimates$estimate))
+  })
+
+  it("AIR-01: aerial effort results carry effort_target metadata", {
+    d <- add_counts(make_aerial_design(), make_aerial_counts()) # nolint: object_usage_linter
+    result <- suppressWarnings(estimate_effort(d))
+    expect_equal(result$effort_target, "sampled_days")
   })
 
   it("AIR-01: effort equals svytotal(counts) x (h_open / v) — no interview needed", {

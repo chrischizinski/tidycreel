@@ -52,6 +52,56 @@ make_interviews_only_release_design <- function() { # nolint: object_length_lint
   ))
 }
 
+make_total_release_missing_rate_strata_design <- function() {
+  calendar <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-08", "2024-06-09")),
+    day_type = c("weekday", "weekday", "weekend", "weekend"),
+    stringsAsFactors = FALSE
+  )
+
+  counts <- data.frame(
+    date = calendar$date,
+    day_type = calendar$day_type,
+    effort_hours = c(10, 12, 20, 24),
+    stringsAsFactors = FALSE
+  )
+
+  interviews <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-01", "2024-06-02", "2024-06-02")),
+    interview_id = 1:4,
+    catch_total = c(2, 1, 3, 2),
+    hours_fished = c(2, 3, 2, 3),
+    trip_status = rep("complete", 4),
+    trip_duration = c(2, 3, 2, 3),
+    stringsAsFactors = FALSE
+  )
+
+  catch_df <- data.frame(
+    interview_id = c(1, 2, 3, 4, 1, 2, 3, 4),
+    species = rep("walleye", 8),
+    count = c(2, 1, 3, 2, 1, 1, 2, 1),
+    catch_type = c(rep("caught", 4), rep("released", 4)),
+    stringsAsFactors = FALSE
+  )
+
+  design <- creel_design(calendar, date = date, strata = day_type) # nolint: object_usage_linter
+  design <- add_counts(design, counts) # nolint: object_usage_linter
+  design <- add_interviews(design, interviews, # nolint: object_usage_linter
+    catch = catch_total,
+    effort = hours_fished,
+    trip_status = trip_status,
+    trip_duration = trip_duration
+  )
+  suppressWarnings(add_catch( # nolint: object_usage_linter
+    design, catch_df,
+    catch_uid = interview_id,
+    interview_uid = interview_id,
+    species = species,
+    count = count,
+    catch_type = catch_type
+  ))
+}
+
 # Basic behavior tests ----
 
 test_that("estimate_total_release returns creel_estimates class object", {
@@ -98,6 +148,23 @@ test_that("estimate_total_release result conf_level is 0.95 by default", {
   result <- suppressWarnings(estimate_total_release(design)) # nolint: object_usage_linter
 
   expect_equal(result$conf_level, 0.95)
+})
+
+test_that("estimate_total_release defaults effort_target to sampled_days", {
+  design <- make_total_release_design()
+
+  result <- suppressWarnings(estimate_total_release(design)) # nolint: object_usage_linter
+
+  expect_equal(result$effort_target, "sampled_days")
+})
+
+test_that("estimate_total_release species path warns when effort strata lack rate coverage", {
+  design <- make_total_release_missing_rate_strata_design()
+
+  expect_warning(
+    estimate_total_release(design, by = species, target = "period_total"), # nolint: object_usage_linter
+    "no matching rate estimate"
+  )
 })
 
 test_that("estimate_total_release estimate is a non-negative numeric value", {
@@ -410,6 +477,14 @@ test_that("PROD-02-release-regression: non-sectioned design returns same result 
   expect_false("section" %in% names(result$estimates))
   expect_true(is.numeric(result$estimates$estimate))
   expect_true(result$estimates$estimate > 0)
+})
+
+test_that("PROD-02-release-target: section path preserves requested effort target", {
+  design <- make_3section_total_catch_design() # nolint: object_usage_linter
+  result <- suppressWarnings(suppressMessages(
+    estimate_total_release(design, target = "period_total", aggregate_sections = FALSE) # nolint: object_usage_linter
+  ))
+  expect_equal(result$effort_target, "period_total")
 })
 
 # PROD-01-release-missing: Missing section inserts NA row with data_available=FALSE ----

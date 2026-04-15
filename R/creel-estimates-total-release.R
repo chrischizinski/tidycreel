@@ -18,6 +18,11 @@
 #'   "taylor" (default), "bootstrap", or "jackknife". Applied to BOTH effort
 #'   and release rate estimation, then combined via delta method.
 #' @param conf_level Numeric confidence level (default: 0.95).
+#' @param target Character string specifying the effort domain supplied to
+#'   [estimate_effort()]. Options are `"sampled_days"` (default),
+#'   `"stratum_total"`, or `"period_total"`. This controls which effort domain
+#'   is multiplied by release rate so total release stays aligned with the
+#'   requested temporal target.
 #' @param aggregate_sections Logical. When the design was created with
 #'   \code{\link{add_sections}}, should a \code{.lake_total} row be appended
 #'   that sums the per-section estimates? Default \code{TRUE}. Set to
@@ -75,10 +80,12 @@ estimate_total_release <- function(
   by = NULL,
   variance = "taylor",
   conf_level = 0.95,
+  target = c("sampled_days", "stratum_total", "period_total"),
   aggregate_sections = TRUE,
   missing_sections = "warn"
 ) {
   by_quo <- rlang::enquo(by)
+  target <- match.arg(target)
 
   # Validate variance parameter
   valid_methods <- c("taylor", "bootstrap", "jackknife")
@@ -121,7 +128,8 @@ estimate_total_release <- function(
       species_col       = by_info$species_var,
       interview_by_vars = by_info$interview_vars,
       variance_method   = variance,
-      conf_level        = conf_level
+      conf_level        = conf_level,
+      target            = target
     )
     return(new_creel_estimates( # nolint: object_usage_linter
       estimates       = tibble::as_tibble(estimates_df),
@@ -129,20 +137,22 @@ estimate_total_release <- function(
       variance_method = variance,
       design          = design,
       conf_level      = conf_level,
-      by_vars         = by_info$all_vars
+      by_vars         = by_info$all_vars,
+      effort_target   = target
     ))
   }
 
   # Section dispatch guard (v0.7.0+ — only fires when add_sections() was called)
   if (!is.null(design[["sections"]])) {
     return(estimate_total_release_sections( # nolint: object_usage_linter
-      design, by_quo, variance, conf_level, aggregate_sections, missing_sections
+      design, by_quo, variance, conf_level, aggregate_sections, missing_sections,
+      target = target
     ))
   }
 
   # Standard (non-species) routing
   if (rlang::quo_is_null(by_quo)) {
-    return(estimate_total_release_ungrouped(design, variance, conf_level)) # nolint: object_usage_linter
+    return(estimate_total_release_ungrouped(design, variance, conf_level, target = target)) # nolint: object_usage_linter
   } else {
     by_cols <- tidyselect::eval_select(
       by_quo,
@@ -153,14 +163,14 @@ estimate_total_release <- function(
     )
     by_vars <- names(by_cols)
     validate_grouping_compatibility(design, by_vars) # nolint: object_usage_linter
-    return(estimate_total_release_grouped(design, by_vars, variance, conf_level)) # nolint: object_usage_linter
+    return(estimate_total_release_grouped(design, by_vars, variance, conf_level, target = target)) # nolint: object_usage_linter
   }
 }
 
 #' @keywords internal
 #' @noRd
-estimate_total_release_ungrouped <- function(design, variance_method, conf_level) { # nolint: object_length_linter
-  effort_result <- estimate_effort(design, variance = variance_method, conf_level = conf_level) # nolint: object_usage_linter
+estimate_total_release_ungrouped <- function(design, variance_method, conf_level, target = "sampled_days") { # nolint: object_length_linter
+  effort_result <- estimate_effort(design, variance = variance_method, conf_level = conf_level, target = target) # nolint: object_usage_linter
   release_result <- estimate_release_rate(design, variance = variance_method, conf_level = conf_level) # nolint: object_usage_linter
 
   effort_est <- effort_result$estimates$estimate
@@ -188,20 +198,21 @@ estimate_total_release_ungrouped <- function(design, variance_method, conf_level
     variance_method = variance_method,
     design          = design,
     conf_level      = conf_level,
-    by_vars         = NULL
+    by_vars         = NULL,
+    effort_target   = target
   )
 }
 
 #' @keywords internal
 #' @noRd
-estimate_total_release_grouped <- function(design, by_vars, variance_method, conf_level) {
+estimate_total_release_grouped <- function(design, by_vars, variance_method, conf_level, target = "sampled_days") {
   if (length(by_vars) == 1L) {
     by_sym <- rlang::sym(by_vars)
   } else {
     by_sym <- rlang::syms(by_vars)
   }
 
-  effort_result <- estimate_effort(design, by = !!by_sym, variance = variance_method, conf_level = conf_level) # nolint: object_usage_linter
+  effort_result <- estimate_effort(design, by = !!by_sym, variance = variance_method, conf_level = conf_level, target = target) # nolint: object_usage_linter
   release_result <- estimate_release_rate(design, by = !!by_sym, variance = variance_method, conf_level = conf_level) # nolint: object_usage_linter
 
   effort_df <- effort_result$estimates
@@ -244,7 +255,8 @@ estimate_total_release_grouped <- function(design, by_vars, variance_method, con
     variance_method = variance_method,
     design          = design,
     conf_level      = conf_level,
-    by_vars         = by_vars
+    by_vars         = by_vars,
+    effort_target   = target
   )
 }
 
@@ -253,83 +265,53 @@ estimate_total_release_grouped <- function(design, by_vars, variance_method, con
 #' @keywords internal
 #' @noRd
 estimate_total_release_species <- function(design, species_col, interview_by_vars,
-                                           variance_method, conf_level) {
-  all_species <- sort(unique(design[["catch"]][[species_col]]))
-  results_list <- vector("list", length(all_species))
+                                           variance_method, conf_level,
+                                           target = "sampled_days") {
+  strata_cols <- design$strata_cols %||% character(0)
+  stratum_by_vars <- unique(c(strata_cols, interview_by_vars))
 
-  # Get all species release rates in one call (avoid redundant loops)
-  all_release_df <- estimate_release_rate_species( # nolint: object_usage_linter
+  # Per-stratum species release rates
+  rate_by <- if (length(stratum_by_vars) > 0L) stratum_by_vars else NULL
+  all_rate_df <- estimate_release_rate_species( # nolint: object_usage_linter
     design,
     species_col       = species_col,
-    interview_by_vars = interview_by_vars,
+    interview_by_vars = rate_by,
     variance_method   = variance_method,
-    conf_level        = conf_level
+    conf_level        = conf_level,
+    validate          = FALSE
   )
 
-  # Get effort estimate (not grouped by species)
-  if (is.null(interview_by_vars)) {
-    effort_result <- estimate_effort(design, variance = variance_method, conf_level = conf_level) # nolint: object_usage_linter
+  # Per-stratum effort
+  if (length(stratum_by_vars) == 0L) {
+    effort_result <- estimate_effort_total(design, variance_method, conf_level, target = target) # nolint: object_usage_linter
   } else {
-    by_sym <- if (length(interview_by_vars) == 1L) {
-      rlang::sym(interview_by_vars)
-    } else {
-      rlang::syms(interview_by_vars)
-    }
-    effort_result <- estimate_effort(design, by = !!by_sym, variance = variance_method, conf_level = conf_level) # nolint: object_usage_linter
+    effort_result <- estimate_effort_grouped(design, stratum_by_vars, variance_method, conf_level, target = target) # nolint: object_usage_linter
   }
   effort_df <- effort_result$estimates
 
+  warn_missing_rate_strata( # nolint: object_usage_linter
+    effort_df = effort_df,
+    rate_df = all_rate_df[, setdiff(names(all_rate_df), species_col), drop = FALSE],
+    stratum_by_vars = stratum_by_vars,
+    context = "species total release"
+  )
+
+  all_species <- sort(unique(design[["catch"]][[species_col]]))
+  results_list <- vector("list", length(all_species))
+
   for (i in seq_along(all_species)) {
     sp <- all_species[[i]]
+    rate_sp_df <- all_rate_df[all_rate_df[[species_col]] == sp, , drop = FALSE]
+    rate_no_sp <- rate_sp_df[, setdiff(names(rate_sp_df), species_col), drop = FALSE]
 
-    sp_release_df <- all_release_df[all_release_df[[species_col]] == sp, , drop = FALSE]
-
-    if (is.null(interview_by_vars)) {
-      effort_est <- effort_df$estimate
-      rpue_est <- sp_release_df$estimate
-      effort_se <- effort_df$se
-      rpue_se <- sp_release_df$se
-      estimate <- effort_est * rpue_est
-      pv <- (effort_est^2 * rpue_se^2) + (rpue_est^2 * effort_se^2)
-      se <- sqrt(pv)
-      z_value <- stats::qnorm(1 - (1 - conf_level) / 2)
-      sp_result <- data.frame(
-        estimate = estimate, se = se,
-        ci_lower = estimate - (z_value * se),
-        ci_upper = estimate + (z_value * se),
-        n = sp_release_df$n,
-        stringsAsFactors = FALSE
-      )
-    } else {
-      # Merge on interview_by_vars (drop species col from release df for merge)
-      release_no_sp <- sp_release_df[, setdiff(names(sp_release_df), species_col), drop = FALSE]
-      merged <- merge(
-        effort_df, release_no_sp,
-        by = interview_by_vars, suffixes = c("_effort", "_rpue"), sort = FALSE
-      )
-      n_groups <- nrow(merged)
-      estimates_list <- vector("list", n_groups)
-      for (j in seq_len(n_groups)) {
-        e_est <- merged$estimate_effort[j]
-        r_est <- merged$estimate_rpue[j]
-        e_se <- merged$se_effort[j]
-        r_se <- merged$se_rpue[j]
-        est <- e_est * r_est
-        pv <- (e_est^2 * r_se^2) + (r_est^2 * e_se^2)
-        z <- stats::qnorm(1 - (1 - conf_level) / 2)
-        estimates_list[[j]] <- list(
-          estimate = est, se = sqrt(pv),
-          ci_lower = est - z * sqrt(pv), ci_upper = est + z * sqrt(pv),
-          n = merged$n_rpue[j]
-        )
-      }
-      sp_result <- tibble::as_tibble(merged[interview_by_vars])
-      sp_result$estimate <- sapply(estimates_list, `[[`, "estimate")
-      sp_result$se <- sapply(estimates_list, `[[`, "se")
-      sp_result$ci_lower <- sapply(estimates_list, `[[`, "ci_lower")
-      sp_result$ci_upper <- sapply(estimates_list, `[[`, "ci_upper")
-      sp_result$n <- sapply(estimates_list, `[[`, "n")
-    }
+    sp_result <- compute_stratum_product_sum( # nolint: object_usage_linter
+      effort_df         = effort_df,
+      rate_df           = rate_no_sp,
+      stratum_by_vars   = stratum_by_vars,
+      interview_by_vars = interview_by_vars,
+      conf_level        = conf_level,
+      rate_suffix       = "rpue"
+    )
 
     sp_result[[species_col]] <- sp
     sp_result <- sp_result[c(species_col, setdiff(names(sp_result), species_col))]
@@ -345,7 +327,8 @@ estimate_total_release_species <- function(design, species_col, interview_by_var
 #' @noRd
 estimate_total_release_sections <- function(design, by_quo, variance_method, # nolint: object_length_linter
                                             conf_level, aggregate_sections,
-                                            missing_sections) {
+                                            missing_sections,
+                                            target = "sampled_days") {
   section_col <- design[["section_col"]]
   registered_sections <- design$sections[[section_col]]
   present_count_sections <- unique(design$counts[[section_col]])
@@ -414,7 +397,8 @@ estimate_total_release_sections <- function(design, by_quo, variance_method, # n
       if (!is.null(by_vars)) {
         # Grouped path: delegates to existing grouped helper
         result <- estimate_total_release_grouped( # nolint: object_usage_linter
-          sec_design, by_vars, variance_method, conf_level
+          sec_design, by_vars, variance_method, conf_level,
+          target = target
         )
         row_df <- tibble::add_column(result$estimates, section = sec, .before = 1)
         row_df$data_available <- TRUE
@@ -422,7 +406,7 @@ estimate_total_release_sections <- function(design, by_quo, variance_method, # n
       } else {
         # Ungrouped path: call internal helpers directly to bypass sample-size validation.
         # Build release data inline (mirrors estimate_release_rate_sections pattern).
-        effort_res <- estimate_effort_total(sec_design, variance_method, conf_level) # nolint: object_usage_linter
+        effort_res <- estimate_effort_total(sec_design, variance_method, conf_level, target = target) # nolint: object_usage_linter
         release_data <- estimate_release_build_data(sec_design, species = NULL) # nolint: object_usage_linter
         release_data$.release_effort <- release_data[[sec_design$angler_effort_col]]
         design_rel <- sec_design
@@ -503,6 +487,7 @@ estimate_total_release_sections <- function(design, by_quo, variance_method, # n
     variance_method = variance_method,
     design          = design,
     conf_level      = conf_level,
-    by_vars         = if (!is.null(by_vars)) c("section", by_vars) else "section"
+    by_vars         = if (!is.null(by_vars)) c("section", by_vars) else "section",
+    effort_target   = target
   )
 }

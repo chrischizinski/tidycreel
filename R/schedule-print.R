@@ -37,7 +37,7 @@ make_day_abbrevs <- function(day_type_labels) {
 #' Build a date-to-cell-content lookup for the calendar grid
 #'
 #' @param x A creel_schedule data frame (already filtered to a single month
-#'   if needed, but accepts full schedule — dates outside the current month
+#'   if needed, but accepts full schedule \u2014 dates outside the current month
 #'   are simply absent from the lookup).
 #' @param abbrev_map Named character vector: day_type label -> abbreviation.
 #' @param mode "ascii" uses newline separator; "pandoc" uses "<br>".
@@ -229,8 +229,21 @@ format.creel_schedule <- function(x, ...) {
     )
   })
 
+  diagnostics <- attr(x, "special_period_diagnostics")
+  diag_lines <- character(0)
+  if (is.data.frame(diagnostics) && nrow(diagnostics) > 0L) {
+    summary_lines <- apply(diagnostics, 1, function(row) {
+      paste0(
+        "- ", row[["severity"]], ": ", row[["stratum"]],
+        " \u2014 ", row[["issue"]],
+        " (baseline=", row[["baseline_days"]], ", final=", row[["final_days"]], ")"
+      )
+    })
+    diag_lines <- c("Special-period diagnostics", unname(summary_lines), "")
+  }
+
   if (!"date" %in% names(x)) {
-    return(c(header, "(no date column to render calendar)"))
+    return(c(header, diag_lines, "(no date column to render calendar)"))
   }
 
   abbrev_map <- make_day_abbrevs(unique(x$day_type))
@@ -250,7 +263,7 @@ format.creel_schedule <- function(x, ...) {
     grid_lines <- c(grid_lines, month_label, month_grid)
   }
 
-  c(header, grid_lines)
+  c(header, diag_lines, grid_lines)
 }
 
 # ---------------------------------------------------------------------------

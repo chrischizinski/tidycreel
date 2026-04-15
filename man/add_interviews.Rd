@@ -127,11 +127,16 @@ A new creel_design object (list) with components:
 \item{validation}{creel_validation object with Tier 1 results}
 }
 \description{
-Attaches interview data (catch, effort, and optionally harvest per completed
+Attaches interview-side trip data (catch, effort, and optionally harvest per
 fishing trip) to a creel_design object and constructs the internal interview
-survey design object eagerly. This enables catch rate and harvest rate
-estimation from angler interviews. Follows the same tidy selector API pattern
-as \code{\link[=add_counts]{add_counts()}}.
+survey design object eagerly. The preferred workflow is to standardize raw
+interview exports into canonical trip rows with \code{\link[=prep_interviews_trips]{prep_interviews_trips()}}
+before calling \code{add_interviews()}, and to standardize species-level catch
+detail with \code{\link[=prep_interview_catch]{prep_interview_catch()}} before calling \code{add_catch()}.
+
+\code{add_interviews()} still supports direct attachment of raw-ish interview data
+with tidy selectors for catch, effort, and trip metadata. This keeps current
+workflows working while making the prep-helper seam explicit.
 }
 \section{Immutability}{
 
@@ -169,31 +174,42 @@ enabling stratified estimation of catch rates.
 }
 
 \examples{
-# Basic usage - with trip status and duration
+# Preferred workflow: standardize interview rows before attachment
 calendar <- data.frame(
   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
   day_type = c("weekday", "weekday", "weekend", "weekend")
 )
 design <- creel_design(calendar, date = date, strata = day_type)
 
-interviews <- data.frame(
-  date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
+raw_interviews <- data.frame(
+  survey_date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
   catch_total = c(5, 3, 7, 2),
   hours_fished = c(2.0, 2.5, 3.0, 1.5),
   trip_status = c("complete", "complete", "incomplete", "complete"),
-  trip_duration = c(2.0, 2.5, 1.5, 1.5)
+  trip_duration = c(2.0, 2.5, 1.5, 1.5),
+  interview_id = 1:4
+)
+
+interviews_ready <- prep_interviews_trips(
+  raw_interviews,
+  date = survey_date,
+  interview_uid = interview_id,
+  effort_hours = hours_fished,
+  trip_status = trip_status,
+  trip_duration = trip_duration,
+  catch_total = catch_total
 )
 
 design_with_interviews <- add_interviews(
-  design, interviews,
+  design, interviews_ready,
   catch = catch_total,
-  effort = hours_fished,
+  effort = effort_hours,
   trip_status = trip_status,
   trip_duration = trip_duration
 )
 print(design_with_interviews)
 
-# With harvest column and calculated duration from timestamps
+# Compatibility path: direct attachment with harvest column and timestamps
 interviews2 <- data.frame(
   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
   catch_total = c(5, 3, 7, 2),

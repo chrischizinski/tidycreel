@@ -93,18 +93,29 @@ season_summary <- function(estimates, ...) {
     )
   }
 
+  effort_targets <- vapply(estimates, function(x) {
+    x$effort_target %||% NA_character_
+  }, character(1))
+
   new_creel_season_summary(
-    table       = wide,
-    names       = names(estimates),
-    n_estimates = length(estimates)
+    table          = wide,
+    names          = names(estimates),
+    n_estimates    = length(estimates),
+    effort_targets = effort_targets
   )
 }
 
 # ---- new_creel_season_summary ------------------------------------------------
 
-new_creel_season_summary <- function(table, names, n_estimates) {
+new_creel_season_summary <- function(table, names, n_estimates,
+                                     effort_targets = character(0)) {
   structure(
-    list(table = table, names = names, n_estimates = n_estimates),
+    list(
+      table = table,
+      names = names,
+      n_estimates = n_estimates,
+      effort_targets = effort_targets
+    ),
     class = "creel_season_summary"
   )
 }
@@ -122,9 +133,24 @@ new_creel_season_summary <- function(table, names, n_estimates) {
 format.creel_season_summary <- function(x, ...) {
   n <- x$n_estimates # nolint: object_usage_linter
   nms <- paste(x$names, collapse = ", ") # nolint: object_usage_linter
+  effort_targets <- x$effort_targets
+  effort_target_lines <- if (length(effort_targets) > 0) {
+    effort_targets <- effort_targets[!is.na(effort_targets)]
+    if (length(effort_targets) > 0) {
+      paste0(names(effort_targets), "=", unname(effort_targets))
+    } else {
+      character(0)
+    }
+  } else {
+    character(0)
+  }
+
   header <- cli::cli_format_method({
     cli::cli_h1("Season Summary")
     cli::cli_text("{n} estimate{?s}: {nms}")
+    if (length(effort_target_lines) > 0) {
+      cli::cli_text("Effort targets: {paste(effort_target_lines, collapse = ', ')}")
+    }
     cli::cli_text("")
   })
   table_output <- utils::capture.output(print(x$table))

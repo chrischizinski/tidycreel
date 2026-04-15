@@ -31,6 +31,39 @@ inst/doc
 .python-version
 .yamllint
 .markdownlint.json
+PROJECT.md
+skills/
+skills-lock.json
+
+# AI tool stubs (various coding agents drop these)
+.adal/
+.agents/
+.augment/
+.bob/
+.codebuddy/
+.commandcode/
+.continue/
+.cortex/
+.crush/
+.factory/
+.goose/
+.iflow/
+.junie/
+.kilocode/
+.kiro/
+.kode/
+.mcpjam/
+.mux/
+.neovate/
+.openhands/
+.pi/
+.pochi/
+.qoder/
+.qwen/
+.trae/
+.vibe/
+.windsurf/
+.zencoder/
 
 # AI workflow planning (local use only)
 .planning/

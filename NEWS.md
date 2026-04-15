@@ -8,6 +8,15 @@
 * `estimate_catch_rate()` gains a `targeted` argument (default `TRUE`). Setting
   `targeted = FALSE` excludes zero-catch trips before MOR/MORtr estimation for
   incidental species workflows.
+* `power_creel()` provides a unified tidy entry point for pre-survey
+  sample-size planning, wrapping `creel_n_effort()`, `creel_n_cpue()`, and
+  `creel_power()` into a single consistent interface with `mode = "effort_n"`,
+  `"cpue_n"`, or `"power"`.
+* `compare_designs()` compares multiple survey designs side by side from a
+  named list of `creel_estimates` objects. An `autoplot()` method renders a
+  forest plot of point estimates with confidence intervals.
+* `as_hybrid_svydesign()` constructs a hybrid access + roving survey design
+  from combined access-point and roving-route count data.
 * `compare_variance()` computes Taylor linearization vs. replicate (bootstrap
   or jackknife) standard errors side-by-side for any `creel_estimates` object.
 * `adjust_nonresponse()` applies nonresponse weighting to a `creel_design` and

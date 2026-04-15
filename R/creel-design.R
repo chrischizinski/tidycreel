@@ -845,18 +845,29 @@ resolve_multi_cols <- function(expr, data, arg_name, error_call = rlang::caller_
 #' Attach count data to a creel design
 #'
 #' @description
-#' Attaches instantaneous count data to a creel_design object and constructs
-#' the internal survey design object eagerly. This is the core of the survey
-#' bridge layer - translating domain vocabulary (creel counts) into statistical
-#' machinery (survey::svydesign). Eager construction catches design errors at
-#' add_counts() time when users have context about what data they are adding.
+#' Attaches count-side effort data to a creel_design object and constructs the
+#' internal survey design object eagerly. The preferred workflow is to
+#' standardize raw count-process data into sampled-day effort rows with
+#' [prep_counts_daily_effort()] (or another `prep_counts_*()` helper) before
+#' calling `add_counts()`. This keeps survey-specific count reconstruction logic
+#' out of the core estimator path.
+#'
+#' Compatibility paths for raw-ish count inputs remain supported: `add_counts()`
+#' can still aggregate multiple within-day observations via `count_time_col` and
+#' can still compute progressive-count daily effort from `circuit_time` and
+#' `period_length_col`. Eager construction catches design errors at add_counts()
+#' time when users have context about what data they are adding.
 #'
 #' @param design A creel_design object (created with [creel_design()])
-#' @param counts Data frame containing count data. Must have:
-#'   - A Date column matching the design's date_col
-#'   - All strata columns from the design's strata_cols
-#'   - At least one numeric column (the count variable)
-#'   - A PSU column (specified via psu argument, defaults to date_col)
+#' @param counts Data frame containing count-side effort data. Preferred input:
+#'   sampled-day effort rows that already have a Date column matching the
+#'   design's date_col, all strata columns from the design's strata_cols, at
+#'   least one numeric effort column, and a PSU column (specified via `psu`,
+#'   defaults to date_col). Use [prep_counts_daily_effort()] to build this form
+#'   from raw source data.
+#'
+#'   Compatibility input paths remain available for raw-ish count workflows with
+#'   multiple within-day observations or progressive counts.
 #' @param psu Character string naming the PSU (Primary Sampling Unit) column
 #'   in the count data. Defaults to NULL, which uses the design's date_col as
 #'   the PSU (day-as-PSU is the most common creel design). For other designs,
@@ -916,23 +927,32 @@ resolve_multi_cols <- function(expr, data, arg_name, error_call = rlang::caller_
 #' allows the same creel_design calendar to be used with different PSU structures.
 #'
 #' @examples
-#' # Basic usage - day as PSU (default)
+#' # Preferred workflow: standardize sampled-day effort before attachment
 #' calendar <- data.frame(
 #'   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
 #'   day_type = c("weekday", "weekday", "weekend", "weekend")
 #' )
 #' design <- creel_design(calendar, date = date, strata = day_type)
 #'
-#' counts <- data.frame(
-#'   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
+#' raw_counts <- data.frame(
+#'   sample_date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
 #'   day_type = c("weekday", "weekday", "weekend", "weekend"),
-#'   count = c(15, 23, 45, 52)
+#'   effort_kind = c("bank", "bank", "bank", "bank"),
+#'   effort_value = c(15, 23, 45, 52)
 #' )
 #'
-#' design_with_counts <- add_counts(design, counts)
+#' counts_ready <- prep_counts_daily_effort(
+#'   raw_counts,
+#'   date = sample_date,
+#'   strata = day_type,
+#'   effort_type = effort_kind,
+#'   daily_effort = effort_value
+#' )
+#'
+#' design_with_counts <- add_counts(design, counts_ready)
 #' print(design_with_counts)
 #'
-#' # Custom PSU column
+#' # Compatibility path: raw count rows with a custom PSU column
 #' counts_with_site_psu <- data.frame(
 #'   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
 #'   day_type = c("weekday", "weekday", "weekend", "weekend"),
@@ -942,7 +962,7 @@ resolve_multi_cols <- function(expr, data, arg_name, error_call = rlang::caller_
 #'
 #' design2 <- add_counts(design, counts_with_site_psu, psu = "site_day")
 #'
-#' # Multiple counts per day (within-day variance via count_time_col)
+#' # Compatibility path: multiple counts per day (within-day variance via count_time_col)
 #' # Two circuits per day: "am" and "pm"
 #' calendar2 <- data.frame(
 #'   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
@@ -960,7 +980,7 @@ resolve_multi_cols <- function(expr, data, arg_name, error_call = rlang::caller_
 #'   count_time_col = count_time # nolint: object_usage_linter
 #' )
 #'
-#' # Progressive count type (Ê_d = C x circuit_time x kappa)
+#' # Compatibility path: progressive count type (Ê_d = C x circuit_time x kappa)
 #' calendar3 <- data.frame(
 #'   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
 #'   day_type = c("weekday", "weekday", "weekend", "weekend")
@@ -1374,11 +1394,16 @@ add_sections <- function(design,
 #' Attach interview data to a creel design
 #'
 #' @description
-#' Attaches interview data (catch, effort, and optionally harvest per completed
+#' Attaches interview-side trip data (catch, effort, and optionally harvest per
 #' fishing trip) to a creel_design object and constructs the internal interview
-#' survey design object eagerly. This enables catch rate and harvest rate
-#' estimation from angler interviews. Follows the same tidy selector API pattern
-#' as [add_counts()].
+#' survey design object eagerly. The preferred workflow is to standardize raw
+#' interview exports into canonical trip rows with [prep_interviews_trips()]
+#' before calling `add_interviews()`, and to standardize species-level catch
+#' detail with [prep_interview_catch()] before calling `add_catch()`.
+#'
+#' `add_interviews()` still supports direct attachment of raw-ish interview data
+#' with tidy selectors for catch, effort, and trip metadata. This keeps current
+#' workflows working while making the prep-helper seam explicit.
 #'
 #' @param design A creel_design object (created with [creel_design()])
 #' @param interviews Data frame containing interview data. Must have:
@@ -1486,31 +1511,42 @@ add_sections <- function(design,
 #' enabling stratified estimation of catch rates.
 #'
 #' @examples
-#' # Basic usage - with trip status and duration
+#' # Preferred workflow: standardize interview rows before attachment
 #' calendar <- data.frame(
 #'   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
 #'   day_type = c("weekday", "weekday", "weekend", "weekend")
 #' )
 #' design <- creel_design(calendar, date = date, strata = day_type)
 #'
-#' interviews <- data.frame(
-#'   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
+#' raw_interviews <- data.frame(
+#'   survey_date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
 #'   catch_total = c(5, 3, 7, 2),
 #'   hours_fished = c(2.0, 2.5, 3.0, 1.5),
 #'   trip_status = c("complete", "complete", "incomplete", "complete"),
-#'   trip_duration = c(2.0, 2.5, 1.5, 1.5)
+#'   trip_duration = c(2.0, 2.5, 1.5, 1.5),
+#'   interview_id = 1:4
+#' )
+#'
+#' interviews_ready <- prep_interviews_trips(
+#'   raw_interviews,
+#'   date = survey_date,
+#'   interview_uid = interview_id,
+#'   effort_hours = hours_fished,
+#'   trip_status = trip_status,
+#'   trip_duration = trip_duration,
+#'   catch_total = catch_total
 #' )
 #'
 #' design_with_interviews <- add_interviews(
-#'   design, interviews,
+#'   design, interviews_ready,
 #'   catch = catch_total,
-#'   effort = hours_fished,
+#'   effort = effort_hours,
 #'   trip_status = trip_status,
 #'   trip_duration = trip_duration
 #' )
 #' print(design_with_interviews)
 #'
-#' # With harvest column and calculated duration from timestamps
+#' # Compatibility path: direct attachment with harvest column and timestamps
 #' interviews2 <- data.frame(
 #'   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
 #'   catch_total = c(5, 3, 7, 2),

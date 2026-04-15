@@ -44,10 +44,27 @@ data(example_calendar)
 data(example_interviews)
 
 design <- creel_design(example_calendar, date = date, strata = day_type)
-design <- add_interviews(design, example_interviews,
+
+interviews_ready <- prep_interviews_trips(
+  example_interviews,
+  date = date,
+  interview_uid = interview_id,
+  effort_hours = hours_fished,
+  trip_status = trip_status,
+  trip_duration = trip_duration,
+  catch_total = catch_total,
+  harvest_total = catch_kept,
+  angler_type = angler_type,
+  angler_method = angler_method,
+  species_sought = species_sought,
+  n_anglers = n_anglers,
+  refused = refused
+)
+
+design <- add_interviews(design, interviews_ready,
   catch = catch_total,
-  effort = hours_fished,
-  harvest = catch_kept,
+  effort = effort_hours,
+  harvest = harvest_total,
   trip_status = trip_status,
   trip_duration = trip_duration,
   angler_type = angler_type,
@@ -61,6 +78,7 @@ print(design)
 }
 \seealso{
 \link{example_calendar} for matching calendar data, \link{example_catch} for
-species-level catch data, \code{\link[=add_interviews]{add_interviews()}} to attach interviews to a design
+species-level catch data, \code{\link[=prep_interviews_trips]{prep_interviews_trips()}} to standardize interview rows,
+\code{\link[=add_interviews]{add_interviews()}} to attach interviews to a design
 }
 \keyword{datasets}

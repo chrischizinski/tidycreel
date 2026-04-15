@@ -744,3 +744,140 @@ test_that("SCHED-LEAP-05: creel_design() Feb 29 calendar date round-trips correc
   expect_equal(nrow(d$calendar), 3L)
   expect_equal(d$calendar$date, cal$date)
 })
+
+test_that("SCHED-SPECIAL-01: special periods split a boundary-crossing opener by day", {
+  special_periods <- data.frame(
+    start_date = as.Date("2027-07-31"),
+    end_date = as.Date("2027-08-01"),
+    label = "high_use",
+    reason = "opener",
+    stringsAsFactors = FALSE
+  )
+
+  sched <- generate_schedule(
+    start_date = "2027-07-30",
+    end_date = "2027-08-02",
+    n_periods = 1,
+    sampling_rate = c(weekday = 1, weekend = 1, high_use = 1),
+    seed = 42,
+    include_all = TRUE,
+    expand_periods = FALSE,
+    special_periods = special_periods
+  )
+
+  expect_true("final_stratum" %in% names(sched))
+  expect_true("special_period_reason" %in% names(sched))
+
+  boundary_rows <- sched[sched$date %in% as.Date(c("2027-07-31", "2027-08-01")), ]
+  expect_equal(boundary_rows$final_stratum, c("high_use", "high_use"))
+  expect_equal(boundary_rows$special_period_reason, c("opener", "opener"))
+
+  audit <- attr(sched, "special_period_audit")
+  expect_true(is.data.frame(audit))
+  expect_equal(sort(unique(audit$date)), as.Date(c("2027-07-31", "2027-08-01")))
+})
+
+test_that("SCHED-SPECIAL-02: overlapping ambiguous special periods abort", {
+  special_periods <- data.frame(
+    start_date = as.Date(c("2027-08-01", "2027-08-01")),
+    end_date = as.Date(c("2027-08-02", "2027-08-03")),
+    label = c("high_use", "holiday"),
+    reason = c("opener", "festival"),
+    stringsAsFactors = FALSE
+  )
+
+  expect_error(
+    generate_schedule(
+      start_date = "2027-08-01",
+      end_date = "2027-08-05",
+      n_periods = 1,
+      sampling_rate = c(weekday = 1, weekend = 1, high_use = 1, holiday = 1),
+      seed = 42,
+      include_all = TRUE,
+      expand_periods = FALSE,
+      special_periods = special_periods
+    ),
+    regexp = "overlap|overlapping|special periods",
+    ignore.case = TRUE
+  )
+})
+
+test_that("SCHED-SPECIAL-03: default scheduling remains unchanged when special_periods is NULL", {
+  sched_default <- generate_schedule(
+    start_date = "2024-06-01",
+    end_date = "2024-06-30",
+    n_periods = 1,
+    sampling_rate = c(weekday = 0.3, weekend = 0.6),
+    seed = 42,
+    include_all = TRUE,
+    expand_periods = FALSE
+  )
+
+  sched_explicit_null <- generate_schedule(
+    start_date = "2024-06-01",
+    end_date = "2024-06-30",
+    n_periods = 1,
+    sampling_rate = c(weekday = 0.3, weekend = 0.6),
+    seed = 42,
+    include_all = TRUE,
+    expand_periods = FALSE,
+    special_periods = NULL
+  )
+
+  expect_equal(sched_default, sched_explicit_null)
+})
+
+test_that("SCHED-SPECIAL-04: consumed baseline stratum with requested sampling rate aborts", {
+  special_periods <- data.frame(
+    start_date = as.Date("2027-08-07"),
+    end_date = as.Date("2027-08-08"),
+    label = "high_use",
+    reason = "opener",
+    stringsAsFactors = FALSE
+  )
+
+  expect_error(
+    generate_schedule(
+      start_date = "2027-08-07",
+      end_date = "2027-08-08",
+      n_periods = 1,
+      sampling_rate = c(weekend = 1, high_use = 1),
+      seed = 42,
+      include_all = TRUE,
+      expand_periods = FALSE,
+      special_periods = special_periods
+    ),
+    regexp = "consum|baseline stratum|weekend|no available",
+    ignore.case = TRUE
+  )
+})
+
+test_that("SCHED-SPECIAL-05: fragile special-period declarations warn and attach diagnostics", {
+  special_periods <- data.frame(
+    start_date = as.Date("2027-08-07"),
+    end_date = as.Date("2027-08-07"),
+    label = "high_use",
+    reason = "opener",
+    stringsAsFactors = FALSE
+  )
+
+  expect_warning(
+    sched <- generate_schedule(
+      start_date = "2027-08-01",
+      end_date = "2027-08-08",
+      n_periods = 1,
+      sampling_rate = c(weekday = 1, weekend = 1, high_use = 1),
+      seed = 42,
+      include_all = TRUE,
+      expand_periods = FALSE,
+      special_periods = special_periods
+    ),
+    regexp = "fragile|tiny|small|residual",
+    ignore.case = TRUE
+  )
+
+  diagnostics <- attr(sched, "special_period_diagnostics")
+  expect_s3_class(diagnostics, "data.frame")
+  expect_true(all(c("severity", "issue", "stratum") %in% names(diagnostics)))
+  expect_true(any(diagnostics$severity %in% c("warning", "warn")))
+})

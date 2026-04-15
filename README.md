@@ -57,6 +57,12 @@ Instantaneous Count
 Stratified effort estimation from periodic angler counts.
 </p>
 
+<p class="small">
+
+<a href="https://chrischizinski.github.io/tidycreel/articles/tidycreel.html">Getting
+Started →</a>
+</p>
+
 </div>
 
 </div>
@@ -74,6 +80,12 @@ Bus-Route
 
 PPS site selection with Horvitz-Thompson estimators and enumeration
 expansion.
+</p>
+
+<p class="small">
+
+<a href="https://chrischizinski.github.io/tidycreel/articles/bus-route-surveys.html">Bus-Route
+vignette →</a>
 </p>
 
 </div>
@@ -94,6 +106,12 @@ Ice Fishing
 Degenerate bus-route design with certainty site sampling.
 </p>
 
+<p class="small">
+
+<a href="https://chrischizinski.github.io/tidycreel/articles/ice-fishing.html">Ice
+Fishing vignette →</a>
+</p>
+
 </div>
 
 </div>
@@ -112,6 +130,12 @@ Camera-Monitored
 Counter and ingress-egress preprocessing plus camera effort indexing.
 </p>
 
+<p class="small">
+
+<a href="https://chrischizinski.github.io/tidycreel/articles/camera-surveys.html">Camera
+Survey vignette →</a>
+</p>
+
 </div>
 
 </div>
@@ -128,6 +152,14 @@ Aerial Survey
 <p class="small">
 
 Single-overflight effort estimation with calibrated open-hours scaling.
+</p>
+
+<p class="small">
+
+<a href="https://chrischizinski.github.io/tidycreel/articles/aerial-surveys.html">Aerial
+vignette →</a> \|
+<a href="https://chrischizinski.github.io/tidycreel/articles/aerial-glmm.html">GLMM
+variant →</a>
 </p>
 
 </div>
@@ -248,15 +280,32 @@ estimate_catch_rate(design)
   **`autoplot.creel_length_distribution()`**, **`theme_creel()`**,
   **`creel_palette()`** — visualisation helpers.
 
-## Selected Vignettes
+## Vignettes
+
+### Get Started
 
 | Vignette | Description |
 |----|----|
 | [Getting Started](https://chrischizinski.github.io/tidycreel/articles/tidycreel.html) | Core workflow: design → counts → effort estimation |
 | [Glossary](https://chrischizinski.github.io/tidycreel/articles/glossary.html) | Plain-language guide to tidycreel terms and concepts |
+
+### Survey Types
+
+| Vignette | Description |
+|----|----|
+| [Bus-Route Surveys](https://chrischizinski.github.io/tidycreel/articles/bus-route-surveys.html) | PPS site selection with Horvitz-Thompson estimators |
+| [Ice Fishing](https://chrischizinski.github.io/tidycreel/articles/ice-fishing.html) | Certainty-site (degenerate bus-route) design |
+| [Camera Surveys](https://chrischizinski.github.io/tidycreel/articles/camera-surveys.html) | Counter and ingress-egress preprocessing, camera effort |
+| [Aerial Surveys](https://chrischizinski.github.io/tidycreel/articles/aerial-surveys.html) | Single-overflight effort with calibrated open-hours scaling |
+| [Aerial GLMM](https://chrischizinski.github.io/tidycreel/articles/aerial-glmm.html) | Negative-binomial GLMM aerial effort (Askey 2018) |
+
+### Reporting & Planning
+
+| Vignette | Description |
+|----|----|
 | [Survey Design Toolbox](https://chrischizinski.github.io/tidycreel/articles/survey-design-toolbox.html) | Sample-size, power, scheduling, and pre-season planning tools |
 | [Survey Scheduling](https://chrischizinski.github.io/tidycreel/articles/survey-scheduling.html) | Count windows, schedules, validation, and completeness checks |
-| [Visualisation](https://chrischizinski.github.io/tidycreel/articles/visualisation.html) | Plotting patterns and output styling |
+| [Visualisation](https://chrischizinski.github.io/tidycreel/articles/visualisation.html) | Plotting patterns and output styling with `theme_creel()` |
 | [Interview Estimation](https://chrischizinski.github.io/tidycreel/articles/interview-estimation.html) | CPUE, catch, and harvest from interview data |
 | [Incomplete Trips](https://chrischizinski.github.io/tidycreel/articles/incomplete-trips.html) | When and how to use mean-of-ratios and TOST validation |
 | [Replicate Designs](https://chrischizinski.github.io/tidycreel/articles/replicate-designs.html) | Variance workflows and replicate-design reasoning |

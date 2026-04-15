@@ -70,14 +70,16 @@ new_creel_estimates <- function(estimates,
                                 variance_method = "taylor",
                                 design = NULL,
                                 conf_level = 0.95,
-                                by_vars = NULL) {
+                                by_vars = NULL,
+                                effort_target = NULL) {
   # Input validation
   stopifnot(
     "estimates must be a data.frame" = is.data.frame(estimates),
     "method must be character" = is.character(method) && length(method) == 1,
     "variance_method must be character" = is.character(variance_method) && length(variance_method) == 1,
     "conf_level must be numeric" = is.numeric(conf_level) && length(conf_level) == 1,
-    "by_vars must be NULL or character" = is.null(by_vars) || is.character(by_vars)
+    "by_vars must be NULL or character" = is.null(by_vars) || is.character(by_vars),
+    "effort_target must be NULL or character" = is.null(effort_target) || is.character(effort_target)
   )
 
   structure(
@@ -87,7 +89,8 @@ new_creel_estimates <- function(estimates,
       variance_method = variance_method,
       design = design,
       conf_level = conf_level,
-      by_vars = by_vars
+      by_vars = by_vars,
+      effort_target = effort_target
     ),
     class = "creel_estimates"
   )
@@ -195,6 +198,10 @@ format.creel_estimates <- function(x, ...) {
       cli::cli_text("Grouped by: {by_display}")
     }
 
+    if (!is.null(x$effort_target)) {
+      cli::cli_text("Effort target: {x$effort_target}")
+    }
+
     cli::cli_text("")
   }))
 
@@ -239,6 +246,16 @@ print.creel_estimates <- function(x, ...) {
 #'   \code{"jackknife"} (jackknife resampling, automatic JKn/JK1 selection).
 #' @param conf_level Numeric confidence level for confidence intervals (default:
 #'   0.95 for 95% confidence intervals). Must be between 0 and 1.
+#' @param target Character string specifying the temporal effort target.
+#'   Options: \code{"sampled_days"} (default, current behavior: total across
+#'   sampled PSU rows only), \code{"stratum_total"} (expand sampled-day means
+#'   within calendar strata before combining), or \code{"period_total"}
+#'   (full calendar-period total after stratum expansion). For standard
+#'   stratified count designs, \code{"stratum_total"} and \code{"period_total"}
+#'   use the same weighted expansion engine; the distinction is semantic and is
+#'   recorded on the returned object as \code{effort_target}. Expanded targets
+#'   are currently limited to the standard count-design path and are not yet
+#'   supported for bus-route, ice, aerial, or sectioned designs.
 #' @param verbose Logical. If TRUE, prints an informational message identifying
 #'   which estimator path was used. Default FALSE for transparent dispatch.
 #' @param aggregate_sections Logical. If TRUE (default), a \code{.lake_total}
@@ -340,10 +357,12 @@ print.creel_estimates <- function(x, ...) {
 #' result_verbose <- estimate_effort(design_with_counts, verbose = TRUE)
 #' @export
 estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level = 0.95,
+                            target = c("sampled_days", "stratum_total", "period_total"),
                             verbose = FALSE, aggregate_sections = TRUE,
                             method = "correlated", missing_sections = "warn") {
   # Capture by parameter BEFORE validation
   by_quo <- rlang::enquo(by)
+  target <- match.arg(target)
 
   # Validate variance parameter
   valid_methods <- c("taylor", "bootstrap", "jackknife")
@@ -375,6 +394,13 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
 
   # Bus-route and ice dispatch (after survey NULL check, before standard tier-2 validation)
   if (!is.null(design$design_type) && design$design_type %in% c("bus_route", "ice")) {
+    if (!identical(target, "sampled_days")) {
+      cli::cli_abort(c(
+        "Expanded effort targets are not yet supported for {.val {design$design_type}} designs.",
+        "x" = "Got {.arg target = {target}}.",
+        "i" = "Use {.code target = 'sampled_days'} for now."
+      ))
+    }
     if (verbose) {
       cli::cli_inform(c(
         "i" = "Using bus-route estimator (Jones & Pollock 2012, Eq. 19.4)"
@@ -406,7 +432,14 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
       by_vars_br <- names(by_cols_br)
     }
 
-    result <- estimate_effort_br(design, by_vars_br, variance, conf_level, verbose) # nolint: object_usage_linter
+    result <- estimate_effort_br( # nolint: object_usage_linter.
+      design,
+      by_vars_br,
+      variance,
+      conf_level,
+      verbose,
+      effort_target = target
+    ) # nolint: object_usage_linter
 
     # Ice-specific: rename 'estimate' column to reflect effort_type
     if (identical(design$design_type, "ice")) {
@@ -423,6 +456,13 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
 
   # Aerial dispatch — svytotal scaled by h_open/v (Pollock et al. 1994 sec.15.6.1)
   if (!is.null(design$design_type) && identical(design$design_type, "aerial")) {
+    if (!identical(target, "sampled_days")) {
+      cli::cli_abort(c(
+        "Expanded effort targets are not yet supported for aerial designs.",
+        "x" = "Got {.arg target = {target}}.",
+        "i" = "Use {.code target = 'sampled_days'} for now."
+      ))
+    }
     if (is.null(design$counts)) {
       cli::cli_abort(c(
         "Aerial effort estimation requires count data.",
@@ -430,13 +470,26 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
         "i" = "Call {.fn add_counts} before estimating aerial effort."
       ))
     }
-    return(estimate_effort_aerial(design, variance, conf_level, verbose)) # nolint: object_usage_linter
+    return(estimate_effort_aerial(design, variance, conf_level, verbose, effort_target = target)) # nolint: object_usage_linter
   }
 
   # Section dispatch (v0.7.0+ — only fires when add_sections() was called)
   if (!is.null(design[["sections"]])) {
+    if (!identical(target, "sampled_days")) {
+      cli::cli_abort(c(
+        "Expanded effort targets are not yet supported for sectioned designs.",
+        "x" = "Got {.arg target = {target}}.",
+        "i" = "Use {.code target = 'sampled_days'} for now."
+      ))
+    }
     return(estimate_effort_sections( # nolint: object_usage_linter
-      design, variance, conf_level, aggregate_sections, method, missing_sections
+      design,
+      variance,
+      conf_level,
+      aggregate_sections,
+      method,
+      missing_sections,
+      target = target
     ))
   }
 
@@ -446,7 +499,7 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
   # Route to grouped or ungrouped estimation
   if (rlang::quo_is_null(by_quo)) {
     # Ungrouped estimation (Phase 4 behavior)
-    return(estimate_effort_total(design, variance, conf_level)) # nolint: object_usage_linter
+    return(estimate_effort_total(design, variance, conf_level, target = target)) # nolint: object_usage_linter
   } else {
     # Grouped estimation (Phase 5 behavior)
     # Resolve by parameter to column names
@@ -459,7 +512,7 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
     )
     by_vars <- names(by_cols)
 
-    return(estimate_effort_grouped(design, by_vars, variance, conf_level)) # nolint: object_usage_linter
+    return(estimate_effort_grouped(design, by_vars, variance, conf_level, target = target)) # nolint: object_usage_linter
   }
 }
 
@@ -1078,16 +1131,16 @@ estimate_catch_rate <- function(design,
       # Warn when targeted = TRUE but most trips are zero-catch
       # (possible mis-specification for a non-targeted species)
       catch_col_local <- design$catch_col
-      if (!is.null(catch_col_local) &&
-            catch_col_local %in% names(incomplete_interviews)) {
+      col_present <- !is.null(catch_col_local) && catch_col_local %in% names(incomplete_interviews)
+      if (col_present) {
         n_total_trips <- nrow(incomplete_interviews)
         n_zero_catch <- sum(
           incomplete_interviews[[catch_col_local]] == 0 |
             is.na(incomplete_interviews[[catch_col_local]]),
           na.rm = TRUE
         )
-        if (n_total_trips > 0 &&
-              (n_zero_catch / n_total_trips) > 0.70) {
+        high_zero_rate <- n_total_trips > 0 && (n_zero_catch / n_total_trips) > 0.70
+        if (high_zero_rate) {
           cli::cli_warn(c(
             paste0(
               round(100 * n_zero_catch / n_total_trips),
@@ -2049,6 +2102,65 @@ compute_within_day_var_contribution <- function(design, by_vars = NULL) { # noli
   }
 }
 
+#' Build a target-aware survey design for effort estimation
+#'
+#' @param design A creel_design object with counts attached.
+#' @param target Effort target: sampled_days, stratum_total, or period_total.
+#'
+#' @return A survey design object suitable for the requested effort target.
+#'
+#' @keywords internal
+#' @noRd
+get_effort_target_design <- function(design, target) {
+  if (identical(target, "sampled_days")) {
+    return(design$survey)
+  }
+
+  counts_data <- design$counts
+  strata_cols <- design$strata_cols
+  calendar <- design$calendar
+
+  if (is.null(strata_cols) || length(strata_cols) == 0) {
+    cli::cli_abort(c(
+      "Expanded effort targets require stratified calendar information.",
+      "x" = "The design has no registered strata columns.",
+      "i" = "Use {.code target = 'sampled_days'} or create the design with {.arg strata}."
+    ))
+  }
+
+  available_by_strata <- dplyr::count(calendar, dplyr::across(dplyr::all_of(strata_cols)), name = ".N_avail")
+  sampled_by_strata <- dplyr::count(counts_data, dplyr::across(dplyr::all_of(strata_cols)), name = ".n_sampled")
+
+  expanded_counts <- counts_data |>
+    dplyr::left_join(available_by_strata, by = strata_cols) |>
+    dplyr::left_join(sampled_by_strata, by = strata_cols)
+
+  if (any(is.na(expanded_counts$.N_avail)) || any(is.na(expanded_counts$.n_sampled))) {
+    cli::cli_abort(c(
+      "Could not compute stratum expansion weights.",
+      "x" = "Some count rows could not be matched to calendar strata.",
+      "i" = "Check that count strata match the design calendar exactly."
+    ))
+  }
+
+  if (any(expanded_counts$.n_sampled <= 0)) {
+    cli::cli_abort(c(
+      "Expanded effort targets require at least one sampled day in each observed stratum.",
+      "x" = "Found strata with zero sampled days."
+    ))
+  }
+
+  expanded_counts$.expansion_weight <- expanded_counts$.N_avail / expanded_counts$.n_sampled
+
+  survey::svydesign(
+    ids = stats::reformulate(design$psu_col),
+    strata = stats::reformulate(strata_cols),
+    weights = ~.expansion_weight,
+    data = expanded_counts,
+    nest = TRUE
+  )
+}
+
 #' Per-section effort estimation orchestrator (Phase 39 logic)
 #'
 #' Dispatched from estimate_effort() when design$sections is non-NULL.
@@ -2068,7 +2180,8 @@ compute_within_day_var_contribution <- function(design, by_vars = NULL) { # noli
 #' @keywords internal
 #' @noRd
 estimate_effort_sections <- function(design, variance_method, conf_level,
-                                     aggregate_sections, method, missing_sections) {
+                                     aggregate_sections, method, missing_sections,
+                                     target = "sampled_days") {
   # NULL guard (defensive; dispatch should prevent this firing)
   if (is.null(design[["sections"]])) {
     stop("sections dispatch called on non-section design")
@@ -2206,7 +2319,8 @@ estimate_effort_sections <- function(design, variance_method, conf_level,
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
-    by_vars = NULL
+    by_vars = NULL,
+    effort_target = target
   )
 }
 
@@ -2214,7 +2328,7 @@ estimate_effort_sections <- function(design, variance_method, conf_level,
 #'
 #' @keywords internal
 #' @noRd
-estimate_effort_total <- function(design, variance_method, conf_level) {
+estimate_effort_total <- function(design, variance_method, conf_level, target = "sampled_days") {
   # Identify the count variable
   # Find first numeric column that is NOT design metadata
   counts_data <- design$counts
@@ -2249,8 +2363,9 @@ estimate_effort_total <- function(design, variance_method, conf_level) {
   # Create formula
   count_formula <- stats::reformulate(count_var)
 
-  # Get appropriate survey design for variance method
-  svy_design <- get_variance_design(design$survey, variance_method) # nolint: object_usage_linter
+  # Get appropriate survey design for variance method and target
+  target_design <- get_effort_target_design(design, target) # nolint: object_usage_linter
+  svy_design <- get_variance_design(target_design, variance_method) # nolint: object_usage_linter
 
   # Call survey::svytotal (suppress expected survey package warnings)
   svy_result <- wrap_survey_call(survey::svytotal(count_formula, svy_design))
@@ -2313,7 +2428,8 @@ estimate_effort_total <- function(design, variance_method, conf_level) {
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
-    by_vars = NULL
+    by_vars = NULL,
+    effort_target = target
   )
 }
 
@@ -2321,7 +2437,7 @@ estimate_effort_total <- function(design, variance_method, conf_level) {
 #'
 #' @keywords internal
 #' @noRd
-estimate_effort_grouped <- function(design, by_vars, variance_method, conf_level) {
+estimate_effort_grouped <- function(design, by_vars, variance_method, conf_level, target = "sampled_days") {
   counts_data <- design$counts
 
   # Tier 2 validation for groups
@@ -2348,8 +2464,9 @@ estimate_effort_grouped <- function(design, by_vars, variance_method, conf_level
   count_formula <- stats::reformulate(count_var)
   by_formula <- stats::reformulate(by_vars)
 
-  # Get appropriate survey design for variance method
-  svy_design <- get_variance_design(design$survey, variance_method) # nolint: object_usage_linter
+  # Get appropriate survey design for variance method and target
+  target_design <- get_effort_target_design(design, target) # nolint: object_usage_linter
+  svy_design <- get_variance_design(target_design, variance_method) # nolint: object_usage_linter
 
   # Call survey::svyby (suppress expected survey package warnings)
   svy_result <- wrap_survey_call(survey::svyby(
@@ -2437,7 +2554,8 @@ estimate_effort_grouped <- function(design, by_vars, variance_method, conf_level
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
-    by_vars = by_vars
+    by_vars = by_vars,
+    effort_target = target
   )
 }
 
@@ -2714,6 +2832,147 @@ estimate_cpue_grouped <- function(design, by_vars, variance_method, conf_level,
   }
 }
 
+#' Warn when effort strata have no matching species-rate rows
+#'
+#' Species/product totals are computed from stratum-level effort × rate products.
+#' If the rate table lacks one or more effort strata, the merge in
+#' `compute_stratum_product_sum()` drops those strata and the resulting total is
+#' necessarily conditioned on the covered strata only. That may be the intended
+#' estimator behavior, but it should not happen silently.
+#'
+#' @param effort_df Tibble of per-stratum effort estimates.
+#' @param rate_df Tibble of per-stratum rate estimates.
+#' @param stratum_by_vars Character vector of join columns.
+#' @param context Short human-readable label for the warning.
+#'
+#' @keywords internal
+#' @noRd
+warn_missing_rate_strata <- function(effort_df, rate_df, stratum_by_vars, context) {
+  if (length(stratum_by_vars) == 0L) {
+    return(invisible(NULL))
+  }
+
+  effort_keys <- unique(effort_df[, c(stratum_by_vars, "estimate"), drop = FALSE])
+  rate_keys <- unique(rate_df[, stratum_by_vars, drop = FALSE])
+
+  missing_rate <- dplyr::anti_join(effort_keys, rate_keys, by = stratum_by_vars)
+  if (nrow(missing_rate) == 0L) {
+    return(invisible(NULL))
+  }
+
+  omitted_effort <- sum(missing_rate$estimate, na.rm = TRUE)
+  total_effort <- sum(effort_df$estimate, na.rm = TRUE)
+  omitted_pct_text <- if (is.finite(total_effort) && total_effort > 0) {
+    paste0(format(round(100 * omitted_effort / total_effort, 1), trim = TRUE), "%")
+  } else {
+    "NA%"
+  }
+
+  cli::cli_warn(c(
+    "Missing rate strata detected during {.val {context}} aggregation.",
+    "!" = paste(
+      nrow(missing_rate),
+      "effort stratum row(s) had no matching rate estimate and will be excluded from the product sum."
+    ),
+    "i" = paste(
+      "Excluded effort total:",
+      format(round(omitted_effort, 3), trim = TRUE),
+      paste0("(", omitted_pct_text, " of grouped effort).")
+    ),
+    "i" = paste(
+      "This usually means count strata were observed without corresponding",
+      "interview coverage for the requested grouping."
+    )
+  ))
+
+  invisible(NULL)
+}
+
+#' Stratum-sum product helper for species total estimators
+#'
+#' Merges per-stratum effort and rate estimates, computes delta-method products
+#' per stratum, then sums across strata within `interview_by_vars` groups.
+#' When `stratum_by_vars` is empty (no strata, no grouping), applies simple
+#' ungrouped delta method.
+#'
+#' @param effort_df Tibble from estimate_effort_total / estimate_effort_grouped.
+#' @param rate_df Tibble from estimate_cpue/hpue/release species (species col removed).
+#' @param stratum_by_vars Character vector of strata + interview grouping columns.
+#' @param interview_by_vars Character vector of user grouping columns (subset of stratum_by_vars).
+#' @param conf_level Numeric confidence level.
+#' @param rate_suffix Character suffix for rate columns after merge ("cpue", "hpue", "rpue").
+#'
+#' @return data.frame with columns: [interview_by_vars...], estimate, se, ci_lower, ci_upper, n
+#'
+#' @keywords internal
+#' @noRd
+compute_stratum_product_sum <- function(effort_df, rate_df, stratum_by_vars,
+                                        interview_by_vars, conf_level,
+                                        rate_suffix = "rate") {
+  z <- stats::qnorm(1 - (1 - conf_level) / 2)
+
+  if (length(stratum_by_vars) == 0L) {
+    # No strata, no grouping: simple delta method on single estimates
+    e_est <- effort_df$estimate
+    r_est <- rate_df$estimate
+    e_se <- effort_df$se
+    r_se <- rate_df$se
+    est <- e_est * r_est
+    pv <- (e_est^2 * r_se^2) + (r_est^2 * e_se^2)
+    return(data.frame(
+      estimate = est, se = sqrt(pv),
+      ci_lower = est - z * sqrt(pv), ci_upper = est + z * sqrt(pv),
+      n = rate_df$n, stringsAsFactors = FALSE
+    ))
+  }
+
+  # Merge per-stratum effort and rate on stratum_by_vars
+  merged <- merge(
+    effort_df, rate_df,
+    by = stratum_by_vars,
+    suffixes = c("_effort", paste0("_", rate_suffix)),
+    sort = FALSE
+  )
+
+  e_col <- "estimate_effort"
+  r_col <- paste0("estimate_", rate_suffix)
+  se_e <- "se_effort"
+  se_r <- paste0("se_", rate_suffix)
+  n_r <- paste0("n_", rate_suffix)
+
+  # Per-stratum delta-method products and variances
+  merged$.est_sh <- merged[[e_col]] * merged[[r_col]]
+  merged$.var_sh <- (merged[[e_col]]^2 * merged[[se_r]]^2) +
+    (merged[[r_col]]^2 * merged[[se_e]]^2)
+  merged$.n_sh <- merged[[n_r]]
+
+  if (is.null(interview_by_vars)) {
+    # Sum all strata to a single total
+    est <- sum(merged$.est_sh)
+    pv <- sum(merged$.var_sh)
+    n <- sum(merged$.n_sh)
+    data.frame(
+      estimate = est, se = sqrt(pv),
+      ci_lower = est - z * sqrt(pv), ci_upper = est + z * sqrt(pv),
+      n = as.integer(n), stringsAsFactors = FALSE
+    )
+  } else {
+    # Sum strata within each interview_by_vars group
+    agg <- stats::aggregate(
+      cbind(.est_sh, .var_sh, .n_sh) ~ .,
+      data = merged[c(interview_by_vars, ".est_sh", ".var_sh", ".n_sh")],
+      FUN  = sum
+    )
+    sp_result <- tibble::as_tibble(agg[interview_by_vars])
+    sp_result$estimate <- agg$.est_sh
+    sp_result$se <- sqrt(agg$.var_sh)
+    sp_result$ci_lower <- sp_result$estimate - z * sp_result$se
+    sp_result$ci_upper <- sp_result$estimate + z * sp_result$se
+    sp_result$n <- as.integer(agg$.n_sh)
+    sp_result
+  }
+}
+
 #' Species-level CPUE estimation (loops over species)
 #'
 #' @param design A creel_design with non-NULL catch slot.
@@ -2729,7 +2988,8 @@ estimate_cpue_grouped <- function(design, by_vars, variance_method, conf_level,
 #' @noRd
 estimate_cpue_species <- function(design, species_col, interview_by_vars,
                                   variance_method, conf_level,
-                                  estimator = "ratio-of-means") {
+                                  estimator = "ratio-of-means",
+                                  validate = TRUE) {
   all_species <- sort(unique(design[["catch"]][[species_col]]))
 
   results_list <- vector("list", length(all_species))
@@ -2757,7 +3017,9 @@ estimate_cpue_species <- function(design, species_col, interview_by_vars,
       strata = strata_formula
     )
 
-    validate_ratio_sample_size(design_sp, interview_by_vars, type = "cpue") # nolint: object_usage_linter
+    if (validate) {
+      validate_ratio_sample_size(design_sp, interview_by_vars, type = "cpue") # nolint: object_usage_linter
+    }
 
     if (is.null(interview_by_vars)) {
       result <- estimate_cpue_total(design_sp, variance_method, conf_level, estimator) # nolint: object_usage_linter
@@ -2780,7 +3042,8 @@ estimate_cpue_species <- function(design, species_col, interview_by_vars,
 #' @keywords internal
 #' @noRd
 estimate_release_rate_species <- function(design, species_col, interview_by_vars,
-                                          variance_method, conf_level) {
+                                          variance_method, conf_level,
+                                          validate = TRUE) {
   all_species <- sort(unique(design[["catch"]][[species_col]]))
 
   results_list <- vector("list", length(all_species))
@@ -2809,7 +3072,9 @@ estimate_release_rate_species <- function(design, species_col, interview_by_vars
       strata = strata_formula
     )
 
-    validate_ratio_sample_size(design_sp, interview_by_vars, type = "cpue") # nolint: object_usage_linter
+    if (validate) {
+      validate_ratio_sample_size(design_sp, interview_by_vars, type = "cpue") # nolint: object_usage_linter
+    }
 
     if (is.null(interview_by_vars)) {
       result <- estimate_cpue_total(design_sp, variance_method, conf_level) # nolint: object_usage_linter
@@ -2832,7 +3097,8 @@ estimate_release_rate_species <- function(design, species_col, interview_by_vars
 #' @keywords internal
 #' @noRd
 estimate_hpue_species <- function(design, species_col, interview_by_vars,
-                                  variance_method, conf_level) {
+                                  variance_method, conf_level,
+                                  validate = TRUE) {
   all_species <- sort(unique(design[["catch"]][[species_col]]))
   results_list <- vector("list", length(all_species))
 
@@ -2858,7 +3124,9 @@ estimate_hpue_species <- function(design, species_col, interview_by_vars,
       strata = strata_formula
     )
 
-    validate_ratio_sample_size(design_sp, interview_by_vars, type = "harvest") # nolint: object_usage_linter
+    if (validate) {
+      validate_ratio_sample_size(design_sp, interview_by_vars, type = "harvest") # nolint: object_usage_linter
+    }
 
     if (is.null(interview_by_vars)) {
       result <- estimate_harvest_total(design_sp, variance_method, conf_level) # nolint: object_usage_linter
