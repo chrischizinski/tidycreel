@@ -221,6 +221,44 @@ A linear temporal term reduces flexibility but can improve stability when only
 a few survey days are available. Use the default quadratic formula when you
 have 8 or more survey days.
 
+## Total Harvest via Product Estimator
+
+`estimate_effort_aerial_glmm()` returns a GLMM-based effort estimate. To
+combine this with a harvest rate from interview data, use the manual
+product-estimator workflow:
+
+1. Extract the effort point estimate and SE from the GLMM result.
+2. Estimate harvest rate (HPUE) using `estimate_harvest_rate()` on a standard
+   interview-survey design.
+3. Apply the delta method manually:
+
+$$\hat{H}_{total} = \hat{E} \times \hat{H}_{rate}$$
+
+$$SE(\hat{H}_{total}) \approx \sqrt{
+  \hat{E}^2 \cdot Var(\hat{H}_{rate}) +
+  \hat{H}_{rate}^2 \cdot Var(\hat{E})
+}$$
+
+`estimate_total_harvest()` is not available for aerial GLMM designs because
+the GLMM effort estimate lives outside the count-survey object. This manual
+step preserves full control over the temporal domain and effort measure.
+
+```{r product-estimator-note, eval = FALSE}
+# Example manual product estimator
+glmm_est <- estimate_effort_aerial_glmm(design, time_col = time_of_flight)
+effort_hat <- glmm_est$estimates$estimate
+effort_se <- glmm_est$estimates$se
+
+# Assume interview_design is a standard creel_design with interviews attached
+hpue <- estimate_harvest_rate(interview_design)
+hpue_hat <- hpue$estimates$estimate
+hpue_se <- hpue$estimates$se
+
+# Delta method
+total_harvest <- effort_hat * hpue_hat
+total_harvest_se <- sqrt(effort_hat^2 * hpue_se^2 + hpue_hat^2 * effort_se^2)
+```
+
 ## References
 
 - Askey, P. J., Parkinson, E. A., Rehill, P., & Post, J. R. (2018).

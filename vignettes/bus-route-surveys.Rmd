@@ -290,6 +290,45 @@ catch_est <- estimate_total_catch(design)
 print(catch_est)
 ```
 
+### Step 5: Estimate Total Harvest and Total Release
+
+`estimate_total_harvest()` and `estimate_total_release()` apply the same
+Horvitz-Thompson logic directly to the harvest or release counts, without the
+effort × rate product-estimator step used for standard interview-survey designs.
+
+$$\hat{H} = \sum_{i} \frac{h_i \times \text{expansion}_i}{\pi_i}$$
+
+This is the same Eq. 19.5 used for effort and catch — just substituting
+harvest (fish kept) or release count for effort. Because it operates directly
+on interview rows, no count data from `add_counts()` is needed.
+
+```{r total-harvest}
+# Estimate total fish harvested (direct HT, no count data required)
+total_harvest_est <- estimate_total_harvest(design)
+print(total_harvest_est)
+
+# Inspect per-site harvest contributions
+site_harvest <- get_site_contributions(total_harvest_est)
+print(site_harvest)
+```
+
+For total release estimates, first attach catch records (with
+`catch_type = "released"`) using `add_catch()`. The function then sums the
+per-interview release counts using the same HT expansion.
+
+```{r total-release-setup, eval = FALSE}
+design <- add_catch(
+  design, catch_data,
+  catch_uid = interview_id,
+  interview_uid = interview_id,
+  species = species,
+  count = count,
+  catch_type = catch_type
+)
+total_release_est <- estimate_total_release(design)
+print(total_release_est)
+```
+
 ## Validation
 
 The effort estimate above (E_hat = 847.5 angler-hours) reproduces the published result

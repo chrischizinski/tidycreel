@@ -225,6 +225,65 @@ The `estimate` column is the projected total walleye catch across the entire
 survey period, with a standard error and 95% confidence interval computed via
 the delta method.
 
+## Harvest Rate Estimation
+
+`estimate_harvest_rate()` applies the Horvitz-Thompson estimator to the
+harvest column (fish kept) and computes a total harvest rate over the survey
+period. For ice designs the formula is:
+
+$$\hat{H} = \sum_{i} \frac{h_i \times \text{expansion}_i}{\pi_i}$$
+
+where $h_i$ is the fish-kept count for interview $i$, expansion is
+`n_counted / n_interviewed`, and $\pi_i = p\_period$ (since `p_site = 1.0`
+for ice surveys).
+
+```{r harvest-rate}
+harvest_rate_est <- estimate_harvest_rate(design)
+print(harvest_rate_est)
+```
+
+## Total Harvest Estimation
+
+`estimate_total_harvest()` uses the same HT formula applied directly to
+expanded harvest counts, without requiring count survey data from
+`add_counts()`. This is the key advantage of the bus-route HT approach:
+effort and harvest come from the same interview rows.
+
+```{r total-harvest}
+total_harvest_est <- estimate_total_harvest(design)
+print(total_harvest_est)
+```
+
+The `estimate` column is the projected total walleye harvest across all sampled
+days, with standard error and 95% confidence interval. The result matches the
+harvest rate estimate from `estimate_harvest_rate()` because both use the same
+HT Eq. 19.5 applied to the harvest column.
+
+## Total Release Estimation
+
+To estimate total released fish, attach a catch data frame with
+`catch_type = "released"` records using `add_catch()`. The function then
+computes:
+
+$$\hat{R} = \sum_{i} \frac{r_i \times \text{expansion}_i}{\pi_i}$$
+
+where $r_i$ is the per-interview release count. The example data does not
+include release records, but the workflow follows the standard `add_catch()`
+pattern:
+
+```{r total-release-setup, eval = FALSE}
+design <- add_catch(
+  design, catch_data,
+  catch_uid = interview_id,
+  interview_uid = interview_id,
+  species = species,
+  count = count,
+  catch_type = catch_type
+)
+total_release_est <- estimate_total_release(design)
+print(total_release_est)
+```
+
 ## References
 
 - Jones, C. M., & Pollock, K. H. (2012). Recreational survey methods:
