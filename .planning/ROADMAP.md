@@ -39,7 +39,7 @@ Plans:
 
 Plans:
 - [x] 72-01-PLAN.md — Write architectural review report (layer violations, S3 class audit, positive findings, recommendations)
-- [ ] 72-02-PLAN.md — Write dependency review report (Imports risk ratings, drop/demote analysis, recommendations)
+- [x] 72-02-PLAN.md — Write dependency review report (Imports risk ratings, drop/demote analysis, recommendations)
 
 ---
 
@@ -49,6 +49,12 @@ Plans:
 
 **Depends on:** —
 **Delivers:** Error handling strategy document; creel.connect investigation report.
+
+**Plans:** 2 plans
+
+Plans:
+- [ ] 73-01-PLAN.md — Write error handling strategy document (canonical cli::cli_abort pattern, deviation inventory, contributor reference)
+- [ ] 73-02-PLAN.md — Write creel.connect integration surface investigation report (schema contract, companion package gaps, readiness verdict)
 
 ---
 
