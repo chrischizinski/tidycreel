@@ -3,24 +3,24 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 current_phase: 73 — Error Handling Strategy
-current_plan: 73-01 complete
+current_plan: 73-02 complete
 status: in_progress
-last_updated: "2026-04-16T03:08:00.000Z"
+last_updated: "2026-04-16T02:59:20.000Z"
 progress:
   total_phases: 6
   completed_phases: 3
-  total_plans: 5
-  completed_plans: 5
+  total_plans: 6
+  completed_plans: 6
 ---
 
 # GSD State
 
 **Milestone:** M022 — Comprehensive Project Evaluation and Future Planning
 **Current phase:** 73 — Error Handling Strategy
-**Phase status:** in progress — plan 73-01 complete
+**Phase status:** in progress — plan 73-02 complete
 
-**Current Plan:** 73-01 complete
-**Last session:** 2026-04-16T03:08:00.000Z
+**Current Plan:** 73-02 complete
+**Last session:** 2026-04-16T02:59:20.000Z
 
 ## Decisions
 
@@ -33,6 +33,7 @@ progress:
 - Phase 72-01: architectural review is complete. All four findings are low/medium severity — package architecture is structurally sound. get_site_contributions() file placement (A1, medium) is the only actionable structural fix. creel_summary_* subclasses without S3 methods (A4) require a commit-to-one-direction decision. Six positive findings (P1-P6) document patterns to preserve.
 - Phase 72-02: dependency review is complete. scales is a DROP candidate (one-line sprintf replacement for single call-site in survey-bridge.R). lubridate is a DEMOTE candidate (all 15 call-sites in scheduling/viz; fold removal into next scheduling refactor). ggplot2 demotion requires an explicit architectural decision (is visualisation core or optional?). checkmate mixed-validation pattern is intentional batch-collection semantics — document for contributors.
 - Phase 73-01: error handling strategy complete. cli::cli_abort named-vector convention declared canonical (368 calls, 30+ files). D1/D2 stop(e) re-raises are intentional idioms — must not convert to cli_abort. D3 rlang::warn(.frequency='once') is approved exception — .frequency not available in cli::cli_warn. D4 split-arg cli::cli_warn in validation-report.R is cosmetic. Named condition classes deferred to Phase 74.
+- Phase 73-02: creel.connect investigation complete. Schema contract (creel_schema, validate_creel_schema) is READY — stable, complete, production-quality. Companion package SQL Server path is NOT READY: three concrete gaps (lengths_table slot mismatch, SQL Server stubs, vignette divergence). PROJECT.md "not current work" tension resolved: schema contract is frozen-but-informal; companion package is proof-of-concept with no active development.
 
 ## Blockers
 
