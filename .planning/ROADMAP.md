@@ -50,7 +50,7 @@ Plans:
 **Depends on:** —
 **Delivers:** Error handling strategy document; creel.connect investigation report.
 
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 - [ ] 73-01-PLAN.md — Write error handling strategy document (canonical cli::cli_abort pattern, deviation inventory, contributor reference)
