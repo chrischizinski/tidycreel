@@ -65,7 +65,7 @@ Plans:
 **Depends on:** —
 **Delivers:** Quality checklist/audit report; external testing strategy document.
 
-**Plans:** 1/2 plans complete
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 74-01-PLAN.md — Write quality checklist audit (tidyverse baseline, rOpenSci delta, coverage measurement, named condition class recommendation)
