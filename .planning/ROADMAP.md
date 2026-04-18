@@ -53,8 +53,8 @@ Plans:
 **Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 73-01-PLAN.md — Write error handling strategy document (canonical cli::cli_abort pattern, deviation inventory, contributor reference)
-- [ ] 73-02-PLAN.md — Write creel.connect integration surface investigation report (schema contract, companion package gaps, readiness verdict)
+- [x] 73-01-PLAN.md — Write error handling strategy document (canonical cli::cli_abort pattern, deviation inventory, contributor reference)
+- [x] 73-02-PLAN.md — Write creel.connect integration surface investigation report (schema contract, companion package gaps, readiness verdict)
 
 ---
 
@@ -65,11 +65,11 @@ Plans:
 **Depends on:** —
 **Delivers:** Quality checklist/audit report; external testing strategy document.
 
-**Plans:** 2 plans
+**Plans:** 1/2 plans complete
 
 Plans:
 - [ ] 74-01-PLAN.md — Write quality checklist audit (tidyverse baseline, rOpenSci delta, coverage measurement, named condition class recommendation)
-- [ ] 74-02-PLAN.md — Write external testing strategy (decision guide: unit, snapshot, integration, property-based)
+- [x] 74-02-PLAN.md — Write external testing strategy (decision guide: unit, snapshot, integration, property-based)
 
 ---
 

@@ -2,25 +2,25 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 73 — Error Handling Strategy
-current_plan: 73-02 complete
+current_phase: 74 — Quality Bar Assessment
+current_plan: 02 complete
 status: in_progress
-last_updated: "2026-04-16T02:59:20.000Z"
+last_updated: "2026-04-18T17:05:00.000Z"
 progress:
   total_phases: 6
-  completed_phases: 3
-  total_plans: 6
-  completed_plans: 6
+  completed_phases: 4
+  total_plans: 8
+  completed_plans: 8
 ---
 
 # GSD State
 
 **Milestone:** M022 — Comprehensive Project Evaluation and Future Planning
-**Current phase:** 73 — Error Handling Strategy
-**Phase status:** in progress — plan 73-02 complete
+**Current phase:** 74 — Quality Bar Assessment
+**Phase status:** in progress — plan 74-02 complete (74-01 pending)
 
-**Current Plan:** 73-02 complete
-**Last session:** 2026-04-16T02:59:20.000Z
+**Current Plan:** 74-02 complete
+**Last session:** 2026-04-18T17:05:00.000Z
 
 ## Decisions
 
@@ -34,6 +34,7 @@ progress:
 - Phase 72-02: dependency review is complete. scales is a DROP candidate (one-line sprintf replacement for single call-site in survey-bridge.R). lubridate is a DEMOTE candidate (all 15 call-sites in scheduling/viz; fold removal into next scheduling refactor). ggplot2 demotion requires an explicit architectural decision (is visualisation core or optional?). checkmate mixed-validation pattern is intentional batch-collection semantics — document for contributors.
 - Phase 73-01: error handling strategy complete. cli::cli_abort named-vector convention declared canonical (368 calls, 30+ files). D1/D2 stop(e) re-raises are intentional idioms — must not convert to cli_abort. D3 rlang::warn(.frequency='once') is approved exception — .frequency not available in cli::cli_warn. D4 split-arg cli::cli_warn in validation-report.R is cosmetic. Named condition classes deferred to Phase 74.
 - Phase 73-02: creel.connect investigation complete. Schema contract (creel_schema, validate_creel_schema) is READY — stable, complete, production-quality. Companion package SQL Server path is NOT READY: three concrete gaps (lengths_table slot mismatch, SQL Server stubs, vignette divergence). PROJECT.md "not current work" tension resolved: schema contract is frozen-but-informal; companion package is proof-of-concept with no active development.
+- Phase 74-02: testing strategy complete. Snapshot policy stated as explicit rule: use expect_snapshot() for formatted text output only (print/format/autoplot), never for numeric estimates. 6 property-based domain invariants documented; quickcheck (CRAN) identified as R package (not rapidcheck, which is C++ only). Implementation deferred to Phase 75 or v1.4.0. Integration test pattern named and codified. _snaps/ empty-but-present gap documented with 6 priority methods for adoption.
 
 ## Blockers
 
