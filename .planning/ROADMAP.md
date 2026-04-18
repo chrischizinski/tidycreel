@@ -65,6 +65,12 @@ Plans:
 **Depends on:** —
 **Delivers:** Quality checklist/audit report; external testing strategy document.
 
+**Plans:** 2 plans
+
+Plans:
+- [ ] 74-01-PLAN.md — Write quality checklist audit (tidyverse baseline, rOpenSci delta, coverage measurement, named condition class recommendation)
+- [ ] 74-02-PLAN.md — Write external testing strategy (decision guide: unit, snapshot, integration, property-based)
+
 ---
 
 ## Phase 75: Performance Optimization — Rcpp Opportunity Identification
