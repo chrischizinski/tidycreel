@@ -45,7 +45,10 @@ Suggests:
     styler,
     sysfonts,
     testthat (>= 3.0.0),
+    bench,
+    htmlwidgets,
     pkgload,
+    profvis,
     withr,
     writexl (>= 1.5.4)
 VignetteBuilder: knitr
