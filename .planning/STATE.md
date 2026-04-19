@@ -1,35 +1,38 @@
 ---
 gsd_state_version: 1.0
-milestone: M022
-milestone_name: Comprehensive Project Evaluation and Future Planning
-current_phase: complete
-current_plan: complete
-status: milestone_complete
+milestone: M023
+milestone_name: Quality, Polish, and rOpenSci Readiness
+current_phase: not_started
+current_plan: ~
+status: defining_requirements
 last_updated: "2026-04-19T00:00:00.000Z"
 progress:
-  total_phases: 6
-  completed_phases: 6
-  total_plans: 11
-  completed_plans: 11
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # GSD State
 
-**Milestone:** M022 — Comprehensive Project Evaluation and Future Planning — SHIPPED 2026-04-19
-**Status:** Complete — all 6 phases, 11 plans delivered and archived
+**Milestone:** M023 — Quality, Polish, and rOpenSci Readiness — v1.4.0
+**Status:** Not started — defining requirements
 
-**Last session:** 2026-04-19
+**Last session:** 2026-04-19 — Milestone M023 started
 
 ## Project Reference
 
 See: .planning/PROJECT.md (updated 2026-04-19)
 
 **Core value:** A biologist should be able to go from survey design to package-ready estimates, plots, summaries, and documentation without stitching together a custom analysis stack.
-**Current focus:** Planning next milestone (v1.4.0)
+**Current focus:** Defining requirements
 
-## Decisions
+## Current Position
 
-All M022 decisions are recorded in PROJECT.md Key Decisions table. See `.planning/milestones/M022-ROADMAP.md` for full phase archive.
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-04-19 — Milestone v1.4.0 started
 
 ## Blockers
 
