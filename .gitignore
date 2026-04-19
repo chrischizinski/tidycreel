@@ -74,6 +74,9 @@ skills-lock.json
 # Test artifacts
 tests/testthat/_problems/
 
+# Profiling fixtures (large generated files — run 00-generate-fixtures.R to recreate)
+inst/profiling/fixtures/
+
 # pkgdown built site (deployed via gh-pages, not committed to main)
 docs/
 

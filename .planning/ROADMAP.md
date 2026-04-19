@@ -78,6 +78,13 @@ Plans:
 **Goal:** Profile computational hot spots and identify where Rcpp could provide material gains.
 
 **Depends on:** —
-**Delivers:** Performance analysis report with Rcpp recommendations.
+**Delivers:** Performance analysis report with empirical Rcpp go/no-go recommendation; property-based testing invariants document.
+
+**Plans:** 3 plans
+
+Plans:
+- [ ] 75-01-PLAN.md — Build profiling infrastructure (inst/profiling/ harness scripts + realistic/stress fixtures)
+- [ ] 75-02-PLAN.md — Run harness and write 75-PERFORMANCE-ANALYSIS.md (empirical results + go/no-go recommendation)
+- [ ] 75-03-PLAN.md — Write 75-TESTING-INVARIANTS.md (6 domain invariants + benchmark regression guards)
 
 ---

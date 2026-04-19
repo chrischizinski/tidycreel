@@ -45,6 +45,7 @@ Suggests:
     styler,
     sysfonts,
     testthat (>= 3.0.0),
+    pkgload,
     withr,
     writexl (>= 1.5.4)
 VignetteBuilder: knitr
