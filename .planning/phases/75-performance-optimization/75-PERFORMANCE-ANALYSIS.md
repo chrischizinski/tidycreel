@@ -283,25 +283,34 @@ confidence interval coverage at standard confidence levels.
 |---|---|---|---|
 | CRAN availability | Yes | Yes | Yes |
 | Compilation time | Slow (~60s) | Fast (~10s) | Slow (~120s) |
-| ABI stability | Historical issues | Clean (r-lib maintained) | Inherits Rcpp |
+| R 4.5+ header compatibility | **Problematic** — built against remapped `Rinternals.h` names that are no longer default | Clean — designed for modern R API | Inherits Rcpp issues |
+| ABI stability | Historical issues; `R_NO_REMAP` is now default (R 4.5.0+), breaking old Rcpp assumptions | Designed for `R_NO_REMAP` | Inherits Rcpp |
 | Matrix/linear algebra | Manual | Manual | Native |
 | Windows toolchain | Rtools required | Rtools required | Rtools required |
-| CRAN review scrutiny | Moderate | Low | Higher (Armadillo dep) |
-| Recommended for new C code | No | **YES** | Only if matrix ops confirmed bottleneck |
+| CRAN review scrutiny | Moderate (plus R 4.5+ compatibility notices) | Low | Higher (Armadillo dep) |
+| Recommended for new C code | **No** | **YES** | Only if matrix ops confirmed bottleneck |
 
-**Adoption cost assessment (for any future Rcpp/cpp11 adoption):**
+**R 4.5+ header reorganization note:** Since R 4.5.0, `R_NO_REMAP` is the default in
+`Rinternals.h` (see [Writing R Extensions §6.21](https://cran.r-project.org/doc/manuals/r-devel/R-exts.html#Organization-of-header-files)).
+This means short-form name remaps (`length` → `Rf_length`, `isNull` → `Rf_isNull`, etc.) are
+no longer automatically injected. Rcpp's internals were built assuming the old (non-`R_NO_REMAP`)
+behavior; the Rcpp maintainers are working through compatibility, but packages linking against
+Rcpp on R 4.5+ may encounter compilation warnings or failures that require Rcpp updates.
+cpp11 was designed from the start for the modern R API and handles `R_NO_REMAP` correctly.
 
-- Add `LinkingTo:` and `Imports: Rcpp` (or `cpp11`) to DESCRIPTION
-- Add `src/` directory with `.cpp` files and `Makevars`
-- Add `.gitignore` entries for compiled objects
+**Adoption cost assessment (for any future cpp11 adoption):**
+
+- Add `LinkingTo: cpp11` to DESCRIPTION (no `Imports:` needed — cpp11 is header-only)
+- Add `src/` directory with `.cpp` files
 - All 3 CI platforms (Windows/macOS/Linux) must compile successfully
 - CRAN review: any C/C++ code receives additional scrutiny; must pass `valgrind` and
   `sanitize-address` checks
-- Estimated overhead to first working Rcpp function: 1–2 days for a developer new to the pattern
+- Estimated overhead to first working cpp11 function: 1–2 days for a developer new to the pattern
 
 **For any hot spot that clears the 10× threshold:** Use cpp11 (not Rcpp) — lower compilation
-overhead, no ABI fragility, maintained by r-lib. RcppArmadillo is warranted only if matrix
-operations on a stratum-level weight matrix are confirmed as a bottleneck (not observed here).
+overhead, compatible with R 4.5+ header defaults, maintained by r-lib. RcppArmadillo is
+warranted only if matrix operations on a stratum-level weight matrix are confirmed as a
+bottleneck (not observed here).
 
 **Current verdict:** No hot spot in tidycreel's own code clears the 10× threshold. The bootstrap
 path (54×) is upstream in `survey`. Rcpp adoption is not warranted at v1.3.0 or v1.4.0.
