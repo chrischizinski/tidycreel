@@ -290,13 +290,17 @@ confidence interval coverage at standard confidence levels.
 | CRAN review scrutiny | Moderate (plus R 4.5+ compatibility notices) | Low | Higher (Armadillo dep) |
 | Recommended for new C code | **No** | **YES** | Only if matrix ops confirmed bottleneck |
 
-**R 4.5+ header reorganization note:** Since R 4.5.0, `R_NO_REMAP` is the default in
-`Rinternals.h` (see [Writing R Extensions §6.21](https://cran.r-project.org/doc/manuals/r-devel/R-exts.html#Organization-of-header-files)).
-This means short-form name remaps (`length` → `Rf_length`, `isNull` → `Rf_isNull`, etc.) are
-no longer automatically injected. Rcpp's internals were built assuming the old (non-`R_NO_REMAP`)
-behavior; the Rcpp maintainers are working through compatibility, but packages linking against
-Rcpp on R 4.5+ may encounter compilation warnings or failures that require Rcpp updates.
-cpp11 was designed from the start for the modern R API and handles `R_NO_REMAP` correctly.
+**R 4.5+ C++ header enforcement note:** Since R 4.5.0, `R_NO_REMAP` is **always defined**
+when R headers are included from C++ code (see
+[Writing R Extensions §6 (The R API)](https://cran.r-project.org/doc/manuals/r-devel/R-exts.html#The-R-API)
+and [§6.21](https://cran.r-project.org/doc/manuals/r-devel/R-exts.html#Organization-of-header-files)).
+This is enforced, not optional. The short-form name remaps that Rcpp relies on —
+`length` → `Rf_length`, `isNull` → `Rf_isNull`, `REAL` → `REAL`, etc. — are no longer
+automatically injected into C++ namespaces. Rcpp has been updating to work around this, but any
+new C++ code written for tidycreel that uses Rcpp patterns from tutorials or older examples
+may silently rely on the old (now-gone) remapping. cpp11 was designed from the start for the
+modern R API and is explicitly compatible with the `R_NO_REMAP` enforcement. This is a
+concrete technical reason to prefer cpp11 over Rcpp for any new C extension work.
 
 **Adoption cost assessment (for any future cpp11 adoption):**
 
