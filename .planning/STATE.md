@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 current_phase: 75 — Performance Optimization
-current_plan: 75-01 complete; 75-02 and 75-03 pending
+current_plan: 75-03 complete; 75-02 (performance analysis checkpoint) pending
 status: in_progress
-last_updated: "2026-04-19T00:00:00.000Z"
+last_updated: "2026-04-19T14:61:00Z"
 progress:
   total_phases: 6
   completed_phases: 5
@@ -17,9 +17,9 @@ progress:
 
 **Milestone:** M022 — Comprehensive Project Evaluation and Future Planning
 **Current phase:** 75 — Performance Optimization
-**Phase status:** in progress — plan 75-01 complete (profiling harness); 75-02 (checkpoint: run harness + write analysis) and 75-03 (testing invariants) pending
+**Phase status:** in progress — plans 75-01 and 75-03 complete; 75-02 (checkpoint: run harness + write analysis) pending
 
-**Current Plan:** 75-02 (Wave 2, checkpoint)
+**Current Plan:** 75-03 complete; 75-02 (Wave 2, checkpoint) next
 **Last session:** 2026-04-19
 
 ## Decisions
@@ -37,6 +37,7 @@ progress:
 - Phase 74-01: quality audit complete. tidycreel v1.3.0 achieves 87% code coverage (above rOpenSci 75% minimum). All three CI platforms confirmed (Windows + macOS + Linux). Named condition classes are MEDIUM priority for v1.4.0 — 8 priority sites identified. lifecycle formalization (R1), inst/CITATION (R2), and codecov threshold (R3) are HIGH priority pre-rOpenSci-submission blockers. Zero @family tags across all R/ files (R5, MEDIUM). design-validator.R at 56.8% is the most significant coverage gap.
 - Phase 74-02: testing strategy complete. Snapshot policy stated as explicit rule: use expect_snapshot() for formatted text output only (print/format/autoplot), never for numeric estimates. 6 property-based domain invariants documented; quickcheck (CRAN) identified as R package (not rapidcheck, which is C++ only). Implementation deferred to Phase 75 or v1.4.0. Integration test pattern named and codified. _snaps/ empty-but-present gap documented with 6 priority methods for adoption.
 - Phase 75-01: profiling harness infrastructure complete. 4 scripts in inst/profiling/. Empirical bench results: taylor ~1.5ms, jackknife ~28ms (18×), bootstrap ~83ms (54×) at realistic scale. Sub-linear scaling: 10× data → ~3.7× time. Fixtures gitignored (too large). bench/htmlwidgets/pkgload/profvis added to Suggests.
+- Phase 75-03: testing invariants specification complete. 75-TESTING-INVARIANTS.md (534 lines) documents 6 domain invariants with quickcheck sketches and benchmark regression guard baselines. quickcheck confirmed as locked PBT package. INV-05 (Taylor/bootstrap convergence) designated manual-review-only. v1.4.0 implementation priority order: INV-04 → INV-01 → INV-02 → INV-06 → INV-03 → INV-05 (manual).
 
 ## Blockers
 

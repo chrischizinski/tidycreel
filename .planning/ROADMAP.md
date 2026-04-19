@@ -80,11 +80,11 @@ Plans:
 **Depends on:** —
 **Delivers:** Performance analysis report with empirical Rcpp go/no-go recommendation; property-based testing invariants document.
 
-**Plans:** 0/3 plans executed
+**Plans:** 2/3 plans executed
 
 Plans:
-- [ ] 75-01-PLAN.md — Build profiling infrastructure (inst/profiling/ harness scripts + realistic/stress fixtures)
+- [x] 75-01-PLAN.md — Build profiling infrastructure (inst/profiling/ harness scripts + realistic/stress fixtures)
 - [ ] 75-02-PLAN.md — Run harness and write 75-PERFORMANCE-ANALYSIS.md (empirical results + go/no-go recommendation)
-- [ ] 75-03-PLAN.md — Write 75-TESTING-INVARIANTS.md (6 domain invariants + benchmark regression guards)
+- [x] 75-03-PLAN.md — Write 75-TESTING-INVARIANTS.md (6 domain invariants + benchmark regression guards)
 
 ---
