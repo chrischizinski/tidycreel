@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: milestone
 status: planning
-stopped_at: "Completed 76-01-PLAN.md (foundation: CITATION, lifecycle, percent stubs)"
-last_updated: "2026-04-20T02:34:29.604Z"
+stopped_at: "Completed 76-02-PLAN.md (named condition classes: 8 sites + 4 auto-extended)"
+last_updated: "2026-04-20T02:47:09.592Z"
 last_activity: 2026-04-19 — Roadmap created for M023 (Phases 76–80)
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 4
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -19,7 +19,7 @@ progress:
 **Milestone:** M023 — Quality, Polish, and rOpenSci Readiness — v1.4.0
 **Status:** Roadmap created — ready to plan Phase 76
 
-**Last session:** 2026-04-20T02:34:29.601Z
+**Last session:** 2026-04-20T02:47:09.589Z
 
 ## Project Reference
 
@@ -52,6 +52,7 @@ Progress: [░░░░░░░░░░] 0% (0/5 phases complete)
 
 *Updated after each plan completion*
 | Phase 76-ropensci-blockers P01 | 2 | 3 tasks | 8 files |
+| Phase 76-ropensci-blockers P02 | 639 | 3 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -67,6 +68,7 @@ Recent decisions affecting current work:
 - M022: D3 rlang::warn(.frequency='once') — approved exception, document for contributors
 - [Phase 76-01]: CITATION.cff has placeholder data — all citation metadata sourced from DESCRIPTION
 - [Phase 76-01]: test-survey-bridge-percent.R stubs are deliberately RED — Plan 03 closes them
+- [Phase 76-02]: Named condition classes: all 8 priority sites covered plus 4 auto-extended sites; creel_error_invalid_input covers both missing-input guards and probability validation
 
 ### Pending Todos
 
@@ -79,5 +81,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-04-19
-Stopped at: Completed 76-01-PLAN.md (foundation: CITATION, lifecycle, percent stubs)
+Stopped at: Completed 76-02-PLAN.md (named condition classes: 8 sites + 4 auto-extended)
 Resume file: None
