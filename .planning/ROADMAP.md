@@ -26,7 +26,7 @@ Full archive: [.planning/milestones/M022-ROADMAP.md](milestones/M022-ROADMAP.md)
 **Milestone Goal:** Close all rOpenSci pre-submission blockers, reduce dependency footprint, adopt property-based testing, and resolve outstanding architectural decisions to make tidycreel v1.4.0 submission-ready.
 
 - [x] **Phase 76: rOpenSci Blockers** — Named condition classes, lifecycle badges, CITATION, and scales removal (completed 2026-04-20)
-- [ ] **Phase 77: Dependency Reduction and Caller Context** — lubridate demotion, rlang::caller_env() in bus-route estimators, get_site_contributions() relocation
+- [x] **Phase 77: Dependency Reduction and Caller Context** — lubridate demotion, rlang::caller_env() in bus-route estimators, get_site_contributions() relocation (completed 2026-04-20)
 - [ ] **Phase 78: Code Quality and Snapshot Testing** — @family tags across R/, expect_snapshot() adoption for 6 priority methods
 - [ ] **Phase 79: Property-Based Testing and Coverage Gate** — quickcheck tests for INV-01–06, covr baseline, codecov threshold in CI
 - [ ] **Phase 80: Architecture Decision and Human Verification** — creel_summary_* S3 direction committed, Phase 70 human verification complete
@@ -107,7 +107,7 @@ Plans:
 | 74. Quality Bar Assessment | M022 | 2/2 | Complete | 2026-04-18 |
 | 75. Performance Optimization | M022 | 3/3 | Complete | 2026-04-19 |
 | 76. rOpenSci Blockers | 4/4 | Complete    | 2026-04-20 | - |
-| 77. Dependency Reduction and Caller Context | 2/3 | In Progress|  | - |
+| 77. Dependency Reduction and Caller Context | 3/3 | Complete   | 2026-04-20 | - |
 | 78. Code Quality and Snapshot Testing | M023 | 0/TBD | Not started | - |
 | 79. Property-Based Testing and Coverage Gate | M023 | 0/TBD | Not started | - |
 | 80. Architecture Decision and Human Verification | M023 | 0/TBD | Not started | - |
