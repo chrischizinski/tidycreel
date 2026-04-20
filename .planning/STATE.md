@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: milestone
 status: planning
-stopped_at: Completed 77-01-PLAN.md — lubridate demoted to Suggests with check_installed guards
-last_updated: "2026-04-20T20:07:30.324Z"
+stopped_at: Completed 77-02-PLAN.md — caller_env threading and get_site_contributions relocation
+last_updated: "2026-04-20T20:13:32.779Z"
 last_activity: 2026-04-19 — Roadmap created for M023 (Phases 76–80)
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 7
-  completed_plans: 5
+  completed_plans: 6
   percent: 0
 ---
 
@@ -19,7 +19,7 @@ progress:
 **Milestone:** M023 — Quality, Polish, and rOpenSci Readiness — v1.4.0
 **Status:** Ready to plan
 
-**Last session:** 2026-04-20T20:07:30.322Z
+**Last session:** 2026-04-20T20:13:32.777Z
 
 ## Project Reference
 
@@ -56,6 +56,7 @@ Progress: [░░░░░░░░░░] 0% (0/5 phases complete)
 | Phase 76-ropensci-blockers P03 | 15 | 2 tasks | 8 files |
 | Phase 76-ropensci-blockers P04 | 10 | 2 tasks | 0 files |
 | Phase 77-dependency-reduction-and-caller-context P01 | 11min | 2 tasks | 5 files |
+| Phase 77-dependency-reduction-and-caller-context P02 | 8min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -77,6 +78,8 @@ Recent decisions affecting current work:
 - [Phase 76-ropensci-blockers]: Phase 76-04: Lifecycle badge SVG visual verification approved — renders as colored pill badge in pkgdown docs for estimate_effort_aerial_glmm, as_hybrid_svydesign, and compare_designs
 - [Phase 77-01]: lubridate guard uses bare rlang::check_installed('lubridate') with no reason argument — per locked plan decision
 - [Phase 77-01]: Soft-dependency pattern established: package in Suggests + rlang::check_installed() at every user-visible entry point that calls it
+- [Phase 77-02]: get_site_contributions() relocated to creel-estimates-utils.R (Layer 2) — consumes creel_estimates, not creel_design objects
+- [Phase 77-02]: caller_env thread pattern: call = rlang::caller_env() as last param + call = call in all cli_abort() calls, including recursive calls in estimate_harvest_br()
 
 ### Pending Todos
 
@@ -89,5 +92,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-04-19
-Stopped at: Completed 77-01-PLAN.md — lubridate demoted to Suggests with check_installed guards
+Stopped at: Completed 77-02-PLAN.md — caller_env threading and get_site_contributions relocation
 Resume file: None
