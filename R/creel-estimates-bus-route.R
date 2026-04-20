@@ -19,7 +19,7 @@
 #' @keywords internal
 #' @noRd
 estimate_effort_br <- function(design, by_vars, variance_method, conf_level, verbose,
-                               effort_target = "sampled_days") { # nolint: object_usage_linter
+                               effort_target = "sampled_days", call = rlang::caller_env()) { # nolint: object_usage_linter
   # Retrieve interview data (contains .pi_i and .expansion from add_interviews())
   interviews <- design$interviews
 
@@ -31,7 +31,7 @@ estimate_effort_br <- function(design, by_vars, variance_method, conf_level, ver
       "i" = paste0(
         "Call {.fn add_interviews} with {.arg n_counted} and {.arg n_interviewed} parameters."
       )
-    ))
+    ), call = call)
   }
 
   # Defensive check: .pi_i column must exist
@@ -40,7 +40,7 @@ estimate_effort_br <- function(design, by_vars, variance_method, conf_level, ver
       "Bus-route effort estimation requires .pi_i column.",
       "x" = ".pi_i not found in interview data.",
       "i" = "Bus-route design must have inclusion probabilities computed via sampling frame."
-    ))
+    ), call = call)
   }
 
   # Check for missing .pi_i values — hard error listing site+circuit combinations
@@ -59,7 +59,7 @@ estimate_effort_br <- function(design, by_vars, variance_method, conf_level, ver
       msg_parts,
       "x" = "All interview site+circuit combinations must appear in the sampling frame.",
       "i" = "Check that interview data site and circuit values match sampling frame."
-    ))
+    ), call = call)
   }
 
   # Identify the effort column stored during add_interviews()
@@ -223,7 +223,8 @@ estimate_effort_br <- function(design, by_vars, variance_method, conf_level, ver
 #' @noRd
 estimate_harvest_br <- function(
   # nolint: object_usage_linter
-  design, by_vars, variance_method, conf_level, verbose, use_trips
+  design, by_vars, variance_method, conf_level, verbose, use_trips,
+  call = rlang::caller_env()
 ) {
   if (verbose) {
     cli::cli_inform(c(
@@ -242,7 +243,7 @@ estimate_harvest_br <- function(
       "Bus-route harvest estimation requires .expansion column.",
       "x" = ".expansion not found in interview data.",
       "i" = msg
-    ))
+    ), call = call)
   }
 
   # Defensive check: .pi_i column must exist
@@ -251,7 +252,7 @@ estimate_harvest_br <- function(
       "Bus-route harvest estimation requires .pi_i column.",
       "x" = ".pi_i not found in interview data.",
       "i" = "Bus-route design must have inclusion probabilities computed via sampling frame."
-    ))
+    ), call = call)
   }
 
   # Check for missing .pi_i values — hard error listing site+circuit combinations
@@ -270,18 +271,18 @@ estimate_harvest_br <- function(
       msg_parts,
       "x" = "All interview site+circuit combinations must appear in the sampling frame.",
       "i" = "Check that interview data site and circuit values match sampling frame."
-    ))
+    ), call = call)
   }
 
   # Diagnostic mode: run both complete and incomplete paths, return diagnostic
   if (use_trips == "diagnostic") {
     complete_result <- estimate_harvest_br(
       design, by_vars, variance_method, conf_level,
-      verbose = FALSE, use_trips = "complete"
+      verbose = FALSE, use_trips = "complete", call = call
     )
     incomplete_result <- suppressWarnings(estimate_harvest_br(
       design, by_vars, variance_method, conf_level,
-      verbose = FALSE, use_trips = "incomplete"
+      verbose = FALSE, use_trips = "incomplete", call = call
     ))
     result <- list(complete = complete_result, incomplete = incomplete_result)
     class(result) <- c("creel_estimates_diagnostic", "list")
@@ -375,7 +376,8 @@ estimate_harvest_br <- function(
 #' @noRd
 estimate_total_catch_br <- function(
   # nolint: object_usage_linter
-  design, by_vars, variance_method, conf_level, verbose
+  design, by_vars, variance_method, conf_level, verbose,
+  call = rlang::caller_env()
 ) {
   if (verbose) {
     cli::cli_inform(c(
@@ -394,7 +396,7 @@ estimate_total_catch_br <- function(
       "Bus-route total catch estimation requires .expansion column.",
       "x" = ".expansion not found in interview data.",
       "i" = msg
-    ))
+    ), call = call)
   }
 
   # Defensive check: .pi_i column must exist
@@ -403,7 +405,7 @@ estimate_total_catch_br <- function(
       "Bus-route total catch estimation requires .pi_i column.",
       "x" = ".pi_i not found in interview data.",
       "i" = "Bus-route design must have inclusion probabilities computed via sampling frame."
-    ))
+    ), call = call)
   }
 
   # Check for missing .pi_i values — hard error listing site+circuit combinations
@@ -425,7 +427,7 @@ estimate_total_catch_br <- function(
       msg_parts,
       "x" = "All interview site+circuit combinations must appear in the sampling frame.",
       "i" = "Check that interview data site and circuit values match sampling frame."
-    ))
+    ), call = call)
   }
 
   catch_col <- design$catch_col
@@ -487,7 +489,8 @@ estimate_total_catch_br <- function(
 #' @noRd
 estimate_total_harvest_br <- function(
   # nolint: object_usage_linter
-  design, by_vars, variance_method, conf_level, verbose
+  design, by_vars, variance_method, conf_level, verbose,
+  call = rlang::caller_env()
 ) {
   if (verbose) {
     cli::cli_inform(c(
@@ -505,14 +508,14 @@ estimate_total_harvest_br <- function(
       "i" = paste0(
         "Call {.fn add_interviews} with {.arg n_counted} and {.arg n_interviewed} parameters."
       )
-    ))
+    ), call = call)
   }
   if (!".pi_i" %in% names(interviews)) {
     cli::cli_abort(c(
       "Bus-route total harvest estimation requires .pi_i column.",
       "x" = ".pi_i not found in interview data.",
       "i" = "Bus-route design must have inclusion probabilities computed via sampling frame."
-    ))
+    ), call = call)
   }
 
   harvest_col <- design$harvest_col
@@ -580,7 +583,8 @@ estimate_total_harvest_br <- function(
 #' @noRd
 estimate_total_release_br <- function(
   # nolint: object_usage_linter
-  design, by_vars, variance_method, conf_level, verbose
+  design, by_vars, variance_method, conf_level, verbose,
+  call = rlang::caller_env()
 ) {
   if (verbose) {
     cli::cli_inform(c(
@@ -599,14 +603,14 @@ estimate_total_release_br <- function(
       "i" = paste0(
         "Call {.fn add_interviews} with {.arg n_counted} and {.arg n_interviewed} parameters."
       )
-    ))
+    ), call = call)
   }
   if (!".pi_i" %in% names(interviews)) {
     cli::cli_abort(c(
       "Bus-route total release estimation requires .pi_i column.",
       "x" = ".pi_i not found in interview data.",
       "i" = "Bus-route design must have inclusion probabilities computed via sampling frame."
-    ))
+    ), call = call)
   }
 
   n_counted_col <- design$n_counted_col
