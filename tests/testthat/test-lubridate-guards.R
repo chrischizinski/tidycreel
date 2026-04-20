@@ -2,15 +2,26 @@
 # Verifies that lubridate is in Suggests (not Imports) in DESCRIPTION
 # and that rlang::check_installed("lubridate") guards are present in source files.
 
-# Helper: resolve path to package root relative to test file location
+# Helper: find package root (works under both devtools::test() and R CMD check)
 pkg_root <- function() {
-  # test files live at <root>/tests/testthat/
-  test_dir <- testthat::test_path(".")
-  normalizePath(file.path(test_dir, "..", ".."), mustWork = FALSE)
+  # Walk up from the test file location to find the DESCRIPTION file
+  start <- normalizePath(testthat::test_path("."), mustWork = FALSE)
+  path <- start
+  for (i in seq_len(10L)) {
+    if (file.exists(file.path(path, "DESCRIPTION"))) {
+      return(path)
+    }
+    parent <- dirname(path)
+    if (parent == path) break
+    path <- parent
+  }
+  NULL
 }
 
 test_that("DEPS-02: lubridate is in Suggests, not Imports, in DESCRIPTION", {
   root <- pkg_root()
+  skip_if(is.null(root), "Cannot locate package root")
+
   desc_lines <- readLines(file.path(root, "DESCRIPTION"))
 
   # Collect Imports lines (start line + continuation lines with leading whitespace)
@@ -54,21 +65,27 @@ test_that("DEPS-02: lubridate is in Suggests, not Imports, in DESCRIPTION", {
 
 test_that("DEPS-02: check_installed guard for lubridate exists in schedule-generators.R", {
   root <- pkg_root()
-  lines <- readLines(file.path(root, "R", "schedule-generators.R"))
+  src <- if (!is.null(root)) file.path(root, "R", "schedule-generators.R") else ""
+  skip_if(!file.exists(src), "Source file not available in this context")
+  lines <- readLines(src)
   matches <- grep("check_installed.*lubridate", lines, value = TRUE)
   expect_gte(length(matches), 1L)
 })
 
 test_that("DEPS-02: check_installed guards for lubridate exist in schedule-print.R (2 guards)", {
   root <- pkg_root()
-  lines <- readLines(file.path(root, "R", "schedule-print.R"))
+  src <- if (!is.null(root)) file.path(root, "R", "schedule-print.R") else ""
+  skip_if(!file.exists(src), "Source file not available in this context")
+  lines <- readLines(src)
   matches <- grep("check_installed.*lubridate", lines, value = TRUE)
   expect_gte(length(matches), 2L)
 })
 
 test_that("DEPS-02: check_installed guard for lubridate exists in autoplot-methods.R", {
   root <- pkg_root()
-  lines <- readLines(file.path(root, "R", "autoplot-methods.R"))
+  src <- if (!is.null(root)) file.path(root, "R", "autoplot-methods.R") else ""
+  skip_if(!file.exists(src), "Source file not available in this context")
+  lines <- readLines(src)
   matches <- grep("check_installed.*lubridate", lines, value = TRUE)
   expect_gte(length(matches), 1L)
 })
