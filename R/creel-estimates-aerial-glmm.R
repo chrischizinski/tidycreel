@@ -1,5 +1,7 @@
 #' GLMM-based aerial effort estimation with diurnal correction
 #'
+#' `r lifecycle::badge("experimental")`
+#'
 #' @description
 #' Estimates total angler effort from aerial creel surveys using a generalized
 #' linear mixed model (GLMM), following the approach of Askey et al. (2018).

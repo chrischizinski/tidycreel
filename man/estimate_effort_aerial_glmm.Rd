@@ -67,6 +67,9 @@ The default model is the quadratic temporal model from Askey (2018):
 \code{\link[lme4:glmer.nb]{lme4::glmer.nb()}}. Variance is propagated via the delta method (default) or
 parametric bootstrap (\code{\link[lme4:bootMer]{lme4::bootMer()}}).
 }
+\details{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+}
 \examples{
 \dontrun{
 data(example_aerial_glmm_counts)
