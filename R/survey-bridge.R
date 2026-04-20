@@ -124,20 +124,23 @@ get_variance_design <- function(design, variance_method) {
           } else {
             "unknown"
           }
-          cli::cli_abort(c(
-            paste0(
-              "Stratum {.val {strat_label}} has only 1 PSU \u2014 ",
-              "jackknife variance cannot be estimated."
+          cli::cli_abort(
+            c(
+              paste0(
+                "Stratum {.val {strat_label}} has only 1 PSU \u2014 ",
+                "jackknife variance cannot be estimated."
+              ),
+              "x" = paste0(
+                "A stratum must have at least 2 PSUs for jackknife ",
+                "resampling."
+              ),
+              "i" = paste0(
+                "Increase the sampling rate for stratum ",
+                "{.val {strat_label}}, or use {.code variance = 'taylor'}."
+              )
             ),
-            "x" = paste0(
-              "A stratum must have at least 2 PSUs for jackknife ",
-              "resampling."
-            ),
-            "i" = paste0(
-              "Increase the sampling rate for stratum ",
-              "{.val {strat_label}}, or use {.code variance = 'taylor'}."
-            )
-          ))
+            class = "creel_error_single_psu"
+          )
         }
         stop(e)
       }
@@ -469,17 +472,20 @@ construct_survey_design <- function(design) {
 
       if (grepl("Stratum.*has only one PSU", err_msg, ignore.case = TRUE)) {
         # Lonely PSU error
-        cli::cli_abort(c(
-          "Survey design construction failed: lonely PSU detected.",
-          "x" = paste(
-            "At least one stratum has only one PSU (Primary Sampling Unit).",
-            "Variance estimation requires 2+ PSUs per stratum."
+        cli::cli_abort(
+          c(
+            "Survey design construction failed: lonely PSU detected.",
+            "x" = paste(
+              "At least one stratum has only one PSU (Primary Sampling Unit).",
+              "Variance estimation requires 2+ PSUs per stratum."
+            ),
+            "i" = "Possible solutions:",
+            "*" = "Combine small strata with similar characteristics",
+            "*" = "Use a different stratification scheme",
+            "*" = "Collect data from more PSUs (days) in sparse strata"
           ),
-          "i" = "Possible solutions:",
-          "*" = "Combine small strata with similar characteristics",
-          "*" = "Use a different stratification scheme",
-          "*" = "Collect data from more PSUs (days) in sparse strata"
-        ))
+          class = "creel_error_single_psu"
+        )
       } else if (grepl("variable.*not found", err_msg, ignore.case = TRUE)) {
         # Column not found
         required_cols <- c(psu_col, strata_cols) # nolint: object_usage_linter
@@ -1400,17 +1406,20 @@ construct_interview_survey <- function(design) {
 
       if (grepl("Stratum.*has only one PSU", err_msg, ignore.case = TRUE)) {
         # Lonely PSU error (less likely for interviews but handle it)
-        cli::cli_abort(c(
-          "Interview survey construction failed: lonely PSU detected.",
-          "x" = paste(
-            "At least one stratum has only one observation.",
-            "Variance estimation requires 2+ observations per stratum."
+        cli::cli_abort(
+          c(
+            "Interview survey construction failed: lonely PSU detected.",
+            "x" = paste(
+              "At least one stratum has only one observation.",
+              "Variance estimation requires 2+ observations per stratum."
+            ),
+            "i" = "Possible solutions:",
+            "*" = "Combine small strata with similar characteristics",
+            "*" = "Use a different stratification scheme",
+            "*" = "Collect more interview observations in sparse strata"
           ),
-          "i" = "Possible solutions:",
-          "*" = "Combine small strata with similar characteristics",
-          "*" = "Use a different stratification scheme",
-          "*" = "Collect more interview observations in sparse strata"
-        ))
+          class = "creel_error_single_psu"
+        )
       } else if (grepl("variable.*not found", err_msg, ignore.case = TRUE)) {
         # Column not found
         required_cols <- strata_cols # nolint: object_usage_linter

@@ -20,18 +20,21 @@ wrap_survey_call <- function(expr) {
         # Extract stratum name from: "Stratum (X) has only one PSU at stage 1"
         strat <- regmatches(msg, regexpr("(?<=Stratum \\()([^)]+)", msg, perl = TRUE))
         strat_label <- if (length(strat) > 0L && nzchar(strat)) strat else "unknown" # nolint: object_usage_linter
-        cli::cli_abort(c(
-          "Stratum {.val {strat_label}} has only 1 PSU \u2014 \\
+        cli::cli_abort(
+          c(
+            "Stratum {.val {strat_label}} has only 1 PSU \u2014 \\
           variance cannot be estimated.",
-          "x" = paste0(
-            "A stratum must have at least 2 PSUs (e.g., 2 sampled days) \\
+            "x" = paste0(
+              "A stratum must have at least 2 PSUs (e.g., 2 sampled days) \\
             for variance estimation."
-          ),
-          "i" = paste0(
-            "Increase the sampling rate for stratum {.val {strat_label}}, \\
+            ),
+            "i" = paste0(
+              "Increase the sampling rate for stratum {.val {strat_label}}, \\
             or combine sparse strata before estimation."
-          )
-        ))
+            )
+          ),
+          class = "creel_error_single_psu"
+        )
       }
       stop(e)
     }
@@ -386,21 +389,27 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
 
   # Validate design$survey exists (skip for bus-route, ice, and aerial: custom dispatch below)
   if (!design$design_type %in% c("bus_route", "ice", "aerial") && is.null(design$survey)) {
-    cli::cli_abort(c(
-      "No survey design available.",
-      "x" = "Call {.fn add_counts} before estimating effort.",
-      "i" = "Example: {.code design <- add_counts(design, counts)}"
-    ))
+    cli::cli_abort(
+      c(
+        "No survey design available.",
+        "x" = "Call {.fn add_counts} before estimating effort.",
+        "i" = "Example: {.code design <- add_counts(design, counts)}"
+      ),
+      class = "creel_error_missing_survey_design"
+    )
   }
 
   # Bus-route and ice dispatch (after survey NULL check, before standard tier-2 validation)
   if (!is.null(design$design_type) && design$design_type %in% c("bus_route", "ice")) {
     if (!identical(target, "sampled_days")) {
-      cli::cli_abort(c(
-        "Expanded effort targets are not yet supported for {.val {design$design_type}} designs.",
-        "x" = "Got {.arg target = {target}}.",
-        "i" = "Use {.code target = 'sampled_days'} for now."
-      ))
+      cli::cli_abort(
+        c(
+          "Expanded effort targets are not yet supported for {.val {design$design_type}} designs.",
+          "x" = "Got {.arg target = {target}}.",
+          "i" = "Use {.code target = 'sampled_days'} for now."
+        ),
+        class = "creel_error_dispatch_unsupported"
+      )
     }
     if (verbose) {
       cli::cli_inform(c(
@@ -410,13 +419,16 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
 
     # Validate interview data exists
     if (is.null(design$interviews)) {
-      cli::cli_abort(c(
-        "Bus-route effort estimation requires interview data.",
-        "x" = "No interview data found in design.",
-        "i" = paste0(
-          "Call {.fn add_interviews} with {.arg n_counted} and {.arg n_interviewed} parameters."
-        )
-      ))
+      cli::cli_abort(
+        c(
+          "Bus-route effort estimation requires interview data.",
+          "x" = "No interview data found in design.",
+          "i" = paste0(
+            "Call {.fn add_interviews} with {.arg n_counted} and {.arg n_interviewed} parameters."
+          )
+        ),
+        class = "creel_error_missing_data"
+      )
     }
 
     # Resolve by_vars (same tidyselect pattern as standard path but against interviews)
@@ -458,18 +470,24 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
   # Aerial dispatch — svytotal scaled by h_open/v (Pollock et al. 1994 sec.15.6.1)
   if (!is.null(design$design_type) && identical(design$design_type, "aerial")) {
     if (!identical(target, "sampled_days")) {
-      cli::cli_abort(c(
-        "Expanded effort targets are not yet supported for aerial designs.",
-        "x" = "Got {.arg target = {target}}.",
-        "i" = "Use {.code target = 'sampled_days'} for now."
-      ))
+      cli::cli_abort(
+        c(
+          "Expanded effort targets are not yet supported for aerial designs.",
+          "x" = "Got {.arg target = {target}}.",
+          "i" = "Use {.code target = 'sampled_days'} for now."
+        ),
+        class = "creel_error_dispatch_unsupported"
+      )
     }
     if (is.null(design$counts)) {
-      cli::cli_abort(c(
-        "Aerial effort estimation requires count data.",
-        "x" = "No count data found in design.",
-        "i" = "Call {.fn add_counts} before estimating aerial effort."
-      ))
+      cli::cli_abort(
+        c(
+          "Aerial effort estimation requires count data.",
+          "x" = "No count data found in design.",
+          "i" = "Call {.fn add_counts} before estimating aerial effort."
+        ),
+        class = "creel_error_missing_data"
+      )
     }
     return(estimate_effort_aerial(design, variance, conf_level, verbose, effort_target = target)) # nolint: object_usage_linter
   }
@@ -2381,20 +2399,23 @@ estimate_effort_total <- function(design, variance_method, conf_level, target = 
 
   # Detect degenerate bootstrap replicate design (single-PSU strata)
   if (is.nan(se_between) && variance_method == "bootstrap") {
-    cli::cli_abort(c(
-      paste0(
-        "Bootstrap variance is {.val NaN} \u2014 one or more strata have ",
-        "only 1 PSU."
+    cli::cli_abort(
+      c(
+        paste0(
+          "Bootstrap variance is {.val NaN} \u2014 one or more strata have ",
+          "only 1 PSU."
+        ),
+        "x" = paste0(
+          "Bootstrap resampling requires at least 2 PSUs ",
+          "(sampled days) per stratum."
+        ),
+        "i" = paste0(
+          "Increase the sampling rate or use ",
+          "{.code variance = 'taylor'} for single-PSU strata."
+        )
       ),
-      "x" = paste0(
-        "Bootstrap resampling requires at least 2 PSUs ",
-        "(sampled days) per stratum."
-      ),
-      "i" = paste0(
-        "Increase the sampling rate or use ",
-        "{.code variance = 'taylor'} for single-PSU strata."
-      )
-    ))
+      class = "creel_error_single_psu"
+    )
   }
 
   # Within-day variance contribution (Rasmussen 1998; 0 when K_bar = 1)
