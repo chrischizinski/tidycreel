@@ -1,0 +1,13 @@
+bibentry(
+  bibtype = "Manual",
+  title   = "tidycreel: Tidy Interface for Creel Survey Design and Analysis",
+  author  = person(
+    given   = "Christopher",
+    family  = "Chizinski",
+    role    = c("aut", "cre"),
+    comment = c(ORCID = "0000-0001-9294-2588")
+  ),
+  year  = format(Sys.Date(), "%Y"),
+  note  = paste0("R package version ", packageVersion("tidycreel")),
+  url   = "https://github.com/chrischizinski/tidycreel"
+)
