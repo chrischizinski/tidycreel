@@ -30,14 +30,17 @@ validate_calendar_schema <- function(data) {
 
   if (!collection$isEmpty()) {
     msgs <- collection$getMessages()
-    cli::cli_abort(c(
-      "Calendar data validation failed:",
-      stats::setNames(msgs, rep("x", length(msgs))),
-      "i" = paste(
-        "Calendar data must be a data frame with at least one Date column",
-        "and one character/factor column for strata."
-      )
-    ))
+    cli::cli_abort(
+      c(
+        "Calendar data validation failed:",
+        stats::setNames(msgs, rep("x", length(msgs))),
+        "i" = paste(
+          "Calendar data must be a data frame with at least one Date column",
+          "and one character/factor column for strata."
+        )
+      ),
+      class = "creel_error_schema_validation"
+    )
   }
 
   invisible(data)
@@ -101,11 +104,14 @@ validate_creel_schedule <- function(data) {
 
   if (!collection$isEmpty()) {
     msgs <- collection$getMessages()
-    cli::cli_abort(c(
-      "creel_schedule validation failed:",
-      stats::setNames(msgs, rep("x", length(msgs))),
-      "i" = "Ensure 'date' is Date class, 'day_type' is non-NA non-empty character."
-    ))
+    cli::cli_abort(
+      c(
+        "creel_schedule validation failed:",
+        stats::setNames(msgs, rep("x", length(msgs))),
+        "i" = "Ensure 'date' is Date class, 'day_type' is non-NA non-empty character."
+      ),
+      class = "creel_error_schema_validation"
+    )
   }
 
   invisible(data)
@@ -142,14 +148,17 @@ validate_count_schema <- function(data) {
 
   if (!collection$isEmpty()) {
     msgs <- collection$getMessages()
-    cli::cli_abort(c(
-      "Count data validation failed:",
-      stats::setNames(msgs, rep("x", length(msgs))),
-      "i" = paste(
-        "Count data must be a data frame with at least one Date column",
-        "and one numeric column."
-      )
-    ))
+    cli::cli_abort(
+      c(
+        "Count data validation failed:",
+        stats::setNames(msgs, rep("x", length(msgs))),
+        "i" = paste(
+          "Count data must be a data frame with at least one Date column",
+          "and one numeric column."
+        )
+      ),
+      class = "creel_error_schema_validation"
+    )
   }
 
   invisible(data)
@@ -186,14 +195,17 @@ validate_interview_schema <- function(data) {
 
   if (!collection$isEmpty()) {
     msgs <- collection$getMessages()
-    cli::cli_abort(c(
-      "Interview data validation failed:",
-      stats::setNames(msgs, rep("x", length(msgs))),
-      "i" = paste(
-        "Interview data must be a data frame with at least one Date column",
-        "and one numeric column."
-      )
-    ))
+    cli::cli_abort(
+      c(
+        "Interview data validation failed:",
+        stats::setNames(msgs, rep("x", length(msgs))),
+        "i" = paste(
+          "Interview data must be a data frame with at least one Date column",
+          "and one numeric column."
+        )
+      ),
+      class = "creel_error_schema_validation"
+    )
   }
 
   invisible(data)

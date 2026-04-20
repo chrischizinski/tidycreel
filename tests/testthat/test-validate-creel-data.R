@@ -3,18 +3,18 @@
 # Helpers ---------------------------------------------------------------------
 make_counts <- function() {
   data.frame(
-    date     = as.Date(c("2024-06-01", "2024-06-02", "2024-06-08")),
+    date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-08")),
     day_type = c("weekday", "weekday", "weekend"),
-    count    = c(10L, 14L, 30L),
+    count = c(10L, 14L, 30L),
     stringsAsFactors = FALSE
   )
 }
 
 make_interviews <- function() {
   data.frame(
-    date      = as.Date(c("2024-06-01", "2024-06-02")),
+    date = as.Date(c("2024-06-01", "2024-06-02")),
     fish_kept = c(2L, 5L),
-    species   = c("walleye", "bass"),
+    species = c("walleye", "bass"),
     stringsAsFactors = FALSE
   )
 }
@@ -24,28 +24,28 @@ make_interviews <- function() {
 test_that("VCDV-01: errors when both counts and interviews are NULL", {
   expect_error(
     validate_creel_data(),
-    class = "rlang_error"
+    class = "creel_error_design_validation"
   )
 })
 
 test_that("VCDV-02: errors when counts is not a data frame", {
   expect_error(
     validate_creel_data(counts = list(a = 1)),
-    class = "rlang_error"
+    class = "creel_error_design_validation"
   )
 })
 
 test_that("VCDV-03: errors when interviews is not a data frame", {
   expect_error(
     validate_creel_data(interviews = "bad"),
-    class = "rlang_error"
+    class = "creel_error_design_validation"
   )
 })
 
 test_that("VCDV-04: errors on invalid na_threshold", {
   expect_error(
     validate_creel_data(counts = make_counts(), na_threshold = 1.5),
-    class = "rlang_error"
+    class = "creel_error_design_validation"
   )
 })
 
@@ -55,7 +55,7 @@ test_that("VCDV-05: errors on invalid date_range", {
       counts     = make_counts(),
       date_range = c("2020-01-01", "2025-01-01")
     ),
-    class = "rlang_error"
+    class = "creel_error_design_validation"
   )
 })
 
@@ -147,7 +147,7 @@ test_that("VCDV-15: non-negative numerics are pass", {
 
 test_that("VCDV-16: empty strings in character column trigger warn", {
   df <- data.frame(
-    date    = as.Date("2024-06-01"),
+    date = as.Date("2024-06-01"),
     species = "",
     stringsAsFactors = FALSE
   )
