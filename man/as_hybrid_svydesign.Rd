@@ -49,11 +49,13 @@ column (\code{"access"} or \code{"roving"}) and a \code{weight} column derived f
 the sampling fractions.
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+}
+\details{
 Combines count data from access-point and roving survey components into a
 single \code{survey::svydesign} object suitable for effort estimation via
 \code{\link[=estimate_effort]{estimate_effort()}}.
-}
-\details{
+
 A hybrid design is appropriate when a survey uses both fixed access-point
 counts (e.g., boat-launch interviews with angler counts) and roving-route
 counts (e.g., progressive counts along a shoreline transect) within the same

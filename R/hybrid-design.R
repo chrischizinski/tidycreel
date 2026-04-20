@@ -2,6 +2,8 @@
 
 #' Construct a hybrid access + roving survey design
 #'
+#' `r lifecycle::badge("experimental")`
+#'
 #' Combines count data from access-point and roving survey components into a
 #' single `survey::svydesign` object suitable for effort estimation via
 #' [estimate_effort()].
@@ -67,14 +69,15 @@
 #'
 #' @export
 as_hybrid_svydesign <- function(
-    access_data,
-    roving_data,
-    date_col         = "date",
-    strata_col       = "day_type",
-    count_col        = "count",
-    access_fraction  = NULL,
-    roving_fraction  = NULL,
-    fpc              = TRUE) {
+  access_data,
+  roving_data,
+  date_col = "date",
+  strata_col = "day_type",
+  count_col = "count",
+  access_fraction = NULL,
+  roving_fraction = NULL,
+  fpc = TRUE
+) {
   # ---- Input validation ----------------------------------------------------
   for (arg_name in c("date_col", "strata_col", "count_col")) {
     val <- get(arg_name)
@@ -144,14 +147,16 @@ as_hybrid_svydesign <- function(
     msgs <- character(0)
     if (length(only_access) > 0L) {
       msgs <- c(msgs, paste0(
-        "i" = paste(length(only_access),
+        "i" = paste(
+          length(only_access),
           "date-stratum combination(s) only in access_data"
         )
       ))
     }
     if (length(only_roving) > 0L) {
       msgs <- c(msgs, paste0(
-        "i" = paste(length(only_roving),
+        "i" = paste(
+          length(only_roving),
           "date-stratum combination(s) only in roving_data"
         )
       ))
@@ -188,8 +193,8 @@ as_hybrid_svydesign <- function(
     roving_fraction[as.character(combined[[strata_col]])]
   )
 
-  ids_formula     <- stats::as.formula("~1")
-  strata_formula  <- stats::as.formula(paste0("~", strata_col))
+  ids_formula <- stats::as.formula("~1")
+  strata_formula <- stats::as.formula(paste0("~", strata_col))
   weights_formula <- stats::as.formula("~weight")
 
   if (fpc) {
@@ -211,7 +216,7 @@ as_hybrid_svydesign <- function(
 
   class(design) <- c("creel_hybrid_svydesign", class(design))
   attr(design, "component_col") <- "component"
-  attr(design, "count_col")     <- count_col
+  attr(design, "count_col") <- count_col
   design
 }
 

@@ -2,6 +2,8 @@
 
 #' Compare multiple survey design estimates side by side
 #'
+#' `r lifecycle::badge("experimental")`
+#'
 #' Takes a named list of `creel_estimates` objects (from different survey
 #' designs or methods), extracts key precision metrics from each, and returns
 #' a tidy comparison tibble.  An `autoplot()` method renders a forest plot of
@@ -84,18 +86,18 @@ compare_designs <- function(designs, metric = "estimate") {
 
 # Build one data frame of rows for a single design.
 .build_comparison_row <- function(design_name, est, metric) {
-  has_se       <- "se" %in% names(est)
+  has_se <- "se" %in% names(est)
   has_ci_lower <- "ci_lower" %in% names(est)
   has_ci_upper <- "ci_upper" %in% names(est)
-  has_n        <- "n" %in% names(est)
+  has_n <- "n" %in% names(est)
 
   n_rows <- nrow(est)
 
   out <- data.frame(
-    design   = rep(design_name, n_rows),
+    design = rep(design_name, n_rows),
     estimate = est[[metric]],
-    se       = if (has_se) est[["se"]] else rep(NA_real_, n_rows),
-    rse      = if (has_se) {
+    se = if (has_se) est[["se"]] else rep(NA_real_, n_rows),
+    rse = if (has_se) {
       abs(est[["se"]]) / pmax(abs(est[[metric]]), .Machine$double.eps)
     } else {
       rep(NA_real_, n_rows)
@@ -107,7 +109,7 @@ compare_designs <- function(designs, metric = "estimate") {
     } else {
       rep(NA_real_, n_rows)
     },
-    n        = if (has_n) est[["n"]] else rep(NA_integer_, n_rows),
+    n = if (has_n) est[["n"]] else rep(NA_integer_, n_rows),
     stringsAsFactors = FALSE
   )
 
@@ -163,8 +165,8 @@ autoplot.creel_design_comparison <- function(object, title = NULL, ...) {
   p <- ggplot2::ggplot(
     object,
     ggplot2::aes(
-      x     = .data[["estimate"]], # nolint: object_usage_linter
-      y     = .data[["design"]], # nolint: object_usage_linter
+      x = .data[["estimate"]], # nolint: object_usage_linter
+      y = .data[["design"]], # nolint: object_usage_linter
       colour = .data[["design"]] # nolint: object_usage_linter
     )
   ) +
