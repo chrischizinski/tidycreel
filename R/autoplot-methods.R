@@ -310,6 +310,7 @@ autoplot.creel_length_distribution <- function(object, title = NULL,
 #'
 #' @export
 autoplot.creel_schedule <- function(object, title = "Creel Schedule", ...) {
+  rlang::check_installed("lubridate")
   # Reconstruct full season from min/max date in the schedule
   min_date <- min(object$date)
   max_date <- max(object$date)
