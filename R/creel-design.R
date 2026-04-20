@@ -706,10 +706,13 @@ validate_creel_design <- function(x) {
 
   # Tier 1: Date column has no NA values
   if (anyNA(cal[[x$date_col]])) {
-    cli::cli_abort(c(
-      "Column {.var {x$date_col}} must not contain {.val NA} values.",
-      "i" = "Remove or impute missing dates before creating a design."
-    ))
+    cli::cli_abort(
+      c(
+        "Column {.var {x$date_col}} must not contain {.val NA} values.",
+        "i" = "Remove or impute missing dates before creating a design."
+      ),
+      class = "creel_error_schema_validation"
+    )
   }
 
   # Tier 1: Strata columns exist and are character/factor

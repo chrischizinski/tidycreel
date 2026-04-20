@@ -27,18 +27,18 @@ test_that("validate_calendar_schema() accepts valid calendar data", {
 test_that("validate_calendar_schema() rejects non-data-frame input", {
   expect_error(
     validate_calendar_schema("not a data frame"),
-    class = "rlang_error"
+    class = "creel_error_schema_validation"
   )
   expect_error(
     validate_calendar_schema(list(date = as.Date("2024-06-01"))),
-    class = "rlang_error"
+    class = "creel_error_schema_validation"
   )
 })
 
 test_that("validate_calendar_schema() rejects empty data frames", {
   expect_error(
     validate_calendar_schema(data.frame()),
-    class = "rlang_error"
+    class = "creel_error_schema_validation"
   )
 })
 
@@ -49,7 +49,7 @@ test_that("validate_calendar_schema() rejects data without Date column", {
   )
   expect_error(
     validate_calendar_schema(no_date),
-    class = "rlang_error"
+    class = "creel_error_schema_validation"
   )
 })
 
@@ -60,7 +60,7 @@ test_that("validate_calendar_schema() rejects data with character date (not Date
   )
   expect_error(
     validate_calendar_schema(char_date),
-    class = "rlang_error"
+    class = "creel_error_schema_validation"
   )
 })
 
@@ -71,7 +71,7 @@ test_that("validate_calendar_schema() rejects data without character/factor colu
   )
   expect_error(
     validate_calendar_schema(no_char),
-    class = "rlang_error"
+    class = "creel_error_schema_validation"
   )
 })
 
@@ -104,18 +104,18 @@ test_that("validate_count_schema() accepts valid count data", {
 test_that("validate_count_schema() rejects non-data-frame input", {
   expect_error(
     validate_count_schema("not a data frame"),
-    class = "rlang_error"
+    class = "creel_error_schema_validation"
   )
   expect_error(
     validate_count_schema(matrix(1:4, nrow = 2)),
-    class = "rlang_error"
+    class = "creel_error_schema_validation"
   )
 })
 
 test_that("validate_count_schema() rejects empty data frames", {
   expect_error(
     validate_count_schema(data.frame()),
-    class = "rlang_error"
+    class = "creel_error_schema_validation"
   )
 })
 
@@ -126,7 +126,7 @@ test_that("validate_count_schema() rejects data without Date column", {
   )
   expect_error(
     validate_count_schema(no_date),
-    class = "rlang_error"
+    class = "creel_error_schema_validation"
   )
 })
 
@@ -137,7 +137,7 @@ test_that("validate_count_schema() rejects data without numeric column", {
   )
   expect_error(
     validate_count_schema(no_numeric),
-    class = "rlang_error"
+    class = "creel_error_schema_validation"
   )
 })
 
@@ -148,6 +148,6 @@ test_that("validate_count_schema() rejects data with only character columns", {
   )
   expect_error(
     validate_count_schema(only_char),
-    class = "rlang_error"
+    class = "creel_error_schema_validation"
   )
 })

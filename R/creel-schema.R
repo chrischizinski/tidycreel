@@ -196,10 +196,13 @@ creel_schema <- function(
 #' @export
 validate_creel_schema <- function(schema) {
   if (!inherits(schema, "creel_schema")) {
-    cli::cli_abort(c(
-      "{.arg schema} must be a {.cls creel_schema} object.",
-      "i" = "Create one with {.fn creel_schema}."
-    ))
+    cli::cli_abort(
+      c(
+        "{.arg schema} must be a {.cls creel_schema} object.",
+        "i" = "Create one with {.fn creel_schema}."
+      ),
+      class = "creel_error_schema_validation"
+    )
   }
 
   required <- CANONICAL_COLUMNS[[schema$survey_type]] # nolint: object_name_linter
@@ -221,10 +224,13 @@ validate_creel_schema <- function(schema) {
   }
 
   if (length(missing_bullets) > 0) {
-    cli::cli_abort(c(
-      "creel_schema validation failed for survey_type {.val {schema$survey_type}}:",
-      missing_bullets
-    ))
+    cli::cli_abort(
+      c(
+        "creel_schema validation failed for survey_type {.val {schema$survey_type}}:",
+        missing_bullets
+      ),
+      class = "creel_error_schema_validation"
+    )
   }
 
   invisible(schema)

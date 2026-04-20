@@ -68,7 +68,7 @@ test_that("creel_design() fails when date column is not Date class", {
   # Schema validator catches this (no Date column exists in the data frame)
   expect_error(
     creel_design(cal, date = date, strata = day_type),
-    class = "rlang_error"
+    class = "creel_error_schema_validation"
   )
 })
 
@@ -81,7 +81,7 @@ test_that("creel_design() fails when date column is numeric", {
   # Schema validator catches this (no Date column exists in the data frame)
   expect_error(
     creel_design(cal, date = date, strata = day_type),
-    class = "rlang_error"
+    class = "creel_error_schema_validation"
   )
 })
 
@@ -93,7 +93,7 @@ test_that("creel_design() fails when date column contains NA values", {
 
   expect_error(
     creel_design(cal, date = date, strata = day_type),
-    class = "rlang_error"
+    class = "creel_error_schema_validation"
   )
   expect_error(
     creel_design(cal, date = date, strata = day_type),
@@ -110,7 +110,7 @@ test_that("creel_design() fails when strata column is numeric", {
   # Schema validator catches this (no character/factor column exists)
   expect_error(
     creel_design(cal, date = date, strata = day_type),
-    class = "rlang_error"
+    class = "creel_error_schema_validation"
   )
 })
 

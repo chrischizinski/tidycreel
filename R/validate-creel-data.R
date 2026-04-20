@@ -59,13 +59,15 @@
 #' @family "Reporting & Diagnostics"
 #' @export
 validate_creel_data <- function(
-    counts      = NULL,
-    interviews  = NULL,
-    na_threshold = 0.10,
-    date_range  = c(as.Date("1970-01-01"), as.Date("2100-12-31"))) {
+  counts = NULL,
+  interviews = NULL,
+  na_threshold = 0.10,
+  date_range = c(as.Date("1970-01-01"), as.Date("2100-12-31"))
+) {
   if (is.null(counts) && is.null(interviews)) {
     cli::cli_abort(
-      "At least one of {.arg counts} or {.arg interviews} must be provided."
+      "At least one of {.arg counts} or {.arg interviews} must be provided.",
+      class = "creel_error_design_validation"
     )
   }
 
@@ -74,7 +76,8 @@ validate_creel_data <- function(
     na_threshold < 0 || na_threshold > 1
   if (bad_threshold) {
     cli::cli_abort(
-      "{.arg na_threshold} must be a single number in [0, 1]."
+      "{.arg na_threshold} must be a single number in [0, 1].",
+      class = "creel_error_design_validation"
     )
   }
 
@@ -84,7 +87,8 @@ validate_creel_data <- function(
       anyNA(date_range)
   ) {
     cli::cli_abort(
-      "{.arg date_range} must be a length-2 {.cls Date} vector with no NAs."
+      "{.arg date_range} must be a length-2 {.cls Date} vector with no NAs.",
+      class = "creel_error_design_validation"
     )
   }
 
@@ -92,14 +96,18 @@ validate_creel_data <- function(
 
   if (!is.null(counts)) {
     if (!is.data.frame(counts)) {
-      cli::cli_abort("{.arg counts} must be a data frame.")
+      cli::cli_abort("{.arg counts} must be a data frame.",
+        class = "creel_error_design_validation"
+      )
     }
     rows <- c(rows, .check_table(counts, "counts", na_threshold, date_range))
   }
 
   if (!is.null(interviews)) {
     if (!is.data.frame(interviews)) {
-      cli::cli_abort("{.arg interviews} must be a data frame.")
+      cli::cli_abort("{.arg interviews} must be a data frame.",
+        class = "creel_error_design_validation"
+      )
     }
     rows <- c(
       rows,
@@ -212,9 +220,9 @@ validate_creel_data <- function(
 # Build a single-row data frame.
 .make_row <- function(table, column, check, status, detail) {
   data.frame(
-    table  = table,
+    table = table,
     column = column,
-    check  = check,
+    check = check,
     status = status,
     detail = detail,
     stringsAsFactors = FALSE
