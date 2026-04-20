@@ -408,6 +408,7 @@ generate_schedule <- function(
   seed,
   special_periods = NULL
 ) {
+  rlang::check_installed("lubridate")
   # Validate mutually-exclusive intensity args
   if (!is.null(n_days) && !is.null(sampling_rate)) {
     cli::cli_abort(c(

@@ -220,6 +220,7 @@ build_month_grid <- function(month_start, cell_lookup, mode = "ascii") {
 #'
 #' @export
 format.creel_schedule <- function(x, ...) {
+  rlang::check_installed("lubridate")
   # One-line summary header (match existing cli_text format)
   header <- cli::cli_format_method({
     cli::cli_text(
@@ -331,6 +332,7 @@ print.creel_schedule <- function(x, ...) {
 #' @rawNamespace S3method(knitr::knit_print, creel_schedule)
 knit_print.creel_schedule <- function(x, ...) {
   rlang::check_installed("knitr", reason = "to render creel_schedule in documents")
+  rlang::check_installed("lubridate")
 
   if (!"date" %in% names(x)) {
     return(knitr::asis_output("*(no date column to render calendar)*"))
