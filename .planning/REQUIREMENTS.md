@@ -19,7 +19,7 @@
 ### Dependencies
 
 - [x] **DEPS-01**: `scales` removed from Imports (one `sprintf()` replacement in survey-bridge.R)
-- [ ] **DEPS-02**: `lubridate` demoted to Suggests with `check_installed()` guards at all use sites
+- [x] **DEPS-02**: `lubridate` demoted to Suggests with `check_installed()` guards at all use sites
 
 ### Testing
 
@@ -67,7 +67,7 @@
 | API-01 | Phase 76 | Complete |
 | API-02 | Phase 76 | Complete |
 | DEPS-01 | Phase 76 | Complete |
-| DEPS-02 | Phase 77 | Pending |
+| DEPS-02 | Phase 77 | Complete |
 | CODE-02 | Phase 77 | Pending |
 | CODE-03 | Phase 77 | Pending |
 | CODE-01 | Phase 78 | Pending |

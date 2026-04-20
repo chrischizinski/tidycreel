@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: milestone
 status: planning
-stopped_at: Completed 76-04-PLAN.md (integration gate — all Phase 76 rOpenSci blockers confirmed closed)
-last_updated: "2026-04-20T14:30:00.433Z"
+stopped_at: Completed 77-01-PLAN.md — lubridate demoted to Suggests with check_installed guards
+last_updated: "2026-04-20T20:07:30.324Z"
 last_activity: 2026-04-19 — Roadmap created for M023 (Phases 76–80)
 progress:
   total_phases: 5
   completed_phases: 1
-  total_plans: 4
-  completed_plans: 4
+  total_plans: 7
+  completed_plans: 5
   percent: 0
 ---
 
@@ -19,7 +19,7 @@ progress:
 **Milestone:** M023 — Quality, Polish, and rOpenSci Readiness — v1.4.0
 **Status:** Ready to plan
 
-**Last session:** 2026-04-20T14:20:19.517Z
+**Last session:** 2026-04-20T20:07:30.322Z
 
 ## Project Reference
 
@@ -55,6 +55,7 @@ Progress: [░░░░░░░░░░] 0% (0/5 phases complete)
 | Phase 76-ropensci-blockers P02 | 639 | 3 tasks | 13 files |
 | Phase 76-ropensci-blockers P03 | 15 | 2 tasks | 8 files |
 | Phase 76-ropensci-blockers P04 | 10 | 2 tasks | 0 files |
+| Phase 77-dependency-reduction-and-caller-context P01 | 11min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -74,6 +75,8 @@ Recent decisions affecting current work:
 - [Phase 76-03]: Boundary condition for mor_truncation_message warning changed from >0.10 to >=0.10 to match test expectations (10% triggers warning)
 - [Phase 76-03]: nolint: object_usage_linter applied to pct_label — lintr cannot detect variable use inside cli glue strings
 - [Phase 76-ropensci-blockers]: Phase 76-04: Lifecycle badge SVG visual verification approved — renders as colored pill badge in pkgdown docs for estimate_effort_aerial_glmm, as_hybrid_svydesign, and compare_designs
+- [Phase 77-01]: lubridate guard uses bare rlang::check_installed('lubridate') with no reason argument — per locked plan decision
+- [Phase 77-01]: Soft-dependency pattern established: package in Suggests + rlang::check_installed() at every user-visible entry point that calls it
 
 ### Pending Todos
 
@@ -86,5 +89,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-04-19
-Stopped at: Completed 76-04-PLAN.md (integration gate — all Phase 76 rOpenSci blockers confirmed closed)
+Stopped at: Completed 77-01-PLAN.md — lubridate demoted to Suggests with check_installed guards
 Resume file: None
