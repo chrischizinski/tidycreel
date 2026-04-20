@@ -58,7 +58,11 @@ Plans:
   2. `rlang::caller_env()` is passed through all bus-route estimator internal helpers so that user-facing error messages cite the user's call frame, not an internal function name
   3. `get_site_contributions()` is defined in the architectural layer identified in 72-ARCH-REVIEW.md (A1 finding); its previous location is removed
   4. `rcmdcheck` continues to pass with 0 errors/warnings after the moves
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 77-01-PLAN.md — lubridate demotion: DESCRIPTION + check_installed guards at 4 entry points
+- [ ] 77-02-PLAN.md — caller_env threading in 5 bus-route internals + get_site_contributions() relocation
+- [ ] 77-03-PLAN.md — Integration gate: full test suite + rcmdcheck + human verification
 
 ### Phase 78: Code Quality and Snapshot Testing
 **Goal**: Every exported function has a @family tag enabling pkgdown grouping, and expect_snapshot() covers the 6 priority output methods identified in 74-TESTING-STRATEGY.md
@@ -103,7 +107,7 @@ Plans:
 | 74. Quality Bar Assessment | M022 | 2/2 | Complete | 2026-04-18 |
 | 75. Performance Optimization | M022 | 3/3 | Complete | 2026-04-19 |
 | 76. rOpenSci Blockers | 4/4 | Complete    | 2026-04-20 | - |
-| 77. Dependency Reduction and Caller Context | M023 | 0/TBD | Not started | - |
+| 77. Dependency Reduction and Caller Context | M023 | 0/3 | Not started | - |
 | 78. Code Quality and Snapshot Testing | M023 | 0/TBD | Not started | - |
 | 79. Property-Based Testing and Coverage Gate | M023 | 0/TBD | Not started | - |
 | 80. Architecture Decision and Human Verification | M023 | 0/TBD | Not started | - |
