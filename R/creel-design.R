@@ -291,30 +291,39 @@ creel_design <- function(calendar,
 
   # --- Enum guard: reject unknown survey types ---
   if (!survey_type %in% VALID_SURVEY_TYPES) {
-    cli::cli_abort(c(
-      "{.arg survey_type} {.val {survey_type}} is not recognized.",
-      "x" = "Unknown survey type: {.val {survey_type}}.",
-      "i" = "Valid types are: {.val {VALID_SURVEY_TYPES}}."
-    ))
+    cli::cli_abort(
+      c(
+        "{.arg survey_type} {.val {survey_type}} is not recognized.",
+        "x" = "Unknown survey type: {.val {survey_type}}.",
+        "i" = "Valid types are: {.val {VALID_SURVEY_TYPES}}."
+      ),
+      class = "creel_error_invalid_survey_type"
+    )
   }
 
   # --- Bus-Route branch ---
   bus_route <- NULL
   if (identical(survey_type, "bus_route")) {
     if (is.null(sampling_frame) || !is.data.frame(sampling_frame)) {
-      cli::cli_abort(c(
-        "{.arg sampling_frame} must be a data frame when {.arg survey_type} is {.val bus_route}.",
-        "i" = "Provide a data frame with site, probability, and optional circuit columns."
-      ))
+      cli::cli_abort(
+        c(
+          "{.arg sampling_frame} must be a data frame when {.arg survey_type} is {.val bus_route}.",
+          "i" = "Provide a data frame with site, probability, and optional circuit columns."
+        ),
+        class = "creel_error_invalid_input"
+      )
     }
 
     # Resolve p_site column (tidy selector, required)
     p_site_quo <- rlang::enquo(p_site)
     if (rlang::quo_is_null(p_site_quo)) {
-      cli::cli_abort(c(
-        "{.arg p_site} is required when {.arg survey_type} is {.val bus_route}.",
-        "i" = "Specify the column in {.arg sampling_frame} that holds site sampling probabilities."
-      ))
+      cli::cli_abort(
+        c(
+          "{.arg p_site} is required when {.arg survey_type} is {.val bus_route}.",
+          "i" = "Specify the column in {.arg sampling_frame} that holds site sampling probabilities."
+        ),
+        class = "creel_error_invalid_input"
+      )
     }
     p_site_col <- resolve_single_col(p_site_quo, sampling_frame, "p_site", rlang::caller_env())
 
@@ -323,10 +332,13 @@ creel_design <- function(calendar,
     if (!rlang::quo_is_null(site_quo)) {
       site_frame_col <- resolve_single_col(site_quo, sampling_frame, "site", rlang::caller_env())
     } else {
-      cli::cli_abort(c(
-        "{.arg site} is required when {.arg survey_type} is {.val bus_route}.",
-        "i" = "Specify the column in {.arg sampling_frame} that identifies sites."
-      ))
+      cli::cli_abort(
+        c(
+          "{.arg site} is required when {.arg survey_type} is {.val bus_route}.",
+          "i" = "Specify the column in {.arg sampling_frame} that identifies sites."
+        ),
+        class = "creel_error_invalid_input"
+      )
     }
 
     # Resolve circuit column (optional; if omitted, default to single circuit ".circuit")
@@ -349,19 +361,25 @@ creel_design <- function(calendar,
         error = function(e) {
           val <- rlang::eval_tidy(p_period_quo)
           if (!is.numeric(val) || length(val) != 1) {
-            cli::cli_abort(c(
-              "{.arg p_period} must be a column name in {.arg sampling_frame} or a single numeric value.",
-              "x" = "Got {.cls {class(val)[1]}} of length {length(val)}."
-            ))
+            cli::cli_abort(
+              c(
+                "{.arg p_period} must be a column name in {.arg sampling_frame} or a single numeric value.",
+                "x" = "Got {.cls {class(val)[1]}} of length {length(val)}."
+              ),
+              class = "creel_error_invalid_input"
+            )
           }
           p_period_scalar <<- val
         }
       )
     } else {
-      cli::cli_abort(c(
-        "{.arg p_period} is required when {.arg survey_type} is {.val bus_route}.",
-        "i" = "Supply a column name from {.arg sampling_frame} or a scalar numeric in (0, 1]."
-      ))
+      cli::cli_abort(
+        c(
+          "{.arg p_period} is required when {.arg survey_type} is {.val bus_route}.",
+          "i" = "Supply a column name from {.arg sampling_frame} or a scalar numeric in (0, 1]."
+        ),
+        class = "creel_error_invalid_input"
+      )
     }
 
     # Build internal bus_route data frame with standardized column names
@@ -725,22 +743,28 @@ validate_creel_design <- function(x) {
     p_site_vals <- br[[p_site_col]]
     if (any(is.na(p_site_vals)) || any(p_site_vals <= 0) || any(p_site_vals > 1)) {
       bad <- which(is.na(p_site_vals) | p_site_vals <= 0 | p_site_vals > 1) # nolint: object_usage_linter
-      cli::cli_abort(c(
-        "All {.field p_site} values must be in the range (0, 1].",
-        "x" = "{length(bad)} value{?s} out of range at row{?s} {bad}.",
-        "i" = "Sampling probabilities must be positive and at most 1.0."
-      ))
+      cli::cli_abort(
+        c(
+          "All {.field p_site} values must be in the range (0, 1].",
+          "x" = "{length(bad)} value{?s} out of range at row{?s} {bad}.",
+          "i" = "Sampling probabilities must be positive and at most 1.0."
+        ),
+        class = "creel_error_invalid_input"
+      )
     }
 
     # All p_period values must be in (0, 1]
     p_period_vals <- br[[p_period_col]]
     if (any(is.na(p_period_vals)) || any(p_period_vals <= 0) || any(p_period_vals > 1)) {
       bad <- which(is.na(p_period_vals) | p_period_vals <= 0 | p_period_vals > 1) # nolint: object_usage_linter
-      cli::cli_abort(c(
-        "All {.field p_period} values must be in the range (0, 1].",
-        "x" = "{length(bad)} value{?s} out of range at row{?s} {bad}.",
-        "i" = "Sampling probabilities must be positive and at most 1.0."
-      ))
+      cli::cli_abort(
+        c(
+          "All {.field p_period} values must be in the range (0, 1].",
+          "x" = "{length(bad)} value{?s} out of range at row{?s} {bad}.",
+          "i" = "Sampling probabilities must be positive and at most 1.0."
+        ),
+        class = "creel_error_invalid_input"
+      )
     }
 
     # p_site values must sum to 1.0 per circuit (tolerance 1e-6)
@@ -749,11 +773,14 @@ validate_creel_design <- function(x) {
       circ_rows <- br[[circuit_col]] == circ
       circ_sum <- sum(br[[p_site_col]][circ_rows])
       if (abs(circ_sum - 1.0) > 1e-6) {
-        cli::cli_abort(c(
-          "{.field p_site} values must sum to 1.0 within each circuit.",
-          "x" = "Circuit {.val {circ}}: sum = {round(circ_sum, 8)} (tolerance 1e-6).",
-          "i" = "Adjust {.field p_site} values so they sum to exactly 1.0 per circuit."
-        ))
+        cli::cli_abort(
+          c(
+            "{.field p_site} values must sum to 1.0 within each circuit.",
+            "x" = "Circuit {.val {circ}}: sum = {round(circ_sum, 8)} (tolerance 1e-6).",
+            "i" = "Adjust {.field p_site} values so they sum to exactly 1.0 per circuit."
+          ),
+          class = "creel_error_invalid_input"
+        )
       }
     }
 
@@ -765,11 +792,14 @@ validate_creel_design <- function(x) {
       if (circ_range > 1e-10) {
         p_min <- round(min(circ_p_period), 8) # nolint: object_usage_linter
         p_max <- round(max(circ_p_period), 8) # nolint: object_usage_linter
-        cli::cli_abort(c(
-          "p_period must be constant within each circuit.",
-          "x" = "Circuit {.val {circ}} has differing {.field p_period} values (min={p_min}, max={p_max}).",
-          "i" = "p_period is the probability of selecting the circuit's sampling period; it should not vary by site."
-        ))
+        cli::cli_abort(
+          c(
+            "p_period must be constant within each circuit.",
+            "x" = "Circuit {.val {circ}} has differing {.field p_period} values (min={p_min}, max={p_max}).",
+            "i" = "p_period is the probability of selecting the circuit's sampling period; it should not vary by site."
+          ),
+          class = "creel_error_invalid_input"
+        )
       }
     }
 
@@ -778,11 +808,14 @@ validate_creel_design <- function(x) {
     pi_i_vals <- br[[pi_i_col]]
     if (any(is.na(pi_i_vals)) || any(pi_i_vals <= 0) || any(pi_i_vals > 1)) {
       bad <- which(is.na(pi_i_vals) | pi_i_vals <= 0 | pi_i_vals > 1) # nolint: object_usage_linter
-      cli::cli_abort(c(
-        "Computed inclusion probabilities ({.field .pi_i}) must be in the range (0, 1].",
-        "x" = "{length(bad)} value{?s} out of range at row{?s} {bad}.",
-        "i" = "pi_i = p_site * p_period must be a valid probability."
-      ))
+      cli::cli_abort(
+        c(
+          "Computed inclusion probabilities ({.field .pi_i}) must be in the range (0, 1].",
+          "x" = "{length(bad)} value{?s} out of range at row{?s} {bad}.",
+          "i" = "pi_i = p_site * p_period must be a valid probability."
+        ),
+        class = "creel_error_invalid_input"
+      )
     }
   }
 
@@ -2316,18 +2349,24 @@ print.creel_design <- function(x, ...) {
 #' @export
 get_sampling_frame <- function(design) {
   if (!inherits(design, "creel_design")) {
-    cli::cli_abort(c(
-      "{.arg design} must be a {.cls creel_design} object.",
-      "x" = "{.arg design} is {.cls {class(design)[1]}}.",
-      "i" = "Create a design with {.fn creel_design}."
-    ))
+    cli::cli_abort(
+      c(
+        "{.arg design} must be a {.cls creel_design} object.",
+        "x" = "{.arg design} is {.cls {class(design)[1]}}.",
+        "i" = "Create a design with {.fn creel_design}."
+      ),
+      class = "creel_error_invalid_input"
+    )
   }
   if (is.null(design$bus_route)) {
-    cli::cli_abort(c(
-      "{.fn get_sampling_frame} is only available for bus-route designs.",
-      "x" = "This design has {.field design_type} = {.val {design$design_type}}.",
-      "i" = "Create a bus-route design with {.code creel_design(..., survey_type = 'bus_route')}."
-    ))
+    cli::cli_abort(
+      c(
+        "{.fn get_sampling_frame} is only available for bus-route designs.",
+        "x" = "This design has {.field design_type} = {.val {design$design_type}}.",
+        "i" = "Create a bus-route design with {.code creel_design(..., survey_type = 'bus_route')}."
+      ),
+      class = "creel_error_invalid_input"
+    )
   }
   design$bus_route$data
 }
@@ -2384,18 +2423,24 @@ get_sampling_frame <- function(design) {
 #' @export
 get_inclusion_probs <- function(design) {
   if (!inherits(design, "creel_design")) {
-    cli::cli_abort(c(
-      "{.arg design} must be a {.cls creel_design} object.",
-      "x" = "{.arg design} is {.cls {class(design)[1]}}.",
-      "i" = "Create a design with {.fn creel_design}."
-    ))
+    cli::cli_abort(
+      c(
+        "{.arg design} must be a {.cls creel_design} object.",
+        "x" = "{.arg design} is {.cls {class(design)[1]}}.",
+        "i" = "Create a design with {.fn creel_design}."
+      ),
+      class = "creel_error_invalid_input"
+    )
   }
   if (is.null(design$bus_route)) {
-    cli::cli_abort(c(
-      "{.fn get_inclusion_probs} is only available for bus-route designs.",
-      "x" = "This design has {.field design_type} = {.val {design$design_type}}.",
-      "i" = "Create a bus-route design with {.code creel_design(..., survey_type = 'bus_route')}."
-    ))
+    cli::cli_abort(
+      c(
+        "{.fn get_inclusion_probs} is only available for bus-route designs.",
+        "x" = "This design has {.field design_type} = {.val {design$design_type}}.",
+        "i" = "Create a bus-route design with {.code creel_design(..., survey_type = 'bus_route')}."
+      ),
+      class = "creel_error_invalid_input"
+    )
   }
   br <- design$bus_route
   br$data[, c(br$site_col, br$circuit_col, br$pi_i_col)]
