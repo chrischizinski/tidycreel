@@ -22,6 +22,7 @@
 #'   hours). Existing columns are preserved.
 #'
 #' @seealso [compute_angler_effort()], [add_interviews()]
+#' @family "Survey Design"
 #' @export
 compute_effort <- function(data, trip_start, interview_time, time_fished = NULL) {
   ts_quo <- rlang::enquo(trip_start)
@@ -64,6 +65,7 @@ compute_effort <- function(data, trip_start, interview_time, time_fished = NULL)
 #'   (numeric, angler-hours). Existing columns are preserved.
 #'
 #' @seealso [compute_effort()], [add_interviews()]
+#' @family "Survey Design"
 #' @export
 compute_angler_effort <- function(data, effort, n_anglers) {
   e_quo <- rlang::enquo(effort)
@@ -242,6 +244,7 @@ VALID_SURVEY_TYPES <- c("instantaneous", "bus_route", "ice", "camera", "aerial")
 #'   p_period = p_period
 #' )
 #'
+#' @family "Survey Design"
 #' @export
 creel_design <- function(calendar,
                          date,
@@ -1036,6 +1039,7 @@ resolve_multi_cols <- function(expr, data, arg_name, error_call = rlang::caller_
 #'   period_length_col = shift_hours # nolint: object_usage_linter
 #' )
 #'
+#' @family "Survey Design"
 #' @export
 add_counts <- function(design, counts, psu = NULL, count_time_col = NULL,
                        count_type = "instantaneous",
@@ -1312,6 +1316,7 @@ add_counts <- function(design, counts, psu = NULL, count_time_col = NULL,
 #'   shoreline_col   = shoreline_km
 #' )
 #'
+#' @family "Survey Design"
 #' @export
 add_sections <- function(design,
                          sections,
@@ -1609,6 +1614,7 @@ add_sections <- function(design,
 #'   interview_time = interview_time
 #' )
 #'
+#' @family "Survey Design"
 #' @export
 add_interviews <- function(design, interviews,
                            catch, effort, harvest = NULL,
@@ -2342,6 +2348,7 @@ print.creel_design <- function(x, ...) {
 #' )
 #' get_sampling_frame(design)
 #'
+#' @family "Bus-Route Helpers"
 #' @export
 get_sampling_frame <- function(design) {
   if (!inherits(design, "creel_design")) {
@@ -2415,6 +2422,7 @@ get_sampling_frame <- function(design) {
 #' )
 #' get_inclusion_probs(design)
 #'
+#' @family "Bus-Route Helpers"
 #' @export
 get_inclusion_probs <- function(design) {
   if (!inherits(design, "creel_design")) {
@@ -2504,6 +2512,7 @@ get_inclusion_probs <- function(design) {
 #' )
 #' get_enumeration_counts(design2)
 #'
+#' @family "Bus-Route Helpers"
 #' @export
 get_enumeration_counts <- function(design) {
   if (!inherits(design, "creel_design")) {
@@ -2593,6 +2602,7 @@ summary.creel_design <- function(object, ...) {
 #' summary <- summarize_trips(design)
 #' print(summary)
 #'
+#' @family "Reporting & Diagnostics"
 #' @export
 summarize_trips <- function(design) {
   # Validate design is creel_design
@@ -2937,6 +2947,7 @@ validate_ice_interviews_tier3 <- function(n_counted_col, n_interviewed_col) {
 #' )
 #' print(design)
 #'
+#' @family "Survey Design"
 #' @export
 add_catch <- function(design, data,
                       catch_uid,
@@ -3173,6 +3184,7 @@ add_catch <- function(design, data,
 #' )
 #' print(design)
 #'
+#' @family "Survey Design"
 #' @export
 add_lengths <- function(design, data,
                         length_uid,
@@ -3357,6 +3369,7 @@ add_lengths <- function(design, data,
 #'   (one row per unique date, effort hours summed across all valid pairs for
 #'   that date).
 #'
+#' @family "Camera Survey"
 #' @export
 preprocess_camera_timestamps <- function(timestamps,
                                          date_col,

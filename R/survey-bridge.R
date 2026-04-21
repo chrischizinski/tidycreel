@@ -49,6 +49,7 @@
 #' survey::svytotal(~count, svy)
 #' survey::svymean(~count, svy)
 #'
+#' @family "Survey Design"
 #' @export
 as_survey_design <- function(design) {
   # Validate input is creel_design

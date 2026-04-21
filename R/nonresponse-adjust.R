@@ -58,10 +58,10 @@
 #' @examples
 #' data("example_counts", package = "tidycreel")
 #' data("example_interviews", package = "tidycreel")
-#' cal     <- unique(example_counts[, c("date", "day_type")])
-#' design  <- creel_design(cal, date = date, strata = day_type)
-#' design  <- suppressWarnings(add_counts(design, example_counts))
-#' design  <- suppressWarnings(add_interviews(
+#' cal <- unique(example_counts[, c("date", "day_type")])
+#' design <- creel_design(cal, date = date, strata = day_type)
+#' design <- suppressWarnings(add_counts(design, example_counts))
+#' design <- suppressWarnings(add_interviews(
 #'   design, example_interviews,
 #'   catch = catch_total, effort = hours_fished,
 #'   trip_status = trip_status, trip_duration = trip_duration
@@ -75,6 +75,7 @@
 #' adj_design <- adjust_nonresponse(design, resp)
 #' attr(adj_design, "nonresponse_diagnostics")
 #'
+#' @family "Reporting & Diagnostics"
 #' @export
 adjust_nonresponse <- function(design,
                                response_rates,
@@ -99,7 +100,7 @@ adjust_nonresponse <- function(design,
   }
 
   required_cols <- c(stratum_col, "n_sampled", "n_responded")
-  missing_cols  <- setdiff(required_cols, names(response_rates))
+  missing_cols <- setdiff(required_cols, names(response_rates))
   if (length(missing_cols) > 0) {
     cli::cli_abort(c(
       "{.arg response_rates} is missing required columns.",
@@ -125,7 +126,7 @@ adjust_nonresponse <- function(design,
 
   # Compute response rates and adjustments
   strata_vals <- response_rates[[stratum_col]]
-  n_sampled   <- as.integer(response_rates$n_sampled)
+  n_sampled <- as.integer(response_rates$n_sampled)
   n_responded <- as.integer(response_rates$n_responded)
 
   # Abort on zero-response strata
@@ -144,14 +145,14 @@ adjust_nonresponse <- function(design,
     ))
   }
 
-  response_rate    <- n_responded / n_sampled
-  weight_adj       <- 1 / response_rate
+  response_rate <- n_responded / n_sampled
+  weight_adj <- 1 / response_rate
 
   # Warn when any stratum has < 50% response rate
   low_resp <- response_rate < 0.50
   if (any(low_resp, na.rm = TRUE)) {
     low_strata <- strata_vals[low_resp] # nolint: object_usage_linter
-    pcts       <- round(100 * response_rate[low_resp]) # nolint: object_usage_linter
+    pcts <- round(100 * response_rate[low_resp]) # nolint: object_usage_linter
     cli::cli_warn(c(
       paste0(
         "Low response rate (<50%) in {sum(low_resp)} ",
@@ -221,7 +222,9 @@ adjust_nonresponse <- function(design,
 #' @noRd
 apply_nonresponse_weights <- function(svy, strata_cols, diagnostics,
                                       method) {
-  if (is.null(svy)) return(NULL)
+  if (is.null(svy)) {
+    return(NULL)
+  }
   if (!inherits(svy, "survey.design") && !inherits(svy, "svyrep.design")) {
     return(svy)
   }
@@ -234,7 +237,9 @@ apply_nonresponse_weights <- function(svy, strata_cols, diagnostics,
 
   # Determine the stratum column in the survey data
   svy_data <- svy$variables
-  if (is.null(svy_data)) return(svy)
+  if (is.null(svy_data)) {
+    return(svy)
+  }
 
   strat_col <- NULL
   for (sc in strata_cols) {
@@ -243,7 +248,9 @@ apply_nonresponse_weights <- function(svy, strata_cols, diagnostics,
       break
     }
   }
-  if (is.null(strat_col)) return(svy)
+  if (is.null(strat_col)) {
+    return(svy)
+  }
 
   strat_values <- as.character(svy_data[[strat_col]])
 
@@ -256,7 +263,7 @@ apply_nonresponse_weights <- function(svy, strata_cols, diagnostics,
     svy$scale <- svy$scale * mean(wt_multipliers, na.rm = TRUE)
   } else {
     # For standard svydesign: scale prob / weights
-    svy$prob    <- svy$prob / wt_multipliers
+    svy$prob <- svy$prob / wt_multipliers
     svy$allprob <- lapply(
       svy$allprob,
       function(p) p / wt_multipliers

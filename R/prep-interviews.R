@@ -44,6 +44,7 @@
 #'   `add_interviews()`.
 #'
 #' @seealso [compute_effort()], [add_interviews()]
+#' @family "Survey Design"
 #' @export
 prep_interviews_trips <- function(data,
                                   date,
@@ -249,6 +250,7 @@ prep_interviews_trips <- function(data,
 #'   and `catch_type`.
 #'
 #' @seealso [add_catch()]
+#' @family "Survey Design"
 #' @export
 prep_interview_catch <- function(data,
                                  interview_uid,

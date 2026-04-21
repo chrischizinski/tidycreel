@@ -19,3 +19,4 @@ Checks that a \code{creel_schedule} (or plain data frame intended for use with
 values. Called by \code{\link[=read_schedule]{read_schedule()}} after coercion and available for users
 to validate hand-constructed schedules.
 }
+\concept{"Scheduling"}

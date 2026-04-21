@@ -68,6 +68,7 @@
 #' cmp <- suppressWarnings(compare_variance(taylor_est))
 #' print(cmp)
 #'
+#' @family "Reporting & Diagnostics"
 #' @export
 compare_variance <- function(x,
                              replicate_method = c("bootstrap", "jackknife"),
@@ -100,8 +101,8 @@ compare_variance <- function(x,
   }
 
   if (!is.numeric(divergence_threshold) ||
-        length(divergence_threshold) != 1 ||
-        divergence_threshold <= 0) {
+    length(divergence_threshold) != 1 || # nolint: indentation_linter
+    divergence_threshold <= 0) {
     cli::cli_abort(c(
       "{.arg divergence_threshold} must be a positive number.",
       "x" = "Got {.val {divergence_threshold}}."
@@ -110,7 +111,7 @@ compare_variance <- function(x,
 
   # Determine which estimator to call based on x$method
   method_str <- x$method
-  by_vars   <- x$by_vars
+  by_vars <- x$by_vars
 
   # Route to the correct re-estimation function
   estimator_fn <- resolve_variance_estimator(method_str) # nolint: object_usage_linter
@@ -153,8 +154,8 @@ compare_variance <- function(x,
   )
 
   # Extract SEs
-  se_taylor     <- x$estimates$se
-  se_replicate  <- replicate_est$estimates$se
+  se_taylor <- x$estimates$se
+  se_replicate <- replicate_est$estimates$se
 
   # Build output tibble, preserving group columns
   est_df <- x$estimates
@@ -203,9 +204,9 @@ compare_variance <- function(x,
 
   result <- structure(
     out,
-    taylor_method    = x$variance_method,
+    taylor_method = x$variance_method,
     replicate_method = replicate_method,
-    n_diverge        = n_diverge,
+    n_diverge = n_diverge,
     divergence_threshold = divergence_threshold,
     class = c("creel_variance_comparison", class(out))
   )
@@ -220,12 +221,12 @@ compare_variance <- function(x,
 resolve_variance_estimator <- function(method_str) {
   if (grepl("cpue|hpue|rpue|catch.rate|ratio", method_str, ignore.case = TRUE)) {
     return(function(design, ...) {
-      suppressWarnings(estimate_catch_rate(design, ...))
+      suppressWarnings(estimate_catch_rate(design, ...)) # nolint: object_usage_linter
     })
   }
   if (grepl("effort", method_str, ignore.case = TRUE)) {
     return(function(design, ...) {
-      suppressWarnings(estimate_effort(design, ...))
+      suppressWarnings(estimate_effort(design, ...)) # nolint: object_usage_linter
     })
   }
   # Fallback: try estimate_catch_rate
@@ -233,7 +234,7 @@ resolve_variance_estimator <- function(method_str) {
     "Cannot determine estimator from method string {.val {method_str}}.",
     "i" = "Defaulting to {.fn estimate_catch_rate} for re-estimation."
   ))
-  function(design, ...) suppressWarnings(estimate_catch_rate(design, ...))
+  function(design, ...) suppressWarnings(estimate_catch_rate(design, ...)) # nolint: object_usage_linter
 }
 
 #' Print a creel_variance_comparison object

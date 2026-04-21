@@ -42,3 +42,9 @@ design <- creel_design(calendar,
 get_sampling_frame(design)
 
 }
+\seealso{
+Other "Bus-Route Helpers":
+\code{\link{get_enumeration_counts}()},
+\code{\link{get_inclusion_probs}()}
+}
+\concept{"Bus-Route Helpers"}

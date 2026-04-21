@@ -67,6 +67,7 @@
 #' survey::svytotal(~count, design)
 #' }
 #'
+#' @family "Survey Design"
 #' @export
 as_hybrid_svydesign <- function(
   access_data,
