@@ -39,6 +39,7 @@ NULL
 #' ggplot2::autoplot(est_grp)
 #' }
 #'
+#' @family "Visualisation"
 #' @export
 autoplot.creel_estimates <- function(object, title = NULL,
                                      theme = c("default", "creel"), ...) {
@@ -184,6 +185,7 @@ autoplot.creel_estimates <- function(object, title = NULL,
 #' ggplot2::autoplot(ld)
 #' }
 #'
+#' @family "Visualisation"
 #' @export
 autoplot.creel_length_distribution <- function(object, title = NULL,
                                                theme = c("default", "creel"), ...) {
@@ -308,6 +310,7 @@ autoplot.creel_length_distribution <- function(object, title = NULL,
 #' ggplot2::autoplot(sched)
 #' }
 #'
+#' @family "Visualisation"
 #' @export
 autoplot.creel_schedule <- function(object, title = "Creel Schedule", ...) {
   # Reconstruct full season from min/max date in the schedule
@@ -476,6 +479,7 @@ autoplot.creel_schedule <- function(object, title = "Creel Schedule", ...) {
 #' plot_design(design_with_counts)
 #' }
 #'
+#' @family "Visualisation"
 #' @export
 plot_design <- function(design, title = NULL, ...) { # nolint: object_usage_linter
   if (!inherits(design, "creel_design")) {

@@ -18,6 +18,7 @@
 #' creel_palette()
 #' creel_palette(3)
 #'
+#' @family "Visualisation"
 #' @export
 creel_palette <- function(n = NULL) {
   palette_vals <- c(
@@ -59,6 +60,7 @@ creel_palette <- function(n = NULL) {
 #'     theme_creel()
 #' }
 #'
+#' @family "Visualisation"
 #' @export
 theme_creel <- function(base_size = 11, base_family = "sans") {
   ggplot2::theme_minimal(base_size = base_size, base_family = base_family) +

@@ -59,6 +59,7 @@ bus-route sampling, used in Eq. 19.4 and 19.5.
 
 Other "Bus-Route Helpers":
 \code{\link{get_enumeration_counts}()},
-\code{\link{get_sampling_frame}()}
+\code{\link{get_sampling_frame}()},
+\code{\link{get_site_contributions}()}
 }
 \concept{"Bus-Route Helpers"}

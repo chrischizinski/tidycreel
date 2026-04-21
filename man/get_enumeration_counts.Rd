@@ -73,6 +73,7 @@ and 19.5 for bus-route effort and harvest estimation.
 
 Other "Bus-Route Helpers":
 \code{\link{get_inclusion_probs}()},
-\code{\link{get_sampling_frame}()}
+\code{\link{get_sampling_frame}()},
+\code{\link{get_site_contributions}()}
 }
 \concept{"Bus-Route Helpers"}
