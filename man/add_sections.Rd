@@ -85,4 +85,23 @@ design2 <- add_sections(design, my_sections,
 }
 \seealso{
 \code{\link[=creel_design]{creel_design()}}, \code{\link[=add_counts]{add_counts()}}, \code{\link[=add_interviews]{add_interviews()}}
+
+Other "Survey Design":
+\code{\link{add_catch}()},
+\code{\link{add_counts}()},
+\code{\link{add_interviews}()},
+\code{\link{add_lengths}()},
+\code{\link{as_hybrid_svydesign}()},
+\code{\link{as_survey_design}()},
+\code{\link{compute_angler_effort}()},
+\code{\link{compute_effort}()},
+\code{\link{creel_design}()},
+\code{\link{creel_schema}()},
+\code{\link{est_effort_camera}()},
+\code{\link{prep_counts_boat_party}()},
+\code{\link{prep_counts_daily_effort}()},
+\code{\link{prep_interview_catch}()},
+\code{\link{prep_interviews_trips}()},
+\code{\link{validate_creel_schema}()}
 }
+\concept{"Survey Design"}

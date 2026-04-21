@@ -355,6 +355,7 @@ print.creel_estimates <- function(x, ...) {
 #'
 #' # Verbose dispatch message (shows which estimator was used for bus-route designs)
 #' result_verbose <- estimate_effort(design_with_counts, verbose = TRUE)
+#' @family "Estimation"
 #' @export
 estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level = 0.95,
                             target = c("sampled_days", "stratum_total", "period_total"),
@@ -697,6 +698,7 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
 #'
 #' # Mean-of-ratios with custom truncation threshold
 #' result_mor_1h <- estimate_catch_rate(design_with_interviews, estimator = "mor", truncate_at = 1.0)
+#' @family "Estimation"
 #' @export
 estimate_catch_rate <- function(design,
                                 by = NULL,
@@ -1382,6 +1384,7 @@ estimate_catch_rate <- function(design,
 #'
 #' # Verbose dispatch message (shows which estimator was used for bus-route designs)
 #' # result_verbose <- estimate_harvest_rate(design, verbose = TRUE)
+#' @family "Estimation"
 #' @export
 estimate_harvest_rate <- function(
   design,
@@ -1575,6 +1578,7 @@ estimate_harvest_rate <- function(
 #' # Per-species release rates
 #' rpue_by_species <- estimate_release_rate(design, by = species)
 #' print(rpue_by_species)
+#' @family "Estimation"
 #' @export
 estimate_release_rate <- function(
   design,

@@ -55,6 +55,7 @@ validate_calendar_schema <- function(data) {
 #' @return Invisibly returns the input data frame on success. Aborts with an
 #'   informative error message on validation failure.
 #'
+#' @family "Scheduling"
 #' @export
 validate_creel_schedule <- function(data) {
   collection <- checkmate::makeAssertCollection()

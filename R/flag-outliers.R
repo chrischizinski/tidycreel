@@ -44,6 +44,7 @@
 #' )
 #' flag_outliers(df, col = effort)
 #'
+#' @family "Reporting & Diagnostics"
 #' @export
 flag_outliers <- function(data, col, k = 1.5, na.rm = TRUE) { # nolint: object_name_linter
   if (!is.data.frame(data)) {

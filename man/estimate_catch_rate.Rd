@@ -210,3 +210,15 @@ result_mor <- estimate_catch_rate(design_with_interviews, estimator = "mor")
 # Mean-of-ratios with custom truncation threshold
 result_mor_1h <- estimate_catch_rate(design_with_interviews, estimator = "mor", truncate_at = 1.0)
 }
+\seealso{
+Other "Estimation":
+\code{\link{est_length_distribution}()},
+\code{\link{estimate_effort}()},
+\code{\link{estimate_effort_aerial_glmm}()},
+\code{\link{estimate_harvest_rate}()},
+\code{\link{estimate_release_rate}()},
+\code{\link{estimate_total_catch}()},
+\code{\link{estimate_total_harvest}()},
+\code{\link{estimate_total_release}()}
+}
+\concept{"Estimation"}

@@ -78,6 +78,7 @@
 #' print(result_boot)
 #' }
 #'
+#' @family "Estimation"
 #' @export
 estimate_effort_aerial_glmm <- function(
   design,

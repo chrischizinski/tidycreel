@@ -56,4 +56,9 @@ bus-route sampling, used in Eq. 19.4 and 19.5.
 }
 \seealso{
 \code{\link[=creel_design]{creel_design()}}, \code{\link[=get_sampling_frame]{get_sampling_frame()}}
+
+Other "Bus-Route Helpers":
+\code{\link{get_enumeration_counts}()},
+\code{\link{get_sampling_frame}()}
 }
+\concept{"Bus-Route Helpers"}

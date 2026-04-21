@@ -56,6 +56,7 @@
 #' res <- validate_creel_data(counts, interviews)
 #' print(res)
 #'
+#' @family "Reporting & Diagnostics"
 #' @export
 validate_creel_data <- function(
     counts      = NULL,

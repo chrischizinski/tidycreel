@@ -155,3 +155,15 @@ result_grouped_boot <- estimate_effort(design_with_counts, by = day_type, varian
 # Verbose dispatch message (shows which estimator was used for bus-route designs)
 result_verbose <- estimate_effort(design_with_counts, verbose = TRUE)
 }
+\seealso{
+Other "Estimation":
+\code{\link{est_length_distribution}()},
+\code{\link{estimate_catch_rate}()},
+\code{\link{estimate_effort_aerial_glmm}()},
+\code{\link{estimate_harvest_rate}()},
+\code{\link{estimate_release_rate}()},
+\code{\link{estimate_total_catch}()},
+\code{\link{estimate_total_harvest}()},
+\code{\link{estimate_total_release}()}
+}
+\concept{"Estimation"}

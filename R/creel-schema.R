@@ -103,6 +103,7 @@ new_creel_schema <- function(survey_type, mappings) {
 #' @param refused_col Column name for refused interviews indicator.
 #'
 #' @return A `creel_schema` S3 object.
+#' @family "Survey Design"
 #' @export
 #' @examples
 #' s <- creel_schema(
@@ -191,6 +192,7 @@ creel_schema <- function(
 #' @param schema A `creel_schema` object created by [creel_schema()].
 #'
 #' @return `invisible(schema)` if all required columns are mapped.
+#' @family "Survey Design"
 #' @export
 validate_creel_schema <- function(schema) {
   if (!inherits(schema, "creel_schema")) {

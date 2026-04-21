@@ -27,3 +27,29 @@ A creel_completeness_report object (S3 list) with:
 Dispatches by survey_type to avoid false-positive warnings on aerial and
 camera designs that do not collect interview data.
 }
+\seealso{
+Other "Reporting & Diagnostics":
+\code{\link{adjust_nonresponse}()},
+\code{\link{compare_variance}()},
+\code{\link{flag_outliers}()},
+\code{\link{season_summary}()},
+\code{\link{standardize_species}()},
+\code{\link{summarize_by_angler_type}()},
+\code{\link{summarize_by_day_type}()},
+\code{\link{summarize_by_method}()},
+\code{\link{summarize_by_species_sought}()},
+\code{\link{summarize_by_trip_length}()},
+\code{\link{summarize_cws_rates}()},
+\code{\link{summarize_hws_rates}()},
+\code{\link{summarize_length_freq}()},
+\code{\link{summarize_refusals}()},
+\code{\link{summarize_successful_parties}()},
+\code{\link{summarize_trips}()},
+\code{\link{summary.creel_estimates}()},
+\code{\link{validate_creel_data}()},
+\code{\link{validate_design}()},
+\code{\link{validate_incomplete_trips}()},
+\code{\link{validation_report}()},
+\code{\link{write_estimates}()}
+}
+\concept{"Reporting & Diagnostics"}

@@ -90,6 +90,7 @@
 #'
 #' @seealso \code{\link{estimate_effort}}, \code{\link{estimate_harvest_rate}},
 #'   \code{\link{estimate_total_catch}}
+#' @family "Estimation"
 #' @export
 estimate_total_harvest <- function(
   design,
