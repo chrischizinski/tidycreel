@@ -87,7 +87,12 @@ Plans:
   2. A fresh `covr::package_coverage()` run confirms the coverage baseline (expected ~87%); the result is recorded in a comment or CI artifact
   3. A codecov threshold is configured in `.github/workflows/` (or equivalent CI config) such that coverage drops below the baseline cause CI to fail
   4. `rcmdcheck` and `devtools::test()` both pass after adding the new tests
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [ ] 79-01-PLAN.md — Create helper-generators.R and test-invariants.R for INV-04, INV-01, INV-02
+- [ ] 79-02-PLAN.md — Confirm coverage baseline, create test-coverage.yaml and .codecov.yml, add badge
+- [ ] 79-03-PLAN.md — Extend test-invariants.R with INV-06 and INV-03; add quickcheck to DESCRIPTION
+- [ ] 79-04-PLAN.md — End-to-end verification: full test suite and R CMD check gate
 
 ### Phase 80: Architecture Decision and Human Verification
 **Goal**: The creel_summary_* S3 subclass direction is formally committed or deferred with documented rationale, and Phase 70's deferred human verification is completed — vignette build and test suite both confirmed green
@@ -98,7 +103,12 @@ Plans:
   2. `pkgdown::build_site()` completes without errors or warnings and the deployed site renders all vignette pages correctly
   3. `rcmdcheck::rcmdcheck(args = c('--no-manual', '--as-cran'), error_on = 'warning')` reports 0 errors and 0 warnings
   4. `devtools::test()` reports 0 failures and 0 errors across the full test suite (2477+ tests)
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [ ] 79-01-PLAN.md — Create helper-generators.R and test-invariants.R for INV-04, INV-01, INV-02
+- [ ] 79-02-PLAN.md — Confirm coverage baseline, create test-coverage.yaml and .codecov.yml, add badge
+- [ ] 79-03-PLAN.md — Extend test-invariants.R with INV-06 and INV-03; add quickcheck to DESCRIPTION
+- [ ] 79-04-PLAN.md — End-to-end verification: full test suite and R CMD check gate
 
 ## Progress
 
