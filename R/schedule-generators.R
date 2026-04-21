@@ -8,6 +8,7 @@
 #'
 #' @return A data frame with class `c("creel_schedule", "data.frame")`.
 #'
+#' @family "Scheduling"
 #' @export
 new_creel_schedule <- function(data) {
   stopifnot(is.data.frame(data))
@@ -391,6 +392,7 @@ resolve_special_periods <- function(all_dates, day_types, special_periods = NULL
 #' # Use result with creel_design()
 #' creel_design(sched, date = date, strata = day_type)
 #'
+#' @family "Scheduling"
 #' @export
 generate_schedule <- function(
   start_date,
@@ -667,6 +669,7 @@ format_min_to_hhmm <- function(mins) {
 #' )
 #' generate_count_times(strategy = "fixed", fixed_windows = fw)
 #'
+#' @family "Scheduling"
 #' @export
 generate_count_times <- function(
   start_time = NULL,
@@ -860,6 +863,7 @@ generate_count_times <- function(
 #' @return A tibble: `sampling_frame` columns plus `p_period` and
 #'   `inclusion_prob`. `inclusion_prob = p_site * p_period`.
 #'
+#' @family "Scheduling"
 #' @export
 generate_bus_schedule <- function(schedule, sampling_frame, site, p_site,
                                   circuit = NULL, crew, seed = NULL) {
@@ -941,6 +945,7 @@ generate_bus_schedule <- function(schedule, sampling_frame, site, p_site,
 #' )
 #' attach_count_times(sched, ct)
 #'
+#' @family "Scheduling"
 #' @export
 attach_count_times <- function(schedule, count_times) {
   # Validate schedule

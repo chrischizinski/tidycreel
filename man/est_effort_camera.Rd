@@ -66,14 +66,17 @@ data(example_camera_interviews)
 
 cal <- data.frame(
   date     = unique(example_camera_counts$date),
-  day_type = unique(example_camera_counts[, c("date","day_type")])[["day_type"]]
+  day_type = unique(example_camera_counts[, c("date", "day_type")])[["day_type"]]
 )
-design <- creel_design(cal, date = date, strata = day_type,
-  survey_type = "camera", camera_mode = "counter")
+design <- creel_design(cal,
+  date = date, strata = day_type,
+  survey_type = "camera", camera_mode = "counter"
+)
 
 # Filter to operational rows
 ops <- example_camera_counts[
-  example_camera_counts$camera_status == "operational", ]
+  example_camera_counts$camera_status == "operational",
+]
 design <- add_counts(design, ops)
 
 # Ratio calibration using interview hours

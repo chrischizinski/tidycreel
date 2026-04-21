@@ -38,6 +38,7 @@
 #' compare_designs(list(instantaneous = est1, bus_route = est2))
 #' }
 #'
+#' @family "Planning & Sample Size"
 #' @export
 compare_designs <- function(designs, metric = "estimate") {
   if (!is.list(designs) || length(designs) < 2L) {

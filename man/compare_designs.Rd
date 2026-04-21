@@ -48,4 +48,12 @@ compare_designs(list(instantaneous = est1, bus_route = est2))
 }
 \seealso{
 \code{\link[=autoplot.creel_design_comparison]{autoplot.creel_design_comparison()}}
+
+Other "Planning & Sample Size":
+\code{\link{creel_n_cpue}()},
+\code{\link{creel_n_effort}()},
+\code{\link{creel_power}()},
+\code{\link{cv_from_n}()},
+\code{\link{power_creel}()}
 }
+\concept{"Planning & Sample Size"}

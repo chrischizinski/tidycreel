@@ -35,6 +35,7 @@
 #' # After: result <- estimate_effort(design_with_br_interviews)
 #' # site_table <- get_site_contributions(result)
 #'
+#' @family "Bus-Route Helpers"
 #' @export
 get_site_contributions <- function(x) {
   # Guard 1: must be creel_estimates

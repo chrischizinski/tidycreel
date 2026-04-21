@@ -40,4 +40,10 @@ American Fisheries Society.
 \seealso{
 \code{\link[=estimate_effort]{estimate_effort()}}, \code{\link[=get_sampling_frame]{get_sampling_frame()}}, \code{\link[=get_inclusion_probs]{get_inclusion_probs()}},
 \code{\link[=get_enumeration_counts]{get_enumeration_counts()}}
+
+Other "Bus-Route Helpers":
+\code{\link{get_enumeration_counts}()},
+\code{\link{get_inclusion_probs}()},
+\code{\link{get_sampling_frame}()}
 }
+\concept{"Bus-Route Helpers"}

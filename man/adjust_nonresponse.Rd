@@ -69,10 +69,10 @@ recommended.
 \examples{
 data("example_counts", package = "tidycreel")
 data("example_interviews", package = "tidycreel")
-cal     <- unique(example_counts[, c("date", "day_type")])
-design  <- creel_design(cal, date = date, strata = day_type)
-design  <- suppressWarnings(add_counts(design, example_counts))
-design  <- suppressWarnings(add_interviews(
+cal <- unique(example_counts[, c("date", "day_type")])
+design <- creel_design(cal, date = date, strata = day_type)
+design <- suppressWarnings(add_counts(design, example_counts))
+design <- suppressWarnings(add_interviews(
   design, example_interviews,
   catch = catch_total, effort = hours_fished,
   trip_status = trip_status, trip_duration = trip_duration
