@@ -49,6 +49,7 @@
 #' survey::svytotal(~count, svy)
 #' survey::svymean(~count, svy)
 #'
+#' @family "Survey Design"
 #' @export
 as_survey_design <- function(design) {
   # Validate input is creel_design
@@ -123,20 +124,23 @@ get_variance_design <- function(design, variance_method) {
           } else {
             "unknown"
           }
-          cli::cli_abort(c(
-            paste0(
-              "Stratum {.val {strat_label}} has only 1 PSU \u2014 ",
-              "jackknife variance cannot be estimated."
+          cli::cli_abort(
+            c(
+              paste0(
+                "Stratum {.val {strat_label}} has only 1 PSU \u2014 ",
+                "jackknife variance cannot be estimated."
+              ),
+              "x" = paste0(
+                "A stratum must have at least 2 PSUs for jackknife ",
+                "resampling."
+              ),
+              "i" = paste0(
+                "Increase the sampling rate for stratum ",
+                "{.val {strat_label}}, or use {.code variance = 'taylor'}."
+              )
             ),
-            "x" = paste0(
-              "A stratum must have at least 2 PSUs for jackknife ",
-              "resampling."
-            ),
-            "i" = paste0(
-              "Increase the sampling rate for stratum ",
-              "{.val {strat_label}}, or use {.code variance = 'taylor'}."
-            )
-          ))
+            class = "creel_error_single_psu"
+          )
         }
         stop(e)
       }
@@ -468,17 +472,20 @@ construct_survey_design <- function(design) {
 
       if (grepl("Stratum.*has only one PSU", err_msg, ignore.case = TRUE)) {
         # Lonely PSU error
-        cli::cli_abort(c(
-          "Survey design construction failed: lonely PSU detected.",
-          "x" = paste(
-            "At least one stratum has only one PSU (Primary Sampling Unit).",
-            "Variance estimation requires 2+ PSUs per stratum."
+        cli::cli_abort(
+          c(
+            "Survey design construction failed: lonely PSU detected.",
+            "x" = paste(
+              "At least one stratum has only one PSU (Primary Sampling Unit).",
+              "Variance estimation requires 2+ PSUs per stratum."
+            ),
+            "i" = "Possible solutions:",
+            "*" = "Combine small strata with similar characteristics",
+            "*" = "Use a different stratification scheme",
+            "*" = "Collect data from more PSUs (days) in sparse strata"
           ),
-          "i" = "Possible solutions:",
-          "*" = "Combine small strata with similar characteristics",
-          "*" = "Use a different stratification scheme",
-          "*" = "Collect data from more PSUs (days) in sparse strata"
-        ))
+          class = "creel_error_single_psu"
+        )
       } else if (grepl("variable.*not found", err_msg, ignore.case = TRUE)) {
         # Column not found
         required_cols <- c(psu_col, strata_cols) # nolint: object_usage_linter
@@ -1399,17 +1406,20 @@ construct_interview_survey <- function(design) {
 
       if (grepl("Stratum.*has only one PSU", err_msg, ignore.case = TRUE)) {
         # Lonely PSU error (less likely for interviews but handle it)
-        cli::cli_abort(c(
-          "Interview survey construction failed: lonely PSU detected.",
-          "x" = paste(
-            "At least one stratum has only one observation.",
-            "Variance estimation requires 2+ observations per stratum."
+        cli::cli_abort(
+          c(
+            "Interview survey construction failed: lonely PSU detected.",
+            "x" = paste(
+              "At least one stratum has only one observation.",
+              "Variance estimation requires 2+ observations per stratum."
+            ),
+            "i" = "Possible solutions:",
+            "*" = "Combine small strata with similar characteristics",
+            "*" = "Use a different stratification scheme",
+            "*" = "Collect more interview observations in sparse strata"
           ),
-          "i" = "Possible solutions:",
-          "*" = "Combine small strata with similar characteristics",
-          "*" = "Use a different stratification scheme",
-          "*" = "Collect more interview observations in sparse strata"
-        ))
+          class = "creel_error_single_psu"
+        )
       } else if (grepl("variable.*not found", err_msg, ignore.case = TRUE)) {
         # Column not found
         required_cols <- strata_cols # nolint: object_usage_linter
@@ -1515,8 +1525,6 @@ validate_grouping_compatibility <- function(design, by_vars) { # nolint: object_
 #' @param n_incomplete_original Original incomplete trip count (before truncation)
 #' @param truncate_at Threshold used (hours)
 #'
-#' @importFrom scales percent
-#'
 #' @keywords internal
 #' @noRd
 mor_truncation_message <- function(n_truncated, n_incomplete_original, truncate_at) {
@@ -1527,10 +1535,11 @@ mor_truncation_message <- function(n_truncated, n_incomplete_original, truncate_
     cli::cli_inform(c(
       "i" = "MOR truncation: 0 trips excluded (all >= {truncate_at} hours)"
     ))
-  } else if (pct_truncated > 0.10) {
-    # >10% truncated - data quality warning
+  } else if (pct_truncated >= 0.10) {
+    # >=10% truncated - data quality warning
+    pct_label <- sprintf("%.1f%%", pct_truncated * 100) # nolint: object_usage_linter
     cli::cli_warn(c(
-      "!" = "MOR truncation: {n_truncated} trip{?s} excluded ({scales::percent(pct_truncated, accuracy = 0.1)})",
+      "!" = "MOR truncation: {n_truncated} trip{?s} excluded ({pct_label})",
       "i" = "Trips < {truncate_at} hours excluded to prevent unstable variance",
       "!" = "High truncation rate may indicate data quality issues",
       "i" = "Consider reviewing trip duration data for errors"

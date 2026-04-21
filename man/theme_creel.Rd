@@ -27,3 +27,12 @@ if (requireNamespace("ggplot2", quietly = TRUE)) {
 }
 
 }
+\seealso{
+Other "Visualisation":
+\code{\link{autoplot.creel_estimates}()},
+\code{\link{autoplot.creel_length_distribution}()},
+\code{\link{autoplot.creel_schedule}()},
+\code{\link{creel_palette}()},
+\code{\link{plot_design}()}
+}
+\concept{"Visualisation"}

@@ -54,3 +54,12 @@ creel_n_cpue(cv_catch = 0.8, cv_effort = 0.5, rho = 0.5, cv_target = 0.20)
 Cochran, W.G. 1977. Sampling Techniques, 3rd ed. Wiley, New York. Chapter 6
 (ratio estimator variance approximation).
 }
+\seealso{
+Other "Planning & Sample Size":
+\code{\link{compare_designs}()},
+\code{\link{creel_n_effort}()},
+\code{\link{creel_power}()},
+\code{\link{cv_from_n}()},
+\code{\link{power_creel}()}
+}
+\concept{"Planning & Sample Size"}

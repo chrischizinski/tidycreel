@@ -37,6 +37,7 @@
 #'
 #' Cochran, W.G. 1977. Sampling Techniques, 3rd ed. Wiley, New York.
 #'
+#' @family "Planning & Sample Size"
 #' @export
 #'
 #' @examples
@@ -111,6 +112,7 @@ creel_n_effort <- function(cv_target, N_h, ybar_h, s2_h) { # nolint: object_name
 #' Cochran, W.G. 1977. Sampling Techniques, 3rd ed. Wiley, New York. Chapter 6
 #' (ratio estimator variance approximation).
 #'
+#' @family "Planning & Sample Size"
 #' @export
 #'
 #' @examples
@@ -175,6 +177,7 @@ creel_n_cpue <- function(cv_catch, cv_effort, rho = 0, cv_target) {
 #' Cohen, J. 1988. Statistical Power Analysis for the Behavioral Sciences, 2nd
 #' ed. Lawrence Erlbaum Associates, Hillsdale, NJ.
 #'
+#' @family "Planning & Sample Size"
 #' @export
 #'
 #' @examples
@@ -257,6 +260,7 @@ creel_power <- function(n, cv_historical, delta_pct, alpha = 0.05, # nolint: obj
 #' @references
 #' Cochran, W.G. 1977. Sampling Techniques, 3rd ed. Wiley, New York.
 #'
+#' @family "Planning & Sample Size"
 #' @export
 #'
 #' @examples

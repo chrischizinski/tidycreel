@@ -53,3 +53,14 @@ where \code{p_period = crew / n_circuits}.
 (or 1 when \code{circuit} is \code{NULL}). \code{crew} is the number of field crews
 deployed simultaneously.
 }
+\seealso{
+Other "Scheduling":
+\code{\link{attach_count_times}()},
+\code{\link{generate_count_times}()},
+\code{\link{generate_schedule}()},
+\code{\link{new_creel_schedule}()},
+\code{\link{read_schedule}()},
+\code{\link{validate_creel_schedule}()},
+\code{\link{write_schedule}()}
+}
+\concept{"Scheduling"}

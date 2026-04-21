@@ -36,4 +36,12 @@ ggplot2::autoplot(ld)
 }
 \seealso{
 \code{\link[=est_length_distribution]{est_length_distribution()}}
+
+Other "Visualisation":
+\code{\link{autoplot.creel_estimates}()},
+\code{\link{autoplot.creel_schedule}()},
+\code{\link{creel_palette}()},
+\code{\link{plot_design}()},
+\code{\link{theme_creel}()}
 }
+\concept{"Visualisation"}

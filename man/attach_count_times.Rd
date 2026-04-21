@@ -36,3 +36,14 @@ ct <- generate_count_times(
 attach_count_times(sched, ct)
 
 }
+\seealso{
+Other "Scheduling":
+\code{\link{generate_bus_schedule}()},
+\code{\link{generate_count_times}()},
+\code{\link{generate_schedule}()},
+\code{\link{new_creel_schedule}()},
+\code{\link{read_schedule}()},
+\code{\link{validate_creel_schedule}()},
+\code{\link{write_schedule}()}
+}
+\concept{"Scheduling"}

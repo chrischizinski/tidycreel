@@ -62,6 +62,7 @@
 #' out <- utils::read.csv(tmp, comment.char = "#")
 #' out
 #'
+#' @family "Reporting & Diagnostics"
 #' @export
 write_estimates <- function(
   x,

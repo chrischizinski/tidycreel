@@ -67,6 +67,9 @@ The default model is the quadratic temporal model from Askey (2018):
 \code{\link[lme4:glmer.nb]{lme4::glmer.nb()}}. Variance is propagated via the delta method (default) or
 parametric bootstrap (\code{\link[lme4:bootMer]{lme4::bootMer()}}).
 }
+\details{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+}
 \examples{
 \dontrun{
 data(example_aerial_glmm_counts)
@@ -103,3 +106,15 @@ aerial creel surveys using a generalized linear mixed model.
 North American Journal of Fisheries Management, 38, 1204-1215.
 \doi{10.1002/nafm.10010}
 }
+\seealso{
+Other "Estimation":
+\code{\link{est_length_distribution}()},
+\code{\link{estimate_catch_rate}()},
+\code{\link{estimate_effort}()},
+\code{\link{estimate_harvest_rate}()},
+\code{\link{estimate_release_rate}()},
+\code{\link{estimate_total_catch}()},
+\code{\link{estimate_total_harvest}()},
+\code{\link{estimate_total_release}()}
+}
+\concept{"Estimation"}

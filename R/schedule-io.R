@@ -118,6 +118,7 @@ coerce_schedule_columns <- function(df) {
 #' tmp <- tempfile(fileext = ".csv")
 #' write_schedule(sched, tmp)
 #'
+#' @family "Scheduling"
 #' @export
 write_schedule <- function(schedule, path, format = c("csv", "xlsx")) {
   format <- match.arg(format)
@@ -162,6 +163,7 @@ write_schedule <- function(schedule, path, format = c("csv", "xlsx")) {
 #' sched2 <- read_schedule(tmp)
 #' inherits(sched2, "creel_schedule")
 #'
+#' @family "Scheduling"
 #' @export
 read_schedule <- function(path) {
   ext <- tolower(tools::file_ext(path))

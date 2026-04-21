@@ -37,7 +37,11 @@ reference:
     contents:
       - creel_design
       - add_counts
+      - prep_counts_daily_effort
+      - prep_counts_boat_party
       - add_interviews
+      - prep_interviews_trips
+      - prep_interview_catch
       - add_catch
       - add_lengths
       - add_sections

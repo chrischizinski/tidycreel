@@ -77,4 +77,12 @@ Cochran, W.G. 1977. Sampling Techniques, 3rd ed. Wiley, New York.
 }
 \seealso{
 \code{\link[=creel_n_effort]{creel_n_effort()}}, \code{\link[=creel_n_cpue]{creel_n_cpue()}}
+
+Other "Planning & Sample Size":
+\code{\link{compare_designs}()},
+\code{\link{creel_n_cpue}()},
+\code{\link{creel_n_effort}()},
+\code{\link{creel_power}()},
+\code{\link{power_creel}()}
 }
+\concept{"Planning & Sample Size"}

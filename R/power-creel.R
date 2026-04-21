@@ -102,23 +102,26 @@
 #'   delta_pct     = 0.20
 #' )
 #'
+#' @family "Planning & Sample Size"
 #' @export
-power_creel <- function( # nolint: object_name_linter
-    mode          = c("effort_n", "cpue_n", "power"),
-    target_rse    = NULL,
-    strata        = NULL,
-    N_h           = NULL, # nolint: object_name_linter
-    ybar_h        = NULL, # nolint: object_name_linter
-    s2_h          = NULL, # nolint: object_name_linter
-    cv_catch      = NULL,
-    cv_effort     = NULL,
-    rho           = 0,
-    n             = NULL,
-    cv_historical = NULL, # nolint: object_name_linter
-    delta_pct     = NULL,
-    alpha         = 0.05,
-    alternative   = c("two.sided", "one.sided")) {
-  mode        <- match.arg(mode)
+power_creel <- function(
+  # nolint: object_name_linter
+  mode = c("effort_n", "cpue_n", "power"),
+  target_rse = NULL,
+  strata = NULL,
+  N_h = NULL, # nolint: object_name_linter
+  ybar_h = NULL, # nolint: object_name_linter
+  s2_h = NULL, # nolint: object_name_linter
+  cv_catch = NULL,
+  cv_effort = NULL,
+  rho = 0,
+  n = NULL,
+  cv_historical = NULL, # nolint: object_name_linter
+  delta_pct = NULL,
+  alpha = 0.05,
+  alternative = c("two.sided", "one.sided")
+) {
+  mode <- match.arg(mode)
   alternative <- match.arg(alternative)
 
   switch(mode,
@@ -168,7 +171,7 @@ power_creel <- function( # nolint: object_name_linter
 
   names(N_h) <- strata # nolint: object_name_linter
 
-  raw <- creel_n_effort(
+  raw <- creel_n_effort( # nolint: object_usage_linter
     cv_target = target_rse,
     N_h       = N_h, # nolint: object_name_linter
     ybar_h    = ybar_h, # nolint: object_name_linter
@@ -177,7 +180,7 @@ power_creel <- function( # nolint: object_name_linter
 
   all_strata <- c(strata, "total")
   data.frame(
-    stratum    = all_strata,
+    stratum = all_strata,
     n_required = as.integer(raw[all_strata]),
     target_rse = target_rse,
     stringsAsFactors = FALSE
@@ -197,7 +200,7 @@ power_creel <- function( # nolint: object_name_linter
     )
   }
 
-  n_req <- creel_n_cpue(
+  n_req <- creel_n_cpue( # nolint: object_usage_linter
     cv_catch   = cv_catch,
     cv_effort  = cv_effort,
     rho        = rho,
@@ -207,9 +210,9 @@ power_creel <- function( # nolint: object_name_linter
   data.frame(
     n_required = n_req,
     target_rse = target_rse,
-    cv_catch   = cv_catch,
-    cv_effort  = cv_effort,
-    rho        = rho,
+    cv_catch = cv_catch,
+    cv_effort = cv_effort,
+    rho = rho,
     stringsAsFactors = FALSE
   )
 }
@@ -232,7 +235,7 @@ power_creel <- function( # nolint: object_name_linter
     )
   }
 
-  pwr <- creel_power(
+  pwr <- creel_power( # nolint: object_usage_linter
     n             = n,
     cv_historical = cv_hist, # nolint: object_name_linter
     delta_pct     = delta_pct,
@@ -241,12 +244,12 @@ power_creel <- function( # nolint: object_name_linter
   )
 
   data.frame(
-    power         = pwr,
-    n             = as.integer(n),
-    delta_pct     = delta_pct,
+    power = pwr,
+    n = as.integer(n),
+    delta_pct = delta_pct,
     cv_historical = cv_hist, # nolint: object_name_linter
-    alpha         = alpha,
-    alternative   = alternative,
+    alpha = alpha,
+    alternative = alternative,
     stringsAsFactors = FALSE
   )
 }

@@ -19,7 +19,7 @@
 #' @keywords internal
 #' @noRd
 estimate_effort_br <- function(design, by_vars, variance_method, conf_level, verbose,
-                               effort_target = "sampled_days") { # nolint: object_usage_linter
+                               effort_target = "sampled_days", call = rlang::caller_env()) { # nolint: object_usage_linter
   # Retrieve interview data (contains .pi_i and .expansion from add_interviews())
   interviews <- design$interviews
 
@@ -31,7 +31,7 @@ estimate_effort_br <- function(design, by_vars, variance_method, conf_level, ver
       "i" = paste0(
         "Call {.fn add_interviews} with {.arg n_counted} and {.arg n_interviewed} parameters."
       )
-    ))
+    ), call = call)
   }
 
   # Defensive check: .pi_i column must exist
@@ -40,7 +40,7 @@ estimate_effort_br <- function(design, by_vars, variance_method, conf_level, ver
       "Bus-route effort estimation requires .pi_i column.",
       "x" = ".pi_i not found in interview data.",
       "i" = "Bus-route design must have inclusion probabilities computed via sampling frame."
-    ))
+    ), call = call)
   }
 
   # Check for missing .pi_i values — hard error listing site+circuit combinations
@@ -59,7 +59,7 @@ estimate_effort_br <- function(design, by_vars, variance_method, conf_level, ver
       msg_parts,
       "x" = "All interview site+circuit combinations must appear in the sampling frame.",
       "i" = "Check that interview data site and circuit values match sampling frame."
-    ))
+    ), call = call)
   }
 
   # Identify the effort column stored during add_interviews()
@@ -223,7 +223,8 @@ estimate_effort_br <- function(design, by_vars, variance_method, conf_level, ver
 #' @noRd
 estimate_harvest_br <- function(
   # nolint: object_usage_linter
-  design, by_vars, variance_method, conf_level, verbose, use_trips
+  design, by_vars, variance_method, conf_level, verbose, use_trips,
+  call = rlang::caller_env()
 ) {
   if (verbose) {
     cli::cli_inform(c(
@@ -242,7 +243,7 @@ estimate_harvest_br <- function(
       "Bus-route harvest estimation requires .expansion column.",
       "x" = ".expansion not found in interview data.",
       "i" = msg
-    ))
+    ), call = call)
   }
 
   # Defensive check: .pi_i column must exist
@@ -251,7 +252,7 @@ estimate_harvest_br <- function(
       "Bus-route harvest estimation requires .pi_i column.",
       "x" = ".pi_i not found in interview data.",
       "i" = "Bus-route design must have inclusion probabilities computed via sampling frame."
-    ))
+    ), call = call)
   }
 
   # Check for missing .pi_i values — hard error listing site+circuit combinations
@@ -270,18 +271,18 @@ estimate_harvest_br <- function(
       msg_parts,
       "x" = "All interview site+circuit combinations must appear in the sampling frame.",
       "i" = "Check that interview data site and circuit values match sampling frame."
-    ))
+    ), call = call)
   }
 
   # Diagnostic mode: run both complete and incomplete paths, return diagnostic
   if (use_trips == "diagnostic") {
     complete_result <- estimate_harvest_br(
       design, by_vars, variance_method, conf_level,
-      verbose = FALSE, use_trips = "complete"
+      verbose = FALSE, use_trips = "complete", call = call
     )
     incomplete_result <- suppressWarnings(estimate_harvest_br(
       design, by_vars, variance_method, conf_level,
-      verbose = FALSE, use_trips = "incomplete"
+      verbose = FALSE, use_trips = "incomplete", call = call
     ))
     result <- list(complete = complete_result, incomplete = incomplete_result)
     class(result) <- c("creel_estimates_diagnostic", "list")
@@ -310,7 +311,9 @@ estimate_harvest_br <- function(
     interviews$.contribution <- interviews$.h_ratio_i / interviews$.pi_i
 
     # Build per-site breakdown table
-    site_table <- interviews[c(site_col, circuit_col, ".h_ratio_i", ".pi_i", ".contribution")]
+    # Use intersect() to skip synthetic site/circuit cols absent in ice interviews
+    avail_site_cols_inc <- intersect(c(site_col, circuit_col), names(interviews))
+    site_table <- interviews[c(avail_site_cols_inc, ".h_ratio_i", ".pi_i", ".contribution")]
     names(site_table)[names(site_table) == ".h_ratio_i"] <- "h_ratio_i"
     names(site_table)[names(site_table) == ".pi_i"] <- "pi_i"
     names(site_table)[names(site_table) == ".contribution"] <- "h_ratio_i_over_pi_i"
@@ -337,7 +340,9 @@ estimate_harvest_br <- function(
   interviews$.contribution <- interviews$.h_i / interviews$.pi_i
 
   # Build per-site attribution table for site_contributions attribute
-  site_table <- interviews[c(site_col, circuit_col, ".h_i", ".pi_i", ".contribution")]
+  # Use intersect() to skip synthetic site/circuit cols absent in ice interviews
+  avail_site_cols <- intersect(c(site_col, circuit_col), names(interviews))
+  site_table <- interviews[c(avail_site_cols, ".h_i", ".pi_i", ".contribution")]
   names(site_table)[names(site_table) == ".h_i"] <- "h_i"
   names(site_table)[names(site_table) == ".pi_i"] <- "pi_i"
   names(site_table)[names(site_table) == ".contribution"] <- "h_i_over_pi_i"
@@ -371,7 +376,8 @@ estimate_harvest_br <- function(
 #' @noRd
 estimate_total_catch_br <- function(
   # nolint: object_usage_linter
-  design, by_vars, variance_method, conf_level, verbose
+  design, by_vars, variance_method, conf_level, verbose,
+  call = rlang::caller_env()
 ) {
   if (verbose) {
     cli::cli_inform(c(
@@ -390,7 +396,7 @@ estimate_total_catch_br <- function(
       "Bus-route total catch estimation requires .expansion column.",
       "x" = ".expansion not found in interview data.",
       "i" = msg
-    ))
+    ), call = call)
   }
 
   # Defensive check: .pi_i column must exist
@@ -399,7 +405,7 @@ estimate_total_catch_br <- function(
       "Bus-route total catch estimation requires .pi_i column.",
       "x" = ".pi_i not found in interview data.",
       "i" = "Bus-route design must have inclusion probabilities computed via sampling frame."
-    ))
+    ), call = call)
   }
 
   # Check for missing .pi_i values — hard error listing site+circuit combinations
@@ -421,7 +427,7 @@ estimate_total_catch_br <- function(
       msg_parts,
       "x" = "All interview site+circuit combinations must appear in the sampling frame.",
       "i" = "Check that interview data site and circuit values match sampling frame."
-    ))
+    ), call = call)
   }
 
   catch_col <- design$catch_col
@@ -459,8 +465,190 @@ estimate_total_catch_br <- function(
   )
 }
 
+# Bus-route total harvest estimation ----
+# Implements Jones & Pollock (2012) Eq. 19.5 variant for complete-trip harvest.
+# HT formula: H_hat = sum(h_i * expansion / pi_i) # nolint: commented_code_linter
+# Called by estimate_total_harvest() when design$design_type is bus_route or ice
+
+#' Bus-route Horvitz-Thompson total harvest estimator
+#'
+#' Internal function implementing the harvest-column HT estimator for bus-route
+#' and ice designs. Computes H_hat = sum(h_i * expansion / pi_i) using only
+#' complete-trip interview rows.
+#' Called by estimate_total_harvest() after bus-route/ice dispatch.
+#'
+#' @param design A creel_design object with bus-route interviews attached
+#' @param by_vars NULL or character vector of grouping variable names
+#' @param variance_method Character string: "taylor", "bootstrap", or "jackknife"
+#' @param conf_level Numeric confidence level (0-1)
+#' @param verbose Logical. If TRUE, prints informational message about estimator
+#'
+#' @return A creel_estimates object with site_contributions attribute
+#'
+#' @keywords internal
+#' @noRd
+estimate_total_harvest_br <- function(
+  # nolint: object_usage_linter
+  design, by_vars, variance_method, conf_level, verbose,
+  call = rlang::caller_env()
+) {
+  if (verbose) {
+    cli::cli_inform(c(
+      "i" = "Using bus-route HT total harvest estimator (Jones & Pollock 2012, Eq. 19.5)"
+    ))
+  }
+
+  interviews <- design$interviews
+
+  # Defensive checks
+  if (!".expansion" %in% names(interviews)) {
+    cli::cli_abort(c(
+      "Bus-route total harvest estimation requires .expansion column.",
+      "x" = ".expansion not found in interview data.",
+      "i" = paste0(
+        "Call {.fn add_interviews} with {.arg n_counted} and {.arg n_interviewed} parameters."
+      )
+    ), call = call)
+  }
+  if (!".pi_i" %in% names(interviews)) {
+    cli::cli_abort(c(
+      "Bus-route total harvest estimation requires .pi_i column.",
+      "x" = ".pi_i not found in interview data.",
+      "i" = "Bus-route design must have inclusion probabilities computed via sampling frame."
+    ), call = call)
+  }
+
+  harvest_col <- design$harvest_col
+  trip_status_col <- design$trip_status_col
+  n_counted_col <- design$n_counted_col
+  n_interviewed_col <- design$n_interviewed_col
+  site_col <- design$bus_route$site_col
+  circuit_col <- design$bus_route$circuit_col
+
+  # Filter to complete trips only
+  if (!is.null(trip_status_col)) {
+    is_complete <- tolower(interviews[[trip_status_col]]) == "complete"
+    interviews <- interviews[is_complete, , drop = FALSE]
+  }
+
+  # Compute h_i = harvest_col * .expansion
+  interviews$.h_i <- interviews[[harvest_col]] * interviews$.expansion
+
+  # Zero-effort sites: set .h_i to 0
+  if (!is.null(n_counted_col) && !is.null(n_interviewed_col)) {
+    zero_mask <- !is.na(interviews[[n_counted_col]]) &
+      interviews[[n_counted_col]] == 0 &
+      !is.na(interviews[[n_interviewed_col]]) &
+      interviews[[n_interviewed_col]] == 0
+    interviews$.h_i[zero_mask] <- 0
+  }
+
+  # Compute h_i / pi_i contribution
+  interviews$.contribution <- interviews$.h_i / interviews$.pi_i
+
+  # Build site attribution table (intersect() guard for ice designs)
+  avail_site_cols <- intersect(c(site_col, circuit_col), names(interviews))
+  site_table <- interviews[c(avail_site_cols, ".h_i", ".pi_i", ".contribution")]
+  names(site_table)[names(site_table) == ".h_i"] <- "h_i"
+  names(site_table)[names(site_table) == ".pi_i"] <- "pi_i"
+  names(site_table)[names(site_table) == ".contribution"] <- "h_i_over_pi_i"
+
+  br_build_estimates(
+    interviews, by_vars, variance_method, conf_level, design,
+    site_table, harvest_col
+  )
+}
+
+# Bus-route total release estimation ----
+# Implements Jones & Pollock (2012) Eq. 19.5 variant for release counts.
+# HT formula: R_hat = sum(r_i * expansion / pi_i) # nolint: commented_code_linter
+# Called by estimate_total_release() when design$design_type is bus_route or ice
+
+#' Bus-route Horvitz-Thompson total release estimator
+#'
+#' Internal function implementing the release-count HT estimator for bus-route
+#' and ice designs. Computes R_hat = sum(r_i * expansion / pi_i) where r_i is
+#' the per-interview release count from attached catch data.
+#' Called by estimate_total_release() after bus-route/ice dispatch.
+#'
+#' @param design A creel_design object with bus-route interviews and catch data
+#' @param by_vars NULL or character vector of grouping variable names
+#' @param variance_method Character string: "taylor", "bootstrap", or "jackknife"
+#' @param conf_level Numeric confidence level (0-1)
+#' @param verbose Logical. If TRUE, prints informational message about estimator
+#'
+#' @return A creel_estimates object with site_contributions attribute
+#'
+#' @keywords internal
+#' @noRd
+estimate_total_release_br <- function(
+  # nolint: object_usage_linter
+  design, by_vars, variance_method, conf_level, verbose,
+  call = rlang::caller_env()
+) {
+  if (verbose) {
+    cli::cli_inform(c(
+      "i" = "Using bus-route HT total release estimator (Jones & Pollock 2012, Eq. 19.5)"
+    ))
+  }
+
+  # Build release data: joins .release_count to interviews
+  interviews <- estimate_release_build_data(design, species = NULL) # nolint: object_usage_linter
+
+  # Defensive checks
+  if (!".expansion" %in% names(interviews)) {
+    cli::cli_abort(c(
+      "Bus-route total release estimation requires .expansion column.",
+      "x" = ".expansion not found in interview data.",
+      "i" = paste0(
+        "Call {.fn add_interviews} with {.arg n_counted} and {.arg n_interviewed} parameters."
+      )
+    ), call = call)
+  }
+  if (!".pi_i" %in% names(interviews)) {
+    cli::cli_abort(c(
+      "Bus-route total release estimation requires .pi_i column.",
+      "x" = ".pi_i not found in interview data.",
+      "i" = "Bus-route design must have inclusion probabilities computed via sampling frame."
+    ), call = call)
+  }
+
+  n_counted_col <- design$n_counted_col
+  n_interviewed_col <- design$n_interviewed_col
+  site_col <- design$bus_route$site_col
+  circuit_col <- design$bus_route$circuit_col
+
+  # Compute r_i = .release_count * .expansion
+  interviews$.r_i <- interviews$.release_count * interviews$.expansion
+
+  # Zero-effort sites: set .r_i to 0
+  if (!is.null(n_counted_col) && !is.null(n_interviewed_col)) {
+    zero_mask <- !is.na(interviews[[n_counted_col]]) &
+      interviews[[n_counted_col]] == 0 &
+      !is.na(interviews[[n_interviewed_col]]) &
+      interviews[[n_interviewed_col]] == 0
+    interviews$.r_i[zero_mask] <- 0
+  }
+
+  # Compute r_i / pi_i contribution
+  interviews$.contribution <- interviews$.r_i / interviews$.pi_i
+
+  # Build site attribution table (intersect() guard for ice designs)
+  avail_site_cols <- intersect(c(site_col, circuit_col), names(interviews))
+  site_table <- interviews[c(avail_site_cols, ".r_i", ".pi_i", ".contribution")]
+  names(site_table)[names(site_table) == ".r_i"] <- "r_i"
+  names(site_table)[names(site_table) == ".pi_i"] <- "pi_i"
+  names(site_table)[names(site_table) == ".contribution"] <- "r_i_over_pi_i"
+
+  br_build_estimates(
+    interviews, by_vars, variance_method, conf_level, design,
+    site_table, ".release_count"
+  )
+}
+
 # Internal helper: build creel_estimates from .contribution column ----
-# Shared by estimate_harvest_br() and estimate_total_catch_br()
+# Shared by estimate_harvest_br(), estimate_total_catch_br(),
+# estimate_total_harvest_br(), and estimate_total_release_br()
 
 #' Build creel_estimates from pre-computed .contribution column
 #'

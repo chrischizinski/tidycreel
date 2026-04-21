@@ -100,6 +100,7 @@
 #' # result_verbose <- estimate_total_catch(design, verbose = TRUE)
 #'
 #' @seealso \code{\link{estimate_effort}}, \code{\link{estimate_catch_rate}}
+#' @family "Estimation"
 #' @export
 estimate_total_catch <- function(
   design,

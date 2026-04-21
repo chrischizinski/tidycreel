@@ -23,6 +23,7 @@
 #'
 #' @seealso [example_counts] for matching count data, [creel_design()] to
 #'   create a design from calendar data
+#' @family "Example Datasets"
 "example_calendar"
 
 #' Example count data for creel survey
@@ -52,6 +53,7 @@
 #'
 #' @seealso [example_calendar] for matching calendar data, [add_counts()] to
 #'   attach counts to a design
+#' @family "Example Datasets"
 "example_counts"
 
 #' Example interview data for creel survey
@@ -124,6 +126,7 @@
 #' @seealso [example_calendar] for matching calendar data, [example_catch] for
 #'   species-level catch data, [prep_interviews_trips()] to standardize interview rows,
 #'   [add_interviews()] to attach interviews to a design
+#' @family "Example Datasets"
 "example_interviews"
 
 #' Example species catch data for creel survey
@@ -187,6 +190,7 @@
 #' @seealso [example_interviews] for the corresponding interview-level data,
 #'   [prep_interview_catch()] to standardize species catch, and
 #'   `add_catch()` to attach species catch to a design
+#' @family "Example Datasets"
 "example_catch"
 
 #' Example fish length data for creel survey
@@ -236,6 +240,7 @@
 #'   release_format = "binned"
 #' )
 #' print(design)
+#' @family "Example Datasets"
 "example_lengths"
 
 #' Example calendar for spatially stratified creel survey
@@ -262,6 +267,7 @@
 #'
 #' @seealso [example_sections_counts], [example_sections_interviews],
 #'   [add_sections()], [creel_design()]
+#' @family "Example Datasets"
 "example_sections_calendar"
 
 #' Example effort counts for spatially stratified creel survey
@@ -297,6 +303,7 @@
 #'
 #' @seealso [example_sections_calendar], [example_sections_interviews],
 #'   [add_counts()], [add_sections()], [estimate_effort()]
+#' @family "Example Datasets"
 "example_sections_counts"
 
 #' Example interview data for spatially stratified creel survey
@@ -347,6 +354,7 @@
 #'
 #' @seealso [example_sections_calendar], [example_sections_counts],
 #'   [add_interviews()], [estimate_catch_rate()], [estimate_total_catch()]
+#' @family "Example Datasets"
 "example_sections_interviews"
 
 #' Example sampling frame for ice fishing creel survey
@@ -384,6 +392,7 @@
 #'
 #' @seealso [example_ice_interviews] for matching interview data,
 #'   [creel_design()] for ice survey design construction
+#' @family "Example Datasets"
 "example_ice_sampling_frame"
 
 #' Example interview data for ice fishing creel survey
@@ -445,6 +454,7 @@
 #'
 #' @seealso [example_ice_sampling_frame] for the matching sampling frame,
 #'   [creel_design()], [add_interviews()], [estimate_effort()]
+#' @family "Example Datasets"
 "example_ice_interviews"
 
 #' Example camera counts dataset (counter mode)
@@ -484,6 +494,7 @@
 #'
 #' @seealso [example_camera_timestamps], [example_camera_interviews],
 #'   [creel_design()], [add_counts()]
+#' @family "Example Datasets"
 "example_camera_counts"
 
 #' Example camera timestamps dataset (ingress-egress mode)
@@ -521,6 +532,7 @@
 #'
 #' @seealso [example_camera_counts], [example_camera_interviews],
 #'   [preprocess_camera_timestamps()]
+#' @family "Example Datasets"
 "example_camera_timestamps"
 
 #' Example interview data for camera-monitored creel survey
@@ -579,6 +591,7 @@
 #'
 #' @seealso [example_camera_counts], [example_camera_timestamps],
 #'   [add_interviews()], [estimate_catch_rate()], [estimate_total_catch()]
+#' @family "Example Datasets"
 "example_camera_interviews"
 
 #' Example aerial angler count dataset
@@ -621,6 +634,7 @@
 #'
 #' @seealso [example_aerial_interviews] for matching interview data,
 #'   [creel_design()], [add_counts()], [estimate_effort()]
+#' @family "Example Datasets"
 "example_aerial_counts"
 
 #' Example angler interview data for aerial creel survey
@@ -678,6 +692,7 @@
 #' @seealso [example_aerial_counts] for matching count data,
 #'   [creel_design()], [add_interviews()], [estimate_catch_rate()],
 #'   [estimate_total_catch()]
+#' @family "Example Datasets"
 "example_aerial_interviews"
 
 #' Example multi-flight aerial count data for GLMM effort estimation
@@ -735,6 +750,7 @@
 #' @seealso [example_aerial_counts] for the simple single-flight dataset,
 #'   [estimate_effort_aerial_glmm()] for the GLMM-based estimator,
 #'   [creel_design()], [add_counts()]
+#' @family "Example Datasets"
 "example_aerial_glmm_counts"
 
 #' Toy count data for data validation examples
@@ -760,6 +776,7 @@
 #' }
 #'
 #' @seealso [creel_interviews_toy]
+#' @family "Example Datasets"
 "creel_counts_toy"
 
 #' Toy interview data for data validation examples
@@ -789,4 +806,5 @@
 #' }
 #'
 #' @seealso [creel_counts_toy]
+#' @family "Example Datasets"
 "creel_interviews_toy"

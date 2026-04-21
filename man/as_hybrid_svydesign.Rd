@@ -49,11 +49,13 @@ column (\code{"access"} or \code{"roving"}) and a \code{weight} column derived f
 the sampling fractions.
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+}
+\details{
 Combines count data from access-point and roving survey components into a
 single \code{survey::svydesign} object suitable for effort estimation via
 \code{\link[=estimate_effort]{estimate_effort()}}.
-}
-\details{
+
 A hybrid design is appropriate when a survey uses both fixed access-point
 counts (e.g., boat-launch interviews with angler counts) and roving-route
 counts (e.g., progressive counts along a shoreline transect) within the same
@@ -90,3 +92,23 @@ survey::svytotal(~count, design)
 }
 
 }
+\seealso{
+Other "Survey Design":
+\code{\link{add_catch}()},
+\code{\link{add_counts}()},
+\code{\link{add_interviews}()},
+\code{\link{add_lengths}()},
+\code{\link{add_sections}()},
+\code{\link{as_survey_design}()},
+\code{\link{compute_angler_effort}()},
+\code{\link{compute_effort}()},
+\code{\link{creel_design}()},
+\code{\link{creel_schema}()},
+\code{\link{est_effort_camera}()},
+\code{\link{prep_counts_boat_party}()},
+\code{\link{prep_counts_daily_effort}()},
+\code{\link{prep_interview_catch}()},
+\code{\link{prep_interviews_trips}()},
+\code{\link{validate_creel_schema}()}
+}
+\concept{"Survey Design"}

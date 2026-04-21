@@ -74,6 +74,7 @@
 #' # Total releases by species
 #' total_rel_sp <- estimate_total_release(design, by = species)
 #' print(total_rel_sp)
+#' @family "Estimation"
 #' @export
 estimate_total_release <- function(
   design,

@@ -49,14 +49,17 @@
 #'
 #' cal <- data.frame(
 #'   date     = unique(example_camera_counts$date),
-#'   day_type = unique(example_camera_counts[, c("date","day_type")])[["day_type"]]
+#'   day_type = unique(example_camera_counts[, c("date", "day_type")])[["day_type"]]
 #' )
-#' design <- creel_design(cal, date = date, strata = day_type,
-#'   survey_type = "camera", camera_mode = "counter")
+#' design <- creel_design(cal,
+#'   date = date, strata = day_type,
+#'   survey_type = "camera", camera_mode = "counter"
+#' )
 #'
 #' # Filter to operational rows
 #' ops <- example_camera_counts[
-#'   example_camera_counts$camera_status == "operational", ]
+#'   example_camera_counts$camera_status == "operational",
+#' ]
 #' design <- add_counts(design, ops)
 #'
 #' # Ratio calibration using interview hours
@@ -64,15 +67,18 @@
 #' print(est)
 #' }
 #'
+#' @family "Survey Design"
 #' @export
-est_effort_camera <- function( # nolint: object_name_linter
-    design,
-    interviews     = NULL,
-    effort_col     = "hours_fished",
-    intercept_col  = NULL,
-    h_open         = NULL,
-    variance       = c("taylor", "replicate"),
-    conf_level     = 0.95) {
+est_effort_camera <- function(
+  # nolint: object_name_linter
+  design,
+  interviews = NULL,
+  effort_col = "hours_fished",
+  intercept_col = NULL,
+  h_open = NULL,
+  variance = c("taylor", "replicate"),
+  conf_level = 0.95
+) {
   variance <- match.arg(variance)
 
   if (!inherits(design, "creel_design")) {

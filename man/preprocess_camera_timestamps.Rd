@@ -32,3 +32,4 @@ egress precedes ingress (negative duration) are flagged with
 \details{
 Preprocess camera ingress-egress timestamps to daily effort hours
 }
+\concept{"Camera Survey"}

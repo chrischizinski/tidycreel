@@ -1812,7 +1812,7 @@ test_that("EDGE-02: all-NA count column emits cli_warn and returns NA estimate",
   expect_true(is.na(result$estimates$estimate))
 })
 
-test_that("EDGE-03: single sampled day per stratum raises rlang_error naming the stratum", {
+test_that("EDGE-03: single sampled day per stratum raises creel_error_single_psu naming the stratum", {
   counts <- data.frame(
     date     = as.Date(c("2024-06-01", "2024-06-08")),
     day_type = c("weekday", "weekend"),
@@ -1823,7 +1823,7 @@ test_that("EDGE-03: single sampled day per stratum raises rlang_error naming the
   d <- suppressWarnings(add_counts(d, counts))
   expect_error(
     estimate_effort(d),
-    class = "rlang_error"
+    class = "creel_error_single_psu"
   )
 })
 

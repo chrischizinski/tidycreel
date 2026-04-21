@@ -70,4 +70,29 @@ print(rpt)
 }
 \seealso{
 \code{\link[=write_estimates]{write_estimates()}}
+
+Other "Reporting & Diagnostics":
+\code{\link{adjust_nonresponse}()},
+\code{\link{check_completeness}()},
+\code{\link{compare_variance}()},
+\code{\link{flag_outliers}()},
+\code{\link{season_summary}()},
+\code{\link{standardize_species}()},
+\code{\link{summarize_by_angler_type}()},
+\code{\link{summarize_by_day_type}()},
+\code{\link{summarize_by_method}()},
+\code{\link{summarize_by_species_sought}()},
+\code{\link{summarize_by_trip_length}()},
+\code{\link{summarize_cws_rates}()},
+\code{\link{summarize_hws_rates}()},
+\code{\link{summarize_length_freq}()},
+\code{\link{summarize_refusals}()},
+\code{\link{summarize_successful_parties}()},
+\code{\link{summarize_trips}()},
+\code{\link{summary.creel_estimates}()},
+\code{\link{validate_creel_data}()},
+\code{\link{validate_design}()},
+\code{\link{validate_incomplete_trips}()},
+\code{\link{write_estimates}()}
 }
+\concept{"Reporting & Diagnostics"}

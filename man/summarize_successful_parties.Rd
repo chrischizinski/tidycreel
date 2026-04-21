@@ -46,3 +46,29 @@ d <- add_catch(d, example_catch,
 summarize_successful_parties(d)
 
 }
+\seealso{
+Other "Reporting & Diagnostics":
+\code{\link{adjust_nonresponse}()},
+\code{\link{check_completeness}()},
+\code{\link{compare_variance}()},
+\code{\link{flag_outliers}()},
+\code{\link{season_summary}()},
+\code{\link{standardize_species}()},
+\code{\link{summarize_by_angler_type}()},
+\code{\link{summarize_by_day_type}()},
+\code{\link{summarize_by_method}()},
+\code{\link{summarize_by_species_sought}()},
+\code{\link{summarize_by_trip_length}()},
+\code{\link{summarize_cws_rates}()},
+\code{\link{summarize_hws_rates}()},
+\code{\link{summarize_length_freq}()},
+\code{\link{summarize_refusals}()},
+\code{\link{summarize_trips}()},
+\code{\link{summary.creel_estimates}()},
+\code{\link{validate_creel_data}()},
+\code{\link{validate_design}()},
+\code{\link{validate_incomplete_trips}()},
+\code{\link{validation_report}()},
+\code{\link{write_estimates}()}
+}
+\concept{"Reporting & Diagnostics"}

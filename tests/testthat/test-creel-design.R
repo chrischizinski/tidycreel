@@ -68,7 +68,7 @@ test_that("creel_design() fails when date column is not Date class", {
   # Schema validator catches this (no Date column exists in the data frame)
   expect_error(
     creel_design(cal, date = date, strata = day_type),
-    class = "rlang_error"
+    class = "creel_error_schema_validation"
   )
 })
 
@@ -81,7 +81,7 @@ test_that("creel_design() fails when date column is numeric", {
   # Schema validator catches this (no Date column exists in the data frame)
   expect_error(
     creel_design(cal, date = date, strata = day_type),
-    class = "rlang_error"
+    class = "creel_error_schema_validation"
   )
 })
 
@@ -93,7 +93,7 @@ test_that("creel_design() fails when date column contains NA values", {
 
   expect_error(
     creel_design(cal, date = date, strata = day_type),
-    class = "rlang_error"
+    class = "creel_error_schema_validation"
   )
   expect_error(
     creel_design(cal, date = date, strata = day_type),
@@ -110,7 +110,7 @@ test_that("creel_design() fails when strata column is numeric", {
   # Schema validator catches this (no character/factor column exists)
   expect_error(
     creel_design(cal, date = date, strata = day_type),
-    class = "rlang_error"
+    class = "creel_error_schema_validation"
   )
 })
 
@@ -379,7 +379,7 @@ test_that("validation fails when p_site does not sum to 1.0 within circuit", {
       survey_type = "bus_route", sampling_frame = sf,
       site = site, p_site = p_site, p_period = p_period
     ),
-    class = "rlang_error"
+    class = "creel_error_invalid_input"
   )
   expect_error(
     creel_design(make_br_cal(),
@@ -421,7 +421,7 @@ test_that("validation fails when p_site value is zero", {
       survey_type = "bus_route", sampling_frame = sf,
       site = site, p_site = p_site, p_period = p_period
     ),
-    class = "rlang_error"
+    class = "creel_error_invalid_input"
   )
 })
 
@@ -436,7 +436,7 @@ test_that("validation fails when p_site value exceeds 1", {
       survey_type = "bus_route", sampling_frame = sf,
       site = site, p_site = p_site, p_period = p_period
     ),
-    class = "rlang_error"
+    class = "creel_error_invalid_input"
   )
 })
 
@@ -451,7 +451,7 @@ test_that("validation fails when p_period value exceeds 1", {
       survey_type = "bus_route", sampling_frame = sf,
       site = site, p_site = p_site, p_period = p_period
     ),
-    class = "rlang_error"
+    class = "creel_error_invalid_input"
   )
 })
 
@@ -461,7 +461,7 @@ test_that("validation fails when sampling_frame is missing for bus_route", {
       date = date, strata = day_type,
       survey_type = "bus_route", site = site, p_site = p_site, p_period = 0.5
     ),
-    class = "rlang_error"
+    class = "creel_error_invalid_input"
   )
 })
 
@@ -539,12 +539,12 @@ test_that("get_sampling_frame() errors on non-bus-route design", {
   )
   d <- creel_design(cal, date = date, strata = day_type)
 
-  expect_error(get_sampling_frame(d), class = "rlang_error")
+  expect_error(get_sampling_frame(d), class = "creel_error_invalid_input")
   expect_error(get_sampling_frame(d), "only available for bus-route")
 })
 
 test_that("get_sampling_frame() errors on non-creel_design input", {
-  expect_error(get_sampling_frame(list()), class = "rlang_error")
+  expect_error(get_sampling_frame(list()), class = "creel_error_invalid_input")
 })
 
 # Inclusion probability calculation ----
@@ -761,7 +761,7 @@ test_that("get_inclusion_probs() on plain list errors with 'must be a creel_desi
   )
   expect_error(
     get_inclusion_probs(list()),
-    class = "rlang_error"
+    class = "creel_error_invalid_input"
   )
 })
 
@@ -890,13 +890,13 @@ make_enum_cal <- function() {
   )
 }
 
-test_that("creel_design() aborts with rlang_error for unknown survey_type", {
+test_that("creel_design() aborts with creel_error_invalid_survey_type for unknown survey_type", {
   expect_error(
     creel_design(make_enum_cal(),
       date = date, strata = day_type,
       survey_type = "unknown_type"
     ),
-    class = "rlang_error"
+    class = "creel_error_invalid_survey_type"
   )
 })
 

@@ -21,8 +21,8 @@ repos:
     rev: v4.6.0
     hooks:
       - id: trailing-whitespace
-        exclude: ^(renv/|\.lintr$)
+        exclude: ^(renv/|\.lintr$|tests/testthat/_snaps/)
       - id: end-of-file-fixer
-        exclude: ^(renv/|\.lintr$)
+        exclude: ^(renv/|\.lintr$|tests/testthat/_snaps/)
       - id: check-yaml
       - id: check-added-large-files

@@ -41,4 +41,12 @@ ggplot2::autoplot(sched)
 \seealso{
 \code{\link[=generate_schedule]{generate_schedule()}}, \code{\link[=print.creel_schedule]{print.creel_schedule()}},
 \code{\link[=write_schedule]{write_schedule()}}
+
+Other "Visualisation":
+\code{\link{autoplot.creel_estimates}()},
+\code{\link{autoplot.creel_length_distribution}()},
+\code{\link{creel_palette}()},
+\code{\link{plot_design}()},
+\code{\link{theme_creel}()}
 }
+\concept{"Visualisation"}

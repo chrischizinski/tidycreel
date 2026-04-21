@@ -51,13 +51,15 @@
 #' print(rpt)
 #' }
 #'
+#' @family "Reporting & Diagnostics"
 #' @export
 validation_report <- function(
-    counts       = NULL,
-    interviews   = NULL,
-    species_col  = NULL,
-    na_threshold = 0.10,
-    date_range   = c(as.Date("1970-01-01"), as.Date("2100-12-31"))) {
+  counts = NULL,
+  interviews = NULL,
+  species_col = NULL,
+  na_threshold = 0.10,
+  date_range = c(as.Date("1970-01-01"), as.Date("2100-12-31"))
+) {
   if (is.null(counts) && is.null(interviews)) {
     cli::cli_abort(
       "At least one of {.arg counts} or {.arg interviews} must be provided."
@@ -110,8 +112,8 @@ validation_report <- function(
       }
 
       rows <- c(rows, list(data.frame(
-        table  = tbl,
-        check  = chk,
+        table = tbl,
+        check = chk,
         n_pass = n_pass,
         n_warn = n_warn,
         n_fail = n_fail,
@@ -135,15 +137,15 @@ validation_report <- function(
   res <- suppressWarnings(
     standardize_species(interviews, species_col = species_col) # nolint: object_usage_linter
   )
-  n_total   <- nrow(res)
+  n_total <- nrow(res)
   n_matched <- sum(!is.na(res$species_code))
-  pct       <- if (n_total > 0L) round(100 * n_matched / n_total, 1) else 0
+  pct <- if (n_total > 0L) round(100 * n_matched / n_total, 1) else 0
 
   n_warn <- if (n_matched < n_total) 1L else 0L
 
   data.frame(
-    table  = "species",
-    check  = "species_coverage",
+    table = "species",
+    check = "species_coverage",
     n_pass = if (n_warn == 0L) 1L else 0L,
     n_warn = n_warn,
     n_fail = 0L,

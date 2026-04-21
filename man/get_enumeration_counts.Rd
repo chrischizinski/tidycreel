@@ -70,4 +70,10 @@ and 19.5 for bus-route effort and harvest estimation.
 \seealso{
 \code{\link[=creel_design]{creel_design()}}, \code{\link[=add_interviews]{add_interviews()}}, \code{\link[=get_sampling_frame]{get_sampling_frame()}},
 \code{\link[=get_inclusion_probs]{get_inclusion_probs()}}
+
+Other "Bus-Route Helpers":
+\code{\link{get_inclusion_probs}()},
+\code{\link{get_sampling_frame}()},
+\code{\link{get_site_contributions}()}
 }
+\concept{"Bus-Route Helpers"}

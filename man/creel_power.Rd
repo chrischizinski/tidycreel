@@ -64,3 +64,12 @@ creel_power(n = 100, cv_historical = 0.5, delta_pct = 0.20, alternative = "one.s
 Cohen, J. 1988. Statistical Power Analysis for the Behavioral Sciences, 2nd
 ed. Lawrence Erlbaum Associates, Hillsdale, NJ.
 }
+\seealso{
+Other "Planning & Sample Size":
+\code{\link{compare_designs}()},
+\code{\link{creel_n_cpue}()},
+\code{\link{creel_n_effort}()},
+\code{\link{cv_from_n}()},
+\code{\link{power_creel}()}
+}
+\concept{"Planning & Sample Size"}

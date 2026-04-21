@@ -44,4 +44,12 @@ ggplot2::autoplot(est_grp)
 \seealso{
 \code{\link[=estimate_effort]{estimate_effort()}}, \code{\link[=estimate_catch_rate]{estimate_catch_rate()}},
 \code{\link[=summary.creel_estimates]{summary.creel_estimates()}}
+
+Other "Visualisation":
+\code{\link{autoplot.creel_length_distribution}()},
+\code{\link{autoplot.creel_schedule}()},
+\code{\link{creel_palette}()},
+\code{\link{plot_design}()},
+\code{\link{theme_creel}()}
 }
+\concept{"Visualisation"}

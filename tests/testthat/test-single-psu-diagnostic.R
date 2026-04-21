@@ -41,13 +41,13 @@ make_adequate_design <- function() {
 
 # ---- DIAG-01: error is now a structured rlang_error ----
 
-test_that("estimate_effort() single-PSU error is an rlang_error", {
+test_that("estimate_effort() single-PSU error is a creel_error_single_psu", {
   design <- make_single_psu_design()
   err <- tryCatch(
     suppressWarnings(estimate_effort(design)),
     error = function(e) e
   )
-  expect_true(inherits(err, "rlang_error"))
+  expect_true(inherits(err, "creel_error_single_psu"))
 })
 
 test_that("estimate_effort() single-PSU error mentions the stratum name", {
@@ -171,11 +171,11 @@ make_repvar_design <- function(n_per_stratum) {
   suppressWarnings(add_counts(d, cnts))
 }
 
-test_that("REPVAR-01: jackknife with 1-PSU per stratum raises rlang_error", {
+test_that("REPVAR-01: jackknife with 1-PSU per stratum raises creel_error_single_psu", {
   d <- make_repvar_design(1L)
   expect_error(
     estimate_effort(d, variance = "jackknife"),
-    class = "rlang_error"
+    class = "creel_error_single_psu"
   )
 })
 
@@ -187,11 +187,11 @@ test_that("REPVAR-02: jackknife 1-PSU error message names the stratum", {
   )
 })
 
-test_that("REPVAR-03: bootstrap with 1-PSU per stratum raises rlang_error", {
+test_that("REPVAR-03: bootstrap with 1-PSU per stratum raises creel_error_single_psu", {
   d <- make_repvar_design(1L)
   expect_error(
     estimate_effort(d, variance = "bootstrap"),
-    class = "rlang_error"
+    class = "creel_error_single_psu"
   )
 })
 

@@ -69,10 +69,10 @@ recommended.
 \examples{
 data("example_counts", package = "tidycreel")
 data("example_interviews", package = "tidycreel")
-cal     <- unique(example_counts[, c("date", "day_type")])
-design  <- creel_design(cal, date = date, strata = day_type)
-design  <- suppressWarnings(add_counts(design, example_counts))
-design  <- suppressWarnings(add_interviews(
+cal <- unique(example_counts[, c("date", "day_type")])
+design <- creel_design(cal, date = date, strata = day_type)
+design <- suppressWarnings(add_counts(design, example_counts))
+design <- suppressWarnings(add_interviews(
   design, example_interviews,
   catch = catch_total, effort = hours_fished,
   trip_status = trip_status, trip_duration = trip_duration
@@ -95,3 +95,29 @@ Pollock, K.H., Jones, C.M. and Brown, T.L. 1994. Angler Survey Methods
 and Their Applications in Fisheries Management. American Fisheries Society,
 Bethesda, MD.
 }
+\seealso{
+Other "Reporting & Diagnostics":
+\code{\link{check_completeness}()},
+\code{\link{compare_variance}()},
+\code{\link{flag_outliers}()},
+\code{\link{season_summary}()},
+\code{\link{standardize_species}()},
+\code{\link{summarize_by_angler_type}()},
+\code{\link{summarize_by_day_type}()},
+\code{\link{summarize_by_method}()},
+\code{\link{summarize_by_species_sought}()},
+\code{\link{summarize_by_trip_length}()},
+\code{\link{summarize_cws_rates}()},
+\code{\link{summarize_hws_rates}()},
+\code{\link{summarize_length_freq}()},
+\code{\link{summarize_refusals}()},
+\code{\link{summarize_successful_parties}()},
+\code{\link{summarize_trips}()},
+\code{\link{summary.creel_estimates}()},
+\code{\link{validate_creel_data}()},
+\code{\link{validate_design}()},
+\code{\link{validate_incomplete_trips}()},
+\code{\link{validation_report}()},
+\code{\link{write_estimates}()}
+}
+\concept{"Reporting & Diagnostics"}

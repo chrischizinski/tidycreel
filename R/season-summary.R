@@ -33,6 +33,7 @@
 #'
 #' @importFrom dplyr rename_with all_of left_join bind_cols
 #' @importFrom cli cli_abort cli_format_method cli_h1 cli_text
+#' @family "Reporting & Diagnostics"
 #' @export
 season_summary <- function(estimates, ...) {
   # Input guard: must be a named list
