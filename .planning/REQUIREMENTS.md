@@ -24,7 +24,7 @@
 ### Testing
 
 - [ ] **TEST-01**: quickcheck property-based tests written for INV-01–06 (priority order: INV-04 → INV-01 → INV-02 → INV-06 → INV-03; INV-05 manual-review only)
-- [ ] **TEST-02**: `expect_snapshot()` adopted for 6 priority methods from 74-TESTING-STRATEGY.md
+- [x] **TEST-02**: `expect_snapshot()` adopted for 6 priority methods from 74-TESTING-STRATEGY.md
 - [ ] **TEST-03**: Fresh `covr` run confirms coverage baseline; codecov threshold configured in CI
 
 ### Code Quality
@@ -71,7 +71,7 @@
 | CODE-02 | Phase 77 | Complete |
 | CODE-03 | Phase 77 | Complete |
 | CODE-01 | Phase 78 | Pending |
-| TEST-02 | Phase 78 | Pending |
+| TEST-02 | Phase 78 | Complete |
 | TEST-01 | Phase 79 | Pending |
 | TEST-03 | Phase 79 | Pending |
 | API-03 | Phase 80 | Pending |
