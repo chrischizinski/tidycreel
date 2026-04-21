@@ -27,7 +27,7 @@ Full archive: [.planning/milestones/M022-ROADMAP.md](milestones/M022-ROADMAP.md)
 
 - [x] **Phase 76: rOpenSci Blockers** — Named condition classes, lifecycle badges, CITATION, and scales removal (completed 2026-04-20)
 - [x] **Phase 77: Dependency Reduction and Caller Context** — lubridate demotion, rlang::caller_env() in bus-route estimators, get_site_contributions() relocation (completed 2026-04-20)
-- [x] **Phase 78: Code Quality and Snapshot Testing** — @family tags across R/, expect_snapshot() adoption for 6 priority methods (completed 2026-04-21)
+- [x] **Phase 78: Code Quality and Snapshot Testing** — @family tags across R/, expect_snapshot() adopted for 3 text-output print methods (completed 2026-04-21)
 - [ ] **Phase 79: Property-Based Testing and Coverage Gate** — quickcheck tests for INV-01–06, covr baseline, codecov threshold in CI
 - [ ] **Phase 80: Architecture Decision and Human Verification** — creel_summary_* S3 direction committed, Phase 70 human verification complete
 
@@ -65,12 +65,12 @@ Plans:
 - [ ] 77-03-PLAN.md — Integration gate: full test suite + rcmdcheck + human verification
 
 ### Phase 78: Code Quality and Snapshot Testing
-**Goal**: Every exported function has a @family tag enabling pkgdown grouping, and expect_snapshot() covers the 6 priority output methods identified in 74-TESTING-STRATEGY.md
+**Goal**: Every exported function has a @family tag enabling pkgdown grouping, and expect_snapshot() covers the 3 text-output print methods identified in 74-TESTING-STRATEGY.md (autoplot methods deferred; see 78-CONTEXT.md)
 **Depends on**: Phase 77
 **Requirements**: CODE-01, TEST-02
 **Success Criteria** (what must be TRUE):
   1. Every file in R/ that contains exported functions has at least one `@family` tag; `pkgdown::build_site()` produces grouped function reference pages
-  2. Snapshot tests exist for each of the 6 priority methods listed in 74-TESTING-STRATEGY.md; snapshots are committed and pass on a clean `devtools::test()` run
+  2. Snapshot tests exist for each of the 3 text-output print methods (`print.creel_design`, `print.creel_estimates_mor`, `print.creel_schedule`); snapshots are committed and pass on a clean `devtools::test()` run; autoplot methods deferred per 78-CONTEXT.md
   3. No existing tests are broken; overall test count is the same or higher than before this phase
 **Plans**: 3 plans
 Plans:
