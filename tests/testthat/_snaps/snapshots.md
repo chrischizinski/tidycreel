@@ -3,7 +3,7 @@
     Code
       print(design)
     Output
-
+      
       -- Creel Survey Design ---------------------------------------------------------
       Type: "instantaneous"
       Date column: date
@@ -24,13 +24,13 @@
       This estimate uses incomplete trip interviews (10 of 10 total).
       Truncation: 0 trips excluded (threshold: 0.5 hours)
       Validate with `validate_incomplete_trips()` before use (Phase 19).
-
-
+      
+      
       -- Creel Survey Estimates ------------------------------------------------------
       Method: Mean-of-Ratios CPUE
       Variance: Taylor linearization
       Confidence level: 95%
-
+      
       # A tibble: 1 x 5
         estimate    se ci_lower ci_upper     n
            <dbl> <dbl>    <dbl>    <dbl> <int>
@@ -51,3 +51,4 @@
       | WEEKE    | 17       | 18       | 19       | WEEKD    | WEEKD    | 22       |
       | WEEKE    | 24       | WEEKD    | 26       | 27       | WEEKD    | WEEKE    |
       | WEEKE    |          |          |          |          |          |          |
+
