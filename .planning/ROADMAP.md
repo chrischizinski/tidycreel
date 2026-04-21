@@ -72,7 +72,11 @@ Plans:
   1. Every file in R/ that contains exported functions has at least one `@family` tag; `pkgdown::build_site()` produces grouped function reference pages
   2. Snapshot tests exist for each of the 6 priority methods listed in 74-TESTING-STRATEGY.md; snapshots are committed and pass on a clean `devtools::test()` run
   3. No existing tests are broken; overall test count is the same or higher than before this phase
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 78-01-PLAN.md — @family tags on all 111 user-facing exports across 40 R/ files + devtools::document()
+- [ ] 78-02-PLAN.md — test-snapshots.R with 3 snapshot tests + _snaps/snapshots.md committed
+- [ ] 78-03-PLAN.md — Integration gate: rcmdcheck + pkgdown visual verification of grouped families
 
 ### Phase 79: Property-Based Testing and Coverage Gate
 **Goal**: quickcheck property-based tests exercise domain invariants INV-01 through INV-06 (excluding INV-05 which is manual-review only), and a codecov threshold is enforced in CI at the confirmed coverage baseline
@@ -108,6 +112,6 @@ Plans:
 | 75. Performance Optimization | M022 | 3/3 | Complete | 2026-04-19 |
 | 76. rOpenSci Blockers | 4/4 | Complete    | 2026-04-20 | - |
 | 77. Dependency Reduction and Caller Context | 3/3 | Complete    | 2026-04-20 | - |
-| 78. Code Quality and Snapshot Testing | M023 | 0/TBD | Not started | - |
+| 78. Code Quality and Snapshot Testing | M023 | 0/3 | Not started | - |
 | 79. Property-Based Testing and Coverage Gate | M023 | 0/TBD | Not started | - |
 | 80. Architecture Decision and Human Verification | M023 | 0/TBD | Not started | - |
