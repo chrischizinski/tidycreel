@@ -29,7 +29,7 @@
 
 ### Code Quality
 
-- [ ] **CODE-01**: `@family` tags added across all R/ files (zero currently; enables pkgdown grouping)
+- [x] **CODE-01**: `@family` tags added across all R/ files (zero currently; enables pkgdown grouping)
 - [x] **CODE-02**: `rlang::caller_env()` added to bus-route estimators (P3 gap from Phase 73 review)
 - [x] **CODE-03**: `get_site_contributions()` relocated to correct architectural layer (A1 finding from 72-ARCH-REVIEW.md)
 
@@ -70,7 +70,7 @@
 | DEPS-02 | Phase 77 | Complete |
 | CODE-02 | Phase 77 | Complete |
 | CODE-03 | Phase 77 | Complete |
-| CODE-01 | Phase 78 | Pending |
+| CODE-01 | Phase 78 | Complete |
 | TEST-02 | Phase 78 | Complete |
 | TEST-01 | Phase 79 | Pending |
 | TEST-03 | Phase 79 | Pending |

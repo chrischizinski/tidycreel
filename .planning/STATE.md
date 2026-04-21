@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: milestone
 status: planning
-stopped_at: Completed 77-03-PLAN.md — integration gate, Phase 77 fully complete
-last_updated: "2026-04-20T20:32:22.123Z"
+stopped_at: Completed 78-01-PLAN.md — @family tags for all 111 user-facing exports
+last_updated: "2026-04-21T01:31:02Z"
 last_activity: 2026-04-19 — Roadmap created for M023 (Phases 76–80)
 progress:
   total_phases: 5
@@ -30,12 +30,12 @@ See: .planning/PROJECT.md (updated 2026-04-19)
 
 ## Current Position
 
-Phase: 76 of 80 (rOpenSci Blockers)
-Plan: — (not yet planned)
-Status: Ready to plan
-Last activity: 2026-04-19 — Roadmap created for M023 (Phases 76–80)
+Phase: 78 of 80 (Code Quality and Snapshot Testing)
+Plan: 01 complete — @family tags for pkgdown reference grouping
+Status: In progress (Phase 78 Plan 01 complete)
+Last activity: 2026-04-21 — Phase 78-01 complete: @family tags on 111 exports, 92 Rd files updated
 
-Progress: [░░░░░░░░░░] 0% (0/5 phases complete)
+Progress: [████░░░░░░] 40% (2/5 phases complete, Phase 78 in progress)
 
 ## Performance Metrics
 
@@ -58,6 +58,7 @@ Progress: [░░░░░░░░░░] 0% (0/5 phases complete)
 | Phase 77-dependency-reduction-and-caller-context P01 | 11min | 2 tasks | 5 files |
 | Phase 77-dependency-reduction-and-caller-context P02 | 8min | 2 tasks | 3 files |
 | Phase 77-dependency-reduction-and-caller-context P03 | 5min | 2 tasks | 0 files |
+| Phase 78-code-quality-and-snapshot-testing P01 | 45min | 2 tasks | 134 files |
 
 ## Accumulated Context
 
@@ -82,6 +83,9 @@ Recent decisions affecting current work:
 - [Phase 77-02]: get_site_contributions() relocated to creel-estimates-utils.R (Layer 2) — consumes creel_estimates, not creel_design objects
 - [Phase 77-02]: caller_env thread pattern: call = rlang::caller_env() as last param + call = call in all cli_abort() calls, including recursive calls in estimate_harvest_br()
 - [Phase 77-dependency-reduction-and-caller-context]: Phase 77 changes confirmed green: lubridate in Suggests, caller_env threaded, get_site_contributions relocated — no regressions
+- [Phase 78-01]: @family tag for autoplot.* methods: these ARE user-facing exports and DO receive @family (not skipped like print.*/format.*/as.data.frame.*)
+- [Phase 78-01]: summary.creel_estimates in creel-summaries.R (not creel-estimates.R) receives @family Reporting & Diagnostics — the one summary.* exception
+- [Phase 78-01]: preprocess_camera_timestamps lives in creel-design.R (not survey-bridge.R); @family Camera Survey added there
 
 ### Pending Todos
 
@@ -93,6 +97,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-19
-Stopped at: Completed 77-03-PLAN.md — integration gate, Phase 77 fully complete
-Resume file: None
+Last session: 2026-04-21
+Stopped at: Completed 78-01-PLAN.md — @family tags for all 111 user-facing exports
+Resume file: .planning/phases/78-code-quality-and-snapshot-testing/78-01-SUMMARY.md
