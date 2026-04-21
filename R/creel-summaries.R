@@ -35,6 +35,7 @@
 #' )
 #' summarize_refusals(d)
 #'
+#' @family "Reporting & Diagnostics"
 #' @export
 summarize_refusals <- function(design) {
   # Guard 1: type check
@@ -130,6 +131,7 @@ summarize_refusals <- function(design) {
 #' )
 #' summarize_by_day_type(d)
 #'
+#' @family "Reporting & Diagnostics"
 #' @export
 summarize_by_day_type <- function(design) {
   # Guard 1: type check
@@ -218,6 +220,7 @@ summarize_by_day_type <- function(design) {
 #' )
 #' summarize_by_angler_type(d)
 #'
+#' @family "Reporting & Diagnostics"
 #' @export
 summarize_by_angler_type <- function(design) {
   # Guard 1: type check
@@ -313,6 +316,7 @@ summarize_by_angler_type <- function(design) {
 #' )
 #' summarize_by_method(d)
 #'
+#' @family "Reporting & Diagnostics"
 #' @export
 summarize_by_method <- function(design) {
   # Guard 1: type check
@@ -408,6 +412,7 @@ summarize_by_method <- function(design) {
 #' )
 #' summarize_by_species_sought(d)
 #'
+#' @family "Reporting & Diagnostics"
 #' @export
 summarize_by_species_sought <- function(design) {
   # Guard 1: type check
@@ -511,6 +516,7 @@ summarize_by_species_sought <- function(design) {
 #' )
 #' summarize_successful_parties(d)
 #'
+#' @family "Reporting & Diagnostics"
 #' @export
 summarize_successful_parties <- function(design) {
   # Guard 1: type check
@@ -649,6 +655,7 @@ summarize_successful_parties <- function(design) {
 #' )
 #' summarize_by_trip_length(d)
 #'
+#' @family "Reporting & Diagnostics"
 #' @export
 summarize_by_trip_length <- function(design) {
   # Guard 1: type check
@@ -754,6 +761,7 @@ summarize_by_trip_length <- function(design) {
 #' )
 #' summarize_cws_rates(d, by = species_sought)
 #'
+#' @family "Reporting & Diagnostics"
 #' @export
 summarize_cws_rates <- function(design, by = NULL, conf_level = 0.95) {
   # Capture by before validation
@@ -964,6 +972,7 @@ summarize_cws_rates <- function(design, by = NULL, conf_level = 0.95) {
 #' )
 #' summarize_hws_rates(d, by = species_sought)
 #'
+#' @family "Reporting & Diagnostics"
 #' @export
 summarize_hws_rates <- function(design, by = NULL, conf_level = 0.95) {
   # Capture by before validation
@@ -1183,6 +1192,7 @@ summarize_hws_rates <- function(design, by = NULL, conf_level = 0.95) {
 #' summarize_length_freq(d, type = "release", by = species)
 #' summarize_length_freq(d, type = "catch")
 #'
+#' @family "Reporting & Diagnostics"
 #' @export
 summarize_length_freq <- function(design, type = "catch", by = NULL, bin_width = 1) {
   by_quo <- rlang::enquo(by)
@@ -1431,6 +1441,7 @@ summarize_length_freq <- function(design, type = "catch", by = NULL, bin_width =
 #' as.data.frame(summary(est))
 #' }
 #'
+#' @family "Reporting & Diagnostics"
 #' @export
 summary.creel_estimates <- function(object, digits = 4L, ...) {
   est <- object$estimates

@@ -25,3 +25,12 @@ creel_palette()
 creel_palette(3)
 
 }
+\seealso{
+Other "Visualisation":
+\code{\link{autoplot.creel_estimates}()},
+\code{\link{autoplot.creel_length_distribution}()},
+\code{\link{autoplot.creel_schedule}()},
+\code{\link{plot_design}()},
+\code{\link{theme_creel}()}
+}
+\concept{"Visualisation"}

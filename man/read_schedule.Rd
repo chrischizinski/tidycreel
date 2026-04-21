@@ -43,3 +43,14 @@ sched2 <- read_schedule(tmp)
 inherits(sched2, "creel_schedule")
 
 }
+\seealso{
+Other "Scheduling":
+\code{\link{attach_count_times}()},
+\code{\link{generate_bus_schedule}()},
+\code{\link{generate_count_times}()},
+\code{\link{generate_schedule}()},
+\code{\link{new_creel_schedule}()},
+\code{\link{validate_creel_schedule}()},
+\code{\link{write_schedule}()}
+}
+\concept{"Scheduling"}

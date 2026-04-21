@@ -38,6 +38,7 @@ new_creel_design_report <- function(results, passed, survey_type) {
 #'     \item{$survey_type}{character}
 #'   }
 #'
+#' @family "Reporting & Diagnostics"
 #' @export
 validate_design <- function(
   # nolint: object_name_linter
@@ -237,15 +238,19 @@ find_low_n_strata <- function(design, n_min) {
 #'     \item{$passed}{logical -- TRUE if no missing days and no low-n strata}
 #'   }
 #'
+#' @family "Reporting & Diagnostics"
 #' @export
 check_completeness <- function(design, n_min = 10L) {
   # Guard 1: type check
   if (!inherits(design, "creel_design")) {
-    cli::cli_abort(c(
-      "{.arg design} must be a {.cls creel_design} object.",
-      "x" = "{.arg design} is {.cls {class(design)[1]}}.",
-      "i" = "Create a design with {.fn creel_design} and attach data."
-    ))
+    cli::cli_abort(
+      c(
+        "{.arg design} must be a {.cls creel_design} object.",
+        "x" = "{.arg design} is {.cls {class(design)[1]}}.",
+        "i" = "Create a design with {.fn creel_design} and attach data."
+      ),
+      class = "creel_error_design_validation"
+    )
   }
   # Guard 2/3: n_min range
   checkmate::assert_integerish(n_min, lower = 1L, len = 1L)

@@ -38,6 +38,7 @@
 #'   `psu`, and `correction_factor`. Optional columns are appended when supplied.
 #'
 #' @seealso [add_counts()]
+#' @family "Survey Design"
 #' @export
 prep_counts_daily_effort <- function(data,
                                      date,
@@ -252,6 +253,7 @@ prep_counts_daily_effort <- function(data,
 #'   `psu`, and `correction_factor`. Optional columns are appended when supplied.
 #'
 #' @seealso [prep_counts_daily_effort()], [add_counts()]
+#' @family "Survey Design"
 #' @export
 prep_counts_boat_party <- function(data,
                                    date,

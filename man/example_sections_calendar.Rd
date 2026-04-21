@@ -34,5 +34,25 @@ print(design)
 \seealso{
 \link{example_sections_counts}, \link{example_sections_interviews},
 \code{\link[=add_sections]{add_sections()}}, \code{\link[=creel_design]{creel_design()}}
+
+Other "Example Datasets":
+\code{\link{creel_counts_toy}},
+\code{\link{creel_interviews_toy}},
+\code{\link{example_aerial_counts}},
+\code{\link{example_aerial_glmm_counts}},
+\code{\link{example_aerial_interviews}},
+\code{\link{example_calendar}},
+\code{\link{example_camera_counts}},
+\code{\link{example_camera_interviews}},
+\code{\link{example_camera_timestamps}},
+\code{\link{example_catch}},
+\code{\link{example_counts}},
+\code{\link{example_ice_interviews}},
+\code{\link{example_ice_sampling_frame}},
+\code{\link{example_interviews}},
+\code{\link{example_lengths}},
+\code{\link{example_sections_counts}},
+\code{\link{example_sections_interviews}}
 }
+\concept{"Example Datasets"}
 \keyword{datasets}

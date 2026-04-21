@@ -138,4 +138,12 @@ power_creel(
 }
 \seealso{
 \code{\link[=creel_n_effort]{creel_n_effort()}}, \code{\link[=creel_n_cpue]{creel_n_cpue()}}, \code{\link[=creel_power]{creel_power()}}
+
+Other "Planning & Sample Size":
+\code{\link{compare_designs}()},
+\code{\link{creel_n_cpue}()},
+\code{\link{creel_n_effort}()},
+\code{\link{creel_power}()},
+\code{\link{cv_from_n}()}
 }
+\concept{"Planning & Sample Size"}

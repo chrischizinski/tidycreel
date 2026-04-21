@@ -127,6 +127,7 @@
 #'   catch = catch_total,
 #'   effort = hours_fished
 #' )
+#' @family "Reporting & Diagnostics"
 #' @export
 validate_incomplete_trips <- function(design,
                                       catch,

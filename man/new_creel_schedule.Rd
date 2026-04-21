@@ -17,3 +17,14 @@ Constructor for the \code{creel_schedule} S3 class. Wraps a data frame with the
 \code{creel_schedule} class attribute following the tibble-subclass pattern used
 throughout the package.
 }
+\seealso{
+Other "Scheduling":
+\code{\link{attach_count_times}()},
+\code{\link{generate_bus_schedule}()},
+\code{\link{generate_count_times}()},
+\code{\link{generate_schedule}()},
+\code{\link{read_schedule}()},
+\code{\link{validate_creel_schedule}()},
+\code{\link{write_schedule}()}
+}
+\concept{"Scheduling"}

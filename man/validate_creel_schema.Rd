@@ -17,3 +17,23 @@ Checks that all columns required for the schema's \code{survey_type} are mapped
 (non-NULL). Aborts with an informative \code{cli_abort()} listing each missing
 column and its table.
 }
+\seealso{
+Other "Survey Design":
+\code{\link{add_catch}()},
+\code{\link{add_counts}()},
+\code{\link{add_interviews}()},
+\code{\link{add_lengths}()},
+\code{\link{add_sections}()},
+\code{\link{as_hybrid_svydesign}()},
+\code{\link{as_survey_design}()},
+\code{\link{compute_angler_effort}()},
+\code{\link{compute_effort}()},
+\code{\link{creel_design}()},
+\code{\link{creel_schema}()},
+\code{\link{est_effort_camera}()},
+\code{\link{prep_counts_boat_party}()},
+\code{\link{prep_counts_daily_effort}()},
+\code{\link{prep_interview_catch}()},
+\code{\link{prep_interviews_trips}()}
+}
+\concept{"Survey Design"}

@@ -56,6 +56,7 @@
 #'
 #' est_length_distribution(design, by = species, bin_width = 25)
 #'
+#' @family "Estimation"
 #' @export
 est_length_distribution <- function(design,
                                     type = "catch",

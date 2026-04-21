@@ -4,7 +4,7 @@
 # Sources: AFS Common and Scientific Names of Fishes (8th ed.)
 # Covers freshwater sport fish common in creel surveys.
 .afs_lookup <- data.frame(
-  afs_code    = c(
+  afs_code = c(
     "WAE", "SMB", "LMB", "NOP", "MUE", "YEP",
     "BLG", "RBT", "BNT", "LKT", "CHS", "CHN",
     "COH", "SOC", "ATL", "PAC", "WPR", "SAU",
@@ -104,13 +104,15 @@
 #' )
 #' standardize_species(interviews)
 #'
+#' @family "Reporting & Diagnostics"
 #' @export
 standardize_species <- function(
-    data,
-    species_col    = "species",
-    lookup         = "AFS",
-    fuzzy          = TRUE,
-    keep_original  = TRUE) {
+  data,
+  species_col = "species",
+  lookup = "AFS",
+  fuzzy = TRUE,
+  keep_original = TRUE
+) {
   if (!is.data.frame(data)) {
     cli::cli_abort("{.arg data} must be a data frame.")
   }
@@ -160,19 +162,19 @@ standardize_species <- function(
 
 # Vectorised species code resolver.
 .resolve_species_codes <- function(raw, fuzzy) {
-  lkp   <- .afs_lookup
+  lkp <- .afs_lookup
   lower <- tolower(trimws(raw))
 
   # Pass-through: looks like a known 3-letter AFS code already.
   known_codes <- toupper(lkp$afs_code)
-  is_code     <- toupper(raw) %in% known_codes & !is.na(raw)
+  is_code <- toupper(raw) %in% known_codes & !is.na(raw)
 
   codes <- ifelse(is_code, toupper(raw), NA_character_)
 
   # Exact common-name match (case-insensitive).
   lkp_lower <- tolower(lkp$common_name)
-  name_idx  <- match(lower, lkp_lower)
-  codes     <- ifelse(is.na(codes) & !is.na(name_idx),
+  name_idx <- match(lower, lkp_lower)
+  codes <- ifelse(is.na(codes) & !is.na(name_idx),
     lkp$afs_code[name_idx],
     codes
   )
@@ -188,12 +190,14 @@ standardize_species <- function(
 # Match remaining NAs against alias strings.
 .match_aliases <- function(codes, lower, lkp) {
   still_na <- which(is.na(codes))
-  if (length(still_na) == 0L) return(codes)
+  if (length(still_na) == 0L) {
+    return(codes)
+  }
 
   for (i in seq_len(nrow(lkp))) {
     aliases <- strsplit(lkp$aliases[i], ";")[[1]]
     aliases <- trimws(tolower(aliases))
-    hit     <- lower[still_na] %in% aliases
+    hit <- lower[still_na] %in% aliases
     if (any(hit)) {
       codes[still_na[hit]] <- lkp$afs_code[i]
       still_na <- still_na[!hit]
