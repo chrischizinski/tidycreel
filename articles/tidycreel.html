@@ -206,6 +206,7 @@ entire survey period:</p>
 <span><span class="co">#&gt; Method: Total</span></span>
 <span><span class="co">#&gt; Variance: Taylor linearization</span></span>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
+<span><span class="co">#&gt; Effort target: sampled_days</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 7</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n</span></span>
@@ -230,6 +231,7 @@ using the <code>by</code> parameter:</p>
 <span><span class="co">#&gt; Variance: Taylor linearization</span></span>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
 <span><span class="co">#&gt; Grouped by: day_type</span></span>
+<span><span class="co">#&gt; Effort target: sampled_days</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 8</span></span></span>
 <span><span class="co">#&gt;   day_type estimate    se se_between se_within ci_lower ci_upper     n</span></span>
@@ -260,6 +262,7 @@ jackknife methods:</p>
 <span><span class="co">#&gt; Method: Total</span></span>
 <span><span class="co">#&gt; Variance: Bootstrap</span></span>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
+<span><span class="co">#&gt; Effort target: sampled_days</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 7</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n</span></span>
@@ -274,6 +277,7 @@ jackknife methods:</p>
 <span><span class="co">#&gt; Method: Total</span></span>
 <span><span class="co">#&gt; Variance: Jackknife</span></span>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
+<span><span class="co">#&gt; Effort target: sampled_days</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 7</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n</span></span>
@@ -306,12 +310,50 @@ bootstrap is too slow.</li>
 <span><span class="co">#&gt; Variance: Bootstrap</span></span>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
 <span><span class="co">#&gt; Grouped by: day_type</span></span>
+<span><span class="co">#&gt; Effort target: sampled_days</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 8</span></span></span>
 <span><span class="co">#&gt;   day_type estimate    se se_between se_within ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekday      171. 10.3       10.3          0     148.     193.    10</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> weekend      202.  8.78       8.78         0     183.     221.     4</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="schedule-defined-special-strata">Schedule-Defined Special Strata<a class="anchor" aria-label="anchor" href="#schedule-defined-special-strata"></a>
+</h2>
+<p>If your survey calendar includes prospective high-use or other
+special periods, the same three-step workflow still applies. The
+difference is that the schedule may carry a resolved
+<code>final_stratum</code> column from
+<code>generate_schedule(..., special_periods = ...)</code>, and that
+resolved stratum should drive the analysis design.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">sched</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generate_schedule.html">generate_schedule</a></span><span class="op">(</span></span>
+<span>  start_date <span class="op">=</span> <span class="st">"2027-07-24"</span>,</span>
+<span>  end_date <span class="op">=</span> <span class="st">"2027-08-04"</span>,</span>
+<span>  n_periods <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  sampling_rate <span class="op">=</span> <span class="fl">0.5</span>,</span>
+<span>  include_all <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  special_periods <span class="op">=</span> <span class="va">opener_periods</span>,</span>
+<span>  seed <span class="op">=</span> <span class="fl">42</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">calendar_for_design</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/transform.html" class="external-link">transform</a></span><span class="op">(</span></span>
+<span>  <span class="va">sched</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"date"</span>, <span class="st">"final_stratum"</span><span class="op">)</span><span class="op">]</span>,</span>
+<span>  analysis_stratum <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"^high_use"</span>, <span class="va">final_stratum</span><span class="op">)</span>, <span class="va">final_stratum</span>, <span class="st">"regular"</span><span class="op">)</span></span>
+<span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"date"</span>, <span class="st">"analysis_stratum"</span><span class="op">)</span><span class="op">]</span></span>
+<span></span>
+<span><span class="va">design_special</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_design.html">creel_design</a></span><span class="op">(</span></span>
+<span>  <span class="va">calendar_for_design</span>,</span>
+<span>  date <span class="op">=</span> <span class="va">date</span>,</span>
+<span>  strata <span class="op">=</span> <span class="va">analysis_stratum</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>Once counts and interviews are attached,
+<code>estimate_effort(..., target = "period_total")</code> and the
+total-catch/product estimators use the declared analysis strata
+directly. If one of those strata is too sparse for variance estimation,
+tidycreel names the sparse stratum in its diagnostic instead of failing
+opaquely.</p>
 </div>
 <div class="section level2">
 <h2 id="next-steps">Next Steps<a class="anchor" aria-label="anchor" href="#next-steps"></a>

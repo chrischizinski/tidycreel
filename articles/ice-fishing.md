@@ -184,6 +184,7 @@ print(effort_est)
 #> Method: Total
 #> Variance: Taylor linearization
 #> Confidence level: 95%
+#> Effort target: sampled_days
 #> 
 #> # A tibble: 1 × 5
 #>   total_effort_hr_on_ice    se ci_lower ci_upper     n
@@ -226,6 +227,7 @@ print(effort_aft)
 #> Method: Total
 #> Variance: Taylor linearization
 #> Confidence level: 95%
+#> Effort target: sampled_days
 #> 
 #> # A tibble: 1 × 5
 #>   total_effort_hr_active    se ci_lower ci_upper     n
@@ -254,6 +256,7 @@ print(effort_by_shelter)
 #> Variance: Taylor linearization
 #> Confidence level: 95%
 #> Grouped by: shelter_mode
+#> Effort target: sampled_days
 #> 
 #> # A tibble: 2 × 7
 #>   shelter_mode total_effort_hr_on_ice    se ci_lower ci_upper proportion     n

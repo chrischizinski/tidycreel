@@ -20,7 +20,8 @@ generate_schedule(
   include_all = FALSE,
   ordered_periods = FALSE,
   period_intensity = NULL,
-  seed
+  seed,
+  special_periods = NULL
 )
 ```
 
@@ -85,18 +86,43 @@ generate_schedule(
   [`withr::with_seed()`](https://withr.r-lib.org/reference/with_seed.html)
   to avoid mutating global RNG state.
 
+- special_periods:
+
+  Optional data frame declaring calendar-defined special periods. Must
+  contain `start_date`, `end_date`, and `label` columns, with optional
+  `reason`. Periods are expanded to day-level assignments before
+  sampling so boundary-crossing periods are split by civil date.
+
 ## Value
 
 A `creel_schedule` data frame with columns:
 
 - `date` (Date): Sampled (or all) dates.
 
-- `day_type` (character): "weekday" or "weekend".
+- `day_type` (character): Baseline "weekday" or "weekend"
+  classification.
+
+- `final_stratum` (character): Present when `special_periods` is
+  supplied; gives the final stratum used for day selection.
+
+- `special_period_reason` (character): Present when `special_periods` is
+  supplied; gives the optional reason for the special-period assignment.
 
 - `period_id` (integer, character, or ordered factor): Period within
   day. Absent when `expand_periods = FALSE`.
 
 - `sampled` (logical): Present only when `include_all = TRUE`.
+
+## See also
+
+Other "Scheduling":
+[`attach_count_times()`](https://chrischizinski.github.io/tidycreel/reference/attach_count_times.md),
+[`generate_bus_schedule()`](https://chrischizinski.github.io/tidycreel/reference/generate_bus_schedule.md),
+[`generate_count_times()`](https://chrischizinski.github.io/tidycreel/reference/generate_count_times.md),
+[`new_creel_schedule()`](https://chrischizinski.github.io/tidycreel/reference/new_creel_schedule.md),
+[`read_schedule()`](https://chrischizinski.github.io/tidycreel/reference/read_schedule.md),
+[`validate_creel_schedule()`](https://chrischizinski.github.io/tidycreel/reference/validate_creel_schedule.md),
+[`write_schedule()`](https://chrischizinski.github.io/tidycreel/reference/write_schedule.md)
 
 ## Examples
 

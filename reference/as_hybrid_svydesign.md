@@ -1,10 +1,6 @@
 # Construct a hybrid access + roving survey design
 
-Combines count data from access-point and roving survey components into
-a single
-[`survey::svydesign`](https://rdrr.io/pkg/survey/man/svydesign.html)
-object suitable for effort estimation via
-[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md).
+**\[experimental\]**
 
 ## Usage
 
@@ -74,6 +70,12 @@ and a `weight` column derived from the sampling fractions.
 
 ## Details
 
+Combines count data from access-point and roving survey components into
+a single
+[`survey::svydesign`](https://rdrr.io/pkg/survey/man/svydesign.html)
+object suitable for effort estimation via
+[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md).
+
 A hybrid design is appropriate when a survey uses both fixed
 access-point counts (e.g., boat-launch interviews with angler counts)
 and roving-route counts (e.g., progressive counts along a shoreline
@@ -89,6 +91,26 @@ rather than a silent expansion. If PSU boundaries differ (e.g., access
 routes cover different sections than roving routes), the estimates will
 be biased; a warning is issued when stratum-date combinations are
 asymmetric.
+
+## See also
+
+Other "Survey Design":
+[`add_catch()`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md),
+[`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md),
+[`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md),
+[`add_lengths()`](https://chrischizinski.github.io/tidycreel/reference/add_lengths.md),
+[`add_sections()`](https://chrischizinski.github.io/tidycreel/reference/add_sections.md),
+[`as_survey_design()`](https://chrischizinski.github.io/tidycreel/reference/as_survey_design.md),
+[`compute_angler_effort()`](https://chrischizinski.github.io/tidycreel/reference/compute_angler_effort.md),
+[`compute_effort()`](https://chrischizinski.github.io/tidycreel/reference/compute_effort.md),
+[`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md),
+[`creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/creel_schema.md),
+[`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md),
+[`prep_counts_boat_party()`](https://chrischizinski.github.io/tidycreel/reference/prep_counts_boat_party.md),
+[`prep_counts_daily_effort()`](https://chrischizinski.github.io/tidycreel/reference/prep_counts_daily_effort.md),
+[`prep_interview_catch()`](https://chrischizinski.github.io/tidycreel/reference/prep_interview_catch.md),
+[`prep_interviews_trips()`](https://chrischizinski.github.io/tidycreel/reference/prep_interviews_trips.md),
+[`validate_creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/validate_creel_schema.md)
 
 ## Examples
 

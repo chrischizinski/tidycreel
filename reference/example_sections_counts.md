@@ -47,6 +47,25 @@ Simulated data for package examples
 [`add_sections()`](https://chrischizinski.github.io/tidycreel/reference/add_sections.md),
 [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
 
+Other "Example Datasets":
+[`creel_counts_toy`](https://chrischizinski.github.io/tidycreel/reference/creel_counts_toy.md),
+[`creel_interviews_toy`](https://chrischizinski.github.io/tidycreel/reference/creel_interviews_toy.md),
+[`example_aerial_counts`](https://chrischizinski.github.io/tidycreel/reference/example_aerial_counts.md),
+[`example_aerial_glmm_counts`](https://chrischizinski.github.io/tidycreel/reference/example_aerial_glmm_counts.md),
+[`example_aerial_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_aerial_interviews.md),
+[`example_calendar`](https://chrischizinski.github.io/tidycreel/reference/example_calendar.md),
+[`example_camera_counts`](https://chrischizinski.github.io/tidycreel/reference/example_camera_counts.md),
+[`example_camera_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_camera_interviews.md),
+[`example_camera_timestamps`](https://chrischizinski.github.io/tidycreel/reference/example_camera_timestamps.md),
+[`example_catch`](https://chrischizinski.github.io/tidycreel/reference/example_catch.md),
+[`example_counts`](https://chrischizinski.github.io/tidycreel/reference/example_counts.md),
+[`example_ice_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_ice_interviews.md),
+[`example_ice_sampling_frame`](https://chrischizinski.github.io/tidycreel/reference/example_ice_sampling_frame.md),
+[`example_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_interviews.md),
+[`example_lengths`](https://chrischizinski.github.io/tidycreel/reference/example_lengths.md),
+[`example_sections_calendar`](https://chrischizinski.github.io/tidycreel/reference/example_sections_calendar.md),
+[`example_sections_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_sections_interviews.md)
+
 ## Examples
 
 ``` r
@@ -66,6 +85,7 @@ estimate_effort(design)
 #> Method: total-sections
 #> Variance: Taylor linearization
 #> Confidence level: 95%
+#> Effort target: sampled_days
 #> 
 #> # A tibble: 4 × 10
 #>   section     estimate    se se_between se_within ci_lower ci_upper     n

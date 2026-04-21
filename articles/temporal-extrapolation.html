@@ -141,6 +141,18 @@ period.</p>
 <li>You do not need to multiply results by any “expansion factor” — the
 weights already perform the extrapolation.</li>
 </ul>
+<p>The same target logic applies when the calendar includes
+schedule-defined special strata. If
+<code>generate_schedule(..., special_periods = ...)</code> resolved
+opener or holiday days into a final analysis stratum,
+<code>estimate_effort(..., target = "stratum_total")</code> and
+<code>target = "period_total"</code> expand within those declared strata
+exactly as they do for the usual weekday/weekend case. The important
+constraint is that the calendar passed to <code><a href="../reference/creel_design.html">creel_design()</a></code>
+must use the resolved final analysis stratum rather than the old
+baseline label. Sparse special strata still trigger the usual variance
+diagnostics: warnings for unstable small strata and explicit single-PSU
+errors when variance cannot be estimated.</p>
 </div>
 <div class="section level2">
 <h2 id="building-a-season-long-dataset">Building a Season-Long Dataset<a class="anchor" aria-label="anchor" href="#building-a-season-long-dataset"></a>

@@ -71,6 +71,18 @@ and columns: grouping columns (if any), `length_bin` (ordered factor),
 `bin_lower`, `bin_upper`, `estimate`, `se`, `ci_lower`, `ci_upper`,
 `percent`, `cumulative_percent`, and `n`.
 
+## See also
+
+Other "Estimation":
+[`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md),
+[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),
+[`estimate_effort_aerial_glmm()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort_aerial_glmm.md),
+[`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md),
+[`estimate_release_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_release_rate.md),
+[`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md),
+[`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md),
+[`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
+
 ## Examples
 
 ``` r

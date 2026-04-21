@@ -46,6 +46,11 @@ American Fisheries Society. Enumeration expansion factor used in Eq.
 [`get_sampling_frame()`](https://chrischizinski.github.io/tidycreel/reference/get_sampling_frame.md),
 [`get_inclusion_probs()`](https://chrischizinski.github.io/tidycreel/reference/get_inclusion_probs.md)
 
+Other "Bus-Route Helpers":
+[`get_inclusion_probs()`](https://chrischizinski.github.io/tidycreel/reference/get_inclusion_probs.md),
+[`get_sampling_frame()`](https://chrischizinski.github.io/tidycreel/reference/get_sampling_frame.md),
+[`get_site_contributions()`](https://chrischizinski.github.io/tidycreel/reference/get_site_contributions.md)
+
 ## Examples
 
 ``` r

@@ -148,6 +148,26 @@ surveys: estimating fishing effort and catch rates from ingress-egress
 camera counts. Fisheries Research 231:105706.
 <a href="https://doi.org/10.1016/j.fishres.2020.105706" class="external-link">doi:10.1016/j.fishres.2020.105706</a></p>
     </div>
+    <div class="section level2">
+    <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
+    <div class="dont-index"><p>Other "Survey Design":
+<code><a href="add_catch.html">add_catch()</a></code>,
+<code><a href="add_counts.html">add_counts()</a></code>,
+<code><a href="add_interviews.html">add_interviews()</a></code>,
+<code><a href="add_lengths.html">add_lengths()</a></code>,
+<code><a href="add_sections.html">add_sections()</a></code>,
+<code><a href="as_hybrid_svydesign.html">as_hybrid_svydesign()</a></code>,
+<code><a href="as_survey_design.html">as_survey_design()</a></code>,
+<code><a href="compute_angler_effort.html">compute_angler_effort()</a></code>,
+<code><a href="compute_effort.html">compute_effort()</a></code>,
+<code><a href="creel_design.html">creel_design()</a></code>,
+<code><a href="creel_schema.html">creel_schema()</a></code>,
+<code><a href="prep_counts_boat_party.html">prep_counts_boat_party()</a></code>,
+<code><a href="prep_counts_daily_effort.html">prep_counts_daily_effort()</a></code>,
+<code><a href="prep_interview_catch.html">prep_interview_catch()</a></code>,
+<code><a href="prep_interviews_trips.html">prep_interviews_trips()</a></code>,
+<code><a href="validate_creel_schema.html">validate_creel_schema()</a></code></p></div>
+    </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
@@ -158,14 +178,17 @@ camera counts. Fisheries Research 231:105706.
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">cal</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
 <span class="r-in"><span>  date     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">example_camera_counts</span><span class="op">$</span><span class="va">date</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  day_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">example_camera_counts</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"date"</span>,<span class="st">"day_type"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span><span class="op">[[</span><span class="st">"day_type"</span><span class="op">]</span><span class="op">]</span></span></span>
+<span class="r-in"><span>  day_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">example_camera_counts</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"date"</span>, <span class="st">"day_type"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span><span class="op">[[</span><span class="st">"day_type"</span><span class="op">]</span><span class="op">]</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">cal</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span>,</span></span>
-<span class="r-in"><span>  survey_type <span class="op">=</span> <span class="st">"camera"</span>, camera_mode <span class="op">=</span> <span class="st">"counter"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">cal</span>,</span></span>
+<span class="r-in"><span>  date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span>,</span></span>
+<span class="r-in"><span>  survey_type <span class="op">=</span> <span class="st">"camera"</span>, camera_mode <span class="op">=</span> <span class="st">"counter"</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Filter to operational rows</span></span></span>
 <span class="r-in"><span><span class="va">ops</span> <span class="op">&lt;-</span> <span class="va">example_camera_counts</span><span class="op">[</span></span></span>
-<span class="r-in"><span>  <span class="va">example_camera_counts</span><span class="op">$</span><span class="va">camera_status</span> <span class="op">==</span> <span class="st">"operational"</span>, <span class="op">]</span></span></span>
+<span class="r-in"><span>  <span class="va">example_camera_counts</span><span class="op">$</span><span class="va">camera_status</span> <span class="op">==</span> <span class="st">"operational"</span>,</span></span>
+<span class="r-in"><span><span class="op">]</span></span></span>
 <span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">ops</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Ratio calibration using interview hours</span></span></span>

@@ -98,12 +98,28 @@ A `creel_estimates` object with:
 
 - `method`: `"aerial_glmm_total"`
 
+## Details
+
+**\[experimental\]**
+
 ## References
 
 Askey, P.J., et al. (2018). Correcting for non-random flight timing in
 aerial creel surveys using a generalized linear mixed model. North
 American Journal of Fisheries Management, 38, 1204-1215.
 [doi:10.1002/nafm.10010](https://doi.org/10.1002/nafm.10010)
+
+## See also
+
+Other "Estimation":
+[`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md),
+[`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md),
+[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),
+[`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md),
+[`estimate_release_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_release_rate.md),
+[`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md),
+[`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md),
+[`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
 
 ## Examples
 

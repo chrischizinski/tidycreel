@@ -1,11 +1,20 @@
 # Attach interview data to a creel design
 
-Attaches interview data (catch, effort, and optionally harvest per
-completed fishing trip) to a creel_design object and constructs the
-internal interview survey design object eagerly. This enables catch rate
-and harvest rate estimation from angler interviews. Follows the same
-tidy selector API pattern as
-[`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md).
+Attaches interview-side trip data (catch, effort, and optionally harvest
+per fishing trip) to a creel_design object and constructs the internal
+interview survey design object eagerly. The preferred workflow is to
+standardize raw interview exports into canonical trip rows with
+[`prep_interviews_trips()`](https://chrischizinski.github.io/tidycreel/reference/prep_interviews_trips.md)
+before calling `add_interviews()`, and to standardize species-level
+catch detail with
+[`prep_interview_catch()`](https://chrischizinski.github.io/tidycreel/reference/prep_interview_catch.md)
+before calling
+[`add_catch()`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md).
+
+`add_interviews()` still supports direct attachment of raw-ish interview
+data with tidy selectors for catch, effort, and trip metadata. This
+keeps current workflows working while making the prep-helper seam
+explicit.
 
 ## Usage
 
@@ -281,28 +290,59 @@ Interview dates are automatically linked to the design calendar via date
 matching. Strata from the calendar are inherited by the interview data,
 enabling stratified estimation of catch rates.
 
+## See also
+
+Other "Survey Design":
+[`add_catch()`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md),
+[`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md),
+[`add_lengths()`](https://chrischizinski.github.io/tidycreel/reference/add_lengths.md),
+[`add_sections()`](https://chrischizinski.github.io/tidycreel/reference/add_sections.md),
+[`as_hybrid_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_hybrid_svydesign.md),
+[`as_survey_design()`](https://chrischizinski.github.io/tidycreel/reference/as_survey_design.md),
+[`compute_angler_effort()`](https://chrischizinski.github.io/tidycreel/reference/compute_angler_effort.md),
+[`compute_effort()`](https://chrischizinski.github.io/tidycreel/reference/compute_effort.md),
+[`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md),
+[`creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/creel_schema.md),
+[`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md),
+[`prep_counts_boat_party()`](https://chrischizinski.github.io/tidycreel/reference/prep_counts_boat_party.md),
+[`prep_counts_daily_effort()`](https://chrischizinski.github.io/tidycreel/reference/prep_counts_daily_effort.md),
+[`prep_interview_catch()`](https://chrischizinski.github.io/tidycreel/reference/prep_interview_catch.md),
+[`prep_interviews_trips()`](https://chrischizinski.github.io/tidycreel/reference/prep_interviews_trips.md),
+[`validate_creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/validate_creel_schema.md)
+
 ## Examples
 
 ``` r
-# Basic usage - with trip status and duration
+# Preferred workflow: standardize interview rows before attachment
 calendar <- data.frame(
   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
   day_type = c("weekday", "weekday", "weekend", "weekend")
 )
 design <- creel_design(calendar, date = date, strata = day_type)
 
-interviews <- data.frame(
-  date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
+raw_interviews <- data.frame(
+  survey_date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
   catch_total = c(5, 3, 7, 2),
   hours_fished = c(2.0, 2.5, 3.0, 1.5),
   trip_status = c("complete", "complete", "incomplete", "complete"),
-  trip_duration = c(2.0, 2.5, 1.5, 1.5)
+  trip_duration = c(2.0, 2.5, 1.5, 1.5),
+  interview_id = 1:4
+)
+
+interviews_ready <- prep_interviews_trips(
+  raw_interviews,
+  date = survey_date,
+  interview_uid = interview_id,
+  effort_hours = hours_fished,
+  trip_status = trip_status,
+  trip_duration = trip_duration,
+  catch_total = catch_total
 )
 
 design_with_interviews <- add_interviews(
-  design, interviews,
+  design, interviews_ready,
   catch = catch_total,
-  effort = hours_fished,
+  effort = effort_hours,
   trip_status = trip_status,
   trip_duration = trip_duration
 )
@@ -327,12 +367,12 @@ print(design_with_interviews)
 #> Interviews: 4 observations
 #> Type: "access"
 #> Catch: catch_total
-#> Effort: hours_fished
+#> Effort: effort_hours
 #> Trip status: 3 complete, 1 incomplete
 #> Survey: <survey.design2> (constructed)
 #> Sections: "none"
 
-# With harvest column and calculated duration from timestamps
+# Compatibility path: direct attachment with harvest column and timestamps
 interviews2 <- data.frame(
   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
   catch_total = c(5, 3, 7, 2),

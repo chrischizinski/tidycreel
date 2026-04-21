@@ -35,6 +35,25 @@ for matching count data,
 [`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md)
 to create a design from calendar data
 
+Other "Example Datasets":
+[`creel_counts_toy`](https://chrischizinski.github.io/tidycreel/reference/creel_counts_toy.md),
+[`creel_interviews_toy`](https://chrischizinski.github.io/tidycreel/reference/creel_interviews_toy.md),
+[`example_aerial_counts`](https://chrischizinski.github.io/tidycreel/reference/example_aerial_counts.md),
+[`example_aerial_glmm_counts`](https://chrischizinski.github.io/tidycreel/reference/example_aerial_glmm_counts.md),
+[`example_aerial_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_aerial_interviews.md),
+[`example_camera_counts`](https://chrischizinski.github.io/tidycreel/reference/example_camera_counts.md),
+[`example_camera_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_camera_interviews.md),
+[`example_camera_timestamps`](https://chrischizinski.github.io/tidycreel/reference/example_camera_timestamps.md),
+[`example_catch`](https://chrischizinski.github.io/tidycreel/reference/example_catch.md),
+[`example_counts`](https://chrischizinski.github.io/tidycreel/reference/example_counts.md),
+[`example_ice_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_ice_interviews.md),
+[`example_ice_sampling_frame`](https://chrischizinski.github.io/tidycreel/reference/example_ice_sampling_frame.md),
+[`example_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_interviews.md),
+[`example_lengths`](https://chrischizinski.github.io/tidycreel/reference/example_lengths.md),
+[`example_sections_calendar`](https://chrischizinski.github.io/tidycreel/reference/example_sections_calendar.md),
+[`example_sections_counts`](https://chrischizinski.github.io/tidycreel/reference/example_sections_counts.md),
+[`example_sections_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_sections_interviews.md)
+
 ## Examples
 
 ``` r

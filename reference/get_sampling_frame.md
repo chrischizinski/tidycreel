@@ -23,6 +23,13 @@ A data frame: the `sampling_frame` as stored in the design, with the
 addition of a `.pi_i` column and (if circuit was omitted) a `.circuit`
 column.
 
+## See also
+
+Other "Bus-Route Helpers":
+[`get_enumeration_counts()`](https://chrischizinski.github.io/tidycreel/reference/get_enumeration_counts.md),
+[`get_inclusion_probs()`](https://chrischizinski.github.io/tidycreel/reference/get_inclusion_probs.md),
+[`get_site_contributions()`](https://chrischizinski.github.io/tidycreel/reference/get_site_contributions.md)
+
 ## Examples
 
 ``` r

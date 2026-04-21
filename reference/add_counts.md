@@ -1,11 +1,19 @@
 # Attach count data to a creel design
 
-Attaches instantaneous count data to a creel_design object and
-constructs the internal survey design object eagerly. This is the core
-of the survey bridge layer - translating domain vocabulary (creel
-counts) into statistical machinery (survey::svydesign). Eager
-construction catches design errors at add_counts() time when users have
-context about what data they are adding.
+Attaches count-side effort data to a creel_design object and constructs
+the internal survey design object eagerly. The preferred workflow is to
+standardize raw count-process data into sampled-day effort rows with
+[`prep_counts_daily_effort()`](https://chrischizinski.github.io/tidycreel/reference/prep_counts_daily_effort.md)
+(or another `prep_counts_*()` helper) before calling `add_counts()`.
+This keeps survey-specific count reconstruction logic out of the core
+estimator path.
+
+Compatibility paths for raw-ish count inputs remain supported:
+`add_counts()` can still aggregate multiple within-day observations via
+`count_time_col` and can still compute progressive-count daily effort
+from `circuit_time` and `period_length_col`. Eager construction catches
+design errors at add_counts() time when users have context about what
+data they are adding.
 
 ## Usage
 
@@ -31,15 +39,16 @@ add_counts(
 
 - counts:
 
-  Data frame containing count data. Must have:
+  Data frame containing count-side effort data. Preferred input:
+  sampled-day effort rows that already have a Date column matching the
+  design's date_col, all strata columns from the design's strata_cols,
+  at least one numeric effort column, and a PSU column (specified via
+  `psu`, defaults to date_col). Use
+  [`prep_counts_daily_effort()`](https://chrischizinski.github.io/tidycreel/reference/prep_counts_daily_effort.md)
+  to build this form from raw source data.
 
-  - A Date column matching the design's date_col
-
-  - All strata columns from the design's strata_cols
-
-  - At least one numeric column (the count variable)
-
-  - A PSU column (specified via psu argument, defaults to date_col)
+  Compatibility input paths remain available for raw-ish count workflows
+  with multiple within-day observations or progressive counts.
 
 - psu:
 
@@ -158,23 +167,52 @@ when count data is present, making add_counts() the correct abstraction
 boundary. This design allows the same creel_design calendar to be used
 with different PSU structures.
 
+## See also
+
+Other "Survey Design":
+[`add_catch()`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md),
+[`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md),
+[`add_lengths()`](https://chrischizinski.github.io/tidycreel/reference/add_lengths.md),
+[`add_sections()`](https://chrischizinski.github.io/tidycreel/reference/add_sections.md),
+[`as_hybrid_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_hybrid_svydesign.md),
+[`as_survey_design()`](https://chrischizinski.github.io/tidycreel/reference/as_survey_design.md),
+[`compute_angler_effort()`](https://chrischizinski.github.io/tidycreel/reference/compute_angler_effort.md),
+[`compute_effort()`](https://chrischizinski.github.io/tidycreel/reference/compute_effort.md),
+[`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md),
+[`creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/creel_schema.md),
+[`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md),
+[`prep_counts_boat_party()`](https://chrischizinski.github.io/tidycreel/reference/prep_counts_boat_party.md),
+[`prep_counts_daily_effort()`](https://chrischizinski.github.io/tidycreel/reference/prep_counts_daily_effort.md),
+[`prep_interview_catch()`](https://chrischizinski.github.io/tidycreel/reference/prep_interview_catch.md),
+[`prep_interviews_trips()`](https://chrischizinski.github.io/tidycreel/reference/prep_interviews_trips.md),
+[`validate_creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/validate_creel_schema.md)
+
 ## Examples
 
 ``` r
-# Basic usage - day as PSU (default)
+# Preferred workflow: standardize sampled-day effort before attachment
 calendar <- data.frame(
   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
   day_type = c("weekday", "weekday", "weekend", "weekend")
 )
 design <- creel_design(calendar, date = date, strata = day_type)
 
-counts <- data.frame(
-  date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
+raw_counts <- data.frame(
+  sample_date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
   day_type = c("weekday", "weekday", "weekend", "weekend"),
-  count = c(15, 23, 45, 52)
+  effort_kind = c("bank", "bank", "bank", "bank"),
+  effort_value = c(15, 23, 45, 52)
 )
 
-design_with_counts <- add_counts(design, counts)
+counts_ready <- prep_counts_daily_effort(
+  raw_counts,
+  date = sample_date,
+  strata = day_type,
+  effort_type = effort_kind,
+  daily_effort = effort_value
+)
+
+design_with_counts <- add_counts(design, counts_ready)
 #> Warning: No weights or probabilities supplied, assuming equal probability
 print(design_with_counts)
 #> 
@@ -191,7 +229,7 @@ print(design_with_counts)
 #> Interviews: "none"
 #> Sections: "none"
 
-# Custom PSU column
+# Compatibility path: raw count rows with a custom PSU column
 counts_with_site_psu <- data.frame(
   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
   day_type = c("weekday", "weekday", "weekend", "weekend"),
@@ -202,7 +240,7 @@ counts_with_site_psu <- data.frame(
 design2 <- add_counts(design, counts_with_site_psu, psu = "site_day")
 #> Warning: No weights or probabilities supplied, assuming equal probability
 
-# Multiple counts per day (within-day variance via count_time_col)
+# Compatibility path: multiple counts per day (within-day variance via count_time_col)
 # Two circuits per day: "am" and "pm"
 calendar2 <- data.frame(
   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
@@ -221,7 +259,7 @@ design_multi <- add_counts(design3, multi_counts,
 )
 #> Warning: No weights or probabilities supplied, assuming equal probability
 
-# Progressive count type (Ê_d = C x circuit_time x kappa)
+# Compatibility path: progressive count type (Ê_d = C x circuit_time x kappa)
 calendar3 <- data.frame(
   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
   day_type = c("weekday", "weekday", "weekend", "weekend")

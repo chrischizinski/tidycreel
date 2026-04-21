@@ -8,7 +8,7 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/chrischizinski/tidycreel/blob/main/DESCRIPTION)
+[`inst/CITATION`](https://github.com/chrischizinski/tidycreel/blob/main/inst/CITATION)
 
 Chizinski C (2026). *tidycreel: Tidy Interface for Creel Survey Design
 and Analysis*. R package version 1.3.0,

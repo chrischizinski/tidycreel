@@ -12,6 +12,24 @@
   gains a `targeted` argument (default `TRUE`). Setting
   `targeted = FALSE` excludes zero-catch trips before MOR/MORtr
   estimation for incidental species workflows.
+- [`power_creel()`](https://chrischizinski.github.io/tidycreel/reference/power_creel.md)
+  provides a unified tidy entry point for pre-survey sample-size
+  planning, wrapping
+  [`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md),
+  [`creel_n_cpue()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_cpue.md),
+  and
+  [`creel_power()`](https://chrischizinski.github.io/tidycreel/reference/creel_power.md)
+  into a single consistent interface with `mode = "effort_n"`,
+  `"cpue_n"`, or `"power"`.
+- [`compare_designs()`](https://chrischizinski.github.io/tidycreel/reference/compare_designs.md)
+  compares multiple survey designs side by side from a named list of
+  `creel_estimates` objects. An
+  [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
+  method renders a forest plot of point estimates with confidence
+  intervals.
+- [`as_hybrid_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_hybrid_svydesign.md)
+  constructs a hybrid access + roving survey design from combined
+  access-point and roving-route count data.
 - [`compare_variance()`](https://chrischizinski.github.io/tidycreel/reference/compare_variance.md)
   computes Taylor linearization vs. replicate (bootstrap or jackknife)
   standard errors side-by-side for any `creel_estimates` object.

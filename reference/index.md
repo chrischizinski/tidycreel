@@ -10,8 +10,16 @@ argument.
   : Create a creel survey design
 - [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
   : Attach count data to a creel design
+- [`prep_counts_daily_effort()`](https://chrischizinski.github.io/tidycreel/reference/prep_counts_daily_effort.md)
+  : Standardize sampled-day effort rows for count-based workflows
+- [`prep_counts_boat_party()`](https://chrischizinski.github.io/tidycreel/reference/prep_counts_boat_party.md)
+  : Standardize boat-party sampled-day effort rows
 - [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)
   : Attach interview data to a creel design
+- [`prep_interviews_trips()`](https://chrischizinski.github.io/tidycreel/reference/prep_interviews_trips.md)
+  : Standardize trip/interview rows for interview-based workflows
+- [`prep_interview_catch()`](https://chrischizinski.github.io/tidycreel/reference/prep_interview_catch.md)
+  : Standardize long catch-table rows for interview-based workflows
 - [`add_catch()`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md)
   : Attach species-level catch data to a creel design
 - [`add_lengths()`](https://chrischizinski.github.io/tidycreel/reference/add_lengths.md)
@@ -23,7 +31,8 @@ argument.
 - [`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md)
   : Estimate angler effort from camera/time-lapse count data
 - [`as_hybrid_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_hybrid_svydesign.md)
-  : Construct a hybrid access + roving survey design
+  **\[experimental\]** : Construct a hybrid access + roving survey
+  design
 - [`print(`*`<creel_hybrid_svydesign>`*`)`](https://chrischizinski.github.io/tidycreel/reference/print.creel_hybrid_svydesign.md)
   : Print a creel_hybrid_svydesign
 - [`compute_effort()`](https://chrischizinski.github.io/tidycreel/reference/compute_effort.md)
@@ -141,7 +150,8 @@ design comparison.
 - [`cv_from_n()`](https://chrischizinski.github.io/tidycreel/reference/cv_from_n.md)
   : Compute the expected CV achievable with a known sample size
 - [`compare_designs()`](https://chrischizinski.github.io/tidycreel/reference/compare_designs.md)
-  : Compare multiple survey design estimates side by side
+  **\[experimental\]** : Compare multiple survey design estimates side
+  by side
 - [`print(`*`<creel_design_comparison>`*`)`](https://chrischizinski.github.io/tidycreel/reference/print.creel_design_comparison.md)
   : Print a creel_design_comparison
 - [`autoplot(`*`<creel_design_comparison>`*`)`](https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_design_comparison.md)

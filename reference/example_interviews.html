@@ -135,7 +135,26 @@ or <code>"panfish"</code></p></dd>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p><a href="example_calendar.html">example_calendar</a> for matching calendar data, <a href="example_catch.html">example_catch</a> for
-species-level catch data, <code><a href="add_interviews.html">add_interviews()</a></code> to attach interviews to a design</p></div>
+species-level catch data, <code><a href="prep_interviews_trips.html">prep_interviews_trips()</a></code> to standardize interview rows,
+<code><a href="add_interviews.html">add_interviews()</a></code> to attach interviews to a design</p>
+<p>Other "Example Datasets":
+<code><a href="creel_counts_toy.html">creel_counts_toy</a></code>,
+<code><a href="creel_interviews_toy.html">creel_interviews_toy</a></code>,
+<code><a href="example_aerial_counts.html">example_aerial_counts</a></code>,
+<code><a href="example_aerial_glmm_counts.html">example_aerial_glmm_counts</a></code>,
+<code><a href="example_aerial_interviews.html">example_aerial_interviews</a></code>,
+<code><a href="example_calendar.html">example_calendar</a></code>,
+<code><a href="example_camera_counts.html">example_camera_counts</a></code>,
+<code><a href="example_camera_interviews.html">example_camera_interviews</a></code>,
+<code><a href="example_camera_timestamps.html">example_camera_timestamps</a></code>,
+<code><a href="example_catch.html">example_catch</a></code>,
+<code><a href="example_counts.html">example_counts</a></code>,
+<code><a href="example_ice_interviews.html">example_ice_interviews</a></code>,
+<code><a href="example_ice_sampling_frame.html">example_ice_sampling_frame</a></code>,
+<code><a href="example_lengths.html">example_lengths</a></code>,
+<code><a href="example_sections_calendar.html">example_sections_calendar</a></code>,
+<code><a href="example_sections_counts.html">example_sections_counts</a></code>,
+<code><a href="example_sections_interviews.html">example_sections_interviews</a></code></p></div>
     </div>
 
     <div class="section level2">
@@ -145,10 +164,27 @@ species-level catch data, <code><a href="add_interviews.html">add_interviews()</
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_interviews</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">example_calendar</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="add_interviews.html">add_interviews</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_interviews</span>,</span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">interviews_ready</span> <span class="op">&lt;-</span> <span class="fu"><a href="prep_interviews_trips.html">prep_interviews_trips</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">example_interviews</span>,</span></span>
+<span class="r-in"><span>  date <span class="op">=</span> <span class="va">date</span>,</span></span>
+<span class="r-in"><span>  interview_uid <span class="op">=</span> <span class="va">interview_id</span>,</span></span>
+<span class="r-in"><span>  effort_hours <span class="op">=</span> <span class="va">hours_fished</span>,</span></span>
+<span class="r-in"><span>  trip_status <span class="op">=</span> <span class="va">trip_status</span>,</span></span>
+<span class="r-in"><span>  trip_duration <span class="op">=</span> <span class="va">trip_duration</span>,</span></span>
+<span class="r-in"><span>  catch_total <span class="op">=</span> <span class="va">catch_total</span>,</span></span>
+<span class="r-in"><span>  harvest_total <span class="op">=</span> <span class="va">catch_kept</span>,</span></span>
+<span class="r-in"><span>  angler_type <span class="op">=</span> <span class="va">angler_type</span>,</span></span>
+<span class="r-in"><span>  angler_method <span class="op">=</span> <span class="va">angler_method</span>,</span></span>
+<span class="r-in"><span>  species_sought <span class="op">=</span> <span class="va">species_sought</span>,</span></span>
+<span class="r-in"><span>  n_anglers <span class="op">=</span> <span class="va">n_anglers</span>,</span></span>
+<span class="r-in"><span>  refused <span class="op">=</span> <span class="va">refused</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="add_interviews.html">add_interviews</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">interviews_ready</span>,</span></span>
 <span class="r-in"><span>  catch <span class="op">=</span> <span class="va">catch_total</span>,</span></span>
-<span class="r-in"><span>  effort <span class="op">=</span> <span class="va">hours_fished</span>,</span></span>
-<span class="r-in"><span>  harvest <span class="op">=</span> <span class="va">catch_kept</span>,</span></span>
+<span class="r-in"><span>  effort <span class="op">=</span> <span class="va">effort_hours</span>,</span></span>
+<span class="r-in"><span>  harvest <span class="op">=</span> <span class="va">harvest_total</span>,</span></span>
 <span class="r-in"><span>  trip_status <span class="op">=</span> <span class="va">trip_status</span>,</span></span>
 <span class="r-in"><span>  trip_duration <span class="op">=</span> <span class="va">trip_duration</span>,</span></span>
 <span class="r-in"><span>  angler_type <span class="op">=</span> <span class="va">angler_type</span>,</span></span>
@@ -170,8 +206,8 @@ species-level catch data, <code><a href="add_interviews.html">add_interviews()</
 <span class="r-out co"><span class="r-pr">#&gt;</span> Interviews: <span style="color: #0000BB;">22</span> observations</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Type: <span style="color: #0000BB;">"access"</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Catch: <span style="color: #00BB00;">catch_total</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Effort: <span style="color: #00BB00;">hours_fished</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Harvest: <span style="color: #00BB00;">catch_kept</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Effort: <span style="color: #00BB00;">effort_hours</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Harvest: <span style="color: #00BB00;">harvest_total</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Trip status: 17 complete, 5 incomplete</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Angler type: <span style="color: #00BB00;">angler_type</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Angler method: <span style="color: #00BB00;">angler_method</span></span>

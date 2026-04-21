@@ -80,6 +80,26 @@ surveys: estimating fishing effort and catch rates from ingress-egress
 camera counts. Fisheries Research 231:105706.
 [doi:10.1016/j.fishres.2020.105706](https://doi.org/10.1016/j.fishres.2020.105706)
 
+## See also
+
+Other "Survey Design":
+[`add_catch()`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md),
+[`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md),
+[`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md),
+[`add_lengths()`](https://chrischizinski.github.io/tidycreel/reference/add_lengths.md),
+[`add_sections()`](https://chrischizinski.github.io/tidycreel/reference/add_sections.md),
+[`as_hybrid_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_hybrid_svydesign.md),
+[`as_survey_design()`](https://chrischizinski.github.io/tidycreel/reference/as_survey_design.md),
+[`compute_angler_effort()`](https://chrischizinski.github.io/tidycreel/reference/compute_angler_effort.md),
+[`compute_effort()`](https://chrischizinski.github.io/tidycreel/reference/compute_effort.md),
+[`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md),
+[`creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/creel_schema.md),
+[`prep_counts_boat_party()`](https://chrischizinski.github.io/tidycreel/reference/prep_counts_boat_party.md),
+[`prep_counts_daily_effort()`](https://chrischizinski.github.io/tidycreel/reference/prep_counts_daily_effort.md),
+[`prep_interview_catch()`](https://chrischizinski.github.io/tidycreel/reference/prep_interview_catch.md),
+[`prep_interviews_trips()`](https://chrischizinski.github.io/tidycreel/reference/prep_interviews_trips.md),
+[`validate_creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/validate_creel_schema.md)
+
 ## Examples
 
 ``` r
@@ -90,14 +110,17 @@ data(example_camera_interviews)
 
 cal <- data.frame(
   date     = unique(example_camera_counts$date),
-  day_type = unique(example_camera_counts[, c("date","day_type")])[["day_type"]]
+  day_type = unique(example_camera_counts[, c("date", "day_type")])[["day_type"]]
 )
-design <- creel_design(cal, date = date, strata = day_type,
-  survey_type = "camera", camera_mode = "counter")
+design <- creel_design(cal,
+  date = date, strata = day_type,
+  survey_type = "camera", camera_mode = "counter"
+)
 
 # Filter to operational rows
 ops <- example_camera_counts[
-  example_camera_counts$camera_status == "operational", ]
+  example_camera_counts$camera_status == "operational",
+]
 design <- add_counts(design, ops)
 
 # Ratio calibration using interview hours

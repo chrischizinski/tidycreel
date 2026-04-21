@@ -96,6 +96,158 @@ The sampled days are drawn by stratified random sampling within each
 stratum, so weekday and weekend sampling fractions match the requested
 rates.
 
+## Scheduling High-Use or Other Special Periods
+
+Some surveys need more than the default weekday/weekend split. Opener
+weekends, holidays, or derby periods are often sampled more heavily
+because they are expected in advance to have different effort and catch
+characteristics. In that case, the scheduling layer should assign those
+dates to their own prospective stratum rather than leaving them inside
+the ordinary weekend pool.
+
+[`generate_schedule()`](https://chrischizinski.github.io/tidycreel/reference/generate_schedule.md)
+accepts a `special_periods` data frame with `start_date`, `end_date`,
+`label`, and optional `reason` columns. The periods are expanded to
+day-level assignments before sampling, so a boundary-crossing opener is
+split deterministically by civil date.
+
+``` r
+opener_periods <- data.frame(
+  start_date = as.Date("2027-07-31"),
+  end_date = as.Date("2027-08-01"),
+  label = "high_use",
+  reason = "opener"
+)
+
+sched_high_use <- generate_schedule(
+  start_date = "2027-07-30",
+  end_date = "2027-08-03",
+  n_periods = 1,
+  sampling_rate = c(weekday = 1, weekend = 1, high_use = 1),
+  include_all = TRUE,
+  expand_periods = FALSE,
+  seed = 42,
+  special_periods = opener_periods
+)
+#> Warning: Special-period declarations produced a fragile schedule design.
+#> ℹ Affected strata: "weekend (baseline=2, final=0)"
+#> ℹ Inspect the "special_period_diagnostics" attribute or print the schedule for
+#>   details.
+
+sched_high_use[, c("date", "day_type", "final_stratum", "special_period_reason", "sampled")]
+```
+
+### July 2027
+
+| Sun | Mon | Tue | Wed | Thu | Fri   | Sat   |
+|-----|-----|-----|-----|-----|-------|-------|
+|     |     |     |     | 01  | 02    | 03    |
+| 04  | 05  | 06  | 07  | 08  | 09    | 10    |
+| 11  | 12  | 13  | 14  | 15  | 16    | 17    |
+| 18  | 19  | 20  | 21  | 22  | 23    | 24    |
+| 25  | 26  | 27  | 28  | 29  | WEEKD | WEEKE |
+
+### August 2027
+
+| Sun   | Mon   | Tue   | Wed | Thu | Fri | Sat |
+|-------|-------|-------|-----|-----|-----|-----|
+| WEEKE | WEEKD | WEEKD | 04  | 05  | 06  | 07  |
+| 08    | 09    | 10    | 11  | 12  | 13  | 14  |
+| 15    | 16    | 17    | 18  | 19  | 20  | 21  |
+| 22    | 23    | 24    | 25  | 26  | 27  | 28  |
+| 29    | 30    | 31    |     |     |     |     |
+
+The output keeps the baseline `day_type` classification and adds
+`final_stratum`, which is what the scheduler actually uses for sample
+allocation when special periods are present. Here the July 31 and August
+1 dates are both assigned to `high_use`, even though one is in July and
+the other is in August.
+
+You can inspect the audit surfaces directly:
+
+``` r
+attr(sched_high_use, "special_period_audit")
+#>         date    label reason source_start_date source_end_date crosses_boundary
+#> 1 2027-07-31 high_use opener        2027-07-31      2027-08-01             TRUE
+#> 2 2027-08-01 high_use opener        2027-07-31      2027-08-01             TRUE
+#>   sampled
+#> 1    TRUE
+#> 2    TRUE
+attr(sched_high_use, "special_period_allocation")
+#>   final_stratum available_days
+#> 1      high_use              2
+#> 2       weekday              3
+```
+
+These attributes show which dates were reassigned to the special stratum
+and how many available days ended up in each final stratum after the
+calendar rules were applied.
+
+When a declaration is technically valid but leaves a very small special
+stratum or consumes most of a baseline stratum,
+[`generate_schedule()`](https://chrischizinski.github.io/tidycreel/reference/generate_schedule.md)
+now emits a warning rather than failing silently. The returned schedule
+also carries a `special_period_diagnostics` attribute, and
+[`print()`](https://rdrr.io/r/base/print.html) /
+[`format()`](https://rdrr.io/r/base/format.html) surface a compact
+summary so you can see the risky stratum rewrite without digging through
+raw attributes.
+
+``` r
+sched_fragile <- suppressWarnings(generate_schedule(
+  start_date = "2027-08-01",
+  end_date = "2027-08-08",
+  n_periods = 1,
+  sampling_rate = c(weekday = 1, weekend = 1, high_use = 1),
+  include_all = TRUE,
+  expand_periods = FALSE,
+  seed = 42,
+  special_periods = data.frame(
+    start_date = as.Date("2027-08-07"),
+    end_date = as.Date("2027-08-07"),
+    label = "high_use",
+    reason = "opener"
+  )
+))
+
+attr(sched_fragile, "special_period_diagnostics")
+#>   severity
+#> 1  warning
+#>                                                                         issue
+#> 1 fragile stratum with only one available day after special-period assignment
+#>    stratum baseline_days final_days
+#> 1 high_use             0          1
+head(format(sched_fragile), 6)
+#> [1] "# A creel_schedule: 8 rows x 5 cols (8 days, 1 periods)"                                                                
+#> [2] "Special-period diagnostics"                                                                                             
+#> [3] "- warning: high_use — fragile stratum with only one available day after special-period assignment (baseline=0, final=1)"
+#> [4] ""                                                                                                                       
+#> [5] "August 2027"                                                                                                            
+#> [6] "| Sun      | Mon      | Tue      | Wed      | Thu      | Fri      | Sat      |"
+```
+
+If a declaration rewrites the schedule so aggressively that a requested
+baseline stratum no longer exists in the final schedule, tidycreel
+aborts and asks you to update `n_days` or `sampling_rate` to match the
+final strata.
+
+This scheduling feature is the operational companion to the high-use
+design contract from M020: prospective high-use periods are treated as
+true design strata, and boundary-crossing periods are split by day
+rather than assigned wholesale to the month where they started.
+
+### Special Strata vs. Post-Stratification
+
+Use `special_periods` when the unusual period is known **before
+sampling** and should be planned explicitly in the field calendar.
+
+Do **not** use it for retrospective corrections after the season. If a
+survey did not schedule a high-use or special period prospectively and
+you later need to correct weights or population totals, that is a
+post-stratification problem, not a scheduling problem. Those
+retrospective corrections belong in a separate post-stratification
+workflow.
+
 ## Three-Period Schedules
 
 Some surveys divide the day into three periods — morning, midday, and
@@ -186,6 +338,47 @@ design
 #> Interviews: "none"
 #> Sections: "none"
 ```
+
+When `special_periods` are present, the scheduling layer adds
+`final_stratum`, which is the resolved day-level stratum actually used
+for allocation. That is the column the analysis layer should follow.
+
+``` r
+sched_for_analysis <- sched_high_use[, c("date", "final_stratum")]
+names(sched_for_analysis)[2] <- "analysis_stratum"
+
+design_special <- creel_design(
+  sched_for_analysis,
+  date = date,
+  strata = analysis_stratum
+)
+design_special
+#> 
+#> ── Creel Survey Design ─────────────────────────────────────────────────────────
+#> Type: "instantaneous"
+#> Date column: date
+#> Strata: analysis_stratum
+#> Calendar: 5 days (2027-07-30 to 2027-08-03)
+#> analysis_stratum: 2 levels
+#> Counts: "none"
+#> Interviews: "none"
+#> Sections: "none"
+```
+
+If you want to collapse multiple baseline labels into one analysis
+bucket (for example, `treat all non-special days as "regular"`), do that
+in the calendar you pass to
+[`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md).
+The key rule is that the analysis strata must be derived from the same
+resolved day-level assignments the scheduler used.
+
+Sparse special strata remain visible in analysis. If a special stratum
+has too few sampled PSUs for variance estimation,
+[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+or the product estimators abort with an explicit single-PSU diagnostic
+naming the stratum. If the stratum is merely small rather than
+impossible, tidycreel emits a warning about unstable variance instead of
+failing silently.
 
 ## Count Period Scheduling vs. Interview Scheduling
 

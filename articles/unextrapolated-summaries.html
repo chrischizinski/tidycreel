@@ -446,56 +446,40 @@ catch data) using the ratio-of-means estimator.</p>
 </h3>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">species</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: Small sample size for CPUE estimation.</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Sample size is 22. Ratio estimates are more stable with n &gt;= 30.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span></span>
-<span><span class="co">#&gt; Small sample size for CPUE estimation.</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Sample size is 22. Ratio estimates are more stable with n &gt;= 30.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span></span>
-<span><span class="co">#&gt; Small sample size for CPUE estimation.</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Sample size is 22. Ratio estimates are more stable with n &gt;= 30.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
 <span><span class="co">#&gt; Method: Total Catch (Effort × CPUE)</span></span>
 <span><span class="co">#&gt; Variance: Taylor linearization</span></span>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
 <span><span class="co">#&gt; Grouped by: species</span></span>
+<span><span class="co">#&gt; Effort target: sampled_days</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 3 × 6</span></span></span>
 <span><span class="co">#&gt;   species estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> bass        29.4  16.4    -<span style="color: #BB0000;">2.70</span>     61.6    22</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> panfish     20.6  20.9   -<span style="color: #BB0000;">20.3</span>      61.5    22</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> walleye     97.2  37.7    23.2     171.     22</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> bass        23.7  10.9     2.40     45.0    22</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> panfish     16.6  17.0   -<span style="color: #BB0000;">16.8</span>      49.9    22</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> walleye     95.5  41.7    13.8     177.     22</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="total-harvest-by-species">Total Harvest by Species<a class="anchor" aria-label="anchor" href="#total-harvest-by-species"></a>
 </h3>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/estimate_total_harvest.html">estimate_total_harvest</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">species</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: Small sample size for harvest estimation.</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Sample size is 22. Ratio estimates are more stable with n &gt;= 30.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span></span>
-<span><span class="co">#&gt; Small sample size for harvest estimation.</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Sample size is 22. Ratio estimates are more stable with n &gt;= 30.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span></span>
-<span><span class="co">#&gt; Small sample size for harvest estimation.</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Sample size is 22. Ratio estimates are more stable with n &gt;= 30.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
 <span><span class="co">#&gt; Method: Total Harvest (Effort × HPUE)</span></span>
 <span><span class="co">#&gt; Variance: Taylor linearization</span></span>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
 <span><span class="co">#&gt; Grouped by: species</span></span>
+<span><span class="co">#&gt; Effort target: sampled_days</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 3 × 6</span></span></span>
 <span><span class="co">#&gt;   species estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> bass        38.3  13.5    11.8      64.8    22</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> panfish     23.6  13.4    -<span style="color: #BB0000;">2.76</span>     49.9    22</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> walleye    112.   22.5    67.8     156.     22</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> bass        33.5  11.7    10.5      56.5    22</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> panfish     24.3  11.8     1.17     47.4    22</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> walleye    121.   26.6    68.6     173.     22</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="release-rate-and-total-releases-by-species">Release Rate and Total Releases by Species<a class="anchor" aria-label="anchor" href="#release-rate-and-total-releases-by-species"></a>
@@ -525,28 +509,20 @@ catch data) using the ratio-of-means estimator.</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> panfish   0.039<span style="text-decoration: underline;">5</span> 0.025<span style="text-decoration: underline;">2</span> -<span style="color: #BB0000;">0.009</span><span style="color: #BB0000; text-decoration: underline;">82</span>   0.088<span style="text-decoration: underline;">9</span>    22</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> walleye   0.134  0.034<span style="text-decoration: underline;">0</span>  0.067<span style="text-decoration: underline;">8</span>    0.201     22</span></span>
 <span><span class="fu"><a href="../reference/estimate_total_release.html">estimate_total_release</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">species</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: Small sample size for CPUE estimation.</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Sample size is 22. Ratio estimates are more stable with n &gt;= 30.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span></span>
-<span><span class="co">#&gt; Small sample size for CPUE estimation.</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Sample size is 22. Ratio estimates are more stable with n &gt;= 30.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span></span>
-<span><span class="co">#&gt; Small sample size for CPUE estimation.</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Sample size is 22. Ratio estimates are more stable with n &gt;= 30.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
 <span><span class="co">#&gt; Method: product-total-release</span></span>
 <span><span class="co">#&gt; Variance: Taylor linearization</span></span>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
 <span><span class="co">#&gt; Grouped by: species</span></span>
+<span><span class="co">#&gt; Effort target: sampled_days</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 3 × 6</span></span></span>
 <span><span class="co">#&gt;   species estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> bass        35.3 13.2      9.52     61.2    22</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> panfish     14.7  9.39    -<span style="color: #BB0000;">3.69</span>     33.1    22</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> walleye     50.1 12.8     25.0      75.1    22</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> bass        32.4 12.3      8.24     56.6    22</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> panfish     14.5  8.02    -<span style="color: #BB0000;">1.20</span>     30.2    22</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> walleye     56.3 15.8     25.3      87.3    22</span></span></code></pre></div>
 <p>For grouped estimates combining calendar strata with species, use
 <code>by = c(day_type, species)</code>. See
 <code><a href="../articles/interview-estimation.html">vignette("interview-estimation")</a></code> for the complete

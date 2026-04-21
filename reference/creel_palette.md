@@ -25,6 +25,15 @@ When `n` is `NULL`, a named character vector of hex colours. Otherwise,
 a character vector of length `n` recycling through the base palette as
 needed.
 
+## See also
+
+Other "Visualisation":
+[`autoplot.creel_estimates()`](https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_estimates.md),
+[`autoplot.creel_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_length_distribution.md),
+[`autoplot.creel_schedule()`](https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_schedule.md),
+[`plot_design()`](https://chrischizinski.github.io/tidycreel/reference/plot_design.md),
+[`theme_creel()`](https://chrischizinski.github.io/tidycreel/reference/theme_creel.md)
+
 ## Examples
 
 ``` r

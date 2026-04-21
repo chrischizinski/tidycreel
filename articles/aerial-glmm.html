@@ -307,6 +307,7 @@ Attach interview data and call <code><a href="../reference/estimate_catch_rate.h
 <span><span class="co">#&gt; Method: Total Catch (Effort × CPUE)</span></span>
 <span><span class="co">#&gt; Variance: Taylor linearization</span></span>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
+<span><span class="co">#&gt; Effort target: sampled_days</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
@@ -350,7 +351,7 @@ integrating the fitted diurnal curve.</p>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">comparison</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   method  estimate        se  ci_lower  ci_upper</span></span>
-<span><span class="co">#&gt; 1   GLMM  4399.453  380.6965  3653.302  5145.605</span></span>
+<span><span class="co">#&gt; 1   GLMM  4399.453  380.6978  3653.299  5145.607</span></span>
 <span><span class="co">#&gt; 2 Simple 20370.000 1891.0861 16156.398 24583.602</span></span></code></pre></div>
 <p>The GLMM estimate corrects for the fact that all flights occurred at
 fixed hours (7, 10, 13, 16). The simple estimator treats each count as

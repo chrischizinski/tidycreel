@@ -70,6 +70,25 @@ Simulated data for package examples
 [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md),
 [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md)
 
+Other "Example Datasets":
+[`creel_counts_toy`](https://chrischizinski.github.io/tidycreel/reference/creel_counts_toy.md),
+[`creel_interviews_toy`](https://chrischizinski.github.io/tidycreel/reference/creel_interviews_toy.md),
+[`example_aerial_counts`](https://chrischizinski.github.io/tidycreel/reference/example_aerial_counts.md),
+[`example_aerial_glmm_counts`](https://chrischizinski.github.io/tidycreel/reference/example_aerial_glmm_counts.md),
+[`example_aerial_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_aerial_interviews.md),
+[`example_calendar`](https://chrischizinski.github.io/tidycreel/reference/example_calendar.md),
+[`example_camera_counts`](https://chrischizinski.github.io/tidycreel/reference/example_camera_counts.md),
+[`example_camera_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_camera_interviews.md),
+[`example_camera_timestamps`](https://chrischizinski.github.io/tidycreel/reference/example_camera_timestamps.md),
+[`example_catch`](https://chrischizinski.github.io/tidycreel/reference/example_catch.md),
+[`example_counts`](https://chrischizinski.github.io/tidycreel/reference/example_counts.md),
+[`example_ice_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_ice_interviews.md),
+[`example_ice_sampling_frame`](https://chrischizinski.github.io/tidycreel/reference/example_ice_sampling_frame.md),
+[`example_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_interviews.md),
+[`example_lengths`](https://chrischizinski.github.io/tidycreel/reference/example_lengths.md),
+[`example_sections_calendar`](https://chrischizinski.github.io/tidycreel/reference/example_sections_calendar.md),
+[`example_sections_counts`](https://chrischizinski.github.io/tidycreel/reference/example_sections_counts.md)
+
 ## Examples
 
 ``` r
@@ -100,6 +119,7 @@ estimate_total_catch(design, aggregate_sections = TRUE)
 #> Variance: Taylor linearization
 #> Confidence level: 95%
 #> Grouped by: section
+#> Effort target: sampled_days
 #> 
 #> # A tibble: 4 × 8
 #>   section     estimate    se ci_lower ci_upper     n prop_of_lake_total

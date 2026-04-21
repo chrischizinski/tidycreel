@@ -13,6 +13,7 @@ estimate_total_harvest(
   by = NULL,
   variance = "taylor",
   conf_level = 0.95,
+  target = c("sampled_days", "stratum_total", "period_total"),
   aggregate_sections = TRUE,
   missing_sections = "warn"
 )
@@ -46,6 +47,15 @@ estimate_total_harvest(
 - conf_level:
 
   Numeric confidence level (default: 0.95)
+
+- target:
+
+  Character string specifying the effort domain supplied to
+  [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md).
+  Options are `"sampled_days"` (default), `"stratum_total"`, or
+  `"period_total"`. This controls which effort domain is multiplied by
+  HPUE so total harvest stays aligned with the requested temporal
+  target.
 
 - aggregate_sections:
 
@@ -106,6 +116,16 @@ lake-wide SE uses the zero-covariance assumption: `sqrt(sum(se_i^2))`.
 [`estimate_harvest_rate`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md),
 [`estimate_total_catch`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md)
 
+Other "Estimation":
+[`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md),
+[`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md),
+[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),
+[`estimate_effort_aerial_glmm()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort_aerial_glmm.md),
+[`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md),
+[`estimate_release_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_release_rate.md),
+[`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md),
+[`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
+
 ## Examples
 
 ``` r
@@ -138,6 +158,7 @@ print(total_harvest)
 #> Method: Total Harvest (Effort × HPUE)
 #> Variance: Taylor linearization
 #> Confidence level: 95%
+#> Effort target: sampled_days
 #> 
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n

@@ -1,9 +1,6 @@
 # Compare multiple survey design estimates side by side
 
-Takes a named list of `creel_estimates` objects (from different survey
-designs or methods), extracts key precision metrics from each, and
-returns a tidy comparison tibble. An `autoplot()` method renders a
-forest plot of point estimates with confidence intervals.
+**\[experimental\]**
 
 ## Usage
 
@@ -63,9 +60,23 @@ A `creel_design_comparison` object – a data frame with columns:
 Group columns are retained when all designs share the same by-variable
 structure.
 
+## Details
+
+Takes a named list of `creel_estimates` objects (from different survey
+designs or methods), extracts key precision metrics from each, and
+returns a tidy comparison tibble. An `autoplot()` method renders a
+forest plot of point estimates with confidence intervals.
+
 ## See also
 
 [`autoplot.creel_design_comparison()`](https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_design_comparison.md)
+
+Other "Planning & Sample Size":
+[`creel_n_cpue()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_cpue.md),
+[`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md),
+[`creel_power()`](https://chrischizinski.github.io/tidycreel/reference/creel_power.md),
+[`cv_from_n()`](https://chrischizinski.github.io/tidycreel/reference/cv_from_n.md),
+[`power_creel()`](https://chrischizinski.github.io/tidycreel/reference/power_creel.md)
 
 ## Examples
 

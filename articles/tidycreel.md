@@ -107,6 +107,7 @@ print(result)
 #> Method: Total
 #> Variance: Taylor linearization
 #> Confidence level: 95%
+#> Effort target: sampled_days
 #> 
 #> # A tibble: 1 × 7
 #>   estimate    se se_between se_within ci_lower ci_upper     n
@@ -133,6 +134,7 @@ print(result_by_day)
 #> Variance: Taylor linearization
 #> Confidence level: 95%
 #> Grouped by: day_type
+#> Effort target: sampled_days
 #> 
 #> # A tibble: 2 × 8
 #>   day_type estimate    se se_between se_within ci_lower ci_upper     n
@@ -166,6 +168,7 @@ print(result_boot)
 #> Method: Total
 #> Variance: Bootstrap
 #> Confidence level: 95%
+#> Effort target: sampled_days
 #> 
 #> # A tibble: 1 × 7
 #>   estimate    se se_between se_within ci_lower ci_upper     n
@@ -180,6 +183,7 @@ print(result_jk)
 #> Method: Total
 #> Variance: Jackknife
 #> Confidence level: 95%
+#> Effort target: sampled_days
 #> 
 #> # A tibble: 1 × 7
 #>   estimate    se se_between se_within ci_lower ci_upper     n
@@ -212,6 +216,7 @@ print(result_grouped_boot)
 #> Variance: Bootstrap
 #> Confidence level: 95%
 #> Grouped by: day_type
+#> Effort target: sampled_days
 #> 
 #> # A tibble: 2 × 8
 #>   day_type estimate    se se_between se_within ci_lower ci_upper     n
@@ -219,6 +224,44 @@ print(result_grouped_boot)
 #> 1 weekday      171. 10.3       10.3          0     148.     193.    10
 #> 2 weekend      202.  8.78       8.78         0     183.     221.     4
 ```
+
+## Schedule-Defined Special Strata
+
+If your survey calendar includes prospective high-use or other special
+periods, the same three-step workflow still applies. The difference is
+that the schedule may carry a resolved `final_stratum` column from
+`generate_schedule(..., special_periods = ...)`, and that resolved
+stratum should drive the analysis design.
+
+``` r
+sched <- generate_schedule(
+  start_date = "2027-07-24",
+  end_date = "2027-08-04",
+  n_periods = 1,
+  sampling_rate = 0.5,
+  include_all = TRUE,
+  special_periods = opener_periods,
+  seed = 42
+)
+
+calendar_for_design <- transform(
+  sched[, c("date", "final_stratum")],
+  analysis_stratum = ifelse(grepl("^high_use", final_stratum), final_stratum, "regular")
+)[, c("date", "analysis_stratum")]
+
+design_special <- creel_design(
+  calendar_for_design,
+  date = date,
+  strata = analysis_stratum
+)
+```
+
+Once counts and interviews are attached,
+`estimate_effort(..., target = "period_total")` and the
+total-catch/product estimators use the declared analysis strata
+directly. If one of those strata is too sparse for variance estimation,
+tidycreel names the sparse stratum in its diagnostic instead of failing
+opaquely.
 
 ## Next Steps
 

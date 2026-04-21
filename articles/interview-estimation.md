@@ -43,6 +43,7 @@ print(effort_est)
 #> Method: Total
 #> Variance: Taylor linearization
 #> Confidence level: 95%
+#> Effort target: sampled_days
 #> 
 #> # A tibble: 1 × 7
 #>   estimate    se se_between se_within ci_lower ci_upper     n
@@ -171,6 +172,7 @@ print(total_catch_est)
 #> Method: Total Catch (Effort × CPUE)
 #> Variance: Taylor linearization
 #> Confidence level: 95%
+#> Effort target: sampled_days
 #> 
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
@@ -224,6 +226,7 @@ print(total_harvest_est)
 #> Method: Total Harvest (Effort × HPUE)
 #> Variance: Taylor linearization
 #> Confidence level: 95%
+#> Effort target: sampled_days
 #> 
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
@@ -353,6 +356,7 @@ print(effort)
 #> Method: Total
 #> Variance: Taylor linearization
 #> Confidence level: 95%
+#> Effort target: sampled_days
 #> 
 #> # A tibble: 1 × 7
 #>   estimate    se se_between se_within ci_lower ci_upper     n
@@ -364,6 +368,7 @@ print(total_catch)
 #> Method: Total Catch (Effort × CPUE)
 #> Variance: Taylor linearization
 #> Confidence level: 95%
+#> Effort target: sampled_days
 #> 
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
@@ -375,6 +380,7 @@ print(total_harvest)
 #> Method: Total Harvest (Effort × HPUE)
 #> Variance: Taylor linearization
 #> Confidence level: 95%
+#> Effort target: sampled_days
 #> 
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n

@@ -30,22 +30,39 @@ devtools::install_github("chrischizinski/tidycreel")
 
 Stratified effort estimation from periodic angler counts.
 
+[Getting Started
+→](https://chrischizinski.github.io/tidycreel/articles/tidycreel.html)
+
 ##### Bus-Route
 
 PPS site selection with Horvitz-Thompson estimators and enumeration
 expansion.
 
+[Bus-Route vignette
+→](https://chrischizinski.github.io/tidycreel/articles/bus-route-surveys.html)
+
 ##### Ice Fishing
 
 Degenerate bus-route design with certainty site sampling.
+
+[Ice Fishing vignette
+→](https://chrischizinski.github.io/tidycreel/articles/ice-fishing.html)
 
 ##### Camera-Monitored
 
 Counter and ingress-egress preprocessing plus camera effort indexing.
 
+[Camera Survey vignette
+→](https://chrischizinski.github.io/tidycreel/articles/camera-surveys.html)
+
 ##### Aerial Survey
 
 Single-overflight effort estimation with calibrated open-hours scaling.
+
+[Aerial vignette
+→](https://chrischizinski.github.io/tidycreel/articles/aerial-surveys.html)
+\| [GLMM variant
+→](https://chrischizinski.github.io/tidycreel/articles/aerial-glmm.html)
 
 ## Key Capabilities
 
@@ -185,18 +202,35 @@ estimate_catch_rate(design)
   **[`creel_palette()`](https://chrischizinski.github.io/tidycreel/reference/creel_palette.md)**
   — visualisation helpers.
 
-## Selected Vignettes
+## Vignettes
 
-| Vignette                                                                                                | Description                                                   |
-|---------------------------------------------------------------------------------------------------------|---------------------------------------------------------------|
-| [Getting Started](https://chrischizinski.github.io/tidycreel/articles/tidycreel.html)                   | Core workflow: design → counts → effort estimation            |
-| [Glossary](https://chrischizinski.github.io/tidycreel/articles/glossary.html)                           | Plain-language guide to tidycreel terms and concepts          |
-| [Survey Design Toolbox](https://chrischizinski.github.io/tidycreel/articles/survey-design-toolbox.html) | Sample-size, power, scheduling, and pre-season planning tools |
-| [Survey Scheduling](https://chrischizinski.github.io/tidycreel/articles/survey-scheduling.html)         | Count windows, schedules, validation, and completeness checks |
-| [Visualisation](https://chrischizinski.github.io/tidycreel/articles/visualisation.html)                 | Plotting patterns and output styling                          |
-| [Interview Estimation](https://chrischizinski.github.io/tidycreel/articles/interview-estimation.html)   | CPUE, catch, and harvest from interview data                  |
-| [Incomplete Trips](https://chrischizinski.github.io/tidycreel/articles/incomplete-trips.html)           | When and how to use mean-of-ratios and TOST validation        |
-| [Replicate Designs](https://chrischizinski.github.io/tidycreel/articles/replicate-designs.html)         | Variance workflows and replicate-design reasoning             |
+### Get Started
+
+| Vignette                                                                              | Description                                          |
+|---------------------------------------------------------------------------------------|------------------------------------------------------|
+| [Getting Started](https://chrischizinski.github.io/tidycreel/articles/tidycreel.html) | Core workflow: design → counts → effort estimation   |
+| [Glossary](https://chrischizinski.github.io/tidycreel/articles/glossary.html)         | Plain-language guide to tidycreel terms and concepts |
+
+### Survey Types
+
+| Vignette                                                                                        | Description                                                 |
+|-------------------------------------------------------------------------------------------------|-------------------------------------------------------------|
+| [Bus-Route Surveys](https://chrischizinski.github.io/tidycreel/articles/bus-route-surveys.html) | PPS site selection with Horvitz-Thompson estimators         |
+| [Ice Fishing](https://chrischizinski.github.io/tidycreel/articles/ice-fishing.html)             | Certainty-site (degenerate bus-route) design                |
+| [Camera Surveys](https://chrischizinski.github.io/tidycreel/articles/camera-surveys.html)       | Counter and ingress-egress preprocessing, camera effort     |
+| [Aerial Surveys](https://chrischizinski.github.io/tidycreel/articles/aerial-surveys.html)       | Single-overflight effort with calibrated open-hours scaling |
+| [Aerial GLMM](https://chrischizinski.github.io/tidycreel/articles/aerial-glmm.html)             | Negative-binomial GLMM aerial effort (Askey 2018)           |
+
+### Reporting & Planning
+
+| Vignette                                                                                                | Description                                                                                                                      |
+|---------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------|
+| [Survey Design Toolbox](https://chrischizinski.github.io/tidycreel/articles/survey-design-toolbox.html) | Sample-size, power, scheduling, and pre-season planning tools                                                                    |
+| [Survey Scheduling](https://chrischizinski.github.io/tidycreel/articles/survey-scheduling.html)         | Count windows, schedules, validation, and completeness checks                                                                    |
+| [Visualisation](https://chrischizinski.github.io/tidycreel/articles/visualisation.html)                 | Plotting patterns and output styling with [`theme_creel()`](https://chrischizinski.github.io/tidycreel/reference/theme_creel.md) |
+| [Interview Estimation](https://chrischizinski.github.io/tidycreel/articles/interview-estimation.html)   | CPUE, catch, and harvest from interview data                                                                                     |
+| [Incomplete Trips](https://chrischizinski.github.io/tidycreel/articles/incomplete-trips.html)           | When and how to use mean-of-ratios and TOST validation                                                                           |
+| [Replicate Designs](https://chrischizinski.github.io/tidycreel/articles/replicate-designs.html)         | Variance workflows and replicate-design reasoning                                                                                |
 
 ## License
 
@@ -216,8 +250,16 @@ argument.
   : Create a creel survey design
 - [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
   : Attach count data to a creel design
+- [`prep_counts_daily_effort()`](https://chrischizinski.github.io/tidycreel/reference/prep_counts_daily_effort.md)
+  : Standardize sampled-day effort rows for count-based workflows
+- [`prep_counts_boat_party()`](https://chrischizinski.github.io/tidycreel/reference/prep_counts_boat_party.md)
+  : Standardize boat-party sampled-day effort rows
 - [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)
   : Attach interview data to a creel design
+- [`prep_interviews_trips()`](https://chrischizinski.github.io/tidycreel/reference/prep_interviews_trips.md)
+  : Standardize trip/interview rows for interview-based workflows
+- [`prep_interview_catch()`](https://chrischizinski.github.io/tidycreel/reference/prep_interview_catch.md)
+  : Standardize long catch-table rows for interview-based workflows
 - [`add_catch()`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md)
   : Attach species-level catch data to a creel design
 - [`add_lengths()`](https://chrischizinski.github.io/tidycreel/reference/add_lengths.md)
@@ -229,7 +271,8 @@ argument.
 - [`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md)
   : Estimate angler effort from camera/time-lapse count data
 - [`as_hybrid_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_hybrid_svydesign.md)
-  : Construct a hybrid access + roving survey design
+  **\[experimental\]** : Construct a hybrid access + roving survey
+  design
 - [`print(`*`<creel_hybrid_svydesign>`*`)`](https://chrischizinski.github.io/tidycreel/reference/print.creel_hybrid_svydesign.md)
   : Print a creel_hybrid_svydesign
 - [`compute_effort()`](https://chrischizinski.github.io/tidycreel/reference/compute_effort.md)
@@ -347,7 +390,8 @@ design comparison.
 - [`cv_from_n()`](https://chrischizinski.github.io/tidycreel/reference/cv_from_n.md)
   : Compute the expected CV achievable with a known sample size
 - [`compare_designs()`](https://chrischizinski.github.io/tidycreel/reference/compare_designs.md)
-  : Compare multiple survey design estimates side by side
+  **\[experimental\]** : Compare multiple survey design estimates side
+  by side
 - [`print(`*`<creel_design_comparison>`*`)`](https://chrischizinski.github.io/tidycreel/reference/print.creel_design_comparison.md)
   : Print a creel_design_comparison
 - [`autoplot(`*`<creel_design_comparison>`*`)`](https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_design_comparison.md)

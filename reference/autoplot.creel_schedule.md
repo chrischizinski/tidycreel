@@ -42,6 +42,13 @@ A `ggplot` object.
 [`print.creel_schedule()`](https://chrischizinski.github.io/tidycreel/reference/print.creel_schedule.md),
 [`write_schedule()`](https://chrischizinski.github.io/tidycreel/reference/write_schedule.md)
 
+Other "Visualisation":
+[`autoplot.creel_estimates()`](https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_estimates.md),
+[`autoplot.creel_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_length_distribution.md),
+[`creel_palette()`](https://chrischizinski.github.io/tidycreel/reference/creel_palette.md),
+[`plot_design()`](https://chrischizinski.github.io/tidycreel/reference/plot_design.md),
+[`theme_creel()`](https://chrischizinski.github.io/tidycreel/reference/theme_creel.md)
+
 ## Examples
 
 ``` r

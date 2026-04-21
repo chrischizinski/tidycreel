@@ -166,15 +166,41 @@ mail surveys. Journal of Marketing Research 14:396–402.</p>
 and Their Applications in Fisheries Management. American Fisheries Society,
 Bethesda, MD.</p>
     </div>
+    <div class="section level2">
+    <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
+    <div class="dont-index"><p>Other "Reporting &amp; Diagnostics":
+<code><a href="check_completeness.html">check_completeness()</a></code>,
+<code><a href="compare_variance.html">compare_variance()</a></code>,
+<code><a href="flag_outliers.html">flag_outliers()</a></code>,
+<code><a href="season_summary.html">season_summary()</a></code>,
+<code><a href="standardize_species.html">standardize_species()</a></code>,
+<code><a href="summarize_by_angler_type.html">summarize_by_angler_type()</a></code>,
+<code><a href="summarize_by_day_type.html">summarize_by_day_type()</a></code>,
+<code><a href="summarize_by_method.html">summarize_by_method()</a></code>,
+<code><a href="summarize_by_species_sought.html">summarize_by_species_sought()</a></code>,
+<code><a href="summarize_by_trip_length.html">summarize_by_trip_length()</a></code>,
+<code><a href="summarize_cws_rates.html">summarize_cws_rates()</a></code>,
+<code><a href="summarize_hws_rates.html">summarize_hws_rates()</a></code>,
+<code><a href="summarize_length_freq.html">summarize_length_freq()</a></code>,
+<code><a href="summarize_refusals.html">summarize_refusals()</a></code>,
+<code><a href="summarize_successful_parties.html">summarize_successful_parties()</a></code>,
+<code><a href="summarize_trips.html">summarize_trips()</a></code>,
+<code><a href="summary.creel_estimates.html">summary.creel_estimates()</a></code>,
+<code><a href="validate_creel_data.html">validate_creel_data()</a></code>,
+<code><a href="validate_design.html">validate_design()</a></code>,
+<code><a href="validate_incomplete_trips.html">validate_incomplete_trips()</a></code>,
+<code><a href="validation_report.html">validation_report()</a></code>,
+<code><a href="write_estimates.html">write_estimates()</a></code></p></div>
+    </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"example_counts"</span>, package <span class="op">=</span> <span class="st">"tidycreel"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"example_interviews"</span>, package <span class="op">=</span> <span class="st">"tidycreel"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">cal</span>     <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">example_counts</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"date"</span>, <span class="st">"day_type"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">design</span>  <span class="op">&lt;-</span> <span class="fu"><a href="creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">cal</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">design</span>  <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_counts</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">design</span>  <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="add_interviews.html">add_interviews</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span><span class="va">cal</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">example_counts</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"date"</span>, <span class="st">"day_type"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">cal</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_counts</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="add_interviews.html">add_interviews</a></span><span class="op">(</span></span></span>
 <span class="r-in"><span>  <span class="va">design</span>, <span class="va">example_interviews</span>,</span></span>
 <span class="r-in"><span>  catch <span class="op">=</span> <span class="va">catch_total</span>, effort <span class="op">=</span> <span class="va">hours_fished</span>,</span></span>
 <span class="r-in"><span>  trip_status <span class="op">=</span> <span class="va">trip_status</span>, trip_duration <span class="op">=</span> <span class="va">trip_duration</span></span></span>

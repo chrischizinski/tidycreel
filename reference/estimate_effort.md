@@ -13,6 +13,7 @@ estimate_effort(
   by = NULL,
   variance = "taylor",
   conf_level = 0.95,
+  target = c("sampled_days", "stratum_total", "period_total"),
   verbose = FALSE,
   aggregate_sections = TRUE,
   method = "correlated",
@@ -47,6 +48,19 @@ estimate_effort(
 
   Numeric confidence level for confidence intervals (default: 0.95 for
   95% confidence intervals). Must be between 0 and 1.
+
+- target:
+
+  Character string specifying the temporal effort target. Options:
+  `"sampled_days"` (default, current behavior: total across sampled PSU
+  rows only), `"stratum_total"` (expand sampled-day means within
+  calendar strata before combining), or `"period_total"` (full
+  calendar-period total after stratum expansion). For standard
+  stratified count designs, `"stratum_total"` and `"period_total"` use
+  the same weighted expansion engine; the distinction is semantic and is
+  recorded on the returned object as `effort_target`. Expanded targets
+  are currently limited to the standard count-design path and are not
+  yet supported for bus-route, ice, aerial, or sectioned designs.
 
 - verbose:
 
@@ -122,6 +136,18 @@ variance.
   based on design). Alternative resampling method, deterministic unlike
   bootstrap.
 
+## See also
+
+Other "Estimation":
+[`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md),
+[`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md),
+[`estimate_effort_aerial_glmm()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort_aerial_glmm.md),
+[`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md),
+[`estimate_release_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_release_rate.md),
+[`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md),
+[`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md),
+[`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
+
 ## Examples
 
 ``` r
@@ -152,6 +178,7 @@ print(result)
 #> Method: Total
 #> Variance: Taylor linearization
 #> Confidence level: 95%
+#> Effort target: sampled_days
 #> 
 #> # A tibble: 1 × 7
 #>   estimate    se se_between se_within ci_lower ci_upper     n
@@ -177,6 +204,7 @@ print(result_grouped)
 #> Variance: Taylor linearization
 #> Confidence level: 95%
 #> Grouped by: day_type
+#> Effort target: sampled_days
 #> 
 #> # A tibble: 2 × 8
 #>   day_type estimate    se se_between se_within ci_lower ci_upper     n
@@ -208,6 +236,7 @@ print(result_boot)
 #> Method: Total
 #> Variance: Bootstrap
 #> Confidence level: 95%
+#> Effort target: sampled_days
 #> 
 #> # A tibble: 1 × 7
 #>   estimate    se se_between se_within ci_lower ci_upper     n
@@ -227,6 +256,7 @@ print(result_jk)
 #> Method: Total
 #> Variance: Jackknife
 #> Confidence level: 95%
+#> Effort target: sampled_days
 #> 
 #> # A tibble: 1 × 7
 #>   estimate    se se_between se_within ci_lower ci_upper     n

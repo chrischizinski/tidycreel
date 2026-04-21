@@ -13,6 +13,7 @@ estimate_total_catch(
   by = NULL,
   variance = "taylor",
   conf_level = 0.95,
+  target = c("sampled_days", "stratum_total", "period_total"),
   aggregate_sections = TRUE,
   missing_sections = "warn",
   verbose = FALSE
@@ -45,6 +46,14 @@ estimate_total_catch(
 - conf_level:
 
   Numeric confidence level (default: 0.95)
+
+- target:
+
+  Character string specifying the effort domain supplied to
+  [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md).
+  Options are `"sampled_days"` (default), `"stratum_total"`, or
+  `"period_total"`. This controls which effort domain is multiplied by
+  CPUE so total catch stays aligned with the requested temporal target.
 
 - aggregate_sections:
 
@@ -116,6 +125,16 @@ CPUE designs is not identified and is therefore assumed zero.
 [`estimate_effort`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),
 [`estimate_catch_rate`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
 
+Other "Estimation":
+[`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md),
+[`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md),
+[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),
+[`estimate_effort_aerial_glmm()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort_aerial_glmm.md),
+[`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md),
+[`estimate_release_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_release_rate.md),
+[`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md),
+[`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
+
 ## Examples
 
 ``` r
@@ -150,6 +169,7 @@ print(total_catch)
 #> Method: Total Catch (Effort × CPUE)
 #> Variance: Taylor linearization
 #> Confidence level: 95%
+#> Effort target: sampled_days
 #> 
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n

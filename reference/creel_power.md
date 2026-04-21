@@ -71,6 +71,15 @@ fractional form (e.g., 20 instead of 0.20).
 Cohen, J. 1988. Statistical Power Analysis for the Behavioral Sciences,
 2nd ed. Lawrence Erlbaum Associates, Hillsdale, NJ.
 
+## See also
+
+Other "Planning & Sample Size":
+[`compare_designs()`](https://chrischizinski.github.io/tidycreel/reference/compare_designs.md),
+[`creel_n_cpue()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_cpue.md),
+[`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md),
+[`cv_from_n()`](https://chrischizinski.github.io/tidycreel/reference/cv_from_n.md),
+[`power_creel()`](https://chrischizinski.github.io/tidycreel/reference/power_creel.md)
+
 ## Examples
 
 ``` r

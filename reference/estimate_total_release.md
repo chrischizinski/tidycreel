@@ -15,6 +15,7 @@ estimate_total_release(
   by = NULL,
   variance = "taylor",
   conf_level = 0.95,
+  target = c("sampled_days", "stratum_total", "period_total"),
   aggregate_sections = TRUE,
   missing_sections = "warn"
 )
@@ -48,6 +49,15 @@ estimate_total_release(
 - conf_level:
 
   Numeric confidence level (default: 0.95).
+
+- target:
+
+  Character string specifying the effort domain supplied to
+  [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md).
+  Options are `"sampled_days"` (default), `"stratum_total"`, or
+  `"period_total"`. This controls which effort domain is multiplied by
+  release rate so total release stays aligned with the requested
+  temporal target.
 
 - aggregate_sections:
 
@@ -86,6 +96,16 @@ lake-wide SE uses the zero-covariance assumption: `sqrt(sum(se_i^2))`.
 [`estimate_release_rate`](https://chrischizinski.github.io/tidycreel/reference/estimate_release_rate.md),
 [`add_catch`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md)
 
+Other "Estimation":
+[`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md),
+[`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md),
+[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),
+[`estimate_effort_aerial_glmm()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort_aerial_glmm.md),
+[`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md),
+[`estimate_release_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_release_rate.md),
+[`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md),
+[`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md)
+
 ## Examples
 
 ``` r
@@ -122,6 +142,7 @@ print(total_rel)
 #> Method: product-total-release
 #> Variance: Taylor linearization
 #> Confidence level: 95%
+#> Effort target: sampled_days
 #> 
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
@@ -130,15 +151,6 @@ print(total_rel)
 
 # Total releases by species
 total_rel_sp <- estimate_total_release(design, by = species)
-#> Warning: Small sample size for CPUE estimation.
-#> ! Sample size is 22. Ratio estimates are more stable with n >= 30.
-#> ℹ Variance estimates may be unstable with n < 30.
-#> Warning: Small sample size for CPUE estimation.
-#> ! Sample size is 22. Ratio estimates are more stable with n >= 30.
-#> ℹ Variance estimates may be unstable with n < 30.
-#> Warning: Small sample size for CPUE estimation.
-#> ! Sample size is 22. Ratio estimates are more stable with n >= 30.
-#> ℹ Variance estimates may be unstable with n < 30.
 print(total_rel_sp)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -146,11 +158,12 @@ print(total_rel_sp)
 #> Variance: Taylor linearization
 #> Confidence level: 95%
 #> Grouped by: species
+#> Effort target: sampled_days
 #> 
 #> # A tibble: 3 × 6
 #>   species estimate    se ci_lower ci_upper     n
 #>   <chr>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1 bass        79.1  28.5    23.2     135.     22
-#> 2 panfish     33.0  21.1    -8.30     74.2    22
-#> 3 walleye    112.   28.0    57.2     167.     22
+#> 1 bass        72.5  26.4    20.7     124.     22
+#> 2 panfish     32.6  18.5    -3.68     68.8    22
+#> 3 walleye    127.   31.4    65.6     189.     22
 ```

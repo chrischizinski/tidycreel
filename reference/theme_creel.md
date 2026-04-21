@@ -24,6 +24,15 @@ theme_creel(base_size = 11, base_family = "sans")
 
 A ggplot2 theme object.
 
+## See also
+
+Other "Visualisation":
+[`autoplot.creel_estimates()`](https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_estimates.md),
+[`autoplot.creel_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_length_distribution.md),
+[`autoplot.creel_schedule()`](https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_schedule.md),
+[`creel_palette()`](https://chrischizinski.github.io/tidycreel/reference/creel_palette.md),
+[`plot_design()`](https://chrischizinski.github.io/tidycreel/reference/plot_design.md)
+
 ## Examples
 
 ``` r

@@ -43,6 +43,13 @@ A `ggplot` object.
 
 [`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md)
 
+Other "Visualisation":
+[`autoplot.creel_estimates()`](https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_estimates.md),
+[`autoplot.creel_schedule()`](https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_schedule.md),
+[`creel_palette()`](https://chrischizinski.github.io/tidycreel/reference/creel_palette.md),
+[`plot_design()`](https://chrischizinski.github.io/tidycreel/reference/plot_design.md),
+[`theme_creel()`](https://chrischizinski.github.io/tidycreel/reference/theme_creel.md)
+
 ## Examples
 
 ``` r

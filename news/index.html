@@ -71,6 +71,12 @@
 <li>
 <code><a href="../reference/estimate_catch_rate.html">estimate_catch_rate()</a></code> gains a <code>targeted</code> argument (default <code>TRUE</code>). Setting <code>targeted = FALSE</code> excludes zero-catch trips before MOR/MORtr estimation for incidental species workflows.</li>
 <li>
+<code><a href="../reference/power_creel.html">power_creel()</a></code> provides a unified tidy entry point for pre-survey sample-size planning, wrapping <code><a href="../reference/creel_n_effort.html">creel_n_effort()</a></code>, <code><a href="../reference/creel_n_cpue.html">creel_n_cpue()</a></code>, and <code><a href="../reference/creel_power.html">creel_power()</a></code> into a single consistent interface with <code>mode = "effort_n"</code>, <code>"cpue_n"</code>, or <code>"power"</code>.</li>
+<li>
+<code><a href="../reference/compare_designs.html">compare_designs()</a></code> compares multiple survey designs side by side from a named list of <code>creel_estimates</code> objects. An <code><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot()</a></code> method renders a forest plot of point estimates with confidence intervals.</li>
+<li>
+<code><a href="../reference/as_hybrid_svydesign.html">as_hybrid_svydesign()</a></code> constructs a hybrid access + roving survey design from combined access-point and roving-route count data.</li>
+<li>
 <code><a href="../reference/compare_variance.html">compare_variance()</a></code> computes Taylor linearization vs. replicate (bootstrap or jackknife) standard errors side-by-side for any <code>creel_estimates</code> object.</li>
 <li>
 <code><a href="../reference/adjust_nonresponse.html">adjust_nonresponse()</a></code> applies nonresponse weighting to a <code>creel_design</code> and records per-stratum diagnostics.</li>

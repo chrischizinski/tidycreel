@@ -42,8 +42,29 @@ Simulated data for package examples
 
 [example_interviews](https://chrischizinski.github.io/tidycreel/reference/example_interviews.md)
 for the corresponding interview-level data,
+[`prep_interview_catch()`](https://chrischizinski.github.io/tidycreel/reference/prep_interview_catch.md)
+to standardize species catch, and
 [`add_catch()`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md)
 to attach species catch to a design
+
+Other "Example Datasets":
+[`creel_counts_toy`](https://chrischizinski.github.io/tidycreel/reference/creel_counts_toy.md),
+[`creel_interviews_toy`](https://chrischizinski.github.io/tidycreel/reference/creel_interviews_toy.md),
+[`example_aerial_counts`](https://chrischizinski.github.io/tidycreel/reference/example_aerial_counts.md),
+[`example_aerial_glmm_counts`](https://chrischizinski.github.io/tidycreel/reference/example_aerial_glmm_counts.md),
+[`example_aerial_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_aerial_interviews.md),
+[`example_calendar`](https://chrischizinski.github.io/tidycreel/reference/example_calendar.md),
+[`example_camera_counts`](https://chrischizinski.github.io/tidycreel/reference/example_camera_counts.md),
+[`example_camera_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_camera_interviews.md),
+[`example_camera_timestamps`](https://chrischizinski.github.io/tidycreel/reference/example_camera_timestamps.md),
+[`example_counts`](https://chrischizinski.github.io/tidycreel/reference/example_counts.md),
+[`example_ice_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_ice_interviews.md),
+[`example_ice_sampling_frame`](https://chrischizinski.github.io/tidycreel/reference/example_ice_sampling_frame.md),
+[`example_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_interviews.md),
+[`example_lengths`](https://chrischizinski.github.io/tidycreel/reference/example_lengths.md),
+[`example_sections_calendar`](https://chrischizinski.github.io/tidycreel/reference/example_sections_calendar.md),
+[`example_sections_counts`](https://chrischizinski.github.io/tidycreel/reference/example_sections_counts.md),
+[`example_sections_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_sections_interviews.md)
 
 ## Examples
 
@@ -53,10 +74,20 @@ data(example_interviews)
 data(example_catch)
 
 design <- creel_design(example_calendar, date = date, strata = day_type)
-design <- add_interviews(design, example_interviews,
+interviews_ready <- prep_interviews_trips(
+  example_interviews,
+  date = date,
+  interview_uid = interview_id,
+  effort_hours = hours_fished,
+  trip_status = trip_status,
+  trip_duration = trip_duration,
+  catch_total = catch_total,
+  harvest_total = catch_kept
+)
+design <- add_interviews(design, interviews_ready,
   catch = catch_total,
-  effort = hours_fished,
-  harvest = catch_kept,
+  effort = effort_hours,
+  harvest = harvest_total,
   trip_status = trip_status,
   trip_duration = trip_duration
 )
@@ -64,9 +95,16 @@ design <- add_interviews(design, example_interviews,
 #> ℹ Pass `n_anglers = <column>` to use actual party sizes for angler-hour
 #>   normalization.
 #> ℹ Added 22 interviews: 17 complete (77%), 5 incomplete (23%)
-design <- add_catch(design, example_catch,
-  catch_uid = interview_id,
+
+catch_ready <- prep_interview_catch(example_catch,
   interview_uid = interview_id,
+  species = species,
+  count = count,
+  catch_type = catch_type
+)
+design <- add_catch(design, catch_ready,
+  catch_uid = interview_uid,
+  interview_uid = interview_uid,
   species = species,
   count = count,
   catch_type = catch_type
@@ -83,8 +121,8 @@ print(design)
 #> Interviews: 22 observations
 #> Type: "access"
 #> Catch: catch_total
-#> Effort: hours_fished
-#> Harvest: catch_kept
+#> Effort: effort_hours
+#> Harvest: harvest_total
 #> Trip status: 17 complete, 5 incomplete
 #> Survey: <survey.design2> (constructed)
 #> Catch Data: 42 rows, 3 species

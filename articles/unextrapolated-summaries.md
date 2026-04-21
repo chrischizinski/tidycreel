@@ -352,56 +352,40 @@ estimate_catch_rate(design, by = species)
 
 ``` r
 estimate_total_catch(design, by = species)
-#> Warning: Small sample size for CPUE estimation.
-#> ! Sample size is 22. Ratio estimates are more stable with n >= 30.
-#> ℹ Variance estimates may be unstable with n < 30.
-#> Small sample size for CPUE estimation.
-#> ! Sample size is 22. Ratio estimates are more stable with n >= 30.
-#> ℹ Variance estimates may be unstable with n < 30.
-#> Small sample size for CPUE estimation.
-#> ! Sample size is 22. Ratio estimates are more stable with n >= 30.
-#> ℹ Variance estimates may be unstable with n < 30.
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
 #> Method: Total Catch (Effort × CPUE)
 #> Variance: Taylor linearization
 #> Confidence level: 95%
 #> Grouped by: species
+#> Effort target: sampled_days
 #> 
 #> # A tibble: 3 × 6
 #>   species estimate    se ci_lower ci_upper     n
 #>   <chr>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1 bass        29.4  16.4    -2.70     61.6    22
-#> 2 panfish     20.6  20.9   -20.3      61.5    22
-#> 3 walleye     97.2  37.7    23.2     171.     22
+#> 1 bass        23.7  10.9     2.40     45.0    22
+#> 2 panfish     16.6  17.0   -16.8      49.9    22
+#> 3 walleye     95.5  41.7    13.8     177.     22
 ```
 
 ### Total Harvest by Species
 
 ``` r
 estimate_total_harvest(design, by = species)
-#> Warning: Small sample size for harvest estimation.
-#> ! Sample size is 22. Ratio estimates are more stable with n >= 30.
-#> ℹ Variance estimates may be unstable with n < 30.
-#> Small sample size for harvest estimation.
-#> ! Sample size is 22. Ratio estimates are more stable with n >= 30.
-#> ℹ Variance estimates may be unstable with n < 30.
-#> Small sample size for harvest estimation.
-#> ! Sample size is 22. Ratio estimates are more stable with n >= 30.
-#> ℹ Variance estimates may be unstable with n < 30.
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
 #> Method: Total Harvest (Effort × HPUE)
 #> Variance: Taylor linearization
 #> Confidence level: 95%
 #> Grouped by: species
+#> Effort target: sampled_days
 #> 
 #> # A tibble: 3 × 6
 #>   species estimate    se ci_lower ci_upper     n
 #>   <chr>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1 bass        38.3  13.5    11.8      64.8    22
-#> 2 panfish     23.6  13.4    -2.76     49.9    22
-#> 3 walleye    112.   22.5    67.8     156.     22
+#> 1 bass        33.5  11.7    10.5      56.5    22
+#> 2 panfish     24.3  11.8     1.17     47.4    22
+#> 3 walleye    121.   26.6    68.6     173.     22
 ```
 
 ### Release Rate and Total Releases by Species
@@ -431,28 +415,20 @@ estimate_release_rate(design, by = species)
 #> 2 panfish   0.0395 0.0252 -0.00982   0.0889    22
 #> 3 walleye   0.134  0.0340  0.0678    0.201     22
 estimate_total_release(design, by = species)
-#> Warning: Small sample size for CPUE estimation.
-#> ! Sample size is 22. Ratio estimates are more stable with n >= 30.
-#> ℹ Variance estimates may be unstable with n < 30.
-#> Small sample size for CPUE estimation.
-#> ! Sample size is 22. Ratio estimates are more stable with n >= 30.
-#> ℹ Variance estimates may be unstable with n < 30.
-#> Small sample size for CPUE estimation.
-#> ! Sample size is 22. Ratio estimates are more stable with n >= 30.
-#> ℹ Variance estimates may be unstable with n < 30.
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
 #> Method: product-total-release
 #> Variance: Taylor linearization
 #> Confidence level: 95%
 #> Grouped by: species
+#> Effort target: sampled_days
 #> 
 #> # A tibble: 3 × 6
 #>   species estimate    se ci_lower ci_upper     n
 #>   <chr>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1 bass        35.3 13.2      9.52     61.2    22
-#> 2 panfish     14.7  9.39    -3.69     33.1    22
-#> 3 walleye     50.1 12.8     25.0      75.1    22
+#> 1 bass        32.4 12.3      8.24     56.6    22
+#> 2 panfish     14.5  8.02    -1.20     30.2    22
+#> 3 walleye     56.3 15.8     25.3      87.3    22
 ```
 
 For grouped estimates combining calendar strata with species, use

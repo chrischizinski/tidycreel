@@ -219,6 +219,7 @@ print(total_catch)
 #> Method: Total Catch (Effort × CPUE)
 #> Variance: Taylor linearization
 #> Confidence level: 95%
+#> Effort target: sampled_days
 #> 
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
@@ -263,7 +264,7 @@ comparison <- rbind(
 
 print(comparison)
 #>   method  estimate        se  ci_lower  ci_upper
-#> 1   GLMM  4399.453  380.6965  3653.302  5145.605
+#> 1   GLMM  4399.453  380.6978  3653.299  5145.607
 #> 2 Simple 20370.000 1891.0861 16156.398 24583.602
 ```
 

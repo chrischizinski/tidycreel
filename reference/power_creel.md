@@ -194,6 +194,13 @@ Three `mode` values are supported:
 [`creel_n_cpue()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_cpue.md),
 [`creel_power()`](https://chrischizinski.github.io/tidycreel/reference/creel_power.md)
 
+Other "Planning & Sample Size":
+[`compare_designs()`](https://chrischizinski.github.io/tidycreel/reference/compare_designs.md),
+[`creel_n_cpue()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_cpue.md),
+[`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md),
+[`creel_power()`](https://chrischizinski.github.io/tidycreel/reference/creel_power.md),
+[`cv_from_n()`](https://chrischizinski.github.io/tidycreel/reference/cv_from_n.md)
+
 ## Examples
 
 ``` r

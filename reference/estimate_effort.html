@@ -83,6 +83,7 @@ domain-specific output formatting.</p>
 <span>  by <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  variance <span class="op">=</span> <span class="st">"taylor"</span>,</span>
 <span>  conf_level <span class="op">=</span> <span class="fl">0.95</span>,</span>
+<span>  target <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"sampled_days"</span>, <span class="st">"stratum_total"</span>, <span class="st">"period_total"</span><span class="op">)</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  aggregate_sections <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  method <span class="op">=</span> <span class="st">"correlated"</span>,</span>
@@ -117,6 +118,19 @@ Options: <code>"taylor"</code> (default, Taylor linearization),
 <dt id="arg-conf-level">conf_level<a class="anchor" aria-label="anchor" href="#arg-conf-level"></a></dt>
 <dd><p>Numeric confidence level for confidence intervals (default:
 0.95 for 95% confidence intervals). Must be between 0 and 1.</p></dd>
+
+
+<dt id="arg-target">target<a class="anchor" aria-label="anchor" href="#arg-target"></a></dt>
+<dd><p>Character string specifying the temporal effort target.
+Options: <code>"sampled_days"</code> (default, current behavior: total across
+sampled PSU rows only), <code>"stratum_total"</code> (expand sampled-day means
+within calendar strata before combining), or <code>"period_total"</code>
+(full calendar-period total after stratum expansion). For standard
+stratified count designs, <code>"stratum_total"</code> and <code>"period_total"</code>
+use the same weighted expansion engine; the distinction is semantic and is
+recorded on the returned object as <code>effort_target</code>. Expanded targets
+are currently limited to the standard count-design path and are not yet
+supported for bus-route, ice, aerial, or sectioned designs.</p></dd>
 
 
 <dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
@@ -186,6 +200,18 @@ More computationally intensive than Taylor.</p></li>
 selection based on design). Alternative resampling method, deterministic
 unlike bootstrap.</p></li>
 </ul></div>
+    <div class="section level2">
+    <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
+    <div class="dont-index"><p>Other "Estimation":
+<code><a href="est_length_distribution.html">est_length_distribution()</a></code>,
+<code><a href="estimate_catch_rate.html">estimate_catch_rate()</a></code>,
+<code><a href="estimate_effort_aerial_glmm.html">estimate_effort_aerial_glmm()</a></code>,
+<code><a href="estimate_harvest_rate.html">estimate_harvest_rate()</a></code>,
+<code><a href="estimate_release_rate.html">estimate_release_rate()</a></code>,
+<code><a href="estimate_total_catch.html">estimate_total_catch()</a></code>,
+<code><a href="estimate_total_harvest.html">estimate_total_harvest()</a></code>,
+<code><a href="estimate_total_release.html">estimate_total_release()</a></code></p></div>
+    </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
@@ -216,6 +242,7 @@ unlike bootstrap.</p></li>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Method: Total</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Variance: Taylor linearization</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Confidence level: 95%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Effort target: sampled_days</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 7</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   estimate    se se_between se_within ci_lower ci_upper     n</span>
@@ -241,6 +268,7 @@ unlike bootstrap.</p></li>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Variance: Taylor linearization</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Confidence level: 95%</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Grouped by: day_type</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Effort target: sampled_days</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 2 × 8</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   day_type estimate    se se_between se_within ci_lower ci_upper     n</span>
@@ -272,6 +300,7 @@ unlike bootstrap.</p></li>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Method: Total</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Variance: Bootstrap</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Confidence level: 95%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Effort target: sampled_days</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 7</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   estimate    se se_between se_within ci_lower ci_upper     n</span>
@@ -291,6 +320,7 @@ unlike bootstrap.</p></li>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Method: Total</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Variance: Jackknife</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Confidence level: 95%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Effort target: sampled_days</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 7</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   estimate    se se_between se_within ci_lower ci_upper     n</span>
