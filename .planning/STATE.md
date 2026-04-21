@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: milestone
 status: planning
-stopped_at: Completed 78-03-PLAN.md — Phase 78 fully confirmed green, ready for Phase 79
-last_updated: "2026-04-20T00:00:00Z"
-last_activity: "2026-04-20 — Phase 78-03 complete: integration gate passed, pkgdown human-verified, Phase 78 done"
+stopped_at: "Completed 78-04-PLAN.md — TEST-02 gap closure: REQUIREMENTS.md and ROADMAP.md updated, Phase 78 fully closed"
+last_updated: "2026-04-21T16:05:06.591Z"
+last_activity: "2026-04-20 — Phase 78-03 complete: integration gate passed, CODE-01 and TEST-02 confirmed"
 progress:
   total_phases: 5
   completed_phases: 3
-  total_plans: 10
-  completed_plans: 10
-  percent: 40
+  total_plans: 11
+  completed_plans: 11
+  percent: 60
 ---
 
 # GSD State
@@ -19,7 +19,7 @@ progress:
 **Milestone:** M023 — Quality, Polish, and rOpenSci Readiness — v1.4.0
 **Status:** Ready to plan
 
-**Last session:** 2026-04-21T01:41:04.947Z
+**Last session:** 2026-04-21T16:05:06.588Z
 
 ## Project Reference
 
@@ -61,6 +61,7 @@ Progress: [████████░░] 60% (3/5 phases complete, Phase 79 is
 | Phase 78-code-quality-and-snapshot-testing P01 | 45min | 2 tasks | 134 files |
 | Phase 78-code-quality-and-snapshot-testing P02 | 15min | 2 tasks | 2 files |
 | Phase 78-code-quality-and-snapshot-testing P03 | 10min | 2 tasks | 91 files |
+| Phase 78-code-quality-and-snapshot-testing P04 | 5min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -90,6 +91,7 @@ Recent decisions affecting current work:
 - [Phase 78-01]: preprocess_camera_timestamps lives in creel-design.R (not survey-bridge.R); @family Camera Survey added there
 - [Phase 78]: rcmdcheck 4 notes are all pre-existing (.env, cmux.json, PROJECT.md, lifecycle in Imports) — not introduced by Phase 78 changes
 - [Phase 78-03]: Phase 78 integration gate passed — pkgdown 9-family Reference page human-verified approved; CODE-01 and TEST-02 both satisfied
+- [Phase 78-04]: TEST-02 gap was in the requirement wording, not the implementation — the 3-method delivery matched the locked 78-CONTEXT.md decision; only documentation needed correction
 
 ### Pending Todos
 
@@ -102,5 +104,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-04-20
-Stopped at: Completed 78-03-PLAN.md — Phase 78 fully confirmed green, ready for Phase 79
+Stopped at: Completed 78-04-PLAN.md — TEST-02 gap closure: REQUIREMENTS.md and ROADMAP.md updated, Phase 78 fully closed
 Resume file: None
