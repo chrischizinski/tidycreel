@@ -24,7 +24,7 @@
 ### Testing
 
 - [ ] **TEST-01**: quickcheck property-based tests written for INV-01–06 (priority order: INV-04 → INV-01 → INV-02 → INV-06 → INV-03; INV-05 manual-review only)
-- [x] **TEST-02**: `expect_snapshot()` adopted for 6 priority methods from 74-TESTING-STRATEGY.md
+- [x] **TEST-02**: `expect_snapshot()` adopted for the 3 text-output priority methods from 74-TESTING-STRATEGY.md (`print.creel_design`, `print.creel_estimates_mor`, `print.creel_schedule`). The 3 autoplot methods (`autoplot.creel_estimates`, `autoplot.creel_schedule`, `autoplot.creel_length_distribution`) are deferred: vdiffr is not a current DESCRIPTION dependency and SVG comparison adds CI fragility across ggplot2 version updates; autoplot methods have existing structural tests covering return type and class.
 - [ ] **TEST-03**: Fresh `covr` run confirms coverage baseline; codecov threshold configured in CI
 
 ### Code Quality
@@ -84,4 +84,4 @@
 
 ---
 *Requirements defined: 2026-04-19*
-*Last updated: 2026-04-19 — Traceability confirmed after roadmap creation*
+*Last updated: 2026-04-21 — TEST-02 definition updated to match 3-method scope per 78-CONTEXT.md deferral decision*
