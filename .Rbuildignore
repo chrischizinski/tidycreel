@@ -50,6 +50,7 @@
 ^rag$
 ^README_BUGFIXES\.md$
 ^README\.html$
+^logo\.png$
 ^renv$
 ^renv\.lock$
 ^sample_data$

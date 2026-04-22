@@ -4,6 +4,7 @@
 # Run from the package root: source("inst/hex/sticker.R")
 
 source_png <- "man/figures/logo.png"
+navbar_logo <- "logo.png"
 
 stopifnot(
   "Run from package root: source('inst/hex/sticker.R')" =
@@ -27,23 +28,35 @@ for (target in target_files) {
   message("  - ", target)
 }
 
-if (dir.exists("docs")) {
-  docs_logo <- "docs/logo.png"
-  stopifnot(
-    "Failed to sync docs/logo.png." =
-      file.copy(source_png, docs_logo, overwrite = TRUE)
-  )
-  message("  - ", docs_logo)
-}
-
 if (!requireNamespace("magick", quietly = TRUE)) {
-  message("Package 'magick' not installed; skipping favicon regeneration.")
+  message("Package 'magick' not installed; skipping pkgdown logo and favicon regeneration.")
   invisible(target_files)
 } else {
   favicon_dir <- "pkgdown/favicon"
   dir.create(favicon_dir, recursive = TRUE, showWarnings = FALSE)
 
   img <- magick::image_read(source_png)
+  navbar_img <- magick::image_quantize(
+    magick::image_trim(img),
+    max = 256,
+    dither = TRUE
+  )
+
+  magick::image_write(
+    navbar_img,
+    path = navbar_logo,
+    format = "png"
+  )
+  message("  - ", navbar_logo)
+
+  if (dir.exists("docs")) {
+    docs_logo <- "docs/logo.png"
+    stopifnot(
+      "Failed to sync docs/logo.png." =
+        file.copy(navbar_logo, docs_logo, overwrite = TRUE)
+    )
+    message("  - ", docs_logo)
+  }
 
   magick::image_write(
     magick::image_resize(img, "180x180"),
