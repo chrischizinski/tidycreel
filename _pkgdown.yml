@@ -5,13 +5,13 @@ template:
   bootstrap: 5
   logo: logo.png
   bslib:
-    primary: "#1B4F72"
-    link-color: "#5DADE2"
-    headings-color: "#1B4F72"
+    primary: "#0b3b5e"
+    link-color: "#f47d65"
+    headings-color: "#1f5e80"
     font-size-base: "1rem"
     border-radius: "0.375rem"
-    base_font: {google: "Lato"}
-    heading_font: {google: "Raleway"}
+    base_font: {google: "Inter"}
+    heading_font: {google: "Outfit"}
     code_font: {google: "Fira Code"}
 
 home:

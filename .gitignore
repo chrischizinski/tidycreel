@@ -36,6 +36,10 @@ skills/
 skills-lock.json
 
 # AI tool stubs (various coding agents drop these)
+AGENTS.md
+CLAUDE.md
+CURSOR.md
+GEMINI.md
 .adal/
 .agents/
 .augment/
