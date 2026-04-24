@@ -17,6 +17,7 @@
 ^\.dockerignore$
 ^\.editorconfig$
 ^\.markdownlint\.json$
+^cmux\.json$
 ^doc$
 ^Meta$
 ^\.roo$
@@ -50,6 +51,7 @@
 ^rag$
 ^README_BUGFIXES\.md$
 ^README\.html$
+^PROJECT\.md$
 ^logo\.png$
 ^renv$
 ^renv\.lock$
@@ -99,5 +101,7 @@
 ^examples$
 ^pkgdown$
 ^Rplots\.pdf$
+^inst/profiling$
+^inst/profiling/
 ^skills$
 ^skills-lock\.json$

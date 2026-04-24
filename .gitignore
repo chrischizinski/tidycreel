@@ -31,7 +31,9 @@ inst/doc
 .python-version
 .yamllint
 .markdownlint.json
+cmux.json
 PROJECT.md
+inst/profiling/
 skills/
 skills-lock.json
 
