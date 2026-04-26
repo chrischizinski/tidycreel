@@ -173,11 +173,7 @@ build_br_design_for_tests <- function(n_sites, n_days, n_interviews, seed = NULL
   n_days <- as.integer(n_days)
   n_interviews <- as.integer(n_interviews)
 
-  calendar <- data.frame(
-    date = seq.Date(as.Date("2024-06-01"), by = "day", length.out = n_days),
-    day_type = rep("weekday", n_days),
-    stringsAsFactors = FALSE
-  )
+  calendar <- build_property_calendar(n_days)
   site_ids <- paste0("S", seq_len(n_sites))
   site_weights <- sample(seq.int(1L, 5L), n_sites, replace = TRUE)
   sampling_frame <- data.frame(
@@ -243,6 +239,10 @@ build_multispecies_design_for_tests <- function(n_days,
   n_interviews <- as.integer(n_interviews)
   n_species <- as.integer(n_species)
 
+  # Single stratum (all weekday) intentional: estimate_total_catch() uses a
+  # combined-ratio estimator while the per-species path uses a stratified-sum
+  # estimator; the two are only equivalent with one stratum. INV-06 should be
+  # re-evaluated once that inconsistency is resolved (tracked separately).
   calendar <- data.frame(
     date = seq.Date(as.Date("2024-06-01"), by = "day", length.out = n_days),
     day_type = rep("weekday", n_days),
