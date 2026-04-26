@@ -1,17 +1,17 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 type: software
-title: "tidycreel: Tidy Analysis of Creel Survey Data"
-version: 0.0.0.9000
-date-released: 2025-08-19
-url: "https://github.com/yourusername/tidycreel"
-repository-code: "https://github.com/yourusername/tidycreel"
+title: "tidycreel: Tidy Interface for Creel Survey Design and Analysis"
+version: 1.4.0
+date-released: 2026-04-23
+url: "https://github.com/chrischizinski/tidycreel"
+repository-code: "https://github.com/chrischizinski/tidycreel"
 authors:
   - family-names: "Chizinski"
     given-names: "Christopher"
-    orcid: "https://orcid.org/0000-0000-0000-0000"
-    email: "your.email@example.com"
-    affiliation: "Your Institution"
+    orcid: "https://orcid.org/0000-0001-9294-2588"
+    email: "chris.chizinski@unl.edu"
+    affiliation: "University of Nebraska-Lincoln"
 abstract: >-
   tidycreel provides a modern, tidy interface for analyzing recreational
   fisheries creel survey data. Built on the survey package, it offers
@@ -26,4 +26,4 @@ keywords:
   - "R package"
   - "tidyverse"
 license: MIT
-license-url: "https://github.com/yourusername/tidycreel/blob/main/LICENSE"
+license-url: "https://github.com/chrischizinski/tidycreel/blob/main/LICENSE"

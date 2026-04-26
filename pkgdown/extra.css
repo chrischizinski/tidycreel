@@ -6,7 +6,7 @@
 /* ---- Navbar ---- */
 /* Belt-and-suspenders supplement to navbar.bg: primary in _pkgdown.yml */
 .navbar {
-  background-color: #1B4F72 !important;
+  background-color: #0b3b5e !important;
 }
 
 .navbar .nav-link,
@@ -16,7 +16,14 @@
 
 .navbar .nav-link:hover,
 .navbar .nav-link:focus {
-  color: #5DADE2 !important;
+  color: #f47d65 !important;
+  transition: color 0.3s ease-in-out;
+}
+
+a:hover {
+  color: #f47d65 !important;
+  text-decoration: underline;
+  transition: color 0.3s ease-in-out;
 }
 
 /* ---- Code Blocks ---- */
@@ -69,7 +76,7 @@ div.bs-callout,
 
 /* ---- Typography Overrides ---- */
 h1, h2, h3, h4, h5, h6 {
-  color: #1B4F72;
+  color: #1f5e80;
 }
 
 /* =============================================================
@@ -94,7 +101,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .card.border-0.bg-light h5.text-primary {
-  color: #1B4F72 !important;
+  color: #0b3b5e !important;
   font-size: 1rem;
   margin-bottom: 0.4rem;
 }

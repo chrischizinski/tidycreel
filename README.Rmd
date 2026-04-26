@@ -14,6 +14,7 @@ output: github_document
 [![pkgdown](https://img.shields.io/badge/pkgdown-live-1B4F72)](https://chrischizinski.github.io/tidycreel/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+[![Codecov test coverage](https://codecov.io/gh/chrischizinski/tidycreel/graph/badge.svg)](https://app.codecov.io/gh/chrischizinski/tidycreel)
 <!-- badges: end -->
 
 **Tidy Interface for Creel Survey Design, Estimation, and Reporting**

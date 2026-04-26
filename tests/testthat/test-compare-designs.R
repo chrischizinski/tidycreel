@@ -4,10 +4,10 @@
 make_est <- function(estimate, se, label = "test") {
   est_df <- data.frame(
     estimate = estimate,
-    se       = se,
+    se = se,
     ci_lower = estimate - 1.96 * se,
     ci_upper = estimate + 1.96 * se,
-    n        = 10L,
+    n = 10L,
     stringsAsFactors = FALSE
   )
   structure(
@@ -27,10 +27,10 @@ make_est_grouped <- function() {
   est_df <- data.frame(
     day_type = c("weekday", "weekend"),
     estimate = c(100, 200),
-    se       = c(10, 20),
+    se = c(10, 20),
     ci_lower = c(80, 161),
     ci_upper = c(120, 239),
-    n        = c(5L, 5L),
+    n = c(5L, 5L),
     stringsAsFactors = FALSE
   )
   structure(
@@ -100,8 +100,10 @@ test_that("CMPD-07: has expected core columns", {
     a = make_est(100, 10),
     b = make_est(200, 20)
   ))
-  expect_true(all(c("design", "estimate", "se", "rse",
-    "ci_lower", "ci_upper", "ci_width", "n") %in% names(res)))
+  expect_true(all(c(
+    "design", "estimate", "se", "rse",
+    "ci_lower", "ci_upper", "ci_width", "n"
+  ) %in% names(res)))
 })
 
 test_that("CMPD-08: design column matches input names", {
@@ -214,7 +216,7 @@ test_that("CMPD-18: print returns x invisibly", {
 })
 
 test_that("CMPD-19: as.data.frame strips class", {
-  res   <- compare_designs(list(a = make_est(100, 10), b = make_est(200, 20)))
+  res <- compare_designs(list(a = make_est(100, 10), b = make_est(200, 20)))
   plain <- as.data.frame(res)
   expect_false(inherits(plain, "creel_design_comparison"))
   expect_s3_class(plain, "data.frame")

@@ -2,23 +2,26 @@ minimum_pre_commit_version: "3.0.0"
 default_stages: [pre-commit]
 
 repos:
-  - repo: https://github.com/lorenzwalthert/precommit
-    rev: main
-    hooks:
-      - id: style-files
-        args: [--style_pkg=styler, --style_fun=tidyverse_style]
-        exclude: ^scripts/
-      - id: lintr
-        exclude: ^scripts/
-      - id: parsable-R
-      - id: no-browser-statement
-      - id: no-debug-statement
-      - id: readme-rmd-rendered
-      - id: use-tidy-description
-      - id: deps-in-desc
-        exclude: ^(scripts/|renv/|data-raw/|tidycreel\.connect/)
+  # lorenzwalthert/precommit R hooks disabled temporarily: incompatible with
+  # R 4.6.0 (Rcpp compile failure in hook renv). Re-enable once the hook
+  # package ships R 4.6.0-compatible dependencies.
+  # - repo: https://github.com/lorenzwalthert/precommit
+  #   rev: v0.4.3.9021
+  #   hooks:
+  #     - id: style-files
+  #       args: [--style_pkg=styler, --style_fun=tidyverse_style]
+  #       exclude: ^scripts/
+  #     - id: lintr
+  #       exclude: ^scripts/
+  #     - id: parsable-R
+  #     - id: no-browser-statement
+  #     - id: no-debug-statement
+  #     - id: readme-rmd-rendered
+  #     - id: use-tidy-description
+  #     - id: deps-in-desc
+  #       exclude: ^(scripts/|renv/|data-raw/|tidycreel\.connect/)
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
         exclude: ^(renv/|\.lintr$|tests/testthat/_snaps/)

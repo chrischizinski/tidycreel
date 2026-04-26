@@ -40,15 +40,16 @@
 #'
 #' @keywords internal
 #' @noRd
-estimate_effort_camera <- function( # nolint: object_usage_linter
-    design,
-    interviews     = NULL,
-    effort_col     = "hours_fished",
-    intercept_col  = NULL,
-    h_open         = NULL,
-    variance_method = "taylor",
-    conf_level     = 0.95) {
-
+estimate_effort_camera <- function(
+  # nolint: object_usage_linter
+  design,
+  interviews = NULL,
+  effort_col = "hours_fished",
+  intercept_col = NULL,
+  h_open = NULL,
+  variance_method = "taylor",
+  conf_level = 0.95
+) {
   counts_data <- design$counts
   if (is.null(counts_data) || nrow(counts_data) == 0L) {
     cli::cli_abort(c(
@@ -62,7 +63,7 @@ estimate_effort_camera <- function( # nolint: object_usage_linter
     design$date_col, design$strata_cols,
     design$psu_col, "camera_status"
   )
-  num_cols  <- names(counts_data)[sapply(counts_data, is.numeric)]
+  num_cols <- names(counts_data)[sapply(counts_data, is.numeric)]
   count_var <- if (!is.null(intercept_col) && intercept_col %in% names(counts_data)) {
     intercept_col
   } else {
@@ -104,9 +105,9 @@ estimate_effort_camera <- function( # nolint: object_usage_linter
       rho <- mean(int_s, na.rm = TRUE) / mean(cnt_s, na.rm = TRUE)
       data.frame(
         stratum = s,
-        rho     = rho,
-        n_cam   = length(cnt_s),
-        n_int   = length(int_s),
+        rho = rho,
+        n_cam = length(cnt_s),
+        n_int = length(int_s),
         stringsAsFactors = FALSE
       )
     })
@@ -127,12 +128,11 @@ estimate_effort_camera <- function( # nolint: object_usage_linter
     )
 
     strata_order <- as.character(svy_raw[[strata_col]])
-    rho_matched  <- cal$rho[match(strata_order, as.character(cal$stratum))]
+    rho_matched <- cal$rho[match(strata_order, as.character(cal$stratum))]
 
-    estimate   <- sum(coef(svy_raw) * rho_matched)
+    estimate <- sum(coef(svy_raw) * rho_matched)
     se_between <- sqrt(sum((survey::SE(svy_raw) * rho_matched)^2))
     method_label <- "camera_ratio"
-
   } else {
     # ---- Raw count expansion fallback ----------------------------------------
     if (is.null(h_open) || !is.numeric(h_open) || h_open <= 0) {
@@ -148,7 +148,7 @@ estimate_effort_camera <- function( # nolint: object_usage_linter
       survey::svytotal(count_formula, svy_design)
     )
 
-    estimate   <- as.numeric(coef(svy_result)) * h_open
+    estimate <- as.numeric(coef(svy_result)) * h_open
     se_between <- as.numeric(survey::SE(svy_result)) * h_open
     method_label <- "camera_raw"
   }
@@ -157,9 +157,9 @@ estimate_effort_camera <- function( # nolint: object_usage_linter
   se <- se_between
 
   # Degrees of freedom and CI
-  df      <- as.numeric(survey::degf(svy_design))
-  alpha   <- 1 - conf_level
-  t_crit  <- qt(1 - alpha / 2, df = df)
+  df <- as.numeric(survey::degf(svy_design))
+  alpha <- 1 - conf_level
+  t_crit <- qt(1 - alpha / 2, df = df)
   ci_lower <- estimate - t_crit * se
   ci_upper <- estimate + t_crit * se
 
