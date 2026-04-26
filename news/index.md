@@ -1,5 +1,34 @@
 # Changelog
 
+## tidycreel 1.4.0 (2026-04-23)
+
+### Quality, testing, and release readiness
+
+- Closed the priority rOpenSci blocker set for the current release line:
+  named condition classes at the key `cli_abort()` sites, formal
+  lifecycle badges on experimental APIs, a valid `inst/CITATION`, and
+  removal of the `scales` dependency from the package surface.
+- Demoted `lubridate` from `Imports` to `Suggests` and added runtime
+  install guards at user-facing schedule entry points.
+- Threaded
+  [`rlang::caller_env()`](https://rlang.r-lib.org/reference/stack.html)
+  through the top-level bus-route estimator internals and relocated
+  [`get_site_contributions()`](https://chrischizinski.github.io/tidycreel/reference/get_site_contributions.md)
+  into the estimation layer to tighten call-frame quality and layering.
+- Added `@family` tags across the exported surface so the pkgdown
+  reference is grouped by workflow topic rather than a flat function
+  list.
+- Added snapshot regression coverage for
+  [`print.creel_design()`](https://chrischizinski.github.io/tidycreel/reference/print.creel_design.md),
+  [`print.creel_estimates_mor()`](https://chrischizinski.github.io/tidycreel/reference/print.creel_estimates_mor.md),
+  and
+  [`print.creel_schedule()`](https://chrischizinski.github.io/tidycreel/reference/print.creel_schedule.md).
+- Added `quickcheck`-based property tests and generator helpers covering
+  the highest-value implemented invariants: INV-01, INV-02, INV-03,
+  INV-04, and INV-06.
+- Added a CI-backed coverage gate with a documented local baseline of
+  `86.27%`, Codecov configuration, and a project target of `85%`.
+
 ## tidycreel 1.3.0
 
 ### New features

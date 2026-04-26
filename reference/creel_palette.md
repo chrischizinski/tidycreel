@@ -39,8 +39,8 @@ Other "Visualisation":
 ``` r
 creel_palette()
 #>   primary      link    accent      warm   neutral     light 
-#> "#1B4F72" "#5DADE2" "#2c7fb8" "#d7191c" "#636e72" "#dfe6e9" 
+#> "#0b3b5e" "#f47d65" "#30a7d5" "#f47d65" "#697f94" "#edf1f4" 
 creel_palette(3)
 #>   primary      link    accent 
-#> "#1B4F72" "#5DADE2" "#2c7fb8" 
+#> "#0b3b5e" "#f47d65" "#30a7d5" 
 ```
