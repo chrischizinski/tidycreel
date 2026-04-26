@@ -1,53 +1,104 @@
 # inst/hex/sticker.R
-# Reproducible hex sticker generator for the tidycreel package.
+# Sync the committed tidycreel hex sticker to package and website asset paths.
+# The canonical art is a hand-authored PNG, not a programmatic hexSticker build.
 # Run from the package root: source("inst/hex/sticker.R")
-#
-# Brand palette (also used in _pkgdown.yml Phase 53):
-#   Primary (h_fill) : #1B4F72  deep navy blue
-#   Accent  (h_color): #5DADE2  teal border
-#   Text    (p_color): #FFFFFF  white
 
-library(hexSticker)
-library(sysfonts)
-library(showtext)
+source_png <- "man/figures/logo.png"
+navbar_logo <- "logo.png"
 
-# Guard: must be run from package root
 stopifnot(
   "Run from package root: source('inst/hex/sticker.R')" =
-    file.exists("inst/hex/creel-basket.png")
-)
-stopifnot(
-  "Font file missing: inst/hex/font/Nunito-Bold.ttf" =
-    file.exists("inst/hex/font/Nunito-Bold.ttf")
+    file.exists(source_png)
 )
 
-# Load committed font — no network required
-font_add("Nunito", regular = "inst/hex/font/Nunito-Bold.ttf", bold = "inst/hex/font/Nunito-Bold.ttf")
-showtext_auto()
-
-# Ensure output directory exists
 dir.create("man/figures", recursive = TRUE, showWarnings = FALSE)
 
-# Generate sticker
-# dpi = 694 yields ~1200x1390px at the standard 43.9x50.8mm hex physical size
-sticker(
-  subplot    = "inst/hex/creel-basket.png",
-  s_x        = 1,
-  s_y        = 0.88,
-  s_width    = 0.53,
-  s_height   = 0.53,
-  package    = "tidycreel",
-  p_x        = 1,
-  p_y        = 1.52,
-  p_color    = "#FFFFFF",
-  p_family   = "Nunito",
-  p_fontface = "bold",
-  p_size     = 32,
-  h_fill     = "#1B4F72",
-  h_color    = "#5DADE2",
-  h_size     = 1.6,
-  filename   = "man/figures/logo.png",
-  dpi        = 694
+target_files <- c(
+  "man/figures/tidycreel-hex.png"
 )
 
-message("Logo written to man/figures/logo.png")
+copied <- file.copy(source_png, target_files, overwrite = TRUE)
+
+stopifnot(
+  "Failed to sync one or more hex sticker outputs." = all(copied)
+)
+
+message("Synced hex sticker to:")
+for (target in target_files) {
+  message("  - ", target)
+}
+
+if (!requireNamespace("magick", quietly = TRUE)) {
+  message("Package 'magick' not installed; skipping pkgdown logo and favicon regeneration.")
+  invisible(target_files)
+} else {
+  favicon_dir <- "pkgdown/favicon"
+  dir.create(favicon_dir, recursive = TRUE, showWarnings = FALSE)
+
+  img <- magick::image_read(source_png)
+  navbar_img <- magick::image_quantize(
+    magick::image_trim(img),
+    max = 256,
+    dither = TRUE
+  )
+
+  magick::image_write(
+    navbar_img,
+    path = navbar_logo,
+    format = "png"
+  )
+  message("  - ", navbar_logo)
+
+  if (dir.exists("docs")) {
+    docs_logo <- "docs/logo.png"
+    stopifnot(
+      "Failed to sync docs/logo.png." =
+        file.copy(navbar_logo, docs_logo, overwrite = TRUE)
+    )
+    message("  - ", docs_logo)
+  }
+
+  magick::image_write(
+    magick::image_resize(img, "180x180"),
+    path = file.path(favicon_dir, "apple-touch-icon.png"),
+    format = "png"
+  )
+  magick::image_write(
+    magick::image_resize(img, "96x96"),
+    path = file.path(favicon_dir, "favicon-96x96.png"),
+    format = "png"
+  )
+  magick::image_write(
+    magick::image_resize(img, "192x192"),
+    path = file.path(favicon_dir, "web-app-manifest-192x192.png"),
+    format = "png"
+  )
+  magick::image_write(
+    magick::image_resize(img, "512x512"),
+    path = file.path(favicon_dir, "web-app-manifest-512x512.png"),
+    format = "png"
+  )
+
+  message("Regenerated pkgdown favicon PNG assets.")
+
+  if (dir.exists("docs")) {
+    docs_targets <- c(
+      "apple-touch-icon.png",
+      "favicon-96x96.png",
+      "web-app-manifest-192x192.png",
+      "web-app-manifest-512x512.png"
+    )
+    copied_docs <- file.copy(
+      from = file.path(favicon_dir, docs_targets),
+      to = file.path("docs", docs_targets),
+      overwrite = TRUE
+    )
+    stopifnot(
+      "Failed to sync one or more docs favicon PNG assets." = all(copied_docs)
+    )
+    message("Synced docs favicon PNG assets.")
+  }
+
+  message("Update favicon.ico and favicon.svg separately if the source art changes.")
+  invisible(c(target_files, favicon_dir))
+}

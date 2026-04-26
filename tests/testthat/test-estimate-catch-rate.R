@@ -2532,7 +2532,7 @@ make_mortr_design <- function(n_complete = 20, n_incomplete = 30,
   )
 
   n_total <- n_complete + n_incomplete
-  n_zero  <- round(n_incomplete * zero_catch_fraction)
+  n_zero <- round(n_incomplete * zero_catch_fraction)
 
   catches <- c(
     sample(4:8, n_complete, replace = TRUE),
@@ -2544,28 +2544,34 @@ make_mortr_design <- function(n_complete = 20, n_incomplete = 30,
   durations <- c(
     rep(3.0, n_complete),
     c(
-      rep(0.3, 5),           # short trips below default 0.5h threshold
+      rep(0.3, 5), # short trips below default 0.5h threshold
       rep(2.0, n_incomplete - 5)
     )
   )
 
   interviews <- data.frame(
-    date          = as.Date(rep(c("2024-06-01", "2024-06-02",
-                                  "2024-06-03", "2024-06-04"),
-                                length.out = n_total)),
-    catch_total   = catches,
-    hours_fished  = durations,
-    trip_status   = c(rep("complete", n_complete),
-                      rep("incomplete", n_incomplete)),
+    date = as.Date(rep(
+      c(
+        "2024-06-01", "2024-06-02",
+        "2024-06-03", "2024-06-04"
+      ),
+      length.out = n_total
+    )),
+    catch_total = catches,
+    hours_fished = durations,
+    trip_status = c(
+      rep("complete", n_complete),
+      rep("incomplete", n_incomplete)
+    ),
     trip_duration = durations,
     stringsAsFactors = FALSE
   )
 
   suppressMessages(suppressWarnings(
     add_interviews(design, interviews,
-      catch        = catch_total,
-      effort       = hours_fished,
-      trip_status  = trip_status,
+      catch = catch_total,
+      effort = hours_fished,
+      trip_status = trip_status,
       trip_duration = trip_duration
     )
   ))
@@ -2593,7 +2599,7 @@ test_that("M013-MORTR-02: estimator='mortr' returns valid numeric SE and CI", {
 })
 
 test_that("M013-MORTR-03: estimator='mortr' excludes short trips (truncation active)", {
-  design <- make_mortr_design()  # 5 trips with duration 0.3h (below 0.5h default)
+  design <- make_mortr_design() # 5 trips with duration 0.3h (below 0.5h default)
   result_mortr <- suppressWarnings(
     estimate_catch_rate(design, estimator = "mortr")
   )
@@ -2623,32 +2629,43 @@ test_that("M013-MORTR-05: mortr is backward-compat with 'mor' + truncate_at", {
   )
   # Same estimate value; method name differs
   expect_equal(res_mortr$estimates$estimate, res_mor$estimates$estimate,
-               tolerance = 1e-8)
-  expect_equal(res_mortr$method,
-               "mean-of-ratios-truncated-cpue")
+    tolerance = 1e-8
+  )
+  expect_equal(
+    res_mortr$method,
+    "mean-of-ratios-truncated-cpue"
+  )
   expect_equal(res_mor$method, "mean-of-ratios-cpue")
 })
 
 test_that("M013-TARGETED-01: targeted=FALSE excludes zero-catch trips", {
   design <- make_mortr_design(zero_catch_fraction = 0.5)
-  result_targeted_true  <- suppressWarnings(
-    estimate_catch_rate(design, estimator = "mor",
-                        truncate_at = NULL, targeted = TRUE)
+  result_targeted_true <- suppressWarnings(
+    estimate_catch_rate(design,
+      estimator = "mor",
+      truncate_at = NULL, targeted = TRUE
+    )
   )
   result_targeted_false <- suppressWarnings(
-    estimate_catch_rate(design, estimator = "mor",
-                        truncate_at = NULL, targeted = FALSE)
+    estimate_catch_rate(design,
+      estimator = "mor",
+      truncate_at = NULL, targeted = FALSE
+    )
   )
   # FALSE removes zero-catch trips -> smaller n
-  expect_lt(result_targeted_false$estimates$n,
-            result_targeted_true$estimates$n)
+  expect_lt(
+    result_targeted_false$estimates$n,
+    result_targeted_true$estimates$n
+  )
 })
 
 test_that("M013-TARGETED-02: targeted=FALSE emits cli_warn with exclusion count", {
   design <- make_mortr_design(zero_catch_fraction = 0.5)
   expect_warning(
-    estimate_catch_rate(design, estimator = "mor",
-                        truncate_at = NULL, targeted = FALSE),
+    estimate_catch_rate(design,
+      estimator = "mor",
+      truncate_at = NULL, targeted = FALSE
+    ),
     regexp = "zero-catch"
   )
 })
@@ -2656,8 +2673,10 @@ test_that("M013-TARGETED-02: targeted=FALSE emits cli_warn with exclusion count"
 test_that("M013-TARGETED-03: targeted=TRUE (default) emits warn when >70% zero-catch", {
   design <- make_mortr_design(n_incomplete = 40, zero_catch_fraction = 0.8)
   expect_warning(
-    estimate_catch_rate(design, estimator = "mor",
-                        truncate_at = NULL, targeted = TRUE),
+    estimate_catch_rate(design,
+      estimator = "mor",
+      truncate_at = NULL, targeted = TRUE
+    ),
     regexp = "non-targeted|zero catch"
   )
 })
@@ -2666,8 +2685,10 @@ test_that("M013-TARGETED-04: targeted=FALSE with all zero-catch aborts", {
   design <- make_mortr_design(zero_catch_fraction = 1.0)
   expect_error(
     suppressWarnings(
-      estimate_catch_rate(design, estimator = "mor",
-                          truncate_at = NULL, targeted = FALSE)
+      estimate_catch_rate(design,
+        estimator = "mor",
+        truncate_at = NULL, targeted = FALSE
+      )
     ),
     regexp = "No trips remain"
   )
@@ -2679,10 +2700,13 @@ test_that("M013-TARGETED-05: targeted=TRUE default preserves backward compatibil
     estimate_catch_rate(design, estimator = "mor", truncate_at = NULL)
   )
   result_targeted <- suppressWarnings(
-    estimate_catch_rate(design, estimator = "mor",
-                        truncate_at = NULL, targeted = TRUE)
+    estimate_catch_rate(design,
+      estimator = "mor",
+      truncate_at = NULL, targeted = TRUE
+    )
   )
   expect_equal(result_default$estimates$estimate,
-               result_targeted$estimates$estimate,
-               tolerance = 1e-8)
+    result_targeted$estimates$estimate,
+    tolerance = 1e-8
+  )
 })

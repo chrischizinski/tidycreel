@@ -79,12 +79,12 @@ test_that("PLTD-08: no-counts plot n_days matches calendar", {
 
 make_design_two_strata <- function(with_counts = FALSE) {
   cal <- data.frame(
-    date     = as.Date(c(
+    date = as.Date(c(
       "2024-06-01", "2024-06-02", "2024-06-08", "2024-06-09",
       "2024-06-15", "2024-06-16", "2024-06-22", "2024-06-23"
     )),
     day_type = rep(c("weekday", "weekend"), 4),
-    season   = c(rep("early", 4), rep("late", 4)),
+    season = c(rep("early", 4), rep("late", 4)),
     stringsAsFactors = FALSE
   )
   d <- suppressWarnings(

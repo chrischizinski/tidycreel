@@ -1,25 +1,27 @@
 # Tests for validation_report() ----
 # Note: requires validate_creel_data() and standardize_species() from M016 S01/S02.
 # Skip entire file when those functions are not yet available.
-if (!exists("validate_creel_data", mode = "function",
-  where = asNamespace("tidycreel"))) {
+if (!exists("validate_creel_data",
+  mode = "function",
+  where = asNamespace("tidycreel")
+)) {
   skip("validate_creel_data() not available; skipping validation_report tests")
 }
 
 make_counts <- function() {
   data.frame(
-    date     = as.Date(c("2024-06-01", "2024-06-02", "2024-06-08")),
+    date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-08")),
     day_type = c("weekday", "weekday", "weekend"),
-    count    = c(10L, 14L, 30L),
+    count = c(10L, 14L, 30L),
     stringsAsFactors = FALSE
   )
 }
 
 make_interviews <- function() {
   data.frame(
-    date      = as.Date(c("2024-06-01", "2024-06-02")),
+    date = as.Date(c("2024-06-01", "2024-06-02")),
     fish_kept = c(2L, 5L),
-    species   = c("walleye", "bass"),
+    species = c("walleye", "bass"),
     stringsAsFactors = FALSE
   )
 }
@@ -149,7 +151,7 @@ test_that("VRPT-15: print returns x invisibly", {
 })
 
 test_that("VRPT-16: as.data.frame strips class", {
-  rpt   <- validation_report(counts = make_counts())
+  rpt <- validation_report(counts = make_counts())
   plain <- as.data.frame(rpt)
   expect_false(inherits(plain, "creel_validation_report"))
   expect_s3_class(plain, "data.frame")

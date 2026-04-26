@@ -16,6 +16,8 @@
 MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Lifecycle:
 experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+[![Codecov test
+coverage](https://codecov.io/gh/chrischizinski/tidycreel/graph/badge.svg)](https://app.codecov.io/gh/chrischizinski/tidycreel)
 <!-- badges: end -->
 
 **Tidy Interface for Creel Survey Design, Estimation, and Reporting**

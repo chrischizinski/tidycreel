@@ -3,20 +3,24 @@
 # Helpers ---------------------------------------------------------------------
 make_access <- function() {
   data.frame(
-    date     = as.Date(c("2024-06-01", "2024-06-02",
-      "2024-06-08", "2024-06-09")),
+    date = as.Date(c(
+      "2024-06-01", "2024-06-02",
+      "2024-06-08", "2024-06-09"
+    )),
     day_type = c("weekday", "weekday", "weekend", "weekend"),
-    count    = c(12L, 15L, 30L, 28L),
+    count = c(12L, 15L, 30L, 28L),
     stringsAsFactors = FALSE
   )
 }
 
 make_roving <- function() {
   data.frame(
-    date     = as.Date(c("2024-06-01", "2024-06-02",
-      "2024-06-08", "2024-06-09")),
+    date = as.Date(c(
+      "2024-06-01", "2024-06-02",
+      "2024-06-08", "2024-06-09"
+    )),
     day_type = c("weekday", "weekday", "weekend", "weekend"),
-    count    = c(8L, 10L, 22L, 25L),
+    count = c(8L, 10L, 22L, 25L),
     stringsAsFactors = FALSE
   )
 }
@@ -32,7 +36,8 @@ test_that("HYBR-01: errors when access_data is not a data frame", {
   expect_error(
     as_hybrid_svydesign(list(), make_roving(),
       access_fraction = fractions$access,
-      roving_fraction = fractions$roving),
+      roving_fraction = fractions$roving
+    ),
     class = "rlang_error"
   )
 })
@@ -41,7 +46,8 @@ test_that("HYBR-02: errors when roving_data is not a data frame", {
   expect_error(
     as_hybrid_svydesign(make_access(), NULL,
       access_fraction = fractions$access,
-      roving_fraction = fractions$roving),
+      roving_fraction = fractions$roving
+    ),
     class = "rlang_error"
   )
 })
@@ -52,7 +58,8 @@ test_that("HYBR-03: errors when required column missing from access_data", {
   expect_error(
     as_hybrid_svydesign(df, make_roving(),
       access_fraction = fractions$access,
-      roving_fraction = fractions$roving),
+      roving_fraction = fractions$roving
+    ),
     class = "rlang_error"
   )
 })
@@ -63,7 +70,8 @@ test_that("HYBR-04: errors when required column missing from roving_data", {
   expect_error(
     as_hybrid_svydesign(make_access(), df,
       access_fraction = fractions$access,
-      roving_fraction = fractions$roving),
+      roving_fraction = fractions$roving
+    ),
     class = "rlang_error"
   )
 })
@@ -71,7 +79,8 @@ test_that("HYBR-04: errors when required column missing from roving_data", {
 test_that("HYBR-05: errors when access_fraction is NULL", {
   expect_error(
     as_hybrid_svydesign(make_access(), make_roving(),
-      roving_fraction = fractions$roving),
+      roving_fraction = fractions$roving
+    ),
     class = "rlang_error"
   )
 })
@@ -79,7 +88,8 @@ test_that("HYBR-05: errors when access_fraction is NULL", {
 test_that("HYBR-06: errors when roving_fraction is NULL", {
   expect_error(
     as_hybrid_svydesign(make_access(), make_roving(),
-      access_fraction = fractions$access),
+      access_fraction = fractions$access
+    ),
     class = "rlang_error"
   )
 })
@@ -87,8 +97,9 @@ test_that("HYBR-06: errors when roving_fraction is NULL", {
 test_that("HYBR-07: errors when fraction missing a stratum", {
   expect_error(
     as_hybrid_svydesign(make_access(), make_roving(),
-      access_fraction = c(weekday = 0.5),  # missing weekend
-      roving_fraction = fractions$roving),
+      access_fraction = c(weekday = 0.5), # missing weekend
+      roving_fraction = fractions$roving
+    ),
     class = "rlang_error"
   )
 })
@@ -97,7 +108,8 @@ test_that("HYBR-08: errors when fraction value <= 0", {
   expect_error(
     as_hybrid_svydesign(make_access(), make_roving(),
       access_fraction = c(weekday = 0, weekend = 0.5),
-      roving_fraction = fractions$roving),
+      roving_fraction = fractions$roving
+    ),
     class = "rlang_error"
   )
 })
@@ -106,7 +118,8 @@ test_that("HYBR-09: errors when fraction value > 1", {
   expect_error(
     as_hybrid_svydesign(make_access(), make_roving(),
       access_fraction = c(weekday = 1.5, weekend = 0.5),
-      roving_fraction = fractions$roving),
+      roving_fraction = fractions$roving
+    ),
     class = "rlang_error"
   )
 })
@@ -168,7 +181,7 @@ test_that("HYBR-15: access weights = 1 / access_fraction", {
     access_fraction = c(weekday = 0.5, weekend = 0.25),
     roving_fraction = fractions$roving
   ))
-  vars   <- design$variables
+  vars <- design$variables
   acc_wk <- vars$weight[vars$component == "access" & vars$day_type == "weekday"]
   expect_equal(unique(acc_wk), 1 / 0.5, tolerance = 1e-9)
   acc_we <- vars$weight[vars$component == "access" & vars$day_type == "weekend"]
@@ -180,8 +193,10 @@ test_that("HYBR-15: access weights = 1 / access_fraction", {
 test_that("HYBR-16: asymmetric dates produce a warning", {
   access_extra <- rbind(
     make_access(),
-    data.frame(date = as.Date("2024-06-15"), day_type = "weekday",
-      count = 5L, stringsAsFactors = FALSE)
+    data.frame(
+      date = as.Date("2024-06-15"), day_type = "weekday",
+      count = 5L, stringsAsFactors = FALSE
+    )
   )
   expect_warning(
     as_hybrid_svydesign(
@@ -219,20 +234,20 @@ test_that("HYBR-18: fpc = FALSE produces a valid design", {
 
 test_that("HYBR-19: custom column names work", {
   access_custom <- make_access()
-  names(access_custom)[names(access_custom) == "date"]     <- "survey_date"
+  names(access_custom)[names(access_custom) == "date"] <- "survey_date"
   names(access_custom)[names(access_custom) == "day_type"] <- "stratum"
-  names(access_custom)[names(access_custom) == "count"]    <- "n_anglers"
+  names(access_custom)[names(access_custom) == "count"] <- "n_anglers"
 
   roving_custom <- make_roving()
-  names(roving_custom)[names(roving_custom) == "date"]     <- "survey_date"
+  names(roving_custom)[names(roving_custom) == "date"] <- "survey_date"
   names(roving_custom)[names(roving_custom) == "day_type"] <- "stratum"
-  names(roving_custom)[names(roving_custom) == "count"]    <- "n_anglers"
+  names(roving_custom)[names(roving_custom) == "count"] <- "n_anglers"
 
   design <- as_hybrid_svydesign(
     access_custom, roving_custom,
-    date_col    = "survey_date",
-    strata_col  = "stratum",
-    count_col   = "n_anglers",
+    date_col = "survey_date",
+    strata_col = "stratum",
+    count_col = "n_anglers",
     access_fraction = c(weekday = 0.5, weekend = 0.5),
     roving_fraction = c(weekday = 0.4, weekend = 0.4)
   )

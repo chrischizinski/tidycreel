@@ -22,12 +22,12 @@
 #' @export
 creel_palette <- function(n = NULL) {
   palette_vals <- c(
-    primary = "#1B4F72",
-    link = "#5DADE2",
-    accent = "#2c7fb8",
-    warm = "#d7191c",
-    neutral = "#636e72",
-    light = "#dfe6e9"
+    primary = "#0b3b5e",
+    link = "#f47d65",
+    accent = "#30a7d5",
+    warm = "#f47d65",
+    neutral = "#697f94",
+    light = "#edf1f4"
   )
 
   if (is.null(n)) {
