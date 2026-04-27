@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: milestone
 status: planning
-stopped_at: Completed 081-exploitation-rate-estimator/081-02-PLAN.md
-last_updated: "2026-04-27T18:20:47.131Z"
+stopped_at: Paused at checkpoint 081-03 Task 3 (human-verify)
+last_updated: "2026-04-27T18:35:40.225Z"
 last_activity: 2026-04-26 — M024 roadmap created (4 phases, 11 requirements mapped)
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 5
-  completed_plans: 4
+  completed_plans: 5
   percent: 0
 ---
 
@@ -54,6 +54,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 80-inv-06-fix-and-quickcheck-proof P02 | 5 | 2 tasks | 1 files |
 | Phase 081-exploitation-rate-estimator P01 | 220 | 2 tasks | 3 files |
 | Phase 081-exploitation-rate-estimator P02 | 238 | 2 tasks | 2 files |
+| Phase 081-exploitation-rate-estimator P03 | 720 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -73,6 +74,8 @@ Recent decisions affecting current work:
 - [Phase 081-exploitation-rate-estimator]: Tests use regexp matching for errors/warnings because cli_error/cli_warning classes not present in cli 3.6.6
 - [Phase 081-exploitation-rate-estimator]: Stratified path uses internal .estimate_exploitation_rate_stratified() helper (not exported); router guard at top of main function
 - [Phase 081-exploitation-rate-estimator]: Vectorised pmax/pmin for per-stratum CI clamp; scalar max/min for .overall row
+- [Phase 081-03]: quickcheck API: for_all (not forall), integer_bounded/double_bounded with left=/right= params
+- [Phase 081-03]: rcmdcheck gate: _R_CHECK_FORCE_SUGGESTS_=false for local dev; 2 pre-existing NOTEs are known and deferred
 
 ### Pending Todos
 
@@ -84,6 +87,6 @@ None at roadmap creation. Phase 80 depends on the Phase 79 quickcheck infrastruc
 
 ## Session Continuity
 
-Last session: 2026-04-27T18:20:47.129Z
-Stopped at: Completed 081-exploitation-rate-estimator/081-02-PLAN.md
+Last session: 2026-04-27T18:35:40.223Z
+Stopped at: Paused at checkpoint 081-03 Task 3 (human-verify)
 Resume file: None
