@@ -12,7 +12,7 @@ tidycreel is an R package for creel survey design, data preparation, estimation,
 
 ## Phases
 
-- [ ] **Phase 80: INV-06 Fix and Quickcheck Proof** - Correct the stratified-sum inconsistency in `estimate_total_catch()` and verify it with the INV-06 property test
+- [x] **Phase 80: INV-06 Fix and Quickcheck Proof** - Correct the stratified-sum inconsistency in `estimate_total_catch()` and verify it with the INV-06 property test (completed 2026-04-27)
 - [ ] **Phase 81: Exploitation-Rate Estimator** - Implement, stratify, and document `estimate_exploitation_rate()` using the Pollock et al. formulation
 - [ ] **Phase 82: Package Quality and Documentation** - Remove the unused `lifecycle` import, pass urlchecker/rhub/goodpractice checks, and add the tidycreel.connect bridge article
 - [ ] **Phase 83: rOpenSci Submission** - Open the software-review issue and close out the milestone
@@ -85,7 +85,7 @@ Plans:
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 80. INV-06 Fix and Quickcheck Proof | 1/2 | In Progress|  | - |
+| 80. INV-06 Fix and Quickcheck Proof | 2/2 | Complete    | 2026-04-27 | - |
 | 81. Exploitation-Rate Estimator | M024 / v1.5.0 | 0/3 | Not started | - |
 | 82. Package Quality and Documentation | M024 / v1.5.0 | 0/5 | Not started | - |
 | 83. rOpenSci Submission | M024 / v1.5.0 | 0/1 | Not started | - |
