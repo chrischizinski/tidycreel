@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: milestone
 status: planning
-stopped_at: Completed 80-inv-06-fix-and-quickcheck-proof/080-01-PLAN.md
-last_updated: "2026-04-27T01:27:11.545Z"
+stopped_at: Completed 80-inv-06-fix-and-quickcheck-proof/080-02-PLAN.md
+last_updated: "2026-04-27T12:35:29.520Z"
 last_activity: 2026-04-26 — M024 roadmap created (4 phases, 11 requirements mapped)
 progress:
   total_phases: 4
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 2
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -51,6 +51,7 @@ Progress: [░░░░░░░░░░] 0%
 
 *Updated after each plan completion*
 | Phase 80-inv-06-fix-and-quickcheck-proof P01 | 525627 | 2 tasks | 4 files |
+| Phase 80-inv-06-fix-and-quickcheck-proof P02 | 5 | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -65,6 +66,7 @@ Recent decisions affecting current work:
 - M024: `lifecycle` import removal deferred from M023; now QUAL-01 in Phase 82
 - [Phase 80]: INV-06 fix uses stratified-sum path via compute_stratum_product_sum() with strata_cols for both ungrouped and grouped total catch
 - [Phase 80]: cpue_for_stratum_product() helper filters complete trips before estimate_cpue_grouped() to avoid NSE issues with public API
+- [Phase 80-inv-06-fix-and-quickcheck-proof]: rep_len() alternating weekday/weekend cycle preferred over format()-based detection: simpler, deterministic, guarantees both strata for n_days >= 2
 
 ### Pending Todos
 
@@ -76,6 +78,6 @@ None at roadmap creation. Phase 80 depends on the Phase 79 quickcheck infrastruc
 
 ## Session Continuity
 
-Last session: 2026-04-27T01:27:11.543Z
-Stopped at: Completed 80-inv-06-fix-and-quickcheck-proof/080-01-PLAN.md
+Last session: 2026-04-27T01:34:13.797Z
+Stopped at: Completed 80-inv-06-fix-and-quickcheck-proof/080-02-PLAN.md
 Resume file: None
