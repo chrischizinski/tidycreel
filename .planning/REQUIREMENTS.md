@@ -9,9 +9,9 @@
 
 - [x] **ESTIM-01**: `estimate_total_catch()` returns the same aggregate estimate as summing `estimate_total_catch(by = "species")` for multi-strata designs (INV-06 fix — stratified-sum)
 - [x] **ESTIM-02**: `estimate_exploitation_rate()` accepts tagged-fish count and creel-harvest data and returns an exploitation rate using the Pollock et al. formulation
-- [ ] **ESTIM-03**: `estimate_exploitation_rate()` supports stratification by survey strata and returns stratum-level estimates
+- [x] **ESTIM-03**: `estimate_exploitation_rate()` supports stratification by survey strata and returns stratum-level estimates
 - [x] **ESTIM-04**: INV-06 quickcheck property test passes for multi-strata multi-species designs after fix
-- [ ] **ESTIM-05**: `estimate_exploitation_rate()` is documented with a worked example in its Rd file
+- [x] **ESTIM-05**: `estimate_exploitation_rate()` is documented with a worked example in its Rd file
 
 ### Package Quality
 
@@ -54,8 +54,8 @@
 | ESTIM-01 | Phase 80 | Complete |
 | ESTIM-04 | Phase 80 | Complete |
 | ESTIM-02 | Phase 81 | Complete |
-| ESTIM-03 | Phase 81 | Pending |
-| ESTIM-05 | Phase 81 | Pending |
+| ESTIM-03 | Phase 81 | Complete |
+| ESTIM-05 | Phase 81 | Complete |
 | QUAL-01 | Phase 82 | Pending |
 | QUAL-02 | Phase 82 | Pending |
 | QUAL-03 | Phase 82 | Pending |

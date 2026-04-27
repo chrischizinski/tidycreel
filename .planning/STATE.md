@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: milestone
 status: planning
-stopped_at: Completed 081-exploitation-rate-estimator/081-01-PLAN.md
-last_updated: "2026-04-27T18:14:54.961Z"
+stopped_at: Completed 081-exploitation-rate-estimator/081-02-PLAN.md
+last_updated: "2026-04-27T18:20:47.131Z"
 last_activity: 2026-04-26 — M024 roadmap created (4 phases, 11 requirements mapped)
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 5
-  completed_plans: 3
+  completed_plans: 4
   percent: 0
 ---
 
@@ -53,6 +53,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 80-inv-06-fix-and-quickcheck-proof P01 | 525627 | 2 tasks | 4 files |
 | Phase 80-inv-06-fix-and-quickcheck-proof P02 | 5 | 2 tasks | 1 files |
 | Phase 081-exploitation-rate-estimator P01 | 220 | 2 tasks | 3 files |
+| Phase 081-exploitation-rate-estimator P02 | 238 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -70,6 +71,8 @@ Recent decisions affecting current work:
 - [Phase 80-inv-06-fix-and-quickcheck-proof]: rep_len() alternating weekday/weekend cycle preferred over format()-based detection: simpler, deterministic, guarantees both strata for n_days >= 2
 - [Phase 081-exploitation-rate-estimator]: estimate_exploitation_rate() takes scalar inputs — no creel_design object needed (pre-computed summary stats)
 - [Phase 081-exploitation-rate-estimator]: Tests use regexp matching for errors/warnings because cli_error/cli_warning classes not present in cli 3.6.6
+- [Phase 081-exploitation-rate-estimator]: Stratified path uses internal .estimate_exploitation_rate_stratified() helper (not exported); router guard at top of main function
+- [Phase 081-exploitation-rate-estimator]: Vectorised pmax/pmin for per-stratum CI clamp; scalar max/min for .overall row
 
 ### Pending Todos
 
@@ -81,6 +84,6 @@ None at roadmap creation. Phase 80 depends on the Phase 79 quickcheck infrastruc
 
 ## Session Continuity
 
-Last session: 2026-04-27T18:14:54.959Z
-Stopped at: Completed 081-exploitation-rate-estimator/081-01-PLAN.md
+Last session: 2026-04-27T18:20:47.129Z
+Stopped at: Completed 081-exploitation-rate-estimator/081-02-PLAN.md
 Resume file: None
