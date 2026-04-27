@@ -42,12 +42,12 @@ Plans:
   2. `estimate_exploitation_rate()` returns stratum-level estimates when stratification is requested
   3. The Rd file for `estimate_exploitation_rate()` contains a self-contained worked example that runs without error under `devtools::check()`
   4. `pkgdown::build_site()` completes without error and the new function appears in the reference index
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 81-01: Implement `estimate_exploitation_rate()` core (Pollock et al., unstratified path)
-- [ ] 81-02: Add stratification support and write Rd documentation with worked example
-- [ ] 81-03: Integration gate — rcmdcheck, pkgdown, and snapshot/invariant tests
+- [ ] 081-01-PLAN.md — implement estimate_exploitation_rate() unstratified path with TDD (ESTIM-02)
+- [ ] 081-02-PLAN.md — add stratified path and complete Roxygen docs with @examples (ESTIM-03, ESTIM-05)
+- [ ] 081-03-PLAN.md — integration gate: quickcheck invariants, rcmdcheck, pkgdown reference (ESTIM-05)
 
 ### Phase 82: Package Quality and Documentation
 **Goal**: The package passes all pre-submission quality checks (urlchecker, rhub, goodpractice), the unused `lifecycle` import is removed, and the pkgdown site includes the tidycreel.connect bridge article
