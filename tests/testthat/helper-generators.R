@@ -239,13 +239,96 @@ build_multispecies_design_for_tests <- function(n_days,
   n_interviews <- as.integer(n_interviews)
   n_species <- as.integer(n_species)
 
-  # Single stratum (all weekday) intentional: estimate_total_catch() uses a
-  # combined-ratio estimator while the per-species path uses a stratified-sum
-  # estimator; the two are only equivalent with one stratum. INV-06 should be
-  # re-evaluated once that inconsistency is resolved (tracked separately).
+  # Single stratum (all weekday) intentional: this fixture keeps the original
+  # combined-ratio regression baseline. Use build_multistrata_multispecies_design_for_tests()
+  # for the two-stratum INV-06 multi-strata fixture.
   calendar <- data.frame(
     date = seq.Date(as.Date("2024-06-01"), by = "day", length.out = n_days),
     day_type = rep("weekday", n_days),
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design(
+    calendar,
+    date = date,
+    strata = day_type
+  )
+
+  counts <- data.frame(
+    date = calendar$date,
+    day_type = calendar$day_type,
+    effort_hours = round(runif(n_days, min = 12, max = 30), 2),
+    stringsAsFactors = FALSE
+  )
+  design <- suppressMessages(suppressWarnings(add_counts(design, counts)))
+
+  catch_data <- build_species_catch_for_tests(
+    interview_ids = seq_len(n_interviews),
+    n_species = n_species,
+    include_harvest = TRUE
+  )
+
+  interviews <- build_trip_interviews_for_tests(
+    calendar = calendar,
+    n_interviews = n_interviews,
+    catch_total = catch_data$interview_catch_total,
+    catch_kept = catch_data$interview_catch_kept
+  )
+
+  design <- suppressMessages(
+    suppressWarnings(
+      add_interviews(
+        design,
+        interviews,
+        catch = catch_total,
+        effort = hours_fished,
+        harvest = catch_kept,
+        n_anglers = n_anglers,
+        trip_status = trip_status,
+        trip_duration = trip_duration,
+        n_counted = n_counted,
+        n_interviewed = n_interviewed
+      )
+    )
+  )
+
+  suppressMessages(
+    suppressWarnings(
+      add_catch(
+        design,
+        catch_data$catch_df,
+        catch_uid = interview_id,
+        interview_uid = interview_id,
+        species = species,
+        count = count,
+        catch_type = catch_type
+      )
+    )
+  )
+}
+
+build_multistrata_multispecies_design_for_tests <- function(n_days,
+                                                           n_interviews,
+                                                           n_species = 3L,
+                                                           seed = NULL) {
+  if (!is.null(seed)) {
+    set.seed(seed)
+  }
+
+  stopifnot(
+    is.numeric(n_days), n_days >= 4,
+    is.numeric(n_interviews), n_interviews >= 10,
+    is.numeric(n_species), n_species >= 2
+  )
+
+  n_days <- as.integer(n_days)
+  n_interviews <- as.integer(n_interviews)
+  n_species <- as.integer(n_species)
+
+  # Two strata (weekday + weekend) so INV-06 exercises the multi-strata path.
+  # Requires n_days >= 4 so each stratum has at least 2 count days for variance.
+  calendar <- data.frame(
+    date = seq.Date(as.Date("2024-06-01"), by = "day", length.out = n_days),
+    day_type = rep(c("weekday", "weekend"), length.out = n_days),
     stringsAsFactors = FALSE
   )
   design <- creel_design(
@@ -348,6 +431,32 @@ gen_valid_creel_design_multi_species <- function(n_species_min = 2L) {
     function(idx) {
       params <- candidate_params[idx, , drop = FALSE]
       build_multispecies_design_for_tests(
+        n_days = params$n_days,
+        n_interviews = params$n_interviews,
+        n_species = params$n_species,
+        seed = idx
+      )
+    }
+  )
+
+  quickcheck::from_hedgehog(generator)
+}
+
+gen_valid_creel_design_multistrata_multispecies <- function(n_species_min = 2L) {
+  stopifnot(is.numeric(n_species_min), n_species_min >= 2)
+
+  candidate_params <- expand.grid(
+    n_days = 4:8,
+    n_interviews = 10:14,
+    n_species = seq.int(as.integer(n_species_min), max(4L, as.integer(n_species_min) + 1L)),
+    stringsAsFactors = FALSE
+  )
+
+  generator <- hedgehog::gen.with(
+    hedgehog::gen.element(seq_len(nrow(candidate_params))),
+    function(idx) {
+      params <- candidate_params[idx, , drop = FALSE]
+      build_multistrata_multispecies_design_for_tests(
         n_days = params$n_days,
         n_interviews = params$n_interviews,
         n_species = params$n_species,

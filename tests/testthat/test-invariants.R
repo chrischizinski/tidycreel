@@ -125,6 +125,44 @@ test_that("INV-06: species total catch estimates sum to the aggregate total", {
   )
 })
 
+test_that("INV-06 multi-strata: species total catch sum equals aggregate for two-stratum designs", {
+  skip_if_not_installed("quickcheck")
+
+  design <- build_multistrata_multispecies_design_for_tests(
+    n_days = 6L,
+    n_interviews = 10L,
+    n_species = 3L,
+    seed = 42L
+  )
+
+  aggregate_fixed <- suppressWarnings(suppressMessages(estimate_total_catch(design)))
+  per_species_fixed <- suppressWarnings(suppressMessages(
+    estimate_total_catch(design, by = species)
+  ))
+
+  expect_equal(
+    sum(per_species_fixed$estimates$estimate),
+    aggregate_fixed$estimates$estimate,
+    tolerance = 1e-6
+  )
+
+  quickcheck::for_all(
+    design = gen_valid_creel_design_multistrata_multispecies(n_species_min = 2L),
+    property = function(design) {
+      aggregate <- suppressWarnings(suppressMessages(estimate_total_catch(design)))
+      per_species <- suppressWarnings(suppressMessages(
+        estimate_total_catch(design, by = species)
+      ))
+
+      expect_equal(
+        sum(per_species$estimates$estimate),
+        aggregate$estimates$estimate,
+        tolerance = 1e-6
+      )
+    }
+  )
+})
+
 test_that("INV-03: ice and degenerate bus-route yield identical total catch estimates", {
   skip_if_not_installed("quickcheck")
 
