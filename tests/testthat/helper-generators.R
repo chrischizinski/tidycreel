@@ -239,12 +239,10 @@ build_multispecies_design_for_tests <- function(n_days,
   n_interviews <- as.integer(n_interviews)
   n_species <- as.integer(n_species)
 
-  # Single stratum (all weekday) intentional: this fixture keeps the original
-  # combined-ratio regression baseline. Use build_multistrata_multispecies_design_for_tests()
-  # for the two-stratum INV-06 multi-strata fixture.
+  dates <- seq.Date(as.Date("2024-06-01"), by = "day", length.out = n_days)
   calendar <- data.frame(
-    date = seq.Date(as.Date("2024-06-01"), by = "day", length.out = n_days),
-    day_type = rep("weekday", n_days),
+    date     = dates,
+    day_type = rep_len(c("weekday", "weekend"), n_days),
     stringsAsFactors = FALSE
   )
   design <- creel_design(
