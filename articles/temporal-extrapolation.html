@@ -344,9 +344,6 @@ generate synthetic interview data:</p>
 <span><span class="co">#&gt; weights or probabilities supplied, assuming equal probability</span></span>
 <span><span class="co">#&gt; Warning: 5 interviews have zero catch.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Zero catch may be valid (skunked) or indicate missing data.</span></span>
-<span><span class="co">#&gt; Warning: Small sample size for CPUE estimation.</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Sample size is 27. Ratio estimates are more stable with n &gt;= 30.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span></span>
 <span><span class="co">#&gt; Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No</span></span>
 <span><span class="co">#&gt; weights or probabilities supplied, assuming equal probability</span></span>
 <span><span class="co">#&gt; Warning: 7 interviews have zero catch.</span></span>
@@ -366,11 +363,11 @@ generate synthetic interview data:</p>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="va">monthly_catch</span><span class="op">)</span></span>
 <span><span class="co">#&gt;       month estimate       se  ci_lower ci_upper  n</span></span>
-<span><span class="co">#&gt; 1       May 132.4452 31.63473  70.44225 194.4481 27</span></span>
-<span><span class="co">#&gt; 2      June 214.1074 47.03040 121.92952 306.2853 39</span></span>
-<span><span class="co">#&gt; 3      July 146.3074 31.84911  83.88432 208.7305 30</span></span>
-<span><span class="co">#&gt; 4    August 247.3898 44.49361 160.18390 334.5957 39</span></span>
-<span><span class="co">#&gt; 5 September 214.4188 34.00801 147.76429 281.0732 39</span></span></code></pre></div>
+<span><span class="co">#&gt; 1       May 135.4235 32.68955  71.35318 199.4939 27</span></span>
+<span><span class="co">#&gt; 2      June 209.1243 44.19099 122.51154 295.7370 39</span></span>
+<span><span class="co">#&gt; 3      July 143.0169 32.81832  78.69413 207.3396 30</span></span>
+<span><span class="co">#&gt; 4    August 236.6189 41.85109 154.59227 318.6455 39</span></span>
+<span><span class="co">#&gt; 5 September 217.9545 38.78860 141.93029 293.9788 39</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="season-total-catch">Season-Total Catch<a class="anchor" aria-label="anchor" href="#season-total-catch"></a>
@@ -385,7 +382,7 @@ generate synthetic interview data:</p>
 <span><span class="op">)</span></span>
 <span><span class="va">season_catch</span></span>
 <span><span class="co">#&gt;        stratum estimate       se</span></span>
-<span><span class="co">#&gt; 1 Season total 954.6685 85.80913</span></span></code></pre></div>
+<span><span class="co">#&gt; 1 Season total 942.1381 85.75874</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="assembling-a-summary-report">Assembling a Summary Report<a class="anchor" aria-label="anchor" href="#assembling-a-summary-report"></a>
@@ -425,9 +422,6 @@ pass it to <code><a href="../reference/season_summary.html">season_summary()</a>
 <span><span class="co">#&gt; weights or probabilities supplied, assuming equal probability</span></span>
 <span><span class="co">#&gt; Warning: 5 interviews have zero catch.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Zero catch may be valid (skunked) or indicate missing data.</span></span>
-<span><span class="co">#&gt; Warning: Small sample size for CPUE estimation.</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Sample size is 27. Ratio estimates are more stable with n &gt;= 30.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span></span>
 <span><span class="co">#&gt; Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No</span></span>
 <span><span class="co">#&gt; weights or probabilities supplied, assuming equal probability</span></span>
 <span><span class="co">#&gt; Warning: 7 interviews have zero catch.</span></span>
@@ -465,7 +459,7 @@ pass it to <code><a href="../reference/season_summary.html">season_summary()</a>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 25</span></span></span>
 <span><span class="co">#&gt;   May_estimate May_se May_ci_lower May_ci_upper May_n June_estimate June_se</span></span>
 <span><span class="co">#&gt;          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>         132.   31.6         70.4         194.    27          214.    47.0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>         135.   32.7         71.4         199.    27          209.    44.2</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 18 more variables: June_ci_lower &lt;dbl&gt;, June_ci_upper &lt;dbl&gt;, June_n &lt;int&gt;,</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;">#   July_estimate &lt;dbl&gt;, July_se &lt;dbl&gt;, July_ci_lower &lt;dbl&gt;,</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;">#   July_ci_upper &lt;dbl&gt;, July_n &lt;int&gt;, August_estimate &lt;dbl&gt;, August_se &lt;dbl&gt;,</span></span></span>

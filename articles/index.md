@@ -76,3 +76,11 @@ Technical equation derivations for advanced users.
 
 - [Bus-Route Survey: Equation
   Traceability](https://chrischizinski.github.io/tidycreel/articles/bus-route-equations.md):
+
+### Ecosystem
+
+Companion packages that extend tidycreel for database integration and
+reproducible data pipelines.
+
+- [tidycreel.connect: Companion Package for Database
+  Integration](https://chrischizinski.github.io/tidycreel/articles/tidycreel-connect.md):

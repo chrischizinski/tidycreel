@@ -357,11 +357,6 @@ exactly as in Part 1c:
 
 ``` r
 total_catch <- estimate_total_catch(design)
-#> ℹ Using complete trips for CPUE estimation
-#>   (n=17, 77.3% of 22 interviews) [default]
-#> Warning: Small sample size for CPUE estimation.
-#> ! Sample size is 17. Ratio estimates are more stable with n >= 30.
-#> ℹ Variance estimates may be unstable with n < 30.
 total_catch
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -373,7 +368,7 @@ total_catch
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     851.  52.0     749.     953.    17
+#> 1     858.  48.4     763.     953.    17
 ```
 
 The total catch estimate (approximately 851) is consistent with the raw

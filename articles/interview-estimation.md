@@ -161,11 +161,6 @@ We can combine the effort and CPUE estimates to compute total catch:
 ``` r
 # Estimate total catch
 total_catch_est <- estimate_total_catch(design)
-#> ℹ Using complete trips for CPUE estimation
-#>   (n=17, 77.3% of 22 interviews) [default]
-#> Warning: Small sample size for CPUE estimation.
-#> ! Sample size is 17. Ratio estimates are more stable with n >= 30.
-#> ℹ Variance estimates may be unstable with n < 30.
 print(total_catch_est)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -177,7 +172,7 @@ print(total_catch_est)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     851.  52.0     749.     953.    17
+#> 1     858.  48.4     763.     953.    17
 ```
 
 The total catch estimate multiplies the effort and CPUE estimates. The
@@ -339,11 +334,6 @@ hpue <- estimate_harvest_rate(complete_design)
 #> ! Sample size is 22. Ratio estimates are more stable with n >= 30.
 #> ℹ Variance estimates may be unstable with n < 30.
 total_catch <- estimate_total_catch(complete_design)
-#> ℹ Using complete trips for CPUE estimation
-#>   (n=17, 77.3% of 22 interviews) [default]
-#> Warning: Small sample size for CPUE estimation.
-#> ! Sample size is 17. Ratio estimates are more stable with n >= 30.
-#> ℹ Variance estimates may be unstable with n < 30.
 total_harvest <- estimate_total_harvest(complete_design)
 #> Warning: Small sample size for harvest estimation.
 #> ! Sample size is 22. Ratio estimates are more stable with n >= 30.
@@ -373,7 +363,7 @@ print(total_catch)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     851.  52.0     749.     953.    17
+#> 1     858.  48.4     763.     953.    17
 print(total_harvest)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────

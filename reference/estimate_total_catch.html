@@ -208,11 +208,6 @@ identified and is therefore assumed zero.</p>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Estimate total catch</span></span></span>
 <span class="r-in"><span><span class="va">total_catch</span> <span class="op">&lt;-</span> <span class="fu">estimate_total_catch</span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Using complete trips for CPUE estimation</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>   (n=17, 77.3% of 22 interviews) [default]</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Small sample size for CPUE estimation.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> Sample size is 17. Ratio estimates are more stable with n &gt;= 30.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">total_catch</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span>
@@ -224,7 +219,7 @@ identified and is therefore assumed zero.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 5</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   estimate    se ci_lower ci_upper     n</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>     851.  52.0     749.     953.    17</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>     858.  48.4     763.     953.    17</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Compare components</span></span></span>
 <span class="r-in"><span><span class="va">effort_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span></span>

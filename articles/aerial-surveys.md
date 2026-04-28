@@ -262,8 +262,6 @@ total walleye catch over the survey period.
 
 ``` r
 total_catch <- suppressWarnings(estimate_total_catch(design))
-#> ℹ Using complete trips for CPUE estimation
-#>   (n=48, 100% of 48 interviews) [default]
 print(total_catch)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -275,7 +273,7 @@ print(total_catch)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1    3681.  601.    2504.    4859.    48
+#> 1     251.  45.3     162.     339.    48
 ```
 
 The delta-method standard error on total catch accounts for variance in

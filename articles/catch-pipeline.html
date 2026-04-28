@@ -501,11 +501,6 @@ variance estimation:</p>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Added 22 interviews: 17 complete (77%), 5 incomplete (23%)</span></span>
 <span></span>
 <span><span class="va">total</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">season_design</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Using complete trips for CPUE estimation</span></span>
-<span><span class="co">#&gt;   (n=17, 77.3% of 22 interviews) [default]</span></span>
-<span><span class="co">#&gt; Warning: Small sample size for CPUE estimation.</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Sample size is 17. Ratio estimates are more stable with n &gt;= 30.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">total</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
@@ -517,7 +512,7 @@ variance estimation:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     851.  52.0     749.     953.    17</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     858.  48.4     763.     953.    17</span></span></code></pre></div>
 <p>The <code>estimate</code> column is
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>E</mi><mo accent="true">̂</mo></mover><mo>×</mo><mover><mi>R</mi><mo accent="true">̂</mo></mover></mrow><annotation encoding="application/x-tex">\hat{E} \times \hat{R}</annotation></semantics></math>.
 The <code>se</code> column is the delta method standard error combining

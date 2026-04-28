@@ -263,11 +263,6 @@ catch:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Estimate total catch</span></span>
 <span><span class="va">total_catch_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Using complete trips for CPUE estimation</span></span>
-<span><span class="co">#&gt;   (n=17, 77.3% of 22 interviews) [default]</span></span>
-<span><span class="co">#&gt; Warning: Small sample size for CPUE estimation.</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Sample size is 17. Ratio estimates are more stable with n &gt;= 30.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">total_catch_est</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
@@ -279,7 +274,7 @@ catch:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     851.  52.0     749.     953.    17</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     858.  48.4     763.     953.    17</span></span></code></pre></div>
 <p>The total catch estimate multiplies the effort and CPUE estimates.
 The variance is computed using the delta method with the formula:</p>
 <p>Var(E × C) = E² Var(C) + C² Var(E)</p>
@@ -433,11 +428,6 @@ bootstrap is too slow.</li>
 <span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Sample size is 22. Ratio estimates are more stable with n &gt;= 30.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span></span>
 <span><span class="va">total_catch</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">complete_design</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Using complete trips for CPUE estimation</span></span>
-<span><span class="co">#&gt;   (n=17, 77.3% of 22 interviews) [default]</span></span>
-<span><span class="co">#&gt; Warning: Small sample size for CPUE estimation.</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Sample size is 17. Ratio estimates are more stable with n &gt;= 30.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span></span>
 <span><span class="va">total_harvest</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_harvest.html">estimate_total_harvest</a></span><span class="op">(</span><span class="va">complete_design</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning: Small sample size for harvest estimation.</span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Sample size is 22. Ratio estimates are more stable with n &gt;= 30.</span></span>
@@ -467,7 +457,7 @@ bootstrap is too slow.</li>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     851.  52.0     749.     953.    17</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     858.  48.4     763.     953.    17</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">total_harvest</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>

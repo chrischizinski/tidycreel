@@ -215,7 +215,7 @@ total_catch$estimates
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1    3715.  282.    3162.    4268.   120
+#> 1    3846.  305.    3248.    4445.   120
 ```
 
 [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md)

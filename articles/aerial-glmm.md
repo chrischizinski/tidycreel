@@ -211,8 +211,6 @@ print(catch_rate)
 #> 1    0.413 0.0601    0.295    0.531    48
 
 total_catch <- estimate_total_catch(design_int)
-#> ℹ Using complete trips for CPUE estimation
-#>   (n=48, 100% of 48 interviews) [default]
 print(total_catch)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -224,7 +222,7 @@ print(total_catch)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1    3681.  601.    2504.    4859.    48
+#> 1     251.  45.3     162.     339.    48
 ```
 
 ## Comparison: Simple vs. GLMM Estimator

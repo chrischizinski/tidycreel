@@ -420,11 +420,6 @@ the complete-trip subset of the interview frame:</p>
 combine the effort and CPUE estimates, exactly as in Part 1c:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">total_catch</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Using complete trips for CPUE estimation</span></span>
-<span><span class="co">#&gt;   (n=17, 77.3% of 22 interviews) [default]</span></span>
-<span><span class="co">#&gt; Warning: Small sample size for CPUE estimation.</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Sample size is 17. Ratio estimates are more stable with n &gt;= 30.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span></span>
 <span><span class="va">total_catch</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
@@ -436,7 +431,7 @@ combine the effort and CPUE estimates, exactly as in Part 1c:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     851.  52.0     749.     953.    17</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     858.  48.4     763.     953.    17</span></span></code></pre></div>
 <p>The total catch estimate (approximately 851) is consistent with the
 raw delta-method calculation in Part 1c. Small numerical differences
 reflect tidycreel’s internal handling of the complete-trip filter and

@@ -24,6 +24,7 @@
 <url><loc>https://chrischizinski.github.io/tidycreel/articles/survey-scheduling.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/articles/survey-tidycreel.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/articles/temporal-extrapolation.html</loc></url>
+<url><loc>https://chrischizinski.github.io/tidycreel/articles/tidycreel-connect.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/articles/tidycreel.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/articles/unextrapolated-summaries.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/articles/visualisation.html</loc></url>
@@ -67,6 +68,7 @@
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/estimate_effort.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/estimate_effort_aerial_glmm.html</loc></url>
+<url><loc>https://chrischizinski.github.io/tidycreel/reference/estimate_exploitation_rate.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/estimate_release_rate.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.html</loc></url>

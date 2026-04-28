@@ -344,8 +344,6 @@ projected total walleye catch over the survey period.
 
 ``` r
 total_catch <- suppressWarnings(estimate_total_catch(design_catch))
-#> ℹ Using complete trips for CPUE estimation
-#>   (n=40, 100% of 40 interviews) [default]
 print(total_catch)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -357,7 +355,7 @@ print(total_catch)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     277.  47.2     185.     370.    40
+#> 1     283.  46.0     192.     373.    40
 ```
 
 ## Summary

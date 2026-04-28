@@ -68,6 +68,8 @@ dispatch automatically on survey type.
 - [`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
   : Estimate total extrapolated release by combining effort and release
   rate
+- [`estimate_exploitation_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_exploitation_rate.md)
+  : Estimate exploitation rate using the Pollock et al. moment estimator
 - [`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md)
   : Estimate a weighted length distribution from creel interview data
 

@@ -252,9 +252,6 @@ monthly_catch <- lapply(seq_along(months), function(i) {
 #> weights or probabilities supplied, assuming equal probability
 #> Warning: 5 interviews have zero catch.
 #> ℹ Zero catch may be valid (skunked) or indicate missing data.
-#> Warning: Small sample size for CPUE estimation.
-#> ! Sample size is 27. Ratio estimates are more stable with n >= 30.
-#> ℹ Variance estimates may be unstable with n < 30.
 #> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
 #> weights or probabilities supplied, assuming equal probability
 #> Warning: 7 interviews have zero catch.
@@ -274,11 +271,11 @@ monthly_catch <- lapply(seq_along(months), function(i) {
 
 do.call(rbind, monthly_catch)
 #>       month estimate       se  ci_lower ci_upper  n
-#> 1       May 132.4452 31.63473  70.44225 194.4481 27
-#> 2      June 214.1074 47.03040 121.92952 306.2853 39
-#> 3      July 146.3074 31.84911  83.88432 208.7305 30
-#> 4    August 247.3898 44.49361 160.18390 334.5957 39
-#> 5 September 214.4188 34.00801 147.76429 281.0732 39
+#> 1       May 135.4235 32.68955  71.35318 199.4939 27
+#> 2      June 209.1243 44.19099 122.51154 295.7370 39
+#> 3      July 143.0169 32.81832  78.69413 207.3396 30
+#> 4    August 236.6189 41.85109 154.59227 318.6455 39
+#> 5 September 217.9545 38.78860 141.93029 293.9788 39
 ```
 
 ## Season-Total Catch
@@ -294,7 +291,7 @@ season_catch <- data.frame(
 )
 season_catch
 #>        stratum estimate       se
-#> 1 Season total 954.6685 85.80913
+#> 1 Season total 942.1381 85.75874
 ```
 
 ## Assembling a Summary Report
@@ -336,9 +333,6 @@ for (i in seq_along(months)) {
 #> weights or probabilities supplied, assuming equal probability
 #> Warning: 5 interviews have zero catch.
 #> ℹ Zero catch may be valid (skunked) or indicate missing data.
-#> Warning: Small sample size for CPUE estimation.
-#> ! Sample size is 27. Ratio estimates are more stable with n >= 30.
-#> ℹ Variance estimates may be unstable with n < 30.
 #> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
 #> weights or probabilities supplied, assuming equal probability
 #> Warning: 7 interviews have zero catch.
@@ -378,7 +372,7 @@ catch_summary$table
 #> # A tibble: 1 × 25
 #>   May_estimate May_se May_ci_lower May_ci_upper May_n June_estimate June_se
 #>          <dbl>  <dbl>        <dbl>        <dbl> <int>         <dbl>   <dbl>
-#> 1         132.   31.6         70.4         194.    27          214.    47.0
+#> 1         135.   32.7         71.4         199.    27          209.    44.2
 #> # ℹ 18 more variables: June_ci_lower <dbl>, June_ci_upper <dbl>, June_n <int>,
 #> #   July_estimate <dbl>, July_se <dbl>, July_ci_lower <dbl>,
 #> #   July_ci_upper <dbl>, July_n <int>, August_estimate <dbl>, August_se <dbl>,
