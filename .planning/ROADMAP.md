@@ -8,14 +8,13 @@ tidycreel is an R package for creel survey design, data preparation, estimation,
 
 - ✅ **M022 — Comprehensive Project Evaluation and Future Planning** — Phases 70-75 (shipped 2026-04-19)
 - ✅ **M023 / v1.4.0 Quality, Polish, and rOpenSci Readiness** — Phases 76-79 (local closeout 2026-04-23) — see [.planning/milestones/v1.4-ROADMAP.md](milestones/v1.4-ROADMAP.md)
-- 🚧 **M024 / v1.5.0 Analytical Extensions and rOpenSci Submission** — Phases 80-83 (in progress) — see [.planning/milestones/v1.5-ROADMAP.md](milestones/v1.5-ROADMAP.md)
+- ✅ **M024 / v1.5.0 Analytical Extensions and rOpenSci Submission** — Phases 80-82 (shipped 2026-04-28) — see [.planning/milestones/v1.5-ROADMAP.md](milestones/v1.5-ROADMAP.md)
 
 ## Phases
 
 - [x] **Phase 80: INV-06 Fix and Quickcheck Proof** - Correct the stratified-sum inconsistency in `estimate_total_catch()` and verify it with the INV-06 property test (completed 2026-04-27)
 - [x] **Phase 81: Exploitation-Rate Estimator** - Implement, stratify, and document `estimate_exploitation_rate()` using the Pollock et al. formulation (completed 2026-04-27)
-- [ ] **Phase 82: Package Quality and Documentation** - Remove the unused `lifecycle` import, pass urlchecker/rhub/goodpractice checks, and add the tidycreel.connect bridge article
-- [ ] **Phase 83: rOpenSci Submission** - Open the software-review issue and close out the milestone
+- [x] **Phase 82: Package Quality and Documentation** - Remove the unused `lifecycle` import, pass urlchecker/rhub/goodpractice checks, and add the tidycreel.connect bridge article (completed 2026-04-28)
 
 ## Phase Details
 
@@ -67,25 +66,3 @@ Plans:
 - [ ] 82-03: Run rhub checks and address any platform-specific findings
 - [ ] 82-04: Run goodpractice and address WARNING-level findings
 - [ ] 82-05: Write and publish the tidycreel.connect bridge article on the pkgdown site
-
-### Phase 83: rOpenSci Submission
-**Goal**: The package is formally submitted to rOpenSci software review and the M024 milestone is closed out
-**Depends on**: Phase 82 (all quality gates passed)
-**Requirements**: QUAL-05
-**Success Criteria** (what must be TRUE):
-  1. A pre-submission enquiry or software-review issue is opened at ropensci/software-review with the package URL and scope description
-  2. The issue number is recorded in `.planning/PROJECT.md`
-  3. M024 milestone planning documents are marked complete and archived
-**Plans**: TBD
-
-Plans:
-- [ ] 83-01: Complete rOpenSci pre-submission checklist, open the software-review issue, and close out M024
-
-## Progress
-
-| Phase | Milestone | Plans Complete | Status | Completed |
-|-------|-----------|----------------|--------|-----------|
-| 80. INV-06 Fix and Quickcheck Proof | 2/2 | Complete    | 2026-04-27 | - |
-| 81. Exploitation-Rate Estimator | M024 / v1.5.0 | 0/3 | Not started | - |
-| 82. Package Quality and Documentation | M024 / v1.5.0 | 0/5 | Not started | - |
-| 83. rOpenSci Submission | M024 / v1.5.0 | 0/1 | Not started | - |
