@@ -15,8 +15,8 @@
 
 ### Package Quality
 
-- [ ] **QUAL-01**: Unused `lifecycle` import removed from DESCRIPTION and NAMESPACE
-- [ ] **QUAL-02**: Package passes `urlchecker::url_check()` with no broken URLs
+- [x] **QUAL-01**: Unused `lifecycle` import removed from DESCRIPTION and NAMESPACE
+- [x] **QUAL-02**: Package passes `urlchecker::url_check()` with no broken URLs
 - [ ] **QUAL-03**: Package passes `rhub::rhub_check()` on Linux and macOS platforms
 - [ ] **QUAL-04**: `goodpractice::gp()` findings addressed (WARNING-level and above)
 - [ ] **QUAL-05**: rOpenSci software review issue opened at ropensci/software-review
@@ -56,8 +56,8 @@
 | ESTIM-02 | Phase 81 | Complete |
 | ESTIM-03 | Phase 81 | Complete |
 | ESTIM-05 | Phase 81 | Complete |
-| QUAL-01 | Phase 82 | Pending |
-| QUAL-02 | Phase 82 | Pending |
+| QUAL-01 | Phase 82 | Complete |
+| QUAL-02 | Phase 82 | Complete |
 | QUAL-03 | Phase 82 | Pending |
 | QUAL-04 | Phase 82 | Pending |
 | DOCS-01 | Phase 82 | Pending |
