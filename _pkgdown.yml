@@ -67,6 +67,7 @@ reference:
       - estimate_total_catch
       - estimate_total_harvest
       - estimate_total_release
+      - estimate_exploitation_rate
       - est_length_distribution
 
   - title: "Reporting & Diagnostics"
@@ -243,6 +244,13 @@ articles:
     Technical equation derivations for advanced users.
   contents:
   - bus-route-equations
+
+- title: "Ecosystem"
+  desc: >
+    Companion packages that extend tidycreel for database integration and
+    reproducible data pipelines.
+  contents:
+  - tidycreel-connect
 
 news:
   one_page: true

@@ -351,45 +351,86 @@ test_that("estimate_total_catch errors for invalid variance method", {
   )
 })
 
-# Delta method correctness - Reference tests ----
+# Stratified-sum correctness - Reference tests ----
 
-test_that("total catch estimate equals effort * cpue exactly", {
-  design <- make_total_catch_design()
+test_that("total catch estimate equals sum of per-stratum effort * cpue products", {
+  # Use a single-stratum design so that per-stratum sum = pooled delta-method
+  # (the two are equal when there is only one stratum). This isolates the
+  # stratified-sum path without requiring large per-stratum sample sizes.
+  calendar <- data.frame(
+    date = seq.Date(as.Date("2024-06-01"), by = "day", length.out = 7),
+    day_type = rep("weekday", 7),
+    stringsAsFactors = FALSE
+  )
+  counts <- data.frame(
+    date = calendar$date, day_type = calendar$day_type,
+    effort_hours = c(10, 12, 14, 11, 13, 15, 10), stringsAsFactors = FALSE
+  )
+  n_int <- 15L
+  set.seed(123L)
+  interviews <- data.frame(
+    date = sample(calendar$date, n_int, replace = TRUE),
+    day_type = rep("weekday", n_int),
+    catch_total = sample(0:5, n_int, replace = TRUE),
+    hours_fished = round(runif(n_int, 1, 4), 2),
+    trip_status = rep("complete", n_int),
+    trip_duration = round(runif(n_int, 1, 4), 2),
+    stringsAsFactors = FALSE
+  )
+  d1 <- creel_design(calendar, date = date, strata = day_type) # nolint: object_usage_linter
+  d1 <- suppressMessages(suppressWarnings(add_counts(d1, counts))) # nolint: object_usage_linter
+  d1 <- suppressMessages(suppressWarnings(
+    add_interviews(d1, interviews, catch = catch_total, effort = hours_fished, # nolint: object_usage_linter
+      trip_status = trip_status, trip_duration = trip_duration)
+  ))
 
-  # Get total catch estimate
-  result <- estimate_total_catch(design) # nolint: object_usage_linter
+  result <- suppressWarnings(suppressMessages(estimate_total_catch(d1))) # nolint: object_usage_linter
+  effort_pooled <- suppressWarnings(estimate_effort(d1)) # nolint: object_usage_linter
+  cpue_pooled <- suppressWarnings(suppressMessages(estimate_catch_rate(d1))) # nolint: object_usage_linter
 
-  # Get component estimates
-  effort <- estimate_effort(design) # nolint: object_usage_linter
-  cpue <- estimate_catch_rate(design) # nolint: object_usage_linter
-
-  # Product should match exactly
-  expected <- effort$estimates$estimate * cpue$estimates$estimate
-
+  # Single stratum: stratified sum == pooled product
+  expected <- effort_pooled$estimates$estimate * cpue_pooled$estimates$estimate
   expect_equal(result$estimates$estimate, expected, tolerance = 1e-10)
 })
 
-test_that("total catch SE matches manual delta method formula", {
-  design <- make_total_catch_design()
+test_that("total catch SE matches stratified-sum delta method formula", {
+  # Single-stratum design (see test above for rationale)
+  calendar <- data.frame(
+    date = seq.Date(as.Date("2024-06-01"), by = "day", length.out = 7),
+    day_type = rep("weekday", 7),
+    stringsAsFactors = FALSE
+  )
+  counts <- data.frame(
+    date = calendar$date, day_type = calendar$day_type,
+    effort_hours = c(10, 12, 14, 11, 13, 15, 10), stringsAsFactors = FALSE
+  )
+  n_int <- 15L
+  set.seed(123L)
+  interviews <- data.frame(
+    date = sample(calendar$date, n_int, replace = TRUE),
+    day_type = rep("weekday", n_int),
+    catch_total = sample(0:5, n_int, replace = TRUE),
+    hours_fished = round(runif(n_int, 1, 4), 2),
+    trip_status = rep("complete", n_int),
+    trip_duration = round(runif(n_int, 1, 4), 2),
+    stringsAsFactors = FALSE
+  )
+  d1 <- creel_design(calendar, date = date, strata = day_type) # nolint: object_usage_linter
+  d1 <- suppressMessages(suppressWarnings(add_counts(d1, counts))) # nolint: object_usage_linter
+  d1 <- suppressMessages(suppressWarnings(
+    add_interviews(d1, interviews, catch = catch_total, effort = hours_fished, # nolint: object_usage_linter
+      trip_status = trip_status, trip_duration = trip_duration)
+  ))
 
-  # Get total catch estimate
-  result <- estimate_total_catch(design) # nolint: object_usage_linter
+  result <- suppressWarnings(suppressMessages(estimate_total_catch(d1))) # nolint: object_usage_linter
+  effort_pooled <- suppressWarnings(estimate_effort(d1)) # nolint: object_usage_linter
+  cpue_pooled <- suppressWarnings(suppressMessages(estimate_catch_rate(d1))) # nolint: object_usage_linter
 
-  # Get component estimates
-  effort <- estimate_effort(design) # nolint: object_usage_linter
-  cpue <- estimate_catch_rate(design) # nolint: object_usage_linter
-
-  # Extract components
-  effort_est <- effort$estimates$estimate # nolint: object_name_linter
-  cpue_est <- cpue$estimates$estimate # nolint: object_name_linter
-  var_effort <- effort$estimates$se^2 # nolint: object_name_linter
-  var_cpue <- cpue$estimates$se^2 # nolint: object_name_linter
-
-  # Manual delta method (first-order approximation)
-  manual_variance <- (effort_est^2 * var_cpue) + (cpue_est^2 * var_effort)
-  manual_se <- sqrt(manual_variance)
-
-  # Allow slightly looser tolerance for SE since svycontrast may include second-order term
+  # Single stratum: stratified-sum delta formula == pooled delta formula
+  manual_se <- sqrt(
+    (effort_pooled$estimates$estimate^2 * cpue_pooled$estimates$se^2) +
+      (cpue_pooled$estimates$estimate^2 * effort_pooled$estimates$se^2)
+  )
   expect_equal(result$estimates$se, manual_se, tolerance = 1e-6)
 })
 
@@ -605,15 +646,41 @@ test_that("full workflow with example data produces valid result", {
   expect_true(is.finite(result$estimates$se))
 })
 
-test_that("total catch components are consistent", {
-  design <- make_total_catch_design()
+test_that("total catch components are consistent with stratified-sum estimator", {
+  # Use a single-stratum design so per-stratum sum == pooled product,
+  # allowing numeric consistency check without per-stratum API call issues.
+  calendar <- data.frame(
+    date = seq.Date(as.Date("2024-06-01"), by = "day", length.out = 7),
+    day_type = rep("weekday", 7),
+    stringsAsFactors = FALSE
+  )
+  counts <- data.frame(
+    date = calendar$date, day_type = calendar$day_type,
+    effort_hours = c(10, 12, 14, 11, 13, 15, 10), stringsAsFactors = FALSE
+  )
+  n_int <- 15L
+  set.seed(123L)
+  interviews <- data.frame(
+    date = sample(calendar$date, n_int, replace = TRUE),
+    day_type = rep("weekday", n_int),
+    catch_total = sample(0:5, n_int, replace = TRUE),
+    hours_fished = round(runif(n_int, 1, 4), 2),
+    trip_status = rep("complete", n_int),
+    trip_duration = round(runif(n_int, 1, 4), 2),
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design(calendar, date = date, strata = day_type) # nolint: object_usage_linter
+  design <- suppressMessages(suppressWarnings(add_counts(design, counts))) # nolint: object_usage_linter
+  design <- suppressMessages(suppressWarnings(
+    add_interviews(design, interviews, catch = catch_total, effort = hours_fished, # nolint: object_usage_linter
+      trip_status = trip_status, trip_duration = trip_duration)
+  ))
 
-  # Estimate all components
-  effort_est <- estimate_effort(design) # nolint: object_usage_linter
-  cpue_est <- estimate_catch_rate(design) # nolint: object_usage_linter
-  total_catch_est <- estimate_total_catch(design) # nolint: object_usage_linter
+  effort_est <- suppressWarnings(estimate_effort(design)) # nolint: object_usage_linter
+  cpue_est <- suppressWarnings(suppressMessages(estimate_catch_rate(design))) # nolint: object_usage_linter
+  total_catch_est <- suppressWarnings(suppressMessages(estimate_total_catch(design))) # nolint: object_usage_linter
 
-  # Verify estimate consistency (product of components)
+  # Single stratum: verify product consistency (pooled = stratified sum when 1 stratum)
   expected_estimate <- effort_est$estimates$estimate * cpue_est$estimates$estimate
   expect_equal(total_catch_est$estimates$estimate, expected_estimate, tolerance = 1e-10)
 

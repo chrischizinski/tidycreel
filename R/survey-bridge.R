@@ -530,7 +530,7 @@ warn_tier2_issues <- function(design) {
 
   # Identify count variable(s): numeric columns that are not design metadata
   excluded_cols <- c(date_col, strata_cols, psu_col)
-  numeric_cols <- names(counts_data)[sapply(counts_data, is.numeric)]
+  numeric_cols <- names(counts_data)[vapply(counts_data, is.numeric, logical(1L))]
   count_vars <- setdiff(numeric_cols, excluded_cols)
 
   # Check each count variable for zero/negative values
