@@ -245,6 +245,13 @@ articles:
   contents:
   - bus-route-equations
 
+- title: "Ecosystem"
+  desc: >
+    Companion packages that extend tidycreel for database integration and
+    reproducible data pipelines.
+  contents:
+  - tidycreel-connect
+
 news:
   one_page: true
   cran_dates: false
