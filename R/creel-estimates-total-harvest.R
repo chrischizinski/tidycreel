@@ -319,11 +319,11 @@ estimate_total_harvest_grouped <- function(design, by_vars, variance_method, con
 
   # Build result tibble
   estimates_df <- tibble::as_tibble(merged[by_vars])
-  estimates_df$estimate <- sapply(estimates_list, `[[`, "estimate")
-  estimates_df$se <- sapply(estimates_list, `[[`, "se")
-  estimates_df$ci_lower <- sapply(estimates_list, `[[`, "ci_lower")
-  estimates_df$ci_upper <- sapply(estimates_list, `[[`, "ci_upper")
-  estimates_df$n <- sapply(estimates_list, `[[`, "n")
+  estimates_df$estimate <- vapply(estimates_list, `[[`, numeric(1L), "estimate")
+  estimates_df$se <- vapply(estimates_list, `[[`, numeric(1L), "se")
+  estimates_df$ci_lower <- vapply(estimates_list, `[[`, numeric(1L), "ci_lower")
+  estimates_df$ci_upper <- vapply(estimates_list, `[[`, numeric(1L), "ci_upper")
+  estimates_df$n <- vapply(estimates_list, `[[`, numeric(1L), "n")
 
   # Return creel_estimates object
   new_creel_estimates( # nolint: object_usage_linter

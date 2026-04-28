@@ -63,7 +63,7 @@ estimate_effort_camera <- function(
     design$date_col, design$strata_cols,
     design$psu_col, "camera_status"
   )
-  num_cols <- names(counts_data)[sapply(counts_data, is.numeric)]
+  num_cols <- names(counts_data)[vapply(counts_data, is.numeric, logical(1L))]
   count_var <- if (!is.null(intercept_col) && intercept_col %in% names(counts_data)) {
     intercept_col
   } else {
