@@ -65,12 +65,28 @@ Progress: [██████████] 100%
 Decisions are logged in PROJECT.md Key Decisions table.
 v1.5.0 decisions:
 
+- M022: quickcheck locked (CRAN; not rapidcheck)
+- M023: Codecov threshold set at 85% against 86.27% local baseline
+- M024: INV-06 fix uses stratified-sum path (not combined-ratio)
+- M024: `lifecycle` import removal deferred from M023; now QUAL-01 in Phase 82
 - Stratified-sum product estimator: per-stratum E_h × CPUE_h summed (not pooled E × CPUE)
+- [Phase 80]: INV-06 fix uses stratified-sum path via compute_stratum_product_sum() with strata_cols for both ungrouped and grouped total catch
+- [Phase 80]: cpue_for_stratum_product() helper filters complete trips before estimate_cpue_grouped() to avoid NSE issues with public API
+- [Phase 80-inv-06-fix-and-quickcheck-proof]: rep_len() alternating weekday/weekend cycle preferred over format()-based detection: simpler, deterministic, guarantees both strata for n_days >= 2
 - estimate_exploitation_rate() takes scalar inputs — no creel_design dependency
+- [Phase 081-exploitation-rate-estimator]: estimate_exploitation_rate() takes scalar inputs — no creel_design object needed (pre-computed summary stats)
+- [Phase 081-exploitation-rate-estimator]: Tests use regexp matching for errors/warnings because cli_error/cli_warning classes not present in cli 3.6.6
 - Stratified path via internal .estimate_exploitation_rate_stratified() helper; router guard at top of main function
-- quickcheck API: for_all() / integer_bounded(left=, right=) / double_bounded(left=, right=)
+- [Phase 081-exploitation-rate-estimator]: Stratified path uses internal .estimate_exploitation_rate_stratified() helper (not exported); router guard at top of main function
+- [Phase 081-exploitation-rate-estimator]: Vectorised pmax/pmin for per-stratum CI clamp; scalar max/min for .overall row
+- [Phase 081-03]: quickcheck API: for_all() / integer_bounded(left=, right=) / double_bounded(left=, right=)
+- [Phase 081-03]: rcmdcheck gate: _R_CHECK_FORCE_SUGGESTS_=false for local dev; 2 pre-existing NOTEs are known and deferred
 - @importFrom lifecycle badge in R/tidycreel-package.R (single package-level declaration)
+- [Phase 082-01]: @importFrom lifecycle badge placed in R/tidycreel-package.R (package-level); DOI 10.1002/nafm.10010 403 is Oxford Academic bot-protection, left in place
 - goodpractice T/F deferral: parameter T is canonical Pollock et al. domain notation; renaming breaks public API
+- [Phase 082-package-quality-and-documentation]: vapply(df, is.numeric, logical(1L)) replaces sapply for type safety across R sources
+- [Phase 082-package-quality-and-documentation]: goodpractice T/F finding deferred: parameter T in estimate_exploitation_rate() is canonical domain notation (Pollock 1994); renaming breaks public API
+- [Phase 082-package-quality-and-documentation]: goodpractice cyclocomp/covr/line-length/rcmdcheck findings deferred as intentional per phase constraints
 - rhub v2 (GitHub Actions-based); ubuntu-release and macos-release confirmed green
 - rOpenSci submission (QUAL-05) deferred from v1.5.0 to undetermined future date
 
