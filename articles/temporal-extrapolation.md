@@ -24,10 +24,10 @@ This vignette shows how to:
 When you create a design with
 [`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md),
 the survey object assigns a **weight** to each sampled day. A day
-sampled at rate $f$ receives weight $1/f$, so its observed angler-hours
-represent $1/f$ days of that stratum type. The estimator then sums
-weighted observations across strata to produce a population total for
-the entire design period.
+sampled at rate $`f`$ receives weight $`1/f`$, so its observed
+angler-hours represent $`1/f`$ days of that stratum type. The estimator
+then sums weighted observations across strata to produce a population
+total for the entire design period.
 
 In practice this means:
 
@@ -55,6 +55,7 @@ errors when variance cannot be estimated.
 ## Building a Season-Long Dataset
 
 ``` r
+
 library(tidycreel)
 
 set.seed(2024)
@@ -109,6 +110,7 @@ The result is the estimated total angler-hours for the entire
 May–September season.
 
 ``` r
+
 season_design <- creel_design(
   sampled_calendar,
   date = date, strata = day_type
@@ -135,6 +137,7 @@ to each month, build a separate monthly design, and estimate. Monthly
 designs are independent, so their variances can be combined later.
 
 ``` r
+
 months <- 5:9
 month_labels <- c("May", "June", "July", "August", "September")
 
@@ -180,6 +183,7 @@ windows), the season total is the sum of monthly estimates and the
 season variance is the sum of monthly variances.
 
 ``` r
+
 monthly_df <- do.call(rbind, monthly_effort)
 
 season_from_months <- data.frame(
@@ -204,6 +208,7 @@ catch rate from interviews, then multiply by monthly effort. First,
 generate synthetic interview data:
 
 ``` r
+
 set.seed(2024)
 
 # Three interviews per sampled day (ensures ≥10 complete trips per month)
@@ -224,6 +229,7 @@ interviews$hours_fished <- pmax(interviews$hours_fished, 0.5)
 Then loop over months exactly as for effort:
 
 ``` r
+
 monthly_catch <- lapply(seq_along(months), function(i) {
   m <- months[i]
   cal_m <- sampled_calendar[format(sampled_calendar$date, "%m") == sprintf("%02d", m), ]
@@ -283,6 +289,7 @@ do.call(rbind, monthly_catch)
 Sum the monthly totals:
 
 ``` r
+
 catch_df <- do.call(rbind, monthly_catch)
 season_catch <- data.frame(
   stratum  = "Season total",
@@ -303,6 +310,7 @@ and pass it to
 [`season_summary()`](https://chrischizinski.github.io/tidycreel/reference/season_summary.md).
 
 ``` r
+
 # Collect effort and catch estimates for each month into named lists
 effort_list <- list()
 catch_list <- list()
@@ -367,6 +375,7 @@ effort_summary$table
 ```
 
 ``` r
+
 catch_summary <- season_summary(catch_list)
 catch_summary$table
 #> # A tibble: 1 × 25
@@ -388,6 +397,7 @@ the year level: build one design per year, run estimators, then sum
 totals and combine variances.
 
 ``` r
+
 # Conceptual pattern — replace with actual data per year
 year_effort <- list()
 
@@ -412,19 +422,20 @@ accepts any data frame, so you can export the assembled summary table
 directly:
 
 ``` r
+
 write_schedule(effort_summary$table, "effort_by_month_2024.csv")
 write_schedule(effort_summary$table, "effort_by_month_2024.xlsx")
 ```
 
 ## Key Principles
 
-| Goal                     | Approach                                                                                                                                     |
-|--------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
-| Season total             | Single design covering full season; call [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md) once |
-| Monthly totals           | Separate monthly designs; loop over months                                                                                                   |
-| Season total from months | Sum monthly estimates; sum monthly variances                                                                                                 |
-| Annual comparison        | Separate annual designs; use [`season_summary()`](https://chrischizinski.github.io/tidycreel/reference/season_summary.md)                    |
-| Report table             | `season_summary(named_list_of_estimates)$table`                                                                                              |
+| Goal | Approach |
+|----|----|
+| Season total | Single design covering full season; call [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md) once |
+| Monthly totals | Separate monthly designs; loop over months |
+| Season total from months | Sum monthly estimates; sum monthly variances |
+| Annual comparison | Separate annual designs; use [`season_summary()`](https://chrischizinski.github.io/tidycreel/reference/season_summary.md) |
+| Report table | `season_summary(named_list_of_estimates)$table` |
 
 ## References
 

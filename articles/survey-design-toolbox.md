@@ -12,6 +12,7 @@ workflow:
     design
 
 ``` r
+
 library(tidycreel)
 ```
 
@@ -30,6 +31,7 @@ weekday and weekend strata to target a 20% RSE on the seasonal effort
 estimate.
 
 ``` r
+
 effort_plan <- power_creel(
   mode = "effort_n",
   target_rse = 0.20,
@@ -57,6 +59,7 @@ If the planning question is interview effort rather than count days,
 CPUE with a target RSE.
 
 ``` r
+
 cpue_plan <- power_creel(
   mode = "cpue_n",
   target_rse = 0.15,
@@ -81,6 +84,7 @@ number of interviews, how much power do we have to detect a change in
 CPUE from one season to the next?
 
 ``` r
+
 power_plan <- power_creel(
   mode = "power",
   n = 120L,
@@ -107,6 +111,7 @@ this example we estimate total effort twice from the same dataset,
 changing only the variance method.
 
 ``` r
+
 data("example_counts")
 data("example_interviews")
 
@@ -125,6 +130,7 @@ design <- add_interviews(
 ```
 
 ``` r
+
 set.seed(123)
 
 effort_taylor <- estimate_effort(design, variance = "taylor")
@@ -152,6 +158,7 @@ point estimate is identical while the uncertainty metrics reflect the
 different variance estimators.
 
 ``` r
+
 ggplot2::autoplot(design_comparison)
 #> `height` was translated to `width`.
 ```
@@ -174,6 +181,7 @@ stacks those components into a single `survey` design object with
 component-specific weights.
 
 ``` r
+
 access <- data.frame(
   date = as.Date(c("2024-06-03", "2024-06-08", "2024-06-10", "2024-06-15")),
   day_type = c("weekday", "weekend", "weekday", "weekend"),
@@ -207,6 +215,7 @@ With the combined design in hand, standard `survey` estimators work
 directly on the stacked data.
 
 ``` r
+
 survey::svytotal(~count, hybrid_design)
 #>       total     SE
 #> count   226 7.6158

@@ -42,15 +42,15 @@ Imagine a three-day survey with two day-type strata:
 | 2024-06-05 | weekday  | PSU-5 |
 | 2024-06-05 | weekend  | PSU-6 |
 
-Six PSUs formed by crossing 3 days × 2 strata.
+Six PSUs formed by crossing 3 days × 2 strata. {.table}
 
 Six PSUs in total — three per stratum. If the survey selected two
 weekday PSUs and two weekend PSUs, the sample would contain four PSUs
 out of six.
 
 The population we want to estimate is the **season total** over all
-$N_{h}$ PSUs in stratum $h$. The sample gives us observations on $n_{h}$
-of those PSUs.
+$`N_h`$ PSUs in stratum $`h`$. The sample gives us observations on
+$`n_h`$ of those PSUs.
 
 ------------------------------------------------------------------------
 
@@ -61,46 +61,53 @@ of those PSUs.
 For a stratified random sample, the Horvitz–Thompson (HT) estimator of
 the population total is:
 
-$$\widehat{E} = \sum\limits_{i \in s}\frac{y_{i}}{\pi_{i}}$$
+``` math
+\hat{E} = \sum_{i \in s} \frac{y_i}{\pi_i}
+```
 
-- $y_{i}$ = observed count (number of anglers) on PSU $i$
-- $\pi_{i}$ = inclusion probability for PSU $i$ (probability that PSU
-  $i$ is selected into the sample)
-- $s$ = the set of sampled PSUs
+- $`y_i`$ = observed count (number of anglers) on PSU $`i`$
+- $`\pi_i`$ = inclusion probability for PSU $`i`$ (probability that PSU
+  $`i`$ is selected into the sample)
+- $`s`$ = the set of sampled PSUs
 
 When sampling is done without replacement and all PSUs in a stratum are
 equally likely to be chosen, the inclusion probability is
-$\pi_{i} = n_{h}/N_{h}$. Substituting into the HT form and recognising
-that the sum over $s_{h}$ covers $n_{h}$ PSUs gives the familiar
+$`\pi_i = n_h / N_h`$. Substituting into the HT form and recognising
+that the sum over $`s_h`$ covers $`n_h`$ PSUs gives the familiar
 stratum-total estimator.
 
 ### Practical creel form
 
-For stratum $h$ with $N_{h}$ total days and $n_{h}$ sampled days:
+For stratum $`h`$ with $`N_h`$ total days and $`n_h`$ sampled days:
 
-$${\widehat{E}}_{h} = \frac{N_{h}}{n_{h}}\sum\limits_{i \in s_{h}}y_{i}$$
+``` math
+\hat{E}_h = \frac{N_h}{n_h} \sum_{i \in s_h} y_i
+```
 
-- $N_{h}$ = total days available in stratum $h$ during the season
-- $n_{h}$ = number of days actually sampled in stratum $h$
-- $y_{i}$ = count (angler-hours or angler-trips) recorded on sampled day
-  $i$
-- $s_{h}$ = the set of sampled days in stratum $h$
+- $`N_h`$ = total days available in stratum $`h`$ during the season
+- $`n_h`$ = number of days actually sampled in stratum $`h`$
+- $`y_i`$ = count (angler-hours or angler-trips) recorded on sampled day
+  $`i`$
+- $`s_h`$ = the set of sampled days in stratum $`h`$
 
-The ratio $N_{h}/n_{h}$ is the **expansion factor**: if only one in
+The ratio $`N_h / n_h`$ is the **expansion factor**: if only one in
 three days was sampled, each observed count represents three days worth
 of effort in the population.
 
 ### Worked numeric
 
-Stratum: “weekday”. $N = n = 3$ days sampled (all available days
-observed). Counts: $y_{1} = 150,\; y_{2} = 230,\; y_{3} = 190$
+Stratum: “weekday”. $`N = n = 3`$ days sampled (all available days
+observed). Counts: $`y_1 = 150, \; y_2 = 230, \; y_3 = 190`$
 angler-hours.
 
-$${\widehat{E}}_{\text{weekday}} = \frac{3}{3} \times (150 + 230 + 190) = 1 \times 570 = 570{\mspace{6mu}\text{angler-hours}}$$
+``` math
+\hat{E}_{\text{weekday}} = \frac{3}{3} \times (150 + 230 + 190) = 1 \times 570 = 570 \text{ angler-hours}
+```
 
 Confirming with R:
 
 ``` r
+
 library(tidycreel)
 
 calendar <- data.frame(
@@ -148,22 +155,26 @@ across days is caused by real differences in angler activity or by
 random counting error. With replication we can decompose the total
 variance into two components:
 
-$$\text{SE}^{2}\left( \widehat{E} \right) = \text{SE}_{\text{between}}^{2} + \text{SE}_{\text{within}}^{2}$$
+``` math
+\text{SE}^2(\hat{E}) = \text{SE}^2_{\text{between}} + \text{SE}^2_{\text{within}}
+```
 
 ### Between-day component
 
 The between-day component measures how much estimated effort varies from
 one sampled PSU to the next. It is computed by treating the **within-day
-mean** ${\bar{y}}_{i}$ (average of all counts on day $i$) as the
+mean** $`\bar{y}_i`$ (average of all counts on day $`i`$) as the
 PSU-level observation and applying the standard variance-of-a-total
 formula:
 
-$$\text{SE}_{\text{between}}^{2} = \frac{N_{h}^{2}}{n_{h}} \cdot s_{\bar{y}}^{2}$$
+``` math
+\text{SE}^2_{\text{between}} = \frac{N_h^2}{n_h} \cdot s^2_{\bar{y}}
+```
 
-- $N_{h}$ = total days available in stratum $h$
-- $n_{h}$ = number of sampled days
-- $s_{\bar{y}}^{2}$ = sample variance of the within-day means
-  ${\bar{y}}_{i}$
+- $`N_h`$ = total days available in stratum $`h`$
+- $`n_h`$ = number of sampled days
+- $`s^2_{\bar{y}}`$ = sample variance of the within-day means
+  $`\bar{y}_i`$
 
 In plain language: this is the variance you would report even with a
 single count per day, using the daily mean in place of a single count.
@@ -175,21 +186,25 @@ The within-day component measures how much counts vary *within* a single
 day — that is, how much the morning count differs from the afternoon
 count. The Rasmussen (1994) formula is:
 
-$$\text{SE}_{\text{within}}^{2} = \frac{N_{h}^{2}}{n_{h}^{2}}\sum\limits_{i = 1}^{n_{h}}\frac{s_{d,i}^{2}}{k_{i}}$$
+``` math
+\text{SE}^2_{\text{within}} = \frac{N_h^2}{n_h^2} \sum_{i=1}^{n_h} \frac{s^2_{d,i}}{k_i}
+```
 
-- $s_{d,i}^{2}$ = sample variance of counts on day $i$ across its
-  $k_{i}$ circuits
-- $k_{i}$ = number of counts (circuits) on day $i$
+- $`s^2_{d,i}`$ = sample variance of counts on day $`i`$ across its
+  $`k_i`$ circuits
+- $`k_i`$ = number of counts (circuits) on day $`i`$
 
 Equivalently, using the pooled formulation implemented in tidycreel:
 
-$$\text{SE}_{\text{within}}^{2} = \frac{N_{h}}{k_{\text{avg}}} \cdot s_{\text{within}}^{2}$$
+``` math
+\text{SE}^2_{\text{within}} = \frac{N_h}{k_{\text{avg}}} \cdot s^2_{\text{within}}
+```
 
 where
-$s_{\text{within}}^{2} = \frac{\sum_{i}\text{SS}_{d,i}}{n_{h}\left( k_{\text{avg}} - 1 \right)}$
+$`s^2_{\text{within}} = \frac{\sum_{i} \text{SS}_{d,i}}{n_h (k_{\text{avg}} - 1)}`$
 is the pooled within-day variance and
-$\text{SS}_{d,i} = \sum_{j}\left( y_{ij} - {\bar{y}}_{i} \right)^{2}$ is
-the sum of squared deviations within day $i$.
+$`\text{SS}_{d,i} = \sum_j (y_{ij} - \bar{y}_i)^2`$ is the sum of
+squared deviations within day $`i`$.
 
 In plain language: this is how much counting error you are carrying
 around. A large within-day component means the morning and afternoon
@@ -198,49 +213,69 @@ angler activity within a single day, or measurement error is high.
 
 ### Worked numeric
 
-Four weekdays are sampled ($N = n = 4$). Each day receives two counts
+Four weekdays are sampled ($`N = n = 4`$). Each day receives two counts
 (morning `am` and afternoon `pm`):
 
-| Day | am count | pm count | Daily mean ${\bar{y}}_{i}$ | $\text{SS}_{d,i}$ |
-|-----|----------|----------|----------------------------|-------------------|
-| 1   | 10       | 20       | 15                         | 50                |
-| 2   | 20       | 30       | 25                         | 50                |
-| 3   | 30       | 40       | 35                         | 50                |
-| 4   | 40       | 50       | 45                         | 50                |
+| Day | am count | pm count | Daily mean $`\bar{y}_i`$ | $`\text{SS}_{d,i}`$ |
+|-----|----------|----------|--------------------------|---------------------|
+| 1   | 10       | 20       | 15                       | 50                  |
+| 2   | 20       | 30       | 25                       | 50                  |
+| 3   | 30       | 40       | 35                       | 50                  |
+| 4   | 40       | 50       | 45                       | 50                  |
 
-Grand mean of daily means: $\bar{\bar{y}} = (15 + 25 + 35 + 45)/4 = 30$
+Grand mean of daily means:
+$`\bar{\bar{y}} = (15 + 25 + 35 + 45)/4 = 30`$
 
 **Between-day SE (step by step):**
 
 Sample variance of daily means:
 
-$$s_{\bar{y}}^{2} = \frac{(15 - 30)^{2} + (25 - 30)^{2} + (35 - 30)^{2} + (45 - 30)^{2}}{4 - 1} = \frac{225 + 25 + 25 + 225}{3} = \frac{500}{3} \approx 166.67$$
+``` math
+s^2_{\bar{y}} = \frac{(15-30)^2 + (25-30)^2 + (35-30)^2 + (45-30)^2}{4 - 1}
+= \frac{225 + 25 + 25 + 225}{3} = \frac{500}{3} \approx 166.67
+```
 
 Between-day variance (without finite-population correction, as in the
 with-replacement design assumed by
 [`survey::svytotal()`](https://rdrr.io/pkg/survey/man/surveysummary.html)):
 
-$$\text{SE}_{\text{between}}^{2} = \frac{N^{2}}{n} \cdot s_{\bar{y}}^{2} = \frac{16}{4} \times 166.67 = 4 \times 166.67 = 666.67$$
+``` math
+\text{SE}^2_{\text{between}} = \frac{N^2}{n} \cdot s^2_{\bar{y}}
+= \frac{16}{4} \times 166.67 = 4 \times 166.67 = 666.67
+```
 
-$$\text{SE}_{\text{between}} = \sqrt{666.67} \approx 25.82$$
+``` math
+\text{SE}_{\text{between}} = \sqrt{666.67} \approx 25.82
+```
 
 **Within-day SE (step by step):**
 
-$k_{\text{avg}} = 2$; all $\text{SS}_{d,i} = 50$:
+$`k_{\text{avg}} = 2`$; all $`\text{SS}_{d,i} = 50`$:
 
-$$s_{\text{within}}^{2} = \frac{\sum\text{SS}_{d,i}}{n \cdot \left( k_{\text{avg}} - 1 \right)} = \frac{50 + 50 + 50 + 50}{4 \times (2 - 1)} = \frac{200}{4} = 50$$
+``` math
+s^2_{\text{within}} = \frac{\sum \text{SS}_{d,i}}{n \cdot (k_{\text{avg}} - 1)}
+= \frac{50 + 50 + 50 + 50}{4 \times (2 - 1)} = \frac{200}{4} = 50
+```
 
-$$\text{SE}_{\text{within}}^{2} = \frac{N}{k_{\text{avg}}} \cdot s_{\text{within}}^{2} = \frac{4}{2} \times 50 = 100$$
+``` math
+\text{SE}^2_{\text{within}} = \frac{N}{k_{\text{avg}}} \cdot s^2_{\text{within}}
+= \frac{4}{2} \times 50 = 100
+```
 
-$$\text{SE}_{\text{within}} = \sqrt{100} = 10$$
+``` math
+\text{SE}_{\text{within}} = \sqrt{100} = 10
+```
 
 **Combined SE:**
 
-$$\text{SE} = \sqrt{666.67 + 100} = \sqrt{766.67} \approx 27.70$$
+``` math
+\text{SE} = \sqrt{666.67 + 100} = \sqrt{766.67} \approx 27.70
+```
 
 Confirming with R:
 
 ``` r
+
 calendar_m <- data.frame(
   date       = as.Date(c("2024-06-03", "2024-06-04", "2024-06-05", "2024-06-06")),
   day_type   = rep("weekday", 4),
@@ -268,9 +303,9 @@ result_m$estimates
 #> 1      120  27.7       25.8        10     31.9     208.     4
 ```
 
-The R output confirms: `se_between` $\approx 25.82$, `se_within`
-$= 10.00$, and `se` $\approx 27.70$ — matching the by-hand calculations
-exactly.
+The R output confirms: `se_between` $`\approx 25.82`$, `se_within`
+$`= 10.00`$, and `se` $`\approx 27.70`$ — matching the by-hand
+calculations exactly.
 
 ### When does `se_within` matter?
 
@@ -296,47 +331,53 @@ estimator formula and its interpretation differ.
 
 ### Formula and derivation
 
-Let $C_{d}$ be the number of anglers encountered during one circuit on
-day $d$, and let $T_{d}$ be the total hours the section is open on day
-$d$.
+Let $`C_d`$ be the number of anglers encountered during one circuit on
+day $`d`$, and let $`T_d`$ be the total hours the section is open on day
+$`d`$.
 
-$${\widehat{E}}_{d} = C_{d} \times T_{d}$$
+``` math
+\hat{E}_d = C_d \times T_d
+```
 
-- $C_{d}$ = progressive count (all anglers encountered during the
-  circuit on day $d$)
-- $T_{d}$ = total open hours on day $d$
+- $`C_d`$ = progressive count (all anglers encountered during the
+  circuit on day $`d`$)
+- $`T_d`$ = total open hours on day $`d`$
 
-**Why does $\tau$ cancel?** During a circuit of duration $\tau$ hours,
-the observer encounters anglers at rate $C_{d}/\tau$ anglers per hour.
-Over the full $T_{d}$ open hours, the total angler-hours is:
+**Why does $`\tau`$ cancel?** During a circuit of duration $`\tau`$
+hours, the observer encounters anglers at rate $`C_d / \tau`$ anglers
+per hour. Over the full $`T_d`$ open hours, the total angler-hours is:
 
-$${\widehat{E}}_{d} = \frac{C_{d}}{\tau} \times T_{d} \times \tau = C_{d} \times T_{d}$$
+``` math
+\hat{E}_d = \frac{C_d}{\tau} \times T_d \times \tau = C_d \times T_d
+```
 
-The circuit time $\tau$ appears in both numerator and denominator and
+The circuit time $`\tau`$ appears in both numerator and denominator and
 cancels exactly. The result is that a progressive count records total
-angler-hours directly, with $\tau$ needed only to derive the expansion
+angler-hours directly, with $`\tau`$ needed only to derive the expansion
 factor internally.
 
 ### Worked numeric
 
-Three weekdays; circuit time $\tau = 2$ hours; section open $T_{d} = 8$
-hours each day. Counts: $C_{1} = 15$, $C_{2} = 20$, $C_{3} = 25$.
+Three weekdays; circuit time $`\tau = 2`$ hours; section open
+$`T_d = 8`$ hours each day. Counts: $`C_1 = 15`$, $`C_2 = 20`$,
+$`C_3 = 25`$.
 
-| Day | $C_{d}$ | $T_{d}$ | ${\widehat{E}}_{d} = C_{d} \times T_{d}$ |
-|-----|---------|---------|------------------------------------------|
-| 1   | 15      | 8       | 120                                      |
-| 2   | 20      | 8       | 160                                      |
-| 3   | 25      | 8       | 200                                      |
+| Day | $`C_d`$ | $`T_d`$ | $`\hat{E}_d = C_d \times T_d`$ |
+|-----|---------|---------|--------------------------------|
+| 1   | 15      | 8       | 120                            |
+| 2   | 20      | 8       | 160                            |
+| 3   | 25      | 8       | 200                            |
 
 Season total (N = n = 3):
-$\widehat{E} = (3/3) \times (120 + 160 + 200) = 480$ angler-hours.
+$`\hat{E} = (3/3) \times (120 + 160 + 200) = 480`$ angler-hours.
 
 Confirming with R (note:
 [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
-stores the expanded ${\widehat{E}}_{d}$ values in the `n_anglers` column
+stores the expanded $`\hat{E}_d`$ values in the `n_anglers` column
 automatically):
 
 ``` r
+
 calendar_p <- data.frame(
   date       = as.Date(c("2024-06-03", "2024-06-04", "2024-06-05")),
   day_type   = rep("weekday", 3),
@@ -384,11 +425,11 @@ calculation.
 
 Three estimator pathways are available for instantaneous creel surveys:
 
-| Scenario                | Data collected            | Key formula                                                       | `se_within`                           |
-|-------------------------|---------------------------|-------------------------------------------------------------------|---------------------------------------|
-| Single count per day    | One count per PSU         | ${\widehat{E}}_{h} = \left( N_{h}/n_{h} \right)\sum y_{i}$        | Always 0                              |
-| Multiple counts per day | $k \geq 2$ counts per PSU | ${\widehat{E}}_{h} = \left( N_{h}/n_{h} \right)\sum{\bar{y}}_{i}$ | Nonzero; measures within-day variance |
-| Progressive count       | One circuit per day       | ${\widehat{E}}_{d} = C_{d} \times T_{d}$                          | Always 0                              |
+| Scenario | Data collected | Key formula | `se_within` |
+|----|----|----|----|
+| Single count per day | One count per PSU | $`\hat{E}_h = (N_h/n_h)\sum y_i`$ | Always 0 |
+| Multiple counts per day | $`k \geq 2`$ counts per PSU | $`\hat{E}_h = (N_h/n_h)\sum \bar{y}_i`$ | Nonzero; measures within-day variance |
+| Progressive count | One circuit per day | $`\hat{E}_d = C_d \times T_d`$ | Always 0 |
 
 **Single count per day** is the classical creel estimator. All variance
 is between-day variation; there is no within-day component to estimate.
@@ -401,8 +442,8 @@ improves precision more than adding sampled days.
 
 **Progressive counts** are appropriate when the section is long enough
 that a spot-check count would miss part of the angler population. The
-$C \times T$ formula recovers total angler-hours without needing $\tau$
-in the final estimate. Variance structure is the same as for
+$`C \times T`$ formula recovers total angler-hours without needing
+$`\tau`$ in the final estimate. Variance structure is the same as for
 single-count instantaneous surveys.
 
 ------------------------------------------------------------------------

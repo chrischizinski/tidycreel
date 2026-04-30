@@ -30,6 +30,7 @@ tidycreel. Load them once and they are shared across both parts of this
 vignette.
 
 ``` r
+
 library(tidycreel)
 
 data(example_calendar)
@@ -90,6 +91,7 @@ calendar), so we can build the FPC column directly from the calendar
 frequency table.
 
 ``` r
+
 library(survey)
 #> Loading required package: grid
 #> Loading required package: Matrix
@@ -152,6 +154,7 @@ estimated via
 count frame design.
 
 ``` r
+
 effort_total <- svytotal(~effort_hours, svy_counts)
 effort_total
 #>              total SE
@@ -178,6 +181,7 @@ This is the [`svyratio()`](https://rdrr.io/pkg/survey/man/svyratio.html)
 approach.
 
 ``` r
+
 # Use complete trips only (standard practice)
 complete_trips <- subset(example_interviews, trip_status == "complete")
 nrow(complete_trips)
@@ -210,6 +214,7 @@ Now combine the effort total and CPUE using the delta method to
 propagate variance through the product E × C:
 
 ``` r
+
 effort_coef <- coef(effort_total)[[1]]
 cpue_coef <- coef(cpue_ratio)[[1]]
 var_effort <- vcov(effort_total)[[1]]
@@ -247,6 +252,7 @@ the equivalent of the
 Part 1a above.
 
 ``` r
+
 design <- creel_design(example_calendar, date = date, strata = day_type)
 design <- add_counts(design, example_counts)
 #> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
@@ -278,6 +284,7 @@ on the internal design object and returns the result as a tidy tibble
 with labelled columns.
 
 ``` r
+
 effort_est <- estimate_effort(design)
 effort_est
 #> 
@@ -308,6 +315,7 @@ This maps interview columns to the design vocabulary and filters to
 complete trips by default.
 
 ``` r
+
 design <- add_interviews(design, example_interviews,
   catch         = catch_total,
   effort        = hours_fished,
@@ -326,6 +334,7 @@ Now estimate CPUE, which calls
 on the complete-trip subset of the interview frame:
 
 ``` r
+
 cpue_est <- estimate_catch_rate(design)
 #> ℹ Using complete trips for CPUE estimation
 #>   (n=17, 77.3% of 22 interviews) [default]
@@ -356,6 +365,7 @@ applies the delta method to combine the effort and CPUE estimates,
 exactly as in Part 1c:
 
 ``` r
+
 total_catch <- estimate_total_catch(design)
 total_catch
 #> 
@@ -380,14 +390,14 @@ components — the statistical method is identical.
 
 ## Mapping Table
 
-| Step                  | survey package                                               | tidycreel                                                                                                                                                                       |
-|-----------------------|--------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Design construction   | `svydesign(ids=~1, strata=~day_type, fpc=~fpc, data=counts)` | [`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md) + [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md) |
-| Attach interview data | subset + `svydesign(ids=~1, data=complete_trips)`            | [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)                                                                                    |
-| Effort estimation     | `svytotal(~effort_hours, design)`                            | `estimate_effort(design)`                                                                                                                                                       |
-| Catch rate            | `svyratio(~catch_total, ~hours_fished, int_design)`          | `estimate_catch_rate(design)`                                                                                                                                                   |
-| Total catch           | E × C with delta method Var(E×C) = E² Var(C) + C² Var(E)     | `estimate_total_catch(design)`                                                                                                                                                  |
-| Variance method       | Taylor linearization (default in survey)                     | Taylor linearization (default in tidycreel)                                                                                                                                     |
+| Step | survey package | tidycreel |
+|----|----|----|
+| Design construction | `svydesign(ids=~1, strata=~day_type, fpc=~fpc, data=counts)` | [`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md) + [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md) |
+| Attach interview data | subset + `svydesign(ids=~1, data=complete_trips)` | [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md) |
+| Effort estimation | `svytotal(~effort_hours, design)` | `estimate_effort(design)` |
+| Catch rate | `svyratio(~catch_total, ~hours_fished, int_design)` | `estimate_catch_rate(design)` |
+| Total catch | E × C with delta method Var(E×C) = E² Var(C) + C² Var(E) | `estimate_total_catch(design)` |
+| Variance method | Taylor linearization (default in survey) | Taylor linearization (default in tidycreel) |
 
 ------------------------------------------------------------------------
 
@@ -411,6 +421,7 @@ design, giving you full access to the survey package toolbox while still
 using tidycreel for the initial data setup.
 
 ``` r
+
 # Extract the internal svydesign object for advanced use
 internal_svy <- as_survey_design(design)
 # Now use any survey package function directly

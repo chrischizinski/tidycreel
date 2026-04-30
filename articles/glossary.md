@@ -6,6 +6,7 @@ reference: plain-language definitions first, then pointers to where each
 concept appears in the package workflow.
 
 ``` r
+
 library(tidycreel)
 ```
 

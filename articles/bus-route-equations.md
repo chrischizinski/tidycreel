@@ -31,16 +31,18 @@ below.
 
 **Formula:**
 
-$$\pi_{i} = p\_ site_{i} \times p\_ period$$
+``` math
+\pi_i = p\_site_i \times p\_period
+```
 
-where $p\_ site_{i}$ is the probability of selecting site $i$ during a
-given circuit pass, and $p\_ period$ is the probability that the
+where $`p\_site_i`$ is the probability of selecting site $`i`$ during a
+given circuit pass, and $`p\_period`$ is the probability that the
 sampling period is included in the survey. For uniform period sampling
-(all periods equally likely), $p\_ period$ is the same for all sites and
-circuits.
+(all periods equally likely), $`p\_period`$ is the same for all sites
+and circuits.
 
-**Statistical meaning:** $\pi_{i}$ is the *inclusion probability* — the
-marginal probability that unit $i$ is included in the sample under the
+**Statistical meaning:** $`\pi_i`$ is the *inclusion probability* — the
+marginal probability that unit $`i`$ is included in the sample under the
 two-stage design (stage 1: select a period; stage 2: traverse the
 circuit). Jones & Pollock (2012) treat this as the product of the two
 independent selection probabilities.
@@ -74,16 +76,18 @@ independent selection probabilities.
 
 **Formula:**
 
-$$\text{expansion}_{i} = \frac{n\_ counted_{i}}{n\_ interviewed_{i}}$$
+``` math
+\text{expansion}_i = \frac{n\_counted_i}{n\_interviewed_i}
+```
 
-where $n\_ counted_{i}$ is the total number of angler parties observed
-at site $i$ during the visit, and $n\_ interviewed_{i}$ is the number of
+where $`n\_counted_i`$ is the total number of angler parties observed at
+site $`i`$ during the visit, and $`n\_interviewed_i`$ is the number of
 those parties actually interviewed.
 
 **Statistical meaning:** When not all parties at a site are interviewed,
 the expansion factor rescales the interviewed sample to represent the
 full party count. If all parties are interviewed
-($n\_ counted = n\_ interviewed$), the expansion is 1 and no adjustment
+($`n\_counted = n\_interviewed`$), the expansion is 1 and no adjustment
 is needed. This is the case in Box 20.6 Example 1.
 
 **R implementation:**
@@ -103,16 +107,18 @@ is needed. This is the case in Box 20.6 Example 1.
 
 **Formula:**
 
-$$\widehat{E} = \sum\limits_{i = 1}^{n}\frac{e_{i}}{\pi_{i}}$$
+``` math
+\hat{E} = \sum_{i=1}^{n} \frac{e_i}{\pi_i}
+```
 
-where $e_{i}$ is the enumeration-expanded effort for interview $i$ (see
-Section 4 below), $\pi_{i}$ is the inclusion probability, and the sum
-runs over all interview records.
+where $`e_i`$ is the enumeration-expanded effort for interview $`i`$
+(see Section 4 below), $`\pi_i`$ is the inclusion probability, and the
+sum runs over all interview records.
 
 **Statistical meaning:** This is a Horvitz-Thompson (HT) total
-estimator. Dividing by $\pi_{i}$ is the HT inverse-probability weight:
-if a unit is sampled with probability $\pi_{i}$, it represents
-$1/\pi_{i}$ units in the population. Summing the weighted contributions
+estimator. Dividing by $`\pi_i`$ is the HT inverse-probability weight:
+if a unit is sampled with probability $`\pi_i`$, it represents
+$`1/\pi_i`$ units in the population. Summing the weighted contributions
 gives an unbiased estimator of the population total (under the design).
 
 **R implementation:**
@@ -124,10 +130,10 @@ gives an unbiased estimator of the population total (under the design).
     (computes expanded effort; see Section 4)
   - Line 83:
     `interviews$.contribution <- interviews$.e_i / interviews$.pi_i`
-    (computes $e_{i}/\pi_{i}$ for each row)
+    (computes $`e_i / \pi_i`$ for each row)
   - Line 96:
     `total_estimate <- sum(interviews$.contribution, na.rm = TRUE)`
-    (sums to produce $\widehat{E}$)
+    (sums to produce $`\hat{E}`$)
 - [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
   in `R/creel-estimates.R`, line 310: dispatches to
   `estimate_effort_br()` when `design$design_type == "bus_route"`.
@@ -141,12 +147,14 @@ the expansion step)
 
 **Formula:**
 
-$$e_{i} = \text{hours\_fished}_{i} \times \text{expansion}_{i}$$
+``` math
+e_i = \text{hours\_fished}_i \times \text{expansion}_i
+```
 
 **Statistical meaning:** The effort recorded in an interview represents
 only the fishing party interviewed. Multiplying by the expansion factor
-scales that effort to represent all $n\_ counted$ parties at the site,
-not just the $n\_ interviewed$ parties.
+scales that effort to represent all $`n\_counted`$ parties at the site,
+not just the $`n\_interviewed`$ parties.
 
 **R implementation:**
 
@@ -155,14 +163,16 @@ not just the $n\_ interviewed$ parties.
     `interviews$.e_i <- interviews[[effort_col]] * interviews$.expansion`
 
 When expansion = 1 (all parties interviewed, as in Box 20.6 Example 1),
-$e_{i}$ equals the raw effort. For example, Site C has 6 interviews each
+$`e_i`$ equals the raw effort. For example, Site C has 6 interviews each
 with `hours_fished = 57.5 / 6`:
 
-$$e_{C} = (57.5/6) \times (6/6) = 57.5{\mspace{6mu}\text{h per interview row}}$$
+``` math
+e_C = (57.5/6) \times (6/6) = 57.5 \text{ h per interview row}
+```
 
 Wait — more precisely, each of the 6 Site C rows contributes
-$e_{i} = (57.5/6) \times 1$, and these sum to 57.5 h before the
-$1/\pi_{C} = 5$ weight is applied, yielding the site contribution of
+$`e_i = (57.5/6) \times 1`$, and these sum to 57.5 h before the
+$`1/\pi_C = 5`$ weight is applied, yielding the site contribution of
 287.5 angler-hours.
 
 ------------------------------------------------------------------------
@@ -173,10 +183,12 @@ $1/\pi_{C} = 5$ weight is applied, yielding the site contribution of
 
 **Formula:**
 
-$$\widehat{H} = \sum\limits_{i = 1}^{n}\frac{h_{i}}{\pi_{i}}$$
+``` math
+\hat{H} = \sum_{i=1}^{n} \frac{h_i}{\pi_i}
+```
 
-where $h_{i} = \text{harvest}_{i} \times \text{expansion}_{i}$ is the
-enumeration-expanded harvest for interview $i$.
+where $`h_i = \text{harvest}_i \times \text{expansion}_i`$ is the
+enumeration-expanded harvest for interview $`i`$.
 
 **Statistical meaning:** Structurally identical to the effort estimator
 (Eq. 19.4) with harvest substituted for effort. Both are HT totals over
@@ -201,8 +213,8 @@ linearization in the R `survey` package (Lumley 2010).
 
 **Method:** tidycreel uses `survey::svytotal(~.contribution, svy_br)`
 where `svy_br` is an `svydesign` object constructed from the interview
-data. The `.contribution` column holds $e_{i}/\pi_{i}$ (or
-$h_{i}/\pi_{i}$). The `survey` package applies Taylor linearization to
+data. The `.contribution` column holds $`e_i / \pi_i`$ (or
+$`h_i / \pi_i`$). The `survey` package applies Taylor linearization to
 compute the standard error of this total.
 
 **R implementation:**
@@ -225,28 +237,28 @@ Bootstrap (`variance = "bootstrap"`) and jackknife
 
 ## 7. Summary Traceability Table
 
-| Quantity              | Formula                               | Source                          | Page   | R Location                                                                                                                                                                                               |
-|-----------------------|---------------------------------------|---------------------------------|--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Inclusion probability | πᵢ = p_site × p_period                | Jones & Pollock (2012)          | p. 912 | `creel-design.R`: [`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md), [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md) |
-| Enumeration expansion | expansion = n_counted / n_interviewed | Malvestuto (1996) Box 20.6      | p. 614 | `creel-design.R`: [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)                                                                                           |
-| Expanded effort       | eᵢ = hours_fished × expansion         | Malvestuto (1996) Box 20.6      | p. 614 | `creel-estimates-bus-route.R` line 69                                                                                                                                                                    |
-| HT effort total       | Ê = Σ(eᵢ/πᵢ)                          | Jones & Pollock (2012) Eq. 19.4 | p. 911 | `creel-estimates-bus-route.R` lines 83, 96                                                                                                                                                               |
-| Expanded harvest      | hᵢ = harvest × expansion              | Malvestuto (1996) Box 20.6      | p. 614 | `creel-estimates-bus-route.R` (harvest branch)                                                                                                                                                           |
-| HT harvest total      | Ĥ = Σ(hᵢ/πᵢ)                          | Jones & Pollock (2012) Eq. 19.5 | p. 912 | `creel-estimates-bus-route.R` lines 218–470                                                                                                                                                              |
-| Variance              | Taylor linearization on Σ(eᵢ/πᵢ)      | Lumley (2010)                   | —      | `survey::svytotal(~.contribution, svy_br)`                                                                                                                                                               |
+| Quantity | Formula | Source | Page | R Location |
+|----|----|----|----|----|
+| Inclusion probability | πᵢ = p_site × p_period | Jones & Pollock (2012) | p. 912 | `creel-design.R`: [`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md), [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md) |
+| Enumeration expansion | expansion = n_counted / n_interviewed | Malvestuto (1996) Box 20.6 | p. 614 | `creel-design.R`: [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md) |
+| Expanded effort | eᵢ = hours_fished × expansion | Malvestuto (1996) Box 20.6 | p. 614 | `creel-estimates-bus-route.R` line 69 |
+| HT effort total | Ê = Σ(eᵢ/πᵢ) | Jones & Pollock (2012) Eq. 19.4 | p. 911 | `creel-estimates-bus-route.R` lines 83, 96 |
+| Expanded harvest | hᵢ = harvest × expansion | Malvestuto (1996) Box 20.6 | p. 614 | `creel-estimates-bus-route.R` (harvest branch) |
+| HT harvest total | Ĥ = Σ(hᵢ/πᵢ) | Jones & Pollock (2012) Eq. 19.5 | p. 912 | `creel-estimates-bus-route.R` lines 218–470 |
+| Variance | Taylor linearization on Σ(eᵢ/πᵢ) | Lumley (2010) | — | `survey::svytotal(~.contribution, svy_br)` |
 
 ------------------------------------------------------------------------
 
 ## 8. Why πᵢ Matters: A Quantitative Example
 
-Some implementations use a fixed value such as $\pi_{i} = 0.5$ for all
-sites, or compute $\pi_{i}$ from interview timing data (e.g., wait time
+Some implementations use a fixed value such as $`\pi_i = 0.5`$ for all
+sites, or compute $`\pi_i`$ from interview timing data (e.g., wait time
 / circuit time). Both approaches are statistically incorrect: neither is
 the inclusion probability of the sampling design.
 
 The bias can be large and heterogeneous across sites. Using the
 Malvestuto (1996) Box 20.6 data, here is the effect of substituting
-$\pi_{i} = 0.5$ for the correct design-based values:
+$`\pi_i = 0.5`$ for the correct design-based values:
 
 | Site      | Correct πᵢ | eᵢ (h) | Correct eᵢ/πᵢ | Incorrect (π=0.5) eᵢ/πᵢ | Error    |
 |-----------|------------|--------|---------------|-------------------------|----------|
@@ -256,10 +268,10 @@ $\pi_{i} = 0.5$ for the correct design-based values:
 | D         | 0.025      | 5.0    | 200.0         | 10.0                    | −95%     |
 | **Total** |            |        | **847.5**     | **225.0**               | **−73%** |
 
-With $\pi_{i} = 0.5$, the total effort estimate would be 225.0
+With $`\pi_i = 0.5`$, the total effort estimate would be 225.0
 angler-hours — a 73% underestimate of the correct 847.5. The bias is not
 uniform: Site D is underestimated by 95% because it has the lowest
-correct $\pi_{i}$ (0.025) but the incorrect formula assigns it the same
+correct $`\pi_i`$ (0.025) but the incorrect formula assigns it the same
 weight as Site C (π = 0.5).
 
 The direction and magnitude of bias depend entirely on the distribution

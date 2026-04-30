@@ -17,6 +17,7 @@ simple three-step pattern:
 We start by loading the package and the example calendar dataset:
 
 ``` r
+
 library(tidycreel)
 
 # Load example calendar data
@@ -56,6 +57,7 @@ weekday/weekend stratification.
 Next, we attach instantaneous count observations to the design:
 
 ``` r
+
 # Load example count data
 data(example_counts)
 head(example_counts)
@@ -99,6 +101,7 @@ With count data attached, we can estimate total effort across the entire
 survey period:
 
 ``` r
+
 # Estimate total effort
 result <- estimate_effort(design)
 print(result)
@@ -125,6 +128,7 @@ We can also compute estimates separately for each stratum or group using
 the `by` parameter:
 
 ``` r
+
 # Estimate effort by day_type
 result_by_day <- estimate_effort(design, by = day_type)
 print(result_by_day)
@@ -159,6 +163,7 @@ uses Taylor linearization for variance estimation. The package also
 supports bootstrap and jackknife methods:
 
 ``` r
+
 # Bootstrap variance estimation (500 replicates)
 set.seed(123) # For reproducibility
 result_boot <- estimate_effort(design, variance = "bootstrap")
@@ -206,6 +211,7 @@ print(result_jk)
 All three methods work with grouped estimation as well:
 
 ``` r
+
 # Grouped estimation with bootstrap variance
 set.seed(123)
 result_grouped_boot <- estimate_effort(design, by = day_type, variance = "bootstrap")
@@ -234,6 +240,7 @@ that the schedule may carry a resolved `final_stratum` column from
 stratum should drive the analysis design.
 
 ``` r
+
 sched <- generate_schedule(
   start_date = "2027-07-24",
   end_date = "2027-08-04",

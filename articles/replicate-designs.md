@@ -6,13 +6,14 @@ tidycreel exposes three variance estimation methods through the
 [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md),
 and related functions:
 
-| `variance =`  | Description                           | Requires                         |
-|---------------|---------------------------------------|----------------------------------|
-| `"taylor"`    | Taylor linearization (default)        | ≥ 2 PSUs per stratum recommended |
-| `"bootstrap"` | Bootstrap resampling (500 replicates) | ≥ 2 PSUs per stratum             |
-| `"jackknife"` | Delete-one jackknife                  | ≥ 2 PSUs per stratum             |
+| `variance =` | Description | Requires |
+|----|----|----|
+| `"taylor"` | Taylor linearization (default) | ≥ 2 PSUs per stratum recommended |
+| `"bootstrap"` | Bootstrap resampling (500 replicates) | ≥ 2 PSUs per stratum |
+| `"jackknife"` | Delete-one jackknife | ≥ 2 PSUs per stratum |
 
 ``` r
+
 library(tidycreel)
 ```
 
@@ -25,6 +26,7 @@ the bundled `example_counts` and `example_interviews` datasets, which
 have 10 sampled weekdays and 4 sampled weekends.
 
 ``` r
+
 data("example_counts")
 data("example_interviews")
 
@@ -51,6 +53,7 @@ Pass `variance = "..."` to any estimator. The point estimate is
 identical across methods; only the SE and CI change.
 
 ``` r
+
 eff_taylor <- estimate_effort(design, variance = "taylor")
 eff_bootstrap <- estimate_effort(design, variance = "bootstrap")
 eff_jackknife <- estimate_effort(design, variance = "jackknife")
@@ -114,6 +117,7 @@ probability samples.
 All three methods work with the `by` argument.
 
 ``` r
+
 eff_grp_taylor <- estimate_effort(design, by = day_type, variance = "taylor")
 eff_grp_bootstrap <- estimate_effort(design, by = day_type, variance = "bootstrap")
 
@@ -137,6 +141,7 @@ stratum**. When a stratum has only 1 sampled day, tidycreel raises a
 structured error naming the stratum:
 
 ``` r
+
 # Build a minimal design with 1 sampled day per stratum
 dates_1psu <- c(as.Date("2024-06-03"), as.Date("2024-06-08"))
 cal_1psu <- data.frame(date = dates_1psu, day_type = c("weekday", "weekend"))
@@ -167,10 +172,10 @@ lonely-PSU adjustment.
 
 ## 6 Summary
 
-| Method    | Deterministic   | Min PSUs                   | Speed                 | When to prefer                                        |
-|:----------|:----------------|:---------------------------|:----------------------|:------------------------------------------------------|
-| taylor    | Yes             | 1 (with lonely-PSU adjust) | Fast                  | Default; simple designs                               |
-| bootstrap | No (stochastic) | 2                          | Slow (500 replicates) | Skewed counts; complex designs                        |
-| jackknife | Yes             | 2                          | Moderate              | Small samples; deterministic alternative to bootstrap |
+| Method | Deterministic | Min PSUs | Speed | When to prefer |
+|:---|:---|:---|:---|:---|
+| taylor | Yes | 1 (with lonely-PSU adjust) | Fast | Default; simple designs |
+| bootstrap | No (stochastic) | 2 | Slow (500 replicates) | Skewed counts; complex designs |
+| jackknife | Yes | 2 | Moderate | Small samples; deterministic alternative to bootstrap |
 
-Variance method comparison
+Variance method comparison {.table}

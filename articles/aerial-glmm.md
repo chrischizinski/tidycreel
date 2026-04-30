@@ -41,6 +41,7 @@ Poisson variability — representative of a scenario where a fixed
 morning-to-afternoon flight schedule is used throughout the season.
 
 ``` r
+
 library(tidycreel)
 data(example_aerial_glmm_counts)
 head(example_aerial_glmm_counts)
@@ -64,6 +65,7 @@ fishery is open each day — this enters the final expansion after the
 diurnal curve is integrated.
 
 ``` r
+
 aerial_cal <- unique(example_aerial_glmm_counts[, c("date", "day_type")])
 aerial_cal <- aerial_cal[order(aerial_cal$date), ]
 
@@ -111,6 +113,7 @@ negative-binomial GLMM with a quadratic temporal effect and a day-level
 random intercept:
 
 ``` r
+
 glmm_result <- estimate_effort_aerial_glmm(design, time_col = time_of_flight)
 #> Warning in theta.ml(Y, mu, weights = object@resp$weights, limit = limit, :
 #> iteration limit reached
@@ -150,6 +153,7 @@ for skewed count distributions. Use it for final production analyses;
 the delta method is appropriate for exploratory work.
 
 ``` r
+
 # Bootstrap CIs — use nboot = 500 for production analyses
 glmm_boot <- estimate_effort_aerial_glmm(
   design,
@@ -170,6 +174,7 @@ and
 on the same design object.
 
 ``` r
+
 # Build a complementary design with matching interview dates
 aerial_int_cal <- unique(example_aerial_counts[, c("date", "day_type")])
 aerial_int_cal <- aerial_int_cal[order(aerial_int_cal$date), ]
@@ -234,6 +239,7 @@ estimator corrects for the fixed-hour flight schedule by integrating the
 fitted diurnal curve.
 
 ``` r
+
 # Simple aerial estimator — no diurnal correction
 simple_result <- estimate_effort(design)
 
@@ -279,6 +285,7 @@ analyst prefers to control the model structure directly — pass a custom
 (`n_anglers`) and the time column by its exact name in the data.
 
 ``` r
+
 glmm_linear <- estimate_effort_aerial_glmm(
   design,
   time_col = time_of_flight,

@@ -25,6 +25,7 @@ workflow without
 ## Building a Sectioned Design
 
 ``` r
+
 library(tidycreel)
 
 data(example_sections_calendar)
@@ -91,6 +92,7 @@ standard error accounts for cross-section covariance (described in the
 Variance Aggregation section below).
 
 ``` r
+
 effort_est <- estimate_effort(design)
 print(effort_est$estimates)
 #> # A tibble: 4 × 10
@@ -119,6 +121,7 @@ on a sectioned design returns one row per section with **no
 `.lake_total` row**.
 
 ``` r
+
 cpue_est <- estimate_catch_rate(design)
 #> ℹ Using complete trips for CPUE estimation
 #>   (n=27, 100% of 27 interviews) [default]
@@ -139,6 +142,7 @@ print(cpue_est$estimates)
 > on a design without section registration.
 
 ``` r
+
 # Lake-wide catch rate: build an unsectioned design using the same data
 design_nosections <- creel_design(example_sections_calendar, date = date, strata = day_type)
 design_nosections <- add_counts(design_nosections, example_sections_counts)
@@ -170,6 +174,7 @@ Total catch combines effort and catch rate within each section:
 a `.lake_total` row is appended to the output.
 
 ``` r
+
 catch_est <- estimate_total_catch(design, aggregate_sections = TRUE)
 print(catch_est$estimates)
 #> # A tibble: 4 × 8
@@ -189,6 +194,7 @@ combined with the highest effort, making it the largest contributor. The
 to the lake-wide total catch.
 
 ``` r
+
 harvest_est <- estimate_total_harvest(design, aggregate_sections = TRUE)
 print(harvest_est$estimates)
 #> # A tibble: 4 × 8
@@ -228,6 +234,7 @@ day, use the default `method = "correlated"`. If different sections have
 separate, non-overlapping calendars, use `method = "independent"`.
 
 ``` r
+
 # Default: accounts for cross-section covariance (shared-calendar designs)
 estimate_effort(design, method = "correlated")$estimates
 #> # A tibble: 4 × 10
@@ -262,6 +269,7 @@ This prevents silent omission of sections that should have been
 observed.
 
 ``` r
+
 north_central_counts <- example_sections_counts[
   example_sections_counts$section != "South",
 ]

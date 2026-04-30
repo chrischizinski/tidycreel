@@ -11,19 +11,19 @@ data collection structure, effort estimation, and catch estimation.
 
 ## Instantaneous vs. Progressive Counts
 
-| Feature          | Instantaneous                        | Progressive                                          |
-|------------------|--------------------------------------|------------------------------------------------------|
-| Observer visits  | One spot at a random time            | Full circuit of the section                          |
-| Count meaning    | Anglers visible at a moment          | Anglers encountered during circuit                   |
-| Estimator        | ${\widehat{E}}_{d} = C \times T_{d}$ | ${\widehat{E}}_{d} = C \times T_{d}$                 |
-| Additional input | —                                    | `circuit_time` (τ) and `period_length_col` ($T_{d}$) |
-| Circuit time τ   | Not needed                           | Required (cancels algebraically)                     |
+| Feature | Instantaneous | Progressive |
+|----|----|----|
+| Observer visits | One spot at a random time | Full circuit of the section |
+| Count meaning | Anglers visible at a moment | Anglers encountered during circuit |
+| Estimator | $`\hat{E}_d = C \times T_d`$ | $`\hat{E}_d = C \times T_d`$ |
+| Additional input | — | `circuit_time` (τ) and `period_length_col` ($`T_d`$) |
+| Circuit time τ | Not needed | Required (cancels algebraically) |
 
 The estimators are algebraically identical once the progressive count
 formula is expanded:
-${\widehat{E}}_{d} = C \times \tau \times \left( T_{d}/\tau \right) = C \times T_{d}$.
-The circuit time $\tau$ cancels, so only the raw count $C$ and the total
-open hours $T_{d}$ enter the final calculation. Nevertheless, $\tau$
+$`\hat{E}_d = C \times \tau \times (T_d / \tau) = C \times T_d`$. The
+circuit time $`\tau`$ cancels, so only the raw count $`C`$ and the total
+open hours $`T_d`$ enter the final calculation. Nevertheless, $`\tau`$
 must be supplied to
 [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
 as a check that the field protocol (circuit duration) is documented.
@@ -38,7 +38,7 @@ Progressive counts are preferred when:
 - The access route is fully enumerable in one traverse within a count
   period
 - Observer movement is fast relative to angler turnover (circuit time \<
-  30% of $T_{d}$)
+  30% of $`T_d`$)
 
 Instantaneous counts are preferred when:
 
@@ -52,12 +52,12 @@ Instantaneous counts are preferred when:
 A progressive count dataset needs:
 
 1.  **Calendar** — sampled dates with `day_type` and `open_hours`
-    ($T_{d}$)
-2.  **Count data** — one row per sampled day with raw angler count ($C$)
-    and a column recording $T_{d}$ (the same `open_hours` value, or an
-    observed value if the site closed early)
+    ($`T_d`$)
+2.  **Count data** — one row per sampled day with raw angler count
+    ($`C`$) and a column recording $`T_d`$ (the same `open_hours` value,
+    or an observed value if the site closed early)
 3.  **`circuit_time`** — a single numeric value (hours) for the
-    traversal duration $\tau$
+    traversal duration $`\tau`$
 
 ## A Complete Example
 
@@ -65,9 +65,10 @@ A progressive count dataset needs:
 
 We survey a 25-km reservoir access road over a 4-week season
 (July–July). A single crew completes the full circuit in 2 hours
-($\tau = 2$ h). The access road is open 10 hours per day.
+($`\tau = 2`$ h). The access road is open 10 hours per day.
 
 ``` r
+
 library(tidycreel)
 
 # Four-week season: 10 weekdays, 8 weekend days sampled
@@ -105,6 +106,7 @@ column records the actual open hours for that day (here always 10, but
 could vary if a site closed early due to weather).
 
 ``` r
+
 set.seed(7)
 counts <- data.frame(
   date = calendar$date,
@@ -121,10 +123,11 @@ counts <- data.frame(
 
 ### Attaching Progressive Counts
 
-Specify `count_type = "progressive"`, the circuit time $\tau$ in hours,
-and the column holding $T_{d}$:
+Specify `count_type = "progressive"`, the circuit time $`\tau`$ in
+hours, and the column holding $`T_d`$:
 
 ``` r
+
 design <- add_counts(
   design, counts,
   count_type = "progressive",
@@ -143,11 +146,11 @@ head(design$counts, 4)
 #> 4 2024-07-04  weekday       120
 ```
 
-The `n_anglers` column now holds ${\widehat{E}}_{d} = C \times T_{d}$,
-not the raw count. For the first day (18 anglers × 10 hours = 180
-angler-hours):
+The `n_anglers` column now holds $`\hat{E}_d = C \times T_d`$, not the
+raw count. For the first day (18 anglers × 10 hours = 180 angler-hours):
 
 ``` r
+
 # Verify: C × T_d = 18 × 10 = 180
 design$counts$n_anglers[1]
 #> [1] 180
@@ -156,6 +159,7 @@ design$counts$n_anglers[1]
 ### Effort Estimation
 
 ``` r
+
 effort <- estimate_effort(design)
 effort$estimates
 #> # A tibble: 1 × 7
@@ -175,6 +179,7 @@ Interviews are collected during or after the circuit traversal. Attach
 them exactly as in any other survey type:
 
 ``` r
+
 set.seed(7)
 n_int <- 120 # interviews collected across the season
 
@@ -203,6 +208,7 @@ design <- add_interviews(
 ### Catch Rate and Total Catch
 
 ``` r
+
 cpue <- estimate_catch_rate(design)
 cpue$estimates
 #> # A tibble: 1 × 5
@@ -226,6 +232,7 @@ combined standard error.
 ### Harvest Rate and Total Harvest
 
 ``` r
+
 harvest_rate <- estimate_harvest_rate(design)
 harvest_rate$estimates
 #> # A tibble: 1 × 5
@@ -243,13 +250,16 @@ total_harvest$estimates
 
 ## Pope et al. Worked Example
 
-Pope et al. (in press) give the canonical calculation: $C = 234$ anglers
-encountered during a $\tau = 2$ h circuit on a day with $T_{d} = 8$ open
-hours.
+Pope et al. (in press) give the canonical calculation: $`C = 234`$
+anglers encountered during a $`\tau = 2`$ h circuit on a day with
+$`T_d = 8`$ open hours.
 
-$${\widehat{E}}_{d} = 234 \times 8 = 1,872{\mspace{6mu}\text{angler-hours}}$$
+``` math
+\hat{E}_d = 234 \times 8 = 1{,}872 \text{ angler-hours}
+```
 
 ``` r
+
 cal_pope <- data.frame(
   date       = as.Date(c("2024-06-01", "2024-06-02")),
   day_type   = c("weekday", "weekday"),
@@ -290,6 +300,7 @@ For the morning–evening case, use `count_time_col` to identify the
 circuit within each day:
 
 ``` r
+
 # Two circuits per day (morning and evening traversals)
 cal_2p <- data.frame(
   date       = rep(as.Date(c("2024-07-01", "2024-07-02", "2024-07-06", "2024-07-07")), 1),
@@ -333,6 +344,7 @@ the morning and evening circuits within each day.
 ## Assemble a Summary Report
 
 ``` r
+
 summary_tbl <- season_summary(list(
   effort  = effort,
   catch   = total_catch,

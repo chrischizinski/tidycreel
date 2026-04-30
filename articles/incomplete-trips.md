@@ -133,6 +133,7 @@ Scientifically rigorous standards for roving-access surveys include
 ### Default Workflow: Complete Trips Only
 
 ``` r
+
 library(tidycreel)
 
 # Standard workflow using complete trips (default)
@@ -171,6 +172,7 @@ Best practices require **≥10% of interviews to be complete trips**
 (Pollock et al. 1994). tidycreel enforces this automatically:
 
 ``` r
+
 # If complete trip percentage drops below 10%, you'll see:
 # Warning: Only 8% of interviews (n=5) are complete trips
 # Best practice: ≥10% of interviews should be complete trips
@@ -216,6 +218,7 @@ pool.
 ### What NOT to Do
 
 ``` r
+
 # WRONG: Do not manually pool trip types
 all_interviews <- rbind(complete_data, incomplete_data)
 estimate_catch_rate(design_with_all_data) # INVALID — always, even after validation passes
@@ -249,6 +252,7 @@ workflow:
 ### Step 1: Load Data with Both Trip Types
 
 ``` r
+
 library(tidycreel)
 
 # Your survey data should have trip_status field
@@ -264,6 +268,7 @@ table(your_interviews$trip_status)
 ### Step 2: Create Design and Attach Data
 
 ``` r
+
 design <- creel_design(your_calendar, date = date, strata = day_type) |>
   add_counts(your_counts) |>
   add_interviews(your_interviews,
@@ -277,6 +282,7 @@ design <- creel_design(your_calendar, date = date, strata = day_type) |>
 ### Step 3: Run TOST Equivalence Testing
 
 ``` r
+
 # Validate incomplete trips using TOST
 validation <- validate_incomplete_trips(design,
   catch = catch_total,
@@ -343,6 +349,7 @@ within a threshold.
 ### Step 5: View Validation Plot
 
 ``` r
+
 # Print method automatically shows plot
 print(validation) # Plot appears after text output
 
@@ -376,6 +383,7 @@ Here’s a realistic scenario where incomplete trip validation passes
 because catch rates are stationary throughout the day.
 
 ``` r
+
 library(tidycreel)
 
 # Simulate data where catch rates are similar for complete vs incomplete
@@ -478,6 +486,7 @@ print(validation_pass)
 **Next steps after passing validation:**
 
 ``` r
+
 # Now safe to use incomplete trips
 cpue_incomplete <- estimate_catch_rate(design, use_trips = "incomplete")
 print(cpue_incomplete)
@@ -493,6 +502,7 @@ Here’s a realistic scenario where validation fails because early-morning
 anglers catch fish at higher rates than afternoon anglers.
 
 ``` r
+
 library(tidycreel)
 set.seed(123)
 
@@ -596,6 +606,7 @@ print(validation_fail)
 **Correct action after failing validation:**
 
 ``` r
+
 # DO NOT use incomplete trips
 # Stick with default complete trip estimation
 cpue_complete <- estimate_catch_rate(design_biased) # Uses complete trips (default)
@@ -616,6 +627,7 @@ For research purposes or to understand your survey dynamics, use
 side-by-side without statistical testing.
 
 ``` r
+
 # Compare complete vs incomplete estimates
 cpue_diagnostic <- estimate_catch_rate(design,
   catch = catch_total,
@@ -676,6 +688,7 @@ When estimating CPUE by strata (e.g., by day type), validate within each
 group:
 
 ``` r
+
 # Validate with grouping
 validation_grouped <- validate_incomplete_trips(design,
   catch = catch_total,
@@ -755,6 +768,7 @@ The default equivalence threshold is **±20%** of the complete trip
 estimate, appropriate for ecological field data. You can customize this:
 
 ``` r
+
 # Use stricter threshold (±15%)
 options(tidycreel.equivalence_threshold = 0.15)
 validation_strict <- validate_incomplete_trips(design,
@@ -789,6 +803,7 @@ variance and bias estimates. tidycreel automatically truncates short
 incomplete trips using the Hoenig et al. (1997) recommended threshold:
 
 ``` r
+
 # Default: truncate incomplete trips <0.5 hours (30 minutes)
 cpue_incomplete <- estimate_catch_rate(design,
   use_trips = "incomplete",

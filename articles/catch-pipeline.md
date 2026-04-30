@@ -24,8 +24,8 @@ The pipeline has three stages:
 ## From Interviews to Catch Rate
 
 Each creel interview captures two key numbers for a completed trip: the
-angler’s total catch $c_{i}$ and the total time they spent fishing
-$h_{i}$ (their trip duration in hours). Catch per unit effort (CPUE) is
+angler’s total catch $`c_i`$ and the total time they spent fishing
+$`h_i`$ (their trip duration in hours). Catch per unit effort (CPUE) is
 catch per angler-hour.
 
 The challenge is that we observe only a sample of anglers — those who
@@ -40,13 +40,15 @@ Two estimators are commonly used for this purpose.
 The ratio-of-means estimator divides total sample catch by total sample
 hours:
 
-$${\widehat{R}}_{\text{ROM}} = \frac{\sum\limits_{i = 1}^{n}c_{i}}{\sum\limits_{i = 1}^{n}h_{i}}$$
+``` math
+\hat{R}_{\text{ROM}} = \frac{\sum_{i=1}^{n} c_i}{\sum_{i=1}^{n} h_i}
+```
 
 where:
 
-- $c_{i}$ is the catch of angler $i$
-- $h_{i}$ is the trip duration (hours fished) of angler $i$
-- $n$ is the number of interviews
+- $`c_i`$ is the catch of angler $`i`$
+- $`h_i`$ is the trip duration (hours fished) of angler $`i`$
+- $`n`$ is the number of interviews
 
 Plain-language interpretation: **total catch in the sample divided by
 total hours in the sample.**
@@ -61,12 +63,14 @@ dominate the estimate when trip durations are variable.
 The mean-of-ratios estimator computes each angler’s individual catch
 rate first, then averages across anglers:
 
-$${\widehat{R}}_{\text{MOR}} = \frac{1}{n}\sum\limits_{i = 1}^{n}\frac{c_{i}}{h_{i}}$$
+``` math
+\hat{R}_{\text{MOR}} = \frac{1}{n} \sum_{i=1}^{n} \frac{c_i}{h_i}
+```
 
 where:
 
-- $c_{i}/h_{i}$ is the catch rate for angler $i$
-- $n$ is the number of interviews
+- $`c_i / h_i`$ is the catch rate for angler $`i`$
+- $`n`$ is the number of interviews
 
 Plain-language interpretation: **the average of each angler’s individual
 catch rate.**
@@ -81,7 +85,7 @@ time even though the trip has not finished.
 
 Consider ten anglers interviewed on a single survey day:
 
-| Angler | Catch ($c_{i}$) | Hours ($h_{i}$) | Individual CPUE ($c_{i}/h_{i}$) |
+| Angler | Catch ($`c_i`$) | Hours ($`h_i`$) | Individual CPUE ($`c_i / h_i`$) |
 |--------|-----------------|-----------------|---------------------------------|
 | 1      | 2               | 4               | 0.50                            |
 | 2      | 0               | 1               | 0.00                            |
@@ -96,11 +100,15 @@ Consider ten anglers interviewed on a single survey day:
 
 **ROM by hand:**
 
-$${\widehat{R}}_{\text{ROM}} = \frac{2 + 0 + 6 + 1 + 3 + 4 + 0 + 2 + 1 + 5}{4 + 1 + 3 + 2 + 2 + 4 + 2 + 2 + 1 + 3} = \frac{24}{24} = 1.00{\mspace{6mu}\text{fish/hr}}$$
+``` math
+\hat{R}_{\text{ROM}} = \frac{2+0+6+1+3+4+0+2+1+5}{4+1+3+2+2+4+2+2+1+3} = \frac{24}{24} = 1.00 \text{ fish/hr}
+```
 
 **MOR by hand:**
 
-$${\widehat{R}}_{\text{MOR}} = \frac{0.50 + 0.00 + 2.00 + 0.50 + 1.50 + 1.00 + 0.00 + 1.00 + 1.00 + 1.67}{10} = \frac{9.17}{10} = 0.917{\mspace{6mu}\text{fish/hr}}$$
+``` math
+\hat{R}_{\text{MOR}} = \frac{0.50+0.00+2.00+0.50+1.50+1.00+0.00+1.00+1.00+1.67}{10} = \frac{9.17}{10} = 0.917 \text{ fish/hr}
+```
 
 The estimates differ because Anglers 2 and 7 each fished only 1–2 hours
 with zero catch. Under ROM, their unproductive hours are diluted across
@@ -111,6 +119,7 @@ influence on the average).
 We can verify these arithmetic steps in R directly:
 
 ``` r
+
 # Ten-angler example
 catch <- c(2, 0, 6, 1, 3, 4, 0, 2, 1, 5)
 hours <- c(4, 1, 3, 2, 2, 4, 2, 2, 1, 3)
@@ -131,6 +140,7 @@ Now confirm the ROM result with
 from tidycreel:
 
 ``` r
+
 library(tidycreel)
 
 mini_calendar <- data.frame(
@@ -218,10 +228,12 @@ diverge most when a few anglers have very short or very long trips.
 
 Total catch is the product of estimated effort and estimated catch rate:
 
-$$\widehat{TC} = \widehat{E} \times \widehat{R}$$
+``` math
+\hat{TC} = \hat{E} \times \hat{R}
+```
 
-where $\widehat{E}$ is the estimated total angler-hours for the survey
-period and $\widehat{R}$ is the estimated catch rate (fish per
+where $`\hat{E}`$ is the estimated total angler-hours for the survey
+period and $`\hat{R}`$ is the estimated catch rate (fish per
 angler-hour). Both quantities are estimated with uncertainty, so the
 uncertainty in their product requires special treatment.
 
@@ -236,62 +248,68 @@ scaled by the other factor, add up to give the total variance.
 
 For a product of two independent estimates, the delta method gives:
 
-$$\text{Var}\left( \widehat{TC} \right) \approx {\widehat{E}}^{2} \cdot \text{Var}\left( \widehat{R} \right) + {\widehat{R}}^{2} \cdot \text{Var}\left( \widehat{E} \right) + 2\widehat{E}\widehat{R} \cdot \text{Cov}\left( \widehat{E},\widehat{R} \right)$$
+``` math
+\text{Var}(\hat{TC}) \approx \hat{E}^2 \cdot \text{Var}(\hat{R}) + \hat{R}^2 \cdot \text{Var}(\hat{E}) + 2\hat{E}\hat{R} \cdot \text{Cov}(\hat{E}, \hat{R})
+```
 
 where:
 
-- $\widehat{E}$ is the estimated effort
-- $\widehat{R}$ is the estimated catch rate (CPUE)
-- $\text{Var}\left( \widehat{R} \right)$ is the variance of the catch
-  rate estimate
-- $\text{Var}\left( \widehat{E} \right)$ is the variance of the effort
-  estimate
-- $\text{Cov}\left( \widehat{E},\widehat{R} \right)$ is the covariance
-  between effort and catch rate
+- $`\hat{E}`$ is the estimated effort
+- $`\hat{R}`$ is the estimated catch rate (CPUE)
+- $`\text{Var}(\hat{R})`$ is the variance of the catch rate estimate
+- $`\text{Var}(\hat{E})`$ is the variance of the effort estimate
+- $`\text{Cov}(\hat{E}, \hat{R})`$ is the covariance between effort and
+  catch rate
 
 **Interpreting the three terms:**
 
-1.  ${\widehat{E}}^{2} \cdot \text{Var}\left( \widehat{R} \right)$ — How
-    much of the total-catch uncertainty comes from imprecise catch-rate
-    estimation, treating effort as if it were known exactly.
+1.  $`\hat{E}^2 \cdot \text{Var}(\hat{R})`$ — How much of the
+    total-catch uncertainty comes from imprecise catch-rate estimation,
+    treating effort as if it were known exactly.
 
-2.  ${\widehat{R}}^{2} \cdot \text{Var}\left( \widehat{E} \right)$ — How
-    much of the total-catch uncertainty comes from imprecise effort
-    estimation, treating catch rate as if it were known exactly.
+2.  $`\hat{R}^2 \cdot \text{Var}(\hat{E})`$ — How much of the
+    total-catch uncertainty comes from imprecise effort estimation,
+    treating catch rate as if it were known exactly.
 
-3.  $2\widehat{E}\widehat{R} \cdot \text{Cov}\left( \widehat{E},\widehat{R} \right)$
-    — A covariance adjustment. This term is usually small. tidycreel
-    assumes zero covariance between the effort and catch-rate samples
-    because counts and interviews are collected through independent
-    sampling processes, so this term vanishes and the formula simplifies
-    to the first two terms only.
+3.  $`2\hat{E}\hat{R} \cdot \text{Cov}(\hat{E}, \hat{R})`$ — A
+    covariance adjustment. This term is usually small. tidycreel assumes
+    zero covariance between the effort and catch-rate samples because
+    counts and interviews are collected through independent sampling
+    processes, so this term vanishes and the formula simplifies to the
+    first two terms only.
 
 ### Worked Numeric Example
 
 Suppose effort estimation on this survey day produced an estimate of
-$\widehat{E} = 40$ angler-hours with
-$\text{SE}\left( \widehat{E} \right) = 8$ (so
-$\text{Var}\left( \widehat{E} \right) = 64$), and the ROM catch rate
-estimate from the ten-angler sample is $\widehat{R} = 1.00$ fish/hr with
-$\text{SE}\left( \widehat{R} \right) = 0.30$ (so
-$\text{Var}\left( \widehat{R} \right) = 0.09$).
+$`\hat{E} = 40`$ angler-hours with $`\text{SE}(\hat{E}) = 8`$ (so
+$`\text{Var}(\hat{E}) = 64`$), and the ROM catch rate estimate from the
+ten-angler sample is $`\hat{R} = 1.00`$ fish/hr with
+$`\text{SE}(\hat{R}) = 0.30`$ (so $`\text{Var}(\hat{R}) = 0.09`$).
 
 **Term 1** (catch-rate uncertainty):
 
-$${\widehat{E}}^{2} \cdot \text{Var}\left( \widehat{R} \right) = 40^{2} \times 0.09 = 1600 \times 0.09 = 144$$
+``` math
+\hat{E}^2 \cdot \text{Var}(\hat{R}) = 40^2 \times 0.09 = 1600 \times 0.09 = 144
+```
 
 **Term 2** (effort uncertainty):
 
-$${\widehat{R}}^{2} \cdot \text{Var}\left( \widehat{E} \right) = 1.00^{2} \times 64 = 1 \times 64 = 64$$
+``` math
+\hat{R}^2 \cdot \text{Var}(\hat{E}) = 1.00^2 \times 64 = 1 \times 64 = 64
+```
 
 **Total variance** (covariance term is zero):
 
-$$\text{Var}\left( \widehat{TC} \right) \approx 144 + 64 = 208$$
+``` math
+\text{Var}(\hat{TC}) \approx 144 + 64 = 208
+```
 
-$$\text{SE}\left( \widehat{TC} \right) = \sqrt{208} \approx 14.4{\mspace{6mu}\text{fish}}$$
+``` math
+\text{SE}(\hat{TC}) = \sqrt{208} \approx 14.4 \text{ fish}
+```
 
-**Total catch estimate:** $\widehat{TC} = 40 \times 1.00 = 40$ fish,
-with SE $\approx$ 14.4 fish (CV $\approx$ 36%).
+**Total catch estimate:** $`\hat{TC} = 40 \times 1.00 = 40`$ fish, with
+SE $`\approx`$ 14.4 fish (CV $`\approx`$ 36%).
 
 In this example, Term 1 contributes 144 / 208 = 69% of the total
 variance, so catch-rate imprecision (from the small interview sample of
@@ -304,6 +322,7 @@ which span a full survey season and provide enough sampling days for
 variance estimation:
 
 ``` r
+
 data(example_calendar)
 data(example_counts)
 data(example_interviews)
@@ -338,9 +357,9 @@ print(total)
 #> 1     858.  48.4     763.     953.    17
 ```
 
-The `estimate` column is $\widehat{E} \times \widehat{R}$. The `se`
-column is the delta method standard error combining uncertainty from
-both the effort estimate (counts variance) and the catch rate estimate
+The `estimate` column is $`\hat{E} \times \hat{R}`$. The `se` column is
+the delta method standard error combining uncertainty from both the
+effort estimate (counts variance) and the catch rate estimate
 (interviews variance). Dividing `se` by `estimate` gives the CV, which
 you can compare to your target precision.
 

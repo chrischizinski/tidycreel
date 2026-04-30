@@ -23,6 +23,7 @@ We start with the same design and count data workflow from the “Getting
 Started” vignette:
 
 ``` r
+
 library(tidycreel)
 
 # Load example calendar and counts
@@ -60,6 +61,7 @@ Next, we attach interview data containing catch and effort for complete
 trips:
 
 ``` r
+
 # Load example interview data
 data(example_interviews)
 head(example_interviews)
@@ -124,6 +126,7 @@ not need to align on specific dates.
 With interview data attached, we can estimate catch per unit effort:
 
 ``` r
+
 # Estimate CPUE
 cpue_est <- estimate_catch_rate(design)
 #> ℹ Using complete trips for CPUE estimation
@@ -159,6 +162,7 @@ For details on the ratio-of-means formula and variance calculation, see
 We can combine the effort and CPUE estimates to compute total catch:
 
 ``` r
+
 # Estimate total catch
 total_catch_est <- estimate_total_catch(design)
 print(total_catch_est)
@@ -193,6 +197,7 @@ harvest (fish kept). We can estimate harvest per unit effort (HPUE) and
 total harvest:
 
 ``` r
+
 # Estimate HPUE
 hpue_est <- estimate_harvest_rate(design)
 #> Warning: Small sample size for harvest estimation.
@@ -240,6 +245,7 @@ Like effort estimation, CPUE and total catch functions support grouped
 estimation using the `by` parameter:
 
 ``` r
+
 # Estimate CPUE by day_type (not evaluated - example data too small)
 cpue_by_day <- estimate_catch_rate(design, by = day_type)
 
@@ -260,6 +266,7 @@ methods. The default is Taylor linearization, but bootstrap and
 jackknife are also available:
 
 ``` r
+
 # Bootstrap variance estimation
 set.seed(42) # For reproducibility
 cpue_boot <- estimate_catch_rate(design, variance = "bootstrap")
@@ -299,6 +306,7 @@ when working with complex grouped estimates.
 Here’s the full pipeline in a single workflow:
 
 ``` r
+
 # Load data
 data(example_calendar)
 data(example_counts)

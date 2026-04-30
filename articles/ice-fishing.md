@@ -10,7 +10,9 @@ site), so there is no site-level subsampling. This means the site
 inclusion probability is always `p_site = 1.0`, and the overall
 inclusion probability reduces to just the period sampling probability:
 
-$$\pi_{i} = p\_ site \times p\_ period = 1.0 \times p\_ period = p\_ period$$
+``` math
+\pi_i = p\_site \times p\_period = 1.0 \times p\_period = p\_period
+```
 
 Because of this, ice fishing surveys are implemented as a *degenerate*
 bus-route design. All the bus-route Horvitz-Thompson estimators apply
@@ -52,6 +54,7 @@ Nebraska ice fishing creel survey at Lake McConaughy in January-February
 ice fishing pressure is concentrated on Saturday and Sunday.
 
 ``` r
+
 library(tidycreel)
 
 data(example_ice_sampling_frame)
@@ -98,6 +101,7 @@ determines the column label in downstream output. We use
 all days).
 
 ``` r
+
 design <- creel_design(
   example_ice_sampling_frame,
   date = date,
@@ -128,6 +132,7 @@ Omitting `effort_type` or supplying an unrecognized value produces an
 informative error:
 
 ``` r
+
 creel_design(
   example_ice_sampling_frame,
   date = date,
@@ -150,6 +155,7 @@ counted at the access point versus how many were actually interviewed
 during each visit, providing the enumeration expansion factor.
 
 ``` r
+
 design <- add_interviews(
   design,
   example_ice_interviews,
@@ -177,6 +183,7 @@ The output column is labeled `total_effort_hr_on_ice` because the design
 was built with `effort_type = "time_on_ice"`.
 
 ``` r
+
 effort_est <- estimate_effort(design)
 print(effort_est)
 #> 
@@ -198,6 +205,7 @@ column from the interview data. The output column is then labeled
 `total_effort_hr_active`.
 
 ``` r
+
 design_aft <- creel_design(
   example_ice_sampling_frame,
   date        = date,
@@ -248,6 +256,7 @@ anglers. This uses the same Horvitz-Thompson framework with the
 interview data split by the grouping variable.
 
 ``` r
+
 effort_by_shelter <- estimate_effort(design, by = shelter_mode)
 print(effort_by_shelter)
 #> 
@@ -280,6 +289,7 @@ By default, only complete trips are used to avoid the well-known
 incomplete-trip bias in effort-based catch rates.
 
 ``` r
+
 cpue_est <- estimate_catch_rate(design)
 #> ℹ Using complete trips for CPUE estimation
 #>   (n=60, 83.3% of 72 interviews) [default]
@@ -309,6 +319,7 @@ incomplete) for the effort component and only complete trips for the
 catch rate, following standard creel survey methodology.
 
 ``` r
+
 total_catch_est <- estimate_total_catch(design)
 print(total_catch_est)
 #> 

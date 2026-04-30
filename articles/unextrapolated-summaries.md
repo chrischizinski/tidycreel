@@ -30,6 +30,7 @@ Estimation” vignette.
 Start by assembling a complete design using all v0.5.0 data layers:
 
 ``` r
+
 library(tidycreel)
 
 # Load example datasets
@@ -125,6 +126,7 @@ High refusal rates can bias estimates if refusers differ systematically
 from participants.
 
 ``` r
+
 summarize_refusals(design)
 #>   month participation  N percent
 #> 1  June      accepted 22     100
@@ -141,6 +143,7 @@ sample.
 ### Day Type
 
 ``` r
+
 summarize_by_day_type(design)
 #>   month day_type  N percent
 #> 1  June  weekday 13    59.1
@@ -150,6 +153,7 @@ summarize_by_day_type(design)
 ### Angler Type
 
 ``` r
+
 summarize_by_angler_type(design)
 #>   month angler_type  N percent
 #> 1  June        bank 13    59.1
@@ -159,6 +163,7 @@ summarize_by_angler_type(design)
 ### Fishing Method
 
 ``` r
+
 summarize_by_method(design)
 #>   month     method  N percent
 #> 1  June artificial  7    31.8
@@ -169,6 +174,7 @@ summarize_by_method(design)
 ### Species Sought
 
 ``` r
+
 summarize_by_species_sought(design)
 #>   month species  N percent
 #> 1  June    bass  6    27.3
@@ -183,6 +189,7 @@ counts parties that caught at least one fish of their target species (as
 recorded in catch data), broken down by angler type and species sought.
 
 ``` r
+
 summarize_successful_parties(design)
 #>   angler_type species_sought N_total N_successful percent
 #> 1        bank           bass       5            0     0.0
@@ -196,6 +203,7 @@ summarize_successful_parties(design)
 ### Trip Length Distribution
 
 ``` r
+
 summarize_by_trip_length(design)
 #>    trip_length_bin N percent
 #> 1            [0,1) 2     9.1
@@ -226,6 +234,7 @@ fishing pressure across the survey period.
 ### CWS Rates by Species Sought
 
 ``` r
+
 summarize_cws_rates(design, by = species_sought)
 #>   species_sought  N  mean_rate         se    ci_lower  ci_upper
 #> 1           bass  6 0.05208333 0.05208333 -0.08180114 0.1859678
@@ -236,6 +245,7 @@ summarize_cws_rates(design, by = species_sought)
 ### CWS Rates Collapsed Across All Groupings
 
 ``` r
+
 summarize_cws_rates(design, by = NULL)
 #>    N mean_rate        se   ci_lower  ci_upper
 #> 1 22 0.2980249 0.1298807 0.02792314 0.5681266
@@ -244,6 +254,7 @@ summarize_cws_rates(design, by = NULL)
 ### HWS Rates
 
 ``` r
+
 summarize_hws_rates(design, by = species_sought)
 #>   species_sought  N mean_rate        se    ci_lower  ci_upper
 #> 1           bass  6 0.0312500 0.0312500 -0.04908068 0.1115807
@@ -265,6 +276,7 @@ can be summarized by catch type and species.
 ### Harvest Lengths
 
 ``` r
+
 summarize_length_freq(design, type = "harvest", by = species, bin_width = 25)
 #>   species length_bin N percent cumulative_percent
 #> 1    bass  [225,250) 1    25.0               25.0
@@ -284,6 +296,7 @@ Release lengths in `example_lengths` are stored in pre-binned format.
 handles this automatically:
 
 ``` r
+
 summarize_length_freq(design, type = "release", by = species)
 #>   species length_bin N percent cumulative_percent
 #> 1    bass  [275,276) 4    44.4               44.4
@@ -297,6 +310,7 @@ summarize_length_freq(design, type = "release", by = species)
 ### All-Catch Lengths
 
 ``` r
+
 summarize_length_freq(design, type = "catch", by = species, bin_width = 25)
 #>    species length_bin N percent cumulative_percent
 #> 1     bass  [225,250) 1     7.7                7.7
@@ -323,6 +337,7 @@ data) using the ratio-of-means estimator.
 ### Catch Per Unit Effort by Species
 
 ``` r
+
 estimate_catch_rate(design, by = species)
 #> Warning: Small sample size for CPUE estimation.
 #> ! Sample size is 17. Ratio estimates are more stable with n >= 30.
@@ -351,6 +366,7 @@ estimate_catch_rate(design, by = species)
 ### Total Catch by Species
 
 ``` r
+
 estimate_total_catch(design, by = species)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -371,6 +387,7 @@ estimate_total_catch(design, by = species)
 ### Total Harvest by Species
 
 ``` r
+
 estimate_total_harvest(design, by = species)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -391,6 +408,7 @@ estimate_total_harvest(design, by = species)
 ### Release Rate and Total Releases by Species
 
 ``` r
+
 estimate_release_rate(design, by = species)
 #> Warning: Small sample size for CPUE estimation.
 #> ! Sample size is 22. Ratio estimates are more stable with n >= 30.
@@ -438,15 +456,15 @@ for the complete extrapolated estimation workflow.
 
 ## Summary
 
-| Function                                                                                                                 | Data required                        | Output                               |
-|--------------------------------------------------------------------------------------------------------------------------|--------------------------------------|--------------------------------------|
-| [`summarize_refusals()`](https://chrischizinski.github.io/tidycreel/reference/summarize_refusals.md)                     | refused field                        | month × participation × N × %        |
-| [`summarize_by_day_type()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_day_type.md)               | strata                               | month × day_type × N × %             |
-| [`summarize_by_angler_type()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_angler_type.md)         | angler_type                          | month × angler_type × N × %          |
-| [`summarize_by_method()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_method.md)                   | angler_method                        | month × method × N × %               |
-| [`summarize_by_species_sought()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_species_sought.md)   | species_sought                       | month × species × N × %              |
+| Function | Data required | Output |
+|----|----|----|
+| [`summarize_refusals()`](https://chrischizinski.github.io/tidycreel/reference/summarize_refusals.md) | refused field | month × participation × N × % |
+| [`summarize_by_day_type()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_day_type.md) | strata | month × day_type × N × % |
+| [`summarize_by_angler_type()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_angler_type.md) | angler_type | month × angler_type × N × % |
+| [`summarize_by_method()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_method.md) | angler_method | month × method × N × % |
+| [`summarize_by_species_sought()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_species_sought.md) | species_sought | month × species × N × % |
 | [`summarize_successful_parties()`](https://chrischizinski.github.io/tidycreel/reference/summarize_successful_parties.md) | catch + angler_type + species_sought | angler_type × species × success rate |
-| [`summarize_by_trip_length()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_trip_length.md)         | trip_duration                        | bin × N × %                          |
-| [`summarize_cws_rates()`](https://chrischizinski.github.io/tidycreel/reference/summarize_cws_rates.md)                   | catch + species_sought               | CWS rate ± SE by grouping            |
-| [`summarize_hws_rates()`](https://chrischizinski.github.io/tidycreel/reference/summarize_hws_rates.md)                   | catch + species_sought               | HWS rate ± SE by grouping            |
-| [`summarize_length_freq()`](https://chrischizinski.github.io/tidycreel/reference/summarize_length_freq.md)               | lengths                              | bin × N × % × cumulative %           |
+| [`summarize_by_trip_length()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_trip_length.md) | trip_duration | bin × N × % |
+| [`summarize_cws_rates()`](https://chrischizinski.github.io/tidycreel/reference/summarize_cws_rates.md) | catch + species_sought | CWS rate ± SE by grouping |
+| [`summarize_hws_rates()`](https://chrischizinski.github.io/tidycreel/reference/summarize_hws_rates.md) | catch + species_sought | HWS rate ± SE by grouping |
+| [`summarize_length_freq()`](https://chrischizinski.github.io/tidycreel/reference/summarize_length_freq.md) | lengths | bin × N × % × cumulative % |

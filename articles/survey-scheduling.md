@@ -32,6 +32,7 @@ May–September creel season with morning and afternoon count periods,
 sampling 30% of weekdays and 50% of weekends.
 
 ``` r
+
 library(tidycreel)
 
 sched <- generate_schedule(
@@ -61,6 +62,7 @@ The result is a `creel_schedule` object with `date`, `day_type`, and
 human-readable names.
 
 ``` r
+
 # Counts of scheduled days by stratum
 table(sched$day_type)
 #> 
@@ -75,6 +77,7 @@ Pass `include_all = TRUE` to return every day of the season with a
 communicating the design to stakeholders.
 
 ``` r
+
 sched_full <- generate_schedule(
   start_date    = "2024-05-01",
   end_date      = "2024-09-30",
@@ -112,6 +115,7 @@ day-level assignments before sampling, so a boundary-crossing opener is
 split deterministically by civil date.
 
 ``` r
+
 opener_periods <- data.frame(
   start_date = as.Date("2027-07-31"),
   end_date = as.Date("2027-08-01"),
@@ -166,6 +170,7 @@ the other is in August.
 You can inspect the audit surfaces directly:
 
 ``` r
+
 attr(sched_high_use, "special_period_audit")
 #>         date    label reason source_start_date source_end_date crosses_boundary
 #> 1 2027-07-31 high_use opener        2027-07-31      2027-08-01             TRUE
@@ -194,6 +199,7 @@ summary so you can see the risky stratum rewrite without digging through
 raw attributes.
 
 ``` r
+
 sched_fragile <- suppressWarnings(generate_schedule(
   start_date = "2027-08-01",
   end_date = "2027-08-08",
@@ -255,6 +261,7 @@ evening — to capture temporal patterns in angler activity (e.g., a
 morning and evening peak with low midday use).
 
 ``` r
+
 sched3 <- generate_schedule(
   start_date    = "2024-06-01",
   end_date      = "2024-08-31",
@@ -285,6 +292,7 @@ time. This is important when the schedule is pre-printed for field use
 and must match what the estimators will use.
 
 ``` r
+
 sched_a <- generate_schedule("2024-06-01", "2024-06-30",
   n_periods = 1,
   sampling_rate = 0.4, seed = 99
@@ -308,6 +316,7 @@ reloads the file with correct column types, so the schedule round-trips
 without type coercion issues.
 
 ``` r
+
 # Save for field crews
 write_schedule(sched, "count_schedule_2024.csv")
 write_schedule(sched, "count_schedule_2024.xlsx")
@@ -325,6 +334,7 @@ The schedule’s stratum structure informs the survey weights used by all
 downstream estimators.
 
 ``` r
+
 design <- creel_design(sched, date = date, strata = day_type)
 design
 #> 
@@ -344,6 +354,7 @@ When `special_periods` are present, the scheduling layer adds
 for allocation. That is the column the analysis layer should follow.
 
 ``` r
+
 sched_for_analysis <- sched_high_use[, c("date", "final_stratum")]
 names(sched_for_analysis)[2] <- "analysis_stratum"
 
@@ -399,9 +410,12 @@ converts a count schedule and a site-level sampling frame into a
 complete bus-route sampling frame with inclusion probabilities. Each
 site’s probability of being visited in a given period is:
 
-$$\pi_{i} = p_{site} \times p_{period}\quad\text{where}\quad p_{period} = \frac{\text{crew}}{n_{circuits}}$$
+``` math
+\pi_i = p_{site} \times p_{period} \quad \text{where} \quad p_{period} = \frac{\text{crew}}{n_{circuits}}
+```
 
 ``` r
+
 # Site-level selection probabilities (must sum to 1.0)
 site_frame <- data.frame(
   site_id = c("North Bay", "South Cove", "Dock Area", "Main Channel"),
@@ -450,6 +464,7 @@ or
 to select rates based on a CV target rather than rule of thumb.
 
 ``` r
+
 # Effort sample size to achieve CV ≤ 0.15
 # N_h: total days per stratum in a 184-day season
 # ybar_h: pilot mean daily effort (angler-hours) per stratum
@@ -484,6 +499,7 @@ separation (minutes) between consecutive windows to prevent back-to-back
 counts.
 
 ``` r
+
 library(tidycreel)
 ct_random <- generate_count_times(
   start_time  = "06:00",
@@ -515,6 +531,7 @@ agencies (Colorado CPW 2012) because it avoids the clustered count times
 that can occur by chance under random placement.
 
 ``` r
+
 ct_systematic <- generate_count_times(
   start_time  = "06:00",
   end_time    = "14:00",
@@ -539,6 +556,7 @@ replicated exactly. Supply a `data.frame` with `start_time` and
 wraps them in a `creel_schedule` object without any random placement.
 
 ``` r
+
 fw <- data.frame(
   start_time = c("07:00", "09:30", "12:00"),
   end_time = c("07:30", "10:00", "12:30"),
@@ -560,6 +578,7 @@ It therefore passes directly to
 for field printing without any conversion step.
 
 ``` r
+
 write_schedule(ct_systematic, "count_times_2024.csv")
 ```
 
@@ -575,6 +594,7 @@ window) — that tells each crew exactly when to count.
 performs the cross-join in one step.
 
 ``` r
+
 sched <- generate_schedule(
   start_date = "2024-06-01", end_date = "2024-06-07",
   n_periods = 2,
@@ -621,6 +641,7 @@ and compares the proposed day counts against the minimum required sample
 size per stratum.
 
 ``` r
+
 report <- validate_design(
   N_h        = c(weekday = 132, weekend = 52),
   ybar_h     = c(weekday = 280, weekend = 550),
@@ -644,6 +665,7 @@ the proposed intensity. `report$passed` is `TRUE` only when all strata
 pass — use this as a go/no-go gate before printing field schedules.
 
 ``` r
+
 report$results
 #> # A tibble: 2 × 7
 #>   stratum status n_proposed n_required cv_actual cv_target message              
@@ -662,6 +684,7 @@ estimators — resolving completeness issues early avoids propagating gaps
 into effort or CPUE estimates.
 
 ``` r
+
 data(example_calendar)
 data(example_counts)
 data(example_interviews)
@@ -712,6 +735,7 @@ reporting or export. It performs no re-estimation; it is purely an
 assembly step that makes it easy to view all key metrics side by side.
 
 ``` r
+
 # Run estimators first (see the tidycreel workflow vignette)
 effort <- estimate_effort(design)
 cpue <- estimate_catch_rate(design)
@@ -729,6 +753,7 @@ is the final step that wraps pre-computed results for export or
 reporting.
 
 ``` r
+
 write_schedule(summary_tbl$table, "season_2024_summary.xlsx")
 ```
 

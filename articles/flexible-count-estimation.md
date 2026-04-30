@@ -31,6 +31,7 @@ The classic workflow records one instantaneous count per PSU (day ×
 stratum).
 
 ``` r
+
 library(tidycreel)
 
 # Survey calendar: four days, two strata
@@ -76,6 +77,7 @@ is a sub-sample within the PSU. Supply the circuit identifier column via
 `count_time_col`.
 
 ``` r
+
 # Two circuits per day: morning ("am") and afternoon ("pm")
 calendar_m <- data.frame(
   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
@@ -131,7 +133,9 @@ Progressive surveys replace a spot-check count with a complete traversal
 of the section. The observer counts every angler encountered during one
 circuit of duration τ hours. The estimator is:
 
-$${\widehat{E}}_{d} = C_{d} \times T_{d}$$
+``` math
+\hat{E}_d = C_d \times T_d
+```
 
 where C_d is the count on day d and T_d is the total open hours on day d
 (the `period_length_col` argument). The circuit time τ cancels
@@ -139,6 +143,7 @@ algebraically; it is only needed internally to compute the expansion
 factor κ = T_d / τ.
 
 ``` r
+
 calendar_p <- data.frame(
   date       = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
   day_type   = c("weekday", "weekday", "weekend", "weekend"),
@@ -182,7 +187,9 @@ Pope et al. (in press) give a worked example with C = 234 anglers
 encountered during a 2-hour circuit (τ = 2 h) on a day with 8 open hours
 (T_d = 8 h):
 
-$${\widehat{E}}_{d} = 234 \times 8 = 1,872{\mspace{6mu}\text{angler-hours}}$$
+``` math
+\hat{E}_d = 234 \times 8 = 1{,}872 \text{ angler-hours}
+```
 
 The code below reproduces this per-day calculation for a two-day survey.
 The processed design’s `$counts` slot stores the expanded per-day effort
@@ -190,6 +197,7 @@ The processed design’s `$counts` slot stores the expanded per-day effort
 directly.
 
 ``` r
+
 # Reproduce Pope et al. per-day calculation
 cal_pope <- data.frame(
   date       = as.Date(c("2024-06-01", "2024-06-02")),
@@ -226,11 +234,11 @@ The `n_anglers` column in `design_pope$counts` shows 1,872 for June 1st
 
 ## Interpreting `se_between` and `se_within`
 
-| Column       | Source                                                                                             | Zero when                |
-|--------------|----------------------------------------------------------------------------------------------------|--------------------------|
+| Column | Source | Zero when |
+|----|----|----|
 | `se_between` | Between-PSU variance via [`survey::svytotal()`](https://rdrr.io/pkg/survey/man/surveysummary.html) | Never (always estimated) |
-| `se_within`  | Rasmussen (1994) two-stage within-day formula                                                      | Single count per PSU     |
-| `se`         | Combined SE: `sqrt(se_between^2 + se_within^2)`                                                    | Never                    |
+| `se_within` | Rasmussen (1994) two-stage within-day formula | Single count per PSU |
+| `se` | Combined SE: `sqrt(se_between^2 + se_within^2)` | Never |
 
 **Practical guidance:**
 

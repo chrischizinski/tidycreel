@@ -9,21 +9,23 @@ moment, the count must be expanded to total effort using the hours the
 fishery is open (`h_open`) and the mean trip duration of anglers on the
 water (`L_bar`). The basic estimator is:
 
-$$\widehat{E} = N_{obs} \times \frac{h_{open}}{v}$$
+``` math
+\hat{E} = N_{obs} \times \frac{h_{open}}{v}
+```
 
-where $N_{obs}$ is the observed (instantaneous) angler count, $h_{open}$
-is the number of hours the fishery is open per day, and $v$ is the
-visibility correction factor (defaulting to 1.0 when all anglers are
-detectable from the air). The mean trip duration $\bar{L}$ is estimated
-from ground interviews and enters the catch rate estimation step rather
-than the effort expansion step.
+where $`N_{obs}`$ is the observed (instantaneous) angler count,
+$`h_{open}`$ is the number of hours the fishery is open per day, and
+$`v`$ is the visibility correction factor (defaulting to 1.0 when all
+anglers are detectable from the air). The mean trip duration $`\bar{L}`$
+is estimated from ground interviews and enters the catch rate estimation
+step rather than the effort expansion step.
 
 When not all anglers are visible from the air — for example, anglers
 fishing under tree cover or in enclosed shelters — a **visibility
 correction** adjusts the count upward. If observers detect only 85% of
 anglers present, the corrected effort estimate is scaled by
-$1/0.85 \approx 1.18$, yielding a higher and more accurate total. The
-`visibility_correction` argument to
+$`1 / 0.85 \approx 1.18`$, yielding a higher and more accurate total.
+The `visibility_correction` argument to
 [`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md)
 captures this calibration constant.
 
@@ -34,6 +36,7 @@ summer walleye and bass fishery at a Nebraska reservoir in June-July
 2024.
 
 ``` r
+
 library(tidycreel)
 
 data(example_aerial_counts)
@@ -80,6 +83,7 @@ number of hours the fishery is open each day, which sets the expansion
 factor for the instantaneous count.
 
 ``` r
+
 # Build the survey calendar from the unique count dates
 aerial_cal <- data.frame(
   date = example_aerial_counts$date,
@@ -122,6 +126,7 @@ Attach the aerial count data with
 The `n_anglers` column is auto-detected as the count variable.
 
 ``` r
+
 design <- add_counts(design, example_aerial_counts)
 #> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
 #> weights or probabilities supplied, assuming equal probability
@@ -130,13 +135,14 @@ design <- add_counts(design, example_aerial_counts)
 Aerial effort estimation requires interview data to be attached before
 calling
 [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),
-because the estimator uses the mean trip duration ($\bar{L}$) from
+because the estimator uses the mean trip duration ($`\bar{L}`$) from
 ground interviews to confirm the expansion factor. Attach the interview
 data with
 [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md),
 then estimate total effort.
 
 ``` r
+
 design <- suppressWarnings(add_interviews(
   design,
   example_aerial_interviews,
@@ -151,6 +157,7 @@ design <- suppressWarnings(add_interviews(
 ```
 
 ``` r
+
 effort <- suppressWarnings(estimate_effort(design))
 print(effort)
 #> 
@@ -177,9 +184,11 @@ When aerial observers cannot detect all anglers on the water, the raw
 count underestimates true effort. Supply a `visibility_correction` to
 [`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md)
 to account for this. A value of 0.85 means observers detected 85% of the
-anglers actually present; the effort estimate is scaled up by $1/0.85$.
+anglers actually present; the effort estimate is scaled up by
+$`1 / 0.85`$.
 
 ``` r
+
 design_corr <- creel_design(
   aerial_cal,
   date = date,
@@ -224,6 +233,7 @@ uncorrected estimate because the visibility correction inflates the
 count to account for undetected anglers.
 
 ``` r
+
 cat(
   "Uncorrected effort:", round(effort$estimate[[1]], 0), "angler-hours\n",
   "Corrected effort (v=0.85):", round(effort_corr$estimate[[1]], 0), "angler-hours\n"
@@ -240,6 +250,7 @@ angler-hour) from the complete-trip interviews already attached to the
 design.
 
 ``` r
+
 catch_rate <- suppressWarnings(estimate_catch_rate(design))
 #> ℹ Using complete trips for CPUE estimation
 #>   (n=48, 100% of 48 interviews) [default]
@@ -261,6 +272,7 @@ multiplies the CPUE estimate by the total effort estimate to project
 total walleye catch over the survey period.
 
 ``` r
+
 total_catch <- suppressWarnings(estimate_total_catch(design))
 print(total_catch)
 #> 

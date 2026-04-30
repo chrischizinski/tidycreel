@@ -3,13 +3,14 @@
 tidycreel ships three ggplot2-based plotting functions that cover the
 main inspection points in a creel survey workflow:
 
-| Function                                                                               | When to use                                          |
-|----------------------------------------------------------------------------------------|------------------------------------------------------|
+| Function | When to use |
+|----|----|
 | [`plot_design()`](https://chrischizinski.github.io/tidycreel/reference/plot_design.md) | Inspect stratum sample sizes and count distributions |
-| `autoplot(schedule)`                                                                   | Review the survey calendar tile-by-tile              |
-| `autoplot(estimates)`                                                                  | Visualise effort or CPUE estimates with CIs          |
+| `autoplot(schedule)` | Review the survey calendar tile-by-tile |
+| `autoplot(estimates)` | Visualise effort or CPUE estimates with CIs |
 
 ``` r
+
 library(tidycreel)
 library(ggplot2)
 ```
@@ -25,6 +26,7 @@ Once you have built a `creel_design` object from a calendar,
 shows the number of sampled days per stratum.
 
 ``` r
+
 # Build a design from the bundled example calendar
 data("example_counts")
 cal <- unique(example_counts[, c("date", "day_type")])
@@ -47,6 +49,7 @@ switches to a jitter + crossbar display showing the raw count
 distribution per stratum.
 
 ``` r
+
 design <- add_counts(design, example_counts)
 
 plot_design(design, title = "Count distribution by stratum")
@@ -69,6 +72,7 @@ same object produced by
 [`generate_schedule()`](https://chrischizinski.github.io/tidycreel/reference/generate_schedule.md).
 
 ``` r
+
 # Generate a three-month schedule sampling 40 % of days
 schedule <- generate_schedule(
   start_date    = "2024-06-01",
@@ -97,6 +101,7 @@ draws a point-and-errorbar plot from any `creel_estimates` object.
 ### Ungrouped effort estimate
 
 ``` r
+
 data("example_interviews")
 
 design <- add_interviews(
@@ -125,6 +130,7 @@ The resulting plot maps the grouping variable to both the x-axis and
 point colour.
 
 ``` r
+
 effort_by_type <- estimate_effort(design, by = day_type)
 
 autoplot(effort_by_type, title = "Angler-effort by day type")
@@ -138,6 +144,7 @@ pattern in summer recreational fisheries.
 ### CPUE estimate
 
 ``` r
+
 cpue <- estimate_catch_rate(design)
 #> ℹ Using complete trips for CPUE estimation
 #>   (n=17, 77.3% of 22 interviews) [default]
@@ -157,6 +164,7 @@ naturally with `+` (ggplot2 operators) or side-by-side using
 installed.
 
 ``` r
+
 # Requires patchwork
 library(patchwork)
 plot_design(design) + autoplot(effort)
@@ -166,11 +174,11 @@ plot_design(design) + autoplot(effort)
 
 ## Summary
 
-| Function              | Input class       | Returns                                           |
-|-----------------------|-------------------|---------------------------------------------------|
-| `plot_design(design)` | `creel_design`    | bar chart (no counts) or jitter+crossbar (counts) |
-| `autoplot(schedule)`  | `creel_schedule`  | monthly tile calendar                             |
-| `autoplot(estimates)` | `creel_estimates` | point-and-errorbar plot                           |
+| Function | Input class | Returns |
+|----|----|----|
+| `plot_design(design)` | `creel_design` | bar chart (no counts) or jitter+crossbar (counts) |
+| `autoplot(schedule)` | `creel_schedule` | monthly tile calendar |
+| `autoplot(estimates)` | `creel_estimates` | point-and-errorbar plot |
 
 All plots accept a `title =` argument and return a `ggplot` object for
 further customisation with standard ggplot2 `+` syntax.

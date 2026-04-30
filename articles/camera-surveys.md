@@ -29,6 +29,7 @@ This vignette uses three built-in datasets representing a hypothetical
 summer creel survey at a Nebraska reservoir boat launch in June 2024.
 
 ``` r
+
 library(tidycreel)
 
 data(example_camera_counts)
@@ -83,6 +84,7 @@ Here we build one from the unique dates in the counts and interview
 data.
 
 ``` r
+
 # Collect all unique sampling dates across datasets
 all_dates <- sort(unique(c(
   example_camera_counts$date,
@@ -117,6 +119,7 @@ with `survey_type = "camera"`. The `camera_mode` argument is required.
 Omitting it produces an informative error:
 
 ``` r
+
 creel_design(
   cam_calendar,
   date = date, strata = day_type,
@@ -131,6 +134,7 @@ creel_design(
 Build the correct design with `camera_mode = "counter"`:
 
 ``` r
+
 design_counter <- creel_design(
   cam_calendar,
   date        = date,
@@ -165,6 +169,7 @@ would silently propagate a missing value into the Horvitz-Thompson
 estimator.
 
 ``` r
+
 # The gap row
 subset(example_camera_counts, camera_status != "operational")
 #>         date day_type ingress_count   camera_status
@@ -178,6 +183,7 @@ probabilistic non-coverage within a sampled period. A camera failure
 means no data exist — the effort during that period is unknown.
 
 ``` r
+
 # Keep only days when the camera was working
 counts_clean <- subset(example_camera_counts, camera_status == "operational")
 nrow(counts_clean) # 9 operational rows
@@ -187,6 +193,7 @@ nrow(counts_clean) # 9 operational rows
 ### Effort Estimation
 
 ``` r
+
 design_counter <- add_counts(design_counter, counts_clean)
 #> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
 #> weights or probabilities supplied, assuming equal probability
@@ -219,6 +226,7 @@ to aggregate the raw pairs into daily effort hours before calling
 ### Preprocess Timestamps
 
 ``` r
+
 daily_effort <- preprocess_camera_timestamps(
   example_camera_timestamps,
   date_col    = date,
@@ -245,6 +253,7 @@ requires all design strata columns, merge the day type back in from the
 raw timestamps:
 
 ``` r
+
 day_type_key <- unique(example_camera_timestamps[, c("date", "day_type")])
 daily_effort <- merge(daily_effort, day_type_key, by = "date")
 print(daily_effort)
@@ -258,6 +267,7 @@ print(daily_effort)
 ### Build the Design and Estimate Effort
 
 ``` r
+
 ie_calendar <- data.frame(
   date = daily_effort$date,
   day_type = daily_effort$day_type,
@@ -298,6 +308,7 @@ eight interview dates) and attach the interview data with
 [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md).
 
 ``` r
+
 design_catch <- add_interviews(
   design_counter,
   example_camera_interviews,
@@ -320,6 +331,7 @@ computes the ratio-of-means CPUE (walleye per angler-hour) using only
 complete trips.
 
 ``` r
+
 catch_rate <- suppressWarnings(estimate_catch_rate(design_catch))
 #> ℹ Using complete trips for CPUE estimation
 #>   (n=40, 100% of 40 interviews) [default]
@@ -343,6 +355,7 @@ multiplies the CPUE estimate by the total effort estimate to produce a
 projected total walleye catch over the survey period.
 
 ``` r
+
 total_catch <- suppressWarnings(estimate_total_catch(design_catch))
 print(total_catch)
 #> 
@@ -362,15 +375,15 @@ print(total_catch)
 
 The table below contrasts the two camera sub-modes:
 
-| Feature            | Counter mode                                | Ingress-egress mode                    |
-|:-------------------|:--------------------------------------------|:---------------------------------------|
-| Input data         | One count per day                           | POSIXct arrival/departure pairs        |
-| Preprocessing step | None (counts used directly)                 | preprocess_camera_timestamps()         |
-| Effort unit        | Daily ingress count                         | Daily effort-hours                     |
-| Gap handling       | Exclude camera_status != ‘operational’ rows | Negative durations warned and excluded |
-| camera_mode value  | “counter”                                   | “ingress_egress”                       |
+| Feature | Counter mode | Ingress-egress mode |
+|:---|:---|:---|
+| Input data | One count per day | POSIXct arrival/departure pairs |
+| Preprocessing step | None (counts used directly) | preprocess_camera_timestamps() |
+| Effort unit | Daily ingress count | Daily effort-hours |
+| Gap handling | Exclude camera_status != ‘operational’ rows | Negative durations warned and excluded |
+| camera_mode value | “counter” | “ingress_egress” |
 
-Comparison of camera survey sub-modes in tidycreel
+Comparison of camera survey sub-modes in tidycreel {.table}
 
 Both sub-modes feed into the same
 [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),

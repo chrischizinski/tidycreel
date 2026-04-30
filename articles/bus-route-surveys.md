@@ -39,7 +39,9 @@ The inclusion probability πᵢ is the probability that a given sampling
 unit (site × period combination) is included in the sample. For a
 two-stage bus-route design:
 
-$$\pi_{i} = p\_ site_{i} \times p\_ period$$
+``` math
+\pi_i = p\_site_i \times p\_period
+```
 
 where `p_site` is the probability of selecting site *i* in a given pass,
 and `p_period` is the probability that the period containing the visit
@@ -58,7 +60,9 @@ the site (`n_counted`) and then interviews as many as possible
 (`n_interviewed`). When not all parties are interviewed, the expansion
 factor
 
-$$\text{expansion} = \frac{n\_ counted}{n\_ interviewed}$$
+``` math
+\text{expansion} = \frac{n\_counted}{n\_interviewed}
+```
 
 rescales the interviewed data so it represents all parties. If all
 parties are interviewed (n_counted = n_interviewed), the expansion is 1
@@ -69,30 +73,34 @@ and no adjustment is needed. This is the case in Malvestuto (1996) Box
 
 The total effort estimator (Jones & Pollock 2012, Eq. 19.4) is:
 
-$$\widehat{E} = \sum\limits_{i}\frac{e_{i}}{\pi_{i}}$$
+``` math
+\hat{E} = \sum_i \frac{e_i}{\pi_i}
+```
 
-where $e_{i} = \text{hours\_fished}_{i} \times \text{expansion}_{i}$ is
-the enumeration-expanded effort for interview *i*. Each site’s
-contribution is weighted by the reciprocal of its inclusion probability.
-A site sampled with probability 0.20 receives weight 5 — five times the
-weight of a site sampled with probability 1.0. This inverse-probability
+where $`e_i = \text{hours\_fished}_i \times \text{expansion}_i`$ is the
+enumeration-expanded effort for interview *i*. Each site’s contribution
+is weighted by the reciprocal of its inclusion probability. A site
+sampled with probability 0.20 receives weight 5 — five times the weight
+of a site sampled with probability 1.0. This inverse-probability
 weighting is what makes the estimator statistically unbiased.
 
 The harvest estimator (Jones & Pollock 2012, Eq. 19.5) follows the same
 structure:
 
-$$\widehat{H} = \sum\limits_{i}\frac{h_{i}}{\pi_{i}}$$
+``` math
+\hat{H} = \sum_i \frac{h_i}{\pi_i}
+```
 
 ## A Note on Existing Implementations
 
-Some R packages that support bus-route surveys hardcode $\pi_{i} = 0.5$
+Some R packages that support bus-route surveys hardcode $`\pi_i = 0.5`$
 or compute the inclusion probability as `wait_time / circuit_time`.
 Neither is the inclusion probability as defined by Horvitz-Thompson
-theory or by Jones & Pollock (2012). Using an incorrect $\pi_{i}$
+theory or by Jones & Pollock (2012). Using an incorrect $`\pi_i`$
 produces biased estimates whose magnitude of bias grows with the
 heterogeneity of site probabilities.
 
-tidycreel computes $\pi_{i} = p\_ site \times p\_ period$ directly from
+tidycreel computes $`\pi_i = p\_site \times p\_period`$ directly from
 the sampling frame you supply to
 [`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md).
 This matches the primary source definition in Jones & Pollock (2012,
@@ -113,6 +121,7 @@ probabilities (`p_site`), and the period sampling probability
 (`p_period`). Site probabilities must sum to 1.0 within each circuit.
 
 ``` r
+
 library(tidycreel)
 
 # Sampling frame: 4 sites, 1 circuit
@@ -184,6 +193,7 @@ are equal (no expansion needed), but the columns must still be supplied
 for bus-route designs.
 
 ``` r
+
 # 15 interviews across 4 sites and 4 days
 # Site A: 4 interviews (all 4 parties interviewed)
 # Site B: 3 interviews (all 3 parties)
@@ -313,9 +323,10 @@ the estimation functions.
 
 [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
 dispatches to the bus-route estimator and computes
-$\widehat{E} = \sum\left( e_{i}/\pi_{i} \right)$.
+$`\hat{E} = \sum(e_i / \pi_i)`$.
 
 ``` r
+
 # Estimate total angler-hours
 effort_est <- estimate_effort(design)
 print(effort_est)
@@ -374,6 +385,7 @@ Example 1 exactly.
 applies the same Horvitz-Thompson logic to fish kept.
 
 ``` r
+
 # Estimate total fish kept (harvest)
 harvest_est <- estimate_harvest_rate(design)
 print(harvest_est)

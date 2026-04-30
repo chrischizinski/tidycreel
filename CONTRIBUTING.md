@@ -44,6 +44,7 @@ dplyr/tidyr). Use `reprex::reprex()` to render and share it.
 A good reprex looks like this:
 
 ``` r
+
 library(tidycreel)
 
 # Minimal data that triggers the problem
@@ -96,6 +97,7 @@ performance and scalability:
 **Examples:**
 
 ``` r
+
 # Good: Vectorized approach
 effort_total <- sum(design_data$effort * design_data$weights, na.rm = TRUE)
 
@@ -157,6 +159,7 @@ completely:**
 **Every contribution must include tests:**
 
 ``` r
+
 test_that("estimate_effort returns proper structure", {
   # Arrange
   design <- create_test_design()
@@ -196,6 +199,7 @@ boundary conditions (DST, leap years)
 3.  **Set up development environment:**
 
     ``` r
+
     renv::restore()
     devtools::load_all()
     ```
@@ -212,6 +216,7 @@ boundary conditions (DST, leap years)
 4.  **Run comprehensive checks:**
 
     ``` r
+
     devtools::document()
     devtools::test()
     devtools::check()
