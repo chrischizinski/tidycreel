@@ -185,9 +185,13 @@ test_that("CAMP-04: warns when missingness > 50% in a stratum", {
 
 test_that("CAMP-05: aborts when entire stratum has no observed counts", {
   counts <- make_camera_counts_all_missing_stratum()
+  # A high-missingness warning fires before the abort (100% missing weekend),
+  # so suppress warnings to let expect_error see the error condition.
   expect_error(
-    impute_camera_counts(counts, count_col = "ingress_count",
-                         strata_col = "day_type"),
+    suppressWarnings(
+      impute_camera_counts(counts, count_col = "ingress_count",
+                           strata_col = "day_type")
+    ),
     class = "rlang_error"
   )
 })
