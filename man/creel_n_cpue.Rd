@@ -55,7 +55,7 @@ Cochran, W.G. 1977. Sampling Techniques, 3rd ed. Wiley, New York. Chapter 6
 (ratio estimator variance approximation).
 }
 \seealso{
-Other "Planning & Sample Size":
+Other "Planning & Sample Size": 
 \code{\link{compare_designs}()},
 \code{\link{creel_n_effort}()},
 \code{\link{creel_power}()},

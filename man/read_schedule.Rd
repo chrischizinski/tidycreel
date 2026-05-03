@@ -44,7 +44,7 @@ inherits(sched2, "creel_schedule")
 
 }
 \seealso{
-Other "Scheduling":
+Other "Scheduling": 
 \code{\link{attach_count_times}()},
 \code{\link{generate_bus_schedule}()},
 \code{\link{generate_count_times}()},

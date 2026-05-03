@@ -211,7 +211,7 @@ result_mor <- estimate_catch_rate(design_with_interviews, estimator = "mor")
 result_mor_1h <- estimate_catch_rate(design_with_interviews, estimator = "mor", truncate_at = 1.0)
 }
 \seealso{
-Other "Estimation":
+Other "Estimation": 
 \code{\link{est_length_distribution}()},
 \code{\link{estimate_effort}()},
 \code{\link{estimate_effort_aerial_glmm}()},
