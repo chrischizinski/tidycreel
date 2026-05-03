@@ -47,6 +47,7 @@ reference:
       - add_sections
       - as_survey_design
       - est_effort_camera
+      - impute_camera_counts
       - as_hybrid_svydesign
       - print.creel_hybrid_svydesign
       - compute_effort

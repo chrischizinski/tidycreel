@@ -84,6 +84,7 @@ Other "Survey Design":
 \code{\link{creel_design}()},
 \code{\link{creel_schema}()},
 \code{\link{est_effort_camera}()},
+\code{\link{impute_camera_counts}()},
 \code{\link{prep_counts_daily_effort}()},
 \code{\link{prep_interview_catch}()},
 \code{\link{prep_interviews_trips}()},
