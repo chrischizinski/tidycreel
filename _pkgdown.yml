@@ -67,6 +67,7 @@ reference:
       - estimate_total_catch
       - estimate_total_harvest
       - estimate_total_release
+      - estimate_exploitation_rate
       - est_length_distribution
 
   - title: "Reporting & Diagnostics"
@@ -109,6 +110,7 @@ reference:
     contents:
       - power_creel
       - creel_n_effort
+      - creel_n_camera
       - creel_n_cpue
       - creel_power
       - cv_from_n
@@ -243,6 +245,13 @@ articles:
     Technical equation derivations for advanced users.
   contents:
   - bus-route-equations
+
+- title: "Ecosystem"
+  desc: >
+    Companion packages that extend tidycreel for database integration and
+    reproducible data pipelines.
+  contents:
+  - tidycreel-connect
 
 news:
   one_page: true

@@ -178,6 +178,7 @@ format.creel_estimates <- function(x, ...) {
     "ratio-of-means-hpue-per-angler" = "Ratio-of-Means HPUE (per angler)",
     "product-total-catch" = "Total Catch (Effort \u00d7 CPUE)",
     "product-total-harvest" = "Total Harvest (Effort \u00d7 HPUE)",
+    "exploitation-rate" = "Exploitation Rate (Mark-Recapture)",
     x$method
   )
 
@@ -2235,7 +2236,7 @@ estimate_effort_sections <- function(design, variance_method, conf_level,
   # Identify count variable (same logic as estimate_effort_total)
   counts_data <- design$counts
   excluded_cols <- c(design$date_col, design$strata_cols, design$psu_col, section_col)
-  numeric_cols <- names(counts_data)[sapply(counts_data, is.numeric)]
+  numeric_cols <- names(counts_data)[vapply(counts_data, is.numeric, logical(1L))]
   count_vars <- setdiff(numeric_cols, excluded_cols)
 
   if (length(count_vars) == 0) {
@@ -2355,7 +2356,7 @@ estimate_effort_total <- function(design, variance_method, conf_level, target = 
   # Find first numeric column that is NOT design metadata
   counts_data <- design$counts
   excluded_cols <- c(design$date_col, design$strata_cols, design$psu_col)
-  numeric_cols <- names(counts_data)[sapply(counts_data, is.numeric)]
+  numeric_cols <- names(counts_data)[vapply(counts_data, is.numeric, logical(1L))]
   count_vars <- setdiff(numeric_cols, excluded_cols)
 
   if (length(count_vars) == 0) {
@@ -2470,7 +2471,7 @@ estimate_effort_grouped <- function(design, by_vars, variance_method, conf_level
 
   # Identify the count variable
   excluded_cols <- c(design$date_col, design$strata_cols, design$psu_col)
-  numeric_cols <- names(counts_data)[sapply(counts_data, is.numeric)]
+  numeric_cols <- names(counts_data)[vapply(counts_data, is.numeric, logical(1L))]
   count_vars <- setdiff(numeric_cols, excluded_cols)
 
   if (length(count_vars) == 0) {

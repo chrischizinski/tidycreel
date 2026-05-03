@@ -18,7 +18,7 @@ Checks that all columns required for the schema's \code{survey_type} are mapped
 column and its table.
 }
 \seealso{
-Other "Survey Design":
+Other "Survey Design": 
 \code{\link{add_catch}()},
 \code{\link{add_counts}()},
 \code{\link{add_interviews}()},

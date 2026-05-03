@@ -67,7 +67,7 @@ suppressWarnings(estimate_catch_rate(design))
 \link{example_camera_counts}, \link{example_camera_timestamps},
 \code{\link[=add_interviews]{add_interviews()}}, \code{\link[=estimate_catch_rate]{estimate_catch_rate()}}, \code{\link[=estimate_total_catch]{estimate_total_catch()}}
 
-Other "Example Datasets":
+Other "Example Datasets": 
 \code{\link{creel_counts_toy}},
 \code{\link{creel_interviews_toy}},
 \code{\link{example_aerial_counts}},
