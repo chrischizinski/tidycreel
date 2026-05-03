@@ -24,7 +24,7 @@ tidycreel is an R package for creel survey design, data preparation, estimation,
 
 ### v1.6.0 Analytical Extensions II
 
-- [ ] **Phase 83: Camera Design Helper** - Implement `creel_n_camera()` for per-stratum camera-day sample size using the Cochran CV formula
+- [x] **Phase 83: Camera Design Helper** - Implement `creel_n_camera()` for per-stratum camera-day sample size using the Cochran CV formula (completed 2026-05-03)
 - [ ] **Phase 84: Camera Missing Data Imputation** - Implement `impute_camera_counts()` with a GLM default tier and opt-in GLMM tier, schema-compatible with `add_counts()`
 - [ ] **Phase 85: Mark-Recapture Harvest Estimators** - Implement `estimate_angler_n()` (Chapman/Petersen/Schnabel) and `estimate_mr_harvest()` for closed-population harvest estimation
 - [ ] **Phase 86: Stratification Audit** - Implement `audit_strata()`, `simulate_strata_collapse()`, and `reallocate_strata()` for effort-precision-driven design evaluation
@@ -97,8 +97,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 083-01-PLAN.md — Implement creel_n_camera() in R/power-sample-size.R, run devtools::document(), and add to _pkgdown.yml
-- [ ] 083-02-PLAN.md — Append creel_n_camera test block to test-power-sample-size.R and run devtools::check() quality gate
+- [x] 083-01-PLAN.md — Implement creel_n_camera() in R/power-sample-size.R, run devtools::document(), and add to _pkgdown.yml
+- [x] 083-02-PLAN.md — Append creel_n_camera test block to test-power-sample-size.R and run devtools::check() quality gate
 
 ### Phase 84: Camera Missing Data Imputation
 **Goal**: Biologists can call `impute_camera_counts()` on a camera count frame with a status column and receive a complete, schema-compatible frame ready to pass directly into `add_counts()`, with diagnostics for high-missingness strata
@@ -110,7 +110,11 @@ Plans:
   3. The output data frame passes directly into `add_counts()` without column manipulation — the full `impute → add_counts → est_effort_camera()` chain runs without error
   4. A `cli_warn()` fires when the missing fraction in any stratum exceeds 50%
   5. The function aborts with an informative `cli_abort()` message when an entire stratum contains no observed counts
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 084-01-PLAN.md — Implement impute_camera_counts() in R/impute-camera-counts.R, add glmmTMB to DESCRIPTION Suggests, register in _pkgdown.yml, run devtools::document()
+- [ ] 084-02-PLAN.md — Write tests/testthat/test-impute-camera-counts.R and run devtools::check() quality gate
 
 ### Phase 85: Mark-Recapture Harvest Estimators
 **Goal**: Biologists can estimate angler population size from mark-recapture data using Chapman (default), Petersen, or Schnabel estimators via `estimate_angler_n()`, and can propagate that uncertainty into total harvest via `estimate_mr_harvest()`
@@ -145,6 +149,6 @@ Plans:
 | 81. Exploitation-Rate Estimator | v1.5.0 | 3/3 | Complete | 2026-04-27 |
 | 82. Package Quality and Documentation | v1.5.0 | 5/5 | Complete | 2026-04-28 |
 | 83. Camera Design Helper | v1.6.0 | 0/2 | Not started | - |
-| 84. Camera Missing Data Imputation | v1.6.0 | 0/TBD | Not started | - |
+| 84. Camera Missing Data Imputation | v1.6.0 | 0/2 | Not started | - |
 | 85. Mark-Recapture Harvest Estimators | v1.6.0 | 0/TBD | Not started | - |
 | 86. Stratification Audit | v1.6.0 | 0/TBD | Not started | - |

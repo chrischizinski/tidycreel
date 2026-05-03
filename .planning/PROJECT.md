@@ -22,7 +22,7 @@ A biologist should be able to go from survey design to package-ready estimates, 
 
 **Package version:** `1.3.0` (version bump, release commit, and tag pending — no outward-facing release yet)
 
-v1.6.0 milestone started 2026-05-02.
+v1.6.0 milestone started 2026-05-02. Phase 83 complete 2026-05-03: `creel_n_camera()` shipped (Cochran 1977, Feltz-Middaugh 2025 minimums; 2556 tests, 0 errors 0 warnings).
 
 ## Previous State (M023 / v1.4.0 — archived)
 
@@ -182,4 +182,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-02 — v1.6.0 milestone started*
+*Last updated: 2026-05-03 — Phase 83 complete (creel_n_camera shipped)*
