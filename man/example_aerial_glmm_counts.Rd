@@ -66,7 +66,7 @@ North American Journal of Fisheries Management, 38, 1204-1215.
 \code{\link[=estimate_effort_aerial_glmm]{estimate_effort_aerial_glmm()}} for the GLMM-based estimator,
 \code{\link[=creel_design]{creel_design()}}, \code{\link[=add_counts]{add_counts()}}
 
-Other "Example Datasets":
+Other "Example Datasets": 
 \code{\link{creel_counts_toy}},
 \code{\link{creel_interviews_toy}},
 \code{\link{example_aerial_counts}},

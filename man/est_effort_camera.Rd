@@ -92,7 +92,7 @@ camera counts. Fisheries Research 231:105706.
 \doi{10.1016/j.fishres.2020.105706}
 }
 \seealso{
-Other "Survey Design":
+Other "Survey Design": 
 \code{\link{add_catch}()},
 \code{\link{add_counts}()},
 \code{\link{add_interviews}()},

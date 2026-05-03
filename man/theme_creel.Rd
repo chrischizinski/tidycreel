@@ -28,7 +28,7 @@ if (requireNamespace("ggplot2", quietly = TRUE)) {
 
 }
 \seealso{
-Other "Visualisation":
+Other "Visualisation": 
 \code{\link{autoplot.creel_estimates}()},
 \code{\link{autoplot.creel_length_distribution}()},
 \code{\link{autoplot.creel_schedule}()},

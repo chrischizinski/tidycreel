@@ -74,7 +74,7 @@ summarize_length_freq(d, type = "catch")
 \seealso{
 \code{\link[=add_lengths]{add_lengths()}}, \code{\link[=summarize_cws_rates]{summarize_cws_rates()}}, \code{\link[=summarize_hws_rates]{summarize_hws_rates()}}
 
-Other "Reporting & Diagnostics":
+Other "Reporting & Diagnostics": 
 \code{\link{adjust_nonresponse}()},
 \code{\link{check_completeness}()},
 \code{\link{compare_variance}()},

@@ -71,7 +71,7 @@ and \code{correction_factor}. Optional columns \code{n_counts}, \code{within_day
 \seealso{
 \code{\link[=prep_counts_daily_effort]{prep_counts_daily_effort()}}, \code{\link[=add_counts]{add_counts()}}
 
-Other "Survey Design":
+Other "Survey Design": 
 \code{\link{add_catch}()},
 \code{\link{add_counts}()},
 \code{\link{add_interviews}()},
