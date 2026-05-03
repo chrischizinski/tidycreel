@@ -65,7 +65,7 @@ summarize_cws_rates(d, by = species_sought)
 \seealso{
 \code{\link[=summarize_hws_rates]{summarize_hws_rates()}}, \code{\link[=estimate_catch_rate]{estimate_catch_rate()}}
 
-Other "Reporting & Diagnostics":
+Other "Reporting & Diagnostics": 
 \code{\link{adjust_nonresponse}()},
 \code{\link{check_completeness}()},
 \code{\link{compare_variance}()},

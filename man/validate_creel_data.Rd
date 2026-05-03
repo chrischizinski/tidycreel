@@ -74,7 +74,7 @@ print(res)
 \seealso{
 \code{\link[=validate_creel_schedule]{validate_creel_schedule()}} for schedule-specific validation.
 
-Other "Reporting & Diagnostics":
+Other "Reporting & Diagnostics": 
 \code{\link{adjust_nonresponse}()},
 \code{\link{check_completeness}()},
 \code{\link{compare_variance}()},

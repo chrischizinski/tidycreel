@@ -203,7 +203,7 @@ estimators; pp. 883--884 define the inclusion probability
 \eqn{\pi_i = p_{\text{site}} \times p_{\text{period}}}.
 }
 \seealso{
-Other "Survey Design":
+Other "Survey Design": 
 \code{\link{add_catch}()},
 \code{\link{add_counts}()},
 \code{\link{add_interviews}()},

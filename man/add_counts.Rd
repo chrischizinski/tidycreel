@@ -190,7 +190,7 @@ design_prog <- add_counts(
 
 }
 \seealso{
-Other "Survey Design":
+Other "Survey Design": 
 \code{\link{add_catch}()},
 \code{\link{add_interviews}()},
 \code{\link{add_lengths}()},
