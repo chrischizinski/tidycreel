@@ -78,7 +78,7 @@ est_length_distribution(design, by = species, bin_width = 25)
 
 }
 \seealso{
-Other "Estimation":
+Other "Estimation": 
 \code{\link{estimate_catch_rate}()},
 \code{\link{estimate_effort}()},
 \code{\link{estimate_effort_aerial_glmm}()},

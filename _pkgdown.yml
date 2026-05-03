@@ -110,6 +110,7 @@ reference:
     contents:
       - power_creel
       - creel_n_effort
+      - creel_n_camera
       - creel_n_cpue
       - creel_power
       - cv_from_n

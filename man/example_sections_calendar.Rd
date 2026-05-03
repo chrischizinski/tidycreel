@@ -35,7 +35,7 @@ print(design)
 \link{example_sections_counts}, \link{example_sections_interviews},
 \code{\link[=add_sections]{add_sections()}}, \code{\link[=creel_design]{creel_design()}}
 
-Other "Example Datasets":
+Other "Example Datasets": 
 \code{\link{creel_counts_toy}},
 \code{\link{creel_interviews_toy}},
 \code{\link{example_aerial_counts}},

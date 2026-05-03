@@ -86,7 +86,7 @@ design2 <- add_sections(design, my_sections,
 \seealso{
 \code{\link[=creel_design]{creel_design()}}, \code{\link[=add_counts]{add_counts()}}, \code{\link[=add_interviews]{add_interviews()}}
 
-Other "Survey Design":
+Other "Survey Design": 
 \code{\link{add_catch}()},
 \code{\link{add_counts}()},
 \code{\link{add_interviews}()},

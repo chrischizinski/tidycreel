@@ -114,7 +114,7 @@ hpue_est <- estimate_harvest_rate(design)
 \code{\link{estimate_effort}}, \code{\link{estimate_harvest_rate}},
 \code{\link{estimate_total_catch}}
 
-Other "Estimation":
+Other "Estimation": 
 \code{\link{est_length_distribution}()},
 \code{\link{estimate_catch_rate}()},
 \code{\link{estimate_effort}()},

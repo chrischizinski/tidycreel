@@ -51,7 +51,7 @@ print(design)
 \link{example_aerial_interviews} for matching interview data,
 \code{\link[=creel_design]{creel_design()}}, \code{\link[=add_counts]{add_counts()}}, \code{\link[=estimate_effort]{estimate_effort()}}
 
-Other "Example Datasets":
+Other "Example Datasets": 
 \code{\link{creel_counts_toy}},
 \code{\link{creel_interviews_toy}},
 \code{\link{example_aerial_glmm_counts}},
