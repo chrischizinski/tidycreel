@@ -113,8 +113,14 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
+
+**Wave 1**
 - [ ] 084-01-PLAN.md — Implement impute_camera_counts() in R/impute-camera-counts.R, add glmmTMB to DESCRIPTION Suggests, register in _pkgdown.yml, run devtools::document()
+
+**Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 084-02-PLAN.md — Write tests/testthat/test-impute-camera-counts.R and run devtools::check() quality gate
+
+Cross-cutting constraints: `impute_camera_counts()` exported and importable before tests run; `add_counts()` column contract (schema-compatible output with `.imputed` flag and integer counts) required in both plans.
 
 ### Phase 85: Mark-Recapture Harvest Estimators
 **Goal**: Biologists can estimate angler population size from mark-recapture data using Chapman (default), Petersen, or Schnabel estimators via `estimate_angler_n()`, and can propagate that uncertainty into total harvest via `estimate_mr_harvest()`

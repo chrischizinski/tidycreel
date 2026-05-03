@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.6.0
 milestone_name: Analytical Extensions II
 status: in_progress
-stopped_at: Phase 83 complete — ready to plan Phase 84
+stopped_at: Phase 84 planned — ready to execute
 last_updated: "2026-05-03T00:00:00.000Z"
-last_activity: 2026-05-03 — Phase 83 executed; creel_n_camera() shipped; 2556 tests, 0 errors 0 warnings
+last_activity: 2026-05-03 — Phase 84 planned; 2 plans in 2 waves ready to execute
 progress:
   total_phases: 4
   completed_phases: 1
-  total_plans: 2
+  total_plans: 4
   completed_plans: 2
   percent: 25
 ---
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-02)
 
 **Core value:** A biologist should be able to go from survey design to package-ready estimates, plots, summaries, and documentation without stitching together a custom analysis stack.
-**Current focus:** Phase 83 complete — Phase 84 (Camera Missing Data Imputation) next
+**Current focus:** Phase 84 planned — ready to execute (2 plans: impute_camera_counts() implementation + tests)
 
 ## Current Position
 
-Phase: 84 of 86 (Camera Missing Data Imputation) — not yet planned
-Plan: — (not yet executed)
-Status: Phase 83 complete; ready to discuss/plan Phase 84
-Last activity: 2026-05-03 — Phase 83 executed (2 plans, 2 waves); creel_n_camera() implemented, documented, tested; devtools::check() 0 errors 0 warnings; 2556 tests passing
+Phase: 84 of 86 (Camera Missing Data Imputation) — planned, ready to execute
+Plan: 084-01 (Wave 1), 084-02 (Wave 2)
+Status: Ready to execute
+Last activity: 2026-05-03 — Phase 84 planned; 2 PLAN.md files created, verification passed
 
 Progress: [##        ] 25%
 
@@ -62,5 +62,5 @@ None. Package state: rcmdcheck 0 errors 0 warnings, 2556 tests passing.
 ## Session Continuity
 
 Last session: 2026-05-03
-Stopped at: Phase 83 complete
-Resume file: .planning/phases/084-camera-missing-data/084-CONTEXT.md (if exists, otherwise discuss first)
+Stopped at: Phase 84 planned
+Resume file: .planning/phases/084-camera-missing-data/084-01-PLAN.md
