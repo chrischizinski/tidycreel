@@ -79,6 +79,7 @@
 #'
 #' @family "Survey Design"
 #' @seealso [est_effort_camera()], [add_counts()]
+#' @importFrom stats predict
 #' @export
 impute_camera_counts <- function(
   data,

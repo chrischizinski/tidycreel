@@ -212,3 +212,64 @@ test_that("non-count columns (date, day_type) are preserved unchanged", {
   expect_equal(result$date, counts$date)
   expect_equal(result$day_type, counts$day_type)
 })
+
+# GLMM guard (CAMP-02 method guard) ----
+
+test_that("CAMP-02: method = 'glmm' proceeds or errors on missing glmmTMB", {
+  counts <- make_camera_counts_with_outages()
+  # If glmmTMB is installed the GLMM path runs and returns a data frame.
+  # If not installed rlang::check_installed() fires an error mentioning glmmTMB.
+  if (requireNamespace("glmmTMB", quietly = TRUE)) {
+    result <- suppressWarnings(
+      impute_camera_counts(counts,
+                           count_col = "ingress_count",
+                           strata_col = "day_type",
+                           method = "glmm")
+    )
+    expect_s3_class(result, "data.frame")
+    expect_true(".imputed" %in% names(result))
+  } else {
+    expect_error(
+      impute_camera_counts(counts,
+                           count_col = "ingress_count",
+                           strata_col = "day_type",
+                           method = "glmm"),
+      regexp = "glmmTMB"
+    )
+  }
+})
+
+# Schema compatibility (CAMP-03 chain test) ----
+
+test_that("CAMP-03: imputed output passes into add_counts() without column manipulation", {
+  counts <- make_camera_counts_with_outages()
+  imputed <- impute_camera_counts(counts,
+                                  count_col  = "ingress_count",
+                                  strata_col = "day_type")
+  cal <- data.frame(
+    date     = imputed$date,
+    day_type = imputed$day_type,
+    stringsAsFactors = FALSE
+  )
+  design <- suppressWarnings(
+    creel_design(cal, date = date, strata = day_type, # nolint
+                 survey_type = "camera", camera_mode = "counter")
+  )
+  # Should not error — schema-compatible imputed output
+  expect_no_error(
+    suppressWarnings(add_counts(design, imputed))
+  )
+})
+
+# CAMP-04 no-warning boundary ----
+
+test_that("CAMP-04: no warning when missingness <= 50% in all strata", {
+  # 1/3 weekday = 33% missing — below the 50% threshold, no warning expected
+  counts <- make_camera_counts_with_outages()
+  # make_camera_counts_with_outages has 1 outage per stratum (1/3 each = 33%)
+  expect_no_warning(
+    impute_camera_counts(counts,
+                         count_col  = "ingress_count",
+                         strata_col = "day_type")
+  )
+})
