@@ -217,3 +217,104 @@ test_that("cv_from_n returns numeric scalar > 0", {
   expect_length(result, 1L)
   expect_true(result > 0)
 })
+
+
+# CDES: creel_n_camera ----
+
+test_that("creel_n_camera returns named integer vector with total element", {
+  result <- creel_n_camera(
+    cv_target = 0.20,
+    N_h = c(weekday = 65, weekend = 28),
+    ybar_h = c(15, 20),
+    s2_h = c(625, 900)
+  )
+  expect_true(is.integer(result))
+  expect_named(result, c("weekday", "weekend", "total"), ignore.order = FALSE)
+  expect_true(all(result >= 1L))
+})
+
+test_that("creel_n_camera stratum sum >= total (ceiling artifact)", {
+  result <- creel_n_camera(
+    cv_target = 0.20,
+    N_h = c(weekday = 65, weekend = 28),
+    ybar_h = c(15, 20),
+    s2_h = c(625, 900)
+  )
+  stratum_sum <- sum(result[names(result) != "total"])
+  expect_true(stratum_sum >= result[["total"]])
+})
+
+test_that("creel_n_camera tighter cv_target gives larger n", {
+  N_h <- c(weekday = 65, weekend = 28) # nolint: object_name_linter
+  n_tight <- creel_n_camera(cv_target = 0.10, N_h = N_h, ybar_h = c(15, 20), s2_h = c(625, 900)) # nolint: object_name_linter
+  n_loose <- creel_n_camera(cv_target = 0.30, N_h = N_h, ybar_h = c(15, 20), s2_h = c(625, 900)) # nolint: object_name_linter
+  expect_true(n_tight[["total"]] > n_loose[["total"]])
+})
+
+test_that("creel_n_camera warns when weekday stratum below 12", {
+  expect_warning(
+    creel_n_camera(
+      cv_target = 0.80,
+      N_h = c(weekday = 10, weekend = 5),
+      ybar_h = c(2, 2),
+      s2_h = c(1, 1)
+    ),
+    regexp = "minimum|Feltz-Middaugh"
+  )
+})
+
+test_that("creel_n_camera no warning when all strata above threshold", {
+  expect_no_warning(
+    creel_n_camera(
+      cv_target = 0.05,
+      N_h = c(weekday = 200, weekend = 100),
+      ybar_h = c(500, 600),
+      s2_h = c(90000, 100000)
+    )
+  )
+})
+
+test_that("creel_n_camera warns for unclassified strata", {
+  expect_warning(
+    creel_n_camera(
+      cv_target = 0.80,
+      N_h = c(morning = 10, afternoon = 5),
+      ybar_h = c(2, 2),
+      s2_h = c(1, 1)
+    ),
+    regexp = "consult Feltz-Middaugh"
+  )
+})
+
+test_that("creel_n_camera errors on unnamed N_h", {
+  expect_error(
+    creel_n_camera(cv_target = 0.20, N_h = c(65, 28), ybar_h = c(15, 20), s2_h = c(25, 40))
+  )
+})
+
+test_that("creel_n_camera errors on mismatched stratum lengths", {
+  expect_error(
+    creel_n_camera(
+      cv_target = 0.20,
+      N_h = c(weekday = 65, weekend = 28),
+      ybar_h = c(15, 20, 25),
+      s2_h = c(25, 40)
+    )
+  )
+})
+
+test_that("creel_n_camera works with single stratum", {
+  result <- creel_n_camera(
+    cv_target = 0.20,
+    N_h = c(all_days = 93),
+    ybar_h = 15,
+    s2_h = 25
+  )
+  expect_named(result, c("all_days", "total"))
+  expect_true(result[["all_days"]] >= 1L)
+})
+
+test_that("creel_n_camera errors on cv_target outside (0, 1]", {
+  expect_error(creel_n_camera(cv_target = 0, N_h = c(weekday = 65), ybar_h = 15, s2_h = 25))
+  expect_error(creel_n_camera(cv_target = 1.1, N_h = c(weekday = 65), ybar_h = 15, s2_h = 25))
+})
