@@ -214,7 +214,7 @@ pal <- creel_palette()
 pal[["primary"]]
 
 # Apply theme and colors manually
-ggplot(example_counts, aes(x = day_type, y = count)) +
+ggplot(example_counts, aes(x = day_type, y = effort_hours)) +
   geom_boxplot(fill = pal[["light"]], color = pal[["primary"]]) +
   theme_creel() +
   labs(title = "Manual Plot with tidycreel Styles")
