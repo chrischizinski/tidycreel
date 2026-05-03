@@ -107,7 +107,7 @@ North American Journal of Fisheries Management, 38, 1204-1215.
 \doi{10.1002/nafm.10010}
 }
 \seealso{
-Other "Estimation":
+Other "Estimation": 
 \code{\link{est_length_distribution}()},
 \code{\link{estimate_catch_rate}()},
 \code{\link{estimate_effort}()},

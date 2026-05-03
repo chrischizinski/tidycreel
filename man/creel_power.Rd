@@ -65,7 +65,7 @@ Cohen, J. 1988. Statistical Power Analysis for the Behavioral Sciences, 2nd
 ed. Lawrence Erlbaum Associates, Hillsdale, NJ.
 }
 \seealso{
-Other "Planning & Sample Size":
+Other "Planning & Sample Size": 
 \code{\link{compare_designs}()},
 \code{\link{creel_n_cpue}()},
 \code{\link{creel_n_effort}()},
