@@ -223,140 +223,135 @@ estimate_total_catch <- function(
   }
 }
 
-#' Ungrouped total catch estimation (delta method product)
+#' CPUE helper that respects trip filtering for the stratified-sum product path
+#'
+#' Mirrors the trip-filtering logic of estimate_catch_rate() (complete-only default)
+#' then calls estimate_cpue_total() or estimate_cpue_grouped() directly. This
+#' avoids NSE complexity while preserving the same n= counts as the public API.
+#' Called from estimate_total_catch_ungrouped() and estimate_total_catch_grouped().
+#'
+#' @param design A creel_design object.
+#' @param by_vars Character vector of grouping column names (may be length-0).
+#' @param variance_method Character. Variance estimation method.
+#' @param conf_level Numeric confidence level.
+#'
+#' @return A creel_estimates object.
+#'
+#' @keywords internal
+#' @noRd
+cpue_for_stratum_product <- function(design, by_vars, variance_method, conf_level) {
+  # Mirror the complete-trip filtering that estimate_catch_rate() applies by default
+  trip_status_col <- design$trip_status_col
+  if (!is.null(trip_status_col)) {
+    complete_interviews <- design$interviews[
+      design$interviews[[trip_status_col]] == "complete", ,
+      drop = FALSE
+    ]
+    design <- rebuild_interview_survey(design, complete_interviews) # nolint: object_usage_linter
+  }
+
+  if (length(by_vars) == 0L) {
+    estimate_cpue_total(design, variance_method, conf_level, "ratio-of-means") # nolint: object_usage_linter
+  } else {
+    estimate_cpue_grouped(design, by_vars, variance_method, conf_level, "ratio-of-means") # nolint: object_usage_linter
+  }
+}
+
+#' Ungrouped total catch estimation (stratified-sum product estimator)
+#'
+#' Uses compute_stratum_product_sum() with per-stratum effort and CPUE so that
+#' for multi-strata designs the result equals sum(per-species estimates).
+#' When strata_cols is empty (no strata), reduces to the simple delta-method
+#' product (the length-0 branch of compute_stratum_product_sum).
 #'
 #' @keywords internal
 #' @noRd
 estimate_total_catch_ungrouped <- function(design, variance_method, conf_level, target = "sampled_days") {
-  # Call estimate_effort() and estimate_catch_rate() with specified variance method
-  effort_result <- estimate_effort(design, variance = variance_method, conf_level = conf_level, target = target) # nolint: object_usage_linter
-  cpue_result <- estimate_catch_rate(design, variance = variance_method, conf_level = conf_level) # nolint: object_usage_linter
+  strata_cols <- design$strata_cols %||% character(0)
 
-  # Extract estimates
-  effort_est <- effort_result$estimates$estimate
-  cpue_est <- cpue_result$estimates$estimate
-  effort_se <- effort_result$estimates$se
-  cpue_se <- cpue_result$estimates$se
+  # Per-stratum effort
+  if (length(strata_cols) == 0L) {
+    effort_result <- estimate_effort_total(design, variance_method, conf_level, target = target) # nolint: object_usage_linter
+  } else {
+    effort_result <- estimate_effort_grouped(design, strata_cols, variance_method, conf_level, target = target) # nolint: object_usage_linter
+  }
+  effort_df <- effort_result$estimates
 
-  # Compute product estimate
-  estimate <- effort_est * cpue_est
+  # Per-stratum CPUE (catch rate), grouped by strata_cols.
+  # Use the public estimate_catch_rate() API so trip filtering (complete-only)
+  # and survey rebuilding are applied consistently with the grouped path.
+  cpue_result <- cpue_for_stratum_product( # nolint: object_usage_linter
+    design, strata_cols, variance_method, conf_level
+  )
+  cpue_df <- cpue_result$estimates
 
-  # Compute variance using delta method for product of independent estimates
-  # Var(X * Y) = X^2 * Var(Y) + Y^2 * Var(X) # nolint: commented_code_linter
-  # where X = effort, Y = cpue
-  effort_var <- effort_se^2
-  cpue_var <- cpue_se^2
-  product_var <- (effort_est^2 * cpue_var) + (cpue_est^2 * effort_var)
-  se <- sqrt(product_var)
-
-  # Compute confidence interval using normal approximation
-  z_value <- stats::qnorm(1 - (1 - conf_level) / 2)
-  ci_lower <- estimate - (z_value * se)
-  ci_upper <- estimate + (z_value * se)
-
-  # Sample size: use CPUE sample size (interview count)
-  n <- cpue_result$estimates$n
-
-  # Build estimates tibble
-  estimates_df <- tibble::tibble(
-    estimate = estimate,
-    se = se,
-    ci_lower = ci_lower,
-    ci_upper = ci_upper,
-    n = n
+  # Stratified-sum product estimator: sum(E_h * CPUE_h) across strata h
+  estimates_df <- compute_stratum_product_sum( # nolint: object_usage_linter
+    effort_df         = effort_df,
+    rate_df           = cpue_df,
+    stratum_by_vars   = strata_cols,
+    interview_by_vars = NULL,
+    conf_level        = conf_level,
+    rate_suffix       = "cpue"
   )
 
-  # Return creel_estimates object
   new_creel_estimates( # nolint: object_usage_linter
-    estimates = estimates_df,
-    method = "product-total-catch",
+    estimates       = tibble::as_tibble(estimates_df),
+    method          = "product-total-catch",
     variance_method = variance_method,
-    design = design,
-    conf_level = conf_level,
-    by_vars = NULL,
-    effort_target = target
+    design          = design,
+    conf_level      = conf_level,
+    by_vars         = NULL,
+    effort_target   = target
   )
 }
 
-#' Grouped total catch estimation using delta method
+#' Grouped total catch estimation (stratified-sum product estimator)
+#'
+#' Diagnosis: the old implementation called estimate_effort(by = by_vars) and
+#' estimate_catch_rate(by = by_vars), grouping only by the user's by_vars. For
+#' multi-strata designs where by_vars does not include strata_cols, this is a
+#' combined-ratio bug: pooled-stratum effort * pooled-stratum CPUE instead of
+#' sum(E_h * CPUE_h). Fixed by using stratum_by_vars = union(strata_cols, by_vars)
+#' for per-stratum products, then summing within by_vars groups.
 #'
 #' @keywords internal
 #' @noRd
 estimate_total_catch_grouped <- function(design, by_vars, variance_method, conf_level, target = "sampled_days") {
-  # Convert by_vars to symbols for NSE
-  if (length(by_vars) == 1) {
-    by_sym <- rlang::sym(by_vars)
-  } else {
-    by_sym <- rlang::syms(by_vars)
-  }
+  strata_cols <- design$strata_cols %||% character(0)
+  # Union of calendar strata and user grouping: ensures per-stratum products
+  stratum_by_vars <- unique(c(strata_cols, by_vars))
 
-  # Call grouped estimation for both effort and CPUE
-  effort_result <- estimate_effort(design, by = !!by_sym, variance = variance_method, conf_level = conf_level, target = target) # nolint: object_usage_linter
-  cpue_result <- estimate_catch_rate(design, by = !!by_sym, variance = variance_method, conf_level = conf_level) # nolint: object_usage_linter
-
-  # Extract estimates data frames (include group columns)
+  # Per-stratum effort grouped by union of strata and user vars
+  effort_result <- estimate_effort_grouped(design, stratum_by_vars, variance_method, conf_level, target = target) # nolint: object_usage_linter
   effort_df <- effort_result$estimates
+
+  # Per-stratum CPUE grouped by same union.
+  # Use the public estimate_catch_rate() API so trip filtering (complete-only)
+  # and survey rebuilding are applied consistently.
+  cpue_result <- cpue_for_stratum_product( # nolint: object_usage_linter
+    design, stratum_by_vars, variance_method, conf_level
+  )
   cpue_df <- cpue_result$estimates
 
-  # Merge on grouping variables to align rows
-  merged <- merge(
-    effort_df,
-    cpue_df,
-    by = by_vars,
-    suffixes = c("_effort", "_cpue"),
-    sort = FALSE
+  # Stratified-sum within each by_vars group
+  estimates_df <- compute_stratum_product_sum( # nolint: object_usage_linter
+    effort_df         = effort_df,
+    rate_df           = cpue_df,
+    stratum_by_vars   = stratum_by_vars,
+    interview_by_vars = if (length(by_vars) > 0L) by_vars else NULL,
+    conf_level        = conf_level,
+    rate_suffix       = "cpue"
   )
 
-  # Apply delta method for each group
-  n_groups <- nrow(merged)
-  estimates_list <- vector("list", n_groups)
-
-  for (i in seq_len(n_groups)) {
-    effort_est <- merged$estimate_effort[i]
-    cpue_est <- merged$estimate_cpue[i]
-    effort_se <- merged$se_effort[i]
-    cpue_se <- merged$se_cpue[i]
-
-    # Compute product estimate for this group
-    estimate <- effort_est * cpue_est
-
-    # Compute variance using delta method
-    effort_var <- effort_se^2
-    cpue_var <- cpue_se^2
-    product_var <- (effort_est^2 * cpue_var) + (cpue_est^2 * effort_var)
-    se <- sqrt(product_var)
-
-    # Compute confidence interval
-    z_value <- stats::qnorm(1 - (1 - conf_level) / 2)
-    ci_lower <- estimate - (z_value * se)
-    ci_upper <- estimate + (z_value * se)
-
-    estimates_list[[i]] <- list(
-      estimate = estimate,
-      se = se,
-      ci_lower = ci_lower,
-      ci_upper = ci_upper,
-      n = merged$n_cpue[i] # Use interview sample size
-    )
-  }
-
-  # Build result tibble
-  estimates_df <- tibble::as_tibble(merged[by_vars])
-  estimates_df$estimate <- sapply(estimates_list, `[[`, "estimate")
-  estimates_df$se <- sapply(estimates_list, `[[`, "se")
-  estimates_df$ci_lower <- sapply(estimates_list, `[[`, "ci_lower")
-  estimates_df$ci_upper <- sapply(estimates_list, `[[`, "ci_upper")
-  estimates_df$n <- sapply(estimates_list, `[[`, "n")
-
-  # Return creel_estimates object
   new_creel_estimates( # nolint: object_usage_linter
-    estimates = estimates_df,
-    method = "product-total-catch",
+    estimates       = tibble::as_tibble(estimates_df),
+    method          = "product-total-catch",
     variance_method = variance_method,
-    design = design,
-    conf_level = conf_level,
-    by_vars = by_vars,
-    effort_target = target
+    design          = design,
+    conf_level      = conf_level,
+    by_vars         = by_vars,
+    effort_target   = target
   )
 }
 

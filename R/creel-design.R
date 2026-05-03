@@ -1196,7 +1196,7 @@ add_counts <- function(design, counts, psu = NULL, count_time_col = NULL,
     key_cols <- unique(c(psu, design$strata_cols))
     # Identify the count variable (first numeric column not in key_cols or count_time_col)
     excluded <- c(key_cols, count_time_col_name, design$date_col)
-    numeric_cols <- names(counts)[sapply(counts, is.numeric)]
+    numeric_cols <- names(counts)[vapply(counts, is.numeric, logical(1L))]
     count_var <- setdiff(numeric_cols, excluded)[1L]
 
     agg_result <- aggregate_within_day( # nolint: object_usage_linter
@@ -1213,7 +1213,7 @@ add_counts <- function(design, counts, psu = NULL, count_time_col = NULL,
   # Compute progressive daily effort Ê_d = C × τ × κ (EFF-02)
   if (count_type == "progressive") {
     excluded_prog <- c(psu, design$strata_cols, design$date_col)
-    numeric_cols_prog <- names(counts)[sapply(counts, is.numeric)]
+    numeric_cols_prog <- names(counts)[vapply(counts, is.numeric, logical(1L))]
     count_var_prog <- setdiff(numeric_cols_prog, c(excluded_prog, period_length_col_name))[1L]
     counts <- compute_progressive_effort( # nolint: object_usage_linter
       counts            = counts,

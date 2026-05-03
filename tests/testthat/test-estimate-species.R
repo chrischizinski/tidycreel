@@ -580,6 +580,22 @@ test_that("estimate_total_release SE > 0 (delta method produces variance)", {
   expect_gt(result$estimates$se, 0)
 })
 
+test_that("estimate_total_release by=day_type routes through grouped path", {
+  d <- make_test_design_with_catch_adequate()
+  result <- suppressWarnings(estimate_total_release(d, by = day_type))
+  expect_s3_class(result, "creel_estimates")
+  expect_equal(nrow(result$estimates), 2L)
+  expect_true(all(c("day_type", "estimate", "se", "ci_lower", "ci_upper", "n") %in%
+    names(result$estimates)))
+})
+
+test_that("estimate_total_release grouped estimates are positive", {
+  d <- make_test_design_with_catch_adequate()
+  result <- suppressWarnings(estimate_total_release(d, by = day_type))
+  expect_true(all(result$estimates$estimate > 0))
+  expect_true(all(result$estimates$se > 0))
+})
+
 # ---------------------------------------------------------------------------
 # 5. estimate_total_catch() species extension tests (~7 tests)
 # ---------------------------------------------------------------------------

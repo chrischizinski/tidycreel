@@ -96,7 +96,7 @@ and Their Applications in Fisheries Management. American Fisheries Society,
 Bethesda, MD.
 }
 \seealso{
-Other "Reporting & Diagnostics":
+Other "Reporting & Diagnostics": 
 \code{\link{check_completeness}()},
 \code{\link{compare_variance}()},
 \code{\link{flag_outliers}()},

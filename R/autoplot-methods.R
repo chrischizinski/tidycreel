@@ -557,7 +557,7 @@ plot_design <- function(design, title = NULL, ...) { # nolint: object_usage_lint
     excluded <- c(
       design$date_col, design$strata_cols, design$psu_col, design$section_col
     )
-    num_cols <- names(counts)[sapply(counts, is.numeric)]
+    num_cols <- names(counts)[vapply(counts, is.numeric, logical(1L))]
     count_var <- setdiff(num_cols, excluded)[1]
 
     plot_df <- data.frame(

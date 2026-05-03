@@ -46,7 +46,7 @@ head(daily_effort)
 \link{example_camera_counts}, \link{example_camera_interviews},
 \code{\link[=preprocess_camera_timestamps]{preprocess_camera_timestamps()}}
 
-Other "Example Datasets":
+Other "Example Datasets": 
 \code{\link{creel_counts_toy}},
 \code{\link{creel_interviews_toy}},
 \code{\link{example_aerial_counts}},

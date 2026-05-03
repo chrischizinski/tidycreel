@@ -29,7 +29,7 @@ estimate_effort_aerial <- function(design, variance_method, conf_level, verbose,
   # Identify count variable (same logic as estimate_effort_total)
   counts_data <- design$counts
   excluded_cols <- c(design$date_col, design$strata_cols, design$psu_col)
-  numeric_cols <- names(counts_data)[sapply(counts_data, is.numeric)]
+  numeric_cols <- names(counts_data)[vapply(counts_data, is.numeric, logical(1L))]
   count_vars <- setdiff(numeric_cols, excluded_cols)
 
   if (length(count_vars) == 0L) {

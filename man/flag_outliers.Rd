@@ -54,7 +54,7 @@ flag_outliers(df, col = effort)
 \seealso{
 \code{\link[=add_interviews]{add_interviews()}}, \code{\link[=estimate_catch_rate]{estimate_catch_rate()}}
 
-Other "Reporting & Diagnostics":
+Other "Reporting & Diagnostics": 
 \code{\link{adjust_nonresponse}()},
 \code{\link{check_completeness}()},
 \code{\link{compare_variance}()},

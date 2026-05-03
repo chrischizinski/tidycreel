@@ -88,7 +88,7 @@ print(rpue_by_species)
 \seealso{
 \code{\link{estimate_harvest_rate}} for harvest rate, \code{\link{add_catch}}
 
-Other "Estimation":
+Other "Estimation": 
 \code{\link{est_length_distribution}()},
 \code{\link{estimate_catch_rate}()},
 \code{\link{estimate_effort}()},
