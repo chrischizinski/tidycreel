@@ -76,7 +76,7 @@ print(design)
 
 }
 \seealso{
-Other "Survey Design":
+Other "Survey Design": 
 \code{\link{add_counts}()},
 \code{\link{add_interviews}()},
 \code{\link{add_lengths}()},

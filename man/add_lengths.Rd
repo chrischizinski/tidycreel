@@ -100,7 +100,7 @@ print(design)
 
 }
 \seealso{
-Other "Survey Design":
+Other "Survey Design": 
 \code{\link{add_catch}()},
 \code{\link{add_counts}()},
 \code{\link{add_interviews}()},

@@ -91,7 +91,7 @@ Wolter, K.M. 2007. Introduction to Variance Estimation, 2nd ed. Springer.
 Lumley, T. 2010. Complex Surveys: A Guide to Analysis Using R. Wiley.
 }
 \seealso{
-Other "Reporting & Diagnostics":
+Other "Reporting & Diagnostics": 
 \code{\link{adjust_nonresponse}()},
 \code{\link{check_completeness}()},
 \code{\link{flag_outliers}()},
