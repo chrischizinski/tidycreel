@@ -90,11 +90,15 @@ Plans:
 **Depends on**: Phase 82 (clean package baseline)
 **Requirements**: CDES-01, CDES-02, CDES-03
 **Success Criteria** (what must be TRUE):
-  1. User can call `creel_n_camera(N_h, s2_h, cv_target)` and receive a named integer vector of required camera-days per stratum plus a `"total"` element
+  1. User can call `creel_n_camera(cv_target, N_h, ybar_h, s2_h)` and receive a named integer vector of required camera-days per stratum plus a `"total"` element
   2. Output shape is consistent with `creel_n_effort()` — same vector structure, same naming convention
   3. A `cli_warn()` message appears when any stratum's computed n falls below the Feltz-Middaugh (2025) empirical minimums (~12 weekday, ~7 weekend)
   4. `rcmdcheck` passes with 0 errors and 0 warnings after the addition
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 083-01-PLAN.md — Implement creel_n_camera() in R/power-sample-size.R, run devtools::document(), and add to _pkgdown.yml
+- [ ] 083-02-PLAN.md — Append creel_n_camera test block to test-power-sample-size.R and run devtools::check() quality gate
 
 ### Phase 84: Camera Missing Data Imputation
 **Goal**: Biologists can call `impute_camera_counts()` on a camera count frame with a status column and receive a complete, schema-compatible frame ready to pass directly into `add_counts()`, with diagnostics for high-missingness strata
@@ -140,7 +144,7 @@ Plans:
 | 80. INV-06 Fix and Quickcheck Proof | v1.5.0 | 2/2 | Complete | 2026-04-27 |
 | 81. Exploitation-Rate Estimator | v1.5.0 | 3/3 | Complete | 2026-04-27 |
 | 82. Package Quality and Documentation | v1.5.0 | 5/5 | Complete | 2026-04-28 |
-| 83. Camera Design Helper | v1.6.0 | 0/TBD | Not started | - |
+| 83. Camera Design Helper | v1.6.0 | 0/2 | Not started | - |
 | 84. Camera Missing Data Imputation | v1.6.0 | 0/TBD | Not started | - |
 | 85. Mark-Recapture Harvest Estimators | v1.6.0 | 0/TBD | Not started | - |
 | 86. Stratification Audit | v1.6.0 | 0/TBD | Not started | - |
