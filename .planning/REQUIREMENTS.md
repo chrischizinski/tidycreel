@@ -7,11 +7,11 @@
 
 ### Camera Missing Data Imputation
 
-- [ ] **CAMP-01**: User can call `impute_camera_counts()` on a data frame with a status column and receive a complete count frame with outage rows filled using a day-type GLM (Hartill 2016)
-- [ ] **CAMP-02**: User can opt into zero-inflated GLMM imputation (Afrifa-Yamoah 2020) via `method = "glmm"`, guarded by `rlang::check_installed("glmmTMB")`
-- [ ] **CAMP-03**: `impute_camera_counts()` output is schema-compatible with `add_counts()`, enabling the full `impute → add_counts → est_effort_camera()` chain without manual intervention
-- [ ] **CAMP-04**: Function warns via `cli_warn()` when the missing fraction in any stratum exceeds 50% (Afrifa-Yamoah 2020 reliability threshold)
-- [ ] **CAMP-05**: Function aborts with an informative message when an entire stratum has no observed counts (imputation requires at least some observed data)
+- [x] **CAMP-01**: User can call `impute_camera_counts()` on a data frame with a status column and receive a complete count frame with outage rows filled using a day-type GLM (Hartill 2016) — Validated in Phase 84
+- [x] **CAMP-02**: User can opt into zero-inflated GLMM imputation (Afrifa-Yamoah 2020) via `method = "glmm"`, guarded by `rlang::check_installed("glmmTMB")` — Validated in Phase 84
+- [x] **CAMP-03**: `impute_camera_counts()` output is schema-compatible with `add_counts()`, enabling the full `impute → add_counts → est_effort_camera()` chain without manual intervention — Validated in Phase 84
+- [x] **CAMP-04**: Function warns via `cli_warn()` when the missing fraction in any stratum exceeds 50% (Afrifa-Yamoah 2020 reliability threshold) — Validated in Phase 84
+- [x] **CAMP-05**: Function aborts with an informative message when an entire stratum has no observed counts (imputation requires at least some observed data) — Validated in Phase 84
 
 ### Camera Design Helper
 
@@ -66,14 +66,14 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CDES-01 | Phase 83 | Pending |
-| CDES-02 | Phase 83 | Pending |
-| CDES-03 | Phase 83 | Pending |
-| CAMP-01 | Phase 84 | Pending |
-| CAMP-02 | Phase 84 | Pending |
-| CAMP-03 | Phase 84 | Pending |
-| CAMP-04 | Phase 84 | Pending |
-| CAMP-05 | Phase 84 | Pending |
+| CDES-01 | Phase 83 | Complete |
+| CDES-02 | Phase 83 | Complete |
+| CDES-03 | Phase 83 | Complete |
+| CAMP-01 | Phase 84 | Complete |
+| CAMP-02 | Phase 84 | Complete |
+| CAMP-03 | Phase 84 | Complete |
+| CAMP-04 | Phase 84 | Complete |
+| CAMP-05 | Phase 84 | Complete |
 | MR-01 | Phase 85 | Pending |
 | MR-02 | Phase 85 | Pending |
 | MR-03 | Phase 85 | Pending |
