@@ -133,7 +133,15 @@ Cross-cutting constraints: `impute_camera_counts()` exported and importable befo
   4. The function aborts with informative `cli_abort()` messages on impossible inputs (m = 0, m > n, m > M)
   5. Return value is a `creel_estimates` S3 object — `compare_designs()` and `autoplot()` work without modification
   6. User can call `estimate_mr_harvest(N_hat, se_N, harvest_rate)` and receive total harvest with delta-method SE propagated from N_hat uncertainty
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+
+**Wave 1**
+- [ ] 085-01-PLAN.md — Implement estimate_angler_n() and estimate_mr_harvest() in R/creel-estimates-mark-recapture.R, run devtools::document(), update _pkgdown.yml
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [ ] 085-02-PLAN.md — Write test-estimate-angler-n.R and test-estimate-mr-harvest.R, run devtools::check() quality gate
 
 ### Phase 86: Stratification Audit
 **Goal**: Biologists can evaluate per-stratum effort precision from a completed creel design or pilot summary statistics, simulate strata merges, and compute Neyman-optimal reallocation of a fixed sampling budget
@@ -156,5 +164,5 @@ Cross-cutting constraints: `impute_camera_counts()` exported and importable befo
 | 82. Package Quality and Documentation | v1.5.0 | 5/5 | Complete | 2026-04-28 |
 | 83. Camera Design Helper | v1.6.0 | 2/2 | Complete | 2026-05-03 |
 | 84. Camera Missing Data Imputation | v1.6.0 | 2/2 | Complete | 2026-05-03 |
-| 85. Mark-Recapture Harvest Estimators | v1.6.0 | 0/TBD | Not started | - |
+| 85. Mark-Recapture Harvest Estimators | v1.6.0 | 0/2 | Not started | - |
 | 86. Stratification Audit | v1.6.0 | 0/TBD | Not started | - |
