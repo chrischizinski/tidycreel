@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.6.0
 milestone_name: Analytical Extensions II
 status: in_progress
-stopped_at: Phase 84 complete — ready to plan Phase 85
-last_updated: "2026-05-03T00:00:00.000Z"
-last_activity: 2026-05-03 — Phase 84 executed; impute_camera_counts() shipped; 2578 tests, 0 errors 0 warnings
+stopped_at: Phase 85 context gathered — ready to plan Phase 85
+last_updated: "2026-05-04T00:00:00.000Z"
+last_activity: 2026-05-04 — Phase 85 context gathered; 4 implementation decisions captured; ready for /gsd-plan-phase 85
 progress:
   total_phases: 4
   completed_phases: 2
@@ -25,9 +25,9 @@ See: .planning/PROJECT.md (updated 2026-05-02)
 
 ## Current Position
 
-Phase: 85 of 86 (Mark-Recapture Harvest Estimators) — not yet planned
+Phase: 85 of 86 (Mark-Recapture Harvest Estimators) — context gathered, ready to plan
 Plan: — (not yet executed)
-Status: Phase 84 complete; ready to discuss/plan Phase 85
+Status: Phase 85 context gathered; ready for /gsd-plan-phase 85
 Last activity: 2026-05-03 — Phase 84 executed (2 plans, 2 waves); impute_camera_counts() implemented, documented, tested; devtools::check() 0 errors 0 warnings; 2578 tests passing
 
 Progress: [####      ] 50%
@@ -74,4 +74,4 @@ None. Package state: rcmdcheck 0 errors 0 warnings, 2578 tests passing.
 
 Last session: 2026-05-03
 Stopped at: Phase 84 complete
-Resume file: .planning/phases/085-mark-recapture/085-CONTEXT.md (if exists, otherwise discuss first)
+Resume file: .planning/phases/085-mark-recapture/085-CONTEXT.md
