@@ -25,7 +25,7 @@ tidycreel is an R package for creel survey design, data preparation, estimation,
 ### v1.6.0 Analytical Extensions II
 
 - [x] **Phase 83: Camera Design Helper** - Implement `creel_n_camera()` for per-stratum camera-day sample size using the Cochran CV formula (completed 2026-05-03)
-- [ ] **Phase 84: Camera Missing Data Imputation** - Implement `impute_camera_counts()` with a GLM default tier and opt-in GLMM tier, schema-compatible with `add_counts()`
+- [x] **Phase 84: Camera Missing Data Imputation** - Implement `impute_camera_counts()` with a GLM default tier and opt-in GLMM tier, schema-compatible with `add_counts()` (completed 2026-05-03)
 - [ ] **Phase 85: Mark-Recapture Harvest Estimators** - Implement `estimate_angler_n()` (Chapman/Petersen/Schnabel) and `estimate_mr_harvest()` for closed-population harvest estimation
 - [ ] **Phase 86: Stratification Audit** - Implement `audit_strata()`, `simulate_strata_collapse()`, and `reallocate_strata()` for effort-precision-driven design evaluation
 
@@ -115,10 +115,10 @@ Plans:
 Plans:
 
 **Wave 1**
-- [ ] 084-01-PLAN.md — Implement impute_camera_counts() in R/impute-camera-counts.R, add glmmTMB to DESCRIPTION Suggests, register in _pkgdown.yml, run devtools::document()
+- [x] 084-01-PLAN.md — Implement impute_camera_counts() in R/impute-camera-counts.R, add glmmTMB to DESCRIPTION Suggests, register in _pkgdown.yml, run devtools::document()
 
 **Wave 2** *(blocked on Wave 1 completion)*
-- [ ] 084-02-PLAN.md — Write tests/testthat/test-impute-camera-counts.R and run devtools::check() quality gate
+- [x] 084-02-PLAN.md — Write tests/testthat/test-impute-camera-counts.R and run devtools::check() quality gate
 
 Cross-cutting constraints: `impute_camera_counts()` exported and importable before tests run; `add_counts()` column contract (schema-compatible output with `.imputed` flag and integer counts) required in both plans.
 
@@ -154,7 +154,7 @@ Cross-cutting constraints: `impute_camera_counts()` exported and importable befo
 | 80. INV-06 Fix and Quickcheck Proof | v1.5.0 | 2/2 | Complete | 2026-04-27 |
 | 81. Exploitation-Rate Estimator | v1.5.0 | 3/3 | Complete | 2026-04-27 |
 | 82. Package Quality and Documentation | v1.5.0 | 5/5 | Complete | 2026-04-28 |
-| 83. Camera Design Helper | v1.6.0 | 0/2 | Not started | - |
-| 84. Camera Missing Data Imputation | v1.6.0 | 0/2 | Not started | - |
+| 83. Camera Design Helper | v1.6.0 | 2/2 | Complete | 2026-05-03 |
+| 84. Camera Missing Data Imputation | v1.6.0 | 2/2 | Complete | 2026-05-03 |
 | 85. Mark-Recapture Harvest Estimators | v1.6.0 | 0/TBD | Not started | - |
 | 86. Stratification Audit | v1.6.0 | 0/TBD | Not started | - |
