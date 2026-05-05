@@ -69,6 +69,8 @@ reference:
       - estimate_total_harvest
       - estimate_total_release
       - estimate_exploitation_rate
+      - estimate_angler_n
+      - estimate_mr_harvest
       - est_length_distribution
 
   - title: "Reporting & Diagnostics"
