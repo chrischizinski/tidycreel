@@ -76,12 +76,15 @@ Management. (in press)
 \code{\link[=creel_n_effort]{creel_n_effort()}} for the equivalent function for angler-contact
 sampling days.
 
-Other "Planning & Sample Size": 
+Other "Planning & Sample Size":
+\code{\link{audit_strata}()},
 \code{\link{compare_designs}()},
 \code{\link{creel_n_cpue}()},
 \code{\link{creel_n_effort}()},
 \code{\link{creel_power}()},
 \code{\link{cv_from_n}()},
-\code{\link{power_creel}()}
+\code{\link{power_creel}()},
+\code{\link{reallocate_strata}()},
+\code{\link{simulate_strata_collapse}()}
 }
 \concept{"Planning & Sample Size"}
