@@ -117,6 +117,9 @@ reference:
       - creel_n_cpue
       - creel_power
       - cv_from_n
+      - audit_strata
+      - simulate_strata_collapse
+      - reallocate_strata
       - compare_designs
       - print.creel_design_comparison
       - autoplot.creel_design_comparison
