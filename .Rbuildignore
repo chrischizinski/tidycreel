@@ -105,3 +105,6 @@
 ^inst/profiling/
 ^skills$
 ^skills-lock\.json$
+^kairo\.db$
+^kairo\.db-shm$
+^kairo\.db-wal$

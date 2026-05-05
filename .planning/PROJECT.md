@@ -8,11 +8,21 @@ tidycreel is an R package for creel survey design, data preparation, estimation,
 
 A biologist should be able to go from survey design to package-ready estimates, plots, summaries, and documentation without stitching together a custom analysis stack.
 
+## Current Milestone: v1.6.0 Analytical Extensions II
+
+**Goal:** Close the four highest-priority gaps identified by literature cross-check — camera data quality, camera survey design, mark-recapture harvest estimation, and stratification auditing.
+
+**Target features:**
+- Camera missing data imputation — GLMM/GLM fill-in tools for camera outages and failures (Afrifa-Yamoah 2020, Hartill 2016)
+- Camera design helper — `creel_n_camera()`-style function for sampling effort guidance (Feltz & Middaugh 2025)
+- Mark-recapture harvest estimators — Petersen/Schnabel/Jolly-Seber on anglers (Hansen & Van Kirk 2018)
+- Stratification audit — tools for re-evaluating strata and power-driven design reduction (de Kerckhove 2026)
+
 ## Current State
 
 **Package version:** `1.3.0` (version bump, release commit, and tag pending — no outward-facing release yet)
 
-v1.5.0 planning complete (Phases 80–82 shipped 2026-04-28). No active milestone defined. Next milestone cycle starts with `/gsd:new-milestone`.
+v1.6.0 milestone started 2026-05-02. Phase 83 complete 2026-05-03: `creel_n_camera()` shipped (Cochran 1977, Feltz-Middaugh 2025 minimums; 2556 tests, 0 errors 0 warnings). Phase 84 complete 2026-05-04: `impute_camera_counts()` shipped — Poisson GLM default + NB GLMM opt-in, `.imputed` flag, CAMP-01..05 satisfied (2578 tests, 0 errors 0 warnings). Phase 85 complete 2026-05-04: `estimate_angler_n()` and `estimate_mr_harvest()` shipped — Chapman/Petersen/Schnabel closed-population estimators + delta-method harvest, MR-01..06 satisfied (2624 tests, 0 errors 0 warnings). Known open: CR-01 `.imputed` false-positive edge case; CR-02 docs say ZINB but impl is NB GLMM; 085-REVIEW.md WARNING-01..03 (advisory, non-blocking).
 
 ## Previous State (M023 / v1.4.0 — archived)
 
@@ -27,15 +37,14 @@ Important release-surface note:
 - this was a local planning closeout, not a git-tagged `v1.4.0` release
 - version bump, release commit, and tag creation remain explicit follow-up work
 
-## Next Milestone Goals
+## Previous State (M024 / v1.5.0 — archived)
 
-No active milestone is defined yet.
-
-Recommended starting points for the next planning cycle:
-- decide the real release path for `v1.4.0` versus a later version bump
-- resolve the remaining `rcmdcheck` housekeeping note for unused `lifecycle` import
-- decide whether `tidycreel.connect` gets a bridge page on the main site or its own pkgdown site
-- choose whether deferred analytical work (multi-species covariance, mark-recapture, exploitation-rate estimation) becomes active or remains out of scope
+What was validated in this milestone:
+- `estimate_exploitation_rate()` with delta-method SE and stratified path (Pollock et al. moment estimator)
+- INV-06 stratified-sum fix for `estimate_total_catch()`
+- `lifecycle` import cleanup, `urlchecker` green, `goodpractice` sapply→vapply sweep (14 sites)
+- `rhub` v2 GitHub Actions CI (ubuntu-release + macos-release green)
+- `tidycreel.connect` bridge article on pkgdown site
 
 ## Current Package State
 
@@ -112,7 +121,7 @@ The package currently closes its local gate with:
 
 ### Active
 
-(None — no active milestone. Start next cycle with `/gsd:new-milestone`.)
+(Requirements being defined — see REQUIREMENTS.md when complete)
 
 ### Out of Scope
 
@@ -155,4 +164,22 @@ The package currently closes its local gate with:
 - Prefer release-surface truthfulness and integration proof over cosmetic editing.
 
 ---
-*Last updated: 2026-04-28 after v1.5.0 milestone*
+## Evolution
+
+This document evolves at phase transitions and milestone boundaries.
+
+**After each phase transition** (via `/gsd-transition`):
+1. Requirements invalidated? → Move to Out of Scope with reason
+2. Requirements validated? → Move to Validated with phase reference
+3. New requirements emerged? → Add to Active
+4. Decisions to log? → Add to Key Decisions
+5. "What This Is" still accurate? → Update if drifted
+
+**After each milestone** (via `/gsd-complete-milestone`):
+1. Full review of all sections
+2. Core Value check — still the right priority?
+3. Audit Out of Scope — reasons still valid?
+4. Update Context with current state
+
+---
+*Last updated: 2026-05-04 — Phase 84 complete (impute_camera_counts shipped)*

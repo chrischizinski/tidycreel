@@ -47,6 +47,7 @@ reference:
       - add_sections
       - as_survey_design
       - est_effort_camera
+      - impute_camera_counts
       - as_hybrid_svydesign
       - print.creel_hybrid_svydesign
       - compute_effort
@@ -68,6 +69,8 @@ reference:
       - estimate_total_harvest
       - estimate_total_release
       - estimate_exploitation_rate
+      - estimate_angler_n
+      - estimate_mr_harvest
       - est_length_distribution
 
   - title: "Reporting & Diagnostics"
@@ -110,9 +113,13 @@ reference:
     contents:
       - power_creel
       - creel_n_effort
+      - creel_n_camera
       - creel_n_cpue
       - creel_power
       - cv_from_n
+      - audit_strata
+      - simulate_strata_collapse
+      - reallocate_strata
       - compare_designs
       - print.creel_design_comparison
       - autoplot.creel_design_comparison

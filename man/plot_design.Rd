@@ -50,7 +50,7 @@ plot_design(design_with_counts)
 \seealso{
 \code{\link[=creel_design]{creel_design()}}, \code{\link[=autoplot.creel_schedule]{autoplot.creel_schedule()}}
 
-Other "Visualisation":
+Other "Visualisation": 
 \code{\link{autoplot.creel_estimates}()},
 \code{\link{autoplot.creel_length_distribution}()},
 \code{\link{autoplot.creel_schedule}()},

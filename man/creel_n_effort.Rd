@@ -60,10 +60,14 @@ Cochran, W.G. 1977. Sampling Techniques, 3rd ed. Wiley, New York.
 }
 \seealso{
 Other "Planning & Sample Size":
+\code{\link{audit_strata}()},
 \code{\link{compare_designs}()},
+\code{\link{creel_n_camera}()},
 \code{\link{creel_n_cpue}()},
 \code{\link{creel_power}()},
 \code{\link{cv_from_n}()},
-\code{\link{power_creel}()}
+\code{\link{power_creel}()},
+\code{\link{reallocate_strata}()},
+\code{\link{simulate_strata_collapse}()}
 }
 \concept{"Planning & Sample Size"}

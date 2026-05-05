@@ -43,7 +43,7 @@ get_sampling_frame(design)
 
 }
 \seealso{
-Other "Bus-Route Helpers":
+Other "Bus-Route Helpers": 
 \code{\link{get_enumeration_counts}()},
 \code{\link{get_inclusion_probs}()},
 \code{\link{get_site_contributions}()}

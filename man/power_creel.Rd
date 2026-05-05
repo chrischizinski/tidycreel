@@ -140,10 +140,14 @@ power_creel(
 \code{\link[=creel_n_effort]{creel_n_effort()}}, \code{\link[=creel_n_cpue]{creel_n_cpue()}}, \code{\link[=creel_power]{creel_power()}}
 
 Other "Planning & Sample Size":
+\code{\link{audit_strata}()},
 \code{\link{compare_designs}()},
+\code{\link{creel_n_camera}()},
 \code{\link{creel_n_cpue}()},
 \code{\link{creel_n_effort}()},
 \code{\link{creel_power}()},
-\code{\link{cv_from_n}()}
+\code{\link{cv_from_n}()},
+\code{\link{reallocate_strata}()},
+\code{\link{simulate_strata_collapse}()}
 }
 \concept{"Planning & Sample Size"}
