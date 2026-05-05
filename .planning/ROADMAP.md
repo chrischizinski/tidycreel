@@ -26,7 +26,7 @@ tidycreel is an R package for creel survey design, data preparation, estimation,
 
 - [x] **Phase 83: Camera Design Helper** - Implement `creel_n_camera()` for per-stratum camera-day sample size using the Cochran CV formula (completed 2026-05-03)
 - [x] **Phase 84: Camera Missing Data Imputation** - Implement `impute_camera_counts()` with a GLM default tier and opt-in GLMM tier, schema-compatible with `add_counts()` (completed 2026-05-03)
-- [ ] **Phase 85: Mark-Recapture Harvest Estimators** - Implement `estimate_angler_n()` (Chapman/Petersen/Schnabel) and `estimate_mr_harvest()` for closed-population harvest estimation
+- [x] **Phase 85: Mark-Recapture Harvest Estimators** - Implement `estimate_angler_n()` (Chapman/Petersen/Schnabel) and `estimate_mr_harvest()` for closed-population harvest estimation (completed 2026-05-04)
 - [ ] **Phase 86: Stratification Audit** - Implement `audit_strata()`, `simulate_strata_collapse()`, and `reallocate_strata()` for effort-precision-driven design evaluation
 
 ## Phase Details
@@ -138,10 +138,10 @@ Cross-cutting constraints: `impute_camera_counts()` exported and importable befo
 Plans:
 
 **Wave 1**
-- [ ] 085-01-PLAN.md — Implement estimate_angler_n() and estimate_mr_harvest() in R/creel-estimates-mark-recapture.R, run devtools::document(), update _pkgdown.yml
+- [x] 085-01-PLAN.md — Implement estimate_angler_n() and estimate_mr_harvest() in R/creel-estimates-mark-recapture.R, run devtools::document(), update _pkgdown.yml
 
 **Wave 2** *(blocked on Wave 1 completion)*
-- [ ] 085-02-PLAN.md — Write test-estimate-angler-n.R and test-estimate-mr-harvest.R, run devtools::check() quality gate
+- [x] 085-02-PLAN.md — Write test-estimate-angler-n.R and test-estimate-mr-harvest.R, run devtools::check() quality gate
 
 ### Phase 86: Stratification Audit
 **Goal**: Biologists can evaluate per-stratum effort precision from a completed creel design or pilot summary statistics, simulate strata merges, and compute Neyman-optimal reallocation of a fixed sampling budget
@@ -164,5 +164,5 @@ Plans:
 | 82. Package Quality and Documentation | v1.5.0 | 5/5 | Complete | 2026-04-28 |
 | 83. Camera Design Helper | v1.6.0 | 2/2 | Complete | 2026-05-03 |
 | 84. Camera Missing Data Imputation | v1.6.0 | 2/2 | Complete | 2026-05-03 |
-| 85. Mark-Recapture Harvest Estimators | v1.6.0 | 0/2 | Not started | - |
+| 85. Mark-Recapture Harvest Estimators | v1.6.0 | 2/2 | Complete | 2026-05-04 |
 | 86. Stratification Audit | v1.6.0 | 0/TBD | Not started | - |
