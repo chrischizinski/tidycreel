@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.6.0
 milestone_name: Analytical Extensions II
-status: executing
-stopped_at: Phase 85 complete
-last_updated: "2026-05-04T00:00:00.000Z"
-last_activity: 2026-05-04 -- Phase 85 execution complete
+status: complete
+stopped_at: Phase 86 complete — all plans executed, rcmdcheck 0 errors 0 warnings
+last_updated: "2026-05-05T00:00:00.000Z"
+last_activity: 2026-05-05 -- Phase 86 complete (STRAT-01..STRAT-05 satisfied)
 progress:
   total_phases: 7
-  completed_phases: 6
-  total_plans: 14
-  completed_plans: 14
-  percent: 86
+  completed_phases: 7
+  total_plans: 16
+  completed_plans: 16
+  percent: 100
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-02)
 
 **Core value:** A biologist should be able to go from survey design to package-ready estimates, plots, summaries, and documentation without stitching together a custom analysis stack.
-**Current focus:** Phase 85 complete — Phase 86 (Stratification Audit) next
+**Current focus:** v1.6.0 milestone complete — ready for verification and PR
 
 ## Current Position
 
-Phase: 86 of 86 (Stratification Audit) — ready to plan
-Plan: — (not yet started)
-Status: Ready to plan/execute
-Last activity: 2026-05-04 -- Phase 85 execution complete
+Phase: 86 of 86 (Stratification Audit) — COMPLETE
+Plan: 086-02 complete
+Status: Milestone v1.6.0 complete — ready for verification + PR
+Last activity: 2026-05-05 -- Phase 86 complete (STRAT-01..STRAT-05 satisfied)
 
-Progress: [#######   ] 86%
+Progress: [##########] 100%
 
 ## Accumulated Context
 
@@ -77,16 +77,29 @@ Progress: [#######   ] 86%
 - devtools::check(): 0 errors | 0 warnings | 1 pre-existing note; 2624 tests passing
 - Code review: 3 advisory warnings (variance_method mislabel in Petersen, Schnabel ci_hi unguarded for lo_m=0, Test J missing upper harvest_rate bound) — tracked in 085-REVIEW.md
 
+### Phase 86 Outcomes
+
+- `audit_strata()` S3 generic added to `R/strata-audit.R` — `creel_design` and `default` methods; returns `creel_strata_audit` with per-stratum RSE, DEFF, meets_target
+- `simulate_strata_collapse(audit, merge_strata)` before/after long tibble for strata merge evaluation
+- `reallocate_strata(n_total, N_h, s2_h)` Neyman-optimal named integer vector allocation
+- `export(audit_strata)`, `S3method(audit_strata,creel_design)`, `S3method(audit_strata,default)`, `export(simulate_strata_collapse)`, `export(reallocate_strata)` in NAMESPACE
+- `man/audit_strata.Rd`, `man/simulate_strata_collapse.Rd`, `man/reallocate_strata.Rd` generated
+- `_pkgdown.yml` updated: three functions in Planning & Sample Size section (between cv_from_n and compare_designs)
+- 37 test_that() blocks in test-strata-audit.R (Tests A–X + creel_design fixture)
+- rcmdcheck 0 errors 0 warnings; 2661 tests passing
+- cli_abort pluralization fix: removed `{?s}` from simulate_strata_collapse error message (post_process_plurals)
+- ignore_attr = TRUE in expect_equal for named-vector tibble subset assertions
+
 ### Pending Todos
 
 None.
 
 ### Blockers/Concerns
 
-None. Package state: rcmdcheck 0 errors 0 warnings, 2624 tests passing.
+None. Package state: rcmdcheck 0 errors 0 warnings, 2661 tests passing.
 
 ## Session Continuity
 
-Last session: 2026-05-04
-Stopped at: Phase 85 complete
-Resume file: .planning/phases/085-mark-recapture/085-VERIFICATION.md
+Last session: 2026-05-05
+Stopped at: Phase 86 complete — all 16 plans executed
+Resume file: None — milestone v1.6.0 complete; next step is verification + PR
