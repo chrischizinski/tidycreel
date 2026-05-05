@@ -16,6 +16,7 @@
 #'   the complete field description.
 #'
 #' @family "Planning & Sample Size"
+#' @importFrom stats var
 #' @export
 audit_strata <- function(x, ...) UseMethod("audit_strata")
 
