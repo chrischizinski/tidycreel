@@ -123,6 +123,16 @@ main inspection points in a creel survey workflow:</p>
 <td><code>autoplot(estimates)</code></td>
 <td>Visualise effort or CPUE estimates with CIs</td>
 </tr>
+<tr class="even">
+<td><code>autoplot(length_dist)</code></td>
+<td>Visualise weighted length-frequency distributions</td>
+</tr>
+<tr class="odd">
+<td>
+<code><a href="../reference/theme_creel.html">theme_creel()</a></code> / <code><a href="../reference/creel_palette.html">creel_palette()</a></code>
+</td>
+<td>Apply consistent package-wide styling</td>
+</tr>
 </tbody>
 </table>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
@@ -195,8 +205,9 @@ panels stack vertically so the full season is visible at a glance.</p>
 <div class="section level2">
 <h2 id="visualise-estimates-with-autoplot">3 Visualise estimates with <code>autoplot()</code><a class="anchor" aria-label="anchor" href="#visualise-estimates-with-autoplot"></a>
 </h2>
-<p><code><a href="../reference/autoplot.creel_estimates.html">autoplot.creel_estimates()</a></code> draws a point-and-errorbar
-plot from any <code>creel_estimates</code> object.</p>
+<p><code><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot()</a></code> draws point-and-errorbar plots from
+<code>creel_estimates</code> objects and histogram-style bar charts from
+<code>creel_length_distribution</code> objects.</p>
 <div class="section level3">
 <h3 id="ungrouped-effort-estimate">Ungrouped effort estimate<a class="anchor" aria-label="anchor" href="#ungrouped-effort-estimate"></a>
 </h3>
@@ -244,21 +255,86 @@ typical pattern in summer recreational fisheries.</p>
 <span></span>
 <span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">cpue</span>, title <span class="op">=</span> <span class="st">"Walleye CPUE (catch per angler-hour)"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="visualisation_files/figure-html/cpue-1.png" class="r-plt" alt="" width="100%"></p>
+</div>
+<div class="section level3">
+<h3 id="weighted-length-distributions">Weighted Length Distributions<a class="anchor" aria-label="anchor" href="#weighted-length-distributions"></a>
+</h3>
+<p><code><a href="../reference/est_length_distribution.html">est_length_distribution()</a></code> produces weighted estimates of
+the population length frequency. <code><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot()</a></code> renders this as
+a histogram-style bar chart.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"example_lengths"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_lengths.html">add_lengths</a></span><span class="op">(</span></span>
+<span>  <span class="va">design</span>,</span>
+<span>  <span class="va">example_lengths</span>,</span>
+<span>  length_uid    <span class="op">=</span> <span class="va">interview_id</span>,</span>
+<span>  interview_uid <span class="op">=</span> <span class="va">interview_id</span>,</span>
+<span>  species       <span class="op">=</span> <span class="va">species</span>,</span>
+<span>  length        <span class="op">=</span> <span class="va">length</span>,</span>
+<span>  length_type   <span class="op">=</span> <span class="va">length_type</span>,</span>
+<span>  count         <span class="op">=</span> <span class="va">count</span>,</span>
+<span>  release_format <span class="op">=</span> <span class="st">"binned"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">ld</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/est_length_distribution.html">est_length_distribution</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">species</span>, bin_width <span class="op">=</span> <span class="fl">25</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">ld</span>, theme <span class="op">=</span> <span class="st">"creel"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="visualisation_files/figure-html/length-dist-1.png" class="r-plt" alt="" width="100%"></p>
 <hr>
 </div>
 </div>
 <div class="section level2">
-<h2 id="combining-plots">Combining plots<a class="anchor" aria-label="anchor" href="#combining-plots"></a>
+<h2 id="combining-plots">4 Combining plots<a class="anchor" aria-label="anchor" href="#combining-plots"></a>
 </h2>
 <p>All three functions return standard <code>ggplot</code> objects, so
 they compose naturally with <code>+</code> (ggplot2 operators) or
 side-by-side using <a href="https://patchwork.data-imaginist.com/" class="external-link">patchwork</a> if that
 package is installed.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Requires patchwork</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://patchwork.data-imaginist.com" class="external-link">patchwork</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/plot_design.html">plot_design</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">effort</span><span class="op">)</span></span></code></pre></div>
 <hr>
+</div>
+<div class="section level2">
+<h2 id="customising-appearance-with-theme_creel">5 Customising Appearance with <code>theme_creel()</code><a class="anchor" aria-label="anchor" href="#customising-appearance-with-theme_creel"></a>
+</h2>
+<p><code>tidycreel</code> provides a built-in theme and color palette to
+ensure your plots match the package’s visual style. These are designed
+for clean, publication-ready output.</p>
+<div class="section level3">
+<h3 id="using-the-theme-creel-argument">Using the <code>theme = "creel"</code> argument<a class="anchor" aria-label="anchor" href="#using-the-theme-creel-argument"></a>
+</h3>
+<p>The <code><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot()</a></code> methods for estimates and schedules
+include a <code>theme</code> argument. Setting this to
+<code>"creel"</code> applies <code><a href="../reference/theme_creel.html">theme_creel()</a></code> and uses the
+package’s primary colors automatically.</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">cpue</span>, theme <span class="op">=</span> <span class="st">"creel"</span>, title <span class="op">=</span> <span class="st">"CPUE with theme = 'creel'"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="visualisation_files/figure-html/theme-arg-1.png" class="r-plt" alt="" width="100%"></p>
+</div>
+<div class="section level3">
+<h3 id="manual-customisation">Manual Customisation<a class="anchor" aria-label="anchor" href="#manual-customisation"></a>
+</h3>
+<p>You can also apply <code><a href="../reference/theme_creel.html">theme_creel()</a></code> manually to any ggplot
+object, including those returned by <code><a href="../reference/plot_design.html">plot_design()</a></code>. The
+<code><a href="../reference/creel_palette.html">creel_palette()</a></code> function provides access to the individual
+hex codes.</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Access individual colors</span></span>
+<span><span class="va">pal</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_palette.html">creel_palette</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">pal</span><span class="op">[[</span><span class="st">"primary"</span><span class="op">]</span><span class="op">]</span></span>
+<span><span class="co">#&gt; [1] "#0b3b5e"</span></span>
+<span></span>
+<span><span class="co"># Apply theme and colors manually</span></span>
+<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">example_counts</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">day_type</span>, y <span class="op">=</span> <span class="va">effort_hours</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_boxplot.html" class="external-link">geom_boxplot</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="va">pal</span><span class="op">[[</span><span class="st">"light"</span><span class="op">]</span><span class="op">]</span>, color <span class="op">=</span> <span class="va">pal</span><span class="op">[[</span><span class="st">"primary"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="../reference/theme_creel.html">theme_creel</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Manual Plot with tidycreel Styles"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="visualisation_files/figure-html/manual-theme-1.png" class="r-plt" alt="" width="100%"></p>
+<hr>
+</div>
 </div>
 <div class="section level2">
 <h2 id="summary">Summary<a class="anchor" aria-label="anchor" href="#summary"></a>
@@ -289,6 +365,21 @@ package is installed.</p>
 <td><code>autoplot(estimates)</code></td>
 <td><code>creel_estimates</code></td>
 <td>point-and-errorbar plot</td>
+</tr>
+<tr class="even">
+<td><code>autoplot(length_dist)</code></td>
+<td><code>creel_length_distribution</code></td>
+<td>histogram-style bar chart</td>
+</tr>
+<tr class="odd">
+<td><code><a href="../reference/theme_creel.html">theme_creel()</a></code></td>
+<td>N/A</td>
+<td>ggplot2 theme object</td>
+</tr>
+<tr class="even">
+<td><code><a href="../reference/creel_palette.html">creel_palette()</a></code></td>
+<td>N/A</td>
+<td>named character vector of hex colors</td>
 </tr>
 </tbody>
 </table>

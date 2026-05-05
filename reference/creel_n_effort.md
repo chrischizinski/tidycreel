@@ -65,11 +65,15 @@ Cochran, W.G. 1977. Sampling Techniques, 3rd ed. Wiley, New York.
 ## See also
 
 Other "Planning & Sample Size":
+[`audit_strata()`](https://chrischizinski.github.io/tidycreel/reference/audit_strata.md),
 [`compare_designs()`](https://chrischizinski.github.io/tidycreel/reference/compare_designs.md),
+[`creel_n_camera()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_camera.md),
 [`creel_n_cpue()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_cpue.md),
 [`creel_power()`](https://chrischizinski.github.io/tidycreel/reference/creel_power.md),
 [`cv_from_n()`](https://chrischizinski.github.io/tidycreel/reference/cv_from_n.md),
-[`power_creel()`](https://chrischizinski.github.io/tidycreel/reference/power_creel.md)
+[`power_creel()`](https://chrischizinski.github.io/tidycreel/reference/power_creel.md),
+[`reallocate_strata()`](https://chrischizinski.github.io/tidycreel/reference/reallocate_strata.md),
+[`simulate_strata_collapse()`](https://chrischizinski.github.io/tidycreel/reference/simulate_strata_collapse.md)
 
 ## Examples
 

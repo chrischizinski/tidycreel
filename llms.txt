@@ -273,6 +273,8 @@ argument.
   : Extract internal survey design object for advanced use
 - [`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md)
   : Estimate angler effort from camera/time-lapse count data
+- [`impute_camera_counts()`](https://chrischizinski.github.io/tidycreel/reference/impute_camera_counts.md)
+  : Impute missing camera counts using GLM or GLMM
 - [`as_hybrid_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_hybrid_svydesign.md)
   **\[experimental\]** : Construct a hybrid access + roving survey
   design
@@ -313,6 +315,10 @@ dispatch automatically on survey type.
   rate
 - [`estimate_exploitation_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_exploitation_rate.md)
   : Estimate exploitation rate using the Pollock et al. moment estimator
+- [`estimate_angler_n()`](https://chrischizinski.github.io/tidycreel/reference/estimate_angler_n.md)
+  : Estimate angler population size via closed-population mark-recapture
+- [`estimate_mr_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_mr_harvest.md)
+  : Estimate total harvest from a mark-recapture population estimate
 - [`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md)
   : Estimate a weighted length distribution from creel interview data
 
@@ -387,6 +393,8 @@ design comparison.
   : Unified sample-size and power interface for creel surveys
 - [`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md)
   : Calculate sampling days required to achieve a target CV on effort
+- [`creel_n_camera()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_camera.md)
+  : Calculate camera-days required to achieve a target CV
 - [`creel_n_cpue()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_cpue.md)
   : Calculate interviews required to achieve a target CV on CPUE
 - [`creel_power()`](https://chrischizinski.github.io/tidycreel/reference/creel_power.md)
@@ -394,6 +402,13 @@ design comparison.
   seasons
 - [`cv_from_n()`](https://chrischizinski.github.io/tidycreel/reference/cv_from_n.md)
   : Compute the expected CV achievable with a known sample size
+- [`audit_strata()`](https://chrischizinski.github.io/tidycreel/reference/audit_strata.md)
+  : Audit per-stratum effort precision from a completed creel design or
+  pilot statistics
+- [`simulate_strata_collapse()`](https://chrischizinski.github.io/tidycreel/reference/simulate_strata_collapse.md)
+  : Simulate the effect of collapsing strata on precision
+- [`reallocate_strata()`](https://chrischizinski.github.io/tidycreel/reference/reallocate_strata.md)
+  : Compute Neyman-optimal sample allocation across strata
 - [`compare_designs()`](https://chrischizinski.github.io/tidycreel/reference/compare_designs.md)
   **\[experimental\]** : Compare multiple survey design estimates side
   by side

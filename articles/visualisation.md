@@ -8,6 +8,8 @@ main inspection points in a creel survey workflow:
 | [`plot_design()`](https://chrischizinski.github.io/tidycreel/reference/plot_design.md) | Inspect stratum sample sizes and count distributions |
 | `autoplot(schedule)` | Review the survey calendar tile-by-tile |
 | `autoplot(estimates)` | Visualise effort or CPUE estimates with CIs |
+| `autoplot(length_dist)` | Visualise weighted length-frequency distributions |
+| [`theme_creel()`](https://chrischizinski.github.io/tidycreel/reference/theme_creel.md) / [`creel_palette()`](https://chrischizinski.github.io/tidycreel/reference/creel_palette.md) | Apply consistent package-wide styling |
 
 ``` r
 
@@ -95,8 +97,9 @@ season is visible at a glance.
 
 ## 3 Visualise estimates with `autoplot()`
 
-[`autoplot.creel_estimates()`](https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_estimates.md)
-draws a point-and-errorbar plot from any `creel_estimates` object.
+[`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
+draws point-and-errorbar plots from `creel_estimates` objects and
+histogram-style bar charts from `creel_length_distribution` objects.
 
 ### Ungrouped effort estimate
 
@@ -154,9 +157,39 @@ autoplot(cpue, title = "Walleye CPUE (catch per angler-hour)")
 
 ![](visualisation_files/figure-html/cpue-1.png)
 
+### Weighted Length Distributions
+
+[`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md)
+produces weighted estimates of the population length frequency.
+[`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
+renders this as a histogram-style bar chart.
+
+``` r
+
+data("example_lengths")
+
+design <- add_lengths(
+  design,
+  example_lengths,
+  length_uid    = interview_id,
+  interview_uid = interview_id,
+  species       = species,
+  length        = length,
+  length_type   = length_type,
+  count         = count,
+  release_format = "binned"
+)
+
+ld <- est_length_distribution(design, by = species, bin_width = 25)
+
+autoplot(ld, theme = "creel")
+```
+
+![](visualisation_files/figure-html/length-dist-1.png)
+
 ------------------------------------------------------------------------
 
-## Combining plots
+## 4 Combining plots
 
 All three functions return standard `ggplot` objects, so they compose
 naturally with `+` (ggplot2 operators) or side-by-side using
@@ -172,6 +205,56 @@ plot_design(design) + autoplot(effort)
 
 ------------------------------------------------------------------------
 
+## 5 Customising Appearance with `theme_creel()`
+
+`tidycreel` provides a built-in theme and color palette to ensure your
+plots match the package’s visual style. These are designed for clean,
+publication-ready output.
+
+### Using the `theme = "creel"` argument
+
+The
+[`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
+methods for estimates and schedules include a `theme` argument. Setting
+this to `"creel"` applies
+[`theme_creel()`](https://chrischizinski.github.io/tidycreel/reference/theme_creel.md)
+and uses the package’s primary colors automatically.
+
+``` r
+
+autoplot(cpue, theme = "creel", title = "CPUE with theme = 'creel'")
+```
+
+![](visualisation_files/figure-html/theme-arg-1.png)
+
+### Manual Customisation
+
+You can also apply
+[`theme_creel()`](https://chrischizinski.github.io/tidycreel/reference/theme_creel.md)
+manually to any ggplot object, including those returned by
+[`plot_design()`](https://chrischizinski.github.io/tidycreel/reference/plot_design.md).
+The
+[`creel_palette()`](https://chrischizinski.github.io/tidycreel/reference/creel_palette.md)
+function provides access to the individual hex codes.
+
+``` r
+
+# Access individual colors
+pal <- creel_palette()
+pal[["primary"]]
+#> [1] "#0b3b5e"
+
+# Apply theme and colors manually
+ggplot(example_counts, aes(x = day_type, y = effort_hours)) +
+  geom_boxplot(fill = pal[["light"]], color = pal[["primary"]]) +
+  theme_creel() +
+  labs(title = "Manual Plot with tidycreel Styles")
+```
+
+![](visualisation_files/figure-html/manual-theme-1.png)
+
+------------------------------------------------------------------------
+
 ## Summary
 
 | Function | Input class | Returns |
@@ -179,6 +262,9 @@ plot_design(design) + autoplot(effort)
 | `plot_design(design)` | `creel_design` | bar chart (no counts) or jitter+crossbar (counts) |
 | `autoplot(schedule)` | `creel_schedule` | monthly tile calendar |
 | `autoplot(estimates)` | `creel_estimates` | point-and-errorbar plot |
+| `autoplot(length_dist)` | `creel_length_distribution` | histogram-style bar chart |
+| [`theme_creel()`](https://chrischizinski.github.io/tidycreel/reference/theme_creel.md) | N/A | ggplot2 theme object |
+| [`creel_palette()`](https://chrischizinski.github.io/tidycreel/reference/creel_palette.md) | N/A | named character vector of hex colors |
 
 All plots accept a `title =` argument and return a `ggplot` object for
 further customisation with standard ggplot2 `+` syntax.

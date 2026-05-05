@@ -220,6 +220,7 @@ Other "Survey Design":
 [`compute_effort()`](https://chrischizinski.github.io/tidycreel/reference/compute_effort.md),
 [`creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/creel_schema.md),
 [`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md),
+[`impute_camera_counts()`](https://chrischizinski.github.io/tidycreel/reference/impute_camera_counts.md),
 [`prep_counts_boat_party()`](https://chrischizinski.github.io/tidycreel/reference/prep_counts_boat_party.md),
 [`prep_counts_daily_effort()`](https://chrischizinski.github.io/tidycreel/reference/prep_counts_daily_effort.md),
 [`prep_interview_catch()`](https://chrischizinski.github.io/tidycreel/reference/prep_interview_catch.md),
