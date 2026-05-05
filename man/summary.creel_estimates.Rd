@@ -41,7 +41,7 @@ as.data.frame(summary(est))
 \code{\link[=estimate_effort]{estimate_effort()}}, \code{\link[=estimate_catch_rate]{estimate_catch_rate()}},
 \code{\link[=estimate_harvest_rate]{estimate_harvest_rate()}}
 
-Other "Reporting & Diagnostics":
+Other "Reporting & Diagnostics": 
 \code{\link{adjust_nonresponse}()},
 \code{\link{check_completeness}()},
 \code{\link{compare_variance}()},

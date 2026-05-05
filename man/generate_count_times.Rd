@@ -102,7 +102,7 @@ generate_count_times(strategy = "fixed", fixed_windows = fw)
 
 }
 \seealso{
-Other "Scheduling":
+Other "Scheduling": 
 \code{\link{attach_count_times}()},
 \code{\link{generate_bus_schedule}()},
 \code{\link{generate_schedule}()},

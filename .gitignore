@@ -110,3 +110,8 @@ vendor/
 coverage/
 .cache/
 tmp/
+
+# Kairo task database (GSD workflow tool)
+kairo.db
+kairo.db-shm
+kairo.db-wal

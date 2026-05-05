@@ -1,73 +1,96 @@
-# Requirements: tidycreel
+# Requirements: tidycreel v1.6.0 — Analytical Extensions II
 
-**Defined:** 2026-04-26
+**Defined:** 2026-05-02
 **Core Value:** A biologist should be able to go from survey design to package-ready estimates, plots, summaries, and documentation without stitching together a custom analysis stack.
 
-## v1.5.0 Requirements
+## v1.6.0 Requirements
 
-### Estimators
+### Camera Missing Data Imputation
 
-- [x] **ESTIM-01**: `estimate_total_catch()` returns the same aggregate estimate as summing `estimate_total_catch(by = "species")` for multi-strata designs (INV-06 fix — stratified-sum)
-- [x] **ESTIM-02**: `estimate_exploitation_rate()` accepts tagged-fish count and creel-harvest data and returns an exploitation rate using the Pollock et al. formulation
-- [x] **ESTIM-03**: `estimate_exploitation_rate()` supports stratification by survey strata and returns stratum-level estimates
-- [x] **ESTIM-04**: INV-06 quickcheck property test passes for multi-strata multi-species designs after fix
-- [x] **ESTIM-05**: `estimate_exploitation_rate()` is documented with a worked example in its Rd file
+- [x] **CAMP-01**: User can call `impute_camera_counts()` on a data frame with a status column and receive a complete count frame with outage rows filled using a day-type GLM (Hartill 2016) — Validated in Phase 84
+- [x] **CAMP-02**: User can opt into zero-inflated GLMM imputation (Afrifa-Yamoah 2020) via `method = "glmm"`, guarded by `rlang::check_installed("glmmTMB")` — Validated in Phase 84
+- [x] **CAMP-03**: `impute_camera_counts()` output is schema-compatible with `add_counts()`, enabling the full `impute → add_counts → est_effort_camera()` chain without manual intervention — Validated in Phase 84
+- [x] **CAMP-04**: Function warns via `cli_warn()` when the missing fraction in any stratum exceeds 50% (Afrifa-Yamoah 2020 reliability threshold) — Validated in Phase 84
+- [x] **CAMP-05**: Function aborts with an informative message when an entire stratum has no observed counts (imputation requires at least some observed data) — Validated in Phase 84
 
-### Package Quality
+### Camera Design Helper
 
-- [x] **QUAL-01**: Unused `lifecycle` import removed from DESCRIPTION and NAMESPACE
-- [x] **QUAL-02**: Package passes `urlchecker::url_check()` with no broken URLs
-- [ ] **QUAL-03**: Package passes `rhub::rhub_check()` on Linux and macOS platforms
-- [x] **QUAL-04**: `goodpractice::gp()` findings addressed (WARNING-level and above)
-- [ ] **QUAL-05**: rOpenSci software review issue opened at ropensci/software-review
+- [ ] **CDES-01**: User can compute required camera-days per stratum for a target CV using `creel_n_camera()` with the stratified Cochran (1977) formula
+- [ ] **CDES-02**: `creel_n_camera()` warns when computed n falls below the Feltz-Middaugh (2025) empirical minimums (~12 weekday + ~7 weekend days)
+- [ ] **CDES-03**: Output is a named integer vector per stratum plus a `"total"` element, consistent with `creel_n_effort()` shape
 
-### Documentation
+### Mark-Recapture Harvest (closed-population)
 
-- [x] **DOCS-01**: pkgdown site includes a `tidycreel.connect` bridge article describing the companion package and linking to it
+- [ ] **MR-01**: User can estimate angler population size N from a single mark-recapture occasion using Chapman correction (default) via `estimate_angler_n()`
+- [ ] **MR-02**: User can request the unadjusted Petersen estimator when m ≥ 7 via `method = "petersen"`
+- [ ] **MR-03**: User can estimate N across multiple sampling occasions using the Schnabel estimator via `method = "schnabel"`
+- [ ] **MR-04**: Function aborts with informative `cli_abort()` messages on impossible inputs: m = 0, m > n, m > M
+- [ ] **MR-05**: `estimate_angler_n()` returns a `creel_estimates` S3 object compatible with `compare_designs()` and `autoplot()`
+- [ ] **MR-06**: User can propagate N_hat uncertainty through to total harvest via `estimate_mr_harvest()` using the delta-method SE (Hansen & Van Kirk 2018)
+
+### Stratification Audit (effort precision)
+
+- [ ] **STRAT-01**: User can audit per-stratum effort precision from a completed survey (`creel_design`) or from pilot summary statistics (`N_h`, `ybar_h`, `s2_h`) via `audit_strata()`
+- [ ] **STRAT-02**: User can simulate collapsing strata via `simulate_strata_collapse()` to compare precision before and after a proposed merge
+- [ ] **STRAT-03**: User can compute Neyman-optimal reallocation of a fixed sampling budget via `reallocate_strata(n_total, N_h, s2_h)`
+- [ ] **STRAT-04**: `audit_strata()` returns a `creel_strata_audit` S3 object with per-stratum RSE, n, and a meets-target flag
+- [ ] **STRAT-05**: Design effect (DEFF) is included in `creel_strata_audit` output to quantify the value of the current stratification scheme
 
 ## Future Requirements
 
-### Estimators
+### Mark-Recapture (open population)
 
-- **ESTIM-F01**: Exploitation-rate estimator supports Bayesian credible interval via Stan/brms
-- **ESTIM-F02**: Multi-species joint covariance estimation via `survey::svyby(..., covmat=TRUE)`
-- **ESTIM-F03**: Mark-recapture effort estimation (Petersen/Chapman applied to anglers)
+- **MR-F01**: User can estimate population size for open populations using Jolly-Seber via `estimate_angler_n_open()` (requires `FSA`; output needs dedicated S3 class)
 
-### Documentation
+### Camera Imputation (multiple imputation)
 
-- **DOCS-F01**: Standalone pkgdown site for `tidycreel.connect` companion package
+- **CAMP-F01**: User can request M imputed datasets for proper variance propagation via Rubin's rules (extends `impute_camera_counts()` with `m` argument)
+
+### Stratification Audit (CPUE precision)
+
+- **STRAT-F01**: `audit_strata()` audits CPUE precision in addition to effort precision via `type = "cpue"` argument
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| Mark-recapture estimators (fish population) | Large scope; FSA wrappers sufficient; deferred to v1.6+ |
-| Spatial/temporal random-effects estimators | Research complete in M022; no implementation commitment yet |
-| Rcpp acceleration | M022 profiling: Taylor 1.5ms; bootstrap cost is in upstream survey::, not addressable here |
-| creel_schema / generic DB interface | Companion package scope; schema contract frozen-but-informal |
-| Mobile app or web UI | Web-first; no current demand |
+| Jolly-Seber open-population mark-recapture | Output contract incompatible with `creel_estimates`; requires a new S3 class and wider scope — deferred to future milestone (MR-F01) |
+| Bayesian joint estimation | Integrating creel + camera + other data sources via Stan/JAGS — large scope, no current demand |
+| Landscape-scale spatial effort (unsurveyed lakes) | Out of single-system scope; deferred per M022 research |
+| Social-ecological / human dimensions | Motivations, values, economics — explicitly excluded from project scope |
+| Off-site vs. on-site estimate reconciliation | No tools for reconciling on/off-site estimates — deferred |
+| Drone-specific aerial workflow | Aerial GLMM exists; drone specifics are not meaningfully different in the current design |
+| Automatic imputation inside `est_effort_camera()` | Imputation changes the data and must be an explicit user action with visible diagnostics — anti-feature |
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ESTIM-01 | Phase 80 | Complete |
-| ESTIM-04 | Phase 80 | Complete |
-| ESTIM-02 | Phase 81 | Complete |
-| ESTIM-03 | Phase 81 | Complete |
-| ESTIM-05 | Phase 81 | Complete |
-| QUAL-01 | Phase 82 | Complete |
-| QUAL-02 | Phase 82 | Complete |
-| QUAL-03 | Phase 82 | Pending |
-| QUAL-04 | Phase 82 | Complete |
-| DOCS-01 | Phase 82 | Complete |
-| QUAL-05 | Phase 83 | Pending |
+| CDES-01 | Phase 83 | Complete |
+| CDES-02 | Phase 83 | Complete |
+| CDES-03 | Phase 83 | Complete |
+| CAMP-01 | Phase 84 | Complete |
+| CAMP-02 | Phase 84 | Complete |
+| CAMP-03 | Phase 84 | Complete |
+| CAMP-04 | Phase 84 | Complete |
+| CAMP-05 | Phase 84 | Complete |
+| MR-01 | Phase 85 | Pending |
+| MR-02 | Phase 85 | Pending |
+| MR-03 | Phase 85 | Pending |
+| MR-04 | Phase 85 | Pending |
+| MR-05 | Phase 85 | Pending |
+| MR-06 | Phase 85 | Pending |
+| STRAT-01 | Phase 86 | Pending |
+| STRAT-02 | Phase 86 | Pending |
+| STRAT-03 | Phase 86 | Pending |
+| STRAT-04 | Phase 86 | Pending |
+| STRAT-05 | Phase 86 | Pending |
 
 **Coverage:**
-- v1.5.0 requirements: 11 total
-- Mapped to phases: 11
-- Unmapped: 0
+- v1.6.0 requirements: 19 total
+- Mapped to phases: 19
+- Unmapped: 0 ✓
 
 ---
-*Requirements defined: 2026-04-26*
-*Last updated: 2026-04-26 — traceability updated after M024 roadmap creation*
+*Requirements defined: 2026-05-02*
+*Last updated: 2026-05-02 after initial definition*

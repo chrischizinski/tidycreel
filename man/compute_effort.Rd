@@ -35,7 +35,7 @@ will be passed as the \code{effort} argument to \code{add_interviews()}.
 \seealso{
 \code{\link[=compute_angler_effort]{compute_angler_effort()}}, \code{\link[=add_interviews]{add_interviews()}}
 
-Other "Survey Design":
+Other "Survey Design": 
 \code{\link{add_catch}()},
 \code{\link{add_counts}()},
 \code{\link{add_interviews}()},
@@ -47,6 +47,7 @@ Other "Survey Design":
 \code{\link{creel_design}()},
 \code{\link{creel_schema}()},
 \code{\link{est_effort_camera}()},
+\code{\link{impute_camera_counts}()},
 \code{\link{prep_counts_boat_party}()},
 \code{\link{prep_counts_daily_effort}()},
 \code{\link{prep_interview_catch}()},
