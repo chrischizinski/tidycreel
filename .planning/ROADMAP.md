@@ -27,7 +27,7 @@ tidycreel is an R package for creel survey design, data preparation, estimation,
 - [x] **Phase 83: Camera Design Helper** - Implement `creel_n_camera()` for per-stratum camera-day sample size using the Cochran CV formula (completed 2026-05-03)
 - [x] **Phase 84: Camera Missing Data Imputation** - Implement `impute_camera_counts()` with a GLM default tier and opt-in GLMM tier, schema-compatible with `add_counts()` (completed 2026-05-03)
 - [x] **Phase 85: Mark-Recapture Harvest Estimators** - Implement `estimate_angler_n()` (Chapman/Petersen/Schnabel) and `estimate_mr_harvest()` for closed-population harvest estimation (completed 2026-05-04)
-- [ ] **Phase 86: Stratification Audit** - Implement `audit_strata()`, `simulate_strata_collapse()`, and `reallocate_strata()` for effort-precision-driven design evaluation
+- [x] **Phase 86: Stratification Audit** - Implement `audit_strata()`, `simulate_strata_collapse()`, and `reallocate_strata()` for effort-precision-driven design evaluation (completed 2026-05-05)
 
 ## Phase Details
 
@@ -153,7 +153,15 @@ Plans:
   3. User can call `reallocate_strata(n_total, N_h, s2_h)` and receive Neyman-optimal sample counts per stratum as a named vector
   4. `creel_strata_audit` output includes DEFF to quantify the value of the current stratification scheme relative to simple random sampling
   5. `rcmdcheck` passes with 0 errors and 0 warnings after all three functions are added
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+
+**Wave 1**
+- [ ] 086-01-PLAN.md — Implement R/strata-audit.R (audit_strata generic + creel_design/default methods, simulate_strata_collapse, reallocate_strata), run devtools::document(), update _pkgdown.yml
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [ ] 086-02-PLAN.md — Write tests/testthat/test-strata-audit.R (Tests A-X covering STRAT-01..STRAT-05) and run rcmdcheck quality gate
 
 ## Progress
 
@@ -165,4 +173,4 @@ Plans:
 | 83. Camera Design Helper | v1.6.0 | 2/2 | Complete | 2026-05-03 |
 | 84. Camera Missing Data Imputation | v1.6.0 | 2/2 | Complete | 2026-05-03 |
 | 85. Mark-Recapture Harvest Estimators | v1.6.0 | 2/2 | Complete | 2026-05-04 |
-| 86. Stratification Audit | v1.6.0 | 0/TBD | Not started | - |
+| 86. Stratification Audit | v1.6.0 | 0/2 | Not started | - |
