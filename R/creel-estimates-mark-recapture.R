@@ -66,14 +66,13 @@ estimate_angler_n <- function(M, n, m, method = "chapman", conf_level = 0.95) {
   method <- match.arg(method, c("chapman", "petersen", "schnabel"))
 
   # --- input validation ---
-  if (any(M <= 0))
-    cli::cli_abort("{.arg M} must be > 0.")
   if (any(n <= 0))
     cli::cli_abort("{.arg n} must be > 0.")
   if (any(m < 0))
     cli::cli_abort("{.arg m} must be >= 0.")
 
   if (method == "schnabel") {
+    # Schnabel: length checks must come before any per-element guards
     if (!all(lengths(list(M, n, m)) == length(M)))
       cli::cli_abort("{.arg M}, {.arg n}, and {.arg m} must be the same length for method = 'schnabel'.")
     if (length(M) < 2L)
@@ -81,12 +80,17 @@ estimate_angler_n <- function(M, n, m, method = "chapman", conf_level = 0.95) {
         "Schnabel requires >= 2 occasions.",
         "i" = "Use {.code method = 'chapman'} or {.code method = 'petersen'} for a single occasion."
       ))
+    # For Schnabel, M[1] = 0 is valid (no marked fish at large before first sample)
+    if (any(M < 0))
+      cli::cli_abort("{.arg M} must be >= 0.")
     if (any(m > pmin(M, n)))
       cli::cli_abort("{.arg m} cannot exceed {.code min(M, n)} at any occasion.")
     if (sum(m) == 0L)
       cli::cli_abort("Total recaptures {.code sum(m)} is 0. Schnabel requires at least one recapture.")
   } else {
     # single-occasion guards (Chapman and Petersen)
+    if (M <= 0)
+      cli::cli_abort("{.arg M} must be > 0.")
     if (m == 0)
       cli::cli_abort("{.arg m} = 0: no recaptures makes N_hat undefined. Increase sampling effort.")
     if (m > n)
