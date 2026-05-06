@@ -8,7 +8,7 @@
 #' Fills outage rows in a camera count data frame using a per-stratum model.
 #' The GLM method (default, Hartill 2016) fits a Poisson GLM with `strata_col`
 #' (typically `day_type`) as the sole predictor. The GLMM method
-#' (Afrifa-Yamoah 2020) fits a zero-inflated negative binomial GLMM and
+#' (Afrifa-Yamoah 2020) fits a negative binomial GLMM and
 #' requires the `glmmTMB` package (in `Suggests`).
 #'
 #' Outage rows are identified as any row where `status_col != "operational"`
@@ -27,8 +27,8 @@
 #'   Default `"camera_status"`. Rows where this column is not
 #'   `"operational"` and `count_col` is `NA` are treated as outages.
 #' @param method Character scalar. Imputation model: `"glm"` (default,
-#'   Poisson GLM, no extra dependencies) or `"glmm"` (zero-inflated negative
-#'   binomial GLMM via `glmmTMB`, requires `glmmTMB` in `Suggests`).
+#'   Poisson GLM, no extra dependencies) or `"glmm"` (negative binomial GLMM
+#'   via `glmmTMB`, requires `glmmTMB` in `Suggests`).
 #' @param site_col Character scalar or `NULL`. When `method = "glmm"` and
 #'   `site_col` is not `NULL`, a random intercept `(1 | site_col)` is included
 #'   in the GLMM formula. Default `NULL`.
@@ -115,11 +115,14 @@ impute_camera_counts <- function(
 
   # 2. Guard: glmmTMB required for GLMM method --------------------------------
   if (method == "glmm") {
-    rlang::check_installed("glmmTMB", reason = "to fit zero-inflated negative binomial GLMM for camera count imputation") # nolint: line_length_linter
+    rlang::check_installed("glmmTMB", reason = "to fit a negative binomial GLMM for camera count imputation") # nolint: line_length_linter
   }
 
   # 3. Identify outage rows ----------------------------------------------------
   is_outage <- data[[status_col]] != "operational" & is.na(data[[count_col]])
+  # Store pre-imputation NA baseline so .imputed is set correctly for rows that
+  # were non-operational but already had a non-NA count (e.g., manually keyed).
+  data[[".was_outage"]] <- is_outage
 
   # 4. High-missingness warning (CAMP-04) -------------------------------------
   strata_vals <- unique(data[[strata_col]])
@@ -230,10 +233,11 @@ impute_camera_counts <- function(
   row.names(result) <- NULL
 
   # 7. Add .imputed flag (D-06) -----------------------------------------------
-  # Any non-operational row that now has a non-NA count was imputed
-  # (operational rows always had counts; outage rows had NA before imputation)
-  result$.imputed <- result[[status_col]] != "operational" &
-    !is.na(result[[count_col]])
+  # Use the pre-imputation NA baseline to identify rows that were genuinely
+  # imputed (was NA before, non-NA after). Avoids false positives for
+  # non-operational rows that already had a manually keyed count.
+  result$.imputed <- result[[".was_outage"]] & !is.na(result[[count_col]])
+  result[[".was_outage"]] <- NULL
 
   # 8. Integer coercion (D-08) ------------------------------------------------
   storage.mode(result[[count_col]]) <- "integer"

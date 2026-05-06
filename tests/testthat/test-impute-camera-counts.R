@@ -273,3 +273,34 @@ test_that("CAMP-04: no warning when missingness <= 50% in all strata", {
                          strata_col = "day_type")
   )
 })
+
+# CR-01 fix: .imputed false-positive for pre-existing non-NA non-operational rows ----
+
+test_that("CR-01: non-operational row with pre-existing non-NA count is NOT marked .imputed", {
+  # A non-operational row that already has a count (manually keyed by biologist)
+  # should not be flagged as imputed — only truly NA-before rows should be.
+  counts <- data.frame(
+    date          = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03",
+                               "2024-06-04", "2024-06-05", "2024-06-06")),
+    day_type      = c("weekday", "weekday", "weekday",
+                      "weekend", "weekend", "weekend"),
+    ingress_count = c(10L, NA_integer_, 8L, 15L, 12L, NA_integer_),
+    camera_status = c("operational", "battery_failure", "partial_outage",
+                      "operational", "operational", "battery_failure"),
+    stringsAsFactors = FALSE
+  )
+  # row 3: non-operational ("partial_outage") but count is already 8 (non-NA)
+  # row 2: non-operational + NA => should be imputed
+  # row 6: non-operational + NA => should be imputed
+  result <- impute_camera_counts(counts,
+                                 count_col  = "ingress_count",
+                                 strata_col = "day_type")
+  # Row 3 (partial_outage, pre-existing count 8) must NOT be marked imputed
+  row3 <- result[result$date == as.Date("2024-06-03"), ]
+  expect_false(row3$.imputed, info = "non-operational row with pre-existing count should not be .imputed")
+  # Rows 2 and 6 (NA before) MUST be marked imputed
+  row2 <- result[result$date == as.Date("2024-06-02"), ]
+  row6 <- result[result$date == as.Date("2024-06-06"), ]
+  expect_true(row2$.imputed, info = "genuine outage row should be .imputed")
+  expect_true(row6$.imputed, info = "genuine outage row should be .imputed")
+})
