@@ -93,7 +93,7 @@ print(result_p)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
 #> Method: mark-recapture-petersen
-#> Variance: chapman
+#> Variance: petersen
 #> Confidence level: 95%
 #> 
 #> # A tibble: 1 × 6

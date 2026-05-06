@@ -3,8 +3,8 @@
 Fills outage rows in a camera count data frame using a per-stratum
 model. The GLM method (default, Hartill 2016) fits a Poisson GLM with
 `strata_col` (typically `day_type`) as the sole predictor. The GLMM
-method (Afrifa-Yamoah 2020) fits a zero-inflated negative binomial GLMM
-and requires the `glmmTMB` package (in `Suggests`).
+method (Afrifa-Yamoah 2020) fits a negative binomial GLMM and requires
+the `glmmTMB` package (in `Suggests`).
 
 Outage rows are identified as any row where
 `status_col != "operational"` AND `count_col` is `NA`. All rows are
@@ -52,8 +52,8 @@ impute_camera_counts(
 - method:
 
   Character scalar. Imputation model: `"glm"` (default, Poisson GLM, no
-  extra dependencies) or `"glmm"` (zero-inflated negative binomial GLMM
-  via `glmmTMB`, requires `glmmTMB` in `Suggests`).
+  extra dependencies) or `"glmm"` (negative binomial GLMM via `glmmTMB`,
+  requires `glmmTMB` in `Suggests`).
 
 - site_col:
 
