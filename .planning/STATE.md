@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.6.0
 milestone_name: Analytical Extensions II
-status: complete
-stopped_at: Phase 86 complete — all plans executed, rcmdcheck 0 errors 0 warnings
+status: shipped
+stopped_at: PR #54 merged to main — milestone v1.6.0 shipped
 last_updated: "2026-05-05T00:00:00.000Z"
-last_activity: 2026-05-05 -- Phase 86 complete (STRAT-01..STRAT-05 satisfied)
+last_activity: 2026-05-05 -- PR #54 merged (feat/082-03-rhub-workflow → main)
 progress:
   total_phases: 7
   completed_phases: 7

@@ -29,8 +29,8 @@ Default \code{"camera_status"}. Rows where this column is not
 \code{"operational"} and \code{count_col} is \code{NA} are treated as outages.}
 
 \item{method}{Character scalar. Imputation model: \code{"glm"} (default,
-Poisson GLM, no extra dependencies) or \code{"glmm"} (zero-inflated negative
-binomial GLMM via \code{glmmTMB}, requires \code{glmmTMB} in \code{Suggests}).}
+Poisson GLM, no extra dependencies) or \code{"glmm"} (negative binomial GLMM
+via \code{glmmTMB}, requires \code{glmmTMB} in \code{Suggests}).}
 
 \item{site_col}{Character scalar or \code{NULL}. When \code{method = "glmm"} and
 \code{site_col} is not \code{NULL}, a random intercept \code{(1 | site_col)} is included
@@ -47,7 +47,7 @@ compatibility with \code{\link[=add_counts]{add_counts()}}. Row count equals \co
 Fills outage rows in a camera count data frame using a per-stratum model.
 The GLM method (default, Hartill 2016) fits a Poisson GLM with \code{strata_col}
 (typically \code{day_type}) as the sole predictor. The GLMM method
-(Afrifa-Yamoah 2020) fits a zero-inflated negative binomial GLMM and
+(Afrifa-Yamoah 2020) fits a negative binomial GLMM and
 requires the \code{glmmTMB} package (in \code{Suggests}).
 
 Outage rows are identified as any row where \code{status_col != "operational"}
@@ -100,7 +100,7 @@ short-term memory neural networks.
 \seealso{
 \code{\link[=est_effort_camera]{est_effort_camera()}}, \code{\link[=add_counts]{add_counts()}}
 
-Other "Survey Design": 
+Other "Survey Design":
 \code{\link{add_catch}()},
 \code{\link{add_counts}()},
 \code{\link{add_interviews}()},
