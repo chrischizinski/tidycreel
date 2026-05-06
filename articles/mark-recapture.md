@@ -1,0 +1,360 @@
+# Mark-Recapture and Exploitation Rate Estimation
+
+## Introduction
+
+Creel surveys are often paired with tagging studies to estimate either
+angler population size or seasonal exploitation rate. tidycreel provides
+three estimators for these purposes:
+
+- **[`estimate_angler_n()`](https://chrischizinski.github.io/tidycreel/reference/estimate_angler_n.md)**
+  — closed-population mark-recapture for total angler count (Chapman,
+  Petersen, or Schnabel)
+- **[`estimate_mr_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_mr_harvest.md)**
+  — total harvest derived from a mark-recapture population estimate
+- **[`estimate_exploitation_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_exploitation_rate.md)**
+  — seasonal exploitation rate from tagged-fish recoveries (Pollock et
+  al. 1994)
+
+All three return `creel_estimates` objects compatible with the standard
+tidycreel output ecosystem
+([`print()`](https://rdrr.io/r/base/print.html), `autoplot()`,
+[`write_estimates()`](https://chrischizinski.github.io/tidycreel/reference/write_estimates.md)).
+
+| Goal | Estimator |
+|----|----|
+| Estimate total anglers from a tag-and-resight study | [`estimate_angler_n()`](https://chrischizinski.github.io/tidycreel/reference/estimate_angler_n.md) |
+| Convert angler population estimate to total harvest | [`estimate_mr_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_mr_harvest.md) |
+| Estimate fraction of population harvested from tagged-fish recoveries | [`estimate_exploitation_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_exploitation_rate.md) |
+
+------------------------------------------------------------------------
+
+## Angler Population Size
+
+### Chapman estimator (default)
+
+The Chapman estimator is a bias-corrected Petersen estimator recommended
+when the recapture count is small. With $`M`$ tagged anglers released,
+$`n`$ anglers checked in the second sample, and $`m`$ recaptures:
+
+``` math
+\hat{N} = \frac{(M+1)(n+1)}{(m+1)} - 1
+```
+
+Variance:
+
+``` math
+\widehat{\text{Var}}(\hat{N}) = \frac{(M+1)(n+1)(M-m)(n-m)}{(m+1)^2(m+2)}
+```
+
+``` r
+
+library(tidycreel)
+
+result_chapman <- estimate_angler_n(M = 200L, n = 50L, m = 10L)
+print(result_chapman)
+#> 
+#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
+#> Method: mark-recapture-chapman
+#> Variance: chapman
+#> Confidence level: 95%
+#> 
+#> # A tibble: 1 × 6
+#>   parameter estimate    se ci_lower ci_upper     n
+#>   <chr>        <dbl> <dbl>    <dbl>    <dbl> <int>
+#> 1 N_hat         931.  232.     477.    1385.    10
+```
+
+The `n` column in the estimates tibble records the recapture count
+(`m`), which determines precision.
+
+### Petersen estimator
+
+The unadjusted Lincoln–Petersen estimator:
+
+``` math
+\hat{N} = \frac{M \cdot n}{m}
+```
+
+tidycreel enforces a minimum of $`m \geq 7`$ recaptures; below this
+threshold the Petersen estimator carries large positive bias and Chapman
+should be used instead.
+
+``` r
+
+result_petersen <- estimate_angler_n(M = 200L, n = 50L, m = 10L, method = "petersen")
+print(result_petersen)
+#> 
+#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
+#> Method: mark-recapture-petersen
+#> Variance: petersen
+#> Confidence level: 95%
+#> 
+#> # A tibble: 1 × 6
+#>   parameter estimate    se ci_lower ci_upper     n
+#>   <chr>        <dbl> <dbl>    <dbl>    <dbl> <int>
+#> 1 N_hat         1000  283.     446.    1554.    10
+```
+
+### Schnabel estimator (multi-occasion)
+
+For $`K \geq 2`$ successive sampling occasions, the Schnabel estimator
+pools information across occasions:
+
+``` math
+\hat{N} = \frac{\sum_{k=1}^{K} M_k n_k}{\sum_{k=1}^{K} m_k}
+```
+
+where $`M_k`$ is the cumulative count of marked-at-large anglers before
+occasion $`k`$ (so $`M_1 = 0`$), $`n_k`$ is the catch on occasion $`k`$,
+and $`m_k`$ is the number of recaptures.
+
+Confidence intervals use the Poisson distribution when $`\sum m_k < 50`$
+and a normal approximation on $`1/\hat{N}`$ otherwise.
+
+``` r
+
+result_schnabel <- estimate_angler_n(
+  M      = c(0L, 47L, 91L, 131L),
+  n      = c(50L, 50L, 50L, 50L),
+  m      = c(0L,  4L,  6L,  8L),
+  method = "schnabel"
+)
+print(result_schnabel)
+#> 
+#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
+#> Method: mark-recapture-schnabel
+#> Variance: delta
+#> Confidence level: 95%
+#> 
+#> # A tibble: 1 × 6
+#>   parameter estimate    se ci_lower ci_upper     n
+#>   <chr>        <dbl> <dbl>    <dbl>    <dbl> <int>
+#> 1 N_hat         747.  176.     498.     1345    18
+```
+
+Four sampling occasions yield 18 total recaptures here, so the Poisson
+CI branch is used automatically.
+
+------------------------------------------------------------------------
+
+## Total Harvest from Mark-Recapture
+
+Once angler population size is estimated,
+[`estimate_mr_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_mr_harvest.md)
+scales it by a known harvest rate to obtain total harvest. The harvest
+rate is typically derived from creel interview data — the proportion of
+interviewed anglers who kept fish.
+
+``` math
+\hat{H} = \hat{N} \times r, \quad SE(\hat{H}) = r \times SE(\hat{N})
+```
+
+``` r
+
+# harvest_rate derived from creel interviews: 35% of anglers harvested fish
+harvest <- estimate_mr_harvest(angler_n = result_chapman, harvest_rate = 0.35)
+print(harvest)
+#> 
+#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
+#> Method: mark-recapture-harvest
+#> Variance: delta
+#> Confidence level: 95%
+#> 
+#> # A tibble: 1 × 5
+#>   parameter     estimate    se ci_lower ci_upper
+#>   <chr>            <dbl> <dbl>    <dbl>    <dbl>
+#> 1 total_harvest     326.  81.1     167.     485.
+```
+
+The delta method propagates uncertainty in $`\hat{N}`$ only. Uncertainty
+in the harvest rate itself is not propagated in this release; if harvest
+rate uncertainty is substantial, re-run across plausible bounds as a
+sensitivity check.
+
+------------------------------------------------------------------------
+
+## Exploitation Rate
+
+[`estimate_exploitation_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_exploitation_rate.md)
+implements the Pollock et al. (1994) moment estimator. Rather than
+counting anglers, it estimates the fraction of a tagged cohort that was
+harvested during the season. The inputs come from two sources:
+
+- **Tagging study**: $`T`$ fish tagged and released at season start;
+  $`m`$ tagged fish recovered among $`n`$ fish inspected in the creel.
+- **Creel survey**: $`C`$ total estimated harvest (e.g., from
+  [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md))
+  with standard error $`SE_C`$.
+
+### Unstratified
+
+``` math
+\hat{u} = \frac{C \cdot m}{T \cdot n}, \quad
+\widehat{\text{Var}}(\hat{u}) \approx
+  \left(\frac{C}{T}\right)^2 \frac{p(1-p)}{n}
+  + p^2 \frac{SE_C^2}{T^2}
+```
+
+where $`p = m/n`$.
+
+``` r
+
+result_expl <- estimate_exploitation_rate(
+  T    = 200L,
+  C    = 450.0,
+  se_C = 42.0,
+  n    = 180L,
+  m    = 15L
+)
+print(result_expl)
+#> 
+#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
+#> Method: Exploitation Rate (Mark-Recapture)
+#> Variance: delta
+#> Confidence level: 95%
+#> 
+#> # A tibble: 1 × 8
+#>   estimate     se ci_lower ci_upper     n     T     C     m
+#>      <dbl>  <dbl>    <dbl>    <dbl> <int> <int> <dbl> <int>
+#> 1    0.188 0.0495   0.0904    0.285   180   200   450    15
+```
+
+### Stratified (T-weighted)
+
+When the survey spans multiple strata (day types, access areas), supply
+a data frame with one row per stratum. The T-weighted aggregate is
+automatically appended as an `.overall` row:
+
+``` math
+\hat{u}_{overall} = \frac{\sum_h T_h \hat{u}_h}{\sum_h T_h}, \quad
+\widehat{\text{Var}}(\hat{u}_{overall}) =
+  \frac{\sum_h T_h^2 \,\widehat{\text{Var}}(\hat{u}_h)}{(\sum_h T_h)^2}
+```
+
+``` r
+
+strata_df <- data.frame(
+  stratum = c("weekday", "weekend"),
+  T_h     = c(120L, 80L),
+  C_h     = c(280.0, 170.0),
+  se_C_h  = c(28.0, 22.0),
+  n_h     = c(110L, 70L),
+  m_h     = c(9L, 6L)
+)
+
+result_strat <- estimate_exploitation_rate(strata = strata_df, by = "stratum")
+print(result_strat)
+#> 
+#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
+#> Method: Exploitation Rate (Mark-Recapture)
+#> Variance: delta
+#> Confidence level: 95%
+#> Grouped by: stratum
+#> 
+#> # A tibble: 3 × 9
+#>   stratum  estimate     se ci_lower ci_upper     n     T     C     m
+#>   <chr>       <dbl>  <dbl>    <dbl>    <dbl> <int> <int> <dbl> <int>
+#> 1 weekday     0.191 0.0639   0.0657    0.316   110   120   280     9
+#> 2 weekend     0.182 0.0749   0.0353    0.329    70    80   170     6
+#> 3 .overall    0.187 0.0487   0.0920    0.283   180   200   450    15
+```
+
+Pass `aggregate = FALSE` to suppress the `.overall` row.
+
+### Reporting rate adjustment
+
+If not all harvested tagged fish are reported, supply the reporting rate
+$`\lambda \in (0, 1]`$:
+
+``` math
+\hat{u}_{adj} = \frac{\hat{u}}{\lambda}
+```
+
+``` r
+
+result_adj <- estimate_exploitation_rate(
+  T              = 200L,
+  C              = 450.0,
+  se_C           = 42.0,
+  n              = 180L,
+  m              = 15L,
+  reporting_rate = 0.80
+)
+print(result_adj)
+#> 
+#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
+#> Method: Exploitation Rate (Mark-Recapture)
+#> Variance: delta
+#> Confidence level: 95%
+#> 
+#> # A tibble: 1 × 8
+#>   estimate     se ci_lower ci_upper     n     T     C     m
+#>      <dbl>  <dbl>    <dbl>    <dbl> <int> <int> <dbl> <int>
+#> 1    0.234 0.0619    0.113    0.356   180   200   450    15
+```
+
+Uncertainty in $`\lambda`$ is not propagated; treat reporting rate
+accuracy as a separate sensitivity analysis.
+
+------------------------------------------------------------------------
+
+## Choosing an Estimator
+
+| Scenario | Recommended estimator |
+|----|----|
+| Single recapture event, small $`m`$ ($`< 7`$) | `estimate_angler_n(method = "chapman")` |
+| Single recapture event, $`m \geq 7`$ | `"chapman"` or `"petersen"` (Chapman preferred) |
+| Multiple survey occasions with cumulative marking | `estimate_angler_n(method = "schnabel")` |
+| Converting population estimate to total harvest | [`estimate_mr_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_mr_harvest.md) |
+| Fraction of tagged cohort harvested (season-level) | [`estimate_exploitation_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_exploitation_rate.md) |
+
+------------------------------------------------------------------------
+
+## Assumptions
+
+All three estimators share the standard closed-population assumptions:
+
+1.  **Closure** — the population is closed between marking and
+    recapture; no births, deaths, emigration, or immigration.
+2.  **Equal catchability** — all individuals have equal probability of
+    being captured or inspected on each occasion.
+3.  **Mark retention** — tags are not lost or overlooked at recapture.
+4.  **Random mixing** — marked individuals are randomly distributed in
+    the population before the second sample.
+
+For
+[`estimate_exploitation_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_exploitation_rate.md)
+two additional caveats apply:
+
+- Natural mortality between tagging and the creel survey is not
+  corrected for; if natural mortality is non-trivial, the estimator
+  overestimates exploitation.
+- The reporting rate is treated as known without error (see adjustment
+  section above).
+
+------------------------------------------------------------------------
+
+## References
+
+Hansen, M. J., & Van Kirk, R. W. (2018). A mark-recapture-based approach
+for estimating angler harvest. *North American Journal of Fisheries
+Management*, 38(2), 400–410. <https://doi.org/10.1002/nafm.10038>
+
+Pollock, K. H., Jones, C. M., & Brown, T. L. (1994). *Angler Survey
+Methods and Their Applications in Fisheries Management.* AFS Special
+Publication 25. American Fisheries Society.
+
+Jones, C. M., & Pollock, K. H. (2012). Recreational survey methods:
+estimating effort, harvest, and abundance. In A. V. Zale et al. (Eds.),
+*Fisheries Techniques* (3rd ed., Ch. 19). American Fisheries Society.
+
+------------------------------------------------------------------------
+
+## See Also
+
+- [Interview
+  Estimation](https://chrischizinski.github.io/tidycreel/articles/interview-estimation.md)
+  — deriving harvest rates from creel interviews
+- [Survey Design
+  Toolbox](https://chrischizinski.github.io/tidycreel/articles/survey-design-toolbox.md)
+  — power and sample-size planning

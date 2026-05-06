@@ -51,7 +51,8 @@ Degenerate bus-route design with certainty site sampling.
 
 ##### Camera-Monitored
 
-Counter and ingress-egress preprocessing plus camera effort indexing.
+Counter and ingress-egress preprocessing, NB GLMM count imputation, and
+camera effort indexing.
 
 [Camera Survey vignette
 →](https://chrischizinski.github.io/tidycreel/articles/camera-surveys.html)
@@ -74,8 +75,17 @@ Single-overflight effort estimation with calibrated open-hours scaling.
   dispatches to the correct workflow for each survey type.
 - **Core estimation surface** — effort, catch rate, harvest rate,
   release rate, and total-catch estimators share a common API.
-- **Extended estimation methods** — includes camera effort indexing,
-  weighted length distributions, and variance comparison helpers.
+- **Extended estimation methods** — camera effort indexing, NB GLMM
+  count imputation, weighted length distributions, mark-recapture
+  population and harvest estimators (Petersen, Schnabel), and
+  exploitation rate from tag returns (Pollock et al.).
+- **Stratification auditing** —
+  [`audit_strata()`](https://chrischizinski.github.io/tidycreel/reference/audit_strata.md),
+  [`simulate_strata_collapse()`](https://chrischizinski.github.io/tidycreel/reference/simulate_strata_collapse.md),
+  and
+  [`reallocate_strata()`](https://chrischizinski.github.io/tidycreel/reference/reallocate_strata.md)
+  diagnose stratum weights, inclusion probabilities, and coverage; test
+  collapse scenarios before committing to a redesign.
 - **Validation and cleaning** — field-level validation, species
   standardisation, data-validation summaries, and toy datasets for
   examples.
@@ -136,6 +146,7 @@ estimate_catch_rate(design)
 | Learn the package vocabulary | [Glossary](https://chrischizinski.github.io/tidycreel/articles/glossary.html) |
 | See the main end-to-end workflow | [Getting Started](https://chrischizinski.github.io/tidycreel/articles/tidycreel.html) |
 | Plan a season before sampling starts | [Survey Design Toolbox](https://chrischizinski.github.io/tidycreel/articles/survey-design-toolbox.html) |
+| Estimate angler population or exploitation rate from tag data | [Mark-Recapture and Exploitation Rate](https://chrischizinski.github.io/tidycreel/articles/mark-recapture.html) |
 | Understand plotting and output styling | [Visualisation](https://chrischizinski.github.io/tidycreel/articles/visualisation.html) and [`theme_creel()`](https://chrischizinski.github.io/tidycreel/reference/theme_creel.md) |
 | Build a report/dashboard | Install the package, then open **R Markdown \> From Template \> Creel Dashboard** in RStudio |
 
@@ -168,6 +179,13 @@ estimate_catch_rate(design)
 - **[`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md)**,
   **[`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md)**
   — camera effort indexing and weighted size-structure estimation.
+- **[`estimate_exploitation_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_exploitation_rate.md)**
+  — exploitation rate from tag returns (Pollock et al.; simple and
+  T-weighted stratified paths).
+- **[`estimate_angler_n()`](https://chrischizinski.github.io/tidycreel/reference/estimate_angler_n.md)**
+  — Petersen and Schnabel mark-recapture population size estimators.
+- **[`estimate_mr_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_mr_harvest.md)**
+  — population-scale total harvest from mark-recapture data.
 
 ### Validation and Diagnostics
 
@@ -181,6 +199,11 @@ estimate_catch_rate(design)
   **[`compare_variance()`](https://chrischizinski.github.io/tidycreel/reference/compare_variance.md)**,
   **[`adjust_nonresponse()`](https://chrischizinski.github.io/tidycreel/reference/adjust_nonresponse.md)**
   — QA and estimator diagnostics.
+- **[`audit_strata()`](https://chrischizinski.github.io/tidycreel/reference/audit_strata.md)**,
+  **[`simulate_strata_collapse()`](https://chrischizinski.github.io/tidycreel/reference/simulate_strata_collapse.md)**,
+  **[`reallocate_strata()`](https://chrischizinski.github.io/tidycreel/reference/reallocate_strata.md)**
+  — stratification diagnostics; verify weights, simulate collapse
+  scenarios, and rebalance allocations.
 
 ### Planning and Reporting
 
@@ -191,6 +214,7 @@ estimate_catch_rate(design)
   — planning/scheduling helpers.
 - **[`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md)**,
   **[`creel_n_cpue()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_cpue.md)**,
+  **[`creel_n_camera()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_camera.md)**,
   **[`creel_power()`](https://chrischizinski.github.io/tidycreel/reference/creel_power.md)**,
   **[`cv_from_n()`](https://chrischizinski.github.io/tidycreel/reference/cv_from_n.md)**
   — sample-size and power tools.
@@ -220,23 +244,144 @@ estimate_catch_rate(design)
 |----|----|
 | [Bus-Route Surveys](https://chrischizinski.github.io/tidycreel/articles/bus-route-surveys.html) | PPS site selection with Horvitz-Thompson estimators |
 | [Ice Fishing](https://chrischizinski.github.io/tidycreel/articles/ice-fishing.html) | Certainty-site (degenerate bus-route) design |
-| [Camera Surveys](https://chrischizinski.github.io/tidycreel/articles/camera-surveys.html) | Counter and ingress-egress preprocessing, camera effort |
+| [Camera Surveys](https://chrischizinski.github.io/tidycreel/articles/camera-surveys.html) | Counter and ingress-egress preprocessing, count imputation, camera effort |
 | [Aerial Surveys](https://chrischizinski.github.io/tidycreel/articles/aerial-surveys.html) | Single-overflight effort with calibrated open-hours scaling |
 | [Aerial GLMM](https://chrischizinski.github.io/tidycreel/articles/aerial-glmm.html) | Negative-binomial GLMM aerial effort (Askey 2018) |
+
+### Estimation
+
+| Vignette | Description |
+|----|----|
+| [Survey Integration](https://chrischizinski.github.io/tidycreel/articles/survey-tidycreel.html) | Using tidycreel alongside the `survey` package directly |
+| [Interview Estimation](https://chrischizinski.github.io/tidycreel/articles/interview-estimation.html) | CPUE, catch, and harvest from interview data |
+| [Mark-Recapture and Exploitation Rate](https://chrischizinski.github.io/tidycreel/articles/mark-recapture.html) | Chapman, Petersen, Schnabel estimators; MR harvest; exploitation rate from tag returns |
+| [Incomplete Trips](https://chrischizinski.github.io/tidycreel/articles/incomplete-trips.html) | When and how to use mean-of-ratios and TOST validation |
+| [Flexible Count Estimation](https://chrischizinski.github.io/tidycreel/articles/flexible-count-estimation.html) | Non-standard count configurations and custom time windows |
+| [Progressive Count Surveys](https://chrischizinski.github.io/tidycreel/articles/progressive-count-surveys.html) | Rolling and progressive count workflows |
+| [Section Estimation](https://chrischizinski.github.io/tidycreel/articles/section-estimation.html) | Spatial section-level effort and catch estimation |
+| [Temporal Extrapolation](https://chrischizinski.github.io/tidycreel/articles/temporal-extrapolation.html) | Extrapolating partial-season data to full-season estimates |
 
 ### Reporting & Planning
 
 | Vignette | Description |
 |----|----|
+| [Unextrapolated Summaries](https://chrischizinski.github.io/tidycreel/articles/unextrapolated-summaries.html) | Raw interview summaries without season-level expansion |
 | [Survey Design Toolbox](https://chrischizinski.github.io/tidycreel/articles/survey-design-toolbox.html) | Sample-size, power, scheduling, and pre-season planning tools |
 | [Survey Scheduling](https://chrischizinski.github.io/tidycreel/articles/survey-scheduling.html) | Count windows, schedules, validation, and completeness checks |
 | [Visualisation](https://chrischizinski.github.io/tidycreel/articles/visualisation.html) | Plotting patterns and output styling with [`theme_creel()`](https://chrischizinski.github.io/tidycreel/reference/theme_creel.md) |
-| [Interview Estimation](https://chrischizinski.github.io/tidycreel/articles/interview-estimation.html) | CPUE, catch, and harvest from interview data |
-| [Incomplete Trips](https://chrischizinski.github.io/tidycreel/articles/incomplete-trips.html) | When and how to use mean-of-ratios and TOST validation |
+
+### Statistical Methods
+
+| Vignette | Description |
+|----|----|
+| [Effort Pipeline](https://chrischizinski.github.io/tidycreel/articles/effort-pipeline.html) | Statistical mechanics of the effort estimation pipeline |
+| [Catch Pipeline](https://chrischizinski.github.io/tidycreel/articles/catch-pipeline.html) | Statistical mechanics of the catch estimation pipeline |
 | [Replicate Designs](https://chrischizinski.github.io/tidycreel/articles/replicate-designs.html) | Variance workflows and replicate-design reasoning |
+| [Bus-Route Equations](https://chrischizinski.github.io/tidycreel/articles/bus-route-equations.html) | Technical equation derivations for bus-route estimators |
+
+### Ecosystem
+
+| Vignette | Description |
+|----|----|
+| [tidycreel.connect](https://chrischizinski.github.io/tidycreel/articles/tidycreel-connect.html) | Database integration and reproducible data pipelines |
+
+## Getting Help and Reporting Bugs
+
+### Questions about usage
+
+If you have questions about which survey type to use, how to interpret
+results, or how to structure your data, the best place to start is
+**GitHub Discussions**:
+
+> <https://github.com/chrischizinski/tidycreel/discussions>
+
+GitHub Discussions works like a threaded forum attached to the
+repository. If you do not already have a GitHub account, you can create
+one for free at <https://github.com/signup> — it only requires an email
+address. Once signed in, click **New discussion**, select the **Q&A**
+category, and describe what you are trying to do. Searching existing
+threads first is worth a moment; your question may already have an
+answer.
+
+### Reporting a bug or unexpected result
+
+If a function returns an error, produces a result that does not look
+right, or behaves differently from what the documentation describes,
+please open a **GitHub Issue**:
+
+> <https://github.com/chrischizinski/tidycreel/issues>
+
+**Step-by-step for first-time GitHub users:**
+
+1.  Go to the Issues link above. If you are not signed in, click **Sign
+    in** in the top-right corner (or **Sign up** if you do not yet have
+    an account).
+2.  Click the green **New issue** button.
+3.  Select the **Bug report** template — it will open a pre-filled form.
+4.  Fill in each section of the form:
+    - **Survey type** — which design you are using (`instantaneous`,
+      `bus_route`, `ice`, `camera`, or `aerial`)
+    - **tidycreel version** — run `packageVersion("tidycreel")` in R and
+      paste the result (e.g., `1.6.0`)
+    - **What you expected** — describe the output or behavior you
+      expected
+    - **What actually happened** — paste the full error message, or
+      describe the result that does not look right
+    - **Reproducible example** — a short R snippet that shows the
+      problem (see below)
+5.  Click **Submit new issue** at the bottom of the form.
+
+**Writing a reproducible example**
+
+The single most useful thing you can include is a short, self-contained
+R snippet that demonstrates the problem without needing your real data.
+Use the package’s built-in example datasets (`example_calendar`,
+`example_counts`, `example_interviews`, etc.) wherever possible, or
+create a small data frame that triggers the issue.
+
+A good example looks like this:
+
+``` r
+
+library(tidycreel)
+
+design <- creel_design(example_calendar, date = date, strata = day_type)
+design <- add_counts(design, example_counts)
+
+# The call that produces the unexpected result
+estimate_effort(design)
+#> Error: ...  (paste the full error message here)
+```
+
+The snippet should run from scratch without any additional files or
+setup. If reducing your data to a minimal example is not
+straightforward, share what you have and describe the context — that is
+still very helpful. The `reprex` package can automatically format and
+share R output if you want a polished submission: install it with
+`install.packages("reprex")` and run `reprex::reprex()` around your
+code.
+
+For guidance on contributing code, requesting new features, or the
+development workflow, see
+[CONTRIBUTING.md](https://github.com/chrischizinski/tidycreel/blob/main/CONTRIBUTING.md).
 
 ## License
 
 MIT License — see
 [LICENSE.md](https://chrischizinski.github.io/tidycreel/LICENSE.md) for
 details.
+
+## AI Use Acknowledgement
+
+Artificial intelligence tools were used during the development of
+tidycreel, primarily through Claude Code (Anthropic), with selected code
+and outputs reviewed using Codex (OpenAI). These tools supported code
+refinement, consistency across functions, GitHub Actions workflows,
+error checking, and the development of testing infrastructure.
+
+All functions and analytical outputs have been reviewed by the author
+team and validated against real-world creel survey data and expected
+analytical behavior. Despite these review and testing efforts, errors
+may still occur. If you identify a problem or unexpected result, please
+[submit an issue](https://github.com/chrischizinski/tidycreel/issues) so
+that it can be reviewed and addressed.

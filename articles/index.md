@@ -26,13 +26,15 @@ Workflow vignettes for each supported creel survey design.
 
 ### Estimation
 
-Catch rate, harvest, effort, and spatially stratified estimation
-techniques.
+Catch rate, harvest, effort, mark-recapture, exploitation rate, and
+spatially stratified estimation techniques.
 
 - [tidycreel and the survey Package: A Side-by-Side
   Guide](https://chrischizinski.github.io/tidycreel/articles/survey-tidycreel.md):
 - [Interview-Based Catch
   Estimation](https://chrischizinski.github.io/tidycreel/articles/interview-estimation.md):
+- [Mark-Recapture and Exploitation Rate
+  Estimation](https://chrischizinski.github.io/tidycreel/articles/mark-recapture.md):
 - [Incomplete Trip
   Estimation](https://chrischizinski.github.io/tidycreel/articles/incomplete-trips.md):
 - [Flexible Count

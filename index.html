@@ -57,6 +57,7 @@
     <li><h6 class="dropdown-header" data-toc-skip>Estimation</h6></li>
     <li><a class="dropdown-item" href="articles/survey-tidycreel.html">tidycreel and the survey Package: A Side-by-Side Guide</a></li>
     <li><a class="dropdown-item" href="articles/interview-estimation.html">Interview-Based Catch Estimation</a></li>
+    <li><a class="dropdown-item" href="articles/mark-recapture.html">Mark-Recapture and Exploitation Rate Estimation</a></li>
     <li><a class="dropdown-item" href="articles/incomplete-trips.html">Incomplete Trip Estimation</a></li>
     <li><a class="dropdown-item" href="articles/flexible-count-estimation.html">Flexible Count Estimation</a></li>
     <li><a class="dropdown-item" href="articles/progressive-count-surveys.html">Progressive Count Surveys</a></li>
@@ -159,7 +160,7 @@ Degenerate bus-route design with certainty site sampling.
 Camera-Monitored
 </h5>
 <p class="small">
-Counter and ingress-egress preprocessing plus camera effort indexing.
+Counter and ingress-egress preprocessing, NB GLMM count imputation, and camera effort indexing.
 </p>
 <p class="small">
 <a href="https://chrischizinski.github.io/tidycreel/articles/camera-surveys.html">Camera Survey vignette →</a>
@@ -192,7 +193,9 @@ Single-overflight effort estimation with calibrated open-hours scaling.
 <li>
 <strong>Core estimation surface</strong> — effort, catch rate, harvest rate, release rate, and total-catch estimators share a common API.</li>
 <li>
-<strong>Extended estimation methods</strong> — includes camera effort indexing, weighted length distributions, and variance comparison helpers.</li>
+<strong>Extended estimation methods</strong> — camera effort indexing, NB GLMM count imputation, weighted length distributions, mark-recapture population and harvest estimators (Petersen, Schnabel), and exploitation rate from tag returns (Pollock et al.).</li>
+<li>
+<strong>Stratification auditing</strong> — <code><a href="reference/audit_strata.html">audit_strata()</a></code>, <code><a href="reference/simulate_strata_collapse.html">simulate_strata_collapse()</a></code>, and <code><a href="reference/reallocate_strata.html">reallocate_strata()</a></code> diagnose stratum weights, inclusion probabilities, and coverage; test collapse scenarios before committing to a redesign.</li>
 <li>
 <strong>Validation and cleaning</strong> — field-level validation, species standardisation, data-validation summaries, and toy datasets for examples.</li>
 <li>
@@ -270,6 +273,10 @@ Single-overflight effort estimation with calibrated open-hours scaling.
 <td><a href="https://chrischizinski.github.io/tidycreel/articles/survey-design-toolbox.html">Survey Design Toolbox</a></td>
 </tr>
 <tr>
+<td>Estimate angler population or exploitation rate from tag data</td>
+<td><a href="https://chrischizinski.github.io/tidycreel/articles/mark-recapture.html">Mark-Recapture and Exploitation Rate</a></td>
+</tr>
+<tr>
 <td>Understand plotting and output styling</td>
 <td>
 <a href="https://chrischizinski.github.io/tidycreel/articles/visualisation.html">Visualisation</a> and <code><a href="reference/theme_creel.html">theme_creel()</a></code>
@@ -307,6 +314,12 @@ Single-overflight effort estimation with calibrated open-hours scaling.
 <strong><code><a href="reference/estimate_total_catch.html">estimate_total_catch()</a></code></strong>, <strong><code><a href="reference/estimate_total_harvest.html">estimate_total_harvest()</a></code></strong>, <strong><code><a href="reference/estimate_total_release.html">estimate_total_release()</a></code></strong> — totals via delta-method propagation.</li>
 <li>
 <strong><code><a href="reference/est_effort_camera.html">est_effort_camera()</a></code></strong>, <strong><code><a href="reference/est_length_distribution.html">est_length_distribution()</a></code></strong> — camera effort indexing and weighted size-structure estimation.</li>
+<li>
+<strong><code><a href="reference/estimate_exploitation_rate.html">estimate_exploitation_rate()</a></code></strong> — exploitation rate from tag returns (Pollock et al.; simple and T-weighted stratified paths).</li>
+<li>
+<strong><code><a href="reference/estimate_angler_n.html">estimate_angler_n()</a></code></strong> — Petersen and Schnabel mark-recapture population size estimators.</li>
+<li>
+<strong><code><a href="reference/estimate_mr_harvest.html">estimate_mr_harvest()</a></code></strong> — population-scale total harvest from mark-recapture data.</li>
 </ul>
 </div>
 <div class="section level3">
@@ -317,6 +330,8 @@ Single-overflight effort estimation with calibrated open-hours scaling.
 <strong><code><a href="reference/validate_creel_data.html">validate_creel_data()</a></code></strong>, <strong><code><a href="reference/validation_report.html">validation_report()</a></code></strong>, <strong><code><a href="reference/standardize_species.html">standardize_species()</a></code></strong> — clean and validate real-world creel inputs.</li>
 <li>
 <strong><code><a href="reference/validate_incomplete_trips.html">validate_incomplete_trips()</a></code></strong>, <strong><code><a href="reference/validate_design.html">validate_design()</a></code></strong>, <strong><code><a href="reference/check_completeness.html">check_completeness()</a></code></strong>, <strong><code><a href="reference/compare_variance.html">compare_variance()</a></code></strong>, <strong><code><a href="reference/adjust_nonresponse.html">adjust_nonresponse()</a></code></strong> — QA and estimator diagnostics.</li>
+<li>
+<strong><code><a href="reference/audit_strata.html">audit_strata()</a></code></strong>, <strong><code><a href="reference/simulate_strata_collapse.html">simulate_strata_collapse()</a></code></strong>, <strong><code><a href="reference/reallocate_strata.html">reallocate_strata()</a></code></strong> — stratification diagnostics; verify weights, simulate collapse scenarios, and rebalance allocations.</li>
 </ul>
 </div>
 <div class="section level3">
@@ -326,7 +341,7 @@ Single-overflight effort estimation with calibrated open-hours scaling.
 <li>
 <strong><code><a href="reference/generate_schedule.html">generate_schedule()</a></code></strong>, <strong><code><a href="reference/generate_bus_schedule.html">generate_bus_schedule()</a></code></strong>, <strong><code><a href="reference/generate_count_times.html">generate_count_times()</a></code></strong>, <strong><code><a href="reference/attach_count_times.html">attach_count_times()</a></code></strong> — planning/scheduling helpers.</li>
 <li>
-<strong><code><a href="reference/creel_n_effort.html">creel_n_effort()</a></code></strong>, <strong><code><a href="reference/creel_n_cpue.html">creel_n_cpue()</a></code></strong>, <strong><code><a href="reference/creel_power.html">creel_power()</a></code></strong>, <strong><code><a href="reference/cv_from_n.html">cv_from_n()</a></code></strong> — sample-size and power tools.</li>
+<strong><code><a href="reference/creel_n_effort.html">creel_n_effort()</a></code></strong>, <strong><code><a href="reference/creel_n_cpue.html">creel_n_cpue()</a></code></strong>, <strong><code><a href="reference/creel_n_camera.html">creel_n_camera()</a></code></strong>, <strong><code><a href="reference/creel_power.html">creel_power()</a></code></strong>, <strong><code><a href="reference/cv_from_n.html">cv_from_n()</a></code></strong> — sample-size and power tools.</li>
 <li>
 <strong><code><a href="reference/season_summary.html">season_summary()</a></code></strong>, <strong><code><a href="reference/summary.creel_estimates.html">summary.creel_estimates()</a></code></strong>, <strong><code><a href="reference/write_estimates.html">write_estimates()</a></code></strong> — report-ready summary/export helpers.</li>
 <li>
@@ -384,7 +399,7 @@ Single-overflight effort estimation with calibrated open-hours scaling.
 </tr>
 <tr>
 <td><a href="https://chrischizinski.github.io/tidycreel/articles/camera-surveys.html">Camera Surveys</a></td>
-<td>Counter and ingress-egress preprocessing, camera effort</td>
+<td>Counter and ingress-egress preprocessing, count imputation, camera effort</td>
 </tr>
 <tr>
 <td><a href="https://chrischizinski.github.io/tidycreel/articles/aerial-surveys.html">Aerial Surveys</a></td>
@@ -393,6 +408,54 @@ Single-overflight effort estimation with calibrated open-hours scaling.
 <tr>
 <td><a href="https://chrischizinski.github.io/tidycreel/articles/aerial-glmm.html">Aerial GLMM</a></td>
 <td>Negative-binomial GLMM aerial effort (Askey 2018)</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section level3">
+<h3 id="estimation-1">Estimation<a class="anchor" aria-label="anchor" href="#estimation-1"></a>
+</h3>
+<table class="table">
+<colgroup>
+<col width="50%">
+<col width="50%">
+</colgroup>
+<thead><tr>
+<th>Vignette</th>
+<th>Description</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><a href="https://chrischizinski.github.io/tidycreel/articles/survey-tidycreel.html">Survey Integration</a></td>
+<td>Using tidycreel alongside the <code>survey</code> package directly</td>
+</tr>
+<tr>
+<td><a href="https://chrischizinski.github.io/tidycreel/articles/interview-estimation.html">Interview Estimation</a></td>
+<td>CPUE, catch, and harvest from interview data</td>
+</tr>
+<tr>
+<td><a href="https://chrischizinski.github.io/tidycreel/articles/mark-recapture.html">Mark-Recapture and Exploitation Rate</a></td>
+<td>Chapman, Petersen, Schnabel estimators; MR harvest; exploitation rate from tag returns</td>
+</tr>
+<tr>
+<td><a href="https://chrischizinski.github.io/tidycreel/articles/incomplete-trips.html">Incomplete Trips</a></td>
+<td>When and how to use mean-of-ratios and TOST validation</td>
+</tr>
+<tr>
+<td><a href="https://chrischizinski.github.io/tidycreel/articles/flexible-count-estimation.html">Flexible Count Estimation</a></td>
+<td>Non-standard count configurations and custom time windows</td>
+</tr>
+<tr>
+<td><a href="https://chrischizinski.github.io/tidycreel/articles/progressive-count-surveys.html">Progressive Count Surveys</a></td>
+<td>Rolling and progressive count workflows</td>
+</tr>
+<tr>
+<td><a href="https://chrischizinski.github.io/tidycreel/articles/section-estimation.html">Section Estimation</a></td>
+<td>Spatial section-level effort and catch estimation</td>
+</tr>
+<tr>
+<td><a href="https://chrischizinski.github.io/tidycreel/articles/temporal-extrapolation.html">Temporal Extrapolation</a></td>
+<td>Extrapolating partial-season data to full-season estimates</td>
 </tr>
 </tbody>
 </table>
@@ -411,6 +474,10 @@ Single-overflight effort estimation with calibrated open-hours scaling.
 </tr></thead>
 <tbody>
 <tr>
+<td><a href="https://chrischizinski.github.io/tidycreel/articles/unextrapolated-summaries.html">Unextrapolated Summaries</a></td>
+<td>Raw interview summaries without season-level expansion</td>
+</tr>
+<tr>
 <td><a href="https://chrischizinski.github.io/tidycreel/articles/survey-design-toolbox.html">Survey Design Toolbox</a></td>
 <td>Sample-size, power, scheduling, and pre-season planning tools</td>
 </tr>
@@ -423,26 +490,126 @@ Single-overflight effort estimation with calibrated open-hours scaling.
 <td>Plotting patterns and output styling with <code><a href="reference/theme_creel.html">theme_creel()</a></code>
 </td>
 </tr>
+</tbody>
+</table>
+</div>
+<div class="section level3">
+<h3 id="statistical-methods">Statistical Methods<a class="anchor" aria-label="anchor" href="#statistical-methods"></a>
+</h3>
+<table class="table">
+<colgroup>
+<col width="50%">
+<col width="50%">
+</colgroup>
+<thead><tr>
+<th>Vignette</th>
+<th>Description</th>
+</tr></thead>
+<tbody>
 <tr>
-<td><a href="https://chrischizinski.github.io/tidycreel/articles/interview-estimation.html">Interview Estimation</a></td>
-<td>CPUE, catch, and harvest from interview data</td>
+<td><a href="https://chrischizinski.github.io/tidycreel/articles/effort-pipeline.html">Effort Pipeline</a></td>
+<td>Statistical mechanics of the effort estimation pipeline</td>
 </tr>
 <tr>
-<td><a href="https://chrischizinski.github.io/tidycreel/articles/incomplete-trips.html">Incomplete Trips</a></td>
-<td>When and how to use mean-of-ratios and TOST validation</td>
+<td><a href="https://chrischizinski.github.io/tidycreel/articles/catch-pipeline.html">Catch Pipeline</a></td>
+<td>Statistical mechanics of the catch estimation pipeline</td>
 </tr>
 <tr>
 <td><a href="https://chrischizinski.github.io/tidycreel/articles/replicate-designs.html">Replicate Designs</a></td>
 <td>Variance workflows and replicate-design reasoning</td>
 </tr>
+<tr>
+<td><a href="https://chrischizinski.github.io/tidycreel/articles/bus-route-equations.html">Bus-Route Equations</a></td>
+<td>Technical equation derivations for bus-route estimators</td>
+</tr>
 </tbody>
 </table>
+</div>
+<div class="section level3">
+<h3 id="ecosystem">Ecosystem<a class="anchor" aria-label="anchor" href="#ecosystem"></a>
+</h3>
+<table class="table">
+<colgroup>
+<col width="50%">
+<col width="50%">
+</colgroup>
+<thead><tr>
+<th>Vignette</th>
+<th>Description</th>
+</tr></thead>
+<tbody><tr>
+<td><a href="https://chrischizinski.github.io/tidycreel/articles/tidycreel-connect.html">tidycreel.connect</a></td>
+<td>Database integration and reproducible data pipelines</td>
+</tr></tbody>
+</table>
+</div>
+</div>
+<div class="section level2">
+<h2 id="getting-help-and-reporting-bugs">Getting Help and Reporting Bugs<a class="anchor" aria-label="anchor" href="#getting-help-and-reporting-bugs"></a>
+</h2>
+<div class="section level3">
+<h3 id="questions-about-usage">Questions about usage<a class="anchor" aria-label="anchor" href="#questions-about-usage"></a>
+</h3>
+<p>If you have questions about which survey type to use, how to interpret results, or how to structure your data, the best place to start is <strong>GitHub Discussions</strong>:</p>
+<blockquote>
+<p><a href="https://github.com/chrischizinski/tidycreel/discussions" class="external-link uri">https://github.com/chrischizinski/tidycreel/discussions</a></p>
+</blockquote>
+<p>GitHub Discussions works like a threaded forum attached to the repository. If you do not already have a GitHub account, you can create one for free at <a href="https://github.com/signup" class="external-link uri">https://github.com/signup</a> — it only requires an email address. Once signed in, click <strong>New discussion</strong>, select the <strong>Q&amp;A</strong> category, and describe what you are trying to do. Searching existing threads first is worth a moment; your question may already have an answer.</p>
+</div>
+<div class="section level3">
+<h3 id="reporting-a-bug-or-unexpected-result">Reporting a bug or unexpected result<a class="anchor" aria-label="anchor" href="#reporting-a-bug-or-unexpected-result"></a>
+</h3>
+<p>If a function returns an error, produces a result that does not look right, or behaves differently from what the documentation describes, please open a <strong>GitHub Issue</strong>:</p>
+<blockquote>
+<p><a href="https://github.com/chrischizinski/tidycreel/issues" class="external-link uri">https://github.com/chrischizinski/tidycreel/issues</a></p>
+</blockquote>
+<p><strong>Step-by-step for first-time GitHub users:</strong></p>
+<ol style="list-style-type: decimal">
+<li>Go to the Issues link above. If you are not signed in, click <strong>Sign in</strong> in the top-right corner (or <strong>Sign up</strong> if you do not yet have an account).</li>
+<li>Click the green <strong>New issue</strong> button.</li>
+<li>Select the <strong>Bug report</strong> template — it will open a pre-filled form.</li>
+<li>Fill in each section of the form:
+<ul>
+<li>
+<strong>Survey type</strong> — which design you are using (<code>instantaneous</code>, <code>bus_route</code>, <code>ice</code>, <code>camera</code>, or <code>aerial</code>)</li>
+<li>
+<strong>tidycreel version</strong> — run <code>packageVersion("tidycreel")</code> in R and paste the result (e.g., <code>1.6.0</code>)</li>
+<li>
+<strong>What you expected</strong> — describe the output or behavior you expected</li>
+<li>
+<strong>What actually happened</strong> — paste the full error message, or describe the result that does not look right</li>
+<li>
+<strong>Reproducible example</strong> — a short R snippet that shows the problem (see below)</li>
+</ul>
+</li>
+<li>Click <strong>Submit new issue</strong> at the bottom of the form.</li>
+</ol>
+<p><strong>Writing a reproducible example</strong></p>
+<p>The single most useful thing you can include is a short, self-contained R snippet that demonstrates the problem without needing your real data. Use the package’s built-in example datasets (<code>example_calendar</code>, <code>example_counts</code>, <code>example_interviews</code>, etc.) wherever possible, or create a small data frame that triggers the issue.</p>
+<p>A good example looks like this:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/chrischizinski/tidycreel" class="external-link">tidycreel</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">example_calendar</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span>
+<span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_counts</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># The call that produces the unexpected result</span></span>
+<span><span class="fu"><a href="reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error: ...  (paste the full error message here)</span></span></code></pre></div>
+<p>The snippet should run from scratch without any additional files or setup. If reducing your data to a minimal example is not straightforward, share what you have and describe the context — that is still very helpful. The <code>reprex</code> package can automatically format and share R output if you want a polished submission: install it with <code>install.packages("reprex")</code> and run <code>reprex::reprex()</code> around your code.</p>
+<p>For guidance on contributing code, requesting new features, or the development workflow, see <a href="https://github.com/chrischizinski/tidycreel/blob/main/CONTRIBUTING.md" class="external-link">CONTRIBUTING.md</a>.</p>
 </div>
 </div>
 <div class="section level2">
 <h2 id="license">License<a class="anchor" aria-label="anchor" href="#license"></a>
 </h2>
 <p>MIT License — see <a href="LICENSE.html">LICENSE.md</a> for details.</p>
+</div>
+<div class="section level2">
+<h2 id="ai-use-acknowledgement">AI Use Acknowledgement<a class="anchor" aria-label="anchor" href="#ai-use-acknowledgement"></a>
+</h2>
+<p>Artificial intelligence tools were used during the development of tidycreel, primarily through Claude Code (Anthropic), with selected code and outputs reviewed using Codex (OpenAI). These tools supported code refinement, consistency across functions, GitHub Actions workflows, error checking, and the development of testing infrastructure.</p>
+<p>All functions and analytical outputs have been reviewed by the author team and validated against real-world creel survey data and expected analytical behavior. Despite these review and testing efforts, errors may still occur. If you identify a problem or unexpected result, please <a href="https://github.com/chrischizinski/tidycreel/issues" class="external-link">submit an issue</a> so that it can be reviewed and addressed.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">
@@ -489,7 +656,7 @@ Single-overflight effort estimation with calibrated open-hours scaling.
 <li><a href="https://github.com/chrischizinski/tidycreel/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/chrischizinski/tidycreel/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a></li>
 <li><a href="https://chrischizinski.github.io/tidycreel/"><img src="https://img.shields.io/badge/pkgdown-live-1B4F72" alt="pkgdown"></a></li>
 <li><a href="https://opensource.org/licenses/MIT" class="external-link"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a></li>
-<li><a href="https://lifecycle.r-lib.org/articles/stages.html#experimental" class="external-link"><img src="https://img.shields.io/badge/lifecycle-experimental-orange.svg" alt="Lifecycle: experimental"></a></li>
+<li><a href="https://lifecycle.r-lib.org/articles/stages.html#stable" class="external-link"><img src="https://img.shields.io/badge/lifecycle-stable-brightgreen.svg" alt="Lifecycle: stable"></a></li>
 <li><a href="https://app.codecov.io/gh/chrischizinski/tidycreel" class="external-link"><img src="https://codecov.io/gh/chrischizinski/tidycreel/graph/badge.svg" alt="Codecov test coverage"></a></li>
 </ul>
 </div>

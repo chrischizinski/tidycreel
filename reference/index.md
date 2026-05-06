@@ -144,7 +144,9 @@ check data completeness, and inspect estimate output.
 ## Planning & Sample Size
 
 Pre-survey tools for sample size determination, power analysis, and
-design comparison.
+design comparison. Also includes post-design stratification diagnostics:
+verify stratum weights, simulate collapse scenarios, and reallocate
+sampling effort across strata.
 
 - [`power_creel()`](https://chrischizinski.github.io/tidycreel/reference/power_creel.md)
   : Unified sample-size and power interface for creel surveys
