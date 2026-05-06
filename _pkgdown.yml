@@ -109,7 +109,9 @@ reference:
   - title: "Planning & Sample Size"
     desc: >
       Pre-survey tools for sample size determination, power analysis, and
-      design comparison.
+      design comparison. Also includes post-design stratification diagnostics:
+      verify stratum weights, simulate collapse scenarios, and reallocate
+      sampling effort across strata.
     contents:
       - power_creel
       - creel_n_effort
@@ -217,10 +219,12 @@ articles:
 - title: "Estimation"
   navbar: "Estimation"
   desc: >
-    Catch rate, harvest, effort, and spatially stratified estimation techniques.
+    Catch rate, harvest, effort, mark-recapture, exploitation rate, and
+    spatially stratified estimation techniques.
   contents:
   - survey-tidycreel
   - interview-estimation
+  - mark-recapture
   - incomplete-trips
   - flexible-count-estimation
   - progressive-count-surveys
