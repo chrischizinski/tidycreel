@@ -167,3 +167,16 @@ test_that("Test V: autoplot() accepts Chapman result without error", {
 test_that("Test W: @examples smoke — estimate_angler_n(M=200, n=50, m=10) completes without error", {
   expect_no_error(estimate_angler_n(M = 200L, n = 50L, m = 10L))
 })
+
+# --- WARNING-02 fix: Schnabel ci_hi guard for lo_m = 0 ---
+
+test_that("Test X: Schnabel warns and returns ci_hi = Inf when lo_m = 0", {
+  # sum_m = 1 => qpois(0.025, 1) = 0 => lo_m = 0 => ci_hi = Inf
+  expect_warning(
+    result <- estimate_angler_n(
+      M = c(0L, 10L), n = c(5L, 5L), m = c(0L, 1L), method = "schnabel"
+    ),
+    regexp = "ci_hi set to Inf"
+  )
+  expect_true(is.infinite(result$estimates$ci_upper))
+})

@@ -78,3 +78,12 @@ test_that("Test K: @examples smoke — two-step call completes without error", {
     estimate_mr_harvest(angler_n = r, harvest_rate = 0.35)
   })
 })
+
+# --- WARNING-03 fix: harvest_rate > 1 upper-bound guard tested ---
+
+test_that("Test L: harvest_rate > 1 fires error", {
+  expect_error(
+    estimate_mr_harvest(angler_n = angler_result, harvest_rate = 1.1),
+    regexp = "harvest_rate.*must be|\\(0, 1\\]"
+  )
+})
