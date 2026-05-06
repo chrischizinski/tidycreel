@@ -28,6 +28,7 @@ tidycreel is an R package for creel survey design, data preparation, estimation,
 - [x] **Phase 84: Camera Missing Data Imputation** - Implement `impute_camera_counts()` with a GLM default tier and opt-in GLMM tier, schema-compatible with `add_counts()` (completed 2026-05-03)
 - [x] **Phase 85: Mark-Recapture Harvest Estimators** - Implement `estimate_angler_n()` (Chapman/Petersen/Schnabel) and `estimate_mr_harvest()` for closed-population harvest estimation (completed 2026-05-04)
 - [x] **Phase 86: Stratification Audit** - Implement `audit_strata()`, `simulate_strata_collapse()`, and `reallocate_strata()` for effort-precision-driven design evaluation (completed 2026-05-05)
+- [ ] **Phase 87: v1.6.0 Tech Debt Cleanup** - Fix 6 advisory items from milestone audit: NB GLMM doc correction, Petersen variance_method label, Schnabel ci_hi guard, harvest_rate > 1 test, .imputed logic refactor, Phase 86 VERIFICATION.md
 
 ## Phase Details
 
@@ -173,4 +174,5 @@ Plans:
 | 83. Camera Design Helper | v1.6.0 | 2/2 | Complete | 2026-05-03 |
 | 84. Camera Missing Data Imputation | v1.6.0 | 2/2 | Complete | 2026-05-03 |
 | 85. Mark-Recapture Harvest Estimators | v1.6.0 | 2/2 | Complete | 2026-05-04 |
-| 86. Stratification Audit | v1.6.0 | 0/2 | Not started | - |
+| 86. Stratification Audit | v1.6.0 | 2/2 | Complete | 2026-05-05 |
+| 87. v1.6.0 Tech Debt Cleanup | v1.6.0 | 0/1 | Not started | - |

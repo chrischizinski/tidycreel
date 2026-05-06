@@ -159,7 +159,7 @@ estimate_angler_n <- function(M, n, m, method = "chapman", conf_level = 0.95) {
         n         = as.integer(m)
       ),
       method          = "mark-recapture-petersen",
-      variance_method = "chapman",
+      variance_method = "petersen",
       design          = NULL,
       conf_level      = conf_level,
       by_vars         = NULL
@@ -183,7 +183,10 @@ estimate_angler_n <- function(M, n, m, method = "chapman", conf_level = 0.95) {
       hi_m  <- stats::qpois(1 - alpha / 2,   lambda = sum_m)
       # Guard against hi_m == 0 (degenerate Poisson quantile)
       ci_lo <- if (hi_m == 0) Inf else sum_Mn / hi_m
-      ci_hi <- sum_Mn / lo_m
+      if (lo_m == 0L) {
+        cli::cli_warn("Schnabel Poisson CI: lower quantile is 0; ci_hi set to Inf.")
+      }
+      ci_hi <- if (lo_m == 0L) Inf else sum_Mn / lo_m
     } else {
       z     <- stats::qnorm(1 - (1 - conf_level) / 2)
       inv_N <- 1 / N_hat
