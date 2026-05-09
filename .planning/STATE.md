@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.7.0
 milestone_name: API Connection & Real-Data Validation
 status: active
-stopped_at: Phase 88 — context gathered, ready for planning
+stopped_at: Phase 88 — planned, ready to execute
 last_updated: "2026-05-09T00:00:00.000Z"
-last_activity: 2026-05-09 -- Phase 88 context gathered via discuss-phase
+last_activity: 2026-05-09 -- Phase 88 planned (3 plans, 2 waves)
 progress:
   total_phases: 3
   completed_phases: 0
-  total_plans: 0
+  total_plans: 3
   completed_plans: 0
   percent: 0
 ---
@@ -27,8 +27,8 @@ See: .planning/PROJECT.md (updated 2026-05-09)
 
 Phase: 88 — httr2 Hardening and API Fetch Methods
 Plan: —
-Status: Not started
-Last activity: 2026-05-09 — Roadmap written; Phase 88 is next
+Status: Ready to execute (3 plans, 2 waves)
+Last activity: 2026-05-09 — Phase 88 planned via /gsd-plan-phase
 
 Progress: [----------] 0% (0/3 phases complete)
 
@@ -36,7 +36,7 @@ Progress: [----------] 0% (0/3 phases complete)
 
 | Phase | Goal | Requirements | Status |
 |-------|------|--------------|--------|
-| 88 | Users can call any `fetch_*` method on a `creel_connection_api` and receive canonical data | API-01 – API-06 | Not started |
+| 88 | Users can call any `fetch_*` method on a `creel_connection_api` and receive canonical data | API-01 – API-06 | Planned (3 plans) |
 | 89 | Users can discover available surveys; non-API connections get clean errors | API-07, API-08 | Not started |
 | 90 | Standalone script validates full pipeline against Calamus 2016 reference outputs | REAL-01 | Not started |
 
