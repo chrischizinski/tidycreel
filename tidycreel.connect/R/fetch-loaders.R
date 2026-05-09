@@ -6,6 +6,24 @@
   readr::read_csv(path, show_col_types = FALSE, progress = FALSE)
 }
 
+# Internal: rename raw NGPC API columns to canonical names using a hardcoded map.
+# api_rename_map: named character vector where names = canonical names,
+#   values = raw NGPC JSON field names (e.g., c(interview_uid = "ii_UID", date = "cd_Date")).
+# Columns in api_rename_map but absent from df are silently dropped.
+# Returns a plain data.frame with only matched canonical columns.
+.rename_api_to_canonical <- function(df, api_rename_map) {
+  keep <- character(0)
+  for (canonical in names(api_rename_map)) {
+    api_col <- api_rename_map[[canonical]]
+    if (api_col %in% names(df)) {
+      keep[[canonical]] <- api_col
+    }
+  }
+  result <- df[, keep, drop = FALSE]
+  names(result) <- names(keep)
+  result
+}
+
 # Internal: rename CSV columns to canonical names using schema field mapping.
 # rename_map: named character vector where names = canonical names,
 #   values = schema field names (e.g., c(date = "date_col", ...)).
@@ -68,6 +86,47 @@ fetch_interviews.creel_connection_sqlserver <- function(conn, ...) {
   cli::cli_abort("SQL Server fetch_interviews() not yet implemented (Phase 69).")
 }
 
+#' @export
+fetch_interviews.creel_connection_api <- function(conn, ...) {
+  raw_df <- .api_fetch(conn$con, "interviews")
+
+  # Early return for empty API response — avoids logical-typed columns failing validation
+  if (nrow(raw_df) == 0L) {
+    return(data.frame(
+      interview_uid    = character(0),
+      date             = as.Date(character(0)),
+      catch_count      = numeric(0),
+      effort           = numeric(0),
+      trip_status      = character(0),
+      stringsAsFactors = FALSE
+    ))
+  }
+
+  # Hardcoded NGPC field names — do NOT route through creel_schema (CONTEXT.md D-01 through D-04)
+  api_rename_map <- c(
+    interview_uid = "ii_UID",
+    date          = "cd_Date",
+    catch_count   = "Num",          # TODO: confirm field name with live API
+    trip_status   = "ii_TripType"   # TODO: confirm field name with live API
+  )
+  df <- .rename_api_to_canonical(raw_df, api_rename_map)
+
+  # Effort: arithmetic from two raw fields — only method requiring field arithmetic (API-01)
+  hours_col   <- "ii_TimeFishedHours"   # TODO: confirm field name with live API
+  minutes_col <- "ii_TimeFishedMinutes" # TODO: confirm field name with live API
+  if (hours_col %in% names(raw_df) && minutes_col %in% names(raw_df)) {
+    df$effort <- as.numeric(raw_df[[hours_col]]) +
+                 as.numeric(raw_df[[minutes_col]]) / 60
+  }
+
+  if ("date" %in% names(df))        df$date        <- .parse_api_date(df$date)
+  if ("catch_count" %in% names(df)) df$catch_count <- as.numeric(df$catch_count)
+  if ("trip_status" %in% names(df)) df$trip_status <- as.character(df$trip_status)
+
+  validate_fetch_interviews(df) # nolint: object_usage_linter
+  df
+}
+
 
 #' Load count data from a creel connection
 #'
@@ -103,6 +162,33 @@ fetch_counts.creel_connection_csv <- function(conn, ...) {
 #' @export
 fetch_counts.creel_connection_sqlserver <- function(conn, ...) {
   cli::cli_abort("SQL Server fetch_counts() not yet implemented (Phase 69).")
+}
+
+#' @export
+fetch_counts.creel_connection_api <- function(conn, ...) {
+  raw_df <- .api_fetch(conn$con, "counts")
+
+  # Early return for empty API response
+  if (nrow(raw_df) == 0L) {
+    return(data.frame(
+      date             = as.Date(character(0)),
+      angler_count     = numeric(0),
+      stringsAsFactors = FALSE
+    ))
+  }
+
+  # Hardcoded NGPC field names — do NOT route through creel_schema (CONTEXT.md D-01 through D-04)
+  api_rename_map <- c(
+    date         = "cd_Date",
+    angler_count = "ii_NumberAnglers"  # TODO: confirm field name with live API
+  )
+  df <- .rename_api_to_canonical(raw_df, api_rename_map)
+
+  if ("date" %in% names(df))         df$date         <- .parse_api_date(df$date)
+  if ("angler_count" %in% names(df)) df$angler_count  <- as.numeric(df$angler_count)
+
+  validate_fetch_counts(df) # nolint: object_usage_linter
+  df
 }
 
 
