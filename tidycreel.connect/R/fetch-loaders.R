@@ -310,6 +310,46 @@ fetch_harvest_lengths.creel_connection_sqlserver <- function(conn, ...) {
   cli::cli_abort("SQL Server fetch_harvest_lengths() not yet implemented (Phase 69).")
 }
 
+#' @export
+fetch_harvest_lengths.creel_connection_api <- function(conn, ...) {
+  raw_df <- .api_fetch(conn$con, "harvest_lengths")
+
+  # Early return for empty API response
+  if (nrow(raw_df) == 0L) {
+    return(data.frame(
+      length_uid       = integer(0),
+      interview_uid    = character(0),
+      species          = character(0),
+      length_mm        = numeric(0),
+      length_type      = character(0),
+      stringsAsFactors = FALSE
+    ))
+  }
+
+  # Hardcoded NGPC field names — do NOT route through creel_schema (CONTEXT.md D-01 through D-04)
+  # NOTE: harvest/release lengths use iiUID (no underscore), NOT ii_UID used by interviews/catch
+  api_rename_map <- c(
+    interview_uid = "iiUID",       # NOTE: no underscore — differs from ii_UID in interviews/catch
+    species       = "ih_Species",
+    length_mm     = "ihl_Length"
+  )
+  df <- .rename_api_to_canonical(raw_df, api_rename_map)
+
+  # UID synthesis: length_uid absent from API response — synthesize as row index (D-05, D-06)
+  if (!"length_uid" %in% names(df)) {
+    df$length_uid <- seq_len(nrow(df))
+  }
+
+  # Constant injection: API returns no length_type flag for harvest endpoint (CONTEXT.md D-07)
+  df$length_type <- "harvest"
+
+  if ("species" %in% names(df))   df$species   <- as.character(df$species)
+  if ("length_mm" %in% names(df)) df$length_mm <- as.numeric(df$length_mm)
+
+  validate_fetch_harvest_lengths(df) # nolint: object_usage_linter
+  df
+}
+
 
 #' Load release length data from a creel connection
 #'
@@ -348,4 +388,46 @@ fetch_release_lengths.creel_connection_csv <- function(conn, ...) {
 #' @export
 fetch_release_lengths.creel_connection_sqlserver <- function(conn, ...) {
   cli::cli_abort("SQL Server fetch_release_lengths() not yet implemented (Phase 69).")
+}
+
+#' @export
+fetch_release_lengths.creel_connection_api <- function(conn, ...) {
+  raw_df <- .api_fetch(conn$con, "release_lengths")
+
+  # Early return for empty API response
+  if (nrow(raw_df) == 0L) {
+    return(data.frame(
+      length_uid       = integer(0),
+      interview_uid    = character(0),
+      species          = character(0),
+      length_mm        = numeric(0),
+      length_type      = character(0),
+      stringsAsFactors = FALSE
+    ))
+  }
+
+  # Hardcoded NGPC field names — do NOT route through creel_schema (CONTEXT.md D-01 through D-04)
+  # NOTE: release lengths use iiUID (no underscore) same as harvest lengths
+  api_rename_map <- c(
+    interview_uid = "iiUID",          # NOTE: no underscore
+    species       = "ir_Species",
+    length_mm     = "ir_LengthGroup"
+    # ir_Count is NOT renamed — no canonical target; dropped silently by .rename_api_to_canonical
+    # TODO: confirm ir_Count aggregation policy with live API (CONTEXT.md D-03)
+  )
+  df <- .rename_api_to_canonical(raw_df, api_rename_map)
+
+  # UID synthesis: length_uid absent from API response — synthesize as row index (D-05, D-06)
+  if (!"length_uid" %in% names(df)) {
+    df$length_uid <- seq_len(nrow(df))
+  }
+
+  # Constant injection: API returns no length_type flag for release endpoint (CONTEXT.md D-07)
+  df$length_type <- "release"
+
+  if ("species" %in% names(df))   df$species   <- as.character(df$species)
+  if ("length_mm" %in% names(df)) df$length_mm <- as.numeric(df$length_mm)
+
+  validate_fetch_release_lengths(df) # nolint: object_usage_linter
+  df
 }
