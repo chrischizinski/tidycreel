@@ -1,105 +1,71 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.6.0
-milestone_name: Analytical Extensions II
-status: shipped
-stopped_at: PR #54 merged to main — milestone v1.6.0 shipped
-last_updated: "2026-05-05T00:00:00.000Z"
-last_activity: 2026-05-05 -- PR #54 merged (feat/082-03-rhub-workflow → main)
+milestone: v1.7.0
+milestone_name: (not yet planned)
+status: planning
+stopped_at: v1.6.0 archived — ready to start v1.7.0 planning
+last_updated: "2026-05-09T00:00:00.000Z"
+last_activity: 2026-05-09 -- v1.6.0 milestone archived; v1.6-ROADMAP.md + v1.6-REQUIREMENTS.md written; MILESTONES.md, PROJECT.md, ROADMAP.md, RETROSPECTIVE.md updated
 progress:
-  total_phases: 7
-  completed_phases: 7
-  total_plans: 16
-  completed_plans: 16
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-05-02)
+See: .planning/PROJECT.md (updated 2026-05-09)
 
 **Core value:** A biologist should be able to go from survey design to package-ready estimates, plots, summaries, and documentation without stitching together a custom analysis stack.
-**Current focus:** v1.6.0 milestone complete — ready for verification and PR
+**Current focus:** v1.7.0 planning — run `/gsd-new-milestone` to define requirements and roadmap
 
 ## Current Position
 
-Phase: 86 of 86 (Stratification Audit) — COMPLETE
-Plan: 086-02 complete
-Status: Milestone v1.6.0 complete — ready for verification + PR
-Last activity: 2026-05-05 -- Phase 86 complete (STRAT-01..STRAT-05 satisfied)
+Phase: None yet (v1.7.0 not planned)
+Status: Ready for next milestone planning
+Last activity: 2026-05-09 -- v1.6.0 milestone archived
 
-Progress: [##########] 100%
+Progress: [----------] 0% (no v1.7.0 phases defined yet)
 
 ## Accumulated Context
 
-### Decisions
+### v1.6.0 Archive
 
-- Jolly-Seber (MR-F01) deferred — output contract incompatible with `creel_estimates`; closed-population only in Phase 85
-- GLMM tier (glmmTMB) is opt-in via `method = "glmm"` in Phase 84; GLM default has no new deps
-- `audit_strata()` audits effort precision only in v1.6.0 — CPUE precision deferred to STRAT-F01
-- `FSA` in Suggests only (guarded); `glmmTMB` in Suggests only (guarded); Imports unchanged
-- creel_n_camera() is standalone (Phase 83 complete); power_creel(mode = "camera_n") remains deferred
-- intercept-only GLM per stratum (`count ~ 1`) — `strata_col` has one unique value within each stratum subset; `count ~ strata_col` would fail with "contrasts need 2+ levels"
+All v1.6.0 work is archived:
+- `.planning/milestones/v1.6-ROADMAP.md` — full phase archive
+- `.planning/milestones/v1.6-REQUIREMENTS.md` — all 19 requirements marked complete
+- `.planning/MILESTONES.md` — milestone entry added
 
-### Phase 83 Outcomes
+### Future Requirements (Carry-Forward)
 
-- `creel_n_camera()` added to `R/power-sample-size.R` — Cochran (1977) eq. 5.25 with Feltz-Middaugh (2025) minimums
-- `export(creel_n_camera)` in NAMESPACE; `man/creel_n_camera.Rd` created
-- `_pkgdown.yml` updated: creel_n_camera between creel_n_effort and creel_n_cpue
-- 10 test_that() blocks appended to tests/testthat/test-power-sample-size.R (CDES-01/02/03)
-- devtools::check(): 0 errors | 0 warnings | 1 pre-existing note; 2556 tests passing
-- Pre-existing vignette bug fixed: visualisation.Rmd boxplot column corrected
+These were in scope but deferred from v1.6.0 — priority candidates for v1.7.0:
 
-### Phase 84 Outcomes
+- **MR-F01**: Jolly-Seber open-population estimator (`estimate_angler_n_open()`) — requires new S3 class; output contract incompatible with `creel_estimates`
+- **CAMP-F01**: Multiple imputation via Rubin's rules (extends `impute_camera_counts()` with `m` argument)
+- **STRAT-F01**: CPUE precision audit in `audit_strata(type = "cpue")`
+- **QUAL-05**: rOpenSci formal submission — deferred to undetermined future date
 
-- `impute_camera_counts()` added to `R/impute-camera-counts.R` (188 lines)
-- GLM default (Poisson, Hartill 2016) + GLMM opt-in (nbinom2, Afrifa-Yamoah 2020)
-- `glmmTMB` added to DESCRIPTION Suggests (alphabetical: between flexdashboard and hedgehog)
-- `export(impute_camera_counts)` in NAMESPACE; `man/impute_camera_counts.Rd` created
-- `_pkgdown.yml` updated: impute_camera_counts in Survey Design section (after est_effort_camera)
-- 21 test_that() blocks in tests/testthat/test-impute-camera-counts.R covering CAMP-01 through CAMP-05
-- devtools::check(): 0 errors | 0 warnings | 1 pre-existing note; 2578 tests passing
+### Known Open Issues
 
-### Phase 85 Outcomes
+- Phase 84: CR-01 `.imputed` false-positive logic — FIXED in Phase 87
+- Phase 84: CR-02 docs say ZINB but impl is NB GLMM — FIXED in Phase 87
+- Phase 85: WARNING-01 variance_method mislabel — FIXED in Phase 87
+- Phase 85: WARNING-02 Schnabel ci_hi unguarded — FIXED in Phase 87
+- Phase 85: WARNING-03 harvest_rate > 1 test missing — FIXED in Phase 87
+- Phase 86: VERIFICATION.md missing — FIXED in Phase 87
 
-- `estimate_angler_n()` added to `R/creel-estimates-mark-recapture.R` (311 lines)
-- Chapman (default), Petersen, and Schnabel closed-population estimators
-- `estimate_mr_harvest()` delta-method harvest propagation: H = N_hat × rate; SE = rate × se_N
-- All input guards: m=0, m>n, m>M, Petersen m<7, Schnabel K<2, Schnabel unequal vector lengths
-- Schnabel Poisson CI branch (sum_m < 50) and normal CI branch (sum_m >= 50) both implemented
-- Bug found and fixed: `any(M <= 0)` guard moved inside method branches to allow Schnabel M[1]=0
-- `export(estimate_angler_n)` and `export(estimate_mr_harvest)` in NAMESPACE; both Rd files created
-- `_pkgdown.yml` updated: both functions in Estimation section after estimate_exploitation_rate
-- 23 test_that() blocks in test-estimate-angler-n.R (MR-01..MR-05)
-- 11 test_that() blocks in test-estimate-mr-harvest.R (MR-06)
-- devtools::check(): 0 errors | 0 warnings | 1 pre-existing note; 2624 tests passing
-- Code review: 3 advisory warnings (variance_method mislabel in Petersen, Schnabel ci_hi unguarded for lo_m=0, Test J missing upper harvest_rate bound) — tracked in 085-REVIEW.md
-
-### Phase 86 Outcomes
-
-- `audit_strata()` S3 generic added to `R/strata-audit.R` — `creel_design` and `default` methods; returns `creel_strata_audit` with per-stratum RSE, DEFF, meets_target
-- `simulate_strata_collapse(audit, merge_strata)` before/after long tibble for strata merge evaluation
-- `reallocate_strata(n_total, N_h, s2_h)` Neyman-optimal named integer vector allocation
-- `export(audit_strata)`, `S3method(audit_strata,creel_design)`, `S3method(audit_strata,default)`, `export(simulate_strata_collapse)`, `export(reallocate_strata)` in NAMESPACE
-- `man/audit_strata.Rd`, `man/simulate_strata_collapse.Rd`, `man/reallocate_strata.Rd` generated
-- `_pkgdown.yml` updated: three functions in Planning & Sample Size section (between cv_from_n and compare_designs)
-- 37 test_that() blocks in test-strata-audit.R (Tests A–X + creel_design fixture)
-- rcmdcheck 0 errors 0 warnings; 2661 tests passing
-- cli_abort pluralization fix: removed `{?s}` from simulate_strata_collapse error message (post_process_plurals)
-- ignore_attr = TRUE in expect_equal for named-vector tibble subset assertions
-
-### Pending Todos
-
-None.
+No known open issues at v1.6.0 close.
 
 ### Blockers/Concerns
 
-None. Package state: rcmdcheck 0 errors 0 warnings, 2661 tests passing.
+None.
 
 ## Session Continuity
 
-Last session: 2026-05-05
-Stopped at: Phase 86 complete — all 16 plans executed
-Resume file: None — milestone v1.6.0 complete; next step is verification + PR
+Last session: 2026-05-09
+Stopped at: v1.6.0 milestone archive complete
+Resume file: None — run `/gsd-new-milestone` to start v1.7.0 planning cycle

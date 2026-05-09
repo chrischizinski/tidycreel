@@ -9,7 +9,8 @@ tidycreel is an R package for creel survey design, data preparation, estimation,
 - ✅ **M022 — Comprehensive Project Evaluation and Future Planning** — Phases 70-75 (shipped 2026-04-19)
 - ✅ **M023 / v1.4.0 Quality, Polish, and rOpenSci Readiness** — Phases 76-79 (local closeout 2026-04-23) — see [.planning/milestones/v1.4-ROADMAP.md](milestones/v1.4-ROADMAP.md)
 - ✅ **M024 / v1.5.0 Analytical Extensions and rOpenSci Submission** — Phases 80-82 (shipped 2026-04-28) — see [.planning/milestones/v1.5-ROADMAP.md](milestones/v1.5-ROADMAP.md)
-- 🚧 **v1.6.0 — Analytical Extensions II** — Phases 83-86 (in progress)
+- ✅ **v1.6.0 — Analytical Extensions II** — Phases 83–87 (shipped 2026-05-06) — see [.planning/milestones/v1.6-ROADMAP.md](milestones/v1.6-ROADMAP.md)
+- 📋 **v1.7.0** — Phases 88+ (not yet planned)
 
 ## Phases
 
@@ -22,13 +23,16 @@ tidycreel is an R package for creel survey design, data preparation, estimation,
 
 </details>
 
-### v1.6.0 Analytical Extensions II
+<details>
+<summary>✅ v1.6.0 Analytical Extensions II (Phases 83–87) — SHIPPED 2026-05-06</summary>
 
-- [x] **Phase 83: Camera Design Helper** - Implement `creel_n_camera()` for per-stratum camera-day sample size using the Cochran CV formula (completed 2026-05-03)
-- [x] **Phase 84: Camera Missing Data Imputation** - Implement `impute_camera_counts()` with a GLM default tier and opt-in GLMM tier, schema-compatible with `add_counts()` (completed 2026-05-03)
-- [x] **Phase 85: Mark-Recapture Harvest Estimators** - Implement `estimate_angler_n()` (Chapman/Petersen/Schnabel) and `estimate_mr_harvest()` for closed-population harvest estimation (completed 2026-05-04)
-- [x] **Phase 86: Stratification Audit** - Implement `audit_strata()`, `simulate_strata_collapse()`, and `reallocate_strata()` for effort-precision-driven design evaluation (completed 2026-05-05)
-- [ ] **Phase 87: v1.6.0 Tech Debt Cleanup** - Fix 6 advisory items from milestone audit: NB GLMM doc correction, Petersen variance_method label, Schnabel ci_hi guard, harvest_rate > 1 test, .imputed logic refactor, Phase 86 VERIFICATION.md
+- [x] **Phase 83: Camera Design Helper** — Implement `creel_n_camera()` for per-stratum camera-day sample size using the Cochran CV formula (completed 2026-05-03)
+- [x] **Phase 84: Camera Missing Data Imputation** — Implement `impute_camera_counts()` with a GLM default tier and opt-in GLMM tier, schema-compatible with `add_counts()` (completed 2026-05-03)
+- [x] **Phase 85: Mark-Recapture Harvest Estimators** — Implement `estimate_angler_n()` (Chapman/Petersen/Schnabel) and `estimate_mr_harvest()` for closed-population harvest estimation (completed 2026-05-04)
+- [x] **Phase 86: Stratification Audit** — Implement `audit_strata()`, `simulate_strata_collapse()`, and `reallocate_strata()` for effort-precision-driven design evaluation (completed 2026-05-05)
+- [x] **Phase 87: v1.6.0 Tech Debt Cleanup** — Close 6 advisory items: NB GLMM doc correction, Petersen variance_method label, Schnabel ci_hi guard, harvest_rate > 1 test, .imputed logic fix, Phase 86 VERIFICATION.md (completed 2026-05-05)
+
+</details>
 
 ## Phase Details
 
@@ -86,83 +90,7 @@ Plans:
 
 </details>
 
-### Phase 83: Camera Design Helper
-**Goal**: Biologists can compute required camera-days per stratum for a target CV using `creel_n_camera()`, with output that matches the shape of `creel_n_effort()` and warns on empirically-grounded minimums
-**Depends on**: Phase 82 (clean package baseline)
-**Requirements**: CDES-01, CDES-02, CDES-03
-**Success Criteria** (what must be TRUE):
-  1. User can call `creel_n_camera(cv_target, N_h, ybar_h, s2_h)` and receive a named integer vector of required camera-days per stratum plus a `"total"` element
-  2. Output shape is consistent with `creel_n_effort()` — same vector structure, same naming convention
-  3. A `cli_warn()` message appears when any stratum's computed n falls below the Feltz-Middaugh (2025) empirical minimums (~12 weekday, ~7 weekend)
-  4. `rcmdcheck` passes with 0 errors and 0 warnings after the addition
-**Plans**: 2 plans
-
-Plans:
-- [x] 083-01-PLAN.md — Implement creel_n_camera() in R/power-sample-size.R, run devtools::document(), and add to _pkgdown.yml
-- [x] 083-02-PLAN.md — Append creel_n_camera test block to test-power-sample-size.R and run devtools::check() quality gate
-
-### Phase 84: Camera Missing Data Imputation
-**Goal**: Biologists can call `impute_camera_counts()` on a camera count frame with a status column and receive a complete, schema-compatible frame ready to pass directly into `add_counts()`, with diagnostics for high-missingness strata
-**Depends on**: Phase 83 (camera vocabulary established)
-**Requirements**: CAMP-01, CAMP-02, CAMP-03, CAMP-04, CAMP-05
-**Success Criteria** (what must be TRUE):
-  1. User can call `impute_camera_counts(data, method = "glm")` and receive a filled count frame where outage rows are imputed using a day-type GLM (Hartill 2016)
-  2. User can call `impute_camera_counts(data, method = "glmm")` and the function installs / requests `glmmTMB` via `rlang::check_installed()` before applying the ZINB GLMM (Afrifa-Yamoah 2020)
-  3. The output data frame passes directly into `add_counts()` without column manipulation — the full `impute → add_counts → est_effort_camera()` chain runs without error
-  4. A `cli_warn()` fires when the missing fraction in any stratum exceeds 50%
-  5. The function aborts with an informative `cli_abort()` message when an entire stratum contains no observed counts
-**Plans**: 2 plans
-
-Plans:
-
-**Wave 1**
-- [x] 084-01-PLAN.md — Implement impute_camera_counts() in R/impute-camera-counts.R, add glmmTMB to DESCRIPTION Suggests, register in _pkgdown.yml, run devtools::document()
-
-**Wave 2** *(blocked on Wave 1 completion)*
-- [x] 084-02-PLAN.md — Write tests/testthat/test-impute-camera-counts.R and run devtools::check() quality gate
-
-Cross-cutting constraints: `impute_camera_counts()` exported and importable before tests run; `add_counts()` column contract (schema-compatible output with `.imputed` flag and integer counts) required in both plans.
-
-### Phase 85: Mark-Recapture Harvest Estimators
-**Goal**: Biologists can estimate angler population size from mark-recapture data using Chapman (default), Petersen, or Schnabel estimators via `estimate_angler_n()`, and can propagate that uncertainty into total harvest via `estimate_mr_harvest()`
-**Depends on**: Phase 82 (clean estimator baseline; no hard dependency on 83-84)
-**Requirements**: MR-01, MR-02, MR-03, MR-04, MR-05, MR-06
-**Success Criteria** (what must be TRUE):
-  1. User can call `estimate_angler_n(M, n, m)` with the Chapman correction (default) and receive a population size estimate with SE and CI
-  2. User can request the unadjusted Petersen estimator via `method = "petersen"` when recaptures m >= 7
-  3. User can pass multi-occasion data and request the Schnabel estimator via `method = "schnabel"`
-  4. The function aborts with informative `cli_abort()` messages on impossible inputs (m = 0, m > n, m > M)
-  5. Return value is a `creel_estimates` S3 object — `compare_designs()` and `autoplot()` work without modification
-  6. User can call `estimate_mr_harvest(N_hat, se_N, harvest_rate)` and receive total harvest with delta-method SE propagated from N_hat uncertainty
-**Plans**: 2 plans
-
-Plans:
-
-**Wave 1**
-- [x] 085-01-PLAN.md — Implement estimate_angler_n() and estimate_mr_harvest() in R/creel-estimates-mark-recapture.R, run devtools::document(), update _pkgdown.yml
-
-**Wave 2** *(blocked on Wave 1 completion)*
-- [x] 085-02-PLAN.md — Write test-estimate-angler-n.R and test-estimate-mr-harvest.R, run devtools::check() quality gate
-
-### Phase 86: Stratification Audit
-**Goal**: Biologists can evaluate per-stratum effort precision from a completed creel design or pilot summary statistics, simulate strata merges, and compute Neyman-optimal reallocation of a fixed sampling budget
-**Depends on**: Phase 82 (clean package baseline; no hard dependency on 83-85)
-**Requirements**: STRAT-01, STRAT-02, STRAT-03, STRAT-04, STRAT-05
-**Success Criteria** (what must be TRUE):
-  1. User can call `audit_strata(creel_design)` or `audit_strata(N_h, ybar_h, s2_h)` and receive per-stratum RSE, n, a meets-target flag, and DEFF in a `creel_strata_audit` S3 object
-  2. User can call `simulate_strata_collapse(audit, merge_strata)` specifying strata to merge and receive a before/after precision comparison as a tibble
-  3. User can call `reallocate_strata(n_total, N_h, s2_h)` and receive Neyman-optimal sample counts per stratum as a named vector
-  4. `creel_strata_audit` output includes DEFF to quantify the value of the current stratification scheme relative to simple random sampling
-  5. `rcmdcheck` passes with 0 errors and 0 warnings after all three functions are added
-**Plans**: 2 plans
-
-Plans:
-
-**Wave 1**
-- [ ] 086-01-PLAN.md — Implement R/strata-audit.R (audit_strata generic + creel_design/default methods, simulate_strata_collapse, reallocate_strata), run devtools::document(), update _pkgdown.yml
-
-**Wave 2** *(blocked on Wave 1 completion)*
-- [ ] 086-02-PLAN.md — Write tests/testthat/test-strata-audit.R (Tests A-X covering STRAT-01..STRAT-05) and run rcmdcheck quality gate
+_(v1.6.0 phase details archived — see [.planning/milestones/v1.6-ROADMAP.md](milestones/v1.6-ROADMAP.md))_
 
 ## Progress
 
@@ -175,4 +103,5 @@ Plans:
 | 84. Camera Missing Data Imputation | v1.6.0 | 2/2 | Complete | 2026-05-03 |
 | 85. Mark-Recapture Harvest Estimators | v1.6.0 | 2/2 | Complete | 2026-05-04 |
 | 86. Stratification Audit | v1.6.0 | 2/2 | Complete | 2026-05-05 |
-| 87. v1.6.0 Tech Debt Cleanup | v1.6.0 | 0/1 | Not started | - |
+| 87. v1.6.0 Tech Debt Cleanup | v1.6.0 | 1/1 | Complete | 2026-05-05 |
+| 88. (next) | v1.7.0 | — | Not started | — |

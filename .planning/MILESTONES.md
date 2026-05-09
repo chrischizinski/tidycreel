@@ -1,5 +1,20 @@
 # Milestones
 
+## v1.6.0 — Analytical Extensions II (Shipped: 2026-05-06)
+
+**Phases:** 83–87 | **Plans:** 9 | **Timeline:** 2026-04-28 → 2026-05-06 (8 days)
+**Files changed:** 152 (+10,081 / −190 lines) | **Tests:** 2556 → 2667 (+111)
+
+**Key accomplishments:**
+1. Implemented `creel_n_camera()` — Cochran (1977) stratified sample-size with Feltz-Middaugh (2025) minimum-day warnings; output shape matches `creel_n_effort()` (Phase 83)
+2. Implemented `impute_camera_counts()` — Poisson GLM default (Hartill 2016) + NB GLMM opt-in (Afrifa-Yamoah 2020) for camera outage fill-in; schema-compatible with `add_counts()`; `.imputed` flag; CAMP-01..05 satisfied (Phase 84)
+3. Implemented `estimate_angler_n()` — Chapman (default), Petersen (m ≥ 7), and Schnabel closed-population estimators with input guards, Poisson/normal CI branches, and `creel_estimates` S3 output (Phase 85)
+4. Implemented `estimate_mr_harvest()` — delta-method harvest propagation from N_hat uncertainty; H = N_hat × rate; SE = rate × se_N (Phase 85)
+5. Implemented `audit_strata()`, `simulate_strata_collapse()`, `reallocate_strata()` — effort-precision stratification audit, before/after merge simulation, and Neyman-optimal reallocation of fixed sampling budget (Phase 86)
+6. Closed all 6 v1.6.0 advisory items — corrected NB GLMM docs, fixed Petersen variance_method label, guarded Schnabel ci_hi, added harvest_rate > 1 test, fixed .imputed false-positive logic, generated Phase 86 VERIFICATION.md (Phase 87)
+
+---
+
 ## M024 / v1.5.0 — Analytical Extensions (Shipped: 2026-04-28)
 
 **Phases:** 80–82 | **Plans:** 8 | **Timeline:** 2026-04-26 → 2026-04-28 (3 days)
