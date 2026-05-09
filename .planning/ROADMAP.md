@@ -10,7 +10,7 @@ tidycreel is an R package for creel survey design, data preparation, estimation,
 - ✅ **M023 / v1.4.0 Quality, Polish, and rOpenSci Readiness** — Phases 76-79 (local closeout 2026-04-23) — see [.planning/milestones/v1.4-ROADMAP.md](milestones/v1.4-ROADMAP.md)
 - ✅ **M024 / v1.5.0 Analytical Extensions and rOpenSci Submission** — Phases 80-82 (shipped 2026-04-28) — see [.planning/milestones/v1.5-ROADMAP.md](milestones/v1.5-ROADMAP.md)
 - ✅ **v1.6.0 — Analytical Extensions II** — Phases 83–87 (shipped 2026-05-06) — see [.planning/milestones/v1.6-ROADMAP.md](milestones/v1.6-ROADMAP.md)
-- 📋 **v1.7.0** — Phases 88+ (not yet planned)
+- 📋 **v1.7.0 — API Connection & Real-Data Validation** — Phases 88–90 (in progress)
 
 ## Phases
 
@@ -33,6 +33,12 @@ tidycreel is an R package for creel survey design, data preparation, estimation,
 - [x] **Phase 87: v1.6.0 Tech Debt Cleanup** — Close 6 advisory items: NB GLMM doc correction, Petersen variance_method label, Schnabel ci_hi guard, harvest_rate > 1 test, .imputed logic fix, Phase 86 VERIFICATION.md (completed 2026-05-05)
 
 </details>
+
+### v1.7.0 — API Connection & Real-Data Validation (Phases 88–90)
+
+- [ ] **Phase 88: httr2 Hardening and API Fetch Methods** — Harden `.api_fetch()` with `req_error`/`req_retry` and implement all five `fetch_*.creel_connection_api` S3 methods with hardcoded field rename maps
+- [ ] **Phase 89: Discovery Generics** — Add `list_creels()` and `search_creels()` generics with API implementations and CSV/SQL stubs in a new `creel-discovery.R` file
+- [ ] **Phase 90: Real-Data Validation** — Integration script in `inst/validation/` runs the full bus-route pipeline on Calamus 2016 archived data and reports whether estimates match archived reference outputs
 
 ## Phase Details
 
@@ -92,6 +98,44 @@ Plans:
 
 _(v1.6.0 phase details archived — see [.planning/milestones/v1.6-ROADMAP.md](milestones/v1.6-ROADMAP.md))_
 
+### Phase 88: httr2 Hardening and API Fetch Methods
+**Goal**: Users can call any `fetch_*` method on a `creel_connection_api` object and receive a canonical data frame, backed by an HTTP layer that surfaces structured errors and retries on transient failures
+**Depends on**: Phase 87 (stable v1.6.0 baseline; existing `.api_fetch()` infrastructure in `tidycreel.connect`)
+**Requirements**: API-01, API-02, API-03, API-04, API-05, API-06
+**Success Criteria** (what must be TRUE):
+  1. `fetch_interviews()` on a `creel_connection_api` object returns a data frame with columns `interview_uid`, `date`, `catch_count`, `effort`, `trip_status` and effort computed as hours + minutes/60
+  2. `fetch_counts()`, `fetch_catch()`, `fetch_harvest_lengths()`, and `fetch_release_lengths()` each return data frames with their respective canonical columns as specified in requirements API-02 through API-05
+  3. When the API returns a non-2xx response, `.api_fetch()` aborts with a human-readable cli error message that includes the HTTP status code and API-provided error body
+  4. When the API returns a 429 or 503 status, `.api_fetch()` retries up to 3 times before aborting
+  5. `httr2` is declared in `Imports` (not `Suggests`) in `tidycreel.connect/DESCRIPTION` with floor `>= 1.0.0`
+**Plans**: 3 plans
+
+Plans:
+- [ ] 088-01-PLAN.md — Promote httr2 to Imports, harden .api_fetch() with req_error/req_retry/cli_abort, write helper-api.R and test-api-fetch.R (API-06)
+- [ ] 088-02-PLAN.md — Add fetch_interviews.creel_connection_api and fetch_counts.creel_connection_api with tests (API-01, API-02)
+- [ ] 088-03-PLAN.md — Add fetch_catch, fetch_harvest_lengths, fetch_release_lengths API methods with tests (API-03, API-04, API-05)
+
+### Phase 89: Discovery Generics
+**Goal**: Users can discover available surveys on a connected API before fetching data, and receive a clean "not supported" error when calling discovery functions on CSV or SQL Server connections
+**Depends on**: Phase 88 (hardened `.api_fetch()` auth and error infrastructure)
+**Requirements**: API-07, API-08
+**Success Criteria** (what must be TRUE):
+  1. `list_creels()` on a `creel_connection_api` object returns a data frame with columns `creel_uid`, `title`, `description`, `active`, `data_complete`, `comments` containing all surveys available on the connected API
+  2. `search_creels(conn, keyword)` returns the same column shape as `list_creels()` filtered to surveys matching the keyword string
+  3. Calling `list_creels()` or `search_creels()` on a CSV or SQL Server connection object produces a cli error message indicating the method is not supported for that connection type (no "no applicable method" crash)
+**Plans**: TBD
+
+### Phase 90: Real-Data Validation
+**Goal**: A standalone script demonstrates end-to-end correctness of the estimation pipeline on real survey data, confirming that effort, catch, and harvest estimates match archived reference values from the Calamus 2016 bus-route survey
+**Depends on**: Phase 88 (canonical fetch output used as pipeline input)
+**Requirements**: REAL-01
+**Success Criteria** (what must be TRUE):
+  1. Running `inst/validation/calamus-2016-validation.R` completes without error using the archived Calamus 2016 CSV fixtures
+  2. The script reports whether effort, catch, and harvest estimates are within acceptable tolerance of the archived reference comparison outputs, printing a pass/fail summary to the console
+  3. The script handles the known Calamus 2016 data characteristics without silent errors: intentionally duplicated interview UIDs, three-value `catch_type` including "caught", species code `86` as distinct from `862`
+  4. The script is offline-capable (uses static fixture files, not live API calls) so it can run in CI without network access
+**Plans**: TBD
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -104,4 +148,6 @@ _(v1.6.0 phase details archived — see [.planning/milestones/v1.6-ROADMAP.md](m
 | 85. Mark-Recapture Harvest Estimators | v1.6.0 | 2/2 | Complete | 2026-05-04 |
 | 86. Stratification Audit | v1.6.0 | 2/2 | Complete | 2026-05-05 |
 | 87. v1.6.0 Tech Debt Cleanup | v1.6.0 | 1/1 | Complete | 2026-05-05 |
-| 88. (next) | v1.7.0 | — | Not started | — |
+| 88. httr2 Hardening and API Fetch Methods | v1.7.0 | 0/3 | Not started | — |
+| 89. Discovery Generics | v1.7.0 | 0/? | Not started | — |
+| 90. Real-Data Validation | v1.7.0 | 0/? | Not started | — |
