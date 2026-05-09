@@ -2,12 +2,12 @@
 gsd_state_version: 1.0
 milestone: v1.7.0
 milestone_name: API Connection & Real-Data Validation
-status: planning
-stopped_at: defining requirements
+status: active
+stopped_at: Phase 88 — context gathered, ready for planning
 last_updated: "2026-05-09T00:00:00.000Z"
-last_activity: 2026-05-09 -- Milestone v1.7.0 started; goals confirmed; PROJECT.md updated
+last_activity: 2026-05-09 -- Phase 88 context gathered via discuss-phase
 progress:
-  total_phases: 0
+  total_phases: 3
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -25,12 +25,20 @@ See: .planning/PROJECT.md (updated 2026-05-09)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 88 — httr2 Hardening and API Fetch Methods
 Plan: —
-Status: Defining requirements
-Last activity: 2026-05-09 — Milestone v1.7.0 started
+Status: Not started
+Last activity: 2026-05-09 — Roadmap written; Phase 88 is next
 
-Progress: [----------] 0% (no v1.7.0 phases defined yet)
+Progress: [----------] 0% (0/3 phases complete)
+
+## Phase Summary
+
+| Phase | Goal | Requirements | Status |
+|-------|------|--------------|--------|
+| 88 | Users can call any `fetch_*` method on a `creel_connection_api` and receive canonical data | API-01 – API-06 | Not started |
+| 89 | Users can discover available surveys; non-API connections get clean errors | API-07, API-08 | Not started |
+| 90 | Standalone script validates full pipeline against Calamus 2016 reference outputs | REAL-01 | Not started |
 
 ## Accumulated Context
 
@@ -41,25 +49,41 @@ All v1.6.0 work is archived:
 - `.planning/milestones/v1.6-REQUIREMENTS.md` — all 19 requirements marked complete
 - `.planning/MILESTONES.md` — milestone entry added
 
-### Future Requirements (Carry-Forward)
+### v1.7.0 Technical Context
 
-These were in scope but deferred from v1.6.0 — priority candidates for v1.7.0:
+Key decisions carried into this milestone from research:
 
-- **MR-F01**: Jolly-Seber open-population estimator (`estimate_angler_n_open()`) — requires new S3 class; output contract incompatible with `creel_estimates`
-- **CAMP-F01**: Multiple imputation via Rubin's rules (extends `impute_camera_counts()` with `m` argument)
+- `httr2` promoted from `Suggests` to `Imports` in `tidycreel.connect/DESCRIPTION` (floor `>= 1.0.0`)
+- API field names are NGPC-fixed, not schema-mediated — each `fetch_*` method uses a hardcoded `api_rename_map`, never schema key lookups
+- `iiUID` (no underscore) is the harvest/release length join key vs `ii_UID` for interviews — wrong map silently drops `interview_uid`
+- ISO-8601 datetime fields silently become NA with `as.Date()` — `.parse_api_date()` must be called in all API methods
+- Empty JSON array (`[]`) returns 0-row data.frame from `resp_body_json(simplifyVector = TRUE)` — current empty-response guard in `.api_fetch()` must be fixed
+- Bus-route interviews are intentionally duplicated (2x/4x rows per `interview_uid` in Calamus 2016) — no deduplication
+- `catch_type` in Calamus 2016 has three values: "harvested", "released", "caught"
+- Species code `86` is valid and distinct from `862`
+
+### Implementation File Targets
+
+- `.api_fetch()` hardening: `tidycreel.connect/R/creel-connection-api.R`
+- Five new S3 methods: `tidycreel.connect/R/fetch-loaders.R`
+- New discovery generics: `tidycreel.connect/R/creel-discovery.R` (new file)
+- Integration script: `inst/validation/calamus-2016-validation.R` (new file)
+
+### Research Flags (Live API Unknowns)
+
+These require live API inspection during Phase 88 implementation:
+- Exact JSON field name for angler count in `GetCountData` (candidate: `ii_NumberAnglers`)
+- Whether `catch_uid` and `length_uid` exist in API responses (absent from reference code; may need synthesis)
+- `ir_Count` aggregation policy for release lengths — decide before `fetch_release_lengths` is written
+- Discovery pagination — if `GetAvailableCreels` returns paginated results, add `req_perform_iterative()`
+
+### Future Requirements (Carry-Forward from v1.6.0)
+
+These remain deferred and are not in scope for v1.7.0:
+- **MR-F01**: Jolly-Seber open-population estimator — output contract incompatible with `creel_estimates`
+- **CAMP-F01**: Multiple imputation via Rubin's rules
 - **STRAT-F01**: CPUE precision audit in `audit_strata(type = "cpue")`
 - **QUAL-05**: rOpenSci formal submission — deferred to undetermined future date
-
-### Known Open Issues
-
-- Phase 84: CR-01 `.imputed` false-positive logic — FIXED in Phase 87
-- Phase 84: CR-02 docs say ZINB but impl is NB GLMM — FIXED in Phase 87
-- Phase 85: WARNING-01 variance_method mislabel — FIXED in Phase 87
-- Phase 85: WARNING-02 Schnabel ci_hi unguarded — FIXED in Phase 87
-- Phase 85: WARNING-03 harvest_rate > 1 test missing — FIXED in Phase 87
-- Phase 86: VERIFICATION.md missing — FIXED in Phase 87
-
-No known open issues at v1.6.0 close.
 
 ### Blockers/Concerns
 
@@ -68,5 +92,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-05-09
-Stopped at: v1.6.0 milestone archive complete
-Resume file: None — run `/gsd-new-milestone` to start v1.7.0 planning cycle
+Stopped at: Roadmap created — Phase 88 not yet started
+Resume: Run `/gsd-plan-phase 88` to begin Phase 88 planning
