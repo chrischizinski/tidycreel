@@ -232,6 +232,44 @@ fetch_catch.creel_connection_sqlserver <- function(conn, ...) {
   cli::cli_abort("SQL Server fetch_catch() not yet implemented (Phase 69).")
 }
 
+#' @export
+fetch_catch.creel_connection_api <- function(conn, ...) {
+  raw_df <- .api_fetch(conn$con, "catch")
+
+  # Early return for empty API response
+  if (nrow(raw_df) == 0L) {
+    return(data.frame(
+      catch_uid        = integer(0),
+      interview_uid    = character(0),
+      species          = character(0),
+      catch_count      = numeric(0),
+      catch_type       = character(0),
+      stringsAsFactors = FALSE
+    ))
+  }
+
+  # Hardcoded NGPC field names — do NOT route through creel_schema (CONTEXT.md D-01 through D-04)
+  api_rename_map <- c(
+    interview_uid = "ii_UID",
+    species       = "ir_Species",
+    catch_count   = "Num",
+    catch_type    = "CatchType"
+  )
+  df <- .rename_api_to_canonical(raw_df, api_rename_map)
+
+  # UID synthesis: catch_uid absent from API response — synthesize as row index (D-05, D-06)
+  if (!"catch_uid" %in% names(df)) {
+    df$catch_uid <- seq_len(nrow(df))
+  }
+
+  if ("species" %in% names(df))     df$species     <- as.character(df$species)
+  if ("catch_count" %in% names(df)) df$catch_count <- as.numeric(df$catch_count)
+  if ("catch_type" %in% names(df))  df$catch_type  <- as.character(df$catch_type)
+
+  validate_fetch_catch(df) # nolint: object_usage_linter
+  df
+}
+
 
 #' Load harvest length data from a creel connection
 #'
