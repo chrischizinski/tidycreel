@@ -8,9 +8,14 @@ tidycreel is an R package for creel survey design, data preparation, estimation,
 
 A biologist should be able to go from survey design to package-ready estimates, plots, summaries, and documentation without stitching together a custom analysis stack.
 
-## Current Milestone: v1.7.0 (planning in progress)
+## Current Milestone: v1.7.0 — API Connection & Real-Data Validation
 
-Run `/gsd-new-milestone` to define requirements and roadmap for v1.7.0.
+**Goal:** Complete the tidycreel.connect API backend so users can fetch creel data from any compatible REST service, and validate the full estimation pipeline against known real-world outputs from the Calamus 2016 archive.
+
+**Target features:**
+- `fetch_*` dispatch for `creel_connection_api` — implement the five missing S3 methods (interviews, counts, catch, harvest_lengths, release_lengths) that call `.api_fetch()`, rename to canonical columns, and validate
+- `list_creels()` + `search_creels()` — discover available survey UIDs from an API before connecting
+- Calamus 2016 integration script — standalone R script running the full bus-route workflow on real NGPC data and validating estimates against archived comparison CSVs
 
 ## Current State
 
@@ -123,9 +128,15 @@ The package currently closes its local gate with:
 - ✓ `simulate_strata_collapse()` — before/after precision comparison for proposed strata merges — v1.6.0
 - ✓ `reallocate_strata()` — Neyman-optimal reallocation of fixed sampling budget — v1.6.0
 
-### Active
+### Active (v1.7.0)
 
-(To be defined — run `/gsd-new-milestone` to define v1.7.0 requirements)
+- [ ] **API-01**: User can call `fetch_interviews()` on a `creel_connection_api` object and receive a canonical data frame
+- [ ] **API-02**: User can call `fetch_counts()` on a `creel_connection_api` object and receive a canonical data frame
+- [ ] **API-03**: User can call `fetch_catch()` on a `creel_connection_api` object and receive a canonical data frame
+- [ ] **API-04**: User can call `fetch_harvest_lengths()` and `fetch_release_lengths()` on a `creel_connection_api` object
+- [ ] **API-05**: User can call `list_creels()` to retrieve all available surveys from an API
+- [ ] **API-06**: User can call `search_creels()` with a keyword to find matching surveys from an API
+- [ ] **REAL-01**: Integration script runs Calamus 2016 bus-route data through the full estimation pipeline and reports whether estimates match archived comparison outputs
 
 ### Out of Scope
 

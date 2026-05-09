@@ -1,11 +1,11 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.7.0
-milestone_name: (not yet planned)
+milestone_name: API Connection & Real-Data Validation
 status: planning
-stopped_at: v1.6.0 archived — ready to start v1.7.0 planning
+stopped_at: defining requirements
 last_updated: "2026-05-09T00:00:00.000Z"
-last_activity: 2026-05-09 -- v1.6.0 milestone archived; v1.6-ROADMAP.md + v1.6-REQUIREMENTS.md written; MILESTONES.md, PROJECT.md, ROADMAP.md, RETROSPECTIVE.md updated
+last_activity: 2026-05-09 -- Milestone v1.7.0 started; goals confirmed; PROJECT.md updated
 progress:
   total_phases: 0
   completed_phases: 0
@@ -21,13 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-09)
 
 **Core value:** A biologist should be able to go from survey design to package-ready estimates, plots, summaries, and documentation without stitching together a custom analysis stack.
-**Current focus:** v1.7.0 planning — run `/gsd-new-milestone` to define requirements and roadmap
+**Current focus:** v1.7.0 — API Connection & Real-Data Validation
 
 ## Current Position
 
-Phase: None yet (v1.7.0 not planned)
-Status: Ready for next milestone planning
-Last activity: 2026-05-09 -- v1.6.0 milestone archived
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-05-09 — Milestone v1.7.0 started
 
 Progress: [----------] 0% (no v1.7.0 phases defined yet)
 
