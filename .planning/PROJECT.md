@@ -20,6 +20,7 @@ A biologist should be able to go from survey design to package-ready estimates, 
 ## Current State
 
 **Package version:** `1.6.0` (shipped 2026-05-06, PR #54 merged, git tag v1.6.0)
+**v1.7.0 in progress:** Phase 88 complete (httr2 hardening, 5 fetch_* methods); Phase 89 complete (2026-05-10) — `list_creels()`, `search_creels()` discovery generics, 142 tests pass.
 
 v1.6.0 complete: 5 phases (83–87), 9 plans, 19/19 requirements satisfied, 2667 tests, 0 errors 0 warnings. Ships `creel_n_camera()`, `impute_camera_counts()`, `estimate_angler_n()`, `estimate_mr_harvest()`, `audit_strata()`, `simulate_strata_collapse()`, `reallocate_strata()`. All 6 advisory items from internal review closed in Phase 87. Mark-recapture vignette added. See `.planning/milestones/v1.6-ROADMAP.md` for full archive.
 
