@@ -123,7 +123,11 @@ Plans:
   1. `list_creels()` on a `creel_connection_api` object returns a data frame with columns `creel_uid`, `title`, `description`, `active`, `data_complete`, `comments` containing all surveys available on the connected API
   2. `search_creels(conn, keyword)` returns the same column shape as `list_creels()` filtered to surveys matching the keyword string
   3. Calling `list_creels()` or `search_creels()` on a CSV or SQL Server connection object produces a cli error message indicating the method is not supported for that connection type (no "no applicable method" crash)
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 089-01-PLAN.md — Create creel-discovery.R (all generics + S3 methods) and add discovery endpoint key to .default_api_endpoints() (API-07, API-08)
+- [ ] 089-02-PLAN.md — Write test-discovery.R, run devtools::document(), and confirm rcmdcheck passes (API-07, API-08)
 
 ### Phase 90: Real-Data Validation
 **Goal**: A standalone script demonstrates end-to-end correctness of the estimation pipeline on real survey data, confirming that effort, catch, and harvest estimates match archived reference values from the Calamus 2016 bus-route survey
@@ -149,5 +153,5 @@ Plans:
 | 86. Stratification Audit | v1.6.0 | 2/2 | Complete | 2026-05-05 |
 | 87. v1.6.0 Tech Debt Cleanup | v1.6.0 | 1/1 | Complete | 2026-05-05 |
 | 88. httr2 Hardening and API Fetch Methods | v1.7.0 | 3/3 | Complete | 2026-05-09 |
-| 89. Discovery Generics | v1.7.0 | 0/? | Not started | — |
+| 89. Discovery Generics | v1.7.0 | 0/2 | Not started | — |
 | 90. Real-Data Validation | v1.7.0 | 0/? | Not started | — |
