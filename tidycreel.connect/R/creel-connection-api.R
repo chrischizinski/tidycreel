@@ -189,10 +189,15 @@ creel_connect_api <- function(
     }
   }
 
-  # D-13: disable httr2 auto-error; manual cli_abort() controls format
+  # D-10, D-11: retry on 429/503, max 3 tries; explicit is_transient so retry
+  # fires regardless of the req_error policy applied below (httr2 1.2.2 behaviour)
+  req  <- httr2::req_retry(
+    req,
+    max_tries    = 3L,
+    is_transient = \(resp) httr2::resp_status(resp) %in% c(429L, 503L)
+  )
+  # D-13: disable httr2 auto-error AFTER retry is wired; manual cli_abort() controls format
   req  <- httr2::req_error(req, is_error = \(resp) FALSE)
-  # D-10, D-11: retry only on 429/503 (httr2 1.2.2 default), max 3 tries
-  req  <- httr2::req_retry(req, max_tries = 3L)
   resp <- httr2::req_perform(req)
 
   status <- httr2::resp_status(resp)
@@ -200,10 +205,15 @@ creel_connect_api <- function(
     # D-12: human-readable error with status, endpoint path, and body
     body_text <- tryCatch(
       {
-        b <- httr2::resp_body_json(resp, simplifyVector = FALSE)
-        paste(utils::capture.output(utils::str(b)), collapse = "\n")
+        raw <- httr2::resp_body_raw(resp)
+        if (length(raw) == 0L) {
+          ""
+        } else {
+          b <- httr2::resp_body_json(resp, simplifyVector = FALSE)
+          paste(utils::capture.output(utils::str(b)), collapse = "\n")
+        }
       },
-      error = function(e) httr2::resp_body_string(resp)
+      error = function(e) tryCatch(httr2::resp_body_string(resp), error = function(e2) "")
     )
     cli::cli_abort(c(
       "API request failed [{status}]",

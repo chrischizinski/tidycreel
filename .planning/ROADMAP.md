@@ -36,7 +36,7 @@ tidycreel is an R package for creel survey design, data preparation, estimation,
 
 ### v1.7.0 — API Connection & Real-Data Validation (Phases 88–90)
 
-- [ ] **Phase 88: httr2 Hardening and API Fetch Methods** — Harden `.api_fetch()` with `req_error`/`req_retry` and implement all five `fetch_*.creel_connection_api` S3 methods with hardcoded field rename maps
+- [x] **Phase 88: httr2 Hardening and API Fetch Methods** — Harden `.api_fetch()` with `req_error`/`req_retry` and implement all five `fetch_*.creel_connection_api` S3 methods with hardcoded field rename maps
 - [ ] **Phase 89: Discovery Generics** — Add `list_creels()` and `search_creels()` generics with API implementations and CSV/SQL stubs in a new `creel-discovery.R` file
 - [ ] **Phase 90: Real-Data Validation** — Integration script in `inst/validation/` runs the full bus-route pipeline on Calamus 2016 archived data and reports whether estimates match archived reference outputs
 
@@ -111,9 +111,9 @@ _(v1.6.0 phase details archived — see [.planning/milestones/v1.6-ROADMAP.md](m
 **Plans**: 3 plans
 
 Plans:
-- [ ] 088-01-PLAN.md — Promote httr2 to Imports, harden .api_fetch() with req_error/req_retry/cli_abort, write helper-api.R and test-api-fetch.R (API-06)
-- [ ] 088-02-PLAN.md — Add fetch_interviews.creel_connection_api and fetch_counts.creel_connection_api with tests (API-01, API-02)
-- [ ] 088-03-PLAN.md — Add fetch_catch, fetch_harvest_lengths, fetch_release_lengths API methods with tests (API-03, API-04, API-05)
+- [x] 088-01-PLAN.md — Promote httr2 to Imports, harden .api_fetch() with req_error/req_retry/cli_abort, write helper-api.R and test-api-fetch.R (API-06)
+- [x] 088-02-PLAN.md — Add fetch_interviews.creel_connection_api and fetch_counts.creel_connection_api with tests (API-01, API-02)
+- [x] 088-03-PLAN.md — Add fetch_catch, fetch_harvest_lengths, fetch_release_lengths API methods with tests (API-03, API-04, API-05)
 
 ### Phase 89: Discovery Generics
 **Goal**: Users can discover available surveys on a connected API before fetching data, and receive a clean "not supported" error when calling discovery functions on CSV or SQL Server connections
@@ -148,6 +148,6 @@ Plans:
 | 85. Mark-Recapture Harvest Estimators | v1.6.0 | 2/2 | Complete | 2026-05-04 |
 | 86. Stratification Audit | v1.6.0 | 2/2 | Complete | 2026-05-05 |
 | 87. v1.6.0 Tech Debt Cleanup | v1.6.0 | 1/1 | Complete | 2026-05-05 |
-| 88. httr2 Hardening and API Fetch Methods | v1.7.0 | 0/3 | Not started | — |
+| 88. httr2 Hardening and API Fetch Methods | v1.7.0 | 3/3 | Complete | 2026-05-09 |
 | 89. Discovery Generics | v1.7.0 | 0/? | Not started | — |
 | 90. Real-Data Validation | v1.7.0 | 0/? | Not started | — |

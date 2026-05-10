@@ -1,370 +1,234 @@
-# Feature Landscape: tidycreel v1.6.0
+# Feature Research
 
-**Domain:** R package for creel survey design and estimation (fisheries)
-**Researched:** 2026-05-02
-**Milestone scope:** 4 new analytical capabilities building on the existing v1.5.0 surface
+**Domain:** REST API fetch dispatch and creel discovery — tidycreel.connect API backend
+**Researched:** 2026-05-09
+**Confidence:** HIGH (all findings derived directly from NGPC reference implementation source code and existing tidycreel.connect source)
 
----
+## Feature Landscape
 
-## Feature 1: Camera Missing Data Imputation
+### Table Stakes (Users Expect These)
 
-### What It Does
+Features users assume exist. Missing these = product feels incomplete.
 
-Fills in camera count records for days when a camera was non-operational (stolen, dead battery, obstructed lens, vandalism). Without imputation, those days drop silently from the effort denominator and bias the seasonal total downward. The imputed count is inserted into the count table so downstream estimation (`est_effort_camera()`) sees a complete record.
+| Feature | Why Expected | Complexity | Notes |
+|---------|--------------|------------|-------|
+| `fetch_interviews.creel_connection_api` | Parity with CSV backend; primary data ingestion path for all estimation workflows | MEDIUM | Map `ii_UID` → `interview_uid`, `cd_Date` → `date` (ISO datetime string via `.parse_api_date()`), `ii_TimeFishedHours + ii_TimeFishedMinutes/60` → `effort`, `ii_TripType` → `trip_status`. Effort requires field arithmetic — only fetch method that is not a pure rename. Reuse `.api_fetch()` and `validate_fetch_interviews()`. |
+| `fetch_counts.creel_connection_api` | Parity with CSV backend; required for effort estimation and all instantaneous estimators | MEDIUM | Map `cd_Date` → `date`. The exact API field name for angler count is unconfirmed: the reference code returns `count.data` without a column selection. Must verify field name against live API or document the schema `count_col` lookup key as the resolution path. |
+| `fetch_catch.creel_connection_api` | Parity with CSV backend; required for harvest and CPUE estimates | LOW | Reference: `select(ii_UID, ir_Species, Num, CatchType)`. Map `ii_UID` → `interview_uid`, `ir_Species` → `species` (coerce to character — NGPC stores integer species codes), `Num` → `catch_count`, `CatchType` → `catch_type`. See gap note on `catch_uid` below. |
+| `fetch_harvest_lengths.creel_connection_api` | Parity with CSV backend; length-frequency data for size structure | LOW | Reference: `select(UID=iiUID, ih_Number, ih_Species, ihl_Length)`. Critical: field is `iiUID` not `ii_UID` (no underscore between `ii` and `UID`). Map `iiUID` → `interview_uid`, `ih_Species` → `species` (character), `ihl_Length` → `length_mm`. Inject constant `length_type = "harvest"` because the API returns no type flag. |
+| `fetch_release_lengths.creel_connection_api` | Parity with CSV backend; release data for catch-and-release analysis | LOW | Reference: `select(UID=iiUID, ir_Species, ir_LengthGroup, ir_Count)`. Map `iiUID` → `interview_uid`, `ir_Species` → `species` (character), `ir_LengthGroup` → `length_mm`. Inject constant `length_type = "release"`. Note: `ir_Count` is a pre-aggregated count per length bin with no CSV equivalent — see gap note below. |
+| `list_creels()` generic + `list_creels.creel_connection_api` | Discovery — users must find available creel UIDs before constructing a connection | LOW | `GET {base_url}/AnalysisData/GetAvailableCreels` with no UID params. Map `Creel_UID` → `creel_uid` (apply `toupper()` — API returns lowercase GUIDs; reference code explicitly corrects this), `Creel_Title` → `title`, `Creel_Description` → `description`, `Creel_Active` → `active` (logical). Returns a plain `data.frame`. |
+| `search_creels()` generic + `search_creels.creel_connection_api` | Discovery — normal workflow for finding surveys by waterbody or survey name | LOW | `GET {base_url}/AnalysisData/GetMatchingCreels?searchText={text}`. Same return shape as `list_creels()`. Single `text` argument (character scalar); partial-match semantics handled server-side by the NGPC API. |
 
-Two methodological paths from the literature:
+### Differentiators (Competitive Advantage)
 
-**Path A — Zero-inflated GLMM (Afrifa-Yamoah et al. 2020, ICES J. Mar. Sci. 77:2984–2999):** A fully conditional specification multiple imputation (MICE) framework where each missing count is drawn from a zero-inflated Poisson or zero-inflated negative binomial model conditioned on observed covariates. The GLMM form (random intercept by day or site) borrows strength across the time series. Afrifa-Yamoah tested nine model variants; ZIP and ZINB consistently ranked in the top three across all missing-data patterns (6%–61% missing). Implemented via `glmmTMB` (or `pscl` + `mice`/`countimp`).
+Features that set the product apart. Not required, but valuable.
 
-**Path B — Day-type GLM (Hartill et al. 2016, Fisheries Research 183:488–497):** A simpler fixed-effects GLM using day-of-week (weekday/weekend) and season as covariates to predict counts at a ramp from counts at neighboring ramps or from the same ramp's historical pattern. R² of 0.71–0.77 between trailer counts and access-point creel effort. No mixed-effects component; straightforward to implement with base `glm()`. Appropriate when the user has few enough cameras that cross-site borrowing does not apply, or prefers a simpler audit trail.
+| Feature | Value Proposition | Complexity | Notes |
+|---------|-------------------|------------|-------|
+| `data_complete` column in discovery functions | Lets analysts filter to surveys with finalized data before running estimates; prevents running analyses on in-progress surveys | LOW | `Creel_DataComplete` is returned by `GetAvailableCreels` and included in the reference `api_getAllCreels()` select. Map to `data_complete` (logical). Expose it so users can do `dplyr::filter(data_complete)` before building a connection. |
+| Unified `effort` arithmetic inside `fetch_interviews` | Reference code returns `ii_TimeFishedHours` and `ii_TimeFishedMinutes` as separate fields; all tidycreel estimators expect `effort` in decimal hours | MEDIUM | Compute `effort = ii_TimeFishedHours + ii_TimeFishedMinutes / 60` inside the method. This is the only API fetch that involves field arithmetic rather than a pure rename. The CSV backend receives pre-computed effort, so this difference is backend-specific. |
+| Synthesized `length_type` constant columns | API encodes catch type implicitly by endpoint called; canonical schema requires `length_type` column; validator will abort without it | LOW | Inject `length_type = "harvest"` for harvest lengths and `length_type = "release"` for release lengths as a constant character column post-rename, before validation. This keeps the canonical contract identical between CSV and API backends. |
+| `comments` in discovery return | `Creel_Comments` is used by NGPC staff to record survey notes, caveats, and analyst contact info | LOW | Include as `comments` in `list_creels()` / `search_creels()` return shape. Treat as optional — may be `NA` for many surveys. Not in the validated canonical schema; just pass through. |
+| `toupper()` normalization of `Creel_UID` | Reference code explicitly notes that the NGPC API returns GUIDs in lowercase, which breaks matching against uppercase UIDs stored in spreadsheets and databases | LOW | Apply `toupper()` to `creel_uid` in both discovery functions. The reference code does this manually after fetching; tidycreel.connect should do it transparently. |
 
-### Expected API Shape
+### Anti-Features (Commonly Requested, Often Problematic)
 
-```r
-impute_camera_counts(
-  counts,            # data frame with camera count records
-  date_col     = "date",
-  count_col    = "n_trailers",   # or n_vehicles, n_ingress, etc.
-  status_col   = "camera_status",  # values: "operational", "outage", etc.
-  outage_value = "outage",
-  covariates   = c("day_type", "month"),  # user-supplied predictors
-  method       = c("glmm_zip", "glmm_zinb", "glm_daytype"),
-  m            = 5L,      # number of imputed datasets (default 5 for MI)
-  seed         = NULL,
-  conf_level   = 0.95
-)
-```
+| Feature | Why Requested | Why Problematic | Alternative |
+|---------|---------------|-----------------|-------------|
+| Auto-discovery on `creel_connect_api()` | Tempting to call `list_creels()` inside the constructor to validate UIDs at connection time | Adds a network round-trip at construction time, couples object creation to connectivity, complicates offline testing and vignette examples | Keep constructor offline. Let users call `list_creels()` explicitly before building a connection. |
+| Automatic species code lookup join | `codes/GetSpeciesCodes` endpoint exists; tempting to auto-join human-readable names on every `fetch_catch()` call | Adds a second network call per fetch, couples fetch to a non-analysis endpoint, species codes are jurisdiction-specific and not part of the canonical schema | Keep species as character codes after `as.character()` coercion. Users who need labels fetch the lookup table separately. |
+| `active_only` filter argument on `list_creels()` | Reference code filters `Creel_Active == TRUE` before building API setup objects | Removes discoverability of completed surveys that analysts need for retrospective analysis; filtering is trivially done by the user | Return all records unfiltered. Users filter with `dplyr::filter(active)` or base R subsetting. |
+| Internal fetch result caching | Analysts sometimes want repeated calls to return the same data without re-fetching | Hidden state; stale data silently returned if a survey is updated mid-session; complex invalidation logic | Users assign fetch results to a variable. No internal cache. |
+| Pagination arguments on discovery functions | General REST API design practice to add `limit` / `offset` | The NGPC `GetAvailableCreels` endpoint has no pagination; adding these arguments implies a capability that does not exist server-side | Return all records the API returns. Add pagination arguments if and when a future API version supports them. |
+| Row-expansion of `ir_Count` in release lengths | The canonical `length_mm` schema implies one row per fish (as in harvest lengths); release lengths have one row per length group with a count | Silently exploding rows to match harvest structure changes data volume non-obviously and creates synthetic rows not present in the API response | Document the structural difference. Either accept the aggregated form (and update the validator expectation) or expand with a `cli_warn()` explaining that rows have been expanded. Do not silently expand. |
 
-Returns: a `creel_imputed_counts` object with:
-- `$imputed` — completed count data frame (single imputed dataset or pooled mean)
-- `$diagnostics` — model fit summary (AIC, model type used)
-- `$m_datasets` — (optional) list of `m` imputed datasets for Rubin's rules pooling
-
-The `$imputed` frame can be passed directly to `est_effort_camera()` in place of the raw counts.
-
-### Table Stakes
-
-| Behavior | Why Expected |
-|----------|-------------|
-| Accept a status flag column that marks outage rows | Camera outages are the primary use case; biologists already track status |
-| Support day-of-week covariate at minimum | Even the simplest published method (Hartill 2016) requires day_type |
-| Return a complete (no-NA) count data frame compatible with `est_effort_camera()` | The imputed data feeds the existing estimator; incompatible shape breaks the workflow |
-| Single deterministic imputed dataset as default output | Simplest audit path for most agency workflows |
-| cli_warn() when missing fraction is high (> 0.5) | Per Afrifa-Yamoah, reliability degrades sharply above ~50% missing |
-
-### Differentiators
-
-| Behavior | Value |
-|----------|-------|
-| Multiple imputation (`m` datasets) with Rubin's rules pooling of variance | Correct propagation of imputation uncertainty into effort SE; agencies doing formal assessments need this |
-| GLMM random effect across days/sites | Borrows strength from the full time series; better than site-isolated GLM for sparse cameras |
-| Automatic model selection (AIC over Poisson, NB, ZIP, ZINB) | Removes modeling burden from the biologist; matches Afrifa-Yamoah evaluation approach |
-
-### Edge Cases
-
-1. **All values in a stratum are missing.** No data to condition the model on. Must `cli_abort()` with a clear message: imputation requires at least some observed counts in the same stratum.
-2. **Outage at the start or end of the season.** No lagged observations to borrow from. GLM fallback still works from day_type alone; GLMM may produce wide prediction intervals — `cli_warn()` appropriate.
-3. **Zero counts that are genuine (no fishing activity), not outages.** The status column must discriminate outage-zero from genuine-zero. If status coding is ambiguous, downstream estimates are biased regardless of imputation.
-4. **Single camera with no neighboring cameras.** Cross-site Hartill-style imputation is not possible. Must use within-site temporal model only.
-5. **Very short seasons (< 14 days total).** Insufficient time series for GLMM random effects to be identifiable. GLM fallback preferred; flag in output.
-
-### Dependencies on Existing Functions
-
-- **Feeds into:** `est_effort_camera()` — the imputed counts replace raw counts in the same data frame schema
-- **Parallel to:** `creel_design()` camera mode — the counts frame should already conform to the schema `add_counts()` expects
-- **New package dependency required:** `glmmTMB` (or `pscl`) in Suggests; `mice` in Suggests for MI path
-- **No new S3 class strictly required** — a list with `$imputed` and `$diagnostics` is sufficient, but a `creel_imputed_counts` class enables a `print()` method with a useful summary
-
----
-
-## Feature 2: Camera Design Helper (`creel_n_camera()`)
-
-### What It Does
-
-Answers "How many sampling days and photos per day are needed to achieve a target CV on the effort estimate from camera data?" This is the camera-survey analogue of the existing `creel_n_effort()` (which covers bus-route/instantaneous designs).
-
-Feltz and Middaugh (2025, NAJFM 45:322) provide the most current empirical guidance: across six Arkansas reservoirs with 3 months of hourly ground-truth data, they found that low-frequency camera sampling (1–4 photos per day) combined with a sufficient number of weekday and weekend days produced effort estimates statistically equivalent to high-frequency baselines. Their practical thresholds: approximately 12 weekday days and 7 weekend days (the exact numbers are reservoir-specific, but these represent reasonable conservative defaults). Photo frequency beyond 4 per day yielded diminishing precision returns.
-
-The function converts these findings into a planning formula: given pilot variance estimates by day type and a target RSE, return the number of camera-days required per day-type stratum and the recommended photo frequency.
-
-### Expected API Shape
-
-```r
-creel_n_camera(
-  cv_target  = 0.20,
-  N_h        = c(weekday = 65, weekend = 28),  # total available days per stratum
-  ybar_h     = c(50, 60),   # pilot mean trailer count per day per stratum
-  s2_h       = c(400, 500), # pilot variance of count per day per stratum
-  photos_per_day = NULL,    # if NULL, returns guidance on photo frequency too
-  conf_level = 0.95
-)
-```
-
-Returns: same shape as `creel_n_effort()` — a named integer vector with one element per stratum plus `"total"`. An attribute `$photo_guidance` provides the Feltz-Middaugh minimum-day thresholds as a reference message.
-
-The function is intentionally parallel to `creel_n_effort()` in signature and output so it integrates naturally with `power_creel()` (which would gain a `mode = "camera_n"` path).
-
-### Table Stakes
-
-| Behavior | Why Expected |
-|----------|-------------|
-| Accept named `N_h`, `ybar_h`, `s2_h` vectors keyed by day-type stratum | Consistent with `creel_n_effort()` — biologists already have this data shape |
-| Return per-stratum and total sampling days required | Matches `creel_n_effort()` output; directly usable in scheduling |
-| Apply stratified Cochran (1977) Eq. 5.25 formula internally | Same formula as `creel_n_effort()` — camera counts are sampled the same way as angler counts |
-| Warn when computed n_h falls below the Feltz-Middaugh empirical minimums | Prevents users from interpreting a statistically-computed n that is below the field-tested threshold |
-
-### Differentiators
-
-| Behavior | Value |
-|----------|-------|
-| Photo-frequency guidance output | Feltz-Middaugh show that 4 photos/day is the practical maximum before diminishing returns; providing this as a named attribute helps planners avoid over-processing |
-| Integration with `power_creel(mode = "camera_n")` | Unified planning surface; biologists planning camera vs. instantaneous surveys can compare side by side with `compare_designs()` |
-
-### Edge Cases
-
-1. **Pilot data from a different waterbody.** Transferability of `ybar_h` and `s2_h` is the user's responsibility; the function should note in the documentation that pilot data from the same system is strongly preferred.
-2. **N_h smaller than the Feltz-Middaugh minimums.** The season is too short for the method. `cli_warn()` recommending supplemental coverage or a different estimator.
-3. **Photos per day < 1.** Degenerate input; `cli_abort()`.
-4. **Single-stratum design (no weekday/weekend split).** Function should handle `length(N_h) == 1` gracefully — same as `creel_n_effort()`.
-
-### Dependencies on Existing Functions
-
-- **Mirrors:** `creel_n_effort()` — same statistical formula, same output shape
-- **Integrates into:** `power_creel()` — a `mode = "camera_n"` branch would call `creel_n_camera()` internally
-- **Upstream:** feeds `generate_schedule()` — the day counts returned should be compatible with the schedule generator's `N_h` inputs
-- **No new package dependencies** — uses only base R arithmetic; `glmmTMB`/`mice` are not needed here
-
----
-
-## Feature 3: Mark-Recapture Harvest Estimators
-
-### What It Does
-
-Estimates the total angler population size using mark-recapture methods where **anglers** (not fish) are the marked unit. This addresses the Mode 1 use case from the existing research (Phase 71): physical marks or license plates are recorded at access points (boat launches, parking areas) at the start of a sampling period; the same individuals are re-sighted/checked at the end. The population size estimate N is the number of unique anglers on the water during the period. Multiplying by mean days-fished and mean harvest-per-day gives total harvest.
-
-Hansen and Van Kirk (2018, NAJFM 38:400–410) demonstrated this approach on Pacific salmon and steelhead fisheries in Idaho and found it produced statistically equivalent harvest estimates to traditional instantaneous creel counts at roughly 50% of the vehicle mileage.
-
-Three estimator families are in scope:
-
-**Petersen (single occasion, closed):** Two-sample design. M anglers marked at entry; on exit, n anglers checked, m found marked.
+## Feature Dependencies
 
 ```
-N_hat = (M * n) / m                         # Petersen
-N_hat_Chapman = ((M+1)*(n+1))/(m+1) - 1    # Chapman bias correction
+creel_connect_api() [constructor — already built]
+    └──required by──> fetch_interviews.creel_connection_api
+    └──required by──> fetch_counts.creel_connection_api
+    └──required by──> fetch_catch.creel_connection_api
+    └──required by──> fetch_harvest_lengths.creel_connection_api
+    └──required by──> fetch_release_lengths.creel_connection_api
+
+.api_fetch() [HTTP helper — already built in creel-connection-api.R]
+    └──required by──> all five fetch_*.creel_connection_api methods
+
+.parse_api_date() [date coercion helper — already built in creel-connection-api.R]
+    └──required by──> fetch_interviews.creel_connection_api
+    └──required by──> fetch_counts.creel_connection_api
+
+validate_fetch_*() [validators — already built in fetch-validators.R]
+    └──required by──> all five fetch_*.creel_connection_api methods
+
+list_creels() [new generic]
+    └──required by──> list_creels.creel_connection_api
+
+search_creels() [new generic]
+    └──required by──> search_creels.creel_connection_api
+
+list_creels.creel_connection_api
+    ──enhances──> creel_connect_api() [helps users find UIDs to pass as creel_uids]
+
+search_creels.creel_connection_api
+    ──enhances──> creel_connect_api() [same; text-filtered discovery]
 ```
 
-Chapman correction is preferred when m < 7 (small recapture sample).
+### Dependency Notes
 
-**Schnabel (multiple occasions, closed):** Cumulative marking across K sampling periods within a day or week. Each period contributes new marks and recaptures. Produces a more precise N when sampling continues across multiple circuits.
+- **All five `fetch_*` methods require `.api_fetch()`:** The HTTP GET helper is already implemented and handles URL construction, UID parameter encoding, and all three auth modes. Each fetch method calls `.api_fetch(conn$con, "endpoint_key")` and receives a plain `data.frame`.
+- **`fetch_interviews` and `fetch_counts` require `.parse_api_date()`:** Dates from the API arrive as ISO 8601 datetime strings (`"YYYY-MM-DDTHH:MM:SS"`); `.parse_api_date()` handles both that format and bare `"YYYY-MM-DD"` strings.
+- **`fetch_harvest_lengths` and `fetch_release_lengths` require synthesized `length_type`:** Neither API endpoint returns a `length_type` column. The constant must be injected after the rename step, before `validate_fetch_*()` runs, because the validators require the column.
+- **`list_creels` and `search_creels` are independent of all five fetch methods:** They call a different endpoint with no UID param and return discovery metadata, not analysis data. They can be developed and tested independently of the fetch dispatch work.
+- **`fetch_interviews` has a unique arithmetic dependency:** The effort calculation `ii_TimeFishedHours + ii_TimeFishedMinutes / 60` must happen before `validate_fetch_interviews()` checks for a numeric `effort` column. The raw API fields should not appear in the returned data frame.
 
-```
-N_hat_Schnabel = sum(M_i * n_i) / sum(m_i)
-```
+## MVP Definition
 
-**Jolly-Seber (open population):** For multi-week seasons where anglers enter and leave the fishery between sampling periods. Estimates both N_t (population size at period t) and apparent survival phi_t. Appropriate when the study spans more than a few days and population closure cannot be assumed.
+### Launch With (v1 — this milestone)
 
-### Expected API Shape
+Minimum needed to make `creel_connection_api` fully functional end-to-end.
 
-```r
-# Petersen / Chapman
-estimate_angler_n(
-  M          = 80L,   # marked at first occasion
-  n          = 60L,   # checked at second occasion
-  m          = 12L,   # recaptured (seen at both)
-  method     = c("chapman", "petersen"),
-  conf_level = 0.95
-)
+- [ ] `fetch_interviews.creel_connection_api` — without this the API backend produces no usable data; it is the entry point for all estimation workflows
+- [ ] `fetch_counts.creel_connection_api` — required by `creel_n_effort()` and all instantaneous estimators
+- [ ] `fetch_catch.creel_connection_api` — required for any harvest or CPUE estimate
+- [ ] `fetch_harvest_lengths.creel_connection_api` — required for length-frequency workflows; constant `length_type` injection is part of this method
+- [ ] `fetch_release_lengths.creel_connection_api` — same as above for releases
+- [ ] `list_creels()` generic + `list_creels.creel_connection_api` — users cannot construct a connection without knowing valid UIDs; discovery is a prerequisite
+- [ ] `search_creels()` generic + `search_creels.creel_connection_api` — text search is the normal operational workflow for finding surveys by waterbody name
 
-# Schnabel (multiple occasions)
-estimate_angler_n(
-  M          = c(80, 95, 110),  # cumulative marks before each occasion
-  n          = c(60, 72, 68),   # checked at each occasion
-  m          = c(12, 18, 15),   # recaptured at each occasion
-  method     = "schnabel",
-  conf_level = 0.95
-)
+### Add After Validation (v1.x)
 
-# Jolly-Seber (open population, via FSA::mrOpen)
-estimate_angler_n_open(
-  cap_hist,   # capture-history data frame (one row per marked angler)
-  conf_level  = 0.95
-)
-```
+- [ ] `list_creels.creel_connection_csv` informative stub — makes the generic safe to call on a CSV connection with a clear `cli_abort()` rather than a dispatch miss error
+- [ ] `search_creels.creel_connection_csv` stub — same reason
+- [ ] `list_creels.creel_connection_sqlserver` stub — parallel to above for SQL Server backend
 
-Returns: `creel_estimates` S3 object with the standard `$estimates` tibble and `method = "mark-recapture-petersen"` (or schnabel, jolly-seber). Columns: `estimate` (N_hat), `se`, `ci_lower`, `ci_upper`, `M`, `n`, `m`.
+### Future Consideration (v2+)
 
-Harvest integration helper:
+- [ ] `fetch_*` methods for `creel_connection_sqlserver` — Phase 69 stub territory; not this milestone
+- [ ] Code table accessors (`fetch_species_codes()`, `fetch_waterbody_codes()`) — the `codes/` endpoints exist in the NGPC API but tidycreel does not consume code tables internally; useful only for label-joining workflows outside the package
 
-```r
-estimate_mr_harvest(
-  N_hat,     # from estimate_angler_n()
-  se_N,
-  mean_days_fished,
-  sd_days_fished,
-  n_interviews,
-  mean_harvest_per_day,
-  sd_harvest_per_day,
-  conf_level = 0.95
-)
-```
+## Feature Prioritization Matrix
 
-Propagates uncertainty from N_hat through to harvest total via delta method, matching the Hansen & Van Kirk workflow.
+| Feature | User Value | Implementation Cost | Priority |
+|---------|------------|---------------------|----------|
+| `fetch_interviews.creel_connection_api` | HIGH | MEDIUM (effort arithmetic, datetime parsing) | P1 |
+| `fetch_counts.creel_connection_api` | HIGH | MEDIUM (angler count field name unconfirmed — needs live API verification) | P1 |
+| `fetch_catch.creel_connection_api` | HIGH | LOW (all field names confirmed from reference) | P1 |
+| `fetch_harvest_lengths.creel_connection_api` | HIGH | LOW (field names confirmed; `iiUID` asymmetry documented; constant injection simple) | P1 |
+| `fetch_release_lengths.creel_connection_api` | HIGH | LOW (same as harvest; `ir_Count` aggregation gap documented) | P1 |
+| `list_creels()` generic + API method | HIGH | LOW (no UID param; 5-column rename; `toupper()` fix) | P1 |
+| `search_creels()` generic + API method | HIGH | LOW (same structure as `list_creels`; one extra `text` argument) | P1 |
+| `data_complete` in discovery return | MEDIUM | LOW (already returned by API; include in rename map) | P2 |
+| `comments` in discovery return | LOW | LOW (passthrough; NA-tolerant) | P2 |
+| CSV / SQL Server stubs for list/search generics | LOW | LOW | P2 |
 
-### Table Stakes
+**Priority key:**
+- P1: Must have for launch
+- P2: Should have, add when possible
+- P3: Nice to have, future consideration
 
-| Behavior | Why Expected |
-|----------|-------------|
-| Chapman correction as default for small m | Petersen is positively biased when m < 7; Chapman is standard in FSA and fisheries literature |
-| Return `creel_estimates` S3 object | Consistent with all other estimators; enables `compare_designs()`, `autoplot()`, and `write_estimates()` on the output |
-| Input validation: m <= min(M, n), M > 0, n > 0 | Physical impossibility guards; same pattern as `estimate_exploitation_rate()` |
-| `conf_level` argument | Consistent across all estimation functions |
+## Canonical Column Mapping Reference
 
-### Differentiators
+Derived directly from `CreelApiHelper.R` (v3.0, 2018-05-04) and cross-checked against `CreelDataAccess.R` (v3.2.1, 2021-05-11).
 
-| Behavior | Value |
-|----------|-------|
-| `estimate_mr_harvest()` delta-method propagation | Hansen & Van Kirk (2018) explicitly combine N_hat uncertainty with interview-based harvest-per-day uncertainty; this is the step most users will need and is not provided by FSA |
-| Schnabel across multiple circuits on the same day | Covers the practical bus-route use case where the creel crew makes multiple loops and accumulates marks |
-| `compare_designs()` compatibility | Lets biologists directly compare traditional instantaneous-count effort vs. mark-recapture effort for the same lake |
+### `fetch_interviews` — endpoint: `AnalysisData/GetInterviewData`
 
-### Edge Cases
+| API Field | Canonical Name | Type | Notes |
+|-----------|----------------|------|-------|
+| `ii_UID` | `interview_uid` | any | GUID string |
+| `cd_Date` | `date` | Date | ISO datetime string; use `.parse_api_date()` |
+| `ii_TimeFishedHours + ii_TimeFishedMinutes / 60` | `effort` | numeric | Arithmetic — no direct one-to-one field; both raw fields are dropped from output |
+| `ii_TripType` | `trip_status` | character | Integer code from API; coerce to character |
 
-1. **m = 0 (no recaptures).** N is undefined (denominator = 0 in Petersen). `cli_abort()` with a message that zero recaptures prevent estimation; suggest increasing M or n.
-2. **m > n (impossible catch).** Data entry error. `cli_abort()`.
-3. **m > M (more recaptures than marks released).** Impossible. `cli_abort()`.
-4. **Closure assumption violated (Petersen/Schnabel).** If the sampling window spans hours during which anglers arrive or depart, the closed-population assumption is violated. The function cannot detect this automatically; a `cli_warn()` should note that closure is assumed and point users to `estimate_angler_n_open()` for multi-session designs.
-5. **Heterogeneous capture probability.** If some anglers (e.g., those with boats vs. bank fishers) are more likely to be checked, the Chapman estimator is biased. Document this limitation; detection requires external information.
-6. **Very small m (m = 1 or 2).** CI is extremely wide and Chapman correction is most critical. Flag with a warning.
+### `fetch_counts` — endpoint: `AnalysisData/GetCountData`
 
-### Dependencies on Existing Functions
+| API Field | Canonical Name | Type | Notes |
+|-----------|----------------|------|-------|
+| `cd_Date` | `date` | Date | Use `.parse_api_date()` |
+| TBD — needs live API inspection | `angler_count` | numeric | Reference code returns `count.data` without a column selection; exact field name unconfirmed |
 
-- **Returns:** `creel_estimates` S3 object — same class as `estimate_effort()`, `estimate_exploitation_rate()`, etc.; all existing print/autoplot/write infrastructure applies
-- **Build vs. wrap decision:** Build thin wrappers around `FSA::mrClosed()` (Petersen, Schnabel) and `FSA::mrOpen()` (Jolly-Seber) for N estimation; build `estimate_mr_harvest()` natively (no FSA equivalent). The Phase 71 research rated FSA as HIGH wrap potential.
-- **`FSA` must be added to Suggests** (CRAN, pure R, no external binary; already identified in Phase 71 research as the correct dependency)
-- **`compare_designs()` integration:** Works automatically if return class is `creel_estimates` with a numeric `estimate` column
-- **Distinct from `estimate_exploitation_rate()`:** That function already handles the Mode 2 (fish-tagging) path. This feature is the Mode 1 (angler-marking) path. They share the `creel_estimates` return type but answer different questions.
+### `fetch_catch` — endpoint: `AnalysisData/GetCatchData`
 
----
+| API Field | Canonical Name | Type | Notes |
+|-----------|----------------|------|-------|
+| `ii_UID` | `interview_uid` | any | |
+| `ir_Species` | `species` | character | Integer code in NGPC; `as.character()` required |
+| `Num` | `catch_count` | numeric | |
+| `CatchType` | `catch_type` | character | `"H"` or `"R"` in NGPC data |
+| TBD | `catch_uid` | any | Validator requires this column; reference code does not select a per-catch UID — needs live API inspection to confirm whether one exists |
 
-## Feature 4: Stratification Audit Tools
+### `fetch_harvest_lengths` — endpoint: `AnalysisData/GetHarvestLengthData`
 
-### What It Does
+| API Field | Canonical Name | Type | Notes |
+|-----------|----------------|------|-------|
+| `iiUID` | `interview_uid` | any | **No underscore** between `ii` and `UID` — differs from interview endpoint's `ii_UID` |
+| `ih_Species` | `species` | character | `as.character()` required |
+| `ihl_Length` | `length_mm` | numeric | Raw mm measurement |
+| (synthesized constant) | `length_type` | character | `"harvest"` — not present in API response |
+| TBD | `length_uid` | any | Validator requires this column; reference code does not select a per-row length UID |
 
-Evaluates whether the current stratification scheme (e.g., weekday/weekend day-type strata) is delivering precision gains commensurate with its sampling cost, and flags strata that could be merged or dropped without meaningful loss. This extends the existing `power_creel()` / `compare_designs()` surface rather than replacing it.
+### `fetch_release_lengths` — endpoint: `AnalysisData/GetReleaseLengthData`
 
-The core concept (from the "Optimizing Creel Surveys" chapter, Springer 2025, which references the de Kerckhove body of work and Malvestuto & Knight 1991): the coefficient of variation within vs. across strata measures stratification effectiveness. If within-stratum CV is nearly the same as the unstratified CV, the strata are not capturing meaningful heterogeneity and simplification is warranted. Conversely, if the design effect (DEFF) from stratification is well below 1.0, stratification is actively helping and additional strata may further reduce variance.
+| API Field | Canonical Name | Type | Notes |
+|-----------|----------------|------|-------|
+| `iiUID` | `interview_uid` | any | Same asymmetry as harvest lengths |
+| `ir_Species` | `species` | character | `as.character()` required |
+| `ir_LengthGroup` | `length_mm` | numeric | Size bin, not raw measurement — maps to same canonical column |
+| `ir_Count` | (no canonical equivalent) | numeric | Pre-aggregated count of fish per length group; CSV backend has one row per fish — structural mismatch must be resolved |
+| (synthesized constant) | `length_type` | character | `"release"` — not present in API response |
+| TBD | `length_uid` | any | Same gap as harvest lengths |
 
-Four concrete operations:
+### `list_creels` / `search_creels` — endpoints: `AnalysisData/GetAvailableCreels` and `AnalysisData/GetMatchingCreels`
 
-1. **Precision audit per stratum:** Report observed CV, n, and RSE for each stratum so biologists see which strata are well-sampled and which are driving imprecision.
-2. **Stratum collapse simulation:** Given a proposed merged stratum (e.g., collapse weekday + weekend into a single stratum), estimate the expected CV under the merged design using pilot data. Returns a comparison table.
-3. **Power-driven n reallocation:** Given the current total n, use Neyman optimal allocation to show how rebalancing sampling days across strata would change precision. Some strata may receive more days, others fewer.
-4. **Design effect reporting:** Report DEFF = Var(stratified) / Var(SRS) for the current design, making it explicit when stratification is not paying its complexity cost.
+| API Field | Canonical Name | Type | Notes |
+|-----------|----------------|------|-------|
+| `Creel_UID` | `creel_uid` | character | API returns lowercase GUIDs; apply `toupper()` |
+| `Creel_Title` | `title` | character | |
+| `Creel_Description` | `description` | character | May be `NA` |
+| `Creel_Active` | `active` | logical | JSON parse may return logical or integer; coerce with `as.logical()` |
+| `Creel_DataComplete` | `data_complete` | logical | Same coercion as `active` |
+| `Creel_Comments` | `comments` | character | Optional passthrough; many surveys will have `NA` |
 
-### Expected API Shape
+`search_creels` takes one additional argument: `text` (non-empty character scalar), passed as `?searchText={text}`.
 
-```r
-# Audit current precision per stratum
-audit_strata(
-  design,         # creel_design object OR named list of stratum statistics
-  estimates = NULL,  # creel_estimates from estimate_effort() if available
-  target_rse = 0.20
-)
-# Returns: creel_strata_audit S3 object — data frame one row per stratum +
-#   overall row, columns: stratum, n, estimate, se, rse, target_rse, meets_target
+Both functions return a plain `data.frame`, one row per creel, with the six columns above.
 
-# Simulate stratum collapse
-simulate_strata_collapse(
-  N_h,       # named numeric: total days per stratum
-  ybar_h,    # named numeric: pilot mean per stratum
-  s2_h,      # named numeric: pilot variance per stratum
-  collapse   # named list: new -> old strata, e.g. list(all = c("weekday","weekend"))
-)
-# Returns: tibble comparing CV before and after collapse for each proposed merge
+## Open Implementation Gaps
 
-# Neyman-optimal reallocation
-reallocate_strata(
-  n_total,   # integer: total sampling budget (days)
-  N_h,
-  s2_h
-)
-# Returns: named integer vector of optimal n_h per stratum + current allocation
-#   for comparison
-```
+These unknowns require resolution during implementation.
 
-### Table Stakes
+**Gap 1 — `angler_count` field name in GetCountData:** The reference code calls `fromJSON(myApis$data$counts)` with no column selection — it returns the entire count table. The canonical field for angler count is unknown without inspecting a live API response or the SQL view definition (`vwCombinedR_CountData`). The implementation should use the connection's `schema$count_col` as the lookup key (consistent with the CSV backend approach) and include clear documentation of the expected API field name once confirmed.
 
-| Behavior | Why Expected |
-|----------|-------------|
-| Per-stratum RSE and meets-target flag | Most direct answer to "is my design working?"; biologists routinely report this |
-| Comparison of proposed merged strata vs. current design | The primary decision point is "can I simplify without losing precision?"; collapse simulation makes this concrete |
-| Consistent input shape with `creel_n_effort()` and `power_creel()` | Same `N_h`, `ybar_h`, `s2_h` naming; lowers cognitive load for users already using the planning tools |
-| Works on pilot data (pre-survey) and on completed survey estimates (post-survey) | Supports both prospective design evaluation and retrospective review |
+**Gap 2 — `catch_uid` absence:** The `validate_fetch_catch()` validator requires a `catch_uid` column (type `"any"`). The reference code `select(ii_UID, ir_Species, Num, CatchType)` does not include a per-catch-row UID. Options in priority order: (a) inspect live API to confirm whether a catch UID field exists but was not selected in the reference code; (b) if no UID exists, synthesize as `paste0(interview_uid, "_", seq_len(nrow(df)))` with a `cli_warn()` noting the synthesis; (c) update the validator to make `catch_uid` optional for the API backend.
 
-### Differentiators
+**Gap 3 — `length_uid` absence:** Same issue as `catch_uid`, affecting both `fetch_harvest_lengths` and `fetch_release_lengths`. Same resolution priority.
 
-| Behavior | Value |
-|----------|-------|
-| Neyman-optimal reallocation output | Shows not just whether current design works, but where to invest additional sampling days for maximum precision gain |
-| `compare_designs()` compatibility for audit output | Feeding `audit_strata()` results into the existing forest-plot autoplot gives a visual precision-by-stratum comparison |
-| Integration with `creel_n_effort()` round-trip | `reallocate_strata()` output can be passed back to `creel_n_effort()` to verify the CV gain from reallocation |
-| DEFF reporting | Design effect quantifies the value of stratification in a single interpretable number; not currently surfaced anywhere in the package |
+**Gap 4 — `ir_Count` aggregation in release lengths:** The CSV backend's `validate_fetch_release_lengths()` validates `length_mm` and `length_type` but says nothing about `ir_Count`. The API returns one row per length group with a count, while harvest lengths have one row per fish. Two acceptable resolutions: (a) accept the aggregated form as-is and document that release lengths from the API are aggregated (the downstream `add_lengths()` function must handle both forms); (b) expand rows by `ir_Count` before validation with a `cli_warn()`. Do not silently expand. This gap requires a decision before implementation begins.
 
-### Edge Cases
+## Competitor Analysis
 
-1. **Stratum with n = 1.** Variance cannot be estimated from a single observation. `cli_warn()` noting that at least 2 observations per stratum are required for within-stratum variance estimation.
-2. **Stratum with n = 0 (never sampled).** This stratum contributes no information. `cli_abort()` or `cli_warn()` depending on whether the function can still compute the audit for other strata.
-3. **Proposed collapse leaves only one stratum.** This is a valid choice (unstratified design). The function should handle it and report the expected CV of the unstratified design — that is the correct comparison point.
-4. **Pilot data from a different season or lake.** Transferability warning; same caveat as `creel_n_effort()`.
-5. **Unequal sampling probabilities across strata.** If strata used non-proportional allocation historically, the pilot variances may reflect unequal effort. The audit should note whether proportional allocation is assumed.
-6. **Strata defined by non-temporal variables (e.g., spatial sections).** The formulae are the same; the audit works for any stratification variable. The function documentation should be explicit that "strata" here means any stratification scheme, not only day type.
+No direct competitors in the R package ecosystem for NGPC-specific creel REST API integration. The reference implementation is the prior art.
 
-### Dependencies on Existing Functions
-
-- **Wraps and extends:** `creel_n_effort()` (same formula, inverted to audit rather than plan), `cv_from_n()` (used internally to compute achieved CV), `power_creel()` (audit mode adds a fourth mode to the existing planning surface)
-- **Feeds into:** `compare_designs()` — audit results as `creel_estimates`-compatible objects enable visual forest-plot comparison across designs
-- **No new package dependencies** — all calculations use base R; `survey` is already imported for DEFF computation if needed (DEFF from a completed survey design uses `survey::deff()` or manual computation from design object)
-- **New S3 class `creel_strata_audit`:** Needed for a clean `print()` method that renders the per-stratum table with meets-target highlighting; `autoplot()` method would render a precision-by-stratum bar chart
-
----
-
-## Cross-Feature Dependencies and Ordering Notes
-
-| Dependency | Implication |
-|------------|-------------|
-| Feature 1 output feeds Feature 2 indirectly | Imputed counts are more reliable pilot data for `creel_n_camera()` planning inputs |
-| Feature 2 is a standalone planning function | No runtime dependency on Features 1, 3, or 4 |
-| Feature 3 returns `creel_estimates` | Plugs into `compare_designs()`, `write_estimates()`, and `autoplot()` without new infrastructure |
-| Feature 4 wraps `creel_n_effort()` and `cv_from_n()` | Must be implemented after those functions are stable (they already are) |
-| Feature 1 requires `glmmTMB` or `pscl` + `mice`/`countimp` | These must be added to Suggests; not in current DESCRIPTION |
-| Feature 3 requires `FSA` | Must be added to Suggests; pure R, no external binary |
-| Features 2 and 4 require no new dependencies | Base R + existing `checkmate` + `cli` validation patterns |
-
-## Anti-Features
-
-| Anti-Feature | Why Avoid | What to Do Instead |
-|--------------|-----------|-------------------|
-| Automatic imputation applied silently in `est_effort_camera()` | Imputation changes the data; biologists must explicitly call it and see diagnostics | Imputation is a separate explicit step before estimation |
-| Jolly-Seber as the default mark-recapture method | Open-population models require capture histories that most creel designs do not produce; defaulting there sets users up for data mismatches | Default to Chapman (closed); expose open-population via a distinct `estimate_angler_n_open()` entry point |
-| Stratification collapse that ignores domain knowledge | Purely statistical strata reduction may merge strata that have biological or regulatory meaning (e.g., special regulation weekends) | Return recommendations only; user makes the final merge decision |
-| Automatic optimal reallocation without a budget constraint | Without a fixed `n_total`, Neyman allocation is undefined | Always require `n_total` as an explicit input to `reallocate_strata()` |
+| Feature | Reference Implementation (`CreelApiHelper.R` v3.0) | tidycreel.connect (this milestone) |
+|---------|-----------------------------------------------------|-------------------------------------|
+| HTTP fetch | `jsonlite::fromJSON(url)` — no auth, no error handling, crashes on HTTP errors | `httr2` with bearer/api_key auth, HTTP error propagation via `req_perform()` |
+| Column naming | Raw API field names returned directly (`ii_UID`, `Num`, `iiUID`) | Canonical tidycreel names (`interview_uid`, `catch_count`) |
+| Type coercion | Implicit or missing (species codes left as integer in some paths) | Explicit per-column coercion with `cli_abort()` validation |
+| Discovery | `api_getAllCreels()` returns raw data frame with PascalCase field names | `list_creels()` returns renamed canonical data frame with `toupper()` fix applied |
+| Search | `api_searchForCreels(apiBase, text)` — API base passed as first argument | `search_creels(conn, text)` — connection-scoped, auth-aware |
+| Error messages | None — R errors or silent data corruption | `cli_abort()` with actionable messages following tidycreel conventions |
+| Date parsing | `as.Date(ymd_hms(cd_Date))` via lubridate | `.parse_api_date()` handles both ISO datetime and bare date formats without lubridate dependency |
 
 ## Sources
 
-- Afrifa-Yamoah, E., Mueller, U.A., Osei, F.B., Adetutu, E.M. 2020. Imputation of missing data from time-lapse cameras used in recreational fishing surveys. ICES Journal of Marine Science 77(7-8):2984–2999. https://academic.oup.com/icesjms/article/77/7-8/2984/5998351 (HIGH confidence — primary source, peer-reviewed)
+- `/Users/cchizinski2/Desktop/creel_test_TEMP/creel/CreelApiHelper.R` — NGPC reference implementation, v3.0 (modified 2018-05-04). PRIMARY source for all API field names, endpoint paths, and discovery function shapes.
+- `/Users/cchizinski2/Desktop/creel_test_TEMP/creel/CreelDataAccess.R` — NGPC data access layer, v3.2.1 (modified 2021-05-11). Confirms field names via SQL view column selections and API path for the SQL Server backend.
+- `/Users/cchizinski2/Dev/tidycreel/tidycreel.connect/R/fetch-loaders.R` — Existing CSV backend. Defines canonical column names, rename_map pattern, and type coercion conventions that API methods must match.
+- `/Users/cchizinski2/Dev/tidycreel/tidycreel.connect/R/fetch-validators.R` — Existing validation contracts. Defines required columns and required types that all `fetch_*` methods must satisfy.
+- `/Users/cchizinski2/Dev/tidycreel/tidycreel.connect/R/creel-connection-api.R` — Existing API constructor. Provides `.api_fetch()`, `.parse_api_date()`, `.default_api_endpoints()`, and auth validation that fetch dispatch methods build on.
 
-- Hartill, B.W., Payne, G.W., Rush, N., Bian, R. 2016. Bridging the temporal gap: Continuous and cost-effective monitoring of dynamic recreational fisheries by web cameras and creel surveys. Fisheries Research 183:488–497. https://www.researchgate.net/publication/304357273 (HIGH confidence — primary source, peer-reviewed)
-
-- Feltz, N.G. and Middaugh, C.R. 2025. Improving efficiency of estimating angler effort using low-frequency time-lapse camera data. North American Journal of Fisheries Management 45(2):322. https://academic.oup.com/najfm/article-abstract/45/2/322/8128941 (HIGH confidence — primary source, peer-reviewed, directly cited in milestone scope)
-
-- Hansen, J.M. and Van Kirk, R.W. 2018. A Mark-Recapture-Based Approach for Estimating Angler Harvest. North American Journal of Fisheries Management 38:400–410. https://onlinelibrary.wiley.com/doi/abs/10.1002/nafm.10038 (HIGH confidence — primary source, peer-reviewed, directly cited in milestone scope)
-
-- de Kerckhove / Springer 2025. Optimizing Creel Surveys. Chapter 13 in recreational fisheries methods volume. https://link.springer.com/chapter/10.1007/978-3-031-99739-6_13 (MEDIUM confidence — identified via search; chapter content not fully verifiable without access; key stratification CV concept well-supported by broader literature)
-
-- FSA package — mrClosed(), mrOpen(), capHistSum(). https://rdrr.io/cran/FSA/man/mrClosed.html (HIGH confidence — CRAN package, well-documented, matches Phase 71 research recommendation)
-
-- glmmTMB package — zero-inflated GLMM. https://cran.r-project.org/web/packages/glmmTMB/vignettes/glmmTMB.pdf (HIGH confidence — CRAN package, stable, widely used for ecological count data)
-
-- countimp package — MICE-based imputation for zero-inflated count data. https://github.com/kkleinke/countimp (MEDIUM confidence — GitHub package, extends mice, not on CRAN; pscl + mice is the CRAN-only alternative)
-
-- Phase 71 Analytical Extensions Research, tidycreel project. /Users/cchizinski2/Dev/tidycreel/.planning/milestones/M022-phases/71-future-analytical-needs/71-ANALYTICAL-EXTENSIONS-RESEARCH.md (HIGH confidence — prior project research, verified against primary sources)
+---
+*Feature research for: tidycreel.connect REST API fetch dispatch and creel discovery*
+*Researched: 2026-05-09*
