@@ -105,8 +105,11 @@ search_creels.creel_connection_api <- function(conn, keyword, ...) {
 
   # Client-side filter — D-04: no extra API round trip
   # D-05: search title and description only; D-06: case-insensitive
-  match_title       <- grepl(keyword, df$title,       ignore.case = TRUE)
-  match_description <- grepl(keyword, df$description, ignore.case = TRUE)
+  # tolower() + fixed=TRUE: safe with regex metacharacters (ignore.case is silently
+  # dropped when fixed=TRUE in R, so we normalise both sides manually)
+  kw_lower          <- tolower(keyword)
+  match_title       <- grepl(kw_lower, tolower(df$title),       fixed = TRUE)
+  match_description <- grepl(kw_lower, tolower(df$description), fixed = TRUE)
   df[match_title | match_description, , drop = FALSE]
 }
 

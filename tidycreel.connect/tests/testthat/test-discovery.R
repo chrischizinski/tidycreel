@@ -110,3 +110,8 @@ test_that("search_creels.creel_connection_csv() aborts with not-supported error 
   conn_csv <- structure(list(), class = c("creel_connection_csv", "creel_connection"))
   expect_error(search_creels(conn_csv, "test"), "not supported")
 })
+
+test_that("search_creels.creel_connection_sqlserver() aborts with not-supported error (API-08)", {
+  conn_sql <- structure(list(), class = c("creel_connection_sqlserver", "creel_connection"))
+  expect_error(search_creels(conn_sql, "test"), "not supported")
+})
