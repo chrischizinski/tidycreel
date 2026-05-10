@@ -19,7 +19,8 @@ list_creels <- function(conn, ...) UseMethod("list_creels")
 
 #' @export
 list_creels.creel_connection_api <- function(conn, ...) {
-  raw_df <- .api_fetch(conn$con, "discovery")
+  # D-01: no UID filter for discovery — pass no_uid_filter = TRUE to .api_fetch()
+  raw_df <- .api_fetch(conn$con, "discovery", no_uid_filter = TRUE)
 
   # Early return for empty API response — avoids column-type issues downstream
   if (nrow(raw_df) == 0L) {

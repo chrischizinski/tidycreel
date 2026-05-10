@@ -170,14 +170,16 @@ creel_connect_api <- function(
 # Perform a single authenticated API GET and return a plain data.frame.
 # Returns a 0-row data.frame if the API returns an empty array.
 #' @noRd
-.api_fetch <- function(con_info, endpoint_key) {
+.api_fetch <- function(con_info, endpoint_key, no_uid_filter = FALSE) {
   endpoint <- con_info$endpoints[[endpoint_key]]
   url      <- paste0(con_info$base_url, endpoint)
-  uid_str  <- paste(con_info$creel_uids, collapse = ",")
 
-  req        <- httr2::request(url)
-  query_args <- stats::setNames(list(uid_str), con_info$uid_param)
-  req        <- do.call(httr2::req_url_query, c(list(req), query_args))
+  req <- httr2::request(url)
+  if (!no_uid_filter) {
+    uid_str    <- paste(con_info$creel_uids, collapse = ",")
+    query_args <- stats::setNames(list(uid_str), con_info$uid_param)
+    req        <- do.call(httr2::req_url_query, c(list(req), query_args))
+  }
 
   auth <- con_info$auth
   if (!is.null(auth)) {
