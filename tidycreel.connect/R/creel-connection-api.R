@@ -136,7 +136,8 @@ creel_connect_api <- function(
     counts          = "AnalysisData/GetCountData",
     catch           = "AnalysisData/GetCatchData",
     harvest_lengths = "AnalysisData/GetHarvestLengthData",
-    release_lengths = "AnalysisData/GetReleaseLengthData"
+    release_lengths = "AnalysisData/GetReleaseLengthData",
+    discovery       = "AnalysisData/GetAvailableCreels" # TODO: confirm endpoint path with live API
   )
 }
 
