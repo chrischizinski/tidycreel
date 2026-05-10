@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.7.0
 milestone_name: API Connection & Real-Data Validation
 status: active
-stopped_at: Phase 89 — planned (2 plans ready)
-last_updated: "2026-05-10T00:00:00.000Z"
-last_activity: 2026-05-10 -- Phase 89 planned (089-01, 089-02 created)
+stopped_at: Phase 89 — complete (2026-05-10)
+last_updated: "2026-05-10T22:00:00.000Z"
+last_activity: 2026-05-10 -- Phase 89 complete (list_creels, search_creels, 142 tests pass)
 progress:
   total_phases: 3
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 5
-  completed_plans: 3
-  percent: 33
+  completed_plans: 5
+  percent: 67
 ---
 
 # Project State
@@ -25,19 +25,19 @@ See: .planning/PROJECT.md (updated 2026-05-09)
 
 ## Current Position
 
-Phase: 89 — Discovery Generics
+Phase: 90 — Real-Data Validation
 Plan: —
-Status: Planned (0/2 plans complete; ready for execution)
-Last activity: 2026-05-10 — Phase 89 planned; 2 plans created
+Status: Not started (ready to plan)
+Last activity: 2026-05-10 — Phase 89 complete (2/2 plans; 142 tests pass)
 
-Progress: [###-------] 33% (1/3 phases complete)
+Progress: [######----] 67% (2/3 phases complete)
 
 ## Phase Summary
 
 | Phase | Goal | Requirements | Status |
 |-------|------|--------------|--------|
 | 88 | Users can call any `fetch_*` method on a `creel_connection_api` and receive canonical data | API-01 – API-06 | Complete (2026-05-09) |
-| 89 | Users can discover available surveys; non-API connections get clean errors | API-07, API-08 | Planned (2 plans) |
+| 89 | Users can discover available surveys; non-API connections get clean errors | API-07, API-08 | Complete (2026-05-10) |
 | 90 | Standalone script validates full pipeline against Calamus 2016 reference outputs | REAL-01 | Not started |
 
 ## Accumulated Context
@@ -71,7 +71,7 @@ Key decisions carried into this milestone from research:
 
 ### Phase 89 Decisions (from 89-CONTEXT.md)
 
-- D-01: `GetAvailableCreels` called with no UID filter — returns all surveys regardless of `creel_uids` in connection
+- D-01: `GetAvailableCreels` called with no UID filter — `.api_fetch()` extended with `no_uid_filter = FALSE` parameter; `list_creels.creel_connection_api()` passes `no_uid_filter = TRUE` to skip UID query injection
 - D-02: Discovery endpoint key added to `.default_api_endpoints()` as `discovery = "AnalysisData/GetAvailableCreels"` with `# TODO: confirm endpoint path` comment
 - D-03: NGPC discovery JSON field names unknown — hardcoded TODO-placeholder rename map in `list_creels.creel_connection_api()`
 - D-04: `search_creels()` is client-side — calls `list_creels(conn)` then filters with `grepl(keyword, ..., ignore.case = TRUE)`
@@ -100,5 +100,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-05-10
-Stopped at: Phase 89 planned
-Resume: Run `/gsd-execute-phase 89` to execute Phase 89 (089-01 then 089-02)
+Stopped at: Phase 89 complete
+Resume: Run `/gsd-plan-phase 90` to plan Phase 90 (Real-Data Validation)

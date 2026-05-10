@@ -37,7 +37,7 @@ tidycreel is an R package for creel survey design, data preparation, estimation,
 ### v1.7.0 — API Connection & Real-Data Validation (Phases 88–90)
 
 - [x] **Phase 88: httr2 Hardening and API Fetch Methods** — Harden `.api_fetch()` with `req_error`/`req_retry` and implement all five `fetch_*.creel_connection_api` S3 methods with hardcoded field rename maps
-- [ ] **Phase 89: Discovery Generics** — Add `list_creels()` and `search_creels()` generics with API implementations and CSV/SQL stubs in a new `creel-discovery.R` file
+- [x] **Phase 89: Discovery Generics** — Add `list_creels()` and `search_creels()` generics with API implementations and CSV/SQL stubs in a new `creel-discovery.R` file (completed 2026-05-10)
 - [ ] **Phase 90: Real-Data Validation** — Integration script in `inst/validation/` runs the full bus-route pipeline on Calamus 2016 archived data and reports whether estimates match archived reference outputs
 
 ## Phase Details
@@ -126,8 +126,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 089-01-PLAN.md — Create creel-discovery.R (all generics + S3 methods) and add discovery endpoint key to .default_api_endpoints() (API-07, API-08)
-- [ ] 089-02-PLAN.md — Write test-discovery.R, run devtools::document(), and confirm rcmdcheck passes (API-07, API-08)
+- [x] 089-01-PLAN.md — Create creel-discovery.R (all generics + S3 methods) and add discovery endpoint key to .default_api_endpoints() (API-07, API-08)
+- [x] 089-02-PLAN.md — Write test-discovery.R, run devtools::document(), and confirm rcmdcheck passes (API-07, API-08)
 
 ### Phase 90: Real-Data Validation
 **Goal**: A standalone script demonstrates end-to-end correctness of the estimation pipeline on real survey data, confirming that effort, catch, and harvest estimates match archived reference values from the Calamus 2016 bus-route survey
@@ -153,5 +153,5 @@ Plans:
 | 86. Stratification Audit | v1.6.0 | 2/2 | Complete | 2026-05-05 |
 | 87. v1.6.0 Tech Debt Cleanup | v1.6.0 | 1/1 | Complete | 2026-05-05 |
 | 88. httr2 Hardening and API Fetch Methods | v1.7.0 | 3/3 | Complete | 2026-05-09 |
-| 89. Discovery Generics | v1.7.0 | 0/2 | Not started | — |
+| 89. Discovery Generics | v1.7.0 | 2/2 | Complete | 2026-05-10 |
 | 90. Real-Data Validation | v1.7.0 | 0/? | Not started | — |
