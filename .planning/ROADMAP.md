@@ -38,7 +38,7 @@ tidycreel is an R package for creel survey design, data preparation, estimation,
 
 - [x] **Phase 88: httr2 Hardening and API Fetch Methods** — Harden `.api_fetch()` with `req_error`/`req_retry` and implement all five `fetch_*.creel_connection_api` S3 methods with hardcoded field rename maps
 - [x] **Phase 89: Discovery Generics** — Add `list_creels()` and `search_creels()` generics with API implementations and CSV/SQL stubs in a new `creel-discovery.R` file (completed 2026-05-10)
-- [ ] **Phase 90: Real-Data Validation** — Integration script in `inst/validation/` runs the full bus-route pipeline on Calamus 2016 archived data and reports whether estimates match archived reference outputs
+- [x] **Phase 90: Real-Data Validation** — Integration script in `inst/validation/` runs the full bus-route pipeline on Calamus 2016 archived data and reports whether estimates match archived reference outputs (completed 2026-05-11)
 
 ## Phase Details
 
@@ -138,7 +138,14 @@ Plans:
   2. The script reports whether effort, catch, and harvest estimates are within acceptable tolerance of the archived reference comparison outputs, printing a pass/fail summary to the console
   3. The script handles the known Calamus 2016 data characteristics without silent errors: intentionally duplicated interview UIDs, three-value `catch_type` including "caught", species code `86` as distinct from `862`
   4. The script is offline-capable (uses static fixture files, not live API calls) so it can run in CI without network access
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+**Wave 1**
+- [x] 90-01-PLAN.md — Create Calamus 2016 fixture CSV files and compute reference-outputs.csv by running the pipeline (REAL-01)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [x] 90-02-PLAN.md — Write inst/validation/calamus-2016-validation.R and verify it runs end-to-end (REAL-01)
 
 ## Progress
 
@@ -154,4 +161,4 @@ Plans:
 | 87. v1.6.0 Tech Debt Cleanup | v1.6.0 | 1/1 | Complete | 2026-05-05 |
 | 88. httr2 Hardening and API Fetch Methods | v1.7.0 | 3/3 | Complete | 2026-05-09 |
 | 89. Discovery Generics | v1.7.0 | 2/2 | Complete | 2026-05-10 |
-| 90. Real-Data Validation | v1.7.0 | 0/? | Not started | — |
+| 90. Real-Data Validation | v1.7.0 | 2/2 | Complete    | 2026-05-11 |

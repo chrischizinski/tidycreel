@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.7.0
-milestone_name: API Connection & Real-Data Validation
-status: active
-stopped_at: Phase 89 — complete (2026-05-10)
-last_updated: "2026-05-10T22:00:00.000Z"
-last_activity: 2026-05-10 -- Phase 89 complete (list_creels, search_creels, 142 tests pass)
+milestone_name: — API Connection & Real-Data Validation
+status: executing
+stopped_at: Phase 89 complete
+last_updated: "2026-05-11T13:39:05.490Z"
+last_activity: 2026-05-11
 progress:
-  total_phases: 3
-  completed_phases: 2
-  total_plans: 5
-  completed_plans: 5
-  percent: 67
+  total_phases: 6
+  completed_phases: 6
+  total_plans: 15
+  completed_plans: 15
+  percent: 100
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-09)
 
 **Core value:** A biologist should be able to go from survey design to package-ready estimates, plots, summaries, and documentation without stitching together a custom analysis stack.
-**Current focus:** v1.7.0 — API Connection & Real-Data Validation
+**Current focus:** Phase 90 — real-data-validation
 
 ## Current Position
 
-Phase: 90 — Real-Data Validation
-Plan: —
-Status: Not started (ready to plan)
-Last activity: 2026-05-10 — Phase 89 complete (2/2 plans; 142 tests pass)
+Phase: 90
+Plan: Not started
+Status: Executing Phase 90
+Last activity: 2026-05-11
 
 Progress: [######----] 67% (2/3 phases complete)
 
@@ -45,6 +45,7 @@ Progress: [######----] 67% (2/3 phases complete)
 ### v1.6.0 Archive
 
 All v1.6.0 work is archived:
+
 - `.planning/milestones/v1.6-ROADMAP.md` — full phase archive
 - `.planning/milestones/v1.6-REQUIREMENTS.md` — all 19 requirements marked complete
 - `.planning/MILESTONES.md` — milestone entry added
@@ -88,6 +89,7 @@ Key decisions carried into this milestone from research:
 ### Future Requirements (Carry-Forward from v1.6.0)
 
 These remain deferred and are not in scope for v1.7.0:
+
 - **MR-F01**: Jolly-Seber open-population estimator — output contract incompatible with `creel_estimates`
 - **CAMP-F01**: Multiple imputation via Rubin's rules
 - **STRAT-F01**: CPUE precision audit in `audit_strata(type = "cpue")`
