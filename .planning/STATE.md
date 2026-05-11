@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-09)
 
 **Core value:** A biologist should be able to go from survey design to package-ready estimates, plots, summaries, and documentation without stitching together a custom analysis stack.
-**Current focus:** v1.7.0 milestone complete — ready to ship
+**Current focus:** v1.7.0 shipped — PR #58 open, awaiting merge
 
 ## Current Position
 
