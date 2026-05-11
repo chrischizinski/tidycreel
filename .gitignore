@@ -77,20 +77,6 @@ GEMINI.md
 .gsd/
 .bg-shell/
 
-# Large fixture data (downloaded from live NGPC API — run inst/extdata/download-fixtures.R to regenerate)
-inst/extdata/benson-2021/
-inst/extdata/flanagan-2021/
-inst/extdata/lake-halleck-2019/
-inst/extdata/lawrence-youngman-2022/
-inst/extdata/mcconaughy-spawn-2022/
-inst/extdata/mcconaughy-spawn-2023/
-inst/extdata/offutt-2021/
-inst/extdata/prairie-queen-2019/
-inst/extdata/schwer-pond-2019/
-inst/extdata/standing-bear-2019/
-inst/extdata/walnut-creek-2021/
-inst/extdata/zorinsky-2022/
-
 # Test artifacts
 tests/testthat/_problems/
 
