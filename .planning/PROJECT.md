@@ -20,7 +20,7 @@ A biologist should be able to go from survey design to package-ready estimates, 
 ## Current State
 
 **Package version:** `1.6.0` (shipped 2026-05-06, PR #54 merged, git tag v1.6.0)
-**v1.7.0 in progress:** Phase 88 complete (httr2 hardening, 5 fetch_* methods); Phase 89 complete (2026-05-10) — `list_creels()`, `search_creels()` discovery generics, 142 tests pass.
+**v1.7.0 ALL PHASES COMPLETE (2026-05-11):** Phase 88 (httr2 hardening, 5 fetch_* methods), Phase 89 (list_creels()/search_creels() discovery generics), Phase 90 (Calamus 2016 validation script — REAL-01). 2667 tests pass. Ready for milestone closure.
 
 v1.6.0 complete: 5 phases (83–87), 9 plans, 19/19 requirements satisfied, 2667 tests, 0 errors 0 warnings. Ships `creel_n_camera()`, `impute_camera_counts()`, `estimate_angler_n()`, `estimate_mr_harvest()`, `audit_strata()`, `simulate_strata_collapse()`, `reallocate_strata()`. All 6 advisory items from internal review closed in Phase 87. Mark-recapture vignette added. See `.planning/milestones/v1.6-ROADMAP.md` for full archive.
 
@@ -129,15 +129,15 @@ The package currently closes its local gate with:
 - ✓ `simulate_strata_collapse()` — before/after precision comparison for proposed strata merges — v1.6.0
 - ✓ `reallocate_strata()` — Neyman-optimal reallocation of fixed sampling budget — v1.6.0
 
-### Active (v1.7.0)
+### Validated in v1.7.0
 
-- [ ] **API-01**: User can call `fetch_interviews()` on a `creel_connection_api` object and receive a canonical data frame
-- [ ] **API-02**: User can call `fetch_counts()` on a `creel_connection_api` object and receive a canonical data frame
-- [ ] **API-03**: User can call `fetch_catch()` on a `creel_connection_api` object and receive a canonical data frame
-- [ ] **API-04**: User can call `fetch_harvest_lengths()` and `fetch_release_lengths()` on a `creel_connection_api` object
-- [ ] **API-05**: User can call `list_creels()` to retrieve all available surveys from an API
-- [ ] **API-06**: User can call `search_creels()` with a keyword to find matching surveys from an API
-- [ ] **REAL-01**: Integration script runs Calamus 2016 bus-route data through the full estimation pipeline and reports whether estimates match archived comparison outputs
+- ✓ **API-01**: `fetch_interviews()` on `creel_connection_api` returns canonical data frame — v1.7.0 (Phase 88)
+- ✓ **API-02**: `fetch_counts()` on `creel_connection_api` returns canonical data frame — v1.7.0 (Phase 88)
+- ✓ **API-03**: `fetch_catch()` on `creel_connection_api` returns canonical data frame — v1.7.0 (Phase 88)
+- ✓ **API-04**: `fetch_harvest_lengths()` and `fetch_release_lengths()` on `creel_connection_api` — v1.7.0 (Phase 88)
+- ✓ **API-05**: `list_creels()` discovers all available surveys from an API — v1.7.0 (Phase 89)
+- ✓ **API-06**: `search_creels()` finds matching surveys by keyword — v1.7.0 (Phase 89)
+- ✓ **REAL-01**: `inst/validation/calamus-2016-validation.R` runs bus-route pipeline on Calamus 2016 fixtures, all 3 estimands PASS within 0.1% tolerance — v1.7.0 (Phase 90)
 
 ### Out of Scope
 
@@ -207,4 +207,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-09 — v1.6.0 milestone complete and archived*
+*Last updated: 2026-05-11 — v1.7.0 all phases complete (88–90); ready for milestone closure*
