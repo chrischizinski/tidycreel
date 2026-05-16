@@ -123,7 +123,12 @@ _(v1.7.0 phase details archived — see [.planning/milestones/v1.7-ROADMAP.md](m
   3. `list_creels(conn)` called against an API that returns zero surveys produces a zero-row tibble with the expected column names (not a 0-column tibble or NULL)
   4. `fetch_counts(conn, creel_id)` for a bus-route survey returns a data frame that includes both `n_counted` and `n_interviewed` columns with non-NA values where the API provides them
   5. All existing tests for `list_creels()`, `search_creels()`, and `fetch_counts()` continue to pass after the changes
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 091-01-PLAN.md — SEC-01 security audit: audit and annotate credential handling in 4 tidycreel.connect source files
+- [ ] 091-02-PLAN.md — API-10 empty tibble guard: fix list_creels() empty-return to tibble, add tibble to DESCRIPTION, update test
+- [ ] 091-03-PLAN.md — API-09 + API-11 field confirmation: probe script, replace TODO stubs, add n_counted/n_interviewed to fetch_counts
 
 ---
 
@@ -184,7 +189,7 @@ _(v1.7.0 phase details archived — see [.planning/milestones/v1.7-ROADMAP.md](m
 | 88. httr2 Hardening and API Fetch Methods | v1.7.0 | 3/3 | Complete | 2026-05-09 |
 | 89. Discovery Generics | v1.7.0 | 2/2 | Complete | 2026-05-10 |
 | 90. Real-Data Validation | v1.7.0 | 2/2 | Complete | 2026-05-11 |
-| 91. API Security and Hardening | v1.8.0 | 0/TBD | Not started | - |
+| 91. API Security and Hardening | v1.8.0 | 0/3 | Not started | - |
 | 92. Package Health Gate | v1.8.0 | 0/TBD | Not started | - |
 | 93. Reporting Exports | v1.8.0 | 0/TBD | Not started | - |
 | 94. Bootstrap Confidence Intervals | v1.8.0 | 0/TBD | Not started | - |
