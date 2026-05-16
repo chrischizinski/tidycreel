@@ -1,7 +1,7 @@
 # Requirements — v1.8.0 Exports, Bootstrap CIs, and API Hardening
 
 **Milestone:** v1.8.0
-**Status:** Active — defining roadmap
+**Status:** Active — roadmap defined
 **Last updated:** 2026-05-16
 
 ---
@@ -60,15 +60,15 @@
 
 | Requirement | Phase | Plan |
 |-------------|-------|------|
-| EXPORT-01 | TBD | TBD |
-| EXPORT-02 | TBD | TBD |
-| BOOT-01 | TBD | TBD |
-| BOOT-02 | TBD | TBD |
-| BOOT-03 | TBD | TBD |
-| BOOT-04 | TBD | TBD |
-| API-09 | TBD | TBD |
-| API-10 | TBD | TBD |
-| API-11 | TBD | TBD |
-| QUAL-01 | TBD | TBD |
-| QUAL-02 | TBD | TBD |
-| SEC-01 | TBD | TBD |
+| SEC-01 | Phase 91 | TBD |
+| API-09 | Phase 91 | TBD |
+| API-10 | Phase 91 | TBD |
+| API-11 | Phase 91 | TBD |
+| QUAL-01 | Phase 92 | TBD |
+| QUAL-02 | Phase 92 | TBD |
+| EXPORT-01 | Phase 93 | TBD |
+| EXPORT-02 | Phase 93 | TBD |
+| BOOT-01 | Phase 94 | TBD |
+| BOOT-02 | Phase 94 | TBD |
+| BOOT-03 | Phase 94 | TBD |
+| BOOT-04 | Phase 94 | TBD |
