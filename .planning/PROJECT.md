@@ -8,21 +8,32 @@ tidycreel is an R package for creel survey design, data preparation, estimation,
 
 A biologist should be able to go from survey design to package-ready estimates, plots, summaries, and documentation without stitching together a custom analysis stack.
 
-## Current Milestone: v1.6.0 Analytical Extensions II
+## Current Milestone: v1.8.0 — Exports, Bootstrap CIs, and API Hardening
 
-**Goal:** Close the four highest-priority gaps identified by literature cross-check — camera data quality, camera survey design, mark-recapture harvest estimation, and stratification auditing.
+**Goal:** Add tidy/write export methods and bootstrap confidence intervals to core estimators, while closing v1.7.0 carry-forward gaps in API discovery and rcmdcheck cleanliness.
 
 **Target features:**
-- Camera missing data imputation — GLMM/GLM fill-in tools for camera outages and failures (Afrifa-Yamoah 2020, Hartill 2016)
-- Camera design helper — `creel_n_camera()`-style function for sampling effort guidance (Feltz & Middaugh 2025)
-- Mark-recapture harvest estimators — Petersen/Schnabel/Jolly-Seber on anglers (Hansen & Van Kirk 2018)
-- Stratification audit — tools for re-evaluating strata and power-driven design reduction (de Kerckhove 2026)
+- `tidy()` methods for estimate objects (tibble coercion)
+- `write_estimates()` file-write helpers (CSV/Excel)
+- Bootstrap CI for `estimate_total_harvest_br()`, `estimate_total_catch()`, `estimate_angler_n()`, `estimate_mr_harvest()`
+- NGPC discovery field name confirmation + `list_creels()` 0-column return guard
+- Bus-route API E2E gap closure (`n_counted`/`n_interviewed` absent from fetch)
+- Validation script working-directory guard + rcmdcheck warning cleanup
 
 ## Current State
 
-**Package version:** `1.3.0` (version bump, release commit, and tag pending — no outward-facing release yet)
+**Package version:** `1.7.0` (shipped 2026-05-11, git tag v1.7.0)
+**Last milestone:** v1.7.0 — API Connection & Real-Data Validation (Phases 88–90, 9/9 requirements satisfied)
 
-v1.6.0 milestone started 2026-05-02. Phase 83 complete 2026-05-03: `creel_n_camera()` shipped (Cochran 1977, Feltz-Middaugh 2025 minimums; 2556 tests, 0 errors 0 warnings). Phase 84 complete 2026-05-04: `impute_camera_counts()` shipped — Poisson GLM default + NB GLMM opt-in, `.imputed` flag, CAMP-01..05 satisfied (2578 tests, 0 errors 0 warnings). Phase 85 complete 2026-05-04: `estimate_angler_n()` and `estimate_mr_harvest()` shipped — Chapman/Petersen/Schnabel closed-population estimators + delta-method harvest, MR-01..06 satisfied (2624 tests, 0 errors 0 warnings). Known open: CR-01 `.imputed` false-positive edge case; CR-02 docs say ZINB but impl is NB GLMM; 085-REVIEW.md WARNING-01..03 (advisory, non-blocking).
+**What shipped in v1.7.0:**
+- `fetch_interviews`, `fetch_counts`, `fetch_catch`, `fetch_harvest_lengths`, `fetch_release_lengths` for `creel_connection_api` (API-01–05)
+- Hardened `.api_fetch()` with `req_error`/`req_retry` and structured `cli_abort` (API-06)
+- `list_creels()` and `search_creels()` discovery generics with API/CSV/SQL dispatch (API-07–08)
+- `inst/validation/calamus-2016-validation.R` — offline bus-route pipeline validates within 0.1% of reference (REAL-01)
+
+**Open carry-forward (v1.8.0):** NGPC discovery field names unconfirmed; `list_creels()` silent 0-column return guard missing; bus-route API E2E gap (`n_counted`/`n_interviewed` absent from fetch); validation script working-directory guard; pre-existing rcmdcheck warnings in tidycreel.connect.
+
+v1.6.0 complete: 5 phases (83–87), 9 plans, 19/19 requirements satisfied, 2667 tests, 0 errors 0 warnings. Ships `creel_n_camera()`, `impute_camera_counts()`, `estimate_angler_n()`, `estimate_mr_harvest()`, `audit_strata()`, `simulate_strata_collapse()`, `reallocate_strata()`. All 6 advisory items from internal review closed in Phase 87. Mark-recapture vignette added. See `.planning/milestones/v1.6-ROADMAP.md` for full archive.
 
 ## Previous State (M023 / v1.4.0 — archived)
 
@@ -119,15 +130,48 @@ The package currently closes its local gate with:
 - ✓ `get_site_contributions()` relocation to the estimation layer
 - ✓ fresh local coverage baseline plus Codecov CI threshold
 
-### Active
+### Validated in v1.6.0
 
-(Requirements being defined — see REQUIREMENTS.md when complete)
+- ✓ `creel_n_camera()` — Cochran (1977) stratified camera-day sample size with Feltz-Middaugh (2025) minimum warnings — v1.6.0
+- ✓ `impute_camera_counts()` — Poisson GLM (default) + NB GLMM opt-in imputation for camera outages, `.imputed` flag, CAMP-01..05 — v1.6.0
+- ✓ `estimate_angler_n()` — Chapman/Petersen/Schnabel closed-population estimators with input guards and `creel_estimates` S3 output — v1.6.0
+- ✓ `estimate_mr_harvest()` — delta-method harvest propagation from N_hat uncertainty — v1.6.0
+- ✓ `audit_strata()` — per-stratum RSE, DEFF, meets-target audit from `creel_design` or pilot statistics — v1.6.0
+- ✓ `simulate_strata_collapse()` — before/after precision comparison for proposed strata merges — v1.6.0
+- ✓ `reallocate_strata()` — Neyman-optimal reallocation of fixed sampling budget — v1.6.0
+
+### Validated in v1.7.0
+
+- ✓ **API-01**: `fetch_interviews()` on `creel_connection_api` returns canonical data frame — v1.7.0 (Phase 88)
+- ✓ **API-02**: `fetch_counts()` on `creel_connection_api` returns canonical data frame — v1.7.0 (Phase 88)
+- ✓ **API-03**: `fetch_catch()` on `creel_connection_api` returns canonical data frame — v1.7.0 (Phase 88)
+- ✓ **API-04**: `fetch_harvest_lengths()` and `fetch_release_lengths()` on `creel_connection_api` — v1.7.0 (Phase 88)
+- ✓ **API-05**: `list_creels()` discovers all available surveys from an API — v1.7.0 (Phase 89)
+- ✓ **API-06**: `search_creels()` finds matching surveys by keyword — v1.7.0 (Phase 89)
+- ✓ **REAL-01**: `inst/validation/calamus-2016-validation.R` runs bus-route pipeline on Calamus 2016 fixtures, all 3 estimands PASS within 0.1% tolerance — v1.7.0 (Phase 90)
+
+### Active (v1.8.0)
+
+- [ ] **EXPORT-01**: Analyst can call `tidy(estimates)` to get a flat tibble from any `creel_estimates` object
+- [ ] **EXPORT-02**: Analyst can call `write_estimates(estimates, path)` to write estimates to CSV or Excel
+- [ ] **BOOT-01**: `estimate_total_harvest_br()` supports `ci_method = "bootstrap"` returning bootstrap CI
+- [ ] **BOOT-02**: `estimate_total_catch()` supports `ci_method = "bootstrap"`
+- [ ] **BOOT-03**: `estimate_angler_n()` supports `ci_method = "bootstrap"`
+- [ ] **BOOT-04**: `estimate_mr_harvest()` supports `ci_method = "bootstrap"`
+- [ ] **API-09**: NGPC discovery field names confirmed and TODO stubs resolved in all 6 `api_rename_map` entries
+- [ ] **API-10**: `list_creels()` returns empty tibble with correct column structure when no surveys found
+- [ ] **API-11**: `fetch_counts()` returns `n_counted` and `n_interviewed` for bus-route API connections
+- [ ] **QUAL-01**: Validation script has working-directory guard so it runs correctly from any context
+- [ ] **QUAL-02**: rcmdcheck passes with 0 warnings (non-ASCII and VignetteBuilder resolved)
 
 ### Out of Scope
 
 - Mobile app or web UI — web-first approach; no current demand
 - Multi-species joint covariance estimation — deferred (requires prototype before interface commitment; see 71-ANALYTICAL-EXTENSIONS-RESEARCH.md)
-- Mark-recapture estimators — deferred (large scope; see 71-ANALYTICAL-EXTENSIONS-RESEARCH.md)
+- Jolly-Seber open-population mark-recapture (MR-F01) — output contract incompatible with `creel_estimates`; requires new S3 class; deferred
+- Multiple imputation via Rubin's rules (CAMP-F01) — extends `impute_camera_counts()`; deferred
+- CPUE precision audit in `audit_strata()` (STRAT-F01) — deferred to future milestone
+- `power_creel(mode = "camera_n")` — `creel_n_camera()` is standalone; power_creel integration deferred
 - Spatial and temporal random effects for non-aerial types — deferred (research complete; no implementation commitment)
 - Rcpp acceleration — DEFER recommendation (empirical: only bootstrap is slow; bootstrap cost is in upstream `survey::as.svrepdesign()`, not addressable in tidycreel)
 - `creel_schema` / `tidycreel.connect` / generic DB interface — NOT current work; companion package has 3 concrete gaps; schema contract is frozen-but-informal
@@ -155,6 +199,19 @@ The package currently closes its local gate with:
 | goodpractice T/F deferral | Parameter `T` is canonical Pollock et al. domain notation; renaming breaks public API | M024 |
 | rhub v2 GitHub Actions | GitHub Actions-based; results auditable by rOpenSci reviewers; Windows deferred | M024 |
 | rOpenSci submission descoped | QUAL-05 deferred from v1.5.0 to undetermined future date | M024 |
+| GLMM tier opt-in via `method = "glmm"` | `glmmTMB` in Suggests only (guarded); GLM default keeps Imports unchanged | v1.6.0 |
+| Intercept-only GLM per stratum | `count ~ 1` (not `count ~ strata_col`) — single unique value per stratum subset at model time | v1.6.0 |
+| Jolly-Seber deferred | Output contract incompatible with `creel_estimates`; closed-population only in Phase 85 | v1.6.0 |
+| `audit_strata()` effort-precision only | CPUE precision deferred to STRAT-F01 — keeps scope contained | v1.6.0 |
+| `variance_method` labels corrected | Petersen branch uses `"petersen"`, not `"chapman"` — fixed in Phase 87 | v1.6.0 |
+| `.imputed` logic refined | Pre-imputation NA baseline captured before loop; only marks rows that were NA-before and non-NA-after | v1.6.0 |
+| `httr2` promoted to `Imports` | Required for structured retry/error without runtime guards; floor `>= 1.0.0` | v1.7.0 |
+| `req_retry` before `req_error` ordering | httr2 1.2.2 short-circuits `is_transient` on status ≥ 400 unless explicit predicate provided; call order matters | v1.7.0 |
+| Hardcoded `api_rename_map` per fetch method | API field names are NGPC-fixed; never route through `creel_schema` keys | v1.7.0 |
+| `iiUID` vs `ii_UID` join keys | Harvest/release lengths use `iiUID` (no underscore); interviews use `ii_UID` (with underscore) — wrong map silently drops `interview_uid` | v1.7.0 |
+| `search_creels()` is client-side | Calls `list_creels(conn)` then `tolower()` + `grepl(fixed = TRUE)` — R silently drops `ignore.case` when `fixed = TRUE` | v1.7.0 |
+| `estimate_harvest_rate(design)` for bus-route harvest total | Not `estimate_total_harvest()` — dispatches to Jones & Pollock Eq. 19.5; confirmed by Calamus 2016 validation | v1.7.0 |
+| Discovery field names deferred as TODO stubs | NGPC field names unconfirmed at development time; TODO comments in all 6 map entries for v1.8.0 confirmation | v1.7.0 |
 
 ## Constraints
 
@@ -182,4 +239,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-04 — Phase 84 complete (impute_camera_counts shipped)*
+*Last updated: 2026-05-16 — v1.8.0 milestone started*
