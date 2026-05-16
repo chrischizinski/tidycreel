@@ -8,6 +8,18 @@ tidycreel is an R package for creel survey design, data preparation, estimation,
 
 A biologist should be able to go from survey design to package-ready estimates, plots, summaries, and documentation without stitching together a custom analysis stack.
 
+## Current Milestone: v1.8.0 — Exports, Bootstrap CIs, and API Hardening
+
+**Goal:** Add tidy/write export methods and bootstrap confidence intervals to core estimators, while closing v1.7.0 carry-forward gaps in API discovery and rcmdcheck cleanliness.
+
+**Target features:**
+- `tidy()` methods for estimate objects (tibble coercion)
+- `write_estimates()` file-write helpers (CSV/Excel)
+- Bootstrap CI for `estimate_total_harvest_br()`, `estimate_total_catch()`, `estimate_angler_n()`, `estimate_mr_harvest()`
+- NGPC discovery field name confirmation + `list_creels()` 0-column return guard
+- Bus-route API E2E gap closure (`n_counted`/`n_interviewed` absent from fetch)
+- Validation script working-directory guard + rcmdcheck warning cleanup
+
 ## Current State
 
 **Package version:** `1.7.0` (shipped 2026-05-11, git tag v1.7.0)
@@ -138,6 +150,20 @@ The package currently closes its local gate with:
 - ✓ **API-06**: `search_creels()` finds matching surveys by keyword — v1.7.0 (Phase 89)
 - ✓ **REAL-01**: `inst/validation/calamus-2016-validation.R` runs bus-route pipeline on Calamus 2016 fixtures, all 3 estimands PASS within 0.1% tolerance — v1.7.0 (Phase 90)
 
+### Active (v1.8.0)
+
+- [ ] **EXPORT-01**: Analyst can call `tidy(estimates)` to get a flat tibble from any `creel_estimates` object
+- [ ] **EXPORT-02**: Analyst can call `write_estimates(estimates, path)` to write estimates to CSV or Excel
+- [ ] **BOOT-01**: `estimate_total_harvest_br()` supports `ci_method = "bootstrap"` returning bootstrap CI
+- [ ] **BOOT-02**: `estimate_total_catch()` supports `ci_method = "bootstrap"`
+- [ ] **BOOT-03**: `estimate_angler_n()` supports `ci_method = "bootstrap"`
+- [ ] **BOOT-04**: `estimate_mr_harvest()` supports `ci_method = "bootstrap"`
+- [ ] **API-09**: NGPC discovery field names confirmed and TODO stubs resolved in all 6 `api_rename_map` entries
+- [ ] **API-10**: `list_creels()` returns empty tibble with correct column structure when no surveys found
+- [ ] **API-11**: `fetch_counts()` returns `n_counted` and `n_interviewed` for bus-route API connections
+- [ ] **QUAL-01**: Validation script has working-directory guard so it runs correctly from any context
+- [ ] **QUAL-02**: rcmdcheck passes with 0 warnings (non-ASCII and VignetteBuilder resolved)
+
 ### Out of Scope
 
 - Mobile app or web UI — web-first approach; no current demand
@@ -213,4 +239,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-16 after v1.7.0 milestone close*
+*Last updated: 2026-05-16 — v1.8.0 milestone started*
