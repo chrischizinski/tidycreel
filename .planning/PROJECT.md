@@ -8,19 +8,18 @@ tidycreel is an R package for creel survey design, data preparation, estimation,
 
 A biologist should be able to go from survey design to package-ready estimates, plots, summaries, and documentation without stitching together a custom analysis stack.
 
-## Current Milestone: v1.7.0 — API Connection & Real-Data Validation
-
-**Goal:** Complete the tidycreel.connect API backend so users can fetch creel data from any compatible REST service, and validate the full estimation pipeline against known real-world outputs from the Calamus 2016 archive.
-
-**Target features:**
-- `fetch_*` dispatch for `creel_connection_api` — implement the five missing S3 methods (interviews, counts, catch, harvest_lengths, release_lengths) that call `.api_fetch()`, rename to canonical columns, and validate
-- `list_creels()` + `search_creels()` — discover available survey UIDs from an API before connecting
-- Calamus 2016 integration script — standalone R script running the full bus-route workflow on real NGPC data and validating estimates against archived comparison CSVs
-
 ## Current State
 
-**Package version:** `1.6.0` (shipped 2026-05-06, PR #54 merged, git tag v1.6.0)
-**v1.7.0 ALL PHASES COMPLETE (2026-05-11):** Phase 88 (httr2 hardening, 5 fetch_* methods), Phase 89 (list_creels()/search_creels() discovery generics), Phase 90 (Calamus 2016 validation script — REAL-01). 2667 tests pass. Ready for milestone closure.
+**Package version:** `1.7.0` (shipped 2026-05-11, git tag v1.7.0)
+**Last milestone:** v1.7.0 — API Connection & Real-Data Validation (Phases 88–90, 9/9 requirements satisfied)
+
+**What shipped in v1.7.0:**
+- `fetch_interviews`, `fetch_counts`, `fetch_catch`, `fetch_harvest_lengths`, `fetch_release_lengths` for `creel_connection_api` (API-01–05)
+- Hardened `.api_fetch()` with `req_error`/`req_retry` and structured `cli_abort` (API-06)
+- `list_creels()` and `search_creels()` discovery generics with API/CSV/SQL dispatch (API-07–08)
+- `inst/validation/calamus-2016-validation.R` — offline bus-route pipeline validates within 0.1% of reference (REAL-01)
+
+**Open carry-forward (v1.8.0):** NGPC discovery field names unconfirmed; `list_creels()` silent 0-column return guard missing; bus-route API E2E gap (`n_counted`/`n_interviewed` absent from fetch); validation script working-directory guard; pre-existing rcmdcheck warnings in tidycreel.connect.
 
 v1.6.0 complete: 5 phases (83–87), 9 plans, 19/19 requirements satisfied, 2667 tests, 0 errors 0 warnings. Ships `creel_n_camera()`, `impute_camera_counts()`, `estimate_angler_n()`, `estimate_mr_harvest()`, `audit_strata()`, `simulate_strata_collapse()`, `reallocate_strata()`. All 6 advisory items from internal review closed in Phase 87. Mark-recapture vignette added. See `.planning/milestones/v1.6-ROADMAP.md` for full archive.
 
@@ -180,6 +179,13 @@ The package currently closes its local gate with:
 | `audit_strata()` effort-precision only | CPUE precision deferred to STRAT-F01 — keeps scope contained | v1.6.0 |
 | `variance_method` labels corrected | Petersen branch uses `"petersen"`, not `"chapman"` — fixed in Phase 87 | v1.6.0 |
 | `.imputed` logic refined | Pre-imputation NA baseline captured before loop; only marks rows that were NA-before and non-NA-after | v1.6.0 |
+| `httr2` promoted to `Imports` | Required for structured retry/error without runtime guards; floor `>= 1.0.0` | v1.7.0 |
+| `req_retry` before `req_error` ordering | httr2 1.2.2 short-circuits `is_transient` on status ≥ 400 unless explicit predicate provided; call order matters | v1.7.0 |
+| Hardcoded `api_rename_map` per fetch method | API field names are NGPC-fixed; never route through `creel_schema` keys | v1.7.0 |
+| `iiUID` vs `ii_UID` join keys | Harvest/release lengths use `iiUID` (no underscore); interviews use `ii_UID` (with underscore) — wrong map silently drops `interview_uid` | v1.7.0 |
+| `search_creels()` is client-side | Calls `list_creels(conn)` then `tolower()` + `grepl(fixed = TRUE)` — R silently drops `ignore.case` when `fixed = TRUE` | v1.7.0 |
+| `estimate_harvest_rate(design)` for bus-route harvest total | Not `estimate_total_harvest()` — dispatches to Jones & Pollock Eq. 19.5; confirmed by Calamus 2016 validation | v1.7.0 |
+| Discovery field names deferred as TODO stubs | NGPC field names unconfirmed at development time; TODO comments in all 6 map entries for v1.8.0 confirmation | v1.7.0 |
 
 ## Constraints
 
@@ -207,4 +213,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-11 — v1.7.0 all phases complete (88–90); ready for milestone closure*
+*Last updated: 2026-05-16 after v1.7.0 milestone close*

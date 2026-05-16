@@ -1,5 +1,27 @@
 # Milestones
 
+## v1.7.0 — API Connection & Real-Data Validation (Shipped: 2026-05-11)
+
+**Phases:** 88–90 | **Plans:** 7 | **Timeline:** 2026-05-09 → 2026-05-11 (3 days)
+**Files changed:** 51 (+7,204 / −1,121 lines)
+
+**Key accomplishments:**
+1. Promoted `httr2` to `Imports` in `tidycreel.connect/DESCRIPTION`; hardened `.api_fetch()` with `req_error`/`req_retry` and structured `cli_abort` error messages including HTTP status and API error body (Phase 88)
+2. Implemented `fetch_interviews.creel_connection_api` and `fetch_counts.creel_connection_api` establishing the canonical pattern: fetch → early-empty-return → NGPC field rename → coerce → validate (Phase 88)
+3. Implemented `fetch_catch`, `fetch_harvest_lengths`, and `fetch_release_lengths` for `creel_connection_api` with synthesized UIDs and constant `length_type` injection; `iiUID` (no underscore) vs `ii_UID` join-key pitfall documented (Phase 88)
+4. Created `creel-discovery.R` with `list_creels()` and `search_creels()` S3 generics; API method uses `.api_fetch()` with `no_uid_filter = TRUE`; CSV/SQL stubs return permanent `cli_abort` (Phase 89)
+5. Created Calamus 2016 fixture CSVs (6 files: interviews, counts, catch, harvest_lengths, release_lengths, reference-outputs) from real NGPC bus-route survey data (Phase 90)
+6. Created `inst/validation/calamus-2016-validation.R` — standalone bus-route estimation pipeline validates effort, total catch, and harvest rate all within 0.1% of archived reference values; offline-capable (Phase 90)
+
+**Tech Debt (carry-forward to v1.8.0):**
+- NGPC discovery field names unconfirmed (TODO stubs in `creel-discovery.R`)
+- `list_creels()` silent 0-column return when rename map fields all miss (WR-01)
+- Bus-route API E2E gap: `fetch_interviews` missing `n_counted`/`n_interviewed` columns
+- Validation script lacks working-directory guard (W-01)
+- Pre-existing rcmdcheck warnings in tidycreel.connect (non-ASCII, missing VignetteBuilder)
+
+---
+
 ## v1.6.0 — Analytical Extensions II (Shipped: 2026-05-06)
 
 **Phases:** 83–87 | **Plans:** 9 | **Timeline:** 2026-04-28 → 2026-05-06 (8 days)
