@@ -1,96 +1,74 @@
-# Requirements: tidycreel v1.6.0 — Analytical Extensions II
+# Requirements — v1.8.0 Exports, Bootstrap CIs, and API Hardening
 
-**Defined:** 2026-05-02
-**Core Value:** A biologist should be able to go from survey design to package-ready estimates, plots, summaries, and documentation without stitching together a custom analysis stack.
+**Milestone:** v1.8.0
+**Status:** Active — roadmap defined
+**Last updated:** 2026-05-16
 
-## v1.6.0 Requirements
+---
 
-### Camera Missing Data Imputation
+## v1 Requirements
 
-- [x] **CAMP-01**: User can call `impute_camera_counts()` on a data frame with a status column and receive a complete count frame with outage rows filled using a day-type GLM (Hartill 2016) — Validated in Phase 84
-- [x] **CAMP-02**: User can opt into zero-inflated GLMM imputation (Afrifa-Yamoah 2020) via `method = "glmm"`, guarded by `rlang::check_installed("glmmTMB")` — Validated in Phase 84
-- [x] **CAMP-03**: `impute_camera_counts()` output is schema-compatible with `add_counts()`, enabling the full `impute → add_counts → est_effort_camera()` chain without manual intervention — Validated in Phase 84
-- [x] **CAMP-04**: Function warns via `cli_warn()` when the missing fraction in any stratum exceeds 50% (Afrifa-Yamoah 2020 reliability threshold) — Validated in Phase 84
-- [x] **CAMP-05**: Function aborts with an informative message when an entire stratum has no observed counts (imputation requires at least some observed data) — Validated in Phase 84
+### Reporting Exports (EXPORT)
 
-### Camera Design Helper
+- [ ] **EXPORT-01**: Analyst can call `tidy(estimates)` to get a flat tibble from any `creel_estimates` object
+- [ ] **EXPORT-02**: Analyst can call `write_estimates(estimates, path)` to write estimates to CSV or Excel
 
-- [ ] **CDES-01**: User can compute required camera-days per stratum for a target CV using `creel_n_camera()` with the stratified Cochran (1977) formula
-- [ ] **CDES-02**: `creel_n_camera()` warns when computed n falls below the Feltz-Middaugh (2025) empirical minimums (~12 weekday + ~7 weekend days)
-- [ ] **CDES-03**: Output is a named integer vector per stratum plus a `"total"` element, consistent with `creel_n_effort()` shape
+### Bootstrap Confidence Intervals (BOOT)
 
-### Mark-Recapture Harvest (closed-population)
+- [ ] **BOOT-01**: `estimate_total_harvest_br()` supports `ci_method = "bootstrap"` returning bootstrap CI alongside delta-method SE
+- [ ] **BOOT-02**: `estimate_total_catch()` supports `ci_method = "bootstrap"`
+- [ ] **BOOT-03**: `estimate_angler_n()` supports `ci_method = "bootstrap"`
+- [ ] **BOOT-04**: `estimate_mr_harvest()` supports `ci_method = "bootstrap"`
 
-- [ ] **MR-01**: User can estimate angler population size N from a single mark-recapture occasion using Chapman correction (default) via `estimate_angler_n()`
-- [ ] **MR-02**: User can request the unadjusted Petersen estimator when m ≥ 7 via `method = "petersen"`
-- [ ] **MR-03**: User can estimate N across multiple sampling occasions using the Schnabel estimator via `method = "schnabel"`
-- [ ] **MR-04**: Function aborts with informative `cli_abort()` messages on impossible inputs: m = 0, m > n, m > M
-- [ ] **MR-05**: `estimate_angler_n()` returns a `creel_estimates` S3 object compatible with `compare_designs()` and `autoplot()`
-- [ ] **MR-06**: User can propagate N_hat uncertainty through to total harvest via `estimate_mr_harvest()` using the delta-method SE (Hansen & Van Kirk 2018)
+### API Hardening (API)
 
-### Stratification Audit (effort precision)
+- [ ] **API-09**: NGPC discovery field names confirmed and TODO stubs resolved in all 6 `api_rename_map` entries
+- [ ] **API-10**: `list_creels()` returns empty tibble with correct column structure when no surveys found
+- [ ] **API-11**: `fetch_counts()` returns `n_counted` and `n_interviewed` for bus-route API connections
 
-- [ ] **STRAT-01**: User can audit per-stratum effort precision from a completed survey (`creel_design`) or from pilot summary statistics (`N_h`, `ybar_h`, `s2_h`) via `audit_strata()`
-- [ ] **STRAT-02**: User can simulate collapsing strata via `simulate_strata_collapse()` to compare precision before and after a proposed merge
-- [ ] **STRAT-03**: User can compute Neyman-optimal reallocation of a fixed sampling budget via `reallocate_strata(n_total, N_h, s2_h)`
-- [ ] **STRAT-04**: `audit_strata()` returns a `creel_strata_audit` S3 object with per-stratum RSE, n, and a meets-target flag
-- [ ] **STRAT-05**: Design effect (DEFF) is included in `creel_strata_audit` output to quantify the value of the current stratification scheme
+### Quality / Package Health (QUAL)
 
-## Future Requirements
+- [ ] **QUAL-01**: Validation script `calamus-2016-validation.R` has working-directory guard so it runs correctly from any context
+- [ ] **QUAL-02**: `rcmdcheck` passes with 0 warnings (non-ASCII character and VignetteBuilder warnings resolved)
 
-### Mark-Recapture (open population)
+### Security (SEC)
 
-- **MR-F01**: User can estimate population size for open populations using Jolly-Seber via `estimate_angler_n_open()` (requires `FSA`; output needs dedicated S3 class)
+- [ ] **SEC-01**: `tidycreel.connect` API connection and YAML-credential code reviewed for security issues (token exposure, injection, credential storage patterns)
 
-### Camera Imputation (multiple imputation)
+---
 
-- **CAMP-F01**: User can request M imputed datasets for proper variance propagation via Rubin's rules (extends `impute_camera_counts()` with `m` argument)
+## Future Requirements (Deferred)
 
-### Stratification Audit (CPUE precision)
+- **MR-F01**: Jolly-Seber open-population estimator — output contract incompatible with `creel_estimates`; requires new S3 class
+- **CAMP-F01**: Multiple imputation via Rubin's rules — extends `impute_camera_counts()`
+- **STRAT-F01**: CPUE precision audit in `audit_strata(type = "cpue")`
+- **QUAL-05**: rOpenSci formal submission — deferred to undetermined future date
 
-- **STRAT-F01**: `audit_strata()` audits CPUE precision in addition to effort precision via `type = "cpue"` argument
+---
 
 ## Out of Scope
 
-| Feature | Reason |
-|---------|--------|
-| Jolly-Seber open-population mark-recapture | Output contract incompatible with `creel_estimates`; requires a new S3 class and wider scope — deferred to future milestone (MR-F01) |
-| Bayesian joint estimation | Integrating creel + camera + other data sources via Stan/JAGS — large scope, no current demand |
-| Landscape-scale spatial effort (unsurveyed lakes) | Out of single-system scope; deferred per M022 research |
-| Social-ecological / human dimensions | Motivations, values, economics — explicitly excluded from project scope |
-| Off-site vs. on-site estimate reconciliation | No tools for reconciling on/off-site estimates — deferred |
-| Drone-specific aerial workflow | Aerial GLMM exists; drone specifics are not meaningfully different in the current design |
-| Automatic imputation inside `est_effort_camera()` | Imputation changes the data and must be an explicit user action with visible diagnostics — anti-feature |
+- Bootstrap CI for `estimate_exploitation_rate()` — delta-method SE sufficient; bootstrap path requires survey design object not always available
+- `power_creel(mode = "camera_n")` integration — `creel_n_camera()` is standalone; deferred
+- Spatial/temporal random effects for non-aerial types — research complete; no implementation commitment
+- Full YAML-defined SQL connection pooling — schema contract frozen-but-informal; companion package gaps not in scope
+- Multi-species joint covariance estimation — requires prototype before interface commitment
+
+---
 
 ## Traceability
 
-| Requirement | Phase | Status |
-|-------------|-------|--------|
-| CDES-01 | Phase 83 | Complete |
-| CDES-02 | Phase 83 | Complete |
-| CDES-03 | Phase 83 | Complete |
-| CAMP-01 | Phase 84 | Complete |
-| CAMP-02 | Phase 84 | Complete |
-| CAMP-03 | Phase 84 | Complete |
-| CAMP-04 | Phase 84 | Complete |
-| CAMP-05 | Phase 84 | Complete |
-| MR-01 | Phase 85 | Pending |
-| MR-02 | Phase 85 | Pending |
-| MR-03 | Phase 85 | Pending |
-| MR-04 | Phase 85 | Pending |
-| MR-05 | Phase 85 | Pending |
-| MR-06 | Phase 85 | Pending |
-| STRAT-01 | Phase 86 | Pending |
-| STRAT-02 | Phase 86 | Pending |
-| STRAT-03 | Phase 86 | Pending |
-| STRAT-04 | Phase 86 | Pending |
-| STRAT-05 | Phase 86 | Pending |
-
-**Coverage:**
-- v1.6.0 requirements: 19 total
-- Mapped to phases: 19
-- Unmapped: 0 ✓
-
----
-*Requirements defined: 2026-05-02*
-*Last updated: 2026-05-02 after initial definition*
+| Requirement | Phase | Plan |
+|-------------|-------|------|
+| SEC-01 | Phase 91 | TBD |
+| API-09 | Phase 91 | TBD |
+| API-10 | Phase 91 | TBD |
+| API-11 | Phase 91 | TBD |
+| QUAL-01 | Phase 92 | TBD |
+| QUAL-02 | Phase 92 | TBD |
+| EXPORT-01 | Phase 93 | TBD |
+| EXPORT-02 | Phase 93 | TBD |
+| BOOT-01 | Phase 94 | TBD |
+| BOOT-02 | Phase 94 | TBD |
+| BOOT-03 | Phase 94 | TBD |
+| BOOT-04 | Phase 94 | TBD |

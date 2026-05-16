@@ -124,6 +124,102 @@
 
 ---
 
+## Milestone: v1.6.0 — Analytical Extensions II
+
+**Shipped:** 2026-05-06
+**Phases:** 5 (83–87) | **Plans:** 9 | **Timeline:** 8 days (2026-04-28 → 2026-05-06)
+
+### What Was Built
+
+- `creel_n_camera()` — Cochran (1977) stratified camera-day sample size with Feltz-Middaugh (2025) minimum-day warnings; vector output matching `creel_n_effort()` shape
+- `impute_camera_counts()` — Poisson GLM (Hartill 2016) default + NB GLMM opt-in (Afrifa-Yamoah 2020) for camera outage fill-in; `.imputed` flag; schema-compatible with `add_counts()`
+- `estimate_angler_n()` — Chapman (default), Petersen, and Schnabel closed-population estimators with input guards, Poisson/normal CI branches, and `creel_estimates` S3 output
+- `estimate_mr_harvest()` — delta-method harvest propagation; H = N_hat × rate; SE = rate × se_N
+- `audit_strata()` S3 generic — `creel_design` and `default` methods; per-stratum RSE, DEFF, meets-target
+- `simulate_strata_collapse()` — before/after precision tibble for proposed strata merges
+- `reallocate_strata()` — Neyman-optimal named integer allocation for fixed sampling budget
+- Phase 87 cleanup — closed all 6 advisory items: NB GLMM doc fix, Petersen label, Schnabel ci_hi guard, harvest_rate > 1 test, `.imputed` false-positive fix, Phase 86 VERIFICATION.md
+
+### What Worked
+
+- **Phase 87 as a dedicated tech-debt phase** — explicitly scheduling a single-plan cleanup phase for advisory items from internal review worked well; all 6 items closed cleanly in one commit without touching active feature code
+- **Standalone estimator pattern carried over** — `estimate_angler_n()` and `estimate_mr_harvest()` followed the v1.5.0 scalar-input pattern established with `estimate_exploitation_rate()`; no `creel_design` dependency simplifies testing
+- **GLMM opt-in via Suggests guard** — keeping `glmmTMB` in Suggests only and gating on `rlang::check_installed()` kept Imports unchanged and avoided a mandatory new dependency
+- **intercept-only GLM per stratum** — discovering and documenting why `count ~ 1` (not `count ~ strata_col`) is correct for imputation within strata was a non-obvious invariant worth capturing
+
+### What Was Inefficient
+
+- **REQUIREMENTS.md checkbox drift** — CDES, MR, and STRAT requirements were never checked off as phases completed; at closeout 14 of 19 checkboxes were stale, requiring manual correction during archive (same issue for 4th milestone running)
+- **Phase 86 VERIFICATION.md omitted** — the verification artifact wasn't generated during execution and had to be created retroactively in Phase 87; adds work and dilutes Phase 87's value as a pure cleanup phase
+- **ROADMAP.md Phase 86 plan checkboxes** — 086-01 and 086-02 were never updated from `[ ]` to `[x]` after completion (same issue for 4th milestone running)
+
+### Patterns Established
+
+- **Tech-debt phase at milestone end** — Phase 87 as a structured one-plan cleanup phase for advisory items from internal review is a reusable pattern; schedule it explicitly rather than folding fixes into feature phases
+- **S3 generic dual-method pattern** — `audit_strata()` S3 generic with `creel_design` and `default` methods is the established pattern for functions that accept either a design object or raw pilot statistics
+- **`ignore_attr = TRUE` in named-vector assertions** — `expect_equal(..., ignore_attr = TRUE)` required when comparing named-vector tibble subsets; document as a convention in test files
+
+### Key Lessons
+
+1. **REQUIREMENTS.md checkbox hygiene is still broken** — four milestones in, the `[ ]` → `[x]` update still isn't happening at phase completion; consider automating this in the phase execution protocol or doing a checkpoint at each phase close
+2. **VERIFICATION.md is a first-class deliverable** — it should be generated as the last step of each phase's Wave 2 plan, not as a retroactive Phase 87 task; add it explicitly to the phase execution checklist
+3. **Tech-debt advisory items need an owner at discovery time** — CR-01, CR-02, and WARNING-01..03 were identified in review but not assigned to a concrete phase until Phase 87 was created; surfacing them earlier reduces close-of-milestone scramble
+
+### Cost Observations
+
+- Model: claude-sonnet-4-6
+- Sessions: ~6 (estimated)
+- Notable: Wave 1 / Wave 2 split worked well for Phases 84–86 — implementation and test phases were naturally sequenced without stalling on dependencies
+
+---
+
+## Milestone: v1.7.0 — API Connection & Real-Data Validation
+
+**Shipped:** 2026-05-11
+**Phases:** 3 (88–90) | **Plans:** 7 | **Timeline:** 3 days (2026-05-09 → 2026-05-11)
+
+### What Was Built
+
+- Five `fetch_*.creel_connection_api` S3 methods (interviews, counts, catch, harvest_lengths, release_lengths) with hardcoded NGPC field rename maps and canonical column validation
+- Hardened `.api_fetch()` — `req_error`/`req_retry` ordered correctly; structured `cli_abort` with HTTP status and API error body
+- `list_creels()` and `search_creels()` discovery generics with API, CSV, and SQL Server dispatch (`creel-discovery.R`)
+- Calamus 2016 fixture CSVs (6 files) plus `inst/validation/calamus-2016-validation.R` — effort, total catch, and harvest rate all within 0.1% of reference
+
+### What Worked
+
+- **Hardcoded rename maps over schema mediation** — per-method `api_rename_map` vectors made NGPC field-name idiosyncrasies explicit and auditable; no schema indirection meant pitfalls (like `iiUID` vs `ii_UID`) were caught during implementation rather than at runtime
+- **Offline fixture strategy** — creating reference-outputs.csv by running the pipeline first (Phase 90 Wave 1) meant the validation script (Wave 2) had a concrete target from the start; the 0.1% tolerance was achievable because the reference was generated by the same pipeline
+- **Permanent `cli_abort` stubs for CSV/SQL** — using "not supported" rather than "not yet implemented" creates a clean user-facing boundary; confirmed as the right pattern in Phase 89
+- **`tolower()` + `fixed = TRUE` fix** — catching the R `ignore.case` + `fixed = TRUE` silent interaction in Phase 89 before ship saved a hard-to-diagnose regression in `search_creels()`
+
+### What Was Inefficient
+
+- **REQUIREMENTS.md checkbox hygiene** — API-01 through API-08 checkboxes remained unchecked at milestone close despite all phases complete; this is a recurring process gap across every milestone
+- **Discovery field names never confirmed** — Phase 89 deferred all 6 NGPC field names as TODO stubs; Phase 90 implemented offline-only validation that couldn't close the gap; these carry into v1.8.0 with no clear confirmation path
+- **httr2 retry positive path unverified** — architectural constraint (mock intercepts before retry loop) left an untested success path; logged in audit but requires human verification with live/staging server that never happened
+- **VALIDATION.md completion at planning time** — Phase 88 VALIDATION.md had `nyquist_compliant: false` at milestone audit; required reconstruction during audit cycle
+
+### Patterns Established
+
+- **`req_retry` before `req_error`** — documented in MEMORY; httr2 1.2.2 requires explicit `is_transient` predicate and correct call order to handle status ≥ 400 gracefully
+- **Synthesized UID pattern** — `seq_len(nrow(df))` for `catch_uid`/`length_uid` when API response lacks a unique key; consistent across fetch_catch, fetch_harvest_lengths, fetch_release_lengths
+- **bus-route harvest total via `estimate_harvest_rate(design)`** — not `estimate_total_harvest()`; this dispatches to Jones & Pollock Eq. 19.5; confirmed by Calamus 2016 validation
+
+### Key Lessons
+
+1. **Fixture-first reference generation** — when building a validation script against archived data, compute the reference outputs with the actual pipeline before writing the assertion; don't hardcode expected values manually
+2. **API field name unknowns should block phases, not defer** — TODO stubs for unconfirmed field names are a v1.8.0 landmine; if live API access isn't available, the phase scope should state "partial implementation pending field name confirmation"
+3. **REQUIREMENTS.md checkboxes still not updated at phase completion** — sixth milestone with this pattern; needs a mechanical prompt in the execution protocol, not reliance on discipline
+4. **httr2 mock limitations are well-understood** — `local_mocked_responses()` intercepts before the retry loop; document this upfront in test files rather than discovering it at test-writing time
+
+### Cost Observations
+
+- Model: claude-sonnet-4-6 (Sonnet throughout)
+- Sessions: ~4–5 (estimated; all phases complete in 3 calendar days)
+- Notable: Short milestone with well-constrained scope; canonical pattern established in Phase 88 made Phases 89–90 structurally predictable
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -133,6 +229,8 @@
 | M022 | 70–75 (6) | First pure evaluation milestone; established research-first document format |
 | M023 | 76–79 (4) | Quality sweep format; quickcheck PBT infrastructure established |
 | M024 | 80–82 (3) | TDD-driven feature + quality milestone; rhub v2 workflow committed |
+| v1.6.0 | 83–87 (5) | Multi-estimator analytical milestone; tech-debt phase pattern; GLMM opt-in via Suggests guard |
+| v1.7.0 | 88–90 (3) | API integration milestone; hardcoded rename-map pattern; offline fixture validation strategy |
 
 ### Cumulative Quality
 
@@ -141,10 +239,14 @@
 | M022 | 2477+ | 87% (covr 2026-04-18) | PBT invariants spec, architecture/dependency review, error-handling canonical, quality audit |
 | M023 | 2537 | 86.27% (local baseline, 85% Codecov threshold) | Named conditions, lifecycle, @family, snapshots, quickcheck INV-01–05 |
 | M024 | 2537+ | ~86% | Exploitation-rate estimator, INV-06 fix, quality sweep, rhub green |
+| v1.6.0 | 2667 | ~86% | creel_n_camera, impute_camera_counts, estimate_angler_n, estimate_mr_harvest, audit_strata, simulate_strata_collapse, reallocate_strata |
+| v1.7.0 | 2667 | ~86% | 5 fetch_* API methods, .api_fetch() hardening, list_creels/search_creels, Calamus 2016 validation script |
 
 ### Top Lessons (Verified Across Milestones)
 
 1. Research before writing — phases that invested in a RESEARCH.md produced more accurate documents with less rework
 2. Forward-link findings — every planning artifact should explicitly name which future phase or backlog item will act on it
-3. ROADMAP checkbox hygiene — update `[ ]` → `[x]` immediately on completion, not at closeout; recurring issue across M022/M023/M024
+3. ROADMAP checkbox hygiene — update `[ ]` → `[x]` immediately on completion, not at closeout; recurring issue across M022/M023/M024/v1.6.0
 4. quickcheck API reference — lock the API in a comment near first usage to prevent generator name confusion
+5. VERIFICATION.md is a first-class deliverable — generate it as the last step of each phase's Wave 2 plan; do not defer to a cleanup phase
+6. REQUIREMENTS.md checkbox updates — tick checkboxes at phase completion, not at milestone closeout; consider a checklist item in the phase execution protocol

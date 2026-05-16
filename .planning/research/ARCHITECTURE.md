@@ -1,318 +1,377 @@
-# Architecture: v1.6.0 Feature Integration
+# Architecture Research: tidycreel.connect API Fetch Methods + Creel Discovery
 
-**Project:** tidycreel v1.6.0 — Analytical Extensions II
-**Researched:** 2026-05-02
-**Confidence:** HIGH (based on direct codebase analysis)
+**Domain:** R package companion — REST API backend for creel survey data retrieval
+**Researched:** 2026-05-09
+**Confidence:** HIGH (direct codebase analysis, all source files read)
 
 ---
 
 ## Existing Architecture Baseline
 
-Before mapping each feature, the relevant structural facts:
+The `tidycreel.connect` package is built on three interlocking mechanisms:
 
-**creel_design object** (constructed by `creel_design()`, extended by `add_*` chain):
+**S3 class hierarchy:**
 ```
-design$calendar        — source calendar data frame
-design$date_col        — character column name
-design$strata_cols     — character vector of stratum column names
-design$design_type     — survey_type string (camera, aerial, instantaneous, bus_route, ice)
-design$counts          — NULL until add_counts(); data frame after
-design$survey          — NULL until estimation; populated internally
-design$interviews      — NULL until add_interviews()
-design$camera          — list(survey_type, camera_mode) for camera designs; NULL otherwise
-design$aerial          — list(survey_type, h_open, visibility_correction) for aerial; NULL otherwise
-design$bus_route       — list with sampling frame + .pi_i for bus_route; NULL otherwise
-design$ice             — list for ice designs; NULL otherwise
-design$sections        — NULL until add_sections()
+creel_connection          (base class: list with $backend, $con, $schema, $status)
+  creel_connection_csv    (subclass: $con = named list of file paths)
+  creel_connection_api    (subclass: $con = list with base_url, creel_uids, uid_param, endpoints, auth)
+  creel_connection_sqlserver  (subclass: $con = DBIConnection)
 ```
 
-**creel_estimates object** (constructed by `new_creel_estimates()`):
+**Dispatch chain for every fetch_*() call:**
 ```
-result$estimates       — tibble of estimate, se, ci_lower, ci_upper, n + optional columns
-result$method          — character method label (e.g. "product-total-catch")
-result$variance_method — character (taylor/bootstrap/jackknife/delta)
-result$design          — reference to source creel_design or NULL
-result$conf_level      — numeric
-result$by_vars         — character vector or NULL
+fetch_interviews(conn)              # exported generic: UseMethod("fetch_interviews")
+  -> fetch_interviews.creel_connection_api(conn, ...)
+       -> .api_fetch(conn$con, "interviews")   # HTTP GET, returns raw data.frame
+       -> .rename_to_canonical(df, conn$schema, rename_map)  # column mapping
+       -> type coercion block
+       -> validate_fetch_interviews(df)         # abort on missing/wrong-type columns
+       -> return df
 ```
 
-**Established naming conventions:**
-- User-facing exported functions: `estimate_*()`, `creel_n_*()`, `add_*()`, `audit_*()`, `validate_*()`, `check_*()`
-- Internal helpers: `.estimate_*_*()` (unexported, noRd)
-- Public wrappers that front-load validation then delegate to internal: `est_*()` (camera effort) or direct `estimate_*()` (most estimators)
-- Result classes: `creel_estimates` (base), sub-classed via prepending (e.g., `c("creel_estimates_mor", "creel_estimates")`)
-- File naming: `creel-estimates-<domain>.R` for estimator files
-- `@family` grouping: "Survey Design", "Estimation", "Planning & Sample Size", "Reporting & Diagnostics"
+**Three existing files own all current fetch logic:**
+- `creel-connection-api.R` — `creel_connect_api()` constructor + `.api_fetch()` + `.parse_api_date()` + `.validate_api_auth()`
+- `fetch-loaders.R` — all `fetch_*()` generics + CSV methods + SQL Server stubs
+- `fetch-validators.R` — `validate_fetch_*()` per-table validators
 
-**autoplot dispatch:** `autoplot.creel_estimates()` reads `object$method` through a `switch()` for the plot title label and falls through to the raw method string if no match. New method strings are automatically renderable without modifying autoplot.
-
-**print/format dispatch:** `format.creel_estimates()` has a switch on `method` for human-readable labels. New method strings display as their raw value if not added to the switch.
+**Key invariant:** `.api_fetch()` is deliberately field-agnostic. It does HTTP + JSON decoding only. Column semantics are owned by the method that calls it, not by the helper.
 
 ---
 
-## Feature 1: Camera Missing Data Imputation
+## System Overview
 
-### What it does
-Fills in camera count data for days where the camera was non-operational (`camera_status` values such as `"battery_failure"`, `"memory_full"`) using a GLMM or GLM fitted to operational days. The imputed counts replace or augment `design$counts` so that `est_effort_camera()` can proceed on a complete panel.
-
-### Integration point
-Camera count data enters the system through `add_counts()`. The existing example data (`example_camera_counts`) already includes a `camera_status` column, and `est_effort_camera()` explicitly lists `camera_status` as an excluded column when identifying the numeric count variable (line 64 of `creel-estimates-camera.R`). The current workflow requires the user to manually filter to operational rows before calling `add_counts()`.
-
-The imputation function sits between the raw counts data frame and `add_counts()`, not between `add_counts()` and `est_effort_camera()`.
-
-### New components
-
-**`impute_camera_counts(counts, design, method = c("glmm", "glm", "mean"), ...)`**
-- Input: raw counts data frame (with `camera_status` column), a `creel_design` object (for strata column names), method selector
-- Output: the counts data frame with NA/failure rows replaced by model-predicted values, plus an `imputation_flag` column marking imputed rows
-- Does NOT modify `design$counts` — returns a modified counts data frame the user passes to `add_counts()`
-- Depends on `lme4` (already in Suggests) for GLMM path; GLM path uses only `stats`
-- Internal helpers: `.fit_imputation_glmm()`, `.fit_imputation_glm()`, `.impute_by_stratum()` — all `@noRd`
-
-**No new S3 class is needed.** The returned object is a data frame, not a `creel_design` or `creel_estimates`. Imputation metadata (n imputed, method used, model summary) can be attached as attributes.
-
-### Modified components
-- None modified. The existing `add_counts()` → `est_effort_camera()` chain is unchanged.
-- `check_completeness()` could optionally gain awareness of `imputation_flag` columns in a future phase, but is not required for the imputation feature itself.
-
-### Data flow
 ```
-raw_camera_counts (with camera_status)
+User code
     |
-impute_camera_counts(counts, design, method)
+    | creel_connect_api(base_url, creel_uids, schema, auth)
     |
-imputed_counts (same structure + imputation_flag column)
+    v
+creel_connection_api  (S3 object)
+    $con:  base_url, creel_uids, uid_param, endpoints, auth
+    $schema: creel_schema  (maps canonical names -> API field names)
     |
-add_counts(design, imputed_counts)
+    | fetch_interviews(conn) / fetch_counts(conn) / ...
     |
-est_effort_camera(design, ...)
+    v
+fetch_*.creel_connection_api  (method in fetch-loaders.R)
+    |
+    |-- .api_fetch(conn$con, endpoint_key)        [creel-connection-api.R]
+    |       GET {base_url}/{endpoint}?{uid_param}={uids}
+    |       add auth headers
+    |       httr2::req_perform -> resp_body_json -> as.data.frame
+    |
+    |-- .rename_to_canonical(df, conn$schema, rename_map)
+    |       maps API field names -> canonical tidycreel names
+    |
+    |-- type coercion (date, numeric, character)
+    |
+    |-- validate_fetch_*(df)                      [fetch-validators.R]
+    |
+    v
+canonical data.frame (same shape as CSV path output)
+    |
+    v
+tidycreel::add_interviews() / add_counts() / ...  (parent package)
 ```
 
-### Breaking change risk: NONE
-- `impute_camera_counts()` is a new function; nothing existing is modified.
-- The filter-before-add-counts pattern in existing docs/examples continues to work as before.
-- `lme4` is already in Suggests, so no dependency change is needed for the GLM fallback path. The GLMM path should add a runtime install guard using the same pattern as `lubridate` guards in the codebase.
-
-### File placement
-`R/impute-camera.R` — new file following the `R/<domain>.R` convention.
-
----
-
-## Feature 2: Camera Design Helper (`creel_n_camera()`)
-
-### What it does
-Takes target CV / precision plus camera-specific sampling constraints (outage rate, detection reliability, stratum structure) and returns recommended number of sampling days per stratum. Mirrors `creel_n_effort()` and `creel_n_cpue()` for the camera domain, following Feltz and Middaugh (2025).
-
-### Integration point
-This is a pure planning function. It has no dependency on a `creel_design` object and produces no `creel_estimates` object. It lives entirely in the Planning & Sample Size family alongside `creel_n_effort()`, `creel_n_cpue()`, and `cv_from_n()`.
-
-### New components
-
-**`creel_n_camera(cv_target, N_h, ybar_h, s2_h, p_operational, ...)`**
-- `p_operational`: per-stratum expected camera uptime probability in (0, 1]. This is the camera-domain parameter not present in `creel_n_effort()`.
-- Returns a named integer vector of the same structure as `creel_n_effort()` (per-stratum counts + `total` element) — consistent with the existing pattern.
-- `checkmate` validation on all numeric inputs using the same idioms as `creel_n_effort()`.
-- `@family "Planning & Sample Size"` to group with existing sample size functions.
-
-**`cv_from_n()` extension** — a new `type = "camera"` branch is a natural extension if the algebraic inverse is needed. This is low cost since `cv_from_n()` already dispatches on `type`. Not strictly required for MVP.
-
-### Modified components
-- `cv_from_n()` gains an optional `"camera"` type branch (additive, no existing behavior changes).
-- `validate_design()` could gain a `type = "camera"` branch for camera designs. Not required for MVP but architecturally clean.
-
-### Breaking change risk: NONE
-- `creel_n_camera()` is a new function.
-- The optional `cv_from_n()` extension adds a new match.arg value — only additive.
-
-### File placement
-`R/power-sample-size.R` — appended to the existing file, following the precedent of `creel_n_effort()` and `creel_n_cpue()` living in the same file.
+**Discovery functions sit upstream of any connection object:**
+```
+list_creels(conn, ...)      \
+search_creels(conn, ...)     > hit a discovery endpoint, return metadata data.frame
+                            /
+(no downstream fetch_* or add_* calls required)
+```
 
 ---
 
-## Feature 3: Mark-Recapture Harvest Estimators (`estimate_harvest_mr()`)
+## Component Responsibilities
 
-### What it does
-Estimates fish population size or harvest using Petersen, Schnabel, and Jolly-Seber mark-recapture estimators, accepting scalar summary statistics (like `estimate_exploitation_rate()`) rather than a full `creel_design`. Returns a `creel_estimates` object with `autoplot()` support.
-
-### Integration point
-`estimate_exploitation_rate()` establishes the canonical pattern for scalar-input estimators: takes pre-computed summary statistics, performs delta-method or analytical variance, returns `new_creel_estimates(..., design = NULL)`. The mark-recapture estimators follow this same pattern.
-
-Key design decision from M024: "scalar input pattern — Takes pre-computed summary stats — no creel_design dependency." This decision applies to the MR estimators as well. The Petersen/Chapman/Schnabel estimators take counts (M, C, R for Petersen; cumulative marks + recaptures for Schnabel) as scalars; Jolly-Seber takes a summary data frame (by occasion).
-
-The previous analytical extensions research (M022/71) recommended wrapping `FSA::mrClosed()` and `FSA::mrOpen()` for the standard families. However, FSA is not currently in Suggests. Adding it is viable (pure R, no external binary) but must be an explicit decision. Alternatively, the Petersen/Chapman closed-population estimator is simple enough to implement directly without FSA, matching the `estimate_exploitation_rate()` build-not-wrap precedent.
-
-### New components
-
-**`estimate_harvest_mr(estimator = c("petersen", "chapman", "schnabel"), ...)`**
-- Dispatches on `estimator` argument
-- Unstratified path: scalars M (marks released), C (total captured), R (recaptures)
-- Chapman-corrected variant: standard small-sample correction
-- Returns `new_creel_estimates(method = "mark-recapture-petersen")` or similar method string
-- Internal helpers: `.estimate_mr_petersen()`, `.estimate_mr_schnabel()` — `@noRd`
-
-**Jolly-Seber path** (if included in v1.6.0):
-- `estimate_harvest_mr(estimator = "jolly_seber", occasions = <data.frame>)`
-- `occasions` data frame mirrors the `strata` data frame pattern from `estimate_exploitation_rate()` — columns: `occasion`, `n_marked`, `n_captured`, `n_recaptured`
-- Returns per-occasion rows + optional aggregate with `aggregate = TRUE`
-
-**Method strings for `format.creel_estimates` and `autoplot.creel_estimates`:**
-- `"mark-recapture-petersen"` → "Petersen Mark-Recapture"
-- `"mark-recapture-schnabel"` → "Schnabel Mark-Recapture"
-- `"mark-recapture-jolly-seber"` → "Jolly-Seber Mark-Recapture"
-- Both `format.creel_estimates` and `autoplot.creel_estimates` switch statements require new entries for clean display; the fallthrough to raw method string works but is not user-facing quality.
-
-### Modified components
-- `format.creel_estimates()` in `creel-estimates.R` — add method string cases to the switch (lines ~171–183 of creel-estimates.R). Minor additive change.
-- `autoplot.creel_estimates()` in `autoplot-methods.R` — add method string cases to the switch. Minor additive change.
-- No changes to `creel_design`, `add_*` functions, or any survey-bridge code.
-
-**FSA dependency question:**
-- If FSA is added: goes in `Suggests` (not `Imports`) — runtime install guard using existing `lubridate` guard pattern. CRAN-safe. FSA is pure R.
-- If building Petersen/Chapman from scratch: no dependency change. Recommended for v1.6.0 to avoid a new dependency for a formula that fits in 20 lines.
-
-### Breaking change risk: NONE (new function + additive format/autoplot switch entries)
-
-### File placement
-`R/creel-estimates-mark-recapture.R` — new file following the `creel-estimates-<domain>.R` convention.
+| Component | File | Responsibility |
+|-----------|------|----------------|
+| `creel_connect_api()` | `creel-connection-api.R` | Constructor: validate inputs, resolve endpoints, call `new_creel_connection()` with `subclass = "creel_connection_api"` |
+| `.api_fetch()` | `creel-connection-api.R` | HTTP GET + auth + JSON decode only. Field-agnostic. Returns raw data.frame |
+| `.parse_api_date()` | `creel-connection-api.R` | Date parsing for ISO 8601 + MM/DD/YYYY formats — shared by all API methods |
+| `fetch_*()` generics | `fetch-loaders.R` | `UseMethod()` dispatch entry points — one per table |
+| `fetch_*.creel_connection_csv` | `fetch-loaders.R` | CSV path — read file, rename, coerce, validate |
+| `fetch_*.creel_connection_api` | `fetch-loaders.R` | **NEW** — call `.api_fetch()`, rename, coerce, validate |
+| `fetch_*.creel_connection_sqlserver` | `fetch-loaders.R` | Stub (Phase 69) |
+| `.rename_to_canonical()` | `fetch-loaders.R` | Column name mapping using schema field specs — reused by API methods |
+| `validate_fetch_*()` | `fetch-validators.R` | Post-rename type/presence checks — reused unchanged by API methods |
+| `list_creels()` | NEW `creel-discovery.R` | Generic: `UseMethod("list_creels")` |
+| `list_creels.creel_connection_api` | NEW `creel-discovery.R` | Hit discovery endpoint, return metadata data.frame |
+| `search_creels()` | NEW `creel-discovery.R` | Generic: `UseMethod("search_creels")` |
+| `search_creels.creel_connection_api` | NEW `creel-discovery.R` | Filter discovery results by name/date/location |
 
 ---
 
-## Feature 4: Stratification Audit (`audit_strata()`)
+## Answers to the Three Design Questions
 
-### What it does
-Takes a `creel_design` object (post-season, with counts and/or interviews attached) or a set of pilot summary statistics, and returns a precision comparison across strata — flagging over-sampled strata (where sample size greatly exceeds required n) and under-sampled strata (where CV is not met). Integrates with `compare_designs()` and `validate_design()`.
+### Question 1: Should `list_creels()` and `search_creels()` be generics or standalone functions?
 
-### Integration point
-`validate_design()` already does pre-season checking against targets (pass/warn/fail per stratum using `creel_n_effort()` and `cv_from_n()`). `compare_designs()` compares multiple `creel_estimates` objects on a forest plot. The stratification audit is post-hoc and descriptive: given what was actually collected, how did each stratum perform, and which strata are candidates for collapsing or splitting in the next season?
+**Make them generics with S3 dispatch. Do not make them standalone functions.**
 
-`audit_strata()` is distinct from `validate_design()` in direction (retrospective not prospective) and output (precision metrics + design recommendations, not pass/fail against a target).
+Rationale:
 
-### New components
+The entire package is built around dispatch by connection class. `fetch_interviews(conn)` is the model. A user who has a `creel_connection_api` object should be able to call `list_creels(conn)` on it — the same object they already have, no new arguments. This is the correct S3 pattern:
 
-**`audit_strata(design, cv_target = NULL, ...)`**
-- Input: a `creel_design` with counts (and optionally interviews) attached, plus an optional CV target for comparison
-- Returns a new S3 class `creel_strata_audit` — a data frame with per-stratum columns: `stratum`, `n_sampled`, `n_available`, `sampling_rate`, `cv_achieved`, `cv_required` (if `cv_target` supplied), `status` (over/adequate/under)
-- Optional: `reduction_candidates` — strata where merging two into one would still meet the CV target
-- `@family "Reporting & Diagnostics"` — groups with `validate_design()` and `check_completeness()`
-
-**`print.creel_strata_audit()`** and **`format.creel_strata_audit()`** — cli-formatted output following `format.creel_design_report()` pattern.
-
-**`autoplot.creel_strata_audit()`** — bar chart of CV by stratum with target reference line. Returns a `ggplot` object.
-
-### Modified components
-- `compare_designs()` — no modification required. `audit_strata()` produces its own class; if comparison of audit results across multiple designs is needed, that is a future capability. The existing `compare_designs()` takes `creel_estimates` objects; `creel_strata_audit` is distinct.
-- `check_completeness()` — no modification required; the two are complementary (completeness = did we collect data; audit = was the data sufficient).
-- `validate_design()` — no modification required; `audit_strata()` is the retrospective counterpart.
-
-### New S3 class: `creel_strata_audit`
-Structure:
 ```r
-structure(
-  list(
-    results            = tibble,   # per-stratum metrics
-    reduction_candidates = tibble | NULL,  # merge suggestions
-    survey_type        = character,
-    cv_target          = numeric | NULL,
-    passed             = logical
-  ),
-  class = "creel_strata_audit"
-)
+list_creels <- function(conn, ...) UseMethod("list_creels")
+list_creels.creel_connection_api <- function(conn, ...)  { ... }
+list_creels.creel_connection_csv <- function(conn, ...)  {
+  cli::cli_abort("list_creels() is not supported for CSV connections.")
+}
 ```
 
-This follows the constructor pattern of `new_creel_design_report()` and `new_creel_completeness_report()` in `design-validator.R`.
+A standalone function `list_creels(base_url, auth)` would duplicate the auth-building logic already encapsulated in `.api_fetch()`. It would also require users to track `base_url` and `auth` separately from the connection object they already hold, which is a worse API.
 
-### Breaking change risk: NONE
-- New function, new class, new autoplot method.
-- `compare_designs()` is unchanged.
+The CSV method should abort with a clear message rather than be omitted. Omitting it causes an unhelpful "no applicable method" error from S3.
 
-### File placement
-`R/design-validator.R` — appended to the existing file, following the precedent of `validate_design()` and `check_completeness()` living together. Alternatively, `R/audit-strata.R` as a separate file if the implementation is large (>200 lines). Recommend separate file to keep `design-validator.R` readable.
+**Discovery endpoint assumption:** The UNL/NGPC API likely exposes a top-level listing endpoint (e.g., `AnalysisData/GetCreelList` or similar) without a `uid_param`. The `list_creels.creel_connection_api` method should call `.api_fetch()` with a modified request that omits the `uid_param`, or use a dedicated lightweight HTTP helper. The cleanest approach is to add an optional `omit_uid_param = FALSE` argument to `.api_fetch()`, defaulting to its current behavior, so discovery can reuse all auth-building logic without duplication.
+
+### Question 2: Where should API column renaming happen — inside each `fetch_*.creel_connection_api` method, or in `.api_fetch()`?
+
+**Inside each `fetch_*.creel_connection_api` method. Do not move renaming into `.api_fetch()`.**
+
+The existing pattern is explicit and unambiguous: `.api_fetch()` returns a raw data.frame with API field names. The calling method owns the rename map and the coercion logic. This separation has two benefits:
+
+1. Different endpoints return different fields. A single rename point inside `.api_fetch()` would need per-endpoint knowledge, turning a field-agnostic helper into a field-aware dispatcher — which collapses the abstraction.
+2. The `creel_schema` object (which holds the field name mappings) is on the `conn` object, not in `con_info` which is what `.api_fetch()` receives. Passing the schema into `.api_fetch()` just to do renaming there is wrong layering.
+
+The `.rename_to_canonical()` helper already exists in `fetch-loaders.R` and is used by all CSV methods. The API methods will call it identically:
+
+```r
+fetch_interviews.creel_connection_api <- function(conn, ...) {
+  df <- .api_fetch(conn$con, "interviews")
+  rename_map <- c(
+    interview_uid = "interview_uid_col",
+    date          = "date_col",
+    catch_count   = "catch_col",
+    effort        = "effort_col",
+    trip_status   = "trip_status_col"
+  )
+  df <- .rename_to_canonical(df, conn$schema, rename_map)
+  if ("date" %in% names(df)) df$date <- .parse_api_date(df$date)
+  if ("catch_count" %in% names(df)) df$catch_count <- as.numeric(df$catch_count)
+  if ("effort" %in% names(df)) df$effort <- as.numeric(df$effort)
+  if ("trip_status" %in% names(df)) df$trip_status <- as.character(df$trip_status)
+  validate_fetch_interviews(df)
+  df
+}
+```
+
+The only difference from the CSV method is:
+- `conn$con$interviews` (path) replaced by `.api_fetch(conn$con, "interviews")` (HTTP call)
+- `as.Date(..., tryFormats = ...)` replaced by `.parse_api_date()` (handles ISO 8601 T-format)
+
+Everything else — the rename map, the coercions, the validator call — is identical. This is intentional: the output contract is the same regardless of backend.
+
+### Question 3: Suggested build order for the 7 new items
+
+The 5 fetch methods share the exact same structural template and have no inter-dependencies. The 2 discovery functions depend on a pattern decision (generic vs. standalone) that must be settled before writing the first one. The correct build order is:
+
+**Step 1 — `fetch_interviews.creel_connection_api`** (in `fetch-loaders.R`)
+The primary table. Establishes the API method template. Has the most columns and the date-parsing edge case. Once this passes tests, the remaining four are mechanical applications of the same pattern.
+
+**Step 2 — `fetch_counts.creel_connection_api`** (in `fetch-loaders.R`)
+Simplest table (2 canonical columns). Quick win. Confirms the template works for minimal schemas.
+
+**Step 3 — `fetch_catch.creel_connection_api`** (in `fetch-loaders.R`)
+Introduces species-as-character coercion (the NGPC integer species code edge case already in the CSV method). Important to replicate.
+
+**Step 4 — `fetch_harvest_lengths.creel_connection_api`** (in `fetch-loaders.R`)
+Step 5 — `fetch_release_lengths.creel_connection_api`** (in `fetch-loaders.R`)
+These two share the same schema shape. Build them together in a single pass.
+
+**Step 6 — `list_creels()` generic + `list_creels.creel_connection_api`** (new `creel-discovery.R`)
+After all fetch methods are green, the HTTP plumbing is proven. `list_creels` is read-only and does not feed into any downstream fetch or estimation call. Establish the new file and the generic pattern here.
+
+**Step 7 — `search_creels()` generic + `search_creels.creel_connection_api`** (in `creel-discovery.R`)
+Depends on `list_creels` output (it filters or re-queries). Build last because its design depends on what `list_creels` actually returns from the API.
 
 ---
 
-## Build Order and Dependencies
+## Data Flow
 
-### Dependency graph among the four features
+### Fetch path (all 5 table methods)
 
 ```
-creel_n_camera()          — no dependencies on the other three features
-impute_camera_counts()    — no dependencies; uses existing creel_design structure
-estimate_harvest_mr()     — no dependencies; scalar inputs, no creel_design
-audit_strata()            — depends on creel_design with counts attached;
-                            uses creel_n_effort() and cv_from_n() (already exist)
+User: fetch_interviews(conn)
+    |
+    | S3 dispatch on class(conn)[1] == "creel_connection_api"
+    v
+fetch_interviews.creel_connection_api(conn, ...)
+    |
+    |-- .api_fetch(conn$con, "interviews")
+    |       build URL: conn$con$base_url + conn$con$endpoints[["interviews"]]
+    |       add query param: conn$con$uid_param = paste(conn$con$creel_uids, ",")
+    |       add auth header (bearer or api_key or none)
+    |       httr2::req_perform() -> resp_body_json(simplifyVector=TRUE)
+    |       return as.data.frame (API field names still intact)
+    |
+    |-- .rename_to_canonical(df, conn$schema, rename_map)
+    |       looks up each canonical name -> schema field name -> API column name
+    |       drops columns not in rename_map
+    |       returns df with only canonical column names
+    |
+    |-- type coercions (.parse_api_date, as.numeric, as.character)
+    |
+    |-- validate_fetch_interviews(df)   [abort if columns missing or wrong type]
+    |
+    v
+canonical data.frame — identical contract to CSV backend output
 ```
 
-The four features have no inter-dependencies. Any build order is technically valid.
+### Discovery path
 
-### Recommended build order
+```
+User: list_creels(conn)
+    |
+    | S3 dispatch on "creel_connection_api"
+    v
+list_creels.creel_connection_api(conn, ...)
+    |
+    |-- .api_fetch_discovery(conn$con, endpoint_key = "creels")
+    |       same auth logic as .api_fetch()
+    |       omits uid_param (no creel selected yet)
+    |       returns metadata data.frame: creel_uid, name, date_range, location, ...
+    |
+    v
+metadata data.frame
 
-**Phase 1: `creel_n_camera()`**
-Rationale: Pure planning function, no survey or estimation machinery involved. Simplest test surface (property-based tests trivially applicable using existing `quickcheck` patterns from `creel_n_effort()`). Establishes the camera domain's sample-size vocabulary before the imputation work.
-
-**Phase 2: `impute_camera_counts()`**
-Rationale: The camera workflow is incomplete without it. Build after the camera sample-size helper so the two camera features are coherent. The GLMM path requires `lme4`; the GLM fallback uses only `stats`. Recommend implementing GLM path first, then GLMM path, so the feature is shippable before the harder statistical path is done.
-
-**Phase 3: `estimate_harvest_mr()`**
-Rationale: Scalar-input pattern is well-proven from `estimate_exploitation_rate()`. No creel_design coupling means tests are straightforward. Petersen/Chapman before Schnabel before Jolly-Seber within the phase (increasing complexity). Add `format.creel_estimates` and `autoplot.creel_estimates` switch entries in this phase.
-
-**Phase 4: `audit_strata()`**
-Rationale: Requires the most integration awareness (reads `design$counts`, delegates to existing `creel_n_effort()` and `cv_from_n()`). Benefits from having the other features complete so test fixtures are richer. The retrospective precision comparison is the most novel UX and merits its own phase.
-
----
-
-## Breaking Change Risk Assessment
-
-| Feature | Risk | Reason |
-|---------|------|--------|
-| `impute_camera_counts()` | None | New function; add_counts / est_effort_camera chain unchanged |
-| `creel_n_camera()` | None | New function; optional cv_from_n extension is additive only |
-| `estimate_harvest_mr()` | Minimal | format.creel_estimates and autoplot.creel_estimates gain new switch cases — additive |
-| `audit_strata()` | None | New function, new class, new autoplot dispatch — all additive |
-
-**No existing public API is modified.** No existing function signatures change. No `creel_design` slots are renamed or removed.
-
-**Dependency changes:**
-- `lme4` (already in Suggests): needs runtime install guard in `impute_camera_counts()` GLMM path — pattern already established with `lubridate`
-- `FSA`: NOT recommended for v1.6.0 — implement Petersen/Chapman/Schnabel directly (all are 2-10 line formulas), following the `estimate_exploitation_rate()` build-not-wrap precedent. Avoids a new Suggests entry for simple formulas.
+User: search_creels(conn, name = "Lake X", year = 2024)
+    |
+    v
+search_creels.creel_connection_api(conn, name, year, ...)
+    |
+    |-- list_creels(conn)   [or cache in conn$con if repeated calls are expensive]
+    |-- filter by name/year/location predicates
+    v
+filtered metadata data.frame
+```
 
 ---
 
-## Naming Convention Consistency Check
+## File Structure Changes
 
-| New Function | Consistent With | Convention |
-|-------------|-----------------|------------|
-| `impute_camera_counts()` | `preprocess_camera_timestamps()` | verb_noun pattern for data-transformation functions |
-| `creel_n_camera()` | `creel_n_effort()`, `creel_n_cpue()` | `creel_n_<domain>` planning family |
-| `estimate_harvest_mr()` | `estimate_exploitation_rate()`, `estimate_total_harvest_br()` | `estimate_<what>_<qualifier>` pattern |
-| `audit_strata()` | `validate_design()`, `check_completeness()` | verb_noun diagnostic functions |
+```
+tidycreel.connect/R/
+├── creel-connection.R          # unchanged
+├── creel-connection-api.R      # add .api_fetch_discovery() helper (or extend .api_fetch)
+├── creel-connect-yaml.R        # unchanged
+├── fetch-loaders.R             # ADD: fetch_*.creel_connection_api for all 5 tables
+├── fetch-validators.R          # unchanged — all validators reused as-is
+├── print-methods.R             # unchanged
+├── creel-check-driver.R        # unchanged
+└── creel-discovery.R           # NEW: list_creels(), search_creels() generics + api methods
+```
 
-All four new names are consistent with existing conventions.
+The 5 API fetch methods go inside `fetch-loaders.R` immediately after their corresponding CSV methods. This keeps the three dispatch targets for each generic in one place, mirroring how the SQL Server stubs are already placed.
+
+`creel-discovery.R` is a new file because discovery functions are not fetch functions — they operate before a `creel_connection_api` is fully configured (no `creel_uids` filter applied), and they return metadata rather than survey data.
 
 ---
 
-## Summary Table
+## Architectural Patterns
 
-| Feature | New Functions | Modified Functions | New Classes | Files |
-|---------|--------------|-------------------|-------------|-------|
-| Camera imputation | `impute_camera_counts()` + 3 internal helpers | None | None | `R/impute-camera.R` |
-| Camera design helper | `creel_n_camera()` + optional `cv_from_n("camera")` | `cv_from_n()` (additive branch only) | None | `R/power-sample-size.R` |
-| MR harvest estimators | `estimate_harvest_mr()` + internal dispatch helpers | `format.creel_estimates()`, `autoplot.creel_estimates()` (additive switch entries) | None (reuses `creel_estimates`) | `R/creel-estimates-mark-recapture.R` |
-| Stratification audit | `audit_strata()`, `print.creel_strata_audit()`, `format.creel_strata_audit()`, `autoplot.creel_strata_audit()` | None | `creel_strata_audit` | `R/audit-strata.R` |
+### Pattern 1: Backend-agnostic output contract
+
+**What:** Every `fetch_*()` method, regardless of backend, returns a data.frame with the same canonical column names, types, and ordering. The `validate_fetch_*()` functions enforce this contract.
+
+**When to use:** All 5 new API methods must follow this. The API method is "correct" when `all.equal(fetch_interviews(api_conn), fetch_interviews(csv_conn))` is TRUE for equivalent data.
+
+**Example:** Reuse the exact same `rename_map` constant that the CSV method uses. If the API uses a different field name for the same concept, that mapping lives in the `creel_schema` object, not in the method body.
+
+### Pattern 2: creel_schema as the single source of column name truth
+
+**What:** The `creel_schema` object (`conn$schema`) stores the mapping from canonical names to backend-specific field names. The `rename_map` in each fetch method uses schema field keys (e.g., `"date_col"`, `"catch_col"`) — not literal API column names.
+
+**When to use:** Always. Never hard-code API field names inside a fetch method. If the API field name for `date` changes between API versions, only the `creel_schema` definition changes, not the fetch methods.
+
+**Implication for API methods:** If the UNL/NGPC API uses field names that differ from what the CSV schema currently defines, add new schema field keys (e.g., `"api_date_col"`) rather than branching inside the method. Alternatively, if the API field names exactly match the CSV field names in the schema, the rename maps are identical and no schema changes are needed.
+
+### Pattern 3: Fail-fast validation after every backend
+
+**What:** `validate_fetch_*()` is called at the end of every method, after rename and coerce. It aborts with a structured error listing all failures at once.
+
+**When to use:** All 5 API methods must call the validator exactly as the CSV methods do. Do not add API-specific validators — the output contract is the same.
+
+### Pattern 4: Internal helpers do not depend on creel_connection
+
+**What:** `.api_fetch()` takes `con_info` (the `$con` list element), not the full `conn` object. `.rename_to_canonical()` takes a schema, not a connection. This keeps helpers testable without constructing a full connection object.
+
+**When to use:** Any new internal helper should accept the minimum required data, not the whole `conn`. For `.api_fetch_discovery()`, pass `conn$con` — same as `.api_fetch()`.
+
+---
+
+## Anti-Patterns
+
+### Anti-Pattern 1: Renaming inside .api_fetch()
+
+**What people do:** Add a `rename_map` parameter to `.api_fetch()` and do the column rename inside the HTTP helper, so each method body is shorter.
+
+**Why it's wrong:** `.api_fetch()` is field-agnostic by design. Adding rename logic couples it to the schema and to per-endpoint field knowledge. It also prevents using `.api_fetch()` for discovery endpoints that have different (or no) canonical mappings.
+
+**Do this instead:** Keep `.api_fetch()` returning raw API field names. Each `fetch_*.creel_connection_api` method owns its rename map.
+
+### Anti-Pattern 2: Standalone discovery functions that bypass dispatch
+
+**What people do:** Export `list_creels(base_url, auth)` and `search_creels(base_url, auth, ...)` as ordinary functions, not generics.
+
+**Why it's wrong:** Duplicates auth-building logic. Breaks the mental model — users already have a `conn` object with auth embedded; requiring them to re-supply `base_url` and `auth` separately is redundant and error-prone. Also prevents CSV-connection methods from giving a clean "not supported" error.
+
+**Do this instead:** `UseMethod("list_creels")` dispatched on the connection object.
+
+### Anti-Pattern 3: Hard-coding API field names in fetch methods
+
+**What people do:** Write `rename_map <- c(date = "SurveyDate", ...)` with the literal API column name instead of going through the schema.
+
+**Why it's wrong:** When the API version changes or a different agency deploys the same software with different field names, every fetch method body must be edited. The `creel_schema` object exists precisely to isolate field-name variation.
+
+**Do this instead:** `rename_map <- c(date = "date_col", ...)` and let `.rename_to_canonical()` look up `schema[["date_col"]]` to get the API-side name.
+
+### Anti-Pattern 4: Adding discovery endpoint to the `endpoints` list in creel_connect_api()
+
+**What people do:** Add `"creels"` to `.default_api_endpoints()` and pass `creel_uids` to the discovery call.
+
+**Why it's wrong:** The discovery endpoint is not a per-creel data endpoint. It does not take `uid_param`. Including it in `endpoints` implies it participates in the UID-filtered query pattern, which it does not. It also means users who override endpoints in `creel_connect_api()` would need to override the discovery endpoint too.
+
+**Do this instead:** Treat the discovery endpoint as a separate concern. Store it in `conn$con` only if the API requires a custom path (default: a sensible convention). The `.api_fetch_discovery()` helper builds the URL from `conn$con$base_url` directly, without `uid_param`.
+
+---
+
+## Integration Points
+
+### Existing components reused unchanged
+
+| Component | Reused by | Notes |
+|-----------|-----------|-------|
+| `.api_fetch(conn$con, key)` | All 5 `fetch_*.creel_connection_api` methods | Only date-parsing and rename differ |
+| `.parse_api_date()` | All 5 API methods that have a date column | Use instead of `as.Date(..., tryFormats)` |
+| `.rename_to_canonical(df, schema, map)` | All 5 API methods | Identical call to CSV methods |
+| `validate_fetch_*(df)` | All 5 API methods | Called identically; returns same errors |
+| `new_creel_connection()` | Not changed by this work | Constructor already handles API subclass |
+
+### New internal helper needed
+
+`.api_fetch_discovery(con_info, endpoint)` — like `.api_fetch()` but without `uid_param` query parameter. Simplest implementation: extract the auth-building block from `.api_fetch()` into a shared `.build_authed_request(req, auth)` helper, then have both `.api_fetch()` and `.api_fetch_discovery()` call it. This eliminates the only auth logic duplication risk.
+
+### Boundary: creel_connection_api -> creel_schema
+
+The `creel_schema` object on the connection carries the column name mapping. The API methods read `conn$schema` exactly as CSV methods do. No schema changes are required unless the UNL/NGPC API uses field names not currently represented by any schema key (e.g., if the API returns `"SurveyDate"` but the schema only has `"date_col"` mapped to `"Date"`). Verify actual API response field names against schema keys before finalizing rename maps.
+
+### Boundary: tidycreel.connect -> tidycreel (parent package)
+
+The output of `fetch_*.creel_connection_api` feeds `tidycreel::add_interviews()`, `add_counts()`, etc. These functions validate their input independently. The API methods produce the same canonical output as CSV methods, so no parent package changes are needed.
 
 ---
 
 ## Sources
 
-All findings are based on direct analysis of the tidycreel codebase at `/Users/cchizinski2/Dev/tidycreel`:
-- `R/creel-design.R` — creel_design S3 structure, new_creel_design(), add_counts() chain
-- `R/creel-estimates.R` — new_creel_estimates(), format.creel_estimates()
-- `R/creel-estimates-camera.R` — estimate_effort_camera() internal, camera_status column exclusion
-- `R/est-effort-camera.R` — est_effort_camera() public wrapper
-- `R/creel-estimates-exploitation-rate.R` — scalar-input estimator pattern, .estimate_exploitation_rate_stratified()
-- `R/power-sample-size.R` — creel_n_effort(), creel_n_cpue(), creel_power(), cv_from_n() patterns
-- `R/design-validator.R` — validate_design(), check_completeness(), creel_design_report class pattern
-- `R/compare-designs.R` — compare_designs(), creel_design_comparison class, autoplot dispatch
-- `R/autoplot-methods.R` — autoplot.creel_estimates() method string dispatch
-- `DESCRIPTION` — current Imports and Suggests
-- `.planning/milestones/M022-phases/71-future-analytical-needs/71-ANALYTICAL-EXTENSIONS-RESEARCH.md` — prior MR research, FSA/RMark assessment, build-vs-wrap recommendations
-- `.planning/PROJECT.md` — v1.6.0 milestone definition, key decisions from M024
+All findings based on direct analysis of the tidycreel.connect codebase:
+- `tidycreel.connect/R/creel-connection-api.R` — constructor, `.api_fetch()`, auth validation, `.parse_api_date()`
+- `tidycreel.connect/R/fetch-loaders.R` — generics, CSV methods, SQL Server stubs, `.rename_to_canonical()`
+- `tidycreel.connect/R/fetch-validators.R` — `validate_fetch_*()` functions, `.validate_fetch()` helper
+- `tidycreel.connect/R/creel-connection.R` — `new_creel_connection()`, class hierarchy
+- `tidycreel.connect/R/creel-connect-yaml.R` — YAML constructor, backend branching pattern
+- `tidycreel.connect/R/print-methods.R` — `format.creel_connection()`, backend branching pattern
+- `.planning/research/ARCHITECTURE.md` (v1.6.0) — prior S3 class patterns and naming conventions

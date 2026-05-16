@@ -9,7 +9,9 @@ tidycreel is an R package for creel survey design, data preparation, estimation,
 - ✅ **M022 — Comprehensive Project Evaluation and Future Planning** — Phases 70-75 (shipped 2026-04-19)
 - ✅ **M023 / v1.4.0 Quality, Polish, and rOpenSci Readiness** — Phases 76-79 (local closeout 2026-04-23) — see [.planning/milestones/v1.4-ROADMAP.md](milestones/v1.4-ROADMAP.md)
 - ✅ **M024 / v1.5.0 Analytical Extensions and rOpenSci Submission** — Phases 80-82 (shipped 2026-04-28) — see [.planning/milestones/v1.5-ROADMAP.md](milestones/v1.5-ROADMAP.md)
-- 🚧 **v1.6.0 — Analytical Extensions II** — Phases 83-86 (in progress)
+- ✅ **v1.6.0 — Analytical Extensions II** — Phases 83–87 (shipped 2026-05-06) — see [.planning/milestones/v1.6-ROADMAP.md](milestones/v1.6-ROADMAP.md)
+- ✅ **v1.7.0 — API Connection & Real-Data Validation** — Phases 88–90 (shipped 2026-05-11) — see [.planning/milestones/v1.7-ROADMAP.md](milestones/v1.7-ROADMAP.md)
+- 🔄 **v1.8.0 — Exports, Bootstrap CIs, and API Hardening** — Phases 91–94 (in progress)
 
 ## Phases
 
@@ -22,13 +24,32 @@ tidycreel is an R package for creel survey design, data preparation, estimation,
 
 </details>
 
-### v1.6.0 Analytical Extensions II
+<details>
+<summary>✅ v1.6.0 Analytical Extensions II (Phases 83–87) — SHIPPED 2026-05-06</summary>
 
-- [x] **Phase 83: Camera Design Helper** - Implement `creel_n_camera()` for per-stratum camera-day sample size using the Cochran CV formula (completed 2026-05-03)
-- [x] **Phase 84: Camera Missing Data Imputation** - Implement `impute_camera_counts()` with a GLM default tier and opt-in GLMM tier, schema-compatible with `add_counts()` (completed 2026-05-03)
-- [x] **Phase 85: Mark-Recapture Harvest Estimators** - Implement `estimate_angler_n()` (Chapman/Petersen/Schnabel) and `estimate_mr_harvest()` for closed-population harvest estimation (completed 2026-05-04)
-- [x] **Phase 86: Stratification Audit** - Implement `audit_strata()`, `simulate_strata_collapse()`, and `reallocate_strata()` for effort-precision-driven design evaluation (completed 2026-05-05)
-- [ ] **Phase 87: v1.6.0 Tech Debt Cleanup** - Fix 6 advisory items from milestone audit: NB GLMM doc correction, Petersen variance_method label, Schnabel ci_hi guard, harvest_rate > 1 test, .imputed logic refactor, Phase 86 VERIFICATION.md
+- [x] **Phase 83: Camera Design Helper** — Implement `creel_n_camera()` for per-stratum camera-day sample size using the Cochran CV formula (completed 2026-05-03)
+- [x] **Phase 84: Camera Missing Data Imputation** — Implement `impute_camera_counts()` with a GLM default tier and opt-in GLMM tier, schema-compatible with `add_counts()` (completed 2026-05-03)
+- [x] **Phase 85: Mark-Recapture Harvest Estimators** — Implement `estimate_angler_n()` (Chapman/Petersen/Schnabel) and `estimate_mr_harvest()` for closed-population harvest estimation (completed 2026-05-04)
+- [x] **Phase 86: Stratification Audit** — Implement `audit_strata()`, `simulate_strata_collapse()`, and `reallocate_strata()` for effort-precision-driven design evaluation (completed 2026-05-05)
+- [x] **Phase 87: v1.6.0 Tech Debt Cleanup** — Close 6 advisory items: NB GLMM doc correction, Petersen variance_method label, Schnabel ci_hi guard, harvest_rate > 1 test, .imputed logic fix, Phase 86 VERIFICATION.md (completed 2026-05-05)
+
+</details>
+
+<details>
+<summary>✅ v1.7.0 API Connection & Real-Data Validation (Phases 88–90) — SHIPPED 2026-05-11</summary>
+
+- [x] **Phase 88: httr2 Hardening and API Fetch Methods** — Harden `.api_fetch()` with `req_error`/`req_retry` and implement all five `fetch_*.creel_connection_api` S3 methods with hardcoded field rename maps (completed 2026-05-09)
+- [x] **Phase 89: Discovery Generics** — Add `list_creels()` and `search_creels()` generics with API implementations and CSV/SQL stubs in a new `creel-discovery.R` file (completed 2026-05-10)
+- [x] **Phase 90: Real-Data Validation** — Integration script in `inst/validation/` runs the full bus-route pipeline on Calamus 2016 archived data and reports whether estimates match archived reference outputs (completed 2026-05-11)
+
+</details>
+
+### v1.8.0 — Exports, Bootstrap CIs, and API Hardening (Phases 91–94)
+
+- [ ] **Phase 91: API Security and Hardening** — Audit `tidycreel.connect` for credential exposure and injection risks; confirm NGPC discovery field names; close `list_creels()` 0-column guard; patch `fetch_counts()` bus-route E2E gap
+- [ ] **Phase 92: Package Health Gate** — Add working-directory guard to the Calamus 2016 validation script; resolve all rcmdcheck warnings so the 0-warnings gate holds before new code lands
+- [ ] **Phase 93: Reporting Exports** — Implement `tidy()` S3 method for `creel_estimates` objects and `write_estimates()` CSV/Excel file-write helpers
+- [ ] **Phase 94: Bootstrap Confidence Intervals** — Add `ci_method = "bootstrap"` to `estimate_total_harvest_br()`, `estimate_total_catch()`, `estimate_angler_n()`, and `estimate_mr_harvest()`
 
 ## Phase Details
 
@@ -86,83 +107,67 @@ Plans:
 
 </details>
 
-### Phase 83: Camera Design Helper
-**Goal**: Biologists can compute required camera-days per stratum for a target CV using `creel_n_camera()`, with output that matches the shape of `creel_n_effort()` and warns on empirically-grounded minimums
-**Depends on**: Phase 82 (clean package baseline)
-**Requirements**: CDES-01, CDES-02, CDES-03
+_(v1.6.0 phase details archived — see [.planning/milestones/v1.6-ROADMAP.md](milestones/v1.6-ROADMAP.md))_
+
+_(v1.7.0 phase details archived — see [.planning/milestones/v1.7-ROADMAP.md](milestones/v1.7-ROADMAP.md))_
+
+---
+
+### Phase 91: API Security and Hardening
+**Goal**: `tidycreel.connect` connection and credential handling has no token-exposure or injection risks, NGPC discovery field names are confirmed in all rename maps, `list_creels()` returns a correctly-structured empty tibble on no-results, and `fetch_counts()` delivers `n_counted`/`n_interviewed` for bus-route API connections
+**Depends on**: Phase 90 (v1.7.0 baseline — httr2 hardening, discovery generics, validation script in place)
+**Requirements**: SEC-01, API-09, API-10, API-11
 **Success Criteria** (what must be TRUE):
-  1. User can call `creel_n_camera(cv_target, N_h, ybar_h, s2_h)` and receive a named integer vector of required camera-days per stratum plus a `"total"` element
-  2. Output shape is consistent with `creel_n_effort()` — same vector structure, same naming convention
-  3. A `cli_warn()` message appears when any stratum's computed n falls below the Feltz-Middaugh (2025) empirical minimums (~12 weekday, ~7 weekend)
-  4. `rcmdcheck` passes with 0 errors and 0 warnings after the addition
-**Plans**: 2 plans
+  1. A reviewer reading `tidycreel.connect` connection, credential-loading, and token-passing code finds no plaintext credential logging, no un-sanitized user input interpolated into URLs or SQL strings, and credentials sourced only from environment variables or a YAML file with documented permissions guidance
+  2. All 6 `api_rename_map` entries in `creel-discovery.R` have TODO stubs replaced with confirmed NGPC field names and a confirming test or inline comment citing the source
+  3. `list_creels(conn)` called against an API that returns zero surveys produces a zero-row tibble with the expected column names (not a 0-column tibble or NULL)
+  4. `fetch_counts(conn, creel_id)` for a bus-route survey returns a data frame that includes both `n_counted` and `n_interviewed` columns with non-NA values where the API provides them
+  5. All existing tests for `list_creels()`, `search_creels()`, and `fetch_counts()` continue to pass after the changes
+**Plans**: TBD
 
-Plans:
-- [x] 083-01-PLAN.md — Implement creel_n_camera() in R/power-sample-size.R, run devtools::document(), and add to _pkgdown.yml
-- [x] 083-02-PLAN.md — Append creel_n_camera test block to test-power-sample-size.R and run devtools::check() quality gate
+---
 
-### Phase 84: Camera Missing Data Imputation
-**Goal**: Biologists can call `impute_camera_counts()` on a camera count frame with a status column and receive a complete, schema-compatible frame ready to pass directly into `add_counts()`, with diagnostics for high-missingness strata
-**Depends on**: Phase 83 (camera vocabulary established)
-**Requirements**: CAMP-01, CAMP-02, CAMP-03, CAMP-04, CAMP-05
+### Phase 92: Package Health Gate
+**Goal**: The package and its validation script pass all quality gates cleanly — `rcmdcheck` reports 0 warnings and the Calamus 2016 validation script runs correctly regardless of the working directory it is invoked from
+**Depends on**: Phase 91 (API hardening complete; no new warnings introduced before gate is closed)
+**Requirements**: QUAL-01, QUAL-02
 **Success Criteria** (what must be TRUE):
-  1. User can call `impute_camera_counts(data, method = "glm")` and receive a filled count frame where outage rows are imputed using a day-type GLM (Hartill 2016)
-  2. User can call `impute_camera_counts(data, method = "glmm")` and the function installs / requests `glmmTMB` via `rlang::check_installed()` before applying the ZINB GLMM (Afrifa-Yamoah 2020)
-  3. The output data frame passes directly into `add_counts()` without column manipulation — the full `impute → add_counts → est_effort_camera()` chain runs without error
-  4. A `cli_warn()` fires when the missing fraction in any stratum exceeds 50%
-  5. The function aborts with an informative `cli_abort()` message when an entire stratum contains no observed counts
-**Plans**: 2 plans
+  1. `inst/validation/calamus-2016-validation.R` executed via `Rscript path/to/script` from any working directory sets its own working directory or uses `here`/path-relative logic so all fixture file paths resolve without manual `setwd()`
+  2. `rcmdcheck::rcmdcheck(args = c("--no-manual", "--as-cran"), error_on = "warning")` exits with 0 errors and 0 warnings across both the main package and `tidycreel.connect`
+  3. The non-ASCII character warning (if in tidycreel.connect) is resolved by replacing the offending character or adding a `\uXXXX` escape
+  4. The VignetteBuilder warning is resolved by either adding the correct `VignetteBuilder:` field to DESCRIPTION or removing the vignette infrastructure that triggers it
+**Plans**: TBD
 
-Plans:
+---
 
-**Wave 1**
-- [x] 084-01-PLAN.md — Implement impute_camera_counts() in R/impute-camera-counts.R, add glmmTMB to DESCRIPTION Suggests, register in _pkgdown.yml, run devtools::document()
-
-**Wave 2** *(blocked on Wave 1 completion)*
-- [x] 084-02-PLAN.md — Write tests/testthat/test-impute-camera-counts.R and run devtools::check() quality gate
-
-Cross-cutting constraints: `impute_camera_counts()` exported and importable before tests run; `add_counts()` column contract (schema-compatible output with `.imputed` flag and integer counts) required in both plans.
-
-### Phase 85: Mark-Recapture Harvest Estimators
-**Goal**: Biologists can estimate angler population size from mark-recapture data using Chapman (default), Petersen, or Schnabel estimators via `estimate_angler_n()`, and can propagate that uncertainty into total harvest via `estimate_mr_harvest()`
-**Depends on**: Phase 82 (clean estimator baseline; no hard dependency on 83-84)
-**Requirements**: MR-01, MR-02, MR-03, MR-04, MR-05, MR-06
+### Phase 93: Reporting Exports
+**Goal**: Analysts can extract a flat tibble from any `creel_estimates` object via `tidy()` and write estimates directly to CSV or Excel via `write_estimates()`, enabling reproducible reporting without manual coercion
+**Depends on**: Phase 92 (clean rcmdcheck baseline before adding new exported functions)
+**Requirements**: EXPORT-01, EXPORT-02
 **Success Criteria** (what must be TRUE):
-  1. User can call `estimate_angler_n(M, n, m)` with the Chapman correction (default) and receive a population size estimate with SE and CI
-  2. User can request the unadjusted Petersen estimator via `method = "petersen"` when recaptures m >= 7
-  3. User can pass multi-occasion data and request the Schnabel estimator via `method = "schnabel"`
-  4. The function aborts with informative `cli_abort()` messages on impossible inputs (m = 0, m > n, m > M)
-  5. Return value is a `creel_estimates` S3 object — `compare_designs()` and `autoplot()` work without modification
-  6. User can call `estimate_mr_harvest(N_hat, se_N, harvest_rate)` and receive total harvest with delta-method SE propagated from N_hat uncertainty
-**Plans**: 2 plans
+  1. `tidy(estimates)` called on any object with class `creel_estimates` returns a tibble where each row is one estimate and columns include at minimum the estimate value, SE, and CI bounds — no list-columns, no nested data frames
+  2. `tidy()` works consistently across all estimator outputs that return `creel_estimates` objects: `estimate_total_harvest_br()`, `estimate_total_catch()`, `estimate_angler_n()`, `estimate_mr_harvest()`, and `estimate_exploitation_rate()`
+  3. `write_estimates(estimates, path = "out.csv")` writes a CSV that, when read back with `read.csv()`, contains the same rows and columns as `tidy(estimates)`
+  4. `write_estimates(estimates, path = "out.xlsx")` writes an Excel file when the `openxlsx` or `writexl` package is available (guarded with an informative error if not installed)
+  5. `rcmdcheck` continues to pass with 0 warnings after the new exports and their Rd documentation are added
+**Plans**: TBD
+**UI hint**: no
 
-Plans:
+---
 
-**Wave 1**
-- [x] 085-01-PLAN.md — Implement estimate_angler_n() and estimate_mr_harvest() in R/creel-estimates-mark-recapture.R, run devtools::document(), update _pkgdown.yml
-
-**Wave 2** *(blocked on Wave 1 completion)*
-- [x] 085-02-PLAN.md — Write test-estimate-angler-n.R and test-estimate-mr-harvest.R, run devtools::check() quality gate
-
-### Phase 86: Stratification Audit
-**Goal**: Biologists can evaluate per-stratum effort precision from a completed creel design or pilot summary statistics, simulate strata merges, and compute Neyman-optimal reallocation of a fixed sampling budget
-**Depends on**: Phase 82 (clean package baseline; no hard dependency on 83-85)
-**Requirements**: STRAT-01, STRAT-02, STRAT-03, STRAT-04, STRAT-05
+### Phase 94: Bootstrap Confidence Intervals
+**Goal**: Analysts can request bootstrap CIs from the four primary estimators by passing `ci_method = "bootstrap"`, giving interval estimates that do not rely on delta-method normality assumptions
+**Depends on**: Phase 93 (EXPORT surface complete; `tidy()` output is verifiable test target for bootstrap CI columns)
+**Requirements**: BOOT-01, BOOT-02, BOOT-03, BOOT-04
 **Success Criteria** (what must be TRUE):
-  1. User can call `audit_strata(creel_design)` or `audit_strata(N_h, ybar_h, s2_h)` and receive per-stratum RSE, n, a meets-target flag, and DEFF in a `creel_strata_audit` S3 object
-  2. User can call `simulate_strata_collapse(audit, merge_strata)` specifying strata to merge and receive a before/after precision comparison as a tibble
-  3. User can call `reallocate_strata(n_total, N_h, s2_h)` and receive Neyman-optimal sample counts per stratum as a named vector
-  4. `creel_strata_audit` output includes DEFF to quantify the value of the current stratification scheme relative to simple random sampling
-  5. `rcmdcheck` passes with 0 errors and 0 warnings after all three functions are added
-**Plans**: 2 plans
+  1. `estimate_total_harvest_br(design, ci_method = "bootstrap")` returns a `creel_estimates` object whose `tidy()` output includes `ci_lo_boot` and `ci_hi_boot` columns alongside the existing delta-method columns
+  2. `estimate_total_catch(design, ci_method = "bootstrap")` returns bootstrap CI columns under the same contract
+  3. `estimate_angler_n(design, ci_method = "bootstrap")` returns bootstrap CI columns; the bootstrap samples the mark-recapture counts rather than survey replicates
+  4. `estimate_mr_harvest(design, ci_method = "bootstrap")` propagates bootstrap uncertainty from `estimate_angler_n()` through the harvest calculation
+  5. All four functions with `ci_method = "delta"` (the default) produce results numerically identical to their pre-bootstrap-CI outputs, confirmed by snapshot tests
+**Plans**: TBD
 
-Plans:
-
-**Wave 1**
-- [ ] 086-01-PLAN.md — Implement R/strata-audit.R (audit_strata generic + creel_design/default methods, simulate_strata_collapse, reallocate_strata), run devtools::document(), update _pkgdown.yml
-
-**Wave 2** *(blocked on Wave 1 completion)*
-- [ ] 086-02-PLAN.md — Write tests/testthat/test-strata-audit.R (Tests A-X covering STRAT-01..STRAT-05) and run rcmdcheck quality gate
+---
 
 ## Progress
 
@@ -175,4 +180,11 @@ Plans:
 | 84. Camera Missing Data Imputation | v1.6.0 | 2/2 | Complete | 2026-05-03 |
 | 85. Mark-Recapture Harvest Estimators | v1.6.0 | 2/2 | Complete | 2026-05-04 |
 | 86. Stratification Audit | v1.6.0 | 2/2 | Complete | 2026-05-05 |
-| 87. v1.6.0 Tech Debt Cleanup | v1.6.0 | 0/1 | Not started | - |
+| 87. v1.6.0 Tech Debt Cleanup | v1.6.0 | 1/1 | Complete | 2026-05-05 |
+| 88. httr2 Hardening and API Fetch Methods | v1.7.0 | 3/3 | Complete | 2026-05-09 |
+| 89. Discovery Generics | v1.7.0 | 2/2 | Complete | 2026-05-10 |
+| 90. Real-Data Validation | v1.7.0 | 2/2 | Complete | 2026-05-11 |
+| 91. API Security and Hardening | v1.8.0 | 0/TBD | Not started | - |
+| 92. Package Health Gate | v1.8.0 | 0/TBD | Not started | - |
+| 93. Reporting Exports | v1.8.0 | 0/TBD | Not started | - |
+| 94. Bootstrap Confidence Intervals | v1.8.0 | 0/TBD | Not started | - |

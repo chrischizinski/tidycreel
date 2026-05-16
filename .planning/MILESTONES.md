@@ -1,5 +1,42 @@
 # Milestones
 
+## v1.7.0 — API Connection & Real-Data Validation (Shipped: 2026-05-11)
+
+**Phases:** 88–90 | **Plans:** 7 | **Timeline:** 2026-05-09 → 2026-05-11 (3 days)
+**Files changed:** 51 (+7,204 / −1,121 lines)
+
+**Key accomplishments:**
+1. Promoted `httr2` to `Imports` in `tidycreel.connect/DESCRIPTION`; hardened `.api_fetch()` with `req_error`/`req_retry` and structured `cli_abort` error messages including HTTP status and API error body (Phase 88)
+2. Implemented `fetch_interviews.creel_connection_api` and `fetch_counts.creel_connection_api` establishing the canonical pattern: fetch → early-empty-return → NGPC field rename → coerce → validate (Phase 88)
+3. Implemented `fetch_catch`, `fetch_harvest_lengths`, and `fetch_release_lengths` for `creel_connection_api` with synthesized UIDs and constant `length_type` injection; `iiUID` (no underscore) vs `ii_UID` join-key pitfall documented (Phase 88)
+4. Created `creel-discovery.R` with `list_creels()` and `search_creels()` S3 generics; API method uses `.api_fetch()` with `no_uid_filter = TRUE`; CSV/SQL stubs return permanent `cli_abort` (Phase 89)
+5. Created Calamus 2016 fixture CSVs (6 files: interviews, counts, catch, harvest_lengths, release_lengths, reference-outputs) from real NGPC bus-route survey data (Phase 90)
+6. Created `inst/validation/calamus-2016-validation.R` — standalone bus-route estimation pipeline validates effort, total catch, and harvest rate all within 0.1% of archived reference values; offline-capable (Phase 90)
+
+**Tech Debt (carry-forward to v1.8.0):**
+- NGPC discovery field names unconfirmed (TODO stubs in `creel-discovery.R`)
+- `list_creels()` silent 0-column return when rename map fields all miss (WR-01)
+- Bus-route API E2E gap: `fetch_interviews` missing `n_counted`/`n_interviewed` columns
+- Validation script lacks working-directory guard (W-01)
+- Pre-existing rcmdcheck warnings in tidycreel.connect (non-ASCII, missing VignetteBuilder)
+
+---
+
+## v1.6.0 — Analytical Extensions II (Shipped: 2026-05-06)
+
+**Phases:** 83–87 | **Plans:** 9 | **Timeline:** 2026-04-28 → 2026-05-06 (8 days)
+**Files changed:** 152 (+10,081 / −190 lines) | **Tests:** 2556 → 2667 (+111)
+
+**Key accomplishments:**
+1. Implemented `creel_n_camera()` — Cochran (1977) stratified sample-size with Feltz-Middaugh (2025) minimum-day warnings; output shape matches `creel_n_effort()` (Phase 83)
+2. Implemented `impute_camera_counts()` — Poisson GLM default (Hartill 2016) + NB GLMM opt-in (Afrifa-Yamoah 2020) for camera outage fill-in; schema-compatible with `add_counts()`; `.imputed` flag; CAMP-01..05 satisfied (Phase 84)
+3. Implemented `estimate_angler_n()` — Chapman (default), Petersen (m ≥ 7), and Schnabel closed-population estimators with input guards, Poisson/normal CI branches, and `creel_estimates` S3 output (Phase 85)
+4. Implemented `estimate_mr_harvest()` — delta-method harvest propagation from N_hat uncertainty; H = N_hat × rate; SE = rate × se_N (Phase 85)
+5. Implemented `audit_strata()`, `simulate_strata_collapse()`, `reallocate_strata()` — effort-precision stratification audit, before/after merge simulation, and Neyman-optimal reallocation of fixed sampling budget (Phase 86)
+6. Closed all 6 v1.6.0 advisory items — corrected NB GLMM docs, fixed Petersen variance_method label, guarded Schnabel ci_hi, added harvest_rate > 1 test, fixed .imputed false-positive logic, generated Phase 86 VERIFICATION.md (Phase 87)
+
+---
+
 ## M024 / v1.5.0 — Analytical Extensions (Shipped: 2026-04-28)
 
 **Phases:** 80–82 | **Plans:** 8 | **Timeline:** 2026-04-26 → 2026-04-28 (3 days)
