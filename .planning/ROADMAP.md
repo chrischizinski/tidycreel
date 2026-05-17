@@ -141,7 +141,12 @@ Plans:
   2. `rcmdcheck::rcmdcheck(args = c("--no-manual", "--as-cran"), error_on = "warning")` exits with 0 errors and 0 warnings across both the main package and `tidycreel.connect`
   3. The non-ASCII character warning (if in tidycreel.connect) is resolved by replacing the offending character or adding a `\uXXXX` escape
   4. The VignetteBuilder warning is resolved by either adding the correct `VignetteBuilder:` field to DESCRIPTION or removing the vignette infrastructure that triggers it
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 92-01-PLAN.md — QUAL-01: WD guard in calamus-2016-validation.R + test-validation-guard.R
+- [ ] 92-02-PLAN.md — QUAL-02: VignetteBuilder + knitr/rmarkdown Suggests in tidycreel.connect/DESCRIPTION + vignette smoke test
+- [ ] 92-03-PLAN.md — QUAL-01+02 gate: rcmdcheck both packages confirm 0 errors, 0 warnings
 
 ---
 
@@ -190,6 +195,6 @@ Plans:
 | 89. Discovery Generics | v1.7.0 | 2/2 | Complete | 2026-05-10 |
 | 90. Real-Data Validation | v1.7.0 | 2/2 | Complete | 2026-05-11 |
 | 91. API Security and Hardening | v1.8.0 | 0/3 | Not started | - |
-| 92. Package Health Gate | v1.8.0 | 0/TBD | Not started | - |
+| 92. Package Health Gate | v1.8.0 | 0/3 | Not started | - |
 | 93. Reporting Exports | v1.8.0 | 0/TBD | Not started | - |
 | 94. Bootstrap Confidence Intervals | v1.8.0 | 0/TBD | Not started | - |
