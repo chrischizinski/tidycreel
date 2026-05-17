@@ -23,7 +23,10 @@ Imports:
 Suggests:
     config,
     duckdb,
+    knitr,
     odbc,
+    rmarkdown,
     testthat (>= 3.0.0),
     withr
+VignetteBuilder: knitr
 Config/testthat/edition: 3
