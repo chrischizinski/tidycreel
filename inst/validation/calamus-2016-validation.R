@@ -5,14 +5,22 @@
 # Usage: Rscript inst/validation/calamus-2016-validation.R
 #   from the package root directory.
 #
+# **MUST be run from the package root directory (where DESCRIPTION lives).**
+# Use Rscript from that directory; do not source() from subdirectories.
+#
 # Offline: reads only static CSV files in inst/extdata/calamus-2016/
 # Fully self-contained — no external service calls are made.
+
+if (!file.exists("DESCRIPTION")) {
+  stop("This script must be run from the package root (the directory containing DESCRIPTION). ",
+       "Set your working directory there before running.")
+}
 
 suppressPackageStartupMessages({
   devtools::load_all(".")
 })
 
-# Assume working directory is package root (documented in header above)
+# Working directory is package root (verified by DESCRIPTION guard above)
 fixture_dir <- file.path("inst", "extdata", "calamus-2016")
 
 # ---- 1. Load fixture data ----
