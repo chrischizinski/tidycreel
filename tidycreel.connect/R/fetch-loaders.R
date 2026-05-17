@@ -139,7 +139,8 @@ fetch_interviews.creel_connection_api <- function(conn, ...) {
 #' @param ... Reserved for future arguments.
 #'
 #' @return A data frame with canonical columns: `date` (Date),
-#'   `angler_count` (numeric). Extra CSV columns are dropped.
+#'   `bank_anglers` (numeric), `angler_boats` (numeric), `non_ang_boats`
+#'   (numeric). Extra CSV columns are dropped.
 #' @export
 fetch_counts <- function(conn, ...) UseMethod("fetch_counts")
 
@@ -147,14 +148,18 @@ fetch_counts <- function(conn, ...) UseMethod("fetch_counts")
 fetch_counts.creel_connection_csv <- function(conn, ...) {
   df <- .read_csv_safe(conn$con$counts)
   rename_map <- c(
-    date         = "date_col",
-    angler_count = "count_col"
+    date          = "date_col",
+    bank_anglers  = "bank_anglers_col",
+    angler_boats  = "angler_boats_col",
+    non_ang_boats = "non_ang_boats_col"
   )
   df <- .rename_to_canonical(df, conn$schema, rename_map)
   if ("date" %in% names(df)) {
     df$date <- as.Date(df$date, tryFormats = c("%Y-%m-%d", "%m/%d/%Y"))
   }
-  if ("angler_count" %in% names(df)) df$angler_count <- as.numeric(df$angler_count)
+  if ("bank_anglers"  %in% names(df)) df$bank_anglers  <- as.numeric(df$bank_anglers)
+  if ("angler_boats"  %in% names(df)) df$angler_boats  <- as.numeric(df$angler_boats)
+  if ("non_ang_boats" %in% names(df)) df$non_ang_boats <- as.numeric(df$non_ang_boats)
   validate_fetch_counts(df) # nolint: object_usage_linter
   df
 }
@@ -172,20 +177,28 @@ fetch_counts.creel_connection_api <- function(conn, ...) {
   if (nrow(raw_df) == 0L) {
     return(data.frame(
       date             = as.Date(character(0)),
-      angler_count     = numeric(0),
+      bank_anglers     = numeric(0),
+      angler_boats     = numeric(0),
+      non_ang_boats    = numeric(0),
       stringsAsFactors = FALSE
     ))
   }
 
   # Hardcoded NGPC field names — do NOT route through creel_schema (CONTEXT.md D-01 through D-04)
+  # bank_anglers = anglers on shore; angler_boats = boats (not anglers); non_ang_boats = boats without anglers
+  # boat angler count is derived from angler_boats * mean(anglers/boat) from interview data — not a raw field
   api_rename_map <- c(
-    date         = "cd_Date",
-    angler_count = "ii_NumberAnglers"  # TODO: confirm field name with live API
+    date          = "cd_Date",
+    bank_anglers  = "c_BankAnglers",
+    angler_boats  = "c_AnglerBoats",
+    non_ang_boats = "c_NonAngBoats"
   )
   df <- .rename_api_to_canonical(raw_df, api_rename_map)
 
-  if ("date" %in% names(df))         df$date         <- .parse_api_date(df$date)
-  if ("angler_count" %in% names(df)) df$angler_count  <- as.numeric(df$angler_count)
+  if ("date"          %in% names(df)) df$date          <- .parse_api_date(df$date)
+  if ("bank_anglers"  %in% names(df)) df$bank_anglers  <- as.numeric(df$bank_anglers)
+  if ("angler_boats"  %in% names(df)) df$angler_boats  <- as.numeric(df$angler_boats)
+  if ("non_ang_boats" %in% names(df)) df$non_ang_boats <- as.numeric(df$non_ang_boats)
 
   validate_fetch_counts(df) # nolint: object_usage_linter
   df

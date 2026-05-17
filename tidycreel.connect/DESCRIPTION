@@ -18,6 +18,7 @@ Imports:
     DBI,
     httr2 (>= 1.0.0),
     readr,
+    tibble,
     tidycreel
 Suggests:
     config,

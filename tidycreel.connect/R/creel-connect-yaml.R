@@ -160,6 +160,8 @@ creel_connect_from_yaml <- function(path, config = "default") {
         "i" = "Install it with {.code install.packages('odbc')}."
       ))
     }
+    # WARNING: cfg$username and cfg$password must come from Sys.getenv() via YAML !expr tags.
+    # Do NOT log or print cfg$password — credentials are validated non-empty above.
     dbi_con <- DBI::dbConnect(
       odbc::odbc(),
       Driver   = "ODBC Driver 17 for SQL Server",

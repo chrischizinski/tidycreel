@@ -182,6 +182,8 @@ creel_connect_api <- function(
   }
 
   auth <- con_info$auth
+  # WARNING: Do NOT print auth or req objects after this point — auth$token will
+  # leak to logs. Use httr2::req_dry_run() for debugging; httr2 redacts auth headers.
   if (!is.null(auth)) {
     if (auth$type == "bearer") {
       req <- httr2::req_auth_bearer_token(req, auth$token)
@@ -230,7 +232,9 @@ creel_connect_api <- function(
   if (is.null(result) || (is.list(result) && length(result) == 0L)) {
     return(data.frame())
   }
-  as.data.frame(result)
+  df <- as.data.frame(result)
+  names(df) <- trimws(names(df))
+  df
 }
 
 # Parse a date column that may arrive as "YYYY-MM-DD" or "YYYY-MM-DDTHH:MM:SS"

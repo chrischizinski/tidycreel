@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.8.0
-milestone_name: Exports, Bootstrap CIs, and API Hardening
-status: planning
-stopped_at: ""
-last_updated: "2026-05-16T00:00:00.000Z"
-last_activity: 2026-05-16
+milestone_name: — Exports, Bootstrap CIs, and API Hardening
+status: executing
+stopped_at: v1.8.0 requirements defined; roadmap creation next
+last_updated: "2026-05-16"
+last_activity: 2026-05-16 -- Phase 91 complete; all 3 plans done; 153 connect tests, 2668 main tests
 progress:
-  total_phases: 0
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_phases: 7
+  completed_phases: 4
+  total_plans: 11
+  completed_plans: 11
+  percent: 100
 ---
 
 # Project State
@@ -21,18 +21,19 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-16)
 
 **Core value:** A biologist should be able to go from survey design to package-ready estimates, plots, summaries, and documentation without stitching together a custom analysis stack.
-**Current focus:** v1.8.0 — Exports, Bootstrap CIs, and API Hardening
+**Current focus:** Phase 91 — API Security and Hardening
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-05-16 — Milestone v1.8.0 started
+Phase: 91 (API Security and Hardening) — COMPLETE
+Plan: 3 of 3
+Status: Phase 91 complete; all plans done; 153 connect + 2668 main tests pass
+Last activity: 2026-05-16 -- Phase 91 complete
 
 ## Previous Milestone Archive
 
 All v1.7.0 work archived:
+
 - `.planning/milestones/v1.7-ROADMAP.md` — full phase archive
 - `.planning/milestones/v1.7-REQUIREMENTS.md` — all 9 requirements marked complete
 - `.planning/milestones/v1.7.0-MILESTONE-AUDIT.md` — audit report (tech_debt)
@@ -59,5 +60,5 @@ All v1.7.0 work archived:
 ## Session Continuity
 
 Last session: 2026-05-16
-Stopped at: v1.8.0 requirements defined; roadmap creation next
-Resume: Run `/gsd-plan-phase 91` after roadmap is committed
+Stopped at: Phase 91 complete (all 3 plans: SEC-01 security audit, API-10 tibble fix, API-09+API-11 counts schema refactor)
+Resume: Phase 91 complete — next phase TBD based on v1.8.0 roadmap

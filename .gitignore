@@ -77,6 +77,9 @@ GEMINI.md
 .gsd/
 .bg-shell/
 
+# Local-only probe/validation scripts (contain live API env var usage — not distributed)
+inst/validation/ngpc-field-discovery.R
+
 # External validation fixture data (local-only, downloaded from live NGPC API — not distributed)
 inst/extdata/benson-2021/
 inst/extdata/flanagan-2021/

@@ -38,7 +38,8 @@ COL_TO_TABLE <- list( # nolint: object_name_linter
     "refused_col", "interview_uid_col"
   ),
   counts = c(
-    "count_col", "n_counted_col"
+    "count_col", "n_counted_col",
+    "bank_anglers_col", "angler_boats_col", "non_ang_boats_col"
   ),
   catch = c(
     "catch_uid_col", "species_col", "catch_count_col", "catch_type_col"
@@ -81,7 +82,10 @@ new_creel_schema <- function(survey_type, mappings) {
 #' @param catch_col Column name for catch count in interviews.
 #' @param effort_col Column name for effort (hours) in interviews.
 #' @param trip_status_col Column name for trip status in interviews.
-#' @param count_col Column name for angler count in counts.
+#' @param count_col Column name for total angler count in counts (legacy single-column format).
+#' @param bank_anglers_col Column name for bank (shore) angler count in counts.
+#' @param angler_boats_col Column name for boats carrying anglers in counts.
+#' @param non_ang_boats_col Column name for non-angler boats in counts (NGPC-specific).
 #' @param catch_uid_col Column name for catch unique identifier.
 #' @param interview_uid_col Column name for interview unique identifier.
 #' @param species_col Column name for species.
@@ -143,6 +147,9 @@ creel_schema <- function(
   n_anglers_col = NULL,
   n_counted_col = NULL,
   n_interviewed_col = NULL,
+  bank_anglers_col = NULL,
+  angler_boats_col = NULL,
+  non_ang_boats_col = NULL,
   angler_type_col = NULL,
   angler_method_col = NULL,
   species_sought_col = NULL,
@@ -174,6 +181,9 @@ creel_schema <- function(
     n_anglers_col      = n_anglers_col,
     n_counted_col      = n_counted_col,
     n_interviewed_col  = n_interviewed_col,
+    bank_anglers_col   = bank_anglers_col,
+    angler_boats_col   = angler_boats_col,
+    non_ang_boats_col  = non_ang_boats_col,
     angler_type_col    = angler_type_col,
     angler_method_col  = angler_method_col,
     species_sought_col = species_sought_col,
