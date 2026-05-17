@@ -165,7 +165,7 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 92-01-PLAN.md — QUAL-01: WD guard in calamus-2016-validation.R + test-validation-guard.R
+- [x] 92-01-PLAN.md — QUAL-01: WD guard in calamus-2016-validation.R + test-validation-guard.R
 - [x] 92-02-PLAN.md — QUAL-02: VignetteBuilder + knitr/rmarkdown Suggests in tidycreel.connect/DESCRIPTION + vignette smoke test
 
 **Wave 2** *(blocked on Wave 1 completion)*
@@ -225,6 +225,6 @@ Plans:
 | 89. Discovery Generics | v1.7.0 | 2/2 | Complete | 2026-05-10 |
 | 90. Real-Data Validation | v1.7.0 | 2/2 | Complete | 2026-05-11 |
 | 91. API Security and Hardening | v1.8.0 | 0/3 | Not started | - |
-| 92. Package Health Gate | v1.8.0 | 1/3 | In Progress|  |
+| 92. Package Health Gate | v1.8.0 | 2/3 | In Progress|  |
 | 93. Reporting Exports | v1.8.0 | 0/TBD | Not started | - |
 | 94. Bootstrap Confidence Intervals | v1.8.0 | 0/TBD | Not started | - |
