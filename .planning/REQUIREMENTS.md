@@ -29,7 +29,7 @@
 ### Quality / Package Health (QUAL)
 
 - [ ] **QUAL-01**: Validation script `calamus-2016-validation.R` has working-directory guard so it runs correctly from any context
-- [ ] **QUAL-02**: `rcmdcheck` passes with 0 warnings (non-ASCII character and VignetteBuilder warnings resolved)
+- [x] **QUAL-02**: `rcmdcheck` passes with 0 warnings (non-ASCII character and VignetteBuilder warnings resolved)
 
 ### Security (SEC)
 
