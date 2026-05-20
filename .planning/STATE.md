@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.8.0
 milestone_name: Exports, Bootstrap CIs, and API Hardening
 status: executing
-stopped_at: Phase 92 complete — all 3 plans done, gate confirmed clean
+stopped_at: Phases 91 and 92 confirmed complete — ready for Phase 93
 last_updated: "2026-05-20T00:00:00.000Z"
 last_activity: 2026-05-20
 progress:
-  total_phases: 7
-  completed_phases: 5
-  total_plans: 14
-  completed_plans: 14
-  percent: 71
+  total_phases: 4
+  completed_phases: 2
+  total_plans: 9
+  completed_plans: 9
+  percent: 50
 ---
 
 # Project State
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-16)
 
 **Core value:** A biologist should be able to go from survey design to package-ready estimates, plots, summaries, and documentation without stitching together a custom analysis stack.
-**Current focus:** Phase 92 COMPLETE — ready for Phase 93 (Reporting Exports)
+**Current focus:** Phases 91 + 92 COMPLETE — ready for Phase 93 (Reporting Exports)
 
 ## Current Position
 
-Phase: 92 (Package Health Gate) — COMPLETE
-Plan: 3 of 3
-Status: All plans complete, gate confirmed
+Phase: 92 (Package Health Gate) — COMPLETE; Phase 91 (API Security) — COMPLETE
+Plan: both phases fully done
+Status: Ready for Phase 93
 Last activity: 2026-05-20
 
 ## Previous Milestone Archive
@@ -66,5 +66,5 @@ All v1.7.0 work archived:
 ## Session Continuity
 
 Last session: 2026-05-20
-Stopped at: Phase 92 complete — all 3 plans done, gate confirmed clean
+Stopped at: Phases 91 and 92 confirmed complete; ROADMAP and REQUIREMENTS synced
 Next: Phase 93 (Reporting Exports) — /gsd:plan-phase 93

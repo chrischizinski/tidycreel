@@ -22,9 +22,9 @@
 
 ### API Hardening (API)
 
-- [ ] **API-09**: NGPC discovery field names confirmed and TODO stubs resolved in all 6 `api_rename_map` entries
-- [ ] **API-10**: `list_creels()` returns empty tibble with correct column structure when no surveys found
-- [ ] **API-11**: `fetch_counts()` returns `n_counted` and `n_interviewed` for bus-route API connections
+- [x] **API-09**: NGPC discovery field names confirmed and TODO stubs resolved in all 6 `api_rename_map` entries
+- [x] **API-10**: `list_creels()` returns empty tibble with correct column structure when no surveys found
+- [x] **API-11**: `fetch_counts()` returns `n_counted` and `n_interviewed` for bus-route API connections
 
 ### Quality / Package Health (QUAL)
 
@@ -33,7 +33,7 @@
 
 ### Security (SEC)
 
-- [ ] **SEC-01**: `tidycreel.connect` API connection and YAML-credential code reviewed for security issues (token exposure, injection, credential storage patterns)
+- [x] **SEC-01**: `tidycreel.connect` API connection and YAML-credential code reviewed for security issues (token exposure, injection, credential storage patterns)
 
 ---
 

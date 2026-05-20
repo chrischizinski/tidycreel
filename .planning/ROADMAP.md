@@ -142,9 +142,9 @@ _(v1.7.0 phase details archived — see [.planning/milestones/v1.7-ROADMAP.md](m
 
 Plans:
 
-- [ ] 091-01-PLAN.md — SEC-01 security audit: audit and annotate credential handling in 4 tidycreel.connect source files
-- [ ] 091-02-PLAN.md — API-10 empty tibble guard: fix list_creels() empty-return to tibble, add tibble to DESCRIPTION, update test
-- [ ] 091-03-PLAN.md — API-09 + API-11 field confirmation: probe script, replace TODO stubs, add n_counted/n_interviewed to fetch_counts
+- [x] 091-01-PLAN.md — SEC-01 security audit: audit and annotate credential handling in 4 tidycreel.connect source files
+- [x] 091-02-PLAN.md — API-10 empty tibble guard: fix list_creels() empty-return to tibble, add tibble to DESCRIPTION, update test
+- [x] 091-03-PLAN.md — API-09 + API-11 field confirmation: probe script, replace TODO stubs, add n_counted/n_interviewed to fetch_counts
 
 ---
 
@@ -170,7 +170,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 92-03-PLAN.md — QUAL-01+02 gate: rcmdcheck both packages confirm 0 errors, 0 warnings
+- [x] 92-03-PLAN.md — QUAL-01+02 gate: rcmdcheck both packages confirm 0 errors, 0 warnings
 
 ---
 
@@ -224,7 +224,7 @@ Plans:
 | 88. httr2 Hardening and API Fetch Methods | v1.7.0 | 3/3 | Complete | 2026-05-09 |
 | 89. Discovery Generics | v1.7.0 | 2/2 | Complete | 2026-05-10 |
 | 90. Real-Data Validation | v1.7.0 | 2/2 | Complete | 2026-05-11 |
-| 91. API Security and Hardening | v1.8.0 | 0/3 | Not started | - |
-| 92. Package Health Gate | v1.8.0 | 2/3 | In Progress|  |
+| 91. API Security and Hardening | v1.8.0 | 3/3 | Complete | 2026-05-16 |
+| 92. Package Health Gate | v1.8.0 | 3/3 | Complete | 2026-05-20 |
 | 93. Reporting Exports | v1.8.0 | 0/TBD | Not started | - |
 | 94. Bootstrap Confidence Intervals | v1.8.0 | 0/TBD | Not started | - |
