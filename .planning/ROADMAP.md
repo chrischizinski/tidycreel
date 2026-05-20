@@ -187,8 +187,11 @@ Plans:
   4. `write_estimates(estimates, path = "out.xlsx")` writes an Excel file when the `openxlsx` or `writexl` package is available (guarded with an informative error if not installed)
   5. `rcmdcheck` continues to pass with 0 warnings after the new exports and their Rd documentation are added
 
-**Plans**: TBD
-**UI hint**: no
+**Plans**: 2 plans
+
+Plans:
+- [ ] 93-01-PLAN.md -- tidy.creel_estimates() S3 method, DESCRIPTION/NAMESPACE wiring, test-tidy-creel-estimates.R (EXPORT-01)
+- [ ] 93-02-PLAN.md -- write_estimates() tidy() path, WRITE-04 test update, rcmdcheck gate (EXPORT-02)
 
 ---
 
