@@ -16,9 +16,9 @@
 #' ## Authentication
 #'
 #' Three auth modes are supported via the `auth` argument:
-#' - `NULL` — no authentication (default)
-#' - `list(type = "bearer", token = "...")` — `Authorization: Bearer` header
-#' - `list(type = "api_key", key = "...", header = "X-API-Key")` — arbitrary
+#' - `NULL` -- no authentication (default)
+#' - `list(type = "bearer", token = "...")` -- `Authorization: Bearer` header
+#' - `list(type = "api_key", key = "...", header = "X-API-Key")` -- arbitrary
 #'   header name (defaults to `"X-API-Key"` if `header` is omitted)
 #'
 #' Credentials should be read from environment variables rather than stored
@@ -141,7 +141,7 @@ creel_connect_api <- function(
   )
 }
 
-# Validate an auth spec list — aborts on any invalid configuration
+# Validate an auth spec list -- aborts on any invalid configuration
 #' @noRd
 .validate_api_auth <- function(auth) {
   if (!is.list(auth) || is.null(auth$type)) {
@@ -182,7 +182,7 @@ creel_connect_api <- function(
   }
 
   auth <- con_info$auth
-  # WARNING: Do NOT print auth or req objects after this point — auth$token will
+  # WARNING: Do NOT print auth or req objects after this point -- auth$token will
   # leak to logs. Use httr2::req_dry_run() for debugging; httr2 redacts auth headers.
   if (!is.null(auth)) {
     if (auth$type == "bearer") {

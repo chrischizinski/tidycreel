@@ -16,9 +16,13 @@ if (!file.exists("DESCRIPTION")) {
        "Set your working directory there before running.")
 }
 
-suppressPackageStartupMessages({
-  devtools::load_all(".")
-})
+if (!isNamespaceLoaded("tidycreel")) {
+  if (requireNamespace("devtools", quietly = TRUE) && file.exists("R")) {
+    suppressPackageStartupMessages(devtools::load_all("."))
+  } else {
+    suppressPackageStartupMessages(library(tidycreel))
+  }
+}
 
 # Working directory is package root (verified by DESCRIPTION guard above)
 fixture_dir <- file.path("inst", "extdata", "calamus-2016")

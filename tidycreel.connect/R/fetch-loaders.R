@@ -90,7 +90,7 @@ fetch_interviews.creel_connection_sqlserver <- function(conn, ...) {
 fetch_interviews.creel_connection_api <- function(conn, ...) {
   raw_df <- .api_fetch(conn$con, "interviews")
 
-  # Early return for empty API response — avoids logical-typed columns failing validation
+  # Early return for empty API response -- avoids logical-typed columns failing validation
   if (nrow(raw_df) == 0L) {
     return(data.frame(
       interview_uid    = character(0),
@@ -102,7 +102,7 @@ fetch_interviews.creel_connection_api <- function(conn, ...) {
     ))
   }
 
-  # Hardcoded NGPC field names — do NOT route through creel_schema (CONTEXT.md D-01 through D-04)
+  # Hardcoded NGPC field names -- do NOT route through creel_schema (CONTEXT.md D-01 through D-04)
   api_rename_map <- c(
     interview_uid = "ii_UID",
     date          = "cd_Date",
@@ -111,7 +111,7 @@ fetch_interviews.creel_connection_api <- function(conn, ...) {
   )
   df <- .rename_api_to_canonical(raw_df, api_rename_map)
 
-  # Effort: arithmetic from two raw fields — only method requiring field arithmetic (API-01)
+  # Effort: arithmetic from two raw fields -- only method requiring field arithmetic (API-01)
   hours_col   <- "ii_TimeFishedHours"   # TODO: confirm field name with live API
   minutes_col <- "ii_TimeFishedMinutes" # TODO: confirm field name with live API
   if (hours_col %in% names(raw_df) && minutes_col %in% names(raw_df)) {
@@ -184,9 +184,9 @@ fetch_counts.creel_connection_api <- function(conn, ...) {
     ))
   }
 
-  # Hardcoded NGPC field names — do NOT route through creel_schema (CONTEXT.md D-01 through D-04)
+  # Hardcoded NGPC field names -- do NOT route through creel_schema (CONTEXT.md D-01 through D-04)
   # bank_anglers = anglers on shore; angler_boats = boats (not anglers); non_ang_boats = boats without anglers
-  # boat angler count is derived from angler_boats * mean(anglers/boat) from interview data — not a raw field
+  # boat angler count is derived from angler_boats * mean(anglers/boat) from interview data -- not a raw field
   api_rename_map <- c(
     date          = "cd_Date",
     bank_anglers  = "c_BankAnglers",
@@ -261,7 +261,7 @@ fetch_catch.creel_connection_api <- function(conn, ...) {
     ))
   }
 
-  # Hardcoded NGPC field names — do NOT route through creel_schema (CONTEXT.md D-01 through D-04)
+  # Hardcoded NGPC field names -- do NOT route through creel_schema (CONTEXT.md D-01 through D-04)
   api_rename_map <- c(
     interview_uid = "ii_UID",
     species       = "ir_Species",
@@ -270,7 +270,7 @@ fetch_catch.creel_connection_api <- function(conn, ...) {
   )
   df <- .rename_api_to_canonical(raw_df, api_rename_map)
 
-  # UID synthesis: catch_uid absent from API response — synthesize as row index (D-05, D-06)
+  # UID synthesis: catch_uid absent from API response -- synthesize as row index (D-05, D-06)
   if (!"catch_uid" %in% names(df)) {
     df$catch_uid <- seq_len(nrow(df))
   }
@@ -339,16 +339,16 @@ fetch_harvest_lengths.creel_connection_api <- function(conn, ...) {
     ))
   }
 
-  # Hardcoded NGPC field names — do NOT route through creel_schema (CONTEXT.md D-01 through D-04)
+  # Hardcoded NGPC field names -- do NOT route through creel_schema (CONTEXT.md D-01 through D-04)
   # NOTE: harvest/release lengths use iiUID (no underscore), NOT ii_UID used by interviews/catch
   api_rename_map <- c(
-    interview_uid = "iiUID",       # NOTE: no underscore — differs from ii_UID in interviews/catch
+    interview_uid = "iiUID",       # NOTE: no underscore -- differs from ii_UID in interviews/catch
     species       = "ih_Species",
     length_mm     = "ihl_Length"
   )
   df <- .rename_api_to_canonical(raw_df, api_rename_map)
 
-  # UID synthesis: length_uid absent from API response — synthesize as row index (D-05, D-06)
+  # UID synthesis: length_uid absent from API response -- synthesize as row index (D-05, D-06)
   if (!"length_uid" %in% names(df)) {
     df$length_uid <- seq_len(nrow(df))
   }
@@ -419,18 +419,18 @@ fetch_release_lengths.creel_connection_api <- function(conn, ...) {
     ))
   }
 
-  # Hardcoded NGPC field names — do NOT route through creel_schema (CONTEXT.md D-01 through D-04)
+  # Hardcoded NGPC field names -- do NOT route through creel_schema (CONTEXT.md D-01 through D-04)
   # NOTE: release lengths use iiUID (no underscore) same as harvest lengths
   api_rename_map <- c(
     interview_uid = "iiUID",          # NOTE: no underscore
     species       = "ir_Species",
     length_mm     = "ir_LengthGroup"
-    # ir_Count is NOT renamed — no canonical target; dropped silently by .rename_api_to_canonical
+    # ir_Count is NOT renamed -- no canonical target; dropped silently by .rename_api_to_canonical
     # TODO: confirm ir_Count aggregation policy with live API (CONTEXT.md D-03)
   )
   df <- .rename_api_to_canonical(raw_df, api_rename_map)
 
-  # UID synthesis: length_uid absent from API response — synthesize as row index (D-05, D-06)
+  # UID synthesis: length_uid absent from API response -- synthesize as row index (D-05, D-06)
   if (!"length_uid" %in% names(df)) {
     df$length_uid <- seq_len(nrow(df))
   }

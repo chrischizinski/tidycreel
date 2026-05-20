@@ -108,3 +108,4 @@
 ^kairo\.db$
 ^kairo\.db-shm$
 ^kairo\.db-wal$
+^graphify-out$

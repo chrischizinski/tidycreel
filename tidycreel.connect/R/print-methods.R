@@ -28,7 +28,7 @@ format.creel_connection <- function(x, ...) {
         cli::cli_text("  {padded} {cli::symbol$arrow_right} {x$con[[nm]]}")
       }
     } else if (x$backend == "api") {
-      # WARNING: do NOT add x$con$auth display here — auth$token must not appear in output
+      # WARNING: do NOT add x$con$auth display here -- auth$token must not appear in output
       cli::cli_text("Backend: API")
       cli::cli_text("  base_url:   {x$con$base_url}")
       cli::cli_text("  creel_uids: {length(x$con$creel_uids)} UID(s)")

@@ -26,13 +26,21 @@ test_that("validation script passes WD guard when run from package root", {
   # Source from the package root where DESCRIPTION exists.
   # The guard must NOT fire — any other error (e.g. from load_all or estimators)
   # is acceptable, but the DESCRIPTION guard stop() must not be reached.
-  # When loaded via devtools::load_all(), system.file(package = "tidycreel")
-  # returns the inst/ directory.  The actual package root (containing DESCRIPTION)
-  # is one level up.
-  pkg_root <- normalizePath(
-    dirname(system.file(package = "tidycreel")),
-    mustWork = FALSE
-  )
+  #
+  # Two contexts to handle:
+  #   devtools::load_all() — system.file(package = "tidycreel") returns inst/;
+  #     the actual package root (containing DESCRIPTION) is one level up.
+  #   Installed (rcmdcheck) — system.file(package = "tidycreel") IS the root
+  #     and already contains DESCRIPTION.
+  pkg_direct <- normalizePath(system.file(package = "tidycreel"), mustWork = FALSE)
+  pkg_root <- if (file.exists(file.path(pkg_direct, "DESCRIPTION"))) {
+    pkg_direct
+  } else {
+    normalizePath(dirname(pkg_direct), mustWork = FALSE)
+  }
+  if (!file.exists(file.path(pkg_root, "DESCRIPTION"))) {
+    skip("Cannot locate package root with DESCRIPTION in this context")
+  }
   withr::with_dir(pkg_root, {
     caught <- tryCatch(
       source(script_path, local = TRUE),
