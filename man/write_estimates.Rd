@@ -82,7 +82,7 @@ out
 \seealso{
 \code{\link[=summary.creel_estimates]{summary.creel_estimates()}}, \code{\link[=write_schedule]{write_schedule()}}
 
-Other "Reporting & Diagnostics": 
+Other "Reporting & Diagnostics":
 \code{\link{adjust_nonresponse}()},
 \code{\link{check_completeness}()},
 \code{\link{compare_variance}()},
@@ -101,6 +101,7 @@ Other "Reporting & Diagnostics":
 \code{\link{summarize_successful_parties}()},
 \code{\link{summarize_trips}()},
 \code{\link{summary.creel_estimates}()},
+\code{\link{tidy.creel_estimates}()},
 \code{\link{validate_creel_data}()},
 \code{\link{validate_design}()},
 \code{\link{validate_incomplete_trips}()},

@@ -49,7 +49,7 @@ Pre-season design check: runs creel_n_effort() and creel_n_cpue() per
 stratum and returns a pass/warn/fail status report.
 }
 \seealso{
-Other "Reporting & Diagnostics": 
+Other "Reporting & Diagnostics":
 \code{\link{adjust_nonresponse}()},
 \code{\link{check_completeness}()},
 \code{\link{compare_variance}()},
@@ -68,6 +68,7 @@ Other "Reporting & Diagnostics":
 \code{\link{summarize_successful_parties}()},
 \code{\link{summarize_trips}()},
 \code{\link{summary.creel_estimates}()},
+\code{\link{tidy.creel_estimates}()},
 \code{\link{validate_creel_data}()},
 \code{\link{validate_incomplete_trips}()},
 \code{\link{validation_report}()},

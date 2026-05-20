@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.8.0
 milestone_name: Exports, Bootstrap CIs, and API Hardening
 status: executing
-stopped_at: Phases 91 and 92 confirmed complete — ready for Phase 93
-last_updated: "2026-05-20T00:00:00.000Z"
-last_activity: 2026-05-20
+stopped_at: Phase 93 complete
+last_updated: "2026-05-20T20:00:00.000Z"
+last_activity: 2026-05-20 -- Phase 93 complete; tidy.creel_estimates() + write_estimates() tidy() path; 2690 tests pass
 progress:
-  total_phases: 4
-  completed_phases: 2
-  total_plans: 9
-  completed_plans: 9
-  percent: 50
+  total_phases: 7
+  completed_phases: 6
+  total_plans: 18
+  completed_plans: 16
+  percent: 86
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-16)
 
 **Core value:** A biologist should be able to go from survey design to package-ready estimates, plots, summaries, and documentation without stitching together a custom analysis stack.
-**Current focus:** Phases 91 + 92 COMPLETE — ready for Phase 93 (Reporting Exports)
+**Current focus:** Phases 91–93 COMPLETE — ready for Phase 94 (Bootstrap CIs)
 
 ## Current Position
 
-Phase: 92 (Package Health Gate) — COMPLETE; Phase 91 (API Security) — COMPLETE
-Plan: both phases fully done
-Status: Ready for Phase 93
-Last activity: 2026-05-20
+Phase: 93 (Reporting Exports) — COMPLETE
+Plan: both plans done (93-01: tidy.creel_estimates(); 93-02: write_estimates() tidy() path)
+Status: Ready to execute
+Last activity: 2026-05-20 -- Phase 93 planning complete
 
 ## Previous Milestone Archive
 
@@ -65,6 +65,6 @@ All v1.7.0 work archived:
 
 ## Session Continuity
 
-Last session: 2026-05-20
-Stopped at: Phases 91 and 92 confirmed complete; ROADMAP and REQUIREMENTS synced
+Last session: 2026-05-20T15:34:01.988Z
+Stopped at: Phase 93 context gathered
 Next: Phase 93 (Reporting Exports) — /gsd:plan-phase 93

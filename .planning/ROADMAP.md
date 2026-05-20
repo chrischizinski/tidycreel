@@ -48,7 +48,7 @@ tidycreel is an R package for creel survey design, data preparation, estimation,
 
 - [ ] **Phase 91: API Security and Hardening** — Audit `tidycreel.connect` for credential exposure and injection risks; confirm NGPC discovery field names; close `list_creels()` 0-column guard; patch `fetch_counts()` bus-route E2E gap
 - [ ] **Phase 92: Package Health Gate** — Add working-directory guard to the Calamus 2016 validation script; resolve all rcmdcheck warnings so the 0-warnings gate holds before new code lands
-- [ ] **Phase 93: Reporting Exports** — Implement `tidy()` S3 method for `creel_estimates` objects and `write_estimates()` CSV/Excel file-write helpers
+- [x] **Phase 93: Reporting Exports** — Implement `tidy()` S3 method for `creel_estimates` objects and `write_estimates()` CSV/Excel file-write helpers
 - [ ] **Phase 94: Bootstrap Confidence Intervals** — Add `ci_method = "bootstrap"` to `estimate_total_harvest_br()`, `estimate_total_catch()`, `estimate_angler_n()`, and `estimate_mr_harvest()`
 
 ## Phase Details
@@ -190,8 +190,13 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 93-01-PLAN.md -- tidy.creel_estimates() S3 method, DESCRIPTION/NAMESPACE wiring, test-tidy-creel-estimates.R (EXPORT-01)
-- [ ] 93-02-PLAN.md -- write_estimates() tidy() path, WRITE-04 test update, rcmdcheck gate (EXPORT-02)
+**Wave 1**
+
+- [x] 93-01-PLAN.md -- tidy.creel_estimates() S3 method, DESCRIPTION/NAMESPACE wiring, test-tidy-creel-estimates.R (EXPORT-01)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [x] 93-02-PLAN.md -- write_estimates() tidy() path, WRITE-04 test update, rcmdcheck gate (EXPORT-02)
 
 ---
 
@@ -229,5 +234,5 @@ Plans:
 | 90. Real-Data Validation | v1.7.0 | 2/2 | Complete | 2026-05-11 |
 | 91. API Security and Hardening | v1.8.0 | 3/3 | Complete | 2026-05-16 |
 | 92. Package Health Gate | v1.8.0 | 3/3 | Complete | 2026-05-20 |
-| 93. Reporting Exports | v1.8.0 | 0/TBD | Not started | - |
+| 93. Reporting Exports | v1.8.0 | 2/2 | Complete | 2026-05-20 |
 | 94. Bootstrap Confidence Intervals | v1.8.0 | 0/TBD | Not started | - |
