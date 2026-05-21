@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.8.0
 milestone_name: Exports, Bootstrap CIs, and API Hardening
 status: executing
-stopped_at: Phase 93 complete
-last_updated: "2026-05-20T20:00:00.000Z"
-last_activity: 2026-05-20 -- Phase 93 complete; tidy.creel_estimates() + write_estimates() tidy() path; 2690 tests pass
+stopped_at: Phase 94 complete
+last_updated: "2026-05-20T22:00:00.000Z"
+last_activity: 2026-05-20 -- Phase 94 complete; bootstrap CIs for all 4 estimators; 2729 tests pass, rcmdcheck 0 warnings
 progress:
   total_phases: 7
-  completed_phases: 6
-  total_plans: 18
-  completed_plans: 16
-  percent: 86
+  completed_phases: 7
+  total_plans: 21
+  completed_plans: 19
+  percent: 90
 ---
 
 # Project State
@@ -21,12 +21,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-16)
 
 **Core value:** A biologist should be able to go from survey design to package-ready estimates, plots, summaries, and documentation without stitching together a custom analysis stack.
-**Current focus:** Phases 91–93 COMPLETE — ready for Phase 94 (Bootstrap CIs)
+**Current focus:** All v1.8.0 phases (91–94) COMPLETE — ready for milestone close
 
 ## Current Position
 
-Phase: 93 (Reporting Exports) — COMPLETE
-Plan: both plans done (93-01: tidy.creel_estimates(); 93-02: write_estimates() tidy() path)
+Phase: 94 (Bootstrap Confidence Intervals) — COMPLETE
+Plan: all three plans done; bootstrap CIs in estimate_total_harvest(), estimate_total_catch(), estimate_angler_n(), estimate_mr_harvest()
 Status: Ready to execute
 Last activity: 2026-05-20 -- Phase 93 planning complete
 

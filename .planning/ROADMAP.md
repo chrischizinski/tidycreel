@@ -49,7 +49,7 @@ tidycreel is an R package for creel survey design, data preparation, estimation,
 - [ ] **Phase 91: API Security and Hardening** — Audit `tidycreel.connect` for credential exposure and injection risks; confirm NGPC discovery field names; close `list_creels()` 0-column guard; patch `fetch_counts()` bus-route E2E gap
 - [ ] **Phase 92: Package Health Gate** — Add working-directory guard to the Calamus 2016 validation script; resolve all rcmdcheck warnings so the 0-warnings gate holds before new code lands
 - [x] **Phase 93: Reporting Exports** — Implement `tidy()` S3 method for `creel_estimates` objects and `write_estimates()` CSV/Excel file-write helpers
-- [ ] **Phase 94: Bootstrap Confidence Intervals** — Add `ci_method = "bootstrap"` to `estimate_total_harvest_br()`, `estimate_total_catch()`, `estimate_angler_n()`, and `estimate_mr_harvest()`
+- [x] **Phase 94: Bootstrap Confidence Intervals** — Add `ci_method = "bootstrap"` to `estimate_total_harvest_br()`, `estimate_total_catch()`, `estimate_angler_n()`, and `estimate_mr_harvest()`
 
 ## Phase Details
 
@@ -213,7 +213,12 @@ Plans:
   4. `estimate_mr_harvest(design, ci_method = "bootstrap")` propagates bootstrap uncertainty from `estimate_angler_n()` through the harvest calculation
   5. All four functions with `ci_method = "delta"` (the default) produce results numerically identical to their pre-bootstrap-CI outputs, confirmed by snapshot tests
 
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 94-01-PLAN.md — Survey bootstrap: ci_method threading through br_build_estimates(), estimate_total_harvest(), estimate_total_catch()
+- [ ] 94-02-PLAN.md — MR bootstrap: parametric rbinom bootstrap for estimate_angler_n() and harvest propagation in estimate_mr_harvest()
+- [ ] 94-03-PLAN.md — Snapshot regression gate + rcmdcheck clean
 
 ---
 
@@ -235,4 +240,4 @@ Plans:
 | 91. API Security and Hardening | v1.8.0 | 3/3 | Complete | 2026-05-16 |
 | 92. Package Health Gate | v1.8.0 | 3/3 | Complete | 2026-05-20 |
 | 93. Reporting Exports | v1.8.0 | 2/2 | Complete | 2026-05-20 |
-| 94. Bootstrap Confidence Intervals | v1.8.0 | 0/TBD | Not started | - |
+| 94. Bootstrap Confidence Intervals | v1.8.0 | 3/3 | Complete | 2026-05-20 |
