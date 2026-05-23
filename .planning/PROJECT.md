@@ -8,32 +8,21 @@ tidycreel is an R package for creel survey design, data preparation, estimation,
 
 A biologist should be able to go from survey design to package-ready estimates, plots, summaries, and documentation without stitching together a custom analysis stack.
 
-## Current Milestone: v1.8.0 — Exports, Bootstrap CIs, and API Hardening
-
-**Goal:** Add tidy/write export methods and bootstrap confidence intervals to core estimators, while closing v1.7.0 carry-forward gaps in API discovery and rcmdcheck cleanliness.
-
-**Target features:**
-- `tidy()` methods for estimate objects (tibble coercion)
-- `write_estimates()` file-write helpers (CSV/Excel)
-- Bootstrap CI for `estimate_total_harvest_br()`, `estimate_total_catch()`, `estimate_angler_n()`, `estimate_mr_harvest()`
-- NGPC discovery field name confirmation + `list_creels()` 0-column return guard
-- Bus-route API E2E gap closure (`n_counted`/`n_interviewed` absent from fetch)
-- Validation script working-directory guard + rcmdcheck warning cleanup
-
 ## Current State
 
-**Package version:** `1.7.0` (shipped 2026-05-11, git tag v1.7.0)
-**Last milestone:** v1.7.0 — API Connection & Real-Data Validation (Phases 88–90, 9/9 requirements satisfied)
+**Package version:** `1.8.0` (shipped 2026-05-23, git tag v1.8.0)
+**Last milestone:** v1.8.0 — Exports, Bootstrap CIs, and API Hardening (Phases 91–94, 12/12 requirements satisfied)
 
-**What shipped in v1.7.0:**
-- `fetch_interviews`, `fetch_counts`, `fetch_catch`, `fetch_harvest_lengths`, `fetch_release_lengths` for `creel_connection_api` (API-01–05)
-- Hardened `.api_fetch()` with `req_error`/`req_retry` and structured `cli_abort` (API-06)
-- `list_creels()` and `search_creels()` discovery generics with API/CSV/SQL dispatch (API-07–08)
-- `inst/validation/calamus-2016-validation.R` — offline bus-route pipeline validates within 0.1% of reference (REAL-01)
+**What shipped in v1.8.0:**
+- `tidy.creel_estimates()` via `generics` dispatch — flat tibble from any `creel_estimates` object (EXPORT-01)
+- `write_estimates()` updated to use `tidy()` path for `creel_estimates`; snake_case CSV output (EXPORT-02)
+- `ci_method = "bootstrap"` added to `estimate_total_harvest_br()`, `estimate_total_catch()`, `estimate_angler_n()`, `estimate_mr_harvest()` (BOOT-01–04)
+- NGPC discovery field names confirmed in all 6 `api_rename_map` entries; schema refactored to `bank_anglers/angler_boats/non_ang_boats` (API-09, API-11)
+- `list_creels()` empty-return returns typed `tibble::tibble()` (API-10)
+- Credential audit for `tidycreel.connect`; `print-methods.R` API branch shows auth type only (SEC-01)
+- `file.exists("DESCRIPTION")` + `isNamespaceLoaded()` guards in validation script; 30+ em dashes removed; both packages rcmdcheck-clean (QUAL-01, QUAL-02)
 
-**Open carry-forward (v1.8.0):** NGPC discovery field names unconfirmed; `list_creels()` silent 0-column return guard missing; bus-route API E2E gap (`n_counted`/`n_interviewed` absent from fetch); validation script working-directory guard; pre-existing rcmdcheck warnings in tidycreel.connect.
-
-v1.6.0 complete: 5 phases (83–87), 9 plans, 19/19 requirements satisfied, 2667 tests, 0 errors 0 warnings. Ships `creel_n_camera()`, `impute_camera_counts()`, `estimate_angler_n()`, `estimate_mr_harvest()`, `audit_strata()`, `simulate_strata_collapse()`, `reallocate_strata()`. All 6 advisory items from internal review closed in Phase 87. Mark-recapture vignette added. See `.planning/milestones/v1.6-ROADMAP.md` for full archive.
+**Open carry-forward (v1.9.0):** WRITE-11 xlsx test for `write_estimates()`; Nyquist VALIDATION.md for Phases 92–94 (process gap only).
 
 ## Previous State (M023 / v1.4.0 — archived)
 
@@ -59,7 +48,7 @@ What was validated in this milestone:
 
 ## Current Package State
 
-**Package version:** `1.3.0`
+**Package version:** `1.8.0`
 
 **Supported survey types:**
 - instantaneous count
@@ -150,19 +139,20 @@ The package currently closes its local gate with:
 - ✓ **API-06**: `search_creels()` finds matching surveys by keyword — v1.7.0 (Phase 89)
 - ✓ **REAL-01**: `inst/validation/calamus-2016-validation.R` runs bus-route pipeline on Calamus 2016 fixtures, all 3 estimands PASS within 0.1% tolerance — v1.7.0 (Phase 90)
 
-### Active (v1.8.0)
+### Validated in v1.8.0
 
-- [ ] **EXPORT-01**: Analyst can call `tidy(estimates)` to get a flat tibble from any `creel_estimates` object
-- [ ] **EXPORT-02**: Analyst can call `write_estimates(estimates, path)` to write estimates to CSV or Excel
-- [ ] **BOOT-01**: `estimate_total_harvest_br()` supports `ci_method = "bootstrap"` returning bootstrap CI
-- [ ] **BOOT-02**: `estimate_total_catch()` supports `ci_method = "bootstrap"`
-- [ ] **BOOT-03**: `estimate_angler_n()` supports `ci_method = "bootstrap"`
-- [ ] **BOOT-04**: `estimate_mr_harvest()` supports `ci_method = "bootstrap"`
-- [ ] **API-09**: NGPC discovery field names confirmed and TODO stubs resolved in all 6 `api_rename_map` entries
-- [ ] **API-10**: `list_creels()` returns empty tibble with correct column structure when no surveys found
-- [ ] **API-11**: `fetch_counts()` returns `n_counted` and `n_interviewed` for bus-route API connections
-- [ ] **QUAL-01**: Validation script has working-directory guard so it runs correctly from any context
-- [ ] **QUAL-02**: rcmdcheck passes with 0 warnings (non-ASCII and VignetteBuilder resolved)
+- ✓ **SEC-01**: `tidycreel.connect` credential handling audited; `print-methods.R` API branch shows `auth$type` only — v1.8.0 (Phase 91)
+- ✓ **API-09**: All 6 `api_rename_map` entries confirmed with NGPC field names; 0 TODO stubs — v1.8.0 (Phase 91)
+- ✓ **API-10**: `list_creels()` returns `tibble::tibble()` on empty result; `tbl_df` class asserted in tests — v1.8.0 (Phase 91)
+- ✓ **API-11**: `fetch_counts()` delivers `bank_anglers/angler_boats/non_ang_boats` schema for bus-route connections — v1.8.0 (Phase 91)
+- ✓ **QUAL-01**: Validation script has `file.exists("DESCRIPTION")` + `isNamespaceLoaded()` guards; 2 passing tests — v1.8.0 (Phase 92)
+- ✓ **QUAL-02**: Both packages rcmdcheck 0 errors | 0 warnings; 30+ em dashes removed; VignetteBuilder added — v1.8.0 (Phase 92)
+- ✓ **EXPORT-01**: `tidy.creel_estimates()` via `generics` dispatch returns `tibble::as_tibble(x$estimates)`; 5 TIDY tests — v1.8.0 (Phase 93)
+- ✓ **EXPORT-02**: `write_estimates()` uses `tidy(x)` for `creel_estimates` path; CSV tested; xlsx path code exists, untested (WRITE-11 tech debt) — v1.8.0 (Phase 93)
+- ✓ **BOOT-01**: `estimate_total_harvest_br(ci_method="bootstrap")` appends `ci_lo_boot`/`ci_hi_boot` to estimates — v1.8.0 (Phase 94)
+- ✓ **BOOT-02**: `estimate_total_catch(ci_method="bootstrap")` bootstrap CI — v1.8.0 (Phase 94)
+- ✓ **BOOT-03**: `estimate_angler_n(ci_method="bootstrap")` rbinom parametric bootstrap for Chapman/Petersen/Schnabel — v1.8.0 (Phase 94)
+- ✓ **BOOT-04**: `estimate_mr_harvest(ci_method="bootstrap")` propagates `boot_samples` from `estimate_angler_n()` — v1.8.0 (Phase 94)
 
 ### Out of Scope
 
@@ -212,6 +202,13 @@ The package currently closes its local gate with:
 | `search_creels()` is client-side | Calls `list_creels(conn)` then `tolower()` + `grepl(fixed = TRUE)` — R silently drops `ignore.case` when `fixed = TRUE` | v1.7.0 |
 | `estimate_harvest_rate(design)` for bus-route harvest total | Not `estimate_total_harvest()` — dispatches to Jones & Pollock Eq. 19.5; confirmed by Calamus 2016 validation | v1.7.0 |
 | Discovery field names deferred as TODO stubs | NGPC field names unconfirmed at development time; TODO comments in all 6 map entries for v1.8.0 confirmation | v1.7.0 |
+| `generics` package for `tidy()` dispatch | Avoids heavy `broom` dependency; `generics` is minimal and on CRAN | v1.8.0 |
+| `bank_anglers/angler_boats/non_ang_boats` schema | `n_counted`/`n_interviewed` are not raw API fields — derived; schema matches actual NGPC API output | v1.8.0 |
+| `tidy.creel_estimates()` returns `x$estimates` unchanged | Tibble coercion only — no transformation; bootstrap CI columns added by Phase 94 pass through automatically | v1.8.0 |
+| `isNamespaceLoaded()` guard for validation scripts | Prevents namespace corruption when script sourced during R CMD check test suite | v1.8.0 |
+| ASCII `--` replaces Unicode em dashes in R comments | U+2014 only valid in string literals, not R source comments; rcmdcheck WARNING otherwise | v1.8.0 |
+| Bootstrap for bus-route via `survey::as.svrepdesign()` | Cost is in upstream `survey` package; not addressable in tidycreel | v1.8.0 |
+| `estimate_angler_n()` bootstrap via `stats::rbinom()` | Parametric bootstrap samples recapture counts; `attr(result, "boot_samples")` propagated downstream | v1.8.0 |
 
 ## Constraints
 
@@ -239,4 +236,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-16 — v1.8.0 milestone started*
+*Last updated: 2026-05-23 — v1.8.0 milestone closed*
