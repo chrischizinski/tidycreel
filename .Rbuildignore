@@ -29,6 +29,8 @@
 ^CITATION\.cff$
 ^CODE_OF_CONDUCT\.md$
 ^codecov\.yml$
+^\.codecov\.yml$
+^\.env$
 ^codemeta\.json$
 ^CONTRIBUTING\.md$
 ^creel_chapter\.md$
