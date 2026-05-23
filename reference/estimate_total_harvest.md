@@ -15,7 +15,8 @@ estimate_total_harvest(
   conf_level = 0.95,
   target = c("sampled_days", "stratum_total", "period_total"),
   aggregate_sections = TRUE,
-  missing_sections = "warn"
+  missing_sections = "warn",
+  ci_method = c("delta", "bootstrap")
 )
 ```
 
@@ -70,6 +71,12 @@ estimate_total_harvest(
   Character(1). Action when a registered section is absent from either
   count data or interview data: `"warn"` (default) inserts an NA row
   with `data_available = FALSE`, `"error"` raises a hard error.
+
+- ci_method:
+
+  character. `"delta"` (default) returns only delta-method CIs.
+  `"bootstrap"` additionally returns `ci_lo_boot`/`ci_hi_boot` using
+  survey bootstrap resampling. Only applies to bus-route/ice designs.
 
 ## Value
 

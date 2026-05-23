@@ -16,7 +16,8 @@ estimate_total_catch(
   target = c("sampled_days", "stratum_total", "period_total"),
   aggregate_sections = TRUE,
   missing_sections = "warn",
-  verbose = FALSE
+  verbose = FALSE,
+  ci_method = c("delta", "bootstrap")
 )
 ```
 
@@ -73,6 +74,12 @@ estimate_total_catch(
 
   Logical. If TRUE, prints an informational message identifying which
   estimator path was used. Default FALSE.
+
+- ci_method:
+
+  character. `"delta"` (default) returns only delta-method CIs.
+  `"bootstrap"` additionally returns `ci_lo_boot`/`ci_hi_boot` using
+  survey bootstrap resampling. Only applies to bus-route/ice designs.
 
 ## Value
 

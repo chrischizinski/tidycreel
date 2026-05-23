@@ -20,7 +20,15 @@ population size (N_hat) using one of three estimators:
 ## Usage
 
 ``` r
-estimate_angler_n(M, n, m, method = "chapman", conf_level = 0.95)
+estimate_angler_n(
+  M,
+  n,
+  m,
+  method = "chapman",
+  conf_level = 0.95,
+  ci_method = c("delta", "bootstrap"),
+  B = 2000L
+)
 ```
 
 ## Arguments
@@ -49,6 +57,20 @@ estimate_angler_n(M, n, m, method = "chapman", conf_level = 0.95)
 - conf_level:
 
   numeric. Confidence level for the CI. Default `0.95`.
+
+- ci_method:
+
+  character(1). CI construction method: `"delta"` (default) uses the
+  analytic delta-method formula; `"bootstrap"` uses a parametric
+  bootstrap via
+  [`stats::rbinom()`](https://rdrr.io/r/stats/Binomial.html). Bootstrap
+  results add `ci_lo_boot` and `ci_hi_boot` columns to the estimates
+  tibble and attach `attr(result, "boot_samples")`.
+
+- B:
+
+  integer(1). Number of bootstrap replicates when
+  `ci_method = "bootstrap"`. Default `2000L`.
 
 ## Value
 

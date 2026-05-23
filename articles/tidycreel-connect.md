@@ -111,7 +111,7 @@ To stay informed:
   posted in the News / Releases section when the companion package
   reaches a public preview.
 - **Watch the tidycreel.connect repository** (placeholder; not yet
-  public) at <https://github.com/chrischizinski/tidycreel.connect> —
+  public) at `https://github.com/chrischizinski/tidycreel.connect` —
   star or watch the repository to receive notifications once it is made
   public.
 

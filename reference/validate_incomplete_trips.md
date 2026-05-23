@@ -159,6 +159,7 @@ Other "Reporting & Diagnostics":
 [`summarize_successful_parties()`](https://chrischizinski.github.io/tidycreel/reference/summarize_successful_parties.md),
 [`summarize_trips()`](https://chrischizinski.github.io/tidycreel/reference/summarize_trips.md),
 [`summary.creel_estimates()`](https://chrischizinski.github.io/tidycreel/reference/summary.creel_estimates.md),
+[`tidy.creel_estimates()`](https://chrischizinski.github.io/tidycreel/reference/tidy.creel_estimates.md),
 [`validate_creel_data()`](https://chrischizinski.github.io/tidycreel/reference/validate_creel_data.md),
 [`validate_design()`](https://chrischizinski.github.io/tidycreel/reference/validate_design.md),
 [`validation_report()`](https://chrischizinski.github.io/tidycreel/reference/validation_report.md),

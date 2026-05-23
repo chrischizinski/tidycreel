@@ -39,6 +39,9 @@ creel_schema(
   n_anglers_col = NULL,
   n_counted_col = NULL,
   n_interviewed_col = NULL,
+  bank_anglers_col = NULL,
+  angler_boats_col = NULL,
+  non_ang_boats_col = NULL,
   angler_type_col = NULL,
   angler_method_col = NULL,
   species_sought_col = NULL,
@@ -88,7 +91,8 @@ creel_schema(
 
 - count_col:
 
-  Column name for angler count in counts.
+  Column name for total angler count in counts (legacy single-column
+  format).
 
 - catch_uid_col:
 
@@ -149,6 +153,18 @@ creel_schema(
 - n_interviewed_col:
 
   Column name for number of anglers interviewed.
+
+- bank_anglers_col:
+
+  Column name for bank (shore) angler count in counts.
+
+- angler_boats_col:
+
+  Column name for boats carrying anglers in counts.
+
+- non_ang_boats_col:
+
+  Column name for non-angler boats in counts (NGPC-specific).
 
 - angler_type_col:
 

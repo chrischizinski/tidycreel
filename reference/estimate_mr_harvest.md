@@ -14,7 +14,12 @@ uncertainty is not propagated in this release).
 ## Usage
 
 ``` r
-estimate_mr_harvest(angler_n, harvest_rate, conf_level = 0.95)
+estimate_mr_harvest(
+  angler_n,
+  harvest_rate,
+  conf_level = 0.95,
+  ci_method = c("delta", "bootstrap")
+)
 ```
 
 ## Arguments
@@ -33,6 +38,13 @@ estimate_mr_harvest(angler_n, harvest_rate, conf_level = 0.95)
 - conf_level:
 
   numeric. Confidence level for the CI. Default `0.95`.
+
+- ci_method:
+
+  character(1). CI construction method: `"delta"` (default) uses the
+  analytic delta-method formula; `"bootstrap"` propagates the bootstrap
+  samples stored in `attr(angler_n, "boot_samples")` (produced by
+  calling `estimate_angler_n(..., ci_method = "bootstrap")` first).
 
 ## Value
 

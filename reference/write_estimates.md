@@ -93,6 +93,7 @@ Other "Reporting & Diagnostics":
 [`summarize_successful_parties()`](https://chrischizinski.github.io/tidycreel/reference/summarize_successful_parties.md),
 [`summarize_trips()`](https://chrischizinski.github.io/tidycreel/reference/summarize_trips.md),
 [`summary.creel_estimates()`](https://chrischizinski.github.io/tidycreel/reference/summary.creel_estimates.md),
+[`tidy.creel_estimates()`](https://chrischizinski.github.io/tidycreel/reference/tidy.creel_estimates.md),
 [`validate_creel_data()`](https://chrischizinski.github.io/tidycreel/reference/validate_creel_data.md),
 [`validate_design()`](https://chrischizinski.github.io/tidycreel/reference/validate_design.md),
 [`validate_incomplete_trips()`](https://chrischizinski.github.io/tidycreel/reference/validate_incomplete_trips.md),
@@ -126,6 +127,6 @@ write_estimates(eff, tmp)
 # Read back (skipping comment lines)
 out <- utils::read.csv(tmp, comment.char = "#")
 out
-#>   Estimate    SE CI.Lower CI.Upper  N
-#> 1    372.5 13.18    343.8    401.2 14
+#>   estimate       se se_between se_within ci_lower ci_upper  n
+#> 1    372.5 13.17645   13.17645         0  343.791  401.209 14
 ```
