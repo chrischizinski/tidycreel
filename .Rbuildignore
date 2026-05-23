@@ -23,6 +23,7 @@
 ^\.roo$
 ^_pkgdown\.yml$
 ^AGENTS\.md$
+^GEMINI\.md$
 ^BUGFIXES_SUMMARY\.md$
 ^CHAPTER_GAP_ANALYSIS\.md$
 ^CITATION\.cff$
