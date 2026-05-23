@@ -3,7 +3,7 @@ Title: Tidy Interface for Creel Survey Design and Analysis
 Version: 1.6.0
 Authors@R:
     person(given = "Christopher", family = "Chizinski", role = c("aut", "cre"),
-           email = "chris.chizinski@unl.edu",
+           email = "cchizinski2@unl.edu",
            comment = c(ORCID = "0000-0001-9294-2588"))
 Description: Provides a tidy, pipe-friendly interface for creel survey
     design, data management, estimation, visualisation, and reporting. Built

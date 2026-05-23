@@ -17,7 +17,7 @@ knitr::opts_chunk$set(
 ## Overview
 
 **tidycreel.connect** provides a unified connection layer for the
-[tidycreel](https://github.com/cchizinski2/tidycreel) creel survey package.
+[tidycreel](https://github.com/chrischizinski/tidycreel) creel survey package.
 It lets you load interview, count, catch, and length data from two backends:
 
 | Backend | When to use |
