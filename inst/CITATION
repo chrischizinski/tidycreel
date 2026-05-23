@@ -8,6 +8,6 @@ bibentry(
     comment = c(ORCID = "0000-0001-9294-2588")
   ),
   year  = format(Sys.Date(), "%Y"),
-  note  = paste0("R package version ", packageVersion("tidycreel")),
+  note  = paste0("R package version ", meta$Version),
   url   = "https://github.com/chrischizinski/tidycreel"
 )
