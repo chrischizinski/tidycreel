@@ -69,3 +69,31 @@ test_that("BOOT-02-delta: estimate_total_catch default has no boot columns", {
   expect_false("ci_lo_boot" %in% names(tbl))
   expect_false("ci_hi_boot" %in% names(tbl))
 })
+
+# BOOT-01b: estimate_total_harvest bootstrap with by_vars (grouped path) ------
+
+test_that("BOOT-01b: estimate_total_harvest bootstrap with by_vars returns boot columns per group", {
+  d      <- .make_br_harvest_boot()
+  result <- suppressWarnings(estimate_total_harvest(d, by = day_type, ci_method = "bootstrap"))
+  tbl    <- tidy(result)
+
+  expect_true("ci_lo_boot" %in% names(tbl))
+  expect_true("ci_hi_boot" %in% names(tbl))
+  expect_true(nrow(tbl) > 1L)
+  expect_true(all(is.numeric(tbl$ci_lo_boot)))
+  expect_true(all(is.numeric(tbl$ci_hi_boot)))
+})
+
+# BOOT-02b: estimate_total_catch bootstrap with by_vars (grouped path) -------
+
+test_that("BOOT-02b: estimate_total_catch bootstrap with by_vars returns boot columns per group", {
+  d      <- .make_br_harvest_boot()
+  result <- suppressWarnings(estimate_total_catch(d, by = day_type, ci_method = "bootstrap"))
+  tbl    <- tidy(result)
+
+  expect_true("ci_lo_boot" %in% names(tbl))
+  expect_true("ci_hi_boot" %in% names(tbl))
+  expect_true(nrow(tbl) > 1L)
+  expect_true(all(is.numeric(tbl$ci_lo_boot)))
+  expect_true(all(is.numeric(tbl$ci_hi_boot)))
+})
