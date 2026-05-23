@@ -30,6 +30,9 @@ creel_schema(
   n_anglers_col = NULL,
   n_counted_col = NULL,
   n_interviewed_col = NULL,
+  bank_anglers_col = NULL,
+  angler_boats_col = NULL,
+  non_ang_boats_col = NULL,
   angler_type_col = NULL,
   angler_method_col = NULL,
   species_sought_col = NULL,
@@ -57,7 +60,7 @@ creel_schema(
 
 \item{trip_status_col}{Column name for trip status in interviews.}
 
-\item{count_col}{Column name for angler count in counts.}
+\item{count_col}{Column name for total angler count in counts (legacy single-column format).}
 
 \item{catch_uid_col}{Column name for catch unique identifier.}
 
@@ -88,6 +91,12 @@ creel_schema(
 \item{n_counted_col}{Column name for number of anglers counted.}
 
 \item{n_interviewed_col}{Column name for number of anglers interviewed.}
+
+\item{bank_anglers_col}{Column name for bank (shore) angler count in counts.}
+
+\item{angler_boats_col}{Column name for boats carrying anglers in counts.}
+
+\item{non_ang_boats_col}{Column name for non-angler boats in counts (NGPC-specific).}
 
 \item{angler_type_col}{Column name for angler type.}
 
@@ -124,7 +133,7 @@ s <- creel_schema(
 print(s)
 }
 \seealso{
-Other "Survey Design": 
+Other "Survey Design":
 \code{\link{add_catch}()},
 \code{\link{add_counts}()},
 \code{\link{add_interviews}()},

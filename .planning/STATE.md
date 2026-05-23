@@ -2,52 +2,49 @@
 gsd_state_version: 1.0
 milestone: v1.8.0
 milestone_name: Exports, Bootstrap CIs, and API Hardening
-status: planning
-stopped_at: ""
-last_updated: "2026-05-16T00:00:00.000Z"
-last_activity: 2026-05-16
+status: shipped
+stopped_at: Milestone v1.8.0 complete and archived
+last_updated: "2026-05-23T00:00:00.000Z"
+last_activity: 2026-05-23 -- v1.8.0 milestone closed; archive files created; git tag v1.8.0 pending
 progress:
-  total_phases: 0
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_phases: 7
+  completed_phases: 7
+  total_plans: 21
+  completed_plans: 21
+  percent: 100
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-05-16)
+See: .planning/PROJECT.md (updated 2026-05-23)
 
 **Core value:** A biologist should be able to go from survey design to package-ready estimates, plots, summaries, and documentation without stitching together a custom analysis stack.
-**Current focus:** v1.8.0 — Exports, Bootstrap CIs, and API Hardening
+**Current focus:** v1.8.0 SHIPPED — next milestone TBD
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-05-16 — Milestone v1.8.0 started
+Phase: v1.8.0 complete
+Plan: All 21 plans done across Phases 91–94; milestone archived
+Status: Shipped
+Last activity: 2026-05-23 -- Milestone close; ROADMAP.md collapsed; archive files created; REQUIREMENTS.md archived
 
 ## Previous Milestone Archive
 
-All v1.7.0 work archived:
-- `.planning/milestones/v1.7-ROADMAP.md` — full phase archive
-- `.planning/milestones/v1.7-REQUIREMENTS.md` — all 9 requirements marked complete
-- `.planning/milestones/v1.7.0-MILESTONE-AUDIT.md` — audit report (tech_debt)
-- `.planning/MILESTONES.md` — milestone entry added
+All v1.8.0 work archived:
 
-## Carry-Forward Tech Debt (addressed in v1.8.0)
+- `.planning/milestones/v1.8.0-ROADMAP.md` — full phase archive
+- `.planning/milestones/v1.8.0-REQUIREMENTS.md` — all 12 requirements marked complete
+- `.planning/milestones/v1.8.0-MILESTONE-AUDIT.md` — audit report (tech_debt — all requirements satisfied)
+- `.planning/MILESTONES.md` — v1.8.0 entry added
 
-| Item | Phase | Priority | v1.8.0 REQ |
-|------|-------|----------|------------|
-| NGPC discovery field names unconfirmed (TODO stubs) | 89 | High | API-09 |
-| `list_creels()` silent 0-column return guard (WR-01) | 89 | Medium | API-10 |
-| Bus-route API E2E gap (`n_counted`/`n_interviewed` missing) | 88 | Medium | API-11 |
-| Validation script working-directory guard (W-01) | 90 | Low | QUAL-01 |
-| Pre-existing rcmdcheck warnings (non-ASCII, VignetteBuilder) | 89 | Medium | QUAL-02 |
-| `@param endpoints` doc omits `"discovery"` key (WR-02) | 89 | Low | (folded into API-09) |
+## Tech Debt Carried to v1.9.0
+
+| Item | REQ | Notes |
+|------|-----|-------|
+| `write_estimates()` xlsx path test | WRITE-11 | Code exists; `writexl` in Suggests; pattern from SCHED-03 not applied |
+| Nyquist VALIDATION.md for Phases 92–94 | process | SUMMARY.md evidence sufficient; no blocker |
 
 ## Future Requirements (Deferred)
 
@@ -58,6 +55,6 @@ All v1.7.0 work archived:
 
 ## Session Continuity
 
-Last session: 2026-05-16
-Stopped at: v1.8.0 requirements defined; roadmap creation next
-Resume: Run `/gsd-plan-phase 91` after roadmap is committed
+Last session: 2026-05-23
+Stopped at: Milestone v1.8.0 close
+Next: `/gsd:new-milestone` to start v1.9.0 requirements and roadmap

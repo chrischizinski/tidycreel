@@ -32,6 +32,10 @@
 #'   absent from either count data or interview data: \code{"warn"} (default)
 #'   inserts an NA row with \code{data_available = FALSE}, \code{"error"}
 #'   raises a hard error.
+#' @param ci_method character. \code{"delta"} (default) returns only
+#'   delta-method CIs. \code{"bootstrap"} additionally returns
+#'   \code{ci_lo_boot}/\code{ci_hi_boot} using survey bootstrap resampling.
+#'   Only applies to bus-route/ice designs.
 #'
 #' @return A creel_estimates S3 object with method = "product-total-harvest"
 #'
@@ -99,11 +103,13 @@ estimate_total_harvest <- function(
   conf_level = 0.95,
   target = c("sampled_days", "stratum_total", "period_total"),
   aggregate_sections = TRUE,
-  missing_sections = "warn"
+  missing_sections = "warn",
+  ci_method = c("delta", "bootstrap")
 ) {
   # Capture by parameter BEFORE validation
   by_quo <- rlang::enquo(by)
   target <- match.arg(target)
+  ci_method <- match.arg(ci_method)
 
   # Validate variance parameter
   valid_methods <- c("taylor", "bootstrap", "jackknife")
@@ -121,6 +127,26 @@ estimate_total_harvest <- function(
       "{.arg design} must be a {.cls creel_design} object.",
       "x" = "{.arg design} is {.cls {class(design)[1]}}.",
       "i" = "Create a design with {.fn creel_design}."
+    ))
+  }
+
+  # Bus-route / ice dispatch (before standard survey NULL check)
+  if (!is.null(design$design_type) && design$design_type %in% c("bus_route", "ice")) {
+    if (rlang::quo_is_null(by_quo)) {
+      by_vars_br <- NULL
+    } else {
+      by_cols_br <- tidyselect::eval_select(
+        by_quo,
+        data = design$interviews,
+        allow_rename = FALSE,
+        allow_empty = FALSE,
+        error_call = rlang::caller_env()
+      )
+      by_vars_br <- names(by_cols_br)
+    }
+    return(estimate_total_harvest_br( # nolint: object_usage_linter
+      design, by_vars_br, variance, conf_level,
+      verbose = FALSE, ci_method = ci_method
     ))
   }
 
