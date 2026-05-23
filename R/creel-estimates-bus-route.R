@@ -377,6 +377,7 @@ estimate_harvest_br <- function(
 estimate_total_catch_br <- function(
   # nolint: object_usage_linter
   design, by_vars, variance_method, conf_level, verbose,
+  ci_method = "delta",
   call = rlang::caller_env()
 ) {
   if (verbose) {
@@ -461,7 +462,8 @@ estimate_total_catch_br <- function(
 
   br_build_estimates(
     interviews, by_vars, variance_method, conf_level, design,
-    site_table, catch_col
+    site_table, catch_col,
+    ci_method = ci_method
   )
 }
 
@@ -490,6 +492,7 @@ estimate_total_catch_br <- function(
 estimate_total_harvest_br <- function(
   # nolint: object_usage_linter
   design, by_vars, variance_method, conf_level, verbose,
+  ci_method = "delta",
   call = rlang::caller_env()
 ) {
   if (verbose) {
@@ -555,7 +558,8 @@ estimate_total_harvest_br <- function(
 
   br_build_estimates(
     interviews, by_vars, variance_method, conf_level, design,
-    site_table, harvest_col
+    site_table, harvest_col,
+    ci_method = ci_method
   )
 }
 
@@ -659,6 +663,9 @@ estimate_total_release_br <- function(
 #' @param design creel_design object
 #' @param site_table Data frame for site_contributions attribute
 #' @param key_col Name of the primary column (harvest_col or catch_col) for n
+#' @param ci_method character. "delta" (default) or "bootstrap". When
+#'   "bootstrap", a second survey-design pass is added using bootstrap
+#'   resampling and the results are bound as ci_lo_boot/ci_hi_boot columns.
 #'
 #' @return A creel_estimates object with site_contributions attribute
 #'
@@ -666,8 +673,10 @@ estimate_total_release_br <- function(
 #' @noRd
 br_build_estimates <- function(
   # nolint: object_usage_linter
-  interviews, by_vars, variance_method, conf_level, design, site_table, key_col
+  interviews, by_vars, variance_method, conf_level, design, site_table, key_col,
+  ci_method = "delta"
 ) {
+  ci_method <- match.arg(ci_method, c("delta", "bootstrap"))
   strata_cols <- design$strata_cols
 
   if (is.null(by_vars)) {
@@ -679,9 +688,9 @@ br_build_estimates <- function(
     } else {
       NULL
     }
-    svy_br <- build_interview_survey(interviews, strata = strata_formula) # nolint: object_usage_linter
-    svy_br <- get_variance_design(svy_br, variance_method) # nolint: object_usage_linter
-    svy_result <- suppressWarnings(survey::svytotal(~.contribution, svy_br))
+    svy_br_base <- build_interview_survey(interviews, strata = strata_formula) # nolint: object_usage_linter
+    svy_br_taylor <- get_variance_design(svy_br_base, variance_method) # nolint: object_usage_linter
+    svy_result <- suppressWarnings(survey::svytotal(~.contribution, svy_br_taylor))
     se <- as.numeric(survey::SE(svy_result)) # nolint: object_usage_linter
     ci <- confint(svy_result, level = conf_level)
     ci_lower <- ci[1, 1] # nolint: object_usage_linter
@@ -694,6 +703,14 @@ br_build_estimates <- function(
       ci_upper = ci_upper,
       n = n
     )
+
+    if (ci_method == "bootstrap") {
+      svy_br_boot  <- get_variance_design(svy_br_base, "bootstrap")
+      svy_boot_res <- suppressWarnings(survey::svytotal(~.contribution, svy_br_boot))
+      ci_boot      <- confint(svy_boot_res, level = conf_level)
+      estimates_df$ci_lo_boot <- ci_boot[1, 1]
+      estimates_df$ci_hi_boot <- ci_boot[1, 2]
+    }
 
     result <- new_creel_estimates( # nolint: object_usage_linter
       estimates = estimates_df,
@@ -713,13 +730,13 @@ br_build_estimates <- function(
     } else {
       NULL
     }
-    svy_br <- build_interview_survey(interviews, strata = strata_formula) # nolint: object_usage_linter
-    svy_br <- get_variance_design(svy_br, variance_method) # nolint: object_usage_linter
+    svy_br_base <- build_interview_survey(interviews, strata = strata_formula) # nolint: object_usage_linter
+    svy_br_taylor <- get_variance_design(svy_br_base, variance_method) # nolint: object_usage_linter
 
     svy_result <- suppressWarnings(survey::svyby(
       formula = ~.contribution,
       by = by_formula,
-      design = svy_br,
+      design = svy_br_taylor,
       FUN = survey::svytotal,
       vartype = c("se", "ci"),
       ci.level = conf_level,
@@ -750,6 +767,21 @@ br_build_estimates <- function(
 
     col_order <- c(by_vars, "estimate", "se", "ci_lower", "ci_upper", "proportion", "n")
     estimates_df <- estimates_df[col_order]
+
+    if (ci_method == "bootstrap") {
+      svy_br_boot <- get_variance_design(svy_br_base, "bootstrap")
+      svy_boot_by <- suppressWarnings(survey::svyby(
+        formula    = ~.contribution,
+        by         = by_formula,
+        design     = svy_br_boot,
+        FUN        = survey::svytotal,
+        vartype    = c("se", "ci"),
+        ci.level   = conf_level,
+        keep.names = FALSE
+      ))
+      estimates_df$ci_lo_boot <- svy_boot_by[["ci_l"]]
+      estimates_df$ci_hi_boot <- svy_boot_by[["ci_u"]]
+    }
 
     result <- new_creel_estimates( # nolint: object_usage_linter
       estimates = estimates_df,

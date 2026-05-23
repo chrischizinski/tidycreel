@@ -96,7 +96,7 @@ and Their Applications in Fisheries Management. American Fisheries Society,
 Bethesda, MD.
 }
 \seealso{
-Other "Reporting & Diagnostics": 
+Other "Reporting & Diagnostics":
 \code{\link{check_completeness}()},
 \code{\link{compare_variance}()},
 \code{\link{flag_outliers}()},
@@ -114,6 +114,7 @@ Other "Reporting & Diagnostics":
 \code{\link{summarize_successful_parties}()},
 \code{\link{summarize_trips}()},
 \code{\link{summary.creel_estimates}()},
+\code{\link{tidy.creel_estimates}()},
 \code{\link{validate_creel_data}()},
 \code{\link{validate_design}()},
 \code{\link{validate_incomplete_trips}()},

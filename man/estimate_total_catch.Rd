@@ -12,7 +12,8 @@ estimate_total_catch(
   target = c("sampled_days", "stratum_total", "period_total"),
   aggregate_sections = TRUE,
   missing_sections = "warn",
-  verbose = FALSE
+  verbose = FALSE,
+  ci_method = c("delta", "bootstrap")
 )
 }
 \arguments{
@@ -49,6 +50,11 @@ raises a hard error.}
 
 \item{verbose}{Logical. If TRUE, prints an informational message identifying
 which estimator path was used. Default FALSE.}
+
+\item{ci_method}{character. \code{"delta"} (default) returns only
+delta-method CIs. \code{"bootstrap"} additionally returns
+\code{ci_lo_boot}/\code{ci_hi_boot} using survey bootstrap resampling.
+Only applies to bus-route/ice designs.}
 }
 \value{
 A creel_estimates S3 object with method = "product-total-catch".
@@ -126,7 +132,7 @@ cpue_est <- estimate_catch_rate(design)
 \seealso{
 \code{\link{estimate_effort}}, \code{\link{estimate_catch_rate}}
 
-Other "Estimation": 
+Other "Estimation":
 \code{\link{est_length_distribution}()},
 \code{\link{estimate_catch_rate}()},
 \code{\link{estimate_effort}()},

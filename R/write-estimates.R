@@ -113,7 +113,7 @@ write_estimates <- function(
   df <- if (inherits(x, "creel_summary")) {
     as.data.frame(x)
   } else {
-    as.data.frame(summary(x))
+    tidy(x)
   }
 
   # ---- Metadata ---------------------------------------------------------------

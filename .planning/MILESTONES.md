@@ -1,5 +1,24 @@
 # Milestones
 
+## v1.8.0 — Exports, Bootstrap CIs, and API Hardening (Shipped: 2026-05-23)
+
+**Phases:** 91–94 | **Plans:** 11 | **Timeline:** 2026-05-16 → 2026-05-23 (7 days)
+**Tests:** 2729 passing (main) + 154 passing (tidycreel.connect)
+
+**Key accomplishments:**
+1. Audited `tidycreel.connect` credential handling (SEC-01) — `print-methods.R` API branch fixed to show `auth$type` only; 3 protective comments added; 0 credential logging sites found (Phase 91)
+2. Confirmed all 6 NGPC discovery field names via live probe; replaced TODO stubs in `api_rename_map`; full schema refactor to `bank_anglers/angler_boats/non_ang_boats` across both packages (Phase 91)
+3. Added `file.exists("DESCRIPTION")` + `isNamespaceLoaded()` guards to validation script; removed 30+ non-ASCII em dashes from `tidycreel.connect` source; both packages rcmdcheck-clean at 0 errors | 0 warnings (Phase 92)
+4. Implemented `tidy.creel_estimates()` via `generics` dispatch — returns `tibble::as_tibble(x$estimates)` unchanged; 5 TIDY tests across all estimator types (Phase 93)
+5. Updated `write_estimates()` to use `tidy(x)` for `creel_estimates` path; snake_case column names throughout (Phase 93)
+6. Added `ci_method = "bootstrap"` to `estimate_total_harvest_br()`, `estimate_total_catch()`, `estimate_angler_n()` (rbinom parametric bootstrap), and `estimate_mr_harvest()` (propagated boot_samples); snapshot regression confirms delta-method output unchanged (Phase 94)
+
+**Tech Debt (carry-forward to v1.9.0):**
+- WRITE-11: `write_estimates()` xlsx path has no test (code exists; `writexl` in Suggests; `skip_if_not_installed` pattern from SCHED-03 not applied)
+- No Nyquist VALIDATION.md for Phases 92–94 (process gap; SUMMARY.md evidence sufficient)
+
+---
+
 ## v1.7.0 — API Connection & Real-Data Validation (Shipped: 2026-05-11)
 
 **Phases:** 88–90 | **Plans:** 7 | **Timeline:** 2026-05-09 → 2026-05-11 (3 days)

@@ -11,7 +11,8 @@ estimate_total_harvest(
   conf_level = 0.95,
   target = c("sampled_days", "stratum_total", "period_total"),
   aggregate_sections = TRUE,
-  missing_sections = "warn"
+  missing_sections = "warn",
+  ci_method = c("delta", "bootstrap")
 )
 }
 \arguments{
@@ -47,6 +48,11 @@ that sums the per-section estimates? Default \code{TRUE}. Set to
 absent from either count data or interview data: \code{"warn"} (default)
 inserts an NA row with \code{data_available = FALSE}, \code{"error"}
 raises a hard error.}
+
+\item{ci_method}{character. \code{"delta"} (default) returns only
+delta-method CIs. \code{"bootstrap"} additionally returns
+\code{ci_lo_boot}/\code{ci_hi_boot} using survey bootstrap resampling.
+Only applies to bus-route/ice designs.}
 }
 \value{
 A creel_estimates S3 object with method = "product-total-harvest"
@@ -114,7 +120,7 @@ hpue_est <- estimate_harvest_rate(design)
 \code{\link{estimate_effort}}, \code{\link{estimate_harvest_rate}},
 \code{\link{estimate_total_catch}}
 
-Other "Estimation": 
+Other "Estimation":
 \code{\link{est_length_distribution}()},
 \code{\link{estimate_catch_rate}()},
 \code{\link{estimate_effort}()},

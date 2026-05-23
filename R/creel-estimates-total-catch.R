@@ -32,6 +32,10 @@
 #'   raises a hard error.
 #' @param verbose Logical. If TRUE, prints an informational message identifying
 #'   which estimator path was used. Default FALSE.
+#' @param ci_method character. \code{"delta"} (default) returns only
+#'   delta-method CIs. \code{"bootstrap"} additionally returns
+#'   \code{ci_lo_boot}/\code{ci_hi_boot} using survey bootstrap resampling.
+#'   Only applies to bus-route/ice designs.
 #'
 #' @return A creel_estimates S3 object with method = "product-total-catch".
 #'   For bus-route designs, returns a bus-route HT estimate with method = "total"
@@ -110,11 +114,13 @@ estimate_total_catch <- function(
   target = c("sampled_days", "stratum_total", "period_total"),
   aggregate_sections = TRUE,
   missing_sections = "warn",
-  verbose = FALSE
+  verbose = FALSE,
+  ci_method = c("delta", "bootstrap")
 ) {
   # Capture by parameter BEFORE validation
   by_quo <- rlang::enquo(by)
   target <- match.arg(target)
+  ci_method <- match.arg(ci_method)
 
   # Validate variance parameter
   valid_methods <- c("taylor", "bootstrap", "jackknife")
@@ -156,7 +162,7 @@ estimate_total_catch <- function(
     }
     return(estimate_total_catch_br( # nolint: object_usage_linter
       design, by_vars_br, variance, conf_level,
-      verbose = FALSE
+      verbose = FALSE, ci_method = ci_method
     ))
   }
 

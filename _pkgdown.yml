@@ -91,6 +91,7 @@ reference:
       - summarize_successful_parties
       - season_summary
       - summary.creel_estimates
+      - tidy.creel_estimates
       - flag_outliers
       - write_estimates
       - validate_incomplete_trips

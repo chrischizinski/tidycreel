@@ -19,31 +19,30 @@ list_creels <- function(conn, ...) UseMethod("list_creels")
 
 #' @export
 list_creels.creel_connection_api <- function(conn, ...) {
-  # D-01: no UID filter for discovery — pass no_uid_filter = TRUE to .api_fetch()
+  # D-01: no UID filter for discovery -- pass no_uid_filter = TRUE to .api_fetch()
   raw_df <- .api_fetch(conn$con, "discovery", no_uid_filter = TRUE)
 
-  # Early return for empty API response — avoids column-type issues downstream
+  # Early return for empty API response -- avoids column-type issues downstream
   if (nrow(raw_df) == 0L) {
-    return(data.frame(
+    return(tibble::tibble(
       creel_uid     = character(0),
       title         = character(0),
       description   = character(0),
       active        = logical(0),
       data_complete = logical(0),
-      comments      = character(0),
-      stringsAsFactors = FALSE
+      comments      = character(0)
     ))
   }
 
-  # Hardcoded NGPC field names — do NOT route through creel_schema (D-03)
-  # TODO: confirm all field names with live API
+  # Hardcoded NGPC field names -- do NOT route through creel_schema (D-03, CONTEXT.md D-15)
+  # Field names confirmed via ngpc-field-discovery.R probe (API-09)
   api_rename_map <- c(
-    creel_uid     = "cr_UID",        # TODO: confirm field name with live API
-    title         = "Creel_Name",    # TODO: confirm field name with live API
-    description   = "sr_Title",      # TODO: confirm field name with live API
-    active        = "Active",        # TODO: confirm field name with live API
-    data_complete = "DataComplete",  # TODO: confirm field name with live API
-    comments      = "sr_Comments"    # TODO: confirm field name with live API
+    creel_uid     = "Creel_UID",          # confirmed NGPC field name -- see ngpc-field-discovery.R output
+    title         = "Creel_Title",        # confirmed NGPC field name -- see ngpc-field-discovery.R output
+    description   = "Creel_Description",  # confirmed NGPC field name -- see ngpc-field-discovery.R output
+    active        = "Creel_Active",       # confirmed NGPC field name -- see ngpc-field-discovery.R output
+    data_complete = "Creel_DataComplete", # confirmed NGPC field name -- trimws() in .api_fetch() strips trailing space
+    comments      = "Creel_Comments"      # confirmed NGPC field name -- see ngpc-field-discovery.R output
   )
   df <- .rename_api_to_canonical(raw_df, api_rename_map)
 
@@ -103,7 +102,7 @@ search_creels.creel_connection_api <- function(conn, keyword, ...) {
 
   df <- list_creels(conn)
 
-  # Client-side filter — D-04: no extra API round trip
+  # Client-side filter -- D-04: no extra API round trip
   # D-05: search title and description only; D-06: case-insensitive
   # tolower() + fixed=TRUE: safe with regex metacharacters (ignore.case is silently
   # dropped when fixed=TRUE in R, so we normalise both sides manually)

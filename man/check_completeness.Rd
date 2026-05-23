@@ -28,7 +28,7 @@ Dispatches by survey_type to avoid false-positive warnings on aerial and
 camera designs that do not collect interview data.
 }
 \seealso{
-Other "Reporting & Diagnostics": 
+Other "Reporting & Diagnostics":
 \code{\link{adjust_nonresponse}()},
 \code{\link{compare_variance}()},
 \code{\link{flag_outliers}()},
@@ -46,6 +46,7 @@ Other "Reporting & Diagnostics":
 \code{\link{summarize_successful_parties}()},
 \code{\link{summarize_trips}()},
 \code{\link{summary.creel_estimates}()},
+\code{\link{tidy.creel_estimates}()},
 \code{\link{validate_creel_data}()},
 \code{\link{validate_design}()},
 \code{\link{validate_incomplete_trips}()},

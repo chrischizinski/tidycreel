@@ -4,7 +4,12 @@
 \alias{estimate_mr_harvest}
 \title{Estimate total harvest from a mark-recapture population estimate}
 \usage{
-estimate_mr_harvest(angler_n, harvest_rate, conf_level = 0.95)
+estimate_mr_harvest(
+  angler_n,
+  harvest_rate,
+  conf_level = 0.95,
+  ci_method = c("delta", "bootstrap")
+)
 }
 \arguments{
 \item{angler_n}{A \code{creel_estimates} object returned by
@@ -15,6 +20,11 @@ Must be in \eqn{(0, 1]}. Uncertainty in the harvest rate is not propagated
 (see Details).}
 
 \item{conf_level}{numeric. Confidence level for the CI. Default \code{0.95}.}
+
+\item{ci_method}{character(1). CI construction method: \code{"delta"} (default)
+uses the analytic delta-method formula; \code{"bootstrap"} propagates the
+bootstrap samples stored in \code{attr(angler_n, "boot_samples")} (produced
+by calling \code{estimate_angler_n(..., ci_method = "bootstrap")} first).}
 }
 \value{
 A \code{creel_estimates} S3 object with \code{method =

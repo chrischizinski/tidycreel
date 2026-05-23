@@ -4,7 +4,15 @@
 \alias{estimate_angler_n}
 \title{Estimate angler population size via closed-population mark-recapture}
 \usage{
-estimate_angler_n(M, n, m, method = "chapman", conf_level = 0.95)
+estimate_angler_n(
+  M,
+  n,
+  m,
+  method = "chapman",
+  conf_level = 0.95,
+  ci_method = c("delta", "bootstrap"),
+  B = 2000L
+)
 }
 \arguments{
 \item{M}{integer or numeric. Number of marked animals released (first sample).
@@ -21,6 +29,15 @@ Petersen; vector (same length as \code{M}) for Schnabel.}
 \code{"petersen"}, or \code{"schnabel"}.}
 
 \item{conf_level}{numeric. Confidence level for the CI. Default \code{0.95}.}
+
+\item{ci_method}{character(1). CI construction method: \code{"delta"} (default)
+uses the analytic delta-method formula; \code{"bootstrap"} uses a parametric
+bootstrap via \code{stats::rbinom()}. Bootstrap results add \code{ci_lo_boot}
+and \code{ci_hi_boot} columns to the estimates tibble and attach
+\code{attr(result, "boot_samples")}.}
+
+\item{B}{integer(1). Number of bootstrap replicates when
+\code{ci_method = "bootstrap"}. Default \code{2000L}.}
 }
 \value{
 A \code{creel_estimates} S3 object with \code{method =

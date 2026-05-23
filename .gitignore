@@ -73,9 +73,13 @@ GEMINI.md
 
 # AI workflow planning (local use only)
 .planning/
+graphify-out/
 .planning-legacy-work/
 .gsd/
 .bg-shell/
+
+# Local-only probe/validation scripts (contain live API env var usage — not distributed)
+inst/validation/ngpc-field-discovery.R
 
 # External validation fixture data (local-only, downloaded from live NGPC API — not distributed)
 inst/extdata/benson-2021/

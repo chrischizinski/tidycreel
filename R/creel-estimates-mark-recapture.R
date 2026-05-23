@@ -31,6 +31,13 @@
 #' @param method character(1). One of \code{"chapman"} (default),
 #'   \code{"petersen"}, or \code{"schnabel"}.
 #' @param conf_level numeric. Confidence level for the CI. Default \code{0.95}.
+#' @param ci_method character(1). CI construction method: \code{"delta"} (default)
+#'   uses the analytic delta-method formula; \code{"bootstrap"} uses a parametric
+#'   bootstrap via \code{stats::rbinom()}. Bootstrap results add \code{ci_lo_boot}
+#'   and \code{ci_hi_boot} columns to the estimates tibble and attach
+#'   \code{attr(result, "boot_samples")}.
+#' @param B integer(1). Number of bootstrap replicates when
+#'   \code{ci_method = "bootstrap"}. Default \code{2000L}.
 #'
 #' @return A \code{creel_estimates} S3 object with \code{method =
 #'   "mark-recapture-chapman"} (or petersen/schnabel) and an \code{estimates}
@@ -62,8 +69,10 @@
 #'   method = "schnabel"
 #' )
 #' print(result_s)
-estimate_angler_n <- function(M, n, m, method = "chapman", conf_level = 0.95) {
-  method <- match.arg(method, c("chapman", "petersen", "schnabel"))
+estimate_angler_n <- function(M, n, m, method = "chapman", conf_level = 0.95,
+                              ci_method = c("delta", "bootstrap"), B = 2000L) {
+  method    <- match.arg(method, c("chapman", "petersen", "schnabel"))
+  ci_method <- match.arg(ci_method)
 
   # --- input validation ---
   if (any(n <= 0))
@@ -119,21 +128,34 @@ estimate_angler_n <- function(M, n, m, method = "chapman", conf_level = 0.95) {
     ci_hi <- N_hat + z * se_N
 
     # --- return ---
-    new_creel_estimates(
-      estimates = tibble::tibble(
-        parameter = "N_hat",
-        estimate  = N_hat,
-        se        = se_N,
-        ci_lower  = ci_lo,
-        ci_upper  = ci_hi,
-        n         = as.integer(m)
-      ),
+    estimates_df <- tibble::tibble(
+      parameter = "N_hat",
+      estimate  = N_hat,
+      se        = se_N,
+      ci_lower  = ci_lo,
+      ci_upper  = ci_hi,
+      n         = as.integer(m)
+    )
+    if (ci_method == "bootstrap") {
+      m_b <- stats::rbinom(B, size = n, prob = m / n)
+      m_b[m_b == 0L] <- 1L
+      N_hat_b    <- ((M + 1L) * (n + 1L)) / (m_b + 1L) - 1
+      alpha      <- 1 - conf_level
+      ci_lo_boot <- stats::quantile(N_hat_b, alpha / 2,       names = FALSE)
+      ci_hi_boot <- stats::quantile(N_hat_b, 1 - alpha / 2,   names = FALSE)
+      estimates_df$ci_lo_boot <- ci_lo_boot
+      estimates_df$ci_hi_boot <- ci_hi_boot
+    }
+    result <- new_creel_estimates(
+      estimates       = estimates_df,
       method          = "mark-recapture-chapman",
       variance_method = "chapman",
       design          = NULL,
       conf_level      = conf_level,
       by_vars         = NULL
     )
+    if (ci_method == "bootstrap") attr(result, "boot_samples") <- N_hat_b
+    result
 
   } else if (method == "petersen") {
     # --- point estimate ---
@@ -149,21 +171,34 @@ estimate_angler_n <- function(M, n, m, method = "chapman", conf_level = 0.95) {
     ci_hi <- N_hat + z * se_N
 
     # --- return ---
-    new_creel_estimates(
-      estimates = tibble::tibble(
-        parameter = "N_hat",
-        estimate  = N_hat,
-        se        = se_N,
-        ci_lower  = ci_lo,
-        ci_upper  = ci_hi,
-        n         = as.integer(m)
-      ),
+    estimates_df <- tibble::tibble(
+      parameter = "N_hat",
+      estimate  = N_hat,
+      se        = se_N,
+      ci_lower  = ci_lo,
+      ci_upper  = ci_hi,
+      n         = as.integer(m)
+    )
+    if (ci_method == "bootstrap") {
+      m_b <- stats::rbinom(B, size = n, prob = m / n)
+      m_b[m_b == 0L] <- 1L
+      N_hat_b    <- (M * n) / m_b
+      alpha      <- 1 - conf_level
+      ci_lo_boot <- stats::quantile(N_hat_b, alpha / 2,       names = FALSE)
+      ci_hi_boot <- stats::quantile(N_hat_b, 1 - alpha / 2,   names = FALSE)
+      estimates_df$ci_lo_boot <- ci_lo_boot
+      estimates_df$ci_hi_boot <- ci_hi_boot
+    }
+    result <- new_creel_estimates(
+      estimates       = estimates_df,
       method          = "mark-recapture-petersen",
       variance_method = "petersen",
       design          = NULL,
       conf_level      = conf_level,
       by_vars         = NULL
     )
+    if (ci_method == "bootstrap") attr(result, "boot_samples") <- N_hat_b
+    result
 
   } else {
     # method == "schnabel"
@@ -195,21 +230,39 @@ estimate_angler_n <- function(M, n, m, method = "chapman", conf_level = 0.95) {
     }
 
     # --- return ---
-    new_creel_estimates(
-      estimates = tibble::tibble(
-        parameter = "N_hat",
-        estimate  = N_hat,
-        se        = se_N,
-        ci_lower  = ci_lo,
-        ci_upper  = ci_hi,
-        n         = as.integer(sum_m)
-      ),
+    estimates_df <- tibble::tibble(
+      parameter = "N_hat",
+      estimate  = N_hat,
+      se        = se_N,
+      ci_lower  = ci_lo,
+      ci_upper  = ci_hi,
+      n         = as.integer(sum_m)
+    )
+    if (ci_method == "bootstrap") {
+      m_b_matrix <- vapply(
+        seq_along(m),
+        function(i) stats::rbinom(B, size = n[i], prob = m[i] / n[i]),
+        numeric(B)
+      )  # matrix B x k (each column is one occasion)
+      sum_m_b    <- rowSums(m_b_matrix)
+      sum_m_b[sum_m_b == 0L] <- 1L
+      N_hat_b    <- sum(M * n) / sum_m_b
+      alpha      <- 1 - conf_level
+      ci_lo_boot <- stats::quantile(N_hat_b, alpha / 2,       names = FALSE)
+      ci_hi_boot <- stats::quantile(N_hat_b, 1 - alpha / 2,   names = FALSE)
+      estimates_df$ci_lo_boot <- ci_lo_boot
+      estimates_df$ci_hi_boot <- ci_hi_boot
+    }
+    result <- new_creel_estimates(
+      estimates       = estimates_df,
       method          = "mark-recapture-schnabel",
       variance_method = "delta",
       design          = NULL,
       conf_level      = conf_level,
       by_vars         = NULL
     )
+    if (ci_method == "bootstrap") attr(result, "boot_samples") <- N_hat_b
+    result
   }
 }
 
@@ -234,6 +287,10 @@ estimate_angler_n <- function(M, n, m, method = "chapman", conf_level = 0.95) {
 #'   Must be in \eqn{(0, 1]}. Uncertainty in the harvest rate is not propagated
 #'   (see Details).
 #' @param conf_level numeric. Confidence level for the CI. Default \code{0.95}.
+#' @param ci_method character(1). CI construction method: \code{"delta"} (default)
+#'   uses the analytic delta-method formula; \code{"bootstrap"} propagates the
+#'   bootstrap samples stored in \code{attr(angler_n, "boot_samples")} (produced
+#'   by calling \code{estimate_angler_n(..., ci_method = "bootstrap")} first).
 #'
 #' @details
 #' The harvest rate is treated as a known constant in this implementation
@@ -260,7 +317,9 @@ estimate_angler_n <- function(M, n, m, method = "chapman", conf_level = 0.95) {
 #' # Step 2: compute total harvest
 #' harvest <- estimate_mr_harvest(angler_n = result, harvest_rate = 0.35)
 #' print(harvest)
-estimate_mr_harvest <- function(angler_n, harvest_rate, conf_level = 0.95) {
+estimate_mr_harvest <- function(angler_n, harvest_rate, conf_level = 0.95,
+                                ci_method = c("delta", "bootstrap")) {
+  ci_method <- match.arg(ci_method)
   # --- input validation ---
   if (!inherits(angler_n, "creel_estimates"))
     cli::cli_abort(
@@ -297,14 +356,29 @@ estimate_mr_harvest <- function(angler_n, harvest_rate, conf_level = 0.95) {
   ci_hi <- harvest_hat + z * se_H
 
   # --- return ---
+  estimates_df <- tibble::tibble(
+    parameter = "total_harvest",
+    estimate  = harvest_hat,
+    se        = se_H,
+    ci_lower  = ci_lo,
+    ci_upper  = ci_hi
+  )
+  if (ci_method == "bootstrap") {
+    boot_samples <- attr(angler_n, "boot_samples")
+    if (is.null(boot_samples)) {
+      cli::cli_abort(c(
+        "ci_method = 'bootstrap' requires angler_n computed with ci_method = 'bootstrap'.",
+        "i" = "Call estimate_angler_n(..., ci_method = 'bootstrap') first."
+      ))
+    }
+    harvest_b  <- boot_samples * harvest_rate
+    ci_lo_boot <- stats::quantile(harvest_b, (1 - conf_level) / 2,     names = FALSE)
+    ci_hi_boot <- stats::quantile(harvest_b, 1 - (1 - conf_level) / 2, names = FALSE)
+    estimates_df$ci_lo_boot <- ci_lo_boot
+    estimates_df$ci_hi_boot <- ci_hi_boot
+  }
   new_creel_estimates(
-    estimates = tibble::tibble(
-      parameter = "total_harvest",
-      estimate  = harvest_hat,
-      se        = se_H,
-      ci_lower  = ci_lo,
-      ci_upper  = ci_hi
-    ),
+    estimates       = estimates_df,
     method          = "mark-recapture-harvest",
     variance_method = "delta",
     design          = NULL,

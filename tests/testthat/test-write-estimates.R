@@ -63,7 +63,7 @@ test_that("WRITE-04: CSV data is readable with comment.char='#'", {
   out <- utils::read.csv(tmp, comment.char = "#")
   expect_s3_class(out, "data.frame")
   expect_gt(nrow(out), 0L)
-  expect_true("Estimate" %in% names(out))
+  expect_true("estimate" %in% names(out))
 })
 
 test_that("WRITE-05: write_estimates() accepts a creel_summary object", {
