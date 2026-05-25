@@ -57,7 +57,7 @@ tidycreel is an R package for creel survey design, data preparation, estimation,
 
 ### v1.9.0 — Report Completeness and Documentation Polish
 
-- [ ] **Phase 95: Trip and Density Estimators** — Implement `estimate_angler_trips()` (effort / mean trip length, Delta Method SE) and `estimate_effort_per_acre()` (effort density wrapper), both returning `creel_estimates` objects
+- [x] **Phase 95: Trip and Density Estimators** — Implement `estimate_angler_trips()` (effort / mean trip length, Delta Method SE) and `estimate_effort_per_acre()` (effort density wrapper), both returning `creel_estimates` objects (completed 2026-05-24)
 - [ ] **Phase 96: Geographic Summary Functions** — Implement `summarize_boat_composition()`, `summarize_by_zip()`, and `summarize_by_county()` for NGPC standard report tabulations
 - [ ] **Phase 97: Documentation Polish and Tech Debt** — Rebuild pkgdown at v1.9.0, confirm/update tidycreel.connect bridge article, add GitHub issue templates, and close the WRITE-11 xlsx test carry-forward
 
@@ -169,7 +169,12 @@ Plans:
   3. Biologist can call `summarize_by_county(design)` and receive a tibble of interview count and percentage by county, with zip-to-county mapping via `zipcodeR`; function emits a clear `cli_abort` when `zipcodeR` is not installed
   4. All three functions return plain tibbles (not `creel_estimates`), consistent with existing `summarize_*` conventions in the package
   5. `rcmdcheck` passes with 0 errors and 0 warnings after the new functions land
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+
+- [ ] 96-01-PLAN.md — summarize_boat_composition() with three-guard pattern, schema-based column lookup, month x day_type grouping
+- [ ] 96-02-PLAN.md — summarize_by_zip() and summarize_by_county() with Unknown row handling, zipcodeR guard, rcmdcheck gate
 
 ---
 
@@ -208,5 +213,5 @@ Plans:
 | 93. Reporting Exports | v1.8.0 | 2/2 | Complete | 2026-05-20 |
 | 94. Bootstrap Confidence Intervals | v1.8.0 | 3/3 | Complete | 2026-05-20 |
 | 95. Trip and Density Estimators | v1.9.0 | 1/2 | In Progress|  |
-| 96. Geographic Summary Functions | v1.9.0 | 0/TBD | Not started | - |
+| 96. Geographic Summary Functions | v1.9.0 | 0/2 | Not started | - |
 | 97. Documentation Polish and Tech Debt | v1.9.0 | 0/TBD | Not started | - |
