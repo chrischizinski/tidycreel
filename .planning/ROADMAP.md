@@ -154,7 +154,7 @@ _(v1.8.0 phase details archived — see [.planning/milestones/v1.8.0-ROADMAP.md]
 Plans:
 
 - [x] 095-01-PLAN.md — implement estimate_angler_trips() with Delta Method SE and per-stratum .overall row
-- [ ] 095-02-PLAN.md — implement estimate_effort_per_acre() and run rcmdcheck gate
+- [x] 095-02-PLAN.md — implement estimate_effort_per_acre() and run rcmdcheck gate
 
 ---
 
@@ -194,10 +194,20 @@ Plans:
 
   1. `pkgdown::build_site()` completes without error and the site header shows the v1.9.0 version string (not stale "1.4.0"); DESCRIPTION version is bumped and committed
   2. The pkgdown site contains a tidycreel.connect bridge article explaining the companion package, how to install it, and linking to its documentation
-  3. `.github/ISSUE_TEMPLATE/bug_report.yml` and `.github/ISSUE_TEMPLATE/feature_request.yml` exist with the specified fields; both validate as correct YAML
+  3. `.github/ISSUE_TEMPLATE/bug-report.yml` contains an `r_version` input field (required); both template files validate as correct YAML
   4. `write_estimates()` xlsx path has a passing test using `skip_if_not_installed("writexl")`, and the test exercises the actual Excel write path
 
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+
+**Wave 1**
+
+- [ ] 97-01-PLAN.md — update tidycreel.connect vignette (install block + content audit), add r_version field to bug-report.yml, add WRITE-11 xlsx round-trip test
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 97-02-PLAN.md — bump DESCRIPTION to 1.9.0, write NEWS.md v1.9.0 section, build pkgdown site, human verify version string, create git tag v1.9.0
 
 ---
 
@@ -220,6 +230,6 @@ Plans:
 | 92. Package Health Gate | v1.8.0 | 3/3 | Complete | 2026-05-20 |
 | 93. Reporting Exports | v1.8.0 | 2/2 | Complete | 2026-05-20 |
 | 94. Bootstrap Confidence Intervals | v1.8.0 | 3/3 | Complete | 2026-05-20 |
-| 95. Trip and Density Estimators | v1.9.0 | 1/2 | In Progress|  |
+| 95. Trip and Density Estimators | v1.9.0 | 2/2 | Complete   | 2026-05-24 |
 | 96. Geographic Summary Functions | v1.9.0 | 2/2 | Complete   | 2026-05-25 |
-| 97. Documentation Polish and Tech Debt | v1.9.0 | 0/TBD | Not started | - |
+| 97. Documentation Polish and Tech Debt | v1.9.0 | 0/2 | Not started | - |
