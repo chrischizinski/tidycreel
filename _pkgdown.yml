@@ -72,6 +72,8 @@ reference:
       - estimate_angler_n
       - estimate_mr_harvest
       - est_length_distribution
+      - estimate_angler_trips
+      - estimate_effort_per_acre
 
   - title: "Reporting & Diagnostics"
     desc: >
@@ -89,6 +91,9 @@ reference:
       - summarize_hws_rates
       - summarize_length_freq
       - summarize_successful_parties
+      - summarize_boat_composition
+      - summarize_by_zip
+      - summarize_by_county
       - season_summary
       - summary.creel_estimates
       - tidy.creel_estimates
