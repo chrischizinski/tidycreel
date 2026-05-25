@@ -174,3 +174,105 @@ test_that("Test L: smoke — write_estimates() to tempfile succeeds", {
   expect_no_error(write_estimates(result, path = tmp))
   expect_true(file.exists(tmp))
 })
+
+
+# -- RPT-02: estimate_effort_per_acre() tests ---------------------------------
+
+# Fixture: ungrouped effort with se_between/se_within present
+effort_with_decomp <- new_creel_estimates(
+  estimates = tibble::tibble(
+    estimate   = 5000,
+    se         = 250,
+    se_between = 150,
+    se_within  = 200,
+    ci_lower   = 4510,
+    ci_upper   = 5490,
+    n          = 40
+  ),
+  method          = "total",
+  variance_method = "taylor",
+  design          = NULL,
+  conf_level      = 0.95,
+  by_vars         = NULL
+)
+
+# Fixture: grouped effort without se_between/se_within
+effort_grouped_no_decomp <- new_creel_estimates(
+  estimates = tibble::tibble(
+    day_type = c("weekday", "weekend"),
+    estimate = c(3000, 2000),
+    se       = c(150, 100),
+    ci_lower = c(2706, 1804),
+    ci_upper = c(3294, 2196),
+    n        = c(30L, 20L)
+  ),
+  method          = "total",
+  variance_method = "taylor",
+  design          = NULL,
+  conf_level      = 0.95,
+  by_vars         = "day_type"
+)
+
+test_that("Test M: estimate equals effort estimate / acres", {
+  result <- estimate_effort_per_acre(effort_with_decomp, 120)
+  expect_equal(result$estimates$estimate, 5000 / 120, tolerance = 1e-10)
+})
+
+test_that("Test N: se equals effort se / acres", {
+  result <- estimate_effort_per_acre(effort_with_decomp, 120)
+  expect_equal(result$estimates$se, 250 / 120, tolerance = 1e-10)
+})
+
+test_that("Test O: ci_lower and ci_upper scaled by 1/acres", {
+  result <- estimate_effort_per_acre(effort_with_decomp, 120)
+  expect_equal(result$estimates$ci_lower, 4510 / 120, tolerance = 1e-10)
+  expect_equal(result$estimates$ci_upper, 5490 / 120, tolerance = 1e-10)
+})
+
+test_that("Test P: se_between and se_within scaled when present", {
+  # This test encodes WHY se_between/se_within must be scaled: they are
+  # variance components of the effort estimate, and dividing effort by a
+  # constant acres divisor requires dividing all SE components by the same
+  # constant (linear propagation, no Delta Method needed).
+  result <- estimate_effort_per_acre(effort_with_decomp, 120)
+  expect_equal(result$estimates$se_between, 150 / 120, tolerance = 1e-10)
+  expect_equal(result$estimates$se_within,  200 / 120, tolerance = 1e-10)
+})
+
+test_that("Test Q: se_between and se_within absent when not in input", {
+  # Guard correctness: when effort lacks variance decomposition columns,
+  # estimate_effort_per_acre must not fabricate them.
+  result2 <- estimate_effort_per_acre(effort_grouped_no_decomp, 80)
+  expect_false("se_between" %in% names(result2$estimates))
+  expect_false("se_within"  %in% names(result2$estimates))
+})
+
+test_that("Test R: returns creel_estimates with method effort-per-acre", {
+  result <- estimate_effort_per_acre(effort_with_decomp, 120)
+  expect_s3_class(result, "creel_estimates")
+  expect_equal(result$method, "effort-per-acre")
+})
+
+test_that("Test S: by_vars and conf_level inherited from effort object", {
+  result2 <- estimate_effort_per_acre(effort_grouped_no_decomp, 80)
+  expect_equal(result2$by_vars, "day_type")
+  expect_equal(result2$conf_level, 0.95)
+})
+
+test_that("Test T: non-positive acres fires cli_abort", {
+  expect_error(estimate_effort_per_acre(effort_with_decomp, 0),  regexp = "positive")
+  expect_error(estimate_effort_per_acre(effort_with_decomp, -5), regexp = "positive")
+})
+
+test_that("Test U: grouped result row count unchanged (no .overall appended)", {
+  result2 <- estimate_effort_per_acre(effort_grouped_no_decomp, 80)
+  expect_equal(nrow(result2$estimates), 2L)
+})
+
+test_that("Test V: smoke — tidy() and write_estimates() succeed", {
+  result <- estimate_effort_per_acre(effort_with_decomp, 120)
+  expect_s3_class(tidy(result), "data.frame")
+  tmp <- tempfile(fileext = ".csv")
+  expect_no_error(write_estimates(result, path = tmp))
+  expect_true(file.exists(tmp))
+})

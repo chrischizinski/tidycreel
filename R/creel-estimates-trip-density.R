@@ -93,7 +93,7 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
 
     if (L <= 0) {
       cli::cli_abort(
-        "Mean trip length is zero or negative — check {.code {dur_col}} values."
+        "Mean trip length is zero or negative; check {.code {dur_col}} values."
       )
     }
 
@@ -140,7 +140,7 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
   # Guard against zero mean trip length
   if (any(summary_df$mean_L <= 0, na.rm = TRUE)) {
     cli::cli_abort(
-      "Mean trip length is zero or negative in at least one stratum — check {.code {dur_col}} values."
+      "Mean trip length is zero or negative in at least one stratum; check {.code {dur_col}} values."
     )
   }
 
