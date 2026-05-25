@@ -26,6 +26,14 @@ body:
     validations:
       required: true
 
+  - type: input
+    id: r_version
+    attributes:
+      label: "R version"
+      description: "Output of R.version.string or sessionInfo()"
+    validations:
+      required: true
+
   - type: textarea
     id: expected
     attributes:

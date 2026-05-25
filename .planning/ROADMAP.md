@@ -12,6 +12,7 @@ tidycreel is an R package for creel survey design, data preparation, estimation,
 - ✅ **v1.6.0 — Analytical Extensions II** — Phases 83–87 (shipped 2026-05-06) — see [.planning/milestones/v1.6-ROADMAP.md](milestones/v1.6-ROADMAP.md)
 - ✅ **v1.7.0 — API Connection & Real-Data Validation** — Phases 88–90 (shipped 2026-05-11) — see [.planning/milestones/v1.7-ROADMAP.md](milestones/v1.7-ROADMAP.md)
 - ✅ **v1.8.0 — Exports, Bootstrap CIs, and API Hardening** — Phases 91–94 (shipped 2026-05-23) — see [.planning/milestones/v1.8.0-ROADMAP.md](milestones/v1.8.0-ROADMAP.md)
+- **v1.9.0 — Report Completeness and Documentation Polish** — Phases 95–97 (active)
 
 ## Phases
 
@@ -53,6 +54,12 @@ tidycreel is an R package for creel survey design, data preparation, estimation,
 - [x] **Phase 94: Bootstrap Confidence Intervals** — Add `ci_method = "bootstrap"` to `estimate_total_harvest_br()`, `estimate_total_catch()`, `estimate_angler_n()`, and `estimate_mr_harvest()`
 
 </details>
+
+### v1.9.0 — Report Completeness and Documentation Polish
+
+- [x] **Phase 95: Trip and Density Estimators** — Implement `estimate_angler_trips()` (effort / mean trip length, Delta Method SE) and `estimate_effort_per_acre()` (effort density wrapper), both returning `creel_estimates` objects (completed 2026-05-24)
+- [ ] **Phase 96: Geographic Summary Functions** — Implement `summarize_boat_composition()`, `summarize_by_zip()`, and `summarize_by_county()` for NGPC standard report tabulations
+- [ ] **Phase 97: Documentation Polish and Tech Debt** — Rebuild pkgdown at v1.9.0, confirm/update tidycreel.connect bridge article, add GitHub issue templates, and close the WRITE-11 xlsx test carry-forward
 
 ## Phase Details
 
@@ -130,6 +137,80 @@ _(v1.8.0 phase details archived — see [.planning/milestones/v1.8.0-ROADMAP.md]
 
 ---
 
+### Phase 95: Trip and Density Estimators
+
+**Goal**: Biologists can derive angler trip counts and effort density from an existing creel design using two new `creel_estimates`-returning functions
+**Depends on**: Phase 94 (creel_estimates S3 class and bootstrap infrastructure complete)
+**Requirements**: RPT-01, RPT-02
+**Success Criteria** (what must be TRUE):
+
+  1. Biologist can call `estimate_angler_trips(effort, design, conf_level = 0.95, ...)` and receive a `creel_estimates` object with per-stratum trip estimates computed as effort / mean trip length with Delta Method SE
+  2. Biologist can call `estimate_effort_per_acre(effort, acres)` and receive angler-hours per acre by stratum, derived from the extrapolated effort estimate
+  3. Both functions return objects that pass `inherits(result, "creel_estimates")` and are compatible with `tidy()` and `write_estimates()`
+  4. `rcmdcheck` passes with 0 errors and 0 warnings after the new functions land
+
+**Plans**: 2 plans
+
+Plans:
+
+- [x] 095-01-PLAN.md — implement estimate_angler_trips() with Delta Method SE and per-stratum .overall row
+- [x] 095-02-PLAN.md — implement estimate_effort_per_acre() and run rcmdcheck gate
+
+---
+
+### Phase 96: Geographic Summary Functions
+
+**Goal**: Biologists can produce the three NGPC standard composition and origin summary tables — boat composition, zip-code origin, and county origin — directly from a creel design object
+**Depends on**: Phase 95 (stable creel_design conventions confirmed in current milestone)
+**Requirements**: RPT-03, RPT-04, RPT-05
+**Success Criteria** (what must be TRUE):
+
+  1. Biologist can call `summarize_boat_composition(design)` and receive a tibble of % angler boats by month and day type, computed from `c_AnglerBoats / (c_AnglerBoats + c_NonAngBoats)` in raw count data
+  2. Biologist can call `summarize_by_zip(design)` and receive a tibble of interview count and percentage by zip code, derived from the `ii_ZipCode` interview field
+  3. Biologist can call `summarize_by_county(design)` and receive a tibble of interview count and percentage by county, with zip-to-county mapping via `zipcodeR`; function emits a clear `cli_abort` when `zipcodeR` is not installed
+  4. All three functions return plain tibbles (not `creel_estimates`), consistent with existing `summarize_*` conventions in the package
+  5. `rcmdcheck` passes with 0 errors and 0 warnings after the new functions land
+
+**Plans**: 2 plans
+
+Plans:
+
+**Wave 1**
+
+- [x] 96-01-PLAN.md — summarize_boat_composition() with three-guard pattern, schema-based column lookup, month x day_type grouping
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [x] 96-02-PLAN.md — summarize_by_zip() and summarize_by_county() with Unknown row handling, zipcodeR guard, rcmdcheck gate
+
+---
+
+### Phase 97: Documentation Polish and Tech Debt
+
+**Goal**: The pkgdown site reflects v1.9.0, the connect bridge article is present and accurate, GitHub issue templates exist, and the WRITE-11 xlsx test carry-forward is closed
+**Depends on**: Phase 96 (all new functions landed so pkgdown rebuild captures the full v1.9.0 surface)
+**Requirements**: DOC-01, DOC-02, DOC-03, TD-01
+**Success Criteria** (what must be TRUE):
+
+  1. `pkgdown::build_site()` completes without error and the site header shows the v1.9.0 version string (not stale "1.4.0"); DESCRIPTION version is bumped and committed
+  2. The pkgdown site contains a tidycreel.connect bridge article explaining the companion package, how to install it, and linking to its documentation
+  3. `.github/ISSUE_TEMPLATE/bug-report.yml` contains an `r_version` input field (required); both template files validate as correct YAML
+  4. `write_estimates()` xlsx path has a passing test using `skip_if_not_installed("writexl")`, and the test exercises the actual Excel write path
+
+**Plans**: 2 plans
+
+Plans:
+
+**Wave 1**
+
+- [ ] 97-01-PLAN.md — update tidycreel.connect vignette (install block + content audit), add r_version field to bug-report.yml, add WRITE-11 xlsx round-trip test
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 97-02-PLAN.md — bump DESCRIPTION to 1.9.0, write NEWS.md v1.9.0 section, build pkgdown site, human verify version string, create git tag v1.9.0
+
+---
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -149,3 +230,6 @@ _(v1.8.0 phase details archived — see [.planning/milestones/v1.8.0-ROADMAP.md]
 | 92. Package Health Gate | v1.8.0 | 3/3 | Complete | 2026-05-20 |
 | 93. Reporting Exports | v1.8.0 | 2/2 | Complete | 2026-05-20 |
 | 94. Bootstrap Confidence Intervals | v1.8.0 | 3/3 | Complete | 2026-05-20 |
+| 95. Trip and Density Estimators | v1.9.0 | 2/2 | Complete   | 2026-05-24 |
+| 96. Geographic Summary Functions | v1.9.0 | 2/2 | Complete   | 2026-05-25 |
+| 97. Documentation Polish and Tech Debt | v1.9.0 | 0/2 | Not started | - |
