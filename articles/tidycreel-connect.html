@@ -29,7 +29,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidycreel</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.8.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.9.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -113,18 +113,30 @@ can analyse.</p>
 tidycreel itself deliberately leaves out of scope:</p>
 <ol style="list-style-type: decimal">
 <li>
-<strong>Schema validation</strong> — confirming that tables arriving
-from the field meet the structural requirements that tidycreel functions
-assume (column names, data types, allowed factor levels).</li>
+<strong>Connection management</strong> — opening validated
+connections to DBI-backed databases (SQL Server, DuckDB, SQLite), CSV
+file collections, or REST API endpoints with a consistent
+interface.</li>
 <li>
-<strong>Database I/O</strong> — reading from and writing to DuckDB,
-SQLite, or PostgreSQL using a consistent DBI-based interface, without
-requiring users to write raw SQL.</li>
+<strong>Schema-aware data loading</strong> — reading counts,
+interviews, catch, and length records from the connected source,
+renaming raw fields to canonical tidycreel column names, and coercing
+types at import time.</li>
 <li>
-<strong>Batch import</strong> — ingesting exports from common field
-data collection formats (CSV bundles, spreadsheet workbooks) and loading
-them into a persistent database in a single reproducible step.</li>
+<strong>Survey discovery</strong> — listing and searching available
+creel surveys on API-backed connections before pulling data.</li>
 </ol>
+</div>
+<div class="section level2">
+<h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
+</h2>
+<p>tidycreel.connect is available from GitHub:</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Using remotes</span></span>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"chrischizinski/tidycreel.connect"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Or using pak</span></span>
+<span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"chrischizinski/tidycreel.connect"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="how-tidycreel-connect-relates-to-tidycreel">How tidycreel.connect relates to tidycreel<a class="anchor" aria-label="anchor" href="#how-tidycreel-connect-relates-to-tidycreel"></a>
@@ -133,34 +145,35 @@ them into a persistent database in a single reproducible step.</li>
 building a <code>creel_design</code> object, running effort and catch
 estimators, producing publication-ready plots and tables.</p>
 <p>tidycreel.connect handles the <strong>data-ingestion and storage
-layer</strong> that feeds it: validating incoming field data, persisting
-it in a structured database, and exposing it to tidycreel through a
-clean read interface.</p>
+layer</strong> that feeds it: connecting to a field database or API,
+loading validated data frames, and handing them off to tidycreel
+estimation functions.</p>
 <p>The two packages are designed to work together but can be used
 independently:</p>
 <ul>
 <li>You can use tidycreel with data that lives in plain CSV files or an
 in-memory data frame — tidycreel.connect is not required.</li>
-<li>You can use tidycreel.connect to manage and validate your field
+<li>You can use tidycreel.connect to manage and query your field
 database without calling any tidycreel estimation functions.</li>
 </ul>
-<p>A typical integrated workflow would look like this:</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<p>A typical integrated workflow looks like this:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/chrischizinski/tidycreel" class="external-link">tidycreel</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">tidycreel.connect</span><span class="op">)</span>   <span class="co"># not yet on CRAN</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">tidycreel.connect</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># 1. Connect to a local DuckDB database</span></span>
-<span><span class="va">con</span> <span class="op">&lt;-</span> <span class="fu">tc_connect</span><span class="op">(</span><span class="st">"survey_data.duckdb"</span><span class="op">)</span></span>
+<span><span class="co"># 1. Connect to a DBI-backed database (SQL Server, DuckDB, SQLite)</span></span>
+<span><span class="va">con</span> <span class="op">&lt;-</span> <span class="fu">creel_connect</span><span class="op">(</span><span class="va">dbi_connection</span>, schema <span class="op">=</span> <span class="st">"creel"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># 2. Batch-import a season's worth of field exports</span></span>
-<span><span class="fu">tc_import_batch</span><span class="op">(</span><span class="va">con</span>, path <span class="op">=</span> <span class="st">"exports/2025/"</span>, season <span class="op">=</span> <span class="st">"2025"</span><span class="op">)</span></span>
+<span><span class="co"># -- or connect using a YAML configuration file --</span></span>
+<span><span class="va">con</span> <span class="op">&lt;-</span> <span class="fu">creel_connect_from_yaml</span><span class="op">(</span><span class="st">"config/creel.yml"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># 3. Validate the imported data against the tidycreel schema</span></span>
-<span><span class="fu">tc_validate</span><span class="op">(</span><span class="va">con</span>, season <span class="op">=</span> <span class="st">"2025"</span><span class="op">)</span></span>
+<span><span class="co"># 2. Discover available surveys (API connections only)</span></span>
+<span><span class="fu">list_creels</span><span class="op">(</span><span class="va">con</span><span class="op">)</span></span>
+<span><span class="fu">search_creels</span><span class="op">(</span><span class="va">con</span>, keyword <span class="op">=</span> <span class="st">"2025"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># 4. Load validated data and hand off to tidycreel</span></span>
-<span><span class="va">counts</span>      <span class="op">&lt;-</span> <span class="fu">tc_read_counts</span><span class="op">(</span><span class="va">con</span>, season <span class="op">=</span> <span class="st">"2025"</span><span class="op">)</span></span>
-<span><span class="va">interviews</span>  <span class="op">&lt;-</span> <span class="fu">tc_read_interviews</span><span class="op">(</span><span class="va">con</span>, season <span class="op">=</span> <span class="st">"2025"</span><span class="op">)</span></span>
+<span><span class="co"># 3. Load validated data and hand off to tidycreel</span></span>
+<span><span class="va">counts</span>     <span class="op">&lt;-</span> <span class="fu">fetch_counts</span><span class="op">(</span><span class="va">con</span><span class="op">)</span></span>
+<span><span class="va">interviews</span> <span class="op">&lt;-</span> <span class="fu">fetch_interviews</span><span class="op">(</span><span class="va">con</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_design.html">creel_design</a></span><span class="op">(</span>counts <span class="op">=</span> <span class="va">counts</span>, <span class="va">...</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/add_interviews.html">add_interviews</a></span><span class="op">(</span><span class="va">interviews</span><span class="op">)</span></span>
@@ -168,72 +181,100 @@ database without calling any tidycreel estimation functions.</li>
 <span><span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="what-tidycreel-connect-will-provide">What tidycreel.connect will provide<a class="anchor" aria-label="anchor" href="#what-tidycreel-connect-will-provide"></a>
+<h2 id="exported-functions">Exported functions<a class="anchor" aria-label="anchor" href="#exported-functions"></a>
 </h2>
-<p>When released, tidycreel.connect is planned to include:</p>
-<p><strong>Schema validation</strong></p>
+<div class="section level3">
+<h3 id="connection-management">Connection management<a class="anchor" aria-label="anchor" href="#connection-management"></a>
+</h3>
 <ul>
 <li>
-<code>tc_validate()</code> — checks that tables in a connected
-database conform to the tidycreel schema; returns a structured
-validation report compatible with
-<code>print.creel_data_validation</code>.</li>
+<code>creel_connect(con, schema)</code> — opens a
+<code>creel_connection</code> object backed by a DBI connection (SQL
+Server, DuckDB, SQLite) or a named list of CSV file paths.</li>
 <li>
-<code>tc_check_columns()</code> — column-level checks for required
-names, types, and allowed values.</li>
-</ul>
-<p><strong>DBI-based read/write helpers</strong></p>
-<ul>
+<code>creel_connect_api(...)</code> — opens a
+<code>creel_connection</code> to a REST API endpoint.</li>
 <li>
-<code>tc_connect()</code> — opens a DBI connection to DuckDB
-(default), SQLite, or PostgreSQL with sensible defaults for creel survey
-databases.</li>
+<code>creel_connect_from_yaml(path, config = "default")</code> —
+convenience wrapper that reads connection parameters from a YAML file;
+supports environment variable injection for credentials.</li>
 <li>
-<code>tc_read_counts()</code>, <code>tc_read_interviews()</code>,
-<code>tc_read_catch()</code> — read validated tables from the database
-into R data frames ready for <code><a href="../reference/creel_design.html">creel_design()</a></code>.</li>
-<li>
-<code>tc_write_estimates()</code> — persist estimation results back
-to the database for longitudinal tracking.</li>
-</ul>
-<p><strong>Batch import</strong></p>
-<ul>
-<li>
-<code>tc_import_batch()</code> — reads a directory of field exports
-(CSV, XLSX) and loads them into the database, applying schema checks at
-ingestion time.</li>
-<li>
-<code>tc_import_csv()</code>, <code>tc_import_xlsx()</code> —
-single-file variants for interactive use.</li>
-</ul>
-<p><strong>Reproducible pipeline templates</strong></p>
-<ul>
-<li>Project templates (via <code>usethis</code>-style helpers) that set
-up a standardised directory structure and a minimal <code>targets</code>
-or <code>drake</code> pipeline connecting field data imports to
-tidycreel analyses.</li>
+<code>creel_check_driver(con)</code> — validates that the underlying
+DBI driver is supported; useful for pre-flight checks in automated
+pipelines.</li>
 </ul>
 </div>
-<div class="section level2">
-<h2 id="how-to-stay-notified">How to stay notified<a class="anchor" aria-label="anchor" href="#how-to-stay-notified"></a>
-</h2>
-<p>tidycreel.connect is under development and not yet publicly
-available. To stay informed:</p>
+<div class="section level3">
+<h3 id="data-loading">Data loading<a class="anchor" aria-label="anchor" href="#data-loading"></a>
+</h3>
+<p>These functions use S3 dispatch so they work identically across DBI,
+CSV, and API back-ends. Each renames raw fields to canonical tidycreel
+column names and coerces data types at import time.</p>
 <ul>
 <li>
-<strong>Watch the tidycreel GitHub repository</strong> at <a href="https://github.com/chrischizinski/tidycreel" class="external-link uri">https://github.com/chrischizinski/tidycreel</a> —
-announcements will be posted in the News / Releases section when the
-companion package reaches a public preview.</li>
+<code>fetch_counts(conn, ...)</code> — loads survey count records
+(bank anglers, angler boats, non-angler boats) into a data frame ready
+for <code><a href="../reference/creel_design.html">creel_design()</a></code>.</li>
 <li>
-<strong>Watch the tidycreel.connect repository</strong>
-(placeholder; not yet public) at
-<code>https://github.com/chrischizinski/tidycreel.connect</code> — star
-or watch the repository to receive notifications once it is made
-public.</li>
+<code>fetch_interviews(conn, ...)</code> — loads interview records
+including IDs, dates, catch counts, effort, and trip status.</li>
+<li>
+<code>fetch_catch(conn, ...)</code> — loads catch detail records
+associated with interviews; species codes are coerced to character.</li>
+<li>
+<code>fetch_harvest_lengths(conn, ...)</code> — loads fish length
+measurements for harvested fish, injecting
+<code>length_type = "harvest"</code>.</li>
+<li>
+<code>fetch_release_lengths(conn, ...)</code> — loads fish length
+measurements for released fish, injecting
+<code>length_type = "release"</code>.</li>
 </ul>
-<p>If you have use-case requirements or schema feedback you would like
-considered during development, please open an issue on the tidycreel
-repository.</p>
+</div>
+<div class="section level3">
+<h3 id="survey-discovery-api-connections-only">Survey discovery (API connections only)<a class="anchor" aria-label="anchor" href="#survey-discovery-api-connections-only"></a>
+</h3>
+<ul>
+<li>
+<code>list_creels(conn, ...)</code> — returns a data frame of all
+available surveys on the connected API, with UIDs, titles, descriptions,
+and active status.</li>
+<li>
+<code>search_creels(conn, keyword, ...)</code> — client-side filter
+of <code>list_creels()</code> output; matches keyword (case-insensitive)
+against title and description fields.</li>
+</ul>
+</div>
+</div>
+<div class="section level2">
+<h2 id="csv-back-end">CSV back-end<a class="anchor" aria-label="anchor" href="#csv-back-end"></a>
+</h2>
+<p>tidycreel.connect also supports a pure-CSV workflow for users who
+store survey data as flat files rather than in a database. Pass a named
+list of file paths to <code>creel_connect()</code>:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">con</span> <span class="op">&lt;-</span> <span class="fu">creel_connect</span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    counts     <span class="op">=</span> <span class="st">"data/counts.csv"</span>,</span>
+<span>    interviews <span class="op">=</span> <span class="st">"data/interviews.csv"</span>,</span>
+<span>    catch      <span class="op">=</span> <span class="st">"data/catch.csv"</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">counts</span>     <span class="op">&lt;-</span> <span class="fu">fetch_counts</span><span class="op">(</span><span class="va">con</span><span class="op">)</span></span>
+<span><span class="va">interviews</span> <span class="op">&lt;-</span> <span class="fu">fetch_interviews</span><span class="op">(</span><span class="va">con</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="more-information">More information<a class="anchor" aria-label="anchor" href="#more-information"></a>
+</h2>
+<ul>
+<li>Source and documentation:
+<code>chrischizinski/tidycreel.connect</code> on GitHub</li>
+<li>Main package: <a href="https://github.com/chrischizinski/tidycreel" class="external-link uri">https://github.com/chrischizinski/tidycreel</a>
+</li>
+<li>Bug reports and feature requests: open an issue on the
+tidycreel.connect repository.</li>
+</ul>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

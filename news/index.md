@@ -1,5 +1,41 @@
 # Changelog
 
+## tidycreel 1.9.0 (2026-05-25)
+
+### New features
+
+- [`estimate_angler_trips()`](https://chrischizinski.github.io/tidycreel/reference/estimate_angler_trips.md)
+  — estimates angler trip counts (angler days) from effort and mean trip
+  length using Delta Method variance propagation.
+- [`estimate_effort_per_acre()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort_per_acre.md)
+  — computes effort density (angler-hours per acre) by stratum from an
+  extrapolated effort estimate and supplied acreage.
+- [`summarize_boat_composition()`](https://chrischizinski.github.io/tidycreel/reference/summarize_boat_composition.md)
+  — returns percent angler boats by month and day type, computed from
+  raw count fields c_AnglerBoats and c_NonAngBoats.
+- [`summarize_by_zip()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_zip.md)
+  — tabulates interview count and percentage by zip code from the
+  ii_ZipCode interview field.
+- [`summarize_by_county()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_county.md)
+  — maps zip codes to counties via zipcodeR and returns interview count
+  and percentage by county; emits an informative error when zipcodeR is
+  not installed.
+
+### Documentation
+
+- pkgdown site rebuilt at v1.9.0; all new functions appear in the
+  reference index.
+- tidycreel.connect bridge vignette updated: install block added
+  (remotes::install_github), stale “not yet public” availability
+  language removed throughout.
+- GitHub bug report issue template gains an R version field (required).
+
+### Tech debt
+
+- WRITE-11: write_estimates() xlsx export path now covered by a passing
+  round-trip test guarded with skip_if_not_installed(“writexl”) (TD-01
+  carry-forward from v1.8.0).
+
 ## tidycreel 1.4.0 (2026-04-23)
 
 ### Quality, testing, and release readiness

@@ -69,9 +69,11 @@
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/estimate_angler_n.html</loc></url>
+<url><loc>https://chrischizinski.github.io/tidycreel/reference/estimate_angler_trips.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/estimate_effort.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/estimate_effort_aerial_glmm.html</loc></url>
+<url><loc>https://chrischizinski.github.io/tidycreel/reference/estimate_effort_per_acre.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/estimate_exploitation_rate.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/estimate_mr_harvest.html</loc></url>
@@ -147,11 +149,14 @@
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/season_summary.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/simulate_strata_collapse.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/standardize_species.html</loc></url>
+<url><loc>https://chrischizinski.github.io/tidycreel/reference/summarize_boat_composition.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/summarize_by_angler_type.html</loc></url>
+<url><loc>https://chrischizinski.github.io/tidycreel/reference/summarize_by_county.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/summarize_by_day_type.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/summarize_by_method.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/summarize_by_species_sought.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/summarize_by_trip_length.html</loc></url>
+<url><loc>https://chrischizinski.github.io/tidycreel/reference/summarize_by_zip.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/summarize_cws_rates.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/summarize_hws_rates.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/summarize_length_freq.html</loc></url>

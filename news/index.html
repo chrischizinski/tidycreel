@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidycreel</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.8.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.9.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -63,6 +63,32 @@
       <small>Source: <a href="https://github.com/chrischizinski/tidycreel/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="1.9.0" id="tidycreel-190-2026-05-25">tidycreel 1.9.0 (2026-05-25)<a class="anchor" aria-label="anchor" href="#tidycreel-190-2026-05-25"></a></h2>
+<div class="section level3">
+<h3 id="new-features-1-9-0">New features<a class="anchor" aria-label="anchor" href="#new-features-1-9-0"></a></h3>
+<ul><li>
+<code><a href="../reference/estimate_angler_trips.html">estimate_angler_trips()</a></code> — estimates angler trip counts (angler days) from effort and mean trip length using Delta Method variance propagation.</li>
+<li>
+<code><a href="../reference/estimate_effort_per_acre.html">estimate_effort_per_acre()</a></code> — computes effort density (angler-hours per acre) by stratum from an extrapolated effort estimate and supplied acreage.</li>
+<li>
+<code><a href="../reference/summarize_boat_composition.html">summarize_boat_composition()</a></code> — returns percent angler boats by month and day type, computed from raw count fields c_AnglerBoats and c_NonAngBoats.</li>
+<li>
+<code><a href="../reference/summarize_by_zip.html">summarize_by_zip()</a></code> — tabulates interview count and percentage by zip code from the ii_ZipCode interview field.</li>
+<li>
+<code><a href="../reference/summarize_by_county.html">summarize_by_county()</a></code> — maps zip codes to counties via zipcodeR and returns interview count and percentage by county; emits an informative error when zipcodeR is not installed.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="documentation-1-9-0">Documentation<a class="anchor" aria-label="anchor" href="#documentation-1-9-0"></a></h3>
+<ul><li>pkgdown site rebuilt at v1.9.0; all new functions appear in the reference index.</li>
+<li>tidycreel.connect bridge vignette updated: install block added (remotes::install_github), stale “not yet public” availability language removed throughout.</li>
+<li>GitHub bug report issue template gains an R version field (required).</li>
+</ul></div>
+<div class="section level3">
+<h3 id="tech-debt-1-9-0">Tech debt<a class="anchor" aria-label="anchor" href="#tech-debt-1-9-0"></a></h3>
+<ul><li>WRITE-11: write_estimates() xlsx export path now covered by a passing round-trip test guarded with skip_if_not_installed(“writexl”) (TD-01 carry-forward from v1.8.0).</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.4.0" id="tidycreel-140-2026-04-23">tidycreel 1.4.0 (2026-04-23)<a class="anchor" aria-label="anchor" href="#tidycreel-140-2026-04-23"></a></h2>
 <div class="section level3">

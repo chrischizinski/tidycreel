@@ -466,6 +466,10 @@ dispatch automatically on survey type.
   : Estimate total harvest from a mark-recapture population estimate
 - [`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md)
   : Estimate a weighted length distribution from creel interview data
+- [`estimate_angler_trips()`](https://chrischizinski.github.io/tidycreel/reference/estimate_angler_trips.md)
+  : Estimate angler trips from extrapolated effort
+- [`estimate_effort_per_acre()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort_per_acre.md)
+  : Compute effort density as angler-hours per acre
 
 ## Reporting & Diagnostics
 
@@ -494,6 +498,12 @@ check data completeness, and inspect estimate output.
   : Compute length frequency distribution from creel interview data
 - [`summarize_successful_parties()`](https://chrischizinski.github.io/tidycreel/reference/summarize_successful_parties.md)
   : Tabulate successful parties by angler type and species sought
+- [`summarize_boat_composition()`](https://chrischizinski.github.io/tidycreel/reference/summarize_boat_composition.md)
+  : Tabulate boat composition by month and day type
+- [`summarize_by_zip()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_zip.md)
+  : Tabulate interviews by zip code of origin
+- [`summarize_by_county()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_county.md)
+  : Tabulate interviews by county of origin
 - [`season_summary()`](https://chrischizinski.github.io/tidycreel/reference/season_summary.md)
   : Assemble pre-computed creel estimates into a report-ready wide
   tibble

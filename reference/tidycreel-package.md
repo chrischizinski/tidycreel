@@ -17,5 +17,5 @@ Useful links:
 
 ## Author
 
-**Maintainer**: Christopher Chizinski <chris.chizinski@unl.edu>
+**Maintainer**: Christopher Chizinski <cchizinski2@unl.edu>
 ([ORCID](https://orcid.org/0000-0001-9294-2588))
