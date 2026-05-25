@@ -150,7 +150,7 @@ interviews <- fetch_interviews(con)
 
 ## More information
 
-- Source and documentation: <https://github.com/chrischizinski/tidycreel.connect>
+- Source and documentation: `chrischizinski/tidycreel.connect` on GitHub
 - Main package: <https://github.com/chrischizinski/tidycreel>
 - Bug reports and feature requests: open an issue on the tidycreel.connect
   repository.
