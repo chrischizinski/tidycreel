@@ -1831,10 +1831,12 @@ summarize_by_county <- function(design) {
   valid_zips <- zip_vals[!is.na(zip_vals)]
   unique_zips <- unique(valid_zips)
 
-  # Build county lookup from zipcodeR
-  county_map <- zipcodeR::zip_to_county(unique_zips)
+  # Build county lookup from zipcodeR's zip_code_db dataset
+  zip_db <- zipcodeR::zip_code_db
+  county_map <- zip_db[zip_db$zipcode %in% as.character(unique_zips),
+                       c("zipcode", "county"), drop = FALSE]
 
-  # Determine actual county column name returned by zip_to_county()
+  # Determine actual county column name returned by the lookup
   county_col <- if ("county" %in% names(county_map)) {
     "county"
   } else if ("county_name" %in% names(county_map)) {
