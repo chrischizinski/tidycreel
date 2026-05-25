@@ -148,6 +148,7 @@ _(v1.8.0 phase details archived — see [.planning/milestones/v1.8.0-ROADMAP.md]
   2. Biologist can call `estimate_effort_per_acre(effort, acres)` and receive angler-hours per acre by stratum, derived from the extrapolated effort estimate
   3. Both functions return objects that pass `inherits(result, "creel_estimates")` and are compatible with `tidy()` and `write_estimates()`
   4. `rcmdcheck` passes with 0 errors and 0 warnings after the new functions land
+
 **Plans**: 2 plans
 
 Plans:
@@ -169,11 +170,17 @@ Plans:
   3. Biologist can call `summarize_by_county(design)` and receive a tibble of interview count and percentage by county, with zip-to-county mapping via `zipcodeR`; function emits a clear `cli_abort` when `zipcodeR` is not installed
   4. All three functions return plain tibbles (not `creel_estimates`), consistent with existing `summarize_*` conventions in the package
   5. `rcmdcheck` passes with 0 errors and 0 warnings after the new functions land
+
 **Plans**: 2 plans
 
 Plans:
 
+**Wave 1**
+
 - [ ] 96-01-PLAN.md — summarize_boat_composition() with three-guard pattern, schema-based column lookup, month x day_type grouping
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 96-02-PLAN.md — summarize_by_zip() and summarize_by_county() with Unknown row handling, zipcodeR guard, rcmdcheck gate
 
 ---
@@ -189,6 +196,7 @@ Plans:
   2. The pkgdown site contains a tidycreel.connect bridge article explaining the companion package, how to install it, and linking to its documentation
   3. `.github/ISSUE_TEMPLATE/bug_report.yml` and `.github/ISSUE_TEMPLATE/feature_request.yml` exist with the specified fields; both validate as correct YAML
   4. `write_estimates()` xlsx path has a passing test using `skip_if_not_installed("writexl")`, and the test exercises the actual Excel write path
+
 **Plans**: TBD
 
 ---

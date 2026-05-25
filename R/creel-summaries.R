@@ -1489,3 +1489,162 @@ new_creel_summary <- function(table, method, variance_method, conf_level) {
     class = "creel_summary"
   )
 }
+
+
+#' Tabulate boat composition by month and day type
+#'
+#' @description
+#' Computes the percentage of boats that are angler boats from raw count data,
+#' grouped by calendar month and day type. Formula:
+#' \code{mean(c_AnglerBoats / (c_AnglerBoats + c_NonAngBoats))} per group.
+#'
+#' @details
+#' Count-based summary, not interview-weighted. Rows where
+#' \code{angler_boats + non_ang_boats == 0} are excluded from ratio computation.
+#'
+#' @param design A \code{creel_design} object with counts attached via
+#'   \code{\link{add_counts}}.
+#' @param schema A \code{creel_schema} object with \code{angler_boats_col} and
+#'   \code{non_ang_boats_col} set.
+#'
+#' @return A \code{data.frame} with class
+#'   \code{c("creel_summary_boat_composition", "data.frame")} and columns:
+#'   \code{month} (full month name), \code{day_type}, \code{n_events}
+#'   (integer), \code{pct_angler_boats} (numeric, 1 decimal).
+#'
+#' @examples
+#' counts_df <- data.frame(
+#'   date         = as.Date(c("2024-05-01", "2024-05-04",
+#'                            "2024-06-01", "2024-06-08")),
+#'   day_type     = c("weekday", "weekend", "weekday", "weekend"),
+#'   angler_boats = c(3L, 2L, 4L, 1L),
+#'   non_ang_boats = c(1L, 2L, 1L, 3L),
+#'   count        = c(10L, 12L, 9L, 8L)
+#' )
+#' cal <- data.frame(
+#'   date     = counts_df$date,
+#'   day_type = counts_df$day_type
+#' )
+#' d <- suppressWarnings(
+#'   creel_design(cal, date = date, strata = day_type)
+#' )
+#' d <- suppressWarnings(
+#'   add_counts(d, counts_df)
+#' )
+#' s <- creel_schema(
+#'   survey_type    = "instantaneous",
+#'   angler_boats_col  = "angler_boats",
+#'   non_ang_boats_col = "non_ang_boats"
+#' )
+#' summarize_boat_composition(d, s)
+#'
+#' @family "Reporting & Diagnostics"
+#' @export
+summarize_boat_composition <- function(design, schema) {
+  # Guard 1: design type check
+  if (!inherits(design, "creel_design")) {
+    cli::cli_abort(c(
+      "{.arg design} must be a {.cls creel_design} object.",
+      "x" = "{.arg design} is {.cls {class(design)[1]}}.",
+      "i" = "Create a design with {.fn creel_design}."
+    ))
+  }
+
+  # Guard 2: counts attached
+  if (is.null(design$counts)) {
+    cli::cli_abort(c(
+      "No count data found in design.",
+      "x" = "The design object has no count data in the {.field $counts} slot.",
+      "i" = "Attach counts with {.fn add_counts}."
+    ))
+  }
+
+  # Guard 3a: angler_boats_col in schema
+  if (is.null(schema$angler_boats_col)) {
+    cli::cli_abort(c(
+      "No {.field angler_boats_col} found in schema.",
+      "x" = "{.arg schema} has no {.field angler_boats_col} mapping.",
+      "i" = "Set {.code angler_boats_col} in {.fn creel_schema}."
+    ))
+  }
+
+  # Guard 3b: non_ang_boats_col in schema
+  if (is.null(schema$non_ang_boats_col)) {
+    cli::cli_abort(c(
+      "No {.field non_ang_boats_col} found in schema.",
+      "x" = "{.arg schema} has no {.field non_ang_boats_col} mapping.",
+      "i" = "Set {.code non_ang_boats_col} in {.fn creel_schema}."
+    ))
+  }
+
+  ab_col <- schema$angler_boats_col
+  nb_col <- schema$non_ang_boats_col
+
+  counts <- design$counts
+
+  # Extract dates and compute month labels
+  dates     <- counts[[design$date_col]]
+  month_chr <- format(dates, "%B")
+  month_num <- format(dates, "%m")
+
+  # Extract day_type from first strata column
+  strata_col <- design$strata_cols[1]
+  day_type   <- counts[[strata_col]]
+
+  ab <- counts[[ab_col]]
+  nb <- counts[[nb_col]]
+
+  # Exclude rows where total boats == 0 (undefined ratio)
+  keep <- (ab + nb) > 0
+  ab        <- ab[keep]
+  nb        <- nb[keep]
+  month_chr <- month_chr[keep]
+  month_num <- month_num[keep]
+  day_type  <- day_type[keep]
+
+  ratio <- ab / (ab + nb)
+
+  working <- data.frame(
+    month     = month_chr,
+    month_num = month_num,
+    day_type  = day_type,
+    ratio     = ratio,
+    stringsAsFactors = FALSE
+  )
+
+  # Aggregate: mean ratio and count of events per month x day_type
+  agg_mean <- stats::aggregate(
+    working$ratio,
+    by  = list(month = working$month, day_type = working$day_type),
+    FUN = mean
+  )
+  names(agg_mean)[names(agg_mean) == "x"] <- "mean_ratio"
+
+  agg_n <- stats::aggregate(
+    working$ratio,
+    by  = list(month = working$month, day_type = working$day_type),
+    FUN = length
+  )
+  names(agg_n)[names(agg_n) == "x"] <- "n_events"
+
+  result <- merge(agg_mean, agg_n, by = c("month", "day_type"))
+
+  # Convert to percent, round to 1 decimal
+  result$pct_angler_boats <- round(result$mean_ratio * 100, 1)
+  result$n_events         <- as.integer(result$n_events)
+  result$mean_ratio       <- NULL
+
+  # Merge sort key and order by month then day_type
+  sort_map <- unique(data.frame(
+    month     = working$month,
+    month_num = working$month_num,
+    stringsAsFactors = FALSE
+  ))
+  result <- merge(result, sort_map, by = "month")
+  result <- result[order(result$month_num, result$day_type), ]
+  result$month_num <- NULL
+  row.names(result) <- NULL
+
+  class(result) <- c("creel_summary_boat_composition", "data.frame")
+  result
+}
