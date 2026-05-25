@@ -131,8 +131,8 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
   # Compute per-stratum mean trip length
   summary_df <- dplyr::summarise(
     dplyr::group_by(interview_df, dplyr::across(dplyr::all_of(effort$by_vars))),
-    mean_L       = mean(.duration, na.rm = TRUE),
-    se_L         = stats::sd(.duration, na.rm = TRUE) / sqrt(dplyr::n()),
+    mean_L       = mean(.data$.duration, na.rm = TRUE),
+    se_L         = stats::sd(.data$.duration, na.rm = TRUE) / sqrt(dplyr::n()),
     n_interviews = dplyr::n(),
     .groups      = "drop"
   )
