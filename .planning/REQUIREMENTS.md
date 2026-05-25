@@ -11,8 +11,8 @@
 - [x] **RPT-01**: Biologist can estimate angler trips (angler days) by calling `estimate_angler_trips()`, which computes effort ÷ mean trip length per stratum with Delta Method variance propagation (Powell 2007), returning a `creel_estimates` object.
 - [ ] **RPT-02**: Biologist can compute effort density by calling `estimate_effort_per_acre(design, acres)`, which divides the extrapolated effort estimate by the supplied surface acreage and returns angler-hours per acre by stratum/month.
 - [x] **RPT-03**: Biologist can summarize boat composition by calling `summarize_boat_composition(design)`, which computes `c_AnglerBoats / (c_AnglerBoats + c_NonAngBoats)` from raw count data and returns % angler boats by month and day type.
-- [ ] **RPT-04**: Biologist can tabulate interview origin by calling `summarize_by_zip(design)`, which returns count and % of interviews by zip code from the `ii_ZipCode` interview field.
-- [ ] **RPT-05**: Biologist can tabulate interview origin by calling `summarize_by_county(design)`, which maps `ii_ZipCode` to county via `zipcodeR` (Suggests) and returns count and % of interviews by county.
+- [x] **RPT-04**: Biologist can tabulate interview origin by calling `summarize_by_zip(design)`, which returns count and % of interviews by zip code from the `ii_ZipCode` interview field.
+- [x] **RPT-05**: Biologist can tabulate interview origin by calling `summarize_by_county(design)`, which maps `ii_ZipCode` to county via `zipcodeR` (Suggests) and returns count and % of interviews by county.
 
 ## Documentation (DOC)
 

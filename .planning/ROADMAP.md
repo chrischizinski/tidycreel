@@ -181,7 +181,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 96-02-PLAN.md — summarize_by_zip() and summarize_by_county() with Unknown row handling, zipcodeR guard, rcmdcheck gate
+- [x] 96-02-PLAN.md — summarize_by_zip() and summarize_by_county() with Unknown row handling, zipcodeR guard, rcmdcheck gate
 
 ---
 
@@ -221,5 +221,5 @@ Plans:
 | 93. Reporting Exports | v1.8.0 | 2/2 | Complete | 2026-05-20 |
 | 94. Bootstrap Confidence Intervals | v1.8.0 | 3/3 | Complete | 2026-05-20 |
 | 95. Trip and Density Estimators | v1.9.0 | 1/2 | In Progress|  |
-| 96. Geographic Summary Functions | v1.9.0 | 1/2 | In Progress|  |
+| 96. Geographic Summary Functions | v1.9.0 | 2/2 | Complete   | 2026-05-25 |
 | 97. Documentation Polish and Tech Debt | v1.9.0 | 0/TBD | Not started | - |
