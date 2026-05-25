@@ -144,15 +144,15 @@ _(v1.8.0 phase details archived — see [.planning/milestones/v1.8.0-ROADMAP.md]
 **Requirements**: RPT-01, RPT-02
 **Success Criteria** (what must be TRUE):
 
-  1. Biologist can call `estimate_angler_trips(design)` and receive a `creel_estimates` object with per-stratum trip estimates computed as effort / mean trip length with Delta Method SE
-  2. Biologist can call `estimate_effort_per_acre(design, acres)` and receive angler-hours per acre by stratum, derived from the extrapolated effort estimate
+  1. Biologist can call `estimate_angler_trips(effort, design, conf_level = 0.95, ...)` and receive a `creel_estimates` object with per-stratum trip estimates computed as effort / mean trip length with Delta Method SE
+  2. Biologist can call `estimate_effort_per_acre(effort, acres)` and receive angler-hours per acre by stratum, derived from the extrapolated effort estimate
   3. Both functions return objects that pass `inherits(result, "creel_estimates")` and are compatible with `tidy()` and `write_estimates()`
   4. `rcmdcheck` passes with 0 errors and 0 warnings after the new functions land
 **Plans**: 2 plans
 
 Plans:
 
-- [ ] 095-01-PLAN.md — implement estimate_angler_trips() with Delta Method SE and per-stratum .overall row
+- [x] 095-01-PLAN.md — implement estimate_angler_trips() with Delta Method SE and per-stratum .overall row
 - [ ] 095-02-PLAN.md — implement estimate_effort_per_acre() and run rcmdcheck gate
 
 ---
@@ -207,6 +207,6 @@ Plans:
 | 92. Package Health Gate | v1.8.0 | 3/3 | Complete | 2026-05-20 |
 | 93. Reporting Exports | v1.8.0 | 2/2 | Complete | 2026-05-20 |
 | 94. Bootstrap Confidence Intervals | v1.8.0 | 3/3 | Complete | 2026-05-20 |
-| 95. Trip and Density Estimators | v1.9.0 | 0/2 | Not started | - |
+| 95. Trip and Density Estimators | v1.9.0 | 1/2 | In Progress|  |
 | 96. Geographic Summary Functions | v1.9.0 | 0/TBD | Not started | - |
 | 97. Documentation Polish and Tech Debt | v1.9.0 | 0/TBD | Not started | - |

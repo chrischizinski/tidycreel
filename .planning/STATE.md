@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.9.0
 milestone_name: Report Completeness and Documentation Polish
 status: planning
-stopped_at: Defining requirements for v1.9.0
-last_updated: "2026-05-24T00:00:00.000Z"
-last_activity: 2026-05-24 -- v1.9.0 milestone started; requirements definition in progress
+stopped_at: Phase 95 context gathered
+last_updated: "2026-05-25T01:12:34.036Z"
+last_activity: 2026-05-24 — Roadmap created; Phases 95-97 defined
 progress:
-  total_phases: 0
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_phases: 6
+  completed_phases: 3
+  total_plans: 10
+  completed_plans: 9
+  percent: 50
 ---
 
 # Project State
@@ -25,10 +25,18 @@ See: .planning/PROJECT.md (updated 2026-05-24)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-05-24 — Milestone v1.9.0 started
+Phase: Not started (roadmap defined, planning next)
+Plan: --
+Status: Ready for phase planning
+Last activity: 2026-05-24 — Roadmap created; Phases 95-97 defined
+
+## Phase Outline
+
+| Phase | Goal | Requirements |
+|-------|------|--------------|
+| 95. Trip and Density Estimators | Biologists can derive angler trip counts and effort density from an existing creel design | RPT-01, RPT-02 |
+| 96. Geographic Summary Functions | Biologists can produce boat composition, zip, and county summary tables from a creel design | RPT-03, RPT-04, RPT-05 |
+| 97. Documentation Polish and Tech Debt | pkgdown at v1.9.0, connect bridge article, issue templates, xlsx test closed | DOC-01, DOC-02, DOC-03, TD-01 |
 
 ## Previous Milestone Archive
 
@@ -47,6 +55,7 @@ All v1.8.0 work archived:
 
 ## Session Continuity
 
-Last session: 2026-05-24
-Stopped at: Requirements definition in progress
-Next: Complete REQUIREMENTS.md, spawn roadmapper
+Last session: 2026-05-25T01:12:34.031Z
+Stopped at: Phase 95 context gathered
+Resume file: None
+Next: `/gsd:plan-phase 95`
