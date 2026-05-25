@@ -177,7 +177,7 @@ Plans:
 
 **Wave 1**
 
-- [ ] 96-01-PLAN.md — summarize_boat_composition() with three-guard pattern, schema-based column lookup, month x day_type grouping
+- [x] 96-01-PLAN.md — summarize_boat_composition() with three-guard pattern, schema-based column lookup, month x day_type grouping
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -221,5 +221,5 @@ Plans:
 | 93. Reporting Exports | v1.8.0 | 2/2 | Complete | 2026-05-20 |
 | 94. Bootstrap Confidence Intervals | v1.8.0 | 3/3 | Complete | 2026-05-20 |
 | 95. Trip and Density Estimators | v1.9.0 | 1/2 | In Progress|  |
-| 96. Geographic Summary Functions | v1.9.0 | 0/2 | Not started | - |
+| 96. Geographic Summary Functions | v1.9.0 | 1/2 | In Progress|  |
 | 97. Documentation Polish and Tech Debt | v1.9.0 | 0/TBD | Not started | - |
