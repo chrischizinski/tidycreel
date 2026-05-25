@@ -20,7 +20,7 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Christopher Chizinski \email{chris.chizinski@unl.edu} (\href{https://orcid.org/0000-0001-9294-2588}{ORCID})
+\strong{Maintainer}: Christopher Chizinski \email{cchizinski2@unl.edu} (\href{https://orcid.org/0000-0001-9294-2588}{ORCID})
 
 }
 \keyword{internal}

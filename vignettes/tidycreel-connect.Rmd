@@ -26,15 +26,26 @@ form that tidycreel can analyse.
 The package focuses on three layers of the data pipeline that tidycreel itself
 deliberately leaves out of scope:
 
-1. **Schema validation** — confirming that tables arriving from the field meet
-   the structural requirements that tidycreel functions assume (column names,
-   data types, allowed factor levels).
-2. **Database I/O** — reading from and writing to DuckDB, SQLite, or PostgreSQL
-   using a consistent DBI-based interface, without requiring users to write raw
-   SQL.
-3. **Batch import** — ingesting exports from common field data collection
-   formats (CSV bundles, spreadsheet workbooks) and loading them into a
-   persistent database in a single reproducible step.
+1. **Connection management** — opening validated connections to DBI-backed
+   databases (SQL Server, DuckDB, SQLite), CSV file collections, or REST API
+   endpoints with a consistent interface.
+2. **Schema-aware data loading** — reading counts, interviews, catch, and length
+   records from the connected source, renaming raw fields to canonical tidycreel
+   column names, and coercing types at import time.
+3. **Survey discovery** — listing and searching available creel surveys on
+   API-backed connections before pulling data.
+
+## Installation
+
+tidycreel.connect is available from GitHub:
+
+```{r install}
+# Using remotes
+remotes::install_github("chrischizinski/tidycreel.connect")
+
+# Or using pak
+pak::pak("chrischizinski/tidycreel.connect")
+```
 
 ## How tidycreel.connect relates to tidycreel
 
@@ -43,34 +54,35 @@ tidycreel handles **design, estimation, and reporting**: building a
 publication-ready plots and tables.
 
 tidycreel.connect handles the **data-ingestion and storage layer** that feeds
-it: validating incoming field data, persisting it in a structured database, and
-exposing it to tidycreel through a clean read interface.
+it: connecting to a field database or API, loading validated data frames, and
+handing them off to tidycreel estimation functions.
 
 The two packages are designed to work together but can be used independently:
 
 - You can use tidycreel with data that lives in plain CSV files or an
   in-memory data frame — tidycreel.connect is not required.
-- You can use tidycreel.connect to manage and validate your field database
+- You can use tidycreel.connect to manage and query your field database
   without calling any tidycreel estimation functions.
 
-A typical integrated workflow would look like this:
+A typical integrated workflow looks like this:
 
 ```{r workflow-overview}
 library(tidycreel)
-library(tidycreel.connect)   # not yet on CRAN
+library(tidycreel.connect)
 
-# 1. Connect to a local DuckDB database
-con <- tc_connect("survey_data.duckdb")
+# 1. Connect to a DBI-backed database (SQL Server, DuckDB, SQLite)
+con <- creel_connect(dbi_connection, schema = "creel")
 
-# 2. Batch-import a season's worth of field exports
-tc_import_batch(con, path = "exports/2025/", season = "2025")
+# -- or connect using a YAML configuration file --
+con <- creel_connect_from_yaml("config/creel.yml")
 
-# 3. Validate the imported data against the tidycreel schema
-tc_validate(con, season = "2025")
+# 2. Discover available surveys (API connections only)
+list_creels(con)
+search_creels(con, keyword = "2025")
 
-# 4. Load validated data and hand off to tidycreel
-counts      <- tc_read_counts(con, season = "2025")
-interviews  <- tc_read_interviews(con, season = "2025")
+# 3. Load validated data and hand off to tidycreel
+counts     <- fetch_counts(con)
+interviews <- fetch_interviews(con)
 
 design <- creel_design(counts = counts, ...) |>
   add_interviews(interviews)
@@ -78,53 +90,67 @@ design <- creel_design(counts = counts, ...) |>
 estimate_effort(design)
 ```
 
-## What tidycreel.connect will provide
+## Exported functions
 
-When released, tidycreel.connect is planned to include:
+### Connection management
 
-**Schema validation**
+- `creel_connect(con, schema)` — opens a `creel_connection` object backed by a
+  DBI connection (SQL Server, DuckDB, SQLite) or a named list of CSV file
+  paths.
+- `creel_connect_api(...)` — opens a `creel_connection` to a REST API endpoint.
+- `creel_connect_from_yaml(path, config = "default")` — convenience wrapper
+  that reads connection parameters from a YAML file; supports environment
+  variable injection for credentials.
+- `creel_check_driver(con)` — validates that the underlying DBI driver is
+  supported; useful for pre-flight checks in automated pipelines.
 
-- `tc_validate()` — checks that tables in a connected database conform to the
-  tidycreel schema; returns a structured validation report compatible with
-  `print.creel_data_validation`.
-- `tc_check_columns()` — column-level checks for required names, types, and
-  allowed values.
+### Data loading
 
-**DBI-based read/write helpers**
+These functions use S3 dispatch so they work identically across DBI, CSV, and
+API back-ends. Each renames raw fields to canonical tidycreel column names and
+coerces data types at import time.
 
-- `tc_connect()` — opens a DBI connection to DuckDB (default), SQLite, or
-  PostgreSQL with sensible defaults for creel survey databases.
-- `tc_read_counts()`, `tc_read_interviews()`, `tc_read_catch()` — read
-  validated tables from the database into R data frames ready for
-  `creel_design()`.
-- `tc_write_estimates()` — persist estimation results back to the database for
-  longitudinal tracking.
+- `fetch_counts(conn, ...)` — loads survey count records (bank anglers, angler
+  boats, non-angler boats) into a data frame ready for `creel_design()`.
+- `fetch_interviews(conn, ...)` — loads interview records including IDs, dates,
+  catch counts, effort, and trip status.
+- `fetch_catch(conn, ...)` — loads catch detail records associated with
+  interviews; species codes are coerced to character.
+- `fetch_harvest_lengths(conn, ...)` — loads fish length measurements for
+  harvested fish, injecting `length_type = "harvest"`.
+- `fetch_release_lengths(conn, ...)` — loads fish length measurements for
+  released fish, injecting `length_type = "release"`.
 
-**Batch import**
+### Survey discovery (API connections only)
 
-- `tc_import_batch()` — reads a directory of field exports (CSV, XLSX) and
-  loads them into the database, applying schema checks at ingestion time.
-- `tc_import_csv()`, `tc_import_xlsx()` — single-file variants for interactive
-  use.
+- `list_creels(conn, ...)` — returns a data frame of all available surveys on
+  the connected API, with UIDs, titles, descriptions, and active status.
+- `search_creels(conn, keyword, ...)` — client-side filter of `list_creels()`
+  output; matches keyword (case-insensitive) against title and description
+  fields.
 
-**Reproducible pipeline templates**
+## CSV back-end
 
-- Project templates (via `usethis`-style helpers) that set up a standardised
-  directory structure and a minimal `targets` or `drake` pipeline connecting
-  field data imports to tidycreel analyses.
+tidycreel.connect also supports a pure-CSV workflow for users who store survey
+data as flat files rather than in a database. Pass a named list of file paths
+to `creel_connect()`:
 
-## How to stay notified
+```{r csv-backend}
+con <- creel_connect(
+  list(
+    counts     = "data/counts.csv",
+    interviews = "data/interviews.csv",
+    catch      = "data/catch.csv"
+  )
+)
 
-tidycreel.connect is under development and not yet publicly available. To stay
-informed:
+counts     <- fetch_counts(con)
+interviews <- fetch_interviews(con)
+```
 
-- **Watch the tidycreel GitHub repository** at
-  <https://github.com/chrischizinski/tidycreel> — announcements will be posted
-  in the News / Releases section when the companion package reaches a public
-  preview.
-- **Watch the tidycreel.connect repository** (placeholder; not yet public) at
-  `https://github.com/chrischizinski/tidycreel.connect` — star or watch the
-  repository to receive notifications once it is made public.
+## More information
 
-If you have use-case requirements or schema feedback you would like considered
-during development, please open an issue on the tidycreel repository.
+- Source and documentation: `chrischizinski/tidycreel.connect` on GitHub
+- Main package: <https://github.com/chrischizinski/tidycreel>
+- Bug reports and feature requests: open an issue on the tidycreel.connect
+  repository.

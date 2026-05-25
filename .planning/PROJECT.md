@@ -8,6 +8,20 @@ tidycreel is an R package for creel survey design, data preparation, estimation,
 
 A biologist should be able to go from survey design to package-ready estimates, plots, summaries, and documentation without stitching together a custom analysis stack.
 
+## Current Milestone: v1.9.0 — Report Completeness and Documentation Polish
+
+**Goal:** Close all NGPC standard report output gaps and fix the pkgdown site so the package surface is fully documented at the correct version.
+
+**Target features:**
+- `estimate_angler_trips()` — effort ÷ mean trip length, Delta Method SE (Powell 2007)
+- `estimate_effort_per_acre()` — effort density wrapper using dg_Acres from design_general
+- `summarize_boat_composition()` — % angler boats from count data by month/day type
+- `summarize_by_zip()` + `summarize_by_county()` — interview geographic summaries with zip→county crosswalk
+- pkgdown rebuild at v1.9.0 — fix site showing stale "1.4.0"
+- tidycreel.connect bridge article on main site
+- GitHub issue templates (bug_report.yml + feature_request.yml)
+- WRITE-11 tech debt: xlsx test for `write_estimates()`
+
 ## Current State
 
 **Package version:** `1.8.0` (shipped 2026-05-23, git tag v1.8.0)
@@ -166,6 +180,8 @@ The package currently closes its local gate with:
 - Rcpp acceleration — DEFER recommendation (empirical: only bootstrap is slow; bootstrap cost is in upstream `survey::as.svrepdesign()`, not addressable in tidycreel)
 - `creel_schema` / `tidycreel.connect` / generic DB interface — NOT current work; companion package has 3 concrete gaps; schema contract is frozen-but-informal
 - rOpenSci formal submission — deferred from v1.5.0 to undetermined future date
+- Quarto guide/book for applied creel survey workflows (DOCS-F02) — keep `pkgdown` for the formal, API-centric package reference site, but add a separate Quarto book/guide for applied workflows and real-data recipes
+- Nebraska-parameterized empirical creel data simulator (SIM-F01) — simulate count and interview datasets based on the abundance and distributions from the Nebraska Angler Survey Project (including urban/rural, small/medium/large lakes, fish species, and angler typologies) for estimator validation and training
 ## Key Decisions
 
 | Decision | Outcome | Milestone |

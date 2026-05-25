@@ -116,3 +116,14 @@ test_that("WRITE-10: non-creel object raises informative error", {
     class = "rlang_error"
   )
 })
+
+test_that("WRITE-11: write_estimates() writes a readable xlsx file with correct row count", {
+  skip_if_not_installed("writexl")
+  skip_if_not_installed("readxl")
+  estimates <- .make_eff()
+  tmp <- tempfile(fileext = ".xlsx")
+  write_estimates(estimates, tmp)
+  expect_true(file.exists(tmp))
+  expect_no_error(readxl::read_xlsx(tmp))
+  expect_equal(nrow(readxl::read_xlsx(tmp)), nrow(tidy(estimates)))
+})

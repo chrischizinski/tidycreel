@@ -1489,3 +1489,398 @@ new_creel_summary <- function(table, method, variance_method, conf_level) {
     class = "creel_summary"
   )
 }
+
+
+#' Tabulate boat composition by month and day type
+#'
+#' @description
+#' Computes the percentage of boats that are angler boats from raw count data,
+#' grouped by calendar month and day type. Formula:
+#' \code{mean(c_AnglerBoats / (c_AnglerBoats + c_NonAngBoats))} per group.
+#'
+#' @details
+#' Count-based summary, not interview-weighted. Rows where
+#' \code{angler_boats + non_ang_boats == 0} are excluded from ratio computation.
+#'
+#' @param design A \code{creel_design} object with counts attached via
+#'   \code{\link{add_counts}}.
+#' @param schema A \code{creel_schema} object with \code{angler_boats_col} and
+#'   \code{non_ang_boats_col} set.
+#'
+#' @return A \code{data.frame} with class
+#'   \code{c("creel_summary_boat_composition", "data.frame")} and columns:
+#'   \code{month} (full month name), \code{day_type}, \code{n_events}
+#'   (integer), \code{pct_angler_boats} (numeric, 1 decimal).
+#'
+#' @examples
+#' counts_df <- data.frame(
+#'   date         = as.Date(c("2024-05-01", "2024-05-04",
+#'                            "2024-06-01", "2024-06-08")),
+#'   day_type     = c("weekday", "weekend", "weekday", "weekend"),
+#'   angler_boats = c(3L, 2L, 4L, 1L),
+#'   non_ang_boats = c(1L, 2L, 1L, 3L),
+#'   count        = c(10L, 12L, 9L, 8L)
+#' )
+#' cal <- data.frame(
+#'   date     = counts_df$date,
+#'   day_type = counts_df$day_type
+#' )
+#' d <- suppressWarnings(
+#'   creel_design(cal, date = date, strata = day_type)
+#' )
+#' d <- suppressWarnings(
+#'   add_counts(d, counts_df)
+#' )
+#' s <- creel_schema(
+#'   survey_type    = "instantaneous",
+#'   angler_boats_col  = "angler_boats",
+#'   non_ang_boats_col = "non_ang_boats"
+#' )
+#' summarize_boat_composition(d, s)
+#'
+#' @family "Reporting & Diagnostics"
+#' @export
+summarize_boat_composition <- function(design, schema) {
+  # Guard 1: design type check
+  if (!inherits(design, "creel_design")) {
+    cli::cli_abort(c(
+      "{.arg design} must be a {.cls creel_design} object.",
+      "x" = "{.arg design} is {.cls {class(design)[1]}}.",
+      "i" = "Create a design with {.fn creel_design}."
+    ))
+  }
+
+  # Guard 2: counts attached
+  if (is.null(design$counts)) {
+    cli::cli_abort(c(
+      "No count data found in design.",
+      "x" = "The design object has no count data in the {.field $counts} slot.",
+      "i" = "Attach counts with {.fn add_counts}."
+    ))
+  }
+
+  # Guard 3a: angler_boats_col in schema
+  if (is.null(schema$angler_boats_col)) {
+    cli::cli_abort(c(
+      "No {.field angler_boats_col} found in schema.",
+      "x" = "{.arg schema} has no {.field angler_boats_col} mapping.",
+      "i" = "Set {.code angler_boats_col} in {.fn creel_schema}."
+    ))
+  }
+
+  # Guard 3b: non_ang_boats_col in schema
+  if (is.null(schema$non_ang_boats_col)) {
+    cli::cli_abort(c(
+      "No {.field non_ang_boats_col} found in schema.",
+      "x" = "{.arg schema} has no {.field non_ang_boats_col} mapping.",
+      "i" = "Set {.code non_ang_boats_col} in {.fn creel_schema}."
+    ))
+  }
+
+  ab_col <- schema$angler_boats_col
+  nb_col <- schema$non_ang_boats_col
+
+  counts <- design$counts
+
+  # Extract dates and compute month labels
+  dates     <- counts[[design$date_col]]
+  month_chr <- format(dates, "%B")
+  month_num <- format(dates, "%m")
+
+  # Extract day_type from first strata column
+  strata_col <- design$strata_cols[1]
+  day_type   <- counts[[strata_col]]
+
+  ab <- counts[[ab_col]]
+  nb <- counts[[nb_col]]
+
+  # Exclude rows where total boats == 0 (undefined ratio)
+  keep <- (ab + nb) > 0
+  ab        <- ab[keep]
+  nb        <- nb[keep]
+  month_chr <- month_chr[keep]
+  month_num <- month_num[keep]
+  day_type  <- day_type[keep]
+
+  ratio <- ab / (ab + nb)
+
+  working <- data.frame(
+    month     = month_chr,
+    month_num = month_num,
+    day_type  = day_type,
+    ratio     = ratio,
+    stringsAsFactors = FALSE
+  )
+
+  # Aggregate: mean ratio and count of events per month x day_type
+  agg_mean <- stats::aggregate(
+    working$ratio,
+    by  = list(month = working$month, day_type = working$day_type),
+    FUN = mean
+  )
+  names(agg_mean)[names(agg_mean) == "x"] <- "mean_ratio"
+
+  agg_n <- stats::aggregate(
+    working$ratio,
+    by  = list(month = working$month, day_type = working$day_type),
+    FUN = length
+  )
+  names(agg_n)[names(agg_n) == "x"] <- "n_events"
+
+  result <- merge(agg_mean, agg_n, by = c("month", "day_type"))
+
+  # Convert to percent, round to 1 decimal
+  result$pct_angler_boats <- round(result$mean_ratio * 100, 1)
+  result$n_events         <- as.integer(result$n_events)
+  result$mean_ratio       <- NULL
+
+  # Merge sort key and order by month then day_type
+  sort_map <- unique(data.frame(
+    month     = working$month,
+    month_num = working$month_num,
+    stringsAsFactors = FALSE
+  ))
+  result <- merge(result, sort_map, by = "month")
+  result <- result[order(result$month_num, result$day_type), ]
+  result$month_num <- NULL
+  row.names(result) <- NULL
+
+  class(result) <- c("creel_summary_boat_composition", "data.frame")
+  result
+}
+
+#' @title Tabulate interviews by zip code of origin
+#'
+#' @description
+#' Counts and computes the percent of interviews by angler zip code of origin.
+#' NA zip codes appear as an explicit "Unknown" row. Percent denominator is
+#' total interviews including NA rows.
+#'
+#' @param design A \code{creel_design} object with interviews attached via
+#'   \code{\link{add_interviews}}. Interviews must include the
+#'   \code{ii_ZipCode} field.
+#'
+#' @return A \code{data.frame} with class
+#'   \code{c("creel_summary_zip", "data.frame")} and columns:
+#'   \code{zip_code} (character), \code{n} (integer), \code{pct} (numeric,
+#'   1 decimal). NA zip codes appear as \code{"Unknown"}. Percent denominator
+#'   is total interviews including NA.
+#'
+#' @details
+#' Interview-based summary, not pressure-weighted. NA zip codes appear as an
+#' explicit "Unknown" row for data quality visibility. Sort order: "Unknown"
+#' last; remaining rows sorted by \code{n} descending.
+#'
+#' @examples
+#' data(example_calendar, package = "tidycreel")
+#' data(example_interviews, package = "tidycreel")
+#' example_interviews$ii_ZipCode <- rep_len(
+#'   c("68502", "68502", NA, "68508", NA),
+#'   nrow(example_interviews)
+#' )
+#' d <- suppressWarnings(
+#'   creel_design(example_calendar, date = date, strata = day_type)
+#' )
+#' d <- suppressWarnings(
+#'   add_interviews(d, example_interviews,
+#'     catch = catch_total, effort = hours_fished, harvest = catch_kept,
+#'     trip_status = trip_status, trip_duration = trip_duration,
+#'     angler_type = angler_type, angler_method = angler_method,
+#'     species_sought = species_sought, n_anglers = n_anglers, refused = refused
+#'   )
+#' )
+#' summarize_by_zip(d)
+#'
+#' @family "Reporting & Diagnostics"
+#' @export
+summarize_by_zip <- function(design) {
+  # Guard 1: design type check
+  if (!inherits(design, "creel_design")) {
+    cli::cli_abort(c(
+      "{.arg design} must be a {.cls creel_design} object.",
+      "x" = "{.arg design} is {.cls {class(design)[1]}}.",
+      "i" = "Create a design with {.fn creel_design}."
+    ))
+  }
+
+  # Guard 2: interviews attached
+  if (is.null(design$interviews)) {
+    cli::cli_abort(c(
+      "No interviews found.",
+      "x" = "The design object has no interviews in the {.field $interviews} slot.",
+      "i" = "Attach interviews with {.fn add_interviews}."
+    ))
+  }
+
+  # Guard 3: ii_ZipCode column present
+  if (!"ii_ZipCode" %in% names(design$interviews)) {
+    cli::cli_abort(c(
+      "No {.field ii_ZipCode} column found in interviews.",
+      "x" = "Column {.field ii_ZipCode} is absent from {.code design$interviews}.",
+      "i" = "Confirm interview data includes NGPC zip code field {.field ii_ZipCode}."
+    ))
+  }
+
+  zip_vals <- design$interviews[["ii_ZipCode"]]
+  total_n  <- length(zip_vals)
+
+  # Replace NA with "Unknown" before tabulating
+  zip_vals[is.na(zip_vals)] <- "Unknown"
+
+  counts_tbl <- as.data.frame(table(zip_code = zip_vals), stringsAsFactors = FALSE)
+  names(counts_tbl)[names(counts_tbl) == "Freq"] <- "n"
+  counts_tbl$n   <- as.integer(counts_tbl$n)
+  counts_tbl$pct <- round(100 * counts_tbl$n / total_n, 1)
+
+  # Sort: Unknown last, remaining rows by n descending
+  known   <- counts_tbl[counts_tbl$zip_code != "Unknown", ]
+  unknown <- counts_tbl[counts_tbl$zip_code == "Unknown", ]
+  known   <- known[order(-known$n), ]
+  counts_tbl <- rbind(known, unknown)
+  row.names(counts_tbl) <- NULL
+
+  class(counts_tbl) <- c("creel_summary_zip", "data.frame")
+  counts_tbl
+}
+
+#' @title Tabulate interviews by county of origin
+#'
+#' @description
+#' Maps angler zip codes to county using the \pkg{zipcodeR} package, then
+#' counts and computes the percent of interviews by county. NA or unmappable
+#' zip codes appear as an explicit "Unknown" row.
+#'
+#' @param design A \code{creel_design} object with interviews attached via
+#'   \code{\link{add_interviews}}. Interviews must include the
+#'   \code{ii_ZipCode} field.
+#'
+#' @return A \code{data.frame} with class
+#'   \code{c("creel_summary_county", "data.frame")} and columns:
+#'   \code{county} (character), \code{n} (integer), \code{pct} (numeric,
+#'   1 decimal). NA or unmappable zip codes appear as \code{"Unknown"}.
+#'
+#' @details
+#' Interview-based summary, not pressure-weighted. Requires the
+#' \pkg{zipcodeR} package (listed in \code{Suggests}). No state filter is
+#' applied; out-of-state anglers receive their actual county name. NA or
+#' unmappable zip codes appear as "Unknown" for data quality visibility.
+#' Sort order: "Unknown" last; remaining rows sorted by \code{n} descending.
+#'
+#' @examples
+#' \dontrun{
+#' # Requires zipcodeR — install with: install.packages("zipcodeR")
+#' interviews_df <- data.frame(
+#'   ii_InterviewNumber = 1:5,
+#'   ii_ZipCode         = c("68502", "68502", NA, "68508", NA),
+#'   stringsAsFactors   = FALSE
+#' )
+#' cal <- data.frame(
+#'   date     = as.Date(c("2024-05-01", "2024-05-02")),
+#'   day_type = c("weekday", "weekend")
+#' )
+#' d <- suppressWarnings(
+#'   creel_design(cal, date = date, strata = day_type)
+#' )
+#' d <- suppressWarnings(
+#'   add_interviews(d, interviews_df)
+#' )
+#' summarize_by_county(d)
+#' }
+#'
+#' @family "Reporting & Diagnostics"
+#' @export
+summarize_by_county <- function(design) {
+  # Guard 0: zipcodeR must be installed
+  rlang::check_installed(
+    "zipcodeR",
+    reason = paste0(
+      "summarize_by_county() requires the zipcodeR package for ",
+      "zip-to-county mapping. Install it with: install.packages(\"zipcodeR\")"
+    )
+  )
+
+  # Guard 1: design type check
+  if (!inherits(design, "creel_design")) {
+    cli::cli_abort(c(
+      "{.arg design} must be a {.cls creel_design} object.",
+      "x" = "{.arg design} is {.cls {class(design)[1]}}.",
+      "i" = "Create a design with {.fn creel_design}."
+    ))
+  }
+
+  # Guard 2: interviews attached
+  if (is.null(design$interviews)) {
+    cli::cli_abort(c(
+      "No interviews found.",
+      "x" = "The design object has no interviews in the {.field $interviews} slot.",
+      "i" = "Attach interviews with {.fn add_interviews}."
+    ))
+  }
+
+  # Guard 3: ii_ZipCode column present
+  if (!"ii_ZipCode" %in% names(design$interviews)) {
+    cli::cli_abort(c(
+      "No {.field ii_ZipCode} column found in interviews.",
+      "x" = "Column {.field ii_ZipCode} is absent from {.code design$interviews}.",
+      "i" = "Confirm interview data includes NGPC zip code field {.field ii_ZipCode}."
+    ))
+  }
+
+  zip_vals  <- design$interviews[["ii_ZipCode"]]
+  total_n   <- length(zip_vals)
+  valid_zips <- zip_vals[!is.na(zip_vals)]
+  unique_zips <- unique(valid_zips)
+
+  # Build county lookup from zipcodeR's zip_code_db dataset
+  zip_db <- zipcodeR::zip_code_db
+  county_map <- zip_db[zip_db$zipcode %in% as.character(unique_zips),
+                       c("zipcode", "county"), drop = FALSE]
+
+  # Determine actual county column name returned by the lookup
+  county_col <- if ("county" %in% names(county_map)) {
+    "county"
+  } else if ("county_name" %in% names(county_map)) {
+    "county_name"
+  } else {
+    # Use first character column other than zipcode as fallback
+    char_cols <- names(county_map)[vapply(county_map, is.character, logical(1))]
+    char_cols <- char_cols[char_cols != "zipcode"]
+    if (length(char_cols) > 0L) char_cols[1L] else NA_character_
+  }
+
+  # Build zip -> county lookup vector
+  zip_col_name <- if ("zipcode" %in% names(county_map)) "zipcode" else names(county_map)[1]
+  lookup <- stats::setNames(
+    if (!is.na(county_col)) county_map[[county_col]] else rep(NA_character_, nrow(county_map)),
+    county_map[[zip_col_name]]
+  )
+
+  # Build county_vals for all interviews
+  county_vals <- rep("Unknown", total_n)
+  for (i in seq_along(zip_vals)) {
+    z <- zip_vals[i]
+    if (!is.na(z)) {
+      mapped <- lookup[z]
+      if (!is.na(mapped) && nzchar(mapped)) {
+        county_vals[i] <- mapped
+      }
+      # else stays "Unknown" (unmappable zip)
+    }
+    # NA zip stays "Unknown"
+  }
+
+  counts_tbl <- as.data.frame(table(county = county_vals), stringsAsFactors = FALSE)
+  names(counts_tbl)[names(counts_tbl) == "Freq"] <- "n"
+  counts_tbl$n   <- as.integer(counts_tbl$n)
+  counts_tbl$pct <- round(100 * counts_tbl$n / total_n, 1)
+
+  # Sort: Unknown last, remaining rows by n descending
+  known   <- counts_tbl[counts_tbl$county != "Unknown", ]
+  unknown <- counts_tbl[counts_tbl$county == "Unknown", ]
+  known   <- known[order(-known$n), ]
+  counts_tbl <- rbind(known, unknown)
+  row.names(counts_tbl) <- NULL
+
+  class(counts_tbl) <- c("creel_summary_county", "data.frame")
+  counts_tbl
+}
