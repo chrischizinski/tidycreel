@@ -203,3 +203,71 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
     by_vars         = effort$by_vars
   )
 }
+
+
+#' Compute effort density as angler-hours per acre
+#'
+#' @description
+#' Divides all effort estimate columns in a pre-computed \code{creel_estimates}
+#' object by a surface area scalar (\code{acres}), producing angler-hours per
+#' acre. Standard error propagates linearly because \code{acres} is a constant
+#' (not a random variable), so no Delta Method is needed:
+#' \code{se_per_acre = se_effort / acres}.
+#'
+#' This is a composable estimator: the effort object must be pre-computed via
+#' \code{\link{estimate_effort}} before calling this function.
+#'
+#' @param effort A \code{creel_estimates} object returned by
+#'   \code{\link{estimate_effort}}. Must contain \code{estimate}, \code{se},
+#'   \code{ci_lower}, and \code{ci_upper} columns in \code{effort$estimates}.
+#' @param acres A single positive numeric scalar giving the total lake surface
+#'   area in acres. All effort estimate columns are divided by this value.
+#' @param ... Reserved for future arguments.
+#'
+#' @return A \code{creel_estimates} object with \code{method = "effort-per-acre"}.
+#'   The \code{estimates} tibble has the same rows as the input but with
+#'   \code{estimate}, \code{se}, \code{ci_lower}, \code{ci_upper} (and
+#'   \code{se_between}, \code{se_within} when present in the input) all divided
+#'   by \code{acres}. Grouping columns (\code{by_vars}) and \code{n} are
+#'   carried through unchanged. \code{variance_method} and \code{conf_level}
+#'   are inherited from the input effort object.
+#'
+#' @seealso \code{\link{estimate_effort}}, \code{\link{estimate_angler_trips}}
+#'
+#' @export
+estimate_effort_per_acre <- function(effort, acres, ...) {
+
+  # --- input guards ---
+  if (!inherits(effort, "creel_estimates")) {
+    cli::cli_abort(
+      "{.arg effort} must be a {.cls creel_estimates} object from {.fn estimate_effort}."
+    )
+  }
+
+  if (!is.numeric(acres) || length(acres) != 1 || acres <= 0) {
+    cli::cli_abort(
+      "{.arg acres} must be a single positive number."
+    )
+  }
+
+  # --- scale columns ---
+  est_df <- effort$estimates
+
+  est_df$estimate <- est_df$estimate / acres
+  est_df$se       <- est_df$se       / acres
+  est_df$ci_lower <- est_df$ci_lower / acres
+  est_df$ci_upper <- est_df$ci_upper / acres
+
+  if ("se_between" %in% names(est_df)) est_df$se_between <- est_df$se_between / acres
+  if ("se_within"  %in% names(est_df)) est_df$se_within  <- est_df$se_within  / acres
+
+  # --- return ---
+  new_creel_estimates(
+    estimates       = est_df,
+    method          = "effort-per-acre",
+    variance_method = effort$variance_method,
+    design          = NULL,
+    conf_level      = effort$conf_level,
+    by_vars         = effort$by_vars
+  )
+}
