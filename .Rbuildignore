@@ -73,6 +73,11 @@
 ^\.serena$
 ^\.gsd$
 ^\.gsd-id$
+^\.gsd\.archive.*$
+^\.ai$
+^justfile$
+^opencode\.json$
+^security$
 ^\.adal$
 ^\.agents$
 ^\.augment$
