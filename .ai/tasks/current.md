@@ -9,7 +9,7 @@
 - [x] Create .ai/ structure
 - [x] Update .Rbuildignore to cover .ai/, justfile, opencode.json, security/
 - [x] Archive .gsd/ → .gsd.archive-20260525
-- [ ] Run `just security` and review findings
+- [x] Run `just security` and review findings — 0 leaks (2026-05-25)
 - [ ] Archive v1.9.0 milestone, plan v2.0.0 scope
 
 ## Backlog

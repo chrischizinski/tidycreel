@@ -21,9 +21,9 @@ Runs: `gitleaks detect --source . --redact`
 | Date | Scanner | Findings | Action |
 |------|---------|----------|--------|
 | 2026-05-25 | manual inspection | No cloud credentials found | None required |
-| — | gitleaks | Not yet run | Run `just security` |
+| 2026-05-25 | gitleaks v8 | 0 leaks — 1009 commits, 63.4 MB scanned | None required |
 
 ## Open items
-- [ ] Run `just security` (gitleaks) and record findings here
-- [ ] Rotate OpenRouter API key in ~/.zshrc
-- [ ] Verify .Rbuildignore covers security/ directory if needed
+- [x] Run `just security` (gitleaks) and record findings here
+- [ ] Rotate OpenRouter API key in ~/.zshrc (precautionary)
+- [x] .Rbuildignore covers security/ directory
