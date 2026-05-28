@@ -808,3 +808,52 @@
 #' @seealso [creel_counts_toy]
 #' @family "Example Datasets"
 "creel_interviews_toy"
+
+#' NGPC Creel Survey Simulator Parameters
+#'
+#' Empirically-fitted distributional parameters derived from 86 complete NGPC
+#' creel surveys (2014–2021) via the NGPC REST API. Used by the tidycreel
+#' creel data simulator to draw realistic effort, catch, party, and angler
+#' pressure values. Stratified by waterbody type.
+#'
+#' @format A named list with elements `large_reservoir`, `urban_small`, `all`,
+#'   and `metadata`. Each waterbody stratum contains:
+#'   \describe{
+#'     \item{n_creels}{Total creels in stratum.}
+#'     \item{n_with_interviews}{Creels with interview data.}
+#'     \item{n_counts_only}{Pressure-only creels (no interviews).}
+#'     \item{effort}{List: `mean`, `sd`, `median` (hr/trip);
+#'       `gamma_shape`, `gamma_rate` for `rgamma()` simulation.}
+#'     \item{party}{List: `mean`, `sd` party size (anglers/trip).}
+#'     \item{catch_per_trip}{List: `mean`, `cv`, `nb_size` for `rnbinom()`.}
+#'     \item{harvest}{List: `mean_pct`, `sd_pct` harvest percentage.}
+#'     \item{counts}{List: `mean_total_anglers`, `sd_total_anglers`,
+#'       `mean_pct_zero` from instantaneous count data.}
+#'     \item{species}{List: `mean_richness` (species per creel).}
+#'     \item{trip_start}{List: `mean_hr`, `sd_hr` (decimal hour, 24h clock).}
+#'     \item{survey_duration}{List: `mean_days`, `median_days`.}
+#'     \item{pct_zero_catch_source}{Character note; zero-catch rate is NOT in
+#'       this object (API artifact) and must be derived separately.}
+#'   }
+#'
+#' @note `pct_zero_catch` is absent because `GetCatchData` omits zero-catch
+#'   interviews. Cross-reference `GetInterviewData` UIDs with `GetCatchData`
+#'   UIDs to derive true zero-catch probability before simulation.
+#'   Refresh with `source("data-raw/ngpc_creel_inventory.R")`.
+#'
+#' @source NGPC REST API (`http://creelsurvey.unl.edu/api/AnalysisData`).
+#'   Raw inventory cached locally at `~/.cache/tidycreel/ngpc_creel_inventory.rds`.
+#'
+#' @examples
+#' data(ngpc_creel_params)
+#' # Simulate effort for a large reservoir creel
+#' p <- ngpc_creel_params$large_reservoir$effort
+#' effort_sim <- rgamma(500, shape = p$gamma_shape, rate = p$gamma_rate)
+#' hist(effort_sim, main = "Simulated effort (hr/trip) — large reservoir")
+#'
+#' # NB catch
+#' cp <- ngpc_creel_params$large_reservoir$catch_per_trip
+#' catch_sim <- rnbinom(500, mu = cp$mean, size = cp$nb_size)
+#'
+#' @family "Example Datasets"
+"ngpc_creel_params"

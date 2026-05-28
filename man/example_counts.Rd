@@ -38,7 +38,7 @@ print(result)
 \link{example_calendar} for matching calendar data, \code{\link[=add_counts]{add_counts()}} to
 attach counts to a design
 
-Other "Example Datasets": 
+Other "Example Datasets":
 \code{\link{creel_counts_toy}},
 \code{\link{creel_interviews_toy}},
 \code{\link{example_aerial_counts}},
@@ -55,7 +55,8 @@ Other "Example Datasets":
 \code{\link{example_lengths}},
 \code{\link{example_sections_calendar}},
 \code{\link{example_sections_counts}},
-\code{\link{example_sections_interviews}}
+\code{\link{example_sections_interviews}},
+\code{\link{ngpc_creel_params}}
 }
 \concept{"Example Datasets"}
 \keyword{datasets}

@@ -59,7 +59,7 @@ estimate_total_catch(design, aggregate_sections = TRUE)
 \link{example_sections_calendar}, \link{example_sections_counts},
 \code{\link[=add_interviews]{add_interviews()}}, \code{\link[=estimate_catch_rate]{estimate_catch_rate()}}, \code{\link[=estimate_total_catch]{estimate_total_catch()}}
 
-Other "Example Datasets": 
+Other "Example Datasets":
 \code{\link{creel_counts_toy}},
 \code{\link{creel_interviews_toy}},
 \code{\link{example_aerial_counts}},
@@ -76,7 +76,8 @@ Other "Example Datasets":
 \code{\link{example_interviews}},
 \code{\link{example_lengths}},
 \code{\link{example_sections_calendar}},
-\code{\link{example_sections_counts}}
+\code{\link{example_sections_counts}},
+\code{\link{ngpc_creel_params}}
 }
 \concept{"Example Datasets"}
 \keyword{datasets}

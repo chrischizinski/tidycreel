@@ -72,7 +72,7 @@ print(design)
 \code{\link[=prep_interview_catch]{prep_interview_catch()}} to standardize species catch, and
 \code{add_catch()} to attach species catch to a design
 
-Other "Example Datasets": 
+Other "Example Datasets":
 \code{\link{creel_counts_toy}},
 \code{\link{creel_interviews_toy}},
 \code{\link{example_aerial_counts}},
@@ -89,7 +89,8 @@ Other "Example Datasets":
 \code{\link{example_lengths}},
 \code{\link{example_sections_calendar}},
 \code{\link{example_sections_counts}},
-\code{\link{example_sections_interviews}}
+\code{\link{example_sections_interviews}},
+\code{\link{ngpc_creel_params}}
 }
 \concept{"Example Datasets"}
 \keyword{datasets}

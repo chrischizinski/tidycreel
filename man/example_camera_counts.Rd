@@ -48,7 +48,7 @@ design <- suppressWarnings(add_counts(design, counts_clean))
 \link{example_camera_timestamps}, \link{example_camera_interviews},
 \code{\link[=creel_design]{creel_design()}}, \code{\link[=add_counts]{add_counts()}}
 
-Other "Example Datasets": 
+Other "Example Datasets":
 \code{\link{creel_counts_toy}},
 \code{\link{creel_interviews_toy}},
 \code{\link{example_aerial_counts}},
@@ -65,7 +65,8 @@ Other "Example Datasets":
 \code{\link{example_lengths}},
 \code{\link{example_sections_calendar}},
 \code{\link{example_sections_counts}},
-\code{\link{example_sections_interviews}}
+\code{\link{example_sections_interviews}},
+\code{\link{ngpc_creel_params}}
 }
 \concept{"Example Datasets"}
 \keyword{datasets}
