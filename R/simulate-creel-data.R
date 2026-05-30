@@ -23,19 +23,11 @@
 #' }
 #'
 #' @param params Named list of distributional parameters. Required. Must
-#'   include sub-lists:
-#'   \describe{
-#'     \item{\code{effort}}{List with \code{gamma_shape} and \code{gamma_rate}
-#'       (passed to \code{rgamma()}).}
-#'     \item{\code{party}}{List with \code{mean} (mean party size, used as
-#'       \code{lambda} for \code{rpois()}).}
-#'     \item{\code{catch_per_trip}}{List with \code{mean} and \code{nb_size}
-#'       (used for \code{rnbinom()}).}
-#'     \item{\code{harvest}}{List with \code{mean_pct} (harvest as a
-#'       percentage, e.g. \code{35} for 35\%).}
-#'     \item{\code{counts}}{List with \code{mean_total_anglers} (mean
-#'       instantaneous count; used when \code{n_anglers_per_day = NULL}).}
-#'   }
+#'   include named sub-lists: `effort` (with `gamma_shape`, `gamma_rate` for
+#'   [rgamma()]); `party` (with `mean` party size for [rpois()]); `catch_per_trip`
+#'   (with `mean` and `nb_size` for [rnbinom()]); `harvest` (with `mean_pct`
+#'   as a percentage, e.g. `35` for 35%); `counts` (with `mean_total_anglers`,
+#'   used when `n_anglers_per_day = NULL`).
 #' @param season_days Integer. Total days in the season. Default 100.
 #' @param n_sampled_days Integer. Number of days actually surveyed. Must be
 #'   \code{<= season_days}. Default 30.

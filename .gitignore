@@ -139,4 +139,5 @@ kairo.db-wal
 
 # NGPC proprietary data — local only, not for distribution
 data/ngpc_creel_params.rda
+data-raw/ngpc_creel_params.rda
 data-raw/ngpc_creel_inventory.R
