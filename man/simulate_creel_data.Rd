@@ -5,8 +5,7 @@
 \title{Simulate a complete creel survey dataset}
 \usage{
 simulate_creel_data(
-  waterbody_type = c("large_reservoir", "urban_small"),
-  params = NULL,
+  params,
   season_days = 100L,
   n_sampled_days = 30L,
   day_types = NULL,
@@ -21,15 +20,20 @@ simulate_creel_data(
 )
 }
 \arguments{
-\item{waterbody_type}{Character. \code{"large_reservoir"} (default) or
-\code{"urban_small"}. Selects the corresponding stratum in
-\code{\link{ngpc_creel_params}}.}
-
-\item{params}{Named list of distributional parameters, or \code{NULL}
-(default) to use \code{ngpc_creel_params[[waterbody_type]]}. When
-supplied, must include \code{effort}, \code{party}, \code{catch_per_trip},
-\code{harvest}, \code{counts}, and \code{trip_start} sub-lists matching
-the structure of \code{ngpc_creel_params$large_reservoir}.}
+\item{params}{Named list of distributional parameters. Required. Must
+include sub-lists:
+\describe{
+\item{\code{effort}}{List with \code{gamma_shape} and \code{gamma_rate}
+(passed to \code{rgamma()}).}
+\item{\code{party}}{List with \code{mean} (mean party size, used as
+\code{lambda} for \code{rpois()}).}
+\item{\code{catch_per_trip}}{List with \code{mean} and \code{nb_size}
+(used for \code{rnbinom()}).}
+\item{\code{harvest}}{List with \code{mean_pct} (harvest as a
+percentage, e.g. \code{35} for 35\\%).}
+\item{\code{counts}}{List with \code{mean_total_anglers} (mean
+instantaneous count; used when \code{n_anglers_per_day = NULL}).}
+}}
 
 \item{season_days}{Integer. Total days in the season. Default 100.}
 
@@ -90,9 +94,8 @@ a calendar with \code{\link{creel_design}}.
 }
 \description{
 Generates realistic synthetic creel data using a three-level hierarchical
-generative model (day → trip → catch). Default distributional parameters
-come from \code{\link{ngpc_creel_params}}, fitted to 86 complete NGPC creel
-surveys (2014–2021). Parameters can be overridden for custom scenarios.
+generative model (day → trip → catch). Caller supplies distributional
+parameters via \code{params}; no default data are bundled with the package.
 
 The generative model follows Su & Clapp (2013) and Greene (1995):
 \enumerate{
@@ -110,9 +113,16 @@ elapsed effort, not total effort.
 }
 }
 \examples{
+my_params <- list(
+  effort         = list(gamma_shape = 2.0, gamma_rate = 0.8),
+  party          = list(mean = 1.5),
+  catch_per_trip = list(mean = 1.8, nb_size = 0.5),
+  harvest        = list(mean_pct = 35),
+  counts         = list(mean_total_anglers = 10)
+)
 set.seed(42)
 sim <- simulate_creel_data(
-  waterbody_type = "large_reservoir",
+  params         = my_params,
   season_days    = 90,
   n_sampled_days = 20,
   species        = c("walleye", "northern_pike"),
@@ -121,16 +131,6 @@ sim <- simulate_creel_data(
 head(sim$interviews)
 head(sim$counts)
 head(sim$catch)
-
-# Urban scenario
-set.seed(1)
-sim_u <- simulate_creel_data(
-  waterbody_type = "urban_small",
-  season_days    = 60,
-  n_sampled_days = 15,
-  day_types      = c(weekday = 5/7, weekend = 2/7),
-  species        = "bluegill"
-)
 
 }
 \references{
@@ -144,7 +144,7 @@ Petrere, M. et al. (2010). Catch-per-unit-effort: which estimator is best?
 Fish. Res. 106: 325–333.
 }
 \seealso{
-\code{\link{simulate_creel_catch}}, \code{\link{ngpc_creel_params}}
+\code{\link{simulate_creel_catch}}
 
 Other "Simulation":
 \code{\link{simulate_creel_catch}()}

@@ -61,8 +61,7 @@ Other "Example Datasets":
 \code{\link{example_interviews}},
 \code{\link{example_lengths}},
 \code{\link{example_sections_calendar}},
-\code{\link{example_sections_interviews}},
-\code{\link{ngpc_creel_params}}
+\code{\link{example_sections_interviews}}
 }
 \concept{"Example Datasets"}
 \keyword{datasets}
