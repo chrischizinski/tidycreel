@@ -6,7 +6,7 @@ test:
     Rscript -e 'devtools::test()'
 
 check:
-    Rscript -e 'rcmdcheck::rcmdcheck(args = c("--no-manual", "--as-cran"), error_on = "warning")'
+    Rscript -e 'rcmdcheck::rcmdcheck(args = c("--no-manual", "--as-cran"), env = c("_R_CHECK_FORCE_SUGGESTS_" = "false"), error_on = "warning")'
 
 lint:
     Rscript -e 'lintr::lint_package()'
@@ -19,7 +19,7 @@ site:
     Rscript -e 'pkgdown::build_site()'
 
 check-gemini:
-    Rscript -e 'rcmdcheck::rcmdcheck(args = c("--no-manual", "--as-cran"), error_on = "warning")' 2>&1 | gemini -p "summarize errors and warnings only, skip passing checks"
+    Rscript -e 'rcmdcheck::rcmdcheck(args = c("--no-manual", "--as-cran"), env = c("_R_CHECK_FORCE_SUGGESTS_" = "false"), error_on = "warning")' 2>&1 | gemini -p "summarize errors and warnings only, skip passing checks"
 
 coverage:
     Rscript -e 'covr::package_coverage()' 2>&1 | gemini -p "list functions under 80% coverage, show percentage"

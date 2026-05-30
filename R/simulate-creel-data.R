@@ -113,6 +113,7 @@
 #' @seealso \code{\link{simulate_creel_catch}}, \code{\link{ngpc_creel_params}}
 #' @family "Simulation"
 #' @importFrom stats rbinom rgamma rnbinom rpois runif
+#' @importFrom utils data
 #' @export
 simulate_creel_data <- function(
   waterbody_type  = c("large_reservoir", "urban_small"),
