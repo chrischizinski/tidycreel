@@ -117,3 +117,6 @@
 ^kairo\.db-shm$
 ^kairo\.db-wal$
 ^graphify-out$
+^\.contextatlas\.yml$
+^\.contextatlas$
+^\.gsd\.archive.*$

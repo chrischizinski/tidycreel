@@ -133,3 +133,6 @@ tmp/
 kairo.db
 kairo.db-shm
 kairo.db-wal
+
+# ContextAtlas: regenerable prompt artifacts (per `contextatlas init`)
+.contextatlas/prompts/
