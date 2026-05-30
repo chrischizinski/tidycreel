@@ -1,30 +1,30 @@
 # Latest Handoff — tidycreel
 
 ## Date
-2026-05-25
+2026-05-30
 
 ## Status
-v1.9.0 shipped. GSD migration complete. Cleanup commit done. Security scan next.
+v2.0.0 all phases complete. Code on main. PR not yet opened.
 
-## Changed (this session)
-- Committed `.Rbuildignore` (covers .ai/, justfile, opencode.json, security/, .gsd.archive)
-- Committed `.ai/`, `justfile`, `opencode.json`, `security/` (all new agent-harness files)
-- Updated `.ai/tasks/current.md` — M022 marked complete, migration tasks updated
-- Updated `.ai/repo-map.md` — M022 open question closed, v2.0.0 placeholder added
-- Updated `.ai/handoffs/latest.md` (this file)
+## What's done
+- Phase 98: `simulate_creel_data()`, `simulate_creel_catch()` — committed (5494525)
+- Phase 99: `compare_cpue_estimators()`, `autoplot.cpue_comparison`, CPUE3 regression + jackknife SE — committed (4d0b3da)
+- Version bumped to 2.0.0 (61d233a)
+- NAMESPACE, .Rbuildignore, .gitignore updated (d0b366a)
+- Broken symlink `.gsd.archive-20260525` deleted (was causing R CMD build to fail)
+- 2861 tests pass, 0 failures
 
-## Commands run
-- `just snapshot`
+## Known issue (pre-existing)
+`just check` fails with ERROR: missing Suggests packages (duckdb, flexdashboard, hexSticker,
+magick, showtext, sysfonts, writexl, zipcodeR). This predates v2.0.0 — existed at HEAD before
+any current-session changes.
 
 ## What remains
-- [ ] Run `just security` (gitleaks) and record findings in security/scan-summary.md
-- [ ] Archive v1.9.0 milestone in .planning/
-- [ ] Plan v2.0.0 scope — likely CRAN submission prep
-- [ ] Rotate OpenRouter API key in ~/.zshrc (precautionary)
-
-## Known risks
-- OpenRouter API key in ~/.zshrc should be rotated (not urgent)
-- CRAN submission pending — one irreducible NOTE expected (new submission)
+- [ ] Open PR for v2.0.0
+- [ ] Address or document missing Suggests check error
+- [ ] Tag v2.0.0 after merge
+- [ ] Archive v2.0.0 in .planning/
+- [ ] Plan next milestone
 
 ## Suggested next step
-Run `just security`, record findings, then plan v2.0.0 / CRAN prep.
+Open PR for v2.0.0 (or decide whether to address Suggests check first).
