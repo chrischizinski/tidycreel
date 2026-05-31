@@ -97,7 +97,8 @@ print(total_rel_sp)
 \code{\link{estimate_total_harvest}}, \code{\link{estimate_release_rate}},
 \code{\link{add_catch}}
 
-Other "Estimation": 
+Other "Estimation":
+\code{\link{compare_cpue_estimators}()},
 \code{\link{est_length_distribution}()},
 \code{\link{estimate_catch_rate}()},
 \code{\link{estimate_effort}()},

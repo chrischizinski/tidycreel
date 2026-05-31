@@ -121,6 +121,7 @@ hpue_est <- estimate_harvest_rate(design)
 \code{\link{estimate_total_catch}}
 
 Other "Estimation":
+\code{\link{compare_cpue_estimators}()},
 \code{\link{est_length_distribution}()},
 \code{\link{estimate_catch_rate}()},
 \code{\link{estimate_effort}()},

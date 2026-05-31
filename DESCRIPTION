@@ -1,6 +1,6 @@
 Package: tidycreel
 Title: Tidy Interface for Creel Survey Design and Analysis
-Version: 1.9.0
+Version: 2.0.0
 Authors@R:
     person(given = "Christopher", family = "Chizinski", role = c("aut", "cre"),
            email = "cchizinski2@unl.edu",
@@ -33,25 +33,20 @@ Suggests:
     covr,
     DBI,
     duckdb,
-    flexdashboard,
     glmmTMB,
     hedgehog,
-    hexSticker,
     htmlwidgets,
     knitr,
     lintr,
     lme4,
     lubridate (>= 1.9.0),
-    magick,
     pkgdown,
     pkgload,
     quickcheck,
     profvis,
     readxl (>= 1.4.0),
     rmarkdown,
-    showtext,
     styler,
-    sysfonts,
     testthat (>= 3.0.0),
     withr,
     writexl (>= 1.5.4),

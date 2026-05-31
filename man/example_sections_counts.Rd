@@ -44,7 +44,7 @@ estimate_effort(design)
 \link{example_sections_calendar}, \link{example_sections_interviews},
 \code{\link[=add_counts]{add_counts()}}, \code{\link[=add_sections]{add_sections()}}, \code{\link[=estimate_effort]{estimate_effort()}}
 
-Other "Example Datasets": 
+Other "Example Datasets":
 \code{\link{creel_counts_toy}},
 \code{\link{creel_interviews_toy}},
 \code{\link{example_aerial_counts}},

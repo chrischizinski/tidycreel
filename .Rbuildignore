@@ -73,6 +73,11 @@
 ^\.serena$
 ^\.gsd$
 ^\.gsd-id$
+^\.gsd\.archive.*$
+^\.ai$
+^justfile$
+^opencode\.json$
+^security$
 ^\.adal$
 ^\.agents$
 ^\.augment$
@@ -112,3 +117,7 @@
 ^kairo\.db-shm$
 ^kairo\.db-wal$
 ^graphify-out$
+^CLAUDE\.md$
+^\.contextatlas\.yml$
+^\.contextatlas$
+^\.gsd\.archive.*$

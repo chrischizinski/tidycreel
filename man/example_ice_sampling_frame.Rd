@@ -46,7 +46,7 @@ print(design)
 \link{example_ice_interviews} for matching interview data,
 \code{\link[=creel_design]{creel_design()}} for ice survey design construction
 
-Other "Example Datasets": 
+Other "Example Datasets":
 \code{\link{creel_counts_toy}},
 \code{\link{creel_interviews_toy}},
 \code{\link{example_aerial_counts}},

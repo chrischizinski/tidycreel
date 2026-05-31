@@ -70,7 +70,7 @@ suppressWarnings(estimate_effort(design))
 \link{example_ice_sampling_frame} for the matching sampling frame,
 \code{\link[=creel_design]{creel_design()}}, \code{\link[=add_interviews]{add_interviews()}}, \code{\link[=estimate_effort]{estimate_effort()}}
 
-Other "Example Datasets": 
+Other "Example Datasets":
 \code{\link{creel_counts_toy}},
 \code{\link{creel_interviews_toy}},
 \code{\link{example_aerial_counts}},

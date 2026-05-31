@@ -74,6 +74,15 @@ reference:
       - est_length_distribution
       - estimate_angler_trips
       - estimate_effort_per_acre
+      - compare_cpue_estimators
+
+  - title: "Simulation"
+    desc: >
+      Generate synthetic creel survey datasets for testing, power analysis,
+      and estimator comparison. Caller supplies distributional parameters.
+    contents:
+      - simulate_creel_data
+      - simulate_creel_catch
 
   - title: "Reporting & Diagnostics"
     desc: >

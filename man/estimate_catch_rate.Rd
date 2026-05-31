@@ -13,7 +13,8 @@ estimate_catch_rate(
   use_trips = NULL,
   truncate_at = 0.5,
   targeted = TRUE,
-  missing_sections = "warn"
+  missing_sections = "warn",
+  force_origin = TRUE
 )
 }
 \arguments{
@@ -73,6 +74,12 @@ registered section has no interview observations. \code{"warn"} (default)
 emits a \code{cli_warn()} and inserts an NA row with
 \code{data_available = FALSE}. \code{"error"} aborts with
 \code{cli_abort()}. Ignored for non-sectioned designs.}
+
+\item{force_origin}{Logical. When \code{estimator = "regression"}, whether
+to force the regression through the origin (\code{catch ~ effort - 1}).
+Default \code{TRUE} (standard CPUE\eqn{_3} formulation per Petrere et al.
+2010). Set to \code{FALSE} to allow a free intercept. Ignored for other
+estimators.}
 }
 \value{
 A creel_estimates S3 object (list) with components: estimates
@@ -211,7 +218,8 @@ result_mor <- estimate_catch_rate(design_with_interviews, estimator = "mor")
 result_mor_1h <- estimate_catch_rate(design_with_interviews, estimator = "mor", truncate_at = 1.0)
 }
 \seealso{
-Other "Estimation": 
+Other "Estimation":
+\code{\link{compare_cpue_estimators}()},
 \code{\link{est_length_distribution}()},
 \code{\link{estimate_effort}()},
 \code{\link{estimate_effort_aerial_glmm}()},

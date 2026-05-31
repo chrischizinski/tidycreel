@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.9.0
-milestone_name: — Report Completeness and Documentation Polish
-status: executing
-stopped_at: Phase 97 Plan 01 complete
-last_updated: "2026-05-25T15:10:00.000Z"
-last_activity: 2026-05-25 -- Phase 97 Plan 01 complete (DOC-02, DOC-03, TD-01)
+milestone: v2.0.0
+milestone_name: Creel Data Simulator and CPUE Extensions
+status: complete
+stopped_at: Phase 99 — complete
+last_updated: "2026-05-30T00:00:00.000Z"
+last_activity: 2026-05-30 -- v2.0.0 all phases shipped; version bumped to 2.0.0; PR pending
 progress:
-  total_phases: 6
-  completed_phases: 5
-  total_plans: 14
-  completed_plans: 13
-  percent: 86
+  total_phases: 2
+  completed_phases: 2
+  total_plans: 2
+  completed_plans: 2
+  percent: 100
 ---
 
 # Project State
@@ -21,41 +21,29 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-24)
 
 **Core value:** A biologist should be able to go from survey design to package-ready estimates, plots, summaries, and documentation without stitching together a custom analysis stack.
-**Current focus:** v1.9.0 — close NGPC report output gaps; fix pkgdown site version
+**Current focus:** v2.0.0 COMPLETE — Creel Data Simulator and CPUE Extensions
 
 ## Current Position
 
-Phase: 97 — IN PROGRESS
-Plan: 01 (complete)
-Status: Executing Plan 02
-Last activity: 2026-05-25 -- Phase 97 Plan 01 complete (DOC-02, DOC-03, TD-01)
+Phase: 99 — complete
+Status: All phases complete; awaiting PR merge
+Last activity: 2026-05-30 -- Phase 98 (simulate_creel_data, simulate_creel_catch) and Phase 99 (CPUE3 regression, jackknife SE, compare_cpue_estimators) shipped; version bumped to 2.0.0
 
 ## Phase Outline
 
-| Phase | Goal | Requirements |
-|-------|------|--------------|
-| 95. Trip and Density Estimators | Biologists can derive angler trip counts and effort density from an existing creel design | RPT-01, RPT-02 |
-| 96. Geographic Summary Functions | Biologists can produce boat composition, zip, and county summary tables from a creel design | RPT-03, RPT-04, RPT-05 |
-| 97. Documentation Polish and Tech Debt | pkgdown at v1.9.0, connect bridge article, issue templates, xlsx test closed | DOC-01, DOC-02, DOC-03, TD-01 |
+| Phase | Goal | Requirements | Status |
+|-------|------|--------------|--------|
+| 98. Creel Data Simulator | Biologists and developers can generate realistic synthetic creel datasets from empirical NGPC distributions | SIM-01, SIM-02 | COMPLETE |
+| 99. Regression CPUE and Jackknife | Biologists can estimate CPUE via regression slope (CPUE₃) with jackknife SE; compare all three estimators | CPUE-01, CPUE-02 | COMPLETE |
 
 ## Previous Milestone Archive
 
-All v1.8.0 work archived:
-
-- `.planning/milestones/v1.8.0-ROADMAP.md` — full phase archive
-- `.planning/milestones/v1.8.0-REQUIREMENTS.md` — all 12 requirements marked complete
-- `.planning/milestones/v1.8.0-MILESTONE-AUDIT.md` — audit report
-- `.planning/MILESTONES.md` — v1.8.0 entry added
-
-## Tech Debt Carried from v1.8.0
-
-| Item | REQ | Notes |
-|------|-----|-------|
-| `write_estimates()` xlsx path test | TD-01 (WRITE-11) | CLOSED in Phase 97 Plan 01 |
+v1.9.0 archived:
+- `.planning/milestones/v1.9.0` (M022 phases)
+- `.planning/MILESTONES.md` — v1.9.0 entry
 
 ## Session Continuity
 
-Last session: 2026-05-25T15:10:00.000Z
-Stopped at: Phase 97 Plan 01 complete
-Resume file: .planning/phases/97-documentation-polish-and-tech-debt/97-01-SUMMARY.md
-Next: Phase 97 Plan 02 (DOC-01 — pkgdown rebuild)
+Last session: 2026-05-30
+Stopped at: v2.0.0 complete — PR pending
+Next: Open PR for v2.0.0; plan next milestone
