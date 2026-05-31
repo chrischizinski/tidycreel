@@ -112,6 +112,7 @@ American Journal of Fisheries Management, 38, 1204-1215.
 ## See also
 
 Other "Estimation":
+[`compare_cpue_estimators()`](https://chrischizinski.github.io/tidycreel/reference/compare_cpue_estimators.md),
 [`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md),
 [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md),
 [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),

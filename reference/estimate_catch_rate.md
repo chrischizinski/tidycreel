@@ -17,7 +17,8 @@ estimate_catch_rate(
   use_trips = NULL,
   truncate_at = 0.5,
   targeted = TRUE,
-  missing_sections = "warn"
+  missing_sections = "warn",
+  force_origin = TRUE
 )
 ```
 
@@ -97,6 +98,13 @@ estimate_catch_rate(
   interview observations. `"warn"` (default) emits a `cli_warn()` and
   inserts an NA row with `data_available = FALSE`. `"error"` aborts with
   `cli_abort()`. Ignored for non-sectioned designs.
+
+- force_origin:
+
+  Logical. When `estimator = "regression"`, whether to force the
+  regression through the origin (`catch ~ effort - 1`). Default `TRUE`
+  (standard CPUE\\\_3\\ formulation per Petrere et al. 2010). Set to
+  `FALSE` to allow a free intercept. Ignored for other estimators.
 
 ## Value
 
@@ -194,6 +202,7 @@ validation when complete trip samples are insufficient.
 ## See also
 
 Other "Estimation":
+[`compare_cpue_estimators()`](https://chrischizinski.github.io/tidycreel/reference/compare_cpue_estimators.md),
 [`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md),
 [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),
 [`estimate_effort_aerial_glmm()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort_aerial_glmm.md),

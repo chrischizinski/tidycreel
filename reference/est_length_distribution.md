@@ -74,6 +74,7 @@ and columns: grouping columns (if any), `length_bin` (ordered factor),
 ## See also
 
 Other "Estimation":
+[`compare_cpue_estimators()`](https://chrischizinski.github.io/tidycreel/reference/compare_cpue_estimators.md),
 [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md),
 [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),
 [`estimate_effort_aerial_glmm()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort_aerial_glmm.md),

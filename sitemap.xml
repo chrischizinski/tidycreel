@@ -52,6 +52,7 @@
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_length_distribution.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_schedule.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/check_completeness.html</loc></url>
+<url><loc>https://chrischizinski.github.io/tidycreel/reference/compare_cpue_estimators.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/compare_designs.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/compare_variance.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/compute_angler_effort.html</loc></url>
@@ -147,6 +148,8 @@
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/read_schedule.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/reallocate_strata.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/season_summary.html</loc></url>
+<url><loc>https://chrischizinski.github.io/tidycreel/reference/simulate_creel_catch.html</loc></url>
+<url><loc>https://chrischizinski.github.io/tidycreel/reference/simulate_creel_data.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/simulate_strata_collapse.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/standardize_species.html</loc></url>
 <url><loc>https://chrischizinski.github.io/tidycreel/reference/summarize_boat_composition.html</loc></url>

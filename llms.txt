@@ -470,6 +470,18 @@ dispatch automatically on survey type.
   : Estimate angler trips from extrapolated effort
 - [`estimate_effort_per_acre()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort_per_acre.md)
   : Compute effort density as angler-hours per acre
+- [`compare_cpue_estimators()`](https://chrischizinski.github.io/tidycreel/reference/compare_cpue_estimators.md)
+  : Compare CPUE estimators (ROM, MOR, Regression)
+
+## Simulation
+
+Generate synthetic creel survey datasets for testing, power analysis,
+and estimator comparison. Caller supplies distributional parameters.
+
+- [`simulate_creel_data()`](https://chrischizinski.github.io/tidycreel/reference/simulate_creel_data.md)
+  : Simulate a complete creel survey dataset
+- [`simulate_creel_catch()`](https://chrischizinski.github.io/tidycreel/reference/simulate_creel_catch.md)
+  : Simulate catch counts from a distributional family
 
 ## Reporting & Diagnostics
 

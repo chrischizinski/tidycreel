@@ -13,7 +13,7 @@ estimation methods."><meta property="og:image" content="https://chrischizinski.g
 
     <a class="navbar-brand me-2" href="../index.html">tidycreel</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.9.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -88,7 +88,8 @@ estimation methods.</p>
 <span>  use_trips <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  truncate_at <span class="op">=</span> <span class="fl">0.5</span>,</span>
 <span>  targeted <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  missing_sections <span class="op">=</span> <span class="st">"warn"</span></span>
+<span>  missing_sections <span class="op">=</span> <span class="st">"warn"</span>,</span>
+<span>  force_origin <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -169,6 +170,14 @@ registered section has no interview observations. <code>"warn"</code> (default)
 emits a <code>cli_warn()</code> and inserts an NA row with
 <code>data_available = FALSE</code>. <code>"error"</code> aborts with
 <code>cli_abort()</code>. Ignored for non-sectioned designs.</p></dd>
+
+
+<dt id="arg-force-origin">force_origin<a class="anchor" aria-label="anchor" href="#arg-force-origin"></a></dt>
+<dd><p>Logical. When <code>estimator = "regression"</code>, whether
+to force the regression through the origin (<code>catch ~ effort - 1</code>).
+Default <code>TRUE</code> (standard CPUE\(_3\) formulation per Petrere et al.
+2010). Set to <code>FALSE</code> to allow a free intercept. Ignored for other
+estimators.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -256,6 +265,7 @@ samples are insufficient.</p>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p>Other "Estimation":
+<code><a href="compare_cpue_estimators.html">compare_cpue_estimators()</a></code>,
 <code><a href="est_length_distribution.html">est_length_distribution()</a></code>,
 <code><a href="estimate_effort.html">estimate_effort()</a></code>,
 <code><a href="estimate_effort_aerial_glmm.html">estimate_effort_aerial_glmm()</a></code>,
