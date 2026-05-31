@@ -75,7 +75,6 @@ reference:
       - estimate_angler_trips
       - estimate_effort_per_acre
       - compare_cpue_estimators
-      - autoplot.cpue_comparison
 
   - title: "Simulation"
     desc: >
