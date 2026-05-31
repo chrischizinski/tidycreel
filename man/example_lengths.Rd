@@ -57,7 +57,7 @@ print(design)
 \code{\link{example_interviews}}, \code{\link{example_catch}},
 \code{\link{add_lengths}}
 
-Other "Example Datasets": 
+Other "Example Datasets":
 \code{\link{creel_counts_toy}},
 \code{\link{creel_interviews_toy}},
 \code{\link{example_aerial_counts}},

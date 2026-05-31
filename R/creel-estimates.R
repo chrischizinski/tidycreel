@@ -591,6 +591,11 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
 #'   emits a \code{cli_warn()} and inserts an NA row with
 #'   \code{data_available = FALSE}. \code{"error"} aborts with
 #'   \code{cli_abort()}. Ignored for non-sectioned designs.
+#' @param force_origin Logical. When \code{estimator = "regression"}, whether
+#'   to force the regression through the origin (\code{catch ~ effort - 1}).
+#'   Default \code{TRUE} (standard CPUE\eqn{_3} formulation per Petrere et al.
+#'   2010). Set to \code{FALSE} to allow a free intercept. Ignored for other
+#'   estimators.
 #'
 #' @note When called on a sectioned design, no \code{.lake_total} row is
 #'   produced. Catch rates (fish per angler-hour) are not additive across
@@ -727,7 +732,8 @@ estimate_catch_rate <- function(design,
                                 use_trips = NULL,
                                 truncate_at = 0.5,
                                 targeted = TRUE,
-                                missing_sections = "warn") {
+                                missing_sections = "warn",
+                                force_origin = TRUE) {
   # Capture by parameter BEFORE validation
   by_quo <- rlang::enquo(by)
 
@@ -748,7 +754,7 @@ estimate_catch_rate <- function(design,
   }
 
   # Validate estimator parameter
-  valid_estimators <- c("ratio-of-means", "mor", "mortr")
+  valid_estimators <- c("ratio-of-means", "mor", "mortr", "regression")
   if (!estimator %in% valid_estimators) {
     cli::cli_abort(c(
       "Invalid estimator: {.val {estimator}}",
@@ -756,7 +762,8 @@ estimate_catch_rate <- function(design,
       "i" = paste(
         "{.val ratio-of-means} for complete trips,",
         "{.val mor} for incomplete trips,",
-        "{.val mortr} for truncated mean-of-ratios"
+        "{.val mortr} for truncated mean-of-ratios,",
+        "{.val regression} for OLS slope (CPUE3) with jackknife SE"
       )
     ))
   }
@@ -1262,6 +1269,27 @@ estimate_catch_rate <- function(design,
       conf_level      = conf_level,
       by_vars         = by_info$all_vars
     ))
+  }
+
+  # Regression (CPUE3) path — route before standard dispatch
+  if (estimator == "regression") {
+    if (rlang::quo_is_null(by_quo)) {
+      return(estimate_cpue_regression_total( # nolint: object_usage_linter
+        design, conf_level, force_origin
+      ))
+    } else {
+      by_cols <- tidyselect::eval_select(
+        by_quo,
+        data = design$interviews,
+        allow_rename = FALSE,
+        allow_empty = FALSE,
+        error_call = rlang::caller_env()
+      )
+      by_vars <- names(by_cols)
+      return(estimate_cpue_reg_grouped( # nolint: object_usage_linter
+        design, by_vars, conf_level, force_origin
+      ))
+    }
   }
 
   # Standard (non-species) routing

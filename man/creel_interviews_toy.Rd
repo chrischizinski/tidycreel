@@ -38,7 +38,7 @@ standardize_species(creel_interviews_toy, species_col = "species")
 \seealso{
 \link{creel_counts_toy}
 
-Other "Example Datasets": 
+Other "Example Datasets":
 \code{\link{creel_counts_toy}},
 \code{\link{example_aerial_counts}},
 \code{\link{example_aerial_glmm_counts}},

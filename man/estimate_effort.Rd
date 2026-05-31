@@ -156,7 +156,8 @@ result_grouped_boot <- estimate_effort(design_with_counts, by = day_type, varian
 result_verbose <- estimate_effort(design_with_counts, verbose = TRUE)
 }
 \seealso{
-Other "Estimation": 
+Other "Estimation":
+\code{\link{compare_cpue_estimators}()},
 \code{\link{est_length_distribution}()},
 \code{\link{estimate_catch_rate}()},
 \code{\link{estimate_effort_aerial_glmm}()},

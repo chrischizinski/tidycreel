@@ -133,3 +133,11 @@ tmp/
 kairo.db
 kairo.db-shm
 kairo.db-wal
+
+# ContextAtlas: regenerable prompt artifacts (per `contextatlas init`)
+.contextatlas/prompts/
+
+# NGPC proprietary data — local only, not for distribution
+data/ngpc_creel_params.rda
+data-raw/ngpc_creel_params.rda
+data-raw/ngpc_creel_inventory.R

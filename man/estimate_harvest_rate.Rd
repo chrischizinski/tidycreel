@@ -141,7 +141,8 @@ result_boot <- estimate_harvest_rate(design_with_interviews, variance = "bootstr
 \seealso{
 \code{\link{estimate_catch_rate}} for total catch rate estimation
 
-Other "Estimation": 
+Other "Estimation":
+\code{\link{compare_cpue_estimators}()},
 \code{\link{est_length_distribution}()},
 \code{\link{estimate_catch_rate}()},
 \code{\link{estimate_effort}()},
