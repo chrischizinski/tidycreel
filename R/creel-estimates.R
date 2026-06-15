@@ -1945,12 +1945,25 @@ make_species_catch_for_interviews <- function(design, species_val, catch_type_va
   count_col <- design$catch_count_col
   type_col <- design$catch_type_col
 
-  # Filter catch to this species + catch_type
-  species_catch <- catch_df[
-    catch_df[[species_col]] == species_val & catch_df[[type_col]] == catch_type_val,
-    c(uid_col, count_col),
-    drop = FALSE
-  ]
+  # Filter catch to this species + catch_type.
+  # When catch_type_val == "caught" (total catch), prefer "caught" rows if present;
+  # otherwise sum "harvested" + "released" (datasets that store sub-types only).
+  species_rows <- catch_df[catch_df[[species_col]] == species_val, , drop = FALSE]
+  if (catch_type_val == "caught") {
+    caught_only <- species_rows[species_rows[[type_col]] == "caught", , drop = FALSE]
+    if (nrow(caught_only) > 0L) {
+      species_catch <- caught_only[, c(uid_col, count_col), drop = FALSE]
+    } else {
+      sub_rows <- species_rows[
+        species_rows[[type_col]] %in% c("harvested", "released"), , drop = FALSE
+      ]
+      species_catch <- sub_rows[, c(uid_col, count_col), drop = FALSE]
+    }
+  } else {
+    species_catch <- species_rows[
+      species_rows[[type_col]] == catch_type_val, c(uid_col, count_col), drop = FALSE
+    ]
+  }
 
   # Aggregate: sum counts per interview (handles multiple rows same species)
   if (nrow(species_catch) > 0L) {

@@ -424,6 +424,21 @@ test_that("estimate_catch_rate species: estimates differ across species (non-ide
   expect_false(length(unique(result$estimates$estimate)) == 1L)
 })
 
+test_that("estimate_catch_rate species: non-zero CPUE when catch has only harvested/released rows", {
+  # Regression: hardcoded "caught" filter produced all-zero CPUE for datasets
+  # that store catch as "harvested"/"released" without a "caught" summary row.
+  d_base <- make_test_design_no_catch()
+  catch_no_caught <- example_catch[example_catch$catch_type != "caught", ]
+  d <- suppressWarnings(suppressMessages(add_catch(
+    d_base, catch_no_caught,
+    catch_uid = interview_id, interview_uid = interview_id,
+    species = species, count = count, catch_type = catch_type
+  )))
+  result <- suppressWarnings(suppressMessages(estimate_catch_rate(d, by = species)))
+  expect_true(any(result$estimates$estimate > 0),
+    info = "CPUE must be non-zero when catch data uses harvested/released types only")
+})
+
 # ---------------------------------------------------------------------------
 # 2. resolve_species_by() helper tests (~5 tests)
 # ---------------------------------------------------------------------------
