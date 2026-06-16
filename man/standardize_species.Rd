@@ -9,7 +9,8 @@ standardize_species(
   species_col = "species",
   lookup = "AFS",
   fuzzy = TRUE,
-  keep_original = TRUE
+  keep_original = TRUE,
+  custom_codes = NULL
 )
 }
 \arguments{
@@ -28,10 +29,19 @@ common-name matching only.}
 
 \item{keep_original}{Logical.  If \code{TRUE} (default), the original
 \code{species_col} column is preserved unchanged.  Set \code{FALSE} to drop it.}
+
+\item{custom_codes}{Named character vector of project-defined overrides
+applied after the AFS lookup.  Names are species name strings (matched
+case-insensitively); values are the codes to assign.  Useful for hybrids,
+pooled entries, or valid species absent from the default AFS table.
+Example: \code{c("Wiper" = "WPR", "Crappie" = "CRP-POOL")}.
+\code{NULL} (default) applies no overrides.}
 }
 \value{
 \code{data} with an additional \code{species_code} character column appended.
-Unmatched rows receive \code{NA_character_}.
+Unmatched rows receive \code{NA_character_}.  When \code{custom_codes} is supplied,
+AFS-matched rows are not overwritten; only rows still \code{NA} after the AFS
+pass are candidates for custom matching.
 }
 \description{
 Maps free-text species names in a data frame to canonical American
@@ -42,6 +52,21 @@ look like a known AFS code (all-uppercase, 3 characters) are passed
 through directly.  Unmatched values are left as \code{NA} with a \code{cli} warning
 listing the unrecognised inputs.
 }
+\details{
+\strong{Handling species not in the AFS table}
+
+The AFS lookup covers common freshwater sport fish but cannot anticipate
+every project-specific entry.  Three common cases require \code{custom_codes}:
+\itemize{
+\item \strong{Hybrids} (e.g. Wiper = Striped Bass × White Bass) — no universal
+AFS code; assign a project-defined code.
+\item \strong{Pooled entries} (e.g. "Crappie" when species was not recorded to
+species level) — use a code like \code{"CRP-POOL"} to signal the
+aggregated nature of the record.
+\item \strong{Valid AFS species missing from the built-in table} — supply the
+correct code via \code{custom_codes} until the table is updated.
+}
+}
 \examples{
 interviews <- data.frame(
   date    = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03")),
@@ -49,6 +74,16 @@ interviews <- data.frame(
   kept    = c(2L, 1L, 0L)
 )
 standardize_species(interviews)
+
+# Override project-specific entries that AFS cannot match
+catch <- data.frame(
+  species = c("Walleye", "Wiper", "Crappie"),
+  stringsAsFactors = FALSE
+)
+standardize_species(
+  catch,
+  custom_codes = c("Wiper" = "WPR", "Crappie" = "CRP-POOL")
+)
 
 }
 \seealso{

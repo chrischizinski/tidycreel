@@ -180,3 +180,57 @@ test_that("SPSZ-25: other columns in data frame are preserved", {
   expect_true("kept" %in% names(res))
   expect_equal(res$kept, df$kept)
 })
+
+# custom_codes ----------------------------------------------------------------
+
+test_that("SPSZ-26: custom_codes fills NA left by AFS pass", {
+  df <- data.frame(species = c("walleye", "Wiper"), stringsAsFactors = FALSE)
+  res <- suppressWarnings(
+    standardize_species(df, custom_codes = c("Wiper" = "WPR"))
+  )
+  expect_equal(res$species_code, c("WAE", "WPR"))
+})
+
+test_that("SPSZ-27: custom_codes match is case-insensitive", {
+  df <- data.frame(species = "wiper", stringsAsFactors = FALSE)
+  res <- suppressWarnings(
+    standardize_species(df, custom_codes = c("Wiper" = "WPR"))
+  )
+  expect_equal(res$species_code, "WPR")
+})
+
+test_that("SPSZ-28: custom_codes does not overwrite AFS-matched codes", {
+  df <- data.frame(species = c("walleye", "Crappie"), stringsAsFactors = FALSE)
+  res <- suppressWarnings(
+    standardize_species(df, custom_codes = c("walleye" = "WRONG", "Crappie" = "CRP-POOL"))
+  )
+  expect_equal(res$species_code[1], "WAE")
+  expect_equal(res$species_code[2], "CRP-POOL")
+})
+
+test_that("SPSZ-29: unmatched after custom_codes still returns NA with warning", {
+  df <- data.frame(species = c("Wiper", "mystery fish"), stringsAsFactors = FALSE)
+  expect_warning(
+    res <- standardize_species(df, custom_codes = c("Wiper" = "WPR")),
+    regexp = NULL
+  )
+  expect_equal(res$species_code[1], "WPR")
+  expect_true(is.na(res$species_code[2]))
+})
+
+test_that("SPSZ-30: custom_codes errors on unnamed vector", {
+  df <- data.frame(species = "Wiper", stringsAsFactors = FALSE)
+  expect_error(
+    standardize_species(df, custom_codes = c("WPR")),
+    class = "rlang_error"
+  )
+})
+
+test_that("SPSZ-31: freshwater drum resolves to FRD via AFS table", {
+  df <- data.frame(
+    species = c("Freshwater Drum", "drum", "sheepshead"),
+    stringsAsFactors = FALSE
+  )
+  res <- standardize_species(df)
+  expect_equal(res$species_code, c("FRD", "FRD", "FRD"))
+})
