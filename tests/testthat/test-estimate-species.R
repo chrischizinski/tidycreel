@@ -396,6 +396,66 @@ test_that("estimate_catch_rate species method attribute is 'ratio-of-means-cpue-
   expect_equal(result$method, "ratio-of-means-cpue-species")
 })
 
+make_mor_design_with_catch <- function(n_incomplete = 15) {
+  cal <- data.frame(
+    date = as.Date("2024-06-01"),
+    day_type = "weekday",
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+  design <- suppressMessages(add_counts(design, data.frame(
+    date = as.Date("2024-06-01"), day_type = "weekday", effort_hours = 8,
+    stringsAsFactors = FALSE
+  )))
+  n <- n_incomplete + 5L
+  interviews <- data.frame(
+    interview_id  = seq_len(n),
+    date          = as.Date("2024-06-01"),
+    day_type      = "weekday",
+    catch_total   = rep(c(2L, 3L, 4L, 1L, 5L), length.out = n),
+    hours_fished  = rep(c(2.0, 3.0, 4.0, 1.5, 2.5), length.out = n),
+    trip_status   = c(rep("incomplete", n_incomplete), rep("complete", 5L)),
+    trip_duration = rep(c(2.0, 3.0, 4.0, 1.5, 2.5), length.out = n),
+    stringsAsFactors = FALSE
+  )
+  design <- suppressMessages(add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration
+  ))
+  catch_df <- data.frame(
+    interview_id = rep(seq_len(n), each = 2L),
+    species      = rep(c("walleye", "bass"), times = n),
+    count        = rep(c(1L, 1L), times = n),
+    catch_type   = "harvested",
+    stringsAsFactors = FALSE
+  )
+  suppressMessages(add_catch(
+    design, catch_df,
+    catch_uid = interview_id, interview_uid = interview_id,
+    species = species, count = count, catch_type = catch_type
+  ))
+}
+
+test_that("estimate_catch_rate species with estimator=mor has correct method label and MOR class", {
+  d <- suppressWarnings(make_mor_design_with_catch())
+  result <- suppressWarnings(suppressMessages(
+    estimate_catch_rate(d, by = species, estimator = "mor")
+  ))
+  expect_equal(result$method, "mean-of-ratios-cpue-species")
+  expect_s3_class(result, "creel_estimates_mor")
+  expect_false(is.null(result$n_incomplete))
+})
+
+test_that("estimate_catch_rate species with estimator=mortr has correct method label", {
+  d <- suppressWarnings(make_mor_design_with_catch())
+  result <- suppressWarnings(suppressMessages(
+    estimate_catch_rate(d, by = species, estimator = "mortr", truncate_at = 0.5)
+  ))
+  expect_equal(result$method, "mean-of-ratios-truncated-cpue-species")
+  expect_s3_class(result, "creel_estimates_mor")
+})
+
 test_that("estimate_catch_rate ungrouped unchanged when no catch data", {
   d <- make_test_design_no_catch()
   result <- suppressWarnings(suppressMessages(estimate_catch_rate(d)))

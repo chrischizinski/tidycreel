@@ -1261,9 +1261,30 @@ estimate_catch_rate <- function(design,
       estimator         = estimator
     )
 
+    method_label <- if (estimator == "mor") {
+      if (mortr_active) "mean-of-ratios-truncated-cpue-species" else "mean-of-ratios-cpue-species"
+    } else {
+      "ratio-of-means-cpue-species"
+    }
+
+    if (estimator == "mor") {
+      return(new_creel_estimates_mor( # nolint: object_usage_linter
+        estimates       = tibble::as_tibble(estimates_df),
+        method          = method_label,
+        variance_method = variance,
+        design          = design,
+        conf_level      = conf_level,
+        by_vars         = by_info$all_vars,
+        n_incomplete    = design$mor_n_incomplete,
+        n_total         = design$mor_n_total,
+        mor_truncate_at = design$mor_truncate_at,
+        mor_n_truncated = design$mor_n_truncated
+      ))
+    }
+
     return(new_creel_estimates( # nolint: object_usage_linter
       estimates       = tibble::as_tibble(estimates_df),
-      method          = "ratio-of-means-cpue-species",
+      method          = method_label,
       variance_method = variance,
       design          = design,
       conf_level      = conf_level,
