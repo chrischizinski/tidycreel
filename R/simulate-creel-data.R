@@ -31,9 +31,12 @@
 #' @param season_days Integer. Total days in the season. Default 100.
 #' @param n_sampled_days Integer. Number of days actually surveyed. Must be
 #'   \code{<= season_days}. Default 30.
-#' @param day_types Named numeric vector. Proportion of days per stratum, e.g.
-#'   \code{c(weekday = 5/7, weekend = 2/7)}. When \code{NULL} (default),
-#'   uses a single stratum \code{"all"}.
+#' @param day_types Named \strong{numeric} vector of stratum proportions, e.g.
+#'   \code{c(weekday = 5/7, weekend = 2/7)}. Names become the \code{day_type}
+#'   values in the output. When \code{NULL} (default), uses a single stratum
+#'   \code{"all"}. \strong{Note:} passing a character vector (e.g.
+#'   \code{c("weekday", "weekend")}) will error — the vector must be numeric
+#'   with named elements.
 #' @param species Character vector. Species names for the catch table. Default
 #'   \code{"walleye"}. Catch is split proportionally across species using
 #'   \code{species_weights}.
@@ -55,8 +58,13 @@
 #' @param seed Integer or \code{NULL}. Random seed for reproducibility.
 #'   Default \code{NULL}.
 #'
-#' @return A named list with three data frames:
+#' @return A named list with four data frames:
 #' \describe{
+#'   \item{\code{schedule}}{Full-season calendar, one row per day. Columns:
+#'     \code{date}, \code{day_type}, \code{sampled} (logical). Pass directly
+#'     to \code{\link{creel_design}} as the \code{calendar} argument.
+#'     Unsampled days have day_type assigned proportionally from
+#'     \code{day_types}.}
 #'   \item{\code{interviews}}{One row per intercepted angler party. Columns:
 #'     \code{date}, \code{day_type}, \code{interview_id}, \code{trip_status}
 #'     (\code{"complete"} or \code{"incomplete"}), \code{hours_fished},
@@ -70,9 +78,10 @@
 #'     \code{"harvested"}, \code{"released"}).}
 #' }
 #'
-#' The \code{interviews} and \code{counts} outputs can be passed directly to
-#' \code{\link{add_interviews}} and \code{\link{add_counts}} after constructing
-#' a calendar with \code{\link{creel_design}}.
+#' The \code{schedule} output can be passed directly to \code{\link{creel_design}}
+#' as the \code{calendar} argument. The \code{interviews} and \code{counts}
+#' outputs are then passed to \code{\link{add_interviews}} and
+#' \code{\link{add_counts}}.
 #'
 #' @references
 #' Su, B.C. & Clapp, D.F. (2013). Simulation-based evaluation of creel survey
@@ -92,6 +101,8 @@
 #'   harvest        = list(mean_pct = 35),
 #'   counts         = list(mean_total_anglers = 10)
 #' )
+#'
+#' # Basic simulation (single stratum)
 #' set.seed(42)
 #' sim <- simulate_creel_data(
 #'   params         = my_params,
@@ -100,9 +111,32 @@
 #'   species        = c("walleye", "northern_pike"),
 #'   species_weights = c(0.6, 0.4)
 #' )
+#' head(sim$schedule)
 #' head(sim$interviews)
 #' head(sim$counts)
 #' head(sim$catch)
+#'
+#' # Multi-stratum simulation with day_types (named numeric vector)
+#' set.seed(1)
+#' sim2 <- simulate_creel_data(
+#'   params         = my_params,
+#'   season_days    = 90,
+#'   n_sampled_days = 20,
+#'   day_types      = c(weekday = 5/7, weekend = 2/7)
+#' )
+#'
+#' # Round-trip: simulate → creel_design → add_counts → add_interviews
+#' design <- creel_design(sim2$schedule, date = date, strata = day_type) |>
+#'   add_counts(sim2$counts) |>
+#'   add_interviews(
+#'     sim2$interviews,
+#'     catch        = "catch_total",
+#'     effort       = "hours_fished",
+#'     harvest      = "catch_kept",
+#'     trip_status  = "trip_status",
+#'     n_anglers    = "n_anglers",
+#'     interview_type = "roving"
+#'   )
 #'
 #' @seealso \code{\link{simulate_creel_catch}}
 #' @family "Simulation"
@@ -157,6 +191,10 @@ simulate_creel_data <- function(
   n_dt       <- length(day_types)
   day_type_vec <- dt_names[sample.int(n_dt, n_sampled_days, replace = TRUE,
                                       prob = day_types)]
+
+  # Full-season day_type assignment (all days, not just sampled)
+  all_day_types <- dt_names[sample.int(n_dt, season_days, replace = TRUE, prob = day_types)]
+  all_day_types[samp_idx] <- day_type_vec
 
   # ── Effort + trip params ─────────────────────────────────────────────────────
   eff_p   <- params$effort
@@ -315,7 +353,15 @@ simulate_creel_data <- function(
     rownames(catch) <- NULL
   }
 
-  list(interviews = interviews, counts = counts, catch = catch)
+  # ── Build full-season schedule (calendar for creel_design) ──────────────────
+  schedule <- data.frame(
+    date     = all_dates,
+    day_type = all_day_types,
+    sampled  = seq_len(season_days) %in% samp_idx,
+    stringsAsFactors = FALSE
+  )
+
+  list(schedule = schedule, interviews = interviews, counts = counts, catch = catch)
 }
 
 

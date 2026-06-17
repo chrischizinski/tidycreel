@@ -1499,8 +1499,11 @@ add_sections <- function(design,
 #'   which uses the design's date_col). Specify explicitly if interview data
 #'   uses a different date column name than the design calendar.
 #' @param interview_type Character: "access" (complete trips at access point)
-#'   or "roving" (incomplete trips during fishing). Default is "access". This
-#'   affects how catch rates are calculated in estimation functions.
+#'   or "roving" (incomplete trips during fishing). Default is "access". When
+#'   set to "roving", estimation functions automatically default to using all
+#'   interviews (complete + incomplete) via the mean-of-ratios (MOR) estimator
+#'   rather than restricting to complete trips. Override the auto-routing by
+#'   passing \code{use_trips} or \code{estimator} explicitly.
 #' @param allow_invalid Logical flag for validation behavior. If FALSE (default),
 #'   validation failures abort with detailed error messages. If TRUE, validation
 #'   failures generate warnings and attach interviews anyway (use with caution).

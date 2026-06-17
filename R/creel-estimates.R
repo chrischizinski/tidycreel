@@ -564,17 +564,16 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
 #'   mandatory and defaults to 0.5 h). MOR and MORtr require the trip_status
 #'   field and error if no incomplete trips are available. See Details.
 #' @param use_trips Character string specifying which trip type to use when
-#'   trip_status field is provided. Options: \code{"complete"} (default when
-#'   NULL) uses only complete trips with ratio-of-means estimator,
-#'   \code{"incomplete"} uses only incomplete trips with mean-of-ratios
-#'   estimator, or \code{"diagnostic"} estimates CPUE using both trip types and
-#'   returns a comparison table. Following Pollock et al. (1994),
-#'   complete trips are scientifically preferred (no length-of-stay bias).
-#'   Incomplete trip estimation is diagnostic/research mode requiring
-#'   validation. Diagnostic mode requires both complete and incomplete trips to
-#'   be present. Default is NULL which defaults to \code{"complete"}.
-#'   Parameter is ignored when trip_status field is not provided (perfect
-#'   backward compatibility). See Details.
+#'   trip_status field is provided. Options: \code{"complete"} uses only
+#'   complete trips with ratio-of-means estimator; \code{"incomplete"} uses
+#'   only incomplete trips with MOR; \code{"all"} uses all interviews
+#'   (complete + incomplete) with MOR — the correct choice for roving designs;
+#'   \code{"diagnostic"} estimates CPUE using both trip types and returns a
+#'   comparison table. Default is NULL. When NULL and
+#'   \code{interview_type = "roving"} (set via \code{add_interviews}),
+#'   automatically defaults to \code{"all"} + MOR. Otherwise defaults to
+#'   \code{"complete"}. Parameter is ignored when trip_status field is not
+#'   provided (backward compatibility). See Details.
 #' @param truncate_at Numeric minimum trip duration (hours) for MOR estimation.
 #'   Default is 0.5 hours (30 minutes) per Hoenig et al. (1997) to prevent
 #'   unstable variance from very short trips. Trips with duration < truncate_at
@@ -630,17 +629,19 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
 #' @details
 #' \strong{Trip Type Selection (use_trips):}
 #' When trip_status is provided, the \code{use_trips} parameter controls which
-#' trips are used for estimation. The default \code{use_trips = "complete"}
-#' filters to complete trips only, following roving-access design best practices
-#' (Pollock et al. 1994). Complete trip interviews are taken at trip
-#' completion and avoid length-of-stay bias. Setting \code{use_trips = "incomplete"}
-#' filters to incomplete trips and automatically uses the MOR estimator.
-#' Incomplete trip estimation is diagnostic/research mode and requires validation
-#' (see Phase 19 validate_incomplete_trips). Setting \code{use_trips = "diagnostic"}
-#' runs both complete and incomplete trip estimation and returns a comparison
-#' object with difference metrics and interpretation guidance. Diagnostic mode
-#' requires both trip types to be present in the data. When trip_status is not
-#' provided, use_trips is ignored for perfect backward compatibility with v0.2.0.
+#' trips are used for estimation. For access-point designs
+#' (\code{interview_type = "access"}, the default), \code{use_trips} defaults
+#' to \code{"complete"}: interviews are taken at trip end, so complete trips
+#' are representative and avoid length-of-stay bias (Pollock et al. 1994).
+#' For roving designs (\code{interview_type = "roving"}), \code{use_trips}
+#' automatically defaults to \code{"all"} with the MOR estimator: the clerk
+#' intercepts trips mid-stream, so all interviews — complete and incomplete —
+#' are valid inputs (Hoenig et al. 1997). Set \code{use_trips = "incomplete"}
+#' to restrict MOR to incomplete trips only. Set \code{use_trips = "diagnostic"}
+#' to run both complete and incomplete trip estimation and return a comparison
+#' object with difference metrics. Diagnostic mode requires both trip types.
+#' When trip_status is not provided, use_trips is ignored for backward
+#' compatibility with v0.2.0.
 #'
 #' \strong{Ratio-of-Means (default):}
 #' CPUE is estimated as the ratio of total catch to total effort. This is the
@@ -728,7 +729,7 @@ estimate_catch_rate <- function(design,
                                 by = NULL,
                                 variance = "taylor",
                                 conf_level = 0.95,
-                                estimator = "ratio-of-means",
+                                estimator = NULL,
                                 use_trips = NULL,
                                 truncate_at = 0.5,
                                 targeted = TRUE,
@@ -737,10 +738,23 @@ estimate_catch_rate <- function(design,
   # Capture by parameter BEFORE validation
   by_quo <- rlang::enquo(by)
 
-  # Track whether use_trips was explicitly provided (for messaging)
-  use_trips_is_default <- is.null(use_trips)
-  if (is.null(use_trips)) {
-    use_trips <- "complete"
+  # Track whether use_trips / estimator were explicitly provided
+  use_trips_is_default  <- is.null(use_trips)
+  estimator_is_default  <- is.null(estimator)
+  if (is.null(use_trips))  use_trips  <- "complete"
+  if (is.null(estimator))  estimator  <- "ratio-of-means"
+
+  # Auto-route roving designs: when interview_type="roving" and the user has not
+  # specified use_trips or estimator, default to all-trip MOR (Hoenig 1997).
+  # Access-point designs keep the ROM-on-complete default.
+  roving_auto <- !is.null(design$interview_type) &&
+    identical(design$interview_type, "roving") &&
+    use_trips_is_default &&
+    estimator_is_default
+  if (roving_auto) {
+    use_trips <- "all"
+    estimator <- "mor"
+    use_trips_is_default <- FALSE
   }
 
   # Validate variance parameter
@@ -821,14 +835,15 @@ estimate_catch_rate <- function(design,
 
   if (has_trip_status) {
     # Validate use_trips parameter
-    valid_use_trips <- c("complete", "incomplete", "diagnostic")
+    valid_use_trips <- c("complete", "incomplete", "all", "diagnostic")
     if (!use_trips %in% valid_use_trips) {
       cli::cli_abort(c(
         "Invalid use_trips value: {.val {use_trips}}",
         "x" = "Must be one of: {.val {valid_use_trips}}",
         "i" = paste(
-          "{.val complete} for complete trips (default),",
-          "{.val incomplete} for incomplete trips,",
+          "{.val complete} for complete trips (default for access designs),",
+          "{.val incomplete} for incomplete trips only,",
+          "{.val all} for all trips via MOR (default for roving designs),",
           "{.val diagnostic} for comparison"
         )
       ))
@@ -989,32 +1004,34 @@ estimate_catch_rate <- function(design,
     n_incomplete <- sum(design$interviews[[trip_status_col]] == "incomplete", na.rm = TRUE)
     n_total <- n_complete + n_incomplete
 
-    # Warn if complete trip percentage is below threshold (uses package option)
-    # Check if we're doing grouped estimation to provide per-group warnings
-    if (rlang::quo_is_null(by_quo)) {
-      # Ungrouped: overall warning
-      warn_low_complete_pct(n_complete, n_total) # nolint: object_usage_linter
-    } else {
-      # Grouped: per-group warnings (before filtering)
-      # Resolve by parameter to column names for grouping, handling species col
-      warn_by_info <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
-      warn_by_vars <- warn_by_info$interview_vars # only interview-level vars for grouping
-
-      if (!is.null(warn_by_vars)) {
-        # Split data by interview-level groups and check each group
-        group_list <- split(design$interviews, design$interviews[warn_by_vars], drop = TRUE)
-
-        for (group_name in names(group_list)) {
-          group_data <- group_list[[group_name]]
-          n_complete_group <- sum(group_data[[trip_status_col]] == "complete", na.rm = TRUE)
-          n_total_group <- sum(!is.na(group_data[[trip_status_col]]))
-
-          # Warn if this group has low complete trip percentage
-          warn_low_complete_pct(n_complete_group, n_total_group) # nolint: object_usage_linter
-        }
-      } else {
-        # Only species in by= (no interview grouping) — warn overall
+    # Warn if complete trip percentage is below threshold (uses package option).
+    # Skip for use_trips="all": incomplete trips are expected in roving designs.
+    if (use_trips != "all") {
+      if (rlang::quo_is_null(by_quo)) {
+        # Ungrouped: overall warning
         warn_low_complete_pct(n_complete, n_total) # nolint: object_usage_linter
+      } else {
+        # Grouped: per-group warnings (before filtering)
+        # Resolve by parameter to column names for grouping, handling species col
+        warn_by_info <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
+        warn_by_vars <- warn_by_info$interview_vars # only interview-level vars for grouping
+
+        if (!is.null(warn_by_vars)) {
+          # Split data by interview-level groups and check each group
+          group_list <- split(design$interviews, design$interviews[warn_by_vars], drop = TRUE)
+
+          for (group_name in names(group_list)) {
+            group_data <- group_list[[group_name]]
+            n_complete_group <- sum(group_data[[trip_status_col]] == "complete", na.rm = TRUE)
+            n_total_group <- sum(!is.na(group_data[[trip_status_col]]))
+
+            # Warn if this group has low complete trip percentage
+            warn_low_complete_pct(n_complete_group, n_total_group) # nolint: object_usage_linter
+          }
+        } else {
+          # Only species in by= (no interview grouping) — warn overall
+          warn_low_complete_pct(n_complete, n_total) # nolint: object_usage_linter
+        }
       }
     }
 
@@ -1079,16 +1096,40 @@ estimate_catch_rate <- function(design,
       # This lets MOR's validate_mor_availability see incomplete-only data
       incomplete_interviews <- design$interviews[design$interviews[[trip_status_col]] == "incomplete", ]
       design <- rebuild_interview_survey(design, incomplete_interviews) # nolint: object_usage_linter
+    } else if (use_trips == "all") {
+      # Roving design (or explicit use_trips="all"): use all interviews with MOR.
+      # No filtering — MOR computes catch/effort per interview regardless of trip status.
+      if (n_total == 0) {
+        cli::cli_abort(c(
+          "No interviews available for estimation",
+          "x" = "use_trips='all' but dataset has 0 interviews",
+          "i" = "Check that interviews were added with {.fn add_interviews}"
+        ))
+      }
+      if (roving_auto) {
+        cli::cli_inform(c(
+          "i" = "Roving design: using all {n_total} interviews for CPUE via MOR [auto]",
+          " " = "({n_complete} complete, {n_incomplete} incomplete)",
+          " " = "Override with {.code use_trips = 'complete'} for access-point estimation."
+        ))
+      } else {
+        cli::cli_inform(c(
+          "i" = "Using all {n_total} interviews for CPUE via MOR",
+          " " = "({n_complete} complete, {n_incomplete} incomplete)",
+          " " = "Use {.code use_trips = 'complete'} to restrict to complete trips."
+        ))
+      }
+      # No design rebuild — all interviews remain
     }
   }
 
   # If MOR estimator requested, validate and filter to incomplete trips
   if (estimator %in% c("mor", "mortr")) {
     # Determine if we already filtered via use_trips
-    # If use_trips='incomplete', we already filtered to incomplete in use_trips block
-    # If use_trips='complete', we filtered to complete (MOR will see only complete trips - non-standard but valid)
+    # Track which use_trips branch filtered the data
     use_trips_was_incomplete <- has_trip_status && use_trips == "incomplete"
-    use_trips_was_complete <- has_trip_status && use_trips == "complete"
+    use_trips_was_complete   <- has_trip_status && use_trips == "complete"
+    use_trips_was_all        <- has_trip_status && use_trips == "all"
 
     # Non-standard case: use_trips='complete' + estimator='mor'
     # Warn but allow (valid but unusual choice)
@@ -1101,24 +1142,27 @@ estimate_catch_rate <- function(design,
           "consider {.code estimator = 'ratio-of-means'} for standard complete trip estimation"
         )
       ))
-    } else {
-      # Standard MOR usage - validate incomplete trips available
+    } else if (!use_trips_was_all) {
+      # Standard MOR usage (incomplete or no-status) - validate incomplete trips available
       validate_mor_availability(design) # nolint: object_usage_linter
     }
 
-    # Calculate trip counts for warning and handle filtering
+    # Calculate trip counts and build the interview set for MOR
     if (use_trips_was_incomplete) {
       # Already filtered to incomplete trips in use_trips block - all rows are incomplete
       n_incomplete <- nrow(design$interviews)
       n_total <- n_incomplete # For MOR warning context
       incomplete_interviews <- design$interviews
     } else if (use_trips_was_complete) {
-      # Non-standard case: use_trips='complete' + estimator='mor'
-      # Design already filtered to complete trips - use them with MOR (unusual but valid)
+      # Non-standard: design already filtered to complete trips
       n_complete_for_mor <- nrow(design$interviews)
       n_total <- n_complete_for_mor
-      n_incomplete <- 0 # Not using incomplete trips
-      # Use complete trips for MOR estimation (non-standard)
+      n_incomplete <- 0
+      incomplete_interviews <- design$interviews
+    } else if (use_trips_was_all) {
+      # Roving/all-trip MOR: use every interview; no additional filtering needed
+      n_total <- nrow(design$interviews)
+      n_incomplete <- sum(design$interviews[[design$trip_status_col]] == "incomplete", na.rm = TRUE)
       incomplete_interviews <- design$interviews
     } else {
       # Old behavior: no use_trips filtering, filter to incomplete now
@@ -1127,9 +1171,10 @@ estimate_catch_rate <- function(design,
       incomplete_interviews <- design$interviews[design$interviews[[design$trip_status_col]] == "incomplete", ]
     }
 
-    # Issue warning about MOR assumptions BEFORE estimation
-    # For use_trips='complete' + MOR, skip standard MOR warning (already warned above)
-    if (!use_trips_was_complete) {
+    # Issue MOR assumptions warning, except:
+    #   - use_trips='complete' + MOR already warned above
+    #   - use_trips='all' (roving): all-trip MOR is the intended estimator, not diagnostic
+    if (!use_trips_was_complete && !use_trips_was_all) {
       mor_estimation_warning(n_incomplete, n_total) # nolint: object_usage_linter
     }
 
@@ -1261,9 +1306,30 @@ estimate_catch_rate <- function(design,
       estimator         = estimator
     )
 
+    method_label <- if (estimator == "mor") {
+      if (mortr_active) "mean-of-ratios-truncated-cpue-species" else "mean-of-ratios-cpue-species"
+    } else {
+      "ratio-of-means-cpue-species"
+    }
+
+    if (estimator == "mor") {
+      return(new_creel_estimates_mor( # nolint: object_usage_linter
+        estimates       = tibble::as_tibble(estimates_df),
+        method          = method_label,
+        variance_method = variance,
+        design          = design,
+        conf_level      = conf_level,
+        by_vars         = by_info$all_vars,
+        n_incomplete    = design$mor_n_incomplete,
+        n_total         = design$mor_n_total,
+        mor_truncate_at = design$mor_truncate_at,
+        mor_n_truncated = design$mor_n_truncated
+      ))
+    }
+
     return(new_creel_estimates( # nolint: object_usage_linter
       estimates       = tibble::as_tibble(estimates_df),
-      method          = "ratio-of-means-cpue-species",
+      method          = method_label,
       variance_method = variance,
       design          = design,
       conf_level      = conf_level,
@@ -1338,10 +1404,13 @@ estimate_catch_rate <- function(design,
 #'   0.95 for 95% confidence intervals). Must be between 0 and 1.
 #' @param verbose Logical. If TRUE, prints an informational message identifying
 #'   which estimator path was used. Default FALSE.
-#' @param use_trips Character string specifying which trip type to use for
-#'   bus-route estimation. One of \code{"complete"} (default),
-#'   \code{"incomplete"} (pi_i-weighted MOR), or \code{"diagnostic"} (both).
-#'   Ignored for non-bus-route designs.
+#' @param use_trips Character string specifying which interviews to include.
+#'   For standard (non-bus-route) designs: \code{"all"} (default) uses all
+#'   interviews including incomplete trips; \code{"complete"} restricts to
+#'   completed trips only. For bus-route designs: \code{"complete"} (default),
+#'   \code{"incomplete"}, or \code{"diagnostic"}. When \code{trip_status} was
+#'   not provided to \code{\link{add_interviews}}, this argument has no effect
+#'   for standard designs.
 #' @param missing_sections Character string controlling behavior when a
 #'   registered section has no interview observations. \code{"warn"} (default)
 #'   emits a \code{cli_warn()} and inserts an NA row with
@@ -1351,6 +1420,14 @@ estimate_catch_rate <- function(design,
 #' @note When called on a sectioned design, no \code{.lake_total} row is
 #'   produced. Harvest rates (fish per angler-hour) are not additive across
 #'   sections. Lake-wide harvest rate requires a separate unsectioned call.
+#'
+#' @note Unlike \code{\link{estimate_catch_rate}}, this function defaults to
+#'   using \strong{all} interviews (complete and incomplete) for HPUE estimation.
+#'   Fish already in the livewell at interview time are directly observable and
+#'   represent confirmed harvest. However, incomplete-trip HPUE may underestimate
+#'   when anglers continue fishing and keep additional fish after being interviewed
+#'   (Hansen & Van Kirk 2010). Use \code{use_trips = "complete"} for a stricter
+#'   analysis restricted to completed-trip interviews.
 #'
 #' @return A creel_estimates S3 object (list) with components: estimates
 #'   (tibble with estimate, se, ci_lower, ci_upper, n columns, plus grouping
@@ -1533,6 +1610,58 @@ estimate_harvest_rate <- function(
     ))
   }
 
+  # Handle use_trips for standard (non-bus-route, non-sectioned) path
+  use_trips_is_default <- is.null(use_trips)
+  if (is.null(use_trips)) use_trips <- "all"
+  valid_use_trips_std <- c("all", "complete")
+  if (!use_trips %in% valid_use_trips_std) {
+    cli::cli_abort(c(
+      "Invalid use_trips value: {.val {use_trips}}",
+      "x" = "Must be one of: {.val {valid_use_trips_std}}",
+      "i" = "Use {.val all} (default) for all interviews or {.val complete} for completed trips only."
+    ))
+  }
+
+  has_trip_status <- !is.null(design$trip_status_col)
+
+  if (!has_trip_status && use_trips == "complete") {
+    cli::cli_warn(c(
+      "{.arg use_trips} = 'complete' has no effect: no trip_status column available.",
+      "i" = "Provide {.arg trip_status} in {.fn add_interviews} to enable trip filtering."
+    ))
+  }
+
+  if (has_trip_status) {
+    trip_status_col <- design$trip_status_col
+    n_complete <- sum(design$interviews[[trip_status_col]] == "complete", na.rm = TRUE)
+    n_incomplete <- sum(design$interviews[[trip_status_col]] == "incomplete", na.rm = TRUE)
+    n_total <- n_complete + n_incomplete
+
+    if (use_trips == "all") {
+      default_tag <- if (use_trips_is_default) " [default]" else "" # nolint: object_usage_linter
+      cli::cli_inform(c(
+        "i" = "Using all interviews for HPUE estimation",
+        " " = "(n={n_total}: {n_complete} complete, {n_incomplete} incomplete){default_tag}",
+        " " = "Use {.code use_trips = 'complete'} to restrict to completed trips."
+      ))
+    } else {
+      if (n_complete == 0L) {
+        cli::cli_abort(c(
+          "No complete trips available for HPUE estimation",
+          "x" = "{.arg use_trips} = 'complete' but dataset has 0 complete trips",
+          "i" = "Use {.code use_trips = 'all'} (default) to include all interviews"
+        ))
+      }
+      pct_complete <- round(100 * n_complete / n_total, 1) # nolint: object_usage_linter
+      cli::cli_inform(c(
+        "i" = "Filtering to complete trips for HPUE estimation",
+        " " = "(n={n_complete}, {pct_complete}% of {n_total} interviews)"
+      ))
+      complete_interviews <- design$interviews[design$interviews[[trip_status_col]] == "complete", ]
+      design <- rebuild_interview_survey(design, complete_interviews) # nolint: object_usage_linter
+    }
+  }
+
   # Route to grouped or ungrouped estimation
   if (rlang::quo_is_null(by_quo)) {
     # Ungrouped estimation
@@ -1575,6 +1704,10 @@ estimate_harvest_rate <- function(
 #'   Options: \code{"taylor"} (default), \code{"bootstrap"}, or
 #'   \code{"jackknife"}.
 #' @param conf_level Numeric confidence level (default: 0.95).
+#' @param use_trips Character string specifying which interviews to include.
+#'   \code{"all"} (default) uses all interviews including incomplete trips;
+#'   \code{"complete"} restricts to completed trips only. When \code{trip_status}
+#'   was not provided to \code{\link{add_interviews}}, this argument has no effect.
 #' @param missing_sections Character string controlling behavior when a
 #'   registered section has no interview observations. \code{"warn"} (default)
 #'   emits a \code{cli_warn()} and inserts an NA row with
@@ -1584,6 +1717,13 @@ estimate_harvest_rate <- function(
 #' @note When called on a sectioned design, no \code{.lake_total} row is
 #'   produced. Release rates (fish per angler-hour) are not additive across
 #'   sections. Lake-wide release rate requires a separate unsectioned call.
+#'
+#' @note Unlike \code{\link{estimate_catch_rate}}, this function defaults to
+#'   using \strong{all} interviews (complete and incomplete) for RPUE estimation.
+#'   Released fish counted at interview time are directly observable. However,
+#'   incomplete-trip RPUE may underestimate if anglers release additional fish
+#'   after the interview. Use \code{use_trips = "complete"} for a stricter
+#'   analysis restricted to completed-trip interviews.
 #'
 #' @return A creel_estimates S3 object with method = "ratio-of-means-rpue".
 #'   Estimates tibble has columns: estimate, se, ci_lower, ci_upper, n (plus
@@ -1632,6 +1772,7 @@ estimate_release_rate <- function(
   by = NULL,
   variance = "taylor",
   conf_level = 0.95,
+  use_trips = NULL,
   missing_sections = "warn"
 ) {
   by_quo <- rlang::enquo(by)
@@ -1678,6 +1819,58 @@ estimate_release_rate <- function(
     return(estimate_release_rate_sections( # nolint: object_usage_linter
       design, by_quo, variance, conf_level, missing_sections
     ))
+  }
+
+  # Handle use_trips for standard (non-sectioned) path
+  use_trips_is_default <- is.null(use_trips)
+  if (is.null(use_trips)) use_trips <- "all"
+  valid_use_trips_std <- c("all", "complete")
+  if (!use_trips %in% valid_use_trips_std) {
+    cli::cli_abort(c(
+      "Invalid use_trips value: {.val {use_trips}}",
+      "x" = "Must be one of: {.val {valid_use_trips_std}}",
+      "i" = "Use {.val all} (default) for all interviews or {.val complete} for completed trips only."
+    ))
+  }
+
+  has_trip_status <- !is.null(design$trip_status_col)
+
+  if (!has_trip_status && use_trips == "complete") {
+    cli::cli_warn(c(
+      "{.arg use_trips} = 'complete' has no effect: no trip_status column available.",
+      "i" = "Provide {.arg trip_status} in {.fn add_interviews} to enable trip filtering."
+    ))
+  }
+
+  if (has_trip_status) {
+    trip_status_col <- design$trip_status_col
+    n_complete <- sum(design$interviews[[trip_status_col]] == "complete", na.rm = TRUE)
+    n_incomplete <- sum(design$interviews[[trip_status_col]] == "incomplete", na.rm = TRUE)
+    n_total <- n_complete + n_incomplete
+
+    if (use_trips == "all") {
+      default_tag <- if (use_trips_is_default) " [default]" else "" # nolint: object_usage_linter
+      cli::cli_inform(c(
+        "i" = "Using all interviews for RPUE estimation",
+        " " = "(n={n_total}: {n_complete} complete, {n_incomplete} incomplete){default_tag}",
+        " " = "Use {.code use_trips = 'complete'} to restrict to completed trips."
+      ))
+    } else {
+      if (n_complete == 0L) {
+        cli::cli_abort(c(
+          "No complete trips available for RPUE estimation",
+          "x" = "{.arg use_trips} = 'complete' but dataset has 0 complete trips",
+          "i" = "Use {.code use_trips = 'all'} (default) to include all interviews"
+        ))
+      }
+      pct_complete <- round(100 * n_complete / n_total, 1) # nolint: object_usage_linter
+      cli::cli_inform(c(
+        "i" = "Filtering to complete trips for RPUE estimation",
+        " " = "(n={n_complete}, {pct_complete}% of {n_total} interviews)"
+      ))
+      complete_interviews <- design$interviews[design$interviews[[trip_status_col]] == "complete", ]
+      design <- rebuild_interview_survey(design, complete_interviews) # nolint: object_usage_linter
+    }
   }
 
   # Detect species-level grouping
@@ -1945,12 +2138,25 @@ make_species_catch_for_interviews <- function(design, species_val, catch_type_va
   count_col <- design$catch_count_col
   type_col <- design$catch_type_col
 
-  # Filter catch to this species + catch_type
-  species_catch <- catch_df[
-    catch_df[[species_col]] == species_val & catch_df[[type_col]] == catch_type_val,
-    c(uid_col, count_col),
-    drop = FALSE
-  ]
+  # Filter catch to this species + catch_type.
+  # When catch_type_val == "caught" (total catch), prefer "caught" rows if present;
+  # otherwise sum "harvested" + "released" (datasets that store sub-types only).
+  species_rows <- catch_df[catch_df[[species_col]] == species_val, , drop = FALSE]
+  if (catch_type_val == "caught") {
+    caught_only <- species_rows[species_rows[[type_col]] == "caught", , drop = FALSE]
+    if (nrow(caught_only) > 0L) {
+      species_catch <- caught_only[, c(uid_col, count_col), drop = FALSE]
+    } else {
+      sub_rows <- species_rows[
+        species_rows[[type_col]] %in% c("harvested", "released"), , drop = FALSE
+      ]
+      species_catch <- sub_rows[, c(uid_col, count_col), drop = FALSE]
+    }
+  } else {
+    species_catch <- species_rows[
+      species_rows[[type_col]] == catch_type_val, c(uid_col, count_col), drop = FALSE
+    ]
+  }
 
   # Aggregate: sum counts per interview (handles multiple rows same species)
   if (nrow(species_catch) > 0L) {

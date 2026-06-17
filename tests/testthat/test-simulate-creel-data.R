@@ -13,7 +13,7 @@ test_that("simulate_creel_data returns correct structure", {
     n_sampled_days = 5L,
     seed           = 1L
   )
-  expect_named(sim, c("interviews", "counts", "catch"))
+  expect_named(sim, c("schedule", "interviews", "counts", "catch"))
   expect_s3_class(sim$interviews, "data.frame")
   expect_s3_class(sim$counts,     "data.frame")
   expect_s3_class(sim$catch,      "data.frame")
@@ -151,7 +151,54 @@ test_that("simulate_creel_data empty result on 0 encounters is valid", {
   sim <- simulate_creel_data(
     params = sparse_params, season_days = 5L, n_sampled_days = 2L, seed = 99L
   )
-  expect_named(sim, c("interviews", "counts", "catch"))
+  expect_named(sim, c("schedule", "interviews", "counts", "catch"))
+})
+
+# ── schedule component ─────────────────────────────────────────────────────────
+
+test_that("SIM-SCH-01: schedule has required columns and correct types", {
+  sim <- simulate_creel_data(params = test_params, season_days = 20L, n_sampled_days = 5L, seed = 10L)
+  expect_true(all(c("date", "day_type", "sampled") %in% names(sim$schedule)))
+  expect_s3_class(sim$schedule$date, "Date")
+  expect_type(sim$schedule$day_type, "character")
+  expect_type(sim$schedule$sampled, "logical")
+})
+
+test_that("SIM-SCH-02: schedule has exactly season_days rows", {
+  sim <- simulate_creel_data(params = test_params, season_days = 45L, n_sampled_days = 10L, seed = 11L)
+  expect_equal(nrow(sim$schedule), 45L)
+})
+
+test_that("SIM-SCH-03: schedule$sampled TRUE count equals n_sampled_days", {
+  sim <- simulate_creel_data(params = test_params, season_days = 30L, n_sampled_days = 8L, seed = 12L)
+  expect_equal(sum(sim$schedule$sampled), 8L)
+})
+
+test_that("SIM-SCH-04: sampled days match interview and count dates", {
+  sim <- simulate_creel_data(params = test_params, season_days = 30L, n_sampled_days = 8L, seed = 13L)
+  sched_sampled_dates <- sim$schedule$date[sim$schedule$sampled]
+  count_dates <- unique(sim$counts$date)
+  expect_true(all(count_dates %in% sched_sampled_dates))
+})
+
+test_that("SIM-SCH-05: schedule passes validate_calendar_schema (pipeable into creel_design)", {
+  sim <- simulate_creel_data(params = test_params, season_days = 20L, n_sampled_days = 5L, seed = 14L)
+  expect_no_error(creel_design(sim$schedule, date = date, strata = day_type))
+})
+
+test_that("SIM-SCH-06: multi-stratum schedule contains only declared day_type levels", {
+  sim <- simulate_creel_data(
+    params = test_params, season_days = 30L, n_sampled_days = 8L,
+    day_types = c(weekday = 5/7, weekend = 2/7), seed = 15L
+  )
+  expect_true(all(sim$schedule$day_type %in% c("weekday", "weekend")))
+})
+
+test_that("SIM-SCH-07: day_types character vector errors with informative message", {
+  expect_error(
+    simulate_creel_data(params = test_params, day_types = c("weekday", "weekend"), seed = 16L),
+    regexp = "numeric"
+  )
 })
 
 # ── simulate_creel_catch ──────────────────────────────────────────────────────

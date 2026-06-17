@@ -36,10 +36,13 @@ Options: \code{"taylor"} (default, Taylor linearization),
 \item{verbose}{Logical. If TRUE, prints an informational message identifying
 which estimator path was used. Default FALSE.}
 
-\item{use_trips}{Character string specifying which trip type to use for
-bus-route estimation. One of \code{"complete"} (default),
-\code{"incomplete"} (pi_i-weighted MOR), or \code{"diagnostic"} (both).
-Ignored for non-bus-route designs.}
+\item{use_trips}{Character string specifying which interviews to include.
+For standard (non-bus-route) designs: \code{"all"} (default) uses all
+interviews including incomplete trips; \code{"complete"} restricts to
+completed trips only. For bus-route designs: \code{"complete"} (default),
+\code{"incomplete"}, or \code{"diagnostic"}. When \code{trip_status} was
+not provided to \code{\link{add_interviews}}, this argument has no effect
+for standard designs.}
 
 \item{missing_sections}{Character string controlling behavior when a
 registered section has no interview observations. \code{"warn"} (default)
@@ -95,6 +98,14 @@ selection based on design). Alternative resampling method.
 When called on a sectioned design, no \code{.lake_total} row is
 produced. Harvest rates (fish per angler-hour) are not additive across
 sections. Lake-wide harvest rate requires a separate unsectioned call.
+
+Unlike \code{\link{estimate_catch_rate}}, this function defaults to
+using \strong{all} interviews (complete and incomplete) for HPUE estimation.
+Fish already in the livewell at interview time are directly observable and
+represent confirmed harvest. However, incomplete-trip HPUE may underestimate
+when anglers continue fishing and keep additional fish after being interviewed
+(Hansen & Van Kirk 2010). Use \code{use_trips = "complete"} for a stricter
+analysis restricted to completed-trip interviews.
 }
 \examples{
 # Basic ungrouped HPUE

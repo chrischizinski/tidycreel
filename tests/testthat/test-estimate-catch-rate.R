@@ -2710,3 +2710,126 @@ test_that("M013-TARGETED-05: targeted=TRUE default preserves backward compatibil
     tolerance = 1e-8
   )
 })
+
+# ---- ROVING-01: interview_type="roving" auto-routing -------------------------
+
+make_roving_design <- function(n_complete = 15, n_incomplete = 35) {
+  n <- n_complete + n_incomplete
+  cal <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03")),
+    day_type = rep("weekday", 3),
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design(cal, date = date, strata = day_type)
+  interviews <- data.frame(
+    date = as.Date(rep("2024-06-01", n)),
+    catch_total = rep(c(1, 2, 3, 4), length.out = n),
+    hours_fished = rep(c(1.0, 2.0, 3.0, 1.5), length.out = n),
+    trip_status = c(rep("complete", n_complete), rep("incomplete", n_incomplete)),
+    trip_duration = rep(c(2.0, 3.0, 4.0, 2.5), length.out = n),
+    stringsAsFactors = FALSE
+  )
+  suppressWarnings(suppressMessages(add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration,
+    interview_type = "roving"
+  )))
+}
+
+test_that("ROVING-01: roving design auto-routes to MOR method", {
+  d <- make_roving_design()
+  result <- suppressWarnings(suppressMessages(estimate_catch_rate(d)))
+  expect_match(result$method, "mean-of-ratios")
+})
+
+test_that("ROVING-02: roving design uses all interviews (n = complete + incomplete)", {
+  n_complete <- 15L
+  n_incomplete <- 35L
+  d <- make_roving_design(n_complete = n_complete, n_incomplete = n_incomplete)
+  result <- suppressWarnings(suppressMessages(estimate_catch_rate(d)))
+  expect_equal(result$estimates$n, n_complete + n_incomplete)
+})
+
+test_that("ROVING-03: roving design estimate differs from complete-only estimate", {
+  d <- make_roving_design()
+  result_roving <- suppressWarnings(suppressMessages(estimate_catch_rate(d)))
+  result_complete <- suppressWarnings(suppressMessages(
+    estimate_catch_rate(d, use_trips = "complete")
+  ))
+  # Different n (all vs complete-only) so methods diverge
+  expect_false(isTRUE(all.equal(
+    result_roving$estimates$estimate,
+    result_complete$estimates$estimate,
+    tolerance = 1e-8
+  )))
+})
+
+test_that("ROVING-04: explicit use_trips overrides roving auto-route", {
+  d <- make_roving_design()
+  result <- suppressWarnings(suppressMessages(
+    estimate_catch_rate(d, use_trips = "complete")
+  ))
+  expect_match(result$method, "ratio-of-means")
+  expect_equal(result$estimates$n, 15L)
+})
+
+test_that("ROVING-05: explicit estimator overrides roving auto-route", {
+  d <- make_roving_design()
+  result <- suppressWarnings(suppressMessages(
+    estimate_catch_rate(d, estimator = "ratio-of-means")
+  ))
+  expect_match(result$method, "ratio-of-means")
+})
+
+test_that("ROVING-06: access design is unaffected by roving logic", {
+  n <- 30L
+  cal <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03")),
+    day_type = rep("weekday", 3),
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design(cal, date = date, strata = day_type)
+  interviews <- data.frame(
+    date = as.Date(rep("2024-06-01", n)),
+    catch_total = rep(c(1, 2, 3), length.out = n),
+    hours_fished = rep(c(1.0, 2.0, 3.0), length.out = n),
+    trip_status = rep("complete", n),
+    trip_duration = rep(c(1.0, 2.0, 3.0), length.out = n),
+    stringsAsFactors = FALSE
+  )
+  d_access <- suppressWarnings(suppressMessages(add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration,
+    interview_type = "access"
+  )))
+  result <- suppressMessages(estimate_catch_rate(d_access))
+  expect_match(result$method, "ratio-of-means")
+})
+
+test_that("ROVING-07: use_trips='all' valid for access design too", {
+  n <- 20L
+  cal <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-02")),
+    day_type = rep("weekday", 2),
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design(cal, date = date, strata = day_type)
+  interviews <- data.frame(
+    date = as.Date(rep("2024-06-01", n)),
+    catch_total = rep(c(2, 3), length.out = n),
+    hours_fished = rep(c(2.0, 3.0), length.out = n),
+    trip_status = c(rep("complete", 10), rep("incomplete", 10)),
+    trip_duration = rep(c(3.0, 4.0), length.out = n),
+    stringsAsFactors = FALSE
+  )
+  d <- suppressWarnings(suppressMessages(add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration
+  )))
+  result <- suppressWarnings(suppressMessages(estimate_catch_rate(d, use_trips = "all")))
+  expect_s3_class(result, "creel_estimates")
+  expect_equal(result$estimates$n, n)
+})

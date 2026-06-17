@@ -11,7 +11,7 @@
     "FHC", "CCF", "BUF", "CRP", "GPS", "WCR",
     "SPB", "STB", "WHB", "STR", "HYB", "BAS",
     "CRK", "BKT", "LAT", "GRY", "MWF", "ELP",
-    "GLF", "BPS", "RSF", "CAS"
+    "GLF", "BPS", "RSF", "CAS", "FRD"
   ),
   common_name = c(
     "walleye", "smallmouth bass", "largemouth bass", "northern pike",
@@ -24,7 +24,7 @@
     "hybrid striped bass", "bass", "creek chub", "brook trout",
     "lake whitefish", "arctic grayling", "mountain whitefish",
     "emerald shiner", "golden shiner", "black crappie", "redear sunfish",
-    "caspian tern"
+    "caspian tern", "freshwater drum"
   ),
   aliases = c(
     "saugeye;pike-perch;yellow pike",
@@ -66,7 +66,8 @@
     "golden shiner;bream",
     "black crappie;papermouth;specks",
     "redear;shellcracker;stumpknocker",
-    "tern;caspian"
+    "tern;caspian",
+    "drum;sheepshead;grunter;thunder pumper"
   ),
   stringsAsFactors = FALSE
 )
@@ -92,9 +93,32 @@
 #'   common-name matching only.
 #' @param keep_original Logical.  If `TRUE` (default), the original
 #'   `species_col` column is preserved unchanged.  Set `FALSE` to drop it.
+#' @param custom_codes Named character vector of project-defined overrides
+#'   applied after the AFS lookup.  Names are species name strings (matched
+#'   case-insensitively); values are the codes to assign.  Useful for hybrids,
+#'   pooled entries, or valid species absent from the default AFS table.
+#'   Example: \code{c("Wiper" = "WPR", "Crappie" = "CRP-POOL")}.
+#'   `NULL` (default) applies no overrides.
 #'
 #' @return `data` with an additional `species_code` character column appended.
-#'   Unmatched rows receive `NA_character_`.
+#'   Unmatched rows receive `NA_character_`.  When `custom_codes` is supplied,
+#'   AFS-matched rows are not overwritten; only rows still `NA` after the AFS
+#'   pass are candidates for custom matching.
+#'
+#' @details
+#' **Handling species not in the AFS table**
+#'
+#' The AFS lookup covers common freshwater sport fish but cannot anticipate
+#' every project-specific entry.  Three common cases require `custom_codes`:
+#' \itemize{
+#'   \item **Hybrids** (e.g. Wiper = Striped Bass × White Bass) — no universal
+#'     AFS code; assign a project-defined code.
+#'   \item **Pooled entries** (e.g. "Crappie" when species was not recorded to
+#'     species level) — use a code like \code{"CRP-POOL"} to signal the
+#'     aggregated nature of the record.
+#'   \item **Valid AFS species missing from the built-in table** — supply the
+#'     correct code via `custom_codes` until the table is updated.
+#' }
 #'
 #' @examples
 #' interviews <- data.frame(
@@ -104,6 +128,16 @@
 #' )
 #' standardize_species(interviews)
 #'
+#' # Override project-specific entries that AFS cannot match
+#' catch <- data.frame(
+#'   species = c("Walleye", "Wiper", "Crappie"),
+#'   stringsAsFactors = FALSE
+#' )
+#' standardize_species(
+#'   catch,
+#'   custom_codes = c("Wiper" = "WPR", "Crappie" = "CRP-POOL")
+#' )
+#'
 #' @family "Reporting & Diagnostics"
 #' @export
 standardize_species <- function(
@@ -111,7 +145,8 @@ standardize_species <- function(
   species_col = "species",
   lookup = "AFS",
   fuzzy = TRUE,
-  keep_original = TRUE
+  keep_original = TRUE,
+  custom_codes = NULL
 ) {
   if (!is.data.frame(data)) {
     cli::cli_abort("{.arg data} must be a data frame.")
@@ -134,9 +169,25 @@ standardize_species <- function(
       "currently supported."
     )
   }
+  if (!is.null(custom_codes)) {
+    bad_custom <- !is.character(custom_codes) ||
+      is.null(names(custom_codes)) ||
+      any(is.na(names(custom_codes))) ||
+      any(nchar(trimws(names(custom_codes))) == 0L)
+    if (bad_custom) {
+      cli::cli_abort(c(
+        "{.arg custom_codes} must be a fully-named character vector.",
+        "i" = "Example: {.code c('Wiper' = 'WPR', 'Crappie' = 'CRP-POOL')}"
+      ))
+    }
+  }
 
   raw <- data[[species_col]]
   codes <- .resolve_species_codes(raw, fuzzy = fuzzy)
+
+  if (!is.null(custom_codes) && any(is.na(codes))) {
+    codes <- .apply_custom_codes(codes, raw, custom_codes) # nolint: object_usage_linter
+  }
 
   unmatched <- unique(raw[is.na(codes) & !is.na(raw)])
   if (length(unmatched) > 0L) {
@@ -182,6 +233,26 @@ standardize_species <- function(
   # Alias match (case-insensitive, semicolon-separated within each row).
   if (fuzzy) {
     codes <- .match_aliases(codes, lower, lkp)
+  }
+
+  codes
+}
+
+# Apply project-defined custom_codes to rows still NA after AFS pass.
+.apply_custom_codes <- function(codes, raw, custom_codes) {
+  still_na <- which(is.na(codes))
+  if (length(still_na) == 0L) return(codes)
+
+  lower_raw <- tolower(trimws(raw[still_na]))
+  lower_names <- tolower(trimws(names(custom_codes)))
+
+  for (i in seq_along(custom_codes)) {
+    hit <- lower_raw == lower_names[i]
+    if (any(hit)) {
+      codes[still_na[hit]] <- custom_codes[[i]]
+      still_na <- still_na[!hit]
+    }
+    if (length(still_na) == 0L) break
   }
 
   codes
