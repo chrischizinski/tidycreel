@@ -99,8 +99,11 @@ which uses the design's date_col). Specify explicitly if interview data
 uses a different date column name than the design calendar.}
 
 \item{interview_type}{Character: "access" (complete trips at access point)
-or "roving" (incomplete trips during fishing). Default is "access". This
-affects how catch rates are calculated in estimation functions.}
+or "roving" (incomplete trips during fishing). Default is "access". When
+set to "roving", estimation functions automatically default to using all
+interviews (complete + incomplete) via the mean-of-ratios (MOR) estimator
+rather than restricting to complete trips. Override the auto-routing by
+passing \code{use_trips} or \code{estimator} explicitly.}
 
 \item{allow_invalid}{Logical flag for validation behavior. If FALSE (default),
 validation failures abort with detailed error messages. If TRUE, validation
@@ -238,7 +241,7 @@ design2 <- add_interviews(
 
 }
 \seealso{
-Other "Survey Design": 
+Other "Survey Design":
 \code{\link{add_catch}()},
 \code{\link{add_counts}()},
 \code{\link{add_lengths}()},

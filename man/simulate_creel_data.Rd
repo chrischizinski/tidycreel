@@ -32,9 +32,12 @@ used when \code{n_anglers_per_day = NULL}).}
 \item{n_sampled_days}{Integer. Number of days actually surveyed. Must be
 \code{<= season_days}. Default 30.}
 
-\item{day_types}{Named numeric vector. Proportion of days per stratum, e.g.
-\code{c(weekday = 5/7, weekend = 2/7)}. When \code{NULL} (default),
-uses a single stratum \code{"all"}.}
+\item{day_types}{Named \strong{numeric} vector of stratum proportions, e.g.
+\code{c(weekday = 5/7, weekend = 2/7)}. Names become the \code{day_type}
+values in the output. When \code{NULL} (default), uses a single stratum
+\code{"all"}. \strong{Note:} passing a character vector (e.g.
+\code{c("weekday", "weekend")}) will error — the vector must be numeric
+with named elements.}
 
 \item{species}{Character vector. Species names for the catch table. Default
 \code{"walleye"}. Catch is split proportionally across species using
@@ -65,8 +68,13 @@ per sampled day. Default \code{3}.}
 Default \code{NULL}.}
 }
 \value{
-A named list with three data frames:
+A named list with four data frames:
 \describe{
+\item{\code{schedule}}{Full-season calendar, one row per day. Columns:
+\code{date}, \code{day_type}, \code{sampled} (logical). Pass directly
+to \code{\link{creel_design}} as the \code{calendar} argument.
+Unsampled days have day_type assigned proportionally from
+\code{day_types}.}
 \item{\code{interviews}}{One row per intercepted angler party. Columns:
 \code{date}, \code{day_type}, \code{interview_id}, \code{trip_status}
 (\code{"complete"} or \code{"incomplete"}), \code{hours_fished},
@@ -80,9 +88,10 @@ complete trips), \code{n_anglers}, \code{catch_total}, \code{catch_kept},
 \code{"harvested"}, \code{"released"}).}
 }
 
-The \code{interviews} and \code{counts} outputs can be passed directly to
-\code{\link{add_interviews}} and \code{\link{add_counts}} after constructing
-a calendar with \code{\link{creel_design}}.
+The \code{schedule} output can be passed directly to \code{\link{creel_design}}
+as the \code{calendar} argument. The \code{interviews} and \code{counts}
+outputs are then passed to \code{\link{add_interviews}} and
+\code{\link{add_counts}}.
 }
 \description{
 Generates realistic synthetic creel data using a three-level hierarchical
@@ -112,6 +121,8 @@ my_params <- list(
   harvest        = list(mean_pct = 35),
   counts         = list(mean_total_anglers = 10)
 )
+
+# Basic simulation (single stratum)
 set.seed(42)
 sim <- simulate_creel_data(
   params         = my_params,
@@ -120,9 +131,32 @@ sim <- simulate_creel_data(
   species        = c("walleye", "northern_pike"),
   species_weights = c(0.6, 0.4)
 )
+head(sim$schedule)
 head(sim$interviews)
 head(sim$counts)
 head(sim$catch)
+
+# Multi-stratum simulation with day_types (named numeric vector)
+set.seed(1)
+sim2 <- simulate_creel_data(
+  params         = my_params,
+  season_days    = 90,
+  n_sampled_days = 20,
+  day_types      = c(weekday = 5/7, weekend = 2/7)
+)
+
+# Round-trip: simulate → creel_design → add_counts → add_interviews
+design <- creel_design(sim2$schedule, date = date, strata = day_type) |>
+  add_counts(sim2$counts) |>
+  add_interviews(
+    sim2$interviews,
+    catch        = "catch_total",
+    effort       = "hours_fished",
+    harvest      = "catch_kept",
+    trip_status  = "trip_status",
+    n_anglers    = "n_anglers",
+    interview_type = "roving"
+  )
 
 }
 \references{

@@ -9,6 +9,7 @@ estimate_release_rate(
   by = NULL,
   variance = "taylor",
   conf_level = 0.95,
+  use_trips = NULL,
   missing_sections = "warn"
 )
 }
@@ -27,6 +28,11 @@ Options: \code{"taylor"} (default), \code{"bootstrap"}, or
 \code{"jackknife"}.}
 
 \item{conf_level}{Numeric confidence level (default: 0.95).}
+
+\item{use_trips}{Character string specifying which interviews to include.
+\code{"all"} (default) uses all interviews including incomplete trips;
+\code{"complete"} restricts to completed trips only. When \code{trip_status}
+was not provided to \code{\link{add_interviews}}, this argument has no effect.}
 
 \item{missing_sections}{Character string controlling behavior when a
 registered section has no interview observations. \code{"warn"} (default)
@@ -55,6 +61,13 @@ to the numerator (zero-fill), ensuring the effort denominator is correct.
 When called on a sectioned design, no \code{.lake_total} row is
 produced. Release rates (fish per angler-hour) are not additive across
 sections. Lake-wide release rate requires a separate unsectioned call.
+
+Unlike \code{\link{estimate_catch_rate}}, this function defaults to
+using \strong{all} interviews (complete and incomplete) for RPUE estimation.
+Released fish counted at interview time are directly observable. However,
+incomplete-trip RPUE may underestimate if anglers release additional fish
+after the interview. Use \code{use_trips = "complete"} for a stricter
+analysis restricted to completed-trip interviews.
 }
 \examples{
 library(tidycreel)
