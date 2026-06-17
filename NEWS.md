@@ -1,3 +1,42 @@
+# tidycreel 2.1.0 "Sauger" (2026-06-17)
+
+## New features
+
+* `estimate_catch_rate()` now auto-routes roving designs: when
+  `add_interviews(..., interview_type = "roving")` is set and `use_trips` /
+  `estimator` are not explicitly supplied, the function defaults to
+  `use_trips = "all"` and `estimator = "mor"` (Hoenig et al. 1997), using all
+  interviewed trips via mean-of-ratios rather than restricting to complete trips.
+  Access-point designs (`interview_type = "access"`, the default) are unaffected.
+  Explicit `use_trips` or `estimator` arguments always override the auto-route.
+  Closes #67.
+
+* New `use_trips = "all"` option for `estimate_catch_rate()`: uses every
+  interview (complete + incomplete) with the MOR estimator. Previously only
+  `"complete"`, `"incomplete"`, and `"diagnostic"` were accepted.
+
+## Bug fixes
+
+* `estimate_catch_rate(by = species)` returned all-zero estimates when catch
+  data contained only `"harvested"` and `"released"` rows (no `"caught"` rows).
+  Fix was in source since v2.0.0 but the installed binary at the site-library
+  was stale; reinstalling now picks up the correct aggregation logic. Closes #64.
+
+## Documentation
+
+* `add_interviews()` `interview_type` parameter description corrected: now
+  accurately states that `"roving"` triggers automatic estimator routing rather
+  than carrying the false claim that the flag was "stored metadata only".
+* `estimate_catch_rate()` `use_trips` parameter and Details section updated to
+  document `"all"`, roving auto-routing, and the access vs. roving distinction.
+
+## Versioning
+
+Starting with this release, tidycreel follows semantic versioning
+(MAJOR.MINOR.PATCH) and names each MINOR release after a fish species native to
+Nebraska or the Great Plains. v2.1.0 is named for the Sauger
+(*Sander canadensis*), a walleye relative common in Nebraska's large rivers.
+
 # tidycreel 1.9.0 (2026-05-25)
 
 ## New features
