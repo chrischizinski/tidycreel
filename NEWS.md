@@ -1,3 +1,49 @@
+# tidycreel 2.2.0 "Goldeye" (2026-06-17)
+
+## New features
+
+* `simulate_creel_data()` now returns a `$schedule` component — a full-season
+  calendar (one row per season day) with columns `date` (Date), `day_type`
+  (character), and `sampled` (logical). Pass directly to `creel_design()` as
+  the `calendar` argument for a complete round-trip simulation pipeline with no
+  manual column construction. Unsampled days receive a `day_type` drawn
+  proportionally from the `day_types` distribution. Closes #68.
+
+  ```r
+  sim <- simulate_creel_data(params = my_params, day_types = c(weekday = 5/7, weekend = 2/7))
+  design <- creel_design(sim$schedule, date = date, strata = day_type) |>
+    add_counts(sim$counts) |>
+    add_interviews(sim$interviews,
+      catch = "catch_total", effort = "hours_fished", harvest = "catch_kept",
+      trip_status = "trip_status", n_anglers = "n_anglers", interview_type = "roving")
+  ```
+
+  **Note:** this changes the return structure from three components
+  (`interviews`, `counts`, `catch`) to four (`schedule`, `interviews`,
+  `counts`, `catch`). Code that checks names by position should switch to
+  name-based access.
+
+## Documentation
+
+* `simulate_creel_data()` `day_types` parameter now explicitly documents that
+  the argument must be a named **numeric** vector (not a character vector), with
+  a worked example showing the correct form `c(weekday = 5/7, weekend = 2/7)`.
+* `@examples` block expanded with a multi-stratum simulation and the full
+  round-trip pipeline from `simulate_creel_data()` through `creel_design()`,
+  `add_counts()`, and `add_interviews()`.
+
+## Bug fixes / closed issues
+
+* `standardize_species()`: added `custom_codes` argument (named character vector
+  applied as a second AFS-NA pass), expanded AFS lookup table with Freshwater
+  Drum (`"FRD"`), and corrected misleading "supply a custom code map"
+  documentation that implied a non-existent function argument. Closes #66.
+* `estimate_harvest_rate()` / `estimate_release_rate()`: added `use_trips`
+  argument (`"all"` default, `"complete"` to restrict) with `cli_inform` notice
+  showing trip-status breakdown. Documented livewell-observable rationale and
+  downward-bias risk (Hansen & Van Kirk 2010). Closes #65. Future default flip
+  to `"complete"` tracked as #69.
+
 # tidycreel 2.1.0 "Sauger" (2026-06-17)
 
 ## New features
