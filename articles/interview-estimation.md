@@ -200,6 +200,9 @@ total harvest:
 
 # Estimate HPUE
 hpue_est <- estimate_harvest_rate(design)
+#> ℹ Using all interviews for HPUE estimation
+#>   (n=22: 17 complete, 5 incomplete) [default]
+#>   Use `use_trips = 'complete'` to restrict to completed trips.
 #> Warning: Small sample size for harvest estimation.
 #> ! Sample size is 22. Ratio estimates are more stable with n >= 30.
 #> ℹ Variance estimates may be unstable with n < 30.
@@ -217,6 +220,9 @@ print(hpue_est)
 
 # Estimate total harvest
 total_harvest_est <- estimate_total_harvest(design)
+#> ℹ Using all interviews for HPUE estimation
+#>   (n=22: 17 complete, 5 incomplete) [default]
+#>   Use `use_trips = 'complete'` to restrict to completed trips.
 #> Warning: Small sample size for harvest estimation.
 #> ! Sample size is 22. Ratio estimates are more stable with n >= 30.
 #> ℹ Variance estimates may be unstable with n < 30.
@@ -338,11 +344,17 @@ cpue <- estimate_catch_rate(complete_design)
 #> ! Sample size is 17. Ratio estimates are more stable with n >= 30.
 #> ℹ Variance estimates may be unstable with n < 30.
 hpue <- estimate_harvest_rate(complete_design)
+#> ℹ Using all interviews for HPUE estimation
+#>   (n=22: 17 complete, 5 incomplete) [default]
+#>   Use `use_trips = 'complete'` to restrict to completed trips.
 #> Warning: Small sample size for harvest estimation.
 #> ! Sample size is 22. Ratio estimates are more stable with n >= 30.
 #> ℹ Variance estimates may be unstable with n < 30.
 total_catch <- estimate_total_catch(complete_design)
 total_harvest <- estimate_total_harvest(complete_design)
+#> ℹ Using all interviews for HPUE estimation
+#>   (n=22: 17 complete, 5 incomplete) [default]
+#>   Use `use_trips = 'complete'` to restrict to completed trips.
 #> Warning: Small sample size for harvest estimation.
 #> ! Sample size is 22. Ratio estimates are more stable with n >= 30.
 #> ℹ Variance estimates may be unstable with n < 30.

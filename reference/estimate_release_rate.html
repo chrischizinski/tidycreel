@@ -13,7 +13,7 @@ released fish per unit effort, analogous to HPUE for harvested fish."><meta prop
 
     <a class="navbar-brand me-2" href="../index.html">tidycreel</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -84,6 +84,7 @@ released fish per unit effort, analogous to HPUE for harvested fish.</p>
 <span>  by <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  variance <span class="op">=</span> <span class="st">"taylor"</span>,</span>
 <span>  conf_level <span class="op">=</span> <span class="fl">0.95</span>,</span>
+<span>  use_trips <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  missing_sections <span class="op">=</span> <span class="st">"warn"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -115,6 +116,13 @@ Options: <code>"taylor"</code> (default), <code>"bootstrap"</code>, or
 <dd><p>Numeric confidence level (default: 0.95).</p></dd>
 
 
+<dt id="arg-use-trips">use_trips<a class="anchor" aria-label="anchor" href="#arg-use-trips"></a></dt>
+<dd><p>Character string specifying which interviews to include.
+<code>"all"</code> (default) uses all interviews including incomplete trips;
+<code>"complete"</code> restricts to completed trips only. When <code>trip_status</code>
+was not provided to <code><a href="add_interviews.html">add_interviews</a></code>, this argument has no effect.</p></dd>
+
+
 <dt id="arg-missing-sections">missing_sections<a class="anchor" aria-label="anchor" href="#arg-missing-sections"></a></dt>
 <dd><p>Character string controlling behavior when a
 registered section has no interview observations. <code>"warn"</code> (default)
@@ -141,6 +149,12 @@ to the numerator (zero-fill), ensuring the effort denominator is correct.</p>
     <p>When called on a sectioned design, no <code>.lake_total</code> row is
 produced. Release rates (fish per angler-hour) are not additive across
 sections. Lake-wide release rate requires a separate unsectioned call.</p>
+<p>Unlike <code><a href="estimate_catch_rate.html">estimate_catch_rate</a></code>, this function defaults to
+using <strong>all</strong> interviews (complete and incomplete) for RPUE estimation.
+Released fish counted at interview time are directly observable. However,
+incomplete-trip RPUE may underestimate if anglers release additional fish
+after the interview. Use <code>use_trips = "complete"</code> for a stricter
+analysis restricted to completed-trip interviews.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
@@ -186,6 +200,9 @@ sections. Lake-wide release rate requires a separate unsectioned call.</p>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Overall release rate (all species combined)</span></span></span>
 <span class="r-in"><span><span class="va">rpue</span> <span class="op">&lt;-</span> <span class="fu">estimate_release_rate</span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Using all interviews for RPUE estimation</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   (n=22: 17 complete, 5 incomplete) [default]</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   Use `use_trips = 'complete'` to restrict to completed trips.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Small sample size for CPUE estimation.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> Sample size is 22. Ratio estimates are more stable with n &gt;= 30.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span>
@@ -203,6 +220,9 @@ sections. Lake-wide release rate requires a separate unsectioned call.</p>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Per-species release rates</span></span></span>
 <span class="r-in"><span><span class="va">rpue_by_species</span> <span class="op">&lt;-</span> <span class="fu">estimate_release_rate</span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">species</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Using all interviews for RPUE estimation</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   (n=22: 17 complete, 5 incomplete) [default]</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   Use `use_trips = 'complete'` to restrict to completed trips.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Small sample size for CPUE estimation.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> Sample size is 22. Ratio estimates are more stable with n &gt;= 30.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span>

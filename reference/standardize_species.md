@@ -16,7 +16,8 @@ standardize_species(
   species_col = "species",
   lookup = "AFS",
   fuzzy = TRUE,
-  keep_original = TRUE
+  keep_original = TRUE,
+  custom_codes = NULL
 )
 ```
 
@@ -48,10 +49,38 @@ standardize_species(
   Logical. If `TRUE` (default), the original `species_col` column is
   preserved unchanged. Set `FALSE` to drop it.
 
+- custom_codes:
+
+  Named character vector of project-defined overrides applied after the
+  AFS lookup. Names are species name strings (matched
+  case-insensitively); values are the codes to assign. Useful for
+  hybrids, pooled entries, or valid species absent from the default AFS
+  table. Example: `c("Wiper" = "WPR", "Crappie" = "CRP-POOL")`. `NULL`
+  (default) applies no overrides.
+
 ## Value
 
 `data` with an additional `species_code` character column appended.
-Unmatched rows receive `NA_character_`.
+Unmatched rows receive `NA_character_`. When `custom_codes` is supplied,
+AFS-matched rows are not overwritten; only rows still `NA` after the AFS
+pass are candidates for custom matching.
+
+## Details
+
+**Handling species not in the AFS table**
+
+The AFS lookup covers common freshwater sport fish but cannot anticipate
+every project-specific entry. Three common cases require `custom_codes`:
+
+- **Hybrids** (e.g. Wiper = Striped Bass × White Bass) — no universal
+  AFS code; assign a project-defined code.
+
+- **Pooled entries** (e.g. "Crappie" when species was not recorded to
+  species level) — use a code like `"CRP-POOL"` to signal the aggregated
+  nature of the record.
+
+- **Valid AFS species missing from the built-in table** — supply the
+  correct code via `custom_codes` until the table is updated.
 
 ## See also
 
@@ -99,4 +128,21 @@ standardize_species(interviews)
 #> 1 2024-06-01         walleye    2          WAE
 #> 2 2024-06-02 Largemouth Bass    1          LMB
 #> 3 2024-06-03         UNKNOWN    0         <NA>
+
+# Override project-specific entries that AFS cannot match
+catch <- data.frame(
+  species = c("Walleye", "Wiper", "Crappie"),
+  stringsAsFactors = FALSE
+)
+standardize_species(
+  catch,
+  custom_codes = c("Wiper" = "WPR", "Crappie" = "CRP-POOL")
+)
+#> Warning: 1 species value(s) could not be matched to an
+#> AFS code and will be "NA":
+#> • "Crappie"
+#>   species species_code
+#> 1 Walleye          WAE
+#> 2   Wiper          WPR
+#> 3 Crappie         <NA>
 ```

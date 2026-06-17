@@ -134,6 +134,9 @@ design <- add_catch(design, example_catch,
 
 # Total releases (all species combined)
 total_rel <- estimate_total_release(design)
+#> ℹ Using all interviews for RPUE estimation
+#>   (n=22: 17 complete, 5 incomplete) [default]
+#>   Use `use_trips = 'complete'` to restrict to completed trips.
 #> Warning: Small sample size for CPUE estimation.
 #> ! Sample size is 22. Ratio estimates are more stable with n >= 30.
 #> ℹ Variance estimates may be unstable with n < 30.

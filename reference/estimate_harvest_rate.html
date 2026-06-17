@@ -15,7 +15,7 @@ from total catch rate (CPUE which includes both kept and released fish)."><meta 
 
     <a class="navbar-brand me-2" href="../index.html">tidycreel</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -129,10 +129,13 @@ which estimator path was used. Default FALSE.</p></dd>
 
 
 <dt id="arg-use-trips">use_trips<a class="anchor" aria-label="anchor" href="#arg-use-trips"></a></dt>
-<dd><p>Character string specifying which trip type to use for
-bus-route estimation. One of <code>"complete"</code> (default),
-<code>"incomplete"</code> (pi_i-weighted MOR), or <code>"diagnostic"</code> (both).
-Ignored for non-bus-route designs.</p></dd>
+<dd><p>Character string specifying which interviews to include.
+For standard (non-bus-route) designs: <code>"all"</code> (default) uses all
+interviews including incomplete trips; <code>"complete"</code> restricts to
+completed trips only. For bus-route designs: <code>"complete"</code> (default),
+<code>"incomplete"</code>, or <code>"diagnostic"</code>. When <code>trip_status</code> was
+not provided to <code><a href="add_interviews.html">add_interviews</a></code>, this argument has no effect
+for standard designs.</p></dd>
 
 
 <dt id="arg-missing-sections">missing_sections<a class="anchor" aria-label="anchor" href="#arg-missing-sections"></a></dt>
@@ -180,6 +183,13 @@ selection based on design). Alternative resampling method.</p></li>
     <p>When called on a sectioned design, no <code>.lake_total</code> row is
 produced. Harvest rates (fish per angler-hour) are not additive across
 sections. Lake-wide harvest rate requires a separate unsectioned call.</p>
+<p>Unlike <code><a href="estimate_catch_rate.html">estimate_catch_rate</a></code>, this function defaults to
+using <strong>all</strong> interviews (complete and incomplete) for HPUE estimation.
+Fish already in the livewell at interview time are directly observable and
+represent confirmed harvest. However, incomplete-trip HPUE may underestimate
+when anglers continue fishing and keep additional fish after being interviewed
+(Hansen &amp; Van Kirk 2010). Use <code>use_trips = "complete"</code> for a stricter
+analysis restricted to completed-trip interviews.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
@@ -230,6 +240,9 @@ sections. Lake-wide harvest rate requires a separate unsectioned call.</p>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Zero catch may be valid (skunked) or indicate missing data.</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Added 40 interviews: 20 complete (50%), 20 incomplete (50%)</span>
 <span class="r-in"><span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">estimate_harvest_rate</span><span class="op">(</span><span class="va">design_with_interviews</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Using all interviews for HPUE estimation</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   (n=40: 20 complete, 20 incomplete) [default]</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   Use `use_trips = 'complete'` to restrict to completed trips.</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span>
@@ -244,6 +257,9 @@ sections. Lake-wide harvest rate requires a separate unsectioned call.</p>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Grouped by day_type</span></span></span>
 <span class="r-in"><span><span class="va">result_grouped</span> <span class="op">&lt;-</span> <span class="fu">estimate_harvest_rate</span><span class="op">(</span><span class="va">design_with_interviews</span>, by <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Using all interviews for HPUE estimation</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   (n=40: 20 complete, 20 incomplete) [default]</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   Use `use_trips = 'complete'` to restrict to completed trips.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Small sample size in 2 groups:</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> Group day_type=weekday: n=20</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> Group day_type=weekend: n=20</span>
@@ -265,9 +281,15 @@ sections. Lake-wide harvest rate requires a separate unsectioned call.</p>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Custom confidence level</span></span></span>
 <span class="r-in"><span><span class="va">result_90</span> <span class="op">&lt;-</span> <span class="fu">estimate_harvest_rate</span><span class="op">(</span><span class="va">design_with_interviews</span>, conf_level <span class="op">=</span> <span class="fl">0.90</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Using all interviews for HPUE estimation</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   (n=40: 20 complete, 20 incomplete) [default]</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   Use `use_trips = 'complete'` to restrict to completed trips.</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Bootstrap variance estimation</span></span></span>
 <span class="r-in"><span><span class="va">result_boot</span> <span class="op">&lt;-</span> <span class="fu">estimate_harvest_rate</span><span class="op">(</span><span class="va">design_with_interviews</span>, variance <span class="op">=</span> <span class="st">"bootstrap"</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Using all interviews for HPUE estimation</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   (n=40: 20 complete, 20 incomplete) [default]</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   Use `use_trips = 'complete'` to restrict to completed trips.</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Verbose dispatch message (shows which estimator was used for bus-route designs)</span></span></span>
 <span class="r-in"><span><span class="co"># result_verbose &lt;- estimate_harvest_rate(design, verbose = TRUE)</span></span></span>

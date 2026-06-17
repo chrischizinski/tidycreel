@@ -19,7 +19,7 @@ listing the unrecognised inputs."><meta property="og:image" content="https://chr
 
     <a class="navbar-brand me-2" href="../index.html">tidycreel</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -93,7 +93,8 @@ listing the unrecognised inputs.</p>
 <span>  species_col <span class="op">=</span> <span class="st">"species"</span>,</span>
 <span>  lookup <span class="op">=</span> <span class="st">"AFS"</span>,</span>
 <span>  fuzzy <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  keep_original <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  keep_original <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  custom_codes <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -126,12 +127,35 @@ common-name matching only.</p></dd>
 <dd><p>Logical.  If <code>TRUE</code> (default), the original
 <code>species_col</code> column is preserved unchanged.  Set <code>FALSE</code> to drop it.</p></dd>
 
+
+<dt id="arg-custom-codes">custom_codes<a class="anchor" aria-label="anchor" href="#arg-custom-codes"></a></dt>
+<dd><p>Named character vector of project-defined overrides
+applied after the AFS lookup.  Names are species name strings (matched
+case-insensitively); values are the codes to assign.  Useful for hybrids,
+pooled entries, or valid species absent from the default AFS table.
+Example: <code>c("Wiper" = "WPR", "Crappie" = "CRP-POOL")</code>.
+<code>NULL</code> (default) applies no overrides.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p><code>data</code> with an additional <code>species_code</code> character column appended.
-Unmatched rows receive <code>NA_character_</code>.</p>
+Unmatched rows receive <code>NA_character_</code>.  When <code>custom_codes</code> is supplied,
+AFS-matched rows are not overwritten; only rows still <code>NA</code> after the AFS
+pass are candidates for custom matching.</p>
     </div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p><strong>Handling species not in the AFS table</strong></p>
+<p>The AFS lookup covers common freshwater sport fish but cannot anticipate
+every project-specific entry.  Three common cases require <code>custom_codes</code>:</p><ul><li><p><strong>Hybrids</strong> (e.g. Wiper = Striped Bass × White Bass) — no universal
+AFS code; assign a project-defined code.</p></li>
+<li><p><strong>Pooled entries</strong> (e.g. "Crappie" when species was not recorded to
+species level) — use a code like <code>"CRP-POOL"</code> to signal the
+aggregated nature of the record.</p></li>
+<li><p><strong>Valid AFS species missing from the built-in table</strong> — supply the
+correct code via <code>custom_codes</code> until the table is updated.</p></li>
+</ul></div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p>Other "Reporting &amp; Diagnostics":
@@ -178,6 +202,23 @@ Unmatched rows receive <code>NA_character_</code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1 2024-06-01         walleye    2          WAE</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2 2024-06-02 Largemouth Bass    1          LMB</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 3 2024-06-03         UNKNOWN    0         &lt;NA&gt;</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Override project-specific entries that AFS cannot match</span></span></span>
+<span class="r-in"><span><span class="va">catch</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  species <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Walleye"</span>, <span class="st">"Wiper"</span>, <span class="st">"Crappie"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  stringsAsFactors <span class="op">=</span> <span class="cn">FALSE</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">standardize_species</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">catch</span>,</span></span>
+<span class="r-in"><span>  custom_codes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Wiper"</span> <span class="op">=</span> <span class="st">"WPR"</span>, <span class="st">"Crappie"</span> <span class="op">=</span> <span class="st">"CRP-POOL"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>1 species value(s) could not be matched to an</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> AFS code and will be <span style="color: #0000BB;">"NA"</span>:</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> <span style="color: #0000BB;">"Crappie"</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   species species_code</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 Walleye          WAE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2   Wiper          WPR</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 Crappie         &lt;NA&gt;</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

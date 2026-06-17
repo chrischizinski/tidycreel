@@ -66,9 +66,11 @@ simulate_creel_data(
 
 - day_types:
 
-  Named numeric vector. Proportion of days per stratum, e.g.
-  `c(weekday = 5/7, weekend = 2/7)`. When `NULL` (default), uses a
-  single stratum `"all"`.
+  Named **numeric** vector of stratum proportions, e.g.
+  `c(weekday = 5/7, weekend = 2/7)`. Names become the `day_type` values
+  in the output. When `NULL` (default), uses a single stratum `"all"`.
+  **Note:** passing a character vector (e.g. `c("weekday", "weekend")`)
+  will error — the vector must be numeric with named elements.
 
 - species:
 
@@ -115,7 +117,15 @@ simulate_creel_data(
 
 ## Value
 
-A named list with three data frames:
+A named list with four data frames:
+
+- `schedule`:
+
+  Full-season calendar, one row per day. Columns: `date`, `day_type`,
+  `sampled` (logical). Pass directly to
+  [`creel_design`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md)
+  as the `calendar` argument. Unsampled days have day_type assigned
+  proportionally from `day_types`.
 
 - `interviews`:
 
@@ -135,12 +145,13 @@ A named list with three data frames:
   Long-format catch table. Columns: `interview_id`, `species`, `count`,
   `catch_type` (`"caught"`, `"harvested"`, `"released"`).
 
-The `interviews` and `counts` outputs can be passed directly to
+The `schedule` output can be passed directly to
+[`creel_design`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md)
+as the `calendar` argument. The `interviews` and `counts` outputs are
+then passed to
 [`add_interviews`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)
 and
-[`add_counts`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
-after constructing a calendar with
-[`creel_design`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md).
+[`add_counts`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md).
 
 ## References
 
@@ -170,6 +181,8 @@ my_params <- list(
   harvest        = list(mean_pct = 35),
   counts         = list(mean_total_anglers = 10)
 )
+
+# Basic simulation (single stratum)
 set.seed(42)
 sim <- simulate_creel_data(
   params         = my_params,
@@ -178,35 +191,73 @@ sim <- simulate_creel_data(
   species        = c("walleye", "northern_pike"),
   species_weights = c(0.6, 0.4)
 )
+head(sim$schedule)
+#>         date day_type sampled
+#> 1 2026-06-17      all   FALSE
+#> 2 2026-06-18      all   FALSE
+#> 3 2026-06-19      all    TRUE
+#> 4 2026-06-20      all   FALSE
+#> 5 2026-06-21      all    TRUE
+#> 6 2026-06-22      all   FALSE
 head(sim$interviews)
 #>         date day_type interview_id trip_status hours_fished trip_duration
-#> 1 2026-06-02      all            2    complete        2.637         2.637
-#> 2 2026-06-02      all            1    complete        3.109         3.109
-#> 3 2026-06-02      all            6    complete        3.794         3.794
-#> 4 2026-06-02      all            3    complete        1.059         1.059
-#> 5 2026-06-02      all            4  incomplete        1.584         2.870
-#> 6 2026-06-02      all            5    complete        1.421         1.421
+#> 1 2026-06-21      all            1    complete        2.249         2.249
+#> 2 2026-06-21      all            6    complete        3.170         3.170
+#> 3 2026-06-21      all            4    complete        3.920         3.920
+#> 4 2026-06-21      all            2    complete        4.609         4.609
+#> 5 2026-06-21      all            5    complete        3.272         3.272
+#> 6 2026-06-21      all            3  incomplete        2.124         4.904
 #>   n_anglers catch_total catch_kept species_sought
-#> 1         2           0          0  northern_pike
-#> 2         1           1          0        walleye
+#> 1         1           3          2        walleye
+#> 2         1           1          1        walleye
 #> 3         1           0          0        walleye
 #> 4         2           0          0        walleye
-#> 5         1           0          0  northern_pike
-#> 6         1           4          2  northern_pike
+#> 5         1           0          0        walleye
+#> 6         1           1          0        walleye
 head(sim$counts)
 #>         date day_type total_anglers
-#> 1 2026-06-02      all             9
-#> 2 2026-06-02      all             9
-#> 3 2026-06-02      all             3
-#> 4 2026-06-04      all             1
-#> 5 2026-06-04      all            11
-#> 6 2026-06-04      all            10
+#> 1 2026-06-19      all             9
+#> 2 2026-06-19      all             1
+#> 3 2026-06-19      all             9
+#> 4 2026-06-21      all             8
+#> 5 2026-06-21      all             0
+#> 6 2026-06-21      all             3
 head(sim$catch)
-#>   interview_id       species count catch_type
-#> 1            1 northern_pike     1     caught
-#> 2            1 northern_pike     0  harvested
-#> 3            1 northern_pike     1   released
-#> 4            5       walleye     2     caught
-#> 5            5       walleye     1  harvested
-#> 6            5       walleye     1   released
+#>   interview_id species count catch_type
+#> 1            1 walleye     3     caught
+#> 2            1 walleye     2  harvested
+#> 3            1 walleye     1   released
+#> 4            6 walleye     1     caught
+#> 5            6 walleye     0  harvested
+#> 6            6 walleye     1   released
+
+# Multi-stratum simulation with day_types (named numeric vector)
+set.seed(1)
+sim2 <- simulate_creel_data(
+  params         = my_params,
+  season_days    = 90,
+  n_sampled_days = 20,
+  day_types      = c(weekday = 5/7, weekend = 2/7)
+)
+
+# Round-trip: simulate → creel_design → add_counts → add_interviews
+design <- creel_design(sim2$schedule, date = date, strata = day_type) |>
+  add_counts(sim2$counts) |>
+  add_interviews(
+    sim2$interviews,
+    catch        = "catch_total",
+    effort       = "hours_fished",
+    harvest      = "catch_kept",
+    trip_status  = "trip_status",
+    n_anglers    = "n_anglers",
+    interview_type = "roving"
+  )
+#> Warning: Duplicate PSU values detected in count data.
+#> ℹ Found 40 duplicate value(s) in column date.
+#> ℹ If multiple counts were taken per day, specify `count_time_col`.
+#> ℹ Example: `add_counts(design, counts, count_time_col = count_time)`
+#> Warning: No weights or probabilities supplied, assuming equal probability
+#> Warning: 72 interviews have zero catch.
+#> ℹ Zero catch may be valid (skunked) or indicate missing data.
+#> ℹ Added 121 interviews: 97 complete (80%), 24 incomplete (20%)
 ```

@@ -14,6 +14,7 @@ estimate_release_rate(
   by = NULL,
   variance = "taylor",
   conf_level = 0.95,
+  use_trips = NULL,
   missing_sections = "warn"
 )
 ```
@@ -45,6 +46,15 @@ estimate_release_rate(
 
   Numeric confidence level (default: 0.95).
 
+- use_trips:
+
+  Character string specifying which interviews to include. `"all"`
+  (default) uses all interviews including incomplete trips; `"complete"`
+  restricts to completed trips only. When `trip_status` was not provided
+  to
+  [`add_interviews`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md),
+  this argument has no effect.
+
 - missing_sections:
 
   Character string controlling behavior when a registered section has no
@@ -72,6 +82,15 @@ denominator is correct.
 When called on a sectioned design, no `.lake_total` row is produced.
 Release rates (fish per angler-hour) are not additive across sections.
 Lake-wide release rate requires a separate unsectioned call.
+
+Unlike
+[`estimate_catch_rate`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md),
+this function defaults to using **all** interviews (complete and
+incomplete) for RPUE estimation. Released fish counted at interview time
+are directly observable. However, incomplete-trip RPUE may underestimate
+if anglers release additional fish after the interview. Use
+`use_trips = "complete"` for a stricter analysis restricted to
+completed-trip interviews.
 
 ## See also
 
@@ -120,6 +139,9 @@ design <- add_catch(design, example_catch,
 
 # Overall release rate (all species combined)
 rpue <- estimate_release_rate(design)
+#> ℹ Using all interviews for RPUE estimation
+#>   (n=22: 17 complete, 5 incomplete) [default]
+#>   Use `use_trips = 'complete'` to restrict to completed trips.
 #> Warning: Small sample size for CPUE estimation.
 #> ! Sample size is 22. Ratio estimates are more stable with n >= 30.
 #> ℹ Variance estimates may be unstable with n < 30.
@@ -137,6 +159,9 @@ print(rpue)
 
 # Per-species release rates
 rpue_by_species <- estimate_release_rate(design, by = species)
+#> ℹ Using all interviews for RPUE estimation
+#>   (n=22: 17 complete, 5 incomplete) [default]
+#>   Use `use_trips = 'complete'` to restrict to completed trips.
 #> Warning: Small sample size for CPUE estimation.
 #> ! Sample size is 22. Ratio estimates are more stable with n >= 30.
 #> ℹ Variance estimates may be unstable with n < 30.

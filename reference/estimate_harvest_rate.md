@@ -57,10 +57,13 @@ estimate_harvest_rate(
 
 - use_trips:
 
-  Character string specifying which trip type to use for bus-route
-  estimation. One of `"complete"` (default), `"incomplete"`
-  (pi_i-weighted MOR), or `"diagnostic"` (both). Ignored for
-  non-bus-route designs.
+  Character string specifying which interviews to include. For standard
+  (non-bus-route) designs: `"all"` (default) uses all interviews
+  including incomplete trips; `"complete"` restricts to completed trips
+  only. For bus-route designs: `"complete"` (default), `"incomplete"`,
+  or `"diagnostic"`. When `trip_status` was not provided to
+  [`add_interviews`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md),
+  this argument has no effect for standard designs.
 
 - missing_sections:
 
@@ -115,6 +118,16 @@ When called on a sectioned design, no `.lake_total` row is produced.
 Harvest rates (fish per angler-hour) are not additive across sections.
 Lake-wide harvest rate requires a separate unsectioned call.
 
+Unlike
+[`estimate_catch_rate`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md),
+this function defaults to using **all** interviews (complete and
+incomplete) for HPUE estimation. Fish already in the livewell at
+interview time are directly observable and represent confirmed harvest.
+However, incomplete-trip HPUE may underestimate when anglers continue
+fishing and keep additional fish after being interviewed (Hansen & Van
+Kirk 2010). Use `use_trips = "complete"` for a stricter analysis
+restricted to completed-trip interviews.
+
 ## See also
 
 [`estimate_catch_rate`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
@@ -166,6 +179,9 @@ design_with_interviews <- add_interviews(design, interviews,
 #> ℹ Zero catch may be valid (skunked) or indicate missing data.
 #> ℹ Added 40 interviews: 20 complete (50%), 20 incomplete (50%)
 result <- estimate_harvest_rate(design_with_interviews)
+#> ℹ Using all interviews for HPUE estimation
+#>   (n=40: 20 complete, 20 incomplete) [default]
+#>   Use `use_trips = 'complete'` to restrict to completed trips.
 print(result)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -180,6 +196,9 @@ print(result)
 
 # Grouped by day_type
 result_grouped <- estimate_harvest_rate(design_with_interviews, by = day_type)
+#> ℹ Using all interviews for HPUE estimation
+#>   (n=40: 20 complete, 20 incomplete) [default]
+#>   Use `use_trips = 'complete'` to restrict to completed trips.
 #> Warning: Small sample size in 2 groups:
 #> • Group day_type=weekday: n=20
 #> • Group day_type=weekend: n=20
@@ -201,9 +220,15 @@ print(result_grouped)
 
 # Custom confidence level
 result_90 <- estimate_harvest_rate(design_with_interviews, conf_level = 0.90)
+#> ℹ Using all interviews for HPUE estimation
+#>   (n=40: 20 complete, 20 incomplete) [default]
+#>   Use `use_trips = 'complete'` to restrict to completed trips.
 
 # Bootstrap variance estimation
 result_boot <- estimate_harvest_rate(design_with_interviews, variance = "bootstrap")
+#> ℹ Using all interviews for HPUE estimation
+#>   (n=40: 20 complete, 20 incomplete) [default]
+#>   Use `use_trips = 'complete'` to restrict to completed trips.
 
 # Verbose dispatch message (shows which estimator was used for bus-route designs)
 # result_verbose <- estimate_harvest_rate(design, verbose = TRUE)

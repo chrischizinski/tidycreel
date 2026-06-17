@@ -23,7 +23,7 @@ workflows working while making the prep-helper seam explicit."><meta property="o
 
     <a class="navbar-brand me-2" href="../index.html">tidycreel</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -226,8 +226,11 @@ uses a different date column name than the design calendar.</p></dd>
 
 <dt id="arg-interview-type">interview_type<a class="anchor" aria-label="anchor" href="#arg-interview-type"></a></dt>
 <dd><p>Character: "access" (complete trips at access point)
-or "roving" (incomplete trips during fishing). Default is "access". This
-affects how catch rates are calculated in estimation functions.</p></dd>
+or "roving" (incomplete trips during fishing). Default is "access". When
+set to "roving", estimation functions automatically default to using all
+interviews (complete + incomplete) via the mean-of-ratios (MOR) estimator
+rather than restricting to complete trips. Override the auto-routing by
+passing <code>use_trips</code> or <code>estimator</code> explicitly.</p></dd>
 
 
 <dt id="arg-allow-invalid">allow_invalid<a class="anchor" aria-label="anchor" href="#arg-allow-invalid"></a></dt>

@@ -13,7 +13,7 @@ estimation methods."><meta property="og:image" content="https://chrischizinski.g
 
     <a class="navbar-brand me-2" href="../index.html">tidycreel</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -84,7 +84,7 @@ estimation methods.</p>
 <span>  by <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  variance <span class="op">=</span> <span class="st">"taylor"</span>,</span>
 <span>  conf_level <span class="op">=</span> <span class="fl">0.95</span>,</span>
-<span>  estimator <span class="op">=</span> <span class="st">"ratio-of-means"</span>,</span>
+<span>  estimator <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  use_trips <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  truncate_at <span class="op">=</span> <span class="fl">0.5</span>,</span>
 <span>  targeted <span class="op">=</span> <span class="cn">TRUE</span>,</span>
@@ -134,17 +134,16 @@ field and error if no incomplete trips are available. See Details.</p></dd>
 
 <dt id="arg-use-trips">use_trips<a class="anchor" aria-label="anchor" href="#arg-use-trips"></a></dt>
 <dd><p>Character string specifying which trip type to use when
-trip_status field is provided. Options: <code>"complete"</code> (default when
-NULL) uses only complete trips with ratio-of-means estimator,
-<code>"incomplete"</code> uses only incomplete trips with mean-of-ratios
-estimator, or <code>"diagnostic"</code> estimates CPUE using both trip types and
-returns a comparison table. Following Pollock et al. (1994),
-complete trips are scientifically preferred (no length-of-stay bias).
-Incomplete trip estimation is diagnostic/research mode requiring
-validation. Diagnostic mode requires both complete and incomplete trips to
-be present. Default is NULL which defaults to <code>"complete"</code>.
-Parameter is ignored when trip_status field is not provided (perfect
-backward compatibility). See Details.</p></dd>
+trip_status field is provided. Options: <code>"complete"</code> uses only
+complete trips with ratio-of-means estimator; <code>"incomplete"</code> uses
+only incomplete trips with MOR; <code>"all"</code> uses all interviews
+(complete + incomplete) with MOR — the correct choice for roving designs;
+<code>"diagnostic"</code> estimates CPUE using both trip types and returns a
+comparison table. Default is NULL. When NULL and
+<code>interview_type = "roving"</code> (set via <code>add_interviews</code>),
+automatically defaults to <code>"all"</code> + MOR. Otherwise defaults to
+<code>"complete"</code>. Parameter is ignored when trip_status field is not
+provided (backward compatibility). See Details.</p></dd>
 
 
 <dt id="arg-truncate-at">truncate_at<a class="anchor" aria-label="anchor" href="#arg-truncate-at"></a></dt>
@@ -194,17 +193,19 @@ by_vars (character vector of grouping variable names or NULL).</p>
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p><strong>Trip Type Selection (use_trips):</strong>
 When trip_status is provided, the <code>use_trips</code> parameter controls which
-trips are used for estimation. The default <code>use_trips = "complete"</code>
-filters to complete trips only, following roving-access design best practices
-(Pollock et al. 1994). Complete trip interviews are taken at trip
-completion and avoid length-of-stay bias. Setting <code>use_trips = "incomplete"</code>
-filters to incomplete trips and automatically uses the MOR estimator.
-Incomplete trip estimation is diagnostic/research mode and requires validation
-(see Phase 19 validate_incomplete_trips). Setting <code>use_trips = "diagnostic"</code>
-runs both complete and incomplete trip estimation and returns a comparison
-object with difference metrics and interpretation guidance. Diagnostic mode
-requires both trip types to be present in the data. When trip_status is not
-provided, use_trips is ignored for perfect backward compatibility with v0.2.0.</p>
+trips are used for estimation. For access-point designs
+(<code>interview_type = "access"</code>, the default), <code>use_trips</code> defaults
+to <code>"complete"</code>: interviews are taken at trip end, so complete trips
+are representative and avoid length-of-stay bias (Pollock et al. 1994).
+For roving designs (<code>interview_type = "roving"</code>), <code>use_trips</code>
+automatically defaults to <code>"all"</code> with the MOR estimator: the clerk
+intercepts trips mid-stream, so all interviews — complete and incomplete —
+are valid inputs (Hoenig et al. 1997). Set <code>use_trips = "incomplete"</code>
+to restrict MOR to incomplete trips only. Set <code>use_trips = "diagnostic"</code>
+to run both complete and incomplete trip estimation and return a comparison
+object with difference metrics. Diagnostic mode requires both trip types.
+When trip_status is not provided, use_trips is ignored for backward
+compatibility with v0.2.0.</p>
 <p><strong>Ratio-of-Means (default):</strong>
 CPUE is estimated as the ratio of total catch to total effort. This is the
 appropriate estimator for complete trip interviews (interview at trip end).

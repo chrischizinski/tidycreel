@@ -161,8 +161,11 @@ add_interviews(
 - interview_type:
 
   Character: "access" (complete trips at access point) or "roving"
-  (incomplete trips during fishing). Default is "access". This affects
-  how catch rates are calculated in estimation functions.
+  (incomplete trips during fishing). Default is "access". When set to
+  "roving", estimation functions automatically default to using all
+  interviews (complete + incomplete) via the mean-of-ratios (MOR)
+  estimator rather than restricting to complete trips. Override the
+  auto-routing by passing `use_trips` or `estimator` explicitly.
 
 - allow_invalid:
 

@@ -157,6 +157,9 @@ design <- add_interviews(design, example_interviews,
 
 # Estimate total harvest
 total_harvest <- estimate_total_harvest(design)
+#> ℹ Using all interviews for HPUE estimation
+#>   (n=22: 17 complete, 5 incomplete) [default]
+#>   Use `use_trips = 'complete'` to restrict to completed trips.
 #> Warning: Small sample size for harvest estimation.
 #> ! Sample size is 22. Ratio estimates are more stable with n >= 30.
 #> ℹ Variance estimates may be unstable with n < 30.
@@ -176,6 +179,9 @@ print(total_harvest)
 # Compare components
 effort_est <- estimate_effort(design)
 hpue_est <- estimate_harvest_rate(design)
+#> ℹ Using all interviews for HPUE estimation
+#>   (n=22: 17 complete, 5 incomplete) [default]
+#>   Use `use_trips = 'complete'` to restrict to completed trips.
 #> Warning: Small sample size for harvest estimation.
 #> ! Sample size is 22. Ratio estimates are more stable with n >= 30.
 #> ℹ Variance estimates may be unstable with n < 30.

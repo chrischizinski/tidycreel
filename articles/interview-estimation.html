@@ -29,7 +29,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidycreel</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -293,6 +293,9 @@ total harvest:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Estimate HPUE</span></span>
 <span><span class="va">hpue_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_harvest_rate.html">estimate_harvest_rate</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Using all interviews for HPUE estimation</span></span>
+<span><span class="co">#&gt;   (n=22: 17 complete, 5 incomplete) [default]</span></span>
+<span><span class="co">#&gt;   Use `use_trips = 'complete'` to restrict to completed trips.</span></span>
 <span><span class="co">#&gt; Warning: Small sample size for harvest estimation.</span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Sample size is 22. Ratio estimates are more stable with n &gt;= 30.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span></span>
@@ -310,6 +313,9 @@ total harvest:</p>
 <span></span>
 <span><span class="co"># Estimate total harvest</span></span>
 <span><span class="va">total_harvest_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_harvest.html">estimate_total_harvest</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Using all interviews for HPUE estimation</span></span>
+<span><span class="co">#&gt;   (n=22: 17 complete, 5 incomplete) [default]</span></span>
+<span><span class="co">#&gt;   Use `use_trips = 'complete'` to restrict to completed trips.</span></span>
 <span><span class="co">#&gt; Warning: Small sample size for harvest estimation.</span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Sample size is 22. Ratio estimates are more stable with n &gt;= 30.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span></span>
@@ -425,11 +431,17 @@ bootstrap is too slow.</li>
 <span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Sample size is 17. Ratio estimates are more stable with n &gt;= 30.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span></span>
 <span><span class="va">hpue</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_harvest_rate.html">estimate_harvest_rate</a></span><span class="op">(</span><span class="va">complete_design</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Using all interviews for HPUE estimation</span></span>
+<span><span class="co">#&gt;   (n=22: 17 complete, 5 incomplete) [default]</span></span>
+<span><span class="co">#&gt;   Use `use_trips = 'complete'` to restrict to completed trips.</span></span>
 <span><span class="co">#&gt; Warning: Small sample size for harvest estimation.</span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Sample size is 22. Ratio estimates are more stable with n &gt;= 30.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span></span>
 <span><span class="va">total_catch</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">complete_design</span><span class="op">)</span></span>
 <span><span class="va">total_harvest</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_harvest.html">estimate_total_harvest</a></span><span class="op">(</span><span class="va">complete_design</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Using all interviews for HPUE estimation</span></span>
+<span><span class="co">#&gt;   (n=22: 17 complete, 5 incomplete) [default]</span></span>
+<span><span class="co">#&gt;   Use `use_trips = 'complete'` to restrict to completed trips.</span></span>
 <span><span class="co">#&gt; Warning: Small sample size for harvest estimation.</span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Sample size is 22. Ratio estimates are more stable with n &gt;= 30.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span></span>

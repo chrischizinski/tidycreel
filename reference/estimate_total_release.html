@@ -13,7 +13,7 @@ propagation via the delta method. Requires a creel design with count data
 
     <a class="navbar-brand me-2" href="../index.html">tidycreel</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -197,6 +197,9 @@ assumption: <code>sqrt(sum(se_i^2))</code>.</p>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Total releases (all species combined)</span></span></span>
 <span class="r-in"><span><span class="va">total_rel</span> <span class="op">&lt;-</span> <span class="fu">estimate_total_release</span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Using all interviews for RPUE estimation</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   (n=22: 17 complete, 5 incomplete) [default]</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   Use `use_trips = 'complete'` to restrict to completed trips.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Small sample size for CPUE estimation.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> Sample size is 22. Ratio estimates are more stable with n &gt;= 30.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span>

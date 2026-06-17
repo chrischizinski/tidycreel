@@ -39,7 +39,7 @@ elapsed effort, not total effort.
 
     <a class="navbar-brand me-2" href="../index.html">tidycreel</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -154,9 +154,12 @@ used when <code>n_anglers_per_day = NULL</code>).</p></dd>
 
 
 <dt id="arg-day-types">day_types<a class="anchor" aria-label="anchor" href="#arg-day-types"></a></dt>
-<dd><p>Named numeric vector. Proportion of days per stratum, e.g.
-<code>c(weekday = 5/7, weekend = 2/7)</code>. When <code>NULL</code> (default),
-uses a single stratum <code>"all"</code>.</p></dd>
+<dd><p>Named <strong>numeric</strong> vector of stratum proportions, e.g.
+<code>c(weekday = 5/7, weekend = 2/7)</code>. Names become the <code>day_type</code>
+values in the output. When <code>NULL</code> (default), uses a single stratum
+<code>"all"</code>. <strong>Note:</strong> passing a character vector (e.g.
+<code>c("weekday", "weekend")</code>) will error — the vector must be numeric
+with named elements.</p></dd>
 
 
 <dt id="arg-species">species<a class="anchor" aria-label="anchor" href="#arg-species"></a></dt>
@@ -205,7 +208,14 @@ Default <code>NULL</code>.</p></dd>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A named list with three data frames:</p><dl><dt><code>interviews</code></dt>
+    <p>A named list with four data frames:</p><dl><dt><code>schedule</code></dt>
+<dd><p>Full-season calendar, one row per day. Columns:
+<code>date</code>, <code>day_type</code>, <code>sampled</code> (logical). Pass directly
+to <code><a href="creel_design.html">creel_design</a></code> as the <code>calendar</code> argument.
+Unsampled days have day_type assigned proportionally from
+<code>day_types</code>.</p></dd>
+
+<dt><code>interviews</code></dt>
 <dd><p>One row per intercepted angler party. Columns:
 <code>date</code>, <code>day_type</code>, <code>interview_id</code>, <code>trip_status</code>
 (<code>"complete"</code> or <code>"incomplete"</code>), <code>hours_fished</code>,
@@ -223,9 +233,10 @@ complete trips), <code>n_anglers</code>, <code>catch_total</code>, <code>catch_k
 <code>"harvested"</code>, <code>"released"</code>).</p></dd>
 
 
-</dl><p>The <code>interviews</code> and <code>counts</code> outputs can be passed directly to
-<code><a href="add_interviews.html">add_interviews</a></code> and <code><a href="add_counts.html">add_counts</a></code> after constructing
-a calendar with <code><a href="creel_design.html">creel_design</a></code>.</p>
+</dl><p>The <code>schedule</code> output can be passed directly to <code><a href="creel_design.html">creel_design</a></code>
+as the <code>calendar</code> argument. The <code>interviews</code> and <code>counts</code>
+outputs are then passed to <code><a href="add_interviews.html">add_interviews</a></code> and
+<code><a href="add_counts.html">add_counts</a></code>.</p>
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
@@ -252,6 +263,8 @@ Fish. Res. 106: 325–333.</p>
 <span class="r-in"><span>  harvest        <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>mean_pct <span class="op">=</span> <span class="fl">35</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  counts         <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>mean_total_anglers <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Basic simulation (single stratum)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">sim</span> <span class="op">&lt;-</span> <span class="fu">simulate_creel_data</span><span class="op">(</span></span></span>
 <span class="r-in"><span>  params         <span class="op">=</span> <span class="va">my_params</span>,</span></span>
@@ -260,37 +273,75 @@ Fish. Res. 106: 325–333.</p>
 <span class="r-in"><span>  species        <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"walleye"</span>, <span class="st">"northern_pike"</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  species_weights <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.6</span>, <span class="fl">0.4</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">sim</span><span class="op">$</span><span class="va">schedule</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         date day_type sampled</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 2026-06-17      all   FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 2026-06-18      all   FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 2026-06-19      all    TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4 2026-06-20      all   FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5 2026-06-21      all    TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6 2026-06-22      all   FALSE</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">sim</span><span class="op">$</span><span class="va">interviews</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>         date day_type interview_id trip_status hours_fished trip_duration</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 2026-06-02      all            2    complete        2.637         2.637</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 2026-06-02      all            1    complete        3.109         3.109</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 2026-06-02      all            6    complete        3.794         3.794</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4 2026-06-02      all            3    complete        1.059         1.059</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5 2026-06-02      all            4  incomplete        1.584         2.870</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6 2026-06-02      all            5    complete        1.421         1.421</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 2026-06-21      all            1    complete        2.249         2.249</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 2026-06-21      all            6    complete        3.170         3.170</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 2026-06-21      all            4    complete        3.920         3.920</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4 2026-06-21      all            2    complete        4.609         4.609</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5 2026-06-21      all            5    complete        3.272         3.272</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6 2026-06-21      all            3  incomplete        2.124         4.904</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   n_anglers catch_total catch_kept species_sought</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1         2           0          0  northern_pike</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2         1           1          0        walleye</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1         1           3          2        walleye</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2         1           1          1        walleye</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 3         1           0          0        walleye</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 4         2           0          0        walleye</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5         1           0          0  northern_pike</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6         1           4          2  northern_pike</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5         1           0          0        walleye</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6         1           1          0        walleye</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">sim</span><span class="op">$</span><span class="va">counts</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>         date day_type total_anglers</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 2026-06-02      all             9</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 2026-06-02      all             9</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 2026-06-02      all             3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4 2026-06-04      all             1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5 2026-06-04      all            11</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6 2026-06-04      all            10</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 2026-06-19      all             9</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 2026-06-19      all             1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 2026-06-19      all             9</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4 2026-06-21      all             8</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5 2026-06-21      all             0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6 2026-06-21      all             3</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">sim</span><span class="op">$</span><span class="va">catch</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   interview_id       species count catch_type</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1            1 northern_pike     1     caught</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2            1 northern_pike     0  harvested</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3            1 northern_pike     1   released</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4            5       walleye     2     caught</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5            5       walleye     1  harvested</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6            5       walleye     1   released</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   interview_id species count catch_type</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1            1 walleye     3     caught</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2            1 walleye     2  harvested</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3            1 walleye     1   released</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4            6 walleye     1     caught</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5            6 walleye     0  harvested</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6            6 walleye     1   released</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Multi-stratum simulation with day_types (named numeric vector)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">sim2</span> <span class="op">&lt;-</span> <span class="fu">simulate_creel_data</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  params         <span class="op">=</span> <span class="va">my_params</span>,</span></span>
+<span class="r-in"><span>  season_days    <span class="op">=</span> <span class="fl">90</span>,</span></span>
+<span class="r-in"><span>  n_sampled_days <span class="op">=</span> <span class="fl">20</span>,</span></span>
+<span class="r-in"><span>  day_types      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>weekday <span class="op">=</span> <span class="fl">5</span><span class="op">/</span><span class="fl">7</span>, weekend <span class="op">=</span> <span class="fl">2</span><span class="op">/</span><span class="fl">7</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Round-trip: simulate → creel_design → add_counts → add_interviews</span></span></span>
+<span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">sim2</span><span class="op">$</span><span class="va">schedule</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">sim2</span><span class="op">$</span><span class="va">counts</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="add_interviews.html">add_interviews</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>    <span class="va">sim2</span><span class="op">$</span><span class="va">interviews</span>,</span></span>
+<span class="r-in"><span>    catch        <span class="op">=</span> <span class="st">"catch_total"</span>,</span></span>
+<span class="r-in"><span>    effort       <span class="op">=</span> <span class="st">"hours_fished"</span>,</span></span>
+<span class="r-in"><span>    harvest      <span class="op">=</span> <span class="st">"catch_kept"</span>,</span></span>
+<span class="r-in"><span>    trip_status  <span class="op">=</span> <span class="st">"trip_status"</span>,</span></span>
+<span class="r-in"><span>    n_anglers    <span class="op">=</span> <span class="st">"n_anglers"</span>,</span></span>
+<span class="r-in"><span>    interview_type <span class="op">=</span> <span class="st">"roving"</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span></span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Duplicate PSU values detected in count data.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Found 40 duplicate value(s) in column <span style="color: #00BB00;">date</span>.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> If multiple counts were taken per day, specify `count_time_col`.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Example: `add_counts(design, counts, count_time_col = count_time)`</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>No weights or probabilities supplied, assuming equal probability</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>72 interviews have zero catch.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Zero catch may be valid (skunked) or indicate missing data.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Added 121 interviews: 97 complete (80%), 24 incomplete (20%)</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

@@ -1,5 +1,117 @@
 # Changelog
 
+## tidycreel 2.2.0 “Goldeye” (2026-06-17)
+
+### New features
+
+- [`simulate_creel_data()`](https://chrischizinski.github.io/tidycreel/reference/simulate_creel_data.md)
+  now returns a `$schedule` component — a full-season calendar (one row
+  per season day) with columns `date` (Date), `day_type` (character),
+  and `sampled` (logical). Pass directly to
+  [`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md)
+  as the `calendar` argument for a complete round-trip simulation
+  pipeline with no manual column construction. Unsampled days receive a
+  `day_type` drawn proportionally from the `day_types` distribution.
+  Closes [\#68](https://github.com/chrischizinski/tidycreel/issues/68).
+
+  ``` r
+
+  sim <- simulate_creel_data(params = my_params, day_types = c(weekday = 5/7, weekend = 2/7))
+  design <- creel_design(sim$schedule, date = date, strata = day_type) |>
+    add_counts(sim$counts) |>
+    add_interviews(sim$interviews,
+      catch = "catch_total", effort = "hours_fished", harvest = "catch_kept",
+      trip_status = "trip_status", n_anglers = "n_anglers", interview_type = "roving")
+  ```
+
+  **Note:** this changes the return structure from three components
+  (`interviews`, `counts`, `catch`) to four (`schedule`, `interviews`,
+  `counts`, `catch`). Code that checks names by position should switch
+  to name-based access.
+
+### Documentation
+
+- [`simulate_creel_data()`](https://chrischizinski.github.io/tidycreel/reference/simulate_creel_data.md)
+  `day_types` parameter now explicitly documents that the argument must
+  be a named **numeric** vector (not a character vector), with a worked
+  example showing the correct form `c(weekday = 5/7, weekend = 2/7)`.
+- `@examples` block expanded with a multi-stratum simulation and the
+  full round-trip pipeline from
+  [`simulate_creel_data()`](https://chrischizinski.github.io/tidycreel/reference/simulate_creel_data.md)
+  through
+  [`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md),
+  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md),
+  and
+  [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md).
+
+### Bug fixes / closed issues
+
+- [`standardize_species()`](https://chrischizinski.github.io/tidycreel/reference/standardize_species.md):
+  added `custom_codes` argument (named character vector applied as a
+  second AFS-NA pass), expanded AFS lookup table with Freshwater Drum
+  (`"FRD"`), and corrected misleading “supply a custom code map”
+  documentation that implied a non-existent function argument. Closes
+  [\#66](https://github.com/chrischizinski/tidycreel/issues/66).
+- [`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md)
+  /
+  [`estimate_release_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_release_rate.md):
+  added `use_trips` argument (`"all"` default, `"complete"` to restrict)
+  with `cli_inform` notice showing trip-status breakdown. Documented
+  livewell-observable rationale and downward-bias risk (Hansen & Van
+  Kirk 2010). Closes
+  [\#65](https://github.com/chrischizinski/tidycreel/issues/65). Future
+  default flip to `"complete"` tracked as
+  [\#69](https://github.com/chrischizinski/tidycreel/issues/69).
+
+## tidycreel 2.1.0 “Sauger” (2026-06-17)
+
+### New features
+
+- [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
+  now auto-routes roving designs: when
+  `add_interviews(..., interview_type = "roving")` is set and
+  `use_trips` / `estimator` are not explicitly supplied, the function
+  defaults to `use_trips = "all"` and `estimator = "mor"` (Hoenig et
+  al. 1997), using all interviewed trips via mean-of-ratios rather than
+  restricting to complete trips. Access-point designs
+  (`interview_type = "access"`, the default) are unaffected. Explicit
+  `use_trips` or `estimator` arguments always override the auto-route.
+  Closes [\#67](https://github.com/chrischizinski/tidycreel/issues/67).
+
+- New `use_trips = "all"` option for
+  [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md):
+  uses every interview (complete + incomplete) with the MOR estimator.
+  Previously only `"complete"`, `"incomplete"`, and `"diagnostic"` were
+  accepted.
+
+### Bug fixes
+
+- `estimate_catch_rate(by = species)` returned all-zero estimates when
+  catch data contained only `"harvested"` and `"released"` rows (no
+  `"caught"` rows). Fix was in source since v2.0.0 but the installed
+  binary at the site-library was stale; reinstalling now picks up the
+  correct aggregation logic. Closes
+  [\#64](https://github.com/chrischizinski/tidycreel/issues/64).
+
+### Documentation
+
+- [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)
+  `interview_type` parameter description corrected: now accurately
+  states that `"roving"` triggers automatic estimator routing rather
+  than carrying the false claim that the flag was “stored metadata
+  only”.
+- [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
+  `use_trips` parameter and Details section updated to document `"all"`,
+  roving auto-routing, and the access vs. roving distinction.
+
+### Versioning
+
+Starting with this release, tidycreel follows semantic versioning
+(MAJOR.MINOR.PATCH) and names each MINOR release after a fish species
+native to Nebraska or the Great Plains. v2.1.0 is named for the Sauger
+(*Sander canadensis*), a walleye relative common in Nebraska’s large
+rivers.
+
 ## tidycreel 1.9.0 (2026-05-25)
 
 ### New features

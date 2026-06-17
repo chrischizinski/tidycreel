@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidycreel</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -63,6 +63,61 @@
       <small>Source: <a href="https://github.com/chrischizinski/tidycreel/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="2.2.0" id="tidycreel-220-goldeye-2026-06-17">tidycreel 2.2.0 “Goldeye” (2026-06-17)<a class="anchor" aria-label="anchor" href="#tidycreel-220-goldeye-2026-06-17"></a></h2>
+<div class="section level3">
+<h3 id="new-features-2-2-0">New features<a class="anchor" aria-label="anchor" href="#new-features-2-2-0"></a></h3>
+<ul><li>
+<p><code><a href="../reference/simulate_creel_data.html">simulate_creel_data()</a></code> now returns a <code>$schedule</code> component — a full-season calendar (one row per season day) with columns <code>date</code> (Date), <code>day_type</code> (character), and <code>sampled</code> (logical). Pass directly to <code><a href="../reference/creel_design.html">creel_design()</a></code> as the <code>calendar</code> argument for a complete round-trip simulation pipeline with no manual column construction. Unsampled days receive a <code>day_type</code> drawn proportionally from the <code>day_types</code> distribution. Closes <a href="https://github.com/chrischizinski/tidycreel/issues/68" class="external-link">#68</a>.</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">sim</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_creel_data.html">simulate_creel_data</a></span><span class="op">(</span>params <span class="op">=</span> <span class="va">my_params</span>, day_types <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>weekday <span class="op">=</span> <span class="fl">5</span><span class="op">/</span><span class="fl">7</span>, weekend <span class="op">=</span> <span class="fl">2</span><span class="op">/</span><span class="fl">7</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">sim</span><span class="op">$</span><span class="va">schedule</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">sim</span><span class="op">$</span><span class="va">counts</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/add_interviews.html">add_interviews</a></span><span class="op">(</span><span class="va">sim</span><span class="op">$</span><span class="va">interviews</span>,</span>
+<span>    catch <span class="op">=</span> <span class="st">"catch_total"</span>, effort <span class="op">=</span> <span class="st">"hours_fished"</span>, harvest <span class="op">=</span> <span class="st">"catch_kept"</span>,</span>
+<span>    trip_status <span class="op">=</span> <span class="st">"trip_status"</span>, n_anglers <span class="op">=</span> <span class="st">"n_anglers"</span>, interview_type <span class="op">=</span> <span class="st">"roving"</span><span class="op">)</span></span></code></pre></div>
+<p><strong>Note:</strong> this changes the return structure from three components (<code>interviews</code>, <code>counts</code>, <code>catch</code>) to four (<code>schedule</code>, <code>interviews</code>, <code>counts</code>, <code>catch</code>). Code that checks names by position should switch to name-based access.</p>
+</li>
+</ul></div>
+<div class="section level3">
+<h3 id="documentation-2-2-0">Documentation<a class="anchor" aria-label="anchor" href="#documentation-2-2-0"></a></h3>
+<ul><li>
+<code><a href="../reference/simulate_creel_data.html">simulate_creel_data()</a></code> <code>day_types</code> parameter now explicitly documents that the argument must be a named <strong>numeric</strong> vector (not a character vector), with a worked example showing the correct form <code>c(weekday = 5/7, weekend = 2/7)</code>.</li>
+<li>
+<code>@examples</code> block expanded with a multi-stratum simulation and the full round-trip pipeline from <code><a href="../reference/simulate_creel_data.html">simulate_creel_data()</a></code> through <code><a href="../reference/creel_design.html">creel_design()</a></code>, <code><a href="../reference/add_counts.html">add_counts()</a></code>, and <code><a href="../reference/add_interviews.html">add_interviews()</a></code>.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="bug-fixes--closed-issues-2-2-0">Bug fixes / closed issues<a class="anchor" aria-label="anchor" href="#bug-fixes--closed-issues-2-2-0"></a></h3>
+<ul><li>
+<code><a href="../reference/standardize_species.html">standardize_species()</a></code>: added <code>custom_codes</code> argument (named character vector applied as a second AFS-NA pass), expanded AFS lookup table with Freshwater Drum (<code>"FRD"</code>), and corrected misleading “supply a custom code map” documentation that implied a non-existent function argument. Closes <a href="https://github.com/chrischizinski/tidycreel/issues/66" class="external-link">#66</a>.</li>
+<li>
+<code><a href="../reference/estimate_harvest_rate.html">estimate_harvest_rate()</a></code> / <code><a href="../reference/estimate_release_rate.html">estimate_release_rate()</a></code>: added <code>use_trips</code> argument (<code>"all"</code> default, <code>"complete"</code> to restrict) with <code>cli_inform</code> notice showing trip-status breakdown. Documented livewell-observable rationale and downward-bias risk (Hansen &amp; Van Kirk 2010). Closes <a href="https://github.com/chrischizinski/tidycreel/issues/65" class="external-link">#65</a>. Future default flip to <code>"complete"</code> tracked as <a href="https://github.com/chrischizinski/tidycreel/issues/69" class="external-link">#69</a>.</li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="2.1.0" id="tidycreel-210-sauger-2026-06-17">tidycreel 2.1.0 “Sauger” (2026-06-17)<a class="anchor" aria-label="anchor" href="#tidycreel-210-sauger-2026-06-17"></a></h2>
+<div class="section level3">
+<h3 id="new-features-2-1-0">New features<a class="anchor" aria-label="anchor" href="#new-features-2-1-0"></a></h3>
+<ul><li><p><code><a href="../reference/estimate_catch_rate.html">estimate_catch_rate()</a></code> now auto-routes roving designs: when <code>add_interviews(..., interview_type = "roving")</code> is set and <code>use_trips</code> / <code>estimator</code> are not explicitly supplied, the function defaults to <code>use_trips = "all"</code> and <code>estimator = "mor"</code> (Hoenig et al. 1997), using all interviewed trips via mean-of-ratios rather than restricting to complete trips. Access-point designs (<code>interview_type = "access"</code>, the default) are unaffected. Explicit <code>use_trips</code> or <code>estimator</code> arguments always override the auto-route. Closes <a href="https://github.com/chrischizinski/tidycreel/issues/67" class="external-link">#67</a>.</p></li>
+<li><p>New <code>use_trips = "all"</code> option for <code><a href="../reference/estimate_catch_rate.html">estimate_catch_rate()</a></code>: uses every interview (complete + incomplete) with the MOR estimator. Previously only <code>"complete"</code>, <code>"incomplete"</code>, and <code>"diagnostic"</code> were accepted.</p></li>
+</ul></div>
+<div class="section level3">
+<h3 id="bug-fixes-2-1-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-2-1-0"></a></h3>
+<ul><li>
+<code>estimate_catch_rate(by = species)</code> returned all-zero estimates when catch data contained only <code>"harvested"</code> and <code>"released"</code> rows (no <code>"caught"</code> rows). Fix was in source since v2.0.0 but the installed binary at the site-library was stale; reinstalling now picks up the correct aggregation logic. Closes <a href="https://github.com/chrischizinski/tidycreel/issues/64" class="external-link">#64</a>.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="documentation-2-1-0">Documentation<a class="anchor" aria-label="anchor" href="#documentation-2-1-0"></a></h3>
+<ul><li>
+<code><a href="../reference/add_interviews.html">add_interviews()</a></code> <code>interview_type</code> parameter description corrected: now accurately states that <code>"roving"</code> triggers automatic estimator routing rather than carrying the false claim that the flag was “stored metadata only”.</li>
+<li>
+<code><a href="../reference/estimate_catch_rate.html">estimate_catch_rate()</a></code> <code>use_trips</code> parameter and Details section updated to document <code>"all"</code>, roving auto-routing, and the access vs. roving distinction.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="versioning-2-1-0">Versioning<a class="anchor" aria-label="anchor" href="#versioning-2-1-0"></a></h3>
+<p>Starting with this release, tidycreel follows semantic versioning (MAJOR.MINOR.PATCH) and names each MINOR release after a fish species native to Nebraska or the Great Plains. v2.1.0 is named for the Sauger (<em>Sander canadensis</em>), a walleye relative common in Nebraska’s large rivers.</p>
+</div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.9.0" id="tidycreel-190-2026-05-25">tidycreel 1.9.0 (2026-05-25)<a class="anchor" aria-label="anchor" href="#tidycreel-190-2026-05-25"></a></h2>
 <div class="section level3">
