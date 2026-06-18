@@ -73,6 +73,7 @@ GEMINI.md
 
 # AI workflow planning (local use only)
 .planning/
+.ai/
 graphify-out/
 .planning-legacy-work/
 .gsd/

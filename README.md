@@ -18,6 +18,7 @@ MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.or
 stable](https://img.shields.io/badge/lifecycle-stable-brightgreen.svg)](https://lifecycle.r-lib.org/articles/stages.html#stable)
 [![Codecov test
 coverage](https://codecov.io/gh/chrischizinski/tidycreel/graph/badge.svg)](https://app.codecov.io/gh/chrischizinski/tidycreel)
+[![Release](https://img.shields.io/badge/release-v2.2.0%20%22Goldeye%22-4CAF50)](https://github.com/chrischizinski/tidycreel/releases)
 <!-- badges: end -->
 
 **Tidy Interface for Creel Survey Design, Estimation, and Reporting**
