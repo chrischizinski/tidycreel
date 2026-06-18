@@ -193,20 +193,20 @@ sim <- simulate_creel_data(
 )
 head(sim$schedule)
 #>         date day_type sampled
-#> 1 2026-06-17      all   FALSE
-#> 2 2026-06-18      all   FALSE
-#> 3 2026-06-19      all    TRUE
-#> 4 2026-06-20      all   FALSE
-#> 5 2026-06-21      all    TRUE
-#> 6 2026-06-22      all   FALSE
+#> 1 2026-06-18      all   FALSE
+#> 2 2026-06-19      all   FALSE
+#> 3 2026-06-20      all    TRUE
+#> 4 2026-06-21      all   FALSE
+#> 5 2026-06-22      all    TRUE
+#> 6 2026-06-23      all   FALSE
 head(sim$interviews)
 #>         date day_type interview_id trip_status hours_fished trip_duration
-#> 1 2026-06-21      all            1    complete        2.249         2.249
-#> 2 2026-06-21      all            6    complete        3.170         3.170
-#> 3 2026-06-21      all            4    complete        3.920         3.920
-#> 4 2026-06-21      all            2    complete        4.609         4.609
-#> 5 2026-06-21      all            5    complete        3.272         3.272
-#> 6 2026-06-21      all            3  incomplete        2.124         4.904
+#> 1 2026-06-22      all            1    complete        2.249         2.249
+#> 2 2026-06-22      all            6    complete        3.170         3.170
+#> 3 2026-06-22      all            4    complete        3.920         3.920
+#> 4 2026-06-22      all            2    complete        4.609         4.609
+#> 5 2026-06-22      all            5    complete        3.272         3.272
+#> 6 2026-06-22      all            3  incomplete        2.124         4.904
 #>   n_anglers catch_total catch_kept species_sought
 #> 1         1           3          2        walleye
 #> 2         1           1          1        walleye
@@ -216,12 +216,12 @@ head(sim$interviews)
 #> 6         1           1          0        walleye
 head(sim$counts)
 #>         date day_type total_anglers
-#> 1 2026-06-19      all             9
-#> 2 2026-06-19      all             1
-#> 3 2026-06-19      all             9
-#> 4 2026-06-21      all             8
-#> 5 2026-06-21      all             0
-#> 6 2026-06-21      all             3
+#> 1 2026-06-20      all             9
+#> 2 2026-06-20      all             1
+#> 3 2026-06-20      all             9
+#> 4 2026-06-22      all             8
+#> 5 2026-06-22      all             0
+#> 6 2026-06-22      all             3
 head(sim$catch)
 #>   interview_id species count catch_type
 #> 1            1 walleye     3     caught
