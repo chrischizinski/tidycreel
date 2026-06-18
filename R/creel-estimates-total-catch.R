@@ -22,6 +22,10 @@
 #'   `"stratum_total"`, or `"period_total"`. This controls which effort domain
 #'   is multiplied by CPUE so total catch stays aligned with the requested
 #'   temporal target.
+#' @param use_trips Character. Which interviews contribute to CPUE. `"complete"`
+#'   (default) uses only completed trips; `"all"` includes incomplete trips.
+#'   Incomplete trips have lower observed CPUE (angler may catch more after
+#'   interview), so `"all"` introduces a downward bias.
 #' @param aggregate_sections Logical. When the design was created with
 #'   \code{\link{add_sections}}, should a \code{.lake_total} row be appended
 #'   that sums the per-section estimates? Default \code{TRUE}. Set to
