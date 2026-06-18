@@ -524,14 +524,15 @@ estimate_total_catch_sections <- function(design, by_quo, variance_method, # nol
         sec_estimate <- effort_est * cpue_est
         sec_var <- (effort_est^2 * cpue_se^2) + (cpue_est^2 * effort_se^2)
         sec_se <- sqrt(sec_var)
-        z_val <- stats::qnorm(1 - (1 - conf_level) / 2)
+        sec_n  <- cpue_res$estimates$n
+        z_val <- stats::qt(1 - (1 - conf_level) / 2, df = max(1L, sec_n - 1L))
         section_rows[[sec]] <- tibble::tibble(
           section = sec,
           estimate = sec_estimate,
           se = sec_se,
           ci_lower = sec_estimate - z_val * sec_se,
           ci_upper = sec_estimate + z_val * sec_se,
-          n = cpue_res$estimates$n,
+          n = sec_n,
           prop_of_lake_total = NA_real_,
           data_available = TRUE
         )

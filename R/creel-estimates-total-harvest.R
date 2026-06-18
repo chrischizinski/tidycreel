@@ -252,13 +252,13 @@ estimate_total_harvest_ungrouped <- function(design, variance_method, conf_level
   product_var <- (effort_est^2 * hpue_var) + (hpue_est^2 * effort_var)
   se <- sqrt(product_var)
 
-  # Compute confidence interval using normal approximation
-  z_value <- stats::qnorm(1 - (1 - conf_level) / 2)
-  ci_lower <- estimate - (z_value * se)
-  ci_upper <- estimate + (z_value * se)
-
   # Sample size: use HPUE sample size (interview count)
   n <- hpue_result$estimates$n
+
+  # Compute confidence interval
+  z_value <- stats::qt(1 - (1 - conf_level) / 2, df = max(1L, n - 1L))
+  ci_lower <- estimate - (z_value * se)
+  ci_upper <- estimate + (z_value * se)
 
   # Build estimates tibble
   estimates_df <- tibble::tibble(
@@ -340,8 +340,8 @@ estimate_total_harvest_grouped <- function(design, by_vars, variance_method, con
     product_var <- (effort_est^2 * hpue_var) + (hpue_est^2 * effort_var)
     se <- sqrt(product_var)
 
-    # Compute confidence interval
-    z_value <- stats::qnorm(1 - (1 - conf_level) / 2)
+    n_i <- merged$n_hpue[i]
+    z_value <- stats::qt(1 - (1 - conf_level) / 2, df = max(1L, n_i - 1L))
     ci_lower <- estimate - (z_value * se)
     ci_upper <- estimate + (z_value * se)
 
@@ -350,7 +350,7 @@ estimate_total_harvest_grouped <- function(design, by_vars, variance_method, con
       se = se,
       ci_lower = ci_lower,
       ci_upper = ci_upper,
-      n = merged$n_hpue[i] # Use interview sample size
+      n = n_i
     )
   }
 
@@ -528,14 +528,15 @@ estimate_total_harvest_sections <- function(design, by_quo, variance_method, # n
         sec_estimate <- effort_est * hpue_est
         sec_var <- (effort_est^2 * hpue_se^2) + (hpue_est^2 * effort_se^2)
         sec_se <- sqrt(sec_var)
-        z_val <- stats::qnorm(1 - (1 - conf_level) / 2)
+        sec_n  <- hpue_res$estimates$n
+        z_val <- stats::qt(1 - (1 - conf_level) / 2, df = max(1L, sec_n - 1L))
         section_rows[[sec]] <- tibble::tibble(
           section = sec,
           estimate = sec_estimate,
           se = sec_se,
           ci_lower = sec_estimate - z_val * sec_se,
           ci_upper = sec_estimate + z_val * sec_se,
-          n = hpue_res$estimates$n,
+          n = sec_n,
           prop_of_lake_total = NA_real_,
           data_available = TRUE
         )

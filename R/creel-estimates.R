@@ -3176,7 +3176,10 @@ warn_missing_rate_strata <- function(effort_df, rate_df, stratum_by_vars, contex
 compute_stratum_product_sum <- function(effort_df, rate_df, stratum_by_vars,
                                         interview_by_vars, conf_level,
                                         rate_suffix = "rate") {
-  z <- stats::qnorm(1 - (1 - conf_level) / 2)
+  # t-distribution df: total interviews minus number of strata (conservative)
+  n_strata_ci <- if (length(stratum_by_vars) == 0L) 1L else max(1L, nrow(rate_df))
+  df_ci <- max(1L, sum(rate_df$n, na.rm = TRUE) - n_strata_ci)
+  z <- stats::qt(1 - (1 - conf_level) / 2, df = df_ci)
 
   if (length(stratum_by_vars) == 0L) {
     # No strata, no grouping: simple delta method on single estimates

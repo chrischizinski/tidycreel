@@ -184,10 +184,10 @@ estimate_total_release_ungrouped <- function(design, variance_method, conf_level
   rpue_var <- rpue_se^2
   product_var <- (effort_est^2 * rpue_var) + (rpue_est^2 * effort_var)
   se <- sqrt(product_var)
-  z_value <- stats::qnorm(1 - (1 - conf_level) / 2)
+  n <- release_result$estimates$n
+  z_value <- stats::qt(1 - (1 - conf_level) / 2, df = max(1L, n - 1L))
   ci_lower <- estimate - (z_value * se)
   ci_upper <- estimate + (z_value * se)
-  n <- release_result$estimates$n
 
   estimates_df <- tibble::tibble(
     estimate = estimate, se = se, ci_lower = ci_lower, ci_upper = ci_upper, n = n
@@ -250,12 +250,13 @@ estimate_total_release_grouped <- function(design, by_vars, variance_method, con
     rpue_var <- rpue_se^2
     product_var <- (effort_est^2 * rpue_var) + (rpue_est^2 * effort_var)
     se <- sqrt(product_var)
-    z_value <- stats::qnorm(1 - (1 - conf_level) / 2)
+    n_i <- merged$n_rpue[i]
+    z_value <- stats::qt(1 - (1 - conf_level) / 2, df = max(1L, n_i - 1L))
     estimates_list[[i]] <- list(
       estimate = estimate, se = se,
       ci_lower = estimate - (z_value * se),
       ci_upper = estimate + (z_value * se),
-      n = merged$n_rpue[i]
+      n = n_i
     )
   }
 
@@ -448,14 +449,15 @@ estimate_total_release_sections <- function(design, by_quo, variance_method, # n
         sec_estimate <- effort_est * rpue_est
         sec_var <- (effort_est^2 * rpue_se^2) + (rpue_est^2 * effort_se^2)
         sec_se <- sqrt(sec_var)
-        z_val <- stats::qnorm(1 - (1 - conf_level) / 2)
+        sec_n  <- rpue_res$estimates$n
+        z_val <- stats::qt(1 - (1 - conf_level) / 2, df = max(1L, sec_n - 1L))
         section_rows[[sec]] <- tibble::tibble(
           section = sec,
           estimate = sec_estimate,
           se = sec_se,
           ci_lower = sec_estimate - z_val * sec_se,
           ci_upper = sec_estimate + z_val * sec_se,
-          n = rpue_res$estimates$n,
+          n = sec_n,
           prop_of_lake_total = NA_real_,
           data_available = TRUE
         )

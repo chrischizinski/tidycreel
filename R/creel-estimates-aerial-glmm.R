@@ -165,7 +165,7 @@ estimate_effort_aerial_glmm <- function(
   x_mat <- stats::model.matrix(terms_obj, data = new_data) # nolint: object_name_linter
   beta <- lme4::fixef(model)
   mu <- as.numeric(exp(x_mat %*% beta))
-  scale_factor <- h_open / 100            # each grid step = h_open/100 hours
+  scale_factor <- h_open / (length(hour_grid) - 1L)  # interval width: 100 pts = 99 gaps
   # sum(mu) * scale_factor integrates the fitted count-vs-time curve over h_open
   # hours, yielding angler-hours directly. Only the visibility correction (1/v)
   # is applied — multiplying by h_open again would double-count the time dimension.
