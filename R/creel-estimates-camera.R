@@ -85,41 +85,63 @@ estimate_effort_camera <- function(
     strata_col <- design$strata_cols[1L]
     strata_vals <- unique(counts_data[[strata_col]])
 
-    cal_rows <- lapply(strata_vals, function(s) {
-      cnt_s <- counts_data[[count_var]][counts_data[[strata_col]] == s]
-      int_s <- interviews[[effort_col]][interviews[[strata_col]] == s]
+    date_col <- design$date_col
 
-      if (length(int_s) == 0L || all(is.na(int_s))) {
+    cal_rows <- lapply(strata_vals, function(s) {
+      # Counts for stratum: one row per day
+      cnt_sub <- counts_data[counts_data[[strata_col]] == s, , drop = FALSE]
+      # Interviews for stratum: aggregate per-trip effort to daily totals
+      int_sub <- interviews[interviews[[strata_col]] == s, , drop = FALSE]
+
+      if (nrow(int_sub) == 0L || all(is.na(int_sub[[effort_col]]))) {
         cli::cli_abort(c(
           "No interview effort data for stratum {.val {s}}.",
           "x" = "Cannot compute calibration ratio."
         ))
       }
-      mean_cnt <- mean(cnt_s, na.rm = TRUE)
-      if (mean_cnt == 0) {
+
+      # Aggregate to daily effort totals (hours/day on interview days)
+      daily_effort <- tapply(
+        int_sub[[effort_col]], int_sub[[date_col]], sum, na.rm = TRUE
+      )
+      int_dates <- names(daily_effort)
+
+      # Camera counts on interview days only (paired calibration per Hartill 2020)
+      cnt_paired <- cnt_sub[[count_var]][cnt_sub[[date_col]] %in% int_dates]
+      int_dates_matched <- as.character(
+        cnt_sub[[date_col]][cnt_sub[[date_col]] %in% int_dates]
+      )
+      E_d <- as.numeric(daily_effort[int_dates_matched])
+      C_d <- cnt_paired
+
+      n_days <- length(E_d)
+      if (n_days == 0L || sum(C_d, na.rm = TRUE) == 0) {
         cli::cli_abort(c(
-          "Mean camera count is 0 in stratum {.val {s}}.",
+          "No matched interview/count days for stratum {.val {s}}.",
           "x" = "Cannot compute calibration ratio."
         ))
       }
 
-      rho <- mean(int_s, na.rm = TRUE) / mean_cnt
+      # Ratio of sums: rho = sum(E_d) / sum(C_d) (hours/count)
+      rho <- sum(E_d, na.rm = TRUE) / sum(C_d, na.rm = TRUE)
 
-      # Delta-method Var(rho): Var(rho) = (1/mean_c)^2 * [s^2_e/n_int + rho^2 * s^2_c/n_cam]
-      # Use 0 variance when n < 2 (conservative: treats single-observation component as fixed)
-      n_int_valid <- sum(!is.na(int_s))
-      n_cam_valid <- sum(!is.na(cnt_s))
-      var_e <- if (n_int_valid > 1L) stats::var(int_s, na.rm = TRUE) else 0
-      var_c <- if (n_cam_valid > 1L) stats::var(cnt_s, na.rm = TRUE) else 0
-      var_rho <- (1 / mean_cnt)^2 *
-        (var_e / max(n_int_valid, 1L) + rho^2 * var_c / max(n_cam_valid, 1L))
+      # Variance via ratio-estimator delta method on paired daily residuals
+      # var(rho) = sum((E_d - rho*C_d)^2) / (n*(n-1)*mean_C^2)
+      mean_C <- mean(C_d, na.rm = TRUE)
+      if (n_days > 1L) {
+        resid_d <- E_d - rho * C_d
+        var_rho <- sum(resid_d^2, na.rm = TRUE) /
+          (n_days * (n_days - 1L) * mean_C^2)
+      } else {
+        var_rho <- 0
+      }
 
       data.frame(
         stratum   = s,
         rho       = rho,
         var_rho   = var_rho,
-        n_cam     = n_cam_valid,
-        n_int     = n_int_valid,
+        n_cam     = nrow(cnt_sub),
+        n_int     = nrow(int_sub),
         stringsAsFactors = FALSE
       )
     })
