@@ -307,6 +307,16 @@ estimate_harvest_br <- function(
       interviews <- interviews[is_incomplete, , drop = FALSE]
     }
     # Incomplete path: pi_i-weighted MOR (h_ratio_i = harvest / effort)
+    # Guard against zero/NA effort (angler intercepted at trip start)
+    valid_effort <- !is.na(interviews[[effort_col]]) & interviews[[effort_col]] > 0
+    if (any(!valid_effort)) {
+      n_dropped <- sum(!valid_effort) # nolint: object_usage_linter
+      cli::cli_warn(
+        "Dropping {n_dropped} incomplete-trip interview{?s} with zero or missing effort \\
+        before computing harvest rate."
+      )
+      interviews <- interviews[valid_effort, , drop = FALSE]
+    }
     interviews$.h_ratio_i <- interviews[[harvest_col]] / interviews[[effort_col]]
     interviews$.contribution <- interviews$.h_ratio_i / interviews$.pi_i
 

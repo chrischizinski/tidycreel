@@ -10,6 +10,7 @@ estimate_total_catch(
   variance = "taylor",
   conf_level = 0.95,
   target = c("sampled_days", "stratum_total", "period_total"),
+  use_trips = c("complete", "all"),
   aggregate_sections = TRUE,
   missing_sections = "warn",
   verbose = FALSE,
@@ -37,6 +38,11 @@ and CPUE estimation, then combined via delta method.}
 \code{"stratum_total"}, or \code{"period_total"}. This controls which effort domain
 is multiplied by CPUE so total catch stays aligned with the requested
 temporal target.}
+
+\item{use_trips}{Character. Which interviews contribute to CPUE. \code{"complete"}
+(default) uses only completed trips; \code{"all"} includes incomplete trips.
+Incomplete trips have lower observed CPUE (angler may catch more after
+interview), so \code{"all"} introduces a downward bias.}
 
 \item{aggregate_sections}{Logical. When the design was created with
 \code{\link{add_sections}}, should a \code{.lake_total} row be appended

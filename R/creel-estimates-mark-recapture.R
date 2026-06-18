@@ -74,6 +74,12 @@ estimate_angler_n <- function(M, n, m, method = "chapman", conf_level = 0.95,
   method    <- match.arg(method, c("chapman", "petersen", "schnabel"))
   ci_method <- match.arg(ci_method)
 
+  # Coerce to numeric before validation to prevent integer overflow in products
+  # (M * n can exceed .Machine$integer.max for large reservoir surveys)
+  M <- as.numeric(M)
+  n <- as.numeric(n)
+  m <- as.numeric(m)
+
   # --- input validation ---
   if (any(n <= 0))
     cli::cli_abort("{.arg n} must be > 0.")
@@ -138,7 +144,8 @@ estimate_angler_n <- function(M, n, m, method = "chapman", conf_level = 0.95,
     )
     if (ci_method == "bootstrap") {
       m_b <- stats::rbinom(B, size = n, prob = m / n)
-      m_b[m_b == 0L] <- 1L
+      # No zero-guard needed: denominator is (m_b + 1), never zero even when m_b = 0.
+      # Zero-guard belongs only on the Petersen path where m_b is the bare denominator.
       N_hat_b    <- ((M + 1L) * (n + 1L)) / (m_b + 1L) - 1
       alpha      <- 1 - conf_level
       ci_lo_boot <- stats::quantile(N_hat_b, alpha / 2,       names = FALSE)

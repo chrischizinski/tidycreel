@@ -42,7 +42,7 @@ estimate_cpue_regression_total <- function(design, conf_level, force_origin) {
   beta_hat <- .ols_slope(catch, effort, force_origin)
   jk_se    <- .jackknife_slope_se(catch, effort, force_origin)
 
-  df  <- if (force_origin) n - 1L else n - 2L
+  df  <- n - 1L
   t_c <- qt((1 + conf_level) / 2, df = df)
 
   estimates_df <- tibble::tibble(
@@ -111,7 +111,7 @@ estimate_cpue_reg_grouped <- function(design, by_vars, conf_level,  # nolint: ob
 
     beta_hat <- .ols_slope(catch, effort, force_origin)
     jk_se    <- .jackknife_slope_se(catch, effort, force_origin)
-    df       <- if (force_origin) n_g - 1L else n_g - 2L
+    df       <- n_g - 1L
     t_c      <- qt((1 + conf_level) / 2, df = max(df, 1L))
 
     grp_vals <- sub[1L, by_vars, drop = FALSE]
@@ -167,8 +167,8 @@ estimate_cpue_reg_grouped <- function(design, by_vars, conf_level,  # nolint: ob
   theta_i  <- vapply(seq_len(n), function(i) {
     .ols_slope(catch[-i], effort[-i], force_origin)
   }, numeric(1L))
-  # Jackknife variance: (n-1)/n * sum((theta_i - theta_hat)^2)
-  jk_var <- (n - 1L) / n * sum((theta_i - beta_hat)^2)
+  # Jackknife variance: (n-1)/n * sum((theta_i - mean(theta_i))^2)
+  jk_var <- (n - 1L) / n * sum((theta_i - mean(theta_i))^2)
   sqrt(jk_var)
 }
 
@@ -278,7 +278,7 @@ compare_cpue_estimators <- function(design, by = NULL, conf_level = 0.95,
   }
 
   rom_df  <- .run("rom",        "ratio-of-means", "complete")
-  mor_df  <- .run("mor",        "mor",            "incomplete")
+  mor_df  <- .run("mor",        "mor",            "complete")
   reg_df  <- .run("regression", "regression",     "complete")
 
   rows <- Filter(Negate(is.null), list(rom_df, mor_df, reg_df))

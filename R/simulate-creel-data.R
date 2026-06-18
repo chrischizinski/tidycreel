@@ -323,9 +323,11 @@ simulate_creel_data <- function(
 
       if (ctotal == 0L) next
 
-      # Distribute total catch across species
+      # Distribute total catch across species, then draw kept within each
+      # species using rbinom so sp_kept[s] <= sp_counts[s] always
       sp_counts <- as.integer(stats::rmultinom(1L, ctotal, sp_wt))
-      sp_kept   <- as.integer(stats::rmultinom(1L, ckept,  sp_wt))
+      p_keep    <- if (ctotal > 0L) ckept / ctotal else 0
+      sp_kept   <- as.integer(stats::rbinom(length(species), sp_counts, p_keep))
 
       sp_rows <- vector("list", length(species))
       for (s in seq_along(species)) {
