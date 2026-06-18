@@ -277,11 +277,11 @@ monthly_catch <- lapply(seq_along(months), function(i) {
 
 do.call(rbind, monthly_catch)
 #>       month estimate       se  ci_lower ci_upper  n
-#> 1       May 135.4235 32.68955  71.35318 199.4939 27
-#> 2      June 209.1243 44.19099 122.51154 295.7370 39
-#> 3      July 143.0169 32.81832  78.69413 207.3396 30
-#> 4    August 236.6189 41.85109 154.59227 318.6455 39
-#> 5 September 217.9545 38.78860 141.93029 293.9788 39
+#> 1       May 135.4235 32.68955  68.09814 202.7489 27
+#> 2      June 209.1243 44.19099 119.58484 298.6637 39
+#> 3      July 143.0169 32.81832  75.79157 210.2421 30
+#> 4    August 236.6189 41.85109 151.82053 321.4173 39
+#> 5 September 217.9545 38.78860 139.36138 296.5477 39
 ```
 
 ## Season-Total Catch
@@ -381,7 +381,7 @@ catch_summary$table
 #> # A tibble: 1 × 25
 #>   May_estimate May_se May_ci_lower May_ci_upper May_n June_estimate June_se
 #>          <dbl>  <dbl>        <dbl>        <dbl> <int>         <dbl>   <dbl>
-#> 1         135.   32.7         71.4         199.    27          209.    44.2
+#> 1         135.   32.7         68.1         203.    27          209.    44.2
 #> # ℹ 18 more variables: June_ci_lower <dbl>, June_ci_upper <dbl>, June_n <int>,
 #> #   July_estimate <dbl>, July_se <dbl>, July_ci_lower <dbl>,
 #> #   July_ci_upper <dbl>, July_n <int>, August_estimate <dbl>, August_se <dbl>,

@@ -378,7 +378,7 @@ total_catch
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     858.  48.4     763.     953.    17
+#> 1     858.  48.4     755.     961.    17
 ```
 
 The total catch estimate (approximately 851) is consistent with the raw

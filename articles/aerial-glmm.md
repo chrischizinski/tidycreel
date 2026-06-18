@@ -127,7 +127,7 @@ print(glmm_result)
 #> # A tibble: 1 × 7
 #>   estimate    se se_between se_within ci_lower ci_upper     n
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1    4399.  381.       381.        NA    3653.    5146.    48
+#> 1     379.  33.0       33.0        NA     314.     443.    48
 ```
 
 The model fits the diurnal count curve over all 48 observations, then
@@ -227,7 +227,7 @@ print(total_catch)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     251.  45.3     162.     339.    48
+#> 1     251.  45.3     159.     342.    48
 ```
 
 ## Comparison: Simple vs. GLMM Estimator
@@ -267,9 +267,9 @@ comparison <- rbind(
 )
 
 print(comparison)
-#>   method  estimate        se  ci_lower  ci_upper
-#> 1   GLMM  4399.453  380.6978  3653.299  5145.607
-#> 2 Simple 20370.000 1891.0861 16156.398 24583.602
+#>   method   estimate         se   ci_lower   ci_upper
+#> 1   GLMM   378.5646   32.98228   313.9205   443.2087
+#> 2 Simple 20370.0000 1891.08611 16156.3976 24583.6024
 ```
 
 The GLMM estimate corrects for the fact that all flights occurred at
@@ -302,7 +302,7 @@ print(glmm_linear)
 #> # A tibble: 1 × 7
 #>   estimate    se se_between se_within ci_lower ci_upper     n
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1    4282.  374.       374.        NA    3548.    5015.    48
+#> 1     768.  108.       108.        NA     555.     980.    48
 ```
 
 A linear temporal term reduces flexibility but can improve stability

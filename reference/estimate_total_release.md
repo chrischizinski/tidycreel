@@ -134,12 +134,6 @@ design <- add_catch(design, example_catch,
 
 # Total releases (all species combined)
 total_rel <- estimate_total_release(design)
-#> ℹ Using all interviews for RPUE estimation
-#>   (n=22: 17 complete, 5 incomplete) [default]
-#>   Use `use_trips = 'complete'` to restrict to completed trips.
-#> Warning: Small sample size for CPUE estimation.
-#> ! Sample size is 22. Ratio estimates are more stable with n >= 30.
-#> ℹ Variance estimates may be unstable with n < 30.
 print(total_rel)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -151,7 +145,7 @@ print(total_rel)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     224.  36.5     153.     296.    22
+#> 1     232.  36.3     156.     308.    22
 
 # Total releases by species
 total_rel_sp <- estimate_total_release(design, by = species)
@@ -167,7 +161,7 @@ print(total_rel_sp)
 #> # A tibble: 3 × 6
 #>   species estimate    se ci_lower ci_upper     n
 #>   <chr>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1 bass        72.5  26.4    20.7     124.     22
-#> 2 panfish     32.6  18.5    -3.68     68.8    22
-#> 3 walleye    127.   31.4    65.6     189.     22
+#> 1 bass        72.5  26.4    17.3     128.     22
+#> 2 panfish     32.6  18.5    -6.01     71.2    22
+#> 3 walleye    127.   31.4    61.7     193.     22
 ```

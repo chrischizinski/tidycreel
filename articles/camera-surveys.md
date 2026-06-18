@@ -368,7 +368,7 @@ print(total_catch)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     283.  46.0     192.     373.    40
+#> 1     283.  46.0     189.     376.    40
 ```
 
 ## Summary

@@ -207,12 +207,6 @@ assumption: <code>sqrt(sum(se_i^2))</code>.</p>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Estimate total harvest</span></span></span>
 <span class="r-in"><span><span class="va">total_harvest</span> <span class="op">&lt;-</span> <span class="fu">estimate_total_harvest</span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Using all interviews for HPUE estimation</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>   (n=22: 17 complete, 5 incomplete) [default]</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>   Use `use_trips = 'complete'` to restrict to completed trips.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Small sample size for harvest estimation.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> Sample size is 22. Ratio estimates are more stable with n &gt;= 30.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">total_harvest</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span>
@@ -224,7 +218,7 @@ assumption: <code>sqrt(sum(se_i^2))</code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 5</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   estimate    se ci_lower ci_upper     n</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>     508.  41.8     426.     590.    22</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>     515.  39.2     433.     597.    22</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Compare components</span></span></span>
 <span class="r-in"><span><span class="va">effort_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span></span>

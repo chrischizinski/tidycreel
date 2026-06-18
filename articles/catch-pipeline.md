@@ -354,7 +354,7 @@ print(total)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     858.  48.4     763.     953.    17
+#> 1     858.  48.4     755.     961.    17
 ```
 
 The `estimate` column is $`\hat{E} \times \hat{R}`$. The `se` column is

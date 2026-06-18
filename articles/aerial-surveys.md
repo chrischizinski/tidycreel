@@ -285,7 +285,7 @@ print(total_catch)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     251.  45.3     162.     339.    48
+#> 1     251.  45.3     159.     342.    48
 ```
 
 The delta-method standard error on total catch accounts for variance in

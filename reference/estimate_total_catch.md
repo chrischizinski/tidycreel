@@ -14,6 +14,7 @@ estimate_total_catch(
   variance = "taylor",
   conf_level = 0.95,
   target = c("sampled_days", "stratum_total", "period_total"),
+  use_trips = c("complete", "all"),
   aggregate_sections = TRUE,
   missing_sections = "warn",
   verbose = FALSE,
@@ -55,6 +56,13 @@ estimate_total_catch(
   Options are `"sampled_days"` (default), `"stratum_total"`, or
   `"period_total"`. This controls which effort domain is multiplied by
   CPUE so total catch stays aligned with the requested temporal target.
+
+- use_trips:
+
+  Character. Which interviews contribute to CPUE. `"complete"` (default)
+  uses only completed trips; `"all"` includes incomplete trips.
+  Incomplete trips have lower observed CPUE (angler may catch more after
+  interview), so `"all"` introduces a downward bias.
 
 - aggregate_sections:
 
@@ -177,7 +185,7 @@ print(total_catch)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     858.  48.4     763.     953.    17
+#> 1     858.  48.4     755.     961.    17
 
 # Compare components
 effort_est <- estimate_effort(design)

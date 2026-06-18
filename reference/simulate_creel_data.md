@@ -225,11 +225,11 @@ head(sim$counts)
 head(sim$catch)
 #>   interview_id species count catch_type
 #> 1            1 walleye     3     caught
-#> 2            1 walleye     2  harvested
-#> 3            1 walleye     1   released
+#> 2            1 walleye     3  harvested
+#> 3            1 walleye     0   released
 #> 4            6 walleye     1     caught
-#> 5            6 walleye     0  harvested
-#> 6            6 walleye     1   released
+#> 5            6 walleye     1  harvested
+#> 6            6 walleye     0   released
 
 # Multi-stratum simulation with day_types (named numeric vector)
 set.seed(1)

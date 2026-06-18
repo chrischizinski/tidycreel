@@ -176,7 +176,7 @@ print(total_catch_est)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     858.  48.4     763.     953.    17
+#> 1     858.  48.4     755.     961.    17
 ```
 
 The total catch estimate multiplies the effort and CPUE estimates. The
@@ -220,12 +220,6 @@ print(hpue_est)
 
 # Estimate total harvest
 total_harvest_est <- estimate_total_harvest(design)
-#> ℹ Using all interviews for HPUE estimation
-#>   (n=22: 17 complete, 5 incomplete) [default]
-#>   Use `use_trips = 'complete'` to restrict to completed trips.
-#> Warning: Small sample size for harvest estimation.
-#> ! Sample size is 22. Ratio estimates are more stable with n >= 30.
-#> ℹ Variance estimates may be unstable with n < 30.
 print(total_harvest_est)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -237,7 +231,7 @@ print(total_harvest_est)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     508.  41.8     426.     590.    22
+#> 1     515.  39.2     433.     597.    22
 ```
 
 Harvest estimation uses the same ratio-of-means approach as CPUE, but
@@ -352,12 +346,6 @@ hpue <- estimate_harvest_rate(complete_design)
 #> ℹ Variance estimates may be unstable with n < 30.
 total_catch <- estimate_total_catch(complete_design)
 total_harvest <- estimate_total_harvest(complete_design)
-#> ℹ Using all interviews for HPUE estimation
-#>   (n=22: 17 complete, 5 incomplete) [default]
-#>   Use `use_trips = 'complete'` to restrict to completed trips.
-#> Warning: Small sample size for harvest estimation.
-#> ! Sample size is 22. Ratio estimates are more stable with n >= 30.
-#> ℹ Variance estimates may be unstable with n < 30.
 
 # Print key results
 print(effort)
@@ -383,7 +371,7 @@ print(total_catch)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     858.  48.4     763.     953.    17
+#> 1     858.  48.4     755.     961.    17
 print(total_harvest)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -395,7 +383,7 @@ print(total_harvest)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     508.  41.8     426.     590.    22
+#> 1     515.  39.2     433.     597.    22
 ```
 
 This demonstrates the complete v0.2.0 workflow from survey design

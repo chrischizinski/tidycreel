@@ -220,7 +220,7 @@ random intercept:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 7</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">4</span>399.  381.       381.        <span style="color: #BB0000;">NA</span>    <span style="text-decoration: underline;">3</span>653.    <span style="text-decoration: underline;">5</span>146.    48</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     379.  33.0       33.0        <span style="color: #BB0000;">NA</span>     314.     443.    48</span></span></code></pre></div>
 <p>The model fits the diurnal count curve over all 48 observations, then
 numerically integrates the predicted mean count across the full
 open-water window (from 0.5 hours before the earliest flight to 0.5
@@ -311,7 +311,7 @@ Attach interview data and call <code><a href="../reference/estimate_catch_rate.h
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     251.  45.3     162.     339.    48</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     251.  45.3     159.     342.    48</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="comparison-simple-vs--glmm-estimator">Comparison: Simple vs. GLMM Estimator<a class="anchor" aria-label="anchor" href="#comparison-simple-vs--glmm-estimator"></a>
@@ -349,9 +349,9 @@ integrating the fitted diurnal curve.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">comparison</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   method  estimate        se  ci_lower  ci_upper</span></span>
-<span><span class="co">#&gt; 1   GLMM  4399.453  380.6978  3653.299  5145.607</span></span>
-<span><span class="co">#&gt; 2 Simple 20370.000 1891.0861 16156.398 24583.602</span></span></code></pre></div>
+<span><span class="co">#&gt;   method   estimate         se   ci_lower   ci_upper</span></span>
+<span><span class="co">#&gt; 1   GLMM   378.5646   32.98228   313.9205   443.2087</span></span>
+<span><span class="co">#&gt; 2 Simple 20370.0000 1891.08611 16156.3976 24583.6024</span></span></code></pre></div>
 <p>The GLMM estimate corrects for the fact that all flights occurred at
 fixed hours (7, 10, 13, 16). The simple estimator treats each count as
 representative of the full open-water window, which inflates or deflates
@@ -382,7 +382,7 @@ data.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 7</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">4</span>282.  374.       374.        <span style="color: #BB0000;">NA</span>    <span style="text-decoration: underline;">3</span>548.    <span style="text-decoration: underline;">5</span>015.    48</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     768.  108.       108.        <span style="color: #BB0000;">NA</span>     555.     980.    48</span></span></code></pre></div>
 <p>A linear temporal term reduces flexibility but can improve stability
 when only a few survey days are available. Use the default quadratic
 formula when you have 8 or more survey days.</p>
