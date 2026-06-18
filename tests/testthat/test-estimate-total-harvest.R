@@ -318,43 +318,27 @@ test_that("estimate_total_harvest errors for invalid variance method", {
 
 # Reference tests ----
 
-test_that("total harvest estimate equals effort * hpue exactly", {
+test_that("total harvest estimate equals sum of per-stratum effort * hpue", {
   design <- make_total_harvest_design()
 
-  # Get total harvest estimate
-  result <- estimate_total_harvest(design) # nolint: object_usage_linter
+  result    <- estimate_total_harvest(design) # nolint: object_usage_linter
+  by_strata <- estimate_total_harvest(design, by = day_type) # nolint: object_usage_linter
 
-  # Get component estimates
-  effort <- estimate_effort(design) # nolint: object_usage_linter
-  hpue <- estimate_harvest_rate(design) # nolint: object_usage_linter
-
-  # Product should match exactly
-  expected <- effort$estimates$estimate * hpue$estimates$estimate
+  # Ungrouped total must equal sum of per-stratum products (stratified formula)
+  expected <- sum(by_strata$estimates$estimate)
 
   expect_equal(result$estimates$estimate, expected, tolerance = 1e-10)
 })
 
-test_that("total harvest SE matches manual delta method formula", {
+test_that("total harvest SE matches stratified delta method formula", {
   design <- make_total_harvest_design()
 
-  # Get total harvest estimate
-  result <- estimate_total_harvest(design) # nolint: object_usage_linter
+  result    <- estimate_total_harvest(design) # nolint: object_usage_linter
+  by_strata <- estimate_total_harvest(design, by = day_type) # nolint: object_usage_linter
 
-  # Get component estimates
-  effort <- estimate_effort(design) # nolint: object_usage_linter
-  hpue <- estimate_harvest_rate(design) # nolint: object_usage_linter
+  # Var(total) = sum(Var_h) for independent strata; SE = sqrt(sum(se_h^2))
+  manual_se <- sqrt(sum(by_strata$estimates$se^2))
 
-  # Extract components
-  effort_est <- effort$estimates$estimate # nolint: object_name_linter
-  hpue_est <- hpue$estimates$estimate # nolint: object_name_linter
-  var_effort <- effort$estimates$se^2 # nolint: object_name_linter
-  var_hpue <- hpue$estimates$se^2 # nolint: object_name_linter
-
-  # Manual delta method (first-order approximation)
-  manual_variance <- (effort_est^2 * var_hpue) + (hpue_est^2 * var_effort)
-  manual_se <- sqrt(manual_variance)
-
-  # Allow slightly looser tolerance for SE since svycontrast may include second-order term
   expect_equal(result$estimates$se, manual_se, tolerance = 1e-6)
 })
 
@@ -525,13 +509,11 @@ test_that("full workflow with example data produces valid total harvest", {
 test_that("total harvest components are consistent", {
   design <- make_total_harvest_design()
 
-  # Estimate all components
-  effort_est <- estimate_effort(design) # nolint: object_usage_linter
-  hpue_est <- estimate_harvest_rate(design) # nolint: object_usage_linter
   total_harvest_est <- estimate_total_harvest(design) # nolint: object_usage_linter
+  by_strata         <- estimate_total_harvest(design, by = day_type) # nolint: object_usage_linter
 
-  # Verify estimate consistency (product of components)
-  expected_estimate <- effort_est$estimates$estimate * hpue_est$estimates$estimate
+  # Ungrouped total = sum of per-stratum products (stratified consistency check)
+  expected_estimate <- sum(by_strata$estimates$estimate)
   expect_equal(total_harvest_est$estimates$estimate, expected_estimate, tolerance = 1e-10)
 
   # Verify variance was propagated (SE should not be zero)
