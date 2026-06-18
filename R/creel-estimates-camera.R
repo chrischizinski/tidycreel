@@ -90,24 +90,36 @@ estimate_effort_camera <- function(
       int_s <- interviews[[effort_col]][interviews[[strata_col]] == s]
 
       if (length(int_s) == 0L || all(is.na(int_s))) {
-        cli::cli_abort(
-          "No interview effort data for stratum {.val {s}}. ",
-          "Cannot compute calibration ratio."
-        )
+        cli::cli_abort(c(
+          "No interview effort data for stratum {.val {s}}.",
+          "x" = "Cannot compute calibration ratio."
+        ))
       }
-      if (mean(cnt_s, na.rm = TRUE) == 0) {
-        cli::cli_abort(
-          "Mean camera count is 0 in stratum {.val {s}}. ",
-          "Cannot compute calibration ratio."
-        )
+      mean_cnt <- mean(cnt_s, na.rm = TRUE)
+      if (mean_cnt == 0) {
+        cli::cli_abort(c(
+          "Mean camera count is 0 in stratum {.val {s}}.",
+          "x" = "Cannot compute calibration ratio."
+        ))
       }
 
-      rho <- mean(int_s, na.rm = TRUE) / mean(cnt_s, na.rm = TRUE)
+      rho <- mean(int_s, na.rm = TRUE) / mean_cnt
+
+      # Delta-method Var(rho): Var(rho) = (1/mean_c)^2 * [s^2_e/n_int + rho^2 * s^2_c/n_cam]
+      # Use 0 variance when n < 2 (conservative: treats single-observation component as fixed)
+      n_int_valid <- sum(!is.na(int_s))
+      n_cam_valid <- sum(!is.na(cnt_s))
+      var_e <- if (n_int_valid > 1L) stats::var(int_s, na.rm = TRUE) else 0
+      var_c <- if (n_cam_valid > 1L) stats::var(cnt_s, na.rm = TRUE) else 0
+      var_rho <- (1 / mean_cnt)^2 *
+        (var_e / max(n_int_valid, 1L) + rho^2 * var_c / max(n_cam_valid, 1L))
+
       data.frame(
-        stratum = s,
-        rho = rho,
-        n_cam = length(cnt_s),
-        n_int = length(int_s),
+        stratum   = s,
+        rho       = rho,
+        var_rho   = var_rho,
+        n_cam     = n_cam_valid,
+        n_int     = n_int_valid,
         stringsAsFactors = FALSE
       )
     })
@@ -127,11 +139,17 @@ estimate_effort_camera <- function(
       )
     )
 
-    strata_order <- as.character(svy_raw[[strata_col]])
-    rho_matched <- cal$rho[match(strata_order, as.character(cal$stratum))]
+    strata_order   <- as.character(svy_raw[[strata_col]])
+    rho_matched    <- cal$rho[match(strata_order, as.character(cal$stratum))]
+    var_rho_matched <- cal$var_rho[match(strata_order, as.character(cal$stratum))]
+    total_counts_h  <- as.numeric(coef(svy_raw))
 
-    estimate <- sum(coef(svy_raw) * rho_matched)
-    se_between <- sqrt(sum((survey::SE(svy_raw) * rho_matched)^2))
+    estimate <- sum(total_counts_h * rho_matched)
+    # SE via delta method: Var(E_h) = rho_h^2 * Var(total_count_h) + total_count_h^2 * Var(rho_h)
+    se_between <- sqrt(
+      sum((survey::SE(svy_raw) * rho_matched)^2) +
+      sum(total_counts_h^2 * var_rho_matched)
+    )
     method_label <- "camera_ratio"
   } else {
     # ---- Raw count expansion fallback ----------------------------------------

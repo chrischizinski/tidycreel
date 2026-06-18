@@ -307,8 +307,19 @@ estimate_total_harvest_grouped <- function(design, by_vars, variance_method, con
     hpue_df,
     by = by_vars,
     suffixes = c("_effort", "_hpue"),
-    sort = FALSE
+    sort = FALSE,
+    all.x = TRUE
   )
+
+  missing_hpue <- is.na(merged$estimate_hpue)
+  if (any(missing_hpue)) {
+    n_missing <- sum(missing_hpue) # nolint: object_usage_linter
+    cli::cli_warn(c(
+      "{n_missing} group{?s} had effort data but no matching HPUE estimate.",
+      "!" = "Total harvest will be {.val NA} for {?those/that} group{?s}.",
+      "i" = "Ensure interview coverage spans all {.val {by_vars}} combinations."
+    ))
+  }
 
   # Apply delta method for each group
   n_groups <- nrow(merged)

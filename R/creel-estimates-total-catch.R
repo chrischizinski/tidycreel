@@ -112,6 +112,7 @@ estimate_total_catch <- function(
   variance = "taylor",
   conf_level = 0.95,
   target = c("sampled_days", "stratum_total", "period_total"),
+  use_trips = c("complete", "all"),
   aggregate_sections = TRUE,
   missing_sections = "warn",
   verbose = FALSE,
@@ -120,6 +121,7 @@ estimate_total_catch <- function(
   # Capture by parameter BEFORE validation
   by_quo <- rlang::enquo(by)
   target <- match.arg(target)
+  use_trips <- match.arg(use_trips)
   ci_method <- match.arg(ci_method)
 
   # Validate variance parameter
@@ -209,7 +211,7 @@ estimate_total_catch <- function(
   # Standard (non-species) routing
   if (rlang::quo_is_null(by_quo)) {
     # Ungrouped estimation
-    return(estimate_total_catch_ungrouped(design, variance, conf_level, target = target)) # nolint: object_usage_linter
+    return(estimate_total_catch_ungrouped(design, variance, conf_level, target = target, use_trips = use_trips)) # nolint: object_usage_linter
   } else {
     # Grouped estimation
     # Resolve by parameter to column names
@@ -225,7 +227,7 @@ estimate_total_catch <- function(
     # Validate grouping compatibility
     validate_grouping_compatibility(design, by_vars) # nolint: object_usage_linter
 
-    return(estimate_total_catch_grouped(design, by_vars, variance, conf_level, target = target)) # nolint: object_usage_linter
+    return(estimate_total_catch_grouped(design, by_vars, variance, conf_level, target = target, use_trips = use_trips)) # nolint: object_usage_linter
   }
 }
 
@@ -245,15 +247,19 @@ estimate_total_catch <- function(
 #'
 #' @keywords internal
 #' @noRd
-cpue_for_stratum_product <- function(design, by_vars, variance_method, conf_level) {
-  # Mirror the complete-trip filtering that estimate_catch_rate() applies by default
+cpue_for_stratum_product <- function(design, by_vars, variance_method, conf_level,
+                                     use_trips = "complete") {
+  use_trips <- match.arg(use_trips, c("complete", "all"))
+
+  # Apply trip filter before computing CPUE so that total-catch and
+  # total-harvest/release can use the same use_trips value for consistency.
   trip_status_col <- design$trip_status_col
-  if (!is.null(trip_status_col)) {
-    complete_interviews <- design$interviews[
-      design$interviews[[trip_status_col]] == "complete", ,
+  if (!is.null(trip_status_col) && use_trips != "all") {
+    filtered_interviews <- design$interviews[
+      tolower(design$interviews[[trip_status_col]]) == use_trips, ,
       drop = FALSE
     ]
-    design <- rebuild_interview_survey(design, complete_interviews) # nolint: object_usage_linter
+    design <- rebuild_interview_survey(design, filtered_interviews) # nolint: object_usage_linter
   }
 
   if (length(by_vars) == 0L) {
@@ -272,7 +278,9 @@ cpue_for_stratum_product <- function(design, by_vars, variance_method, conf_leve
 #'
 #' @keywords internal
 #' @noRd
-estimate_total_catch_ungrouped <- function(design, variance_method, conf_level, target = "sampled_days") {
+estimate_total_catch_ungrouped <- function(design, variance_method, conf_level,
+                                           target = "sampled_days",
+                                           use_trips = "complete") {
   strata_cols <- design$strata_cols %||% character(0)
 
   # Per-stratum effort
@@ -283,11 +291,8 @@ estimate_total_catch_ungrouped <- function(design, variance_method, conf_level, 
   }
   effort_df <- effort_result$estimates
 
-  # Per-stratum CPUE (catch rate), grouped by strata_cols.
-  # Use the public estimate_catch_rate() API so trip filtering (complete-only)
-  # and survey rebuilding are applied consistently with the grouped path.
   cpue_result <- cpue_for_stratum_product( # nolint: object_usage_linter
-    design, strata_cols, variance_method, conf_level
+    design, strata_cols, variance_method, conf_level, use_trips = use_trips
   )
   cpue_df <- cpue_result$estimates
 
@@ -323,7 +328,9 @@ estimate_total_catch_ungrouped <- function(design, variance_method, conf_level, 
 #'
 #' @keywords internal
 #' @noRd
-estimate_total_catch_grouped <- function(design, by_vars, variance_method, conf_level, target = "sampled_days") {
+estimate_total_catch_grouped <- function(design, by_vars, variance_method, conf_level,
+                                         target = "sampled_days",
+                                         use_trips = "complete") {
   strata_cols <- design$strata_cols %||% character(0)
   # Union of calendar strata and user grouping: ensures per-stratum products
   stratum_by_vars <- unique(c(strata_cols, by_vars))
@@ -332,11 +339,8 @@ estimate_total_catch_grouped <- function(design, by_vars, variance_method, conf_
   effort_result <- estimate_effort_grouped(design, stratum_by_vars, variance_method, conf_level, target = target) # nolint: object_usage_linter
   effort_df <- effort_result$estimates
 
-  # Per-stratum CPUE grouped by same union.
-  # Use the public estimate_catch_rate() API so trip filtering (complete-only)
-  # and survey rebuilding are applied consistently.
   cpue_result <- cpue_for_stratum_product( # nolint: object_usage_linter
-    design, stratum_by_vars, variance_method, conf_level
+    design, stratum_by_vars, variance_method, conf_level, use_trips = use_trips
   )
   cpue_df <- cpue_result$estimates
 

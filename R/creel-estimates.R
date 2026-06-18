@@ -2260,7 +2260,8 @@ estimate_release_build_data <- function(design, species = NULL) {
 #'
 #' @keywords internal
 #' @noRd
-compute_within_day_var_contribution <- function(design, by_vars = NULL) { # nolint: object_length_linter
+compute_within_day_var_contribution <- function(design, by_vars = NULL, # nolint: object_length_linter
+                                               target = "stratum_total") {
   wdv <- design$within_day_var
   if (is.null(wdv)) {
     return(0)
@@ -2321,7 +2322,12 @@ compute_within_day_var_contribution <- function(design, by_vars = NULL) { # noli
       k_bar <- mean(k_d)
       if (k_bar <= 1) next # no within-day component when k_bar = 1
       s2_within <- sum(ss_d) / (n_sampled * (k_bar - 1))
-      v_within <- (n_avail / k_bar) * s2_within
+      # For sampled_days target the between-day variance is on the sampled-day
+      # scale (no expansion weights), so the within-day component must match:
+      # use n_sampled not N_avail. For expanded targets (stratum/period total)
+      # the Rasmussen N_s formula applies.
+      scale_n <- if (identical(target, "sampled_days")) n_sampled else n_avail
+      v_within <- (scale_n / k_bar) * s2_within
       v_within_total <- v_within_total + v_within
     }
     v_within_total
@@ -2350,7 +2356,8 @@ compute_within_day_var_contribution <- function(design, by_vars = NULL) { # noli
         k_bar <- mean(k_d)
         if (k_bar <= 1) next
         s2_within <- sum(ss_d) / (n_sampled * (k_bar - 1))
-        v_within <- (n_avail / k_bar) * s2_within
+        scale_n <- if (identical(target, "sampled_days")) n_sampled else n_avail
+        v_within <- (scale_n / k_bar) * s2_within
         v_g <- v_g + v_within
       }
       v_within_by_group[gk] <- v_g
@@ -2654,7 +2661,7 @@ estimate_effort_total <- function(design, variance_method, conf_level, target = 
   }
 
   # Within-day variance contribution (Rasmussen 1998; 0 when K_bar = 1)
-  var_within <- compute_within_day_var_contribution(design, by_vars = NULL) # nolint: object_usage_linter
+  var_within <- compute_within_day_var_contribution(design, by_vars = NULL, target = target) # nolint: object_usage_linter
   se_within <- sqrt(var_within)
 
   # Combined SE and CI (recomputed from total variance)
@@ -2748,7 +2755,7 @@ estimate_effort_grouped <- function(design, by_vars, variance_method, conf_level
   var_between_vec <- se_between_vec^2
 
   # Within-day variance per group (Rasmussen 1998; named vector keyed by group)
-  var_within_named <- compute_within_day_var_contribution(design, by_vars = by_vars) # nolint: object_usage_linter
+  var_within_named <- compute_within_day_var_contribution(design, by_vars = by_vars, target = target) # nolint: object_usage_linter
 
   # Build group keys for the svyby result rows to match var_within_named names
   if (length(by_vars) == 1) {

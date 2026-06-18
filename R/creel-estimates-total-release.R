@@ -219,7 +219,23 @@ estimate_total_release_grouped <- function(design, by_vars, variance_method, con
   effort_df <- effort_result$estimates
   release_df <- release_result$estimates
 
-  merged <- merge(effort_df, release_df, by = by_vars, suffixes = c("_effort", "_rpue"), sort = FALSE)
+  merged <- merge(
+    effort_df, release_df,
+    by = by_vars,
+    suffixes = c("_effort", "_rpue"),
+    sort = FALSE,
+    all.x = TRUE
+  )
+
+  missing_rpue <- is.na(merged$estimate_rpue)
+  if (any(missing_rpue)) {
+    n_missing <- sum(missing_rpue) # nolint: object_usage_linter
+    cli::cli_warn(c(
+      "{n_missing} group{?s} had effort data but no matching RPUE estimate.",
+      "!" = "Total release will be {.val NA} for {?those/that} group{?s}.",
+      "i" = "Ensure interview coverage spans all {.val {by_vars}} combinations."
+    ))
+  }
 
   n_groups <- nrow(merged)
   estimates_list <- vector("list", n_groups)
