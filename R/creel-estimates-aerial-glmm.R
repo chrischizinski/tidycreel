@@ -146,12 +146,15 @@ estimate_effort_aerial_glmm <- function(
     model <- lme4::glmer(glmm_formula, data = counts_data, family = family)
   }
 
-  # 7. Build prediction grid for numerical integration over the fishing day
-  h_over_v <- design$aerial$h_open / (design$aerial$visibility_correction %||% 1.0)
-
+  # 7. Build prediction grid for numerical integration over the fishing day.
+  # Integrate over exactly h_open hours anchored at the earliest observed flight.
+  # Using only the observed flight range would truncate the integral and understate
+  # effort for unsampled morning/evening hours — the whole point of the GLMM.
+  h_open <- design$aerial$h_open
+  v      <- design$aerial$visibility_correction %||% 1.0
   open_start <- min(counts_data[[time_col_name]]) - 0.5
-  open_end <- max(counts_data[[time_col_name]]) + 0.5
-  hour_grid <- seq(open_start, open_end, length.out = 100)
+  open_end   <- open_start + h_open               # always spans the full fishing day
+  hour_grid  <- seq(open_start, open_end, length.out = 100)
 
   new_data <- stats::setNames(
     data.frame(hour_grid, NA_character_, stringsAsFactors = FALSE),
@@ -162,13 +165,16 @@ estimate_effort_aerial_glmm <- function(
   x_mat <- stats::model.matrix(terms_obj, data = new_data) # nolint: object_name_linter
   beta <- lme4::fixef(model)
   mu <- as.numeric(exp(x_mat %*% beta))
-  scale_factor <- (open_end - open_start) / 100
-  total_effort <- sum(mu) * scale_factor * h_over_v
+  scale_factor <- h_open / (length(hour_grid) - 1L)  # interval width: 100 pts = 99 gaps
+  # sum(mu) * scale_factor integrates the fitted count-vs-time curve over h_open
+  # hours, yielding angler-hours directly. Only the visibility correction (1/v)
+  # is applied — multiplying by h_open again would double-count the time dimension.
+  total_effort <- sum(mu) * scale_factor / v
 
   # 8. Variance: delta method (default) or bootstrap
   if (!boot) {
     v_mat <- as.matrix(stats::vcov(model)) # nolint: object_name_linter
-    grad <- scale_factor * h_over_v * colSums(mu * x_mat)
+    grad <- scale_factor / v * colSums(mu * x_mat)
     var_total <- as.numeric(t(grad) %*% v_mat %*% grad)
     se <- sqrt(var_total)
     se_between <- se
@@ -181,9 +187,17 @@ estimate_effort_aerial_glmm <- function(
     # 9. Bootstrap path
     cli::cli_inform("Running {nboot} bootstrap replicates via lme4::bootMer...")
 
+    if (length(design$strata_cols) > 0L) {
+      cli::cli_warn(c(
+        "!" = "Bootstrap SE ignores design strata ({.val {design$strata_cols}}).",
+        "i" = "The default GLMM formula has no stratum term; bootstrap resamples from \\
+        a single pooled model. Include strata in {.arg formula} for stratified inference."
+      ))
+    }
+
     boot_fn <- function(m) {
       mu_b <- as.numeric(exp(x_mat %*% lme4::fixef(m)))
-      sum(mu_b) * scale_factor * h_over_v
+      sum(mu_b) * scale_factor / v
     }
 
     b <- lme4::bootMer(model, FUN = boot_fn, nsim = nboot, type = "parametric", use.u = FALSE)

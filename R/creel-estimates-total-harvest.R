@@ -226,140 +226,88 @@ estimate_total_harvest <- function(
   }
 }
 
-#' Ungrouped total harvest estimation (delta method product)
+#' Ungrouped total harvest estimation (stratified-sum product estimator)
+#'
+#' Uses compute_stratum_product_sum() with per-stratum effort and HPUE so that
+#' total harvest equals sum(E_h * HPUE_h) across calendar strata h, not the
+#' biased pooled-stratum product E_total * HPUE_pooled.
 #'
 #' @keywords internal
 #' @noRd
 estimate_total_harvest_ungrouped <- function(design, variance_method, conf_level, target = "sampled_days") { # nolint: object_length_linter
-  # Call estimate_effort() and estimate_harvest_rate() with specified variance method
-  effort_result <- estimate_effort(design, variance = variance_method, conf_level = conf_level, target = target) # nolint: object_usage_linter
-  hpue_result <- estimate_harvest_rate(design, variance = variance_method, conf_level = conf_level) # nolint: object_usage_linter
+  strata_cols <- design$strata_cols %||% character(0)
 
-  # Extract estimates
-  effort_est <- effort_result$estimates$estimate
-  hpue_est <- hpue_result$estimates$estimate
-  effort_se <- effort_result$estimates$se
-  hpue_se <- hpue_result$estimates$se
+  # Per-stratum effort
+  if (length(strata_cols) == 0L) {
+    effort_result <- estimate_effort_total(design, variance_method, conf_level, target = target) # nolint: object_usage_linter
+  } else {
+    effort_result <- estimate_effort_grouped(design, strata_cols, variance_method, conf_level, target = target) # nolint: object_usage_linter
+  }
+  effort_df <- effort_result$estimates
 
-  # Compute product estimate
-  estimate <- effort_est * hpue_est
+  # Per-stratum HPUE
+  if (length(strata_cols) == 0L) {
+    hpue_result <- estimate_harvest_total(design, variance_method, conf_level) # nolint: object_usage_linter
+  } else {
+    hpue_result <- estimate_harvest_grouped(design, strata_cols, variance_method, conf_level) # nolint: object_usage_linter
+  }
+  hpue_df <- hpue_result$estimates
 
-  # Compute variance using delta method for product of independent estimates
-  # Var(X * Y) = X^2 * Var(Y) + Y^2 * Var(X) # nolint: commented_code_linter
-  # where X = effort, Y = hpue
-  effort_var <- effort_se^2
-  hpue_var <- hpue_se^2
-  product_var <- (effort_est^2 * hpue_var) + (hpue_est^2 * effort_var)
-  se <- sqrt(product_var)
-
-  # Compute confidence interval using normal approximation
-  z_value <- stats::qnorm(1 - (1 - conf_level) / 2)
-  ci_lower <- estimate - (z_value * se)
-  ci_upper <- estimate + (z_value * se)
-
-  # Sample size: use HPUE sample size (interview count)
-  n <- hpue_result$estimates$n
-
-  # Build estimates tibble
-  estimates_df <- tibble::tibble(
-    estimate = estimate,
-    se = se,
-    ci_lower = ci_lower,
-    ci_upper = ci_upper,
-    n = n
+  # Stratified-sum product estimator: sum(E_h * HPUE_h) across strata h
+  estimates_df <- compute_stratum_product_sum( # nolint: object_usage_linter
+    effort_df         = effort_df,
+    rate_df           = hpue_df,
+    stratum_by_vars   = strata_cols,
+    interview_by_vars = NULL,
+    conf_level        = conf_level,
+    rate_suffix       = "hpue"
   )
 
-  # Return creel_estimates object
   new_creel_estimates( # nolint: object_usage_linter
-    estimates = estimates_df,
-    method = "product-total-harvest",
+    estimates       = tibble::as_tibble(estimates_df),
+    method          = "product-total-harvest",
     variance_method = variance_method,
-    design = design,
-    conf_level = conf_level,
-    by_vars = NULL,
-    effort_target = target
+    design          = design,
+    conf_level      = conf_level,
+    by_vars         = NULL,
+    effort_target   = target
   )
 }
 
-#' Grouped total harvest estimation using delta method
+#' Grouped total harvest estimation (stratified-sum product estimator)
+#'
+#' Fixes combined-ratio bug: groups by union(strata_cols, by_vars) so per-stratum
+#' products E_h * HPUE_h are computed first, then summed within each by_vars group.
 #'
 #' @keywords internal
 #' @noRd
 estimate_total_harvest_grouped <- function(design, by_vars, variance_method, conf_level, target = "sampled_days") {
-  # Convert by_vars to symbols for NSE
-  if (length(by_vars) == 1) {
-    by_sym <- rlang::sym(by_vars)
-  } else {
-    by_sym <- rlang::syms(by_vars)
-  }
+  strata_cols <- design$strata_cols %||% character(0)
+  stratum_by_vars <- unique(c(strata_cols, by_vars))
 
-  # Call grouped estimation for both effort and HPUE
-  effort_result <- estimate_effort(design, by = !!by_sym, variance = variance_method, conf_level = conf_level, target = target) # nolint: object_usage_linter
-  hpue_result <- estimate_harvest_rate(design, by = !!by_sym, variance = variance_method, conf_level = conf_level) # nolint: object_usage_linter
-
-  # Extract estimates data frames (include group columns)
+  effort_result <- estimate_effort_grouped(design, stratum_by_vars, variance_method, conf_level, target = target) # nolint: object_usage_linter
   effort_df <- effort_result$estimates
+
+  hpue_result <- estimate_harvest_grouped(design, stratum_by_vars, variance_method, conf_level) # nolint: object_usage_linter
   hpue_df <- hpue_result$estimates
 
-  # Merge on grouping variables to align rows
-  merged <- merge(
-    effort_df,
-    hpue_df,
-    by = by_vars,
-    suffixes = c("_effort", "_hpue"),
-    sort = FALSE
+  estimates_df <- compute_stratum_product_sum( # nolint: object_usage_linter
+    effort_df         = effort_df,
+    rate_df           = hpue_df,
+    stratum_by_vars   = stratum_by_vars,
+    interview_by_vars = if (length(by_vars) > 0L) by_vars else NULL,
+    conf_level        = conf_level,
+    rate_suffix       = "hpue"
   )
 
-  # Apply delta method for each group
-  n_groups <- nrow(merged)
-  estimates_list <- vector("list", n_groups)
-
-  for (i in seq_len(n_groups)) {
-    effort_est <- merged$estimate_effort[i]
-    hpue_est <- merged$estimate_hpue[i]
-    effort_se <- merged$se_effort[i]
-    hpue_se <- merged$se_hpue[i]
-
-    # Compute product estimate for this group
-    estimate <- effort_est * hpue_est
-
-    # Compute variance using delta method
-    effort_var <- effort_se^2
-    hpue_var <- hpue_se^2
-    product_var <- (effort_est^2 * hpue_var) + (hpue_est^2 * effort_var)
-    se <- sqrt(product_var)
-
-    # Compute confidence interval
-    z_value <- stats::qnorm(1 - (1 - conf_level) / 2)
-    ci_lower <- estimate - (z_value * se)
-    ci_upper <- estimate + (z_value * se)
-
-    estimates_list[[i]] <- list(
-      estimate = estimate,
-      se = se,
-      ci_lower = ci_lower,
-      ci_upper = ci_upper,
-      n = merged$n_hpue[i] # Use interview sample size
-    )
-  }
-
-  # Build result tibble
-  estimates_df <- tibble::as_tibble(merged[by_vars])
-  estimates_df$estimate <- vapply(estimates_list, `[[`, numeric(1L), "estimate")
-  estimates_df$se <- vapply(estimates_list, `[[`, numeric(1L), "se")
-  estimates_df$ci_lower <- vapply(estimates_list, `[[`, numeric(1L), "ci_lower")
-  estimates_df$ci_upper <- vapply(estimates_list, `[[`, numeric(1L), "ci_upper")
-  estimates_df$n <- vapply(estimates_list, `[[`, numeric(1L), "n")
-
-  # Return creel_estimates object
   new_creel_estimates( # nolint: object_usage_linter
-    estimates = estimates_df,
-    method = "product-total-harvest",
+    estimates       = tibble::as_tibble(estimates_df),
+    method          = "product-total-harvest",
     variance_method = variance_method,
-    design = design,
-    conf_level = conf_level,
-    by_vars = by_vars,
-    effort_target = target
+    design          = design,
+    conf_level      = conf_level,
+    by_vars         = by_vars,
+    effort_target   = target
   )
 }
 
@@ -517,14 +465,15 @@ estimate_total_harvest_sections <- function(design, by_quo, variance_method, # n
         sec_estimate <- effort_est * hpue_est
         sec_var <- (effort_est^2 * hpue_se^2) + (hpue_est^2 * effort_se^2)
         sec_se <- sqrt(sec_var)
-        z_val <- stats::qnorm(1 - (1 - conf_level) / 2)
+        sec_n  <- hpue_res$estimates$n
+        z_val <- stats::qt(1 - (1 - conf_level) / 2, df = max(1L, sec_n - 1L))
         section_rows[[sec]] <- tibble::tibble(
           section = sec,
           estimate = sec_estimate,
           se = sec_se,
           ci_lower = sec_estimate - z_val * sec_se,
           ci_upper = sec_estimate + z_val * sec_se,
-          n = hpue_res$estimates$n,
+          n = sec_n,
           prop_of_lake_total = NA_real_,
           data_available = TRUE
         )

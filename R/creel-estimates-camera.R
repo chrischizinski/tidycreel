@@ -85,29 +85,63 @@ estimate_effort_camera <- function(
     strata_col <- design$strata_cols[1L]
     strata_vals <- unique(counts_data[[strata_col]])
 
+    date_col <- design$date_col
+
     cal_rows <- lapply(strata_vals, function(s) {
-      cnt_s <- counts_data[[count_var]][counts_data[[strata_col]] == s]
-      int_s <- interviews[[effort_col]][interviews[[strata_col]] == s]
+      # Counts for stratum: one row per day
+      cnt_sub <- counts_data[counts_data[[strata_col]] == s, , drop = FALSE]
+      # Interviews for stratum: aggregate per-trip effort to daily totals
+      int_sub <- interviews[interviews[[strata_col]] == s, , drop = FALSE]
 
-      if (length(int_s) == 0L || all(is.na(int_s))) {
-        cli::cli_abort(
-          "No interview effort data for stratum {.val {s}}. ",
-          "Cannot compute calibration ratio."
-        )
-      }
-      if (mean(cnt_s, na.rm = TRUE) == 0) {
-        cli::cli_abort(
-          "Mean camera count is 0 in stratum {.val {s}}. ",
-          "Cannot compute calibration ratio."
-        )
+      if (nrow(int_sub) == 0L || all(is.na(int_sub[[effort_col]]))) {
+        cli::cli_abort(c(
+          "No interview effort data for stratum {.val {s}}.",
+          "x" = "Cannot compute calibration ratio."
+        ))
       }
 
-      rho <- mean(int_s, na.rm = TRUE) / mean(cnt_s, na.rm = TRUE)
+      # Aggregate to daily effort totals (hours/day on interview days)
+      daily_effort <- tapply(
+        int_sub[[effort_col]], int_sub[[date_col]], sum, na.rm = TRUE
+      )
+      int_dates <- names(daily_effort)
+
+      # Camera counts on interview days only (paired calibration per Hartill 2020)
+      cnt_paired <- cnt_sub[[count_var]][cnt_sub[[date_col]] %in% int_dates]
+      int_dates_matched <- as.character(
+        cnt_sub[[date_col]][cnt_sub[[date_col]] %in% int_dates]
+      )
+      E_d <- as.numeric(daily_effort[int_dates_matched])
+      C_d <- cnt_paired
+
+      n_days <- length(E_d)
+      if (n_days == 0L || sum(C_d, na.rm = TRUE) == 0) {
+        cli::cli_abort(c(
+          "No matched interview/count days for stratum {.val {s}}.",
+          "x" = "Cannot compute calibration ratio."
+        ))
+      }
+
+      # Ratio of sums: rho = sum(E_d) / sum(C_d) (hours/count)
+      rho <- sum(E_d, na.rm = TRUE) / sum(C_d, na.rm = TRUE)
+
+      # Variance via ratio-estimator delta method on paired daily residuals
+      # var(rho) = sum((E_d - rho*C_d)^2) / (n*(n-1)*mean_C^2)
+      mean_C <- mean(C_d, na.rm = TRUE)
+      if (n_days > 1L) {
+        resid_d <- E_d - rho * C_d
+        var_rho <- sum(resid_d^2, na.rm = TRUE) /
+          (n_days * (n_days - 1L) * mean_C^2)
+      } else {
+        var_rho <- 0
+      }
+
       data.frame(
-        stratum = s,
-        rho = rho,
-        n_cam = length(cnt_s),
-        n_int = length(int_s),
+        stratum   = s,
+        rho       = rho,
+        var_rho   = var_rho,
+        n_cam     = nrow(cnt_sub),
+        n_int     = nrow(int_sub),
         stringsAsFactors = FALSE
       )
     })
@@ -127,11 +161,17 @@ estimate_effort_camera <- function(
       )
     )
 
-    strata_order <- as.character(svy_raw[[strata_col]])
-    rho_matched <- cal$rho[match(strata_order, as.character(cal$stratum))]
+    strata_order   <- as.character(svy_raw[[strata_col]])
+    rho_matched    <- cal$rho[match(strata_order, as.character(cal$stratum))]
+    var_rho_matched <- cal$var_rho[match(strata_order, as.character(cal$stratum))]
+    total_counts_h  <- as.numeric(coef(svy_raw))
 
-    estimate <- sum(coef(svy_raw) * rho_matched)
-    se_between <- sqrt(sum((survey::SE(svy_raw) * rho_matched)^2))
+    estimate <- sum(total_counts_h * rho_matched)
+    # SE via delta method: Var(E_h) = rho_h^2 * Var(total_count_h) + total_count_h^2 * Var(rho_h)
+    se_between <- sqrt(
+      sum((survey::SE(svy_raw) * rho_matched)^2) +
+      sum(total_counts_h^2 * var_rho_matched)
+    )
     method_label <- "camera_ratio"
   } else {
     # ---- Raw count expansion fallback ----------------------------------------

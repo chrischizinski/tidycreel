@@ -54,7 +54,7 @@ estimate_effort_aerial <- function(design, variance_method, conf_level, verbose,
   se_between <- as.numeric(survey::SE(svy_result)) * h_over_v
 
   # Within-day Rasmussen component (same as estimate_effort_total)
-  var_within <- compute_within_day_var_contribution(design, by_vars = NULL) * h_over_v^2 # nolint: object_usage_linter
+  var_within <- compute_within_day_var_contribution(design, by_vars = NULL, target = "sampled_days") * h_over_v^2 # nolint: object_usage_linter
   se_within <- sqrt(var_within)
 
   # Combined SE

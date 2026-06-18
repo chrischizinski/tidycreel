@@ -170,31 +170,61 @@ estimate_total_release <- function(
 
 #' @keywords internal
 #' @noRd
+rpue_for_stratum_product <- function(design, by_vars, variance_method, conf_level) {
+  strata_cols <- design$strata_cols
+  strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0L) {
+    stats::reformulate(strata_cols)
+  } else {
+    NULL
+  }
+
+  release_data <- estimate_release_build_data(design, species = NULL)
+  release_data$.release_effort <- release_data[[design$angler_effort_col]]
+
+  design_rel <- design
+  design_rel$interviews <- release_data
+  design_rel$catch_col <- ".release_count"
+  design_rel$angler_effort_col <- ".release_effort"
+  design_rel$interview_survey <- build_interview_survey(
+    release_data,
+    strata = strata_formula
+  )
+
+  if (length(by_vars) == 0L) {
+    result <- estimate_cpue_total(design_rel, variance_method, conf_level)
+  } else {
+    result <- estimate_cpue_grouped(design_rel, by_vars, variance_method, conf_level)
+  }
+  result$method <- "ratio-of-means-rpue"
+  result
+}
+
+#' @keywords internal
+#' @noRd
 estimate_total_release_ungrouped <- function(design, variance_method, conf_level, target = "sampled_days") { # nolint: object_length_linter
-  effort_result <- estimate_effort(design, variance = variance_method, conf_level = conf_level, target = target) # nolint: object_usage_linter
-  release_result <- estimate_release_rate(design, variance = variance_method, conf_level = conf_level) # nolint: object_usage_linter
+  strata_cols <- design$strata_cols %||% character(0)
 
-  effort_est <- effort_result$estimates$estimate
-  rpue_est <- release_result$estimates$estimate
-  effort_se <- effort_result$estimates$se
-  rpue_se <- release_result$estimates$se
+  if (length(strata_cols) == 0L) {
+    effort_result <- estimate_effort_total(design, variance_method, conf_level, target = target)
+  } else {
+    effort_result <- estimate_effort_grouped(design, strata_cols, variance_method, conf_level, target = target)
+  }
+  effort_df <- effort_result$estimates
 
-  estimate <- effort_est * rpue_est
-  effort_var <- effort_se^2
-  rpue_var <- rpue_se^2
-  product_var <- (effort_est^2 * rpue_var) + (rpue_est^2 * effort_var)
-  se <- sqrt(product_var)
-  z_value <- stats::qnorm(1 - (1 - conf_level) / 2)
-  ci_lower <- estimate - (z_value * se)
-  ci_upper <- estimate + (z_value * se)
-  n <- release_result$estimates$n
+  rpue_result <- rpue_for_stratum_product(design, strata_cols, variance_method, conf_level)
+  rpue_df <- rpue_result$estimates
 
-  estimates_df <- tibble::tibble(
-    estimate = estimate, se = se, ci_lower = ci_lower, ci_upper = ci_upper, n = n
+  estimates_df <- compute_stratum_product_sum( # nolint: object_usage_linter
+    effort_df         = effort_df,
+    rate_df           = rpue_df,
+    stratum_by_vars   = strata_cols,
+    interview_by_vars = NULL,
+    conf_level        = conf_level,
+    rate_suffix       = "rpue"
   )
 
   new_creel_estimates( # nolint: object_usage_linter
-    estimates       = estimates_df,
+    estimates       = tibble::as_tibble(estimates_df),
     method          = "product-total-release",
     variance_method = variance_method,
     design          = design,
@@ -207,51 +237,26 @@ estimate_total_release_ungrouped <- function(design, variance_method, conf_level
 #' @keywords internal
 #' @noRd
 estimate_total_release_grouped <- function(design, by_vars, variance_method, conf_level, target = "sampled_days") {
-  if (length(by_vars) == 1L) {
-    by_sym <- rlang::sym(by_vars)
-  } else {
-    by_sym <- rlang::syms(by_vars)
-  }
+  strata_cols <- design$strata_cols %||% character(0)
+  stratum_by_vars <- unique(c(strata_cols, by_vars))
 
-  effort_result <- estimate_effort(design, by = !!by_sym, variance = variance_method, conf_level = conf_level, target = target) # nolint: object_usage_linter
-  release_result <- estimate_release_rate(design, by = !!by_sym, variance = variance_method, conf_level = conf_level) # nolint: object_usage_linter
-
+  effort_result <- estimate_effort_grouped(design, stratum_by_vars, variance_method, conf_level, target = target)
   effort_df <- effort_result$estimates
-  release_df <- release_result$estimates
 
-  merged <- merge(effort_df, release_df, by = by_vars, suffixes = c("_effort", "_rpue"), sort = FALSE)
+  rpue_result <- rpue_for_stratum_product(design, stratum_by_vars, variance_method, conf_level)
+  rpue_df <- rpue_result$estimates
 
-  n_groups <- nrow(merged)
-  estimates_list <- vector("list", n_groups)
-
-  for (i in seq_len(n_groups)) {
-    effort_est <- merged$estimate_effort[i]
-    rpue_est <- merged$estimate_rpue[i]
-    effort_se <- merged$se_effort[i]
-    rpue_se <- merged$se_rpue[i]
-    estimate <- effort_est * rpue_est
-    effort_var <- effort_se^2
-    rpue_var <- rpue_se^2
-    product_var <- (effort_est^2 * rpue_var) + (rpue_est^2 * effort_var)
-    se <- sqrt(product_var)
-    z_value <- stats::qnorm(1 - (1 - conf_level) / 2)
-    estimates_list[[i]] <- list(
-      estimate = estimate, se = se,
-      ci_lower = estimate - (z_value * se),
-      ci_upper = estimate + (z_value * se),
-      n = merged$n_rpue[i]
-    )
-  }
-
-  estimates_df <- tibble::as_tibble(merged[by_vars])
-  estimates_df$estimate <- vapply(estimates_list, `[[`, numeric(1L), "estimate")
-  estimates_df$se <- vapply(estimates_list, `[[`, numeric(1L), "se")
-  estimates_df$ci_lower <- vapply(estimates_list, `[[`, numeric(1L), "ci_lower")
-  estimates_df$ci_upper <- vapply(estimates_list, `[[`, numeric(1L), "ci_upper")
-  estimates_df$n <- vapply(estimates_list, `[[`, numeric(1L), "n")
+  estimates_df <- compute_stratum_product_sum( # nolint: object_usage_linter
+    effort_df         = effort_df,
+    rate_df           = rpue_df,
+    stratum_by_vars   = stratum_by_vars,
+    interview_by_vars = if (length(by_vars) > 0L) by_vars else NULL,
+    conf_level        = conf_level,
+    rate_suffix       = "rpue"
+  )
 
   new_creel_estimates( # nolint: object_usage_linter
-    estimates       = estimates_df,
+    estimates       = tibble::as_tibble(estimates_df),
     method          = "product-total-release",
     variance_method = variance_method,
     design          = design,
@@ -432,14 +437,15 @@ estimate_total_release_sections <- function(design, by_quo, variance_method, # n
         sec_estimate <- effort_est * rpue_est
         sec_var <- (effort_est^2 * rpue_se^2) + (rpue_est^2 * effort_se^2)
         sec_se <- sqrt(sec_var)
-        z_val <- stats::qnorm(1 - (1 - conf_level) / 2)
+        sec_n  <- rpue_res$estimates$n
+        z_val <- stats::qt(1 - (1 - conf_level) / 2, df = max(1L, sec_n - 1L))
         section_rows[[sec]] <- tibble::tibble(
           section = sec,
           estimate = sec_estimate,
           se = sec_se,
           ci_lower = sec_estimate - z_val * sec_se,
           ci_upper = sec_estimate + z_val * sec_se,
-          n = rpue_res$estimates$n,
+          n = sec_n,
           prop_of_lake_total = NA_real_,
           data_available = TRUE
         )
