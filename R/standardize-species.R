@@ -250,7 +250,8 @@ standardize_species <- function(
     hit <- lower_raw == lower_names[i]
     if (any(hit)) {
       codes[still_na[hit]] <- custom_codes[[i]]
-      still_na <- still_na[!hit]
+      still_na  <- still_na[!hit]
+      lower_raw <- lower_raw[!hit]
     }
     if (length(still_na) == 0L) break
   }

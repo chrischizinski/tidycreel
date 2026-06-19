@@ -29,7 +29,16 @@ test_that("simulate_creel_data interviews have required columns", {
 
 test_that("simulate_creel_data counts have required columns", {
   sim <- simulate_creel_data(params = test_params, season_days = 20L, n_sampled_days = 5L, seed = 3L)
-  expect_true(all(c("date", "day_type", "total_anglers") %in% names(sim$counts)))
+  expect_true(all(c("date", "day_type", "count_time", "total_anglers") %in% names(sim$counts)))
+})
+
+test_that("simulate_creel_data counts: count_time is 1..n per day", {
+  sim <- simulate_creel_data(
+    params = test_params, season_days = 20L, n_sampled_days = 5L,
+    n_counts_per_day = 3L, seed = 3L
+  )
+  ct_per_day <- tapply(sim$counts$count_time, sim$counts$date, function(x) sort(x))
+  expect_true(all(vapply(ct_per_day, function(x) identical(x, 1:3), logical(1))))
 })
 
 test_that("simulate_creel_data catch has required columns", {

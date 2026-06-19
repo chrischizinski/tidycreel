@@ -82,7 +82,10 @@ Unsampled days have day_type assigned proportionally from
 complete trips), \code{n_anglers}, \code{catch_total}, \code{catch_kept},
 \code{species_sought}.}
 \item{\code{counts}}{One row per instantaneous count. Columns:
-\code{date}, \code{day_type}, \code{total_anglers}.}
+\code{date}, \code{day_type}, \code{count_time} (integer index
+1…\code{n_counts_per_day}), \code{total_anglers}. Pass
+\code{count_time_col = count_time} to \code{\link{add_counts}} when
+\code{n_counts_per_day > 1}.}
 \item{\code{catch}}{Long-format catch table. Columns: \code{interview_id},
 \code{species}, \code{count}, \code{catch_type} (\code{"caught"},
 \code{"harvested"}, \code{"released"}).}
@@ -147,14 +150,15 @@ sim2 <- simulate_creel_data(
 
 # Round-trip: simulate → creel_design → add_counts → add_interviews
 design <- creel_design(sim2$schedule, date = date, strata = day_type) |>
-  add_counts(sim2$counts) |>
+  add_counts(sim2$counts, count_time_col = count_time) |>
   add_interviews(
     sim2$interviews,
-    catch        = "catch_total",
-    effort       = "hours_fished",
-    harvest      = "catch_kept",
-    trip_status  = "trip_status",
-    n_anglers    = "n_anglers",
+    catch          = "catch_total",
+    effort         = "hours_fished",
+    harvest        = "catch_kept",
+    trip_status    = "trip_status",
+    trip_duration  = "trip_duration",
+    n_anglers      = "n_anglers",
     interview_type = "roving"
   )
 

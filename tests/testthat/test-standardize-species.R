@@ -226,6 +226,28 @@ test_that("SPSZ-30: custom_codes errors on unnamed vector", {
   )
 })
 
+test_that("SPSZ-31a: custom_codes multi-entry resolves all species", {
+  df <- data.frame(species = c("walleye", "Wiper", "Crappie"), stringsAsFactors = FALSE)
+  res <- suppressWarnings(
+    standardize_species(df, custom_codes = c("Wiper" = "WPR", "Crappie" = "CRP-POOL"))
+  )
+  expect_equal(res$species_code[1], "WAE")
+  expect_equal(res$species_code[2], "WPR")
+  expect_equal(res$species_code[3], "CRP-POOL")
+})
+
+test_that("SPSZ-31b: custom_codes multi-entry resolves regardless of order", {
+  df <- data.frame(species = c("Wiper", "Crappie"), stringsAsFactors = FALSE)
+  res1 <- suppressWarnings(
+    standardize_species(df, custom_codes = c("Wiper" = "WPR", "Crappie" = "CRP-POOL"))
+  )
+  res2 <- suppressWarnings(
+    standardize_species(df, custom_codes = c("Crappie" = "CRP-POOL", "Wiper" = "WPR"))
+  )
+  expect_equal(res1$species_code, c("WPR", "CRP-POOL"))
+  expect_equal(res2$species_code, c("WPR", "CRP-POOL"))
+})
+
 test_that("SPSZ-31: freshwater drum resolves to FRD via AFS table", {
   df <- data.frame(
     species = c("Freshwater Drum", "drum", "sheepshead"),
