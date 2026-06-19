@@ -137,6 +137,7 @@ reference:
       - audit_strata
       - simulate_strata_collapse
       - reallocate_strata
+      - optimal_n
       - compare_designs
       - print.creel_design_comparison
       - autoplot.creel_design_comparison

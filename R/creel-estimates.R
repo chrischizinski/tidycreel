@@ -1230,7 +1230,7 @@ estimate_catch_rate <- function(design,
     }
 
     # Apply truncation if specified
-    if (!is.null(truncate_at)) {
+    if (!is.null(truncate_at) && !is.null(design$trip_duration_col)) {
       # Filter to trips >= threshold
       truncated_interviews <- incomplete_interviews[
         incomplete_interviews[[design$trip_duration_col]] >= truncate_at,
@@ -1245,6 +1245,13 @@ estimate_catch_rate <- function(design,
       # Issue truncation message
       mor_truncation_message(n_truncated, n_incomplete, truncate_at) # nolint: object_usage_linter
     } else {
+      if (!is.null(truncate_at) && is.null(design$trip_duration_col)) {
+        cli::cli_warn(c(
+          "MOR truncation skipped: no trip duration column in design.",
+          "i" = "Supply {.arg trip_duration} in {.fn add_interviews} to enable truncation.",
+          "i" = "All {nrow(incomplete_interviews)} trip{?s} used without truncation."
+        ))
+      }
       n_truncated <- 0
     }
 
