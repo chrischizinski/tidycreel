@@ -580,6 +580,8 @@ sampling effort across strata.
   : Simulate the effect of collapsing strata on precision
 - [`reallocate_strata()`](https://chrischizinski.github.io/tidycreel/reference/reallocate_strata.md)
   : Compute Neyman-optimal sample allocation across strata
+- [`optimal_n()`](https://chrischizinski.github.io/tidycreel/reference/optimal_n.md)
+  : Calculate sampling days required under Neyman-optimal allocation
 - [`compare_designs()`](https://chrischizinski.github.io/tidycreel/reference/compare_designs.md)
   **\[experimental\]** : Compare multiple survey design estimates side
   by side

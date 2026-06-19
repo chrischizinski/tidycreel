@@ -112,7 +112,8 @@ branch and required additional arguments.</p></dd>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p><strong>Effort branch</strong> (<code>type = "effort"</code>):
-$$CV = \frac{\sqrt{\sum_h N_h s_h^2 / n}}{\sum_h N_h \bar{y}_h}$$</p>
+$$CV = \frac{\sqrt{N \sum_h N_h s_h^2 / n}}{\sum_h N_h \bar{y}_h}$$
+where \(N = \sum_h N_h\).</p>
 <p>This is the inverse of the Cochran (1977) stratified sample-size formula
 implemented in <code><a href="creel_n_effort.html">creel_n_effort()</a></code>.</p>
 <p><strong>CPUE branch</strong> (<code>type = "cpue"</code>):
@@ -138,6 +139,7 @@ round-trip property is <code>cv_from_n(type, n = creel_n_*(cv, ...), ...) &lt;= 
 <code><a href="creel_n_cpue.html">creel_n_cpue()</a></code>,
 <code><a href="creel_n_effort.html">creel_n_effort()</a></code>,
 <code><a href="creel_power.html">creel_power()</a></code>,
+<code><a href="optimal_n.html">optimal_n()</a></code>,
 <code><a href="power_creel.html">power_creel()</a></code>,
 <code><a href="reallocate_strata.html">reallocate_strata()</a></code>,
 <code><a href="simulate_strata_collapse.html">simulate_strata_collapse()</a></code></p></div>
@@ -155,7 +157,7 @@ round-trip property is <code>cv_from_n(type, n = creel_n_*(cv, ...), ...) &lt;= 
 <span class="r-in"><span>  N_h <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>weekday <span class="op">=</span> <span class="fl">65</span>, weekend <span class="op">=</span> <span class="fl">28</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  ybar_h <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">50</span>, <span class="fl">60</span><span class="op">)</span>, s2_h <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">400</span>, <span class="fl">500</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.02028398</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.1956116</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># CPUE round-trip</span></span></span>
 <span class="r-in"><span><span class="va">n_int</span> <span class="op">&lt;-</span> <span class="fu"><a href="creel_n_cpue.html">creel_n_cpue</a></span><span class="op">(</span>cv_catch <span class="op">=</span> <span class="fl">0.8</span>, cv_effort <span class="op">=</span> <span class="fl">0.5</span>, rho <span class="op">=</span> <span class="fl">0</span>, cv_target <span class="op">=</span> <span class="fl">0.20</span><span class="op">)</span></span></span>

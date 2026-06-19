@@ -984,8 +984,8 @@ against the minimum required sample size per stratum.</p>
 <span><span class="co">#&gt; Type: effort</span></span>
 <span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> All strata PASSED</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> weekday: n=40 &gt;= 6 required (CV 0.006 vs target 0.15)</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> weekend: n=26 &gt;= 2 required (CV 0.009 vs target 0.15)</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> weekday: n=40 &gt;= 6 required (CV 0.068 vs target 0.15)</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> weekend: n=26 &gt;= 2 required (CV 0.064 vs target 0.15)</span></span></code></pre></div>
 <p><code>report$results</code> shows the per-stratum status (pass / warn
 / fail), the proposed sample size, the required sample size, and the
 achieved CV at the proposed intensity. <code>report$passed</code> is
@@ -996,8 +996,8 @@ gate before printing field schedules.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 7</span></span></span>
 <span><span class="co">#&gt;   stratum status n_proposed n_required cv_actual cv_target message              </span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekday pass           40          6    0.005<span style="text-decoration: underline;">9</span>      0.15 Proposed n meets or …</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> weekend pass           26          2    0.008<span style="text-decoration: underline;">9</span>      0.15 Proposed n meets or …</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekday pass           40          6    0.067<span style="text-decoration: underline;">8</span>      0.15 Proposed n meets or …</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> weekend pass           26          2    0.064<span style="text-decoration: underline;">2</span>      0.15 Proposed n meets or …</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="checking-data-completeness-after-the-season">Checking Data Completeness After the Season<a class="anchor" aria-label="anchor" href="#checking-data-completeness-after-the-season"></a>

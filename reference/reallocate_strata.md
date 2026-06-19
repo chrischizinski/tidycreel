@@ -54,6 +54,7 @@ Other "Planning & Sample Size":
 [`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md),
 [`creel_power()`](https://chrischizinski.github.io/tidycreel/reference/creel_power.md),
 [`cv_from_n()`](https://chrischizinski.github.io/tidycreel/reference/cv_from_n.md),
+[`optimal_n()`](https://chrischizinski.github.io/tidycreel/reference/optimal_n.md),
 [`power_creel()`](https://chrischizinski.github.io/tidycreel/reference/power_creel.md),
 [`simulate_strata_collapse()`](https://chrischizinski.github.io/tidycreel/reference/simulate_strata_collapse.md)
 

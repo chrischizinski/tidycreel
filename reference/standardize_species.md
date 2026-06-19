@@ -138,11 +138,8 @@ standardize_species(
   catch,
   custom_codes = c("Wiper" = "WPR", "Crappie" = "CRP-POOL")
 )
-#> Warning: 1 species value(s) could not be matched to an
-#> AFS code and will be "NA":
-#> • "Crappie"
 #>   species species_code
 #> 1 Walleye          WAE
 #> 2   Wiper          WPR
-#> 3 Crappie         <NA>
+#> 3 Crappie     CRP-POOL
 ```

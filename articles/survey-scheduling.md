@@ -655,8 +655,8 @@ report
 #> Type: effort
 #> ✔ All strata PASSED
 #> 
-#> ✔ weekday: n=40 >= 6 required (CV 0.006 vs target 0.15)
-#> ✔ weekend: n=26 >= 2 required (CV 0.009 vs target 0.15)
+#> ✔ weekday: n=40 >= 6 required (CV 0.068 vs target 0.15)
+#> ✔ weekend: n=26 >= 2 required (CV 0.064 vs target 0.15)
 ```
 
 `report$results` shows the per-stratum status (pass / warn / fail), the
@@ -670,8 +670,8 @@ report$results
 #> # A tibble: 2 × 7
 #>   stratum status n_proposed n_required cv_actual cv_target message              
 #>   <chr>   <chr>       <int>      <int>     <dbl>     <dbl> <chr>                
-#> 1 weekday pass           40          6    0.0059      0.15 Proposed n meets or …
-#> 2 weekend pass           26          2    0.0089      0.15 Proposed n meets or …
+#> 1 weekday pass           40          6    0.0678      0.15 Proposed n meets or …
+#> 2 weekend pass           26          2    0.0642      0.15 Proposed n meets or …
 ```
 
 ## Checking Data Completeness After the Season

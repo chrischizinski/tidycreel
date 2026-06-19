@@ -56,8 +56,8 @@ A numeric scalar (\> 0): the expected CV achievable at sample size `n`.
 
 ## Details
 
-**Effort branch** (`type = "effort"`): \$\$CV = \frac{\sqrt{\sum_h N_h
-s_h^2 / n}}{\sum_h N_h \bar{y}\_h}\$\$
+**Effort branch** (`type = "effort"`): \$\$CV = \frac{\sqrt{N \sum_h N_h
+s_h^2 / n}}{\sum_h N_h \bar{y}\_h}\$\$ where \\N = \sum_h N_h\\.
 
 This is the inverse of the Cochran (1977) stratified sample-size formula
 implemented in
@@ -93,6 +93,7 @@ Other "Planning & Sample Size":
 [`creel_n_cpue()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_cpue.md),
 [`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md),
 [`creel_power()`](https://chrischizinski.github.io/tidycreel/reference/creel_power.md),
+[`optimal_n()`](https://chrischizinski.github.io/tidycreel/reference/optimal_n.md),
 [`power_creel()`](https://chrischizinski.github.io/tidycreel/reference/power_creel.md),
 [`reallocate_strata()`](https://chrischizinski.github.io/tidycreel/reference/reallocate_strata.md),
 [`simulate_strata_collapse()`](https://chrischizinski.github.io/tidycreel/reference/simulate_strata_collapse.md)
@@ -110,7 +111,7 @@ cv_from_n("effort",
   N_h = c(weekday = 65, weekend = 28),
   ybar_h = c(50, 60), s2_h = c(400, 500)
 )
-#> [1] 0.02028398
+#> [1] 0.1956116
 
 # CPUE round-trip
 n_int <- creel_n_cpue(cv_catch = 0.8, cv_effort = 0.5, rho = 0, cv_target = 0.20)
