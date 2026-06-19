@@ -40,7 +40,8 @@ or \code{\link[=creel_n_cpue]{creel_n_cpue()}} (when \code{type = "cpue"}).
 }
 \details{
 \strong{Effort branch} (\code{type = "effort"}):
-\deqn{CV = \frac{\sqrt{\sum_h N_h s_h^2 / n}}{\sum_h N_h \bar{y}_h}}
+\deqn{CV = \frac{\sqrt{N \sum_h N_h s_h^2 / n}}{\sum_h N_h \bar{y}_h}}
+where \eqn{N = \sum_h N_h}.
 
 This is the inverse of the Cochran (1977) stratified sample-size formula
 implemented in \code{\link[=creel_n_effort]{creel_n_effort()}}.
@@ -85,6 +86,7 @@ Other "Planning & Sample Size":
 \code{\link{creel_n_cpue}()},
 \code{\link{creel_n_effort}()},
 \code{\link{creel_power}()},
+\code{\link{optimal_n}()},
 \code{\link{power_creel}()},
 \code{\link{reallocate_strata}()},
 \code{\link{simulate_strata_collapse}()}

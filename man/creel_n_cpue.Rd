@@ -62,6 +62,7 @@ Other "Planning & Sample Size":
 \code{\link{creel_n_effort}()},
 \code{\link{creel_power}()},
 \code{\link{cv_from_n}()},
+\code{\link{optimal_n}()},
 \code{\link{power_creel}()},
 \code{\link{reallocate_strata}()},
 \code{\link{simulate_strata_collapse}()}

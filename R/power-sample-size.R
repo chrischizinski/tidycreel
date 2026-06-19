@@ -75,6 +75,115 @@ creel_n_effort <- function(cv_target, N_h, ybar_h, s2_h) { # nolint: object_name
 }
 
 
+#' Calculate sampling days required under Neyman-optimal allocation
+#'
+#' Determines how many sampling days are needed to achieve a target coefficient
+#' of variation on the effort estimate, then allocates those days across strata
+#' using Neyman (optimal) allocation. Unlike [creel_n_effort()], which distributes
+#' days proportionally to stratum size, this function concentrates days in strata
+#' with higher between-day variance, minimising total days for a given precision.
+#'
+#' @param cv_target Numeric scalar. Target coefficient of variation for the
+#'   effort estimate (e.g., 0.20 for 20 percent). Must be in (0, 1].
+#' @param N_h Named numeric vector. Total available days per stratum (e.g.,
+#'   `c(weekday = 65, weekend = 28)`). Values must be >= 1.
+#' @param ybar_h Numeric vector of same length as `N_h`. Pilot mean effort per
+#'   day per stratum (e.g., angler-hours per day). Values must be >= 0.
+#' @param s2_h Numeric vector of same length as `N_h`. Pilot variance of
+#'   effort per day per stratum. Values must be >= 0.
+#' @param cost_ratio Numeric scalar or named numeric vector of same length as
+#'   `N_h`. Relative cost of sampling one day in each stratum. Default `1`
+#'   (equal costs). When costs differ across strata, days are preferentially
+#'   allocated to cheaper, high-variance strata. Values must be > 0.
+#'
+#' @details
+#' **Total sample size** uses Cochran (1977) equation 5.25 (identical to
+#' [creel_n_effort()]):
+#'
+#' \deqn{n = \left\lceil \frac{\left(\sum_h N_h s_h\right)^2}{V_0 +
+#'   \sum_h N_h s_h^2} \right\rceil}
+#'
+#' where \eqn{V_0 = (CV_{target} \cdot \hat{E})^2}, \eqn{\hat{E} = \sum_h N_h
+#' \bar{y}_h} is the pilot total effort estimate, and \eqn{s_h = \sqrt{s_h^2}}.
+#'
+#' **Per-stratum allocation** uses the Neyman formula (Cochran 1977 eq. 5.24)
+#' extended for unequal costs (eq. 5.30):
+#'
+#' \deqn{n_h = \left\lceil n \cdot
+#'   \frac{N_h s_h / \sqrt{c_h}}{\sum_h N_h s_h / \sqrt{c_h}} \right\rceil}
+#'
+#' where \eqn{c_h} is the relative sampling cost for stratum \eqn{h}. With
+#' equal costs (\code{cost_ratio = 1}), this reduces to the standard Neyman
+#' formula \eqn{n_h \propto N_h s_h}.
+#'
+#' Because each stratum is ceiling-ed independently, `sum(n_h)` may slightly
+#' exceed `n_total`.
+#'
+#' @return A named integer vector. Elements named after strata in `N_h` give the
+#'   optimal sampling days per stratum; element `"total"` gives the overall
+#'   sample size before allocation.
+#'
+#' @references
+#' Cochran, W.G. 1977. Sampling Techniques, 3rd ed. Wiley, New York.
+#'
+#' McCormick, J.L. and Quist, M.C. 2017. Sample size estimation for on-site
+#' creel surveys. North American Journal of Fisheries Management 37:970-983.
+#' \doi{10.1080/02755947.2017.1342723}
+#'
+#' @family "Planning & Sample Size"
+#' @seealso [creel_n_effort()] for proportional allocation,
+#'   [reallocate_strata()] to re-allocate a fixed day budget.
+#' @export
+#'
+#' @examples
+#' # Two-stratum weekday/weekend example
+#' optimal_n(
+#'   cv_target = 0.20,
+#'   N_h   = c(weekday = 65, weekend = 28),
+#'   ybar_h = c(50, 60),
+#'   s2_h   = c(400, 500)
+#' )
+#'
+#' # Weekend sampling costs twice as much -- shift days toward weekdays
+#' optimal_n(
+#'   cv_target  = 0.20,
+#'   N_h        = c(weekday = 65, weekend = 28),
+#'   ybar_h     = c(50, 60),
+#'   s2_h       = c(400, 500),
+#'   cost_ratio = c(weekday = 1, weekend = 2)
+#' )
+optimal_n <- function(cv_target, N_h, ybar_h, s2_h, cost_ratio = 1) { # nolint: object_name_linter
+  checkmate::assert_number(cv_target, lower = 1e-6, upper = 1.0)
+  checkmate::assert_numeric(N_h, lower = 1, min.len = 1, names = "named") # nolint: object_name_linter
+  checkmate::assert_numeric(ybar_h, lower = 0, len = length(N_h)) # nolint: object_name_linter
+  checkmate::assert_numeric(s2_h, lower = 0, len = length(N_h)) # nolint: object_name_linter
+  checkmate::assert_numeric(cost_ratio, lower = 1e-6)
+  if (length(cost_ratio) == 1L) {
+    cost_ratio <- rep(cost_ratio, length(N_h))
+  }
+  checkmate::assert_numeric(cost_ratio, lower = 1e-6, len = length(N_h))
+
+  E_total <- sum(N_h * ybar_h) # nolint: object_name_linter
+  V_0 <- (cv_target * E_total)^2 # nolint: object_name_linter
+  s_h <- sqrt(s2_h) # nolint: object_name_linter
+
+  # Cochran (1977) eq. 5.25 -- total n (same formula as creel_n_effort)
+  numerator <- sum(N_h * s_h)^2 # nolint: object_name_linter
+  denominator <- V_0 + sum(N_h * s2_h) # nolint: object_name_linter
+  n_total <- ceiling(numerator / denominator)
+
+  # Neyman allocation with optional cost adjustment (Cochran eq. 5.24 / 5.30)
+  alloc_weights <- N_h * s_h / sqrt(cost_ratio) # nolint: object_name_linter
+  n_h <- ceiling(n_total * alloc_weights / sum(alloc_weights)) # nolint: object_name_linter
+  names(n_h) <- names(N_h) # nolint: object_name_linter
+
+  storage.mode(n_h) <- "integer" # nolint: object_name_linter
+  storage.mode(n_total) <- "integer"
+
+  c(n_h, total = n_total) # nolint: object_name_linter
+}
+
+
 #' Calculate interviews required to achieve a target CV on CPUE
 #'
 #' Determines the number of interviews needed to achieve a target coefficient of
@@ -362,7 +471,8 @@ creel_power <- function(n, cv_historical, delta_pct, alpha = 0.05, # nolint: obj
 #'
 #' @details
 #' **Effort branch** (`type = "effort"`):
-#' \deqn{CV = \frac{\sqrt{\sum_h N_h s_h^2 / n}}{\sum_h N_h \bar{y}_h}}
+#' \deqn{CV = \frac{\sqrt{N \sum_h N_h s_h^2 / n}}{\sum_h N_h \bar{y}_h}}
+#' where \eqn{N = \sum_h N_h}.
 #'
 #' This is the inverse of the Cochran (1977) stratified sample-size formula
 #' implemented in [creel_n_effort()].
@@ -419,7 +529,7 @@ cv_from_n <- function(type = c("effort", "cpue"), n, ...) {
     checkmate::assert_numeric(s2_h, lower = 0, len = length(N_h)) # nolint: object_name_linter
 
     E_total <- sum(N_h * ybar_h) # nolint: object_name_linter
-    cv <- sqrt(sum(N_h * s2_h) / n) / E_total # nolint: object_name_linter
+    cv <- sqrt(sum(N_h) * sum(N_h * s2_h) / n) / E_total # nolint: object_name_linter
   } else {
     cv_catch <- dots[["cv_catch"]]
     cv_effort <- dots[["cv_effort"]]

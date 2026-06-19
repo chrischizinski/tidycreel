@@ -2808,6 +2808,38 @@ test_that("ROVING-06: access design is unaffected by roving logic", {
   expect_match(result$method, "ratio-of-means")
 })
 
+test_that("ROVING-06b: roving auto-route succeeds when trip_duration_col is NULL", {
+  # Simulates the case where add_interviews is called without trip_duration
+  # GH #76: auto-route sets truncate_at=0.5+estimator=mor; trip_duration_col=NULL
+  # caused get1index error on incomplete_interviews[[NULL]]
+  n <- 50L
+  cal <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03")),
+    day_type = rep("weekday", 3),
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design(cal, date = date, strata = day_type)
+  interviews <- data.frame(
+    date = as.Date(rep("2024-06-01", n)),
+    catch_total = rep(c(1, 2, 3, 0), length.out = n),
+    hours_fished = rep(c(1.0, 2.0, 3.0, 1.5), length.out = n),
+    trip_status = c(rep("complete", 30), rep("incomplete", 20)),
+    stringsAsFactors = FALSE
+  )
+  d <- suppressWarnings(suppressMessages(add_interviews(
+    design, interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status,
+    interview_type = "roving"
+    # no trip_duration: trip_duration_col = NULL
+  )))
+  expect_null(d$trip_duration_col)
+  result <- suppressWarnings(suppressMessages(estimate_catch_rate(d)))
+  expect_s3_class(result, "creel_estimates")
+  expect_match(result$method, "mean-of-ratios")
+  expect_equal(result$estimates$n, n)
+})
+
 test_that("ROVING-07: use_trips='all' valid for access design too", {
   n <- 20L
   cal <- data.frame(
