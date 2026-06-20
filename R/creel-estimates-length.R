@@ -384,3 +384,146 @@ build_length_distribution_records <- function(lengths_data, # nolint: object_len
 
   rbind(harvest_records, release_records)
 }
+
+# Biomass estimation ----
+
+#' Estimate total biomass from a creel length distribution
+#'
+#' @description
+#' `est_biomass()` converts a pressure-weighted length-frequency distribution
+#' produced by [est_length_distribution()] into a total biomass estimate using
+#' the allometric length-weight equation \eqn{W = a \cdot L^b}.
+#'
+#' Variance is propagated via the delta method, treating estimated fish counts
+#' per length bin as uncorrelated (see Details).
+#'
+#' @param ld A `creel_length_distribution` object from [est_length_distribution()].
+#' @param a Positive numeric allometric coefficient (the \eqn{a} in
+#'   \eqn{W = a \cdot L^b}).
+#' @param b Numeric allometric exponent (the \eqn{b} in
+#'   \eqn{W = a \cdot L^b}). Typical values for fish are 2.5–3.5.
+#' @param conf_level Numeric confidence level for confidence intervals.
+#'   Defaults to the level stored in `ld` (usually `0.95`).
+#'
+#' @details
+#' For each length bin h with midpoint \eqn{L_h = (\text{bin\_lower} +
+#' \text{bin\_upper}) / 2}, per-bin biomass is
+#' \eqn{B_h = a \cdot L_h^b \cdot \hat{N}_h}, where \eqn{\hat{N}_h} is the
+#' survey-weighted estimated fish count from [est_length_distribution()].
+#' Total biomass is \eqn{B = \sum_h B_h}.
+#'
+#' Variance is approximated as
+#' \eqn{\widehat{\text{Var}}(B) \approx \sum_h (a \cdot L_h^b)^2 \cdot
+#' \widehat{\text{SE}}_h^2}, which ignores cross-bin covariances.
+#' When positive covariances exist (likely in small surveys), this
+#' under-estimates the true variance.
+#'
+#' Length and weight units are determined by the user: if lengths are in mm
+#' and `a` is calibrated for mm input, weights are returned in the
+#' corresponding unit (e.g., grams).
+#'
+#' @return A `data.frame` with class `c("creel_biomass", "data.frame")` and
+#'   columns: grouping columns (if any), `biomass_estimate`, `biomass_se`,
+#'   `biomass_ci_lower`, `biomass_ci_upper`.
+#'
+#' @examples
+#' data(example_calendar)
+#' data(example_interviews)
+#' data(example_lengths)
+#'
+#' design <- creel_design(example_calendar, date = date, strata = day_type)
+#' design <- add_interviews(design, example_interviews,
+#'   catch = catch_total, effort = hours_fished, harvest = catch_kept,
+#'   trip_status = trip_status
+#' )
+#' design <- add_lengths(design, example_lengths,
+#'   length_uid = interview_id,
+#'   interview_uid = interview_id,
+#'   species = species,
+#'   length = length,
+#'   length_type = length_type,
+#'   count = count,
+#'   release_format = "binned"
+#' )
+#'
+#' ld <- est_length_distribution(design, by = species, bin_width = 25)
+#' est_biomass(ld, a = 0.0088, b = 3.1)
+#'
+#' @family "Estimation"
+#' @export
+est_biomass <- function(ld, a, b, conf_level = NULL) {
+  if (!inherits(ld, "creel_length_distribution")) {
+    cli::cli_abort(c(
+      "{.arg ld} must be a {.cls creel_length_distribution} object.",
+      "x" = "{.arg ld} is {.cls {class(ld)[1]}}.",
+      "i" = "Create one with {.fn est_length_distribution}."
+    ))
+  }
+  if (!is.numeric(a) || length(a) != 1L || is.na(a) || a <= 0) {
+    cli::cli_abort(c(
+      "{.arg a} must be a single positive number.",
+      "x" = "{.arg a} is {.val {a}}."
+    ))
+  }
+  if (!is.numeric(b) || length(b) != 1L || is.na(b)) {
+    cli::cli_abort(c(
+      "{.arg b} must be a single numeric value.",
+      "x" = "{.arg b} is {.val {b}}."
+    ))
+  }
+
+  ld_conf <- attr(ld, "conf_level")
+  if (is.null(conf_level)) {
+    conf_level <- if (!is.null(ld_conf)) ld_conf else 0.95
+  } else {
+    if (!is.numeric(conf_level) || length(conf_level) != 1L ||
+      conf_level <= 0 || conf_level >= 1) { # nolint: indentation_linter
+      cli::cli_abort(c(
+        "{.arg conf_level} must be a single number in (0, 1).",
+        "x" = "{.arg conf_level} is {.val {conf_level}}."
+      ))
+    }
+  }
+
+  by_vars <- attr(ld, "by_vars")
+  if (is.null(by_vars)) by_vars <- character(0)
+
+  z <- stats::qnorm((1 + conf_level) / 2)
+
+  compute_biomass <- function(rows) {
+    l_mid <- (rows$bin_lower + rows$bin_upper) / 2
+    w_h <- a * l_mid^b
+    biomass <- sum(w_h * rows$estimate)
+    se_b <- sqrt(sum(w_h^2 * rows$se^2))
+    data.frame(
+      biomass_estimate = biomass,
+      biomass_se = se_b,
+      biomass_ci_lower = biomass - z * se_b,
+      biomass_ci_upper = biomass + z * se_b,
+      stringsAsFactors = FALSE
+    )
+  }
+
+  if (length(by_vars) == 0L) {
+    result <- compute_biomass(ld)
+  } else {
+    group_key <- do.call(paste, c(lapply(by_vars, function(v) ld[[v]]), sep = "\x1f"))
+    groups <- unique(group_key)
+    result_rows <- vector("list", length(groups))
+    for (i in seq_along(groups)) {
+      rows <- ld[group_key == groups[[i]], , drop = FALSE]
+      group_info <- rows[1L, by_vars, drop = FALSE]
+      result_rows[[i]] <- cbind(group_info, compute_biomass(rows), row.names = NULL)
+    }
+    result <- do.call(rbind, result_rows)
+  }
+
+  rownames(result) <- NULL
+  class(result) <- c("creel_biomass", "data.frame")
+  attr(result, "method") <- "biomass"
+  attr(result, "a") <- a
+  attr(result, "b") <- b
+  attr(result, "conf_level") <- conf_level
+  attr(result, "by_vars") <- if (length(by_vars) > 0L) by_vars else NULL
+  result
+}

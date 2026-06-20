@@ -80,6 +80,7 @@ est_length_distribution(design, by = species, bin_width = 25)
 \seealso{
 Other "Estimation":
 \code{\link{compare_cpue_estimators}()},
+\code{\link{est_biomass}()},
 \code{\link{estimate_catch_rate}()},
 \code{\link{estimate_effort}()},
 \code{\link{estimate_effort_aerial_glmm}()},

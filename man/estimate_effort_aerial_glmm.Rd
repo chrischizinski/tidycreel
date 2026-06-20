@@ -109,6 +109,7 @@ North American Journal of Fisheries Management, 38, 1204-1215.
 \seealso{
 Other "Estimation":
 \code{\link{compare_cpue_estimators}()},
+\code{\link{est_biomass}()},
 \code{\link{est_length_distribution}()},
 \code{\link{estimate_catch_rate}()},
 \code{\link{estimate_effort}()},
