@@ -527,3 +527,253 @@ est_biomass <- function(ld, a, b, conf_level = NULL) {
   attr(result, "by_vars") <- if (length(by_vars) > 0L) by_vars else NULL
   result
 }
+
+# Mean length estimation ----
+
+#' Estimate design-weighted mean length from a creel length distribution
+#'
+#' @description
+#' `est_mean_length()` computes the pressure-weighted mean fish length from a
+#' [est_length_distribution()] object using the ratio estimator
+#' \eqn{\bar{L} = \sum_h L_h \hat{N}_h / \sum_h \hat{N}_h}, with
+#' delta-method standard error.
+#'
+#' @param ld A `creel_length_distribution` object from [est_length_distribution()].
+#' @param conf_level Numeric confidence level for confidence intervals.
+#'   Defaults to the level stored in `ld` (usually `0.95`).
+#'
+#' @details
+#' Bin midpoints \eqn{L_h = (\text{bin\_lower} + \text{bin\_upper}) / 2} serve
+#' as representative lengths. Mean length is the ratio of total length-weighted
+#' count to total count:
+#' \deqn{\bar{L} = \frac{\sum_h L_h \hat{N}_h}{\hat{N}}}
+#'
+#' Variance is propagated via the delta method for a ratio estimator, treating
+#' cross-bin covariances as zero:
+#' \deqn{\widehat{\text{Var}}(\bar{L}) \approx
+#'   \frac{1}{\hat{N}^2} \sum_h (L_h - \bar{L})^2 \, \widehat{\text{SE}}_h^2}
+#'
+#' @return A `data.frame` with class `c("creel_mean_length", "data.frame")` and
+#'   columns: grouping columns (if any), `mean_length`, `mean_length_se`,
+#'   `mean_length_ci_lower`, `mean_length_ci_upper`.
+#'
+#' @examples
+#' data(example_calendar)
+#' data(example_interviews)
+#' data(example_lengths)
+#'
+#' design <- creel_design(example_calendar, date = date, strata = day_type)
+#' design <- add_interviews(design, example_interviews,
+#'   catch = catch_total, effort = hours_fished, harvest = catch_kept,
+#'   trip_status = trip_status
+#' )
+#' design <- add_lengths(design, example_lengths,
+#'   length_uid = interview_id,
+#'   interview_uid = interview_id,
+#'   species = species,
+#'   length = length,
+#'   length_type = length_type,
+#'   count = count,
+#'   release_format = "binned"
+#' )
+#'
+#' ld <- est_length_distribution(design, by = species, bin_width = 25)
+#' est_mean_length(ld)
+#'
+#' @family "Estimation"
+#' @export
+est_mean_length <- function(ld, conf_level = NULL) {
+  if (!inherits(ld, "creel_length_distribution")) {
+    cli::cli_abort(c(
+      "{.arg ld} must be a {.cls creel_length_distribution} object.",
+      "x" = "{.arg ld} is {.cls {class(ld)[1]}}.",
+      "i" = "Create one with {.fn est_length_distribution}."
+    ))
+  }
+
+  ld_conf <- attr(ld, "conf_level")
+  if (is.null(conf_level)) {
+    conf_level <- if (!is.null(ld_conf)) ld_conf else 0.95
+  } else {
+    if (!is.numeric(conf_level) || length(conf_level) != 1L ||
+      conf_level <= 0 || conf_level >= 1) { # nolint: indentation_linter
+      cli::cli_abort(c(
+        "{.arg conf_level} must be a single number in (0, 1).",
+        "x" = "{.arg conf_level} is {.val {conf_level}}."
+      ))
+    }
+  }
+
+  by_vars <- attr(ld, "by_vars")
+  if (is.null(by_vars)) by_vars <- character(0)
+  z <- stats::qnorm((1 + conf_level) / 2)
+
+  compute_mean_length <- function(rows) {
+    l_mid <- (rows$bin_lower + rows$bin_upper) / 2
+    n_total <- sum(rows$estimate)
+    mean_l <- sum(l_mid * rows$estimate) / n_total
+    se_l <- sqrt(sum((l_mid - mean_l)^2 * rows$se^2)) / n_total
+    data.frame(
+      mean_length = mean_l,
+      mean_length_se = se_l,
+      mean_length_ci_lower = mean_l - z * se_l,
+      mean_length_ci_upper = mean_l + z * se_l,
+      stringsAsFactors = FALSE
+    )
+  }
+
+  if (length(by_vars) == 0L) {
+    result <- compute_mean_length(ld)
+  } else {
+    group_key <- do.call(paste, c(lapply(by_vars, function(v) ld[[v]]), sep = "\x1f"))
+    groups <- unique(group_key)
+    result_rows <- vector("list", length(groups))
+    for (i in seq_along(groups)) {
+      rows <- ld[group_key == groups[[i]], , drop = FALSE]
+      group_info <- rows[1L, by_vars, drop = FALSE]
+      result_rows[[i]] <- cbind(group_info, compute_mean_length(rows), row.names = NULL)
+    }
+    result <- do.call(rbind, result_rows)
+  }
+
+  rownames(result) <- NULL
+  class(result) <- c("creel_mean_length", "data.frame")
+  attr(result, "method") <- "mean_length"
+  attr(result, "conf_level") <- conf_level
+  attr(result, "by_vars") <- if (length(by_vars) > 0L) by_vars else NULL
+  result
+}
+
+# Compliance estimation ----
+
+#' Estimate design-weighted size-limit compliance from a creel length distribution
+#'
+#' @description
+#' `est_compliance()` estimates the proportion of fish meeting a minimum size
+#' limit from a [est_length_distribution()] object.  Fish in bins whose lower
+#' bound is at or above `min_length` are classified as legal (conservative:
+#' bins straddling the limit are classified as illegal).
+#'
+#' @param ld A `creel_length_distribution` object from [est_length_distribution()].
+#' @param min_length Positive numeric minimum legal length in the same units as
+#'   the lengths used to build `ld`.
+#' @param conf_level Numeric confidence level for confidence intervals.
+#'   Defaults to the level stored in `ld` (usually `0.95`).
+#'
+#' @details
+#' A bin is legal when `bin_lower >= min_length`.  The compliance proportion
+#' and its variance use the ratio estimator:
+#' \deqn{P = \frac{\sum_h I_h \hat{N}_h}{\hat{N}}}
+#' \deqn{\widehat{\text{Var}}(P) \approx
+#'   \frac{1}{\hat{N}^2} \sum_h (I_h - P)^2 \, \widehat{\text{SE}}_h^2}
+#' where \eqn{I_h = \mathbf{1}(\text{bin\_lower}_h \geq \text{min\_length})}.
+#'
+#' Confidence interval bounds are clamped to \eqn{[0, 1]}.
+#'
+#' Choose `bin_width` in [est_length_distribution()] smaller than the typical
+#' variation near the legal limit to minimise classification error for bins
+#' that straddle the threshold.
+#'
+#' @return A `data.frame` with class `c("creel_compliance", "data.frame")` and
+#'   columns: grouping columns (if any), `min_length`, `n_legal_est`,
+#'   `n_total_est`, `compliance_prop`, `compliance_se`,
+#'   `compliance_ci_lower`, `compliance_ci_upper`.
+#'
+#' @examples
+#' data(example_calendar)
+#' data(example_interviews)
+#' data(example_lengths)
+#'
+#' design <- creel_design(example_calendar, date = date, strata = day_type)
+#' design <- add_interviews(design, example_interviews,
+#'   catch = catch_total, effort = hours_fished, harvest = catch_kept,
+#'   trip_status = trip_status
+#' )
+#' design <- add_lengths(design, example_lengths,
+#'   length_uid = interview_id,
+#'   interview_uid = interview_id,
+#'   species = species,
+#'   length = length,
+#'   length_type = length_type,
+#'   count = count,
+#'   release_format = "binned"
+#' )
+#'
+#' ld <- est_length_distribution(design, by = species, bin_width = 25)
+#' est_compliance(ld, min_length = 356)  # 14-inch limit in mm
+#'
+#' @family "Estimation"
+#' @export
+est_compliance <- function(ld, min_length, conf_level = NULL) {
+  if (!inherits(ld, "creel_length_distribution")) {
+    cli::cli_abort(c(
+      "{.arg ld} must be a {.cls creel_length_distribution} object.",
+      "x" = "{.arg ld} is {.cls {class(ld)[1]}}.",
+      "i" = "Create one with {.fn est_length_distribution}."
+    ))
+  }
+  if (!is.numeric(min_length) || length(min_length) != 1L ||
+    is.na(min_length) || min_length <= 0) { # nolint: indentation_linter
+    cli::cli_abort(c(
+      "{.arg min_length} must be a single positive number.",
+      "x" = "{.arg min_length} is {.val {min_length}}."
+    ))
+  }
+
+  ld_conf <- attr(ld, "conf_level")
+  if (is.null(conf_level)) {
+    conf_level <- if (!is.null(ld_conf)) ld_conf else 0.95
+  } else {
+    if (!is.numeric(conf_level) || length(conf_level) != 1L ||
+      conf_level <= 0 || conf_level >= 1) { # nolint: indentation_linter
+      cli::cli_abort(c(
+        "{.arg conf_level} must be a single number in (0, 1).",
+        "x" = "{.arg conf_level} is {.val {conf_level}}."
+      ))
+    }
+  }
+
+  by_vars <- attr(ld, "by_vars")
+  if (is.null(by_vars)) by_vars <- character(0)
+  z <- stats::qnorm((1 + conf_level) / 2)
+
+  compute_compliance <- function(rows) {
+    legal <- rows$bin_lower >= min_length
+    n_legal <- sum(rows$estimate[legal])
+    n_total <- sum(rows$estimate)
+    p <- n_legal / n_total
+    se_p <- sqrt(sum((as.numeric(legal) - p)^2 * rows$se^2)) / n_total
+    data.frame(
+      min_length = min_length,
+      n_legal_est = n_legal,
+      n_total_est = n_total,
+      compliance_prop = p,
+      compliance_se = se_p,
+      compliance_ci_lower = pmax(0, p - z * se_p),
+      compliance_ci_upper = pmin(1, p + z * se_p),
+      stringsAsFactors = FALSE
+    )
+  }
+
+  if (length(by_vars) == 0L) {
+    result <- compute_compliance(ld)
+  } else {
+    group_key <- do.call(paste, c(lapply(by_vars, function(v) ld[[v]]), sep = "\x1f"))
+    groups <- unique(group_key)
+    result_rows <- vector("list", length(groups))
+    for (i in seq_along(groups)) {
+      rows <- ld[group_key == groups[[i]], , drop = FALSE]
+      group_info <- rows[1L, by_vars, drop = FALSE]
+      result_rows[[i]] <- cbind(group_info, compute_compliance(rows), row.names = NULL)
+    }
+    result <- do.call(rbind, result_rows)
+  }
+
+  rownames(result) <- NULL
+  class(result) <- c("creel_compliance", "data.frame")
+  attr(result, "method") <- "compliance"
+  attr(result, "min_length") <- min_length
+  attr(result, "conf_level") <- conf_level
+  attr(result, "by_vars") <- if (length(by_vars) > 0L) by_vars else NULL
+  result
+}
