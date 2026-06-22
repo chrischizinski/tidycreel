@@ -75,6 +75,8 @@ reference:
       - est_length_distribution
       - est_biomass
       - est_mean_length
+      - est_age_distribution
+      - est_mean_age
       - est_compliance
       - estimate_angler_trips
       - estimate_effort_per_acre
@@ -197,6 +199,7 @@ reference:
       - example_interviews
       - example_catch
       - example_lengths
+      - example_ages
       - example_sections_calendar
       - example_sections_counts
       - example_sections_interviews
