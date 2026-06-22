@@ -412,6 +412,8 @@ argument.
   : Attach species-level catch data to a creel design
 - [`add_lengths()`](https://chrischizinski.github.io/tidycreel/reference/add_lengths.md)
   : Attach fish length frequency data to a creel design
+- [`add_ages()`](https://chrischizinski.github.io/tidycreel/reference/add_ages.md)
+  : Attach age data to a creel design
 - [`add_sections()`](https://chrischizinski.github.io/tidycreel/reference/add_sections.md)
   : Register spatial sections for a creel survey design
 - [`as_survey_design()`](https://chrischizinski.github.io/tidycreel/reference/as_survey_design.md)
@@ -466,6 +468,14 @@ dispatch automatically on survey type.
   : Estimate total harvest from a mark-recapture population estimate
 - [`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md)
   : Estimate a weighted length distribution from creel interview data
+- [`est_biomass()`](https://chrischizinski.github.io/tidycreel/reference/est_biomass.md)
+  : Estimate total biomass from a creel length distribution
+- [`est_mean_length()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_length.md)
+  : Estimate design-weighted mean length from a creel length
+  distribution
+- [`est_compliance()`](https://chrischizinski.github.io/tidycreel/reference/est_compliance.md)
+  : Estimate design-weighted size-limit compliance from a creel length
+  distribution
 - [`estimate_angler_trips()`](https://chrischizinski.github.io/tidycreel/reference/estimate_angler_trips.md)
   : Estimate angler trips from extrapolated effort
 - [`estimate_effort_per_acre()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort_per_acre.md)

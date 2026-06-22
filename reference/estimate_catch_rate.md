@@ -201,7 +201,10 @@ validation when complete trip samples are insufficient.
 
 Other "Estimation":
 [`compare_cpue_estimators()`](https://chrischizinski.github.io/tidycreel/reference/compare_cpue_estimators.md),
+[`est_biomass()`](https://chrischizinski.github.io/tidycreel/reference/est_biomass.md),
+[`est_compliance()`](https://chrischizinski.github.io/tidycreel/reference/est_compliance.md),
 [`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md),
+[`est_mean_length()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_length.md),
 [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),
 [`estimate_effort_aerial_glmm()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort_aerial_glmm.md),
 [`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md),

@@ -75,6 +75,9 @@ and columns: grouping columns (if any), `length_bin` (ordered factor),
 
 Other "Estimation":
 [`compare_cpue_estimators()`](https://chrischizinski.github.io/tidycreel/reference/compare_cpue_estimators.md),
+[`est_biomass()`](https://chrischizinski.github.io/tidycreel/reference/est_biomass.md),
+[`est_compliance()`](https://chrischizinski.github.io/tidycreel/reference/est_compliance.md),
+[`est_mean_length()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_length.md),
 [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md),
 [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),
 [`estimate_effort_aerial_glmm()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort_aerial_glmm.md),

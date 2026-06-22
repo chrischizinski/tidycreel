@@ -124,14 +124,18 @@ sample size before allocation.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p><strong>Total sample size</strong> uses Cochran (1977) equation 5.25 (identical to
-<code><a href="creel_n_effort.html">creel_n_effort()</a></code>):</p>
-<p>$$n = \left\lceil \frac{\left(\sum_h N_h s_h\right)^2}{V_0 +
-  \sum_h N_h s_h^2} \right\rceil$$</p>
-<p>where \(V_0 = (CV_{target} \cdot \hat{E})^2\), \(\hat{E} = \sum_h N_h
-\bar{y}_h\) is the pilot total effort estimate, and \(s_h = \sqrt{s_h^2}\).</p>
-<p><strong>Per-stratum allocation</strong> uses the Neyman formula (Cochran 1977 eq. 5.24)
-extended for unequal costs (eq. 5.30):</p>
+    <p><strong>Total sample size</strong> uses the cost-generalised Cochran (1977) formula
+(eq. 5.25 / 5.34 with finite-population correction):</p>
+<p>$$n = \left\lceil \frac{A \cdot C}{V_0 + \sum_h N_h s_h^2}
+  \right\rceil$$</p>
+<p>where \(A = \sum_h N_h s_h / \sqrt{c_h}\),
+\(C = \sum_h N_h s_h \sqrt{c_h}\),
+\(V_0 = (CV_{target} \cdot \hat{E})^2\), \(\hat{E} = \sum_h N_h
+\bar{y}_h\), and \(s_h = \sqrt{s_h^2}\). When all \(c_h = 1\)
+(equal costs) this reduces to \((\sum_h N_h s_h)^2 / (V_0 + \sum_h N_h
+s_h^2)\), identical to <code><a href="creel_n_effort.html">creel_n_effort()</a></code>.</p>
+<p><strong>Per-stratum allocation</strong> uses the cost-adjusted Neyman formula (Cochran
+1977 eq. 5.30):</p>
 <p>$$n_h = \left\lceil n \cdot
   \frac{N_h s_h / \sqrt{c_h}}{\sum_h N_h s_h / \sqrt{c_h}} \right\rceil$$</p>
 <p>where \(c_h\) is the relative sampling cost for stratum \(h\). With

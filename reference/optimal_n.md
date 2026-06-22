@@ -51,18 +51,21 @@ sample size before allocation.
 
 ## Details
 
-**Total sample size** uses Cochran (1977) equation 5.25 (identical to
-[`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md)):
+**Total sample size** uses the cost-generalised Cochran (1977) formula
+(eq. 5.25 / 5.34 with finite-population correction):
 
-\$\$n = \left\lceil \frac{\left(\sum_h N_h s_h\right)^2}{V_0 + \sum_h
-N_h s_h^2} \right\rceil\$\$
+\$\$n = \left\lceil \frac{A \cdot C}{V_0 + \sum_h N_h s_h^2}
+\right\rceil\$\$
 
-where \\V_0 = (CV\_{target} \cdot \hat{E})^2\\, \\\hat{E} = \sum_h N_h
-\bar{y}\_h\\ is the pilot total effort estimate, and \\s_h =
-\sqrt{s_h^2}\\.
+where \\A = \sum_h N_h s_h / \sqrt{c_h}\\, \\C = \sum_h N_h s_h
+\sqrt{c_h}\\, \\V_0 = (CV\_{target} \cdot \hat{E})^2\\, \\\hat{E} =
+\sum_h N_h \bar{y}\_h\\, and \\s_h = \sqrt{s_h^2}\\. When all \\c_h =
+1\\ (equal costs) this reduces to \\(\sum_h N_h s_h)^2 / (V_0 + \sum_h
+N_h s_h^2)\\, identical to
+[`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md).
 
-**Per-stratum allocation** uses the Neyman formula (Cochran 1977 eq.
-5.24) extended for unequal costs (eq. 5.30):
+**Per-stratum allocation** uses the cost-adjusted Neyman formula
+(Cochran 1977 eq. 5.30):
 
 \$\$n_h = \left\lceil n \cdot \frac{N_h s_h / \sqrt{c_h}}{\sum_h N_h s_h
 / \sqrt{c_h}} \right\rceil\$\$
