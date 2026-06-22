@@ -664,8 +664,8 @@ test_that("RATE-69-release: estimate_release_rate defaults to use_trips = 'compl
 test_that("estimate_harvest_rate with conf_level = 0.90 produces narrower CI than 0.95", {
   design <- make_harvest_design()
 
-  result_95 <- estimate_harvest_rate(design, conf_level = 0.95) # nolint: object_usage_linter
-  result_90 <- estimate_harvest_rate(design, conf_level = 0.90) # nolint: object_usage_linter
+  result_95 <- estimate_harvest_rate(design, conf_level = 0.95, use_trips = "all") # nolint: object_usage_linter
+  result_90 <- estimate_harvest_rate(design, conf_level = 0.90, use_trips = "all") # nolint: object_usage_linter
 
   # CI width should be narrower for 90% than 95%
   width_95 <- result_95$estimates$ci_upper - result_95$estimates$ci_lower
@@ -680,7 +680,7 @@ test_that("estimate_harvest_rate with conf_level = 0.90 produces narrower CI tha
 test_that("estimate_harvest_rate with bootstrap variance method produces valid results", {
   design <- make_harvest_design()
 
-  result <- estimate_harvest_rate(design, variance = "bootstrap") # nolint: object_usage_linter
+  result <- estimate_harvest_rate(design, variance = "bootstrap", use_trips = "all") # nolint: object_usage_linter
 
   expect_equal(result$variance_method, "bootstrap")
   expect_true(is.numeric(result$estimates$se))
