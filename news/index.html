@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidycreel</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -64,12 +64,26 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="2.3.0" id="tidycreel-230-northern-pike-2026-06-22">tidycreel 2.3.0 “Northern Pike” (2026-06-22)<a class="anchor" aria-label="anchor" href="#tidycreel-230-northern-pike-2026-06-22"></a></h2>
+<div class="section level3">
+<h3 id="breaking-changes-2-3-0">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-2-3-0"></a></h3>
+<ul><li>
+<p><code><a href="../reference/estimate_harvest_rate.html">estimate_harvest_rate()</a></code> and <code><a href="../reference/estimate_release_rate.html">estimate_release_rate()</a></code> now default to <code>use_trips = "complete"</code> (previously <code>use_trips = "all"</code>). For standard (non-bus-route) designs that supply <code>trip_status</code>, HPUE and RPUE are now estimated from completed-trip interviews only. This is the statistically preferred default: incomplete-trip rates underestimate harvest and release when anglers keep or release additional fish after being interviewed (Hansen &amp; Van Kirk 2010). The previous all-interview behavior is no longer the default but remains fully available.</p>
+<p><strong>To restore the previous behavior</strong>, pass <code>use_trips = "all"</code> explicitly:</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/estimate_harvest_rate.html">estimate_harvest_rate</a></span><span class="op">(</span><span class="va">design</span>, use_trips <span class="op">=</span> <span class="st">"all"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/estimate_release_rate.html">estimate_release_rate</a></span><span class="op">(</span><span class="va">design</span>, use_trips <span class="op">=</span> <span class="st">"all"</span><span class="op">)</span></span></code></pre></div>
+<p>Designs without a <code>trip_status</code> column are unaffected (the argument has no effect). Bus-route designs already defaulted to <code>"complete"</code> and are unchanged. Closes <a href="https://github.com/chrischizinski/tidycreel/issues/69" class="external-link">#69</a>.</p>
+</li>
+</ul></div>
+</div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="2.2.0" id="tidycreel-220-goldeye-2026-06-17">tidycreel 2.2.0 “Goldeye” (2026-06-17)<a class="anchor" aria-label="anchor" href="#tidycreel-220-goldeye-2026-06-17"></a></h2>
 <div class="section level3">
 <h3 id="new-features-2-2-0">New features<a class="anchor" aria-label="anchor" href="#new-features-2-2-0"></a></h3>
 <ul><li>
 <p><code><a href="../reference/simulate_creel_data.html">simulate_creel_data()</a></code> now returns a <code>$schedule</code> component — a full-season calendar (one row per season day) with columns <code>date</code> (Date), <code>day_type</code> (character), and <code>sampled</code> (logical). Pass directly to <code><a href="../reference/creel_design.html">creel_design()</a></code> as the <code>calendar</code> argument for a complete round-trip simulation pipeline with no manual column construction. Unsampled days receive a <code>day_type</code> drawn proportionally from the <code>day_types</code> distribution. Closes <a href="https://github.com/chrischizinski/tidycreel/issues/68" class="external-link">#68</a>.</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sim</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_creel_data.html">simulate_creel_data</a></span><span class="op">(</span>params <span class="op">=</span> <span class="va">my_params</span>, day_types <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>weekday <span class="op">=</span> <span class="fl">5</span><span class="op">/</span><span class="fl">7</span>, weekend <span class="op">=</span> <span class="fl">2</span><span class="op">/</span><span class="fl">7</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">sim</span><span class="op">$</span><span class="va">schedule</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">sim</span><span class="op">$</span><span class="va">counts</span><span class="op">)</span> <span class="op">|&gt;</span></span>

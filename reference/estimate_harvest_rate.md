@@ -58,10 +58,15 @@ estimate_harvest_rate(
 - use_trips:
 
   Character string specifying which interviews to include. For standard
-  (non-bus-route) designs: `"all"` (default) uses all interviews
-  including incomplete trips; `"complete"` restricts to completed trips
-  only. For bus-route designs: `"complete"` (default), `"incomplete"`,
-  or `"diagnostic"`. When `trip_status` was not provided to
+  (non-bus-route) designs: `"complete"` (default) restricts to completed
+  trips only; `"all"` uses all interviews including incomplete trips.
+  `"complete"` is the statistically preferred default because
+  incomplete-trip HPUE underestimates harvest when anglers keep
+  additional fish after the interview (Hansen & Van Kirk 2010). Fish
+  already in the livewell are directly observable, so `"all"` remains
+  available for analyses that prefer the larger interview set. For
+  bus-route designs: `"complete"` (default), `"incomplete"`, or
+  `"diagnostic"`. When `trip_status` was not provided to
   [`add_interviews`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md),
   this argument has no effect for standard designs.
 
@@ -118,15 +123,14 @@ When called on a sectioned design, no `.lake_total` row is produced.
 Harvest rates (fish per angler-hour) are not additive across sections.
 Lake-wide harvest rate requires a separate unsectioned call.
 
-Unlike
-[`estimate_catch_rate`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md),
-this function defaults to using **all** interviews (complete and
-incomplete) for HPUE estimation. Fish already in the livewell at
-interview time are directly observable and represent confirmed harvest.
-However, incomplete-trip HPUE may underestimate when anglers continue
-fishing and keep additional fish after being interviewed (Hansen & Van
-Kirk 2010). Use `use_trips = "complete"` for a stricter analysis
-restricted to completed-trip interviews.
+This function defaults to using **completed-trip** interviews only for
+HPUE estimation (`use_trips = "complete"`). Incomplete-trip HPUE
+underestimates harvest when anglers continue fishing and keep additional
+fish after being interviewed (Hansen & Van Kirk 2010), so restricting to
+completed trips is the statistically preferred default. Fish already in
+the livewell at interview time are directly observable, so
+`use_trips = "all"` remains available to include incomplete-trip
+interviews.
 
 ## See also
 
@@ -182,9 +186,11 @@ design_with_interviews <- add_interviews(design, interviews,
 #> ℹ Zero catch may be valid (skunked) or indicate missing data.
 #> ℹ Added 40 interviews: 20 complete (50%), 20 incomplete (50%)
 result <- estimate_harvest_rate(design_with_interviews)
-#> ℹ Using all interviews for HPUE estimation
-#>   (n=40: 20 complete, 20 incomplete) [default]
-#>   Use `use_trips = 'complete'` to restrict to completed trips.
+#> ℹ Filtering to complete trips for HPUE estimation
+#>   (n=20, 50% of 40 interviews) [default]
+#> Warning: Small sample size for harvest estimation.
+#> ! Sample size is 20. Ratio estimates are more stable with n >= 30.
+#> ℹ Variance estimates may be unstable with n < 30.
 print(result)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -195,16 +201,14 @@ print(result)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1    0.923 0.121    0.686     1.16    40
+#> 1    0.917 0.202    0.521     1.31    20
 
 # Grouped by day_type
 result_grouped <- estimate_harvest_rate(design_with_interviews, by = day_type)
-#> ℹ Using all interviews for HPUE estimation
-#>   (n=40: 20 complete, 20 incomplete) [default]
-#>   Use `use_trips = 'complete'` to restrict to completed trips.
-#> Warning: Small sample size in 2 groups:
+#> ℹ Filtering to complete trips for HPUE estimation
+#>   (n=20, 50% of 40 interviews) [default]
+#> Warning: Small sample size in 1 group:
 #> • Group day_type=weekday: n=20
-#> • Group day_type=weekend: n=20
 #> ! Ratio estimates are more stable with n >= 30 per group.
 #> ℹ Variance estimates may be unstable with n < 30.
 print(result_grouped)
@@ -215,23 +219,26 @@ print(result_grouped)
 #> Confidence level: 95%
 #> Grouped by: day_type
 #> 
-#> # A tibble: 2 × 6
+#> # A tibble: 1 × 6
 #>   day_type estimate    se ci_lower ci_upper     n
 #>   <chr>       <dbl> <dbl>    <dbl>    <dbl> <dbl>
 #> 1 weekday     0.917 0.202    0.521     1.31    20
-#> 2 weekend     0.929 0.142    0.650     1.21    20
 
 # Custom confidence level
 result_90 <- estimate_harvest_rate(design_with_interviews, conf_level = 0.90)
-#> ℹ Using all interviews for HPUE estimation
-#>   (n=40: 20 complete, 20 incomplete) [default]
-#>   Use `use_trips = 'complete'` to restrict to completed trips.
+#> ℹ Filtering to complete trips for HPUE estimation
+#>   (n=20, 50% of 40 interviews) [default]
+#> Warning: Small sample size for harvest estimation.
+#> ! Sample size is 20. Ratio estimates are more stable with n >= 30.
+#> ℹ Variance estimates may be unstable with n < 30.
 
 # Bootstrap variance estimation
 result_boot <- estimate_harvest_rate(design_with_interviews, variance = "bootstrap")
-#> ℹ Using all interviews for HPUE estimation
-#>   (n=40: 20 complete, 20 incomplete) [default]
-#>   Use `use_trips = 'complete'` to restrict to completed trips.
+#> ℹ Filtering to complete trips for HPUE estimation
+#>   (n=20, 50% of 40 interviews) [default]
+#> Warning: Small sample size for harvest estimation.
+#> ! Sample size is 20. Ratio estimates are more stable with n >= 30.
+#> ℹ Variance estimates may be unstable with n < 30.
 
 # Verbose dispatch message (shows which estimator was used for bus-route designs)
 # result_verbose <- estimate_harvest_rate(design, verbose = TRUE)

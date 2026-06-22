@@ -411,13 +411,13 @@ estimate_total_harvest(design, by = species)
 
 estimate_release_rate(design, by = species)
 #> Warning: Small sample size for CPUE estimation.
-#> ! Sample size is 22. Ratio estimates are more stable with n >= 30.
+#> ! Sample size is 17. Ratio estimates are more stable with n >= 30.
 #> ℹ Variance estimates may be unstable with n < 30.
 #> Small sample size for CPUE estimation.
-#> ! Sample size is 22. Ratio estimates are more stable with n >= 30.
+#> ! Sample size is 17. Ratio estimates are more stable with n >= 30.
 #> ℹ Variance estimates may be unstable with n < 30.
 #> Small sample size for CPUE estimation.
-#> ! Sample size is 22. Ratio estimates are more stable with n >= 30.
+#> ! Sample size is 17. Ratio estimates are more stable with n >= 30.
 #> ℹ Variance estimates may be unstable with n < 30.
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -429,9 +429,9 @@ estimate_release_rate(design, by = species)
 #> # A tibble: 3 × 6
 #>   species estimate     se ci_lower ci_upper     n
 #>   <chr>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1 bass      0.0949 0.0352  0.0259    0.164     22
-#> 2 panfish   0.0395 0.0252 -0.00982   0.0889    22
-#> 3 walleye   0.134  0.0340  0.0678    0.201     22
+#> 1 bass      0.102  0.0407  0.0225    0.182     17
+#> 2 panfish   0.0186 0.0104 -0.00173   0.0389    17
+#> 3 walleye   0.140  0.0385  0.0640    0.215     17
 estimate_total_release(design, by = species)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────

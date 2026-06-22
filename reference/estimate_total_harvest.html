@@ -11,7 +11,7 @@ data (for effort estimation) and interview data (for HPUE estimation)."><meta pr
 
     <a class="navbar-brand me-2" href="../index.html">tidycreel</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -226,11 +226,10 @@ assumption: <code>sqrt(sum(se_i^2))</code>.</p>
 <span class="r-in"><span><span class="co"># Compare components</span></span></span>
 <span class="r-in"><span><span class="va">effort_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">hpue_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="estimate_harvest_rate.html">estimate_harvest_rate</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Using all interviews for HPUE estimation</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>   (n=22: 17 complete, 5 incomplete) [default]</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>   Use `use_trips = 'complete'` to restrict to completed trips.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Filtering to complete trips for HPUE estimation</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   (n=17, 77.3% of 22 interviews) [default]</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Small sample size for harvest estimation.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> Sample size is 22. Ratio estimates are more stable with n &gt;= 30.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> Sample size is 17. Ratio estimates are more stable with n &gt;= 30.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span>
 <span class="r-in"><span><span class="co"># total_harvest$estimates$estimate approximately equals effort_est * hpue_est</span></span></span>
 <span class="r-in"><span></span></span>

@@ -13,7 +13,7 @@ released fish per unit effort, analogous to HPUE for harvested fish."><meta prop
 
     <a class="navbar-brand me-2" href="../index.html">tidycreel</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -118,9 +118,13 @@ Options: <code>"taylor"</code> (default), <code>"bootstrap"</code>, or
 
 <dt id="arg-use-trips">use_trips<a class="anchor" aria-label="anchor" href="#arg-use-trips"></a></dt>
 <dd><p>Character string specifying which interviews to include.
-<code>"all"</code> (default) uses all interviews including incomplete trips;
-<code>"complete"</code> restricts to completed trips only. When <code>trip_status</code>
-was not provided to <code><a href="add_interviews.html">add_interviews</a></code>, this argument has no effect.</p></dd>
+<code>"complete"</code> (default) restricts to completed trips only; <code>"all"</code>
+uses all interviews including incomplete trips. <code>"complete"</code> is the
+statistically preferred default because incomplete-trip RPUE underestimates
+releases when anglers release additional fish after the interview (Hansen &amp;
+Van Kirk 2010). <code>"all"</code> remains available for analyses that prefer the
+larger interview set. When <code>trip_status</code> was not provided to
+<code><a href="add_interviews.html">add_interviews</a></code>, this argument has no effect.</p></dd>
 
 
 <dt id="arg-missing-sections">missing_sections<a class="anchor" aria-label="anchor" href="#arg-missing-sections"></a></dt>
@@ -149,12 +153,13 @@ to the numerator (zero-fill), ensuring the effort denominator is correct.</p>
     <p>When called on a sectioned design, no <code>.lake_total</code> row is
 produced. Release rates (fish per angler-hour) are not additive across
 sections. Lake-wide release rate requires a separate unsectioned call.</p>
-<p>Unlike <code><a href="estimate_catch_rate.html">estimate_catch_rate</a></code>, this function defaults to
-using <strong>all</strong> interviews (complete and incomplete) for RPUE estimation.
-Released fish counted at interview time are directly observable. However,
-incomplete-trip RPUE may underestimate if anglers release additional fish
-after the interview. Use <code>use_trips = "complete"</code> for a stricter
-analysis restricted to completed-trip interviews.</p>
+<p>This function defaults to using <strong>completed-trip</strong> interviews only
+for RPUE estimation (<code>use_trips = "complete"</code>). Incomplete-trip RPUE may
+underestimate releases if anglers release additional fish after the
+interview (Hansen &amp; Van Kirk 2010), so restricting to completed trips is the
+statistically preferred default. Released fish counted at interview time are
+directly observable, so <code>use_trips = "all"</code> remains available to include
+incomplete-trip interviews.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
@@ -203,11 +208,10 @@ analysis restricted to completed-trip interviews.</p>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Overall release rate (all species combined)</span></span></span>
 <span class="r-in"><span><span class="va">rpue</span> <span class="op">&lt;-</span> <span class="fu">estimate_release_rate</span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Using all interviews for RPUE estimation</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>   (n=22: 17 complete, 5 incomplete) [default]</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>   Use `use_trips = 'complete'` to restrict to completed trips.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Filtering to complete trips for RPUE estimation</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   (n=17, 77.3% of 22 interviews) [default]</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Small sample size for CPUE estimation.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> Sample size is 22. Ratio estimates are more stable with n &gt;= 30.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> Sample size is 17. Ratio estimates are more stable with n &gt;= 30.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">rpue</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
@@ -217,23 +221,22 @@ analysis restricted to completed-trip interviews.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Confidence level: 95%</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 5</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   estimate     se ci_lower ci_upper     n</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>    0.602 0.095<span style="text-decoration: underline;">6</span>    0.414    0.789    22</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   estimate    se ci_lower ci_upper     n</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>    0.615 0.105    0.409    0.822    17</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Per-species release rates</span></span></span>
 <span class="r-in"><span><span class="va">rpue_by_species</span> <span class="op">&lt;-</span> <span class="fu">estimate_release_rate</span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">species</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Using all interviews for RPUE estimation</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>   (n=22: 17 complete, 5 incomplete) [default]</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>   Use `use_trips = 'complete'` to restrict to completed trips.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Filtering to complete trips for RPUE estimation</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   (n=17, 77.3% of 22 interviews) [default]</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Small sample size for CPUE estimation.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> Sample size is 22. Ratio estimates are more stable with n &gt;= 30.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> Sample size is 17. Ratio estimates are more stable with n &gt;= 30.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Small sample size for CPUE estimation.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> Sample size is 22. Ratio estimates are more stable with n &gt;= 30.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> Sample size is 17. Ratio estimates are more stable with n &gt;= 30.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Small sample size for CPUE estimation.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> Sample size is 22. Ratio estimates are more stable with n &gt;= 30.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> Sample size is 17. Ratio estimates are more stable with n &gt;= 30.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">rpue_by_species</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
@@ -246,9 +249,9 @@ analysis restricted to completed-trip interviews.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 3 × 6</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   species estimate     se ci_lower ci_upper     n</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> bass      0.212  0.076<span style="text-decoration: underline;">2</span>   0.063<span style="text-decoration: underline;">1</span>    0.362    22</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> panfish   0.088<span style="text-decoration: underline;">5</span> 0.056<span style="text-decoration: underline;">4</span>  -<span style="color: #BB0000;">0.022</span><span style="color: #BB0000; text-decoration: underline;">1</span>    0.199    22</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span> walleye   0.301  0.074<span style="text-decoration: underline;">5</span>   0.155     0.447    22</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> bass      0.242  0.090<span style="text-decoration: underline;">4</span>  0.064<span style="text-decoration: underline;">5</span>    0.419     17</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> panfish   0.044<span style="text-decoration: underline;">0</span> 0.026<span style="text-decoration: underline;">8</span> -<span style="color: #BB0000;">0.008</span><span style="color: #BB0000; text-decoration: underline;">49</span>   0.096<span style="text-decoration: underline;">4</span>    17</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span> walleye   0.330  0.087<span style="text-decoration: underline;">0</span>  0.159     0.500     17</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

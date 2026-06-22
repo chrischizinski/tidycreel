@@ -1,5 +1,35 @@
 # Changelog
 
+## tidycreel 2.3.0 “Northern Pike” (2026-06-22)
+
+### Breaking changes
+
+- [`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md)
+  and
+  [`estimate_release_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_release_rate.md)
+  now default to `use_trips = "complete"` (previously
+  `use_trips = "all"`). For standard (non-bus-route) designs that supply
+  `trip_status`, HPUE and RPUE are now estimated from completed-trip
+  interviews only. This is the statistically preferred default:
+  incomplete-trip rates underestimate harvest and release when anglers
+  keep or release additional fish after being interviewed (Hansen & Van
+  Kirk 2010). The previous all-interview behavior is no longer the
+  default but remains fully available.
+
+  **To restore the previous behavior**, pass `use_trips = "all"`
+  explicitly:
+
+  ``` r
+
+  estimate_harvest_rate(design, use_trips = "all")
+  estimate_release_rate(design, use_trips = "all")
+  ```
+
+  Designs without a `trip_status` column are unaffected (the argument
+  has no effect). Bus-route designs already defaulted to `"complete"`
+  and are unchanged. Closes
+  [\#69](https://github.com/chrischizinski/tidycreel/issues/69).
+
 ## tidycreel 2.2.0 “Goldeye” (2026-06-17)
 
 ### New features

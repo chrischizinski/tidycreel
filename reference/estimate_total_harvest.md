@@ -176,11 +176,10 @@ print(total_harvest)
 # Compare components
 effort_est <- estimate_effort(design)
 hpue_est <- estimate_harvest_rate(design)
-#> ℹ Using all interviews for HPUE estimation
-#>   (n=22: 17 complete, 5 incomplete) [default]
-#>   Use `use_trips = 'complete'` to restrict to completed trips.
+#> ℹ Filtering to complete trips for HPUE estimation
+#>   (n=17, 77.3% of 22 interviews) [default]
 #> Warning: Small sample size for harvest estimation.
-#> ! Sample size is 22. Ratio estimates are more stable with n >= 30.
+#> ! Sample size is 17. Ratio estimates are more stable with n >= 30.
 #> ℹ Variance estimates may be unstable with n < 30.
 # total_harvest$estimates$estimate approximately equals effort_est * hpue_est
 

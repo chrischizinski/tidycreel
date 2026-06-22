@@ -29,7 +29,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidycreel</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -488,13 +488,13 @@ catch data) using the ratio-of-means estimator.</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/estimate_release_rate.html">estimate_release_rate</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">species</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning: Small sample size for CPUE estimation.</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Sample size is 22. Ratio estimates are more stable with n &gt;= 30.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Sample size is 17. Ratio estimates are more stable with n &gt;= 30.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span></span>
 <span><span class="co">#&gt; Small sample size for CPUE estimation.</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Sample size is 22. Ratio estimates are more stable with n &gt;= 30.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Sample size is 17. Ratio estimates are more stable with n &gt;= 30.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span></span>
 <span><span class="co">#&gt; Small sample size for CPUE estimation.</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Sample size is 22. Ratio estimates are more stable with n &gt;= 30.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Sample size is 17. Ratio estimates are more stable with n &gt;= 30.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
@@ -506,9 +506,9 @@ catch data) using the ratio-of-means estimator.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 3 × 6</span></span></span>
 <span><span class="co">#&gt;   species estimate     se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> bass      0.094<span style="text-decoration: underline;">9</span> 0.035<span style="text-decoration: underline;">2</span>  0.025<span style="text-decoration: underline;">9</span>    0.164     22</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> panfish   0.039<span style="text-decoration: underline;">5</span> 0.025<span style="text-decoration: underline;">2</span> -<span style="color: #BB0000;">0.009</span><span style="color: #BB0000; text-decoration: underline;">82</span>   0.088<span style="text-decoration: underline;">9</span>    22</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> walleye   0.134  0.034<span style="text-decoration: underline;">0</span>  0.067<span style="text-decoration: underline;">8</span>    0.201     22</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> bass      0.102  0.040<span style="text-decoration: underline;">7</span>  0.022<span style="text-decoration: underline;">5</span>    0.182     17</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> panfish   0.018<span style="text-decoration: underline;">6</span> 0.010<span style="text-decoration: underline;">4</span> -<span style="color: #BB0000;">0.001</span><span style="color: #BB0000; text-decoration: underline;">73</span>   0.038<span style="text-decoration: underline;">9</span>    17</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> walleye   0.140  0.038<span style="text-decoration: underline;">5</span>  0.064<span style="text-decoration: underline;">0</span>    0.215     17</span></span>
 <span><span class="fu"><a href="../reference/estimate_total_release.html">estimate_total_release</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">species</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>

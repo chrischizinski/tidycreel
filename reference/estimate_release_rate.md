@@ -48,10 +48,14 @@ estimate_release_rate(
 
 - use_trips:
 
-  Character string specifying which interviews to include. `"all"`
-  (default) uses all interviews including incomplete trips; `"complete"`
-  restricts to completed trips only. When `trip_status` was not provided
-  to
+  Character string specifying which interviews to include. `"complete"`
+  (default) restricts to completed trips only; `"all"` uses all
+  interviews including incomplete trips. `"complete"` is the
+  statistically preferred default because incomplete-trip RPUE
+  underestimates releases when anglers release additional fish after the
+  interview (Hansen & Van Kirk 2010). `"all"` remains available for
+  analyses that prefer the larger interview set. When `trip_status` was
+  not provided to
   [`add_interviews`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md),
   this argument has no effect.
 
@@ -83,14 +87,13 @@ When called on a sectioned design, no `.lake_total` row is produced.
 Release rates (fish per angler-hour) are not additive across sections.
 Lake-wide release rate requires a separate unsectioned call.
 
-Unlike
-[`estimate_catch_rate`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md),
-this function defaults to using **all** interviews (complete and
-incomplete) for RPUE estimation. Released fish counted at interview time
-are directly observable. However, incomplete-trip RPUE may underestimate
-if anglers release additional fish after the interview. Use
-`use_trips = "complete"` for a stricter analysis restricted to
-completed-trip interviews.
+This function defaults to using **completed-trip** interviews only for
+RPUE estimation (`use_trips = "complete"`). Incomplete-trip RPUE may
+underestimate releases if anglers release additional fish after the
+interview (Hansen & Van Kirk 2010), so restricting to completed trips is
+the statistically preferred default. Released fish counted at interview
+time are directly observable, so `use_trips = "all"` remains available
+to include incomplete-trip interviews.
 
 ## See also
 
@@ -142,11 +145,10 @@ design <- add_catch(design, example_catch,
 
 # Overall release rate (all species combined)
 rpue <- estimate_release_rate(design)
-#> ℹ Using all interviews for RPUE estimation
-#>   (n=22: 17 complete, 5 incomplete) [default]
-#>   Use `use_trips = 'complete'` to restrict to completed trips.
+#> ℹ Filtering to complete trips for RPUE estimation
+#>   (n=17, 77.3% of 22 interviews) [default]
 #> Warning: Small sample size for CPUE estimation.
-#> ! Sample size is 22. Ratio estimates are more stable with n >= 30.
+#> ! Sample size is 17. Ratio estimates are more stable with n >= 30.
 #> ℹ Variance estimates may be unstable with n < 30.
 print(rpue)
 #> 
@@ -156,23 +158,22 @@ print(rpue)
 #> Confidence level: 95%
 #> 
 #> # A tibble: 1 × 5
-#>   estimate     se ci_lower ci_upper     n
-#>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.602 0.0956    0.414    0.789    22
+#>   estimate    se ci_lower ci_upper     n
+#>      <dbl> <dbl>    <dbl>    <dbl> <int>
+#> 1    0.615 0.105    0.409    0.822    17
 
 # Per-species release rates
 rpue_by_species <- estimate_release_rate(design, by = species)
-#> ℹ Using all interviews for RPUE estimation
-#>   (n=22: 17 complete, 5 incomplete) [default]
-#>   Use `use_trips = 'complete'` to restrict to completed trips.
+#> ℹ Filtering to complete trips for RPUE estimation
+#>   (n=17, 77.3% of 22 interviews) [default]
 #> Warning: Small sample size for CPUE estimation.
-#> ! Sample size is 22. Ratio estimates are more stable with n >= 30.
+#> ! Sample size is 17. Ratio estimates are more stable with n >= 30.
 #> ℹ Variance estimates may be unstable with n < 30.
 #> Warning: Small sample size for CPUE estimation.
-#> ! Sample size is 22. Ratio estimates are more stable with n >= 30.
+#> ! Sample size is 17. Ratio estimates are more stable with n >= 30.
 #> ℹ Variance estimates may be unstable with n < 30.
 #> Warning: Small sample size for CPUE estimation.
-#> ! Sample size is 22. Ratio estimates are more stable with n >= 30.
+#> ! Sample size is 17. Ratio estimates are more stable with n >= 30.
 #> ℹ Variance estimates may be unstable with n < 30.
 print(rpue_by_species)
 #> 
@@ -185,7 +186,7 @@ print(rpue_by_species)
 #> # A tibble: 3 × 6
 #>   species estimate     se ci_lower ci_upper     n
 #>   <chr>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1 bass      0.212  0.0762   0.0631    0.362    22
-#> 2 panfish   0.0885 0.0564  -0.0221    0.199    22
-#> 3 walleye   0.301  0.0745   0.155     0.447    22
+#> 1 bass      0.242  0.0904  0.0645    0.419     17
+#> 2 panfish   0.0440 0.0268 -0.00849   0.0964    17
+#> 3 walleye   0.330  0.0870  0.159     0.500     17
 ```
