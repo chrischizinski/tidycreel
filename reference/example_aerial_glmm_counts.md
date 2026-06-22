@@ -63,6 +63,7 @@ Other "Example Datasets":
 [`creel_interviews_toy`](https://chrischizinski.github.io/tidycreel/reference/creel_interviews_toy.md),
 [`example_aerial_counts`](https://chrischizinski.github.io/tidycreel/reference/example_aerial_counts.md),
 [`example_aerial_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_aerial_interviews.md),
+[`example_ages`](https://chrischizinski.github.io/tidycreel/reference/example_ages.md),
 [`example_calendar`](https://chrischizinski.github.io/tidycreel/reference/example_calendar.md),
 [`example_camera_counts`](https://chrischizinski.github.io/tidycreel/reference/example_camera_counts.md),
 [`example_camera_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_camera_interviews.md),

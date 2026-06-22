@@ -85,6 +85,10 @@ dispatch automatically on survey type.
 - [`est_mean_length()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_length.md)
   : Estimate design-weighted mean length from a creel length
   distribution
+- [`est_age_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_age_distribution.md)
+  : Estimate a weighted age distribution from creel interview data
+- [`est_mean_age()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_age.md)
+  : Estimate design-weighted mean age from a creel age distribution
 - [`est_compliance()`](https://chrischizinski.github.io/tidycreel/reference/est_compliance.md)
   : Estimate design-weighted size-limit compliance from a creel length
   distribution
@@ -289,6 +293,8 @@ vignettes and function examples.
   : Example species catch data for creel survey
 - [`example_lengths`](https://chrischizinski.github.io/tidycreel/reference/example_lengths.md)
   : Example fish length data for creel survey
+- [`example_ages`](https://chrischizinski.github.io/tidycreel/reference/example_ages.md)
+  : Example fish age data for creel estimation
 - [`example_sections_calendar`](https://chrischizinski.github.io/tidycreel/reference/example_sections_calendar.md)
   : Example calendar for spatially stratified creel survey
 - [`example_sections_counts`](https://chrischizinski.github.io/tidycreel/reference/example_sections_counts.md)

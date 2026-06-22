@@ -1,39 +1,47 @@
-# Example calendar data for creel survey
+# Example fish age data for creel estimation
 
-A sample survey calendar dataset demonstrating the structure required
-for
-[`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md).
-Contains 14 days (June 1-14, 2024) with weekday/weekend strata,
-representing a two-week survey period.
+A small set of individual fish age records (one row per aged fish)
+linked to
+[`example_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_interviews.md).
+Suitable for use with
+[`add_ages`](https://chrischizinski.github.io/tidycreel/reference/add_ages.md).
 
 ## Usage
 
 ``` r
-example_calendar
+example_ages
 ```
 
 ## Format
 
-A data frame with 14 rows and 2 columns:
+A data frame with 18 rows and 4 columns:
 
-- date:
+- interview_id:
 
-  Survey date (Date class), June 1-14, 2024
+  Integer interview identifier. Foreign key to
+  `example_interviews$interview_id`.
 
-- day_type:
+- species:
 
-  Day type stratum: "weekday" or "weekend"
+  Character. Species name: `"walleye"`, `"bass"`, or `"panfish"`.
+
+- age:
+
+  Integer. Estimated age in years (0-6). Each row is a single aged fish.
+
+- age_type:
+
+  Character. Fish fate: `"harvest"` or `"release"`.
 
 ## Source
 
-Simulated data for package examples
+Simulated data for package examples.
 
 ## See also
 
-[example_counts](https://chrischizinski.github.io/tidycreel/reference/example_counts.md)
-for matching count data,
-[`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md)
-to create a design from calendar data
+[`example_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_interviews.md),
+[`example_lengths`](https://chrischizinski.github.io/tidycreel/reference/example_lengths.md),
+[`add_ages`](https://chrischizinski.github.io/tidycreel/reference/add_ages.md)
 
 Other "Example Datasets":
 [`creel_counts_toy`](https://chrischizinski.github.io/tidycreel/reference/creel_counts_toy.md),
@@ -41,7 +49,7 @@ Other "Example Datasets":
 [`example_aerial_counts`](https://chrischizinski.github.io/tidycreel/reference/example_aerial_counts.md),
 [`example_aerial_glmm_counts`](https://chrischizinski.github.io/tidycreel/reference/example_aerial_glmm_counts.md),
 [`example_aerial_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_aerial_interviews.md),
-[`example_ages`](https://chrischizinski.github.io/tidycreel/reference/example_ages.md),
+[`example_calendar`](https://chrischizinski.github.io/tidycreel/reference/example_calendar.md),
 [`example_camera_counts`](https://chrischizinski.github.io/tidycreel/reference/example_camera_counts.md),
 [`example_camera_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_camera_interviews.md),
 [`example_camera_timestamps`](https://chrischizinski.github.io/tidycreel/reference/example_camera_timestamps.md),
@@ -58,19 +66,26 @@ Other "Example Datasets":
 ## Examples
 
 ``` r
-# Load and inspect
 data(example_calendar)
-head(example_calendar)
-#>         date day_type
-#> 1 2024-06-01  weekend
-#> 2 2024-06-02  weekend
-#> 3 2024-06-03  weekday
-#> 4 2024-06-04  weekday
-#> 5 2024-06-05  weekday
-#> 6 2024-06-06  weekday
+data(example_interviews)
+data(example_ages)
 
-# Create a creel design
 design <- creel_design(example_calendar, date = date, strata = day_type)
+design <- add_interviews(design, example_interviews,
+  catch = catch_total, effort = hours_fished, harvest = catch_kept,
+  trip_status = trip_status, trip_duration = trip_duration
+)
+#> ℹ No `n_anglers` provided — assuming 1 angler per interview.
+#> ℹ Pass `n_anglers = <column>` to use actual party sizes for angler-hour
+#>   normalization.
+#> ℹ Added 22 interviews: 17 complete (77%), 5 incomplete (23%)
+design <- add_ages(design, example_ages,
+  age_uid = interview_id,
+  interview_uid = interview_id,
+  species = species,
+  age = age,
+  age_type = age_type
+)
 print(design)
 #> 
 #> ── Creel Survey Design ─────────────────────────────────────────────────────────
@@ -80,6 +95,12 @@ print(design)
 #> Calendar: 14 days (2024-06-01 to 2024-06-14)
 #> day_type: 2 levels
 #> Counts: "none"
-#> Interviews: "none"
+#> Interviews: 22 observations
+#> Type: "access"
+#> Catch: catch_total
+#> Effort: hours_fished
+#> Harvest: catch_kept
+#> Trip status: 17 complete, 5 incomplete
+#> Survey: <survey.design2> (constructed)
 #> Sections: "none"
 ```

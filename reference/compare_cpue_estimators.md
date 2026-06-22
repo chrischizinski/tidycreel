@@ -87,9 +87,11 @@ best? *Fish. Res.* 106: 325–333.
 [`estimate_catch_rate`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
 
 Other "Estimation":
+[`est_age_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_age_distribution.md),
 [`est_biomass()`](https://chrischizinski.github.io/tidycreel/reference/est_biomass.md),
 [`est_compliance()`](https://chrischizinski.github.io/tidycreel/reference/est_compliance.md),
 [`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md),
+[`est_mean_age()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_age.md),
 [`est_mean_length()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_length.md),
 [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md),
 [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),

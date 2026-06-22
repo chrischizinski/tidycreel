@@ -1,46 +1,44 @@
-# Estimate design-weighted mean length from a creel length distribution
+# Estimate design-weighted mean age from a creel age distribution
 
-`est_mean_length()` computes the pressure-weighted mean fish length from
-a
-[`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md)
-object using the ratio estimator \\\bar{L} = \sum_h L_h \hat{N}\_h /
-\sum_h \hat{N}\_h\\, with delta-method standard error.
+`est_mean_age()` computes the pressure-weighted mean fish age from a
+[`est_age_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_age_distribution.md)
+object using the ratio estimator \\\bar{A} = \sum_a a \hat{N}\_a /
+\sum_a \hat{N}\_a\\, with delta-method standard error.
 
 ## Usage
 
 ``` r
-est_mean_length(ld, conf_level = NULL)
+est_mean_age(ad, conf_level = NULL)
 ```
 
 ## Arguments
 
-- ld:
+- ad:
 
-  A `creel_length_distribution` object from
-  [`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md).
+  A `creel_age_distribution` object from
+  [`est_age_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_age_distribution.md).
 
 - conf_level:
 
   Numeric confidence level for confidence intervals. Defaults to the
-  level stored in `ld` (usually `0.95`).
+  level stored in `ad` (usually `0.95`).
 
 ## Value
 
-A `data.frame` with class `c("creel_mean_length", "data.frame")` and
-columns: grouping columns (if any), `mean_length`, `mean_length_se`,
-`mean_length_ci_lower`, `mean_length_ci_upper`.
+A `data.frame` with class `c("creel_mean_age", "data.frame")` and
+columns: grouping columns (if any), `mean_age`, `mean_age_se`,
+`mean_age_ci_lower`, `mean_age_ci_upper`.
 
 ## Details
 
-Bin midpoints \\L_h = (\text{bin\\lower} + \text{bin\\upper}) / 2\\
-serve as representative lengths. Mean length is the ratio of total
-length-weighted count to total count: \$\$\bar{L} = \frac{\sum_h L_h
-\hat{N}\_h}{\hat{N}}\$\$
+Each integer age \\a\\ contributes its survey-weighted count
+\\\hat{N}\_a\\. Mean age is the ratio of total age-weighted count to
+total count: \$\$\bar{A} = \frac{\sum_a a \hat{N}\_a}{\hat{N}}\$\$
 
 Variance is propagated via the delta method for a ratio estimator,
-treating cross-bin covariances as zero:
-\$\$\widehat{\text{Var}}(\bar{L}) \approx \frac{1}{\hat{N}^2} \sum_h
-(L_h - \bar{L})^2 \\ \widehat{\text{SE}}\_h^2\$\$
+treating cross-class covariances as zero:
+\$\$\widehat{\text{Var}}(\bar{A}) \approx \frac{1}{\hat{N}^2} \sum_a
+(a - \bar{A})^2 \\ \widehat{\text{SE}}\_a^2\$\$
 
 ## See also
 
@@ -50,7 +48,7 @@ Other "Estimation":
 [`est_biomass()`](https://chrischizinski.github.io/tidycreel/reference/est_biomass.md),
 [`est_compliance()`](https://chrischizinski.github.io/tidycreel/reference/est_compliance.md),
 [`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md),
-[`est_mean_age()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_age.md),
+[`est_mean_length()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_length.md),
 [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md),
 [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),
 [`estimate_effort_aerial_glmm()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort_aerial_glmm.md),
@@ -65,7 +63,7 @@ Other "Estimation":
 ``` r
 data(example_calendar)
 data(example_interviews)
-data(example_lengths)
+data(example_ages)
 
 design <- creel_design(example_calendar, date = date, strata = day_type)
 design <- add_interviews(design, example_interviews,
@@ -76,20 +74,18 @@ design <- add_interviews(design, example_interviews,
 #> ℹ Pass `n_anglers = <column>` to use actual party sizes for angler-hour
 #>   normalization.
 #> ℹ Added 22 interviews: 17 complete (77%), 5 incomplete (23%)
-design <- add_lengths(design, example_lengths,
-  length_uid = interview_id,
+design <- add_ages(design, example_ages,
+  age_uid = interview_id,
   interview_uid = interview_id,
   species = species,
-  length = length,
-  length_type = length_type,
-  count = count,
-  release_format = "binned"
+  age = age,
+  age_type = age_type
 )
 
-ld <- est_length_distribution(design, by = species, bin_width = 25)
-est_mean_length(ld)
-#>   species mean_length mean_length_se mean_length_ci_lower mean_length_ci_upper
-#> 1    bass    300.9615       15.78323             270.0270             331.8961
-#> 2 panfish    196.5909       13.69260             169.7539             223.4279
-#> 3 walleye    431.7308       15.84683             400.6716             462.7900
+ad <- est_age_distribution(design, by = species)
+est_mean_age(ad)
+#>   species mean_age mean_age_se mean_age_ci_lower mean_age_ci_upper
+#> 1    bass 2.600000   0.2154066         2.1778108          3.022189
+#> 2 panfish 1.000000   0.3535534         0.3070481          1.692952
+#> 3 walleye 4.444444   0.4307445         3.6002007          5.288688
 ```
