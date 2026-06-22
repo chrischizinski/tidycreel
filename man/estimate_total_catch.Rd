@@ -140,9 +140,11 @@ cpue_est <- estimate_catch_rate(design)
 
 Other "Estimation":
 \code{\link{compare_cpue_estimators}()},
+\code{\link{est_age_distribution}()},
 \code{\link{est_biomass}()},
 \code{\link{est_compliance}()},
 \code{\link{est_length_distribution}()},
+\code{\link{est_mean_age}()},
 \code{\link{est_mean_length}()},
 \code{\link{estimate_catch_rate}()},
 \code{\link{estimate_effort}()},
