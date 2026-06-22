@@ -30,9 +30,13 @@ Options: \code{"taylor"} (default), \code{"bootstrap"}, or
 \item{conf_level}{Numeric confidence level (default: 0.95).}
 
 \item{use_trips}{Character string specifying which interviews to include.
-\code{"all"} (default) uses all interviews including incomplete trips;
-\code{"complete"} restricts to completed trips only. When \code{trip_status}
-was not provided to \code{\link{add_interviews}}, this argument has no effect.}
+\code{"complete"} (default) restricts to completed trips only; \code{"all"}
+uses all interviews including incomplete trips. \code{"complete"} is the
+statistically preferred default because incomplete-trip RPUE underestimates
+releases when anglers release additional fish after the interview (Hansen &
+Van Kirk 2010). \code{"all"} remains available for analyses that prefer the
+larger interview set. When \code{trip_status} was not provided to
+\code{\link{add_interviews}}, this argument has no effect.}
 
 \item{missing_sections}{Character string controlling behavior when a
 registered section has no interview observations. \code{"warn"} (default)
@@ -62,12 +66,13 @@ When called on a sectioned design, no \code{.lake_total} row is
 produced. Release rates (fish per angler-hour) are not additive across
 sections. Lake-wide release rate requires a separate unsectioned call.
 
-Unlike \code{\link{estimate_catch_rate}}, this function defaults to
-using \strong{all} interviews (complete and incomplete) for RPUE estimation.
-Released fish counted at interview time are directly observable. However,
-incomplete-trip RPUE may underestimate if anglers release additional fish
-after the interview. Use \code{use_trips = "complete"} for a stricter
-analysis restricted to completed-trip interviews.
+This function defaults to using \strong{completed-trip} interviews only
+for RPUE estimation (\code{use_trips = "complete"}). Incomplete-trip RPUE may
+underestimate releases if anglers release additional fish after the
+interview (Hansen & Van Kirk 2010), so restricting to completed trips is the
+statistically preferred default. Released fish counted at interview time are
+directly observable, so \code{use_trips = "all"} remains available to include
+incomplete-trip interviews.
 }
 \examples{
 library(tidycreel)

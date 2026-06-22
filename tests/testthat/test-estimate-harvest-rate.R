@@ -431,10 +431,12 @@ test_that("estimate_harvest_rate warns when 10 <= n < 30 ungrouped", {
 test_that("estimate_harvest_rate has no sample size warning when n >= 30 ungrouped", {
   design <- make_harvest_design() # has 32 interviews
 
+  # use_trips = "all" keeps all 32 interviews (default "complete" would filter
+  # to the 16 completed trips and trip the 10 <= n < 30 warning this test guards)
   # Capture warnings
   warnings <- character()
   result <- withCallingHandlers(
-    estimate_harvest_rate(design), # nolint: object_usage_linter
+    estimate_harvest_rate(design, use_trips = "all"), # nolint: object_usage_linter
     warning = function(w) {
       warnings <<- c(warnings, conditionMessage(w))
     }
@@ -456,11 +458,15 @@ test_that("estimate_harvest_rate errors when any group has n < 10 in grouped est
 })
 
 # Grouped estimation tests ----
+# These tests exercise grouping/variance mechanics, not trip-status filtering.
+# make_harvest_design() has 8 completed trips per day_type group, below the
+# n >= 10 ratio-estimation floor, so they pass use_trips = "all" to retain all
+# 16 interviews per group. The default ("complete") is covered separately below.
 
 test_that("estimate_harvest_rate grouped by day_type returns creel_estimates with by_vars set", {
   design <- make_harvest_design()
 
-  result <- estimate_harvest_rate(design, by = day_type) # nolint: object_usage_linter
+  result <- estimate_harvest_rate(design, by = day_type, use_trips = "all") # nolint: object_usage_linter
 
   expect_s3_class(result, "creel_estimates")
   expect_true(!is.null(result$by_vars))
@@ -470,7 +476,7 @@ test_that("estimate_harvest_rate grouped by day_type returns creel_estimates wit
 test_that("estimate_harvest_rate grouped result estimates tibble has day_type column", {
   design <- make_harvest_design()
 
-  result <- estimate_harvest_rate(design, by = day_type) # nolint: object_usage_linter
+  result <- estimate_harvest_rate(design, by = day_type, use_trips = "all") # nolint: object_usage_linter
 
   expect_true("day_type" %in% names(result$estimates))
 })
@@ -478,7 +484,7 @@ test_that("estimate_harvest_rate grouped result estimates tibble has day_type co
 test_that("estimate_harvest_rate grouped result has one row per group level", {
   design <- make_harvest_design()
 
-  result <- estimate_harvest_rate(design, by = day_type) # nolint: object_usage_linter
+  result <- estimate_harvest_rate(design, by = day_type, use_trips = "all") # nolint: object_usage_linter
 
   expect_equal(nrow(result$estimates), 2)
   expect_true("weekday" %in% result$estimates$day_type)
@@ -488,7 +494,7 @@ test_that("estimate_harvest_rate grouped result has one row per group level", {
 test_that("estimate_harvest_rate grouped result has n column reflecting per-group sample sizes", {
   design <- make_harvest_design()
 
-  result <- estimate_harvest_rate(design, by = day_type) # nolint: object_usage_linter
+  result <- estimate_harvest_rate(design, by = day_type, use_trips = "all") # nolint: object_usage_linter
 
   expect_true("n" %in% names(result$estimates))
   expect_equal(sum(result$estimates$n), nrow(design$interviews))
@@ -500,8 +506,9 @@ test_that("estimate_harvest_rate grouped result has n column reflecting per-grou
 test_that("ungrouped HPUE matches manual svyratio calculation", {
   design <- make_harvest_design()
 
-  # tidycreel estimate
-  result <- estimate_harvest_rate(design) # nolint: object_usage_linter
+  # tidycreel estimate (use_trips = "all" so the survey object below — which
+  # spans all 32 interviews — is the correct manual reference)
+  result <- estimate_harvest_rate(design, use_trips = "all") # nolint: object_usage_linter
 
   # Manual survey::svyratio calculation
   svy <- design$interview_survey
@@ -519,8 +526,9 @@ test_that("ungrouped HPUE matches manual svyratio calculation", {
 test_that("grouped HPUE matches manual svyby+svyratio calculation", {
   design <- make_harvest_design()
 
-  # tidycreel grouped estimate
-  result <- estimate_harvest_rate(design, by = day_type) # nolint: object_usage_linter
+  # tidycreel grouped estimate (use_trips = "all" to match the all-interview
+  # survey object used for the manual reference below)
+  result <- estimate_harvest_rate(design, by = day_type, use_trips = "all") # nolint: object_usage_linter
 
   # Manual survey::svyby + svyratio calculation
   svy <- design$interview_survey
@@ -559,8 +567,9 @@ test_that("grouped HPUE matches manual svyby+svyratio calculation", {
 test_that("ungrouped HPUE SE^2 matches variance from manual vcov", {
   design <- make_harvest_design()
 
-  # tidycreel estimate
-  result <- estimate_harvest_rate(design) # nolint: object_usage_linter
+  # tidycreel estimate (use_trips = "all" to match the all-interview survey
+  # object used for the manual reference below)
+  result <- estimate_harvest_rate(design, use_trips = "all") # nolint: object_usage_linter
 
   # Manual survey::svyratio calculation
   svy <- design$interview_survey
@@ -588,12 +597,66 @@ test_that("HPUE and CPUE use same n (sample size should match)", {
   result_hpue <- estimate_harvest_rate(design) # nolint: object_usage_linter
   result_cpue <- estimate_catch_rate(design) # nolint: object_usage_linter
 
-  # After Phase 17, estimate_catch_rate defaults to complete trips only
-  # estimate_harvest_rate doesn't have use_trips parameter yet, uses all trips
-  # TODO: Update when estimate_harvest_rate gets use_trips parameter
+  # As of v2.3.0 (#69) estimate_harvest_rate defaults to use_trips = "complete",
+  # matching estimate_catch_rate. Both now restrict to completed-trip interviews,
+  # so their sample sizes agree.
   n_complete <- sum(design$interviews$trip_status == "complete")
   expect_equal(result_cpue$estimates$n, n_complete)
-  expect_equal(result_hpue$estimates$n, nrow(design$interviews))
+  expect_equal(result_hpue$estimates$n, n_complete)
+})
+
+# Default use_trips tests (v2.3.0 / #69) ----
+
+test_that("RATE-69-harvest: estimate_harvest_rate defaults to use_trips = 'complete'", {
+  # Statistical rationale (Hansen & Van Kirk 2010): incomplete-trip HPUE
+  # underestimates harvest, so the default must restrict to completed trips.
+  # make_harvest_design() has 16 complete + 16 incomplete interviews.
+  design <- make_harvest_design()
+  n_complete <- sum(design$interviews$trip_status == "complete")
+
+  # Default call must filter to completed trips (announced via cli message) ...
+  expect_message(
+    result_default <- estimate_harvest_rate(design), # nolint: object_usage_linter
+    "complete"
+  )
+  expect_equal(result_default$estimates$n, n_complete)
+
+  # ... and must equal an explicit use_trips = "complete" call.
+  result_complete <- suppressMessages(estimate_harvest_rate(design, use_trips = "complete")) # nolint: object_usage_linter line_length_linter
+  expect_equal(result_default$estimates$estimate, result_complete$estimates$estimate)
+
+  # The opt-out (use_trips = "all") uses every interview and differs in n.
+  result_all <- suppressMessages(estimate_harvest_rate(design, use_trips = "all")) # nolint: object_usage_linter
+  expect_equal(result_all$estimates$n, nrow(design$interviews))
+  expect_gt(result_all$estimates$n, result_default$estimates$n)
+})
+
+test_that("RATE-69-release: estimate_release_rate defaults to use_trips = 'complete'", {
+  # Same default-flip rationale as harvest; release rate must also restrict to
+  # completed trips by default.
+  data("example_calendar", package = "tidycreel")
+  data("example_interviews", package = "tidycreel")
+  data("example_catch", package = "tidycreel")
+
+  design <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
+  design <- add_interviews(design, example_interviews, # nolint: object_usage_linter
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration
+  )
+  design <- add_catch(design, example_catch, # nolint: object_usage_linter
+    catch_uid = interview_id, interview_uid = interview_id,
+    species = species, count = count, catch_type = catch_type
+  )
+
+  has_incomplete <- any(design$interviews$trip_status == "incomplete")
+  skip_if_not(has_incomplete, "example data has no incomplete trips to filter")
+
+  n_complete <- sum(design$interviews$trip_status == "complete")
+  result_default <- suppressMessages(estimate_release_rate(design)) # nolint: object_usage_linter
+  result_complete <- suppressMessages(estimate_release_rate(design, use_trips = "complete")) # nolint: object_usage_linter line_length_linter
+
+  expect_equal(result_default$estimates$n, n_complete)
+  expect_equal(result_default$estimates$estimate, result_complete$estimates$estimate)
 })
 
 # Custom confidence level test ----
@@ -601,8 +664,8 @@ test_that("HPUE and CPUE use same n (sample size should match)", {
 test_that("estimate_harvest_rate with conf_level = 0.90 produces narrower CI than 0.95", {
   design <- make_harvest_design()
 
-  result_95 <- estimate_harvest_rate(design, conf_level = 0.95) # nolint: object_usage_linter
-  result_90 <- estimate_harvest_rate(design, conf_level = 0.90) # nolint: object_usage_linter
+  result_95 <- estimate_harvest_rate(design, conf_level = 0.95, use_trips = "all") # nolint: object_usage_linter
+  result_90 <- estimate_harvest_rate(design, conf_level = 0.90, use_trips = "all") # nolint: object_usage_linter
 
   # CI width should be narrower for 90% than 95%
   width_95 <- result_95$estimates$ci_upper - result_95$estimates$ci_lower
@@ -617,7 +680,7 @@ test_that("estimate_harvest_rate with conf_level = 0.90 produces narrower CI tha
 test_that("estimate_harvest_rate with bootstrap variance method produces valid results", {
   design <- make_harvest_design()
 
-  result <- estimate_harvest_rate(design, variance = "bootstrap") # nolint: object_usage_linter
+  result <- estimate_harvest_rate(design, variance = "bootstrap", use_trips = "all") # nolint: object_usage_linter
 
   expect_equal(result$variance_method, "bootstrap")
   expect_true(is.numeric(result$estimates$se))
@@ -641,8 +704,9 @@ test_that("estimate_harvest_rate with jackknife variance method produces valid r
 test_that("estimate_harvest_rate grouped + bootstrap variance compose correctly", {
   design <- make_harvest_design()
 
+  # use_trips = "all": grouped bootstrap mechanics need >= 10 interviews/group
   # Should work (may warn about small n per group, but should not error)
-  result <- suppressWarnings(estimate_harvest_rate(design, by = day_type, variance = "bootstrap")) # nolint: object_usage_linter
+  result <- suppressWarnings(estimate_harvest_rate(design, by = day_type, variance = "bootstrap", use_trips = "all")) # nolint: object_usage_linter object_length_linter line_length_linter
 
   expect_s3_class(result, "creel_estimates")
   expect_equal(result$variance_method, "bootstrap")
@@ -749,9 +813,11 @@ test_that("estimate_harvest_rate filters zero-effort interviews with warning", {
   # Inject 2 zero-effort interviews (must set .angler_effort, the column used by estimate_harvest_rate)
   design$interviews[[".angler_effort"]][1:2] <- 0
 
+  # use_trips = "all" so the 32-interview arithmetic below (32 - 2 = 30) holds;
+  # this test verifies zero-effort filtering, not trip-status filtering
   # Should warn about zero-effort
   expect_warning(
-    result <- estimate_harvest_rate(design), # nolint: object_usage_linter
+    result <- estimate_harvest_rate(design, use_trips = "all"), # nolint: object_usage_linter
     "zero effort"
   )
 
@@ -785,9 +851,11 @@ test_that("estimate_harvest_rate filters NA harvest interviews with warning", {
   # Inject 2 NA harvest values
   design$interviews$catch_kept[1:2] <- NA
 
+  # use_trips = "all" so the 32-interview arithmetic below (32 - 2 = 30) holds;
+  # this test verifies NA-harvest filtering, not trip-status filtering
   # Should warn about missing harvest
   expect_warning(
-    result <- estimate_harvest_rate(design), # nolint: object_usage_linter
+    result <- estimate_harvest_rate(design, use_trips = "all"), # nolint: object_usage_linter
     "missing harvest"
   )
 
