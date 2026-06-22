@@ -79,7 +79,9 @@ Petrere, M. et al. (2010). Catch-per-unit-effort: which estimator is best?
 
 Other "Estimation":
 \code{\link{est_biomass}()},
+\code{\link{est_compliance}()},
 \code{\link{est_length_distribution}()},
+\code{\link{est_mean_length}()},
 \code{\link{estimate_catch_rate}()},
 \code{\link{estimate_effort}()},
 \code{\link{estimate_effort_aerial_glmm}()},

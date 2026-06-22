@@ -75,7 +75,9 @@ est_biomass(ld, a = 0.0088, b = 3.1)
 \seealso{
 Other "Estimation":
 \code{\link{compare_cpue_estimators}()},
+\code{\link{est_compliance}()},
 \code{\link{est_length_distribution}()},
+\code{\link{est_mean_length}()},
 \code{\link{estimate_catch_rate}()},
 \code{\link{estimate_effort}()},
 \code{\link{estimate_effort_aerial_glmm}()},
