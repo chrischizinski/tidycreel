@@ -37,12 +37,16 @@ Options: \code{"taylor"} (default, Taylor linearization),
 which estimator path was used. Default FALSE.}
 
 \item{use_trips}{Character string specifying which interviews to include.
-For standard (non-bus-route) designs: \code{"all"} (default) uses all
-interviews including incomplete trips; \code{"complete"} restricts to
-completed trips only. For bus-route designs: \code{"complete"} (default),
-\code{"incomplete"}, or \code{"diagnostic"}. When \code{trip_status} was
-not provided to \code{\link{add_interviews}}, this argument has no effect
-for standard designs.}
+For standard (non-bus-route) designs: \code{"complete"} (default) restricts
+to completed trips only; \code{"all"} uses all interviews including
+incomplete trips. \code{"complete"} is the statistically preferred default
+because incomplete-trip HPUE underestimates harvest when anglers keep
+additional fish after the interview (Hansen & Van Kirk 2010). Fish already
+in the livewell are directly observable, so \code{"all"} remains available
+for analyses that prefer the larger interview set. For bus-route designs:
+\code{"complete"} (default), \code{"incomplete"}, or \code{"diagnostic"}.
+When \code{trip_status} was not provided to \code{\link{add_interviews}},
+this argument has no effect for standard designs.}
 
 \item{missing_sections}{Character string controlling behavior when a
 registered section has no interview observations. \code{"warn"} (default)
@@ -99,13 +103,13 @@ When called on a sectioned design, no \code{.lake_total} row is
 produced. Harvest rates (fish per angler-hour) are not additive across
 sections. Lake-wide harvest rate requires a separate unsectioned call.
 
-Unlike \code{\link{estimate_catch_rate}}, this function defaults to
-using \strong{all} interviews (complete and incomplete) for HPUE estimation.
-Fish already in the livewell at interview time are directly observable and
-represent confirmed harvest. However, incomplete-trip HPUE may underestimate
-when anglers continue fishing and keep additional fish after being interviewed
-(Hansen & Van Kirk 2010). Use \code{use_trips = "complete"} for a stricter
-analysis restricted to completed-trip interviews.
+This function defaults to using \strong{completed-trip} interviews only
+for HPUE estimation (\code{use_trips = "complete"}). Incomplete-trip HPUE
+underestimates harvest when anglers continue fishing and keep additional
+fish after being interviewed (Hansen & Van Kirk 2010), so restricting to
+completed trips is the statistically preferred default. Fish already in the
+livewell at interview time are directly observable, so \code{use_trips =
+  "all"} remains available to include incomplete-trip interviews.
 }
 \examples{
 # Basic ungrouped HPUE

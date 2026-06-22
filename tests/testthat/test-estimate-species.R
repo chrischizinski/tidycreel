@@ -565,7 +565,9 @@ test_that("estimate_release_rate estimate is non-negative", {
 
 test_that("estimate_release_rate n equals total interviews", {
   d <- make_test_design_with_catch()
-  result <- suppressWarnings(estimate_release_rate(d))
+  # use_trips = "all": this test verifies n spans the full interview set; as of
+  # v2.3.0 (#69) the default ("complete") would filter to completed trips only.
+  result <- suppressWarnings(estimate_release_rate(d, use_trips = "all"))
   expect_equal(result$estimates$n, nrow(d$interviews))
 })
 
