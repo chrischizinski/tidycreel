@@ -243,6 +243,50 @@
 #' @family "Example Datasets"
 "example_lengths"
 
+#' Example fish age data for creel estimation
+#'
+#' A small set of individual fish age records (one row per aged fish) linked to
+#' \code{\link{example_interviews}}. Suitable for use with
+#' \code{\link{add_ages}}.
+#'
+#' @format A data frame with 18 rows and 4 columns:
+#' \describe{
+#'   \item{interview_id}{Integer interview identifier. Foreign key to
+#'     \code{example_interviews$interview_id}.}
+#'   \item{species}{Character. Species name: \code{"walleye"},
+#'     \code{"bass"}, or \code{"panfish"}.}
+#'   \item{age}{Integer. Estimated age in years (0-6). Each row is a single
+#'     aged fish.}
+#'   \item{age_type}{Character. Fish fate: \code{"harvest"} or
+#'     \code{"release"}.}
+#' }
+#'
+#' @source Simulated data for package examples.
+#'
+#' @seealso \code{\link{example_interviews}}, \code{\link{example_lengths}},
+#'   \code{\link{add_ages}}
+#'
+#' @examples
+#' data(example_calendar)
+#' data(example_interviews)
+#' data(example_ages)
+#'
+#' design <- creel_design(example_calendar, date = date, strata = day_type)
+#' design <- add_interviews(design, example_interviews,
+#'   catch = catch_total, effort = hours_fished, harvest = catch_kept,
+#'   trip_status = trip_status, trip_duration = trip_duration
+#' )
+#' design <- add_ages(design, example_ages,
+#'   age_uid = interview_id,
+#'   interview_uid = interview_id,
+#'   species = species,
+#'   age = age,
+#'   age_type = age_type
+#' )
+#' print(design)
+#' @family "Example Datasets"
+"example_ages"
+
 #' Example calendar for spatially stratified creel survey
 #'
 #' A 12-day survey calendar used to demonstrate the spatially stratified

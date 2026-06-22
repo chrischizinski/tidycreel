@@ -54,6 +54,7 @@ Other "Example Datasets":
 \code{\link{example_aerial_counts}},
 \code{\link{example_aerial_glmm_counts}},
 \code{\link{example_aerial_interviews}},
+\code{\link{example_ages}},
 \code{\link{example_calendar}},
 \code{\link{example_camera_interviews}},
 \code{\link{example_camera_timestamps}},
