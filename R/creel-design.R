@@ -3348,6 +3348,133 @@ add_lengths <- function(design, data,
   new_design
 }
 
+# Age data attachment ----
+
+#' Attach age data to a creel design
+#'
+#' @description
+#' `add_ages()` attaches a data frame of individual fish age records (from
+#' scale, fin ray, or otolith samples) to a `creel_design` object.  The age
+#' data are linked to interviews via a shared identifier, analogous to
+#' [add_lengths()].
+#'
+#' @param design A `creel_design` object with interviews attached.
+#' @param data A data frame of age records. One row per aged fish.
+#' @param age_uid Unquoted column in `data` — the column that holds the
+#'   interview identifier, linking each age record to its interview (the
+#'   foreign key; analogous to `length_uid` in [add_lengths()]).
+#' @param interview_uid Unquoted column in `design$interviews` — the interview
+#'   identifier column in the design, used as the join target.
+#' @param species Unquoted column in `data` — species name or code.
+#' @param age Unquoted column in `data` — estimated age (integer or numeric).
+#' @param age_type Unquoted column in `data` — fate of the fish:
+#'   `"harvest"` or `"release"`.
+#'
+#' @return A `creel_design` object with age data attached in `design$ages`
+#'   and associated column-name slots.
+#'
+#' @examples
+#' \dontrun{
+#' design <- creel_design(example_calendar, date = date, strata = day_type)
+#' design <- add_interviews(design, example_interviews,
+#'   catch = catch_total, effort = hours_fished, harvest = catch_kept,
+#'   trip_status = trip_status
+#' )
+#' design <- add_ages(design, my_ages,
+#'   age_uid       = interview_id,
+#'   interview_uid = interview_id,
+#'   species       = species,
+#'   age           = estimated_age,
+#'   age_type      = fish_fate
+#' )
+#' }
+#'
+#' @seealso [add_lengths()]
+#' @export
+add_ages <- function(design, data,
+                     age_uid,
+                     interview_uid,
+                     species,
+                     age,
+                     age_type) {
+  if (!inherits(design, "creel_design")) {
+    cli::cli_abort("{.arg design} must be a {.cls creel_design} object.")
+  }
+  if (!is.null(design[["ages"]])) {
+    cli::cli_abort(c(
+      "This design already has age data attached.",
+      "i" = "Use immutable workflow: {.code design2 <- add_ages(design, data, ...)}"
+    ))
+  }
+  if (is.null(design$interviews)) {
+    cli::cli_abort(c(
+      "Interviews must be attached before age data.",
+      "i" = "Call {.fn add_interviews} before {.fn add_ages}."
+    ))
+  }
+
+  age_uid_col <- resolve_single_col(
+    rlang::enquo(age_uid), data, "age_uid", rlang::caller_env()
+  )
+  interview_uid_col <- resolve_single_col(
+    rlang::enquo(interview_uid), design$interviews, "interview_uid", rlang::caller_env()
+  )
+  species_col <- resolve_single_col(
+    rlang::enquo(species), data, "species", rlang::caller_env()
+  )
+  age_col <- resolve_single_col(
+    rlang::enquo(age), data, "age", rlang::caller_env()
+  )
+  type_col <- resolve_single_col(
+    rlang::enquo(age_type), data, "age_type", rlang::caller_env()
+  )
+
+  data[[type_col]] <- tolower(data[[type_col]])
+  valid_types <- c("harvest", "release")
+  bad_types <- setdiff(unique(data[[type_col]]), valid_types)
+  if (length(bad_types) > 0) {
+    cli::cli_abort(c(
+      "Invalid {.field age_type} value{?s}: {.val {bad_types}}",
+      "i" = "Accepted values: {.val {valid_types}}"
+    ))
+  }
+
+  age_ids <- unique(data[[age_uid_col]])
+  interview_ids <- design$interviews[[interview_uid_col]]
+  unmatched <- setdiff(age_ids, interview_ids)
+  if (length(unmatched) > 0) {
+    cli::cli_abort(c(
+      "{length(unmatched)} age record ID{?s} not found in design interviews:",
+      stats::setNames(paste0("{.val ", unmatched, "}"), rep("x", length(unmatched))),
+      "i" = "Every age row must reference an interview in the design."
+    ))
+  }
+
+  age_vals <- suppressWarnings(as.numeric(data[[age_col]]))
+  if (any(is.na(age_vals))) {
+    cli::cli_abort(c(
+      "{.field age} values must be numeric.",
+      "i" = "Non-numeric or NA age found in age data."
+    ))
+  }
+  if (any(age_vals < 0)) {
+    cli::cli_abort(c(
+      "{.field age} values must be non-negative.",
+      "i" = "Negative age found in age data."
+    ))
+  }
+
+  new_design <- design
+  new_design$ages <- data
+  new_design$ages_uid_col <- age_uid_col
+  new_design$ages_interview_uid_col <- interview_uid_col
+  new_design$ages_species_col <- species_col
+  new_design$ages_age_col <- age_col
+  new_design$ages_type_col <- type_col
+  class(new_design) <- "creel_design"
+  new_design
+}
+
 # Camera preprocessing ----
 
 #' Preprocess camera ingress-egress timestamps to daily effort hours

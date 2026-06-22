@@ -37,17 +37,21 @@ days proportionally to stratum size, this function concentrates days in strata
 with higher between-day variance, minimising total days for a given precision.
 }
 \details{
-\strong{Total sample size} uses Cochran (1977) equation 5.25 (identical to
-\code{\link[=creel_n_effort]{creel_n_effort()}}):
+\strong{Total sample size} uses the cost-generalised Cochran (1977) formula
+(eq. 5.25 / 5.34 with finite-population correction):
 
-\deqn{n = \left\lceil \frac{\left(\sum_h N_h s_h\right)^2}{V_0 +
-  \sum_h N_h s_h^2} \right\rceil}
+\deqn{n = \left\lceil \frac{A \cdot C}{V_0 + \sum_h N_h s_h^2}
+  \right\rceil}
 
-where \eqn{V_0 = (CV_{target} \cdot \hat{E})^2}, \eqn{\hat{E} = \sum_h N_h
-\bar{y}_h} is the pilot total effort estimate, and \eqn{s_h = \sqrt{s_h^2}}.
+where \eqn{A = \sum_h N_h s_h / \sqrt{c_h}},
+\eqn{C = \sum_h N_h s_h \sqrt{c_h}},
+\eqn{V_0 = (CV_{target} \cdot \hat{E})^2}, \eqn{\hat{E} = \sum_h N_h
+\bar{y}_h}, and \eqn{s_h = \sqrt{s_h^2}}. When all \eqn{c_h = 1}
+(equal costs) this reduces to \eqn{(\sum_h N_h s_h)^2 / (V_0 + \sum_h N_h
+s_h^2)}, identical to \code{\link[=creel_n_effort]{creel_n_effort()}}.
 
-\strong{Per-stratum allocation} uses the Neyman formula (Cochran 1977 eq. 5.24)
-extended for unequal costs (eq. 5.30):
+\strong{Per-stratum allocation} uses the cost-adjusted Neyman formula (Cochran
+1977 eq. 5.30):
 
 \deqn{n_h = \left\lceil n \cdot
   \frac{N_h s_h / \sqrt{c_h}}{\sum_h N_h s_h / \sqrt{c_h}} \right\rceil}

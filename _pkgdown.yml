@@ -44,6 +44,7 @@ reference:
       - prep_interview_catch
       - add_catch
       - add_lengths
+      - add_ages
       - add_sections
       - as_survey_design
       - est_effort_camera
@@ -72,6 +73,9 @@ reference:
       - estimate_angler_n
       - estimate_mr_harvest
       - est_length_distribution
+      - est_biomass
+      - est_mean_length
+      - est_compliance
       - estimate_angler_trips
       - estimate_effort_per_acre
       - compare_cpue_estimators

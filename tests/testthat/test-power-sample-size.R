@@ -375,7 +375,8 @@ test_that("optimal_n cost_ratio shifts allocation toward cheaper strata", {
   expect_true(result_costly[["weekday"]] > result_equal[["weekday"]])
 })
 
-test_that("optimal_n cost_ratio numerical check: weekday=28, weekend=10 when weekend costs 2x", {
+test_that("optimal_n cost_ratio numerical check: weekday=29, weekend=10, total=38 when weekend costs 2x", {
+  # Cochran 5.34 with FPC: n = A*C/(V_0 + sum(N_h*s2_h)) where A=sum(N_h*s_h/sqrt(c_h))
   result <- optimal_n(
     cv_target  = 0.05,
     N_h        = c(weekday = 65, weekend = 28),
@@ -383,8 +384,22 @@ test_that("optimal_n cost_ratio numerical check: weekday=28, weekend=10 when wee
     s2_h       = c(400, 500),
     cost_ratio = c(1, 2)
   )
-  expect_identical(result[["weekday"]], 28L)
+  expect_identical(result[["total"]], 38L)
+  expect_identical(result[["weekday"]], 29L)
   expect_identical(result[["weekend"]], 10L)
+})
+
+test_that("optimal_n cost_ratio achieves target CV (extreme costs, with FPC)", {
+  # Ensures Cochran 5.34 n_total (not 5.25) is used -- extreme cost_ratio exposes the bug
+  N_h    <- c(weekday = 65, weekend = 28)  # nolint: object_name_linter
+  ybar_h <- c(50, 60); s2_h <- c(400, 500); cv_target <- 0.05
+  result <- optimal_n(cv_target = cv_target, N_h = N_h, ybar_h = ybar_h, s2_h = s2_h,
+                      cost_ratio = c(weekday = 1, weekend = 10))
+  n_h <- result[c("weekday", "weekend")]
+  E_total <- sum(N_h * ybar_h)
+  V_achieved <- sum(N_h^2 * s2_h / n_h) - sum(N_h * s2_h)  # stratified total variance with FPC
+  cv_achieved <- sqrt(V_achieved) / E_total
+  expect_true(cv_achieved <= cv_target)
 })
 
 test_that("optimal_n scalar cost_ratio expands to all strata", {
@@ -460,6 +475,18 @@ test_that("optimal_n errors on non-positive cost_ratio", {
       ybar_h     = c(50, 60),
       s2_h       = c(400, 500),
       cost_ratio = c(1, -1)
+    )
+  )
+})
+
+test_that("optimal_n errors on NA cost_ratio", {
+  expect_error(
+    optimal_n(
+      cv_target  = 0.20,
+      N_h        = c(weekday = 65, weekend = 28),
+      ybar_h     = c(50, 60),
+      s2_h       = c(400, 500),
+      cost_ratio = NA_real_
     )
   )
 })
