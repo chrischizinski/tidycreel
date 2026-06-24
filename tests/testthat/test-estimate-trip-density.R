@@ -276,3 +276,56 @@ test_that("Test V: smoke — tidy() and write_estimates() succeed", {
   expect_no_error(write_estimates(result, path = tmp))
   expect_true(file.exists(tmp))
 })
+
+# -- RPT-01b: single-interview stratum NA-SE guards ---------------------------
+
+test_that("RPT-01b: ungrouped single interview warns and returns NA SE/CI", {
+  effort_one <- new_creel_estimates(
+    estimates = tibble::tibble(
+      estimate = 500, se = 25, ci_lower = 451, ci_upper = 549, n = 1L
+    ),
+    method = "total", variance_method = "taylor",
+    design = NULL, conf_level = 0.95, by_vars = NULL
+  )
+  design_one <- list(
+    trip_duration_col = "duration",
+    interviews        = data.frame(duration = 4.0)
+  )
+  expect_warning(
+    result <- estimate_angler_trips(effort_one, design_one),
+    regexp = "SE of mean trip length is undefined"
+  )
+  expect_false(is.na(result$estimates$estimate))  # point estimate valid
+  expect_true(is.na(result$estimates$se))
+  expect_true(is.na(result$estimates$ci_lower))
+  expect_true(is.na(result$estimates$ci_upper))
+})
+
+test_that("RPT-01b: grouped singleton stratum warns and returns NA SE/CI for that row", {
+  effort_g <- new_creel_estimates(
+    estimates = tibble::tibble(
+      day_type = c("weekday", "weekend"),
+      estimate = c(600, 400), se = c(30, 20),
+      ci_lower = c(541, 361), ci_upper = c(659, 439), n = c(6L, 1L)
+    ),
+    method = "total", variance_method = "taylor",
+    design = NULL, conf_level = 0.95, by_vars = "day_type"
+  )
+  design_g <- list(
+    trip_duration_col = "duration",
+    interviews        = data.frame(
+      day_type = c(rep("weekday", 6), "weekend"),
+      duration = c(3.0, 4.0, 5.0, 3.5, 4.5, 3.0, 2.0)
+    )
+  )
+  expect_warning(
+    result <- estimate_angler_trips(effort_g, design_g),
+    regexp = "SE of mean trip length is undefined"
+  )
+  stratum_rows <- result$estimates[result$estimates$day_type != ".overall", ]
+  wknd <- stratum_rows[stratum_rows$day_type == "weekend", ]
+  wkday <- stratum_rows[stratum_rows$day_type == "weekday", ]
+  expect_false(is.na(wknd$estimate))   # point estimate valid
+  expect_true(is.na(wknd$se))          # SE undefined for singleton
+  expect_false(is.na(wkday$se))        # weekday (n=6) has valid SE
+})

@@ -300,6 +300,8 @@ estimate_total_catch_ungrouped <- function(design, variance_method, conf_level,
   )
   cpue_df <- cpue_result$estimates
 
+  warn_missing_rate_strata(effort_df, cpue_df, strata_cols, "estimate_total_catch") # nolint: object_usage_linter
+
   # Stratified-sum product estimator: sum(E_h * CPUE_h) across strata h
   estimates_df <- compute_stratum_product_sum( # nolint: object_usage_linter
     effort_df         = effort_df,
@@ -347,6 +349,8 @@ estimate_total_catch_grouped <- function(design, by_vars, variance_method, conf_
     design, stratum_by_vars, variance_method, conf_level, use_trips = use_trips
   )
   cpue_df <- cpue_result$estimates
+
+  warn_missing_rate_strata(effort_df, cpue_df, stratum_by_vars, "estimate_total_catch(by=)") # nolint: object_usage_linter
 
   # Stratified-sum within each by_vars group
   estimates_df <- compute_stratum_product_sum( # nolint: object_usage_linter

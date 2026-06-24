@@ -816,3 +816,21 @@ test_that("PROD-01-harvest-missing: missing section inserts NA row with data_ava
   expect_false(south_row$data_available)
   expect_true(is.na(south_row$estimate))
 })
+
+# TOTH-WARN: standard-path missing-strata warning ----
+
+test_that("estimate_total_harvest warns on standard (non-species) path when effort strata lack rate coverage", {
+  design <- make_total_harvest_missing_rate_strata_design() # nolint: object_usage_linter
+  expect_warning(
+    estimate_total_harvest(design), # nolint: object_usage_linter
+    regexp = "no matching rate estimate"
+  )
+})
+
+test_that("estimate_total_harvest(by=day_type) warns on grouped standard path when effort strata lack rate coverage", {
+  design <- make_total_harvest_missing_rate_strata_design() # nolint: object_usage_linter
+  expect_warning(
+    estimate_total_harvest(design, by = day_type), # nolint: object_usage_linter
+    regexp = "no matching rate estimate"
+  )
+})

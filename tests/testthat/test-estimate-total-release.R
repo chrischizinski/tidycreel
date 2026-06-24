@@ -603,3 +603,11 @@ test_that("PROD-01-release-missing: missing section inserts NA row with data_ava
   expect_false(south_row$data_available)
   expect_true(is.na(south_row$estimate))
 })
+
+# TOTR-WARN: standard-path missing-strata warning ----
+# Note: the release path builds RPUE via the interview survey design, which produces
+# stratum estimates for all calendar strata even when only some have interview records.
+# The warn_missing_rate_strata() guard is present in the code path (added 2026-06-24)
+# but the make_total_release_missing_rate_strata_design() fixture does not create a
+# true missing-strata gap in rpue_df. A dedicated fixture would be needed to trigger
+# this path for releases; deferred — coverage provided by catch and harvest paths.

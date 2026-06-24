@@ -190,3 +190,22 @@ test_that("CV-12: compare_variance errors on invalid divergence_threshold", {
     regexp = "positive"
   )
 })
+
+# CV-13: se_taylor joined by group key, not positionally paired ----------------
+
+test_that("CV-13: grouped se_taylor in output matches original SE joined by group key", {
+  # This test guards against the positional-pairing bug:
+  # se_taylor and se_replicate must be matched by group key, not row index.
+  set.seed(42)
+  design <- make_cv_design(grouped = TRUE)
+  est <- suppressWarnings(estimate_catch_rate(design, by = day_type))
+  cmp <- suppressWarnings(compare_variance(est))
+
+  # Join compare_variance output back to original estimates on day_type
+  original_se <- est$estimates[, c("day_type", "se")]
+  compared_se <- as.data.frame(cmp)[, c("day_type", "se_taylor")]
+  joined <- merge(original_se, compared_se, by = "day_type")
+
+  # se_taylor must equal the original se for every stratum, regardless of row order
+  expect_equal(joined$se, joined$se_taylor, tolerance = 1e-10)
+})

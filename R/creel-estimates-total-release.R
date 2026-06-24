@@ -214,6 +214,8 @@ estimate_total_release_ungrouped <- function(design, variance_method, conf_level
   rpue_result <- rpue_for_stratum_product(design, strata_cols, variance_method, conf_level)
   rpue_df <- rpue_result$estimates
 
+  warn_missing_rate_strata(effort_df, rpue_df, strata_cols, "estimate_total_release") # nolint: object_usage_linter
+
   estimates_df <- compute_stratum_product_sum( # nolint: object_usage_linter
     effort_df         = effort_df,
     rate_df           = rpue_df,
@@ -245,6 +247,8 @@ estimate_total_release_grouped <- function(design, by_vars, variance_method, con
 
   rpue_result <- rpue_for_stratum_product(design, stratum_by_vars, variance_method, conf_level)
   rpue_df <- rpue_result$estimates
+
+  warn_missing_rate_strata(effort_df, rpue_df, stratum_by_vars, "estimate_total_release(by=)") # nolint: object_usage_linter
 
   estimates_df <- compute_stratum_product_sum( # nolint: object_usage_linter
     effort_df         = effort_df,

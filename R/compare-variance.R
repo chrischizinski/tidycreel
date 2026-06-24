@@ -153,16 +153,26 @@ compare_variance <- function(x,
     }
   )
 
-  # Extract SEs
-  se_taylor <- x$estimates$se
-  se_replicate <- replicate_est$estimates$se
-
   # Build output tibble, preserving group columns
   est_df <- x$estimates
   group_cols <- setdiff(
     names(est_df),
     c("estimate", "se", "ci_lower", "ci_upper", "n", "method")
   )
+
+  # Extract SEs — join by group keys to avoid positional pairing errors when
+  # Taylor and replicate estimates return rows in different orders.
+  if (length(group_cols) > 0) {
+    rep_df <- replicate_est$estimates[, c(group_cols, "se"), drop = FALSE]
+    names(rep_df)[names(rep_df) == "se"] <- "se_replicate"
+    joined_est <- dplyr::left_join(est_df, rep_df, by = group_cols)
+    se_taylor    <- joined_est$se
+    se_replicate <- joined_est$se_replicate
+  } else {
+    # Ungrouped: single row, positional pairing safe
+    se_taylor    <- est_df$se
+    se_replicate <- replicate_est$estimates$se
+  }
 
   divergence_ratio <- ifelse(
     se_taylor == 0,

@@ -1275,3 +1275,23 @@ test_that("AIR-05: estimate_total_catch() on aerial routes through standard (non
   # Aerial is NOT in c("bus_route", "ice") — standard path produces "product-total-catch"
   expect_equal(result$method, "product-total-catch")
 })
+
+# TOTC-WARN: standard-path missing-strata warning ----
+
+test_that("estimate_total_catch warns on standard (non-species) path when effort strata lack rate coverage", {
+  # Reuse species fixture: interviews only in weekdays, counts in both strata.
+  # The standard (no by=species) path must also warn — previously it was silent.
+  design <- make_species_missing_rate_strata_design() # nolint: object_usage_linter
+  expect_warning(
+    estimate_total_catch(design), # nolint: object_usage_linter
+    regexp = "no matching rate estimate"
+  )
+})
+
+test_that("estimate_total_catch(by=day_type) warns on grouped standard path when effort strata lack rate coverage", {
+  design <- make_species_missing_rate_strata_design() # nolint: object_usage_linter
+  expect_warning(
+    estimate_total_catch(design, by = day_type), # nolint: object_usage_linter
+    regexp = "no matching rate estimate"
+  )
+})

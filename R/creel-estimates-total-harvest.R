@@ -253,6 +253,8 @@ estimate_total_harvest_ungrouped <- function(design, variance_method, conf_level
   }
   hpue_df <- hpue_result$estimates
 
+  warn_missing_rate_strata(effort_df, hpue_df, strata_cols, "estimate_total_harvest") # nolint: object_usage_linter
+
   # Stratified-sum product estimator: sum(E_h * HPUE_h) across strata h
   estimates_df <- compute_stratum_product_sum( # nolint: object_usage_linter
     effort_df         = effort_df,
@@ -290,6 +292,8 @@ estimate_total_harvest_grouped <- function(design, by_vars, variance_method, con
 
   hpue_result <- estimate_harvest_grouped(design, stratum_by_vars, variance_method, conf_level) # nolint: object_usage_linter
   hpue_df <- hpue_result$estimates
+
+  warn_missing_rate_strata(effort_df, hpue_df, stratum_by_vars, "estimate_total_harvest(by=)") # nolint: object_usage_linter
 
   estimates_df <- compute_stratum_product_sum( # nolint: object_usage_linter
     effort_df         = effort_df,

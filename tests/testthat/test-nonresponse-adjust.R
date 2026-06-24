@@ -160,3 +160,19 @@ test_that("NR-12: unit response rate = 1 produces same estimates as unadjusted",
     tolerance = 1e-6
   )
 })
+
+# NR-13: method dispatch guards -----------------------------------------------
+
+test_that("NR-13: method='calibrate' raises an informative error", {
+  design <- make_nr_design()
+  resp <- data.frame(
+    stratum = c("weekday", "weekend"),
+    n_sampled = c(80L, 60L),
+    n_responded = c(72L, 48L),
+    stringsAsFactors = FALSE
+  )
+  expect_error(
+    adjust_nonresponse(design, resp, method = "calibrate"),
+    regexp = "not yet implemented"
+  )
+})
