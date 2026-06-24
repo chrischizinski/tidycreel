@@ -490,3 +490,57 @@ test_that("optimal_n errors on NA cost_ratio", {
     )
   )
 })
+
+# POWER-06b: optimal_n bug guards ----
+
+test_that("optimal_n named cost_ratio is reordered to match N_h, not applied positionally", {
+  # Bug: c(weekend=2, weekday=1) was applied positionally before fix.
+  # weekday stratum is cheaper in both calls; allocation must be the same.
+  N_h <- c(weekday = 65, weekend = 28) # nolint: object_name_linter
+  r_named_match <- optimal_n(
+    cv_target = 0.05, N_h = N_h, ybar_h = c(50, 60), s2_h = c(400, 500),
+    cost_ratio = c(weekday = 1, weekend = 2)
+  )
+  r_named_reversed <- optimal_n(
+    cv_target = 0.05, N_h = N_h, ybar_h = c(50, 60), s2_h = c(400, 500),
+    cost_ratio = c(weekend = 2, weekday = 1)
+  )
+  expect_identical(r_named_match, r_named_reversed)
+})
+
+test_that("optimal_n named cost_ratio with wrong names errors", {
+  expect_error(
+    optimal_n(
+      cv_target  = 0.05,
+      N_h        = c(weekday = 65, weekend = 28),
+      ybar_h     = c(50, 60),
+      s2_h       = c(400, 500),
+      cost_ratio = c(weekday = 1, holiday = 2)
+    ),
+    regexp = "names must match"
+  )
+})
+
+test_that("optimal_n errors when all s2_h are zero", {
+  expect_error(
+    optimal_n(
+      cv_target = 0.20,
+      N_h       = c(weekday = 65, weekend = 28),
+      ybar_h    = c(50, 60),
+      s2_h      = c(0, 0)
+    ),
+    regexp = "zero"
+  )
+})
+
+test_that("optimal_n errors when E_total is zero (all ybar_h zero)", {
+  expect_error(
+    optimal_n(
+      cv_target = 0.20,
+      N_h       = c(weekday = 65, weekend = 28),
+      ybar_h    = c(0, 0),
+      s2_h      = c(400, 500)
+    ),
+    regexp = "zero total"
+  )
+})

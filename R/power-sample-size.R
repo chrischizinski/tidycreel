@@ -108,7 +108,9 @@ creel_n_effort <- function(cv_target, N_h, ybar_h, s2_h) { # nolint: object_name
 #' \eqn{V_0 = (CV_{target} \cdot \hat{E})^2}, \eqn{\hat{E} = \sum_h N_h
 #' \bar{y}_h}, and \eqn{s_h = \sqrt{s_h^2}}. When all \eqn{c_h = 1}
 #' (equal costs) this reduces to \eqn{(\sum_h N_h s_h)^2 / (V_0 + \sum_h N_h
-#' s_h^2)}, identical to [creel_n_effort()].
+#' s_h^2)}, which gives the same `n_total` as [creel_n_effort()] (per-stratum
+#' allocation differs: Neyman uses \eqn{n_h \propto N_h s_h} vs proportional
+#' \eqn{n_h \propto N_h}).
 #'
 #' **Per-stratum allocation** uses the cost-adjusted Neyman formula (Cochran
 #' 1977 eq. 5.30):
@@ -167,23 +169,45 @@ optimal_n <- function(cv_target, N_h, ybar_h, s2_h, cost_ratio = 1) { # nolint: 
   }
   checkmate::assert_numeric(cost_ratio, lower = 1e-6, len = length(N_h), any.missing = FALSE)
 
-  E_total <- sum(N_h * ybar_h) # nolint: object_name_linter
-  V_0 <- (cv_target * E_total)^2 # nolint: object_name_linter
-  s_h <- sqrt(s2_h) # nolint: object_name_linter
+  # Reorder named cost_ratio to match N_h strata order; unnamed stays positional.
+  if (!is.null(names(cost_ratio))) {
+    cost_ratio <- cost_ratio[names(N_h)] # nolint: object_name_linter
+    if (anyNA(cost_ratio)) {
+      cli::cli_abort(
+        "{.arg cost_ratio} names must match strata names in {.arg N_h}."
+      )
+    }
+  }
 
-  # Cochran (1977) eq. 5.25/5.34 with FPC -- generalises to equal costs when
-  # all cost_ratio == 1 (reduces to creel_n_effort formula)
-  A <- sum(N_h * s_h / sqrt(cost_ratio)) # nolint: object_name_linter
-  C_cost <- sum(N_h * s_h * sqrt(cost_ratio)) # nolint: object_name_linter
-  denominator <- V_0 + sum(N_h * s2_h) # nolint: object_name_linter
-  n_total <- ceiling(A * C_cost / denominator)
+  # nolint start: object_name_linter
+  E_total <- sum(N_h * ybar_h)
+  if (E_total <= 0) {
+    cli::cli_abort(
+      "sum(N_h * ybar_h) must be > 0; CV of a zero total is undefined."
+    )
+  }
+  if (sum(s2_h) == 0) {
+    cli::cli_abort(
+      "All {.arg s2_h} are zero; no variance to allocate. Provide at least one s2_h > 0."
+    )
+  }
+
+  V_0      <- (cv_target * E_total)^2
+  s_h      <- sqrt(s2_h)
+
+  # Cochran (1977) eq. 5.25/5.34 with FPC -- equal costs reduces to creel_n_effort n_total
+  A           <- sum(N_h * s_h / sqrt(cost_ratio))
+  C_cost      <- sum(N_h * s_h * sqrt(cost_ratio))
+  denominator <- V_0 + sum(N_h * s2_h)
+  n_total     <- max(ceiling(A * C_cost / denominator), 1L)
 
   # Neyman allocation with optional cost adjustment (Cochran eq. 5.24 / 5.30)
-  neyman_w <- N_h * s_h / sqrt(cost_ratio) # nolint: object_name_linter
-  n_h <- ceiling(n_total * neyman_w / sum(neyman_w)) # nolint: object_name_linter
-  names(n_h) <- names(N_h) # nolint: object_name_linter
+  neyman_w <- N_h * s_h / sqrt(cost_ratio)
+  n_h      <- ceiling(n_total * neyman_w / sum(neyman_w))
+  names(n_h) <- names(N_h)
 
-  storage.mode(n_h) <- "integer" # nolint: object_name_linter
+  storage.mode(n_h) <- "integer"
+  # nolint end: object_name_linter
   storage.mode(n_total) <- "integer"
 
   c(n_h, total = n_total) # nolint: object_name_linter
