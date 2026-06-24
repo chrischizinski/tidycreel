@@ -147,12 +147,23 @@ estimate_effort_aerial_glmm <- function(
   }
 
   # 7. Build prediction grid for numerical integration over the fishing day.
-  # Integrate over exactly h_open hours anchored at the earliest observed flight.
+  # Integrate over exactly h_open hours anchored at open_start.
   # Using only the observed flight range would truncate the integral and understate
   # effort for unsampled morning/evening hours — the whole point of the GLMM.
   h_open <- design$aerial$h_open
   v      <- design$aerial$visibility_correction %||% 1.0
-  open_start <- min(counts_data[[time_col_name]]) - 0.5
+  if (!is.null(design$aerial$open_start)) {
+    open_start <- design$aerial$open_start
+  } else {
+    open_start <- min(counts_data[[time_col_name]]) - 0.5
+    cli::cli_inform(c(
+      "i" = paste0(
+        "Integration window start derived from data: ",
+        round(open_start, 2), " h (earliest flight - 0.5 h)."
+      ),
+      " " = "Specify {.arg open_start} in {.fn creel_design} for a fixed fishery opening time."
+    ))
+  }
   open_end   <- open_start + h_open               # always spans the full fishing day
   hour_grid  <- seq(open_start, open_end, length.out = 100)
 

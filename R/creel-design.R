@@ -152,6 +152,14 @@ VALID_SURVEY_TYPES <- c("instantaneous", "bus_route", "ice", "camera", "aerial")
 #'   aircraft. Used only when `survey_type = "aerial"`. Defaults to `1.0`
 #'   (all anglers visible) when `NULL`. A value of 0.85 means 85% of anglers
 #'   are detected; the effort estimate is scaled up by \eqn{1 / 0.85}.
+#' @param open_start Optional non-negative numeric scalar specifying the
+#'   hour of day (decimal, 24-hour clock) when the fishery opens. Used only
+#'   when `survey_type = "aerial"` and only by [estimate_effort_aerial_glmm()]
+#'   to anchor the numerical integration window. If `NULL` (default), the
+#'   GLMM estimator derives the window start from the earliest observed flight
+#'   time minus 0.5 hours, with an informational message. Supplying
+#'   `open_start` fixes the window across surveys for consistent comparisons.
+#'   Example: `open_start = 5.5` means fishing begins at 5:30 AM.
 #'
 #' @return A `creel_design` S3 object (list) with components:
 #'   \item{calendar}{The original calendar data frame}
@@ -259,7 +267,8 @@ creel_design <- function(calendar,
                          effort_type = NULL,
                          camera_mode = NULL,
                          h_open = NULL,
-                         visibility_correction = NULL) {
+                         visibility_correction = NULL,
+                         open_start = NULL) {
   # 1. Structural validation (Phase 1 validator)
   validate_calendar_schema(calendar) # nolint: object_usage_linter
 
@@ -600,10 +609,21 @@ creel_design <- function(calendar,
         "i" = "Valid range: 0 < {.arg visibility_correction} <= 1."
       ))
     }
+    # open_start validation: optional, must be non-negative numeric scalar if supplied
+    if (!is.null(open_start) && (
+      !is.numeric(open_start) || length(open_start) != 1L || open_start < 0
+    )) {
+      cli::cli_abort(c(
+        "{.arg open_start} must be a single non-negative number (decimal hours).",
+        "x" = "Supplied value {.val {open_start}} is invalid.",
+        "i" = "Example: {.code open_start = 5.5} means fishing begins at 5:30 AM."
+      ))
+    }
     aerial <- list(
       survey_type           = "aerial",
       h_open                = h_open,
-      visibility_correction = visibility_correction
+      visibility_correction = visibility_correction,
+      open_start            = open_start
     )
   }
 

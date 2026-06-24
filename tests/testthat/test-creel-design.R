@@ -1357,6 +1357,48 @@ describe("Phase 47: Aerial constructor", {
     )
     expect_equal(d$design_type, "aerial")
   })
+
+  it("AIR-04: open_start stored in design$aerial$open_start", {
+    d <- creel_design(make_aerial_cal(),
+      date = date, strata = day_type,
+      survey_type = "aerial",
+      h_open = 14,
+      open_start = 5.5
+    )
+    expect_equal(d$aerial$open_start, 5.5)
+  })
+
+  it("AIR-04: open_start = NULL stored as NULL in design$aerial", {
+    d <- creel_design(make_aerial_cal(),
+      date = date, strata = day_type,
+      survey_type = "aerial",
+      h_open = 14
+    )
+    expect_null(d$aerial$open_start)
+  })
+
+  it("AIR-04: open_start = -1 aborts (not non-negative)", {
+    expect_error(
+      creel_design(make_aerial_cal(),
+        date = date, strata = day_type,
+        survey_type = "aerial",
+        h_open = 14,
+        open_start = -1
+      ),
+      regexp = "open_start"
+    )
+  })
+
+  it("AIR-04: open_start = 0 is accepted (midnight opening)", {
+    expect_no_error(
+      creel_design(make_aerial_cal(),
+        date = date, strata = day_type,
+        survey_type = "aerial",
+        h_open = 14,
+        open_start = 0
+      )
+    )
+  })
 })
 
 # ---- NA-weight diagnostics: bus-route inclusion probabilities ----------------
