@@ -116,16 +116,20 @@ as_hybrid_svydesign <- function(
     missing_strata <- setdiff(strata_vals, names(frac))
     if (length(missing_strata) > 0L) {
       cli::cli_abort(
-        "{.arg {name}} is missing entries for strata: ",
-        "{.val {missing_strata}}."
+        c(
+          "{.arg {name}} is missing entries for strata.",
+          "x" = "Missing: {.val {missing_strata}}."
+        )
       )
     }
     bad_vals <- frac[names(frac) %in% strata_vals]
     bad_vals <- bad_vals[bad_vals <= 0 | bad_vals > 1]
     if (length(bad_vals) > 0L) {
       cli::cli_abort(
-        "{.arg {name}} values must be in (0, 1]. ",
-        "Invalid: {.val {names(bad_vals)}} = {.val {bad_vals}}."
+        c(
+          "{.arg {name}} values must be in (0, 1].",
+          "x" = "Invalid strata: {.val {names(bad_vals)}} = {.val {bad_vals}}."
+        )
       )
     }
   }

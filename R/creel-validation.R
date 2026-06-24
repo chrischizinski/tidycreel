@@ -29,7 +29,8 @@ new_creel_validation <- function(results, tier, context) {
   )
 
   # Compute passed flag - only "pass" status counts as passed
-  passed <- all(results$status == "pass")
+  # Guard: all(logical(0)) == TRUE, so an empty results df would silently pass
+  passed <- nrow(results) > 0L && all(results$status == "pass")
 
   structure(
     list(

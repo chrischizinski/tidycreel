@@ -183,3 +183,16 @@ test_that("new_creel_validation() rejects non-character context", {
     "character"
   )
 })
+
+# VALID-EMPTY: empty results data frame must not silently pass ----------------
+
+test_that("VALID-EMPTY-01: new_creel_validation with 0-row results is NOT passed", {
+  empty_df <- data.frame(
+    check = character(0),
+    status = character(0),
+    message = character(0),
+    stringsAsFactors = FALSE
+  )
+  obj <- new_creel_validation(empty_df, tier = 1L, context = "empty test")
+  expect_false(obj$passed)
+})

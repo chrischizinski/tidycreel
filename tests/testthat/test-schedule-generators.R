@@ -881,3 +881,34 @@ test_that("SCHED-SPECIAL-05: fragile special-period declarations warn and attach
   expect_true(all(c("severity", "issue", "stratum") %in% names(diagnostics)))
   expect_true(any(diagnostics$severity %in% c("warning", "warn")))
 })
+
+# SCHED-INCL: inclusion_prob > 1 must error ----------------------------------
+
+test_that("SCHED-INCL-01: crew/circuit ratio producing inclusion_prob > 1 errors", {
+  # p_site sums to 1 (valid), but p_site * crew > 1 for site A
+  frame <- data.frame(
+    site = c("A", "B"),
+    p_site = c(0.7, 0.3),
+    stringsAsFactors = FALSE
+  )
+  sched <- generate_schedule("2024-06-01", "2024-06-07",
+    n_periods = 2, sampling_rate = 0.5, seed = 1)
+  # crew=2, n_circuits=1 → p_period=2 → inclusion_prob for A = 0.7*2 = 1.4 > 1
+  expect_error(
+    generate_bus_schedule(sched, frame, site = site, p_site = p_site, crew = 2),
+    regexp = "exceed.*1|probability|crew"
+  )
+})
+
+test_that("SCHED-INCL-02: crew=1 with p_site <= 0.5 does not error for single circuit", {
+  frame <- data.frame(
+    site = c("A", "B"),
+    p_site = c(0.5, 0.5),
+    stringsAsFactors = FALSE
+  )
+  sched <- generate_schedule("2024-06-01", "2024-06-07",
+    n_periods = 2, sampling_rate = 0.5, seed = 1)
+  expect_no_error(
+    generate_bus_schedule(sched, frame, site = site, p_site = p_site, crew = 1)
+  )
+})

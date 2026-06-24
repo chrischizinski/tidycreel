@@ -263,7 +263,9 @@ validate_incomplete_trips <- function(design,
     )
 
     # Overall passed = overall test passes AND all group tests pass
-    passed <- overall_result$equivalence_passed && all(group_results$equivalence_passed)
+    # isTRUE guards NA from degenerate TOST groups (df<=0 or se_diff==0 outside bounds)
+    passed <- isTRUE(overall_result$equivalence_passed) &&
+      all(vapply(group_results$equivalence_passed, isTRUE, logical(1)))
 
     # Build plot_data for grouped estimation
     complete_df <- complete_result$estimates
@@ -512,6 +514,41 @@ perform_tost <- function(complete_estimate, complete_se, incomplete_estimate,
 
   # Degrees of freedom (conservative: min of two samples)
   df <- min(n_complete - 1, n_incomplete - 1)
+
+  # Guard: se_diff == 0 (both groups have identical estimates with zero SE)
+  # → t-statistics are ±Inf; treat as trivially equivalent if diff is within bounds.
+  if (se_diff == 0) {
+    equivalence_passed <- (diff_estimate >= equivalence_lower) &&
+      (diff_estimate <= equivalence_upper)
+    return(list(
+      p_lower = if (equivalence_passed) 0 else 1,
+      p_upper = if (equivalence_passed) 0 else 1,
+      equivalence_passed = equivalence_passed,
+      diff_estimate = diff_estimate,
+      equivalence_lower = equivalence_lower,
+      equivalence_upper = equivalence_upper,
+      se_diff = se_diff,
+      df = df
+    ))
+  }
+
+  # Guard: df <= 0 (n=1 in one or both groups) → cannot compute t-distribution
+  if (df <= 0L) {
+    cli::cli_warn(
+      "TOST: insufficient degrees of freedom (df={df}); equivalence cannot be tested.",
+      class = "creel_warn_tost_degenerate"
+    )
+    return(list(
+      p_lower = NA_real_,
+      p_upper = NA_real_,
+      equivalence_passed = NA,
+      diff_estimate = diff_estimate,
+      equivalence_lower = equivalence_lower,
+      equivalence_upper = equivalence_upper,
+      se_diff = se_diff,
+      df = df
+    ))
+  }
 
   # TOST: Two one-sided tests
   # Test 1: H0: diff <= lower_bound vs H1: diff > lower_bound

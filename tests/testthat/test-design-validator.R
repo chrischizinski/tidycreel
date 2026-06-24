@@ -344,3 +344,35 @@ describe("check_completeness() — QUAL-01", {
     )
   })
 })
+
+# VALID-ORDER: validate_design must handle reordered named vectors correctly ---
+
+test_that("VALID-ORDER-01: reordered ybar_h/s2_h/n_proposed give same result as canonical order", {
+  N_h_canon <- c(weekday = 65L, weekend = 28L)
+  ybar_h_canon <- c(weekday = 50, weekend = 60)
+  s2_h_canon <- c(weekday = 400, weekend = 500)
+  n_proposed_canon <- c(weekday = 10L, weekend = 5L)
+
+  # Reorder inputs — names swapped, should be re-keyed internally
+  N_h_reord <- c(weekend = 28L, weekday = 65L)
+  ybar_h_reord <- c(weekend = 60, weekday = 50)
+  s2_h_reord <- c(weekend = 500, weekday = 400)
+  n_proposed_reord <- c(weekend = 5L, weekday = 10L)
+
+  r_canon <- validate_design(
+    N_h = N_h_canon, ybar_h = ybar_h_canon,
+    s2_h = s2_h_canon, n_proposed = n_proposed_canon,
+    cv_target = 0.20
+  )
+  r_reord <- validate_design(
+    N_h = N_h_reord, ybar_h = ybar_h_reord,
+    s2_h = s2_h_reord, n_proposed = n_proposed_reord,
+    cv_target = 0.20
+  )
+
+  # Results should match when keyed by stratum name
+  r_canon_keyed <- r_canon$results[order(r_canon$results$stratum), ]
+  r_reord_keyed <- r_reord$results[order(r_reord$results$stratum), ]
+  expect_equal(r_canon_keyed$status, r_reord_keyed$status)
+  expect_equal(r_canon_keyed$cv_actual, r_reord_keyed$cv_actual)
+})

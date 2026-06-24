@@ -64,6 +64,12 @@ validate_design <- function(
 
   strata_names <- names(N_h)
 
+  # Re-key ybar_h, s2_h, n_proposed to N_h's stratum order so positional
+  # indexing below is correct even if the caller supplied named-but-reordered vectors.
+  if (!is.null(names(ybar_h))) ybar_h <- ybar_h[strata_names]
+  if (!is.null(names(s2_h))) s2_h <- s2_h[strata_names]
+  if (!is.null(names(n_proposed))) n_proposed <- n_proposed[strata_names]
+
   # Per-stratum calculations -- delegate entirely to Phase 49 functions
   if (type == "effort") {
     n_req_all <- creel_n_effort( # nolint: object_usage_linter

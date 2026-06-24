@@ -493,3 +493,36 @@ test_that("plot_data passed status matches per-group results for grouped estimat
   expect_equal(sum(plot_data$passed), 1)
   expect_equal(sum(!plot_data$passed), 1)
 })
+
+# TOST-DEGEN: degenerate TOST cases must not crash ---------------------------
+
+test_that("TOST-DEGEN-01: se_diff=0 (identical estimates) returns equivalence_passed TRUE within bounds", {
+  result <- perform_tost(
+    complete_estimate = 1.0, complete_se = 0,
+    incomplete_estimate = 1.0, incomplete_se = 0,
+    threshold = 0.10, n_complete = 5, n_incomplete = 5
+  )
+  expect_true(result$equivalence_passed)
+  expect_equal(result$se_diff, 0)
+})
+
+test_that("TOST-DEGEN-02: se_diff=0 but diff outside bounds returns equivalence_passed FALSE", {
+  result <- perform_tost(
+    complete_estimate = 2.0, complete_se = 0,
+    incomplete_estimate = 1.0, incomplete_se = 0,
+    threshold = 0.10, n_complete = 5, n_incomplete = 5
+  )
+  expect_false(result$equivalence_passed)
+})
+
+test_that("TOST-DEGEN-03: df <= 0 (n=1 group) warns and returns NA equivalence_passed", {
+  expect_warning(
+    result <- perform_tost(
+      complete_estimate = 1.0, complete_se = 0.1,
+      incomplete_estimate = 0.9, incomplete_se = 0.1,
+      threshold = 0.10, n_complete = 1, n_incomplete = 1
+    ),
+    class = "creel_warn_tost_degenerate"
+  )
+  expect_true(is.na(result$equivalence_passed))
+})

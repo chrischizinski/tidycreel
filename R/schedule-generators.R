@@ -908,7 +908,17 @@ generate_bus_schedule <- function(schedule, sampling_frame, site, p_site,
 
   # Add columns to output
   result[["p_period"]] <- p_period
-  result[["inclusion_prob"]] <- p_site_vals * p_period
+  inclusion_probs <- p_site_vals * p_period
+  result[["inclusion_prob"]] <- inclusion_probs
+
+  bad_sites <- which(inclusion_probs > 1)
+  if (length(bad_sites) > 0L) {
+    cli::cli_abort(c(
+      "Inclusion probabilities exceed 1 for {length(bad_sites)} site{?s}.",
+      "x" = "crew={crew}, n_circuits={n_circuits} → p_period={p_period}; max p_site={max(p_site_vals[bad_sites])}.",
+      "i" = "Reduce {.arg crew} or increase circuits so that p_site * (crew / n_circuits) ≤ 1 for all sites."
+    ))
+  }
 
   # Drop synthetic circuit column
   if (rlang::quo_is_null(circuit_quo)) {

@@ -165,8 +165,7 @@ standardize_species <- function(
     toupper(lookup) != "AFS"
   if (bad_lookup) {
     cli::cli_abort(
-      "{.arg lookup} must be {.val AFS}; no other code systems are ",
-      "currently supported."
+      "{.arg lookup} must be {.val AFS}; no other code systems are currently supported."
     )
   }
   if (!is.null(custom_codes)) {
