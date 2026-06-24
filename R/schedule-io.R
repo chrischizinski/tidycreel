@@ -84,7 +84,12 @@ coerce_schedule_columns <- function(df) {
     df$day_type[!is.na(df$day_type) & df$day_type == "NA"] <- NA_character_
   }
   if ("period_id" %in% names(df)) {
-    df$period_id <- suppressWarnings(as.integer(df$period_id))
+    pid <- df$period_id
+    all_numeric <- all(is.na(pid) | grepl("^[0-9]+$", pid))
+    if (all_numeric) {
+      df$period_id <- as.integer(pid)
+    }
+    # else: character period labels (e.g. "AM"/"PM") — preserve as-is
   }
   if ("sampled" %in% names(df)) {
     df$sampled <- as.logical(df$sampled)

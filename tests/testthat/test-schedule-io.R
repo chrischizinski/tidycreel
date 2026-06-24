@@ -201,3 +201,18 @@ test_that("SCHED-04: validation error on period_id = 0", {
   utils::write.csv(df, tmp, row.names = FALSE)
   expect_error(read_schedule(tmp), regexp = "period_id")
 })
+
+test_that("SCHED-IO-01: read_schedule preserves character period_id without NA coercion", {
+  tmp <- withr::local_tempfile(fileext = ".csv")
+  df <- data.frame(
+    date = c("2024-06-01", "2024-06-01"),
+    day_type = c("weekday", "weekday"),
+    period_id = c("AM", "PM"),
+    stringsAsFactors = FALSE
+  )
+  utils::write.csv(df, tmp, row.names = FALSE)
+  result <- read_schedule(tmp)
+  expect_type(result$period_id, "character")
+  expect_equal(result$period_id, c("AM", "PM"))
+  expect_false(any(is.na(result$period_id)))
+})
