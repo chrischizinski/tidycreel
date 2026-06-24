@@ -1169,3 +1169,45 @@ test_that("RATE-03-harvest: missing section produces NA row + cli_warn for estim
   expect_false(south_row$data_available)
   expect_true(is.na(south_row$estimate))
 })
+
+# Species-level HPUE dispatch ----
+
+test_that("HPUE-SPECIES-01: by=species returns creel_estimates with hpue-species method", {
+  design <- suppressMessages(suppressWarnings(
+    build_multistrata_multispecies_design_for_tests(n_days = 10L, n_interviews = 30L, n_species = 2L, seed = 42L)
+  ))
+  result <- suppressMessages(suppressWarnings(estimate_harvest_rate(design, by = species)))
+  expect_s3_class(result, "creel_estimates")
+  expect_equal(result$method, "ratio-of-means-hpue-species")
+})
+
+test_that("HPUE-SPECIES-02: by=species result has one row per species with species column", {
+  design <- suppressMessages(suppressWarnings(
+    build_multistrata_multispecies_design_for_tests(n_days = 10L, n_interviews = 30L, n_species = 3L, seed = 7L)
+  ))
+  result <- suppressMessages(suppressWarnings(estimate_harvest_rate(design, by = species)))
+  expect_true("species" %in% names(result$estimates))
+  expect_equal(nrow(result$estimates), 3L)
+})
+
+test_that("HPUE-SPECIES-03: by=c(day_type, species) groups by interview var + species", {
+  design <- suppressMessages(suppressWarnings(
+    build_multistrata_multispecies_design_for_tests(n_days = 10L, n_interviews = 40L, n_species = 2L, seed = 99L)
+  ))
+  result <- suppressMessages(suppressWarnings(
+    estimate_harvest_rate(design, by = c(day_type, species))
+  ))
+  expect_s3_class(result, "creel_estimates")
+  expect_true("species" %in% names(result$estimates))
+  expect_true("day_type" %in% names(result$estimates))
+})
+
+test_that("HPUE-SPECIES-04: all estimate/se/ci columns present in species result", {
+  design <- suppressMessages(suppressWarnings(
+    build_multistrata_multispecies_design_for_tests(n_days = 10L, n_interviews = 30L, n_species = 2L, seed = 42L)
+  ))
+  result <- suppressMessages(suppressWarnings(estimate_harvest_rate(design, by = species)))
+  expected_cols <- c("species", "estimate", "se", "ci_lower", "ci_upper")
+  expect_true(all(expected_cols %in% names(result$estimates)))
+  expect_true(all(is.finite(result$estimates$estimate)))
+})

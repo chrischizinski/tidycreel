@@ -1673,6 +1673,35 @@ estimate_harvest_rate <- function(
     }
   }
 
+  # Detect species-level grouping
+  by_info <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
+
+  # Species-level dispatch
+  if (!is.null(by_info$species_var)) {
+    if (is.null(design[["catch"]])) {
+      cli::cli_abort(c(
+        "Species-level HPUE requires catch data.",
+        "x" = "{.field species} found in {.arg by} but {.fn add_catch} has not been called.",
+        "i" = "Call {.fn add_catch} before using species grouping in {.fn estimate_harvest_rate}."
+      ))
+    }
+    estimates_df <- estimate_hpue_species( # nolint: object_usage_linter
+      design,
+      species_col       = by_info$species_var,
+      interview_by_vars = by_info$interview_vars,
+      variance_method   = variance,
+      conf_level        = conf_level
+    )
+    return(new_creel_estimates( # nolint: object_usage_linter
+      estimates       = tibble::as_tibble(estimates_df),
+      method          = "ratio-of-means-hpue-species",
+      variance_method = variance,
+      design          = design,
+      conf_level      = conf_level,
+      by_vars         = by_info$all_vars
+    ))
+  }
+
   # Route to grouped or ungrouped estimation
   if (rlang::quo_is_null(by_quo)) {
     # Ungrouped estimation
