@@ -2436,6 +2436,7 @@ get_effort_target_design <- function(design, target) {
     ids = stats::reformulate(design$psu_col),
     strata = stats::reformulate(strata_cols),
     weights = ~.expansion_weight,
+    fpc = ~.N_avail,
     data = expanded_counts,
     nest = TRUE
   )
