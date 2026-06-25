@@ -159,10 +159,7 @@ compare_variance <- function(
 
   # Build output tibble, preserving group columns
   est_df <- x$estimates
-  group_cols <- setdiff(
-    names(est_df),
-    c("estimate", "se", "ci_lower", "ci_upper", "n", "method")
-  )
+  group_cols <- if (length(by_vars) > 0) by_vars else character(0)
 
   # Extract SEs — join by group keys to avoid positional pairing errors when
   # Taylor and replicate estimates return rows in different orders.
