@@ -2,7 +2,8 @@
 
 test_that("SCHED-03: write_schedule() produces readable CSV file", {
   sched <- generate_schedule(
-    "2024-06-01", "2024-08-31",
+    "2024-06-01",
+    "2024-08-31",
     n_periods = 2,
     sampling_rate = c(weekday = 0.3, weekend = 0.6),
     seed = 42
@@ -14,7 +15,8 @@ test_that("SCHED-03: write_schedule() produces readable CSV file", {
 
 test_that("SCHED-03: CSV write preserves date column as ISO format", {
   sched <- generate_schedule(
-    "2024-06-01", "2024-08-31",
+    "2024-06-01",
+    "2024-08-31",
     n_periods = 2,
     sampling_rate = c(weekday = 0.3, weekend = 0.6),
     seed = 42
@@ -31,7 +33,8 @@ test_that("SCHED-03: CSV write preserves date column as ISO format", {
 test_that("SCHED-03: xlsx export works when writexl installed", {
   skip_if_not_installed("writexl")
   sched <- generate_schedule(
-    "2024-06-01", "2024-08-31",
+    "2024-06-01",
+    "2024-08-31",
     n_periods = 2,
     sampling_rate = c(weekday = 0.3, weekend = 0.6),
     seed = 42
@@ -48,7 +51,8 @@ test_that("SCHED-03: informative error when writexl missing and xlsx requested",
     "writexl is installed; cannot test missing-package error path"
   )
   sched <- generate_schedule(
-    "2024-06-01", "2024-06-30",
+    "2024-06-01",
+    "2024-06-30",
     n_periods = 1,
     sampling_rate = 0.5,
     seed = 1
@@ -62,7 +66,8 @@ test_that("SCHED-03: informative error when writexl missing and xlsx requested",
 
 test_that("SCHED-03: write_schedule() returns path invisibly", {
   sched <- generate_schedule(
-    "2024-06-01", "2024-08-31",
+    "2024-06-01",
+    "2024-08-31",
     n_periods = 2,
     sampling_rate = c(weekday = 0.3, weekend = 0.6),
     seed = 42
@@ -76,7 +81,8 @@ test_that("SCHED-03: write_schedule() returns path invisibly", {
 
 test_that("SCHED-04: read_schedule() returns creel_schedule object from CSV", {
   sched <- generate_schedule(
-    "2024-06-01", "2024-08-31",
+    "2024-06-01",
+    "2024-08-31",
     n_periods = 2,
     sampling_rate = c(weekday = 0.3, weekend = 0.6),
     seed = 42
@@ -89,7 +95,8 @@ test_that("SCHED-04: read_schedule() returns creel_schedule object from CSV", {
 
 test_that("SCHED-04: column types correct after read (Date, character, integer)", {
   sched <- generate_schedule(
-    "2024-06-01", "2024-08-31",
+    "2024-06-01",
+    "2024-08-31",
     n_periods = 2,
     sampling_rate = c(weekday = 0.3, weekend = 0.6),
     seed = 42
@@ -104,7 +111,8 @@ test_that("SCHED-04: column types correct after read (Date, character, integer)"
 
 test_that("SCHED-04: round-trip write -> read -> creel_design() succeeds", {
   sched <- generate_schedule(
-    "2024-06-01", "2024-08-31",
+    "2024-06-01",
+    "2024-08-31",
     n_periods = 2,
     sampling_rate = c(weekday = 0.3, weekend = 0.6),
     seed = 42
@@ -133,7 +141,8 @@ test_that("SCHED-04: read_schedule() handles xlsx files", {
   skip_if_not_installed("writexl")
   skip_if_not_installed("readxl")
   sched <- generate_schedule(
-    "2024-06-01", "2024-08-31",
+    "2024-06-01",
+    "2024-08-31",
     n_periods = 2,
     sampling_rate = c(weekday = 0.3, weekend = 0.6),
     seed = 42
@@ -163,7 +172,8 @@ test_that("SCHED-04: coercion handles POSIXct date column", {
 
 test_that("SCHED-04: round-trip for include_all = TRUE schedule (with sampled column)", {
   sched <- generate_schedule(
-    "2024-06-01", "2024-08-31",
+    "2024-06-01",
+    "2024-08-31",
     n_periods = 2,
     sampling_rate = c(weekday = 0.3, weekend = 0.6),
     seed = 42,
@@ -215,4 +225,30 @@ test_that("SCHED-IO-01: read_schedule preserves character period_id without NA c
   expect_type(result$period_id, "character")
   expect_equal(result$period_id, c("AM", "PM"))
   expect_false(any(is.na(result$period_id)))
+})
+
+test_that("SCHED-IO-02: write_schedule() aborts when file exists and overwrite = FALSE", {
+  sched <- generate_schedule(
+    start_date = "2024-06-01",
+    end_date = "2024-06-07",
+    n_periods = 1,
+    sampling_rate = c(weekday = 0.5, weekend = 1.0),
+    seed = 1L
+  )
+  tmp <- withr::local_tempfile(fileext = ".csv")
+  write_schedule(sched, tmp)
+  expect_error(write_schedule(sched, tmp), regexp = "already exists")
+})
+
+test_that("SCHED-IO-03: write_schedule() overwrites when overwrite = TRUE", {
+  sched <- generate_schedule(
+    start_date = "2024-06-01",
+    end_date = "2024-06-07",
+    n_periods = 1,
+    sampling_rate = c(weekday = 0.5, weekend = 1.0),
+    seed = 1L
+  )
+  tmp <- withr::local_tempfile(fileext = ".csv")
+  write_schedule(sched, tmp)
+  expect_no_error(write_schedule(sched, tmp, overwrite = TRUE))
 })

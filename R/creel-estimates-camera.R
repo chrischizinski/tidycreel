@@ -60,8 +60,10 @@ estimate_effort_camera <- function(
 
   # Identify count variable
   excluded_cols <- c(
-    design$date_col, design$strata_cols,
-    design$psu_col, "camera_status"
+    design$date_col,
+    design$strata_cols,
+    design$psu_col,
+    "camera_status"
   )
   num_cols <- names(counts_data)[vapply(counts_data, is.numeric, logical(1L))]
   count_var <- if (!is.null(intercept_col) && intercept_col %in% names(counts_data)) {
@@ -102,7 +104,10 @@ estimate_effort_camera <- function(
 
       # Aggregate to daily effort totals (hours/day on interview days)
       daily_effort <- tapply(
-        int_sub[[effort_col]], int_sub[[date_col]], sum, na.rm = TRUE
+        int_sub[[effort_col]],
+        int_sub[[date_col]],
+        sum,
+        na.rm = TRUE
       )
       int_dates <- names(daily_effort)
 
@@ -137,11 +142,11 @@ estimate_effort_camera <- function(
       }
 
       data.frame(
-        stratum   = s,
-        rho       = rho,
-        var_rho   = var_rho,
-        n_cam     = nrow(cnt_sub),
-        n_int     = nrow(int_sub),
+        stratum = s,
+        rho = rho,
+        var_rho = var_rho,
+        n_cam = nrow(cnt_sub),
+        n_int = nrow(int_sub),
         stringsAsFactors = FALSE
       )
     })
@@ -161,16 +166,16 @@ estimate_effort_camera <- function(
       )
     )
 
-    strata_order   <- as.character(svy_raw[[strata_col]])
-    rho_matched    <- cal$rho[match(strata_order, as.character(cal$stratum))]
+    strata_order <- as.character(svy_raw[[strata_col]])
+    rho_matched <- cal$rho[match(strata_order, as.character(cal$stratum))]
     var_rho_matched <- cal$var_rho[match(strata_order, as.character(cal$stratum))]
-    total_counts_h  <- as.numeric(coef(svy_raw))
+    total_counts_h <- as.numeric(coef(svy_raw))
 
     estimate <- sum(total_counts_h * rho_matched)
     # SE via delta method: Var(E_h) = rho_h^2 * Var(total_count_h) + total_count_h^2 * Var(rho_h)
     se_between <- sqrt(
       sum((survey::SE(svy_raw) * rho_matched)^2) +
-      sum(total_counts_h^2 * var_rho_matched)
+        sum(total_counts_h^2 * var_rho_matched)
     )
     method_label <- "camera_ratio"
   } else {
@@ -206,21 +211,22 @@ estimate_effort_camera <- function(
   n <- nrow(counts_data)
 
   estimates_df <- tibble::tibble(
-    estimate   = estimate,
-    se         = se,
+    estimate = estimate,
+    se = se,
     se_between = se_between,
-    se_within  = 0,
-    ci_lower   = ci_lower,
-    ci_upper   = ci_upper,
-    n          = n
+    se_within = 0,
+    ci_lower = ci_lower,
+    ci_upper = ci_upper,
+    n = n
   )
 
-  new_creel_estimates( # nolint: object_usage_linter
-    estimates       = estimates_df,
-    method          = method_label,
+  new_creel_estimates(
+    # nolint: object_usage_linter
+    estimates = estimates_df,
+    method = method_label,
     variance_method = variance_method,
-    design          = design,
-    conf_level      = conf_level,
-    by_vars         = NULL
+    design = design,
+    conf_level = conf_level,
+    by_vars = NULL
   )
 }

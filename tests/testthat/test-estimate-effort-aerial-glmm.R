@@ -6,7 +6,8 @@ make_aerial_glmm_design <- function() {
   data("example_aerial_glmm_counts", envir = environment())
   aerial_cal <- unique(example_aerial_glmm_counts[, c("date", "day_type")]) # nolint: object_usage_linter
   aerial_cal <- aerial_cal[order(aerial_cal$date), ]
-  design <- creel_design( # nolint: object_usage_linter
+  design <- creel_design(
+    # nolint: object_usage_linter
     aerial_cal,
     date = date,
     strata = day_type, # nolint: object_usage_linter
@@ -95,8 +96,14 @@ test_that("result$method is 'aerial_glmm_total'", {
 test_that("cli_abort() fires when design_type is not 'aerial'", {
   cal <- data.frame(
     date = as.Date(c(
-      "2024-06-03", "2024-06-04", "2024-06-05", "2024-06-06",
-      "2024-06-10", "2024-06-11", "2024-06-17", "2024-06-18"
+      "2024-06-03",
+      "2024-06-04",
+      "2024-06-05",
+      "2024-06-06",
+      "2024-06-10",
+      "2024-06-11",
+      "2024-06-17",
+      "2024-06-18"
     )),
     day_type = rep(c("weekday", "weekend"), each = 4),
     stringsAsFactors = FALSE
@@ -133,7 +140,8 @@ test_that("GLMM-05: fixed open_start suppresses data-derived window message", {
   aerial_cal <- aerial_cal[order(aerial_cal$date), ]
   design <- creel_design(
     aerial_cal,
-    date = date, strata = day_type,
+    date = date,
+    strata = day_type,
     survey_type = "aerial",
     h_open = 14,
     open_start = 5.0
@@ -171,7 +179,8 @@ test_that("GLMM-05: fixed open_start yields finite estimate", {
   aerial_cal <- aerial_cal[order(aerial_cal$date), ]
   design <- creel_design(
     aerial_cal,
-    date = date, strata = day_type,
+    date = date,
+    strata = day_type,
     survey_type = "aerial",
     h_open = 14,
     open_start = 5.0

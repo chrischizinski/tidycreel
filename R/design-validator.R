@@ -42,9 +42,15 @@ new_creel_design_report <- function(results, passed, survey_type) {
 #' @export
 validate_design <- function(
   # nolint: object_name_linter
-  N_h, ybar_h, s2_h, n_proposed, cv_target, # nolint: object_name_linter
+  N_h,
+  ybar_h,
+  s2_h,
+  n_proposed,
+  cv_target, # nolint: object_name_linter
   type = c("effort", "cpue"),
-  cv_catch = NULL, cv_effort = NULL, rho = 0
+  cv_catch = NULL,
+  cv_effort = NULL,
+  rho = 0
 ) {
   type <- match.arg(type)
 
@@ -66,33 +72,56 @@ validate_design <- function(
 
   # Re-key ybar_h, s2_h, n_proposed to N_h's stratum order so positional
   # indexing below is correct even if the caller supplied named-but-reordered vectors.
-  if (!is.null(names(ybar_h))) ybar_h <- ybar_h[strata_names]
-  if (!is.null(names(s2_h))) s2_h <- s2_h[strata_names]
-  if (!is.null(names(n_proposed))) n_proposed <- n_proposed[strata_names]
+  if (!is.null(names(ybar_h))) {
+    ybar_h <- ybar_h[strata_names]
+  }
+  if (!is.null(names(s2_h))) {
+    s2_h <- s2_h[strata_names]
+  }
+  if (!is.null(names(n_proposed))) {
+    n_proposed <- n_proposed[strata_names]
+  }
 
   # Per-stratum calculations -- delegate entirely to Phase 49 functions
   if (type == "effort") {
-    n_req_all <- creel_n_effort( # nolint: object_usage_linter
+    n_req_all <- creel_n_effort(
+      # nolint: object_usage_linter
       cv_target = cv_target, # nolint: object_name_linter
-      N_h = N_h, ybar_h = ybar_h, s2_h = s2_h
+      N_h = N_h,
+      ybar_h = ybar_h,
+      s2_h = s2_h
     )
     n_required_vec <- n_req_all[strata_names]
-    cv_actual_vec <- vapply(seq_along(N_h), function(i) {
-      cv_from_n("effort", # nolint: object_usage_linter
-        n = n_proposed[[i]],
-        N_h = N_h[i], ybar_h = ybar_h[i], s2_h = s2_h[i]
-      )
-    }, numeric(1))
+    cv_actual_vec <- vapply(
+      seq_along(N_h),
+      function(i) {
+        cv_from_n(
+          "effort", # nolint: object_usage_linter
+          n = n_proposed[[i]],
+          N_h = N_h[i],
+          ybar_h = ybar_h[i],
+          s2_h = s2_h[i]
+        )
+      },
+      numeric(1)
+    )
   } else {
     # CPUE: single overall n (no per-stratum breakdown in creel_n_cpue)
-    n_required_scalar <- creel_n_cpue( # nolint: object_usage_linter
-      cv_catch = cv_catch, cv_effort = cv_effort,
-      rho = rho, cv_target = cv_target
+    n_required_scalar <- creel_n_cpue(
+      # nolint: object_usage_linter
+      cv_catch = cv_catch,
+      cv_effort = cv_effort,
+      rho = rho,
+      cv_target = cv_target
     )
     n_required_vec <- rep(n_required_scalar, length(N_h))
-    cv_actual_vec <- vapply(n_proposed, function(n) {
-      cv_from_n("cpue", n = n, cv_catch = cv_catch, cv_effort = cv_effort, rho = rho) # nolint: object_usage_linter
-    }, numeric(1))
+    cv_actual_vec <- vapply(
+      n_proposed,
+      function(n) {
+        cv_from_n("cpue", n = n, cv_catch = cv_catch, cv_effort = cv_effort, rho = rho) # nolint: object_usage_linter
+      },
+      numeric(1)
+    )
   }
 
   # Status logic: pass / warn / fail
@@ -111,18 +140,26 @@ validate_design <- function(
     cv_actual = round(cv_actual_vec, 4),
     cv_target = cv_target,
     message = dplyr::case_when(
-      status_vec == "pass" ~ paste0("Proposed n meets or exceeds required n (", n_required_vec, ")"),
+      status_vec == "pass" ~ paste0(
+        "Proposed n meets or exceeds required n (",
+        n_required_vec,
+        ")"
+      ),
       status_vec == "warn" ~ paste0(
-        "Proposed n below required (", n_required_vec, ") but CV within ", WARN_CV_BUFFER, "x target"
+        "Proposed n below required (",
+        n_required_vec,
+        ") but CV within ",
+        WARN_CV_BUFFER,
+        "x target"
       ),
       TRUE ~ paste0("Proposed n well below required (", n_required_vec, ")")
     )
   )
 
   new_creel_design_report(
-    results      = results,
-    passed       = all(status_vec == "pass"),
-    survey_type  = type
+    results = results,
+    passed = all(status_vec == "pass"),
+    survey_type = type
   )
 }
 
@@ -175,18 +212,23 @@ print.creel_design_report <- function(x, ...) {
 
 # ---- check_completeness internals -------------------------------------------
 
-new_creel_completeness_report <- function(missing_days, low_n_strata, refusals,
-                                          n_min, survey_type) {
+new_creel_completeness_report <- function(
+  missing_days,
+  low_n_strata,
+  refusals,
+  n_min,
+  survey_type
+) {
   passed <- (nrow(missing_days) == 0L) &&
     (is.null(low_n_strata) || nrow(low_n_strata) == 0L)
   structure(
     list(
       missing_days = missing_days,
       low_n_strata = low_n_strata,
-      refusals     = refusals,
-      n_min        = n_min,
-      survey_type  = survey_type,
-      passed       = passed
+      refusals = refusals,
+      n_min = n_min,
+      survey_type = survey_type,
+      passed = passed
     ),
     class = "creel_completeness_report"
   )
@@ -200,10 +242,7 @@ find_missing_days <- function(design) {
   }
   count_dates <- unique(design$counts[[design$date_col]])
   missing <- cal_dates[!cal_dates %in% count_dates]
-  design$calendar[design$calendar[[design$date_col]] %in% missing,
-    keep_cols,
-    drop = FALSE
-  ]
+  design$calendar[design$calendar[[design$date_col]] %in% missing, keep_cols, drop = FALSE]
 }
 
 find_low_n_strata <- function(design, n_min) {
@@ -211,7 +250,8 @@ find_low_n_strata <- function(design, n_min) {
   strata_cols <- intersect(design$strata_cols, names(interviews))
   if (length(strata_cols) == 0L) {
     return(data.frame(
-      key = character(0), n_observed = integer(0),
+      key = character(0),
+      n_observed = integer(0),
       stringsAsFactors = FALSE
     ))
   }
@@ -280,14 +320,16 @@ check_completeness <- function(design, n_min = 10L) {
   }
 
   survey_type <- design$design_type
-  if (is.null(survey_type)) survey_type <- "instantaneous"
+  if (is.null(survey_type)) {
+    survey_type <- "instantaneous"
+  }
 
   new_creel_completeness_report(
     missing_days = missing_days,
     low_n_strata = low_n_strata,
-    refusals     = refusals,
-    n_min        = n_min,
-    survey_type  = survey_type
+    refusals = refusals,
+    n_min = n_min,
+    survey_type = survey_type
   )
 }
 

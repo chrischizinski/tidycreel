@@ -21,8 +21,14 @@
 #'
 #' @keywords internal
 #' @noRd
-estimate_effort_aerial <- function(design, variance_method, conf_level, verbose,
-                                   effort_target = "sampled_days") { # nolint: object_usage_linter
+estimate_effort_aerial <- function(
+  design,
+  variance_method,
+  conf_level,
+  verbose,
+  effort_target = "sampled_days"
+) {
+  # nolint: object_usage_linter
   # Calibration constant: h_open / visibility_correction (v defaults to 1.0)
   h_over_v <- design$aerial$h_open / (design$aerial$visibility_correction %||% 1.0)
 
@@ -54,7 +60,12 @@ estimate_effort_aerial <- function(design, variance_method, conf_level, verbose,
   se_between <- as.numeric(survey::SE(svy_result)) * h_over_v
 
   # Within-day Rasmussen component (same as estimate_effort_total)
-  var_within <- compute_within_day_var_contribution(design, by_vars = NULL, target = "sampled_days") * h_over_v^2 # nolint: object_usage_linter
+  var_within <- compute_within_day_var_contribution(
+    design,
+    by_vars = NULL,
+    target = "sampled_days"
+  ) *
+    h_over_v^2 # nolint: object_usage_linter
   se_within <- sqrt(var_within)
 
   # Combined SE
@@ -70,22 +81,23 @@ estimate_effort_aerial <- function(design, variance_method, conf_level, verbose,
   n <- nrow(counts_data)
 
   estimates_df <- tibble::tibble(
-    estimate   = estimate,
-    se         = se,
+    estimate = estimate,
+    se = se,
     se_between = se_between,
-    se_within  = se_within,
-    ci_lower   = ci_lower,
-    ci_upper   = ci_upper,
-    n          = n
+    se_within = se_within,
+    ci_lower = ci_lower,
+    ci_upper = ci_upper,
+    n = n
   )
 
-  new_creel_estimates( # nolint: object_usage_linter
-    estimates       = estimates_df,
-    method          = "aerial_total",
+  new_creel_estimates(
+    # nolint: object_usage_linter
+    estimates = estimates_df,
+    method = "aerial_total",
     variance_method = variance_method,
-    design          = design,
-    conf_level      = conf_level,
-    by_vars         = NULL,
-    effort_target   = effort_target
+    design = design,
+    conf_level = conf_level,
+    by_vars = NULL,
+    effort_target = effort_target
   )
 }

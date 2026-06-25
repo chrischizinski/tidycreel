@@ -67,11 +67,12 @@ validation_report <- function(
   }
 
   # Run field-level validation.
-  raw <- validate_creel_data( # nolint: object_usage_linter
-    counts       = counts,
-    interviews   = interviews,
+  raw <- validate_creel_data(
+    # nolint: object_usage_linter
+    counts = counts,
+    interviews = interviews,
     na_threshold = na_threshold,
-    date_range   = date_range
+    date_range = date_range
   )
 
   # Aggregate: one row per table x check, with flagged column names.
@@ -98,7 +99,9 @@ validation_report <- function(
   for (tbl in tables) {
     for (chk in checks) {
       sub <- raw[raw$table == tbl & raw$check == chk, , drop = FALSE]
-      if (nrow(sub) == 0L) next
+      if (nrow(sub) == 0L) {
+        next
+      }
 
       n_pass <- sum(sub$status == "pass")
       n_warn <- sum(sub$status == "warn")
@@ -111,15 +114,18 @@ validation_report <- function(
         paste(flagged, collapse = ", ")
       }
 
-      rows <- c(rows, list(data.frame(
-        table = tbl,
-        check = chk,
-        n_pass = n_pass,
-        n_warn = n_warn,
-        n_fail = n_fail,
-        detail = detail_str,
-        stringsAsFactors = FALSE
-      )))
+      rows <- c(
+        rows,
+        list(data.frame(
+          table = tbl,
+          check = chk,
+          n_pass = n_pass,
+          n_warn = n_warn,
+          n_fail = n_fail,
+          detail = detail_str,
+          stringsAsFactors = FALSE
+        ))
+      )
     }
   }
   do.call(rbind, rows)
@@ -149,7 +155,10 @@ validation_report <- function(
     n_warn = n_warn,
     n_fail = 0L,
     detail = sprintf(
-      "%d / %d matched (%.1f%%)", n_matched, n_total, pct
+      "%d / %d matched (%.1f%%)",
+      n_matched,
+      n_total,
+      pct
     ),
     stringsAsFactors = FALSE
   )
@@ -172,7 +181,8 @@ print.creel_validation_report <- function(x, ...) {
   total_warn <- sum(x$n_warn)
   total_fail <- sum(x$n_fail)
 
-  overall <- if (total_fail > 0L) { # nolint: object_usage_linter
+  overall <- if (total_fail > 0L) {
+    # nolint: object_usage_linter
     "FAIL"
   } else if (total_warn > 0L) {
     "WARN"
@@ -190,8 +200,15 @@ print.creel_validation_report <- function(x, ...) {
 
     for (i in seq_len(nrow(tbl_rows))) {
       row <- tbl_rows[i, , drop = FALSE]
-      status <- if (row$n_fail > 0L) "fail" else if (row$n_warn > 0L) "warn" else "pass"
-      sym <- if (status == "pass") { # nolint: object_usage_linter
+      status <- if (row$n_fail > 0L) {
+        "fail"
+      } else if (row$n_warn > 0L) {
+        "warn"
+      } else {
+        "pass"
+      }
+      sym <- if (status == "pass") {
+        # nolint: object_usage_linter
         cli::symbol$tick
       } else if (status == "warn") {
         cli::symbol$warning

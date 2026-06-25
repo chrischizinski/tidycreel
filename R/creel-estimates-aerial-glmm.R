@@ -151,7 +151,7 @@ estimate_effort_aerial_glmm <- function(
   # Using only the observed flight range would truncate the integral and understate
   # effort for unsampled morning/evening hours — the whole point of the GLMM.
   h_open <- design$aerial$h_open
-  v      <- design$aerial$visibility_correction %||% 1.0
+  v <- design$aerial$visibility_correction %||% 1.0
   if (!is.null(design$aerial$open_start)) {
     open_start <- design$aerial$open_start
   } else {
@@ -159,13 +159,14 @@ estimate_effort_aerial_glmm <- function(
     cli::cli_inform(c(
       "i" = paste0(
         "Integration window start derived from data: ",
-        round(open_start, 2), " h (earliest flight - 0.5 h)."
+        round(open_start, 2),
+        " h (earliest flight - 0.5 h)."
       ),
       " " = "Specify {.arg open_start} in {.fn creel_design} for a fixed fishery opening time."
     ))
   }
-  open_end   <- open_start + h_open               # always spans the full fishing day
-  hour_grid  <- seq(open_start, open_end, length.out = 100)
+  open_end <- open_start + h_open # always spans the full fishing day
+  hour_grid <- seq(open_start, open_end, length.out = 100)
 
   new_data <- stats::setNames(
     data.frame(hour_grid, NA_character_, stringsAsFactors = FALSE),
@@ -176,7 +177,7 @@ estimate_effort_aerial_glmm <- function(
   x_mat <- stats::model.matrix(terms_obj, data = new_data) # nolint: object_name_linter
   beta <- lme4::fixef(model)
   mu <- as.numeric(exp(x_mat %*% beta))
-  scale_factor <- h_open / (length(hour_grid) - 1L)  # interval width: 100 pts = 99 gaps
+  scale_factor <- h_open / (length(hour_grid) - 1L) # interval width: 100 pts = 99 gaps
   # sum(mu) * scale_factor integrates the fitted count-vs-time curve over h_open
   # hours, yielding angler-hours directly. Only the visibility correction (1/v)
   # is applied — multiplying by h_open again would double-count the time dimension.
@@ -223,23 +224,24 @@ estimate_effort_aerial_glmm <- function(
 
   # 10. Assemble output
   estimates_df <- tibble::tibble(
-    estimate   = total_effort,
-    se         = se,
+    estimate = total_effort,
+    se = se,
     se_between = se_between,
-    se_within  = NA_real_,
-    ci_lower   = ci_lower,
-    ci_upper   = ci_upper,
-    n          = nrow(counts_data)
+    se_within = NA_real_,
+    ci_lower = ci_lower,
+    ci_upper = ci_upper,
+    n = nrow(counts_data)
   )
 
   variance_method_str <- if (boot) "bootstrap" else "delta"
 
-  new_creel_estimates( # nolint: object_usage_linter
-    estimates       = estimates_df,
-    method          = "aerial_glmm_total",
+  new_creel_estimates(
+    # nolint: object_usage_linter
+    estimates = estimates_df,
+    method = "aerial_glmm_total",
     variance_method = variance_method_str,
-    design          = design,
-    conf_level      = conf_level,
-    by_vars         = NULL
+    design = design,
+    conf_level = conf_level,
+    by_vars = NULL
   )
 }

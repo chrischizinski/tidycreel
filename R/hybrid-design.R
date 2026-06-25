@@ -151,20 +151,26 @@ as_hybrid_svydesign <- function(
   if (length(only_access) > 0L || length(only_roving) > 0L) {
     msgs <- character(0)
     if (length(only_access) > 0L) {
-      msgs <- c(msgs, paste0(
-        "i" = paste(
-          length(only_access),
-          "date-stratum combination(s) only in access_data"
+      msgs <- c(
+        msgs,
+        paste0(
+          "i" = paste(
+            length(only_access),
+            "date-stratum combination(s) only in access_data"
+          )
         )
-      ))
+      )
     }
     if (length(only_roving) > 0L) {
-      msgs <- c(msgs, paste0(
-        "i" = paste(
-          length(only_roving),
-          "date-stratum combination(s) only in roving_data"
+      msgs <- c(
+        msgs,
+        paste0(
+          "i" = paste(
+            length(only_roving),
+            "date-stratum combination(s) only in roving_data"
+          )
         )
-      ))
+      )
     }
     cli::cli_warn(c(
       "Asymmetric date-stratum coverage between access and roving data.",
@@ -176,15 +182,17 @@ as_hybrid_svydesign <- function(
   # ---- Combine and weight --------------------------------------------------
   access_out <- access_data[, required_cols, drop = FALSE]
   access_out$component <- "access"
-  access_out$weight <- 1 / access_fraction[
-    as.character(access_out[[strata_col]])
-  ]
+  access_out$weight <- 1 /
+    access_fraction[
+      as.character(access_out[[strata_col]])
+    ]
 
   roving_out <- roving_data[, required_cols, drop = FALSE]
   roving_out$component <- "roving"
-  roving_out$weight <- 1 / roving_fraction[
-    as.character(roving_out[[strata_col]])
-  ]
+  roving_out$weight <- 1 /
+    roving_fraction[
+      as.character(roving_out[[strata_col]])
+    ]
 
   combined <- rbind(access_out, roving_out)
 
@@ -204,18 +212,18 @@ as_hybrid_svydesign <- function(
 
   if (fpc) {
     design <- survey::svydesign(
-      ids     = ids_formula,
-      strata  = strata_formula,
+      ids = ids_formula,
+      strata = strata_formula,
       weights = weights_formula,
-      fpc     = ~fpc_val, # nolint: object_usage_linter
-      data    = combined
+      fpc = ~fpc_val, # nolint: object_usage_linter
+      data = combined
     )
   } else {
     design <- survey::svydesign(
-      ids     = ids_formula,
-      strata  = strata_formula,
+      ids = ids_formula,
+      strata = strata_formula,
       weights = weights_formula,
-      data    = combined
+      data = combined
     )
   }
 

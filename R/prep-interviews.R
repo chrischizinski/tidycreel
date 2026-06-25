@@ -46,22 +46,24 @@
 #' @seealso [compute_effort()], [add_interviews()]
 #' @family "Survey Design"
 #' @export
-prep_interviews_trips <- function(data,
-                                  date,
-                                  interview_uid,
-                                  effort_hours = NULL,
-                                  trip_status,
-                                  trip_duration = NULL,
-                                  trip_start = NULL,
-                                  interview_time = NULL,
-                                  catch_total = NULL,
-                                  harvest_total = NULL,
-                                  angler_type = NULL,
-                                  angler_method = NULL,
-                                  species_sought = NULL,
-                                  n_anglers = NULL,
-                                  refused = NULL,
-                                  strata = NULL) {
+prep_interviews_trips <- function(
+  data,
+  date,
+  interview_uid,
+  effort_hours = NULL,
+  trip_status,
+  trip_duration = NULL,
+  trip_start = NULL,
+  interview_time = NULL,
+  catch_total = NULL,
+  harvest_total = NULL,
+  angler_type = NULL,
+  angler_method = NULL,
+  species_sought = NULL,
+  n_anglers = NULL,
+  refused = NULL,
+  strata = NULL
+) {
   date_quo <- rlang::enquo(date)
   interview_uid_quo <- rlang::enquo(interview_uid)
   effort_hours_quo <- rlang::enquo(effort_hours)
@@ -252,11 +254,7 @@ prep_interviews_trips <- function(data,
 #' @seealso [add_catch()]
 #' @family "Survey Design"
 #' @export
-prep_interview_catch <- function(data,
-                                 interview_uid,
-                                 species,
-                                 count,
-                                 catch_type) {
+prep_interview_catch <- function(data, interview_uid, species, count, catch_type) {
   interview_uid_quo <- rlang::enquo(interview_uid)
   species_quo <- rlang::enquo(species)
   count_quo <- rlang::enquo(count)

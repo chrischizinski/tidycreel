@@ -2,7 +2,8 @@
 
 # --- Shared fixtures -----------------------------------------------------------
 
-make_design_with_extended_interviews <- function() { # nolint: object_length_linter
+make_design_with_extended_interviews <- function() {
+  # nolint: object_length_linter
   data(example_calendar, package = "tidycreel")
   data(example_interviews, package = "tidycreel")
   # Inject one refusal for USUM-01 coverage (example_interviews has all refused=FALSE)
@@ -10,8 +11,11 @@ make_design_with_extended_interviews <- function() { # nolint: object_length_lin
   d <- suppressWarnings(
     creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
   )
-  suppressWarnings( # nolint: object_usage_linter
-    add_interviews(d, example_interviews, # nolint: object_usage_linter
+  suppressWarnings(
+    # nolint: object_usage_linter
+    add_interviews(
+      d,
+      example_interviews, # nolint: object_usage_linter
       catch = catch_total, # nolint: object_usage_linter
       effort = hours_fished, # nolint: object_usage_linter
       harvest = catch_kept, # nolint: object_usage_linter
@@ -29,12 +33,14 @@ make_design_with_extended_interviews <- function() { # nolint: object_length_lin
 make_design_with_catch <- function() {
   data(example_catch, package = "tidycreel")
   d <- make_design_with_extended_interviews()
-  add_catch(d, example_catch, # nolint: object_usage_linter
-    catch_uid     = interview_id, # nolint: object_usage_linter
+  add_catch(
+    d,
+    example_catch, # nolint: object_usage_linter
+    catch_uid = interview_id, # nolint: object_usage_linter
     interview_uid = interview_id, # nolint: object_usage_linter
-    species       = species, # nolint: object_usage_linter
-    count         = count, # nolint: object_usage_linter
-    catch_type    = catch_type # nolint: object_usage_linter
+    species = species, # nolint: object_usage_linter
+    count = count, # nolint: object_usage_linter
+    catch_type = catch_type # nolint: object_usage_linter
   )
 }
 
@@ -83,7 +89,9 @@ test_that("summarize_refusals() errors when refused_col is NULL", {
     creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
   )
   d2 <- suppressWarnings(
-    add_interviews(d, example_interviews, # nolint: object_usage_linter
+    add_interviews(
+      d,
+      example_interviews, # nolint: object_usage_linter
       catch = catch_total, # nolint: object_usage_linter
       effort = hours_fished, # nolint: object_usage_linter
       harvest = catch_kept, # nolint: object_usage_linter
@@ -130,7 +138,9 @@ test_that("summarize_by_day_type() works without optional Phase 28 fields", {
     creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
   )
   d2 <- suppressWarnings(
-    add_interviews(d, example_interviews, # nolint: object_usage_linter
+    add_interviews(
+      d,
+      example_interviews, # nolint: object_usage_linter
       catch = catch_total, # nolint: object_usage_linter
       effort = hours_fished, # nolint: object_usage_linter
       harvest = catch_kept, # nolint: object_usage_linter
@@ -174,7 +184,9 @@ test_that("summarize_by_angler_type() errors when angler_type_col is NULL", {
     creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
   )
   d2 <- suppressWarnings(
-    add_interviews(d, example_interviews, # nolint: object_usage_linter
+    add_interviews(
+      d,
+      example_interviews, # nolint: object_usage_linter
       catch = catch_total, # nolint: object_usage_linter
       effort = hours_fished, # nolint: object_usage_linter
       harvest = catch_kept, # nolint: object_usage_linter
@@ -218,7 +230,9 @@ test_that("summarize_by_method() errors when angler_method_col is NULL", {
     creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
   )
   d2 <- suppressWarnings(
-    add_interviews(d, example_interviews, # nolint: object_usage_linter
+    add_interviews(
+      d,
+      example_interviews, # nolint: object_usage_linter
       catch = catch_total, # nolint: object_usage_linter
       effort = hours_fished, # nolint: object_usage_linter
       harvest = catch_kept, # nolint: object_usage_linter
@@ -262,7 +276,9 @@ test_that("summarize_by_species_sought() errors when species_sought_col is NULL"
     creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
   )
   d2 <- suppressWarnings(
-    add_interviews(d, example_interviews, # nolint: object_usage_linter
+    add_interviews(
+      d,
+      example_interviews, # nolint: object_usage_linter
       catch = catch_total, # nolint: object_usage_linter
       effort = hours_fished, # nolint: object_usage_linter
       harvest = catch_kept, # nolint: object_usage_linter
@@ -314,7 +330,9 @@ test_that("summarize_successful_parties() errors when angler_type_col is NULL", 
     creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
   )
   d2 <- suppressWarnings(
-    add_interviews(d, example_interviews, # nolint: object_usage_linter
+    add_interviews(
+      d,
+      example_interviews, # nolint: object_usage_linter
       catch = catch_total, # nolint: object_usage_linter
       effort = hours_fished, # nolint: object_usage_linter
       harvest = catch_kept, # nolint: object_usage_linter
@@ -367,7 +385,9 @@ test_that("summarize_by_trip_length() errors when trip_duration_col is NULL", {
     creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
   )
   d2 <- suppressWarnings(
-    add_interviews(d, example_interviews, # nolint: object_usage_linter
+    add_interviews(
+      d,
+      example_interviews, # nolint: object_usage_linter
       catch = catch_total, # nolint: object_usage_linter
       effort = hours_fished, # nolint: object_usage_linter
       harvest = catch_kept, # nolint: object_usage_linter

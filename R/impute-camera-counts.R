@@ -86,8 +86,8 @@ impute_camera_counts <- function(
   count_col,
   strata_col,
   status_col = "camera_status",
-  method     = "glm",
-  site_col   = NULL
+  method = "glm",
+  site_col = NULL
 ) {
   # 1. Input validation --------------------------------------------------------
   checkmate::assert_data_frame(data, min.rows = 1L)
@@ -115,7 +115,10 @@ impute_camera_counts <- function(
 
   # 2. Guard: glmmTMB required for GLMM method --------------------------------
   if (method == "glmm") {
-    rlang::check_installed("glmmTMB", reason = "to fit a negative binomial GLMM for camera count imputation") # nolint: line_length_linter
+    rlang::check_installed(
+      "glmmTMB",
+      reason = "to fit a negative binomial GLMM for camera count imputation"
+    ) # nolint: line_length_linter
   }
 
   # 3. Identify outage rows ----------------------------------------------------
@@ -126,10 +129,14 @@ impute_camera_counts <- function(
 
   # 4. High-missingness warning (CAMP-04) -------------------------------------
   strata_vals <- unique(data[[strata_col]])
-  miss_fractions <- vapply(strata_vals, function(s) {
-    stratum_mask <- data[[strata_col]] == s
-    sum(is_outage[stratum_mask]) / sum(stratum_mask)
-  }, numeric(1L))
+  miss_fractions <- vapply(
+    strata_vals,
+    function(s) {
+      stratum_mask <- data[[strata_col]] == s
+      sum(is_outage[stratum_mask]) / sum(stratum_mask)
+    },
+    numeric(1L)
+  )
   names(miss_fractions) <- strata_vals
 
   high_miss_strata <- names(miss_fractions[miss_fractions > 0.5])
@@ -176,7 +183,7 @@ impute_camera_counts <- function(
     if (method == "glm") {
       fit <- stats::glm(
         glm_formula,
-        data   = stratum_data[obs_mask, , drop = FALSE],
+        data = stratum_data[obs_mask, , drop = FALSE],
         family = stats::poisson()
       )
     } else {
@@ -194,7 +201,7 @@ impute_camera_counts <- function(
       fit <- tryCatch(
         glmmTMB::glmmTMB(
           glmm_formula,
-          data   = stratum_data[obs_mask, , drop = FALSE],
+          data = stratum_data[obs_mask, , drop = FALSE],
           family = glmmTMB::nbinom2(link = "log")
         ),
         error = function(e) {
@@ -211,7 +218,7 @@ impute_camera_counts <- function(
       if (is.null(fit)) {
         fit <- stats::glm(
           glm_formula,
-          data   = stratum_data[obs_mask, , drop = FALSE],
+          data = stratum_data[obs_mask, , drop = FALSE],
           family = stats::poisson()
         )
       }
@@ -221,7 +228,7 @@ impute_camera_counts <- function(
     predicted <- predict(
       fit,
       newdata = stratum_data[outage_mask, , drop = FALSE],
-      type    = "response"
+      type = "response"
     )
     stratum_data[[count_col]][outage_mask] <- as.integer(round(predicted))
 

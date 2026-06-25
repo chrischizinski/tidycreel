@@ -4,15 +4,14 @@
 
 make_boat_composition_design <- function() {
   counts_df <- data.frame(
-    date          = as.Date(c("2024-05-01", "2024-05-04",
-                              "2024-06-01", "2024-06-08")),
-    day_type      = c("weekday", "weekend", "weekday", "weekend"),
-    angler_boats  = c(3L, 2L, 4L, 1L),
+    date = as.Date(c("2024-05-01", "2024-05-04", "2024-06-01", "2024-06-08")),
+    day_type = c("weekday", "weekend", "weekday", "weekend"),
+    angler_boats = c(3L, 2L, 4L, 1L),
     non_ang_boats = c(1L, 2L, 1L, 3L),
-    count         = c(10L, 12L, 9L, 8L)
+    count = c(10L, 12L, 9L, 8L)
   )
   cal <- data.frame(
-    date     = counts_df$date,
+    date = counts_df$date,
     day_type = counts_df$day_type
   )
   d <- suppressWarnings(
@@ -24,11 +23,12 @@ make_boat_composition_design <- function() {
 }
 
 make_boat_composition_schema <- function(
-    ab_col = "angler_boats",
-    nb_col = "non_ang_boats") {
+  ab_col = "angler_boats",
+  nb_col = "non_ang_boats"
+) {
   creel_schema(
-    survey_type       = "instantaneous",
-    angler_boats_col  = ab_col,
+    survey_type = "instantaneous",
+    angler_boats_col = ab_col,
     non_ang_boats_col = nb_col
   )
 }
@@ -86,7 +86,7 @@ test_that("summarize_boat_composition() aborts when design is not creel_design",
 test_that("summarize_boat_composition() aborts when design$counts is NULL", {
   # Build a design without add_counts()
   cal <- data.frame(
-    date     = as.Date("2024-05-01"),
+    date = as.Date("2024-05-01"),
     day_type = "weekday"
   )
   d_no_counts <- suppressWarnings(
@@ -102,7 +102,7 @@ test_that("summarize_boat_composition() aborts when design$counts is NULL", {
 test_that("summarize_boat_composition() aborts when schema$angler_boats_col is NULL", {
   d <- make_boat_composition_design()
   s_no_ab <- creel_schema(
-    survey_type       = "instantaneous",
+    survey_type = "instantaneous",
     non_ang_boats_col = "non_ang_boats"
   )
   expect_error(
@@ -114,7 +114,7 @@ test_that("summarize_boat_composition() aborts when schema$angler_boats_col is N
 test_that("summarize_boat_composition() aborts when schema$non_ang_boats_col is NULL", {
   d <- make_boat_composition_design()
   s_no_nb <- creel_schema(
-    survey_type      = "instantaneous",
+    survey_type = "instantaneous",
     angler_boats_col = "angler_boats"
   )
   expect_error(
@@ -145,17 +145,19 @@ make_zip_design <- function() {
     creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
   )
   suppressWarnings(
-    add_interviews(d, ints, # nolint: object_usage_linter
-      catch         = catch_total,   # nolint: object_usage_linter
-      effort        = hours_fished,  # nolint: object_usage_linter
-      harvest       = catch_kept,    # nolint: object_usage_linter
-      trip_status   = trip_status,   # nolint: object_usage_linter
+    add_interviews(
+      d,
+      ints, # nolint: object_usage_linter
+      catch = catch_total, # nolint: object_usage_linter
+      effort = hours_fished, # nolint: object_usage_linter
+      harvest = catch_kept, # nolint: object_usage_linter
+      trip_status = trip_status, # nolint: object_usage_linter
       trip_duration = trip_duration, # nolint: object_usage_linter
-      angler_type   = angler_type,   # nolint: object_usage_linter
+      angler_type = angler_type, # nolint: object_usage_linter
       angler_method = angler_method, # nolint: object_usage_linter
       species_sought = species_sought, # nolint: object_usage_linter
-      n_anglers     = n_anglers,     # nolint: object_usage_linter
-      refused       = refused        # nolint: object_usage_linter
+      n_anglers = n_anglers, # nolint: object_usage_linter
+      refused = refused # nolint: object_usage_linter
     )
   )
 }
@@ -207,7 +209,7 @@ test_that("summarize_by_zip() Unknown row n matches NA count in interviews", {
 
 test_that("summarize_by_zip() aborts when interviews not attached", {
   cal <- data.frame(
-    date     = as.Date("2024-05-01"),
+    date = as.Date("2024-05-01"),
     day_type = "weekday"
   )
   d_no_int <- suppressWarnings(
@@ -227,17 +229,19 @@ test_that("summarize_by_zip() aborts when ii_ZipCode not in interviews", {
     creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
   )
   d <- suppressWarnings(
-    add_interviews(d, example_interviews, # nolint: object_usage_linter
-      catch         = catch_total,   # nolint: object_usage_linter
-      effort        = hours_fished,  # nolint: object_usage_linter
-      harvest       = catch_kept,    # nolint: object_usage_linter
-      trip_status   = trip_status,   # nolint: object_usage_linter
+    add_interviews(
+      d,
+      example_interviews, # nolint: object_usage_linter
+      catch = catch_total, # nolint: object_usage_linter
+      effort = hours_fished, # nolint: object_usage_linter
+      harvest = catch_kept, # nolint: object_usage_linter
+      trip_status = trip_status, # nolint: object_usage_linter
       trip_duration = trip_duration, # nolint: object_usage_linter
-      angler_type   = angler_type,   # nolint: object_usage_linter
+      angler_type = angler_type, # nolint: object_usage_linter
       angler_method = angler_method, # nolint: object_usage_linter
       species_sought = species_sought, # nolint: object_usage_linter
-      n_anglers     = n_anglers,     # nolint: object_usage_linter
-      refused       = refused        # nolint: object_usage_linter
+      n_anglers = n_anglers, # nolint: object_usage_linter
+      refused = refused # nolint: object_usage_linter
     )
   )
   expect_error(
@@ -302,17 +306,19 @@ test_that("summarize_by_county() aborts when ii_ZipCode not in interviews", {
     creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
   )
   d <- suppressWarnings(
-    add_interviews(d, example_interviews, # nolint: object_usage_linter
-      catch         = catch_total,   # nolint: object_usage_linter
-      effort        = hours_fished,  # nolint: object_usage_linter
-      harvest       = catch_kept,    # nolint: object_usage_linter
-      trip_status   = trip_status,   # nolint: object_usage_linter
+    add_interviews(
+      d,
+      example_interviews, # nolint: object_usage_linter
+      catch = catch_total, # nolint: object_usage_linter
+      effort = hours_fished, # nolint: object_usage_linter
+      harvest = catch_kept, # nolint: object_usage_linter
+      trip_status = trip_status, # nolint: object_usage_linter
       trip_duration = trip_duration, # nolint: object_usage_linter
-      angler_type   = angler_type,   # nolint: object_usage_linter
+      angler_type = angler_type, # nolint: object_usage_linter
       angler_method = angler_method, # nolint: object_usage_linter
       species_sought = species_sought, # nolint: object_usage_linter
-      n_anglers     = n_anglers,     # nolint: object_usage_linter
-      refused       = refused        # nolint: object_usage_linter
+      n_anglers = n_anglers, # nolint: object_usage_linter
+      refused = refused # nolint: object_usage_linter
     )
   )
   expect_error(

@@ -37,9 +37,20 @@ test_that("prep_interviews_trips() returns canonical columns from direct effort 
   expect_named(
     result,
     c(
-      "date", "interview_uid", "effort_hours", "trip_status", "trip_duration",
-      "n_anglers", "refused", "month", "day_type", "catch_total",
-      "harvest_total", "angler_type", "angler_method", "species_sought"
+      "date",
+      "interview_uid",
+      "effort_hours",
+      "trip_status",
+      "trip_duration",
+      "n_anglers",
+      "refused",
+      "month",
+      "day_type",
+      "catch_total",
+      "harvest_total",
+      "angler_type",
+      "angler_method",
+      "species_sought"
     )
   )
   expect_equal(result$trip_status, c("complete", "incomplete"))

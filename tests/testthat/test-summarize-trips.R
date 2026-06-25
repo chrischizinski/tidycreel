@@ -6,7 +6,9 @@ create_trip_design <- function() {
   data(example_interviews, package = "tidycreel", envir = environment())
 
   design <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
-  add_interviews(design, example_interviews, # nolint: object_usage_linter
+  add_interviews(
+    design,
+    example_interviews, # nolint: object_usage_linter
     catch = catch_total, # nolint: object_usage_linter
     effort = hours_fished, # nolint: object_usage_linter
     harvest = catch_kept, # nolint: object_usage_linter
@@ -119,7 +121,9 @@ test_that("error when design has no trip metadata", {
   data(example_interviews, package = "tidycreel")
 
   design <- creel_design(example_calendar, date = date, strata = day_type)
-  design <- add_interviews(design, example_interviews,
+  design <- add_interviews(
+    design,
+    example_interviews,
     catch = catch_total,
     effort = hours_fished,
     harvest = catch_kept,

@@ -50,11 +50,13 @@
 #'
 #' @family "Estimation"
 #' @export
-est_age_distribution <- function(design,
-                                 by = NULL,
-                                 type = "catch",
-                                 variance = "taylor",
-                                 conf_level = 0.95) {
+est_age_distribution <- function(
+  design,
+  by = NULL,
+  type = "catch",
+  variance = "taylor",
+  conf_level = 0.95
+) {
   by_quo <- rlang::enquo(by)
 
   if (!inherits(design, "creel_design")) {
@@ -88,8 +90,8 @@ est_age_distribution <- function(design,
     ))
   }
 
-  if (!is.numeric(conf_level) || length(conf_level) != 1L ||
-    conf_level <= 0 || conf_level >= 1) { # nolint: indentation_linter
+  if (!is.numeric(conf_level) || length(conf_level) != 1L || conf_level <= 0 || conf_level >= 1) {
+    # nolint: indentation_linter
     cli::cli_abort(c(
       "{.arg conf_level} must be a single number in (0, 1).",
       "x" = "{.arg conf_level} is {.val {conf_level}}."
@@ -223,15 +225,34 @@ est_age_distribution <- function(design,
       for (v in by_vars) {
         group_df[[v]] <- group_info[[v]][1]
       }
-      group_df <- group_df[, c(
-        by_vars, "age", "estimate", "se", "ci_lower", "ci_upper",
-        "percent", "cumulative_percent", "n"
-      ), drop = FALSE]
+      group_df <- group_df[,
+        c(
+          by_vars,
+          "age",
+          "estimate",
+          "se",
+          "ci_lower",
+          "ci_upper",
+          "percent",
+          "cumulative_percent",
+          "n"
+        ),
+        drop = FALSE
+      ]
     } else {
-      group_df <- group_df[, c(
-        "age", "estimate", "se", "ci_lower", "ci_upper",
-        "percent", "cumulative_percent", "n"
-      ), drop = FALSE]
+      group_df <- group_df[,
+        c(
+          "age",
+          "estimate",
+          "se",
+          "ci_lower",
+          "ci_upper",
+          "percent",
+          "cumulative_percent",
+          "n"
+        ),
+        drop = FALSE
+      ]
     }
 
     result_rows[[length(result_rows) + 1L]] <- group_df
@@ -253,12 +274,14 @@ est_age_distribution <- function(design,
 #'
 #' @keywords internal
 #' @noRd
-.build_age_distribution_records <- function(ages_data, # nolint: object_length_linter
-                                            type,
-                                            by_vars,
-                                            age_col,
-                                            type_col,
-                                            interview_uid_col) {
+.build_age_distribution_records <- function(
+  ages_data, # nolint: object_length_linter
+  type,
+  by_vars,
+  age_col,
+  type_col,
+  interview_uid_col
+) {
   if (type == "harvest") {
     ages_data <- ages_data[ages_data[[type_col]] == "harvest", , drop = FALSE]
   } else if (type == "release") {
@@ -272,7 +295,9 @@ est_age_distribution <- function(design,
       .fish_count = numeric(0),
       stringsAsFactors = FALSE
     )
-    for (v in by_vars) out[[v]] <- ages_data[[v]]
+    for (v in by_vars) {
+      out[[v]] <- ages_data[[v]]
+    }
     return(out)
   }
 
@@ -290,7 +315,9 @@ est_age_distribution <- function(design,
     .fish_count = rep(1, nrow(ages_data)),
     stringsAsFactors = FALSE
   )
-  for (v in by_vars) out[[v]] <- ages_data[[v]]
+  for (v in by_vars) {
+    out[[v]] <- ages_data[[v]]
+  }
   out
 }
 
@@ -359,8 +386,8 @@ est_mean_age <- function(ad, conf_level = NULL) {
   if (is.null(conf_level)) {
     conf_level <- if (!is.null(ad_conf)) ad_conf else 0.95
   } else {
-    if (!is.numeric(conf_level) || length(conf_level) != 1L ||
-      conf_level <= 0 || conf_level >= 1) { # nolint: indentation_linter
+    if (!is.numeric(conf_level) || length(conf_level) != 1L || conf_level <= 0 || conf_level >= 1) {
+      # nolint: indentation_linter
       cli::cli_abort(c(
         "{.arg conf_level} must be a single number in (0, 1).",
         "x" = "{.arg conf_level} is {.val {conf_level}}."
@@ -369,7 +396,9 @@ est_mean_age <- function(ad, conf_level = NULL) {
   }
 
   by_vars <- attr(ad, "by_vars")
-  if (is.null(by_vars)) by_vars <- character(0)
+  if (is.null(by_vars)) {
+    by_vars <- character(0)
+  }
   z <- stats::qnorm((1 + conf_level) / 2)
 
   compute_mean_age <- function(rows) {

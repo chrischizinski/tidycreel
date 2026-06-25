@@ -3,7 +3,10 @@
 make_cv_design <- function(n = 40, grouped = FALSE) {
   cal <- data.frame(
     date = as.Date(c(
-      "2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04"
+      "2024-06-01",
+      "2024-06-02",
+      "2024-06-03",
+      "2024-06-04"
     )),
     day_type = rep(c("weekday", "weekend"), each = 2),
     stringsAsFactors = FALSE
@@ -33,10 +36,12 @@ make_cv_design <- function(n = 40, grouped = FALSE) {
   interviews <- as.data.frame(base_cols, stringsAsFactors = FALSE)
 
   suppressMessages(suppressWarnings(
-    add_interviews(design, interviews,
-      catch         = catch_total,
-      effort        = hours_fished,
-      trip_status   = trip_status,
+    add_interviews(
+      design,
+      interviews,
+      catch = catch_total,
+      effort = hours_fished,
+      trip_status = trip_status,
       trip_duration = trip_duration
     )
   ))
@@ -87,8 +92,10 @@ test_that("CV-05: diverges_flag = FALSE on uniform toy data", {
   # Taylor and bootstrap SEs should both be near 0
   cal <- data.frame(
     date = as.Date(c(
-      "2024-06-01", "2024-06-02",
-      "2024-06-03", "2024-06-04"
+      "2024-06-01",
+      "2024-06-02",
+      "2024-06-03",
+      "2024-06-04"
     )),
     day_type = rep(c("weekday", "weekend"), each = 2),
     stringsAsFactors = FALSE
@@ -97,8 +104,10 @@ test_that("CV-05: diverges_flag = FALSE on uniform toy data", {
   interviews <- data.frame(
     date = as.Date(rep(
       c(
-        "2024-06-01", "2024-06-02",
-        "2024-06-03", "2024-06-04"
+        "2024-06-01",
+        "2024-06-02",
+        "2024-06-03",
+        "2024-06-04"
       ),
       each = 10
     )),
@@ -109,10 +118,12 @@ test_that("CV-05: diverges_flag = FALSE on uniform toy data", {
     stringsAsFactors = FALSE
   )
   design <- suppressMessages(suppressWarnings(
-    add_interviews(design, interviews,
-      catch         = catch_total,
-      effort        = hours_fished,
-      trip_status   = trip_status,
+    add_interviews(
+      design,
+      interviews,
+      catch = catch_total,
+      effort = hours_fished,
+      trip_status = trip_status,
       trip_duration = trip_duration
     )
   ))

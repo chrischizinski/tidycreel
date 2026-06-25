@@ -1,10 +1,7 @@
 # Tests for validation_report() ----
 # Note: requires validate_creel_data() and standardize_species() from M016 S01/S02.
 # Skip entire file when those functions are not yet available.
-if (!exists("validate_creel_data",
-  mode = "function",
-  where = asNamespace("tidycreel")
-)) {
+if (!exists("validate_creel_data", mode = "function", where = asNamespace("tidycreel"))) {
   skip("validate_creel_data() not available; skipping validation_report tests")
 }
 
@@ -50,7 +47,7 @@ test_that("VRPT-03: result has expected columns", {
 
 test_that("VRPT-04: one row per unique table x check combination", {
   rpt <- validation_report(
-    counts     = make_counts(),
+    counts = make_counts(),
     interviews = make_interviews()
   )
   combos <- paste(rpt$table, rpt$check)
@@ -64,7 +61,7 @@ test_that("VRPT-05: counts-only produces table == 'counts' rows", {
 
 test_that("VRPT-06: both inputs produce rows for both tables", {
   rpt <- validation_report(
-    counts     = make_counts(),
+    counts = make_counts(),
     interviews = make_interviews()
   )
   expect_true("counts" %in% rpt$table)
@@ -81,7 +78,7 @@ test_that("VRPT-07: n_pass + n_warn + n_fail > 0 for every row", {
 
 test_that("VRPT-08: species_col adds a species table row", {
   rpt <- validation_report(
-    interviews  = make_interviews(),
+    interviews = make_interviews(),
     species_col = "species"
   )
   expect_true("species" %in% rpt$table)
@@ -89,7 +86,7 @@ test_that("VRPT-08: species_col adds a species table row", {
 
 test_that("VRPT-09: species coverage detail contains percentage", {
   rpt <- validation_report(
-    interviews  = make_interviews(),
+    interviews = make_interviews(),
     species_col = "species"
   )
   sp_row <- rpt[rpt$table == "species", ]
@@ -99,7 +96,7 @@ test_that("VRPT-09: species coverage detail contains percentage", {
 test_that("VRPT-10: missing species_col warns and skips species row", {
   expect_warning(
     rpt <- validation_report(
-      interviews  = make_interviews(),
+      interviews = make_interviews(),
       species_col = "nonexistent"
     )
   )
@@ -108,7 +105,7 @@ test_that("VRPT-10: missing species_col warns and skips species row", {
 
 test_that("VRPT-11: species_col ignored when interviews is NULL", {
   rpt <- validation_report(
-    counts      = make_counts(),
+    counts = make_counts(),
     species_col = "species"
   )
   expect_false("species" %in% rpt$table)
@@ -118,7 +115,7 @@ test_that("VRPT-11: species_col ignored when interviews is NULL", {
 
 test_that("VRPT-12: high NA rate shows in n_warn", {
   df <- data.frame(
-    date  = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03")),
+    date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03")),
     count = c(NA_integer_, NA_integer_, 1L)
   )
   rpt <- validation_report(counts = df, na_threshold = 0.10)
@@ -128,7 +125,7 @@ test_that("VRPT-12: high NA rate shows in n_warn", {
 
 test_that("VRPT-13: flagged columns named in detail field", {
   df <- data.frame(
-    date  = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03")),
+    date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03")),
     count = c(NA_integer_, NA_integer_, 1L)
   )
   rpt <- validation_report(counts = df, na_threshold = 0.10)

@@ -77,10 +77,12 @@
 #'
 #' @family "Reporting & Diagnostics"
 #' @export
-adjust_nonresponse <- function(design,
-                               response_rates,
-                               method = c("postStratify", "calibrate"),
-                               stratum_col = "stratum") {
+adjust_nonresponse <- function(
+  design,
+  response_rates,
+  method = c("postStratify", "calibrate"),
+  stratum_col = "stratum"
+) {
   method <- match.arg(method)
 
   # Input validation -----------------------------------------------------------
@@ -168,10 +170,10 @@ adjust_nonresponse <- function(design,
 
   # Build diagnostics tibble
   diagnostics <- tibble::tibble(
-    stratum           = strata_vals,
-    n_sampled         = n_sampled,
-    n_responded       = n_responded,
-    response_rate     = response_rate,
+    stratum = strata_vals,
+    n_sampled = n_sampled,
+    n_responded = n_responded,
+    response_rate = response_rate,
     weight_adjustment = weight_adj
   )
 
@@ -220,8 +222,7 @@ adjust_nonresponse <- function(design,
 #' @return Updated svydesign.
 #' @keywords internal
 #' @noRd
-apply_nonresponse_weights <- function(svy, strata_cols, diagnostics,
-                                      method) {
+apply_nonresponse_weights <- function(svy, strata_cols, diagnostics, method) {
   if (is.null(svy)) {
     return(NULL)
   }

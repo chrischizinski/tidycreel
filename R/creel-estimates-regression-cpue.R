@@ -7,7 +7,7 @@
 #' @importFrom stats lm coef qt
 estimate_cpue_regression_total <- function(design, conf_level, force_origin) {
   interviews_data <- design$interviews
-  catch_col  <- design$catch_col
+  catch_col <- design$catch_col
   effort_col <- design$angler_effort_col
 
   if (is.null(catch_col) || is.null(effort_col)) {
@@ -28,9 +28,9 @@ estimate_cpue_regression_total <- function(design, conf_level, force_origin) {
     interviews_data <- interviews_data[!zero_eff, , drop = FALSE]
   }
 
-  catch  <- as.numeric(interviews_data[[catch_col]])
+  catch <- as.numeric(interviews_data[[catch_col]])
   effort <- as.numeric(interviews_data[[effort_col]])
-  n      <- length(catch)
+  n <- length(catch)
 
   if (n < 3L) {
     cli::cli_abort(c(
@@ -40,26 +40,27 @@ estimate_cpue_regression_total <- function(design, conf_level, force_origin) {
   }
 
   beta_hat <- .ols_slope(catch, effort, force_origin)
-  jk_se    <- .jackknife_slope_se(catch, effort, force_origin)
+  jk_se <- .jackknife_slope_se(catch, effort, force_origin)
 
-  df  <- n - 1L
+  df <- n - 1L
   t_c <- qt((1 + conf_level) / 2, df = df)
 
   estimates_df <- tibble::tibble(
     estimate = beta_hat,
-    se       = jk_se,
+    se = jk_se,
     ci_lower = beta_hat - t_c * jk_se,
     ci_upper = beta_hat + t_c * jk_se,
-    n        = n
+    n = n
   )
 
-  new_creel_estimates( # nolint: object_usage_linter
-    estimates       = estimates_df,
-    method          = "regression-cpue",
+  new_creel_estimates(
+    # nolint: object_usage_linter
+    estimates = estimates_df,
+    method = "regression-cpue",
     variance_method = "jackknife",
-    design          = design,
-    conf_level      = conf_level,
-    by_vars         = NULL
+    design = design,
+    conf_level = conf_level,
+    by_vars = NULL
   )
 }
 
@@ -68,10 +69,14 @@ estimate_cpue_regression_total <- function(design, conf_level, force_origin) {
 #'
 #' @keywords internal
 #' @noRd
-estimate_cpue_reg_grouped <- function(design, by_vars, conf_level,  # nolint: object_length_linter
-                                      force_origin) {
+estimate_cpue_reg_grouped <- function(
+  design,
+  by_vars,
+  conf_level, # nolint: object_length_linter
+  force_origin
+) {
   interviews_data <- design$interviews
-  catch_col  <- design$catch_col
+  catch_col <- design$catch_col
   effort_col <- design$angler_effort_col
 
   if (is.null(catch_col) || is.null(effort_col)) {
@@ -93,14 +98,14 @@ estimate_cpue_reg_grouped <- function(design, by_vars, conf_level,  # nolint: ob
   }
 
   group_key <- do.call(paste, c(interviews_data[by_vars], sep = ""))
-  groups    <- sort(unique(group_key))
+  groups <- sort(unique(group_key))
 
   rows <- lapply(groups, function(gk) {
-    idx    <- group_key == gk
-    sub    <- interviews_data[idx, , drop = FALSE]
-    catch  <- as.numeric(sub[[catch_col]])
+    idx <- group_key == gk
+    sub <- interviews_data[idx, , drop = FALSE]
+    catch <- as.numeric(sub[[catch_col]])
     effort <- as.numeric(sub[[effort_col]])
-    n_g    <- length(catch)
+    n_g <- length(catch)
 
     if (n_g < 3L) {
       cli::cli_warn(c(
@@ -110,9 +115,9 @@ estimate_cpue_reg_grouped <- function(design, by_vars, conf_level,  # nolint: ob
     }
 
     beta_hat <- .ols_slope(catch, effort, force_origin)
-    jk_se    <- .jackknife_slope_se(catch, effort, force_origin)
-    df       <- n_g - 1L
-    t_c      <- qt((1 + conf_level) / 2, df = max(df, 1L))
+    jk_se <- .jackknife_slope_se(catch, effort, force_origin)
+    df <- n_g - 1L
+    t_c <- qt((1 + conf_level) / 2, df = max(df, 1L))
 
     grp_vals <- sub[1L, by_vars, drop = FALSE]
     rownames(grp_vals) <- NULL
@@ -121,23 +126,24 @@ estimate_cpue_reg_grouped <- function(design, by_vars, conf_level,  # nolint: ob
       grp_vals,
       tibble::tibble(
         estimate = beta_hat,
-        se       = jk_se,
+        se = jk_se,
         ci_lower = beta_hat - t_c * jk_se,
         ci_upper = beta_hat + t_c * jk_se,
-        n        = n_g
+        n = n_g
       )
     )
   })
 
   estimates_df <- tibble::as_tibble(do.call(rbind, rows))
 
-  new_creel_estimates( # nolint: object_usage_linter
-    estimates       = estimates_df,
-    method          = "regression-cpue",
+  new_creel_estimates(
+    # nolint: object_usage_linter
+    estimates = estimates_df,
+    method = "regression-cpue",
     variance_method = "jackknife",
-    design          = design,
-    conf_level      = conf_level,
-    by_vars         = by_vars
+    design = design,
+    conf_level = conf_level,
+    by_vars = by_vars
   )
 }
 
@@ -162,11 +168,15 @@ estimate_cpue_reg_grouped <- function(design, by_vars, conf_level,  # nolint: ob
 #' @keywords internal
 #' @noRd
 .jackknife_slope_se <- function(catch, effort, force_origin) {
-  n        <- length(catch)
+  n <- length(catch)
   beta_hat <- .ols_slope(catch, effort, force_origin)
-  theta_i  <- vapply(seq_len(n), function(i) {
-    .ols_slope(catch[-i], effort[-i], force_origin)
-  }, numeric(1L))
+  theta_i <- vapply(
+    seq_len(n),
+    function(i) {
+      .ols_slope(catch[-i], effort[-i], force_origin)
+    },
+    numeric(1L)
+  )
   # Jackknife variance: (n-1)/n * sum((theta_i - mean(theta_i))^2)
   jk_var <- (n - 1L) / n * sum((theta_i - mean(theta_i))^2)
   sqrt(jk_var)
@@ -233,8 +243,13 @@ estimate_cpue_reg_grouped <- function(design, by_vars, conf_level,  # nolint: ob
 #' @seealso \code{\link{estimate_catch_rate}}
 #' @family "Estimation"
 #' @export
-compare_cpue_estimators <- function(design, by = NULL, conf_level = 0.95,
-                                    force_origin = TRUE, verbose = FALSE) {
+compare_cpue_estimators <- function(
+  design,
+  by = NULL,
+  conf_level = 0.95,
+  force_origin = TRUE,
+  verbose = FALSE
+) {
   checkmate::assert_class(design, "creel_design")
   checkmate::assert_number(conf_level, lower = 0.5, upper = 1.0)
   checkmate::assert_flag(force_origin)
@@ -243,43 +258,50 @@ compare_cpue_estimators <- function(design, by = NULL, conf_level = 0.95,
   by_quo <- rlang::enquo(by)
 
   .run <- function(est_name, est_str, use_trips_val = "complete") {
-    if (verbose) cli::cli_inform("Running {.val {est_name}} estimator...")
-    tryCatch({
-      if (rlang::quo_is_null(by_quo)) {
-        r <- estimate_catch_rate( # nolint: object_usage_linter
-          design,
-          variance     = if (est_str == "regression") "jackknife" else "taylor",
-          conf_level   = conf_level,
-          estimator    = est_str,
-          use_trips    = use_trips_val,
-          force_origin = force_origin
-        )
-      } else {
-        r <- estimate_catch_rate( # nolint: object_usage_linter
-          design,
-          by           = !!by_quo,
-          variance     = if (est_str == "regression") "jackknife" else "taylor",
-          conf_level   = conf_level,
-          estimator    = est_str,
-          use_trips    = use_trips_val,
-          force_origin = force_origin
-        )
+    if (verbose) {
+      cli::cli_inform("Running {.val {est_name}} estimator...")
+    }
+    tryCatch(
+      {
+        if (rlang::quo_is_null(by_quo)) {
+          r <- estimate_catch_rate(
+            # nolint: object_usage_linter
+            design,
+            variance = if (est_str == "regression") "jackknife" else "taylor",
+            conf_level = conf_level,
+            estimator = est_str,
+            use_trips = use_trips_val,
+            force_origin = force_origin
+          )
+        } else {
+          r <- estimate_catch_rate(
+            # nolint: object_usage_linter
+            design,
+            by = !!by_quo,
+            variance = if (est_str == "regression") "jackknife" else "taylor",
+            conf_level = conf_level,
+            estimator = est_str,
+            use_trips = use_trips_val,
+            force_origin = force_origin
+          )
+        }
+        df <- r$estimates
+        df$cpue_method <- est_name
+        df
+      },
+      error = function(e) {
+        cli::cli_warn(c(
+          "Estimator {.val {est_name}} failed.",
+          "x" = conditionMessage(e)
+        ))
+        NULL
       }
-      df <- r$estimates
-      df$cpue_method <- est_name
-      df
-    }, error = function(e) {
-      cli::cli_warn(c(
-        "Estimator {.val {est_name}} failed.",
-        "x" = conditionMessage(e)
-      ))
-      NULL
-    })
+    )
   }
 
-  rom_df  <- .run("rom",        "ratio-of-means", "complete")
-  mor_df  <- .run("mor",        "mor",            "complete")
-  reg_df  <- .run("regression", "regression",     "complete")
+  rom_df <- .run("rom", "ratio-of-means", "complete")
+  mor_df <- .run("mor", "mor", "complete")
+  reg_df <- .run("regression", "regression", "complete")
 
   rows <- Filter(Negate(is.null), list(rom_df, mor_df, reg_df))
   if (length(rows) == 0L) {
@@ -298,20 +320,19 @@ compare_cpue_estimators <- function(design, by = NULL, conf_level = 0.95,
 
 #' @export
 #' @importFrom ggplot2 ggplot aes geom_point geom_errorbar facet_wrap labs theme_bw theme
-autoplot.cpue_comparison <- function(object, ...) {  # nolint: object_name_linter
+autoplot.cpue_comparison <- function(object, ...) {
+  # nolint: object_name_linter
   if (!requireNamespace("ggplot2", quietly = TRUE)) {
     cli::cli_abort("{.pkg ggplot2} is required for {.fn autoplot.cpue_comparison}.")
   }
-  by_cols <- setdiff(names(object),
-                     c("cpue_method", "estimate", "se",
-                       "ci_lower", "ci_upper", "n"))
+  by_cols <- setdiff(names(object), c("cpue_method", "estimate", "se", "ci_lower", "ci_upper", "n"))
   p <- ggplot2::ggplot(
     object,
     ggplot2::aes(
-      x      = .data[["cpue_method"]],
-      y      = .data[["estimate"]],
-      ymin   = .data[["ci_lower"]],
-      ymax   = .data[["ci_upper"]],
+      x = .data[["cpue_method"]],
+      y = .data[["estimate"]],
+      ymin = .data[["ci_lower"]],
+      ymax = .data[["ci_upper"]],
       colour = .data[["cpue_method"]]
     )
   ) +

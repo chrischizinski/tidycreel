@@ -9,12 +9,14 @@ build_property_calendar <- function(n_days, start_date = as.Date("2024-06-01")) 
   calendar
 }
 
-build_trip_interviews_for_tests <- function(calendar,
-                                            n_interviews,
-                                            site_ids = NULL,
-                                            circuit_id = NULL,
-                                            catch_total = NULL,
-                                            catch_kept = NULL) {
+build_trip_interviews_for_tests <- function(
+  calendar,
+  n_interviews,
+  site_ids = NULL,
+  circuit_id = NULL,
+  catch_total = NULL,
+  catch_kept = NULL
+) {
   interview_dates <- sample(rep(calendar$date, length.out = n_interviews))
   interview_day_type <- calendar$day_type[match(interview_dates, calendar$date)]
   n_anglers <- sample(1:3, n_interviews, replace = TRUE)
@@ -77,8 +79,14 @@ build_trip_interviews_for_tests <- function(calendar,
 
 species_pool_for_tests <- function(n_species) {
   base_species <- c(
-    "bass", "panfish", "walleye", "perch", "crappie",
-    "trout", "catfish", "bluegill"
+    "bass",
+    "panfish",
+    "walleye",
+    "perch",
+    "crappie",
+    "trout",
+    "catfish",
+    "bluegill"
   )
 
   if (n_species <= length(base_species)) {
@@ -164,9 +172,12 @@ build_br_design_for_tests <- function(n_sites, n_days, n_interviews, seed = NULL
   }
 
   stopifnot(
-    is.numeric(n_sites), n_sites >= 2,
-    is.numeric(n_days), n_days >= 4,
-    is.numeric(n_interviews), n_interviews >= 2
+    is.numeric(n_sites),
+    n_sites >= 2,
+    is.numeric(n_days),
+    n_days >= 4,
+    is.numeric(n_interviews),
+    n_interviews >= 2
   )
 
   n_sites <- as.integer(n_sites)
@@ -221,18 +232,18 @@ build_br_design_for_tests <- function(n_sites, n_days, n_interviews, seed = NULL
   )
 }
 
-build_multispecies_design_for_tests <- function(n_days,
-                                                n_interviews,
-                                                n_species = 3L,
-                                                seed = NULL) {
+build_multispecies_design_for_tests <- function(n_days, n_interviews, n_species = 3L, seed = NULL) {
   if (!is.null(seed)) {
     set.seed(seed)
   }
 
   stopifnot(
-    is.numeric(n_days), n_days >= 4,
-    is.numeric(n_interviews), n_interviews >= 10,
-    is.numeric(n_species), n_species >= 2
+    is.numeric(n_days),
+    n_days >= 4,
+    is.numeric(n_interviews),
+    n_interviews >= 10,
+    is.numeric(n_species),
+    n_species >= 2
   )
 
   n_days <- as.integer(n_days)
@@ -241,7 +252,7 @@ build_multispecies_design_for_tests <- function(n_days,
 
   dates <- seq.Date(as.Date("2024-06-01"), by = "day", length.out = n_days)
   calendar <- data.frame(
-    date     = dates,
+    date = dates,
     day_type = rep_len(c("weekday", "weekend"), n_days),
     stringsAsFactors = FALSE
   )
@@ -304,18 +315,23 @@ build_multispecies_design_for_tests <- function(n_days,
   )
 }
 
-build_multistrata_multispecies_design_for_tests <- function(n_days,
-                                                           n_interviews,
-                                                           n_species = 3L,
-                                                           seed = NULL) {
+build_multistrata_multispecies_design_for_tests <- function(
+  n_days,
+  n_interviews,
+  n_species = 3L,
+  seed = NULL
+) {
   if (!is.null(seed)) {
     set.seed(seed)
   }
 
   stopifnot(
-    is.numeric(n_days), n_days >= 4,
-    is.numeric(n_interviews), n_interviews >= 10,
-    is.numeric(n_species), n_species >= 2
+    is.numeric(n_days),
+    n_days >= 4,
+    is.numeric(n_interviews),
+    n_interviews >= 10,
+    is.numeric(n_species),
+    n_species >= 2
   )
 
   n_days <- as.integer(n_days)
@@ -472,8 +488,10 @@ build_ice_design <- function(n_days, n_interviews, seed = NULL) {
   }
 
   stopifnot(
-    is.numeric(n_days), n_days >= 4,
-    is.numeric(n_interviews), n_interviews >= 10
+    is.numeric(n_days),
+    n_days >= 4,
+    is.numeric(n_interviews),
+    n_interviews >= 10
   )
 
   n_days <- as.integer(n_days)
@@ -517,8 +535,10 @@ build_br_degenerate_design <- function(n_days, n_interviews, seed = NULL) {
   }
 
   stopifnot(
-    is.numeric(n_days), n_days >= 4,
-    is.numeric(n_interviews), n_interviews >= 10
+    is.numeric(n_days),
+    n_days >= 4,
+    is.numeric(n_interviews),
+    n_interviews >= 10
   )
 
   n_days <- as.integer(n_days)

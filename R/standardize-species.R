@@ -5,26 +5,90 @@
 # Covers freshwater sport fish common in creel surveys.
 .afs_lookup <- data.frame(
   afs_code = c(
-    "WAE", "SMB", "LMB", "NOP", "MUE", "YEP",
-    "BLG", "RBT", "BNT", "LKT", "CHS", "CHN",
-    "COH", "SOC", "ATL", "PAC", "WPR", "SAU",
-    "FHC", "CCF", "BUF", "CRP", "GPS", "WCR",
-    "SPB", "STB", "WHB", "STR", "HYB", "BAS",
-    "CRK", "BKT", "LAT", "GRY", "MWF", "ELP",
-    "GLF", "BPS", "RSF", "CAS", "FRD"
+    "WAE",
+    "SMB",
+    "LMB",
+    "NOP",
+    "MUE",
+    "YEP",
+    "BLG",
+    "RBT",
+    "BNT",
+    "LKT",
+    "CHS",
+    "CHN",
+    "COH",
+    "SOC",
+    "ATL",
+    "PAC",
+    "WPR",
+    "SAU",
+    "FHC",
+    "CCF",
+    "BUF",
+    "CRP",
+    "GPS",
+    "WCR",
+    "SPB",
+    "STB",
+    "WHB",
+    "STR",
+    "HYB",
+    "BAS",
+    "CRK",
+    "BKT",
+    "LAT",
+    "GRY",
+    "MWF",
+    "ELP",
+    "GLF",
+    "BPS",
+    "RSF",
+    "CAS",
+    "FRD"
   ),
   common_name = c(
-    "walleye", "smallmouth bass", "largemouth bass", "northern pike",
-    "muskellunge", "yellow perch", "bluegill", "rainbow trout",
-    "brown trout", "lake trout", "chinook salmon", "chinook salmon",
-    "coho salmon", "sockeye salmon", "atlantic salmon", "pacific salmon",
-    "white perch", "sauger", "flathead catfish", "channel catfish",
-    "buffalo", "common carp", "gizzard shad", "white crappie",
-    "spotted bass", "striped bass", "white bass", "shovelnose sturgeon",
-    "hybrid striped bass", "bass", "creek chub", "brook trout",
-    "lake whitefish", "arctic grayling", "mountain whitefish",
-    "emerald shiner", "golden shiner", "black crappie", "redear sunfish",
-    "caspian tern", "freshwater drum"
+    "walleye",
+    "smallmouth bass",
+    "largemouth bass",
+    "northern pike",
+    "muskellunge",
+    "yellow perch",
+    "bluegill",
+    "rainbow trout",
+    "brown trout",
+    "lake trout",
+    "chinook salmon",
+    "chinook salmon",
+    "coho salmon",
+    "sockeye salmon",
+    "atlantic salmon",
+    "pacific salmon",
+    "white perch",
+    "sauger",
+    "flathead catfish",
+    "channel catfish",
+    "buffalo",
+    "common carp",
+    "gizzard shad",
+    "white crappie",
+    "spotted bass",
+    "striped bass",
+    "white bass",
+    "shovelnose sturgeon",
+    "hybrid striped bass",
+    "bass",
+    "creek chub",
+    "brook trout",
+    "lake whitefish",
+    "arctic grayling",
+    "mountain whitefish",
+    "emerald shiner",
+    "golden shiner",
+    "black crappie",
+    "redear sunfish",
+    "caspian tern",
+    "freshwater drum"
   ),
   aliases = c(
     "saugeye;pike-perch;yellow pike",
@@ -224,10 +288,7 @@ standardize_species <- function(
   # Exact common-name match (case-insensitive).
   lkp_lower <- tolower(lkp$common_name)
   name_idx <- match(lower, lkp_lower)
-  codes <- ifelse(is.na(codes) & !is.na(name_idx),
-    lkp$afs_code[name_idx],
-    codes
-  )
+  codes <- ifelse(is.na(codes) & !is.na(name_idx), lkp$afs_code[name_idx], codes)
 
   # Alias match (case-insensitive, semicolon-separated within each row).
   if (fuzzy) {
@@ -240,7 +301,9 @@ standardize_species <- function(
 # Apply project-defined custom_codes to rows still NA after AFS pass.
 .apply_custom_codes <- function(codes, raw, custom_codes) {
   still_na <- which(is.na(codes))
-  if (length(still_na) == 0L) return(codes)
+  if (length(still_na) == 0L) {
+    return(codes)
+  }
 
   lower_raw <- tolower(trimws(raw[still_na]))
   lower_names <- tolower(trimws(names(custom_codes)))
@@ -249,7 +312,7 @@ standardize_species <- function(
     hit <- lower_raw == lower_names[i]
     if (any(hit)) {
       codes[still_na[hit]] <- custom_codes[[i]]
-      still_na  <- still_na[!hit]
+      still_na <- still_na[!hit]
       lower_raw <- lower_raw[!hit]
     }
     if (length(still_na) == 0L) break

@@ -41,7 +41,6 @@
 #'
 #' @export
 estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
-
   # --- input guards ---
   if (!inherits(effort, "creel_estimates")) {
     cli::cli_abort(
@@ -88,7 +87,7 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
   if (is.null(effort$by_vars)) {
     dur_vals <- durations_all[!is.na(durations_all) & durations_all > 0]
     n_int <- length(dur_vals)
-    L     <- mean(dur_vals)
+    L <- mean(dur_vals)
     if (n_int < 2L) {
       cli::cli_warn(c(
         "!" = "Only {n_int} valid trip duration value{?s}; SE of mean trip length is undefined.",
@@ -105,29 +104,29 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
       )
     }
 
-    E     <- effort$estimates$estimate
-    se_E  <- effort$estimates$se
+    E <- effort$estimates$estimate
+    se_E <- effort$estimates$se
 
     var_trips <- se_E^2 / L^2 + E^2 * se_L^2 / L^4
-    se_trips  <- sqrt(var_trips)
-    trips     <- E / L
+    se_trips <- sqrt(var_trips)
+    trips <- E / L
 
     estimates_df <- tibble::tibble(
       estimate = trips,
-      se       = se_trips,
+      se = se_trips,
       ci_lower = trips - z * se_trips,
       ci_upper = trips + z * se_trips,
-      n        = n_int
+      n = n_int
     )
 
     return(
       new_creel_estimates(
-        estimates       = estimates_df,
-        method          = "angler-trips",
+        estimates = estimates_df,
+        method = "angler-trips",
         variance_method = "delta",
-        design          = NULL,
-        conf_level      = conf_level,
-        by_vars         = NULL
+        design = NULL,
+        conf_level = conf_level,
+        by_vars = NULL
       )
     )
   }
@@ -139,14 +138,14 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
   # Compute per-stratum mean trip length
   summary_df <- dplyr::summarise(
     dplyr::group_by(interview_df, dplyr::across(dplyr::all_of(effort$by_vars))),
-    mean_L       = mean(.data$.duration, na.rm = TRUE),
-    se_L         = dplyr::if_else(
+    mean_L = mean(.data$.duration, na.rm = TRUE),
+    se_L = dplyr::if_else(
       dplyr::n() >= 2L,
       stats::sd(.data$.duration, na.rm = TRUE) / sqrt(dplyr::n()),
       NA_real_
     ),
     n_interviews = dplyr::n(),
-    .groups      = "drop"
+    .groups = "drop"
   )
 
   # Warn about single-interview strata (SD undefined → SE/CI will be NA)
@@ -154,7 +153,9 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
   if (nrow(singleton_strata) > 0L) {
     stratum_labels <- apply(
       singleton_strata[effort$by_vars],
-      1, paste, collapse = " / "
+      1,
+      paste,
+      collapse = " / "
     )
     cli::cli_warn(c(
       "!" = "{nrow(singleton_strata)} stratum/strata {?has/have} only 1 interview; SE of mean trip length is undefined.",
@@ -182,29 +183,29 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
   }
 
   # Row-wise Delta Method
-  E         <- joined$estimate
-  se_E      <- joined$se
-  L         <- joined$mean_L
-  se_L_vec  <- joined$se_L
+  E <- joined$estimate
+  se_E <- joined$se
+  L <- joined$mean_L
+  se_L_vec <- joined$se_L
 
   var_trips <- se_E^2 / L^2 + E^2 * se_L_vec^2 / L^4
-  trips     <- E / L
-  se_trips  <- sqrt(var_trips)
+  trips <- E / L
+  se_trips <- sqrt(var_trips)
 
   # Per-stratum rows
   stratum_rows <- tibble::tibble(
     dplyr::select(joined, dplyr::all_of(effort$by_vars)),
     estimate = trips,
-    se       = se_trips,
+    se = se_trips,
     ci_lower = trips - z * se_trips,
     ci_upper = trips + z * se_trips,
-    n        = joined$n_interviews
+    n = joined$n_interviews
   )
 
   # .overall row: additive aggregate
   overall_est <- sum(trips)
   overall_var <- sum(var_trips)
-  overall_se  <- sqrt(overall_var)
+  overall_se <- sqrt(overall_var)
 
   overall_vals <- stats::setNames(
     rep(".overall", length(effort$by_vars)),
@@ -212,20 +213,20 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
   )
   overall_row <- tibble::as_tibble(as.list(overall_vals))
   overall_row$estimate <- overall_est
-  overall_row$se       <- overall_se
+  overall_row$se <- overall_se
   overall_row$ci_lower <- overall_est - z * overall_se
   overall_row$ci_upper <- overall_est + z * overall_se
-  overall_row$n        <- sum(joined$n_interviews)
+  overall_row$n <- sum(joined$n_interviews)
 
   estimates_df <- dplyr::bind_rows(stratum_rows, overall_row)
 
   new_creel_estimates(
-    estimates       = estimates_df,
-    method          = "angler-trips",
+    estimates = estimates_df,
+    method = "angler-trips",
     variance_method = "delta",
-    design          = NULL,
-    conf_level      = conf_level,
-    by_vars         = effort$by_vars
+    design = NULL,
+    conf_level = conf_level,
+    by_vars = effort$by_vars
   )
 }
 
@@ -261,7 +262,6 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
 #'
 #' @export
 estimate_effort_per_acre <- function(effort, acres, ...) {
-
   # --- input guards ---
   if (!inherits(effort, "creel_estimates")) {
     cli::cli_abort(
@@ -279,20 +279,24 @@ estimate_effort_per_acre <- function(effort, acres, ...) {
   est_df <- effort$estimates
 
   est_df$estimate <- est_df$estimate / acres
-  est_df$se       <- est_df$se       / acres
+  est_df$se <- est_df$se / acres
   est_df$ci_lower <- est_df$ci_lower / acres
   est_df$ci_upper <- est_df$ci_upper / acres
 
-  if ("se_between" %in% names(est_df)) est_df$se_between <- est_df$se_between / acres
-  if ("se_within"  %in% names(est_df)) est_df$se_within  <- est_df$se_within  / acres
+  if ("se_between" %in% names(est_df)) {
+    est_df$se_between <- est_df$se_between / acres
+  }
+  if ("se_within" %in% names(est_df)) {
+    est_df$se_within <- est_df$se_within / acres
+  }
 
   # --- return ---
   new_creel_estimates(
-    estimates       = est_df,
-    method          = "effort-per-acre",
+    estimates = est_df,
+    method = "effort-per-acre",
     variance_method = effort$variance_method,
-    design          = NULL,
-    conf_level      = effort$conf_level,
-    by_vars         = effort$by_vars
+    design = NULL,
+    conf_level = effort$conf_level,
+    by_vars = effort$by_vars
   )
 }

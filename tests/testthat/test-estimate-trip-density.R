@@ -12,24 +12,24 @@ dur_ungrouped <- c(3.0, 4.0, 5.0, 3.5, 4.5)
 
 effort_ungrouped <- new_creel_estimates(
   estimates = tibble::tibble(
-    estimate   = 1000,
-    se         = 50,
+    estimate = 1000,
+    se = 50,
     se_between = 30,
-    se_within  = 40,
-    ci_lower   = 902,
-    ci_upper   = 1098,
-    n          = 20
+    se_within = 40,
+    ci_lower = 902,
+    ci_upper = 1098,
+    n = 20
   ),
-  method          = "total",
+  method = "total",
   variance_method = "taylor",
-  design          = NULL,
-  conf_level      = 0.95,
-  by_vars         = NULL
+  design = NULL,
+  conf_level = 0.95,
+  by_vars = NULL
 )
 
 design_ungrouped <- list(
   trip_duration_col = "duration",
-  interviews        = data.frame(duration = dur_ungrouped)
+  interviews = data.frame(duration = dur_ungrouped)
 )
 
 dur_weekday <- c(3.0, 4.0, 5.0, 3.5, 4.5, 3.0)
@@ -39,21 +39,21 @@ effort_grouped <- new_creel_estimates(
   estimates = tibble::tibble(
     day_type = c("weekday", "weekend"),
     estimate = c(600, 400),
-    se       = c(30, 20),
+    se = c(30, 20),
     ci_lower = c(541, 361),
     ci_upper = c(659, 439),
-    n        = c(60L, 40L)
+    n = c(60L, 40L)
   ),
-  method          = "total",
+  method = "total",
   variance_method = "taylor",
-  design          = NULL,
-  conf_level      = 0.95,
-  by_vars         = "day_type"
+  design = NULL,
+  conf_level = 0.95,
+  by_vars = "day_type"
 )
 
 design_grouped <- list(
   trip_duration_col = "duration",
-  interviews        = data.frame(
+  interviews = data.frame(
     day_type = c(rep("weekday", length(dur_weekday)), rep("weekend", length(dur_weekend))),
     duration = c(dur_weekday, dur_weekend)
   )
@@ -62,7 +62,7 @@ design_grouped <- list(
 # -- Tests --------------------------------------------------------------------
 
 test_that("Test A: ungrouped — point estimate equals E / mean(duration)", {
-  result   <- estimate_angler_trips(effort_ungrouped, design_ungrouped)
+  result <- estimate_angler_trips(effort_ungrouped, design_ungrouped)
   expected <- 1000 / mean(dur_ungrouped)
   expect_equal(result$estimates$estimate, expected, tolerance = 1e-10)
 })
@@ -72,13 +72,13 @@ test_that("Test B: ungrouped — SE matches Delta Method formula Var(E/L) = Var(
   # for a derived quantity T = E / L where E and L are independently estimated.
   result <- estimate_angler_trips(effort_ungrouped, design_ungrouped)
 
-  E     <- 1000
-  se_E  <- 50
-  L     <- mean(dur_ungrouped)
-  se_L  <- stats::sd(dur_ungrouped) / sqrt(length(dur_ungrouped))
+  E <- 1000
+  se_E <- 50
+  L <- mean(dur_ungrouped)
+  se_L <- stats::sd(dur_ungrouped) / sqrt(length(dur_ungrouped))
 
-  var_trips    <- se_E^2 / L^2 + E^2 * se_L^2 / L^4
-  expected_se  <- sqrt(var_trips)
+  var_trips <- se_E^2 / L^2 + E^2 * se_L^2 / L^4
+  expected_se <- sqrt(var_trips)
 
   expect_equal(result$estimates$se, expected_se, tolerance = 1e-10)
 })
@@ -118,9 +118,9 @@ test_that("Test F: grouped — .overall row present, estimate = sum of stratum t
 test_that("Test G: grouped — .overall SE is quadrature sum of stratum variances", {
   result <- estimate_angler_trips(effort_grouped, design_grouped)
 
-  L_wd   <- mean(dur_weekday)
+  L_wd <- mean(dur_weekday)
   se_L_wd <- stats::sd(dur_weekday) / sqrt(length(dur_weekday))
-  L_we   <- mean(dur_weekend)
+  L_we <- mean(dur_weekend)
   se_L_we <- stats::sd(dur_weekend) / sqrt(length(dur_weekend))
 
   var_wd <- 30^2 / L_wd^2 + 600^2 * se_L_wd^2 / L_wd^4
@@ -155,7 +155,7 @@ test_that("Test J: missing by_vars column in interviews fires cli_abort", {
   # Grouped effort expects 'day_type' in interviews, but this design has none
   design_no_bv <- list(
     trip_duration_col = "duration",
-    interviews        = data.frame(duration = c(3.0, 4.0, 5.0))
+    interviews = data.frame(duration = c(3.0, 4.0, 5.0))
   )
   expect_error(
     estimate_angler_trips(effort_grouped, design_no_bv),
@@ -170,7 +170,7 @@ test_that("Test K: smoke — tidy() returns a data.frame", {
 
 test_that("Test L: smoke — write_estimates() to tempfile succeeds", {
   result <- estimate_angler_trips(effort_ungrouped, design_ungrouped)
-  tmp    <- tempfile(fileext = ".csv")
+  tmp <- tempfile(fileext = ".csv")
   expect_no_error(write_estimates(result, path = tmp))
   expect_true(file.exists(tmp))
 })
@@ -181,19 +181,19 @@ test_that("Test L: smoke — write_estimates() to tempfile succeeds", {
 # Fixture: ungrouped effort with se_between/se_within present
 effort_with_decomp <- new_creel_estimates(
   estimates = tibble::tibble(
-    estimate   = 5000,
-    se         = 250,
+    estimate = 5000,
+    se = 250,
     se_between = 150,
-    se_within  = 200,
-    ci_lower   = 4510,
-    ci_upper   = 5490,
-    n          = 40
+    se_within = 200,
+    ci_lower = 4510,
+    ci_upper = 5490,
+    n = 40
   ),
-  method          = "total",
+  method = "total",
   variance_method = "taylor",
-  design          = NULL,
-  conf_level      = 0.95,
-  by_vars         = NULL
+  design = NULL,
+  conf_level = 0.95,
+  by_vars = NULL
 )
 
 # Fixture: grouped effort without se_between/se_within
@@ -201,16 +201,16 @@ effort_grouped_no_decomp <- new_creel_estimates(
   estimates = tibble::tibble(
     day_type = c("weekday", "weekend"),
     estimate = c(3000, 2000),
-    se       = c(150, 100),
+    se = c(150, 100),
     ci_lower = c(2706, 1804),
     ci_upper = c(3294, 2196),
-    n        = c(30L, 20L)
+    n = c(30L, 20L)
   ),
-  method          = "total",
+  method = "total",
   variance_method = "taylor",
-  design          = NULL,
-  conf_level      = 0.95,
-  by_vars         = "day_type"
+  design = NULL,
+  conf_level = 0.95,
+  by_vars = "day_type"
 )
 
 test_that("Test M: estimate equals effort estimate / acres", {
@@ -236,7 +236,7 @@ test_that("Test P: se_between and se_within scaled when present", {
   # constant (linear propagation, no Delta Method needed).
   result <- estimate_effort_per_acre(effort_with_decomp, 120)
   expect_equal(result$estimates$se_between, 150 / 120, tolerance = 1e-10)
-  expect_equal(result$estimates$se_within,  200 / 120, tolerance = 1e-10)
+  expect_equal(result$estimates$se_within, 200 / 120, tolerance = 1e-10)
 })
 
 test_that("Test Q: se_between and se_within absent when not in input", {
@@ -244,7 +244,7 @@ test_that("Test Q: se_between and se_within absent when not in input", {
   # estimate_effort_per_acre must not fabricate them.
   result2 <- estimate_effort_per_acre(effort_grouped_no_decomp, 80)
   expect_false("se_between" %in% names(result2$estimates))
-  expect_false("se_within"  %in% names(result2$estimates))
+  expect_false("se_within" %in% names(result2$estimates))
 })
 
 test_that("Test R: returns creel_estimates with method effort-per-acre", {
@@ -260,7 +260,7 @@ test_that("Test S: by_vars and conf_level inherited from effort object", {
 })
 
 test_that("Test T: non-positive acres fires cli_abort", {
-  expect_error(estimate_effort_per_acre(effort_with_decomp, 0),  regexp = "positive")
+  expect_error(estimate_effort_per_acre(effort_with_decomp, 0), regexp = "positive")
   expect_error(estimate_effort_per_acre(effort_with_decomp, -5), regexp = "positive")
 })
 
@@ -282,20 +282,27 @@ test_that("Test V: smoke — tidy() and write_estimates() succeed", {
 test_that("RPT-01b: ungrouped single interview warns and returns NA SE/CI", {
   effort_one <- new_creel_estimates(
     estimates = tibble::tibble(
-      estimate = 500, se = 25, ci_lower = 451, ci_upper = 549, n = 1L
+      estimate = 500,
+      se = 25,
+      ci_lower = 451,
+      ci_upper = 549,
+      n = 1L
     ),
-    method = "total", variance_method = "taylor",
-    design = NULL, conf_level = 0.95, by_vars = NULL
+    method = "total",
+    variance_method = "taylor",
+    design = NULL,
+    conf_level = 0.95,
+    by_vars = NULL
   )
   design_one <- list(
     trip_duration_col = "duration",
-    interviews        = data.frame(duration = 4.0)
+    interviews = data.frame(duration = 4.0)
   )
   expect_warning(
     result <- estimate_angler_trips(effort_one, design_one),
     regexp = "SE of mean trip length is undefined"
   )
-  expect_false(is.na(result$estimates$estimate))  # point estimate valid
+  expect_false(is.na(result$estimates$estimate)) # point estimate valid
   expect_true(is.na(result$estimates$se))
   expect_true(is.na(result$estimates$ci_lower))
   expect_true(is.na(result$estimates$ci_upper))
@@ -305,15 +312,21 @@ test_that("RPT-01b: grouped singleton stratum warns and returns NA SE/CI for tha
   effort_g <- new_creel_estimates(
     estimates = tibble::tibble(
       day_type = c("weekday", "weekend"),
-      estimate = c(600, 400), se = c(30, 20),
-      ci_lower = c(541, 361), ci_upper = c(659, 439), n = c(6L, 1L)
+      estimate = c(600, 400),
+      se = c(30, 20),
+      ci_lower = c(541, 361),
+      ci_upper = c(659, 439),
+      n = c(6L, 1L)
     ),
-    method = "total", variance_method = "taylor",
-    design = NULL, conf_level = 0.95, by_vars = "day_type"
+    method = "total",
+    variance_method = "taylor",
+    design = NULL,
+    conf_level = 0.95,
+    by_vars = "day_type"
   )
   design_g <- list(
     trip_duration_col = "duration",
-    interviews        = data.frame(
+    interviews = data.frame(
       day_type = c(rep("weekday", 6), "weekend"),
       duration = c(3.0, 4.0, 5.0, 3.5, 4.5, 3.0, 2.0)
     )
@@ -325,7 +338,7 @@ test_that("RPT-01b: grouped singleton stratum warns and returns NA SE/CI for tha
   stratum_rows <- result$estimates[result$estimates$day_type != ".overall", ]
   wknd <- stratum_rows[stratum_rows$day_type == "weekend", ]
   wkday <- stratum_rows[stratum_rows$day_type == "weekday", ]
-  expect_false(is.na(wknd$estimate))   # point estimate valid
-  expect_true(is.na(wknd$se))          # SE undefined for singleton
-  expect_false(is.na(wkday$se))        # weekday (n=6) has valid SE
+  expect_false(is.na(wknd$estimate)) # point estimate valid
+  expect_true(is.na(wknd$se)) # SE undefined for singleton
+  expect_false(is.na(wkday$se)) # weekday (n=6) has valid SE
 })

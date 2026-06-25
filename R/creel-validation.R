@@ -55,36 +55,39 @@ format.creel_validation <- function(x, ...) {
   # Build formatted output using cli
   output <- character()
 
-  output <- c(output, cli::cli_format_method({
-    cli::cli_h1("Validation Results")
-    cli::cli_text("Context: {x$context}")
-    cli::cli_text("Tier: {x$tier}")
+  output <- c(
+    output,
+    cli::cli_format_method({
+      cli::cli_h1("Validation Results")
+      cli::cli_text("Context: {x$context}")
+      cli::cli_text("Tier: {x$tier}")
 
-    # Status with styling
-    if (x$passed) {
-      cli::cli_text("Status: {.emph PASSED}")
-    } else {
-      cli::cli_text("Status: {.emph FAILED}")
-    }
-
-    cli::cli_text("")
-    cli::cli_text("Checks:")
-
-    # List individual checks with status indicators
-    for (i in seq_len(nrow(x$results))) {
-      check_name <- x$results$check[i] # nolint: object_usage_linter
-      check_status <- x$results$status[i]
-      check_msg <- x$results$message[i] # nolint: object_usage_linter
-
-      if (check_status == "pass") {
-        cli::cli_alert_success("{check_name}: {check_msg}")
-      } else if (check_status == "fail") {
-        cli::cli_alert_danger("{check_name}: {check_msg}")
-      } else if (check_status == "warn") {
-        cli::cli_alert_warning("{check_name}: {check_msg}")
+      # Status with styling
+      if (x$passed) {
+        cli::cli_text("Status: {.emph PASSED}")
+      } else {
+        cli::cli_text("Status: {.emph FAILED}")
       }
-    }
-  }))
+
+      cli::cli_text("")
+      cli::cli_text("Checks:")
+
+      # List individual checks with status indicators
+      for (i in seq_len(nrow(x$results))) {
+        check_name <- x$results$check[i] # nolint: object_usage_linter
+        check_status <- x$results$status[i]
+        check_msg <- x$results$message[i] # nolint: object_usage_linter
+
+        if (check_status == "pass") {
+          cli::cli_alert_success("{check_name}: {check_msg}")
+        } else if (check_status == "fail") {
+          cli::cli_alert_danger("{check_name}: {check_msg}")
+        } else if (check_status == "warn") {
+          cli::cli_alert_warning("{check_name}: {check_msg}")
+        }
+      }
+    })
+  )
 
   output
 }

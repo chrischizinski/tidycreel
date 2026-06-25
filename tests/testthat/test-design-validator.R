@@ -22,7 +22,9 @@ make_design_with_interviews <- function() {
   )
   d2 <- suppressWarnings(add_counts(d, example_counts)) # nolint: object_usage_linter
   suppressWarnings(
-    add_interviews(d2, example_interviews, # nolint: object_usage_linter
+    add_interviews(
+      d2,
+      example_interviews, # nolint: object_usage_linter
       catch = catch_total, # nolint: object_usage_linter
       effort = hours_fished, # nolint: object_usage_linter
       harvest = catch_kept, # nolint: object_usage_linter
@@ -42,7 +44,9 @@ make_design_with_refusals <- function() {
   )
   d2 <- suppressWarnings(add_counts(d, example_counts)) # nolint: object_usage_linter
   suppressWarnings(
-    add_interviews(d2, example_interviews, # nolint: object_usage_linter
+    add_interviews(
+      d2,
+      example_interviews, # nolint: object_usage_linter
       catch = catch_total, # nolint: object_usage_linter
       effort = hours_fished, # nolint: object_usage_linter
       harvest = catch_kept, # nolint: object_usage_linter
@@ -55,31 +59,54 @@ make_design_with_refusals <- function() {
 make_aerial_design <- function() {
   cal <- data.frame(
     date = as.Date(c(
-      "2024-06-03", "2024-06-04", "2024-06-05", "2024-06-06", "2024-06-07",
-      "2024-06-08", "2024-06-09"
+      "2024-06-03",
+      "2024-06-04",
+      "2024-06-05",
+      "2024-06-06",
+      "2024-06-07",
+      "2024-06-08",
+      "2024-06-09"
     )),
     day_type = c(
-      "weekday", "weekday", "weekday", "weekday", "weekday",
-      "weekend", "weekend"
+      "weekday",
+      "weekday",
+      "weekday",
+      "weekday",
+      "weekday",
+      "weekend",
+      "weekend"
     ),
     stringsAsFactors = FALSE
   )
   aerial_counts <- data.frame(
     date = as.Date(c(
-      "2024-06-03", "2024-06-04", "2024-06-05", "2024-06-06", "2024-06-07",
-      "2024-06-08", "2024-06-09"
+      "2024-06-03",
+      "2024-06-04",
+      "2024-06-05",
+      "2024-06-06",
+      "2024-06-07",
+      "2024-06-08",
+      "2024-06-09"
     )),
     day_type = c(
-      "weekday", "weekday", "weekday", "weekday", "weekday",
-      "weekend", "weekend"
+      "weekday",
+      "weekday",
+      "weekday",
+      "weekday",
+      "weekday",
+      "weekend",
+      "weekend"
     ),
     n_counted = c(39L, 32L, 29L, 35L, 28L, 45L, 52L),
     stringsAsFactors = FALSE
   )
   d <- suppressWarnings(
-    creel_design(cal, # nolint: object_usage_linter
-      date = date, strata = day_type, # nolint: object_usage_linter
-      survey_type = "aerial", h_open = 14
+    creel_design(
+      cal, # nolint: object_usage_linter
+      date = date,
+      strata = day_type, # nolint: object_usage_linter
+      survey_type = "aerial",
+      h_open = 14
     )
   )
   suppressWarnings(add_counts(d, aerial_counts)) # nolint: object_usage_linter
@@ -88,30 +115,52 @@ make_aerial_design <- function() {
 make_camera_design <- function() {
   cal <- data.frame(
     date = as.Date(c(
-      "2024-06-03", "2024-06-04", "2024-06-05", "2024-06-06", "2024-06-07",
-      "2024-06-08", "2024-06-09"
+      "2024-06-03",
+      "2024-06-04",
+      "2024-06-05",
+      "2024-06-06",
+      "2024-06-07",
+      "2024-06-08",
+      "2024-06-09"
     )),
     day_type = c(
-      "weekday", "weekday", "weekday", "weekday", "weekday",
-      "weekend", "weekend"
+      "weekday",
+      "weekday",
+      "weekday",
+      "weekday",
+      "weekday",
+      "weekend",
+      "weekend"
     ),
     stringsAsFactors = FALSE
   )
   camera_counts <- data.frame(
     date = as.Date(c(
-      "2024-06-03", "2024-06-04", "2024-06-05", "2024-06-06", "2024-06-07",
-      "2024-06-08", "2024-06-09"
+      "2024-06-03",
+      "2024-06-04",
+      "2024-06-05",
+      "2024-06-06",
+      "2024-06-07",
+      "2024-06-08",
+      "2024-06-09"
     )),
     day_type = c(
-      "weekday", "weekday", "weekday", "weekday", "weekday",
-      "weekend", "weekend"
+      "weekday",
+      "weekday",
+      "weekday",
+      "weekday",
+      "weekday",
+      "weekend",
+      "weekend"
     ),
     ingress_count = c(48L, 55L, 43L, 50L, 37L, 62L, 70L),
     stringsAsFactors = FALSE
   )
   d <- suppressWarnings(
-    creel_design(cal, # nolint: object_usage_linter
-      date = date, strata = day_type, # nolint: object_usage_linter
+    creel_design(
+      cal, # nolint: object_usage_linter
+      date = date,
+      strata = day_type, # nolint: object_usage_linter
       survey_type = "camera",
       camera_mode = "counter"
     )
@@ -136,15 +185,19 @@ make_ice_design <- function() {
     stringsAsFactors = FALSE
   )
   d <- suppressWarnings(
-    creel_design(cal, # nolint: object_usage_linter
-      date = date, strata = day_type, # nolint: object_usage_linter
+    creel_design(
+      cal, # nolint: object_usage_linter
+      date = date,
+      strata = day_type, # nolint: object_usage_linter
       survey_type = "ice",
       effort_type = "time_on_ice",
       p_period = 0.5
     )
   )
   suppressMessages(suppressWarnings(
-    add_interviews(d, interviews, # nolint: object_usage_linter
+    add_interviews(
+      d,
+      interviews, # nolint: object_usage_linter
       catch = catch_total, # nolint: object_usage_linter
       effort = hours_fished, # nolint: object_usage_linter
       trip_status = trip_status, # nolint: object_usage_linter
@@ -172,8 +225,11 @@ N_PROPOSED_MIXED <- c(weekday = 10L, weekend = 1L) # weekday pass, weekend warn/
 describe("validate_design() — VALID-01", {
   it("returns an object of class creel_design_report", {
     r <- validate_design(
-      N_h = N_H, ybar_h = YBAR_H, s2_h = S2_H, # nolint: object_name_linter
-      n_proposed = N_PROPOSED_PASS, cv_target = CV_TARGET # nolint: object_name_linter
+      N_h = N_H,
+      ybar_h = YBAR_H,
+      s2_h = S2_H, # nolint: object_name_linter
+      n_proposed = N_PROPOSED_PASS,
+      cv_target = CV_TARGET # nolint: object_name_linter
     )
     expect_s3_class(r, "creel_design_report")
   })
@@ -181,10 +237,14 @@ describe("validate_design() — VALID-01", {
   it("$results tibble has required columns", {
     # columns: stratum, status, n_proposed, n_required, cv_actual, cv_target, message
     r <- validate_design(
-      N_h = N_H, ybar_h = YBAR_H, s2_h = S2_H, # nolint: object_name_linter
-      n_proposed = N_PROPOSED_PASS, cv_target = CV_TARGET # nolint: object_name_linter
+      N_h = N_H,
+      ybar_h = YBAR_H,
+      s2_h = S2_H, # nolint: object_name_linter
+      n_proposed = N_PROPOSED_PASS,
+      cv_target = CV_TARGET # nolint: object_name_linter
     )
-    expect_named(r$results,
+    expect_named(
+      r$results,
       c("stratum", "status", "n_proposed", "n_required", "cv_actual", "cv_target", "message"),
       ignore.order = FALSE
     )
@@ -193,30 +253,41 @@ describe("validate_design() — VALID-01", {
 
   it("stratum with n_proposed >= n_required gets status == 'pass'", {
     r <- validate_design(
-      N_h = N_H, ybar_h = YBAR_H, s2_h = S2_H, # nolint: object_name_linter
-      n_proposed = N_PROPOSED_PASS, cv_target = CV_TARGET # nolint: object_name_linter
+      N_h = N_H,
+      ybar_h = YBAR_H,
+      s2_h = S2_H, # nolint: object_name_linter
+      n_proposed = N_PROPOSED_PASS,
+      cv_target = CV_TARGET # nolint: object_name_linter
     )
     expect_true(all(r$results$status == "pass"))
   })
 
   it("stratum with n_proposed < n_required gets status 'fail' or 'warn'", {
     r <- validate_design(
-      N_h = N_H, ybar_h = YBAR_H, s2_h = S2_H, # nolint: object_name_linter
-      n_proposed = N_PROPOSED_FAIL, cv_target = CV_TARGET # nolint: object_name_linter
+      N_h = N_H,
+      ybar_h = YBAR_H,
+      s2_h = S2_H, # nolint: object_name_linter
+      n_proposed = N_PROPOSED_FAIL,
+      cv_target = CV_TARGET # nolint: object_name_linter
     )
     expect_true(all(r$results$status %in% c("fail", "warn")))
   })
 
   it("cv_actual matches cv_from_n() output exactly (no duplicate formula)", {
     r <- validate_design(
-      N_h = N_H, ybar_h = YBAR_H, s2_h = S2_H, # nolint: object_name_linter
-      n_proposed = N_PROPOSED_PASS, cv_target = CV_TARGET # nolint: object_name_linter
+      N_h = N_H,
+      ybar_h = YBAR_H,
+      s2_h = S2_H, # nolint: object_name_linter
+      n_proposed = N_PROPOSED_PASS,
+      cv_target = CV_TARGET # nolint: object_name_linter
     )
     # Check weekday stratum cv_actual matches direct cv_from_n() call
     expected_cv_weekday <- cv_from_n(
       "effort",
       n = N_PROPOSED_PASS[["weekday"]], # nolint: object_name_linter
-      N_h = N_H["weekday"], ybar_h = YBAR_H["weekday"], s2_h = S2_H["weekday"] # nolint: object_name_linter
+      N_h = N_H["weekday"],
+      ybar_h = YBAR_H["weekday"],
+      s2_h = S2_H["weekday"] # nolint: object_name_linter
     )
     expect_equal(
       r$results$cv_actual[r$results$stratum == "weekday"],
@@ -226,16 +297,22 @@ describe("validate_design() — VALID-01", {
 
   it("$passed is TRUE when all strata pass", {
     r <- validate_design(
-      N_h = N_H, ybar_h = YBAR_H, s2_h = S2_H, # nolint: object_name_linter
-      n_proposed = N_PROPOSED_PASS, cv_target = CV_TARGET # nolint: object_name_linter
+      N_h = N_H,
+      ybar_h = YBAR_H,
+      s2_h = S2_H, # nolint: object_name_linter
+      n_proposed = N_PROPOSED_PASS,
+      cv_target = CV_TARGET # nolint: object_name_linter
     )
     expect_true(r$passed)
   })
 
   it("$passed is FALSE when any stratum fails", {
     r <- validate_design(
-      N_h = N_H, ybar_h = YBAR_H, s2_h = S2_H, # nolint: object_name_linter
-      n_proposed = N_PROPOSED_FAIL, cv_target = CV_TARGET # nolint: object_name_linter
+      N_h = N_H,
+      ybar_h = YBAR_H,
+      s2_h = S2_H, # nolint: object_name_linter
+      n_proposed = N_PROPOSED_FAIL,
+      cv_target = CV_TARGET # nolint: object_name_linter
     )
     expect_false(r$passed)
   })
@@ -243,8 +320,11 @@ describe("validate_design() — VALID-01", {
   it("non-data-frame sampling_frame input triggers cli_abort()", {
     expect_error(
       validate_design(
-        N_h = "not_a_vector", ybar_h = YBAR_H, s2_h = S2_H, # nolint: object_name_linter
-        n_proposed = N_PROPOSED_PASS, cv_target = CV_TARGET # nolint: object_name_linter
+        N_h = "not_a_vector",
+        ybar_h = YBAR_H,
+        s2_h = S2_H, # nolint: object_name_linter
+        n_proposed = N_PROPOSED_PASS,
+        cv_target = CV_TARGET # nolint: object_name_linter
       )
     )
   })
@@ -360,13 +440,17 @@ test_that("VALID-ORDER-01: reordered ybar_h/s2_h/n_proposed give same result as 
   n_proposed_reord <- c(weekend = 5L, weekday = 10L)
 
   r_canon <- validate_design(
-    N_h = N_h_canon, ybar_h = ybar_h_canon,
-    s2_h = s2_h_canon, n_proposed = n_proposed_canon,
+    N_h = N_h_canon,
+    ybar_h = ybar_h_canon,
+    s2_h = s2_h_canon,
+    n_proposed = n_proposed_canon,
     cv_target = 0.20
   )
   r_reord <- validate_design(
-    N_h = N_h_reord, ybar_h = ybar_h_reord,
-    s2_h = s2_h_reord, n_proposed = n_proposed_reord,
+    N_h = N_h_reord,
+    ybar_h = ybar_h_reord,
+    s2_h = s2_h_reord,
+    n_proposed = n_proposed_reord,
     cv_target = 0.20
   )
 

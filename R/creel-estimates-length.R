@@ -58,13 +58,15 @@
 #'
 #' @family "Estimation"
 #' @export
-est_length_distribution <- function(design,
-                                    type = "catch",
-                                    by = NULL,
-                                    bin_width = 1,
-                                    length_col = NULL,
-                                    variance = "taylor",
-                                    conf_level = 0.95) {
+est_length_distribution <- function(
+  design,
+  type = "catch",
+  by = NULL,
+  bin_width = 1,
+  length_col = NULL,
+  variance = "taylor",
+  conf_level = 0.95
+) {
   by_quo <- rlang::enquo(by)
 
   if (!inherits(design, "creel_design")) {
@@ -105,8 +107,8 @@ est_length_distribution <- function(design,
     ))
   }
 
-  if (!is.numeric(conf_level) || length(conf_level) != 1L ||
-    conf_level <= 0 || conf_level >= 1) { # nolint: indentation_linter
+  if (!is.numeric(conf_level) || length(conf_level) != 1L || conf_level <= 0 || conf_level >= 1) {
+    # nolint: indentation_linter
     cli::cli_abort(c(
       "{.arg conf_level} must be a single number in (0, 1).",
       "x" = "{.arg conf_level} is {.val {conf_level}}."
@@ -281,11 +283,22 @@ est_length_distribution <- function(design,
       for (v in by_vars) {
         group_df[[v]] <- group_info[[v]][1]
       }
-      group_df <- group_df[, c(
-        by_vars, "length_bin", "bin_lower", "bin_upper",
-        "estimate", "se", "ci_lower", "ci_upper", "percent",
-        "cumulative_percent", "n"
-      ), drop = FALSE]
+      group_df <- group_df[,
+        c(
+          by_vars,
+          "length_bin",
+          "bin_lower",
+          "bin_upper",
+          "estimate",
+          "se",
+          "ci_lower",
+          "ci_upper",
+          "percent",
+          "cumulative_percent",
+          "n"
+        ),
+        drop = FALSE
+      ]
     }
 
     result_rows[[length(result_rows) + 1L]] <- group_df
@@ -308,14 +321,16 @@ est_length_distribution <- function(design,
 #'
 #' @keywords internal
 #' @noRd
-build_length_distribution_records <- function(lengths_data, # nolint: object_length_linter
-                                              type,
-                                              by_vars,
-                                              length_col,
-                                              type_col,
-                                              count_col,
-                                              interview_uid_col,
-                                              release_format) {
+build_length_distribution_records <- function(
+  lengths_data, # nolint: object_length_linter
+  type,
+  by_vars,
+  length_col,
+  type_col,
+  count_col,
+  interview_uid_col,
+  release_format
+) {
   if (type == "harvest") {
     lengths_data <- lengths_data[lengths_data[[type_col]] == "harvest", , drop = FALSE]
   } else if (type == "release") {
@@ -333,7 +348,9 @@ build_length_distribution_records <- function(lengths_data, # nolint: object_len
         .fish_count = numeric(0),
         stringsAsFactors = FALSE
       )
-      for (v in by_vars) out[[v]] <- rows[[v]]
+      for (v in by_vars) {
+        out[[v]] <- rows[[v]]
+      }
       return(out)
     }
 
@@ -372,7 +389,9 @@ build_length_distribution_records <- function(lengths_data, # nolint: object_len
       .fish_count = fish_count,
       stringsAsFactors = FALSE
     )
-    for (v in by_vars) out[[v]] <- rows[[v]]
+    for (v in by_vars) {
+      out[[v]] <- rows[[v]]
+    }
     out
   }
 
@@ -476,8 +495,8 @@ est_biomass <- function(ld, a, b, conf_level = NULL) {
   if (is.null(conf_level)) {
     conf_level <- if (!is.null(ld_conf)) ld_conf else 0.95
   } else {
-    if (!is.numeric(conf_level) || length(conf_level) != 1L ||
-      conf_level <= 0 || conf_level >= 1) { # nolint: indentation_linter
+    if (!is.numeric(conf_level) || length(conf_level) != 1L || conf_level <= 0 || conf_level >= 1) {
+      # nolint: indentation_linter
       cli::cli_abort(c(
         "{.arg conf_level} must be a single number in (0, 1).",
         "x" = "{.arg conf_level} is {.val {conf_level}}."
@@ -486,7 +505,9 @@ est_biomass <- function(ld, a, b, conf_level = NULL) {
   }
 
   by_vars <- attr(ld, "by_vars")
-  if (is.null(by_vars)) by_vars <- character(0)
+  if (is.null(by_vars)) {
+    by_vars <- character(0)
+  }
 
   z <- stats::qnorm((1 + conf_level) / 2)
 
@@ -595,8 +616,8 @@ est_mean_length <- function(ld, conf_level = NULL) {
   if (is.null(conf_level)) {
     conf_level <- if (!is.null(ld_conf)) ld_conf else 0.95
   } else {
-    if (!is.numeric(conf_level) || length(conf_level) != 1L ||
-      conf_level <= 0 || conf_level >= 1) { # nolint: indentation_linter
+    if (!is.numeric(conf_level) || length(conf_level) != 1L || conf_level <= 0 || conf_level >= 1) {
+      # nolint: indentation_linter
       cli::cli_abort(c(
         "{.arg conf_level} must be a single number in (0, 1).",
         "x" = "{.arg conf_level} is {.val {conf_level}}."
@@ -605,7 +626,9 @@ est_mean_length <- function(ld, conf_level = NULL) {
   }
 
   by_vars <- attr(ld, "by_vars")
-  if (is.null(by_vars)) by_vars <- character(0)
+  if (is.null(by_vars)) {
+    by_vars <- character(0)
+  }
   z <- stats::qnorm((1 + conf_level) / 2)
 
   compute_mean_length <- function(rows) {
@@ -712,8 +735,8 @@ est_compliance <- function(ld, min_length, conf_level = NULL) {
       "i" = "Create one with {.fn est_length_distribution}."
     ))
   }
-  if (!is.numeric(min_length) || length(min_length) != 1L ||
-    is.na(min_length) || min_length <= 0) { # nolint: indentation_linter
+  if (!is.numeric(min_length) || length(min_length) != 1L || is.na(min_length) || min_length <= 0) {
+    # nolint: indentation_linter
     cli::cli_abort(c(
       "{.arg min_length} must be a single positive number.",
       "x" = "{.arg min_length} is {.val {min_length}}."
@@ -724,8 +747,8 @@ est_compliance <- function(ld, min_length, conf_level = NULL) {
   if (is.null(conf_level)) {
     conf_level <- if (!is.null(ld_conf)) ld_conf else 0.95
   } else {
-    if (!is.numeric(conf_level) || length(conf_level) != 1L ||
-      conf_level <= 0 || conf_level >= 1) { # nolint: indentation_linter
+    if (!is.numeric(conf_level) || length(conf_level) != 1L || conf_level <= 0 || conf_level >= 1) {
+      # nolint: indentation_linter
       cli::cli_abort(c(
         "{.arg conf_level} must be a single number in (0, 1).",
         "x" = "{.arg conf_level} is {.val {conf_level}}."
@@ -734,7 +757,9 @@ est_compliance <- function(ld, min_length, conf_level = NULL) {
   }
 
   by_vars <- attr(ld, "by_vars")
-  if (is.null(by_vars)) by_vars <- character(0)
+  if (is.null(by_vars)) {
+    by_vars <- character(0)
+  }
   z <- stats::qnorm((1 + conf_level) / 2)
 
   compute_compliance <- function(rows) {

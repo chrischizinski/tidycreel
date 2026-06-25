@@ -129,13 +129,15 @@
 #' )
 #' @family "Reporting & Diagnostics"
 #' @export
-validate_incomplete_trips <- function(design,
-                                      catch,
-                                      effort,
-                                      by = NULL,
-                                      variance = "taylor",
-                                      conf_level = 0.95,
-                                      truncate_at = 0.5) {
+validate_incomplete_trips <- function(
+  design,
+  catch,
+  effort,
+  by = NULL,
+  variance = "taylor",
+  conf_level = 0.95,
+  truncate_at = 0.5
+) {
   # Capture bare column names
   catch_quo <- rlang::enquo(catch)
   effort_quo <- rlang::enquo(effort)
@@ -205,7 +207,8 @@ validate_incomplete_trips <- function(design,
 
   # Estimate CPUE for complete trips (ratio-of-means)
   complete_result <- suppressMessages(
-    estimate_catch_rate( # nolint: object_usage_linter
+    estimate_catch_rate(
+      # nolint: object_usage_linter
       design,
       by = !!by_quo,
       variance = variance,
@@ -218,7 +221,8 @@ validate_incomplete_trips <- function(design,
 
   # Estimate CPUE for incomplete trips (mean-of-ratios)
   incomplete_result <- suppressMessages(suppressWarnings(
-    estimate_catch_rate( # nolint: object_usage_linter
+    estimate_catch_rate(
+      # nolint: object_usage_linter
       design,
       by = !!by_quo,
       variance = variance,
@@ -318,7 +322,10 @@ validate_incomplete_trips <- function(design,
         recommendation <- paste0(
           "Validation failed: Use complete trips only. ",
           "Groups failed equivalence: ",
-          paste(apply(failing_groups, 1, function(x) paste(by_vars, "=", x, collapse = ", ")), collapse = "; ")
+          paste(
+            apply(failing_groups, 1, function(x) paste(by_vars, "=", x, collapse = ", ")),
+            collapse = "; "
+          )
         )
       } else {
         recommendation <- "Validation failed: Use complete trips only (overall test failed)"
@@ -414,11 +421,19 @@ validate_incomplete_trips <- function(design,
 #'
 #' @keywords internal
 #' @noRd
-perform_overall_tost <- function(design, catch_quo, effort_quo, variance,
-                                 conf_level, truncate_at, threshold) {
+perform_overall_tost <- function(
+  design,
+  catch_quo,
+  effort_quo,
+  variance,
+  conf_level,
+  truncate_at,
+  threshold
+) {
   # Estimate ungrouped complete CPUE
   complete_overall <- suppressMessages(
-    estimate_catch_rate( # nolint: object_usage_linter
+    estimate_catch_rate(
+      # nolint: object_usage_linter
       design,
       variance = variance,
       conf_level = conf_level,
@@ -430,7 +445,8 @@ perform_overall_tost <- function(design, catch_quo, effort_quo, variance,
 
   # Estimate ungrouped incomplete CPUE
   incomplete_overall <- suppressMessages(suppressWarnings(
-    estimate_catch_rate( # nolint: object_usage_linter
+    estimate_catch_rate(
+      # nolint: object_usage_linter
       design,
       variance = variance,
       conf_level = conf_level,
@@ -501,8 +517,15 @@ perform_grouped_tost <- function(complete_result, incomplete_result, by_vars, th
 #'
 #' @keywords internal
 #' @noRd
-perform_tost <- function(complete_estimate, complete_se, incomplete_estimate,
-                         incomplete_se, threshold, n_complete, n_incomplete) {
+perform_tost <- function(
+  complete_estimate,
+  complete_se,
+  incomplete_estimate,
+  incomplete_se,
+  threshold,
+  n_complete,
+  n_incomplete
+) {
   # Calculate difference and bounds
   diff_estimate <- complete_estimate - incomplete_estimate
   equivalence_lower <- -threshold * abs(complete_estimate)
@@ -585,60 +608,69 @@ perform_tost <- function(complete_estimate, complete_se, incomplete_estimate,
 format.creel_tost_validation <- function(x, ...) {
   output <- character()
 
-  output <- c(output, cli::cli_format_method({
-    cli::cli_h1("TOST Equivalence Validation Results")
-    cli::cli_text("Threshold: \u00b1{round(x$equivalence_threshold * 100, 1)}% of complete trip estimate")
+  output <- c(
+    output,
+    cli::cli_format_method({
+      cli::cli_h1("TOST Equivalence Validation Results")
+      cli::cli_text(
+        "Threshold: \u00b1{round(x$equivalence_threshold * 100, 1)}% of complete trip estimate"
+      )
 
-    # Overall status
-    if (x$passed) {
-      cli::cli_alert_success("Validation PASSED")
-    } else {
-      cli::cli_alert_danger("Validation FAILED")
-    }
+      # Overall status
+      if (x$passed) {
+        cli::cli_alert_success("Validation PASSED")
+      } else {
+        cli::cli_alert_danger("Validation FAILED")
+      }
 
-    cli::cli_text("")
-    cli::cli_text("Recommendation: {x$recommendation}")
-    cli::cli_text("")
-
-    # Overall test results
-    cli::cli_h2("Overall Test")
-
-    # Handle both ungrouped (metadata$complete) and grouped (metadata$overall$complete) structures
-    if (!is.null(x$metadata$overall)) {
-      # Grouped validation
-      complete_meta <- x$metadata$overall$complete # nolint: object_usage_linter
-      incomplete_meta <- x$metadata$overall$incomplete # nolint: object_usage_linter
-    } else {
-      # Ungrouped validation
-      complete_meta <- x$metadata$complete # nolint: object_usage_linter
-      incomplete_meta <- x$metadata$incomplete # nolint: object_usage_linter
-    }
-
-    cli::cli_text("Complete trips: n = {complete_meta$n}, CPUE = {round(complete_meta$estimate, 3)}")
-    cli::cli_text("Incomplete trips: n = {incomplete_meta$n}, CPUE = {round(incomplete_meta$estimate, 3)}")
-    cli::cli_text("Difference: {round(x$overall_test$diff_estimate, 3)}")
-    equiv_lower <- round(x$overall_test$equivalence_lower, 3) # nolint: object_usage_linter
-    equiv_upper <- round(x$overall_test$equivalence_upper, 3) # nolint: object_usage_linter
-    p_lower <- round(x$overall_test$p_lower, 4) # nolint: object_usage_linter
-    p_upper <- round(x$overall_test$p_upper, 4) # nolint: object_usage_linter
-    cli::cli_text("Equivalence bounds: [{equiv_lower}, {equiv_upper}]")
-    cli::cli_text("TOST p-values: p_lower = {p_lower}, p_upper = {p_upper}")
-
-    if (x$overall_test$equivalence_passed) {
-      cli::cli_alert_success("Overall equivalence: PASSED")
-    } else {
-      cli::cli_alert_danger("Overall equivalence: FAILED")
-    }
-
-    # Group results if present
-    if (!is.null(x$group_tests)) {
       cli::cli_text("")
-      cli::cli_h2("Per-Group Tests")
-      n_groups <- nrow(x$group_tests) # nolint: object_usage_linter
-      n_passed <- sum(x$group_tests$equivalence_passed) # nolint: object_usage_linter
-      cli::cli_text("{n_passed}/{n_groups} group{?s} passed equivalence")
-    }
-  }))
+      cli::cli_text("Recommendation: {x$recommendation}")
+      cli::cli_text("")
+
+      # Overall test results
+      cli::cli_h2("Overall Test")
+
+      # Handle both ungrouped (metadata$complete) and grouped (metadata$overall$complete) structures
+      if (!is.null(x$metadata$overall)) {
+        # Grouped validation
+        complete_meta <- x$metadata$overall$complete # nolint: object_usage_linter
+        incomplete_meta <- x$metadata$overall$incomplete # nolint: object_usage_linter
+      } else {
+        # Ungrouped validation
+        complete_meta <- x$metadata$complete # nolint: object_usage_linter
+        incomplete_meta <- x$metadata$incomplete # nolint: object_usage_linter
+      }
+
+      cli::cli_text(
+        "Complete trips: n = {complete_meta$n}, CPUE = {round(complete_meta$estimate, 3)}"
+      )
+      cli::cli_text(
+        "Incomplete trips: n = {incomplete_meta$n}, CPUE = {round(incomplete_meta$estimate, 3)}"
+      )
+      cli::cli_text("Difference: {round(x$overall_test$diff_estimate, 3)}")
+      equiv_lower <- round(x$overall_test$equivalence_lower, 3) # nolint: object_usage_linter
+      equiv_upper <- round(x$overall_test$equivalence_upper, 3) # nolint: object_usage_linter
+      p_lower <- round(x$overall_test$p_lower, 4) # nolint: object_usage_linter
+      p_upper <- round(x$overall_test$p_upper, 4) # nolint: object_usage_linter
+      cli::cli_text("Equivalence bounds: [{equiv_lower}, {equiv_upper}]")
+      cli::cli_text("TOST p-values: p_lower = {p_lower}, p_upper = {p_upper}")
+
+      if (x$overall_test$equivalence_passed) {
+        cli::cli_alert_success("Overall equivalence: PASSED")
+      } else {
+        cli::cli_alert_danger("Overall equivalence: FAILED")
+      }
+
+      # Group results if present
+      if (!is.null(x$group_tests)) {
+        cli::cli_text("")
+        cli::cli_h2("Per-Group Tests")
+        n_groups <- nrow(x$group_tests) # nolint: object_usage_linter
+        n_passed <- sum(x$group_tests$equivalence_passed) # nolint: object_usage_linter
+        cli::cli_text("{n_passed}/{n_groups} group{?s} passed equivalence")
+      }
+    })
+  )
 
   output
 }
@@ -667,17 +699,23 @@ print.creel_tost_validation <- function(x, ...) {
   graphics::par(mar = c(5, 5, 4, 2) + 0.1)
 
   # Determine axis ranges (include CI bounds)
-  x_range <- range(c(
-    plot_data$complete_est,
-    plot_data$complete_ci_lower,
-    plot_data$complete_ci_upper
-  ), na.rm = TRUE)
+  x_range <- range(
+    c(
+      plot_data$complete_est,
+      plot_data$complete_ci_lower,
+      plot_data$complete_ci_upper
+    ),
+    na.rm = TRUE
+  )
 
-  y_range <- range(c(
-    plot_data$incomplete_est,
-    plot_data$incomplete_ci_lower,
-    plot_data$incomplete_ci_upper
-  ), na.rm = TRUE)
+  y_range <- range(
+    c(
+      plot_data$incomplete_est,
+      plot_data$incomplete_ci_lower,
+      plot_data$incomplete_ci_upper
+    ),
+    na.rm = TRUE
+  )
 
   # Ensure ranges are equal (square plot)
   all_range <- range(c(x_range, y_range))
