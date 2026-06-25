@@ -1,3 +1,119 @@
+# tidycreel 2.4.0 "Bowfin" (2026-06-25)
+
+## New features
+
+* `est_age_distribution()` estimates proportional age structure with SE and
+  confidence intervals from age-frequency interview data, fully integrated with
+  the `creel_design` workflow. Stratified and grouped estimation supported.
+
+* `est_mean_age()` estimates mean age (± SE, CI) from structured interview
+  data. Complements `est_age_distribution()` for reporting age-structured
+  harvest results.
+
+* `example_ages` — new built-in dataset of simulated age observations for use
+  in examples and tests.
+
+* `estimate_harvest_rate()` gains species-level dispatch: pass a species column
+  and the function routes harvest-rate estimation independently per species,
+  returning a tidy multi-species result in a single call.
+
+* `creel_design()` gains `open_start` parameter for GLMM aerial designs,
+  allowing the survey window to be anchored to the count time rather than
+  requiring a fixed open time.
+
+## Bug fixes
+
+### Statistical correctness
+
+* `estimate_total_catch()`, `estimate_total_harvest()`,
+  `estimate_total_release()`: strata with effort but no interview coverage were
+  silently dropped by an inner join in `compute_stratum_product_sum()`, biasing
+  season totals low. Fixed to warn and retain all effort strata (#Tier1-Bug1).
+
+* `estimate_angler_trips()`: `stats::sd()` on a single-interview stratum
+  returned `NA`, propagating silently into SE and CI. Guard added for `n < 2`;
+  emits `cli_warn()` and returns `NA_real_` for SE so the point estimate
+  remains usable (#Tier1-Bug2).
+
+* `estimate_effort()`: finite population correction (FPC) was not applied to
+  the expanded effort `svydesign`, causing inflated SE for designs with high
+  sampling fractions. Fixed (#Tier1-Bug5-adjacent).
+
+* `optimal_n()`: named `cost_ratio` vectors were applied positionally instead
+  of by stratum name, producing wrong allocations when stratum order differed.
+  Zero variance (`all s2_h = 0`) and zero total (`all ybar_h = 0`) produced
+  silent `NaN`; both now abort with informative errors. `n_total` floored at 1
+  to prevent degenerate zero-sample result.
+
+* `adjust_nonresponse()`: `method = "calibrate"` was accepted and matched but
+  silently ignored — both methods used direct weight rescaling. Now aborts with
+  an informative error directing users to `survey::calibrate()` directly
+  (#Tier1-Bug4).
+
+* `adjust_nonresponse()` replicate-design path: `svy$scale` (a variance
+  formula constant) was multiplied by `mean(wt_multipliers)`, affecting only
+  variance and using an average instead of per-observation values. Fixed to
+  scale `svy$pweights` per-observation and `svy$repweights` row-wise
+  (#Tier1-Bug5).
+
+### Validation and scheduling
+
+* `new_creel_validation()`: `all(logical(0)) == TRUE` caused a 0-row results
+  object to silently report `passed = TRUE`. Fixed with `nrow > 0` guard;
+  empty validation results now correctly return `passed = FALSE`.
+
+* `design-validator`: `ybar_h`, `s2_h`, and `n_proposed` were consumed
+  positionally against named `N_h`, producing wrong stratum indexing when order
+  differed. All three now rekeyed by `strata_names` before indexing.
+
+* `validate_incomplete_trips()`: `perform_tost()` crashed or silently passed
+  when `se_diff == 0` (identical SEs) or `df <= 0` (`n = 1` group). Early-
+  return guards added for both degenerate cases; `isTRUE()` used in grouped-
+  passed aggregation to prevent `NA` propagating into `if()`.
+
+* `schedule_generators()`: `inclusion_prob` could silently exceed 1 when
+  `p_site * (crew / n_circuits) > 1`. Now aborts with an actionable message.
+
+### Reporting helpers
+
+* `creel_palette(n)`: modular recycling used 0-based index at palette-length
+  multiples, returning `NA` at those positions. Fixed to 1-based modular
+  arithmetic.
+
+* `coerce_schedule_columns()`: unconditional `as.integer(period_id)` silently
+  coerced character labels (`"AM"` / `"PM"`) to all-`NA`, filtering all
+  downstream rows. Now only coerces when all non-`NA` values are numeric
+  strings; character period labels are preserved unchanged.
+
+* `compare_variance()`: Taylor and replicate SEs were paired by row position
+  rather than stratum key. If the two estimators returned rows in different
+  orders, divergence ratios were computed for mismatched strata. Fixed with a
+  keyed join; group-column detection now derived from `x$by_vars` rather than
+  a hardcoded exclusion list that would misclassify new output columns.
+
+* `validation_report()`, `standardize_species()`, `hybrid_design()`: second
+  positional string to `cli_abort()` / `cli_warn()` was silently dropped by
+  cli's argument handling. Merged into single message or named vector.
+
+### Age and length estimators
+
+* `est_age_distribution()` and `est_length_distribution()`: per-group `n` was
+  reporting the global interview count (`nrow(design$interviews)`) instead of
+  the within-group count. Fixed to `nrow(wide)` per group, consistent with
+  `estimate_total_catch()` and `estimate_total_harvest()`.
+
+* `est_age_distribution()` and `est_length_distribution()`: `left_join()` was
+  called inside the per-group loop against the full interviews table (constant
+  across iterations). Replaced with `match()` lookup and direct column
+  assignment, eliminating repeated dplyr overhead.
+
+## Documentation
+
+* Added a Quarto Creel Report starter template under
+  `inst/quarto/templates/creel-report/`. The template demonstrates a full
+  season workflow — design, validation, estimation, and plotting — using
+  `tidycreel` helpers end to end.
+
 # tidycreel 2.3.0 "Northern Pike" (2026-06-22)
 
 ## Breaking changes
