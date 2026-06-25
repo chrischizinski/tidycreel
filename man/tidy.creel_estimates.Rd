@@ -13,7 +13,9 @@
 }
 \value{
 A tibble with one row per estimate. All columns from
-\code{x$estimates} are returned unchanged. Required columns:
+\code{x$estimates} are returned, plus \code{n} padded to
+\code{NA_integer_} when the estimator does not produce a sample size
+(e.g. mark-recapture harvest). Guaranteed columns:
 \code{estimate}, \code{se}, \code{ci_lower}, \code{ci_upper}, \code{n}.
 }
 \description{

@@ -11,13 +11,17 @@ make_age_design <- function() {
   d <- suppressWarnings(
     creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
   )
-  d <- suppressWarnings(add_interviews(d, example_interviews, # nolint: object_usage_linter
+  d <- suppressWarnings(add_interviews(
+    d,
+    example_interviews, # nolint: object_usage_linter
     catch = catch_total, # nolint: object_usage_linter
     effort = hours_fished, # nolint: object_usage_linter
     harvest = catch_kept, # nolint: object_usage_linter
     trip_status = trip_status # nolint: object_usage_linter
   ))
-  add_ages(d, example_ages, # nolint: object_usage_linter
+  add_ages(
+    d,
+    example_ages, # nolint: object_usage_linter
     age_uid = interview_id, # nolint: object_usage_linter
     interview_uid = interview_id, # nolint: object_usage_linter
     species = species, # nolint: object_usage_linter
@@ -33,7 +37,9 @@ make_age_design_no_ages <- function() {
   d <- suppressWarnings(
     creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
   )
-  suppressWarnings(add_interviews(d, example_interviews, # nolint: object_usage_linter
+  suppressWarnings(add_interviews(
+    d,
+    example_interviews, # nolint: object_usage_linter
     catch = catch_total, # nolint: object_usage_linter
     effort = hours_fished, # nolint: object_usage_linter
     harvest = catch_kept, # nolint: object_usage_linter
@@ -58,7 +64,8 @@ test_that("AGD-03 est_age_distribution() errors when interviews not attached", {
   d <- suppressWarnings(
     creel_design(
       tidycreel::example_calendar,
-      date = date, strata = day_type
+      date = date,
+      strata = day_type
     )
   )
   expect_error(est_age_distribution(d), "No interview survey")
@@ -93,10 +100,19 @@ test_that("AGD-07 est_age_distribution() returns creel_age_distribution S3 class
 test_that("AGD-08 est_age_distribution() returns expected columns", {
   d <- make_age_design()
   result <- est_age_distribution(d, type = "catch")
-  expect_true(all(c(
-    "age", "estimate", "se", "ci_lower", "ci_upper",
-    "percent", "cumulative_percent", "n"
-  ) %in% names(result)))
+  expect_true(all(
+    c(
+      "age",
+      "estimate",
+      "se",
+      "ci_lower",
+      "ci_upper",
+      "percent",
+      "cumulative_percent",
+      "n"
+    ) %in%
+      names(result)
+  ))
 })
 
 test_that("AGD-09 est_age_distribution() age column is integer", {
@@ -278,9 +294,15 @@ test_that("AGD-32 est_mean_age() returns expected columns", {
   d <- make_age_design()
   ad <- est_age_distribution(d, type = "catch")
   result <- est_mean_age(ad)
-  expect_true(all(c(
-    "mean_age", "mean_age_se", "mean_age_ci_lower", "mean_age_ci_upper"
-  ) %in% names(result)))
+  expect_true(all(
+    c(
+      "mean_age",
+      "mean_age_se",
+      "mean_age_ci_lower",
+      "mean_age_ci_upper"
+    ) %in%
+      names(result)
+  ))
 })
 
 test_that("AGD-33 est_mean_age() mean is between min and max observed age", {

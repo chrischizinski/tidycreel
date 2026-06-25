@@ -73,8 +73,8 @@ test_that("error message includes the table name (e.g., 'interviews table')", {
 test_that("validate_creel_schema() passes for camera type with only counts columns", {
   s <- creel_schema(
     survey_type = "camera",
-    date_col    = "SurveyDate",
-    count_col   = "AnglerCount"
+    date_col = "SurveyDate",
+    count_col = "AnglerCount"
   )
   expect_no_error(validate_creel_schema(s))
 })

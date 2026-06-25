@@ -41,22 +41,19 @@ NULL
 #'
 #' @family "Visualisation"
 #' @export
-autoplot.creel_estimates <- function(object, title = NULL,
-                                     theme = c("default", "creel"), ...) {
+autoplot.creel_estimates <- function(object, title = NULL, theme = c("default", "creel"), ...) {
   theme <- match.arg(theme)
   theme_obj <- if (theme == "creel") theme_creel() else ggplot2::theme_bw() # nolint: object_usage_linter
   # Human-readable method label
-  method_label <- switch(object$method,
+  method_label <- switch(
+    object$method,
     total = "Total Effort",
     "ratio-of-means-cpue" = "CPUE (Ratio-of-Means)",
     "mean-of-ratios-cpue" = "CPUE (Mean-of-Ratios)",
     "ratio-of-means-hpue" = "HPUE (Ratio-of-Means)",
-    "ratio-of-means-cpue-per-angler" =
-      "CPUE per Angler (Ratio-of-Means)",
-    "mean-of-ratios-cpue-per-angler" =
-      "CPUE per Angler (Mean-of-Ratios)",
-    "ratio-of-means-hpue-per-angler" =
-      "HPUE per Angler (Ratio-of-Means)",
+    "ratio-of-means-cpue-per-angler" = "CPUE per Angler (Ratio-of-Means)",
+    "mean-of-ratios-cpue-per-angler" = "CPUE per Angler (Mean-of-Ratios)",
+    "ratio-of-means-hpue-per-angler" = "HPUE per Angler (Ratio-of-Means)",
     "product-total-catch" = "Total Catch",
     "product-total-harvest" = "Total Harvest",
     object$method
@@ -65,7 +62,9 @@ autoplot.creel_estimates <- function(object, title = NULL,
   effort_target <- object$effort_target %||% NULL
   if (!is.null(title)) {
     plot_title <- title
-  } else if (!is.null(effort_target) && method_label %in% c("Total Effort", "Total Catch", "Total Harvest")) {
+  } else if (
+    !is.null(effort_target) && method_label %in% c("Total Effort", "Total Catch", "Total Harvest")
+  ) {
     plot_title <- paste0(method_label, " (", effort_target, ")")
   } else {
     plot_title <- method_label
@@ -81,8 +80,13 @@ autoplot.creel_estimates <- function(object, title = NULL,
 
   # Identify group columns
   est_cols <- c(
-    "estimate", "se", "ci_lower", "ci_upper", "n",
-    "se_between", "se_within"
+    "estimate",
+    "se",
+    "ci_lower",
+    "ci_upper",
+    "n",
+    "se_between",
+    "se_within"
   )
   group_cols <- setdiff(names(est), est_cols)
 
@@ -90,16 +94,16 @@ autoplot.creel_estimates <- function(object, title = NULL,
     # Ungrouped: single point
     point_colour <- if (theme == "creel") creel_palette()[["primary"]] else "black" # nolint: object_usage_linter
     plot_df <- data.frame(
-      label     = method_label,
-      estimate  = est$estimate,
-      ci_lower  = est$ci_lower,
-      ci_upper  = est$ci_upper
+      label = method_label,
+      estimate = est$estimate,
+      ci_lower = est$ci_lower,
+      ci_upper = est$ci_upper
     )
     p <- ggplot2::ggplot(
       plot_df,
       ggplot2::aes(
-        x    = .data[["label"]], # nolint: object_usage_linter
-        y    = .data[["estimate"]],
+        x = .data[["label"]], # nolint: object_usage_linter
+        y = .data[["estimate"]],
         ymin = .data[["ci_lower"]],
         ymax = .data[["ci_upper"]]
       )
@@ -117,7 +121,7 @@ autoplot.creel_estimates <- function(object, title = NULL,
     # Grouped: one point per group row
     grp_col <- group_cols[[1L]]
     plot_df <- data.frame(
-      group    = as.character(est[[grp_col]]),
+      group = as.character(est[[grp_col]]),
       estimate = est$estimate,
       ci_lower = est$ci_lower,
       ci_upper = est$ci_upper
@@ -125,10 +129,10 @@ autoplot.creel_estimates <- function(object, title = NULL,
     p <- ggplot2::ggplot(
       plot_df,
       ggplot2::aes(
-        x     = .data[["group"]], # nolint: object_usage_linter
-        y     = .data[["estimate"]],
-        ymin  = .data[["ci_lower"]],
-        ymax  = .data[["ci_upper"]],
+        x = .data[["group"]], # nolint: object_usage_linter
+        y = .data[["estimate"]],
+        ymin = .data[["ci_lower"]],
+        ymax = .data[["ci_upper"]],
         color = .data[["group"]]
       )
     ) +
@@ -187,11 +191,16 @@ autoplot.creel_estimates <- function(object, title = NULL,
 #'
 #' @family "Visualisation"
 #' @export
-autoplot.creel_length_distribution <- function(object, title = NULL,
-                                               theme = c("default", "creel"), ...) {
+autoplot.creel_length_distribution <- function(
+  object,
+  title = NULL,
+  theme = c("default", "creel"),
+  ...
+) {
   theme <- match.arg(theme)
   theme_obj <- if (theme == "creel") theme_creel() else ggplot2::theme_bw() # nolint: object_usage_linter
-  type_label <- switch(attr(object, "type"),
+  type_label <- switch(
+    attr(object, "type"),
     catch = "Catch",
     harvest = "Harvest",
     release = "Release",
@@ -378,18 +387,22 @@ autoplot.creel_schedule <- function(object, title = "Creel Schedule", ...) {
 
   p <- ggplot2::ggplot(
     all_days,
-    ggplot2::aes( # nolint: object_usage_linter
-      x    = .data[["wday"]], # nolint: object_usage_linter
-      y    = .data[["week_row"]],
+    ggplot2::aes(
+      # nolint: object_usage_linter
+      x = .data[["wday"]], # nolint: object_usage_linter
+      y = .data[["week_row"]],
       fill = .data[["fill_group"]]
     )
   ) +
     ggplot2::geom_tile(
-      color = "white", linewidth = 0.5
+      color = "white",
+      linewidth = 0.5
     ) +
     ggplot2::geom_text(
       ggplot2::aes(label = .data[["day_label"]]), # nolint: object_usage_linter
-      size = 2.5, color = "white", fontface = "bold"
+      size = 2.5,
+      color = "white",
+      fontface = "bold"
     ) +
     ggplot2::scale_x_continuous(
       breaks = 0:6,
@@ -400,17 +413,26 @@ autoplot.creel_schedule <- function(object, title = "Creel Schedule", ...) {
 
   fill_scale <- if (has_circuit) {
     ggplot2::scale_fill_brewer(
-      palette  = "Set2",
+      palette = "Set2",
       na.value = "#cccccc",
-      name     = "Circuit"
+      name = "Circuit"
     )
   } else {
+    # Canonical day types get fixed colors; additional special-period types
+    # get creel_palette() colors so they don't render as unsampled grey.
+    canonical_colors <- c(weekday = "#2c7bb6", weekend = "#d7191c")
+    extra_types <- setdiff(
+      unique(all_days$fill_group[all_days$fill_group != "unsampled"]),
+      names(canonical_colors)
+    )
+    extra_colors <- if (length(extra_types) > 0L) {
+      stats::setNames(creel_palette(length(extra_types)), extra_types)
+    } else {
+      character(0)
+    }
+    day_colors <- c(canonical_colors, extra_colors, unsampled = "#cccccc")
     ggplot2::scale_fill_manual(
-      values = c(
-        weekday   = "#2c7bb6",
-        weekend   = "#d7191c",
-        unsampled = "#cccccc"
-      ),
+      values = day_colors,
       na.value = "#cccccc",
       name = NULL
     )
@@ -430,10 +452,10 @@ autoplot.creel_schedule <- function(object, title = "Creel Schedule", ...) {
     ) +
     ggplot2::theme_minimal() +
     ggplot2::theme(
-      axis.text.y  = ggplot2::element_blank(),
+      axis.text.y = ggplot2::element_blank(),
       axis.ticks.y = ggplot2::element_blank(),
-      panel.grid   = ggplot2::element_blank(),
-      strip.text   = ggplot2::element_text(face = "bold")
+      panel.grid = ggplot2::element_blank(),
+      strip.text = ggplot2::element_text(face = "bold")
     )
 
   p
@@ -482,7 +504,8 @@ autoplot.creel_schedule <- function(object, title = "Creel Schedule", ...) {
 #'
 #' @family "Visualisation"
 #' @export
-plot_design <- function(design, title = NULL, ...) { # nolint: object_usage_linter
+plot_design <- function(design, title = NULL, ...) {
+  # nolint: object_usage_linter
   if (!inherits(design, "creel_design")) {
     cli::cli_abort(c(
       "{.arg design} must be a {.cls creel_design} object.",
@@ -540,9 +563,9 @@ plot_design <- function(design, title = NULL, ...) { # nolint: object_usage_lint
       ggplot2::scale_fill_brewer(palette = "Set2") +
       ggplot2::labs(
         title = plot_title,
-        x     = strata_label,
-        y     = "Sampled days",
-        fill  = strata_label
+        x = strata_label,
+        y = "Sampled days",
+        fill = strata_label
       ) +
       ggplot2::theme_bw() +
       ggplot2::theme(
@@ -555,7 +578,10 @@ plot_design <- function(design, title = NULL, ...) { # nolint: object_usage_lint
 
     # Identify first numeric count column (excluding design metadata)
     excluded <- c(
-      design$date_col, design$strata_cols, design$psu_col, design$section_col
+      design$date_col,
+      design$strata_cols,
+      design$psu_col,
+      design$section_col
     )
     num_cols <- names(counts)[vapply(counts, is.numeric, logical(1L))]
     count_var <- setdiff(num_cols, excluded)[1]
@@ -582,7 +608,9 @@ plot_design <- function(design, title = NULL, ...) { # nolint: object_usage_lint
       )
     ) +
       ggplot2::geom_jitter(
-        width = 0.15, alpha = 0.6, size = 2
+        width = 0.15,
+        alpha = 0.6,
+        size = 2
       ) +
       ggplot2::stat_summary(
         fun.data = ggplot2::mean_cl_normal, # nolint: object_usage_linter
@@ -594,14 +622,14 @@ plot_design <- function(design, title = NULL, ...) { # nolint: object_usage_lint
       ) +
       ggplot2::scale_colour_brewer(palette = "Set2") +
       ggplot2::labs(
-        title  = plot_title,
-        x      = strata_label,
-        y      = count_var,
+        title = plot_title,
+        x = strata_label,
+        y = count_var,
         colour = strata_label
       ) +
       ggplot2::theme_bw() +
       ggplot2::theme(
-        plot.title      = ggplot2::element_text(face = "bold"),
+        plot.title = ggplot2::element_text(face = "bold"),
         legend.position = "none"
       )
   }

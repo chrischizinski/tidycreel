@@ -11,7 +11,8 @@
   d <- suppressWarnings(add_counts(d, example_counts)) # nolint: object_usage_linter
   d <- suppressWarnings(
     add_interviews(
-      d, example_interviews, # nolint: object_usage_linter
+      d,
+      example_interviews, # nolint: object_usage_linter
       catch = catch_total, # nolint: object_usage_linter
       effort = hours_fished, # nolint: object_usage_linter
       trip_status = trip_status # nolint: object_usage_linter

@@ -9,7 +9,9 @@ make_design_with_interviews <- function() {
     creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
   )
   suppressWarnings(
-    add_interviews(d, example_interviews, # nolint: object_usage_linter
+    add_interviews(
+      d,
+      example_interviews, # nolint: object_usage_linter
       catch = catch_total, # nolint: object_usage_linter
       effort = hours_fished, # nolint: object_usage_linter
       harvest = catch_kept, # nolint: object_usage_linter
@@ -43,7 +45,9 @@ minimal_lengths_individual <- data.frame(
 
 test_that("add_lengths() returns a creel_design (LEN-01)", {
   d <- make_design_with_interviews()
-  result <- add_lengths(d, minimal_lengths_binned,
+  result <- add_lengths(
+    d,
+    minimal_lengths_binned,
     length_uid = interview_id, # nolint: object_usage_linter
     interview_uid = interview_id, # nolint: object_usage_linter
     species = species, # nolint: object_usage_linter
@@ -57,7 +61,9 @@ test_that("add_lengths() returns a creel_design (LEN-01)", {
 
 test_that("add_lengths() stores data on design$lengths (LEN-01)", {
   d <- make_design_with_interviews()
-  result <- add_lengths(d, minimal_lengths_binned,
+  result <- add_lengths(
+    d,
+    minimal_lengths_binned,
     length_uid = interview_id, # nolint: object_usage_linter
     interview_uid = interview_id, # nolint: object_usage_linter
     species = species, # nolint: object_usage_linter
@@ -72,7 +78,9 @@ test_that("add_lengths() stores data on design$lengths (LEN-01)", {
 
 test_that("add_lengths() sets all $lengths_*_col fields (LEN-01)", {
   d <- make_design_with_interviews()
-  result <- add_lengths(d, minimal_lengths_binned,
+  result <- add_lengths(
+    d,
+    minimal_lengths_binned,
     length_uid = interview_id, # nolint: object_usage_linter
     interview_uid = interview_id, # nolint: object_usage_linter
     species = species, # nolint: object_usage_linter
@@ -94,7 +102,9 @@ test_that("add_lengths() works with example_lengths dataset (LEN-01)", {
   data(example_lengths, package = "tidycreel")
   d <- make_design_with_interviews()
   expect_no_error(
-    add_lengths(d, example_lengths,
+    add_lengths(
+      d,
+      example_lengths,
       length_uid = interview_id, # nolint: object_usage_linter
       interview_uid = interview_id, # nolint: object_usage_linter
       species = species, # nolint: object_usage_linter
@@ -108,7 +118,9 @@ test_that("add_lengths() works with example_lengths dataset (LEN-01)", {
 
 test_that("add_lengths() works without count arg when release_format is individual (LEN-02)", {
   d <- make_design_with_interviews()
-  result <- add_lengths(d, minimal_lengths_individual,
+  result <- add_lengths(
+    d,
+    minimal_lengths_individual,
     length_uid = interview_id, # nolint: object_usage_linter
     interview_uid = interview_id, # nolint: object_usage_linter
     species = species, # nolint: object_usage_linter
@@ -123,16 +135,21 @@ test_that("add_lengths() works without count arg when release_format is individu
 test_that("interviews with no length rows are valid (LEN-01)", {
   d <- make_design_with_interviews()
   one_row <- data.frame(
-    interview_id = 1L, species = "walleye", length = "420",
-    length_type = "harvest", count = NA_integer_,
+    interview_id = 1L,
+    species = "walleye",
+    length = "420",
+    length_type = "harvest",
+    count = NA_integer_,
     stringsAsFactors = FALSE
   )
-  result <- add_lengths(d, one_row,
-    length_uid    = interview_id, # nolint: object_usage_linter
+  result <- add_lengths(
+    d,
+    one_row,
+    length_uid = interview_id, # nolint: object_usage_linter
     interview_uid = interview_id, # nolint: object_usage_linter
-    species       = species, # nolint: object_usage_linter
-    length        = length, # nolint: object_usage_linter
-    length_type   = length_type # nolint: object_usage_linter
+    species = species, # nolint: object_usage_linter
+    length = length, # nolint: object_usage_linter
+    length_type = length_type # nolint: object_usage_linter
   )
   expect_equal(nrow(result[["lengths"]]), 1L)
 })
@@ -141,7 +158,9 @@ test_that("interviews with no length rows are valid (LEN-01)", {
 
 test_that("add_lengths() does not modify the original design", {
   d <- make_design_with_interviews()
-  add_lengths(d, minimal_lengths_binned,
+  add_lengths(
+    d,
+    minimal_lengths_binned,
     length_uid = interview_id, # nolint: object_usage_linter
     interview_uid = interview_id, # nolint: object_usage_linter
     species = species, # nolint: object_usage_linter
@@ -155,7 +174,9 @@ test_that("add_lengths() does not modify the original design", {
 
 test_that("add_lengths() errors when lengths already attached", {
   d <- make_design_with_interviews()
-  d2 <- add_lengths(d, minimal_lengths_binned,
+  d2 <- add_lengths(
+    d,
+    minimal_lengths_binned,
     length_uid = interview_id, # nolint: object_usage_linter
     interview_uid = interview_id, # nolint: object_usage_linter
     species = species, # nolint: object_usage_linter
@@ -165,7 +186,9 @@ test_that("add_lengths() errors when lengths already attached", {
     release_format = "binned"
   )
   expect_error(
-    add_lengths(d2, minimal_lengths_binned,
+    add_lengths(
+      d2,
+      minimal_lengths_binned,
       length_uid = interview_id, # nolint: object_usage_linter
       interview_uid = interview_id, # nolint: object_usage_linter
       species = species, # nolint: object_usage_linter
@@ -184,7 +207,9 @@ test_that("add_lengths() errors when no interviews attached", {
     creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
   )
   expect_error(
-    add_lengths(d, minimal_lengths_binned,
+    add_lengths(
+      d,
+      minimal_lengths_binned,
       length_uid = interview_id, # nolint: object_usage_linter
       interview_uid = interview_id, # nolint: object_usage_linter
       species = species, # nolint: object_usage_linter
@@ -202,17 +227,22 @@ test_that("add_lengths() errors when no interviews attached", {
 test_that("add_lengths() errors on unmatched interview IDs (LEN-03)", {
   d <- make_design_with_interviews()
   bad <- data.frame(
-    interview_id = 999L, species = "walleye", length = "420",
-    length_type = "harvest", count = NA_integer_,
+    interview_id = 999L,
+    species = "walleye",
+    length = "420",
+    length_type = "harvest",
+    count = NA_integer_,
     stringsAsFactors = FALSE
   )
   expect_error(
-    add_lengths(d, bad,
-      length_uid    = interview_id, # nolint: object_usage_linter
+    add_lengths(
+      d,
+      bad,
+      length_uid = interview_id, # nolint: object_usage_linter
       interview_uid = interview_id, # nolint: object_usage_linter
-      species       = species, # nolint: object_usage_linter
-      length        = length, # nolint: object_usage_linter
-      length_type   = length_type # nolint: object_usage_linter
+      species = species, # nolint: object_usage_linter
+      length = length, # nolint: object_usage_linter
+      length_type = length_type # nolint: object_usage_linter
     ),
     regexp = "not found in design interviews"
   )
@@ -231,12 +261,14 @@ test_that("add_lengths() normalizes length_type to lowercase silently (LEN-04)",
     stringsAsFactors = FALSE
   )
   result <- expect_no_warning(
-    add_lengths(d, mixed_case,
-      length_uid    = interview_id, # nolint: object_usage_linter
+    add_lengths(
+      d,
+      mixed_case,
+      length_uid = interview_id, # nolint: object_usage_linter
       interview_uid = interview_id, # nolint: object_usage_linter
-      species       = species, # nolint: object_usage_linter
-      length        = length, # nolint: object_usage_linter
-      length_type   = length_type # nolint: object_usage_linter
+      species = species, # nolint: object_usage_linter
+      length = length, # nolint: object_usage_linter
+      length_type = length_type # nolint: object_usage_linter
     )
   )
   expect_true(all(result[["lengths"]]$length_type %in% c("harvest", "release")))
@@ -245,17 +277,22 @@ test_that("add_lengths() normalizes length_type to lowercase silently (LEN-04)",
 test_that("add_lengths() errors on invalid length_type after normalization (LEN-04)", {
   d <- make_design_with_interviews()
   bad_type <- data.frame(
-    interview_id = 1L, species = "walleye", length = "420",
-    length_type = "KEPT", count = NA_integer_,
+    interview_id = 1L,
+    species = "walleye",
+    length = "420",
+    length_type = "KEPT",
+    count = NA_integer_,
     stringsAsFactors = FALSE
   )
   expect_error(
-    add_lengths(d, bad_type,
-      length_uid    = interview_id, # nolint: object_usage_linter
+    add_lengths(
+      d,
+      bad_type,
+      length_uid = interview_id, # nolint: object_usage_linter
       interview_uid = interview_id, # nolint: object_usage_linter
-      species       = species, # nolint: object_usage_linter
-      length        = length, # nolint: object_usage_linter
-      length_type   = length_type # nolint: object_usage_linter
+      species = species, # nolint: object_usage_linter
+      length = length, # nolint: object_usage_linter
+      length_type = length_type # nolint: object_usage_linter
     ),
     regexp = "Invalid.*length_type"
   )
@@ -264,12 +301,14 @@ test_that("add_lengths() errors on invalid length_type after normalization (LEN-
 test_that("add_lengths() errors on invalid release_format (LEN-04)", {
   d <- make_design_with_interviews()
   expect_error(
-    add_lengths(d, minimal_lengths_binned,
-      length_uid     = interview_id, # nolint: object_usage_linter
-      interview_uid  = interview_id, # nolint: object_usage_linter
-      species        = species, # nolint: object_usage_linter
-      length         = length, # nolint: object_usage_linter
-      length_type    = length_type, # nolint: object_usage_linter
+    add_lengths(
+      d,
+      minimal_lengths_binned,
+      length_uid = interview_id, # nolint: object_usage_linter
+      interview_uid = interview_id, # nolint: object_usage_linter
+      species = species, # nolint: object_usage_linter
+      length = length, # nolint: object_usage_linter
+      length_type = length_type, # nolint: object_usage_linter
       release_format = "grouped"
     ),
     regexp = "Invalid.*release_format"
@@ -279,17 +318,22 @@ test_that("add_lengths() errors on invalid release_format (LEN-04)", {
 test_that("add_lengths() errors when harvest length is non-numeric (LEN-04)", {
   d <- make_design_with_interviews()
   bad <- data.frame(
-    interview_id = 1L, species = "walleye", length = "big",
-    length_type = "harvest", count = NA_integer_,
+    interview_id = 1L,
+    species = "walleye",
+    length = "big",
+    length_type = "harvest",
+    count = NA_integer_,
     stringsAsFactors = FALSE
   )
   expect_error(
-    add_lengths(d, bad,
-      length_uid    = interview_id, # nolint: object_usage_linter
+    add_lengths(
+      d,
+      bad,
+      length_uid = interview_id, # nolint: object_usage_linter
       interview_uid = interview_id, # nolint: object_usage_linter
-      species       = species, # nolint: object_usage_linter
-      length        = length, # nolint: object_usage_linter
-      length_type   = length_type # nolint: object_usage_linter
+      species = species, # nolint: object_usage_linter
+      length = length, # nolint: object_usage_linter
+      length_type = length_type # nolint: object_usage_linter
     ),
     regexp = "numeric.*mm"
   )
@@ -298,17 +342,22 @@ test_that("add_lengths() errors when harvest length is non-numeric (LEN-04)", {
 test_that("add_lengths() errors when harvest length is <= 0 (LEN-04)", {
   d <- make_design_with_interviews()
   bad <- data.frame(
-    interview_id = 1L, species = "walleye", length = "0",
-    length_type = "harvest", count = NA_integer_,
+    interview_id = 1L,
+    species = "walleye",
+    length = "0",
+    length_type = "harvest",
+    count = NA_integer_,
     stringsAsFactors = FALSE
   )
   expect_error(
-    add_lengths(d, bad,
-      length_uid    = interview_id, # nolint: object_usage_linter
+    add_lengths(
+      d,
+      bad,
+      length_uid = interview_id, # nolint: object_usage_linter
       interview_uid = interview_id, # nolint: object_usage_linter
-      species       = species, # nolint: object_usage_linter
-      length        = length, # nolint: object_usage_linter
-      length_type   = length_type # nolint: object_usage_linter
+      species = species, # nolint: object_usage_linter
+      length = length, # nolint: object_usage_linter
+      length_type = length_type # nolint: object_usage_linter
     ),
     regexp = "positive"
   )
@@ -324,12 +373,14 @@ test_that("add_lengths() errors when binned release has no count column (LEN-04)
     stringsAsFactors = FALSE
   )
   expect_error(
-    add_lengths(d, no_count,
-      length_uid     = interview_id, # nolint: object_usage_linter
-      interview_uid  = interview_id, # nolint: object_usage_linter
-      species        = species, # nolint: object_usage_linter
-      length         = length, # nolint: object_usage_linter
-      length_type    = length_type, # nolint: object_usage_linter
+    add_lengths(
+      d,
+      no_count,
+      length_uid = interview_id, # nolint: object_usage_linter
+      interview_uid = interview_id, # nolint: object_usage_linter
+      species = species, # nolint: object_usage_linter
+      length = length, # nolint: object_usage_linter
+      length_type = length_type, # nolint: object_usage_linter
       release_format = "binned"
     ),
     regexp = "count.*required"
@@ -347,13 +398,15 @@ test_that("add_lengths() errors when binned release count is NA (LEN-04)", {
     stringsAsFactors = FALSE
   )
   expect_error(
-    add_lengths(d, na_count,
-      length_uid     = interview_id, # nolint: object_usage_linter
-      interview_uid  = interview_id, # nolint: object_usage_linter
-      species        = species, # nolint: object_usage_linter
-      length         = length, # nolint: object_usage_linter
-      length_type    = length_type, # nolint: object_usage_linter
-      count          = count, # nolint: object_usage_linter
+    add_lengths(
+      d,
+      na_count,
+      length_uid = interview_id, # nolint: object_usage_linter
+      interview_uid = interview_id, # nolint: object_usage_linter
+      species = species, # nolint: object_usage_linter
+      length = length, # nolint: object_usage_linter
+      length_type = length_type, # nolint: object_usage_linter
+      count = count, # nolint: object_usage_linter
       release_format = "binned"
     ),
     regexp = "count.*not be NA"
@@ -371,13 +424,15 @@ test_that("add_lengths() errors when binned release count is 0 (LEN-04)", {
     stringsAsFactors = FALSE
   )
   expect_error(
-    add_lengths(d, zero_count,
-      length_uid     = interview_id, # nolint: object_usage_linter
-      interview_uid  = interview_id, # nolint: object_usage_linter
-      species        = species, # nolint: object_usage_linter
-      length         = length, # nolint: object_usage_linter
-      length_type    = length_type, # nolint: object_usage_linter
-      count          = count, # nolint: object_usage_linter
+    add_lengths(
+      d,
+      zero_count,
+      length_uid = interview_id, # nolint: object_usage_linter
+      interview_uid = interview_id, # nolint: object_usage_linter
+      species = species, # nolint: object_usage_linter
+      length = length, # nolint: object_usage_linter
+      length_type = length_type, # nolint: object_usage_linter
+      count = count, # nolint: object_usage_linter
       release_format = "binned"
     ),
     regexp = "positive"
@@ -394,12 +449,14 @@ test_that("add_lengths() errors when individual release length is non-numeric (L
     stringsAsFactors = FALSE
   )
   expect_error(
-    add_lengths(d, bad,
-      length_uid     = interview_id, # nolint: object_usage_linter
-      interview_uid  = interview_id, # nolint: object_usage_linter
-      species        = species, # nolint: object_usage_linter
-      length         = length, # nolint: object_usage_linter
-      length_type    = length_type, # nolint: object_usage_linter
+    add_lengths(
+      d,
+      bad,
+      length_uid = interview_id, # nolint: object_usage_linter
+      interview_uid = interview_id, # nolint: object_usage_linter
+      species = species, # nolint: object_usage_linter
+      length = length, # nolint: object_usage_linter
+      length_type = length_type, # nolint: object_usage_linter
       release_format = "individual"
     ),
     regexp = "numeric.*individual"
@@ -411,7 +468,9 @@ test_that("add_lengths() errors when individual release length is non-numeric (L
 test_that("print shows Length Data section when attached (LEN-05)", {
   data(example_lengths, package = "tidycreel")
   d <- make_design_with_interviews()
-  d2 <- add_lengths(d, example_lengths,
+  d2 <- add_lengths(
+    d,
+    example_lengths,
     length_uid = interview_id, # nolint: object_usage_linter
     interview_uid = interview_id, # nolint: object_usage_linter
     species = species, # nolint: object_usage_linter

@@ -33,8 +33,8 @@
     Code
       tidy(result)
     Output
-      # A tibble: 1 x 5
-        parameter     estimate    se ci_lower ci_upper
-        <chr>            <dbl> <dbl>    <dbl>    <dbl>
-      1 total_harvest     326.  81.1     167.     485.
+      # A tibble: 1 x 6
+        parameter     estimate    se ci_lower ci_upper     n
+        <chr>            <dbl> <dbl>    <dbl>    <dbl> <int>
+      1 total_harvest     326.  81.1     167.     485.    NA
 

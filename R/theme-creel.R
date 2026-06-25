@@ -38,7 +38,7 @@ creel_palette <- function(n = NULL) {
     cli::cli_abort("{.arg n} must be a single positive number when provided.")
   }
 
-  palette_vals[seq_len(n) %% length(palette_vals)]
+  palette_vals[(seq_len(n) - 1L) %% length(palette_vals) + 1L]
 }
 
 #' Package-standard ggplot2 theme for tidycreel plots

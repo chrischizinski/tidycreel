@@ -4,7 +4,6 @@
 # All percent values are rounded to 1 decimal; N columns are integer.
 # Base R only: table(), aggregate(), merge(), cut(), format(). No dplyr.
 
-
 #' Tabulate refused vs accepted interviews by month
 #'
 #' Counts the number of refused and accepted interviews in each calendar
@@ -79,14 +78,16 @@ summarize_refusals <- function(design) {
   counts$N <- as.integer(counts$N)
 
   sort_map <- unique(data.frame(
-    month = month_chr, sort = month_num,
+    month = month_chr,
+    sort = month_num,
     stringsAsFactors = FALSE
   ))
   counts <- merge(counts, sort_map, by = "month")
 
   month_totals <- stats::aggregate(
     counts$N,
-    by = list(month = counts$month), FUN = sum
+    by = list(month = counts$month),
+    FUN = sum
   )
   names(month_totals)[2] <- "month_total"
   counts <- merge(counts, month_totals, by = "month")
@@ -168,14 +169,16 @@ summarize_by_day_type <- function(design) {
   counts$N <- as.integer(counts$N)
 
   sort_map <- unique(data.frame(
-    month = month_chr, sort = month_num,
+    month = month_chr,
+    sort = month_num,
     stringsAsFactors = FALSE
   ))
   counts <- merge(counts, sort_map, by = "month")
 
   month_totals <- stats::aggregate(
     counts$N,
-    by = list(month = counts$month), FUN = sum
+    by = list(month = counts$month),
+    FUN = sum
   )
   names(month_totals)[2] <- "month_total"
   counts <- merge(counts, month_totals, by = "month")
@@ -263,14 +266,16 @@ summarize_by_angler_type <- function(design) {
   counts$N <- as.integer(counts$N)
 
   sort_map <- unique(data.frame(
-    month = month_chr, sort = month_num,
+    month = month_chr,
+    sort = month_num,
     stringsAsFactors = FALSE
   ))
   counts <- merge(counts, sort_map, by = "month")
 
   month_totals <- stats::aggregate(
     counts$N,
-    by = list(month = counts$month), FUN = sum
+    by = list(month = counts$month),
+    FUN = sum
   )
   names(month_totals)[2] <- "month_total"
   counts <- merge(counts, month_totals, by = "month")
@@ -359,14 +364,16 @@ summarize_by_method <- function(design) {
   counts$N <- as.integer(counts$N)
 
   sort_map <- unique(data.frame(
-    month = month_chr, sort = month_num,
+    month = month_chr,
+    sort = month_num,
     stringsAsFactors = FALSE
   ))
   counts <- merge(counts, sort_map, by = "month")
 
   month_totals <- stats::aggregate(
     counts$N,
-    by = list(month = counts$month), FUN = sum
+    by = list(month = counts$month),
+    FUN = sum
   )
   names(month_totals)[2] <- "month_total"
   counts <- merge(counts, month_totals, by = "month")
@@ -455,14 +462,16 @@ summarize_by_species_sought <- function(design) {
   counts$N <- as.integer(counts$N)
 
   sort_map <- unique(data.frame(
-    month = month_chr, sort = month_num,
+    month = month_chr,
+    sort = month_num,
     stringsAsFactors = FALSE
   ))
   counts <- merge(counts, sort_map, by = "month")
 
   month_totals <- stats::aggregate(
     counts$N,
-    by = list(month = counts$month), FUN = sum
+    by = list(month = counts$month),
+    FUN = sum
   )
   names(month_totals)[2] <- "month_total"
   counts <- merge(counts, month_totals, by = "month")
@@ -573,8 +582,11 @@ summarize_successful_parties <- function(design) {
 
   sought_map <- interviews[, c(iuid_col, ss_col, at_col), drop = FALSE]
   catch_merged <- merge(
-    catch_data, sought_map,
-    by.x = uid_col, by.y = iuid_col, all.x = FALSE
+    catch_data,
+    sought_map,
+    by.x = uid_col,
+    by.y = iuid_col,
+    all.x = FALSE
   )
   caught_rows <- catch_merged[
     catch_merged[[type_col]] == "caught" &
@@ -587,7 +599,7 @@ summarize_successful_parties <- function(design) {
   totals <- stats::aggregate(
     interviews[[iuid_col]],
     by = list(
-      angler_type    = interviews[[at_col]],
+      angler_type = interviews[[at_col]],
       species_sought = interviews[[ss_col]]
     ),
     FUN = length
@@ -599,15 +611,13 @@ summarize_successful_parties <- function(design) {
     successes <- stats::aggregate(
       success_sub[[iuid_col]],
       by = list(
-        angler_type    = success_sub[[at_col]],
+        angler_type = success_sub[[at_col]],
         species_sought = success_sub[[ss_col]]
       ),
       FUN = length
     )
     names(successes)[3] <- "N_successful"
-    result <- merge(totals, successes,
-      by = c("angler_type", "species_sought"), all.x = TRUE
-    )
+    result <- merge(totals, successes, by = c("angler_type", "species_sought"), all.x = TRUE)
   } else {
     result <- totals
     result$N_successful <- 0L
@@ -686,15 +696,21 @@ summarize_by_trip_length <- function(design) {
 
   breaks <- c(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, Inf)
   labels <- c(
-    "[0,1)", "[1,2)", "[2,3)", "[3,4)", "[4,5)",
-    "[5,6)", "[6,7)", "[7,8)", "[8,9)", "[9,10)", "10+"
+    "[0,1)",
+    "[1,2)",
+    "[2,3)",
+    "[3,4)",
+    "[4,5)",
+    "[5,6)",
+    "[6,7)",
+    "[7,8)",
+    "[8,9)",
+    "[9,10)",
+    "10+"
   )
 
   durations <- design$interviews[[design$trip_duration_col]]
-  bins <- cut(durations,
-    breaks = breaks, labels = labels,
-    right = FALSE, include.lowest = TRUE
-  )
+  bins <- cut(durations, breaks = breaks, labels = labels, right = FALSE, include.lowest = TRUE)
 
   counts <- as.data.frame(table(trip_length_bin = bins), stringsAsFactors = FALSE)
   names(counts)[names(counts) == "Freq"] <- "N"
@@ -822,7 +838,8 @@ summarize_cws_rates <- function(design, by = NULL, conf_level = 0.95) {
 
   # Step 1: Resolve by columns from interviews
   if (!rlang::quo_is_null(by_quo)) {
-    by_cols <- tidyselect::eval_select( # nolint: object_usage_linter
+    by_cols <- tidyselect::eval_select(
+      # nolint: object_usage_linter
       by_quo,
       data = interviews,
       allow_rename = FALSE,
@@ -840,14 +857,18 @@ summarize_cws_rates <- function(design, by = NULL, conf_level = 0.95) {
   # Merge to get species_sought on each catch row
   sought_map <- interviews[, c(uid_col, ss_col), drop = FALSE]
   catch_merged <- merge(
-    target_catch, sought_map,
-    by.x = uid_col, by.y = uid_col, all.x = FALSE
+    target_catch,
+    sought_map,
+    by.x = uid_col,
+    by.y = uid_col,
+    all.x = FALSE
   )
 
   # Filter to rows where catch species == species_sought
   target_rows <- catch_merged[
     !is.na(catch_merged[[species_col]]) &
-      catch_merged[[species_col]] == catch_merged[[ss_col]], ,
+      catch_merged[[species_col]] == catch_merged[[ss_col]],
+    ,
     drop = FALSE
   ]
 
@@ -866,8 +887,11 @@ summarize_cws_rates <- function(design, by = NULL, conf_level = 0.95) {
   # Step 3: Join back to ALL interviews to preserve zeros
   interview_base <- interviews[, unique(c(uid_col, ss_col, ae_col, by_vars)), drop = FALSE]
   interview_base <- merge(
-    interview_base, agg,
-    by.x = uid_col, by.y = ".uid", all.x = TRUE
+    interview_base,
+    agg,
+    by.x = uid_col,
+    by.y = ".uid",
+    all.x = TRUE
   )
   interview_base$.target_count[is.na(interview_base$.target_count)] <- 0
 
@@ -908,7 +932,9 @@ summarize_cws_rates <- function(design, by = NULL, conf_level = 0.95) {
   result$sd_rate <- NULL
 
   # Drop .group column when no by variables
-  if (length(by_vars) == 0) result$.group <- NULL
+  if (length(by_vars) == 0) {
+    result$.group <- NULL
+  }
 
   result$N <- as.integer(result$N)
   row.names(result) <- NULL
@@ -1033,7 +1059,8 @@ summarize_hws_rates <- function(design, by = NULL, conf_level = 0.95) {
 
   # Step 1: Resolve by columns from interviews
   if (!rlang::quo_is_null(by_quo)) {
-    by_cols <- tidyselect::eval_select( # nolint: object_usage_linter
+    by_cols <- tidyselect::eval_select(
+      # nolint: object_usage_linter
       by_quo,
       data = interviews,
       allow_rename = FALSE,
@@ -1051,14 +1078,18 @@ summarize_hws_rates <- function(design, by = NULL, conf_level = 0.95) {
   # Merge to get species_sought on each catch row
   sought_map <- interviews[, c(uid_col, ss_col), drop = FALSE]
   catch_merged <- merge(
-    target_catch, sought_map,
-    by.x = uid_col, by.y = uid_col, all.x = FALSE
+    target_catch,
+    sought_map,
+    by.x = uid_col,
+    by.y = uid_col,
+    all.x = FALSE
   )
 
   # Filter to rows where catch species == species_sought
   target_rows <- catch_merged[
     !is.na(catch_merged[[species_col]]) &
-      catch_merged[[species_col]] == catch_merged[[ss_col]], ,
+      catch_merged[[species_col]] == catch_merged[[ss_col]],
+    ,
     drop = FALSE
   ]
 
@@ -1077,8 +1108,11 @@ summarize_hws_rates <- function(design, by = NULL, conf_level = 0.95) {
   # Step 3: Join back to ALL interviews to preserve zeros
   interview_base <- interviews[, unique(c(uid_col, ss_col, ae_col, by_vars)), drop = FALSE]
   interview_base <- merge(
-    interview_base, agg,
-    by.x = uid_col, by.y = ".uid", all.x = TRUE
+    interview_base,
+    agg,
+    by.x = uid_col,
+    by.y = ".uid",
+    all.x = TRUE
   )
   interview_base$.target_count[is.na(interview_base$.target_count)] <- 0
 
@@ -1119,7 +1153,9 @@ summarize_hws_rates <- function(design, by = NULL, conf_level = 0.95) {
   result$sd_rate <- NULL
 
   # Drop .group column when no by variables
-  if (length(by_vars) == 0) result$.group <- NULL
+  if (length(by_vars) == 0) {
+    result$.group <- NULL
+  }
 
   result$N <- as.integer(result$N)
   row.names(result) <- NULL
@@ -1238,7 +1274,8 @@ summarize_length_freq <- function(design, type = "catch", by = NULL, bin_width =
     by_cols <- tidyselect::eval_select(
       by_quo,
       data = lengths_data,
-      allow_rename = FALSE, allow_empty = FALSE,
+      allow_rename = FALSE,
+      allow_empty = FALSE,
       error_call = rlang::caller_env()
     )
     by_vars <- names(by_cols)
@@ -1272,7 +1309,9 @@ summarize_length_freq <- function(design, type = "catch", by = NULL, bin_width =
         lengths = numeric(0),
         weights = integer(0)
       )
-      for (v in by_vars) out[[v]] <- character(0)
+      for (v in by_vars) {
+        out[[v]] <- character(0)
+      }
       return(out)
     }
 
@@ -1299,13 +1338,17 @@ summarize_length_freq <- function(design, type = "catch", by = NULL, bin_width =
       lengths <- rep(midpoints, times = counts)
       weights <- rep(1L, times = length(lengths))
       out <- list(lengths = lengths, weights = weights)
-      for (v in by_vars) out[[v]] <- rep(rows[[v]], times = counts)
+      for (v in by_vars) {
+        out[[v]] <- rep(rows[[v]], times = counts)
+      }
     } else {
       # Individual format: one fish per row, weight = 1
       lengths <- as.numeric(rows[[length_col]])
       weights <- rep(1L, times = length(lengths))
       out <- list(lengths = lengths, weights = weights)
-      for (v in by_vars) out[[v]] <- rows[[v]]
+      for (v in by_vars) {
+        out[[v]] <- rows[[v]]
+      }
     }
     out
   }
@@ -1336,10 +1379,7 @@ summarize_length_freq <- function(design, type = "catch", by = NULL, bin_width =
   max_len <- ceiling(max(all_lengths) / bin_width) * bin_width
   breaks <- seq(0, max_len + bin_width, by = bin_width)
   labels <- paste0("[", breaks[-length(breaks)], ",", breaks[-1], ")")
-  bins <- cut(all_lengths,
-    breaks = breaks, labels = labels,
-    right = FALSE, include.lowest = TRUE
-  )
+  bins <- cut(all_lengths, breaks = breaks, labels = labels, right = FALSE, include.lowest = TRUE)
 
   # Build a data frame of all records
   records_df <- data.frame(
@@ -1348,7 +1388,9 @@ summarize_length_freq <- function(design, type = "catch", by = NULL, bin_width =
     .weight = all_weights,
     stringsAsFactors = FALSE
   )
-  for (v in by_vars) records_df[[v]] <- group_lists[[v]]
+  for (v in by_vars) {
+    records_df[[v]] <- group_lists[[v]]
+  }
 
   # Aggregate: N = sum(weight) per (by_vars + .length_bin)
   agg_by <- c(by_vars, ".length_bin", ".lower")
@@ -1371,10 +1413,7 @@ summarize_length_freq <- function(design, type = "catch", by = NULL, bin_width =
   lower_map <- unique(n_agg[, c(".length_bin", ".lower"), drop = FALSE])
   lower_map <- lower_map[order(lower_map$.lower), ]
   ordered_labs <- lower_map$.length_bin[lower_map$.length_bin %in% occupied_labels]
-  n_agg$.length_bin <- factor(n_agg$.length_bin,
-    levels = ordered_labs,
-    ordered = TRUE
-  )
+  n_agg$.length_bin <- factor(n_agg$.length_bin, levels = ordered_labs, ordered = TRUE)
 
   # Compute percent and cumulative_percent within each group
   if (length(by_vars) > 0) {
@@ -1398,9 +1437,7 @@ summarize_length_freq <- function(design, type = "catch", by = NULL, bin_width =
   n_agg$.lower <- NULL
 
   # Final column order: by_vars, length_bin, N, percent, cumulative_percent
-  result <- n_agg[, c(by_vars, "length_bin", "N", "percent", "cumulative_percent"),
-    drop = FALSE
-  ]
+  result <- n_agg[, c(by_vars, "length_bin", "N", "percent", "cumulative_percent"), drop = FALSE]
   result$N <- as.integer(result$N)
   row.names(result) <- NULL
 
@@ -1448,8 +1485,13 @@ summary.creel_estimates <- function(object, digits = 4L, ...) {
 
   # Identify group columns (everything except the estimate columns)
   est_cols <- c(
-    "estimate", "se", "ci_lower", "ci_upper", "n",
-    "se_between", "se_within"
+    "estimate",
+    "se",
+    "ci_lower",
+    "ci_upper",
+    "n",
+    "se_between",
+    "se_within"
   )
   group_cols <- setdiff(names(est), est_cols)
 
@@ -1481,10 +1523,10 @@ summary.creel_estimates <- function(object, digits = 4L, ...) {
 new_creel_summary <- function(table, method, variance_method, conf_level) {
   structure(
     list(
-      table           = table,
-      method          = method,
+      table = table,
+      method = method,
       variance_method = variance_method,
-      conf_level      = conf_level
+      conf_level = conf_level
     ),
     class = "creel_summary"
   )
@@ -1583,46 +1625,46 @@ summarize_boat_composition <- function(design, schema) {
   counts <- design$counts
 
   # Extract dates and compute month labels
-  dates     <- counts[[design$date_col]]
+  dates <- counts[[design$date_col]]
   month_chr <- format(dates, "%B")
   month_num <- format(dates, "%m")
 
   # Extract day_type from first strata column
   strata_col <- design$strata_cols[1]
-  day_type   <- counts[[strata_col]]
+  day_type <- counts[[strata_col]]
 
   ab <- counts[[ab_col]]
   nb <- counts[[nb_col]]
 
   # Exclude rows where total boats == 0 (undefined ratio)
   keep <- (ab + nb) > 0
-  ab        <- ab[keep]
-  nb        <- nb[keep]
+  ab <- ab[keep]
+  nb <- nb[keep]
   month_chr <- month_chr[keep]
   month_num <- month_num[keep]
-  day_type  <- day_type[keep]
+  day_type <- day_type[keep]
 
   ratio <- ab / (ab + nb)
 
   working <- data.frame(
-    month     = month_chr,
+    month = month_chr,
     month_num = month_num,
-    day_type  = day_type,
-    ratio     = ratio,
+    day_type = day_type,
+    ratio = ratio,
     stringsAsFactors = FALSE
   )
 
   # Aggregate: mean ratio and count of events per month x day_type
   agg_mean <- stats::aggregate(
     working$ratio,
-    by  = list(month = working$month, day_type = working$day_type),
+    by = list(month = working$month, day_type = working$day_type),
     FUN = mean
   )
   names(agg_mean)[names(agg_mean) == "x"] <- "mean_ratio"
 
   agg_n <- stats::aggregate(
     working$ratio,
-    by  = list(month = working$month, day_type = working$day_type),
+    by = list(month = working$month, day_type = working$day_type),
     FUN = length
   )
   names(agg_n)[names(agg_n) == "x"] <- "n_events"
@@ -1631,12 +1673,12 @@ summarize_boat_composition <- function(design, schema) {
 
   # Convert to percent, round to 1 decimal
   result$pct_angler_boats <- round(result$mean_ratio * 100, 1)
-  result$n_events         <- as.integer(result$n_events)
-  result$mean_ratio       <- NULL
+  result$n_events <- as.integer(result$n_events)
+  result$mean_ratio <- NULL
 
   # Merge sort key and order by month then day_type
   sort_map <- unique(data.frame(
-    month     = working$month,
+    month = working$month,
     month_num = working$month_num,
     stringsAsFactors = FALSE
   ))
@@ -1722,20 +1764,20 @@ summarize_by_zip <- function(design) {
   }
 
   zip_vals <- design$interviews[["ii_ZipCode"]]
-  total_n  <- length(zip_vals)
+  total_n <- length(zip_vals)
 
   # Replace NA with "Unknown" before tabulating
   zip_vals[is.na(zip_vals)] <- "Unknown"
 
   counts_tbl <- as.data.frame(table(zip_code = zip_vals), stringsAsFactors = FALSE)
   names(counts_tbl)[names(counts_tbl) == "Freq"] <- "n"
-  counts_tbl$n   <- as.integer(counts_tbl$n)
+  counts_tbl$n <- as.integer(counts_tbl$n)
   counts_tbl$pct <- round(100 * counts_tbl$n / total_n, 1)
 
   # Sort: Unknown last, remaining rows by n descending
-  known   <- counts_tbl[counts_tbl$zip_code != "Unknown", ]
+  known <- counts_tbl[counts_tbl$zip_code != "Unknown", ]
   unknown <- counts_tbl[counts_tbl$zip_code == "Unknown", ]
-  known   <- known[order(-known$n), ]
+  known <- known[order(-known$n), ]
   counts_tbl <- rbind(known, unknown)
   row.names(counts_tbl) <- NULL
 
@@ -1826,15 +1868,18 @@ summarize_by_county <- function(design) {
     ))
   }
 
-  zip_vals  <- design$interviews[["ii_ZipCode"]]
-  total_n   <- length(zip_vals)
+  zip_vals <- design$interviews[["ii_ZipCode"]]
+  total_n <- length(zip_vals)
   valid_zips <- zip_vals[!is.na(zip_vals)]
   unique_zips <- unique(valid_zips)
 
   # Build county lookup from zipcodeR's zip_code_db dataset
   zip_db <- zipcodeR::zip_code_db
-  county_map <- zip_db[zip_db$zipcode %in% as.character(unique_zips),
-                       c("zipcode", "county"), drop = FALSE]
+  county_map <- zip_db[
+    zip_db$zipcode %in% as.character(unique_zips),
+    c("zipcode", "county"),
+    drop = FALSE
+  ]
 
   # Determine actual county column name returned by the lookup
   county_col <- if ("county" %in% names(county_map)) {
@@ -1871,13 +1916,13 @@ summarize_by_county <- function(design) {
 
   counts_tbl <- as.data.frame(table(county = county_vals), stringsAsFactors = FALSE)
   names(counts_tbl)[names(counts_tbl) == "Freq"] <- "n"
-  counts_tbl$n   <- as.integer(counts_tbl$n)
+  counts_tbl$n <- as.integer(counts_tbl$n)
   counts_tbl$pct <- round(100 * counts_tbl$n / total_n, 1)
 
   # Sort: Unknown last, remaining rows by n descending
-  known   <- counts_tbl[counts_tbl$county != "Unknown", ]
+  known <- counts_tbl[counts_tbl$county != "Unknown", ]
   unknown <- counts_tbl[counts_tbl$county == "Unknown", ]
-  known   <- known[order(-known$n), ]
+  known <- known[order(-known$n), ]
   counts_tbl <- rbind(known, unknown)
   row.names(counts_tbl) <- NULL
 

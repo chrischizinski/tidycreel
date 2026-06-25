@@ -50,11 +50,13 @@
 #'
 #' @family "Estimation"
 #' @export
-est_age_distribution <- function(design,
-                                 by = NULL,
-                                 type = "catch",
-                                 variance = "taylor",
-                                 conf_level = 0.95) {
+est_age_distribution <- function(
+  design,
+  by = NULL,
+  type = "catch",
+  variance = "taylor",
+  conf_level = 0.95
+) {
   by_quo <- rlang::enquo(by)
 
   if (!inherits(design, "creel_design")) {
@@ -88,8 +90,8 @@ est_age_distribution <- function(design,
     ))
   }
 
-  if (!is.numeric(conf_level) || length(conf_level) != 1L ||
-    conf_level <= 0 || conf_level >= 1) { # nolint: indentation_linter
+  if (!is.numeric(conf_level) || length(conf_level) != 1L || conf_level <= 0 || conf_level >= 1) {
+    # nolint: indentation_linter
     cli::cli_abort(c(
       "{.arg conf_level} must be a single number in (0, 1).",
       "x" = "{.arg conf_level} is {.val {conf_level}}."
@@ -130,6 +132,8 @@ est_age_distribution <- function(design,
   }
 
   result_rows <- vector("list", 0)
+  base_interviews <- design$interviews
+  uid_col <- design$ages_interview_uid_col
 
   if (length(by_vars) == 0L) {
     group_indices <- list(seq_len(nrow(records)))
@@ -172,19 +176,14 @@ est_age_distribution <- function(design,
       direction = "wide"
     )
     names(wide) <- sub("^age_count\\.", "", names(wide))
-    names(wide)[names(wide) == "uid"] <- design$ages_interview_uid_col
+    names(wide)[names(wide) == "uid"] <- uid_col
 
-    interviews_aug <- dplyr::left_join(
-      design$interviews,
-      wide,
-      by = design$ages_interview_uid_col
-    )
-
+    row_map <- match(base_interviews[[uid_col]], wide[[uid_col]])
+    interviews_aug <- base_interviews
     for (col in age_lookup$age_col) {
-      if (!col %in% names(interviews_aug)) {
-        interviews_aug[[col]] <- 0
-      }
-      interviews_aug[[col]][is.na(interviews_aug[[col]])] <- 0
+      val <- wide[[col]][row_map]
+      val[is.na(val)] <- 0L
+      interviews_aug[[col]] <- val
     }
 
     temp_design <- rebuild_interview_survey(design, interviews_aug) # nolint: object_usage_linter
@@ -205,7 +204,7 @@ est_age_distribution <- function(design,
       se = ses,
       ci_lower = cis[, 1],
       ci_upper = cis[, 2],
-      n = nrow(design$interviews),
+      n = nrow(wide),
       stringsAsFactors = FALSE
     )
 
@@ -223,15 +222,34 @@ est_age_distribution <- function(design,
       for (v in by_vars) {
         group_df[[v]] <- group_info[[v]][1]
       }
-      group_df <- group_df[, c(
-        by_vars, "age", "estimate", "se", "ci_lower", "ci_upper",
-        "percent", "cumulative_percent", "n"
-      ), drop = FALSE]
+      group_df <- group_df[,
+        c(
+          by_vars,
+          "age",
+          "estimate",
+          "se",
+          "ci_lower",
+          "ci_upper",
+          "percent",
+          "cumulative_percent",
+          "n"
+        ),
+        drop = FALSE
+      ]
     } else {
-      group_df <- group_df[, c(
-        "age", "estimate", "se", "ci_lower", "ci_upper",
-        "percent", "cumulative_percent", "n"
-      ), drop = FALSE]
+      group_df <- group_df[,
+        c(
+          "age",
+          "estimate",
+          "se",
+          "ci_lower",
+          "ci_upper",
+          "percent",
+          "cumulative_percent",
+          "n"
+        ),
+        drop = FALSE
+      ]
     }
 
     result_rows[[length(result_rows) + 1L]] <- group_df
@@ -253,12 +271,14 @@ est_age_distribution <- function(design,
 #'
 #' @keywords internal
 #' @noRd
-.build_age_distribution_records <- function(ages_data, # nolint: object_length_linter
-                                            type,
-                                            by_vars,
-                                            age_col,
-                                            type_col,
-                                            interview_uid_col) {
+.build_age_distribution_records <- function(
+  ages_data, # nolint: object_length_linter
+  type,
+  by_vars,
+  age_col,
+  type_col,
+  interview_uid_col
+) {
   if (type == "harvest") {
     ages_data <- ages_data[ages_data[[type_col]] == "harvest", , drop = FALSE]
   } else if (type == "release") {
@@ -272,7 +292,9 @@ est_age_distribution <- function(design,
       .fish_count = numeric(0),
       stringsAsFactors = FALSE
     )
-    for (v in by_vars) out[[v]] <- ages_data[[v]]
+    for (v in by_vars) {
+      out[[v]] <- ages_data[[v]]
+    }
     return(out)
   }
 
@@ -290,7 +312,9 @@ est_age_distribution <- function(design,
     .fish_count = rep(1, nrow(ages_data)),
     stringsAsFactors = FALSE
   )
-  for (v in by_vars) out[[v]] <- ages_data[[v]]
+  for (v in by_vars) {
+    out[[v]] <- ages_data[[v]]
+  }
   out
 }
 
@@ -359,8 +383,8 @@ est_mean_age <- function(ad, conf_level = NULL) {
   if (is.null(conf_level)) {
     conf_level <- if (!is.null(ad_conf)) ad_conf else 0.95
   } else {
-    if (!is.numeric(conf_level) || length(conf_level) != 1L ||
-      conf_level <= 0 || conf_level >= 1) { # nolint: indentation_linter
+    if (!is.numeric(conf_level) || length(conf_level) != 1L || conf_level <= 0 || conf_level >= 1) {
+      # nolint: indentation_linter
       cli::cli_abort(c(
         "{.arg conf_level} must be a single number in (0, 1).",
         "x" = "{.arg conf_level} is {.val {conf_level}}."
@@ -369,7 +393,9 @@ est_mean_age <- function(ad, conf_level = NULL) {
   }
 
   by_vars <- attr(ad, "by_vars")
-  if (is.null(by_vars)) by_vars <- character(0)
+  if (is.null(by_vars)) {
+    by_vars <- character(0)
+  }
   z <- stats::qnorm((1 + conf_level) / 2)
 
   compute_mean_age <- function(rows) {

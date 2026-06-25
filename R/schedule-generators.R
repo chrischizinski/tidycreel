@@ -37,8 +37,13 @@ new_creel_schedule <- function(data) {
 #'   sampled days.
 #'
 #' @noRd
-select_sampled_days <- function(all_dates, day_types, n_days = NULL,
-                                sampling_rate = NULL, valid_strata = NULL) {
+select_sampled_days <- function(
+  all_dates,
+  day_types,
+  n_days = NULL,
+  sampling_rate = NULL,
+  valid_strata = NULL
+) {
   strata <- unique(day_types)
   if (is.null(valid_strata)) {
     valid_strata <- strata
@@ -108,8 +113,7 @@ select_sampled_days <- function(all_dates, day_types, n_days = NULL,
 #'   column.
 #'
 #' @noRd
-expand_periods_impl <- function(base_df, n_periods, period_labels = NULL,
-                                ordered_periods = FALSE) {
+expand_periods_impl <- function(base_df, n_periods, period_labels = NULL, ordered_periods = FALSE) {
   if (!is.null(period_labels) && length(period_labels) != n_periods) {
     cli::cli_abort(c(
       "Length of {.arg period_labels} must equal {.arg n_periods}.",
@@ -273,15 +277,22 @@ resolve_special_periods <- function(all_dates, day_types, special_periods = NULL
     source_end_date = expanded$source_end_date,
     stringsAsFactors = FALSE
   )
-  audit$crosses_boundary <- format(audit$source_start_date, "%Y-%m") != format(audit$source_end_date, "%Y-%m")
+  audit$crosses_boundary <- format(audit$source_start_date, "%Y-%m") !=
+    format(audit$source_end_date, "%Y-%m")
 
   allocation <- as.data.frame(table(final_stratum), stringsAsFactors = FALSE)
   names(allocation) <- c("final_stratum", "available_days")
 
   diag_rows <- list()
-  all_strata <- unique(c(as.character(baseline_allocation$stratum), as.character(allocation$final_stratum)))
+  all_strata <- unique(c(
+    as.character(baseline_allocation$stratum),
+    as.character(allocation$final_stratum)
+  ))
   for (stratum_name in all_strata) {
-    baseline_days <- baseline_allocation$baseline_days[match(stratum_name, baseline_allocation$stratum)]
+    baseline_days <- baseline_allocation$baseline_days[match(
+      stratum_name,
+      baseline_allocation$stratum
+    )]
     final_days <- allocation$available_days[match(stratum_name, allocation$final_stratum)]
     baseline_days[is.na(baseline_days)] <- 0L
     final_days[is.na(final_days)] <- 0L
@@ -468,7 +479,8 @@ generate_schedule <- function(
     blocking <- diagnostics[
       diagnostics$severity == "error" &
         diagnostics$stratum %in% requested_strata &
-        season_fully_rewritten, ,
+        season_fully_rewritten,
+      ,
       drop = FALSE
     ]
     if (nrow(blocking) > 0L) {
@@ -476,9 +488,13 @@ generate_schedule <- function(
       cli::cli_abort(c(
         "Special-period declarations consumed a baseline stratum still requested for sampling.",
         "x" = paste0(
-          "Stratum ", b1$stratum,
-          " had ", b1$baseline_days, " baseline day(s) and ",
-          b1$final_days, " remaining final day(s)."
+          "Stratum ",
+          b1$stratum,
+          " had ",
+          b1$baseline_days,
+          " baseline day(s) and ",
+          b1$final_days,
+          " remaining final day(s)."
         ),
         "i" = paste0(
           "Update {.arg n_days} or {.arg sampling_rate} to match",
@@ -489,14 +505,19 @@ generate_schedule <- function(
 
     warnings <- diagnostics[
       diagnostics$severity == "warning" |
-        (diagnostics$severity == "error" & diagnostics$stratum %in% requested_strata), ,
+        (diagnostics$severity == "error" & diagnostics$stratum %in% requested_strata),
+      ,
       drop = FALSE
     ]
     if (nrow(warnings) > 0L) {
-      warn_labels <- paste0( # nolint: object_usage_linter.
+      warn_labels <- paste0(
+        # nolint: object_usage_linter.
         warnings$stratum,
-        " (baseline=", warnings$baseline_days,
-        ", final=", warnings$final_days, ")"
+        " (baseline=",
+        warnings$baseline_days,
+        ", final=",
+        warnings$final_days,
+        ")"
       )
       cli::cli_warn(c(
         "Special-period declarations produced a fragile schedule design.",
@@ -531,9 +552,9 @@ generate_schedule <- function(
 
   # Build base tibble with all season dates
   base <- tibble::tibble(
-    date     = all_dates,
+    date = all_dates,
     day_type = day_types,
-    sampled  = sampled
+    sampled = sampled
   )
 
   if (!is.null(special_periods)) {
@@ -805,10 +826,14 @@ generate_count_times <- function(
   # Generate windows
   t_starts <- withr::with_seed(seed, {
     if (strategy == "random") {
-      vapply(seq_len(n_windows) - 1L, function(i) {
-        stratum_start <- start_min + i * k
-        sample(stratum_start:(stratum_start + k - window_size), 1L)
-      }, integer(1))
+      vapply(
+        seq_len(n_windows) - 1L,
+        function(i) {
+          stratum_start <- start_min + i * k
+          sample(stratum_start:(stratum_start + k - window_size), 1L)
+        },
+        integer(1)
+      )
     } else {
       # systematic
       t1 <- sample(start_min:(start_min + k - window_size), 1L)
@@ -865,8 +890,15 @@ generate_count_times <- function(
 #'
 #' @family "Scheduling"
 #' @export
-generate_bus_schedule <- function(schedule, sampling_frame, site, p_site,
-                                  circuit = NULL, crew, seed = NULL) {
+generate_bus_schedule <- function(
+  schedule,
+  sampling_frame,
+  site,
+  p_site,
+  circuit = NULL,
+  crew,
+  seed = NULL
+) {
   # Capture tidy selectors
   site_quo <- rlang::enquo(site)
   p_site_quo <- rlang::enquo(p_site)
@@ -908,7 +940,17 @@ generate_bus_schedule <- function(schedule, sampling_frame, site, p_site,
 
   # Add columns to output
   result[["p_period"]] <- p_period
-  result[["inclusion_prob"]] <- p_site_vals * p_period
+  inclusion_probs <- p_site_vals * p_period
+  result[["inclusion_prob"]] <- inclusion_probs
+
+  bad_sites <- which(inclusion_probs > 1)
+  if (length(bad_sites) > 0L) {
+    cli::cli_abort(c(
+      "Inclusion probabilities exceed 1 for {length(bad_sites)} site{?s}.",
+      "x" = "crew={crew}, n_circuits={n_circuits}, p_period={p_period}; max p_site={max(p_site_vals[bad_sites])}.",
+      "i" = "Reduce {.arg crew} or increase circuits so that p_site * (crew / n_circuits) <= 1 for all sites."
+    ))
+  }
 
   # Drop synthetic circuit column
   if (rlang::quo_is_null(circuit_quo)) {
@@ -969,11 +1011,13 @@ attach_count_times <- function(schedule, count_times) {
   # merge() with no by columns performs a full cross-join
   result <- merge(schedule, count_times, by = NULL)
   # Restore intuitive row order: schedule rows primary, windows secondary
-  result <- result[order(
-    result$date,
-    if ("period_id" %in% names(result)) result$period_id else seq_len(nrow(result)),
-    result$window_id
-  ), ]
+  result <- result[
+    order(
+      result$date,
+      if ("period_id" %in% names(result)) result$period_id else seq_len(nrow(result)),
+      result$window_id
+    ),
+  ]
   rownames(result) <- NULL
   new_creel_schedule(result)
 }

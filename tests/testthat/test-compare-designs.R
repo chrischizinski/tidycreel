@@ -12,12 +12,12 @@ make_est <- function(estimate, se, label = "test") {
   )
   structure(
     list(
-      estimates       = est_df,
-      method          = label,
+      estimates = est_df,
+      method = label,
       variance_method = "taylor",
-      design          = NULL,
-      conf_level      = 0.95,
-      by_vars         = NULL
+      design = NULL,
+      conf_level = 0.95,
+      by_vars = NULL
     ),
     class = "creel_estimates"
   )
@@ -35,12 +35,12 @@ make_est_grouped <- function() {
   )
   structure(
     list(
-      estimates       = est_df,
-      method          = "grouped",
+      estimates = est_df,
+      method = "grouped",
       variance_method = "taylor",
-      design          = NULL,
-      conf_level      = 0.95,
-      by_vars         = "day_type"
+      design = NULL,
+      conf_level = 0.95,
+      by_vars = "day_type"
     ),
     class = "creel_estimates"
   )
@@ -100,15 +100,24 @@ test_that("CMPD-07: has expected core columns", {
     a = make_est(100, 10),
     b = make_est(200, 20)
   ))
-  expect_true(all(c(
-    "design", "estimate", "se", "rse",
-    "ci_lower", "ci_upper", "ci_width", "n"
-  ) %in% names(res)))
+  expect_true(all(
+    c(
+      "design",
+      "estimate",
+      "se",
+      "rse",
+      "ci_lower",
+      "ci_upper",
+      "ci_width",
+      "n"
+    ) %in%
+      names(res)
+  ))
 })
 
 test_that("CMPD-08: design column matches input names", {
   res <- compare_designs(list(
-    instant  = make_est(100, 10),
+    instant = make_est(100, 10),
     busroute = make_est(200, 20)
   ))
   expect_setequal(res$design, c("instant", "busroute"))
@@ -158,7 +167,7 @@ test_that("CMPD-12: ci_width = ci_upper - ci_lower", {
 test_that("CMPD-13: grouped estimates expand correctly", {
   res <- compare_designs(list(
     grouped = make_est_grouped(),
-    single  = make_est(150, 15)
+    single = make_est(150, 15)
   ))
   # grouped has 2 rows, single has 1 -> total 3
   expect_equal(nrow(res), 3L)
@@ -167,7 +176,7 @@ test_that("CMPD-13: grouped estimates expand correctly", {
 test_that("CMPD-14: group columns retained", {
   res <- compare_designs(list(
     grp = make_est_grouped(),
-    b   = make_est(150, 15)
+    b = make_est(150, 15)
   ))
   expect_true("day_type" %in% names(res))
 })
@@ -198,9 +207,13 @@ test_that("CMPD-17: autoplot includes error bars when CI present", {
     b = make_est(200, 20)
   ))
   p <- autoplot(res)
-  layer_classes <- vapply(p$layers, function(l) {
-    class(l$geom)[1]
-  }, character(1))
+  layer_classes <- vapply(
+    p$layers,
+    function(l) {
+      class(l$geom)[1]
+    },
+    character(1)
+  )
   expect_true(any(grepl("errorbar", layer_classes, ignore.case = TRUE)))
 })
 
@@ -228,8 +241,11 @@ test_that("CMPD-20: handles missing SE gracefully (NA rse)", {
   est_no_se <- structure(
     list(
       estimates = data.frame(estimate = 100, stringsAsFactors = FALSE),
-      method = "test", variance_method = "none",
-      design = NULL, conf_level = 0.95, by_vars = NULL
+      method = "test",
+      variance_method = "none",
+      design = NULL,
+      conf_level = 0.95,
+      by_vars = NULL
     ),
     class = "creel_estimates"
   )

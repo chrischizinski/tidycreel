@@ -96,7 +96,8 @@ write_estimates <- function(
   format <- match.arg(format)
   if (format == "auto") {
     ext <- tolower(tools::file_ext(path))
-    format <- switch(ext,
+    format <- switch(
+      ext,
       csv = "csv",
       xlsx = "xlsx",
       cli::cli_abort(c(
@@ -125,14 +126,25 @@ write_estimates <- function(
 
   # ---- Write ------------------------------------------------------------------
   if (format == "csv") {
-    con <- file(path, open = "wt")
-    on.exit(close(con), add = TRUE)
+    tmp <- tempfile(tmpdir = dirname(path), fileext = ".csv")
+    con <- file(tmp, open = "wt")
+    on.exit(
+      {
+        try(close(con), silent = TRUE)
+        if (file.exists(tmp)) file.remove(tmp)
+      },
+      add = TRUE
+    )
     header_lines <- c(
       "# Survey estimates - tidycreel",
       paste0(
-        "# Method: ", method_label,
-        " | ", var_label,
-        " | ", conf_label, " CI"
+        "# Method: ",
+        method_label,
+        " | ",
+        var_label,
+        " | ",
+        conf_label,
+        " CI"
       )
     )
     if (!is.null(effort_target) && nzchar(effort_target)) {
@@ -141,6 +153,8 @@ write_estimates <- function(
     header_lines <- c(header_lines, paste0("# Generated: ", ts))
     writeLines(header_lines, con = con)
     utils::write.csv(df, file = con, row.names = FALSE)
+    close(con)
+    file.rename(tmp, path)
   } else {
     rlang::check_installed(
       "writexl",

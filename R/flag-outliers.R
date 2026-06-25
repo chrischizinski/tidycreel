@@ -46,7 +46,8 @@
 #'
 #' @family "Reporting & Diagnostics"
 #' @export
-flag_outliers <- function(data, col, k = 1.5, na.rm = TRUE) { # nolint: object_name_linter
+flag_outliers <- function(data, col, k = 1.5, na.rm = TRUE) {
+  # nolint: object_name_linter
   if (!is.data.frame(data)) {
     cli::cli_abort(c(
       "{.arg data} must be a {.cls data.frame}.",
@@ -117,10 +118,12 @@ flag_outliers <- function(data, col, k = 1.5, na.rm = TRUE) { # nolint: object_n
   is_out <- above | below
   reason <- character(nrow(data))
   reason[above] <- sprintf(
-    "above fence_high (%.4g)", fence_hi
+    "above fence_high (%.4g)",
+    fence_hi
   )
   reason[below] <- sprintf(
-    "below fence_low (%.4g)", fence_lo
+    "below fence_low (%.4g)",
+    fence_lo
   )
 
   data$is_outlier <- is_out

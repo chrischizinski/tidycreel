@@ -73,7 +73,8 @@ validate_creel_data <- function(
 
   bad_threshold <- !is.numeric(na_threshold) ||
     length(na_threshold) != 1L ||
-    na_threshold < 0 || na_threshold > 1
+    na_threshold < 0 ||
+    na_threshold > 1
   if (bad_threshold) {
     cli::cli_abort(
       "{.arg na_threshold} must be a single number in [0, 1].",
@@ -96,16 +97,15 @@ validate_creel_data <- function(
 
   if (!is.null(counts)) {
     if (!is.data.frame(counts)) {
-      cli::cli_abort("{.arg counts} must be a data frame.",
-        class = "creel_error_design_validation"
-      )
+      cli::cli_abort("{.arg counts} must be a data frame.", class = "creel_error_design_validation")
     }
     rows <- c(rows, .check_table(counts, "counts", na_threshold, date_range))
   }
 
   if (!is.null(interviews)) {
     if (!is.data.frame(interviews)) {
-      cli::cli_abort("{.arg interviews} must be a data frame.",
+      cli::cli_abort(
+        "{.arg interviews} must be a data frame.",
         class = "creel_error_design_validation"
       )
     }
@@ -141,23 +141,37 @@ validate_creel_data <- function(
 
   # -- type ------------------------------------------------------------------
   col_class <- paste(class(x), collapse = "/")
-  rows <- c(rows, list(.make_row(
-    table_name, col, "type", "pass",
-    paste0("class: ", col_class)
-  )))
+  rows <- c(
+    rows,
+    list(.make_row(
+      table_name,
+      col,
+      "type",
+      "pass",
+      paste0("class: ", col_class)
+    ))
+  )
 
   # -- NA rate ---------------------------------------------------------------
   n_total <- length(x)
   n_na <- sum(is.na(x))
   na_rate <- if (n_total > 0L) n_na / n_total else 0
   na_status <- if (na_rate > na_threshold) "warn" else "pass"
-  rows <- c(rows, list(.make_row(
-    table_name, col, "na_rate", na_status,
-    sprintf(
-      "%d / %d NA (%.0f%%)",
-      n_na, n_total, na_rate * 100
-    )
-  )))
+  rows <- c(
+    rows,
+    list(.make_row(
+      table_name,
+      col,
+      "na_rate",
+      na_status,
+      sprintf(
+        "%d / %d NA (%.0f%%)",
+        n_na,
+        n_total,
+        na_rate * 100
+      )
+    ))
+  )
 
   # -- Date-specific checks --------------------------------------------------
   if (inherits(x, "Date")) {
@@ -165,38 +179,50 @@ validate_creel_data <- function(
     if (length(non_na) > 0L) {
       out_of_range <- non_na < date_range[1] | non_na > date_range[2]
       range_status <- if (any(out_of_range)) "warn" else "pass"
-      rows <- c(rows, list(.make_row(
-        table_name, col, "date_range", range_status,
-        if (any(out_of_range)) {
-          sprintf(
-            "%d value(s) outside %s - %s",
-            sum(out_of_range),
-            format(date_range[1]),
-            format(date_range[2])
-          )
-        } else {
-          sprintf(
-            "all within %s - %s",
-            format(date_range[1]),
-            format(date_range[2])
-          )
-        }
-      )))
+      rows <- c(
+        rows,
+        list(.make_row(
+          table_name,
+          col,
+          "date_range",
+          range_status,
+          if (any(out_of_range)) {
+            sprintf(
+              "%d value(s) outside %s - %s",
+              sum(out_of_range),
+              format(date_range[1]),
+              format(date_range[2])
+            )
+          } else {
+            sprintf(
+              "all within %s - %s",
+              format(date_range[1]),
+              format(date_range[2])
+            )
+          }
+        ))
+      )
     }
   }
 
   # -- Numeric-specific checks -----------------------------------------------
   if (is.numeric(x) && !inherits(x, "Date")) {
     non_na <- x[!is.na(x)]
-    neg_status <- if (any(non_na < 0)) "warn" else "pass"
-    rows <- c(rows, list(.make_row(
-      table_name, col, "negative_values", neg_status,
-      if (any(non_na < 0)) {
-        sprintf("%d negative value(s)", sum(non_na < 0))
-      } else {
-        "none"
-      }
-    )))
+    neg_status <- if (any(non_na < 0)) "fail" else "pass"
+    rows <- c(
+      rows,
+      list(.make_row(
+        table_name,
+        col,
+        "negative_values",
+        neg_status,
+        if (any(non_na < 0)) {
+          sprintf("%d negative value(s)", sum(non_na < 0))
+        } else {
+          "none"
+        }
+      ))
+    )
   }
 
   # -- Character/factor-specific checks --------------------------------------
@@ -204,14 +230,20 @@ validate_creel_data <- function(
     chr_x <- as.character(x)
     non_na <- chr_x[!is.na(chr_x)]
     empty_status <- if (any(non_na == "")) "warn" else "pass"
-    rows <- c(rows, list(.make_row(
-      table_name, col, "empty_strings", empty_status,
-      if (any(non_na == "")) {
-        sprintf("%d empty string(s)", sum(non_na == ""))
-      } else {
-        "none"
-      }
-    )))
+    rows <- c(
+      rows,
+      list(.make_row(
+        table_name,
+        col,
+        "empty_strings",
+        empty_status,
+        if (any(non_na == "")) {
+          sprintf("%d empty string(s)", sum(non_na == ""))
+        } else {
+          "none"
+        }
+      ))
+    )
   }
 
   rows
@@ -278,7 +310,8 @@ print.creel_data_validation <- function(x, ...) {
       }
 
       for (i in seq_len(nrow(col_rows))) {
-        status_sym <- switch(col_rows$status[i], # nolint: object_usage_linter
+        status_sym <- switch(
+          col_rows$status[i], # nolint: object_usage_linter
           pass = cli::symbol$tick,
           warn = cli::symbol$warning,
           fail = cli::symbol$cross,

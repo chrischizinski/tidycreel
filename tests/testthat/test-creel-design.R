@@ -288,10 +288,15 @@ make_br_cal <- function() {
 }
 
 test_that("creel_design() accepts survey_type = 'bus_route' with valid inputs", {
-  d <- creel_design(make_br_cal(),
-    date = date, strata = day_type,
-    survey_type = "bus_route", sampling_frame = make_br_sf(),
-    site = site, p_site = p_site, p_period = p_period
+  d <- creel_design(
+    make_br_cal(),
+    date = date,
+    strata = day_type,
+    survey_type = "bus_route",
+    sampling_frame = make_br_sf(),
+    site = site,
+    p_site = p_site,
+    p_period = p_period
   )
 
   expect_s3_class(d, "creel_design")
@@ -300,10 +305,15 @@ test_that("creel_design() accepts survey_type = 'bus_route' with valid inputs", 
 })
 
 test_that("bus_route slot contains data frame with .pi_i column", {
-  d <- creel_design(make_br_cal(),
-    date = date, strata = day_type,
-    survey_type = "bus_route", sampling_frame = make_br_sf(),
-    site = site, p_site = p_site, p_period = p_period
+  d <- creel_design(
+    make_br_cal(),
+    date = date,
+    strata = day_type,
+    survey_type = "bus_route",
+    sampling_frame = make_br_sf(),
+    site = site,
+    p_site = p_site,
+    p_period = p_period
   )
 
   expect_true(is.data.frame(d$bus_route$data))
@@ -312,10 +322,15 @@ test_that("bus_route slot contains data frame with .pi_i column", {
 })
 
 test_that("bus_route slot stores correct column mappings", {
-  d <- creel_design(make_br_cal(),
-    date = date, strata = day_type,
-    survey_type = "bus_route", sampling_frame = make_br_sf(),
-    site = site, p_site = p_site, p_period = p_period
+  d <- creel_design(
+    make_br_cal(),
+    date = date,
+    strata = day_type,
+    survey_type = "bus_route",
+    sampling_frame = make_br_sf(),
+    site = site,
+    p_site = p_site,
+    p_period = p_period
   )
 
   expect_equal(d$bus_route$site_col, "site")
@@ -325,10 +340,15 @@ test_that("bus_route slot stores correct column mappings", {
 })
 
 test_that("omitting circuit column defaults to single .default circuit", {
-  d <- creel_design(make_br_cal(),
-    date = date, strata = day_type,
-    survey_type = "bus_route", sampling_frame = make_br_sf(),
-    site = site, p_site = p_site, p_period = p_period
+  d <- creel_design(
+    make_br_cal(),
+    date = date,
+    strata = day_type,
+    survey_type = "bus_route",
+    sampling_frame = make_br_sf(),
+    site = site,
+    p_site = p_site,
+    p_period = p_period
   )
 
   expect_equal(d$bus_route$circuit_col, ".circuit")
@@ -343,10 +363,16 @@ test_that("circuit column is respected when provided", {
     p_period = rep(c(0.4, 0.6), each = 3),
     stringsAsFactors = FALSE
   )
-  d <- creel_design(make_br_cal(),
-    date = date, strata = day_type,
-    survey_type = "bus_route", sampling_frame = sf,
-    site = site, p_site = p_site, circuit = route, p_period = p_period
+  d <- creel_design(
+    make_br_cal(),
+    date = date,
+    strata = day_type,
+    survey_type = "bus_route",
+    sampling_frame = sf,
+    site = site,
+    p_site = p_site,
+    circuit = route,
+    p_period = p_period
   )
 
   expect_equal(d$bus_route$circuit_col, "route")
@@ -355,13 +381,19 @@ test_that("circuit column is respected when provided", {
 
 test_that("p_period as scalar applies to all rows", {
   sf <- data.frame(
-    site = c("A", "B"), p_site = c(0.6, 0.4),
+    site = c("A", "B"),
+    p_site = c(0.6, 0.4),
     stringsAsFactors = FALSE
   )
-  d <- creel_design(make_br_cal(),
-    date = date, strata = day_type,
-    survey_type = "bus_route", sampling_frame = sf,
-    site = site, p_site = p_site, p_period = 0.25
+  d <- creel_design(
+    make_br_cal(),
+    date = date,
+    strata = day_type,
+    survey_type = "bus_route",
+    sampling_frame = sf,
+    site = site,
+    p_site = p_site,
+    p_period = 0.25
   )
 
   expect_true(all(d$bus_route$data$.p_period == 0.25))
@@ -370,22 +402,34 @@ test_that("p_period as scalar applies to all rows", {
 
 test_that("validation fails when p_site does not sum to 1.0 within circuit", {
   sf <- data.frame(
-    site = c("A", "B"), p_site = c(0.3, 0.4), p_period = 0.5,
+    site = c("A", "B"),
+    p_site = c(0.3, 0.4),
+    p_period = 0.5,
     stringsAsFactors = FALSE
   )
   expect_error(
-    creel_design(make_br_cal(),
-      date = date, strata = day_type,
-      survey_type = "bus_route", sampling_frame = sf,
-      site = site, p_site = p_site, p_period = p_period
+    creel_design(
+      make_br_cal(),
+      date = date,
+      strata = day_type,
+      survey_type = "bus_route",
+      sampling_frame = sf,
+      site = site,
+      p_site = p_site,
+      p_period = p_period
     ),
     class = "creel_error_invalid_input"
   )
   expect_error(
-    creel_design(make_br_cal(),
-      date = date, strata = day_type,
-      survey_type = "bus_route", sampling_frame = sf,
-      site = site, p_site = p_site, p_period = p_period
+    creel_design(
+      make_br_cal(),
+      date = date,
+      strata = day_type,
+      survey_type = "bus_route",
+      sampling_frame = sf,
+      site = site,
+      p_site = p_site,
+      p_period = p_period
     ),
     "sum to 1\\.0"
   )
@@ -400,10 +444,16 @@ test_that("validation error message includes circuit name and actual sum", {
     stringsAsFactors = FALSE
   )
   err <- tryCatch(
-    creel_design(make_br_cal(),
-      date = date, strata = day_type,
-      survey_type = "bus_route", sampling_frame = sf,
-      site = site, p_site = p_site, circuit = route, p_period = p_period
+    creel_design(
+      make_br_cal(),
+      date = date,
+      strata = day_type,
+      survey_type = "bus_route",
+      sampling_frame = sf,
+      site = site,
+      p_site = p_site,
+      circuit = route,
+      p_period = p_period
     ),
     error = function(e) conditionMessage(e)
   )
@@ -412,14 +462,21 @@ test_that("validation error message includes circuit name and actual sum", {
 
 test_that("validation fails when p_site value is zero", {
   sf <- data.frame(
-    site = c("A", "B", "C"), p_site = c(0.3, 0.0, 0.7), p_period = 0.5,
+    site = c("A", "B", "C"),
+    p_site = c(0.3, 0.0, 0.7),
+    p_period = 0.5,
     stringsAsFactors = FALSE
   )
   expect_error(
-    creel_design(make_br_cal(),
-      date = date, strata = day_type,
-      survey_type = "bus_route", sampling_frame = sf,
-      site = site, p_site = p_site, p_period = p_period
+    creel_design(
+      make_br_cal(),
+      date = date,
+      strata = day_type,
+      survey_type = "bus_route",
+      sampling_frame = sf,
+      site = site,
+      p_site = p_site,
+      p_period = p_period
     ),
     class = "creel_error_invalid_input"
   )
@@ -427,14 +484,21 @@ test_that("validation fails when p_site value is zero", {
 
 test_that("validation fails when p_site value exceeds 1", {
   sf <- data.frame(
-    site = c("A"), p_site = c(1.1), p_period = 0.5,
+    site = c("A"),
+    p_site = c(1.1),
+    p_period = 0.5,
     stringsAsFactors = FALSE
   )
   expect_error(
-    creel_design(make_br_cal(),
-      date = date, strata = day_type,
-      survey_type = "bus_route", sampling_frame = sf,
-      site = site, p_site = p_site, p_period = p_period
+    creel_design(
+      make_br_cal(),
+      date = date,
+      strata = day_type,
+      survey_type = "bus_route",
+      sampling_frame = sf,
+      site = site,
+      p_site = p_site,
+      p_period = p_period
     ),
     class = "creel_error_invalid_input"
   )
@@ -442,14 +506,21 @@ test_that("validation fails when p_site value exceeds 1", {
 
 test_that("validation fails when p_period value exceeds 1", {
   sf <- data.frame(
-    site = c("A", "B"), p_site = c(0.6, 0.4), p_period = c(0.5, 1.5),
+    site = c("A", "B"),
+    p_site = c(0.6, 0.4),
+    p_period = c(0.5, 1.5),
     stringsAsFactors = FALSE
   )
   expect_error(
-    creel_design(make_br_cal(),
-      date = date, strata = day_type,
-      survey_type = "bus_route", sampling_frame = sf,
-      site = site, p_site = p_site, p_period = p_period
+    creel_design(
+      make_br_cal(),
+      date = date,
+      strata = day_type,
+      survey_type = "bus_route",
+      sampling_frame = sf,
+      site = site,
+      p_site = p_site,
+      p_period = p_period
     ),
     class = "creel_error_invalid_input"
   )
@@ -457,9 +528,14 @@ test_that("validation fails when p_period value exceeds 1", {
 
 test_that("validation fails when sampling_frame is missing for bus_route", {
   expect_error(
-    creel_design(make_br_cal(),
-      date = date, strata = day_type,
-      survey_type = "bus_route", site = site, p_site = p_site, p_period = 0.5
+    creel_design(
+      make_br_cal(),
+      date = date,
+      strata = day_type,
+      survey_type = "bus_route",
+      site = site,
+      p_site = p_site,
+      p_period = 0.5
     ),
     class = "creel_error_invalid_input"
   )
@@ -475,17 +551,23 @@ test_that("p_site sums within 1e-6 tolerance are accepted", {
   )
   # Should not error (sum is 1.0 within floating point)
   expect_no_error(
-    creel_design(make_br_cal(),
-      date = date, strata = day_type,
-      survey_type = "bus_route", sampling_frame = sf,
-      site = site, p_site = p_site, p_period = p_period
+    creel_design(
+      make_br_cal(),
+      date = date,
+      strata = day_type,
+      survey_type = "bus_route",
+      sampling_frame = sf,
+      site = site,
+      p_site = p_site,
+      p_period = p_period
     )
   )
 })
 
 test_that("existing instantaneous designs still work with bus_route = NULL", {
   cal <- data.frame(
-    date = as.Date("2024-06-01"), day_type = "weekday",
+    date = as.Date("2024-06-01"),
+    day_type = "weekday",
     stringsAsFactors = FALSE
   )
   d <- creel_design(cal, date = date, strata = day_type)
@@ -495,10 +577,15 @@ test_that("existing instantaneous designs still work with bus_route = NULL", {
 })
 
 test_that("format.creel_design() includes Bus-Route section for bus_route designs", {
-  d <- creel_design(make_br_cal(),
-    date = date, strata = day_type,
-    survey_type = "bus_route", sampling_frame = make_br_sf(),
-    site = site, p_site = p_site, p_period = p_period
+  d <- creel_design(
+    make_br_cal(),
+    date = date,
+    strata = day_type,
+    survey_type = "bus_route",
+    sampling_frame = make_br_sf(),
+    site = site,
+    p_site = p_site,
+    p_period = p_period
   )
   out <- format(d)
 
@@ -509,7 +596,8 @@ test_that("format.creel_design() includes Bus-Route section for bus_route design
 
 test_that("format.creel_design() does not include Bus-Route section for instantaneous designs", {
   cal <- data.frame(
-    date = as.Date("2024-06-01"), day_type = "weekday",
+    date = as.Date("2024-06-01"),
+    day_type = "weekday",
     stringsAsFactors = FALSE
   )
   d <- creel_design(cal, date = date, strata = day_type)
@@ -519,10 +607,15 @@ test_that("format.creel_design() does not include Bus-Route section for instanta
 })
 
 test_that("get_sampling_frame() returns the stored data frame", {
-  d <- creel_design(make_br_cal(),
-    date = date, strata = day_type,
-    survey_type = "bus_route", sampling_frame = make_br_sf(),
-    site = site, p_site = p_site, p_period = p_period
+  d <- creel_design(
+    make_br_cal(),
+    date = date,
+    strata = day_type,
+    survey_type = "bus_route",
+    sampling_frame = make_br_sf(),
+    site = site,
+    p_site = p_site,
+    p_period = p_period
   )
   sf_out <- get_sampling_frame(d)
 
@@ -534,7 +627,8 @@ test_that("get_sampling_frame() returns the stored data frame", {
 
 test_that("get_sampling_frame() errors on non-bus-route design", {
   cal <- data.frame(
-    date = as.Date("2024-06-01"), day_type = "weekday",
+    date = as.Date("2024-06-01"),
+    day_type = "weekday",
     stringsAsFactors = FALSE
   )
   d <- creel_design(cal, date = date, strata = day_type)
@@ -568,10 +662,15 @@ test_that("golden test 1: single-circuit scalar p_period pi_i = p_site * p_perio
     p_site = c(0.20, 0.50, 0.30),
     stringsAsFactors = FALSE
   )
-  d <- creel_design(make_br_cal(),
-    date = date, strata = day_type,
-    survey_type = "bus_route", sampling_frame = sf,
-    site = site, p_site = p_site, p_period = 0.30
+  d <- creel_design(
+    make_br_cal(),
+    date = date,
+    strata = day_type,
+    survey_type = "bus_route",
+    sampling_frame = sf,
+    site = site,
+    p_site = p_site,
+    p_period = 0.30
   )
 
   expect_equal(d$bus_route$data$.pi_i, c(0.06, 0.15, 0.09), tolerance = 1e-10)
@@ -584,20 +683,31 @@ test_that("golden test 2: single-circuit column p_period pi_i = p_site * p_perio
     p_period = c(0.25, 0.25),
     stringsAsFactors = FALSE
   )
-  d <- creel_design(make_br_cal(),
-    date = date, strata = day_type,
-    survey_type = "bus_route", sampling_frame = sf,
-    site = site, p_site = p_site, p_period = p_period
+  d <- creel_design(
+    make_br_cal(),
+    date = date,
+    strata = day_type,
+    survey_type = "bus_route",
+    sampling_frame = sf,
+    site = site,
+    p_site = p_site,
+    p_period = p_period
   )
 
   expect_equal(d$bus_route$data$.pi_i, c(0.10, 0.15), tolerance = 1e-10)
 })
 
 test_that("golden test 3: multi-circuit varying p_site and p_period", {
-  d <- creel_design(make_br_cal(),
-    date = date, strata = day_type,
-    survey_type = "bus_route", sampling_frame = make_br_sf_2circuit(),
-    site = site, p_site = p_site, circuit = route, p_period = p_period
+  d <- creel_design(
+    make_br_cal(),
+    date = date,
+    strata = day_type,
+    survey_type = "bus_route",
+    sampling_frame = make_br_sf_2circuit(),
+    site = site,
+    p_site = p_site,
+    circuit = route,
+    p_period = p_period
   )
 
   expect_equal(d$bus_route$data$.pi_i, c(0.12, 0.28, 0.30, 0.20), tolerance = 1e-10)
@@ -610,10 +720,15 @@ test_that("golden test 4: boundary values p_site=1.0, p_period=1.0 -> pi_i=1.0 e
     p_period = c(1.0),
     stringsAsFactors = FALSE
   )
-  d <- creel_design(make_br_cal(),
-    date = date, strata = day_type,
-    survey_type = "bus_route", sampling_frame = sf,
-    site = site, p_site = p_site, p_period = p_period
+  d <- creel_design(
+    make_br_cal(),
+    date = date,
+    strata = day_type,
+    survey_type = "bus_route",
+    sampling_frame = sf,
+    site = site,
+    p_site = p_site,
+    p_period = p_period
   )
 
   expect_equal(d$bus_route$data$.pi_i, 1.0, tolerance = 1e-10)
@@ -629,10 +744,15 @@ test_that("p_period varying within single circuit errors with 'constant within e
     stringsAsFactors = FALSE
   )
   expect_error(
-    creel_design(make_br_cal(),
-      date = date, strata = day_type,
-      survey_type = "bus_route", sampling_frame = sf,
-      site = site, p_site = p_site, p_period = p_period
+    creel_design(
+      make_br_cal(),
+      date = date,
+      strata = day_type,
+      survey_type = "bus_route",
+      sampling_frame = sf,
+      site = site,
+      p_site = p_site,
+      p_period = p_period
     ),
     "constant within each circuit"
   )
@@ -647,18 +767,30 @@ test_that("p_period varying within one of two circuits errors mentioning failing
     stringsAsFactors = FALSE
   )
   expect_error(
-    creel_design(make_br_cal(),
-      date = date, strata = day_type,
-      survey_type = "bus_route", sampling_frame = sf,
-      site = site, p_site = p_site, circuit = route, p_period = p_period
+    creel_design(
+      make_br_cal(),
+      date = date,
+      strata = day_type,
+      survey_type = "bus_route",
+      sampling_frame = sf,
+      site = site,
+      p_site = p_site,
+      circuit = route,
+      p_period = p_period
     ),
     "constant within each circuit"
   )
   expect_error(
-    creel_design(make_br_cal(),
-      date = date, strata = day_type,
-      survey_type = "bus_route", sampling_frame = sf,
-      site = site, p_site = p_site, circuit = route, p_period = p_period
+    creel_design(
+      make_br_cal(),
+      date = date,
+      strata = day_type,
+      survey_type = "bus_route",
+      sampling_frame = sf,
+      site = site,
+      p_site = p_site,
+      circuit = route,
+      p_period = p_period
     ),
     "R2"
   )
@@ -674,10 +806,16 @@ test_that("different circuits with different but uniform p_period values succeed
     stringsAsFactors = FALSE
   )
   expect_no_error(
-    creel_design(make_br_cal(),
-      date = date, strata = day_type,
-      survey_type = "bus_route", sampling_frame = sf,
-      site = site, p_site = p_site, circuit = route, p_period = p_period
+    creel_design(
+      make_br_cal(),
+      date = date,
+      strata = day_type,
+      survey_type = "bus_route",
+      sampling_frame = sf,
+      site = site,
+      p_site = p_site,
+      circuit = route,
+      p_period = p_period
     )
   )
 })
@@ -689,10 +827,15 @@ test_that("scalar p_period always passes uniformity check", {
     stringsAsFactors = FALSE
   )
   expect_no_error(
-    creel_design(make_br_cal(),
-      date = date, strata = day_type,
-      survey_type = "bus_route", sampling_frame = sf,
-      site = site, p_site = p_site, p_period = 0.45
+    creel_design(
+      make_br_cal(),
+      date = date,
+      strata = day_type,
+      survey_type = "bus_route",
+      sampling_frame = sf,
+      site = site,
+      p_site = p_site,
+      p_period = 0.45
     )
   )
 })
@@ -700,10 +843,15 @@ test_that("scalar p_period always passes uniformity check", {
 # get_inclusion_probs() unit tests ----
 
 test_that("get_inclusion_probs() returns data frame with 3 correct columns for single-circuit design", {
-  d <- creel_design(make_br_cal(),
-    date = date, strata = day_type,
-    survey_type = "bus_route", sampling_frame = make_br_sf(),
-    site = site, p_site = p_site, p_period = p_period
+  d <- creel_design(
+    make_br_cal(),
+    date = date,
+    strata = day_type,
+    survey_type = "bus_route",
+    sampling_frame = make_br_sf(),
+    site = site,
+    p_site = p_site,
+    p_period = p_period
   )
   out <- get_inclusion_probs(d)
 
@@ -719,10 +867,15 @@ test_that("get_inclusion_probs() returns correct pi_i values matching bus_route$
     p_site = c(0.20, 0.50, 0.30),
     stringsAsFactors = FALSE
   )
-  d <- creel_design(make_br_cal(),
-    date = date, strata = day_type,
-    survey_type = "bus_route", sampling_frame = sf,
-    site = site, p_site = p_site, p_period = 0.30
+  d <- creel_design(
+    make_br_cal(),
+    date = date,
+    strata = day_type,
+    survey_type = "bus_route",
+    sampling_frame = sf,
+    site = site,
+    p_site = p_site,
+    p_period = 0.30
   )
   out <- get_inclusion_probs(d)
 
@@ -731,10 +884,16 @@ test_that("get_inclusion_probs() returns correct pi_i values matching bus_route$
 })
 
 test_that("get_inclusion_probs() multi-circuit returns correct site, circuit, and pi_i columns", {
-  d <- creel_design(make_br_cal(),
-    date = date, strata = day_type,
-    survey_type = "bus_route", sampling_frame = make_br_sf_2circuit(),
-    site = site, p_site = p_site, circuit = route, p_period = p_period
+  d <- creel_design(
+    make_br_cal(),
+    date = date,
+    strata = day_type,
+    survey_type = "bus_route",
+    sampling_frame = make_br_sf_2circuit(),
+    site = site,
+    p_site = p_site,
+    circuit = route,
+    p_period = p_period
   )
   out <- get_inclusion_probs(d)
 
@@ -746,7 +905,8 @@ test_that("get_inclusion_probs() multi-circuit returns correct site, circuit, an
 
 test_that("get_inclusion_probs() on non-bus-route design errors with 'only available for bus-route'", {
   cal <- data.frame(
-    date = as.Date("2024-06-01"), day_type = "weekday",
+    date = as.Date("2024-06-01"),
+    day_type = "weekday",
     stringsAsFactors = FALSE
   )
   d <- creel_design(cal, date = date, strata = day_type)
@@ -775,10 +935,15 @@ test_that("range invariant: all pi_i values in (0,1] for edge-case probability c
     p_period = c(0.99, 0.99),
     stringsAsFactors = FALSE
   )
-  d1 <- creel_design(make_br_cal(),
-    date = date, strata = day_type,
-    survey_type = "bus_route", sampling_frame = sf1,
-    site = site, p_site = p_site, p_period = p_period
+  d1 <- creel_design(
+    make_br_cal(),
+    date = date,
+    strata = day_type,
+    survey_type = "bus_route",
+    sampling_frame = sf1,
+    site = site,
+    p_site = p_site,
+    p_period = p_period
   )
   pi_i_1 <- d1$bus_route$data$.pi_i
   expect_true(all(pi_i_1 > 0))
@@ -792,10 +957,15 @@ test_that("range invariant: all pi_i values in (0,1] for edge-case probability c
     p_period = c(0.01, 0.01),
     stringsAsFactors = FALSE
   )
-  d2 <- creel_design(make_br_cal(),
-    date = date, strata = day_type,
-    survey_type = "bus_route", sampling_frame = sf2,
-    site = site, p_site = p_site, p_period = p_period
+  d2 <- creel_design(
+    make_br_cal(),
+    date = date,
+    strata = day_type,
+    survey_type = "bus_route",
+    sampling_frame = sf2,
+    site = site,
+    p_site = p_site,
+    p_period = p_period
   )
   pi_i_2 <- d2$bus_route$data$.pi_i
   expect_true(all(pi_i_2 > 0))
@@ -811,10 +981,15 @@ test_that("vectorization consistency: 5-site design with varying p_site and scal
     p_site = p_sites,
     stringsAsFactors = FALSE
   )
-  d <- creel_design(make_br_cal(),
-    date = date, strata = day_type,
-    survey_type = "bus_route", sampling_frame = sf,
-    site = site, p_site = p_site, p_period = p_period_val
+  d <- creel_design(
+    make_br_cal(),
+    date = date,
+    strata = day_type,
+    survey_type = "bus_route",
+    sampling_frame = sf,
+    site = site,
+    p_site = p_site,
+    p_period = p_period_val
   )
 
   expected_pi_i <- p_sites * p_period_val
@@ -872,9 +1047,11 @@ test_that("format.creel_design() shows area when area_col registered", {
     area_ha = c(100.0, 200.0),
     stringsAsFactors = FALSE
   )
-  design2 <- add_sections(design, secs,
+  design2 <- add_sections(
+    design,
+    secs,
     section_col = section, # nolint: object_usage_linter
-    area_col    = area_ha # nolint: object_usage_linter
+    area_col = area_ha # nolint: object_usage_linter
   )
   output <- format(design2)
   expect_true(any(grepl("ha", output)))
@@ -892,27 +1069,23 @@ make_enum_cal <- function() {
 
 test_that("creel_design() aborts with creel_error_invalid_survey_type for unknown survey_type", {
   expect_error(
-    creel_design(make_enum_cal(),
-      date = date, strata = day_type,
-      survey_type = "unknown_type"
-    ),
+    creel_design(make_enum_cal(), date = date, strata = day_type, survey_type = "unknown_type"),
     class = "creel_error_invalid_survey_type"
   )
 })
 
 test_that("enum guard error message names the bad survey_type value", {
   expect_error(
-    creel_design(make_enum_cal(),
-      date = date, strata = day_type,
-      survey_type = "unknown_type"
-    ),
+    creel_design(make_enum_cal(), date = date, strata = day_type, survey_type = "unknown_type"),
     "unknown_type"
   )
 })
 
 test_that("creel_design() accepts survey_type = 'ice' with effort_type and returns creel_design", {
-  d <- creel_design(make_enum_cal(),
-    date = date, strata = day_type,
+  d <- creel_design(
+    make_enum_cal(),
+    date = date,
+    strata = day_type,
     survey_type = "ice",
     effort_type = "time_on_ice",
     p_period = 0.5
@@ -922,8 +1095,10 @@ test_that("creel_design() accepts survey_type = 'ice' with effort_type and retur
 })
 
 test_that("creel_design() accepts survey_type = 'camera' and returns creel_design", {
-  d <- creel_design(make_enum_cal(),
-    date = date, strata = day_type,
+  d <- creel_design(
+    make_enum_cal(),
+    date = date,
+    strata = day_type,
     survey_type = "camera",
     camera_mode = "counter"
   )
@@ -932,8 +1107,10 @@ test_that("creel_design() accepts survey_type = 'camera' and returns creel_desig
 })
 
 test_that("creel_design() accepts survey_type = 'aerial' and returns creel_design", {
-  d <- creel_design(make_enum_cal(),
-    date = date, strata = day_type,
+  d <- creel_design(
+    make_enum_cal(),
+    date = date,
+    strata = day_type,
     survey_type = "aerial",
     h_open = 14
   )
@@ -952,8 +1129,10 @@ make_ice_cal <- function() {
 }
 
 test_that("ICE-01: creel_design(ice, effort_type='time_on_ice', p_period=0.5) constructs non-NULL ice slot", {
-  d <- creel_design(make_ice_cal(),
-    date = date, strata = day_type,
+  d <- creel_design(
+    make_ice_cal(),
+    date = date,
+    strata = day_type,
     survey_type = "ice",
     effort_type = "time_on_ice",
     p_period = 0.5
@@ -963,8 +1142,10 @@ test_that("ICE-01: creel_design(ice, effort_type='time_on_ice', p_period=0.5) co
 })
 
 test_that("ICE-01: design$ice$effort_type stores 'active_fishing_time' when supplied", {
-  d <- creel_design(make_ice_cal(),
-    date = date, strata = day_type,
+  d <- creel_design(
+    make_ice_cal(),
+    date = date,
+    strata = day_type,
     survey_type = "ice",
     effort_type = "active_fishing_time",
     p_period = 0.5
@@ -979,8 +1160,10 @@ test_that("ICE-01: creel_design(ice) with valid sampling_frame (all p_site==1.0)
     p_period = 0.5,
     stringsAsFactors = FALSE
   )
-  d <- creel_design(make_ice_cal(),
-    date = date, strata = day_type,
+  d <- creel_design(
+    make_ice_cal(),
+    date = date,
+    strata = day_type,
     survey_type = "ice",
     effort_type = "time_on_ice",
     sampling_frame = sf,
@@ -998,8 +1181,10 @@ test_that("ICE-01: creel_design(ice) aborts with cli_abort when any p_site != 1.
     stringsAsFactors = FALSE
   )
   expect_error(
-    creel_design(make_ice_cal(),
-      date = date, strata = day_type,
+    creel_design(
+      make_ice_cal(),
+      date = date,
+      strata = day_type,
       survey_type = "ice",
       effort_type = "time_on_ice",
       sampling_frame = sf_bad,
@@ -1017,8 +1202,10 @@ test_that("ICE-01: p_site enforcement error message names offending row indices"
     stringsAsFactors = FALSE
   )
   expect_error(
-    creel_design(make_ice_cal(),
-      date = date, strata = day_type,
+    creel_design(
+      make_ice_cal(),
+      date = date,
+      strata = day_type,
       survey_type = "ice",
       effort_type = "time_on_ice",
       sampling_frame = sf_bad,
@@ -1032,8 +1219,10 @@ test_that("ICE-01: p_site enforcement error message names offending row indices"
 
 test_that("ICE-02: creel_design(ice) without effort_type aborts with cli_abort", {
   expect_error(
-    creel_design(make_ice_cal(),
-      date = date, strata = day_type,
+    creel_design(
+      make_ice_cal(),
+      date = date,
+      strata = day_type,
       survey_type = "ice",
       p_period = 0.5
     ),
@@ -1043,8 +1232,10 @@ test_that("ICE-02: creel_design(ice) without effort_type aborts with cli_abort",
 
 test_that("ICE-02: creel_design(ice) with unknown effort_type aborts with informative message", {
   expect_error(
-    creel_design(make_ice_cal(),
-      date = date, strata = day_type,
+    creel_design(
+      make_ice_cal(),
+      date = date,
+      strata = day_type,
       survey_type = "ice",
       effort_type = "unknown_type",
       p_period = 0.5
@@ -1056,9 +1247,11 @@ test_that("ICE-02: creel_design(ice) with unknown effort_type aborts with inform
 # ICE-04: add_interviews() ice path ----
 
 make_ice_design_no_sf <- function() {
-  creel_design( # nolint: object_usage_linter
+  creel_design(
+    # nolint: object_usage_linter
     make_ice_cal(),
-    date = date, strata = day_type, # nolint: object_usage_linter
+    date = date,
+    strata = day_type, # nolint: object_usage_linter
     survey_type = "ice",
     effort_type = "time_on_ice",
     p_period = 0.5
@@ -1155,8 +1348,10 @@ make_cam_cal <- function() {
 # CAM-01: counter mode construction ----
 
 test_that("CAM-01: creel_design(camera, counter) constructs without error", {
-  d <- creel_design(make_cam_cal(),
-    date = date, strata = day_type,
+  d <- creel_design(
+    make_cam_cal(),
+    date = date,
+    strata = day_type,
     survey_type = "camera",
     camera_mode = "counter"
   )
@@ -1167,28 +1362,24 @@ test_that("CAM-01: creel_design(camera, counter) constructs without error", {
 
 test_that("CAM-01: creel_design(camera) without camera_mode aborts with cli_abort", {
   expect_error(
-    creel_design(make_cam_cal(),
-      date = date, strata = day_type,
-      survey_type = "camera"
-    ),
+    creel_design(make_cam_cal(), date = date, strata = day_type, survey_type = "camera"),
     class = "rlang_error"
   )
 })
 
 test_that("CAM-01: camera_mode absent error message names valid values", {
   expect_error(
-    creel_design(make_cam_cal(),
-      date = date, strata = day_type,
-      survey_type = "camera"
-    ),
+    creel_design(make_cam_cal(), date = date, strata = day_type, survey_type = "camera"),
     regexp = "counter|ingress_egress"
   )
 })
 
 test_that("CAM-01: creel_design(camera, bad_mode) aborts naming the bad value", {
   expect_error(
-    creel_design(make_cam_cal(),
-      date = date, strata = day_type,
+    creel_design(
+      make_cam_cal(),
+      date = date,
+      strata = day_type,
       survey_type = "camera",
       camera_mode = "unknown_mode"
     ),
@@ -1199,8 +1390,10 @@ test_that("CAM-01: creel_design(camera, bad_mode) aborts naming the bad value", 
 # CAM-02: ingress_egress mode construction ----
 
 test_that("CAM-02: creel_design(camera, ingress_egress) constructs without error", {
-  d <- creel_design(make_cam_cal(),
-    date = date, strata = day_type,
+  d <- creel_design(
+    make_cam_cal(),
+    date = date,
+    strata = day_type,
     survey_type = "camera",
     camera_mode = "ingress_egress"
   )
@@ -1214,21 +1407,32 @@ make_cam_timestamps <- function() {
   base_date <- as.Date("2024-06-01")
   data.frame(
     survey_date = rep(c(base_date, base_date + 1), each = 2L),
-    ingress_time = as.POSIXct(c(
-      "2024-06-01 06:00:00", "2024-06-01 09:00:00",
-      "2024-06-02 07:00:00", "2024-06-02 10:30:00"
-    ), tz = "UTC"),
-    egress_time = as.POSIXct(c(
-      "2024-06-01 08:00:00", "2024-06-01 11:00:00",
-      "2024-06-02 09:00:00", "2024-06-02 13:00:00"
-    ), tz = "UTC"),
+    ingress_time = as.POSIXct(
+      c(
+        "2024-06-01 06:00:00",
+        "2024-06-01 09:00:00",
+        "2024-06-02 07:00:00",
+        "2024-06-02 10:30:00"
+      ),
+      tz = "UTC"
+    ),
+    egress_time = as.POSIXct(
+      c(
+        "2024-06-01 08:00:00",
+        "2024-06-01 11:00:00",
+        "2024-06-02 09:00:00",
+        "2024-06-02 13:00:00"
+      ),
+      tz = "UTC"
+    ),
     stringsAsFactors = FALSE
   )
 }
 
 test_that("CAM-02: preprocess_camera_timestamps() returns data frame with date + daily_effort_hours", {
   ts <- make_cam_timestamps()
-  result <- preprocess_camera_timestamps(ts,
+  result <- preprocess_camera_timestamps(
+    ts,
     date_col = survey_date,
     ingress_col = ingress_time,
     egress_col = egress_time
@@ -1241,7 +1445,8 @@ test_that("CAM-02: preprocess_camera_timestamps() returns data frame with date +
 
 test_that("CAM-02: preprocess_camera_timestamps() aggregates hours correctly", {
   ts <- make_cam_timestamps()
-  result <- preprocess_camera_timestamps(ts,
+  result <- preprocess_camera_timestamps(
+    ts,
     date_col = survey_date,
     ingress_col = ingress_time,
     egress_col = egress_time
@@ -1257,7 +1462,8 @@ test_that("CAM-02: preprocess_camera_timestamps() warns on egress < ingress and 
   # Make one row have egress before ingress
   ts$egress_time[2L] <- ts$ingress_time[2L] - 3600
   expect_warning(
-    result <- preprocess_camera_timestamps(ts,
+    result <- preprocess_camera_timestamps(
+      ts,
       date_col = survey_date,
       ingress_col = ingress_time,
       egress_col = egress_time
@@ -1274,8 +1480,14 @@ test_that("CAM-02: preprocess_camera_timestamps() warns on egress < ingress and 
 make_aerial_cal <- function() {
   data.frame(
     date = as.Date(c(
-      "2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04",
-      "2024-06-08", "2024-06-09", "2024-06-15", "2024-06-16"
+      "2024-06-01",
+      "2024-06-02",
+      "2024-06-03",
+      "2024-06-04",
+      "2024-06-08",
+      "2024-06-09",
+      "2024-06-15",
+      "2024-06-16"
     )),
     day_type = rep(c("weekday", "weekend"), each = 4L),
     stringsAsFactors = FALSE
@@ -1284,8 +1496,10 @@ make_aerial_cal <- function() {
 
 describe("Phase 47: Aerial constructor", {
   it("AIR-01: creel_design(survey_type = 'aerial', h_open = 14) constructs; design$aerial$h_open == 14", {
-    d <- creel_design(make_aerial_cal(),
-      date = date, strata = day_type,
+    d <- creel_design(
+      make_aerial_cal(),
+      date = date,
+      strata = day_type,
       survey_type = "aerial",
       h_open = 14
     )
@@ -1296,18 +1510,17 @@ describe("Phase 47: Aerial constructor", {
 
   it("AIR-01: creel_design(survey_type = 'aerial') without h_open aborts with cli_abort()", {
     expect_error(
-      creel_design(make_aerial_cal(),
-        date = date, strata = day_type,
-        survey_type = "aerial"
-      ),
+      creel_design(make_aerial_cal(), date = date, strata = day_type, survey_type = "aerial"),
       regexp = "h_open"
     )
   })
 
   it("AIR-01: creel_design(survey_type = 'aerial', h_open = -1) aborts with informative message", {
     expect_error(
-      creel_design(make_aerial_cal(),
-        date = date, strata = day_type,
+      creel_design(
+        make_aerial_cal(),
+        date = date,
+        strata = day_type,
         survey_type = "aerial",
         h_open = -1
       ),
@@ -1316,8 +1529,10 @@ describe("Phase 47: Aerial constructor", {
   })
 
   it("AIR-03: creel_design(survey_type = 'aerial', h_open = 14, visibility_correction = 0.85) constructs", {
-    d <- creel_design(make_aerial_cal(),
-      date = date, strata = day_type,
+    d <- creel_design(
+      make_aerial_cal(),
+      date = date,
+      strata = day_type,
       survey_type = "aerial",
       h_open = 14,
       visibility_correction = 0.85
@@ -1327,8 +1542,10 @@ describe("Phase 47: Aerial constructor", {
 
   it("AIR-03: visibility_correction = 1.5 aborts (outside (0, 1])", {
     expect_error(
-      creel_design(make_aerial_cal(),
-        date = date, strata = day_type,
+      creel_design(
+        make_aerial_cal(),
+        date = date,
+        strata = day_type,
         survey_type = "aerial",
         h_open = 14,
         visibility_correction = 1.5
@@ -1339,8 +1556,10 @@ describe("Phase 47: Aerial constructor", {
 
   it("AIR-03: visibility_correction = 0 aborts (not > 0)", {
     expect_error(
-      creel_design(make_aerial_cal(),
-        date = date, strata = day_type,
+      creel_design(
+        make_aerial_cal(),
+        date = date,
+        strata = day_type,
         survey_type = "aerial",
         h_open = 14,
         visibility_correction = 0
@@ -1350,12 +1569,64 @@ describe("Phase 47: Aerial constructor", {
   })
 
   it("AIR-01: design$design_type == 'aerial' after construction", {
-    d <- creel_design(make_aerial_cal(),
-      date = date, strata = day_type,
+    d <- creel_design(
+      make_aerial_cal(),
+      date = date,
+      strata = day_type,
       survey_type = "aerial",
       h_open = 14
     )
     expect_equal(d$design_type, "aerial")
+  })
+
+  it("AIR-04: open_start stored in design$aerial$open_start", {
+    d <- creel_design(
+      make_aerial_cal(),
+      date = date,
+      strata = day_type,
+      survey_type = "aerial",
+      h_open = 14,
+      open_start = 5.5
+    )
+    expect_equal(d$aerial$open_start, 5.5)
+  })
+
+  it("AIR-04: open_start = NULL stored as NULL in design$aerial", {
+    d <- creel_design(
+      make_aerial_cal(),
+      date = date,
+      strata = day_type,
+      survey_type = "aerial",
+      h_open = 14
+    )
+    expect_null(d$aerial$open_start)
+  })
+
+  it("AIR-04: open_start = -1 aborts (not non-negative)", {
+    expect_error(
+      creel_design(
+        make_aerial_cal(),
+        date = date,
+        strata = day_type,
+        survey_type = "aerial",
+        h_open = 14,
+        open_start = -1
+      ),
+      regexp = "open_start"
+    )
+  })
+
+  it("AIR-04: open_start = 0 is accepted (midnight opening)", {
+    expect_no_error(
+      creel_design(
+        make_aerial_cal(),
+        date = date,
+        strata = day_type,
+        survey_type = "aerial",
+        h_open = 14,
+        open_start = 0
+      )
+    )
   })
 })
 
@@ -1371,9 +1642,13 @@ test_that("DIAG-WGHT-01: bus-route design with NA p_site aborts naming p_site", 
   expect_error(
     creel_design(
       make_br_cal(),
-      date = date, strata = day_type,
-      survey_type = "bus_route", sampling_frame = sf_na,
-      site = site, p_site = p_site, p_period = p_period
+      date = date,
+      strata = day_type,
+      survey_type = "bus_route",
+      sampling_frame = sf_na,
+      site = site,
+      p_site = p_site,
+      p_period = p_period
     ),
     regexp = "p_site"
   )
@@ -1389,9 +1664,13 @@ test_that("DIAG-WGHT-02: bus-route design with NA p_period aborts naming p_perio
   expect_error(
     creel_design(
       make_br_cal(),
-      date = date, strata = day_type,
-      survey_type = "bus_route", sampling_frame = sf_na,
-      site = site, p_site = p_site, p_period = p_period
+      date = date,
+      strata = day_type,
+      survey_type = "bus_route",
+      sampling_frame = sf_na,
+      site = site,
+      p_site = p_site,
+      p_period = p_period
     ),
     regexp = "p_period"
   )
@@ -1407,10 +1686,50 @@ test_that("DIAG-WGHT-03: bus-route design with p_site = 0 aborts (zero probabili
   expect_error(
     creel_design(
       make_br_cal(),
-      date = date, strata = day_type,
-      survey_type = "bus_route", sampling_frame = sf_zero,
-      site = site, p_site = p_site, p_period = p_period
+      date = date,
+      strata = day_type,
+      survey_type = "bus_route",
+      sampling_frame = sf_zero,
+      site = site,
+      p_site = p_site,
+      p_period = p_period
     ),
     regexp = "p_site"
   )
+})
+
+# T2-A: add_interviews() multi-strata join (no date-only duplication) ----
+
+test_that("T2A-01: add_interviews() joins on shared strata cols, not date alone", {
+  # Two sites per date: date-only join would duplicate each interview row.
+  cal <- data.frame(
+    date = rep(as.Date(c("2024-06-01", "2024-06-02")), each = 2),
+    day_type = rep(c("weekend", "weekday"), each = 2),
+    site = rep(c("A", "B"), times = 2),
+    .N = 10L,
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design(
+    cal,
+    date = date,
+    strata = c(day_type, site)
+  )
+  interviews <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-02")),
+    day_type = c("weekend", "weekday"),
+    site = c("A", "B"),
+    catch = c(2L, 1L),
+    effort = c(2.0, 1.5),
+    trip_status = c("complete", "complete"),
+    stringsAsFactors = FALSE
+  )
+  result <- suppressWarnings(add_interviews(
+    design,
+    interviews,
+    catch = catch,
+    effort = effort,
+    trip_status = trip_status
+  ))
+  # No duplication: one row per interview
+  expect_equal(nrow(result$interviews), nrow(interviews))
 })

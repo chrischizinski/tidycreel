@@ -4,7 +4,7 @@
 \alias{write_schedule}
 \title{Write a creel schedule to a CSV or xlsx file}
 \usage{
-write_schedule(schedule, path, format = c("csv", "xlsx"))
+write_schedule(schedule, path, format = c("csv", "xlsx"), overwrite = FALSE)
 }
 \arguments{
 \item{schedule}{A \code{creel_schedule} object (or plain data frame) to export.}
@@ -15,6 +15,9 @@ write_schedule(schedule, path, format = c("csv", "xlsx"))
 is written with \code{\link[utils:write.table]{utils::write.csv()}} (no row names). When \code{"xlsx"},
 \code{\link[writexl:write_xlsx]{writexl::write_xlsx()}} is used behind an \code{\link[rlang:is_installed]{rlang::check_installed()}}
 guard.}
+
+\item{overwrite}{Logical. If \code{FALSE} (default), aborts with an error when
+\code{path} already exists. Set \code{TRUE} to replace an existing file.}
 }
 \value{
 \code{path}, returned invisibly.
@@ -37,7 +40,7 @@ write_schedule(sched, tmp)
 
 }
 \seealso{
-Other "Scheduling": 
+Other "Scheduling":
 \code{\link{attach_count_times}()},
 \code{\link{generate_bus_schedule}()},
 \code{\link{generate_count_times}()},

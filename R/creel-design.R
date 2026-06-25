@@ -152,6 +152,14 @@ VALID_SURVEY_TYPES <- c("instantaneous", "bus_route", "ice", "camera", "aerial")
 #'   aircraft. Used only when `survey_type = "aerial"`. Defaults to `1.0`
 #'   (all anglers visible) when `NULL`. A value of 0.85 means 85% of anglers
 #'   are detected; the effort estimate is scaled up by \eqn{1 / 0.85}.
+#' @param open_start Optional non-negative numeric scalar specifying the
+#'   hour of day (decimal, 24-hour clock) when the fishery opens. Used only
+#'   when `survey_type = "aerial"` and only by [estimate_effort_aerial_glmm()]
+#'   to anchor the numerical integration window. If `NULL` (default), the
+#'   GLMM estimator derives the window start from the earliest observed flight
+#'   time minus 0.5 hours, with an informational message. Supplying
+#'   `open_start` fixes the window across surveys for consistent comparisons.
+#'   Example: `open_start = 5.5` means fishing begins at 5:30 AM.
 #'
 #' @return A `creel_design` S3 object (list) with components:
 #'   \item{calendar}{The original calendar data frame}
@@ -246,20 +254,23 @@ VALID_SURVEY_TYPES <- c("instantaneous", "bus_route", "ice", "camera", "aerial")
 #'
 #' @family "Survey Design"
 #' @export
-creel_design <- function(calendar,
-                         date,
-                         strata,
-                         site = NULL,
-                         design_type = "instantaneous",
-                         survey_type = design_type,
-                         sampling_frame = NULL,
-                         p_site = NULL,
-                         p_period = NULL,
-                         circuit = NULL,
-                         effort_type = NULL,
-                         camera_mode = NULL,
-                         h_open = NULL,
-                         visibility_correction = NULL) {
+creel_design <- function(
+  calendar,
+  date,
+  strata,
+  site = NULL,
+  design_type = "instantaneous",
+  survey_type = design_type,
+  sampling_frame = NULL,
+  p_site = NULL,
+  p_period = NULL,
+  circuit = NULL,
+  effort_type = NULL,
+  camera_mode = NULL,
+  h_open = NULL,
+  visibility_correction = NULL,
+  open_start = NULL
+) {
   # 1. Structural validation (Phase 1 validator)
   validate_calendar_schema(calendar) # nolint: object_usage_linter
 
@@ -356,7 +367,12 @@ creel_design <- function(calendar,
       # Try as column selector first; if it fails, evaluate as expression (scalar numeric)
       tryCatch(
         {
-          p_period_col <- resolve_single_col(p_period_quo, sampling_frame, "p_period", rlang::caller_env())
+          p_period_col <- resolve_single_col(
+            p_period_quo,
+            sampling_frame,
+            "p_period",
+            rlang::caller_env()
+          )
         },
         error = function(e) {
           val <- rlang::eval_tidy(p_period_quo)
@@ -402,12 +418,12 @@ creel_design <- function(calendar,
 
     # Store resolved column mappings alongside the data
     bus_route <- list(
-      data         = br_df,
-      site_col     = site_frame_col,
-      circuit_col  = circuit_col,
-      p_site_col   = p_site_col,
+      data = br_df,
+      site_col = site_frame_col,
+      circuit_col = circuit_col,
+      p_site_col = p_site_col,
       p_period_col = p_period_col,
-      pi_i_col     = ".pi_i"
+      pi_i_col = ".pi_i"
     )
   }
 
@@ -434,7 +450,12 @@ creel_design <- function(calendar,
       p_site_quo_ice <- rlang::enquo(p_site)
       p_site_col_ice <- NULL
       if (!rlang::quo_is_null(p_site_quo_ice)) {
-        p_site_col_ice <- resolve_single_col(p_site_quo_ice, sampling_frame, "p_site", rlang::caller_env())
+        p_site_col_ice <- resolve_single_col(
+          p_site_quo_ice,
+          sampling_frame,
+          "p_site",
+          rlang::caller_env()
+        )
       } else if ("p_site" %in% names(sampling_frame)) {
         p_site_col_ice <- "p_site"
       }
@@ -460,7 +481,10 @@ creel_design <- function(calendar,
         tryCatch(
           {
             p_period_ice_col <- resolve_single_col(
-              p_period_quo_ice, sampling_frame, "p_period", rlang::caller_env()
+              p_period_quo_ice,
+              sampling_frame,
+              "p_period",
+              rlang::caller_env()
             )
           },
           error = function(e) {
@@ -493,7 +517,10 @@ creel_design <- function(calendar,
         tryCatch(
           {
             site_frame_col_ice <- resolve_single_col(
-              site_quo, sampling_frame, "site", rlang::caller_env()
+              site_quo,
+              sampling_frame,
+              "site",
+              rlang::caller_env()
             )
           },
           error = function(e) NULL
@@ -514,12 +541,12 @@ creel_design <- function(calendar,
       ice_sf[[".pi_i"]] <- ice_sf[[p_period_ice_col]]
 
       bus_route <- list(
-        data         = ice_sf,
-        site_col     = site_frame_col_ice,
-        circuit_col  = circuit_col_ice,
-        p_site_col   = NULL,
+        data = ice_sf,
+        site_col = site_frame_col_ice,
+        circuit_col = circuit_col_ice,
+        p_site_col = NULL,
         p_period_col = p_period_ice_col,
-        pi_i_col     = ".pi_i"
+        pi_i_col = ".pi_i"
       )
     } else {
       # No sampling_frame: build single-site synthetic bus_route frame
@@ -532,21 +559,21 @@ creel_design <- function(calendar,
         stringsAsFactors = FALSE
       )
       bus_route <- list(
-        data         = ice_sf,
-        site_col     = ".ice_site",
-        circuit_col  = ".circuit",
-        p_site_col   = NULL,
+        data = ice_sf,
+        site_col = ".ice_site",
+        circuit_col = ".circuit",
+        p_site_col = NULL,
         p_period_col = ".p_period",
-        pi_i_col     = ".pi_i"
+        pi_i_col = ".pi_i"
       )
     }
 
     # (d) Build ice slot
     ice <- list(
-      survey_type    = "ice",
-      effort_type    = effort_type,
-      p_period_col   = if (!is.null(p_period_ice_col)) p_period_ice_col else ".p_period",
-      pi_i_col       = ".pi_i"
+      survey_type = "ice",
+      effort_type = effort_type,
+      p_period_col = if (!is.null(p_period_ice_col)) p_period_ice_col else ".p_period",
+      pi_i_col = ".pi_i"
     )
     if (!is.null(p_period_ice_scalar)) {
       ice$p_period_scalar <- p_period_ice_scalar
@@ -587,12 +614,11 @@ creel_design <- function(calendar,
       ))
     }
     # visibility_correction validation: optional, must be in (0, 1] if supplied
-    vc_bad <- !is.null(visibility_correction) && (
-      !is.numeric(visibility_correction) ||
+    vc_bad <- !is.null(visibility_correction) &&
+      (!is.numeric(visibility_correction) ||
         length(visibility_correction) != 1L ||
         visibility_correction <= 0 ||
-        visibility_correction > 1
-    )
+        visibility_correction > 1)
     if (vc_bad) {
       cli::cli_abort(c(
         "{.arg visibility_correction} must be a single numeric value in (0, 1].",
@@ -600,24 +626,36 @@ creel_design <- function(calendar,
         "i" = "Valid range: 0 < {.arg visibility_correction} <= 1."
       ))
     }
+    # open_start validation: optional, must be non-negative numeric scalar if supplied
+    if (
+      !is.null(open_start) &&
+        (!is.numeric(open_start) || length(open_start) != 1L || open_start < 0)
+    ) {
+      cli::cli_abort(c(
+        "{.arg open_start} must be a single non-negative number (decimal hours).",
+        "x" = "Supplied value {.val {open_start}} is invalid.",
+        "i" = "Example: {.code open_start = 5.5} means fishing begins at 5:30 AM."
+      ))
+    }
     aerial <- list(
-      survey_type           = "aerial",
-      h_open                = h_open,
-      visibility_correction = visibility_correction
+      survey_type = "aerial",
+      h_open = h_open,
+      visibility_correction = visibility_correction,
+      open_start = open_start
     )
   }
 
   # 3. Construct and validate
   design <- new_creel_design(
-    calendar    = calendar,
-    date_col    = date_col,
+    calendar = calendar,
+    date_col = date_col,
     strata_cols = strata_cols,
-    site_col    = site_col,
+    site_col = site_col,
     design_type = survey_type,
-    bus_route   = bus_route,
-    ice         = ice,
-    camera      = camera,
-    aerial      = aerial
+    bus_route = bus_route,
+    ice = ice,
+    camera = camera,
+    aerial = aerial
   )
   validate_creel_design(design)
 }
@@ -640,15 +678,17 @@ creel_design <- function(calendar,
 #'
 #' @keywords internal
 #' @noRd
-new_creel_design <- function(calendar,
-                             date_col,
-                             strata_cols,
-                             site_col = NULL,
-                             design_type = "instantaneous",
-                             bus_route = NULL,
-                             ice = NULL,
-                             camera = NULL,
-                             aerial = NULL) {
+new_creel_design <- function(
+  calendar,
+  date_col,
+  strata_cols,
+  site_col = NULL,
+  design_type = "instantaneous",
+  bus_route = NULL,
+  ice = NULL,
+  camera = NULL,
+  aerial = NULL
+) {
   stopifnot(is.data.frame(calendar))
   stopifnot(is.character(date_col), length(date_col) == 1)
   stopifnot(is.character(strata_cols), length(strata_cols) >= 1)
@@ -661,18 +701,18 @@ new_creel_design <- function(calendar,
 
   structure(
     list(
-      calendar    = calendar,
-      date_col    = date_col,
+      calendar = calendar,
+      date_col = date_col,
       strata_cols = strata_cols,
-      site_col    = site_col,
+      site_col = site_col,
       design_type = design_type,
-      counts      = NULL,
-      survey      = NULL,
-      bus_route   = bus_route, # NULL for non-bus_route designs
-      ice         = ice, # NULL for non-ice designs
-      camera      = camera, # NULL for non-camera designs
-      aerial      = aerial, # NULL for non-aerial designs
-      sections    = NULL,
+      counts = NULL,
+      survey = NULL,
+      bus_route = bus_route, # NULL for non-bus_route designs
+      ice = ice, # NULL for non-ice designs
+      camera = camera, # NULL for non-camera designs
+      aerial = aerial, # NULL for non-aerial designs
+      sections = NULL,
       section_col = NULL
     ),
     class = "creel_design"
@@ -1041,11 +1081,16 @@ resolve_multi_cols <- function(expr, data, arg_name, error_call = rlang::caller_
 #'
 #' @family "Survey Design"
 #' @export
-add_counts <- function(design, counts, psu = NULL, count_time_col = NULL,
-                       count_type = "instantaneous",
-                       circuit_time = NULL,
-                       period_length_col = NULL,
-                       allow_invalid = FALSE) {
+add_counts <- function(
+  design,
+  counts,
+  psu = NULL,
+  count_time_col = NULL,
+  count_type = "instantaneous",
+  circuit_time = NULL,
+  period_length_col = NULL,
+  allow_invalid = FALSE
+) {
   # Validate design is creel_design
   if (!inherits(design, "creel_design")) {
     cli::cli_abort(c(
@@ -1199,12 +1244,13 @@ add_counts <- function(design, counts, psu = NULL, count_time_col = NULL,
     numeric_cols <- names(counts)[vapply(counts, is.numeric, logical(1L))]
     count_var <- setdiff(numeric_cols, excluded)[1L]
 
-    agg_result <- aggregate_within_day( # nolint: object_usage_linter
-      counts         = counts,
-      psu_col        = psu,
-      count_var      = count_var,
+    agg_result <- aggregate_within_day(
+      # nolint: object_usage_linter
+      counts = counts,
+      psu_col = psu,
+      count_var = count_var,
       count_time_col = count_time_col_name,
-      key_cols       = key_cols
+      key_cols = key_cols
     )
     counts <- agg_result$aggregated
     within_day_var <- agg_result$within_day_var
@@ -1215,11 +1261,12 @@ add_counts <- function(design, counts, psu = NULL, count_time_col = NULL,
     excluded_prog <- c(psu, design$strata_cols, design$date_col)
     numeric_cols_prog <- names(counts)[vapply(counts, is.numeric, logical(1L))]
     count_var_prog <- setdiff(numeric_cols_prog, c(excluded_prog, period_length_col_name))[1L]
-    counts <- compute_progressive_effort( # nolint: object_usage_linter
-      counts            = counts,
-      count_var         = count_var_prog,
+    counts <- compute_progressive_effort(
+      # nolint: object_usage_linter
+      counts = counts,
+      count_var = count_var_prog,
       period_length_col = period_length_col_name,
-      circuit_time      = circuit_time
+      circuit_time = circuit_time
     )
   }
 
@@ -1318,12 +1365,14 @@ add_counts <- function(design, counts, psu = NULL, count_time_col = NULL,
 #'
 #' @family "Survey Design"
 #' @export
-add_sections <- function(design,
-                         sections,
-                         section_col,
-                         description_col = NULL,
-                         area_col = NULL,
-                         shoreline_col = NULL) {
+add_sections <- function(
+  design,
+  sections,
+  section_col,
+  description_col = NULL,
+  area_col = NULL,
+  shoreline_col = NULL
+) {
   # Guard: design must be creel_design
   if (!inherits(design, "creel_design")) {
     cli::cli_abort(c(
@@ -1409,7 +1458,10 @@ add_sections <- function(design,
     NULL
   } else {
     col <- resolve_single_col(
-      shoreline_col_quo, sections, "shoreline_col", rlang::caller_env()
+      shoreline_col_quo,
+      sections,
+      "shoreline_col",
+      rlang::caller_env()
     )
     vals <- sections[[col]]
     if (!is.numeric(vals) || any(!is.finite(vals)) || any(vals <= 0)) {
@@ -1619,22 +1671,27 @@ add_sections <- function(design,
 #'
 #' @family "Survey Design"
 #' @export
-add_interviews <- function(design, interviews,
-                           catch, effort, harvest = NULL,
-                           trip_status,
-                           trip_duration = NULL,
-                           trip_start = NULL,
-                           interview_time = NULL,
-                           n_counted = NULL,
-                           n_interviewed = NULL,
-                           angler_type = NULL,
-                           angler_method = NULL,
-                           species_sought = NULL,
-                           n_anglers = 1L,
-                           refused = NULL,
-                           date_col = NULL,
-                           interview_type = c("access", "roving"),
-                           allow_invalid = FALSE) {
+add_interviews <- function(
+  design,
+  interviews,
+  catch,
+  effort,
+  harvest = NULL,
+  trip_status,
+  trip_duration = NULL,
+  trip_start = NULL,
+  interview_time = NULL,
+  n_counted = NULL,
+  n_interviewed = NULL,
+  angler_type = NULL,
+  angler_method = NULL,
+  species_sought = NULL,
+  n_anglers = 1L,
+  refused = NULL,
+  date_col = NULL,
+  interview_type = c("access", "roving"),
+  allow_invalid = FALSE
+) {
   # Capture missing status before any default resolution
   n_anglers_missing <- missing(n_anglers)
 
@@ -1753,7 +1810,10 @@ add_interviews <- function(design, interviews,
   n_counted_quo <- rlang::enquo(n_counted)
   if (!rlang::quo_is_null(n_counted_quo)) {
     n_counted_col <- resolve_single_col(
-      n_counted_quo, interviews, "n_counted", rlang::caller_env()
+      n_counted_quo,
+      interviews,
+      "n_counted",
+      rlang::caller_env()
     )
   }
 
@@ -1762,7 +1822,10 @@ add_interviews <- function(design, interviews,
   n_interviewed_quo <- rlang::enquo(n_interviewed)
   if (!rlang::quo_is_null(n_interviewed_quo)) {
     n_interviewed_col <- resolve_single_col(
-      n_interviewed_quo, interviews, "n_interviewed", rlang::caller_env()
+      n_interviewed_quo,
+      interviews,
+      "n_interviewed",
+      rlang::caller_env()
     )
   }
 
@@ -1771,7 +1834,10 @@ add_interviews <- function(design, interviews,
   angler_type_quo <- rlang::enquo(angler_type)
   if (!rlang::quo_is_null(angler_type_quo)) {
     angler_type_col <- resolve_single_col(
-      angler_type_quo, interviews, "angler_type", rlang::caller_env()
+      angler_type_quo,
+      interviews,
+      "angler_type",
+      rlang::caller_env()
     )
   }
 
@@ -1780,7 +1846,10 @@ add_interviews <- function(design, interviews,
   angler_method_quo <- rlang::enquo(angler_method)
   if (!rlang::quo_is_null(angler_method_quo)) {
     angler_method_col <- resolve_single_col(
-      angler_method_quo, interviews, "angler_method", rlang::caller_env()
+      angler_method_quo,
+      interviews,
+      "angler_method",
+      rlang::caller_env()
     )
   }
 
@@ -1789,7 +1858,10 @@ add_interviews <- function(design, interviews,
   species_sought_quo <- rlang::enquo(species_sought)
   if (!rlang::quo_is_null(species_sought_quo)) {
     species_sought_col <- resolve_single_col(
-      species_sought_quo, interviews, "species_sought", rlang::caller_env()
+      species_sought_quo,
+      interviews,
+      "species_sought",
+      rlang::caller_env()
     )
   }
 
@@ -1799,7 +1871,10 @@ add_interviews <- function(design, interviews,
     n_anglers_quo <- rlang::enquo(n_anglers)
     if (!rlang::quo_is_null(n_anglers_quo)) {
       n_anglers_col <- resolve_single_col(
-        n_anglers_quo, interviews, "n_anglers", rlang::caller_env()
+        n_anglers_quo,
+        interviews,
+        "n_anglers",
+        rlang::caller_env()
       )
     }
   }
@@ -1809,7 +1884,10 @@ add_interviews <- function(design, interviews,
   refused_quo <- rlang::enquo(refused)
   if (!rlang::quo_is_null(refused_quo)) {
     refused_col <- resolve_single_col(
-      refused_quo, interviews, "refused", rlang::caller_env()
+      refused_quo,
+      interviews,
+      "refused",
+      rlang::caller_env()
     )
   }
 
@@ -1822,25 +1900,39 @@ add_interviews <- function(design, interviews,
   interview_type <- match.arg(interview_type)
 
   # Validate interviews structure (Tier 1)
-  validation <- validate_interviews_tier1(interviews, design, catch_col, effort_col, harvest_col, date_col, allow_invalid) # nolint: object_usage_linter
+  validation <- validate_interviews_tier1(
+    interviews,
+    design,
+    catch_col,
+    effort_col,
+    harvest_col,
+    date_col,
+    allow_invalid
+  ) # nolint: object_usage_linter
 
   # Validate trip metadata
-  validate_trip_metadata(interviews, trip_status_col, trip_duration_col, trip_start_col, interview_time_col) # nolint: object_usage_linter
+  validate_trip_metadata(
+    interviews,
+    trip_status_col,
+    trip_duration_col,
+    trip_start_col,
+    interview_time_col
+  ) # nolint: object_usage_linter
 
   # Tier 3: Bus-route specific validation (skip site/circuit checks for ice)
   if (!is.null(design$bus_route) && !identical(design$design_type, "ice")) {
     validate_br_interviews_tier3(
-      interviews         = interviews,
-      design             = design,
-      n_counted_col      = n_counted_col,
-      n_interviewed_col  = n_interviewed_col
+      interviews = interviews,
+      design = design,
+      n_counted_col = n_counted_col,
+      n_interviewed_col = n_interviewed_col
     )
   }
 
   # Tier 3: Ice-specific validation — n_counted and n_interviewed required
   if (identical(design$design_type, "ice")) {
     validate_ice_interviews_tier3(
-      n_counted_col     = n_counted_col,
+      n_counted_col = n_counted_col,
       n_interviewed_col = n_interviewed_col
     )
   }
@@ -1856,11 +1948,17 @@ add_interviews <- function(design, interviews,
   # Normalize trip_status to lowercase
   interviews[[trip_status_col]] <- tolower(interviews[[trip_status_col]])
 
-  # Join interviews with calendar
+  # Join interviews with calendar on date + any shared strata columns.
+  # Using only date causes row duplication when multiple sites/strata share a date.
+  shared_strata <- intersect(design$strata_cols, colnames(interviews))
+  cal_join_by <- c(
+    stats::setNames(design$date_col, date_col),
+    stats::setNames(shared_strata, shared_strata)
+  )
   interviews_joined <- dplyr::left_join(
     interviews,
     design$calendar,
-    by = stats::setNames(design$date_col, date_col),
+    by = cal_join_by,
     suffix = c("", "_cal")
   )
 
@@ -1990,12 +2088,17 @@ add_interviews <- function(design, interviews,
   status_table <- table(tolower(new_design$interviews[[trip_status_col]]))
   n_complete <- as.integer(status_table["complete"])
   n_incomplete <- as.integer(status_table["incomplete"])
-  if (is.na(n_complete)) n_complete <- 0L
-  if (is.na(n_incomplete)) n_incomplete <- 0L
+  if (is.na(n_complete)) {
+    n_complete <- 0L
+  }
+  if (is.na(n_incomplete)) {
+    n_incomplete <- 0L
+  }
   n_total <- n_complete + n_incomplete
   pct_complete <- round(100 * n_complete / n_total, 0) # nolint: object_usage_linter
   pct_incomplete <- round(100 * n_incomplete / n_total, 0) # nolint: object_usage_linter
-  cli::cli_inform(c( # nolint: line_length_linter
+  cli::cli_inform(c(
+    # nolint: line_length_linter
     "i" = "Added {n_total} interview{?s}: {n_complete} complete ({pct_complete}%), {n_incomplete} incomplete ({pct_incomplete}%)" # nolint: line_length_linter
   ))
 
@@ -2087,8 +2190,12 @@ format.creel_design <- function(x, ...) {
         status_table <- table(tolower(x$interviews[[trip_status_col]])) # nolint: object_usage_linter
         n_complete <- as.integer(status_table["complete"]) # nolint: object_usage_linter
         n_incomplete <- as.integer(status_table["incomplete"]) # nolint: object_usage_linter
-        if (is.na(n_complete)) n_complete <- 0L
-        if (is.na(n_incomplete)) n_incomplete <- 0L
+        if (is.na(n_complete)) {
+          n_complete <- 0L
+        }
+        if (is.na(n_incomplete)) {
+          n_incomplete <- 0L
+        }
         cli::cli_text("  Trip status: {n_complete} complete, {n_incomplete} incomplete")
       }
       if (!is.null(x$angler_type_col)) {
@@ -2256,19 +2363,23 @@ format.creel_design <- function(x, ...) {
         ivw <- x$interviews
 
         cli::cli_h2("Enumeration Counts")
-        cli::cli_text("(n_counted observed, n_interviewed interviewed, expansion = n_counted/n_interviewed)")
+        cli::cli_text(
+          "(n_counted observed, n_interviewed interviewed, expansion = n_counted/n_interviewed)"
+        )
 
         # Summarize by site + circuit: sum n_counted, sum n_interviewed
         grp_keys <- c(site_col_br, circ_col_br)
         agg_nc <- stats::aggregate(
           ivw[[nc_col]],
           by = ivw[grp_keys],
-          FUN = sum, na.rm = TRUE
+          FUN = sum,
+          na.rm = TRUE
         )
         agg_ni <- stats::aggregate(
           ivw[[ni_col]],
           by = ivw[grp_keys],
-          FUN = sum, na.rm = TRUE
+          FUN = sum,
+          na.rm = TRUE
         )
         names(agg_nc)[length(agg_nc)] <- "nc_sum"
         names(agg_ni)[length(agg_ni)] <- "ni_sum"
@@ -2285,7 +2396,8 @@ format.creel_design <- function(x, ...) {
           cv <- enum_summary[[circ_col_br]][i] # nolint: object_usage_linter
           nc <- enum_summary$nc_sum[i] # nolint: object_usage_linter
           ni <- enum_summary$ni_sum[i] # nolint: object_usage_linter
-          exp_val <- if (is.na(enum_summary$expansion[i])) { # nolint: object_usage_linter
+          exp_val <- if (is.na(enum_summary$expansion[i])) {
+            # nolint: object_usage_linter
             "NA (0 interviewed)"
           } else {
             round(enum_summary$expansion[i], 2)
@@ -2642,8 +2754,12 @@ summarize_trips <- function(design) {
   status_table <- table(trip_status)
   n_complete <- as.integer(status_table["complete"])
   n_incomplete <- as.integer(status_table["incomplete"])
-  if (is.na(n_complete)) n_complete <- 0L
-  if (is.na(n_incomplete)) n_incomplete <- 0L
+  if (is.na(n_complete)) {
+    n_complete <- 0L
+  }
+  if (is.na(n_incomplete)) {
+    n_incomplete <- 0L
+  }
   n_total <- n_complete + n_incomplete
 
   # Compute percentages
@@ -2708,9 +2824,12 @@ format.creel_trip_summary <- function(x, ...) {
   # Format duration_stats table
   for (i in seq_len(nrow(x$duration_stats))) {
     row <- x$duration_stats[i, ] # nolint: object_usage_linter
-    lines <- c(lines, cli::format_inline(
-      "  {row$status}: min={row$min}, median={row$median}, mean={row$mean}, max={row$max}"
-    ))
+    lines <- c(
+      lines,
+      cli::format_inline(
+        "  {row$status}: min={row$min}, median={row$median}, mean={row$mean}, max={row$max}"
+      )
+    )
   }
   lines
 }
@@ -2738,9 +2857,7 @@ print.creel_trip_summary <- function(x, ...) {
 #'
 #' @keywords internal
 #' @noRd
-validate_br_interviews_tier3 <- function(interviews, design,
-                                         n_counted_col,
-                                         n_interviewed_col) {
+validate_br_interviews_tier3 <- function(interviews, design, n_counted_col, n_interviewed_col) {
   collection <- checkmate::makeAssertCollection()
   br <- design$bus_route
   site_col <- br$site_col
@@ -2952,12 +3069,7 @@ validate_ice_interviews_tier3 <- function(n_counted_col, n_interviewed_col) {
 #'
 #' @family "Survey Design"
 #' @export
-add_catch <- function(design, data,
-                      catch_uid,
-                      interview_uid,
-                      species,
-                      count,
-                      catch_type) {
+add_catch <- function(design, data, catch_uid, interview_uid, species, count, catch_type) {
   # Guard: must be a creel_design
   if (!inherits(design, "creel_design")) {
     cli::cli_abort(
@@ -2984,19 +3096,34 @@ add_catch <- function(design, data,
 
   # Resolve tidy selectors
   catch_uid_col <- resolve_single_col(
-    rlang::enquo(catch_uid), data, "catch_uid", rlang::caller_env()
+    rlang::enquo(catch_uid),
+    data,
+    "catch_uid",
+    rlang::caller_env()
   )
   interview_uid_col <- resolve_single_col(
-    rlang::enquo(interview_uid), design$interviews, "interview_uid", rlang::caller_env()
+    rlang::enquo(interview_uid),
+    design$interviews,
+    "interview_uid",
+    rlang::caller_env()
   )
   species_col <- resolve_single_col(
-    rlang::enquo(species), data, "species", rlang::caller_env()
+    rlang::enquo(species),
+    data,
+    "species",
+    rlang::caller_env()
   )
   count_col <- resolve_single_col(
-    rlang::enquo(count), data, "count", rlang::caller_env()
+    rlang::enquo(count),
+    data,
+    "count",
+    rlang::caller_env()
   )
   catch_type_col <- resolve_single_col(
-    rlang::enquo(catch_type), data, "catch_type", rlang::caller_env()
+    rlang::enquo(catch_type),
+    data,
+    "catch_type",
+    rlang::caller_env()
   )
 
   # Normalize catch_type to lowercase
@@ -3189,14 +3316,17 @@ add_catch <- function(design, data,
 #'
 #' @family "Survey Design"
 #' @export
-add_lengths <- function(design, data,
-                        length_uid,
-                        interview_uid,
-                        species,
-                        length,
-                        length_type,
-                        count = NULL,
-                        release_format = "individual") {
+add_lengths <- function(
+  design,
+  data,
+  length_uid,
+  interview_uid,
+  species,
+  length,
+  length_type,
+  count = NULL,
+  release_format = "individual"
+) {
   # Guard: must be a creel_design
   if (!inherits(design, "creel_design")) {
     cli::cli_abort("{.arg design} must be a {.cls creel_design} object.")
@@ -3229,19 +3359,34 @@ add_lengths <- function(design, data,
 
   # Resolve tidy selectors
   length_uid_col <- resolve_single_col(
-    rlang::enquo(length_uid), data, "length_uid", rlang::caller_env()
+    rlang::enquo(length_uid),
+    data,
+    "length_uid",
+    rlang::caller_env()
   )
   interview_uid_col <- resolve_single_col(
-    rlang::enquo(interview_uid), design$interviews, "interview_uid", rlang::caller_env()
+    rlang::enquo(interview_uid),
+    design$interviews,
+    "interview_uid",
+    rlang::caller_env()
   )
   species_col <- resolve_single_col(
-    rlang::enquo(species), data, "species", rlang::caller_env()
+    rlang::enquo(species),
+    data,
+    "species",
+    rlang::caller_env()
   )
   length_col <- resolve_single_col(
-    rlang::enquo(length), data, "length", rlang::caller_env()
+    rlang::enquo(length),
+    data,
+    "length",
+    rlang::caller_env()
   )
   type_col <- resolve_single_col(
-    rlang::enquo(length_type), data, "length_type", rlang::caller_env()
+    rlang::enquo(length_type),
+    data,
+    "length_type",
+    rlang::caller_env()
   )
 
   # Handle optional count argument — check enexpr BEFORE enquo
@@ -3391,12 +3536,7 @@ add_lengths <- function(design, data,
 #'
 #' @seealso [add_lengths()]
 #' @export
-add_ages <- function(design, data,
-                     age_uid,
-                     interview_uid,
-                     species,
-                     age,
-                     age_type) {
+add_ages <- function(design, data, age_uid, interview_uid, species, age, age_type) {
   if (!inherits(design, "creel_design")) {
     cli::cli_abort("{.arg design} must be a {.cls creel_design} object.")
   }
@@ -3414,19 +3554,34 @@ add_ages <- function(design, data,
   }
 
   age_uid_col <- resolve_single_col(
-    rlang::enquo(age_uid), data, "age_uid", rlang::caller_env()
+    rlang::enquo(age_uid),
+    data,
+    "age_uid",
+    rlang::caller_env()
   )
   interview_uid_col <- resolve_single_col(
-    rlang::enquo(interview_uid), design$interviews, "interview_uid", rlang::caller_env()
+    rlang::enquo(interview_uid),
+    design$interviews,
+    "interview_uid",
+    rlang::caller_env()
   )
   species_col <- resolve_single_col(
-    rlang::enquo(species), data, "species", rlang::caller_env()
+    rlang::enquo(species),
+    data,
+    "species",
+    rlang::caller_env()
   )
   age_col <- resolve_single_col(
-    rlang::enquo(age), data, "age", rlang::caller_env()
+    rlang::enquo(age),
+    data,
+    "age",
+    rlang::caller_env()
   )
   type_col <- resolve_single_col(
-    rlang::enquo(age_type), data, "age_type", rlang::caller_env()
+    rlang::enquo(age_type),
+    data,
+    "age_type",
+    rlang::caller_env()
   )
 
   data[[type_col]] <- tolower(data[[type_col]])
@@ -3501,10 +3656,7 @@ add_ages <- function(design, data,
 #'
 #' @family "Camera Survey"
 #' @export
-preprocess_camera_timestamps <- function(timestamps,
-                                         date_col,
-                                         ingress_col,
-                                         egress_col) {
+preprocess_camera_timestamps <- function(timestamps, date_col, ingress_col, egress_col) {
   if (!is.data.frame(timestamps)) {
     cli::cli_abort(c(
       "{.arg timestamps} must be a data frame.",

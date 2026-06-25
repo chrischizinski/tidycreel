@@ -121,3 +121,4 @@
 ^\.contextatlas\.yml$
 ^\.contextatlas$
 ^\.gsd\.archive.*$
+^air\.toml$

@@ -4,8 +4,14 @@
 make_test_calendar <- function() {
   data.frame(
     date = as.Date(c(
-      "2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04",
-      "2024-06-08", "2024-06-09", "2024-06-15", "2024-06-16"
+      "2024-06-01",
+      "2024-06-02",
+      "2024-06-03",
+      "2024-06-04",
+      "2024-06-08",
+      "2024-06-09",
+      "2024-06-15",
+      "2024-06-16"
     )),
     day_type = rep(c("weekday", "weekend"), each = 4),
     stringsAsFactors = FALSE
@@ -17,8 +23,14 @@ make_test_calendar <- function() {
 make_test_counts <- function() {
   data.frame(
     date = as.Date(c(
-      "2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04",
-      "2024-06-08", "2024-06-09", "2024-06-15", "2024-06-16"
+      "2024-06-01",
+      "2024-06-02",
+      "2024-06-03",
+      "2024-06-04",
+      "2024-06-08",
+      "2024-06-09",
+      "2024-06-15",
+      "2024-06-16"
     )),
     day_type = rep(c("weekday", "weekend"), each = 4),
     count = c(15, 23, 18, 21, 45, 52, 48, 51),
@@ -225,8 +237,14 @@ test_that("survey object has correct strata - single stratum", {
 test_that("survey object has correct strata - multiple strata", {
   cal <- data.frame(
     date = as.Date(c(
-      "2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04",
-      "2024-06-08", "2024-06-09", "2024-06-15", "2024-06-16"
+      "2024-06-01",
+      "2024-06-02",
+      "2024-06-03",
+      "2024-06-04",
+      "2024-06-08",
+      "2024-06-09",
+      "2024-06-15",
+      "2024-06-16"
     )),
     day_type = rep(c("weekday", "weekend"), each = 4),
     season = rep(c("spring", "summer"), 4)
@@ -235,8 +253,14 @@ test_that("survey object has correct strata - multiple strata", {
 
   counts <- data.frame(
     date = as.Date(c(
-      "2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04",
-      "2024-06-08", "2024-06-09", "2024-06-15", "2024-06-16"
+      "2024-06-01",
+      "2024-06-02",
+      "2024-06-03",
+      "2024-06-04",
+      "2024-06-08",
+      "2024-06-09",
+      "2024-06-15",
+      "2024-06-16"
     )),
     day_type = rep(c("weekday", "weekend"), each = 4),
     season = rep(c("spring", "summer"), 4),
@@ -412,8 +436,14 @@ test_that("add_counts() aborts when count_type = 'progressive' and circuit_time 
 make_progressive_counts <- function() {
   data.frame(
     date = as.Date(c(
-      "2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04",
-      "2024-06-08", "2024-06-09", "2024-06-15", "2024-06-16"
+      "2024-06-01",
+      "2024-06-02",
+      "2024-06-03",
+      "2024-06-04",
+      "2024-06-08",
+      "2024-06-09",
+      "2024-06-15",
+      "2024-06-16"
     )),
     day_type = rep(c("weekday", "weekend"), each = 4),
     n_anglers = c(15L, 23L, 18L, 21L, 45L, 52L, 48L, 51L),
@@ -427,7 +457,8 @@ test_that("add_counts() accepts count_type = 'progressive' with required args (C
   prog_counts <- make_progressive_counts()
   expect_no_error(
     add_counts(
-      design, prog_counts,
+      design,
+      prog_counts,
       count_type = "progressive",
       circuit_time = 2,
       period_length_col = shift_hours # nolint: object_usage_linter
@@ -451,7 +482,8 @@ test_that("add_counts() replaces raw counts with Ê_d = count × period_length f
   expected_effort <- prog_counts$n_anglers * prog_counts$shift_hours
 
   d <- add_counts(
-    design, prog_counts,
+    design,
+    prog_counts,
     count_type = "progressive",
     circuit_time = 2,
     period_length_col = shift_hours # nolint: object_usage_linter
@@ -463,7 +495,8 @@ test_that("add_counts() replaces raw counts with Ê_d = count × period_length f
 test_that("add_counts() drops period_length_col from design$counts after progressive computation", {
   design <- creel_design(make_test_calendar(), date = date, strata = day_type)
   d <- add_counts(
-    design, make_progressive_counts(),
+    design,
+    make_progressive_counts(),
     count_type = "progressive",
     circuit_time = 2,
     period_length_col = shift_hours # nolint: object_usage_linter
@@ -474,7 +507,8 @@ test_that("add_counts() drops period_length_col from design$counts after progres
 test_that("add_counts() stores circuit_time and period_length_col slots (CNT-03)", {
   design <- creel_design(make_test_calendar(), date = date, strata = day_type)
   d <- add_counts(
-    design, make_progressive_counts(),
+    design,
+    make_progressive_counts(),
     count_type = "progressive",
     circuit_time = 2,
     period_length_col = shift_hours # nolint: object_usage_linter
@@ -489,7 +523,8 @@ test_that("add_counts() aborts when count_time_col and count_type = 'progressive
   prog_counts$circuit_id <- rep(c("am", "pm"), length.out = nrow(prog_counts))
   expect_error(
     add_counts(
-      design, prog_counts,
+      design,
+      prog_counts,
       count_time_col = circuit_id, # nolint: object_usage_linter
       count_type = "progressive",
       circuit_time = 2,
@@ -505,7 +540,8 @@ test_that("add_counts() aborts when period_length column contains non-positive v
   bad_counts$shift_hours[1] <- 0
   expect_error(
     add_counts(
-      design, bad_counts,
+      design,
+      bad_counts,
       count_type = "progressive",
       circuit_time = 2,
       period_length_col = shift_hours # nolint: object_usage_linter

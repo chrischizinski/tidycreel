@@ -4,8 +4,14 @@
 make_test_calendar <- function() {
   data.frame(
     date = as.Date(c(
-      "2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04",
-      "2024-06-08", "2024-06-09", "2024-06-15", "2024-06-16"
+      "2024-06-01",
+      "2024-06-02",
+      "2024-06-03",
+      "2024-06-04",
+      "2024-06-08",
+      "2024-06-09",
+      "2024-06-15",
+      "2024-06-16"
     )),
     day_type = rep(c("weekday", "weekend"), each = 4),
     stringsAsFactors = FALSE
@@ -17,8 +23,14 @@ make_test_calendar <- function() {
 make_test_counts <- function() {
   data.frame(
     date = as.Date(c(
-      "2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04",
-      "2024-06-08", "2024-06-09", "2024-06-15", "2024-06-16"
+      "2024-06-01",
+      "2024-06-02",
+      "2024-06-03",
+      "2024-06-04",
+      "2024-06-08",
+      "2024-06-09",
+      "2024-06-15",
+      "2024-06-16"
     )),
     day_type = rep(c("weekday", "weekend"), each = 4),
     count = c(15, 23, 18, 21, 45, 52, 48, 51),
@@ -184,8 +196,14 @@ test_that("multiple strata workflow works with as_survey_design", {
   # Create design with multiple strata
   cal <- data.frame(
     date = as.Date(c(
-      "2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04",
-      "2024-06-08", "2024-06-09", "2024-06-15", "2024-06-16"
+      "2024-06-01",
+      "2024-06-02",
+      "2024-06-03",
+      "2024-06-04",
+      "2024-06-08",
+      "2024-06-09",
+      "2024-06-15",
+      "2024-06-16"
     )),
     day_type = rep(c("weekday", "weekend"), each = 4),
     season = rep(c("spring", "summer"), 4)
@@ -194,8 +212,14 @@ test_that("multiple strata workflow works with as_survey_design", {
 
   counts <- data.frame(
     date = as.Date(c(
-      "2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04",
-      "2024-06-08", "2024-06-09", "2024-06-15", "2024-06-16"
+      "2024-06-01",
+      "2024-06-02",
+      "2024-06-03",
+      "2024-06-04",
+      "2024-06-08",
+      "2024-06-09",
+      "2024-06-15",
+      "2024-06-16"
     )),
     day_type = rep(c("weekday", "weekend"), each = 4),
     season = rep(c("spring", "summer"), 4),

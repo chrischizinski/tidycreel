@@ -29,8 +29,16 @@ test_that("prep_counts_daily_effort() returns canonical columns with optional fi
   expect_named(
     result,
     c(
-      "date", "month", "day_type", "effort_type", "daily_effort", "psu",
-      "correction_factor", "n_counts", "within_day_var", "source_method"
+      "date",
+      "month",
+      "day_type",
+      "effort_type",
+      "daily_effort",
+      "psu",
+      "correction_factor",
+      "n_counts",
+      "within_day_var",
+      "source_method"
     )
   )
   expect_equal(result$daily_effort, c(12.5, 18.0))
@@ -254,12 +262,23 @@ test_that("prep_counts_boat_party() computes canonical daily boat effort rows", 
 
   expect_named(
     result,
-    c("date", "day_type", "effort_type", "daily_effort", "psu", "correction_factor", "source_method")
+    c(
+      "date",
+      "day_type",
+      "effort_type",
+      "daily_effort",
+      "psu",
+      "correction_factor",
+      "source_method"
+    )
   )
   expect_equal(result$effort_type, c("boat", "boat"))
   expect_equal(result$daily_effort, c(25, 24))
   expect_equal(result$correction_factor, c(1, 1))
-  expect_equal(result$source_method, c("boat_count_x_mean_party_size", "boat_count_x_mean_party_size"))
+  expect_equal(
+    result$source_method,
+    c("boat_count_x_mean_party_size", "boat_count_x_mean_party_size")
+  )
 })
 
 test_that("prep_counts_boat_party() applies correction_factor", {

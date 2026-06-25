@@ -124,34 +124,36 @@ power_creel <- function(
   mode <- match.arg(mode)
   alternative <- match.arg(alternative)
 
-  switch(mode,
+  switch(
+    mode,
     effort_n = .power_creel_effort_n(
       target_rse = target_rse,
-      strata     = strata,
-      N_h        = N_h, # nolint: object_name_linter
-      ybar_h     = ybar_h, # nolint: object_name_linter
-      s2_h       = s2_h # nolint: object_name_linter
+      strata = strata,
+      N_h = N_h, # nolint: object_name_linter
+      ybar_h = ybar_h, # nolint: object_name_linter
+      s2_h = s2_h # nolint: object_name_linter
     ),
     cpue_n = .power_creel_cpue_n(
       target_rse = target_rse,
-      cv_catch   = cv_catch,
-      cv_effort  = cv_effort,
-      rho        = rho
+      cv_catch = cv_catch,
+      cv_effort = cv_effort,
+      rho = rho
     ),
     power = .power_creel_power(
-      n             = n,
+      n = n,
       cv_historical = cv_historical, # nolint: object_name_linter
-      cv_catch      = cv_catch,
-      delta_pct     = delta_pct,
-      alpha         = alpha,
-      alternative   = alternative
+      cv_catch = cv_catch,
+      delta_pct = delta_pct,
+      alpha = alpha,
+      alternative = alternative
     )
   )
 }
 
 # ---- Internal mode handlers -------------------------------------------------
 
-.power_creel_effort_n <- function(target_rse, strata, N_h, ybar_h, s2_h) { # nolint
+.power_creel_effort_n <- function(target_rse, strata, N_h, ybar_h, s2_h) {
+  # nolint
   if (is.null(target_rse)) {
     cli::cli_abort(
       "{.arg target_rse} is required for {.code mode = \"effort_n\"}."
@@ -171,11 +173,12 @@ power_creel <- function(
 
   names(N_h) <- strata # nolint: object_name_linter
 
-  raw <- creel_n_effort( # nolint: object_usage_linter
+  raw <- creel_n_effort(
+    # nolint: object_usage_linter
     cv_target = target_rse,
-    N_h       = N_h, # nolint: object_name_linter
-    ybar_h    = ybar_h, # nolint: object_name_linter
-    s2_h      = s2_h # nolint: object_name_linter
+    N_h = N_h, # nolint: object_name_linter
+    ybar_h = ybar_h, # nolint: object_name_linter
+    s2_h = s2_h # nolint: object_name_linter
   )
 
   all_strata <- c(strata, "total")
@@ -200,11 +203,12 @@ power_creel <- function(
     )
   }
 
-  n_req <- creel_n_cpue( # nolint: object_usage_linter
-    cv_catch   = cv_catch,
-    cv_effort  = cv_effort,
-    rho        = rho,
-    cv_target  = target_rse
+  n_req <- creel_n_cpue(
+    # nolint: object_usage_linter
+    cv_catch = cv_catch,
+    cv_effort = cv_effort,
+    rho = rho,
+    cv_target = target_rse
   )
 
   data.frame(
@@ -217,8 +221,14 @@ power_creel <- function(
   )
 }
 
-.power_creel_power <- function(n, cv_historical, cv_catch, delta_pct, # nolint
-                               alpha, alternative) {
+.power_creel_power <- function(
+  n,
+  cv_historical,
+  cv_catch,
+  delta_pct, # nolint
+  alpha,
+  alternative
+) {
   if (is.null(n)) {
     cli::cli_abort("{.arg n} is required for {.code mode = \"power\"}.")
   }
@@ -235,12 +245,13 @@ power_creel <- function(
     )
   }
 
-  pwr <- creel_power( # nolint: object_usage_linter
-    n             = n,
+  pwr <- creel_power(
+    # nolint: object_usage_linter
+    n = n,
     cv_historical = cv_hist, # nolint: object_name_linter
-    delta_pct     = delta_pct,
-    alpha         = alpha,
-    alternative   = alternative
+    delta_pct = delta_pct,
+    alpha = alpha,
+    alternative = alternative
   )
 
   data.frame(

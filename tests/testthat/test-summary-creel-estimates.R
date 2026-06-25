@@ -7,7 +7,8 @@ make_effort_est <- function() {
     cal <- unique(example_counts[, c("date", "day_type")]) # nolint: object_usage_linter
     design <- creel_design(
       cal,
-      date = date, strata = day_type, # nolint: object_usage_linter
+      date = date,
+      strata = day_type, # nolint: object_usage_linter
       survey_type = "instantaneous"
     )
     design <- add_counts(design, example_counts) # nolint: object_usage_linter
@@ -20,13 +21,16 @@ make_cpue_est <- function() {
     cal <- unique(example_counts[, c("date", "day_type")]) # nolint: object_usage_linter
     design <- creel_design(
       cal,
-      date = date, strata = day_type, # nolint: object_usage_linter
+      date = date,
+      strata = day_type, # nolint: object_usage_linter
       survey_type = "instantaneous"
     )
     design <- add_counts(design, example_counts) # nolint: object_usage_linter
     design <- add_interviews(
-      design, example_interviews, # nolint: object_usage_linter
-      catch = catch_total, effort = hours_fished, # nolint: object_usage_linter
+      design,
+      example_interviews, # nolint: object_usage_linter
+      catch = catch_total,
+      effort = hours_fished, # nolint: object_usage_linter
       trip_status = trip_status # nolint: object_usage_linter
     )
     estimate_catch_rate(design)
@@ -38,7 +42,8 @@ make_grouped_est <- function() {
     cal <- unique(example_counts[, c("date", "day_type")]) # nolint: object_usage_linter
     design <- creel_design(
       cal,
-      date = date, strata = day_type, # nolint: object_usage_linter
+      date = date,
+      strata = day_type, # nolint: object_usage_linter
       survey_type = "instantaneous"
     )
     design <- add_counts(design, example_counts) # nolint: object_usage_linter

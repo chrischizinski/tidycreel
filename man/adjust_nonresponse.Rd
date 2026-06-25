@@ -27,11 +27,11 @@ the stratum.}
 Must be \code{<= n_sampled}.}
 }}
 
-\item{method}{Character. Weighting method to apply. Either
-\code{"postStratify"} (default, adjusts weights to match known stratum
-totals inversely proportional to response rate) or \code{"calibrate"}
-(calibration estimator via \code{survey::calibrate}; requires stratum
-population totals in \code{response_rates}).}
+\item{method}{Character. Weighting method to apply. Currently only
+\code{"postStratify"} (default) is implemented. It multiplies each
+observation's sampling weight by the inverse response rate for its stratum.
+Specifying \code{"calibrate"} raises an error; use \code{survey::calibrate}
+directly with population totals from your sampling frame.}
 
 \item{stratum_col}{Character. Name of the stratum column in
 \code{response_rates} (default: \code{"stratum"}).}

@@ -1,23 +1,24 @@
 # Internal canonical column requirements per survey type — not exported
 # Keys: survey type -> table name -> character vector of required canonical col names
-CANONICAL_COLUMNS <- list( # nolint: object_name_linter
+CANONICAL_COLUMNS <- list(
+  # nolint: object_name_linter
   instantaneous = list(
     interviews = c("date", "catch", "effort", "trip_status"),
-    counts     = c("date", "count"),
-    catch      = c("catch_uid", "interview_uid", "species", "catch_count", "catch_type"),
-    lengths    = c("length_uid", "interview_uid", "species", "length_mm", "length_type")
+    counts = c("date", "count"),
+    catch = c("catch_uid", "interview_uid", "species", "catch_count", "catch_type"),
+    lengths = c("length_uid", "interview_uid", "species", "length_mm", "length_type")
   ),
   bus_route = list(
     interviews = c("date", "catch", "effort", "trip_status"),
-    counts     = c("date", "count"),
-    catch      = c("catch_uid", "interview_uid", "species", "catch_count", "catch_type"),
-    lengths    = c("length_uid", "interview_uid", "species", "length_mm", "length_type")
+    counts = c("date", "count"),
+    catch = c("catch_uid", "interview_uid", "species", "catch_count", "catch_type"),
+    lengths = c("length_uid", "interview_uid", "species", "length_mm", "length_type")
   ),
   ice = list(
     interviews = c("date", "catch", "effort", "trip_status"),
-    counts     = c("date", "count"),
-    catch      = c("catch_uid", "interview_uid", "species", "catch_count", "catch_type"),
-    lengths    = c("length_uid", "interview_uid", "species", "length_mm", "length_type")
+    counts = c("date", "count"),
+    catch = c("catch_uid", "interview_uid", "species", "catch_count", "catch_type"),
+    lengths = c("length_uid", "interview_uid", "species", "length_mm", "length_type")
   ),
   camera = list(
     counts = c("date", "count")
@@ -29,23 +30,42 @@ CANONICAL_COLUMNS <- list( # nolint: object_name_linter
 
 # Column-to-table mapping for print grouping (internal)
 # nolint: object_name_linter
-COL_TO_TABLE <- list( # nolint: object_name_linter
+COL_TO_TABLE <- list(
+  # nolint: object_name_linter
   interviews = c(
-    "date_col", "catch_col", "effort_col", "trip_status_col",
-    "harvest_col", "trip_duration_col", "trip_start_col",
-    "interview_time_col", "n_anglers_col", "n_interviewed_col",
-    "angler_type_col", "angler_method_col", "species_sought_col",
-    "refused_col", "interview_uid_col"
+    "date_col",
+    "catch_col",
+    "effort_col",
+    "trip_status_col",
+    "harvest_col",
+    "trip_duration_col",
+    "trip_start_col",
+    "interview_time_col",
+    "n_anglers_col",
+    "n_interviewed_col",
+    "angler_type_col",
+    "angler_method_col",
+    "species_sought_col",
+    "refused_col",
+    "interview_uid_col"
   ),
   counts = c(
-    "count_col", "n_counted_col",
-    "bank_anglers_col", "angler_boats_col", "non_ang_boats_col"
+    "count_col",
+    "n_counted_col",
+    "bank_anglers_col",
+    "angler_boats_col",
+    "non_ang_boats_col"
   ),
   catch = c(
-    "catch_uid_col", "species_col", "catch_count_col", "catch_type_col"
+    "catch_uid_col",
+    "species_col",
+    "catch_count_col",
+    "catch_type_col"
   ),
   lengths = c(
-    "length_uid_col", "length_mm_col", "length_type_col"
+    "length_uid_col",
+    "length_mm_col",
+    "length_type_col"
   )
 )
 
@@ -156,39 +176,42 @@ creel_schema <- function(
   refused_col = NULL
 ) {
   survey_type <- match.arg(survey_type)
-  new_creel_schema(survey_type, list(
-    interviews_table   = interviews_table,
-    counts_table       = counts_table,
-    catch_table        = catch_table,
-    lengths_table      = lengths_table,
-    date_col           = date_col,
-    catch_col          = catch_col,
-    effort_col         = effort_col,
-    trip_status_col    = trip_status_col,
-    count_col          = count_col,
-    catch_uid_col      = catch_uid_col,
-    interview_uid_col  = interview_uid_col,
-    species_col        = species_col,
-    catch_count_col    = catch_count_col,
-    catch_type_col     = catch_type_col,
-    length_uid_col     = length_uid_col,
-    length_mm_col      = length_mm_col,
-    length_type_col    = length_type_col,
-    harvest_col        = harvest_col,
-    trip_duration_col  = trip_duration_col,
-    trip_start_col     = trip_start_col,
-    interview_time_col = interview_time_col,
-    n_anglers_col      = n_anglers_col,
-    n_counted_col      = n_counted_col,
-    n_interviewed_col  = n_interviewed_col,
-    bank_anglers_col   = bank_anglers_col,
-    angler_boats_col   = angler_boats_col,
-    non_ang_boats_col  = non_ang_boats_col,
-    angler_type_col    = angler_type_col,
-    angler_method_col  = angler_method_col,
-    species_sought_col = species_sought_col,
-    refused_col        = refused_col
-  ))
+  new_creel_schema(
+    survey_type,
+    list(
+      interviews_table = interviews_table,
+      counts_table = counts_table,
+      catch_table = catch_table,
+      lengths_table = lengths_table,
+      date_col = date_col,
+      catch_col = catch_col,
+      effort_col = effort_col,
+      trip_status_col = trip_status_col,
+      count_col = count_col,
+      catch_uid_col = catch_uid_col,
+      interview_uid_col = interview_uid_col,
+      species_col = species_col,
+      catch_count_col = catch_count_col,
+      catch_type_col = catch_type_col,
+      length_uid_col = length_uid_col,
+      length_mm_col = length_mm_col,
+      length_type_col = length_type_col,
+      harvest_col = harvest_col,
+      trip_duration_col = trip_duration_col,
+      trip_start_col = trip_start_col,
+      interview_time_col = interview_time_col,
+      n_anglers_col = n_anglers_col,
+      n_counted_col = n_counted_col,
+      n_interviewed_col = n_interviewed_col,
+      bank_anglers_col = bank_anglers_col,
+      angler_boats_col = angler_boats_col,
+      non_ang_boats_col = non_ang_boats_col,
+      angler_type_col = angler_type_col,
+      angler_method_col = angler_method_col,
+      species_sought_col = species_sought_col,
+      refused_col = refused_col
+    )
+  )
 }
 
 
@@ -259,9 +282,9 @@ format.creel_schema <- function(x, ...) {
 
     table_fields <- c(
       interviews_table = "interviews",
-      counts_table     = "counts",
-      catch_table      = "catch",
-      lengths_table    = "lengths"
+      counts_table = "counts",
+      catch_table = "catch",
+      lengths_table = "lengths"
     )
 
     for (tbl_field in names(table_fields)) {

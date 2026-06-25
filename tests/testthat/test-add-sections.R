@@ -5,7 +5,10 @@
 make_base_design <- function() {
   cal <- data.frame(
     date = as.Date(c(
-      "2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04"
+      "2024-06-01",
+      "2024-06-02",
+      "2024-06-03",
+      "2024-06-04"
     )),
     day_type = c("weekday", "weekday", "weekend", "weekend"),
     stringsAsFactors = FALSE
@@ -57,8 +60,10 @@ test_that("add_sections() stores optional description_col name", {
   design <- make_base_design()
   secs <- make_sections_df()
 
-  result <- add_sections(design, secs,
-    section_col     = section, # nolint: object_usage_linter
+  result <- add_sections(
+    design,
+    secs,
+    section_col = section, # nolint: object_usage_linter
     description_col = description # nolint: object_usage_linter
   )
 
@@ -69,9 +74,11 @@ test_that("add_sections() stores optional area_col name", {
   design <- make_base_design()
   secs <- make_sections_df()
 
-  result <- add_sections(design, secs,
+  result <- add_sections(
+    design,
+    secs,
     section_col = section, # nolint: object_usage_linter
-    area_col    = area_ha # nolint: object_usage_linter
+    area_col = area_ha # nolint: object_usage_linter
   )
 
   expect_equal(result$section_area_col, "area_ha")
@@ -81,8 +88,10 @@ test_that("add_sections() stores optional shoreline_col name", {
   design <- make_base_design()
   secs <- make_sections_df()
 
-  result <- add_sections(design, secs,
-    section_col   = section, # nolint: object_usage_linter
+  result <- add_sections(
+    design,
+    secs,
+    section_col = section, # nolint: object_usage_linter
     shoreline_col = shoreline_km # nolint: object_usage_linter
   )
 
@@ -163,9 +172,11 @@ test_that("add_sections() errors when area_col is non-positive", {
   )
 
   expect_error(
-    add_sections(design, secs,
+    add_sections(
+      design,
+      secs,
       section_col = section, # nolint: object_usage_linter
-      area_col    = area_ha # nolint: object_usage_linter
+      area_col = area_ha # nolint: object_usage_linter
     ),
     regexp = "positive"
   )
@@ -180,8 +191,10 @@ test_that("add_sections() errors when shoreline_col is non-positive", {
   )
 
   expect_error(
-    add_sections(design, secs,
-      section_col   = section, # nolint: object_usage_linter
+    add_sections(
+      design,
+      secs,
+      section_col = section, # nolint: object_usage_linter
       shoreline_col = shoreline_km # nolint: object_usage_linter
     ),
     regexp = "positive"
@@ -242,7 +255,8 @@ test_that("add_counts() skips section validation when no sections registered", {
 
 # --- Section validation in add_interviews() ------------------------------------
 
-make_design_with_sections_and_counts <- function() { # nolint: object_length_linter
+make_design_with_sections_and_counts <- function() {
+  # nolint: object_length_linter
   design <- make_design_with_sections()
 
   counts <- data.frame(
@@ -271,9 +285,13 @@ test_that("add_interviews() passes when all section values are registered", {
 
   expect_no_error(
     suppressWarnings(
-      add_interviews(design, interviews, # nolint: object_usage_linter
-        catch = catch_total, effort = hours_fished, # nolint: object_usage_linter
-        harvest = catch_kept, trip_status = trip_status # nolint: object_usage_linter
+      add_interviews(
+        design,
+        interviews, # nolint: object_usage_linter
+        catch = catch_total,
+        effort = hours_fished, # nolint: object_usage_linter
+        harvest = catch_kept,
+        trip_status = trip_status # nolint: object_usage_linter
       )
     )
   )
@@ -295,9 +313,13 @@ test_that("add_interviews() errors on unregistered section value", {
 
   expect_error(
     suppressWarnings(
-      add_interviews(design, interviews, # nolint: object_usage_linter
-        catch = catch_total, effort = hours_fished, # nolint: object_usage_linter
-        harvest = catch_kept, trip_status = trip_status # nolint: object_usage_linter
+      add_interviews(
+        design,
+        interviews, # nolint: object_usage_linter
+        catch = catch_total,
+        effort = hours_fished, # nolint: object_usage_linter
+        harvest = catch_kept,
+        trip_status = trip_status # nolint: object_usage_linter
       )
     ),
     regexp = "MIAN"

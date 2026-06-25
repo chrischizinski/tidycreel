@@ -68,21 +68,25 @@ wrap_survey_call <- function(expr) {
 #'
 #' @keywords internal
 #' @noRd
-new_creel_estimates <- function(estimates,
-                                method = "total",
-                                variance_method = "taylor",
-                                design = NULL,
-                                conf_level = 0.95,
-                                by_vars = NULL,
-                                effort_target = NULL) {
+new_creel_estimates <- function(
+  estimates,
+  method = "total",
+  variance_method = "taylor",
+  design = NULL,
+  conf_level = 0.95,
+  by_vars = NULL,
+  effort_target = NULL
+) {
   # Input validation
   stopifnot(
     "estimates must be a data.frame" = is.data.frame(estimates),
     "method must be character" = is.character(method) && length(method) == 1,
-    "variance_method must be character" = is.character(variance_method) && length(variance_method) == 1,
+    "variance_method must be character" = is.character(variance_method) &&
+      length(variance_method) == 1,
     "conf_level must be numeric" = is.numeric(conf_level) && length(conf_level) == 1,
     "by_vars must be NULL or character" = is.null(by_vars) || is.character(by_vars),
-    "effort_target must be NULL or character" = is.null(effort_target) || is.character(effort_target)
+    "effort_target must be NULL or character" = is.null(effort_target) ||
+      is.character(effort_target)
   )
 
   structure(
@@ -115,16 +119,18 @@ new_creel_estimates <- function(estimates,
 #'
 #' @keywords internal
 #' @noRd
-new_creel_estimates_mor <- function(estimates,
-                                    method = "mean-of-ratios-cpue",
-                                    variance_method = "taylor",
-                                    design = NULL,
-                                    conf_level = 0.95,
-                                    by_vars = NULL,
-                                    n_incomplete = NULL,
-                                    n_total = NULL,
-                                    mor_truncate_at = NULL,
-                                    mor_n_truncated = NULL) {
+new_creel_estimates_mor <- function(
+  estimates,
+  method = "mean-of-ratios-cpue",
+  variance_method = "taylor",
+  design = NULL,
+  conf_level = 0.95,
+  by_vars = NULL,
+  n_incomplete = NULL,
+  n_total = NULL,
+  mor_truncate_at = NULL,
+  mor_n_truncated = NULL
+) {
   # Call parent constructor
   result <- new_creel_estimates(
     estimates = estimates,
@@ -157,7 +163,8 @@ new_creel_estimates_mor <- function(estimates,
 #' @export
 format.creel_estimates <- function(x, ...) {
   # Convert variance method to human-readable form
-  variance_display <- switch(x$variance_method, # nolint: object_usage_linter
+  variance_display <- switch(
+    x$variance_method, # nolint: object_usage_linter
     taylor = "Taylor linearization",
     bootstrap = "Bootstrap",
     jackknife = "Jackknife",
@@ -168,7 +175,8 @@ format.creel_estimates <- function(x, ...) {
   conf_pct <- paste0(round(x$conf_level * 100), "%") # nolint: object_usage_linter
 
   # Convert method to human-readable form
-  method_display <- switch(x$method, # nolint: object_usage_linter
+  method_display <- switch(
+    x$method, # nolint: object_usage_linter
     total = "Total",
     "ratio-of-means-cpue" = "Ratio-of-Means CPUE",
     "mean-of-ratios-cpue" = "Mean-of-Ratios CPUE",
@@ -185,29 +193,32 @@ format.creel_estimates <- function(x, ...) {
   # Build formatted output using cli
   output <- character()
 
-  output <- c(output, cli::cli_format_method({
-    cli::cli_h1("Creel Survey Estimates")
-    cli::cli_text("Method: {method_display}")
-    cli::cli_text("Variance: {variance_display}")
-    cli::cli_text("Confidence level: {conf_pct}")
+  output <- c(
+    output,
+    cli::cli_format_method({
+      cli::cli_h1("Creel Survey Estimates")
+      cli::cli_text("Method: {method_display}")
+      cli::cli_text("Variance: {variance_display}")
+      cli::cli_text("Confidence level: {conf_pct}")
 
-    # Show normalization note if effort was normalized by party size
-    if (endsWith(x$method, "-per-angler")) {
-      cli::cli_text("Note: Effort normalized by party size (n_anglers)")
-    }
+      # Show normalization note if effort was normalized by party size
+      if (endsWith(x$method, "-per-angler")) {
+        cli::cli_text("Note: Effort normalized by party size (n_anglers)")
+      }
 
-    # Show grouping variables if present
-    if (!is.null(x$by_vars)) {
-      by_display <- paste(x$by_vars, collapse = ", ") # nolint: object_usage_linter
-      cli::cli_text("Grouped by: {by_display}")
-    }
+      # Show grouping variables if present
+      if (!is.null(x$by_vars)) {
+        by_display <- paste(x$by_vars, collapse = ", ") # nolint: object_usage_linter
+        cli::cli_text("Grouped by: {by_display}")
+      }
 
-    if (!is.null(x$effort_target)) {
-      cli::cli_text("Effort target: {x$effort_target}")
-    }
+      if (!is.null(x$effort_target)) {
+        cli::cli_text("Effort target: {x$effort_target}")
+      }
 
-    cli::cli_text("")
-  }))
+      cli::cli_text("")
+    })
+  )
 
   # Add estimates table
   output <- c(output, utils::capture.output(print(x$estimates)))
@@ -361,10 +372,17 @@ print.creel_estimates <- function(x, ...) {
 #' result_verbose <- estimate_effort(design_with_counts, verbose = TRUE)
 #' @family "Estimation"
 #' @export
-estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level = 0.95,
-                            target = c("sampled_days", "stratum_total", "period_total"),
-                            verbose = FALSE, aggregate_sections = TRUE,
-                            method = "correlated", missing_sections = "warn") {
+estimate_effort <- function(
+  design,
+  by = NULL,
+  variance = "taylor",
+  conf_level = 0.95,
+  target = c("sampled_days", "stratum_total", "period_total"),
+  verbose = FALSE,
+  aggregate_sections = TRUE,
+  method = "correlated",
+  missing_sections = "warn"
+) {
   # Capture by parameter BEFORE validation
   by_quo <- rlang::enquo(by)
   target <- match.arg(target)
@@ -446,7 +464,8 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
       by_vars_br <- names(by_cols_br)
     }
 
-    result <- estimate_effort_br( # nolint: object_usage_linter.
+    result <- estimate_effort_br(
+      # nolint: object_usage_linter.
       design,
       by_vars_br,
       variance,
@@ -457,7 +476,8 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
 
     # Ice-specific: rename 'estimate' column to reflect effort_type
     if (identical(design$design_type, "ice")) {
-      col_name <- switch(design$ice$effort_type,
+      col_name <- switch(
+        design$ice$effort_type,
         time_on_ice = "total_effort_hr_on_ice",
         active_fishing_time = "total_effort_hr_active",
         "estimate"
@@ -502,7 +522,8 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
         "i" = "Use {.code target = 'sampled_days'} for now."
       ))
     }
-    return(estimate_effort_sections( # nolint: object_usage_linter
+    return(estimate_effort_sections(
+      # nolint: object_usage_linter
       design,
       variance,
       conf_level,
@@ -725,24 +746,30 @@ estimate_effort <- function(design, by = NULL, variance = "taylor", conf_level =
 #' result_mor_1h <- estimate_catch_rate(design_with_interviews, estimator = "mor", truncate_at = 1.0)
 #' @family "Estimation"
 #' @export
-estimate_catch_rate <- function(design,
-                                by = NULL,
-                                variance = "taylor",
-                                conf_level = 0.95,
-                                estimator = NULL,
-                                use_trips = NULL,
-                                truncate_at = 0.5,
-                                targeted = TRUE,
-                                missing_sections = "warn",
-                                force_origin = TRUE) {
+estimate_catch_rate <- function(
+  design,
+  by = NULL,
+  variance = "taylor",
+  conf_level = 0.95,
+  estimator = NULL,
+  use_trips = NULL,
+  truncate_at = 0.5,
+  targeted = TRUE,
+  missing_sections = "warn",
+  force_origin = TRUE
+) {
   # Capture by parameter BEFORE validation
   by_quo <- rlang::enquo(by)
 
   # Track whether use_trips / estimator were explicitly provided
-  use_trips_is_default  <- is.null(use_trips)
-  estimator_is_default  <- is.null(estimator)
-  if (is.null(use_trips))  use_trips  <- "complete"
-  if (is.null(estimator))  estimator  <- "ratio-of-means"
+  use_trips_is_default <- is.null(use_trips)
+  estimator_is_default <- is.null(estimator)
+  if (is.null(use_trips)) {
+    use_trips <- "complete"
+  }
+  if (is.null(estimator)) {
+    estimator <- "ratio-of-means"
+  }
 
   # Auto-route roving designs: when interview_type="roving" and the user has not
   # specified use_trips or estimator, default to all-trip MOR (Hoenig 1997).
@@ -1094,7 +1121,9 @@ estimate_catch_rate <- function(design,
 
       # Filter to incomplete trips and rebuild survey design
       # This lets MOR's validate_mor_availability see incomplete-only data
-      incomplete_interviews <- design$interviews[design$interviews[[trip_status_col]] == "incomplete", ]
+      incomplete_interviews <- design$interviews[
+        design$interviews[[trip_status_col]] == "incomplete",
+      ]
       design <- rebuild_interview_survey(design, incomplete_interviews) # nolint: object_usage_linter
     } else if (use_trips == "all") {
       # Roving design (or explicit use_trips="all"): use all interviews with MOR.
@@ -1128,8 +1157,8 @@ estimate_catch_rate <- function(design,
     # Determine if we already filtered via use_trips
     # Track which use_trips branch filtered the data
     use_trips_was_incomplete <- has_trip_status && use_trips == "incomplete"
-    use_trips_was_complete   <- has_trip_status && use_trips == "complete"
-    use_trips_was_all        <- has_trip_status && use_trips == "all"
+    use_trips_was_complete <- has_trip_status && use_trips == "complete"
+    use_trips_was_all <- has_trip_status && use_trips == "all"
 
     # Non-standard case: use_trips='complete' + estimator='mor'
     # Warn but allow (valid but unusual choice)
@@ -1168,7 +1197,9 @@ estimate_catch_rate <- function(design,
       # Old behavior: no use_trips filtering, filter to incomplete now
       n_total <- nrow(design$interviews)
       n_incomplete <- sum(design$interviews[[design$trip_status_col]] == "incomplete", na.rm = TRUE)
-      incomplete_interviews <- design$interviews[design$interviews[[design$trip_status_col]] == "incomplete", ]
+      incomplete_interviews <- design$interviews[
+        design$interviews[[design$trip_status_col]] == "incomplete",
+      ]
     }
 
     # Issue MOR assumptions warning, except:
@@ -1274,7 +1305,8 @@ estimate_catch_rate <- function(design,
     } else {
       NULL
     }
-    design_incomplete$interview_survey <- build_interview_survey( # nolint: object_usage_linter
+    design_incomplete$interview_survey <- build_interview_survey(
+      # nolint: object_usage_linter
       incomplete_interviews,
       strata = strata_formula
     )
@@ -1285,8 +1317,14 @@ estimate_catch_rate <- function(design,
 
   # Section dispatch guard — fires AFTER trip filtering, BEFORE standard dispatch
   if (!is.null(design[["sections"]])) {
-    return(estimate_catch_rate_sections( # nolint: object_usage_linter
-      design, by_quo, variance, conf_level, missing_sections, estimator
+    return(estimate_catch_rate_sections(
+      # nolint: object_usage_linter
+      design,
+      by_quo,
+      variance,
+      conf_level,
+      missing_sections,
+      estimator
     ))
   }
 
@@ -1304,13 +1342,14 @@ estimate_catch_rate <- function(design,
       ))
     }
 
-    estimates_df <- estimate_cpue_species( # nolint: object_usage_linter
+    estimates_df <- estimate_cpue_species(
+      # nolint: object_usage_linter
       design,
-      species_col       = by_info$species_var,
+      species_col = by_info$species_var,
       interview_by_vars = by_info$interview_vars,
-      variance_method   = variance,
-      conf_level        = conf_level,
-      estimator         = estimator
+      variance_method = variance,
+      conf_level = conf_level,
+      estimator = estimator
     )
 
     method_label <- if (estimator == "mor") {
@@ -1320,35 +1359,40 @@ estimate_catch_rate <- function(design,
     }
 
     if (estimator == "mor") {
-      return(new_creel_estimates_mor( # nolint: object_usage_linter
-        estimates       = tibble::as_tibble(estimates_df),
-        method          = method_label,
+      return(new_creel_estimates_mor(
+        # nolint: object_usage_linter
+        estimates = tibble::as_tibble(estimates_df),
+        method = method_label,
         variance_method = variance,
-        design          = design,
-        conf_level      = conf_level,
-        by_vars         = by_info$all_vars,
-        n_incomplete    = design$mor_n_incomplete,
-        n_total         = design$mor_n_total,
+        design = design,
+        conf_level = conf_level,
+        by_vars = by_info$all_vars,
+        n_incomplete = design$mor_n_incomplete,
+        n_total = design$mor_n_total,
         mor_truncate_at = design$mor_truncate_at,
         mor_n_truncated = design$mor_n_truncated
       ))
     }
 
-    return(new_creel_estimates( # nolint: object_usage_linter
-      estimates       = tibble::as_tibble(estimates_df),
-      method          = method_label,
+    return(new_creel_estimates(
+      # nolint: object_usage_linter
+      estimates = tibble::as_tibble(estimates_df),
+      method = method_label,
       variance_method = variance,
-      design          = design,
-      conf_level      = conf_level,
-      by_vars         = by_info$all_vars
+      design = design,
+      conf_level = conf_level,
+      by_vars = by_info$all_vars
     ))
   }
 
   # Regression (CPUE3) path — route before standard dispatch
   if (estimator == "regression") {
     if (rlang::quo_is_null(by_quo)) {
-      return(estimate_cpue_regression_total( # nolint: object_usage_linter
-        design, conf_level, force_origin
+      return(estimate_cpue_regression_total(
+        # nolint: object_usage_linter
+        design,
+        conf_level,
+        force_origin
       ))
     } else {
       by_cols <- tidyselect::eval_select(
@@ -1359,8 +1403,12 @@ estimate_catch_rate <- function(design,
         error_call = rlang::caller_env()
       )
       by_vars <- names(by_cols)
-      return(estimate_cpue_reg_grouped( # nolint: object_usage_linter
-        design, by_vars, conf_level, force_origin
+      return(estimate_cpue_reg_grouped(
+        # nolint: object_usage_linter
+        design,
+        by_vars,
+        conf_level,
+        force_origin
       ))
     }
   }
@@ -1381,8 +1429,13 @@ estimate_catch_rate <- function(design,
     )
     by_vars <- names(by_cols)
     validate_ratio_sample_size(design, by_vars, type = "cpue") # nolint: object_usage_linter
-    return(estimate_cpue_grouped( # nolint: object_usage_linter
-      design, by_vars, variance, conf_level, dispatch_estimator
+    return(estimate_cpue_grouped(
+      # nolint: object_usage_linter
+      design,
+      by_vars,
+      variance,
+      conf_level,
+      dispatch_estimator
     ))
   }
 }
@@ -1586,9 +1639,14 @@ estimate_harvest_rate <- function(
       by_vars_br <- names(by_cols_br)
     }
     use_trips_br <- if (is.null(use_trips)) "complete" else use_trips
-    return(estimate_harvest_br( # nolint: object_usage_linter
-      design, by_vars_br, variance, conf_level,
-      verbose = FALSE, use_trips = use_trips_br
+    return(estimate_harvest_br(
+      # nolint: object_usage_linter
+      design,
+      by_vars_br,
+      variance,
+      conf_level,
+      verbose = FALSE,
+      use_trips = use_trips_br
     ))
   }
 
@@ -1616,14 +1674,21 @@ estimate_harvest_rate <- function(
 
   # Section dispatch guard — fires AFTER validation, BEFORE standard dispatch
   if (!is.null(design[["sections"]])) {
-    return(estimate_harvest_rate_sections( # nolint: object_usage_linter
-      design, by_quo, variance, conf_level, missing_sections
+    return(estimate_harvest_rate_sections(
+      # nolint: object_usage_linter
+      design,
+      by_quo,
+      variance,
+      conf_level,
+      missing_sections
     ))
   }
 
   # Handle use_trips for standard (non-bus-route, non-sectioned) path
   use_trips_is_default <- is.null(use_trips)
-  if (is.null(use_trips)) use_trips <- "complete"
+  if (is.null(use_trips)) {
+    use_trips <- "complete"
+  }
   valid_use_trips_std <- c("all", "complete")
   if (!use_trips %in% valid_use_trips_std) {
     cli::cli_abort(c(
@@ -1671,6 +1736,37 @@ estimate_harvest_rate <- function(
       complete_interviews <- design$interviews[design$interviews[[trip_status_col]] == "complete", ]
       design <- rebuild_interview_survey(design, complete_interviews) # nolint: object_usage_linter
     }
+  }
+
+  # Detect species-level grouping
+  by_info <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
+
+  # Species-level dispatch
+  if (!is.null(by_info$species_var)) {
+    if (is.null(design[["catch"]])) {
+      cli::cli_abort(c(
+        "Species-level HPUE requires catch data.",
+        "x" = "{.field species} found in {.arg by} but {.fn add_catch} has not been called.",
+        "i" = "Call {.fn add_catch} before using species grouping in {.fn estimate_harvest_rate}."
+      ))
+    }
+    estimates_df <- estimate_hpue_species(
+      # nolint: object_usage_linter
+      design,
+      species_col = by_info$species_var,
+      interview_by_vars = by_info$interview_vars,
+      variance_method = variance,
+      conf_level = conf_level
+    )
+    return(new_creel_estimates(
+      # nolint: object_usage_linter
+      estimates = tibble::as_tibble(estimates_df),
+      method = "ratio-of-means-hpue-species",
+      variance_method = variance,
+      design = design,
+      conf_level = conf_level,
+      by_vars = by_info$all_vars
+    ))
   }
 
   # Route to grouped or ungrouped estimation
@@ -1832,14 +1928,21 @@ estimate_release_rate <- function(
 
   # Section dispatch guard — fires AFTER validation, BEFORE standard dispatch
   if (!is.null(design[["sections"]])) {
-    return(estimate_release_rate_sections( # nolint: object_usage_linter
-      design, by_quo, variance, conf_level, missing_sections
+    return(estimate_release_rate_sections(
+      # nolint: object_usage_linter
+      design,
+      by_quo,
+      variance,
+      conf_level,
+      missing_sections
     ))
   }
 
   # Handle use_trips for standard (non-sectioned) path
   use_trips_is_default <- is.null(use_trips)
-  if (is.null(use_trips)) use_trips <- "complete"
+  if (is.null(use_trips)) {
+    use_trips <- "complete"
+  }
   valid_use_trips_std <- c("all", "complete")
   if (!use_trips %in% valid_use_trips_std) {
     cli::cli_abort(c(
@@ -1894,20 +1997,22 @@ estimate_release_rate <- function(
 
   if (!is.null(by_info$species_var)) {
     # Species-level release rate: loop over species
-    estimates_df <- estimate_release_rate_species( # nolint: object_usage_linter
+    estimates_df <- estimate_release_rate_species(
+      # nolint: object_usage_linter
       design,
       species_col = by_info$species_var,
       interview_by_vars = by_info$interview_vars,
       variance_method = variance,
       conf_level = conf_level
     )
-    return(new_creel_estimates( # nolint: object_usage_linter
-      estimates       = tibble::as_tibble(estimates_df),
-      method          = "ratio-of-means-rpue",
+    return(new_creel_estimates(
+      # nolint: object_usage_linter
+      estimates = tibble::as_tibble(estimates_df),
+      method = "ratio-of-means-rpue",
       variance_method = variance,
-      design          = design,
-      conf_level      = conf_level,
-      by_vars         = by_info$all_vars
+      design = design,
+      conf_level = conf_level,
+      by_vars = by_info$all_vars
     ))
   }
 
@@ -1928,7 +2033,8 @@ estimate_release_rate <- function(
   } else {
     NULL
   }
-  design_rel$interview_survey <- build_interview_survey( # nolint: object_usage_linter
+  design_rel$interview_survey <- build_interview_survey(
+    # nolint: object_usage_linter
     release_data,
     strata = strata_formula
   )
@@ -1979,7 +2085,8 @@ rebuild_interview_survey <- function(design, filtered_interviews) {
   } else {
     NULL
   }
-  design_new$interview_survey <- build_interview_survey( # nolint: object_usage_linter
+  design_new$interview_survey <- build_interview_survey(
+    # nolint: object_usage_linter
     filtered_interviews,
     strata = strata_formula
   )
@@ -2032,31 +2139,31 @@ aggregate_section_totals <- function(by_formula, full_design_svy, count_formula,
   if (method == "correlated") {
     by_result <- survey::svyby(
       formula = count_formula,
-      by      = by_formula,
-      design  = full_design_svy,
-      FUN     = survey::svytotal,
-      covmat  = TRUE
+      by = by_formula,
+      design = full_design_svy,
+      FUN = survey::svytotal,
+      covmat = TRUE
     )
     contrast_vec <- setNames(rep(1, nrow(by_result)), rownames(vcov(by_result)))
     lake_contrast <- survey::svycontrast(by_result, list(lake_total = contrast_vec))
     list(
       estimate = as.numeric(coef(lake_contrast)),
-      se       = as.numeric(survey::SE(lake_contrast))
+      se = as.numeric(survey::SE(lake_contrast))
     )
   } else {
     # Cochran 5.2 — documented approximation for independent section designs
     by_result_ind <- survey::svyby(
       formula = count_formula,
-      by      = by_formula,
-      design  = full_design_svy,
-      FUN     = survey::svytotal,
-      covmat  = FALSE
+      by = by_formula,
+      design = full_design_svy,
+      FUN = survey::svytotal,
+      covmat = FALSE
     )
     section_ests <- as.numeric(coef(by_result_ind))
     section_ses <- as.numeric(survey::SE(by_result_ind))
     list(
       estimate = sum(section_ests),
-      se       = sqrt(sum(section_ses^2))
+      se = sqrt(sum(section_ses^2))
     )
   }
 }
@@ -2119,7 +2226,9 @@ resolve_species_by <- function(by_quo, design) {
   # Split: species_var vs interview_vars
   species_var <- if (species_col_name %in% all_vars) species_col_name else NULL
   interview_vars <- setdiff(all_vars, species_col_name)
-  if (length(interview_vars) == 0L) interview_vars <- NULL
+  if (length(interview_vars) == 0L) {
+    interview_vars <- NULL
+  }
 
   list(
     all_vars = all_vars,
@@ -2145,7 +2254,8 @@ resolve_species_by <- function(by_quo, design) {
 #'
 #' @keywords internal
 #' @noRd
-make_species_catch_for_interviews <- function(design, species_val, catch_type_val) { # nolint: object_length_linter
+make_species_catch_for_interviews <- function(design, species_val, catch_type_val) {
+  # nolint: object_length_linter
   catch_df <- design[["catch"]]
   interviews <- design$interviews
 
@@ -2164,13 +2274,17 @@ make_species_catch_for_interviews <- function(design, species_val, catch_type_va
       species_catch <- caught_only[, c(uid_col, count_col), drop = FALSE]
     } else {
       sub_rows <- species_rows[
-        species_rows[[type_col]] %in% c("harvested", "released"), , drop = FALSE
+        species_rows[[type_col]] %in% c("harvested", "released"),
+        ,
+        drop = FALSE
       ]
       species_catch <- sub_rows[, c(uid_col, count_col), drop = FALSE]
     }
   } else {
     species_catch <- species_rows[
-      species_rows[[type_col]] == catch_type_val, c(uid_col, count_col), drop = FALSE
+      species_rows[[type_col]] == catch_type_val,
+      c(uid_col, count_col),
+      drop = FALSE
     ]
   }
 
@@ -2276,8 +2390,11 @@ estimate_release_build_data <- function(design, species = NULL) {
 #'
 #' @keywords internal
 #' @noRd
-compute_within_day_var_contribution <- function(design, by_vars = NULL, # nolint: object_length_linter
-                                               target = "stratum_total") {
+compute_within_day_var_contribution <- function(
+  design,
+  by_vars = NULL, # nolint: object_length_linter
+  target = "stratum_total"
+) {
   wdv <- design$within_day_var
   if (is.null(wdv)) {
     return(0)
@@ -2336,7 +2453,9 @@ compute_within_day_var_contribution <- function(design, by_vars = NULL, # nolint
       k_d <- combined$k_d[rows]
       ss_d <- combined$ss_d[rows]
       k_bar <- mean(k_d)
-      if (k_bar <= 1) next # no within-day component when k_bar = 1
+      if (k_bar <= 1) {
+        next
+      } # no within-day component when k_bar = 1
       s2_within <- sum(ss_d) / (n_sampled * (k_bar - 1))
       # For sampled_days target the between-day variance is on the sampled-day
       # scale (no expansion weights), so the within-day component must match:
@@ -2356,7 +2475,8 @@ compute_within_day_var_contribution <- function(design, by_vars = NULL, # nolint
     }
     group_keys <- unique(combined$.group_key)
     v_within_by_group <- stats::setNames(
-      numeric(length(group_keys)), group_keys
+      numeric(length(group_keys)),
+      group_keys
     )
     for (gk in group_keys) {
       g_rows <- combined$.group_key == gk
@@ -2370,7 +2490,9 @@ compute_within_day_var_contribution <- function(design, by_vars = NULL, # nolint
         k_d <- g_data$k_d[s_rows]
         ss_d <- g_data$ss_d[s_rows]
         k_bar <- mean(k_d)
-        if (k_bar <= 1) next
+        if (k_bar <= 1) {
+          next
+        }
         s2_within <- sum(ss_d) / (n_sampled * (k_bar - 1))
         scale_n <- if (identical(target, "sampled_days")) n_sampled else n_avail
         v_within <- (scale_n / k_bar) * s2_within
@@ -2408,8 +2530,16 @@ get_effort_target_design <- function(design, target) {
     ))
   }
 
-  available_by_strata <- dplyr::count(calendar, dplyr::across(dplyr::all_of(strata_cols)), name = ".N_avail")
-  sampled_by_strata <- dplyr::count(counts_data, dplyr::across(dplyr::all_of(strata_cols)), name = ".n_sampled")
+  available_by_strata <- dplyr::count(
+    calendar,
+    dplyr::across(dplyr::all_of(strata_cols)),
+    name = ".N_avail"
+  )
+  sampled_by_strata <- dplyr::count(
+    counts_data,
+    dplyr::across(dplyr::all_of(strata_cols)),
+    name = ".n_sampled"
+  )
 
   expanded_counts <- counts_data |>
     dplyr::left_join(available_by_strata, by = strata_cols) |>
@@ -2436,6 +2566,7 @@ get_effort_target_design <- function(design, target) {
     ids = stats::reformulate(design$psu_col),
     strata = stats::reformulate(strata_cols),
     weights = ~.expansion_weight,
+    fpc = ~.N_avail,
     data = expanded_counts,
     nest = TRUE
   )
@@ -2459,9 +2590,15 @@ get_effort_target_design <- function(design, target) {
 #'
 #' @keywords internal
 #' @noRd
-estimate_effort_sections <- function(design, variance_method, conf_level,
-                                     aggregate_sections, method, missing_sections,
-                                     target = "sampled_days") {
+estimate_effort_sections <- function(
+  design,
+  variance_method,
+  conf_level,
+  aggregate_sections,
+  method,
+  missing_sections,
+  target = "sampled_days"
+) {
   # NULL guard (defensive; dispatch should prevent this firing)
   if (is.null(design[["sections"]])) {
     stop("sections dispatch called on non-section design")
@@ -2561,11 +2698,12 @@ estimate_effort_sections <- function(design, variance_method, conf_level,
     # Use only present sections for aggregation
     present_design_svy <- full_svy_design
     # Filter to present sections only for the section formula (absent sections skipped)
-    agg <- suppressWarnings(aggregate_section_totals( # nolint: object_usage_linter
-      by_formula      = section_formula,
+    agg <- suppressWarnings(aggregate_section_totals(
+      # nolint: object_usage_linter
+      by_formula = section_formula,
       full_design_svy = present_design_svy,
-      count_formula   = count_formula,
-      method          = method
+      count_formula = count_formula,
+      method = method
     ))
     lake_est <- agg$estimate
     lake_se <- agg$se
@@ -2593,7 +2731,8 @@ estimate_effort_sections <- function(design, variance_method, conf_level,
   }
 
   # Return creel_estimates object
-  new_creel_estimates( # nolint: object_usage_linter
+  new_creel_estimates(
+    # nolint: object_usage_linter
     estimates = result_df,
     method = "total-sections",
     variance_method = variance_method,
@@ -2705,7 +2844,8 @@ estimate_effort_total <- function(design, variance_method, conf_level, target = 
   )
 
   # Return creel_estimates object
-  new_creel_estimates( # nolint: object_usage_linter
+  new_creel_estimates(
+    # nolint: object_usage_linter
     estimates = estimates_df,
     method = "total",
     variance_method = variance_method,
@@ -2720,7 +2860,13 @@ estimate_effort_total <- function(design, variance_method, conf_level, target = 
 #'
 #' @keywords internal
 #' @noRd
-estimate_effort_grouped <- function(design, by_vars, variance_method, conf_level, target = "sampled_days") {
+estimate_effort_grouped <- function(
+  design,
+  by_vars,
+  variance_method,
+  conf_level,
+  target = "sampled_days"
+) {
   counts_data <- design$counts
 
   # Tier 2 validation for groups
@@ -2771,7 +2917,11 @@ estimate_effort_grouped <- function(design, by_vars, variance_method, conf_level
   var_between_vec <- se_between_vec^2
 
   # Within-day variance per group (Rasmussen 1998; named vector keyed by group)
-  var_within_named <- compute_within_day_var_contribution(design, by_vars = by_vars, target = target) # nolint: object_usage_linter
+  var_within_named <- compute_within_day_var_contribution(
+    design,
+    by_vars = by_vars,
+    target = target
+  ) # nolint: object_usage_linter
 
   # Build group keys for the svyby result rows to match var_within_named names
   if (length(by_vars) == 1) {
@@ -2831,7 +2981,8 @@ estimate_effort_grouped <- function(design, by_vars, variance_method, conf_level
   estimates_df <- estimates_df[col_order]
 
   # Return creel_estimates object
-  new_creel_estimates( # nolint: object_usage_linter
+  new_creel_estimates(
+    # nolint: object_usage_linter
     estimates = estimates_df,
     method = "total",
     variance_method = variance_method,
@@ -2846,8 +2997,7 @@ estimate_effort_grouped <- function(design, by_vars, variance_method, conf_level
 #'
 #' @keywords internal
 #' @noRd
-estimate_cpue_total <- function(design, variance_method, conf_level,
-                                estimator = "ratio-of-means") {
+estimate_cpue_total <- function(design, variance_method, conf_level, estimator = "ratio-of-means") {
   interviews_data <- design$interviews
   catch_col <- design$catch_col
   effort_col <- design$angler_effort_col
@@ -2939,7 +3089,8 @@ estimate_cpue_total <- function(design, variance_method, conf_level,
   # Return appropriate creel_estimates object (MOR or standard)
   if (estimator %in% c("mor", "mortr")) {
     # Get trip counts and truncation metadata stored during MOR filtering
-    new_creel_estimates_mor( # nolint: object_usage_linter
+    new_creel_estimates_mor(
+      # nolint: object_usage_linter
       estimates = estimates_df,
       method = method_name,
       variance_method = variance_method,
@@ -2952,7 +3103,8 @@ estimate_cpue_total <- function(design, variance_method, conf_level,
       mor_n_truncated = design$mor_n_truncated
     )
   } else {
-    new_creel_estimates( # nolint: object_usage_linter
+    new_creel_estimates(
+      # nolint: object_usage_linter
       estimates = estimates_df,
       method = method_name,
       variance_method = variance_method,
@@ -2967,8 +3119,13 @@ estimate_cpue_total <- function(design, variance_method, conf_level,
 #'
 #' @keywords internal
 #' @noRd
-estimate_cpue_grouped <- function(design, by_vars, variance_method, conf_level,
-                                  estimator = "ratio-of-means") {
+estimate_cpue_grouped <- function(
+  design,
+  by_vars,
+  variance_method,
+  conf_level,
+  estimator = "ratio-of-means"
+) {
   interviews_data <- design$interviews
   catch_col <- design$catch_col
   effort_col <- design$angler_effort_col
@@ -3091,7 +3248,8 @@ estimate_cpue_grouped <- function(design, by_vars, variance_method, conf_level,
   # Return appropriate creel_estimates object (MOR or standard)
   if (estimator %in% c("mor", "mortr")) {
     # Get trip counts and truncation metadata stored during MOR filtering
-    new_creel_estimates_mor( # nolint: object_usage_linter
+    new_creel_estimates_mor(
+      # nolint: object_usage_linter
       estimates = estimates_df,
       method = method_name,
       variance_method = variance_method,
@@ -3104,7 +3262,8 @@ estimate_cpue_grouped <- function(design, by_vars, variance_method, conf_level,
       mor_n_truncated = design$mor_n_truncated
     )
   } else {
-    new_creel_estimates( # nolint: object_usage_linter
+    new_creel_estimates(
+      # nolint: object_usage_linter
       estimates = estimates_df,
       method = method_name,
       variance_method = variance_method,
@@ -3189,9 +3348,14 @@ warn_missing_rate_strata <- function(effort_df, rate_df, stratum_by_vars, contex
 #'
 #' @keywords internal
 #' @noRd
-compute_stratum_product_sum <- function(effort_df, rate_df, stratum_by_vars,
-                                        interview_by_vars, conf_level,
-                                        rate_suffix = "rate") {
+compute_stratum_product_sum <- function(
+  effort_df,
+  rate_df,
+  stratum_by_vars,
+  interview_by_vars,
+  conf_level,
+  rate_suffix = "rate"
+) {
   # t-distribution df: total interviews minus number of strata (conservative)
   n_strata_ci <- if (length(stratum_by_vars) == 0L) 1L else max(1L, nrow(rate_df))
   df_ci <- max(1L, sum(rate_df$n, na.rm = TRUE) - n_strata_ci)
@@ -3206,15 +3370,19 @@ compute_stratum_product_sum <- function(effort_df, rate_df, stratum_by_vars,
     est <- e_est * r_est
     pv <- (e_est^2 * r_se^2) + (r_est^2 * e_se^2)
     return(data.frame(
-      estimate = est, se = sqrt(pv),
-      ci_lower = est - z * sqrt(pv), ci_upper = est + z * sqrt(pv),
-      n = rate_df$n, stringsAsFactors = FALSE
+      estimate = est,
+      se = sqrt(pv),
+      ci_lower = est - z * sqrt(pv),
+      ci_upper = est + z * sqrt(pv),
+      n = rate_df$n,
+      stringsAsFactors = FALSE
     ))
   }
 
   # Merge per-stratum effort and rate on stratum_by_vars
   merged <- merge(
-    effort_df, rate_df,
+    effort_df,
+    rate_df,
     by = stratum_by_vars,
     suffixes = c("_effort", paste0("_", rate_suffix)),
     sort = FALSE
@@ -3238,16 +3406,19 @@ compute_stratum_product_sum <- function(effort_df, rate_df, stratum_by_vars,
     pv <- sum(merged$.var_sh)
     n <- sum(merged$.n_sh)
     data.frame(
-      estimate = est, se = sqrt(pv),
-      ci_lower = est - z * sqrt(pv), ci_upper = est + z * sqrt(pv),
-      n = as.integer(n), stringsAsFactors = FALSE
+      estimate = est,
+      se = sqrt(pv),
+      ci_lower = est - z * sqrt(pv),
+      ci_upper = est + z * sqrt(pv),
+      n = as.integer(n),
+      stringsAsFactors = FALSE
     )
   } else {
     # Sum strata within each interview_by_vars group
     agg <- stats::aggregate(
       cbind(.est_sh, .var_sh, .n_sh) ~ .,
       data = merged[c(interview_by_vars, ".est_sh", ".var_sh", ".n_sh")],
-      FUN  = sum
+      FUN = sum
     )
     sp_result <- tibble::as_tibble(agg[interview_by_vars])
     sp_result$estimate <- agg$.est_sh
@@ -3272,10 +3443,15 @@ compute_stratum_product_sum <- function(effort_df, rate_df, stratum_by_vars,
 #'
 #' @keywords internal
 #' @noRd
-estimate_cpue_species <- function(design, species_col, interview_by_vars,
-                                  variance_method, conf_level,
-                                  estimator = "ratio-of-means",
-                                  validate = TRUE) {
+estimate_cpue_species <- function(
+  design,
+  species_col,
+  interview_by_vars,
+  variance_method,
+  conf_level,
+  estimator = "ratio-of-means",
+  validate = TRUE
+) {
   all_species <- sort(unique(design[["catch"]][[species_col]]))
 
   results_list <- vector("list", length(all_species))
@@ -3298,7 +3474,8 @@ estimate_cpue_species <- function(design, species_col, interview_by_vars,
     } else {
       NULL
     }
-    design_sp$interview_survey <- build_interview_survey( # nolint: object_usage_linter
+    design_sp$interview_survey <- build_interview_survey(
+      # nolint: object_usage_linter
       sp_data,
       strata = strata_formula
     )
@@ -3310,7 +3487,13 @@ estimate_cpue_species <- function(design, species_col, interview_by_vars,
     if (is.null(interview_by_vars)) {
       result <- estimate_cpue_total(design_sp, variance_method, conf_level, estimator) # nolint: object_usage_linter
     } else {
-      result <- estimate_cpue_grouped(design_sp, interview_by_vars, variance_method, conf_level, estimator) # nolint: object_usage_linter
+      result <- estimate_cpue_grouped(
+        design_sp,
+        interview_by_vars,
+        variance_method,
+        conf_level,
+        estimator
+      ) # nolint: object_usage_linter
     }
 
     sp_df <- result$estimates
@@ -3327,9 +3510,14 @@ estimate_cpue_species <- function(design, species_col, interview_by_vars,
 #'
 #' @keywords internal
 #' @noRd
-estimate_release_rate_species <- function(design, species_col, interview_by_vars,
-                                          variance_method, conf_level,
-                                          validate = TRUE) {
+estimate_release_rate_species <- function(
+  design,
+  species_col,
+  interview_by_vars,
+  variance_method,
+  conf_level,
+  validate = TRUE
+) {
   all_species <- sort(unique(design[["catch"]][[species_col]]))
 
   results_list <- vector("list", length(all_species))
@@ -3353,7 +3541,8 @@ estimate_release_rate_species <- function(design, species_col, interview_by_vars
     } else {
       NULL
     }
-    design_sp$interview_survey <- build_interview_survey( # nolint: object_usage_linter
+    design_sp$interview_survey <- build_interview_survey(
+      # nolint: object_usage_linter
       sp_data,
       strata = strata_formula
     )
@@ -3382,9 +3571,14 @@ estimate_release_rate_species <- function(design, species_col, interview_by_vars
 #'
 #' @keywords internal
 #' @noRd
-estimate_hpue_species <- function(design, species_col, interview_by_vars,
-                                  variance_method, conf_level,
-                                  validate = TRUE) {
+estimate_hpue_species <- function(
+  design,
+  species_col,
+  interview_by_vars,
+  variance_method,
+  conf_level,
+  validate = TRUE
+) {
   all_species <- sort(unique(design[["catch"]][[species_col]]))
   results_list <- vector("list", length(all_species))
 
@@ -3405,7 +3599,8 @@ estimate_hpue_species <- function(design, species_col, interview_by_vars,
     } else {
       NULL
     }
-    design_sp$interview_survey <- build_interview_survey( # nolint: object_usage_linter
+    design_sp$interview_survey <- build_interview_survey(
+      # nolint: object_usage_linter
       sp_data,
       strata = strata_formula
     )
@@ -3512,7 +3707,8 @@ estimate_harvest_total <- function(design, variance_method, conf_level) {
   )
 
   # Return creel_estimates object
-  new_creel_estimates( # nolint: object_usage_linter
+  new_creel_estimates(
+    # nolint: object_usage_linter
     estimates = estimates_df,
     method = "ratio-of-means-hpue",
     variance_method = variance_method,
@@ -3631,7 +3827,8 @@ estimate_harvest_grouped <- function(design, by_vars, variance_method, conf_leve
   estimates_df <- estimates_df[col_order]
 
   # Return creel_estimates object
-  new_creel_estimates( # nolint: object_usage_linter
+  new_creel_estimates(
+    # nolint: object_usage_linter
     estimates = estimates_df,
     method = "ratio-of-means-hpue",
     variance_method = variance_method,
@@ -3647,9 +3844,14 @@ estimate_harvest_grouped <- function(design, by_vars, variance_method, conf_leve
 #'
 #' @keywords internal
 #' @noRd
-estimate_catch_rate_sections <- function(design, by_quo, variance_method, # nolint: object_length_linter
-                                         conf_level, missing_sections,
-                                         estimator) {
+estimate_catch_rate_sections <- function(
+  design,
+  by_quo,
+  variance_method, # nolint: object_length_linter
+  conf_level,
+  missing_sections,
+  estimator
+) {
   section_col <- design[["section_col"]]
   registered_sections <- design$sections[[section_col]]
   present_sections <- unique(design$interviews[[section_col]])
@@ -3683,12 +3885,12 @@ estimate_catch_rate_sections <- function(design, by_quo, variance_method, # noli
     if (sec %in% absent_sections) {
       # Build NA row — include by= columns set to NA if present
       na_row <- tibble::tibble(
-        section        = sec,
-        estimate       = NA_real_,
-        se             = NA_real_,
-        ci_lower       = NA_real_,
-        ci_upper       = NA_real_,
-        n              = 0L,
+        section = sec,
+        estimate = NA_real_,
+        se = NA_real_,
+        ci_lower = NA_real_,
+        ci_upper = NA_real_,
+        n = 0L,
         data_available = FALSE
       )
       if (!is.null(by_info$all_vars)) {
@@ -3704,42 +3906,48 @@ estimate_catch_rate_sections <- function(design, by_quo, variance_method, # noli
 
       if (!is.null(by_info$species_var)) {
         # Species by= path
-        sp_df <- estimate_cpue_species( # nolint: object_usage_linter
+        sp_df <- estimate_cpue_species(
+          # nolint: object_usage_linter
           sec_design,
-          species_col       = by_info$species_var,
+          species_col = by_info$species_var,
           interview_by_vars = by_info$interview_vars,
-          variance_method   = variance_method,
-          conf_level        = conf_level,
-          estimator         = estimator
+          variance_method = variance_method,
+          conf_level = conf_level,
+          estimator = estimator
         )
         sp_df <- tibble::add_column(tibble::as_tibble(sp_df), section = sec, .before = 1)
         sp_df$data_available <- TRUE
         section_rows[[sec]] <- sp_df
       } else if (!is.null(by_info$interview_vars)) {
         # Grouped (non-species) by= path
-        result <- estimate_cpue_grouped( # nolint: object_usage_linter
+        result <- estimate_cpue_grouped(
+          # nolint: object_usage_linter
           sec_design,
-          by_vars         = by_info$interview_vars,
+          by_vars = by_info$interview_vars,
           variance_method = variance_method,
-          conf_level      = conf_level,
-          estimator       = estimator
+          conf_level = conf_level,
+          estimator = estimator
         )
         row_df <- tibble::add_column(result$estimates, section = sec, .before = 1)
         row_df$data_available <- TRUE
         section_rows[[sec]] <- row_df
       } else {
         # Ungrouped (total) path
-        result <- estimate_cpue_total( # nolint: object_usage_linter
-          sec_design, variance_method, conf_level, estimator
+        result <- estimate_cpue_total(
+          # nolint: object_usage_linter
+          sec_design,
+          variance_method,
+          conf_level,
+          estimator
         )
         row <- result$estimates
         section_rows[[sec]] <- tibble::tibble(
-          section        = sec,
-          estimate       = row$estimate,
-          se             = row$se,
-          ci_lower       = row$ci_lower,
-          ci_upper       = row$ci_upper,
-          n              = row$n,
+          section = sec,
+          estimate = row$estimate,
+          se = row$se,
+          ci_lower = row$ci_lower,
+          ci_upper = row$ci_upper,
+          n = row$n,
           data_available = TRUE
         )
       }
@@ -3748,13 +3956,14 @@ estimate_catch_rate_sections <- function(design, by_quo, variance_method, # noli
 
   result_df <- dplyr::bind_rows(section_rows)
 
-  new_creel_estimates( # nolint: object_usage_linter
-    estimates       = result_df,
-    method          = "ratio-of-means-cpue-sections",
+  new_creel_estimates(
+    # nolint: object_usage_linter
+    estimates = result_df,
+    method = "ratio-of-means-cpue-sections",
     variance_method = variance_method,
-    design          = design,
-    conf_level      = conf_level,
-    by_vars         = if (!is.null(by_info$all_vars)) c("section", by_info$all_vars) else "section"
+    design = design,
+    conf_level = conf_level,
+    by_vars = if (!is.null(by_info$all_vars)) c("section", by_info$all_vars) else "section"
   )
 }
 
@@ -3762,8 +3971,13 @@ estimate_catch_rate_sections <- function(design, by_quo, variance_method, # noli
 #'
 #' @keywords internal
 #' @noRd
-estimate_harvest_rate_sections <- function(design, by_quo, variance_method, # nolint: object_length_linter
-                                           conf_level, missing_sections) {
+estimate_harvest_rate_sections <- function(
+  design,
+  by_quo,
+  variance_method, # nolint: object_length_linter
+  conf_level,
+  missing_sections
+) {
   section_col <- design[["section_col"]]
   registered_sections <- design$sections[[section_col]]
   present_sections <- unique(design$interviews[[section_col]])
@@ -3807,12 +4021,12 @@ estimate_harvest_rate_sections <- function(design, by_quo, variance_method, # no
   for (sec in registered_sections) {
     if (sec %in% absent_sections) {
       na_row <- tibble::tibble(
-        section        = sec,
-        estimate       = NA_real_,
-        se             = NA_real_,
-        ci_lower       = NA_real_,
-        ci_upper       = NA_real_,
-        n              = 0L,
+        section = sec,
+        estimate = NA_real_,
+        se = NA_real_,
+        ci_lower = NA_real_,
+        ci_upper = NA_real_,
+        n = 0L,
         data_available = FALSE
       )
       if (!is.null(by_vars)) {
@@ -3826,24 +4040,31 @@ estimate_harvest_rate_sections <- function(design, by_quo, variance_method, # no
       sec_design <- rebuild_interview_survey(design, filtered) # nolint: object_usage_linter
 
       if (!is.null(by_vars)) {
-        result <- estimate_harvest_grouped( # nolint: object_usage_linter
-          sec_design, by_vars, variance_method, conf_level
+        result <- estimate_harvest_grouped(
+          # nolint: object_usage_linter
+          sec_design,
+          by_vars,
+          variance_method,
+          conf_level
         )
         row_df <- tibble::add_column(result$estimates, section = sec, .before = 1)
         row_df$data_available <- TRUE
         section_rows[[sec]] <- row_df
       } else {
-        result <- estimate_harvest_total( # nolint: object_usage_linter
-          sec_design, variance_method, conf_level
+        result <- estimate_harvest_total(
+          # nolint: object_usage_linter
+          sec_design,
+          variance_method,
+          conf_level
         )
         row <- result$estimates
         section_rows[[sec]] <- tibble::tibble(
-          section        = sec,
-          estimate       = row$estimate,
-          se             = row$se,
-          ci_lower       = row$ci_lower,
-          ci_upper       = row$ci_upper,
-          n              = row$n,
+          section = sec,
+          estimate = row$estimate,
+          se = row$se,
+          ci_lower = row$ci_lower,
+          ci_upper = row$ci_upper,
+          n = row$n,
           data_available = TRUE
         )
       }
@@ -3852,13 +4073,14 @@ estimate_harvest_rate_sections <- function(design, by_quo, variance_method, # no
 
   result_df <- dplyr::bind_rows(section_rows)
 
-  new_creel_estimates( # nolint: object_usage_linter
-    estimates       = result_df,
-    method          = "ratio-of-means-hpue-sections",
+  new_creel_estimates(
+    # nolint: object_usage_linter
+    estimates = result_df,
+    method = "ratio-of-means-hpue-sections",
     variance_method = variance_method,
-    design          = design,
-    conf_level      = conf_level,
-    by_vars         = if (!is.null(by_vars)) c("section", by_vars) else "section"
+    design = design,
+    conf_level = conf_level,
+    by_vars = if (!is.null(by_vars)) c("section", by_vars) else "section"
   )
 }
 
@@ -3866,8 +4088,13 @@ estimate_harvest_rate_sections <- function(design, by_quo, variance_method, # no
 #'
 #' @keywords internal
 #' @noRd
-estimate_release_rate_sections <- function(design, by_quo, variance_method, # nolint: object_length_linter
-                                           conf_level, missing_sections) {
+estimate_release_rate_sections <- function(
+  design,
+  by_quo,
+  variance_method, # nolint: object_length_linter
+  conf_level,
+  missing_sections
+) {
   section_col <- design[["section_col"]]
   registered_sections <- design$sections[[section_col]]
   present_sections <- unique(design$interviews[[section_col]])
@@ -3911,12 +4138,12 @@ estimate_release_rate_sections <- function(design, by_quo, variance_method, # no
   for (sec in registered_sections) {
     if (sec %in% absent_sections) {
       na_row <- tibble::tibble(
-        section        = sec,
-        estimate       = NA_real_,
-        se             = NA_real_,
-        ci_lower       = NA_real_,
-        ci_upper       = NA_real_,
-        n              = 0L,
+        section = sec,
+        estimate = NA_real_,
+        se = NA_real_,
+        ci_lower = NA_real_,
+        ci_upper = NA_real_,
+        n = 0L,
         data_available = FALSE
       )
       if (!is.null(by_vars)) {
@@ -3944,14 +4171,19 @@ estimate_release_rate_sections <- function(design, by_quo, variance_method, # no
       } else {
         NULL
       }
-      design_rel$interview_survey <- build_interview_survey( # nolint: object_usage_linter
+      design_rel$interview_survey <- build_interview_survey(
+        # nolint: object_usage_linter
         release_data,
         strata = strata_formula
       )
 
       if (!is.null(by_vars)) {
-        result <- estimate_cpue_grouped( # nolint: object_usage_linter
-          design_rel, by_vars, variance_method, conf_level
+        result <- estimate_cpue_grouped(
+          # nolint: object_usage_linter
+          design_rel,
+          by_vars,
+          variance_method,
+          conf_level
         )
         row_df <- tibble::add_column(result$estimates, section = sec, .before = 1)
         row_df$data_available <- TRUE
@@ -3960,12 +4192,12 @@ estimate_release_rate_sections <- function(design, by_quo, variance_method, # no
         result <- estimate_cpue_total(design_rel, variance_method, conf_level) # nolint: object_usage_linter
         row <- result$estimates
         section_rows[[sec]] <- tibble::tibble(
-          section        = sec,
-          estimate       = row$estimate,
-          se             = row$se,
-          ci_lower       = row$ci_lower,
-          ci_upper       = row$ci_upper,
-          n              = row$n,
+          section = sec,
+          estimate = row$estimate,
+          se = row$se,
+          ci_lower = row$ci_lower,
+          ci_upper = row$ci_upper,
+          n = row$n,
           data_available = TRUE
         )
       }
@@ -3974,12 +4206,13 @@ estimate_release_rate_sections <- function(design, by_quo, variance_method, # no
 
   result_df <- dplyr::bind_rows(section_rows)
 
-  new_creel_estimates( # nolint: object_usage_linter
-    estimates       = result_df,
-    method          = "ratio-of-means-rpue-sections",
+  new_creel_estimates(
+    # nolint: object_usage_linter
+    estimates = result_df,
+    method = "ratio-of-means-rpue-sections",
     variance_method = variance_method,
-    design          = design,
-    conf_level      = conf_level,
-    by_vars         = if (!is.null(by_vars)) c("section", by_vars) else "section"
+    design = design,
+    conf_level = conf_level,
+    by_vars = if (!is.null(by_vars)) c("section", by_vars) else "section"
   )
 }

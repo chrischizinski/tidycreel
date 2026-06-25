@@ -8,13 +8,17 @@ make_ld <- function(by_species = TRUE) {
   d <- suppressWarnings(
     creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
   )
-  d <- suppressWarnings(add_interviews(d, example_interviews, # nolint: object_usage_linter
+  d <- suppressWarnings(add_interviews(
+    d,
+    example_interviews, # nolint: object_usage_linter
     catch = catch_total, # nolint: object_usage_linter
     effort = hours_fished, # nolint: object_usage_linter
     harvest = catch_kept, # nolint: object_usage_linter
     trip_status = trip_status # nolint: object_usage_linter
   ))
-  d <- add_lengths(d, example_lengths, # nolint: object_usage_linter
+  d <- add_lengths(
+    d,
+    example_lengths, # nolint: object_usage_linter
     length_uid = interview_id, # nolint: object_usage_linter
     interview_uid = interview_id, # nolint: object_usage_linter
     species = species, # nolint: object_usage_linter
@@ -64,18 +68,31 @@ test_that("est_compliance() returns creel_compliance data.frame", {
 test_that("est_compliance() returns expected columns (grouped)", {
   ld <- make_ld()
   result <- est_compliance(ld, min_length = 300)
-  expected_cols <- c("species", "min_length", "n_legal_est", "n_total_est",
-                     "compliance_prop", "compliance_se",
-                     "compliance_ci_lower", "compliance_ci_upper")
+  expected_cols <- c(
+    "species",
+    "min_length",
+    "n_legal_est",
+    "n_total_est",
+    "compliance_prop",
+    "compliance_se",
+    "compliance_ci_lower",
+    "compliance_ci_upper"
+  )
   expect_true(all(expected_cols %in% names(result)))
 })
 
 test_that("est_compliance() returns expected columns (ungrouped)", {
   ld <- make_ld(by_species = FALSE)
   result <- est_compliance(ld, min_length = 300)
-  expected_cols <- c("min_length", "n_legal_est", "n_total_est",
-                     "compliance_prop", "compliance_se",
-                     "compliance_ci_lower", "compliance_ci_upper")
+  expected_cols <- c(
+    "min_length",
+    "n_legal_est",
+    "n_total_est",
+    "compliance_prop",
+    "compliance_se",
+    "compliance_ci_lower",
+    "compliance_ci_upper"
+  )
   expect_true(all(expected_cols %in% names(result)))
   expect_false("species" %in% names(result))
 })
@@ -116,8 +133,12 @@ test_that("est_compliance() matches manual P = sum(I_h * N_h) / sum(N_h)", {
     legal <- rows$bin_lower >= min_l
     expected_p <- sum(rows$estimate[legal]) / sum(rows$estimate)
     actual_p <- result$compliance_prop[result$species == sp]
-    expect_equal(actual_p, expected_p, tolerance = 1e-9,
-                 label = paste("compliance_prop for species", sp))
+    expect_equal(
+      actual_p,
+      expected_p,
+      tolerance = 1e-9,
+      label = paste("compliance_prop for species", sp)
+    )
   }
 })
 
@@ -129,8 +150,12 @@ test_that("est_compliance() n_total_est matches sum(estimate)", {
     rows <- ld[ld$species == sp, ]
     expected_total <- sum(rows$estimate)
     actual_total <- result$n_total_est[result$species == sp]
-    expect_equal(actual_total, expected_total, tolerance = 1e-9,
-                 label = paste("n_total_est for species", sp))
+    expect_equal(
+      actual_total,
+      expected_total,
+      tolerance = 1e-9,
+      label = paste("n_total_est for species", sp)
+    )
   }
 })
 
@@ -143,8 +168,12 @@ test_that("est_compliance() n_legal_est + n_illegal_est = n_total_est", {
     rows <- ld[ld$species == sp, ]
     illegal_est <- sum(rows$estimate[rows$bin_lower < min_l])
     row <- result[result$species == sp, ]
-    expect_equal(row$n_legal_est + illegal_est, row$n_total_est, tolerance = 1e-9,
-                 label = paste("legal + illegal = total for species", sp))
+    expect_equal(
+      row$n_legal_est + illegal_est,
+      row$n_total_est,
+      tolerance = 1e-9,
+      label = paste("legal + illegal = total for species", sp)
+    )
   }
 })
 

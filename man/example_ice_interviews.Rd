@@ -5,7 +5,7 @@
 \alias{example_ice_interviews}
 \title{Example interview data for ice fishing creel survey}
 \format{
-A data frame with 72 rows and 10 columns:
+A data frame with 72 rows and 11 columns:
 \describe{
 \item{date}{Interview date (Date class), matching \link{example_ice_sampling_frame}}
 \item{n_counted}{Integer total number of angler parties counted at the

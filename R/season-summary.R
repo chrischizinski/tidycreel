@@ -62,9 +62,13 @@ season_summary <- function(estimates, ...) {
   # by_vars consistency guard
   by_vars_list <- lapply(estimates, function(x) x$by_vars)
   first_by <- by_vars_list[[1]]
-  all_consistent <- all(vapply(by_vars_list, function(bv) {
-    identical(bv, first_by)
-  }, logical(1)))
+  all_consistent <- all(vapply(
+    by_vars_list,
+    function(bv) {
+      identical(bv, first_by)
+    },
+    logical(1)
+  ))
   if (!all_consistent) {
     cli::cli_abort(
       c(
@@ -94,22 +98,25 @@ season_summary <- function(estimates, ...) {
     )
   }
 
-  effort_targets <- vapply(estimates, function(x) {
-    x$effort_target %||% NA_character_
-  }, character(1))
+  effort_targets <- vapply(
+    estimates,
+    function(x) {
+      x$effort_target %||% NA_character_
+    },
+    character(1)
+  )
 
   new_creel_season_summary(
-    table          = wide,
-    names          = names(estimates),
-    n_estimates    = length(estimates),
+    table = wide,
+    names = names(estimates),
+    n_estimates = length(estimates),
     effort_targets = effort_targets
   )
 }
 
 # ---- new_creel_season_summary ------------------------------------------------
 
-new_creel_season_summary <- function(table, names, n_estimates,
-                                     effort_targets = character(0)) {
+new_creel_season_summary <- function(table, names, n_estimates, effort_targets = character(0)) {
   structure(
     list(
       table = table,

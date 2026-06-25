@@ -1,15 +1,14 @@
 # Helper: build minimal creel_estimates objects for testing
-make_est <- function(estimate_val, se_val = 1.0, by_vars = NULL,
-                     effort_target = NULL) {
+make_est <- function(estimate_val, se_val = 1.0, by_vars = NULL, effort_target = NULL) {
   tbl <- tibble::tibble(estimate = estimate_val, se = se_val)
   tidycreel:::new_creel_estimates(
-    estimates       = tbl,
-    method          = "total",
+    estimates = tbl,
+    method = "total",
     variance_method = "taylor",
-    design          = NULL,
-    conf_level      = 0.95,
-    by_vars         = by_vars,
-    effort_target   = effort_target
+    design = NULL,
+    conf_level = 0.95,
+    by_vars = by_vars,
+    effort_target = effort_target
   )
 }
 

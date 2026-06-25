@@ -23,7 +23,9 @@ format.creel_estimates_mor <- function(x, ...) {
     # Add truncation details if applicable
     if (!is.null(x$mor_truncate_at)) {
       if (x$mor_n_truncated > 0) {
-        cli::cli_text("Truncation: {x$mor_n_truncated} trip{?s} excluded (< {x$mor_truncate_at} hours)")
+        cli::cli_text(
+          "Truncation: {x$mor_n_truncated} trip{?s} excluded (< {x$mor_truncate_at} hours)"
+        )
       } else {
         cli::cli_text("Truncation: 0 trips excluded (threshold: {x$mor_truncate_at} hours)")
       }
@@ -133,23 +135,22 @@ print.creel_estimates_diagnostic <- function(x, ...) {
 #'
 #' @export
 print.creel_summary <- function(x, ...) {
-  method_display <- switch(x$method,
+  method_display <- switch(
+    x$method,
     total = "Total",
     "ratio-of-means-cpue" = "Ratio-of-Means CPUE",
     "mean-of-ratios-cpue" = "Mean-of-Ratios CPUE",
     "ratio-of-means-hpue" = "Ratio-of-Means HPUE",
-    "ratio-of-means-cpue-per-angler" =
-      "Ratio-of-Means CPUE (per angler)",
-    "mean-of-ratios-cpue-per-angler" =
-      "Mean-of-Ratios CPUE (per angler)",
-    "ratio-of-means-hpue-per-angler" =
-      "Ratio-of-Means HPUE (per angler)",
+    "ratio-of-means-cpue-per-angler" = "Ratio-of-Means CPUE (per angler)",
+    "mean-of-ratios-cpue-per-angler" = "Mean-of-Ratios CPUE (per angler)",
+    "ratio-of-means-hpue-per-angler" = "Ratio-of-Means HPUE (per angler)",
     "product-total-catch" = "Total Catch (Effort x CPUE)",
     "product-total-harvest" = "Total Harvest (Effort x HPUE)",
     x$method
   )
-  variance_display <- switch(x$variance_method,
-    taylor    = "Taylor linearization",
+  variance_display <- switch(
+    x$variance_method,
+    taylor = "Taylor linearization",
     bootstrap = "Bootstrap",
     jackknife = "Jackknife",
     x$variance_method
@@ -158,7 +159,9 @@ print.creel_summary <- function(x, ...) {
 
   cat(sprintf(
     "-- Creel Survey Summary (%s | %s | %s) --\n",
-    method_display, variance_display, conf_pct
+    method_display,
+    variance_display,
+    conf_pct
   ))
   print(x$table, row.names = FALSE, ...)
   invisible(x)

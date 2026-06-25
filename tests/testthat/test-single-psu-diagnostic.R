@@ -10,12 +10,13 @@
 # Design where 'weekday' stratum has only 1 PSU (day)
 make_single_psu_design <- function() {
   cal <- data.frame(
-    date     = as.Date(c("2024-06-03", "2024-06-08", "2024-06-09")),
+    date = as.Date(c("2024-06-03", "2024-06-08", "2024-06-09")),
     day_type = c("weekday", "weekend", "weekend")
   )
   design <- suppressWarnings(creel_design(
     cal,
-    date = date, strata = day_type, # nolint: object_usage_linter
+    date = date,
+    strata = day_type, # nolint: object_usage_linter
     survey_type = "instantaneous"
   ))
   counts <- data.frame(
@@ -32,7 +33,8 @@ make_adequate_design <- function() {
     cal <- unique(example_counts[, c("date", "day_type")]) # nolint: object_usage_linter
     design <- creel_design(
       cal,
-      date = date, strata = day_type, # nolint: object_usage_linter
+      date = date,
+      strata = day_type, # nolint: object_usage_linter
       survey_type = "instantaneous"
     )
     add_counts(design, example_counts) # nolint: object_usage_linter
@@ -76,7 +78,8 @@ test_that("estimate_effort() single-PSU error names a special stratum explicitly
   )
   design <- suppressWarnings(creel_design(
     cal,
-    date = date, strata = analysis_stratum, # nolint: object_usage_linter
+    date = date,
+    strata = analysis_stratum, # nolint: object_usage_linter
     survey_type = "instantaneous"
   ))
   counts <- data.frame(
@@ -110,13 +113,18 @@ test_that("estimate_catch_rate() on adequate design works without PSU error", {
   cal <- data.frame(
     date = as.Date("2024-06-01") + c(0, 5, 6, 7, 12, 13),
     day_type = c(
-      "weekday", "weekend", "weekend",
-      "weekend", "weekday", "weekend"
+      "weekday",
+      "weekend",
+      "weekend",
+      "weekend",
+      "weekday",
+      "weekend"
     )
   )
   design <- suppressWarnings(creel_design(
     cal,
-    date = date, strata = day_type, # nolint: object_usage_linter
+    date = date,
+    strata = day_type, # nolint: object_usage_linter
     survey_type = "instantaneous"
   ))
   counts <- data.frame(
@@ -134,8 +142,10 @@ test_that("estimate_catch_rate() on adequate design works without PSU error", {
     interview_id = seq_len(12L)
   )
   design <- suppressWarnings(add_interviews(
-    design, int,
-    catch = catch, effort = effort, # nolint: object_usage_linter
+    design,
+    int,
+    catch = catch,
+    effort = effort, # nolint: object_usage_linter
     trip_status = trip_status # nolint: object_usage_linter
   ))
   expect_no_error(suppressWarnings(estimate_catch_rate(design)))
@@ -164,9 +174,9 @@ make_repvar_design <- function(n_per_stratum) {
     creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
   )
   cnts <- data.frame(
-    date     = dates,
+    date = dates,
     day_type = dts,
-    count    = all_counts[seq_len(2L * n_per_stratum)]
+    count = all_counts[seq_len(2L * n_per_stratum)]
   )
   suppressWarnings(add_counts(d, cnts))
 }

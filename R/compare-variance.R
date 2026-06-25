@@ -70,11 +70,13 @@
 #'
 #' @family "Reporting & Diagnostics"
 #' @export
-compare_variance <- function(x,
-                             replicate_method = c("bootstrap", "jackknife"),
-                             conf_level = 0.95,
-                             divergence_threshold = 0.10,
-                             ...) {
+compare_variance <- function(
+  x,
+  replicate_method = c("bootstrap", "jackknife"),
+  conf_level = 0.95,
+  divergence_threshold = 0.10,
+  ...
+) {
   replicate_method <- match.arg(replicate_method)
 
   # Input validation
@@ -100,9 +102,11 @@ compare_variance <- function(x,
     ))
   }
 
-  if (!is.numeric(divergence_threshold) ||
-    length(divergence_threshold) != 1 || # nolint: indentation_linter
-    divergence_threshold <= 0) {
+  if (
+    !is.numeric(divergence_threshold) ||
+      length(divergence_threshold) != 1 || # nolint: indentation_linter
+      divergence_threshold <= 0
+  ) {
     cli::cli_abort(c(
       "{.arg divergence_threshold} must be a positive number.",
       "x" = "Got {.val {divergence_threshold}}."
@@ -122,7 +126,7 @@ compare_variance <- function(x,
       if (is.null(by_vars) || length(by_vars) == 0) {
         estimator_fn(
           x$design,
-          variance   = replicate_method,
+          variance = replicate_method,
           conf_level = conf_level,
           ...
         )
@@ -134,8 +138,8 @@ compare_variance <- function(x,
         by_vars_local <- by_vars
         estimator_fn(
           x$design,
-          by         = tidyselect::all_of(by_vars_local),
-          variance   = replicate_method,
+          by = tidyselect::all_of(by_vars_local),
+          variance = replicate_method,
           conf_level = conf_level,
           ...
         )
@@ -153,16 +157,23 @@ compare_variance <- function(x,
     }
   )
 
-  # Extract SEs
-  se_taylor <- x$estimates$se
-  se_replicate <- replicate_est$estimates$se
-
   # Build output tibble, preserving group columns
   est_df <- x$estimates
-  group_cols <- setdiff(
-    names(est_df),
-    c("estimate", "se", "ci_lower", "ci_upper", "n", "method")
-  )
+  group_cols <- if (length(by_vars) > 0) by_vars else character(0)
+
+  # Extract SEs — join by group keys to avoid positional pairing errors when
+  # Taylor and replicate estimates return rows in different orders.
+  if (length(group_cols) > 0) {
+    rep_df <- replicate_est$estimates[, c(group_cols, "se"), drop = FALSE]
+    names(rep_df)[names(rep_df) == "se"] <- "se_replicate"
+    joined_est <- dplyr::left_join(est_df, rep_df, by = group_cols)
+    se_taylor <- joined_est$se
+    se_replicate <- joined_est$se_replicate
+  } else {
+    # Ungrouped: single row, positional pairing safe
+    se_taylor <- est_df$se
+    se_replicate <- replicate_est$estimates$se
+  }
 
   divergence_ratio <- ifelse(
     se_taylor == 0,
@@ -173,10 +184,10 @@ compare_variance <- function(x,
     (abs(divergence_ratio - 1) > divergence_threshold)
 
   se_tbl <- tibble::tibble(
-    se_taylor        = se_taylor,
-    se_replicate     = se_replicate,
+    se_taylor = se_taylor,
+    se_replicate = se_replicate,
     divergence_ratio = divergence_ratio,
-    diverges_flag    = diverges_flag
+    diverges_flag = diverges_flag
   )
 
   if (length(group_cols) > 0) {

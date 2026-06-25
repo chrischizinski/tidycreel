@@ -325,9 +325,9 @@ test_that("creel_n_camera errors on cv_target outside (0, 1]", {
 test_that("optimal_n returns named integer vector with total element", {
   result <- optimal_n(
     cv_target = 0.20,
-    N_h    = c(weekday = 65, weekend = 28),
+    N_h = c(weekday = 65, weekend = 28),
     ybar_h = c(50, 60),
-    s2_h   = c(400, 500)
+    s2_h = c(400, 500)
   )
   expect_true(is.integer(result))
   expect_named(result, c("weekday", "weekend", "total"), ignore.order = FALSE)
@@ -337,9 +337,9 @@ test_that("optimal_n returns named integer vector with total element", {
 test_that("optimal_n numerical check: weekday=25, weekend=13, total=37 at cv=0.05", {
   result <- optimal_n(
     cv_target = 0.05,
-    N_h    = c(weekday = 65, weekend = 28),
+    N_h = c(weekday = 65, weekend = 28),
     ybar_h = c(50, 60),
-    s2_h   = c(400, 500)
+    s2_h = c(400, 500)
   )
   expect_identical(result[["total"]], 37L)
   expect_identical(result[["weekday"]], 25L)
@@ -349,9 +349,9 @@ test_that("optimal_n numerical check: weekday=25, weekend=13, total=37 at cv=0.0
 test_that("optimal_n Neyman allocation: high-variance stratum gets >= proportional share", {
   # weekend has higher s2_h (500 > 400); Neyman should allocate more relative share
   # than proportional (N_h-based) would
-  N_h    <- c(weekday = 65, weekend = 28)  # nolint: object_name_linter
+  N_h <- c(weekday = 65, weekend = 28) # nolint: object_name_linter
   ybar_h <- c(50, 60)
-  s2_h   <- c(400, 500)
+  s2_h <- c(400, 500)
   result <- optimal_n(cv_target = 0.05, N_h = N_h, ybar_h = ybar_h, s2_h = s2_h)
   n_total <- result[["total"]]
   prop_share_wkend <- ceiling(n_total * 28 / 93)
@@ -359,15 +359,15 @@ test_that("optimal_n Neyman allocation: high-variance stratum gets >= proportion
 })
 
 test_that("optimal_n cost_ratio shifts allocation toward cheaper strata", {
-  N_h    <- c(weekday = 65, weekend = 28)  # nolint: object_name_linter
+  N_h <- c(weekday = 65, weekend = 28) # nolint: object_name_linter
   ybar_h <- c(50, 60)
-  s2_h   <- c(400, 500)
+  s2_h <- c(400, 500)
   result_equal <- optimal_n(cv_target = 0.05, N_h = N_h, ybar_h = ybar_h, s2_h = s2_h)
   result_costly <- optimal_n(
-    cv_target  = 0.05,
-    N_h        = N_h,
-    ybar_h     = ybar_h,
-    s2_h       = s2_h,
+    cv_target = 0.05,
+    N_h = N_h,
+    ybar_h = ybar_h,
+    s2_h = s2_h,
     cost_ratio = c(weekday = 1, weekend = 2)
   )
   # weekend is more expensive -> fewer weekend days, more weekday days
@@ -378,10 +378,10 @@ test_that("optimal_n cost_ratio shifts allocation toward cheaper strata", {
 test_that("optimal_n cost_ratio numerical check: weekday=29, weekend=10, total=38 when weekend costs 2x", {
   # Cochran 5.34 with FPC: n = A*C/(V_0 + sum(N_h*s2_h)) where A=sum(N_h*s_h/sqrt(c_h))
   result <- optimal_n(
-    cv_target  = 0.05,
-    N_h        = c(weekday = 65, weekend = 28),
-    ybar_h     = c(50, 60),
-    s2_h       = c(400, 500),
+    cv_target = 0.05,
+    N_h = c(weekday = 65, weekend = 28),
+    ybar_h = c(50, 60),
+    s2_h = c(400, 500),
     cost_ratio = c(1, 2)
   )
   expect_identical(result[["total"]], 38L)
@@ -391,31 +391,44 @@ test_that("optimal_n cost_ratio numerical check: weekday=29, weekend=10, total=3
 
 test_that("optimal_n cost_ratio achieves target CV (extreme costs, with FPC)", {
   # Ensures Cochran 5.34 n_total (not 5.25) is used -- extreme cost_ratio exposes the bug
-  N_h    <- c(weekday = 65, weekend = 28)  # nolint: object_name_linter
-  ybar_h <- c(50, 60); s2_h <- c(400, 500); cv_target <- 0.05
-  result <- optimal_n(cv_target = cv_target, N_h = N_h, ybar_h = ybar_h, s2_h = s2_h,
-                      cost_ratio = c(weekday = 1, weekend = 10))
+  N_h <- c(weekday = 65, weekend = 28) # nolint: object_name_linter
+  ybar_h <- c(50, 60)
+  s2_h <- c(400, 500)
+  cv_target <- 0.05
+  result <- optimal_n(
+    cv_target = cv_target,
+    N_h = N_h,
+    ybar_h = ybar_h,
+    s2_h = s2_h,
+    cost_ratio = c(weekday = 1, weekend = 10)
+  )
   n_h <- result[c("weekday", "weekend")]
   E_total <- sum(N_h * ybar_h)
-  V_achieved <- sum(N_h^2 * s2_h / n_h) - sum(N_h * s2_h)  # stratified total variance with FPC
+  V_achieved <- sum(N_h^2 * s2_h / n_h) - sum(N_h * s2_h) # stratified total variance with FPC
   cv_achieved <- sqrt(V_achieved) / E_total
   expect_true(cv_achieved <= cv_target)
 })
 
 test_that("optimal_n scalar cost_ratio expands to all strata", {
   r1 <- optimal_n(
-    cv_target = 0.05, N_h = c(weekday = 65, weekend = 28),
-    ybar_h = c(50, 60), s2_h = c(400, 500), cost_ratio = 1
+    cv_target = 0.05,
+    N_h = c(weekday = 65, weekend = 28),
+    ybar_h = c(50, 60),
+    s2_h = c(400, 500),
+    cost_ratio = 1
   )
   r2 <- optimal_n(
-    cv_target = 0.05, N_h = c(weekday = 65, weekend = 28),
-    ybar_h = c(50, 60), s2_h = c(400, 500), cost_ratio = c(1, 1)
+    cv_target = 0.05,
+    N_h = c(weekday = 65, weekend = 28),
+    ybar_h = c(50, 60),
+    s2_h = c(400, 500),
+    cost_ratio = c(1, 1)
   )
   expect_identical(r1, r2)
 })
 
 test_that("optimal_n tighter cv_target gives larger n_total", {
-  N_h    <- c(weekday = 65, weekend = 28)  # nolint: object_name_linter
+  N_h <- c(weekday = 65, weekend = 28) # nolint: object_name_linter
   n_tight <- optimal_n(cv_target = 0.10, N_h = N_h, ybar_h = c(50, 60), s2_h = c(400, 500))
   n_loose <- optimal_n(cv_target = 0.20, N_h = N_h, ybar_h = c(50, 60), s2_h = c(400, 500))
   expect_true(n_tight[["total"]] > n_loose[["total"]])
@@ -424,9 +437,9 @@ test_that("optimal_n tighter cv_target gives larger n_total", {
 test_that("optimal_n works with single stratum", {
   result <- optimal_n(
     cv_target = 0.20,
-    N_h    = c(all_days = 93),
+    N_h = c(all_days = 93),
     ybar_h = 55,
-    s2_h   = 450
+    s2_h = 450
   )
   expect_named(result, c("all_days", "total"), ignore.order = FALSE)
   expect_true(result[["all_days"]] >= 1L)
@@ -435,9 +448,9 @@ test_that("optimal_n works with single stratum", {
 test_that("optimal_n stratum sum >= total (ceiling artifact)", {
   result <- optimal_n(
     cv_target = 0.05,
-    N_h    = c(weekday = 65, weekend = 28),
+    N_h = c(weekday = 65, weekend = 28),
     ybar_h = c(50, 60),
-    s2_h   = c(400, 500)
+    s2_h = c(400, 500)
   )
   stratum_sum <- sum(result[names(result) != "total"])
   expect_true(stratum_sum >= result[["total"]])
@@ -453,27 +466,27 @@ test_that("optimal_n errors on mismatched stratum lengths", {
   expect_error(
     optimal_n(
       cv_target = 0.20,
-      N_h    = c(weekday = 65, weekend = 28),
+      N_h = c(weekday = 65, weekend = 28),
       ybar_h = c(50, 60, 70),
-      s2_h   = c(400, 500)
+      s2_h = c(400, 500)
     )
   )
 })
 
 test_that("optimal_n errors on cv_target outside (0, 1]", {
-  N_h <- c(weekday = 65, weekend = 28)  # nolint: object_name_linter
-  expect_error(optimal_n(cv_target = 0,    N_h = N_h, ybar_h = c(50, 60), s2_h = c(400, 500)))
+  N_h <- c(weekday = 65, weekend = 28) # nolint: object_name_linter
+  expect_error(optimal_n(cv_target = 0, N_h = N_h, ybar_h = c(50, 60), s2_h = c(400, 500)))
   expect_error(optimal_n(cv_target = -0.1, N_h = N_h, ybar_h = c(50, 60), s2_h = c(400, 500)))
-  expect_error(optimal_n(cv_target = 1.1,  N_h = N_h, ybar_h = c(50, 60), s2_h = c(400, 500)))
+  expect_error(optimal_n(cv_target = 1.1, N_h = N_h, ybar_h = c(50, 60), s2_h = c(400, 500)))
 })
 
 test_that("optimal_n errors on non-positive cost_ratio", {
   expect_error(
     optimal_n(
-      cv_target  = 0.20,
-      N_h        = c(weekday = 65, weekend = 28),
-      ybar_h     = c(50, 60),
-      s2_h       = c(400, 500),
+      cv_target = 0.20,
+      N_h = c(weekday = 65, weekend = 28),
+      ybar_h = c(50, 60),
+      s2_h = c(400, 500),
       cost_ratio = c(1, -1)
     )
   )
@@ -482,11 +495,71 @@ test_that("optimal_n errors on non-positive cost_ratio", {
 test_that("optimal_n errors on NA cost_ratio", {
   expect_error(
     optimal_n(
-      cv_target  = 0.20,
-      N_h        = c(weekday = 65, weekend = 28),
-      ybar_h     = c(50, 60),
-      s2_h       = c(400, 500),
+      cv_target = 0.20,
+      N_h = c(weekday = 65, weekend = 28),
+      ybar_h = c(50, 60),
+      s2_h = c(400, 500),
       cost_ratio = NA_real_
     )
+  )
+})
+
+# POWER-06b: optimal_n bug guards ----
+
+test_that("optimal_n named cost_ratio is reordered to match N_h, not applied positionally", {
+  # Bug: c(weekend=2, weekday=1) was applied positionally before fix.
+  # weekday stratum is cheaper in both calls; allocation must be the same.
+  N_h <- c(weekday = 65, weekend = 28) # nolint: object_name_linter
+  r_named_match <- optimal_n(
+    cv_target = 0.05,
+    N_h = N_h,
+    ybar_h = c(50, 60),
+    s2_h = c(400, 500),
+    cost_ratio = c(weekday = 1, weekend = 2)
+  )
+  r_named_reversed <- optimal_n(
+    cv_target = 0.05,
+    N_h = N_h,
+    ybar_h = c(50, 60),
+    s2_h = c(400, 500),
+    cost_ratio = c(weekend = 2, weekday = 1)
+  )
+  expect_identical(r_named_match, r_named_reversed)
+})
+
+test_that("optimal_n named cost_ratio with wrong names errors", {
+  expect_error(
+    optimal_n(
+      cv_target = 0.05,
+      N_h = c(weekday = 65, weekend = 28),
+      ybar_h = c(50, 60),
+      s2_h = c(400, 500),
+      cost_ratio = c(weekday = 1, holiday = 2)
+    ),
+    regexp = "names must match"
+  )
+})
+
+test_that("optimal_n errors when all s2_h are zero", {
+  expect_error(
+    optimal_n(
+      cv_target = 0.20,
+      N_h = c(weekday = 65, weekend = 28),
+      ybar_h = c(50, 60),
+      s2_h = c(0, 0)
+    ),
+    regexp = "zero"
+  )
+})
+
+test_that("optimal_n errors when E_total is zero (all ybar_h zero)", {
+  expect_error(
+    optimal_n(
+      cv_target = 0.20,
+      N_h = c(weekday = 65, weekend = 28),
+      ybar_h = c(0, 0),
+      s2_h = c(400, 500)
+    ),
+    regexp = "zero total"
   )
 })

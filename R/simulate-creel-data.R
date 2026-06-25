@@ -148,28 +148,32 @@
 #' @export
 simulate_creel_data <- function(
   params,
-  season_days     = 100L,
-  n_sampled_days  = 30L,
-  day_types       = NULL,
-  species         = "walleye",
+  season_days = 100L,
+  n_sampled_days = 30L,
+  day_types = NULL,
+  species = "walleye",
   species_weights = NULL,
-  p_complete      = 0.75,
-  p_zero_catch    = 0.40,
+  p_complete = 0.75,
+  p_zero_catch = 0.40,
   n_anglers_per_day = NULL,
-  start_date      = Sys.Date(),
+  start_date = Sys.Date(),
   n_counts_per_day = 3L,
-  seed            = NULL
+  seed = NULL
 ) {
   checkmate::assert_list(params, names = "named")
-  checkmate::assert_int(season_days,    lower = 1L)
+  checkmate::assert_int(season_days, lower = 1L)
   checkmate::assert_int(n_sampled_days, lower = 1L, upper = season_days)
   checkmate::assert_character(species, min.len = 1L, any.missing = FALSE)
-  checkmate::assert_number(p_complete,   lower = 1e-6, upper = 1.0)
-  checkmate::assert_number(p_zero_catch, lower = 0.0,  upper = 1.0 - 1e-9)
+  checkmate::assert_number(p_complete, lower = 1e-6, upper = 1.0)
+  checkmate::assert_number(p_zero_catch, lower = 0.0, upper = 1.0 - 1e-9)
   checkmate::assert_int(n_counts_per_day, lower = 1L)
-  if (!is.null(seed)) checkmate::assert_int(seed)
+  if (!is.null(seed)) {
+    checkmate::assert_int(seed)
+  }
 
-  if (!is.null(seed)) set.seed(seed)
+  if (!is.null(seed)) {
+    set.seed(seed)
+  }
 
   sp_wt <- if (is.null(species_weights)) {
     rep(1.0 / length(species), length(species))
@@ -187,25 +191,24 @@ simulate_creel_data <- function(
   }
 
   # ── Season calendar: sample n_sampled_days from season_days ─────────────────
-  all_dates  <- seq.Date(as.Date(start_date), by = "day", length.out = season_days)
-  samp_idx   <- sort(sample.int(season_days, n_sampled_days, replace = FALSE))
+  all_dates <- seq.Date(as.Date(start_date), by = "day", length.out = season_days)
+  samp_idx <- sort(sample.int(season_days, n_sampled_days, replace = FALSE))
   samp_dates <- all_dates[samp_idx]
 
-  dt_names   <- names(day_types)
-  n_dt       <- length(day_types)
-  day_type_vec <- dt_names[sample.int(n_dt, n_sampled_days, replace = TRUE,
-                                      prob = day_types)]
+  dt_names <- names(day_types)
+  n_dt <- length(day_types)
+  day_type_vec <- dt_names[sample.int(n_dt, n_sampled_days, replace = TRUE, prob = day_types)]
 
   # Full-season day_type assignment (all days, not just sampled)
   all_day_types <- dt_names[sample.int(n_dt, season_days, replace = TRUE, prob = day_types)]
   all_day_types[samp_idx] <- day_type_vec
 
   # ── Effort + trip params ─────────────────────────────────────────────────────
-  eff_p   <- params$effort
+  eff_p <- params$effort
   party_p <- params$party
   catch_p <- params$catch_per_trip
-  harv_p  <- params$harvest
-  cnt_p   <- params$counts
+  harv_p <- params$harvest
+  cnt_p <- params$counts
 
   mu_anglers <- if (!is.null(n_anglers_per_day)) {
     checkmate::assert_number(n_anglers_per_day, lower = 0.1)
@@ -213,25 +216,25 @@ simulate_creel_data <- function(
   } else {
     cnt_p$mean_total_anglers
   }
-  if (is.na(mu_anglers) || mu_anglers <= 0) mu_anglers <- 10.0
+  if (is.na(mu_anglers) || mu_anglers <= 0) {
+    mu_anglers <- 10.0
+  }
 
   # ── Simulate ─────────────────────────────────────────────────────────────────
   interview_rows <- vector("list", n_sampled_days)
-  count_rows     <- vector("list", n_sampled_days)
-  int_id         <- 0L
+  count_rows <- vector("list", n_sampled_days)
+  int_id <- 0L
 
   for (d in seq_len(n_sampled_days)) {
-    d_date    <- samp_dates[d]
-    d_dtype   <- day_type_vec[d]
+    d_date <- samp_dates[d]
+    d_dtype <- day_type_vec[d]
 
     # Number of parties arriving this day — NB around mu_anglers
     n_trips_d <- max(0L, rnbinom(1, mu = mu_anglers, size = 1.5))
 
     if (n_trips_d > 0L) {
       # Trip-level draws
-      eff_total <- rgamma(n_trips_d,
-                          shape = eff_p$gamma_shape,
-                          rate  = eff_p$gamma_rate)
+      eff_total <- rgamma(n_trips_d, shape = eff_p$gamma_shape, rate = eff_p$gamma_rate)
       eff_total <- pmax(eff_total, 0.05)
 
       n_ang <- pmax(1L, rpois(n_trips_d, lambda = party_p$mean))
@@ -240,9 +243,8 @@ simulate_creel_data <- function(
 
       # Length-biased encounter probability ∝ trip length (roving clerk)
       enc_prob <- eff_total / sum(eff_total)
-      n_enc    <- min(n_trips_d, max(1L, round(n_trips_d * 0.70)))
-      enc_idx  <- sample.int(n_trips_d, size = n_enc, replace = FALSE,
-                             prob = enc_prob)
+      n_enc <- min(n_trips_d, max(1L, round(n_trips_d * 0.70)))
+      enc_idx <- sample.int(n_trips_d, size = n_enc, replace = FALSE, prob = enc_prob)
 
       for (ti in enc_idx) {
         int_id <- int_id + 1L
@@ -258,37 +260,37 @@ simulate_creel_data <- function(
         is_zero <- rbinom(1L, 1L, p_zero_catch) == 1L
         if (is_zero) {
           ctotal <- 0L
-          ckept  <- 0L
+          ckept <- 0L
         } else {
-          nb_sz  <- if (!is.na(catch_p$nb_size) && catch_p$nb_size > 0) catch_p$nb_size else 0.5
+          nb_sz <- if (!is.na(catch_p$nb_size) && catch_p$nb_size > 0) catch_p$nb_size else 0.5
           ctotal <- rnbinom(1L, mu = catch_p$mean, size = nb_sz)
-          p_h    <- if (!is.na(harv_p$mean_pct)) harv_p$mean_pct / 100 else 0.35
-          p_h    <- pmin(pmax(p_h, 0.0), 1.0)
-          ckept  <- rbinom(1L, ctotal, p_h)
+          p_h <- if (!is.na(harv_p$mean_pct)) harv_p$mean_pct / 100 else 0.35
+          p_h <- pmin(pmax(p_h, 0.0), 1.0)
+          ckept <- rbinom(1L, ctotal, p_h)
         }
 
         interview_rows[[d]][[ti]] <- list(
-          date         = d_date,
-          day_type     = d_dtype,
+          date = d_date,
+          day_type = d_dtype,
           interview_id = int_id,
-          trip_status  = if (is_complete[ti]) "complete" else "incomplete",
+          trip_status = if (is_complete[ti]) "complete" else "incomplete",
           hours_fished = round(eff_obs, 3),
           trip_duration = round(eff_total[ti], 3),
-          n_anglers    = n_ang[ti],
-          catch_total  = ctotal,
-          catch_kept   = ckept,
+          n_anglers = n_ang[ti],
+          catch_total = ctotal,
+          catch_kept = ckept,
           species_sought = species[which.max(stats::rmultinom(1L, 1L, sp_wt))]
         )
       }
     }
 
     # Instantaneous counts for this day
-    mu_cnt   <- max(0.1, mu_anglers * 0.6)  # count ~ 60% of daily arrivals
-    tot_cnt  <- rnbinom(n_counts_per_day, mu = mu_cnt, size = 1.5)
+    mu_cnt <- max(0.1, mu_anglers * 0.6) # count ~ 60% of daily arrivals
+    tot_cnt <- rnbinom(n_counts_per_day, mu = mu_cnt, size = 1.5)
     count_rows[[d]] <- data.frame(
-      date          = rep(d_date, n_counts_per_day),
-      day_type      = rep(d_dtype, n_counts_per_day),
-      count_time    = seq_len(n_counts_per_day),
+      date = rep(d_date, n_counts_per_day),
+      day_type = rep(d_dtype, n_counts_per_day),
+      count_time = seq_len(n_counts_per_day),
       total_anglers = as.integer(tot_cnt)
     )
   }
@@ -297,11 +299,16 @@ simulate_creel_data <- function(
   int_flat <- do.call(c, lapply(interview_rows, function(dl) Filter(Negate(is.null), dl)))
   if (length(int_flat) == 0L) {
     interviews <- data.frame(
-      date = as.Date(character(0)), day_type = character(0),
-      interview_id = integer(0), trip_status = character(0),
-      hours_fished = numeric(0), trip_duration = numeric(0),
-      n_anglers = integer(0), catch_total = integer(0),
-      catch_kept = integer(0), species_sought = character(0)
+      date = as.Date(character(0)),
+      day_type = character(0),
+      interview_id = integer(0),
+      trip_status = character(0),
+      hours_fished = numeric(0),
+      trip_duration = numeric(0),
+      n_anglers = integer(0),
+      catch_total = integer(0),
+      catch_kept = integer(0),
+      species_sought = character(0)
     )
   } else {
     interviews <- do.call(rbind, lapply(int_flat, as.data.frame, stringsAsFactors = FALSE))
@@ -316,35 +323,41 @@ simulate_creel_data <- function(
   # ── Build catch (long format, multi-species) ─────────────────────────────────
   if (nrow(interviews) == 0L || length(species) == 0L) {
     catch <- data.frame(
-      interview_id = integer(0), species = character(0),
-      count = integer(0), catch_type = character(0)
+      interview_id = integer(0),
+      species = character(0),
+      count = integer(0),
+      catch_type = character(0)
     )
   } else {
     catch_rows <- vector("list", nrow(interviews))
     for (i in seq_len(nrow(interviews))) {
-      iid    <- interviews$interview_id[i]
+      iid <- interviews$interview_id[i]
       ctotal <- interviews$catch_total[i]
-      ckept  <- interviews$catch_kept[i]
+      ckept <- interviews$catch_kept[i]
 
-      if (ctotal == 0L) next
+      if (ctotal == 0L) {
+        next
+      }
 
       # Distribute total catch across species, then draw kept within each
       # species using rbinom so sp_kept[s] <= sp_counts[s] always
       sp_counts <- as.integer(stats::rmultinom(1L, ctotal, sp_wt))
-      p_keep    <- if (ctotal > 0L) ckept / ctotal else 0
-      sp_kept   <- as.integer(stats::rbinom(length(species), sp_counts, p_keep))
+      p_keep <- if (ctotal > 0L) ckept / ctotal else 0
+      sp_kept <- as.integer(stats::rbinom(length(species), sp_counts, p_keep))
 
       sp_rows <- vector("list", length(species))
       for (s in seq_along(species)) {
         c_s <- sp_counts[s]
         k_s <- sp_kept[s]
         r_s <- c_s - k_s
-        if (c_s == 0L) next
+        if (c_s == 0L) {
+          next
+        }
         sp_rows[[s]] <- data.frame(
           interview_id = rep(iid, 3L),
-          species      = rep(species[s], 3L),
-          count        = c(c_s, k_s, r_s),
-          catch_type   = c("caught", "harvested", "released"),
+          species = rep(species[s], 3L),
+          count = c(c_s, k_s, r_s),
+          catch_type = c("caught", "harvested", "released"),
           stringsAsFactors = FALSE
         )
       }
@@ -353,8 +366,10 @@ simulate_creel_data <- function(
     catch <- do.call(rbind, Filter(Negate(is.null), catch_rows))
     if (is.null(catch)) {
       catch <- data.frame(
-        interview_id = integer(0), species = character(0),
-        count = integer(0), catch_type = character(0)
+        interview_id = integer(0),
+        species = character(0),
+        count = integer(0),
+        catch_type = character(0)
       )
     }
     rownames(catch) <- NULL
@@ -362,9 +377,9 @@ simulate_creel_data <- function(
 
   # ── Build full-season schedule (calendar for creel_design) ──────────────────
   schedule <- data.frame(
-    date     = all_dates,
+    date = all_dates,
     day_type = all_day_types,
-    sampled  = seq_len(season_days) %in% samp_idx,
+    sampled = seq_len(season_days) %in% samp_idx,
     stringsAsFactors = FALSE
   )
 
@@ -443,44 +458,50 @@ simulate_creel_data <- function(
 #' @export
 simulate_creel_catch <- function(
   n,
-  effort        = 1.0,
-  family        = c("negbin", "delta", "poisson"),
-  mu            = 5.0,
-  size          = 0.5,
-  p_zero        = 0.40,
-  sigma         = 1.0,
+  effort = 1.0,
+  family = c("negbin", "delta", "poisson"),
+  mu = 5.0,
+  size = 0.5,
+  p_zero = 0.40,
+  sigma = 1.0,
   var_structure = c("constant", "proportional", "squared"),
-  seed          = NULL
+  seed = NULL
 ) {
-  family        <- match.arg(family)
+  family <- match.arg(family)
   var_structure <- match.arg(var_structure)
 
-  checkmate::assert_int(n,      lower = 1L)
+  checkmate::assert_int(n, lower = 1L)
   checkmate::assert_numeric(effort, lower = 0, any.missing = FALSE)
-  checkmate::assert_number(mu,    lower = 1e-9)
-  checkmate::assert_number(size,  lower = 1e-9)
+  checkmate::assert_number(mu, lower = 1e-9)
+  checkmate::assert_number(size, lower = 1e-9)
   checkmate::assert_number(p_zero, lower = 0.0, upper = 1.0 - 1e-9)
-  checkmate::assert_number(sigma,  lower = 1e-9)
-  if (!is.null(seed)) checkmate::assert_int(seed)
+  checkmate::assert_number(sigma, lower = 1e-9)
+  if (!is.null(seed)) {
+    checkmate::assert_int(seed)
+  }
 
-  if (!is.null(seed)) set.seed(seed)
+  if (!is.null(seed)) {
+    set.seed(seed)
+  }
 
   # Recycle effort to length n
   effort <- rep_len(effort, n)
 
   # Scale mu by effort based on variance structure
-  mu_i <- switch(var_structure,
-    "constant"     = rep(mu, n),
+  mu_i <- switch(
+    var_structure,
+    "constant" = rep(mu, n),
     "proportional" = mu * effort,
-    "squared"      = mu * effort^2
+    "squared" = mu * effort^2
   )
 
-  switch(family,
+  switch(
+    family,
     "negbin" = {
       as.integer(rnbinom(n, mu = pmax(mu_i, 1e-9), size = size))
     },
     "delta" = {
-      is_zero  <- rbinom(n, 1L, p_zero) == 1L
+      is_zero <- rbinom(n, 1L, p_zero) == 1L
       log_mean <- log(pmax(mu_i, 1e-9)) - sigma^2 / 2
       pos_vals <- as.integer(round(rlnorm(n, meanlog = log_mean, sdlog = sigma)))
       pos_vals[pos_vals < 0L] <- 0L

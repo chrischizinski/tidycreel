@@ -71,7 +71,10 @@ test_that("new_creel_estimates() creates creel_estimates S3 object", {
 
   expect_s3_class(result, "creel_estimates")
   expect_type(result, "list")
-  expect_named(result, c("estimates", "method", "variance_method", "design", "conf_level", "by_vars", "effort_target"))
+  expect_named(
+    result,
+    c("estimates", "method", "variance_method", "design", "conf_level", "by_vars", "effort_target")
+  )
 })
 
 test_that("new_creel_estimates() uses correct defaults", {
@@ -201,7 +204,15 @@ make_mor_test_design <- function(n_incomplete = 30, n_complete = 0) {
     stringsAsFactors = FALSE
   )
 
-  add_interviews(design, interviews, catch = catch_total, effort = hours_fished, harvest = catch_kept, trip_status = trip_status, trip_duration = trip_duration) # nolint: object_usage_linter
+  add_interviews(
+    design,
+    interviews,
+    catch = catch_total,
+    effort = hours_fished,
+    harvest = catch_kept,
+    trip_status = trip_status,
+    trip_duration = trip_duration
+  ) # nolint: object_usage_linter
 }
 
 test_that("creel_estimates_mor has correct class structure", {

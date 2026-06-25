@@ -115,3 +115,20 @@ test_that("SCHED-PLOT-CIRC-03: schedule without circuit_id still uses day_type f
   sampled_fills <- p$data$fill_group[p$data$sampled]
   expect_true(all(sampled_fills %in% c("weekday", "weekend")))
 })
+
+test_that("SCHED-PLOT-SPECIAL-01: special-period day types get distinct colors, not unsampled grey", {
+  sched <- new_creel_schedule(data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03")),
+    day_type = c("weekday", "weekend", "tournament"),
+    stringsAsFactors = FALSE
+  ))
+  p <- autoplot(sched)
+  # fill_group in plot data must include "tournament" for the sampled day
+  sampled_fills <- p$data$fill_group[p$data$sampled]
+  expect_true("tournament" %in% sampled_fills)
+  # palette(n) with n = number of fill groups must give tournament a non-grey color
+  fill_scale <- Filter(function(s) "fill" %in% s$aesthetics, p$scales$scales)[[1]]
+  n_groups <- length(unique(p$data$fill_group))
+  palette_vals <- fill_scale$palette(n_groups)
+  expect_false(isTRUE(palette_vals[["tournament"]] == "#cccccc"))
+})

@@ -7,8 +7,8 @@
     build_br_design_for_tests(3L, 6L, 8L, seed = 42L)
   ))
   counts <- data.frame(
-    date      = d$calendar$date,
-    day_type  = d$calendar$day_type,
+    date = d$calendar$date,
+    day_type = d$calendar$day_type,
     effort_hours = c(15, 20, 18, 22, 16, 19),
     stringsAsFactors = FALSE
   )
@@ -27,11 +27,12 @@
   d <- suppressWarnings(add_counts(d, example_counts)) # nolint
   d <- suppressWarnings(
     add_interviews(
-      d, example_interviews, # nolint
-      catch         = catch_total,    # nolint
-      effort        = hours_fished,   # nolint
-      trip_status   = trip_status,    # nolint
-      trip_duration = trip_duration   # nolint
+      d,
+      example_interviews, # nolint
+      catch = catch_total, # nolint
+      effort = hours_fished, # nolint
+      trip_status = trip_status, # nolint
+      trip_duration = trip_duration # nolint
     )
   )
   suppressWarnings(estimate_total_catch(d))
@@ -69,12 +70,13 @@ test_that("TIDY-03: tidy(estimate_angler_n) returns flat tibble", {
 
 # ---- TIDY-04: estimate_mr_harvest() -----------------------------------------
 
-test_that("TIDY-04: tidy(estimate_mr_harvest) returns flat tibble", {
+test_that("TIDY-04: tidy(estimate_mr_harvest) returns flat tibble with n = NA", {
   angler_n <- estimate_angler_n(M = 200L, n = 50L, m = 10L)
-  result   <- tidy(estimate_mr_harvest(angler_n = angler_n, harvest_rate = 0.35))
+  result <- tidy(estimate_mr_harvest(angler_n = angler_n, harvest_rate = 0.35))
   expect_s3_class(result, "tbl_df")
   expect_false(any(vapply(result, is.list, logical(1L))))
-  expect_true(all(c("estimate", "se", "ci_lower", "ci_upper") %in% names(result)))
+  expect_true(all(c("estimate", "se", "ci_lower", "ci_upper", "n") %in% names(result)))
+  expect_true(all(is.na(result$n)))
   expect_gt(nrow(result), 0L)
 })
 
@@ -83,11 +85,11 @@ test_that("TIDY-04: tidy(estimate_mr_harvest) returns flat tibble", {
 test_that("TIDY-05: tidy(estimate_exploitation_rate) returns flat tibble", {
   result <- tidy(
     estimate_exploitation_rate(
-      T      = 200L,
-      C      = 450.0,
-      se_C   = 42.0,
-      n      = 180L,
-      m      = 15L
+      T = 200L,
+      C = 450.0,
+      se_C = 42.0,
+      n = 180L,
+      m = 15L
     )
   )
   expect_s3_class(result, "tbl_df")

@@ -4,8 +4,10 @@
 make_access <- function() {
   data.frame(
     date = as.Date(c(
-      "2024-06-01", "2024-06-02",
-      "2024-06-08", "2024-06-09"
+      "2024-06-01",
+      "2024-06-02",
+      "2024-06-08",
+      "2024-06-09"
     )),
     day_type = c("weekday", "weekday", "weekend", "weekend"),
     count = c(12L, 15L, 30L, 28L),
@@ -16,8 +18,10 @@ make_access <- function() {
 make_roving <- function() {
   data.frame(
     date = as.Date(c(
-      "2024-06-01", "2024-06-02",
-      "2024-06-08", "2024-06-09"
+      "2024-06-01",
+      "2024-06-02",
+      "2024-06-08",
+      "2024-06-09"
     )),
     day_type = c("weekday", "weekday", "weekend", "weekend"),
     count = c(8L, 10L, 22L, 25L),
@@ -26,15 +30,17 @@ make_roving <- function() {
 }
 
 fractions <- list(
-  access  = c(weekday = 0.5, weekend = 0.5),
-  roving  = c(weekday = 0.4, weekend = 0.4)
+  access = c(weekday = 0.5, weekend = 0.5),
+  roving = c(weekday = 0.4, weekend = 0.4)
 )
 
 # Input validation ------------------------------------------------------------
 
 test_that("HYBR-01: errors when access_data is not a data frame", {
   expect_error(
-    as_hybrid_svydesign(list(), make_roving(),
+    as_hybrid_svydesign(
+      list(),
+      make_roving(),
       access_fraction = fractions$access,
       roving_fraction = fractions$roving
     ),
@@ -44,7 +50,9 @@ test_that("HYBR-01: errors when access_data is not a data frame", {
 
 test_that("HYBR-02: errors when roving_data is not a data frame", {
   expect_error(
-    as_hybrid_svydesign(make_access(), NULL,
+    as_hybrid_svydesign(
+      make_access(),
+      NULL,
       access_fraction = fractions$access,
       roving_fraction = fractions$roving
     ),
@@ -56,7 +64,9 @@ test_that("HYBR-03: errors when required column missing from access_data", {
   df <- make_access()
   df$count <- NULL
   expect_error(
-    as_hybrid_svydesign(df, make_roving(),
+    as_hybrid_svydesign(
+      df,
+      make_roving(),
       access_fraction = fractions$access,
       roving_fraction = fractions$roving
     ),
@@ -68,7 +78,9 @@ test_that("HYBR-04: errors when required column missing from roving_data", {
   df <- make_roving()
   df$date <- NULL
   expect_error(
-    as_hybrid_svydesign(make_access(), df,
+    as_hybrid_svydesign(
+      make_access(),
+      df,
       access_fraction = fractions$access,
       roving_fraction = fractions$roving
     ),
@@ -78,25 +90,23 @@ test_that("HYBR-04: errors when required column missing from roving_data", {
 
 test_that("HYBR-05: errors when access_fraction is NULL", {
   expect_error(
-    as_hybrid_svydesign(make_access(), make_roving(),
-      roving_fraction = fractions$roving
-    ),
+    as_hybrid_svydesign(make_access(), make_roving(), roving_fraction = fractions$roving),
     class = "rlang_error"
   )
 })
 
 test_that("HYBR-06: errors when roving_fraction is NULL", {
   expect_error(
-    as_hybrid_svydesign(make_access(), make_roving(),
-      access_fraction = fractions$access
-    ),
+    as_hybrid_svydesign(make_access(), make_roving(), access_fraction = fractions$access),
     class = "rlang_error"
   )
 })
 
 test_that("HYBR-07: errors when fraction missing a stratum", {
   expect_error(
-    as_hybrid_svydesign(make_access(), make_roving(),
+    as_hybrid_svydesign(
+      make_access(),
+      make_roving(),
       access_fraction = c(weekday = 0.5), # missing weekend
       roving_fraction = fractions$roving
     ),
@@ -106,7 +116,9 @@ test_that("HYBR-07: errors when fraction missing a stratum", {
 
 test_that("HYBR-08: errors when fraction value <= 0", {
   expect_error(
-    as_hybrid_svydesign(make_access(), make_roving(),
+    as_hybrid_svydesign(
+      make_access(),
+      make_roving(),
       access_fraction = c(weekday = 0, weekend = 0.5),
       roving_fraction = fractions$roving
     ),
@@ -116,7 +128,9 @@ test_that("HYBR-08: errors when fraction value <= 0", {
 
 test_that("HYBR-09: errors when fraction value > 1", {
   expect_error(
-    as_hybrid_svydesign(make_access(), make_roving(),
+    as_hybrid_svydesign(
+      make_access(),
+      make_roving(),
       access_fraction = c(weekday = 1.5, weekend = 0.5),
       roving_fraction = fractions$roving
     ),
@@ -128,7 +142,8 @@ test_that("HYBR-09: errors when fraction value > 1", {
 
 test_that("HYBR-10: returns an svydesign object", {
   design <- suppressWarnings(as_hybrid_svydesign(
-    make_access(), make_roving(),
+    make_access(),
+    make_roving(),
     access_fraction = fractions$access,
     roving_fraction = fractions$roving
   ))
@@ -137,7 +152,8 @@ test_that("HYBR-10: returns an svydesign object", {
 
 test_that("HYBR-11: returns creel_hybrid_svydesign class", {
   design <- suppressWarnings(as_hybrid_svydesign(
-    make_access(), make_roving(),
+    make_access(),
+    make_roving(),
     access_fraction = fractions$access,
     roving_fraction = fractions$roving
   ))
@@ -146,7 +162,8 @@ test_that("HYBR-11: returns creel_hybrid_svydesign class", {
 
 test_that("HYBR-12: combined data has component column", {
   design <- suppressWarnings(as_hybrid_svydesign(
-    make_access(), make_roving(),
+    make_access(),
+    make_roving(),
     access_fraction = fractions$access,
     roving_fraction = fractions$roving
   ))
@@ -156,7 +173,8 @@ test_that("HYBR-12: combined data has component column", {
 
 test_that("HYBR-13: combined data has weight column", {
   design <- suppressWarnings(as_hybrid_svydesign(
-    make_access(), make_roving(),
+    make_access(),
+    make_roving(),
     access_fraction = fractions$access,
     roving_fraction = fractions$roving
   ))
@@ -166,7 +184,8 @@ test_that("HYBR-13: combined data has weight column", {
 
 test_that("HYBR-14: row count equals nrow(access) + nrow(roving)", {
   design <- suppressWarnings(as_hybrid_svydesign(
-    make_access(), make_roving(),
+    make_access(),
+    make_roving(),
     access_fraction = fractions$access,
     roving_fraction = fractions$roving
   ))
@@ -177,7 +196,8 @@ test_that("HYBR-14: row count equals nrow(access) + nrow(roving)", {
 
 test_that("HYBR-15: access weights = 1 / access_fraction", {
   design <- suppressWarnings(as_hybrid_svydesign(
-    make_access(), make_roving(),
+    make_access(),
+    make_roving(),
     access_fraction = c(weekday = 0.5, weekend = 0.25),
     roving_fraction = fractions$roving
   ))
@@ -194,13 +214,16 @@ test_that("HYBR-16: asymmetric dates produce a warning", {
   access_extra <- rbind(
     make_access(),
     data.frame(
-      date = as.Date("2024-06-15"), day_type = "weekday",
-      count = 5L, stringsAsFactors = FALSE
+      date = as.Date("2024-06-15"),
+      day_type = "weekday",
+      count = 5L,
+      stringsAsFactors = FALSE
     )
   )
   expect_warning(
     as_hybrid_svydesign(
-      access_extra, make_roving(),
+      access_extra,
+      make_roving(),
       access_fraction = c(weekday = 0.5, weekend = 0.5),
       roving_fraction = fractions$roving
     )
@@ -210,7 +233,8 @@ test_that("HYBR-16: asymmetric dates produce a warning", {
 test_that("HYBR-17: symmetric dates produce no PSU warning", {
   expect_no_warning(
     as_hybrid_svydesign(
-      make_access(), make_roving(),
+      make_access(),
+      make_roving(),
       access_fraction = fractions$access,
       roving_fraction = fractions$roving,
       fpc = FALSE
@@ -222,7 +246,8 @@ test_that("HYBR-17: symmetric dates produce no PSU warning", {
 
 test_that("HYBR-18: fpc = FALSE produces a valid design", {
   design <- as_hybrid_svydesign(
-    make_access(), make_roving(),
+    make_access(),
+    make_roving(),
     access_fraction = fractions$access,
     roving_fraction = fractions$roving,
     fpc = FALSE
@@ -244,7 +269,8 @@ test_that("HYBR-19: custom column names work", {
   names(roving_custom)[names(roving_custom) == "count"] <- "n_anglers"
 
   design <- as_hybrid_svydesign(
-    access_custom, roving_custom,
+    access_custom,
+    roving_custom,
     date_col = "survey_date",
     strata_col = "stratum",
     count_col = "n_anglers",
@@ -258,7 +284,8 @@ test_that("HYBR-19: custom column names work", {
 
 test_that("HYBR-20: svytotal runs without error on the hybrid design", {
   design <- as_hybrid_svydesign(
-    make_access(), make_roving(),
+    make_access(),
+    make_roving(),
     access_fraction = fractions$access,
     roving_fraction = fractions$roving,
     fpc = FALSE
