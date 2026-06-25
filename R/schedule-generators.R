@@ -947,8 +947,8 @@ generate_bus_schedule <- function(
   if (length(bad_sites) > 0L) {
     cli::cli_abort(c(
       "Inclusion probabilities exceed 1 for {length(bad_sites)} site{?s}.",
-      "x" = "crew={crew}, n_circuits={n_circuits} → p_period={p_period}; max p_site={max(p_site_vals[bad_sites])}.",
-      "i" = "Reduce {.arg crew} or increase circuits so that p_site * (crew / n_circuits) ≤ 1 for all sites."
+      "x" = "crew={crew}, n_circuits={n_circuits}, p_period={p_period}; max p_site={max(p_site_vals[bad_sites])}.",
+      "i" = "Reduce {.arg crew} or increase circuits so that p_site * (crew / n_circuits) <= 1 for all sites."
     ))
   }
 

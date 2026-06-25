@@ -1,18 +1,9 @@
 # Tests for the Quarto Creel Report template ----
 
 test_that("Quarto Creel Report template exists and is tidycreel aligned", {
-  template_path <- normalizePath(
-    file.path(
-      "..",
-      "..",
-      "inst",
-      "quarto",
-      "templates",
-      "creel-report",
-      "template.qmd"
-    ),
-    winslash = "/",
-    mustWork = FALSE
+  template_path <- system.file(
+    "quarto", "templates", "creel-report", "template.qmd",
+    package = "tidycreel"
   )
   expect_true(file.exists(template_path))
 
