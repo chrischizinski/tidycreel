@@ -6,7 +6,8 @@
 # Resolve the absolute path to the script before any with_dir() changes cwd.
 # system.file() works because tidycreel is loaded during devtools::test().
 script_path <- system.file(
-  "validation", "calamus-2016-validation.R",
+  "validation",
+  "calamus-2016-validation.R",
   package = "tidycreel",
   mustWork = TRUE
 )
@@ -53,7 +54,8 @@ test_that("validation script passes WD guard when run from package root", {
         grepl("DESCRIPTION", conditionMessage(caught)),
         info = paste(
           "DESCRIPTION guard must not fire from package root;",
-          "actual error:", conditionMessage(caught)
+          "actual error:",
+          conditionMessage(caught)
         )
       )
     } else {

@@ -2,7 +2,8 @@
 
 # Fixtures ----
 
-make_design_with_lengths_for_est <- function() { # nolint: object_length_linter
+make_design_with_lengths_for_est <- function() {
+  # nolint: object_length_linter
   data(example_calendar, package = "tidycreel")
   data(example_interviews, package = "tidycreel")
   data(example_lengths, package = "tidycreel")
@@ -10,13 +11,17 @@ make_design_with_lengths_for_est <- function() { # nolint: object_length_linter
   d <- suppressWarnings(
     creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
   )
-  d <- suppressWarnings(add_interviews(d, example_interviews, # nolint: object_usage_linter
+  d <- suppressWarnings(add_interviews(
+    d,
+    example_interviews, # nolint: object_usage_linter
     catch = catch_total, # nolint: object_usage_linter
     effort = hours_fished, # nolint: object_usage_linter
     harvest = catch_kept, # nolint: object_usage_linter
     trip_status = trip_status # nolint: object_usage_linter
   ))
-  add_lengths(d, example_lengths, # nolint: object_usage_linter
+  add_lengths(
+    d,
+    example_lengths, # nolint: object_usage_linter
     length_uid = interview_id, # nolint: object_usage_linter
     interview_uid = interview_id, # nolint: object_usage_linter
     species = species, # nolint: object_usage_linter
@@ -27,14 +32,17 @@ make_design_with_lengths_for_est <- function() { # nolint: object_length_linter
   )
 }
 
-make_design_no_lengths_for_est <- function() { # nolint: object_length_linter
+make_design_no_lengths_for_est <- function() {
+  # nolint: object_length_linter
   data(example_calendar, package = "tidycreel")
   data(example_interviews, package = "tidycreel")
 
   d <- suppressWarnings(
     creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
   )
-  suppressWarnings(add_interviews(d, example_interviews, # nolint: object_usage_linter
+  suppressWarnings(add_interviews(
+    d,
+    example_interviews, # nolint: object_usage_linter
     catch = catch_total, # nolint: object_usage_linter
     effort = hours_fished, # nolint: object_usage_linter
     harvest = catch_kept, # nolint: object_usage_linter
@@ -85,10 +93,21 @@ test_that("est_length_distribution() returns classed data.frame", {
 test_that("est_length_distribution() returns expected columns", {
   d <- make_design_with_lengths_for_est()
   result <- est_length_distribution(d, type = "catch")
-  expect_true(all(c(
-    "length_bin", "bin_lower", "bin_upper", "estimate", "se",
-    "ci_lower", "ci_upper", "percent", "cumulative_percent", "n"
-  ) %in% names(result)))
+  expect_true(all(
+    c(
+      "length_bin",
+      "bin_lower",
+      "bin_upper",
+      "estimate",
+      "se",
+      "ci_lower",
+      "ci_upper",
+      "percent",
+      "cumulative_percent",
+      "n"
+    ) %in%
+      names(result)
+  ))
 })
 
 test_that("est_length_distribution() length_bin is ordered", {

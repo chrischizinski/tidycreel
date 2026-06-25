@@ -41,7 +41,13 @@ test_that("format displays 'Ratio-of-Means HPUE' for harvest method", {
 
 test_that("format displays 'Total Catch (Effort x CPUE)' for product-total-catch method", {
   obj <- tidycreel:::new_creel_estimates(
-    estimates = tibble::tibble(estimate = 1500, se = 150, ci_lower = 1200, ci_upper = 1800, n = 22L),
+    estimates = tibble::tibble(
+      estimate = 1500,
+      se = 150,
+      ci_lower = 1200,
+      ci_upper = 1800,
+      n = 22L
+    ),
     method = "product-total-catch"
   )
   output <- format(obj)

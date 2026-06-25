@@ -1,20 +1,19 @@
 make_simple_design <- function(n = 30L, seed = 42L) {
   set.seed(seed)
   dates <- seq.Date(as.Date("2024-06-01"), by = "day", length.out = 14L)
-  cal   <- data.frame(
-    date     = dates,
+  cal <- data.frame(
+    date = dates,
     day_type = rep(c("weekend", "weekday"), c(2L, 12L))
   )
   ints <- data.frame(
-    date         = sample(dates, n, replace = TRUE),
-    day_type     = sample(c("weekday", "weekend"), n, replace = TRUE),
+    date = sample(dates, n, replace = TRUE),
+    day_type = sample(c("weekday", "weekend"), n, replace = TRUE),
     hours_fished = round(rgamma(n, 2.5, 0.7), 2),
-    catch_total  = rnbinom(n, mu = 5, size = 0.6),
-    trip_status  = "complete"
+    catch_total = rnbinom(n, mu = 5, size = 0.6),
+    trip_status = "complete"
   )
   creel_design(cal, date = date, strata = day_type) |>
-    add_interviews(ints, catch = catch_total, effort = hours_fished,
-                   trip_status = trip_status)
+    add_interviews(ints, catch = catch_total, effort = hours_fished, trip_status = trip_status)
 }
 
 test_that("regression estimator returns creel_estimates with correct method", {
@@ -62,8 +61,8 @@ test_that("regression slope matches manual OLS (force_origin = TRUE)", {
   d <- make_simple_design(n = 50L, seed = 3L)
   r <- estimate_catch_rate(d, estimator = "regression", force_origin = TRUE)
 
-  ints   <- d$interviews
-  catch  <- as.numeric(ints[[d$catch_col]])
+  ints <- d$interviews
+  catch <- as.numeric(ints[[d$catch_col]])
   effort <- as.numeric(ints[[d$angler_effort_col]])
   manual_beta <- sum(catch * effort) / sum(effort^2)
 
@@ -128,7 +127,7 @@ test_that(".jackknife_slope_se near zero for near-perfect linear data", {
 # ── compare_cpue_estimators ───────────────────────────────────────────────────
 
 test_that("compare_cpue_estimators returns cpue_comparison tibble", {
-  d    <- make_simple_design(n = 40L)
+  d <- make_simple_design(n = 40L)
   comp <- compare_cpue_estimators(d)
   expect_s3_class(comp, "cpue_comparison")
   expect_true("cpue_method" %in% names(comp))
@@ -136,14 +135,14 @@ test_that("compare_cpue_estimators returns cpue_comparison tibble", {
 })
 
 test_that("compare_cpue_estimators includes rom and regression", {
-  d    <- make_simple_design(n = 40L)
+  d <- make_simple_design(n = 40L)
   comp <- compare_cpue_estimators(d)
   expect_true("rom" %in% comp$cpue_method)
   expect_true("regression" %in% comp$cpue_method)
 })
 
 test_that("compare_cpue_estimators grouped returns group columns", {
-  d    <- make_simple_design(n = 60L, seed = 20L)
+  d <- make_simple_design(n = 60L, seed = 20L)
   comp <- compare_cpue_estimators(d, by = day_type)
   expect_true("day_type" %in% names(comp))
 })
@@ -155,8 +154,8 @@ test_that("compare_cpue_estimators conf_level validation", {
 
 test_that("autoplot.cpue_comparison returns ggplot", {
   skip_if_not_installed("ggplot2")
-  d    <- make_simple_design(n = 40L)
+  d <- make_simple_design(n = 40L)
   comp <- compare_cpue_estimators(d)
-  p    <- autoplot(comp)
+  p <- autoplot(comp)
   expect_s3_class(p, "ggplot")
 })

@@ -2,20 +2,25 @@
 
 # Fixtures ----
 
-make_design_with_lengths <- function() { # nolint: object_length_linter
+make_design_with_lengths <- function() {
+  # nolint: object_length_linter
   data(example_calendar, package = "tidycreel")
   data(example_interviews, package = "tidycreel")
   data(example_lengths, package = "tidycreel")
   d <- suppressWarnings(
     creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
   )
-  d <- suppressWarnings(add_interviews(d, example_interviews, # nolint: object_usage_linter
+  d <- suppressWarnings(add_interviews(
+    d,
+    example_interviews, # nolint: object_usage_linter
     catch = catch_total, # nolint: object_usage_linter
     effort = hours_fished, # nolint: object_usage_linter
     harvest = catch_kept, # nolint: object_usage_linter
     trip_status = trip_status # nolint: object_usage_linter
   ))
-  add_lengths(d, example_lengths, # nolint: object_usage_linter
+  add_lengths(
+    d,
+    example_lengths, # nolint: object_usage_linter
     length_uid = interview_id, # nolint: object_usage_linter
     interview_uid = interview_id, # nolint: object_usage_linter
     species = species, # nolint: object_usage_linter
@@ -26,13 +31,16 @@ make_design_with_lengths <- function() { # nolint: object_length_linter
   )
 }
 
-make_design_no_lengths <- function() { # nolint: object_length_linter
+make_design_no_lengths <- function() {
+  # nolint: object_length_linter
   data(example_calendar, package = "tidycreel")
   data(example_interviews, package = "tidycreel")
   d <- suppressWarnings(
     creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
   )
-  suppressWarnings(add_interviews(d, example_interviews, # nolint: object_usage_linter
+  suppressWarnings(add_interviews(
+    d,
+    example_interviews, # nolint: object_usage_linter
     catch = catch_total, # nolint: object_usage_linter
     effort = hours_fished, # nolint: object_usage_linter
     harvest = catch_kept, # nolint: object_usage_linter
@@ -182,7 +190,9 @@ test_that("bin_width = 25: walleye harvest bins span 25mm", {
   d <- make_design_with_lengths()
   result <- summarize_length_freq(
     d,
-    type = "harvest", by = species, bin_width = 25 # nolint: object_usage_linter
+    type = "harvest",
+    by = species,
+    bin_width = 25 # nolint: object_usage_linter
   )
   walleye <- result[result$species == "walleye", ]
   bins <- as.character(walleye[["length_bin"]])
@@ -203,7 +213,9 @@ test_that("release bins reflect midpoints of original bin labels", {
   d <- make_design_with_lengths()
   result <- summarize_length_freq(
     d,
-    type = "release", by = species, bin_width = 1 # nolint: object_usage_linter
+    type = "release",
+    by = species,
+    bin_width = 1 # nolint: object_usage_linter
   )
   # walleye midpoints: 375 and 425; with bin_width=1 each fish is at 375 or 425
   walleye <- result[result$species == "walleye", ]
@@ -218,7 +230,9 @@ test_that("release N is expanded from count: walleye 'count=2' bin has N=2", {
   d <- make_design_with_lengths()
   result <- summarize_length_freq(
     d,
-    type = "release", by = species, bin_width = 1 # nolint: object_usage_linter
+    type = "release",
+    by = species,
+    bin_width = 1 # nolint: object_usage_linter
   )
   walleye <- result[result$species == "walleye", ]
   # "350-400" midpoint=375, count=2 -> expect a bin at 375 with N=2

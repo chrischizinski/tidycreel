@@ -16,14 +16,17 @@ test_that("format.creel_tost_validation returns character vector", {
     trip_duration = runif(50, min = 2, max = 4)
   )
 
-  design_with_interviews <- add_interviews(design, interviews,
+  design_with_interviews <- add_interviews(
+    design,
+    interviews,
     catch = catch_total,
     effort = hours_fished,
     trip_status = trip_status,
     trip_duration = trip_duration
   )
 
-  result <- validate_incomplete_trips(design_with_interviews,
+  result <- validate_incomplete_trips(
+    design_with_interviews,
     catch = catch_total,
     effort = hours_fished
   )
@@ -49,14 +52,17 @@ test_that("print method displays plot for ungrouped validation", {
     trip_duration = runif(50, min = 2, max = 4)
   )
 
-  design_with_interviews <- add_interviews(design, interviews,
+  design_with_interviews <- add_interviews(
+    design,
+    interviews,
     catch = catch_total,
     effort = hours_fished,
     trip_status = trip_status,
     trip_duration = trip_duration
   )
 
-  result <- validate_incomplete_trips(design_with_interviews,
+  result <- validate_incomplete_trips(
+    design_with_interviews,
     catch = catch_total,
     effort = hours_fished
   )
@@ -84,14 +90,17 @@ test_that("print method displays plot for grouped validation", {
     trip_duration = runif(60, min = 2, max = 4)
   )
 
-  design_with_interviews <- add_interviews(design, interviews,
+  design_with_interviews <- add_interviews(
+    design,
+    interviews,
     catch = catch_total,
     effort = hours_fished,
     trip_status = trip_status,
     trip_duration = trip_duration
   )
 
-  result <- validate_incomplete_trips(design_with_interviews,
+  result <- validate_incomplete_trips(
+    design_with_interviews,
     catch = catch_total,
     effort = hours_fished,
     by = location
@@ -117,14 +126,17 @@ test_that("formatted output includes overall test results", {
     trip_duration = runif(50, min = 2, max = 4)
   )
 
-  design_with_interviews <- add_interviews(design, interviews,
+  design_with_interviews <- add_interviews(
+    design,
+    interviews,
     catch = catch_total,
     effort = hours_fished,
     trip_status = trip_status,
     trip_duration = trip_duration
   )
 
-  result <- validate_incomplete_trips(design_with_interviews,
+  result <- validate_incomplete_trips(
+    design_with_interviews,
     catch = catch_total,
     effort = hours_fished
   )
@@ -156,14 +168,17 @@ test_that("formatted output includes per-group results if grouped", {
     trip_duration = runif(60, min = 2, max = 4)
   )
 
-  design_with_interviews <- add_interviews(design, interviews,
+  design_with_interviews <- add_interviews(
+    design,
+    interviews,
     catch = catch_total,
     effort = hours_fished,
     trip_status = trip_status,
     trip_duration = trip_duration
   )
 
-  result <- validate_incomplete_trips(design_with_interviews,
+  result <- validate_incomplete_trips(
+    design_with_interviews,
     catch = catch_total,
     effort = hours_fished,
     by = location
@@ -192,14 +207,17 @@ test_that("formatted output includes recommendation text", {
     trip_duration = runif(50, min = 2, max = 4)
   )
 
-  design_with_interviews <- add_interviews(design, interviews,
+  design_with_interviews <- add_interviews(
+    design,
+    interviews,
     catch = catch_total,
     effort = hours_fished,
     trip_status = trip_status,
     trip_duration = trip_duration
   )
 
-  result <- validate_incomplete_trips(design_with_interviews,
+  result <- validate_incomplete_trips(
+    design_with_interviews,
     catch = catch_total,
     effort = hours_fished
   )

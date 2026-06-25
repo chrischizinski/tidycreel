@@ -4,16 +4,22 @@
 make_camera_design <- function() {
   cal <- data.frame(
     date = as.Date(c(
-      "2024-06-03", "2024-06-04", "2024-06-05",
-      "2024-06-08", "2024-06-09"
+      "2024-06-03",
+      "2024-06-04",
+      "2024-06-05",
+      "2024-06-08",
+      "2024-06-09"
     )),
     day_type = c("weekday", "weekday", "weekday", "weekend", "weekend"),
     stringsAsFactors = FALSE
   )
   suppressWarnings(
-    creel_design(cal,
-      date = date, strata = day_type, # nolint
-      survey_type = "camera", camera_mode = "counter"
+    creel_design(
+      cal,
+      date = date,
+      strata = day_type, # nolint
+      survey_type = "camera",
+      camera_mode = "counter"
     )
   )
 }
@@ -21,8 +27,11 @@ make_camera_design <- function() {
 make_camera_counts <- function() {
   data.frame(
     date = as.Date(c(
-      "2024-06-03", "2024-06-04", "2024-06-05",
-      "2024-06-08", "2024-06-09"
+      "2024-06-03",
+      "2024-06-04",
+      "2024-06-05",
+      "2024-06-08",
+      "2024-06-09"
     )),
     day_type = c("weekday", "weekday", "weekday", "weekend", "weekend"),
     ingress_count = c(48L, 55L, 43L, 80L, 75L),
@@ -34,8 +43,11 @@ make_camera_counts <- function() {
 make_interviews <- function() {
   data.frame(
     date = as.Date(c(
-      "2024-06-03", "2024-06-03", "2024-06-04",
-      "2024-06-08", "2024-06-09"
+      "2024-06-03",
+      "2024-06-03",
+      "2024-06-04",
+      "2024-06-08",
+      "2024-06-09"
     )),
     day_type = c("weekday", "weekday", "weekday", "weekend", "weekend"),
     hours_fished = c(3.5, 2.0, 4.0, 2.5, 3.0),
@@ -109,8 +121,10 @@ test_that("CEST-07: raw mode returns creel_estimates", {
 test_that("CEST-08: raw mode has expected columns", {
   d <- make_design_with_counts()
   res <- suppressWarnings(est_effort_camera(d, h_open = 14))
-  expect_true(all(c("estimate", "se", "ci_lower", "ci_upper", "n") %in%
-    names(res$estimates)))
+  expect_true(all(
+    c("estimate", "se", "ci_lower", "ci_upper", "n") %in%
+      names(res$estimates)
+  ))
 })
 
 test_that("CEST-09: ratio mode returns creel_estimates", {
@@ -126,8 +140,10 @@ test_that("CEST-10: ratio mode has expected columns", {
   res <- suppressWarnings(
     est_effort_camera(d, interviews = make_interviews())
   )
-  expect_true(all(c("estimate", "se", "ci_lower", "ci_upper", "n") %in%
-    names(res$estimates)))
+  expect_true(all(
+    c("estimate", "se", "ci_lower", "ci_upper", "n") %in%
+      names(res$estimates)
+  ))
 })
 
 # Numeric correctness ---------------------------------------------------------
@@ -199,16 +215,22 @@ test_that("CEST-18: higher conf_level gives wider CI", {
 test_that("CEST-19: non-camera design type produces a cli warning", {
   cal <- data.frame(
     date = as.Date(c(
-      "2024-06-01", "2024-06-02",
-      "2024-06-03", "2024-06-08", "2024-06-09"
+      "2024-06-01",
+      "2024-06-02",
+      "2024-06-03",
+      "2024-06-08",
+      "2024-06-09"
     )),
     day_type = c("weekday", "weekday", "weekday", "weekend", "weekend")
   )
   d <- suppressWarnings(creel_design(cal, date = date, strata = day_type)) # nolint
   counts <- data.frame(
     date = as.Date(c(
-      "2024-06-01", "2024-06-02",
-      "2024-06-03", "2024-06-08", "2024-06-09"
+      "2024-06-01",
+      "2024-06-02",
+      "2024-06-03",
+      "2024-06-08",
+      "2024-06-09"
     )),
     day_type = c("weekday", "weekday", "weekday", "weekend", "weekend"),
     count = c(10L, 12L, 14L, 20L, 22L)

@@ -100,13 +100,14 @@ est_effort_camera <- function(
     )
   }
 
-  estimate_effort_camera( # nolint: object_usage_linter
-    design          = design,
-    interviews      = interviews,
-    effort_col      = effort_col,
-    intercept_col   = intercept_col,
-    h_open          = h_open,
+  estimate_effort_camera(
+    # nolint: object_usage_linter
+    design = design,
+    interviews = interviews,
+    effort_col = effort_col,
+    intercept_col = intercept_col,
+    h_open = h_open,
     variance_method = variance,
-    conf_level      = conf_level
+    conf_level = conf_level
   )
 }

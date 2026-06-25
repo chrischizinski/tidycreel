@@ -40,16 +40,18 @@
 #' @seealso [add_counts()]
 #' @family "Survey Design"
 #' @export
-prep_counts_daily_effort <- function(data,
-                                     date,
-                                     strata = NULL,
-                                     effort_type,
-                                     daily_effort,
-                                     correction_factor = 1,
-                                     psu = NULL,
-                                     n_counts = NULL,
-                                     within_day_var = NULL,
-                                     source_method = NULL) {
+prep_counts_daily_effort <- function(
+  data,
+  date,
+  strata = NULL,
+  effort_type,
+  daily_effort,
+  correction_factor = 1,
+  psu = NULL,
+  n_counts = NULL,
+  within_day_var = NULL,
+  source_method = NULL
+) {
   date_quo <- rlang::enquo(date)
   strata_quo <- rlang::enquo(strata)
   effort_type_quo <- rlang::enquo(effort_type)
@@ -255,17 +257,19 @@ prep_counts_daily_effort <- function(data,
 #' @seealso [prep_counts_daily_effort()], [add_counts()]
 #' @family "Survey Design"
 #' @export
-prep_counts_boat_party <- function(data,
-                                   date,
-                                   strata = NULL,
-                                   boat_count,
-                                   mean_party_size,
-                                   effort_type = "boat",
-                                   correction_factor = 1,
-                                   psu = NULL,
-                                   n_counts = NULL,
-                                   within_day_var = NULL,
-                                   source_method = "boat_count_x_mean_party_size") {
+prep_counts_boat_party <- function(
+  data,
+  date,
+  strata = NULL,
+  boat_count,
+  mean_party_size,
+  effort_type = "boat",
+  correction_factor = 1,
+  psu = NULL,
+  n_counts = NULL,
+  within_day_var = NULL,
+  source_method = "boat_count_x_mean_party_size"
+) {
   date_quo <- rlang::enquo(date)
   strata_quo <- rlang::enquo(strata)
   boat_count_quo <- rlang::enquo(boat_count)

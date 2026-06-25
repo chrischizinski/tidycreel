@@ -18,7 +18,8 @@ creel_design(
   effort_type = NULL,
   camera_mode = NULL,
   h_open = NULL,
-  visibility_correction = NULL
+  visibility_correction = NULL,
+  open_start = NULL
 )
 }
 \arguments{
@@ -93,6 +94,15 @@ the proportion of anglers on the water that are detectable from the
 aircraft. Used only when \code{survey_type = "aerial"}. Defaults to \code{1.0}
 (all anglers visible) when \code{NULL}. A value of 0.85 means 85\% of anglers
 are detected; the effort estimate is scaled up by \eqn{1 / 0.85}.}
+
+\item{open_start}{Optional non-negative numeric scalar specifying the
+hour of day (decimal, 24-hour clock) when the fishery opens. Used only
+when \code{survey_type = "aerial"} and only by \code{\link[=estimate_effort_aerial_glmm]{estimate_effort_aerial_glmm()}}
+to anchor the numerical integration window. If \code{NULL} (default), the
+GLMM estimator derives the window start from the earliest observed flight
+time minus 0.5 hours, with an informational message. Supplying
+\code{open_start} fixes the window across surveys for consistent comparisons.
+Example: \code{open_start = 5.5} means fishing begins at 5:30 AM.}
 }
 \value{
 A \code{creel_design} S3 object (list) with components:
@@ -203,7 +213,7 @@ estimators; pp. 883--884 define the inclusion probability
 \eqn{\pi_i = p_{\text{site}} \times p_{\text{period}}}.
 }
 \seealso{
-Other "Survey Design": 
+Other "Survey Design":
 \code{\link{add_catch}()},
 \code{\link{add_counts}()},
 \code{\link{add_interviews}()},

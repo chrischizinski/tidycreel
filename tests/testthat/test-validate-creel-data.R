@@ -52,7 +52,7 @@ test_that("VCDV-04: errors on invalid na_threshold", {
 test_that("VCDV-05: errors on invalid date_range", {
   expect_error(
     validate_creel_data(
-      counts     = make_counts(),
+      counts = make_counts(),
       date_range = c("2020-01-01", "2025-01-01")
     ),
     class = "creel_error_design_validation"
@@ -74,7 +74,7 @@ test_that("VCDV-07: result has expected columns", {
 
 test_that("VCDV-08: status values are restricted to pass/warn/fail", {
   res <- validate_creel_data(
-    counts     = make_counts(),
+    counts = make_counts(),
     interviews = make_interviews()
   )
   expect_true(all(res$status %in% c("pass", "warn", "fail")))
@@ -82,7 +82,7 @@ test_that("VCDV-08: status values are restricted to pass/warn/fail", {
 
 test_that("VCDV-09: table column identifies source correctly", {
   res <- validate_creel_data(
-    counts     = make_counts(),
+    counts = make_counts(),
     interviews = make_interviews()
   )
   expect_true("counts" %in% res$table)
@@ -93,7 +93,7 @@ test_that("VCDV-09: table column identifies source correctly", {
 
 test_that("VCDV-10: high NA rate triggers warn status", {
   df <- data.frame(
-    date  = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03")),
+    date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03")),
     count = c(NA_integer_, NA_integer_, 1L)
   )
   res <- validate_creel_data(counts = df, na_threshold = 0.10)
@@ -111,7 +111,7 @@ test_that("VCDV-11: NA rate below threshold is pass", {
 
 test_that("VCDV-12: out-of-range dates trigger warn", {
   df <- data.frame(
-    date  = as.Date(c("1900-01-01", "2024-06-01")),
+    date = as.Date(c("1900-01-01", "2024-06-01")),
     count = c(5L, 10L)
   )
   res <- validate_creel_data(counts = df)
@@ -127,14 +127,14 @@ test_that("VCDV-13: in-range dates are pass", {
 
 # Negative values check -------------------------------------------------------
 
-test_that("VCDV-14: negative numeric values trigger warn", {
+test_that("VCDV-14: negative numeric values trigger fail", {
   df <- data.frame(
-    date  = as.Date("2024-06-01"),
+    date = as.Date("2024-06-01"),
     count = -5L
   )
   res <- validate_creel_data(counts = df)
   neg_row <- res[res$column == "count" & res$check == "negative_values", ]
-  expect_equal(neg_row$status, "warn")
+  expect_equal(neg_row$status, "fail")
 })
 
 test_that("VCDV-15: non-negative numerics are pass", {
@@ -201,7 +201,7 @@ test_that("VCDV-22: interviews-only call works (no counts)", {
 
 test_that("VCDV-23: single-row data frame is handled without error", {
   df <- data.frame(
-    date  = as.Date("2024-06-01"),
+    date = as.Date("2024-06-01"),
     count = 5L
   )
   expect_no_error(validate_creel_data(counts = df))
@@ -209,7 +209,7 @@ test_that("VCDV-23: single-row data frame is handled without error", {
 
 test_that("VCDV-24: factor column gets empty_strings check", {
   df <- data.frame(
-    date    = as.Date("2024-06-01"),
+    date = as.Date("2024-06-01"),
     species = factor("walleye")
   )
   res <- validate_creel_data(interviews = df)
@@ -218,7 +218,7 @@ test_that("VCDV-24: factor column gets empty_strings check", {
 
 test_that("VCDV-25: all-NA column still produces rows", {
   df <- data.frame(
-    date  = as.Date(c("2024-06-01", "2024-06-02")),
+    date = as.Date(c("2024-06-01", "2024-06-02")),
     count = c(NA_integer_, NA_integer_)
   )
   res <- validate_creel_data(counts = df)

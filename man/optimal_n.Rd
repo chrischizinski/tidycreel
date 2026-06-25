@@ -48,7 +48,9 @@ where \eqn{A = \sum_h N_h s_h / \sqrt{c_h}},
 \eqn{V_0 = (CV_{target} \cdot \hat{E})^2}, \eqn{\hat{E} = \sum_h N_h
 \bar{y}_h}, and \eqn{s_h = \sqrt{s_h^2}}. When all \eqn{c_h = 1}
 (equal costs) this reduces to \eqn{(\sum_h N_h s_h)^2 / (V_0 + \sum_h N_h
-s_h^2)}, identical to \code{\link[=creel_n_effort]{creel_n_effort()}}.
+s_h^2)}, which gives the same \code{n_total} as \code{\link[=creel_n_effort]{creel_n_effort()}} (per-stratum
+allocation differs: Neyman uses \eqn{n_h \propto N_h s_h} vs proportional
+\eqn{n_h \propto N_h}).
 
 \strong{Per-stratum allocation} uses the cost-adjusted Neyman formula (Cochran
 1977 eq. 5.30):

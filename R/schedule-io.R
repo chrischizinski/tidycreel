@@ -84,7 +84,12 @@ coerce_schedule_columns <- function(df) {
     df$day_type[!is.na(df$day_type) & df$day_type == "NA"] <- NA_character_
   }
   if ("period_id" %in% names(df)) {
-    df$period_id <- suppressWarnings(as.integer(df$period_id))
+    pid <- df$period_id
+    all_numeric <- all(is.na(pid) | grepl("^[0-9]+$", pid))
+    if (all_numeric) {
+      df$period_id <- as.integer(pid)
+    }
+    # else: character period labels (e.g. "AM"/"PM") — preserve as-is
   }
   if ("sampled" %in% names(df)) {
     df$sampled <- as.logical(df$sampled)
@@ -105,6 +110,8 @@ coerce_schedule_columns <- function(df) {
 #'   is written with [utils::write.csv()] (no row names). When `"xlsx"`,
 #'   [writexl::write_xlsx()] is used behind an [rlang::check_installed()]
 #'   guard.
+#' @param overwrite Logical. If `FALSE` (default), aborts with an error when
+#'   `path` already exists. Set `TRUE` to replace an existing file.
 #'
 #' @return `path`, returned invisibly.
 #'
@@ -120,7 +127,13 @@ coerce_schedule_columns <- function(df) {
 #'
 #' @family "Scheduling"
 #' @export
-write_schedule <- function(schedule, path, format = c("csv", "xlsx")) {
+write_schedule <- function(schedule, path, format = c("csv", "xlsx"), overwrite = FALSE) {
+  if (!overwrite && file.exists(path)) {
+    cli::cli_abort(c(
+      "File already exists: {.path {path}}",
+      "i" = "Set {.code overwrite = TRUE} to replace it."
+    ))
+  }
   format <- match.arg(format)
   if (format == "xlsx") {
     rlang::check_installed("writexl", reason = "to write xlsx schedule files")

@@ -8,13 +8,17 @@ make_ld <- function(by_species = TRUE) {
   d <- suppressWarnings(
     creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
   )
-  d <- suppressWarnings(add_interviews(d, example_interviews, # nolint: object_usage_linter
+  d <- suppressWarnings(add_interviews(
+    d,
+    example_interviews, # nolint: object_usage_linter
     catch = catch_total, # nolint: object_usage_linter
     effort = hours_fished, # nolint: object_usage_linter
     harvest = catch_kept, # nolint: object_usage_linter
     trip_status = trip_status # nolint: object_usage_linter
   ))
-  d <- add_lengths(d, example_lengths, # nolint: object_usage_linter
+  d <- add_lengths(
+    d,
+    example_lengths, # nolint: object_usage_linter
     length_uid = interview_id, # nolint: object_usage_linter
     interview_uid = interview_id, # nolint: object_usage_linter
     species = species, # nolint: object_usage_linter
@@ -56,16 +60,25 @@ test_that("est_mean_length() returns creel_mean_length data.frame", {
 test_that("est_mean_length() returns expected columns (grouped)", {
   ld <- make_ld()
   result <- est_mean_length(ld)
-  expected_cols <- c("species", "mean_length", "mean_length_se",
-                     "mean_length_ci_lower", "mean_length_ci_upper")
+  expected_cols <- c(
+    "species",
+    "mean_length",
+    "mean_length_se",
+    "mean_length_ci_lower",
+    "mean_length_ci_upper"
+  )
   expect_true(all(expected_cols %in% names(result)))
 })
 
 test_that("est_mean_length() returns expected columns (ungrouped)", {
   ld <- make_ld(by_species = FALSE)
   result <- est_mean_length(ld)
-  expected_cols <- c("mean_length", "mean_length_se",
-                     "mean_length_ci_lower", "mean_length_ci_upper")
+  expected_cols <- c(
+    "mean_length",
+    "mean_length_se",
+    "mean_length_ci_lower",
+    "mean_length_ci_upper"
+  )
   expect_true(all(expected_cols %in% names(result)))
   expect_false("species" %in% names(result))
 })
@@ -104,8 +117,7 @@ test_that("est_mean_length() matches manual sum(L_mid * N) / sum(N)", {
     l_mid <- (rows$bin_lower + rows$bin_upper) / 2
     expected <- sum(l_mid * rows$estimate) / sum(rows$estimate)
     actual <- result$mean_length[result$species == sp]
-    expect_equal(actual, expected, tolerance = 1e-9,
-                 label = paste("mean_length for species", sp))
+    expect_equal(actual, expected, tolerance = 1e-9, label = paste("mean_length for species", sp))
   }
 })
 
@@ -120,8 +132,12 @@ test_that("est_mean_length() SE matches delta method (1/N) * sqrt(sum((L-mean)^2
     mean_l <- sum(l_mid * rows$estimate) / n_total
     expected_se <- sqrt(sum((l_mid - mean_l)^2 * rows$se^2)) / n_total
     actual_se <- result$mean_length_se[result$species == sp]
-    expect_equal(actual_se, expected_se, tolerance = 1e-9,
-                 label = paste("mean_length_se for species", sp))
+    expect_equal(
+      actual_se,
+      expected_se,
+      tolerance = 1e-9,
+      label = paste("mean_length_se for species", sp)
+    )
   }
 })
 

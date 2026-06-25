@@ -116,8 +116,13 @@ compare_designs <- function(designs, metric = "estimate") {
 
   # Retain group columns (anything not in the standard set)
   std_cols <- c(
-    "estimate", "se", "se_between", "se_within",
-    "ci_lower", "ci_upper", "n"
+    "estimate",
+    "se",
+    "se_between",
+    "se_within",
+    "ci_lower",
+    "ci_upper",
+    "n"
   )
   grp_cols <- setdiff(names(est), c(std_cols, metric))
   if (length(grp_cols) > 0L) {
@@ -174,25 +179,26 @@ autoplot.creel_design_comparison <- function(object, title = NULL, ...) {
     ggplot2::geom_point(size = 3) +
     ggplot2::scale_colour_brewer(palette = "Set2") +
     ggplot2::labs(
-      title  = plot_title,
-      x      = "Estimate",
-      y      = "Design",
+      title = plot_title,
+      x = "Estimate",
+      y = "Design",
       colour = "Design"
     ) +
     ggplot2::theme_bw() +
     ggplot2::theme(
-      plot.title      = ggplot2::element_text(face = "bold"),
+      plot.title = ggplot2::element_text(face = "bold"),
       legend.position = "none"
     )
 
   if (has_ci) {
-    p <- p + ggplot2::geom_errorbarh(
-      ggplot2::aes(
-        xmin = .data[["ci_lower"]], # nolint: object_usage_linter
-        xmax = .data[["ci_upper"]] # nolint: object_usage_linter
-      ),
-      height = 0.2
-    )
+    p <- p +
+      ggplot2::geom_errorbarh(
+        ggplot2::aes(
+          xmin = .data[["ci_lower"]], # nolint: object_usage_linter
+          xmax = .data[["ci_upper"]] # nolint: object_usage_linter
+        ),
+        height = 0.2
+      )
   }
 
   p

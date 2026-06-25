@@ -166,16 +166,27 @@ estimate_total_catch <- function(
       )
       by_vars_br <- names(by_cols_br)
     }
-    return(estimate_total_catch_br( # nolint: object_usage_linter
-      design, by_vars_br, variance, conf_level,
-      verbose = FALSE, ci_method = ci_method
+    return(estimate_total_catch_br(
+      # nolint: object_usage_linter
+      design,
+      by_vars_br,
+      variance,
+      conf_level,
+      verbose = FALSE,
+      ci_method = ci_method
     ))
   }
 
   # Section dispatch guard (v0.7.0+ — only fires when add_sections() was called)
   if (!is.null(design[["sections"]])) {
-    return(estimate_total_catch_sections( # nolint: object_usage_linter
-      design, by_quo, variance, conf_level, aggregate_sections, missing_sections,
+    return(estimate_total_catch_sections(
+      # nolint: object_usage_linter
+      design,
+      by_quo,
+      variance,
+      conf_level,
+      aggregate_sections,
+      missing_sections,
       target = target
     ))
   }
@@ -193,29 +204,37 @@ estimate_total_catch <- function(
         "x" = "Call {.fn add_catch} before using species grouping in {.fn estimate_total_catch}."
       ))
     }
-    estimates_df <- estimate_total_catch_species( # nolint: object_usage_linter
+    estimates_df <- estimate_total_catch_species(
+      # nolint: object_usage_linter
       design,
-      species_col       = by_info$species_var,
+      species_col = by_info$species_var,
       interview_by_vars = by_info$interview_vars,
-      variance_method   = variance,
-      conf_level        = conf_level,
-      target            = target
-    )
-    return(new_creel_estimates( # nolint: object_usage_linter
-      estimates       = tibble::as_tibble(estimates_df),
-      method          = "product-total-catch",
       variance_method = variance,
-      design          = design,
-      conf_level      = conf_level,
-      by_vars         = by_info$all_vars,
-      effort_target   = target
+      conf_level = conf_level,
+      target = target
+    )
+    return(new_creel_estimates(
+      # nolint: object_usage_linter
+      estimates = tibble::as_tibble(estimates_df),
+      method = "product-total-catch",
+      variance_method = variance,
+      design = design,
+      conf_level = conf_level,
+      by_vars = by_info$all_vars,
+      effort_target = target
     ))
   }
 
   # Standard (non-species) routing
   if (rlang::quo_is_null(by_quo)) {
     # Ungrouped estimation
-    return(estimate_total_catch_ungrouped(design, variance, conf_level, target = target, use_trips = use_trips)) # nolint: object_usage_linter
+    return(estimate_total_catch_ungrouped(
+      design,
+      variance,
+      conf_level,
+      target = target,
+      use_trips = use_trips
+    )) # nolint: object_usage_linter
   } else {
     # Grouped estimation
     # Resolve by parameter to column names
@@ -231,7 +250,14 @@ estimate_total_catch <- function(
     # Validate grouping compatibility
     validate_grouping_compatibility(design, by_vars) # nolint: object_usage_linter
 
-    return(estimate_total_catch_grouped(design, by_vars, variance, conf_level, target = target, use_trips = use_trips)) # nolint: object_usage_linter
+    return(estimate_total_catch_grouped(
+      design,
+      by_vars,
+      variance,
+      conf_level,
+      target = target,
+      use_trips = use_trips
+    )) # nolint: object_usage_linter
   }
 }
 
@@ -251,8 +277,13 @@ estimate_total_catch <- function(
 #'
 #' @keywords internal
 #' @noRd
-cpue_for_stratum_product <- function(design, by_vars, variance_method, conf_level,
-                                     use_trips = "complete") {
+cpue_for_stratum_product <- function(
+  design,
+  by_vars,
+  variance_method,
+  conf_level,
+  use_trips = "complete"
+) {
   use_trips <- match.arg(use_trips, c("complete", "all"))
 
   # Apply trip filter before computing CPUE so that total-catch and
@@ -260,7 +291,8 @@ cpue_for_stratum_product <- function(design, by_vars, variance_method, conf_leve
   trip_status_col <- design$trip_status_col
   if (!is.null(trip_status_col) && use_trips != "all") {
     filtered_interviews <- design$interviews[
-      tolower(design$interviews[[trip_status_col]]) == use_trips, ,
+      tolower(design$interviews[[trip_status_col]]) == use_trips,
+      ,
       drop = FALSE
     ]
     design <- rebuild_interview_survey(design, filtered_interviews) # nolint: object_usage_linter
@@ -282,42 +314,61 @@ cpue_for_stratum_product <- function(design, by_vars, variance_method, conf_leve
 #'
 #' @keywords internal
 #' @noRd
-estimate_total_catch_ungrouped <- function(design, variance_method, conf_level,
-                                           target = "sampled_days",
-                                           use_trips = "complete") {
+estimate_total_catch_ungrouped <- function(
+  design,
+  variance_method,
+  conf_level,
+  target = "sampled_days",
+  use_trips = "complete"
+) {
   strata_cols <- design$strata_cols %||% character(0)
 
   # Per-stratum effort
   if (length(strata_cols) == 0L) {
     effort_result <- estimate_effort_total(design, variance_method, conf_level, target = target) # nolint: object_usage_linter
   } else {
-    effort_result <- estimate_effort_grouped(design, strata_cols, variance_method, conf_level, target = target) # nolint: object_usage_linter
+    effort_result <- estimate_effort_grouped(
+      design,
+      strata_cols,
+      variance_method,
+      conf_level,
+      target = target
+    ) # nolint: object_usage_linter
   }
   effort_df <- effort_result$estimates
 
-  cpue_result <- cpue_for_stratum_product( # nolint: object_usage_linter
-    design, strata_cols, variance_method, conf_level, use_trips = use_trips
+  cpue_result <- cpue_for_stratum_product(
+    # nolint: object_usage_linter
+    design,
+    strata_cols,
+    variance_method,
+    conf_level,
+    use_trips = use_trips
   )
   cpue_df <- cpue_result$estimates
 
+  warn_missing_rate_strata(effort_df, cpue_df, strata_cols, "estimate_total_catch") # nolint: object_usage_linter
+
   # Stratified-sum product estimator: sum(E_h * CPUE_h) across strata h
-  estimates_df <- compute_stratum_product_sum( # nolint: object_usage_linter
-    effort_df         = effort_df,
-    rate_df           = cpue_df,
-    stratum_by_vars   = strata_cols,
+  estimates_df <- compute_stratum_product_sum(
+    # nolint: object_usage_linter
+    effort_df = effort_df,
+    rate_df = cpue_df,
+    stratum_by_vars = strata_cols,
     interview_by_vars = NULL,
-    conf_level        = conf_level,
-    rate_suffix       = "cpue"
+    conf_level = conf_level,
+    rate_suffix = "cpue"
   )
 
-  new_creel_estimates( # nolint: object_usage_linter
-    estimates       = tibble::as_tibble(estimates_df),
-    method          = "product-total-catch",
+  new_creel_estimates(
+    # nolint: object_usage_linter
+    estimates = tibble::as_tibble(estimates_df),
+    method = "product-total-catch",
     variance_method = variance_method,
-    design          = design,
-    conf_level      = conf_level,
-    by_vars         = NULL,
-    effort_target   = target
+    design = design,
+    conf_level = conf_level,
+    by_vars = NULL,
+    effort_target = target
   )
 }
 
@@ -332,40 +383,60 @@ estimate_total_catch_ungrouped <- function(design, variance_method, conf_level,
 #'
 #' @keywords internal
 #' @noRd
-estimate_total_catch_grouped <- function(design, by_vars, variance_method, conf_level,
-                                         target = "sampled_days",
-                                         use_trips = "complete") {
+estimate_total_catch_grouped <- function(
+  design,
+  by_vars,
+  variance_method,
+  conf_level,
+  target = "sampled_days",
+  use_trips = "complete"
+) {
   strata_cols <- design$strata_cols %||% character(0)
   # Union of calendar strata and user grouping: ensures per-stratum products
   stratum_by_vars <- unique(c(strata_cols, by_vars))
 
   # Per-stratum effort grouped by union of strata and user vars
-  effort_result <- estimate_effort_grouped(design, stratum_by_vars, variance_method, conf_level, target = target) # nolint: object_usage_linter
+  effort_result <- estimate_effort_grouped(
+    design,
+    stratum_by_vars,
+    variance_method,
+    conf_level,
+    target = target
+  ) # nolint: object_usage_linter
   effort_df <- effort_result$estimates
 
-  cpue_result <- cpue_for_stratum_product( # nolint: object_usage_linter
-    design, stratum_by_vars, variance_method, conf_level, use_trips = use_trips
+  cpue_result <- cpue_for_stratum_product(
+    # nolint: object_usage_linter
+    design,
+    stratum_by_vars,
+    variance_method,
+    conf_level,
+    use_trips = use_trips
   )
   cpue_df <- cpue_result$estimates
 
+  warn_missing_rate_strata(effort_df, cpue_df, stratum_by_vars, "estimate_total_catch(by=)") # nolint: object_usage_linter
+
   # Stratified-sum within each by_vars group
-  estimates_df <- compute_stratum_product_sum( # nolint: object_usage_linter
-    effort_df         = effort_df,
-    rate_df           = cpue_df,
-    stratum_by_vars   = stratum_by_vars,
+  estimates_df <- compute_stratum_product_sum(
+    # nolint: object_usage_linter
+    effort_df = effort_df,
+    rate_df = cpue_df,
+    stratum_by_vars = stratum_by_vars,
     interview_by_vars = if (length(by_vars) > 0L) by_vars else NULL,
-    conf_level        = conf_level,
-    rate_suffix       = "cpue"
+    conf_level = conf_level,
+    rate_suffix = "cpue"
   )
 
-  new_creel_estimates( # nolint: object_usage_linter
-    estimates       = tibble::as_tibble(estimates_df),
-    method          = "product-total-catch",
+  new_creel_estimates(
+    # nolint: object_usage_linter
+    estimates = tibble::as_tibble(estimates_df),
+    method = "product-total-catch",
     variance_method = variance_method,
-    design          = design,
-    conf_level      = conf_level,
-    by_vars         = by_vars,
-    effort_target   = target
+    design = design,
+    conf_level = conf_level,
+    by_vars = by_vars,
+    effort_target = target
   )
 }
 
@@ -378,32 +449,45 @@ estimate_total_catch_grouped <- function(design, by_vars, variance_method, conf_
 #'
 #' @keywords internal
 #' @noRd
-estimate_total_catch_species <- function(design, species_col, interview_by_vars,
-                                         variance_method, conf_level,
-                                         target = "sampled_days") {
+estimate_total_catch_species <- function(
+  design,
+  species_col,
+  interview_by_vars,
+  variance_method,
+  conf_level,
+  target = "sampled_days"
+) {
   strata_cols <- design$strata_cols %||% character(0)
   stratum_by_vars <- unique(c(strata_cols, interview_by_vars))
 
   # Per-stratum species CPUE (grouped by strata + interview grouping vars)
   rate_by <- if (length(stratum_by_vars) > 0L) stratum_by_vars else NULL
-  all_rate_df <- estimate_cpue_species( # nolint: object_usage_linter
+  all_rate_df <- estimate_cpue_species(
+    # nolint: object_usage_linter
     design,
-    species_col       = species_col,
+    species_col = species_col,
     interview_by_vars = rate_by,
-    variance_method   = variance_method,
-    conf_level        = conf_level,
-    validate          = FALSE
+    variance_method = variance_method,
+    conf_level = conf_level,
+    validate = FALSE
   )
 
   # Per-stratum effort (grouped by same vars)
   if (length(stratum_by_vars) == 0L) {
     effort_result <- estimate_effort_total(design, variance_method, conf_level, target = target) # nolint: object_usage_linter
   } else {
-    effort_result <- estimate_effort_grouped(design, stratum_by_vars, variance_method, conf_level, target = target) # nolint: object_usage_linter
+    effort_result <- estimate_effort_grouped(
+      design,
+      stratum_by_vars,
+      variance_method,
+      conf_level,
+      target = target
+    ) # nolint: object_usage_linter
   }
   effort_df <- effort_result$estimates
 
-  warn_missing_rate_strata( # nolint: object_usage_linter
+  warn_missing_rate_strata(
+    # nolint: object_usage_linter
     effort_df = effort_df,
     rate_df = all_rate_df[, setdiff(names(all_rate_df), species_col), drop = FALSE],
     stratum_by_vars = stratum_by_vars,
@@ -418,13 +502,14 @@ estimate_total_catch_species <- function(design, species_col, interview_by_vars,
     rate_sp_df <- all_rate_df[all_rate_df[[species_col]] == sp, , drop = FALSE]
     rate_no_sp <- rate_sp_df[, setdiff(names(rate_sp_df), species_col), drop = FALSE]
 
-    sp_result <- compute_stratum_product_sum( # nolint: object_usage_linter
-      effort_df         = effort_df,
-      rate_df           = rate_no_sp,
-      stratum_by_vars   = stratum_by_vars,
+    sp_result <- compute_stratum_product_sum(
+      # nolint: object_usage_linter
+      effort_df = effort_df,
+      rate_df = rate_no_sp,
+      stratum_by_vars = stratum_by_vars,
       interview_by_vars = interview_by_vars,
-      conf_level        = conf_level,
-      rate_suffix       = "cpue"
+      conf_level = conf_level,
+      rate_suffix = "cpue"
     )
 
     sp_result[[species_col]] <- sp
@@ -439,10 +524,15 @@ estimate_total_catch_species <- function(design, species_col, interview_by_vars,
 #'
 #' @keywords internal
 #' @noRd
-estimate_total_catch_sections <- function(design, by_quo, variance_method, # nolint: object_length_linter
-                                          conf_level, aggregate_sections,
-                                          missing_sections,
-                                          target = "sampled_days") {
+estimate_total_catch_sections <- function(
+  design,
+  by_quo,
+  variance_method, # nolint: object_length_linter
+  conf_level,
+  aggregate_sections,
+  missing_sections,
+  target = "sampled_days"
+) {
   section_col <- design[["section_col"]]
   registered_sections <- design$sections[[section_col]]
   present_count_sections <- unique(design$counts[[section_col]])
@@ -510,8 +600,12 @@ estimate_total_catch_sections <- function(design, by_quo, variance_method, # nol
 
       if (!is.null(by_vars)) {
         # Grouped path: delegates to existing grouped helper
-        result <- estimate_total_catch_grouped( # nolint: object_usage_linter
-          sec_design, by_vars, variance_method, conf_level,
+        result <- estimate_total_catch_grouped(
+          # nolint: object_usage_linter
+          sec_design,
+          by_vars,
+          variance_method,
+          conf_level,
           target = target
         )
         row_df <- tibble::add_column(result$estimates, section = sec, .before = 1)
@@ -519,7 +613,12 @@ estimate_total_catch_sections <- function(design, by_quo, variance_method, # nol
         section_rows[[sec]] <- row_df
       } else {
         # Ungrouped path: call internal helpers directly to bypass sample-size validation
-        effort_res <- estimate_effort_total(sec_design, variance_method, conf_level, target = target) # nolint: object_usage_linter
+        effort_res <- estimate_effort_total(
+          sec_design,
+          variance_method,
+          conf_level,
+          target = target
+        ) # nolint: object_usage_linter
         cpue_res <- estimate_cpue_total(sec_design, variance_method, conf_level, "ratio") # nolint: object_usage_linter
         effort_est <- effort_res$estimates$estimate
         cpue_est <- cpue_res$estimates$estimate
@@ -528,7 +627,7 @@ estimate_total_catch_sections <- function(design, by_quo, variance_method, # nol
         sec_estimate <- effort_est * cpue_est
         sec_var <- (effort_est^2 * cpue_se^2) + (cpue_est^2 * effort_se^2)
         sec_se <- sqrt(sec_var)
-        sec_n  <- cpue_res$estimates$n
+        sec_n <- cpue_res$estimates$n
         z_val <- stats::qt(1 - (1 - conf_level) / 2, df = max(1L, sec_n - 1L))
         section_rows[[sec]] <- tibble::tibble(
           section = sec,
@@ -580,13 +679,14 @@ estimate_total_catch_sections <- function(design, by_quo, variance_method, # nol
     result_df <- dplyr::bind_rows(result_df, lake_row)
   }
 
-  new_creel_estimates( # nolint: object_usage_linter
-    estimates       = result_df,
-    method          = "product-total-catch-sections",
+  new_creel_estimates(
+    # nolint: object_usage_linter
+    estimates = result_df,
+    method = "product-total-catch-sections",
     variance_method = variance_method,
-    design          = design,
-    conf_level      = conf_level,
-    by_vars         = if (!is.null(by_vars)) c("section", by_vars) else "section",
-    effort_target   = target
+    design = design,
+    conf_level = conf_level,
+    by_vars = if (!is.null(by_vars)) c("section", by_vars) else "section",
+    effort_target = target
   )
 }

@@ -119,7 +119,8 @@ get_variance_design <- function(design, variance_method) {
             msg,
             regexpr("(?<=Stratum)(.+?)(?=has only one PSU)", msg, perl = TRUE)
           )
-          strat_label <- if (length(strat) > 0L && nzchar(strat)) { # nolint: object_usage_linter
+          strat_label <- if (length(strat) > 0L && nzchar(strat)) {
+            # nolint: object_usage_linter
             strat
           } else {
             "unknown"
@@ -230,7 +231,8 @@ validate_counts_tier1 <- function(counts, design, psu, allow_invalid = FALSE) {
     if (na_count_date > 0) {
       collection$push(sprintf(
         "Date column '%s' contains %d NA value(s)",
-        design$date_col, na_count_date
+        design$date_col,
+        na_count_date
       ))
     }
   }
@@ -242,7 +244,8 @@ validate_counts_tier1 <- function(counts, design, psu, allow_invalid = FALSE) {
       if (na_count_strata > 0) {
         collection$push(sprintf(
           "Strata column '%s' contains %d NA value(s)",
-          col, na_count_strata
+          col,
+          na_count_strata
         ))
       }
     }
@@ -254,7 +257,8 @@ validate_counts_tier1 <- function(counts, design, psu, allow_invalid = FALSE) {
     if (na_count_psu > 0) {
       collection$push(sprintf(
         "PSU column '%s' contains %d NA value(s)",
-        psu, na_count_psu
+        psu,
+        na_count_psu
       ))
     }
   }
@@ -292,7 +296,8 @@ validate_counts_tier1 <- function(counts, design, psu, allow_invalid = FALSE) {
   }
 
   # Return validation object
-  new_creel_validation( # nolint: object_usage_linter
+  new_creel_validation(
+    # nolint: object_usage_linter
     results = results,
     tier = 1L,
     context = "add_counts validation"
@@ -382,7 +387,7 @@ aggregate_within_day <- function(counts, psu_col, count_var, count_time_col, key
   }
 
   list(
-    aggregated     = do.call(rbind, agg_rows),
+    aggregated = do.call(rbind, agg_rows),
     within_day_var = do.call(rbind, var_rows)
   )
 }
@@ -577,7 +582,12 @@ warn_tier2_issues <- function(design) {
     for (i in seq_along(sparse_strata)) {
       stratum_name <- names(sparse_strata)[i]
       n_obs <- sparse_strata[i]
-      bullet_items[i] <- sprintf("Stratum %s: %d observation%s", stratum_name, n_obs, ifelse(n_obs == 1, "", "s"))
+      bullet_items[i] <- sprintf(
+        "Stratum %s: %d observation%s",
+        stratum_name,
+        n_obs,
+        ifelse(n_obs == 1, "", "s")
+      )
     }
     names(bullet_items) <- rep("*", length(sparse_strata))
 
@@ -959,8 +969,15 @@ mor_estimation_warning <- function(n_incomplete, n_total) {
 #'
 #' @keywords internal
 #' @noRd
-validate_interviews_tier1 <- function(interviews, design, catch_col, effort_col,
-                                      harvest_col, date_col, allow_invalid = FALSE) {
+validate_interviews_tier1 <- function(
+  interviews,
+  design,
+  catch_col,
+  effort_col,
+  harvest_col,
+  date_col,
+  allow_invalid = FALSE
+) {
   collection <- checkmate::makeAssertCollection()
 
   # Check 1: date_col exists in interviews
@@ -1021,7 +1038,8 @@ validate_interviews_tier1 <- function(interviews, design, catch_col, effort_col,
     if (na_count_date > 0) {
       collection$push(sprintf(
         "Date column '%s' contains %d NA value(s)",
-        date_col, na_count_date
+        date_col,
+        na_count_date
       ))
     }
   }
@@ -1091,7 +1109,8 @@ validate_interviews_tier1 <- function(interviews, design, catch_col, effort_col,
   }
 
   # Return validation object
-  new_creel_validation( # nolint: object_usage_linter
+  new_creel_validation(
+    # nolint: object_usage_linter
     results = results,
     tier = 1L,
     context = "add_interviews validation"
@@ -1114,8 +1133,13 @@ validate_interviews_tier1 <- function(interviews, design, catch_col, effort_col,
 #'
 #' @keywords internal
 #' @noRd
-validate_trip_metadata <- function(interviews, trip_status_col, trip_duration_col,
-                                   trip_start_col, interview_time_col) {
+validate_trip_metadata <- function(
+  interviews,
+  trip_status_col,
+  trip_duration_col,
+  trip_start_col,
+  interview_time_col
+) {
   collection <- checkmate::makeAssertCollection()
 
   # Check 1: trip_status_col exists in interviews
@@ -1144,7 +1168,8 @@ validate_trip_metadata <- function(interviews, trip_status_col, trip_duration_co
     if (na_count > 0) {
       collection$push(sprintf(
         "Trip status column '%s' contains %d NA value(s). Trip status is required for all interviews",
-        trip_status_col, na_count
+        trip_status_col,
+        na_count
       ))
     }
   }
@@ -1197,7 +1222,8 @@ validate_trip_metadata <- function(interviews, trip_status_col, trip_duration_co
         if (na_count_duration > 0) {
           collection$push(sprintf(
             "Trip duration column '%s' contains %d NA value(s). Trip duration is required for all interviews",
-            trip_duration_col, na_count_duration
+            trip_duration_col,
+            na_count_duration
           ))
         }
 
@@ -1212,7 +1238,8 @@ validate_trip_metadata <- function(interviews, trip_status_col, trip_duration_co
         # No values < 1/60 hours (1 minute)
         min_duration <- 1 / 60
         if (any(duration_vals < min_duration & duration_vals >= 0, na.rm = TRUE)) {
-          collection$push(sprintf( # nolint: line_length_linter
+          collection$push(sprintf(
+            # nolint: line_length_linter
             paste(
               "Trip duration column '%s' contains values less than 1 minute (1/60 hours).",
               "Trip durations less than 1 minute are unrealistic"
@@ -1224,7 +1251,8 @@ validate_trip_metadata <- function(interviews, trip_status_col, trip_duration_co
         # Warn if any values > 48 hours
         if (any(duration_vals > 48, na.rm = TRUE)) {
           n_long <- sum(duration_vals > 48, na.rm = TRUE) # nolint: object_usage_linter
-          cli::cli_warn(c( # nolint: line_length_linter
+          cli::cli_warn(c(
+            # nolint: line_length_linter
             "!" = "Trip duration column '{trip_duration_col}' contains {n_long} value{?s} > 48 hours",
             "i" = "Multi-day trips are valid, but verify these are not data entry errors"
           ))
@@ -1258,7 +1286,8 @@ validate_trip_metadata <- function(interviews, trip_status_col, trip_duration_co
       if (na_count_start > 0) {
         collection$push(sprintf(
           "Trip start column '%s' contains %d NA value(s)",
-          trip_start_col, na_count_start
+          trip_start_col,
+          na_count_start
         ))
       }
     }
@@ -1286,29 +1315,43 @@ validate_trip_metadata <- function(interviews, trip_status_col, trip_duration_co
       if (na_count_interview > 0) {
         collection$push(sprintf(
           "Interview time column '%s' contains %d NA value(s)",
-          interview_time_col, na_count_interview
+          interview_time_col,
+          na_count_interview
         ))
       }
     }
 
     # If both columns exist and are time-like, check computed duration
-    if (trip_start_col %in% names(interviews) && # nolint: indentation_linter
-      interview_time_col %in% names(interviews)) { # nolint: indentation_linter
+    if (
+      trip_start_col %in%
+        names(interviews) && # nolint: indentation_linter
+        interview_time_col %in% names(interviews)
+    ) {
+      # nolint: indentation_linter
       start_vals <- interviews[[trip_start_col]]
       interview_vals <- interviews[[interview_time_col]]
 
-      if ((inherits(start_vals, "POSIXct") || inherits(start_vals, "POSIXlt")) && # nolint: indentation_linter
-        (inherits(interview_vals, "POSIXct") || inherits(interview_vals, "POSIXlt"))) { # nolint: indentation_linter
+      if (
+        (inherits(start_vals, "POSIXct") || inherits(start_vals, "POSIXlt")) && # nolint: indentation_linter
+          (inherits(interview_vals, "POSIXct") || inherits(interview_vals, "POSIXlt"))
+      ) {
+        # nolint: indentation_linter
         # Check timezone consistency
         tz_start <- attr(start_vals, "tzone")
         tz_interview <- attr(interview_vals, "tzone")
         # Only error if both explicitly set to different timezones
-        if (!is.null(tz_start) && !is.null(tz_interview) && # nolint: indentation_linter
-          nzchar(tz_start) && nzchar(tz_interview) && # nolint: indentation_linter
-          tz_start != tz_interview) {
-          collection$push(sprintf( # nolint: line_length_linter
+        if (
+          !is.null(tz_start) &&
+            !is.null(tz_interview) && # nolint: indentation_linter
+            nzchar(tz_start) &&
+            nzchar(tz_interview) && # nolint: indentation_linter
+            tz_start != tz_interview
+        ) {
+          collection$push(sprintf(
+            # nolint: line_length_linter
             "trip_start timezone '%s' differs from interview_time timezone '%s'. Use the same timezone for both columns", # nolint: line_length_linter
-            tz_start, tz_interview
+            tz_start,
+            tz_interview
           ))
         }
 
@@ -1341,7 +1384,8 @@ validate_trip_metadata <- function(interviews, trip_status_col, trip_duration_co
         # Warn if any > 48 hours
         if (any(computed_duration > 48, na.rm = TRUE)) {
           n_long <- sum(computed_duration > 48, na.rm = TRUE) # nolint: object_usage_linter
-          cli::cli_warn(c( # nolint: line_length_linter
+          cli::cli_warn(c(
+            # nolint: line_length_linter
             "!" = "Computed duration (interview_time - trip_start) > 48 hours for {n_long} interview{?s}",
             "i" = "Multi-day trips are valid, but verify these are not data entry errors"
           ))
@@ -1491,7 +1535,8 @@ validate_design_compatibility <- function(design) {
 #'
 #' @keywords internal
 #' @noRd
-validate_grouping_compatibility <- function(design, by_vars) { # nolint: object_length_linter
+validate_grouping_compatibility <- function(design, by_vars) {
+  # nolint: object_length_linter
   # Check grouping variables exist in count data
   missing_in_counts <- setdiff(by_vars, names(design$counts))
   if (length(missing_in_counts) > 0) {

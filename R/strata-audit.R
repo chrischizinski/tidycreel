@@ -24,7 +24,8 @@ audit_strata <- function(x, ...) UseMethod("audit_strata")
 #' @param rse_target Numeric scalar. Target relative standard error threshold.
 #'   Default 0.20 (20 percent). Must be in (0, 1].
 #' @export
-audit_strata.creel_design <- function(x, rse_target = 0.20, ...) {  # nolint: object_name_linter
+audit_strata.creel_design <- function(x, rse_target = 0.20, ...) {
+  # nolint: object_name_linter
   design <- x
   checkmate::assert_number(rse_target, lower = 1e-6, upper = 1.0)
 
@@ -37,7 +38,7 @@ audit_strata.creel_design <- function(x, rse_target = 0.20, ...) {  # nolint: ob
   }
 
   strata_cols <- design$strata_cols
-  cal         <- design$calendar
+  cal <- design$calendar
 
   if (length(strata_cols) == 1) {
     cal$.strata_key <- as.character(cal[[strata_cols]])
@@ -46,10 +47,10 @@ audit_strata.creel_design <- function(x, rse_target = 0.20, ...) {  # nolint: ob
   }
   available_by_strata <- table(cal$.strata_key)
 
-  counts_data   <- design$counts
+  counts_data <- design$counts
   excluded_cols <- c(design$date_col, design$strata_cols, design$psu_col)
-  numeric_cols  <- names(counts_data)[vapply(counts_data, is.numeric, logical(1L))]
-  count_vars    <- setdiff(numeric_cols, excluded_cols)
+  numeric_cols <- names(counts_data)[vapply(counts_data, is.numeric, logical(1L))]
+  count_vars <- setdiff(numeric_cols, excluded_cols)
 
   if (length(count_vars) == 0) {
     cli::cli_abort(c(
@@ -69,33 +70,33 @@ audit_strata.creel_design <- function(x, rse_target = 0.20, ...) {  # nolint: ob
 
   strata_keys <- unique(counts_data$.strata_key)
 
-  n_h_vals    <- integer(length(strata_keys))
-  N_h_vals    <- integer(length(strata_keys))
+  n_h_vals <- integer(length(strata_keys))
+  N_h_vals <- integer(length(strata_keys))
   ybar_h_vals <- numeric(length(strata_keys))
-  s2_h_vals   <- numeric(length(strata_keys))
+  s2_h_vals <- numeric(length(strata_keys))
 
   for (i in seq_along(strata_keys)) {
-    sk           <- strata_keys[i]
-    rows         <- counts_data$.strata_key == sk
-    n_h_i        <- sum(rows)
-    n_h_vals[i]    <- n_h_i  # nolint: object_name_linter
-    N_h_vals[i]    <- as.integer(available_by_strata[sk])  # nolint: object_name_linter
-    ybar_h_vals[i] <- mean(counts_data[[count_var]][rows])  # nolint: object_name_linter
-    s2_h_vals[i]   <- if (n_h_i >= 2L) var(counts_data[[count_var]][rows]) else NA_real_  # nolint: object_name_linter
+    sk <- strata_keys[i]
+    rows <- counts_data$.strata_key == sk
+    n_h_i <- sum(rows)
+    n_h_vals[i] <- n_h_i # nolint: object_name_linter
+    N_h_vals[i] <- as.integer(available_by_strata[sk]) # nolint: object_name_linter
+    ybar_h_vals[i] <- mean(counts_data[[count_var]][rows]) # nolint: object_name_linter
+    s2_h_vals[i] <- if (n_h_i >= 2L) var(counts_data[[count_var]][rows]) else NA_real_ # nolint: object_name_linter
   }
 
-  names(n_h_vals)    <- strata_keys  # nolint: object_name_linter
-  names(N_h_vals)    <- strata_keys  # nolint: object_name_linter
-  names(ybar_h_vals) <- strata_keys  # nolint: object_name_linter
-  names(s2_h_vals)   <- strata_keys  # nolint: object_name_linter
+  names(n_h_vals) <- strata_keys # nolint: object_name_linter
+  names(N_h_vals) <- strata_keys # nolint: object_name_linter
+  names(ybar_h_vals) <- strata_keys # nolint: object_name_linter
+  names(s2_h_vals) <- strata_keys # nolint: object_name_linter
 
   .build_strata_audit(
-    N_h        = N_h_vals,  # nolint: object_name_linter
-    n_h        = n_h_vals,  # nolint: object_name_linter
-    ybar_h     = ybar_h_vals,  # nolint: object_name_linter
-    s2_h       = s2_h_vals,  # nolint: object_name_linter
+    N_h = N_h_vals, # nolint: object_name_linter
+    n_h = n_h_vals, # nolint: object_name_linter
+    ybar_h = ybar_h_vals, # nolint: object_name_linter
+    s2_h = s2_h_vals, # nolint: object_name_linter
     rse_target = rse_target,
-    stratum    = strata_keys
+    stratum = strata_keys
   )
 }
 
@@ -157,27 +158,29 @@ audit_strata.creel_design <- function(x, rse_target = 0.20, ...) {  # nolint: ob
 #' )
 #' audit$strata
 #' audit$deff
-audit_strata.default <- function(x, n_h, ybar_h, s2_h, rse_target = 0.20, ...) {  # nolint: object_name_linter
-  N_h <- x  # nolint: object_name_linter
-  checkmate::assert_numeric(N_h, lower = 1, min.len = 1, names = "named")  # nolint: object_name_linter
-  checkmate::assert_numeric(n_h, lower = 1, len = length(N_h), names = "named")  # nolint: object_name_linter
-  checkmate::assert_numeric(ybar_h, lower = 0, len = length(N_h))  # nolint: object_name_linter
-  checkmate::assert_numeric(s2_h, lower = 0, len = length(N_h))  # nolint: object_name_linter
+audit_strata.default <- function(x, n_h, ybar_h, s2_h, rse_target = 0.20, ...) {
+  # nolint: object_name_linter
+  N_h <- x # nolint: object_name_linter
+  checkmate::assert_numeric(N_h, lower = 1, min.len = 1, names = "named") # nolint: object_name_linter
+  checkmate::assert_numeric(n_h, lower = 1, len = length(N_h), names = "named") # nolint: object_name_linter
+  checkmate::assert_numeric(ybar_h, lower = 0, len = length(N_h)) # nolint: object_name_linter
+  checkmate::assert_numeric(s2_h, lower = 0, len = length(N_h)) # nolint: object_name_linter
   checkmate::assert_number(rse_target, lower = 1e-6, upper = 1.0)
 
   .build_strata_audit(
-    N_h        = N_h,  # nolint: object_name_linter
-    n_h        = n_h,  # nolint: object_name_linter
-    ybar_h     = ybar_h,  # nolint: object_name_linter
-    s2_h       = s2_h,  # nolint: object_name_linter
+    N_h = N_h, # nolint: object_name_linter
+    n_h = n_h, # nolint: object_name_linter
+    ybar_h = ybar_h, # nolint: object_name_linter
+    s2_h = s2_h, # nolint: object_name_linter
     rse_target = rse_target,
-    stratum    = names(N_h)  # nolint: object_name_linter
+    stratum = names(N_h) # nolint: object_name_linter
   )
 }
 
 # Internal: shared computation for both audit_strata methods.
-.build_strata_audit <- function(N_h, n_h, ybar_h, s2_h, rse_target, stratum) {  # nolint: object_name_linter
-  single_day <- names(n_h)[n_h == 1L]  # nolint: object_name_linter
+.build_strata_audit <- function(N_h, n_h, ybar_h, s2_h, rse_target, stratum) {
+  # nolint: object_name_linter
+  single_day <- names(n_h)[n_h == 1L] # nolint: object_name_linter
   if (length(single_day) > 0) {
     cli::cli_warn(c(
       "Single-day strata cannot estimate variance.",
@@ -186,38 +189,39 @@ audit_strata.default <- function(x, n_h, ybar_h, s2_h, rse_target = 0.20, ...) {
     ))
   }
 
-  N  <- sum(N_h)  # nolint: object_name_linter
-  n  <- sum(n_h)  # nolint: object_name_linter
+  N <- sum(N_h) # nolint: object_name_linter
+  n <- sum(n_h) # nolint: object_name_linter
 
-  se_h  <- sqrt((1 - n_h / N_h) * s2_h / n_h)  # nolint: object_name_linter
-  rse_h <- se_h / ybar_h  # nolint: object_name_linter
+  se_h <- sqrt((1 - n_h / N_h) * s2_h / n_h) # nolint: object_name_linter
+  rse_h <- se_h / ybar_h # nolint: object_name_linter
 
-  s2_overall <- sum(N_h * s2_h, na.rm = TRUE) / N  # nolint: object_name_linter
-  Var_SRS    <- (1 - n / N) * s2_overall / n  # nolint: object_name_linter
-  Var_strat  <- sum((N_h / N)^2 * (1 - n_h / N_h) * s2_h / n_h, na.rm = TRUE)  # nolint: object_name_linter
-  deff_overall <- if (!is.na(Var_SRS) && Var_SRS > .Machine$double.eps) {  # nolint: object_name_linter
-    Var_strat / Var_SRS  # nolint: object_name_linter
+  s2_overall <- sum(N_h * s2_h, na.rm = TRUE) / N # nolint: object_name_linter
+  Var_SRS <- (1 - n / N) * s2_overall / n # nolint: object_name_linter
+  Var_strat <- sum((N_h / N)^2 * (1 - n_h / N_h) * s2_h / n_h, na.rm = TRUE) # nolint: object_name_linter
+  deff_overall <- if (!is.na(Var_SRS) && Var_SRS > .Machine$double.eps) {
+    # nolint: object_name_linter
+    Var_strat / Var_SRS # nolint: object_name_linter
   } else {
     NA_real_
   }
 
-  deff_h <- ((1 - n_h / N_h) * s2_h / n_h) / ((1 - n / N) * s2_overall / n)  # nolint: object_name_linter
+  deff_h <- ((1 - n_h / N_h) * s2_h / n_h) / ((1 - n / N) * s2_overall / n) # nolint: object_name_linter
 
   structure(
     list(
       strata = tibble::tibble(
-        stratum      = stratum,
-        N_h          = as.integer(N_h),  # nolint: object_name_linter
-        n_h          = as.integer(n_h),  # nolint: object_name_linter
-        ybar_h       = ybar_h,  # nolint: object_name_linter
-        s2_h         = s2_h,  # nolint: object_name_linter
-        RSE          = rse_h,  # nolint: object_name_linter
-        DEFF         = deff_h,  # nolint: object_name_linter
+        stratum = stratum,
+        N_h = as.integer(N_h), # nolint: object_name_linter
+        n_h = as.integer(n_h), # nolint: object_name_linter
+        ybar_h = ybar_h, # nolint: object_name_linter
+        s2_h = s2_h, # nolint: object_name_linter
+        RSE = rse_h, # nolint: object_name_linter
+        DEFF = deff_h, # nolint: object_name_linter
         meets_target = rse_h <= rse_target
       ),
       rse_target = rse_target,
-      n_total    = as.integer(n),
-      deff       = deff_overall
+      n_total = as.integer(n),
+      deff = deff_overall
     ),
     class = "creel_strata_audit"
   )
@@ -279,17 +283,19 @@ simulate_strata_collapse <- function(audit, merge_strata) {
     ))
   }
 
-  strata_tbl    <- audit$strata
-  rse_target    <- audit$rse_target
-  N_total       <- sum(strata_tbl$N_h)  # nolint: object_name_linter
-  n_total       <- sum(strata_tbl$n_h)
-  s2_overall    <- sum(strata_tbl$N_h * strata_tbl$s2_h, na.rm = TRUE) / N_total  # nolint: object_name_linter
-  Var_SRS_denom <- (1 - n_total / N_total) * s2_overall / n_total  # nolint: object_name_linter
+  strata_tbl <- audit$strata
+  rse_target <- audit$rse_target
+  N_total <- sum(strata_tbl$N_h) # nolint: object_name_linter
+  n_total <- sum(strata_tbl$n_h)
+  s2_overall <- sum(strata_tbl$N_h * strata_tbl$s2_h, na.rm = TRUE) / N_total # nolint: object_name_linter
+  Var_SRS_denom <- (1 - n_total / N_total) * s2_overall / n_total # nolint: object_name_linter
 
-  .rse_deff <- function(N_h_i, n_h_i, ybar_h_i, s2_h_i) {  # nolint: object_name_linter
-    rse_i  <- sqrt((1 - n_h_i / N_h_i) * s2_h_i / n_h_i) / ybar_h_i  # nolint: object_name_linter
-    deff_i <- if (!is.na(Var_SRS_denom) && Var_SRS_denom > .Machine$double.eps) {  # nolint: object_name_linter
-      ((1 - n_h_i / N_h_i) * s2_h_i / n_h_i) / Var_SRS_denom  # nolint: object_name_linter
+  .rse_deff <- function(N_h_i, n_h_i, ybar_h_i, s2_h_i) {
+    # nolint: object_name_linter
+    rse_i <- sqrt((1 - n_h_i / N_h_i) * s2_h_i / n_h_i) / ybar_h_i # nolint: object_name_linter
+    deff_i <- if (!is.na(Var_SRS_denom) && Var_SRS_denom > .Machine$double.eps) {
+      # nolint: object_name_linter
+      ((1 - n_h_i / N_h_i) * s2_h_i / n_h_i) / Var_SRS_denom # nolint: object_name_linter
     } else {
       NA_real_
     }
@@ -297,49 +303,49 @@ simulate_strata_collapse <- function(audit, merge_strata) {
   }
 
   before_rows <- lapply(seq_len(nrow(strata_tbl)), function(i) {
-    s  <- strata_tbl[i, ]
-    rd <- .rse_deff(s$N_h, s$n_h, s$ybar_h, s$s2_h)  # nolint: object_name_linter
+    s <- strata_tbl[i, ]
+    rd <- .rse_deff(s$N_h, s$n_h, s$ybar_h, s$s2_h) # nolint: object_name_linter
     tibble::tibble(
-      state        = "before",
-      stratum      = s$stratum,
-      N_h          = s$N_h,  # nolint: object_name_linter
-      n_h          = s$n_h,  # nolint: object_name_linter
-      RSE          = rd$RSE,
-      DEFF         = rd$DEFF,
+      state = "before",
+      stratum = s$stratum,
+      N_h = s$N_h, # nolint: object_name_linter
+      n_h = s$n_h, # nolint: object_name_linter
+      RSE = rd$RSE,
+      DEFF = rd$DEFF,
       meets_target = rd$meets_target
     )
   })
 
-  merge_rows   <- strata_tbl[strata_tbl$stratum %in% merge_strata, ]
-  keep_rows    <- strata_tbl[!strata_tbl$stratum %in% merge_strata, ]
+  merge_rows <- strata_tbl[strata_tbl$stratum %in% merge_strata, ]
+  keep_rows <- strata_tbl[!strata_tbl$stratum %in% merge_strata, ]
 
-  N_merged     <- sum(merge_rows$N_h)  # nolint: object_name_linter
-  n_merged     <- sum(merge_rows$n_h)
-  ybar_merged  <- sum(merge_rows$N_h * merge_rows$ybar_h) / N_merged  # nolint: object_name_linter
-  s2_merged    <- sum(merge_rows$n_h * merge_rows$s2_h, na.rm = TRUE) / n_merged  # nolint: object_name_linter
+  N_merged <- sum(merge_rows$N_h) # nolint: object_name_linter
+  n_merged <- sum(merge_rows$n_h)
+  ybar_merged <- sum(merge_rows$N_h * merge_rows$ybar_h) / N_merged # nolint: object_name_linter
+  s2_merged <- sum(merge_rows$n_h * merge_rows$s2_h, na.rm = TRUE) / n_merged # nolint: object_name_linter
   merged_label <- paste(merge_strata, collapse = "+")
-  rd_merged    <- .rse_deff(N_merged, n_merged, ybar_merged, s2_merged)  # nolint: object_name_linter
+  rd_merged <- .rse_deff(N_merged, n_merged, ybar_merged, s2_merged) # nolint: object_name_linter
 
   merged_row <- tibble::tibble(
-    state        = "after",
-    stratum      = merged_label,
-    N_h          = as.integer(N_merged),  # nolint: object_name_linter
-    n_h          = as.integer(n_merged),
-    RSE          = rd_merged$RSE,
-    DEFF         = rd_merged$DEFF,
+    state = "after",
+    stratum = merged_label,
+    N_h = as.integer(N_merged), # nolint: object_name_linter
+    n_h = as.integer(n_merged),
+    RSE = rd_merged$RSE,
+    DEFF = rd_merged$DEFF,
     meets_target = rd_merged$meets_target
   )
 
   after_keep <- lapply(seq_len(nrow(keep_rows)), function(i) {
-    s  <- keep_rows[i, ]
-    rd <- .rse_deff(s$N_h, s$n_h, s$ybar_h, s$s2_h)  # nolint: object_name_linter
+    s <- keep_rows[i, ]
+    rd <- .rse_deff(s$N_h, s$n_h, s$ybar_h, s$s2_h) # nolint: object_name_linter
     tibble::tibble(
-      state        = "after",
-      stratum      = s$stratum,
-      N_h          = s$N_h,  # nolint: object_name_linter
-      n_h          = s$n_h,  # nolint: object_name_linter
-      RSE          = rd$RSE,
-      DEFF         = rd$DEFF,
+      state = "after",
+      stratum = s$stratum,
+      N_h = s$N_h, # nolint: object_name_linter
+      n_h = s$n_h, # nolint: object_name_linter
+      RSE = rd$RSE,
+      DEFF = rd$DEFF,
       meets_target = rd$meets_target
     )
   })
@@ -381,14 +387,15 @@ simulate_strata_collapse <- function(audit, merge_strata) {
 #'   N_h     = c(weekday = 65, weekend = 28),
 #'   s2_h    = c(400, 500)
 #' )
-reallocate_strata <- function(n_total, N_h, s2_h) {  # nolint: object_name_linter
+reallocate_strata <- function(n_total, N_h, s2_h) {
+  # nolint: object_name_linter
   checkmate::assert_integerish(n_total, lower = 1, len = 1)
-  checkmate::assert_numeric(N_h, lower = 1, min.len = 1, names = "named")  # nolint: object_name_linter
-  checkmate::assert_numeric(s2_h, lower = 0, len = length(N_h))  # nolint: object_name_linter
+  checkmate::assert_numeric(N_h, lower = 1, min.len = 1, names = "named") # nolint: object_name_linter
+  checkmate::assert_numeric(s2_h, lower = 0, len = length(N_h)) # nolint: object_name_linter
 
-  alloc_weights  <- N_h * sqrt(s2_h)  # nolint: object_name_linter
-  n_h_opt        <- ceiling(n_total * alloc_weights / sum(alloc_weights))  # nolint: object_name_linter
-  names(n_h_opt) <- names(N_h)  # nolint: object_name_linter
+  alloc_weights <- N_h * sqrt(s2_h) # nolint: object_name_linter
+  n_h_opt <- ceiling(n_total * alloc_weights / sum(alloc_weights)) # nolint: object_name_linter
+  names(n_h_opt) <- names(N_h) # nolint: object_name_linter
   storage.mode(n_h_opt) <- "integer"
-  n_h_opt  # nolint: object_name_linter
+  n_h_opt # nolint: object_name_linter
 }

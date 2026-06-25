@@ -12,7 +12,9 @@ pkg_root <- function() {
       return(path)
     }
     parent <- dirname(path)
-    if (parent == path) break
+    if (parent == path) {
+      break
+    }
     path <- parent
   }
   NULL
@@ -32,7 +34,9 @@ test_that("DEPS-02: lubridate is in Suggests, not Imports, in DESCRIPTION", {
     repeat {
       imports_block <- c(imports_block, desc_lines[i])
       i <- i + 1
-      if (i > length(desc_lines)) break
+      if (i > length(desc_lines)) {
+        break
+      }
       if (!grepl("^\\s", desc_lines[i])) break
     }
   }
@@ -51,7 +55,9 @@ test_that("DEPS-02: lubridate is in Suggests, not Imports, in DESCRIPTION", {
     repeat {
       suggests_block <- c(suggests_block, desc_lines[i])
       i <- i + 1
-      if (i > length(desc_lines)) break
+      if (i > length(desc_lines)) {
+        break
+      }
       if (!grepl("^\\s", desc_lines[i])) break
     }
   }

@@ -32,3 +32,19 @@ security:
 # Incremental: only fetches creels not already in ~/.cache/tidycreel/ngpc_creel_inventory.rds
 refresh-inventory:
     Rscript data-raw/ngpc_creel_inventory.R
+
+# Show all files with needs-review status in REVIEW-MANIFEST.md
+review-status:
+    @grep "needs-review" .ai/REVIEW-MANIFEST.md | grep "^| R/" | awk -F'|' '{printf "%-45s tier=%s\n", $2, $7}' || echo "Nothing needs review."
+
+# Update REVIEW-MANIFEST.md after reviewing a file.
+# Usage: just review-update R/foo.R clean "notes here"
+# Performs best-effort row update; on no-match, prints reminder to edit manually.
+review-update file status notes:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    sha=$(git log -1 --format="%h" -- "{{file}}")
+    rdate=$(git log -1 --format="%as" -- "{{file}}")
+    today=$(date +%Y-%m-%d)
+    echo "Updating {{file}} -> {{status}} (reviewed $today)"
+    python3 scripts/review_update.py "{{file}}" "{{status}}" "{{notes}}" "$sha" "$rdate" "$today"

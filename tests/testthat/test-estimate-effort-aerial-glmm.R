@@ -6,7 +6,8 @@ make_aerial_glmm_design <- function() {
   data("example_aerial_glmm_counts", envir = environment())
   aerial_cal <- unique(example_aerial_glmm_counts[, c("date", "day_type")]) # nolint: object_usage_linter
   aerial_cal <- aerial_cal[order(aerial_cal$date), ]
-  design <- creel_design( # nolint: object_usage_linter
+  design <- creel_design(
+    # nolint: object_usage_linter
     aerial_cal,
     date = date,
     strata = day_type, # nolint: object_usage_linter
@@ -95,8 +96,14 @@ test_that("result$method is 'aerial_glmm_total'", {
 test_that("cli_abort() fires when design_type is not 'aerial'", {
   cal <- data.frame(
     date = as.Date(c(
-      "2024-06-03", "2024-06-04", "2024-06-05", "2024-06-06",
-      "2024-06-10", "2024-06-11", "2024-06-17", "2024-06-18"
+      "2024-06-03",
+      "2024-06-04",
+      "2024-06-05",
+      "2024-06-06",
+      "2024-06-10",
+      "2024-06-11",
+      "2024-06-17",
+      "2024-06-18"
     )),
     day_type = rep(c("weekday", "weekend"), each = 4),
     stringsAsFactors = FALSE
@@ -122,4 +129,63 @@ test_that("rlang::check_installed fires an rlang_error for a non-existent packag
     rlang::check_installed("lme4_notinstalled_package_xyz"),
     class = "rlang_error"
   )
+})
+
+# GLMM-05: open_start integration window ----
+
+test_that("GLMM-05: fixed open_start suppresses data-derived window message", {
+  skip_if_not_installed("lme4")
+  data("example_aerial_glmm_counts", envir = environment())
+  aerial_cal <- unique(example_aerial_glmm_counts[, c("date", "day_type")])
+  aerial_cal <- aerial_cal[order(aerial_cal$date), ]
+  design <- creel_design(
+    aerial_cal,
+    date = date,
+    strata = day_type,
+    survey_type = "aerial",
+    h_open = 14,
+    open_start = 5.0
+  )
+  design <- add_counts(design, example_aerial_glmm_counts)
+  msgs <- character(0)
+  withCallingHandlers(
+    estimate_effort_aerial_glmm(design, time_col = time_of_flight),
+    message = function(m) {
+      msgs <<- c(msgs, conditionMessage(m))
+      invokeRestart("muffleMessage")
+    }
+  )
+  expect_false(any(grepl("derived from data", msgs, fixed = TRUE)))
+})
+
+test_that("GLMM-05: missing open_start emits data-derived window message", {
+  skip_if_not_installed("lme4")
+  design <- make_aerial_glmm_design()
+  msgs <- character(0)
+  withCallingHandlers(
+    estimate_effort_aerial_glmm(design, time_col = time_of_flight),
+    message = function(m) {
+      msgs <<- c(msgs, conditionMessage(m))
+      invokeRestart("muffleMessage")
+    }
+  )
+  expect_true(any(grepl("derived from data", msgs, fixed = TRUE)))
+})
+
+test_that("GLMM-05: fixed open_start yields finite estimate", {
+  skip_if_not_installed("lme4")
+  data("example_aerial_glmm_counts", envir = environment())
+  aerial_cal <- unique(example_aerial_glmm_counts[, c("date", "day_type")])
+  aerial_cal <- aerial_cal[order(aerial_cal$date), ]
+  design <- creel_design(
+    aerial_cal,
+    date = date,
+    strata = day_type,
+    survey_type = "aerial",
+    h_open = 14,
+    open_start = 5.0
+  )
+  design <- add_counts(design, example_aerial_glmm_counts)
+  result <- suppressMessages(estimate_effort_aerial_glmm(design, time_col = time_of_flight))
+  expect_true(is.finite(result$estimates$estimate))
 })

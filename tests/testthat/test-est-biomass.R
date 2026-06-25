@@ -10,13 +10,17 @@ make_ld_grouped <- function() {
   d <- suppressWarnings(
     creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
   )
-  d <- suppressWarnings(add_interviews(d, example_interviews, # nolint: object_usage_linter
+  d <- suppressWarnings(add_interviews(
+    d,
+    example_interviews, # nolint: object_usage_linter
     catch = catch_total, # nolint: object_usage_linter
     effort = hours_fished, # nolint: object_usage_linter
     harvest = catch_kept, # nolint: object_usage_linter
     trip_status = trip_status # nolint: object_usage_linter
   ))
-  d <- add_lengths(d, example_lengths, # nolint: object_usage_linter
+  d <- add_lengths(
+    d,
+    example_lengths, # nolint: object_usage_linter
     length_uid = interview_id, # nolint: object_usage_linter
     interview_uid = interview_id, # nolint: object_usage_linter
     species = species, # nolint: object_usage_linter
@@ -36,13 +40,17 @@ make_ld_ungrouped <- function() {
   d <- suppressWarnings(
     creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
   )
-  d <- suppressWarnings(add_interviews(d, example_interviews, # nolint: object_usage_linter
+  d <- suppressWarnings(add_interviews(
+    d,
+    example_interviews, # nolint: object_usage_linter
     catch = catch_total, # nolint: object_usage_lumber
     effort = hours_fished, # nolint: object_usage_linter
     harvest = catch_kept, # nolint: object_usage_linter
     trip_status = trip_status # nolint: object_usage_linter
   ))
-  d <- add_lengths(d, example_lengths, # nolint: object_usage_linter
+  d <- add_lengths(
+    d,
+    example_lengths, # nolint: object_usage_linter
     length_uid = interview_id, # nolint: object_usage_linter
     interview_uid = interview_id, # nolint: object_usage_linter
     species = species, # nolint: object_usage_linter
@@ -96,16 +104,20 @@ test_that("est_biomass() returns creel_biomass data.frame", {
 test_that("est_biomass() returns expected columns (grouped)", {
   ld <- make_ld_grouped()
   result <- est_biomass(ld, a = 0.01, b = 3)
-  expected_cols <- c("species", "biomass_estimate", "biomass_se",
-                     "biomass_ci_lower", "biomass_ci_upper")
+  expected_cols <- c(
+    "species",
+    "biomass_estimate",
+    "biomass_se",
+    "biomass_ci_lower",
+    "biomass_ci_upper"
+  )
   expect_true(all(expected_cols %in% names(result)))
 })
 
 test_that("est_biomass() returns expected columns (ungrouped)", {
   ld <- make_ld_ungrouped()
   result <- est_biomass(ld, a = 0.01, b = 3)
-  expected_cols <- c("biomass_estimate", "biomass_se",
-                     "biomass_ci_lower", "biomass_ci_upper")
+  expected_cols <- c("biomass_estimate", "biomass_se", "biomass_ci_lower", "biomass_ci_upper")
   expect_true(all(expected_cols %in% names(result)))
   expect_false("species" %in% names(result))
 })
@@ -149,8 +161,12 @@ test_that("est_biomass() biomass_estimate matches manual W = a * L_mid^b * N_h s
     l_mid <- (rows$bin_lower + rows$bin_upper) / 2
     expected_biomass <- sum(a * l_mid^b * rows$estimate)
     actual_biomass <- result$biomass_estimate[result$species == sp]
-    expect_equal(actual_biomass, expected_biomass, tolerance = 1e-9,
-                 label = paste("biomass for species", sp))
+    expect_equal(
+      actual_biomass,
+      expected_biomass,
+      tolerance = 1e-9,
+      label = paste("biomass for species", sp)
+    )
   }
 })
 
@@ -166,8 +182,7 @@ test_that("est_biomass() biomass_se matches delta method sqrt(sum(w^2 * se^2))",
     w_h <- a * l_mid^b
     expected_se <- sqrt(sum(w_h^2 * rows$se^2))
     actual_se <- result$biomass_se[result$species == sp]
-    expect_equal(actual_se, expected_se, tolerance = 1e-9,
-                 label = paste("SE for species", sp))
+    expect_equal(actual_se, expected_se, tolerance = 1e-9, label = paste("SE for species", sp))
   }
 })
 

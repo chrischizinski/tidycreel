@@ -446,7 +446,7 @@
 #' 2024. Anglers fish from both open-air setups and enclosed dark-house shelters,
 #' targeting walleye and yellow perch. Dates match [example_ice_sampling_frame].
 #'
-#' @format A data frame with 72 rows and 10 columns:
+#' @format A data frame with 72 rows and 11 columns:
 #' \describe{
 #'   \item{date}{Interview date (Date class), matching [example_ice_sampling_frame]}
 #'   \item{n_counted}{Integer total number of angler parties counted at the

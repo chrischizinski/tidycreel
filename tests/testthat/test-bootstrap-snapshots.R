@@ -9,8 +9,8 @@
   suppressMessages(suppressWarnings({
     d <- build_br_design_for_tests(3L, 6L, 8L, seed = 42L)
     counts <- data.frame(
-      date         = d$calendar$date,
-      day_type     = d$calendar$day_type,
+      date = d$calendar$date,
+      day_type = d$calendar$day_type,
       effort_hours = c(15, 20, 18, 22, 16, 19),
       stringsAsFactors = FALSE
     )
@@ -45,6 +45,6 @@ test_that("SNAP-BOOT-03: estimate_angler_n default output is stable", {
 
 test_that("SNAP-BOOT-04: estimate_mr_harvest default output is stable", {
   angler_n <- estimate_angler_n(M = 200L, n = 50L, m = 10L)
-  result   <- estimate_mr_harvest(angler_n, harvest_rate = 0.35)
+  result <- estimate_mr_harvest(angler_n, harvest_rate = 0.35)
   expect_snapshot(tidy(result))
 })

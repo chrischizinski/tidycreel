@@ -3,14 +3,17 @@
 
 # Fixtures ----
 
-make_design_with_catch_for_cws <- function() { # nolint: object_length_linter
+make_design_with_catch_for_cws <- function() {
+  # nolint: object_length_linter
   data(example_calendar, package = "tidycreel")
   data(example_interviews, package = "tidycreel")
   data(example_catch, package = "tidycreel")
   d <- suppressWarnings(
     creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
   )
-  d <- suppressWarnings(add_interviews(d, example_interviews, # nolint: object_usage_linter
+  d <- suppressWarnings(add_interviews(
+    d,
+    example_interviews, # nolint: object_usage_linter
     catch = catch_total, # nolint: object_usage_linter
     effort = hours_fished, # nolint: object_usage_linter
     harvest = catch_kept, # nolint: object_usage_linter
@@ -19,7 +22,9 @@ make_design_with_catch_for_cws <- function() { # nolint: object_length_linter
     angler_type = angler_type, # nolint: object_usage_linter
     n_anglers = n_anglers # nolint: object_usage_linter
   ))
-  add_catch(d, example_catch, # nolint: object_usage_linter
+  add_catch(
+    d,
+    example_catch, # nolint: object_usage_linter
     catch_uid = interview_id, # nolint: object_usage_linter
     interview_uid = interview_id, # nolint: object_usage_linter
     species = species, # nolint: object_usage_linter
@@ -34,7 +39,9 @@ make_design_no_catch <- function() {
   d <- suppressWarnings(
     creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
   )
-  suppressWarnings(add_interviews(d, example_interviews, # nolint: object_usage_linter
+  suppressWarnings(add_interviews(
+    d,
+    example_interviews, # nolint: object_usage_linter
     catch = catch_total, # nolint: object_usage_linter
     effort = hours_fished, # nolint: object_usage_linter
     harvest = catch_kept, # nolint: object_usage_linter
@@ -117,8 +124,12 @@ test_that("add_interviews() without n_anglers emits cli_inform about assumption"
   data(example_interviews, package = "tidycreel")
   d <- suppressWarnings(creel_design(example_calendar, date = date, strata = day_type))
   expect_message(
-    suppressWarnings(add_interviews(d, example_interviews,
-      catch = catch_total, effort = hours_fished, harvest = catch_kept,
+    suppressWarnings(add_interviews(
+      d,
+      example_interviews,
+      catch = catch_total,
+      effort = hours_fished,
+      harvest = catch_kept,
       trip_status = trip_status
     )),
     "assuming 1 angler"
@@ -129,8 +140,12 @@ test_that("add_interviews() always sets angler_effort_col on returned design", {
   data(example_calendar, package = "tidycreel")
   data(example_interviews, package = "tidycreel")
   d <- suppressWarnings(creel_design(example_calendar, date = date, strata = day_type))
-  d2 <- suppressWarnings(add_interviews(d, example_interviews,
-    catch = catch_total, effort = hours_fished, harvest = catch_kept,
+  d2 <- suppressWarnings(add_interviews(
+    d,
+    example_interviews,
+    catch = catch_total,
+    effort = hours_fished,
+    harvest = catch_kept,
     trip_status = trip_status
   ))
   expect_equal(d2[["angler_effort_col"]], ".angler_effort")
@@ -141,8 +156,12 @@ test_that("add_interviews() with n_anglers=1 produces .angler_effort == effort",
   data(example_calendar, package = "tidycreel")
   data(example_interviews, package = "tidycreel")
   d <- suppressWarnings(creel_design(example_calendar, date = date, strata = day_type))
-  d2 <- suppressWarnings(add_interviews(d, example_interviews,
-    catch = catch_total, effort = hours_fished, harvest = catch_kept,
+  d2 <- suppressWarnings(add_interviews(
+    d,
+    example_interviews,
+    catch = catch_total,
+    effort = hours_fished,
+    harvest = catch_kept,
     trip_status = trip_status
   ))
   ae <- d2[["interviews"]][[".angler_effort"]]
@@ -154,9 +173,14 @@ test_that("add_interviews() with n_anglers column produces .angler_effort = effo
   data(example_calendar, package = "tidycreel")
   data(example_interviews, package = "tidycreel")
   d <- suppressWarnings(creel_design(example_calendar, date = date, strata = day_type))
-  d2 <- suppressWarnings(add_interviews(d, example_interviews,
-    catch = catch_total, effort = hours_fished, harvest = catch_kept,
-    trip_status = trip_status, n_anglers = n_anglers # nolint: object_usage_linter
+  d2 <- suppressWarnings(add_interviews(
+    d,
+    example_interviews,
+    catch = catch_total,
+    effort = hours_fished,
+    harvest = catch_kept,
+    trip_status = trip_status,
+    n_anglers = n_anglers # nolint: object_usage_linter
   ))
   ae <- d2[["interviews"]][[".angler_effort"]]
   ef <- d2[["interviews"]][[d2[["effort_col"]]]]
@@ -183,8 +207,12 @@ test_that("summarize_cws_rates() errors when species_sought_col is NULL", {
   data(example_calendar, package = "tidycreel")
   data(example_interviews, package = "tidycreel")
   d <- suppressWarnings(creel_design(example_calendar, date = date, strata = day_type))
-  d2 <- suppressWarnings(add_interviews(d, example_interviews,
-    catch = catch_total, effort = hours_fished, harvest = catch_kept,
+  d2 <- suppressWarnings(add_interviews(
+    d,
+    example_interviews,
+    catch = catch_total,
+    effort = hours_fished,
+    harvest = catch_kept,
     trip_status = trip_status # no species_sought
   ))
   expect_error(summarize_cws_rates(d2), "species_sought")
@@ -269,7 +297,8 @@ test_that("summarize_hws_rates() mean_rate <= summarize_cws_rates() mean_rate (h
   merged <- merge(
     cws[, c("species_sought", "mean_rate")],
     hws[, c("species_sought", "mean_rate")],
-    by = "species_sought", suffixes = c("_cws", "_hws")
+    by = "species_sought",
+    suffixes = c("_cws", "_hws")
   )
   expect_true(all(merged[["mean_rate_hws"]] <= merged[["mean_rate_cws"]] + 1e-10))
 })

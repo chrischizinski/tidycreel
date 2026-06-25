@@ -1,6 +1,6 @@
 # Build a shared angler_n result for harvest tests
 angler_result <- estimate_angler_n(M = 200L, n = 50L, m = 10L)
-rate           <- 0.35
+rate <- 0.35
 
 # --- MR-06: estimate_mr_harvest() delta-method harvest estimator ---
 

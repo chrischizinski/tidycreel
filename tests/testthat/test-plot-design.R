@@ -12,9 +12,9 @@ make_design_no_counts <- function() {
 
 make_design_with_counts <- function() {
   counts <- data.frame(
-    date     = as.Date(c("2024-06-01", "2024-06-02", "2024-06-08", "2024-06-09")),
+    date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-08", "2024-06-09")),
     day_type = c("weekday", "weekday", "weekend", "weekend"),
-    count    = c(10L, 14L, 30L, 35L)
+    count = c(10L, 14L, 30L, 35L)
   )
   d <- make_design_no_counts()
   suppressWarnings(add_counts(d, counts))
@@ -80,8 +80,14 @@ test_that("PLTD-08: no-counts plot n_days matches calendar", {
 make_design_two_strata <- function(with_counts = FALSE) {
   cal <- data.frame(
     date = as.Date(c(
-      "2024-06-01", "2024-06-02", "2024-06-08", "2024-06-09",
-      "2024-06-15", "2024-06-16", "2024-06-22", "2024-06-23"
+      "2024-06-01",
+      "2024-06-02",
+      "2024-06-08",
+      "2024-06-09",
+      "2024-06-15",
+      "2024-06-16",
+      "2024-06-22",
+      "2024-06-23"
     )),
     day_type = rep(c("weekday", "weekend"), 4),
     season = c(rep("early", 4), rep("late", 4)),
@@ -92,10 +98,10 @@ make_design_two_strata <- function(with_counts = FALSE) {
   )
   if (with_counts) {
     counts <- data.frame(
-      date     = cal$date,
+      date = cal$date,
       day_type = cal$day_type,
-      season   = cal$season,
-      count    = c(5L, 10L, 8L, 20L, 6L, 12L, 9L, 22L)
+      season = cal$season,
+      count = c(5L, 10L, 8L, 20L, 6L, 12L, 9L, 22L)
     )
     d <- suppressWarnings(add_counts(d, counts))
   }
@@ -127,7 +133,8 @@ test_that("PLTD-12: multi-strata with-counts colour label reflects both strata",
   d <- make_design_two_strata(with_counts = TRUE)
   p <- suppressWarnings(plot_design(d))
   expect_match(
-    p$labels$colour, "day_type.*season|season.*day_type",
+    p$labels$colour,
+    "day_type.*season|season.*day_type",
     perl = TRUE
   )
 })

@@ -73,9 +73,13 @@ build_cell_lookup <- function(x, abbrev_map, mode = "ascii") {
     )
     # Combine abbreviation + circuit
     date_keys <- names(abbrevs)
-    cell_content <- vapply(date_keys, function(d) {
-      paste(abbrevs[[d]], circuit_by_date[[d]], sep = sep)
-    }, character(1))
+    cell_content <- vapply(
+      date_keys,
+      function(d) {
+        paste(abbrevs[[d]], circuit_by_date[[d]], sep = sep)
+      },
+      character(1)
+    )
     names(cell_content) <- date_keys
     return(cell_content)
   }
@@ -108,19 +112,23 @@ build_month_grid <- function(month_start, cell_lookup, mode = "ascii") {
   date_slots <- c(rep(NA, pad_left), all_dates, rep(NA, pad_right))
 
   # Cell content for each slot
-  cell_content <- vapply(seq_along(date_slots), function(i) {
-    d <- date_slots[[i]]
-    if (is.na(d)) {
-      return("")
-    }
-    key <- as.character(as.Date(d, origin = "1970-01-01"))
-    val <- cell_lookup[key] # single bracket: returns NA if key not present
-    if (!is.na(val)) {
-      val
-    } else {
-      format(as.Date(d, origin = "1970-01-01"), "%d")
-    }
-  }, character(1))
+  cell_content <- vapply(
+    seq_along(date_slots),
+    function(i) {
+      d <- date_slots[[i]]
+      if (is.na(d)) {
+        return("")
+      }
+      key <- as.character(as.Date(d, origin = "1970-01-01"))
+      val <- cell_lookup[key] # single bracket: returns NA if key not present
+      if (!is.na(val)) {
+        val
+      } else {
+        format(as.Date(d, origin = "1970-01-01"), "%d")
+      }
+    },
+    character(1)
+  )
 
   if (mode == "pandoc") {
     .build_pandoc_grid(cell_content)
@@ -145,9 +153,13 @@ build_month_grid <- function(month_start, cell_lookup, mode = "ascii") {
   max_subrows <- max(vapply(cell_lines, length, integer(1)), na.rm = TRUE)
 
   # Determine max character width per cell (across all sub-lines)
-  all_widths <- vapply(cell_lines, function(cl) {
-    if (length(cl) == 0L || (length(cl) == 1L && cl == "")) 0L else max(nchar(cl))
-  }, integer(1))
+  all_widths <- vapply(
+    cell_lines,
+    function(cl) {
+      if (length(cl) == 0L || (length(cl) == 1L && cl == "")) 0L else max(nchar(cl))
+    },
+    integer(1)
+  )
   cell_w <- max(max(all_widths, na.rm = TRUE), 8L)
 
   pad_cell <- function(s, w) {
@@ -168,9 +180,13 @@ build_month_grid <- function(month_start, cell_lookup, mode = "ascii") {
     week_cells <- cell_lines[(r - 1L) * 7L + seq_len(7L)]
     # Render one sub-row per logical line in the cell (bus-route = 2+ lines)
     for (sub in seq_len(max_subrows)) {
-      sub_row_cells <- vapply(week_cells, function(cl) {
-        if (sub <= length(cl)) cl[[sub]] else ""
-      }, character(1))
+      sub_row_cells <- vapply(
+        week_cells,
+        function(cl) {
+          if (sub <= length(cl)) cl[[sub]] else ""
+        },
+        character(1)
+      )
       padded <- vapply(sub_row_cells, pad_cell, character(1), w = cell_w)
       lines <- c(lines, paste0("| ", paste(padded, collapse = " | "), " |"))
     }
@@ -235,9 +251,17 @@ format.creel_schedule <- function(x, ...) {
   if (is.data.frame(diagnostics) && nrow(diagnostics) > 0L) {
     summary_lines <- apply(diagnostics, 1, function(row) {
       paste0(
-        "- ", row[["severity"]], ": ", row[["stratum"]],
-        " \u2014 ", row[["issue"]],
-        " (baseline=", row[["baseline_days"]], ", final=", row[["final_days"]], ")"
+        "- ",
+        row[["severity"]],
+        ": ",
+        row[["stratum"]],
+        " \u2014 ",
+        row[["issue"]],
+        " (baseline=",
+        row[["baseline_days"]],
+        ", final=",
+        row[["final_days"]],
+        ")"
       )
     })
     diag_lines <- c("Special-period diagnostics", unname(summary_lines), "")

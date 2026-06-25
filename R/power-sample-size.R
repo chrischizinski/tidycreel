@@ -48,7 +48,8 @@
 #'   ybar_h = c(50, 60),
 #'   s2_h = c(400, 500)
 #' )
-creel_n_effort <- function(cv_target, N_h, ybar_h, s2_h) { # nolint: object_name_linter
+creel_n_effort <- function(cv_target, N_h, ybar_h, s2_h) {
+  # nolint: object_name_linter
   checkmate::assert_number(cv_target, lower = 1e-6, upper = 1.0)
   checkmate::assert_numeric(N_h, lower = 1, min.len = 1, names = "named") # nolint: object_name_linter
   checkmate::assert_numeric(ybar_h, lower = 0, len = length(N_h)) # nolint: object_name_linter
@@ -108,7 +109,9 @@ creel_n_effort <- function(cv_target, N_h, ybar_h, s2_h) { # nolint: object_name
 #' \eqn{V_0 = (CV_{target} \cdot \hat{E})^2}, \eqn{\hat{E} = \sum_h N_h
 #' \bar{y}_h}, and \eqn{s_h = \sqrt{s_h^2}}. When all \eqn{c_h = 1}
 #' (equal costs) this reduces to \eqn{(\sum_h N_h s_h)^2 / (V_0 + \sum_h N_h
-#' s_h^2)}, identical to [creel_n_effort()].
+#' s_h^2)}, which gives the same `n_total` as [creel_n_effort()] (per-stratum
+#' allocation differs: Neyman uses \eqn{n_h \propto N_h s_h} vs proportional
+#' \eqn{n_h \propto N_h}).
 #'
 #' **Per-stratum allocation** uses the cost-adjusted Neyman formula (Cochran
 #' 1977 eq. 5.30):
@@ -156,7 +159,8 @@ creel_n_effort <- function(cv_target, N_h, ybar_h, s2_h) { # nolint: object_name
 #'   s2_h       = c(400, 500),
 #'   cost_ratio = c(weekday = 1, weekend = 2)
 #' )
-optimal_n <- function(cv_target, N_h, ybar_h, s2_h, cost_ratio = 1) { # nolint: object_name_linter
+optimal_n <- function(cv_target, N_h, ybar_h, s2_h, cost_ratio = 1) {
+  # nolint: object_name_linter
   checkmate::assert_number(cv_target, lower = 1e-6, upper = 1.0)
   checkmate::assert_numeric(N_h, lower = 1, min.len = 1, names = "named") # nolint: object_name_linter
   checkmate::assert_numeric(ybar_h, lower = 0, len = length(N_h)) # nolint: object_name_linter
@@ -167,23 +171,45 @@ optimal_n <- function(cv_target, N_h, ybar_h, s2_h, cost_ratio = 1) { # nolint: 
   }
   checkmate::assert_numeric(cost_ratio, lower = 1e-6, len = length(N_h), any.missing = FALSE)
 
-  E_total <- sum(N_h * ybar_h) # nolint: object_name_linter
-  V_0 <- (cv_target * E_total)^2 # nolint: object_name_linter
-  s_h <- sqrt(s2_h) # nolint: object_name_linter
+  # Reorder named cost_ratio to match N_h strata order; unnamed stays positional.
+  if (!is.null(names(cost_ratio))) {
+    cost_ratio <- cost_ratio[names(N_h)] # nolint: object_name_linter
+    if (anyNA(cost_ratio)) {
+      cli::cli_abort(
+        "{.arg cost_ratio} names must match strata names in {.arg N_h}."
+      )
+    }
+  }
 
-  # Cochran (1977) eq. 5.25/5.34 with FPC -- generalises to equal costs when
-  # all cost_ratio == 1 (reduces to creel_n_effort formula)
-  A <- sum(N_h * s_h / sqrt(cost_ratio)) # nolint: object_name_linter
-  C_cost <- sum(N_h * s_h * sqrt(cost_ratio)) # nolint: object_name_linter
-  denominator <- V_0 + sum(N_h * s2_h) # nolint: object_name_linter
-  n_total <- ceiling(A * C_cost / denominator)
+  # nolint start: object_name_linter
+  E_total <- sum(N_h * ybar_h)
+  if (E_total <= 0) {
+    cli::cli_abort(
+      "sum(N_h * ybar_h) must be > 0; CV of a zero total is undefined."
+    )
+  }
+  if (sum(s2_h) == 0) {
+    cli::cli_abort(
+      "All {.arg s2_h} are zero; no variance to allocate. Provide at least one s2_h > 0."
+    )
+  }
+
+  V_0 <- (cv_target * E_total)^2
+  s_h <- sqrt(s2_h)
+
+  # Cochran (1977) eq. 5.25/5.34 with FPC -- equal costs reduces to creel_n_effort n_total
+  A <- sum(N_h * s_h / sqrt(cost_ratio))
+  C_cost <- sum(N_h * s_h * sqrt(cost_ratio))
+  denominator <- V_0 + sum(N_h * s2_h)
+  n_total <- max(ceiling(A * C_cost / denominator), 1L)
 
   # Neyman allocation with optional cost adjustment (Cochran eq. 5.24 / 5.30)
-  neyman_w <- N_h * s_h / sqrt(cost_ratio) # nolint: object_name_linter
-  n_h <- ceiling(n_total * neyman_w / sum(neyman_w)) # nolint: object_name_linter
-  names(n_h) <- names(N_h) # nolint: object_name_linter
+  neyman_w <- N_h * s_h / sqrt(cost_ratio)
+  n_h <- ceiling(n_total * neyman_w / sum(neyman_w))
+  names(n_h) <- names(N_h)
 
-  storage.mode(n_h) <- "integer" # nolint: object_name_linter
+  storage.mode(n_h) <- "integer"
+  # nolint end: object_name_linter
   storage.mode(n_total) <- "integer"
 
   c(n_h, total = n_total) # nolint: object_name_linter
@@ -317,7 +343,8 @@ creel_n_cpue <- function(cv_catch, cv_effort, rho = 0, cv_target) {
 #'   ybar_h = c(15, 20),
 #'   s2_h = c(625, 900)
 #' )
-creel_n_camera <- function(cv_target, N_h, ybar_h, s2_h) { # nolint: object_name_linter
+creel_n_camera <- function(cv_target, N_h, ybar_h, s2_h) {
+  # nolint: object_name_linter
   checkmate::assert_number(cv_target, lower = 1e-6, upper = 1.0)
   checkmate::assert_numeric(N_h, lower = 1, min.len = 1, names = "named") # nolint: object_name_linter
   checkmate::assert_numeric(ybar_h, lower = 0, len = length(N_h)) # nolint: object_name_linter
@@ -338,12 +365,21 @@ creel_n_camera <- function(cv_target, N_h, ybar_h, s2_h) { # nolint: object_name
   names(n_h) <- names(N_h) # nolint: object_name_linter
 
   # Feltz-Middaugh (2025) minimum check -- D-06/D-07
-  min_h <- vapply(names(N_h), function(nm) { # nolint: object_name_linter
-    nm_lower <- tolower(nm)
-    if (grepl("weekday", nm_lower)) 12L
-    else if (grepl("weekend", nm_lower)) 7L
-    else NA_integer_
-  }, integer(1))
+  min_h <- vapply(
+    names(N_h),
+    function(nm) {
+      # nolint: object_name_linter
+      nm_lower <- tolower(nm)
+      if (grepl("weekday", nm_lower)) {
+        12L
+      } else if (grepl("weekend", nm_lower)) {
+        7L
+      } else {
+        NA_integer_
+      }
+    },
+    integer(1)
+  )
 
   below <- which(!is.na(min_h) & n_h < min_h) # nolint: object_name_linter
   generic_below <- which(is.na(min_h)) # unclassified strata always warned
@@ -352,14 +388,20 @@ creel_n_camera <- function(cv_target, N_h, ybar_h, s2_h) { # nolint: object_name
     bullet_items <- character(length(below) + length(generic_below))
     idx <- 1L
     for (i in below) {
-      bullet_items[idx] <- sprintf("%s: n = %d (minimum %d per Feltz-Middaugh 2025)",
-                                   names(n_h)[i], n_h[i], min_h[i])
+      bullet_items[idx] <- sprintf(
+        "%s: n = %d (minimum %d per Feltz-Middaugh 2025)",
+        names(n_h)[i],
+        n_h[i],
+        min_h[i]
+      )
       idx <- idx + 1L
     }
     for (i in generic_below) {
       bullet_items[idx] <- sprintf(
         "%s: n = %d (unclassified stratum -- consult Feltz-Middaugh 2025 for recommended minimum)",
-        names(n_h)[i], n_h[i])
+        names(n_h)[i],
+        n_h[i]
+      )
       idx <- idx + 1L
     }
     names(bullet_items) <- rep("*", length(bullet_items))
@@ -426,8 +468,13 @@ creel_n_camera <- function(cv_target, N_h, ybar_h, s2_h) { # nolint: object_name
 #'
 #' # One-sided test (higher power for same inputs)
 #' creel_power(n = 100, cv_historical = 0.5, delta_pct = 0.20, alternative = "one.sided")
-creel_power <- function(n, cv_historical, delta_pct, alpha = 0.05, # nolint: object_name_linter
-                        alternative = c("two.sided", "one.sided")) {
+creel_power <- function(
+  n,
+  cv_historical,
+  delta_pct,
+  alpha = 0.05, # nolint: object_name_linter
+  alternative = c("two.sided", "one.sided")
+) {
   checkmate::assert_integerish(n, lower = 1, len = 1)
   checkmate::assert_number(cv_historical, lower = 1e-6) # nolint: object_name_linter
   checkmate::assert_number(delta_pct, lower = 1e-6)

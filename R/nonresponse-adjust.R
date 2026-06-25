@@ -21,11 +21,11 @@
 #'     \item{n_responded}{Integer. Number of units that actually responded.
 #'       Must be \code{<= n_sampled}.}
 #'   }
-#' @param method Character. Weighting method to apply. Either
-#'   \code{"postStratify"} (default, adjusts weights to match known stratum
-#'   totals inversely proportional to response rate) or \code{"calibrate"}
-#'   (calibration estimator via \code{survey::calibrate}; requires stratum
-#'   population totals in \code{response_rates}).
+#' @param method Character. Weighting method to apply. Currently only
+#'   \code{"postStratify"} (default) is implemented. It multiplies each
+#'   observation's sampling weight by the inverse response rate for its stratum.
+#'   Specifying \code{"calibrate"} raises an error; use \code{survey::calibrate}
+#'   directly with population totals from your sampling frame.
 #' @param stratum_col Character. Name of the stratum column in
 #'   \code{response_rates} (default: \code{"stratum"}).
 #'
@@ -77,10 +77,12 @@
 #'
 #' @family "Reporting & Diagnostics"
 #' @export
-adjust_nonresponse <- function(design,
-                               response_rates,
-                               method = c("postStratify", "calibrate"),
-                               stratum_col = "stratum") {
+adjust_nonresponse <- function(
+  design,
+  response_rates,
+  method = c("postStratify", "calibrate"),
+  stratum_col = "stratum"
+) {
   method <- match.arg(method)
 
   # Input validation -----------------------------------------------------------
@@ -168,10 +170,10 @@ adjust_nonresponse <- function(design,
 
   # Build diagnostics tibble
   diagnostics <- tibble::tibble(
-    stratum           = strata_vals,
-    n_sampled         = n_sampled,
-    n_responded       = n_responded,
-    response_rate     = response_rate,
+    stratum = strata_vals,
+    n_sampled = n_sampled,
+    n_responded = n_responded,
+    response_rate = response_rate,
     weight_adjustment = weight_adj
   )
 
@@ -220,13 +222,28 @@ adjust_nonresponse <- function(design,
 #' @return Updated svydesign.
 #' @keywords internal
 #' @noRd
-apply_nonresponse_weights <- function(svy, strata_cols, diagnostics,
-                                      method) {
+apply_nonresponse_weights <- function(svy, strata_cols, diagnostics, method) {
   if (is.null(svy)) {
     return(NULL)
   }
   if (!inherits(svy, "survey.design") && !inherits(svy, "svyrep.design")) {
     return(svy)
+  }
+
+  # "calibrate" requires population totals not available here; it must be
+  # called directly via survey::calibrate() with a suitable population frame.
+  if (method == "calibrate") {
+    cli::cli_abort(c(
+      '{.val "calibrate"} method is not yet implemented in {.fn adjust_nonresponse}.',
+      "i" = paste0(
+        'Use {.val "postStratify"} (the default), which applies the ',
+        'inverse-response-rate weight scaling documented in the function.'
+      ),
+      "i" = paste0(
+        'For calibration, call {.fn survey::calibrate} directly with ',
+        'population totals derived from your sampling frame.'
+      )
+    ))
   }
 
   # Build stratum-weight mapping
@@ -259,10 +276,16 @@ apply_nonresponse_weights <- function(svy, strata_cols, diagnostics,
   wt_multipliers[is.na(wt_multipliers)] <- 1.0
 
   if (inherits(svy, "svyrep.design")) {
-    # For replicate designs: scale the scale slot
-    svy$scale <- svy$scale * mean(wt_multipliers, na.rm = TRUE)
+    # Scale per-observation base weights (pweights = sampling weights = 1/prob).
+    # Multiply by per-stratum nonresponse multiplier to upweight respondents.
+    svy$pweights <- svy$pweights * wt_multipliers
+    # Scale replicate weight matrix row-wise by the same per-observation
+    # multipliers so that variance estimates reflect the adjusted weights.
+    rw <- as.matrix(svy$repweights)
+    svy$repweights <- sweep(rw, 1, wt_multipliers, "*")
   } else {
-    # For standard svydesign: scale prob / weights
+    # For standard svydesign: prob is the inclusion probability (lower = higher
+    # weight), so divide by multiplier to increase weight for respondents.
     svy$prob <- svy$prob / wt_multipliers
     svy$allprob <- lapply(
       svy$allprob,

@@ -6,8 +6,14 @@ make_validation_design <- function(n_complete = 50, n_incomplete = 50, cpue_diff
   # Calendar with sufficient dates
   cal <- data.frame(
     date = as.Date(c(
-      "2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04",
-      "2024-06-08", "2024-06-09", "2024-06-15", "2024-06-16"
+      "2024-06-01",
+      "2024-06-02",
+      "2024-06-03",
+      "2024-06-04",
+      "2024-06-08",
+      "2024-06-09",
+      "2024-06-15",
+      "2024-06-16"
     )),
     day_type = rep(c("weekday", "weekend"), each = 4),
     stringsAsFactors = FALSE
@@ -32,7 +38,10 @@ make_validation_design <- function(n_complete = 50, n_incomplete = 50, cpue_diff
 
   # Combine complete and incomplete trips
   interviews <- data.frame(
-    date = as.Date(rep(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04"), length.out = n_total)),
+    date = as.Date(rep(
+      c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04"),
+      length.out = n_total
+    )),
     catch_total = c(complete_catch, incomplete_catch),
     hours_fished = c(complete_effort, incomplete_effort),
     trip_status = c(rep("complete", n_complete), rep("incomplete", n_incomplete)),
@@ -40,7 +49,14 @@ make_validation_design <- function(n_complete = 50, n_incomplete = 50, cpue_diff
     stringsAsFactors = FALSE
   )
 
-  add_interviews(design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration) # nolint: object_usage_linter
+  add_interviews(
+    design,
+    interviews,
+    catch = catch_total,
+    effort = hours_fished,
+    trip_status = trip_status,
+    trip_duration = trip_duration
+  ) # nolint: object_usage_linter
 }
 
 #' Create grouped validation design
@@ -48,8 +64,14 @@ make_grouped_validation_design <- function(group_a_diff = 0, group_b_diff = 0) {
   # Calendar with two groups
   cal <- data.frame(
     date = as.Date(c(
-      "2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04",
-      "2024-06-08", "2024-06-09", "2024-06-15", "2024-06-16"
+      "2024-06-01",
+      "2024-06-02",
+      "2024-06-03",
+      "2024-06-04",
+      "2024-06-08",
+      "2024-06-09",
+      "2024-06-15",
+      "2024-06-16"
     )),
     day_type = rep(c("weekday", "weekend"), each = 4),
     location = rep(c("site_a", "site_b"), times = 4),
@@ -81,25 +103,41 @@ make_grouped_validation_design <- function(group_a_diff = 0, group_b_diff = 0) {
 
   # Combine all
   interviews <- data.frame(
-    date = as.Date(rep(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04"), length.out = 120)),
+    date = as.Date(rep(
+      c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04"),
+      length.out = 120
+    )),
     location = rep(c("site_a", "site_b"), each = 60),
     catch_total = c(
-      site_a_complete_catch, site_a_incomplete_catch,
-      site_b_complete_catch, site_b_incomplete_catch
+      site_a_complete_catch,
+      site_a_incomplete_catch,
+      site_b_complete_catch,
+      site_b_incomplete_catch
     ),
     hours_fished = c(
-      site_a_complete_effort, site_a_incomplete_effort,
-      site_b_complete_effort, site_b_incomplete_effort
+      site_a_complete_effort,
+      site_a_incomplete_effort,
+      site_b_complete_effort,
+      site_b_incomplete_effort
     ),
     trip_status = rep(c(rep("complete", 30), rep("incomplete", 30)), times = 2),
     trip_duration = c(
-      site_a_complete_effort, site_a_incomplete_effort,
-      site_b_complete_effort, site_b_incomplete_effort
+      site_a_complete_effort,
+      site_a_incomplete_effort,
+      site_b_complete_effort,
+      site_b_incomplete_effort
     ),
     stringsAsFactors = FALSE
   )
 
-  add_interviews(design, interviews, catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration) # nolint: object_usage_linter
+  add_interviews(
+    design,
+    interviews,
+    catch = catch_total,
+    effort = hours_fished,
+    trip_status = trip_status,
+    trip_duration = trip_duration
+  ) # nolint: object_usage_linter
 }
 
 # Basic functionality tests ----
@@ -212,7 +250,12 @@ test_that("default equivalence threshold is 0.20", {
 test_that("validate_incomplete_trips handles grouped estimation", {
   design <- make_grouped_validation_design(group_a_diff = 0, group_b_diff = 0)
 
-  result <- validate_incomplete_trips(design, catch = catch_total, effort = hours_fished, by = location)
+  result <- validate_incomplete_trips(
+    design,
+    catch = catch_total,
+    effort = hours_fished,
+    by = location
+  )
 
   # Should have group_tests component
   expect_true("group_tests" %in% names(result))
@@ -230,7 +273,12 @@ test_that("grouped validation requires all groups to pass", {
   # Site B: different (diff = 1.0)
   design <- make_grouped_validation_design(group_a_diff = 0, group_b_diff = 1.0)
 
-  result <- validate_incomplete_trips(design, catch = catch_total, effort = hours_fished, by = location)
+  result <- validate_incomplete_trips(
+    design,
+    catch = catch_total,
+    effort = hours_fished,
+    by = location
+  )
 
   # Overall should fail because site_b fails
   expect_false(result$passed)
@@ -248,7 +296,12 @@ test_that("grouped validation passes when all groups pass", {
   # Both groups identical
   design <- make_grouped_validation_design(group_a_diff = 0, group_b_diff = 0)
 
-  result <- validate_incomplete_trips(design, catch = catch_total, effort = hours_fished, by = location)
+  result <- validate_incomplete_trips(
+    design,
+    catch = catch_total,
+    effort = hours_fished,
+    by = location
+  )
 
   # Overall should pass
   expect_true(result$passed)
@@ -345,10 +398,14 @@ test_that("metadata includes all required fields", {
   result <- validate_incomplete_trips(design, catch = catch_total, effort = hours_fished)
 
   # Complete trip metadata
-  expect_true(all(c("n", "estimate", "se", "ci_lower", "ci_upper") %in% names(result$metadata$complete)))
+  expect_true(all(
+    c("n", "estimate", "se", "ci_lower", "ci_upper") %in% names(result$metadata$complete)
+  ))
 
   # Incomplete trip metadata
-  expect_true(all(c("n", "estimate", "se", "ci_lower", "ci_upper") %in% names(result$metadata$incomplete)))
+  expect_true(all(
+    c("n", "estimate", "se", "ci_lower", "ci_upper") %in% names(result$metadata$incomplete)
+  ))
 
   # Sample sizes should be correct
   expect_equal(result$metadata$complete$n, 50)
@@ -415,7 +472,8 @@ test_that("plot_data has correct structure for ungrouped estimation", {
 
 test_that("plot_data has correct structure for grouped estimation", {
   design <- make_grouped_validation_design(group_a_diff = 0, group_b_diff = 0)
-  result <- validate_incomplete_trips(design,
+  result <- validate_incomplete_trips(
+    design,
     catch = catch_total,
     effort = hours_fished,
     by = location
@@ -481,7 +539,8 @@ test_that("plot_data includes passed status for annotation", {
 test_that("plot_data passed status matches per-group results for grouped estimation", {
   # Mixed results: group A passes, group B fails
   design <- make_grouped_validation_design(group_a_diff = 0, group_b_diff = 1.0)
-  result <- validate_incomplete_trips(design,
+  result <- validate_incomplete_trips(
+    design,
     catch = catch_total,
     effort = hours_fished,
     by = location
@@ -492,4 +551,49 @@ test_that("plot_data passed status matches per-group results for grouped estimat
   # Should have one passed, one failed
   expect_equal(sum(plot_data$passed), 1)
   expect_equal(sum(!plot_data$passed), 1)
+})
+
+# TOST-DEGEN: degenerate TOST cases must not crash ---------------------------
+
+test_that("TOST-DEGEN-01: se_diff=0 (identical estimates) returns equivalence_passed TRUE within bounds", {
+  result <- perform_tost(
+    complete_estimate = 1.0,
+    complete_se = 0,
+    incomplete_estimate = 1.0,
+    incomplete_se = 0,
+    threshold = 0.10,
+    n_complete = 5,
+    n_incomplete = 5
+  )
+  expect_true(result$equivalence_passed)
+  expect_equal(result$se_diff, 0)
+})
+
+test_that("TOST-DEGEN-02: se_diff=0 but diff outside bounds returns equivalence_passed FALSE", {
+  result <- perform_tost(
+    complete_estimate = 2.0,
+    complete_se = 0,
+    incomplete_estimate = 1.0,
+    incomplete_se = 0,
+    threshold = 0.10,
+    n_complete = 5,
+    n_incomplete = 5
+  )
+  expect_false(result$equivalence_passed)
+})
+
+test_that("TOST-DEGEN-03: df <= 0 (n=1 group) warns and returns NA equivalence_passed", {
+  expect_warning(
+    result <- perform_tost(
+      complete_estimate = 1.0,
+      complete_se = 0.1,
+      incomplete_estimate = 0.9,
+      incomplete_se = 0.1,
+      threshold = 0.10,
+      n_complete = 1,
+      n_incomplete = 1
+    ),
+    class = "creel_warn_tost_degenerate"
+  )
+  expect_true(is.na(result$equivalence_passed))
 })

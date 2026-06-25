@@ -11,10 +11,12 @@ make_nr_design <- function() {
     add_counts(design, example_counts)
   ))
   suppressMessages(suppressWarnings(
-    add_interviews(design, example_interviews,
-      catch         = catch_total,
-      effort        = hours_fished,
-      trip_status   = trip_status,
+    add_interviews(
+      design,
+      example_interviews,
+      catch = catch_total,
+      effort = hours_fished,
+      trip_status = trip_status,
       trip_duration = trip_duration
     )
   ))
@@ -77,9 +79,7 @@ test_that("NR-05: weight_adjustment = 1 / response_rate", {
   resp <- make_response_rates(weekday_pct = 0.80, weekend_pct = 0.50)
   result <- suppressWarnings(adjust_nonresponse(design, resp))
   diag <- attr(result, "nonresponse_diagnostics")
-  expect_equal(diag$weight_adjustment, 1 / diag$response_rate,
-    tolerance = 1e-8
-  )
+  expect_equal(diag$weight_adjustment, 1 / diag$response_rate, tolerance = 1e-8)
 })
 
 # Warning / abort tests --------------------------------------------------------
@@ -156,7 +156,21 @@ test_that("NR-12: unit response rate = 1 produces same estimates as unadjusted",
   adj_design <- suppressWarnings(adjust_nonresponse(design, resp))
   est_orig <- suppressWarnings(estimate_catch_rate(design))
   est_adj <- suppressWarnings(estimate_catch_rate(adj_design))
-  expect_equal(est_orig$estimates$estimate, est_adj$estimates$estimate,
-    tolerance = 1e-6
+  expect_equal(est_orig$estimates$estimate, est_adj$estimates$estimate, tolerance = 1e-6)
+})
+
+# NR-13: method dispatch guards -----------------------------------------------
+
+test_that("NR-13: method='calibrate' raises an informative error", {
+  design <- make_nr_design()
+  resp <- data.frame(
+    stratum = c("weekday", "weekend"),
+    n_sampled = c(80L, 60L),
+    n_responded = c(72L, 48L),
+    stringsAsFactors = FALSE
+  )
+  expect_error(
+    adjust_nonresponse(design, resp, method = "calibrate"),
+    regexp = "not yet implemented"
   )
 })

@@ -1,0 +1,378 @@
+---
+title: "Creel Report"
+subtitle: "A tidycreel Quarto starter template"
+author: "Your Name"
+date: today
+format:
+  pdf:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    colorlinks: true
+    geometry: margin=1in
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    theme: [cosmo, theme.scss]
+execute:
+  echo: false
+  warning: false
+  message: false
+  freeze: auto
+---
+
+```{r setup}
+library(tidycreel)
+library(ggplot2)
+library(knitr)
+
+data(example_calendar)
+data(example_counts)
+data(example_interviews)
+data(example_catch)
+data(example_lengths)
+
+# Replace these example objects with your own project data imports.
+calendar <- example_calendar
+counts <- example_counts
+interviews <- example_interviews
+catch <- example_catch
+lengths <- example_lengths
+
+design <- creel_design(calendar, date = date, strata = day_type)
+design <- add_counts(design, counts)
+design <- add_interviews(
+  design,
+  interviews,
+  catch = catch_total,
+  effort = hours_fished,
+  harvest = catch_kept,
+  trip_status = trip_status,
+  trip_duration = trip_duration,
+  angler_type = angler_type,
+  angler_method = angler_method,
+  species_sought = species_sought,
+  n_anglers = n_anglers,
+  refused = refused
+)
+design <- add_catch(
+  design,
+  catch,
+  catch_uid = interview_id,
+  interview_uid = interview_id,
+  species = species,
+  count = count,
+  catch_type = catch_type
+)
+design <- add_lengths(
+  design,
+  lengths,
+  length_uid = interview_id,
+  interview_uid = interview_id,
+  species = species,
+  length = length,
+  length_type = length_type,
+  count = count,
+  release_format = "binned"
+)
+
+design_table <- data.frame(
+  Metric = c(
+    "Survey type",
+    "Date column",
+    "Strata",
+    "Calendar days",
+    "Calendar range",
+    "Count records",
+    "Interview records",
+    "Catch records",
+    "Length records"
+  ),
+  Value = c(
+    design$design_type,
+    design$date_col,
+    paste(design$strata_cols, collapse = ", "),
+    nrow(design$calendar),
+    paste(range(design$calendar[[design$date_col]]), collapse = " to "),
+    nrow(design$counts),
+    nrow(design$interviews),
+    nrow(design$catch),
+    nrow(design$lengths)
+  ),
+  stringsAsFactors = FALSE
+)
+
+maybe <- function(expr, required = character()) {
+  if (length(required) > 0L && !all(required %in% names(design$interviews))) {
+    return(NULL)
+  }
+  tryCatch(expr, error = function(e) NULL)
+}
+
+validation <- validation_report(
+  counts = counts,
+  interviews = interviews
+)
+trip_summary <- summarize_trips(design)
+refusal_summary <- maybe(summarize_refusals(design))
+day_type_summary <- maybe(summarize_by_day_type(design), required = "day_type")
+angler_type_summary <- maybe(summarize_by_angler_type(design), required = "angler_type")
+method_summary <- maybe(summarize_by_method(design), required = "angler_method")
+species_sought_summary <- maybe(
+  summarize_by_species_sought(design),
+  required = "species_sought"
+)
+trip_length_summary <- maybe(summarize_by_trip_length(design), required = "trip_duration")
+successful_parties_summary <- maybe(
+  summarize_successful_parties(design),
+  required = c("angler_type", "species_sought")
+)
+cws_month_species_summary <- maybe(
+  summarize_cws_rates(design, by = c(month, species_sought)),
+  required = "species_sought"
+)
+cws_group_summary <- maybe(
+  summarize_cws_rates(design, by = c(month, angler_type, species_sought)),
+  required = c("angler_type", "species_sought")
+)
+hws_month_species_summary <- maybe(
+  summarize_hws_rates(design, by = c(month, species_sought)),
+  required = "species_sought"
+)
+hws_group_summary <- maybe(
+  summarize_hws_rates(design, by = c(month, angler_type, species_sought)),
+  required = c("angler_type", "species_sought")
+)
+length_catch_summary <- maybe(
+  summarize_length_freq(design, type = "catch", by = species, bin_width = 25),
+  required = "species"
+)
+length_harvest_summary <- maybe(
+  summarize_length_freq(design, type = "harvest", by = species, bin_width = 25),
+  required = "species"
+)
+length_release_summary <- maybe(
+  summarize_length_freq(design, type = "release", by = species, bin_width = 25),
+  required = "species"
+)
+
+effort_total <- estimate_effort(design)
+effort_by_day <- estimate_effort(design, by = day_type)
+angler_trips <- estimate_angler_trips(effort_total, design)
+catch_rate_by_species <- maybe(
+  estimate_catch_rate(design, by = species_sought),
+  required = "species_sought"
+)
+harvest_rate_by_species <- maybe(
+  estimate_harvest_rate(design, by = species_sought),
+  required = "species_sought"
+)
+release_rate_by_species <- maybe(
+  estimate_release_rate(design, by = species_sought),
+  required = "species_sought"
+)
+total_catch <- estimate_total_catch(design)
+total_harvest <- estimate_total_harvest(design)
+total_release <- estimate_total_release(design)
+season_totals <- season_summary(list(
+  effort = effort_total,
+  trips = angler_trips,
+  catch = total_catch,
+  harvest = total_harvest,
+  release = total_release
+))
+```
+
+## Design Parameters
+
+Replace the example data imports in the setup chunk with your own survey tables, then keep the report structure and `tidycreel` calls intact.
+
+```{r design-parameters}
+knitr::kable(design_table, col.names = c("Metric", "Value"))
+```
+
+## Data Validation
+
+```{r validation-report}
+knitr::kable(as.data.frame(validation))
+```
+
+## Unextrapolated Summaries
+
+### Trip Summary
+
+```{r trip-summary}
+knitr::kable(
+  data.frame(
+    Metric = c("Total interviews", "Complete trips", "Incomplete trips", "Complete share"),
+    Value = c(
+      trip_summary$n_total,
+      trip_summary$n_complete,
+      trip_summary$n_incomplete,
+      sprintf("%.1f%%", trip_summary$pct_complete)
+    ),
+    stringsAsFactors = FALSE
+  )
+)
+```
+
+### Refusals
+
+```{r refusals}
+if (!is.null(refusal_summary)) knitr::kable(as.data.frame(refusal_summary))
+```
+
+### By Day Type
+
+```{r by-day-type}
+if (!is.null(day_type_summary)) knitr::kable(as.data.frame(day_type_summary))
+```
+
+### By Angler Type
+
+```{r by-angler-type}
+if (!is.null(angler_type_summary)) knitr::kable(as.data.frame(angler_type_summary))
+```
+
+### By Angler Method
+
+```{r by-method}
+if (!is.null(method_summary)) knitr::kable(as.data.frame(method_summary))
+```
+
+### By Species Sought
+
+```{r by-species-sought}
+if (!is.null(species_sought_summary)) knitr::kable(as.data.frame(species_sought_summary))
+```
+
+### Successful Parties
+
+```{r successful-parties}
+if (!is.null(successful_parties_summary)) knitr::kable(as.data.frame(successful_parties_summary))
+```
+
+### Trip Length
+
+```{r trip-length}
+if (!is.null(trip_length_summary)) knitr::kable(as.data.frame(trip_length_summary))
+```
+
+## Length Frequencies
+
+### Catch
+
+```{r length-catch}
+if (!is.null(length_catch_summary)) knitr::kable(as.data.frame(length_catch_summary))
+```
+
+### Harvest
+
+```{r length-harvest}
+if (!is.null(length_harvest_summary)) knitr::kable(as.data.frame(length_harvest_summary))
+```
+
+### Release
+
+```{r length-release}
+if (!is.null(length_release_summary)) knitr::kable(as.data.frame(length_release_summary))
+```
+
+## Caught-while-sought and Harvest-while-sought
+
+### CWS Rates by Month and Species Sought
+
+```{r cws-month-species}
+if (!is.null(cws_month_species_summary)) knitr::kable(as.data.frame(cws_month_species_summary))
+```
+
+### CWS Rates by Month, Angler Type, and Species Sought
+
+```{r cws-group}
+if (!is.null(cws_group_summary)) knitr::kable(as.data.frame(cws_group_summary))
+```
+
+### HWS Rates by Month and Species Sought
+
+```{r hws-month-species}
+if (!is.null(hws_month_species_summary)) knitr::kable(as.data.frame(hws_month_species_summary))
+```
+
+### HWS Rates by Month, Angler Type, and Species Sought
+
+```{r hws-group}
+if (!is.null(hws_group_summary)) knitr::kable(as.data.frame(hws_group_summary))
+```
+
+## Extrapolated Estimates
+
+### Effort
+
+```{r effort-total}
+ggplot2::autoplot(
+  effort_total,
+  title = "Estimated total effort",
+  theme = "creel"
+)
+```
+
+```{r effort-by-day}
+ggplot2::autoplot(
+  effort_by_day,
+  title = "Effort by day type",
+  theme = "creel"
+)
+```
+
+### Angler Trips
+
+```{r angler-trips}
+ggplot2::autoplot(
+  angler_trips,
+  title = "Estimated angler trips",
+  theme = "creel"
+)
+```
+
+### Catch, Harvest, and Release
+
+```{r catch-rate}
+if (!is.null(catch_rate_by_species)) {
+  ggplot2::autoplot(
+    catch_rate_by_species,
+    title = "Catch rate by species sought",
+    theme = "creel"
+  )
+}
+```
+
+```{r harvest-rate}
+if (!is.null(harvest_rate_by_species)) {
+  ggplot2::autoplot(
+    harvest_rate_by_species,
+    title = "Harvest rate by species sought",
+    theme = "creel"
+  )
+}
+```
+
+```{r release-rate}
+if (!is.null(release_rate_by_species)) {
+  ggplot2::autoplot(
+    release_rate_by_species,
+    title = "Release rate by species sought",
+    theme = "creel"
+  )
+}
+```
+
+```{r total-estimates}
+knitr::kable(season_totals$table)
+```
+
+## Notes
+
+- Use the example data as a working starting point, then swap in your own calendar, count, interview, catch, and length tables.
+- Keep the `creel_design()` through `season_summary()` workflow so the report stays aligned with `tidycreel`.
+- Prefer `theme = "creel"` for plots so the report matches package styling.

@@ -10,7 +10,9 @@ make_total_harvest_design <- function() {
   # Create design with both data sources including harvest
   design <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
   design <- add_counts(design, example_counts) # nolint: object_usage_linter
-  design <- add_interviews(design, example_interviews, # nolint: object_usage_linter
+  design <- add_interviews(
+    design,
+    example_interviews, # nolint: object_usage_linter
     catch = catch_total, # nolint: object_usage_linter
     harvest = catch_kept, # nolint: object_usage_linter
     effort = hours_fished, # nolint: object_usage_linter
@@ -22,7 +24,8 @@ make_total_harvest_design <- function() {
 }
 
 #' Create test design without harvest column
-make_design_no_harvest <- function() { # nolint: object_length_linter
+make_design_no_harvest <- function() {
+  # nolint: object_length_linter
   data("example_calendar", package = "tidycreel")
   data("example_counts", package = "tidycreel")
   data("example_interviews", package = "tidycreel")
@@ -30,7 +33,9 @@ make_design_no_harvest <- function() { # nolint: object_length_linter
   # Create design but don't specify harvest parameter
   design <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
   design <- add_counts(design, example_counts) # nolint: object_usage_linter
-  design <- add_interviews(design, example_interviews, # nolint: object_usage_linter
+  design <- add_interviews(
+    design,
+    example_interviews, # nolint: object_usage_linter
     catch = catch_total, # nolint: object_usage_linter
     effort = hours_fished, # nolint: object_usage_linter
     trip_status = trip_status, # nolint: object_usage_linter
@@ -46,10 +51,22 @@ make_total_harvest_species_design <- function() {
   set.seed(42)
   cal <- data.frame(
     date = as.Date(c(
-      "2024-06-03", "2024-06-04", "2024-06-05", "2024-06-06",
-      "2024-06-07", "2024-06-10", "2024-06-11", "2024-06-12",
-      "2024-06-08", "2024-06-09", "2024-06-15", "2024-06-16",
-      "2024-06-22", "2024-06-23", "2024-06-29", "2024-06-30"
+      "2024-06-03",
+      "2024-06-04",
+      "2024-06-05",
+      "2024-06-06",
+      "2024-06-07",
+      "2024-06-10",
+      "2024-06-11",
+      "2024-06-12",
+      "2024-06-08",
+      "2024-06-09",
+      "2024-06-15",
+      "2024-06-16",
+      "2024-06-22",
+      "2024-06-23",
+      "2024-06-29",
+      "2024-06-30"
     )),
     day_type = c(rep("weekday", 8), rep("weekend", 8)),
     stringsAsFactors = FALSE
@@ -62,14 +79,28 @@ make_total_harvest_species_design <- function() {
   )
   # 12 interviews per stratum (24 total), each a completed trip
   iview_dates <- c(
-    rep(as.Date(c(
-      "2024-06-03", "2024-06-04", "2024-06-05",
-      "2024-06-06", "2024-06-07", "2024-06-10"
-    )), 2),
-    rep(as.Date(c(
-      "2024-06-08", "2024-06-09", "2024-06-15",
-      "2024-06-16", "2024-06-22", "2024-06-23"
-    )), 2)
+    rep(
+      as.Date(c(
+        "2024-06-03",
+        "2024-06-04",
+        "2024-06-05",
+        "2024-06-06",
+        "2024-06-07",
+        "2024-06-10"
+      )),
+      2
+    ),
+    rep(
+      as.Date(c(
+        "2024-06-08",
+        "2024-06-09",
+        "2024-06-15",
+        "2024-06-16",
+        "2024-06-22",
+        "2024-06-23"
+      )),
+      2
+    )
   )
   iview_dtype <- c(rep("weekday", 12), rep("weekend", 12))
   catch_total <- sample(1:5, 24, replace = TRUE)
@@ -100,19 +131,23 @@ make_total_harvest_species_design <- function() {
 
   design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
   design <- add_counts(design, counts) # nolint: object_usage_linter
-  design <- add_interviews(design, interviews, # nolint: object_usage_linter
+  design <- add_interviews(
+    design,
+    interviews, # nolint: object_usage_linter
     catch = catch_total,
     harvest = catch_kept,
     effort = hours_fished,
     trip_status = trip_status,
     trip_duration = trip_duration
   )
-  design <- add_catch(design, catch_df, # nolint: object_usage_linter
-    catch_uid     = interview_id,
+  design <- add_catch(
+    design,
+    catch_df, # nolint: object_usage_linter
+    catch_uid = interview_id,
     interview_uid = interview_id,
-    species       = species,
-    count         = count,
-    catch_type    = catch_type
+    species = species,
+    count = count,
+    catch_type = catch_type
   )
 
   design
@@ -153,14 +188,18 @@ make_total_harvest_missing_rate_strata_design <- function() {
 
   design <- creel_design(calendar, date = date, strata = day_type) # nolint: object_usage_linter
   design <- add_counts(design, counts) # nolint: object_usage_linter
-  design <- add_interviews(design, interviews, # nolint: object_usage_linter
+  design <- add_interviews(
+    design,
+    interviews, # nolint: object_usage_linter
     catch = catch_total,
     harvest = catch_kept,
     effort = hours_fished,
     trip_status = trip_status,
     trip_duration = trip_duration
   )
-  add_catch(design, catch_df, # nolint: object_usage_linter
+  add_catch(
+    design,
+    catch_df, # nolint: object_usage_linter
     catch_uid = interview_id,
     interview_uid = interview_id,
     species = species,
@@ -270,7 +309,9 @@ test_that("estimate_total_harvest errors when design has no counts", {
   data("example_interviews", package = "tidycreel")
 
   design <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
-  design <- add_interviews(design, example_interviews, # nolint: object_usage_linter
+  design <- add_interviews(
+    design,
+    example_interviews, # nolint: object_usage_linter
     catch = catch_total,
     harvest = catch_kept,
     effort = hours_fished,
@@ -321,7 +362,7 @@ test_that("estimate_total_harvest errors for invalid variance method", {
 test_that("total harvest estimate equals sum of per-stratum effort * hpue", {
   design <- make_total_harvest_design()
 
-  result    <- estimate_total_harvest(design) # nolint: object_usage_linter
+  result <- estimate_total_harvest(design) # nolint: object_usage_linter
   by_strata <- estimate_total_harvest(design, by = day_type) # nolint: object_usage_linter
 
   # Ungrouped total must equal sum of per-stratum products (stratified formula)
@@ -333,7 +374,7 @@ test_that("total harvest estimate equals sum of per-stratum effort * hpue", {
 test_that("total harvest SE matches stratified delta method formula", {
   design <- make_total_harvest_design()
 
-  result    <- estimate_total_harvest(design) # nolint: object_usage_linter
+  result <- estimate_total_harvest(design) # nolint: object_usage_linter
   by_strata <- estimate_total_harvest(design, by = day_type) # nolint: object_usage_linter
 
   # Var(total) = sum(Var_h) for independent strata; SE = sqrt(sum(se_h^2))
@@ -378,7 +419,9 @@ make_grouped_harvest_design <- function() {
   # Create design
   design <- creel_design(calendar, date = date, strata = day_type) # nolint: object_usage_linter
   design <- add_counts(design, counts) # nolint: object_usage_linter
-  design <- add_interviews(design, interviews, # nolint: object_usage_linter
+  design <- add_interviews(
+    design,
+    interviews, # nolint: object_usage_linter
     catch = catch_total, # nolint: object_usage_linter
     harvest = catch_kept, # nolint: object_usage_linter
     effort = hours_fished, # nolint: object_usage_linter
@@ -485,7 +528,9 @@ test_that("full workflow with example data produces valid total harvest", {
   # Create complete design including harvest
   design <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
   design <- add_counts(design, example_counts) # nolint: object_usage_linter
-  design <- add_interviews(design, example_interviews, # nolint: object_usage_linter
+  design <- add_interviews(
+    design,
+    example_interviews, # nolint: object_usage_linter
     catch = catch_total, # nolint: object_usage_linter
     harvest = catch_kept, # nolint: object_usage_linter
     effort = hours_fished, # nolint: object_usage_linter
@@ -510,7 +555,7 @@ test_that("total harvest components are consistent", {
   design <- make_total_harvest_design()
 
   total_harvest_est <- estimate_total_harvest(design) # nolint: object_usage_linter
-  by_strata         <- estimate_total_harvest(design, by = day_type) # nolint: object_usage_linter
+  by_strata <- estimate_total_harvest(design, by = day_type) # nolint: object_usage_linter
 
   # Ungrouped total = sum of per-stratum products (stratified consistency check)
   expected_estimate <- sum(by_strata$estimates$estimate)
@@ -528,17 +573,36 @@ test_that("total harvest components are consistent", {
 #' both counts and interview data (including harvest col) for all three
 #' sections. 12-date calendar, 9 interviews per section. Data shape is
 #' identical to the Phase 40 fixture make_3section_design_with_interviews().
-make_3section_total_catch_design <- function() { # nolint: object_length_linter
+make_3section_total_catch_design <- function() {
+  # nolint: object_length_linter
   cal <- data.frame(
     date = as.Date(c(
-      "2024-06-03", "2024-06-04", "2024-06-05", "2024-06-06",
-      "2024-06-07", "2024-06-10",
-      "2024-06-08", "2024-06-09", "2024-06-14", "2024-06-15",
-      "2024-06-16", "2024-06-21"
+      "2024-06-03",
+      "2024-06-04",
+      "2024-06-05",
+      "2024-06-06",
+      "2024-06-07",
+      "2024-06-10",
+      "2024-06-08",
+      "2024-06-09",
+      "2024-06-14",
+      "2024-06-15",
+      "2024-06-16",
+      "2024-06-21"
     )),
     day_type = c(
-      "weekday", "weekday", "weekday", "weekday", "weekday", "weekday",
-      "weekend", "weekend", "weekend", "weekend", "weekend", "weekend"
+      "weekday",
+      "weekday",
+      "weekday",
+      "weekday",
+      "weekday",
+      "weekday",
+      "weekend",
+      "weekend",
+      "weekend",
+      "weekend",
+      "weekend",
+      "weekend"
     ),
     stringsAsFactors = FALSE
   )
@@ -557,14 +621,44 @@ make_3section_total_catch_design <- function() { # nolint: object_length_linter
     section = rep(c("North", "Central", "South"), each = nrow(cal)),
     effort_hours = c(
       # North: weekday ~15-25, weekend ~20-28
-      20, 22, 18, 25, 15, 24,
-      21, 26, 23, 28, 20, 27,
+      20,
+      22,
+      18,
+      25,
+      15,
+      24,
+      21,
+      26,
+      23,
+      28,
+      20,
+      27,
       # Central: weekday ~30-45, weekend ~35-48
-      35, 38, 32, 42, 30, 45,
-      37, 44, 40, 48, 35, 46,
+      35,
+      38,
+      32,
+      42,
+      30,
+      45,
+      37,
+      44,
+      40,
+      48,
+      35,
+      46,
       # South: weekday ~5-12, weekend ~6-13
-      8, 10, 5, 12, 6, 11,
-      7, 9, 6, 13, 8, 10
+      8,
+      10,
+      5,
+      12,
+      6,
+      11,
+      7,
+      9,
+      6,
+      13,
+      8,
+      10
     ),
     stringsAsFactors = FALSE
   )
@@ -574,67 +668,207 @@ make_3section_total_catch_design <- function() { # nolint: object_length_linter
   interviews <- data.frame(
     date = as.Date(c(
       # North (9 interviews)
-      "2024-06-03", "2024-06-04", "2024-06-05",
-      "2024-06-07", "2024-06-10", "2024-06-07",
-      "2024-06-08", "2024-06-09", "2024-06-14",
+      "2024-06-03",
+      "2024-06-04",
+      "2024-06-05",
+      "2024-06-07",
+      "2024-06-10",
+      "2024-06-07",
+      "2024-06-08",
+      "2024-06-09",
+      "2024-06-14",
       # Central (9 interviews)
-      "2024-06-03", "2024-06-04", "2024-06-05",
-      "2024-06-06", "2024-06-10", "2024-06-10",
-      "2024-06-08", "2024-06-09", "2024-06-21",
+      "2024-06-03",
+      "2024-06-04",
+      "2024-06-05",
+      "2024-06-06",
+      "2024-06-10",
+      "2024-06-10",
+      "2024-06-08",
+      "2024-06-09",
+      "2024-06-21",
       # South (9 interviews)
-      "2024-06-03", "2024-06-04", "2024-06-05",
-      "2024-06-06", "2024-06-07", "2024-06-07",
-      "2024-06-08", "2024-06-09", "2024-06-14"
+      "2024-06-03",
+      "2024-06-04",
+      "2024-06-05",
+      "2024-06-06",
+      "2024-06-07",
+      "2024-06-07",
+      "2024-06-08",
+      "2024-06-09",
+      "2024-06-14"
     )),
     day_type = c(
-      "weekday", "weekday", "weekday", "weekday", "weekday", "weekday",
-      "weekend", "weekend", "weekend",
-      "weekday", "weekday", "weekday", "weekday", "weekday", "weekday",
-      "weekend", "weekend", "weekend",
-      "weekday", "weekday", "weekday", "weekday", "weekday", "weekday",
-      "weekend", "weekend", "weekend"
+      "weekday",
+      "weekday",
+      "weekday",
+      "weekday",
+      "weekday",
+      "weekday",
+      "weekend",
+      "weekend",
+      "weekend",
+      "weekday",
+      "weekday",
+      "weekday",
+      "weekday",
+      "weekday",
+      "weekday",
+      "weekend",
+      "weekend",
+      "weekend",
+      "weekday",
+      "weekday",
+      "weekday",
+      "weekday",
+      "weekday",
+      "weekday",
+      "weekend",
+      "weekend",
+      "weekend"
     ),
     section = rep(c("North", "Central", "South"), each = 9),
     catch_total = c(
       # North: ~1 fish/hr
-      2, 3, 2, 4, 3, 2, 3, 4, 3,
+      2,
+      3,
+      2,
+      4,
+      3,
+      2,
+      3,
+      4,
+      3,
       # Central: ~1.5 fish/hr
-      5, 6, 5, 7, 6, 5, 7, 8, 6,
+      5,
+      6,
+      5,
+      7,
+      6,
+      5,
+      7,
+      8,
+      6,
       # South: ~2.5 fish/hr
-      10, 12, 9, 11, 10, 12, 13, 11, 10
+      10,
+      12,
+      9,
+      11,
+      10,
+      12,
+      13,
+      11,
+      10
     ),
     catch_kept = c(
       # North
-      1, 2, 1, 3, 2, 1, 2, 3, 2,
+      1,
+      2,
+      1,
+      3,
+      2,
+      1,
+      2,
+      3,
+      2,
       # Central
-      3, 4, 3, 5, 4, 3, 5, 6, 4,
+      3,
+      4,
+      3,
+      5,
+      4,
+      3,
+      5,
+      6,
+      4,
       # South
-      7, 9, 6, 8, 7, 9, 10, 8, 7
+      7,
+      9,
+      6,
+      8,
+      7,
+      9,
+      10,
+      8,
+      7
     ),
     hours_fished = c(
       # North: 2-3 hrs
-      2.0, 3.0, 2.5, 3.0, 2.0, 2.5, 3.0, 3.5, 3.0,
+      2.0,
+      3.0,
+      2.5,
+      3.0,
+      2.0,
+      2.5,
+      3.0,
+      3.5,
+      3.0,
       # Central: 3-4 hrs
-      3.5, 4.0, 3.5, 4.5, 4.0, 3.5, 4.5, 5.0, 4.0,
+      3.5,
+      4.0,
+      3.5,
+      4.5,
+      4.0,
+      3.5,
+      4.5,
+      5.0,
+      4.0,
       # South: 4-5 hrs
-      4.0, 5.0, 4.0, 4.5, 4.0, 5.0, 5.0, 4.5, 4.0
+      4.0,
+      5.0,
+      4.0,
+      4.5,
+      4.0,
+      5.0,
+      5.0,
+      4.5,
+      4.0
     ),
     trip_status = rep("complete", 27),
     trip_duration = c(
       # North
-      2.0, 3.0, 2.5, 3.0, 2.0, 2.5, 3.0, 3.5, 3.0,
+      2.0,
+      3.0,
+      2.5,
+      3.0,
+      2.0,
+      2.5,
+      3.0,
+      3.5,
+      3.0,
       # Central
-      3.5, 4.0, 3.5, 4.5, 4.0, 3.5, 4.5, 5.0, 4.0,
+      3.5,
+      4.0,
+      3.5,
+      4.5,
+      4.0,
+      3.5,
+      4.5,
+      5.0,
+      4.0,
       # South
-      4.0, 5.0, 4.0, 4.5, 4.0, 5.0, 5.0, 4.5, 4.0
+      4.0,
+      5.0,
+      4.0,
+      4.5,
+      4.0,
+      5.0,
+      5.0,
+      4.5,
+      4.0
     ),
     stringsAsFactors = FALSE
   )
 
-  suppressWarnings(add_interviews( # nolint: object_usage_linter
-    design, interviews,
-    catch = catch_total, harvest = catch_kept, effort = hours_fished, # nolint: object_usage_linter
-    trip_status = trip_status, trip_duration = trip_duration # nolint: object_usage_linter
+  suppressWarnings(add_interviews(
+    # nolint: object_usage_linter
+    design,
+    interviews,
+    catch = catch_total,
+    harvest = catch_kept,
+    effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status,
+    trip_duration = trip_duration # nolint: object_usage_linter
   ))
 }
 
@@ -722,17 +956,36 @@ test_that("PROD-02-harvest-target: section path preserves requested effort targe
 #'
 #' Registered sections: "North", "Central", "South".
 #' Interview data contains only "North" and "Central" rows — "South" absent.
-make_3section_harvest_design_missing_south <- function() { # nolint: object_length_linter
+make_3section_harvest_design_missing_south <- function() {
+  # nolint: object_length_linter
   cal <- data.frame(
     date = as.Date(c(
-      "2024-06-03", "2024-06-04", "2024-06-05", "2024-06-06",
-      "2024-06-07", "2024-06-10",
-      "2024-06-08", "2024-06-09", "2024-06-14", "2024-06-15",
-      "2024-06-16", "2024-06-21"
+      "2024-06-03",
+      "2024-06-04",
+      "2024-06-05",
+      "2024-06-06",
+      "2024-06-07",
+      "2024-06-10",
+      "2024-06-08",
+      "2024-06-09",
+      "2024-06-14",
+      "2024-06-15",
+      "2024-06-16",
+      "2024-06-21"
     )),
     day_type = c(
-      "weekday", "weekday", "weekday", "weekday", "weekday", "weekday",
-      "weekend", "weekend", "weekend", "weekend", "weekend", "weekend"
+      "weekday",
+      "weekday",
+      "weekday",
+      "weekday",
+      "weekday",
+      "weekday",
+      "weekend",
+      "weekend",
+      "weekend",
+      "weekend",
+      "weekend",
+      "weekend"
     ),
     stringsAsFactors = FALSE
   )
@@ -749,9 +1002,42 @@ make_3section_harvest_design_missing_south <- function() { # nolint: object_leng
     day_type = rep(cal$day_type, times = 3),
     section = rep(c("North", "Central", "South"), each = nrow(cal)),
     effort_hours = c(
-      20, 22, 18, 25, 15, 24, 21, 26, 23, 28, 20, 27,
-      35, 38, 32, 42, 30, 45, 37, 44, 40, 48, 35, 46,
-      8, 10, 5, 12, 6, 11, 7, 9, 6, 13, 8, 10
+      20,
+      22,
+      18,
+      25,
+      15,
+      24,
+      21,
+      26,
+      23,
+      28,
+      20,
+      27,
+      35,
+      38,
+      32,
+      42,
+      30,
+      45,
+      37,
+      44,
+      40,
+      48,
+      35,
+      46,
+      8,
+      10,
+      5,
+      12,
+      6,
+      11,
+      7,
+      9,
+      6,
+      13,
+      8,
+      10
     ),
     stringsAsFactors = FALSE
   )
@@ -760,48 +1046,144 @@ make_3section_harvest_design_missing_south <- function() { # nolint: object_leng
   # Only North and Central interviews — South absent
   interviews <- data.frame(
     date = as.Date(c(
-      "2024-06-03", "2024-06-04", "2024-06-05",
-      "2024-06-07", "2024-06-10", "2024-06-07",
-      "2024-06-08", "2024-06-09", "2024-06-14",
-      "2024-06-03", "2024-06-04", "2024-06-05",
-      "2024-06-06", "2024-06-10", "2024-06-10",
-      "2024-06-08", "2024-06-09", "2024-06-21"
+      "2024-06-03",
+      "2024-06-04",
+      "2024-06-05",
+      "2024-06-07",
+      "2024-06-10",
+      "2024-06-07",
+      "2024-06-08",
+      "2024-06-09",
+      "2024-06-14",
+      "2024-06-03",
+      "2024-06-04",
+      "2024-06-05",
+      "2024-06-06",
+      "2024-06-10",
+      "2024-06-10",
+      "2024-06-08",
+      "2024-06-09",
+      "2024-06-21"
     )),
     day_type = c(
-      "weekday", "weekday", "weekday", "weekday", "weekday", "weekday",
-      "weekend", "weekend", "weekend",
-      "weekday", "weekday", "weekday", "weekday", "weekday", "weekday",
-      "weekend", "weekend", "weekend"
+      "weekday",
+      "weekday",
+      "weekday",
+      "weekday",
+      "weekday",
+      "weekday",
+      "weekend",
+      "weekend",
+      "weekend",
+      "weekday",
+      "weekday",
+      "weekday",
+      "weekday",
+      "weekday",
+      "weekday",
+      "weekend",
+      "weekend",
+      "weekend"
     ),
     section = rep(c("North", "Central"), each = 9),
     catch_total = c(
-      2, 3, 2, 4, 3, 2, 3, 4, 3,
-      5, 6, 5, 7, 6, 5, 7, 8, 6
+      2,
+      3,
+      2,
+      4,
+      3,
+      2,
+      3,
+      4,
+      3,
+      5,
+      6,
+      5,
+      7,
+      6,
+      5,
+      7,
+      8,
+      6
     ),
     catch_kept = c(
-      1, 2, 1, 3, 2, 1, 2, 3, 2,
-      3, 4, 3, 5, 4, 3, 5, 6, 4
+      1,
+      2,
+      1,
+      3,
+      2,
+      1,
+      2,
+      3,
+      2,
+      3,
+      4,
+      3,
+      5,
+      4,
+      3,
+      5,
+      6,
+      4
     ),
     hours_fished = c(
-      2.0, 3.0, 2.5, 3.0, 2.0, 2.5, 3.0, 3.5, 3.0,
-      3.5, 4.0, 3.5, 4.5, 4.0, 3.5, 4.5, 5.0, 4.0
+      2.0,
+      3.0,
+      2.5,
+      3.0,
+      2.0,
+      2.5,
+      3.0,
+      3.5,
+      3.0,
+      3.5,
+      4.0,
+      3.5,
+      4.5,
+      4.0,
+      3.5,
+      4.5,
+      5.0,
+      4.0
     ),
     trip_status = rep("complete", 18),
     trip_duration = c(
-      2.0, 3.0, 2.5, 3.0, 2.0, 2.5, 3.0, 3.5, 3.0,
-      3.5, 4.0, 3.5, 4.5, 4.0, 3.5, 4.5, 5.0, 4.0
+      2.0,
+      3.0,
+      2.5,
+      3.0,
+      2.0,
+      2.5,
+      3.0,
+      3.5,
+      3.0,
+      3.5,
+      4.0,
+      3.5,
+      4.5,
+      4.0,
+      3.5,
+      4.5,
+      5.0,
+      4.0
     ),
     stringsAsFactors = FALSE
   )
 
-  suppressWarnings(add_interviews( # nolint: object_usage_linter
-    design, interviews,
-    catch = catch_total, harvest = catch_kept, effort = hours_fished, # nolint: object_usage_linter
-    trip_status = trip_status, trip_duration = trip_duration # nolint: object_usage_linter
+  suppressWarnings(add_interviews(
+    # nolint: object_usage_linter
+    design,
+    interviews,
+    catch = catch_total,
+    harvest = catch_kept,
+    effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status,
+    trip_duration = trip_duration # nolint: object_usage_linter
   ))
 }
 
-test_that("PROD-01-harvest-missing: missing section inserts NA row with data_available=FALSE for estimate_total_harvest", { # nolint: line_length_linter
+test_that("PROD-01-harvest-missing: missing section inserts NA row with data_available=FALSE for estimate_total_harvest", {
+  # nolint: line_length_linter
   design <- make_3section_harvest_design_missing_south() # nolint: object_usage_linter
   warns <- character(0)
   result <- withCallingHandlers(
@@ -815,4 +1197,22 @@ test_that("PROD-01-harvest-missing: missing section inserts NA row with data_ava
   expect_equal(nrow(south_row), 1L)
   expect_false(south_row$data_available)
   expect_true(is.na(south_row$estimate))
+})
+
+# TOTH-WARN: standard-path missing-strata warning ----
+
+test_that("estimate_total_harvest warns on standard (non-species) path when effort strata lack rate coverage", {
+  design <- make_total_harvest_missing_rate_strata_design() # nolint: object_usage_linter
+  expect_warning(
+    estimate_total_harvest(design), # nolint: object_usage_linter
+    regexp = "no matching rate estimate"
+  )
+})
+
+test_that("estimate_total_harvest(by=day_type) warns on grouped standard path when effort strata lack rate coverage", {
+  design <- make_total_harvest_missing_rate_strata_design() # nolint: object_usage_linter
+  expect_warning(
+    estimate_total_harvest(design, by = day_type), # nolint: object_usage_linter
+    regexp = "no matching rate estimate"
+  )
 })

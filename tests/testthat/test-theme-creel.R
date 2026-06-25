@@ -37,3 +37,13 @@ test_that("theme_creel() respects custom base size", {
   th <- theme_creel(base_size = 14)
   expect_true(ggplot2::is_theme(th))
 })
+
+test_that("PALETTE-RECYCLE-01: creel_palette(n) at palette-length multiples returns no NA", {
+  n_pal <- length(creel_palette())
+  pal <- creel_palette(n_pal)
+  expect_length(pal, n_pal)
+  expect_false(any(is.na(pal)))
+  pal2 <- creel_palette(n_pal * 2L)
+  expect_length(pal2, n_pal * 2L)
+  expect_false(any(is.na(pal2)))
+})
