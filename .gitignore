@@ -135,8 +135,9 @@ kairo.db
 kairo.db-shm
 kairo.db-wal
 
-# ContextAtlas: regenerable prompt artifacts (per `contextatlas init`)
-.contextatlas/prompts/
+# ContextAtlas: config and regenerable artifacts (per `contextatlas init`)
+.contextatlas.yml
+.contextatlas/
 
 # NGPC proprietary data — local only, not for distribution
 data/ngpc_creel_params.rda
