@@ -132,6 +132,8 @@ est_age_distribution <- function(
   }
 
   result_rows <- vector("list", 0)
+  base_interviews <- design$interviews
+  uid_col <- design$ages_interview_uid_col
 
   if (length(by_vars) == 0L) {
     group_indices <- list(seq_len(nrow(records)))
@@ -174,19 +176,14 @@ est_age_distribution <- function(
       direction = "wide"
     )
     names(wide) <- sub("^age_count\\.", "", names(wide))
-    names(wide)[names(wide) == "uid"] <- design$ages_interview_uid_col
+    names(wide)[names(wide) == "uid"] <- uid_col
 
-    interviews_aug <- dplyr::left_join(
-      design$interviews,
-      wide,
-      by = design$ages_interview_uid_col
-    )
-
+    row_map <- match(base_interviews[[uid_col]], wide[[uid_col]])
+    interviews_aug <- base_interviews
     for (col in age_lookup$age_col) {
-      if (!col %in% names(interviews_aug)) {
-        interviews_aug[[col]] <- 0
-      }
-      interviews_aug[[col]][is.na(interviews_aug[[col]])] <- 0
+      val <- wide[[col]][row_map]
+      val[is.na(val)] <- 0L
+      interviews_aug[[col]] <- val
     }
 
     temp_design <- rebuild_interview_survey(design, interviews_aug) # nolint: object_usage_linter

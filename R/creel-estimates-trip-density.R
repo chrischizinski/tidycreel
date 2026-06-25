@@ -82,13 +82,14 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
   }
 
   z <- stats::qnorm(1 - (1 - conf_level) / 2)
+  min_n_se <- 2L
 
   # --- ungrouped case ---
   if (is.null(effort$by_vars)) {
     dur_vals <- durations_all[!is.na(durations_all) & durations_all > 0]
     n_int <- length(dur_vals)
     L <- mean(dur_vals)
-    if (n_int < 2L) {
+    if (n_int < min_n_se) {
       cli::cli_warn(c(
         "!" = "Only {n_int} valid trip duration value{?s}; SE of mean trip length is undefined.",
         "i" = "SE and CI will be {.val NA}. Point estimate (trips) is still returned."
@@ -140,7 +141,7 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
     dplyr::group_by(interview_df, dplyr::across(dplyr::all_of(effort$by_vars))),
     mean_L = mean(.data$.duration, na.rm = TRUE),
     se_L = dplyr::if_else(
-      dplyr::n() >= 2L,
+      dplyr::n() >= min_n_se,
       stats::sd(.data$.duration, na.rm = TRUE) / sqrt(dplyr::n()),
       NA_real_
     ),
@@ -149,7 +150,7 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
   )
 
   # Warn about single-interview strata (SD undefined → SE/CI will be NA)
-  singleton_strata <- summary_df[summary_df$n_interviews < 2L, , drop = FALSE]
+  singleton_strata <- summary_df[summary_df$n_interviews < min_n_se, , drop = FALSE]
   if (nrow(singleton_strata) > 0L) {
     stratum_labels <- apply(
       singleton_strata[effort$by_vars],
