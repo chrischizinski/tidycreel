@@ -22,6 +22,11 @@
   effect). Bus-route designs already defaulted to `"complete"` and are
   unchanged. Closes #69.
 
+## Documentation
+
+* Added a Quarto Creel Report starter template scaffold that uses the
+  `tidycreel` design, validation, summary, and plotting helpers end to end.
+
 # tidycreel 2.2.0 "Goldeye" (2026-06-17)
 
 ## New features
