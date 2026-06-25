@@ -207,7 +207,7 @@ est_age_distribution <- function(
       se = ses,
       ci_lower = cis[, 1],
       ci_upper = cis[, 2],
-      n = nrow(design$interviews),
+      n = nrow(wide),
       stringsAsFactors = FALSE
     )
 
