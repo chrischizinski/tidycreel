@@ -27,7 +27,8 @@ creel_design(
   effort_type = NULL,
   camera_mode = NULL,
   h_open = NULL,
-  visibility_correction = NULL
+  visibility_correction = NULL,
+  open_start = NULL
 )
 ```
 
@@ -135,6 +136,19 @@ creel_design(
   when `survey_type = "aerial"`. Defaults to `1.0` (all anglers visible)
   when `NULL`. A value of 0.85 means 85% of anglers are detected; the
   effort estimate is scaled up by \\1 / 0.85\\.
+
+- open_start:
+
+  Optional non-negative numeric scalar specifying the hour of day
+  (decimal, 24-hour clock) when the fishery opens. Used only when
+  `survey_type = "aerial"` and only by
+  [`estimate_effort_aerial_glmm()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort_aerial_glmm.md)
+  to anchor the numerical integration window. If `NULL` (default), the
+  GLMM estimator derives the window start from the earliest observed
+  flight time minus 0.5 hours, with an informational message. Supplying
+  `open_start` fixes the window across surveys for consistent
+  comparisons. Example: `open_start = 5.5` means fishing begins at 5:30
+  AM.
 
 ## Value
 

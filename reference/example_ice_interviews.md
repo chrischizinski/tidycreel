@@ -15,7 +15,7 @@ example_ice_interviews
 
 ## Format
 
-A data frame with 72 rows and 10 columns:
+A data frame with 72 rows and 11 columns:
 
 - date:
 

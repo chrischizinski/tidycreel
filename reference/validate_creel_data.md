@@ -129,7 +129,7 @@ res <- validate_creel_data(counts, interviews)
 print(res)
 #> 
 #> ── Creel Data Validation ───────────────────────────────────────────────────────
-#> 15 pass | 3 warn | 0 fail
+#> 15 pass | 2 warn | 1 fail
 #> 
 #> 
 #> ── Table: counts ──
@@ -154,10 +154,10 @@ print(res)
 #> ✔ type: class: Date
 #> ✔ na_rate: 0 / 2 NA (0%)
 #> ✔ date_range: all within 1970-01-01 - 2100-12-31
-#> ! fish_kept
+#> ✖ fish_kept
 #> ✔ type: class: integer
 #> ✔ na_rate: 0 / 2 NA (0%)
-#> ⚠ negative_values: 1 negative value(s)
+#> ✖ negative_values: 1 negative value(s)
 #> ! species
 #> ✔ type: class: character
 #> ✔ na_rate: 0 / 2 NA (0%)

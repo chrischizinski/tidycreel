@@ -19,7 +19,7 @@ automatically use the corrected weights."><meta property="og:image" content="htt
 
     <a class="navbar-brand me-2" href="../index.html">tidycreel</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.3.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -125,11 +125,11 @@ Must be <code>&lt;= n_sampled</code>.</p></dd>
 
 
 <dt id="arg-method">method<a class="anchor" aria-label="anchor" href="#arg-method"></a></dt>
-<dd><p>Character. Weighting method to apply. Either
-<code>"postStratify"</code> (default, adjusts weights to match known stratum
-totals inversely proportional to response rate) or <code>"calibrate"</code>
-(calibration estimator via <code><a href="https://rdrr.io/pkg/survey/man/calibrate.html" class="external-link">survey::calibrate</a></code>; requires stratum
-population totals in <code>response_rates</code>).</p></dd>
+<dd><p>Character. Weighting method to apply. Currently only
+<code>"postStratify"</code> (default) is implemented. It multiplies each
+observation's sampling weight by the inverse response rate for its stratum.
+Specifying <code>"calibrate"</code> raises an error; use <code><a href="https://rdrr.io/pkg/survey/man/calibrate.html" class="external-link">survey::calibrate</a></code>
+directly with population totals from your sampling frame.</p></dd>
 
 
 <dt id="arg-stratum-col">stratum_col<a class="anchor" aria-label="anchor" href="#arg-stratum-col"></a></dt>

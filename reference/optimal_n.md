@@ -61,8 +61,10 @@ where \\A = \sum_h N_h s_h / \sqrt{c_h}\\, \\C = \sum_h N_h s_h
 \sqrt{c_h}\\, \\V_0 = (CV\_{target} \cdot \hat{E})^2\\, \\\hat{E} =
 \sum_h N_h \bar{y}\_h\\, and \\s_h = \sqrt{s_h^2}\\. When all \\c_h =
 1\\ (equal costs) this reduces to \\(\sum_h N_h s_h)^2 / (V_0 + \sum_h
-N_h s_h^2)\\, identical to
-[`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md).
+N_h s_h^2)\\, which gives the same `n_total` as
+[`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md)
+(per-stratum allocation differs: Neyman uses \\n_h \propto N_h s_h\\ vs
+proportional \\n_h \propto N_h\\).
 
 **Per-stratum allocation** uses the cost-adjusted Neyman formula
 (Cochran 1977 eq. 5.30):

@@ -7,7 +7,7 @@ writexl package; an informative error is raised if it is not installed.
 ## Usage
 
 ``` r
-write_schedule(schedule, path, format = c("csv", "xlsx"))
+write_schedule(schedule, path, format = c("csv", "xlsx"), overwrite = FALSE)
 ```
 
 ## Arguments
@@ -30,6 +30,11 @@ write_schedule(schedule, path, format = c("csv", "xlsx"))
   is used behind an
   [`rlang::check_installed()`](https://rlang.r-lib.org/reference/is_installed.html)
   guard.
+
+- overwrite:
+
+  Logical. If `FALSE` (default), aborts with an error when `path`
+  already exists. Set `TRUE` to replace an existing file.
 
 ## Value
 

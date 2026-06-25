@@ -22,8 +22,9 @@ tidy(x, ...)
 ## Value
 
 A tibble with one row per estimate. All columns from `x$estimates` are
-returned unchanged. Required columns: `estimate`, `se`, `ci_lower`,
-`ci_upper`, `n`.
+returned, plus `n` padded to `NA_integer_` when the estimator does not
+produce a sample size (e.g. mark-recapture harvest). Guaranteed columns:
+`estimate`, `se`, `ci_lower`, `ci_upper`, `n`.
 
 ## See also
 

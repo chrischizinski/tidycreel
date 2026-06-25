@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidycreel</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.3.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -89,7 +89,9 @@
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A tibble with one row per estimate. All columns from
-<code>x$estimates</code> are returned unchanged. Required columns:
+<code>x$estimates</code> are returned, plus <code>n</code> padded to
+<code>NA_integer_</code> when the estimator does not produce a sample size
+(e.g. mark-recapture harvest). Guaranteed columns:
 <code>estimate</code>, <code>se</code>, <code>ci_lower</code>, <code>ci_upper</code>, <code>n</code>.</p>
     </div>
     <div class="section level2">

@@ -94,7 +94,8 @@ Single-overflight effort estimation with calibrated open-hours scaling.
 - **Visualisation and reporting** — `autoplot()` methods,
   [`theme_creel()`](https://chrischizinski.github.io/tidycreel/reference/theme_creel.md),
   [`creel_palette()`](https://chrischizinski.github.io/tidycreel/reference/creel_palette.md),
-  and a flexdashboard report template scaffold.
+  a Quarto Creel Report template scaffold, and the legacy flexdashboard
+  scaffold.
 - **Documentation and onboarding** — glossary, workflow vignettes,
   statistical-method articles, and a pkgdown site.
 
@@ -148,7 +149,7 @@ estimate_catch_rate(design)
 | Plan a season before sampling starts | [Survey Design Toolbox](https://chrischizinski.github.io/tidycreel/articles/survey-design-toolbox.html) |
 | Estimate angler population or exploitation rate from tag data | [Mark-Recapture and Exploitation Rate](https://chrischizinski.github.io/tidycreel/articles/mark-recapture.html) |
 | Understand plotting and output styling | [Visualisation](https://chrischizinski.github.io/tidycreel/articles/visualisation.html) and [`theme_creel()`](https://chrischizinski.github.io/tidycreel/reference/theme_creel.md) |
-| Build a report/dashboard | Install the package, then open **R Markdown \> From Template \> Creel Dashboard** in RStudio |
+| Build a report/dashboard | Use the bundled Quarto Creel Report starter template, or open **R Markdown \> From Template \> Creel Dashboard** for the legacy scaffold |
 
 ## Functions at a Glance
 

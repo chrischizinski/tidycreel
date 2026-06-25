@@ -55,12 +55,12 @@ adjust_nonresponse(
 
 - method:
 
-  Character. Weighting method to apply. Either `"postStratify"`
-  (default, adjusts weights to match known stratum totals inversely
-  proportional to response rate) or `"calibrate"` (calibration estimator
-  via
-  [`survey::calibrate`](https://rdrr.io/pkg/survey/man/calibrate.html);
-  requires stratum population totals in `response_rates`).
+  Character. Weighting method to apply. Currently only `"postStratify"`
+  (default) is implemented. It multiplies each observation's sampling
+  weight by the inverse response rate for its stratum. Specifying
+  `"calibrate"` raises an error; use
+  [`survey::calibrate`](https://rdrr.io/pkg/survey/man/calibrate.html)
+  directly with population totals from your sampling frame.
 
 - stratum_col:
 

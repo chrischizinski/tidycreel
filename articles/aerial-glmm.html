@@ -29,7 +29,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidycreel</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.3.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -210,6 +210,8 @@ random intercept:</p>
 <code class="sourceCode R"><span><span class="va">glmm_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort_aerial_glmm.html">estimate_effort_aerial_glmm</a></span><span class="op">(</span><span class="va">design</span>, time_col <span class="op">=</span> <span class="va">time_of_flight</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning in theta.ml(Y, mu, weights = object@resp$weights, limit = limit, :</span></span>
 <span><span class="co">#&gt; iteration limit reached</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Integration window start derived from data: 6.5 h (earliest flight - 0.5 h).</span></span>
+<span><span class="co">#&gt;   Specify `open_start` in `creel_design()` for a fixed fishery opening time.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">glmm_result</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
@@ -350,7 +352,7 @@ integrating the fitted diurnal curve.</p>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">comparison</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   method   estimate         se   ci_lower   ci_upper</span></span>
-<span><span class="co">#&gt; 1   GLMM   378.5646   32.98228   313.9205   443.2087</span></span>
+<span><span class="co">#&gt; 1   GLMM   378.5647   32.98221   313.9208   443.2087</span></span>
 <span><span class="co">#&gt; 2 Simple 20370.0000 1891.08611 16156.3976 24583.6024</span></span></code></pre></div>
 <p>The GLMM estimate corrects for the fact that all flights occurred at
 fixed hours (7, 10, 13, 16). The simple estimator treats each count as
@@ -372,6 +374,8 @@ data.</p>
 <span>  formula  <span class="op">=</span> <span class="va">n_anglers</span> <span class="op">~</span> <span class="va">time_of_flight</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">date</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; boundary (singular) fit: see help('isSingular')</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Integration window start derived from data: 6.5 h (earliest flight - 0.5 h).</span></span>
+<span><span class="co">#&gt;   Specify `open_start` in `creel_design()` for a fixed fishery opening time.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">glmm_linear</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>

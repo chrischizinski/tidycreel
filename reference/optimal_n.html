@@ -15,7 +15,7 @@ with higher between-day variance, minimising total days for a given precision.">
 
     <a class="navbar-brand me-2" href="../index.html">tidycreel</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.3.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -133,7 +133,9 @@ sample size before allocation.</p>
 \(V_0 = (CV_{target} \cdot \hat{E})^2\), \(\hat{E} = \sum_h N_h
 \bar{y}_h\), and \(s_h = \sqrt{s_h^2}\). When all \(c_h = 1\)
 (equal costs) this reduces to \((\sum_h N_h s_h)^2 / (V_0 + \sum_h N_h
-s_h^2)\), identical to <code><a href="creel_n_effort.html">creel_n_effort()</a></code>.</p>
+s_h^2)\), which gives the same <code>n_total</code> as <code><a href="creel_n_effort.html">creel_n_effort()</a></code> (per-stratum
+allocation differs: Neyman uses \(n_h \propto N_h s_h\) vs proportional
+\(n_h \propto N_h\)).</p>
 <p><strong>Per-stratum allocation</strong> uses the cost-adjusted Neyman formula (Cochran
 1977 eq. 5.30):</p>
 <p>$$n_h = \left\lceil n \cdot

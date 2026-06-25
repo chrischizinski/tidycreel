@@ -117,6 +117,8 @@ random intercept:
 glmm_result <- estimate_effort_aerial_glmm(design, time_col = time_of_flight)
 #> Warning in theta.ml(Y, mu, weights = object@resp$weights, limit = limit, :
 #> iteration limit reached
+#> ℹ Integration window start derived from data: 6.5 h (earliest flight - 0.5 h).
+#>   Specify `open_start` in `creel_design()` for a fixed fishery opening time.
 print(glmm_result)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -268,7 +270,7 @@ comparison <- rbind(
 
 print(comparison)
 #>   method   estimate         se   ci_lower   ci_upper
-#> 1   GLMM   378.5646   32.98228   313.9205   443.2087
+#> 1   GLMM   378.5647   32.98221   313.9208   443.2087
 #> 2 Simple 20370.0000 1891.08611 16156.3976 24583.6024
 ```
 
@@ -292,6 +294,8 @@ glmm_linear <- estimate_effort_aerial_glmm(
   formula  = n_anglers ~ time_of_flight + (1 | date)
 )
 #> boundary (singular) fit: see help('isSingular')
+#> ℹ Integration window start derived from data: 6.5 h (earliest flight - 0.5 h).
+#>   Specify `open_start` in `creel_design()` for a fixed fishery opening time.
 print(glmm_linear)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────

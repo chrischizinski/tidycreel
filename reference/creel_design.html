@@ -21,7 +21,7 @@ specifying sites, circuits, and their sampling probabilities.'><meta property="o
 
     <a class="navbar-brand me-2" href="../index.html">tidycreel</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.3.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -105,7 +105,8 @@ specifying sites, circuits, and their sampling probabilities.</p>
 <span>  effort_type <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  camera_mode <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  h_open <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  visibility_correction <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  visibility_correction <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  open_start <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -211,6 +212,17 @@ the proportion of anglers on the water that are detectable from the
 aircraft. Used only when <code>survey_type = "aerial"</code>. Defaults to <code>1.0</code>
 (all anglers visible) when <code>NULL</code>. A value of 0.85 means 85% of anglers
 are detected; the effort estimate is scaled up by \(1 / 0.85\).</p></dd>
+
+
+<dt id="arg-open-start">open_start<a class="anchor" aria-label="anchor" href="#arg-open-start"></a></dt>
+<dd><p>Optional non-negative numeric scalar specifying the
+hour of day (decimal, 24-hour clock) when the fishery opens. Used only
+when <code>survey_type = "aerial"</code> and only by <code><a href="estimate_effort_aerial_glmm.html">estimate_effort_aerial_glmm()</a></code>
+to anchor the numerical integration window. If <code>NULL</code> (default), the
+GLMM estimator derives the window start from the earliest observed flight
+time minus 0.5 hours, with an informational message. Supplying
+<code>open_start</code> fixes the window across surveys for consistent comparisons.
+Example: <code>open_start = 5.5</code> means fishing begins at 5:30 AM.</p></dd>
 
 </dl></div>
     <div class="section level2">

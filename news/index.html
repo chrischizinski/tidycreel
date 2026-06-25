@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidycreel</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.3.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -64,6 +64,52 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="2.4.0" id="tidycreel-240-bowfin-2026-06-25">tidycreel 2.4.0 “Bowfin” (2026-06-25)<a class="anchor" aria-label="anchor" href="#tidycreel-240-bowfin-2026-06-25"></a></h2>
+<div class="section level3">
+<h3 id="new-features-2-4-0">New features<a class="anchor" aria-label="anchor" href="#new-features-2-4-0"></a></h3>
+<ul><li><p><code><a href="../reference/est_age_distribution.html">est_age_distribution()</a></code> estimates proportional age structure with SE and confidence intervals from age-frequency interview data, fully integrated with the <code>creel_design</code> workflow. Stratified and grouped estimation supported.</p></li>
+<li><p><code><a href="../reference/est_mean_age.html">est_mean_age()</a></code> estimates mean age (± SE, CI) from structured interview data. Complements <code><a href="../reference/est_age_distribution.html">est_age_distribution()</a></code> for reporting age-structured harvest results.</p></li>
+<li><p><code>example_ages</code> — new built-in dataset of simulated age observations for use in examples and tests.</p></li>
+<li><p><code><a href="../reference/estimate_harvest_rate.html">estimate_harvest_rate()</a></code> gains species-level dispatch: pass a species column and the function routes harvest-rate estimation independently per species, returning a tidy multi-species result in a single call.</p></li>
+<li><p><code><a href="../reference/creel_design.html">creel_design()</a></code> gains <code>open_start</code> parameter for GLMM aerial designs, allowing the survey window to be anchored to the count time rather than requiring a fixed open time.</p></li>
+</ul></div>
+<div class="section level3">
+<h3 id="bug-fixes-2-4-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-2-4-0"></a></h3>
+<div class="section level4">
+<h4 id="statistical-correctness-2-4-0">Statistical correctness<a class="anchor" aria-label="anchor" href="#statistical-correctness-2-4-0"></a></h4>
+<ul><li><p><code><a href="../reference/estimate_total_catch.html">estimate_total_catch()</a></code>, <code><a href="../reference/estimate_total_harvest.html">estimate_total_harvest()</a></code>, <code><a href="../reference/estimate_total_release.html">estimate_total_release()</a></code>: strata with effort but no interview coverage were silently dropped by an inner join in <code>compute_stratum_product_sum()</code>, biasing season totals low. Fixed to warn and retain all effort strata (#Tier1-Bug1).</p></li>
+<li><p><code><a href="../reference/estimate_angler_trips.html">estimate_angler_trips()</a></code>: <code><a href="https://rdrr.io/r/stats/sd.html" class="external-link">stats::sd()</a></code> on a single-interview stratum returned <code>NA</code>, propagating silently into SE and CI. Guard added for <code>n &lt; 2</code>; emits <code>cli_warn()</code> and returns <code>NA_real_</code> for SE so the point estimate remains usable (#Tier1-Bug2).</p></li>
+<li><p><code><a href="../reference/estimate_effort.html">estimate_effort()</a></code>: finite population correction (FPC) was not applied to the expanded effort <code>svydesign</code>, causing inflated SE for designs with high sampling fractions. Fixed (#Tier1-Bug5-adjacent).</p></li>
+<li><p><code><a href="../reference/optimal_n.html">optimal_n()</a></code>: named <code>cost_ratio</code> vectors were applied positionally instead of by stratum name, producing wrong allocations when stratum order differed. Zero variance (<code>all s2_h = 0</code>) and zero total (<code>all ybar_h = 0</code>) produced silent <code>NaN</code>; both now abort with informative errors. <code>n_total</code> floored at 1 to prevent degenerate zero-sample result.</p></li>
+<li><p><code><a href="../reference/adjust_nonresponse.html">adjust_nonresponse()</a></code>: <code>method = "calibrate"</code> was accepted and matched but silently ignored — both methods used direct weight rescaling. Now aborts with an informative error directing users to <code><a href="https://rdrr.io/pkg/survey/man/calibrate.html" class="external-link">survey::calibrate()</a></code> directly (#Tier1-Bug4).</p></li>
+<li><p><code><a href="../reference/adjust_nonresponse.html">adjust_nonresponse()</a></code> replicate-design path: <code>svy$scale</code> (a variance formula constant) was multiplied by <code>mean(wt_multipliers)</code>, affecting only variance and using an average instead of per-observation values. Fixed to scale <code>svy$pweights</code> per-observation and <code>svy$repweights</code> row-wise (#Tier1-Bug5).</p></li>
+</ul></div>
+<div class="section level4">
+<h4 id="validation-and-scheduling-2-4-0">Validation and scheduling<a class="anchor" aria-label="anchor" href="#validation-and-scheduling-2-4-0"></a></h4>
+<ul><li><p><code>new_creel_validation()</code>: <code>all(logical(0)) == TRUE</code> caused a 0-row results object to silently report <code>passed = TRUE</code>. Fixed with <code>nrow &gt; 0</code> guard; empty validation results now correctly return <code>passed = FALSE</code>.</p></li>
+<li><p><code>design-validator</code>: <code>ybar_h</code>, <code>s2_h</code>, and <code>n_proposed</code> were consumed positionally against named <code>N_h</code>, producing wrong stratum indexing when order differed. All three now rekeyed by <code>strata_names</code> before indexing.</p></li>
+<li><p><code><a href="../reference/validate_incomplete_trips.html">validate_incomplete_trips()</a></code>: <code>perform_tost()</code> crashed or silently passed when <code>se_diff == 0</code> (identical SEs) or <code>df &lt;= 0</code> (<code>n = 1</code> group). Early- return guards added for both degenerate cases; <code><a href="https://rdrr.io/r/base/Logic.html" class="external-link">isTRUE()</a></code> used in grouped- passed aggregation to prevent <code>NA</code> propagating into <code>if()</code>.</p></li>
+<li><p><code>schedule_generators()</code>: <code>inclusion_prob</code> could silently exceed 1 when <code>p_site * (crew / n_circuits) &gt; 1</code>. Now aborts with an actionable message.</p></li>
+</ul></div>
+<div class="section level4">
+<h4 id="reporting-helpers-2-4-0">Reporting helpers<a class="anchor" aria-label="anchor" href="#reporting-helpers-2-4-0"></a></h4>
+<ul><li><p><code>creel_palette(n)</code>: modular recycling used 0-based index at palette-length multiples, returning <code>NA</code> at those positions. Fixed to 1-based modular arithmetic.</p></li>
+<li><p><code>coerce_schedule_columns()</code>: unconditional <code>as.integer(period_id)</code> silently coerced character labels (<code>"AM"</code> / <code>"PM"</code>) to all-<code>NA</code>, filtering all downstream rows. Now only coerces when all non-<code>NA</code> values are numeric strings; character period labels are preserved unchanged.</p></li>
+<li><p><code><a href="../reference/compare_variance.html">compare_variance()</a></code>: Taylor and replicate SEs were paired by row position rather than stratum key. If the two estimators returned rows in different orders, divergence ratios were computed for mismatched strata. Fixed with a keyed join; group-column detection now derived from <code>x$by_vars</code> rather than a hardcoded exclusion list that would misclassify new output columns.</p></li>
+<li><p><code><a href="../reference/validation_report.html">validation_report()</a></code>, <code><a href="../reference/standardize_species.html">standardize_species()</a></code>, <code>hybrid_design()</code>: second positional string to <code>cli_abort()</code> / <code>cli_warn()</code> was silently dropped by cli’s argument handling. Merged into single message or named vector.</p></li>
+</ul></div>
+<div class="section level4">
+<h4 id="age-and-length-estimators-2-4-0">Age and length estimators<a class="anchor" aria-label="anchor" href="#age-and-length-estimators-2-4-0"></a></h4>
+<ul><li><p><code><a href="../reference/est_age_distribution.html">est_age_distribution()</a></code> and <code><a href="../reference/est_length_distribution.html">est_length_distribution()</a></code>: per-group <code>n</code> was reporting the global interview count (<code>nrow(design$interviews)</code>) instead of the within-group count. Fixed to <code>nrow(wide)</code> per group, consistent with <code><a href="../reference/estimate_total_catch.html">estimate_total_catch()</a></code> and <code><a href="../reference/estimate_total_harvest.html">estimate_total_harvest()</a></code>.</p></li>
+<li><p><code><a href="../reference/est_age_distribution.html">est_age_distribution()</a></code> and <code><a href="../reference/est_length_distribution.html">est_length_distribution()</a></code>: <code>left_join()</code> was called inside the per-group loop against the full interviews table (constant across iterations). Replaced with <code><a href="https://rdrr.io/r/base/match.html" class="external-link">match()</a></code> lookup and direct column assignment, eliminating repeated dplyr overhead.</p></li>
+</ul></div>
+</div>
+<div class="section level3">
+<h3 id="documentation-2-4-0">Documentation<a class="anchor" aria-label="anchor" href="#documentation-2-4-0"></a></h3>
+<ul><li>Added a Quarto Creel Report starter template under <code>inst/quarto/templates/creel-report/</code>. The template demonstrates a full season workflow — design, validation, estimation, and plotting — using <code>tidycreel</code> helpers end to end.</li>
+</ul></div>
+</div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="2.3.0" id="tidycreel-230-northern-pike-2026-06-22">tidycreel 2.3.0 “Northern Pike” (2026-06-22)<a class="anchor" aria-label="anchor" href="#tidycreel-230-northern-pike-2026-06-22"></a></h2>
 <div class="section level3">
 <h3 id="breaking-changes-2-3-0">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-2-3-0"></a></h3>
@@ -75,6 +121,10 @@
 <span><span class="fu"><a href="../reference/estimate_release_rate.html">estimate_release_rate</a></span><span class="op">(</span><span class="va">design</span>, use_trips <span class="op">=</span> <span class="st">"all"</span><span class="op">)</span></span></code></pre></div>
 <p>Designs without a <code>trip_status</code> column are unaffected (the argument has no effect). Bus-route designs already defaulted to <code>"complete"</code> and are unchanged. Closes <a href="https://github.com/chrischizinski/tidycreel/issues/69" class="external-link">#69</a>.</p>
 </li>
+</ul></div>
+<div class="section level3">
+<h3 id="documentation-2-3-0">Documentation<a class="anchor" aria-label="anchor" href="#documentation-2-3-0"></a></h3>
+<ul><li>Added a Quarto Creel Report starter template scaffold that uses the <code>tidycreel</code> design, validation, summary, and plotting helpers end to end.</li>
 </ul></div>
 </div>
     <div class="section level2">
