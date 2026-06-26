@@ -161,6 +161,7 @@ estimate_catch_rate(design)
   **[`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)**,
   **[`add_catch()`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md)**,
   **[`add_lengths()`](https://chrischizinski.github.io/tidycreel/reference/add_lengths.md)**,
+  **[`add_ages()`](https://chrischizinski.github.io/tidycreel/reference/add_ages.md)**,
   **[`add_sections()`](https://chrischizinski.github.io/tidycreel/reference/add_sections.md)**
   — attach observation data.
 
@@ -178,8 +179,12 @@ estimate_catch_rate(design)
   **[`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)**
   — totals via delta-method propagation.
 - **[`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md)**,
-  **[`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md)**
-  — camera effort indexing and weighted size-structure estimation.
+  **[`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md)**,
+  **[`est_mean_length()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_length.md)**,
+  **[`est_age_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_age_distribution.md)**,
+  **[`est_mean_age()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_age.md)**
+  — camera effort indexing and weighted size- and age-structure
+  estimation.
 - **[`estimate_exploitation_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_exploitation_rate.md)**
   — exploitation rate from tag returns (Pollock et al.; simple and
   T-weighted stratified paths).

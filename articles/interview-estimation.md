@@ -300,6 +300,89 @@ when working with complex grouped estimates.
   (unlike bootstrap). Useful for verification or when bootstrap is too
   slow.
 
+## Age Structure Estimation
+
+Age data collected during interviews can be used to estimate a
+pressure-weighted age distribution and design-weighted mean age for the
+catch or harvest. Attach age records with
+[`add_ages()`](https://chrischizinski.github.io/tidycreel/reference/add_ages.md),
+then call
+[`est_age_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_age_distribution.md)
+followed by
+[`est_mean_age()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_age.md).
+
+``` r
+
+data(example_ages)
+head(example_ages)
+#>   interview_id species age age_type
+#> 1            1 walleye   4  harvest
+#> 2            1 walleye   3  harvest
+#> 3            1 walleye   5  harvest
+#> 4            2    bass   2  harvest
+#> 5            2    bass   3  harvest
+#> 6            6 walleye   6  harvest
+
+# Attach age data — one row per aged fish
+design <- add_ages(
+  design,
+  example_ages,
+  age_uid      = interview_id,
+  interview_uid = interview_id,
+  species      = species,
+  age          = age,
+  age_type     = age_type
+)
+
+# Estimate weighted age frequency by species
+ad <- est_age_distribution(design, by = species)
+print(ad)
+#>   species age estimate       se   ci_lower ci_upper percent cumulative_percent
+#> 1    bass   2        2 1.414214 -0.7718076 4.771808    40.0               40.0
+#> 2    bass   3        3 1.658312 -0.2502326 6.250233    60.0              100.0
+#> 3 panfish   0        1 1.000000 -0.9599640 2.959964    25.0               25.0
+#> 4 panfish   1        2 1.354006 -0.6538038 4.653804    50.0               75.0
+#> 5 panfish   2        1 1.000000 -0.9599640 2.959964    25.0              100.0
+#> 6 walleye   3        2 1.414214 -0.7718076 4.771808    22.2               22.2
+#> 7 walleye   4        3 1.683251 -0.2991110 6.299111    33.3               55.5
+#> 8 walleye   5        2 1.414214 -0.7718076 4.771808    22.2               77.7
+#> 9 walleye   6        2 2.000000 -1.9199280 5.919928    22.2               99.9
+#>   n
+#> 1 3
+#> 2 3
+#> 3 2
+#> 4 2
+#> 5 2
+#> 6 3
+#> 7 3
+#> 8 3
+#> 9 3
+```
+
+Each row is one integer age class. The `estimate` column is the
+survey-design-weighted count of fish at that age, `percent` is the
+within-species proportion, and `cumulative_percent` accumulates from the
+youngest age class up. The same `variance`, `type`, and `conf_level`
+arguments available in
+[`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md)
+are accepted here.
+
+``` r
+
+# Compute weighted mean age from the distribution object
+est_mean_age(ad)
+#>   species mean_age mean_age_se mean_age_ci_lower mean_age_ci_upper
+#> 1    bass 2.600000   0.2154066         2.1778108          3.022189
+#> 2 panfish 1.000000   0.3535534         0.3070481          1.692952
+#> 3 walleye 4.444444   0.4307445         3.6002007          5.288688
+```
+
+[`est_mean_age()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_age.md)
+applies the ratio estimator (Σ a N̂\_a / N̂) to the weighted age counts
+returned by
+[`est_age_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_age_distribution.md)
+and propagates variance via the delta method.
+
 ## Complete Workflow Example
 
 Here’s the full pipeline in a single workflow:
@@ -428,8 +511,16 @@ For more details on interview-based estimation functions, see:
   Estimate total catch
 - [`?estimate_total_harvest`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md) -
   Estimate total harvest
+- [`?add_ages`](https://chrischizinski.github.io/tidycreel/reference/add_ages.md) -
+  Attach age data to a design
+- [`?est_age_distribution`](https://chrischizinski.github.io/tidycreel/reference/est_age_distribution.md) -
+  Estimate weighted age frequency
+- [`?est_mean_age`](https://chrischizinski.github.io/tidycreel/reference/est_mean_age.md) -
+  Compute design-weighted mean age
 - [`?example_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_interviews.md) -
   Example interview dataset
+- [`?example_ages`](https://chrischizinski.github.io/tidycreel/reference/example_ages.md) -
+  Example age dataset
 
 For the effort estimation workflow, see the “Getting Started with
 tidycreel” vignette.
