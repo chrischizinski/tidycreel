@@ -345,7 +345,9 @@ est_age_distribution <- function(
 #'
 #' @return A `data.frame` with class `c("creel_mean_age", "data.frame")` and
 #'   columns: grouping columns (if any), `mean_age`, `mean_age_se`,
-#'   `mean_age_ci_lower`, `mean_age_ci_upper`.
+#'   `mean_age_ci_lower`, `mean_age_ci_upper`. Rows where the total estimated
+#'   fish is zero or negative return `NA` for all numeric columns with a
+#'   warning.
 #'
 #' @examples
 #' data(example_calendar)
@@ -401,6 +403,16 @@ est_mean_age <- function(ad, conf_level = NULL) {
   compute_mean_age <- function(rows) {
     a <- as.numeric(rows$age)
     n_total <- sum(rows$estimate)
+    if (n_total <= 0) {
+      cli::cli_warn("Total estimated fish is zero or negative; mean age cannot be computed.")
+      return(data.frame(
+        mean_age = NA_real_,
+        mean_age_se = NA_real_,
+        mean_age_ci_lower = NA_real_,
+        mean_age_ci_upper = NA_real_,
+        stringsAsFactors = FALSE
+      ))
+    }
     mean_a <- sum(a * rows$estimate) / n_total
     se_a <- sqrt(sum((a - mean_a)^2 * rows$se^2)) / n_total
     data.frame(

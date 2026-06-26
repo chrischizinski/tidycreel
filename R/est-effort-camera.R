@@ -90,8 +90,7 @@ est_effort_camera <- function(
     !identical(design$design_type, "camera")
   if (bad_type) {
     cli::cli_warn(
-      "{.arg design} has {.field design_type} = {.val {design$design_type}}, ",
-      "not {.val camera}. Proceeding anyway."
+      "{.arg design} has {.field design_type} = {.val {design$design_type}}, not {.val camera}. Proceeding anyway."
     )
   }
   if (!is.numeric(conf_level) || conf_level <= 0 || conf_level >= 1) {

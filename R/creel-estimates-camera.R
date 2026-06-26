@@ -182,8 +182,7 @@ estimate_effort_camera <- function(
     # ---- Raw count expansion fallback ----------------------------------------
     if (is.null(h_open) || !is.numeric(h_open) || h_open <= 0) {
       cli::cli_abort(
-        "{.arg h_open} must be a positive number when no interview data ",
-        "are provided for camera effort estimation."
+        "{.arg h_open} must be a positive number when no interview data are provided for camera effort estimation."
       )
     }
 

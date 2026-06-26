@@ -175,7 +175,6 @@ creel_connect_api <- function(
     interviews = list(
       interview_uid  = "ii_UID",
       date           = "cd_Date",
-      catch_count    = "Num",
       trip_status    = "ii_TripType",
       effort_hours   = "ii_TimeFishedHours",
       effort_minutes = "ii_TimeFishedMinutes"
