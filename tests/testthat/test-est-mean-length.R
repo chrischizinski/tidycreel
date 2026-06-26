@@ -188,3 +188,55 @@ test_that("est_mean_length() uses supplied conf_level over ld attribute", {
   ci_half <- (result$mean_length_ci_upper - result$mean_length_ci_lower) / 2
   expect_equal(ci_half, z_90 * result$mean_length_se, tolerance = 1e-9)
 })
+
+# Zero-total guard ----
+
+make_zero_ld <- function() {
+  ld <- data.frame(
+    bin_lower = c(200, 225, 250),
+    bin_upper = c(225, 250, 275),
+    estimate = c(0, 0, 0),
+    se = c(0, 0, 0),
+    stringsAsFactors = FALSE
+  )
+  class(ld) <- c("creel_length_distribution", "data.frame")
+  attr(ld, "by_vars") <- NULL
+  attr(ld, "conf_level") <- 0.95
+  ld
+}
+
+test_that("EML-ZT-01 est_mean_length() warns and returns NA when all estimates are zero", {
+  ld <- make_zero_ld()
+  expect_warning(result <- est_mean_length(ld), "zero")
+  expect_true(is.na(result$mean_length))
+  expect_true(is.na(result$mean_length_se))
+})
+
+test_that("EML-ZT-02 est_compliance() warns and returns NA when all estimates are zero", {
+  ld <- make_zero_ld()
+  expect_warning(result <- est_compliance(ld, min_length = 230), "zero")
+  expect_true(is.na(result$compliance_prop))
+  expect_true(is.na(result$compliance_se))
+  expect_true(is.na(result$n_legal_est))
+  expect_true(is.na(result$n_total_est))
+})
+
+test_that("EML-ZT-03 est_mean_length() warns NA only for zero-total group in grouped call", {
+  ld <- data.frame(
+    species = c("walleye", "walleye", "perch", "perch"),
+    bin_lower = c(200, 225, 200, 225),
+    bin_upper = c(225, 250, 225, 250),
+    estimate = c(10, 20, 0, 0),
+    se = c(1, 2, 0, 0),
+    stringsAsFactors = FALSE
+  )
+  class(ld) <- c("creel_length_distribution", "data.frame")
+  attr(ld, "by_vars") <- "species"
+  attr(ld, "conf_level") <- 0.95
+
+  expect_warning(result <- est_mean_length(ld), "zero")
+  walleye_row <- result[result$species == "walleye", ]
+  perch_row <- result[result$species == "perch", ]
+  expect_false(is.na(walleye_row$mean_length))
+  expect_true(is.na(perch_row$mean_length))
+})

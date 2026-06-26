@@ -573,7 +573,9 @@ est_biomass <- function(ld, a, b, conf_level = NULL) {
 #'
 #' @return A `data.frame` with class `c("creel_mean_length", "data.frame")` and
 #'   columns: grouping columns (if any), `mean_length`, `mean_length_se`,
-#'   `mean_length_ci_lower`, `mean_length_ci_upper`.
+#'   `mean_length_ci_lower`, `mean_length_ci_upper`. Rows where the total
+#'   estimated fish is zero or negative return `NA` for all numeric columns
+#'   with a warning.
 #'
 #' @examples
 #' data(example_calendar)
@@ -631,6 +633,16 @@ est_mean_length <- function(ld, conf_level = NULL) {
   compute_mean_length <- function(rows) {
     l_mid <- (rows$bin_lower + rows$bin_upper) / 2
     n_total <- sum(rows$estimate)
+    if (n_total <= 0) {
+      cli::cli_warn("Total estimated fish is zero or negative; mean length cannot be computed.")
+      return(data.frame(
+        mean_length = NA_real_,
+        mean_length_se = NA_real_,
+        mean_length_ci_lower = NA_real_,
+        mean_length_ci_upper = NA_real_,
+        stringsAsFactors = FALSE
+      ))
+    }
     mean_l <- sum(l_mid * rows$estimate) / n_total
     se_l <- sqrt(sum((l_mid - mean_l)^2 * rows$se^2)) / n_total
     data.frame(
@@ -697,7 +709,9 @@ est_mean_length <- function(ld, conf_level = NULL) {
 #' @return A `data.frame` with class `c("creel_compliance", "data.frame")` and
 #'   columns: grouping columns (if any), `min_length`, `n_legal_est`,
 #'   `n_total_est`, `compliance_prop`, `compliance_se`,
-#'   `compliance_ci_lower`, `compliance_ci_upper`.
+#'   `compliance_ci_lower`, `compliance_ci_upper`. Rows where the total
+#'   estimated fish is zero or negative return `NA` for all numeric columns
+#'   with a warning.
 #'
 #' @examples
 #' data(example_calendar)
@@ -763,6 +777,19 @@ est_compliance <- function(ld, min_length, conf_level = NULL) {
     legal <- rows$bin_lower >= min_length
     n_legal <- sum(rows$estimate[legal])
     n_total <- sum(rows$estimate)
+    if (n_total <= 0) {
+      cli::cli_warn("Total estimated fish is zero or negative; compliance proportion cannot be computed.")
+      return(data.frame(
+        min_length = min_length,
+        n_legal_est = NA_real_,
+        n_total_est = NA_real_,
+        compliance_prop = NA_real_,
+        compliance_se = NA_real_,
+        compliance_ci_lower = NA_real_,
+        compliance_ci_upper = NA_real_,
+        stringsAsFactors = FALSE
+      ))
+    }
     p <- n_legal / n_total
     se_p <- sqrt(sum((as.numeric(legal) - p)^2 * rows$se^2)) / n_total
     data.frame(

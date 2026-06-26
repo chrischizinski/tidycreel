@@ -371,3 +371,42 @@ test_that("AGD-40 est_mean_age() defaults conf_level from distribution attr", {
   result <- est_mean_age(ad)
   expect_equal(attr(result, "conf_level"), 0.90)
 })
+
+# Zero-total guard ----
+
+test_that("AGD-41 est_mean_age() warns and returns NA when all estimates are zero", {
+  fake_ad <- data.frame(
+    age = c(1L, 2L, 3L),
+    estimate = c(0, 0, 0),
+    se = c(0, 0, 0),
+    stringsAsFactors = FALSE
+  )
+  class(fake_ad) <- c("creel_age_distribution", "data.frame")
+  attr(fake_ad, "by_vars") <- NULL
+  attr(fake_ad, "conf_level") <- 0.95
+
+  expect_warning(result <- est_mean_age(fake_ad), "zero")
+  expect_true(is.na(result$mean_age))
+  expect_true(is.na(result$mean_age_se))
+  expect_true(is.na(result$mean_age_ci_lower))
+  expect_true(is.na(result$mean_age_ci_upper))
+})
+
+test_that("AGD-42 est_mean_age() warns NA only for zero-total group in grouped call", {
+  fake_ad <- data.frame(
+    species = c("walleye", "walleye", "perch", "perch"),
+    age = c(1L, 2L, 1L, 2L),
+    estimate = c(10, 20, 0, 0),
+    se = c(1, 2, 0, 0),
+    stringsAsFactors = FALSE
+  )
+  class(fake_ad) <- c("creel_age_distribution", "data.frame")
+  attr(fake_ad, "by_vars") <- "species"
+  attr(fake_ad, "conf_level") <- 0.95
+
+  expect_warning(result <- est_mean_age(fake_ad), "zero")
+  walleye_row <- result[result$species == "walleye", ]
+  perch_row <- result[result$species == "perch", ]
+  expect_false(is.na(walleye_row$mean_age))
+  expect_true(is.na(perch_row$mean_age))
+})
