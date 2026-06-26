@@ -15,7 +15,7 @@ output: github_document
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Lifecycle: stable](https://img.shields.io/badge/lifecycle-stable-brightgreen.svg)](https://lifecycle.r-lib.org/articles/stages.html#stable)
 [![Codecov test coverage](https://codecov.io/gh/chrischizinski/tidycreel/graph/badge.svg)](https://app.codecov.io/gh/chrischizinski/tidycreel)
-[![Release](https://img.shields.io/badge/release-v2.2.0%20%22Goldeye%22-4CAF50)](https://github.com/chrischizinski/tidycreel/releases)
+[![Release](https://img.shields.io/badge/release-v2.4.0%20%22Bowfin%22-4CAF50)](https://github.com/chrischizinski/tidycreel/releases)
 <!-- badges: end -->
 
 **Tidy Interface for Creel Survey Design, Estimation, and Reporting**
@@ -140,13 +140,13 @@ estimate_catch_rate(design)
 
 ### Survey Design
 - **`creel_design()`** — single entry point; dispatches on `survey_type`.
-- **`add_counts()`**, **`add_interviews()`**, **`add_catch()`**, **`add_lengths()`**, **`add_sections()`** — attach observation data.
+- **`add_counts()`**, **`add_interviews()`**, **`add_catch()`**, **`add_lengths()`**, **`add_ages()`**, **`add_sections()`** — attach observation data.
 
 ### Estimation
 - **`estimate_effort()`** — total effort with Taylor linearization, bootstrap, or jackknife variance.
 - **`estimate_catch_rate()`**, **`estimate_harvest_rate()`**, **`estimate_release_rate()`** — ratio-based interview estimators.
 - **`estimate_total_catch()`**, **`estimate_total_harvest()`**, **`estimate_total_release()`** — totals via delta-method propagation.
-- **`est_effort_camera()`**, **`est_length_distribution()`** — camera effort indexing and weighted size-structure estimation.
+- **`est_effort_camera()`**, **`est_length_distribution()`**, **`est_mean_length()`**, **`est_age_distribution()`**, **`est_mean_age()`** — camera effort indexing and weighted size- and age-structure estimation.
 - **`estimate_exploitation_rate()`** — exploitation rate from tag returns (Pollock et al.; simple and T-weighted stratified paths).
 - **`estimate_angler_n()`** — Petersen and Schnabel mark-recapture population size estimators.
 - **`estimate_mr_harvest()`** — population-scale total harvest from mark-recapture data.

@@ -122,3 +122,4 @@
 ^\.contextatlas$
 ^\.gsd\.archive.*$
 ^air\.toml$
+^\.codegraph$
