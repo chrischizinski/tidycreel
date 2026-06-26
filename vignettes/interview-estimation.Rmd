@@ -153,6 +153,48 @@ All three methods produce similar results for these data. Use bootstrap or jackk
 - **Bootstrap**: Use when working with non-smooth statistics or when you want to verify Taylor linearization assumptions. More computationally intensive.
 - **Jackknife**: Alternative resampling method that is deterministic (unlike bootstrap). Useful for verification or when bootstrap is too slow.
 
+## Age Structure Estimation
+
+Age data collected during interviews can be used to estimate a pressure-weighted
+age distribution and design-weighted mean age for the catch or harvest. Attach
+age records with `add_ages()`, then call `est_age_distribution()` followed by
+`est_mean_age()`.
+
+```{r ages}
+data(example_ages)
+head(example_ages)
+
+# Attach age data — one row per aged fish
+design <- add_ages(
+  design,
+  example_ages,
+  age_uid      = interview_id,
+  interview_uid = interview_id,
+  species      = species,
+  age          = age,
+  age_type     = age_type
+)
+
+# Estimate weighted age frequency by species
+ad <- est_age_distribution(design, by = species)
+print(ad)
+```
+
+Each row is one integer age class. The `estimate` column is the
+survey-design-weighted count of fish at that age, `percent` is the within-species
+proportion, and `cumulative_percent` accumulates from the youngest age class up.
+The same `variance`, `type`, and `conf_level` arguments available in
+`est_length_distribution()` are accepted here.
+
+```{r mean_age}
+# Compute weighted mean age from the distribution object
+est_mean_age(ad)
+```
+
+`est_mean_age()` applies the ratio estimator
+(Σ a N̂_a / N̂) to the weighted age counts returned by `est_age_distribution()`
+and propagates variance via the delta method.
+
 ## Complete Workflow Example
 
 Here's the full pipeline in a single workflow:
@@ -218,6 +260,10 @@ For more details on interview-based estimation functions, see:
 - `?estimate_harvest_rate` - Estimate harvest per unit effort
 - `?estimate_total_catch` - Estimate total catch
 - `?estimate_total_harvest` - Estimate total harvest
+- `?add_ages` - Attach age data to a design
+- `?est_age_distribution` - Estimate weighted age frequency
+- `?est_mean_age` - Compute design-weighted mean age
 - `?example_interviews` - Example interview dataset
+- `?example_ages` - Example age dataset
 
 For the effort estimation workflow, see the "Getting Started with tidycreel" vignette.
