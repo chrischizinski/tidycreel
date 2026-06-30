@@ -15,7 +15,7 @@ output: github_document
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Lifecycle: stable](https://img.shields.io/badge/lifecycle-stable-brightgreen.svg)](https://lifecycle.r-lib.org/articles/stages.html#stable)
 [![Codecov test coverage](https://codecov.io/gh/chrischizinski/tidycreel/graph/badge.svg)](https://app.codecov.io/gh/chrischizinski/tidycreel)
-[![Release](https://img.shields.io/badge/release-v2.4.0%20%22Bowfin%22-4CAF50)](https://github.com/chrischizinski/tidycreel/releases)
+[![Release](https://img.shields.io/badge/release-v2.5.0%20%22Creek%20Chub%22-4CAF50)](https://github.com/chrischizinski/tidycreel/releases)
 <!-- badges: end -->
 
 **Tidy Interface for Creel Survey Design, Estimation, and Reporting**
