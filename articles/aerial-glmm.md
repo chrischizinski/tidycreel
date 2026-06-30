@@ -270,7 +270,7 @@ comparison <- rbind(
 
 print(comparison)
 #>   method   estimate         se   ci_lower   ci_upper
-#> 1   GLMM   378.5647   32.98221   313.9208   443.2087
+#> 1   GLMM   378.5646   32.98228   313.9205   443.2087
 #> 2 Simple 20370.0000 1891.08611 16156.3976 24583.6024
 ```
 

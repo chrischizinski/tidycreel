@@ -27,7 +27,9 @@ est_mean_age(ad, conf_level = NULL)
 
 A `data.frame` with class `c("creel_mean_age", "data.frame")` and
 columns: grouping columns (if any), `mean_age`, `mean_age_se`,
-`mean_age_ci_lower`, `mean_age_ci_upper`.
+`mean_age_ci_lower`, `mean_age_ci_upper`. Rows where the total estimated
+fish is zero or negative return `NA` for all numeric columns with a
+warning.
 
 ## Details
 

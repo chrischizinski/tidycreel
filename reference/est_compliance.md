@@ -35,7 +35,9 @@ est_compliance(ld, min_length, conf_level = NULL)
 A `data.frame` with class `c("creel_compliance", "data.frame")` and
 columns: grouping columns (if any), `min_length`, `n_legal_est`,
 `n_total_est`, `compliance_prop`, `compliance_se`,
-`compliance_ci_lower`, `compliance_ci_upper`.
+`compliance_ci_lower`, `compliance_ci_upper`. Rows where the total
+estimated fish is zero or negative return `NA` for all numeric columns
+with a warning.
 
 ## Details
 

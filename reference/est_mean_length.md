@@ -28,7 +28,9 @@ est_mean_length(ld, conf_level = NULL)
 
 A `data.frame` with class `c("creel_mean_length", "data.frame")` and
 columns: grouping columns (if any), `mean_length`, `mean_length_se`,
-`mean_length_ci_lower`, `mean_length_ci_upper`.
+`mean_length_ci_lower`, `mean_length_ci_upper`. Rows where the total
+estimated fish is zero or negative return `NA` for all numeric columns
+with a warning.
 
 ## Details
 

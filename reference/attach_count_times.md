@@ -38,6 +38,7 @@ equals `nrow(schedule) * nrow(count_times)`.
 Other "Scheduling":
 [`generate_bus_schedule()`](https://chrischizinski.github.io/tidycreel/reference/generate_bus_schedule.md),
 [`generate_count_times()`](https://chrischizinski.github.io/tidycreel/reference/generate_count_times.md),
+[`generate_progressive_start()`](https://chrischizinski.github.io/tidycreel/reference/generate_progressive_start.md),
 [`generate_schedule()`](https://chrischizinski.github.io/tidycreel/reference/generate_schedule.md),
 [`new_creel_schedule()`](https://chrischizinski.github.io/tidycreel/reference/new_creel_schedule.md),
 [`read_schedule()`](https://chrischizinski.github.io/tidycreel/reference/read_schedule.md),

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidycreel</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -63,6 +63,21 @@
       <small>Source: <a href="https://github.com/chrischizinski/tidycreel/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="2.5.0" id="tidycreel-250-creek-chub-2026-06-30">tidycreel 2.5.0 “Creek Chub” (2026-06-30)<a class="anchor" aria-label="anchor" href="#tidycreel-250-creek-chub-2026-06-30"></a></h2>
+<div class="section level3">
+<h3 id="new-features-2-5-0">New features<a class="anchor" aria-label="anchor" href="#new-features-2-5-0"></a></h3>
+<ul><li>
+<code><a href="../reference/generate_progressive_start.html">generate_progressive_start()</a></code> schedules randomised circuit start times for progressive count surveys following Hoenig et al. (1993). Two strategies supported: <code>"discrete"</code> (start drawn from valid τ-aligned offsets; avoids mid-day bias from the common <code>U[0, T−τ]</code> error) and <code>"wraparound"</code> (start drawn from <code>U[0, T)</code> with wrap detection). Returns a <code>creel_schedule</code> with <code>circuit_start</code>, <code>circuit_end</code>, <code>is_wrapped</code>, and <code>direction</code> columns.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="bug-fixes-2-5-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-2-5-0"></a></h3>
+<ul><li><p><code><a href="../reference/add_counts.html">add_counts()</a></code> with <code>count_type = "progressive"</code>: multi-circuit designs (multiple counts per day via <code>count_time_col</code>) were previously blocked with an error. Now supported — daily effort is estimated as <code>mean(C_k) × T_d</code> across circuits.</p></li>
+<li><p><code><a href="../reference/add_counts.html">add_counts()</a></code> multi-circuit progressive: within-day variance <code>ss_d</code> was in count² units but <code>compute_within_day_var_contribution()</code> requires effort² units. <code>ss_d</code> is now scaled by <code>T_d²</code> per PSU before the progressive effort computation, correcting variance estimates for multi-circuit designs.</p></li>
+<li><p><code><a href="../reference/add_counts.html">add_counts()</a></code> progressive: <code>period_length_col</code> was incorrectly included in the numeric column scan used to auto-detect the count variable, causing it to be misidentified as the count. Now excluded from the scan.</p></li>
+<li><p><code><a href="../reference/simulate_creel_data.html">simulate_creel_data()</a></code>: minimum trip effort floor raised from 0.05 h to 0.1 h to reduce implausibly short simulated fishing trips.</p></li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="2.4.0" id="tidycreel-240-bowfin-2026-06-25">tidycreel 2.4.0 “Bowfin” (2026-06-25)<a class="anchor" aria-label="anchor" href="#tidycreel-240-bowfin-2026-06-25"></a></h2>
 <div class="section level3">

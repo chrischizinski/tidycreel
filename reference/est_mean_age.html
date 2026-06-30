@@ -13,7 +13,7 @@ standard error."><meta property="og:image" content="https://chrischizinski.githu
 
     <a class="navbar-brand me-2" href="../index.html">tidycreel</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -99,7 +99,9 @@ Defaults to the level stored in <code>ad</code> (usually <code>0.95</code>).</p>
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A <code>data.frame</code> with class <code>c("creel_mean_age", "data.frame")</code> and
 columns: grouping columns (if any), <code>mean_age</code>, <code>mean_age_se</code>,
-<code>mean_age_ci_lower</code>, <code>mean_age_ci_upper</code>.</p>
+<code>mean_age_ci_lower</code>, <code>mean_age_ci_upper</code>. Rows where the total estimated
+fish is zero or negative return <code>NA</code> for all numeric columns with a
+warning.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>

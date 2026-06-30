@@ -39,7 +39,7 @@ elapsed effort, not total effort.
 
     <a class="navbar-brand me-2" href="../index.html">tidycreel</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -278,20 +278,20 @@ Fish. Res. 106: 325–333.</p>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">sim</span><span class="op">$</span><span class="va">schedule</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>         date day_type sampled</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 2026-06-26      all   FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 2026-06-27      all   FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 2026-06-28      all    TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4 2026-06-29      all   FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5 2026-06-30      all    TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6 2026-07-01      all   FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 2026-06-30      all   FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 2026-07-01      all   FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 2026-07-02      all    TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4 2026-07-03      all   FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5 2026-07-04      all    TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6 2026-07-05      all   FALSE</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">sim</span><span class="op">$</span><span class="va">interviews</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>         date day_type interview_id trip_status hours_fished trip_duration</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 2026-06-30      all            1    complete        2.249         2.249</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 2026-06-30      all            6    complete        3.170         3.170</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 2026-06-30      all            4    complete        3.920         3.920</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4 2026-06-30      all            2    complete        4.609         4.609</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5 2026-06-30      all            5    complete        3.272         3.272</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6 2026-06-30      all            3  incomplete        2.124         4.904</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 2026-07-04      all            1    complete        2.249         2.249</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 2026-07-04      all            6    complete        3.170         3.170</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 2026-07-04      all            4    complete        3.920         3.920</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4 2026-07-04      all            2    complete        4.609         4.609</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5 2026-07-04      all            5    complete        3.272         3.272</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6 2026-07-04      all            3  incomplete        2.124         4.904</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   n_anglers catch_total catch_kept species_sought</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1         1           3          2        walleye</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2         1           1          1        walleye</span>
@@ -301,12 +301,12 @@ Fish. Res. 106: 325–333.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 6         1           1          0        walleye</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">sim</span><span class="op">$</span><span class="va">counts</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>         date day_type count_time total_anglers</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 2026-06-28      all          1             9</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 2026-06-28      all          2             1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 2026-06-28      all          3             9</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4 2026-06-30      all          1             8</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5 2026-06-30      all          2             0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6 2026-06-30      all          3             3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 2026-07-02      all          1             9</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 2026-07-02      all          2             1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 2026-07-02      all          3             9</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4 2026-07-04      all          1             8</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5 2026-07-04      all          2             0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6 2026-07-04      all          3             3</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">sim</span><span class="op">$</span><span class="va">catch</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   interview_id species count catch_type</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1            1 walleye     3     caught</span>

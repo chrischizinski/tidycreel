@@ -622,6 +622,8 @@ Generate, validate, read, and write creel survey schedules.
   : Generate a bus-route sampling frame
 - [`generate_count_times()`](https://chrischizinski.github.io/tidycreel/reference/generate_count_times.md)
   : Generate within-day count time windows
+- [`generate_progressive_start()`](https://chrischizinski.github.io/tidycreel/reference/generate_progressive_start.md)
+  : Schedule progressive count circuit start times
 - [`attach_count_times()`](https://chrischizinski.github.io/tidycreel/reference/attach_count_times.md)
   : Attach count time windows to a daily sampling schedule
 - [`new_creel_schedule()`](https://chrischizinski.github.io/tidycreel/reference/new_creel_schedule.md)

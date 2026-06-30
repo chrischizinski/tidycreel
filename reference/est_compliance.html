@@ -13,7 +13,7 @@ bins straddling the limit are classified as illegal)."><meta property="og:image"
 
     <a class="navbar-brand me-2" href="../index.html">tidycreel</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -105,7 +105,9 @@ Defaults to the level stored in <code>ld</code> (usually <code>0.95</code>).</p>
     <p>A <code>data.frame</code> with class <code>c("creel_compliance", "data.frame")</code> and
 columns: grouping columns (if any), <code>min_length</code>, <code>n_legal_est</code>,
 <code>n_total_est</code>, <code>compliance_prop</code>, <code>compliance_se</code>,
-<code>compliance_ci_lower</code>, <code>compliance_ci_upper</code>.</p>
+<code>compliance_ci_lower</code>, <code>compliance_ci_upper</code>. Rows where the total
+estimated fish is zero or negative return <code>NA</code> for all numeric columns
+with a warning.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
