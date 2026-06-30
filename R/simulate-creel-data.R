@@ -235,7 +235,7 @@ simulate_creel_data <- function(
     if (n_trips_d > 0L) {
       # Trip-level draws
       eff_total <- rgamma(n_trips_d, shape = eff_p$gamma_shape, rate = eff_p$gamma_rate)
-      eff_total <- pmax(eff_total, 0.05)
+      eff_total <- pmax(eff_total, 0.1)
 
       n_ang <- pmax(1L, rpois(n_trips_d, lambda = party_p$mean))
 

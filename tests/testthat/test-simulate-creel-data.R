@@ -204,9 +204,9 @@ test_that("simulate_creel_data different params produce different results", {
   lo <- simulate_creel_data(params = lo_effort, season_days = 60L, n_sampled_days = 20L, seed = 12L)
   hi_mean <- mean(hi$interviews$hours_fished)
   lo_mean <- mean(lo$interviews$hours_fished)
-  if (!is.na(hi_mean) && !is.na(lo_mean)) {
-    expect_true(hi_mean > lo_mean)
-  }
+  expect_false(is.nan(hi_mean), label = "hi_mean must not be NaN")
+  expect_false(is.nan(lo_mean), label = "lo_mean must not be NaN")
+  expect_true(hi_mean > lo_mean)
 })
 
 test_that("simulate_creel_data multi-species splits catch across species", {

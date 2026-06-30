@@ -19,7 +19,9 @@ Defaults to the level stored in \code{ld} (usually \code{0.95}).}
 A \code{data.frame} with class \code{c("creel_compliance", "data.frame")} and
 columns: grouping columns (if any), \code{min_length}, \code{n_legal_est},
 \code{n_total_est}, \code{compliance_prop}, \code{compliance_se},
-\code{compliance_ci_lower}, \code{compliance_ci_upper}.
+\code{compliance_ci_lower}, \code{compliance_ci_upper}. Rows where the total
+estimated fish is zero or negative return \code{NA} for all numeric columns
+with a warning.
 }
 \description{
 \code{est_compliance()} estimates the proportion of fish meeting a minimum size

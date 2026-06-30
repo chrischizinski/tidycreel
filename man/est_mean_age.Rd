@@ -15,7 +15,9 @@ Defaults to the level stored in \code{ad} (usually \code{0.95}).}
 \value{
 A \code{data.frame} with class \code{c("creel_mean_age", "data.frame")} and
 columns: grouping columns (if any), \code{mean_age}, \code{mean_age_se},
-\code{mean_age_ci_lower}, \code{mean_age_ci_upper}.
+\code{mean_age_ci_lower}, \code{mean_age_ci_upper}. Rows where the total estimated
+fish is zero or negative return \code{NA} for all numeric columns with a
+warning.
 }
 \description{
 \code{est_mean_age()} computes the pressure-weighted mean fish age from a

@@ -18,10 +18,11 @@ Constructor for the \code{creel_schedule} S3 class. Wraps a data frame with the
 throughout the package.
 }
 \seealso{
-Other "Scheduling": 
+Other "Scheduling":
 \code{\link{attach_count_times}()},
 \code{\link{generate_bus_schedule}()},
 \code{\link{generate_count_times}()},
+\code{\link{generate_progressive_start}()},
 \code{\link{generate_schedule}()},
 \code{\link{read_schedule}()},
 \code{\link{validate_creel_schedule}()},

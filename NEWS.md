@@ -1,3 +1,33 @@
+# tidycreel 2.5.0 "Creek Chub" (2026-06-30)
+
+## New features
+
+* `generate_progressive_start()` schedules randomised circuit start times for
+  progressive count surveys following Hoenig et al. (1993). Two strategies
+  supported: `"discrete"` (start drawn from valid τ-aligned offsets; avoids
+  mid-day bias from the common `U[0, T−τ]` error) and `"wraparound"` (start
+  drawn from `U[0, T)` with wrap detection). Returns a `creel_schedule` with
+  `circuit_start`, `circuit_end`, `is_wrapped`, and `direction` columns.
+
+## Bug fixes
+
+* `add_counts()` with `count_type = "progressive"`: multi-circuit designs
+  (multiple counts per day via `count_time_col`) were previously blocked with
+  an error. Now supported — daily effort is estimated as `mean(C_k) × T_d`
+  across circuits.
+
+* `add_counts()` multi-circuit progressive: within-day variance `ss_d` was
+  in count² units but `compute_within_day_var_contribution()` requires effort²
+  units. `ss_d` is now scaled by `T_d²` per PSU before the progressive effort
+  computation, correcting variance estimates for multi-circuit designs.
+
+* `add_counts()` progressive: `period_length_col` was incorrectly included in
+  the numeric column scan used to auto-detect the count variable, causing it to
+  be misidentified as the count. Now excluded from the scan.
+
+* `simulate_creel_data()`: minimum trip effort floor raised from 0.05 h to
+  0.1 h to reduce implausibly short simulated fishing trips.
+
 # tidycreel 2.4.0 "Bowfin" (2026-06-25)
 
 ## New features
