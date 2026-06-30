@@ -15,7 +15,9 @@ Defaults to the level stored in \code{ld} (usually \code{0.95}).}
 \value{
 A \code{data.frame} with class \code{c("creel_mean_length", "data.frame")} and
 columns: grouping columns (if any), \code{mean_length}, \code{mean_length_se},
-\code{mean_length_ci_lower}, \code{mean_length_ci_upper}.
+\code{mean_length_ci_lower}, \code{mean_length_ci_upper}. Rows where the total
+estimated fish is zero or negative return \code{NA} for all numeric columns
+with a warning.
 }
 \description{
 \code{est_mean_length()} computes the pressure-weighted mean fish length from a

@@ -37,9 +37,10 @@ attach_count_times(sched, ct)
 
 }
 \seealso{
-Other "Scheduling": 
+Other "Scheduling":
 \code{\link{generate_bus_schedule}()},
 \code{\link{generate_count_times}()},
+\code{\link{generate_progressive_start}()},
 \code{\link{generate_schedule}()},
 \code{\link{new_creel_schedule}()},
 \code{\link{read_schedule}()},

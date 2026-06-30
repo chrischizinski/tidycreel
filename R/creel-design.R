@@ -1159,14 +1159,6 @@ add_counts <- function(
 
   # Progressive-specific validation (CNT-03, CNT-05)
   if (count_type == "progressive") {
-    # Guard: count_time_col + progressive is not supported (deferred to future phase)
-    if (!rlang::quo_is_null(rlang::enquo(count_time_col))) {
-      cli::cli_abort(c(
-        "Combining {.arg count_time_col} with {.code count_type = 'progressive'} is not yet supported.",
-        "i" = "Use {.arg count_time_col} only with {.val instantaneous} counts.",
-        "i" = "Multiple progressive circuits per day will be supported in a future version."
-      ))
-    }
     # Guard: circuit_time required (CNT-05)
     if (is.null(circuit_time)) {
       cli::cli_abort(c(
@@ -1239,8 +1231,8 @@ add_counts <- function(
   within_day_var <- NULL
   if (!is.null(count_time_col_name)) {
     key_cols <- unique(c(psu, design$strata_cols))
-    # Identify the count variable (first numeric column not in key_cols or count_time_col)
-    excluded <- c(key_cols, count_time_col_name, design$date_col)
+    # Exclude period_length_col_name when progressive so it isn't mistaken for the count variable
+    excluded <- c(key_cols, count_time_col_name, design$date_col, period_length_col_name)
     numeric_cols <- names(counts)[vapply(counts, is.numeric, logical(1L))]
     count_var <- setdiff(numeric_cols, excluded)[1L]
 
@@ -1254,6 +1246,14 @@ add_counts <- function(
     )
     counts <- agg_result$aggregated
     within_day_var <- agg_result$within_day_var
+  }
+
+  # For multi-circuit progressive counts: ss_d is in count² units from aggregate_within_day(),
+  # but compute_within_day_var_contribution() must operate in effort² units (Ê_d,k = C_k × T_d).
+  # Scale ss_d by T_d² per PSU before compute_progressive_effort() drops period_length_col.
+  if (count_type == "progressive" && !is.null(within_day_var)) {
+    td_vals <- counts[[period_length_col_name]][match(within_day_var[[psu]], counts[[psu]])]
+    within_day_var$ss_d <- within_day_var$ss_d * td_vals^2
   }
 
   # Compute progressive daily effort Ê_d = C × τ × κ (EFF-02)

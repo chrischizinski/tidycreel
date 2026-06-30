@@ -44,10 +44,11 @@ inherits(sched2, "creel_schedule")
 
 }
 \seealso{
-Other "Scheduling": 
+Other "Scheduling":
 \code{\link{attach_count_times}()},
 \code{\link{generate_bus_schedule}()},
 \code{\link{generate_count_times}()},
+\code{\link{generate_progressive_start}()},
 \code{\link{generate_schedule}()},
 \code{\link{new_creel_schedule}()},
 \code{\link{validate_creel_schedule}()},

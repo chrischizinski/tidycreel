@@ -517,21 +517,84 @@ test_that("add_counts() stores circuit_time and period_length_col slots (CNT-03)
   expect_equal(d$period_length_col, "shift_hours")
 })
 
-test_that("add_counts() aborts when count_time_col and count_type = 'progressive' combined", {
+test_that("add_counts() accepts count_time_col + count_type = 'progressive' (multi-circuit, CNT-07)", {
   design <- creel_design(make_test_calendar(), date = date, strata = day_type)
-  prog_counts <- make_progressive_counts()
-  prog_counts$circuit_id <- rep(c("am", "pm"), length.out = nrow(prog_counts))
-  expect_error(
+  # Two circuits (am/pm) per day: duplicate each row
+  single <- make_progressive_counts()
+  multi <- rbind(
+    transform(single, circuit_id = "am", n_anglers = n_anglers),
+    transform(single, circuit_id = "pm", n_anglers = n_anglers + 5L)
+  )
+  multi <- multi[order(multi$date), ]
+  expect_no_error(
     add_counts(
       design,
-      prog_counts,
+      multi,
       count_time_col = circuit_id, # nolint: object_usage_linter
       count_type = "progressive",
       circuit_time = 2,
       period_length_col = shift_hours # nolint: object_usage_linter
-    ),
-    regexp = "count_time_col.*progressive|progressive.*count_time_col"
+    )
   )
+})
+
+test_that("add_counts() multi-circuit progressive: Ê_d = mean(C_k) × T_d (CNT-08)", {
+  design <- creel_design(make_test_calendar(), date = date, strata = day_type)
+  single <- make_progressive_counts()
+  # am count = 20, pm count = 30 → mean = 25; T_d = 8 → Ê_d = 200
+  multi <- rbind(
+    transform(single, circuit_id = "am", n_anglers = 20L),
+    transform(single, circuit_id = "pm", n_anglers = 30L)
+  )
+  multi <- multi[order(multi$date), ]
+  result <- add_counts(
+    design, multi,
+    count_time_col = circuit_id, # nolint: object_usage_linter
+    count_type = "progressive",
+    circuit_time = 2,
+    period_length_col = shift_hours # nolint: object_usage_linter
+  )
+  # Each day: mean(20, 30) × 8 = 200
+  expect_equal(result$counts$n_anglers, rep(200, nrow(single)))
+})
+
+test_that("add_counts() multi-circuit progressive: within_day_var is non-NULL (CNT-09)", {
+  design <- creel_design(make_test_calendar(), date = date, strata = day_type)
+  single <- make_progressive_counts()
+  multi <- rbind(
+    transform(single, circuit_id = "am", n_anglers = 20L),
+    transform(single, circuit_id = "pm", n_anglers = 30L)
+  )
+  multi <- multi[order(multi$date), ]
+  result <- add_counts(
+    design, multi,
+    count_time_col = circuit_id, # nolint: object_usage_linter
+    count_type = "progressive",
+    circuit_time = 2,
+    period_length_col = shift_hours # nolint: object_usage_linter
+  )
+  expect_false(is.null(result$within_day_var))
+  expect_true(all(c("ss_d", "k_d") %in% names(result$within_day_var)))
+})
+
+test_that("add_counts() multi-circuit progressive: ss_d scaled by T_d^2 (CNT-10)", {
+  design <- creel_design(make_test_calendar(), date = date, strata = day_type)
+  single <- make_progressive_counts()
+  # am = 20, pm = 30, T_d = 8 → count ss_d = (20-25)^2 + (30-25)^2 = 50
+  # effort ss_d must be 50 * 8^2 = 3200
+  multi <- rbind(
+    transform(single, circuit_id = "am", n_anglers = 20L),
+    transform(single, circuit_id = "pm", n_anglers = 30L)
+  )
+  multi <- multi[order(multi$date), ]
+  result <- add_counts(
+    design, multi,
+    count_time_col = circuit_id, # nolint: object_usage_linter
+    count_type = "progressive",
+    circuit_time = 2,
+    period_length_col = shift_hours # nolint: object_usage_linter
+  )
+  expect_equal(result$within_day_var$ss_d, rep(3200, nrow(single)))
 })
 
 test_that("add_counts() aborts when period_length column contains non-positive values", {

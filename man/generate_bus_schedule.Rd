@@ -54,9 +54,10 @@ where \code{p_period = crew / n_circuits}.
 deployed simultaneously.
 }
 \seealso{
-Other "Scheduling": 
+Other "Scheduling":
 \code{\link{attach_count_times}()},
 \code{\link{generate_count_times}()},
+\code{\link{generate_progressive_start}()},
 \code{\link{generate_schedule}()},
 \code{\link{new_creel_schedule}()},
 \code{\link{read_schedule}()},
