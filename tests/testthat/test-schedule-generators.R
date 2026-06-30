@@ -1029,3 +1029,97 @@ test_that("SCHED-INCL-02: crew=1 with p_site <= 0.5 does not error for single ci
     generate_bus_schedule(sched, frame, site = site, p_site = p_site, crew = 1)
   )
 })
+
+# generate_progressive_start() -------------------------------------------------
+
+test_that("PROG-01: discrete strategy returns n rows with correct structure", {
+  result <- generate_progressive_start(
+    open_start = "06:00", open_end = "16:00",
+    circuit_time = 2, strategy = "discrete", n = 5, seed = 1
+  )
+  expect_s3_class(result, "creel_schedule")
+  expect_equal(nrow(result), 5L)
+  expect_true(all(c("circuit_start", "circuit_end", "is_wrapped", "direction") %in% names(result)))
+})
+
+test_that("PROG-02: discrete strategy start times are multiples of tau from open_start", {
+  result <- generate_progressive_start(
+    open_start = "06:00", open_end = "16:00",
+    circuit_time = 2, strategy = "discrete", n = 20, seed = 42
+  )
+  valid <- c("06:00", "08:00", "10:00", "12:00", "14:00")
+  expect_true(all(result$circuit_start %in% valid))
+})
+
+test_that("PROG-03: discrete strategy is_wrapped is always FALSE", {
+  result <- generate_progressive_start(
+    open_start = "06:00", open_end = "16:00",
+    circuit_time = 2, strategy = "discrete", n = 10, seed = 7
+  )
+  expect_true(all(!result$is_wrapped))
+})
+
+test_that("PROG-04: discrete strategy aborts when T is not integer multiple of tau", {
+  expect_error(
+    generate_progressive_start(
+      open_start = "06:00", open_end = "15:00",
+      circuit_time = 2, strategy = "discrete", n = 3, seed = 1
+    ),
+    regexp = "integer multiple|T/.*whole"
+  )
+})
+
+test_that("PROG-05: wraparound strategy start times are within [open_start, open_end)", {
+  result <- generate_progressive_start(
+    open_start = "06:00", open_end = "16:00",
+    circuit_time = 2, strategy = "wraparound", n = 50, seed = 99
+  )
+  starts_min <- vapply(result$circuit_start, function(x) {
+    h <- as.integer(substr(x, 1, 2))
+    m <- as.integer(substr(x, 4, 5))
+    h * 60L + m
+  }, integer(1))
+  expect_true(all(starts_min >= 360L))
+  expect_true(all(starts_min < 960L))
+})
+
+test_that("PROG-06: wraparound strategy marks wrapped circuits correctly", {
+  result <- generate_progressive_start(
+    open_start = "06:00", open_end = "16:00",
+    circuit_time = 3, strategy = "wraparound", n = 100, seed = 123
+  )
+  starts_min <- vapply(result$circuit_start, function(x) {
+    h <- as.integer(substr(x, 1, 2))
+    m <- as.integer(substr(x, 4, 5))
+    h * 60L + m
+  }, integer(1))
+  expect_true(any(result$is_wrapped))
+  expect_true(all(result$is_wrapped == (starts_min > 780L)))
+})
+
+test_that("PROG-07: direction column contains only 'forward' and 'reverse'", {
+  result <- generate_progressive_start(
+    open_start = "06:00", open_end = "16:00",
+    circuit_time = 2, strategy = "discrete", n = 20, seed = 5
+  )
+  expect_true(all(result$direction %in% c("forward", "reverse")))
+})
+
+test_that("PROG-08: seed produces reproducible output", {
+  r1 <- generate_progressive_start("06:00", "16:00", 2, strategy = "discrete", n = 5, seed = 77)
+  r2 <- generate_progressive_start("06:00", "16:00", 2, strategy = "discrete", n = 5, seed = 77)
+  expect_identical(r1$circuit_start, r2$circuit_start)
+  expect_identical(r1$direction, r2$direction)
+})
+
+test_that("PROG-09: aborts when circuit_time >= survey period", {
+  expect_error(
+    generate_progressive_start("06:00", "08:00", circuit_time = 3),
+    regexp = "shorter than"
+  )
+})
+
+test_that("PROG-10: n = 1 returns single-row creel_schedule", {
+  result <- generate_progressive_start("06:00", "16:00", circuit_time = 2, n = 1, seed = 1)
+  expect_equal(nrow(result), 1L)
+})

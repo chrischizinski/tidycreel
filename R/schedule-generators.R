@@ -855,6 +855,158 @@ generate_count_times <- function(
   new_creel_schedule(result)
 }
 
+#' Schedule progressive count circuit start times
+#'
+#' Generates randomised start times for progressive count surveys following
+#' Hoenig et al. (1993). Two scheduling strategies are supported:
+#'
+#' - `"discrete"` (recommended): The survey period T must be an integer multiple
+#'   of the circuit time \eqn{\tau}. A start time is drawn uniformly from
+#'   \eqn{\{0, \tau, 2\tau, \ldots, (k-1)\tau\}} where \eqn{k = T/\tau}. The
+#'   starting *location* and *direction* of travel must both be randomised;
+#'   direction is returned in the output and must be recorded in the field protocol.
+#'
+#' - `"wraparound"`: A start time is drawn from \eqn{U[0, T)}. If the circuit
+#'   would extend past the end of the survey period it wraps to the beginning
+#'   of the day (`is_wrapped = TRUE`). Starting location need not be randomised,
+#'   though direction still must be.
+#'
+#' @section Common scheduling error:
+#' Drawing the start time from \eqn{U[0, T - \tau]} is **biased** -- it makes
+#' the middle of the survey day over-represented, introducing bias toward
+#' mid-day effort patterns. Both strategies here avoid this error.
+#'
+#' @param open_start Character. Survey-day opening time in `"HH:MM"` format.
+#' @param open_end   Character. Survey-day closing time in `"HH:MM"` format.
+#'   Must be later than `open_start`.
+#' @param circuit_time Positive numeric. Duration of one circuit traversal
+#'   \eqn{\tau} in hours. Must be shorter than the survey period T.
+#' @param strategy Character scalar. `"discrete"` (default) or `"wraparound"`.
+#'   For `"discrete"`, T / `circuit_time` must be a whole number
+#'   (within 0.001 h tolerance).
+#' @param n Positive integer. Number of survey days to schedule. Returns one
+#'   row per day.
+#' @param seed Optional integer. Passed to [withr::with_seed()] for
+#'   reproducible scheduling. Has no effect when `NULL`.
+#'
+#' @return A `creel_schedule` data frame with columns:
+#'   - `circuit_start` (character `"HH:MM"`): Scheduled circuit start time.
+#'   - `circuit_end`   (character `"HH:MM"`): Scheduled circuit end time.
+#'     For `"wraparound"` this may be earlier than `circuit_start` when the
+#'     circuit crosses the end of the survey period.
+#'   - `is_wrapped`    (logical): `TRUE` when circuit wraps around the
+#'     end of the survey period. Always `FALSE` for `"discrete"`.
+#'   - `direction`     (character): `"forward"` or `"reverse"`. Must be
+#'     implemented in the field protocol for unbiased estimation.
+#'
+#' @references Hoenig, J. M., Robson, D. S., Jones, C. M., and Pollock, K. H.
+#'   (1993). Scheduling counts in the instantaneous and progressive count
+#'   methods for estimating sportfishing effort.
+#'   *North American Journal of Fisheries Management*, **13**, 723--736.
+#'
+#' @examples
+#' # Discrete strategy: T = 10 h, tau = 2 h -> k = 5 valid start times
+#' generate_progressive_start(
+#'   open_start = "06:00", open_end = "16:00",
+#'   circuit_time = 2, strategy = "discrete", n = 5, seed = 42
+#' )
+#'
+#' # Wraparound strategy: start drawn from U[0, T)
+#' generate_progressive_start(
+#'   open_start = "06:00", open_end = "16:00",
+#'   circuit_time = 2, strategy = "wraparound", n = 5, seed = 42
+#' )
+#'
+#' @family "Scheduling"
+#' @export
+generate_progressive_start <- function(
+  open_start,
+  open_end,
+  circuit_time,
+  strategy = c("discrete", "wraparound"),
+  n = 1L,
+  seed = NULL
+) {
+  strategy <- match.arg(strategy)
+
+  hhmm_re <- "^[0-2][0-9]:[0-5][0-9]$"
+  if (!grepl(hhmm_re, open_start) || !grepl(hhmm_re, open_end)) {
+    cli::cli_abort(c(
+      "{.arg open_start} and {.arg open_end} must be in HH:MM format.",
+      "x" = "Received open_start={.val {open_start}}, open_end={.val {open_end}}."
+    ))
+  }
+
+  start_min <- parse_hhmm_to_min(open_start)
+  end_min   <- parse_hhmm_to_min(open_end)
+  T_min     <- end_min - start_min
+
+  if (T_min <= 0) {
+    cli::cli_abort(c(
+      "{.arg open_end} must be later than {.arg open_start}.",
+      "x" = "open_start={.val {open_start}}, open_end={.val {open_end}}."
+    ))
+  }
+
+  if (!is.numeric(circuit_time) || length(circuit_time) != 1L || circuit_time <= 0) {
+    cli::cli_abort(c(
+      "{.arg circuit_time} must be a single positive number (hours).",
+      "x" = "Got {.val {circuit_time}}."
+    ))
+  }
+  tau_min <- circuit_time * 60
+
+  if (tau_min >= T_min) {
+    cli::cli_abort(c(
+      "{.arg circuit_time} must be shorter than the survey period.",
+      "x" = "circuit_time = {circuit_time} h; T = {T_min / 60} h.",
+      "i" = "The circuit must complete within (or wrap within) the survey day."
+    ))
+  }
+
+  if (!is.numeric(n) || length(n) != 1L || n < 1L || n != round(n)) {
+    cli::cli_abort("{.arg n} must be a single positive integer.")
+  }
+  n <- as.integer(n)
+
+  do_draw <- function() {
+    if (strategy == "discrete") {
+      k_raw <- T_min / tau_min
+      if (abs(k_raw - round(k_raw)) > 0.001) {
+        cli::cli_abort(c(
+          "For {.val discrete} strategy, T must be an integer multiple of {.arg circuit_time}.",
+          "x" = "T = {T_min / 60} h, circuit_time = {circuit_time} h, T/tau = {round(k_raw, 3)}.",
+          "i" = "Adjust {.arg open_start}/{.arg open_end}/{.arg circuit_time} so T/tau is a whole number.",
+          "i" = "Or use {.code strategy = 'wraparound'} which has no divisibility requirement."
+        ))
+      }
+      k <- round(k_raw)
+      offsets <- (sample.int(k, n, replace = TRUE) - 1L) * tau_min
+    } else {
+      offsets <- runif(n, min = 0, max = T_min)
+    }
+    dirs <- sample(c("forward", "reverse"), n, replace = TRUE)
+    list(offsets = offsets, dirs = dirs)
+  }
+
+  drawn <- if (!is.null(seed)) withr::with_seed(seed, do_draw()) else do_draw()
+
+  abs_start <- start_min + drawn$offsets
+  abs_end   <- abs_start + tau_min
+  is_wrapped <- abs_end > end_min
+  # Wrapped end: wraps back to open_start + overflow past open_end
+  abs_end_adj <- ifelse(is_wrapped, start_min + (abs_end - end_min), abs_end)
+
+  result <- data.frame(
+    circuit_start = format_min_to_hhmm(as.integer(round(abs_start))),
+    circuit_end   = format_min_to_hhmm(as.integer(round(abs_end_adj))),
+    is_wrapped    = is_wrapped,
+    direction     = drawn$dirs,
+    stringsAsFactors = FALSE
+  )
+  new_creel_schedule(result)
+}
+
 #' Generate a bus-route sampling frame
 #'
 #' @description
