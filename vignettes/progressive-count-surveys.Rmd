@@ -95,6 +95,35 @@ design <- creel_design(calendar, date = date, strata = day_type)
 design
 ```
 
+### Scheduling Circuit Start Times
+
+Before field work begins, randomise the circuit start time for each survey day
+using `generate_progressive_start()`. This ensures the count is unbiased with
+respect to time-of-day effort patterns. Two strategies are available:
+
+- `"discrete"` (default): start drawn from the \eqn{k = T / \tau} valid
+  τ-aligned offsets — avoids mid-day over-representation caused by the common
+  \eqn{U[0, T - \tau]} error.
+- `"wraparound"`: start drawn from \eqn{U[0, T)}; circuit may wrap past the
+  end of the survey day.
+
+```{r prog-start, message = FALSE}
+starts <- generate_progressive_start(
+  open_start    = "06:00",
+  open_end      = "16:00",
+  circuit_time  = 2,          # τ = 2 h; T = 10 h → k = 5 valid starts
+  strategy      = "discrete",
+  n             = nrow(calendar),
+  seed          = 42
+)
+starts
+```
+
+The returned `creel_schedule` records `circuit_start`, `circuit_end`,
+`is_wrapped`, and `direction` (`"forward"` / `"reverse"`) for each survey day.
+Record the scheduled start and direction in your field protocol — both are
+required for unbiased estimation.
+
 ### Count Data
 
 Each row is one circuit traversal per sampled day. The `shift_hours` column records
