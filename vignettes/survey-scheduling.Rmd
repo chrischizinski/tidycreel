@@ -411,6 +411,27 @@ ct_fixed <- generate_count_times(strategy = "fixed", fixed_windows = fw)
 ct_fixed
 ```
 
+### Progressive Count Strategy
+
+Progressive surveys require a randomised circuit start time in addition to a
+day-level schedule. Use `generate_progressive_start()` to draw start times that
+avoid the \eqn{U[0, T - \tau]} mid-day bias common in hand-crafted schedules.
+
+```{r count-times-progressive, message = FALSE}
+prog_starts <- generate_progressive_start(
+  open_start   = "06:00",
+  open_end     = "16:00",   # T = 10 h
+  circuit_time = 2,          # τ = 2 h → k = 5 discrete start offsets
+  strategy     = "discrete",
+  n            = 10,
+  seed         = 99
+)
+prog_starts
+```
+
+Use `strategy = "wraparound"` when τ does not divide T evenly. The `direction`
+column (`"forward"` / `"reverse"`) must be recorded in the field protocol.
+
 ### Exporting Count Time Schedules
 
 `generate_count_times()` returns a `creel_schedule` object, the same class returned by
