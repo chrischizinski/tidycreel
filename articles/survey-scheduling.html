@@ -849,6 +849,28 @@ replicated exactly. Supply a <code>data.frame</code> with
 <p><em>(no date column to render calendar)</em></p>
 </div>
 <div class="section level3">
+<h3 id="progressive-count-strategy">Progressive Count Strategy<a class="anchor" aria-label="anchor" href="#progressive-count-strategy"></a>
+</h3>
+<p>Progressive surveys require a randomised circuit start time in
+addition to a day-level schedule. Use
+<code><a href="../reference/generate_progressive_start.html">generate_progressive_start()</a></code> to draw start times that avoid
+the mid-day bias common in hand-crafted schedules.</p>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">prog_starts</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generate_progressive_start.html">generate_progressive_start</a></span><span class="op">(</span></span>
+<span>  open_start   <span class="op">=</span> <span class="st">"06:00"</span>,</span>
+<span>  open_end     <span class="op">=</span> <span class="st">"16:00"</span>,   <span class="co"># T = 10 h</span></span>
+<span>  circuit_time <span class="op">=</span> <span class="fl">2</span>,          <span class="co"># τ = 2 h → k = 5 discrete start offsets</span></span>
+<span>  strategy     <span class="op">=</span> <span class="st">"discrete"</span>,</span>
+<span>  n            <span class="op">=</span> <span class="fl">10</span>,</span>
+<span>  seed         <span class="op">=</span> <span class="fl">99</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">prog_starts</span></span></code></pre></div>
+<p><em>(no date column to render calendar)</em></p>
+<p>Use <code>strategy = "wraparound"</code> when τ does not divide T
+evenly. The <code>direction</code> column (<code>"forward"</code> /
+<code>"reverse"</code>) must be recorded in the field protocol.</p>
+</div>
+<div class="section level3">
 <h3 id="exporting-count-time-schedules">Exporting Count Time Schedules<a class="anchor" aria-label="anchor" href="#exporting-count-time-schedules"></a>
 </h3>
 <p><code><a href="../reference/generate_count_times.html">generate_count_times()</a></code> returns a
@@ -856,7 +878,7 @@ replicated exactly. Supply a <code>data.frame</code> with
 <code><a href="../reference/generate_schedule.html">generate_schedule()</a></code>. It therefore passes directly to
 <code><a href="../reference/write_schedule.html">write_schedule()</a></code> for field printing without any conversion
 step.</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/write_schedule.html">write_schedule</a></span><span class="op">(</span><span class="va">ct_systematic</span>, <span class="st">"count_times_2024.csv"</span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
@@ -869,7 +891,7 @@ step.</p>
 single table — one row per (date x period x count window) — that tells
 each crew exactly when to count. <code><a href="../reference/attach_count_times.html">attach_count_times()</a></code>
 performs the cross-join in one step.</p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sched</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generate_schedule.html">generate_schedule</a></span><span class="op">(</span></span>
 <span>  start_date <span class="op">=</span> <span class="st">"2024-06-01"</span>, end_date <span class="op">=</span> <span class="st">"2024-06-07"</span>,</span>
 <span>  n_periods <span class="op">=</span> <span class="fl">2</span>,</span>
@@ -970,7 +992,7 @@ the season starts rather than discovering them in the post-season
 analysis. It uses the same pilot mean and variance inputs as
 <code><a href="../reference/creel_n_effort.html">creel_n_effort()</a></code> and compares the proposed day counts
 against the minimum required sample size per stratum.</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">report</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/validate_design.html">validate_design</a></span><span class="op">(</span></span>
 <span>  N_h        <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>weekday <span class="op">=</span> <span class="fl">132</span>, weekend <span class="op">=</span> <span class="fl">52</span><span class="op">)</span>,</span>
 <span>  ybar_h     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>weekday <span class="op">=</span> <span class="fl">280</span>, weekend <span class="op">=</span> <span class="fl">550</span><span class="op">)</span>,</span>
@@ -991,7 +1013,7 @@ against the minimum required sample size per stratum.</p>
 achieved CV at the proposed intensity. <code>report$passed</code> is
 <code>TRUE</code> only when all strata pass — use this as a go/no-go
 gate before printing field schedules.</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">report</span><span class="op">$</span><span class="va">results</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 7</span></span></span>
 <span><span class="co">#&gt;   stratum status n_proposed n_required cv_actual cv_target message              </span></span>
@@ -1008,7 +1030,7 @@ sampling days and strata with too few interviews to produce reliable
 estimates. It is the first diagnostic step before running estimators —
 resolving completeness issues early avoids propagating gaps into effort
 or CPUE estimates.</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_calendar</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_counts</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_interviews</span><span class="op">)</span></span>
@@ -1058,7 +1080,7 @@ related functions — and joins them into a single wide tibble for
 reporting or export. It performs no re-estimation; it is purely an
 assembly step that makes it easy to view all key metrics side by
 side.</p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Run estimators first (see the tidycreel workflow vignette)</span></span>
 <span><span class="va">effort</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
 <span><span class="va">cpue</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
@@ -1070,7 +1092,7 @@ side.</p>
 and interviews, and running the estimators — is covered in the main
 tidycreel vignette. <code><a href="../reference/season_summary.html">season_summary()</a></code> is the final step that
 wraps pre-computed results for export or reporting.</p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/write_schedule.html">write_schedule</a></span><span class="op">(</span><span class="va">summary_tbl</span><span class="op">$</span><span class="va">table</span>, <span class="st">"season_2024_summary.xlsx"</span><span class="op">)</span></span></code></pre></div>
 <p><code><a href="../reference/write_schedule.html">write_schedule()</a></code> accepts any data frame or tibble, so
 the season summary table exports to CSV or xlsx with a single call.</p>

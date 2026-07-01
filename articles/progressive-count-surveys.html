@@ -255,13 +255,47 @@ h). The access road is open 10 hours per day.</p>
 <span><span class="co">#&gt; Sections: <span style="color: #0000BB;">"none"</span></span></span></code></pre></div>
 </div>
 <div class="section level3">
+<h3 id="scheduling-circuit-start-times">Scheduling Circuit Start Times<a class="anchor" aria-label="anchor" href="#scheduling-circuit-start-times"></a>
+</h3>
+<p>Before field work begins, randomise the circuit start time for each
+survey day using <code><a href="../reference/generate_progressive_start.html">generate_progressive_start()</a></code>. This ensures
+the count is unbiased with respect to time-of-day effort patterns. Two
+strategies are available:</p>
+<ul>
+<li>
+<code>"discrete"</code> (default): start drawn from the valid
+τ-aligned offsets — avoids mid-day over-representation caused by the
+common error.</li>
+<li>
+<code>"wraparound"</code>: start drawn from ; circuit may wrap past
+the end of the survey day.</li>
+</ul>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">starts</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generate_progressive_start.html">generate_progressive_start</a></span><span class="op">(</span></span>
+<span>  open_start    <span class="op">=</span> <span class="st">"06:00"</span>,</span>
+<span>  open_end      <span class="op">=</span> <span class="st">"16:00"</span>,</span>
+<span>  circuit_time  <span class="op">=</span> <span class="fl">2</span>,          <span class="co"># τ = 2 h; T = 10 h → k = 5 valid starts</span></span>
+<span>  strategy      <span class="op">=</span> <span class="st">"discrete"</span>,</span>
+<span>  n             <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">calendar</span><span class="op">)</span>,</span>
+<span>  seed          <span class="op">=</span> <span class="fl">42</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">starts</span></span></code></pre></div>
+<p><em>(no date column to render calendar)</em></p>
+<p>The returned <code>creel_schedule</code> records
+<code>circuit_start</code>, <code>circuit_end</code>,
+<code>is_wrapped</code>, and <code>direction</code>
+(<code>"forward"</code> / <code>"reverse"</code>) for each survey day.
+Record the scheduled start and direction in your field protocol — both
+are required for unbiased estimation.</p>
+</div>
+<div class="section level3">
 <h3 id="count-data">Count Data<a class="anchor" aria-label="anchor" href="#count-data"></a>
 </h3>
 <p>Each row is one circuit traversal per sampled day. The
 <code>shift_hours</code> column records the actual open hours for that
 day (here always 10, but could vary if a site closed early due to
 weather).</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">7</span><span class="op">)</span></span>
 <span><span class="va">counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  date <span class="op">=</span> <span class="va">calendar</span><span class="op">$</span><span class="va">date</span>,</span>
@@ -282,7 +316,7 @@ weather).</p>
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>τ</mi><annotation encoding="application/x-tex">\tau</annotation></semantics></math>
 in hours, and the column holding
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>T</mi><mi>d</mi></msub><annotation encoding="application/x-tex">T_d</annotation></semantics></math>:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span></span>
 <span>  <span class="va">design</span>, <span class="va">counts</span>,</span>
 <span>  count_type <span class="op">=</span> <span class="st">"progressive"</span>,</span>
@@ -303,7 +337,7 @@ in hours, and the column holding
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>E</mi><mo accent="true">̂</mo></mover><mi>d</mi></msub><mo>=</mo><mi>C</mi><mo>×</mo><msub><mi>T</mi><mi>d</mi></msub></mrow><annotation encoding="application/x-tex">\hat{E}_d = C \times T_d</annotation></semantics></math>,
 not the raw count. For the first day (18 anglers × 10 hours = 180
 angler-hours):</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Verify: C × T_d = 18 × 10 = 180</span></span>
 <span><span class="va">design</span><span class="op">$</span><span class="va">counts</span><span class="op">$</span><span class="va">n_anglers</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span></span>
 <span><span class="co">#&gt; [1] 180</span></span></code></pre></div>
@@ -311,7 +345,7 @@ angler-hours):</p>
 <div class="section level3">
 <h3 id="effort-estimation">Effort Estimation<a class="anchor" aria-label="anchor" href="#effort-estimation"></a>
 </h3>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">effort</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
 <span><span class="va">effort</span><span class="op">$</span><span class="va">estimates</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 7</span></span></span>
@@ -329,7 +363,7 @@ replication).</p>
 </h3>
 <p>Interviews are collected during or after the circuit traversal.
 Attach them exactly as in any other survey type:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">7</span><span class="op">)</span></span>
 <span><span class="va">n_int</span> <span class="op">&lt;-</span> <span class="fl">120</span> <span class="co"># interviews collected across the season</span></span>
 <span></span>
@@ -357,7 +391,7 @@ Attach them exactly as in any other survey type:</p>
 <div class="section level3">
 <h3 id="catch-rate-and-total-catch">Catch Rate and Total Catch<a class="anchor" aria-label="anchor" href="#catch-rate-and-total-catch"></a>
 </h3>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cpue</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
 <span><span class="va">cpue</span><span class="op">$</span><span class="va">estimates</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
@@ -378,7 +412,7 @@ producing a season-total catch with a combined standard error.</p>
 <div class="section level3">
 <h3 id="harvest-rate-and-total-harvest">Harvest Rate and Total Harvest<a class="anchor" aria-label="anchor" href="#harvest-rate-and-total-harvest"></a>
 </h3>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">harvest_rate</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_harvest_rate.html">estimate_harvest_rate</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
 <span><span class="va">harvest_rate</span><span class="op">$</span><span class="va">estimates</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
@@ -405,7 +439,7 @@ h circuit on a day with
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>T</mi><mi>d</mi></msub><mo>=</mo><mn>8</mn></mrow><annotation encoding="application/x-tex">T_d = 8</annotation></semantics></math>
 open hours.</p>
 <p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>E</mi><mo accent="true">̂</mo></mover><mi>d</mi></msub><mo>=</mo><mn>234</mn><mo>×</mo><mn>8</mn><mo>=</mo><mn>1</mn><mo>,</mo><mn>872</mn><mrow><mspace width="0.333em"></mspace><mtext mathvariant="normal"> angler-hours</mtext></mrow></mrow><annotation encoding="application/x-tex">\hat{E}_d = 234 \times 8 = 1{,}872 \text{ angler-hours}</annotation></semantics></math></p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cal_pope</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  date       <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2024-06-01"</span>, <span class="st">"2024-06-02"</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  day_type   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"weekday"</span>, <span class="st">"weekday"</span><span class="op">)</span>,</span>
@@ -443,7 +477,7 @@ decomposes variance into between-day and within-day components via the
 Rasmussen (1994) two-stage formula.</p>
 <p>For the morning–evening case, use <code>count_time_col</code> to
 identify the circuit within each day:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Two circuits per day (morning and evening traversals)</span></span>
 <span><span class="va">cal_2p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  date       <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2024-07-01"</span>, <span class="st">"2024-07-02"</span>, <span class="st">"2024-07-06"</span>, <span class="st">"2024-07-07"</span><span class="op">)</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span>,</span>
@@ -486,7 +520,7 @@ day.</p>
 <div class="section level2">
 <h2 id="assemble-a-summary-report">Assemble a Summary Report<a class="anchor" aria-label="anchor" href="#assemble-a-summary-report"></a>
 </h2>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">summary_tbl</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/season_summary.html">season_summary</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  effort  <span class="op">=</span> <span class="va">effort</span>,</span>
 <span>  catch   <span class="op">=</span> <span class="va">total_catch</span>,</span>

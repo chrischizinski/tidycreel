@@ -99,6 +99,39 @@ design
 #> Sections: "none"
 ```
 
+### Scheduling Circuit Start Times
+
+Before field work begins, randomise the circuit start time for each
+survey day using
+[`generate_progressive_start()`](https://chrischizinski.github.io/tidycreel/reference/generate_progressive_start.md).
+This ensures the count is unbiased with respect to time-of-day effort
+patterns. Two strategies are available:
+
+- `"discrete"` (default): start drawn from the valid τ-aligned offsets —
+  avoids mid-day over-representation caused by the common error.
+- `"wraparound"`: start drawn from ; circuit may wrap past the end of
+  the survey day.
+
+``` r
+
+starts <- generate_progressive_start(
+  open_start    = "06:00",
+  open_end      = "16:00",
+  circuit_time  = 2,          # τ = 2 h; T = 10 h → k = 5 valid starts
+  strategy      = "discrete",
+  n             = nrow(calendar),
+  seed          = 42
+)
+starts
+```
+
+*(no date column to render calendar)*
+
+The returned `creel_schedule` records `circuit_start`, `circuit_end`,
+`is_wrapped`, and `direction` (`"forward"` / `"reverse"`) for each
+survey day. Record the scheduled start and direction in your field
+protocol — both are required for unbiased estimation.
+
 ### Count Data
 
 Each row is one circuit traversal per sampled day. The `shift_hours`

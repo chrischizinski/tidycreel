@@ -568,6 +568,33 @@ ct_fixed
 
 *(no date column to render calendar)*
 
+### Progressive Count Strategy
+
+Progressive surveys require a randomised circuit start time in addition
+to a day-level schedule. Use
+[`generate_progressive_start()`](https://chrischizinski.github.io/tidycreel/reference/generate_progressive_start.md)
+to draw start times that avoid the mid-day bias common in hand-crafted
+schedules.
+
+``` r
+
+prog_starts <- generate_progressive_start(
+  open_start   = "06:00",
+  open_end     = "16:00",   # T = 10 h
+  circuit_time = 2,          # τ = 2 h → k = 5 discrete start offsets
+  strategy     = "discrete",
+  n            = 10,
+  seed         = 99
+)
+prog_starts
+```
+
+*(no date column to render calendar)*
+
+Use `strategy = "wraparound"` when τ does not divide T evenly. The
+`direction` column (`"forward"` / `"reverse"`) must be recorded in the
+field protocol.
+
 ### Exporting Count Time Schedules
 
 [`generate_count_times()`](https://chrischizinski.github.io/tidycreel/reference/generate_count_times.md)
