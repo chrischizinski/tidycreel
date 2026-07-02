@@ -3002,6 +3002,17 @@ estimate_cpue_total <- function(design, variance_method, conf_level, estimator =
   catch_col <- design$catch_col
   effort_col <- design$angler_effort_col
 
+  # Filter out NA-effort interviews with warning (must precede zero-effort filter)
+  na_effort <- is.na(interviews_data[[effort_col]])
+  if (any(na_effort)) {
+    n_na <- sum(na_effort) # nolint: object_usage_linter
+    cli::cli_warn(c(
+      "{n_na} interview{?s} with missing effort excluded from CPUE estimation.",
+      "i" = "Interviews must have non-NA effort values for CPUE estimation."
+    ))
+    interviews_data <- interviews_data[!na_effort, , drop = FALSE]
+  }
+
   # Filter out zero-effort interviews with warning
   zero_effort <- !is.na(interviews_data[[effort_col]]) & interviews_data[[effort_col]] == 0
   if (any(zero_effort)) {
@@ -3129,6 +3140,17 @@ estimate_cpue_grouped <- function(
   interviews_data <- design$interviews
   catch_col <- design$catch_col
   effort_col <- design$angler_effort_col
+
+  # Filter out NA-effort interviews with warning (must precede zero-effort filter)
+  na_effort <- is.na(interviews_data[[effort_col]])
+  if (any(na_effort)) {
+    n_na <- sum(na_effort) # nolint: object_usage_linter
+    cli::cli_warn(c(
+      "{n_na} interview{?s} with missing effort excluded from CPUE estimation.",
+      "i" = "Interviews must have non-NA effort values for CPUE estimation."
+    ))
+    interviews_data <- interviews_data[!na_effort, , drop = FALSE]
+  }
 
   # Filter out zero-effort interviews with warning
   zero_effort <- !is.na(interviews_data[[effort_col]]) & interviews_data[[effort_col]] == 0
@@ -3354,8 +3376,23 @@ compute_stratum_product_sum <- function(
   stratum_by_vars,
   interview_by_vars,
   conf_level,
-  rate_suffix = "rate"
+  rate_suffix = "rate",
+  product_variance = "goodman",
+  ci_type = "symmetric"
 ) {
+  # Vectorized CI builder: log-transform for positive totals, else Wald with clamp
+  .ci <- function(est, se_val, z) {
+    if (ci_type == "log") {
+      use_log <- !is.na(est) & est > 0
+      lower <- ifelse(use_log, est * exp(-z * se_val / est), pmax(0, est - z * se_val))
+      upper <- ifelse(use_log, est * exp(z * se_val / est), est + z * se_val)
+    } else {
+      lower <- pmax(0, est - z * se_val)
+      upper <- est + z * se_val
+    }
+    list(lower = lower, upper = upper)
+  }
+
   # t-distribution df: total interviews minus number of strata (conservative)
   n_strata_ci <- if (length(stratum_by_vars) == 0L) 1L else max(1L, nrow(rate_df))
   df_ci <- max(1L, sum(rate_df$n, na.rm = TRUE) - n_strata_ci)
@@ -3368,12 +3405,15 @@ compute_stratum_product_sum <- function(
     e_se <- effort_df$se
     r_se <- rate_df$se
     est <- e_est * r_est
-    pv <- (e_est^2 * r_se^2) + (r_est^2 * e_se^2)
+    cross_term <- if (product_variance == "goodman") r_se^2 * e_se^2 else 0
+    pv <- (e_est^2 * r_se^2) + (r_est^2 * e_se^2) + cross_term
+    se_val <- sqrt(pv)
+    ci <- .ci(est, se_val, z)
     return(data.frame(
       estimate = est,
-      se = sqrt(pv),
-      ci_lower = est - z * sqrt(pv),
-      ci_upper = est + z * sqrt(pv),
+      se = se_val,
+      ci_lower = ci$lower,
+      ci_upper = ci$upper,
       n = rate_df$n,
       stringsAsFactors = FALSE
     ))
@@ -3396,8 +3436,14 @@ compute_stratum_product_sum <- function(
 
   # Per-stratum delta-method products and variances
   merged$.est_sh <- merged[[e_col]] * merged[[r_col]]
+  cross_term_sh <- if (product_variance == "goodman") {
+    merged[[se_r]]^2 * merged[[se_e]]^2
+  } else {
+    rep(0, nrow(merged))
+  }
   merged$.var_sh <- (merged[[e_col]]^2 * merged[[se_r]]^2) +
-    (merged[[r_col]]^2 * merged[[se_e]]^2)
+    (merged[[r_col]]^2 * merged[[se_e]]^2) +
+    cross_term_sh
   merged$.n_sh <- merged[[n_r]]
 
   if (is.null(interview_by_vars)) {
@@ -3405,26 +3451,40 @@ compute_stratum_product_sum <- function(
     est <- sum(merged$.est_sh)
     pv <- sum(merged$.var_sh)
     n <- sum(merged$.n_sh)
+    se_val <- sqrt(pv)
+    ci <- .ci(est, se_val, z)
     data.frame(
       estimate = est,
-      se = sqrt(pv),
-      ci_lower = est - z * sqrt(pv),
-      ci_upper = est + z * sqrt(pv),
+      se = se_val,
+      ci_lower = ci$lower,
+      ci_upper = ci$upper,
       n = as.integer(n),
       stringsAsFactors = FALSE
     )
   } else {
-    # Sum strata within each interview_by_vars group
+    # Sum strata within each interview_by_vars group; compute per-group df (#94)
     agg <- stats::aggregate(
       cbind(.est_sh, .var_sh, .n_sh) ~ .,
       data = merged[c(interview_by_vars, ".est_sh", ".var_sh", ".n_sh")],
       FUN = sum
     )
+    # Count strata per group for per-group df
+    k_strata <- stats::aggregate(
+      rep(1L, nrow(merged)),
+      by = merged[interview_by_vars],
+      FUN = sum
+    )
+    names(k_strata)[ncol(k_strata)] <- ".k_strata"
+    agg <- merge(agg, k_strata, by = interview_by_vars, sort = FALSE)
+    df_per_group <- pmax(1L, as.integer(agg$.n_sh) - as.integer(agg$.k_strata))
+    z_per_group <- stats::qt(1 - (1 - conf_level) / 2, df = df_per_group)
+
     sp_result <- tibble::as_tibble(agg[interview_by_vars])
     sp_result$estimate <- agg$.est_sh
     sp_result$se <- sqrt(agg$.var_sh)
-    sp_result$ci_lower <- sp_result$estimate - z * sp_result$se
-    sp_result$ci_upper <- sp_result$estimate + z * sp_result$se
+    ci <- .ci(sp_result$estimate, sp_result$se, z_per_group)
+    sp_result$ci_lower <- ci$lower
+    sp_result$ci_upper <- ci$upper
     sp_result$n <- as.integer(agg$.n_sh)
     sp_result
   }
@@ -3634,6 +3694,17 @@ estimate_harvest_total <- function(design, variance_method, conf_level) {
   harvest_col <- design$harvest_col
   effort_col <- design$angler_effort_col
 
+  # Filter out NA-effort interviews with warning (must precede zero-effort filter)
+  na_effort <- is.na(interviews_data[[effort_col]])
+  if (any(na_effort)) {
+    n_na <- sum(na_effort) # nolint: object_usage_linter
+    cli::cli_warn(c(
+      "{n_na} interview{?s} with missing effort excluded from harvest estimation.",
+      "i" = "Interviews must have non-NA effort values for HPUE estimation."
+    ))
+    interviews_data <- interviews_data[!na_effort, , drop = FALSE]
+  }
+
   # Filter out zero-effort interviews with warning
   zero_effort <- !is.na(interviews_data[[effort_col]]) & interviews_data[[effort_col]] == 0
   if (any(zero_effort)) {
@@ -3666,7 +3737,7 @@ estimate_harvest_total <- function(design, variance_method, conf_level) {
   }
 
   # Build temporary survey design from filtered data if filtering occurred
-  needs_rebuild <- any(zero_effort) || any(na_harvest)
+  needs_rebuild <- any(na_effort) || any(zero_effort) || any(na_harvest)
   if (needs_rebuild) {
     strata_cols <- design$strata_cols
     strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0) {
@@ -3727,6 +3798,17 @@ estimate_harvest_grouped <- function(design, by_vars, variance_method, conf_leve
   harvest_col <- design$harvest_col
   effort_col <- design$angler_effort_col
 
+  # Filter out NA-effort interviews with warning (must precede zero-effort filter)
+  na_effort <- is.na(interviews_data[[effort_col]])
+  if (any(na_effort)) {
+    n_na <- sum(na_effort) # nolint: object_usage_linter
+    cli::cli_warn(c(
+      "{n_na} interview{?s} with missing effort excluded from harvest estimation.",
+      "i" = "Interviews must have non-NA effort values for HPUE estimation."
+    ))
+    interviews_data <- interviews_data[!na_effort, , drop = FALSE]
+  }
+
   # Filter out zero-effort interviews with warning
   zero_effort <- !is.na(interviews_data[[effort_col]]) & interviews_data[[effort_col]] == 0
   if (any(zero_effort)) {
@@ -3759,7 +3841,7 @@ estimate_harvest_grouped <- function(design, by_vars, variance_method, conf_leve
   }
 
   # Build temporary survey design from filtered data if filtering occurred
-  needs_rebuild <- any(zero_effort) || any(na_harvest)
+  needs_rebuild <- any(na_effort) || any(zero_effort) || any(na_harvest)
   if (needs_rebuild) {
     strata_cols <- design$strata_cols
     strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0) {

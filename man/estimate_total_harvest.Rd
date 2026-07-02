@@ -12,7 +12,9 @@ estimate_total_harvest(
   target = c("sampled_days", "stratum_total", "period_total"),
   aggregate_sections = TRUE,
   missing_sections = "warn",
-  ci_method = c("delta", "bootstrap")
+  ci_method = c("delta", "bootstrap"),
+  product_variance = c("goodman", "first_order"),
+  ci_type = c("symmetric", "log")
 )
 }
 \arguments{
@@ -53,6 +55,15 @@ raises a hard error.}
 delta-method CIs. \code{"bootstrap"} additionally returns
 \code{ci_lo_boot}/\code{ci_hi_boot} using survey bootstrap resampling.
 Only applies to bus-route/ice designs.}
+
+\item{product_variance}{character. Variance formula for the product
+\eqn{E \times H}. \code{"goodman"} (default) uses the exact Goodman
+(1960) three-term formula. \code{"first_order"} drops the cross-term.}
+
+\item{ci_type}{character. Shape of the confidence interval.
+\code{"symmetric"} (default) gives \eqn{\hat\theta \pm z \cdot SE}
+clamped at zero. \code{"log"} applies a log-transform for a
+strictly positive CI.}
 }
 \value{
 A creel_estimates S3 object with method = "product-total-harvest"
@@ -69,8 +80,8 @@ for independent estimates is approximately:
 
 \deqn{Var(E \times H) \approx E^2 \cdot Var(H) + H^2 \cdot Var(E)}
 
-The function uses survey::svycontrast() to compute variance automatically
-via symbolic differentiation and Taylor series approximation.
+Variance is computed via a stratified delta-method sum in
+\code{compute_stratum_product_sum()}, not via \code{survey::svycontrast()}.
 
 \strong{Sectioned designs:}
 When \code{\link{add_sections}} has been called on the design, each section

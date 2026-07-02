@@ -26,7 +26,7 @@
       # A tibble: 1 x 6
         parameter estimate    se ci_lower ci_upper     n
         <chr>        <dbl> <dbl>    <dbl>    <dbl> <int>
-      1 N_hat         931.  232.     477.    1385.    10
+      1 N_hat         931.  232.     407.    1455.    10
 
 # SNAP-BOOT-04: estimate_mr_harvest default output is stable
 
@@ -36,5 +36,5 @@
       # A tibble: 1 x 6
         parameter     estimate    se ci_lower ci_upper     n
         <chr>            <dbl> <dbl>    <dbl>    <dbl> <int>
-      1 total_harvest     326.  81.1     167.     485.    NA
+      1 total_harvest     326.  81.1     142.     509.    NA
 

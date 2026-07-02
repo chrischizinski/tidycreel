@@ -81,7 +81,6 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
     ))
   }
 
-  z <- stats::qnorm(1 - (1 - conf_level) / 2)
   min_n_se <- 2L
 
   # --- ungrouped case ---
@@ -111,6 +110,7 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
     var_trips <- se_E^2 / L^2 + E^2 * se_L^2 / L^4
     se_trips <- sqrt(var_trips)
     trips <- E / L
+    z <- stats::qt(1 - (1 - conf_level) / 2, df = max(1L, n_int - 1L))
 
     estimates_df <- tibble::tibble(
       estimate = trips,
@@ -193,20 +193,27 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
   trips <- E / L
   se_trips <- sqrt(var_trips)
 
+  # Per-stratum t critical values (df = n_interviews - 1 per stratum)
+  z_vec <- stats::qt(1 - (1 - conf_level) / 2, df = pmax(1L, joined$n_interviews - 1L))
+
   # Per-stratum rows
   stratum_rows <- tibble::tibble(
     dplyr::select(joined, dplyr::all_of(effort$by_vars)),
     estimate = trips,
     se = se_trips,
-    ci_lower = trips - z * se_trips,
-    ci_upper = trips + z * se_trips,
+    ci_lower = trips - z_vec * se_trips,
+    ci_upper = trips + z_vec * se_trips,
     n = joined$n_interviews
   )
 
-  # .overall row: additive aggregate
+  # .overall row: additive aggregate; df = sum(n) - n_strata
   overall_est <- sum(trips)
   overall_var <- sum(var_trips)
   overall_se <- sqrt(overall_var)
+  z_overall <- stats::qt(
+    1 - (1 - conf_level) / 2,
+    df = max(1L, sum(joined$n_interviews) - nrow(joined))
+  )
 
   overall_vals <- stats::setNames(
     rep(".overall", length(effort$by_vars)),
@@ -215,8 +222,8 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
   overall_row <- tibble::as_tibble(as.list(overall_vals))
   overall_row$estimate <- overall_est
   overall_row$se <- overall_se
-  overall_row$ci_lower <- overall_est - z * overall_se
-  overall_row$ci_upper <- overall_est + z * overall_se
+  overall_row$ci_lower <- overall_est - z_overall * overall_se
+  overall_row$ci_upper <- overall_est + z_overall * overall_se
   overall_row$n <- sum(joined$n_interviews)
 
   estimates_df <- dplyr::bind_rows(stratum_rows, overall_row)

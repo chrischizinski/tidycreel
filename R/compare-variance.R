@@ -240,12 +240,26 @@ resolve_variance_estimator <- function(method_str) {
       suppressWarnings(estimate_effort(design, ...)) # nolint: object_usage_linter
     })
   }
-  # Fallback: try estimate_catch_rate
-  cli::cli_warn(c(
+  if (grepl("product.total.harvest", method_str, ignore.case = TRUE)) {
+    return(function(design, ...) {
+      suppressWarnings(estimate_total_harvest(design, ...)) # nolint: object_usage_linter
+    })
+  }
+  if (grepl("product.total.release", method_str, ignore.case = TRUE)) {
+    return(function(design, ...) {
+      suppressWarnings(estimate_total_release(design, ...)) # nolint: object_usage_linter
+    })
+  }
+  if (grepl("product.total", method_str, ignore.case = TRUE)) {
+    return(function(design, ...) {
+      suppressWarnings(estimate_total_catch(design, ...)) # nolint: object_usage_linter
+    })
+  }
+  # Fallback: unsupported method — stop with a clear message
+  cli::cli_abort(c(
     "Cannot determine estimator from method string {.val {method_str}}.",
-    "i" = "Defaulting to {.fn estimate_catch_rate} for re-estimation."
+    "i" = "Supported method patterns: cpue/hpue/rpue/catch.rate/ratio, effort, product.total."
   ))
-  function(design, ...) suppressWarnings(estimate_catch_rate(design, ...)) # nolint: object_usage_linter
 }
 
 #' Print a creel_variance_comparison object
