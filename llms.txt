@@ -27,14 +27,18 @@ devtools::install_github("chrischizinski/tidycreel")
 
 ## Survey Types
 
-##### Instantaneous Count
+Survey Type
+
+### Instantaneous Count
 
 Stratified effort estimation from periodic angler counts.
 
 [Getting Started
 →](https://chrischizinski.github.io/tidycreel/articles/tidycreel.html)
 
-##### Bus-Route
+Survey Type
+
+### Bus-Route
 
 PPS site selection with Horvitz-Thompson estimators and enumeration
 expansion.
@@ -42,14 +46,18 @@ expansion.
 [Bus-Route vignette
 →](https://chrischizinski.github.io/tidycreel/articles/bus-route-surveys.html)
 
-##### Ice Fishing
+Survey Type
+
+### Ice Fishing
 
 Degenerate bus-route design with certainty site sampling.
 
 [Ice Fishing vignette
 →](https://chrischizinski.github.io/tidycreel/articles/ice-fishing.html)
 
-##### Camera-Monitored
+Survey Type
+
+### Camera-Monitored
 
 Counter and ingress-egress preprocessing, NB GLMM count imputation, and
 camera effort indexing.
@@ -57,7 +65,9 @@ camera effort indexing.
 [Camera Survey vignette
 →](https://chrischizinski.github.io/tidycreel/articles/camera-surveys.html)
 
-##### Aerial Survey
+Survey Type
+
+### Aerial Survey
 
 Single-overflight effort estimation with calibrated open-hours scaling.
 
