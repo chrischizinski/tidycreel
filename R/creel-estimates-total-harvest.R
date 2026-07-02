@@ -46,8 +46,8 @@
 #'
 #' \deqn{Var(E \times H) \approx E^2 \cdot Var(H) + H^2 \cdot Var(E)}
 #'
-#' The function uses survey::svycontrast() to compute variance automatically
-#' via symbolic differentiation and Taylor series approximation.
+#' Variance is computed via a stratified delta-method sum in
+#' \code{compute_stratum_product_sum()}, not via \code{survey::svycontrast()}.
 #'
 #' \strong{Sectioned designs:}
 #' When \code{\link{add_sections}} has been called on the design, each section
@@ -536,7 +536,7 @@ estimate_total_harvest_sections <- function(
         effort_se <- effort_res$estimates$se
         hpue_se <- hpue_res$estimates$se
         sec_estimate <- effort_est * hpue_est
-        sec_var <- (effort_est^2 * hpue_se^2) + (hpue_est^2 * effort_se^2)
+        sec_var <- (effort_est^2 * hpue_se^2) + (hpue_est^2 * effort_se^2) + (hpue_se^2 * effort_se^2)
         sec_se <- sqrt(sec_var)
         sec_n <- hpue_res$estimates$n
         z_val <- stats::qt(1 - (1 - conf_level) / 2, df = max(1L, sec_n - 1L))

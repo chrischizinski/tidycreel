@@ -3002,6 +3002,17 @@ estimate_cpue_total <- function(design, variance_method, conf_level, estimator =
   catch_col <- design$catch_col
   effort_col <- design$angler_effort_col
 
+  # Filter out NA-effort interviews with warning (must precede zero-effort filter)
+  na_effort <- is.na(interviews_data[[effort_col]])
+  if (any(na_effort)) {
+    n_na <- sum(na_effort) # nolint: object_usage_linter
+    cli::cli_warn(c(
+      "{n_na} interview{?s} with missing effort excluded from CPUE estimation.",
+      "i" = "Interviews must have non-NA effort values for CPUE estimation."
+    ))
+    interviews_data <- interviews_data[!na_effort, , drop = FALSE]
+  }
+
   # Filter out zero-effort interviews with warning
   zero_effort <- !is.na(interviews_data[[effort_col]]) & interviews_data[[effort_col]] == 0
   if (any(zero_effort)) {
@@ -3129,6 +3140,17 @@ estimate_cpue_grouped <- function(
   interviews_data <- design$interviews
   catch_col <- design$catch_col
   effort_col <- design$angler_effort_col
+
+  # Filter out NA-effort interviews with warning (must precede zero-effort filter)
+  na_effort <- is.na(interviews_data[[effort_col]])
+  if (any(na_effort)) {
+    n_na <- sum(na_effort) # nolint: object_usage_linter
+    cli::cli_warn(c(
+      "{n_na} interview{?s} with missing effort excluded from CPUE estimation.",
+      "i" = "Interviews must have non-NA effort values for CPUE estimation."
+    ))
+    interviews_data <- interviews_data[!na_effort, , drop = FALSE]
+  }
 
   # Filter out zero-effort interviews with warning
   zero_effort <- !is.na(interviews_data[[effort_col]]) & interviews_data[[effort_col]] == 0
@@ -3368,7 +3390,7 @@ compute_stratum_product_sum <- function(
     e_se <- effort_df$se
     r_se <- rate_df$se
     est <- e_est * r_est
-    pv <- (e_est^2 * r_se^2) + (r_est^2 * e_se^2)
+    pv <- (e_est^2 * r_se^2) + (r_est^2 * e_se^2) + (r_se^2 * e_se^2)
     return(data.frame(
       estimate = est,
       se = sqrt(pv),
@@ -3397,7 +3419,8 @@ compute_stratum_product_sum <- function(
   # Per-stratum delta-method products and variances
   merged$.est_sh <- merged[[e_col]] * merged[[r_col]]
   merged$.var_sh <- (merged[[e_col]]^2 * merged[[se_r]]^2) +
-    (merged[[r_col]]^2 * merged[[se_e]]^2)
+    (merged[[r_col]]^2 * merged[[se_e]]^2) +
+    (merged[[se_r]]^2 * merged[[se_e]]^2)
   merged$.n_sh <- merged[[n_r]]
 
   if (is.null(interview_by_vars)) {
@@ -3634,6 +3657,17 @@ estimate_harvest_total <- function(design, variance_method, conf_level) {
   harvest_col <- design$harvest_col
   effort_col <- design$angler_effort_col
 
+  # Filter out NA-effort interviews with warning (must precede zero-effort filter)
+  na_effort <- is.na(interviews_data[[effort_col]])
+  if (any(na_effort)) {
+    n_na <- sum(na_effort) # nolint: object_usage_linter
+    cli::cli_warn(c(
+      "{n_na} interview{?s} with missing effort excluded from harvest estimation.",
+      "i" = "Interviews must have non-NA effort values for HPUE estimation."
+    ))
+    interviews_data <- interviews_data[!na_effort, , drop = FALSE]
+  }
+
   # Filter out zero-effort interviews with warning
   zero_effort <- !is.na(interviews_data[[effort_col]]) & interviews_data[[effort_col]] == 0
   if (any(zero_effort)) {
@@ -3666,7 +3700,7 @@ estimate_harvest_total <- function(design, variance_method, conf_level) {
   }
 
   # Build temporary survey design from filtered data if filtering occurred
-  needs_rebuild <- any(zero_effort) || any(na_harvest)
+  needs_rebuild <- any(na_effort) || any(zero_effort) || any(na_harvest)
   if (needs_rebuild) {
     strata_cols <- design$strata_cols
     strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0) {
@@ -3727,6 +3761,17 @@ estimate_harvest_grouped <- function(design, by_vars, variance_method, conf_leve
   harvest_col <- design$harvest_col
   effort_col <- design$angler_effort_col
 
+  # Filter out NA-effort interviews with warning (must precede zero-effort filter)
+  na_effort <- is.na(interviews_data[[effort_col]])
+  if (any(na_effort)) {
+    n_na <- sum(na_effort) # nolint: object_usage_linter
+    cli::cli_warn(c(
+      "{n_na} interview{?s} with missing effort excluded from harvest estimation.",
+      "i" = "Interviews must have non-NA effort values for HPUE estimation."
+    ))
+    interviews_data <- interviews_data[!na_effort, , drop = FALSE]
+  }
+
   # Filter out zero-effort interviews with warning
   zero_effort <- !is.na(interviews_data[[effort_col]]) & interviews_data[[effort_col]] == 0
   if (any(zero_effort)) {
@@ -3759,7 +3804,7 @@ estimate_harvest_grouped <- function(design, by_vars, variance_method, conf_leve
   }
 
   # Build temporary survey design from filtered data if filtering occurred
-  needs_rebuild <- any(zero_effort) || any(na_harvest)
+  needs_rebuild <- any(na_effort) || any(zero_effort) || any(na_harvest)
   if (needs_rebuild) {
     strata_cols <- design$strata_cols
     strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0) {
