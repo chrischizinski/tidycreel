@@ -504,7 +504,7 @@ estimate_total_release_sections <- function(
         effort_se <- effort_res$estimates$se
         rpue_se <- rpue_res$estimates$se
         sec_estimate <- effort_est * rpue_est
-        sec_var <- (effort_est^2 * rpue_se^2) + (rpue_est^2 * effort_se^2)
+        sec_var <- (effort_est^2 * rpue_se^2) + (rpue_est^2 * effort_se^2) + (rpue_se^2 * effort_se^2)
         sec_se <- sqrt(sec_var)
         sec_n <- rpue_res$estimates$n
         z_val <- stats::qt(1 - (1 - conf_level) / 2, df = max(1L, sec_n - 1L))

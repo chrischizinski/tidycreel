@@ -492,10 +492,11 @@ test_that("total catch SE matches stratified-sum delta method formula", {
   effort_pooled <- suppressWarnings(estimate_effort(d1)) # nolint: object_usage_linter
   cpue_pooled <- suppressWarnings(suppressMessages(estimate_catch_rate(d1))) # nolint: object_usage_linter
 
-  # Single stratum: stratified-sum delta formula == pooled delta formula
+  # Single stratum: stratified-sum delta formula == pooled delta formula (Goodman cross-term included)
   manual_se <- sqrt(
     (effort_pooled$estimates$estimate^2 * cpue_pooled$estimates$se^2) +
-      (cpue_pooled$estimates$estimate^2 * effort_pooled$estimates$se^2)
+      (cpue_pooled$estimates$estimate^2 * effort_pooled$estimates$se^2) +
+      (cpue_pooled$estimates$se^2 * effort_pooled$estimates$se^2)
   )
   expect_equal(result$estimates$se, manual_se, tolerance = 1e-6)
 })
