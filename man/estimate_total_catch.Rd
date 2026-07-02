@@ -14,7 +14,9 @@ estimate_total_catch(
   aggregate_sections = TRUE,
   missing_sections = "warn",
   verbose = FALSE,
-  ci_method = c("delta", "bootstrap")
+  ci_method = c("delta", "bootstrap"),
+  product_variance = c("goodman", "first_order"),
+  ci_type = c("symmetric", "log")
 )
 }
 \arguments{
@@ -61,6 +63,18 @@ which estimator path was used. Default FALSE.}
 delta-method CIs. \code{"bootstrap"} additionally returns
 \code{ci_lo_boot}/\code{ci_hi_boot} using survey bootstrap resampling.
 Only applies to bus-route/ice designs.}
+
+\item{product_variance}{character. Variance formula for the product
+\eqn{E \times C}. \code{"goodman"} (default) uses the exact Goodman
+(1960) three-term formula \eqn{E^2 Var(C) + C^2 Var(E) + Var(E)Var(C)}.
+\code{"first_order"} drops the cross-term (classical two-term delta
+method).}
+
+\item{ci_type}{character. Shape of the confidence interval.
+\code{"symmetric"} (default) gives the standard \eqn{\hat\theta \pm z
+  \cdot SE} interval clamped at zero. \code{"log"} applies a
+log-transform so the CI stays positive:
+\eqn{[\hat\theta e^{-z SE/\hat\theta},\; \hat\theta e^{z SE/\hat\theta}]}.}
 }
 \value{
 A creel_estimates S3 object with method = "product-total-catch".
@@ -82,8 +96,8 @@ for independent estimates is approximately:
 
 \deqn{Var(E \times C) \approx E^2 \cdot Var(C) + C^2 \cdot Var(E)}
 
-The function uses survey::svycontrast() to compute variance automatically
-via symbolic differentiation and Taylor series approximation.
+Variance is computed via a stratified delta-method sum in
+\code{compute_stratum_product_sum()}, not via \code{survey::svycontrast()}.
 
 \strong{Sectioned designs:}
 When \code{\link{add_sections}} has been called on the design, each section
