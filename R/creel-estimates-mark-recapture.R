@@ -151,8 +151,8 @@ estimate_angler_n <- function(
     var_N <- ((M + 1) * (n + 1) * (M - m) * (n - m)) / ((m + 2) * (m + 1)^2)
     se_N <- sqrt(var_N)
 
-    # --- CI ---
-    z <- stats::qnorm(1 - (1 - conf_level) / 2)
+    # --- CI (t-distribution; df = m - 1 based on recapture count) ---
+    z <- stats::qt(1 - (1 - conf_level) / 2, df = max(1L, m - 1L))
     ci_lo <- N_hat - z * se_N
     ci_hi <- N_hat + z * se_N
 
@@ -196,8 +196,8 @@ estimate_angler_n <- function(
     var_N <- N_hat^2 * (1 / m - 1 / n)
     se_N <- sqrt(var_N)
 
-    # --- CI ---
-    z <- stats::qnorm(1 - (1 - conf_level) / 2)
+    # --- CI (t-distribution; df = m - 1 based on recapture count) ---
+    z <- stats::qt(1 - (1 - conf_level) / 2, df = max(1L, m - 1L))
     ci_lo <- N_hat - z * se_N
     ci_hi <- N_hat + z * se_N
 
@@ -255,7 +255,7 @@ estimate_angler_n <- function(
       }
       ci_hi <- if (lo_m == 0L) Inf else sum_Mn / lo_m
     } else {
-      z <- stats::qnorm(1 - (1 - conf_level) / 2)
+      z <- stats::qt(1 - (1 - conf_level) / 2, df = max(1L, sum_m - 1L))
       inv_N <- 1 / N_hat
       ci_lo <- 1 / (inv_N + z * se_inv)
       ci_hi <- 1 / (inv_N - z * se_inv)
@@ -393,8 +393,9 @@ estimate_mr_harvest <- function(
   harvest_hat <- N_hat * harvest_rate
   se_H <- harvest_rate * se_N
 
-  # --- CI ---
-  z <- stats::qnorm(1 - (1 - conf_level) / 2)
+  # --- CI (t-distribution; df from N_hat recapture count) ---
+  n_mr <- as.integer(angler_n$estimates$n)
+  z <- stats::qt(1 - (1 - conf_level) / 2, df = max(1L, n_mr - 1L))
   ci_lo <- harvest_hat - z * se_H
   ci_hi <- harvest_hat + z * se_H
 
