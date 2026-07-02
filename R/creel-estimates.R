@@ -3391,11 +3391,12 @@ compute_stratum_product_sum <- function(
     r_se <- rate_df$se
     est <- e_est * r_est
     pv <- (e_est^2 * r_se^2) + (r_est^2 * e_se^2) + (r_se^2 * e_se^2)
+    se_val <- sqrt(pv)
     return(data.frame(
       estimate = est,
-      se = sqrt(pv),
-      ci_lower = est - z * sqrt(pv),
-      ci_upper = est + z * sqrt(pv),
+      se = se_val,
+      ci_lower = pmax(0, est - z * se_val),
+      ci_upper = est + z * se_val,
       n = rate_df$n,
       stringsAsFactors = FALSE
     ))
@@ -3428,26 +3429,38 @@ compute_stratum_product_sum <- function(
     est <- sum(merged$.est_sh)
     pv <- sum(merged$.var_sh)
     n <- sum(merged$.n_sh)
+    se_val <- sqrt(pv)
     data.frame(
       estimate = est,
-      se = sqrt(pv),
-      ci_lower = est - z * sqrt(pv),
-      ci_upper = est + z * sqrt(pv),
+      se = se_val,
+      ci_lower = pmax(0, est - z * se_val),
+      ci_upper = est + z * se_val,
       n = as.integer(n),
       stringsAsFactors = FALSE
     )
   } else {
-    # Sum strata within each interview_by_vars group
+    # Sum strata within each interview_by_vars group; compute per-group df (#94)
     agg <- stats::aggregate(
       cbind(.est_sh, .var_sh, .n_sh) ~ .,
       data = merged[c(interview_by_vars, ".est_sh", ".var_sh", ".n_sh")],
       FUN = sum
     )
+    # Count strata per group for per-group df
+    k_strata <- stats::aggregate(
+      rep(1L, nrow(merged)),
+      by = merged[interview_by_vars],
+      FUN = sum
+    )
+    names(k_strata)[ncol(k_strata)] <- ".k_strata"
+    agg <- merge(agg, k_strata, by = interview_by_vars, sort = FALSE)
+    df_per_group <- pmax(1L, as.integer(agg$.n_sh) - as.integer(agg$.k_strata))
+    z_per_group <- stats::qt(1 - (1 - conf_level) / 2, df = df_per_group)
+
     sp_result <- tibble::as_tibble(agg[interview_by_vars])
     sp_result$estimate <- agg$.est_sh
     sp_result$se <- sqrt(agg$.var_sh)
-    sp_result$ci_lower <- sp_result$estimate - z * sp_result$se
-    sp_result$ci_upper <- sp_result$estimate + z * sp_result$se
+    sp_result$ci_lower <- pmax(0, sp_result$estimate - z_per_group * sp_result$se)
+    sp_result$ci_upper <- sp_result$estimate + z_per_group * sp_result$se
     sp_result$n <- as.integer(agg$.n_sh)
     sp_result
   }
