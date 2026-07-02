@@ -37,39 +37,44 @@ devtools::install_github("chrischizinski/tidycreel")
 ## Survey Types
 
 <div class="row mt-4 mb-4">
-<div class="col-md-4 mb-3">
-<div class="card h-100 border-0 bg-light p-3">
-<h5 class="text-primary">Instantaneous Count</h5>
+<div class="col-sm-6 col-lg-4 mb-3">
+<div class="tc-survey-card h-100">
+<div class="tc-card-type" aria-hidden="true">Survey Type</div>
+<h3>Instantaneous Count</h3>
 <p class="small">Stratified effort estimation from periodic angler counts.</p>
-<p class="small"><a href="https://chrischizinski.github.io/tidycreel/articles/tidycreel.html">Getting Started →</a></p>
+<p class="mb-0"><a class="tc-card-link" href="https://chrischizinski.github.io/tidycreel/articles/tidycreel.html">Getting Started <span aria-hidden="true">→</span></a></p>
 </div>
 </div>
-<div class="col-md-4 mb-3">
-<div class="card h-100 border-0 bg-light p-3">
-<h5 class="text-primary">Bus-Route</h5>
+<div class="col-sm-6 col-lg-4 mb-3">
+<div class="tc-survey-card h-100">
+<div class="tc-card-type" aria-hidden="true">Survey Type</div>
+<h3>Bus-Route</h3>
 <p class="small">PPS site selection with Horvitz-Thompson estimators and enumeration expansion.</p>
-<p class="small"><a href="https://chrischizinski.github.io/tidycreel/articles/bus-route-surveys.html">Bus-Route vignette →</a></p>
+<p class="mb-0"><a class="tc-card-link" href="https://chrischizinski.github.io/tidycreel/articles/bus-route-surveys.html">Bus-Route vignette <span aria-hidden="true">→</span></a></p>
 </div>
 </div>
-<div class="col-md-4 mb-3">
-<div class="card h-100 border-0 bg-light p-3">
-<h5 class="text-primary">Ice Fishing</h5>
+<div class="col-sm-6 col-lg-4 mb-3">
+<div class="tc-survey-card h-100">
+<div class="tc-card-type" aria-hidden="true">Survey Type</div>
+<h3>Ice Fishing</h3>
 <p class="small">Degenerate bus-route design with certainty site sampling.</p>
-<p class="small"><a href="https://chrischizinski.github.io/tidycreel/articles/ice-fishing.html">Ice Fishing vignette →</a></p>
+<p class="mb-0"><a class="tc-card-link" href="https://chrischizinski.github.io/tidycreel/articles/ice-fishing.html">Ice Fishing vignette <span aria-hidden="true">→</span></a></p>
 </div>
 </div>
-<div class="col-md-4 mb-3">
-<div class="card h-100 border-0 bg-light p-3">
-<h5 class="text-primary">Camera-Monitored</h5>
+<div class="col-sm-6 col-lg-4 mb-3">
+<div class="tc-survey-card h-100">
+<div class="tc-card-type" aria-hidden="true">Survey Type</div>
+<h3>Camera-Monitored</h3>
 <p class="small">Counter and ingress-egress preprocessing, NB GLMM count imputation, and camera effort indexing.</p>
-<p class="small"><a href="https://chrischizinski.github.io/tidycreel/articles/camera-surveys.html">Camera Survey vignette →</a></p>
+<p class="mb-0"><a class="tc-card-link" href="https://chrischizinski.github.io/tidycreel/articles/camera-surveys.html">Camera Survey vignette <span aria-hidden="true">→</span></a></p>
 </div>
 </div>
-<div class="col-md-4 mb-3">
-<div class="card h-100 border-0 bg-light p-3">
-<h5 class="text-primary">Aerial Survey</h5>
+<div class="col-sm-6 col-lg-4 mb-3">
+<div class="tc-survey-card h-100">
+<div class="tc-card-type" aria-hidden="true">Survey Type</div>
+<h3>Aerial Survey</h3>
 <p class="small">Single-overflight effort estimation with calibrated open-hours scaling.</p>
-<p class="small"><a href="https://chrischizinski.github.io/tidycreel/articles/aerial-surveys.html">Aerial vignette →</a> | <a href="https://chrischizinski.github.io/tidycreel/articles/aerial-glmm.html">GLMM variant →</a></p>
+<p class="mb-0"><a class="tc-card-link" href="https://chrischizinski.github.io/tidycreel/articles/aerial-surveys.html">Aerial vignette <span aria-hidden="true">→</span></a> | <a class="tc-card-link" href="https://chrischizinski.github.io/tidycreel/articles/aerial-glmm.html">GLMM variant <span aria-hidden="true">→</span></a></p>
 </div>
 </div>
 </div>

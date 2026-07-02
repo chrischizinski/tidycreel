@@ -21,7 +21,7 @@
 }
 
 a:hover {
-  color: #f47d65 !important;
+  color: #f47d65;
   text-decoration: underline;
   transition: color 0.3s ease-in-out;
 }
@@ -79,31 +79,71 @@ h1, h2, h3, h4, h5, h6 {
   color: #1f5e80;
 }
 
+h1, h2 {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
 /* =============================================================
-   PHASE 54 ADDITIONS BELOW THIS LINE
-   (hero section spacing, badge styling)
+   REDESIGN ADDITIONS
    ============================================================= */
 
-/* ============================================================= */
-/*   PHASE 54: Hero section & badge styling                      */
-/* ============================================================= */
-
-/* ---- Feature Grid Cards ---- */
-/* Bootstrap 5 card grid for the Survey Types section on the home page */
-.card.border-0.bg-light {
+/* ---- Survey Type Cards ---- */
+.tc-survey-card {
+  border-top: 3px solid #f47d65;
+  background: transparent;
   border-radius: 0.375rem;
-  box-shadow: 0 1px 4px rgba(27, 79, 114, 0.12);
-  transition: box-shadow 0.2s ease;
+  padding: 1.25rem;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
 
-.card.border-0.bg-light:hover {
-  box-shadow: 0 4px 12px rgba(27, 79, 114, 0.22);
+.tc-survey-card:hover {
+  box-shadow: 0 4px 16px rgba(11, 59, 94, 0.18);
+  transform: translateY(-2px);
 }
 
-.card.border-0.bg-light h5.text-primary {
-  color: #0b3b5e !important;
-  font-size: 1rem;
-  margin-bottom: 0.4rem;
+@media (prefers-reduced-motion: reduce) {
+  .tc-survey-card {
+    transition: none;
+  }
+  .tc-survey-card:hover {
+    transform: none;
+  }
+}
+
+.tc-card-type {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #5a6268;
+  margin-bottom: 0.35rem;
+}
+
+.tc-card-link {
+  color: #b83d29;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.tc-card-link:hover,
+.tc-card-link:focus {
+  color: #8c2d1e;
+  text-decoration: underline;
+}
+
+/* ---- Focus ring ---- */
+:focus-visible {
+  outline: 2px solid #f47d65;
+  outline-offset: 3px;
+}
+
+/* ---- Smooth scroll (reduced-motion safe) ---- */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 /* ---- Badge Block ---- */
