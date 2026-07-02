@@ -544,7 +544,7 @@ estimate_total_harvest_sections <- function(
           section = sec,
           estimate = sec_estimate,
           se = sec_se,
-          ci_lower = sec_estimate - z_val * sec_se,
+          ci_lower = pmax(0, sec_estimate - z_val * sec_se),
           ci_upper = sec_estimate + z_val * sec_se,
           n = sec_n,
           prop_of_lake_total = NA_real_,
@@ -569,11 +569,10 @@ estimate_total_harvest_sections <- function(
     lake_est <- sum(present_rows$estimate)
     lake_se <- sqrt(sum(present_rows$se^2))
 
-    full_svy <- get_variance_design(design$survey, variance_method) # nolint: object_usage_linter
-    df <- as.numeric(survey::degf(full_svy))
-    alpha <- 1 - conf_level
-    t_crit <- qt(1 - alpha / 2, df = df)
-    lake_ci_lower <- lake_est - t_crit * lake_se
+    # CI for lake total: sum(section n) - n_sections (consistent with compute_stratum_product_sum)
+    df_lake <- max(1L, sum(present_rows$n) - nrow(present_rows))
+    t_crit <- qt(1 - (1 - conf_level) / 2, df = df_lake)
+    lake_ci_lower <- pmax(0, lake_est - t_crit * lake_se)
     lake_ci_upper <- lake_est + t_crit * lake_se
 
     lake_row <- tibble::tibble(
