@@ -29,7 +29,13 @@ navbar:
   type: dark
   structure:
     left: [intro, reference, articles, news]
-    right: [github]
+    right: [book, github]
+  components:
+    book:
+      text: Book
+      icon: fa-book
+      href: https://modern-creel-surveys.netlify.app
+      aria-label: "Modern Creel Survey Analysis book"
 
 reference:
   - title: "Survey Design"
