@@ -181,8 +181,7 @@ print.creel_validation_report <- function(x, ...) {
   total_warn <- sum(x$n_warn)
   total_fail <- sum(x$n_fail)
 
-  overall <- if (total_fail > 0L) {
-    # nolint: object_usage_linter
+  overall <- if (total_fail > 0L) { # nolint: object_usage_linter
     "FAIL"
   } else if (total_warn > 0L) {
     "WARN"
@@ -207,8 +206,7 @@ print.creel_validation_report <- function(x, ...) {
       } else {
         "pass"
       }
-      sym <- if (status == "pass") {
-        # nolint: object_usage_linter
+      sym <- if (status == "pass") { # nolint: object_usage_linter
         cli::symbol$tick
       } else if (status == "warn") {
         cli::symbol$warning

@@ -64,13 +64,13 @@ though direction still must be.
 }
 \section{Common scheduling error}{
 
-Drawing the start time from \eqn{U[0, T - \tau]} is \strong{biased} — it makes
+Drawing the start time from \eqn{U[0, T - \tau]} is \strong{biased} -- it makes
 the middle of the survey day over-represented, introducing bias toward
 mid-day effort patterns. Both strategies here avoid this error.
 }
 
 \examples{
-# Discrete strategy: T = 10 h, tau = 2 h → k = 5 valid start times
+# Discrete strategy: T = 10 h, tau = 2 h -> k = 5 valid start times
 generate_progressive_start(
   open_start = "06:00", open_end = "16:00",
   circuit_time = 2, strategy = "discrete", n = 5, seed = 42
