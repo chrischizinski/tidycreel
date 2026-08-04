@@ -31,6 +31,17 @@
 #'   absent from either count data or interview data: \code{"warn"} (default)
 #'   inserts an NA row with \code{data_available = FALSE}, \code{"error"}
 #'   raises a hard error.
+#' @param product_variance character. Variance formula for the product
+#'   \eqn{E \times R}. \code{"goodman"} (default) uses Goodman's (1960)
+#'   unbiased estimator \eqn{E^2 Var(R) + R^2 Var(E) - Var(E)Var(R)};
+#'   \code{"first_order"} omits the cross-term, which is conservative. Both
+#'   assume \eqn{E} and \eqn{R} are independently estimated. When both
+#'   components are so imprecise that the subtraction would give a
+#'   non-positive variance, the first-order value is used as a floor.
+#' @param ci_type character. Shape of the confidence interval.
+#'   \code{"symmetric"} (default) gives \eqn{\hat\theta \pm z \cdot SE}
+#'   clamped at zero. \code{"log"} applies a log-transform for a
+#'   strictly positive CI.
 #'
 #' @return A creel_estimates S3 object with method = "product-total-release".
 #'   Estimates tibble has columns: estimate, se, ci_lower, ci_upper, n (plus
@@ -83,10 +94,14 @@ estimate_total_release <- function(
   conf_level = 0.95,
   target = c("sampled_days", "stratum_total", "period_total"),
   aggregate_sections = TRUE,
-  missing_sections = "warn"
+  missing_sections = "warn",
+  product_variance = c("goodman", "first_order"),
+  ci_type = c("symmetric", "log")
 ) {
   by_quo <- rlang::enquo(by)
   target <- match.arg(target)
+  product_variance <- match.arg(product_variance)
+  ci_type <- match.arg(ci_type)
 
   # Validate variance parameter
   valid_methods <- c("taylor", "bootstrap", "jackknife")
@@ -131,7 +146,9 @@ estimate_total_release <- function(
       interview_by_vars = by_info$interview_vars,
       variance_method = variance,
       conf_level = conf_level,
-      target = target
+      target = target,
+      product_variance = product_variance,
+      ci_type = ci_type
     )
     return(new_creel_estimates(
       # nolint: object_usage_linter
@@ -155,13 +172,15 @@ estimate_total_release <- function(
       conf_level,
       aggregate_sections,
       missing_sections,
-      target = target
+      target = target,
+      product_variance = product_variance,
+      ci_type = ci_type
     ))
   }
 
   # Standard (non-species) routing
   if (rlang::quo_is_null(by_quo)) {
-    return(estimate_total_release_ungrouped(design, variance, conf_level, target = target)) # nolint: object_usage_linter
+    return(estimate_total_release_ungrouped(design, variance, conf_level, target = target, product_variance = product_variance, ci_type = ci_type)) # nolint: object_usage_linter
   } else {
     by_cols <- tidyselect::eval_select(
       by_quo,
@@ -172,7 +191,7 @@ estimate_total_release <- function(
     )
     by_vars <- names(by_cols)
     validate_grouping_compatibility(design, by_vars) # nolint: object_usage_linter
-    return(estimate_total_release_grouped(design, by_vars, variance, conf_level, target = target)) # nolint: object_usage_linter
+    return(estimate_total_release_grouped(design, by_vars, variance, conf_level, target = target, product_variance = product_variance, ci_type = ci_type)) # nolint: object_usage_linter
   }
 }
 
@@ -213,7 +232,9 @@ estimate_total_release_ungrouped <- function(
   design,
   variance_method,
   conf_level,
-  target = "sampled_days"
+  target = "sampled_days",
+  product_variance = "goodman",
+  ci_type = "symmetric"
 ) {
   # nolint: object_length_linter
   strata_cols <- design$strata_cols %||% character(0)
@@ -243,7 +264,9 @@ estimate_total_release_ungrouped <- function(
     stratum_by_vars = strata_cols,
     interview_by_vars = NULL,
     conf_level = conf_level,
-    rate_suffix = "rpue"
+    rate_suffix = "rpue",
+    product_variance = product_variance,
+    ci_type = ci_type
   )
 
   new_creel_estimates(
@@ -265,7 +288,9 @@ estimate_total_release_grouped <- function(
   by_vars,
   variance_method,
   conf_level,
-  target = "sampled_days"
+  target = "sampled_days",
+  product_variance = "goodman",
+  ci_type = "symmetric"
 ) {
   strata_cols <- design$strata_cols %||% character(0)
   stratum_by_vars <- unique(c(strata_cols, by_vars))
@@ -291,7 +316,9 @@ estimate_total_release_grouped <- function(
     stratum_by_vars = stratum_by_vars,
     interview_by_vars = if (length(by_vars) > 0L) by_vars else NULL,
     conf_level = conf_level,
-    rate_suffix = "rpue"
+    rate_suffix = "rpue",
+    product_variance = product_variance,
+    ci_type = ci_type
   )
 
   new_creel_estimates(
@@ -316,7 +343,9 @@ estimate_total_release_species <- function(
   interview_by_vars,
   variance_method,
   conf_level,
-  target = "sampled_days"
+  target = "sampled_days",
+  product_variance = "goodman",
+  ci_type = "symmetric"
 ) {
   strata_cols <- design$strata_cols %||% character(0)
   stratum_by_vars <- unique(c(strata_cols, interview_by_vars))
@@ -370,7 +399,9 @@ estimate_total_release_species <- function(
       stratum_by_vars = stratum_by_vars,
       interview_by_vars = interview_by_vars,
       conf_level = conf_level,
-      rate_suffix = "rpue"
+      rate_suffix = "rpue",
+      product_variance = product_variance,
+      ci_type = ci_type
     )
 
     sp_result[[species_col]] <- sp
@@ -392,7 +423,9 @@ estimate_total_release_sections <- function(
   conf_level,
   aggregate_sections,
   missing_sections,
-  target = "sampled_days"
+  target = "sampled_days",
+  product_variance = "goodman",
+  ci_type = "symmetric"
 ) {
   section_col <- design[["section_col"]]
   registered_sections <- design$sections[[section_col]]
@@ -504,7 +537,13 @@ estimate_total_release_sections <- function(
         effort_se <- effort_res$estimates$se
         rpue_se <- rpue_res$estimates$se
         sec_estimate <- effort_est * rpue_est
-        sec_var <- (effort_est^2 * rpue_se^2) + (rpue_est^2 * effort_se^2)
+        sec_var <- product_total_variance(
+          effort_est,
+          effort_se,
+          rpue_est,
+          rpue_se,
+          product_variance
+        )
         sec_se <- sqrt(sec_var)
         sec_n <- rpue_res$estimates$n
         z_val <- stats::qt(1 - (1 - conf_level) / 2, df = max(1L, sec_n - 1L))
@@ -512,8 +551,8 @@ estimate_total_release_sections <- function(
           section = sec,
           estimate = sec_estimate,
           se = sec_se,
-          ci_lower = sec_estimate - z_val * sec_se,
-          ci_upper = sec_estimate + z_val * sec_se,
+          ci_lower = if (ci_type == "log" && sec_estimate > 0) sec_estimate * exp(-z_val * sec_se / sec_estimate) else pmax(0, sec_estimate - z_val * sec_se),
+          ci_upper = if (ci_type == "log" && sec_estimate > 0) sec_estimate * exp(z_val * sec_se / sec_estimate) else sec_estimate + z_val * sec_se,
           n = sec_n,
           prop_of_lake_total = NA_real_,
           data_available = TRUE
@@ -537,12 +576,11 @@ estimate_total_release_sections <- function(
     lake_est <- sum(present_rows$estimate)
     lake_se <- sqrt(sum(present_rows$se^2))
 
-    full_svy <- get_variance_design(design$survey, variance_method) # nolint: object_usage_linter
-    df <- as.numeric(survey::degf(full_svy))
-    alpha <- 1 - conf_level
-    t_crit <- qt(1 - alpha / 2, df = df)
-    lake_ci_lower <- lake_est - t_crit * lake_se
-    lake_ci_upper <- lake_est + t_crit * lake_se
+    # CI for lake total: sum(section n) - n_sections (consistent with compute_stratum_product_sum)
+    df_lake <- max(1L, sum(present_rows$n) - nrow(present_rows))
+    t_crit <- qt(1 - (1 - conf_level) / 2, df = df_lake)
+    lake_ci_lower <- if (ci_type == "log" && lake_est > 0) lake_est * exp(-t_crit * lake_se / lake_est) else pmax(0, lake_est - t_crit * lake_se)
+    lake_ci_upper <- if (ci_type == "log" && lake_est > 0) lake_est * exp(t_crit * lake_se / lake_est) else lake_est + t_crit * lake_se
 
     lake_row <- tibble::tibble(
       section = ".lake_total",

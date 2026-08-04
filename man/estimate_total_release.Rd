@@ -11,7 +11,9 @@ estimate_total_release(
   conf_level = 0.95,
   target = c("sampled_days", "stratum_total", "period_total"),
   aggregate_sections = TRUE,
-  missing_sections = "warn"
+  missing_sections = "warn",
+  product_variance = c("goodman", "first_order"),
+  ci_type = c("symmetric", "log")
 )
 }
 \arguments{
@@ -45,6 +47,19 @@ that sums the per-section estimates? Default \code{TRUE}. Set to
 absent from either count data or interview data: \code{"warn"} (default)
 inserts an NA row with \code{data_available = FALSE}, \code{"error"}
 raises a hard error.}
+
+\item{product_variance}{character. Variance formula for the product
+\eqn{E \times R}. \code{"goodman"} (default) uses Goodman's (1960)
+unbiased estimator \eqn{E^2 Var(R) + R^2 Var(E) - Var(E)Var(R)};
+\code{"first_order"} omits the cross-term, which is conservative. Both
+assume \eqn{E} and \eqn{R} are independently estimated. When both
+components are so imprecise that the subtraction would give a
+non-positive variance, the first-order value is used as a floor.}
+
+\item{ci_type}{character. Shape of the confidence interval.
+\code{"symmetric"} (default) gives \eqn{\hat\theta \pm z \cdot SE}
+clamped at zero. \code{"log"} applies a log-transform for a
+strictly positive CI.}
 }
 \value{
 A creel_estimates S3 object with method = "product-total-release".

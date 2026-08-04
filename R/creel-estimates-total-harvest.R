@@ -36,6 +36,17 @@
 #'   delta-method CIs. \code{"bootstrap"} additionally returns
 #'   \code{ci_lo_boot}/\code{ci_hi_boot} using survey bootstrap resampling.
 #'   Only applies to bus-route/ice designs.
+#' @param product_variance character. Variance formula for the product
+#'   \eqn{E \times H}. \code{"goodman"} (default) uses Goodman's (1960)
+#'   unbiased estimator \eqn{E^2 Var(H) + H^2 Var(E) - Var(E)Var(H)};
+#'   \code{"first_order"} omits the cross-term, which is conservative. Both
+#'   assume \eqn{E} and \eqn{H} are independently estimated. When both
+#'   components are so imprecise that the subtraction would give a
+#'   non-positive variance, the first-order value is used as a floor.
+#' @param ci_type character. Shape of the confidence interval.
+#'   \code{"symmetric"} (default) gives \eqn{\hat\theta \pm z \cdot SE}
+#'   clamped at zero. \code{"log"} applies a log-transform for a
+#'   strictly positive CI.
 #'
 #' @return A creel_estimates S3 object with method = "product-total-harvest"
 #'
@@ -46,8 +57,8 @@
 #'
 #' \deqn{Var(E \times H) \approx E^2 \cdot Var(H) + H^2 \cdot Var(E)}
 #'
-#' The function uses survey::svycontrast() to compute variance automatically
-#' via symbolic differentiation and Taylor series approximation.
+#' Variance is computed via a stratified delta-method sum in
+#' \code{compute_stratum_product_sum()}, not via \code{survey::svycontrast()}.
 #'
 #' \strong{Sectioned designs:}
 #' When \code{\link{add_sections}} has been called on the design, each section
@@ -104,12 +115,16 @@ estimate_total_harvest <- function(
   target = c("sampled_days", "stratum_total", "period_total"),
   aggregate_sections = TRUE,
   missing_sections = "warn",
-  ci_method = c("delta", "bootstrap")
+  ci_method = c("delta", "bootstrap"),
+  product_variance = c("goodman", "first_order"),
+  ci_type = c("symmetric", "log")
 ) {
   # Capture by parameter BEFORE validation
   by_quo <- rlang::enquo(by)
   target <- match.arg(target)
   ci_method <- match.arg(ci_method)
+  product_variance <- match.arg(product_variance)
+  ci_type <- match.arg(ci_type)
 
   # Validate variance parameter
   valid_methods <- c("taylor", "bootstrap", "jackknife")
@@ -175,7 +190,8 @@ estimate_total_harvest <- function(
       interview_by_vars = by_info$interview_vars,
       variance_method = variance,
       conf_level = conf_level,
-      target = target
+      target = target,
+      product_variance = product_variance
     )
     return(new_creel_estimates(
       # nolint: object_usage_linter
@@ -212,14 +228,16 @@ estimate_total_harvest <- function(
       conf_level,
       aggregate_sections,
       missing_sections,
-      target = target
+      target = target,
+      product_variance = product_variance,
+      ci_type = ci_type
     ))
   }
 
   # Route to grouped or ungrouped estimation
   if (rlang::quo_is_null(by_quo)) {
     # Ungrouped estimation
-    return(estimate_total_harvest_ungrouped(design, variance, conf_level, target = target)) # nolint: object_usage_linter
+    return(estimate_total_harvest_ungrouped(design, variance, conf_level, target = target, product_variance = product_variance, ci_type = ci_type)) # nolint: object_usage_linter
   } else {
     # Grouped estimation
     # Resolve by parameter to column names
@@ -235,7 +253,7 @@ estimate_total_harvest <- function(
     # Validate grouping compatibility
     validate_grouping_compatibility(design, by_vars) # nolint: object_usage_linter
 
-    return(estimate_total_harvest_grouped(design, by_vars, variance, conf_level, target = target)) # nolint: object_usage_linter
+    return(estimate_total_harvest_grouped(design, by_vars, variance, conf_level, target = target, product_variance = product_variance, ci_type = ci_type)) # nolint: object_usage_linter
   }
 }
 
@@ -251,7 +269,9 @@ estimate_total_harvest_ungrouped <- function(
   design,
   variance_method,
   conf_level,
-  target = "sampled_days"
+  target = "sampled_days",
+  product_variance = "goodman",
+  ci_type = "symmetric"
 ) {
   # nolint: object_length_linter
   strata_cols <- design$strata_cols %||% character(0)
@@ -288,7 +308,9 @@ estimate_total_harvest_ungrouped <- function(
     stratum_by_vars = strata_cols,
     interview_by_vars = NULL,
     conf_level = conf_level,
-    rate_suffix = "hpue"
+    rate_suffix = "hpue",
+    product_variance = product_variance,
+    ci_type = ci_type
   )
 
   new_creel_estimates(
@@ -315,7 +337,9 @@ estimate_total_harvest_grouped <- function(
   by_vars,
   variance_method,
   conf_level,
-  target = "sampled_days"
+  target = "sampled_days",
+  product_variance = "goodman",
+  ci_type = "symmetric"
 ) {
   strata_cols <- design$strata_cols %||% character(0)
   stratum_by_vars <- unique(c(strata_cols, by_vars))
@@ -341,7 +365,9 @@ estimate_total_harvest_grouped <- function(
     stratum_by_vars = stratum_by_vars,
     interview_by_vars = if (length(by_vars) > 0L) by_vars else NULL,
     conf_level = conf_level,
-    rate_suffix = "hpue"
+    rate_suffix = "hpue",
+    product_variance = product_variance,
+    ci_type = ci_type
   )
 
   new_creel_estimates(
@@ -366,7 +392,9 @@ estimate_total_harvest_species <- function(
   interview_by_vars,
   variance_method,
   conf_level,
-  target = "sampled_days"
+  target = "sampled_days",
+  product_variance = "goodman",
+  ci_type = "symmetric"
 ) {
   strata_cols <- design$strata_cols %||% character(0)
   stratum_by_vars <- unique(c(strata_cols, interview_by_vars))
@@ -420,7 +448,9 @@ estimate_total_harvest_species <- function(
       stratum_by_vars = stratum_by_vars,
       interview_by_vars = interview_by_vars,
       conf_level = conf_level,
-      rate_suffix = "hpue"
+      rate_suffix = "hpue",
+      product_variance = product_variance,
+      ci_type = ci_type
     )
 
     sp_result[[species_col]] <- sp
@@ -442,7 +472,9 @@ estimate_total_harvest_sections <- function(
   conf_level,
   aggregate_sections,
   missing_sections,
-  target = "sampled_days"
+  target = "sampled_days",
+  product_variance = "goodman",
+  ci_type = "symmetric"
 ) {
   section_col <- design[["section_col"]]
   registered_sections <- design$sections[[section_col]]
@@ -536,7 +568,13 @@ estimate_total_harvest_sections <- function(
         effort_se <- effort_res$estimates$se
         hpue_se <- hpue_res$estimates$se
         sec_estimate <- effort_est * hpue_est
-        sec_var <- (effort_est^2 * hpue_se^2) + (hpue_est^2 * effort_se^2)
+        sec_var <- product_total_variance(
+          effort_est,
+          effort_se,
+          hpue_est,
+          hpue_se,
+          product_variance
+        )
         sec_se <- sqrt(sec_var)
         sec_n <- hpue_res$estimates$n
         z_val <- stats::qt(1 - (1 - conf_level) / 2, df = max(1L, sec_n - 1L))
@@ -544,8 +582,8 @@ estimate_total_harvest_sections <- function(
           section = sec,
           estimate = sec_estimate,
           se = sec_se,
-          ci_lower = sec_estimate - z_val * sec_se,
-          ci_upper = sec_estimate + z_val * sec_se,
+          ci_lower = if (ci_type == "log" && sec_estimate > 0) sec_estimate * exp(-z_val * sec_se / sec_estimate) else pmax(0, sec_estimate - z_val * sec_se),
+          ci_upper = if (ci_type == "log" && sec_estimate > 0) sec_estimate * exp(z_val * sec_se / sec_estimate) else sec_estimate + z_val * sec_se,
           n = sec_n,
           prop_of_lake_total = NA_real_,
           data_available = TRUE
@@ -569,12 +607,11 @@ estimate_total_harvest_sections <- function(
     lake_est <- sum(present_rows$estimate)
     lake_se <- sqrt(sum(present_rows$se^2))
 
-    full_svy <- get_variance_design(design$survey, variance_method) # nolint: object_usage_linter
-    df <- as.numeric(survey::degf(full_svy))
-    alpha <- 1 - conf_level
-    t_crit <- qt(1 - alpha / 2, df = df)
-    lake_ci_lower <- lake_est - t_crit * lake_se
-    lake_ci_upper <- lake_est + t_crit * lake_se
+    # CI for lake total: sum(section n) - n_sections (consistent with compute_stratum_product_sum)
+    df_lake <- max(1L, sum(present_rows$n) - nrow(present_rows))
+    t_crit <- qt(1 - (1 - conf_level) / 2, df = df_lake)
+    lake_ci_lower <- if (ci_type == "log" && lake_est > 0) lake_est * exp(-t_crit * lake_se / lake_est) else pmax(0, lake_est - t_crit * lake_se)
+    lake_ci_upper <- if (ci_type == "log" && lake_est > 0) lake_est * exp(t_crit * lake_se / lake_est) else lake_est + t_crit * lake_se
 
     lake_row <- tibble::tibble(
       section = ".lake_total",
