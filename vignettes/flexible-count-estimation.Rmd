@@ -36,7 +36,7 @@ circuits). When multiple counts are recorded per sampling unit (PSU), tidycreel 
 them automatically and decomposes variance into a between-day component and a within-day
 component via the Rasmussen (1994) two-stage formula.
 
-This vignette demonstrates all three workflows using inline data.
+The examples below show each workflow with inline data.
 
 ## Single Count per Day (Instantaneous Baseline)
 

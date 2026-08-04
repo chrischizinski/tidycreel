@@ -145,3 +145,6 @@ data-raw/ngpc_creel_params.rda
 data-raw/ngpc_creel_inventory.R
 data-raw/fish_release_names.txt
 .codegraph/
+
+# Local quality/review reports — not for distribution
+quality_reports/

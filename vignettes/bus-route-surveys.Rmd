@@ -58,8 +58,9 @@ is the probability that the period containing the visit is sampled. Sites with h
 expected effort get higher `p_site` values, meaning they are selected more often — and
 correspondingly receive a lower inverse-probability weight in the estimator.
 
-**Critical point:** πᵢ is a property of the *sampling design*, not of the site or the
-anglers. It is specified when you design the survey, not computed from the interview data.
+The inclusion probability πᵢ belongs to the *sampling design*, not to a site or
+its anglers. Specify it when designing the survey; do not compute it from the
+interview data.
 
 ### Enumeration Counts
 

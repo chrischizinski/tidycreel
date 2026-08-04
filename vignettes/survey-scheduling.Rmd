@@ -18,11 +18,10 @@ knitr::opts_chunk$set(
 
 ## Overview
 
-A well-structured sampling schedule ensures that creel survey estimates of effort, catch,
-and CPUE are unbiased and representative of the full survey season. `generate_schedule()`
-builds a stratified random sampling calendar from season boundaries and a target sampling
-intensity — producing the count-period framework that drives the tidycreel estimation
-pipeline.
+A sampling schedule defines which days and periods represent the survey season. With a
+stratified random schedule, estimates of effort, catch, and CPUE can represent that season
+without treating sampled days as if they were the whole population. `generate_schedule()`
+builds the count-period calendar from season boundaries and a target sampling intensity.
 
 ## The Count Period Framework
 

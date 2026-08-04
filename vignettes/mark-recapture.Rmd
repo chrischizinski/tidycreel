@@ -30,7 +30,7 @@ estimators for these purposes:
   tagged-fish recoveries (Pollock et al. 1994)
 
 All three return `creel_estimates` objects compatible with the standard
-tidycreel output ecosystem (`print()`, `autoplot()`, `write_estimates()`).
+tidycreel output tools (`print()`, `autoplot()`, `write_estimates()`).
 
 | Goal | Estimator |
 |---|---|
