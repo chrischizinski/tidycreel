@@ -1,0 +1,76 @@
+name: tidycreel.connect R CMD Check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tidycreel.connect/**'
+      - '.github/workflows/tidycreel-connect-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tidycreel.connect/**'
+      - '.github/workflows/tidycreel-connect-check.yml'
+
+jobs:
+  r-cmd-check:
+    runs-on: ${{ matrix.config.os }}
+    timeout-minutes: 45
+    concurrency:
+      group: tc-connect-check-${{ github.ref }}-${{ matrix.config.os }}
+      cancel-in-progress: true
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - {os: macos-latest,  r: 'release'}
+          - {os: ubuntu-latest, r: 'release'}
+
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      R_KEEP_PKG_SOURCE: true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-pandoc@v2
+
+      # Install ODBC driver manager and SQL Server driver so creel_check_driver()
+      # and odbc-dependent tests can run. Tests already skip gracefully via
+      # skip_if_not_installed("odbc") if the driver is absent.
+      - name: Install ODBC driver (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install unixodbc
+          brew tap microsoft/mssql-release \
+            https://github.com/Microsoft/homebrew-mssql-release
+          HOMEBREW_ACCEPT_EULA=Y brew install msodbcsql18
+
+      - name: Install ODBC driver (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          curl -sSL https://packages.microsoft.com/keys/microsoft.asc \
+            | sudo gpg --dearmor -o /usr/share/keyrings/microsoft.gpg
+          echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft.gpg] \
+            https://packages.microsoft.com/ubuntu/$(lsb_release -rs)/prod \
+            $(lsb_release -cs) main" \
+            | sudo tee /etc/apt/sources.list.d/mssql-release.list
+          sudo apt-get update -qq
+          ACCEPT_EULA=Y sudo apt-get install -y msodbcsql18 unixodbc-dev
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: ${{ matrix.config.r }}
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          working-directory: tidycreel.connect
+          extra-packages: any::rcmdcheck
+          needs: check
+
+      - uses: r-lib/actions/check-r-package@v2
+        with:
+          working-directory: tidycreel.connect
+          upload-snapshots: true
+          error-on: '"error"'
