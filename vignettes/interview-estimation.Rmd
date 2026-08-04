@@ -197,7 +197,7 @@ and propagates variance via the delta method.
 
 ## Complete Workflow Example
 
-Here's the full pipeline in a single workflow:
+The full pipeline in one workflow is:
 
 ```{r complete}
 # Load data
@@ -236,7 +236,7 @@ This demonstrates the complete v0.2.0 workflow from survey design through total 
 This vignette demonstrates the default workflow using complete trips, which is
 the recommended approach following Pollock et al. (1994) roving-access design principles.
 
-For situations where you have incomplete trip interviews and want to explore
+For situations with incomplete-trip interviews where you want to examine
 using them for estimation, see the **Incomplete Trip Estimation** vignette
 (`vignette("incomplete-trips", package = "tidycreel")`). That vignette covers:
 

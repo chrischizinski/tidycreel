@@ -18,11 +18,11 @@ knitr::opts_chunk$set(
 
 ## Introduction
 
-The tidycreel package provides a tidy, pipe-friendly interface for creel survey design and analysis. It allows fisheries biologists to work in domain vocabulary (dates, strata, counts, effort) without needing to understand the internals of the survey package. The workflow follows a simple three-step pattern:
+tidycreel gives fisheries biologists a tidy, pipe-friendly way to design and analyse creel surveys. You can work with the terms used in the field—dates, strata, counts, and effort—without having to work directly with the internals of the survey package. The basic workflow has three steps:
 
-1. **Design**: Define your survey calendar and stratification
-2. **Data**: Attach count observations to the design
-3. **Estimation**: Compute effort estimates with variance
+1. Define the survey calendar and its strata.
+2. Attach count observations to the design.
+3. Estimate effort and its variance.
 
 ## Survey Design
 
