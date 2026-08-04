@@ -38,7 +38,7 @@ day and records the number of anglers visible on the survey section. Each
 **day × stratum combination** is treated as one sampling unit. In survey-sampling
 language these units are called **Primary Sampling Units** (PSUs).
 
-Imagine a three-day survey with two day-type strata:
+Consider a three-day survey with two day-type strata:
 
 ```{r psu-table, echo = FALSE}
 psu_example <- data.frame(

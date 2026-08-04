@@ -23,7 +23,7 @@ tidycreel automatically account for unsampled days through survey weights — so
 you call `estimate_effort()` or `estimate_total_catch()`, the result is already a
 season-total estimate, not just a sample-day sum.
 
-This vignette shows how to:
+The examples show how to:
 
 1. Obtain a full-season total from a single design
 2. Break the season into monthly totals using separate monthly designs
@@ -315,7 +315,7 @@ write_schedule(effort_summary$table, "effort_by_month_2024.csv")
 write_schedule(effort_summary$table, "effort_by_month_2024.xlsx")
 ```
 
-## Key Principles
+## Practical reminders
 
 | Goal | Approach |
 |------|----------|
