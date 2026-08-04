@@ -188,7 +188,7 @@ plot_design(design) + autoplot(effort)
 
 ## 5  Customising Appearance with `theme_creel()`
 
-`tidycreel` provides a built-in theme and color palette to ensure your plots
+`tidycreel` provides a built-in theme and color palette so your plots
 match the package's visual style. These are designed for clean,
 publication-ready output.
 

@@ -87,32 +87,27 @@ samples.
 
 ### Taylor linearization (`"taylor"`, default)
 
-- **Use when**: stratum-level variance is dominated by between-day
-  variability and the sampling design is a straightforward stratified random
-  sample of days.
-- **Advantage**: fastest; closed-form analytic variance formula; no
-  randomness.
-- **Limitation**: relies on large-sample approximations; can be less reliable
-  for highly skewed count distributions or very small strata.
+- Use Taylor linearization when between-day variability dominates within
+  strata and the design is a straightforward stratified random sample of days.
+  It is fast, uses a closed-form variance formula, and introduces no additional
+  randomness. It relies on large-sample approximations, however, so it can be
+  less reliable for highly skewed counts or very small strata.
 
 ### Bootstrap (`"bootstrap"`)
 
-- **Use when**: count distributions are highly skewed, the design is complex,
-  or you want variance that is robust to distributional assumptions.
-- **Advantage**: makes no distributional assumption; captures nonlinear
-  variance propagation.
-- **Limitation**: stochastic (set a seed in your script for reproducibility);
-  slower (500 replicates by default); requires ≥ 2 PSUs per stratum.
+- Bootstrap is useful for highly skewed count distributions or complex designs,
+  and when you want variance estimates that do not depend on a distributional
+  assumption. It captures nonlinear variance propagation, but is stochastic:
+  set a seed for reproducibility. It is also slower (500 replicates by default)
+  and requires at least two PSUs per stratum.
 
 ### Jackknife (`"jackknife"`)
 
-- **Use when**: you prefer a deterministic, delete-one variance estimate that
-  is slightly more conservative than Taylor for small samples.
-- **Advantage**: deterministic; often more stable than bootstrap with small
-  PSU counts.
-- **Limitation**: also requires ≥ 2 PSUs per stratum; not appropriate for
-  designs with unequal inclusion probabilities unless the correct jackknife
-  weights are applied.
+- Choose the jackknife when you prefer a deterministic delete-one estimate that
+  is slightly more conservative than Taylor for small samples. It is often more
+  stable than bootstrap with few PSUs, but still needs at least two PSUs per
+  stratum. For unequal inclusion probabilities, use the appropriate jackknife
+  weights.
 
 ---
 

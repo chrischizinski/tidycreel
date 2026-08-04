@@ -18,19 +18,18 @@ knitr::opts_chunk$set(
 
 ## Overview
 
-Ice fishing creel surveys share the same structure as bus-route surveys, but
-with one important simplification: all access points are sampled with
-certainty. Every angler leaving the lake must pass through the single ice
-access point (the boat ramp area or designated ice-access site), so there is
-no site-level subsampling. This means the site inclusion probability is always
+Ice fishing creel surveys share the bus-route structure, but all access points
+are sampled with certainty. Every angler leaving the lake must pass through the
+single ice access point (the boat ramp area or designated ice-access site), so
+there is no site-level subsampling. The site inclusion probability is always
 `p_site = 1.0`, and the overall inclusion probability reduces to just the
 period sampling probability:
 
 $$\pi_i = p\_site \times p\_period = 1.0 \times p\_period = p\_period$$
 
-Because of this, ice fishing surveys are implemented as a *degenerate*
-bus-route design. All the bus-route Horvitz-Thompson estimators apply
-unchanged — only the probability structure is simplified.
+In tidycreel, this is a *degenerate* bus-route design. The bus-route
+Horvitz-Thompson estimators still apply; only the probability structure is
+simpler.
 
 ### Effort type distinction
 

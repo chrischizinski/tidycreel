@@ -32,11 +32,11 @@ two camera-based sub-modes:
   `preprocess_camera_timestamps()` before entering the standard effort
   estimation workflow.
 
-Both modes share a key concept: the `camera_status` column. Unlike random
-missed observations (modeled via `missing_sections`), a camera failure is an
-**informative gap** — the number of anglers that passed during the outage is
-unknown and cannot be estimated from the surrounding data. These rows must be
-removed before calling `add_counts()`.
+In both modes, use the `camera_status` column to identify failures. Unlike
+random missed observations (modeled via `missing_sections`), a camera failure
+leaves an **informative gap**: the number of anglers that passed during the
+outage is unknown and cannot be estimated from nearby observations. Remove
+these rows before calling `add_counts()`.
 
 ## Example Data
 
