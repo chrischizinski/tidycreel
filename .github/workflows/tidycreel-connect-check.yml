@@ -77,10 +77,16 @@ jobs:
           r-version: ${{ matrix.config.r }}
           use-public-rspm: true
 
+      # tidycreel.connect imports tidycreel, which is not on CRAN, so pak
+      # cannot resolve it from a repository ("Can't find package called
+      # tidycreel"). Point it at the parent package in the repo root --
+      # working-directory is tidycreel.connect, so `..` is the root.
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           working-directory: tidycreel.connect
-          extra-packages: any::rcmdcheck
+          extra-packages: |
+            any::rcmdcheck
+            local::..
           needs: check
 
       - uses: r-lib/actions/check-r-package@v2
