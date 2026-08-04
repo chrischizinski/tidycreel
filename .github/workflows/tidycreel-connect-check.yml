@@ -44,6 +44,10 @@ jobs:
           brew install unixodbc
           brew tap microsoft/mssql-release \
             https://github.com/Microsoft/homebrew-mssql-release
+          # Homebrew now refuses to load formulae from untrusted third-party
+          # taps. Scope the grant to this one formula rather than the whole
+          # tap, so anything added to it later does not inherit trust.
+          brew trust --formula microsoft/mssql-release/msodbcsql18
           HOMEBREW_ACCEPT_EULA=Y brew install msodbcsql18
 
       - name: Install ODBC driver (Linux)
