@@ -32,8 +32,12 @@
 #'   inserts an NA row with \code{data_available = FALSE}, \code{"error"}
 #'   raises a hard error.
 #' @param product_variance character. Variance formula for the product
-#'   \eqn{E \times R}. \code{"goodman"} (default) uses the exact Goodman
-#'   (1960) three-term formula. \code{"first_order"} drops the cross-term.
+#'   \eqn{E \times R}. \code{"goodman"} (default) uses Goodman's (1960)
+#'   unbiased estimator \eqn{E^2 Var(R) + R^2 Var(E) - Var(E)Var(R)};
+#'   \code{"first_order"} omits the cross-term, which is conservative. Both
+#'   assume \eqn{E} and \eqn{R} are independently estimated. When both
+#'   components are so imprecise that the subtraction would give a
+#'   non-positive variance, the first-order value is used as a floor.
 #' @param ci_type character. Shape of the confidence interval.
 #'   \code{"symmetric"} (default) gives \eqn{\hat\theta \pm z \cdot SE}
 #'   clamped at zero. \code{"log"} applies a log-transform for a
@@ -533,8 +537,13 @@ estimate_total_release_sections <- function(
         effort_se <- effort_res$estimates$se
         rpue_se <- rpue_res$estimates$se
         sec_estimate <- effort_est * rpue_est
-        cross_term <- if (product_variance == "goodman") rpue_se^2 * effort_se^2 else 0
-        sec_var <- (effort_est^2 * rpue_se^2) + (rpue_est^2 * effort_se^2) + cross_term
+        sec_var <- product_total_variance(
+          effort_est,
+          effort_se,
+          rpue_est,
+          rpue_se,
+          product_variance
+        )
         sec_se <- sqrt(sec_var)
         sec_n <- rpue_res$estimates$n
         z_val <- stats::qt(1 - (1 - conf_level) / 2, df = max(1L, sec_n - 1L))

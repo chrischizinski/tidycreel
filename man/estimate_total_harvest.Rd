@@ -57,8 +57,12 @@ delta-method CIs. \code{"bootstrap"} additionally returns
 Only applies to bus-route/ice designs.}
 
 \item{product_variance}{character. Variance formula for the product
-\eqn{E \times H}. \code{"goodman"} (default) uses the exact Goodman
-(1960) three-term formula. \code{"first_order"} drops the cross-term.}
+\eqn{E \times H}. \code{"goodman"} (default) uses Goodman's (1960)
+unbiased estimator \eqn{E^2 Var(H) + H^2 Var(E) - Var(E)Var(H)};
+\code{"first_order"} omits the cross-term, which is conservative. Both
+assume \eqn{E} and \eqn{H} are independently estimated. When both
+components are so imprecise that the subtraction would give a
+non-positive variance, the first-order value is used as a floor.}
 
 \item{ci_type}{character. Shape of the confidence interval.
 \code{"symmetric"} (default) gives \eqn{\hat\theta \pm z \cdot SE}

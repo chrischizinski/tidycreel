@@ -41,6 +41,41 @@ wrap_survey_call <- function(expr) {
   )
 }
 
+#' Variance of an effort x rate product total
+#'
+#' Combines the variances of two independently estimated components into the
+#' variance of their product.
+#'
+#' With \eqn{\hat E} and \eqn{\hat R} independent and unbiased, the exact
+#' variance of the product is
+#' \eqn{E^2\sigma_R^2 + R^2\sigma_E^2 + \sigma_E^2\sigma_R^2}. Substituting the
+#' estimates for the unknown means overshoots that target, because
+#' \eqn{E[\hat E^2] = E^2 + \sigma_E^2}: the two-term plug-in already carries
+#' \eqn{2\sigma_E^2\sigma_R^2} in expectation. Goodman's (1960) unbiased
+#' estimator therefore *subtracts* one cross-term.
+#'
+#' The subtraction can drive the result non-positive when both components are
+#' very imprecise (specifically when
+#' \eqn{1/CV_E^2 + 1/CV_R^2 < 1}, i.e. both CVs above roughly 1.4). That is
+#' implausible in aggregate but reachable in a sparse stratum, so the first-order
+#' value is used as a floor.
+#'
+#' @param e_est,e_se Effort estimate and its standard error.
+#' @param r_est,r_se Rate estimate and its standard error.
+#' @param product_variance Either "goodman" (subtract the cross-term) or
+#'   "first_order" (omit it).
+#' @return Numeric vector of product variances, parallel to the inputs.
+#' @keywords internal
+#' @noRd
+product_total_variance <- function(e_est, e_se, r_est, r_se, product_variance) {
+  first_order <- (e_est^2 * r_se^2) + (r_est^2 * e_se^2)
+  if (!identical(product_variance, "goodman")) {
+    return(first_order)
+  }
+  pv <- first_order - (e_se^2 * r_se^2)
+  ifelse(pv > 0, pv, first_order)
+}
+
 # creel_estimates S3 class ----
 
 #' Create a creel_estimates object
@@ -3405,8 +3440,7 @@ compute_stratum_product_sum <- function(
     e_se <- effort_df$se
     r_se <- rate_df$se
     est <- e_est * r_est
-    cross_term <- if (product_variance == "goodman") r_se^2 * e_se^2 else 0
-    pv <- (e_est^2 * r_se^2) + (r_est^2 * e_se^2) + cross_term
+    pv <- product_total_variance(e_est, e_se, r_est, r_se, product_variance)
     se_val <- sqrt(pv)
     ci <- .ci(est, se_val, z)
     return(data.frame(
@@ -3436,14 +3470,13 @@ compute_stratum_product_sum <- function(
 
   # Per-stratum delta-method products and variances
   merged$.est_sh <- merged[[e_col]] * merged[[r_col]]
-  cross_term_sh <- if (product_variance == "goodman") {
-    merged[[se_r]]^2 * merged[[se_e]]^2
-  } else {
-    rep(0, nrow(merged))
-  }
-  merged$.var_sh <- (merged[[e_col]]^2 * merged[[se_r]]^2) +
-    (merged[[r_col]]^2 * merged[[se_e]]^2) +
-    cross_term_sh
+  merged$.var_sh <- product_total_variance(
+    merged[[e_col]],
+    merged[[se_e]],
+    merged[[r_col]],
+    merged[[se_r]],
+    product_variance
+  )
   merged$.n_sh <- merged[[n_r]]
 
   if (is.null(interview_by_vars)) {

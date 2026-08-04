@@ -98,7 +98,7 @@ make_single_stratum_design <- function() {
 
 # product_variance ----
 
-test_that("product_variance='first_order' drops exactly the Goodman cross-term", {
+test_that("product_variance='first_order' differs by exactly the Goodman cross-term", {
   # The two settings must differ only by var(E) * var(R). Deriving the expected
   # difference from the component estimates (not from the estimator output)
   # means this fails if the cross-term is dropped, doubled, or sign-flipped.
@@ -113,24 +113,59 @@ test_that("product_variance='first_order' drops exactly the Goodman cross-term",
   expected_cross <- sum(effort$estimates$se^2 * cpue$estimates$se^2)
 
   expect_equal(
-    goodman$estimates$se^2 - first_order$estimates$se^2,
+    first_order$estimates$se^2 - goodman$estimates$se^2,
     expected_cross,
     tolerance = 1e-8
   )
 })
 
-test_that("Goodman cross-term is added, not subtracted", {
-  # Guards the sign. Goodman (1960) gives both an exact product variance
-  # (which adds var(E)var(R)) and an unbiased estimator (which subtracts it).
-  # tidycreel plugs point estimates into the additive form, so the Goodman SE
-  # must be the larger of the two. A sign flip would silently narrow every
-  # product-total CI in the package.
+test_that("Goodman cross-term is subtracted, not added", {
+  # Guards the sign. Goodman (1960) gives both an exact product variance for
+  # known means (which adds var(E)var(R)) and an unbiased estimator for the
+  # plug-in case (which subtracts it). tidycreel uses the unbiased estimator,
+  # because substituting estimates for the unknown means already carries an
+  # extra cross-term in expectation. The Goodman SE must therefore be the
+  # SMALLER of the two. A sign flip would silently widen every product-total
+  # CI and make "goodman" more biased than "first_order" -- the opposite of
+  # what the option name implies.
   design <- make_product_arg_design()
 
   goodman <- quiet_estimate(estimate_total_catch(design, product_variance = "goodman"))
   first_order <- quiet_estimate(estimate_total_catch(design, product_variance = "first_order"))
 
-  expect_gt(goodman$estimates$se, first_order$estimates$se)
+  expect_lt(goodman$estimates$se, first_order$estimates$se)
+})
+
+test_that("Goodman variance falls back to first-order rather than going non-positive", {
+  # The subtraction can exceed the two first-order terms when both components
+  # are extremely imprecise (1/CV_E^2 + 1/CV_R^2 < 1). A negative variance
+  # would propagate as NaN through sqrt(); the floor keeps the estimator
+  # defined. Exercised on the internal helper because no realistic creel
+  # design reaches those CVs.
+  degenerate <- product_total_variance(
+    e_est = 1, e_se = 100, r_est = 1, r_se = 100,
+    product_variance = "goodman"
+  )
+  degenerate_fo <- product_total_variance(
+    e_est = 1, e_se = 100, r_est = 1, r_se = 100,
+    product_variance = "first_order"
+  )
+
+  expect_gt(degenerate, 0)
+  expect_equal(degenerate, degenerate_fo)
+
+  # Well-conditioned inputs must still take the subtractive branch.
+  normal <- product_total_variance(
+    e_est = 1000, e_se = 35, r_est = 0.5, r_se = 0.025,
+    product_variance = "goodman"
+  )
+  normal_fo <- product_total_variance(
+    e_est = 1000, e_se = 35, r_est = 0.5, r_se = 0.025,
+    product_variance = "first_order"
+  )
+
+  expect_lt(normal, normal_fo)
+  expect_equal(normal_fo - normal, 35^2 * 0.025^2, tolerance = 1e-10)
 })
 
 test_that("product_variance does not change the point estimate", {
@@ -159,8 +194,8 @@ test_that("product_variance is wired through harvest and release estimators", {
     estimate_total_release(release_design, product_variance = "first_order")
   )
 
-  expect_gt(harvest_g$estimates$se, harvest_f$estimates$se)
-  expect_gt(release_g$estimates$se, release_f$estimates$se)
+  expect_lt(harvest_g$estimates$se, harvest_f$estimates$se)
+  expect_lt(release_g$estimates$se, release_f$estimates$se)
   expect_equal(harvest_g$estimates$estimate, harvest_f$estimates$estimate)
   expect_equal(release_g$estimates$estimate, release_f$estimates$estimate)
 })

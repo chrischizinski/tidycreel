@@ -65,10 +65,14 @@ delta-method CIs. \code{"bootstrap"} additionally returns
 Only applies to bus-route/ice designs.}
 
 \item{product_variance}{character. Variance formula for the product
-\eqn{E \times C}. \code{"goodman"} (default) uses the exact Goodman
-(1960) three-term formula \eqn{E^2 Var(C) + C^2 Var(E) + Var(E)Var(C)}.
-\code{"first_order"} drops the cross-term (classical two-term delta
-method).}
+\eqn{E \times C}. \code{"goodman"} (default) uses Goodman's (1960)
+unbiased estimator \eqn{E^2 Var(C) + C^2 Var(E) - Var(E)Var(C)}; the
+cross-term is subtracted because substituting estimates for the unknown
+means leaves the two-term plug-in biased upward. \code{"first_order"}
+omits it (classical two-term delta method), which is conservative.
+Both assume \eqn{E} and \eqn{C} are independently estimated. When both
+components are so imprecise that the subtraction would give a
+non-positive variance, the first-order value is used as a floor.}
 
 \item{ci_type}{character. Shape of the confidence interval.
 \code{"symmetric"} (default) gives the standard \eqn{\hat\theta \pm z

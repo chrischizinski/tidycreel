@@ -49,8 +49,12 @@ inserts an NA row with \code{data_available = FALSE}, \code{"error"}
 raises a hard error.}
 
 \item{product_variance}{character. Variance formula for the product
-\eqn{E \times R}. \code{"goodman"} (default) uses the exact Goodman
-(1960) three-term formula. \code{"first_order"} drops the cross-term.}
+\eqn{E \times R}. \code{"goodman"} (default) uses Goodman's (1960)
+unbiased estimator \eqn{E^2 Var(R) + R^2 Var(E) - Var(E)Var(R)};
+\code{"first_order"} omits the cross-term, which is conservative. Both
+assume \eqn{E} and \eqn{R} are independently estimated. When both
+components are so imprecise that the subtraction would give a
+non-positive variance, the first-order value is used as a floor.}
 
 \item{ci_type}{character. Shape of the confidence interval.
 \code{"symmetric"} (default) gives \eqn{\hat\theta \pm z \cdot SE}

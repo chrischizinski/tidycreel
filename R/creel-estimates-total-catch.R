@@ -41,10 +41,14 @@
 #'   \code{ci_lo_boot}/\code{ci_hi_boot} using survey bootstrap resampling.
 #'   Only applies to bus-route/ice designs.
 #' @param product_variance character. Variance formula for the product
-#'   \eqn{E \times C}. \code{"goodman"} (default) uses the exact Goodman
-#'   (1960) three-term formula \eqn{E^2 Var(C) + C^2 Var(E) + Var(E)Var(C)}.
-#'   \code{"first_order"} drops the cross-term (classical two-term delta
-#'   method).
+#'   \eqn{E \times C}. \code{"goodman"} (default) uses Goodman's (1960)
+#'   unbiased estimator \eqn{E^2 Var(C) + C^2 Var(E) - Var(E)Var(C)}; the
+#'   cross-term is subtracted because substituting estimates for the unknown
+#'   means leaves the two-term plug-in biased upward. \code{"first_order"}
+#'   omits it (classical two-term delta method), which is conservative.
+#'   Both assume \eqn{E} and \eqn{C} are independently estimated. When both
+#'   components are so imprecise that the subtraction would give a
+#'   non-positive variance, the first-order value is used as a floor.
 #' @param ci_type character. Shape of the confidence interval.
 #'   \code{"symmetric"} (default) gives the standard \eqn{\hat\theta \pm z
 #'   \cdot SE} interval clamped at zero. \code{"log"} applies a
@@ -661,8 +665,13 @@ estimate_total_catch_sections <- function(
         effort_se <- effort_res$estimates$se
         cpue_se <- cpue_res$estimates$se
         sec_estimate <- effort_est * cpue_est
-        cross_term <- if (product_variance == "goodman") cpue_se^2 * effort_se^2 else 0
-        sec_var <- (effort_est^2 * cpue_se^2) + (cpue_est^2 * effort_se^2) + cross_term
+        sec_var <- product_total_variance(
+          effort_est,
+          effort_se,
+          cpue_est,
+          cpue_se,
+          product_variance
+        )
         sec_se <- sqrt(sec_var)
         sec_n <- cpue_res$estimates$n
         z_val <- stats::qt(1 - (1 - conf_level) / 2, df = max(1L, sec_n - 1L))
