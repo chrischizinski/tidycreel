@@ -340,6 +340,108 @@ test_that("add_catch() allows caught == harvested + released (CATCH-04)", {
   )
 })
 
+# --- CATCH-06: full-partition reconciliation advisory --------------------------
+
+# `caught` rows carry the per-species total; `harvested` and `released`
+# partition it. CATCH-04 aborts when the partition exceeds the total. These
+# tests pin the opposite direction, which is only advisory because the two
+# readings of a shortfall — a dropped row versus a fish whose disposition was
+# never recorded — are indistinguishable from the data alone. The warning is
+# therefore restricted to pairs recording BOTH dispositions, where a full
+# partition was evidently intended. Widening it to partial recording would
+# make it fire on ordinary field data and train users to ignore it.
+
+test_that("add_catch() warns when a full partition falls short of caught (CATCH-06)", {
+  d <- make_design_with_interviews()
+  short_partition <- data.frame(
+    interview_id = c(1L, 1L, 1L),
+    species = "walleye",
+    count = c(10L, 4L, 3L), # 4 + 3 < 10, both dispositions recorded
+    catch_type = c("caught", "harvested", "released"),
+    stringsAsFactors = FALSE
+  )
+  expect_warning(
+    add_catch(
+      d,
+      short_partition,
+      catch_uid = interview_id,
+      interview_uid = interview_id, # nolint: object_usage_linter
+      species = species,
+      count = count,
+      catch_type = catch_type # nolint: object_usage_linter
+    ),
+    regexp = "less than caught"
+  )
+})
+
+test_that("add_catch() is silent when only one disposition is recorded (CATCH-06)", {
+  d <- make_design_with_interviews()
+  partial <- data.frame(
+    interview_id = c(1L, 1L),
+    species = "walleye",
+    count = c(5L, 2L), # 3 fish with no recorded disposition — routine
+    catch_type = c("caught", "harvested"),
+    stringsAsFactors = FALSE
+  )
+  expect_no_warning(
+    add_catch(
+      d,
+      partial,
+      catch_uid = interview_id,
+      interview_uid = interview_id, # nolint: object_usage_linter
+      species = species,
+      count = count,
+      catch_type = catch_type # nolint: object_usage_linter
+    )
+  )
+})
+
+test_that("add_catch() is silent when a full partition reconciles exactly (CATCH-06)", {
+  d <- make_design_with_interviews()
+  exact <- data.frame(
+    interview_id = c(1L, 1L, 1L),
+    species = "walleye",
+    count = c(7L, 4L, 3L),
+    catch_type = c("caught", "harvested", "released"),
+    stringsAsFactors = FALSE
+  )
+  expect_no_warning(
+    add_catch(
+      d,
+      exact,
+      catch_uid = interview_id,
+      interview_uid = interview_id, # nolint: object_usage_linter
+      species = species,
+      count = count,
+      catch_type = catch_type # nolint: object_usage_linter
+    ),
+    message = "less than caught"
+  )
+})
+
+test_that("CATCH-06 advisory does not fire per-species across a mixed table (CATCH-06)", {
+  d <- make_design_with_interviews()
+  mixed <- data.frame(
+    interview_id = c(1L, 1L, 1L, 1L, 1L),
+    species = c("walleye", "walleye", "walleye", "northern_pike", "northern_pike"),
+    count = c(6L, 4L, 2L, 5L, 2L), # walleye reconciles; pike is partial
+    catch_type = c("caught", "harvested", "released", "caught", "harvested"),
+    stringsAsFactors = FALSE
+  )
+  expect_no_warning(
+    add_catch(
+      d,
+      mixed,
+      catch_uid = interview_id,
+      interview_uid = interview_id, # nolint: object_usage_linter
+      species = species,
+      count = count,
+      catch_type = catch_type # nolint: object_usage_linter
+    ),
+    message = "less than caught"
+  )
+})
+
 # --- CATCH-05: print method integration ----------------------------------------
 
 test_that("print shows Catch Data section when attached (CATCH-05)", {

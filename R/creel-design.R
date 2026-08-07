@@ -3159,14 +3159,23 @@ add_catch <- function(design, data, catch_uid, interview_uid, species, count, ca
   if (nrow(caught_rows) > 0) {
     sub_rows <- data[data[[catch_type_col]] %in% c("harvested", "released"), ]
     if (nrow(sub_rows) > 0) {
-      sub_agg <- stats::aggregate(
-        sub_rows[[count_col]],
-        by = list(uid = sub_rows[[catch_uid_col]], species = sub_rows[[species_col]]),
-        FUN = sum
-      )
+      sub_keys <- list(uid = sub_rows[[catch_uid_col]], species = sub_rows[[species_col]])
+      sub_agg <- stats::aggregate(sub_rows[[count_col]], by = sub_keys, FUN = sum)
       names(sub_agg)[3] <- "sub_total"
+      # Number of distinct disposition types recorded per pair, used below to
+      # tell a full partition apart from partial recording.
+      sub_types <- stats::aggregate(
+        sub_rows[[catch_type_col]],
+        by = sub_keys,
+        FUN = function(x) length(unique(x))
+      )
+      names(sub_types)[3] <- "n_types"
+      sub_agg <- merge(sub_agg, sub_types, by = c("uid", "species"))
     } else {
-      sub_agg <- data.frame(uid = character(0), species = character(0), sub_total = numeric(0))
+      sub_agg <- data.frame(
+        uid = character(0), species = character(0),
+        sub_total = numeric(0), n_types = integer(0)
+      )
     }
     caught_agg <- stats::aggregate(
       caught_rows[[count_col]],
@@ -3175,6 +3184,9 @@ add_catch <- function(design, data, catch_uid, interview_uid, species, count, ca
     )
     names(caught_agg)[3] <- "caught_total"
     combined <- merge(caught_agg, sub_agg, by = c("uid", "species"), all.x = TRUE)
+    # Recorded before the NA fill: TRUE only where both harvested and released
+    # were recorded, i.e. a full partition was attempted.
+    full_partition <- !is.na(combined$n_types) & combined$n_types == 2L
     combined$sub_total[is.na(combined$sub_total)] <- 0L
     violations <- combined[combined$caught_total < combined$sub_total, ]
     if (nrow(violations) > 0) {
@@ -3187,6 +3199,37 @@ add_catch <- function(design, data, catch_uid, interview_uid, species, count, ca
         ),
         "i" = paste0(
           "caught must be >= harvested + released for each species-interview combination."
+        )
+      ))
+    }
+
+    # Advisory: a full partition that under-accounts for catch (CATCH-06).
+    # The reverse direction aborts above. Only pairs recording BOTH harvested
+    # and released are checked: partial recording (one disposition type, or
+    # none) is common and legitimate in real creel data, so warning on it
+    # would be noise.
+    unreconciled <- combined[full_partition & combined$caught_total > combined$sub_total, ]
+    if (nrow(unreconciled) > 0) {
+      n_unrec <- nrow(unreconciled) # nolint: object_usage_linter
+      unrec_pairs <- paste0(unreconciled$uid, "/", unreconciled$species) # nolint: object_usage_linter
+      cli::cli_warn(c(
+        "!" = paste0(
+          "harvested + released is less than caught for {n_unrec} ",
+          "species-interview pair{?s}:"
+        ),
+        stats::setNames(
+          paste0("{.val ", unrec_pairs, "}"),
+          rep("*", length(unrec_pairs))
+        ),
+        "i" = paste0(
+          "This is advisory. Fish with no recorded disposition are legitimate, ",
+          "but a partition that does not sum to {.val caught} may indicate ",
+          "dropped rows."
+        ),
+        "i" = paste0(
+          "{.val caught} rows are the per-species total; {.val harvested} and ",
+          "{.val released} partition it. Summing {.field count} across all ",
+          "{.field catch_type} values double-counts."
         )
       ))
     }
