@@ -27,6 +27,29 @@ confirmed by code trace. Every finding below is verified; none are speculative.
 
 ---
 
+## Issue map
+
+Findings are tracked on GitHub (opened 2026-08-07). Grouped where findings share a
+fix or travel together.
+
+| Finding(s) | Issue | Title |
+| ---------- | ----- | ----- |
+| 1 | #105 | `add_counts()` selects the count column positionally |
+| 2 | #106 | Bus-route/ice `estimate_effort()` returns party-hours |
+| 3 | #107 | `estimate_harvest_rate()` returns a total, not a rate |
+| 4, 5 | #108 | Incomplete-trip ratio/pi sum; diagnostic slots not comparable |
+| 6 | #109 | `prep_counts_*()` `within_day_var`/`n_counts` are dead arguments |
+| 8 | #110 | No bus-route dispatch for release; `estimate_total_release_br()` dead |
+| 10 | #111 | `br_build_estimates()` hardcodes `method = "total"` |
+| 7, 9, 11 | #112 | Missing unit guards |
+| 12 | #113 | Documentation asserts units the code does not produce |
+
+Downstream book work is tracked in
+`~/Dev/modern-creel-surveys/.planning/TIDYCREEL-WISHLIST.md`, not as GitHub issues —
+that repo has never used issues and the wishlist is its working tracker.
+
+---
+
 ## Findings
 
 Severity order. All are silent — none currently produce an error or warning.
