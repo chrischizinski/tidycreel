@@ -50,6 +50,51 @@ that repo has never used issues and the wishlist is its working tracker.
 
 ---
 
+## Model routing
+
+**Routing principle:** route by whether a wrong answer is *detectable*. Dimensional
+and estimator-design work produces confidently-wrong answers that still pass the
+suite — that is the entire lesson of this audit, and of shipped bug 2. Mechanical
+changes with a fixed contract and a test that can actually fail are safe to delegate.
+
+**Verification is always Opus** (user instruction), including the confirm-the-fix
+pass on anything Sonnet implements.
+
+| Issue | Finding(s) | Implement | Why |
+| ----- | ---------- | --------- | --- |
+| #105 | 1 | **Opus** | Breaking API contract + back-compat call (abort vs warn vs default), and **three** positional call sites, not two — `creel-design.R:1237`, `creel-design.R:1263` (progressive `count_var_prog`), `creel-estimates.R:2803`. |
+| #106 | 2 | **Opus** | Moves every bus-route and ice number. Requires confirming `angler_effort_col` is the right operand against Malvestuto / Jones & Pollock, plus designing the party-size != 1 regression test. |
+| #107 | 3 | **Opus** | Divide-by-HT-effort vs error-out is an estimator design call, and the ratio needs correct variance (delta / `svyratio`), not just a division. |
+| #108 | 4, 5 | **Opus** | Hardest. Re-deriving the incomplete-trip estimator from Jones & Pollock Eq. 19.4/19.5. Pure estimator design. |
+| #109 | 6 | **Opus** | `cf²` and `mean_party_size²` scaling in variance units — precisely the class Sonnet gets confidently wrong, and precisely how shipped bug 2 happened. |
+| #110 | 8 | **Sonnet** implement / **Opus** verify | The dispatch mirrors the existing harvest bus-route dispatch — mechanical. **But `estimate_total_release_br()` has never been called, so it has never been exercised. Opus must verify it is correct before the wiring is trusted.** |
+| #111 | 10 | **Sonnet** | Thread a `method` string through 4 call sites and fix one `autoplot` map entry. No math. |
+| #112 | 7, 9, 11 | **Sonnet** | All three are guards. #11 is an allowlist check; #7 is a flag plus a warn; #9 is a guard **once Opus decides reject-vs-honour** — decide that first, then it is one branch. |
+| #113 | 12a | **Opus** | `flexible-count-estimation.Rmd` needs a *correct* replacement worked example. Producing the right numbers is exactly what failed the first time. |
+| #113 | 12b | **Sonnet** | `glossary.Rmd:68`, `data.R:330`, `ice-fishing.Rmd:~214-218`, `tidycreel.Rmd:47/71` — prose only, exact target text already identified. |
+
+Non-finding work:
+
+| Task | Model | Why |
+| ---- | ----- | --- |
+| Finish daylight change — tests for `kearney_daylight()` | **Opus** | A solar-position calculation validated against known values; wrong-but-plausible is the failure mode. |
+| Finish daylight change — roxygen, `document()`, version bump | **Sonnet** | Mechanical. |
+| NEWS entry, version bump | **Sonnet** | Drafted from the commit log. |
+| Interpreting `just check` / `just test` failures | **Opus** | Verification. |
+| Verify/close stale issues #93–#101 | **Opus** | Verification, and the claim "all nine resolved" is unconfirmed. |
+
+**Sequencing constraints that override convenience:**
+
+- #106 before #107 — #107's denominator is wrong until #106 lands.
+- #105 before #110 — `estimate_total_release()` currently reaches the positional
+  selector via `estimate_effort_total()`.
+- #108 depends on #106 for the same denominator reason.
+- Unit propagation last, after all 12. See the sequencing note at the end of this
+  document: labelling an estimator that computes the wrong quantity yields
+  confident, well-labelled, wrong numbers.
+
+---
+
 ## Findings
 
 Severity order. All are silent — none currently produce an error or warning.
