@@ -1,3 +1,22 @@
+# tidycreel (development version)
+
+## Documentation
+
+* `vignettes/flexible-count-estimation.Rmd`: the instantaneous baseline built an
+  `open_hours` column that no tidycreel function reads, so the example looked
+  like it accounted for the length of the fishing day while reporting 135 where
+  its own stated formula gives 1350 — a 10x understatement in the vignette
+  teaching this exact topic. The inert column is removed and the units of the
+  instantaneous estimate (angler-days, not angler-hours) are now stated
+  explicitly (#113).
+
+* `vignettes/progressive-count-surveys.Rmd`: the "Multiple Periods per Day"
+  example built `open_hours` and `shift_hours` and passed neither, so it
+  demonstrated the instantaneous multi-count path inside the progressive
+  article. Both inert columns are removed and the text now says the chunk shows
+  the within-day variance decomposition only, without the progressive `T_d`
+  expansion (#113).
+
 # tidycreel 2.5.0 "Creek Chub" (2026-06-30)
 
 ## New features

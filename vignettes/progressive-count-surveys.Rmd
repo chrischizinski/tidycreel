@@ -277,9 +277,8 @@ For the morning–evening case, use `count_time_col` to identify the circuit wit
 ```{r multi-period, message = FALSE}
 # Two circuits per day (morning and evening traversals)
 cal_2p <- data.frame(
-  date       = rep(as.Date(c("2024-07-01", "2024-07-02", "2024-07-06", "2024-07-07")), 1),
-  day_type   = c("weekday", "weekday", "weekend", "weekend"),
-  open_hours = 12
+  date     = rep(as.Date(c("2024-07-01", "2024-07-02", "2024-07-06", "2024-07-07")), 1),
+  day_type = c("weekday", "weekday", "weekend", "weekend")
 )
 des_2p <- creel_design(cal_2p, date = date, strata = day_type)
 
@@ -290,8 +289,7 @@ cnt_2p <- data.frame(
   )), each = 2),
   day_type = rep(c("weekday", "weekday", "weekend", "weekend"), each = 2),
   count_time = rep(c("am", "pm"), 4),
-  n_anglers = c(22L, 18L, 20L, 24L, 55L, 48L, 62L, 58L),
-  shift_hours = 12
+  n_anglers = c(22L, 18L, 20L, 24L, 55L, 48L, 62L, 58L)
 )
 
 # Note: count_time_col for within-day identification
@@ -303,6 +301,12 @@ est_2p$estimates
 
 The `se_within` column is now non-zero, reflecting variability between the morning and
 evening circuits within each day.
+
+This chunk shows the within-day variance decomposition on its own; it does not apply the
+progressive $T_d$ expansion, so `est_2p` is in counts rather than angler-hours. To get
+both, add `count_type = "progressive"`, `circuit_time`, and `period_length_col` as in the
+sections above — `add_counts()` supports multiple circuits per day on the progressive
+path.
 
 ## Assemble a Summary Report
 

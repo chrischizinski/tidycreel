@@ -22,8 +22,11 @@ Creel surveys estimate angler effort — the total angler-hours or angler-trips 
 during a survey period. The count data collected in the field can take two forms:
 
 - **Instantaneous counts** (Hoenig et al. 1993): At a random time within the survey period,
-  an observer records the number of anglers visible on a section. Effort is estimated as
-  count × total open hours.
+  an observer records the number of anglers visible on a section. `estimate_effort()`
+  expands the counts to the season and returns **angler-days** — the counts themselves,
+  summed over days. It does not multiply by open hours, so converting the result to
+  angler-hours is a step you take yourself (see "Units of the instantaneous estimate"
+  below).
 
 - **Progressive counts** (Pope et al., in press): An observer travels the entire section
   (one "circuit") and records the number of anglers encountered along the way.
@@ -48,8 +51,7 @@ library(tidycreel)
 # Survey calendar: four days, two strata
 calendar <- data.frame(
   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
-  day_type = c("weekday", "weekday", "weekend", "weekend"),
-  open_hours = rep(10, 4)
+  day_type = c("weekday", "weekday", "weekend", "weekend")
 )
 
 design <- creel_design(calendar, date = date, strata = day_type)
@@ -69,6 +71,20 @@ result$estimates
 With a single count per day, `se_within` is always zero — there is no within-day
 replication to estimate within-day variance. The `se` column equals `se_between`.
 
+### Units of the instantaneous estimate
+
+The estimate above is 135, which is the sum of the four counts (all four calendar days
+were sampled, so the season expansion factor is 1). It is **angler-days**, not
+angler-hours: an instantaneous count is a snapshot of how many anglers were present at
+one moment, and `estimate_effort()` never multiplies it by the length of the fishing
+day. On a 10-hour day the corresponding effort is `135 * 10 = 1350` angler-hours, and
+that multiplication is yours to do.
+
+The progressive path below is the one that carries hours, via `period_length_col`. If
+you need angler-hours from instantaneous counts, either scale the result yourself or
+supply pre-expanded daily effort to `add_counts()` — a column already in angler-hours
+— rather than raw counts.
+
 ## Multiple Counts per Day
 
 When observers complete multiple circuits on the same day, each circuit is a sub-sample
@@ -78,8 +94,7 @@ within the PSU. Supply the circuit identifier column via `count_time_col`.
 # Two circuits per day: morning ("am") and afternoon ("pm")
 calendar_m <- data.frame(
   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
-  day_type = c("weekday", "weekday", "weekend", "weekend"),
-  open_hours = rep(10, 4)
+  day_type = c("weekday", "weekday", "weekend", "weekend")
 )
 
 design_m <- creel_design(calendar_m, date = date, strata = day_type)
@@ -127,8 +142,7 @@ needed internally to compute the expansion factor κ = T_d / τ.
 ```{r progressive, message = FALSE}
 calendar_p <- data.frame(
   date       = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
-  day_type   = c("weekday", "weekday", "weekend", "weekend"),
-  open_hours = rep(8, 4)
+  day_type   = c("weekday", "weekday", "weekend", "weekend")
 )
 
 design_p <- creel_design(calendar_p, date = date, strata = day_type)
@@ -166,8 +180,7 @@ the first-day value equals 1,872 angler-hours directly.
 # Reproduce Pope et al. per-day calculation
 cal_pope <- data.frame(
   date       = as.Date(c("2024-06-01", "2024-06-02")),
-  day_type   = c("weekday", "weekday"),
-  open_hours = c(8, 8)
+  day_type   = c("weekday", "weekday")
 )
 design_pope <- creel_design(cal_pope, date = date, strata = day_type)
 
