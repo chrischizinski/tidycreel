@@ -1,5 +1,31 @@
 # tidycreel (development version)
 
+## New features
+
+* `day_length()` computes hours between sunrise and sunset for a latitude and
+  date using the CBM model of Forsythe et al. (1995). Closed form — no lookup
+  table, no network access, no location database. Only latitude is needed:
+  longitude and time zone shift when sunrise and sunset occur, not the interval
+  between them. `horizon` selects the depression angle, by name (`"sunset"`,
+  `"civil"`, `"nautical"`, `"astronomical"`) or in degrees. Days inside the
+  polar circles saturate at 0 or 24 hours rather than returning `NaN`.
+
+  Day length is astronomical and is not the same quantity as the estimators'
+  \eqn{T_d}, which is the period the counts were randomised within — a property
+  of the survey design, set by regulation, access hours, or field protocol. Use
+  `day_length()` for simulation and planning; pass the period your protocol
+  actually used to `add_counts()`.
+
+* `simulate_creel_data()` gains `lat` and `daylight_hours`, either of which adds
+  `daylight_hours` and `angler_hours` columns to the simulated counts table.
+  `lat` derives the daily period per date via `day_length()`; `daylight_hours`
+  sets it directly, as a scalar or a named monthly vector, for surveys whose
+  fishing day is fixed by regulation. Supplying both is an error.
+
+  Supplying neither leaves both columns off, so the default output is unchanged.
+  There is no honest default latitude, and substituting one would put a
+  plausible number where the caller gave none.
+
 ## Breaking changes
 
 * `add_counts()` gains a `count_col` argument and no longer picks the count
