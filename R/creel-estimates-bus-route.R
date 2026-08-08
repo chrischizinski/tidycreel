@@ -79,8 +79,14 @@ estimate_effort_br <- function(
     )
   }
 
-  # Identify the effort column stored during add_interviews()
-  effort_col <- design$effort_col
+  # Use angler-effort (duration x n_anglers), not the raw per-party trip duration.
+  # e_i must be angler-hours: the reported total is labelled angler-hours, and CPUE on
+  # the same design is fish per angler-hour, so a party-hours e_i both understates the
+  # total by the mean party size and mixes denominators in any E x CPUE product.
+  # Every other rate estimator reads angler_effort_col for this reason. When
+  # add_interviews() was given no n_anglers, .angler_effort equals the raw effort and
+  # this is a no-op -- add_interviews() already warns in that case.
+  effort_col <- design$angler_effort_col
 
   # Compute enumeration-expanded effort per interview row (Jones & Pollock Eq. 19.4)
   # NA expansion with n_counted=0, n_interviewed=0: treat e_i as 0 (zero-effort site)

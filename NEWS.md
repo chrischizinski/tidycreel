@@ -28,6 +28,20 @@
 
 ## Breaking changes
 
+* Bus-route and ice `estimate_effort()` now return angler-hours. They read the
+  raw per-party trip duration, so the estimate was party-hours reported under an
+  angler-hours label — invariant to party size, and understated by exactly the
+  mean party size in any boat fishery. They now read the angler-effort column
+  (duration × `n_anglers`) that every other rate estimator already used. On the
+  same design CPUE is fish per angler-hour, so the old behaviour also mixed
+  denominators in any effort × CPUE product (#106).
+
+  Surveys recording one angler per party are unaffected: with no `n_anglers`,
+  angler-effort equals the raw effort, and `add_interviews()` already warns.
+  Anything with parties larger than one will see totals rise by roughly the mean
+  party size. The ice output column `total_effort_hr_on_ice` is affected on the
+  same terms.
+
 * `add_counts()` gains a `count_col` argument and no longer picks the count
   column by position. Previously the count variable was taken as the first
   numeric column that was not design metadata, so a counts table carrying more
