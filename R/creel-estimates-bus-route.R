@@ -240,6 +240,9 @@ estimate_effort_br <- function(
 #' @param conf_level Numeric confidence level (0-1)
 #' @param verbose Logical. If TRUE, prints informational message about estimator
 #' @param use_trips Character: "complete", "incomplete", or "diagnostic"
+#' @param truncate_at Numeric minimum trip duration (hours) below which
+#'   incomplete trips are discarded before mean-of-ratios estimation, or NULL
+#'   to disable. Ignored on the complete-trip path.
 #'
 #' @return A creel_estimates object with site_contributions attribute,
 #'   or creel_estimates_diagnostic for use_trips = "diagnostic"
@@ -254,11 +257,16 @@ estimate_harvest_br <- function(
   conf_level,
   verbose,
   use_trips,
+  truncate_at = 0.5,
   call = rlang::caller_env()
 ) {
   if (verbose) {
     cli::cli_inform(c(
-      "i" = "Using bus-route HPUE: ratio of HT totals (Jones & Pollock 2012, Eq. 19.5 / Eq. 19.4)"
+      "i" = if (identical(use_trips, "incomplete")) {
+        "Using bus-route HPUE: truncated mean of ratios (Hoenig et al. 1997)"
+      } else {
+        "Using bus-route HPUE: ratio of HT totals (Jones & Pollock 2012, Eq. 19.5 / Eq. 19.4)"
+      }
     ))
   }
 
@@ -315,6 +323,12 @@ estimate_harvest_br <- function(
 
   # Diagnostic mode: run both complete and incomplete paths, return diagnostic
   if (use_trips == "diagnostic") {
+    # Both slots are now fish per angler-hour, so the gap between them is
+    # attributable to trip status rather than to a change of physical quantity
+    # (GH #108). They remain different estimators -- ratio of HT totals for
+    # complete trips, truncated mean of ratios for incomplete ones -- because
+    # each is the estimator its trip type supports.
+    br_require_trip_status(design, interviews, call)
     complete_result <- estimate_harvest_br(
       design,
       by_vars,
@@ -322,6 +336,7 @@ estimate_harvest_br <- function(
       conf_level,
       verbose = FALSE,
       use_trips = "complete",
+      truncate_at = truncate_at,
       call = call
     )
     incomplete_result <- suppressWarnings(estimate_harvest_br(
@@ -331,6 +346,7 @@ estimate_harvest_br <- function(
       conf_level,
       verbose = FALSE,
       use_trips = "incomplete",
+      truncate_at = truncate_at,
       call = call
     ))
     result <- list(complete = complete_result, incomplete = incomplete_result)
@@ -339,7 +355,6 @@ estimate_harvest_br <- function(
   }
 
   harvest_col <- design$harvest_col
-  effort_col <- design$effort_col
   site_col <- design$bus_route$site_col
   circuit_col <- design$bus_route$circuit_col
   trip_status_col <- design$trip_status_col
@@ -355,36 +370,14 @@ estimate_harvest_br <- function(
       is_incomplete <- tolower(interviews[[trip_status_col]]) == "incomplete"
       interviews <- interviews[is_incomplete, , drop = FALSE]
     }
-    # Incomplete path: pi_i-weighted MOR (h_ratio_i = harvest / effort)
-    # Guard against zero/NA effort (angler intercepted at trip start)
-    valid_effort <- !is.na(interviews[[effort_col]]) & interviews[[effort_col]] > 0
-    if (any(!valid_effort)) {
-      n_dropped <- sum(!valid_effort) # nolint: object_usage_linter
-      cli::cli_warn(
-        "Dropping {n_dropped} incomplete-trip interview{?s} with zero or missing effort \\
-        before computing harvest rate."
-      )
-      interviews <- interviews[valid_effort, , drop = FALSE]
-    }
-    interviews$.h_ratio_i <- interviews[[harvest_col]] / interviews[[effort_col]]
-    interviews$.contribution <- interviews$.h_ratio_i / interviews$.pi_i
-
-    # Build per-site breakdown table
-    # Use intersect() to skip synthetic site/circuit cols absent in ice interviews
-    avail_site_cols_inc <- intersect(c(site_col, circuit_col), names(interviews))
-    site_table <- interviews[c(avail_site_cols_inc, ".h_ratio_i", ".pi_i", ".contribution")]
-    names(site_table)[names(site_table) == ".h_ratio_i"] <- "h_ratio_i"
-    names(site_table)[names(site_table) == ".pi_i"] <- "pi_i"
-    names(site_table)[names(site_table) == ".contribution"] <- "h_ratio_i_over_pi_i"
-
-    return(br_build_estimates(
+    return(br_incomplete_harvest_rate(
       interviews,
       by_vars,
       variance_method,
       conf_level,
       design,
-      site_table,
-      harvest_col
+      truncate_at,
+      call
     ))
   }
 
@@ -450,15 +443,24 @@ estimate_harvest_br <- function(
 #' required; dividing point estimates and propagating the SEs as if independent
 #' overstates the standard error.
 #'
-#' @param interviews Interview rows carrying `.contribution` (h_i / pi_i) and
-#'   `.e_contribution` (e_i / pi_i)
+#' The same machinery serves the incomplete-trip mean-of-ratios path, where the
+#' numerator is the weighted sum of per-angler rates and the denominator is the
+#' sum of those weights (a Hajek mean). Both are ratio estimators over the same
+#' interviews, so both need the same linearisation.
+#'
+#' @param interviews Interview rows carrying `.contribution` and the denominator
+#'   contribution column named by `denom_col`
 #' @param by_vars NULL or character vector of grouping variable names
 #' @param variance_method Character string: "taylor", "bootstrap", or "jackknife"
 #' @param conf_level Numeric confidence level (0-1)
 #' @param design The creel_design object
 #' @param site_table Per-site attribution table to attach as an attribute
+#' @param method Character method string recorded on the result
+#' @param denom_col Name of the denominator contribution column
+#' @param zero_denom_msg Character vector passed to [cli::cli_abort()] when the
+#'   denominator sums to zero
 #'
-#' @return A creel_estimates object with method "ratio-of-means-hpue"
+#' @return A creel_estimates object carrying `method`
 #'
 #' @keywords internal
 #' @noRd
@@ -469,7 +471,14 @@ br_harvest_rate_estimates <- function(
   variance_method,
   conf_level,
   design,
-  site_table
+  site_table,
+  method = "ratio-of-means-hpue",
+  denom_col = ".e_contribution",
+  zero_denom_msg = c(
+    "Cannot compute a harvest rate: estimated total effort is zero.",
+    "x" = "{.fn estimate_harvest_rate} divides harvest by the HT effort total.",
+    "i" = "Check that {.arg effort} and {.arg n_anglers} were supplied to {.fn add_interviews}."
+  )
 ) {
   strata_cols <- design$strata_cols
   strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0) {
@@ -480,19 +489,16 @@ br_harvest_rate_estimates <- function(
   svy_br <- build_interview_survey(interviews, strata = strata_formula) # nolint: object_usage_linter
   svy_br <- get_variance_design(svy_br, variance_method) # nolint: object_usage_linter
 
-  # A zero effort total leaves the rate undefined. Abort rather than return Inf
+  # A zero denominator leaves the rate undefined. Abort rather than return Inf
   # or NaN dressed up as a harvest rate.
-  if (isTRUE(all.equal(sum(interviews$.e_contribution, na.rm = TRUE), 0))) {
-    cli::cli_abort(c(
-      "Cannot compute a harvest rate: estimated total effort is zero.",
-      "x" = "{.fn estimate_harvest_rate} divides harvest by the HT effort total.",
-      "i" = "Check that {.arg effort} and {.arg n_anglers} were supplied to {.fn add_interviews}."
-    ))
+  denom_formula <- stats::reformulate(denom_col)
+  if (isTRUE(all.equal(sum(interviews[[denom_col]], na.rm = TRUE), 0))) {
+    cli::cli_abort(zero_denom_msg)
   }
 
   if (is.null(by_vars)) {
     svy_result <- suppressWarnings(
-      survey::svyratio(~.contribution, ~.e_contribution, svy_br)
+      survey::svyratio(~.contribution, denom_formula, svy_br)
     )
     ci <- confint(svy_result, level = conf_level)
     estimates_df <- tibble::tibble(
@@ -505,7 +511,7 @@ br_harvest_rate_estimates <- function(
     result <- new_creel_estimates(
       # nolint: object_usage_linter
       estimates = estimates_df,
-      method = "ratio-of-means-hpue",
+      method = method,
       variance_method = variance_method,
       design = design,
       conf_level = conf_level,
@@ -521,13 +527,13 @@ br_harvest_rate_estimates <- function(
     by = by_formula,
     design = svy_br,
     FUN = survey::svyratio,
-    denominator = ~.e_contribution,
+    denominator = denom_formula,
     vartype = c("se", "ci"),
     ci.level = conf_level,
     keep.names = FALSE
   ))
 
-  ratio_col <- ".contribution/.e_contribution"
+  ratio_col <- paste0(".contribution/", denom_col)
   n_by_group <- stats::aggregate(
     list(n = rep(1L, nrow(interviews))),
     by = interviews[by_vars],
@@ -551,7 +557,7 @@ br_harvest_rate_estimates <- function(
   result <- new_creel_estimates(
     # nolint: object_usage_linter
     estimates = estimates_df,
-    method = "ratio-of-means-hpue",
+    method = method,
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
@@ -559,6 +565,203 @@ br_harvest_rate_estimates <- function(
   )
   attr(result, "site_contributions") <- site_table
   result
+}
+
+#' Abort when a trip-status column is required but absent or one-sided
+#'
+#' @param design The creel_design object
+#' @param interviews Interview rows
+#' @param call Calling environment for the condition
+#'
+#' @keywords internal
+#' @noRd
+br_require_trip_status <- function(design, interviews, call = rlang::caller_env()) {
+  trip_status_col <- design$trip_status_col
+  if (is.null(trip_status_col) || !trip_status_col %in% names(interviews)) {
+    cli::cli_abort(
+      c(
+        "{.code use_trips = \"diagnostic\"} requires a trip status column.",
+        "x" = "The design has no trip status column, so the two slots cannot be separated.",
+        "i" = "Supply {.arg trip_status} to {.fn add_interviews}."
+      ),
+      call = call
+    )
+  }
+  status <- tolower(interviews[[trip_status_col]])
+  n_complete <- sum(status == "complete", na.rm = TRUE) # nolint: object_usage_linter
+  n_incomplete <- sum(status == "incomplete", na.rm = TRUE) # nolint: object_usage_linter
+  if (n_complete == 0 || n_incomplete == 0) {
+    cli::cli_abort(
+      c(
+        "{.code use_trips = \"diagnostic\"} needs both complete and incomplete trips.",
+        "x" = "Found {n_complete} complete and {n_incomplete} incomplete interview{?s}.",
+        "i" = "A one-sided comparison has nothing to compare; \\
+               use {.code use_trips = \"complete\"} or {.code \"incomplete\"} instead."
+      ),
+      call = call
+    )
+  }
+  invisible(TRUE)
+}
+
+#' Bus-route incomplete-trip harvest rate by truncated mean of ratios
+#'
+#' Hoenig, Jones, Pollock, Robson & Wade (1997, *Biometrics* 53:306-317) analyse
+#' both candidate catch-rate estimators for anglers intercepted mid-trip. The
+#' ratio of means "does not provide an estimate of catch rate that can be used
+#' with an independent estimate of total effort to provide an unbiased estimate
+#' of total catch except in the unrealistic case where lambda is constant over
+#' all anglers" -- its expectation weights individual rates by the *square* of
+#' completed trip length. The mean of ratios has the correct expectation, and is
+#' what this path computes.
+#'
+#' Two departures from the paper's plain average are forced by the bus-route
+#' design:
+#'
+#' * Interviews are not equally likely. Each is weighted by
+#'   `.expansion / .pi_i` -- the within-site subsampling expansion over the
+#'   site-by-period inclusion probability -- giving a Hajek weighted mean rather
+#'   than an arithmetic one. The previous code divided each *ratio* by `.pi_i`
+#'   and summed, which is neither a rate nor a total: it grew linearly with the
+#'   number of interviews (GH #108). It also dropped `.expansion` entirely,
+#'   which the complete-trip path applies.
+#' * The per-angler rate divides by angler-effort, not the party's elapsed
+#'   hours, so the result is fish per angler-hour and not fish per party-hour
+#'   (GH #106).
+#'
+#' The mean of ratios has *infinite* asymptotic variance, because `1/L_j` has
+#' infinite expectation as trip length approaches zero. Hoenig et al. recommend
+#' discarding trips shorter than 30 minutes, which is the `truncate_at` default.
+#' Truncation is applied to elapsed trip duration, not to angler-hours: it is the
+#' short *clock* interval that makes the reciprocal explode, and a large party
+#' fishing briefly can clear an angler-hour threshold while still being the
+#' unstable case the truncation exists to remove.
+#'
+#' @param interviews Incomplete-trip interview rows, already filtered
+#' @param by_vars NULL or character vector of grouping variable names
+#' @param variance_method Character string: "taylor", "bootstrap", or "jackknife"
+#' @param conf_level Numeric confidence level (0-1)
+#' @param design The creel_design object
+#' @param truncate_at Numeric minimum trip duration in hours, or NULL to disable
+#' @param call Calling environment for conditions
+#'
+#' @return A creel_estimates object with method "mean-of-ratios-hpue"
+#'
+#' @keywords internal
+#' @noRd
+br_incomplete_harvest_rate <- function(
+  # nolint: object_usage_linter
+  interviews,
+  by_vars,
+  variance_method,
+  conf_level,
+  design,
+  truncate_at,
+  call = rlang::caller_env()
+) {
+  harvest_col <- design$harvest_col
+  angler_effort_col <- design$angler_effort_col
+  site_col <- design$bus_route$site_col
+  circuit_col <- design$bus_route$circuit_col
+
+  if (!is.null(truncate_at) && (!is.numeric(truncate_at) || truncate_at <= 0)) {
+    cli::cli_abort(
+      c(
+        "Invalid {.arg truncate_at}: {.val {truncate_at}}",
+        "x" = "{.arg truncate_at} must be a positive number of hours, or NULL."
+      ),
+      call = call
+    )
+  }
+
+  # Truncate on elapsed duration. trip_duration_col is the explicit clock
+  # interval when the design carries one; effort_col is the party's hours fished
+  # to the time of interview, which is the same elapsed interval.
+  duration_col <- design$trip_duration_col
+  if (is.null(duration_col) || !duration_col %in% names(interviews)) {
+    duration_col <- design$effort_col
+  }
+
+  if (!is.null(truncate_at)) {
+    keep <- !is.na(interviews[[duration_col]]) &
+      interviews[[duration_col]] >= truncate_at
+    n_truncated <- sum(!keep) # nolint: object_usage_linter
+    interviews <- interviews[keep, , drop = FALSE]
+    if (n_truncated > 0) {
+      cli::cli_inform(c(
+        "i" = "Discarded {n_truncated} incomplete trip{?s} shorter than \\
+               {truncate_at} hour{?s} before mean-of-ratios estimation.",
+        " " = "Hoenig et al. (1997) recommend this truncation; \\
+               untruncated MOR has infinite variance."
+      ))
+    }
+  } else {
+    cli::cli_warn(c(
+      "{.arg truncate_at = NULL} disables short-trip truncation.",
+      "x" = "The mean-of-ratios estimator has infinite asymptotic variance \\
+             without it (Hoenig et al. 1997).",
+      "i" = "The reported SE understates the true sampling variability."
+    ))
+  }
+
+  # Guard against zero/NA angler-effort (angler intercepted at trip start).
+  # Survives truncation only when truncate_at is NULL.
+  valid_effort <- !is.na(interviews[[angler_effort_col]]) &
+    interviews[[angler_effort_col]] > 0
+  if (any(!valid_effort)) {
+    n_dropped <- sum(!valid_effort) # nolint: object_usage_linter
+    cli::cli_warn(
+      "Dropping {n_dropped} incomplete-trip interview{?s} with zero or missing effort \\
+      before computing harvest rate."
+    )
+    interviews <- interviews[valid_effort, , drop = FALSE]
+  }
+
+  if (nrow(interviews) == 0) {
+    cli::cli_abort(
+      c(
+        "No incomplete trips remain for mean-of-ratios estimation.",
+        "x" = "All incomplete-trip interviews were truncated or had zero effort.",
+        "i" = "Lower {.arg truncate_at} or check the interview effort column."
+      ),
+      call = call
+    )
+  }
+
+  # Per-angler rate, then Hajek weights. .contribution / .w_contribution is the
+  # weighted mean of the rates; svyratio linearises over both.
+  interviews$.h_ratio_i <- interviews[[harvest_col]] /
+    interviews[[angler_effort_col]]
+  interviews$.w_i <- interviews$.expansion / interviews$.pi_i
+  interviews$.contribution <- interviews$.h_ratio_i * interviews$.w_i
+  interviews$.w_contribution <- interviews$.w_i
+
+  # Build per-site breakdown table
+  # Use intersect() to skip synthetic site/circuit cols absent in ice interviews
+  avail_site_cols_inc <- intersect(c(site_col, circuit_col), names(interviews))
+  site_table <- interviews[c(
+    avail_site_cols_inc, ".h_ratio_i", ".pi_i", ".w_i", ".contribution"
+  )]
+  names(site_table)[names(site_table) == ".h_ratio_i"] <- "h_ratio_i"
+  names(site_table)[names(site_table) == ".pi_i"] <- "pi_i"
+  names(site_table)[names(site_table) == ".w_i"] <- "w_i"
+  names(site_table)[names(site_table) == ".contribution"] <- "w_i_times_h_ratio_i"
+
+  br_harvest_rate_estimates(
+    interviews,
+    by_vars,
+    variance_method,
+    conf_level,
+    design,
+    site_table,
+    method = "mean-of-ratios-hpue",
+    denom_col = ".w_contribution",
+    zero_denom_msg = c(
+      "Cannot compute a harvest rate: the mean-of-ratios weights sum to zero.",
+      "x" = "Every incomplete-trip interview has zero weight (.expansion / .pi_i).",
+      "i" = "Check {.arg n_counted}, {.arg n_interviewed}, and the sampling frame."
+    )
+  )
 }
 
 # Bus-route total catch estimation ----

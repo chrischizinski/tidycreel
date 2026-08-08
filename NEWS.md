@@ -46,10 +46,49 @@
   Grouped results no longer carry a `proportion` column. A share-of-total is
   meaningful for a total and meaningless for a rate.
 
-  `use_trips = "incomplete"` is unchanged and still pending #108. Hoenig et al.
-  (1997) show ratio-of-means has the wrong expectation for roving-type designs
-  with incomplete trips and recommend a mean-of-ratios estimator with trips
-  shorter than 30 minutes discarded; that is not yet implemented here.
+* `estimate_harvest_rate(use_trips = "incomplete")` on a bus-route design now
+  returns a rate. It computed a per-angler ratio, divided that ratio by the
+  inclusion probability, and summed. Inverse-probability weights apply to
+  totals, not to ratios, so the result was neither the population rate nor a
+  total: it **grew linearly with the number of interviews**. On a fixture where
+  every angler harvests at 1 fish per angler-hour it returned 19.2, 38.3, and
+  76.7 as the same population was sampled with 4, 8, and 16 interviews. It also
+  dropped the `.expansion` factor the complete-trip path applies, and divided by
+  the party's elapsed hours rather than angler-hours, so the underlying ratio
+  was fish per party-hour (#108).
+
+  The path now returns the estimator this trip type supports: the truncated
+  mean of ratios of Hoenig, Jones, Pollock, Robson & Wade (1997, *Biometrics*
+  53:306–317), reported as `method = "mean-of-ratios-hpue"`. For anglers
+  intercepted mid-trip they show ratio-of-means weights individual rates by the
+  *square* of completed trip length and so "does not provide an estimate of
+  catch rate that can be used with an independent estimate of total effort to
+  provide an unbiased estimate of total catch"; the mean of ratios has the
+  correct expectation. Because interviews are not equally likely under a
+  bus-route design, the mean is weighted by `.expansion / .pi_i` — a Hájek mean
+  rather than the paper's plain average — and computed with `survey::svyratio()`
+  so the variance is linearised over numerator and denominator together.
+
+* `estimate_harvest_rate()` gains `truncate_at`, defaulting to `0.5` hours.
+  The mean-of-ratios estimator has *infinite* asymptotic variance, because
+  `1/L` has infinite expectation as trip length approaches zero; Hoenig et al.
+  (1997) recommend discarding trips shorter than 30 minutes. The threshold
+  applies to elapsed trip duration, not to angler-hours — it is the short clock
+  interval that makes the reciprocal explode, and a large party fishing briefly
+  clears an angler-hour threshold while still being the unstable case.
+  `truncate_at = NULL` disables truncation and warns. The argument is ignored on
+  every other path, including `use_trips = "complete"`.
+
+* `use_trips = "diagnostic"` on a bus-route design now compares like with like.
+  Its two slots held a harvest total and a quantity that grew with sample size,
+  so the gap read as enormous incomplete-trip bias when it was a change of
+  physical units. Both slots now report fish per angler-hour. They remain
+  different estimators — ratio of HT totals for complete trips, truncated mean
+  of ratios for incomplete ones — because each is the estimator its trip type
+  supports. A design carrying only one trip type now aborts with a clear message
+  instead of failing inside `survey` with "all arguments must have the same
+  length", and the `verbose` dispatch message names the estimator actually used
+  rather than always announcing the complete-trip one.
 
 * Bus-route and ice `estimate_effort()` now return angler-hours. They read the
   raw per-party trip duration, so the estimate was party-hours reported under an

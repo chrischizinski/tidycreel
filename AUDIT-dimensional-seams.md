@@ -200,6 +200,14 @@ The denominator is `effort_col`, so the underlying ratio is also fish per
 
 **Decision: REAL BUG.**
 
+**LANDED (#108).** Reproduced before the fix: on a fixture where every angler harvests
+at exactly 1 fish per angler-hour, the estimator returned 19.17, 38.33, and 76.67 for
+the same population sampled with 4, 8, and 16 interviews — defect 2 confirmed exactly.
+Replaced by the truncated mean of ratios of Hoenig et al. (1997), weighted by
+`.expansion / .pi_i` (a Hájek mean, which is what defect 1 required and what restores
+the dropped `.expansion` of defect 3) and divided by angler-effort (finding 2 residue).
+Returns 1.0 at all three sample sizes. `method = "mean-of-ratios-hpue"`.
+
 ### 5. `use_trips = "diagnostic"` compares two different physical dimensions
 
 `R/creel-estimates-bus-route.R:311-332` returns `list(complete=, incomplete=)` classed
@@ -209,6 +217,14 @@ findings 3 and 4, the `complete` slot is fish (a total) and the `incomplete` slo
 bias is enormous". It is not bias; the slots are not the same quantity.
 
 **Decision: REAL BUG** — consequence of 3 + 4, but separately user-facing.
+
+**LANDED (#108).** Both slots are now fish per angler-hour, verified on a fixture whose
+true rate is 2.0: both return 2.0, and tripling party size divides both by three. They
+stay different estimators (ratio of HT totals vs truncated mean of ratios) because each
+is the estimator its trip type supports. A one-sided design used to fail inside `survey`
+with "all arguments must have the same length"; it now aborts naming the counts. The
+`verbose` message named the complete-trip estimator on every path, including the one
+that never ran it — it now names the estimator actually used.
 
 ### 6. `prep_counts_*(within_day_var=, n_counts=)` are dead arguments
 

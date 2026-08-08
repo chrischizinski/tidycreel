@@ -1510,11 +1510,30 @@ estimate_catch_rate <- function(
 #'   \code{"complete"} (default), \code{"incomplete"}, or \code{"diagnostic"}.
 #'   When \code{trip_status} was not provided to \code{\link{add_interviews}},
 #'   this argument has no effect for standard designs.
+#' @param truncate_at Numeric minimum trip duration in hours for the bus-route
+#'   incomplete-trip estimator (default \code{0.5}, i.e. 30 minutes). Incomplete
+#'   trips shorter than this are discarded before the mean of ratios is taken.
+#'   Hoenig et al. (1997) recommend the 30-minute threshold because the
+#'   untruncated mean-of-ratios estimator has infinite asymptotic variance:
+#'   \code{1/L} has infinite expectation as trip length approaches zero. The
+#'   threshold applies to elapsed trip duration, not to angler-hours. Set to
+#'   \code{NULL} to disable, which warns. Ignored on every other path, including
+#'   \code{use_trips = "complete"}.
 #' @param missing_sections Character string controlling behavior when a
 #'   registered section has no interview observations. \code{"warn"} (default)
 #'   emits a \code{cli_warn()} and inserts an NA row with
 #'   \code{data_available = FALSE}. \code{"error"} aborts with
 #'   \code{cli_abort()}. Ignored for non-sectioned designs.
+#'
+#' @note Bus-route designs use a different estimator for each trip type, because
+#'   each is the estimator that trip type supports. \code{use_trips = "complete"}
+#'   returns the ratio of the two Horvitz-Thompson totals (Jones & Pollock 2012,
+#'   Eq. 19.4 and 19.5). \code{use_trips = "incomplete"} returns a truncated,
+#'   design-weighted mean of the individual angler rates (Hoenig et al. 1997),
+#'   whose expectation is the ratio of total harvest to total effort; the ratio
+#'   of means is biased for anglers intercepted mid-trip, weighting individual
+#'   rates by the square of completed trip length. Both report fish per
+#'   angler-hour, so \code{use_trips = "diagnostic"} compares like with like.
 #'
 #' @note When called on a sectioned design, no \code{.lake_total} row is
 #'   produced. Harvest rates (fish per angler-hour) are not additive across
@@ -1616,6 +1635,7 @@ estimate_harvest_rate <- function(
   conf_level = 0.95,
   verbose = FALSE,
   use_trips = NULL,
+  truncate_at = 0.5,
   missing_sections = "warn"
 ) {
   # Capture by parameter BEFORE validation
@@ -1654,12 +1674,6 @@ estimate_harvest_rate <- function(
 
   # Bus-route dispatch (before standard tier-2 validation)
   if (!is.null(design$design_type) && design$design_type == "bus_route") {
-    if (verbose) {
-      cli::cli_inform(c(
-        "i" = "Using bus-route HPUE: ratio of HT totals (Jones & Pollock 2012, Eq. 19.5 / Eq. 19.4)"
-      ))
-    }
-
     # Resolve by parameter to column names for bus-route
     if (rlang::quo_is_null(by_quo)) {
       by_vars_br <- NULL
@@ -1674,6 +1688,20 @@ estimate_harvest_rate <- function(
       by_vars_br <- names(by_cols_br)
     }
     use_trips_br <- if (is.null(use_trips)) "complete" else use_trips
+
+    # The two trip paths are different estimators, so the dispatch message has to
+    # name the one actually used. Announcing the complete-trip ratio of HT totals
+    # on the incomplete path described an estimator that never ran.
+    if (verbose) {
+      cli::cli_inform(c(
+        "i" = if (identical(use_trips_br, "incomplete")) {
+          "Using bus-route HPUE: truncated mean of ratios (Hoenig et al. 1997)"
+        } else {
+          "Using bus-route HPUE: ratio of HT totals (Jones & Pollock 2012, Eq. 19.5 / Eq. 19.4)"
+        }
+      ))
+    }
+
     return(estimate_harvest_br(
       # nolint: object_usage_linter
       design,
@@ -1681,7 +1709,8 @@ estimate_harvest_rate <- function(
       variance,
       conf_level,
       verbose = FALSE,
-      use_trips = use_trips_br
+      use_trips = use_trips_br,
+      truncate_at = truncate_at
     ))
   }
 

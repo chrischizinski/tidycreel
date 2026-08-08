@@ -192,16 +192,60 @@ the same interviews and are strongly positively correlated; propagating their SE
 as if independent overstates the standard error substantially (roughly eightfold
 on the package's bus-route harvest fixture).
 
-**Incomplete trips are a separate question.** Hoenig et al. (1997) show that for
-roving-type designs, where encounter probability is proportional to time fished
-and catch is observed only to the interview moment, the ratio-of-means estimator
-has the wrong expectation; they recommend a mean-of-ratios estimator with trips
-shorter than 30 minutes discarded. `use_trips = "incomplete"` on a bus-route
-design does **not** yet implement that recommendation — see GH #108.
+## 5b. Incomplete trips: truncated mean of ratios
+
+Everything above assumes completed trips. Anglers intercepted mid-trip are a
+different estimation problem, and `use_trips = "incomplete"` uses a different
+estimator for it.
+
+Hoenig, Jones, Pollock, Robson & Wade (1997) analyse both candidates under the
+roving-type sampling that applies here — encounter probability proportional to
+time fished, catch observed only up to the interview moment. Writing $C_j$ for
+the catch and $L_j$ for the hours fished by angler $j$ at the time of interview,
+the ratio of means has expectation
+
+$$E[R_1] \;\approx\; \frac{\sum_j \lambda_j L_j^{*2}}{\sum_j L_j^{*2}}$$
+
+a weighting of individual rates $\lambda_j$ by the **square** of completed trip
+length $L_j^{*}$. That is not the population catch rate, so $R_1$ "does not
+provide an estimate of catch rate that can be used with an independent estimate
+of total effort to provide an unbiased estimate of total catch except in the
+unrealistic case where $\lambda$ is constant over all anglers." The mean of
+ratios has the correct expectation — the ratio of total catch to total effort.
+
+Two departures from the paper's plain average are forced by the bus-route
+design. Interviews are not equally likely, so each is weighted by
+$w_i = \text{expansion}_i / \pi_i$, giving a Hájek weighted mean:
+
+$$\widehat{\text{HPUE}}_{\text{inc}} \;=\;
+\frac{\sum_i w_i \, (h_i / a_i)}{\sum_i w_i},
+\qquad w_i = \frac{\text{expansion}_i}{\pi_i}$$
+
+where $a_i$ is angler-effort, so the result is fish per **angler**-hour rather
+than fish per party-hour. It is reported as `method = "mean-of-ratios-hpue"`.
+
+**Truncation is not optional.** The mean-of-ratios estimator has *infinite*
+asymptotic variance: $E[1/L_j]$ is infinite as trip length approaches zero.
+Hoenig et al. recommend discarding trips shorter than 30 minutes, which is the
+`truncate_at = 0.5` default. The threshold applies to elapsed trip duration, not
+to angler-hours — it is the short clock interval that makes the reciprocal
+explode, and a party of five fishing twelve minutes supplies a full angler-hour
+while still being the unstable case. `truncate_at = NULL` disables truncation
+and warns.
+
+**Variance.** As in 5a, `survey::svyratio()` linearises over numerator and
+denominator together; here the denominator is the sum of the weights.
+
+**Comparing the two.** `use_trips = "diagnostic"` returns both slots. They use
+different estimators, because each is the estimator its trip type supports, but
+both report fish per angler-hour — so the gap between them is attributable to
+trip status rather than to a change of physical quantity.
 
 **R implementation:**
 
-- `br_harvest_rate_estimates()` in `R/creel-estimates-bus-route.R`.
+- `br_harvest_rate_estimates()` in `R/creel-estimates-bus-route.R` (shared ratio
+  machinery for both trip paths).
+- `br_incomplete_harvest_rate()` in `R/creel-estimates-bus-route.R`.
 - `estimate_harvest_rate()` in `R/creel-estimates.R`: dispatches to
   `estimate_harvest_br()` when `design$design_type == "bus_route"`.
 

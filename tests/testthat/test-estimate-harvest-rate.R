@@ -2043,3 +2043,322 @@ test_that("HPUE-SPECIES-04: all estimate/se/ci columns present in species result
   expect_true(all(expected_cols %in% names(result$estimates)))
   expect_true(all(is.finite(result$estimates$estimate)))
 })
+
+# GH #108 — bus-route incomplete-trip harvest rate (audit findings 4 and 5) ----
+#
+# The incomplete branch used to compute r_i = harvest / party-hours, divide that
+# ratio by the inclusion probability, and sum. Inverse-probability weights apply
+# to totals, not to ratios, so the result was neither a rate nor a total: it grew
+# linearly with the number of interviews. Hoenig, Jones, Pollock, Robson & Wade
+# (1997, Biometrics 53:306-317) give the estimator this trip type supports — a
+# mean of the individual angler rates, with short trips truncated.
+
+# Builds an incomplete-trip fixture whose true rate is exactly `rate` fish per
+# angler-hour for every angler, so any honest rate estimator must return `rate`.
+make_br_incomplete <- function(
+  hours = c(2.0, 3.0, 1.5, 2.5),
+  rate = 2,
+  status = "incomplete",
+  reps = 1L,
+  n_counted = 3L,
+  n_interviewed = 3L
+) {
+  sf <- data.frame(
+    site = c("A", "B", "C"),
+    circuit = "c1",
+    p_site = c(0.2, 0.5, 0.3),
+    p_period = 0.8
+  )
+  cal <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
+    day_type = "weekday"
+  )
+  design <- creel_design(
+    calendar = cal,
+    date = date, # nolint: object_usage_linter
+    strata = day_type, # nolint: object_usage_linter
+    survey_type = "bus_route",
+    sampling_frame = sf,
+    site = site, # nolint: object_usage_linter
+    circuit = circuit, # nolint: object_usage_linter
+    p_site = p_site, # nolint: object_usage_linter
+    p_period = p_period # nolint: object_usage_linter
+  )
+  base <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
+    site = c("A", "A", "B", "C"),
+    circuit = "c1",
+    n_counted = n_counted,
+    n_interviewed = n_interviewed,
+    hours_fished = hours,
+    fish_kept = hours * rate,
+    fish_caught = hours * rate,
+    trip_status = status,
+    n_anglers = 1L
+  )
+  iv <- do.call(rbind, replicate(reps, base, simplify = FALSE))
+  suppressMessages(add_interviews(
+    design,
+    iv,
+    effort = hours_fished, # nolint: object_usage_linter
+    catch = fish_caught, # nolint: object_usage_linter
+    harvest = fish_kept, # nolint: object_usage_linter
+    n_anglers = n_anglers, # nolint: object_usage_linter
+    n_counted = n_counted, # nolint: object_usage_linter
+    n_interviewed = n_interviewed, # nolint: object_usage_linter
+    trip_status = trip_status # nolint: object_usage_linter
+  ))
+}
+
+test_that("bus-route incomplete HPUE does not grow with sample size (GH #108)", {
+  # The falsifying property. Sampling the same population harder cannot change
+  # the rate it has. The old estimator doubled when the interviews doubled,
+  # which alone disqualifies it as a rate regardless of any other defect.
+  rates <- vapply(
+    c(1L, 2L, 4L),
+    function(reps) {
+      d <- make_br_incomplete(reps = reps)
+      suppressMessages(
+        estimate_harvest_rate(d, use_trips = "incomplete")$estimates$estimate
+      )
+    },
+    numeric(1)
+  )
+
+  expect_equal(rates[[2]], rates[[1]], tolerance = 1e-9)
+  expect_equal(rates[[3]], rates[[1]], tolerance = 1e-9)
+})
+
+test_that("bus-route incomplete HPUE recovers a known constant rate (GH #108)", {
+  # Every angler in the fixture harvests at exactly 2 fish per angler-hour, so
+  # the weighted mean of the per-angler rates is 2 whatever the weights are.
+  # The old estimator returned 38.3 on this fixture.
+  d <- make_br_incomplete(rate = 2)
+  result <- suppressMessages(estimate_harvest_rate(d, use_trips = "incomplete"))
+
+  expect_equal(result$estimates$estimate, 2, tolerance = 1e-9)
+  expect_identical(result$method, "mean-of-ratios-hpue")
+})
+
+test_that("bus-route incomplete HPUE is a Hajek weighted mean of angler rates (GH #108)", {
+  # Hand-computed against the design weights: w_i = .expansion / .pi_i, and the
+  # estimate is sum(w_i * r_i) / sum(w_i). Pins the weighting scheme itself, so
+  # dropping .expansion (as the old code did) or reverting to sum(r_i / pi_i)
+  # fails here rather than silently changing the number.
+  d <- make_br_incomplete(hours = c(2.0, 3.0, 1.5, 2.5), rate = 2)
+  d$interviews$fish_kept <- c(2, 9, 3, 10) # rates 1, 3, 2, 4 fish/angler-hour
+
+  iv <- d$interviews
+  w <- iv$.expansion / iv$.pi_i
+  r <- iv$fish_kept / iv[[d$angler_effort_col]]
+  expected <- sum(w * r) / sum(w)
+
+  result <- suppressMessages(estimate_harvest_rate(d, use_trips = "incomplete"))
+  expect_equal(result$estimates$estimate, expected, tolerance = 1e-9)
+
+  # Not the unweighted mean, and not the old sum(r_i / pi_i).
+  expect_false(isTRUE(all.equal(result$estimates$estimate, mean(r))))
+  expect_false(isTRUE(all.equal(result$estimates$estimate, sum(r / iv$.pi_i))))
+})
+
+test_that("bus-route incomplete HPUE applies the enumeration expansion (GH #108)", {
+  # .expansion (n_counted / n_interviewed) is part of the weight. The complete
+  # branch has always applied it; the incomplete branch dropped it, so the two
+  # were not comparable even setting the ratio-weighting bug aside.
+  #
+  # Rates here are 1 and 3 at site A, 2 at B, 4 at C. Site C is the fastest, so
+  # raising only site C's expansion must pull the weighted mean up, and raising
+  # only site A's (mean rate 2, below the overall 2.43) must pull it down.
+  d <- make_br_incomplete()
+  d$interviews$fish_kept <- c(2, 9, 3, 10)
+  base <- suppressMessages(
+    estimate_harvest_rate(d, use_trips = "incomplete")$estimates$estimate
+  )
+
+  bump <- function(site_id) {
+    d2 <- d
+    rows <- d2$interviews$site == site_id
+    d2$interviews$.expansion[rows] <- d2$interviews$.expansion[rows] * 4
+    suppressMessages(
+      estimate_harvest_rate(d2, use_trips = "incomplete")$estimates$estimate
+    )
+  }
+
+  expect_gt(bump("C"), base)
+  expect_lt(bump("A"), base)
+})
+
+test_that("bus-route incomplete HPUE is fish per angler-hour, not party-hour (GH #106, #108)", {
+  # The denominator was the party's elapsed hours, so a party of three reported
+  # the same rate as a solo angler catching the same fish. Tripling party size
+  # at fixed harvest must divide the rate by three.
+  d1 <- make_br_incomplete()
+  d3 <- d1
+  d3$interviews[[d3$n_anglers_col]] <- 3L
+  d3$interviews[[d3$angler_effort_col]] <- d3$interviews[[d3$effort_col]] * 3
+
+  r1 <- suppressMessages(
+    estimate_harvest_rate(d1, use_trips = "incomplete")$estimates$estimate
+  )
+  r3 <- suppressMessages(
+    estimate_harvest_rate(d3, use_trips = "incomplete")$estimates$estimate
+  )
+
+  expect_equal(r3, r1 / 3, tolerance = 1e-9)
+})
+
+test_that("bus-route incomplete HPUE truncates short trips by default (GH #108)", {
+  # Hoenig et al. (1997): the mean-of-ratios estimator has infinite asymptotic
+  # variance because E(1/L) is infinite as trip length goes to zero. They
+  # recommend discarding trips under 30 minutes. The 12-minute trip here carries
+  # a wild rate that swamps the estimate when it is retained.
+  d <- make_br_incomplete(hours = c(2.0, 3.0, 1.5, 0.2), rate = 2)
+  d$interviews$fish_kept <- c(4, 6, 3, 5) # last row is 25 fish/angler-hour
+
+  truncated <- suppressMessages(
+    estimate_harvest_rate(d, use_trips = "incomplete", truncate_at = 0.5)
+  )
+  untruncated <- suppressWarnings(suppressMessages(
+    estimate_harvest_rate(d, use_trips = "incomplete", truncate_at = NULL)
+  ))
+
+  expect_identical(truncated$estimates$n, 3L)
+  expect_equal(truncated$estimates$estimate, 2, tolerance = 1e-9)
+
+  expect_identical(untruncated$estimates$n, 4L)
+  expect_gt(untruncated$estimates$estimate, truncated$estimates$estimate)
+})
+
+test_that("bus-route incomplete HPUE truncates on elapsed hours, not angler-hours (GH #108)", {
+  # The instability comes from a short *clock* interval, because it is 1/L that
+  # explodes. A party of five fishing 12 minutes supplies a full angler-hour of
+  # effort while still being the unstable case, so truncating on angler-effort
+  # would let exactly the wrong row through.
+  d <- make_br_incomplete(hours = c(2.0, 3.0, 1.5, 0.2), rate = 2)
+  d$interviews[[d$n_anglers_col]] <- 5L
+  d$interviews[[d$angler_effort_col]] <- d$interviews[[d$effort_col]] * 5
+
+  result <- suppressMessages(estimate_harvest_rate(d, use_trips = "incomplete"))
+  expect_identical(result$estimates$n, 3L)
+})
+
+test_that("bus-route incomplete HPUE warns when truncation is disabled (GH #108)", {
+  # Disabling truncation is allowed but the reported SE then understates the
+  # true sampling variability, which the user has to be told.
+  d <- make_br_incomplete()
+  expect_warning(
+    suppressMessages(
+      estimate_harvest_rate(d, use_trips = "incomplete", truncate_at = NULL)
+    ),
+    "infinite asymptotic variance"
+  )
+})
+
+test_that("bus-route incomplete HPUE rejects a non-positive truncate_at (GH #108)", {
+  d <- make_br_incomplete()
+  expect_error(
+    suppressMessages(
+      estimate_harvest_rate(d, use_trips = "incomplete", truncate_at = -1)
+    ),
+    "must be a positive number of hours"
+  )
+})
+
+test_that("bus-route incomplete HPUE aborts when truncation empties the sample (GH #108)", {
+  # Returning an estimate from zero retained trips would be worse than failing.
+  d <- make_br_incomplete(hours = c(0.2, 0.1, 0.15, 0.2))
+  expect_error(
+    suppressMessages(
+      estimate_harvest_rate(d, use_trips = "incomplete", truncate_at = 0.5)
+    ),
+    "No incomplete trips remain"
+  )
+})
+
+test_that("bus-route incomplete HPUE by-group returns rates with no proportion column (GH #108)", {
+  # As on the complete path: a share-of-total is meaningful for a total and
+  # meaningless for a rate.
+  d <- make_br_incomplete()
+  result <- suppressMessages(
+    estimate_harvest_rate(d, by = site, use_trips = "incomplete") # nolint: object_usage_linter
+  )
+
+  expect_identical(result$method, "mean-of-ratios-hpue")
+  expect_false("proportion" %in% names(result$estimates))
+  expect_true(all(abs(result$estimates$estimate - 2) < 1e-9))
+})
+
+# GH #108 finding 5 — diagnostic slots ----
+
+make_br_diagnostic <- function(rate = 2) {
+  d <- make_br_incomplete(rate = rate, reps = 2L)
+  d$interviews$trip_status <- rep(c("incomplete", "complete"), each = 4)
+  d
+}
+
+test_that("diagnostic slots report the same physical quantity (GH #108)", {
+  # The whole purpose of the diagnostic is a side-by-side read of complete
+  # against incomplete. It used to put a harvest total in one slot and
+  # sum(fish per party-hour / probability) in the other, so the gap looked like
+  # enormous incomplete-trip bias when it was a change of units. On a fixture
+  # where every angler fishes at 2 fish per angler-hour, both slots must say 2.
+  d <- make_br_diagnostic(rate = 2)
+  result <- suppressWarnings(suppressMessages(
+    estimate_harvest_rate(d, use_trips = "diagnostic")
+  ))
+
+  expect_s3_class(result, "creel_estimates_diagnostic")
+  expect_identical(result$complete$method, "ratio-of-means-hpue")
+  expect_identical(result$incomplete$method, "mean-of-ratios-hpue")
+  expect_equal(result$complete$estimates$estimate, 2, tolerance = 1e-9)
+  expect_equal(result$incomplete$estimates$estimate, 2, tolerance = 1e-9)
+})
+
+test_that("both diagnostic slots respond to party size the same way (GH #108)", {
+  # A shared dimension is not just a matching number on one fixture: both slots
+  # have to be fish per *angler*-hour, so tripling party size must divide both
+  # by three. A slot holding a total would not move at all.
+  d1 <- make_br_diagnostic()
+  d3 <- d1
+  d3$interviews[[d3$n_anglers_col]] <- 3L
+  d3$interviews[[d3$angler_effort_col]] <- d3$interviews[[d3$effort_col]] * 3
+
+  g1 <- suppressWarnings(suppressMessages(
+    estimate_harvest_rate(d1, use_trips = "diagnostic")
+  ))
+  g3 <- suppressWarnings(suppressMessages(
+    estimate_harvest_rate(d3, use_trips = "diagnostic")
+  ))
+
+  for (slot in c("complete", "incomplete")) {
+    expect_equal(
+      g3[[slot]]$estimates$estimate,
+      g1[[slot]]$estimates$estimate / 3,
+      tolerance = 1e-9
+    )
+  }
+})
+
+test_that("diagnostic aborts when only one trip type is present (GH #108)", {
+  # A one-sided comparison used to fail deep inside survey with
+  # "all arguments must have the same length".
+  d <- make_br_incomplete(status = "incomplete")
+  expect_error(
+    suppressMessages(estimate_harvest_rate(d, use_trips = "diagnostic")),
+    "needs both complete and incomplete trips"
+  )
+})
+
+test_that("bus-route verbose names the estimator the trip type actually uses (GH #108)", {
+  # The dispatch message advertised the complete-trip ratio of HT totals on
+  # every path, including the one that never runs it.
+  d <- make_br_diagnostic()
+  expect_message(
+    suppressWarnings(estimate_harvest_rate(d, use_trips = "incomplete", verbose = TRUE)),
+    "mean of ratios"
+  )
+  expect_message(
+    suppressWarnings(estimate_harvest_rate(d, use_trips = "complete", verbose = TRUE)),
+    "ratio of HT totals"
+  )
+})
