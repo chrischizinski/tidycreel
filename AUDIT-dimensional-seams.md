@@ -43,6 +43,7 @@ fix or travel together.
 | 10 | #111 | `br_build_estimates()` hardcodes `method = "total"` |
 | 7, 9, 11 | #112 | Missing unit guards |
 | 12 | #113 | Documentation asserts units the code does not produce |
+| 13 | *not opened* | Instantaneous path never carries T, so it returns angler-days (added 2026-08-08) |
 
 Downstream book work is tracked in
 `~/Dev/modern-creel-surveys/.planning/TIDYCREEL-WISHLIST.md`, not as GitHub issues —
@@ -72,13 +73,14 @@ pass on anything Sonnet implements.
 | #112 | 7, 9, 11 | **Sonnet** | All three are guards. #11 is an allowlist check; #7 is a flag plus a warn; #9 is a guard **once Opus decides reject-vs-honour** — decide that first, then it is one branch. |
 | #113 | 12a | **Opus** | `flexible-count-estimation.Rmd` needs a *correct* replacement worked example. Producing the right numbers is exactly what failed the first time. |
 | #113 | 12b | **Sonnet** | `glossary.Rmd:68`, `data.R:330`, `ice-fishing.Rmd:~214-218`, `tidycreel.Rmd:47/71` — prose only, exact target text already identified. |
+| *not opened* | 13 | **Opus** | Adds \eqn{T_d} to the instantaneous estimator. Estimator design, moves every instantaneous number in the package, and the absent-\eqn{T_d} behaviour has to be decided jointly with unit propagation. Exactly the class where a plausible wrong answer passes the suite. |
 
 Non-finding work:
 
 | Task | Model | Why |
 | ---- | ----- | --- |
-| Finish daylight change — tests for `kearney_daylight()` | **Opus** | A solar-position calculation validated against known values; wrong-but-plausible is the failure mode. |
-| Finish daylight change — roxygen, `document()`, version bump | **Sonnet** | Mechanical. |
+| ~~Finish daylight change — tests for `kearney_daylight()`~~ | ~~**Opus**~~ | **DONE 2026-08-08** (`974e976`). `kearney_daylight` no longer exists: it was a hardcoded 12-value Kearney vector, and the CBM model reproduces all twelve from latitude alone to within 0.03 min, so it was replaced by `day_length(lat, date, horizon)`. Tested against published solstice values, the twelve retired monthly means, and two physical identities. |
+| ~~Finish daylight change — roxygen, `document()`~~ | ~~**Sonnet**~~ | **DONE 2026-08-08** (`974e976`). Version bump still outstanding — deferred to ship time for all findings at once. |
 | NEWS entry, version bump | **Sonnet** | Drafted from the commit log. |
 | Interpreting `just check` / `just test` failures | **Opus** | Verification. |
 | Verify/close stale issues #93–#101 | **Opus** | Verification, and the claim "all nine resolved" is unconfirmed. |
@@ -349,6 +351,75 @@ Fish per hour divided by hours per trip, relabelled "angler-trips", no warning.
 **Decision: DOC FIX** for all, but note the first is a 10x error in the primary
 teaching vignette for this exact topic.
 
+### 13. The instantaneous path never carries T, so it returns angler-days
+
+Added 2026-08-08, after findings 1 and 12a landed. This is the seam those two fixes
+kept running into without closing.
+
+`estimate_effort()` on an instantaneous design expands whatever numeric column it was
+given to the season and returns it. There is no \eqn{T_d} anywhere on that path — no
+argument, no design slot, no column. Verified: the estimate is exactly
+`sum(counts$n_anglers)` when every calendar day is sampled.
+
+But an instantaneous count estimates the *number of anglers present at an instant*,
+not effort. Effort is that count multiplied by the length of the period the count was
+randomised within (Hoenig et al. 1993):
+\eqn{\hat{E}_d = \bar{C}_d \times T_d}. So the returned quantity is **angler-days**,
+reported under the label "Total Effort" and read as angler-hours.
+
+The progressive path gets this right — `period_length_col` carries \eqn{T_d} per row
+and `compute_progressive_effort()` applies it before aggregation. The instantaneous
+path has no equivalent.
+
+**Why this is its own finding and not part of 12.** Finding 12 is documentation
+asserting units the code does not produce, and the fix there was to make the docs
+honest — `flexible-count-estimation.Rmd` now says the estimate is angler-days and that
+the caller must scale it. That is correct but it is a workaround: it documents a gap
+rather than closing it. Closing it changes the estimator.
+
+**Two consequences worth stating separately.**
+
+*Order of operations.* Anyone converting after the fact computes
+\eqn{\bar{C} \times \bar{T}} over a stratum, when the target is
+\eqn{\overline{C \times T}}. The gap is \eqn{\mathrm{Cov}(C, T)}, and it is not zero:
+anglers fish more on long days, so the covariance is positive and the collapsed form
+biases **low**. Roughly \eqn{\rho \cdot CV_C \cdot CV_T} — under 1% within a calendar
+month, one to two percent across an April–September block. Small, systematic, and
+entirely avoidable by multiplying per date before aggregating, which is what the
+progressive path already does.
+
+*Temporal strata.* Measured at Kearney (40.699°N) with `day_length()`:
+
+| Stratum | Within-stratum spread in \eqn{T} |
+| ------- | -------------------------------- |
+| Week | median 13 min, max 16 min |
+| Month | up to 1.35 h (March); 7–12% of the mean in 8 of 12 months |
+| Apr–Sep as one stratum | 3.23 h, 23% of the mean |
+
+Weeks are effectively \eqn{T}-homogeneous; months are not. This matters for stratum
+design **only if** the collapsed form is used. Carrying \eqn{T_d} per date makes the
+covariance term exactly zero at any stratum width and removes the constraint on
+stratum design altogether. Prefer that over telling users to stratify by week.
+
+**Decision: REAL GAP — estimator change.** `add_counts()` should accept a per-date
+\eqn{T_d} for instantaneous designs the way it already does for progressive, and
+`estimate_effort()` should apply it before expansion. Open questions for whoever takes
+this:
+
+- Is \eqn{T_d} a new argument, or is `period_length_col` generalised off the
+  progressive path? The latter is less surface area and the semantics already match.
+- What happens when it is absent — abort, warn, or return angler-days with the unit
+  carried on the object? This should be answered together with the unit-propagation
+  work below, not before it, since the whole point of carrying the unit is to make
+  "angler-days" a legitimate answer rather than a silent one.
+- `day_length()` (added `974e976`) supplies \eqn{T_d} from latitude for simulation and
+  planning. It must **not** become the default for real surveys: the estimator's
+  \eqn{T_d} is the period the protocol randomised within — set by regulation, access
+  hours, or field practice — and astronomical daylight is a proxy for it, not the
+  thing itself.
+
+**Not yet opened as a GitHub issue.**
+
 ---
 
 ## Seams checked and found sound
@@ -452,7 +523,13 @@ propagation logic itself is right.
    string.
 7. **Finding 12** — doc fixes; do the `flexible-count-estimation.Rmd` one alongside
    finding 1, since they are the same error.
-8. **Unit propagation** — after the above.
+8. **Finding 13 and unit propagation together, last.** Finding 13 asks what
+   `estimate_effort()` should do when no \eqn{T_d} is supplied, and unit propagation is
+   what makes "angler-days" a legitimate labelled answer instead of a silent one.
+   Deciding either alone forces the other's hand. Finding 13 also supersedes the doc
+   workaround shipped for 12a — once the estimator carries \eqn{T_d},
+   `flexible-count-estimation.Rmd` should teach the real path rather than the manual
+   conversion.
 
 ## Downstream
 
