@@ -82,7 +82,7 @@ design <- creel_design(
   h_open      = 14
 )
 
-design <- add_counts(design, example_aerial_glmm_counts)
+design <- add_counts(design, example_aerial_glmm_counts, count_col = n_anglers)
 print(design)
 ```
 

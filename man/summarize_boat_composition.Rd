@@ -45,7 +45,7 @@ d <- suppressWarnings(
   creel_design(cal, date = date, strata = day_type)
 )
 d <- suppressWarnings(
-  add_counts(d, counts_df)
+  add_counts(d, counts_df, count_col = count)
 )
 s <- creel_schema(
   survey_type    = "instantaneous",

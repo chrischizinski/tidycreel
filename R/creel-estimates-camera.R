@@ -65,15 +65,14 @@ estimate_effort_camera <- function(
     design$psu_col,
     "camera_status"
   )
-  num_cols <- names(counts_data)[vapply(counts_data, is.numeric, logical(1L))]
   count_var <- if (!is.null(intercept_col) && intercept_col %in% names(counts_data)) {
     intercept_col
   } else {
-    setdiff(num_cols, excluded_cols)[1L]
-  }
-
-  if (is.na(count_var) || is.null(count_var)) {
-    cli::cli_abort("No numeric count column found in count data.")
+    resolve_count_col( # nolint: object_usage_linter
+      counts = counts_data,
+      excluded = excluded_cols,
+      count_col = design$count_col
+    )
   }
 
   # ---- Ratio calibration path -----------------------------------------------

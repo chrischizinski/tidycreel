@@ -576,15 +576,17 @@ plot_design <- function(design, title = NULL, ...) {
     # ---- With counts: jitter + crossbar distribution per stratum -----------
     counts <- design$counts
 
-    # Identify first numeric count column (excluding design metadata)
-    excluded <- c(
-      design$date_col,
-      design$strata_cols,
-      design$psu_col,
-      design$section_col
+    # Identify the count column (resolved and stored by add_counts())
+    count_var <- resolve_count_col( # nolint: object_usage_linter
+      counts = counts,
+      excluded = c(
+        design$date_col,
+        design$strata_cols,
+        design$psu_col,
+        design$section_col
+      ),
+      count_col = design$count_col
     )
-    num_cols <- names(counts)[vapply(counts, is.numeric, logical(1L))]
-    count_var <- setdiff(num_cols, excluded)[1]
 
     plot_df <- data.frame(
       stratum = .make_stratum(counts, strata_cols),

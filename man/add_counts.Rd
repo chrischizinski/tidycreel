@@ -7,6 +7,7 @@
 add_counts(
   design,
   counts,
+  count_col = NULL,
   psu = NULL,
   count_time_col = NULL,
   count_type = "instantaneous",
@@ -27,6 +28,14 @@ from raw source data.
 
 Compatibility input paths remain available for raw-ish count workflows with
 multiple within-day observations or progressive counts.}
+
+\item{count_col}{Tidy selector for the numeric column holding the angler
+counts. Defaults to NULL, in which case the column is inferred as the only
+numeric column that is not design metadata (date, strata, PSU, section,
+count-time, or period-length). If more than one numeric column qualifies,
+\code{add_counts()} aborts and lists the candidates rather than choosing by
+position — name the column here to resolve it. The resolved name is stored
+on the design and used by every downstream estimator.}
 
 \item{psu}{Character string naming the PSU (Primary Sampling Unit) column
 in the count data. Defaults to NULL, which uses the design's date_col as
@@ -190,7 +199,7 @@ design_prog <- add_counts(
 
 }
 \seealso{
-Other "Survey Design": 
+Other "Survey Design":
 \code{\link{add_catch}()},
 \code{\link{add_interviews}()},
 \code{\link{add_lengths}()},

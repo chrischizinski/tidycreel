@@ -921,6 +921,93 @@ resolve_multi_cols <- function(expr, data, arg_name, error_call = rlang::caller_
   names(loc)
 }
 
+#' Resolve the count variable in a counts table
+#'
+#' Internal helper. Returns the name of the numeric column holding angler
+#' counts. When `count_col` is supplied it is validated and returned unchanged;
+#' otherwise the numeric columns that are not design metadata are collected and
+#' the single remaining candidate is returned.
+#'
+#' Two or more candidates is an error, not a positional pick. Column order in a
+#' counts table carries no meaning, so taking the first candidate silently
+#' expands whatever happens to sit leftmost -- a row index, a daylight-hours
+#' column -- into a number reported as "Total Effort" with no warning.
+#'
+#' @param counts Data frame of count data
+#' @param excluded Character vector of design metadata column names
+#' @param count_col Character name of the count column, or NULL to infer
+#' @param error_call Calling environment for error reporting
+#'
+#' @return Character scalar column name
+#'
+#' @keywords internal
+#' @noRd
+resolve_count_col <- function(
+  counts,
+  excluded,
+  count_col = NULL,
+  error_call = rlang::caller_env()
+) {
+  # Numeric columns that prep_counts_daily_effort() emits alongside the effort
+  # column. They are part of that function's fixed output contract, never the
+  # count, so they must not make the preferred prep -> add_counts() pipeline
+  # look ambiguous. A user whose count column really is named one of these can
+  # still say so with count_col, which skips this list entirely.
+  excluded <- c(excluded, "correction_factor", "n_counts", "within_day_var")
+
+  numeric_cols <- names(counts)[vapply(counts, is.numeric, logical(1L))]
+
+  if (!is.null(count_col)) {
+    if (!count_col %in% names(counts)) {
+      cli::cli_abort(
+        c(
+          "Count column {.field {count_col}} not found in count data.",
+          "i" = "Available columns: {.field {names(counts)}}"
+        ),
+        call = error_call
+      )
+    }
+    if (!count_col %in% numeric_cols) {
+      cli::cli_abort(
+        c(
+          "Count column {.field {count_col}} must be numeric.",
+          "x" = "{.field {count_col}} is {.cls {class(counts[[count_col]])[1]}}."
+        ),
+        call = error_call
+      )
+    }
+    return(count_col)
+  }
+
+  candidates <- setdiff(numeric_cols, excluded)
+
+  if (length(candidates) == 0L) {
+    cli::cli_abort(
+      c(
+        "No count variable found in count data.",
+        "x" = "Count data must have at least one numeric column.",
+        "i" = "Numeric columns found: {.field {numeric_cols}}",
+        "i" = "Design metadata columns: {.field {excluded}}"
+      ),
+      call = error_call
+    )
+  }
+
+  if (length(candidates) > 1L) {
+    cli::cli_abort(
+      c(
+        "Cannot tell which column holds the angler counts.",
+        "x" = "{length(candidates)} numeric columns are candidates: {.field {candidates}}.",
+        "i" = "Name the count column: {.code add_counts(design, counts, count_col = <col>)}.",
+        "i" = "Column order is not used to choose -- picking one would risk expanding the wrong variable into effort."
+      ),
+      call = error_call
+    )
+  }
+
+  candidates
+}
+
 #' Attach count data to a creel design
 #'
 #' @description
@@ -947,6 +1034,13 @@ resolve_multi_cols <- function(expr, data, arg_name, error_call = rlang::caller_
 #'
 #'   Compatibility input paths remain available for raw-ish count workflows with
 #'   multiple within-day observations or progressive counts.
+#' @param count_col Tidy selector for the numeric column holding the angler
+#'   counts. Defaults to NULL, in which case the column is inferred as the only
+#'   numeric column that is not design metadata (date, strata, PSU, section,
+#'   count-time, or period-length). If more than one numeric column qualifies,
+#'   `add_counts()` aborts and lists the candidates rather than choosing by
+#'   position — name the column here to resolve it. The resolved name is stored
+#'   on the design and used by every downstream estimator.
 #' @param psu Character string naming the PSU (Primary Sampling Unit) column
 #'   in the count data. Defaults to NULL, which uses the design's date_col as
 #'   the PSU (day-as-PSU is the most common creel design). For other designs,
@@ -1084,6 +1178,7 @@ resolve_multi_cols <- function(expr, data, arg_name, error_call = rlang::caller_
 add_counts <- function(
   design,
   counts,
+  count_col = NULL,
   psu = NULL,
   count_time_col = NULL,
   count_type = "instantaneous",
@@ -1219,6 +1314,27 @@ add_counts <- function(
     names(count_time_col_sel)
   }
 
+  # Resolve the count variable once, here, so an ambiguous counts table fails at
+  # attach time rather than being resolved by position in each estimator (CNT-11)
+  count_col_quo <- rlang::enquo(count_col)
+  count_col_name <- if (rlang::quo_is_null(count_col_quo)) {
+    NULL
+  } else {
+    resolve_single_col(count_col_quo, counts, "count_col")
+  }
+  count_col_name <- resolve_count_col(
+    counts = counts,
+    excluded = c(
+      psu,
+      design$strata_cols,
+      design$date_col,
+      design$section_col,
+      count_time_col_name,
+      period_length_col_name
+    ),
+    count_col = count_col_name
+  )
+
   # Validate counts structure (Tier 1)
   validation <- validate_counts_tier1(counts, design, psu, allow_invalid) # nolint: object_usage_linter
 
@@ -1231,10 +1347,7 @@ add_counts <- function(
   within_day_var <- NULL
   if (!is.null(count_time_col_name)) {
     key_cols <- unique(c(psu, design$strata_cols))
-    # Exclude period_length_col_name when progressive so it isn't mistaken for the count variable
-    excluded <- c(key_cols, count_time_col_name, design$date_col, period_length_col_name)
-    numeric_cols <- names(counts)[vapply(counts, is.numeric, logical(1L))]
-    count_var <- setdiff(numeric_cols, excluded)[1L]
+    count_var <- count_col_name
 
     agg_result <- aggregate_within_day(
       # nolint: object_usage_linter
@@ -1258,13 +1371,10 @@ add_counts <- function(
 
   # Compute progressive daily effort Ê_d = C × τ × κ (EFF-02)
   if (count_type == "progressive") {
-    excluded_prog <- c(psu, design$strata_cols, design$date_col)
-    numeric_cols_prog <- names(counts)[vapply(counts, is.numeric, logical(1L))]
-    count_var_prog <- setdiff(numeric_cols_prog, c(excluded_prog, period_length_col_name))[1L]
     counts <- compute_progressive_effort(
       # nolint: object_usage_linter
       counts = counts,
-      count_var = count_var_prog,
+      count_var = count_col_name,
       period_length_col = period_length_col_name,
       circuit_time = circuit_time
     )
@@ -1277,6 +1387,7 @@ add_counts <- function(
 
   # Store new slots before survey construction
   new_design$count_type <- count_type
+  new_design$count_col <- count_col_name
   new_design$count_time_col <- count_time_col_name
   new_design$within_day_var <- within_day_var
   new_design$n_counts_per_psu <- if (!is.null(within_day_var)) {

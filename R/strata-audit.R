@@ -48,19 +48,11 @@ audit_strata.creel_design <- function(x, rse_target = 0.20, ...) {
   available_by_strata <- table(cal$.strata_key)
 
   counts_data <- design$counts
-  excluded_cols <- c(design$date_col, design$strata_cols, design$psu_col)
-  numeric_cols <- names(counts_data)[vapply(counts_data, is.numeric, logical(1L))]
-  count_vars <- setdiff(numeric_cols, excluded_cols)
-
-  if (length(count_vars) == 0) {
-    cli::cli_abort(c(
-      "No count variable found in count data.",
-      "x" = "Count data must have at least one numeric column.",
-      "i" = "Numeric columns found: {.field {numeric_cols}}",
-      "i" = "Design metadata columns: {.field {excluded_cols}}"
-    ))
-  }
-  count_var <- count_vars[1]
+  count_var <- resolve_count_col( # nolint: object_usage_linter
+    counts = counts_data,
+    excluded = c(design$date_col, design$strata_cols, design$psu_col),
+    count_col = design$count_col
+  )
 
   if (length(strata_cols) == 1) {
     counts_data$.strata_key <- as.character(counts_data[[strata_cols]])

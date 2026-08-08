@@ -49,7 +49,7 @@ design <- creel_design(
   survey_type = "aerial",
   h_open = 14
 )
-design <- add_counts(design, example_aerial_glmm_counts)
+design <- add_counts(design, example_aerial_glmm_counts, count_col = n_anglers)
 result <- estimate_effort_aerial_glmm(design, time_col = time_of_flight)
 print(result)
 }

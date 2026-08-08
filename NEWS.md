@@ -1,5 +1,25 @@
 # tidycreel (development version)
 
+## Breaking changes
+
+* `add_counts()` gains a `count_col` argument and no longer picks the count
+  column by position. Previously the count variable was taken as the first
+  numeric column that was not design metadata, so a counts table carrying more
+  than one numeric column could have a row index, a daylight-hours column, or a
+  boat count silently expanded and reported as "Total Effort" — off by an order
+  of magnitude, with no warning. When more than one numeric column qualifies,
+  `add_counts()` now aborts and lists the candidates; name the intended column
+  with `count_col`. Tables with a single count column are unaffected (#105).
+
+  The resolved name is stored on the design as `$count_col` and used by
+  `estimate_effort()`, the sections and grouped effort paths, the aerial and
+  aerial-GLMM estimators, camera effort, `audit_strata()`, and `autoplot()`,
+  all of which previously repeated the same positional guess.
+
+  Callers of `tidycreel.connect::fetch_counts()` are affected: it returns
+  `bank_anglers`, `angler_boats`, and `non_ang_boats`, so `add_counts()` now
+  requires `count_col` to be named.
+
 ## Documentation
 
 * `vignettes/flexible-count-estimation.Rmd`: the instantaneous baseline built an

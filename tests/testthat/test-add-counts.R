@@ -612,3 +612,110 @@ test_that("add_counts() aborts when period_length column contains non-positive v
     regexp = "positive"
   )
 })
+
+# CNT-11: count column is named, never chosen by position ----
+
+#' Counts where the intended count column is NOT the leftmost numeric column.
+#' Mirrors the shape that broke in the field: simulate_creel_data() gained
+#' daylight_hours, which sorted ahead of the angler count and was silently
+#' expanded into "Total Effort".
+make_ambiguous_counts <- function() {
+  counts <- make_test_counts()
+  data.frame(
+    date = counts$date,
+    day_type = counts$day_type,
+    daylight_hours = rep(14, nrow(counts)),
+    count = counts$count,
+    stringsAsFactors = FALSE
+  )
+}
+
+test_that("add_counts() aborts rather than guessing when two numeric columns qualify", {
+  design <- make_test_design()
+  expect_error(
+    add_counts(design, make_ambiguous_counts()),
+    regexp = "Cannot tell which column holds the angler counts"
+  )
+})
+
+test_that("add_counts() names the ambiguity candidates so the caller can resolve it", {
+  design <- make_test_design()
+  expect_error(
+    add_counts(design, make_ambiguous_counts()),
+    regexp = "daylight_hours"
+  )
+})
+
+test_that("count_col resolves the ambiguity and the estimator uses the named column", {
+  # The point of the guard: a positional pick would expand daylight_hours (14 per
+  # day) instead of the angler counts, and report the wrong number as effort with
+  # no warning. Naming the column must make the estimate the counts, not the hours.
+  ambiguous <- make_ambiguous_counts()
+  design <- add_counts(
+    make_test_design(),
+    ambiguous,
+    count_col = count # nolint: object_usage_linter
+  )
+  expect_identical(design$count_col, "count")
+
+  result <- suppressWarnings(estimate_effort(design))
+  expect_equal(result$estimates$estimate, sum(ambiguous$count))
+  expect_false(isTRUE(all.equal(
+    result$estimates$estimate,
+    sum(ambiguous$daylight_hours)
+  )))
+})
+
+test_that("add_counts() still infers the count column when only one candidate exists", {
+  design <- add_counts(make_test_design(), make_test_counts())
+  expect_identical(design$count_col, "count")
+})
+
+test_that("add_counts() aborts when count_col names a column that is not numeric", {
+  design <- make_test_design()
+  counts <- make_test_counts()
+  counts$observer <- "AB"
+  expect_error(
+    add_counts(design, counts, count_col = observer), # nolint: object_usage_linter
+    regexp = "must be numeric"
+  )
+})
+
+test_that("add_counts() aborts when count_col names a column that is absent", {
+  design <- make_test_design()
+  expect_error(
+    add_counts(design, make_test_counts(), count_col = no_such_col), # nolint: object_usage_linter
+    regexp = "doesn't exist|not found"
+  )
+})
+
+test_that("prep_counts_daily_effort() output stays unambiguous for add_counts()", {
+  # prep_counts_daily_effort() emits correction_factor (and optionally n_counts
+  # and within_day_var) alongside daily_effort. Those are contract metadata, not
+  # counts. If they ever count as candidates, the preferred documented pipeline
+  # aborts on every call.
+  raw <- data.frame(
+    sample_date = make_test_calendar()$date,
+    day_type = make_test_calendar()$day_type,
+    effort_kind = "bank",
+    effort_value = c(15, 23, 18, 21, 45, 52, 48, 51),
+    n_obs = 3L,
+    ss = 4.5,
+    stringsAsFactors = FALSE
+  )
+  ready <- prep_counts_daily_effort(
+    raw,
+    date = sample_date, # nolint: object_usage_linter
+    strata = day_type, # nolint: object_usage_linter
+    effort_type = effort_kind, # nolint: object_usage_linter
+    daily_effort = effort_value, # nolint: object_usage_linter
+    n_counts = n_obs, # nolint: object_usage_linter
+    within_day_var = ss # nolint: object_usage_linter
+  )
+  expect_true(all(
+    c("correction_factor", "n_counts", "within_day_var") %in% names(ready)
+  ))
+
+  design <- add_counts(make_test_design(), ready)
+  expect_identical(design$count_col, "daily_effort")
+})
