@@ -165,11 +165,45 @@ harvest substituted for effort. Both are HT totals over the same sampling design
 
 **R implementation:**
 
-- `estimate_harvest_br()` in `R/creel-estimates-bus-route.R`, lines 218–470:
-  computes `.h_i = harvest * .expansion` and `.contribution = .h_i / .pi_i`, then
-  sums via `survey::svytotal(~.contribution, ...)`.
-- `estimate_harvest_rate()` in `R/creel-estimates.R`: dispatches to `estimate_harvest_br()`
-  when `design$design_type == "bus_route"`.
+- `estimate_harvest_br()` in `R/creel-estimates-bus-route.R`:
+  computes `.h_i = harvest * .expansion` and `.contribution = .h_i / .pi_i`.
+- `estimate_total_harvest()` sums those contributions via
+  `survey::svytotal(~.contribution, ...)` to give $\hat{H}$.
+
+---
+
+## 5a. Harvest Rate (HPUE) as a Ratio of HT Totals
+
+Eq. 19.4 and Eq. 19.5 are **totals**. Jones & Pollock define no rate estimator for
+the bus-route design, so the rate this design supports is the ratio of the two
+totals:
+
+$$\widehat{\text{HPUE}} = \frac{\hat{H}}{\hat{E}}
+= \frac{\sum_i h_i / \pi_i}{\sum_i e_i / \pi_i}$$
+
+This is the ratio-of-means form, the same quantity `estimate_harvest_rate()`
+returns for standard designs, and it carries the same `method` string
+(`"ratio-of-means-hpue"`). Because $e_i$ is built from angler-effort, the result
+is fish per **angler**-hour, matching the CPUE denominator on the same design.
+
+**Variance.** Computed with `survey::svyratio()` over both contribution columns,
+not by dividing two separately estimated totals. $\hat{H}$ and $\hat{E}$ come from
+the same interviews and are strongly positively correlated; propagating their SEs
+as if independent overstates the standard error substantially (roughly eightfold
+on the package's bus-route harvest fixture).
+
+**Incomplete trips are a separate question.** Hoenig et al. (1997) show that for
+roving-type designs, where encounter probability is proportional to time fished
+and catch is observed only to the interview moment, the ratio-of-means estimator
+has the wrong expectation; they recommend a mean-of-ratios estimator with trips
+shorter than 30 minutes discarded. `use_trips = "incomplete"` on a bus-route
+design does **not** yet implement that recommendation — see GH #108.
+
+**R implementation:**
+
+- `br_harvest_rate_estimates()` in `R/creel-estimates-bus-route.R`.
+- `estimate_harvest_rate()` in `R/creel-estimates.R`: dispatches to
+  `estimate_harvest_br()` when `design$design_type == "bus_route"`.
 
 ---
 
@@ -203,10 +237,11 @@ are available via `get_variance_design()`, consistent with all other tidycreel e
 |----------|---------|--------|------|------------|
 | Inclusion probability | πᵢ = p_site × p_period | Jones & Pollock (2012) | p. 912 | `creel-design.R`: `creel_design()`, `add_interviews()` |
 | Enumeration expansion | expansion = n_counted / n_interviewed | Malvestuto (1996) Box 20.6 | p. 614 | `creel-design.R`: `add_interviews()` |
-| Expanded effort | eᵢ = hours_fished × expansion | Malvestuto (1996) Box 20.6 | p. 614 | `creel-estimates-bus-route.R` line 69 |
+| Expanded effort | eᵢ = angler-hours × expansion | Malvestuto (1996) Box 20.6 | p. 614 | `creel-estimates-bus-route.R`: `estimate_effort_br()` |
 | HT effort total | Ê = Σ(eᵢ/πᵢ) | Jones & Pollock (2012) Eq. 19.4 | p. 911 | `creel-estimates-bus-route.R` lines 83, 96 |
 | Expanded harvest | hᵢ = harvest × expansion | Malvestuto (1996) Box 20.6 | p. 614 | `creel-estimates-bus-route.R` (harvest branch) |
-| HT harvest total | Ĥ = Σ(hᵢ/πᵢ) | Jones & Pollock (2012) Eq. 19.5 | p. 912 | `creel-estimates-bus-route.R` lines 218–470 |
+| HT harvest total | Ĥ = Σ(hᵢ/πᵢ) | Jones & Pollock (2012) Eq. 19.5 | p. 912 | `creel-estimates-bus-route.R`: `estimate_total_harvest_br()` |
+| Harvest rate (HPUE) | Ĥ / Ê | ratio of Eq. 19.5 to Eq. 19.4 | pp. 911–912 | `creel-estimates-bus-route.R`: `br_harvest_rate_estimates()` |
 | Variance | Taylor linearization on Σ(eᵢ/πᵢ) | Lumley (2010) | — | `survey::svytotal(~.contribution, svy_br)` |
 
 ---
@@ -245,6 +280,10 @@ underestimate for that site alone.
 ---
 
 ## References
+
+- Hoenig, J. M., Jones, C. M., Pollock, K. H., Robson, D. S., & Wade, D. L. (1997).
+  Calculation of catch rate and total catch in roving surveys of anglers. *Biometrics*,
+  53(1), 306–317.
 
 - Horvitz, D. G., & Thompson, D. J. (1952). A generalization of sampling without
   replacement from a finite universe. *Journal of the American Statistical Association*,

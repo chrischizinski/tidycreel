@@ -1656,7 +1656,7 @@ estimate_harvest_rate <- function(
   if (!is.null(design$design_type) && design$design_type == "bus_route") {
     if (verbose) {
       cli::cli_inform(c(
-        "i" = "Using bus-route estimator (Jones & Pollock 2012, Eq. 19.5)"
+        "i" = "Using bus-route HPUE: ratio of HT totals (Jones & Pollock 2012, Eq. 19.5 / Eq. 19.4)"
       ))
     }
 

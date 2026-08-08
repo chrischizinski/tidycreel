@@ -258,7 +258,7 @@ estimate_harvest_br <- function(
 ) {
   if (verbose) {
     cli::cli_inform(c(
-      "i" = "Using bus-route estimator (Jones & Pollock 2012, Eq. 19.5)"
+      "i" = "Using bus-route HPUE: ratio of HT totals (Jones & Pollock 2012, Eq. 19.5 / Eq. 19.4)"
     ))
   }
 
@@ -403,23 +403,162 @@ estimate_harvest_br <- function(
   # Compute h_i / pi_i (Eq. 19.5 site contribution)
   interviews$.contribution <- interviews$.h_i / interviews$.pi_i
 
+  # Denominator: the same HT effort total that estimate_effort() reports, built
+  # the same way -- angler-effort x expansion, then / pi_i. Using angler-effort
+  # (not the raw per-party duration) is what makes the ratio fish per
+  # angler-hour rather than fish per party-hour (#106).
+  angler_effort_col <- design$angler_effort_col
+  interviews$.e_i <- interviews[[angler_effort_col]] * interviews$.expansion
+  if (!is.null(n_counted_col) && !is.null(n_interviewed_col)) {
+    interviews$.e_i[zero_mask] <- 0
+  }
+  interviews$.e_contribution <- interviews$.e_i / interviews$.pi_i
+
   # Build per-site attribution table for site_contributions attribute
   # Use intersect() to skip synthetic site/circuit cols absent in ice interviews
   avail_site_cols <- intersect(c(site_col, circuit_col), names(interviews))
-  site_table <- interviews[c(avail_site_cols, ".h_i", ".pi_i", ".contribution")]
+  site_table <- interviews[c(
+    avail_site_cols, ".h_i", ".e_i", ".pi_i", ".contribution", ".e_contribution"
+  )]
   names(site_table)[names(site_table) == ".h_i"] <- "h_i"
+  names(site_table)[names(site_table) == ".e_i"] <- "e_i"
   names(site_table)[names(site_table) == ".pi_i"] <- "pi_i"
   names(site_table)[names(site_table) == ".contribution"] <- "h_i_over_pi_i"
+  names(site_table)[names(site_table) == ".e_contribution"] <- "e_i_over_pi_i"
 
-  br_build_estimates(
+  br_harvest_rate_estimates(
     interviews,
     by_vars,
     variance_method,
     conf_level,
     design,
-    site_table,
-    harvest_col
+    site_table
   )
+}
+
+#' Bus-route harvest rate as a ratio of Horvitz-Thompson totals
+#'
+#' Jones & Pollock (2012) Eq. 19.4 and 19.5 give bus-route effort and harvest as
+#' HT *totals*; the framework has no rate estimator. The rate this design
+#' supports is the ratio of those two totals, `H_hat / E_hat`, which is the
+#' ratio-of-means form -- the same quantity `estimate_harvest_rate()` returns for
+#' standard designs, and reported under the same `method` string.
+#'
+#' The ratio is computed with [survey::svyratio()] rather than by dividing two
+#' separately estimated totals. `H_hat` and `E_hat` come from the same
+#' interviews and are positively correlated, so Taylor linearisation over both is
+#' required; dividing point estimates and propagating the SEs as if independent
+#' overstates the standard error.
+#'
+#' @param interviews Interview rows carrying `.contribution` (h_i / pi_i) and
+#'   `.e_contribution` (e_i / pi_i)
+#' @param by_vars NULL or character vector of grouping variable names
+#' @param variance_method Character string: "taylor", "bootstrap", or "jackknife"
+#' @param conf_level Numeric confidence level (0-1)
+#' @param design The creel_design object
+#' @param site_table Per-site attribution table to attach as an attribute
+#'
+#' @return A creel_estimates object with method "ratio-of-means-hpue"
+#'
+#' @keywords internal
+#' @noRd
+br_harvest_rate_estimates <- function(
+  # nolint: object_usage_linter
+  interviews,
+  by_vars,
+  variance_method,
+  conf_level,
+  design,
+  site_table
+) {
+  strata_cols <- design$strata_cols
+  strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0) {
+    stats::reformulate(strata_cols)
+  } else {
+    NULL
+  }
+  svy_br <- build_interview_survey(interviews, strata = strata_formula) # nolint: object_usage_linter
+  svy_br <- get_variance_design(svy_br, variance_method) # nolint: object_usage_linter
+
+  # A zero effort total leaves the rate undefined. Abort rather than return Inf
+  # or NaN dressed up as a harvest rate.
+  if (isTRUE(all.equal(sum(interviews$.e_contribution, na.rm = TRUE), 0))) {
+    cli::cli_abort(c(
+      "Cannot compute a harvest rate: estimated total effort is zero.",
+      "x" = "{.fn estimate_harvest_rate} divides harvest by the HT effort total.",
+      "i" = "Check that {.arg effort} and {.arg n_anglers} were supplied to {.fn add_interviews}."
+    ))
+  }
+
+  if (is.null(by_vars)) {
+    svy_result <- suppressWarnings(
+      survey::svyratio(~.contribution, ~.e_contribution, svy_br)
+    )
+    ci <- confint(svy_result, level = conf_level)
+    estimates_df <- tibble::tibble(
+      estimate = as.numeric(coef(svy_result)),
+      se = as.numeric(survey::SE(svy_result)),
+      ci_lower = ci[1, 1],
+      ci_upper = ci[1, 2],
+      n = nrow(interviews)
+    )
+    result <- new_creel_estimates(
+      # nolint: object_usage_linter
+      estimates = estimates_df,
+      method = "ratio-of-means-hpue",
+      variance_method = variance_method,
+      design = design,
+      conf_level = conf_level,
+      by_vars = NULL
+    )
+    attr(result, "site_contributions") <- site_table
+    return(result)
+  }
+
+  by_formula <- stats::reformulate(by_vars)
+  svy_result <- suppressWarnings(survey::svyby(
+    formula = ~.contribution,
+    by = by_formula,
+    design = svy_br,
+    FUN = survey::svyratio,
+    denominator = ~.e_contribution,
+    vartype = c("se", "ci"),
+    ci.level = conf_level,
+    keep.names = FALSE
+  ))
+
+  ratio_col <- ".contribution/.e_contribution"
+  n_by_group <- stats::aggregate(
+    list(n = rep(1L, nrow(interviews))),
+    by = interviews[by_vars],
+    FUN = sum
+  )
+
+  estimates_df <- tibble::as_tibble(svy_result[by_vars])
+  estimates_df$estimate <- svy_result[[ratio_col]]
+  estimates_df$se <- svy_result[[paste0("se.", ratio_col)]]
+  estimates_df$ci_lower <- svy_result[["ci_l"]]
+  estimates_df$ci_upper <- svy_result[["ci_u"]]
+  estimates_df$n <- n_by_group$n[match(
+    do.call(paste, estimates_df[by_vars]),
+    do.call(paste, n_by_group[by_vars])
+  )]
+
+  # No `proportion` column here, unlike the HT total paths. A share-of-total is
+  # meaningful for a total and meaningless for a rate -- group rates do not sum
+  # to the overall rate.
+
+  result <- new_creel_estimates(
+    # nolint: object_usage_linter
+    estimates = estimates_df,
+    method = "ratio-of-means-hpue",
+    variance_method = variance_method,
+    design = design,
+    conf_level = conf_level,
+    by_vars = by_vars
+  )
+  attr(result, "site_contributions") <- site_table
+  result
 }
 
 # Bus-route total catch estimation ----

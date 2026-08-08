@@ -1804,9 +1804,12 @@ test_that("estimate_harvest_rate() dispatches to bus-route estimator for bus_rou
   expect_s3_class(result, "creel_estimates")
 })
 
-test_that("estimate_harvest_rate() Eq. 19.5: H_hat = sum(h_i/pi_i) matches hand-computed value", {
+test_that("Eq. 19.5: H_hat = sum(h_i/pi_i) is what estimate_total_harvest() returns", {
+  # This assertion used to be made against estimate_harvest_rate(), which is how
+  # a total came to be reported as a rate (GH #107). Eq. 19.5 is a total, so it
+  # belongs to the total estimator.
   d <- make_br_harvest_interviews(make_br_harvest_design())
-  result <- estimate_harvest_rate(d)
+  result <- estimate_total_harvest(d)
   # H_hat = 37.5 + 75.0 + 2.5 + 0 + 12.5 + 8.333... = 135.833...
   expected_h_hat <- (2 * 3) /
     0.16 +
@@ -1816,6 +1819,64 @@ test_that("estimate_harvest_rate() Eq. 19.5: H_hat = sum(h_i/pi_i) matches hand-
     (3 * 1) / 0.24 +
     (2 * 1) / 0.24
   expect_equal(result$estimates$estimate, expected_h_hat, tolerance = 1e-6)
+})
+
+test_that("estimate_harvest_rate() on a bus-route design returns a rate, not a total (GH #107)", {
+  # Jones & Pollock give bus-route harvest and effort as HT totals and define no
+  # rate estimator. The rate the design supports is the ratio of those totals.
+  d <- make_br_harvest_interviews(make_br_harvest_design())
+  rate <- estimate_harvest_rate(d)
+
+  expect_identical(rate$method, "ratio-of-means-hpue")
+
+  # Hand-computed: H_hat = 135.8333..., E_hat = 113.3333..., ratio = 1.1985294
+  expect_equal(rate$estimates$estimate, 135.83333333 / 113.33333333, tolerance = 1e-6)
+
+  # State the defect directly: the rate must not be the harvest total.
+  expect_false(isTRUE(all.equal(rate$estimates$estimate, 135.83333333)))
+})
+
+test_that("bus-route HPUE equals total harvest over total effort (GH #107)", {
+  # Ties the rate to the two estimators it is built from, so a change to either
+  # HT total that is not reflected in the rate fails here.
+  d <- make_br_harvest_interviews(make_br_harvest_design())
+  rate <- estimate_harvest_rate(d)$estimates$estimate
+  h_total <- estimate_total_harvest(d)$estimates$estimate
+  e_total <- estimate_effort(d)$estimates$estimate
+
+  expect_equal(rate, h_total / e_total, tolerance = 1e-9)
+})
+
+test_that("bus-route HPUE variance accounts for the harvest-effort covariance (GH #107)", {
+  # H_hat and E_hat come from the same interviews and are strongly positively
+  # correlated. Dividing the point estimates and propagating the SEs as if they
+  # were independent overstates the SE by roughly eightfold on this fixture,
+  # which is why svyratio does the linearisation over both.
+  d <- make_br_harvest_interviews(make_br_harvest_design())
+  rate <- estimate_harvest_rate(d)$estimates
+  h <- estimate_total_harvest(d)$estimates
+  e <- estimate_effort(d)$estimates
+
+  naive_se <- (h$estimate / e$estimate) *
+    sqrt((h$se / h$estimate)^2 + (e$se / e$estimate)^2)
+
+  expect_lt(rate$se, naive_se / 2)
+  expect_gt(rate$se, 0)
+})
+
+test_that("bus-route HPUE is fish per angler-hour, so it falls as party size rises (GH #106, #107)", {
+  # The denominator is angler-effort. Holding harvest fixed and tripling party
+  # size triples the effort denominator, so the rate must fall by three. A
+  # party-hours denominator would leave it unchanged.
+  d1 <- make_br_harvest_interviews(make_br_harvest_design())
+  d3 <- d1
+  d3$interviews[[d3$n_anglers_col %||% "n_anglers"]] <- 3L
+  d3$interviews[[d3$angler_effort_col]] <- d3$interviews[[d3$effort_col]] * 3L
+
+  r1 <- estimate_harvest_rate(d1)$estimates$estimate
+  r3 <- estimate_harvest_rate(d3)$estimates$estimate
+
+  expect_equal(r3, r1 / 3, tolerance = 1e-9)
 })
 
 test_that("estimate_harvest_rate() site_contributions attribute present with h_i and pi_i columns", {
@@ -1833,11 +1894,13 @@ test_that("get_site_contributions() returns tibble from bus-route harvest result
   expect_true("pi_i" %in% names(sc))
 })
 
-test_that("estimate_harvest_rate() verbose=TRUE prints bus-route dispatch message", {
+test_that("estimate_harvest_rate() verbose=TRUE names the bus-route estimator it used", {
+  # The message has to say a rate is being computed. Advertising Eq. 19.5 alone
+  # described a total, which is what the function used to return (GH #107).
   d <- make_br_harvest_interviews(make_br_harvest_design())
   expect_message(
     estimate_harvest_rate(d, verbose = TRUE),
-    "bus-route estimator"
+    "bus-route HPUE"
   )
 })
 
@@ -1866,11 +1929,28 @@ test_that("estimate_harvest_rate() use_trips='diagnostic' returns creel_estimate
   expect_s3_class(result, "creel_estimates_diagnostic")
 })
 
-test_that("estimate_harvest_rate() by=circuit: proportion column present and sums to ~1", {
+test_that("estimate_harvest_rate() by=circuit returns a rate per group, with no proportion column (GH #107)", {
+  # A share-of-total column is meaningful for a total and meaningless for a
+  # rate: group rates are not parts of the overall rate and do not sum to it.
+  # It was present only because the rate path returned a total.
   d <- make_br_harvest_interviews(make_br_harvest_design())
   result <- estimate_harvest_rate(d, by = circuit) # nolint: object_usage_linter
-  expect_true("proportion" %in% names(result$estimates))
-  expect_equal(sum(result$estimates$proportion), 1.0, tolerance = 1e-6)
+
+  expect_identical(result$method, "ratio-of-means-hpue")
+  expect_false("proportion" %in% names(result$estimates))
+  expect_true(all(c("estimate", "se", "ci_lower", "ci_upper", "n") %in% names(result$estimates)))
+  expect_true(all(result$estimates$estimate > 0))
+})
+
+test_that("single-group bus-route HPUE equals the ungrouped rate (GH #107)", {
+  # The fixture has one circuit, so grouping by it must not change the number.
+  # This catches a grouped path that silently computes something else.
+  d <- make_br_harvest_interviews(make_br_harvest_design())
+  ungrouped <- estimate_harvest_rate(d)$estimates$estimate
+  grouped <- estimate_harvest_rate(d, by = circuit) # nolint: object_usage_linter
+
+  expect_equal(nrow(grouped$estimates), 1L)
+  expect_equal(grouped$estimates$estimate, ungrouped, tolerance = 1e-9)
 })
 
 # Section dispatch tests (RATE-02a, RATE-03) ----

@@ -28,6 +28,29 @@
 
 ## Breaking changes
 
+* `estimate_harvest_rate()` on a bus-route or ice design now returns a rate. It
+  dispatched to the Horvitz–Thompson harvest **total** of Jones & Pollock (2012)
+  Eq. 19.5 and returned it with `method = "total"`, so it produced a number
+  identical to `estimate_total_harvest()` under a function documented as
+  returning fish per angler-hour (#107).
+
+  Jones & Pollock give bus-route effort and harvest as HT totals and define no
+  rate estimator, so the rate this design supports is the ratio of those two
+  totals, `H_hat / E_hat` — the ratio-of-means form, and the same quantity and
+  `method` string (`"ratio-of-means-hpue"`) the standard designs already return.
+  The ratio is computed with `survey::svyratio()` rather than by dividing two
+  separately estimated totals: the numerator and denominator come from the same
+  interviews and are strongly correlated, and treating them as independent
+  overstates the SE by roughly eightfold on the package's own fixture.
+
+  Grouped results no longer carry a `proportion` column. A share-of-total is
+  meaningful for a total and meaningless for a rate.
+
+  `use_trips = "incomplete"` is unchanged and still pending #108. Hoenig et al.
+  (1997) show ratio-of-means has the wrong expectation for roving-type designs
+  with incomplete trips and recommend a mean-of-ratios estimator with trips
+  shorter than 30 minutes discarded; that is not yet implemented here.
+
 * Bus-route and ice `estimate_effort()` now return angler-hours. They read the
   raw per-party trip duration, so the estimate was party-hours reported under an
   angler-hours label — invariant to party size, and understated by exactly the

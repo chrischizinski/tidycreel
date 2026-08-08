@@ -531,7 +531,10 @@ test_that("Harvest estimate matches manual survey::svydesign + svytotal (point e
     survey::svydesign(ids = ~1, strata = ~day_type, data = int_data)
   )
   manual_result <- survey::svytotal(~.harvest_contrib, svy_manual)
-  tidycreel_result <- suppressWarnings(estimate_harvest_rate(d))
+  # A manual svytotal is a total, so it validates the total estimator. This
+  # comparison used to be made against estimate_harvest_rate(), which is how a
+  # total came to be reported as a rate (GH #107).
+  tidycreel_result <- suppressWarnings(estimate_total_harvest(d))
   expect_equal(
     tidycreel_result$estimates$estimate,
     as.numeric(coef(manual_result)),
@@ -547,11 +550,39 @@ test_that("Harvest SE matches manual survey::svydesign + svytotal (tol 1e-3)", {
     survey::svydesign(ids = ~1, strata = ~day_type, data = int_data)
   )
   manual_result <- survey::svytotal(~.harvest_contrib, svy_manual)
-  tidycreel_result <- suppressWarnings(estimate_harvest_rate(d))
+  tidycreel_result <- suppressWarnings(estimate_total_harvest(d))
   # Per CONTEXT.md: SE tolerance 1e-3 (FPC differences acceptable)
   expect_equal(
     tidycreel_result$estimates$se,
     as.numeric(survey::SE(manual_result)),
+    tolerance = 1e-3
+  )
+})
+
+test_that("Bus-route HPUE matches manual survey::svyratio (point estimate and SE, GH #107)", {
+  # The rate needs its own independent check against the survey package, built
+  # the same way the effort and harvest totals are checked above.
+  d <- make_box20_6_example1()
+  int_data <- d$interviews
+  int_data$.harvest_contrib <- int_data$fish_kept * int_data$.expansion / int_data$.pi_i
+  int_data$.effort_contrib <- int_data[[d$angler_effort_col]] *
+    int_data$.expansion / int_data$.pi_i
+  svy_manual <- suppressWarnings(
+    survey::svydesign(ids = ~1, strata = ~day_type, data = int_data)
+  )
+  manual_ratio <- suppressWarnings(
+    survey::svyratio(~.harvest_contrib, ~.effort_contrib, svy_manual)
+  )
+  tidycreel_result <- suppressWarnings(estimate_harvest_rate(d))
+
+  expect_equal(
+    tidycreel_result$estimates$estimate,
+    as.numeric(coef(manual_ratio)),
+    tolerance = 1e-6
+  )
+  expect_equal(
+    tidycreel_result$estimates$se,
+    as.numeric(survey::SE(manual_ratio)),
     tolerance = 1e-3
   )
 })
