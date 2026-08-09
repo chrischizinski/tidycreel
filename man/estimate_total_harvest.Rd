@@ -115,6 +115,7 @@ design <- creel_design(example_calendar, date = date, strata = day_type)
 design <- add_counts(design, example_counts)
 design <- add_interviews(design, example_interviews,
   catch = catch_total, harvest = catch_kept, effort = hours_fished,
+  n_anglers = n_anglers,
   trip_status = trip_status, trip_duration = trip_duration
 )
 

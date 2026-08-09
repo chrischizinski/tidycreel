@@ -94,7 +94,7 @@ data(example_catch)
 design <- creel_design(example_calendar, date = date, strata = day_type)
 design <- add_counts(design, example_counts)
 design <- add_interviews(design, example_interviews,
-  catch = catch_total, effort = hours_fished,
+  catch = catch_total, effort = hours_fished, n_anglers = n_anglers,
   trip_status = trip_status, trip_duration = trip_duration
 )
 design <- add_catch(design, example_catch,

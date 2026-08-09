@@ -50,7 +50,8 @@
 #' design <- suppressWarnings(
 #'   add_interviews(
 #'     design, example_interviews,
-#'     catch = catch_total, effort = hours_fished, trip_status = trip_status
+#'     catch = catch_total, effort = hours_fished, n_anglers = n_anglers,
+#'     trip_status = trip_status
 #'   )
 #' )
 #' eff <- suppressWarnings(estimate_effort(design))

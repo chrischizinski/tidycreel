@@ -263,3 +263,92 @@ test_that("creel_estimates_mor print includes trip counts", {
   # After Phase 17, auto-switch to incomplete trips means n_total = n_incomplete
   expect_match(output_text, "25.*25", perl = TRUE) # n_incomplete of n_total
 })
+
+# DESIGN-112: party-hour vs angler-hour guard (finding 7) ----
+
+test_that("design records whether n_anglers was supplied (GH #112)", {
+  # angler_effort_col is ".angler_effort" whether or not party sizes were applied,
+  # so before this flag no downstream function could tell party-hours from
+  # angler-hours.
+  data(example_calendar, envir = environment())
+  data(example_counts, envir = environment())
+  data(example_interviews, envir = environment())
+
+  base <- suppressMessages(creel_design(example_calendar, date = date, strata = day_type))
+  base <- suppressMessages(suppressWarnings(add_counts(base, example_counts)))
+
+  without <- suppressMessages(suppressWarnings(add_interviews(
+    base, example_interviews,
+    catch = catch_total, effort = hours_fished, trip_status = trip_status
+  )))
+  with_na <- suppressMessages(suppressWarnings(add_interviews(
+    base, example_interviews,
+    catch = catch_total, effort = hours_fished, n_anglers = n_anglers,
+    trip_status = trip_status
+  )))
+
+  expect_false(without$n_anglers_supplied)
+  expect_true(with_na$n_anglers_supplied)
+
+  # And the flag tracks the quantity it claims to: without n_anglers the two
+  # columns are the same numbers, with it they are not (mean party size 2.05).
+  expect_identical(
+    without$interviews[[".angler_effort"]],
+    without$interviews[["hours_fished"]]
+  )
+  expect_false(identical(
+    with_na$interviews[[".angler_effort"]],
+    with_na$interviews[["hours_fished"]]
+  ))
+})
+
+test_that("product totals warn when a party-hour rate meets angler-hour effort (GH #112)", {
+  # add_interviews() informs at construction, but the units only actually collide
+  # at the multiplication, which is a different call in a different function.
+  data(example_calendar, envir = environment())
+  data(example_counts, envir = environment())
+  data(example_interviews, envir = environment())
+
+  base <- suppressMessages(creel_design(example_calendar, date = date, strata = day_type))
+  base <- suppressMessages(suppressWarnings(add_counts(base, example_counts)))
+  design <- suppressMessages(suppressWarnings(add_interviews(
+    base, example_interviews,
+    catch = catch_total, harvest = catch_kept, effort = hours_fished,
+    trip_status = trip_status
+  )))
+
+  expect_warning(estimate_total_catch(design), "party")
+  expect_warning(estimate_total_harvest(design), "party")
+})
+
+test_that("product totals stay silent once n_anglers is supplied (GH #112)", {
+  # The warning must be answerable -- passing n_anglers has to switch it off, or
+  # it is noise rather than a guard.
+  data(example_calendar, envir = environment())
+  data(example_counts, envir = environment())
+  data(example_interviews, envir = environment())
+
+  base <- suppressMessages(creel_design(example_calendar, date = date, strata = day_type))
+  base <- suppressMessages(suppressWarnings(add_counts(base, example_counts)))
+  design <- suppressMessages(suppressWarnings(add_interviews(
+    base, example_interviews,
+    catch = catch_total, harvest = catch_kept, effort = hours_fished,
+    n_anglers = n_anglers, trip_status = trip_status
+  )))
+
+  expect_no_warning(estimate_total_catch(design))
+  expect_no_warning(estimate_total_harvest(design))
+})
+
+test_that("bus-route totals do not raise the party-hours warning (GH #112)", {
+  # Bus-route totals are HT sums over interviews with no rate multiplication, so
+  # there is no unit collision to warn about. Warning there would be a false
+  # positive on every bus-route call.
+  design <- build_br_design_for_tests(n_sites = 3, n_days = 8, n_interviews = 24, seed = 42)
+  # This helper does supply n_anglers, so force the flag off to isolate the
+  # branch: even then the bus-route path must not warn, because it never
+  # multiplies a rate by count-derived effort.
+  design$n_anglers_supplied <- FALSE
+
+  expect_no_warning(suppressMessages(estimate_total_harvest(design)))
+})

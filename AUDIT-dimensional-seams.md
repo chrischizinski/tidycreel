@@ -72,7 +72,7 @@ pass on anything Sonnet implements.
 | #109 | 6 | **Opus** | `cf²` and `mean_party_size²` scaling in variance units — precisely the class Sonnet gets confidently wrong, and precisely how shipped bug 2 happened. |
 | #110 | 8 | **Sonnet** implement / **Opus** verify | The dispatch mirrors the existing harvest bus-route dispatch — mechanical. **But `estimate_total_release_br()` has never been called, so it has never been exercised. Opus must verify it is correct before the wiring is trusted.** |
 | #111 | 10 | **Sonnet** | ~~Thread a `method` string through 4 call sites and fix one `autoplot` map entry. No math.~~ **LANDED.** Three call sites, not four (effort builds its own object and its `"total"` was already correct), and three label maps, not one. |
-| #112 | 7, 9, 11 | **Sonnet** | All three are guards. #11 is an allowlist check; #7 is a flag plus a warn; #9 is a guard **once Opus decides reject-vs-honour** — decide that first, then it is one branch. |
+| #112 | 7, 9, 11 | **Sonnet** | ~~All three are guards. #11 is an allowlist check; #7 is a flag plus a warn; #9 is a guard **once Opus decides reject-vs-honour** — decide that first, then it is one branch.~~ **LANDED.** #9 was not one branch: the reject was, but the substantive half was giving catch and release the completed-trip filter harvest already had, which moves shipped numbers. #7's blast radius had to be measured, not reasoned about. |
 | #113 | 12a | **Opus** | `flexible-count-estimation.Rmd` needs a *correct* replacement worked example. Producing the right numbers is exactly what failed the first time. |
 | #113 | 12b | **Sonnet** | `glossary.Rmd:68`, `data.R:330`, `ice-fishing.Rmd:~214-218`, `tidycreel.Rmd:47/71` — prose only, exact target text already identified. |
 | *not opened* | 14 | **Opus** | One-line dispatch condition, but it moves every ice harvest-rate number and the two paths are indistinguishable from their output, so the regression fixture is the whole job. |
@@ -299,6 +299,36 @@ angler-hours. Both operands individually correct; the product is not.
 **Decision: GUARD.** Record `n_anglers_supplied` on the design and warn at the point of
 multiplication, not only at `add_interviews()`. Fix the examples to pass `n_anglers`.
 
+**LANDED (#112).** `add_interviews()` now records
+`design$n_anglers_supplied <- !is.null(n_anglers_col)`, and
+`warn_party_hours_product()` fires on the product path of `estimate_total_catch()`,
+`estimate_total_harvest()` and `estimate_total_release()` when it is `FALSE`. The
+warning is placed after the bus-route dispatch: those totals are HT sums over
+interviews with no rate multiplication, so warning there would be a false positive on
+every bus-route call.
+
+Blast radius was measured rather than guessed. 309 `add_interviews()` calls in the
+suite pass `n_anglers` only 5 times, so the upper bound looked alarming; the measured
+cost is **58 new warnings and 0 failures** (602 -> 660), because most tests never reach
+a product total.
+
+The predicate has to be the stored flag, not a runtime comparison of `.angler_effort`
+against the effort column. When `n_anglers` is absent the two columns are identical and
+there is no party-size data to consult, so the runtime check cannot distinguish "every
+party is one angler" (no bug) from "we were never told" (the bug). The flag records the
+second.
+
+Examples: the four roxygen blocks that reach a product total were identified by parsing
+`@examples` blocks rather than by grep over the file, which had matched prose. Three now
+pass `n_anglers`, as does the `write_estimates()` example named above.
+`man/example_sections_interviews.Rd`'s block is left warning **on purpose** --
+`example_sections_interviews` carries no `n_anglers` column, so the warning is true
+there and suppressing it would hide a real signal in the docs.
+
+**Not done:** 16 vignettes call a product total and will now emit the warning. Sweeping
+them is mechanical but touches 16 files, so it is left as a follow-up rather than folded
+into this commit.
+
 ### 8. `estimate_total_release()` has no bus-route dispatch; `estimate_total_release_br()` is dead code
 
 `R/creel-estimates-total-release.R` contains zero `design_type` references; at L243 it
@@ -423,6 +453,20 @@ Edge case, unchanged: when `trip_status_col` is `NULL` nothing can be filtered, 
 rows are treated as complete — the existing `estimate_total_harvest_br()` behaviour, now
 applied consistently across the three.
 
+**LANDED (#112).** All three totals now route through one `br_complete_trips_only()`
+helper rather than each carrying (or omitting) its own filter — the drift between them
+*was* the defect, so consolidating is the fix that stops it recurring.
+`estimate_total_catch()` aborts on `use_trips = "all"` for bus-route and ice, naming
+`estimate_catch_rate(use_trips = "incomplete")` as the incomplete-trip route.
+
+Measured on the mixed fixture: total catch drops from 1089.81 over 24 rows to 512.31
+over 12, and catch and harvest now report the same `n` on the same design — the
+invariant that matters, since the two estimate different quantities and should not
+report the same estimate.
+
+Mutation testing, 4/4: make the helper a no-op -> 3 failures; drop the filter from catch
+only -> 3; from release only -> 2; remove the `use_trips = "all"` rejection -> 2.
+
 ### 10. `br_build_estimates()` hardcodes `method = "total"`, so every bus-route plot reads "Total Effort"
 
 `br_build_estimates()` (`R/creel-estimates-bus-route.R:790`) is called by effort
@@ -496,6 +540,19 @@ estimate_effort_per_acre(cpue_object, 100)-> 0.00967  method "effort-per-acre"
 Fish per hour divided by hours per trip, relabelled "angler-trips", no warning.
 
 **Decision: GUARD** — reject any `effort$method` outside the effort family.
+
+**LANDED (#112).** `require_effort_estimates()` replaces the bare `inherits()` check in
+both functions and tests `effort$method` against `effort_family_methods()`, which is
+`c("total", "total-sections")` — determined by running `estimate_effort()` across design
+types rather than by grepping for `method =` strings, which turns up the *argument*
+named `method` on `estimate_effort()` itself and two unrelated defaults.
+
+The guard also catches the other direction of the same mistake: since #111 the
+bus-route HT totals carry `ht-total-*` strings, so a fish-valued total is rejected here
+too. Before #111 they carried `"total"` and would have passed this allowlist — the two
+findings had to land in this order.
+
+Mutation testing, 1/1: make the allowlist admit everything -> 3 failures.
 
 ### 12. Documentation asserting units the code does not produce
 

@@ -674,6 +674,43 @@ warn_tier2_group_issues <- function(design, by_vars) {
 #'
 #' @keywords internal
 #' @noRd
+# Warn where a party-hour rate meets angler-hour effort.
+#
+# When add_interviews() runs without `n_anglers`, .angler_effort is the raw
+# effort column, so every rate estimator returns fish per *party*-hour. The
+# product totals then multiply that rate by effort derived from angler counts,
+# which is angler-hours. Both operands are individually correct; their product is
+# correct only if every party is a single angler.
+#
+# add_interviews() already informs at construction, but the design records
+# angler_effort_col = ".angler_effort" either way, so nothing downstream could
+# tell the two apart -- and the inform is far from the call that actually
+# multiplies them. This fires at that point instead.
+#
+# Bus-route and ice designs do not reach this: their totals are HT sums over
+# interviews, with no rate multiplication.
+warn_party_hours_product <- function(design, call = rlang::caller_env()) {
+  if (isTRUE(design$n_anglers_supplied)) {
+    return(invisible(FALSE))
+  }
+
+  cli::cli_warn(
+    c(
+      "Rate and effort may be in different units.",
+      "x" = paste(
+        "{.arg n_anglers} was not supplied, so the rate is per {.emph party}-hour",
+        "while count-derived effort is angler-hours."
+      ),
+      "i" = paste(
+        "The product is correct only if every party is one angler.",
+        "Pass {.code add_interviews(n_anglers = <col>)} to normalise."
+      )
+    ),
+    call = call
+  )
+  invisible(TRUE)
+}
+
 warn_tier2_interview_issues <- function(design) {
   interviews <- design$interviews
   catch_col <- design$catch_col

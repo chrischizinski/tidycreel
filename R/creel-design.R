@@ -2279,6 +2279,13 @@ add_interviews <- function(
   }
   new_design$angler_effort_col <- ".angler_effort"
 
+  # Record whether .angler_effort was actually normalised by a per-interview
+  # party size. Without it, .angler_effort is party-hours while count-derived
+  # effort is angler-hours, and no downstream function could previously tell the
+  # two apart -- angler_effort_col is ".angler_effort" either way (see the
+  # warning in warn_party_hours_product()).
+  new_design$n_anglers_supplied <- !is.null(n_anglers_col)
+
   # Construct interview survey eagerly
   new_design$interview_survey <- construct_interview_survey(new_design) # nolint: object_usage_linter
 

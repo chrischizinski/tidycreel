@@ -953,6 +953,9 @@ estimate_total_catch_br <- function(
   n_counted_col <- design$n_counted_col
   n_interviewed_col <- design$n_interviewed_col
 
+  # Filter to complete trips only (see br_complete_trips_only)
+  interviews <- br_complete_trips_only(interviews, design)
+
   # Compute c_i = catch_col * .expansion (Eq. 19.5 catch variant)
   interviews$.c_i <- interviews[[catch_col]] * interviews$.expansion
 
@@ -1053,17 +1056,13 @@ estimate_total_harvest_br <- function(
   }
 
   harvest_col <- design$harvest_col
-  trip_status_col <- design$trip_status_col
   n_counted_col <- design$n_counted_col
   n_interviewed_col <- design$n_interviewed_col
   site_col <- design$bus_route$site_col
   circuit_col <- design$bus_route$circuit_col
 
-  # Filter to complete trips only
-  if (!is.null(trip_status_col)) {
-    is_complete <- tolower(interviews[[trip_status_col]]) == "complete"
-    interviews <- interviews[is_complete, , drop = FALSE]
-  }
+  # Filter to complete trips only (see br_complete_trips_only)
+  interviews <- br_complete_trips_only(interviews, design)
 
   # Compute h_i = harvest_col * .expansion
   interviews$.h_i <- interviews[[harvest_col]] * interviews$.expansion
@@ -1168,6 +1167,9 @@ estimate_total_release_br <- function(
   site_col <- design$bus_route$site_col
   circuit_col <- design$bus_route$circuit_col
 
+  # Filter to complete trips only (see br_complete_trips_only)
+  interviews <- br_complete_trips_only(interviews, design)
+
   # Compute r_i = .release_count * .expansion
   interviews$.r_i <- interviews$.release_count * interviews$.expansion
 
@@ -1199,6 +1201,33 @@ estimate_total_release_br <- function(
     site_table,
     method = "ht-total-release"
   )
+}
+
+# Internal helper: restrict a bus-route/ice total to completed trips ----
+
+# The bus-route method is an access-point design (Malvestuto 1996, section
+# 20.3.1.2), and its totals are the access-point estimator of section 20.5.1:
+# completed trip quantities summed over interviews. An uncompleted trip breaks it
+# twice, in opposite directions. The observed count is catch *so far*, not the
+# trip's catch, which biases the sum **down**; and pi_i is the inclusion
+# probability of a completed trip at a site during the circuit, whereas an
+# uncompleted trip is intercepted with probability proportional to its length
+# ("length-of-stay bias", section 20.3.1.1), which biases it **up**. The two do
+# not cancel predictably, so the net error cannot even be signed.
+#
+# Incomplete trips support a *rate* -- the truncated Hajek mean of ratios of
+# Hoenig et al. (1997), see estimate_harvest_br() -- never a total.
+#
+# Shared by all three totals so they cannot drift onto different row sets again;
+# that drift was the defect. A design with no trip status column records nothing
+# to filter on, so its rows are treated as complete.
+br_complete_trips_only <- function(interviews, design) {
+  trip_status_col <- design$trip_status_col
+  if (is.null(trip_status_col) || !trip_status_col %in% names(interviews)) {
+    return(interviews)
+  }
+  is_complete <- tolower(interviews[[trip_status_col]]) == "complete"
+  interviews[is_complete, , drop = FALSE]
 }
 
 # Internal helper: build creel_estimates from .contribution column ----

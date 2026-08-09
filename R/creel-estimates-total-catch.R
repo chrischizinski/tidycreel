@@ -100,7 +100,7 @@
 #' design <- creel_design(example_calendar, date = date, strata = day_type)
 #' design <- add_counts(design, example_counts)
 #' design <- add_interviews(design, example_interviews,
-#'   catch = catch_total, effort = hours_fished,
+#'   catch = catch_total, effort = hours_fished, n_anglers = n_anglers,
 #'   trip_status = trip_status, trip_duration = trip_duration
 #' )
 #'
@@ -167,6 +167,23 @@ estimate_total_catch <- function(
 
   # Bus-route / ice dispatch (before standard survey NULL check)
   if (!is.null(design$design_type) && design$design_type %in% c("bus_route", "ice")) {
+    # These designs estimate a completed-trip total; "all" has no estimator here.
+    # See br_complete_trips_only() for why an uncompleted trip breaks the HT sum
+    # in two directions at once.
+    if (identical(use_trips, "all")) {
+      cli::cli_abort(c(
+        "{.code use_trips = \"all\"} is not available for {.val {design$design_type}} designs.",
+        "x" = paste(
+          "The bus-route total is a completed-trip Horvitz-Thompson sum;",
+          "an uncompleted trip contributes catch-so-far under the inclusion",
+          "probability of a completed one."
+        ),
+        "i" = paste(
+          "Incomplete trips support a rate, not a total; see",
+          "{.code estimate_catch_rate(use_trips = \"incomplete\")}."
+        )
+      ))
+    }
     if (verbose) {
       cli::cli_inform(c(
         "i" = "Using bus-route estimator (Jones & Pollock 2012, Eq. 19.5)"
@@ -194,6 +211,9 @@ estimate_total_catch <- function(
       ci_method = ci_method
     ))
   }
+
+  # Effort x rate from here on: flag a party-hour rate meeting angler-hour effort
+  warn_party_hours_product(design) # nolint: object_usage_linter
 
   # Section dispatch guard (v0.7.0+ — only fires when add_sections() was called)
   if (!is.null(design[["sections"]])) {

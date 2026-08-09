@@ -1744,3 +1744,87 @@ test_that("estimate_total_catch(by=day_type) warns on grouped standard path when
     regexp = "no matching rate estimate"
   )
 })
+
+# TOTC-112: bus-route trip-status handling (finding 9) ----
+
+make_br_mixed_trips <- function(seed = 42) {
+  d <- build_br_design_for_tests(n_sites = 3, n_days = 8, n_interviews = 24, seed = seed)
+  d$interviews$trip_status <- rep(
+    c("complete", "incomplete"),
+    length.out = nrow(d$interviews)
+  )
+  d
+}
+
+test_that("bus-route total catch counts only completed trips (GH #112)", {
+  # The bus-route total is the access-point estimator of Malvestuto (1996) 20.5.1:
+  # completed-trip quantities summed over interviews. An uncompleted trip reports
+  # catch so far under the inclusion probability of a completed trip, so it breaks
+  # the sum in two directions at once. Catch summed every row while harvest, on
+  # the same design, already filtered -- so the two were not comparable.
+  design <- make_br_mixed_trips()
+  n_complete <- sum(design$interviews$trip_status == "complete")
+
+  result <- suppressWarnings(suppressMessages(estimate_total_catch(design)))
+
+  expect_equal(result$estimates$n, n_complete)
+  expect_lt(result$estimates$n, nrow(design$interviews))
+})
+
+test_that("bus-route total catch and total harvest use the same rows (GH #112)", {
+  # This is the defect finding 9 names: two totals over different row sets on one
+  # design, making their comparison unsound. Equal n is the invariant that matters,
+  # not equal estimates -- they are different quantities.
+  design <- make_br_mixed_trips()
+
+  catch <- suppressWarnings(suppressMessages(estimate_total_catch(design)))
+  harvest <- suppressWarnings(suppressMessages(estimate_total_harvest(design)))
+
+  expect_equal(catch$estimates$n, harvest$estimates$n)
+})
+
+test_that("estimate_total_catch() rejects use_trips='all' on bus-route (GH #112)", {
+  # Previously accepted and silently discarded: "all" and "complete" returned the
+  # same unfiltered number, so the argument documented as selecting trips did
+  # nothing at all on these designs.
+  design <- make_br_mixed_trips()
+
+  expect_error(
+    suppressWarnings(suppressMessages(estimate_total_catch(design, use_trips = "all"))),
+    "not available"
+  )
+})
+
+test_that("estimate_total_catch() rejects use_trips='all' on ice designs (GH #112)", {
+  # Ice is a degenerate bus route and routes through the same HT estimator.
+  design <- build_ice_design(n_days = 8, n_interviews = 24, seed = 7)
+
+  expect_error(
+    suppressWarnings(suppressMessages(estimate_total_catch(design, use_trips = "all"))),
+    "not available"
+  )
+})
+
+test_that("estimate_total_catch() still accepts the default use_trips on bus-route (GH #112)", {
+  # "complete" is the default, so rejecting "all" must not break callers who pass
+  # nothing -- or who pass the default explicitly.
+  design <- make_br_mixed_trips()
+
+  bare <- suppressWarnings(suppressMessages(estimate_total_catch(design)))
+  explicit <- suppressWarnings(suppressMessages(
+    estimate_total_catch(design, use_trips = "complete")
+  ))
+
+  expect_equal(bare$estimates$estimate, explicit$estimates$estimate)
+})
+
+test_that("bus-route totals treat rows as complete when no trip status is recorded (GH #112)", {
+  # A design that records no trip status has nothing to filter on. Dropping every
+  # row instead would silently return zero.
+  design <- make_br_mixed_trips()
+  design$trip_status_col <- NULL
+
+  result <- suppressWarnings(suppressMessages(estimate_total_catch(design)))
+
+  expect_equal(result$estimates$n, nrow(design$interviews))
+})

@@ -1,3 +1,41 @@
+# Internal: effort-family method allowlist ----
+
+# `estimate_effort()` returns "total" on every design type and "total-sections"
+# when add_sections() was used. Everything else in the package -- CPUE, HPUE,
+# RPUE, the product totals, the bus-route HT totals -- is a different quantity.
+# Consumers documented as taking angler-hours check against this set so a rate
+# or a fish-valued total cannot be divided by hours or acres and relabelled.
+effort_family_methods <- function() {
+  c("total", "total-sections")
+}
+
+# Shared guard for the composable estimators that consume an effort object.
+require_effort_estimates <- function(effort, arg = "effort", call = rlang::caller_env()) {
+  if (!inherits(effort, "creel_estimates")) {
+    cli::cli_abort(
+      "{.arg {arg}} must be a {.cls creel_estimates} object from {.fn estimate_effort}.",
+      call = call
+    )
+  }
+
+  method <- effort$method %||% NA_character_
+  if (!method %in% effort_family_methods()) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must hold angler-hours, but carries {.val {method}}.",
+        "x" = paste(
+          "Only {.fn estimate_effort} results qualify",
+          "({.val {effort_family_methods()}})."
+        ),
+        "i" = "Dividing a rate or a fish-valued total here would relabel it as effort."
+      ),
+      call = call
+    )
+  }
+
+  invisible(effort)
+}
+
 #' Estimate angler trips from extrapolated effort
 #'
 #' @description
@@ -42,11 +80,7 @@
 #' @export
 estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
   # --- input guards ---
-  if (!inherits(effort, "creel_estimates")) {
-    cli::cli_abort(
-      "{.arg effort} must be a {.cls creel_estimates} object from {.fn estimate_effort}."
-    )
-  }
+  require_effort_estimates(effort)
 
   if (is.null(design$trip_duration_col)) {
     cli::cli_abort(c(
@@ -271,11 +305,7 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
 #' @export
 estimate_effort_per_acre <- function(effort, acres, ...) {
   # --- input guards ---
-  if (!inherits(effort, "creel_estimates")) {
-    cli::cli_abort(
-      "{.arg effort} must be a {.cls creel_estimates} object from {.fn estimate_effort}."
-    )
-  }
+  require_effort_estimates(effort)
 
   if (!is.numeric(acres) || length(acres) != 1 || acres <= 0) {
     cli::cli_abort(

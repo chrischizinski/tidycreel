@@ -1078,3 +1078,24 @@ test_that("bus-route total release reads the release column, not the harvest one
   release <- suppressWarnings(suppressMessages(estimate_total_release(design)))
   expect_equal(release$estimates$estimate, 2 * harvest$estimates$estimate, tolerance = 1e-12)
 })
+
+# TOTR-112: bus-route trip-status handling (finding 9) ----
+
+test_that("bus-route total release counts only completed trips (GH #112)", {
+  # Release summed every row while harvest, on the same design, filtered to
+  # complete ones. Same defect as total catch, same fix, asserted separately so a
+  # partial fix cannot pass.
+  design <- attach_release_equal_to_harvest(
+    build_br_design_for_tests(n_sites = 3, n_days = 8, n_interviews = 24, seed = 42)
+  )
+  design$interviews$trip_status <- rep(
+    c("complete", "incomplete"),
+    length.out = nrow(design$interviews)
+  )
+
+  release <- suppressWarnings(suppressMessages(estimate_total_release(design)))
+  harvest <- suppressWarnings(suppressMessages(estimate_total_harvest(design)))
+
+  expect_equal(release$estimates$n, harvest$estimates$n)
+  expect_lt(release$estimates$n, nrow(design$interviews))
+})

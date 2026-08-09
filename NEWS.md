@@ -28,6 +28,20 @@
 
 ## Bug fixes
 
+* The product totals now warn when the rate and the effort they multiply are in
+  different units. Without `n_anglers`, `add_interviews()` leaves `.angler_effort`
+  equal to the raw effort column, so every rate is fish per *party*-hour while
+  count-derived effort is angler-hours; both operands are individually correct but
+  the product is not, unless every party is a single angler. `add_interviews()`
+  informed at construction, but `design$angler_effort_col` was `".angler_effort"`
+  either way, so nothing downstream could tell the two apart and nothing spoke up
+  where the units actually collide. Designs now carry `n_anglers_supplied`, and
+  `estimate_total_catch()`, `estimate_total_harvest()` and
+  `estimate_total_release()` warn on the product path when it is `FALSE`.
+  Bus-route and ice designs are unaffected: their totals are Horvitz–Thompson sums
+  over interviews with no rate multiplication. The package's own examples now pass
+  `n_anglers` (#112).
+
 * `estimate_total_release()` and `estimate_release_rate()` had no bus-route
   dispatch, so on a bus-route or ice design they ran the count-based product
   path and ignored the inclusion probabilities entirely. The interview-derived
@@ -75,6 +89,37 @@
   double count. Counts tables carrying neither column are unaffected.
 
 ## Breaking changes
+
+* Bus-route and ice totals now count **completed trips only**, in all three
+  quantities. `estimate_total_harvest()` already filtered; `estimate_total_catch()`
+  and `estimate_total_release()` did not, so on one design the three totals were
+  computed over different row sets and could not be compared. On a 24-interview
+  fixture split 12 complete / 12 incomplete, total catch was 1089.81 over 24 rows
+  where the completed-trip figure is 512.31 over 12 — a factor of 2.13.
+
+  These are access-point estimators (Malvestuto 1996, §20.3.1.2), and §20.5.1
+  builds them by summing completed-trip quantities over interviews. An uncompleted
+  trip breaks that in two directions at once: the observed count is catch *so far*
+  rather than the trip's catch, biasing the sum **down**, while \eqn{\pi_i} is the
+  inclusion probability of a *completed* trip and an uncompleted one is intercepted
+  with probability proportional to its length (length-of-stay bias, §20.3.1.1),
+  biasing it **up**. The two do not cancel predictably. Incomplete trips support a
+  rate — the truncated Hájek mean of ratios of Hoenig et al. (1997), reachable via
+  `estimate_catch_rate(use_trips = "incomplete")` — never a total (#112).
+
+* `estimate_total_catch(use_trips = "all")` now **aborts** on bus-route and ice
+  designs. It was previously accepted and silently discarded: `"all"` and
+  `"complete"` returned the same unfiltered number, so the argument documented as
+  selecting trips did nothing at all on these designs. `"complete"` is the default
+  and is unaffected, so callers passing nothing see no change beyond the
+  completed-trip filter above (#112).
+
+* `estimate_angler_trips()` and `estimate_effort_per_acre()` now reject any
+  `creel_estimates` whose `method` is outside the effort family (`"total"`,
+  `"total-sections"`). Both are documented as taking angler-hours but guarded only
+  on class, so a CPUE object passed straight through: fish per hour divided by
+  hours per trip, relabelled `"angler-trips"`, no warning. A fish-valued bus-route
+  total was accepted the same way (#112).
 
 * `estimate_total_catch()`, `estimate_total_harvest()` and
   `estimate_total_release()` on a bus-route or ice design now report

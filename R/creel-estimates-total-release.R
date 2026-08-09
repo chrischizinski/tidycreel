@@ -72,7 +72,7 @@
 #' design <- creel_design(example_calendar, date = date, strata = day_type)
 #' design <- add_counts(design, example_counts)
 #' design <- add_interviews(design, example_interviews,
-#'   catch = catch_total, effort = hours_fished,
+#'   catch = catch_total, effort = hours_fished, n_anglers = n_anglers,
 #'   trip_status = trip_status, trip_duration = trip_duration
 #' )
 #' design <- add_catch(design, example_catch,
@@ -159,6 +159,9 @@ estimate_total_release <- function(
       verbose = FALSE
     ))
   }
+
+  # Effort x rate from here on: flag a party-hour rate meeting angler-hour effort
+  warn_party_hours_product(design) # nolint: object_usage_linter
 
   # Validate design compatibility (counts AND interviews required for effort)
   validate_design_compatibility(design) # nolint: object_usage_linter
