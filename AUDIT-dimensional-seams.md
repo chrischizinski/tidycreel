@@ -370,10 +370,58 @@ So total catch sums interrupted-trip catch as though complete while total harves
 not — the two are computed over different row sets on the same design, making their
 comparison unsound.
 
-(Empirical demo pending: the available bus-route fixture has 12/12 complete trips, so
-results coincide. The code path is decisive on its own.)
+Empirical demo (2026-08-09), on the 24-interview fixture forced to 12 complete and 12
+incomplete with `rep(c("complete","incomplete"), length.out = n)`:
 
-**Decision: GUARD** — honour `use_trips` or reject it for bus-route designs.
+| call | estimate | se | n |
+| ---- | -------- | -- | - |
+| `estimate_total_harvest()` — filters to complete | 171.06 | 68.02 | 12 |
+| `estimate_total_catch()` — no filter | 1089.81 | 242.60 | 24 |
+| `estimate_total_catch()` as it would be if it filtered | 512.31 | 206.22 | 12 |
+
+Unfiltered catch is **2.13×** the filtered figure. `use_trips` is provably inert on this
+path: `"all"` and `"complete"` both return 1089.8125 at n = 24, so even the *default*
+does not filter.
+
+**Decision: GUARD — reject, do not honour.** Bus-route and ice totals are
+complete-trip-only by construction; `use_trips = "all"` aborts on those designs.
+
+The bus route is an **access-point** method, not a roving one — Malvestuto (1996) files
+it under §20.3.1.2 Access Point Surveys, and the estimator implemented here is the
+access-point estimator that section describes: "Completed trip lengths are simply added
+over all interviews to obtain an estimate of fishing effort" (§20.5.1). Feeding it
+uncompleted trips breaks it in two independent places:
+
+- **Quantity.** The HT sum treats \eqn{c_i} as the trip's catch. An uncompleted trip
+  reports catch *so far* — biased **down**.
+- **Design.** \eqn{\pi_i} is the inclusion probability of a completed trip at a site
+  during the circuit. Uncompleted trips are intercepted with probability proportional to
+  trip length ("the probability of contacting an angler is proportional to trip length",
+  Malvestuto 1996 §20.3.1.1, length-of-stay bias) — biased **up**.
+
+The two run in opposite directions, so they do not cancel predictably and the net error
+cannot even be signed. Honouring `"all"` would mean shipping an estimator whose bias
+direction is unknown. This also matches what finding 4/5 (#108) already established:
+incomplete trips support a **rate** (truncated Hájek mean of ratios, Hoenig et al. 1997),
+never a total. No incomplete-trip total exists in the package or in the literature.
+
+Implementation, all in one commit:
+
+1. `estimate_total_catch_br()` and `estimate_total_release_br()` gain the complete-trip
+   filter `estimate_total_harvest_br()` already has. This is the substantive half — the
+   three are currently computed over different row sets on the same design, which is why
+   171.06 and 1089.81 above are not comparable. Breaking: moves catch and release totals
+   on any bus-route or ice design carrying incomplete trips.
+2. `estimate_total_catch(use_trips = "all")` aborts on bus-route and ice, pointing at
+   `estimate_catch_rate(use_trips = "incomplete")`. `"complete"` is accepted as a no-op —
+   it is already the default, so callers passing nothing are unaffected.
+3. **Do not** add `use_trips` to `estimate_total_harvest()` or `estimate_total_release()`.
+   Neither carries it today, and an argument whose only legal value is its default is
+   noise.
+
+Edge case, unchanged: when `trip_status_col` is `NULL` nothing can be filtered, so all
+rows are treated as complete — the existing `estimate_total_harvest_br()` behaviour, now
+applied consistently across the three.
 
 ### 10. `br_build_estimates()` hardcodes `method = "total"`, so every bus-route plot reads "Total Effort"
 
@@ -601,11 +649,19 @@ harvest behaviour deliberately rather than fixing one twin and creating an asymm
 
 Two questions to settle before coding:
 
-- Is `"all"` a legitimate bus-route value? The unfiltered ratio of HT totals *is* the
-  all-trips estimate, so the current behaviour is arguably correct but undocumented.
-  Bless it in the roxygen or reject it — do not leave it working by accident.
+- ~~Is `"all"` a legitimate bus-route value?~~ **Settled 2026-08-09 with finding 9:
+  reject it.** The reasoning is recorded in full under finding 9 and applies unchanged
+  to the rate path — an unfiltered pool of complete and uncompleted trips mixes a
+  truncated numerator with a length-biased inclusion probability, in opposite
+  directions. The valid sets are **not** the same on the two paths and should not be
+  unified: `"incomplete"` is legitimate for rates (Hoenig et al. 1997) and illegitimate
+  for totals. So `complete|incomplete|diagnostic` for the rate twins,
+  `complete` only for the totals.
 - Reject unknown values with a `cli_abort()` listing the valid set, matching the
-  standard path's message, or `match.arg()` inside `estimate_harvest_br()`?
+  standard path's message, or `match.arg()` inside `estimate_harvest_br()`? **Prefer the
+  explicit `cli_abort()`** — it is what the standard path already emits for the same
+  mistake, and `match.arg()` would partial-match `"comp"` to `"complete"`, quietly
+  accepting input the standard twin rejects.
 
 **Decision: REAL BUG — guard.** Fix both functions in one commit so the twins stay
 symmetric. **Not yet opened as a GitHub issue.**
