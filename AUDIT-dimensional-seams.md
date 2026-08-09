@@ -677,6 +677,29 @@ outlier.
 harvest-rate number in the package and belongs in a commit whose title says so, with
 its own regression fixture. **Not yet opened as a GitHub issue.**
 
+**Sharpened by finding 15 (2026-08-09), not caused by it.** The guard added for finding
+15 fires on `design_type == "bus_route"` only, so ice rate estimators still fall to the
+standard path and its `all|complete` set. Measured on an 8-day, 24-interview ice fixture
+*after* the finding-15 commit:
+
+```
+estimate_harvest_rate(ice, use_trips = "complete")     0.514328  n = 24
+estimate_harvest_rate(ice, use_trips = "all")          0.514328  n = 24
+estimate_harvest_rate(ice, use_trips = "incomplete")   abort: Invalid use_trips value
+estimate_harvest_rate(ice, use_trips = "diagnostic")   abort: Invalid use_trips value
+```
+
+The rejections are **not new** — the standard path's check predates finding 15. What
+changed is that the contradiction is now *written down twice*: one guard says the
+bus-route rate family takes `complete|incomplete|diagnostic`, the other says a design the
+package documents as a degenerate bus route takes `all|complete`. An ice design is
+therefore refused the two values its own design type is supposed to support, and offered
+`"all"`, which finding 15 rejects for the estimator it is meant to be running.
+
+This is a second symptom of the same dispatch gap, so it lands with the fix above rather
+than separately; the regression fixture that pins the moved ice rate numbers should pin
+the accepted `use_trips` set alongside them.
+
 ### 15. `use_trips` is never validated on the bus-route path, so a typo silently changes the estimator
 
 Added 2026-08-09, found while wiring #110. `estimate_harvest_rate()` and
