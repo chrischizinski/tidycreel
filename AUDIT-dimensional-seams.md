@@ -45,6 +45,7 @@ fix or travel together.
 | 12 | #113 | Documentation asserts units the code does not produce |
 | 13 | *not opened* | Instantaneous path never carries T, so it returns angler-days (added 2026-08-08) |
 | 14 | *not opened* | Ice designs skip the bus-route dispatch in the rate estimators (added 2026-08-09) |
+| 15 | *not opened* | `use_trips` unvalidated on the bus-route path; a typo silently swaps the estimator (added 2026-08-09) |
 
 Downstream book work is tracked in
 `~/Dev/modern-creel-surveys/.planning/TIDYCREEL-WISHLIST.md`, not as GitHub issues —
@@ -75,6 +76,7 @@ pass on anything Sonnet implements.
 | #113 | 12a | **Opus** | `flexible-count-estimation.Rmd` needs a *correct* replacement worked example. Producing the right numbers is exactly what failed the first time. |
 | #113 | 12b | **Sonnet** | `glossary.Rmd:68`, `data.R:330`, `ice-fishing.Rmd:~214-218`, `tidycreel.Rmd:47/71` — prose only, exact target text already identified. |
 | *not opened* | 14 | **Opus** | One-line dispatch condition, but it moves every ice harvest-rate number and the two paths are indistinguishable from their output, so the regression fixture is the whole job. |
+| *not opened* | 15 | **Sonnet** | One guard in two twin functions, with the valid set already written down on the standard path. **But Opus decides first whether `"all"` is blessed or rejected on bus-route** — that is an estimator question, not a validation one. |
 | *not opened* | 13 | **Opus** | Adds \eqn{T_d} to the instantaneous estimator. Estimator design, moves every instantaneous number in the package, and the absent-\eqn{T_d} behaviour has to be decided jointly with unit propagation. Exactly the class where a plausible wrong answer passes the suite. |
 
 Non-finding work:
@@ -527,6 +529,45 @@ outlier.
 **Decision: REAL BUG**, kept out of #110 on purpose — the fix moves every ice
 harvest-rate number in the package and belongs in a commit whose title says so, with
 its own regression fixture. **Not yet opened as a GitHub issue.**
+
+### 15. `use_trips` is never validated on the bus-route path, so a typo silently changes the estimator
+
+Added 2026-08-09, found while wiring #110. `estimate_harvest_rate()` and
+`estimate_release_rate()` validate `use_trips` against `valid_use_trips_std` only on
+the **standard** path. The bus-route dispatch runs before that check and hands the
+string straight to `estimate_harvest_br()`, which branches on `== "diagnostic"`,
+`== "complete"`, `else if (== "incomplete")` — with no final `else`. Anything
+unrecognised therefore falls through to the complete-trip code **without the
+trip-status filter**.
+
+Reproduced on a 24-interview bus-route fixture, 12 complete and 12 incomplete:
+
+| `use_trips` | bus-route result | same value, standard design |
+| ----------- | ---------------- | --------------------------- |
+| `"complete"` | 0.119752, n = 12 | — |
+| `"all"` | 0.184918, n = 24 | — |
+| `"bogus"` | **0.184918, n = 24**, silent | `Invalid use_trips value: "bogus"` |
+| `"Complete"` | **0.184918, n = 24**, silent | aborts |
+
+The dangerous cell is the last one: a capitalisation typo in a *valid* value returns
+the all-trips answer, **54% away** from the complete-trip answer the caller asked for,
+with no condition raised — and only on bus-route designs. The standard path rejects the
+same input. This is the audit's own failure mode one level up: not a wrong dimension,
+but a silently substituted estimator.
+
+Both twins behave identically. The release dispatch added in `dc017aa` mirrored the
+harvest behaviour deliberately rather than fixing one twin and creating an asymmetry.
+
+Two questions to settle before coding:
+
+- Is `"all"` a legitimate bus-route value? The unfiltered ratio of HT totals *is* the
+  all-trips estimate, so the current behaviour is arguably correct but undocumented.
+  Bless it in the roxygen or reject it — do not leave it working by accident.
+- Reject unknown values with a `cli_abort()` listing the valid set, matching the
+  standard path's message, or `match.arg()` inside `estimate_harvest_br()`?
+
+**Decision: REAL BUG — guard.** Fix both functions in one commit so the twins stay
+symmetric. **Not yet opened as a GitHub issue.**
 
 ---
 
