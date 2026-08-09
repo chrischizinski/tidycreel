@@ -45,7 +45,7 @@ fix or travel together.
 | 12 | #113 | Documentation asserts units the code does not produce |
 | 13 | *not opened* | Instantaneous path never carries T, so it returns angler-days (added 2026-08-08) |
 | 14 | *not opened* | Ice designs skip the bus-route dispatch in the rate estimators (added 2026-08-09) |
-| 15 | *not opened* | `use_trips` unvalidated on the bus-route path; a typo silently swaps the estimator (added 2026-08-09) |
+| 15 | *not opened* | ~~`use_trips` unvalidated on the bus-route path; a typo silently swaps the estimator~~ **LANDED** (added and fixed 2026-08-09) |
 | 16 | *not opened* | ~~Scalar `n_anglers` resolves positionally to the first column, and sets `n_anglers_supplied = TRUE`~~ **LANDED** (added and fixed 2026-08-09) |
 
 Downstream book work is tracked in
@@ -723,6 +723,37 @@ Two questions to settle before coding:
 
 **Decision: REAL BUG — guard.** Fix both functions in one commit so the twins stay
 symmetric. **Not yet opened as a GitHub issue.**
+
+**LANDED.** Both twins now call one `validate_use_trips_br()` before dispatching, so
+their valid sets cannot drift apart the way the estimators themselves did under
+findings 9 and 16. Reproduced first on a fixture of four complete and four incomplete
+trips with rates that differ, so the substituted estimator shows in the number and not
+only in `n`:
+
+| `use_trips` | HPUE before | RPUE before | after |
+| ----------- | ----------- | ----------- | ----- |
+| `"complete"` | 2.642202, n = 4 | 2.990826, n = 4 | unchanged |
+| `"incomplete"` | 2.000000, n = 4 | 2.000000, n = 4 | unchanged |
+| `"diagnostic"` | both slots | both slots | unchanged |
+| `"all"` | 2.816514, n = 8 | 2.816514, n = 8 | **abort** |
+| `"bogus"` | 2.816514, n = 8 | 2.816514, n = 8 | **abort** |
+| `"Complete"` | 2.816514, n = 8 | 2.816514, n = 8 | **abort** |
+| `"comp"` | 2.816514, n = 8 | 2.816514, n = 8 | **abort** |
+
+Note what the "before" column shows: every rejected value returned the *same* number,
+because all four fell through to the complete-trip branch with the filter switched off.
+The estimator was not selected by the argument at all once the argument stopped being
+recognised.
+
+Two things the audit did not predict. First, the **documentation was already correct** —
+both `@param use_trips` blocks named `complete|incomplete|diagnostic` for bus-route
+designs. The fix makes the code match its own docs rather than changing the contract;
+what changed is that `"all"`, previously undocumented on this path and silently
+accepted, now aborts. Second, `""` (empty string) takes the same fall-through, so it is
+pinned in the tests alongside the typos.
+
+Mutation 6/6, including one mutant that swaps the guard for `pmatch()` semantics — that
+is the test that fails if the guard is ever rewritten as `match.arg()`.
 
 ### 16. Scalar `n_anglers` resolves positionally to the first column
 

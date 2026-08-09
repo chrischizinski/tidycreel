@@ -45,9 +45,13 @@ because incomplete-trip HPUE underestimates harvest when anglers keep
 additional fish after the interview (Hansen & Van Kirk 2010). Fish already
 in the livewell are directly observable, so \code{"all"} remains available
 for analyses that prefer the larger interview set. For bus-route designs:
-\code{"complete"} (default), \code{"incomplete"}, or \code{"diagnostic"}.
-When \code{trip_status} was not provided to \code{\link{add_interviews}},
-this argument has no effect for standard designs.}
+\code{"complete"} (default), \code{"incomplete"}, or \code{"diagnostic"};
+\code{"all"} is not an estimator there, because pooling the two kinds of
+trip applies the complete-trip ratio of Horvitz-Thompson totals to
+numerators that are catch so far. Matching is exact on both paths, and
+unrecognised values are an error. When \code{trip_status} was not provided
+to \code{\link{add_interviews}}, this argument has no effect for standard
+designs.}
 
 \item{truncate_at}{Numeric minimum trip duration in hours for the bus-route
 incomplete-trip estimator (default \code{0.5}, i.e. 30 minutes). Incomplete

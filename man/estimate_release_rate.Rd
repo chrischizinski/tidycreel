@@ -39,7 +39,9 @@ Van Kirk 2010). \code{"all"} remains available for analyses that prefer the
 larger interview set. When \code{trip_status} was not provided to
 \code{\link{add_interviews}}, this argument has no effect. For bus-route
 designs: \code{"complete"} (default), \code{"incomplete"}, or
-\code{"diagnostic"}, matching \code{\link{estimate_harvest_rate}}.}
+\code{"diagnostic"}, matching \code{\link{estimate_harvest_rate}};
+\code{"all"} is not an estimator there, and unrecognised values are an
+error rather than a silent fall-through to the complete-trip path.}
 
 \item{truncate_at}{Numeric minimum trip duration in hours for the bus-route
 incomplete-trip estimator (default \code{0.5}, i.e. 30 minutes). Incomplete

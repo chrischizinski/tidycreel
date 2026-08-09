@@ -1230,6 +1230,47 @@ br_complete_trips_only <- function(interviews, design) {
   interviews[is_complete, , drop = FALSE]
 }
 
+# Internal helper: validate use_trips on the bus-route rate path ----
+
+# estimate_harvest_br() branches on "diagnostic", then "complete", then
+# "incomplete", with no final else, so an unrecognised string reaches the
+# complete-trip code with the trip-status filter switched off and returns the
+# all-trips answer silently. The standard path rejects the same input, so the
+# same typo aborted or not depending on the design type.
+#
+# The valid set here is deliberately NOT the standard path's. "incomplete" is a
+# legitimate rate (the truncated Hajek mean of ratios, Hoenig et al. 1997) and
+# an illegitimate total; "all" is the reverse of what it means on the standard
+# path -- pooling the two kinds of trip applies the complete-trip ratio of
+# Horvitz-Thompson totals to numerators that are catch *so far*, which biases
+# the pooled rate down by the incomplete rows' share.
+#
+# Not match.arg(): it partial-matches, so "comp" would be accepted here and
+# rejected by the standard twin. Shared by both rate twins so their valid sets
+# cannot drift apart.
+validate_use_trips_br <- function(use_trips, call = rlang::caller_env()) {
+  valid_use_trips_br <- c("complete", "incomplete", "diagnostic")
+  if (use_trips %in% valid_use_trips_br) {
+    return(invisible(use_trips))
+  }
+  cli::cli_abort(
+    c(
+      "Invalid use_trips value: {.val {use_trips}}",
+      "x" = "Must be one of: {.val {valid_use_trips_br}}",
+      "i" = if (identical(use_trips, "all")) {
+        paste(
+          "{.val all} pools completed and uncompleted trips into the",
+          "complete-trip ratio estimator; use {.val incomplete} for the",
+          "mean-of-ratios rate or {.val diagnostic} to compare the two."
+        )
+      } else {
+        "Matching is exact: {.val complete} is not {.val Complete}."
+      }
+    ),
+    call = call
+  )
+}
+
 # Internal helper: build creel_estimates from .contribution column ----
 # Shared by estimate_harvest_br(), estimate_total_catch_br(),
 # estimate_total_harvest_br(), and estimate_total_release_br()

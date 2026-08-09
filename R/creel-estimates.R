@@ -1510,9 +1510,13 @@ estimate_catch_rate <- function(
 #'   additional fish after the interview (Hansen & Van Kirk 2010). Fish already
 #'   in the livewell are directly observable, so \code{"all"} remains available
 #'   for analyses that prefer the larger interview set. For bus-route designs:
-#'   \code{"complete"} (default), \code{"incomplete"}, or \code{"diagnostic"}.
-#'   When \code{trip_status} was not provided to \code{\link{add_interviews}},
-#'   this argument has no effect for standard designs.
+#'   \code{"complete"} (default), \code{"incomplete"}, or \code{"diagnostic"};
+#'   \code{"all"} is not an estimator there, because pooling the two kinds of
+#'   trip applies the complete-trip ratio of Horvitz-Thompson totals to
+#'   numerators that are catch so far. Matching is exact on both paths, and
+#'   unrecognised values are an error. When \code{trip_status} was not provided
+#'   to \code{\link{add_interviews}}, this argument has no effect for standard
+#'   designs.
 #' @param truncate_at Numeric minimum trip duration in hours for the bus-route
 #'   incomplete-trip estimator (default \code{0.5}, i.e. 30 minutes). Incomplete
 #'   trips shorter than this are discarded before the mean of ratios is taken.
@@ -1691,6 +1695,7 @@ estimate_harvest_rate <- function(
       by_vars_br <- names(by_cols_br)
     }
     use_trips_br <- if (is.null(use_trips)) "complete" else use_trips
+    validate_use_trips_br(use_trips_br) # nolint: object_usage_linter
 
     # The two trip paths are different estimators, so the dispatch message has to
     # name the one actually used. Announcing the complete-trip ratio of HT totals
@@ -1887,7 +1892,9 @@ estimate_harvest_rate <- function(
 #'   larger interview set. When \code{trip_status} was not provided to
 #'   \code{\link{add_interviews}}, this argument has no effect. For bus-route
 #'   designs: \code{"complete"} (default), \code{"incomplete"}, or
-#'   \code{"diagnostic"}, matching \code{\link{estimate_harvest_rate}}.
+#'   \code{"diagnostic"}, matching \code{\link{estimate_harvest_rate}};
+#'   \code{"all"} is not an estimator there, and unrecognised values are an
+#'   error rather than a silent fall-through to the complete-trip path.
 #' @param truncate_at Numeric minimum trip duration in hours for the bus-route
 #'   incomplete-trip estimator (default \code{0.5}, i.e. 30 minutes). Incomplete
 #'   trips shorter than this are discarded before the mean of ratios is taken.
@@ -2030,6 +2037,7 @@ estimate_release_rate <- function(
       by_vars_br <- names(by_cols_br)
     }
     use_trips_br <- if (is.null(use_trips)) "complete" else use_trips
+    validate_use_trips_br(use_trips_br) # nolint: object_usage_linter
 
     return(estimate_release_br(
       # nolint: object_usage_linter

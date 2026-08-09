@@ -28,6 +28,27 @@
 
 ## Bug fixes
 
+* `estimate_harvest_rate()` and `estimate_release_rate()` now validate
+  `use_trips` on the bus-route path. The bus-route dispatch runs before the
+  standard path's check and handed the string straight to the estimator, which
+  branches on `"diagnostic"`, then `"complete"`, then `"incomplete"` with no
+  final `else` — so an unrecognised value reached the complete-trip code with
+  the trip-status filter switched off and returned the all-trips answer under
+  the complete-trip method string, silently. The dangerous input was not a
+  nonsense string but a *valid* value typed with the wrong case: on a fixture of
+  four complete and four incomplete trips, `"Complete"` returned 2.816514 over
+  all eight rows where `"complete"` returns 2.642202 over four. The standard
+  path rejected the same input, so whether a typo aborted depended on the design
+  type.
+
+  The valid set on the bus-route rate path is `"complete"`, `"incomplete"` or
+  `"diagnostic"`, as documented. It is deliberately not the standard path's set:
+  `"incomplete"` is a legitimate rate here (Hoenig et al. 1997) and is not
+  offered there, and `"all"` is legitimate there and is not an estimator here,
+  because pooling the two kinds of trip applies the complete-trip ratio of
+  Horvitz–Thompson totals to numerators that are catch so far. Matching is
+  exact — `"comp"` is an error, not `"complete"`.
+
 * The product totals now warn when the rate and the effort they multiply are in
   different units. Without `n_anglers`, `add_interviews()` leaves `.angler_effort`
   equal to the raw effort column, so every rate is fish per *party*-hour while

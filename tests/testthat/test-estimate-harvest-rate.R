@@ -2513,3 +2513,111 @@ test_that("bus-route RPUE reads the release column, not the harvest one (GH #110
     expect_equal(r$estimates$estimate, 4, tolerance = 1e-9)
   }
 })
+
+# Finding 15: use_trips is validated on the bus-route rate path ----
+
+test_that("bus-route rate estimators reject an unrecognised use_trips (finding 15)", {
+  # estimate_harvest_br() branches on "diagnostic", then "complete", then
+  # "incomplete", with no final else, so an unrecognised string reached the
+  # complete-trip code with the trip-status filter switched off. It did not
+  # error and it did not return the requested estimator -- it returned the
+  # all-trips answer under the complete-trip method string.
+  #
+  # The fixture is 4 complete + 4 incomplete with rates that differ, so the
+  # substituted estimator is visible in the number and not only in n: the
+  # requested complete-trip answer is 2.642202 over 4 rows, the one silently
+  # returned was 2.816514 over all 8.
+  d <- make_br_incomplete(reps = 2L)
+  d$interviews$trip_status <- rep(c("complete", "incomplete"), each = 4)
+  d$interviews$fish_kept <- c(1, 9, 3, 12, 2, 4, 6, 20)
+
+  asked <- suppressWarnings(suppressMessages(
+    estimate_harvest_rate(d, use_trips = "complete")
+  ))
+  expect_identical(asked$estimates$n, 4L)
+
+  expect_error(
+    estimate_harvest_rate(d, use_trips = "bogus"),
+    "Invalid use_trips value"
+  )
+})
+
+test_that("bus-route rate estimators reject a capitalisation typo (finding 15)", {
+  # The dangerous input is not a nonsense string but a *valid* value typed with
+  # the wrong case: it looks accepted, and the number that comes back is the
+  # all-trips answer rather than the complete-trip one the caller asked for.
+  # Matching must stay exact for the same reason the standard twin's is.
+  d <- make_br_incomplete(reps = 2L)
+  d$interviews$trip_status <- rep(c("complete", "incomplete"), each = 4)
+
+  expect_error(
+    estimate_harvest_rate(d, use_trips = "Complete"),
+    "Invalid use_trips value"
+  )
+  expect_error(
+    estimate_release_rate(make_br_release_diagnostic(), use_trips = "Complete"),
+    "Invalid use_trips value"
+  )
+})
+
+test_that("bus-route rate estimators do not partial-match use_trips (finding 15)", {
+  # This is the test that fails if the guard is ever rewritten as match.arg().
+  # match.arg() would expand "comp" to "complete" and accept it here while the
+  # standard twin rejects it, reintroducing the design-dependent behaviour the
+  # guard exists to remove.
+  d <- make_br_incomplete(reps = 2L)
+  d$interviews$trip_status <- rep(c("complete", "incomplete"), each = 4)
+
+  expect_error(
+    estimate_harvest_rate(d, use_trips = "comp"),
+    "Invalid use_trips value"
+  )
+  expect_error(estimate_harvest_rate(make_harvest_design(), use_trips = "comp"))
+})
+
+test_that("the bus-route rate valid set is not the standard one (finding 15)", {
+  # The two paths take deliberately different sets, so neither guard can be
+  # replaced by the other. "incomplete" is a legitimate bus-route rate (the
+  # truncated mean of ratios, Hoenig et al. 1997) and is not offered on the
+  # standard path; "all" is legitimate on the standard path and is not an
+  # estimator here, because pooling the two kinds of trip applies the
+  # complete-trip ratio of HT totals to numerators that are catch so far.
+  d <- make_br_incomplete(reps = 2L)
+  d$interviews$trip_status <- rep(c("complete", "incomplete"), each = 4)
+
+  expect_error(
+    estimate_harvest_rate(d, use_trips = "all"),
+    "Invalid use_trips value"
+  )
+  expect_no_error(suppressWarnings(suppressMessages(
+    estimate_harvest_rate(d, use_trips = "incomplete")
+  )))
+
+  # Same value, standard design: accepted, and the guard above did not leak.
+  expect_no_error(suppressWarnings(suppressMessages(
+    estimate_harvest_rate(make_harvest_design(), use_trips = "all")
+  )))
+})
+
+test_that("both bus-route rate twins accept the same use_trips values (finding 15)", {
+  # The twins have drifted apart before -- the release dispatch was added a
+  # release later than the harvest one, and findings 9 and 16 were both drift
+  # between functions that should have been identical. Pin the sets equal so a
+  # change to one twin alone fails here.
+  dh <- make_br_incomplete(reps = 2L)
+  dh$interviews$trip_status <- rep(c("complete", "incomplete"), each = 4)
+  dr <- make_br_release_diagnostic()
+
+  for (ut in c("complete", "incomplete", "diagnostic")) {
+    expect_no_error(suppressWarnings(suppressMessages(
+      estimate_harvest_rate(dh, use_trips = ut)
+    )))
+    expect_no_error(suppressWarnings(suppressMessages(
+      estimate_release_rate(dr, use_trips = ut)
+    )))
+  }
+  for (ut in c("all", "bogus", "")) {
+    expect_error(estimate_harvest_rate(dh, use_trips = ut), "Invalid use_trips value")
+    expect_error(estimate_release_rate(dr, use_trips = ut), "Invalid use_trips value")
+  }
+})
