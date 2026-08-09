@@ -2730,12 +2730,12 @@ test_that("the ice rate path honours the complete-trip filter (findings 14, 15)"
   expect_false(isTRUE(all.equal(complete$estimates$estimate, incomplete$estimates$estimate)))
 })
 
-test_that("species CPUE keeps the standard path on bus-route designs (finding 17)", {
-  # Deliberate carve-out, pinned so it is a decision rather than an oversight.
-  # Species CPUE is a different estimator (estimate_cpue_species()) reporting a
-  # -cpue-species method; routing it through the bus-route path, which cannot
-  # compute it, would break calls that work today. The remaining gap is recorded
-  # in the audit rather than silently diverted here.
+test_that("species CPUE still reports a -cpue-species method (findings 17, 18)", {
+  # Finding 17 carved species CPUE out of the bus-route dispatch and pinned the
+  # carve-out here. Finding 18 reversed that decision -- the carve-out left the
+  # species rates contradicting the all-species rate on the same object -- so
+  # what survives is the label: species CPUE is still a species estimator and
+  # still says so, whichever estimator computes it.
   # reps = 3 gives 12 complete trips; the standard path refuses fewer than 10.
   d <- make_br_release(status = "complete", reps = 3L)
   res <- suppressWarnings(suppressMessages(
@@ -2989,4 +2989,219 @@ test_that("CPUE reads the catch column, not the harvest one, on both HT designs 
     expect_equal(c2$estimates$estimate, 2 * c0$estimates$estimate, tolerance = 1e-9, info = nm)
     expect_equal(h2$estimates$estimate, h0$estimates$estimate, tolerance = 1e-12, info = nm)
   }
+})
+
+# Finding 18: species rates on bus-route and ice designs ----
+#
+# The species-level rate estimators build a per-species interview table and hand
+# it to the standard interview-survey estimators, so on a bus-route or ice
+# design they ignored .pi_i and .expansion -- the defect findings 14 and 17
+# removed from the all-species rates, one estimator over. Findings 14 and 17
+# fixed the all-species side and left the species side on the standard path,
+# which is what made the contradiction visible: before this change one design
+# object returned both answers, each under a method string naming the same
+# quantity.
+#
+#   design      quantity  all-species (HT)  species sum (standard)   gap
+#   bus_route   CPUE      0.748339          0.937805               +25.32%
+#   bus_route   RPUE      0.421378          0.494953               +17.46%
+#   ice         HPUE      0.919685          0.862944                -6.17%
+#   ice         RPUE      0.909720          0.964467                +6.02%
+#   ice         CPUE      1.829405          1.827411                -0.11%
+#
+# Bus-route HPUE by species did not return a number at all: the dispatch
+# resolved `by` against the interviews, where there is no species column.
+
+ht_species_rate_fns <- list(
+  cpue = estimate_catch_rate,
+  hpue = estimate_harvest_rate,
+  rpue = estimate_release_rate
+)
+
+test_that("species rates sum to the all-species rate on both HT designs (finding 18)", {
+  # The falsifier, and the one that says which side was wrong rather than only
+  # that the two disagreed. Species partition the catch and every species shares
+  # the same effort denominator, so sum_s rate_s is the all-species rate by
+  # construction -- not approximately, exactly. Before the fix the species sum
+  # matched the standard-path rate to the last digit while the all-species rate
+  # was the HT one, which is what identified the species path as the wrong side.
+  for (type in c("bus_route", "ice")) {
+    d <- build_ht_multispecies_design(type, seed = 42)
+
+    for (metric in names(ht_species_rate_fns)) {
+      rate_fn <- ht_species_rate_fns[[metric]]
+      all_sp <- suppressWarnings(suppressMessages(rate_fn(d)))
+      by_sp <- suppressWarnings(suppressMessages(
+        rate_fn(d, by = species) # nolint: object_usage_linter
+      ))
+
+      # A zero-vs-zero identity is unfalsifiable, so the fixture has to make
+      # every quantity non-degenerate before the sum means anything.
+      expect_gt(all_sp$estimates$estimate, 0)
+      expect_identical(nrow(by_sp$estimates), 3L, info = paste(type, metric))
+      expect_equal(
+        sum(by_sp$estimates$estimate),
+        all_sp$estimates$estimate,
+        tolerance = 1e-9,
+        info = paste(type, metric)
+      )
+    }
+  }
+})
+
+test_that("species rates carry the HT weights on both HT designs (finding 18)", {
+  # Reconciliation could be satisfied by both sides being wrong the same way.
+  # This pins the weighting itself: .expansion is part of the HT weight, so
+  # raising it on the interviews with the highest rates must pull the species
+  # rates up. The standard interview-survey path ignores .expansion entirely and
+  # does not move, which is exactly how the two paths were told apart.
+  for (type in c("bus_route", "ice")) {
+    d <- build_ht_multispecies_design(type, seed = 42)
+    base <- suppressWarnings(suppressMessages(
+      estimate_catch_rate(d, by = species) # nolint: object_usage_linter
+    ))
+
+    rate_i <- d$interviews[[d$catch_col]] / d$interviews[[d$angler_effort_col]]
+    top <- rate_i >= stats::median(rate_i)
+    d2 <- d
+    d2$interviews$.expansion[top] <- d2$interviews$.expansion[top] * 4
+    bumped <- suppressWarnings(suppressMessages(
+      estimate_catch_rate(d2, by = species) # nolint: object_usage_linter
+    ))
+
+    expect_gt(sum(bumped$estimates$estimate), sum(base$estimates$estimate))
+  }
+})
+
+test_that("grouped species rates sum to the grouped all-species rate (finding 18)", {
+  # The identity has to survive a second grouping variable, and within each
+  # stratum rather than only pooled. A species path that grouped the numerator
+  # and the denominator differently satisfies the pooled test and fails this one.
+  for (type in c("bus_route", "ice")) {
+    d <- build_ht_multispecies_design(type, seed = 42)
+
+    all_sp <- suppressWarnings(suppressMessages(
+      estimate_catch_rate(d, by = day_type) # nolint: object_usage_linter
+    ))
+    by_sp <- suppressWarnings(suppressMessages(
+      estimate_catch_rate(d, by = c(day_type, species)) # nolint: object_usage_linter
+    ))
+
+    summed <- tapply(by_sp$estimates$estimate, by_sp$estimates$day_type, sum)
+    expect_equal(
+      as.numeric(summed[all_sp$estimates$day_type]),
+      all_sp$estimates$estimate,
+      tolerance = 1e-9,
+      info = type
+    )
+  }
+})
+
+test_that("species rates name both the quantity and the trip path (finding 18)", {
+  # The delegation repoints the numerator at one species' counts and hands the
+  # design to the same estimator the all-species rates use, so the label is the
+  # only thing distinguishing the result -- and the two trip paths are different
+  # estimators that must not share one. The suffix matches what the standard
+  # path already reports, so the label does not depend on the design type.
+  for (type in c("bus_route", "ice")) {
+    d <- build_ht_multispecies_design(type, seed = 42)
+    d$interviews$trip_status <- rep(c("complete", "incomplete"), length.out = nrow(d$interviews))
+
+    for (metric in names(ht_species_rate_fns)) {
+      rate_fn <- ht_species_rate_fns[[metric]]
+      complete <- suppressWarnings(suppressMessages(
+        rate_fn(d, by = species, use_trips = "complete") # nolint: object_usage_linter
+      ))
+      incomplete <- suppressWarnings(suppressMessages(
+        rate_fn(d, by = species, use_trips = "incomplete") # nolint: object_usage_linter
+      ))
+
+      expect_identical(
+        complete$method,
+        paste0("ratio-of-means-", metric, "-species"),
+        info = paste(type, metric)
+      )
+      expect_identical(
+        incomplete$method,
+        paste0("mean-of-ratios-", metric, "-species"),
+        info = paste(type, metric)
+      )
+    }
+  }
+})
+
+test_that("both trip paths keep the species identity on HT designs (finding 18)", {
+  # The complete path is a ratio of HT totals and the incomplete path a mean of
+  # per-angler ratios. Both are linear in the numerator, so both owe the
+  # partition identity -- and the incomplete path was reachable for species only
+  # after this change, so nothing had ever exercised it.
+  for (type in c("bus_route", "ice")) {
+    d <- build_ht_multispecies_design(type, seed = 42)
+    d$interviews$trip_status <- rep(c("complete", "incomplete"), length.out = nrow(d$interviews))
+
+    for (ut in c("complete", "incomplete")) {
+      all_sp <- suppressWarnings(suppressMessages(estimate_catch_rate(d, use_trips = ut)))
+      by_sp <- suppressWarnings(suppressMessages(
+        estimate_catch_rate(d, by = species, use_trips = ut) # nolint: object_usage_linter
+      ))
+
+      expect_equal(
+        sum(by_sp$estimates$estimate),
+        all_sp$estimates$estimate,
+        tolerance = 1e-9,
+        info = paste(type, ut)
+      )
+    }
+  }
+})
+
+test_that("by = species returns a number on both HT designs (finding 18)", {
+  # Regression pin. Finding 14 widened the harvest and release dispatches to ice
+  # but resolved `by` with tidyselect against the interviews, where there is no
+  # species column, so `by = species` stopped returning anything on ice -- it had
+  # worked before that change -- and had never worked on bus route. An estimator
+  # that aborts is the loudest failure in this audit and still went unnoticed,
+  # because no fixture combined a species column with an HT design type.
+  for (type in c("bus_route", "ice")) {
+    d <- build_ht_multispecies_design(type, seed = 42)
+
+    for (metric in names(ht_species_rate_fns)) {
+      res <- suppressWarnings(suppressMessages(
+        ht_species_rate_fns[[metric]](d, by = species) # nolint: object_usage_linter
+      ))
+      expect_true(all(is.finite(res$estimates$estimate)), info = paste(type, metric))
+      expect_identical(res$estimates$species, c("bass", "panfish", "walleye"))
+    }
+  }
+})
+
+test_that("diagnostic is refused with species grouping on HT designs (finding 18)", {
+  # The diagnostic pair returns two estimates per species, which does not fit one
+  # row per species. Refused rather than collapsed to one of them: returning
+  # either half under a single label is finding 5's failure mode, a result whose
+  # method string does not say which estimator produced it.
+  for (type in c("bus_route", "ice")) {
+    d <- build_ht_multispecies_design(type, seed = 42)
+    d$interviews$trip_status <- rep(c("complete", "incomplete"), length.out = nrow(d$interviews))
+
+    expect_error(
+      estimate_catch_rate(d, by = species, use_trips = "diagnostic"), # nolint: object_usage_linter
+      "not supported with species grouping"
+    )
+  }
+})
+
+test_that("standard designs keep the standard species estimator (finding 18)", {
+  # The dispatch is keyed on design_type, so it must not reach a design that is
+  # neither bus_route nor ice. The standard species path is a stratum product
+  # sum, not a pooled ratio, so it does not owe the exact identity the HT paths
+  # do -- pinning that it still answers under its own label is the check that
+  # applies.
+  d <- build_multispecies_design_for_tests(n_days = 8, n_interviews = 24, n_species = 3, seed = 42)
+  res <- suppressWarnings(suppressMessages(
+    estimate_catch_rate(d, by = species) # nolint: object_usage_linter
+  ))
+
+  expect_identical(res$method, "ratio-of-means-cpue-species")
+  expect_identical(nrow(res$estimates), 3L)
 })

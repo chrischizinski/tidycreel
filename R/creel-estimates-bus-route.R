@@ -908,6 +908,128 @@ estimate_catch_br <- function(
   )
 }
 
+# Species-level rates on bus-route and ice designs ----
+# Called by estimate_catch_rate(), estimate_harvest_rate() and
+# estimate_release_rate() when design$design_type is "bus_route" or "ice" and
+# `by` names the species column.
+
+#' Species-level CPUE, HPUE and RPUE on a bus-route or ice design
+#'
+#' The species-level rate estimators ([estimate_cpue_species()],
+#' [estimate_hpue_species()], [estimate_release_rate_species()]) build a per-species
+#' interview table and hand it to the *standard* interview-survey estimators, so
+#' on a bus-route or ice design they ignore `.pi_i` and `.expansion` -- the
+#' defect findings 14 and 17 removed from the all-species rates, one estimator
+#' over (finding 18).
+#'
+#' The falsifier is a partition identity rather than a reference value: species
+#' partition the catch and every species shares the same effort denominator, so
+#' `sum_s rate_s` must equal the all-species rate the same object returns. On a
+#' bus-route fixture the species rates summed to 0.937805 against an all-species
+#' CPUE of 0.748339 -- 25.3% apart, both reported under a `-cpue` method. The
+#' species sum matched the standard-path rate to the last digit, which is what
+#' identified the species path rather than the all-species one as the wrong side.
+#'
+#' Per species this repoints `harvest_col` at that species' count column and
+#' delegates to [estimate_harvest_br()] -- the delegation [estimate_release_br()]
+#' and [estimate_catch_br()] already use -- so the species rates come off the
+#' same estimator body as the all-species ones and cannot drift from them.
+#'
+#' @param design A creel_design with a non-NULL catch slot.
+#' @param species_col Character(1). Name of the species column in `design$catch`.
+#' @param interview_by_vars Character vector or NULL. Non-species grouping vars.
+#' @param metric One of "cpue", "hpue", "rpue".
+#' @inheritParams estimate_harvest_br
+#'
+#' @return A creel_estimates object whose `method` is the delegate's method with
+#'   `-species` appended, matching the standard path's labels.
+#'
+#' @keywords internal
+#' @noRd
+estimate_rate_species_br <- function(
+  # nolint: object_usage_linter
+  design,
+  species_col,
+  interview_by_vars,
+  variance_method,
+  conf_level,
+  use_trips,
+  truncate_at = 0.5,
+  metric = c("cpue", "hpue", "rpue"),
+  call = rlang::caller_env()
+) {
+  metric <- match.arg(metric)
+
+  # The diagnostic pair returns two estimates per species, which does not fit
+  # one row per species. Refused rather than silently collapsed to one of them:
+  # returning either half under a single label is finding 5's failure mode.
+  if (identical(use_trips, "diagnostic")) {
+    cli::cli_abort(
+      c(
+        "{.arg use_trips = \"diagnostic\"} is not supported with species grouping.",
+        "x" = "The diagnostic pair returns two estimates per species.",
+        "i" = "Call the estimator once per {.arg use_trips} value instead."
+      ),
+      call = call
+    )
+  }
+
+  all_species <- sort(unique(design[["catch"]][[species_col]]))
+  results_list <- vector("list", length(all_species))
+  method <- NULL
+
+  for (i in seq_along(all_species)) {
+    sp <- all_species[[i]]
+
+    # Same per-species builders the standard path uses, so the two paths differ
+    # only in which estimator consumes the table.
+    if (identical(metric, "rpue")) {
+      sp_data <- estimate_release_build_data(design, species = sp) # nolint: object_usage_linter
+      count_col <- ".release_count"
+    } else {
+      catch_type_val <- if (identical(metric, "cpue")) "caught" else "harvested"
+      sp_data <- make_species_catch_for_interviews(design, sp, catch_type_val) # nolint: object_usage_linter
+      count_col <- ".species_count"
+    }
+
+    design_sp <- design
+    design_sp$interviews <- sp_data
+    design_sp$catch_col <- count_col
+    design_sp$harvest_col <- count_col
+
+    res <- estimate_harvest_br(
+      design_sp,
+      interview_by_vars,
+      variance_method,
+      conf_level,
+      verbose = FALSE,
+      use_trips = use_trips,
+      truncate_at = truncate_at,
+      metric = metric,
+      call = call
+    )
+
+    # Taken from the delegate rather than rebuilt, so the ratio-of-means and
+    # mean-of-ratios halves stay distinguishable and cannot drift from the
+    # all-species labels.
+    method <- paste0(res$method, "-species")
+
+    sp_df <- res$estimates
+    sp_df[[species_col]] <- sp
+    results_list[[i]] <- sp_df[c(species_col, setdiff(names(sp_df), species_col))]
+  }
+
+  new_creel_estimates(
+    # nolint: object_usage_linter
+    estimates = tibble::as_tibble(do.call(rbind, results_list)),
+    method = method,
+    variance_method = variance_method,
+    design = design,
+    conf_level = conf_level,
+    by_vars = c(species_col, interview_by_vars)
+  )
+}
+
 # Bus-route total catch estimation ----
 # Implements Jones & Pollock (2012) Eq. 19.5 variant: C_hat = sum(c_i / pi_i)
 # where c_i = catch_col * .expansion (enumeration expansion factor)

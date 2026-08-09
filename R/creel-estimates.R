@@ -903,19 +903,20 @@ estimate_catch_rate <- function(
   # designs, so CPUE coming off the standard interview survey did not reconcile
   # with the design's own totals (finding 17).
   #
-  # Species CPUE is a different estimator (estimate_cpue_species(), reported
-  # under a -cpue-species method) and keeps the standard path, so the dispatch
-  # has to know whether a species variable is in `by` before it fires.
+  # Species CPUE is built one species at a time, so it needs its own entry point
+  # on this path; it kept the standard interview survey until finding 18, which
+  # left the species rates contradicting the all-species rate on the same object.
   if (!is.null(design$design_type) && design$design_type %in% c("bus_route", "ice")) {
     by_info_br <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
-    if (is.null(by_info_br$species_var)) {
-      # The roving auto-route above may have flipped an unspecified use_trips to
-      # "all" + MOR. That is a standard-design heuristic and "all" is not an
-      # estimator here, so the bus-route path reads the user's own value and
-      # treats "unspecified" as "complete", matching estimate_harvest_rate().
-      use_trips_br <- if (use_trips_is_default) "complete" else use_trips
-      validate_use_trips_br(use_trips_br) # nolint: object_usage_linter
 
+    # The roving auto-route above may have flipped an unspecified use_trips to
+    # "all" + MOR. That is a standard-design heuristic and "all" is not an
+    # estimator here, so the bus-route path reads the user's own value and
+    # treats "unspecified" as "complete", matching estimate_harvest_rate().
+    use_trips_br <- if (use_trips_is_default) "complete" else use_trips
+    validate_use_trips_br(use_trips_br) # nolint: object_usage_linter
+
+    if (is.null(by_info_br$species_var)) {
       return(estimate_catch_br( # nolint: object_usage_linter
         design,
         by_info_br$interview_vars,
@@ -926,6 +927,25 @@ estimate_catch_rate <- function(
         truncate_at = truncate_at
       ))
     }
+
+    if (is.null(design[["catch"]])) {
+      cli::cli_abort(c(
+        "Species-level CPUE requires catch data.",
+        "x" = "{.field species} found in {.arg by} but {.fn add_catch} has not been called.",
+        "i" = "Call {.fn add_catch} before using species grouping in {.fn estimate_catch_rate}."
+      ))
+    }
+
+    return(estimate_rate_species_br( # nolint: object_usage_linter
+      design,
+      species_col = by_info_br$species_var,
+      interview_by_vars = by_info_br$interview_vars,
+      variance_method = variance,
+      conf_level = conf_level,
+      use_trips = use_trips_br,
+      truncate_at = truncate_at,
+      metric = "cpue"
+    ))
   }
 
   # Backward compatibility: if trip_status_col is NULL, skip all use_trips logic
@@ -1721,21 +1741,35 @@ estimate_harvest_rate <- function(
   # as one; the rate estimators were the outlier, so an ice design reported a
   # rate that did not reconcile with its own totals (finding 14).
   if (!is.null(design$design_type) && design$design_type %in% c("bus_route", "ice")) {
-    # Resolve by parameter to column names for bus-route
-    if (rlang::quo_is_null(by_quo)) {
-      by_vars_br <- NULL
-    } else {
-      by_cols_br <- tidyselect::eval_select(
-        by_quo,
-        data = design$interviews,
-        allow_rename = FALSE,
-        allow_empty = FALSE,
-        error_call = rlang::caller_env()
-      )
-      by_vars_br <- names(by_cols_br)
-    }
+    # Resolved against interviews *plus* the species column: eval_select() on the
+    # interviews alone aborts on `by = species`, which is a real grouping this
+    # estimator supports, and finding 14 widened this dispatch to ice without
+    # noticing (finding 18).
+    by_info_br <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
+    by_vars_br <- by_info_br$interview_vars
     use_trips_br <- if (is.null(use_trips)) "complete" else use_trips
     validate_use_trips_br(use_trips_br) # nolint: object_usage_linter
+
+    if (!is.null(by_info_br$species_var)) {
+      if (is.null(design[["catch"]])) {
+        cli::cli_abort(c(
+          "Species-level HPUE requires catch data.",
+          "x" = "{.field species} found in {.arg by} but {.fn add_catch} has not been called.",
+          "i" = "Call {.fn add_catch} before using species grouping in {.fn estimate_harvest_rate}."
+        ))
+      }
+
+      return(estimate_rate_species_br( # nolint: object_usage_linter
+        design,
+        species_col = by_info_br$species_var,
+        interview_by_vars = by_vars_br,
+        variance_method = variance,
+        conf_level = conf_level,
+        use_trips = use_trips_br,
+        truncate_at = truncate_at,
+        metric = "hpue"
+      ))
+    }
 
     # The two trip paths are different estimators, so the dispatch message has to
     # name the one actually used. Announcing the complete-trip ratio of HT totals
@@ -2065,20 +2099,31 @@ estimate_release_rate <- function(
   # from the standard interview survey and ignored .pi_i entirely (GH #110); ice
   # was left out of the same dispatch until finding 14.
   if (!is.null(design$design_type) && design$design_type %in% c("bus_route", "ice")) {
-    if (rlang::quo_is_null(by_quo)) {
-      by_vars_br <- NULL
-    } else {
-      by_cols_br <- tidyselect::eval_select(
-        by_quo,
-        data = design$interviews,
-        allow_rename = FALSE,
-        allow_empty = FALSE,
-        error_call = rlang::caller_env()
-      )
-      by_vars_br <- names(by_cols_br)
-    }
+    by_info_br <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
+    by_vars_br <- by_info_br$interview_vars
     use_trips_br <- if (is.null(use_trips)) "complete" else use_trips
     validate_use_trips_br(use_trips_br) # nolint: object_usage_linter
+
+    if (!is.null(by_info_br$species_var)) {
+      if (is.null(design[["catch"]])) {
+        cli::cli_abort(c(
+          "Species-level RPUE requires catch data.",
+          "x" = "{.field species} found in {.arg by} but {.fn add_catch} has not been called.",
+          "i" = "Call {.fn add_catch} before using species grouping in {.fn estimate_release_rate}."
+        ))
+      }
+
+      return(estimate_rate_species_br( # nolint: object_usage_linter
+        design,
+        species_col = by_info_br$species_var,
+        interview_by_vars = by_vars_br,
+        variance_method = variance,
+        conf_level = conf_level,
+        use_trips = use_trips_br,
+        truncate_at = truncate_at,
+        metric = "rpue"
+      ))
+    }
 
     return(estimate_release_br(
       # nolint: object_usage_linter

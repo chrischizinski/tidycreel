@@ -28,6 +28,44 @@
 
 ## Bug fixes
 
+* Species-level rates (`by = species`) now take the Horvitz–Thompson path on
+  bus-route and ice designs. `estimate_cpue_species()` and its harvest and
+  release siblings build a per-species interview table and hand it to the
+  *standard* interview-survey estimators, so on these two design types they
+  ignored `.pi_i` and `.expansion` — the defect the previous entry removed from
+  the all-species rates, one estimator over. Fixing the all-species side first is
+  what made it visible: one design object then returned both answers, each under
+  a method string naming the same quantity.
+
+  The falsifier is a partition identity rather than a reference value. Species
+  partition the catch and every species shares the same effort denominator, so
+  the species rates must sum to the all-species rate exactly. Before the fix the
+  species sum matched the standard-path rate to the last digit:
+
+  | design | rate | all-species | species sum | gap |
+  | ------ | ---- | ----------- | ----------- | --- |
+  | bus-route | CPUE | 0.748339 | 0.937805 | +25.32% |
+  | bus-route | RPUE | 0.421378 | 0.494953 | +17.46% |
+  | ice | HPUE | 0.919685 | 0.862944 | −6.17% |
+  | ice | RPUE | 0.909720 | 0.964467 | +6.02% |
+  | ice | CPUE | 1.829405 | 1.827411 | −0.11% |
+
+  All five now reconcile exactly. Per species the estimator repoints the
+  numerator at that species' counts and delegates to the bus-route estimator the
+  all-species rates already use, so the two can no longer drift apart, and the
+  reported method gains the `-species` suffix on both trip paths
+  (`ratio-of-means-rpue-species` where the standard path still reports
+  `ratio-of-means-rpue`). `use_trips = "diagnostic"` is refused with species
+  grouping: the diagnostic pair returns two estimates per species, and returning
+  either half under one label is the mislabelling this release is removing.
+
+  Also fixes a regression introduced by the previous entry: that dispatch
+  resolved `by` against the interview columns, where there is no species column,
+  so `by = species` aborted on ice designs where it had previously worked, and on
+  bus-route designs where it had never worked.
+
+  **Breaking:** every species-level rate on a bus-route or ice design moves.
+
 * The three rate estimators now dispatch to the Horvitz–Thompson path on **ice**
   designs as well as bus-route ones, and `estimate_catch_rate()` gains the
   bus-route dispatch it never had. `estimate_effort()` and all three totals
@@ -50,10 +88,6 @@
   accept the two values their own design type is built on and reject `"all"`,
   which is not an estimator on this path. For `estimate_catch_rate()` the roving
   auto-route to `"all"` + MOR does not apply on these designs.
-
-  Species-level CPUE (`by = species`) deliberately keeps the standard path: it is
-  a different estimator reporting a `-cpue-species` method. That remains an open
-  gap rather than a silent redirection.
 
   **Breaking:** ice HPUE, ice RPUE, ice CPUE and bus-route CPUE all move.
 

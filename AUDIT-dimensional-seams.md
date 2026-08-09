@@ -768,13 +768,87 @@ dropping `by_vars` — kill 2, 5 and 1. The last was **0** before this work: gro
 was unmeasured for every quantity, because the coverage sweep's probe perturbed column 1,
 which is the group label.
 
-**Deliberately out of scope:** species CPUE (`by = species`) keeps the standard path. It
-routes to `estimate_cpue_species()`, a different estimator reporting a `-cpue-species`
-method, and the bus-route path cannot compute it; diverting it would break calls that
-work today. A test pins the carve-out so it reads as a decision rather than an oversight.
-**The dimensional question for species CPUE on bus-route and ice designs is open and
-unexamined** — it is the same defect, one estimator over, and should be the next finding
-opened rather than assumed benign.
+**Deliberately out of scope at the time:** species CPUE (`by = species`) kept the standard
+path, on the reasoning that it routes to `estimate_cpue_species()`, a different estimator
+reporting a `-cpue-species` method, and that the bus-route path could not compute it. A
+test pinned the carve-out so it read as a decision rather than an oversight. **That
+reasoning was wrong on the second half and the decision is reversed by finding 18** — the
+bus-route path computes it fine once the numerator is repointed one species at a time,
+which is the delegation `estimate_release_br()` was already using.
+
+### 18. Species rates on bus-route and ice designs ignore the HT weights
+
+Added 2026-08-09, the carve-out finding 17 recorded and declined to fix. The species-level
+rate estimators — `estimate_cpue_species()`, `estimate_hpue_species()`,
+`estimate_release_rate_species()` — build a per-species interview table and hand it to the
+**standard** interview-survey estimators, so on a bus-route or ice design they ignore
+`.pi_i` and `.expansion` entirely. Findings 14 and 17 fixed the all-species side and left
+this one, which is what made the contradiction visible: one design object then returned
+both answers, each under a method string naming the same quantity.
+
+The falsifier is a **partition identity**, not a reference value. Species partition the
+catch and every species shares the same effort denominator, so `sum_s rate_s` must equal
+the all-species rate exactly. Before the fix the species sum matched the *standard-path*
+rate to the last digit on every combination, which is what identified the species path
+rather than the all-species one as the wrong side:
+
+```
+design      quantity  all-species (HT)  species sum (standard)   gap
+bus_route   CPUE      0.748339          0.937805               +25.32%
+bus_route   RPUE      0.421378          0.494953               +17.46%
+ice         HPUE      0.919685          0.862944                -6.17%
+ice         RPUE      0.909720          0.964467                +6.02%
+ice         CPUE      1.829405          1.827411                -0.11%
+```
+
+Ice CPUE's −0.11% is this fixture, not a milder defect: the same code path produced
++25.32% one design type over. A tolerance-based check would have passed it.
+
+**Second defect, a regression this audit introduced.** The dispatch finding 14 widened
+resolves `by` with `tidyselect::eval_select()` against `design$interviews`, where there is
+no species column. `estimate_catch_rate()` was given a `resolve_species_by()` guard;
+`estimate_harvest_rate()` and `estimate_release_rate()` were not. So `by = species`
+**aborted** on ice designs where it had worked before commit `61b439a`, and on bus-route
+designs where it had never worked. Verified against `origin/main`: ice HPUE by species
+returned `ratio-of-means-hpue-species`, sum 0.862944; on the branch it raised
+``Column `species` doesn't exist``. An estimator that aborts is the loudest failure mode in
+this audit and it still shipped unnoticed, because no fixture in the suite combined a
+species column with an HT design type.
+
+**Decision: fix all three species rates, not only CPUE** (user's call, 2026-08-09). Fixing
+CPUE alone would have left HPUE-species and RPUE-species on the standard path — the exact
+drift that made finding 17 necessary after finding 14 fixed two of three siblings.
+
+**LANDED.** One `estimate_rate_species_br()` in `R/creel-estimates-bus-route.R` loops
+species, repoints `harvest_col` at that species' count column and delegates to
+`estimate_harvest_br()` — the delegation `estimate_release_br()` and `estimate_catch_br()`
+already use, so the species rates come off the same estimator body as the all-species ones
+and cannot drift from them. The reported method is the delegate's with `-species` appended,
+which reproduces the standard path's labels on both trip paths. All five combinations
+above now reconcile to 0.00%, grouped (`by = c(day_type, species)`) reconciles within each
+stratum, and both trip paths hold the identity.
+
+`use_trips = "diagnostic"` is **refused** with species grouping: the pair returns two
+estimates per species, which does not fit one row per species, and returning either half
+under a single label is finding 5's failure mode.
+
+**Coverage.** Widening the dispatch moved bus-route species CPUE by 25% and failed **0 of
+3534** tests — the same signal findings 9, 15, 16 and 17 each produced. Mutants against
+the new path, control 0: ignoring `.pi_i`/`.expansion` kills 4; hardcoding `metric` kills
+2; dropping the `-species` suffix kills 2; dropping `by_vars` kills 1; removing the
+diagnostic guard kills 1.
+
+**Surfaced, not fixed:**
+
+- `estimate_release_rate(by = species)` reports `ratio-of-means-rpue` with **no `-species`
+  suffix** on the standard path — finding 10's shape, pre-existing, and now inconsistent
+  with the HT path, which does append it.
+- `estimate_total_catch(by = species)` and its harvest and release siblings **abort** on
+  bus-route and ice designs, on `origin/main` as well as here. Same root cause as the
+  regression above, in the totals rather than the rates. Not opened as a finding yet.
+- The `metric` argument on `estimate_harvest_br()`'s **diagnostic** branch is pinned by a
+  single test: hardcoding it to `"hpue"` for the complete half kills only `bus-route RPUE
+  supports use_trips = 'diagnostic' (GH #110)`.
 
 ### 15. `use_trips` is never validated on the bus-route path, so a typo silently changes the estimator
 
