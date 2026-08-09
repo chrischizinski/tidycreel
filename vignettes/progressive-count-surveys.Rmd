@@ -196,7 +196,6 @@ interviews <- data.frame(
   date = int_dates,
   day_type = calendar$day_type[match(int_dates, calendar$date)],
   trip_status = "complete",
-  n_anglers = 1L, # solo anglers: stated, not assumed
   hours_fished = round(pmax(rnorm(n_int, mean = 3.8, sd = 1.3), 0.5), 1),
   catch_total = catch_total,
   catch_kept = pmin(rpois(n_int, lambda = 0.7), catch_total)
@@ -207,7 +206,7 @@ design <- add_interviews(
   trip_status = trip_status,
   catch = catch_total,
   effort = hours_fished,
-  n_anglers = n_anglers,
+  n_anglers = 1, # every interview is a single angler
   harvest = catch_kept
 )
 ```

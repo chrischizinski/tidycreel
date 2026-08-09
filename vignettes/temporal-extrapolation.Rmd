@@ -186,7 +186,6 @@ interviews <- data.frame(
   date         = rep(sampled_calendar$date, each = n_per_day),
   day_type     = rep(sampled_calendar$day_type, each = n_per_day),
   trip_status  = "complete",
-  n_anglers    = 1L, # solo anglers: stated, not assumed
   hours_fished = round(rnorm(n_int, mean = 3.5, sd = 1.2), 1),
   catch_total  = catch_total,
   catch_kept   = pmin(rpois(n_int, lambda = 0.6), catch_total)
@@ -213,7 +212,7 @@ monthly_catch <- lapply(seq_along(months), function(i) {
     trip_status = trip_status,
     catch = catch_total,
     effort = hours_fished,
-    n_anglers = n_anglers,
+    n_anglers = 1, # every interview is a single angler
     harvest = catch_kept
   )
 
@@ -267,7 +266,7 @@ for (i in seq_along(months)) {
     trip_status = trip_status,
     catch = catch_total,
     effort = hours_fished,
-    n_anglers = n_anglers,
+    n_anglers = 1, # every interview is a single angler
     harvest = catch_kept
   )
 
