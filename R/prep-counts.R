@@ -26,9 +26,23 @@
 #' @param psu Optional tidy selector for the PSU column. Defaults to the selected
 #'   date column when omitted.
 #' @param n_counts Optional tidy selector for the number of within-day counts
-#'   used to compute the sampled-day estimate.
-#' @param within_day_var Optional tidy selector for a within-day variance or sum
-#'   of squares column associated with the sampled-day estimate.
+#'   each sampled-day estimate is built from (k_d). Required whenever
+#'   `within_day_var` is supplied.
+#' @param within_day_var Optional tidy selector for the within-day
+#'   **sum of squares** of the counts behind each sampled-day estimate, that is
+#'   `sum((x - mean(x))^2)` per PSU. This is not a variance: the divisor is
+#'   applied downstream by the estimator, which forms
+#'   `sum(ss_d) / (n_sampled * (k_bar - 1))`. Supplying a variance here
+#'   understates the within-day component by a factor of `k_d - 1`. Must be `0`
+#'   wherever `n_counts` is 1, and requires `n_counts`.
+#'
+#'   Supply it on the raw `daily_effort` values you pass in; it is rescaled into `daily_effort`
+#'   squared units on output, multiplied by `correction_factor^2`. `add_counts()` reads the emitted
+#'   `within_day_var` and `n_counts` columns into the design, so the reported SE
+#'   carries a within-day component. Before tidycreel 2.6.0 both columns were
+#'   written here and never read, and the SE omitted that component entirely.
+#'   Do not combine with `add_counts(count_time_col = )`, which derives the same
+#'   quantity from raw counts; supplying both is an error.
 #' @param source_method Optional tidy selector for a column describing how the
 #'   sampled-day effort estimate was derived (e.g. `"direct_count"`,
 #'   `"boat_count_x_mean_party_size"`, `"camera_count_x_detection_correction"`).
@@ -115,6 +129,8 @@ prep_counts_daily_effort <- function(
   } else {
     names(tidyselect::eval_select(within_day_var_quo, data))
   }
+
+  validate_within_day_inputs(n_counts_col, within_day_var_col, data)
 
   source_method_col <- if (rlang::quo_is_null(source_method_quo)) {
     NULL
@@ -205,7 +221,12 @@ prep_counts_daily_effort <- function(
     out[["n_counts"]] <- data[[n_counts_col]]
   }
   if (!is.null(within_day_var_col)) {
-    out[["within_day_var"]] <- data[[within_day_var_col]]
+    # daily_effort is scaled by correction_factor above, so the sum of squares
+    # has to be scaled by its square to stay in (daily_effort)^2 units. Passing
+    # it through unscaled would leave the within-day component a factor of cf^2
+    # away from the between-day term it is added to (GH #109).
+    out[["within_day_var"]] <- data[[within_day_var_col]] *
+      correction_factor_vals^2
   }
   if (!is.null(source_method_col)) {
     out[["source_method"]] <- data[[source_method_col]]
@@ -243,9 +264,23 @@ prep_counts_daily_effort <- function(
 #' @param psu Optional tidy selector for the PSU column. Defaults to the selected
 #'   date column when omitted.
 #' @param n_counts Optional tidy selector for the number of within-day counts
-#'   used to compute the sampled-day estimate.
-#' @param within_day_var Optional tidy selector for a within-day variance or sum
-#'   of squares column associated with the sampled-day estimate.
+#'   each sampled-day estimate is built from (k_d). Required whenever
+#'   `within_day_var` is supplied.
+#' @param within_day_var Optional tidy selector for the within-day
+#'   **sum of squares** of the counts behind each sampled-day estimate, that is
+#'   `sum((x - mean(x))^2)` per PSU. This is not a variance: the divisor is
+#'   applied downstream by the estimator, which forms
+#'   `sum(ss_d) / (n_sampled * (k_bar - 1))`. Supplying a variance here
+#'   understates the within-day component by a factor of `k_d - 1`. Must be `0`
+#'   wherever `n_counts` is 1, and requires `n_counts`.
+#'
+#'   Supply it on the raw `boat_count` values you pass in; it is rescaled into `daily_effort`
+#'   squared units on output, multiplied by `(mean_party_size * correction_factor)^2`. `add_counts()` reads the emitted
+#'   `within_day_var` and `n_counts` columns into the design, so the reported SE
+#'   carries a within-day component. Before tidycreel 2.6.0 both columns were
+#'   written here and never read, and the SE omitted that component entirely.
+#'   Do not combine with `add_counts(count_time_col = )`, which derives the same
+#'   quantity from raw counts; supplying both is an error.
 #' @param source_method Optional source-method values. Defaults to
 #'   `"boat_count_x_mean_party_size"`. May be a scalar string/factor or an
 #'   expression that evaluates to one value per row.
@@ -334,6 +369,8 @@ prep_counts_boat_party <- function(
   } else {
     names(tidyselect::eval_select(within_day_var_quo, data))
   }
+
+  validate_within_day_inputs(n_counts_col, within_day_var_col, data)
 
   date_vals <- data[[date_col]]
   if (!inherits(date_vals, "Date")) {
@@ -463,9 +500,120 @@ prep_counts_boat_party <- function(
     out[["n_counts"]] <- data[[n_counts_col]]
   }
   if (!is.null(within_day_var_col)) {
-    out[["within_day_var"]] <- data[[within_day_var_col]]
+    # daily_effort is boat_count x mean_party_size x correction_factor here, so
+    # a sum of squares computed on boat counts needs both factors squared to
+    # reach (daily_effort)^2 units (GH #109).
+    out[["within_day_var"]] <- data[[within_day_var_col]] *
+      (mean_party_size_vals * correction_factor_vals)^2
   }
   out[["source_method"]] <- as.character(source_method_vals)
 
   out
+}
+
+# Within-day variance inputs ----
+
+#' Validate the within-day variance inputs to the prep_counts_* functions
+#'
+#' `within_day_var` is consumed as a per-PSU **sum of squares**, not a variance:
+#' `compute_within_day_var_contribution()` forms
+#' `sum(ss_d) / (n_sampled * (k_bar - 1))`, supplying the divisor itself. It also
+#' needs `k_d`, which is what `n_counts` carries, so the two columns are only
+#' usable together. Before GH #109 both were written to the output tibble and
+#' never read by `add_counts()`, so a within-day component supplied here was
+#' silently dropped and the reported SE omitted it entirely.
+#'
+#' @param n_counts_col Resolved column name or NULL
+#' @param within_day_var_col Resolved column name or NULL
+#' @param data The caller's data frame
+#' @param call Calling environment for the condition
+#'
+#' @keywords internal
+#' @noRd
+validate_within_day_inputs <- function(
+  n_counts_col,
+  within_day_var_col,
+  data,
+  call = rlang::caller_env()
+) {
+  if (is.null(within_day_var_col)) {
+    return(invisible(NULL))
+  }
+
+  if (is.null(n_counts_col)) {
+    cli::cli_abort(
+      c(
+        "{.arg within_day_var} requires {.arg n_counts}.",
+        "x" = "The within-day variance component needs the number of counts per \\
+               PSU as well as the sum of squares.",
+        "i" = "{.arg within_day_var} is a {.strong sum of squares}, not a variance: \\
+               pass {.code sum((x - mean(x))^2)} per PSU.",
+        "i" = "Supply {.arg n_counts} with the number of counts each PSU is built from."
+      ),
+      call = call
+    )
+  }
+
+  ss_vals <- data[[within_day_var_col]]
+  k_vals <- data[[n_counts_col]]
+
+  if (!is.numeric(ss_vals)) {
+    cli::cli_abort(
+      c(
+        "{.arg within_day_var} must be numeric.",
+        "x" = "Column {.val {within_day_var_col}} is {.cls {class(ss_vals)[1]}}."
+      ),
+      call = call
+    )
+  }
+  if (!is.numeric(k_vals)) {
+    cli::cli_abort(
+      c(
+        "{.arg n_counts} must be numeric.",
+        "x" = "Column {.val {n_counts_col}} is {.cls {class(k_vals)[1]}}."
+      ),
+      call = call
+    )
+  }
+
+  bad_ss <- !is.na(ss_vals) & ss_vals < 0
+  if (any(bad_ss)) {
+    cli::cli_abort(
+      c(
+        "{.arg within_day_var} must not be negative.",
+        "x" = "Found {sum(bad_ss)} negative value{?s} in {.val {within_day_var_col}}.",
+        "i" = "A sum of squares cannot be negative."
+      ),
+      call = call
+    )
+  }
+
+  bad_k <- !is.na(k_vals) & k_vals < 1
+  if (any(bad_k)) {
+    cli::cli_abort(
+      c(
+        "{.arg n_counts} must be at least 1.",
+        "x" = "Found {sum(bad_k)} value{?s} below 1 in {.val {n_counts_col}}."
+      ),
+      call = call
+    )
+  }
+
+  # A single count carries no within-day information, so its sum of squares must
+  # be zero. A non-zero value means the two columns describe different things.
+  single <- !is.na(k_vals) & k_vals == 1 & !is.na(ss_vals) & ss_vals != 0
+  if (any(single)) {
+    cli::cli_abort(
+      c(
+        "{.arg within_day_var} is non-zero where {.arg n_counts} is 1.",
+        "x" = "Found {sum(single)} such row{?s}.",
+        "i" = "A PSU built from one count has no within-day variation, so its \\
+               sum of squares must be 0.",
+        "i" = "Check that {.arg within_day_var} is a sum of squares and not a variance."
+      ),
+      call = call
+    )
+  }
+
+  invisible(NULL)
 }

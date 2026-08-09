@@ -1008,6 +1008,85 @@ resolve_count_col <- function(
   candidates
 }
 
+#' Read a supplied within-day variance from the counts table
+#'
+#' The `prep_counts_*()` functions emit `within_day_var` (a per-PSU sum of
+#' squares, already scaled into `daily_effort^2` units) and `n_counts` (k_d).
+#' Both columns were previously written and never read, so the within-day
+#' component was silently dropped and the reported SE omitted it (GH #109).
+#'
+#' Returns the same shape `aggregate_within_day()` produces -- key columns plus
+#' `ss_d` and `k_d` -- so both seams feed one slot and one consumer.
+#'
+#' @param counts Data frame of count data
+#' @param psu Character name of the PSU column
+#' @param strata_cols Character vector of strata column names
+#' @param count_time_col_name Resolved count-time column name, or NULL
+#' @param call Calling environment for conditions
+#'
+#' @return A data frame with key columns + `ss_d` + `k_d`, or NULL
+#'
+#' @keywords internal
+#' @noRd
+read_supplied_within_day_var <- function(
+  counts,
+  psu,
+  strata_cols,
+  count_time_col_name,
+  call = rlang::caller_env()
+) {
+  has_ss <- "within_day_var" %in% names(counts)
+  has_k <- "n_counts" %in% names(counts)
+
+  if (!has_ss) {
+    return(NULL)
+  }
+
+  if (!has_k) {
+    cli::cli_abort(
+      c(
+        "A {.field within_day_var} column requires an {.field n_counts} column.",
+        "x" = "The within-day variance component needs the per-PSU count as well \\
+               as the sum of squares.",
+        "i" = "Both are produced together by {.fn prep_counts_daily_effort} and \\
+               {.fn prep_counts_boat_party}."
+      ),
+      call = call
+    )
+  }
+
+  # Two sources for one component would double-count it.
+  if (!is.null(count_time_col_name)) {
+    cli::cli_abort(
+      c(
+        "Within-day variance supplied twice.",
+        "x" = "{.arg count_time_col} computes it from the raw counts, and the \\
+               counts table already carries a {.field within_day_var} column.",
+        "i" = "Drop {.arg count_time_col}, or drop the {.field within_day_var} \\
+               and {.field n_counts} columns."
+      ),
+      call = call
+    )
+  }
+
+  key_cols <- unique(c(psu, strata_cols))
+  missing_keys <- setdiff(key_cols, names(counts))
+  if (length(missing_keys) > 0) {
+    cli::cli_abort(
+      c(
+        "Cannot key the supplied within-day variance.",
+        "x" = "Column{?s} {.val {missing_keys}} {?is/are} not in the counts table."
+      ),
+      call = call
+    )
+  }
+
+  out <- counts[key_cols]
+  out$ss_d <- counts[["within_day_var"]]
+  out$k_d <- counts[["n_counts"]]
+  out
+}
+
 #' Attach count data to a creel design
 #'
 #' @description
@@ -1343,6 +1422,18 @@ add_counts <- function(
     detect_duplicate_psus(counts, psu) # nolint: object_usage_linter
   }
 
+  # Within-day variance supplied as columns by the prep_counts_* seam. Both
+  # columns were written to the prep output and never read here, so a user who
+  # supplied them through the documented preferred pipeline got an SE with the
+  # entire within-day component missing -- biased downward (GH #109).
+  supplied_wdv <- read_supplied_within_day_var(
+    # nolint: object_usage_linter
+    counts,
+    psu,
+    design$strata_cols,
+    count_time_col_name
+  )
+
   # Aggregate multiple counts per day to single PSU-level rows
   within_day_var <- NULL
   if (!is.null(count_time_col_name)) {
@@ -1359,6 +1450,8 @@ add_counts <- function(
     )
     counts <- agg_result$aggregated
     within_day_var <- agg_result$within_day_var
+  } else if (!is.null(supplied_wdv)) {
+    within_day_var <- supplied_wdv
   }
 
   # For multi-circuit progressive counts: ss_d is in count² units from aggregate_within_day(),

@@ -26,6 +26,34 @@
   There is no honest default latitude, and substituting one would put a
   plausible number where the caller gave none.
 
+## Bug fixes
+
+* `prep_counts_daily_effort()` and `prep_counts_boat_party()` emitted
+  `n_counts` and `within_day_var` columns that `add_counts()` never read, so a
+  within-day variance component supplied through the documented preferred seam
+  was silently dropped and the reported SE omitted it entirely — biased
+  **downward**, the dangerous direction. On an eight-day fixture with three
+  counts per day the prep seam reported SE 6.93 where the equivalent
+  `add_counts(count_time_col = )` route reported 9.52. `add_counts()` now reads
+  both columns into `design$within_day_var`, and the two seams agree exactly
+  (#109).
+
+  The columns are also rescaled into `daily_effort` squared units on output —
+  by `correction_factor^2`, and additionally by `mean_party_size^2` in the boat
+  path. `daily_effort` is scaled by those factors but the sum of squares was
+  passed through untouched, so wiring the slot up without rescaling would have
+  left the within-day term a factor of `cf^2` away from the between-day term it
+  is added to.
+
+  `within_day_var` is now documented unambiguously as a **sum of squares**, not
+  a variance: the estimator supplies the divisor itself, forming
+  `sum(ss_d) / (n_sampled * (k_bar - 1))`, so a variance understates the
+  component by a factor of `k_d - 1`. To make that contract enforceable,
+  `within_day_var` now requires `n_counts`, must be non-negative, and must be
+  `0` wherever `n_counts` is 1. Supplying the component through both the
+  columns and `add_counts(count_time_col = )` is an error rather than a
+  double count. Counts tables carrying neither column are unaffected.
+
 ## Breaking changes
 
 * `estimate_harvest_rate()` on a bus-route or ice design now returns a rate. It

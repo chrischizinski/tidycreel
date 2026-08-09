@@ -258,6 +258,24 @@ required factor is `(mean_party_size x cf)²`.
 are present but unusable. Silently dropping a variance component the user explicitly
 supplied is not acceptable.
 
+**LANDED (#109).** Wired in, both halves. Reproduced first: on an 8-day fixture with 3
+counts/day, identical data gave `se 6.928, se_within 0` through the prep seam and
+`se 9.522, se_within 6.532` through `add_counts(count_time_col=)` — a **27% downward**
+understatement. The user's supplied `ss_d` was **32**, exactly what
+`aggregate_within_day()` computes, so the column was always the right quantity and was
+simply never read. `resolve_supplied_within_day_var()` in `add_counts()` now reads it;
+both seams now return `se 9.522` on the same data, and the cf ≠ 1 and boat paths were
+cross-checked against equivalently-scaled raw counts (exact match).
+
+One thing the audit did not flag: the roxygen said "a within-day variance **or** sum of
+squares", but the consumer needs SS specifically — it forms
+`sum(ss_d) / (n_sampled * (k_bar - 1))`, supplying the divisor itself, so a variance is
+wrong by `k_d - 1`. Wiring the column in as-is would have converted a silent omission
+into a silent miscalculation. The contract is now SS only, enforced by requiring
+`n_counts` alongside, rejecting negatives, and rejecting non-zero SS where `n_counts`
+is 1. Supplying the component through both seams at once is an error, not a double
+count.
+
 ### 7. `.angler_effort` is party-hours when `n_anglers` is omitted, and the flagship examples omit it
 
 `R/creel-design.R:2073-2076` sets `.angler_effort <- effort_col` unchanged when
