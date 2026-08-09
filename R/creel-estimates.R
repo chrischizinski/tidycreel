@@ -632,7 +632,10 @@ estimate_effort <- function(
 #'   \code{interview_type = "roving"} (set via \code{add_interviews}),
 #'   automatically defaults to \code{"all"} + MOR. Otherwise defaults to
 #'   \code{"complete"}. Parameter is ignored when trip_status field is not
-#'   provided (backward compatibility). See Details.
+#'   provided (backward compatibility). For bus-route and ice designs the set is
+#'   \code{"complete"} (default), \code{"incomplete"} or \code{"diagnostic"};
+#'   \code{"all"} is not an estimator there, and the roving auto-route to
+#'   \code{"all"} + MOR does not apply. See Details.
 #' @param truncate_at Numeric minimum trip duration (hours) for MOR estimation.
 #'   Default is 0.5 hours (30 minutes) per Hoenig et al. (1997) to prevent
 #'   unstable variance from very short trips. Trips with duration < truncate_at
@@ -892,6 +895,37 @@ estimate_catch_rate <- function(
       "x" = "Design must have catch_col and effort_col set.",
       "i" = "Call {.fn add_interviews} with catch and effort parameters."
     ))
+  }
+
+  # Bus-route / ice dispatch (before the use_trips block, which filters
+  # interviews the bus-route path filters for itself). estimate_total_catch()
+  # and estimate_effort() already take the Horvitz-Thompson route on these
+  # designs, so CPUE coming off the standard interview survey did not reconcile
+  # with the design's own totals (finding 17).
+  #
+  # Species CPUE is a different estimator (estimate_cpue_species(), reported
+  # under a -cpue-species method) and keeps the standard path, so the dispatch
+  # has to know whether a species variable is in `by` before it fires.
+  if (!is.null(design$design_type) && design$design_type %in% c("bus_route", "ice")) {
+    by_info_br <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
+    if (is.null(by_info_br$species_var)) {
+      # The roving auto-route above may have flipped an unspecified use_trips to
+      # "all" + MOR. That is a standard-design heuristic and "all" is not an
+      # estimator here, so the bus-route path reads the user's own value and
+      # treats "unspecified" as "complete", matching estimate_harvest_rate().
+      use_trips_br <- if (use_trips_is_default) "complete" else use_trips
+      validate_use_trips_br(use_trips_br) # nolint: object_usage_linter
+
+      return(estimate_catch_br( # nolint: object_usage_linter
+        design,
+        by_info_br$interview_vars,
+        variance,
+        conf_level,
+        verbose = FALSE,
+        use_trips = use_trips_br,
+        truncate_at = truncate_at
+      ))
+    }
   }
 
   # Backward compatibility: if trip_status_col is NULL, skip all use_trips logic
@@ -1667,8 +1701,11 @@ estimate_harvest_rate <- function(
     ))
   }
 
-  # Validate design$interview_survey exists (skip for bus-route: uses interviews not counts)
-  if (!identical(design$design_type, "bus_route") && is.null(design$interview_survey)) {
+  # Validate design$interview_survey exists (skip for bus-route/ice: they use
+  # interviews, not counts)
+  if (
+    !design$design_type %in% c("bus_route", "ice") && is.null(design$interview_survey)
+  ) {
     cli::cli_abort(c(
       "No interview survey design available.",
       "x" = "Call {.fn add_interviews} before estimating harvest.",
@@ -1679,8 +1716,11 @@ estimate_harvest_rate <- function(
     ))
   }
 
-  # Bus-route dispatch (before standard tier-2 validation)
-  if (!is.null(design$design_type) && design$design_type == "bus_route") {
+  # Bus-route / ice dispatch (before standard tier-2 validation). Ice is a
+  # degenerate bus route and estimate_effort() and the three totals all treat it
+  # as one; the rate estimators were the outlier, so an ice design reported a
+  # rate that did not reconcile with its own totals (finding 14).
+  if (!is.null(design$design_type) && design$design_type %in% c("bus_route", "ice")) {
     # Resolve by parameter to column names for bus-route
     if (rlang::quo_is_null(by_quo)) {
       by_vars_br <- NULL
@@ -2020,10 +2060,11 @@ estimate_release_rate <- function(
     ))
   }
 
-  # Bus-route dispatch (before standard tier-2 validation), mirroring
+  # Bus-route / ice dispatch (before standard tier-2 validation), mirroring
   # estimate_harvest_rate(). Without it, RPUE on a bus-route design was computed
-  # from the standard interview survey and ignored .pi_i entirely (GH #110).
-  if (!is.null(design$design_type) && design$design_type == "bus_route") {
+  # from the standard interview survey and ignored .pi_i entirely (GH #110); ice
+  # was left out of the same dispatch until finding 14.
+  if (!is.null(design$design_type) && design$design_type %in% c("bus_route", "ice")) {
     if (rlang::quo_is_null(by_quo)) {
       by_vars_br <- NULL
     } else {

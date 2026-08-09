@@ -44,7 +44,8 @@ fix or travel together.
 | 7, 9, 11 | #112 | Missing unit guards |
 | 12 | #113 | Documentation asserts units the code does not produce |
 | 13 | *not opened* | Instantaneous path never carries T, so it returns angler-days (added 2026-08-08) |
-| 14 | *not opened* | Ice designs skip the bus-route dispatch in the rate estimators (added 2026-08-09) |
+| 14 | *not opened* | ~~Ice designs skip the bus-route dispatch in the rate estimators~~ **LANDED** (added and fixed 2026-08-09) |
+| 17 | *not opened* | ~~`estimate_catch_rate()` has no bus-route or ice dispatch at all, and no CPUE estimator existed to dispatch to~~ **LANDED** (added and fixed 2026-08-09, with finding 14) |
 | 15 | *not opened* | ~~`use_trips` unvalidated on the bus-route path; a typo silently swaps the estimator~~ **LANDED** (added and fixed 2026-08-09) |
 | 16 | *not opened* | ~~Scalar `n_anglers` resolves positionally to the first column, and sets `n_anglers_supplied = TRUE`~~ **LANDED** (added and fixed 2026-08-09) |
 
@@ -699,6 +700,68 @@ therefore refused the two values its own design type is supposed to support, and
 This is a second symptom of the same dispatch gap, so it lands with the fix above rather
 than separately; the regression fixture that pins the moved ice rate numbers should pin
 the accepted `use_trips` set alongside them.
+
+**LANDED (with finding 17).** All three rate estimators now dispatch on
+`design_type %in% c("bus_route", "ice")`.
+
+The reproduction that settled which answer was wrong is **internal consistency**, not a
+reference value: a ratio of HT totals must equal `total / effort` *exactly*, because it
+is that ratio. Measured before the fix:
+
+| design | rate | before | its own totals imply | gap |
+| ------ | ---- | ------ | -------------------- | --- |
+| ice | HPUE | 0.514328 | 0.478561 | +7.47% |
+| bus-route | CPUE | 0.466438 | 0.433603 | +7.57% |
+
+After the fix all four rate/total pairs (ice HPUE, ice RPUE, ice CPUE, bus-route CPUE)
+reconcile to 0.00%. Ice consequently takes the bus-route `use_trips` set, closing the
+contradiction recorded above: it now accepts `"incomplete"` and `"diagnostic"` and
+rejects `"all"`.
+
+**The suite did not notice.** Widening the dispatch — which moves every ice rate number
+and every bus-route CPUE number in the package — produced **0 failures** against 3477
+passing tests. That is not a safety signal; it is the audit's own thesis in the tests
+rather than the code. No fixture pinned an ice rate or a bus-route CPUE, so the fixtures
+were degenerate in exactly the dimension that mattered. Worse, once the new tests were
+written, the mutant that drops ice from the **release** dispatch still failed nothing
+until an ice RPUE fixture was added specifically for it: the harvest and catch twins were
+pinned and the release twin was not, which is findings 9, 15 and 16's drift pattern
+reappearing one level up, in the test suite.
+
+Mutation 6/6 after that gap was closed.
+
+### 17. `estimate_catch_rate()` has no bus-route or ice dispatch, and no CPUE estimator existed
+
+Added 2026-08-09, found while reproducing finding 14. Finding 14 assumed the rate
+estimators were correct on bus-route designs and wrong only on ice. They are not:
+`estimate_catch_rate()` never had a bus-route dispatch either, so CPUE came off the
+standard interview survey on **both** design types while `estimate_total_catch()` and
+`estimate_effort()` on the same object took the Horvitz-Thompson route.
+
+```
+estimate_catch_rate(bus_route)        0.466438   method = "ratio-of-means-cpue"
+HT total catch / HT effort            0.433603
+```
+
+There was also nothing to dispatch *to*: `estimate_harvest_br()`'s `metric` argument was
+`c("hpue", "rpue")`, so no bus-route CPUE estimator existed anywhere in the package.
+
+**Decision: REAL BUG — fix with finding 14** (user's call, 2026-08-09; the alternative
+considered was recording it and fixing separately). Fixing two of three sibling
+estimators would have written the next instance of the drift the audit keeps finding.
+
+**LANDED.** `metric` gains `"cpue"` and a new `estimate_catch_br()` repoints
+`harvest_col` at `catch_col` and delegates to `estimate_harvest_br()` — the same
+delegation `estimate_release_br()` already used, so the three siblings now share one
+estimator body rather than three copies that can drift.
+
+**Deliberately out of scope:** species CPUE (`by = species`) keeps the standard path. It
+routes to `estimate_cpue_species()`, a different estimator reporting a `-cpue-species`
+method, and the bus-route path cannot compute it; diverting it would break calls that
+work today. A test pins the carve-out so it reads as a decision rather than an oversight.
+**The dimensional question for species CPUE on bus-route and ice designs is open and
+unexamined** — it is the same defect, one estimator over, and should be the next finding
+opened rather than assumed benign.
 
 ### 15. `use_trips` is never validated on the bus-route path, so a typo silently changes the estimator
 

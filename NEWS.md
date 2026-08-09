@@ -28,6 +28,35 @@
 
 ## Bug fixes
 
+* The three rate estimators now dispatch to the Horvitz–Thompson path on **ice**
+  designs as well as bus-route ones, and `estimate_catch_rate()` gains the
+  bus-route dispatch it never had. `estimate_effort()` and all three totals
+  already treated ice as the degenerate bus route it is documented to be; the
+  rate estimators were the outliers, so a single design object returned a rate
+  that its own totals contradict. Both paths reported the same `method` string,
+  so nothing in the returned object distinguished them.
+
+  A ratio of HT totals must equal total ÷ effort exactly, which is what says
+  which of the two answers was wrong rather than merely that they differed:
+
+  | design | rate | before | totals imply | after |
+  | ------ | ---- | ------ | ------------ | ----- |
+  | ice | HPUE | 0.514328 | 0.478561 | 0.478561 |
+  | ice | CPUE | — | — | reconciles exactly |
+  | bus-route | CPUE | 0.466438 | 0.433603 | 0.433603 |
+
+  Ice designs consequently take the bus-route `use_trips` set — `"complete"`,
+  `"incomplete"`, `"diagnostic"` — instead of the standard path's, so they now
+  accept the two values their own design type is built on and reject `"all"`,
+  which is not an estimator on this path. For `estimate_catch_rate()` the roving
+  auto-route to `"all"` + MOR does not apply on these designs.
+
+  Species-level CPUE (`by = species`) deliberately keeps the standard path: it is
+  a different estimator reporting a `-cpue-species` method. That remains an open
+  gap rather than a silent redirection.
+
+  **Breaking:** ice HPUE, ice RPUE, ice CPUE and bus-route CPUE all move.
+
 * `estimate_harvest_rate()` and `estimate_release_rate()` now validate
   `use_trips` on the bus-route path. The bus-route dispatch runs before the
   standard path's check and handed the string straight to the estimator, which

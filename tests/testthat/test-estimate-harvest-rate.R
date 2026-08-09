@@ -2621,3 +2621,191 @@ test_that("both bus-route rate twins accept the same use_trips values (finding 1
     expect_error(estimate_release_rate(dr, use_trips = ut), "Invalid use_trips value")
   }
 })
+
+# Findings 14 and 17: the rate estimators dispatch on bus_route AND ice ----
+
+# Ice with a mix of complete and incomplete trips. build_trip_interviews_for_tests()
+# marks every trip complete, so the incomplete and diagnostic paths need the
+# status forced -- and without a mix, a fixture cannot tell a filtered estimator
+# from an unfiltered one, which is how finding 15 survived.
+make_ice_mixed <- function(n_interviews = 24L, seed = 42L) {
+  d <- build_ice_design(n_days = 8, n_interviews = n_interviews, seed = seed)
+  d$interviews$trip_status <- rep(c("complete", "incomplete"), length.out = nrow(d$interviews))
+  d
+}
+
+test_that("ice rates reconcile with the ice totals the package already ships (finding 14)", {
+  # The falsifying property, and the one that says which of the two answers was
+  # wrong rather than merely that they differed. estimate_effort() and the three
+  # totals have always taken the Horvitz-Thompson route on ice; the rate
+  # estimators took the standard interview survey, so one design object returned
+  # a rate that its own totals contradict. A ratio of HT totals must equal
+  # total / effort exactly -- not approximately -- because it is that ratio.
+  #
+  # Before the fix: HPUE 0.514328 against totals implying 0.478561, 7.47% apart,
+  # both reported under method "ratio-of-means-hpue" so nothing in the returned
+  # object distinguished them.
+  d <- build_ice_design(n_days = 8, n_interviews = 24, seed = 42)
+  effort <- suppressWarnings(suppressMessages(estimate_effort(d)))$estimates[[1]][[1]]
+
+  hpue <- suppressWarnings(suppressMessages(estimate_harvest_rate(d)))
+  h_tot <- suppressWarnings(suppressMessages(estimate_total_harvest(d)))
+  expect_equal(hpue$estimates$estimate, h_tot$estimates$estimate / effort, tolerance = 1e-9)
+
+  cpue <- suppressWarnings(suppressMessages(estimate_catch_rate(d)))
+  c_tot <- suppressWarnings(suppressMessages(estimate_total_catch(d)))
+  expect_equal(cpue$estimates$estimate, c_tot$estimates$estimate / effort, tolerance = 1e-9)
+})
+
+test_that("bus-route CPUE reconciles with the bus-route totals (finding 17)", {
+  # estimate_catch_rate() had no bus-route dispatch either, so the defect
+  # finding 14 describes for ice applied to CPUE on the design type finding 14
+  # assumed was already correct. Before the fix: 0.466438 against totals implying
+  # 0.433603.
+  d <- build_br_design_for_tests(n_sites = 3, n_days = 8, n_interviews = 24, seed = 42)
+  effort <- suppressWarnings(suppressMessages(estimate_effort(d)))$estimates[[1]][[1]]
+
+  cpue <- suppressWarnings(suppressMessages(estimate_catch_rate(d)))
+  c_tot <- suppressWarnings(suppressMessages(estimate_total_catch(d)))
+
+  expect_equal(cpue$estimates$estimate, c_tot$estimates$estimate / effort, tolerance = 1e-9)
+  expect_identical(cpue$method, "ratio-of-means-cpue")
+})
+
+test_that("the ice rate path weights by .pi_i and .expansion (findings 14, 17)", {
+  # Reconciliation alone could be satisfied by both sides being wrong the same
+  # way. This pins the weighting itself: .expansion is part of the HT weight, so
+  # raising it on the highest-rate interviews must pull the rate up. The standard
+  # interview-survey path ignores .expansion entirely and would not move.
+  d <- build_ice_design(n_days = 8, n_interviews = 24, seed = 42)
+  base <- suppressWarnings(suppressMessages(estimate_harvest_rate(d)))$estimates$estimate
+
+  rate_i <- d$interviews[[d$harvest_col]] / d$interviews[[d$angler_effort_col]]
+  top <- rate_i >= stats::median(rate_i)
+  d2 <- d
+  d2$interviews$.expansion[top] <- d2$interviews$.expansion[top] * 4
+  bumped <- suppressWarnings(suppressMessages(estimate_harvest_rate(d2)))$estimates$estimate
+
+  expect_gt(bumped, base)
+})
+
+test_that("ice takes the bus-route use_trips set, not the standard one (findings 14, 15)", {
+  # Ice is documented and implemented as a degenerate bus route, so it should
+  # accept the values that design supports. Before the dispatch was widened it
+  # fell to the standard path and was refused "incomplete" and "diagnostic" --
+  # the two its own design type is built on -- while being offered "all", which
+  # is not an estimator on this path at all.
+  d <- make_ice_mixed()
+
+  expect_no_error(suppressWarnings(suppressMessages(
+    estimate_harvest_rate(d, use_trips = "incomplete")
+  )))
+  diag <- suppressWarnings(suppressMessages(
+    estimate_harvest_rate(d, use_trips = "diagnostic")
+  ))
+  expect_s3_class(diag, "creel_estimates_diagnostic")
+
+  expect_error(estimate_harvest_rate(d, use_trips = "all"), "Invalid use_trips value")
+  expect_error(estimate_catch_rate(d, use_trips = "all"), "Invalid use_trips value")
+})
+
+test_that("the ice rate path honours the complete-trip filter (findings 14, 15)", {
+  # A dispatch that arrived without the filter would return the same number for
+  # every use_trips value, which is the finding-15 failure mode one design type
+  # over. The mixed fixture is 12/12, so complete and incomplete must disagree in
+  # n as well as in value.
+  d <- make_ice_mixed()
+
+  complete <- suppressWarnings(suppressMessages(
+    estimate_harvest_rate(d, use_trips = "complete")
+  ))
+  incomplete <- suppressWarnings(suppressMessages(
+    estimate_harvest_rate(d, use_trips = "incomplete")
+  ))
+
+  expect_identical(complete$estimates$n, 12L)
+  expect_identical(incomplete$estimates$n, 12L)
+  expect_identical(complete$method, "ratio-of-means-hpue")
+  expect_identical(incomplete$method, "mean-of-ratios-hpue")
+  expect_false(isTRUE(all.equal(complete$estimates$estimate, incomplete$estimates$estimate)))
+})
+
+test_that("species CPUE keeps the standard path on bus-route designs (finding 17)", {
+  # Deliberate carve-out, pinned so it is a decision rather than an oversight.
+  # Species CPUE is a different estimator (estimate_cpue_species()) reporting a
+  # -cpue-species method; routing it through the bus-route path, which cannot
+  # compute it, would break calls that work today. The remaining gap is recorded
+  # in the audit rather than silently diverted here.
+  # reps = 3 gives 12 complete trips; the standard path refuses fewer than 10.
+  d <- make_br_release(status = "complete", reps = 3L)
+  res <- suppressWarnings(suppressMessages(
+    estimate_catch_rate(d, by = species) # nolint: object_usage_linter
+  ))
+
+  expect_true(grepl("cpue-species$", res$method))
+})
+
+test_that("standard designs are untouched by the ice dispatch (findings 14, 17)", {
+  # The dispatch is keyed on design_type, so widening it must not reach a design
+  # that is neither bus_route nor ice. Pins that the standard path still answers
+  # and still accepts "all", which the bus-route path rejects.
+  d <- make_harvest_design()
+
+  expect_no_error(suppressWarnings(suppressMessages(
+    estimate_harvest_rate(d, use_trips = "all")
+  )))
+  expect_identical(
+    suppressWarnings(suppressMessages(estimate_harvest_rate(d)))$method,
+    "ratio-of-means-hpue"
+  )
+})
+
+make_ice_release <- function(n_interviews = 24L, seed = 42L) {
+  d <- build_ice_design(n_days = 8, n_interviews = n_interviews, seed = seed)
+  d$interviews$interview_id <- seq_len(nrow(d$interviews))
+  catch <- data.frame(
+    interview_id = d$interviews$interview_id,
+    species = "walleye",
+    count = d$interviews[[d$harvest_col]],
+    catch_type = "released",
+    stringsAsFactors = FALSE
+  )
+  suppressMessages(suppressWarnings(add_catch(
+    d,
+    catch,
+    catch_uid = interview_id, # nolint: object_usage_linter
+    interview_uid = interview_id,
+    species = species, # nolint: object_usage_linter
+    count = count, # nolint: object_usage_linter
+    catch_type = catch_type # nolint: object_usage_linter
+  )))
+}
+
+test_that("ice RPUE reconciles with the ice release total (finding 14)", {
+  # The release twin was the one with no coverage at all on ice: dropping ice
+  # from its dispatch failed nothing until this test existed, even though the
+  # harvest and catch twins were pinned. That is the drift pattern findings 9,
+  # 15 and 16 are about, showing up in the tests rather than the code.
+  d <- make_ice_release()
+  effort <- suppressWarnings(suppressMessages(estimate_effort(d)))$estimates[[1]][[1]]
+
+  rpue <- suppressWarnings(suppressMessages(estimate_release_rate(d)))
+  r_tot <- suppressWarnings(suppressMessages(estimate_total_release(d)))
+
+  expect_equal(rpue$estimates$estimate, r_tot$estimates$estimate / effort, tolerance = 1e-9)
+  expect_identical(rpue$method, "ratio-of-means-rpue")
+})
+
+test_that("ice RPUE equals ice HPUE when every released fish is also kept (finding 14)", {
+  # Cross-estimator identity: the fixture sets the released count equal to the
+  # harvest column interview by interview, so the two rates are the same quantity
+  # down two code paths. A release path that dispatched differently from the
+  # harvest path -- which is exactly what ice did before this change -- separates
+  # them.
+  d <- make_ice_release()
+  h <- suppressWarnings(suppressMessages(estimate_harvest_rate(d)))
+  r <- suppressWarnings(suppressMessages(estimate_release_rate(d)))
+
+  expect_equal(r$estimates$estimate, h$estimates$estimate, tolerance = 1e-12)
+  expect_equal(r$estimates$se, h$estimates$se, tolerance = 1e-12)
+})

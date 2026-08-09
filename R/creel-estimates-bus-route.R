@@ -263,7 +263,7 @@ estimate_harvest_br <- function(
   verbose,
   use_trips,
   truncate_at = 0.5,
-  metric = c("hpue", "rpue"),
+  metric = c("hpue", "rpue", "cpue"),
   call = rlang::caller_env()
 ) {
   metric <- match.arg(metric)
@@ -433,7 +433,7 @@ estimate_harvest_br <- function(
 
   # Interpolated here, not in the message string: cli_abort() glues in the
   # aborting function's environment, where these locals do not exist.
-  quantity <- if (identical(metric, "rpue")) "release" else "harvest"
+  quantity <- switch(metric, rpue = "release", cpue = "catch", "harvest")
   rate_fn <- paste0("estimate_", quantity, "_rate")
 
   br_harvest_rate_estimates(
@@ -685,11 +685,11 @@ br_incomplete_harvest_rate <- function(
   conf_level,
   design,
   truncate_at,
-  metric = c("hpue", "rpue"),
+  metric = c("hpue", "rpue", "cpue"),
   call = rlang::caller_env()
 ) {
   metric <- match.arg(metric)
-  quantity <- if (identical(metric, "rpue")) "release" else "harvest" # nolint: object_usage_linter
+  quantity <- switch(metric, rpue = "release", cpue = "catch", "harvest") # nolint: object_usage_linter
   harvest_col <- design$harvest_col
   angler_effort_col <- design$angler_effort_col
   site_col <- design$bus_route$site_col
@@ -847,6 +847,63 @@ estimate_release_br <- function(
     use_trips = use_trips,
     truncate_at = truncate_at,
     metric = "rpue",
+    call = call
+  )
+}
+
+# Bus-route catch rate estimation ----
+# Called by estimate_catch_rate() when design$design_type is "bus_route" or "ice"
+
+#' Bus-route catch rate estimator
+#'
+#' `estimate_catch_rate()` carried no bus-route or ice dispatch, so CPUE on both
+#' design types came from the standard interview survey and ignored `.pi_i` and
+#' `.expansion` -- while `estimate_total_catch()` and `estimate_effort()` on the
+#' same design object both took the Horvitz-Thompson route. The rate and the
+#' totals therefore disagreed: on a bus-route fixture CPUE read 0.466438 where
+#' the design's own totals imply 0.433603.
+#'
+#' Catch differs from harvest only in which column supplies the numerator, so
+#' this repoints `harvest_col` at `catch_col` and hands the design to
+#' [estimate_harvest_br()], the same delegation [estimate_release_br()] uses.
+#' Both trip paths, the truncation and the diagnostic pair come along unchanged;
+#' only the reported `method` string differs.
+#'
+#' Species-level CPUE (`by = species`) is not routed here: it is a different
+#' estimator ([estimate_cpue_species()]) returning a `-cpue-species` method, and
+#' it keeps the standard path for now.
+#'
+#' @inheritParams estimate_harvest_br
+#'
+#' @return A creel_estimates object with method "ratio-of-means-cpue" or
+#'   "mean-of-ratios-cpue", or a creel_estimates_diagnostic for
+#'   `use_trips = "diagnostic"`
+#'
+#' @keywords internal
+#' @noRd
+estimate_catch_br <- function(
+  # nolint: object_usage_linter
+  design,
+  by_vars,
+  variance_method,
+  conf_level,
+  verbose,
+  use_trips,
+  truncate_at = 0.5,
+  call = rlang::caller_env()
+) {
+  design_catch <- design
+  design_catch$harvest_col <- design$catch_col
+
+  estimate_harvest_br(
+    design_catch,
+    by_vars,
+    variance_method,
+    conf_level,
+    verbose = verbose,
+    use_trips = use_trips,
+    truncate_at = truncate_at,
+    metric = "cpue",
     call = call
   )
 }
