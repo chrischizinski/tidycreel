@@ -755,6 +755,19 @@ estimators would have written the next instance of the drift the audit keeps fin
 delegation `estimate_release_br()` already used, so the three siblings now share one
 estimator body rather than three copies that can drift.
 
+**Coverage follow-up (2026-08-09).** The fix shipped with the reconciliation test and
+nothing else, so bus-route CPUE and ice CPUE were each pinned by exactly **one**
+assertion — up from zero, but reconciliation only sees the pooled point estimate. Both
+now carry what the HPUE and RPUE twins already had: a per-angler-hour dimensional check
+on both trip paths, SE/CI/`n`, grouped (`by = day_type`) reconciliation within each
+stratum, the `method` string on both trip paths, and a numerator check that moves catch
+without moving harvest. Perturbing every numeric column of the CPUE result kills **6**
+tests on each design type (was 1); control run kills 0. Three targeted mutants on
+`estimate_catch_br()` — `metric = "hpue"`, dropping the `harvest_col` repoint, and
+dropping `by_vars` — kill 2, 5 and 1. The last was **0** before this work: grouped output
+was unmeasured for every quantity, because the coverage sweep's probe perturbed column 1,
+which is the group label.
+
 **Deliberately out of scope:** species CPUE (`by = species`) keeps the standard path. It
 routes to `estimate_cpue_species()`, a different estimator reporting a `-cpue-species`
 method, and the bus-route path cannot compute it; diverting it would break calls that

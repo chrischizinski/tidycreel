@@ -2809,3 +2809,184 @@ test_that("ice RPUE equals ice HPUE when every released fish is also kept (findi
   expect_equal(r$estimates$estimate, h$estimates$estimate, tolerance = 1e-12)
   expect_equal(r$estimates$se, h$estimates$se, tolerance = 1e-12)
 })
+
+# CPUE coverage on the two Horvitz-Thompson design types (findings 14, 17) ----
+#
+# Bus-route CPUE and ice CPUE were each pinned by exactly one assertion -- the
+# reconciliation tests above, added with the fix itself. Before that they were
+# pinned by nothing: widening the dispatch moved every one of these numbers and
+# failed nothing in a 3477-test suite. Reconciliation on its own only says the
+# rate agrees with the totals in aggregate; it does not see the SE, the sample
+# size, the reported method, the grouped path, or the denominator's units. The
+# HPUE and RPUE twins already carry all of those, so CPUE gets the same.
+
+make_br_mixed <- function(n_interviews = 24L, seed = 42L) {
+  d <- build_br_design_for_tests(
+    n_sites = 3,
+    n_days = 8,
+    n_interviews = n_interviews,
+    seed = seed
+  )
+  d$interviews$trip_status <- rep(c("complete", "incomplete"), length.out = nrow(d$interviews))
+  d
+}
+
+ht_cpue_designs <- function(mixed = FALSE) {
+  if (mixed) {
+    list(bus_route = make_br_mixed(), ice = make_ice_mixed())
+  } else {
+    list(
+      bus_route = build_br_design_for_tests(
+        n_sites = 3,
+        n_days = 8,
+        n_interviews = 24,
+        seed = 42
+      ),
+      ice = build_ice_design(n_days = 8, n_interviews = 24, seed = 42)
+    )
+  }
+}
+
+# Triples the angler-hours behind the same catch. A bus-route design registers
+# an n_anglers column, so party size scales there too; an ice design registers
+# none -- .angler_effort is already angler-hours -- so only the effort moves.
+triple_angler_effort <- function(d) {
+  if (!is.null(d$n_anglers_col) && nzchar(d$n_anglers_col)) {
+    d$interviews[[d$n_anglers_col]] <- d$interviews[[d$n_anglers_col]] * 3L
+  }
+  d$interviews[[d$angler_effort_col]] <- d$interviews[[d$angler_effort_col]] * 3
+  d
+}
+
+test_that("CPUE is catch per angler-hour on both HT design types (findings 14, 17)", {
+  # Dimensional check, not a value check, and the one thing reconciliation
+  # cannot do: rate == total / effort still holds if both sides count party-hours
+  # instead of angler-hours. Spreading the same fish over three times the
+  # angler-hours has to divide a per-angler-hour rate by three. A total would not
+  # move at all and a per-party-hour rate would move only on the bus-route
+  # fixture, where party size is what changed.
+  #
+  # Both trip paths are checked because they are different estimators: the
+  # complete path is a ratio of HT totals, the incomplete path a mean of
+  # per-angler ratios, and each divides by the denominator in its own place.
+  for (nm in names(ht_cpue_designs(mixed = TRUE))) {
+    for (ut in c("complete", "incomplete")) {
+      d1 <- ht_cpue_designs(mixed = TRUE)[[nm]]
+      d3 <- triple_angler_effort(d1)
+
+      r1 <- suppressWarnings(suppressMessages(estimate_catch_rate(d1, use_trips = ut)))
+      r3 <- suppressWarnings(suppressMessages(estimate_catch_rate(d3, use_trips = ut)))
+
+      expect_equal(
+        r3$estimates$estimate,
+        r1$estimates$estimate / 3,
+        tolerance = 1e-9,
+        info = paste(nm, ut)
+      )
+    }
+  }
+})
+
+test_that("CPUE reports an SE, a CI and n on both HT design types (findings 14, 17)", {
+  # The reconciliation tests read $estimate and nothing else, so a variance path
+  # that returned NA, zero or a degenerate interval on these two design types
+  # would have gone unremarked -- and a rate with no usable SE is not a usable
+  # estimate. n is pinned to the interview count because a silently filtered
+  # sample is the finding-15 failure mode, which shows up in n before it shows
+  # up anywhere else.
+  for (nm in names(ht_cpue_designs())) {
+    res <- suppressWarnings(suppressMessages(
+      estimate_catch_rate(ht_cpue_designs()[[nm]])
+    ))
+
+    expect_identical(res$estimates$n, 24L, info = nm)
+    expect_true(is.finite(res$estimates$se), info = nm)
+    expect_gt(res$estimates$se, 0)
+    expect_lt(res$estimates$ci_lower, res$estimates$estimate)
+    expect_gt(res$estimates$ci_upper, res$estimates$estimate)
+  }
+})
+
+test_that("grouped CPUE reconciles with the grouped totals on both HT designs (findings 14, 17)", {
+  # The dispatch has to survive by_vars, and grouped output was the one shape
+  # the coverage sweep could not see at all -- its probe perturbed column 1,
+  # which is the group label here, so every grouped result read as uncovered.
+  # The same rate == total / effort identity has to hold within each stratum,
+  # not only pooled: a grouped path that dropped .pi_i or grouped the numerator
+  # and denominator differently satisfies the pooled test and fails this one.
+  for (nm in names(ht_cpue_designs())) {
+    d <- ht_cpue_designs()[[nm]]
+
+    cpue <- suppressWarnings(suppressMessages(
+      estimate_catch_rate(d, by = day_type) # nolint: object_usage_linter
+    ))
+    effort <- suppressWarnings(suppressMessages(
+      estimate_effort(d, by = day_type) # nolint: object_usage_linter
+    ))
+    total <- suppressWarnings(suppressMessages(
+      estimate_total_catch(d, by = day_type) # nolint: object_usage_linter
+    ))
+
+    # The effort column is named for the effort type ("total_effort_hr_on_ice" on
+    # ice, "estimate" on bus route), so it is taken by position: column 1 is the
+    # group label, column 2 the point estimate.
+    expect_identical(cpue$estimates$day_type, effort$estimates[[1]])
+    expect_identical(cpue$estimates$day_type, total$estimates[[1]])
+    expect_identical(cpue$estimates$n, c(12L, 12L), info = nm)
+    expect_equal(
+      cpue$estimates$estimate,
+      total$estimates[[2]] / effort$estimates[[2]],
+      tolerance = 1e-9,
+      info = nm
+    )
+  }
+})
+
+test_that("CPUE names the estimator each trip path actually used (findings 14, 17)", {
+  # Finding 10's shape: a delegation that repoints the numerator but keeps the
+  # borrowed label returns a correct number under the wrong quantity's name.
+  # estimate_catch_br() reaches estimate_harvest_br() with harvest_col pointed at
+  # catch_col, so "hpue" is exactly what leaks through if metric is not passed.
+  # The two trip paths are separate estimators and must not share a label.
+  for (nm in names(ht_cpue_designs(mixed = TRUE))) {
+    d <- ht_cpue_designs(mixed = TRUE)[[nm]]
+
+    complete <- suppressWarnings(suppressMessages(
+      estimate_catch_rate(d, use_trips = "complete")
+    ))
+    incomplete <- suppressWarnings(suppressMessages(
+      estimate_catch_rate(d, use_trips = "incomplete")
+    ))
+
+    expect_identical(complete$method, "ratio-of-means-cpue", info = nm)
+    expect_identical(incomplete$method, "mean-of-ratios-cpue", info = nm)
+    expect_identical(complete$estimates$n, 12L, info = nm)
+    expect_identical(incomplete$estimates$n, 12L, info = nm)
+    # Different estimators on different halves of the same fixture: equal values
+    # would mean the trip-status filter never fired, which is finding 15.
+    expect_false(
+      isTRUE(all.equal(complete$estimates$estimate, incomplete$estimates$estimate))
+    )
+  }
+})
+
+test_that("CPUE reads the catch column, not the harvest one, on both HT designs (findings 14, 17)", {
+  # estimate_catch_br() delegates by repointing harvest_col at catch_col. Drop
+  # the repointing and every fixture where catch and harvest move together still
+  # passes, so the two are made to differ: catch is doubled while harvest is left
+  # alone, and CPUE must double while HPUE does not move.
+  for (nm in names(ht_cpue_designs())) {
+    d <- ht_cpue_designs()[[nm]]
+    h0 <- suppressWarnings(suppressMessages(estimate_harvest_rate(d)))
+    c0 <- suppressWarnings(suppressMessages(estimate_catch_rate(d)))
+
+    d2 <- d
+    d2$interviews[[d2$catch_col]] <- d2$interviews[[d2$catch_col]] * 2
+
+    h2 <- suppressWarnings(suppressMessages(estimate_harvest_rate(d2)))
+    c2 <- suppressWarnings(suppressMessages(estimate_catch_rate(d2)))
+
+    expect_equal(c2$estimates$estimate, 2 * c0$estimates$estimate, tolerance = 1e-9, info = nm)
+    expect_equal(h2$estimates$estimate, h0$estimates$estimate, tolerance = 1e-12, info = nm)
+  }
+})
