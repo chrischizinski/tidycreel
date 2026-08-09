@@ -762,6 +762,13 @@ outright, because it is the only option that lets a solo-angler survey be *state
 and therefore the only one that lets such a survey silence the finding-7 warning without
 inventing a constant column, which is what the vignette sweep had to do.
 
+Those fabricated columns were removed in `797e7bc`, which states `n_anglers = 1`
+directly in `progressive-count-surveys.Rmd`, `temporal-extrapolation.Rmd` (2 call sites)
+and `catch-pipeline.Rmd`. Every number was unchanged: the column held `1L`, the constant
+is `1`, and a constant column consumes no RNG draws. The sequence closed on itself --
+the vignette sweep needed a workaround, the workaround exposed this finding, and fixing
+it made the workaround unnecessary.
+
 Tracing the cascade reframed the fix. `.angler_effort` is derived once at
 `add_interviews()` and stored, after which it is an anonymous numeric column read as
 angler-hours by **37 references across 6 files** (`creel-estimates.R`,
