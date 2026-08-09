@@ -232,7 +232,9 @@ estimate_effort_br <- function(
 #' Bus-route Horvitz-Thompson harvest estimator
 #'
 #' Internal function implementing Jones & Pollock (2012) Eq. 19.5.
-#' Called by estimate_harvest_rate() after bus-route dispatch.
+#' Called by estimate_harvest_rate() after bus-route dispatch, and by
+#' estimate_release_br() with a design whose harvest_col names the joined
+#' release count.
 #'
 #' @param design A creel_design object with bus-route interviews attached
 #' @param by_vars NULL or character vector of grouping variable names
@@ -243,6 +245,9 @@ estimate_effort_br <- function(
 #' @param truncate_at Numeric minimum trip duration (hours) below which
 #'   incomplete trips are discarded before mean-of-ratios estimation, or NULL
 #'   to disable. Ignored on the complete-trip path.
+#' @param metric Either "hpue" or "rpue". Selects the reported `method` string
+#'   and the noun used in conditions. The estimator is identical either way; the
+#'   numerator is whatever column `design$harvest_col` names.
 #'
 #' @return A creel_estimates object with site_contributions attribute,
 #'   or creel_estimates_diagnostic for use_trips = "diagnostic"
@@ -258,14 +263,18 @@ estimate_harvest_br <- function(
   verbose,
   use_trips,
   truncate_at = 0.5,
+  metric = c("hpue", "rpue"),
   call = rlang::caller_env()
 ) {
+  metric <- match.arg(metric)
+  metric_label <- toupper(metric) # nolint: object_usage_linter
   if (verbose) {
     cli::cli_inform(c(
       "i" = if (identical(use_trips, "incomplete")) {
-        "Using bus-route HPUE: truncated mean of ratios (Hoenig et al. 1997)"
+        "Using bus-route {metric_label}: truncated mean of ratios (Hoenig et al. 1997)"
       } else {
-        "Using bus-route HPUE: ratio of HT totals (Jones & Pollock 2012, Eq. 19.5 / Eq. 19.4)"
+        "Using bus-route {metric_label}: ratio of HT totals \\
+         (Jones & Pollock 2012, Eq. 19.5 / Eq. 19.4)"
       }
     ))
   }
@@ -337,6 +346,7 @@ estimate_harvest_br <- function(
       verbose = FALSE,
       use_trips = "complete",
       truncate_at = truncate_at,
+      metric = metric,
       call = call
     )
     incomplete_result <- suppressWarnings(estimate_harvest_br(
@@ -347,6 +357,7 @@ estimate_harvest_br <- function(
       verbose = FALSE,
       use_trips = "incomplete",
       truncate_at = truncate_at,
+      metric = metric,
       call = call
     ))
     result <- list(complete = complete_result, incomplete = incomplete_result)
@@ -377,7 +388,8 @@ estimate_harvest_br <- function(
       conf_level,
       design,
       truncate_at,
-      call
+      metric = metric,
+      call = call
     ))
   }
 
@@ -419,13 +431,24 @@ estimate_harvest_br <- function(
   names(site_table)[names(site_table) == ".contribution"] <- "h_i_over_pi_i"
   names(site_table)[names(site_table) == ".e_contribution"] <- "e_i_over_pi_i"
 
+  # Interpolated here, not in the message string: cli_abort() glues in the
+  # aborting function's environment, where these locals do not exist.
+  quantity <- if (identical(metric, "rpue")) "release" else "harvest"
+  rate_fn <- paste0("estimate_", quantity, "_rate")
+
   br_harvest_rate_estimates(
     interviews,
     by_vars,
     variance_method,
     conf_level,
     design,
-    site_table
+    site_table,
+    method = paste0("ratio-of-means-", metric),
+    zero_denom_msg = c(
+      paste0("Cannot compute a ", quantity, " rate: estimated total effort is zero."),
+      "x" = paste0("{.fn ", rate_fn, "} divides ", quantity, " by the HT effort total."),
+      "i" = "Check that {.arg effort} and {.arg n_anglers} were supplied to {.fn add_interviews}."
+    )
   )
 }
 
@@ -643,9 +666,14 @@ br_require_trip_status <- function(design, interviews, call = rlang::caller_env(
 #' @param conf_level Numeric confidence level (0-1)
 #' @param design The creel_design object
 #' @param truncate_at Numeric minimum trip duration in hours, or NULL to disable
+#' @param metric Either "hpue" (harvest per unit effort) or "rpue" (release per
+#'   unit effort). Selects the reported `method` string and the noun used in
+#'   conditions; the estimator itself is identical, because the numerator column
+#'   is whatever `design$harvest_col` names.
 #' @param call Calling environment for conditions
 #'
-#' @return A creel_estimates object with method "mean-of-ratios-hpue"
+#' @return A creel_estimates object with method "mean-of-ratios-hpue" or
+#'   "mean-of-ratios-rpue"
 #'
 #' @keywords internal
 #' @noRd
@@ -657,8 +685,11 @@ br_incomplete_harvest_rate <- function(
   conf_level,
   design,
   truncate_at,
+  metric = c("hpue", "rpue"),
   call = rlang::caller_env()
 ) {
+  metric <- match.arg(metric)
+  quantity <- if (identical(metric, "rpue")) "release" else "harvest" # nolint: object_usage_linter
   harvest_col <- design$harvest_col
   angler_effort_col <- design$angler_effort_col
   site_col <- design$bus_route$site_col
@@ -712,7 +743,7 @@ br_incomplete_harvest_rate <- function(
     n_dropped <- sum(!valid_effort) # nolint: object_usage_linter
     cli::cli_warn(
       "Dropping {n_dropped} incomplete-trip interview{?s} with zero or missing effort \\
-      before computing harvest rate."
+      before computing {quantity} rate."
     )
     interviews <- interviews[valid_effort, , drop = FALSE]
   }
@@ -754,13 +785,69 @@ br_incomplete_harvest_rate <- function(
     conf_level,
     design,
     site_table,
-    method = "mean-of-ratios-hpue",
+    method = paste0("mean-of-ratios-", metric),
     denom_col = ".w_contribution",
     zero_denom_msg = c(
-      "Cannot compute a harvest rate: the mean-of-ratios weights sum to zero.",
+      paste0(
+        "Cannot compute a ", quantity,
+        " rate: the mean-of-ratios weights sum to zero."
+      ),
       "x" = "Every incomplete-trip interview has zero weight (.expansion / .pi_i).",
       "i" = "Check {.arg n_counted}, {.arg n_interviewed}, and the sampling frame."
     )
+  )
+}
+
+# Bus-route release rate estimation ----
+# RPUE on a bus-route design is the HPUE estimator with a different numerator.
+# Called by estimate_release_rate() when design$design_type == "bus_route"
+
+#' Bus-route release rate estimator
+#'
+#' `estimate_release_rate()` carried no bus-route dispatch (GH #110), so RPUE on
+#' a bus-route design came from the standard interview survey and ignored
+#' `.pi_i` and `.expansion` entirely -- the interviews were treated as if equally
+#' likely, which for a bus route they are not.
+#'
+#' Release differs from harvest only in which column supplies the numerator, so
+#' this joins the per-interview release count with [estimate_release_build_data()]
+#' and hands the result to [estimate_harvest_br()] with `harvest_col` pointed at
+#' that column. Both trip paths, the truncation, and the diagnostic pair come
+#' along unchanged; only the reported `method` string differs.
+#'
+#' @inheritParams estimate_harvest_br
+#'
+#' @return A creel_estimates object with method "ratio-of-means-rpue" or
+#'   "mean-of-ratios-rpue", or a creel_estimates_diagnostic for
+#'   `use_trips = "diagnostic"`
+#'
+#' @keywords internal
+#' @noRd
+estimate_release_br <- function(
+  # nolint: object_usage_linter
+  design,
+  by_vars,
+  variance_method,
+  conf_level,
+  verbose,
+  use_trips,
+  truncate_at = 0.5,
+  call = rlang::caller_env()
+) {
+  design_rel <- design
+  design_rel$interviews <- estimate_release_build_data(design, species = NULL) # nolint: object_usage_linter
+  design_rel$harvest_col <- ".release_count"
+
+  estimate_harvest_br(
+    design_rel,
+    by_vars,
+    variance_method,
+    conf_level,
+    verbose = verbose,
+    use_trips = use_trips,
+    truncate_at = truncate_at,
+    metric = "rpue",
+    call = call
   )
 }
 

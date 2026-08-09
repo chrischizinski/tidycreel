@@ -1882,12 +1882,31 @@ estimate_harvest_rate <- function(
 #'   releases when anglers release additional fish after the interview (Hansen &
 #'   Van Kirk 2010). \code{"all"} remains available for analyses that prefer the
 #'   larger interview set. When \code{trip_status} was not provided to
-#'   \code{\link{add_interviews}}, this argument has no effect.
+#'   \code{\link{add_interviews}}, this argument has no effect. For bus-route
+#'   designs: \code{"complete"} (default), \code{"incomplete"}, or
+#'   \code{"diagnostic"}, matching \code{\link{estimate_harvest_rate}}.
+#' @param truncate_at Numeric minimum trip duration in hours for the bus-route
+#'   incomplete-trip estimator (default \code{0.5}, i.e. 30 minutes). Incomplete
+#'   trips shorter than this are discarded before the mean of ratios is taken.
+#'   Hoenig et al. (1997) recommend the 30-minute threshold because the
+#'   untruncated mean-of-ratios estimator has infinite asymptotic variance:
+#'   \code{1/L} has infinite expectation as trip length approaches zero. The
+#'   threshold applies to elapsed trip duration, not to angler-hours. Set to
+#'   \code{NULL} to disable, which warns. Ignored on every other path, including
+#'   \code{use_trips = "complete"}.
 #' @param missing_sections Character string controlling behavior when a
 #'   registered section has no interview observations. \code{"warn"} (default)
 #'   emits a \code{cli_warn()} and inserts an NA row with
 #'   \code{data_available = FALSE}. \code{"error"} aborts with
 #'   \code{cli_abort()}. Ignored for non-sectioned designs.
+#'
+#' @note Bus-route designs use a different estimator for each trip type, matching
+#'   \code{\link{estimate_harvest_rate}}. \code{use_trips = "complete"} returns
+#'   the ratio of the two Horvitz-Thompson totals (Jones & Pollock 2012, Eq. 19.5
+#'   / Eq. 19.4) and reports \code{method = "ratio-of-means-rpue"};
+#'   \code{use_trips = "incomplete"} returns the truncated, Hajek-weighted mean of
+#'   per-angler rates (Hoenig et al. 1997) and reports
+#'   \code{method = "mean-of-ratios-rpue"}. Both are releases per angler-hour.
 #'
 #' @note When called on a sectioned design, no \code{.lake_total} row is
 #'   produced. Release rates (fish per angler-hour) are not additive across
@@ -1949,6 +1968,7 @@ estimate_release_rate <- function(
   variance = "taylor",
   conf_level = 0.95,
   use_trips = NULL,
+  truncate_at = 0.5,
   missing_sections = "warn"
 ) {
   by_quo <- rlang::enquo(by)
@@ -1987,6 +2007,36 @@ estimate_release_rate <- function(
       "No interview survey design available.",
       "x" = "Call {.fn add_interviews} before estimating release rate.",
       "i" = "Release rate requires effort data from interviews."
+    ))
+  }
+
+  # Bus-route dispatch (before standard tier-2 validation), mirroring
+  # estimate_harvest_rate(). Without it, RPUE on a bus-route design was computed
+  # from the standard interview survey and ignored .pi_i entirely (GH #110).
+  if (!is.null(design$design_type) && design$design_type == "bus_route") {
+    if (rlang::quo_is_null(by_quo)) {
+      by_vars_br <- NULL
+    } else {
+      by_cols_br <- tidyselect::eval_select(
+        by_quo,
+        data = design$interviews,
+        allow_rename = FALSE,
+        allow_empty = FALSE,
+        error_call = rlang::caller_env()
+      )
+      by_vars_br <- names(by_cols_br)
+    }
+    use_trips_br <- if (is.null(use_trips)) "complete" else use_trips
+
+    return(estimate_release_br(
+      # nolint: object_usage_linter
+      design,
+      by_vars_br,
+      variance,
+      conf_level,
+      verbose = FALSE,
+      use_trips = use_trips_br,
+      truncate_at = truncate_at
     ))
   }
 

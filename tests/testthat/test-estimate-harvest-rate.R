@@ -2362,3 +2362,154 @@ test_that("bus-route verbose names the estimator the trip type actually uses (GH
     "ratio of HT totals"
   )
 })
+
+# GH #110 — bus-route release rate ----
+
+#' Bus-route fixture whose every angler releases at a known rate
+#'
+#' Reuses make_br_incomplete(), where n_anglers = 1 and fish_kept = hours * rate,
+#' then attaches catch records with catch_type = "released" and count = fish_kept.
+#' The true release rate is therefore `rate` releases per angler-hour for every
+#' interview, and the true release total equals the true harvest total.
+make_br_release <- function(rate = 2, status = "incomplete", reps = 1L) {
+  d <- make_br_incomplete(rate = rate, status = status, reps = reps)
+  d$interviews$interview_id <- seq_len(nrow(d$interviews))
+  catch <- data.frame(
+    interview_id = d$interviews$interview_id,
+    species = "walleye",
+    count = d$interviews$fish_kept,
+    catch_type = "released",
+    stringsAsFactors = FALSE
+  )
+  suppressMessages(suppressWarnings(add_catch(
+    d,
+    catch,
+    catch_uid = interview_id, # nolint: object_usage_linter
+    interview_uid = interview_id,
+    species = species, # nolint: object_usage_linter
+    count = count, # nolint: object_usage_linter
+    catch_type = catch_type # nolint: object_usage_linter
+  )))
+}
+
+make_br_release_diagnostic <- function(rate = 2) {
+  d <- make_br_release(rate = rate, reps = 2L)
+  d$interviews$trip_status <- rep(c("incomplete", "complete"), each = 4)
+  d
+}
+
+test_that("bus-route RPUE recovers the true rate on both trip paths (GH #110)", {
+  # estimate_release_rate() had no bus-route dispatch, so RPUE came off the
+  # standard interview survey with .pi_i and .expansion ignored -- the bus-route
+  # interviews were treated as equally likely, which they are not. On a fixture
+  # where every angler releases at 2 fish per angler-hour, the answer is 2
+  # whatever the inclusion probabilities are; a weighting scheme that ignores
+  # them lands somewhere else.
+  for (status in c("complete", "incomplete")) {
+    d <- make_br_release(rate = 2, status = status)
+    res <- suppressWarnings(suppressMessages(
+      estimate_release_rate(d, use_trips = status)
+    ))
+    expect_equal(res$estimates$estimate, 2, tolerance = 1e-9)
+  }
+})
+
+test_that("bus-route RPUE is releases per angler-hour (GH #110)", {
+  # Dimensional check, not a value check: a rate per angler-hour has to fall by
+  # three when the same fish are spread over three times the anglers. A total,
+  # or a rate per party-hour, would not move.
+  for (status in c("complete", "incomplete")) {
+    d1 <- make_br_release(status = status)
+    d3 <- d1
+    d3$interviews[[d3$n_anglers_col]] <- 3L
+    d3$interviews[[d3$angler_effort_col]] <- d3$interviews[[d3$effort_col]] * 3
+
+    r1 <- suppressWarnings(suppressMessages(estimate_release_rate(d1, use_trips = status)))
+    r3 <- suppressWarnings(suppressMessages(estimate_release_rate(d3, use_trips = status)))
+    expect_equal(r3$estimates$estimate, r1$estimates$estimate / 3, tolerance = 1e-9)
+  }
+})
+
+test_that("bus-route RPUE reports the release method, not the harvest one (GH #110)", {
+  # The release path delegates to the harvest estimator with a different
+  # numerator column. A delegation that forgot to re-label would return correct
+  # numbers under a method string naming the wrong quantity, which is exactly the
+  # kind of mislabelling this audit exists to remove.
+  expect_identical(
+    suppressWarnings(suppressMessages(
+      estimate_release_rate(make_br_release(status = "complete"), use_trips = "complete")
+    ))$method,
+    "ratio-of-means-rpue"
+  )
+  expect_identical(
+    suppressWarnings(suppressMessages(
+      estimate_release_rate(make_br_release(status = "incomplete"), use_trips = "incomplete")
+    ))$method,
+    "mean-of-ratios-rpue"
+  )
+})
+
+test_that("bus-route RPUE equals HPUE when every released fish is also kept (GH #110)", {
+  # Cross-estimator identity. The fixture sets the released count equal to the
+  # harvest column interview by interview, so the two rates are the same
+  # quantity computed through two code paths. Any difference is the release path
+  # weighting its interviews differently from the harvest path.
+  for (status in c("complete", "incomplete")) {
+    d <- make_br_release(status = status)
+    h <- suppressWarnings(suppressMessages(estimate_harvest_rate(d, use_trips = status)))
+    r <- suppressWarnings(suppressMessages(estimate_release_rate(d, use_trips = status)))
+    expect_equal(r$estimates$estimate, h$estimates$estimate, tolerance = 1e-12)
+    expect_equal(r$estimates$se, h$estimates$se, tolerance = 1e-12)
+  }
+})
+
+test_that("bus-route RPUE supports use_trips = 'diagnostic' (GH #110)", {
+  # estimate_release_rate() used to reject anything outside all/complete, so the
+  # complete-vs-incomplete read available for harvest had no release counterpart.
+  d <- make_br_release_diagnostic(rate = 2)
+  res <- suppressWarnings(suppressMessages(
+    estimate_release_rate(d, use_trips = "diagnostic")
+  ))
+
+  expect_s3_class(res, "creel_estimates_diagnostic")
+  expect_identical(res$complete$method, "ratio-of-means-rpue")
+  expect_identical(res$incomplete$method, "mean-of-ratios-rpue")
+  expect_equal(res$complete$estimates$estimate, 2, tolerance = 1e-9)
+  expect_equal(res$incomplete$estimates$estimate, 2, tolerance = 1e-9)
+})
+
+test_that("truncate_at reaches the bus-route release path (GH #110)", {
+  # The mean of ratios has infinite asymptotic variance without truncation
+  # (Hoenig et al. 1997), so the release path must honour the threshold rather
+  # than silently accept the argument. Trip hours are 2.0/3.0/1.5/2.5, so a
+  # 2.5-hour floor keeps exactly two of the four.
+  d <- make_br_release(status = "incomplete")
+  kept_all <- suppressWarnings(suppressMessages(
+    estimate_release_rate(d, use_trips = "incomplete", truncate_at = 0.5)
+  ))
+  kept_some <- suppressWarnings(suppressMessages(
+    estimate_release_rate(d, use_trips = "incomplete", truncate_at = 2.5)
+  ))
+
+  expect_identical(kept_all$estimates$n, 4L)
+  expect_identical(kept_some$estimates$n, 2L)
+  # Every angler fishes at the same rate here, so truncation moves n but not the
+  # estimate. That is the point: it is a variance control, not a rate change.
+  expect_equal(kept_some$estimates$estimate, 2, tolerance = 1e-9)
+})
+
+test_that("bus-route RPUE reads the release column, not the harvest one (GH #110)", {
+  # The release path delegates to the harvest estimator by pointing the
+  # numerator column at the joined release count. Drop that repointing and every
+  # fixture that sets releases equal to harvest still passes, so the numerator
+  # has to be made to differ: here anglers release twice what they keep.
+  for (status in c("complete", "incomplete")) {
+    d <- make_br_release(status = status)
+    d$catch[[d$catch_count_col]] <- d$catch[[d$catch_count_col]] * 2
+
+    h <- suppressWarnings(suppressMessages(estimate_harvest_rate(d, use_trips = status)))
+    r <- suppressWarnings(suppressMessages(estimate_release_rate(d, use_trips = status)))
+    expect_equal(r$estimates$estimate, 2 * h$estimates$estimate, tolerance = 1e-12)
+    expect_equal(r$estimates$estimate, 4, tolerance = 1e-9)
+  }
+})

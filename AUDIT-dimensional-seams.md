@@ -44,6 +44,7 @@ fix or travel together.
 | 7, 9, 11 | #112 | Missing unit guards |
 | 12 | #113 | Documentation asserts units the code does not produce |
 | 13 | *not opened* | Instantaneous path never carries T, so it returns angler-days (added 2026-08-08) |
+| 14 | *not opened* | Ice designs skip the bus-route dispatch in the rate estimators (added 2026-08-09) |
 
 Downstream book work is tracked in
 `~/Dev/modern-creel-surveys/.planning/TIDYCREEL-WISHLIST.md`, not as GitHub issues —
@@ -73,6 +74,7 @@ pass on anything Sonnet implements.
 | #112 | 7, 9, 11 | **Sonnet** | All three are guards. #11 is an allowlist check; #7 is a flag plus a warn; #9 is a guard **once Opus decides reject-vs-honour** — decide that first, then it is one branch. |
 | #113 | 12a | **Opus** | `flexible-count-estimation.Rmd` needs a *correct* replacement worked example. Producing the right numbers is exactly what failed the first time. |
 | #113 | 12b | **Sonnet** | `glossary.Rmd:68`, `data.R:330`, `ice-fishing.Rmd:~214-218`, `tidycreel.Rmd:47/71` — prose only, exact target text already identified. |
+| *not opened* | 14 | **Opus** | One-line dispatch condition, but it moves every ice harvest-rate number and the two paths are indistinguishable from their output, so the regression fixture is the whole job. |
 | *not opened* | 13 | **Opus** | Adds \eqn{T_d} to the instantaneous estimator. Estimator design, moves every instantaneous number in the package, and the absent-\eqn{T_d} behaviour has to be decided jointly with unit propagation. Exactly the class where a plausible wrong answer passes the suite. |
 
 Non-finding work:
@@ -312,6 +314,49 @@ Two different efforts, two dimensions, one design object, no warning.
 
 **Decision: REAL BUG.**
 
+**LANDED (#110).** Both halves dispatched. Reproduced first on a bus-route fixture whose
+catch records set the released count equal to the harvest column interview by
+interview, which makes the true release total *equal* the true harvest total:
+
+| call | before | after |
+| ---- | ------ | ----- |
+| `estimate_total_harvest()` (dispatch already present) | 465.4 (se 115) | 465.4 |
+| `estimate_total_release()` | **51.1** (se 13.7) | **465.4** (se 115) |
+| `estimate_total_release_br()` direct | 465.4 | 465.4 |
+| `estimate_release_rate()` vs bus-route `estimate_harvest_rate()` | **0.225** vs 0.185 | 0.1198 vs 0.1198 |
+
+The 51.1 is not a scaled harvest total; it is a different quantity, built by dividing
+interview-derived releases by a `svytotal` over count rows. Without counts attached the
+same call aborted demanding `add_counts()` — on precisely the designs whose own
+estimator was sitting unused.
+
+`estimate_total_release_br()` was verified before being trusted, per the routing note:
+it had never executed. On the complete-trip path it reproduces the harvest total to
+machine precision, so the dead code was correct as written.
+
+RPUE reaches full parity with HPUE rather than the complete-trip path alone (user's
+call): `use_trips` now accepts `"incomplete"` (truncated Hájek mean of ratios) and
+`"diagnostic"`, and `truncate_at` is a public argument with the same name, default, and
+units as on `estimate_harvest_rate()`. Rather than duplicate the estimator,
+`estimate_release_br()` joins the release count and delegates to
+`estimate_harvest_br()` with `harvest_col` repointed — the same temp-design idiom the
+standard release path already used — under a new `metric` argument that selects the
+`method` string and the noun in conditions. On the truth fixture (every angler releases
+at 2 fish per angler-hour) both trip paths return exactly 2, tripling party size
+divides both by 3, and `truncate_at = 2.5` drops n from 4 to 2 without moving the
+estimate.
+
+Two things left deliberately untouched, both flagged rather than fixed:
+
+* `estimate_total_release_br()` does not filter to complete trips while
+  `estimate_total_harvest_br()` does. `estimate_total_catch_br()` has the same gap, and
+  finding 9 (#112) already owns the reject-vs-honour decision for `use_trips` on the
+  bus-route total path. Deciding it twice, in two commits, would risk two answers.
+* Per-species release on a bus-route design now aborts (`by = species` resolves against
+  interviews, where the column does not exist) instead of silently returning a
+  count-based number. `estimate_total_harvest()` has behaved this way since its own
+  dispatch landed; the bus-route HT estimators take no species argument.
+
 ### 9. `estimate_total_catch()` accepts `use_trips` and discards it on the bus-route path
 
 `R/creel-estimates-total-catch.R:144` calls `match.arg(use_trips)`; the bus-route
@@ -453,6 +498,35 @@ this:
   thing itself.
 
 **Not yet opened as a GitHub issue.**
+
+### 14. Ice designs skip the bus-route dispatch in the *rate* estimators
+
+Added 2026-08-09, found while wiring #110. The total estimators dispatch on
+`design_type %in% c("bus_route", "ice")`; the rate estimators dispatch on
+`design_type == "bus_route"` alone (`R/creel-estimates.R:1676`, and the new release
+dispatch mirrors it). One design object therefore takes the Horvitz-Thompson route for
+its totals and the standard interview-survey route for its rates.
+
+Reproduced on an 8-day, 24-interview ice fixture:
+
+```
+estimate_harvest_rate(ice_design)                    0.435   method ratio-of-means-hpue
+estimate_harvest_br(ice_design, use_trips="complete") 0.420   method ratio-of-means-hpue
+```
+
+The two paths report the **same `method` string**, so nothing in the returned object
+distinguishes them — the same property that made findings 3 and 8 survive. The gap here
+is `.expansion`, not `p_site`: ice is degenerate in `p_site` (1.0) but not in the
+within-site enumeration expansion, so the standard path is not a special case of the
+HT one.
+
+Ice is documented and implemented as a degenerate bus route, and `estimate_effort()`
+and `estimate_total_harvest()` both treat it as one. The rate estimators are the
+outlier.
+
+**Decision: REAL BUG**, kept out of #110 on purpose — the fix moves every ice
+harvest-rate number in the package and belongs in a commit whose title says so, with
+its own regression fixture. **Not yet opened as a GitHub issue.**
 
 ---
 

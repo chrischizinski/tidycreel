@@ -28,6 +28,26 @@
 
 ## Bug fixes
 
+* `estimate_total_release()` and `estimate_release_rate()` had no bus-route
+  dispatch, so on a bus-route or ice design they ran the count-based product
+  path and ignored the inclusion probabilities entirely. The interview-derived
+  release counts were divided by a `svytotal()` over count rows — a different
+  effort basis from the one `estimate_effort()` reports for the same design,
+  with no warning. On a fixture whose catch records set the released count equal
+  to the harvest column interview by interview, so that the true release total
+  *equals* the true harvest total, `estimate_total_harvest()` returned 465.4 and
+  `estimate_total_release()` returned 51.1; the two now agree to machine
+  precision. Bus-route designs carrying no counts aborted demanding
+  `add_counts()`, which they do not need. `estimate_total_release_br()` had been
+  correct and unreachable since it was written (#110).
+
+* `estimate_release_rate()` on a bus-route design reaches the same estimators as
+  `estimate_harvest_rate()`. `use_trips` accepts `"incomplete"` — the truncated,
+  Hájek-weighted mean of ratios of Hoenig et al. (1997), reported as
+  `method = "mean-of-ratios-rpue"` — and `"diagnostic"`, alongside the existing
+  complete-trip ratio of Horvitz–Thompson totals
+  (`method = "ratio-of-means-rpue"`). Both are releases per angler-hour (#110).
+
 * `prep_counts_daily_effort()` and `prep_counts_boat_party()` emitted
   `n_counts` and `within_day_var` columns that `add_counts()` never read, so a
   within-day variance component supplied through the documented preferred seam
@@ -55,6 +75,21 @@
   double count. Counts tables carrying neither column are unaffected.
 
 ## Breaking changes
+
+* `estimate_release_rate()` gains `truncate_at`, defaulting to `0.5` hours, with
+  the same meaning, units, and `NULL` behaviour it has on
+  `estimate_harvest_rate()`. It applies only to the bus-route incomplete-trip
+  path (#110).
+
+* `estimate_total_release(design, by = species)` and
+  `estimate_release_rate(design, by = species)` on a bus-route or ice design now
+  abort with `Column 'species' doesn't exist` rather than returning a number
+  from the standard path. The bus-route Horvitz–Thompson estimators take no
+  species argument, and `by` resolves against the interview table, where a
+  species column does not exist. `estimate_total_harvest()` and
+  `estimate_harvest_rate()` have behaved this way since their own dispatches
+  landed; per-species release on these designs was never estimated from the
+  sampling frame (#110).
 
 * `estimate_harvest_rate()` on a bus-route or ice design now returns a rate. It
   dispatched to the Horvitz–Thompson harvest **total** of Jones & Pollock (2012)
