@@ -90,6 +90,29 @@
 
 ## Breaking changes
 
+* `n_anglers` now means a party size, not a tidyselect column position. It was
+  resolved through `tidyselect::eval_select()`, where a bare integer selects a
+  *column by position*, so `n_anglers = 1L` — the literal in `add_interviews()`'s
+  own signature — selected column 1 and multiplied effort by whatever it held.
+  On interviews whose first column is numeric that silently produced
+  `.angler_effort = hours × <that column>`; on the shipped column order it failed
+  with `* not defined for "Date" objects`, naming neither the argument nor the
+  column it chose. Which of the two you got depended on your column order. It
+  also set `n_anglers_supplied = TRUE`, switching off the warning that exists to
+  catch exactly this mismatch.
+
+  A bare number is now a constant party size: `n_anglers = 1` states that every
+  interview is a single angler, and `n_anglers = 3` that every party held three.
+  Bare column names are unaffected. This is also the only way to declare a
+  genuinely solo-angler survey, and therefore to silence the party-hours warning
+  above without inventing a constant column.
+
+  Party sizes are now validated wherever they come from. Zero, negative and
+  non-finite values abort — a party of no anglers would silently zero out that
+  interview's effort — missing values abort as a stated constant but warn as a
+  column, and non-integer values warn. `compute_angler_effort()` follows the same
+  contract; it is the other exported entry point that writes `.angler_effort`.
+
 * Bus-route and ice totals now count **completed trips only**, in all three
   quantities. `estimate_total_harvest()` already filtered; `estimate_total_catch()`
   and `estimate_total_release()` did not, so on one design the three totals were

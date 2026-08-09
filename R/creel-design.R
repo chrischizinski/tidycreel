@@ -59,7 +59,11 @@ compute_effort <- function(data, trip_start, interview_time, time_fished = NULL)
 #'
 #' @param data A data frame containing the interview records.
 #' @param effort Tidy selector for the effort column (numeric, hours per trip).
-#' @param n_anglers Tidy selector for the number-of-anglers column (positive integer).
+#' @param n_anglers Number of anglers in the party. Either a bare column name
+#'   (e.g. \code{n_anglers = party_size}) or a single positive number stating a
+#'   constant party size (e.g. \code{n_anglers = 1} for individual-level
+#'   interviews). A bare number is read as a party size, **not** as a tidyselect
+#'   column position. Values must be positive and finite.
 #'
 #' @return The input data frame with an added \code{.angler_effort} column
 #'   (numeric, angler-hours). Existing columns are preserved.
@@ -72,10 +76,108 @@ compute_angler_effort <- function(data, effort, n_anglers) {
   na_quo <- rlang::enquo(n_anglers)
 
   e_col <- names(tidyselect::eval_select(e_quo, data))
+
+  # Same contract as add_interviews(): a bare number is a party size, not a
+  # tidyselect column position.
+  na_lit <- party_size_literal(rlang::quo_get_expr(na_quo))
+  if (!is.null(na_lit)) {
+    validate_party_size(na_lit, "n_anglers", allow_missing = FALSE)
+    data[[".angler_effort"]] <- data[[e_col]] * na_lit
+    return(data)
+  }
+
   na_col <- names(tidyselect::eval_select(na_quo, data))
+  validate_party_size(data[[na_col]], paste0("n_anglers (column ", na_col, ")"))
 
   data[[".angler_effort"]] <- data[[e_col]] * data[[na_col]]
   data
+}
+
+# Is this `n_anglers` expression a stated constant rather than a column selector?
+#
+# Returns the number, or NULL when the expression should be resolved as a column.
+# Unary minus has to be handled explicitly: `-2` parses as a call, not a numeric
+# literal, and tidyselect reads it as "every column except the second" -- which
+# reports a column-count error rather than saying the party size is negative.
+party_size_literal <- function(expr) {
+  if (is.numeric(expr) && length(expr) == 1L) {
+    return(expr)
+  }
+  if (
+    rlang::is_call(expr, "-", n = 1L) &&
+      is.numeric(expr[[2L]]) &&
+      length(expr[[2L]]) == 1L
+  ) {
+    return(-expr[[2L]])
+  }
+  NULL
+}
+
+# Validate a party size, whether stated as a constant or read from a column.
+#
+# `.angler_effort` is derived once and stored, after which it is an anonymous
+# numeric column that ~37 call sites across 6 files read as angler-hours. Nothing
+# downstream can tell hours x party-size from hours x anything-else, so the only
+# place a wrong multiplier can be caught is here, at construction.
+#
+# A shape guard alone would not be enough: `n_anglers = catch_kept` names a real
+# column and would pass any check on the argument's form. Checking the values is
+# what catches the whole class -- in the reproduction for audit finding 16 the
+# resolved column held a zero, i.e. a party of no anglers.
+validate_party_size <- function(x, arg_name, call = rlang::caller_env(),
+                                allow_missing = TRUE) {
+  if (!is.numeric(x)) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg_name}} must be numeric, not {.cls {class(x)[1]}}.",
+        "i" = "Pass a bare column name, or a single number for a constant party size."
+      ),
+      call = call
+    )
+  }
+
+  missing_vals <- is.na(x)
+  if (any(missing_vals) && !allow_missing) {
+    # A column may legitimately have gaps; a stated constant may not.
+    cli::cli_abort(
+      "{.arg {arg_name}} must be a positive party size, not {.val {NA}}.",
+      call = call
+    )
+  }
+  invalid <- !missing_vals & (!is.finite(x) | x <= 0)
+  if (any(invalid)) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg_name}} must be a positive party size.",
+        "x" = "Found {sum(invalid)} value{?s} that {?is/are} zero, negative, or non-finite.",
+        "i" = "A party of zero anglers would silently zero out that interview's effort."
+      ),
+      call = call
+    )
+  }
+
+  if (any(missing_vals)) {
+    cli::cli_warn(
+      c(
+        "{.arg {arg_name}} has {sum(missing_vals)} missing value{?s}.",
+        "i" = "Those interviews get {.val NA} angler-hours and drop out of rate estimates."
+      ),
+      call = call
+    )
+  }
+
+  fractional <- !missing_vals & is.finite(x) & x != round(x)
+  if (any(fractional)) {
+    cli::cli_warn(
+      c(
+        "{.arg {arg_name}} has {sum(fractional)} non-integer value{?s}.",
+        "i" = "Party sizes are counts of anglers; a fractional value suggests a wrong column."
+      ),
+      call = call
+    )
+  }
+
+  invisible(x)
 }
 
 # Valid survey types accepted by creel_design()
@@ -1745,9 +1847,18 @@ add_sections <- function(
 #' @param species_sought Tidy selector for species sought column (optional, default
 #'   NULL). Use bare column names (e.g., `species_sought = target_species`).
 #'   Records the species the angler was targeting during the interview.
-#' @param n_anglers Tidy selector for the number of anglers in the party (default 1L --
-#'   individual-level interviews). When omitted, a \code{cli_inform()} message notes the
-#'   assumption. Use bare column names (e.g., \code{n_anglers = party_size}).
+#' @param n_anglers Number of anglers in the party. Either a bare column name
+#'   (e.g. \code{n_anglers = party_size}) or a single positive number stating a
+#'   constant party size (e.g. \code{n_anglers = 1} when every interview is one
+#'   angler). A bare number is read as a party size, **not** as a tidyselect
+#'   column position, so \code{n_anglers = 1} means one angler per party rather
+#'   than "column 1". Values must be positive and finite; missing and
+#'   non-integer values warn.
+#'
+#'   When omitted, effort is left un-normalised and a \code{cli_inform()} message
+#'   notes the assumption. In that case the rate estimators return quantities per
+#'   *party*-hour, and the product totals warn when they multiply one by
+#'   count-derived angler-hours.
 #' @param refused Tidy selector for the refused interview flag column (optional,
 #'   default NULL). Use bare column names (e.g., `refused = refused_flag`).
 #'   Values should be logical (TRUE/FALSE) or coercible to logical.
@@ -2069,15 +2180,35 @@ add_interviews <- function(
     )
   }
 
-  # Resolve n_anglers column (optional; skip resolution when using integer default)
+  # Resolve n_anglers, which is either a constant party size or a column.
+  #
+  # A bare number is a party size, not a tidyselect position. Reading it as a
+  # position -- the tidyselect default, and what this did before -- meant
+  # `n_anglers = 1L`, the value in this function's own signature, silently
+  # selected column 1 and multiplied effort by whatever it held.
   n_anglers_col <- NULL
+  n_anglers_const <- NULL
   if (!n_anglers_missing) {
     n_anglers_quo <- rlang::enquo(n_anglers)
-    if (!rlang::quo_is_null(n_anglers_quo)) {
+    n_anglers_lit <- party_size_literal(rlang::quo_get_expr(n_anglers_quo))
+    if (!is.null(n_anglers_lit)) {
+      validate_party_size(
+        n_anglers_lit,
+        "n_anglers",
+        rlang::caller_env(),
+        allow_missing = FALSE
+      )
+      n_anglers_const <- n_anglers_lit
+    } else if (!rlang::quo_is_null(n_anglers_quo)) {
       n_anglers_col <- resolve_single_col(
         n_anglers_quo,
         interviews,
         "n_anglers",
+        rlang::caller_env()
+      )
+      validate_party_size(
+        interviews[[n_anglers_col]],
+        paste0("n_anglers (column ", n_anglers_col, ")"),
         rlang::caller_env()
       )
     }
@@ -2273,8 +2404,12 @@ add_interviews <- function(
   if (!is.null(n_anglers_col)) {
     new_design$interviews[[".angler_effort"]] <-
       new_design$interviews[[effort_col]] * new_design$interviews[[n_anglers_col]]
+  } else if (!is.null(n_anglers_const)) {
+    # Constant party size: the caller stated it rather than supplying a column
+    new_design$interviews[[".angler_effort"]] <-
+      new_design$interviews[[effort_col]] * n_anglers_const
   } else {
-    # n_anglers defaults to 1L -- angler_effort equals raw effort
+    # n_anglers omitted -- angler_effort equals raw effort (party-hours)
     new_design$interviews[[".angler_effort"]] <- new_design$interviews[[effort_col]]
   }
   new_design$angler_effort_col <- ".angler_effort"
@@ -2284,7 +2419,9 @@ add_interviews <- function(
   # effort is angler-hours, and no downstream function could previously tell the
   # two apart -- angler_effort_col is ".angler_effort" either way (see the
   # warning in warn_party_hours_product()).
-  new_design$n_anglers_supplied <- !is.null(n_anglers_col)
+  # A stated constant counts as supplied: "every party is one angler" makes
+  # .angler_effort genuine angler-hours, so the product totals must not warn.
+  new_design$n_anglers_supplied <- !is.null(n_anglers_col) || !is.null(n_anglers_const)
 
   # Construct interview survey eagerly
   new_design$interview_survey <- construct_interview_survey(new_design) # nolint: object_usage_linter

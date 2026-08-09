@@ -46,7 +46,7 @@ fix or travel together.
 | 13 | *not opened* | Instantaneous path never carries T, so it returns angler-days (added 2026-08-08) |
 | 14 | *not opened* | Ice designs skip the bus-route dispatch in the rate estimators (added 2026-08-09) |
 | 15 | *not opened* | `use_trips` unvalidated on the bus-route path; a typo silently swaps the estimator (added 2026-08-09) |
-| 16 | *not opened* | Scalar `n_anglers` resolves positionally to the first column, and sets `n_anglers_supplied = TRUE` (added 2026-08-09) |
+| 16 | *not opened* | ~~Scalar `n_anglers` resolves positionally to the first column, and sets `n_anglers_supplied = TRUE`~~ **LANDED** (added and fixed 2026-08-09) |
 
 Downstream book work is tracked in
 `~/Dev/modern-creel-surveys/.planning/TIDYCREEL-WISHLIST.md`, not as GitHub issues —
@@ -753,11 +753,46 @@ positionally) in a second location, and it defeats the guard added for finding 7
 same breath: `n_anglers_supplied` is set to `TRUE`, so the warning that exists to catch
 exactly this mismatch is switched **off** by the input that causes it.
 
-**Decision: REAL BUG -- guard.** Reject a non-column `n_anglers` with a message naming
-the argument, and decide separately whether to offer an explicit way to declare
-single-angler parties (the vignette sweep worked around its absence by adding a literal
-`n_anglers = 1L` *column* to the hand-built interview frames). **Not yet opened as a
-GitHub issue.**
+**Decision: REAL BUG -- guard.**
+
+**LANDED.** A bare number is now a constant party size rather than a column position:
+`n_anglers = 1` states one angler per interview, `n_anglers = 3` states three. Bare
+column names are untouched. The user chose this over rejecting numeric literals
+outright, because it is the only option that lets a solo-angler survey be *stated* --
+and therefore the only one that lets such a survey silence the finding-7 warning without
+inventing a constant column, which is what the vignette sweep had to do.
+
+Tracing the cascade reframed the fix. `.angler_effort` is derived once at
+`add_interviews()` and stored, after which it is an anonymous numeric column read as
+angler-hours by **37 references across 6 files** (`creel-estimates.R`,
+`creel-estimates-bus-route.R`, `creel-summaries.R`, `creel-estimates-total-release.R`,
+`creel-estimates-regression-cpue.R`, `survey-bridge.R`). Nothing downstream can tell
+hours x party-size from hours x anything-else, so construction is the only place a wrong
+multiplier can be caught -- and a guard on the argument's *shape* is the smaller half.
+The reproduction resolved to `catch_kept`, a **real column name** that any shape guard
+would accept, holding a zero: a party of no anglers. `validate_party_size()` therefore
+checks values wherever they come from -- constant or column. Zero, negative and
+non-finite abort; missing aborts as a constant but warns as a column, since a column may
+legitimately have gaps and a stated constant may not; non-integer warns.
+
+Two details worth keeping:
+
+- `-2` parses as a *call* to `-`, not a numeric literal, so it initially slipped past the
+  literal branch into tidyselect and reported "must select exactly one column, not 11".
+  `party_size_literal()` handles unary minus explicitly so the message names the real
+  problem.
+- Only bare literals were ever silent. An **external variable** (`v <- 2;
+  n_anglers = v`) already draws a tidyselect deprecation warning pointing at `all_of()`,
+  so it is out of scope by design rather than by oversight.
+
+`compute_angler_effort()` was fixed in the same commit -- it is the other exported entry
+point that writes `.angler_effort`, and fixing one twin and not the other is the drift
+pattern findings 9 and 15 are both about.
+
+Mutation testing, 6/6: disable literal detection -> 5 failures; drop the non-positive
+check -> 5; remove the unary-minus branch -> 1; stop counting a constant as supplied ->
+2; ignore `allow_missing` -> 1; remove the literal branch from `compute_angler_effort()`
+-> 3. **Never opened as a GitHub issue.**
 
 ---
 
