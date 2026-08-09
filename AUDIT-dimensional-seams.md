@@ -46,6 +46,7 @@ fix or travel together.
 | 13 | *not opened* | Instantaneous path never carries T, so it returns angler-days (added 2026-08-08) |
 | 14 | *not opened* | Ice designs skip the bus-route dispatch in the rate estimators (added 2026-08-09) |
 | 15 | *not opened* | `use_trips` unvalidated on the bus-route path; a typo silently swaps the estimator (added 2026-08-09) |
+| 16 | *not opened* | Scalar `n_anglers` resolves positionally to the first column, and sets `n_anglers_supplied = TRUE` (added 2026-08-09) |
 
 Downstream book work is tracked in
 `~/Dev/modern-creel-surveys/.planning/TIDYCREEL-WISHLIST.md`, not as GitHub issues —
@@ -722,6 +723,41 @@ Two questions to settle before coding:
 
 **Decision: REAL BUG — guard.** Fix both functions in one commit so the twins stay
 symmetric. **Not yet opened as a GitHub issue.**
+
+### 16. Scalar `n_anglers` resolves positionally to the first column
+
+Added 2026-08-09, found while sweeping the vignettes for #112. There is no way to tell
+`add_interviews()` "every party is one angler". The obvious spelling, `n_anglers = 1`,
+does not mean the scalar 1 -- it is resolved as a **column selector**, and tidyselect
+reads a bare integer as a position. `n_anglers = 1` therefore means *column 1*.
+
+Reproduced on `example_interviews` reordered so that a numeric column comes first:
+
+```
+ei <- example_interviews[, c("catch_kept", setdiff(names(example_interviews), "catch_kept"))]
+d  <- add_interviews(design, ei, catch = catch_total, effort = hours_fished, n_anglers = 1, ...)
+
+d$n_anglers_supplied                                      # TRUE
+all.equal(d$interviews$.angler_effort,
+          d$interviews$hours_fished * d$interviews$catch_kept)   # TRUE
+```
+
+`.angler_effort` became hours x **catch_kept** -- effort multiplied by a *fish count*.
+With the shipped column order the first column is `date`, so the same call fails with
+`* not defined for "Date" objects`: an error whose text names neither `n_anglers` nor
+the column it picked. Whether the user gets a confusing error or silent corruption
+depends on their column order.
+
+This is finding 1's failure mode (`add_counts()` selecting the count column
+positionally) in a second location, and it defeats the guard added for finding 7 in the
+same breath: `n_anglers_supplied` is set to `TRUE`, so the warning that exists to catch
+exactly this mismatch is switched **off** by the input that causes it.
+
+**Decision: REAL BUG -- guard.** Reject a non-column `n_anglers` with a message naming
+the argument, and decide separately whether to offer an explicit way to declare
+single-angler parties (the vignette sweep worked around its absence by adding a literal
+`n_anglers = 1L` *column* to the hand-built interview frames). **Not yet opened as a
+GitHub issue.**
 
 ---
 

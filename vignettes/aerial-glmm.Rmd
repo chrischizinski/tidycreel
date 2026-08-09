@@ -159,6 +159,14 @@ total_catch <- estimate_total_catch(design_int)
 print(total_catch)
 ```
 
+`example_aerial_interviews` carries no party-size column, so `add_interviews()`
+cannot normalise effort to angler-hours and `estimate_total_catch()` warns that
+the CPUE it multiplies is per *party*-hour while the count-derived effort is
+angler-hours. The warning is correct for this dataset and is left visible rather
+than suppressed: with one angler per party the total is right as printed, and
+with larger parties it is understated. Supply `n_anglers` from your own
+interview data to remove the ambiguity.
+
 ## Comparison: Simple vs. GLMM Estimator
 
 Both estimators are applied to the same design. The simple estimator treats
