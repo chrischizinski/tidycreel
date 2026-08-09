@@ -1038,6 +1038,19 @@ test_that("estimate_total_release() dispatches ice designs (GH #110)", {
   expect_equal(release$estimates$estimate, harvest$estimates$estimate, tolerance = 1e-12)
 })
 
+test_that("bus-route total release reports its own quantity, not effort (GH #111)", {
+  # br_build_estimates() hardcoded method = "total", the one string autoplot maps
+  # to "Total Effort". A fish-valued total therefore plotted under an effort
+  # label, with nothing in the returned object to contradict it.
+  design <- attach_release_equal_to_harvest(
+    build_br_design_for_tests(n_sites = 3, n_days = 8, n_interviews = 24, seed = 42)
+  )
+  result <- suppressWarnings(suppressMessages(estimate_total_release(design)))
+
+  expect_equal(result$method, "ht-total-release")
+  expect_equal(ggplot2::autoplot(result)$labels$y, "Total Release")
+})
+
 test_that("bus-route total release no longer demands add_counts() (GH #110)", {
   # A bus-route design estimates effort from interviews and inclusion
   # probabilities, so it need not carry counts at all. Routing release through

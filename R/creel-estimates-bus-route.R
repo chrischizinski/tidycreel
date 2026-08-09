@@ -983,7 +983,7 @@ estimate_total_catch_br <- function(
     conf_level,
     design,
     site_table,
-    catch_col,
+    method = "ht-total-catch",
     ci_method = ci_method
   )
 }
@@ -1094,7 +1094,7 @@ estimate_total_harvest_br <- function(
     conf_level,
     design,
     site_table,
-    harvest_col,
+    method = "ht-total-harvest",
     ci_method = ci_method
   )
 }
@@ -1197,7 +1197,7 @@ estimate_total_release_br <- function(
     conf_level,
     design,
     site_table,
-    ".release_count"
+    method = "ht-total-release"
   )
 }
 
@@ -1213,7 +1213,11 @@ estimate_total_release_br <- function(
 #' @param conf_level Numeric confidence level
 #' @param design creel_design object
 #' @param site_table Data frame for site_contributions attribute
-#' @param key_col Name of the primary column (harvest_col or catch_col) for n
+#' @param method Character method string recorded on the returned object. Names
+#'   the estimator and the quantity it holds ("ht-total-catch",
+#'   "ht-total-harvest", "ht-total-release"), so that downstream labelling
+#'   (\code{autoplot()}, \code{print()}, \code{write_estimates()} provenance)
+#'   reports the right quantity rather than defaulting to effort.
 #' @param ci_method character. "delta" (default) or "bootstrap". When
 #'   "bootstrap", a second survey-design pass is added using bootstrap
 #'   resampling and the results are bound as ci_lo_boot/ci_hi_boot columns.
@@ -1230,7 +1234,7 @@ br_build_estimates <- function(
   conf_level,
   design,
   site_table,
-  key_col,
+  method,
   ci_method = "delta"
 ) {
   ci_method <- match.arg(ci_method, c("delta", "bootstrap"))
@@ -1272,7 +1276,7 @@ br_build_estimates <- function(
     result <- new_creel_estimates(
       # nolint: object_usage_linter
       estimates = estimates_df,
-      method = "total",
+      method = method,
       variance_method = variance_method,
       design = design,
       conf_level = conf_level,
@@ -1344,7 +1348,7 @@ br_build_estimates <- function(
     result <- new_creel_estimates(
       # nolint: object_usage_linter
       estimates = estimates_df,
-      method = "total",
+      method = method,
       variance_method = variance_method,
       design = design,
       conf_level = conf_level,

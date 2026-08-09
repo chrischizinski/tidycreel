@@ -894,6 +894,44 @@ test_that("get_site_contributions() works on bus-route total-catch result", {
   expect_true("pi_i" %in% names(sc))
 })
 
+test_that("bus-route total catch reports its own quantity, not effort (GH #111)", {
+  # br_build_estimates() hardcoded method = "total", the one string autoplot maps
+  # to "Total Effort". A fish-valued total therefore plotted under an effort
+  # label, with nothing in the returned object to contradict it.
+  d <- make_br_catch_interviews(make_br_catch_design())
+  result <- estimate_total_catch(d)
+
+  expect_equal(result$method, "ht-total-catch")
+  expect_equal(ggplot2::autoplot(result)$labels$y, "Total Catch")
+})
+
+test_that("bus-route total catch labels the grouped path too (GH #111)", {
+  # br_build_estimates() sets method in two separate new_creel_estimates() calls,
+  # one per by_vars branch. Fixing only the ungrouped branch leaves every by=
+  # result mislabelled.
+  d <- build_br_design_for_tests(n_sites = 3, n_days = 8, n_interviews = 24, seed = 42)
+  result <- suppressWarnings(suppressMessages(
+    estimate_total_catch(d, by = day_type) # nolint: object_usage_linter
+  ))
+
+  expect_equal(result$method, "ht-total-catch")
+  expect_equal(ggplot2::autoplot(result)$labels$y, "Total Catch")
+})
+
+test_that("bus-route total catch records its quantity in the CSV provenance (GH #111)", {
+  # write_estimates() copies $method verbatim into the header, so an exported
+  # file gave a downstream reader no way to tell which quantity it held.
+  d <- make_br_catch_interviews(make_br_catch_design())
+  f <- withr::local_tempfile(fileext = ".csv")
+  write_estimates(estimate_total_catch(d), f)
+
+  expect_match(
+    paste(readLines(f, n = 3L), collapse = "\n"),
+    "ht-total-catch",
+    fixed = TRUE
+  )
+})
+
 test_that("estimate_total_catch() verbose=TRUE prints bus-route dispatch message", {
   d <- make_br_catch_interviews(make_br_catch_design())
   expect_message(

@@ -56,6 +56,9 @@ autoplot.creel_estimates <- function(object, title = NULL, theme = c("default", 
     "ratio-of-means-hpue-per-angler" = "HPUE per Angler (Ratio-of-Means)",
     "product-total-catch" = "Total Catch",
     "product-total-harvest" = "Total Harvest",
+    "ht-total-catch" = "Total Catch",
+    "ht-total-harvest" = "Total Harvest",
+    "ht-total-release" = "Total Release",
     object$method
   )
 
@@ -63,7 +66,8 @@ autoplot.creel_estimates <- function(object, title = NULL, theme = c("default", 
   if (!is.null(title)) {
     plot_title <- title
   } else if (
-    !is.null(effort_target) && method_label %in% c("Total Effort", "Total Catch", "Total Harvest")
+    !is.null(effort_target) &&
+      method_label %in% c("Total Effort", "Total Catch", "Total Harvest", "Total Release")
   ) {
     plot_title <- paste0(method_label, " (", effort_target, ")")
   } else {

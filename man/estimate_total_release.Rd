@@ -64,7 +64,9 @@ strictly positive CI.}
 \value{
 A creel_estimates S3 object with method = "product-total-release".
 Estimates tibble has columns: estimate, se, ci_lower, ci_upper, n (plus
-any grouping columns).
+any grouping columns). For bus-route and ice designs, returns a bus-route
+HT estimate with method = "ht-total-release" and a "site_contributions"
+attribute.
 }
 \description{
 Computes total release estimates by multiplying effort x RPUE with variance

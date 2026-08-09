@@ -71,7 +71,7 @@ pass on anything Sonnet implements.
 | #108 | 4, 5 | **Opus** | Hardest. Re-deriving the incomplete-trip estimator from Jones & Pollock Eq. 19.4/19.5. Pure estimator design. |
 | #109 | 6 | **Opus** | `cf²` and `mean_party_size²` scaling in variance units — precisely the class Sonnet gets confidently wrong, and precisely how shipped bug 2 happened. |
 | #110 | 8 | **Sonnet** implement / **Opus** verify | The dispatch mirrors the existing harvest bus-route dispatch — mechanical. **But `estimate_total_release_br()` has never been called, so it has never been exercised. Opus must verify it is correct before the wiring is trusted.** |
-| #111 | 10 | **Sonnet** | Thread a `method` string through 4 call sites and fix one `autoplot` map entry. No math. |
+| #111 | 10 | **Sonnet** | ~~Thread a `method` string through 4 call sites and fix one `autoplot` map entry. No math.~~ **LANDED.** Three call sites, not four (effort builds its own object and its `"total"` was already correct), and three label maps, not one. |
 | #112 | 7, 9, 11 | **Sonnet** | All three are guards. #11 is an allowlist check; #7 is a flag plus a warn; #9 is a guard **once Opus decides reject-vs-honour** — decide that first, then it is one branch. |
 | #113 | 12a | **Opus** | `flexible-count-estimation.Rmd` needs a *correct* replacement worked example. Producing the right numbers is exactly what failed the first time. |
 | #113 | 12b | **Sonnet** | `glossary.Rmd:68`, `data.R:330`, `ice-fishing.Rmd:~214-218`, `tidycreel.Rmd:47/71` — prose only, exact target text already identified. |
@@ -390,6 +390,47 @@ of which quantity it holds.
 
 **Decision: REAL BUG** — thread the correct method string through
 `br_build_estimates()`.
+
+**LANDED (#111).** Reproduced first on an 8-day bus-route fixture. All three totals came
+back under the effort label, beside a genuine effort total for contrast:
+
+| call | method before | method after | estimate | autoplot y-axis before | after |
+| ---- | ------------- | ------------ | -------- | ---------------------- | ----- |
+| `estimate_effort()` | `total` | `total` | 2513.38 angler-hours | Total Effort | Total Effort |
+| `estimate_total_catch()` | `total` | `ht-total-catch` | 1089.81 fish | **Total Effort** | Total Catch |
+| `estimate_total_harvest()` | `total` | `ht-total-harvest` | 464.77 fish | **Total Effort** | Total Harvest |
+| `estimate_total_release()` | `total` | `ht-total-release` | — | **Total Effort** | Total Release |
+
+The estimates are untouched; only the method string and everything derived from it move.
+`print()` went from `Method: Total` to `Method: Total Catch (Horvitz-Thompson)`, and the
+CSV provenance header from `Method: total` to `Method: ht-total-catch`.
+
+The `ht-` prefix was the user's call over reusing the standard path's
+`product-total-*` strings. Reuse was cheaper — two of the three names are already in all
+three label maps — but it would have asserted an effort × rate product estimator where
+the bus-route path is a Horvitz–Thompson sum over site contributions, making the two
+estimators indistinguishable in the returned object. That is precisely the complaint
+finding 14 raises about the rate path, so reuse would have written a second instance of
+the defect while closing the first. `ht-` also matches the existing convention of naming
+the estimator and the quantity.
+
+Three label maps carry the new strings: `R/autoplot-methods.R`, `R/print-methods.R`, and
+the `format()` method in `R/creel-estimates.R`. Unmapped strings fall through to the raw
+method string rather than erroring, so a missed map degrades quietly — the tests assert
+the rendered label, not just `$method`.
+
+`br_build_estimates()`'s unused `key_col` parameter was dropped in the same commit
+(user's call): it was documented and passed positionally by all three callers but never
+read in the body, and the commit was already editing all four locations.
+
+A `match.arg()` guard on the new `method` parameter was written and then removed: all
+three call sites pass literals in the same file, so no test can reach it. Mutation-tested
+to confirm — deleting the guard failed nothing.
+
+Mutation testing, 5/5 caught: hardcode the ungrouped branch back to `"total"` → 8
+failures; the grouped branch → 2 (only the `by =` path exercises it); mislabel the catch
+call site as harvest → 5; mislabel the release call site → 2; drop the three `autoplot`
+map entries → 4. Baseline unmutated: 0. Suite 3417 pass, 0 fail, 0 error.
 
 ### 11. `estimate_angler_trips()` / `estimate_effort_per_acre()` accept any `creel_estimates`
 

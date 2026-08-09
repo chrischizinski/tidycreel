@@ -48,7 +48,9 @@
 #'   clamped at zero. \code{"log"} applies a log-transform for a
 #'   strictly positive CI.
 #'
-#' @return A creel_estimates S3 object with method = "product-total-harvest"
+#' @return A creel_estimates S3 object with method = "product-total-harvest".
+#'   For bus-route and ice designs, returns a bus-route HT estimate with
+#'   method = "ht-total-harvest" and a "site_contributions" attribute.
 #'
 #' @details
 #' Total harvest is computed as Effort × HPUE. Variance is propagated using the

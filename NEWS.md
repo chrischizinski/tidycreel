@@ -76,6 +76,25 @@
 
 ## Breaking changes
 
+* `estimate_total_catch()`, `estimate_total_harvest()` and
+  `estimate_total_release()` on a bus-route or ice design now report
+  `method = "ht-total-catch"`, `"ht-total-harvest"` and `"ht-total-release"`
+  respectively, in place of the bare `"total"` all three returned. `"total"` is
+  the string the labelling code maps to *effort*, so a fish-valued total plotted
+  with a y-axis and title reading "Total Effort" and exported a CSV whose
+  provenance header read `Method: total` — nothing in the returned object said
+  which quantity it held. On an eight-day bus-route fixture the catch total of
+  1089.81 fish and the harvest total of 464.77 fish both plotted as "Total
+  Effort" beside a genuine effort total of 2513.38 angler-hours. The estimates
+  themselves are unchanged; only the method string and the labels derived from
+  it move. `estimate_effort()` still returns `"total"`, which was correct for it
+  all along.
+
+  The `ht-` prefix names the estimator as well as the quantity, following the
+  existing `product-total-*` convention, so a bus-route Horvitz–Thompson total
+  is no longer indistinguishable from the standard design's effort × rate
+  product in either the object or the exported file (#111).
+
 * `estimate_release_rate()` gains `truncate_at`, defaulting to `0.5` hours, with
   the same meaning, units, and `NULL` behaviour it has on
   `estimate_harvest_rate()`. It applies only to the bus-route incomplete-trip

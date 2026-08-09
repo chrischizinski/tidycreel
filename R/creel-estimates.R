@@ -221,6 +221,9 @@ format.creel_estimates <- function(x, ...) {
     "ratio-of-means-hpue-per-angler" = "Ratio-of-Means HPUE (per angler)",
     "product-total-catch" = "Total Catch (Effort \u00d7 CPUE)",
     "product-total-harvest" = "Total Harvest (Effort \u00d7 HPUE)",
+    "ht-total-catch" = "Total Catch (Horvitz-Thompson)",
+    "ht-total-harvest" = "Total Harvest (Horvitz-Thompson)",
+    "ht-total-release" = "Total Release (Horvitz-Thompson)",
     "exploitation-rate" = "Exploitation Rate (Mark-Recapture)",
     x$method
   )
