@@ -62,6 +62,16 @@ autoplot.creel_estimates <- function(object, title = NULL, theme = c("default", 
     object$method
   )
 
+  # The axis says what the number is measured in only when tidycreel derived it.
+  # A hardcoded unit here is the poster-label problem the carried unit exists to
+  # replace: it would keep reading "angler-hours" for a quantity that is not.
+  unit_label <- object$unit %||% NA_character_
+  axis_label <- if (is.na(unit_label)) {
+    method_label
+  } else {
+    paste0(method_label, " (", unit_label, ")")
+  }
+
   effort_target <- object$effort_target %||% NULL
   if (!is.null(title)) {
     plot_title <- title
@@ -116,7 +126,7 @@ autoplot.creel_estimates <- function(object, title = NULL, theme = c("default", 
       ggplot2::geom_errorbar(width = 0.2, colour = point_colour) +
       ggplot2::labs(
         x = NULL,
-        y = method_label,
+        y = axis_label,
         title = plot_title,
         caption = caption_text
       ) +
@@ -144,7 +154,7 @@ autoplot.creel_estimates <- function(object, title = NULL, theme = c("default", 
       ggplot2::geom_errorbar(width = 0.2) +
       ggplot2::labs(
         x = grp_col,
-        y = method_label,
+        y = axis_label,
         color = grp_col,
         title = plot_title,
         caption = caption_text

@@ -43,7 +43,7 @@ fix or travel together.
 | 10 | #111 | `br_build_estimates()` hardcodes `method = "total"` |
 | 7, 9, 11 | #112 | Missing unit guards |
 | 12 | #113 | ~~Documentation asserts units the code does not produce~~ **LANDED** (12a 2026-08-08, 12b 2026-08-10) |
-| 13 | *not opened* | Instantaneous path never carries T, so it returns angler-days (added 2026-08-08) — **estimator half LANDED 2026-08-10**; unit propagation still ahead |
+| 13 | *not opened* | ~~Instantaneous path never carries T, so it returns angler-days~~ **LANDED 2026-08-10** (added 2026-08-08), with the first pass of unit propagation |
 | 20 | *not opened* | `circuit_time` cancels out of the progressive estimate and cannot change any output (added 2026-08-10) |
 | 14 | *not opened* | ~~Ice designs skip the bus-route dispatch in the rate estimators~~ **LANDED** (added and fixed 2026-08-09) |
 | 17 | *not opened* | ~~`estimate_catch_rate()` has no bus-route or ice dispatch at all, and no CPUE estimator existed to dispatch to~~ **LANDED** (added and fixed 2026-08-09, with finding 14) |
@@ -1250,6 +1250,55 @@ confident, well-labelled, wrong numbers.
 k; total effort must scale by k, CPUE by 1/k, total catch by k, variance by k². A
 dimension error breaks these; a fixed-number example test cannot. These verify that the
 propagation logic itself is right.
+
+**LANDED (first pass, 2026-08-10)**, with finding 13. Four departures from the plan
+above, each forced by something the plan did not know.
+
+*"Unknown" is a required third state, and it is not "angler-days".* The plan has
+`estimate_effort()` propagate `unit_out = unit_in x days`, which implies labelling
+an unexpanded instantaneous total "angler-days". That is unsafe:
+`example_counts$effort_hours` **already holds angler-hours**, so a bare numeric
+count column may be either a head count or pre-expanded effort and nothing can
+tell them apart. Asserting a unit there would produce precisely the confident,
+well-labelled, wrong number this section exists to prevent. The unit is asserted
+only where the package did the arithmetic — T_d multiplication on the count side,
+party-size multiplication on the interview side — and is `NA` otherwise. An absent
+`Unit:` line is a claim of ignorance, which is a different statement from a
+default.
+
+*The abort could not take the seam it was written for.* The plan's example —
+"aborts when the CPUE denominator unit != the effort unit" — describes the
+party-hours case, which finding 7 had already shipped as a **warning** with a
+better message at the same three call sites. Escalating it would break every
+caller who omits `n_anglers`, which is what the bundled examples do. Decision:
+the abort fires on known mismatches finding 7 does not cover, and the
+party-hours seam keeps its warning.
+
+*One defect, one diagnosis.* An unknown effort unit at the multiplication point
+is the same fact the finding-13 warning reports. A second, differently-worded
+warning there read as two problems. The totals now call
+`warn_missing_period_length()` directly instead — needed anyway, since they reach
+`estimate_effort_total()` without passing through `estimate_effort()`, so that
+path had been silent.
+
+*The preferred workflow had to be exempted.* `prep_counts_*()` resolves counts
+into sampled-day effort before `add_counts()`, so the finding-13 warning fired on
+the documented recommended pipeline. Marked with an attribute, which degrades to
+"unknown" if dropped by intervening verbs — the safe direction.
+
+Mutation testing, control 0: labelling the unknown unit "angler-days" 5 kills;
+dropping the mismatch abort 1 kill; dropping the party-hours carve-out **0 kills
+at first**, because every fixture in the file had an *unknown* effort unit, so the
+check returned early and the carve-out was never reached. The case that exercises
+it — T_d applied (effort known to be angler-hours) against interviews with no
+`n_anglers` — needed its own fixture; with it the mutant kills 1. A carve-out
+guarding a decision the user made explicitly was, until then, entirely unmeasured.
+
+Still outstanding: rate estimators outside the standard CPUE spine (species,
+bus-route, aerial, regression) return `NA` units rather than derived ones, and
+`estimate_angler_trips()` / `estimate_effort_per_acre()` do not yet carry
+`angler-trips` and `angler-hours/acre`. Those are what would make the abort
+reachable from ordinary use rather than only from a hand-set unit.
 
 ---
 

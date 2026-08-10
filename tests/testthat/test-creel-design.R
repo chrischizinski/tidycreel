@@ -1797,7 +1797,18 @@ test_that("a stated constant counts as n_anglers supplied (GH audit finding 16)"
   )))
 
   expect_true(d$n_anglers_supplied)
-  expect_no_warning(estimate_total_catch(d))
+  # Scoped to the finding-7 message. These counts carry no T_d, so the same call
+  # also raises the finding-13 warning -- a different seam, and asserting total
+  # silence would make this test pass or fail for reasons unrelated to n_anglers.
+  msgs <- character()
+  withCallingHandlers(
+    estimate_total_catch(d),
+    warning = function(w) {
+      msgs <<- c(msgs, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    }
+  )
+  expect_length(grep("different units", msgs), 0L)
 })
 
 test_that("a column n_anglers still resolves as a column (GH audit finding 16)", {

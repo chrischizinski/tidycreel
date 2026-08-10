@@ -2,6 +2,38 @@
 
 ## New features
 
+* Estimates now carry the unit of the quantity they report. `creel_estimates`
+  objects gain a `unit` field, `print()` shows a `Unit:` line, `autoplot()` puts
+  it on the y-axis, and `write_estimates()` records it in the CSV header. This
+  replaces hardcoded axis and header strings, which could not tell that the
+  number underneath them had changed dimension.
+
+  The unit is **derived, never declared**. A unit the caller types is exactly as
+  trustworthy as the axis label on the poster — a second place to write the wrong
+  thing — so tidycreel asserts one only where it performed the arithmetic that
+  produces it: angler-hours on the count side when `add_counts()` multiplied by
+  T_d, angler-hours on the interview side when `add_interviews()` multiplied trip
+  hours by a supplied party size, and party-hours when it did not.
+
+  Everywhere else the unit is `NA`, meaning unknown — deliberately **not**
+  "angler-days". A bare numeric count column may be an instantaneous head count
+  or effort the caller already expanded, and `example_counts` is the latter;
+  guessing between them would put a confident label on a number that may be in
+  either unit, which is the failure this machinery exists to prevent. An absent
+  `Unit:` line is the claim that tidycreel does not know, which is a different
+  statement from a default.
+
+* `estimate_total_catch()`, `estimate_total_harvest()` and
+  `estimate_total_release()` abort with class `creel_error_unit_mismatch` when
+  the effort unit and the rate's denominator are both known and disagree. Their
+  product is not a catch.
+
+  Two seams are deliberately excluded. A per-party-hour rate meeting angler-hour
+  effort keeps `warn_party_hours_product()`'s existing warning rather than
+  becoming an error, since that would break every caller who omits `n_anglers`.
+  An unknown effort unit is reported by the T_d warning below rather than a
+  second message, so one defect produces one diagnosis.
+
 * `day_length()` computes hours between sunrise and sunset for a latitude and
   date using the CBM model of Forsythe et al. (1995). Closed form — no lookup
   table, no network access, no location database. Only latitude is needed:
@@ -35,6 +67,18 @@
   instantaneous head count from a column that already holds angler-hours, since
   both arrive as a numeric column, so it says that *if* the column is a count the
   result is in angler-days. Numbers are unchanged for these callers.
+
+  The three product totals raise the same warning. They call
+  `estimate_effort_total()` directly rather than `estimate_effort()`, so without
+  this a caller who only ever asks for a total never heard that the count column
+  had no T_d applied.
+
+  Output from the `prep_counts_*()` helpers is exempt. That seam resolves counts
+  into sampled-day effort before `add_counts()` sees them, so there is no
+  instantaneous count left to expand and no T_d to ask for — warning there would
+  fire on the documented preferred workflow. The marker is carried as an
+  attribute, so a table piped through intervening dplyr verbs degrades to
+  "unknown", which is the safe direction.
 
 * `estimate_total_catch()`, `estimate_total_harvest()` and
   `estimate_total_release()` now accept `by = species` on bus-route and ice

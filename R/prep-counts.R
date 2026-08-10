@@ -232,7 +232,7 @@ prep_counts_daily_effort <- function(
     out[["source_method"]] <- data[[source_method_col]]
   }
 
-  out
+  mark_counts_as_effort(out) # nolint: object_usage_linter
 }
 
 #' Standardize boat-party sampled-day effort rows
@@ -508,7 +508,7 @@ prep_counts_boat_party <- function(
   }
   out[["source_method"]] <- as.character(source_method_vals)
 
-  out
+  mark_counts_as_effort(out) # nolint: object_usage_linter
 }
 
 # Within-day variance inputs ----

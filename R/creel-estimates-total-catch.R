@@ -227,6 +227,11 @@ estimate_total_catch <- function(
 
   # Effort x rate from here on: flag a party-hour rate meeting angler-hour effort
   warn_party_hours_product(design) # nolint: object_usage_linter
+  check_product_units(design) # nolint: object_usage_linter
+  # Totals call estimate_effort_total() directly, bypassing estimate_effort(),
+  # so the finding-13 warning has to be raised here too or this path never
+  # hears that the count column had no T_d applied.
+  warn_missing_period_length(design) # nolint: object_usage_linter
 
   # Section dispatch guard (v0.7.0+ — only fires when add_sections() was called)
   if (!is.null(design[["sections"]])) {
@@ -423,15 +428,15 @@ estimate_total_catch_ungrouped <- function(
     ci_type = ci_type
   )
 
-  new_creel_estimates(
-    # nolint: object_usage_linter
+  new_creel_estimates( # nolint: object_usage_linter
     estimates = tibble::as_tibble(estimates_df),
     method = "product-total-catch",
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
     by_vars = NULL,
-    effort_target = target
+    effort_target = target,
+    unit = "fish"
   )
 }
 
@@ -495,15 +500,15 @@ estimate_total_catch_grouped <- function(
     ci_type = ci_type
   )
 
-  new_creel_estimates(
-    # nolint: object_usage_linter
+  new_creel_estimates( # nolint: object_usage_linter
     estimates = tibble::as_tibble(estimates_df),
     method = "product-total-catch",
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
     by_vars = by_vars,
-    effort_target = target
+    effort_target = target,
+    unit = "fish"
   )
 }
 
@@ -774,8 +779,7 @@ estimate_total_catch_sections <- function(
     result_df <- dplyr::bind_rows(result_df, lake_row)
   }
 
-  new_creel_estimates(
-    # nolint: object_usage_linter
+  new_creel_estimates( # nolint: object_usage_linter
     estimates = result_df,
     method = "product-total-catch-sections",
     variance_method = variance_method,

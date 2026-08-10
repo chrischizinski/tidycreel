@@ -550,6 +550,145 @@ construct_survey_design <- function(design) {
   )
 }
 
+# Unit propagation ----
+#
+# The dimension a number carries is derived and propagated, never declared. A
+# unit the caller types is exactly as trustworthy as the axis label on the
+# poster -- a second place to write the wrong thing. So tidycreel asserts a unit
+# only where it performed the arithmetic that produces it:
+#
+#   * angler-hours on the count side, when add_counts() multiplied a count by
+#     the period length T_d
+#   * angler-hours on the interview side, when add_interviews() multiplied trip
+#     hours by a supplied party size
+#   * party-hours on the interview side, when it did not
+#
+# Everywhere else the unit is NA, meaning unknown -- not "angler-days". A bare
+# numeric count column may be an instantaneous head count or effort that the
+# caller already expanded; `example_counts` is the latter. Guessing between them
+# would put a confident label on a number that may be in either unit, which is
+# the failure this machinery exists to prevent.
+
+#' Mark a counts table as already holding sampled-day effort
+#'
+#' The `prep_counts_*()` seam resolves counts into sampled-day effort before
+#' `add_counts()` sees them, so its output is not a raw instantaneous count even
+#' though no `period_length_col` was supplied. The mark suppresses the
+#' finding-13 warning for that workflow. It deliberately does **not** assert a
+#' unit: the caller chose the input column, and it may be in any time base.
+#'
+#' Carried as an attribute rather than a column, since a column duplicates a
+#' constant per row and is user-editable. An attribute dropped by intervening
+#' dplyr verbs degrades to "unknown", which is the safe direction.
+#'
+#' @param x A data frame of sampled-day effort rows
+#'
+#' @return `x` with the marker attribute set
+#'
+#' @keywords internal
+#' @noRd
+mark_counts_as_effort <- function(x) {
+  attr(x, "tidycreel_counts_are_effort") <- TRUE
+  x
+}
+
+#' Read the sampled-day effort marker back off a counts table
+#'
+#' @param x A data frame of counts
+#'
+#' @return `TRUE` when the table came from a `prep_counts_*()` helper
+#'
+#' @keywords internal
+#' @noRd
+counts_are_effort <- function(x) {
+  isTRUE(attr(x, "tidycreel_counts_are_effort", exact = TRUE))
+}
+
+#' Derive the unit of a rate's denominator from the interview side
+#'
+#' @param design A creel_design object
+#'
+#' @return `"angler-hours"`, `"party-hours"`, or `NA_character_` when no
+#'   interviews are attached
+#'
+#' @keywords internal
+#' @noRd
+interview_effort_unit <- function(design) {
+  if (is.null(design$angler_effort_col)) {
+    return(NA_character_)
+  }
+  # add_interviews() records whether .angler_effort was actually normalised by a
+  # party size. Without it the column is party-hours, which is the same seam
+  # warn_party_hours_product() guards at the multiplication point.
+  if (isTRUE(design$n_anglers_supplied)) "angler-hours" else "party-hours"
+}
+
+#' Build the unit string for a per-unit-effort rate
+#'
+#' @param design A creel_design object
+#'
+#' @return e.g. `"fish/angler-hour"`, or `NA_character_` when the denominator
+#'   unit is unknown
+#'
+#' @keywords internal
+#' @noRd
+rate_unit <- function(design) {
+  denom <- interview_effort_unit(design)
+  if (is.na(denom)) {
+    return(NA_character_)
+  }
+  paste0("fish/", sub("-hours$", "-hour", denom))
+}
+
+#' Check that a product of effort and a rate is dimensionally coherent
+#'
+#' Total catch is effort x rate, so the rate's denominator must be the same
+#' quantity the effort is measured in. Two known units that disagree make the
+#' product meaningless, and this aborts.
+#'
+#' It does not warn when the effort unit is merely *unknown*. That is the same
+#' fact [warn_missing_period_length()] reports, and the totals call it directly
+#' for exactly this reason — one defect should produce one diagnosis, not two
+#' competing ones at adjacent call sites.
+#'
+#' The party-hours case is likewise excluded: [warn_party_hours_product()]
+#' already names it with a better message at the same call sites, and escalating
+#' it to an error would break every caller who omits `n_anglers`.
+#'
+#' @param design A creel_design object
+#' @param call Calling environment for the condition
+#'
+#' @return NULL (invisible) - called for its side effect
+#'
+#' @keywords internal
+#' @noRd
+check_product_units <- function(design, call = rlang::caller_env()) {
+  effort <- design$effort_unit %||% NA_character_
+  denom <- interview_effort_unit(design)
+
+  if (identical(denom, "party-hours")) {
+    return(invisible(NULL))
+  }
+
+  if (is.na(effort)) {
+    return(invisible(NULL))
+  }
+
+  if (!is.na(denom) && !identical(effort, denom)) {
+    cli::cli_abort(
+      c(
+        "Effort and rate are in different units.",
+        "x" = "Effort is {.val {effort}} but the rate is per {.val {denom}}.",
+        "i" = "Their product is not a catch. Re-attach the counts or interviews in matching units."
+      ),
+      class = "creel_error_unit_mismatch",
+      call = call
+    )
+  }
+
+  invisible(NULL)
+}
+
 #' Warn that an instantaneous effort estimate never had T_d applied
 #'
 #' An instantaneous count is a snapshot of how many anglers were present at one
@@ -576,6 +715,13 @@ warn_missing_period_length <- function(design) {
     return(invisible(NULL))
   }
   if (!is.null(design$period_length_col)) {
+    return(invisible(NULL))
+  }
+  # The prep_counts_*() seam resolves counts into sampled-day effort before
+  # add_counts() sees them, so there is no instantaneous count left to expand
+  # and no T_d to ask for. Warning there would fire on the documented preferred
+  # workflow.
+  if (isTRUE(design$counts_are_effort)) {
     return(invisible(NULL))
   }
   cli::cli_warn(
@@ -785,7 +931,7 @@ warn_party_hours_product <- function(design, call = rlang::caller_env()) {
       "Rate and effort may be in different units.",
       "x" = paste(
         "{.arg n_anglers} was not supplied, so the rate is per {.emph party}-hour",
-        "while count-derived effort is angler-hours."
+        "while count-derived effort is per angler."
       ),
       "i" = paste(
         "The product is correct only if every party is one angler.",

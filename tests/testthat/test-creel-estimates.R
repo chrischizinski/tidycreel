@@ -73,7 +73,10 @@ test_that("new_creel_estimates() creates creel_estimates S3 object", {
   expect_type(result, "list")
   expect_named(
     result,
-    c("estimates", "method", "variance_method", "design", "conf_level", "by_vars", "effort_target")
+    c(
+      "estimates", "method", "variance_method", "design", "conf_level",
+      "by_vars", "effort_target", "unit"
+    )
   )
 })
 
@@ -336,8 +339,24 @@ test_that("product totals stay silent once n_anglers is supplied (GH #112)", {
     n_anglers = n_anglers, trip_status = trip_status
   )))
 
-  expect_no_warning(estimate_total_catch(design))
-  expect_no_warning(estimate_total_harvest(design))
+  # Scoped to the party-hours warning by message rather than asserting total
+  # silence. The same call sites also raise the finding-13 warning when the
+  # counts carry no T_d, which example_counts do not -- that is a different
+  # seam, and swallowing it here would let this test pass for the wrong reason.
+  party_hours_warnings <- function(expr) {
+    msgs <- character()
+    withCallingHandlers(
+      expr,
+      warning = function(w) {
+        msgs <<- c(msgs, conditionMessage(w))
+        invokeRestart("muffleWarning")
+      }
+    )
+    grep("different units", msgs, value = TRUE)
+  }
+
+  expect_length(party_hours_warnings(estimate_total_catch(design)), 0L)
+  expect_length(party_hours_warnings(estimate_total_harvest(design)), 0L)
 })
 
 test_that("bus-route totals do not raise the party-hours warning (GH #112)", {

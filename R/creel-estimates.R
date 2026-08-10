@@ -110,7 +110,8 @@ new_creel_estimates <- function(
   design = NULL,
   conf_level = 0.95,
   by_vars = NULL,
-  effort_target = NULL
+  effort_target = NULL,
+  unit = NA_character_
 ) {
   # Input validation
   stopifnot(
@@ -121,7 +122,8 @@ new_creel_estimates <- function(
     "conf_level must be numeric" = is.numeric(conf_level) && length(conf_level) == 1,
     "by_vars must be NULL or character" = is.null(by_vars) || is.character(by_vars),
     "effort_target must be NULL or character" = is.null(effort_target) ||
-      is.character(effort_target)
+      is.character(effort_target),
+    "unit must be NULL or character" = is.null(unit) || is.character(unit)
   )
 
   structure(
@@ -132,7 +134,8 @@ new_creel_estimates <- function(
       design = design,
       conf_level = conf_level,
       by_vars = by_vars,
-      effort_target = effort_target
+      effort_target = effort_target,
+      unit = unit %||% NA_character_
     ),
     class = "creel_estimates"
   )
@@ -252,6 +255,13 @@ format.creel_estimates <- function(x, ...) {
 
       if (!is.null(x$effort_target)) {
         cli::cli_text("Effort target: {x$effort_target}")
+      }
+
+      # Printed only when derived. An absent line means tidycreel does not know
+      # the unit, which is a different claim from asserting a default one.
+      unit_display <- x$unit %||% NA_character_ # nolint: object_usage_linter
+      if (!is.na(unit_display)) {
+        cli::cli_text("Unit: {unit_display}")
       }
 
       cli::cli_text("")
@@ -2949,7 +2959,8 @@ estimate_effort_sections <- function(
     design = design,
     conf_level = conf_level,
     by_vars = NULL,
-    effort_target = target
+    effort_target = target,
+    unit = design$effort_unit
   )
 }
 
@@ -3051,7 +3062,8 @@ estimate_effort_total <- function(design, variance_method, conf_level, target = 
     design = design,
     conf_level = conf_level,
     by_vars = NULL,
-    effort_target = target
+    effort_target = target,
+    unit = design$effort_unit
   )
 }
 
@@ -3178,7 +3190,8 @@ estimate_effort_grouped <- function(
     design = design,
     conf_level = conf_level,
     by_vars = by_vars,
-    effort_target = target
+    effort_target = target,
+    unit = design$effort_unit
   )
 }
 
@@ -3310,7 +3323,8 @@ estimate_cpue_total <- function(design, variance_method, conf_level, estimator =
       variance_method = variance_method,
       design = design,
       conf_level = conf_level,
-      by_vars = NULL
+      by_vars = NULL,
+      unit = rate_unit(design) # nolint: object_usage_linter
     )
   }
 }
@@ -3480,7 +3494,8 @@ estimate_cpue_grouped <- function(
       variance_method = variance_method,
       design = design,
       conf_level = conf_level,
-      by_vars = by_vars
+      by_vars = by_vars,
+      unit = rate_unit(design) # nolint: object_usage_linter
     )
   }
 }

@@ -176,6 +176,11 @@ estimate_total_release <- function(
 
   # Effort x rate from here on: flag a party-hour rate meeting angler-hour effort
   warn_party_hours_product(design) # nolint: object_usage_linter
+  check_product_units(design) # nolint: object_usage_linter
+  # Totals call estimate_effort_total() directly, bypassing estimate_effort(),
+  # so the finding-13 warning has to be raised here too or this path never
+  # hears that the count column had no T_d applied.
+  warn_missing_period_length(design) # nolint: object_usage_linter
 
   # Validate design compatibility (counts AND interviews required for effort)
   validate_design_compatibility(design) # nolint: object_usage_linter
@@ -315,15 +320,15 @@ estimate_total_release_ungrouped <- function(
     ci_type = ci_type
   )
 
-  new_creel_estimates(
-    # nolint: object_usage_linter
+  new_creel_estimates( # nolint: object_usage_linter
     estimates = tibble::as_tibble(estimates_df),
     method = "product-total-release",
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
     by_vars = NULL,
-    effort_target = target
+    effort_target = target,
+    unit = "fish"
   )
 }
 
@@ -367,15 +372,15 @@ estimate_total_release_grouped <- function(
     ci_type = ci_type
   )
 
-  new_creel_estimates(
-    # nolint: object_usage_linter
+  new_creel_estimates( # nolint: object_usage_linter
     estimates = tibble::as_tibble(estimates_df),
     method = "product-total-release",
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
     by_vars = by_vars,
-    effort_target = target
+    effort_target = target,
+    unit = "fish"
   )
 }
 
@@ -641,8 +646,7 @@ estimate_total_release_sections <- function(
     result_df <- dplyr::bind_rows(result_df, lake_row)
   }
 
-  new_creel_estimates(
-    # nolint: object_usage_linter
+  new_creel_estimates( # nolint: object_usage_linter
     estimates = result_df,
     method = "product-total-release-sections",
     variance_method = variance_method,

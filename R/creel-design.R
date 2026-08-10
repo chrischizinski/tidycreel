@@ -1413,6 +1413,10 @@ add_counts <- function(
   # Validate count data schema (Date column, numeric column)
   validate_count_schema(counts) # nolint: object_usage_linter
 
+  # Read before any transformation: aggregate_within_day() rebuilds the table
+  # with rbind(), which drops attributes.
+  counts_from_prep_seam <- counts_are_effort(counts) # nolint: object_usage_linter
+
   # Guard: validate section values against registered sections (SEC-01)
   if (!is.null(design[["sections"]]) && !is.null(design[["section_col"]])) {
     sec_col <- design[["section_col"]]
@@ -1633,6 +1637,18 @@ add_counts <- function(
   }
   new_design$circuit_time <- circuit_time
   new_design$period_length_col <- period_length_col_name
+  new_design$counts_are_effort <- counts_from_prep_seam
+
+  # The count side is angler-hours exactly when this function did the
+  # multiplication that produces them. A bare count column with no T_d may be an
+  # instantaneous head count or effort the caller already expanded, and nothing
+  # here can tell the two apart, so the honest answer is that the unit is
+  # unknown rather than a guess at "angler-days".
+  new_design$effort_unit <- if (is.null(period_length_col_name)) {
+    NA_character_
+  } else {
+    "angler-hours"
+  }
 
   # Construct survey design eagerly
   new_design$survey <- construct_survey_design(new_design) # nolint: object_usage_linter
