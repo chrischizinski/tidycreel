@@ -28,6 +28,29 @@
 
 ## Bug fixes
 
+* `estimate_total_catch()`, `estimate_total_harvest()` and
+  `estimate_total_release()` now accept `by = species` on bus-route and ice
+  designs, and answer on the Horvitz–Thompson path. All three resolved `by`
+  against the interview columns, which carry no species column, so the call
+  aborted with ``Column `species` doesn't exist`` on both design types — six
+  combinations, none of them reachable. The species-level total estimators they
+  would otherwise have reached are stratum product sums built on the standard
+  interview survey, so routing there instead would have reproduced the previous
+  entry's defect in the totals: a species total contradicting the all-species
+  total on the same object.
+
+  The falsifier is the same partition identity, and it is exact for a
+  Horvitz–Thompson sum because that sum is linear in its numerator. All six
+  combinations now satisfy it, and each species' total over the HT effort equals
+  that species' rate to machine precision — the cross-check tying the totals to
+  the rates. The reported method names the estimator and the quantity
+  (`ht-total-release-species`).
+
+  `use_trips = "all"` is still rejected: the completed-trip guard runs ahead of
+  the species branch, because an incomplete trip contributes catch-so-far under a
+  completed trip's inclusion probability whether or not the numerator is one
+  species.
+
 * Species-level rates (`by = species`) now take the Horvitz–Thompson path on
   bus-route and ice designs. `estimate_cpue_species()` and its harvest and
   release siblings build a per-species interview table and hand it to the

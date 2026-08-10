@@ -843,12 +843,74 @@ diagnostic guard kills 1.
 - `estimate_release_rate(by = species)` reports `ratio-of-means-rpue` with **no `-species`
   suffix** on the standard path — finding 10's shape, pre-existing, and now inconsistent
   with the HT path, which does append it.
-- `estimate_total_catch(by = species)` and its harvest and release siblings **abort** on
-  bus-route and ice designs, on `origin/main` as well as here. Same root cause as the
-  regression above, in the totals rather than the rates. Not opened as a finding yet.
 - The `metric` argument on `estimate_harvest_br()`'s **diagnostic** branch is pinned by a
   single test: hardcoding it to `"hpue"` for the complete half kills only `bus-route RPUE
   supports use_trips = 'diagnostic' (GH #110)`.
+
+### 19. Species totals abort on bus-route and ice designs
+
+Added 2026-08-09, surfaced by finding 18 and opened as its own finding. All three totals
+resolve `by` with `tidyselect::eval_select()` against `design$interviews`, which carry no
+species column, so `by = species` **aborted** — six combinations (three quantities x two
+design types), none of them reachable, on `origin/main` as well as on this branch:
+
+```
+estimate_total_catch(bus_route, by = species)     Error: Column `species` doesn't exist.
+estimate_total_harvest(ice, by = species)         Error: Column `species` doesn't exist.
+...
+```
+
+Same root cause as finding 18's regression, in the totals rather than the rates, but
+pre-existing rather than introduced: the totals never had the guard, so this one predates
+the audit.
+
+**The fix is not "add the guard".** The species-level total estimators the guard would
+reach — `estimate_total_catch_species()` and its siblings — are stratum product sums built
+on the *standard* interview survey, and `estimate_total_catch_species()` calls
+`estimate_cpue_species()`, which is precisely the estimator finding 18 had to repoint.
+Routing `by = species` there would have made the call return a number and reintroduced
+finding 18 one estimator over, in the totals: a species total contradicting the
+all-species total on the same design object. Making an aborting call return a wrong number
+is not a fix.
+
+**LANDED.** One `estimate_total_species_br()` in `R/creel-estimates-bus-route.R` loops
+species, repoints the numerator at that species' counts and delegates to the all-species HT
+total estimator — the same delegation `estimate_rate_species_br()` uses. Release is
+repointed by subsetting `design$catch` rather than the interviews, because
+`estimate_total_release_br()` derives its own per-interview release counts from the catch
+table; catch and harvest are repointed on the interviews.
+
+Two identities, both exact:
+
+```
+partition        sum_s total_s == total_all        all 6 combinations, 0.0000%
+cross-estimator  total_s / E_hat == rate_s         max gap 2.22e-16
+```
+
+The second is what ties findings 18 and 19 together: satisfying the partition sum alone
+would still allow a totals path that weighted its interviews differently from the rate
+path. Grouped (`by = c(day_type, species)`) reconciles within each stratum for all three
+quantities. The reported method names both the estimator and the quantity
+(`ht-total-release-species`); `use_trips = "all"` stays rejected, since the completed-trip
+guard runs ahead of the species branch.
+
+**Coverage.** Mutants against the new path, control 0: ignoring `.pi_i`/`.expansion` kills
+4 (the four value-based tests; the label and finiteness tests correctly do not respond to a
+weighting change), hardcoding the quantity in the method string kills 1, reading `"caught"`
+where harvest wants `"harvested"` kills 1, dropping `by_vars` on the release branch kills 1
+— that last one killed **0** until the grouped test was widened past catch, because release
+reaches the estimator down a different branch.
+
+**Instrument note.** The first `ignore_ht_weights` measurement reported 6 kills from a
+mutant that was not computing at all: the `perl` replacement text left `$` unescaped, so
+`design_sp$catch_col` interpolated an empty Perl variable and the mutant aborted with `$
+operator is invalid for atomic vectors`. Erroring mutants read as kills. The corrected
+mutant returns 144 against a true 1684.25 and kills 4. Same class of instrument failure as
+the session-7 sweep: always confirm the mutant produces a *wrong number*, not an error.
+
+**Surfaced, not fixed:** the standard path's species totals report `product-total-catch`
+with **no `-species` suffix**, so the HT and standard paths now label species totals
+differently. Same gap already recorded for `estimate_release_rate()` under finding 18.
 
 ### 15. `use_trips` is never validated on the bus-route path, so a typo silently changes the estimator
 

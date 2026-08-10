@@ -150,18 +150,33 @@ estimate_total_harvest <- function(
 
   # Bus-route / ice dispatch (before standard survey NULL check)
   if (!is.null(design$design_type) && design$design_type %in% c("bus_route", "ice")) {
-    if (rlang::quo_is_null(by_quo)) {
-      by_vars_br <- NULL
-    } else {
-      by_cols_br <- tidyselect::eval_select(
-        by_quo,
-        data = design$interviews,
-        allow_rename = FALSE,
-        allow_empty = FALSE,
-        error_call = rlang::caller_env()
-      )
-      by_vars_br <- names(by_cols_br)
+    # See estimate_total_catch(): `by = species` aborted here because eval_select()
+    # resolved against the interviews, which carry no species column (finding 19).
+    by_info_br <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
+    by_vars_br <- by_info_br$interview_vars
+
+    if (!is.null(by_info_br$species_var)) {
+      if (is.null(design[["catch"]])) {
+        cli::cli_abort(c(
+          "Species-level total harvest requires catch data.",
+          "x" = paste(
+            "Call {.fn add_catch} before using species grouping in",
+            "{.fn estimate_total_harvest}."
+          )
+        ))
+      }
+
+      return(estimate_total_species_br( # nolint: object_usage_linter
+        design,
+        species_col = by_info_br$species_var,
+        interview_by_vars = by_vars_br,
+        variance_method = variance,
+        conf_level = conf_level,
+        quantity = "harvest",
+        ci_method = ci_method
+      ))
     }
+
     return(estimate_total_harvest_br(
       # nolint: object_usage_linter
       design,

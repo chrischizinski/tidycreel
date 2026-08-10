@@ -1409,6 +1409,115 @@ br_complete_trips_only <- function(interviews, design) {
   interviews[is_complete, , drop = FALSE]
 }
 
+# Species-level totals on bus-route and ice designs ----
+# Called by estimate_total_catch(), estimate_total_harvest() and
+# estimate_total_release() when design$design_type is "bus_route" or "ice" and
+# `by` names the species column.
+
+#' Species-level HT totals on a bus-route or ice design
+#'
+#' The three totals resolved `by` against `design$interviews`, where there is no
+#' species column, so `by = species` aborted on both design types rather than
+#' returning a number (finding 19). The species-level total estimators they would
+#' have reached are stratum product sums built on the *standard* interview
+#' survey, so routing `by = species` there instead would have reintroduced
+#' finding 18 in the totals: a species total that contradicts the all-species
+#' total on the same object.
+#'
+#' The falsifier is the same partition identity finding 18 used, and it is
+#' exact for a Horvitz-Thompson sum because that sum is linear in the numerator:
+#' `sum_i (c_i * expansion_i / pi_i)` over a partition of `c_i` is the sum over
+#' the parts. So `sum_s total_s` must equal the all-species total.
+#'
+#' Per species this repoints the numerator at that species' counts and delegates
+#' to the all-species HT total estimator, the same delegation
+#' [estimate_rate_species_br()] uses for the rates. Release is repointed by
+#' subsetting `design$catch` rather than the interviews, because
+#' [estimate_total_release_br()] derives its own per-interview release counts
+#' from the catch table.
+#'
+#' @param design A creel_design with a non-NULL catch slot.
+#' @param species_col Character(1). Name of the species column in `design$catch`.
+#' @param interview_by_vars Character vector or NULL. Non-species grouping vars.
+#' @param quantity One of "catch", "harvest", "release".
+#' @inheritParams estimate_total_catch_br
+#'
+#' @return A creel_estimates object with method "ht-total-<quantity>-species".
+#'
+#' @keywords internal
+#' @noRd
+estimate_total_species_br <- function(
+  # nolint: object_usage_linter
+  design,
+  species_col,
+  interview_by_vars,
+  variance_method,
+  conf_level,
+  quantity = c("catch", "harvest", "release"),
+  ci_method = "delta",
+  call = rlang::caller_env()
+) {
+  quantity <- match.arg(quantity)
+
+  all_species <- sort(unique(design[["catch"]][[species_col]]))
+  results_list <- vector("list", length(all_species))
+
+  for (i in seq_along(all_species)) {
+    sp <- all_species[[i]]
+    design_sp <- design
+
+    if (identical(quantity, "release")) {
+      # estimate_total_release_br() calls estimate_release_build_data() itself,
+      # so the species filter has to go in ahead of it, on the catch table.
+      catch_df <- design[["catch"]]
+      design_sp[["catch"]] <- catch_df[catch_df[[species_col]] == sp, , drop = FALSE]
+
+      res <- estimate_total_release_br(
+        design_sp,
+        interview_by_vars,
+        variance_method,
+        conf_level,
+        verbose = FALSE,
+        call = call
+      )
+    } else {
+      catch_type_val <- if (identical(quantity, "catch")) "caught" else "harvested"
+      design_sp$interviews <- make_species_catch_for_interviews(design, sp, catch_type_val) # nolint: object_usage_linter
+      design_sp$catch_col <- ".species_count"
+      design_sp$harvest_col <- ".species_count"
+
+      total_fn <- if (identical(quantity, "catch")) {
+        estimate_total_catch_br
+      } else {
+        estimate_total_harvest_br
+      }
+      res <- total_fn(
+        design_sp,
+        interview_by_vars,
+        variance_method,
+        conf_level,
+        verbose = FALSE,
+        ci_method = ci_method,
+        call = call
+      )
+    }
+
+    sp_df <- res$estimates
+    sp_df[[species_col]] <- sp
+    results_list[[i]] <- sp_df[c(species_col, setdiff(names(sp_df), species_col))]
+  }
+
+  new_creel_estimates(
+    # nolint: object_usage_linter
+    estimates = tibble::as_tibble(do.call(rbind, results_list)),
+    method = paste0("ht-total-", quantity, "-species"),
+    variance_method = variance_method,
+    design = design,
+    conf_level = conf_level,
+    by_vars = c(species_col, interview_by_vars)
+  )
+}
+
 # Internal helper: validate use_trips on the bus-route rate path ----
 
 # estimate_harvest_br() branches on "diagnostic", then "complete", then

@@ -189,18 +189,31 @@ estimate_total_catch <- function(
         "i" = "Using bus-route estimator (Jones & Pollock 2012, Eq. 19.5)"
       ))
     }
-    if (rlang::quo_is_null(by_quo)) {
-      by_vars_br <- NULL
-    } else {
-      by_cols_br <- tidyselect::eval_select(
-        by_quo,
-        data = design$interviews,
-        allow_rename = FALSE,
-        allow_empty = FALSE,
-        error_call = rlang::caller_env()
-      )
-      by_vars_br <- names(by_cols_br)
+    # Resolved against interviews *plus* the species column: eval_select() on the
+    # interviews alone aborts on `by = species`, which is a grouping this
+    # estimator supports on every other design type (finding 19).
+    by_info_br <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
+    by_vars_br <- by_info_br$interview_vars
+
+    if (!is.null(by_info_br$species_var)) {
+      if (is.null(design[["catch"]])) {
+        cli::cli_abort(c(
+          "Species-level total catch requires catch data.",
+          "x" = "Call {.fn add_catch} before using species grouping in {.fn estimate_total_catch}."
+        ))
+      }
+
+      return(estimate_total_species_br( # nolint: object_usage_linter
+        design,
+        species_col = by_info_br$species_var,
+        interview_by_vars = by_vars_br,
+        variance_method = variance,
+        conf_level = conf_level,
+        quantity = "catch",
+        ci_method = ci_method
+      ))
     }
+
     return(estimate_total_catch_br(
       # nolint: object_usage_linter
       design,

@@ -1828,3 +1828,193 @@ test_that("bus-route totals treat rows as complete when no trip status is record
 
   expect_equal(result$estimates$n, nrow(design$interviews))
 })
+
+# Finding 19: species totals on bus-route and ice designs ----
+#
+# All three totals resolved `by` with tidyselect against design$interviews, which
+# carry no species column, so `by = species` aborted on both HT design types --
+# on origin/main as well as on this branch. The species-level total estimators
+# they would otherwise have reached are stratum product sums built on the
+# standard interview survey, so routing there instead would have reproduced
+# finding 18 in the totals: a species total contradicting the all-species total
+# on the same object.
+#
+# The falsifier is the partition identity again, and it is exact here because a
+# Horvitz-Thompson sum is linear in its numerator: sum_i (c_i * expansion_i /
+# pi_i) over a partition of c_i is the sum over the parts.
+
+ht_species_total_fns <- list(
+  catch = estimate_total_catch,
+  harvest = estimate_total_harvest,
+  release = estimate_total_release
+)
+
+test_that("species totals sum to the all-species total on both HT designs (finding 19)", {
+  for (type in c("bus_route", "ice")) {
+    d <- build_ht_multispecies_design(type, seed = 42)
+
+    for (quantity in names(ht_species_total_fns)) {
+      total_fn <- ht_species_total_fns[[quantity]]
+      all_sp <- suppressWarnings(suppressMessages(total_fn(d)))
+      by_sp <- suppressWarnings(suppressMessages(
+        total_fn(d, by = species) # nolint: object_usage_linter
+      ))
+
+      # A zero-vs-zero identity is unfalsifiable, so every quantity has to be
+      # non-degenerate before the sum means anything.
+      expect_gt(all_sp$estimates$estimate, 0)
+      expect_identical(nrow(by_sp$estimates), 3L, info = paste(type, quantity))
+      expect_equal(
+        sum(by_sp$estimates$estimate),
+        all_sp$estimates$estimate,
+        tolerance = 1e-9,
+        info = paste(type, quantity)
+      )
+    }
+  }
+})
+
+test_that("species totals reconcile with the species rates (finding 19)", {
+  # Cross-estimator check tying findings 18 and 19 together: a species rate is
+  # that species' total over the same HT effort, so total_s / E must equal
+  # rate_s for every species. Satisfying the partition identity alone does not
+  # get this -- a totals path that summed correctly but weighted its interviews
+  # differently from the rate path would pass the sum and fail here.
+  for (type in c("bus_route", "ice")) {
+    d <- build_ht_multispecies_design(type, seed = 42)
+    effort <- suppressWarnings(suppressMessages(estimate_effort(d)))$estimates[[1]][[1]]
+
+    totals <- suppressWarnings(suppressMessages(
+      estimate_total_catch(d, by = species) # nolint: object_usage_linter
+    ))
+    rates <- suppressWarnings(suppressMessages(
+      estimate_catch_rate(d, by = species) # nolint: object_usage_linter
+    ))
+
+    expect_identical(totals$estimates$species, rates$estimates$species)
+    expect_equal(
+      totals$estimates$estimate / effort,
+      rates$estimates$estimate,
+      tolerance = 1e-9,
+      info = type
+    )
+  }
+})
+
+test_that("grouped species totals sum to the grouped all-species total (finding 19)", {
+  # The identity has to survive a second grouping variable, within each stratum
+  # rather than only pooled. All three quantities are checked because release
+  # reaches the HT estimator down a different branch -- it is repointed by
+  # subsetting design$catch, not the interviews -- so a grouping argument dropped
+  # on that branch alone is invisible to a catch-only test.
+  for (type in c("bus_route", "ice")) {
+    d <- build_ht_multispecies_design(type, seed = 42)
+
+    for (quantity in names(ht_species_total_fns)) {
+      total_fn <- ht_species_total_fns[[quantity]]
+      all_sp <- suppressWarnings(suppressMessages(
+        total_fn(d, by = day_type) # nolint: object_usage_linter
+      ))
+      by_sp <- suppressWarnings(suppressMessages(
+        total_fn(d, by = c(day_type, species)) # nolint: object_usage_linter
+      ))
+
+      expect_identical(nrow(by_sp$estimates), 6L, info = paste(type, quantity))
+      summed <- tapply(by_sp$estimates$estimate, by_sp$estimates$day_type, sum)
+      expect_equal(
+        as.numeric(summed[all_sp$estimates$day_type]),
+        all_sp$estimates$estimate,
+        tolerance = 1e-9,
+        info = paste(type, quantity)
+      )
+    }
+  }
+})
+
+test_that("species totals carry the HT weights (finding 19)", {
+  # .expansion is part of the HT weight, so raising it on the interviews holding
+  # the most fish must raise the species totals. The standard product-sum path
+  # ignores .expansion entirely and would not move.
+  for (type in c("bus_route", "ice")) {
+    d <- build_ht_multispecies_design(type, seed = 42)
+    base <- suppressWarnings(suppressMessages(
+      estimate_total_catch(d, by = species) # nolint: object_usage_linter
+    ))
+
+    top <- d$interviews[[d$catch_col]] >= stats::median(d$interviews[[d$catch_col]])
+    d2 <- d
+    d2$interviews$.expansion[top] <- d2$interviews$.expansion[top] * 4
+    bumped <- suppressWarnings(suppressMessages(
+      estimate_total_catch(d2, by = species) # nolint: object_usage_linter
+    ))
+
+    expect_gt(sum(bumped$estimates$estimate), sum(base$estimates$estimate))
+  }
+})
+
+test_that("species totals name the HT estimator and the quantity (finding 19)", {
+  # The delegation repoints the numerator at one species' counts and hands the
+  # design to the same estimator the all-species totals use, so the method string
+  # is the only thing distinguishing the result. It has to name both the
+  # estimator that ran and the quantity it holds -- "ht-total-release-species"
+  # under a catch numerator is finding 10's shape.
+  for (type in c("bus_route", "ice")) {
+    d <- build_ht_multispecies_design(type, seed = 42)
+
+    for (quantity in names(ht_species_total_fns)) {
+      res <- suppressWarnings(suppressMessages(
+        ht_species_total_fns[[quantity]](d, by = species) # nolint: object_usage_linter
+      ))
+      expect_identical(
+        res$method,
+        paste0("ht-total-", quantity, "-species"),
+        info = paste(type, quantity)
+      )
+    }
+  }
+})
+
+test_that("by = species returns a number from every HT total (finding 19)", {
+  # Regression pin. All three totals aborted with "Column `species` doesn't
+  # exist" on both HT design types -- an estimator that does not return is the
+  # loudest failure mode in this audit, and it shipped because no fixture
+  # combined a species column with a bus-route or ice design.
+  for (type in c("bus_route", "ice")) {
+    d <- build_ht_multispecies_design(type, seed = 42)
+
+    for (quantity in names(ht_species_total_fns)) {
+      res <- suppressWarnings(suppressMessages(
+        ht_species_total_fns[[quantity]](d, by = species) # nolint: object_usage_linter
+      ))
+      expect_true(all(is.finite(res$estimates$estimate)), info = paste(type, quantity))
+      expect_identical(res$estimates$species, c("bass", "panfish", "walleye"))
+    }
+  }
+})
+
+test_that("use_trips = 'all' is still rejected with species grouping (finding 19)", {
+  # The completed-trip guard runs ahead of the species branch, so widening the
+  # dispatch must not open a route around it: an incomplete trip contributes
+  # catch-so-far under a completed trip's inclusion probability whether or not
+  # the numerator is one species.
+  d <- build_ht_multispecies_design("bus_route", seed = 42)
+
+  expect_error(
+    estimate_total_catch(d, by = species, use_trips = "all"), # nolint: object_usage_linter
+    "not available"
+  )
+})
+
+test_that("standard designs keep the product-sum species totals (finding 19)", {
+  # The dispatch is keyed on design_type and must not reach a design that is
+  # neither bus_route nor ice. The standard species total is a stratum product
+  # sum, which does not owe the exact HT identity, so what is pinned is that it
+  # still answers under its own method string.
+  d <- build_multispecies_design_for_tests(n_days = 8, n_interviews = 24, n_species = 3, seed = 42)
+  res <- suppressWarnings(suppressMessages(
+    estimate_total_catch(d, by = species) # nolint: object_usage_linter
+  ))
+
+  expect_identical(res$method, "product-total-catch")
+  expect_identical(nrow(res$estimates), 3L)
+})
