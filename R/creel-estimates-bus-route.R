@@ -531,14 +531,15 @@ br_harvest_rate_estimates <- function(
       ci_upper = ci[1, 2],
       n = nrow(interviews)
     )
-    result <- new_creel_estimates(
+    result <- new_creel_estimates( # nolint: object_usage_linter
       # nolint: object_usage_linter
       estimates = estimates_df,
       method = method,
       variance_method = variance_method,
       design = design,
       conf_level = conf_level,
-      by_vars = NULL
+      by_vars = NULL,
+      unit = rate_unit(design) # nolint: object_usage_linter
     )
     attr(result, "site_contributions") <- site_table
     return(result)
@@ -577,14 +578,15 @@ br_harvest_rate_estimates <- function(
   # meaningful for a total and meaningless for a rate -- group rates do not sum
   # to the overall rate.
 
-  result <- new_creel_estimates(
+  result <- new_creel_estimates( # nolint: object_usage_linter
     # nolint: object_usage_linter
     estimates = estimates_df,
     method = method,
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
-    by_vars = by_vars
+    by_vars = by_vars,
+    unit = rate_unit(design) # nolint: object_usage_linter
   )
   attr(result, "site_contributions") <- site_table
   result
@@ -1019,14 +1021,15 @@ estimate_rate_species_br <- function(
     results_list[[i]] <- sp_df[c(species_col, setdiff(names(sp_df), species_col))]
   }
 
-  new_creel_estimates(
+  new_creel_estimates( # nolint: object_usage_linter
     # nolint: object_usage_linter
     estimates = tibble::as_tibble(do.call(rbind, results_list)),
     method = method,
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
-    by_vars = c(species_col, interview_by_vars)
+    by_vars = c(species_col, interview_by_vars),
+    unit = rate_unit(design) # nolint: object_usage_linter
   )
 }
 
@@ -1507,14 +1510,15 @@ estimate_total_species_br <- function(
     results_list[[i]] <- sp_df[c(species_col, setdiff(names(sp_df), species_col))]
   }
 
-  new_creel_estimates(
+  new_creel_estimates( # nolint: object_usage_linter
     # nolint: object_usage_linter
     estimates = tibble::as_tibble(do.call(rbind, results_list)),
     method = paste0("ht-total-", quantity, "-species"),
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
-    by_vars = c(species_col, interview_by_vars)
+    by_vars = c(species_col, interview_by_vars),
+    unit = "fish"
   )
 }
 
@@ -1631,14 +1635,15 @@ br_build_estimates <- function(
       estimates_df$ci_hi_boot <- ci_boot[1, 2]
     }
 
-    result <- new_creel_estimates(
+    result <- new_creel_estimates( # nolint: object_usage_linter
       # nolint: object_usage_linter
       estimates = estimates_df,
       method = method,
       variance_method = variance_method,
       design = design,
       conf_level = conf_level,
-      by_vars = NULL
+      by_vars = NULL,
+      unit = "fish"
     )
     attr(result, "site_contributions") <- site_table
     result
@@ -1703,14 +1708,15 @@ br_build_estimates <- function(
       estimates_df$ci_hi_boot <- svy_boot_by[["ci_u"]]
     }
 
-    result <- new_creel_estimates(
+    result <- new_creel_estimates( # nolint: object_usage_linter
       # nolint: object_usage_linter
       estimates = estimates_df,
       method = method,
       variance_method = variance_method,
       design = design,
       conf_level = conf_level,
-      by_vars = by_vars
+      by_vars = by_vars,
+      unit = "fish"
     )
     attr(result, "site_contributions") <- site_table
     result

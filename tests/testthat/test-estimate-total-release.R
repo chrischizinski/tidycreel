@@ -1048,7 +1048,7 @@ test_that("bus-route total release reports its own quantity, not effort (GH #111
   result <- suppressWarnings(suppressMessages(estimate_total_release(design)))
 
   expect_equal(result$method, "ht-total-release")
-  expect_equal(ggplot2::autoplot(result)$labels$y, "Total Release")
+  expect_equal(ggplot2::autoplot(result)$labels$y, "Total Release (fish)")
 })
 
 test_that("bus-route total release no longer demands add_counts() (GH #110)", {

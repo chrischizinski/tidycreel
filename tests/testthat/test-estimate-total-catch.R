@@ -902,7 +902,7 @@ test_that("bus-route total catch reports its own quantity, not effort (GH #111)"
   result <- estimate_total_catch(d)
 
   expect_equal(result$method, "ht-total-catch")
-  expect_equal(ggplot2::autoplot(result)$labels$y, "Total Catch")
+  expect_equal(ggplot2::autoplot(result)$labels$y, "Total Catch (fish)")
 })
 
 test_that("bus-route total catch labels the grouped path too (GH #111)", {
@@ -915,7 +915,7 @@ test_that("bus-route total catch labels the grouped path too (GH #111)", {
   ))
 
   expect_equal(result$method, "ht-total-catch")
-  expect_equal(ggplot2::autoplot(result)$labels$y, "Total Catch")
+  expect_equal(ggplot2::autoplot(result)$labels$y, "Total Catch (fish)")
 })
 
 test_that("bus-route total catch records its quantity in the CSV provenance (GH #111)", {

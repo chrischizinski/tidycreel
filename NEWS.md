@@ -23,6 +23,26 @@
   `Unit:` line is the claim that tidycreel does not know, which is a different
   statement from a default.
 
+* Unit propagation now reaches the rate and total estimators outside the
+  standard CPUE spine. Species, sections, grouped, bus-route and regression
+  rates carry `fish/<denominator>`; species, sections and bus-route totals
+  carry `fish`. These paths reach different constructors than the ungrouped
+  ones, which is why they were still reporting `NA` after the first pass.
+
+  `NA` is not a neutral default: it reads as "tidycreel does not know what this
+  number is", and it suppresses the unit from `print()`, `autoplot()` and the
+  CSV header, so the number travels bare. Saying `NA` where the package does
+  know is as much a false claim as guessing.
+
+  The denominator is a property of the interviews rather than of which rate was
+  asked for, so every rate estimator on one design now reports the same one —
+  asserted between estimators in the tests rather than against a hardcoded
+  string, since a wrong constant can satisfy a literal but cannot make two
+  independent estimators agree.
+
+  Visible change: `autoplot()` y-axis labels on these paths now read e.g.
+  "Total Catch (fish)" where they previously read "Total Catch".
+
 * `estimate_total_catch()`, `estimate_total_harvest()` and
   `estimate_total_release()` abort with class `creel_error_unit_mismatch` when
   the effort unit and the rate's denominator are both known and disagree. Their

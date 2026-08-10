@@ -1490,7 +1490,8 @@ estimate_catch_rate <- function(
       variance_method = variance,
       design = design,
       conf_level = conf_level,
-      by_vars = by_info$all_vars
+      by_vars = by_info$all_vars,
+      unit = rate_unit(design) # nolint: object_usage_linter
     ))
   }
 
@@ -1928,7 +1929,8 @@ estimate_harvest_rate <- function(
       variance_method = variance,
       design = design,
       conf_level = conf_level,
-      by_vars = by_info$all_vars
+      by_vars = by_info$all_vars,
+      unit = rate_unit(design) # nolint: object_usage_linter
     ))
   }
 
@@ -2240,7 +2242,8 @@ estimate_release_rate <- function(
       variance_method = variance,
       design = design,
       conf_level = conf_level,
-      by_vars = by_info$all_vars
+      by_vars = by_info$all_vars,
+      unit = rate_unit(design) # nolint: object_usage_linter
     ))
   }
 
@@ -3987,7 +3990,8 @@ estimate_harvest_total <- function(design, variance_method, conf_level) {
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
-    by_vars = NULL
+    by_vars = NULL,
+    unit = rate_unit(design) # nolint: object_usage_linter
   )
 }
 
@@ -4118,7 +4122,8 @@ estimate_harvest_grouped <- function(design, by_vars, variance_method, conf_leve
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
-    by_vars = by_vars
+    by_vars = by_vars,
+    unit = rate_unit(design) # nolint: object_usage_linter
   )
 }
 
@@ -4247,7 +4252,8 @@ estimate_catch_rate_sections <- function(
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
-    by_vars = if (!is.null(by_info$all_vars)) c("section", by_info$all_vars) else "section"
+    by_vars = if (!is.null(by_info$all_vars)) c("section", by_info$all_vars) else "section",
+    unit = rate_unit(design) # nolint: object_usage_linter
   )
 }
 
@@ -4364,7 +4370,8 @@ estimate_harvest_rate_sections <- function(
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
-    by_vars = if (!is.null(by_vars)) c("section", by_vars) else "section"
+    by_vars = if (!is.null(by_vars)) c("section", by_vars) else "section",
+    unit = rate_unit(design) # nolint: object_usage_linter
   )
 }
 
@@ -4497,6 +4504,7 @@ estimate_release_rate_sections <- function(
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
-    by_vars = if (!is.null(by_vars)) c("section", by_vars) else "section"
+    by_vars = if (!is.null(by_vars)) c("section", by_vars) else "section",
+    unit = rate_unit(design) # nolint: object_usage_linter
   )
 }

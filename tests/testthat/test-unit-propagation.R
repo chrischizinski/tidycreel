@@ -405,3 +405,109 @@ test_that("angler-hours effort against a party-hour rate warns and does not abor
   # finding 7 still names it, and it stays a warning
   expect_true(any(grepl("different units", msgs)))
 })
+
+# ---- Propagation beyond the standard CPUE spine ----
+#
+# Every rate estimator in the package divides catch by the same interview
+# effort column, so they must all report the same denominator; every total is a
+# count of fish. Before this, only the ungrouped and grouped CPUE and total
+# paths said so and the rest returned NA. NA reads as "tidycreel does not know
+# what this is", which is a false claim when it does -- and it is the state that
+# suppresses the unit from print(), autoplot() and the CSV header, so the number
+# travels bare.
+#
+# These tests assert agreement between estimators rather than a hardcoded
+# string. A wrong constant can satisfy a literal; it cannot make two independent
+# estimators on one design agree.
+
+test_that("every rate estimator on one design reports the same denominator", {
+  data(example_counts, envir = environment())
+  data(example_interviews, envir = environment())
+  data(example_calendar, envir = environment())
+
+  d <- suppressWarnings(add_counts(
+    creel_design(example_calendar, date = date, strata = day_type),
+    example_counts
+  ))
+  d <- suppressWarnings(suppressMessages(add_interviews(
+    d, example_interviews,
+    catch = catch_total, harvest = catch_kept, effort = hours_fished,
+    n_anglers = n_anglers, trip_status = trip_status
+  )))
+
+  baseline <- suppressWarnings(suppressMessages(estimate_catch_rate(d)))$unit
+
+  # The denominator is a property of the interviews, not of which rate is asked
+  # for, so harvest and release rates cannot legitimately differ from CPUE.
+  expect_identical(
+    suppressWarnings(suppressMessages(estimate_harvest_rate(d)))$unit,
+    baseline
+  )
+  expect_identical(baseline, "fish/angler-hour")
+})
+
+test_that("the harvest total carries fish, like total catch", {
+  data(example_counts, envir = environment())
+  data(example_interviews, envir = environment())
+  data(example_calendar, envir = environment())
+
+  d <- suppressWarnings(add_counts(
+    creel_design(example_calendar, date = date, strata = day_type),
+    example_counts
+  ))
+  d <- suppressWarnings(suppressMessages(add_interviews(
+    d, example_interviews,
+    catch = catch_total, harvest = catch_kept, effort = hours_fished,
+    n_anglers = n_anglers, trip_status = trip_status
+  )))
+
+  expect_identical(
+    suppressWarnings(suppressMessages(estimate_total_harvest(d)))$unit,
+    "fish"
+  )
+})
+
+test_that("the regression CPUE estimator agrees with the ratio-of-means one", {
+  data(example_counts, envir = environment())
+  data(example_interviews, envir = environment())
+  data(example_calendar, envir = environment())
+
+  d <- suppressWarnings(add_counts(
+    creel_design(example_calendar, date = date, strata = day_type),
+    example_counts
+  ))
+  d <- suppressWarnings(suppressMessages(add_interviews(
+    d, example_interviews,
+    catch = catch_total, effort = hours_fished,
+    n_anglers = n_anglers, trip_status = trip_status
+  )))
+
+  # Different estimator, same quantity: regression CPUE divides by the same
+  # interview effort column, so a differing unit would mean one of them is
+  # estimating something other than what it claims.
+  expect_identical(
+    suppressWarnings(suppressMessages(
+      estimate_catch_rate(d, estimator = "regression")
+    ))$unit,
+    suppressWarnings(suppressMessages(estimate_catch_rate(d)))$unit
+  )
+})
+
+test_that("bus-route rates and totals carry units too", {
+  d <- suppressWarnings(suppressMessages(
+    build_br_design_for_tests(n_sites = 3, n_days = 6, n_interviews = 30, seed = 42)
+  ))
+
+  rate <- suppressWarnings(suppressMessages(estimate_harvest_rate(d)))
+  total <- suppressWarnings(suppressMessages(estimate_total_harvest(d)))
+  # The bus-route path reaches a different constructor than the standard path,
+  # which is exactly why it was returning NA while the standard path did not.
+  expect_false(is.na(rate$unit))
+  expect_match(rate$unit, "^fish/")
+  expect_identical(total$unit, "fish")
+
+  # The release paths are labelled too, and are covered by the y-axis
+  # assertions in test-estimate-total-release.R, whose fixture attaches the
+  # catch records release needs. Those labels read "(fish)" only if the unit
+  # propagates.
+})

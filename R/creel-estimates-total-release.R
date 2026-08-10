@@ -201,7 +201,7 @@ estimate_total_release <- function(
       product_variance = product_variance,
       ci_type = ci_type
     )
-    return(new_creel_estimates(
+    return(new_creel_estimates( # nolint: object_usage_linter
       # nolint: object_usage_linter
       estimates = tibble::as_tibble(estimates_df),
       method = "product-total-release",
@@ -209,7 +209,8 @@ estimate_total_release <- function(
       design = design,
       conf_level = conf_level,
       by_vars = by_info$all_vars,
-      effort_target = target
+      effort_target = target,
+      unit = "fish"
     ))
   }
 
@@ -653,6 +654,7 @@ estimate_total_release_sections <- function(
     design = design,
     conf_level = conf_level,
     by_vars = if (!is.null(by_vars)) c("section", by_vars) else "section",
-    effort_target = target
+    effort_target = target,
+    unit = "fish"
   )
 }

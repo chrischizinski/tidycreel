@@ -1227,7 +1227,7 @@ test_that("bus-route total harvest reports its own quantity, not effort (GH #111
   result <- suppressWarnings(suppressMessages(estimate_total_harvest(design)))
 
   expect_equal(result$method, "ht-total-harvest")
-  expect_equal(ggplot2::autoplot(result)$labels$y, "Total Harvest")
+  expect_equal(ggplot2::autoplot(result)$labels$y, "Total Harvest (fish)")
 })
 
 test_that("ice total harvest carries the bus-route method string (GH #111)", {
