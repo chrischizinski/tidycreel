@@ -1205,6 +1205,11 @@ read_supplied_within_day_var <- function(
 #' `period_length_col`. Eager construction catches design errors at add_counts()
 #' time when users have context about what data they are adding.
 #'
+#' `period_length_col` applies to instantaneous counts as well as progressive
+#' ones. An instantaneous count is a snapshot of the anglers present at one
+#' moment, so it becomes effort only once multiplied by the period it was
+#' randomised within; supply that column and the estimate is in angler-hours.
+#'
 #' @param design A creel_design object (created with [creel_design()])
 #' @param counts Data frame containing count-side effort data. Preferred input:
 #'   sampled-day effort rows that already have a Date column matching the
@@ -1242,10 +1247,29 @@ read_supplied_within_day_var <- function(
 #'   κ = T_d / τ and Ê_d = C × τ × κ. Ignored (with a warning) when
 #'   `count_type = "instantaneous"`.
 #' @param period_length_col Tidy selector for the column containing T_d — the
-#'   total fishable shift duration in hours for each PSU. Required when
-#'   `count_type = "progressive"` (CNT-05). Values must be positive and finite.
-#'   The column is dropped from `design$counts` after Ê_d is computed (it
-#'   must not be passed to `estimate_effort()` as a count variable).
+#'   length in hours of the period each count was randomised within. Required
+#'   when `count_type = "progressive"` (CNT-05), optional but strongly
+#'   recommended when `count_type = "instantaneous"`. Values must be positive
+#'   and finite. The column is dropped from `design$counts` after Ê_d is
+#'   computed (it must not be passed to `estimate_effort()` as a count
+#'   variable).
+#'
+#'   For instantaneous counts, supplying this is what makes the estimate
+#'   angler-hours. A count is a snapshot of how many anglers were present at one
+#'   moment; effort is that count times the period it was randomised within,
+#'   Ê_d = C̄_d × T_d (Hoenig et al. 1993). Without it, `estimate_effort()`
+#'   expands the counts to the season and returns them unmultiplied, and warns
+#'   once per session that it has done so.
+#'
+#'   T_d is a property of the survey protocol — the period set by regulation,
+#'   access hours, or field practice. It is not astronomical daylight.
+#'   [day_length()] is for simulation and planning; do not feed it here as a
+#'   substitute for the period actually surveyed.
+#'
+#'   The multiplication happens per PSU, before aggregation. Converting after
+#'   the fact computes C̄ × T̄ where the target is the mean of C × T; the two
+#'   differ by Cov(C, T), which is positive in practice because anglers fish
+#'   more on long days, so the collapsed form biases low.
 #' @param allow_invalid Logical flag for validation behavior. If FALSE (default),
 #'   validation failures abort with detailed error messages. If TRUE, validation
 #'   failures generate warnings and attach counts anyway (use with caution).
@@ -1433,6 +1457,23 @@ add_counts <- function(
     names(period_length_col_sel)
   }
 
+  # T_d is validated wherever it is supplied, not only on the progressive path.
+  # Instantaneous designs accept it too (finding 13): the count is a snapshot of
+  # anglers present, and effort is that count times the period it was randomised
+  # within. Before this, supplying period_length_col on an instantaneous design
+  # was accepted, recorded on the design, and then silently discarded.
+  period_vals <- if (is.null(period_length_col_name)) {
+    NULL
+  } else {
+    counts[[period_length_col_name]]
+  }
+  if (!is.null(period_vals) && (any(!is.finite(period_vals)) || any(period_vals <= 0))) {
+    cli::cli_abort(c(
+      "{.field {period_length_col_name}} must contain positive finite values (hours).",
+      "x" = "Found {sum(period_vals <= 0 | !is.finite(period_vals))} non-positive or non-finite value(s)."
+    ))
+  }
+
   # Progressive-specific validation (CNT-03, CNT-05)
   if (count_type == "progressive") {
     # Guard: circuit_time required (CNT-05)
@@ -1455,14 +1496,6 @@ add_counts <- function(
         "{.arg period_length_col} is required when {.code count_type = 'progressive'}.",
         "i" = "{.arg period_length_col} identifies the column with shift duration T_d (hours).",
         "i" = "Example: add_counts(design, counts, count_type = 'progressive', circuit_time = 2, period_length_col = <col>)" # nolint: line_length_linter
-      ))
-    }
-    # Guard: period_length values must be positive
-    period_vals <- counts[[period_length_col_name]]
-    if (any(!is.finite(period_vals)) || any(period_vals <= 0)) {
-      cli::cli_abort(c(
-        "{.field {period_length_col_name}} must contain positive finite values (hours).",
-        "x" = "Found {sum(period_vals <= 0 | !is.finite(period_vals))} non-positive or non-finite value(s)."
       ))
     }
     # Advisory: period_length < circuit_time means κ < 1 (unusual)
@@ -1556,10 +1589,11 @@ add_counts <- function(
     within_day_var <- supplied_wdv
   }
 
-  # For multi-circuit progressive counts: ss_d is in count² units from aggregate_within_day(),
-  # but compute_within_day_var_contribution() must operate in effort² units (Ê_d,k = C_k × T_d).
-  # Scale ss_d by T_d² per PSU before compute_progressive_effort() drops period_length_col.
-  if (count_type == "progressive" && !is.null(within_day_var)) {
+  # For multi-count PSUs: ss_d is in count² units from aggregate_within_day(), but
+  # compute_within_day_var_contribution() must operate in effort² units
+  # (Ê_d,k = C_k × T_d). Scale ss_d by T_d² per PSU before period_length_col is
+  # dropped. Applies to both count types, since both now multiply through by T_d.
+  if (!is.null(period_length_col_name) && !is.null(within_day_var)) {
     td_vals <- counts[[period_length_col_name]][match(within_day_var[[psu]], counts[[psu]])]
     within_day_var$ss_d <- within_day_var$ss_d * td_vals^2
   }
@@ -1572,6 +1606,13 @@ add_counts <- function(
       count_var = count_col_name,
       period_length_col = period_length_col_name,
       circuit_time = circuit_time
+    )
+  } else if (!is.null(period_length_col_name)) {
+    # Instantaneous with T_d supplied: Ê_d = C̄_d × T_d, applied per PSU (finding 13)
+    counts <- apply_period_length( # nolint: object_usage_linter
+      counts = counts,
+      count_var = count_col_name,
+      period_length_col = period_length_col_name
     )
   }
 

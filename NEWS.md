@@ -28,6 +28,14 @@
 
 ## Bug fixes
 
+* `estimate_effort()` warns, once per session, when an instantaneous design
+  carries no `period_length_col`. Without T_d the estimator expands the count
+  column to the season and returns it, which is not angler-hours. The warning
+  states the reading rather than asserting the unit: tidycreel cannot tell an
+  instantaneous head count from a column that already holds angler-hours, since
+  both arrive as a numeric column, so it says that *if* the column is a count the
+  result is in angler-days. Numbers are unchanged for these callers.
+
 * `estimate_total_catch()`, `estimate_total_harvest()` and
   `estimate_total_release()` now accept `by = species` on bus-route and ice
   designs, and answer on the Horvitz–Thompson path. All three resolved `by`
@@ -196,6 +204,32 @@
   double count. Counts tables carrying neither column are unaffected.
 
 ## Breaking changes
+
+* `add_counts()` now applies `period_length_col` to instantaneous counts instead
+  of discarding it. Supplying the column on an instantaneous design used to be
+  accepted, recorded in `design$period_length_col`, and then ignored — the
+  estimate came back as the bare counts summed over days, with the T_d column
+  left sitting unread in `design$counts`. Effort estimates move for anyone who
+  passed it: on an 8-day fixture with T_d of 8–14 hours the total went from 140
+  to 1780.
+
+  An instantaneous count is a snapshot of how many anglers were present at one
+  moment, not effort. Effort is that count times the length of the period it was
+  randomised within, Ê_d = C̄_d × T_d (Hoenig et al. 1993). The multiplication
+  happens per PSU at attach time, so the ungrouped, grouped, sectioned and
+  within-day-variance paths all inherit it, and multi-count PSUs get their `ss_d`
+  scaled by T_d² so the within-day variance stays in effort² units.
+
+  Applying T_d per date rather than after aggregation is deliberate: the
+  collapsed form computes C̄ × T̄ where the target is the mean of C × T, and the
+  two differ by Cov(C, T). Anglers fish more on long days, so that covariance is
+  positive and the collapsed form biases low. Multiplying per date makes the term
+  exactly zero at any stratum width, which removes the constraint on stratum
+  design that would otherwise follow from T varying within a stratum.
+
+  The positive-and-finite check on `period_length_col` now runs wherever the
+  column is supplied. It previously lived inside the progressive-only block, so a
+  zero or negative period passed unchecked on an instantaneous design.
 
 * `n_anglers` now means a party size, not a tidyselect column position. It was
   resolved through `tidyselect::eval_select()`, where a bare integer selects a

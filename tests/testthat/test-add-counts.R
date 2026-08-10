@@ -719,3 +719,168 @@ test_that("prep_counts_daily_effort() output stays unambiguous for add_counts()"
   design <- add_counts(make_test_design(), ready)
   expect_identical(design$count_col, "daily_effort")
 })
+
+# Finding 13: instantaneous counts accept and apply T_d ----
+#
+# An instantaneous count estimates the number of anglers present at one moment,
+# not effort. Effort is that count times the length of the period the count was
+# randomised within (Hoenig et al. 1993): Ê_d = C̄_d × T_d. Before these tests,
+# `period_length_col` was accepted on an instantaneous design, recorded on the
+# design object, and then silently discarded -- the estimate came back as the
+# bare counts summed over days, with nothing to say so.
+
+#' Counts whose T_d varies WITH the count, so Cov(C, T) != 0.
+#' A fixture with constant T_d cannot distinguish per-date multiplication from
+#' scaling the collapsed total, which is the whole point of finding 13.
+make_instantaneous_counts_varying_td <- function() {
+  data.frame(
+    date = as.Date(c(
+      "2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04",
+      "2024-06-08", "2024-06-09", "2024-06-15", "2024-06-16"
+    )),
+    day_type = rep(c("weekday", "weekend"), each = 4),
+    # weekdays: few anglers, short days; weekends: many anglers, long days
+    n_anglers = c(10L, 12L, 11L, 15L, 40L, 55L, 48L, 52L),
+    shift_hours = c(8, 8, 9, 9, 14, 14, 13, 13),
+    stringsAsFactors = FALSE
+  )
+}
+
+test_that("add_counts() applies T_d to instantaneous counts (finding 13)", {
+  design <- creel_design(make_test_calendar(), date = date, strata = day_type)
+  cnt <- make_instantaneous_counts_varying_td()
+
+  result <- add_counts(
+    design, cnt,
+    period_length_col = shift_hours # nolint: object_usage_linter
+  )
+
+  # The count column is replaced by Ê_d = C × T_d, per date
+  expect_equal(result$counts$n_anglers, cnt$n_anglers * cnt$shift_hours)
+})
+
+test_that("instantaneous T_d is applied per date, not to the collapsed total", {
+  # Anglers fish more on long days, so Cov(C, T) > 0 and the collapsed form
+  # C_total × mean(T) biases LOW. Multiplying per date makes that term exactly
+  # zero at any stratum width; this test fails if the multiplication is ever
+  # moved after aggregation.
+  design <- creel_design(make_test_calendar(), date = date, strata = day_type)
+  cnt <- make_instantaneous_counts_varying_td()
+
+  per_date <- sum(cnt$n_anglers * cnt$shift_hours)
+  collapsed <- sum(cnt$n_anglers) * mean(cnt$shift_hours)
+
+  # Guard the fixture itself: if these ever coincide the test proves nothing
+  expect_gt(per_date, collapsed)
+
+  d <- add_counts(design, cnt, period_length_col = shift_hours) # nolint: object_usage_linter
+  est <- suppressWarnings(estimate_effort(d))$estimates$estimate
+
+  expect_equal(est, per_date)
+  expect_false(isTRUE(all.equal(est, collapsed)))
+})
+
+test_that("add_counts() drops period_length_col from instantaneous counts", {
+  # Left in place it is a second numeric column and can be resolved as the count
+  # variable by an estimator that re-resolves it.
+  design <- creel_design(make_test_calendar(), date = date, strata = day_type)
+  result <- add_counts(
+    design, make_instantaneous_counts_varying_td(),
+    period_length_col = shift_hours # nolint: object_usage_linter
+  )
+
+  expect_false("shift_hours" %in% names(result$counts))
+  expect_identical(result$period_length_col, "shift_hours")
+  expect_identical(result$count_col, "n_anglers")
+})
+
+test_that("add_counts() aborts on non-positive T_d for instantaneous counts too", {
+  # The guard used to live inside the progressive-only block, so a zero or
+  # negative period sailed through on an instantaneous design.
+  design <- creel_design(make_test_calendar(), date = date, strata = day_type)
+  bad <- make_instantaneous_counts_varying_td()
+  bad$shift_hours[3] <- 0
+
+  expect_error(
+    add_counts(design, bad, period_length_col = shift_hours), # nolint: object_usage_linter
+    regexp = "positive"
+  )
+})
+
+test_that("instantaneous multi-count PSUs scale ss_d by T_d^2 (finding 13)", {
+  # aggregate_within_day() computes ss_d in count^2 units, but the within-day
+  # variance contribution must be in effort^2 units once the counts become
+  # Ê_d = C̄_d × T_d. Without the scaling the SE is missing the T_d^2 factor.
+  design <- creel_design(make_test_calendar(), date = date, strata = day_type)
+  single <- make_instantaneous_counts_varying_td()
+  # am = 20, pm = 30 on every date → count ss_d = (20-25)^2 + (30-25)^2 = 50
+  multi <- rbind(
+    transform(single, circuit_id = "am", n_anglers = 20L),
+    transform(single, circuit_id = "pm", n_anglers = 30L)
+  )
+  multi <- multi[order(multi$date), ]
+
+  result <- add_counts(
+    design, multi,
+    count_time_col = circuit_id, # nolint: object_usage_linter
+    period_length_col = shift_hours # nolint: object_usage_linter
+  )
+
+  td_by_psu <- single$shift_hours[match(result$within_day_var$date, single$date)]
+  expect_equal(result$within_day_var$ss_d, 50 * td_by_psu^2)
+})
+
+test_that("grouped effort inherits T_d, so strata do not need equal day lengths", {
+  # The per-date multiplication happens at attach time, so every downstream
+  # path -- grouped included -- gets it without its own dispatch.
+  design <- creel_design(make_test_calendar(), date = date, strata = day_type)
+  cnt <- make_instantaneous_counts_varying_td()
+  d <- add_counts(design, cnt, period_length_col = shift_hours) # nolint: object_usage_linter
+
+  res <- suppressWarnings(estimate_effort(d, by = day_type))$estimates
+  effort <- cnt$n_anglers * cnt$shift_hours
+  expected <- tapply(effort, cnt$day_type, sum)
+
+  expect_equal(res$estimate[res$day_type == "weekday"], as.numeric(expected[["weekday"]]))
+  expect_equal(res$estimate[res$day_type == "weekend"], as.numeric(expected[["weekend"]]))
+})
+
+test_that("estimate_effort() warns when instantaneous counts carry no T_d", {
+  # The gap is the point of finding 13: without T_d the estimator returns the
+  # counts summed over days, which is not angler-hours. Once per session, so
+  # force it rather than depending on test order.
+  withr::local_options(rlib_warning_verbosity = "verbose")
+
+  design <- creel_design(make_test_calendar(), date = date, strata = day_type)
+  cnt <- make_instantaneous_counts_varying_td()
+  d <- add_counts(design, cnt[, c("date", "day_type", "n_anglers")])
+
+  expect_warning(estimate_effort(d), regexp = "angler-days")
+})
+
+test_that("estimate_effort() does not warn once T_d is supplied", {
+  withr::local_options(rlib_warning_verbosity = "verbose")
+
+  design <- creel_design(make_test_calendar(), date = date, strata = day_type)
+  d <- add_counts(
+    design, make_instantaneous_counts_varying_td(),
+    period_length_col = shift_hours # nolint: object_usage_linter
+  )
+
+  expect_no_warning(estimate_effort(d), message = "angler-days")
+})
+
+test_that("estimate_effort() does not warn on progressive designs", {
+  # Progressive always carries T_d, so the warning must not fire there.
+  withr::local_options(rlib_warning_verbosity = "verbose")
+
+  design <- creel_design(make_test_calendar(), date = date, strata = day_type)
+  d <- add_counts(
+    design, make_progressive_counts(),
+    count_type = "progressive",
+    circuit_time = 2,
+    period_length_col = shift_hours # nolint: object_usage_linter
+  )
+
+  expect_no_warning(estimate_effort(d), message = "angler-days")
+})

@@ -551,6 +551,13 @@ estimate_effort <- function(
     return(estimate_effort_aerial(design, variance, conf_level, verbose, effort_target = target)) # nolint: object_usage_linter
   }
 
+  # Finding 13: an instantaneous count with no T_d expands to the season without
+  # ever being multiplied by the length of the period it was randomised within,
+  # so the returned quantity is not angler-hours. Fires here, after the dispatches
+  # that do not take the count-expansion path, and before the sectioned one, which
+  # does.
+  warn_missing_period_length(design) # nolint: object_usage_linter
+
   # Section dispatch (v0.7.0+ — only fires when add_sections() was called)
   if (!is.null(design[["sections"]])) {
     if (!identical(target, "sampled_days")) {

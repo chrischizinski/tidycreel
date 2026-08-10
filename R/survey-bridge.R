@@ -427,6 +427,42 @@ compute_progressive_effort <- function(counts, count_var, period_length_col, cir
   counts
 }
 
+#' Apply the period length T_d to instantaneous counts (Ê_d = C̄_d × T_d)
+#'
+#' An instantaneous count estimates the number of anglers present at one moment,
+#' not effort. Effort is that count multiplied by the length of the period the
+#' count was randomised within (Hoenig et al. 1993):
+#'
+#'   Ê_d = C̄_d × T_d
+#'
+#' Multiplication happens per PSU, before any aggregation across days. Collapsing
+#' first and scaling by a stratum-mean T afterwards computes C̄ × T̄ where the
+#' target is the mean of C × T; the two differ by Cov(C, T), which is positive in
+#' practice because anglers fish more on long days, so the collapsed form biases
+#' low. Doing it here makes that covariance term exactly zero at any stratum width.
+#'
+#' This is the same arithmetic [compute_progressive_effort()] performs — τ cancels
+#' out of Ê_d = C × τ × (T_d / τ) — but the progressive path keeps its own function
+#' because `circuit_time` still drives its κ < 1 advisory.
+#'
+#' @param counts Data frame of count data (one row per PSU after aggregation)
+#' @param count_var Character name of the count column (replaced with Ê_d)
+#' @param period_length_col Character name of the T_d column (hours, dropped after)
+#'
+#' @return Modified counts data frame with count_var replaced by Ê_d values
+#'   and period_length_col removed
+#'
+#' @references Hoenig, Robson, Jones, Pollock (1993). Scheduling counts in the
+#'   instantaneous and progressive count methods. NAJFM 13:723-736.
+#'
+#' @keywords internal
+#' @noRd
+apply_period_length <- function(counts, count_var, period_length_col) {
+  counts[[count_var]] <- counts[[count_var]] * counts[[period_length_col]]
+  counts[[period_length_col]] <- NULL
+  counts
+}
+
 #' Construct survey design object
 #'
 #' Internal function that wraps survey::svydesign() with domain-specific error
@@ -512,6 +548,56 @@ construct_survey_design <- function(design) {
       }
     }
   )
+}
+
+#' Warn that an instantaneous effort estimate never had T_d applied
+#'
+#' An instantaneous count is a snapshot of how many anglers were present at one
+#' moment. Effort is that count multiplied by the length of the period the count
+#' was randomised within, and with no `period_length_col` the estimator has no
+#' \eqn{T_d} to apply — it expands the counts to the season and returns them.
+#'
+#' The warning does not claim the result is angler-days, because the package
+#' cannot tell an instantaneous head count from a column that already holds
+#' angler-hours; both arrive as a numeric column. It states the reading and lets
+#' the caller decide which case they are in.
+#'
+#' Once per session, so a script that estimates repeatedly is told once. Tests
+#' force it with `rlib_warning_verbosity = "verbose"`.
+#'
+#' @param design A creel_design object
+#'
+#' @return NULL (invisible) - called for its side effect
+#'
+#' @keywords internal
+#' @noRd
+warn_missing_period_length <- function(design) {
+  if (!identical(design$count_type, "instantaneous")) {
+    return(invisible(NULL))
+  }
+  if (!is.null(design$period_length_col)) {
+    return(invisible(NULL))
+  }
+  cli::cli_warn(
+    c(
+      "Instantaneous counts were expanded without a period length.",
+      "i" = paste(
+        "No {.arg period_length_col} was supplied to {.fn add_counts}, so the",
+        "estimate is the count column summed over days."
+      ),
+      "!" = paste(
+        "If that column holds an instantaneous angler count, the result is in",
+        "angler-days, not angler-hours."
+      ),
+      "i" = paste(
+        "Supply the period each count was randomised within:",
+        "{.code add_counts(design, counts, period_length_col = <col>)}."
+      )
+    ),
+    .frequency = "once",
+    .frequency_id = "tidycreel_effort_without_period_length"
+  )
+  invisible(NULL)
 }
 
 #' Validate data quality (Tier 2)

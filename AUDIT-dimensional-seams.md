@@ -43,7 +43,8 @@ fix or travel together.
 | 10 | #111 | `br_build_estimates()` hardcodes `method = "total"` |
 | 7, 9, 11 | #112 | Missing unit guards |
 | 12 | #113 | ~~Documentation asserts units the code does not produce~~ **LANDED** (12a 2026-08-08, 12b 2026-08-10) |
-| 13 | *not opened* | Instantaneous path never carries T, so it returns angler-days (added 2026-08-08) |
+| 13 | *not opened* | Instantaneous path never carries T, so it returns angler-days (added 2026-08-08) — **estimator half LANDED 2026-08-10**; unit propagation still ahead |
+| 20 | *not opened* | `circuit_time` cancels out of the progressive estimate and cannot change any output (added 2026-08-10) |
 | 14 | *not opened* | ~~Ice designs skip the bus-route dispatch in the rate estimators~~ **LANDED** (added and fixed 2026-08-09) |
 | 17 | *not opened* | ~~`estimate_catch_rate()` has no bus-route or ice dispatch at all, and no CPUE estimator existed to dispatch to~~ **LANDED** (added and fixed 2026-08-09, with finding 14) |
 | 15 | *not opened* | ~~`use_trips` unvalidated on the bus-route path; a typo silently swaps the estimator~~ **LANDED** (added and fixed 2026-08-09) |
@@ -687,6 +688,64 @@ this:
   thing itself.
 
 **Not yet opened as a GitHub issue.**
+
+**LANDED (estimator half, 2026-08-10).** The unit-propagation half is still ahead;
+see "Prevention: carry the unit on the object". Four things the writeup did not
+anticipate.
+
+*The gap was worse than "no way to supply T".* Supplying `period_length_col` on an
+instantaneous design was **accepted and discarded**: no error, no warning,
+`design$period_length_col` set as though it were in use, and the T_d column left
+sitting unread in `design$counts`. On an 8-day fixture with T_d of 8–14 hours the
+estimate came back 140 against a true 1780. So the finding was not only a missing
+capability, it was a silent one.
+
+*The machinery already existed and was already general.* `period_length_col` is
+resolved unconditionally in `add_counts()` for any `count_type`, stored on the
+design, and excluded from count-column resolution. Two `count_type ==
+"progressive"` guards were the whole gate. Applying T_d at attach time means the
+ungrouped, grouped, sectioned and within-day-variance paths inherit it with no
+dispatch of their own — the fix is `apply_period_length()` plus widening two `if`s.
+
+*The positivity guard was inside the progressive block*, so a zero or negative
+period passed unchecked on an instantaneous design. Moved out.
+
+*Answering the open questions.* `period_length_col` was generalised rather than a
+new argument added, as the writeup preferred. Absent T_d **warns once per session**
+and returns the counts as before. The warning deliberately does **not** label the
+result angler-days, which departs from `unit_out = unit_in × days` in the
+prevention section: `example_counts$effort_hours` already holds angler-hours, so
+the package cannot tell a head count from a pre-expanded effort column — both are
+a numeric column. Asserting "angler-days" there would produce exactly the
+confident, well-labelled, wrong number that section warns about. The honest
+derived state is unknown; the warning carries the reading instead.
+
+Mutation testing, control 0: disabling the instantaneous application 5 kills (Ê_d
+came back 10, 20 against a true 80, 160); replacing per-row T_d with `mean(T_d)`
+5 kills (330 against 360 — the collapsed, biased-low form); dropping the ss_d
+T_d² scaling 2 kills; removing the warning 1 kill, with the two does-not-warn
+tests correctly unmoved.
+
+### 20. `circuit_time` cannot change any progressive effort estimate
+
+Found 2026-08-10 while reading the progressive path for finding 13. Not yet fixed.
+
+`compute_progressive_effort()` computes
+\eqn{\hat{E}_d = C \times \tau \times \kappa} with \eqn{\kappa = T_d / \tau}, so
+\eqn{\tau} cancels and the result is \eqn{C \times T_d}. Verified: the same design
+with `circuit_time = 2` and `circuit_time = 5` returns **1490** both times.
+
+`circuit_time` is nonetheless required, type-checked, and stored on the design. Its
+only live effect is the \eqn{\kappa < 1} advisory warning. So a user who supplies
+the wrong \eqn{\tau} gets the right number, and a user who reasons about \eqn{\tau}
+as an input to the estimate is reasoning about something inert. The vignette states
+the cancellation algebraically, which makes this a naming and API question rather
+than a wrong number: it is the one parameter in the count path whose value cannot
+move any output.
+
+Worth deciding whether it stays required. Not a dimensional defect — flagged here
+because the audit's method is to surface seams where a plausible input has no
+effect on the answer.
 
 ### 14. Ice designs skip the bus-route dispatch in the *rate* estimators
 
