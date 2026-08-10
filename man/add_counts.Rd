@@ -75,6 +75,10 @@ moment; effort is that count times the period it was randomised within,
 expands the counts to the season and returns them unmultiplied, and warns
 once per session that it has done so.
 
+Not accepted on aerial designs, which carry their period length as
+\code{h_open} and scale the count by \code{h_open / v} when estimating. Supplying
+both would apply time twice, so this errors rather than choosing one.
+
 T_d is a property of the survey protocol — the period set by regulation,
 access hours, or field practice. It is not astronomical daylight.
 \code{\link[=day_length]{day_length()}} is for simulation and planning; do not feed it here as a

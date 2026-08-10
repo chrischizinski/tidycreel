@@ -185,6 +185,25 @@ estimate_effort_camera <- function(
       )
     }
 
+    # This branch expands a raw count by h_open. If add_counts() already
+    # multiplied the count column by T_d, h_open applies time a second time
+    # (finding 21). effort_unit is set to angler-hours only where that
+    # multiplication happened, so it is the reliable witness.
+    #
+    # Deliberately scoped to this branch. The ratio-calibration path above
+    # divides by mean(count) before multiplying by count, so a constant T_d
+    # cancels and does no harm there.
+    if (identical(design$effort_unit %||% NA_character_, "angler-hours")) {
+      cli::cli_abort(
+        c(
+          "Counts already carry the period length, so {.arg h_open} would apply time twice.",
+          "x" = "{.fn add_counts} was given {.arg period_length_col}, which converted the counts to angler-hours.",
+          "i" = "Drop {.arg period_length_col} from {.fn add_counts}, or supply interviews to use the calibration path."
+        ),
+        class = "creel_error_camera_period_length"
+      )
+    }
+
     count_formula <- stats::reformulate(count_var)
     svy_design <- get_variance_design(design$survey, variance_method) # nolint: object_usage_linter
     svy_result <- suppressWarnings(

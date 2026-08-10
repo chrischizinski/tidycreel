@@ -747,6 +747,64 @@ Worth deciding whether it stays required. Not a dimensional defect — flagged h
 because the audit's method is to surface seams where a plausible input has no
 effect on the answer.
 
+### 21. Finding 13 made aerial and camera designs apply time twice
+
+Found 2026-08-10 while extending unit propagation to the effort family. **LANDED**
+the same day. This is a regression introduced by the audit's own fix, which is why
+it is written up rather than quietly patched.
+
+`estimate_effort_aerial()` computes \eqn{\hat{E} = \mathrm{svytotal}(C) \times
+h_{open}/v} (Pollock Eq. 15.4), and its comment asserted "svytotal on the raw
+instantaneous count". `estimate_effort_camera()`'s raw-count fallback does the same
+with a caller-supplied `h_open`. Both treat \eqn{h_{open}} as *the* period length.
+
+Finding 13 (`ee3e74f`) made `apply_period_length()` multiply the count column by
+\eqn{T_d} at attach time for **any** `count_type`, with no `design_type` guard. So a
+design carrying both got \eqn{C \times T_d \times h_{open}} — angler-hour-*hours*.
+Measured on a 4-day design, \eqn{h_{open} = 14}, \eqn{T_d = 2}:
+
+| | counts column | estimate | `effort_unit` |
+| --- | --- | --- | --- |
+| no `period_length_col` | 10 20 30 40 | **1400** | `NA` |
+| with `period_length_col` | 20 40 60 80 | **2800** | `angler-hours` |
+
+Camera reproduces the same 2x through `est_effort_camera(h_open = )`, which is a
+separate exported entry point and is *not* reached by `estimate_effort()`.
+
+Two things make this worse than an ordinary arithmetic bug. The aerial result is
+labelled `angler-hours` by the unit spine — the confident, well-labelled, wrong
+number the prevention section exists to prevent, produced by the machinery built to
+prevent it. And before finding 13 the same call was *harmless*: `period_length_col`
+on a non-progressive design was accepted and discarded, so aerial returned 1400 by
+accident. Finding 13 converted a silent no-op into a wrong number.
+
+**Fix.** Refuse rather than silently pick a side. \eqn{h_{open}} is a required slot
+on the aerial design and already is the period length; two sources for one quantity
+is the defect, and a caller who supplied both has a wrong model of which term the
+estimator applies that a silent choice would preserve. `add_counts()` aborts with
+class `creel_error_aerial_period_length` when `period_length_col` meets
+`design_type == "aerial"` — eagerly, matching the documented "catch design errors at
+`add_counts()`" pattern, since both facts are known at attach time.
+
+Camera's guard sits in `estimate_effort_camera()` instead, because `h_open` is an
+argument there and is unknown at attach time. It is scoped to the raw-count branch
+only: the ratio-calibration path divides by `mean(count)` before multiplying by
+`count`, so a constant \eqn{T_d} cancels and does no harm. That cancellation is
+asserted by a test rather than assumed — the ratio path returns **36** with and
+without \eqn{T_d}.
+
+Mutation, control 0: disabling the aerial guard **1** (mutant returns 2800 against a
+true 1400); disabling the camera guard **1** (same 2800 against 1400); re-scoping the
+aerial guard to `design_type == "instantaneous"` **24** across the suite, which is
+what pins it to aerial rather than to any design carrying \eqn{T_d}.
+
+**Lesson for the prevention section.** Finding 13 generalised \eqn{T_d} from the
+progressive path to "any `count_type`" on the reasoning that the machinery was
+already general. It was — but two estimators had their *own* period-length term,
+supplied through a different door. Generalising a multiplication requires checking
+every consumer for a term that already plays that role, not only that the plumbing
+accepts it.
+
 ### 14. Ice designs skip the bus-route dispatch in the *rate* estimators
 
 Added 2026-08-09, found while wiring #110. The total estimators dispatch on

@@ -249,6 +249,26 @@
 
 ## Breaking changes
 
+* `add_counts()` now aborts with class `creel_error_aerial_period_length` when
+  `period_length_col` is supplied on an aerial design, and
+  `est_effort_camera()` aborts with class `creel_error_camera_period_length`
+  when its raw-count branch is handed counts that already carry T_d.
+
+  Both estimators already have a period-length term of their own: aerial scales
+  the count by `h_open / v` (Pollock Eq. 15.4) and camera's raw-count fallback
+  scales by a supplied `h_open`. Once `add_counts()` began applying
+  `period_length_col` for any count type (see the previous entry), a design
+  carrying both multiplied by time twice — on a 4-day fixture with `h_open = 14`
+  and T_d = 2 the aerial total went from 1400 to 2800, and the unit spine
+  labelled that 2800 "angler-hours".
+
+  This is a regression in the development version only; no released version
+  applied T_d on those paths, so callers of released tidycreel are unaffected.
+  Anyone who added `period_length_col` since that change should remove it and
+  set the period length through `h_open` instead. Camera's ratio-calibration
+  path is deliberately unaffected: it divides by `mean(count)` before
+  multiplying by `count`, so a constant T_d cancels out of the estimate.
+
 * `add_counts()` now applies `period_length_col` to instantaneous counts instead
   of discarding it. Supplying the column on an instantaneous design used to be
   accepted, recorded in `design$period_length_col`, and then ignored — the

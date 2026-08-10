@@ -884,3 +884,71 @@ test_that("estimate_effort() does not warn on progressive designs", {
 
   expect_no_warning(estimate_effort(d), message = "angler-days")
 })
+
+# Finding 21: aerial designs already carry their period length as h_open -------
+#
+# estimate_effort_aerial() scales the count by h_open/v. Finding 13 made
+# add_counts() apply T_d for any count type, so an aerial design given
+# period_length_col multiplied by time twice and the unit spine then labelled
+# the result "angler-hours". Refusing is what keeps h_open the single source.
+
+test_that("F21: add_counts() refuses period_length_col on an aerial design", {
+  cal <- data.frame(
+    date = as.Date("2024-06-01") + 0:3,
+    day_type = c("weekday", "weekday", "weekend", "weekend"),
+    stringsAsFactors = FALSE
+  )
+  counts <- data.frame(
+    date = as.Date("2024-06-01") + 0:3,
+    day_type = c("weekday", "weekday", "weekend", "weekend"),
+    anglers = c(10, 20, 30, 40),
+    shift_hours = rep(2, 4),
+    stringsAsFactors = FALSE
+  )
+  d <- suppressWarnings(creel_design(
+    cal,
+    date = date,
+    strata = day_type, # nolint
+    survey_type = "aerial",
+    h_open = 14
+  ))
+
+  expect_error(
+    add_counts(
+      d,
+      counts,
+      count_col = anglers, # nolint: object_usage_linter
+      period_length_col = shift_hours # nolint: object_usage_linter
+    ),
+    class = "creel_error_aerial_period_length"
+  )
+})
+
+test_that("F21: aerial effort still applies h_open once when T_d is absent", {
+  cal <- data.frame(
+    date = as.Date("2024-06-01") + 0:3,
+    day_type = c("weekday", "weekday", "weekend", "weekend"),
+    stringsAsFactors = FALSE
+  )
+  counts <- data.frame(
+    date = as.Date("2024-06-01") + 0:3,
+    day_type = c("weekday", "weekday", "weekend", "weekend"),
+    anglers = c(10, 20, 30, 40),
+    stringsAsFactors = FALSE
+  )
+  d <- suppressWarnings(creel_design(
+    cal,
+    date = date,
+    strata = day_type, # nolint
+    survey_type = "aerial",
+    h_open = 14
+  ))
+  d <- suppressWarnings(add_counts(d, counts, count_col = anglers)) # nolint: object_usage_linter
+
+  # sum(anglers) = 100 over a 4-day calendar, scaled by h_open = 14 exactly
+  # once. The pre-finding-13 answer, and the correct one.
+  expect_equal(
+    suppressWarnings(estimate_effort(d))$estimates$estimate,
+    1400
+  )
+})

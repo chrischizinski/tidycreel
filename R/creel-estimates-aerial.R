@@ -44,7 +44,9 @@ estimate_effort_aerial <- function(
   # Get appropriate survey design for variance method
   svy_design <- get_variance_design(design$survey, variance_method) # nolint: object_usage_linter
 
-  # svytotal on the raw instantaneous count, then scale by h_over_v
+  # svytotal on the raw instantaneous count, then scale by h_over_v. The count
+  # is guaranteed raw: add_counts() refuses period_length_col on an aerial
+  # design, so nothing has already multiplied it by a period (finding 21).
   svy_result <- suppressWarnings(survey::svytotal(count_formula, svy_design))
 
   estimate <- as.numeric(coef(svy_result)) * h_over_v

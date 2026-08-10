@@ -1261,6 +1261,10 @@ read_supplied_within_day_var <- function(
 #'   expands the counts to the season and returns them unmultiplied, and warns
 #'   once per session that it has done so.
 #'
+#'   Not accepted on aerial designs, which carry their period length as
+#'   `h_open` and scale the count by `h_open / v` when estimating. Supplying
+#'   both would apply time twice, so this errors rather than choosing one.
+#'
 #'   T_d is a property of the survey protocol — the period set by regulation,
 #'   access hours, or field practice. It is not astronomical daylight.
 #'   [day_length()] is for simulation and planning; do not feed it here as a
@@ -1476,6 +1480,24 @@ add_counts <- function(
       "{.field {period_length_col_name}} must contain positive finite values (hours).",
       "x" = "Found {sum(period_vals <= 0 | !is.finite(period_vals))} non-positive or non-finite value(s)."
     ))
+  }
+
+  # Aerial designs already carry their period length as h_open, a required slot
+  # on the aerial design, and estimate_effort_aerial() scales the count by
+  # h_open/v. Applying T_d here as well multiplies by time twice (finding 21):
+  # the result is angler-hour-hours, and the unit spine would label it
+  # angler-hours. Two sources for one quantity is the defect, so refuse rather
+  # than silently pick one — a caller who supplied both has a wrong model of
+  # which term the estimator applies, and a silent choice would preserve it.
+  if (!is.null(period_length_col_name) && identical(design$design_type, "aerial")) {
+    cli::cli_abort(
+      c(
+        "{.arg period_length_col} cannot be used with an aerial design.",
+        "x" = "{.field h_open} already supplies the period length, so time would apply twice.",
+        "i" = "Set the period length with {.arg h_open} in {.fn creel_design} instead."
+      ),
+      class = "creel_error_aerial_period_length"
+    )
   }
 
   # Progressive-specific validation (CNT-03, CNT-05)

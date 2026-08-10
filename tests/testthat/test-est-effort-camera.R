@@ -242,3 +242,64 @@ test_that("CEST-19: non-camera design type produces a cli warning", {
     regexp = "design_type"
   )
 })
+
+# Finding 21: h_open must not apply time a second time -------------------------
+#
+# The raw-count branch expands a count by h_open. Once add_counts() gained the
+# ability to apply T_d to any count type (finding 13), a design carrying both
+# produced count x T_d x h_open -- angler-hour-hours, roughly double the truth,
+# with nothing in the result saying so. These tests fail if that branch ever
+# stops checking, which is what makes the number wrong rather than merely
+# unlabelled.
+
+make_camera_counts_with_td <- function() {
+  counts <- make_camera_counts()
+  counts$shift_hours <- rep(2, nrow(counts))
+  counts
+}
+
+test_that("F21: raw-count branch refuses counts that already carry T_d", {
+  d <- suppressWarnings(add_counts(
+    make_camera_design(),
+    make_camera_counts_with_td(),
+    period_length_col = shift_hours # nolint: object_usage_linter
+  ))
+
+  # h_open would be the second time multiplier, so the product is not effort.
+  expect_error(
+    est_effort_camera(d, h_open = 14),
+    class = "creel_error_camera_period_length"
+  )
+})
+
+test_that("F21: raw-count branch is unaffected when no T_d was applied", {
+  d <- make_design_with_counts()
+
+  res <- suppressWarnings(est_effort_camera(d, h_open = 14))
+
+  # sum(ingress) = 301 over 5 sampled days expanded to a 5-day calendar,
+  # scaled by h_open = 14. Guards against the check firing on the normal path.
+  expect_equal(res$estimates$estimate, 301 * 14)
+})
+
+test_that("F21: ratio-calibration branch accepts T_d, because it cancels", {
+  d_td <- suppressWarnings(add_counts(
+    make_camera_design(),
+    make_camera_counts_with_td(),
+    period_length_col = shift_hours # nolint: object_usage_linter
+  ))
+  d_raw <- make_design_with_counts()
+
+  # The ratio path divides by mean(count) before multiplying by count, so a
+  # constant T_d cancels out of the estimate entirely. Scoping the guard to the
+  # raw branch is only correct if that is true -- assert it rather than assume.
+  with_td <- suppressWarnings(
+    est_effort_camera(d_td, interviews = make_interviews())
+  )
+  without_td <- suppressWarnings(
+    est_effort_camera(d_raw, interviews = make_interviews())
+  )
+
+  expect_equal(with_td$estimates$estimate, without_td$estimates$estimate)
+  expect_equal(with_td$method, "camera_ratio")
+})
