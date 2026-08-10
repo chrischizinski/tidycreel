@@ -42,7 +42,7 @@ fix or travel together.
 | 8 | #110 | No bus-route dispatch for release; `estimate_total_release_br()` dead |
 | 10 | #111 | `br_build_estimates()` hardcodes `method = "total"` |
 | 7, 9, 11 | #112 | Missing unit guards |
-| 12 | #113 | Documentation asserts units the code does not produce |
+| 12 | #113 | ~~Documentation asserts units the code does not produce~~ **LANDED** (12a 2026-08-08, 12b 2026-08-10) |
 | 13 | *not opened* | Instantaneous path never carries T, so it returns angler-days (added 2026-08-08) |
 | 14 | *not opened* | ~~Ice designs skip the bus-route dispatch in the rate estimators~~ **LANDED** (added and fixed 2026-08-09) |
 | 17 | *not opened* | ~~`estimate_catch_rate()` has no bus-route or ice dispatch at all, and no CPUE estimator existed to dispatch to~~ **LANDED** (added and fixed 2026-08-09, with finding 14) |
@@ -75,8 +75,8 @@ pass on anything Sonnet implements.
 | #110 | 8 | **Sonnet** implement / **Opus** verify | The dispatch mirrors the existing harvest bus-route dispatch — mechanical. **But `estimate_total_release_br()` has never been called, so it has never been exercised. Opus must verify it is correct before the wiring is trusted.** |
 | #111 | 10 | **Sonnet** | ~~Thread a `method` string through 4 call sites and fix one `autoplot` map entry. No math.~~ **LANDED.** Three call sites, not four (effort builds its own object and its `"total"` was already correct), and three label maps, not one. |
 | #112 | 7, 9, 11 | **Sonnet** | ~~All three are guards. #11 is an allowlist check; #7 is a flag plus a warn; #9 is a guard **once Opus decides reject-vs-honour** — decide that first, then it is one branch.~~ **LANDED.** #9 was not one branch: the reject was, but the substantive half was giving catch and release the completed-trip filter harvest already had, which moves shipped numbers. #7's blast radius had to be measured, not reasoned about. |
-| #113 | 12a | **Opus** | `flexible-count-estimation.Rmd` needs a *correct* replacement worked example. Producing the right numbers is exactly what failed the first time. |
-| #113 | 12b | **Sonnet** | `glossary.Rmd:68`, `data.R:330`, `ice-fishing.Rmd:~214-218`, `tidycreel.Rmd:47/71` — prose only, exact target text already identified. |
+| #113 | 12a | **Opus** | ~~`flexible-count-estimation.Rmd` needs a *correct* replacement worked example.~~ **LANDED** (`3af819f`, 2026-08-08). |
+| #113 | 12b | **Sonnet** | ~~`glossary.Rmd:68`, `data.R:330`, `ice-fishing.Rmd:~214-218`, `tidycreel.Rmd:47/71` — prose only, exact target text already identified.~~ **LANDED** (2026-08-10). Not prose only: two of the four targets carried stale *numbers*, and the ice one had gone stale a second time when #112 landed the completed-trip filter. |
 | *not opened* | 14 | **Opus** | One-line dispatch condition, but it moves every ice harvest-rate number and the two paths are indistinguishable from their output, so the regression fixture is the whole job. |
 | *not opened* | 15 | **Sonnet** | One guard in two twin functions, with the valid set already written down on the standard path. **But Opus decides first whether `"all"` is blessed or rejected on bus-route** — that is an estimator question, not a validation one. |
 | *not opened* | 13 | **Opus** | Adds \eqn{T_d} to the instantaneous estimator. Estimator design, moves every instantaneous number in the package, and the absent-\eqn{T_d} behaviour has to be decided jointly with unit propagation. Exactly the class where a plausible wrong answer passes the suite. |
@@ -579,6 +579,45 @@ Mutation testing, 1/1: make the allowlist admit everything -> 3 failures.
 
 **Decision: DOC FIX** for all, but note the first is a 10x error in the primary
 teaching vignette for this exact topic.
+
+**LANDED (#113).** 12a in `3af819f` (2026-08-08); 12b on 2026-08-10. Four things
+worth recording, because "prose only" was wrong three times over.
+
+*The decoy was not confined to one vignette.* `open_hours` survived in six more
+places after 12a — `progressive-count-surveys.Rmd:63,91,249`,
+`effort-pipeline.Rmd:113,241,324`, `temporal-extrapolation.Rmd:73` — all inert
+calendar columns, since `creel_design()` reads only the date and the strata. The
+progressive one was the worst of them: its data-requirements list called the
+calendar's `open_hours` the \eqn{T_d} the estimator uses, when the real \eqn{T_d}
+travels with the counts as `shift_hours` via `period_length_col`. All six removed.
+
+*Two targets carried stale numbers, not just stale units.* `tidycreel.Rmd:71`
+claimed "approximately 358 angler-hours" against an actual **372.5**, and `:83`
+claimed weekend 250 / weekday 108 against an actual **201.9 / 170.6**. The second
+was also framed misleadingly: the calendar holds 10 weekdays to 4 weekend days, so
+a weekend total only 18% higher corresponds to a per-day rate roughly **3x** higher
+(50.5 against 17.1). Every number in the fix was read off a rendered chunk rather
+than off the prose it replaced.
+
+*`example_counts` is angler-hours, so the units half of the `tidycreel.Rmd`
+finding pointed at the wrong line.* The values are fractional (45.2, 52.8) in a
+column named `effort_hours`. L71's "angler-hours" was therefore correct and L47's
+"instantaneous count observations" was the wrong half — the reverse of what this
+finding assumed. `R/data.R:39` had the same ambiguity as `:330` two entries up and
+was fixed with it.
+
+*The ice text had gone stale a second time, after this finding was written.* It
+described `estimate_total_catch()` as CPUE x effort over all interviews. By the
+time 12b landed, #112 had added `br_complete_trips_only()`, so the live behaviour
+is an HT sum (`ht-total-catch`) over **complete trips only** — verified 60 of 72
+interviews, `use_trips = "all"` refused, and no effort term at all. The vignette
+also credited the delta method for the SE, where the HT path uses Taylor
+linearization; there is no product whose uncertainty needs propagating. A doc
+finding aimed at a moving estimator has to be re-verified against the branch, not
+against the audit entry.
+
+Gate: all 8 affected and dependent vignettes knit, and the three numbers above were
+confirmed against the rendered HTML.
 
 ### 13. The instantaneous path never carries T, so it returns angler-days
 

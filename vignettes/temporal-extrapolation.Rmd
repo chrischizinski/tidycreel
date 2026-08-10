@@ -68,9 +68,8 @@ day_types <- ifelse(
 )
 
 season_calendar <- data.frame(
-  date       = all_dates,
-  day_type   = day_types,
-  open_hours = 10
+  date     = all_dates,
+  day_type = day_types
 )
 
 # Stratified random sample: 30% of weekdays, 50% of weekends

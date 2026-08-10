@@ -11,7 +11,8 @@ A data frame with 36 rows and 4 columns:
 \item{day_type}{Day type stratum: \code{"weekday"} or \code{"weekend"}}
 \item{section}{Section identifier: \code{"North"}, \code{"Central"}, or
 \code{"South"}}
-\item{effort_hours}{Numeric instantaneous count of angler-hours observed}
+\item{effort_hours}{Numeric angler-hours observed on the section for that
+date}
 }
 }
 \source{
@@ -21,10 +22,15 @@ Simulated data for package examples
 example_sections_counts
 }
 \description{
-Instantaneous count observations for a 3-section lake (North, Central, South)
-covering 12 survey dates. Each section has one count row per date (36 rows
+Daily effort observations for a 3-section lake (North, Central, South)
+covering 12 survey dates. Each section has one row per date (36 rows
 total). Effort varies materially by section: Central has the highest angler
 traffic, South the lowest. Use with \code{\link[=add_sections]{add_sections()}} and \code{\link[=add_counts]{add_counts()}}.
+}
+\details{
+As with \link{example_counts}, the effort column holds angler-hours rather than
+raw angler counts; see that dataset for why the distinction matters to
+\code{\link[=estimate_effort]{estimate_effort()}}.
 }
 \examples{
 data(example_sections_calendar)

@@ -109,8 +109,7 @@ library(tidycreel)
 
 calendar <- data.frame(
   date = as.Date(c("2024-06-03", "2024-06-04", "2024-06-05")),
-  day_type = rep("weekday", 3),
-  open_hours = rep(10, 3)
+  day_type = rep("weekday", 3)
 )
 design <- creel_design(calendar, date = date, strata = day_type)
 
@@ -236,9 +235,8 @@ Confirming with R:
 
 ```{r multi-count, message = FALSE}
 calendar_m <- data.frame(
-  date       = as.Date(c("2024-06-03", "2024-06-04", "2024-06-05", "2024-06-06")),
-  day_type   = rep("weekday", 4),
-  open_hours = rep(10, 4)
+  date     = as.Date(c("2024-06-03", "2024-06-04", "2024-06-05", "2024-06-06")),
+  day_type = rep("weekday", 4)
 )
 design_m <- creel_design(calendar_m, date = date, strata = day_type)
 
@@ -319,9 +317,8 @@ in the `n_anglers` column automatically):
 
 ```{r progressive, message = FALSE}
 calendar_p <- data.frame(
-  date       = as.Date(c("2024-06-03", "2024-06-04", "2024-06-05")),
-  day_type   = rep("weekday", 3),
-  open_hours = rep(8, 3)
+  date     = as.Date(c("2024-06-03", "2024-06-04", "2024-06-05")),
+  day_type = rep("weekday", 3)
 )
 design_p <- creel_design(calendar_p, date = date, strata = day_type)
 

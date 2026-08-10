@@ -396,6 +396,42 @@
   the within-day variance decomposition only, without the progressive `T_d`
   expansion (#113).
 
+* Inert `open_hours` calendar columns are removed from the six remaining places
+  they appeared — `vignettes/progressive-count-surveys.Rmd`,
+  `vignettes/effort-pipeline.Rmd` and `vignettes/temporal-extrapolation.Rmd`.
+  `creel_design()` reads only the date and the strata, so the column was never
+  consulted anywhere it was written. The progressive article additionally listed
+  the calendar's `open_hours` as the \eqn{T_d} the estimator applies; the real
+  \eqn{T_d} travels with the count data and is passed as `period_length_col`
+  (#113).
+
+* `vignettes/tidycreel.Rmd`: two reported values had drifted from what the
+  chunks print. The total effort estimate is 372.5 angler-hours, not the 358
+  claimed, and the grouped estimates are 201.9 weekend / 170.6 weekday, not
+  250 / 108. The grouped comparison now notes that the calendar holds 10
+  weekdays to 4 weekend days, so a weekend total 18% higher is a per-day rate
+  about three times higher. The article also called `example_counts`
+  "instantaneous count observations" when the column holds angler-hours already
+  accumulated over the day (#113).
+
+* `example_counts` and `example_sections_counts` documented their
+  `effort_hours` column as an instantaneous count *of angler-hours*, which is
+  two different quantities at once. Both now state that the column holds
+  angler-hours, and that `estimate_effort()` expands whatever column it is
+  given without converting units — raw counts in, angler-days out (#113).
+
+* `vignettes/glossary.Rmd` sanctioned the same ambiguity by defining count data
+  as "the observed angler count or angler-hours". It now states that both are
+  accepted, that no conversion happens, and which unit each choice returns
+  (#113).
+
+* `vignettes/ice-fishing.Rmd` described `estimate_total_catch()` as CPUE times
+  effort over all interviews. On ice designs it is a Horvitz–Thompson sum with
+  no CPUE term and no effort term, over complete trips only — 60 of the
+  vignette's 72 interviews — and `use_trips = "all"` is refused. The standard
+  error comes from Taylor linearization, not the delta method the text credited
+  (#113).
+
 # tidycreel 2.5.0 "Creek Chub" (2026-06-30)
 
 ## New features

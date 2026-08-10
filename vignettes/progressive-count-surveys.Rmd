@@ -60,10 +60,12 @@ Instantaneous counts are preferred when:
 
 A progressive count dataset needs:
 
-1. **Calendar** — sampled dates with `day_type` and `open_hours` ($T_d$)
+1. **Calendar** — sampled dates with `day_type`. The calendar carries no hours
+   column: `creel_design()` reads only the date and the strata, so $T_d$ must
+   travel with the counts.
 2. **Count data** — one row per sampled day with raw angler count ($C$) and
-   a column recording $T_d$ (the same `open_hours` value, or an observed value
-   if the site closed early)
+   a column recording $T_d$, passed as `period_length_col`. This is the only
+   place the estimator looks for the open hours.
 3. **`circuit_time`** — a single numeric value (hours) for the traversal duration $\tau$
 
 ## A Complete Example
@@ -87,8 +89,7 @@ calendar <- data.frame(
     "2024-07-06", "2024-07-07", "2024-07-13", "2024-07-14",
     "2024-07-20", "2024-07-21", "2024-07-27", "2024-07-28"
   )),
-  day_type = c(rep("weekday", 10), rep("weekend", 8)),
-  open_hours = 10
+  day_type = c(rep("weekday", 10), rep("weekend", 8))
 )
 
 design <- creel_design(calendar, date = date, strata = day_type)
@@ -244,9 +245,8 @@ $$\hat{E}_d = 234 \times 8 = 1{,}872 \text{ angler-hours}$$
 
 ```{r pope, message = FALSE}
 cal_pope <- data.frame(
-  date       = as.Date(c("2024-06-01", "2024-06-02")),
-  day_type   = c("weekday", "weekday"),
-  open_hours = c(8, 8)
+  date     = as.Date(c("2024-06-01", "2024-06-02")),
+  day_type = c("weekday", "weekday")
 )
 des_pope <- creel_design(cal_pope, date = date, strata = day_type)
 

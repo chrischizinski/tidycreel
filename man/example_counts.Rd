@@ -9,7 +9,7 @@ A data frame with 14 rows and 3 columns:
 \describe{
 \item{date}{Survey date (Date class), matching \link{example_calendar} dates}
 \item{day_type}{Day type stratum: "weekday" or "weekend", matching calendar}
-\item{effort_hours}{Numeric count variable: total angler-hours observed}
+\item{effort_hours}{Numeric angler-hours observed on the survey date}
 }
 }
 \source{
@@ -19,9 +19,15 @@ Simulated data for package examples
 example_counts
 }
 \description{
-Sample instantaneous count observations matching \link{example_calendar}.
-Contains effort measurements for each survey date, suitable for use
-with \code{\link[=add_counts]{add_counts()}} and \code{\link[=estimate_effort]{estimate_effort()}}.
+Sample daily effort observations matching \link{example_calendar}. One row per
+survey date, suitable for use with \code{\link[=add_counts]{add_counts()}} and \code{\link[=estimate_effort]{estimate_effort()}}.
+}
+\details{
+The effort column holds angler-hours, not raw angler counts.
+\code{\link[=estimate_effort]{estimate_effort()}} expands whichever column it is given to the season
+without converting units, so a design built on these data reports
+angler-hours. Supplying raw instantaneous counts instead would give a total
+in angler-days.
 }
 \examples{
 # Load and use with a creel design
