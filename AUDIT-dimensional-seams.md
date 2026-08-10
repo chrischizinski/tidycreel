@@ -1235,7 +1235,9 @@ findings 1, 2 and 7.
 
 **Rejected: the `units` package.** Real dimensional arithmetic, but `svytotal()` will
 not accept a units vector and it would touch every estimator. Too invasive at 2.5.0
-with CRAN in view.
+with CRAN in view. Revisited after the first pass landed — see *Design note: why not
+`units`* below, which confirms the rejection on a sharper reason and records the part
+worth stealing.
 
 **Back-compat.** Default `unit = NA` ("unknown") must warn rather than abort, or every
 existing caller breaks. Scope the first pass to the effort/catch spine.
@@ -1299,6 +1301,73 @@ bus-route, aerial, regression) return `NA` units rather than derived ones, and
 `estimate_angler_trips()` / `estimate_effort_per_acre()` do not yet carry
 `angler-trips` and `angler-hours/acre`. Those are what would make the abort
 reachable from ordinary use rather than only from a hand-set unit.
+
+### Design note: why not `units` (2026-08-10, revisit)
+
+The `units` package (r-quantities/units, a udunits2 wrapper) is the obvious
+off-the-shelf answer and was rejected above on invasiveness. That reason holds, but
+it is not the strongest one, and the first pass surfaced a better one. Recording both
+so this does not get re-proposed on the weaker argument.
+
+**The numbers never touch plain arithmetic.** Every quantity that would carry a unit
+is produced inside `survey::svytotal()`, `svyratio()`, Taylor linearization,
+`lme4::glmer.nb()` or a bootstrap resample. None of those accept a units vector — they
+do internal matrix algebra and will error or silently strip the class. Adopting
+`units` therefore means `drop_units()` on entry and reattach on exit, which is the
+label-passing spine that already exists, plus a udunits system dependency and a
+label-to-udunits translation layer. Non-trivial install friction for the agency
+Windows users this package targets, bought with no change in what the machinery can
+express.
+
+**"Unknown" has no representation, and it is the state that matters most.** This is
+the decisive objection and it only became visible once the first pass established
+unknown as a required third state. `units` has two states: carries units, or plain
+numeric. Map unknown onto plain numeric and udunits treats it as **dimensionless**, so
+`unknown + angler-hours` errors (correct) but `unknown x angler-hours` silently
+succeeds (wrong — and that product is exactly the confident, well-labelled, wrong
+number this whole section exists to prevent). The one distinction the landed design
+depends on is the one udunits cannot hold.
+
+**What is worth stealing anyway.** Two things udunits gets right that the current
+string-label spine does not:
+
+- *Derived units are computed, not looked up.* effort x rate -> catch falls out of the
+  algebra; no rule table, and combinations nobody anticipated are still checked. The
+  current spine only catches mismatches someone wrote a rule for.
+- *Variance squares for free.* `Var(effort)` in angler-hours² rather than the
+  hand-tracked `T_d^2` scaling in `add_counts()`.
+
+Also worth noting as a modelling confirmation: udunits would represent angler-hours
+and party-hours as distinct base dimensions with **no installed conversion**, because
+a party holds an unknown number of anglers. Refusing to convert between them is the
+correct behaviour, not a limitation — the same conclusion findings 2 and 7 reached
+independently.
+
+**Cheaper path to the same benefit, if it is ever needed.** Represent a unit as
+numerator/denominator token vectors instead of a string:
+
+```
+angler-hours     -> list(num = c("angler", "hour"), den = character())
+fish/angler-hour -> list(num = "fish", den = c("angler", "hour"))
+```
+
+Multiply = concatenate then cancel; square = duplicate the numerator; compare = sorted
+token equality; `NULL` remains the unknown state with its own short-circuit. Roughly
+50 lines, no dependency, character labels preserved at the API surface via a
+formatter. Gets computed derived units and free variance-squaring; skips conversion
+factors, which nothing in the package currently needs.
+
+**Trigger condition — do not build this yet.** The package currently has **six**
+distinct unit labels (`fish`, `angler-hours`, `party-hours`, `angler-trips`,
+`angler-days`, `fish/angler-hour`) across six `unit =` assignment sites. String
+equality over six labels is the right tool and the token form would be speculative
+generality. Revisit only if extending propagation to the species, bus-route, aerial
+and regression estimators plus `estimate_angler_trips()` /
+`estimate_effort_per_acre()` (see "Still outstanding" above) pushes the label set past
+roughly ten — that is the point at which hand-written pairwise rules start missing
+legal combinations, which is the failure mode the token form removes. Sequence it
+*after* that extension, never before: the extension is what reveals whether the
+problem is real.
 
 ---
 
