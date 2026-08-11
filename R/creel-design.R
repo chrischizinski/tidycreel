@@ -3923,13 +3923,26 @@ add_lengths <- function(
     if (any(is.na(release_counts))) {
       cli::cli_abort(c(
         "Release {.field count} values must not be NA.",
-        "i" = "Every release row must have a positive integer count."
+        "i" = "Every release row must have a positive count; non-integer values warn."
       ))
     }
     if (any(as.numeric(release_counts) <= 0)) {
       cli::cli_abort(c(
         "Release {.field count} values must be positive.",
         "i" = "All release row counts must be > 0."
+      ))
+    }
+    # A binned count is a number of fish, so a fractional value is the same
+    # category error the party-size validator warns about above. The NA message
+    # used to claim "a positive integer count" with no code behind it — finding
+    # 26. Warn rather than abort: the party-size precedent treats a fractional
+    # count as a wrong-column signal, not as invalid data.
+    count_nums <- suppressWarnings(as.numeric(release_counts))
+    fractional <- !is.na(count_nums) & count_nums != round(count_nums)
+    if (any(fractional)) {
+      cli::cli_warn(c(
+        "Release {.field count} has {sum(fractional)} non-integer value{?s}.",
+        "i" = "Binned release counts are counts of fish; a fractional value suggests a wrong column."
       ))
     }
   }

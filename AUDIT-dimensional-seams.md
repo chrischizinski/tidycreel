@@ -61,6 +61,7 @@ fix or travel together.
 | 23 | *not opened* | ~~`estimate_mr_harvest()` multiplied by a proportion of anglers and called the product total harvest~~ **LANDED** (added and fixed 2026-08-11) |
 | 24 | *not opened* | ~~`estimate_exploitation_rate()` documented `C` as coming from `estimate_total_catch()`, but the estimator needs harvest~~ **LANDED** (added and fixed 2026-08-11) |
 | 25 | *not opened* | `estimate_angler_n()` cannot know whether it counted anglers, boats, or parties; unit recorded `NA`, ambiguity **not fixed** (added 2026-08-11) |
+| 26 | *not opened* | ~~Binned release counts claimed integer enforcement that was never there~~ **LANDED** (added and fixed 2026-08-11, from the `cli_abort()` sweep finding 12c called for) |
 
 Downstream book work is tracked in
 `~/Dev/modern-creel-surveys/.planning/TIDYCREEL-WISHLIST.md`, not as GitHub issues —
@@ -1020,6 +1021,58 @@ argument naming the marked unit — but unlike the camera case that argument wou
 carry no data the code could verify, so it is a declaration wearing a derivation's
 clothes. A warning at the seam, finding 22's direction 2, is the cheaper option and
 is what the codebase already does at analogous gaps. Not decided.
+
+### 26. Binned release counts claimed integer enforcement that was never there
+
+Found 2026-08-11 by the sweep finding 12c called for: checking the other `cli_abort()`
+messages for a guard declaring something no code behind it enforces. 514 call sites
+across 44 files; this is the only new instance.
+
+`add_lengths()` with `release_format = "binned"` validated the count column in two
+steps — abort on `NA`, abort on `<= 0` — and the first of those messages read "Every
+release row must have a positive **integer** count". Nothing tested integrality.
+Verified by running it: a release table with `count = c(3.5, 2.7)` returned a
+`creel_design` with `3.5` and `2.7` stored on `design$lengths`, no warning.
+
+The value is not inert. `design$lengths_count_col` reaches
+`estimate_length_distribution()` (`R/creel-estimates-length.R:155`), which aggregates
+it as `.fish_count` per length bin, so a fraction of a fish enters the distribution
+and every proportion computed from it.
+
+**The precedent is in the same file.** `validate_party_size()`
+(`R/creel-design.R:171`) checks `x != round(x)` and warns "Party sizes are counts of
+anglers; a fractional value suggests a wrong column". Same category error — a
+fractional count of discrete things — policed 3,700 lines earlier and unpoliced here.
+
+**Fixed by adding the check, which is the opposite of 12c's fix.** That is
+deliberate. 12c corrected the message rather than adding the check because enforcing
+angler-hours would have rejected party-hours effort, a legitimate input. No fractional
+count of fish is legitimate, so the discriminator does not transfer and the
+party-size precedent governs instead. The check warns rather than aborts, matching
+that precedent: a fractional count signals a wrong column, and aborting would break
+data that has always been accepted. The `NA` message now says "a positive count;
+non-integer values warn", so the claim and the code match exactly.
+
+**Boundary of the sweep, stated because it decides what counts as this shape.**
+Parenthetical unit hints — `"must be a single positive number (hours)"`, `"All
+harvest lengths must be > 0 mm"` — are *not* instances. They instruct the caller
+which unit to supply, which is the only thing a guard on a bare numeric can do. 12c's
+message claimed verification by naming the value it had observed ("must hold
+angler-hours, but carries `{method}`"). That is the distinction: a message that
+reports an observation implies a check; a message that states an expectation does not.
+
+**Everything else came back clean**, each verified rather than skimmed: `conf_level`
+(8 sites, all enforcing the open interval they name), `na_threshold`,
+`visibility_correction`, `circuit_time` (2 sites), `open_start`, `period_length`, the
+hybrid-design fractions, `check_product_units()`, `require_effort_estimates()`, the
+MOR guard (which counts incomplete trips rather than proxying via column presence),
+and the camera double-time guard — that last one sound because `design$effort_unit`
+has exactly one writer, `R/creel-design.R:1669`, which sets `"angler-hours"` if and
+only if `period_length_col_name` is non-`NULL`, so the message names the true cause.
+
+**Adjacent, not fixed.** `est-effort-camera.R:96` and `creel-estimates-bus-route.R:709`
+omit the `length(x) != 1L` term their sibling guards carry, so a length-2 input dies
+on R's `||` error instead of the guard's message. Not a dimensional defect.
 
 ### 14. Ice designs skip the bus-route dispatch in the *rate* estimators
 

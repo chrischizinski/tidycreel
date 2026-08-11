@@ -131,6 +131,19 @@
 
 ## Bug fixes
 
+* `add_lengths()` warns when a binned release row carries a fractional `count`.
+  The guard's own error message had always said "a positive integer count" while
+  nothing checked integrality, so `count = 3.5` was accepted silently and reached
+  `estimate_length_distribution()`, which aggregates that column as a per-bin fish
+  count. A fraction of a fish then entered the distribution and every proportion
+  computed from it.
+
+  Warned rather than rejected, matching how `n_anglers` treats the same category
+  error: a fractional count of discrete things signals the wrong column was
+  supplied, not that the data are unusable, and aborting would break tables that
+  have always been accepted. The `NA` message now says "a positive count;
+  non-integer values warn", so what it claims and what it enforces agree.
+
 * `estimate_effort()` warns, once per session, when an instantaneous design
   carries no `period_length_col`. Without T_d the estimator expands the count
   column to the season and returns it, which is not angler-hours. The warning
