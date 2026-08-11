@@ -63,7 +63,7 @@ fix or travel together.
 | 24 | *not opened* | ~~`estimate_exploitation_rate()` documented `C` as coming from `estimate_total_catch()`, but the estimator needs harvest~~ **LANDED** (added and fixed 2026-08-11) |
 | 25 | *not opened* | `estimate_angler_n()` cannot know whether it counted anglers, boats, or parties; **closed 2026-08-11 as decided** — `NA` is the terminal answer, no channel exists to derive one |
 | 26 | *not opened* | ~~Binned release counts claimed integer enforcement that was never there~~ **LANDED** (added and fixed 2026-08-11, from the `cli_abort()` sweep finding 12c called for) |
-| 27 | *not opened* | **OPEN.** Chapman and Petersen CIs are symmetric and return negative lower bounds at small `m` (`ci_lower = -2124.8` at `m = 3`); the cited paper and this function's own Schnabel branch both build skewed intervals. Documented 2026-08-11, not fixed — the repair moves shipped interval numbers |
+| 27 | #95 | **OPEN.** Chapman and Petersen CIs are symmetric and return negative lower bounds at small `m` (`ci_lower = -2124.8` at `m = 3`); the cited paper and this function's own Schnabel branch both build skewed intervals. Documented 2026-08-11, not fixed — the repair moves shipped interval numbers. Filed onto the existing #95 (negative lower CI bounds), whose product-total half `924c43e` already fixed |
 | 28 | *not opened* | ~~The harvest-rate-as-known-constant caveat cited Hansen & Van Kirk 2018, which resamples that rate instead~~ **LANDED** (added and fixed 2026-08-11, docs only, from finding 23's literature check) |
 
 Downstream book work is tracked in
