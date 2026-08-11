@@ -475,6 +475,57 @@ test_that("add_counts() aborts when count_type = 'progressive' and period_length
   )
 })
 
+# A shift shorter than one circuit (finding 20) ----
+
+test_that("add_counts() rejects a shift shorter than one circuit (CNT-12)", {
+  # Hoenig et al. (1993) eq. 3 expands the count over K = T_d/tau whole circuits in
+  # the day. With T_d = 8 and tau = 12 there is no whole circuit, so the count is not
+  # a progressive count of that shift and the expansion has nothing to expand. This
+  # used to warn and then return a number regardless.
+  design <- creel_design(make_test_calendar(), date = date, strata = day_type)
+  expect_error(
+    add_counts(
+      design,
+      make_progressive_counts(),
+      count_type = "progressive",
+      circuit_time = 12,
+      period_length_col = shift_hours # nolint: object_usage_linter
+    ),
+    class = "creel_error_circuit_exceeds_shift"
+  )
+})
+
+test_that("add_counts() points at the scheduler that already enforces the circuit fit", {
+  # generate_progressive_start() aborts on the same design, so reaching this error at
+  # all means the schedule was hand-built. The message has to say where the guard is.
+  design <- creel_design(make_test_calendar(), date = date, strata = day_type)
+  expect_error(
+    add_counts(
+      design,
+      make_progressive_counts(),
+      count_type = "progressive",
+      circuit_time = 12,
+      period_length_col = shift_hours # nolint: object_usage_linter
+    ),
+    regexp = "generate_progressive_start"
+  )
+})
+
+test_that("add_counts() accepts a shift exactly one circuit long", {
+  # tau == T_d is Robson's (1961) all-day-circuit case, K = 1: valid, not an edge to
+  # reject. The guard must trigger on T_d < tau only, or it would refuse this.
+  design <- creel_design(make_test_calendar(), date = date, strata = day_type)
+  expect_no_error(
+    add_counts(
+      design,
+      make_progressive_counts(),
+      count_type = "progressive",
+      circuit_time = 8,
+      period_length_col = shift_hours # nolint: object_usage_linter
+    )
+  )
+})
+
 test_that("add_counts() replaces raw counts with Ê_d = count × period_length for progressive (EFF-02)", {
   design <- creel_design(make_test_calendar(), date = date, strata = day_type)
   prog_counts <- make_progressive_counts()

@@ -49,7 +49,7 @@ fix or travel together.
 | 7, 9, 11 | #112 | Missing unit guards |
 | 12 | #113 | ~~Documentation asserts units the code does not produce~~ **LANDED** (12a 2026-08-08, 12b and 12c 2026-08-10) |
 | 13 | *not opened* | ~~Instantaneous path never carries T, so it returns angler-days~~ **LANDED 2026-08-10** (added 2026-08-08), with the first pass of unit propagation |
-| 20 | *not opened* | `circuit_time` cancels out of the progressive estimate and cannot change any output (added 2026-08-10) |
+| 20 | *not opened* | ~~`circuit_time` cancels out of the progressive estimate and cannot change any output~~ **RESOLVED 2026-08-11 — not a defect.** The cancellation is Hoenig et al. (1993) eq (3); \eqn{\tau} is consumed by `generate_progressive_start()` at scheduling time. Leaves a docs gap and a misplaced \eqn{\kappa < 1} guard |
 | 14 | *not opened* | ~~Ice designs skip the bus-route dispatch in the rate estimators~~ **LANDED** (added and fixed 2026-08-09) |
 | 17 | *not opened* | ~~`estimate_catch_rate()` has no bus-route or ice dispatch at all, and no CPUE estimator existed to dispatch to~~ **LANDED** (added and fixed 2026-08-09, with finding 14) |
 | 15 | *not opened* | ~~`use_trips` unvalidated on the bus-route path; a typo silently swaps the estimator~~ **LANDED** (added and fixed 2026-08-09) |
@@ -785,6 +785,100 @@ move any output.
 Worth deciding whether it stays required. Not a dimensional defect — flagged here
 because the audit's method is to surface seams where a plausible input has no
 effect on the answer.
+
+**Re-verified 2026-08-11, and it is wider than recorded above.** Two things the
+original entry understated:
+
+1. \eqn{\tau} is inert across any range, not just 2-vs-5. On an 8-day fixture with
+   \eqn{T_d = 8}, the estimate, the SE, and the unit label are identical at
+   \eqn{\tau \in \{0.5, 2, 8, 100\}} — 2184.0000 / 75.4718 / angler-hours in every
+   case. At \eqn{\tau = 100} the \eqn{\kappa < 1} advisory fires, warning that less
+   than one full circuit fits in the shift, and the estimator then returns the same
+   number as if it had not: \eqn{\kappa} has no path to the answer.
+2. `count_type = "progressive"` is inert too. The same fixture run as
+   `count_type = "instantaneous"` with the same `period_length_col` returns a
+   byte-identical estimate, SE, and unit. So the progressive path is not merely
+   insensitive to \eqn{\tau} — as implemented it is not a distinct estimator.
+
+\eqn{\tau}'s only live effects are its two validation guards, the \eqn{\kappa < 1}
+advisory, and being stored on the design. Nothing downstream reads
+`design$circuit_time` for arithmetic. `R/survey-bridge.R:446` already concedes this
+in a comment.
+
+**RESOLVED against the primary source 2026-08-11 — the estimator is correct, and
+\eqn{\tau}'s inertness is a property of the method, not a defect.** Read Hoenig,
+Robson, Jones & Pollock (1993), *Scheduling counts in the instantaneous and
+progressive count methods*, NAJFM 13:723–736 (Zotero **creel** group library,
+item `LRCNZQUN`; the `creel_kb` copy was unreadable, collection mid-rebuild).
+
+The paper's equations (2) and (3), p. 725, for a single circuit taking an appreciable
+part of the day — exactly tidycreel's case:
+
+> an unbiased estimate of the fishing effort […] in any particular 1.5-h block of time
+> chosen to be sampled is given by \eqn{\hat{E} = C'\tau} […] As there are 4 blocks
+> (\eqn{K}) of duration 1.5 h in a 6-h workday, an unbiased estimate of the total
+> fishing effort in the 6-h day is given by \eqn{C \tau K = C \times 1.5 \times 4}.
+
+`compute_progressive_effort()` computes \eqn{C \times \tau \times \kappa} with
+\eqn{\kappa = T_d/\tau}. That **is** equation (3). The cancellation is in the source,
+not an artefact of the implementation, and the vignettes' conclusion is right. So
+finding 20's premise — "a plausible input has no effect on the answer" — has an
+answer: \eqn{\tau}'s job is to define the block structure **at scheduling time**, and
+by the time `add_counts()` sees the data that job is already done.
+
+`generate_progressive_start()` (`R/schedule-generators.R:922`) implements the paper
+faithfully, and this is worth recording because it is the part that is *right*:
+`strategy = "discrete"` aborts unless \eqn{K = T/\tau} is a whole number (line 975)
+and then draws \eqn{i \sim \mathrm{Unif}\{0,\dots,K-1\}} and starts the count at
+\eqn{i\tau} (line 984) — the paper's prescribed scheme. `strategy = "wraparound"` is
+the paper's second scheme, uniform start on \eqn{(0,T)} with the circuit wrapping past
+the end. Both randomise direction of travel (line 988), which the paper requires of
+both. The erroneous procedure the paper warns against — uniform start on
+\eqn{(0, T-\tau)}, which biases toward mid-day effort (their Figure 1) — is not
+implemented anywhere.
+
+**What remains is a seam between the two halves, not a wrong number:**
+
+1. ~~The \eqn{\kappa < 1} advisory in `add_counts()` is the wrong check in the wrong
+   place — `generate_progressive_start():959` already *aborts* when \eqn{\tau \ge T},
+   while `add_counts()` only warned and then returned a number anyway.~~
+   **FIXED 2026-08-11.** Escalated to an abort carrying
+   `creel_error_circuit_exceeds_shift`, since \eqn{T_d < \tau} means no circuit
+   completed and eq. 3 has nothing to expand. Deliberately the opposite call from
+   finding 26, which stayed a warning because legitimate input existed there; here
+   none does. Three tests added (CNT-12), including the boundary: \eqn{\tau = T_d}
+   (\eqn{K = 1}) is Robson's (1961) all-day circuit and must keep passing — verified
+   \eqn{\tau = 8} accepted, \eqn{\tau = 9} and \eqn{\tau = 12} rejected against
+   \eqn{T_d = 8}.
+2. Nothing on the estimator side checks \eqn{K} integrality. \eqn{\tau = 3} against
+   \eqn{T_d = 8} gives \eqn{K = 2.667} and passes silently, while the scheduler would
+   have refused the same design outright. Whether that should be enforced here is a
+   real question: eq (3) is stated for the discrete scheme, and under the wraparound
+   scheme there is no integrality requirement — so `add_counts()` cannot enforce it
+   without knowing which strategy produced the counts, which it is never told.
+3. `add_counts()` cannot tell whether counts came from a validly scheduled progressive
+   survey at all. The paper's errors (2), (3) and (4) — count time not randomised,
+   agent interrupting travel to interview, improper scheduling — are all invisible to
+   it. Probably not fixable in the estimator; a documentation obligation.
+4. ~~**Documentation gap.** Neither vignette states the paper's three conditions for
+   unbiasedness, nor its error (1); `effort-pipeline.Rmd` derives the cancellation by
+   an unmotivated \eqn{\times\tau} rather than the source's \eqn{K}-block argument.~~
+   **FIXED 2026-08-11.** `progressive-count-surveys.Rmd` gains a *Conditions for an
+   Unbiased Estimate* section carrying all three conditions plus the two cautions
+   (do not interrupt the circuit to interview; the count is angler-days, not trips —
+   "a negative bias that can be severe"). `effort-pipeline.Rmd`'s derivation is
+   rewritten as the source's two-step block argument, and its closing summary now
+   points at the field conditions. One adjacent correction: the vignette's
+   "circuit time < 30% of \eqn{T_d}" rule of thumb is not in Hoenig et al. and is not
+   the paper's condition — replaced with the actual requirement, that the observer
+   outpace the anglers.
+
+**Decision: NOT a defect in the estimator. \eqn{\tau} stays required** — it is a real
+design parameter that the scheduler consumes, and dropping it would break
+`generate_progressive_start()`'s contract. Items 1 and 4 fixed 2026-08-11. Item 2
+remains open and needs a decision about whether the design should record which
+scheduling strategy produced the counts; item 3 is a documentation obligation rather
+than something the estimator can check.
 
 ### 21. Finding 13 made aerial and camera designs apply time twice
 

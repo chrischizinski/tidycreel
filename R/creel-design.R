@@ -1524,14 +1524,23 @@ add_counts <- function(
         "i" = "Example: add_counts(design, counts, count_type = 'progressive', circuit_time = 2, period_length_col = <col>)" # nolint: line_length_linter
       ))
     }
-    # Advisory: period_length < circuit_time means κ < 1 (unusual)
+    # T_d < tau means no circuit completes within the shift, so the count cannot be a
+    # progressive count of it and Hoenig et al. (1993) eq. 3 does not apply: its
+    # K = T_d/tau counts whole tau-blocks in the day, which requires K >= 1. This was
+    # a warning that then returned a number anyway. It aborts because
+    # generate_progressive_start() already refuses the same design, so the only way to
+    # reach here is a hand-built schedule -- the case with no other guard in front of it.
     if (any(period_vals < circuit_time)) {
       n_short <- sum(period_vals < circuit_time) # nolint: object_usage_linter
-      cli::cli_warn(c(
-        "{n_short} day(s) have shift duration shorter than {.arg circuit_time} ({circuit_time} hours).",
-        "i" = "This gives \u03ba < 1 (less than one full circuit possible in the shift).",
-        "i" = "Verify that {.field {period_length_col_name}} and {.arg circuit_time} are in the same units."
-      ))
+      cli::cli_abort(
+        c(
+          "{n_short} day{?s} {?has/have} a shift shorter than {.arg circuit_time} ({circuit_time} hours).",
+          "x" = "No full circuit fits the shift, so the count is not a progressive count of it.",
+          "i" = "Check that {.field {period_length_col_name}} and {.arg circuit_time} are both in hours.",
+          "i" = "Schedule progressive counts with {.fn generate_progressive_start}, which enforces this."
+        ),
+        class = "creel_error_circuit_exceeds_shift"
+      )
     }
   }
   if (count_type == "instantaneous" && !is.null(circuit_time)) {

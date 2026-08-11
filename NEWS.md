@@ -352,6 +352,22 @@
 
 ## Breaking changes
 
+* `add_counts(count_type = "progressive")` now **errors** when a day's shift is
+  shorter than `circuit_time`, with condition class
+  `creel_error_circuit_exceeds_shift`. It previously warned and then returned an
+  estimate anyway.
+
+  The progressive estimator is Hoenig et al. (1993) eq. 3,
+  \eqn{\hat{E}_d = C \tau K} with \eqn{K = T_d/\tau} the number of whole circuits
+  in the day. When \eqn{T_d < \tau} no circuit completed, so the count is not a
+  progressive count of that shift and there is nothing for \eqn{K} to expand.
+  `generate_progressive_start()` already refused such a design, so the only way to
+  reach the old warning was a hand-built schedule — precisely the case with no
+  other guard in front of it.
+
+  \eqn{\tau = T_d} (\eqn{K = 1}) is unaffected: that is Robson's (1961) all-day
+  circuit and remains valid.
+
 * `estimate_mr_harvest(harvest_rate = )` is harvest **per angler**, in fish per
   angler, and is no longer bounded above. It was documented as the "proportion
   of anglers that harvested fish" and guarded to `(0, 1]`.
@@ -604,6 +620,28 @@
   requires `count_col` to be named.
 
 ## Documentation
+
+* The progressive count articles now state the conditions under which
+  \eqn{\hat{E}_d = C \times T_d} is unbiased. `vignettes/progressive-count-surveys.Rmd`
+  gains a *Conditions for an Unbiased Estimate* section covering Hoenig et al.'s
+  (1993) three requirements — random starting location, randomly chosen direction of
+  travel, and an observer who outpaces the anglers — plus two cautions from the same
+  paper: do not interrupt the circuit to interview, and do not read the count as a
+  number of trips, which "results in a negative bias that can be severe."
+
+  None of these are checkable from the counts table, which is why they belong in
+  prose rather than in a guard.
+
+  `vignettes/effort-pipeline.Rmd` previously derived the \eqn{\tau} cancellation
+  through an unmotivated \eqn{\times\tau} that returned the expression to
+  \eqn{C_d \times T_d}. It now follows the source's two-step argument — expand the
+  sampled block by \eqn{\tau}, then scale by the \eqn{K = T_d/\tau} blocks in the
+  day — which reaches the same formula and shows why \eqn{\tau} cancels: it defines
+  the blocks the count was scheduled within, so it has done its work before the
+  estimator runs.
+
+  Also corrected: the "circuit time < 30% of \eqn{T_d}" rule of thumb was not from
+  Hoenig et al. and is not the paper's condition.
 
 * `estimate_exploitation_rate()` described `C` as a harvest total while pointing
   at `estimate_total_catch()` to produce it. Catch includes released fish, which

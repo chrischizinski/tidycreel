@@ -442,8 +442,9 @@ compute_progressive_effort <- function(counts, count_var, period_length_col, cir
 #' low. Doing it here makes that covariance term exactly zero at any stratum width.
 #'
 #' This is the same arithmetic [compute_progressive_effort()] performs — τ cancels
-#' out of Ê_d = C × τ × (T_d / τ) — but the progressive path keeps its own function
-#' because `circuit_time` still drives its κ < 1 advisory.
+#' out of Ê_d = C × τ × (T_d / τ), which is Hoenig et al. (1993) eq. 3 — but the
+#' progressive path keeps its own function because `circuit_time` still gates the
+#' shift-shorter-than-a-circuit check that only applies to progressive counts.
 #'
 #' @param counts Data frame of count data (one row per PSU after aggregation)
 #' @param count_var Character name of the count column (replaced with Ê_d)

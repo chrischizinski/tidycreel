@@ -47,7 +47,8 @@ Progressive counts are preferred when:
 - Anglers are spread along a linear corridor (river, canal, reservoir shoreline road)
   and a single spot-check would miss substantial activity
 - The access route is fully enumerable in one traverse within a count period
-- Observer movement is fast relative to angler turnover (circuit time < 30% of $T_d$)
+- The observer can travel the circuit faster than anglers move between fishing spots
+  (see the conditions below — this is a requirement of the method, not a preference)
 
 Instantaneous counts are preferred when:
 
@@ -55,6 +56,34 @@ Instantaneous counts are preferred when:
 - Multiple sections are counted simultaneously by separate crews
 - Observer presence along the circuit might disturb anglers or alert them to upcoming
   interviews
+
+## Conditions for an Unbiased Estimate
+
+$\hat{E}_d = C \times T_d$ is unbiased only when the field protocol satisfies three
+conditions (Hoenig et al. 1993, p. 725). They are properties of how the count is
+*collected*, so no check inside `add_counts()` can confirm them — they are the
+analyst's responsibility:
+
+1. **The starting location on the circuit is chosen randomly.** Always beginning at
+   the boat ramp biases the count toward whatever is happening there at that hour.
+2. **The direction of travel is chosen randomly** from the two alternatives.
+   `generate_progressive_start()` draws this for you and returns it in the
+   `direction` column — it is a field instruction, not decoration.
+3. **The observer travels faster than the anglers move** while those anglers are
+   fishing. If anglers can outpace the observer they may be counted twice or missed.
+
+Two further cautions from the same paper:
+
+- **Do not interrupt the circuit to conduct interviews.** The derivation assumes
+  constant travel speed; stopping to interview breaks it and is one of the four
+  errors Hoenig et al. single out. Interview on a separate pass.
+- **The count estimates angler-days of effort, not the number of trips.** Reading
+  $C$ as a trip count "results in a negative bias that can be severe"
+  (Hoenig et al. 1993). $C$ counts anglers present, and an angler fishing all day
+  is counted once per circuit — not once per trip.
+
+Scheduling the circuit start correctly is the fourth condition, and it is the subject
+of the section below.
 
 ## Data Requirements
 

@@ -288,15 +288,31 @@ $$\hat{E}_d = C_d \times T_d$$
 - $C_d$ = progressive count (all anglers encountered during the circuit on day $d$)
 - $T_d$ = total open hours on day $d$
 
-**Why does $\tau$ cancel?** During a circuit of duration $\tau$ hours, the
-observer encounters anglers at rate $C_d / \tau$ anglers per hour. Over the full
-$T_d$ open hours, the total angler-hours is:
+**Why does $\tau$ cancel?** Follow Hoenig et al. (1993, p. 725). The circuit is a
+sample of *one* $\tau$-hour block out of the day, so the argument runs in two steps.
 
-$$\hat{E}_d = \frac{C_d}{\tau} \times T_d \times \tau = C_d \times T_d$$
+First, for the single block that was sampled, the count expands over its own
+duration:
 
-The circuit time $\tau$ appears in both numerator and denominator and cancels
-exactly. The result is that a progressive count records total angler-hours
-directly, with $\tau$ needed only to derive the expansion factor internally.
+$$\hat{E}_{\text{block}} = C_d \times \tau$$
+
+Second, the day is partitioned into $K = T_d / \tau$ blocks of length $\tau$, and the
+sampled block is drawn at random from them, so it is an unbiased estimate of the mean
+block. Scaling by the number of blocks gives the day:
+
+$$\hat{E}_d = C_d \times \tau \times K = C_d \times \tau \times \frac{T_d}{\tau} = C_d \times T_d$$
+
+$\tau$ enters twice — once expanding the block, once counting how many blocks there
+are — and cancels between them. So the cancellation is a property of the method, not
+an accident of the algebra: $\tau$ has already done its work in **defining the blocks
+the count was scheduled within**, which is why `generate_progressive_start()` needs it
+and the final arithmetic does not.
+
+That also explains why $\tau$ is still required by `add_counts()`. It is not inert —
+it determines whether the schedule that produced $C_d$ was valid. Two consequences
+are enforced: a shift shorter than one circuit ($K < 1$) is an error, since no
+circuit completed; and $\tau = T_d$ ($K = 1$) is the legitimate all-day-circuit case
+of Robson (1961), not an edge case to reject.
 
 ### Worked numeric
 
@@ -370,6 +386,10 @@ than adding sampled days.
 a spot-check count would miss part of the angler population. The $C \times T$
 formula recovers total angler-hours without needing $\tau$ in the final estimate.
 Variance structure is the same as for single-count instantaneous surveys.
+The formula is unbiased only when the circuit start, start location and travel
+direction were randomised and the observer outpaced the anglers; none of this is
+checkable from the counts table, so see `vignette("progressive-count-surveys")`
+for the field conditions before relying on the estimate.
 
 ---
 
