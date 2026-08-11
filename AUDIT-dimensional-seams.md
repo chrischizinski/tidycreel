@@ -19,8 +19,11 @@ accident:
 3. Everything below.
 
 Paths audited: **instantaneous** and **bus-route** (including ice, which is
-implemented as a degenerate bus route). Not audited: aerial, camera,
-mark-recapture, and the `tidycreel.connect` boat→angler reconstruction.
+implemented as a degenerate bus route). Aerial and camera were *not* in the original
+scope but were pulled in on 2026-08-10 by findings 21 and 22, which surfaced while
+extending unit propagation — the effort family cannot be labelled without deciding
+where each design's period length comes from. Still not audited: mark-recapture, and
+the `tidycreel.connect` boat→angler reconstruction.
 
 Findings 1–4 and 5, 9, 10 were reproduced by running the package. 6, 7, 8 were
 confirmed by code trace. Every finding below is verified; none are speculative.
@@ -49,6 +52,8 @@ fix or travel together.
 | 17 | *not opened* | ~~`estimate_catch_rate()` has no bus-route or ice dispatch at all, and no CPUE estimator existed to dispatch to~~ **LANDED** (added and fixed 2026-08-09, with finding 14) |
 | 15 | *not opened* | ~~`use_trips` unvalidated on the bus-route path; a typo silently swaps the estimator~~ **LANDED** (added and fixed 2026-08-09) |
 | 16 | *not opened* | ~~Scalar `n_anglers` resolves positionally to the first column, and sets `n_anglers_supplied = TRUE`~~ **LANDED** (added and fixed 2026-08-09) |
+| 21 | *not opened* | ~~Finding 13 made aerial and camera designs apply time twice~~ **LANDED** (added and fixed 2026-08-10) |
+| 22 | *not opened* | The camera ratio path cannot know whether it returned angler-hours or party-hours; unit recorded `NA`, ambiguity **not fixed** (added 2026-08-10) |
 
 Downstream book work is tracked in
 `~/Dev/modern-creel-surveys/.planning/TIDYCREEL-WISHLIST.md`, not as GitHub issues —
@@ -804,6 +809,66 @@ already general. It was — but two estimators had their *own* period-length ter
 supplied through a different door. Generalising a multiplication requires checking
 every consumer for a term that already plays that role, not only that the plumbing
 accepts it.
+
+### 22. The camera ratio path cannot know whether it returned angler-hours or party-hours
+
+Found 2026-08-10 while labelling the effort family, by asking where the ratio path's
+unit comes from and finding that nothing in the package can answer. The unit is
+recorded as `NA` (`b3611d6`), which is honest but is a **marker, not a fix** — the
+underlying ambiguity is untouched.
+
+Everywhere else in tidycreel, angler-hours vs party-hours is decided in one place:
+`add_interviews(n_anglers = )` performs the multiplication, records
+`design$n_anglers_supplied`, and `interview_effort_unit()` reports the result. That
+is the mechanism finding 7 exists to police.
+
+`est_effort_camera()` bypasses all of it. Its `interviews` is a **plain data frame
+passed as an argument**, not an `add_interviews()` attachment, and `effort_col` is a
+**bare string defaulting to `"hours_fished"`**. Grepping the camera path for
+`n_anglers` or party size returns nothing. The calibration is
+
+\deqn{\rho_h = \frac{\sum_d E_d}{\sum_d C_d}, \qquad \hat{E} = \sum_h \hat{T}_h \rho_h}
+
+so the counts cancel and the result carries whatever unit `effort_col` was in. The
+design cannot stand in for that column: on the documented example
+`design$angler_effort_col` is `NULL` and `example_camera_interviews` has
+`hours_fished` but **no `n_anglers` column at all**.
+
+Measured on that example, varying only whether the input column is party- or
+angler-hours (synthetic party sizes, mean 1.875):
+
+| `hours_fished` holds | estimate | reported unit |
+| --- | --- | --- |
+| party-hours (the shipped example) | **110.902** | `NA` |
+| angler-hours | **205.098** | `NA` |
+
+Two different physical quantities, a factor of 1.849 apart, reported identically.
+The ratio is the count-weighted mean party size rather than the simple mean, because
+\eqn{\rho} is a ratio of sums.
+
+This is finding 7 again, in the one path where the unit spine cannot diagnose it.
+`add_interviews()` at least *warns* when `n_anglers` is omitted; here nothing warns,
+because nothing on this path ever looks. And because `est_effort_camera()` is a
+separate exported entry point, a caller reaches it without passing through any of
+the machinery that would have asked.
+
+The consequence is not confined to the effort number. A camera effort total that is
+silently party-hours, multiplied by a CPUE that is per angler-hour, is the mixed
+denominator of finding 2 — and `check_product_units()` cannot catch it, since it
+compares design-level units and this quantity has none.
+
+**Not fixed.** Two candidate directions, both unexplored:
+
+1. Give `est_effort_camera()` an `n_anglers` argument mirroring `add_interviews()`,
+   so the same normalisation and the same recorded provenance apply. Makes the unit
+   derivable rather than unknown, at the cost of a second place implementing the
+   party-size rule.
+2. Warn when the ratio path runs, naming the ambiguity, as `add_interviews()` does
+   for the same omission. Cheaper, and consistent with how the package already
+   treats this exact gap, but leaves the number ambiguous.
+
+Direction 1 is the better match for the audit's "derive, never declare" line;
+direction 2 is what the codebase already does at the analogous seam. Not decided.
 
 ### 14. Ice designs skip the bus-route dispatch in the *rate* estimators
 
