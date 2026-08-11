@@ -511,3 +511,158 @@ test_that("bus-route rates and totals carry units too", {
   # catch records release needs. Those labels read "(fish)" only if the unit
   # propagates.
 })
+
+# ---- The effort family ----
+#
+# Effort is where the audit's central confusion lives, because three designs
+# reach three different constructors and derive the period from three different
+# places. The rule below is the same one as everywhere else -- assert the unit
+# only where this package did the arithmetic -- but here it forces a different
+# answer per design, so a single constant would be wrong for two of them.
+
+# build_br_design_for_tests() always supplies n_anglers. The party-hours case is
+# the discriminator for these tests, so build the same design without it.
+build_br_design_party_hours <- function(seed = 42) {
+  set.seed(seed)
+  calendar <- build_property_calendar(6L)
+  site_ids <- paste0("S", seq_len(3L))
+  weights <- sample(seq.int(1L, 5L), 3L, replace = TRUE)
+  frame <- data.frame(
+    site = site_ids,
+    circuit = rep("C1", 3L),
+    p_site = weights / sum(weights),
+    p_period = rep(0.8, 3L),
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design(
+    calendar,
+    date = date,
+    strata = day_type, # nolint
+    survey_type = "bus_route",
+    sampling_frame = frame,
+    site = site, # nolint
+    circuit = circuit, # nolint
+    p_site = p_site, # nolint
+    p_period = p_period # nolint
+  )
+  interviews <- build_trip_interviews_for_tests(
+    calendar = calendar,
+    n_interviews = 30L,
+    site_ids = site_ids,
+    circuit_id = "C1"
+  )
+  suppressMessages(suppressWarnings(add_interviews(
+    design, interviews,
+    catch = catch_total, # nolint
+    effort = hours_fished, # nolint
+    harvest = catch_kept, # nolint
+    trip_status = trip_status, # nolint
+    trip_duration = trip_duration, # nolint
+    n_counted = n_counted, # nolint
+    n_interviewed = n_interviewed # nolint
+  )))
+}
+
+test_that("bus-route effort takes its unit from the interviews, not the counts", {
+  # E_hat = sum(e_i / pi_i) is built entirely from interview contributions, so
+  # the counts side has no claim on it. Reading design$effort_unit here would
+  # restate finding 2 in machine-readable form -- and would report NA, since a
+  # bus-route design carries no period_length_col.
+  angler <- suppressWarnings(suppressMessages(
+    build_br_design_for_tests(n_sites = 3, n_days = 6, n_interviews = 30, seed = 42)
+  ))
+  party <- suppressWarnings(suppressMessages(build_br_design_party_hours()))
+
+  angler_effort <- suppressWarnings(suppressMessages(estimate_effort(angler)))
+  party_effort <- suppressWarnings(suppressMessages(estimate_effort(party)))
+
+  # The only difference between the two designs is whether n_anglers was
+  # supplied. A hardcoded constant would report the same unit for both.
+  expect_identical(angler_effort$unit, "angler-hours")
+  expect_identical(party_effort$unit, "party-hours")
+
+  # And the counts side is not merely uninformative here, it is absent: a
+  # bus-route design estimates effort without ever calling add_counts(), so
+  # effort_unit was never set. Labelling from there would have yielded NULL.
+  expect_null(angler$effort_unit)
+})
+
+test_that("grouped bus-route effort agrees with the ungrouped total", {
+  d <- suppressWarnings(suppressMessages(
+    build_br_design_for_tests(n_sites = 3, n_days = 6, n_interviews = 30, seed = 42)
+  ))
+
+  # Grouping changes which rows are summed, never what quantity they measure,
+  # so the two branches of estimate_effort_br() cannot legitimately disagree.
+  expect_identical(
+    suppressWarnings(suppressMessages(estimate_effort(d, by = "site")))$unit,
+    suppressWarnings(suppressMessages(estimate_effort(d)))$unit
+  )
+})
+
+test_that("aerial effort is angler-hours even though the design's unit is unknown", {
+  cal <- data.frame(
+    date = as.Date("2024-06-01") + 0:3,
+    day_type = c("weekday", "weekday", "weekend", "weekend"),
+    stringsAsFactors = FALSE
+  )
+  counts <- data.frame(
+    date = as.Date("2024-06-01") + 0:3,
+    day_type = c("weekday", "weekday", "weekend", "weekend"),
+    anglers = c(10, 20, 30, 40),
+    stringsAsFactors = FALSE
+  )
+  d <- suppressWarnings(creel_design(
+    cal,
+    date = date,
+    strata = day_type, # nolint
+    survey_type = "aerial",
+    h_open = 14
+  ))
+  d <- suppressWarnings(add_counts(d, counts, count_col = anglers)) # nolint
+
+  est <- suppressWarnings(estimate_effort(d))
+
+  # An aerial design refuses period_length_col (finding 21), so effort_unit is
+  # necessarily NA and the estimator must label from h_open instead. This pairs
+  # the unit with the number that earns it: 1400 = sum(counts) x h_open once.
+  expect_true(is.na(d$effort_unit))
+  expect_identical(est$unit, "angler-hours")
+  expect_equal(est$estimates$estimate, 1400)
+})
+
+test_that("camera effort labels the raw path but not the calibrated one", {
+  data(example_camera_counts, envir = environment())
+  data(example_camera_interviews, envir = environment())
+
+  cal <- data.frame(
+    date = unique(example_camera_counts$date),
+    day_type = unique(example_camera_counts[, c("date", "day_type")])[["day_type"]],
+    stringsAsFactors = FALSE
+  )
+  d <- suppressWarnings(creel_design(
+    cal,
+    date = date,
+    strata = day_type, # nolint
+    survey_type = "camera",
+    camera_mode = "counter"
+  ))
+  ops <- example_camera_counts[example_camera_counts$camera_status == "operational", ]
+  d <- suppressWarnings(add_counts(d, ops))
+
+  raw <- suppressWarnings(est_effort_camera(d, h_open = 14))
+  ratio <- suppressWarnings(est_effort_camera(d, interviews = example_camera_interviews))
+
+  # Raw path: count x h_open, with the finding-21 guard establishing that no
+  # T_d was already applied. Same reasoning as aerial.
+  expect_identical(raw$unit, "angler-hours")
+
+  # Ratio path: rho = sum(E_d)/sum(C_d) carries the unit of `effort_col`, a bare
+  # column in a caller-supplied data frame that nothing normalises by party
+  # size. `interviews` is an argument, not an add_interviews() attachment, so
+  # the design cannot answer for it -- and here it holds no interviews at all.
+  # Angler-hours and party-hours are indistinguishable, so unknown is the only
+  # honest answer.
+  expect_true(is.na(ratio$unit))
+  expect_true(is.null(d$angler_effort_col))
+})

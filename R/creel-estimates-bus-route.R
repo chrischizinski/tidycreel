@@ -146,7 +146,7 @@ estimate_effort_br <- function(
       n = n
     )
 
-    result <- new_creel_estimates(
+    result <- new_creel_estimates( # nolint: object_usage_linter
       # nolint: object_usage_linter
       estimates = estimates_df,
       method = "total",
@@ -154,7 +154,12 @@ estimate_effort_br <- function(
       design = design,
       conf_level = conf_level,
       by_vars = NULL,
-      effort_target = effort_target
+      effort_target = effort_target,
+      # The HT total sums interview contributions e_i / pi_i, so its unit comes
+      # from the interview side, not design$effort_unit (the counts side).
+      # Labelling it from the counts would restate finding 2 in machine-readable
+      # form.
+      unit = interview_effort_unit(design) # nolint: object_usage_linter
     )
     attr(result, "site_contributions") <- site_table
     result
@@ -209,7 +214,7 @@ estimate_effort_br <- function(
     col_order <- c(by_vars, "estimate", "se", "ci_lower", "ci_upper", "proportion", "n")
     estimates_df <- estimates_df[col_order]
 
-    result <- new_creel_estimates(
+    result <- new_creel_estimates( # nolint: object_usage_linter
       # nolint: object_usage_linter
       estimates = estimates_df,
       method = "total",
@@ -217,7 +222,9 @@ estimate_effort_br <- function(
       design = design,
       conf_level = conf_level,
       by_vars = by_vars,
-      effort_target = effort_target
+      effort_target = effort_target,
+      # Same interview-side provenance as the ungrouped branch above.
+      unit = interview_effort_unit(design) # nolint: object_usage_linter
     )
     attr(result, "site_contributions") <- site_table
     result

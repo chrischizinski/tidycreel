@@ -177,6 +177,15 @@ estimate_effort_camera <- function(
         sum(total_counts_h^2 * var_rho_matched)
     )
     method_label <- "camera_ratio"
+    # rho is sum(E_d)/sum(C_d), so the counts cancel and the result carries the
+    # unit of `effort_col` -- a bare column in a caller-supplied data frame.
+    # Nothing here normalises it by party size, and `interviews` is an argument
+    # rather than an add_interviews() attachment, so design$angler_effort_col
+    # describes a different (often absent) set of interviews and must not be
+    # consulted. Angler-hours and party-hours are indistinguishable at this
+    # point, so the honest answer is unknown -- the same call add_counts() makes
+    # for a bare count column with no T_d.
+    effort_unit_label <- NA_character_
   } else {
     # ---- Raw count expansion fallback ----------------------------------------
     if (is.null(h_open) || !is.numeric(h_open) || h_open <= 0) {
@@ -213,6 +222,10 @@ estimate_effort_camera <- function(
     estimate <- as.numeric(coef(svy_result)) * h_open
     se_between <- as.numeric(survey::SE(svy_result)) * h_open
     method_label <- "camera_raw"
+    # Raw count x h_open hours. The guard above establishes that no T_d has
+    # already been applied, so h_open is the sole period source and this is
+    # angler-hours -- the same reasoning as the aerial estimator.
+    effort_unit_label <- "angler-hours"
   }
 
   # Combined SE (no within-day component for camera designs)
@@ -237,13 +250,16 @@ estimate_effort_camera <- function(
     n = n
   )
 
-  new_creel_estimates(
+  new_creel_estimates( # nolint: object_usage_linter
     # nolint: object_usage_linter
     estimates = estimates_df,
     method = method_label,
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
-    by_vars = NULL
+    by_vars = NULL,
+    # Set per branch above: the two paths reach this constructor with different
+    # provenance for the same quantity.
+    unit = effort_unit_label # nolint: object_usage_linter
   )
 }

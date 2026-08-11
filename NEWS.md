@@ -43,6 +43,23 @@
   Visible change: `autoplot()` y-axis labels on these paths now read e.g.
   "Total Catch (fish)" where they previously read "Total Catch".
 
+* Unit propagation now covers the effort family, where the same quantity is
+  derived three different ways and so takes its unit from three different
+  places.
+
+  Bus-route effort reports the **interview** denominator, not the count side:
+  `E_hat = sum(e_i / pi_i)` is built entirely from interview contributions, so
+  labelling it from the counts would assert a provenance the number does not
+  have. Aerial effort is angler-hours unconditionally — an aerial design refuses
+  `period_length_col`, which makes `h_open` the sole period source.
+
+  Camera effort splits by path. The raw-count path is angler-hours for the same
+  reason as aerial. The ratio-calibration path is `NA`: its ratio carries the
+  unit of the `effort_col` column in a caller-supplied data frame, which nothing
+  normalises by party size, so angler-hours and party-hours are
+  indistinguishable there. Unknown is the honest answer, and the same one
+  `add_counts()` gives a bare count column.
+
 * `estimate_total_catch()`, `estimate_total_harvest()` and
   `estimate_total_release()` abort with class `creel_error_unit_mismatch` when
   the effort unit and the rate's denominator are both known and disagree. Their

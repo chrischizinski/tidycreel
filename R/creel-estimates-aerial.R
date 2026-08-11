@@ -83,7 +83,7 @@ estimate_effort_aerial <- function(
     n = n
   )
 
-  new_creel_estimates(
+  new_creel_estimates( # nolint: object_usage_linter
     # nolint: object_usage_linter
     estimates = estimates_df,
     method = "aerial_total",
@@ -91,6 +91,10 @@ estimate_effort_aerial <- function(
     design = design,
     conf_level = conf_level,
     by_vars = NULL,
-    effort_target = effort_target
+    effort_target = effort_target,
+    # Unconditional, not design$effort_unit: an aerial design refuses
+    # period_length_col, so its effort_unit is always NA. h_open is the sole
+    # period source here (finding 21), and count x hours is angler-hours.
+    unit = "angler-hours" # nolint: object_usage_linter
   )
 }
