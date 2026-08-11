@@ -640,6 +640,33 @@ rate_unit <- function(design) {
   paste0("fish/", sub("-hours$", "-hour", denom))
 }
 
+#' Derive the unit of a trip count from the effort it was divided from
+#'
+#' Trips are effort / mean trip length, and the divisor is hours per trip, so
+#' the count inherits whichever actor the effort was measured in: angler-hours
+#' give angler-trips, party-hours give party-trips. Asserting "angler-trips"
+#' unconditionally would put a confident label on a party-level number whenever
+#' the effort it came from was party-hours.
+#'
+#' @param effort_unit The `unit` field of the effort estimates object
+#'
+#' @return `"angler-trips"`, `"party-trips"`, or `NA_character_` when the
+#'   effort unit is unknown
+#'
+#' @keywords internal
+#' @noRd
+trips_unit <- function(effort_unit) {
+  unit <- effort_unit %||% NA_character_
+  if (length(unit) != 1L || is.na(unit)) {
+    return(NA_character_)
+  }
+  switch(unit,
+    "angler-hours" = "angler-trips",
+    "party-hours" = "party-trips",
+    NA_character_
+  )
+}
+
 #' Check that a product of effort and a rate is dimensionally coherent
 #'
 #' Total catch is effort x rate, so the rate's denominator must be the same

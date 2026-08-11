@@ -666,3 +666,135 @@ test_that("camera effort labels the raw path but not the calibrated one", {
   expect_true(is.na(ratio$unit))
   expect_true(is.null(d$angler_effort_col))
 })
+
+# ---- Trip density: units that are inherited rather than derived ----
+#
+# These two estimators take a creel_estimates rather than a design, so they
+# cannot ask the design what unit anything is in. Both transform a quantity
+# whose unit they were handed, which makes the correct answer a function of the
+# input -- and makes a hardcoded label wrong for every caller whose effort was
+# in the other actor.
+
+make_trips_design <- function(with_n_anglers = TRUE) {
+  data(example_counts, envir = environment())
+  data(example_interviews, envir = environment())
+  data(example_calendar, envir = environment())
+
+  cnt <- example_counts
+  cnt$shift_hours <- 8
+  d <- suppressWarnings(add_counts(
+    creel_design(example_calendar, date = date, strata = day_type),
+    cnt,
+    period_length_col = shift_hours # nolint
+  ))
+  args <- list(
+    d, example_interviews,
+    catch = quote(catch_total), harvest = quote(catch_kept),
+    effort = quote(hours_fished), trip_status = quote(trip_status),
+    trip_duration = quote(trip_duration)
+  )
+  if (with_n_anglers) {
+    args$n_anglers <- quote(n_anglers)
+  }
+  suppressWarnings(suppressMessages(do.call(add_interviews, args)))
+}
+
+test_that("trips inherit the actor of the effort they divide", {
+  # trips = E / L, and L is hours per trip, so the count is in whichever actor
+  # E was measured in. estimate_angler_trips() is named for the common case but
+  # is not restricted to it: a bus-route design with no n_anglers produces
+  # party-hours, and dividing that by a trip length gives party-trips.
+  d <- make_trips_design()
+  e <- suppressWarnings(suppressMessages(estimate_effort(d)))
+  trips <- suppressWarnings(suppressMessages(estimate_angler_trips(e, d)))
+
+  expect_identical(e$unit, "angler-hours")
+  expect_identical(trips$unit, "angler-trips")
+
+  br <- suppressWarnings(suppressMessages(build_br_design_party_hours()))
+  br_effort <- suppressWarnings(suppressMessages(estimate_effort(br)))
+  br_trips <- suppressWarnings(suppressMessages(estimate_angler_trips(br_effort, br)))
+
+  expect_identical(br_effort$unit, "party-hours")
+  expect_identical(br_trips$unit, "party-trips")
+
+  # The method name is "angler-trips" on both, which is exactly why the unit
+  # cannot be read off it.
+  expect_identical(trips$method, br_trips$method)
+})
+
+test_that("trips are unknown when the effort they came from was unknown", {
+  # Counts with no T_d give an effort of unknown unit. Dividing an unknown by a
+  # trip length does not make it known, and labelling the result "angler-trips"
+  # would manufacture a dimension the input never had.
+  data(example_counts, envir = environment())
+  data(example_interviews, envir = environment())
+  data(example_calendar, envir = environment())
+
+  d <- suppressWarnings(add_counts(
+    creel_design(example_calendar, date = date, strata = day_type),
+    example_counts
+  ))
+  d <- suppressWarnings(suppressMessages(add_interviews(
+    d, example_interviews,
+    catch = catch_total, harvest = catch_kept, effort = hours_fished,
+    n_anglers = n_anglers, trip_status = trip_status, trip_duration = trip_duration
+  )))
+  e <- suppressWarnings(suppressMessages(estimate_effort(d)))
+  trips <- suppressWarnings(suppressMessages(estimate_angler_trips(e, d)))
+
+  expect_true(is.na(e$unit))
+  expect_true(is.na(trips$unit))
+})
+
+test_that("grouped trips agree with ungrouped", {
+  d <- make_trips_design()
+  ungrouped <- suppressWarnings(suppressMessages(estimate_effort(d)))
+  grouped <- suppressWarnings(suppressMessages(estimate_effort(d, by = "day_type")))
+
+  # Two branches of estimate_angler_trips(); grouping changes which rows are
+  # divided, never what the quotient measures.
+  expect_identical(
+    suppressWarnings(suppressMessages(estimate_angler_trips(grouped, d)))$unit,
+    suppressWarnings(suppressMessages(estimate_angler_trips(ungrouped, d)))$unit
+  )
+})
+
+test_that("effort per acre composes its unit rather than assuming angler-hours", {
+  d <- make_trips_design()
+  e <- suppressWarnings(suppressMessages(estimate_effort(d)))
+
+  expect_identical(
+    suppressWarnings(suppressMessages(estimate_effort_per_acre(e, acres = 500)))$unit,
+    "angler-hours/acre"
+  )
+
+  # acres is a constant divisor, so whatever went in comes out per acre. A
+  # hardcoded "angler-hours/acre" would silently relabel a party-hours density.
+  br <- suppressWarnings(suppressMessages(build_br_design_party_hours()))
+  br_effort <- suppressWarnings(suppressMessages(estimate_effort(br)))
+  expect_identical(
+    suppressWarnings(suppressMessages(
+      estimate_effort_per_acre(br_effort, acres = 500)
+    ))$unit,
+    "party-hours/acre"
+  )
+})
+
+test_that("effort per acre does not invent a dimension from an unknown one", {
+  # Appending "/acre" to NA would produce "NA/acre", a string that reads as a
+  # real unit and would print on the y-axis as though the package knew.
+  data(example_counts, envir = environment())
+  data(example_calendar, envir = environment())
+
+  d <- suppressWarnings(add_counts(
+    creel_design(example_calendar, date = date, strata = day_type),
+    example_counts
+  ))
+  e <- suppressWarnings(suppressMessages(estimate_effort(d)))
+  per_acre <- suppressWarnings(suppressMessages(estimate_effort_per_acre(e, acres = 500)))
+
+  expect_true(is.na(e$unit))
+  expect_true(is.na(per_acre$unit))
+  expect_false(identical(per_acre$unit, "NA/acre"))
+})

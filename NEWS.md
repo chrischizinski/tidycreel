@@ -60,6 +60,23 @@
   indistinguishable there. Unknown is the honest answer, and the same one
   `add_counts()` gives a bare count column.
 
+* `estimate_angler_trips()` and `estimate_effort_per_acre()` now carry units,
+  and both **inherit** rather than assert them. These two take a
+  `creel_estimates` rather than a design, so they cannot ask a design what
+  anything is in; each transforms a quantity whose unit it was handed.
+
+  Trips are effort divided by mean trip length, and the divisor is hours per
+  trip, so the count comes back in whichever actor the effort was measured in:
+  angler-hours give `angler-trips`, party-hours give `party-trips`. The method
+  name is `"angler-trips"` for every caller, which is precisely why the unit
+  cannot be read off it — a bus-route design with no `n_anglers` produces a
+  party-level count that a fixed label would have reported as angler trips.
+
+  Effort per acre composes its unit from the effort's, keeping
+  `party-hours/acre` distinguishable from `angler-hours/acre`. An unknown
+  effort unit stays unknown through both: dividing an unknown quantity does not
+  make it known, and `"NA/acre"` would read as a real unit on a plot axis.
+
 * `estimate_total_catch()`, `estimate_total_harvest()` and
   `estimate_total_release()` abort with class `creel_error_unit_mismatch` when
   the effort unit and the rate's denominator are both known and disagree. Their

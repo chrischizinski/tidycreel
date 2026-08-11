@@ -154,14 +154,18 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
       n = n_int
     )
 
-    return(
-      new_creel_estimates(
+    return( # nolint: object_usage_linter
+      new_creel_estimates( # nolint: object_usage_linter
         estimates = estimates_df,
         method = "angler-trips",
         variance_method = "delta",
         design = NULL,
         conf_level = conf_level,
-        by_vars = NULL
+        by_vars = NULL,
+        # Inherited, not fixed: trips = E / L divides by hours per trip, so the
+        # count is in whichever actor E was measured in. The method name says
+        # "angler-trips" for every caller; the unit must not.
+        unit = trips_unit(effort$unit) # nolint: object_usage_linter
       )
     )
   }
@@ -262,13 +266,15 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
 
   estimates_df <- dplyr::bind_rows(stratum_rows, overall_row)
 
-  new_creel_estimates(
+  new_creel_estimates( # nolint: object_usage_linter
     estimates = estimates_df,
     method = "angler-trips",
     variance_method = "delta",
     design = NULL,
     conf_level = conf_level,
-    by_vars = effort$by_vars
+    by_vars = effort$by_vars,
+    # Same inheritance as the ungrouped branch above.
+    unit = trips_unit(effort$unit) # nolint: object_usage_linter
   )
 }
 
@@ -328,13 +334,26 @@ estimate_effort_per_acre <- function(effort, acres, ...) {
     est_df$se_within <- est_df$se_within / acres
   }
 
+  # Derived rather than looked up: acres is a constant divisor, so this is
+  # whatever the effort was, per acre. Composing the string keeps
+  # party-hours/acre distinguishable from angler-hours/acre, which a hardcoded
+  # "angler-hours/acre" would silently conflate. Unknown in, unknown out --
+  # appending "/acre" to NA would invent a dimension.
+  effort_unit <- effort$unit %||% NA_character_
+  density_unit <- if (is.na(effort_unit)) {
+    NA_character_
+  } else {
+    paste0(effort_unit, "/acre")
+  }
+
   # --- return ---
-  new_creel_estimates(
+  new_creel_estimates( # nolint: object_usage_linter
     estimates = est_df,
     method = "effort-per-acre",
     variance_method = effort$variance_method,
     design = NULL,
     conf_level = effort$conf_level,
-    by_vars = effort$by_vars
+    by_vars = effort$by_vars,
+    unit = density_unit
   )
 }
