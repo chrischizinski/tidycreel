@@ -822,3 +822,74 @@ test_that("effort per acre does not invent a dimension from an unknown one", {
   expect_true(is.na(per_acre$unit))
   expect_false(identical(per_acre$unit, "NA/acre"))
 })
+
+test_that("the exploitation rate is dimensionless whatever the design", {
+  # u = (C/T) x (m/n) divides fish by fish twice, so both actors cancel. This
+  # is the one estimator in the audit whose unit no input can change, and that
+  # is the claim being pinned: not that "proportion" is spelled right, but that
+  # nothing about the inputs can make it anything else.
+  r <- estimate_exploitation_rate(T = 200L, C = 450.0, se_C = 42.0, n = 180L, m = 15L)
+  expect_identical(r$unit, "proportion")
+
+  # Reporting-rate adjustment divides by a dimensionless constant.
+  r_adj <- estimate_exploitation_rate(
+    T = 200L, C = 450.0, se_C = 42.0, n = 180L, m = 15L,
+    reporting_rate = 0.8
+  )
+  expect_identical(r_adj$unit, "proportion")
+  expect_false(isTRUE(all.equal(r$estimates$estimate, r_adj$estimates$estimate)))
+
+  # A logit CI reshapes the interval, not the quantity.
+  r_logit <- estimate_exploitation_rate(
+    T = 200L, C = 450.0, se_C = 42.0, n = 180L, m = 15L,
+    ci_type = "logit"
+  )
+  expect_identical(r_logit$unit, "proportion")
+})
+
+test_that("the stratified exploitation rate keeps the proportion through aggregation", {
+  # The .overall row is a T-weighted mean of proportions, which is still one.
+  strata_df <- data.frame(
+    stratum = c("weekday", "weekend"),
+    T_h     = c(120L, 80L),
+    C_h     = c(280.0, 170.0),
+    se_C_h  = c(28.0, 22.0),
+    n_h     = c(110L, 70L),
+    m_h     = c(9L, 6L)
+  )
+  r <- estimate_exploitation_rate(strata = strata_df, by = "stratum")
+  expect_identical(r$unit, "proportion")
+  expect_true(".overall" %in% r$estimates$stratum)
+})
+
+test_that("mark-recapture cannot name the actor it counted", {
+  # Finding 25. M, n, and m arrive as bare numerics and nothing inspects them,
+  # so N_hat counts whatever the marking protocol marked -- anglers on some
+  # surveys, boats or parties on others. Reporting "anglers" would be a
+  # declaration restating the function name, which is the failure the unit
+  # spine exists to prevent. NA is the honest answer on all three estimators.
+  chapman <- estimate_angler_n(M = 200L, n = 50L, m = 10L)
+  petersen <- estimate_angler_n(M = 200L, n = 50L, m = 10L, method = "petersen")
+  schnabel <- estimate_angler_n(
+    M = c(0L, 47L, 91L, 131L),
+    n = c(50L, 50L, 50L, 50L),
+    m = c(0L, 4L, 6L, 8L),
+    method = "schnabel"
+  )
+
+  expect_true(is.na(chapman$unit))
+  expect_true(is.na(petersen$unit))
+  expect_true(is.na(schnabel$unit))
+  expect_false(identical(chapman$unit, "anglers"))
+})
+
+test_that("mark-recapture harvest does not launder the unknown actor into fish", {
+  # Finding 23. H = N_hat x harvest_rate is in fish only when N_hat counts
+  # anglers, and estimate_angler_n() cannot know that. Labelling the product
+  # "fish" would manufacture a certainty neither factor has.
+  angler_n <- estimate_angler_n(M = 200L, n = 50L, m = 10L)
+  h <- estimate_mr_harvest(angler_n = angler_n, harvest_rate = 0.35)
+
+  expect_true(is.na(h$unit))
+  expect_false(identical(h$unit, "fish"))
+})

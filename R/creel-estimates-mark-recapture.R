@@ -143,6 +143,11 @@ estimate_angler_n <- function(
     }
   }
 
+  # Unit: NA on every branch. N_hat inherits its actor from whatever the caller
+  # marked, and M, n, and m arrive as bare numerics that nothing here inspects.
+  # Creel mark-recapture is routinely run on boats or parties rather than on
+  # individual anglers, so asserting "anglers" would put a confident label on a
+  # party-level count. See finding 25 in AUDIT-dimensional-seams.md.
   if (method == "chapman") {
     # --- point estimate ---
     N_hat <- ((M + 1) * (n + 1)) / (m + 1) - 1
@@ -176,13 +181,14 @@ estimate_angler_n <- function(
       estimates_df$ci_lo_boot <- ci_lo_boot
       estimates_df$ci_hi_boot <- ci_hi_boot
     }
-    result <- new_creel_estimates(
+    result <- new_creel_estimates( # nolint: object_usage_linter
       estimates = estimates_df,
       method = "mark-recapture-chapman",
       variance_method = "chapman",
       design = NULL,
       conf_level = conf_level,
-      by_vars = NULL
+      by_vars = NULL,
+      unit = NA_character_
     )
     if (ci_method == "bootstrap") {
       attr(result, "boot_samples") <- N_hat_b
@@ -220,13 +226,14 @@ estimate_angler_n <- function(
       estimates_df$ci_lo_boot <- ci_lo_boot
       estimates_df$ci_hi_boot <- ci_hi_boot
     }
-    result <- new_creel_estimates(
+    result <- new_creel_estimates( # nolint: object_usage_linter
       estimates = estimates_df,
       method = "mark-recapture-petersen",
       variance_method = "petersen",
       design = NULL,
       conf_level = conf_level,
-      by_vars = NULL
+      by_vars = NULL,
+      unit = NA_character_
     )
     if (ci_method == "bootstrap") {
       attr(result, "boot_samples") <- N_hat_b
@@ -285,13 +292,14 @@ estimate_angler_n <- function(
       estimates_df$ci_lo_boot <- ci_lo_boot
       estimates_df$ci_hi_boot <- ci_hi_boot
     }
-    result <- new_creel_estimates(
+    result <- new_creel_estimates( # nolint: object_usage_linter
       estimates = estimates_df,
       method = "mark-recapture-schnabel",
       variance_method = "delta",
       design = NULL,
       conf_level = conf_level,
-      by_vars = NULL
+      by_vars = NULL,
+      unit = NA_character_
     )
     if (ci_method == "bootstrap") {
       attr(result, "boot_samples") <- N_hat_b
@@ -310,16 +318,17 @@ estimate_angler_n <- function(
 #' \code{\link{estimate_angler_n}} and a known harvest rate.
 #'
 #' The point estimate is \eqn{\hat{H} = \hat{N} \times r} where \eqn{r} is the
-#' harvest rate (proportion of anglers that harvested fish). The delta-method
+#' harvest rate in fish per angler. The delta-method
 #' standard error is \eqn{SE(\hat{H}) = r \times SE(\hat{N})}, propagating only
 #' the uncertainty in \eqn{\hat{N}} (harvest-rate uncertainty is not propagated
 #' in this release).
 #'
 #' @param angler_n A \code{creel_estimates} object returned by
 #'   \code{\link{estimate_angler_n}}.
-#' @param harvest_rate numeric scalar. Proportion of anglers that harvested fish.
-#'   Must be in \eqn{(0, 1]}. Uncertainty in the harvest rate is not propagated
-#'   (see Details).
+#' @param harvest_rate numeric scalar. Harvest per angler, in fish per angler.
+#'   Must be \eqn{> 0}. This is a rate, not a proportion, and is not bounded
+#'   above: a fishery averaging 1.4 fish per angler is a legal value.
+#'   Uncertainty in the harvest rate is not propagated (see Details).
 #' @param conf_level numeric. Confidence level for the CI. Default \code{0.95}.
 #' @param ci_method character(1). CI construction method: \code{"delta"} (default)
 #'   uses the analytic delta-method formula; \code{"bootstrap"} propagates the
@@ -381,8 +390,8 @@ estimate_mr_harvest <- function(
   if (!is.numeric(harvest_rate) || length(harvest_rate) != 1L) {
     cli::cli_abort("{.arg harvest_rate} must be a single numeric value.")
   }
-  if (harvest_rate <= 0 || harvest_rate > 1) {
-    cli::cli_abort("{.arg harvest_rate} must be in (0, 1], not {harvest_rate}.")
+  if (harvest_rate <= 0) {
+    cli::cli_abort("{.arg harvest_rate} must be > 0, not {harvest_rate}.")
   }
 
   # --- extract N_hat and se_N from the creel_estimates object ---
@@ -421,12 +430,16 @@ estimate_mr_harvest <- function(
     estimates_df$ci_lo_boot <- ci_lo_boot
     estimates_df$ci_hi_boot <- ci_hi_boot
   }
-  new_creel_estimates(
+  # Unit: NA. H = N_hat x harvest_rate is in fish only if N_hat counts anglers,
+  # and estimate_angler_n() cannot know its own actor (finding 25). Claiming
+  # "fish" here would launder that unknown into a confident label.
+  new_creel_estimates( # nolint: object_usage_linter
     estimates = estimates_df,
     method = "mark-recapture-harvest",
     variance_method = "delta",
     design = NULL,
     conf_level = conf_level,
-    by_vars = NULL
+    by_vars = NULL,
+    unit = NA_character_
   )
 }

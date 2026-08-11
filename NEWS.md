@@ -77,6 +77,23 @@
   effort unit stays unknown through both: dividing an unknown quantity does not
   make it known, and `"NA/acre"` would read as a real unit on a plot axis.
 
+* Unit propagation now reaches the mark-recapture and exploitation-rate
+  estimators, the last group without units, and the honest answer for most of
+  them is `NA`.
+
+  `estimate_exploitation_rate()` reports `"proportion"` on both the stratified
+  and unstratified paths. It is the one estimator in the package whose unit no
+  input can change: \eqn{u = (C/T) \times (m/n)} divides fish by fish twice, so
+  both actors cancel for every design.
+
+  `estimate_angler_n()` reports `NA`, **not** `"anglers"`. Its `M`, `n` and `m`
+  arrive as bare numerics that nothing inspects, and the arithmetic divides
+  counts by counts, so \eqn{\hat{N}} carries whatever actor the marking protocol
+  marked — anglers on some surveys, boats or parties on others. Asserting
+  `"anglers"` would restate the function's name rather than derive anything.
+  `estimate_mr_harvest()` inherits that unknown for the same reason: its product
+  is in fish only if \eqn{\hat{N}} counted anglers.
+
 * `estimate_total_catch()`, `estimate_total_harvest()` and
   `estimate_total_release()` abort with class `creel_error_unit_mismatch` when
   the effort unit and the rate's denominator are both known and disagree. Their
@@ -302,6 +319,29 @@
   double count. Counts tables carrying neither column are unaffected.
 
 ## Breaking changes
+
+* `estimate_mr_harvest(harvest_rate = )` is harvest **per angler**, in fish per
+  angler, and is no longer bounded above. It was documented as the "proportion
+  of anglers that harvested fish" and guarded to `(0, 1]`.
+
+  Those two readings produce different quantities from the same arithmetic.
+  \eqn{\hat{H} = \hat{N} \times r} with a dimensionless proportion is a count of
+  *anglers who kept a fish*; the function returns it as `total_harvest`, from
+  `estimate_mr_harvest()`, with `method = "mark-recapture-harvest"`. The
+  per-angler-rate reading is the one the output has always claimed, and the one
+  that makes the product fish.
+
+  The `(0, 1]` guard did more than mislabel — it enforced the wrong reading. A
+  fishery averaging 1.4 kept fish per angler is ordinary, and the guard made
+  total harvest unreachable for exactly those fisheries by erroring on the
+  correct input.
+
+  **No numeric result changes.** Every previously legal call returns what it
+  always did, because the multiplication is untouched. What changes is which
+  quantity you are told to supply, and that values above 1 are now accepted. If
+  you were passing a proportion of anglers, your input was answering a different
+  question than the output claimed to ask, and it should be replaced with mean
+  fish kept per angler.
 
 * `add_counts()` now aborts with class `creel_error_aerial_period_length` when
   `period_length_col` is supplied on an aerial design, and
@@ -532,6 +572,17 @@
   requires `count_col` to be named.
 
 ## Documentation
+
+* `estimate_exploitation_rate()` described `C` as a harvest total while pointing
+  at `estimate_total_catch()` to produce it. Catch includes released fish, which
+  were never removed from the tagged cohort, so a catch total inflates
+  \eqn{\hat{u}} by the release fraction. `@param C`, `@param strata` and
+  `vignettes/mark-recapture.Rmd` now point at `estimate_total_harvest()` and say
+  why. The estimator is unchanged; only the cross-reference was wrong.
+
+  Noted in the docs because no check can catch it: both totals are counts of
+  fish and both carry `unit = "fish"`, so the expression is dimensionally
+  coherent. The actor matches and the quantity does not.
 
 * `vignettes/flexible-count-estimation.Rmd`: the instantaneous baseline built an
   `open_hours` column that no tidycreel function reads, so the example looked

@@ -15,9 +15,10 @@ estimate_mr_harvest(
 \item{angler_n}{A \code{creel_estimates} object returned by
 \code{\link{estimate_angler_n}}.}
 
-\item{harvest_rate}{numeric scalar. Proportion of anglers that harvested fish.
-Must be in \eqn{(0, 1]}. Uncertainty in the harvest rate is not propagated
-(see Details).}
+\item{harvest_rate}{numeric scalar. Harvest per angler, in fish per angler.
+Must be \eqn{> 0}. This is a rate, not a proportion, and is not bounded
+above: a fishery averaging 1.4 fish per angler is a legal value.
+Uncertainty in the harvest rate is not propagated (see Details).}
 
 \item{conf_level}{numeric. Confidence level for the CI. Default \code{0.95}.}
 
@@ -38,7 +39,7 @@ given a closed-population angler population estimate from
 \code{\link{estimate_angler_n}} and a known harvest rate.
 
 The point estimate is \eqn{\hat{H} = \hat{N} \times r} where \eqn{r} is the
-harvest rate (proportion of anglers that harvested fish). The delta-method
+harvest rate in fish per angler. The delta-method
 standard error is \eqn{SE(\hat{H}) = r \times SE(\hat{N})}, propagating only
 the uncertainty in \eqn{\hat{N}} (harvest-rate uncertainty is not propagated
 in this release).
