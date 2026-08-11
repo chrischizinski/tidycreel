@@ -22,8 +22,10 @@ Paths audited: **instantaneous** and **bus-route** (including ice, which is
 implemented as a degenerate bus route). Aerial and camera were *not* in the original
 scope but were pulled in on 2026-08-10 by findings 21 and 22, which surfaced while
 extending unit propagation — the effort family cannot be labelled without deciding
-where each design's period length comes from. Still not audited: mark-recapture, and
-the `tidycreel.connect` boat→angler reconstruction.
+where each design's period length comes from. Mark-recapture and exploitation rate
+were audited on 2026-08-11 while labelling the last unlabelled estimators, producing
+findings 23–25. Still not audited: the `tidycreel.connect` boat→angler
+reconstruction.
 
 Findings 1–4 and 5, 9, 10 were reproduced by running the package. 6, 7, 8 were
 confirmed by code trace. Every finding below is verified; none are speculative.
@@ -56,6 +58,9 @@ fix or travel together.
 | 19 | *not opened* | ~~Species totals abort on bus-route and ice designs~~ **LANDED** (added and fixed 2026-08-09) |
 | 21 | *not opened* | ~~Finding 13 made aerial and camera designs apply time twice~~ **LANDED** (added and fixed 2026-08-10) |
 | 22 | *not opened* | The camera ratio path cannot know whether it returned angler-hours or party-hours; unit recorded `NA`, ambiguity **not fixed** (added 2026-08-10) |
+| 23 | *not opened* | ~~`estimate_mr_harvest()` multiplied by a proportion of anglers and called the product total harvest~~ **LANDED** (added and fixed 2026-08-11) |
+| 24 | *not opened* | ~~`estimate_exploitation_rate()` documented `C` as coming from `estimate_total_catch()`, but the estimator needs harvest~~ **LANDED** (added and fixed 2026-08-11) |
+| 25 | *not opened* | `estimate_angler_n()` cannot know whether it counted anglers, boats, or parties; unit recorded `NA`, ambiguity **not fixed** (added 2026-08-11) |
 
 Downstream book work is tracked in
 `~/Dev/modern-creel-surveys/.planning/TIDYCREEL-WISHLIST.md`, not as GitHub issues —
@@ -897,6 +902,124 @@ compares design-level units and this quantity has none.
 
 Direction 1 is the better match for the audit's "derive, never declare" line;
 direction 2 is what the codebase already does at the analogous seam. Not decided.
+
+### 23. `estimate_mr_harvest()` multiplied by a proportion and called the product harvest
+
+Found 2026-08-11 while labelling the mark-recapture family, by asking what unit
+\eqn{\hat{H} = \hat{N} \times r} carries and discovering that the answer depended on
+a question the documentation answered one way and the function name answered another.
+
+`harvest_rate` was documented as "Proportion of anglers that harvested fish" and
+guarded to \eqn{(0, 1]}. Under that reading the arithmetic is
+
+\deqn{\hat{H} = \underbrace{\hat{N}}_{\text{anglers}} \times \underbrace{r}_{\text{dimensionless}} = \text{anglers who kept a fish}}
+
+but the result is returned as `parameter = "total_harvest"`, from a function called
+`estimate_mr_harvest()`, with `method = "mark-recapture-harvest"`, under a vignette
+section headed "Total Harvest from Mark-Recapture". Four places said the output was
+fish; one param description and one guard said the multiplier was a proportion, which
+makes the output anglers. Both cannot hold.
+
+Measured on the documented example before the fix:
+
+| call | returned | labelled | reading under the old param doc |
+| --- | --- | --- | --- |
+| `estimate_mr_harvest(N̂ = 930.909, harvest_rate = 0.35)` | **325.818** | `total_harvest` | 325.8 *anglers* who kept ≥1 fish |
+| `estimate_mr_harvest(N̂ = 930.909, harvest_rate = 1.4)` | **error** | — | rejected by the `(0, 1]` guard |
+
+The second row is the sharper half. A fishery averaging 1.4 kept fish per angler is
+ordinary, and the guard made total harvest unreachable for it — the guard was not
+merely documenting the wrong reading, it was enforcing it. The guard arrived as a
+"WARNING-03 fix" and was pinned by Test L in `test-estimate-mr-harvest.R`, so the
+wrong reading had a test defending it.
+
+The failure is the audit's own class with the roles reversed. Elsewhere a number
+crosses a boundary with its dimension unasserted; here the dimension was asserted in
+two incompatible ways at the same boundary, and the arithmetic silently picked one.
+A manager reading `total_harvest = 325.8` takes it for fish. Under the documented
+multiplier it was a count of people.
+
+**Fixed** (2026-08-11). `harvest_rate` is now documented as harvest per angler, in
+fish per angler, and the upper bound is dropped — the guard is `> 0`. Every
+previously legal call returns the identical number, because the arithmetic never
+changed; what changed is which quantity the caller is told to supply, and that calls
+above 1 are now reachable. Test L is inverted to pin that a rate above 1 is accepted,
+with the reasoning recorded in the test.
+
+**Caveat on the fix direction.** The `creel-knowledge` KB is broken (searches for
+Hansen & Van Kirk 2018 returned Cochran sampling theory and Wolter variance
+estimation at relevance 0.0), so the primary reference could not be consulted. The
+direction rests on internal evidence — the function name, the parameter label, the
+method string, the docstring title, and the vignette heading all say the output is
+harvest in fish — plus the standard expansion of an angler count to a harvest total
+being a per-angler rate. Worth a literature confirmation before release.
+
+### 24. `estimate_exploitation_rate()` is documented against the wrong input
+
+Found 2026-08-11 alongside finding 23. `C` was described as "Total creel harvest
+estimate (from `estimate_total_catch()`)", and the vignette said the same. The two
+halves of that sentence name different quantities.
+
+Exploitation rate is the fraction of a tagged cohort removed by the fishery:
+
+\deqn{\hat{u} = \frac{C \cdot m}{T \cdot n}}
+
+Catch includes fish that were caught and released. Those fish were not removed from
+the cohort and are still available to be caught again, so feeding a catch total where
+harvest is required inflates \eqn{\hat{u}} by the release fraction — which in a
+catch-and-release-dominated fishery is most of the catch. `estimate_total_catch()`
+and `estimate_total_harvest()` are separate exported functions, so the wrong one was
+named by a live cross-reference a user would follow.
+
+The unit spine cannot help here, and that is the point worth recording. Both totals
+are counts of fish and both carry `unit = "fish"`, so `check_product_units()` sees a
+dimensionally coherent expression. The actor matches; the *quantity* does not. This
+is the limit of a single-token unit: `"fish"` distinguishes fish from angler-hours,
+not harvested fish from caught fish.
+
+**Fixed** (2026-08-11). `@param C` and `@param strata` now point at
+`estimate_total_harvest()`, state that harvest and not catch is required, give the
+reason, and note that no unit check can detect the substitution. The vignette carries
+the same correction. No code change — the estimator was always right about what it
+needed, and only the documentation sent callers elsewhere.
+
+### 25. `estimate_angler_n()` cannot know whether it counted anglers, boats, or parties
+
+Found 2026-08-11 while labelling the mark-recapture family. The handoff for this work
+specified `"anglers"`; re-deriving it before implementing showed that nothing in the
+function can support the claim.
+
+`M`, `n`, and `m` arrive as bare numerics. There is no design, no attached
+interviews, and no argument naming what the marking protocol marked. The arithmetic
+
+\deqn{\hat{N} = \frac{(M+1)(n+1)}{(m+1)} - 1}
+
+is actor-preserving: it divides counts by counts, so \eqn{\hat{N}} carries whatever
+actor the inputs carried and the code never observes which that was. The parameter
+documentation itself says "marked **animals**", generic mark-recapture boilerplate,
+while the function name says anglers. Creel mark-recapture is routinely run on boats
+or trailers at access points rather than on individual anglers, so this is not a
+hypothetical caller.
+
+This is finding 22's shape at a different seam, with one difference that matters: the
+camera ratio path has an input column whose unit *could* in principle be derived, so
+its ambiguity is fixable. Here there is no channel at all — no measurement can
+discriminate, because no input varies the answer. A label here could only ever be a
+restatement of the function name, which is precisely what the "derive, never declare"
+line in `R/survey-bridge.R` exists to forbid. Compare the aerial effort estimator,
+which does assert `"angler-hours"` unconditionally: there the function's own
+arithmetic multiplies angler counts by `h_open`, so the code earned the label.
+
+The consequence propagates. `estimate_mr_harvest()` multiplies \eqn{\hat{N}} by a
+per-angler rate, so its product is fish only if \eqn{\hat{N}} counted anglers. That
+is why both estimators now report `NA` rather than `"anglers"` and `"fish"`.
+
+**Not fixed.** The unit is recorded as `NA`, which is honest but is a marker, not a
+fix. The candidate direction, parallel to finding 22's direction 1, is an explicit
+argument naming the marked unit — but unlike the camera case that argument would
+carry no data the code could verify, so it is a declaration wearing a derivation's
+clothes. A warning at the seam, finding 22's direction 2, is the cheaper option and
+is what the codebase already does at analogous gaps. Not decided.
 
 ### 14. Ice designs skip the bus-route dispatch in the *rate* estimators
 
