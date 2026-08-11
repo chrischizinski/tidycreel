@@ -39,14 +39,14 @@ fix or travel together.
 
 | Finding(s) | Issue | Title |
 | ---------- | ----- | ----- |
-| 1 | #105 | `add_counts()` selects the count column positionally |
-| 2 | #106 | Bus-route/ice `estimate_effort()` returns party-hours |
-| 3 | #107 | `estimate_harvest_rate()` returns a total, not a rate |
-| 4, 5 | #108 | Incomplete-trip ratio/pi sum; diagnostic slots not comparable |
-| 6 | #109 | `prep_counts_*()` `within_day_var`/`n_counts` are dead arguments |
-| 8 | #110 | No bus-route dispatch for release; `estimate_total_release_br()` dead |
-| 10 | #111 | `br_build_estimates()` hardcodes `method = "total"` |
-| 7, 9, 11 | #112 | Missing unit guards |
+| 1 | #105 | ~~`add_counts()` selects the count column positionally~~ **LANDED** (`c806b07`) |
+| 2 | #106 | ~~Bus-route/ice `estimate_effort()` returns party-hours~~ **LANDED** (`578bb5f`) |
+| 3 | #107 | ~~`estimate_harvest_rate()` returns a total, not a rate~~ **LANDED** (`5180c5e`) |
+| 4, 5 | #108 | ~~Incomplete-trip ratio/pi sum; diagnostic slots not comparable~~ **LANDED** (`21d6c08`) |
+| 6 | #109 | ~~`prep_counts_*()` `within_day_var`/`n_counts` are dead arguments~~ **LANDED** (`40108b1`) |
+| 8 | #110 | ~~No bus-route dispatch for release; `estimate_total_release_br()` dead~~ **LANDED** (`dc017aa`) |
+| 10 | #111 | ~~`br_build_estimates()` hardcodes `method = "total"`~~ **LANDED** (`66e1a74`) |
+| 7, 9, 11 | #112 | ~~Missing unit guards~~ **LANDED** (`7c3f46c`) |
 | 12 | #113 | ~~Documentation asserts units the code does not produce~~ **LANDED** (12a 2026-08-08, 12b and 12c 2026-08-10) |
 | 13 | *not opened* | ~~Instantaneous path never carries T, so it returns angler-days~~ **LANDED 2026-08-10** (added 2026-08-08), with the first pass of unit propagation |
 | 20 | *not opened* | ~~`circuit_time` cancels out of the progressive estimate and cannot change any output~~ **RESOLVED 2026-08-11 — not a defect.** The cancellation is Hoenig et al. (1993) eq (3); \eqn{\tau} is consumed by `generate_progressive_start()` at scheduling time. Leaves a docs gap and a misplaced \eqn{\kappa < 1} guard |
@@ -147,6 +147,16 @@ A row index is expanded and returned as "Total Effort" with no warning.
 candidates when more than one is present. Note this means the daylight change as it
 currently stands is documentation-only; the trap it was meant to close is still armed.
 
+**LANDED (#105, `c806b07`).** Both halves. `add_counts()` gains `count_col`, and
+`resolve_count_col()` (`R/creel-design.R:1047`) aborts when more than one numeric
+candidate remains, naming them: "Cannot tell which column holds the angler counts […]
+Column order is not used to choose -- picking one would risk expanding the wrong
+variable into effort." Re-verified 2026-08-11 by running the CNT-11 block, which
+includes the negative assertion that the estimate is *not* `sum(daylight_hours)` —
+the original 13.2x failure. `prep_counts_daily_effort()`'s fixed output columns
+(`correction_factor`, `n_counts`, `within_day_var`) are excluded from the candidate
+set so the preferred pipeline does not look ambiguous.
+
 ### 2. Bus-route and ice `estimate_effort()` returns party-hours labelled angler-hours
 
 `R/creel-estimates-bus-route.R:83` reads `design$effort_col` (raw per-party trip
@@ -178,6 +188,14 @@ per party, so party-hours and angler-hours coincide and the test passes either w
 That test cannot fail when this logic changes. Any fix must add a party-size != 1 case
 to `test-primary-source-validation.R`.
 
+**LANDED (#106, `578bb5f`).** The bus-route and ice paths now read
+`design$angler_effort_col` like every other rate estimator. The process note was
+honoured rather than waved through: `test-primary-source-validation.R` gained
+`make_box20_6_party()` and "bus-route effort scales with party size (VALID-06,
+GH #106)", which restates Box 20.6 at an explicit party size. The published benchmark
+is still held at party size 1, so the original validation is unchanged; the new case
+is what can actually fail when this logic changes.
+
 ### 3. `estimate_harvest_rate()` on a bus-route design returns a total, not a rate
 
 `R/creel-estimates.R:1656-1685` dispatches to `estimate_harvest_br()`, which computes
@@ -198,6 +216,12 @@ effort"; L1533 declares `method = "ratio-of-means-hpue"`. The returned object ca
 
 **Decision: REAL BUG.** Either divide by the HT effort total to give a real HPUE, or
 make `estimate_harvest_rate()` error on bus-route designs. Do not leave both.
+
+**LANDED (#107, `5180c5e`).** The first branch was taken: `estimate_harvest_rate()` on
+a bus-route design divides the HT harvest total by the HT effort total and returns
+fish per angler-hour with `method = "ratio-of-means-hpue"`, matching the roxygen that
+was already promising a rate. The sibling `estimate_catch_rate()` was brought onto the
+same footing later (finding 17), so the two no longer disagree about what a "rate" is.
 
 ### 4. Bus-route incomplete-trip branch divides a ratio by pi and sums it
 
@@ -850,12 +874,22 @@ implemented anywhere.
    (\eqn{K = 1}) is Robson's (1961) all-day circuit and must keep passing — verified
    \eqn{\tau = 8} accepted, \eqn{\tau = 9} and \eqn{\tau = 12} rejected against
    \eqn{T_d = 8}.
-2. Nothing on the estimator side checks \eqn{K} integrality. \eqn{\tau = 3} against
-   \eqn{T_d = 8} gives \eqn{K = 2.667} and passes silently, while the scheduler would
-   have refused the same design outright. Whether that should be enforced here is a
-   real question: eq (3) is stated for the discrete scheme, and under the wraparound
-   scheme there is no integrality requirement — so `add_counts()` cannot enforce it
-   without knowing which strategy produced the counts, which it is never told.
+2. ~~Nothing on the estimator side checks \eqn{K} integrality — \eqn{\tau = 3} against
+   \eqn{T_d = 8} gives \eqn{K = 2.667} and passes silently, while the scheduler refuses
+   the same design outright.~~ **RESOLVED 2026-08-11 — the estimator must NOT check it,
+   and the current behaviour is correct.** The paper attaches the requirement to the
+   discrete scheme alone: "Suppose the duration of the study period, \eqn{T}, is an
+   integer multiple of the time, \eqn{\tau}, required to make a count, i.e., \eqn{K} is
+   now an integer." The wraparound scheme is offered as a full alternative — "A second
+   way to schedule the count is to pick a start time […] in the interval \eqn{(0,T)}
+   with continuous uniform probability and, if necessary, 'wrap' the count around" —
+   and carries no divisibility requirement, because the window slides freely instead of
+   partitioning the day into blocks. Both schemes give every moment equal probability
+   of being observed, so both are estimated by the same \eqn{C \times T_d}. A check in
+   `add_counts()` would therefore reject valid wraparound designs. `generate_progressive_start()`
+   already enforces it exactly where it applies, gated on `strategy == "discrete"`
+   (`R/schedule-generators.R:973-982`). Only the *reason* was undocumented; the
+   scheduling section of `vignettes/progressive-count-surveys.Rmd` now states it.
 3. `add_counts()` cannot tell whether counts came from a validly scheduled progressive
    survey at all. The paper's errors (2), (3) and (4) — count time not randomised,
    agent interrupting travel to interview, improper scheduling — are all invisible to
@@ -875,10 +909,12 @@ implemented anywhere.
 
 **Decision: NOT a defect in the estimator. \eqn{\tau} stays required** — it is a real
 design parameter that the scheduler consumes, and dropping it would break
-`generate_progressive_start()`'s contract. Items 1 and 4 fixed 2026-08-11. Item 2
-remains open and needs a decision about whether the design should record which
-scheduling strategy produced the counts; item 3 is a documentation obligation rather
-than something the estimator can check.
+`generate_progressive_start()`'s contract. Items 1, 2 and 4 closed 2026-08-11 — 1 and
+4 by fixing them, 2 by establishing that the current behaviour is already correct.
+Item 3 stands as a documentation obligation rather than something the estimator can
+check, and is discharged by the conditions section added under item 4.
+
+**Finding 20 is closed.** No further work outstanding.
 
 ### 21. Finding 13 made aerial and camera designs apply time twice
 

@@ -131,11 +131,23 @@ Before field work begins, randomise the circuit start time for each survey day
 using `generate_progressive_start()`. This ensures the count is unbiased with
 respect to time-of-day effort patterns. Two strategies are available:
 
-- `"discrete"` (default): start drawn from the \eqn{k = T / \tau} valid
+- `"discrete"` (default): start drawn from the \eqn{K = T / \tau} valid
   τ-aligned offsets — avoids mid-day over-representation caused by the common
-  \eqn{U[0, T - \tau]} error.
+  \eqn{U[0, T - \tau]} error. Requires \eqn{K} to be a whole number, and aborts
+  if it is not; adjust `circuit_time` or the open hours to make it one.
 - `"wraparound"`: start drawn from \eqn{U[0, T)}; circuit may wrap past the
-  end of the survey day.
+  end of the survey day. Carries **no** divisibility requirement.
+
+The whole-number requirement belongs to `"discrete"` alone, because that scheme
+partitions the day into \eqn{K} non-overlapping blocks and samples one. Under
+`"wraparound"` the count window slides freely, so \eqn{K = T/\tau} is an ordinary
+ratio rather than a count of blocks and need not be a whole number.
+
+This is why `add_counts()` does not check it. Both schemes give every moment of the
+day equal probability of being observed, so both are estimated by the same
+\eqn{\hat{E}_d = C \times T_d}; a divisibility check in the estimator would reject
+perfectly valid wraparound designs. The constraint is enforced where it applies —
+at scheduling time, by `generate_progressive_start()`.
 
 ```{r prog-start, message = FALSE}
 starts <- generate_progressive_start(
