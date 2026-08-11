@@ -20,6 +20,11 @@
 #'   calibration.  If `NULL`, falls back to raw count expansion.
 #' @param effort_col Character scalar.  Column in `interviews` that contains
 #'   per-trip effort (e.g. hours fished). Default `"hours_fished"`.
+#' @param n_anglers Optional party size, used to convert `effort_col` to
+#'   angler-hours before calibration. Either a character scalar naming a column
+#'   in `interviews`, or a single positive number stating a constant party size.
+#'   `NULL` (default) leaves `effort_col` as supplied and the returned unit
+#'   unknown.
 #' @param intercept_col Character scalar.  Column in `interviews` or
 #'   `design$counts` that contains the camera count during the interview
 #'   period (for counter mode, this is `ingress_count` from the counts
@@ -45,6 +50,7 @@ estimate_effort_camera <- function(
   design,
   interviews = NULL,
   effort_col = "hours_fished",
+  n_anglers = NULL,
   intercept_col = NULL,
   h_open = NULL,
   variance_method = "taylor",
@@ -81,6 +87,37 @@ estimate_effort_camera <- function(
       cli::cli_abort(
         "Column {.field {effort_col}} not found in {.arg interviews}."
       )
+    }
+    # Finding 22: rho is a ratio of sums, so the counts cancel and the estimate
+    # inherits whatever unit `effort_col` holds. Supplying n_anglers makes this
+    # function perform the party-size multiplication itself, which is what earns
+    # the label -- the same rule add_interviews() applies, through the same
+    # helper, rather than a second implementation of it.
+    if (!is.null(n_anglers)) {
+      interviews <- compute_angler_effort(
+        interviews,
+        effort = !!effort_col,
+        n_anglers = !!n_anglers
+      )
+      effort_col <- ".angler_effort"
+      effort_unit_label <- "angler-hours"
+    } else {
+      # Warned rather than silent because the caller can now act on it. Before
+      # n_anglers existed this warning would have named a gap with no means to
+      # close it.
+      cli::cli_warn(c(
+        "Camera ratio calibration cannot tell angler-hours from party-hours.",
+        "x" = paste(
+          "{.field {effort_col}} is a caller-supplied column and nothing on",
+          "this path normalises it by party size."
+        ),
+        "i" = paste(
+          "Pass {.arg n_anglers} -- a column in {.arg interviews}, or a constant",
+          "party size -- to make the unit derivable."
+        ),
+        "i" = "The estimate is returned with an unknown unit until then."
+      ))
+      effort_unit_label <- NA_character_
     }
     # Build calibration ratio per stratum: mean(effort) / mean(camera_count)
     strata_col <- design$strata_cols[1L]
@@ -177,15 +214,10 @@ estimate_effort_camera <- function(
         sum(total_counts_h^2 * var_rho_matched)
     )
     method_label <- "camera_ratio"
-    # rho is sum(E_d)/sum(C_d), so the counts cancel and the result carries the
-    # unit of `effort_col` -- a bare column in a caller-supplied data frame.
-    # Nothing here normalises it by party size, and `interviews` is an argument
-    # rather than an add_interviews() attachment, so design$angler_effort_col
-    # describes a different (often absent) set of interviews and must not be
-    # consulted. Angler-hours and party-hours are indistinguishable at this
-    # point, so the honest answer is unknown -- the same call add_counts() makes
-    # for a bare count column with no T_d.
-    effort_unit_label <- NA_character_
+    # effort_unit_label was set above, where the party-size decision was made.
+    # design$angler_effort_col is deliberately not consulted: `interviews` is an
+    # argument rather than an add_interviews() attachment, so it describes a
+    # different (often absent) set of interviews.
   } else {
     # ---- Raw count expansion fallback ----------------------------------------
     if (is.null(h_open) || !is.numeric(h_open) || h_open <= 0) {

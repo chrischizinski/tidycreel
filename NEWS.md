@@ -23,6 +23,25 @@
   `Unit:` line is the claim that tidycreel does not know, which is a different
   statement from a default.
 
+* `est_effort_camera()` gains `n_anglers`, which makes the ratio-calibration
+  path's unit derivable instead of unknown. The calibration ratio is a ratio of
+  sums, so the camera counts cancel and the estimate inherits whatever unit the
+  interview effort column holds — angler-hours and party-hours were
+  indistinguishable, a factor of roughly two apart on the shipped example and
+  reported identically. Passing `n_anglers`, either a column in `interviews` or a
+  constant party size, makes the function perform the normalisation itself, which
+  is what earns the `angler-hours` label.
+
+  Omitting it now warns and names the ambiguity. That warning is only worth
+  raising because the argument exists to answer it: before, it would have
+  reported a gap the caller had no means to close.
+
+  The party-size rule is not reimplemented. This path calls the same exported
+  `compute_angler_effort()` that `add_interviews()` uses, so a party size of zero
+  is refused at both seams for the same reason, and they cannot drift apart.
+  `n_anglers` here takes a column *name* or a constant rather than a tidyselect
+  symbol, matching its neighbouring `effort_col` and `intercept_col` arguments.
+
 * Unit propagation now reaches the rate and total estimators outside the
   standard CPUE spine. Species, sections, grouped, bus-route and regression
   rates carry `fish/<denominator>`; species, sections and bus-route totals

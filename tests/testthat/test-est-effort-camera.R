@@ -303,3 +303,62 @@ test_that("F21: ratio-calibration branch accepts T_d, because it cancels", {
   expect_equal(with_td$estimates$estimate, without_td$estimates$estimate)
   expect_equal(with_td$method, "camera_ratio")
 })
+
+# Finding 22: the calibration ratio is a ratio of sums, so the camera counts
+# cancel and the estimate inherits whatever unit `effort_col` holds. Before
+# `n_anglers` existed there was no way to tell angler-hours from party-hours on
+# this path, and no way for a caller to supply the missing information.
+
+test_that("CEST-22: ratio path warns when n_anglers is not supplied", {
+  d <- make_design_with_counts()
+  expect_warning(
+    est_effort_camera(d, interviews = make_interviews()),
+    regexp = "angler-hours from party-hours"
+  )
+})
+
+test_that("CEST-22: unit is unknown when n_anglers is not supplied", {
+  # NA is the claim that tidycreel does not know, which is what the warning
+  # above says out loud.
+  d <- make_design_with_counts()
+  res <- suppressWarnings(est_effort_camera(d, interviews = make_interviews()))
+  expect_true(is.na(res$unit))
+})
+
+test_that("CEST-22: supplying n_anglers as a column earns the angler-hours label", {
+  d <- make_design_with_counts()
+  ints <- make_interviews()
+  ints$party <- c(2, 2, 1, 3, 1)
+  res <- est_effort_camera(d, interviews = ints, n_anglers = "party")
+  expect_equal(res$unit, "angler-hours")
+})
+
+test_that("CEST-22: n_anglers changes the estimate, not just the label", {
+  # The label is only honest if the function did the arithmetic that produces
+  # it. A constant party size of 2 must double the estimate; if it does not,
+  # the multiplication never reached the calibration and the label is a
+  # declaration.
+  d <- make_design_with_counts()
+  ints <- make_interviews()
+  base <- suppressWarnings(est_effort_camera(d, interviews = ints))
+  doubled <- est_effort_camera(d, interviews = ints, n_anglers = 2)
+  expect_equal(doubled$estimates$estimate, 2 * base$estimates$estimate)
+  expect_equal(doubled$unit, "angler-hours")
+})
+
+test_that("CEST-22: no ambiguity warning once n_anglers is supplied", {
+  d <- make_design_with_counts()
+  expect_no_warning(
+    est_effort_camera(d, interviews = make_interviews(), n_anglers = 1)
+  )
+})
+
+test_that("CEST-22: n_anglers goes through the shared party-size rule", {
+  # Reuses validate_party_size() rather than reimplementing it, so a party of
+  # zero is refused here for the same reason it is in add_interviews().
+  d <- make_design_with_counts()
+  expect_error(
+    est_effort_camera(d, interviews = make_interviews(), n_anglers = 0),
+    regexp = "positive party size"
+  )
+})

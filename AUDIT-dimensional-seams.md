@@ -57,10 +57,10 @@ fix or travel together.
 | 18 | *not opened* | ~~Species rates on bus-route and ice designs ignore the HT weights~~ **LANDED** (added and fixed 2026-08-09) |
 | 19 | *not opened* | ~~Species totals abort on bus-route and ice designs~~ **LANDED** (added and fixed 2026-08-09) |
 | 21 | *not opened* | ~~Finding 13 made aerial and camera designs apply time twice~~ **LANDED** (added and fixed 2026-08-10) |
-| 22 | *not opened* | The camera ratio path cannot know whether it returned angler-hours or party-hours; unit recorded `NA`, ambiguity **not fixed** (added 2026-08-10) |
+| 22 | *not opened* | ~~The camera ratio path cannot know whether it returned angler-hours or party-hours~~ **LANDED** (added 2026-08-10, fixed 2026-08-11 via `n_anglers` + a warning, both directions together) |
 | 23 | *not opened* | ~~`estimate_mr_harvest()` multiplied by a proportion of anglers and called the product total harvest~~ **LANDED** (added and fixed 2026-08-11) |
 | 24 | *not opened* | ~~`estimate_exploitation_rate()` documented `C` as coming from `estimate_total_catch()`, but the estimator needs harvest~~ **LANDED** (added and fixed 2026-08-11) |
-| 25 | *not opened* | `estimate_angler_n()` cannot know whether it counted anglers, boats, or parties; unit recorded `NA`, ambiguity **not fixed** (added 2026-08-11) |
+| 25 | *not opened* | `estimate_angler_n()` cannot know whether it counted anglers, boats, or parties; **closed 2026-08-11 as decided** — `NA` is the terminal answer, no channel exists to derive one |
 | 26 | *not opened* | ~~Binned release counts claimed integer enforcement that was never there~~ **LANDED** (added and fixed 2026-08-11, from the `cli_abort()` sweep finding 12c called for) |
 
 Downstream book work is tracked in
@@ -891,18 +891,48 @@ silently party-hours, multiplied by a CPUE that is per angler-hour, is the mixed
 denominator of finding 2 — and `check_product_units()` cannot catch it, since it
 compares design-level units and this quantity has none.
 
-**Not fixed.** Two candidate directions, both unexplored:
+**Fixed 2026-08-11, by both directions together.** The audit originally posed them as
+alternatives:
 
 1. Give `est_effort_camera()` an `n_anglers` argument mirroring `add_interviews()`,
-   so the same normalisation and the same recorded provenance apply. Makes the unit
-   derivable rather than unknown, at the cost of a second place implementing the
-   party-size rule.
+   so the same normalisation and the same recorded provenance apply.
 2. Warn when the ratio path runs, naming the ambiguity, as `add_interviews()` does
-   for the same omission. Cheaper, and consistent with how the package already
-   treats this exact gap, but leaves the number ambiguous.
+   for the same omission.
 
-Direction 1 is the better match for the audit's "derive, never declare" line;
-direction 2 is what the codebase already does at the analogous seam. Not decided.
+Re-deriving them showed they are not alternatives at all. Direction 2 *depends* on
+direction 1: before the argument existed, a warning would have named a gap the caller
+had no means to close, which is the kind of warning that trains people to ignore
+warnings. With the argument in place the warning becomes actionable, and it is the
+only thing that reaches the callers who do not supply it.
+
+**Direction 1's stated cost was also wrong.** The audit priced it as "a second place
+implementing the party-size rule". There is no second place:
+`compute_angler_effort()` (`R/creel-design.R:74`) is already exported, already takes a
+plain data frame, and already routes through `validate_party_size()` — the same
+helper `add_interviews()` uses. The camera path calls it. A test pins that
+`n_anglers = 0` is refused here for the same reason it is refused there, so the two
+seams cannot drift apart.
+
+`n_anglers` takes a character column name or a constant, not a tidyselect symbol.
+That diverges from `add_interviews()` and is deliberate: `est_effort_camera()`'s
+neighbouring arguments (`effort_col`, `intercept_col`) are character scalars, so
+local consistency wins, and the character/numeric split disambiguates column-versus-
+constant without the trap `party_size_literal()` exists to handle.
+
+Measured on the same example as the table above, with the same synthetic party sizes:
+
+| call | estimate | reported unit |
+| --- | --- | --- |
+| `interviews =` only | **110.902** | `NA`, plus a warning |
+| `n_anglers = "party"` | **205.098** | `angler-hours` |
+
+A factor of 1.849, the count-weighted mean party size — the same two quantities the
+original table showed reported identically, now distinguished and labelled.
+
+**The label is earned, not asserted.** A test supplies a constant party size of 2 and
+requires the estimate to double, so a future edit that sets the label without doing
+the multiplication fails. Verified by mutation: keeping the label and deleting the
+`compute_angler_effort()` call gives 19.0 where 37.9 is expected.
 
 ### 23. `estimate_mr_harvest()` multiplied by a proportion and called the product harvest
 
@@ -1015,12 +1045,28 @@ The consequence propagates. `estimate_mr_harvest()` multiplies \eqn{\hat{N}} by 
 per-angler rate, so its product is fish only if \eqn{\hat{N}} counted anglers. That
 is why both estimators now report `NA` rather than `"anglers"` and `"fish"`.
 
-**Not fixed.** The unit is recorded as `NA`, which is honest but is a marker, not a
-fix. The candidate direction, parallel to finding 22's direction 1, is an explicit
-argument naming the marked unit — but unlike the camera case that argument would
-carry no data the code could verify, so it is a declaration wearing a derivation's
-clothes. A warning at the seam, finding 22's direction 2, is the cheaper option and
-is what the codebase already does at analogous gaps. Not decided.
+**Decided 2026-08-11: the unit stays `NA`, and this is the fix rather than a
+placeholder for one.** Both candidate directions were re-derived against finding 22,
+which was fixed the same day, and neither survives the comparison.
+
+*An argument naming the marked unit* would be finding 22's direction 1 in form only.
+There, `n_anglers` supplies **data** and the function then performs a multiplication —
+the unit is derived from arithmetic the code did. Here a `marked_unit` argument would
+supply a **label**, with no data behind it and no arithmetic to apply it to. That is
+the thing the doctrine at `R/survey-bridge.R:553` exists to forbid, and NEWS states
+the reason in the caller's own terms: a unit the caller types is exactly as
+trustworthy as the axis label on the poster.
+
+*A warning at the seam* would be finding 22's direction 2 without the thing that
+makes it work. That warning is actionable because `n_anglers` exists to close the
+gap it names. Here nothing closes it, so the warning would fire on every call, for
+every caller, unconditionally and permanently — a warning no one can act on, which
+costs the credibility of the warnings that can be acted on.
+
+The `NA` is therefore load-bearing. It suppresses the unit from `print()`,
+`autoplot()` and the CSV header, so the number travels visibly bare rather than
+wearing a label the package cannot support. That is the whole of what tidycreel
+honestly knows here, and stating it is the correct terminal state for this finding.
 
 ### 26. Binned release counts claimed integer enforcement that was never there
 
