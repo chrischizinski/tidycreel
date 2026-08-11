@@ -54,8 +54,12 @@ names_final <- sort(unique(names_clean))
 # ── Remove already-used release names ─────────────────────────────────────────
 # Add entries here each time a name is assigned to a release.
 used <- c(
-  "Sauger",  # v2.1.0
-  "Goldeye"  # v2.2.0
+  "Sauger",        # v2.1.0
+  "Goldeye",       # v2.2.0
+  "Northern Pike", # v2.3.0
+  "Bowfin",        # v2.4.0
+  "Creek Chub",    # v2.5.0
+  "Blue Sucker"    # v3.0.0
 )
 names_final <- names_final[!names_final %in% used]
 

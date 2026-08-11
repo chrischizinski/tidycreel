@@ -1,4 +1,14 @@
-# tidycreel (development version)
+# tidycreel 3.0.0 "Blue Sucker" (2026-08-11)
+
+The first major bump since the package adopted semantic versioning. It closes the
+dimensional seam audit opened 2026-08-07: 27 findings, ten of them breaking changes
+to what an estimator returns. Estimates now carry the unit of the quantity they
+report, derived from the arithmetic the package performed rather than declared by
+the caller.
+
+Read the **Breaking changes** section before upgrading — bus-route, ice,
+instantaneous, aerial and camera designs all report different numbers than 2.5.0 did,
+because 2.5.0's numbers were wrong.
 
 ## New features
 
