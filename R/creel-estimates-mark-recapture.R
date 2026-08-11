@@ -39,6 +39,17 @@
 #' @param B integer(1). Number of bootstrap replicates when
 #'   \code{ci_method = "bootstrap"}. Default \code{2000L}.
 #'
+#' @details
+#' \strong{Chapman and Petersen intervals are symmetric and can go negative.}
+#' Both use \eqn{\hat{N} \pm t_{\alpha/2,\,m-1} \cdot SE(\hat{N})}, while
+#' \eqn{\hat{N}} is a ratio with a small integer denominator and is
+#' right-skewed. With \code{M = 200}, \code{n = 50} and \code{m = 3},
+#' \code{ci_lower} is \code{-2124.8}. Chapman is recommended exactly when
+#' recaptures are few, so this regime is not exotic. Prefer
+#' \code{ci_method = "bootstrap"}, whose percentile bounds respect the skew,
+#' when \eqn{m} is small. The Schnabel branch is unaffected: it inverts Poisson
+#' quantiles on \eqn{\sum m} and cannot produce a negative bound.
+#'
 #' @return A \code{creel_estimates} S3 object with \code{method =
 #'   "mark-recapture-chapman"} (or petersen/schnabel) and an \code{estimates}
 #'   tibble with columns: \code{parameter}, \code{estimate}, \code{se},
@@ -325,9 +336,13 @@ estimate_angler_n <- function(
 #'
 #' @param angler_n A \code{creel_estimates} object returned by
 #'   \code{\link{estimate_angler_n}}.
-#' @param harvest_rate numeric scalar. Harvest per angler, in fish per angler.
-#'   Must be \eqn{> 0}. This is a rate, not a proportion, and is not bounded
-#'   above: a fishery averaging 1.4 fish per angler is a legal value.
+#' @param harvest_rate numeric scalar. Harvest per angler, in fish per angler,
+#'   over the same period \code{angler_n} counts anglers for. Must be
+#'   \eqn{> 0}. This is a rate, not a proportion, and is not bounded above: a
+#'   fishery averaging 1.4 fish per angler is a legal value. In the notation of
+#'   Hansen & Van Kirk (2018) eq. (1), \eqn{H = N \cdot D \cdot V}, this
+#'   argument is the product \eqn{D \times V} — mean days fished per angler
+#'   times mean daily harvest per angler — not \eqn{V} alone.
 #'   Uncertainty in the harvest rate is not propagated (see Details).
 #' @param conf_level numeric. Confidence level for the CI. Default \code{0.95}.
 #' @param ci_method character(1). CI construction method: \code{"delta"} (default)
@@ -336,9 +351,19 @@ estimate_angler_n <- function(
 #'   by calling \code{estimate_angler_n(..., ci_method = "bootstrap")} first).
 #'
 #' @details
-#' The harvest rate is treated as a known constant in this implementation
-#' (Hansen & Van Kirk 2018, D-04). Propagation of harvest-rate uncertainty via a
-#' two-source delta method is a planned future extension.
+#' The harvest rate is treated as a known constant. This is a simplification
+#' made by this implementation, not by the cited method: Hansen & Van Kirk
+#' (2018) estimate both factors of the rate, give each a log-normal sampling
+#' distribution, and resample them alongside \eqn{\hat{N}} in the bootstrap
+#' that produces their harvest CIs. Holding the rate fixed therefore makes the
+#' reported \code{se} a lower bound on the true uncertainty. Propagation of
+#' harvest-rate uncertainty via a two-source delta method is a planned future
+#' extension.
+#'
+#' The delta-method interval is also symmetric, which for a mark-recapture
+#' estimate is optimistic at the lower end and can place \code{ci_lower} below
+#' zero when recaptures are few; see the same note under
+#' \code{\link{estimate_angler_n}}.
 #'
 #' @return A \code{creel_estimates} S3 object with \code{method =
 #'   "mark-recapture-harvest"} and an \code{estimates} tibble with columns:

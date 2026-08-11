@@ -24,7 +24,8 @@ scope but were pulled in on 2026-08-10 by findings 21 and 22, which surfaced whi
 extending unit propagation — the effort family cannot be labelled without deciding
 where each design's period length comes from. Mark-recapture and exploitation rate
 were audited on 2026-08-11 while labelling the last unlabelled estimators, producing
-findings 23–25. Still not audited: the `tidycreel.connect` boat→angler
+findings 23–25, and again the same day when the literature check finding 23 called for
+was run against the primary source, producing findings 27 and 28. Still not audited: the `tidycreel.connect` boat→angler
 reconstruction.
 
 Findings 1–4 and 5, 9, 10 were reproduced by running the package. 6, 7, 8 were
@@ -62,6 +63,8 @@ fix or travel together.
 | 24 | *not opened* | ~~`estimate_exploitation_rate()` documented `C` as coming from `estimate_total_catch()`, but the estimator needs harvest~~ **LANDED** (added and fixed 2026-08-11) |
 | 25 | *not opened* | `estimate_angler_n()` cannot know whether it counted anglers, boats, or parties; **closed 2026-08-11 as decided** — `NA` is the terminal answer, no channel exists to derive one |
 | 26 | *not opened* | ~~Binned release counts claimed integer enforcement that was never there~~ **LANDED** (added and fixed 2026-08-11, from the `cli_abort()` sweep finding 12c called for) |
+| 27 | *not opened* | **OPEN.** Chapman and Petersen CIs are symmetric and return negative lower bounds at small `m` (`ci_lower = -2124.8` at `m = 3`); the cited paper and this function's own Schnabel branch both build skewed intervals. Documented 2026-08-11, not fixed — the repair moves shipped interval numbers |
+| 28 | *not opened* | ~~The harvest-rate-as-known-constant caveat cited Hansen & Van Kirk 2018, which resamples that rate instead~~ **LANDED** (added and fixed 2026-08-11, docs only, from finding 23's literature check) |
 
 Downstream book work is tracked in
 `~/Dev/modern-creel-surveys/.planning/TIDYCREEL-WISHLIST.md`, not as GitHub issues —
@@ -1107,13 +1110,26 @@ changed; what changed is which quantity the caller is told to supply, and that c
 above 1 are now reachable. Test L is inverted to pin that a rate above 1 is accepted,
 with the reasoning recorded in the test.
 
-**Caveat on the fix direction.** The `creel-knowledge` KB is broken (searches for
-Hansen & Van Kirk 2018 returned Cochran sampling theory and Wolter variance
-estimation at relevance 0.0), so the primary reference could not be consulted. The
-direction rests on internal evidence — the function name, the parameter label, the
-method string, the docstring title, and the vignette heading all say the output is
-harvest in fish — plus the standard expansion of an angler count to a harvest total
-being a per-angler rate. Worth a literature confirmation before release.
+**Fix direction confirmed against the primary source (2026-08-11).** The
+`creel-knowledge` KB is still broken (a Hansen & Van Kirk query returned Cochran
+sampling theory and Wolter variance estimation at relevance 0.0), so the paper was
+pulled from the Zotero `creel` group library (5667477, item `UKQW4FJ2`) instead. Its
+equation (1) is
+
+\deqn{H = N \cdot D \cdot V}
+
+where \eqn{N} is the estimated angler population for the week, \eqn{D} the mean days
+fished per angler that week, and \eqn{V} the mean *daily harvest per angler*. The
+multiplier on \eqn{N} is \eqn{D \cdot V} — a harvest **rate in fish per angler**, not
+a proportion of anglers, exactly as the fix assumed. It is also unbounded above by
+construction: the paper's own fishery ran \eqn{D = 2.3} d/week against a daily bag
+limit of 2–3 fish, so weekly harvest per angler above 1 is not merely legal, it is
+the design case. The retired \eqn{(0, 1]} guard had no basis in the cited method.
+
+**One doc tightening the paper forces.** `harvest_rate` folds the paper's \eqn{D} and
+\eqn{V} into one scalar, which is sound, but only if the rate covers the *same period*
+\eqn{\hat{N}} counts anglers over. "Fish per angler" alone does not say that; "fish
+per angler per day" would be wrong.
 
 ### 24. `estimate_exploitation_rate()` is documented against the wrong input
 
@@ -1249,6 +1265,87 @@ only if `period_length_col_name` is non-`NULL`, so the message names the true ca
 **Adjacent, not fixed.** `est-effort-camera.R:96` and `creel-estimates-bus-route.R:709`
 omit the `length(x) != 1L` term their sibling guards carry, so a length-2 input dies
 on R's `||` error instead of the guard's message. Not a dimensional defect.
+
+### 27. Chapman and Petersen CIs are symmetric, and go negative at ordinary recapture counts
+
+Found 2026-08-11 by the literature check finding 23 asked for. Reading Hansen & Van
+Kirk (2018) to confirm the harvest-rate direction surfaced a second, larger departure
+from the same paper.
+
+`estimate_angler_n()` builds the Chapman and Petersen intervals as
+\eqn{\hat{N} \pm t_{\alpha/2, m-1} \cdot SE(\hat{N})}
+(`R/creel-estimates-mark-recapture.R:160` and `:205`), and `estimate_mr_harvest()`
+inherits the shape by scaling that SE. \eqn{\hat{N}} is a ratio with a small integer
+in the denominator, so its sampling distribution is strongly right-skewed and a
+symmetric interval is not merely imprecise — it leaves the parameter space. Run on the
+documented example's own `M` and `n`:
+
+| `m` | \eqn{\hat{N}} | `ci_lower` | `ci_upper` |
+| --- | --- | --- | --- |
+| 2 | 3416.0 | **-17486.6** | 24318.6 |
+| 3 | 2561.8 | **-2124.8** | 7248.3 |
+| 5 | 1707.5 | 48.7 | 3366.3 |
+| 10 | 930.9 | 406.9 | 1454.9 |
+
+and the defect propagates: `estimate_mr_harvest(estimate_angler_n(M = 200, n = 50,
+m = 3), harvest_rate = 0.35)` reports `total_harvest = 896.6` with `ci_lower =
+-744.4` — a 95% lower bound of negative 744 fish harvested. Chapman exists precisely
+*because* recaptures are few (the docstring says so), so the regime that produces the
+negative bound is the regime the default estimator is chosen for.
+
+**Two independent authorities say the interval should be skewed, and one of them is
+this file.** Hansen & Van Kirk build every harvest CI by drawing 2,000 values from the
+sampling distributions of \eqn{N}, \eqn{D} and \eqn{V}, multiplying, and taking
+percentiles; their appendix constructs the \eqn{N} interval on \eqn{1/N} and
+reciprocates the endpoints, which cannot go negative. They report the resulting
+intervals as right-skewed, with 95% width averaging three times the point estimate —
+so the wide, asymmetric answer is the *expected* one, not a symptom. And
+`estimate_angler_n()`'s own Schnabel branch already does this: it inverts Poisson
+quantiles on \eqn{\sum m} (`:253`) whenever \eqn{\sum m < 50}. Two estimators in one
+function, one method-dispatch apart, disagree about whether an MR interval may be
+symmetric.
+
+**No test pins the current behaviour as correct.** Test C in both
+`test-estimate-angler-n.R` and `test-estimate-mr-harvest.R` asserts only
+`ci_lower <= estimate <= ci_upper`, which a negative lower bound satisfies. Nothing
+asserts non-negativity, so a fix breaks no expectation.
+
+**NOT FIXED — needs an estimator decision, not a guard.** Clamping at zero is the
+wrong repair: it would preserve the symmetric width that produced the excursion and
+merely hide it at the boundary. The defensible options are the paper's inversion on
+\eqn{1/\hat{N}} (which the Schnabel branch already implements and could be shared), or
+making `ci_method = "bootstrap"` the default for Chapman and Petersen — both move
+shipped interval numbers on every mark-recapture call, which is why this is recorded
+rather than fixed alongside a doc pass.
+
+**Scope note.** This is not the audit's dimensional class — the number's *dimension* is
+fine, its *distribution* is wrong. Recorded here because the literature check that
+closed finding 23 is what exposed it, and because the same citation covers both.
+
+### 28. The harvest-rate-as-constant caveat cites a paper that does the opposite
+
+Found 2026-08-11, same reading. `estimate_mr_harvest()`'s Details block read:
+
+> The harvest rate is treated as a known constant in this implementation
+> (Hansen & Van Kirk 2018, D-04).
+
+The parenthetical attributes the simplification to the cited paper. The paper does not
+make it. \eqn{D} and \eqn{V} — whose product is this function's `harvest_rate` — are
+both estimated there, both given log-normal sampling distributions, and both resampled
+in the bootstrap that produces every harvest CI. Treating the rate as known is this
+package's choice, and it is the choice the paper's own CI machinery exists to avoid.
+
+The consequence is understated uncertainty on `se`, in a direction the docs implied a
+source had blessed. It is the audit's class one level up: not a number crossing a
+seam with its dimension unasserted, but a *simplification* crossing into the docs with
+a citation it did not earn.
+
+**Fixed** (2026-08-11), docs only. The Details block now states that holding the rate
+fixed is this implementation's simplification, that the cited method resamples all
+three factors, and that `se` is therefore a lower bound on the true uncertainty.
+`harvest_rate`'s `@param` gains the period requirement finding 23's literature check
+established: the rate must cover the same period \eqn{\hat{N}} counts anglers over,
+which is the paper's \eqn{D \cdot V}, not its \eqn{V} alone. No numbers change.
 
 ### 14. Ice designs skip the bus-route dispatch in the *rate* estimators
 

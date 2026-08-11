@@ -643,6 +643,29 @@
   Also corrected: the "circuit time < 30% of \eqn{T_d}" rule of thumb was not from
   Hoenig et al. and is not the paper's condition.
 
+* `estimate_mr_harvest()` attributed its known-constant harvest rate to Hansen &
+  Van Kirk (2018), which does the opposite: both factors of that rate are
+  estimated there, given log-normal sampling distributions, and resampled
+  alongside \eqn{\hat{N}} in the bootstrap behind every harvest CI. The
+  simplification is this package's, so the reported `se` is a lower bound on the
+  true uncertainty, and `@details` now says so rather than crediting a source.
+
+  `harvest_rate` also gains the period it was missing. In the paper's
+  \eqn{H = N \cdot D \cdot V} the multiplier on the angler population is
+  \eqn{D \times V} — days fished per angler times daily harvest per angler — so
+  the argument must cover the same period `angler_n` counts anglers for. "Fish
+  per angler" alone did not pin that down, and the daily rate is the wrong one.
+
+* `estimate_angler_n()` documents that its Chapman and Petersen confidence
+  intervals are symmetric and can fall below zero. \eqn{\hat{N}} is a ratio with
+  a small integer denominator, so it is right-skewed; at `M = 200`, `n = 50`,
+  `m = 3` the reported `ci_lower` is `-2124.8`, and `estimate_mr_harvest()`
+  inherits the shape. Chapman is recommended precisely when recaptures are few,
+  so the docs now direct small-\eqn{m} users to `ci_method = "bootstrap"`, whose
+  percentile bounds respect the skew. The Schnabel branch already inverts
+  Poisson quantiles and is unaffected. The interval arithmetic is unchanged in
+  this release — correcting it moves every shipped Chapman and Petersen bound.
+
 * `estimate_exploitation_rate()` described `C` as a harvest total while pointing
   at `estimate_total_catch()` to produce it. Catch includes released fish, which
   were never removed from the tagged cohort, so a catch total inflates
