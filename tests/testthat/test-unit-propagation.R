@@ -781,6 +781,30 @@ test_that("effort per acre composes its unit rather than assuming angler-hours",
   )
 })
 
+test_that("the effort guard checks the quantity, not the actor", {
+  # require_effort_estimates() long claimed to enforce angler-hours and never
+  # did (finding 12c). It must not start: party-hours is a legitimate input
+  # whose actor these estimators carry through, so rejecting it would break the
+  # bus-route path. What it does police is that the object is effort at all.
+  br <- suppressWarnings(suppressMessages(build_br_design_party_hours()))
+  br_effort <- suppressWarnings(suppressMessages(estimate_effort(br)))
+  expect_identical(br_effort$unit, "party-hours")
+
+  expect_no_error(
+    suppressWarnings(suppressMessages(estimate_effort_per_acre(br_effort, acres = 500)))
+  )
+  expect_no_error(
+    suppressWarnings(suppressMessages(estimate_angler_trips(br_effort, br)))
+  )
+
+  # A rate is still refused: dividing fish/angler-hour by acres would relabel it.
+  rate <- suppressWarnings(suppressMessages(estimate_harvest_rate(br)))
+  expect_error(
+    estimate_effort_per_acre(rate, acres = 500),
+    "must hold effort"
+  )
+})
+
 test_that("effort per acre does not invent a dimension from an unknown one", {
   # Appending "/acre" to NA would produce "NA/acre", a string that reads as a
   # real unit and would print on the y-axis as though the package knew.

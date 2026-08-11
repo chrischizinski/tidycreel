@@ -45,13 +45,15 @@ fix or travel together.
 | 8 | #110 | No bus-route dispatch for release; `estimate_total_release_br()` dead |
 | 10 | #111 | `br_build_estimates()` hardcodes `method = "total"` |
 | 7, 9, 11 | #112 | Missing unit guards |
-| 12 | #113 | ~~Documentation asserts units the code does not produce~~ **LANDED** (12a 2026-08-08, 12b 2026-08-10) |
+| 12 | #113 | ~~Documentation asserts units the code does not produce~~ **LANDED** (12a 2026-08-08, 12b and 12c 2026-08-10) |
 | 13 | *not opened* | ~~Instantaneous path never carries T, so it returns angler-days~~ **LANDED 2026-08-10** (added 2026-08-08), with the first pass of unit propagation |
 | 20 | *not opened* | `circuit_time` cancels out of the progressive estimate and cannot change any output (added 2026-08-10) |
 | 14 | *not opened* | ~~Ice designs skip the bus-route dispatch in the rate estimators~~ **LANDED** (added and fixed 2026-08-09) |
 | 17 | *not opened* | ~~`estimate_catch_rate()` has no bus-route or ice dispatch at all, and no CPUE estimator existed to dispatch to~~ **LANDED** (added and fixed 2026-08-09, with finding 14) |
 | 15 | *not opened* | ~~`use_trips` unvalidated on the bus-route path; a typo silently swaps the estimator~~ **LANDED** (added and fixed 2026-08-09) |
 | 16 | *not opened* | ~~Scalar `n_anglers` resolves positionally to the first column, and sets `n_anglers_supplied = TRUE`~~ **LANDED** (added and fixed 2026-08-09) |
+| 18 | *not opened* | ~~Species rates on bus-route and ice designs ignore the HT weights~~ **LANDED** (added and fixed 2026-08-09) |
+| 19 | *not opened* | ~~Species totals abort on bus-route and ice designs~~ **LANDED** (added and fixed 2026-08-09) |
 | 21 | *not opened* | ~~Finding 13 made aerial and camera designs apply time twice~~ **LANDED** (added and fixed 2026-08-10) |
 | 22 | *not opened* | The camera ratio path cannot know whether it returned angler-hours or party-hours; unit recorded `NA`, ambiguity **not fixed** (added 2026-08-10) |
 
@@ -621,6 +623,32 @@ also credited the delta method for the SE, where the HT path uses Taylor
 linearization; there is no product whose uncertainty needs propagating. A doc
 finding aimed at a moving estimator has to be re-verified against the branch, not
 against the audit entry.
+
+**12c (2026-08-10): an error message claiming an enforcement that was never there.**
+Found while labelling trip density. `require_effort_estimates()` aborted with *"must
+hold angler-hours, but carries {method}"*, and the roxygen on both consumers said the
+same — `estimate_angler_trips()` "dividing extrapolated angler-hours effort",
+`estimate_effort_per_acre()` "producing angler-hours per acre". The guard only ever
+compared `effort$method` against `c("total", "total-sections")`. A party-hours effort
+passed it silently, which is how a bus-route design with no `n_anglers` reaches these
+estimators today.
+
+This is the reverse of the usual shape in this finding. Elsewhere the prose describes
+arithmetic the code does not do; here the *code* describes a check it does not
+perform, in the string the user actually sees when it fires.
+
+**Fixed by correcting the claim, not by adding the check.** Enforcing angler-hours
+would reject party-hours effort, which is a legitimate input — the consumers now carry
+the actor through to their own unit (`party-trips`, `party-hours/acre`), so there is
+nothing left to protect against. The guard polices the *quantity*, not the actor: a
+rate or a fish-valued total still cannot be divided by acres and relabelled. Message
+is now "must hold effort"; a test pins both halves, that party-hours is accepted and
+that a rate is still refused.
+
+**Lesson.** The audit's rule is "derive, never declare". A guard's error message is a
+declaration too, and this one had been asserting a dimension for as long as the
+function existed without a line of code behind it. Worth checking the other abort
+messages for the same shape.
 
 Gate: all 8 affected and dependent vignettes knit, and the three numbers above were
 confirmed against the rendered HTML.

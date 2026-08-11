@@ -2,7 +2,7 @@
 % Please edit documentation in R/creel-estimates-trip-density.R
 \name{estimate_effort_per_acre}
 \alias{estimate_effort_per_acre}
-\title{Compute effort density as angler-hours per acre}
+\title{Compute effort density as effort per acre}
 \usage{
 estimate_effort_per_acre(effort, acres, ...)
 }
@@ -27,10 +27,14 @@ are inherited from the input effort object.
 }
 \description{
 Divides all effort estimate columns in a pre-computed \code{creel_estimates}
-object by a surface area scalar (\code{acres}), producing angler-hours per
-acre. Standard error propagates linearly because \code{acres} is a constant
-(not a random variable), so no Delta Method is needed:
-\code{se_per_acre = se_effort / acres}.
+object by a surface area scalar (\code{acres}). Standard error propagates
+linearly because \code{acres} is a constant (not a random variable), so no
+Delta Method is needed: \code{se_per_acre = se_effort / acres}.
+
+\code{acres} is a constant divisor, so the result is whatever the effort was,
+per acre: the returned \code{unit} field composes the effort's own unit
+(\code{"angler-hours/acre"}, \code{"party-hours/acre"}), and stays \code{NA}
+when the effort's unit was unknown.
 
 This is a composable estimator: the effort object must be pre-computed via
 \code{\link{estimate_effort}} before calling this function.

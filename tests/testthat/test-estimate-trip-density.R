@@ -355,15 +355,18 @@ make_effort_and_rate <- function() {
 }
 
 test_that("estimate_angler_trips() rejects a rate object (GH #112)", {
-  # Both consumers guarded only on class, never on $method, and both document
-  # their input as angler-hours. A CPUE object passed the class check, so fish per
-  # hour was divided by hours per trip and relabelled "angler-trips" -- a number
-  # with no defensible unit and no warning.
+  # Both consumers guarded only on class, never on $method. A CPUE object passed
+  # the class check, so fish per hour was divided by hours per trip and
+  # relabelled "angler-trips" -- a number with no defensible unit and no warning.
+  #
+  # The guard is on the quantity, not the actor: it refuses a rate, and admits
+  # party-hours effort (finding 12c). These matchers said "angler-hours" while
+  # the message did, which was the wrong claim rather than the wrong check.
   fx <- make_effort_and_rate()
 
   expect_error(
     estimate_angler_trips(fx$rate, fx$design),
-    "angler-hours"
+    "must hold effort"
   )
 })
 
@@ -372,7 +375,7 @@ test_that("estimate_effort_per_acre() rejects a rate object (GH #112)", {
 
   expect_error(
     estimate_effort_per_acre(fx$rate, acres = 100),
-    "angler-hours"
+    "must hold effort"
   )
 })
 
@@ -384,7 +387,7 @@ test_that("estimate_angler_trips() rejects a fish-valued total (GH #112)", {
 
   expect_error(
     estimate_angler_trips(total, design),
-    "angler-hours"
+    "must hold effort"
   )
 })
 
