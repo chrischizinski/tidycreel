@@ -61,7 +61,8 @@ to avoid large positive bias; use Chapman for smaller recapture counts.
 weighted estimator for \eqn{K \geq 2} sampling occasions.
 \eqn{\hat{N} = \frac{\sum M_k n_k}{\sum m_k}}
 CI uses the Poisson branch when \eqn{\sum m_k < 50} and the normal
-approximation on \eqn{1/\hat{N}} otherwise.
+approximation on \eqn{1/\hat{N}} otherwise, on \eqn{K - 1} degrees of
+freedom (Hansen & Van Kirk 2018, eq. A.5).
 }
 }
 \details{

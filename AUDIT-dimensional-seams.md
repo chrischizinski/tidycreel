@@ -1347,6 +1347,96 @@ three factors, and that `se` is therefore a lower bound on the true uncertainty.
 established: the rate must cover the same period \eqn{\hat{N}} counts anglers over,
 which is the paper's \eqn{D \cdot V}, not its \eqn{V} alone. No numbers change.
 
+### 29. The Schnabel t-interval keys its degrees of freedom to recaptures, not occasions
+
+Found 2026-08-11 while checking a *citation*, not a number. Dettloff (2023) describes
+Hansen & Van Kirk (2018) as a Schumacher-Eschmeyer application, while this package
+cites that paper for its Schnabel branch; reading the appendix to settle which
+estimator they used turned up a defect one line away.
+
+The citation is sound — H&VK eq. (A.1) is \eqn{\sum M_i C_i / \sum R_i}, exactly what
+`estimate_angler_n(method = "schnabel")` computes; they ran *both* estimators and kept
+whichever gave the narrower CI. But eq. (A.5) builds the large-sample interval as
+\eqn{1/\hat{N} \pm t_{\alpha/2,\,S-1}\cdot SE(1/\hat{N})} for \eqn{S} sample days,
+and `R/creel-estimates-mark-recapture.R:276` used
+\eqn{df = \sum m - 1}.
+
+Those are not the same quantity. \eqn{S-1} counts sampling occasions; \eqn{\sum m - 1}
+counts recaptured anglers, treating every recapture within an occasion as an
+independent observation of the ratio. The estimator has \eqn{S} data points no matter
+how many recaptures land in them, so the recapture total inflates df and shrinks the
+interval. On the fixture already in `test-estimate-angler-n.R` (5 occasions,
+\eqn{\sum m = 52}): \eqn{t} = 2.008 against 2.776, giving `[1504.28, 2665.02]` where
+the source gives `[1388.48, 3127.07]` — **33% too narrow**.
+
+**Confirmed against the implementation H&VK modified, not just the paper.**
+`fishmethods::schnabel()` (Nelson, v1.13.1) computes
+`qt(alpha/2, df = S - 1)` with `S <- length(marks[, 1])`, the number of occasions.
+With df fixed, `tidycreel` and `fishmethods` agree on `N_hat`, on `invSE`
+(7.211103e-05) and now on both bounds to full printed precision. df was the *only*
+divergence in the whole estimator.
+
+**A second suspected defect in the same equation dissolved on inspection, and is
+recorded because the near-miss is the point.** A.5 as typeset puts
+\eqn{\sum_i (M_i C_i)^2} under the radical, where `:261` has \eqn{(\sum_i M_i C_i)^2}.
+The two differ materially. `fishmethods` computes
+`sum(recaps) / (sum(catch * marks)^2)` — the package's form — and the Poisson-model
+derivation agrees: \eqn{1/\hat{N} = \sum R/\sum MC} with
+\eqn{\mathrm{Var}(\sum R) \approx \sum R} gives \eqn{\sum R/(\sum MC)^2}. The paper's
+rendering is a typesetting error. **The package was right; "fixing" it toward the
+printed equation would have introduced a defect.** The tell was that A.5's
+\eqn{t_{S-1}} and \eqn{\sum (M_iC_i)^2} both belong to the regression-through-origin
+form of Schnabel, while \eqn{(\sum M_iC_i)^2} belongs to the Poisson-model form — the
+package had one from each, which is why only one of the two needed changing.
+
+**Fixed** (2026-08-11). `df = max(1L, length(m) - 1L)`. Every Schnabel interval with
+\eqn{\sum m \geq 50} widens. Test N asserted only
+`ci_lower < estimate < ci_upper`, which both dfs satisfy, so nothing caught it; Test N2
+now pins the two `fishmethods` bounds as literals.
+
+### 30. The Schnabel infinite upper bound has a published remedy the package does not use
+
+Found 2026-08-11, alongside finding 29, in the same appendix.
+
+When \eqn{Q_{Pois}(\alpha/2; \sum m) = 0} — routine at \eqn{\sum m \leq 3} — eq. (A.3)
+divides by zero and the upper bound is infinite. `:271-274` warns and returns `Inf`.
+That matches stock `fishmethods::schnabel()`, which has no guard at all and returns
+`Inf` silently, so the package is strictly better than the library it tracks.
+
+It does *not* match the cited paper. H&VK say plainly that they "modified the code in
+the R package fishmethods" for exactly this: they replace the discrete Poisson with
+its continuous analog (Ilienko 2013), CDF \eqn{\Gamma(x,\lambda)/\Gamma(x)}, to obtain
+"an approximate but finite upper confidence limit." So the package implements the
+unpatched library while citing the patch.
+
+**One caveat before anyone implements this.** The paper's stated CDF and its own
+worked example disagree. Solving \eqn{\Gamma(x,2)/\Gamma(x) = 0.025} gives
+\eqn{x = 0.329}; the paper states 0.24 and marks it on Figure A.1.
+`qgamma(0.025, shape = 2)` = 0.2422 — a different function. Do not implement from the
+figure without resolving which of the two is intended.
+
+**NOT FIXED.** Lower priority than 29: `Inf` is honest, if useless, and the current
+behaviour warns.
+
+### 31. Schumacher-Eschmeyer is absent, so the cited selection rule cannot be applied
+
+Found 2026-08-11, alongside findings 29 and 30.
+
+H&VK do not pick an estimator a priori. They compute Schnabel *and*
+Schumacher-Eschmeyer and "selected the mark-recapture estimator that produced the
+smallest 95% CI." `estimate_angler_n()` offers `chapman`, `petersen` and `schnabel`,
+so a user following the cited method cannot carry out its final step.
+
+Formulas are complete in A.6-A.8 (\eqn{\hat{N} = \sum C_i M_i^2 / \sum R_i M_i}, with
+the interval on \eqn{1/\hat{N}} at \eqn{df = S-2}), and `fishmethods::schnabel()`
+returns a verified reference implementation of both rows. Worth noting that A.8 hits
+the same wall finding 27 documents — "occasionally the lower bound for \eqn{1/N} \dots
+was negative, in which case it was set to \eqn{10^{-14}}" — independent confirmation
+that an interval built on \eqn{1/\hat{N}} crosses zero at small recapture counts.
+
+**NOT FIXED — a new estimator, not a repair.** Belongs with finding 27's decision,
+since both are about which interval this family should report.
+
 ### 14. Ice designs skip the bus-route dispatch in the *rate* estimators
 
 Added 2026-08-09, found while wiring #110. The total estimators dispatch on

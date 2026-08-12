@@ -111,6 +111,23 @@ test_that("Test N: Schnabel normal CI branch fires when sum(m) >= 50", {
   expect_true(result$estimates$estimate < result$estimates$ci_upper)
 })
 
+test_that("Test N2: Schnabel t-branch df is occasions - 1, matching Hansen & Van Kirk (A.5)", {
+  # The t quantile must be keyed to the number of sampling occasions, not to
+  # the recapture total. Recaptures within one occasion are not independent
+  # observations of the ratio, so df = sum(m) - 1 understates the interval.
+  # Reference values are fishmethods::schnabel(catch = n, recaps = m,
+  # newmarks = rep(100, 5)), the implementation Hansen & Van Kirk (2018)
+  # modified; their eq. (A.5) gives the same t_{alpha/2, S-1}. Hard-coded
+  # rather than computed so this fails if the df is ever keyed to sum(m)
+  # again, which returns [1504.282, 2665.024] -- a 33% narrower interval.
+  M_s2 <- c(0L, 100L, 200L, 300L, 400L)
+  n_s2 <- c(100L, 100L, 100L, 100L, 100L)
+  m_s2 <- c(0L, 10L, 12L, 14L, 16L) # 5 occasions, sum(m) = 52
+  result <- estimate_angler_n(M = M_s2, n = n_s2, m = m_s2, method = "schnabel")
+  expect_equal(result$estimates$ci_lower, 1388.4790, tolerance = 1e-4)
+  expect_equal(result$estimates$ci_upper, 3127.0750, tolerance = 1e-4)
+})
+
 test_that("Test O: Schnabel returns method mark-recapture-schnabel", {
   result <- estimate_angler_n(M = M_s, n = n_s, m = m_s, method = "schnabel")
   expect_equal(result$method, "mark-recapture-schnabel")

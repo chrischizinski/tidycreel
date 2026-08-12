@@ -18,7 +18,8 @@
 #'     weighted estimator for \eqn{K \geq 2} sampling occasions.
 #'     \eqn{\hat{N} = \frac{\sum M_k n_k}{\sum m_k}}
 #'     CI uses the Poisson branch when \eqn{\sum m_k < 50} and the normal
-#'     approximation on \eqn{1/\hat{N}} otherwise.
+#'     approximation on \eqn{1/\hat{N}} otherwise, on \eqn{K - 1} degrees of
+#'     freedom (Hansen & Van Kirk 2018, eq. A.5).
 #' }
 #'
 #' @param M integer or numeric. Number of marked animals released (first sample).
@@ -273,7 +274,14 @@ estimate_angler_n <- function(
       }
       ci_hi <- if (lo_m == 0L) Inf else sum_Mn / lo_m
     } else {
-      z <- stats::qt(1 - (1 - conf_level) / 2, df = max(1L, sum_m - 1L))
+      # df is the number of sampling occasions minus one, not the recapture
+      # total minus one. Hansen & Van Kirk (2018) eq. (A.5) uses t_{alpha/2, S-1}
+      # for S sample days, as does fishmethods::schnabel(), the implementation
+      # they modified. Keying df to sum(m) treats every recapture as an
+      # independent observation and understates the interval: on 5 occasions
+      # with sum(m) = 52 it returns t = 2.008 where S - 1 gives t = 2.776, a
+      # 33% narrower CI. See finding 29 in AUDIT-dimensional-seams.md.
+      z <- stats::qt(1 - (1 - conf_level) / 2, df = max(1L, length(m) - 1L))
       inv_N <- 1 / N_hat
       ci_lo <- 1 / (inv_N + z * se_inv)
       ci_hi <- 1 / (inv_N - z * se_inv)

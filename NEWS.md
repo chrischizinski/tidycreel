@@ -362,6 +362,22 @@ because 2.5.0's numbers were wrong.
 
 ## Breaking changes
 
+* `estimate_angler_n(method = "schnabel")` now builds its large-sample confidence
+  interval on \eqn{S - 1} degrees of freedom, where \eqn{S} is the number of sampling
+  occasions. It previously used \eqn{\sum m - 1}, the recapture total. **Every
+  Schnabel interval with \eqn{\sum m \geq 50} widens**; the point estimate and `se`
+  are unchanged.
+
+  Hansen & Van Kirk (2018) eq. (A.5) uses \eqn{t_{\alpha/2,\,S-1}}, as does
+  `fishmethods::schnabel()`, the implementation they modified. The estimator has one
+  observation per occasion regardless of how many recaptures land in it, so keying df
+  to \eqn{\sum m} treats recaptures within an occasion as independent and understates
+  the interval. On five occasions with \eqn{\sum m = 52} the reported interval was
+  `[1504.28, 2665.02]` where the source gives `[1388.48, 3127.07]` — 33% too narrow.
+
+  The `se` itself was checked against the same sources and is correct as it stands.
+  Only the quantile changed.
+
 * `add_counts(count_type = "progressive")` now **errors** when a day's shift is
   shorter than `circuit_time`, with condition class
   `creel_error_circuit_exceeds_shift`. It previously warned and then returned an
