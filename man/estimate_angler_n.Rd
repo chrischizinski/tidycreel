@@ -114,6 +114,20 @@ brackets the point estimate matters more than coverage.
 
 \code{ci_method = "delta"} reproduces the pre-3.0.0 bounds exactly.
 
+\strong{Where the Petersen \eqn{m \geq 7} guard comes from.} The threshold is a
+practical stand-in, not a derivation, and it is worth knowing why no exact one
+is available. Robson & Regier (1964) give two conditions: Chapman is exactly
+unbiased when \eqn{M + n \geq N}, and its negative bias stays under 2\\% when
+\eqn{\sqrt{Mn} \geq 2\sqrt{N}} — the geometric mean of marks and captures at
+least twice the square root of the population size. Both depend on \eqn{N},
+the unknown being estimated. Dettloff (2023) calls this "paradoxical" and
+treats such rules as "a way of avoiding inaccurate estimates from absurdly
+small sample sizes based on an educated guess of the order of magnitude" of
+\eqn{N}. A fixed \eqn{m} threshold is that guess made concrete; it rules out
+the regime where Petersen's positive bias is severe without pretending to a
+precision the conditions cannot deliver. Chapman is the better default at any
+recapture count and is what the error message points to.
+
 \strong{Why Schnabel is bias-adjusted by default.} Each \eqn{m_k} is
 approximately Poisson with parameter \eqn{M_k n_k / N}, which motivated
 Chapman's (1952) \eqn{+1} correction to the recapture total. Dettloff (2023)
@@ -168,6 +182,10 @@ population mark-recapture estimators. \emph{Fisheries Research}, 265,
 
 Chapman, D. G. (1952). Inverse, multiple and sequential sample censuses.
 \emph{Biometrics}, 8(4), 286--306. \doi{10.2307/3001864}
+
+Robson, D. S., & Regier, H. A. (1964). Sample size in Petersen mark-recapture
+experiments. \emph{Transactions of the American Fisheries Society}, 93(3),
+215--226. \doi{10.1577/1548-8659(1964)93[215:SSIPME]2.0.CO;2}
 }
 \seealso{
 Other Estimation:

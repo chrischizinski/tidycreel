@@ -2049,8 +2049,9 @@ Recorded so coverage is auditable, not just hits.
   \eqn{m} threshold is a reasonable stand-in rather than a derivation. Dettloff calls
   this dependence "paradoxical" and treats the rule as "a way of avoiding inaccurate
   estimates from absurdly small sample sizes based on an educated guess of the order of
-  magnitude" of \eqn{N}. **Documentation gap only — no number moves.** Worth adding the
-  citation and the reasoning to the `@details` block so the 7 does not read as arbitrary.
+  magnitude" of \eqn{N}. **Documentation gap only — no number moves.** Citation and
+  reasoning added to the `@details` block 2026-08-12, so the 7 no longer reads as
+  arbitrary. The guard itself and its error message are unchanged.
 
 ---
 
