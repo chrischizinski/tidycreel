@@ -34,6 +34,63 @@ test_that("Test D: conf_level=0.90 gives narrower CI than conf_level=0.95", {
   expect_true(result_90$estimates$ci_upper < result_95$estimates$ci_upper)
 })
 
+test_that("Test D2: harvest bounds are the angler_n bounds scaled by harvest_rate", {
+  # H = N * harvest_rate is a monotone linear map with harvest_rate > 0, so
+  # scaling the endpoints is exact rather than approximate. Rebuilding a
+  # symmetric interval here instead -- as the code did before 3.0.0 -- threw
+  # away whatever construction estimate_angler_n() had chosen and could put
+  # ci_lower below zero even when the angler interval was strictly positive.
+  result <- estimate_mr_harvest(angler_n = angler_result, harvest_rate = rate)
+  expect_equal(result$estimates$ci_lower, angler_result$estimates$ci_lower * rate)
+  expect_equal(result$estimates$ci_upper, angler_result$estimates$ci_upper * rate)
+})
+
+test_that("Test D3: few recaptures no longer drive total_harvest ci_lower negative", {
+  # Finding 27's reported symptom: M = 200, n = 50, m = 3 at a 0.35 rate gave
+  # total_harvest = 896.6 with ci_lower = -743.7, a 95% lower bound of negative
+  # 744 fish harvested. ci_method = "delta" still reproduces it exactly.
+  few <- estimate_angler_n(M = 200L, n = 50L, m = 3L)
+  result <- estimate_mr_harvest(angler_n = few, harvest_rate = 0.35)
+  expect_equal(result$estimates$estimate, 896.6125, tolerance = 1e-4)
+  expect_gt(result$estimates$ci_lower, 0)
+
+  legacy <- estimate_angler_n(M = 200L, n = 50L, m = 3L, ci_method = "delta")
+  legacy_h <- estimate_mr_harvest(angler_n = legacy, harvest_rate = 0.35, ci_method = "delta")
+  expect_equal(legacy_h$estimates$ci_lower, -743.6921, tolerance = 1e-4)
+})
+
+test_that("Test D4: Schnabel harvest CI keys df to occasions, not to sum(m)", {
+  # Finding 29 fixed the degrees of freedom inside estimate_angler_n(), but the
+  # harvest path rebuilt its own Wald interval from angler_n$estimates$n, which
+  # for Schnabel is sum(m) -- so the defect survived one function downstream.
+  # Recaptures within an occasion are not independent observations of the ratio.
+  # With 5 occasions and sum(m) = 52 the wrong df gives t = 2.0076 instead of
+  # 2.7764, a 28% narrower harvest interval. See finding 33.
+  sch <- estimate_angler_n(
+    M = c(0L, 100L, 200L, 300L, 400L),
+    n = rep(100L, 5),
+    m = c(0L, 10L, 12L, 14L, 16L),
+    method = "schnabel"
+  )
+  result <- estimate_mr_harvest(angler_n = sch, harvest_rate = 0.35)
+  implied_t <- (result$estimates$ci_upper - result$estimates$estimate) /
+    result$estimates$se
+  expect_equal(implied_t, stats::qt(0.975, df = 4), tolerance = 1e-6)
+  # guard the specific regression: df = sum(m) - 1 = 51 must not come back
+  expect_false(isTRUE(all.equal(implied_t, stats::qt(0.975, df = 51), tolerance = 1e-6)))
+})
+
+test_that("Test D5: Chapman harvest CI still keys df to the recapture count", {
+  # The occasion-count attribute is Schnabel-only; the two-sample branches must
+  # keep df = m - 1, so the fallback in estimate_mr_harvest() has to survive its
+  # absence rather than defaulting to something occasion-shaped.
+  few <- estimate_angler_n(M = 200L, n = 50L, m = 10L, ci_method = "delta")
+  result <- estimate_mr_harvest(angler_n = few, harvest_rate = rate, ci_method = "delta")
+  implied_t <- (result$estimates$ci_upper - result$estimates$estimate) /
+    result$estimates$se
+  expect_equal(implied_t, stats::qt(0.975, df = 9), tolerance = 1e-6)
+})
+
 test_that("Test E: returns class creel_estimates with method mark-recapture-harvest", {
   result <- estimate_mr_harvest(angler_n = angler_result, harvest_rate = rate)
   expect_s3_class(result, "creel_estimates")

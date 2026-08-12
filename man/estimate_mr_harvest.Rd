@@ -8,7 +8,7 @@ estimate_mr_harvest(
   angler_n,
   harvest_rate,
   conf_level = 0.95,
-  ci_method = c("delta", "bootstrap")
+  ci_method = c("logit", "delta", "bootstrap")
 )
 }
 \arguments{
@@ -72,7 +72,7 @@ harvest <- estimate_mr_harvest(angler_n = result, harvest_rate = 0.35)
 print(harvest)
 }
 \references{
-Hansen, M. J., & Van Kirk, R. W. (2018). A mark-recapture-based approach
+Hansen, J. M., & Van Kirk, R. W. (2018). A mark-recapture-based approach
 for estimating angler harvest. \emph{North American Journal of Fisheries
 Management}, 38(2), 400--410. \doi{10.1002/nafm.10038}
 }

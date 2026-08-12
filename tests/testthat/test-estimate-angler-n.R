@@ -16,7 +16,9 @@ n_s <- c(50L, 50L, 50L, 50L)
 m_s <- c(0L, 4L, 6L, 8L)
 sum_Mn_s <- sum(M_s * n_s) # 0+2350+4550+6550 = 13450
 sum_m_s <- sum(m_s) # 0+4+6+8 = 18
-N_hat_s <- sum_Mn_s / sum_m_s # 747.222...
+# Default is Chapman's (1952) small-sample correction, Dettloff (2023) eq. (6).
+N_hat_s <- sum_Mn_s / (sum_m_s + 1) # 707.894...
+N_hat_s_unadj <- sum_Mn_s / sum_m_s # 747.222...
 se_inv_s <- sqrt(sum_m_s / sum_Mn_s^2)
 se_N_s <- N_hat_s^2 * se_inv_s
 
@@ -55,6 +57,63 @@ test_that("Test F: Chapman estimates tibble has columns parameter, estimate, se,
   expect_named(result$estimates, c("parameter", "estimate", "se", "ci_lower", "ci_upper", "n"))
 })
 
+# --- MR-01b: Sadinle transformed logit interval (default since 3.0.0) ---
+
+test_that("Test P: logit lower bound never falls below the individuals observed", {
+  # This is the property the interval is chosen for. Sadinle (2009) p.1923:
+  # the .5 transformed logit lower limit can never be less than
+  # n11 + n12 + n21 = M + n - m, the number of distinct individuals actually
+  # handled. The Wald interval it replaces has no such guarantee -- it returns
+  # -2124.8 at m = 3, and 48.7 at m = 5 against 245 observed. A test that only
+  # checked non-negativity would miss the m = 5 case entirely.
+  for (M in c(20L, 50L, 200L, 500L)) {
+    for (n in c(10L, 50L, 200L)) {
+      for (m in seq_len(min(M, n))) {
+        result <- estimate_angler_n(M = M, n = n, m = m)
+        expect_gte(result$estimates$ci_lower, M + n - m)
+      }
+    }
+  }
+})
+
+test_that("Test Q: logit bounds match Sadinle (2009) sec. 5 computed by hand", {
+  # M = 200, n = 50, m = 3 gives the 2x2 table n11 = 3, n12 = 197, n21 = 47.
+  # With c = .5: se(log OR) = sqrt(1/3.5 + 1/197.5 + 1/47.5 + 3.5/(197.5*47.5)),
+  # n22_hat = 197.5*47.5/3.5, and the N bounds add back the 247 observed.
+  cc <- 0.5
+  se_log_or <- sqrt(1 / 3.5 + 1 / 197.5 + 1 / 47.5 + 3.5 / (197.5 * 47.5))
+  n22_hat <- 197.5 * 47.5 / 3.5
+  z <- qnorm(0.975)
+  expected_lo <- n22_hat * exp(-z * se_log_or) - cc + 247
+  expected_hi <- n22_hat * exp(z * se_log_or) - cc + 247
+
+  result <- estimate_angler_n(M = 200L, n = 50L, m = 3L)
+  expect_equal(result$estimates$ci_lower, expected_lo, tolerance = 1e-9)
+  expect_equal(result$estimates$ci_upper, expected_hi, tolerance = 1e-9)
+  expect_equal(result$estimates$ci_lower, 1143.0653, tolerance = 1e-4)
+})
+
+test_that("Test R: ci_method = 'delta' reproduces the pre-3.0.0 Wald bounds", {
+  # The escape hatch must be exact, not merely similar -- anyone pinning a
+  # published number needs the old values back unchanged.
+  result <- estimate_angler_n(M = 200L, n = 50L, m = 3L, ci_method = "delta")
+  expect_equal(result$estimates$ci_lower, -2124.8, tolerance = 1e-4)
+  expect_equal(result$estimates$ci_upper, 7248.3, tolerance = 1e-4)
+  expect_lt(result$estimates$ci_lower, 0) # the defect, retained deliberately
+})
+
+test_that("Test S: saturated m == n puts the logit lower bound above N_hat", {
+  # Every individual in the second sample was already marked, so the estimator
+  # saturates at N_hat = M and the data imply N > M rather than N = M. The
+  # lower limit sitting fractionally above the point estimate is the interval
+  # being informative at a boundary; it is pinned so the behaviour stays
+  # deliberate. Documented under @details.
+  result <- estimate_angler_n(M = 500L, n = 10L, m = 10L)
+  expect_equal(result$estimates$estimate, 500)
+  expect_gt(result$estimates$ci_lower, result$estimates$estimate)
+  expect_gte(result$estimates$ci_lower, 500) # never below the observed count
+})
+
 # --- MR-02: Petersen estimator ---
 
 test_that("Test G: Petersen N_hat matches M*n/m", {
@@ -82,15 +141,55 @@ test_that("Test J: Petersen returns method mark-recapture-petersen", {
 
 # --- MR-03: Schnabel estimator ---
 
-test_that("Test K: Schnabel N_hat matches sum(M*n)/sum(m)", {
+test_that("Test K: Schnabel N_hat carries Chapman's +1 correction by default", {
+  # Dettloff (2023) eq. (6). Two reasons this is the default rather than opt-in.
+  # First, the unadjusted form turns biased *high* at moderate sample sizes,
+  # which propagates into an inflated harvest estimate; the adjusted form's bias
+  # "approaches zero ... without ever becoming positive". Second, Schnabel
+  # reduces to Lincoln-Petersen at K = 2, so an unadjusted Schnabel made bias
+  # handling depend on occasion count while method = "chapman" already carried
+  # the +1 at two occasions. See finding 32 in AUDIT-dimensional-seams.md.
   result <- estimate_angler_n(M = M_s, n = n_s, m = m_s, method = "schnabel")
   expect_equal(result$estimates$estimate, N_hat_s, tolerance = 1e-10)
+  # The correction is exactly -1/(sum(m) + 1) in relative terms. Pinning the
+  # ratio fails if the +1 is ever moved into se_inv or the numerator instead.
+  expect_equal(
+    result$estimates$estimate / N_hat_s_unadj,
+    sum_m_s / (sum_m_s + 1),
+    tolerance = 1e-12
+  )
+})
+
+test_that("Test K2: bias_adjust = FALSE restores the pre-3.0.0 unadjusted form", {
+  # The escape hatch must reproduce sum(M*n)/sum(m) exactly, since that is the
+  # form fishmethods::schnabel() computes and every cross-check against it (see
+  # Test N2) depends on this path staying bit-for-bit unadjusted.
+  result <- estimate_angler_n(
+    M = M_s, n = n_s, m = m_s, method = "schnabel", bias_adjust = FALSE
+  )
+  expect_equal(result$estimates$estimate, N_hat_s_unadj, tolerance = 1e-10)
 })
 
 test_that("Test L: Schnabel SE is in N scale (se > 1, not near 0)", {
   result <- estimate_angler_n(M = M_s, n = n_s, m = m_s, method = "schnabel")
   expect_equal(result$estimates$se, se_N_s, tolerance = 1e-10)
   expect_true(result$estimates$se > 1)
+})
+
+test_that("Test L2: bias_adjust leaves Var(1/N_hat) alone and rescales se only via the Jacobian", {
+  # 1/N_hat_adj = 1/N_hat_unadj + 1/sum(M*n) -- a shift by a constant, so the
+  # variance of 1/N_hat is identical under both forms. se_N differs only because
+  # the delta-method Jacobian N_hat^2 is evaluated at a different point. If
+  # someone ever keys se_inv to sum(m) + 1, this ratio breaks.
+  adj <- estimate_angler_n(M = M_s, n = n_s, m = m_s, method = "schnabel")
+  unadj <- estimate_angler_n(
+    M = M_s, n = n_s, m = m_s, method = "schnabel", bias_adjust = FALSE
+  )
+  expect_equal(
+    adj$estimates$se / unadj$estimates$se,
+    (N_hat_s / N_hat_s_unadj)^2,
+    tolerance = 1e-12
+  )
 })
 
 test_that("Test M: Schnabel Poisson CI branch fires when sum(m) < 50 (ci_lower < N_hat < ci_upper)", {
@@ -101,6 +200,114 @@ test_that("Test M: Schnabel Poisson CI branch fires when sum(m) < 50 (ci_lower <
   expect_true(result$estimates$estimate < result$estimates$ci_upper)
 })
 
+test_that("Test M2: the Poisson branch inverts sum(m) and so is identical under both bias_adjust settings", {
+  # This branch is an inversion interval for N built from the Poisson
+  # distribution of sum(m), not an interval centred on N_hat. It is therefore
+  # valid under either estimator and is deliberately left unadjusted -- the
+  # point estimate moves, the bounds do not. Contrast Test N3, where the t
+  # branch *is* built around 1/N_hat and does follow the correction.
+  adj <- estimate_angler_n(M = M_s, n = n_s, m = m_s, method = "schnabel")
+  unadj <- estimate_angler_n(
+    M = M_s, n = n_s, m = m_s, method = "schnabel", bias_adjust = FALSE
+  )
+  expect_identical(adj$estimates$ci_lower, unadj$estimates$ci_lower)
+  expect_identical(adj$estimates$ci_upper, unadj$estimates$ci_upper)
+  expect_false(adj$estimates$estimate == unadj$estimates$estimate)
+})
+
+test_that("Test M3: the adjusted point estimate stays inside the unadjusted Poisson interval across sum(m)", {
+  # Leaving the Poisson bounds unadjusted is only defensible if the adjusted
+  # N_hat cannot fall outside them. It cannot: the upper recapture quantile
+  # exceeds sum(m) + 1 for every sum(m) >= 1, so sum(M*n)/(sum(m)+1) stays above
+  # the lower bound. Swept rather than spot-checked because the Poisson
+  # quantiles are step functions and a single fixture would not catch a
+  # boundary failure at very small sum(m).
+  for (k in c(1, 2, 3, 5, 9, 18, 30, 49)) {
+    # At k <= 3 the lower Poisson quantile is 0 and ci_upper is Inf by design,
+    # which warns. That is the documented behaviour and finding 30's subject,
+    # not a failure of the containment property being checked here.
+    r <- suppressWarnings(estimate_angler_n(
+      M = c(0, 500), n = c(500, 500), m = c(0, k), method = "schnabel"
+    ))
+    expect_gt(r$estimates$estimate, r$estimates$ci_lower)
+    expect_lt(r$estimates$estimate, r$estimates$ci_upper)
+  }
+})
+
+test_that("Test M4: the continuous Poisson quantile reproduces the discrete CDF at integer x", {
+  # Ilienko (2013) eq. (1): Gamma(x, lambda)/Gamma(x) IS the discrete Poisson
+  # CDF P(X < x) at integer x, which is what makes Definition 3.1 the genuine
+  # continuous interpolant rather than a nearby gamma. This identity is the
+  # anchor for the whole remedy, and it is deliberately pinned against
+  # ppois() rather than against Hansen & Van Kirk's worked example -- their
+  # example is wrong (see Test M6), so testing toward it would bake in the
+  # defect. See finding 30 in AUDIT-dimensional-seams.md.
+  for (lambda in c(0.5, 2, 7, 30)) {
+    for (x in 1:8) {
+      expect_equal(
+        stats::pgamma(lambda, shape = x, lower.tail = FALSE),
+        stats::ppois(x - 1, lambda),
+        tolerance = 1e-10
+      )
+    }
+  }
+})
+
+test_that("Test M5: the continuous quantile inverts its own CDF and is monotone in lambda", {
+  # The quantile sits in pgamma()'s shape argument, so it is root-found rather
+  # than closed-form. Verify the root actually solves F(x) = p, and that it
+  # increases with lambda -- a solver bracketed too tightly would silently
+  # return an endpoint instead of failing.
+  for (lambda in c(1, 2, 3, 10, 49)) {
+    q <- tidycreel:::.continuous_poisson_q(0.025, lambda)
+    expect_equal(
+      stats::pgamma(lambda, shape = q, lower.tail = FALSE),
+      0.025,
+      tolerance = 1e-8
+    )
+  }
+  qs <- vapply(1:20, function(l) tidycreel:::.continuous_poisson_q(0.025, l), numeric(1))
+  expect_true(all(diff(qs) > 0))
+})
+
+test_that("Test M6: the continuous quantile is NOT qgamma, the error the source paper made", {
+  # Hansen & Van Kirk (2018) state the 0.025 quantile at lambda = 2 is 0.24 and
+  # draw Figure A.1 accordingly. That number is qgamma(0.025, shape = 2) =
+  # 0.2422, the quantile of a Gamma(2, 1) variate -- a different distribution.
+  # Inverting their own eq. (A.4), which transcribes Ilienko Definition 3.1
+  # faithfully, gives 0.3292. This test exists so nobody "corrects" the
+  # implementation toward the printed example.
+  q <- tidycreel:::.continuous_poisson_q(0.025, 2)
+  expect_equal(q, 0.329194, tolerance = 1e-5)
+  expect_false(isTRUE(all.equal(q, stats::qgamma(0.025, shape = 2), tolerance = 1e-3)))
+})
+
+test_that("Test M7: a zero discrete quantile yields a finite upper bound, and warns that it is interpolated", {
+  # sum(m) <= 3 at the 95% level drives qpois(0.025, sum(m)) to 0, which sent
+  # ci_upper to Inf. The substitution must produce a finite bound, must fire
+  # only where the discrete quantile is 0, and must stay monotone across the
+  # seam -- a bound that jumped upward at sum(m) = 4 would mean the two
+  # distributions had been mismatched.
+  fit <- function(k) {
+    suppressWarnings(estimate_angler_n(
+      M = c(0, 500), n = c(500, 500), m = c(0, k), method = "schnabel"
+    ))
+  }
+  uppers <- vapply(1:6, function(k) fit(k)$estimates$ci_upper, numeric(1))
+  expect_true(all(is.finite(uppers)))
+  expect_true(all(diff(uppers) <= 0))
+
+  # the warning names the interpolation rather than appearing silently
+  expect_warning(
+    estimate_angler_n(M = c(0, 500), n = c(500, 500), m = c(0, 2), method = "schnabel"),
+    "continuous Poisson"
+  )
+  # and at sum(m) = 4 the discrete quantile is 1, so no substitution and no warning
+  expect_no_warning(
+    estimate_angler_n(M = c(0, 500), n = c(500, 500), m = c(0, 4), method = "schnabel")
+  )
+})
+
 test_that("Test N: Schnabel normal CI branch fires when sum(m) >= 50", {
   M_s2 <- c(0L, 100L, 200L, 300L, 400L)
   n_s2 <- c(100L, 100L, 100L, 100L, 100L)
@@ -109,6 +316,51 @@ test_that("Test N: Schnabel normal CI branch fires when sum(m) >= 50", {
   result <- estimate_angler_n(M = M_s2, n = n_s2, m = m_s2, method = "schnabel")
   expect_true(result$estimates$ci_lower < result$estimates$estimate)
   expect_true(result$estimates$estimate < result$estimates$ci_upper)
+})
+
+test_that("Test N2: Schnabel t-branch df is occasions - 1, matching Hansen & Van Kirk (A.5)", {
+  # The t quantile must be keyed to the number of sampling occasions, not to
+  # the recapture total. Recaptures within one occasion are not independent
+  # observations of the ratio, so df = sum(m) - 1 understates the interval.
+  # Reference values are fishmethods::schnabel(catch = n, recaps = m,
+  # newmarks = rep(100, 5)), the implementation Hansen & Van Kirk (2018)
+  # modified; their eq. (A.5) gives the same t_{alpha/2, S-1}. Hard-coded
+  # rather than computed so this fails if the df is ever keyed to sum(m)
+  # again, which returns [1504.282, 2665.024] -- a 33% narrower interval.
+  #
+  # Pinned on bias_adjust = FALSE because fishmethods::schnabel() computes the
+  # unadjusted estimator: this is the cross-implementation anchor, and it only
+  # holds if the escape hatch stays exactly unadjusted. The adjusted default is
+  # checked separately in Test N3.
+  M_s2 <- c(0L, 100L, 200L, 300L, 400L)
+  n_s2 <- c(100L, 100L, 100L, 100L, 100L)
+  m_s2 <- c(0L, 10L, 12L, 14L, 16L) # 5 occasions, sum(m) = 52
+  result <- estimate_angler_n(
+    M = M_s2, n = n_s2, m = m_s2, method = "schnabel", bias_adjust = FALSE
+  )
+  expect_equal(result$estimates$estimate, 1923.0769, tolerance = 1e-4)
+  expect_equal(result$estimates$ci_lower, 1388.4790, tolerance = 1e-4)
+  expect_equal(result$estimates$ci_upper, 3127.0750, tolerance = 1e-4)
+})
+
+test_that("Test N3: the t branch is centred on 1/N_hat and so follows bias_adjust", {
+  # The t interval is built from 1/N_hat +/- z * se_inv, so unlike the Poisson
+  # branch (Test M2) the correction must move the bounds too -- otherwise the
+  # reported estimate would sit off-centre in its own interval. Reference values
+  # computed by hand from sum(M*n) = 100000, sum(m) = 52, df = 4:
+  #   1/N = 53/100000, se_inv = sqrt(52)/100000, t = qt(0.975, 4) = 2.7764451
+  M_s2 <- c(0L, 100L, 200L, 300L, 400L)
+  n_s2 <- c(100L, 100L, 100L, 100L, 100L)
+  m_s2 <- c(0L, 10L, 12L, 14L, 16L)
+  result <- estimate_angler_n(M = M_s2, n = n_s2, m = m_s2, method = "schnabel")
+  expect_equal(result$estimates$estimate, 100000 / 53, tolerance = 1e-9)
+  inv_n <- 53 / 100000
+  se_inv <- sqrt(52) / 100000
+  tq <- stats::qt(0.975, df = 4)
+  expect_equal(result$estimates$ci_lower, 1 / (inv_n + tq * se_inv), tolerance = 1e-9)
+  expect_equal(result$estimates$ci_upper, 1 / (inv_n - tq * se_inv), tolerance = 1e-9)
+  # and the bounds must differ from the unadjusted ones pinned in Test N2
+  expect_false(isTRUE(all.equal(result$estimates$ci_lower, 1388.4790, tolerance = 1e-4)))
 })
 
 test_that("Test O: Schnabel returns method mark-recapture-schnabel", {
@@ -170,10 +422,197 @@ test_that("Test W: @examples smoke — estimate_angler_n(M=200, n=50, m=10) comp
   expect_no_error(estimate_angler_n(M = 200L, n = 50L, m = 10L))
 })
 
+# --- MR-04: Schumacher-Eschmeyer estimator (finding 31) ---
+
+# Seber (1982) sec. 4.1.3 worked example, Ricker's [1958: 103] red-ear sunfish.
+# Only the summary statistics are used because the OCR of Seber's Table 4.4 is
+# not trustworthy; these four are printed in the running text.
+se_sum_nM2 <- 970296
+se_sum_mM <- 2294
+se_sum_m2n <- 7.7452
+se_s <- 14
+
+test_that("Test SE1: the Seber (1982) 4.16/4.17 formulas reproduce his printed worked example", {
+  # Seber prints N = 423, sigma^2 = 0.1935 and t = 2.179 for these data. This
+  # test does not touch package code -- it pins the reading of the source, so a
+  # later reimplementation can be checked against a verified transcription
+  # rather than against a scanned page. sigma^2 in particular is easy to
+  # mis-transcribe: the sum(m^2/n) term and the correction term are printed on
+  # one line in the original.
+  sigma2 <- (se_sum_m2n - se_sum_mM^2 / se_sum_nM2) / (se_s - 2)
+  expect_equal(se_sum_nM2 / se_sum_mM, 423, tolerance = 1e-3)
+  expect_equal(sigma2, 0.1935, tolerance = 1e-3)
+  expect_equal(stats::qt(0.975, df = se_s - 2), 2.179, tolerance = 1e-3)
+})
+
+test_that("Test SE2: unadjusted Schumacher-Eschmeyer matches fishmethods to printed precision", {
+  # fishmethods::schnabel() returns a Schumacher-Eschmeyer row implementing
+  # Seber 4.16/4.17 exactly, verified term by term. Pinning literals rather
+  # than calling fishmethods keeps it out of DESCRIPTION while preserving the
+  # cross-implementation anchor -- the same arrangement Test N2 uses.
+  nn <- c(100, 120, 90, 110, 95)
+  mm <- c(0, 8, 11, 14, 19)
+  MM <- c(0, cumsum(nn)[-length(nn)])
+  result <- estimate_angler_n(
+    M = MM, n = nn, m = mm, method = "schumacher", bias_adjust = FALSE
+  )
+  expect_equal(result$estimates$estimate, 2116.151866, tolerance = 1e-6)
+  expect_equal(result$estimates$ci_lower, 1719.0431, tolerance = 1e-4)
+  expect_equal(result$estimates$ci_upper, 2751.8433, tolerance = 1e-4)
+  # invSE, the quantity fishmethods reports directly
+  expect_equal(result$estimates$se / result$estimates$estimate^2, 3.4301628e-05, tolerance = 1e-6)
+})
+
+test_that("Test SE3: df is occasions - 2, which is Seber's explicit choice not an off-by-one", {
+  # Seber addresses this directly: including the first sample would put the
+  # point (0, 0) in the regression and give s - 1, "However, as y_1 is always
+  # zero when M_1 = 0, y_1 is not strictly a random observation and for this
+  # reason is not included." Schnabel spends s - 1 (finding 29); the two
+  # estimators legitimately differ, so this pins the difference on purpose.
+  nn <- c(100, 120, 90, 110, 95)
+  mm <- c(0, 8, 11, 14, 19)
+  MM <- c(0, cumsum(nn)[-length(nn)])
+  result <- estimate_angler_n(
+    M = MM, n = nn, m = mm, method = "schumacher", bias_adjust = FALSE
+  )
+  inv_n <- 1 / result$estimates$estimate
+  se_inv <- result$estimates$se / result$estimates$estimate^2
+  implied_t <- (1 / result$estimates$ci_lower - inv_n) / se_inv
+  expect_equal(implied_t, stats::qt(0.975, df = 3), tolerance = 1e-6)
+  expect_false(isTRUE(all.equal(implied_t, stats::qt(0.975, df = 4), tolerance = 1e-6)))
+})
+
+test_that("Test SE4: bias_adjust applies Dettloff eq. (8), dropping occasion 1 by hand", {
+  # Unlike every other term in this estimator, (M_k + 1)^2 (n_k + 1) does NOT
+  # vanish at M_1 = 0, so occasion 1 has to be excluded explicitly. Including
+  # it would silently inflate the numerator by (n_1 + 1). This recomputes the
+  # published formula independently rather than restating the implementation.
+  nn <- c(100, 120, 90, 110, 95)
+  mm <- c(0, 8, 11, 14, 19)
+  MM <- c(0, cumsum(nn)[-length(nn)])
+  k <- 2:5
+  expected <- sum((MM[k] + 1)^2 * (nn[k] + 1)) / sum(MM * (mm + 1)) - 2
+  result <- estimate_angler_n(M = MM, n = nn, m = mm, method = "schumacher")
+  expect_equal(result$estimates$estimate, expected, tolerance = 1e-9)
+
+  # the wrong version, with occasion 1 left in, must not be what we return
+  wrong <- sum((MM + 1)^2 * (nn + 1)) / sum(MM * (mm + 1)) - 2
+  expect_false(isTRUE(all.equal(result$estimates$estimate, wrong, tolerance = 1e-6)))
+  # and the correction moves the estimate down, per Dettloff's bias direction
+  expect_lt(result$estimates$estimate, 2116.151866)
+})
+
+test_that("Test SE5: Schumacher-Eschmeyer requires >= 3 occasions", {
+  # df = s - 2, so two occasions leaves none. Dettloff states eq. (7) "for
+  # k > 2" for the same reason. The error must name schnabel as the two-occasion
+  # route rather than sending the caller to chapman.
+  expect_error(
+    estimate_angler_n(
+      M = c(0L, 100L), n = c(100L, 100L), m = c(0L, 10L), method = "schumacher"
+    ),
+    regexp = "3 occasions"
+  )
+  expect_no_error(
+    estimate_angler_n(
+      M = c(0L, 100L, 200L), n = rep(100L, 3), m = c(0L, 10L, 12L),
+      method = "schumacher"
+    )
+  )
+})
+
+test_that("Test SE6: the method string and occasion attribute are carried for downstream use", {
+  nn <- c(100, 120, 90, 110, 95)
+  mm <- c(0, 8, 11, 14, 19)
+  MM <- c(0, cumsum(nn)[-length(nn)])
+  result <- estimate_angler_n(M = MM, n = nn, m = mm, method = "schumacher")
+  expect_equal(result$method, "mark-recapture-schumacher")
+  # estimate_mr_harvest() keys its df off this; without it the harvest interval
+  # would fall back to sum(m) - 1 (finding 33).
+  expect_equal(attr(result, "n_occasions"), 5L)
+  harvest <- estimate_mr_harvest(angler_n = result, harvest_rate = 0.35)
+  implied_t <- (harvest$estimates$ci_upper - harvest$estimates$estimate) /
+    harvest$estimates$se
+  expect_equal(implied_t, stats::qt(0.975, df = 4), tolerance = 1e-6)
+})
+
+test_that("Test SE7: bias_adjust rejects anything that is not a single non-missing logical", {
+  # A silently-ignored bad bias_adjust would return the wrong estimator without
+  # complaint, and the two forms differ by 1/(sum(m)+1) -- 33% at sum(m) = 2.
+  # NA is included because is.logical(NA) is TRUE, so a bare is.logical() check
+  # would let it through and then take the FALSE branch by accident.
+  args <- list(M = c(0L, 100L, 200L), n = rep(100L, 3), m = c(0L, 10L, 12L), method = "schnabel")
+  for (bad in list("yes", 1L, c(TRUE, FALSE), NA, logical(0))) {
+    expect_error(
+      do.call(estimate_angler_n, c(args, list(bias_adjust = bad))),
+      regexp = "single non-missing logical"
+    )
+  }
+})
+
+test_that("Test SE8: sum(m * M), the 4.16 denominator, cannot be zero once validation passes", {
+  # There is deliberately no runtime guard for a zero denominator, because the
+  # earlier guards make it unreachable: m_k <= min(M_k, n_k) forces M_k >= m_k,
+  # and sum(m) > 0 forces some m_j > 0, so that occasion contributes
+  # m_j * M_j > 0. This test pins the reasoning -- if either guard is ever
+  # relaxed, the denominator becomes reachable and needs a real check.
+  expect_error(
+    estimate_angler_n(
+      M = c(0L, 0L, 0L), n = rep(50L, 3), m = c(0L, 5L, 0L), method = "schumacher"
+    ),
+    regexp = "cannot exceed"
+  )
+  # and the combination that would zero the denominator is exactly what that
+  # guard rejects: any recapture on an occasion with no marks at large
+  expect_error(
+    estimate_angler_n(
+      M = c(0L, 100L, 0L), n = rep(50L, 3), m = c(0L, 2L, 1L), method = "schumacher"
+    ),
+    regexp = "cannot exceed"
+  )
+})
+
+test_that("Test SE9: a Schumacher-Eschmeyer upper bound that crosses zero is reported as Inf, not negative", {
+  # 4.17 is built on 1/N, so at large residual variance the upper end of the
+  # interval for 1/N can pass through zero and invert -- exactly the pathology
+  # H&VK eq. (A.8) hit and clamped at 1e-14. Reporting the inverted value would
+  # give an upper bound below the estimate, or a negative population size.
+  # Inf is the honest statement that the data do not bound N above here.
+  noisy <- estimate_angler_n(
+    M = c(0L, 100L, 200L, 300L),
+    n = c(100L, 100L, 100L, 100L),
+    m = c(0L, 1L, 20L, 3L),
+    method = "schumacher",
+    bias_adjust = FALSE
+  )
+  expect_gt(noisy$estimates$ci_upper, noisy$estimates$estimate)
+  expect_false(noisy$estimates$ci_upper < 0)
+})
+
+test_that("Test SE10: the zero-recapture guard names the method that was actually asked for", {
+  # This message is shared by both multi-occasion methods, so it interpolates
+  # the estimator name. A hardcoded "Schnabel" would misreport what failed.
+  expect_error(
+    estimate_angler_n(
+      M = c(0L, 100L, 200L), n = rep(100L, 3), m = c(0L, 0L, 0L), method = "schnabel"
+    ),
+    regexp = "Schnabel requires at least one recapture"
+  )
+  expect_error(
+    estimate_angler_n(
+      M = c(0L, 100L, 200L), n = rep(100L, 3), m = c(0L, 0L, 0L), method = "schumacher"
+    ),
+    regexp = "Schumacher-Eschmeyer requires at least one recapture"
+  )
+})
+
 # --- WARNING-02 fix: Schnabel ci_hi guard for lo_m = 0 ---
 
-test_that("Test X: Schnabel warns and returns ci_hi = Inf when lo_m = 0", {
-  # sum_m = 1 => qpois(0.025, 1) = 0 => lo_m = 0 => ci_hi = Inf
+test_that("Test X: Schnabel warns and substitutes the continuous Poisson when lo_m = 0", {
+  # sum_m = 1 => qpois(0.025, 1) = 0 => lo_m = 0. Before finding 30 this
+  # returned ci_upper = Inf; it now takes Hansen & Van Kirk's (2018) eq. (A.4)
+  # substitution and returns a finite interpolated bound. The warning is
+  # retained deliberately -- the bound comes from the continuous distribution
+  # rather than from the data, so it must not appear silently.
   expect_warning(
     result <- estimate_angler_n(
       M = c(0L, 10L),
@@ -181,7 +620,10 @@ test_that("Test X: Schnabel warns and returns ci_hi = Inf when lo_m = 0", {
       m = c(0L, 1L),
       method = "schnabel"
     ),
-    regexp = "ci_hi set to Inf"
+    regexp = "continuous Poisson"
   )
-  expect_true(is.infinite(result$estimates$ci_upper))
+  expect_true(is.finite(result$estimates$ci_upper))
+  expect_gt(result$estimates$ci_upper, result$estimates$estimate)
+  # sum(M*n) = 50, and the 0.025 continuous quantile at lambda = 1 is 0.10331492
+  expect_equal(result$estimates$ci_upper, 483.957208, tolerance = 1e-6)
 })

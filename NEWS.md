@@ -362,6 +362,153 @@ because 2.5.0's numbers were wrong.
 
 ## Breaking changes
 
+* `estimate_angler_n()` now defaults to Sadinle's (2009) 0.5 transformed logit
+  confidence interval on the Chapman and Petersen branches, via a new
+  `ci_method = "logit"`. **Every Chapman and Petersen bound moves.** Pass
+  `ci_method = "delta"` to reproduce the previous symmetric Wald interval
+  exactly. `estimate_mr_harvest()` inherits the change, rebuilding its interval
+  from the same capture table.
+
+  The Wald interval is symmetric while \eqn{\hat{N}} is a ratio with a small
+  integer denominator and is strongly right-skewed, so it leaves the parameter
+  space in the regime Chapman exists for. At `M = 200`, `n = 50`, `m = 3` it
+  reported `ci_lower = -2124.8`; at `m = 5` it reported `48.7` against 245
+  individuals actually observed. Evans et al. (1996) measured Wald coverage
+  failing on one side 27.9% of the time against a 2.5% nominal rate.
+
+  Sadinle compared nine intervals and found the 0.5 transformed logit "the best
+  of the intervals reported here", with near-nominal coverage even for small
+  populations and capture probabilities near 0 or 1, where profile-likelihood
+  and Monte Carlo intervals both degrade. Its lower limit cannot fall below the
+  number of individuals observed. It is closed-form, deterministic, and adds no
+  dependency.
+
+  | `m` | before | after |
+  | --- | --- | --- |
+  | 2 | `[-17486.6, 24318.6]` | `[1319.1, 14085.6]` |
+  | 3 | `[-2124.8, 7248.3]` | `[1143.1, 8259.6]` |
+  | 5 | `[48.7, 3366.3]` | `[903.9, 4211.2]` |
+  | 10 | `[406.9, 1454.9]` | `[605.4, 1715.0]` |
+
+  The Schnabel branch is unchanged — it already inverted Poisson quantiles and
+  could not produce a negative bound.
+
+  One boundary behaviour is worth knowing: when `m == n`, every individual in
+  the second sample was already marked, the estimator saturates at
+  \eqn{\hat{N} = M}, and the logit lower limit sits fractionally *above* the
+  point estimate because the data imply \eqn{N > M}. Use `ci_method = "delta"`
+  if a bound that brackets the point estimate matters more than coverage.
+
+* `estimate_mr_harvest()` now derives its interval from the angler-population
+  interval instead of rebuilding a symmetric one, so a positive angler bound can
+  no longer become a negative harvest bound. On the `ci_method = "delta"` path
+  this is not a numeric change: the old code used the same degrees of freedom
+  and `se_H = harvest_rate * se_N`, so its bounds already equalled the scaled
+  angler bounds to machine precision.
+
+* `estimate_angler_n(method = "schnabel")` now builds its large-sample confidence
+  interval on \eqn{S - 1} degrees of freedom, where \eqn{S} is the number of sampling
+  occasions. It previously used \eqn{\sum m - 1}, the recapture total. **Every
+  Schnabel interval with \eqn{\sum m \geq 50} widens**; the point estimate and `se`
+  are unchanged.
+
+  Hansen & Van Kirk (2018) eq. (A.5) uses \eqn{t_{\alpha/2,\,S-1}}, as does
+  `fishmethods::schnabel()`, the implementation they modified. The estimator has one
+  observation per occasion regardless of how many recaptures land in it, so keying df
+  to \eqn{\sum m} treats recaptures within an occasion as independent and understates
+  the interval. On five occasions with \eqn{\sum m = 52} the reported interval was
+  `[1504.28, 2665.02]` where the source gives `[1388.48, 3127.07]` — 33% too narrow.
+
+  The `se` itself was checked against the same sources and is correct as it stands.
+  Only the quantile changed.
+
+* `estimate_angler_n(method = "schnabel")` now applies Chapman's (1952)
+  small-sample correction by default, dividing by \eqn{\sum m_k + 1} instead of
+  \eqn{\sum m_k}. **Every Schnabel point estimate falls**, by exactly
+  \eqn{1/(\sum m_k + 1)} in relative terms: 33% at \eqn{\sum m_k = 2}, 1.9% at 52,
+  0.2% at 500. Pass `bias_adjust = FALSE` for the previous form, which is also
+  what `fishmethods::schnabel()` computes.
+
+  Dettloff (2023) eq. (6) simulated both forms across population sizes from
+  \eqn{10^2} to \eqn{10^6}. The unadjusted estimator turns biased *high* at
+  moderate sample sizes before settling, which propagates into an inflated
+  `estimate_mr_harvest()`; the adjusted form's bias "approaches zero as the sample
+  size increases without ever becoming positive", at lower variance and no cost in
+  large samples. He recommends the adjusted estimators "in place of the originals
+  in all scenarios".
+
+  The consistency argument is the other half. Schnabel reduces exactly to
+  Lincoln-Petersen at \eqn{K = 2}, so the unadjusted form meant that
+  `method = "schnabel"` on two occasions returned the estimator the package
+  already declines to default to at `method = "petersen"` — bias handling depended
+  on how many occasions had been sampled rather than on the data.
+
+  The `se` moves only through the delta-method Jacobian, which is evaluated at the
+  reported \eqn{\hat{N}}. \eqn{1/\hat{N}} shifts by the constant \eqn{1/\sum M_k n_k},
+  so \eqn{\mathrm{Var}(1/\hat{N})} is unchanged and `invSE` still matches
+  `fishmethods`. The Poisson interval (\eqn{\sum m_k < 50}) inverts the distribution
+  of \eqn{\sum m_k} rather than centring on \eqn{\hat{N}}, so **its bounds do not
+  move**; the large-sample interval is built around \eqn{1/\hat{N}} and does.
+
+* `estimate_angler_n()` gains `method = "schumacher"`, the Schumacher-Eschmeyer
+  regression estimator, for \eqn{K \geq 3} occasions. It takes the same inputs as
+  `"schnabel"` and fits \eqn{m_k/n_k} against \eqn{M_k} through the origin with
+  slope \eqn{1/N}, giving \eqn{\hat{N} = \sum n_k M_k^2 / \sum m_k M_k}. The
+  interval is Seber (1982) eq. (4.17) on \eqn{K - 2} degrees of freedom, and
+  `bias_adjust` (default `TRUE`) applies Dettloff's (2023) eq. (8) small-sample
+  correction. With `bias_adjust = FALSE` the point estimate, `invSE` and both
+  bounds match `fishmethods::schnabel()`'s Schumacher-Eschmeyer row to printed
+  precision, and the formulas were checked against Seber's own worked example
+  (Ricker's red-ear sunfish: \eqn{\hat{N}} = 423, \eqn{\hat\sigma^2} = 0.1935).
+
+  Two details differ from the Schnabel branch on purpose. Degrees of freedom are
+  \eqn{K - 2}, not \eqn{K - 1}: Seber excludes the first occasion because
+  \eqn{y_1} is identically zero when \eqn{M_1 = 0} and so "is not strictly a
+  random observation". And Dettloff's eq. (8) numerator sums from \eqn{k = 2}
+  explicitly — \eqn{(M_k + 1)^2 (n_k + 1)} is the one term here that does *not*
+  vanish at \eqn{M_1 = 0}, so occasion 1 has to be dropped by hand rather than by
+  the algebra.
+
+  **tidycreel deliberately does not implement the "pick the narrower CI" rule.**
+  Hansen & Van Kirk (2018) computed both estimators and "selected the
+  mark-recapture estimator that produced the smallest 95% CI". Choosing the
+  narrower of two intervals after seeing them conditions on the luckier draw, so
+  the reported interval does not have its nominal coverage. Choose between the
+  estimators on design grounds, or report both.
+
+* `estimate_angler_n(method = "schnabel")` no longer returns
+  `ci_upper = Inf` when the recapture total is very small. The Poisson interval
+  divides by the lower quantile \eqn{q_{\alpha/2}(\sum m_k)}, which is **zero** for
+  \eqn{\sum m_k \leq 3} at the 95\% level. Hansen & Van Kirk (2018) eq. (A.4)
+  substitute Ilienko's (2013) continuous Poisson,
+  \eqn{F(x) = \Gamma(x, \lambda)/\Gamma(x)}, in exactly that case; it is positive
+  there and yields a finite bound. The substitution fires only where the discrete
+  quantile is zero — from \eqn{\sum m_k \geq 4} the continuous quantile sits just
+  above the discrete one, so the bound stays monotone across the seam.
+
+  **The bound is an interpolation, and the warning that announces it is
+  deliberate.** It rests on a continuous interpolation of a discrete distribution
+  at one to three total recaptures; it stands in for "the data do not bound this
+  above" rather than measuring anything.
+
+  Implementers should note two traps. The quantile lives in the *shape* argument
+  of `pgamma()`, so it must be root-found — there is no `qgamma()` call that
+  produces it. And **the source paper's own worked example is wrong**: it reports
+  the 0.025 quantile at \eqn{\lambda = 2} as 0.24 and draws Figure A.1 to match,
+  but 0.24 is `qgamma(0.025, shape = 2)`, a Gamma(2, 1) quantile. Inverting their
+  eq. (A.4) gives **0.3292**. Equation A.4 transcribes Ilienko's Definition 3.1
+  faithfully; the example does not. Tests pin the implementation against Ilienko's
+  eq. (1) identity with `ppois()`, never against the printed example.
+
+* `estimate_mr_harvest()` now keys its Wald interval to the number of sampling
+  occasions when the input came from `method = "schnabel"`, matching the change to
+  `estimate_angler_n()` above. It read `angler_n$estimates$n`, which for Schnabel is
+  \eqn{\sum m}, so the degrees-of-freedom defect fixed in the estimator survived one
+  function downstream: with five occasions and \eqn{\sum m = 52} the harvest interval
+  used \eqn{t = 2.008} where \eqn{t_{0.975,\,4} = 2.776}, 28% too narrow. **Schnabel
+  harvest intervals widen**; Chapman and Petersen are unaffected and still use
+  \eqn{m - 1}.
+
 * `add_counts(count_type = "progressive")` now **errors** when a day's shift is
   shorter than `circuit_time`, with condition class
   `creel_error_circuit_exceeds_shift`. It previously warned and then returned an
