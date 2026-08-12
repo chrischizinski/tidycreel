@@ -53,7 +53,10 @@ comparison table. Default is NULL. When NULL and
 \code{interview_type = "roving"} (set via \code{add_interviews}),
 automatically defaults to \code{"all"} + MOR. Otherwise defaults to
 \code{"complete"}. Parameter is ignored when trip_status field is not
-provided (backward compatibility). See Details.}
+provided (backward compatibility). For bus-route and ice designs the set is
+\code{"complete"} (default), \code{"incomplete"} or \code{"diagnostic"};
+\code{"all"} is not an estimator there, and the roving auto-route to
+\code{"all"} + MOR does not apply. See Details.}
 
 \item{truncate_at}{Numeric minimum trip duration (hours) for MOR estimation.
 Default is 0.5 hours (30 minutes) per Hoenig et al. (1997) to prevent

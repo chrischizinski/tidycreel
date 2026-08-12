@@ -28,15 +28,20 @@
 
 #' Example count data for creel survey
 #'
-#' Sample instantaneous count observations matching [example_calendar].
-#' Contains effort measurements for each survey date, suitable for use
-#' with [add_counts()] and [estimate_effort()].
+#' Sample daily effort observations matching [example_calendar]. One row per
+#' survey date, suitable for use with [add_counts()] and [estimate_effort()].
+#'
+#' The effort column holds angler-hours, not raw angler counts.
+#' [estimate_effort()] expands whichever column it is given to the season
+#' without converting units, so a design built on these data reports
+#' angler-hours. Supplying raw instantaneous counts instead would give a total
+#' in angler-days.
 #'
 #' @format A data frame with 14 rows and 3 columns:
 #' \describe{
 #'   \item{date}{Survey date (Date class), matching [example_calendar] dates}
 #'   \item{day_type}{Day type stratum: "weekday" or "weekend", matching calendar}
-#'   \item{effort_hours}{Numeric count variable: total angler-hours observed}
+#'   \item{effort_hours}{Numeric angler-hours observed on the survey date}
 #' }
 #'
 #' @source Simulated data for package examples
@@ -316,10 +321,14 @@
 
 #' Example effort counts for spatially stratified creel survey
 #'
-#' Instantaneous count observations for a 3-section lake (North, Central, South)
-#' covering 12 survey dates. Each section has one count row per date (36 rows
+#' Daily effort observations for a 3-section lake (North, Central, South)
+#' covering 12 survey dates. Each section has one row per date (36 rows
 #' total). Effort varies materially by section: Central has the highest angler
 #' traffic, South the lowest. Use with [add_sections()] and [add_counts()].
+#'
+#' As with [example_counts], the effort column holds angler-hours rather than
+#' raw angler counts; see that dataset for why the distinction matters to
+#' [estimate_effort()].
 #'
 #' @format A data frame with 36 rows and 4 columns:
 #' \describe{
@@ -327,7 +336,8 @@
 #'   \item{day_type}{Day type stratum: \code{"weekday"} or \code{"weekend"}}
 #'   \item{section}{Section identifier: \code{"North"}, \code{"Central"}, or
 #'     \code{"South"}}
-#'   \item{effort_hours}{Numeric instantaneous count of angler-hours observed}
+#'   \item{effort_hours}{Numeric angler-hours observed on the section for that
+#'     date}
 #' }
 #'
 #' @source Simulated data for package examples
@@ -786,7 +796,7 @@
 #'   survey_type = "aerial",
 #'   h_open = 14
 #' )
-#' design <- add_counts(design, example_aerial_glmm_counts)
+#' design <- add_counts(design, example_aerial_glmm_counts, count_col = n_anglers)
 #' result <- estimate_effort_aerial_glmm(design, time_col = time_of_flight)
 #' print(result)
 #' }

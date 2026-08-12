@@ -11,6 +11,7 @@ estimate_harvest_rate(
   conf_level = 0.95,
   verbose = FALSE,
   use_trips = NULL,
+  truncate_at = 0.5,
   missing_sections = "warn"
 )
 }
@@ -44,9 +45,23 @@ because incomplete-trip HPUE underestimates harvest when anglers keep
 additional fish after the interview (Hansen & Van Kirk 2010). Fish already
 in the livewell are directly observable, so \code{"all"} remains available
 for analyses that prefer the larger interview set. For bus-route designs:
-\code{"complete"} (default), \code{"incomplete"}, or \code{"diagnostic"}.
-When \code{trip_status} was not provided to \code{\link{add_interviews}},
-this argument has no effect for standard designs.}
+\code{"complete"} (default), \code{"incomplete"}, or \code{"diagnostic"};
+\code{"all"} is not an estimator there, because pooling the two kinds of
+trip applies the complete-trip ratio of Horvitz-Thompson totals to
+numerators that are catch so far. Matching is exact on both paths, and
+unrecognised values are an error. When \code{trip_status} was not provided
+to \code{\link{add_interviews}}, this argument has no effect for standard
+designs.}
+
+\item{truncate_at}{Numeric minimum trip duration in hours for the bus-route
+incomplete-trip estimator (default \code{0.5}, i.e. 30 minutes). Incomplete
+trips shorter than this are discarded before the mean of ratios is taken.
+Hoenig et al. (1997) recommend the 30-minute threshold because the
+untruncated mean-of-ratios estimator has infinite asymptotic variance:
+\code{1/L} has infinite expectation as trip length approaches zero. The
+threshold applies to elapsed trip duration, not to angler-hours. Set to
+\code{NULL} to disable, which warns. Ignored on every other path, including
+\code{use_trips = "complete"}.}
 
 \item{missing_sections}{Character string controlling behavior when a
 registered section has no interview observations. \code{"warn"} (default)
@@ -99,6 +114,16 @@ selection based on design). Alternative resampling method.
 }
 }
 \note{
+Bus-route designs use a different estimator for each trip type, because
+each is the estimator that trip type supports. \code{use_trips = "complete"}
+returns the ratio of the two Horvitz-Thompson totals (Jones & Pollock 2012,
+Eq. 19.4 and 19.5). \code{use_trips = "incomplete"} returns a truncated,
+design-weighted mean of the individual angler rates (Hoenig et al. 1997),
+whose expectation is the ratio of total harvest to total effort; the ratio
+of means is biased for anglers intercepted mid-trip, weighting individual
+rates by the square of completed trip length. Both report fish per
+angler-hour, so \code{use_trips = "diagnostic"} compares like with like.
+
 When called on a sectioned design, no \code{.lake_total} row is
 produced. Harvest rates (fish per angler-hour) are not additive across
 sections. Lake-wide harvest rate requires a separate unsectioned call.

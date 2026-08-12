@@ -23,6 +23,17 @@
 #'   raw count expansion and `h_open` is required.
 #' @param effort_col Character scalar.  Column in `interviews` containing
 #'   per-trip effort in hours. Default `"hours_fished"`.
+#' @param n_anglers Optional party size for the ratio-calibration path. Either a
+#'   character scalar naming a column in `interviews`, or a single positive
+#'   number stating a constant party size (`n_anglers = 1` for individual-level
+#'   interviews).
+#'
+#'   The calibration ratio cancels the camera counts, so the estimate inherits
+#'   whatever unit `effort_col` holds. Supplying `n_anglers` makes this function
+#'   perform the party-size multiplication, so the result is angler-hours and is
+#'   labelled as such. Omitting it leaves the estimate in the unit of the column
+#'   you supplied, which the package cannot identify: the unit is reported as
+#'   unknown and a warning names the ambiguity. Default `NULL`.
 #' @param intercept_col Character scalar or `NULL`.  Column in the count data
 #'   representing the camera count during the interview interception period.
 #'   Default `NULL` (auto-detects the first numeric count column).
@@ -62,9 +73,18 @@
 #' ]
 #' design <- add_counts(design, ops)
 #'
-#' # Ratio calibration using interview hours
+#' # Ratio calibration using interview hours. `example_camera_interviews` has no
+#' # party-size column, so this warns and reports an unknown unit: the estimate
+#' # is in whatever unit `hours_fished` holds, which the package cannot tell.
 #' est <- est_effort_camera(design, interviews = example_camera_interviews)
 #' print(est)
+#'
+#' # With party sizes the function does the normalisation itself, so the result
+#' # is angler-hours and is labelled as such.
+#' ints <- example_camera_interviews
+#' ints$party_size <- 2
+#' est_ah <- est_effort_camera(design, interviews = ints, n_anglers = "party_size")
+#' print(est_ah)
 #' }
 #'
 #' @family "Survey Design"
@@ -74,6 +94,7 @@ est_effort_camera <- function(
   design,
   interviews = NULL,
   effort_col = "hours_fished",
+  n_anglers = NULL,
   intercept_col = NULL,
   h_open = NULL,
   variance = c("taylor", "replicate"),
@@ -99,11 +120,11 @@ est_effort_camera <- function(
     )
   }
 
-  estimate_effort_camera(
-    # nolint: object_usage_linter
+  estimate_effort_camera( # nolint: object_usage_linter
     design = design,
     interviews = interviews,
     effort_col = effort_col,
+    n_anglers = n_anglers,
     intercept_col = intercept_col,
     h_open = h_open,
     variance_method = variance,

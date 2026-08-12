@@ -15,9 +15,14 @@ estimate_mr_harvest(
 \item{angler_n}{A \code{creel_estimates} object returned by
 \code{\link{estimate_angler_n}}.}
 
-\item{harvest_rate}{numeric scalar. Proportion of anglers that harvested fish.
-Must be in \eqn{(0, 1]}. Uncertainty in the harvest rate is not propagated
-(see Details).}
+\item{harvest_rate}{numeric scalar. Harvest per angler, in fish per angler,
+over the same period \code{angler_n} counts anglers for. Must be
+\eqn{> 0}. This is a rate, not a proportion, and is not bounded above: a
+fishery averaging 1.4 fish per angler is a legal value. In the notation of
+Hansen & Van Kirk (2018) eq. (1), \eqn{H = N \cdot D \cdot V}, this
+argument is the product \eqn{D \times V} — mean days fished per angler
+times mean daily harvest per angler — not \eqn{V} alone.
+Uncertainty in the harvest rate is not propagated (see Details).}
 
 \item{conf_level}{numeric. Confidence level for the CI. Default \code{0.95}.}
 
@@ -38,15 +43,25 @@ given a closed-population angler population estimate from
 \code{\link{estimate_angler_n}} and a known harvest rate.
 
 The point estimate is \eqn{\hat{H} = \hat{N} \times r} where \eqn{r} is the
-harvest rate (proportion of anglers that harvested fish). The delta-method
+harvest rate in fish per angler. The delta-method
 standard error is \eqn{SE(\hat{H}) = r \times SE(\hat{N})}, propagating only
 the uncertainty in \eqn{\hat{N}} (harvest-rate uncertainty is not propagated
 in this release).
 }
 \details{
-The harvest rate is treated as a known constant in this implementation
-(Hansen & Van Kirk 2018, D-04). Propagation of harvest-rate uncertainty via a
-two-source delta method is a planned future extension.
+The harvest rate is treated as a known constant. This is a simplification
+made by this implementation, not by the cited method: Hansen & Van Kirk
+(2018) estimate both factors of the rate, give each a log-normal sampling
+distribution, and resample them alongside \eqn{\hat{N}} in the bootstrap
+that produces their harvest CIs. Holding the rate fixed therefore makes the
+reported \code{se} a lower bound on the true uncertainty. Propagation of
+harvest-rate uncertainty via a two-source delta method is a planned future
+extension.
+
+The delta-method interval is also symmetric, which for a mark-recapture
+estimate is optimistic at the lower end and can place \code{ci_lower} below
+zero when recaptures are few; see the same note under
+\code{\link{estimate_angler_n}}.
 }
 \examples{
 # Step 1: estimate angler population

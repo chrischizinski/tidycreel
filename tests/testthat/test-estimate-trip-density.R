@@ -342,3 +342,65 @@ test_that("RPT-01b: grouped singleton stratum warns and returns NA SE/CI for tha
   expect_true(is.na(wknd$se)) # SE undefined for singleton
   expect_false(is.na(wkday$se)) # weekday (n=6) has valid SE
 })
+
+# TRIPD-112: effort-family guard (finding 11) ----
+
+make_effort_and_rate <- function() {
+  design <- build_multispecies_design_for_tests(n_days = 8, n_interviews = 24, seed = 3)
+  list(
+    design = design,
+    effort = suppressWarnings(suppressMessages(estimate_effort(design))),
+    rate = suppressWarnings(suppressMessages(estimate_catch_rate(design)))
+  )
+}
+
+test_that("estimate_angler_trips() rejects a rate object (GH #112)", {
+  # Both consumers guarded only on class, never on $method. A CPUE object passed
+  # the class check, so fish per hour was divided by hours per trip and
+  # relabelled "angler-trips" -- a number with no defensible unit and no warning.
+  #
+  # The guard is on the quantity, not the actor: it refuses a rate, and admits
+  # party-hours effort (finding 12c). These matchers said "angler-hours" while
+  # the message did, which was the wrong claim rather than the wrong check.
+  fx <- make_effort_and_rate()
+
+  expect_error(
+    estimate_angler_trips(fx$rate, fx$design),
+    "must hold effort"
+  )
+})
+
+test_that("estimate_effort_per_acre() rejects a rate object (GH #112)", {
+  fx <- make_effort_and_rate()
+
+  expect_error(
+    estimate_effort_per_acre(fx$rate, acres = 100),
+    "must hold effort"
+  )
+})
+
+test_that("estimate_angler_trips() rejects a fish-valued total (GH #112)", {
+  # The bus-route HT totals are the other way in: fish-valued, and since GH #111
+  # they carry their own method strings rather than the effort string "total".
+  design <- build_br_design_for_tests(n_sites = 3, n_days = 8, n_interviews = 24, seed = 42)
+  total <- suppressWarnings(suppressMessages(estimate_total_harvest(design)))
+
+  expect_error(
+    estimate_angler_trips(total, design),
+    "must hold effort"
+  )
+})
+
+test_that("the effort-family guard still admits genuine effort objects (GH #112)", {
+  # The guard must not reject what these functions exist to consume.
+  fx <- make_effort_and_rate()
+
+  expect_s3_class(
+    suppressWarnings(estimate_angler_trips(fx$effort, fx$design)),
+    "creel_estimates"
+  )
+  expect_s3_class(
+    suppressWarnings(estimate_effort_per_acre(fx$effort, acres = 100)),
+    "creel_estimates"
+  )
+})

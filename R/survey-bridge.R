@@ -427,6 +427,43 @@ compute_progressive_effort <- function(counts, count_var, period_length_col, cir
   counts
 }
 
+#' Apply the period length T_d to instantaneous counts (Ê_d = C̄_d × T_d)
+#'
+#' An instantaneous count estimates the number of anglers present at one moment,
+#' not effort. Effort is that count multiplied by the length of the period the
+#' count was randomised within (Hoenig et al. 1993):
+#'
+#'   Ê_d = C̄_d × T_d
+#'
+#' Multiplication happens per PSU, before any aggregation across days. Collapsing
+#' first and scaling by a stratum-mean T afterwards computes C̄ × T̄ where the
+#' target is the mean of C × T; the two differ by Cov(C, T), which is positive in
+#' practice because anglers fish more on long days, so the collapsed form biases
+#' low. Doing it here makes that covariance term exactly zero at any stratum width.
+#'
+#' This is the same arithmetic [compute_progressive_effort()] performs — τ cancels
+#' out of Ê_d = C × τ × (T_d / τ), which is Hoenig et al. (1993) eq. 3 — but the
+#' progressive path keeps its own function because `circuit_time` still gates the
+#' shift-shorter-than-a-circuit check that only applies to progressive counts.
+#'
+#' @param counts Data frame of count data (one row per PSU after aggregation)
+#' @param count_var Character name of the count column (replaced with Ê_d)
+#' @param period_length_col Character name of the T_d column (hours, dropped after)
+#'
+#' @return Modified counts data frame with count_var replaced by Ê_d values
+#'   and period_length_col removed
+#'
+#' @references Hoenig, Robson, Jones, Pollock (1993). Scheduling counts in the
+#'   instantaneous and progressive count methods. NAJFM 13:723-736.
+#'
+#' @keywords internal
+#' @noRd
+apply_period_length <- function(counts, count_var, period_length_col) {
+  counts[[count_var]] <- counts[[count_var]] * counts[[period_length_col]]
+  counts[[period_length_col]] <- NULL
+  counts
+}
+
 #' Construct survey design object
 #'
 #' Internal function that wraps survey::svydesign() with domain-specific error
@@ -512,6 +549,229 @@ construct_survey_design <- function(design) {
       }
     }
   )
+}
+
+# Unit propagation ----
+#
+# The dimension a number carries is derived and propagated, never declared. A
+# unit the caller types is exactly as trustworthy as the axis label on the
+# poster -- a second place to write the wrong thing. So tidycreel asserts a unit
+# only where it performed the arithmetic that produces it:
+#
+#   * angler-hours on the count side, when add_counts() multiplied a count by
+#     the period length T_d
+#   * angler-hours on the interview side, when add_interviews() multiplied trip
+#     hours by a supplied party size
+#   * party-hours on the interview side, when it did not
+#
+# Everywhere else the unit is NA, meaning unknown -- not "angler-days". A bare
+# numeric count column may be an instantaneous head count or effort that the
+# caller already expanded; `example_counts` is the latter. Guessing between them
+# would put a confident label on a number that may be in either unit, which is
+# the failure this machinery exists to prevent.
+
+#' Mark a counts table as already holding sampled-day effort
+#'
+#' The `prep_counts_*()` seam resolves counts into sampled-day effort before
+#' `add_counts()` sees them, so its output is not a raw instantaneous count even
+#' though no `period_length_col` was supplied. The mark suppresses the
+#' finding-13 warning for that workflow. It deliberately does **not** assert a
+#' unit: the caller chose the input column, and it may be in any time base.
+#'
+#' Carried as an attribute rather than a column, since a column duplicates a
+#' constant per row and is user-editable. An attribute dropped by intervening
+#' dplyr verbs degrades to "unknown", which is the safe direction.
+#'
+#' @param x A data frame of sampled-day effort rows
+#'
+#' @return `x` with the marker attribute set
+#'
+#' @keywords internal
+#' @noRd
+mark_counts_as_effort <- function(x) {
+  attr(x, "tidycreel_counts_are_effort") <- TRUE
+  x
+}
+
+#' Read the sampled-day effort marker back off a counts table
+#'
+#' @param x A data frame of counts
+#'
+#' @return `TRUE` when the table came from a `prep_counts_*()` helper
+#'
+#' @keywords internal
+#' @noRd
+counts_are_effort <- function(x) {
+  isTRUE(attr(x, "tidycreel_counts_are_effort", exact = TRUE))
+}
+
+#' Derive the unit of a rate's denominator from the interview side
+#'
+#' @param design A creel_design object
+#'
+#' @return `"angler-hours"`, `"party-hours"`, or `NA_character_` when no
+#'   interviews are attached
+#'
+#' @keywords internal
+#' @noRd
+interview_effort_unit <- function(design) {
+  if (is.null(design$angler_effort_col)) {
+    return(NA_character_)
+  }
+  # add_interviews() records whether .angler_effort was actually normalised by a
+  # party size. Without it the column is party-hours, which is the same seam
+  # warn_party_hours_product() guards at the multiplication point.
+  if (isTRUE(design$n_anglers_supplied)) "angler-hours" else "party-hours"
+}
+
+#' Build the unit string for a per-unit-effort rate
+#'
+#' @param design A creel_design object
+#'
+#' @return e.g. `"fish/angler-hour"`, or `NA_character_` when the denominator
+#'   unit is unknown
+#'
+#' @keywords internal
+#' @noRd
+rate_unit <- function(design) {
+  denom <- interview_effort_unit(design)
+  if (is.na(denom)) {
+    return(NA_character_)
+  }
+  paste0("fish/", sub("-hours$", "-hour", denom))
+}
+
+#' Derive the unit of a trip count from the effort it was divided from
+#'
+#' Trips are effort / mean trip length, and the divisor is hours per trip, so
+#' the count inherits whichever actor the effort was measured in: angler-hours
+#' give angler-trips, party-hours give party-trips. Asserting "angler-trips"
+#' unconditionally would put a confident label on a party-level number whenever
+#' the effort it came from was party-hours.
+#'
+#' @param effort_unit The `unit` field of the effort estimates object
+#'
+#' @return `"angler-trips"`, `"party-trips"`, or `NA_character_` when the
+#'   effort unit is unknown
+#'
+#' @keywords internal
+#' @noRd
+trips_unit <- function(effort_unit) {
+  unit <- effort_unit %||% NA_character_
+  if (length(unit) != 1L || is.na(unit)) {
+    return(NA_character_)
+  }
+  switch(unit,
+    "angler-hours" = "angler-trips",
+    "party-hours" = "party-trips",
+    NA_character_
+  )
+}
+
+#' Check that a product of effort and a rate is dimensionally coherent
+#'
+#' Total catch is effort x rate, so the rate's denominator must be the same
+#' quantity the effort is measured in. Two known units that disagree make the
+#' product meaningless, and this aborts.
+#'
+#' It does not warn when the effort unit is merely *unknown*. That is the same
+#' fact [warn_missing_period_length()] reports, and the totals call it directly
+#' for exactly this reason — one defect should produce one diagnosis, not two
+#' competing ones at adjacent call sites.
+#'
+#' The party-hours case is likewise excluded: [warn_party_hours_product()]
+#' already names it with a better message at the same call sites, and escalating
+#' it to an error would break every caller who omits `n_anglers`.
+#'
+#' @param design A creel_design object
+#' @param call Calling environment for the condition
+#'
+#' @return NULL (invisible) - called for its side effect
+#'
+#' @keywords internal
+#' @noRd
+check_product_units <- function(design, call = rlang::caller_env()) {
+  effort <- design$effort_unit %||% NA_character_
+  denom <- interview_effort_unit(design)
+
+  if (identical(denom, "party-hours")) {
+    return(invisible(NULL))
+  }
+
+  if (is.na(effort)) {
+    return(invisible(NULL))
+  }
+
+  if (!is.na(denom) && !identical(effort, denom)) {
+    cli::cli_abort(
+      c(
+        "Effort and rate are in different units.",
+        "x" = "Effort is {.val {effort}} but the rate is per {.val {denom}}.",
+        "i" = "Their product is not a catch. Re-attach the counts or interviews in matching units."
+      ),
+      class = "creel_error_unit_mismatch",
+      call = call
+    )
+  }
+
+  invisible(NULL)
+}
+
+#' Warn that an instantaneous effort estimate never had T_d applied
+#'
+#' An instantaneous count is a snapshot of how many anglers were present at one
+#' moment. Effort is that count multiplied by the length of the period the count
+#' was randomised within, and with no `period_length_col` the estimator has no
+#' \eqn{T_d} to apply — it expands the counts to the season and returns them.
+#'
+#' The warning does not claim the result is angler-days, because the package
+#' cannot tell an instantaneous head count from a column that already holds
+#' angler-hours; both arrive as a numeric column. It states the reading and lets
+#' the caller decide which case they are in.
+#'
+#' Once per session, so a script that estimates repeatedly is told once. Tests
+#' force it with `rlib_warning_verbosity = "verbose"`.
+#'
+#' @param design A creel_design object
+#'
+#' @return NULL (invisible) - called for its side effect
+#'
+#' @keywords internal
+#' @noRd
+warn_missing_period_length <- function(design) {
+  if (!identical(design$count_type, "instantaneous")) {
+    return(invisible(NULL))
+  }
+  if (!is.null(design$period_length_col)) {
+    return(invisible(NULL))
+  }
+  # The prep_counts_*() seam resolves counts into sampled-day effort before
+  # add_counts() sees them, so there is no instantaneous count left to expand
+  # and no T_d to ask for. Warning there would fire on the documented preferred
+  # workflow.
+  if (isTRUE(design$counts_are_effort)) {
+    return(invisible(NULL))
+  }
+  cli::cli_warn(
+    c(
+      "Instantaneous counts were expanded without a period length.",
+      "i" = paste(
+        "No {.arg period_length_col} was supplied to {.fn add_counts}, so the",
+        "estimate is the count column summed over days."
+      ),
+      "!" = paste(
+        "If that column holds an instantaneous angler count, the result is in",
+        "angler-days, not angler-hours."
+      ),
+      "i" = paste(
+        "Supply the period each count was randomised within:",
+        "{.code add_counts(design, counts, period_length_col = <col>)}."
+      )
+    ),
+    .frequency = "once",
+    .frequency_id = "tidycreel_effort_without_period_length"
+  )
+  invisible(NULL)
 }
 
 #' Validate data quality (Tier 2)
@@ -674,6 +934,43 @@ warn_tier2_group_issues <- function(design, by_vars) {
 #'
 #' @keywords internal
 #' @noRd
+# Warn where a party-hour rate meets angler-hour effort.
+#
+# When add_interviews() runs without `n_anglers`, .angler_effort is the raw
+# effort column, so every rate estimator returns fish per *party*-hour. The
+# product totals then multiply that rate by effort derived from angler counts,
+# which is angler-hours. Both operands are individually correct; their product is
+# correct only if every party is a single angler.
+#
+# add_interviews() already informs at construction, but the design records
+# angler_effort_col = ".angler_effort" either way, so nothing downstream could
+# tell the two apart -- and the inform is far from the call that actually
+# multiplies them. This fires at that point instead.
+#
+# Bus-route and ice designs do not reach this: their totals are HT sums over
+# interviews, with no rate multiplication.
+warn_party_hours_product <- function(design, call = rlang::caller_env()) {
+  if (isTRUE(design$n_anglers_supplied)) {
+    return(invisible(FALSE))
+  }
+
+  cli::cli_warn(
+    c(
+      "Rate and effort may be in different units.",
+      "x" = paste(
+        "{.arg n_anglers} was not supplied, so the rate is per {.emph party}-hour",
+        "while count-derived effort is per angler."
+      ),
+      "i" = paste(
+        "The product is correct only if every party is one angler.",
+        "Pass {.code add_interviews(n_anglers = <col>)} to normalise."
+      )
+    ),
+    call = call
+  )
+  invisible(TRUE)
+}
+
 warn_tier2_interview_issues <- function(design) {
   interviews <- design$interviews
   catch_col <- design$catch_col

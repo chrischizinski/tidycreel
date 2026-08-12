@@ -68,9 +68,8 @@ day_types <- ifelse(
 )
 
 season_calendar <- data.frame(
-  date       = all_dates,
-  day_type   = day_types,
-  open_hours = 10
+  date     = all_dates,
+  day_type = day_types
 )
 
 # Stratified random sample: 30% of weekdays, 50% of weekends
@@ -212,6 +211,7 @@ monthly_catch <- lapply(seq_along(months), function(i) {
     trip_status = trip_status,
     catch = catch_total,
     effort = hours_fished,
+    n_anglers = 1, # every interview is a single angler
     harvest = catch_kept
   )
 
@@ -265,6 +265,7 @@ for (i in seq_along(months)) {
     trip_status = trip_status,
     catch = catch_total,
     effort = hours_fished,
+    n_anglers = 1, # every interview is a single angler
     harvest = catch_kept
   )
 

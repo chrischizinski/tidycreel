@@ -34,26 +34,19 @@ estimate_effort_aerial <- function(
 
   # Identify count variable (same logic as estimate_effort_total)
   counts_data <- design$counts
-  excluded_cols <- c(design$date_col, design$strata_cols, design$psu_col)
-  numeric_cols <- names(counts_data)[vapply(counts_data, is.numeric, logical(1L))]
-  count_vars <- setdiff(numeric_cols, excluded_cols)
-
-  if (length(count_vars) == 0L) {
-    cli::cli_abort(c(
-      "No count variable found in count data.",
-      "x" = "Count data must have at least one numeric column.",
-      "i" = "Numeric columns found: {.field {numeric_cols}}",
-      "i" = "Design metadata columns: {.field {excluded_cols}}"
-    ))
-  }
-
-  count_var <- count_vars[1L]
+  count_var <- resolve_count_col( # nolint: object_usage_linter
+    counts = counts_data,
+    excluded = c(design$date_col, design$strata_cols, design$psu_col),
+    count_col = design$count_col
+  )
   count_formula <- stats::reformulate(count_var)
 
   # Get appropriate survey design for variance method
   svy_design <- get_variance_design(design$survey, variance_method) # nolint: object_usage_linter
 
-  # svytotal on the raw instantaneous count, then scale by h_over_v
+  # svytotal on the raw instantaneous count, then scale by h_over_v. The count
+  # is guaranteed raw: add_counts() refuses period_length_col on an aerial
+  # design, so nothing has already multiplied it by a period (finding 21).
   svy_result <- suppressWarnings(survey::svytotal(count_formula, svy_design))
 
   estimate <- as.numeric(coef(svy_result)) * h_over_v
@@ -90,7 +83,7 @@ estimate_effort_aerial <- function(
     n = n
   )
 
-  new_creel_estimates(
+  new_creel_estimates( # nolint: object_usage_linter
     # nolint: object_usage_linter
     estimates = estimates_df,
     method = "aerial_total",
@@ -98,6 +91,10 @@ estimate_effort_aerial <- function(
     design = design,
     conf_level = conf_level,
     by_vars = NULL,
-    effort_target = effort_target
+    effort_target = effort_target,
+    # Unconditional, not design$effort_unit: an aerial design refuses
+    # period_length_col, so its effort_unit is always NA. h_open is the sole
+    # period source here (finding 21), and count x hours is angler-hours.
+    unit = "angler-hours" # nolint: object_usage_linter
   )
 }

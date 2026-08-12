@@ -59,7 +59,11 @@ compute_effort <- function(data, trip_start, interview_time, time_fished = NULL)
 #'
 #' @param data A data frame containing the interview records.
 #' @param effort Tidy selector for the effort column (numeric, hours per trip).
-#' @param n_anglers Tidy selector for the number-of-anglers column (positive integer).
+#' @param n_anglers Number of anglers in the party. Either a bare column name
+#'   (e.g. \code{n_anglers = party_size}) or a single positive number stating a
+#'   constant party size (e.g. \code{n_anglers = 1} for individual-level
+#'   interviews). A bare number is read as a party size, **not** as a tidyselect
+#'   column position. Values must be positive and finite.
 #'
 #' @return The input data frame with an added \code{.angler_effort} column
 #'   (numeric, angler-hours). Existing columns are preserved.
@@ -72,10 +76,108 @@ compute_angler_effort <- function(data, effort, n_anglers) {
   na_quo <- rlang::enquo(n_anglers)
 
   e_col <- names(tidyselect::eval_select(e_quo, data))
+
+  # Same contract as add_interviews(): a bare number is a party size, not a
+  # tidyselect column position.
+  na_lit <- party_size_literal(rlang::quo_get_expr(na_quo))
+  if (!is.null(na_lit)) {
+    validate_party_size(na_lit, "n_anglers", allow_missing = FALSE)
+    data[[".angler_effort"]] <- data[[e_col]] * na_lit
+    return(data)
+  }
+
   na_col <- names(tidyselect::eval_select(na_quo, data))
+  validate_party_size(data[[na_col]], paste0("n_anglers (column ", na_col, ")"))
 
   data[[".angler_effort"]] <- data[[e_col]] * data[[na_col]]
   data
+}
+
+# Is this `n_anglers` expression a stated constant rather than a column selector?
+#
+# Returns the number, or NULL when the expression should be resolved as a column.
+# Unary minus has to be handled explicitly: `-2` parses as a call, not a numeric
+# literal, and tidyselect reads it as "every column except the second" -- which
+# reports a column-count error rather than saying the party size is negative.
+party_size_literal <- function(expr) {
+  if (is.numeric(expr) && length(expr) == 1L) {
+    return(expr)
+  }
+  if (
+    rlang::is_call(expr, "-", n = 1L) &&
+      is.numeric(expr[[2L]]) &&
+      length(expr[[2L]]) == 1L
+  ) {
+    return(-expr[[2L]])
+  }
+  NULL
+}
+
+# Validate a party size, whether stated as a constant or read from a column.
+#
+# `.angler_effort` is derived once and stored, after which it is an anonymous
+# numeric column that ~37 call sites across 6 files read as angler-hours. Nothing
+# downstream can tell hours x party-size from hours x anything-else, so the only
+# place a wrong multiplier can be caught is here, at construction.
+#
+# A shape guard alone would not be enough: `n_anglers = catch_kept` names a real
+# column and would pass any check on the argument's form. Checking the values is
+# what catches the whole class -- in the reproduction for audit finding 16 the
+# resolved column held a zero, i.e. a party of no anglers.
+validate_party_size <- function(x, arg_name, call = rlang::caller_env(),
+                                allow_missing = TRUE) {
+  if (!is.numeric(x)) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg_name}} must be numeric, not {.cls {class(x)[1]}}.",
+        "i" = "Pass a bare column name, or a single number for a constant party size."
+      ),
+      call = call
+    )
+  }
+
+  missing_vals <- is.na(x)
+  if (any(missing_vals) && !allow_missing) {
+    # A column may legitimately have gaps; a stated constant may not.
+    cli::cli_abort(
+      "{.arg {arg_name}} must be a positive party size, not {.val {NA}}.",
+      call = call
+    )
+  }
+  invalid <- !missing_vals & (!is.finite(x) | x <= 0)
+  if (any(invalid)) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg_name}} must be a positive party size.",
+        "x" = "Found {sum(invalid)} value{?s} that {?is/are} zero, negative, or non-finite.",
+        "i" = "A party of zero anglers would silently zero out that interview's effort."
+      ),
+      call = call
+    )
+  }
+
+  if (any(missing_vals)) {
+    cli::cli_warn(
+      c(
+        "{.arg {arg_name}} has {sum(missing_vals)} missing value{?s}.",
+        "i" = "Those interviews get {.val NA} angler-hours and drop out of rate estimates."
+      ),
+      call = call
+    )
+  }
+
+  fractional <- !missing_vals & is.finite(x) & x != round(x)
+  if (any(fractional)) {
+    cli::cli_warn(
+      c(
+        "{.arg {arg_name}} has {sum(fractional)} non-integer value{?s}.",
+        "i" = "Party sizes are counts of anglers; a fractional value suggests a wrong column."
+      ),
+      call = call
+    )
+  }
+
+  invisible(x)
 }
 
 # Valid survey types accepted by creel_design()
@@ -921,6 +1023,172 @@ resolve_multi_cols <- function(expr, data, arg_name, error_call = rlang::caller_
   names(loc)
 }
 
+#' Resolve the count variable in a counts table
+#'
+#' Internal helper. Returns the name of the numeric column holding angler
+#' counts. When `count_col` is supplied it is validated and returned unchanged;
+#' otherwise the numeric columns that are not design metadata are collected and
+#' the single remaining candidate is returned.
+#'
+#' Two or more candidates is an error, not a positional pick. Column order in a
+#' counts table carries no meaning, so taking the first candidate silently
+#' expands whatever happens to sit leftmost -- a row index, a daylight-hours
+#' column -- into a number reported as "Total Effort" with no warning.
+#'
+#' @param counts Data frame of count data
+#' @param excluded Character vector of design metadata column names
+#' @param count_col Character name of the count column, or NULL to infer
+#' @param error_call Calling environment for error reporting
+#'
+#' @return Character scalar column name
+#'
+#' @keywords internal
+#' @noRd
+resolve_count_col <- function(
+  counts,
+  excluded,
+  count_col = NULL,
+  error_call = rlang::caller_env()
+) {
+  # Numeric columns that prep_counts_daily_effort() emits alongside the effort
+  # column. They are part of that function's fixed output contract, never the
+  # count, so they must not make the preferred prep -> add_counts() pipeline
+  # look ambiguous. A user whose count column really is named one of these can
+  # still say so with count_col, which skips this list entirely.
+  excluded <- c(excluded, "correction_factor", "n_counts", "within_day_var")
+
+  numeric_cols <- names(counts)[vapply(counts, is.numeric, logical(1L))]
+
+  if (!is.null(count_col)) {
+    if (!count_col %in% names(counts)) {
+      cli::cli_abort(
+        c(
+          "Count column {.field {count_col}} not found in count data.",
+          "i" = "Available columns: {.field {names(counts)}}"
+        ),
+        call = error_call
+      )
+    }
+    if (!count_col %in% numeric_cols) {
+      cli::cli_abort(
+        c(
+          "Count column {.field {count_col}} must be numeric.",
+          "x" = "{.field {count_col}} is {.cls {class(counts[[count_col]])[1]}}."
+        ),
+        call = error_call
+      )
+    }
+    return(count_col)
+  }
+
+  candidates <- setdiff(numeric_cols, excluded)
+
+  if (length(candidates) == 0L) {
+    cli::cli_abort(
+      c(
+        "No count variable found in count data.",
+        "x" = "Count data must have at least one numeric column.",
+        "i" = "Numeric columns found: {.field {numeric_cols}}",
+        "i" = "Design metadata columns: {.field {excluded}}"
+      ),
+      call = error_call
+    )
+  }
+
+  if (length(candidates) > 1L) {
+    cli::cli_abort(
+      c(
+        "Cannot tell which column holds the angler counts.",
+        "x" = "{length(candidates)} numeric columns are candidates: {.field {candidates}}.",
+        "i" = "Name the count column: {.code add_counts(design, counts, count_col = <col>)}.",
+        "i" = "Column order is not used to choose -- picking one would risk expanding the wrong variable into effort."
+      ),
+      call = error_call
+    )
+  }
+
+  candidates
+}
+
+#' Read a supplied within-day variance from the counts table
+#'
+#' The `prep_counts_*()` functions emit `within_day_var` (a per-PSU sum of
+#' squares, already scaled into `daily_effort^2` units) and `n_counts` (k_d).
+#' Both columns were previously written and never read, so the within-day
+#' component was silently dropped and the reported SE omitted it (GH #109).
+#'
+#' Returns the same shape `aggregate_within_day()` produces -- key columns plus
+#' `ss_d` and `k_d` -- so both seams feed one slot and one consumer.
+#'
+#' @param counts Data frame of count data
+#' @param psu Character name of the PSU column
+#' @param strata_cols Character vector of strata column names
+#' @param count_time_col_name Resolved count-time column name, or NULL
+#' @param call Calling environment for conditions
+#'
+#' @return A data frame with key columns + `ss_d` + `k_d`, or NULL
+#'
+#' @keywords internal
+#' @noRd
+read_supplied_within_day_var <- function(
+  counts,
+  psu,
+  strata_cols,
+  count_time_col_name,
+  call = rlang::caller_env()
+) {
+  has_ss <- "within_day_var" %in% names(counts)
+  has_k <- "n_counts" %in% names(counts)
+
+  if (!has_ss) {
+    return(NULL)
+  }
+
+  if (!has_k) {
+    cli::cli_abort(
+      c(
+        "A {.field within_day_var} column requires an {.field n_counts} column.",
+        "x" = "The within-day variance component needs the per-PSU count as well \\
+               as the sum of squares.",
+        "i" = "Both are produced together by {.fn prep_counts_daily_effort} and \\
+               {.fn prep_counts_boat_party}."
+      ),
+      call = call
+    )
+  }
+
+  # Two sources for one component would double-count it.
+  if (!is.null(count_time_col_name)) {
+    cli::cli_abort(
+      c(
+        "Within-day variance supplied twice.",
+        "x" = "{.arg count_time_col} computes it from the raw counts, and the \\
+               counts table already carries a {.field within_day_var} column.",
+        "i" = "Drop {.arg count_time_col}, or drop the {.field within_day_var} \\
+               and {.field n_counts} columns."
+      ),
+      call = call
+    )
+  }
+
+  key_cols <- unique(c(psu, strata_cols))
+  missing_keys <- setdiff(key_cols, names(counts))
+  if (length(missing_keys) > 0) {
+    cli::cli_abort(
+      c(
+        "Cannot key the supplied within-day variance.",
+        "x" = "Column{?s} {.val {missing_keys}} {?is/are} not in the counts table."
+      ),
+      call = call
+    )
+  }
+
+  out <- counts[key_cols]
+  out$ss_d <- counts[["within_day_var"]]
+  out$k_d <- counts[["n_counts"]]
+  out
+}
+
 #' Attach count data to a creel design
 #'
 #' @description
@@ -937,6 +1205,11 @@ resolve_multi_cols <- function(expr, data, arg_name, error_call = rlang::caller_
 #' `period_length_col`. Eager construction catches design errors at add_counts()
 #' time when users have context about what data they are adding.
 #'
+#' `period_length_col` applies to instantaneous counts as well as progressive
+#' ones. An instantaneous count is a snapshot of the anglers present at one
+#' moment, so it becomes effort only once multiplied by the period it was
+#' randomised within; supply that column and the estimate is in angler-hours.
+#'
 #' @param design A creel_design object (created with [creel_design()])
 #' @param counts Data frame containing count-side effort data. Preferred input:
 #'   sampled-day effort rows that already have a Date column matching the
@@ -947,6 +1220,13 @@ resolve_multi_cols <- function(expr, data, arg_name, error_call = rlang::caller_
 #'
 #'   Compatibility input paths remain available for raw-ish count workflows with
 #'   multiple within-day observations or progressive counts.
+#' @param count_col Tidy selector for the numeric column holding the angler
+#'   counts. Defaults to NULL, in which case the column is inferred as the only
+#'   numeric column that is not design metadata (date, strata, PSU, section,
+#'   count-time, or period-length). If more than one numeric column qualifies,
+#'   `add_counts()` aborts and lists the candidates rather than choosing by
+#'   position — name the column here to resolve it. The resolved name is stored
+#'   on the design and used by every downstream estimator.
 #' @param psu Character string naming the PSU (Primary Sampling Unit) column
 #'   in the count data. Defaults to NULL, which uses the design's date_col as
 #'   the PSU (day-as-PSU is the most common creel design). For other designs,
@@ -967,10 +1247,33 @@ resolve_multi_cols <- function(expr, data, arg_name, error_call = rlang::caller_
 #'   κ = T_d / τ and Ê_d = C × τ × κ. Ignored (with a warning) when
 #'   `count_type = "instantaneous"`.
 #' @param period_length_col Tidy selector for the column containing T_d — the
-#'   total fishable shift duration in hours for each PSU. Required when
-#'   `count_type = "progressive"` (CNT-05). Values must be positive and finite.
-#'   The column is dropped from `design$counts` after Ê_d is computed (it
-#'   must not be passed to `estimate_effort()` as a count variable).
+#'   length in hours of the period each count was randomised within. Required
+#'   when `count_type = "progressive"` (CNT-05), optional but strongly
+#'   recommended when `count_type = "instantaneous"`. Values must be positive
+#'   and finite. The column is dropped from `design$counts` after Ê_d is
+#'   computed (it must not be passed to `estimate_effort()` as a count
+#'   variable).
+#'
+#'   For instantaneous counts, supplying this is what makes the estimate
+#'   angler-hours. A count is a snapshot of how many anglers were present at one
+#'   moment; effort is that count times the period it was randomised within,
+#'   Ê_d = C̄_d × T_d (Hoenig et al. 1993). Without it, `estimate_effort()`
+#'   expands the counts to the season and returns them unmultiplied, and warns
+#'   once per session that it has done so.
+#'
+#'   Not accepted on aerial designs, which carry their period length as
+#'   `h_open` and scale the count by `h_open / v` when estimating. Supplying
+#'   both would apply time twice, so this errors rather than choosing one.
+#'
+#'   T_d is a property of the survey protocol — the period set by regulation,
+#'   access hours, or field practice. It is not astronomical daylight.
+#'   [day_length()] is for simulation and planning; do not feed it here as a
+#'   substitute for the period actually surveyed.
+#'
+#'   The multiplication happens per PSU, before aggregation. Converting after
+#'   the fact computes C̄ × T̄ where the target is the mean of C × T; the two
+#'   differ by Cov(C, T), which is positive in practice because anglers fish
+#'   more on long days, so the collapsed form biases low.
 #' @param allow_invalid Logical flag for validation behavior. If FALSE (default),
 #'   validation failures abort with detailed error messages. If TRUE, validation
 #'   failures generate warnings and attach counts anyway (use with caution).
@@ -1084,6 +1387,7 @@ resolve_multi_cols <- function(expr, data, arg_name, error_call = rlang::caller_
 add_counts <- function(
   design,
   counts,
+  count_col = NULL,
   psu = NULL,
   count_time_col = NULL,
   count_type = "instantaneous",
@@ -1112,6 +1416,10 @@ add_counts <- function(
 
   # Validate count data schema (Date column, numeric column)
   validate_count_schema(counts) # nolint: object_usage_linter
+
+  # Read before any transformation: aggregate_within_day() rebuilds the table
+  # with rbind(), which drops attributes.
+  counts_from_prep_seam <- counts_are_effort(counts) # nolint: object_usage_linter
 
   # Guard: validate section values against registered sections (SEC-01)
   if (!is.null(design[["sections"]]) && !is.null(design[["section_col"]])) {
@@ -1157,6 +1465,41 @@ add_counts <- function(
     names(period_length_col_sel)
   }
 
+  # T_d is validated wherever it is supplied, not only on the progressive path.
+  # Instantaneous designs accept it too (finding 13): the count is a snapshot of
+  # anglers present, and effort is that count times the period it was randomised
+  # within. Before this, supplying period_length_col on an instantaneous design
+  # was accepted, recorded on the design, and then silently discarded.
+  period_vals <- if (is.null(period_length_col_name)) {
+    NULL
+  } else {
+    counts[[period_length_col_name]]
+  }
+  if (!is.null(period_vals) && (any(!is.finite(period_vals)) || any(period_vals <= 0))) {
+    cli::cli_abort(c(
+      "{.field {period_length_col_name}} must contain positive finite values (hours).",
+      "x" = "Found {sum(period_vals <= 0 | !is.finite(period_vals))} non-positive or non-finite value(s)."
+    ))
+  }
+
+  # Aerial designs already carry their period length as h_open, a required slot
+  # on the aerial design, and estimate_effort_aerial() scales the count by
+  # h_open/v. Applying T_d here as well multiplies by time twice (finding 21):
+  # the result is angler-hour-hours, and the unit spine would label it
+  # angler-hours. Two sources for one quantity is the defect, so refuse rather
+  # than silently pick one — a caller who supplied both has a wrong model of
+  # which term the estimator applies, and a silent choice would preserve it.
+  if (!is.null(period_length_col_name) && identical(design$design_type, "aerial")) {
+    cli::cli_abort(
+      c(
+        "{.arg period_length_col} cannot be used with an aerial design.",
+        "x" = "{.field h_open} already supplies the period length, so time would apply twice.",
+        "i" = "Set the period length with {.arg h_open} in {.fn creel_design} instead."
+      ),
+      class = "creel_error_aerial_period_length"
+    )
+  }
+
   # Progressive-specific validation (CNT-03, CNT-05)
   if (count_type == "progressive") {
     # Guard: circuit_time required (CNT-05)
@@ -1181,22 +1524,23 @@ add_counts <- function(
         "i" = "Example: add_counts(design, counts, count_type = 'progressive', circuit_time = 2, period_length_col = <col>)" # nolint: line_length_linter
       ))
     }
-    # Guard: period_length values must be positive
-    period_vals <- counts[[period_length_col_name]]
-    if (any(!is.finite(period_vals)) || any(period_vals <= 0)) {
-      cli::cli_abort(c(
-        "{.field {period_length_col_name}} must contain positive finite values (hours).",
-        "x" = "Found {sum(period_vals <= 0 | !is.finite(period_vals))} non-positive or non-finite value(s)."
-      ))
-    }
-    # Advisory: period_length < circuit_time means κ < 1 (unusual)
+    # T_d < tau means no circuit completes within the shift, so the count cannot be a
+    # progressive count of it and Hoenig et al. (1993) eq. 3 does not apply: its
+    # K = T_d/tau counts whole tau-blocks in the day, which requires K >= 1. This was
+    # a warning that then returned a number anyway. It aborts because
+    # generate_progressive_start() already refuses the same design, so the only way to
+    # reach here is a hand-built schedule -- the case with no other guard in front of it.
     if (any(period_vals < circuit_time)) {
       n_short <- sum(period_vals < circuit_time) # nolint: object_usage_linter
-      cli::cli_warn(c(
-        "{n_short} day(s) have shift duration shorter than {.arg circuit_time} ({circuit_time} hours).",
-        "i" = "This gives \u03ba < 1 (less than one full circuit possible in the shift).",
-        "i" = "Verify that {.field {period_length_col_name}} and {.arg circuit_time} are in the same units."
-      ))
+      cli::cli_abort(
+        c(
+          "{n_short} day{?s} {?has/have} a shift shorter than {.arg circuit_time} ({circuit_time} hours).",
+          "x" = "No full circuit fits the shift, so the count is not a progressive count of it.",
+          "i" = "Check that {.field {period_length_col_name}} and {.arg circuit_time} are both in hours.",
+          "i" = "Schedule progressive counts with {.fn generate_progressive_start}, which enforces this."
+        ),
+        class = "creel_error_circuit_exceeds_shift"
+      )
     }
   }
   if (count_type == "instantaneous" && !is.null(circuit_time)) {
@@ -1219,6 +1563,27 @@ add_counts <- function(
     names(count_time_col_sel)
   }
 
+  # Resolve the count variable once, here, so an ambiguous counts table fails at
+  # attach time rather than being resolved by position in each estimator (CNT-11)
+  count_col_quo <- rlang::enquo(count_col)
+  count_col_name <- if (rlang::quo_is_null(count_col_quo)) {
+    NULL
+  } else {
+    resolve_single_col(count_col_quo, counts, "count_col")
+  }
+  count_col_name <- resolve_count_col(
+    counts = counts,
+    excluded = c(
+      psu,
+      design$strata_cols,
+      design$date_col,
+      design$section_col,
+      count_time_col_name,
+      period_length_col_name
+    ),
+    count_col = count_col_name
+  )
+
   # Validate counts structure (Tier 1)
   validation <- validate_counts_tier1(counts, design, psu, allow_invalid) # nolint: object_usage_linter
 
@@ -1227,14 +1592,23 @@ add_counts <- function(
     detect_duplicate_psus(counts, psu) # nolint: object_usage_linter
   }
 
+  # Within-day variance supplied as columns by the prep_counts_* seam. Both
+  # columns were written to the prep output and never read here, so a user who
+  # supplied them through the documented preferred pipeline got an SE with the
+  # entire within-day component missing -- biased downward (GH #109).
+  supplied_wdv <- read_supplied_within_day_var(
+    # nolint: object_usage_linter
+    counts,
+    psu,
+    design$strata_cols,
+    count_time_col_name
+  )
+
   # Aggregate multiple counts per day to single PSU-level rows
   within_day_var <- NULL
   if (!is.null(count_time_col_name)) {
     key_cols <- unique(c(psu, design$strata_cols))
-    # Exclude period_length_col_name when progressive so it isn't mistaken for the count variable
-    excluded <- c(key_cols, count_time_col_name, design$date_col, period_length_col_name)
-    numeric_cols <- names(counts)[vapply(counts, is.numeric, logical(1L))]
-    count_var <- setdiff(numeric_cols, excluded)[1L]
+    count_var <- count_col_name
 
     agg_result <- aggregate_within_day(
       # nolint: object_usage_linter
@@ -1246,27 +1620,34 @@ add_counts <- function(
     )
     counts <- agg_result$aggregated
     within_day_var <- agg_result$within_day_var
+  } else if (!is.null(supplied_wdv)) {
+    within_day_var <- supplied_wdv
   }
 
-  # For multi-circuit progressive counts: ss_d is in count² units from aggregate_within_day(),
-  # but compute_within_day_var_contribution() must operate in effort² units (Ê_d,k = C_k × T_d).
-  # Scale ss_d by T_d² per PSU before compute_progressive_effort() drops period_length_col.
-  if (count_type == "progressive" && !is.null(within_day_var)) {
+  # For multi-count PSUs: ss_d is in count² units from aggregate_within_day(), but
+  # compute_within_day_var_contribution() must operate in effort² units
+  # (Ê_d,k = C_k × T_d). Scale ss_d by T_d² per PSU before period_length_col is
+  # dropped. Applies to both count types, since both now multiply through by T_d.
+  if (!is.null(period_length_col_name) && !is.null(within_day_var)) {
     td_vals <- counts[[period_length_col_name]][match(within_day_var[[psu]], counts[[psu]])]
     within_day_var$ss_d <- within_day_var$ss_d * td_vals^2
   }
 
   # Compute progressive daily effort Ê_d = C × τ × κ (EFF-02)
   if (count_type == "progressive") {
-    excluded_prog <- c(psu, design$strata_cols, design$date_col)
-    numeric_cols_prog <- names(counts)[vapply(counts, is.numeric, logical(1L))]
-    count_var_prog <- setdiff(numeric_cols_prog, c(excluded_prog, period_length_col_name))[1L]
     counts <- compute_progressive_effort(
       # nolint: object_usage_linter
       counts = counts,
-      count_var = count_var_prog,
+      count_var = count_col_name,
       period_length_col = period_length_col_name,
       circuit_time = circuit_time
+    )
+  } else if (!is.null(period_length_col_name)) {
+    # Instantaneous with T_d supplied: Ê_d = C̄_d × T_d, applied per PSU (finding 13)
+    counts <- apply_period_length( # nolint: object_usage_linter
+      counts = counts,
+      count_var = count_col_name,
+      period_length_col = period_length_col_name
     )
   }
 
@@ -1277,6 +1658,7 @@ add_counts <- function(
 
   # Store new slots before survey construction
   new_design$count_type <- count_type
+  new_design$count_col <- count_col_name
   new_design$count_time_col <- count_time_col_name
   new_design$within_day_var <- within_day_var
   new_design$n_counts_per_psu <- if (!is.null(within_day_var)) {
@@ -1286,6 +1668,18 @@ add_counts <- function(
   }
   new_design$circuit_time <- circuit_time
   new_design$period_length_col <- period_length_col_name
+  new_design$counts_are_effort <- counts_from_prep_seam
+
+  # The count side is angler-hours exactly when this function did the
+  # multiplication that produces them. A bare count column with no T_d may be an
+  # instantaneous head count or effort the caller already expanded, and nothing
+  # here can tell the two apart, so the honest answer is that the unit is
+  # unknown rather than a guess at "angler-days".
+  new_design$effort_unit <- if (is.null(period_length_col_name)) {
+    NA_character_
+  } else {
+    "angler-hours"
+  }
 
   # Construct survey design eagerly
   new_design$survey <- construct_survey_design(new_design) # nolint: object_usage_linter
@@ -1541,9 +1935,18 @@ add_sections <- function(
 #' @param species_sought Tidy selector for species sought column (optional, default
 #'   NULL). Use bare column names (e.g., `species_sought = target_species`).
 #'   Records the species the angler was targeting during the interview.
-#' @param n_anglers Tidy selector for the number of anglers in the party (default 1L --
-#'   individual-level interviews). When omitted, a \code{cli_inform()} message notes the
-#'   assumption. Use bare column names (e.g., \code{n_anglers = party_size}).
+#' @param n_anglers Number of anglers in the party. Either a bare column name
+#'   (e.g. \code{n_anglers = party_size}) or a single positive number stating a
+#'   constant party size (e.g. \code{n_anglers = 1} when every interview is one
+#'   angler). A bare number is read as a party size, **not** as a tidyselect
+#'   column position, so \code{n_anglers = 1} means one angler per party rather
+#'   than "column 1". Values must be positive and finite; missing and
+#'   non-integer values warn.
+#'
+#'   When omitted, effort is left un-normalised and a \code{cli_inform()} message
+#'   notes the assumption. In that case the rate estimators return quantities per
+#'   *party*-hour, and the product totals warn when they multiply one by
+#'   count-derived angler-hours.
 #' @param refused Tidy selector for the refused interview flag column (optional,
 #'   default NULL). Use bare column names (e.g., `refused = refused_flag`).
 #'   Values should be logical (TRUE/FALSE) or coercible to logical.
@@ -1865,15 +2268,35 @@ add_interviews <- function(
     )
   }
 
-  # Resolve n_anglers column (optional; skip resolution when using integer default)
+  # Resolve n_anglers, which is either a constant party size or a column.
+  #
+  # A bare number is a party size, not a tidyselect position. Reading it as a
+  # position -- the tidyselect default, and what this did before -- meant
+  # `n_anglers = 1L`, the value in this function's own signature, silently
+  # selected column 1 and multiplied effort by whatever it held.
   n_anglers_col <- NULL
+  n_anglers_const <- NULL
   if (!n_anglers_missing) {
     n_anglers_quo <- rlang::enquo(n_anglers)
-    if (!rlang::quo_is_null(n_anglers_quo)) {
+    n_anglers_lit <- party_size_literal(rlang::quo_get_expr(n_anglers_quo))
+    if (!is.null(n_anglers_lit)) {
+      validate_party_size(
+        n_anglers_lit,
+        "n_anglers",
+        rlang::caller_env(),
+        allow_missing = FALSE
+      )
+      n_anglers_const <- n_anglers_lit
+    } else if (!rlang::quo_is_null(n_anglers_quo)) {
       n_anglers_col <- resolve_single_col(
         n_anglers_quo,
         interviews,
         "n_anglers",
+        rlang::caller_env()
+      )
+      validate_party_size(
+        interviews[[n_anglers_col]],
+        paste0("n_anglers (column ", n_anglers_col, ")"),
         rlang::caller_env()
       )
     }
@@ -2069,11 +2492,24 @@ add_interviews <- function(
   if (!is.null(n_anglers_col)) {
     new_design$interviews[[".angler_effort"]] <-
       new_design$interviews[[effort_col]] * new_design$interviews[[n_anglers_col]]
+  } else if (!is.null(n_anglers_const)) {
+    # Constant party size: the caller stated it rather than supplying a column
+    new_design$interviews[[".angler_effort"]] <-
+      new_design$interviews[[effort_col]] * n_anglers_const
   } else {
-    # n_anglers defaults to 1L -- angler_effort equals raw effort
+    # n_anglers omitted -- angler_effort equals raw effort (party-hours)
     new_design$interviews[[".angler_effort"]] <- new_design$interviews[[effort_col]]
   }
   new_design$angler_effort_col <- ".angler_effort"
+
+  # Record whether .angler_effort was actually normalised by a per-interview
+  # party size. Without it, .angler_effort is party-hours while count-derived
+  # effort is angler-hours, and no downstream function could previously tell the
+  # two apart -- angler_effort_col is ".angler_effort" either way (see the
+  # warning in warn_party_hours_product()).
+  # A stated constant counts as supplied: "every party is one angler" makes
+  # .angler_effort genuine angler-hours, so the product totals must not warn.
+  new_design$n_anglers_supplied <- !is.null(n_anglers_col) || !is.null(n_anglers_const)
 
   # Construct interview survey eagerly
   new_design$interview_survey <- construct_interview_survey(new_design) # nolint: object_usage_linter
@@ -3159,14 +3595,23 @@ add_catch <- function(design, data, catch_uid, interview_uid, species, count, ca
   if (nrow(caught_rows) > 0) {
     sub_rows <- data[data[[catch_type_col]] %in% c("harvested", "released"), ]
     if (nrow(sub_rows) > 0) {
-      sub_agg <- stats::aggregate(
-        sub_rows[[count_col]],
-        by = list(uid = sub_rows[[catch_uid_col]], species = sub_rows[[species_col]]),
-        FUN = sum
-      )
+      sub_keys <- list(uid = sub_rows[[catch_uid_col]], species = sub_rows[[species_col]])
+      sub_agg <- stats::aggregate(sub_rows[[count_col]], by = sub_keys, FUN = sum)
       names(sub_agg)[3] <- "sub_total"
+      # Number of distinct disposition types recorded per pair, used below to
+      # tell a full partition apart from partial recording.
+      sub_types <- stats::aggregate(
+        sub_rows[[catch_type_col]],
+        by = sub_keys,
+        FUN = function(x) length(unique(x))
+      )
+      names(sub_types)[3] <- "n_types"
+      sub_agg <- merge(sub_agg, sub_types, by = c("uid", "species"))
     } else {
-      sub_agg <- data.frame(uid = character(0), species = character(0), sub_total = numeric(0))
+      sub_agg <- data.frame(
+        uid = character(0), species = character(0),
+        sub_total = numeric(0), n_types = integer(0)
+      )
     }
     caught_agg <- stats::aggregate(
       caught_rows[[count_col]],
@@ -3175,6 +3620,9 @@ add_catch <- function(design, data, catch_uid, interview_uid, species, count, ca
     )
     names(caught_agg)[3] <- "caught_total"
     combined <- merge(caught_agg, sub_agg, by = c("uid", "species"), all.x = TRUE)
+    # Recorded before the NA fill: TRUE only where both harvested and released
+    # were recorded, i.e. a full partition was attempted.
+    full_partition <- !is.na(combined$n_types) & combined$n_types == 2L
     combined$sub_total[is.na(combined$sub_total)] <- 0L
     violations <- combined[combined$caught_total < combined$sub_total, ]
     if (nrow(violations) > 0) {
@@ -3187,6 +3635,37 @@ add_catch <- function(design, data, catch_uid, interview_uid, species, count, ca
         ),
         "i" = paste0(
           "caught must be >= harvested + released for each species-interview combination."
+        )
+      ))
+    }
+
+    # Advisory: a full partition that under-accounts for catch (CATCH-06).
+    # The reverse direction aborts above. Only pairs recording BOTH harvested
+    # and released are checked: partial recording (one disposition type, or
+    # none) is common and legitimate in real creel data, so warning on it
+    # would be noise.
+    unreconciled <- combined[full_partition & combined$caught_total > combined$sub_total, ]
+    if (nrow(unreconciled) > 0) {
+      n_unrec <- nrow(unreconciled) # nolint: object_usage_linter
+      unrec_pairs <- paste0(unreconciled$uid, "/", unreconciled$species) # nolint: object_usage_linter
+      cli::cli_warn(c(
+        "!" = paste0(
+          "harvested + released is less than caught for {n_unrec} ",
+          "species-interview pair{?s}:"
+        ),
+        stats::setNames(
+          paste0("{.val ", unrec_pairs, "}"),
+          rep("*", length(unrec_pairs))
+        ),
+        "i" = paste0(
+          "This is advisory. Fish with no recorded disposition are legitimate, ",
+          "but a partition that does not sum to {.val caught} may indicate ",
+          "dropped rows."
+        ),
+        "i" = paste0(
+          "{.val caught} rows are the per-species total; {.val harvested} and ",
+          "{.val released} partition it. Summing {.field count} across all ",
+          "{.field catch_type} values double-counts."
         )
       ))
     }
@@ -3453,13 +3932,26 @@ add_lengths <- function(
     if (any(is.na(release_counts))) {
       cli::cli_abort(c(
         "Release {.field count} values must not be NA.",
-        "i" = "Every release row must have a positive integer count."
+        "i" = "Every release row must have a positive count; non-integer values warn."
       ))
     }
     if (any(as.numeric(release_counts) <= 0)) {
       cli::cli_abort(c(
         "Release {.field count} values must be positive.",
         "i" = "All release row counts must be > 0."
+      ))
+    }
+    # A binned count is a number of fish, so a fractional value is the same
+    # category error the party-size validator warns about above. The NA message
+    # used to claim "a positive integer count" with no code behind it — finding
+    # 26. Warn rather than abort: the party-size precedent treats a fractional
+    # count as a wrong-column signal, not as invalid data.
+    count_nums <- suppressWarnings(as.numeric(release_counts))
+    fractional <- !is.na(count_nums) & count_nums != round(count_nums)
+    if (any(fractional)) {
+      cli::cli_warn(c(
+        "Release {.field count} has {sum(fractional)} non-integer value{?s}.",
+        "i" = "Binned release counts are counts of fish; a fractional value suggests a wrong column."
       ))
     }
   }

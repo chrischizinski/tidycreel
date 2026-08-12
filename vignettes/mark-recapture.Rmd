@@ -112,16 +112,22 @@ branch is used automatically.
 
 Once angler population size is estimated, `estimate_mr_harvest()` scales
 it by a known harvest rate to obtain total harvest. The harvest rate is
-typically derived from creel interview data — the proportion of interviewed
-anglers who kept fish.
+typically derived from creel interview data — the mean number of fish kept
+per angler. It is a rate in fish per angler, not a proportion, and values
+above 1 are ordinary.
 
 $$\hat{H} = \hat{N} \times r, \quad SE(\hat{H}) = r \times SE(\hat{N})$$
 
 ```{r}
-# harvest_rate derived from creel interviews: 35% of anglers harvested fish
+# harvest_rate derived from creel interviews: 0.35 fish kept per angler
 harvest <- estimate_mr_harvest(angler_n = result_chapman, harvest_rate = 0.35)
 print(harvest)
 ```
+
+`estimate_angler_n()` reports its unit as `NA` rather than `"anglers"`,
+and `estimate_mr_harvest()` inherits that. The estimators never see what
+the marking protocol marked — anglers, boats, or parties — so neither can
+say which of those $\hat{N}$ counts.
 
 The delta method propagates uncertainty in $\hat{N}$ only. Uncertainty in
 the harvest rate itself is not propagated in this release; if harvest rate
@@ -139,8 +145,10 @@ sources:
 
 - **Tagging study**: $T$ fish tagged and released at season start; $m$ tagged
   fish recovered among $n$ fish inspected in the creel.
-- **Creel survey**: $C$ total estimated harvest (e.g., from
-  `estimate_total_catch()`) with standard error $SE_C$.
+- **Creel survey**: $C$ total estimated harvest (from
+  `estimate_total_harvest()`) with standard error $SE_C$. This must be
+  harvest, not catch — released fish stayed in the tagged cohort, so a
+  catch total from `estimate_total_catch()` inflates $\hat{u}$.
 
 ### Unstratified
 

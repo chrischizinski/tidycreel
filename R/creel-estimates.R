@@ -110,7 +110,8 @@ new_creel_estimates <- function(
   design = NULL,
   conf_level = 0.95,
   by_vars = NULL,
-  effort_target = NULL
+  effort_target = NULL,
+  unit = NA_character_
 ) {
   # Input validation
   stopifnot(
@@ -121,7 +122,8 @@ new_creel_estimates <- function(
     "conf_level must be numeric" = is.numeric(conf_level) && length(conf_level) == 1,
     "by_vars must be NULL or character" = is.null(by_vars) || is.character(by_vars),
     "effort_target must be NULL or character" = is.null(effort_target) ||
-      is.character(effort_target)
+      is.character(effort_target),
+    "unit must be NULL or character" = is.null(unit) || is.character(unit)
   )
 
   structure(
@@ -132,7 +134,8 @@ new_creel_estimates <- function(
       design = design,
       conf_level = conf_level,
       by_vars = by_vars,
-      effort_target = effort_target
+      effort_target = effort_target,
+      unit = unit %||% NA_character_
     ),
     class = "creel_estimates"
   )
@@ -221,6 +224,9 @@ format.creel_estimates <- function(x, ...) {
     "ratio-of-means-hpue-per-angler" = "Ratio-of-Means HPUE (per angler)",
     "product-total-catch" = "Total Catch (Effort \u00d7 CPUE)",
     "product-total-harvest" = "Total Harvest (Effort \u00d7 HPUE)",
+    "ht-total-catch" = "Total Catch (Horvitz-Thompson)",
+    "ht-total-harvest" = "Total Harvest (Horvitz-Thompson)",
+    "ht-total-release" = "Total Release (Horvitz-Thompson)",
     "exploitation-rate" = "Exploitation Rate (Mark-Recapture)",
     x$method
   )
@@ -249,6 +255,13 @@ format.creel_estimates <- function(x, ...) {
 
       if (!is.null(x$effort_target)) {
         cli::cli_text("Effort target: {x$effort_target}")
+      }
+
+      # Printed only when derived. An absent line means tidycreel does not know
+      # the unit, which is a different claim from asserting a default one.
+      unit_display <- x$unit %||% NA_character_ # nolint: object_usage_linter
+      if (!is.na(unit_display)) {
+        cli::cli_text("Unit: {unit_display}")
       }
 
       cli::cli_text("")
@@ -548,6 +561,13 @@ estimate_effort <- function(
     return(estimate_effort_aerial(design, variance, conf_level, verbose, effort_target = target)) # nolint: object_usage_linter
   }
 
+  # Finding 13: an instantaneous count with no T_d expands to the season without
+  # ever being multiplied by the length of the period it was randomised within,
+  # so the returned quantity is not angler-hours. Fires here, after the dispatches
+  # that do not take the count-expansion path, and before the sectioned one, which
+  # does.
+  warn_missing_period_length(design) # nolint: object_usage_linter
+
   # Section dispatch (v0.7.0+ — only fires when add_sections() was called)
   if (!is.null(design[["sections"]])) {
     if (!identical(target, "sampled_days")) {
@@ -629,7 +649,10 @@ estimate_effort <- function(
 #'   \code{interview_type = "roving"} (set via \code{add_interviews}),
 #'   automatically defaults to \code{"all"} + MOR. Otherwise defaults to
 #'   \code{"complete"}. Parameter is ignored when trip_status field is not
-#'   provided (backward compatibility). See Details.
+#'   provided (backward compatibility). For bus-route and ice designs the set is
+#'   \code{"complete"} (default), \code{"incomplete"} or \code{"diagnostic"};
+#'   \code{"all"} is not an estimator there, and the roving auto-route to
+#'   \code{"all"} + MOR does not apply. See Details.
 #' @param truncate_at Numeric minimum trip duration (hours) for MOR estimation.
 #'   Default is 0.5 hours (30 minutes) per Hoenig et al. (1997) to prevent
 #'   unstable variance from very short trips. Trips with duration < truncate_at
@@ -888,6 +911,57 @@ estimate_catch_rate <- function(
       "No catch or effort column available.",
       "x" = "Design must have catch_col and effort_col set.",
       "i" = "Call {.fn add_interviews} with catch and effort parameters."
+    ))
+  }
+
+  # Bus-route / ice dispatch (before the use_trips block, which filters
+  # interviews the bus-route path filters for itself). estimate_total_catch()
+  # and estimate_effort() already take the Horvitz-Thompson route on these
+  # designs, so CPUE coming off the standard interview survey did not reconcile
+  # with the design's own totals (finding 17).
+  #
+  # Species CPUE is built one species at a time, so it needs its own entry point
+  # on this path; it kept the standard interview survey until finding 18, which
+  # left the species rates contradicting the all-species rate on the same object.
+  if (!is.null(design$design_type) && design$design_type %in% c("bus_route", "ice")) {
+    by_info_br <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
+
+    # The roving auto-route above may have flipped an unspecified use_trips to
+    # "all" + MOR. That is a standard-design heuristic and "all" is not an
+    # estimator here, so the bus-route path reads the user's own value and
+    # treats "unspecified" as "complete", matching estimate_harvest_rate().
+    use_trips_br <- if (use_trips_is_default) "complete" else use_trips
+    validate_use_trips_br(use_trips_br) # nolint: object_usage_linter
+
+    if (is.null(by_info_br$species_var)) {
+      return(estimate_catch_br( # nolint: object_usage_linter
+        design,
+        by_info_br$interview_vars,
+        variance,
+        conf_level,
+        verbose = FALSE,
+        use_trips = use_trips_br,
+        truncate_at = truncate_at
+      ))
+    }
+
+    if (is.null(design[["catch"]])) {
+      cli::cli_abort(c(
+        "Species-level CPUE requires catch data.",
+        "x" = "{.field species} found in {.arg by} but {.fn add_catch} has not been called.",
+        "i" = "Call {.fn add_catch} before using species grouping in {.fn estimate_catch_rate}."
+      ))
+    }
+
+    return(estimate_rate_species_br( # nolint: object_usage_linter
+      design,
+      species_col = by_info_br$species_var,
+      interview_by_vars = by_info_br$interview_vars,
+      variance_method = variance,
+      conf_level = conf_level,
+      use_trips = use_trips_br,
+      truncate_at = truncate_at,
+      metric = "cpue"
     ))
   }
 
@@ -1416,7 +1490,8 @@ estimate_catch_rate <- function(
       variance_method = variance,
       design = design,
       conf_level = conf_level,
-      by_vars = by_info$all_vars
+      by_vars = by_info$all_vars,
+      unit = rate_unit(design) # nolint: object_usage_linter
     ))
   }
 
@@ -1507,14 +1582,37 @@ estimate_catch_rate <- function(
 #'   additional fish after the interview (Hansen & Van Kirk 2010). Fish already
 #'   in the livewell are directly observable, so \code{"all"} remains available
 #'   for analyses that prefer the larger interview set. For bus-route designs:
-#'   \code{"complete"} (default), \code{"incomplete"}, or \code{"diagnostic"}.
-#'   When \code{trip_status} was not provided to \code{\link{add_interviews}},
-#'   this argument has no effect for standard designs.
+#'   \code{"complete"} (default), \code{"incomplete"}, or \code{"diagnostic"};
+#'   \code{"all"} is not an estimator there, because pooling the two kinds of
+#'   trip applies the complete-trip ratio of Horvitz-Thompson totals to
+#'   numerators that are catch so far. Matching is exact on both paths, and
+#'   unrecognised values are an error. When \code{trip_status} was not provided
+#'   to \code{\link{add_interviews}}, this argument has no effect for standard
+#'   designs.
+#' @param truncate_at Numeric minimum trip duration in hours for the bus-route
+#'   incomplete-trip estimator (default \code{0.5}, i.e. 30 minutes). Incomplete
+#'   trips shorter than this are discarded before the mean of ratios is taken.
+#'   Hoenig et al. (1997) recommend the 30-minute threshold because the
+#'   untruncated mean-of-ratios estimator has infinite asymptotic variance:
+#'   \code{1/L} has infinite expectation as trip length approaches zero. The
+#'   threshold applies to elapsed trip duration, not to angler-hours. Set to
+#'   \code{NULL} to disable, which warns. Ignored on every other path, including
+#'   \code{use_trips = "complete"}.
 #' @param missing_sections Character string controlling behavior when a
 #'   registered section has no interview observations. \code{"warn"} (default)
 #'   emits a \code{cli_warn()} and inserts an NA row with
 #'   \code{data_available = FALSE}. \code{"error"} aborts with
 #'   \code{cli_abort()}. Ignored for non-sectioned designs.
+#'
+#' @note Bus-route designs use a different estimator for each trip type, because
+#'   each is the estimator that trip type supports. \code{use_trips = "complete"}
+#'   returns the ratio of the two Horvitz-Thompson totals (Jones & Pollock 2012,
+#'   Eq. 19.4 and 19.5). \code{use_trips = "incomplete"} returns a truncated,
+#'   design-weighted mean of the individual angler rates (Hoenig et al. 1997),
+#'   whose expectation is the ratio of total harvest to total effort; the ratio
+#'   of means is biased for anglers intercepted mid-trip, weighting individual
+#'   rates by the square of completed trip length. Both report fish per
+#'   angler-hour, so \code{use_trips = "diagnostic"} compares like with like.
 #'
 #' @note When called on a sectioned design, no \code{.lake_total} row is
 #'   produced. Harvest rates (fish per angler-hour) are not additive across
@@ -1616,6 +1714,7 @@ estimate_harvest_rate <- function(
   conf_level = 0.95,
   verbose = FALSE,
   use_trips = NULL,
+  truncate_at = 0.5,
   missing_sections = "warn"
 ) {
   # Capture by parameter BEFORE validation
@@ -1640,8 +1739,11 @@ estimate_harvest_rate <- function(
     ))
   }
 
-  # Validate design$interview_survey exists (skip for bus-route: uses interviews not counts)
-  if (!identical(design$design_type, "bus_route") && is.null(design$interview_survey)) {
+  # Validate design$interview_survey exists (skip for bus-route/ice: they use
+  # interviews, not counts)
+  if (
+    !design$design_type %in% c("bus_route", "ice") && is.null(design$interview_survey)
+  ) {
     cli::cli_abort(c(
       "No interview survey design available.",
       "x" = "Call {.fn add_interviews} before estimating harvest.",
@@ -1652,28 +1754,54 @@ estimate_harvest_rate <- function(
     ))
   }
 
-  # Bus-route dispatch (before standard tier-2 validation)
-  if (!is.null(design$design_type) && design$design_type == "bus_route") {
-    if (verbose) {
-      cli::cli_inform(c(
-        "i" = "Using bus-route estimator (Jones & Pollock 2012, Eq. 19.5)"
+  # Bus-route / ice dispatch (before standard tier-2 validation). Ice is a
+  # degenerate bus route and estimate_effort() and the three totals all treat it
+  # as one; the rate estimators were the outlier, so an ice design reported a
+  # rate that did not reconcile with its own totals (finding 14).
+  if (!is.null(design$design_type) && design$design_type %in% c("bus_route", "ice")) {
+    # Resolved against interviews *plus* the species column: eval_select() on the
+    # interviews alone aborts on `by = species`, which is a real grouping this
+    # estimator supports, and finding 14 widened this dispatch to ice without
+    # noticing (finding 18).
+    by_info_br <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
+    by_vars_br <- by_info_br$interview_vars
+    use_trips_br <- if (is.null(use_trips)) "complete" else use_trips
+    validate_use_trips_br(use_trips_br) # nolint: object_usage_linter
+
+    if (!is.null(by_info_br$species_var)) {
+      if (is.null(design[["catch"]])) {
+        cli::cli_abort(c(
+          "Species-level HPUE requires catch data.",
+          "x" = "{.field species} found in {.arg by} but {.fn add_catch} has not been called.",
+          "i" = "Call {.fn add_catch} before using species grouping in {.fn estimate_harvest_rate}."
+        ))
+      }
+
+      return(estimate_rate_species_br( # nolint: object_usage_linter
+        design,
+        species_col = by_info_br$species_var,
+        interview_by_vars = by_vars_br,
+        variance_method = variance,
+        conf_level = conf_level,
+        use_trips = use_trips_br,
+        truncate_at = truncate_at,
+        metric = "hpue"
       ))
     }
 
-    # Resolve by parameter to column names for bus-route
-    if (rlang::quo_is_null(by_quo)) {
-      by_vars_br <- NULL
-    } else {
-      by_cols_br <- tidyselect::eval_select(
-        by_quo,
-        data = design$interviews,
-        allow_rename = FALSE,
-        allow_empty = FALSE,
-        error_call = rlang::caller_env()
-      )
-      by_vars_br <- names(by_cols_br)
+    # The two trip paths are different estimators, so the dispatch message has to
+    # name the one actually used. Announcing the complete-trip ratio of HT totals
+    # on the incomplete path described an estimator that never ran.
+    if (verbose) {
+      cli::cli_inform(c(
+        "i" = if (identical(use_trips_br, "incomplete")) {
+          "Using bus-route HPUE: truncated mean of ratios (Hoenig et al. 1997)"
+        } else {
+          "Using bus-route HPUE: ratio of HT totals (Jones & Pollock 2012, Eq. 19.5 / Eq. 19.4)"
+        }
+      ))
     }
-    use_trips_br <- if (is.null(use_trips)) "complete" else use_trips
+
     return(estimate_harvest_br(
       # nolint: object_usage_linter
       design,
@@ -1681,7 +1809,8 @@ estimate_harvest_rate <- function(
       variance,
       conf_level,
       verbose = FALSE,
-      use_trips = use_trips_br
+      use_trips = use_trips_br,
+      truncate_at = truncate_at
     ))
   }
 
@@ -1800,7 +1929,8 @@ estimate_harvest_rate <- function(
       variance_method = variance,
       design = design,
       conf_level = conf_level,
-      by_vars = by_info$all_vars
+      by_vars = by_info$all_vars,
+      unit = rate_unit(design) # nolint: object_usage_linter
     ))
   }
 
@@ -1853,12 +1983,33 @@ estimate_harvest_rate <- function(
 #'   releases when anglers release additional fish after the interview (Hansen &
 #'   Van Kirk 2010). \code{"all"} remains available for analyses that prefer the
 #'   larger interview set. When \code{trip_status} was not provided to
-#'   \code{\link{add_interviews}}, this argument has no effect.
+#'   \code{\link{add_interviews}}, this argument has no effect. For bus-route
+#'   designs: \code{"complete"} (default), \code{"incomplete"}, or
+#'   \code{"diagnostic"}, matching \code{\link{estimate_harvest_rate}};
+#'   \code{"all"} is not an estimator there, and unrecognised values are an
+#'   error rather than a silent fall-through to the complete-trip path.
+#' @param truncate_at Numeric minimum trip duration in hours for the bus-route
+#'   incomplete-trip estimator (default \code{0.5}, i.e. 30 minutes). Incomplete
+#'   trips shorter than this are discarded before the mean of ratios is taken.
+#'   Hoenig et al. (1997) recommend the 30-minute threshold because the
+#'   untruncated mean-of-ratios estimator has infinite asymptotic variance:
+#'   \code{1/L} has infinite expectation as trip length approaches zero. The
+#'   threshold applies to elapsed trip duration, not to angler-hours. Set to
+#'   \code{NULL} to disable, which warns. Ignored on every other path, including
+#'   \code{use_trips = "complete"}.
 #' @param missing_sections Character string controlling behavior when a
 #'   registered section has no interview observations. \code{"warn"} (default)
 #'   emits a \code{cli_warn()} and inserts an NA row with
 #'   \code{data_available = FALSE}. \code{"error"} aborts with
 #'   \code{cli_abort()}. Ignored for non-sectioned designs.
+#'
+#' @note Bus-route designs use a different estimator for each trip type, matching
+#'   \code{\link{estimate_harvest_rate}}. \code{use_trips = "complete"} returns
+#'   the ratio of the two Horvitz-Thompson totals (Jones & Pollock 2012, Eq. 19.5
+#'   / Eq. 19.4) and reports \code{method = "ratio-of-means-rpue"};
+#'   \code{use_trips = "incomplete"} returns the truncated, Hajek-weighted mean of
+#'   per-angler rates (Hoenig et al. 1997) and reports
+#'   \code{method = "mean-of-ratios-rpue"}. Both are releases per angler-hour.
 #'
 #' @note When called on a sectioned design, no \code{.lake_total} row is
 #'   produced. Release rates (fish per angler-hour) are not additive across
@@ -1920,6 +2071,7 @@ estimate_release_rate <- function(
   variance = "taylor",
   conf_level = 0.95,
   use_trips = NULL,
+  truncate_at = 0.5,
   missing_sections = "warn"
 ) {
   by_quo <- rlang::enquo(by)
@@ -1958,6 +2110,49 @@ estimate_release_rate <- function(
       "No interview survey design available.",
       "x" = "Call {.fn add_interviews} before estimating release rate.",
       "i" = "Release rate requires effort data from interviews."
+    ))
+  }
+
+  # Bus-route / ice dispatch (before standard tier-2 validation), mirroring
+  # estimate_harvest_rate(). Without it, RPUE on a bus-route design was computed
+  # from the standard interview survey and ignored .pi_i entirely (GH #110); ice
+  # was left out of the same dispatch until finding 14.
+  if (!is.null(design$design_type) && design$design_type %in% c("bus_route", "ice")) {
+    by_info_br <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
+    by_vars_br <- by_info_br$interview_vars
+    use_trips_br <- if (is.null(use_trips)) "complete" else use_trips
+    validate_use_trips_br(use_trips_br) # nolint: object_usage_linter
+
+    if (!is.null(by_info_br$species_var)) {
+      if (is.null(design[["catch"]])) {
+        cli::cli_abort(c(
+          "Species-level RPUE requires catch data.",
+          "x" = "{.field species} found in {.arg by} but {.fn add_catch} has not been called.",
+          "i" = "Call {.fn add_catch} before using species grouping in {.fn estimate_release_rate}."
+        ))
+      }
+
+      return(estimate_rate_species_br( # nolint: object_usage_linter
+        design,
+        species_col = by_info_br$species_var,
+        interview_by_vars = by_vars_br,
+        variance_method = variance,
+        conf_level = conf_level,
+        use_trips = use_trips_br,
+        truncate_at = truncate_at,
+        metric = "rpue"
+      ))
+    }
+
+    return(estimate_release_br(
+      # nolint: object_usage_linter
+      design,
+      by_vars_br,
+      variance,
+      conf_level,
+      verbose = FALSE,
+      use_trips = use_trips_br,
+      truncate_at = truncate_at
     ))
   }
 
@@ -2047,7 +2242,8 @@ estimate_release_rate <- function(
       variance_method = variance,
       design = design,
       conf_level = conf_level,
-      by_vars = by_info$all_vars
+      by_vars = by_info$all_vars,
+      unit = rate_unit(design) # nolint: object_usage_linter
     ))
   }
 
@@ -2664,19 +2860,11 @@ estimate_effort_sections <- function(
 
   # Identify count variable (same logic as estimate_effort_total)
   counts_data <- design$counts
-  excluded_cols <- c(design$date_col, design$strata_cols, design$psu_col, section_col)
-  numeric_cols <- names(counts_data)[vapply(counts_data, is.numeric, logical(1L))]
-  count_vars <- setdiff(numeric_cols, excluded_cols)
-
-  if (length(count_vars) == 0) {
-    cli::cli_abort(c(
-      "No count variable found in count data.",
-      "x" = "Count data must have at least one numeric column.",
-      "i" = "Numeric columns found: {.field {numeric_cols}}",
-      "i" = "Design metadata columns: {.field {excluded_cols}}"
-    ))
-  }
-  count_var <- count_vars[1]
+  count_var <- resolve_count_col( # nolint: object_usage_linter
+    counts = counts_data,
+    excluded = c(design$date_col, design$strata_cols, design$psu_col, section_col),
+    count_col = design$count_col
+  )
   count_formula <- stats::reformulate(count_var)
   section_formula <- stats::reformulate(section_col)
 
@@ -2774,7 +2962,8 @@ estimate_effort_sections <- function(
     design = design,
     conf_level = conf_level,
     by_vars = NULL,
-    effort_target = target
+    effort_target = target,
+    unit = design$effort_unit
   )
 }
 
@@ -2783,24 +2972,13 @@ estimate_effort_sections <- function(
 #' @keywords internal
 #' @noRd
 estimate_effort_total <- function(design, variance_method, conf_level, target = "sampled_days") {
-  # Identify the count variable
-  # Find first numeric column that is NOT design metadata
+  # Identify the count variable (resolved and stored by add_counts())
   counts_data <- design$counts
-  excluded_cols <- c(design$date_col, design$strata_cols, design$psu_col)
-  numeric_cols <- names(counts_data)[vapply(counts_data, is.numeric, logical(1L))]
-  count_vars <- setdiff(numeric_cols, excluded_cols)
-
-  if (length(count_vars) == 0) {
-    cli::cli_abort(c(
-      "No count variable found in count data.",
-      "x" = "Count data must have at least one numeric column.",
-      "i" = "Numeric columns found: {.field {numeric_cols}}",
-      "i" = "Design metadata columns: {.field {excluded_cols}}"
-    ))
-  }
-
-  # Use first count variable
-  count_var <- count_vars[1]
+  count_var <- resolve_count_col( # nolint: object_usage_linter
+    counts = counts_data,
+    excluded = c(design$date_col, design$strata_cols, design$psu_col),
+    count_col = design$count_col
+  )
 
   # Warn (not abort) if all count values are NA — result will be NA
   if (all(is.na(counts_data[[count_var]]))) {
@@ -2887,7 +3065,8 @@ estimate_effort_total <- function(design, variance_method, conf_level, target = 
     design = design,
     conf_level = conf_level,
     by_vars = NULL,
-    effort_target = target
+    effort_target = target,
+    unit = design$effort_unit
   )
 }
 
@@ -2908,21 +3087,11 @@ estimate_effort_grouped <- function(
   warn_tier2_group_issues(design, by_vars) # nolint: object_usage_linter
 
   # Identify the count variable
-  excluded_cols <- c(design$date_col, design$strata_cols, design$psu_col)
-  numeric_cols <- names(counts_data)[vapply(counts_data, is.numeric, logical(1L))]
-  count_vars <- setdiff(numeric_cols, excluded_cols)
-
-  if (length(count_vars) == 0) {
-    cli::cli_abort(c(
-      "No count variable found in count data.",
-      "x" = "Count data must have at least one numeric column.",
-      "i" = "Numeric columns found: {.field {numeric_cols}}",
-      "i" = "Design metadata columns: {.field {excluded_cols}}"
-    ))
-  }
-
-  # Use first count variable
-  count_var <- count_vars[1]
+  count_var <- resolve_count_col( # nolint: object_usage_linter
+    counts = counts_data,
+    excluded = c(design$date_col, design$strata_cols, design$psu_col),
+    count_col = design$count_col
+  )
 
   # Build formulas for svyby
   count_formula <- stats::reformulate(count_var)
@@ -3024,7 +3193,8 @@ estimate_effort_grouped <- function(
     design = design,
     conf_level = conf_level,
     by_vars = by_vars,
-    effort_target = target
+    effort_target = target,
+    unit = design$effort_unit
   )
 }
 
@@ -3156,7 +3326,8 @@ estimate_cpue_total <- function(design, variance_method, conf_level, estimator =
       variance_method = variance_method,
       design = design,
       conf_level = conf_level,
-      by_vars = NULL
+      by_vars = NULL,
+      unit = rate_unit(design) # nolint: object_usage_linter
     )
   }
 }
@@ -3326,7 +3497,8 @@ estimate_cpue_grouped <- function(
       variance_method = variance_method,
       design = design,
       conf_level = conf_level,
-      by_vars = by_vars
+      by_vars = by_vars,
+      unit = rate_unit(design) # nolint: object_usage_linter
     )
   }
 }
@@ -3818,7 +3990,8 @@ estimate_harvest_total <- function(design, variance_method, conf_level) {
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
-    by_vars = NULL
+    by_vars = NULL,
+    unit = rate_unit(design) # nolint: object_usage_linter
   )
 }
 
@@ -3949,7 +4122,8 @@ estimate_harvest_grouped <- function(design, by_vars, variance_method, conf_leve
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
-    by_vars = by_vars
+    by_vars = by_vars,
+    unit = rate_unit(design) # nolint: object_usage_linter
   )
 }
 
@@ -4078,7 +4252,8 @@ estimate_catch_rate_sections <- function(
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
-    by_vars = if (!is.null(by_info$all_vars)) c("section", by_info$all_vars) else "section"
+    by_vars = if (!is.null(by_info$all_vars)) c("section", by_info$all_vars) else "section",
+    unit = rate_unit(design) # nolint: object_usage_linter
   )
 }
 
@@ -4195,7 +4370,8 @@ estimate_harvest_rate_sections <- function(
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
-    by_vars = if (!is.null(by_vars)) c("section", by_vars) else "section"
+    by_vars = if (!is.null(by_vars)) c("section", by_vars) else "section",
+    unit = rate_unit(design) # nolint: object_usage_linter
   )
 }
 
@@ -4328,6 +4504,7 @@ estimate_release_rate_sections <- function(
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
-    by_vars = if (!is.null(by_vars)) c("section", by_vars) else "section"
+    by_vars = if (!is.null(by_vars)) c("section", by_vars) else "section",
+    unit = rate_unit(design) # nolint: object_usage_linter
   )
 }

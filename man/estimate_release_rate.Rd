@@ -10,6 +10,7 @@ estimate_release_rate(
   variance = "taylor",
   conf_level = 0.95,
   use_trips = NULL,
+  truncate_at = 0.5,
   missing_sections = "warn"
 )
 }
@@ -36,7 +37,21 @@ statistically preferred default because incomplete-trip RPUE underestimates
 releases when anglers release additional fish after the interview (Hansen &
 Van Kirk 2010). \code{"all"} remains available for analyses that prefer the
 larger interview set. When \code{trip_status} was not provided to
-\code{\link{add_interviews}}, this argument has no effect.}
+\code{\link{add_interviews}}, this argument has no effect. For bus-route
+designs: \code{"complete"} (default), \code{"incomplete"}, or
+\code{"diagnostic"}, matching \code{\link{estimate_harvest_rate}};
+\code{"all"} is not an estimator there, and unrecognised values are an
+error rather than a silent fall-through to the complete-trip path.}
+
+\item{truncate_at}{Numeric minimum trip duration in hours for the bus-route
+incomplete-trip estimator (default \code{0.5}, i.e. 30 minutes). Incomplete
+trips shorter than this are discarded before the mean of ratios is taken.
+Hoenig et al. (1997) recommend the 30-minute threshold because the
+untruncated mean-of-ratios estimator has infinite asymptotic variance:
+\code{1/L} has infinite expectation as trip length approaches zero. The
+threshold applies to elapsed trip duration, not to angler-hours. Set to
+\code{NULL} to disable, which warns. Ignored on every other path, including
+\code{use_trips = "complete"}.}
 
 \item{missing_sections}{Character string controlling behavior when a
 registered section has no interview observations. \code{"warn"} (default)
@@ -62,6 +77,14 @@ RPUE is estimated as the ratio of total released fish to total effort
 to the numerator (zero-fill), ensuring the effort denominator is correct.
 }
 \note{
+Bus-route designs use a different estimator for each trip type, matching
+\code{\link{estimate_harvest_rate}}. \code{use_trips = "complete"} returns
+the ratio of the two Horvitz-Thompson totals (Jones & Pollock 2012, Eq. 19.5
+/ Eq. 19.4) and reports \code{method = "ratio-of-means-rpue"};
+\code{use_trips = "incomplete"} returns the truncated, Hajek-weighted mean of
+per-angler rates (Hoenig et al. 1997) and reports
+\code{method = "mean-of-ratios-rpue"}. Both are releases per angler-hour.
+
 When called on a sectioned design, no \code{.lake_total} row is
 produced. Release rates (fish per angler-hour) are not additive across
 sections. Lake-wide release rate requires a separate unsectioned call.

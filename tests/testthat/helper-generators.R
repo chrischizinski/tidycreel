@@ -482,6 +482,143 @@ gen_valid_creel_design_multistrata_multispecies <- function(n_species_min = 2L) 
   quickcheck::from_hedgehog(generator)
 }
 
+# Multispecies bus-route or ice design (finding 18)
+#
+# The existing multispecies generator builds a standard design, and the
+# bus-route/ice generators build single-species catch, so nothing in the suite
+# could see a species rate on a Horvitz-Thompson design type. Interview catch and
+# harvest totals are the species sums, so the all-species rate and the species
+# rates are the same fish counted two ways -- which is what makes
+# sum_s rate_s == rate_all a falsifiable claim rather than an approximation.
+build_ht_multispecies_design <- function(
+  design_type,
+  n_days = 8L,
+  n_interviews = 24L,
+  n_species = 3L,
+  seed = NULL
+) {
+  if (!is.null(seed)) {
+    set.seed(seed)
+  }
+
+  stopifnot(design_type %in% c("bus_route", "ice"), n_days >= 4, n_interviews >= 10)
+
+  n_days <- as.integer(n_days)
+  n_interviews <- as.integer(n_interviews)
+
+  catch_data <- build_species_catch_for_tests(
+    interview_ids = seq_len(n_interviews),
+    n_species = as.integer(n_species),
+    include_harvest = TRUE
+  )
+  catch_df <- add_released_rows_for_tests(catch_data$catch_df)
+
+  if (identical(design_type, "ice")) {
+    calendar <- build_property_calendar(n_days, start_date = as.Date("2024-01-10"))
+    design <- creel_design(
+      calendar,
+      date = date,
+      strata = day_type,
+      survey_type = "ice",
+      effort_type = "time_on_ice",
+      p_period = 0.5
+    )
+    interviews <- build_trip_interviews_for_tests(
+      calendar = calendar,
+      n_interviews = n_interviews,
+      catch_total = catch_data$interview_catch_total,
+      catch_kept = catch_data$interview_catch_kept
+    )
+    design <- suppressMessages(suppressWarnings(add_interviews(
+      design,
+      interviews,
+      catch = catch_total,
+      effort = hours_fished,
+      harvest = catch_kept,
+      trip_status = trip_status,
+      trip_duration = trip_duration,
+      n_counted = n_counted,
+      n_interviewed = n_interviewed
+    )))
+  } else {
+    calendar <- build_property_calendar(n_days)
+    site_ids <- paste0("S", seq_len(3L))
+    site_weights <- c(1L, 3L, 5L)
+    sampling_frame <- data.frame(
+      site = site_ids,
+      circuit = "C1",
+      p_site = site_weights / sum(site_weights),
+      p_period = 0.8,
+      stringsAsFactors = FALSE
+    )
+    design <- creel_design(
+      calendar,
+      date = date,
+      strata = day_type,
+      survey_type = "bus_route",
+      sampling_frame = sampling_frame,
+      site = site,
+      circuit = circuit,
+      p_site = p_site,
+      p_period = p_period
+    )
+    interviews <- build_trip_interviews_for_tests(
+      calendar = calendar,
+      n_interviews = n_interviews,
+      site_ids = site_ids,
+      circuit_id = "C1",
+      catch_total = catch_data$interview_catch_total,
+      catch_kept = catch_data$interview_catch_kept
+    )
+    design <- suppressMessages(suppressWarnings(add_interviews(
+      design,
+      interviews,
+      catch = catch_total,
+      effort = hours_fished,
+      harvest = catch_kept,
+      n_anglers = n_anglers,
+      trip_status = trip_status,
+      trip_duration = trip_duration,
+      n_counted = n_counted,
+      n_interviewed = n_interviewed
+    )))
+  }
+
+  suppressMessages(suppressWarnings(add_catch(
+    design,
+    catch_df,
+    catch_uid = interview_id,
+    interview_uid = interview_id,
+    species = species,
+    count = count,
+    catch_type = catch_type
+  )))
+}
+
+# build_species_catch_for_tests() emits "caught" and "harvested" rows only, so
+# every release rate off it is exactly zero and the RPUE partition identity
+# reduces to 0 == 0, which no wrong estimator can fail. Releases are the
+# remainder: caught - harvested per interview and species.
+add_released_rows_for_tests <- function(catch_df) {
+  caught <- catch_df[catch_df$catch_type == "caught", , drop = FALSE]
+  harvested <- catch_df[catch_df$catch_type == "harvested", , drop = FALSE]
+
+  released <- merge(
+    caught[c("interview_id", "species", "count")],
+    harvested[c("interview_id", "species", "count")],
+    by = c("interview_id", "species"),
+    all.x = TRUE,
+    suffixes = c("_caught", "_kept"),
+    sort = FALSE
+  )
+  released$count_kept[is.na(released$count_kept)] <- 0L
+  released$count <- released$count_caught - released$count_kept
+  released$catch_type <- "released"
+  released <- released[released$count > 0L, c("interview_id", "species", "count", "catch_type")]
+
+  rbind(catch_df, released)
+}
+
 build_ice_design <- function(n_days, n_interviews, seed = NULL) {
   if (!is.null(seed)) {
     set.seed(seed)

@@ -2068,3 +2068,60 @@ test_that("EDGE-04: single sampled day error message names the stratum", {
     regexp = "only 1 PSU"
   )
 })
+
+# ICE party size sensitivity (finding 2 / GH #106) ----
+
+#' Ice design with an explicit party size, otherwise identical across calls.
+make_ice_party_design <- function(party_size) {
+  cal <- data.frame(
+    date = as.Date("2024-01-10") + 0:5,
+    day_type = rep(c("weekday", "weekend"), 3),
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design(
+    cal,
+    date = date, # nolint: object_usage_linter
+    strata = day_type, # nolint: object_usage_linter
+    survey_type = "ice",
+    effort_type = "time_on_ice",
+    p_period = 0.5
+  )
+  interviews <- data.frame(
+    date = rep(cal$date, each = 2),
+    day_type = rep(cal$day_type, each = 2),
+    hours_fished = rep(c(3, 4), 6),
+    trip_duration = rep(c(3, 4), 6),
+    n_anglers = as.integer(party_size),
+    catch_total = 2L,
+    catch_kept = 1L,
+    trip_status = "complete",
+    n_counted = 4L,
+    n_interviewed = 4L,
+    stringsAsFactors = FALSE
+  )
+  suppressMessages(suppressWarnings(add_interviews(
+    design,
+    interviews,
+    catch = catch_total, # nolint: object_usage_linter
+    effort = hours_fished, # nolint: object_usage_linter
+    harvest = catch_kept, # nolint: object_usage_linter
+    n_anglers = n_anglers, # nolint: object_usage_linter
+    trip_status = trip_status, # nolint: object_usage_linter
+    trip_duration = trip_duration, # nolint: object_usage_linter
+    n_counted = n_counted, # nolint: object_usage_linter
+    n_interviewed = n_interviewed # nolint: object_usage_linter
+  )))
+}
+
+test_that("ICE-06: ice effort scales with party size (GH #106)", {
+  # Ice is a degenerate bus-route and shares estimate_effort_br(), but it reaches
+  # it through its own dispatch, so it needs its own guard. The output column is
+  # named total_effort_hr_on_ice -- it has to actually be angler-hours on ice,
+  # not party-hours.
+  e1 <- suppressWarnings(estimate_effort(make_ice_party_design(1L)))$estimates
+  e3 <- suppressWarnings(estimate_effort(make_ice_party_design(3L)))$estimates
+
+  expect_equal(e3$total_effort_hr_on_ice, 3 * e1$total_effort_hr_on_ice, tolerance = 1e-9)
+  expect_equal(e1$total_effort_hr_on_ice, 84, tolerance = 1e-9)
+  expect_equal(e3$total_effort_hr_on_ice, 252, tolerance = 1e-9)
+})

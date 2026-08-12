@@ -439,6 +439,84 @@ test_that("add_lengths() errors when binned release count is 0 (LEN-04)", {
   )
 })
 
+# Finding 26: the NA guard above claimed "a positive integer count" while nothing
+# checked integrality, so a fractional count reached `.fish_count` in
+# estimate_length_distribution() and put a fraction of a fish in a bin. Warned, not
+# aborted, matching how the party-size validator treats the same category error.
+test_that("add_lengths() warns when a binned release count is fractional (LEN-04)", {
+  d <- make_design_with_interviews()
+  fractional_count <- data.frame(
+    interview_id = c(1L, 1L),
+    species = c("walleye", "walleye"),
+    length = c("420", "400-450"),
+    length_type = c("harvest", "release"),
+    count = c(NA_real_, 3.5),
+    stringsAsFactors = FALSE
+  )
+  expect_warning(
+    add_lengths(
+      d,
+      fractional_count,
+      length_uid = interview_id, # nolint: object_usage_linter
+      interview_uid = interview_id, # nolint: object_usage_linter
+      species = species, # nolint: object_usage_linter
+      length = length, # nolint: object_usage_linter
+      length_type = length_type, # nolint: object_usage_linter
+      count = count, # nolint: object_usage_linter
+      release_format = "binned"
+    ),
+    regexp = "non-integer"
+  )
+})
+
+test_that("add_lengths() still accepts a fractional binned count (LEN-04)", {
+  # Pins the warn-not-abort call: a fractional count signals a wrong column, but
+  # rejecting it would break data that has always been accepted.
+  d <- make_design_with_interviews()
+  fractional_count <- data.frame(
+    interview_id = c(1L, 1L),
+    species = c("walleye", "walleye"),
+    length = c("420", "400-450"),
+    length_type = c("harvest", "release"),
+    count = c(NA_real_, 3.5),
+    stringsAsFactors = FALSE
+  )
+  result <- suppressWarnings(
+    add_lengths(
+      d,
+      fractional_count,
+      length_uid = interview_id, # nolint: object_usage_linter
+      interview_uid = interview_id, # nolint: object_usage_linter
+      species = species, # nolint: object_usage_linter
+      length = length, # nolint: object_usage_linter
+      length_type = length_type, # nolint: object_usage_linter
+      count = count, # nolint: object_usage_linter
+      release_format = "binned"
+    )
+  )
+  expect_s3_class(result, "creel_design")
+  expect_equal(result[["lengths"]][["count"]][2], 3.5)
+})
+
+test_that("add_lengths() is silent for whole-number binned counts (LEN-04)", {
+  # The warning must not fire on the normal case, or it would train users to
+  # ignore it.
+  d <- make_design_with_interviews()
+  expect_no_warning(
+    add_lengths(
+      d,
+      minimal_lengths_binned,
+      length_uid = interview_id, # nolint: object_usage_linter
+      interview_uid = interview_id, # nolint: object_usage_linter
+      species = species, # nolint: object_usage_linter
+      length = length, # nolint: object_usage_linter
+      length_type = length_type, # nolint: object_usage_linter
+      count = count, # nolint: object_usage_linter
+      release_format = "binned"
+    )
+  )
+})
+
 test_that("add_lengths() errors when individual release length is non-numeric (LEN-04)", {
   d <- make_design_with_interviews()
   bad <- data.frame(

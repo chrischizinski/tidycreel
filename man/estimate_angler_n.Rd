@@ -64,6 +64,17 @@ CI uses the Poisson branch when \eqn{\sum m_k < 50} and the normal
 approximation on \eqn{1/\hat{N}} otherwise.
 }
 }
+\details{
+\strong{Chapman and Petersen intervals are symmetric and can go negative.}
+Both use \eqn{\hat{N} \pm t_{\alpha/2,\,m-1} \cdot SE(\hat{N})}, while
+\eqn{\hat{N}} is a ratio with a small integer denominator and is
+right-skewed. With \code{M = 200}, \code{n = 50} and \code{m = 3},
+\code{ci_lower} is \code{-2124.8}. Chapman is recommended exactly when
+recaptures are few, so this regime is not exotic. Prefer
+\code{ci_method = "bootstrap"}, whose percentile bounds respect the skew,
+when \eqn{m} is small. The Schnabel branch is unaffected: it inverts Poisson
+quantiles on \eqn{\sum m} and cannot produce a negative bound.
+}
 \examples{
 # Chapman (default) — bias-corrected Petersen
 result <- estimate_angler_n(M = 200L, n = 50L, m = 10L)

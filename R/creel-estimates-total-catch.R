@@ -56,8 +56,8 @@
 #'   \eqn{[\hat\theta e^{-z SE/\hat\theta},\; \hat\theta e^{z SE/\hat\theta}]}.
 #'
 #' @return A creel_estimates S3 object with method = "product-total-catch".
-#'   For bus-route designs, returns a bus-route HT estimate with method = "total"
-#'   and a "site_contributions" attribute.
+#'   For bus-route and ice designs, returns a bus-route HT estimate with
+#'   method = "ht-total-catch" and a "site_contributions" attribute.
 #'   For sectioned designs, returns per-section rows plus (by default) a
 #'   \code{.lake_total} row. The lake-wide total is computed as
 #'   \code{sum(TC_i)} over sections, never as \code{E_total * CPUE_pooled}.
@@ -100,7 +100,7 @@
 #' design <- creel_design(example_calendar, date = date, strata = day_type)
 #' design <- add_counts(design, example_counts)
 #' design <- add_interviews(design, example_interviews,
-#'   catch = catch_total, effort = hours_fished,
+#'   catch = catch_total, effort = hours_fished, n_anglers = n_anglers,
 #'   trip_status = trip_status, trip_duration = trip_duration
 #' )
 #'
@@ -167,23 +167,53 @@ estimate_total_catch <- function(
 
   # Bus-route / ice dispatch (before standard survey NULL check)
   if (!is.null(design$design_type) && design$design_type %in% c("bus_route", "ice")) {
+    # These designs estimate a completed-trip total; "all" has no estimator here.
+    # See br_complete_trips_only() for why an uncompleted trip breaks the HT sum
+    # in two directions at once.
+    if (identical(use_trips, "all")) {
+      cli::cli_abort(c(
+        "{.code use_trips = \"all\"} is not available for {.val {design$design_type}} designs.",
+        "x" = paste(
+          "The bus-route total is a completed-trip Horvitz-Thompson sum;",
+          "an uncompleted trip contributes catch-so-far under the inclusion",
+          "probability of a completed one."
+        ),
+        "i" = paste(
+          "Incomplete trips support a rate, not a total; see",
+          "{.code estimate_catch_rate(use_trips = \"incomplete\")}."
+        )
+      ))
+    }
     if (verbose) {
       cli::cli_inform(c(
         "i" = "Using bus-route estimator (Jones & Pollock 2012, Eq. 19.5)"
       ))
     }
-    if (rlang::quo_is_null(by_quo)) {
-      by_vars_br <- NULL
-    } else {
-      by_cols_br <- tidyselect::eval_select(
-        by_quo,
-        data = design$interviews,
-        allow_rename = FALSE,
-        allow_empty = FALSE,
-        error_call = rlang::caller_env()
-      )
-      by_vars_br <- names(by_cols_br)
+    # Resolved against interviews *plus* the species column: eval_select() on the
+    # interviews alone aborts on `by = species`, which is a grouping this
+    # estimator supports on every other design type (finding 19).
+    by_info_br <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
+    by_vars_br <- by_info_br$interview_vars
+
+    if (!is.null(by_info_br$species_var)) {
+      if (is.null(design[["catch"]])) {
+        cli::cli_abort(c(
+          "Species-level total catch requires catch data.",
+          "x" = "Call {.fn add_catch} before using species grouping in {.fn estimate_total_catch}."
+        ))
+      }
+
+      return(estimate_total_species_br( # nolint: object_usage_linter
+        design,
+        species_col = by_info_br$species_var,
+        interview_by_vars = by_vars_br,
+        variance_method = variance,
+        conf_level = conf_level,
+        quantity = "catch",
+        ci_method = ci_method
+      ))
     }
+
     return(estimate_total_catch_br(
       # nolint: object_usage_linter
       design,
@@ -194,6 +224,14 @@ estimate_total_catch <- function(
       ci_method = ci_method
     ))
   }
+
+  # Effort x rate from here on: flag a party-hour rate meeting angler-hour effort
+  warn_party_hours_product(design) # nolint: object_usage_linter
+  check_product_units(design) # nolint: object_usage_linter
+  # Totals call estimate_effort_total() directly, bypassing estimate_effort(),
+  # so the finding-13 warning has to be raised here too or this path never
+  # hears that the count column had no T_d applied.
+  warn_missing_period_length(design) # nolint: object_usage_linter
 
   # Section dispatch guard (v0.7.0+ — only fires when add_sections() was called)
   if (!is.null(design[["sections"]])) {
@@ -235,7 +273,7 @@ estimate_total_catch <- function(
       product_variance = product_variance,
       ci_type = ci_type
     )
-    return(new_creel_estimates(
+    return(new_creel_estimates( # nolint: object_usage_linter
       # nolint: object_usage_linter
       estimates = tibble::as_tibble(estimates_df),
       method = "product-total-catch",
@@ -243,7 +281,8 @@ estimate_total_catch <- function(
       design = design,
       conf_level = conf_level,
       by_vars = by_info$all_vars,
-      effort_target = target
+      effort_target = target,
+      unit = "fish"
     ))
   }
 
@@ -390,15 +429,15 @@ estimate_total_catch_ungrouped <- function(
     ci_type = ci_type
   )
 
-  new_creel_estimates(
-    # nolint: object_usage_linter
+  new_creel_estimates( # nolint: object_usage_linter
     estimates = tibble::as_tibble(estimates_df),
     method = "product-total-catch",
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
     by_vars = NULL,
-    effort_target = target
+    effort_target = target,
+    unit = "fish"
   )
 }
 
@@ -462,15 +501,15 @@ estimate_total_catch_grouped <- function(
     ci_type = ci_type
   )
 
-  new_creel_estimates(
-    # nolint: object_usage_linter
+  new_creel_estimates( # nolint: object_usage_linter
     estimates = tibble::as_tibble(estimates_df),
     method = "product-total-catch",
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
     by_vars = by_vars,
-    effort_target = target
+    effort_target = target,
+    unit = "fish"
   )
 }
 
@@ -741,14 +780,14 @@ estimate_total_catch_sections <- function(
     result_df <- dplyr::bind_rows(result_df, lake_row)
   }
 
-  new_creel_estimates(
-    # nolint: object_usage_linter
+  new_creel_estimates( # nolint: object_usage_linter
     estimates = result_df,
     method = "product-total-catch-sections",
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
     by_vars = if (!is.null(by_vars)) c("section", by_vars) else "section",
-    effort_target = target
+    effort_target = target,
+    unit = "fish"
   )
 }

@@ -47,7 +47,8 @@ Progressive counts are preferred when:
 - Anglers are spread along a linear corridor (river, canal, reservoir shoreline road)
   and a single spot-check would miss substantial activity
 - The access route is fully enumerable in one traverse within a count period
-- Observer movement is fast relative to angler turnover (circuit time < 30% of $T_d$)
+- The observer can travel the circuit faster than anglers move between fishing spots
+  (see the conditions below — this is a requirement of the method, not a preference)
 
 Instantaneous counts are preferred when:
 
@@ -56,14 +57,44 @@ Instantaneous counts are preferred when:
 - Observer presence along the circuit might disturb anglers or alert them to upcoming
   interviews
 
+## Conditions for an Unbiased Estimate
+
+$\hat{E}_d = C \times T_d$ is unbiased only when the field protocol satisfies three
+conditions (Hoenig et al. 1993, p. 725). They are properties of how the count is
+*collected*, so no check inside `add_counts()` can confirm them — they are the
+analyst's responsibility:
+
+1. **The starting location on the circuit is chosen randomly.** Always beginning at
+   the boat ramp biases the count toward whatever is happening there at that hour.
+2. **The direction of travel is chosen randomly** from the two alternatives.
+   `generate_progressive_start()` draws this for you and returns it in the
+   `direction` column — it is a field instruction, not decoration.
+3. **The observer travels faster than the anglers move** while those anglers are
+   fishing. If anglers can outpace the observer they may be counted twice or missed.
+
+Two further cautions from the same paper:
+
+- **Do not interrupt the circuit to conduct interviews.** The derivation assumes
+  constant travel speed; stopping to interview breaks it and is one of the four
+  errors Hoenig et al. single out. Interview on a separate pass.
+- **The count estimates angler-days of effort, not the number of trips.** Reading
+  $C$ as a trip count "results in a negative bias that can be severe"
+  (Hoenig et al. 1993). $C$ counts anglers present, and an angler fishing all day
+  is counted once per circuit — not once per trip.
+
+Scheduling the circuit start correctly is the fourth condition, and it is the subject
+of the section below.
+
 ## Data Requirements
 
 A progressive count dataset needs:
 
-1. **Calendar** — sampled dates with `day_type` and `open_hours` ($T_d$)
+1. **Calendar** — sampled dates with `day_type`. The calendar carries no hours
+   column: `creel_design()` reads only the date and the strata, so $T_d$ must
+   travel with the counts.
 2. **Count data** — one row per sampled day with raw angler count ($C$) and
-   a column recording $T_d$ (the same `open_hours` value, or an observed value
-   if the site closed early)
+   a column recording $T_d$, passed as `period_length_col`. This is the only
+   place the estimator looks for the open hours.
 3. **`circuit_time`** — a single numeric value (hours) for the traversal duration $\tau$
 
 ## A Complete Example
@@ -87,8 +118,7 @@ calendar <- data.frame(
     "2024-07-06", "2024-07-07", "2024-07-13", "2024-07-14",
     "2024-07-20", "2024-07-21", "2024-07-27", "2024-07-28"
   )),
-  day_type = c(rep("weekday", 10), rep("weekend", 8)),
-  open_hours = 10
+  day_type = c(rep("weekday", 10), rep("weekend", 8))
 )
 
 design <- creel_design(calendar, date = date, strata = day_type)
@@ -101,11 +131,23 @@ Before field work begins, randomise the circuit start time for each survey day
 using `generate_progressive_start()`. This ensures the count is unbiased with
 respect to time-of-day effort patterns. Two strategies are available:
 
-- `"discrete"` (default): start drawn from the \eqn{k = T / \tau} valid
+- `"discrete"` (default): start drawn from the \eqn{K = T / \tau} valid
   τ-aligned offsets — avoids mid-day over-representation caused by the common
-  \eqn{U[0, T - \tau]} error.
+  \eqn{U[0, T - \tau]} error. Requires \eqn{K} to be a whole number, and aborts
+  if it is not; adjust `circuit_time` or the open hours to make it one.
 - `"wraparound"`: start drawn from \eqn{U[0, T)}; circuit may wrap past the
-  end of the survey day.
+  end of the survey day. Carries **no** divisibility requirement.
+
+The whole-number requirement belongs to `"discrete"` alone, because that scheme
+partitions the day into \eqn{K} non-overlapping blocks and samples one. Under
+`"wraparound"` the count window slides freely, so \eqn{K = T/\tau} is an ordinary
+ratio rather than a count of blocks and need not be a whole number.
+
+This is why `add_counts()` does not check it. Both schemes give every moment of the
+day equal probability of being observed, so both are estimated by the same
+\eqn{\hat{E}_d = C \times T_d}; a divisibility check in the estimator would reject
+perfectly valid wraparound designs. The constraint is enforced where it applies —
+at scheduling time, by `generate_progressive_start()`.
 
 ```{r prog-start, message = FALSE}
 starts <- generate_progressive_start(
@@ -206,6 +248,7 @@ design <- add_interviews(
   trip_status = trip_status,
   catch = catch_total,
   effort = hours_fished,
+  n_anglers = 1, # every interview is a single angler
   harvest = catch_kept
 )
 ```
@@ -243,9 +286,8 @@ $$\hat{E}_d = 234 \times 8 = 1{,}872 \text{ angler-hours}$$
 
 ```{r pope, message = FALSE}
 cal_pope <- data.frame(
-  date       = as.Date(c("2024-06-01", "2024-06-02")),
-  day_type   = c("weekday", "weekday"),
-  open_hours = c(8, 8)
+  date     = as.Date(c("2024-06-01", "2024-06-02")),
+  day_type = c("weekday", "weekday")
 )
 des_pope <- creel_design(cal_pope, date = date, strata = day_type)
 
@@ -277,9 +319,8 @@ For the morning–evening case, use `count_time_col` to identify the circuit wit
 ```{r multi-period, message = FALSE}
 # Two circuits per day (morning and evening traversals)
 cal_2p <- data.frame(
-  date       = rep(as.Date(c("2024-07-01", "2024-07-02", "2024-07-06", "2024-07-07")), 1),
-  day_type   = c("weekday", "weekday", "weekend", "weekend"),
-  open_hours = 12
+  date     = rep(as.Date(c("2024-07-01", "2024-07-02", "2024-07-06", "2024-07-07")), 1),
+  day_type = c("weekday", "weekday", "weekend", "weekend")
 )
 des_2p <- creel_design(cal_2p, date = date, strata = day_type)
 
@@ -290,8 +331,7 @@ cnt_2p <- data.frame(
   )), each = 2),
   day_type = rep(c("weekday", "weekday", "weekend", "weekend"), each = 2),
   count_time = rep(c("am", "pm"), 4),
-  n_anglers = c(22L, 18L, 20L, 24L, 55L, 48L, 62L, 58L),
-  shift_hours = 12
+  n_anglers = c(22L, 18L, 20L, 24L, 55L, 48L, 62L, 58L)
 )
 
 # Note: count_time_col for within-day identification
@@ -303,6 +343,12 @@ est_2p$estimates
 
 The `se_within` column is now non-zero, reflecting variability between the morning and
 evening circuits within each day.
+
+This chunk shows the within-day variance decomposition on its own; it does not apply the
+progressive $T_d$ expansion, so `est_2p` is in counts rather than angler-hours. To get
+both, add `count_type = "progressive"`, `circuit_time`, and `period_length_col` as in the
+sections above — `add_counts()` supports multiple circuits per day on the progressive
+path.
 
 ## Assemble a Summary Report
 

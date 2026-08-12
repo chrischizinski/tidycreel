@@ -63,6 +63,7 @@ head(example_interviews)
 design <- add_interviews(design, example_interviews,
   catch = catch_total,
   effort = hours_fished,
+  n_anglers = n_anglers,
   harvest = catch_kept,
   trip_status = trip_status,
   trip_duration = trip_duration
@@ -211,6 +212,7 @@ complete_design <- creel_design(example_calendar, date = date, strata = day_type
   add_interviews(example_interviews,
     catch = catch_total,
     effort = hours_fished,
+    n_anglers = n_anglers,
     harvest = catch_kept,
     trip_status = trip_status,
     trip_duration = trip_duration

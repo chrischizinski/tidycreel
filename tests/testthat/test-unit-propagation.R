@@ -1,0 +1,895 @@
+# Unit propagation across the effort/catch spine
+#
+# The durable fix for this audit's whole class of defect is to make the
+# dimension non-silent. The rule these tests encode is that tidycreel asserts a
+# unit ONLY where it performed the arithmetic that produces it, and reports
+# "unknown" otherwise. A guessed unit is worse than no unit: it makes a wrong
+# claim machine-readable, and every consumer downstream then repeats it.
+
+make_unit_calendar <- function() {
+  data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
+    day_type = c("weekday", "weekday", "weekend", "weekend"),
+    stringsAsFactors = FALSE
+  )
+}
+
+make_unit_counts <- function() {
+  data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
+    day_type = c("weekday", "weekday", "weekend", "weekend"),
+    n_anglers = c(10, 20, 50, 60),
+    shift_hours = c(8, 8, 14, 14),
+    stringsAsFactors = FALSE
+  )
+}
+
+# ---- Derivation: assert a unit only where we did the arithmetic ----
+
+test_that("effort is angler-hours exactly when add_counts() applied T_d", {
+  design <- creel_design(make_unit_calendar(), date = date, strata = day_type)
+  cnt <- make_unit_counts()
+
+  with_td <- suppressWarnings(
+    add_counts(design, cnt, period_length_col = shift_hours) # nolint: object_usage_linter
+  )
+  expect_identical(with_td$effort_unit, "angler-hours")
+})
+
+test_that("effort unit is unknown, not angler-days, when no T_d was applied", {
+  # example_counts$effort_hours is ALREADY angler-hours. A bare numeric column
+  # may be a head count or pre-expanded effort, and nothing here can tell them
+  # apart, so labelling this "angler-days" would be a confident wrong claim on
+  # half the inputs. NA means unknown and is the only honest answer.
+  design <- creel_design(make_unit_calendar(), date = date, strata = day_type)
+  cnt <- make_unit_counts()[, c("date", "day_type", "n_anglers")]
+
+  no_td <- suppressWarnings(add_counts(design, cnt))
+
+  expect_true(is.na(no_td$effort_unit))
+  expect_false(identical(no_td$effort_unit, "angler-days"))
+})
+
+test_that("the interview denominator distinguishes angler-hours from party-hours", {
+  data(example_counts, envir = environment())
+  data(example_interviews, envir = environment())
+  data(example_calendar, envir = environment())
+
+  base <- suppressWarnings(add_counts(
+    creel_design(example_calendar, date = date, strata = day_type),
+    example_counts
+  ))
+
+  normalised <- suppressWarnings(suppressMessages(add_interviews(
+    base, example_interviews,
+    catch = catch_total, effort = hours_fished,
+    n_anglers = n_anglers, trip_status = trip_status
+  )))
+  bare <- suppressWarnings(suppressMessages(add_interviews(
+    base, example_interviews,
+    catch = catch_total, effort = hours_fished, trip_status = trip_status
+  )))
+
+  expect_identical(interview_effort_unit(normalised), "angler-hours")
+  expect_identical(interview_effort_unit(bare), "party-hours")
+  expect_identical(rate_unit(normalised), "fish/angler-hour")
+  expect_identical(rate_unit(bare), "fish/party-hour")
+})
+
+# ---- Propagation onto the returned object ----
+
+test_that("estimate_effort() carries the derived unit onto the estimates", {
+  design <- creel_design(make_unit_calendar(), date = date, strata = day_type)
+  d <- suppressWarnings(
+    add_counts(design, make_unit_counts(), period_length_col = shift_hours) # nolint: object_usage_linter
+  )
+
+  expect_identical(suppressWarnings(estimate_effort(d))$unit, "angler-hours")
+  expect_identical(
+    suppressWarnings(estimate_effort(d, by = day_type))$unit,
+    "angler-hours"
+  )
+})
+
+test_that("CPUE carries fish per denominator unit, and totals carry fish", {
+  data(example_counts, envir = environment())
+  data(example_interviews, envir = environment())
+  data(example_calendar, envir = environment())
+
+  d <- suppressWarnings(add_counts(
+    creel_design(example_calendar, date = date, strata = day_type),
+    example_counts
+  ))
+  d <- suppressWarnings(suppressMessages(add_interviews(
+    d, example_interviews,
+    catch = catch_total, effort = hours_fished,
+    n_anglers = n_anglers, trip_status = trip_status
+  )))
+
+  expect_identical(
+    suppressWarnings(suppressMessages(estimate_catch_rate(d)))$unit,
+    "fish/angler-hour"
+  )
+  expect_identical(
+    suppressWarnings(suppressMessages(estimate_total_catch(d)))$unit,
+    "fish"
+  )
+})
+
+test_that("print shows the unit only when it is known", {
+  design <- creel_design(make_unit_calendar(), date = date, strata = day_type)
+  cnt <- make_unit_counts()
+
+  known <- suppressWarnings(
+    add_counts(design, cnt, period_length_col = shift_hours) # nolint: object_usage_linter
+  )
+  unknown <- suppressWarnings(
+    add_counts(design, cnt[, c("date", "day_type", "n_anglers")])
+  )
+
+  known_out <- format(suppressWarnings(estimate_effort(known)))
+  unknown_out <- format(suppressWarnings(estimate_effort(unknown)))
+
+  expect_true(any(grepl("Unit: angler-hours", known_out, fixed = TRUE)))
+  # Absent, not "Unit: unknown" -- silence is the claim that we do not know
+  expect_false(any(grepl("Unit:", unknown_out, fixed = TRUE)))
+})
+
+test_that("write_estimates() records a known unit in the CSV header", {
+  design <- creel_design(make_unit_calendar(), date = date, strata = day_type)
+  d <- suppressWarnings(
+    add_counts(design, make_unit_counts(), period_length_col = shift_hours) # nolint: object_usage_linter
+  )
+  est <- suppressWarnings(estimate_effort(d))
+
+  path <- withr::local_tempfile(fileext = ".csv")
+  write_estimates(est, path)
+
+  expect_true(any(grepl("^# Unit: angler-hours$", readLines(path))))
+})
+
+# ---- The check at the multiplication point ----
+
+test_that("a known unit mismatch aborts the product", {
+  # This is the guard the audit asks for: effort x rate is only a catch when the
+  # rate's denominator is the quantity the effort is measured in.
+  data(example_counts, envir = environment())
+  data(example_interviews, envir = environment())
+  data(example_calendar, envir = environment())
+
+  d <- suppressWarnings(add_counts(
+    creel_design(example_calendar, date = date, strata = day_type),
+    example_counts
+  ))
+  d <- suppressWarnings(suppressMessages(add_interviews(
+    d, example_interviews,
+    catch = catch_total, effort = hours_fished,
+    n_anglers = n_anglers, trip_status = trip_status
+  )))
+  d$effort_unit <- "angler-trips"
+
+  expect_error(
+    suppressMessages(estimate_total_catch(d)),
+    class = "creel_error_unit_mismatch"
+  )
+})
+
+test_that("matching units pass the product check silently", {
+  data(example_counts, envir = environment())
+  data(example_interviews, envir = environment())
+  data(example_calendar, envir = environment())
+
+  d <- suppressWarnings(add_counts(
+    creel_design(example_calendar, date = date, strata = day_type),
+    example_counts
+  ))
+  d <- suppressWarnings(suppressMessages(add_interviews(
+    d, example_interviews,
+    catch = catch_total, effort = hours_fished,
+    n_anglers = n_anglers, trip_status = trip_status
+  )))
+  d$effort_unit <- "angler-hours"
+
+  expect_no_warning(
+    suppressMessages(estimate_total_catch(d)),
+    message = "could not be verified"
+  )
+})
+
+test_that("the party-hours product keeps its own warning and is not double-reported", {
+  # warn_party_hours_product() (finding 7) already names this seam with a better
+  # message. check_product_units() must stay silent so the caller gets one
+  # diagnosis, not two competing ones.
+  data(example_counts, envir = environment())
+  data(example_interviews, envir = environment())
+  data(example_calendar, envir = environment())
+
+  d <- suppressWarnings(add_counts(
+    creel_design(example_calendar, date = date, strata = day_type),
+    example_counts
+  ))
+  d <- suppressWarnings(suppressMessages(add_interviews(
+    d, example_interviews,
+    catch = catch_total, effort = hours_fished, trip_status = trip_status
+  )))
+
+  msgs <- character()
+  withCallingHandlers(
+    suppressMessages(estimate_total_catch(d)),
+    warning = function(w) {
+      msgs <<- c(msgs, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    }
+  )
+
+  expect_true(any(grepl("different units", msgs)))
+  expect_false(any(grepl("could not be verified", msgs)))
+})
+
+# ---- The prep seam is effort already, so it must not be nagged ----
+
+test_that("prep_counts_daily_effort() output does not trip the T_d warning", {
+  # This is the documented preferred workflow: counts are resolved into
+  # sampled-day effort before add_counts() sees them, so there is no
+  # instantaneous count left to expand and no T_d to ask for.
+  withr::local_options(rlib_warning_verbosity = "verbose")
+
+  raw <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
+    day_type = c("weekday", "weekday", "weekend", "weekend"),
+    gear = rep("bank", 4),
+    eff = c(80, 160, 700, 840),
+    stringsAsFactors = FALSE
+  )
+  prepped <- prep_counts_daily_effort(
+    raw,
+    date = date, strata = day_type,
+    effort_type = gear, daily_effort = eff
+  )
+  expect_true(counts_are_effort(prepped))
+
+  design <- creel_design(make_unit_calendar(), date = date, strata = day_type)
+  d <- suppressWarnings(add_counts(design, prepped))
+
+  expect_true(d$counts_are_effort)
+  expect_no_warning(estimate_effort(d), message = "angler-days")
+})
+
+# ---- Scale invariance: the property a fixed-number test cannot check ----
+#
+# Multiply an input by k and the outputs must move by the exponent their
+# dimension implies. A dimension error breaks these; an example test pinned to
+# one number does not notice, because the wrong quantity is still a number.
+
+test_that("scaling the count column scales effort by k and its variance by k^2", {
+  design <- creel_design(make_unit_calendar(), date = date, strata = day_type)
+  cnt <- make_unit_counts()
+  k <- 3
+
+  base <- suppressWarnings(estimate_effort(suppressWarnings(
+    add_counts(design, cnt, period_length_col = shift_hours) # nolint: object_usage_linter
+  )))
+  scaled_cnt <- cnt
+  scaled_cnt$n_anglers <- scaled_cnt$n_anglers * k
+  scaled <- suppressWarnings(estimate_effort(suppressWarnings(
+    add_counts(design, scaled_cnt, period_length_col = shift_hours) # nolint: object_usage_linter
+  )))
+
+  expect_equal(scaled$estimates$estimate, k * base$estimates$estimate)
+  expect_equal(scaled$estimates$se, k * base$estimates$se)
+  expect_equal(scaled$estimates$se^2, k^2 * base$estimates$se^2)
+})
+
+test_that("scaling T_d scales effort by k, so T_d enters linearly", {
+  design <- creel_design(make_unit_calendar(), date = date, strata = day_type)
+  cnt <- make_unit_counts()
+  k <- 2.5
+
+  base <- suppressWarnings(estimate_effort(suppressWarnings(
+    add_counts(design, cnt, period_length_col = shift_hours) # nolint: object_usage_linter
+  )))
+  scaled_cnt <- cnt
+  scaled_cnt$shift_hours <- scaled_cnt$shift_hours * k
+  scaled <- suppressWarnings(estimate_effort(suppressWarnings(
+    add_counts(design, scaled_cnt, period_length_col = shift_hours) # nolint: object_usage_linter
+  )))
+
+  expect_equal(scaled$estimates$estimate, k * base$estimates$estimate)
+})
+
+test_that("scaling interview effort scales CPUE by 1/k", {
+  data(example_counts, envir = environment())
+  data(example_interviews, envir = environment())
+  data(example_calendar, envir = environment())
+  k <- 4
+
+  build <- function(ivw) {
+    d <- suppressWarnings(add_counts(
+      creel_design(example_calendar, date = date, strata = day_type),
+      example_counts
+    ))
+    suppressWarnings(suppressMessages(add_interviews(
+      d, ivw,
+      catch = catch_total, effort = hours_fished,
+      n_anglers = n_anglers, trip_status = trip_status
+    )))
+  }
+
+  scaled_ivw <- example_interviews
+  scaled_ivw$hours_fished <- scaled_ivw$hours_fished * k
+
+  base <- suppressWarnings(suppressMessages(
+    estimate_catch_rate(build(example_interviews))
+  ))$estimates$estimate
+  scaled <- suppressWarnings(suppressMessages(
+    estimate_catch_rate(build(scaled_ivw))
+  ))$estimates$estimate
+
+  expect_equal(scaled, base / k)
+})
+
+test_that("scaling the count column scales total catch by k", {
+  data(example_counts, envir = environment())
+  data(example_interviews, envir = environment())
+  data(example_calendar, envir = environment())
+  k <- 3
+
+  build <- function(cnts) {
+    d <- suppressWarnings(add_counts(
+      creel_design(example_calendar, date = date, strata = day_type),
+      cnts
+    ))
+    suppressWarnings(suppressMessages(add_interviews(
+      d, example_interviews,
+      catch = catch_total, effort = hours_fished,
+      n_anglers = n_anglers, trip_status = trip_status
+    )))
+  }
+
+  scaled_counts <- example_counts
+  scaled_counts$effort_hours <- scaled_counts$effort_hours * k
+
+  base <- suppressWarnings(suppressMessages(
+    estimate_total_catch(build(example_counts))
+  ))$estimates$estimate
+  scaled <- suppressWarnings(suppressMessages(
+    estimate_total_catch(build(scaled_counts))
+  ))$estimates$estimate
+
+  expect_equal(scaled, k * base)
+})
+
+test_that("angler-hours effort against a party-hour rate warns and does not abort", {
+  # The load-bearing case for the party-hours carve-out. Once T_d is applied the
+  # effort unit is KNOWN to be angler-hours, so a per-party-hour rate is a
+  # genuine known-unit mismatch and the generic check would abort on it.
+  # Escalating this seam from finding 7's warning to an error would break every
+  # caller who omits n_anglers, which is what the bundled examples do -- so the
+  # carve-out must hold. A fixture whose effort unit is unknown cannot test this:
+  # the check returns early and the carve-out is never reached.
+  data(example_calendar, envir = environment())
+  data(example_interviews, envir = environment())
+
+  counts <- data.frame(
+    date = example_calendar$date,
+    day_type = example_calendar$day_type,
+    n_anglers = rep(c(12, 30), length.out = nrow(example_calendar)),
+    shift_hours = rep(c(9, 13), length.out = nrow(example_calendar)),
+    stringsAsFactors = FALSE
+  )
+
+  d <- suppressWarnings(add_counts(
+    creel_design(example_calendar, date = date, strata = day_type),
+    counts,
+    period_length_col = shift_hours # nolint: object_usage_linter
+  ))
+  # n_anglers deliberately omitted: .angler_effort is party-hours
+  d <- suppressWarnings(suppressMessages(add_interviews(
+    d, example_interviews,
+    catch = catch_total, effort = hours_fished, trip_status = trip_status
+  )))
+
+  expect_identical(d$effort_unit, "angler-hours")
+  expect_identical(interview_effort_unit(d), "party-hours")
+
+  msgs <- character()
+  expect_no_error(
+    withCallingHandlers(
+      suppressMessages(estimate_total_catch(d)),
+      warning = function(w) {
+        msgs <<- c(msgs, conditionMessage(w))
+        invokeRestart("muffleWarning")
+      }
+    )
+  )
+  # finding 7 still names it, and it stays a warning
+  expect_true(any(grepl("different units", msgs)))
+})
+
+# ---- Propagation beyond the standard CPUE spine ----
+#
+# Every rate estimator in the package divides catch by the same interview
+# effort column, so they must all report the same denominator; every total is a
+# count of fish. Before this, only the ungrouped and grouped CPUE and total
+# paths said so and the rest returned NA. NA reads as "tidycreel does not know
+# what this is", which is a false claim when it does -- and it is the state that
+# suppresses the unit from print(), autoplot() and the CSV header, so the number
+# travels bare.
+#
+# These tests assert agreement between estimators rather than a hardcoded
+# string. A wrong constant can satisfy a literal; it cannot make two independent
+# estimators on one design agree.
+
+test_that("every rate estimator on one design reports the same denominator", {
+  data(example_counts, envir = environment())
+  data(example_interviews, envir = environment())
+  data(example_calendar, envir = environment())
+
+  d <- suppressWarnings(add_counts(
+    creel_design(example_calendar, date = date, strata = day_type),
+    example_counts
+  ))
+  d <- suppressWarnings(suppressMessages(add_interviews(
+    d, example_interviews,
+    catch = catch_total, harvest = catch_kept, effort = hours_fished,
+    n_anglers = n_anglers, trip_status = trip_status
+  )))
+
+  baseline <- suppressWarnings(suppressMessages(estimate_catch_rate(d)))$unit
+
+  # The denominator is a property of the interviews, not of which rate is asked
+  # for, so harvest and release rates cannot legitimately differ from CPUE.
+  expect_identical(
+    suppressWarnings(suppressMessages(estimate_harvest_rate(d)))$unit,
+    baseline
+  )
+  expect_identical(baseline, "fish/angler-hour")
+})
+
+test_that("the harvest total carries fish, like total catch", {
+  data(example_counts, envir = environment())
+  data(example_interviews, envir = environment())
+  data(example_calendar, envir = environment())
+
+  d <- suppressWarnings(add_counts(
+    creel_design(example_calendar, date = date, strata = day_type),
+    example_counts
+  ))
+  d <- suppressWarnings(suppressMessages(add_interviews(
+    d, example_interviews,
+    catch = catch_total, harvest = catch_kept, effort = hours_fished,
+    n_anglers = n_anglers, trip_status = trip_status
+  )))
+
+  expect_identical(
+    suppressWarnings(suppressMessages(estimate_total_harvest(d)))$unit,
+    "fish"
+  )
+})
+
+test_that("the regression CPUE estimator agrees with the ratio-of-means one", {
+  data(example_counts, envir = environment())
+  data(example_interviews, envir = environment())
+  data(example_calendar, envir = environment())
+
+  d <- suppressWarnings(add_counts(
+    creel_design(example_calendar, date = date, strata = day_type),
+    example_counts
+  ))
+  d <- suppressWarnings(suppressMessages(add_interviews(
+    d, example_interviews,
+    catch = catch_total, effort = hours_fished,
+    n_anglers = n_anglers, trip_status = trip_status
+  )))
+
+  # Different estimator, same quantity: regression CPUE divides by the same
+  # interview effort column, so a differing unit would mean one of them is
+  # estimating something other than what it claims.
+  expect_identical(
+    suppressWarnings(suppressMessages(
+      estimate_catch_rate(d, estimator = "regression")
+    ))$unit,
+    suppressWarnings(suppressMessages(estimate_catch_rate(d)))$unit
+  )
+})
+
+test_that("bus-route rates and totals carry units too", {
+  d <- suppressWarnings(suppressMessages(
+    build_br_design_for_tests(n_sites = 3, n_days = 6, n_interviews = 30, seed = 42)
+  ))
+
+  rate <- suppressWarnings(suppressMessages(estimate_harvest_rate(d)))
+  total <- suppressWarnings(suppressMessages(estimate_total_harvest(d)))
+  # The bus-route path reaches a different constructor than the standard path,
+  # which is exactly why it was returning NA while the standard path did not.
+  expect_false(is.na(rate$unit))
+  expect_match(rate$unit, "^fish/")
+  expect_identical(total$unit, "fish")
+
+  # The release paths are labelled too, and are covered by the y-axis
+  # assertions in test-estimate-total-release.R, whose fixture attaches the
+  # catch records release needs. Those labels read "(fish)" only if the unit
+  # propagates.
+})
+
+# ---- The effort family ----
+#
+# Effort is where the audit's central confusion lives, because three designs
+# reach three different constructors and derive the period from three different
+# places. The rule below is the same one as everywhere else -- assert the unit
+# only where this package did the arithmetic -- but here it forces a different
+# answer per design, so a single constant would be wrong for two of them.
+
+# build_br_design_for_tests() always supplies n_anglers. The party-hours case is
+# the discriminator for these tests, so build the same design without it.
+build_br_design_party_hours <- function(seed = 42) {
+  set.seed(seed)
+  calendar <- build_property_calendar(6L)
+  site_ids <- paste0("S", seq_len(3L))
+  weights <- sample(seq.int(1L, 5L), 3L, replace = TRUE)
+  frame <- data.frame(
+    site = site_ids,
+    circuit = rep("C1", 3L),
+    p_site = weights / sum(weights),
+    p_period = rep(0.8, 3L),
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design(
+    calendar,
+    date = date,
+    strata = day_type, # nolint
+    survey_type = "bus_route",
+    sampling_frame = frame,
+    site = site, # nolint
+    circuit = circuit, # nolint
+    p_site = p_site, # nolint
+    p_period = p_period # nolint
+  )
+  interviews <- build_trip_interviews_for_tests(
+    calendar = calendar,
+    n_interviews = 30L,
+    site_ids = site_ids,
+    circuit_id = "C1"
+  )
+  suppressMessages(suppressWarnings(add_interviews(
+    design, interviews,
+    catch = catch_total, # nolint
+    effort = hours_fished, # nolint
+    harvest = catch_kept, # nolint
+    trip_status = trip_status, # nolint
+    trip_duration = trip_duration, # nolint
+    n_counted = n_counted, # nolint
+    n_interviewed = n_interviewed # nolint
+  )))
+}
+
+test_that("bus-route effort takes its unit from the interviews, not the counts", {
+  # E_hat = sum(e_i / pi_i) is built entirely from interview contributions, so
+  # the counts side has no claim on it. Reading design$effort_unit here would
+  # restate finding 2 in machine-readable form -- and would report NA, since a
+  # bus-route design carries no period_length_col.
+  angler <- suppressWarnings(suppressMessages(
+    build_br_design_for_tests(n_sites = 3, n_days = 6, n_interviews = 30, seed = 42)
+  ))
+  party <- suppressWarnings(suppressMessages(build_br_design_party_hours()))
+
+  angler_effort <- suppressWarnings(suppressMessages(estimate_effort(angler)))
+  party_effort <- suppressWarnings(suppressMessages(estimate_effort(party)))
+
+  # The only difference between the two designs is whether n_anglers was
+  # supplied. A hardcoded constant would report the same unit for both.
+  expect_identical(angler_effort$unit, "angler-hours")
+  expect_identical(party_effort$unit, "party-hours")
+
+  # And the counts side is not merely uninformative here, it is absent: a
+  # bus-route design estimates effort without ever calling add_counts(), so
+  # effort_unit was never set. Labelling from there would have yielded NULL.
+  expect_null(angler$effort_unit)
+})
+
+test_that("grouped bus-route effort agrees with the ungrouped total", {
+  d <- suppressWarnings(suppressMessages(
+    build_br_design_for_tests(n_sites = 3, n_days = 6, n_interviews = 30, seed = 42)
+  ))
+
+  # Grouping changes which rows are summed, never what quantity they measure,
+  # so the two branches of estimate_effort_br() cannot legitimately disagree.
+  expect_identical(
+    suppressWarnings(suppressMessages(estimate_effort(d, by = "site")))$unit,
+    suppressWarnings(suppressMessages(estimate_effort(d)))$unit
+  )
+})
+
+test_that("aerial effort is angler-hours even though the design's unit is unknown", {
+  cal <- data.frame(
+    date = as.Date("2024-06-01") + 0:3,
+    day_type = c("weekday", "weekday", "weekend", "weekend"),
+    stringsAsFactors = FALSE
+  )
+  counts <- data.frame(
+    date = as.Date("2024-06-01") + 0:3,
+    day_type = c("weekday", "weekday", "weekend", "weekend"),
+    anglers = c(10, 20, 30, 40),
+    stringsAsFactors = FALSE
+  )
+  d <- suppressWarnings(creel_design(
+    cal,
+    date = date,
+    strata = day_type, # nolint
+    survey_type = "aerial",
+    h_open = 14
+  ))
+  d <- suppressWarnings(add_counts(d, counts, count_col = anglers)) # nolint
+
+  est <- suppressWarnings(estimate_effort(d))
+
+  # An aerial design refuses period_length_col (finding 21), so effort_unit is
+  # necessarily NA and the estimator must label from h_open instead. This pairs
+  # the unit with the number that earns it: 1400 = sum(counts) x h_open once.
+  expect_true(is.na(d$effort_unit))
+  expect_identical(est$unit, "angler-hours")
+  expect_equal(est$estimates$estimate, 1400)
+})
+
+test_that("camera effort labels the raw path but not the calibrated one", {
+  data(example_camera_counts, envir = environment())
+  data(example_camera_interviews, envir = environment())
+
+  cal <- data.frame(
+    date = unique(example_camera_counts$date),
+    day_type = unique(example_camera_counts[, c("date", "day_type")])[["day_type"]],
+    stringsAsFactors = FALSE
+  )
+  d <- suppressWarnings(creel_design(
+    cal,
+    date = date,
+    strata = day_type, # nolint
+    survey_type = "camera",
+    camera_mode = "counter"
+  ))
+  ops <- example_camera_counts[example_camera_counts$camera_status == "operational", ]
+  d <- suppressWarnings(add_counts(d, ops))
+
+  raw <- suppressWarnings(est_effort_camera(d, h_open = 14))
+  ratio <- suppressWarnings(est_effort_camera(d, interviews = example_camera_interviews))
+
+  # Raw path: count x h_open, with the finding-21 guard establishing that no
+  # T_d was already applied. Same reasoning as aerial.
+  expect_identical(raw$unit, "angler-hours")
+
+  # Ratio path: rho = sum(E_d)/sum(C_d) carries the unit of `effort_col`, a bare
+  # column in a caller-supplied data frame that nothing normalises by party
+  # size. `interviews` is an argument, not an add_interviews() attachment, so
+  # the design cannot answer for it -- and here it holds no interviews at all.
+  # Angler-hours and party-hours are indistinguishable, so unknown is the only
+  # honest answer.
+  expect_true(is.na(ratio$unit))
+  expect_true(is.null(d$angler_effort_col))
+})
+
+# ---- Trip density: units that are inherited rather than derived ----
+#
+# These two estimators take a creel_estimates rather than a design, so they
+# cannot ask the design what unit anything is in. Both transform a quantity
+# whose unit they were handed, which makes the correct answer a function of the
+# input -- and makes a hardcoded label wrong for every caller whose effort was
+# in the other actor.
+
+make_trips_design <- function(with_n_anglers = TRUE) {
+  data(example_counts, envir = environment())
+  data(example_interviews, envir = environment())
+  data(example_calendar, envir = environment())
+
+  cnt <- example_counts
+  cnt$shift_hours <- 8
+  d <- suppressWarnings(add_counts(
+    creel_design(example_calendar, date = date, strata = day_type),
+    cnt,
+    period_length_col = shift_hours # nolint
+  ))
+  args <- list(
+    d, example_interviews,
+    catch = quote(catch_total), harvest = quote(catch_kept),
+    effort = quote(hours_fished), trip_status = quote(trip_status),
+    trip_duration = quote(trip_duration)
+  )
+  if (with_n_anglers) {
+    args$n_anglers <- quote(n_anglers)
+  }
+  suppressWarnings(suppressMessages(do.call(add_interviews, args)))
+}
+
+test_that("trips inherit the actor of the effort they divide", {
+  # trips = E / L, and L is hours per trip, so the count is in whichever actor
+  # E was measured in. estimate_angler_trips() is named for the common case but
+  # is not restricted to it: a bus-route design with no n_anglers produces
+  # party-hours, and dividing that by a trip length gives party-trips.
+  d <- make_trips_design()
+  e <- suppressWarnings(suppressMessages(estimate_effort(d)))
+  trips <- suppressWarnings(suppressMessages(estimate_angler_trips(e, d)))
+
+  expect_identical(e$unit, "angler-hours")
+  expect_identical(trips$unit, "angler-trips")
+
+  br <- suppressWarnings(suppressMessages(build_br_design_party_hours()))
+  br_effort <- suppressWarnings(suppressMessages(estimate_effort(br)))
+  br_trips <- suppressWarnings(suppressMessages(estimate_angler_trips(br_effort, br)))
+
+  expect_identical(br_effort$unit, "party-hours")
+  expect_identical(br_trips$unit, "party-trips")
+
+  # The method name is "angler-trips" on both, which is exactly why the unit
+  # cannot be read off it.
+  expect_identical(trips$method, br_trips$method)
+})
+
+test_that("trips are unknown when the effort they came from was unknown", {
+  # Counts with no T_d give an effort of unknown unit. Dividing an unknown by a
+  # trip length does not make it known, and labelling the result "angler-trips"
+  # would manufacture a dimension the input never had.
+  data(example_counts, envir = environment())
+  data(example_interviews, envir = environment())
+  data(example_calendar, envir = environment())
+
+  d <- suppressWarnings(add_counts(
+    creel_design(example_calendar, date = date, strata = day_type),
+    example_counts
+  ))
+  d <- suppressWarnings(suppressMessages(add_interviews(
+    d, example_interviews,
+    catch = catch_total, harvest = catch_kept, effort = hours_fished,
+    n_anglers = n_anglers, trip_status = trip_status, trip_duration = trip_duration
+  )))
+  e <- suppressWarnings(suppressMessages(estimate_effort(d)))
+  trips <- suppressWarnings(suppressMessages(estimate_angler_trips(e, d)))
+
+  expect_true(is.na(e$unit))
+  expect_true(is.na(trips$unit))
+})
+
+test_that("grouped trips agree with ungrouped", {
+  d <- make_trips_design()
+  ungrouped <- suppressWarnings(suppressMessages(estimate_effort(d)))
+  grouped <- suppressWarnings(suppressMessages(estimate_effort(d, by = "day_type")))
+
+  # Two branches of estimate_angler_trips(); grouping changes which rows are
+  # divided, never what the quotient measures.
+  expect_identical(
+    suppressWarnings(suppressMessages(estimate_angler_trips(grouped, d)))$unit,
+    suppressWarnings(suppressMessages(estimate_angler_trips(ungrouped, d)))$unit
+  )
+})
+
+test_that("effort per acre composes its unit rather than assuming angler-hours", {
+  d <- make_trips_design()
+  e <- suppressWarnings(suppressMessages(estimate_effort(d)))
+
+  expect_identical(
+    suppressWarnings(suppressMessages(estimate_effort_per_acre(e, acres = 500)))$unit,
+    "angler-hours/acre"
+  )
+
+  # acres is a constant divisor, so whatever went in comes out per acre. A
+  # hardcoded "angler-hours/acre" would silently relabel a party-hours density.
+  br <- suppressWarnings(suppressMessages(build_br_design_party_hours()))
+  br_effort <- suppressWarnings(suppressMessages(estimate_effort(br)))
+  expect_identical(
+    suppressWarnings(suppressMessages(
+      estimate_effort_per_acre(br_effort, acres = 500)
+    ))$unit,
+    "party-hours/acre"
+  )
+})
+
+test_that("the effort guard checks the quantity, not the actor", {
+  # require_effort_estimates() long claimed to enforce angler-hours and never
+  # did (finding 12c). It must not start: party-hours is a legitimate input
+  # whose actor these estimators carry through, so rejecting it would break the
+  # bus-route path. What it does police is that the object is effort at all.
+  br <- suppressWarnings(suppressMessages(build_br_design_party_hours()))
+  br_effort <- suppressWarnings(suppressMessages(estimate_effort(br)))
+  expect_identical(br_effort$unit, "party-hours")
+
+  expect_no_error(
+    suppressWarnings(suppressMessages(estimate_effort_per_acre(br_effort, acres = 500)))
+  )
+  expect_no_error(
+    suppressWarnings(suppressMessages(estimate_angler_trips(br_effort, br)))
+  )
+
+  # A rate is still refused: dividing fish/angler-hour by acres would relabel it.
+  rate <- suppressWarnings(suppressMessages(estimate_harvest_rate(br)))
+  expect_error(
+    estimate_effort_per_acre(rate, acres = 500),
+    "must hold effort"
+  )
+})
+
+test_that("effort per acre does not invent a dimension from an unknown one", {
+  # Appending "/acre" to NA would produce "NA/acre", a string that reads as a
+  # real unit and would print on the y-axis as though the package knew.
+  data(example_counts, envir = environment())
+  data(example_calendar, envir = environment())
+
+  d <- suppressWarnings(add_counts(
+    creel_design(example_calendar, date = date, strata = day_type),
+    example_counts
+  ))
+  e <- suppressWarnings(suppressMessages(estimate_effort(d)))
+  per_acre <- suppressWarnings(suppressMessages(estimate_effort_per_acre(e, acres = 500)))
+
+  expect_true(is.na(e$unit))
+  expect_true(is.na(per_acre$unit))
+  expect_false(identical(per_acre$unit, "NA/acre"))
+})
+
+test_that("the exploitation rate is dimensionless whatever the design", {
+  # u = (C/T) x (m/n) divides fish by fish twice, so both actors cancel. This
+  # is the one estimator in the audit whose unit no input can change, and that
+  # is the claim being pinned: not that "proportion" is spelled right, but that
+  # nothing about the inputs can make it anything else.
+  r <- estimate_exploitation_rate(T = 200L, C = 450.0, se_C = 42.0, n = 180L, m = 15L)
+  expect_identical(r$unit, "proportion")
+
+  # Reporting-rate adjustment divides by a dimensionless constant.
+  r_adj <- estimate_exploitation_rate(
+    T = 200L, C = 450.0, se_C = 42.0, n = 180L, m = 15L,
+    reporting_rate = 0.8
+  )
+  expect_identical(r_adj$unit, "proportion")
+  expect_false(isTRUE(all.equal(r$estimates$estimate, r_adj$estimates$estimate)))
+
+  # A logit CI reshapes the interval, not the quantity.
+  r_logit <- estimate_exploitation_rate(
+    T = 200L, C = 450.0, se_C = 42.0, n = 180L, m = 15L,
+    ci_type = "logit"
+  )
+  expect_identical(r_logit$unit, "proportion")
+})
+
+test_that("the stratified exploitation rate keeps the proportion through aggregation", {
+  # The .overall row is a T-weighted mean of proportions, which is still one.
+  strata_df <- data.frame(
+    stratum = c("weekday", "weekend"),
+    T_h     = c(120L, 80L),
+    C_h     = c(280.0, 170.0),
+    se_C_h  = c(28.0, 22.0),
+    n_h     = c(110L, 70L),
+    m_h     = c(9L, 6L)
+  )
+  r <- estimate_exploitation_rate(strata = strata_df, by = "stratum")
+  expect_identical(r$unit, "proportion")
+  expect_true(".overall" %in% r$estimates$stratum)
+})
+
+test_that("mark-recapture cannot name the actor it counted", {
+  # Finding 25. M, n, and m arrive as bare numerics and nothing inspects them,
+  # so N_hat counts whatever the marking protocol marked -- anglers on some
+  # surveys, boats or parties on others. Reporting "anglers" would be a
+  # declaration restating the function name, which is the failure the unit
+  # spine exists to prevent. NA is the honest answer on all three estimators.
+  chapman <- estimate_angler_n(M = 200L, n = 50L, m = 10L)
+  petersen <- estimate_angler_n(M = 200L, n = 50L, m = 10L, method = "petersen")
+  schnabel <- estimate_angler_n(
+    M = c(0L, 47L, 91L, 131L),
+    n = c(50L, 50L, 50L, 50L),
+    m = c(0L, 4L, 6L, 8L),
+    method = "schnabel"
+  )
+
+  expect_true(is.na(chapman$unit))
+  expect_true(is.na(petersen$unit))
+  expect_true(is.na(schnabel$unit))
+  expect_false(identical(chapman$unit, "anglers"))
+})
+
+test_that("mark-recapture harvest does not launder the unknown actor into fish", {
+  # Finding 23. H = N_hat x harvest_rate is in fish only when N_hat counts
+  # anglers, and estimate_angler_n() cannot know that. Labelling the product
+  # "fish" would manufacture a certainty neither factor has.
+  angler_n <- estimate_angler_n(M = 200L, n = 50L, m = 10L)
+  h <- estimate_mr_harvest(angler_n = angler_n, harvest_rate = 0.35)
+
+  expect_true(is.na(h$unit))
+  expect_false(identical(h$unit, "fish"))
+})

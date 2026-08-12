@@ -14,7 +14,7 @@ make_aerial_glmm_design <- function() {
     survey_type = "aerial",
     h_open = 14
   )
-  add_counts(design, example_aerial_glmm_counts) # nolint: object_usage_linter
+  add_counts(design, example_aerial_glmm_counts, count_col = n_anglers) # nolint: object_usage_linter
 }
 
 # GLMM-01: Basic usage ----
@@ -116,7 +116,7 @@ test_that("cli_abort() fires when design_type is not 'aerial'", {
     time_of_flight = rep(10.0, 8),
     stringsAsFactors = FALSE
   )
-  bad_design <- add_counts(bad_design, counts) # nolint: object_usage_linter
+  bad_design <- add_counts(bad_design, counts, count_col = effort_hours) # nolint: object_usage_linter
   expect_error(
     estimate_effort_aerial_glmm(bad_design, time_col = time_of_flight),
     class = "rlang_error"
@@ -146,7 +146,7 @@ test_that("GLMM-05: fixed open_start suppresses data-derived window message", {
     h_open = 14,
     open_start = 5.0
   )
-  design <- add_counts(design, example_aerial_glmm_counts)
+  design <- add_counts(design, example_aerial_glmm_counts, count_col = n_anglers)
   msgs <- character(0)
   withCallingHandlers(
     estimate_effort_aerial_glmm(design, time_col = time_of_flight),
@@ -185,7 +185,7 @@ test_that("GLMM-05: fixed open_start yields finite estimate", {
     h_open = 14,
     open_start = 5.0
   )
-  design <- add_counts(design, example_aerial_glmm_counts)
+  design <- add_counts(design, example_aerial_glmm_counts, count_col = n_anglers)
   result <- suppressMessages(estimate_effort_aerial_glmm(design, time_col = time_of_flight))
   expect_true(is.finite(result$estimates$estimate))
 })

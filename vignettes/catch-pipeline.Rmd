@@ -165,6 +165,7 @@ mini_design <- creel_design(mini_calendar, date = date, strata = day_type) |>
   add_interviews(mini_interviews,
     catch         = catch_total,
     effort        = hours_fished,
+    n_anglers     = 1, # every interview is a single angler
     trip_status   = trip_status,
     trip_duration = trip_duration
   )
@@ -285,6 +286,7 @@ season_design <- creel_design(example_calendar, date = date, strata = day_type) 
   add_interviews(example_interviews,
     catch         = catch_total,
     effort        = hours_fished,
+    n_anglers     = n_anglers,
     trip_status   = trip_status,
     trip_duration = trip_duration
   )

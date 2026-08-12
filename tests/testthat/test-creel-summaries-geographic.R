@@ -18,7 +18,7 @@ make_boat_composition_design <- function() {
     creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
   )
   suppressWarnings(
-    add_counts(d, counts_df) # nolint: object_usage_linter
+    add_counts(d, counts_df, count_col = count) # nolint: object_usage_linter
   )
 }
 

@@ -1216,3 +1216,25 @@ test_that("estimate_total_harvest(by=day_type) warns on grouped standard path wh
     regexp = "no matching rate estimate"
   )
 })
+
+# TOTH-111: bus-route method string ----
+
+test_that("bus-route total harvest reports its own quantity, not effort (GH #111)", {
+  # br_build_estimates() hardcoded method = "total", the one string autoplot maps
+  # to "Total Effort". A fish-valued total therefore plotted under an effort
+  # label, with nothing in the returned object to contradict it.
+  design <- build_br_design_for_tests(n_sites = 3, n_days = 8, n_interviews = 24, seed = 42)
+  result <- suppressWarnings(suppressMessages(estimate_total_harvest(design)))
+
+  expect_equal(result$method, "ht-total-harvest")
+  expect_equal(ggplot2::autoplot(result)$labels$y, "Total Harvest (fish)")
+})
+
+test_that("ice total harvest carries the bus-route method string (GH #111)", {
+  # Ice is a degenerate bus route and routes through the same HT estimator, so it
+  # inherited the same effort label on a fish-valued total.
+  design <- build_ice_design(n_days = 8, n_interviews = 24, seed = 7)
+  result <- suppressWarnings(suppressMessages(estimate_total_harvest(design)))
+
+  expect_equal(result$method, "ht-total-harvest")
+})

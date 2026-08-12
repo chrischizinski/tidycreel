@@ -1,11 +1,60 @@
+# Internal: effort-family method allowlist ----
+
+# `estimate_effort()` returns "total" on every design type and "total-sections"
+# when add_sections() was used. Everything else in the package -- CPUE, HPUE,
+# RPUE, the product totals, the bus-route HT totals -- is a different quantity.
+# Consumers check against this set so a rate or a fish-valued total cannot be
+# divided by hours or acres and relabelled as effort.
+effort_family_methods <- function() {
+  c("total", "total-sections")
+}
+
+# Shared guard for the composable estimators that consume an effort object.
+#
+# This checks the *quantity* (is it effort at all?), never the actor. Effort
+# reaches here as angler-hours, party-hours, or unknown, and all three are
+# legitimate: the consumers carry the actor through to their own unit rather
+# than requiring one. The message used to claim it enforced angler-hours, which
+# it never did -- see finding 12c.
+require_effort_estimates <- function(effort, arg = "effort", call = rlang::caller_env()) {
+  if (!inherits(effort, "creel_estimates")) {
+    cli::cli_abort(
+      "{.arg {arg}} must be a {.cls creel_estimates} object from {.fn estimate_effort}.",
+      call = call
+    )
+  }
+
+  method <- effort$method %||% NA_character_
+  if (!method %in% effort_family_methods()) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must hold effort, but carries {.val {method}}.",
+        "x" = paste(
+          "Only {.fn estimate_effort} results qualify",
+          "({.val {effort_family_methods()}})."
+        ),
+        "i" = "Dividing a rate or a fish-valued total here would relabel it as effort."
+      ),
+      call = call
+    )
+  }
+
+  invisible(effort)
+}
+
 #' Estimate angler trips from extrapolated effort
 #'
 #' @description
-#' Computes estimated angler trips (angler days) by dividing extrapolated
-#' angler-hours effort by the mean trip length per stratum, with Delta Method
-#' variance propagation (Powell 2007). This is a composable estimator: the
-#' effort object must be pre-computed via \code{\link{estimate_effort}} before
-#' calling this function.
+#' Computes estimated trips by dividing extrapolated effort by the mean trip
+#' length per stratum, with Delta Method variance propagation (Powell 2007).
+#' This is a composable estimator: the effort object must be pre-computed via
+#' \code{\link{estimate_effort}} before calling this function.
+#'
+#' The divisor is hours per trip, so the result comes back in whichever actor
+#' the effort was measured in: angler-hours give angler trips, party-hours give
+#' party trips. The returned \code{unit} field records which, and is \code{NA}
+#' when the effort's own unit was unknown. The method string is
+#' \code{"angler-trips"} in every case and so is not a guide to the actor.
 #'
 #' @param effort A \code{creel_estimates} object returned by
 #'   \code{\link{estimate_effort}}. Must have a numeric \code{estimate} column
@@ -21,8 +70,8 @@
 #'   \describe{
 #'     \item{by_vars columns}{Any grouping columns from the effort object (if
 #'       grouped).}
-#'     \item{estimate}{Estimated angler trips per stratum (effort / mean trip
-#'       length).}
+#'     \item{estimate}{Estimated trips per stratum (effort / mean trip
+#'       length), in the actor the effort was measured in.}
 #'     \item{se}{Standard error via Delta Method variance propagation.}
 #'     \item{ci_lower}{Lower confidence interval bound.}
 #'     \item{ci_upper}{Upper confidence interval bound.}
@@ -42,11 +91,7 @@
 #' @export
 estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
   # --- input guards ---
-  if (!inherits(effort, "creel_estimates")) {
-    cli::cli_abort(
-      "{.arg effort} must be a {.cls creel_estimates} object from {.fn estimate_effort}."
-    )
-  }
+  require_effort_estimates(effort)
 
   if (is.null(design$trip_duration_col)) {
     cli::cli_abort(c(
@@ -120,14 +165,18 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
       n = n_int
     )
 
-    return(
-      new_creel_estimates(
+    return( # nolint: object_usage_linter
+      new_creel_estimates( # nolint: object_usage_linter
         estimates = estimates_df,
         method = "angler-trips",
         variance_method = "delta",
         design = NULL,
         conf_level = conf_level,
-        by_vars = NULL
+        by_vars = NULL,
+        # Inherited, not fixed: trips = E / L divides by hours per trip, so the
+        # count is in whichever actor E was measured in. The method name says
+        # "angler-trips" for every caller; the unit must not.
+        unit = trips_unit(effort$unit) # nolint: object_usage_linter
       )
     )
   }
@@ -228,25 +277,31 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
 
   estimates_df <- dplyr::bind_rows(stratum_rows, overall_row)
 
-  new_creel_estimates(
+  new_creel_estimates( # nolint: object_usage_linter
     estimates = estimates_df,
     method = "angler-trips",
     variance_method = "delta",
     design = NULL,
     conf_level = conf_level,
-    by_vars = effort$by_vars
+    by_vars = effort$by_vars,
+    # Same inheritance as the ungrouped branch above.
+    unit = trips_unit(effort$unit) # nolint: object_usage_linter
   )
 }
 
 
-#' Compute effort density as angler-hours per acre
+#' Compute effort density as effort per acre
 #'
 #' @description
 #' Divides all effort estimate columns in a pre-computed \code{creel_estimates}
-#' object by a surface area scalar (\code{acres}), producing angler-hours per
-#' acre. Standard error propagates linearly because \code{acres} is a constant
-#' (not a random variable), so no Delta Method is needed:
-#' \code{se_per_acre = se_effort / acres}.
+#' object by a surface area scalar (\code{acres}). Standard error propagates
+#' linearly because \code{acres} is a constant (not a random variable), so no
+#' Delta Method is needed: \code{se_per_acre = se_effort / acres}.
+#'
+#' \code{acres} is a constant divisor, so the result is whatever the effort was,
+#' per acre: the returned \code{unit} field composes the effort's own unit
+#' (\code{"angler-hours/acre"}, \code{"party-hours/acre"}), and stays \code{NA}
+#' when the effort's unit was unknown.
 #'
 #' This is a composable estimator: the effort object must be pre-computed via
 #' \code{\link{estimate_effort}} before calling this function.
@@ -271,11 +326,7 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
 #' @export
 estimate_effort_per_acre <- function(effort, acres, ...) {
   # --- input guards ---
-  if (!inherits(effort, "creel_estimates")) {
-    cli::cli_abort(
-      "{.arg effort} must be a {.cls creel_estimates} object from {.fn estimate_effort}."
-    )
-  }
+  require_effort_estimates(effort)
 
   if (!is.numeric(acres) || length(acres) != 1 || acres <= 0) {
     cli::cli_abort(
@@ -298,13 +349,26 @@ estimate_effort_per_acre <- function(effort, acres, ...) {
     est_df$se_within <- est_df$se_within / acres
   }
 
+  # Derived rather than looked up: acres is a constant divisor, so this is
+  # whatever the effort was, per acre. Composing the string keeps
+  # party-hours/acre distinguishable from angler-hours/acre, which a hardcoded
+  # "angler-hours/acre" would silently conflate. Unknown in, unknown out --
+  # appending "/acre" to NA would invent a dimension.
+  effort_unit <- effort$unit %||% NA_character_
+  density_unit <- if (is.na(effort_unit)) {
+    NA_character_
+  } else {
+    paste0(effort_unit, "/acre")
+  }
+
   # --- return ---
-  new_creel_estimates(
+  new_creel_estimates( # nolint: object_usage_linter
     estimates = est_df,
     method = "effort-per-acre",
     variance_method = effort$variance_method,
     design = NULL,
     conf_level = effort$conf_level,
-    by_vars = effort$by_vars
+    by_vars = effort$by_vars,
+    unit = density_unit
   )
 }

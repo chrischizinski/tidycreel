@@ -978,3 +978,124 @@ test_that("PROD-01-release-missing: missing section inserts NA row with data_ava
 # but the make_total_release_missing_rate_strata_design() fixture does not create a
 # true missing-strata gap in rpue_df. A dedicated fixture would be needed to trigger
 # this path for releases; deferred — coverage provided by catch and harvest paths.
+
+# GH #110 — bus-route and ice dispatch ----
+
+#' Attach release records equal to the harvest column, interview by interview
+#'
+#' Makes the true total release equal the true total harvest, so the two
+#' estimators become two code paths onto one number.
+attach_release_equal_to_harvest <- function(design) {
+  design$interviews$trip_status <- "complete"
+  if (!"interview_id" %in% names(design$interviews)) {
+    design$interviews$interview_id <- seq_len(nrow(design$interviews))
+  }
+  catch <- data.frame(
+    interview_id = design$interviews$interview_id,
+    species = "walleye",
+    count = design$interviews[[design$harvest_col]],
+    catch_type = "released",
+    stringsAsFactors = FALSE
+  )
+  suppressMessages(suppressWarnings(add_catch(
+    design,
+    catch,
+    catch_uid = interview_id, # nolint: object_usage_linter
+    interview_uid = interview_id,
+    species = species, # nolint: object_usage_linter
+    count = count, # nolint: object_usage_linter
+    catch_type = catch_type # nolint: object_usage_linter
+  )))
+}
+
+test_that("estimate_total_release() dispatches bus-route designs (GH #110)", {
+  # There was no bus-route branch, so the count-based product path ran instead:
+  # interview-derived releases divided by a svytotal over count rows. Two
+  # unrelated effort bases in one design object, no warning. With every released
+  # fish also counted as kept, the release total must equal the harvest total --
+  # the harvest side has had its dispatch since v1.x.
+  design <- attach_release_equal_to_harvest(
+    build_br_design_for_tests(n_sites = 3, n_days = 8, n_interviews = 24, seed = 42)
+  )
+
+  harvest <- suppressWarnings(suppressMessages(estimate_total_harvest(design)))
+  release <- suppressWarnings(suppressMessages(estimate_total_release(design)))
+
+  expect_equal(release$estimates$estimate, harvest$estimates$estimate, tolerance = 1e-12)
+  expect_equal(release$estimates$se, harvest$estimates$se, tolerance = 1e-12)
+})
+
+test_that("estimate_total_release() dispatches ice designs (GH #110)", {
+  # Ice is a degenerate bus route and estimate_total_harvest() already routes it
+  # through the HT estimator. Release routed elsewhere.
+  design <- attach_release_equal_to_harvest(
+    build_ice_design(n_days = 8, n_interviews = 24, seed = 7)
+  )
+
+  harvest <- suppressWarnings(suppressMessages(estimate_total_harvest(design)))
+  release <- suppressWarnings(suppressMessages(estimate_total_release(design)))
+
+  expect_equal(release$estimates$estimate, harvest$estimates$estimate, tolerance = 1e-12)
+})
+
+test_that("bus-route total release reports its own quantity, not effort (GH #111)", {
+  # br_build_estimates() hardcoded method = "total", the one string autoplot maps
+  # to "Total Effort". A fish-valued total therefore plotted under an effort
+  # label, with nothing in the returned object to contradict it.
+  design <- attach_release_equal_to_harvest(
+    build_br_design_for_tests(n_sites = 3, n_days = 8, n_interviews = 24, seed = 42)
+  )
+  result <- suppressWarnings(suppressMessages(estimate_total_release(design)))
+
+  expect_equal(result$method, "ht-total-release")
+  expect_equal(ggplot2::autoplot(result)$labels$y, "Total Release (fish)")
+})
+
+test_that("bus-route total release no longer demands add_counts() (GH #110)", {
+  # A bus-route design estimates effort from interviews and inclusion
+  # probabilities, so it need not carry counts at all. Routing release through
+  # the count-based path made estimate_total_release() abort on exactly the
+  # designs whose own estimator was sitting unused.
+  design <- attach_release_equal_to_harvest(
+    build_br_design_for_tests(n_sites = 3, n_days = 8, n_interviews = 24, seed = 42)
+  )
+  expect_null(design$counts)
+
+  result <- suppressWarnings(suppressMessages(estimate_total_release(design)))
+  expect_s3_class(result, "creel_estimates")
+  expect_true(is.finite(result$estimates$estimate))
+})
+
+test_that("bus-route total release reads the release column, not the harvest one (GH #110)", {
+  # Same guard as the rate path: with releases set equal to harvest, a delegation
+  # that never repointed the numerator would go undetected.
+  design <- attach_release_equal_to_harvest(
+    build_br_design_for_tests(n_sites = 3, n_days = 8, n_interviews = 24, seed = 42)
+  )
+  design$catch[[design$catch_count_col]] <- design$catch[[design$catch_count_col]] * 2
+
+  harvest <- suppressWarnings(suppressMessages(estimate_total_harvest(design)))
+  release <- suppressWarnings(suppressMessages(estimate_total_release(design)))
+  expect_equal(release$estimates$estimate, 2 * harvest$estimates$estimate, tolerance = 1e-12)
+})
+
+# TOTR-112: bus-route trip-status handling (finding 9) ----
+
+test_that("bus-route total release counts only completed trips (GH #112)", {
+  # Release summed every row while harvest, on the same design, filtered to
+  # complete ones. Same defect as total catch, same fix, asserted separately so a
+  # partial fix cannot pass.
+  design <- attach_release_equal_to_harvest(
+    build_br_design_for_tests(n_sites = 3, n_days = 8, n_interviews = 24, seed = 42)
+  )
+  design$interviews$trip_status <- rep(
+    c("complete", "incomplete"),
+    length.out = nrow(design$interviews)
+  )
+
+  release <- suppressWarnings(suppressMessages(estimate_total_release(design)))
+  harvest <- suppressWarnings(suppressMessages(estimate_total_harvest(design)))
+
+  expect_equal(release$estimates$n, harvest$estimates$n)
+  expect_lt(release$estimates$n, nrow(design$interviews))
+})

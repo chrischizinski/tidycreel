@@ -8,6 +8,7 @@ est_effort_camera(
   design,
   interviews = NULL,
   effort_col = "hours_fished",
+  n_anglers = NULL,
   intercept_col = NULL,
   h_open = NULL,
   variance = c("taylor", "replicate"),
@@ -26,6 +27,18 @@ raw count expansion and \code{h_open} is required.}
 
 \item{effort_col}{Character scalar.  Column in \code{interviews} containing
 per-trip effort in hours. Default \code{"hours_fished"}.}
+
+\item{n_anglers}{Optional party size for the ratio-calibration path. Either a
+character scalar naming a column in \code{interviews}, or a single positive
+number stating a constant party size (\code{n_anglers = 1} for individual-level
+interviews).
+
+The calibration ratio cancels the camera counts, so the estimate inherits
+whatever unit \code{effort_col} holds. Supplying \code{n_anglers} makes this function
+perform the party-size multiplication, so the result is angler-hours and is
+labelled as such. Omitting it leaves the estimate in the unit of the column
+you supplied, which the package cannot identify: the unit is reported as
+unknown and a warning names the ambiguity. Default \code{NULL}.}
 
 \item{intercept_col}{Character scalar or \code{NULL}.  Column in the count data
 representing the camera count during the interview interception period.
@@ -79,9 +92,18 @@ ops <- example_camera_counts[
 ]
 design <- add_counts(design, ops)
 
-# Ratio calibration using interview hours
+# Ratio calibration using interview hours. `example_camera_interviews` has no
+# party-size column, so this warns and reports an unknown unit: the estimate
+# is in whatever unit `hours_fished` holds, which the package cannot tell.
 est <- est_effort_camera(design, interviews = example_camera_interviews)
 print(est)
+
+# With party sizes the function does the normalisation itself, so the result
+# is angler-hours and is labelled as such.
+ints <- example_camera_interviews
+ints$party_size <- 2
+est_ah <- est_effort_camera(design, interviews = ints, n_anglers = "party_size")
+print(est_ah)
 }
 
 }
@@ -92,7 +114,7 @@ camera counts. Fisheries Research 231:105706.
 \doi{10.1016/j.fishres.2020.105706}
 }
 \seealso{
-Other "Survey Design": 
+Other "Survey Design":
 \code{\link{add_catch}()},
 \code{\link{add_counts}()},
 \code{\link{add_interviews}()},

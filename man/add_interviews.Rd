@@ -86,9 +86,18 @@ the fishing technique employed (e.g., "fly", "spin", "bait").}
 NULL). Use bare column names (e.g., \code{species_sought = target_species}).
 Records the species the angler was targeting during the interview.}
 
-\item{n_anglers}{Tidy selector for the number of anglers in the party (default 1L --
-individual-level interviews). When omitted, a \code{cli_inform()} message notes the
-assumption. Use bare column names (e.g., \code{n_anglers = party_size}).}
+\item{n_anglers}{Number of anglers in the party. Either a bare column name
+(e.g. \code{n_anglers = party_size}) or a single positive number stating a
+constant party size (e.g. \code{n_anglers = 1} when every interview is one
+angler). A bare number is read as a party size, \strong{not} as a tidyselect
+column position, so \code{n_anglers = 1} means one angler per party rather
+than "column 1". Values must be positive and finite; missing and
+non-integer values warn.
+
+When omitted, effort is left un-normalised and a \code{cli_inform()} message
+notes the assumption. In that case the rate estimators return quantities per
+\emph{party}-hour, and the product totals warn when they multiply one by
+count-derived angler-hours.}
 
 \item{refused}{Tidy selector for the refused interview flag column (optional,
 default NULL). Use bare column names (e.g., \code{refused = refused_flag}).

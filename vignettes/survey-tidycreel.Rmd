@@ -202,6 +202,7 @@ and filters to complete trips by default.
 design <- add_interviews(design, example_interviews,
   catch         = catch_total,
   effort        = hours_fished,
+  n_anglers     = n_anglers,
   harvest       = catch_kept,
   trip_status   = trip_status,
   trip_duration = trip_duration

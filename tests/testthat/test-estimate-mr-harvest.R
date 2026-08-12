@@ -68,7 +68,7 @@ test_that("Test I: exploitation-rate creel_estimates fires error", {
 test_that("Test J: harvest_rate = 0 fires error", {
   expect_error(
     estimate_mr_harvest(angler_n = angler_result, harvest_rate = 0),
-    regexp = "harvest_rate.*must be|\\(0, 1\\]"
+    regexp = "harvest_rate.*must be > 0"
   )
 })
 
@@ -79,11 +79,22 @@ test_that("Test K: @examples smoke — two-step call completes without error", {
   })
 })
 
-# --- WARNING-03 fix: harvest_rate > 1 upper-bound guard tested ---
+# --- Finding 23: harvest_rate is fish per angler, so it has no upper bound ---
 
-test_that("Test L: harvest_rate > 1 fires error", {
-  expect_error(
-    estimate_mr_harvest(angler_n = angler_result, harvest_rate = 1.1),
-    regexp = "harvest_rate.*must be|\\(0, 1\\]"
+# The (0, 1] guard this test used to pin encoded a wrong reading of the
+# estimator: it treated harvest_rate as the proportion of anglers who kept
+# fish, which would make H = N_hat * r a count of anglers rather than of fish
+# while the output is labelled total_harvest. A fishery averaging more than one
+# kept fish per angler is ordinary, and rejecting it made total harvest
+# unreachable for exactly those fisheries.
+test_that("Test L: harvest_rate above 1 is accepted as fish per angler", {
+  expect_no_error(
+    estimate_mr_harvest(angler_n = angler_result, harvest_rate = 1.4)
+  )
+  result <- estimate_mr_harvest(angler_n = angler_result, harvest_rate = 1.4)
+  expect_equal(
+    result$estimates$estimate,
+    angler_result$estimates$estimate * 1.4,
+    tolerance = 1e-10
   )
 })

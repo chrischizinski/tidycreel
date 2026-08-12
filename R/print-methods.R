@@ -146,6 +146,9 @@ print.creel_summary <- function(x, ...) {
     "ratio-of-means-hpue-per-angler" = "Ratio-of-Means HPUE (per angler)",
     "product-total-catch" = "Total Catch (Effort x CPUE)",
     "product-total-harvest" = "Total Harvest (Effort x HPUE)",
+    "ht-total-catch" = "Total Catch (Horvitz-Thompson)",
+    "ht-total-harvest" = "Total Harvest (Horvitz-Thompson)",
+    "ht-total-release" = "Total Release (Horvitz-Thompson)",
     x$method
   )
   variance_display <- switch(

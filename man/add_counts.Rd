@@ -7,6 +7,7 @@
 add_counts(
   design,
   counts,
+  count_col = NULL,
   psu = NULL,
   count_time_col = NULL,
   count_type = "instantaneous",
@@ -27,6 +28,14 @@ from raw source data.
 
 Compatibility input paths remain available for raw-ish count workflows with
 multiple within-day observations or progressive counts.}
+
+\item{count_col}{Tidy selector for the numeric column holding the angler
+counts. Defaults to NULL, in which case the column is inferred as the only
+numeric column that is not design metadata (date, strata, PSU, section,
+count-time, or period-length). If more than one numeric column qualifies,
+\code{add_counts()} aborts and lists the candidates rather than choosing by
+position — name the column here to resolve it. The resolved name is stored
+on the design and used by every downstream estimator.}
 
 \item{psu}{Character string naming the PSU (Primary Sampling Unit) column
 in the count data. Defaults to NULL, which uses the design's date_col as
@@ -52,10 +61,33 @@ to complete one roving count circuit of the water body. Required when
 \code{count_type = "instantaneous"}.}
 
 \item{period_length_col}{Tidy selector for the column containing T_d — the
-total fishable shift duration in hours for each PSU. Required when
-\code{count_type = "progressive"} (CNT-05). Values must be positive and finite.
-The column is dropped from \code{design$counts} after Ê_d is computed (it
-must not be passed to \code{estimate_effort()} as a count variable).}
+length in hours of the period each count was randomised within. Required
+when \code{count_type = "progressive"} (CNT-05), optional but strongly
+recommended when \code{count_type = "instantaneous"}. Values must be positive
+and finite. The column is dropped from \code{design$counts} after Ê_d is
+computed (it must not be passed to \code{estimate_effort()} as a count
+variable).
+
+For instantaneous counts, supplying this is what makes the estimate
+angler-hours. A count is a snapshot of how many anglers were present at one
+moment; effort is that count times the period it was randomised within,
+Ê_d = C̄_d × T_d (Hoenig et al. 1993). Without it, \code{estimate_effort()}
+expands the counts to the season and returns them unmultiplied, and warns
+once per session that it has done so.
+
+Not accepted on aerial designs, which carry their period length as
+\code{h_open} and scale the count by \code{h_open / v} when estimating. Supplying
+both would apply time twice, so this errors rather than choosing one.
+
+T_d is a property of the survey protocol — the period set by regulation,
+access hours, or field practice. It is not astronomical daylight.
+\code{\link[=day_length]{day_length()}} is for simulation and planning; do not feed it here as a
+substitute for the period actually surveyed.
+
+The multiplication happens per PSU, before aggregation. Converting after
+the fact computes C̄ × T̄ where the target is the mean of C × T; the two
+differ by Cov(C, T), which is positive in practice because anglers fish
+more on long days, so the collapsed form biases low.}
 
 \item{allow_invalid}{Logical flag for validation behavior. If FALSE (default),
 validation failures abort with detailed error messages. If TRUE, validation
@@ -86,6 +118,11 @@ can still aggregate multiple within-day observations via \code{count_time_col} a
 can still compute progressive-count daily effort from \code{circuit_time} and
 \code{period_length_col}. Eager construction catches design errors at add_counts()
 time when users have context about what data they are adding.
+
+\code{period_length_col} applies to instantaneous counts as well as progressive
+ones. An instantaneous count is a snapshot of the anglers present at one
+moment, so it becomes effort only once multiplied by the period it was
+randomised within; supply that column and the estimate is in angler-hours.
 }
 \section{Immutability}{
 
@@ -190,7 +227,7 @@ design_prog <- add_counts(
 
 }
 \seealso{
-Other "Survey Design": 
+Other "Survey Design":
 \code{\link{add_catch}()},
 \code{\link{add_interviews}()},
 \code{\link{add_lengths}()},

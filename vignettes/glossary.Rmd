@@ -65,8 +65,12 @@ hood.
 
 ### Count data
 **Count data** are effort-related observations attached with `add_counts()`. For
-instantaneous surveys this is often the observed angler count or angler-hours at
-a sampled moment.
+instantaneous surveys the attached column may hold either the raw angler count
+observed at a sampled moment or angler-hours already accumulated over the day,
+and `estimate_effort()` does not convert between them — it expands whatever it
+is given to the season. Attach raw counts and the total is in angler-days;
+attach angler-hours and the total is in angler-hours. The bundled
+`example_counts` holds angler-hours.
 
 ### Interview data
 **Interview data** are party-level observations attached with `add_interviews()`.

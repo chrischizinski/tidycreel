@@ -64,7 +64,9 @@ strictly positive CI.}
 \value{
 A creel_estimates S3 object with method = "product-total-release".
 Estimates tibble has columns: estimate, se, ci_lower, ci_upper, n (plus
-any grouping columns).
+any grouping columns). For bus-route and ice designs, returns a bus-route
+HT estimate with method = "ht-total-release" and a "site_contributions"
+attribute.
 }
 \description{
 Computes total release estimates by multiplying effort x RPUE with variance
@@ -92,7 +94,7 @@ data(example_catch)
 design <- creel_design(example_calendar, date = date, strata = day_type)
 design <- add_counts(design, example_counts)
 design <- add_interviews(design, example_interviews,
-  catch = catch_total, effort = hours_fished,
+  catch = catch_total, effort = hours_fished, n_anglers = n_anglers,
   trip_status = trip_status, trip_duration = trip_duration
 )
 design <- add_catch(design, example_catch,
