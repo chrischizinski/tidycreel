@@ -535,6 +535,76 @@ test_that("Test SE6: the method string and occasion attribute are carried for do
   expect_equal(implied_t, stats::qt(0.975, df = 4), tolerance = 1e-6)
 })
 
+test_that("Test SE7: bias_adjust rejects anything that is not a single non-missing logical", {
+  # A silently-ignored bad bias_adjust would return the wrong estimator without
+  # complaint, and the two forms differ by 1/(sum(m)+1) -- 33% at sum(m) = 2.
+  # NA is included because is.logical(NA) is TRUE, so a bare is.logical() check
+  # would let it through and then take the FALSE branch by accident.
+  args <- list(M = c(0L, 100L, 200L), n = rep(100L, 3), m = c(0L, 10L, 12L), method = "schnabel")
+  for (bad in list("yes", 1L, c(TRUE, FALSE), NA, logical(0))) {
+    expect_error(
+      do.call(estimate_angler_n, c(args, list(bias_adjust = bad))),
+      regexp = "single non-missing logical"
+    )
+  }
+})
+
+test_that("Test SE8: sum(m * M), the 4.16 denominator, cannot be zero once validation passes", {
+  # There is deliberately no runtime guard for a zero denominator, because the
+  # earlier guards make it unreachable: m_k <= min(M_k, n_k) forces M_k >= m_k,
+  # and sum(m) > 0 forces some m_j > 0, so that occasion contributes
+  # m_j * M_j > 0. This test pins the reasoning -- if either guard is ever
+  # relaxed, the denominator becomes reachable and needs a real check.
+  expect_error(
+    estimate_angler_n(
+      M = c(0L, 0L, 0L), n = rep(50L, 3), m = c(0L, 5L, 0L), method = "schumacher"
+    ),
+    regexp = "cannot exceed"
+  )
+  # and the combination that would zero the denominator is exactly what that
+  # guard rejects: any recapture on an occasion with no marks at large
+  expect_error(
+    estimate_angler_n(
+      M = c(0L, 100L, 0L), n = rep(50L, 3), m = c(0L, 2L, 1L), method = "schumacher"
+    ),
+    regexp = "cannot exceed"
+  )
+})
+
+test_that("Test SE9: a Schumacher-Eschmeyer upper bound that crosses zero is reported as Inf, not negative", {
+  # 4.17 is built on 1/N, so at large residual variance the upper end of the
+  # interval for 1/N can pass through zero and invert -- exactly the pathology
+  # H&VK eq. (A.8) hit and clamped at 1e-14. Reporting the inverted value would
+  # give an upper bound below the estimate, or a negative population size.
+  # Inf is the honest statement that the data do not bound N above here.
+  noisy <- estimate_angler_n(
+    M = c(0L, 100L, 200L, 300L),
+    n = c(100L, 100L, 100L, 100L),
+    m = c(0L, 1L, 20L, 3L),
+    method = "schumacher",
+    bias_adjust = FALSE
+  )
+  expect_gt(noisy$estimates$ci_upper, noisy$estimates$estimate)
+  expect_false(noisy$estimates$ci_upper < 0)
+})
+
+test_that("Test SE10: the zero-recapture guard names the method that was actually asked for", {
+  # This message is shared by both multi-occasion methods, so it interpolates
+  # the estimator name. A hardcoded "Schnabel" would misreport what failed.
+  expect_error(
+    estimate_angler_n(
+      M = c(0L, 100L, 200L), n = rep(100L, 3), m = c(0L, 0L, 0L), method = "schnabel"
+    ),
+    regexp = "Schnabel requires at least one recapture"
+  )
+  expect_error(
+    estimate_angler_n(
+      M = c(0L, 100L, 200L), n = rep(100L, 3), m = c(0L, 0L, 0L), method = "schumacher"
+    ),
+    regexp = "Schumacher-Eschmeyer requires at least one recapture"
+  )
+})
+
 # --- WARNING-02 fix: Schnabel ci_hi guard for lo_m = 0 ---
 
 test_that("Test X: Schnabel warns and substitutes the continuous Poisson when lo_m = 0", {

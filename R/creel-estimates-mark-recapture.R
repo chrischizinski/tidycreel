@@ -541,12 +541,10 @@ estimate_angler_n <- function(
     sum_mM <- sum(m * M)
     s_occ <- length(m)
 
-    if (sum_mM == 0) {
-      cli::cli_abort(c(
-        "Schumacher-Eschmeyer is undefined: {.code sum(m * M)} is 0.",
-        "i" = "Every recapture landed on an occasion with no marks at large."
-      ))
-    }
+    # No guard on sum_mM == 0 -- it cannot happen. The validation above rejects
+    # m_k > min(M_k, n_k) and sum(m) == 0, so some m_j > 0 with M_j >= m_j > 0,
+    # which makes sum(m * M) strictly positive. A defensive check here would be
+    # unreachable code.
 
     # Dettloff (2023) eq. (8) proposes the Chapman-style small-sample correction
     # for this estimator, analogous to eq. (6) for Schnabel, and reports it had
