@@ -95,6 +95,7 @@ reference:
       Generate synthetic creel survey datasets for testing, power analysis,
       and estimator comparison. Caller supplies distributional parameters.
     contents:
+      - day_length
       - simulate_creel_data
       - simulate_creel_catch
 
