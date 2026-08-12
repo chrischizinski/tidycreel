@@ -450,6 +450,32 @@ because 2.5.0's numbers were wrong.
   of \eqn{\sum m_k} rather than centring on \eqn{\hat{N}}, so **its bounds do not
   move**; the large-sample interval is built around \eqn{1/\hat{N}} and does.
 
+* `estimate_angler_n()` gains `method = "schumacher"`, the Schumacher-Eschmeyer
+  regression estimator, for \eqn{K \geq 3} occasions. It takes the same inputs as
+  `"schnabel"` and fits \eqn{m_k/n_k} against \eqn{M_k} through the origin with
+  slope \eqn{1/N}, giving \eqn{\hat{N} = \sum n_k M_k^2 / \sum m_k M_k}. The
+  interval is Seber (1982) eq. (4.17) on \eqn{K - 2} degrees of freedom, and
+  `bias_adjust` (default `TRUE`) applies Dettloff's (2023) eq. (8) small-sample
+  correction. With `bias_adjust = FALSE` the point estimate, `invSE` and both
+  bounds match `fishmethods::schnabel()`'s Schumacher-Eschmeyer row to printed
+  precision, and the formulas were checked against Seber's own worked example
+  (Ricker's red-ear sunfish: \eqn{\hat{N}} = 423, \eqn{\hat\sigma^2} = 0.1935).
+
+  Two details differ from the Schnabel branch on purpose. Degrees of freedom are
+  \eqn{K - 2}, not \eqn{K - 1}: Seber excludes the first occasion because
+  \eqn{y_1} is identically zero when \eqn{M_1 = 0} and so "is not strictly a
+  random observation". And Dettloff's eq. (8) numerator sums from \eqn{k = 2}
+  explicitly — \eqn{(M_k + 1)^2 (n_k + 1)} is the one term here that does *not*
+  vanish at \eqn{M_1 = 0}, so occasion 1 has to be dropped by hand rather than by
+  the algebra.
+
+  **tidycreel deliberately does not implement the "pick the narrower CI" rule.**
+  Hansen & Van Kirk (2018) computed both estimators and "selected the
+  mark-recapture estimator that produced the smallest 95% CI". Choosing the
+  narrower of two intervals after seeing them conditions on the luckier draw, so
+  the reported interval does not have its nominal coverage. Choose between the
+  estimators on design grounds, or report both.
+
 * `estimate_angler_n(method = "schnabel")` no longer returns
   `ci_upper = Inf` when the recapture total is very small. The Poisson interval
   divides by the lower quantile \eqn{q_{\alpha/2}(\sum m_k)}, which is **zero** for

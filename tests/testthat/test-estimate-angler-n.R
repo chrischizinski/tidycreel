@@ -422,6 +422,119 @@ test_that("Test W: @examples smoke — estimate_angler_n(M=200, n=50, m=10) comp
   expect_no_error(estimate_angler_n(M = 200L, n = 50L, m = 10L))
 })
 
+# --- MR-04: Schumacher-Eschmeyer estimator (finding 31) ---
+
+# Seber (1982) sec. 4.1.3 worked example, Ricker's [1958: 103] red-ear sunfish.
+# Only the summary statistics are used because the OCR of Seber's Table 4.4 is
+# not trustworthy; these four are printed in the running text.
+se_sum_nM2 <- 970296
+se_sum_mM <- 2294
+se_sum_m2n <- 7.7452
+se_s <- 14
+
+test_that("Test SE1: the Seber (1982) 4.16/4.17 formulas reproduce his printed worked example", {
+  # Seber prints N = 423, sigma^2 = 0.1935 and t = 2.179 for these data. This
+  # test does not touch package code -- it pins the reading of the source, so a
+  # later reimplementation can be checked against a verified transcription
+  # rather than against a scanned page. sigma^2 in particular is easy to
+  # mis-transcribe: the sum(m^2/n) term and the correction term are printed on
+  # one line in the original.
+  sigma2 <- (se_sum_m2n - se_sum_mM^2 / se_sum_nM2) / (se_s - 2)
+  expect_equal(se_sum_nM2 / se_sum_mM, 423, tolerance = 1e-3)
+  expect_equal(sigma2, 0.1935, tolerance = 1e-3)
+  expect_equal(stats::qt(0.975, df = se_s - 2), 2.179, tolerance = 1e-3)
+})
+
+test_that("Test SE2: unadjusted Schumacher-Eschmeyer matches fishmethods to printed precision", {
+  # fishmethods::schnabel() returns a Schumacher-Eschmeyer row implementing
+  # Seber 4.16/4.17 exactly, verified term by term. Pinning literals rather
+  # than calling fishmethods keeps it out of DESCRIPTION while preserving the
+  # cross-implementation anchor -- the same arrangement Test N2 uses.
+  nn <- c(100, 120, 90, 110, 95)
+  mm <- c(0, 8, 11, 14, 19)
+  MM <- c(0, cumsum(nn)[-length(nn)])
+  result <- estimate_angler_n(
+    M = MM, n = nn, m = mm, method = "schumacher", bias_adjust = FALSE
+  )
+  expect_equal(result$estimates$estimate, 2116.151866, tolerance = 1e-6)
+  expect_equal(result$estimates$ci_lower, 1719.0431, tolerance = 1e-4)
+  expect_equal(result$estimates$ci_upper, 2751.8433, tolerance = 1e-4)
+  # invSE, the quantity fishmethods reports directly
+  expect_equal(result$estimates$se / result$estimates$estimate^2, 3.4301628e-05, tolerance = 1e-6)
+})
+
+test_that("Test SE3: df is occasions - 2, which is Seber's explicit choice not an off-by-one", {
+  # Seber addresses this directly: including the first sample would put the
+  # point (0, 0) in the regression and give s - 1, "However, as y_1 is always
+  # zero when M_1 = 0, y_1 is not strictly a random observation and for this
+  # reason is not included." Schnabel spends s - 1 (finding 29); the two
+  # estimators legitimately differ, so this pins the difference on purpose.
+  nn <- c(100, 120, 90, 110, 95)
+  mm <- c(0, 8, 11, 14, 19)
+  MM <- c(0, cumsum(nn)[-length(nn)])
+  result <- estimate_angler_n(
+    M = MM, n = nn, m = mm, method = "schumacher", bias_adjust = FALSE
+  )
+  inv_n <- 1 / result$estimates$estimate
+  se_inv <- result$estimates$se / result$estimates$estimate^2
+  implied_t <- (1 / result$estimates$ci_lower - inv_n) / se_inv
+  expect_equal(implied_t, stats::qt(0.975, df = 3), tolerance = 1e-6)
+  expect_false(isTRUE(all.equal(implied_t, stats::qt(0.975, df = 4), tolerance = 1e-6)))
+})
+
+test_that("Test SE4: bias_adjust applies Dettloff eq. (8), dropping occasion 1 by hand", {
+  # Unlike every other term in this estimator, (M_k + 1)^2 (n_k + 1) does NOT
+  # vanish at M_1 = 0, so occasion 1 has to be excluded explicitly. Including
+  # it would silently inflate the numerator by (n_1 + 1). This recomputes the
+  # published formula independently rather than restating the implementation.
+  nn <- c(100, 120, 90, 110, 95)
+  mm <- c(0, 8, 11, 14, 19)
+  MM <- c(0, cumsum(nn)[-length(nn)])
+  k <- 2:5
+  expected <- sum((MM[k] + 1)^2 * (nn[k] + 1)) / sum(MM * (mm + 1)) - 2
+  result <- estimate_angler_n(M = MM, n = nn, m = mm, method = "schumacher")
+  expect_equal(result$estimates$estimate, expected, tolerance = 1e-9)
+
+  # the wrong version, with occasion 1 left in, must not be what we return
+  wrong <- sum((MM + 1)^2 * (nn + 1)) / sum(MM * (mm + 1)) - 2
+  expect_false(isTRUE(all.equal(result$estimates$estimate, wrong, tolerance = 1e-6)))
+  # and the correction moves the estimate down, per Dettloff's bias direction
+  expect_lt(result$estimates$estimate, 2116.151866)
+})
+
+test_that("Test SE5: Schumacher-Eschmeyer requires >= 3 occasions", {
+  # df = s - 2, so two occasions leaves none. Dettloff states eq. (7) "for
+  # k > 2" for the same reason. The error must name schnabel as the two-occasion
+  # route rather than sending the caller to chapman.
+  expect_error(
+    estimate_angler_n(
+      M = c(0L, 100L), n = c(100L, 100L), m = c(0L, 10L), method = "schumacher"
+    ),
+    regexp = "3 occasions"
+  )
+  expect_no_error(
+    estimate_angler_n(
+      M = c(0L, 100L, 200L), n = rep(100L, 3), m = c(0L, 10L, 12L),
+      method = "schumacher"
+    )
+  )
+})
+
+test_that("Test SE6: the method string and occasion attribute are carried for downstream use", {
+  nn <- c(100, 120, 90, 110, 95)
+  mm <- c(0, 8, 11, 14, 19)
+  MM <- c(0, cumsum(nn)[-length(nn)])
+  result <- estimate_angler_n(M = MM, n = nn, m = mm, method = "schumacher")
+  expect_equal(result$method, "mark-recapture-schumacher")
+  # estimate_mr_harvest() keys its df off this; without it the harvest interval
+  # would fall back to sum(m) - 1 (finding 33).
+  expect_equal(attr(result, "n_occasions"), 5L)
+  harvest <- estimate_mr_harvest(angler_n = result, harvest_rate = 0.35)
+  implied_t <- (harvest$estimates$ci_upper - harvest$estimates$estimate) /
+    harvest$estimates$se
+  expect_equal(implied_t, stats::qt(0.975, df = 4), tolerance = 1e-6)
+})
+
 # --- WARNING-02 fix: Schnabel ci_hi guard for lo_m = 0 ---
 
 test_that("Test X: Schnabel warns and substitutes the continuous Poisson when lo_m = 0", {

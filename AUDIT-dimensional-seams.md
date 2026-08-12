@@ -1511,8 +1511,61 @@ the same wall finding 27 documents — "occasionally the lower bound for \eqn{1/
 was negative, in which case it was set to \eqn{10^{-14}}" — independent confirmation
 that an interval built on \eqn{1/\hat{N}} crosses zero at small recapture counts.
 
-**NOT FIXED — a new estimator, not a repair.** Belongs with finding 27's decision,
-since both are about which interval this family should report.
+**FIXED** (2026-08-12), as `method = "schumacher"`, once Seber (1982) was in hand.
+
+Seber sec. 4.1.3 derives it as a weighted regression of \eqn{m_k/n_k} on \eqn{M_k}
+through the origin with slope \eqn{1/N}. His eq. (4.16) is
+\eqn{\hat{N} = \sum n_k M_k^2 / \sum m_k M_k} and eq. (4.17) gives the interval;
+De Lury (1958) supplies the argument for weighting by \eqn{n_k} rather than by the
+reciprocal variances, since in the field the marked proportions are the thing most
+likely to be wrong. The method is also Hayne's (1949b).
+
+**Verified twice.** Seber's own worked example (Ricker's red-ear sunfish) reproduces
+from the printed summary statistics: \eqn{\hat{N}} = 422.97 against his 423,
+\eqn{\hat\sigma^2} = 0.19347 against 0.1935, \eqn{t} = 2.179. And
+`fishmethods::schnabel()`'s Schumacher-Eschmeyer row matches a direct implementation
+of 4.16/4.17 term for term — \eqn{\hat{N}}, `invSE` and both bounds to full printed
+precision. Both anchors are pinned on the `bias_adjust = FALSE` path.
+
+**Two things that would have been silent errors.**
+
+- **df is \eqn{s-2}, not \eqn{s-1}, and Seber says why.** "Some authors (e.g. Hayne
+  [1949b], Ricker [1958]) include the first sample in the theory, so that the point
+  (0, 0) is used in the regression analysis. In this case the number of degrees of
+  freedom should be \eqn{s-1} rather than \eqn{s-2}. However, as \eqn{y_1} is always
+  zero when \eqn{M_1 = 0}, \eqn{y_1} is not strictly a random observation and for
+  this reason is not included." So Schnabel spending \eqn{s-1} (finding 29) and
+  Schumacher-Eschmeyer spending \eqn{s-2} is a real difference between the
+  estimators, not an off-by-one in one of them. Test SE3 pins the difference.
+- **Dettloff eq. (8)'s numerator must sum from \eqn{k=2} by hand.** Everywhere else
+  in this estimator the \eqn{M_1 = 0} term vanishes through the algebra, so summing
+  over all occasions is harmless. \eqn{(M_k+1)^2(n_k+1)} does not vanish — at
+  \eqn{k=1} it contributes \eqn{n_1+1}. Test SE4 recomputes the published formula
+  independently and asserts the all-occasions version is *not* what is returned.
+
+**The cited selection rule was deliberately NOT implemented, and this is a
+disagreement with the source.** H&VK compute both estimators and "selected the
+mark-recapture estimator that produced the smallest 95% CI." Choosing the narrower
+of two intervals after seeing them conditions on the luckier of two draws, so the
+reported 95% interval does not have 95% coverage. Automating it would have put a
+coverage bug in the package under the banner of following the cited method. The
+`@details` block states the rule, explains why it undercovers, and tells the reader
+to choose on design grounds or report both.
+
+**One accuracy note on the secondary literature.** Dettloff reports that "Seber
+(1982) noted the regression-based Schumacher-Eschmeyer is expected to be the most
+robust multi-visit method". Seber's actual words are weaker and carry no
+superlative: "We would also expect (4.17) to be robust with regard to departures
+from the underlying assumptions, and this model should therefore be used in
+conjunction with the other methods mentioned so far in this chapter." An
+expectation, not a demonstration, and *in conjunction with* rather than instead of.
+The package documents Seber's claim, not Dettloff's paraphrase of it.
+
+**Known approximation.** Dettloff gives no variance or interval for eq. (8), and
+unlike his eq. (6) the correction is not a constant shift of \eqn{1/\hat{N}}, so the
+variance is not provably unchanged. Seber's `se_inv` is taken at the corrected
+location so the estimate stays centred in its own interval; `bias_adjust = FALSE` is
+the exact published path and is what the two external anchors are pinned to.
 
 ### 32. The Schnabel branch is the unadjusted form, so bias handling depended on occasion count
 

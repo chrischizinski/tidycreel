@@ -95,6 +95,12 @@
 #'     CI uses the Poisson branch when \eqn{\sum m_k < 50} and the normal
 #'     approximation on \eqn{1/\hat{N}} otherwise, on \eqn{K - 1} degrees of
 #'     freedom (Hansen & Van Kirk 2018, eq. A.5).
+#'   \item \strong{Schumacher-Eschmeyer} (\code{method = "schumacher"}): The
+#'     regression alternative to Schnabel for \eqn{K \geq 3} occasions, fitting
+#'     \eqn{m_k/n_k} against \eqn{M_k} through the origin with slope \eqn{1/N}.
+#'     \eqn{\hat{N} = \frac{\sum n_k M_k^2}{\sum m_k M_k}}
+#'     Interval from Seber (1982) eq. (4.17) on \eqn{K - 2} degrees of freedom.
+#'     Also carries Dettloff's (2023) eq. (8) small-sample correction by default.
 #' }
 #'
 #' @param M integer or numeric. Number of marked animals released (first sample).
@@ -105,7 +111,7 @@
 #' @param m integer or numeric. Number of recaptures. Scalar for Chapman and
 #'   Petersen; vector (same length as \code{M}) for Schnabel.
 #' @param method character(1). One of \code{"chapman"} (default),
-#'   \code{"petersen"}, or \code{"schnabel"}.
+#'   \code{"petersen"}, \code{"schnabel"}, or \code{"schumacher"}.
 #' @param conf_level numeric. Confidence level for the CI. Default \code{0.95}.
 #' @param ci_method character(1). CI construction for the Chapman and Petersen
 #'   branches: \code{"logit"} (default) is Sadinle's (2009) 0.5 transformed logit
@@ -120,12 +126,13 @@
 #'   (2018) — but still honours \code{"bootstrap"} for the extra columns.
 #' @param B integer(1). Number of bootstrap replicates when
 #'   \code{ci_method = "bootstrap"}. Default \code{2000L}.
-#' @param bias_adjust logical(1). Schnabel only; ignored by the Chapman and
-#'   Petersen branches, which carry their own bias handling. \code{TRUE}
-#'   (default, new in 3.0.0) applies Chapman's (1952) small-sample correction,
-#'   dividing by \eqn{\sum m_k + 1}. \code{FALSE} restores the unadjusted
-#'   \eqn{\sum M_k n_k / \sum m_k} that was the only form before 3.0.0 and that
-#'   \code{fishmethods::schnabel()} computes.
+#' @param bias_adjust logical(1). Multi-occasion methods only; ignored by the
+#'   Chapman and Petersen branches, which carry their own bias handling.
+#'   \code{TRUE} (default, new in 3.0.0) applies the small-sample correction —
+#'   Chapman's (1952), dividing by \eqn{\sum m_k + 1}, for Schnabel, and
+#'   Dettloff's (2023) eq. (8) for Schumacher-Eschmeyer. \code{FALSE} restores
+#'   the unadjusted forms, which are what \code{fishmethods::schnabel()}
+#'   computes for both and, for Schnabel, the only form available before 3.0.0.
 #'
 #' @details
 #' \strong{Why the Chapman and Petersen default is not a Wald interval.}
@@ -160,6 +167,26 @@
 #' brackets the point estimate matters more than coverage.
 #'
 #' \code{ci_method = "delta"} reproduces the pre-3.0.0 bounds exactly.
+#'
+#' \strong{Choosing between Schnabel and Schumacher-Eschmeyer, and a warning about
+#' how not to.} They use identical field data and differ in how they pool it:
+#' Schnabel is a ratio of sums, Schumacher-Eschmeyer a weighted regression through
+#' the origin. Seber (1982) expects the regression form "to be robust with regard
+#' to departures from the underlying assumptions" and recommends using it "in
+#' conjunction with the other methods" — as a cross-check, not a replacement. That
+#' is a weaker claim than it is sometimes reported as; Seber neither demonstrates
+#' the robustness nor calls it the most robust method. Dettloff (2023) found the
+#' two adjusted forms "effectively equivalent at larger sample sizes", with
+#' Schumacher-Eschmeyer less variable and Schnabel reaching unbiasedness slightly
+#' sooner.
+#'
+#' \strong{Do not pick whichever gives the narrower interval.} Hansen & Van Kirk
+#' (2018) computed both and "selected the mark-recapture estimator that produced
+#' the smallest 95\% CI", and that procedure does not have 95\% coverage: choosing
+#' the narrower of two intervals after seeing them conditions on the luckier draw,
+#' so the reported interval is narrower than its nominal level. tidycreel therefore
+#' does not implement the selection rule. Decide between the estimators on design
+#' grounds before looking at the answer, or report both.
 #'
 #' \strong{The Schnabel upper bound at very few recaptures.} The Poisson interval
 #' inverts the distribution of \eqn{\sum m_k}, so it needs the lower quantile
@@ -215,7 +242,7 @@
 #'   \code{ci_lower}, \code{ci_upper}, \code{n} (total recaptures).
 #'
 #' @references
-#' Hansen, M. J., & Van Kirk, R. W. (2018). A mark-recapture-based approach
+#' Hansen, J. M., & Van Kirk, R. W. (2018). A mark-recapture-based approach
 #' for estimating angler harvest. \emph{North American Journal of Fisheries
 #' Management}, 38(2), 400--410. \doi{10.1002/nafm.10038}
 #'
@@ -245,6 +272,25 @@
 #' Budapestinensis de Rolando Eotvos Nominatae, Sectio Computatorica}, 39,
 #' 137--147.
 #'
+#' Schnabel, Z. E. (1938). The estimation of the total fish population of a
+#' lake. \emph{The American Mathematical Monthly}, 45(6), 348--352.
+#' \doi{10.2307/2304025}
+#'
+#' Chapman, D. G. (1951). Some properties of the hypergeometric distribution
+#' with applications to zoological sample censuses. \emph{University of
+#' California Publications in Statistics}, 1(7), 131--160.
+#'
+#' Schumacher, F. X., & Eschmeyer, R. W. (1943). The estimation of fish
+#' populations in lakes or ponds. \emph{Journal of the Tennessee Academy of
+#' Science}, 18, 228--249.
+#'
+#' Seber, G. A. F. (1982). \emph{The Estimation of Animal Abundance and Related
+#' Parameters}, 2nd ed. Macmillan, New York.
+#'
+#' De Lury, D. B. (1958). The estimation of population size by a marking and
+#' recapture procedure. \emph{Journal of the Fisheries Research Board of
+#' Canada}, 15(1), 19--25. \doi{10.1139/f58-002}
+#'
 #' @family Estimation
 #' @export
 #'
@@ -265,6 +311,15 @@
 #'   method = "schnabel"
 #' )
 #' print(result_s)
+#'
+#' # Schumacher-Eschmeyer — the regression alternative, needs >= 3 occasions
+#' result_se <- estimate_angler_n(
+#'   M = c(0L, 47L, 91L, 131L),
+#'   n = c(50L, 50L, 50L, 50L),
+#'   m = c(0L,  4L,  6L,  8L),
+#'   method = "schumacher"
+#' )
+#' print(result_se)
 estimate_angler_n <- function(
   M,
   n,
@@ -275,8 +330,9 @@ estimate_angler_n <- function(
   B = 2000L,
   bias_adjust = TRUE
 ) {
-  method <- match.arg(method, c("chapman", "petersen", "schnabel"))
+  method <- match.arg(method, c("chapman", "petersen", "schnabel", "schumacher"))
   ci_method <- match.arg(ci_method)
+  multi_occasion <- method %in% c("schnabel", "schumacher")
   if (!is.logical(bias_adjust) || length(bias_adjust) != 1L || is.na(bias_adjust)) {
     cli::cli_abort("{.arg bias_adjust} must be a single non-missing logical value.")
   }
@@ -295,20 +351,29 @@ estimate_angler_n <- function(
     cli::cli_abort("{.arg m} must be >= 0.")
   }
 
-  if (method == "schnabel") {
-    # Schnabel: length checks must come before any per-element guards
+  if (multi_occasion) {
+    # Multi-occasion: length checks must come before any per-element guards
     if (!all(lengths(list(M, n, m)) == length(M))) {
       cli::cli_abort(
-        "{.arg M}, {.arg n}, and {.arg m} must be the same length for method = 'schnabel'."
+        "{.arg M}, {.arg n}, and {.arg m} must be the same length for method = {.val {method}}."
       )
     }
-    if (length(M) < 2L) {
+    # Schnabel needs 2 occasions; Schumacher-Eschmeyer is a regression through
+    # the origin on s - 1 usable points and spends 2 df, so it needs 3. Dettloff
+    # (2023) eq. (7) states the estimator "for k > 2" for the same reason.
+    min_occasions <- if (method == "schumacher") 3L else 2L
+    label <- if (method == "schumacher") "Schumacher-Eschmeyer" else "Schnabel"
+    if (length(M) < min_occasions) {
       cli::cli_abort(c(
-        "Schnabel requires >= 2 occasions.",
-        "i" = "Use {.code method = 'chapman'} or {.code method = 'petersen'} for a single occasion."
+        "{label} requires >= {min_occasions} occasions.",
+        "i" = if (method == "schumacher") {
+          "Use {.code method = 'schnabel'} for two occasions."
+        } else {
+          "Use {.code method = 'chapman'} or {.code method = 'petersen'} for a single occasion."
+        }
       ))
     }
-    # For Schnabel, M[1] = 0 is valid (no marked fish at large before first sample)
+    # M[1] = 0 is valid (no marked fish at large before the first sample)
     if (any(M < 0)) {
       cli::cli_abort("{.arg M} must be >= 0.")
     }
@@ -317,7 +382,7 @@ estimate_angler_n <- function(
     }
     if (sum(m) == 0L) {
       cli::cli_abort(
-        "Total recaptures {.code sum(m)} is 0. Schnabel requires at least one recapture."
+        "Total recaptures {.code sum(m)} is 0. {label} requires at least one recapture."
       )
     }
   } else {
@@ -460,6 +525,80 @@ estimate_angler_n <- function(
     if (ci_method == "bootstrap") {
       attr(result, "boot_samples") <- N_hat_b
     }
+    result
+  } else if (method == "schumacher") {
+    # Schumacher-Eschmeyer: a weighted regression of m_k/n_k on M_k through the
+    # origin, slope 1/N. Seber (1982) sec. 4.1.3 derives it; De Lury (1958)
+    # supplies the argument for weighting by n_k rather than by the reciprocal
+    # variances, since the true marked proportions are the thing most likely to
+    # be wrong in the field. Also known as Hayne's method (Hayne 1949b).
+    # See finding 31 in AUDIT-dimensional-seams.md.
+    #
+    # Occasion 1 contributes nothing: M_1 = 0 zeroes every term below. Seber
+    # excludes it explicitly -- y_1 is always 0 when M_1 = 0, so it is not a
+    # random observation, which is why df is s - 2 and not s - 1.
+    sum_nM2 <- sum(n * M^2)
+    sum_mM <- sum(m * M)
+    s_occ <- length(m)
+
+    if (sum_mM == 0) {
+      cli::cli_abort(c(
+        "Schumacher-Eschmeyer is undefined: {.code sum(m * M)} is 0.",
+        "i" = "Every recapture landed on an occasion with no marks at large."
+      ))
+    }
+
+    # Dettloff (2023) eq. (8) proposes the Chapman-style small-sample correction
+    # for this estimator, analogous to eq. (6) for Schnabel, and reports it had
+    # the fastest reduction in bias at small sample sizes while staying exactly
+    # unbiased at large ones. Note the numerator sum runs from k = 2: unlike
+    # every other term here, (M_k + 1)^2 (n_k + 1) does NOT vanish at M_1 = 0,
+    # so occasion 1 has to be dropped by hand rather than by the algebra.
+    N_hat <- if (bias_adjust) {
+      idx <- seq_along(m)[-1]
+      sum((M[idx] + 1)^2 * (n[idx] + 1)) / sum(M * (m + 1)) - 2
+    } else {
+      sum_nM2 / sum_mM
+    }
+
+    # Seber (1982) eq. (4.17). sigma^2 is the residual mean square of the
+    # weighted regression on s - 2 degrees of freedom.
+    sigma2 <- (sum(m^2 / n) - sum_mM^2 / sum_nM2) / (s_occ - 2L)
+    se_inv <- sqrt(max(0, sigma2) / sum_nM2)
+    se_N <- N_hat^2 * se_inv
+
+    z <- stats::qt(1 - (1 - conf_level) / 2, df = s_occ - 2L)
+    # 4.17 rearranges to 1/(beta_hat +/- t * se_inv), so this interval is centred
+    # on 1/N_hat rather than being an inversion independent of it -- contrast the
+    # Schnabel Poisson branch. It therefore has to follow bias_adjust, or the
+    # reported estimate would sit off-centre in its own interval.
+    #
+    # Dettloff supplies no variance or interval for eq. (8), and unlike his
+    # eq. (6) the correction is not a constant shift of 1/N_hat, so the variance
+    # is not provably unchanged. Taking Seber's se_inv at the corrected location
+    # is an approximation, and bias_adjust = FALSE is the exact, published path.
+    inv_N <- 1 / N_hat
+    ci_lo <- 1 / (inv_N + z * se_inv)
+    ci_hi <- 1 / (inv_N - z * se_inv)
+
+    estimates_df <- tibble::tibble(
+      parameter = "N_hat",
+      estimate = N_hat,
+      se = se_N,
+      ci_lower = ci_lo,
+      ci_upper = if (ci_hi < 0) Inf else ci_hi,
+      n = as.integer(sum(m))
+    )
+    result <- new_creel_estimates( # nolint: object_usage_linter
+      estimates = estimates_df,
+      method = "mark-recapture-schumacher",
+      variance_method = "delta",
+      design = NULL,
+      conf_level = conf_level,
+      by_vars = NULL,
+      unit = NA_character_
+    )
+    attr(result, "n_occasions") <- s_occ
     result
   } else {
     # method == "schnabel"
@@ -634,7 +773,7 @@ estimate_angler_n <- function(
 #'   \code{ci_upper}.
 #'
 #' @references
-#' Hansen, M. J., & Van Kirk, R. W. (2018). A mark-recapture-based approach
+#' Hansen, J. M., & Van Kirk, R. W. (2018). A mark-recapture-based approach
 #' for estimating angler harvest. \emph{North American Journal of Fisheries
 #' Management}, 38(2), 400--410. \doi{10.1002/nafm.10038}
 #'
