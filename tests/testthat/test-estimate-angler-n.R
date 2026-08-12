@@ -16,7 +16,9 @@ n_s <- c(50L, 50L, 50L, 50L)
 m_s <- c(0L, 4L, 6L, 8L)
 sum_Mn_s <- sum(M_s * n_s) # 0+2350+4550+6550 = 13450
 sum_m_s <- sum(m_s) # 0+4+6+8 = 18
-N_hat_s <- sum_Mn_s / sum_m_s # 747.222...
+# Default is Chapman's (1952) small-sample correction, Dettloff (2023) eq. (6).
+N_hat_s <- sum_Mn_s / (sum_m_s + 1) # 707.894...
+N_hat_s_unadj <- sum_Mn_s / sum_m_s # 747.222...
 se_inv_s <- sqrt(sum_m_s / sum_Mn_s^2)
 se_N_s <- N_hat_s^2 * se_inv_s
 
@@ -139,9 +141,33 @@ test_that("Test J: Petersen returns method mark-recapture-petersen", {
 
 # --- MR-03: Schnabel estimator ---
 
-test_that("Test K: Schnabel N_hat matches sum(M*n)/sum(m)", {
+test_that("Test K: Schnabel N_hat carries Chapman's +1 correction by default", {
+  # Dettloff (2023) eq. (6). Two reasons this is the default rather than opt-in.
+  # First, the unadjusted form turns biased *high* at moderate sample sizes,
+  # which propagates into an inflated harvest estimate; the adjusted form's bias
+  # "approaches zero ... without ever becoming positive". Second, Schnabel
+  # reduces to Lincoln-Petersen at K = 2, so an unadjusted Schnabel made bias
+  # handling depend on occasion count while method = "chapman" already carried
+  # the +1 at two occasions. See finding 32 in AUDIT-dimensional-seams.md.
   result <- estimate_angler_n(M = M_s, n = n_s, m = m_s, method = "schnabel")
   expect_equal(result$estimates$estimate, N_hat_s, tolerance = 1e-10)
+  # The correction is exactly -1/(sum(m) + 1) in relative terms. Pinning the
+  # ratio fails if the +1 is ever moved into se_inv or the numerator instead.
+  expect_equal(
+    result$estimates$estimate / N_hat_s_unadj,
+    sum_m_s / (sum_m_s + 1),
+    tolerance = 1e-12
+  )
+})
+
+test_that("Test K2: bias_adjust = FALSE restores the pre-3.0.0 unadjusted form", {
+  # The escape hatch must reproduce sum(M*n)/sum(m) exactly, since that is the
+  # form fishmethods::schnabel() computes and every cross-check against it (see
+  # Test N2) depends on this path staying bit-for-bit unadjusted.
+  result <- estimate_angler_n(
+    M = M_s, n = n_s, m = m_s, method = "schnabel", bias_adjust = FALSE
+  )
+  expect_equal(result$estimates$estimate, N_hat_s_unadj, tolerance = 1e-10)
 })
 
 test_that("Test L: Schnabel SE is in N scale (se > 1, not near 0)", {
@@ -150,12 +176,62 @@ test_that("Test L: Schnabel SE is in N scale (se > 1, not near 0)", {
   expect_true(result$estimates$se > 1)
 })
 
+test_that("Test L2: bias_adjust leaves Var(1/N_hat) alone and rescales se only via the Jacobian", {
+  # 1/N_hat_adj = 1/N_hat_unadj + 1/sum(M*n) -- a shift by a constant, so the
+  # variance of 1/N_hat is identical under both forms. se_N differs only because
+  # the delta-method Jacobian N_hat^2 is evaluated at a different point. If
+  # someone ever keys se_inv to sum(m) + 1, this ratio breaks.
+  adj <- estimate_angler_n(M = M_s, n = n_s, m = m_s, method = "schnabel")
+  unadj <- estimate_angler_n(
+    M = M_s, n = n_s, m = m_s, method = "schnabel", bias_adjust = FALSE
+  )
+  expect_equal(
+    adj$estimates$se / unadj$estimates$se,
+    (N_hat_s / N_hat_s_unadj)^2,
+    tolerance = 1e-12
+  )
+})
+
 test_that("Test M: Schnabel Poisson CI branch fires when sum(m) < 50 (ci_lower < N_hat < ci_upper)", {
   result <- estimate_angler_n(M = M_s, n = n_s, m = m_s, method = "schnabel")
   # sum_m_s = 18 < 50, so Poisson branch should be used
   expect_true(sum(m_s) < 50L)
   expect_true(result$estimates$ci_lower < result$estimates$estimate)
   expect_true(result$estimates$estimate < result$estimates$ci_upper)
+})
+
+test_that("Test M2: the Poisson branch inverts sum(m) and so is identical under both bias_adjust settings", {
+  # This branch is an inversion interval for N built from the Poisson
+  # distribution of sum(m), not an interval centred on N_hat. It is therefore
+  # valid under either estimator and is deliberately left unadjusted -- the
+  # point estimate moves, the bounds do not. Contrast Test N3, where the t
+  # branch *is* built around 1/N_hat and does follow the correction.
+  adj <- estimate_angler_n(M = M_s, n = n_s, m = m_s, method = "schnabel")
+  unadj <- estimate_angler_n(
+    M = M_s, n = n_s, m = m_s, method = "schnabel", bias_adjust = FALSE
+  )
+  expect_identical(adj$estimates$ci_lower, unadj$estimates$ci_lower)
+  expect_identical(adj$estimates$ci_upper, unadj$estimates$ci_upper)
+  expect_false(adj$estimates$estimate == unadj$estimates$estimate)
+})
+
+test_that("Test M3: the adjusted point estimate stays inside the unadjusted Poisson interval across sum(m)", {
+  # Leaving the Poisson bounds unadjusted is only defensible if the adjusted
+  # N_hat cannot fall outside them. It cannot: the upper recapture quantile
+  # exceeds sum(m) + 1 for every sum(m) >= 1, so sum(M*n)/(sum(m)+1) stays above
+  # the lower bound. Swept rather than spot-checked because the Poisson
+  # quantiles are step functions and a single fixture would not catch a
+  # boundary failure at very small sum(m).
+  for (k in c(1, 2, 3, 5, 9, 18, 30, 49)) {
+    # At k <= 3 the lower Poisson quantile is 0 and ci_upper is Inf by design,
+    # which warns. That is the documented behaviour and finding 30's subject,
+    # not a failure of the containment property being checked here.
+    r <- suppressWarnings(estimate_angler_n(
+      M = c(0, 500), n = c(500, 500), m = c(0, k), method = "schnabel"
+    ))
+    expect_gt(r$estimates$estimate, r$estimates$ci_lower)
+    expect_lt(r$estimates$estimate, r$estimates$ci_upper)
+  }
 })
 
 test_that("Test N: Schnabel normal CI branch fires when sum(m) >= 50", {
@@ -177,12 +253,40 @@ test_that("Test N2: Schnabel t-branch df is occasions - 1, matching Hansen & Van
   # modified; their eq. (A.5) gives the same t_{alpha/2, S-1}. Hard-coded
   # rather than computed so this fails if the df is ever keyed to sum(m)
   # again, which returns [1504.282, 2665.024] -- a 33% narrower interval.
+  #
+  # Pinned on bias_adjust = FALSE because fishmethods::schnabel() computes the
+  # unadjusted estimator: this is the cross-implementation anchor, and it only
+  # holds if the escape hatch stays exactly unadjusted. The adjusted default is
+  # checked separately in Test N3.
   M_s2 <- c(0L, 100L, 200L, 300L, 400L)
   n_s2 <- c(100L, 100L, 100L, 100L, 100L)
   m_s2 <- c(0L, 10L, 12L, 14L, 16L) # 5 occasions, sum(m) = 52
-  result <- estimate_angler_n(M = M_s2, n = n_s2, m = m_s2, method = "schnabel")
+  result <- estimate_angler_n(
+    M = M_s2, n = n_s2, m = m_s2, method = "schnabel", bias_adjust = FALSE
+  )
+  expect_equal(result$estimates$estimate, 1923.0769, tolerance = 1e-4)
   expect_equal(result$estimates$ci_lower, 1388.4790, tolerance = 1e-4)
   expect_equal(result$estimates$ci_upper, 3127.0750, tolerance = 1e-4)
+})
+
+test_that("Test N3: the t branch is centred on 1/N_hat and so follows bias_adjust", {
+  # The t interval is built from 1/N_hat +/- z * se_inv, so unlike the Poisson
+  # branch (Test M2) the correction must move the bounds too -- otherwise the
+  # reported estimate would sit off-centre in its own interval. Reference values
+  # computed by hand from sum(M*n) = 100000, sum(m) = 52, df = 4:
+  #   1/N = 53/100000, se_inv = sqrt(52)/100000, t = qt(0.975, 4) = 2.7764451
+  M_s2 <- c(0L, 100L, 200L, 300L, 400L)
+  n_s2 <- c(100L, 100L, 100L, 100L, 100L)
+  m_s2 <- c(0L, 10L, 12L, 14L, 16L)
+  result <- estimate_angler_n(M = M_s2, n = n_s2, m = m_s2, method = "schnabel")
+  expect_equal(result$estimates$estimate, 100000 / 53, tolerance = 1e-9)
+  inv_n <- 53 / 100000
+  se_inv <- sqrt(52) / 100000
+  tq <- stats::qt(0.975, df = 4)
+  expect_equal(result$estimates$ci_lower, 1 / (inv_n + tq * se_inv), tolerance = 1e-9)
+  expect_equal(result$estimates$ci_upper, 1 / (inv_n - tq * se_inv), tolerance = 1e-9)
+  # and the bounds must differ from the unadjusted ones pinned in Test N2
+  expect_false(isTRUE(all.equal(result$estimates$ci_lower, 1388.4790, tolerance = 1e-4)))
 })
 
 test_that("Test O: Schnabel returns method mark-recapture-schnabel", {

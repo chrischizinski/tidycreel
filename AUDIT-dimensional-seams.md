@@ -1486,6 +1486,94 @@ that an interval built on \eqn{1/\hat{N}} crosses zero at small recapture counts
 **NOT FIXED — a new estimator, not a repair.** Belongs with finding 27's decision,
 since both are about which interval this family should report.
 
+### 32. The Schnabel branch is the unadjusted form, so bias handling depended on occasion count
+
+Found 2026-08-12 while reading Dettloff (2023) end to end, after findings 29-31 had
+been taken from its citation trail rather than its argument.
+
+`R/creel-estimates-mark-recapture.R` computed \eqn{\hat{N} = \sum M_k n_k / \sum m_k}.
+Dettloff eq. (6) gives Chapman's (1952) small-sample correction,
+\eqn{\hat{N} = \sum M_k n_k / (\sum m_k + 1)}, motivated by each \eqn{m_k} being
+approximately Poisson with parameter \eqn{M_k n_k / N}. His simulations (10,000
+replicates, \eqn{N} from \eqn{10^2} to \eqn{10^6}) found the unadjusted form turns
+biased *high* at moderate sample sizes before settling, while the adjusted form's bias
+"approaches zero as the sample size increases without ever becoming positive", at lower
+variance and no cost at large samples. His recommendation is unhedged: "it is
+recommended that the adjusted estimators are used in place of the originals in all
+scenarios."
+
+**The dimensional argument is the one that made this an audit finding rather than a
+literature preference.** Dettloff notes Schnabel "becomes equivalent to
+Lincoln-Petersen (Eq. 1) in the case of k = 2 visits." The package defaults to
+`method = "chapman"` — the \eqn{+1} corrected form — and treats unadjusted
+`method = "petersen"` as opt-in behind an \eqn{m \geq 7} guard. So
+`method = "schnabel"` on two occasions returned *precisely the estimator the package
+declines to default to*, and a user moving from two occasions to three silently lost
+bias correction. Whether the estimate was bias-corrected depended on how many occasions
+had been sampled, not on the data or on any choice the caller made.
+
+**What the correction is worth.** Exactly \eqn{-1/(\sum m_k + 1)} in relative terms:
+33% at \eqn{\sum m_k = 2}, 5.3% at 18 (the Test K fixture, 747.22 -> 707.89), 1.9% at
+52, 0.2% at 500. Material where recaptures are few, negligible where they are many —
+which is the regime the multi-occasion design exists to improve.
+
+**The CI objection was raised and does not hold, but only after separating the two
+branches.** Dettloff gives no variance or interval for eq. (6), and the package's
+interval machinery was built for the unadjusted estimator, so the first read was that
+adopting eq. (6) would introduce a point-estimate/interval mismatch — a new seam, in a
+seam audit. It does not, because the two branches are different objects:
+
+- The Poisson branch (\eqn{\sum m_k < 50}) is \eqn{\sum M_k n_k / q_{\text{pois}}},
+  an *inversion* interval for \eqn{N} built from the distribution of \eqn{\sum m_k}. It
+  is not centred on \eqn{\hat{N}} and its validity does not depend on which point
+  estimator is reported. Left unadjusted deliberately. Containment is not an assumption:
+  \eqn{q_{0.975}(\sum m_k) > \sum m_k + 1} for every \eqn{\sum m_k \geq 1}, swept in
+  Test M3 rather than spot-checked because the Poisson quantiles are step functions.
+- The large-sample branch *is* built around \eqn{1/\hat{N}}, so it follows the
+  correction automatically and its bounds move.
+
+The `se` needed no separate decision either. \eqn{1/\hat{N}_{\text{adj}}} differs from
+\eqn{1/\hat{N}_{\text{unadj}}} by the constant \eqn{1/\sum M_k n_k}, so
+\eqn{\mathrm{Var}(1/\hat{N})} is identical and `se_inv` stays keyed to \eqn{\sum m_k};
+`se_N` moves only through the delta-method Jacobian evaluated at the reported estimate.
+Test L2 pins that ratio so a future edit cannot quietly move the \eqn{+1} into `se_inv`.
+
+**FIXED** (2026-08-12), as `bias_adjust = TRUE` default. `FALSE` restores the previous
+form, and the `fishmethods::schnabel()` cross-check from finding 29 was re-pinned onto
+that path (Test N2) rather than discarded — `fishmethods` implements the *unadjusted*
+estimator, so keeping an escape hatch keeps the external verification anchor. Test N3
+covers the adjusted default's bounds by hand-computation.
+
+### 33. Finding 29's degrees-of-freedom defect survived one function downstream
+
+Found 2026-08-12 while reading `estimate_mr_harvest()` to check whether finding 32
+would ripple into it.
+
+Finding 29 fixed the Schnabel t-quantile inside `estimate_angler_n()`. But
+`estimate_mr_harvest()` does not reuse that interval on the `ci_method = "delta"` path
+— it rebuilds a Wald interval, and keyed the quantile to `angler_n$estimates$n`. That
+column is the recapture count \eqn{m} for Chapman and Petersen, where \eqn{m-1} is
+right, but for Schnabel it is \eqn{\sum m}. So the harvest path went on using
+\eqn{df = \sum m - 1}: the exact quantity finding 29 established is wrong, one function
+downstream, while the estimator it derives from had already been fixed.
+
+With five occasions and \eqn{\sum m = 52}: \eqn{t = 2.008} against
+\eqn{t_{0.975,\,4} = 2.776}, a **28% too narrow** harvest interval, sitting alongside an
+angler interval that was by then correct — the two would not have agreed under scaling.
+
+The fix could not read the occasion count from the estimates tibble, since Schnabel
+carries no two-sample capture table and \eqn{\sum m} is all the tibble records.
+`estimate_angler_n()` now attaches `attr(result, "n_occasions") <- length(m)` on the
+Schnabel branch, mirroring the `capture_table` attribute finding 27 introduced, and the
+harvest path falls back to \eqn{m-1} when the attribute is absent so Chapman and
+Petersen are untouched. Test D5 pins that fallback; without it the two-sample branches
+could silently acquire occasion-shaped df.
+
+**FIXED** (2026-08-12). **Generalisable lesson: a df fix is not done when the estimator
+is fixed.** Anything that rebuilds an interval from a returned `se` rather than scaling
+returned bounds needs checking too, and the `n` column is ambiguous across methods — it
+means recaptures under two of the three, and a sum of recaptures under the third.
+
 ### 14. Ice designs skip the bus-route dispatch in the *rate* estimators
 
 Added 2026-08-09, found while wiring #110. The total estimators dispatch on
@@ -1945,6 +2033,24 @@ Recorded so coverage is auditable, not just hits.
   the code correctly does not implement.
 - **`vignettes/effort-pipeline.Rmd:117`** — the one place in the docs that gets this
   seam right, with an explicit comment that `n_anglers` holds angler-hours.
+- **Chao and Bayesian mark-recapture estimators are correctly absent** (checked
+  2026-08-12 against Dettloff 2023). Their omission from `estimate_angler_n()` is a
+  sound choice, not a gap: Dettloff measured the Bayesian estimator as having the
+  highest RMSE at low sample sizes and the Chao estimator retaining "a much higher
+  RMSE even as the sample size increases", concluding they "can easily be eliminated
+  as viable options for data of this type." Recorded so the absence is not
+  re-litigated as a missing feature.
+- **The Petersen \eqn{m \geq 7} guard is sound but uncited** (checked 2026-08-12).
+  The threshold is not wrong — it is in the right regime — but the package asserts it
+  without a source, and Dettloff supplies the citable one: Robson & Regier (1964) give
+  \eqn{\sqrt{Mn} \geq 2\sqrt{N}} (his eq. 10) for negative bias under 2%, and Chapman
+  is exactly unbiased when \eqn{M + n \geq N} (Robson & Regier 1964; Wittes 1972). Both
+  conditions depend on \eqn{N}, the unknown being estimated, which is why a fixed
+  \eqn{m} threshold is a reasonable stand-in rather than a derivation. Dettloff calls
+  this dependence "paradoxical" and treats the rule as "a way of avoiding inaccurate
+  estimates from absurdly small sample sizes based on an educated guess of the order of
+  magnitude" of \eqn{N}. **Documentation gap only — no number moves.** Worth adding the
+  citation and the reasoning to the `@details` block so the 7 does not read as arbitrary.
 
 ---
 

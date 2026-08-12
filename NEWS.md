@@ -422,6 +422,43 @@ because 2.5.0's numbers were wrong.
   The `se` itself was checked against the same sources and is correct as it stands.
   Only the quantile changed.
 
+* `estimate_angler_n(method = "schnabel")` now applies Chapman's (1952)
+  small-sample correction by default, dividing by \eqn{\sum m_k + 1} instead of
+  \eqn{\sum m_k}. **Every Schnabel point estimate falls**, by exactly
+  \eqn{1/(\sum m_k + 1)} in relative terms: 33% at \eqn{\sum m_k = 2}, 1.9% at 52,
+  0.2% at 500. Pass `bias_adjust = FALSE` for the previous form, which is also
+  what `fishmethods::schnabel()` computes.
+
+  Dettloff (2023) eq. (6) simulated both forms across population sizes from
+  \eqn{10^2} to \eqn{10^6}. The unadjusted estimator turns biased *high* at
+  moderate sample sizes before settling, which propagates into an inflated
+  `estimate_mr_harvest()`; the adjusted form's bias "approaches zero as the sample
+  size increases without ever becoming positive", at lower variance and no cost in
+  large samples. He recommends the adjusted estimators "in place of the originals
+  in all scenarios".
+
+  The consistency argument is the other half. Schnabel reduces exactly to
+  Lincoln-Petersen at \eqn{K = 2}, so the unadjusted form meant that
+  `method = "schnabel"` on two occasions returned the estimator the package
+  already declines to default to at `method = "petersen"` — bias handling depended
+  on how many occasions had been sampled rather than on the data.
+
+  The `se` moves only through the delta-method Jacobian, which is evaluated at the
+  reported \eqn{\hat{N}}. \eqn{1/\hat{N}} shifts by the constant \eqn{1/\sum M_k n_k},
+  so \eqn{\mathrm{Var}(1/\hat{N})} is unchanged and `invSE` still matches
+  `fishmethods`. The Poisson interval (\eqn{\sum m_k < 50}) inverts the distribution
+  of \eqn{\sum m_k} rather than centring on \eqn{\hat{N}}, so **its bounds do not
+  move**; the large-sample interval is built around \eqn{1/\hat{N}} and does.
+
+* `estimate_mr_harvest()` now keys its Wald interval to the number of sampling
+  occasions when the input came from `method = "schnabel"`, matching the change to
+  `estimate_angler_n()` above. It read `angler_n$estimates$n`, which for Schnabel is
+  \eqn{\sum m}, so the degrees-of-freedom defect fixed in the estimator survived one
+  function downstream: with five occasions and \eqn{\sum m = 52} the harvest interval
+  used \eqn{t = 2.008} where \eqn{t_{0.975,\,4} = 2.776}, 28% too narrow. **Schnabel
+  harvest intervals widen**; Chapman and Petersen are unaffected and still use
+  \eqn{m - 1}.
+
 * `add_counts(count_type = "progressive")` now **errors** when a day's shift is
   shorter than `circuit_time`, with condition class
   `creel_error_circuit_exceeds_shift`. It previously warned and then returned an

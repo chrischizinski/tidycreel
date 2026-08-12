@@ -58,8 +58,9 @@
 #'     to avoid large positive bias; use Chapman for smaller recapture counts.
 #'     \eqn{\hat{N} = \frac{M \cdot n}{m}}
 #'   \item \strong{Schnabel} (\code{method = "schnabel"}): A multi-occasion
-#'     weighted estimator for \eqn{K \geq 2} sampling occasions.
-#'     \eqn{\hat{N} = \frac{\sum M_k n_k}{\sum m_k}}
+#'     weighted estimator for \eqn{K \geq 2} sampling occasions, carrying
+#'     Chapman's (1952) small-sample correction by default.
+#'     \eqn{\hat{N} = \frac{\sum M_k n_k}{\sum m_k + 1}}
 #'     CI uses the Poisson branch when \eqn{\sum m_k < 50} and the normal
 #'     approximation on \eqn{1/\hat{N}} otherwise, on \eqn{K - 1} degrees of
 #'     freedom (Hansen & Van Kirk 2018, eq. A.5).
@@ -88,6 +89,12 @@
 #'   (2018) — but still honours \code{"bootstrap"} for the extra columns.
 #' @param B integer(1). Number of bootstrap replicates when
 #'   \code{ci_method = "bootstrap"}. Default \code{2000L}.
+#' @param bias_adjust logical(1). Schnabel only; ignored by the Chapman and
+#'   Petersen branches, which carry their own bias handling. \code{TRUE}
+#'   (default, new in 3.0.0) applies Chapman's (1952) small-sample correction,
+#'   dividing by \eqn{\sum m_k + 1}. \code{FALSE} restores the unadjusted
+#'   \eqn{\sum M_k n_k / \sum m_k} that was the only form before 3.0.0 and that
+#'   \code{fishmethods::schnabel()} computes.
 #'
 #' @details
 #' \strong{Why the Chapman and Petersen default is not a Wald interval.}
@@ -123,6 +130,21 @@
 #'
 #' \code{ci_method = "delta"} reproduces the pre-3.0.0 bounds exactly.
 #'
+#' \strong{Why Schnabel is bias-adjusted by default.} Each \eqn{m_k} is
+#' approximately Poisson with parameter \eqn{M_k n_k / N}, which motivated
+#' Chapman's (1952) \eqn{+1} correction to the recapture total. Dettloff (2023)
+#' simulated both forms and found the unadjusted estimator turns biased
+#' \emph{high} at moderate sample sizes before settling, whereas the adjusted
+#' form has bias that "approaches zero as the sample size increases without ever
+#' becoming positive", with lower variance and no cost at large samples; he
+#' recommends the adjusted estimators "in place of the originals in all
+#' scenarios". The package already defaults to the analogous \eqn{+1} correction
+#' at two occasions (\code{method = "chapman"}), and Schnabel reduces exactly to
+#' Lincoln-Petersen at \eqn{K = 2}, so leaving Schnabel unadjusted made bias
+#' handling depend on how many occasions were sampled. The relative shift is
+#' \eqn{-1/(\sum m_k + 1)}: −33\% at \eqn{\sum m_k = 2}, −1.9\% at 52, −0.2\% at
+#' 500. Pass \code{bias_adjust = FALSE} for the previous form.
+#'
 #' @return A \code{creel_estimates} S3 object with \code{method =
 #'   "mark-recapture-chapman"} (or petersen/schnabel) and an \code{estimates}
 #'   tibble with columns: \code{parameter}, \code{estimate}, \code{se},
@@ -146,6 +168,9 @@
 #' Dettloff, K. (2023). Assessment of bias and precision among simple closed
 #' population mark-recapture estimators. \emph{Fisheries Research}, 265,
 #' 106756. \doi{10.1016/j.fishres.2023.106756}
+#'
+#' Chapman, D. G. (1952). Inverse, multiple and sequential sample censuses.
+#' \emph{Biometrics}, 8(4), 286--306. \doi{10.2307/3001864}
 #'
 #' @family Estimation
 #' @export
@@ -174,10 +199,14 @@ estimate_angler_n <- function(
   method = "chapman",
   conf_level = 0.95,
   ci_method = c("logit", "delta", "bootstrap"),
-  B = 2000L
+  B = 2000L,
+  bias_adjust = TRUE
 ) {
   method <- match.arg(method, c("chapman", "petersen", "schnabel"))
   ci_method <- match.arg(ci_method)
+  if (!is.logical(bias_adjust) || length(bias_adjust) != 1L || is.na(bias_adjust)) {
+    cli::cli_abort("{.arg bias_adjust} must be a single non-missing logical value.")
+  }
 
   # Coerce to numeric before validation to prevent integer overflow in products
   # (M * n can exceed .Machine$integer.max for large reservoir surveys)
@@ -364,15 +393,33 @@ estimate_angler_n <- function(
     # --- point estimate ---
     sum_Mn <- sum(M * n)
     sum_m <- sum(m)
-    N_hat <- sum_Mn / sum_m
+    # Chapman's (1952) small-sample correction adds 1 to the recapture total,
+    # since each m_k is approximately Poisson with parameter M_k n_k / N.
+    # Dettloff (2023) eq. (6) measured the unadjusted form turning biased high
+    # at moderate sample sizes, while the adjusted form "approaches zero as the
+    # sample size increases without ever becoming positive" with lower variance,
+    # and recommends "the adjusted estimators are used in place of the originals
+    # in all scenarios". The correction is exactly -1/(sum(m) + 1) in relative
+    # terms: -33% at sum(m) = 2, -1.9% at 52, -0.2% at 500.
+    # bias_adjust = FALSE restores the unadjusted form, which is what
+    # fishmethods::schnabel() computes. See finding 32 in
+    # AUDIT-dimensional-seams.md.
+    N_hat <- sum_Mn / (sum_m + if (bias_adjust) 1 else 0)
 
     # --- SE (delta method on 1/N_hat) ---
+    # The correction shifts 1/N_hat by the constant 1/sum_Mn, which leaves
+    # Var(1/N_hat) unchanged, so se_inv is keyed to sum_m under both forms.
+    # se_N evaluates the delta-method Jacobian at whichever N_hat is reported.
     se_inv <- sqrt(sum_m / sum_Mn^2)
     se_N <- N_hat^2 * se_inv
 
     # --- CI ---
     alpha <- 1 - conf_level
     if (sum_m < 50L) {
+      # This branch inverts the Poisson distribution of sum(m) directly rather
+      # than centring on N_hat, so it is a valid interval for N under either
+      # form and is deliberately left unadjusted. N_hat stays strictly inside
+      # it: qpois(1 - alpha/2, sum_m) > sum_m + 1 for every sum_m >= 1.
       lo_m <- stats::qpois(alpha / 2, lambda = sum_m)
       hi_m <- stats::qpois(1 - alpha / 2, lambda = sum_m)
       # Guard against hi_m == 0 (degenerate Poisson quantile)
@@ -390,6 +437,8 @@ estimate_angler_n <- function(
       # with sum(m) = 52 it returns t = 2.008 where S - 1 gives t = 2.776, a
       # 33% narrower CI. See finding 29 in AUDIT-dimensional-seams.md.
       z <- stats::qt(1 - (1 - conf_level) / 2, df = max(1L, length(m) - 1L))
+      # Unlike the Poisson branch, this interval is built around 1/N_hat, so it
+      # follows the bias_adjust choice automatically.
       inv_N <- 1 / N_hat
       ci_lo <- 1 / (inv_N + z * se_inv)
       ci_hi <- 1 / (inv_N - z * se_inv)
@@ -411,8 +460,12 @@ estimate_angler_n <- function(
         numeric(B)
       ) # matrix B x k (each column is one occasion)
       sum_m_b <- rowSums(m_b_matrix)
-      sum_m_b[sum_m_b == 0L] <- 1L
-      N_hat_b <- sum(M * n) / sum_m_b
+      # Replicates use the same estimator as the point estimate, so the
+      # bootstrap columns describe the quantity actually reported. Under
+      # bias_adjust the +1 keeps a zero-recapture replicate finite on its own;
+      # the unadjusted form needs the floor at 1 instead.
+      denom_b <- if (bias_adjust) sum_m_b + 1 else pmax(sum_m_b, 1)
+      N_hat_b <- sum_Mn / denom_b
       alpha <- 1 - conf_level
       ci_lo_boot <- stats::quantile(N_hat_b, alpha / 2, names = FALSE)
       ci_hi_boot <- stats::quantile(N_hat_b, 1 - alpha / 2, names = FALSE)
@@ -428,6 +481,11 @@ estimate_angler_n <- function(
       by_vars = NULL,
       unit = NA_character_
     )
+    # Schnabel carries no two-sample capture table, but estimate_mr_harvest()
+    # needs the occasion count to key its t quantile the same way the CI above
+    # does. Without it the harvest interval falls back to sum(m) - 1 degrees of
+    # freedom -- the defect finding 29 fixed here. See finding 33.
+    attr(result, "n_occasions") <- length(m)
     if (ci_method == "bootstrap") {
       attr(result, "boot_samples") <- N_hat_b
     }
@@ -563,7 +621,15 @@ estimate_mr_harvest <- function(
     ci_lo <- logit_ci[1] * harvest_rate
     ci_hi <- logit_ci[2] * harvest_rate
   } else {
-    z <- stats::qt(1 - (1 - conf_level) / 2, df = max(1L, n_mr - 1L))
+    # Degrees of freedom must match the branch that produced angler_n. For
+    # Chapman and Petersen the n column is the recapture count m, so m - 1 is
+    # right. For Schnabel it is sum(m), and keying the t quantile to that
+    # repeats finding 29 on the harvest path: recaptures within one occasion
+    # are not independent observations of the ratio. Use the occasion count
+    # that estimate_angler_n() attached instead. See finding 33.
+    n_occ <- attr(angler_n, "n_occasions")
+    df_h <- if (is.null(n_occ)) n_mr - 1L else n_occ - 1L
+    z <- stats::qt(1 - (1 - conf_level) / 2, df = max(1L, df_h))
     ci_lo <- harvest_hat - z * se_H
     ci_hi <- harvest_hat + z * se_H
   }

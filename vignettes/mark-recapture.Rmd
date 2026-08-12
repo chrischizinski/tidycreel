@@ -82,16 +82,36 @@ print(result_petersen)
 ### Schnabel estimator (multi-occasion)
 
 For $K \geq 2$ successive sampling occasions, the Schnabel estimator pools
-information across occasions:
+information across occasions, carrying Chapman's (1952) small-sample
+correction to the recapture total:
 
-$$\hat{N} = \frac{\sum_{k=1}^{K} M_k n_k}{\sum_{k=1}^{K} m_k}$$
+$$\hat{N} = \frac{\sum_{k=1}^{K} M_k n_k}{\sum_{k=1}^{K} m_k + 1}$$
 
 where $M_k$ is the cumulative count of marked-at-large anglers before
 occasion $k$ (so $M_1 = 0$), $n_k$ is the catch on occasion $k$, and $m_k$
 is the number of recaptures.
 
+The $+1$ is the default as of tidycreel 3.0.0. Each $m_k$ is approximately
+Poisson with parameter $M_k n_k / N$, which is what motivates the
+correction. Dettloff (2023) simulated both forms and found the unadjusted
+estimator turns biased *high* at moderate sample sizes — inflating harvest
+downstream — while the adjusted form's bias approaches zero without ever
+becoming positive, at lower variance and no cost in large samples. It also
+keeps bias handling consistent across occasion counts: Schnabel reduces to
+Lincoln-Petersen at $K = 2$, so an unadjusted Schnabel would have silently
+dropped the correction that `method = "chapman"` applies to the same data.
+Pass `bias_adjust = FALSE` for the pre-3.0.0 form, which is also what
+`fishmethods::schnabel()` computes.
+
+The correction is worth $-1/(\sum m_k + 1)$ in relative terms: $-33\%$ at
+$\sum m_k = 2$, $-1.9\%$ at 52, and $-0.2\%$ at 500. It matters at low
+recapture totals and is negligible at high ones.
+
 Confidence intervals use the Poisson distribution when $\sum m_k < 50$ and
-a normal approximation on $1/\hat{N}$ otherwise.
+a normal approximation on $1/\hat{N}$ otherwise. The Poisson branch inverts
+the distribution of $\sum m_k$ directly rather than centring on $\hat{N}$,
+so it is a valid interval under either form and its bounds do not move with
+`bias_adjust`; the normal branch is built around $1/\hat{N}$ and does.
 
 ```{r}
 result_schnabel <- estimate_angler_n(
@@ -267,6 +287,13 @@ American Fisheries Society.
 Jones, C. M., & Pollock, K. H. (2012). Recreational survey methods:
 estimating effort, harvest, and abundance. In A. V. Zale et al. (Eds.),
 *Fisheries Techniques* (3rd ed., Ch. 19). American Fisheries Society.
+
+Chapman, D. G. (1952). Inverse, multiple and sequential sample censuses.
+*Biometrics*, 8(4), 286–306. https://doi.org/10.2307/3001864
+
+Dettloff, K. (2023). Assessment of bias and precision among simple closed
+population mark-recapture estimators. *Fisheries Research*, 265, 106756.
+https://doi.org/10.1016/j.fishres.2023.106756
 
 ---
 

@@ -11,7 +11,8 @@ estimate_angler_n(
   method = "chapman",
   conf_level = 0.95,
   ci_method = c("logit", "delta", "bootstrap"),
-  B = 2000L
+  B = 2000L,
+  bias_adjust = TRUE
 )
 }
 \arguments{
@@ -44,6 +45,13 @@ uses the \eqn{t} approximation on \eqn{1/\hat{N}}, per Hansen & Van Kirk
 
 \item{B}{integer(1). Number of bootstrap replicates when
 \code{ci_method = "bootstrap"}. Default \code{2000L}.}
+
+\item{bias_adjust}{logical(1). Schnabel only; ignored by the Chapman and
+Petersen branches, which carry their own bias handling. \code{TRUE}
+(default, new in 3.0.0) applies Chapman's (1952) small-sample correction,
+dividing by \eqn{\sum m_k + 1}. \code{FALSE} restores the unadjusted
+\eqn{\sum M_k n_k / \sum m_k} that was the only form before 3.0.0 and that
+\code{fishmethods::schnabel()} computes.}
 }
 \value{
 A \code{creel_estimates} S3 object with \code{method =
@@ -64,8 +72,9 @@ Lincoln-Petersen estimator. Requires at least 7 recaptures (\eqn{m \geq 7})
 to avoid large positive bias; use Chapman for smaller recapture counts.
 \eqn{\hat{N} = \frac{M \cdot n}{m}}
 \item \strong{Schnabel} (\code{method = "schnabel"}): A multi-occasion
-weighted estimator for \eqn{K \geq 2} sampling occasions.
-\eqn{\hat{N} = \frac{\sum M_k n_k}{\sum m_k}}
+weighted estimator for \eqn{K \geq 2} sampling occasions, carrying
+Chapman's (1952) small-sample correction by default.
+\eqn{\hat{N} = \frac{\sum M_k n_k}{\sum m_k + 1}}
 CI uses the Poisson branch when \eqn{\sum m_k < 50} and the normal
 approximation on \eqn{1/\hat{N}} otherwise, on \eqn{K - 1} degrees of
 freedom (Hansen & Van Kirk 2018, eq. A.5).
@@ -104,6 +113,21 @@ at a boundary, not an error; pass \code{ci_method = "delta"} if a bound that
 brackets the point estimate matters more than coverage.
 
 \code{ci_method = "delta"} reproduces the pre-3.0.0 bounds exactly.
+
+\strong{Why Schnabel is bias-adjusted by default.} Each \eqn{m_k} is
+approximately Poisson with parameter \eqn{M_k n_k / N}, which motivated
+Chapman's (1952) \eqn{+1} correction to the recapture total. Dettloff (2023)
+simulated both forms and found the unadjusted estimator turns biased
+\emph{high} at moderate sample sizes before settling, whereas the adjusted
+form has bias that "approaches zero as the sample size increases without ever
+becoming positive", with lower variance and no cost at large samples; he
+recommends the adjusted estimators "in place of the originals in all
+scenarios". The package already defaults to the analogous \eqn{+1} correction
+at two occasions (\code{method = "chapman"}), and Schnabel reduces exactly to
+Lincoln-Petersen at \eqn{K = 2}, so leaving Schnabel unadjusted made bias
+handling depend on how many occasions were sampled. The relative shift is
+\eqn{-1/(\sum m_k + 1)}: −33\\% at \eqn{\sum m_k = 2}, −1.9\\% at 52, −0.2\\% at
+500. Pass \code{bias_adjust = FALSE} for the previous form.
 }
 \examples{
 # Chapman (default) — bias-corrected Petersen
@@ -141,6 +165,9 @@ Statistics}, 1(1), 131--140. \doi{10.2307/1400565}
 Dettloff, K. (2023). Assessment of bias and precision among simple closed
 population mark-recapture estimators. \emph{Fisheries Research}, 265,
 106756. \doi{10.1016/j.fishres.2023.106756}
+
+Chapman, D. G. (1952). Inverse, multiple and sequential sample censuses.
+\emph{Biometrics}, 8(4), 286--306. \doi{10.2307/3001864}
 }
 \seealso{
 Other Estimation:
