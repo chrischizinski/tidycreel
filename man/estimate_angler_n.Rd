@@ -10,8 +10,9 @@ estimate_angler_n(
   m,
   method = "chapman",
   conf_level = 0.95,
-  ci_method = c("delta", "bootstrap"),
-  B = 2000L
+  ci_method = c("logit", "delta", "bootstrap"),
+  B = 2000L,
+  bias_adjust = TRUE
 )
 }
 \arguments{
@@ -26,18 +27,32 @@ a vector of per-occasion catch counts (same length as \code{M}).}
 Petersen; vector (same length as \code{M}) for Schnabel.}
 
 \item{method}{character(1). One of \code{"chapman"} (default),
-\code{"petersen"}, or \code{"schnabel"}.}
+\code{"petersen"}, \code{"schnabel"}, or \code{"schumacher"}.}
 
 \item{conf_level}{numeric. Confidence level for the CI. Default \code{0.95}.}
 
-\item{ci_method}{character(1). CI construction method: \code{"delta"} (default)
-uses the analytic delta-method formula; \code{"bootstrap"} uses a parametric
-bootstrap via \code{stats::rbinom()}. Bootstrap results add \code{ci_lo_boot}
-and \code{ci_hi_boot} columns to the estimates tibble and attach
-\code{attr(result, "boot_samples")}.}
+\item{ci_method}{character(1). CI construction for the Chapman and Petersen
+branches: \code{"logit"} (default) is Sadinle's (2009) 0.5 transformed logit
+interval; \code{"delta"} is the symmetric Wald interval
+\eqn{\hat{N} \pm t_{\alpha/2,\,m-1} SE(\hat{N})} that was the default before
+3.0.0; \code{"bootstrap"} keeps the \code{"logit"} bounds and additionally
+appends \code{ci_lo_boot} and \code{ci_hi_boot} columns from a parametric
+bootstrap via \code{stats::rbinom()}, attaching
+\code{attr(result, "boot_samples")}. The Schnabel branch ignores this
+argument for its analytic bounds — it always inverts Poisson quantiles or
+uses the \eqn{t} approximation on \eqn{1/\hat{N}}, per Hansen & Van Kirk
+(2018) — but still honours \code{"bootstrap"} for the extra columns.}
 
 \item{B}{integer(1). Number of bootstrap replicates when
 \code{ci_method = "bootstrap"}. Default \code{2000L}.}
+
+\item{bias_adjust}{logical(1). Multi-occasion methods only; ignored by the
+Chapman and Petersen branches, which carry their own bias handling.
+\code{TRUE} (default, new in 3.0.0) applies the small-sample correction —
+Chapman's (1952), dividing by \eqn{\sum m_k + 1}, for Schnabel, and
+Dettloff's (2023) eq. (8) for Schumacher-Eschmeyer. \code{FALSE} restores
+the unadjusted forms, which are what \code{fishmethods::schnabel()}
+computes for both and, for Schnabel, the only form available before 3.0.0.}
 }
 \value{
 A \code{creel_estimates} S3 object with \code{method =
@@ -58,22 +73,121 @@ Lincoln-Petersen estimator. Requires at least 7 recaptures (\eqn{m \geq 7})
 to avoid large positive bias; use Chapman for smaller recapture counts.
 \eqn{\hat{N} = \frac{M \cdot n}{m}}
 \item \strong{Schnabel} (\code{method = "schnabel"}): A multi-occasion
-weighted estimator for \eqn{K \geq 2} sampling occasions.
-\eqn{\hat{N} = \frac{\sum M_k n_k}{\sum m_k}}
+weighted estimator for \eqn{K \geq 2} sampling occasions, carrying
+Chapman's (1952) small-sample correction by default.
+\eqn{\hat{N} = \frac{\sum M_k n_k}{\sum m_k + 1}}
 CI uses the Poisson branch when \eqn{\sum m_k < 50} and the normal
-approximation on \eqn{1/\hat{N}} otherwise.
+approximation on \eqn{1/\hat{N}} otherwise, on \eqn{K - 1} degrees of
+freedom (Hansen & Van Kirk 2018, eq. A.5).
+\item \strong{Schumacher-Eschmeyer} (\code{method = "schumacher"}): The
+regression alternative to Schnabel for \eqn{K \geq 3} occasions, fitting
+\eqn{m_k/n_k} against \eqn{M_k} through the origin with slope \eqn{1/N}.
+\eqn{\hat{N} = \frac{\sum n_k M_k^2}{\sum m_k M_k}}
+Interval from Seber (1982) eq. (4.17) on \eqn{K - 2} degrees of freedom.
+Also carries Dettloff's (2023) eq. (8) small-sample correction by default.
 }
 }
 \details{
-\strong{Chapman and Petersen intervals are symmetric and can go negative.}
-Both use \eqn{\hat{N} \pm t_{\alpha/2,\,m-1} \cdot SE(\hat{N})}, while
-\eqn{\hat{N}} is a ratio with a small integer denominator and is
-right-skewed. With \code{M = 200}, \code{n = 50} and \code{m = 3},
-\code{ci_lower} is \code{-2124.8}. Chapman is recommended exactly when
-recaptures are few, so this regime is not exotic. Prefer
-\code{ci_method = "bootstrap"}, whose percentile bounds respect the skew,
-when \eqn{m} is small. The Schnabel branch is unaffected: it inverts Poisson
-quantiles on \eqn{\sum m} and cannot produce a negative bound.
+\strong{Why the Chapman and Petersen default is not a Wald interval.}
+\eqn{\hat{N}} is a ratio with a small integer denominator, so its sampling
+distribution is strongly right-skewed and a symmetric interval leaves the
+parameter space. Evans et al. (1996) measured Wald coverage failing on one
+side 27.9\\% of the time against a 2.5\\% nominal rate, and Otis et al. (1978)
+and Dettloff (2023) report the same. With \code{M = 200}, \code{n = 50} and
+\code{m = 3} the Wald lower bound is \code{-2124.8}; at \code{m = 5} it is
+\code{48.7}, below the 245 individuals actually observed. Chapman is
+recommended precisely when recaptures are few, so this is the regime the
+default estimator is chosen for.
+
+The default \code{"logit"} interval is Sadinle's (2009) 0.5 transformed
+logit, built on the \eqn{2 \times 2} capture table
+(\eqn{n_{11} = m}, \eqn{n_{12} = M - m}, \eqn{n_{21} = n - m}) with 0.5 added
+to each cell. Sadinle compared nine intervals and found it "the best of the
+intervals reported here", with near-nominal coverage even for small
+populations and capture probabilities near 0 or 1, where profile-likelihood
+and Monte Carlo intervals both degrade. Its lower limit is guaranteed never
+to fall below \eqn{n_{11} + n_{12} + n_{21}}, the number of individuals
+actually seen — the property the Wald interval lacks. It is closed-form and
+always computable, since the 0.5 continuity correction removes every
+zero-count division.
+
+\strong{One consequence worth knowing.} When \eqn{m = n} — every individual
+in the second sample was already marked — the estimator saturates at
+\eqn{\hat{N} = M}, which is also the observed count. The logit lower limit
+then sits fractionally \emph{above} \eqn{\hat{N}}, because the data imply
+\eqn{N > M} rather than \eqn{N = M}. This is the interval being informative
+at a boundary, not an error; pass \code{ci_method = "delta"} if a bound that
+brackets the point estimate matters more than coverage.
+
+\code{ci_method = "delta"} reproduces the pre-3.0.0 bounds exactly.
+
+\strong{Choosing between Schnabel and Schumacher-Eschmeyer, and a warning about
+how not to.} They use identical field data and differ in how they pool it:
+Schnabel is a ratio of sums, Schumacher-Eschmeyer a weighted regression through
+the origin. Seber (1982) expects the regression form "to be robust with regard
+to departures from the underlying assumptions" and recommends using it "in
+conjunction with the other methods" — as a cross-check, not a replacement. That
+is a weaker claim than it is sometimes reported as; Seber neither demonstrates
+the robustness nor calls it the most robust method. Dettloff (2023) found the
+two adjusted forms "effectively equivalent at larger sample sizes", with
+Schumacher-Eschmeyer less variable and Schnabel reaching unbiasedness slightly
+sooner.
+
+\strong{Do not pick whichever gives the narrower interval.} Hansen & Van Kirk
+(2018) computed both and "selected the mark-recapture estimator that produced
+the smallest 95\\% CI", and that procedure does not have 95\\% coverage: choosing
+the narrower of two intervals after seeing them conditions on the luckier draw,
+so the reported interval is narrower than its nominal level. tidycreel therefore
+does not implement the selection rule. Decide between the estimators on design
+grounds before looking at the answer, or report both.
+
+\strong{The Schnabel upper bound at very few recaptures.} The Poisson interval
+inverts the distribution of \eqn{\sum m_k}, so it needs the lower quantile
+\eqn{q_{\alpha/2}} in its denominator. That quantile is \emph{zero} whenever
+\eqn{\sum m_k \leq 3} at the 95\\% level, which used to send \code{ci_upper} to
+\code{Inf}. Following Hansen & Van Kirk (2018) eq. (A.4), tidycreel substitutes
+Ilienko's (2013) continuous Poisson in exactly that case — it has distribution
+function \eqn{\Gamma(x, \lambda)/\Gamma(x)}, is positive there, and so returns a
+finite bound. The substitution fires only where the discrete quantile is zero;
+from \eqn{\sum m_k \geq 4} the continuous quantile sits just above the discrete
+one, so this is a targeted patch rather than a change of method.
+
+\strong{Read that bound for what it is.} It comes from a continuous
+interpolation of a discrete distribution at one to three total recaptures, not
+from the data, and it is wide. It stands in for "the data do not bound this
+above" rather than measuring anything, which is why the function still warns
+when it fires. Ilienko's construction is the genuine interpolant — his eq. (1)
+shows the same expression returns the discrete Poisson CDF at integer
+\eqn{x} — but interpolating at \eqn{\sum m_k = 1} is still interpolating.
+
+\strong{Where the Petersen \eqn{m \geq 7} guard comes from.} The threshold is a
+practical stand-in, not a derivation, and it is worth knowing why no exact one
+is available. Robson & Regier (1964) give two conditions: Chapman is exactly
+unbiased when \eqn{M + n \geq N}, and its negative bias stays under 2\\% when
+\eqn{\sqrt{Mn} \geq 2\sqrt{N}} — the geometric mean of marks and captures at
+least twice the square root of the population size. Both depend on \eqn{N},
+the unknown being estimated. Dettloff (2023) calls this "paradoxical" and
+treats such rules as "a way of avoiding inaccurate estimates from absurdly
+small sample sizes based on an educated guess of the order of magnitude" of
+\eqn{N}. A fixed \eqn{m} threshold is that guess made concrete; it rules out
+the regime where Petersen's positive bias is severe without pretending to a
+precision the conditions cannot deliver. Chapman is the better default at any
+recapture count and is what the error message points to.
+
+\strong{Why Schnabel is bias-adjusted by default.} Each \eqn{m_k} is
+approximately Poisson with parameter \eqn{M_k n_k / N}, which motivated
+Chapman's (1952) \eqn{+1} correction to the recapture total. Dettloff (2023)
+simulated both forms and found the unadjusted estimator turns biased
+\emph{high} at moderate sample sizes before settling, whereas the adjusted
+form has bias that "approaches zero as the sample size increases without ever
+becoming positive", with lower variance and no cost at large samples; he
+recommends the adjusted estimators "in place of the originals in all
+scenarios". The package already defaults to the analogous \eqn{+1} correction
+at two occasions (\code{method = "chapman"}), and Schnabel reduces exactly to
+Lincoln-Petersen at \eqn{K = 2}, so leaving Schnabel unadjusted made bias
+handling depend on how many occasions were sampled. The relative shift is
+\eqn{-1/(\sum m_k + 1)}: −33\\% at \eqn{\sum m_k = 2}, −1.9\\% at 52, −0.2\\% at
+500. Pass \code{bias_adjust = FALSE} for the previous form.
 }
 \examples{
 # Chapman (default) — bias-corrected Petersen
@@ -92,11 +206,65 @@ result_s <- estimate_angler_n(
   method = "schnabel"
 )
 print(result_s)
+
+# Schumacher-Eschmeyer — the regression alternative, needs >= 3 occasions
+result_se <- estimate_angler_n(
+  M = c(0L, 47L, 91L, 131L),
+  n = c(50L, 50L, 50L, 50L),
+  m = c(0L,  4L,  6L,  8L),
+  method = "schumacher"
+)
+print(result_se)
 }
 \references{
-Hansen, M. J., & Van Kirk, R. W. (2018). A mark-recapture-based approach
+Hansen, J. M., & Van Kirk, R. W. (2018). A mark-recapture-based approach
 for estimating angler harvest. \emph{North American Journal of Fisheries
 Management}, 38(2), 400--410. \doi{10.1002/nafm.10038}
+
+Sadinle, M. (2009). Transformed logit confidence intervals for small
+populations in single capture-recapture estimation.
+\emph{Communications in Statistics - Simulation and Computation}, 38(9),
+1909--1924. \doi{10.1080/03610910903168595}
+
+Evans, M. A., Kim, H.-M., & O'Brien, T. E. (1996). An application of
+profile-likelihood based confidence interval to capture-recapture
+estimators. \emph{Journal of Agricultural, Biological, and Environmental
+Statistics}, 1(1), 131--140. \doi{10.2307/1400565}
+
+Dettloff, K. (2023). Assessment of bias and precision among simple closed
+population mark-recapture estimators. \emph{Fisheries Research}, 265,
+106756. \doi{10.1016/j.fishres.2023.106756}
+
+Chapman, D. G. (1952). Inverse, multiple and sequential sample censuses.
+\emph{Biometrics}, 8(4), 286--306. \doi{10.2307/3001864}
+
+Robson, D. S., & Regier, H. A. (1964). Sample size in Petersen mark-recapture
+experiments. \emph{Transactions of the American Fisheries Society}, 93(3),
+215--226. \doi{10.1577/1548-8659(1964)93[215:SSIPME]2.0.CO;2}
+
+Ilienko, A. (2013). Continuous counterparts of Poisson and binomial
+distributions and their properties. \emph{Annales Universitatis Scientiarum
+Budapestinensis de Rolando Eotvos Nominatae, Sectio Computatorica}, 39,
+137--147.
+
+Schnabel, Z. E. (1938). The estimation of the total fish population of a
+lake. \emph{The American Mathematical Monthly}, 45(6), 348--352.
+\doi{10.2307/2304025}
+
+Chapman, D. G. (1951). Some properties of the hypergeometric distribution
+with applications to zoological sample censuses. \emph{University of
+California Publications in Statistics}, 1(7), 131--160.
+
+Schumacher, F. X., & Eschmeyer, R. W. (1943). The estimation of fish
+populations in lakes or ponds. \emph{Journal of the Tennessee Academy of
+Science}, 18, 228--249.
+
+Seber, G. A. F. (1982). \emph{The Estimation of Animal Abundance and Related
+Parameters}, 2nd ed. Macmillan, New York.
+
+De Lury, D. B. (1958). The estimation of population size by a marking and
+recapture procedure. \emph{Journal of the Fisheries Research Board of
+Canada}, 15(1), 19--25. \doi{10.1139/f58-002}
 }
 \seealso{
 Other Estimation:
