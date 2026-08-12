@@ -450,6 +450,30 @@ because 2.5.0's numbers were wrong.
   of \eqn{\sum m_k} rather than centring on \eqn{\hat{N}}, so **its bounds do not
   move**; the large-sample interval is built around \eqn{1/\hat{N}} and does.
 
+* `estimate_angler_n(method = "schnabel")` no longer returns
+  `ci_upper = Inf` when the recapture total is very small. The Poisson interval
+  divides by the lower quantile \eqn{q_{\alpha/2}(\sum m_k)}, which is **zero** for
+  \eqn{\sum m_k \leq 3} at the 95\% level. Hansen & Van Kirk (2018) eq. (A.4)
+  substitute Ilienko's (2013) continuous Poisson,
+  \eqn{F(x) = \Gamma(x, \lambda)/\Gamma(x)}, in exactly that case; it is positive
+  there and yields a finite bound. The substitution fires only where the discrete
+  quantile is zero — from \eqn{\sum m_k \geq 4} the continuous quantile sits just
+  above the discrete one, so the bound stays monotone across the seam.
+
+  **The bound is an interpolation, and the warning that announces it is
+  deliberate.** It rests on a continuous interpolation of a discrete distribution
+  at one to three total recaptures; it stands in for "the data do not bound this
+  above" rather than measuring anything.
+
+  Implementers should note two traps. The quantile lives in the *shape* argument
+  of `pgamma()`, so it must be root-found — there is no `qgamma()` call that
+  produces it. And **the source paper's own worked example is wrong**: it reports
+  the 0.025 quantile at \eqn{\lambda = 2} as 0.24 and draws Figure A.1 to match,
+  but 0.24 is `qgamma(0.025, shape = 2)`, a Gamma(2, 1) quantile. Inverting their
+  eq. (A.4) gives **0.3292**. Equation A.4 transcribes Ilienko's Definition 3.1
+  faithfully; the example does not. Tests pin the implementation against Ilienko's
+  eq. (1) identity with `ppois()`, never against the printed example.
+
 * `estimate_mr_harvest()` now keys its Wald interval to the number of sampling
   occasions when the input came from `method = "schnabel"`, matching the change to
   `estimate_angler_n()` above. It read `angler_n$estimates$n`, which for Schnabel is

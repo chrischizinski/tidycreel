@@ -114,6 +114,25 @@ brackets the point estimate matters more than coverage.
 
 \code{ci_method = "delta"} reproduces the pre-3.0.0 bounds exactly.
 
+\strong{The Schnabel upper bound at very few recaptures.} The Poisson interval
+inverts the distribution of \eqn{\sum m_k}, so it needs the lower quantile
+\eqn{q_{\alpha/2}} in its denominator. That quantile is \emph{zero} whenever
+\eqn{\sum m_k \leq 3} at the 95\\% level, which used to send \code{ci_upper} to
+\code{Inf}. Following Hansen & Van Kirk (2018) eq. (A.4), tidycreel substitutes
+Ilienko's (2013) continuous Poisson in exactly that case — it has distribution
+function \eqn{\Gamma(x, \lambda)/\Gamma(x)}, is positive there, and so returns a
+finite bound. The substitution fires only where the discrete quantile is zero;
+from \eqn{\sum m_k \geq 4} the continuous quantile sits just above the discrete
+one, so this is a targeted patch rather than a change of method.
+
+\strong{Read that bound for what it is.} It comes from a continuous
+interpolation of a discrete distribution at one to three total recaptures, not
+from the data, and it is wide. It stands in for "the data do not bound this
+above" rather than measuring anything, which is why the function still warns
+when it fires. Ilienko's construction is the genuine interpolant — his eq. (1)
+shows the same expression returns the discrete Poisson CDF at integer
+\eqn{x} — but interpolating at \eqn{\sum m_k = 1} is still interpolating.
+
 \strong{Where the Petersen \eqn{m \geq 7} guard comes from.} The threshold is a
 practical stand-in, not a derivation, and it is worth knowing why no exact one
 is available. Robson & Regier (1964) give two conditions: Chapman is exactly
@@ -186,6 +205,11 @@ Chapman, D. G. (1952). Inverse, multiple and sequential sample censuses.
 Robson, D. S., & Regier, H. A. (1964). Sample size in Petersen mark-recapture
 experiments. \emph{Transactions of the American Fisheries Society}, 93(3),
 215--226. \doi{10.1577/1548-8659(1964)93[215:SSIPME]2.0.CO;2}
+
+Ilienko, A. (2013). Continuous counterparts of Poisson and binomial
+distributions and their properties. \emph{Annales Universitatis Scientiarum
+Budapestinensis de Rolando Eotvos Nominatae, Sectio Computatorica}, 39,
+137--147.
 }
 \seealso{
 Other Estimation:

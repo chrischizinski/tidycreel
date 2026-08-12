@@ -1464,8 +1464,36 @@ worked example disagree. Solving \eqn{\Gamma(x,2)/\Gamma(x) = 0.025} gives
 `qgamma(0.025, shape = 2)` = 0.2422 — a different function. Do not implement from the
 figure without resolving which of the two is intended.
 
-**NOT FIXED.** Lower priority than 29: `Inf` is honest, if useless, and the current
-behaviour warns.
+**Resolved 2026-08-12 by reading Ilienko directly.** Definition 3.1 of Ilienko (2013)
+is, verbatim, \eqn{\tilde{F}_\lambda(x) = \Gamma(x,\lambda)/\Gamma(x)} for \eqn{x > 0}.
+That is exactly what H&VK print as A.4. **So A.4 is a faithful transcription and the
+paper's worked example is the error** — the reverse of what could be assumed from the
+figure being the more concrete artefact.
+
+Two independent confirmations that A.4 is the right function:
+
+- Ilienko's eq. (1) states the same expression gives the *discrete* Poisson CDF
+  \eqn{P(X < x)} at integer \eqn{x}. Checked numerically against `ppois(x - 1, lambda)`
+  across \eqn{\lambda \in \{0.5, 2, 7, 30\}} and \eqn{x = 1..8}: agreement to 1e-10.
+  A.4 is therefore the genuine continuous interpolant, not a nearby gamma.
+- Inverting A.4 at \eqn{\lambda = 2} gives 0.329194. The paper's 0.24 is
+  `qgamma(0.025, shape = 2)` = 0.242209, the quantile of a Gamma(2, 1) variate.
+  Figure A.1's line segment was drawn from that different distribution.
+
+**The trap that produced the paper's error is worth naming, because it is easy to
+repeat.** The quantile sits in the *shape* argument of `pgamma()`, so it has no closed
+form and must be root-found. `qgamma()` inverts over the wrong argument and returns a
+plausible nearby number rather than failing, which is precisely how a wrong value
+reaches print and a figure.
+
+**FIXED** (2026-08-12). New `.continuous_poisson_q()` helper; the Poisson branch
+substitutes it only where `qpois()` returns 0. The bound stays monotone across the
+seam — at \eqn{\sum m = 3} the continuous quantile is 0.6915 against the discrete 1 at
+\eqn{\sum m = 4}, so nothing jumps. The warning is retained rather than dropped: the
+bound is an interpolation at one to three total recaptures and stands in for "the data
+do not bound this above", so it must not appear silently. Tests M4-M7 pin the
+implementation against Ilienko's eq. (1) identity and explicitly assert the result is
+**not** `qgamma`, so nobody "fixes" it toward the printed example.
 
 ### 31. Schumacher-Eschmeyer is absent, so the cited selection rule cannot be applied
 

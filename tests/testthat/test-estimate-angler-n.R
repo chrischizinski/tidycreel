@@ -234,6 +234,80 @@ test_that("Test M3: the adjusted point estimate stays inside the unadjusted Pois
   }
 })
 
+test_that("Test M4: the continuous Poisson quantile reproduces the discrete CDF at integer x", {
+  # Ilienko (2013) eq. (1): Gamma(x, lambda)/Gamma(x) IS the discrete Poisson
+  # CDF P(X < x) at integer x, which is what makes Definition 3.1 the genuine
+  # continuous interpolant rather than a nearby gamma. This identity is the
+  # anchor for the whole remedy, and it is deliberately pinned against
+  # ppois() rather than against Hansen & Van Kirk's worked example -- their
+  # example is wrong (see Test M6), so testing toward it would bake in the
+  # defect. See finding 30 in AUDIT-dimensional-seams.md.
+  for (lambda in c(0.5, 2, 7, 30)) {
+    for (x in 1:8) {
+      expect_equal(
+        stats::pgamma(lambda, shape = x, lower.tail = FALSE),
+        stats::ppois(x - 1, lambda),
+        tolerance = 1e-10
+      )
+    }
+  }
+})
+
+test_that("Test M5: the continuous quantile inverts its own CDF and is monotone in lambda", {
+  # The quantile sits in pgamma()'s shape argument, so it is root-found rather
+  # than closed-form. Verify the root actually solves F(x) = p, and that it
+  # increases with lambda -- a solver bracketed too tightly would silently
+  # return an endpoint instead of failing.
+  for (lambda in c(1, 2, 3, 10, 49)) {
+    q <- tidycreel:::.continuous_poisson_q(0.025, lambda)
+    expect_equal(
+      stats::pgamma(lambda, shape = q, lower.tail = FALSE),
+      0.025,
+      tolerance = 1e-8
+    )
+  }
+  qs <- vapply(1:20, function(l) tidycreel:::.continuous_poisson_q(0.025, l), numeric(1))
+  expect_true(all(diff(qs) > 0))
+})
+
+test_that("Test M6: the continuous quantile is NOT qgamma, the error the source paper made", {
+  # Hansen & Van Kirk (2018) state the 0.025 quantile at lambda = 2 is 0.24 and
+  # draw Figure A.1 accordingly. That number is qgamma(0.025, shape = 2) =
+  # 0.2422, the quantile of a Gamma(2, 1) variate -- a different distribution.
+  # Inverting their own eq. (A.4), which transcribes Ilienko Definition 3.1
+  # faithfully, gives 0.3292. This test exists so nobody "corrects" the
+  # implementation toward the printed example.
+  q <- tidycreel:::.continuous_poisson_q(0.025, 2)
+  expect_equal(q, 0.329194, tolerance = 1e-5)
+  expect_false(isTRUE(all.equal(q, stats::qgamma(0.025, shape = 2), tolerance = 1e-3)))
+})
+
+test_that("Test M7: a zero discrete quantile yields a finite upper bound, and warns that it is interpolated", {
+  # sum(m) <= 3 at the 95% level drives qpois(0.025, sum(m)) to 0, which sent
+  # ci_upper to Inf. The substitution must produce a finite bound, must fire
+  # only where the discrete quantile is 0, and must stay monotone across the
+  # seam -- a bound that jumped upward at sum(m) = 4 would mean the two
+  # distributions had been mismatched.
+  fit <- function(k) {
+    suppressWarnings(estimate_angler_n(
+      M = c(0, 500), n = c(500, 500), m = c(0, k), method = "schnabel"
+    ))
+  }
+  uppers <- vapply(1:6, function(k) fit(k)$estimates$ci_upper, numeric(1))
+  expect_true(all(is.finite(uppers)))
+  expect_true(all(diff(uppers) <= 0))
+
+  # the warning names the interpolation rather than appearing silently
+  expect_warning(
+    estimate_angler_n(M = c(0, 500), n = c(500, 500), m = c(0, 2), method = "schnabel"),
+    "continuous Poisson"
+  )
+  # and at sum(m) = 4 the discrete quantile is 1, so no substitution and no warning
+  expect_no_warning(
+    estimate_angler_n(M = c(0, 500), n = c(500, 500), m = c(0, 4), method = "schnabel")
+  )
+})
+
 test_that("Test N: Schnabel normal CI branch fires when sum(m) >= 50", {
   M_s2 <- c(0L, 100L, 200L, 300L, 400L)
   n_s2 <- c(100L, 100L, 100L, 100L, 100L)
@@ -350,8 +424,12 @@ test_that("Test W: @examples smoke — estimate_angler_n(M=200, n=50, m=10) comp
 
 # --- WARNING-02 fix: Schnabel ci_hi guard for lo_m = 0 ---
 
-test_that("Test X: Schnabel warns and returns ci_hi = Inf when lo_m = 0", {
-  # sum_m = 1 => qpois(0.025, 1) = 0 => lo_m = 0 => ci_hi = Inf
+test_that("Test X: Schnabel warns and substitutes the continuous Poisson when lo_m = 0", {
+  # sum_m = 1 => qpois(0.025, 1) = 0 => lo_m = 0. Before finding 30 this
+  # returned ci_upper = Inf; it now takes Hansen & Van Kirk's (2018) eq. (A.4)
+  # substitution and returns a finite interpolated bound. The warning is
+  # retained deliberately -- the bound comes from the continuous distribution
+  # rather than from the data, so it must not appear silently.
   expect_warning(
     result <- estimate_angler_n(
       M = c(0L, 10L),
@@ -359,7 +437,10 @@ test_that("Test X: Schnabel warns and returns ci_hi = Inf when lo_m = 0", {
       m = c(0L, 1L),
       method = "schnabel"
     ),
-    regexp = "ci_hi set to Inf"
+    regexp = "continuous Poisson"
   )
-  expect_true(is.infinite(result$estimates$ci_upper))
+  expect_true(is.finite(result$estimates$ci_upper))
+  expect_gt(result$estimates$ci_upper, result$estimates$estimate)
+  # sum(M*n) = 50, and the 0.025 continuous quantile at lambda = 1 is 0.10331492
+  expect_equal(result$estimates$ci_upper, 483.957208, tolerance = 1e-6)
 })

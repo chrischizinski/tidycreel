@@ -1,5 +1,36 @@
 # Mark-Recapture Estimation Functions ----
 
+#' Lower-tail quantile of Ilienko's continuous Poisson distribution
+#'
+#' Ilienko (2013) Definition 3.1: the continuous Poisson with parameter
+#' \eqn{\lambda} has distribution function \eqn{F(x) = \Gamma(x, \lambda)/\Gamma(x)}
+#' for \eqn{x > 0}. This is the genuine continuous interpolant of the discrete
+#' Poisson, not a nearby gamma: Ilienko's eq. (1) shows the same expression gives
+#' the discrete CDF \eqn{P(X < x)} at integer \eqn{x}, which the tests pin.
+#'
+#' Hansen & Van Kirk (2018) use it to replace a zero Poisson quantile, which
+#' would otherwise send the Schnabel upper bound to infinity.
+#'
+#' The quantile sits in the *shape* argument of `pgamma()`, so it has no
+#' closed form and must be solved for. That is the trap the source paper fell
+#' into — their worked example reports `qgamma(0.025, shape = 2) = 0.24`, the
+#' quantile of a Gamma(2, 1) variate, where inverting their own eq. (A.4) at
+#' \eqn{\lambda = 2} gives 0.3292. Equation A.4 is a faithful transcription of
+#' Ilienko; the example and Figure A.1 are not. See finding 30 in
+#' AUDIT-dimensional-seams.md.
+#'
+#' @param p Lower-tail probability.
+#' @param lambda Poisson parameter, > 0.
+#' @return Numeric(1), the value x with `Gamma(x, lambda)/Gamma(x) == p`.
+#' @noRd
+.continuous_poisson_q <- function(p, lambda) {
+  # F is increasing in x from 0 to 1, so the root is unique. The upper bracket
+  # grows with lambda; lambda + 10 clears it comfortably for any p < 1 in the
+  # range this is called on (lambda = sum(m) < 50).
+  cdf <- function(x) stats::pgamma(lambda, shape = x, lower.tail = FALSE) - p
+  stats::uniroot(cdf, lower = 1e-10, upper = lambda + 10, tol = .Machine$double.eps^0.5)$root
+}
+
 #' Sadinle's 0.5 transformed logit interval for a two-sample capture table
 #'
 #' Sadinle (2009) sec. 5. The two-sample experiment is a 2x2 table with
@@ -130,6 +161,25 @@
 #'
 #' \code{ci_method = "delta"} reproduces the pre-3.0.0 bounds exactly.
 #'
+#' \strong{The Schnabel upper bound at very few recaptures.} The Poisson interval
+#' inverts the distribution of \eqn{\sum m_k}, so it needs the lower quantile
+#' \eqn{q_{\alpha/2}} in its denominator. That quantile is \emph{zero} whenever
+#' \eqn{\sum m_k \leq 3} at the 95\% level, which used to send \code{ci_upper} to
+#' \code{Inf}. Following Hansen & Van Kirk (2018) eq. (A.4), tidycreel substitutes
+#' Ilienko's (2013) continuous Poisson in exactly that case — it has distribution
+#' function \eqn{\Gamma(x, \lambda)/\Gamma(x)}, is positive there, and so returns a
+#' finite bound. The substitution fires only where the discrete quantile is zero;
+#' from \eqn{\sum m_k \geq 4} the continuous quantile sits just above the discrete
+#' one, so this is a targeted patch rather than a change of method.
+#'
+#' \strong{Read that bound for what it is.} It comes from a continuous
+#' interpolation of a discrete distribution at one to three total recaptures, not
+#' from the data, and it is wide. It stands in for "the data do not bound this
+#' above" rather than measuring anything, which is why the function still warns
+#' when it fires. Ilienko's construction is the genuine interpolant — his eq. (1)
+#' shows the same expression returns the discrete Poisson CDF at integer
+#' \eqn{x} — but interpolating at \eqn{\sum m_k = 1} is still interpolating.
+#'
 #' \strong{Where the Petersen \eqn{m \geq 7} guard comes from.} The threshold is a
 #' practical stand-in, not a derivation, and it is worth knowing why no exact one
 #' is available. Robson & Regier (1964) give two conditions: Chapman is exactly
@@ -189,6 +239,11 @@
 #' Robson, D. S., & Regier, H. A. (1964). Sample size in Petersen mark-recapture
 #' experiments. \emph{Transactions of the American Fisheries Society}, 93(3),
 #' 215--226. \doi{10.1577/1548-8659(1964)93[215:SSIPME]2.0.CO;2}
+#'
+#' Ilienko, A. (2013). Continuous counterparts of Poisson and binomial
+#' distributions and their properties. \emph{Annales Universitatis Scientiarum
+#' Budapestinensis de Rolando Eotvos Nominatae, Sectio Computatorica}, 39,
+#' 137--147.
 #'
 #' @family Estimation
 #' @export
@@ -443,9 +498,25 @@ estimate_angler_n <- function(
       # Guard against hi_m == 0 (degenerate Poisson quantile)
       ci_lo <- if (hi_m == 0) Inf else sum_Mn / hi_m
       if (lo_m == 0L) {
-        cli::cli_warn("Schnabel Poisson CI: lower quantile is 0; ci_hi set to Inf.")
+        # The discrete lower quantile is 0 whenever sum(m) is small enough --
+        # sum(m) <= 3 at the 95% level -- which sends the upper bound to
+        # infinity. Hansen & Van Kirk (2018) eq. (A.4) substitute Ilienko's
+        # (2013) continuous Poisson in exactly this case, which has a positive
+        # quantile there and so yields a finite bound. Applied only when the
+        # discrete quantile is 0: at sum(m) >= 4 the continuous quantile sits
+        # just above the discrete one, so this stays a targeted substitution
+        # rather than a change of method. See finding 30.
+        lo_cont <- .continuous_poisson_q(alpha / 2, sum_m)
+        ci_hi <- sum_Mn / lo_cont
+        cli::cli_warn(c(
+          "Schnabel Poisson CI: the discrete lower quantile is 0 at {.code sum(m) = {sum_m}}.",
+          "i" = "{.field ci_upper} comes from the continuous Poisson (Ilienko 2013) rather than
+                 the data, and is an interpolation between the achievable discrete bounds.",
+          "i" = "Treat it as a stand-in for an unbounded upper limit, not as a measured one."
+        ))
+      } else {
+        ci_hi <- sum_Mn / lo_m
       }
-      ci_hi <- if (lo_m == 0L) Inf else sum_Mn / lo_m
     } else {
       # df is the number of sampling occasions minus one, not the recapture
       # total minus one. Hansen & Van Kirk (2018) eq. (A.5) uses t_{alpha/2, S-1}
