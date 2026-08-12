@@ -10,7 +10,7 @@ estimate_angler_n(
   m,
   method = "chapman",
   conf_level = 0.95,
-  ci_method = c("delta", "bootstrap"),
+  ci_method = c("logit", "delta", "bootstrap"),
   B = 2000L
 )
 }
@@ -30,11 +30,17 @@ Petersen; vector (same length as \code{M}) for Schnabel.}
 
 \item{conf_level}{numeric. Confidence level for the CI. Default \code{0.95}.}
 
-\item{ci_method}{character(1). CI construction method: \code{"delta"} (default)
-uses the analytic delta-method formula; \code{"bootstrap"} uses a parametric
-bootstrap via \code{stats::rbinom()}. Bootstrap results add \code{ci_lo_boot}
-and \code{ci_hi_boot} columns to the estimates tibble and attach
-\code{attr(result, "boot_samples")}.}
+\item{ci_method}{character(1). CI construction for the Chapman and Petersen
+branches: \code{"logit"} (default) is Sadinle's (2009) 0.5 transformed logit
+interval; \code{"delta"} is the symmetric Wald interval
+\eqn{\hat{N} \pm t_{\alpha/2,\,m-1} SE(\hat{N})} that was the default before
+3.0.0; \code{"bootstrap"} keeps the \code{"logit"} bounds and additionally
+appends \code{ci_lo_boot} and \code{ci_hi_boot} columns from a parametric
+bootstrap via \code{stats::rbinom()}, attaching
+\code{attr(result, "boot_samples")}. The Schnabel branch ignores this
+argument for its analytic bounds — it always inverts Poisson quantiles or
+uses the \eqn{t} approximation on \eqn{1/\hat{N}}, per Hansen & Van Kirk
+(2018) — but still honours \code{"bootstrap"} for the extra columns.}
 
 \item{B}{integer(1). Number of bootstrap replicates when
 \code{ci_method = "bootstrap"}. Default \code{2000L}.}
@@ -66,15 +72,38 @@ freedom (Hansen & Van Kirk 2018, eq. A.5).
 }
 }
 \details{
-\strong{Chapman and Petersen intervals are symmetric and can go negative.}
-Both use \eqn{\hat{N} \pm t_{\alpha/2,\,m-1} \cdot SE(\hat{N})}, while
-\eqn{\hat{N}} is a ratio with a small integer denominator and is
-right-skewed. With \code{M = 200}, \code{n = 50} and \code{m = 3},
-\code{ci_lower} is \code{-2124.8}. Chapman is recommended exactly when
-recaptures are few, so this regime is not exotic. Prefer
-\code{ci_method = "bootstrap"}, whose percentile bounds respect the skew,
-when \eqn{m} is small. The Schnabel branch is unaffected: it inverts Poisson
-quantiles on \eqn{\sum m} and cannot produce a negative bound.
+\strong{Why the Chapman and Petersen default is not a Wald interval.}
+\eqn{\hat{N}} is a ratio with a small integer denominator, so its sampling
+distribution is strongly right-skewed and a symmetric interval leaves the
+parameter space. Evans et al. (1996) measured Wald coverage failing on one
+side 27.9\\% of the time against a 2.5\\% nominal rate, and Otis et al. (1978)
+and Dettloff (2023) report the same. With \code{M = 200}, \code{n = 50} and
+\code{m = 3} the Wald lower bound is \code{-2124.8}; at \code{m = 5} it is
+\code{48.7}, below the 245 individuals actually observed. Chapman is
+recommended precisely when recaptures are few, so this is the regime the
+default estimator is chosen for.
+
+The default \code{"logit"} interval is Sadinle's (2009) 0.5 transformed
+logit, built on the \eqn{2 \times 2} capture table
+(\eqn{n_{11} = m}, \eqn{n_{12} = M - m}, \eqn{n_{21} = n - m}) with 0.5 added
+to each cell. Sadinle compared nine intervals and found it "the best of the
+intervals reported here", with near-nominal coverage even for small
+populations and capture probabilities near 0 or 1, where profile-likelihood
+and Monte Carlo intervals both degrade. Its lower limit is guaranteed never
+to fall below \eqn{n_{11} + n_{12} + n_{21}}, the number of individuals
+actually seen — the property the Wald interval lacks. It is closed-form and
+always computable, since the 0.5 continuity correction removes every
+zero-count division.
+
+\strong{One consequence worth knowing.} When \eqn{m = n} — every individual
+in the second sample was already marked — the estimator saturates at
+\eqn{\hat{N} = M}, which is also the observed count. The logit lower limit
+then sits fractionally \emph{above} \eqn{\hat{N}}, because the data imply
+\eqn{N > M} rather than \eqn{N = M}. This is the interval being informative
+at a boundary, not an error; pass \code{ci_method = "delta"} if a bound that
+brackets the point estimate matters more than coverage.
+
+\code{ci_method = "delta"} reproduces the pre-3.0.0 bounds exactly.
 }
 \examples{
 # Chapman (default) — bias-corrected Petersen
@@ -98,6 +127,20 @@ print(result_s)
 Hansen, M. J., & Van Kirk, R. W. (2018). A mark-recapture-based approach
 for estimating angler harvest. \emph{North American Journal of Fisheries
 Management}, 38(2), 400--410. \doi{10.1002/nafm.10038}
+
+Sadinle, M. (2009). Transformed logit confidence intervals for small
+populations in single capture-recapture estimation.
+\emph{Communications in Statistics - Simulation and Computation}, 38(9),
+1909--1924. \doi{10.1080/03610910903168595}
+
+Evans, M. A., Kim, H.-M., & O'Brien, T. E. (1996). An application of
+profile-likelihood based confidence interval to capture-recapture
+estimators. \emph{Journal of Agricultural, Biological, and Environmental
+Statistics}, 1(1), 131--140. \doi{10.2307/1400565}
+
+Dettloff, K. (2023). Assessment of bias and precision among simple closed
+population mark-recapture estimators. \emph{Fisheries Research}, 265,
+106756. \doi{10.1016/j.fishres.2023.106756}
 }
 \seealso{
 Other Estimation:

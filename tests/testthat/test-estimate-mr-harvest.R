@@ -34,6 +34,31 @@ test_that("Test D: conf_level=0.90 gives narrower CI than conf_level=0.95", {
   expect_true(result_90$estimates$ci_upper < result_95$estimates$ci_upper)
 })
 
+test_that("Test D2: harvest bounds are the angler_n bounds scaled by harvest_rate", {
+  # H = N * harvest_rate is a monotone linear map with harvest_rate > 0, so
+  # scaling the endpoints is exact rather than approximate. Rebuilding a
+  # symmetric interval here instead -- as the code did before 3.0.0 -- threw
+  # away whatever construction estimate_angler_n() had chosen and could put
+  # ci_lower below zero even when the angler interval was strictly positive.
+  result <- estimate_mr_harvest(angler_n = angler_result, harvest_rate = rate)
+  expect_equal(result$estimates$ci_lower, angler_result$estimates$ci_lower * rate)
+  expect_equal(result$estimates$ci_upper, angler_result$estimates$ci_upper * rate)
+})
+
+test_that("Test D3: few recaptures no longer drive total_harvest ci_lower negative", {
+  # Finding 27's reported symptom: M = 200, n = 50, m = 3 at a 0.35 rate gave
+  # total_harvest = 896.6 with ci_lower = -743.7, a 95% lower bound of negative
+  # 744 fish harvested. ci_method = "delta" still reproduces it exactly.
+  few <- estimate_angler_n(M = 200L, n = 50L, m = 3L)
+  result <- estimate_mr_harvest(angler_n = few, harvest_rate = 0.35)
+  expect_equal(result$estimates$estimate, 896.6125, tolerance = 1e-4)
+  expect_gt(result$estimates$ci_lower, 0)
+
+  legacy <- estimate_angler_n(M = 200L, n = 50L, m = 3L, ci_method = "delta")
+  legacy_h <- estimate_mr_harvest(angler_n = legacy, harvest_rate = 0.35, ci_method = "delta")
+  expect_equal(legacy_h$estimates$ci_lower, -743.6921, tolerance = 1e-4)
+})
+
 test_that("Test E: returns class creel_estimates with method mark-recapture-harvest", {
   result <- estimate_mr_harvest(angler_n = angler_result, harvest_rate = rate)
   expect_s3_class(result, "creel_estimates")

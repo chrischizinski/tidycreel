@@ -1,5 +1,48 @@
 # Mark-Recapture Estimation Functions ----
 
+#' Sadinle's 0.5 transformed logit interval for a two-sample capture table
+#'
+#' Sadinle (2009) sec. 5. The two-sample experiment is a 2x2 table with
+#' \eqn{n_{11} = m} seen twice, \eqn{n_{12} = M - m} marked but not recaptured,
+#' \eqn{n_{21} = n - m} caught only in the second sample, and \eqn{n_{22}}
+#' unobserved. Under independence the odds ratio is 1, so a logit interval for
+#' the odds ratio transforms into one for \eqn{n_{22}}; adding the observed
+#' count back gives the interval for \eqn{N}.
+#'
+#' Adding \code{cc} to every cell is what makes this always computable — no
+#' cell count can drive a division by zero — and it is why the lower limit can
+#' never fall below the number of individuals actually observed.
+#'
+#' @param M,n,m Marked released, second-sample size, recaptures.
+#' @param conf_level Confidence level.
+#' @param cc Continuity correction added to each cell. Sadinle's 0.5.
+#' @return Numeric vector of length 2, `c(lower, upper)`.
+#' @noRd
+.mr_logit_ci <- function(M, n, m, conf_level, cc = 0.5) {
+  n11 <- m
+  n12 <- M - m
+  n21 <- n - m
+  observed <- n11 + n12 + n21
+
+  se_log_or <- sqrt(
+    1 / (n11 + cc) + 1 / (n12 + cc) + 1 / (n21 + cc) +
+      (n11 + cc) / ((n12 + cc) * (n21 + cc))
+  )
+  z <- stats::qnorm(1 - (1 - conf_level) / 2)
+  n22_hat <- (n12 + cc) * (n21 + cc) / (n11 + cc)
+
+  # n22 is a count of individuals never seen, so its lower bound cannot be
+  # negative. Clamping at zero is the parameter-space boundary, not a fudge,
+  # and it is what makes Sadinle's stated guarantee hold exactly: the lower
+  # limit for N is then never below the observed count. Without it the bound
+  # dips a few tenths under `observed` in saturated corners such as
+  # M = 500, n = 10, m = 9, where n22_hat * exp(-z * se) falls below cc.
+  c(
+    max(0, n22_hat * exp(-z * se_log_or) - cc) + observed,
+    n22_hat * exp(z * se_log_or) - cc + observed
+  )
+}
+
 #' Estimate angler population size via closed-population mark-recapture
 #'
 #' @description
@@ -32,24 +75,53 @@
 #' @param method character(1). One of \code{"chapman"} (default),
 #'   \code{"petersen"}, or \code{"schnabel"}.
 #' @param conf_level numeric. Confidence level for the CI. Default \code{0.95}.
-#' @param ci_method character(1). CI construction method: \code{"delta"} (default)
-#'   uses the analytic delta-method formula; \code{"bootstrap"} uses a parametric
-#'   bootstrap via \code{stats::rbinom()}. Bootstrap results add \code{ci_lo_boot}
-#'   and \code{ci_hi_boot} columns to the estimates tibble and attach
-#'   \code{attr(result, "boot_samples")}.
+#' @param ci_method character(1). CI construction for the Chapman and Petersen
+#'   branches: \code{"logit"} (default) is Sadinle's (2009) 0.5 transformed logit
+#'   interval; \code{"delta"} is the symmetric Wald interval
+#'   \eqn{\hat{N} \pm t_{\alpha/2,\,m-1} SE(\hat{N})} that was the default before
+#'   3.0.0; \code{"bootstrap"} keeps the \code{"logit"} bounds and additionally
+#'   appends \code{ci_lo_boot} and \code{ci_hi_boot} columns from a parametric
+#'   bootstrap via \code{stats::rbinom()}, attaching
+#'   \code{attr(result, "boot_samples")}. The Schnabel branch ignores this
+#'   argument for its analytic bounds — it always inverts Poisson quantiles or
+#'   uses the \eqn{t} approximation on \eqn{1/\hat{N}}, per Hansen & Van Kirk
+#'   (2018) — but still honours \code{"bootstrap"} for the extra columns.
 #' @param B integer(1). Number of bootstrap replicates when
 #'   \code{ci_method = "bootstrap"}. Default \code{2000L}.
 #'
 #' @details
-#' \strong{Chapman and Petersen intervals are symmetric and can go negative.}
-#' Both use \eqn{\hat{N} \pm t_{\alpha/2,\,m-1} \cdot SE(\hat{N})}, while
-#' \eqn{\hat{N}} is a ratio with a small integer denominator and is
-#' right-skewed. With \code{M = 200}, \code{n = 50} and \code{m = 3},
-#' \code{ci_lower} is \code{-2124.8}. Chapman is recommended exactly when
-#' recaptures are few, so this regime is not exotic. Prefer
-#' \code{ci_method = "bootstrap"}, whose percentile bounds respect the skew,
-#' when \eqn{m} is small. The Schnabel branch is unaffected: it inverts Poisson
-#' quantiles on \eqn{\sum m} and cannot produce a negative bound.
+#' \strong{Why the Chapman and Petersen default is not a Wald interval.}
+#' \eqn{\hat{N}} is a ratio with a small integer denominator, so its sampling
+#' distribution is strongly right-skewed and a symmetric interval leaves the
+#' parameter space. Evans et al. (1996) measured Wald coverage failing on one
+#' side 27.9\% of the time against a 2.5\% nominal rate, and Otis et al. (1978)
+#' and Dettloff (2023) report the same. With \code{M = 200}, \code{n = 50} and
+#' \code{m = 3} the Wald lower bound is \code{-2124.8}; at \code{m = 5} it is
+#' \code{48.7}, below the 245 individuals actually observed. Chapman is
+#' recommended precisely when recaptures are few, so this is the regime the
+#' default estimator is chosen for.
+#'
+#' The default \code{"logit"} interval is Sadinle's (2009) 0.5 transformed
+#' logit, built on the \eqn{2 \times 2} capture table
+#' (\eqn{n_{11} = m}, \eqn{n_{12} = M - m}, \eqn{n_{21} = n - m}) with 0.5 added
+#' to each cell. Sadinle compared nine intervals and found it "the best of the
+#' intervals reported here", with near-nominal coverage even for small
+#' populations and capture probabilities near 0 or 1, where profile-likelihood
+#' and Monte Carlo intervals both degrade. Its lower limit is guaranteed never
+#' to fall below \eqn{n_{11} + n_{12} + n_{21}}, the number of individuals
+#' actually seen — the property the Wald interval lacks. It is closed-form and
+#' always computable, since the 0.5 continuity correction removes every
+#' zero-count division.
+#'
+#' \strong{One consequence worth knowing.} When \eqn{m = n} — every individual
+#' in the second sample was already marked — the estimator saturates at
+#' \eqn{\hat{N} = M}, which is also the observed count. The logit lower limit
+#' then sits fractionally \emph{above} \eqn{\hat{N}}, because the data imply
+#' \eqn{N > M} rather than \eqn{N = M}. This is the interval being informative
+#' at a boundary, not an error; pass \code{ci_method = "delta"} if a bound that
+#' brackets the point estimate matters more than coverage.
+#'
+#' \code{ci_method = "delta"} reproduces the pre-3.0.0 bounds exactly.
 #'
 #' @return A \code{creel_estimates} S3 object with \code{method =
 #'   "mark-recapture-chapman"} (or petersen/schnabel) and an \code{estimates}
@@ -60,6 +132,20 @@
 #' Hansen, M. J., & Van Kirk, R. W. (2018). A mark-recapture-based approach
 #' for estimating angler harvest. \emph{North American Journal of Fisheries
 #' Management}, 38(2), 400--410. \doi{10.1002/nafm.10038}
+#'
+#' Sadinle, M. (2009). Transformed logit confidence intervals for small
+#' populations in single capture-recapture estimation.
+#' \emph{Communications in Statistics - Simulation and Computation}, 38(9),
+#' 1909--1924. \doi{10.1080/03610910903168595}
+#'
+#' Evans, M. A., Kim, H.-M., & O'Brien, T. E. (1996). An application of
+#' profile-likelihood based confidence interval to capture-recapture
+#' estimators. \emph{Journal of Agricultural, Biological, and Environmental
+#' Statistics}, 1(1), 131--140. \doi{10.2307/1400565}
+#'
+#' Dettloff, K. (2023). Assessment of bias and precision among simple closed
+#' population mark-recapture estimators. \emph{Fisheries Research}, 265,
+#' 106756. \doi{10.1016/j.fishres.2023.106756}
 #'
 #' @family Estimation
 #' @export
@@ -87,7 +173,7 @@ estimate_angler_n <- function(
   m,
   method = "chapman",
   conf_level = 0.95,
-  ci_method = c("delta", "bootstrap"),
+  ci_method = c("logit", "delta", "bootstrap"),
   B = 2000L
 ) {
   method <- match.arg(method, c("chapman", "petersen", "schnabel"))
@@ -168,10 +254,20 @@ estimate_angler_n <- function(
     var_N <- ((M + 1) * (n + 1) * (M - m) * (n - m)) / ((m + 2) * (m + 1)^2)
     se_N <- sqrt(var_N)
 
-    # --- CI (t-distribution; df = m - 1 based on recapture count) ---
-    z <- stats::qt(1 - (1 - conf_level) / 2, df = max(1L, m - 1L))
-    ci_lo <- N_hat - z * se_N
-    ci_hi <- N_hat + z * se_N
+    # --- CI ---
+    # Wald is retained only under ci_method = "delta". It is symmetric while
+    # N_hat is right-skewed, so it leaves the parameter space at the small
+    # recapture counts Chapman exists for. See finding 27 in
+    # AUDIT-dimensional-seams.md.
+    if (ci_method == "delta") {
+      z <- stats::qt(1 - (1 - conf_level) / 2, df = max(1L, m - 1L))
+      ci_lo <- N_hat - z * se_N
+      ci_hi <- N_hat + z * se_N
+    } else {
+      logit_ci <- .mr_logit_ci(M, n, m, conf_level)
+      ci_lo <- logit_ci[1]
+      ci_hi <- logit_ci[2]
+    }
 
     # --- return ---
     estimates_df <- tibble::tibble(
@@ -202,6 +298,9 @@ estimate_angler_n <- function(
       by_vars = NULL,
       unit = NA_character_
     )
+    # Carried so estimate_mr_harvest() can rebuild the interval at its own
+    # conf_level rather than silently reusing this one.
+    attr(result, "capture_table") <- c(M = M, n = n, m = m)
     if (ci_method == "bootstrap") {
       attr(result, "boot_samples") <- N_hat_b
     }
@@ -214,10 +313,18 @@ estimate_angler_n <- function(
     var_N <- N_hat^2 * (1 / m - 1 / n)
     se_N <- sqrt(var_N)
 
-    # --- CI (t-distribution; df = m - 1 based on recapture count) ---
-    z <- stats::qt(1 - (1 - conf_level) / 2, df = max(1L, m - 1L))
-    ci_lo <- N_hat - z * se_N
-    ci_hi <- N_hat + z * se_N
+    # --- CI ---
+    # Same construction as the Chapman branch: the logit interval is built on
+    # the capture table, not on the point estimator, so it serves both.
+    if (ci_method == "delta") {
+      z <- stats::qt(1 - (1 - conf_level) / 2, df = max(1L, m - 1L))
+      ci_lo <- N_hat - z * se_N
+      ci_hi <- N_hat + z * se_N
+    } else {
+      logit_ci <- .mr_logit_ci(M, n, m, conf_level)
+      ci_lo <- logit_ci[1]
+      ci_hi <- logit_ci[2]
+    }
 
     # --- return ---
     estimates_df <- tibble::tibble(
@@ -247,6 +354,7 @@ estimate_angler_n <- function(
       by_vars = NULL,
       unit = NA_character_
     )
+    attr(result, "capture_table") <- c(M = M, n = n, m = m)
     if (ci_method == "bootstrap") {
       attr(result, "boot_samples") <- N_hat_b
     }
@@ -397,7 +505,7 @@ estimate_mr_harvest <- function(
   angler_n,
   harvest_rate,
   conf_level = 0.95,
-  ci_method = c("delta", "bootstrap")
+  ci_method = c("logit", "delta", "bootstrap")
 ) {
   ci_method <- match.arg(ci_method)
   # --- input validation ---
@@ -435,11 +543,30 @@ estimate_mr_harvest <- function(
   harvest_hat <- N_hat * harvest_rate
   se_H <- harvest_rate * se_N
 
-  # --- CI (t-distribution; df from N_hat recapture count) ---
+  # --- CI ---
+  # H = N x harvest_rate is a monotone linear map with harvest_rate > 0
+  # guaranteed above, so scaling the endpoints of the N interval is exact:
+  # P(N in [L, U]) = P(H in [rL, rU]). Rebuilding a symmetric interval here
+  # instead -- as the code did before 3.0.0 -- discarded whatever construction
+  # estimate_angler_n() had chosen and put ci_lower below zero at small
+  # recapture counts (finding 27).
+  #
+  # The capture table is rebuilt at this call's conf_level rather than reusing
+  # angler_n's bounds directly, so conf_level keeps working here. Schnabel
+  # carries no two-sample table and keeps the legacy Wald interval.
+  capture_table <- attr(angler_n, "capture_table")
   n_mr <- as.integer(angler_n$estimates$n)
-  z <- stats::qt(1 - (1 - conf_level) / 2, df = max(1L, n_mr - 1L))
-  ci_lo <- harvest_hat - z * se_H
-  ci_hi <- harvest_hat + z * se_H
+  if (ci_method != "delta" && !is.null(capture_table)) {
+    logit_ci <- .mr_logit_ci(
+      capture_table[["M"]], capture_table[["n"]], capture_table[["m"]], conf_level
+    )
+    ci_lo <- logit_ci[1] * harvest_rate
+    ci_hi <- logit_ci[2] * harvest_rate
+  } else {
+    z <- stats::qt(1 - (1 - conf_level) / 2, df = max(1L, n_mr - 1L))
+    ci_lo <- harvest_hat - z * se_H
+    ci_hi <- harvest_hat + z * se_H
+  }
 
   # --- return ---
   estimates_df <- tibble::tibble(

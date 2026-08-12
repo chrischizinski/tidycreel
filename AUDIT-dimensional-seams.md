@@ -1289,7 +1289,7 @@ documented example's own `M` and `n`:
 
 and the defect propagates: `estimate_mr_harvest(estimate_angler_n(M = 200, n = 50,
 m = 3), harvest_rate = 0.35)` reports `total_harvest = 896.6` with `ci_lower =
--744.4` — a 95% lower bound of negative 744 fish harvested. Chapman exists precisely
+-743.7` — a 95% lower bound of negative 744 fish harvested. Chapman exists precisely
 *because* recaptures are few (the docstring says so), so the regime that produces the
 negative bound is the regime the default estimator is chosen for.
 
@@ -1310,13 +1310,62 @@ symmetric.
 `ci_lower <= estimate <= ci_upper`, which a negative lower bound satisfies. Nothing
 asserts non-negativity, so a fix breaks no expectation.
 
-**NOT FIXED — needs an estimator decision, not a guard.** Clamping at zero is the
-wrong repair: it would preserve the symmetric width that produced the excursion and
-merely hide it at the boundary. The defensible options are the paper's inversion on
-\eqn{1/\hat{N}} (which the Schnabel branch already implements and could be shared), or
-making `ci_method = "bootstrap"` the default for Chapman and Petersen — both move
-shipped interval numbers on every mark-recapture call, which is why this is recorded
-rather than fixed alongside a doc pass.
+**The defect is worse than "goes negative."** At \eqn{m = 5} the lower bound is
+**48.7** while **245** individuals were actually handled — inadmissible without being
+negative, and invisible to any guard that only checks the sign.
+
+**FIXED** (2026-08-11) — Sadinle's (2009) 0.5 transformed logit interval, now the
+default via `ci_method = "logit"`. Four papers were read to choose it, and the first
+three ruled out the options this finding originally proposed:
+
+- **Inversion on \eqn{1/\hat{N}}** — the option recorded above — **fails at the case
+  that motivates it.** Run at \eqn{m = 3} it returns lower 905.4 and upper **-3088.5**:
+  \eqn{t_{.975,2} = 4.30} drives \eqn{1/\hat{N} - z\,SE} through zero and the bounds
+  invert. Hansen & Van Kirk hit the same wall from the other direction — their eq. (A.8)
+  says "occasionally the lower bound for \eqn{1/N} \dots was negative, in which case it
+  was set to \eqn{10^{-14}}." Poisson inversion belongs to the Schnabel branch, where
+  the package already has it, and does not transfer.
+- **Bootstrap as default** — Dettloff (2023) does recommend parametric bootstrapping,
+  and the scheme he attributes to Tyers (2021), resampling \eqn{m} as
+  \eqn{\mathrm{Binom}(n, m/n)}, is *already implemented* at `:185` and `:231`. But
+  Sadinle measured it directly: "the Monte Carlo interval is quite general and robust
+  \dots its poor performance for small populations restricts its implementation." It
+  also makes default output RNG-dependent.
+- **Profile likelihood** (Evans et al. 1996) — strong in its own study, and far cheaper
+  than bootstrap, but Sadinle found it "quite irregular", undefined at \eqn{m = 0}, and
+  degrading at large capture probabilities.
+
+Sadinle compared nine intervals and concluded the 0.5 transformed logit is "the best of
+the intervals reported here." Decisively for this finding: **its lower limit is
+structurally incapable of falling below the observed count**, the exact property the
+Wald interval lacks. It is closed-form, deterministic, needs no dependency, and the 0.5
+continuity correction removes every zero-count division so it is always computable.
+
+| \eqn{m} | before | after |
+| --- | --- | --- |
+| 2 | `[-17486.6, 24318.6]` | `[1319.1, 14085.6]` |
+| 3 | `[-2124.8, 7248.3]` | `[1143.1, 8259.6]` |
+| 5 | `[48.7, 3366.3]` | `[903.9, 4211.2]` |
+| 10 | `[406.9, 1454.9]` | `[605.4, 1715.0]` |
+
+Two implementation notes, both found by tests rather than by reading:
+
+- **\eqn{n_{22}}'s lower bound needs clamping at zero.** Sadinle states the lower limit
+  is never below \eqn{n_{11}+n_{12}+n_{21}}, but as written it dips a few tenths under
+  in saturated corners (\eqn{M = 500, n = 10, m = 9}) where
+  \eqn{\hat{n}_{22}e^{-z\sigma} < 0.5}. \eqn{n_{22}} counts individuals never seen, so
+  zero is the parameter-space boundary and clamping there makes the stated guarantee
+  hold exactly.
+- **`estimate_mr_harvest()` cannot simply scale the angler bounds.** Doing so silently
+  made its own `conf_level` a no-op, caught by that file's Test D. It now carries the
+  capture table on the result and rebuilds at its own level. On the `delta` path this
+  is provably not a numeric change — old and new agree to 10 decimals, since the old
+  code used the same df and \eqn{se_H = r \cdot se_N}.
+
+**One recorded number here was wrong.** This finding stated
+`ci_lower = -744.4` for the harvest example; the value is **-743.7**
+(\eqn{-743.6921}). The identity \eqn{r \cdot (\hat{N} - t\,SE)} is exact, so the
+original was a transcription slip, not a code change.
 
 **Scope note.** This is not the audit's dimensional class — the number's *dimension* is
 fine, its *distribution* is wrong. Recorded here because the literature check that

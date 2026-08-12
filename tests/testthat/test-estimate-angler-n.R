@@ -55,6 +55,63 @@ test_that("Test F: Chapman estimates tibble has columns parameter, estimate, se,
   expect_named(result$estimates, c("parameter", "estimate", "se", "ci_lower", "ci_upper", "n"))
 })
 
+# --- MR-01b: Sadinle transformed logit interval (default since 3.0.0) ---
+
+test_that("Test P: logit lower bound never falls below the individuals observed", {
+  # This is the property the interval is chosen for. Sadinle (2009) p.1923:
+  # the .5 transformed logit lower limit can never be less than
+  # n11 + n12 + n21 = M + n - m, the number of distinct individuals actually
+  # handled. The Wald interval it replaces has no such guarantee -- it returns
+  # -2124.8 at m = 3, and 48.7 at m = 5 against 245 observed. A test that only
+  # checked non-negativity would miss the m = 5 case entirely.
+  for (M in c(20L, 50L, 200L, 500L)) {
+    for (n in c(10L, 50L, 200L)) {
+      for (m in seq_len(min(M, n))) {
+        result <- estimate_angler_n(M = M, n = n, m = m)
+        expect_gte(result$estimates$ci_lower, M + n - m)
+      }
+    }
+  }
+})
+
+test_that("Test Q: logit bounds match Sadinle (2009) sec. 5 computed by hand", {
+  # M = 200, n = 50, m = 3 gives the 2x2 table n11 = 3, n12 = 197, n21 = 47.
+  # With c = .5: se(log OR) = sqrt(1/3.5 + 1/197.5 + 1/47.5 + 3.5/(197.5*47.5)),
+  # n22_hat = 197.5*47.5/3.5, and the N bounds add back the 247 observed.
+  cc <- 0.5
+  se_log_or <- sqrt(1 / 3.5 + 1 / 197.5 + 1 / 47.5 + 3.5 / (197.5 * 47.5))
+  n22_hat <- 197.5 * 47.5 / 3.5
+  z <- qnorm(0.975)
+  expected_lo <- n22_hat * exp(-z * se_log_or) - cc + 247
+  expected_hi <- n22_hat * exp(z * se_log_or) - cc + 247
+
+  result <- estimate_angler_n(M = 200L, n = 50L, m = 3L)
+  expect_equal(result$estimates$ci_lower, expected_lo, tolerance = 1e-9)
+  expect_equal(result$estimates$ci_upper, expected_hi, tolerance = 1e-9)
+  expect_equal(result$estimates$ci_lower, 1143.0653, tolerance = 1e-4)
+})
+
+test_that("Test R: ci_method = 'delta' reproduces the pre-3.0.0 Wald bounds", {
+  # The escape hatch must be exact, not merely similar -- anyone pinning a
+  # published number needs the old values back unchanged.
+  result <- estimate_angler_n(M = 200L, n = 50L, m = 3L, ci_method = "delta")
+  expect_equal(result$estimates$ci_lower, -2124.8, tolerance = 1e-4)
+  expect_equal(result$estimates$ci_upper, 7248.3, tolerance = 1e-4)
+  expect_lt(result$estimates$ci_lower, 0) # the defect, retained deliberately
+})
+
+test_that("Test S: saturated m == n puts the logit lower bound above N_hat", {
+  # Every individual in the second sample was already marked, so the estimator
+  # saturates at N_hat = M and the data imply N > M rather than N = M. The
+  # lower limit sitting fractionally above the point estimate is the interval
+  # being informative at a boundary; it is pinned so the behaviour stays
+  # deliberate. Documented under @details.
+  result <- estimate_angler_n(M = 500L, n = 10L, m = 10L)
+  expect_equal(result$estimates$estimate, 500)
+  expect_gt(result$estimates$ci_lower, result$estimates$estimate)
+  expect_gte(result$estimates$ci_lower, 500) # never below the observed count
+})
+
 # --- MR-02: Petersen estimator ---
 
 test_that("Test G: Petersen N_hat matches M*n/m", {

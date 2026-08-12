@@ -362,6 +362,50 @@ because 2.5.0's numbers were wrong.
 
 ## Breaking changes
 
+* `estimate_angler_n()` now defaults to Sadinle's (2009) 0.5 transformed logit
+  confidence interval on the Chapman and Petersen branches, via a new
+  `ci_method = "logit"`. **Every Chapman and Petersen bound moves.** Pass
+  `ci_method = "delta"` to reproduce the previous symmetric Wald interval
+  exactly. `estimate_mr_harvest()` inherits the change, rebuilding its interval
+  from the same capture table.
+
+  The Wald interval is symmetric while \eqn{\hat{N}} is a ratio with a small
+  integer denominator and is strongly right-skewed, so it leaves the parameter
+  space in the regime Chapman exists for. At `M = 200`, `n = 50`, `m = 3` it
+  reported `ci_lower = -2124.8`; at `m = 5` it reported `48.7` against 245
+  individuals actually observed. Evans et al. (1996) measured Wald coverage
+  failing on one side 27.9% of the time against a 2.5% nominal rate.
+
+  Sadinle compared nine intervals and found the 0.5 transformed logit "the best
+  of the intervals reported here", with near-nominal coverage even for small
+  populations and capture probabilities near 0 or 1, where profile-likelihood
+  and Monte Carlo intervals both degrade. Its lower limit cannot fall below the
+  number of individuals observed. It is closed-form, deterministic, and adds no
+  dependency.
+
+  | `m` | before | after |
+  | --- | --- | --- |
+  | 2 | `[-17486.6, 24318.6]` | `[1319.1, 14085.6]` |
+  | 3 | `[-2124.8, 7248.3]` | `[1143.1, 8259.6]` |
+  | 5 | `[48.7, 3366.3]` | `[903.9, 4211.2]` |
+  | 10 | `[406.9, 1454.9]` | `[605.4, 1715.0]` |
+
+  The Schnabel branch is unchanged — it already inverted Poisson quantiles and
+  could not produce a negative bound.
+
+  One boundary behaviour is worth knowing: when `m == n`, every individual in
+  the second sample was already marked, the estimator saturates at
+  \eqn{\hat{N} = M}, and the logit lower limit sits fractionally *above* the
+  point estimate because the data imply \eqn{N > M}. Use `ci_method = "delta"`
+  if a bound that brackets the point estimate matters more than coverage.
+
+* `estimate_mr_harvest()` now derives its interval from the angler-population
+  interval instead of rebuilding a symmetric one, so a positive angler bound can
+  no longer become a negative harvest bound. On the `ci_method = "delta"` path
+  this is not a numeric change: the old code used the same degrees of freedom
+  and `se_H = harvest_rate * se_N`, so its bounds already equalled the scaled
+  angler bounds to machine precision.
+
 * `estimate_angler_n(method = "schnabel")` now builds its large-sample confidence
   interval on \eqn{S - 1} degrees of freedom, where \eqn{S} is the number of sampling
   occasions. It previously used \eqn{\sum m - 1}, the recapture total. **Every

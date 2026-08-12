@@ -8,7 +8,7 @@ estimate_mr_harvest(
   angler_n,
   harvest_rate,
   conf_level = 0.95,
-  ci_method = c("delta", "bootstrap")
+  ci_method = c("logit", "delta", "bootstrap")
 )
 }
 \arguments{
