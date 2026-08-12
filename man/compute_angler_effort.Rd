@@ -11,7 +11,11 @@ compute_angler_effort(data, effort, n_anglers)
 
 \item{effort}{Tidy selector for the effort column (numeric, hours per trip).}
 
-\item{n_anglers}{Tidy selector for the number-of-anglers column (positive integer).}
+\item{n_anglers}{Number of anglers in the party. Either a bare column name
+(e.g. \code{n_anglers = party_size}) or a single positive number stating a
+constant party size (e.g. \code{n_anglers = 1} for individual-level
+interviews). A bare number is read as a party size, \strong{not} as a tidyselect
+column position. Values must be positive and finite.}
 }
 \value{
 The input data frame with an added \code{.angler_effort} column
@@ -29,7 +33,7 @@ internally by \code{\link{add_interviews}} when constructing the design object.
 \seealso{
 \code{\link[=compute_effort]{compute_effort()}}, \code{\link[=add_interviews]{add_interviews()}}
 
-Other "Survey Design": 
+Other "Survey Design":
 \code{\link{add_catch}()},
 \code{\link{add_counts}()},
 \code{\link{add_interviews}()},

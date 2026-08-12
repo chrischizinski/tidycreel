@@ -334,3 +334,301 @@ test_that("prep_counts_boat_party() errors on invalid boat_count or mean_party_s
     "strictly positive"
   )
 })
+
+# GH #109 — within-day variance reaches the estimator (audit finding 6) ----
+#
+# `prep_counts_*()` wrote `n_counts` and `within_day_var` into its output tibble
+# and `add_counts()` never read them, so a user who supplied a within-day sum of
+# squares through the documented preferred seam got an SE with the entire
+# within-day component missing. Downward-biased SE is the dangerous direction.
+
+make_wdv_raw <- function(n_days = 8L, counts_per_day = c(8, 12, 16)) {
+  dates <- seq(as.Date("2024-06-01"), by = "day", length.out = n_days)
+  do.call(rbind, lapply(seq_along(dates), function(i) {
+    data.frame(
+      date = dates[i],
+      day_type = "weekday",
+      count = counts_per_day + i
+    )
+  }))
+}
+
+# Collapses the raw counts to the per-PSU summary a user would compute by hand
+# before calling prep_counts_*().
+make_wdv_per_day <- function(raw) {
+  out <- do.call(rbind, lapply(split(raw, raw$date), function(g) {
+    data.frame(
+      date = g$date[1],
+      day_type = "weekday",
+      mean_count = mean(g$count),
+      ss = sum((g$count - mean(g$count))^2),
+      k = nrow(g),
+      effort_type = "angler_hours",
+      boats = mean(g$count),
+      mps = 2.5
+    )
+  }))
+  out$date <- as.Date(out$date, origin = "1970-01-01")
+  out
+}
+
+make_wdv_design <- function(raw) {
+  cal <- data.frame(date = unique(raw$date), day_type = "weekday")
+  suppressMessages(creel_design(calendar = cal, date = date, strata = day_type)) # nolint: object_usage_linter
+}
+
+test_that("supplied within_day_var reaches the design and the SE (GH #109)", {
+  # The component used to be dropped on the floor: design$within_day_var stayed
+  # NULL and the within-day contribution evaluated to exactly 0.
+  raw <- make_wdv_raw()
+  prepped <- prep_counts_daily_effort(
+    make_wdv_per_day(raw),
+    date = date, # nolint: object_usage_linter
+    strata = day_type, # nolint: object_usage_linter
+    effort_type = effort_type, # nolint: object_usage_linter
+    daily_effort = mean_count, # nolint: object_usage_linter
+    n_counts = k, # nolint: object_usage_linter
+    within_day_var = ss # nolint: object_usage_linter
+  )
+  d <- suppressMessages(add_counts(
+    make_wdv_design(raw),
+    prepped,
+    count_col = daily_effort, # nolint: object_usage_linter
+    psu = "psu"
+  ))
+
+  expect_false(is.null(d$within_day_var))
+  expect_identical(d$within_day_var$ss_d, prepped$within_day_var)
+  expect_identical(d$within_day_var$k_d, prepped$n_counts)
+  expect_gt(compute_within_day_var_contribution(d), 0)
+})
+
+test_that("both within-day seams give the same SE on the same data (GH #109)", {
+  # The strongest statement of the fix: routing identical counts through the
+  # prep_counts seam and through add_counts(count_time_col =) must agree. Before
+  # the fix the prep seam reported a strictly smaller SE, because it was missing
+  # a variance component the other one included.
+  raw <- make_wdv_raw()
+
+  prepped <- prep_counts_daily_effort(
+    make_wdv_per_day(raw),
+    date = date,
+    strata = day_type,
+    effort_type = effort_type,
+    daily_effort = mean_count,
+    n_counts = k,
+    within_day_var = ss
+  )
+  d_prep <- suppressMessages(add_counts(
+    make_wdv_design(raw), prepped, count_col = daily_effort, psu = "psu"
+  ))
+
+  raw_timed <- raw
+  raw_timed$count_time <- rep(c(9, 13, 17), times = length(unique(raw$date)))
+  d_time <- suppressMessages(add_counts(
+    make_wdv_design(raw),
+    raw_timed,
+    count_col = count, # nolint: object_usage_linter
+    psu = "date",
+    count_time_col = count_time # nolint: object_usage_linter
+  ))
+
+  e_prep <- suppressMessages(estimate_effort(d_prep))$estimates
+  e_time <- suppressMessages(estimate_effort(d_time))$estimates
+
+  expect_equal(e_prep$estimate, e_time$estimate, tolerance = 1e-9)
+  expect_equal(e_prep$se, e_time$se, tolerance = 1e-9)
+
+  # And the within-day component is a real part of that SE, not a rounding
+  # artefact: dropping it would shrink the SE.
+  se_between_only <- sqrt(e_prep$se^2 - compute_within_day_var_contribution(d_prep))
+  expect_lt(se_between_only, e_prep$se)
+})
+
+test_that("within_day_var is rescaled by correction_factor squared (GH #109)", {
+  # daily_effort is multiplied by correction_factor, so a sum of squares computed
+  # on the unscaled counts is a factor of cf^2 away from the between-day term it
+  # is added to. Passing it through unscaled was the latent half of finding 6.
+  raw <- make_wdv_raw()
+  per_day <- make_wdv_per_day(raw)
+
+  prepped <- prep_counts_daily_effort(
+    per_day,
+    date = date,
+    strata = day_type,
+    effort_type = effort_type,
+    daily_effort = mean_count,
+    correction_factor = 2,
+    n_counts = k,
+    within_day_var = ss
+  )
+  expect_equal(prepped$within_day_var, per_day$ss * 4, tolerance = 1e-9)
+
+  # Cross-check against the raw-count seam with the counts themselves doubled,
+  # which is the same survey.
+  d_prep <- suppressMessages(add_counts(
+    make_wdv_design(raw), prepped, count_col = daily_effort, psu = "psu"
+  ))
+  raw_doubled <- raw
+  raw_doubled$count <- raw_doubled$count * 2
+  raw_doubled$count_time <- rep(c(9, 13, 17), times = length(unique(raw$date)))
+  d_time <- suppressMessages(add_counts(
+    make_wdv_design(raw), raw_doubled, count_col = count, psu = "date",
+    count_time_col = count_time
+  ))
+
+  expect_equal(
+    suppressMessages(estimate_effort(d_prep))$estimates$se,
+    suppressMessages(estimate_effort(d_time))$estimates$se,
+    tolerance = 1e-9
+  )
+})
+
+test_that("boat path rescales within_day_var by (party size x cf) squared (GH #109)", {
+  # daily_effort is boat_count x mean_party_size x correction_factor, so a sum of
+  # squares computed on boat counts needs both factors squared.
+  raw <- make_wdv_raw()
+  per_day <- make_wdv_per_day(raw)
+
+  prepped <- prep_counts_boat_party(
+    per_day,
+    date = date,
+    strata = day_type,
+    effort_type = effort_type,
+    boat_count = boats, # nolint: object_usage_linter
+    mean_party_size = mps, # nolint: object_usage_linter
+    correction_factor = 2,
+    n_counts = k,
+    within_day_var = ss
+  )
+  expect_equal(prepped$within_day_var, per_day$ss * (2.5 * 2)^2, tolerance = 1e-9)
+
+  d_prep <- suppressMessages(add_counts(
+    make_wdv_design(raw), prepped, count_col = daily_effort, psu = "psu"
+  ))
+  raw_scaled <- raw
+  raw_scaled$count <- raw_scaled$count * 2.5 * 2
+  raw_scaled$count_time <- rep(c(9, 13, 17), times = length(unique(raw$date)))
+  d_time <- suppressMessages(add_counts(
+    make_wdv_design(raw), raw_scaled, count_col = count, psu = "date",
+    count_time_col = count_time
+  ))
+
+  expect_equal(
+    suppressMessages(estimate_effort(d_prep))$estimates$se,
+    suppressMessages(estimate_effort(d_time))$estimates$se,
+    tolerance = 1e-9
+  )
+})
+
+test_that("within_day_var without n_counts is an error (GH #109)", {
+  # k_d is needed to compute the component at all, and demanding it is what
+  # makes the sum-of-squares contract statable.
+  per_day <- make_wdv_per_day(make_wdv_raw())
+  expect_error(
+    prep_counts_daily_effort(
+      per_day,
+      date = date,
+      strata = day_type,
+      effort_type = effort_type,
+      daily_effort = mean_count,
+      within_day_var = ss
+    ),
+    "requires"
+  )
+})
+
+test_that("a non-zero within_day_var where n_counts is 1 is an error (GH #109)", {
+  # One count carries no within-day information, so a non-zero sum of squares
+  # there means the column is a variance, or the two columns disagree. Either
+  # way it must not be silently used.
+  per_day <- make_wdv_per_day(make_wdv_raw())
+  per_day$k <- 1L
+  expect_error(
+    prep_counts_daily_effort(
+      per_day,
+      date = date,
+      strata = day_type,
+      effort_type = effort_type,
+      daily_effort = mean_count,
+      n_counts = k,
+      within_day_var = ss
+    ),
+    "non-zero"
+  )
+})
+
+test_that("a negative within_day_var is an error (GH #109)", {
+  per_day <- make_wdv_per_day(make_wdv_raw())
+  per_day$ss <- -1
+  expect_error(
+    prep_counts_daily_effort(
+      per_day,
+      date = date,
+      strata = day_type,
+      effort_type = effort_type,
+      daily_effort = mean_count,
+      n_counts = k,
+      within_day_var = ss
+    ),
+    "must not be negative"
+  )
+})
+
+test_that("supplying the within-day component twice is an error (GH #109)", {
+  # count_time_col derives it from raw counts and the columns carry it directly.
+  # Taking both would double-count the component.
+  raw <- make_wdv_raw()
+  raw$count_time <- rep(c(9, 13, 17), times = length(unique(raw$date)))
+  raw$within_day_var <- 1
+  raw$n_counts <- 3L
+
+  expect_error(
+    add_counts(
+      make_wdv_design(raw), raw, count_col = count, psu = "date",
+      count_time_col = count_time
+    ),
+    "supplied twice"
+  )
+})
+
+test_that("a within_day_var column without n_counts is an error in add_counts() (GH #109)", {
+  raw <- make_wdv_raw()
+  prepped <- prep_counts_daily_effort(
+    make_wdv_per_day(raw),
+    date = date,
+    strata = day_type,
+    effort_type = effort_type,
+    daily_effort = mean_count,
+    n_counts = k,
+    within_day_var = ss
+  )
+  prepped$n_counts <- NULL
+
+  expect_error(
+    add_counts(make_wdv_design(raw), prepped, count_col = daily_effort, psu = "psu"),
+    "requires an"
+  )
+})
+
+test_that("counts with neither column still build a design (GH #109)", {
+  # The wiring must not make the columns mandatory. A counts table that never
+  # carried them is unaffected, and its within-day contribution stays 0.
+  raw <- make_wdv_raw()
+  per_day <- make_wdv_per_day(raw)
+  prepped <- prep_counts_daily_effort(
+    per_day,
+    date = date,
+    strata = day_type,
+    effort_type = effort_type,
+    daily_effort = mean_count
+  )
+  expect_false("within_day_var" %in% names(prepped))
+  expect_false("n_counts" %in% names(prepped))
+
+  d <- suppressMessages(add_counts(
+    make_wdv_design(raw), prepped, count_col = daily_effort, psu = "psu"
+  ))
+  expect_null(d$within_day_var)
+  expect_identical(compute_within_day_var_contribution(d), 0)
+})

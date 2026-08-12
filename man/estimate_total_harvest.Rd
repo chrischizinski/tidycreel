@@ -70,7 +70,9 @@ clamped at zero. \code{"log"} applies a log-transform for a
 strictly positive CI.}
 }
 \value{
-A creel_estimates S3 object with method = "product-total-harvest"
+A creel_estimates S3 object with method = "product-total-harvest".
+For bus-route and ice designs, returns a bus-route HT estimate with
+method = "ht-total-harvest" and a "site_contributions" attribute.
 }
 \description{
 Computes total harvest estimates by multiplying effort × HPUE with variance
@@ -113,6 +115,7 @@ design <- creel_design(example_calendar, date = date, strata = day_type)
 design <- add_counts(design, example_counts)
 design <- add_interviews(design, example_interviews,
   catch = catch_total, harvest = catch_kept, effort = hours_fished,
+  n_anglers = n_anglers,
   trip_status = trip_status, trip_duration = trip_duration
 )
 

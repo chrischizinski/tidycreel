@@ -210,10 +210,20 @@ interviews used in the ratio.
 
 ## Total Catch Estimation
 
-`estimate_total_catch()` multiplies the CPUE estimate by the total effort
-estimate to produce a total fish catch estimate. It uses all interviews
-(complete and incomplete) for the effort component and only complete trips
-for the catch rate, following standard creel survey methodology.
+On instantaneous designs `estimate_total_catch()` multiplies a catch rate by a
+total effort estimate, but ice designs take the bus-route dispatch instead and
+form no such product. The total is a direct Horvitz-Thompson sum over the
+interviewed parties, each party's catch divided by its inclusion probability
+\(\pi_i\); there is no CPUE term and no effort term. The method is reported as
+`ht-total-catch` rather than `product-total-catch`.
+
+Only completed trips enter the sum. A party still fishing has caught some of
+its eventual catch, so counting it would expand a partial catch under the
+inclusion probability of a finished trip. Of the 72 interviews, the 60 complete
+ones contribute and the 12 incomplete ones are dropped — which is why the `n`
+column below reads 60. For the same reason `use_trips = "all"` is refused on
+ice and bus-route designs; incomplete trips support a rate, via
+`estimate_catch_rate(use_trips = "incomplete")`, not a total.
 
 ```{r total-catch}
 total_catch_est <- estimate_total_catch(design)
@@ -221,8 +231,9 @@ print(total_catch_est)
 ```
 
 The `estimate` column is the projected total walleye catch across the entire
-survey period, with a standard error and 95% confidence interval computed via
-the delta method.
+survey period. The standard error and 95% confidence interval come from Taylor
+linearization on the Horvitz-Thompson sum, not from the delta method — there is
+no product of two estimates here whose uncertainty would need propagating.
 
 ## References
 

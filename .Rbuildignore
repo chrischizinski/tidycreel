@@ -124,3 +124,6 @@
 ^\.gsd\.archive.*$
 ^air\.toml$
 ^\.codegraph$
+^inst/extdata$
+^TODO-remove-extdata\.md$
+^AUDIT-dimensional-seams\.md$

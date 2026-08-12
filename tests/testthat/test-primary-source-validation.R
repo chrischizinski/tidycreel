@@ -531,7 +531,10 @@ test_that("Harvest estimate matches manual survey::svydesign + svytotal (point e
     survey::svydesign(ids = ~1, strata = ~day_type, data = int_data)
   )
   manual_result <- survey::svytotal(~.harvest_contrib, svy_manual)
-  tidycreel_result <- suppressWarnings(estimate_harvest_rate(d))
+  # A manual svytotal is a total, so it validates the total estimator. This
+  # comparison used to be made against estimate_harvest_rate(), which is how a
+  # total came to be reported as a rate (GH #107).
+  tidycreel_result <- suppressWarnings(estimate_total_harvest(d))
   expect_equal(
     tidycreel_result$estimates$estimate,
     as.numeric(coef(manual_result)),
@@ -547,11 +550,39 @@ test_that("Harvest SE matches manual survey::svydesign + svytotal (tol 1e-3)", {
     survey::svydesign(ids = ~1, strata = ~day_type, data = int_data)
   )
   manual_result <- survey::svytotal(~.harvest_contrib, svy_manual)
-  tidycreel_result <- suppressWarnings(estimate_harvest_rate(d))
+  tidycreel_result <- suppressWarnings(estimate_total_harvest(d))
   # Per CONTEXT.md: SE tolerance 1e-3 (FPC differences acceptable)
   expect_equal(
     tidycreel_result$estimates$se,
     as.numeric(survey::SE(manual_result)),
+    tolerance = 1e-3
+  )
+})
+
+test_that("Bus-route HPUE matches manual survey::svyratio (point estimate and SE, GH #107)", {
+  # The rate needs its own independent check against the survey package, built
+  # the same way the effort and harvest totals are checked above.
+  d <- make_box20_6_example1()
+  int_data <- d$interviews
+  int_data$.harvest_contrib <- int_data$fish_kept * int_data$.expansion / int_data$.pi_i
+  int_data$.effort_contrib <- int_data[[d$angler_effort_col]] *
+    int_data$.expansion / int_data$.pi_i
+  svy_manual <- suppressWarnings(
+    survey::svydesign(ids = ~1, strata = ~day_type, data = int_data)
+  )
+  manual_ratio <- suppressWarnings(
+    survey::svyratio(~.harvest_contrib, ~.effort_contrib, svy_manual)
+  )
+  tidycreel_result <- suppressWarnings(estimate_harvest_rate(d))
+
+  expect_equal(
+    tidycreel_result$estimates$estimate,
+    as.numeric(coef(manual_ratio)),
+    tolerance = 1e-6
+  )
+  expect_equal(
+    tidycreel_result$estimates$se,
+    as.numeric(survey::SE(manual_ratio)),
     tolerance = 1e-3
   )
 })
@@ -653,4 +684,124 @@ test_that("AIR-04: estimate_effort() matches hand-calculated svytotal x h_open =
   # E_hat = 111 x 14 = 1554 angler-hours (exact integer result)
   expect_equal(result$estimates$estimate, 1554, tolerance = 1e-4)
   expect_true(result$estimates$se > 0)
+})
+
+# Party size sensitivity (finding 2 / GH #106) ----
+#
+# Box 20.6 has exactly one angler per party, so party-hours and angler-hours
+# coincide and every assertion above passes whether estimate_effort_br() reads
+# the raw trip duration or the angler-effort column. That is precisely how a
+# party-hours/angler-hours defect survived a suite that validates against a
+# published source. These tests hold the published benchmark at party size 1 and
+# additionally pin the behaviour the benchmark cannot see.
+
+#' Box 20.6 Example 1 restated compactly, with an explicit party size.
+#'
+#' Same sites, probabilities, durations, and enumeration counts as
+#' `make_box20_6_example1()`; `party_size` anglers per interviewed party.
+make_box20_6_party <- function(party_size) {
+  sf <- data.frame(
+    site = c("A", "B", "C", "D"),
+    circuit = "circ1",
+    p_site = c(0.30, 0.25, 0.40, 0.05),
+    p_period = 0.50,
+    stringsAsFactors = FALSE
+  )
+  cal <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
+    day_type = "weekday",
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design(
+    calendar = cal,
+    date = date, # nolint: object_usage_linter
+    strata = day_type, # nolint: object_usage_linter
+    survey_type = "bus_route",
+    sampling_frame = sf,
+    site = site, # nolint: object_usage_linter
+    circuit = circuit, # nolint: object_usage_linter
+    p_site = p_site, # nolint: object_usage_linter
+    p_period = p_period # nolint: object_usage_linter
+  )
+  interviews <- data.frame(
+    date = as.Date(c(
+      "2024-06-01", "2024-06-01", "2024-06-02", "2024-06-02",
+      "2024-06-01", "2024-06-02", "2024-06-03",
+      "2024-06-01", "2024-06-02", "2024-06-03",
+      "2024-06-03", "2024-06-04", "2024-06-03",
+      "2024-06-03", "2024-06-04"
+    )),
+    site = c(rep("A", 4), rep("B", 3), rep("C", 6), rep("D", 2)),
+    circuit = "circ1",
+    hours_fished = c(
+      rep(7.5, 4), rep(20 / 3, 3), rep(57.5 / 6, 6), rep(2.5, 2)
+    ),
+    n_anglers = as.integer(party_size),
+    fish_kept = 1L,
+    fish_caught = 2L,
+    n_counted = c(rep(4L, 4), rep(3L, 3), rep(6L, 6), rep(2L, 2)),
+    n_interviewed = c(rep(4L, 4), rep(3L, 3), rep(6L, 6), rep(2L, 2)),
+    trip_status = "complete",
+    stringsAsFactors = FALSE
+  )
+  add_interviews(
+    design,
+    interviews,
+    effort = hours_fished, # nolint: object_usage_linter
+    catch = fish_caught, # nolint: object_usage_linter
+    harvest = fish_kept, # nolint: object_usage_linter
+    n_anglers = n_anglers, # nolint: object_usage_linter
+    n_counted = n_counted, # nolint: object_usage_linter
+    n_interviewed = n_interviewed, # nolint: object_usage_linter
+    trip_status = trip_status # nolint: object_usage_linter
+  )
+}
+
+test_that("one angler per party still reproduces Box 20.6 exactly (VALID-06)", {
+  # The compact restatement must be the same design as the verbose fixture, or
+  # the party-size assertions below prove nothing about the published example.
+  result <- suppressWarnings(estimate_effort(make_box20_6_party(1L)))
+  expect_equal(result$estimates$estimate, 847.5, tolerance = 1e-6)
+})
+
+test_that("bus-route effort scales with party size (VALID-06, GH #106)", {
+  # Effort is angler-hours. Three anglers fishing the same hours are three times
+  # the effort of one. Before #106 the estimate was invariant to party size and
+  # understated the total by exactly the mean party size in any boat fishery.
+  e1 <- suppressWarnings(estimate_effort(make_box20_6_party(1L)))$estimates
+  e3 <- suppressWarnings(estimate_effort(make_box20_6_party(3L)))$estimates
+
+  expect_equal(e3$estimate, 3 * e1$estimate, tolerance = 1e-6)
+  expect_equal(e3$estimate, 2542.5, tolerance = 1e-6)
+
+  # State the defect directly: an implementation reading the raw per-party trip
+  # duration returns the party-size-1 answer here.
+  expect_false(isTRUE(all.equal(e3$estimate, 847.5)))
+})
+
+test_that("bus-route effort SE scales with party size (VALID-06, GH #106)", {
+  # The SE comes from svytotal on the same contribution column, so it carries the
+  # same units as the point estimate. If only the estimate were rescaled, the CV
+  # would change and this would fail.
+  e1 <- suppressWarnings(estimate_effort(make_box20_6_party(1L)))$estimates
+  e3 <- suppressWarnings(estimate_effort(make_box20_6_party(3L)))$estimates
+
+  expect_equal(e3$se, 3 * e1$se, tolerance = 1e-6)
+  expect_equal(e3$se / e3$estimate, e1$se / e1$estimate, tolerance = 1e-9)
+})
+
+test_that("mixed party sizes give the angler-weighted total, not the party count (GH #106)", {
+  # A constant party size cannot distinguish "multiply the total by k" from
+  # "weight each interview by its own party size". Mixed sizes can.
+  design <- make_box20_6_party(1L)
+  varied <- design$interviews
+  # Site A parties carry 4 anglers each; everyone else stays at 1.
+  varied[[design$n_anglers_col]] <- ifelse(varied$site == "A", 4L, 1L)
+  varied[[design$angler_effort_col]] <-
+    varied[[design$effort_col]] * varied[[design$n_anglers_col]]
+  design$interviews <- varied
+
+  result <- suppressWarnings(estimate_effort(design))
+  # Site A contributes 30 h x 4 anglers / 0.15 = 800; the rest are unchanged.
+  expect_equal(result$estimates$estimate, 800 + 160 + 287.5 + 200, tolerance = 1e-6)
 })

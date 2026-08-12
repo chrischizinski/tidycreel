@@ -42,10 +42,24 @@ finite and strictly positive.}
 date column when omitted.}
 
 \item{n_counts}{Optional tidy selector for the number of within-day counts
-used to compute the sampled-day estimate.}
+each sampled-day estimate is built from (k_d). Required whenever
+\code{within_day_var} is supplied.}
 
-\item{within_day_var}{Optional tidy selector for a within-day variance or sum
-of squares column associated with the sampled-day estimate.}
+\item{within_day_var}{Optional tidy selector for the within-day
+\strong{sum of squares} of the counts behind each sampled-day estimate, that is
+\code{sum((x - mean(x))^2)} per PSU. This is not a variance: the divisor is
+applied downstream by the estimator, which forms
+\code{sum(ss_d) / (n_sampled * (k_bar - 1))}. Supplying a variance here
+understates the within-day component by a factor of \code{k_d - 1}. Must be \code{0}
+wherever \code{n_counts} is 1, and requires \code{n_counts}.
+
+Supply it on the raw \code{boat_count} values you pass in; it is rescaled into \code{daily_effort}
+squared units on output, multiplied by \code{(mean_party_size * correction_factor)^2}. \code{add_counts()} reads the emitted
+\code{within_day_var} and \code{n_counts} columns into the design, so the reported SE
+carries a within-day component. Before tidycreel 2.6.0 both columns were
+written here and never read, and the SE omitted that component entirely.
+Do not combine with \code{add_counts(count_time_col = )}, which derives the same
+quantity from raw counts; supplying both is an error.}
 
 \item{source_method}{Optional source-method values. Defaults to
 \code{"boat_count_x_mean_party_size"}. May be a scalar string/factor or an
@@ -71,7 +85,7 @@ and \code{correction_factor}. Optional columns \code{n_counts}, \code{within_day
 \seealso{
 \code{\link[=prep_counts_daily_effort]{prep_counts_daily_effort()}}, \code{\link[=add_counts]{add_counts()}}
 
-Other "Survey Design": 
+Other "Survey Design":
 \code{\link{add_catch}()},
 \code{\link{add_counts}()},
 \code{\link{add_interviews}()},

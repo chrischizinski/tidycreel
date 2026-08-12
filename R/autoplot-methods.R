@@ -56,14 +56,28 @@ autoplot.creel_estimates <- function(object, title = NULL, theme = c("default", 
     "ratio-of-means-hpue-per-angler" = "HPUE per Angler (Ratio-of-Means)",
     "product-total-catch" = "Total Catch",
     "product-total-harvest" = "Total Harvest",
+    "ht-total-catch" = "Total Catch",
+    "ht-total-harvest" = "Total Harvest",
+    "ht-total-release" = "Total Release",
     object$method
   )
+
+  # The axis says what the number is measured in only when tidycreel derived it.
+  # A hardcoded unit here is the poster-label problem the carried unit exists to
+  # replace: it would keep reading "angler-hours" for a quantity that is not.
+  unit_label <- object$unit %||% NA_character_
+  axis_label <- if (is.na(unit_label)) {
+    method_label
+  } else {
+    paste0(method_label, " (", unit_label, ")")
+  }
 
   effort_target <- object$effort_target %||% NULL
   if (!is.null(title)) {
     plot_title <- title
   } else if (
-    !is.null(effort_target) && method_label %in% c("Total Effort", "Total Catch", "Total Harvest")
+    !is.null(effort_target) &&
+      method_label %in% c("Total Effort", "Total Catch", "Total Harvest", "Total Release")
   ) {
     plot_title <- paste0(method_label, " (", effort_target, ")")
   } else {
@@ -112,7 +126,7 @@ autoplot.creel_estimates <- function(object, title = NULL, theme = c("default", 
       ggplot2::geom_errorbar(width = 0.2, colour = point_colour) +
       ggplot2::labs(
         x = NULL,
-        y = method_label,
+        y = axis_label,
         title = plot_title,
         caption = caption_text
       ) +
@@ -140,7 +154,7 @@ autoplot.creel_estimates <- function(object, title = NULL, theme = c("default", 
       ggplot2::geom_errorbar(width = 0.2) +
       ggplot2::labs(
         x = grp_col,
-        y = method_label,
+        y = axis_label,
         color = grp_col,
         title = plot_title,
         caption = caption_text
@@ -576,15 +590,17 @@ plot_design <- function(design, title = NULL, ...) {
     # ---- With counts: jitter + crossbar distribution per stratum -----------
     counts <- design$counts
 
-    # Identify first numeric count column (excluding design metadata)
-    excluded <- c(
-      design$date_col,
-      design$strata_cols,
-      design$psu_col,
-      design$section_col
+    # Identify the count column (resolved and stored by add_counts())
+    count_var <- resolve_count_col( # nolint: object_usage_linter
+      counts = counts,
+      excluded = c(
+        design$date_col,
+        design$strata_cols,
+        design$psu_col,
+        design$section_col
+      ),
+      count_col = design$count_col
     )
-    num_cols <- names(counts)[vapply(counts, is.numeric, logical(1L))]
-    count_var <- setdiff(num_cols, excluded)[1]
 
     plot_df <- data.frame(
       stratum = .make_stratum(counts, strata_cols),

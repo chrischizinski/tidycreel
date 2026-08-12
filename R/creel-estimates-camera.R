@@ -20,6 +20,11 @@
 #'   calibration.  If `NULL`, falls back to raw count expansion.
 #' @param effort_col Character scalar.  Column in `interviews` that contains
 #'   per-trip effort (e.g. hours fished). Default `"hours_fished"`.
+#' @param n_anglers Optional party size, used to convert `effort_col` to
+#'   angler-hours before calibration. Either a character scalar naming a column
+#'   in `interviews`, or a single positive number stating a constant party size.
+#'   `NULL` (default) leaves `effort_col` as supplied and the returned unit
+#'   unknown.
 #' @param intercept_col Character scalar.  Column in `interviews` or
 #'   `design$counts` that contains the camera count during the interview
 #'   period (for counter mode, this is `ingress_count` from the counts
@@ -45,6 +50,7 @@ estimate_effort_camera <- function(
   design,
   interviews = NULL,
   effort_col = "hours_fished",
+  n_anglers = NULL,
   intercept_col = NULL,
   h_open = NULL,
   variance_method = "taylor",
@@ -65,15 +71,14 @@ estimate_effort_camera <- function(
     design$psu_col,
     "camera_status"
   )
-  num_cols <- names(counts_data)[vapply(counts_data, is.numeric, logical(1L))]
   count_var <- if (!is.null(intercept_col) && intercept_col %in% names(counts_data)) {
     intercept_col
   } else {
-    setdiff(num_cols, excluded_cols)[1L]
-  }
-
-  if (is.na(count_var) || is.null(count_var)) {
-    cli::cli_abort("No numeric count column found in count data.")
+    resolve_count_col( # nolint: object_usage_linter
+      counts = counts_data,
+      excluded = excluded_cols,
+      count_col = design$count_col
+    )
   }
 
   # ---- Ratio calibration path -----------------------------------------------
@@ -82,6 +87,37 @@ estimate_effort_camera <- function(
       cli::cli_abort(
         "Column {.field {effort_col}} not found in {.arg interviews}."
       )
+    }
+    # Finding 22: rho is a ratio of sums, so the counts cancel and the estimate
+    # inherits whatever unit `effort_col` holds. Supplying n_anglers makes this
+    # function perform the party-size multiplication itself, which is what earns
+    # the label -- the same rule add_interviews() applies, through the same
+    # helper, rather than a second implementation of it.
+    if (!is.null(n_anglers)) {
+      interviews <- compute_angler_effort(
+        interviews,
+        effort = !!effort_col,
+        n_anglers = !!n_anglers
+      )
+      effort_col <- ".angler_effort"
+      effort_unit_label <- "angler-hours"
+    } else {
+      # Warned rather than silent because the caller can now act on it. Before
+      # n_anglers existed this warning would have named a gap with no means to
+      # close it.
+      cli::cli_warn(c(
+        "Camera ratio calibration cannot tell angler-hours from party-hours.",
+        "x" = paste(
+          "{.field {effort_col}} is a caller-supplied column and nothing on",
+          "this path normalises it by party size."
+        ),
+        "i" = paste(
+          "Pass {.arg n_anglers} -- a column in {.arg interviews}, or a constant",
+          "party size -- to make the unit derivable."
+        ),
+        "i" = "The estimate is returned with an unknown unit until then."
+      ))
+      effort_unit_label <- NA_character_
     }
     # Build calibration ratio per stratum: mean(effort) / mean(camera_count)
     strata_col <- design$strata_cols[1L]
@@ -178,11 +214,34 @@ estimate_effort_camera <- function(
         sum(total_counts_h^2 * var_rho_matched)
     )
     method_label <- "camera_ratio"
+    # effort_unit_label was set above, where the party-size decision was made.
+    # design$angler_effort_col is deliberately not consulted: `interviews` is an
+    # argument rather than an add_interviews() attachment, so it describes a
+    # different (often absent) set of interviews.
   } else {
     # ---- Raw count expansion fallback ----------------------------------------
     if (is.null(h_open) || !is.numeric(h_open) || h_open <= 0) {
       cli::cli_abort(
         "{.arg h_open} must be a positive number when no interview data are provided for camera effort estimation."
+      )
+    }
+
+    # This branch expands a raw count by h_open. If add_counts() already
+    # multiplied the count column by T_d, h_open applies time a second time
+    # (finding 21). effort_unit is set to angler-hours only where that
+    # multiplication happened, so it is the reliable witness.
+    #
+    # Deliberately scoped to this branch. The ratio-calibration path above
+    # divides by mean(count) before multiplying by count, so a constant T_d
+    # cancels and does no harm there.
+    if (identical(design$effort_unit %||% NA_character_, "angler-hours")) {
+      cli::cli_abort(
+        c(
+          "Counts already carry the period length, so {.arg h_open} would apply time twice.",
+          "x" = "{.fn add_counts} was given {.arg period_length_col}, which converted the counts to angler-hours.",
+          "i" = "Drop {.arg period_length_col} from {.fn add_counts}, or supply interviews to use the calibration path."
+        ),
+        class = "creel_error_camera_period_length"
       )
     }
 
@@ -195,6 +254,10 @@ estimate_effort_camera <- function(
     estimate <- as.numeric(coef(svy_result)) * h_open
     se_between <- as.numeric(survey::SE(svy_result)) * h_open
     method_label <- "camera_raw"
+    # Raw count x h_open hours. The guard above establishes that no T_d has
+    # already been applied, so h_open is the sole period source and this is
+    # angler-hours -- the same reasoning as the aerial estimator.
+    effort_unit_label <- "angler-hours"
   }
 
   # Combined SE (no within-day component for camera designs)
@@ -219,13 +282,16 @@ estimate_effort_camera <- function(
     n = n
   )
 
-  new_creel_estimates(
+  new_creel_estimates( # nolint: object_usage_linter
     # nolint: object_usage_linter
     estimates = estimates_df,
     method = method_label,
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
-    by_vars = NULL
+    by_vars = NULL,
+    # Set per branch above: the two paths reach this constructor with different
+    # provenance for the same quantity.
+    unit = effort_unit_label # nolint: object_usage_linter
   )
 }

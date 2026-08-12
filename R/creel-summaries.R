@@ -1571,7 +1571,7 @@ new_creel_summary <- function(table, method, variance_method, conf_level) {
 #'   creel_design(cal, date = date, strata = day_type)
 #' )
 #' d <- suppressWarnings(
-#'   add_counts(d, counts_df)
+#'   add_counts(d, counts_df, count_col = count)
 #' )
 #' s <- creel_schema(
 #'   survey_type    = "instantaneous",

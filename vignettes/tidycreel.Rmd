@@ -44,7 +44,10 @@ The `creel_design()` function uses tidy selectors, so you can specify columns by
 
 ## Adding Count Data
 
-Next, we attach instantaneous count observations to the design:
+Next, we attach the daily effort observations to the design. The `effort_hours`
+column holds angler-hours already accumulated over each day, not the raw angler
+count seen at a single moment — `estimate_effort()` expands whatever column it
+is given without converting units, so this design reports angler-hours:
 
 ```{r counts}
 # Load example count data
@@ -68,7 +71,7 @@ result <- estimate_effort(design)
 print(result)
 ```
 
-The result shows the estimated total effort, standard error, and 95% confidence interval. The estimate is approximately 358 angler-hours over the 14-day period.
+The result shows the estimated total effort, standard error, and 95% confidence interval. The estimate is 372.5 angler-hours over the 14-day period. Every calendar day was sampled here, so the season expansion factor is 1 and the estimate is exactly the sum of the attached `effort_hours`.
 
 ## Grouped Estimation
 
@@ -80,7 +83,7 @@ result_by_day <- estimate_effort(design, by = day_type)
 print(result_by_day)
 ```
 
-The grouped results show separate estimates for weekday and weekend periods. Notice that weekend effort (approximately 250 hours) is much higher than weekday effort (approximately 108 hours), reflecting typical recreational fishing patterns.
+The grouped results show separate estimates for weekday and weekend periods: approximately 202 angler-hours on weekends against 171 on weekdays. Compare the totals with care — the calendar holds 10 weekdays to 4 weekend days, so the modest gap between the totals reflects a much larger gap per day, roughly 50 angler-hours per weekend day against 17 per weekday.
 
 The `by` parameter accepts tidy selectors, so you can group by multiple columns or use tidyselect helpers like `starts_with()`.
 

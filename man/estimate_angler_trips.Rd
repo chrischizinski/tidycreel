@@ -25,8 +25,8 @@ and \code{variance_method = "delta"}. The \code{estimates} tibble contains:
 \describe{
 \item{by_vars columns}{Any grouping columns from the effort object (if
 grouped).}
-\item{estimate}{Estimated angler trips per stratum (effort / mean trip
-length).}
+\item{estimate}{Estimated trips per stratum (effort / mean trip
+length), in the actor the effort was measured in.}
 \item{se}{Standard error via Delta Method variance propagation.}
 \item{ci_lower}{Lower confidence interval bound.}
 \item{ci_upper}{Upper confidence interval bound.}
@@ -38,11 +38,16 @@ For grouped effort, an \code{.overall} row is appended with
 in quadrature.
 }
 \description{
-Computes estimated angler trips (angler days) by dividing extrapolated
-angler-hours effort by the mean trip length per stratum, with Delta Method
-variance propagation (Powell 2007). This is a composable estimator: the
-effort object must be pre-computed via \code{\link{estimate_effort}} before
-calling this function.
+Computes estimated trips by dividing extrapolated effort by the mean trip
+length per stratum, with Delta Method variance propagation (Powell 2007).
+This is a composable estimator: the effort object must be pre-computed via
+\code{\link{estimate_effort}} before calling this function.
+
+The divisor is hours per trip, so the result comes back in whichever actor
+the effort was measured in: angler-hours give angler trips, party-hours give
+party trips. The returned \code{unit} field records which, and is \code{NA}
+when the effort's own unit was unknown. The method string is
+\code{"angler-trips"} in every case and so is not a guide to the actor.
 }
 \references{
 Powell, L. A. (2007). Approximating variance of demographic

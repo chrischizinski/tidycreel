@@ -50,7 +50,8 @@
 #' design <- suppressWarnings(
 #'   add_interviews(
 #'     design, example_interviews,
-#'     catch = catch_total, effort = hours_fished, trip_status = trip_status
+#'     catch = catch_total, effort = hours_fished, n_anglers = n_anglers,
+#'     trip_status = trip_status
 #'   )
 #' )
 #' eff <- suppressWarnings(estimate_effort(design))
@@ -122,6 +123,7 @@ write_estimates <- function(
   var_label <- x$variance_method %||% "Unknown"
   conf_label <- paste0(round((x$conf_level %||% 0.95) * 100), "%")
   effort_target <- x$effort_target %||% NULL
+  unit_label <- x$unit %||% NA_character_
   ts <- format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z")
 
   # ---- Write ------------------------------------------------------------------
@@ -149,6 +151,11 @@ write_estimates <- function(
     )
     if (!is.null(effort_target) && nzchar(effort_target)) {
       header_lines <- c(header_lines, paste0("# Effort target: ", effort_target))
+    }
+    # Only when derived: no line means the unit is unknown, which is not the
+    # same as it being the default one.
+    if (!is.null(unit_label) && !is.na(unit_label) && nzchar(unit_label)) {
+      header_lines <- c(header_lines, paste0("# Unit: ", unit_label))
     }
     header_lines <- c(header_lines, paste0("# Generated: ", ts))
     writeLines(header_lines, con = con)

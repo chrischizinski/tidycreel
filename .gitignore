@@ -148,3 +148,4 @@ data-raw/fish_release_names.txt
 
 # Local quality/review reports — not for distribution
 quality_reports/
+testthat-problems.rds

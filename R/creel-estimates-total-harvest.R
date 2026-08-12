@@ -48,7 +48,9 @@
 #'   clamped at zero. \code{"log"} applies a log-transform for a
 #'   strictly positive CI.
 #'
-#' @return A creel_estimates S3 object with method = "product-total-harvest"
+#' @return A creel_estimates S3 object with method = "product-total-harvest".
+#'   For bus-route and ice designs, returns a bus-route HT estimate with
+#'   method = "ht-total-harvest" and a "site_contributions" attribute.
 #'
 #' @details
 #' Total harvest is computed as Effort × HPUE. Variance is propagated using the
@@ -86,6 +88,7 @@
 #' design <- add_counts(design, example_counts)
 #' design <- add_interviews(design, example_interviews,
 #'   catch = catch_total, harvest = catch_kept, effort = hours_fished,
+#'   n_anglers = n_anglers,
 #'   trip_status = trip_status, trip_duration = trip_duration
 #' )
 #'
@@ -147,18 +150,33 @@ estimate_total_harvest <- function(
 
   # Bus-route / ice dispatch (before standard survey NULL check)
   if (!is.null(design$design_type) && design$design_type %in% c("bus_route", "ice")) {
-    if (rlang::quo_is_null(by_quo)) {
-      by_vars_br <- NULL
-    } else {
-      by_cols_br <- tidyselect::eval_select(
-        by_quo,
-        data = design$interviews,
-        allow_rename = FALSE,
-        allow_empty = FALSE,
-        error_call = rlang::caller_env()
-      )
-      by_vars_br <- names(by_cols_br)
+    # See estimate_total_catch(): `by = species` aborted here because eval_select()
+    # resolved against the interviews, which carry no species column (finding 19).
+    by_info_br <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
+    by_vars_br <- by_info_br$interview_vars
+
+    if (!is.null(by_info_br$species_var)) {
+      if (is.null(design[["catch"]])) {
+        cli::cli_abort(c(
+          "Species-level total harvest requires catch data.",
+          "x" = paste(
+            "Call {.fn add_catch} before using species grouping in",
+            "{.fn estimate_total_harvest}."
+          )
+        ))
+      }
+
+      return(estimate_total_species_br( # nolint: object_usage_linter
+        design,
+        species_col = by_info_br$species_var,
+        interview_by_vars = by_vars_br,
+        variance_method = variance,
+        conf_level = conf_level,
+        quantity = "harvest",
+        ci_method = ci_method
+      ))
     }
+
     return(estimate_total_harvest_br(
       # nolint: object_usage_linter
       design,
@@ -169,6 +187,14 @@ estimate_total_harvest <- function(
       ci_method = ci_method
     ))
   }
+
+  # Effort x rate from here on: flag a party-hour rate meeting angler-hour effort
+  warn_party_hours_product(design) # nolint: object_usage_linter
+  check_product_units(design) # nolint: object_usage_linter
+  # Totals call estimate_effort_total() directly, bypassing estimate_effort(),
+  # so the finding-13 warning has to be raised here too or this path never
+  # hears that the count column had no T_d applied.
+  warn_missing_period_length(design) # nolint: object_usage_linter
 
   # Validate design compatibility (counts AND interviews required)
   validate_design_compatibility(design) # nolint: object_usage_linter
@@ -193,7 +219,7 @@ estimate_total_harvest <- function(
       target = target,
       product_variance = product_variance
     )
-    return(new_creel_estimates(
+    return(new_creel_estimates( # nolint: object_usage_linter
       # nolint: object_usage_linter
       estimates = tibble::as_tibble(estimates_df),
       method = "product-total-harvest",
@@ -201,7 +227,8 @@ estimate_total_harvest <- function(
       design = design,
       conf_level = conf_level,
       by_vars = by_info$all_vars,
-      effort_target = target
+      effort_target = target,
+      unit = "fish"
     ))
   }
 
@@ -313,15 +340,15 @@ estimate_total_harvest_ungrouped <- function(
     ci_type = ci_type
   )
 
-  new_creel_estimates(
-    # nolint: object_usage_linter
+  new_creel_estimates( # nolint: object_usage_linter
     estimates = tibble::as_tibble(estimates_df),
     method = "product-total-harvest",
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
     by_vars = NULL,
-    effort_target = target
+    effort_target = target,
+    unit = "fish"
   )
 }
 
@@ -370,15 +397,15 @@ estimate_total_harvest_grouped <- function(
     ci_type = ci_type
   )
 
-  new_creel_estimates(
-    # nolint: object_usage_linter
+  new_creel_estimates( # nolint: object_usage_linter
     estimates = tibble::as_tibble(estimates_df),
     method = "product-total-harvest",
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
     by_vars = by_vars,
-    effort_target = target
+    effort_target = target,
+    unit = "fish"
   )
 }
 
@@ -626,14 +653,14 @@ estimate_total_harvest_sections <- function(
     result_df <- dplyr::bind_rows(result_df, lake_row)
   }
 
-  new_creel_estimates(
-    # nolint: object_usage_linter
+  new_creel_estimates( # nolint: object_usage_linter
     estimates = result_df,
     method = "product-total-harvest-sections",
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
     by_vars = if (!is.null(by_vars)) c("section", by_vars) else "section",
-    effort_target = target
+    effort_target = target,
+    unit = "fish"
   )
 }

@@ -64,7 +64,7 @@
 #'   survey_type = "aerial",
 #'   h_open = 14
 #' )
-#' design <- add_counts(design, example_aerial_glmm_counts)
+#' design <- add_counts(design, example_aerial_glmm_counts, count_col = n_anglers)
 #'
 #' # Default Askey quadratic model with delta-method SE
 #' result <- estimate_effort_aerial_glmm(design, time_col = time_of_flight)
@@ -115,20 +115,11 @@ estimate_effort_aerial_glmm <- function(
 
   # 4. Identify count variable (exclude design metadata and time column)
   counts_data <- design$counts
-  excluded_cols <- c(design$date_col, design$strata_cols, design$psu_col, time_col_name)
-  numeric_cols <- names(counts_data)[vapply(counts_data, is.numeric, logical(1L))]
-  count_vars <- setdiff(numeric_cols, excluded_cols)
-
-  if (length(count_vars) == 0L) {
-    cli::cli_abort(c(
-      "No count variable found in count data.",
-      "x" = "Count data must have at least one numeric column.",
-      "i" = "Numeric columns found: {.field {numeric_cols}}",
-      "i" = "Design metadata and time columns: {.field {excluded_cols}}"
-    ))
-  }
-
-  count_var <- count_vars[1L]
+  count_var <- resolve_count_col( # nolint: object_usage_linter
+    counts = counts_data,
+    excluded = c(design$date_col, design$strata_cols, design$psu_col, time_col_name),
+    count_col = design$count_col
+  )
 
   # 5. Build GLMM formula
   if (is.null(formula)) {

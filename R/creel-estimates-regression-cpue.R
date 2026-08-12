@@ -53,14 +53,15 @@ estimate_cpue_regression_total <- function(design, conf_level, force_origin) {
     n = n
   )
 
-  new_creel_estimates(
+  new_creel_estimates( # nolint: object_usage_linter
     # nolint: object_usage_linter
     estimates = estimates_df,
     method = "regression-cpue",
     variance_method = "jackknife",
     design = design,
     conf_level = conf_level,
-    by_vars = NULL
+    by_vars = NULL,
+    unit = rate_unit(design) # nolint: object_usage_linter
   )
 }
 
@@ -136,14 +137,15 @@ estimate_cpue_reg_grouped <- function(
 
   estimates_df <- tibble::as_tibble(do.call(rbind, rows))
 
-  new_creel_estimates(
+  new_creel_estimates( # nolint: object_usage_linter
     # nolint: object_usage_linter
     estimates = estimates_df,
     method = "regression-cpue",
     variance_method = "jackknife",
     design = design,
     conf_level = conf_level,
-    by_vars = by_vars
+    by_vars = by_vars,
+    unit = rate_unit(design) # nolint: object_usage_linter
   )
 }
 

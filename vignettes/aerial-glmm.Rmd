@@ -82,7 +82,7 @@ design <- creel_design(
   h_open      = 14
 )
 
-design <- add_counts(design, example_aerial_glmm_counts)
+design <- add_counts(design, example_aerial_glmm_counts, count_col = n_anglers)
 print(design)
 ```
 
@@ -158,6 +158,15 @@ print(catch_rate)
 total_catch <- estimate_total_catch(design_int)
 print(total_catch)
 ```
+
+`example_aerial_interviews` carries no party-size column, so `add_interviews()`
+cannot normalise effort to angler-hours and `estimate_total_catch()` warns that
+the CPUE it multiplies is per *party*-hour while the count-derived effort is
+angler-hours. The warning is correct for this dataset and is left visible rather
+than suppressed: with one angler per party the total is right as printed, and
+with larger parties it is understated. Supply `n_anglers` from your own
+interview data, or state a constant party size (`n_anglers = 1`) when every
+interview really is a single angler, to remove the ambiguity.
 
 ## Comparison: Simple vs. GLMM Estimator
 

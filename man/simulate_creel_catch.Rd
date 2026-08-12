@@ -94,6 +94,7 @@ Fish. Res. 106: 325–333.
 \code{\link{simulate_creel_data}}
 
 Other "Simulation":
+\code{\link{day_length}()},
 \code{\link{simulate_creel_data}()}
 }
 \concept{"Simulation"}

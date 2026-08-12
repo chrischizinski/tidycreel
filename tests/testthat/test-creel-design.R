@@ -1733,3 +1733,189 @@ test_that("T2A-01: add_interviews() joins on shared strata cols, not date alone"
   # No duplication: one row per interview
   expect_equal(nrow(result$interviews), nrow(interviews))
 })
+
+# DESIGN-16: n_anglers is a party size, not a column position ----
+
+make_na_base <- function() {
+  data(example_calendar, envir = environment())
+  data(example_counts, envir = environment())
+  b <- suppressMessages(creel_design(example_calendar, date = date, strata = day_type))
+  suppressMessages(suppressWarnings(add_counts(b, example_counts)))
+}
+
+test_that("n_anglers = 1L means one angler, not column 1 (GH audit finding 16)", {
+  # n_anglers went through tidyselect, where a bare integer is a column position.
+  # `n_anglers = 1L` -- the literal in this function's own signature -- therefore
+  # selected column 1. With a numeric column first that silently made
+  # .angler_effort = effort x that column; with the shipped order it died on
+  # `* not defined for "Date" objects`, naming neither the argument nor the column.
+  data(example_interviews, envir = environment())
+  decoy_first <- example_interviews[
+    , c("catch_kept", setdiff(names(example_interviews), "catch_kept"))
+  ]
+  base <- make_na_base()
+
+  d <- suppressMessages(suppressWarnings(add_interviews(
+    base, decoy_first,
+    catch = catch_total, effort = hours_fished, n_anglers = 1L,
+    trip_status = trip_status
+  )))
+
+  # One angler per party => angler-hours are exactly the raw effort hours ...
+  expect_equal(d$interviews[[".angler_effort"]], d$interviews$hours_fished)
+  # ... and emphatically not effort times the first column.
+  expect_false(isTRUE(all.equal(
+    d$interviews[[".angler_effort"]],
+    d$interviews$hours_fished * d$interviews$catch_kept
+  )))
+})
+
+test_that("a constant n_anglers scales effort by that party size (GH audit finding 16)", {
+  data(example_interviews, envir = environment())
+  base <- make_na_base()
+
+  d <- suppressMessages(suppressWarnings(add_interviews(
+    base, example_interviews,
+    catch = catch_total, effort = hours_fished, n_anglers = 3,
+    trip_status = trip_status
+  )))
+
+  expect_equal(d$interviews[[".angler_effort"]], d$interviews$hours_fished * 3)
+})
+
+test_that("a stated constant counts as n_anglers supplied (GH audit finding 16)", {
+  # Declaring "every party is one angler" makes .angler_effort genuine
+  # angler-hours, so the finding-7 product-total warning must switch off. Without
+  # this there is no way to silence it for a survey that really is solo anglers.
+  data(example_interviews, envir = environment())
+  base <- make_na_base()
+
+  d <- suppressMessages(suppressWarnings(add_interviews(
+    base, example_interviews,
+    catch = catch_total, harvest = catch_kept, effort = hours_fished,
+    n_anglers = 1L, trip_status = trip_status
+  )))
+
+  expect_true(d$n_anglers_supplied)
+  # Scoped to the finding-7 message. These counts carry no T_d, so the same call
+  # also raises the finding-13 warning -- a different seam, and asserting total
+  # silence would make this test pass or fail for reasons unrelated to n_anglers.
+  msgs <- character()
+  withCallingHandlers(
+    estimate_total_catch(d),
+    warning = function(w) {
+      msgs <<- c(msgs, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    }
+  )
+  expect_length(grep("different units", msgs), 0L)
+})
+
+test_that("a column n_anglers still resolves as a column (GH audit finding 16)", {
+  # The literal branch must not swallow the ordinary case.
+  data(example_interviews, envir = environment())
+  base <- make_na_base()
+
+  d <- suppressMessages(suppressWarnings(add_interviews(
+    base, example_interviews,
+    catch = catch_total, effort = hours_fished, n_anglers = n_anglers,
+    trip_status = trip_status
+  )))
+
+  expect_equal(
+    d$interviews[[".angler_effort"]],
+    d$interviews$hours_fished * d$interviews$n_anglers
+  )
+})
+
+test_that("a resolved n_anglers column of impossible values aborts (GH audit finding 16)", {
+  # The value guard, not the shape guard, is what catches this: catch_kept is a
+  # real column name that any check on the argument's *form* would accept, and it
+  # contains a zero -- a party of no anglers, which would zero that interview's
+  # effort.
+  data(example_interviews, envir = environment())
+  base <- make_na_base()
+
+  expect_error(
+    suppressMessages(suppressWarnings(add_interviews(
+      base, example_interviews,
+      catch = catch_total, effort = hours_fished, n_anglers = catch_kept,
+      trip_status = trip_status
+    ))),
+    "positive party size"
+  )
+})
+
+test_that("non-positive constant party sizes abort (GH audit finding 16)", {
+  data(example_interviews, envir = environment())
+  base <- make_na_base()
+
+  # Literals, not a variable: only a bare literal is read silently as a position.
+  # An external vector already draws a tidyselect deprecation warning pointing at
+  # all_of(), so it was never the silent case.
+  expect_error(
+    suppressMessages(suppressWarnings(add_interviews(
+      base, example_interviews,
+      catch = catch_total, effort = hours_fished, n_anglers = 0,
+      trip_status = trip_status
+    ))),
+    "positive party size"
+  )
+  expect_error(
+    suppressMessages(suppressWarnings(add_interviews(
+      base, example_interviews,
+      catch = catch_total, effort = hours_fished, n_anglers = Inf,
+      trip_status = trip_status
+    ))),
+    "positive party size"
+  )
+  # -2 parses as a call to `-`, not a numeric literal, so it reached tidyselect
+  # and reported "must select exactly one column, not 11" instead of saying the
+  # party size was negative.
+  expect_error(
+    suppressMessages(suppressWarnings(add_interviews(
+      base, example_interviews,
+      catch = catch_total, effort = hours_fished, n_anglers = -2,
+      trip_status = trip_status
+    ))),
+    "positive party size"
+  )
+})
+
+test_that("missing party size aborts as a constant but warns as a column (GH audit finding 16)", {
+  # A column may legitimately have gaps; a stated constant may not.
+  data(example_interviews, envir = environment())
+  base <- make_na_base()
+
+  expect_error(
+    suppressMessages(suppressWarnings(add_interviews(
+      base, example_interviews,
+      catch = catch_total, effort = hours_fished, n_anglers = NA_real_,
+      trip_status = trip_status
+    ))),
+    "positive party size"
+  )
+
+  gappy <- example_interviews
+  gappy$party <- gappy$n_anglers
+  gappy$party[3] <- NA
+  expect_warning(
+    suppressMessages(add_interviews(
+      base, gappy,
+      catch = catch_total, effort = hours_fished, n_anglers = party,
+      trip_status = trip_status
+    )),
+    "missing value"
+  )
+})
+
+test_that("compute_angler_effort() honours the same n_anglers contract (GH audit finding 16)", {
+  # The other exported entry point that writes .angler_effort. Fixing only one
+  # would recreate the twins drift findings 9 and 15 are both about.
+  df <- data.frame(hours = c(2, 4), party = c(1, 3), decoy = c(9, 9))
+
+  expect_equal(compute_angler_effort(df, hours, 1L)$.angler_effort, c(2, 4))
+  expect_equal(compute_angler_effort(df, hours, 2)$.angler_effort, c(4, 8))
+  expect_equal(compute_angler_effort(df, hours, party)$.angler_effort, c(2, 12))
+  expect_error(compute_angler_effort(df, hours, 0), "positive party size")
+})

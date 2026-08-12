@@ -138,6 +138,16 @@ harvest_est <- estimate_total_harvest(design, aggregate_sections = TRUE)
 print(harvest_est$estimates)
 ```
 
+`example_sections_interviews` carries no party-size column, so both calls above
+raise a warning that the rate they multiply is per *party*-hour while the
+count-derived effort is angler-hours. It is correct for this dataset and is
+hidden here only by the chunks' `warning = FALSE`, which predates it. With one
+angler per party the totals are right as printed; with larger parties they are
+understated. Supply `n_anglers` from your own interview data, or state a
+constant party size (`n_anglers = 1`) when every interview really is a single
+angler, to remove the ambiguity.
+
+
 ---
 
 ## Variance Aggregation — Why `method = "correlated"` Is the Default

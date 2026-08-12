@@ -16,6 +16,8 @@ simulate_creel_data(
   n_anglers_per_day = NULL,
   start_date = Sys.Date(),
   n_counts_per_day = 3L,
+  lat = NULL,
+  daylight_hours = NULL,
   seed = NULL
 )
 }
@@ -64,6 +66,24 @@ specified. Default \code{NULL} (use params).}
 \item{n_counts_per_day}{Integer. Number of instantaneous count observations
 per sampled day. Default \code{3}.}
 
+\item{lat}{Numeric latitude in decimal degrees, positive north. When given,
+the daily fishing period \eqn{T} is computed per date with
+\code{\link{day_length}} and the counts table gains \code{daylight_hours}
+and \code{angler_hours} columns. Default \code{NULL}. Mutually exclusive
+with \code{daylight_hours}.}
+
+\item{daylight_hours}{Numeric. Length of the daily fishing period \eqn{T}, in
+hours, used to convert instantaneous counts to angler-hours. Accepts a
+single value applied to every day, or a named length-12 vector of monthly
+values (names \code{"1"}…\code{"12"}, or \code{month.abb}) which is matched
+on the month of each count date. Use this when \eqn{T} is set by regulation
+or field protocol rather than by daylight. Default \code{NULL}. Mutually
+exclusive with \code{lat}.
+
+Supplying neither leaves \code{daylight_hours} and \code{angler_hours} off
+the counts table, rather than substituting a latitude the caller never
+gave.}
+
 \item{seed}{Integer or \code{NULL}. Random seed for reproducibility.
 Default \code{NULL}.}
 }
@@ -83,13 +103,32 @@ complete trips), \code{n_anglers}, \code{catch_total}, \code{catch_kept},
 \code{species_sought}.}
 \item{\code{counts}}{One row per instantaneous count. Columns:
 \code{date}, \code{day_type}, \code{count_time} (integer index
-1…\code{n_counts_per_day}), \code{total_anglers}. Pass
+1…\code{n_counts_per_day}) and \code{total_anglers}, plus
+\code{daylight_hours} (\eqn{T} for that day) and \code{angler_hours}
+(\code{total_anglers * daylight_hours}) when \code{lat} or
+\code{daylight_hours} was supplied. Pass
 \code{count_time_col = count_time} to \code{\link{add_counts}} when
 \code{n_counts_per_day > 1}.}
 \item{\code{catch}}{Long-format catch table. Columns: \code{interview_id},
 \code{species}, \code{count}, \code{catch_type} (\code{"caught"},
 \code{"harvested"}, \code{"released"}).}
 }
+
+\strong{Pass \code{angler_hours}, not \code{total_anglers}, to
+\code{\link{add_counts}}.} An instantaneous count estimates the mean number of
+anglers present, not effort; effort is that count multiplied by the length of
+the period the count was randomised within (Hoenig et al. 1993).
+\code{estimate_effort()} expands whatever numeric column it is given and
+cannot tell the two apart, so handing it \code{total_anglers} yields
+angler-days silently mislabelled as angler-hours. When \code{lat} or
+\code{daylight_hours} is supplied the counts table carries three numeric
+columns and \code{\link{add_counts}} will not guess between them: name the one
+you mean with
+\code{add_counts(design, sim$counts, count_col = angler_hours)}.
+
+Note that \code{\link{day_length}} gives astronomical daylight. Where the
+fishing day is fixed by regulation or access hours instead, pass that period
+as \code{daylight_hours}.
 
 The \code{schedule} output can be passed directly to \code{\link{creel_design}}
 as the \code{calendar} argument. The \code{interviews} and \code{counts}
@@ -139,18 +178,25 @@ head(sim$interviews)
 head(sim$counts)
 head(sim$catch)
 
-# Multi-stratum simulation with day_types (named numeric vector)
+# Multi-stratum simulation with day_types (named numeric vector).
+# `lat` derives the daily fishing period from day_length(), which adds the
+# daylight_hours and angler_hours columns to sim2$counts.
 set.seed(1)
 sim2 <- simulate_creel_data(
   params         = my_params,
   season_days    = 90,
   n_sampled_days = 20,
-  day_types      = c(weekday = 5/7, weekend = 2/7)
+  day_types      = c(weekday = 5/7, weekend = 2/7),
+  lat            = 40.699
 )
 
 # Round-trip: simulate → creel_design → add_counts → add_interviews
 design <- creel_design(sim2$schedule, date = date, strata = day_type) |>
-  add_counts(sim2$counts, count_time_col = count_time) |>
+  add_counts(
+    sim2$counts,
+    count_col = angler_hours, # counts alone are angler-days, not effort
+    count_time_col = count_time
+  ) |>
   add_interviews(
     sim2$interviews,
     catch          = "catch_total",
@@ -177,6 +223,7 @@ Fish. Res. 106: 325–333.
 \code{\link{simulate_creel_catch}}
 
 Other "Simulation":
+\code{\link{day_length}()},
 \code{\link{simulate_creel_catch}()}
 }
 \concept{"Simulation"}

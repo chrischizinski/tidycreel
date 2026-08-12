@@ -82,8 +82,8 @@ log-transform so the CI stays positive:
 }
 \value{
 A creel_estimates S3 object with method = "product-total-catch".
-For bus-route designs, returns a bus-route HT estimate with method = "total"
-and a "site_contributions" attribute.
+For bus-route and ice designs, returns a bus-route HT estimate with
+method = "ht-total-catch" and a "site_contributions" attribute.
 For sectioned designs, returns per-section rows plus (by default) a
 \code{.lake_total} row. The lake-wide total is computed as
 \code{sum(TC_i)} over sections, never as \code{E_total * CPUE_pooled}.
@@ -131,7 +131,7 @@ data(example_interviews)
 design <- creel_design(example_calendar, date = date, strata = day_type)
 design <- add_counts(design, example_counts)
 design <- add_interviews(design, example_interviews,
-  catch = catch_total, effort = hours_fished,
+  catch = catch_total, effort = hours_fished, n_anglers = n_anglers,
   trip_status = trip_status, trip_duration = trip_duration
 )
 
