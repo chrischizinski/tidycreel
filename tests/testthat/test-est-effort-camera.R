@@ -77,6 +77,22 @@ test_that("CEST-02: errors when conf_level out of range", {
   )
 })
 
+test_that("CEST-02b: conf_level of length != 1 reaches the package's own error", {
+  # A bare `conf_level <= 0` comparison on a length-2 input makes `||` raise
+  # base R's "'length = 2' in coercion to 'logical(1)'", which is a simpleError:
+  # the caller never sees which argument was wrong. The guard must reject the
+  # length itself so the cli_abort naming `conf_level` is what actually fires.
+  d <- make_design_with_counts()
+  expect_error(
+    est_effort_camera(d, h_open = 14, conf_level = c(0.90, 0.95)),
+    class = "rlang_error"
+  )
+  expect_error(
+    est_effort_camera(d, h_open = 14, conf_level = numeric(0)),
+    class = "rlang_error"
+  )
+})
+
 test_that("CEST-03: errors when no counts attached", {
   d <- make_camera_design()
   expect_error(

@@ -1,4 +1,34 @@
-# tidycreel 3.0.0 "Blue Sucker" (2026-08-11)
+# tidycreel 3.0.1 (development version)
+
+## Documentation
+
+* `est_biomass()` now states that the length-weight parameters `a` and `b` are
+  treated as known constants, so `biomass_se` omits their estimation error and
+  should be read as a lower bound. Because `a * L^b` multiplies every bin,
+  that error is perfectly correlated across bins and does not shrink as bins are
+  added. Measured on the documented example it adds roughly 2–11% to a
+  coefficient of variation of 40–65% — minor there, but material for a survey
+  precise enough to reach a count CV near 10%, or when `a`/`b` are borrowed from
+  a system whose fish differ in size. Propagating the term needs an API that can
+  accept the regression's standard errors and their covariance; tracked in #117.
+
+## Bug fixes
+
+* Argument guards on `truncate_at` and `conf_level` now reject a value whose
+  length is not 1, rather than letting it reach the comparison. Passing
+  `truncate_at = c(0.5, 1)` to `estimate_catch_rate()` raised base R's
+  `'length = 2' in coercion to 'logical(1)'`, and `numeric(0)` raised
+  `missing value where TRUE/FALSE needed` — both of which name neither the
+  argument nor the constraint it violated. The intended error, which cites the
+  argument and its default, now fires instead. Affects `estimate_catch_rate()`,
+  the bus-route incomplete-trip path, and `est_effort_camera()`.
+
+  A `conf_level` or `truncate_at` of `NA_real_` still reaches base R's
+  "missing value where TRUE/FALSE needed". That gap predates this change and is
+  shared by the six other guards written to the same pattern; it is left for a
+  single pass over all of them rather than fixed at three sites only.
+
+# tidycreel 3.0.0 "Blue Sucker" (2026-08-12)
 
 The first major bump since the package adopted semantic versioning. It closes the
 dimensional seam audit opened 2026-08-07: 27 findings, ten of them breaking changes

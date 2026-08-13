@@ -1994,6 +1994,34 @@ test_that("truncate_at=NULL uses all trips", {
   expect_equal(result$estimates$n, 30)
 })
 
+test_that("truncate_at of length != 1 reaches the package's own error", {
+  # `truncate_at <= 0` on a length-2 input makes `||` raise base R's
+  # "'length = 2' in coercion to 'logical(1)'", and on numeric(0) it raises
+  # "missing value where TRUE/FALSE needed" — both simpleError, neither naming
+  # the offending argument. The guard must reject the length itself so the
+  # cli_abort that cites truncate_at and its default is what the caller sees.
+  design <- make_truncation_test_design(n_above = 15, n_below = 15, threshold = 0.5)
+
+  expect_error(
+    suppressWarnings(estimate_catch_rate(
+      design,
+      use_trips = "incomplete",
+      estimator = "mor",
+      truncate_at = c(0.5, 1.0)
+    )),
+    class = "rlang_error"
+  )
+  expect_error(
+    suppressWarnings(estimate_catch_rate(
+      design,
+      use_trips = "incomplete",
+      estimator = "mor",
+      truncate_at = numeric(0)
+    )),
+    class = "rlang_error"
+  )
+})
+
 test_that("truncated sample count stored in metadata", {
   # Create design with 25 trips >= 0.5h, 5 trips < 0.5h
   design <- make_truncation_test_design(n_above = 25, n_below = 5, threshold = 0.5)

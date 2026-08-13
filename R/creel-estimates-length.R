@@ -411,7 +411,8 @@ build_length_distribution_records <- function(
 #' the allometric length-weight equation \eqn{W = a \cdot L^b}.
 #'
 #' Variance is propagated via the delta method, treating estimated fish counts
-#' per length bin as uncorrelated (see Details).
+#' per length bin as uncorrelated and the length-weight parameters `a` and `b`
+#' as known without error (see Details).
 #'
 #' @param ld A `creel_length_distribution` object from [est_length_distribution()].
 #' @param a Positive numeric allometric coefficient (the \eqn{a} in
@@ -433,6 +434,22 @@ build_length_distribution_records <- function(
 #' \widehat{\text{SE}}_h^2}, which ignores cross-bin covariances.
 #' When positive covariances exist (likely in small surveys), this
 #' under-estimates the true variance.
+#'
+#' `a` and `b` are treated as known constants, so `biomass_se` carries no
+#' contribution from their estimation error. In practice they are point
+#' estimates from a length-weight regression, often one fitted to a different
+#' water body or year. Because \eqn{a \cdot L_h^b} multiplies every bin, that
+#' error is perfectly correlated across bins and does not shrink as bins are
+#' added — unlike the cross-bin term above.
+#'
+#' The omission is usually minor relative to count variance: on the example
+#' below it adds roughly 2–11% to a coefficient of variation of 40–65%, for
+#' regression standard errors spanning well- and poorly-determined fits. It
+#' becomes material in two situations — a survey precise enough to bring the
+#' count CV near 10%, and `a`/`b` borrowed from a system whose fish differ in
+#' size from those measured here, since the contribution scales with the
+#' distance between the two samples' mean log lengths. Treat `biomass_se` as a
+#' lower bound in either case.
 #'
 #' Length and weight units are determined by the user: if lengths are in mm
 #' and `a` is calibrated for mm input, weights are returned in the

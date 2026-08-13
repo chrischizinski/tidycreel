@@ -704,7 +704,10 @@ br_incomplete_harvest_rate <- function(
   site_col <- design$bus_route$site_col
   circuit_col <- design$bus_route$circuit_col
 
-  if (!is.null(truncate_at) && (!is.numeric(truncate_at) || truncate_at <= 0)) {
+  if (
+    !is.null(truncate_at) &&
+      (!is.numeric(truncate_at) || length(truncate_at) != 1L || truncate_at <= 0)
+  ) {
     cli::cli_abort(
       c(
         "Invalid {.arg truncate_at}: {.val {truncate_at}}",
