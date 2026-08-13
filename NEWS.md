@@ -1,5 +1,17 @@
 # tidycreel 3.0.1 (development version)
 
+## Documentation
+
+* `est_biomass()` now states that the length-weight parameters `a` and `b` are
+  treated as known constants, so `biomass_se` omits their estimation error and
+  should be read as a lower bound. Because `a * L^b` multiplies every bin,
+  that error is perfectly correlated across bins and does not shrink as bins are
+  added. Measured on the documented example it adds roughly 2–11% to a
+  coefficient of variation of 40–65% — minor there, but material for a survey
+  precise enough to reach a count CV near 10%, or when `a`/`b` are borrowed from
+  a system whose fish differ in size. Propagating the term needs an API that can
+  accept the regression's standard errors and their covariance; tracked in #117.
+
 ## Bug fixes
 
 * Argument guards on `truncate_at` and `conf_level` now reject a value whose
