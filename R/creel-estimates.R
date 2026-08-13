@@ -92,6 +92,11 @@ product_total_variance <- function(e_est, e_se, r_est, r_se, product_variance) {
 #' @param design NULL or creel_design object - reference to source design
 #' @param conf_level Numeric confidence level (default: 0.95)
 #' @param by_vars NULL or character vector of grouping variable names
+#' @param effort_target NULL or character effort target
+#' @param unit NULL or character effort unit
+#' @param se_expansion NULL, or the party-size expansion standard-error
+#'   component (one value, or one per group). NULL means the component was not
+#'   propagated at all, which is deliberately distinct from a propagated zero.
 #'
 #' @return List of class "creel_estimates" with components:
 #'   - estimates: data frame of estimates
@@ -100,6 +105,7 @@ product_total_variance <- function(e_est, e_se, r_est, r_se, product_variance) {
 #'   - design: source design object or NULL
 #'   - conf_level: confidence level
 #'   - by_vars: grouping variable names or NULL
+#'   - se_expansion: party-size expansion SE component, or NULL
 #'
 #' @keywords internal
 #' @noRd
@@ -111,11 +117,14 @@ new_creel_estimates <- function(
   conf_level = 0.95,
   by_vars = NULL,
   effort_target = NULL,
-  unit = NA_character_
+  unit = NA_character_,
+  se_expansion = NULL
 ) {
   # Input validation
   stopifnot(
     "estimates must be a data.frame" = is.data.frame(estimates),
+    "se_expansion must be NULL or numeric" = is.null(se_expansion) ||
+      is.numeric(se_expansion),
     "method must be character" = is.character(method) && length(method) == 1,
     "variance_method must be character" = is.character(variance_method) &&
       length(variance_method) == 1,
@@ -135,7 +144,13 @@ new_creel_estimates <- function(
       conf_level = conf_level,
       by_vars = by_vars,
       effort_target = effort_target,
-      unit = unit %||% NA_character_
+      unit = unit %||% NA_character_,
+      # Absent rather than zero when no party-size standard error was supplied.
+      # The estimates tibble keeps its seven columns either way, so the aerial,
+      # camera and GLMM estimators and every consumer of that shape are
+      # untouched, and the term still reaches catch and harvest totals through
+      # `se` (GH #121).
+      se_expansion = se_expansion
     ),
     class = "creel_estimates"
   )
@@ -262,6 +277,18 @@ format.creel_estimates <- function(x, ...) {
       unit_display <- x$unit %||% NA_character_ # nolint: object_usage_linter
       if (!is.na(unit_display)) {
         cli::cli_text("Unit: {unit_display}")
+      }
+
+      # Printed only when the party-size term was actually propagated. Silence
+      # here means the multiplier was treated as known, not that its
+      # contribution was measured and found to be zero (GH #121).
+      if (!is.null(x$se_expansion)) {
+        se_exp_display <- format( # nolint: object_usage_linter
+          signif(as.numeric(x$se_expansion), 4)
+        )
+        cli::cli_text(
+          "Party-size expansion SE: {se_exp_display} (included in {.field se})"
+        )
       }
 
       cli::cli_text("")
@@ -2624,6 +2651,76 @@ estimate_release_build_data <- function(design, species = NULL) {
 #'
 #' @keywords internal
 #' @noRd
+#' Variance contributed by an estimated party-size multiplier
+#'
+#' A mean party size taken from interviews multiplies the boat component of
+#' every count, so its sampling error is one error applied many times rather
+#' than fresh noise per count. It does not average away as counts accumulate,
+#' which is what separates it from the between- and within-day components.
+#'
+#' For a multiplier `p` with standard error `se_p` acting on an expanded basis
+#' total `T`, the contribution is `(T * se_p)^2`. Rows sharing an
+#' `expansion_group` share one estimate of `p`, so their bases are summed by
+#' `svyby()` before being squared -- perfect correlation. Separate groups come
+#' from disjoint interview subsets, so their variances add instead.
+#'
+#' Returns `NULL`, never `0`, when the design carries no party-size standard
+#' error. Callers use that to tell an omitted component from one that was
+#' propagated and came out small, which is the distinction the whole component
+#' exists to preserve (GH #121).
+#'
+#' @param design A creel_design with counts attached
+#' @param svy_design The survey design the estimate itself was computed on, so
+#'   the basis total is expanded on exactly the same weights and target
+#' @param by_vars Character vector of grouping columns, or NULL
+#'
+#' @return `NULL` when absent; otherwise a single variance when `by_vars` is
+#'   NULL, or a named vector of variances keyed by group
+#'
+#' @keywords internal
+#' @noRd
+compute_expansion_var_contribution <- function(design, svy_design, by_vars = NULL) { # nolint: object_length_linter
+  spec <- design$expansion
+  if (is.null(spec)) {
+    return(NULL)
+  }
+
+  counts_data <- design$counts
+  basis_col <- spec$basis_col
+  se_col <- spec$se_col
+  group_col <- spec$group_col
+
+  # One standard error per group; constancy within a PSU was enforced at attach
+  # time, and a group never spans two different estimates by construction.
+  se_by_group <- tapply(counts_data[[se_col]], counts_data[[group_col]], function(x) x[[1L]])
+
+  totals <- wrap_survey_call(survey::svyby( # nolint: object_usage_linter
+    formula = stats::reformulate(basis_col),
+    by = stats::reformulate(c(by_vars, group_col)),
+    design = svy_design,
+    FUN = survey::svytotal,
+    keep.names = FALSE
+  ))
+
+  se_vec <- as.numeric(se_by_group[as.character(totals[[group_col]])])
+
+  # NA standard errors propagate deliberately: a multiplier whose uncertainty
+  # could not be estimated yields an unknown total SE, not a smaller one.
+  contrib <- (as.numeric(totals[[basis_col]]) * se_vec)^2
+
+  if (is.null(by_vars)) {
+    return(sum(contrib))
+  }
+
+  group_keys <- if (length(by_vars) == 1) {
+    as.character(totals[[by_vars]])
+  } else {
+    do.call(paste, c(totals[by_vars], sep = ""))
+  }
+  vapply(split(contrib, group_keys), sum, numeric(1L))
+}
+
+
 compute_within_day_var_contribution <- function(
   design,
   by_vars = NULL, # nolint: object_length_linter
@@ -3035,8 +3132,12 @@ estimate_effort_total <- function(design, variance_method, conf_level, target = 
   var_within <- compute_within_day_var_contribution(design, by_vars = NULL, target = target) # nolint: object_usage_linter
   se_within <- sqrt(var_within)
 
+  # Party-size expansion contribution (GH #121); NULL when no SE was supplied
+  var_expansion <- compute_expansion_var_contribution(design, svy_design, by_vars = NULL) # nolint: object_usage_linter
+  se_expansion <- if (is.null(var_expansion)) NULL else sqrt(var_expansion)
+
   # Combined SE and CI (recomputed from total variance)
-  total_var <- var_between + var_within
+  total_var <- var_between + var_within + (var_expansion %||% 0)
   se <- sqrt(total_var)
 
   # Degrees of freedom: use survey package df (Taylor series linearization)
@@ -3069,7 +3170,8 @@ estimate_effort_total <- function(design, variance_method, conf_level, target = 
     conf_level = conf_level,
     by_vars = NULL,
     effort_target = target,
-    unit = design$effort_unit
+    unit = design$effort_unit,
+    se_expansion = se_expansion
   )
 }
 
@@ -3145,8 +3247,23 @@ estimate_effort_grouped <- function(
   }
   var_within_vec[is.na(var_within_vec)] <- 0
 
+  # Party-size expansion contribution per group (GH #121); NULL when no SE
+  var_expansion_named <- compute_expansion_var_contribution(design, svy_design, by_vars = by_vars) # nolint: object_usage_linter
+  if (is.null(var_expansion_named)) {
+    var_expansion_vec <- rep(0, length(estimate))
+    se_expansion <- NULL
+  } else {
+    var_expansion_vec <- as.numeric(var_expansion_named[result_group_keys])
+    # An absent key means the group contributed no expanded boats, so zero. A
+    # present key holding NA means the multiplier's uncertainty is unknown and
+    # must stay NA. Testing the key, not the value, keeps the two apart.
+    absent <- !(result_group_keys %in% names(var_expansion_named))
+    var_expansion_vec[absent] <- 0
+    se_expansion <- sqrt(var_expansion_vec)
+  }
+
   # Combined SE per group
-  total_var_vec <- var_between_vec + var_within_vec
+  total_var_vec <- var_between_vec + var_within_vec + var_expansion_vec
   se <- sqrt(total_var_vec)
   se_between <- se_between_vec
   se_within <- sqrt(var_within_vec)
@@ -3197,7 +3314,8 @@ estimate_effort_grouped <- function(
     conf_level = conf_level,
     by_vars = by_vars,
     effort_target = target,
-    unit = design$effort_unit
+    unit = design$effort_unit,
+    se_expansion = se_expansion
   )
 }
 

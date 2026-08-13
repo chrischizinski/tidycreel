@@ -10,6 +10,7 @@ derive_angler_count(
   boat_anglers = NULL,
   boat_count = NULL,
   party_size = NULL,
+  party_size_se = NULL,
   to = "angler_count"
 )
 }
@@ -29,10 +30,22 @@ One of: a single number; a tidy selector for a numeric column of \code{counts};
 or a data frame of the kind \code{\link[=mean_party_size]{mean_party_size()}} returns with \code{by}, which is
 joined onto \code{counts} by its non-numeric columns.}
 
+\item{party_size_se}{Optional standard error of \code{party_size}, in the same
+three shapes. Defaults to the \code{"se"} attribute of \code{party_size} when it has
+one, so \code{\link[=mean_party_size]{mean_party_size()}} output propagates on its own. There is
+deliberately no zero default; see the section above.}
+
 \item{to}{Name of the column to write. Defaults to \code{"angler_count"}.}
 }
 \value{
 \code{counts} with the derived column appended.
+
+When a party-size standard error is available, three further columns are
+appended for the estimators to read: \code{expansion_basis} (the boat count,
+which is what the multiplier acts on), \code{expansion_se}, and
+\code{expansion_group} (which rows share one estimated multiplier, and so carry
+perfectly correlated error). \code{\link[=add_counts]{add_counts()}} recognises all three and
+excludes them from count-column detection.
 }
 \description{
 Builds the single angler-count column that \code{add_counts()} needs from the
@@ -64,6 +77,26 @@ same way and are being reported as one quantity. Where detection
 probabilities or catch rates differ between them, estimate the two as
 separate domains instead of adding them.
 }
+\section{The party size is an estimate}{
+
+A mean party size taken from interviews is itself estimated, and it
+multiplies the boat component of \strong{every} count. Its error is therefore
+perfectly correlated across counts and does not shrink as counts are added --
+averaging more counts will not reduce it. Left out, the reported effort
+standard error is too small; the estimate itself is unaffected.
+
+Supply \code{party_size_se} to carry that term through to the effort standard
+error. \code{\link[=mean_party_size]{mean_party_size()}} returns it as a \code{"se"} attribute, which is picked
+up automatically when its output is passed as \code{party_size}, so the usual
+pipeline propagates the term without any extra argument.
+
+When no standard error is available the term is \strong{omitted rather than set to
+zero}. A zero would produce a standard error identical to an unpropagated
+one while looking propagated, which is worse than a documented omission. The
+returned table carries no expansion columns in that case, and
+\verb{attr(<estimates>, "se_expansion")} is \code{NULL} rather than \code{0}.
+}
+
 \examples{
 counts <- data.frame(
   date = as.Date("2024-06-01") + 0:1,

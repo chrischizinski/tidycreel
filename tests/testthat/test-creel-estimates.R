@@ -75,9 +75,13 @@ test_that("new_creel_estimates() creates creel_estimates S3 object", {
     result,
     c(
       "estimates", "method", "variance_method", "design", "conf_level",
-      "by_vars", "effort_target", "unit"
+      "by_vars", "effort_target", "unit", "se_expansion"
     )
   )
+  # The field is always present but NULL until a party-size standard error is
+  # actually propagated, so callers can distinguish an omitted component from a
+  # propagated one (GH #121).
+  expect_null(result$se_expansion)
 })
 
 test_that("new_creel_estimates() uses correct defaults", {

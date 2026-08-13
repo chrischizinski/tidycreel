@@ -1055,7 +1055,18 @@ resolve_count_col <- function(
   # count, so they must not make the preferred prep -> add_counts() pipeline
   # look ambiguous. A user whose count column really is named one of these can
   # still say so with count_col, which skips this list entirely.
-  excluded <- c(excluded, "correction_factor", "n_counts", "within_day_var")
+  excluded <- c(
+    excluded,
+    "correction_factor",
+    "n_counts",
+    "within_day_var",
+    # Written by derive_angler_count() to carry the party-size variance
+    # component. They are numeric and sit beside the count, so without this they
+    # would make an otherwise unambiguous table look ambiguous.
+    "expansion_basis",
+    "expansion_se",
+    "expansion_group"
+  )
 
   numeric_cols <- names(counts)[vapply(counts, is.numeric, logical(1L))]
 
@@ -1187,6 +1198,44 @@ read_supplied_within_day_var <- function(
   out$ss_d <- counts[["within_day_var"]]
   out$k_d <- counts[["n_counts"]]
   out
+}
+
+#' Check that one PSU carries one party-size estimate
+#'
+#' Internal helper. Aggregation collapses each PSU to a single row and takes the
+#' first value for every column it does not average, so a standard error or
+#' group that varied within a day would be silently resolved to whichever row
+#' sorted first. That is a malformed input rather than something to paper over:
+#' a day cannot have been expanded by two different estimates at once.
+#'
+#' @param counts Data frame of count data, before aggregation
+#' @param key_cols Character vector of PSU + strata columns
+#' @param call Calling environment for conditions
+#'
+#' @return `NULL`, invisibly. Called for its side effect.
+#'
+#' @keywords internal
+#' @noRd
+check_expansion_constant_per_psu <- function(counts, key_cols, call = rlang::caller_env()) { # nolint: object_length_linter, line_length_linter
+  key <- do.call(paste, c(counts[key_cols], sep = ""))
+  for (col in c("expansion_se", "expansion_group")) {
+    n_distinct <- tapply(counts[[col]], key, function(x) length(unique(x)))
+    if (any(n_distinct > 1L, na.rm = TRUE)) {
+      bad <- names(n_distinct)[!is.na(n_distinct) & n_distinct > 1L] # nolint: object_usage_linter
+      cli::cli_abort(
+        c(
+          "{.field {col}} varies within a single PSU.",
+          "x" = "{length(bad)} PSU{?s} carr{?ies/y} more than one value.",
+          "i" = "One day is expanded by one party-size estimate, so its standard \\
+                 error and group must be constant across that day's counts.",
+          "i" = "This usually means the counts table was built from two different \\
+                 {.fn derive_angler_count} calls."
+        ),
+        call = call
+      )
+    }
+  }
+  invisible(NULL)
 }
 
 #' Attach count data to a creel design
@@ -1604,19 +1653,32 @@ add_counts <- function(
     count_time_col_name
   )
 
+  # Party-size expansion carried as columns by derive_angler_count(). Read
+  # before aggregation, which is where the per-row link between the count and
+  # its derivative has to be preserved.
+  has_expansion <- all(
+    c("expansion_basis", "expansion_se", "expansion_group") %in% names(counts)
+  )
+  if (has_expansion) {
+    check_expansion_constant_per_psu(counts, unique(c(psu, design$strata_cols))) # nolint: object_usage_linter
+  }
+
   # Aggregate multiple counts per day to single PSU-level rows
   within_day_var <- NULL
   if (!is.null(count_time_col_name)) {
     key_cols <- unique(c(psu, design$strata_cols))
     count_var <- count_col_name
 
-    agg_result <- aggregate_within_day(
-      # nolint: object_usage_linter
+    agg_result <- aggregate_within_day( # nolint: object_usage_linter
       counts = counts,
       psu_col = psu,
       count_var = count_var,
       count_time_col = count_time_col_name,
-      key_cols = key_cols
+      key_cols = key_cols,
+      # The basis is d(count)/d(party_size), so it must collapse to a per-day
+      # mean exactly as the count does. Left at its first value it would be the
+      # derivative of a count that no longer exists.
+      mean_vars = if (has_expansion) "expansion_basis" else character()
     )
     counts <- agg_result$aggregated
     within_day_var <- agg_result$within_day_var
@@ -1631,6 +1693,16 @@ add_counts <- function(
   if (!is.null(period_length_col_name) && !is.null(within_day_var)) {
     td_vals <- counts[[period_length_col_name]][match(within_day_var[[psu]], counts[[psu]])]
     within_day_var$ss_d <- within_day_var$ss_d * td_vals^2
+  }
+
+  # Scale the expansion basis by T_d for the same reason ss_d is scaled above:
+  # both count paths below multiply the count through by T_d (τ cancels out of
+  # the progressive form), so the derivative has to be carried into effort units
+  # alongside it or the variance component would be in count² units against an
+  # effort² estimate. Done here because both paths drop period_length_col.
+  if (!is.null(period_length_col_name) && has_expansion) {
+    counts[["expansion_basis"]] <- counts[["expansion_basis"]] *
+      counts[[period_length_col_name]]
   }
 
   # Compute progressive daily effort Ê_d = C × τ × κ (EFF-02)
@@ -1668,6 +1740,19 @@ add_counts <- function(
   }
   new_design$circuit_time <- circuit_time
   new_design$period_length_col <- period_length_col_name
+  # NULL, not a zero-variance placeholder, when no party-size standard error was
+  # supplied. The estimators test for NULL to decide whether the component
+  # exists at all, which is what keeps an unpropagated SE distinguishable from a
+  # propagated one that happened to come out at zero.
+  new_design$expansion <- if (has_expansion) {
+    list(
+      basis_col = "expansion_basis",
+      se_col = "expansion_se",
+      group_col = "expansion_group"
+    )
+  } else {
+    NULL
+  }
   new_design$counts_are_effort <- counts_from_prep_seam
 
   # The count side is angler-hours exactly when this function did the
