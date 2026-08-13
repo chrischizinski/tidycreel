@@ -6,7 +6,7 @@
       # A tibble: 1 x 5
         estimate    se ci_lower ci_upper     n
            <dbl> <dbl>    <dbl>    <dbl> <int>
-      1     115.  78.3    -38.8     268.     8
+      1     115.  78.3        0     268.     8
 
 # SNAP-BOOT-02: estimate_total_catch default output is stable
 
