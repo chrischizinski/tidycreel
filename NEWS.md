@@ -1,4 +1,4 @@
-# tidycreel 3.2.0 "Bigmouth Buffalo" (development version)
+# tidycreel 3.2.0 "Bigmouth Buffalo" (2026-08-13)
 
 ## New features
 
@@ -73,7 +73,7 @@
   detection, so they cannot make an otherwise unambiguous counts table look
   ambiguous.
 
-# tidycreel 3.1.0 "Sauger" (development version)
+# tidycreel 3.1.0 "Sauger" (2026-08-13)
 
 ## New features
 
