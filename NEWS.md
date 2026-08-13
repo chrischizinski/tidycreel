@@ -1,3 +1,55 @@
+# tidycreel 3.2.0 "Bigmouth Buffalo" (development version)
+
+## New features
+
+* The sampling error of an estimated party size now reaches the effort standard
+  error (#121). A mean party size taken from interviews multiplies the boat
+  component of every count, so its error is one error applied many times rather
+  than fresh noise per count: it does not shrink as counts accumulate. Treating
+  it as known made every count-expanded effort standard error too small.
+
+  `mean_party_size()` now returns that standard error as a `"se"` attribute, and
+  `derive_angler_count()` reads it, so the usual pipeline propagates the term
+  with no extra argument:
+
+  ```r
+  counts |> derive_angler_count(
+    bank       = bank_anglers,
+    boat_count = angler_boats,
+    party_size = mean_party_size(interviews, n_anglers, angler_type = angler_type)
+  )
+  ```
+
+  Supply `party_size_se` directly to override it, in any of the three shapes
+  `party_size` accepts (scalar, column, lookup).
+
+  The component is reported as `se_expansion` on the returned estimates object
+  and is included in `se`, so it reaches catch, harvest, and release totals as
+  well. The estimates tibble keeps its existing seven columns.
+
+## Breaking changes
+
+* Effort standard errors **increase** for designs that expand a boat count by
+  `mean_party_size()` output, because a variance component that was previously
+  dropped is now carried. Estimates themselves are unchanged; only their
+  uncertainty moves. Designs that pass a bare number or a column as `party_size`
+  are unaffected, since no standard error is available for those.
+
+## Notes
+
+* When no party-size standard error is available the component is **omitted, not
+  set to zero**. `se_expansion` is `NULL` rather than `0`, because a zero would
+  produce a standard error identical to an unpropagated one while appearing to
+  have been propagated. A party size estimated from a single interviewed party
+  yields `NA`, which propagates to an `NA` standard error rather than being read
+  as certainty.
+
+* `derive_angler_count()` writes three further columns — `expansion_basis`,
+  `expansion_se`, and `expansion_group` — when a standard error is available.
+  `add_counts()` recognises all three and excludes them from count-column
+  detection, so they cannot make an otherwise unambiguous counts table look
+  ambiguous.
+
 # tidycreel 3.1.0 "Sauger" (development version)
 
 ## New features

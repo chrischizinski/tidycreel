@@ -1452,6 +1452,12 @@ test_that("estimate_effort() total se equals sqrt(se_between^2 + se_within^2)", 
   est <- result$estimates
   expected_se <- sqrt(est$se_between^2 + est$se_within^2)
   expect_equal(est$se, expected_se, tolerance = 1e-10)
+
+  # The two-component identity holds only because no party-size standard error
+  # was propagated here. Were the component silently defaulted to zero rather
+  # than left absent, this assertion would still pass and would stop being
+  # evidence of anything (GH #121).
+  expect_null(result$se_expansion)
 })
 
 test_that("estimate_effort() emits informational message for mixed K_d (VAR-03)", {

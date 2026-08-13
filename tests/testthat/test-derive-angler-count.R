@@ -189,17 +189,19 @@ test_interviews <- function() {
 test_that("mean_party_size uses boat parties only", {
   # Bank parties must not enter the multiplier that expands a count of boats.
   # The bank values here are large on purpose: including them would show.
-  expect_equal(
-    mean_party_size(test_interviews(), n_anglers, angler_type = angler_type),
-    mean(c(2, 3, 5))
-  )
+  out <- mean_party_size(test_interviews(), n_anglers, angler_type = angler_type)
+
+  expect_equal(as.numeric(out), mean(c(2, 3, 5)))
+  # The standard error must be computed over the same restricted set. A bank
+  # party leaking into the spread would inflate it without touching the mean.
+  expect_equal(attr(out, "se"), sd(c(2, 3, 5)) / sqrt(3))
 })
 
 test_that("mean_party_size over every row when no angler_type is given", {
-  expect_equal(
-    mean_party_size(test_interviews(), n_anglers),
-    mean(c(2, 10, 3, 5, 20))
-  )
+  out <- mean_party_size(test_interviews(), n_anglers)
+
+  expect_equal(as.numeric(out), mean(c(2, 10, 3, 5, 20)))
+  expect_equal(attr(out, "se"), sd(c(2, 10, 3, 5, 20)) / sqrt(5))
 })
 
 test_that("mean_party_size returns one value per group when by is supplied", {

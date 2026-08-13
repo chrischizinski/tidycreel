@@ -340,6 +340,8 @@ detect_duplicate_psus <- function(counts, psu, call = rlang::caller_env()) {
 #'   observations (used for grouping only -- not ordered or weighted)
 #' @param key_cols Character vector of all grouping key columns
 #'   (psu_col + strata_cols). These define a unique PSU.
+#' @param mean_vars Character vector of further columns to collapse by their
+#'   mean, the way `count_var` is. Every other column takes its first value.
 #'
 #' @return A list with elements:
 #'   \describe{
@@ -349,7 +351,14 @@ detect_duplicate_psus <- function(counts, psu, call = rlang::caller_env()) {
 #'
 #' @keywords internal
 #' @noRd
-aggregate_within_day <- function(counts, psu_col, count_var, count_time_col, key_cols) {
+aggregate_within_day <- function(
+  counts,
+  psu_col,
+  count_var,
+  count_time_col,
+  key_cols,
+  mean_vars = character()
+) {
   # Create grouping key as character for split()
   if (length(key_cols) == 1) {
     group_key <- as.character(counts[[key_cols]])
@@ -374,6 +383,13 @@ aggregate_within_day <- function(counts, psu_col, count_var, count_time_col, key
     # Build one aggregated row: take first row, replace count_var with mean
     row <- g[1L, , drop = FALSE]
     row[[count_var]] <- c_mean
+    # Columns that must collapse the same way the count does. Taking the first
+    # row's value instead -- the default for every other column here -- would
+    # leave a per-day derivative that no longer matches the per-day count it is
+    # the derivative of.
+    for (mv in mean_vars) {
+      row[[mv]] <- mean(g[[mv]])
+    }
     # Drop the count_time_col column -- no longer meaningful after aggregation
     row[[count_time_col]] <- NULL
 
