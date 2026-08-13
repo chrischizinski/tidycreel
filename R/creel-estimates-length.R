@@ -523,6 +523,9 @@ est_biomass <- function(ld, a, b, conf_level = NULL) {
     by_vars <- character(0)
   }
 
+  # Normal quantile rather than t: the SE below is propagated from the length
+  # distribution's per-bin SEs, so there is no local sample size to key degrees
+  # of freedom to. See ?creel_confidence_intervals.
   z <- stats::qnorm((1 + conf_level) / 2)
 
   compute_biomass <- function(rows) {
@@ -645,6 +648,9 @@ est_mean_length <- function(ld, conf_level = NULL) {
   if (is.null(by_vars)) {
     by_vars <- character(0)
   }
+  # Normal quantile rather than t: the SE below is propagated from the length
+  # distribution's per-bin SEs, so there is no local sample size to key degrees
+  # of freedom to. See ?creel_confidence_intervals.
   z <- stats::qnorm((1 + conf_level) / 2)
 
   compute_mean_length <- function(rows) {
@@ -788,6 +794,9 @@ est_compliance <- function(ld, min_length, conf_level = NULL) {
   if (is.null(by_vars)) {
     by_vars <- character(0)
   }
+  # Normal quantile rather than t: the SE below is propagated from the length
+  # distribution's per-bin SEs, so there is no local sample size to key degrees
+  # of freedom to. See ?creel_confidence_intervals.
   z <- stats::qnorm((1 + conf_level) / 2)
 
   compute_compliance <- function(rows) {

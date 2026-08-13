@@ -135,7 +135,8 @@ estimate_effort_br <- function(
     svy_result <- suppressWarnings(survey::svytotal(~.contribution, svy_br))
     se <- as.numeric(survey::SE(svy_result)) # nolint: object_usage_linter
     ci <- confint(svy_result, level = conf_level)
-    ci_lower <- ci[1, 1] # nolint: object_usage_linter
+    # Effort is bounded below by zero; the symmetric Wald bound is not.
+    ci_lower <- pmax(0, ci[1, 1]) # nolint: object_usage_linter
     ci_upper <- ci[1, 2] # nolint: object_usage_linter
 
     estimates_df <- tibble::tibble(
@@ -188,7 +189,8 @@ estimate_effort_br <- function(
 
     estimate <- svy_result[[".contribution"]]
     se <- svy_result[["se"]]
-    ci_lower <- svy_result[["ci_l"]]
+    # Effort is bounded below by zero; the symmetric Wald bound is not.
+    ci_lower <- pmax(0, svy_result[["ci_l"]])
     ci_upper <- svy_result[["ci_u"]]
 
     # Compute proportion of overall total for each group
@@ -534,7 +536,8 @@ br_harvest_rate_estimates <- function(
     estimates_df <- tibble::tibble(
       estimate = as.numeric(coef(svy_result)),
       se = as.numeric(survey::SE(svy_result)),
-      ci_lower = ci[1, 1],
+      # A catch rate is bounded below by zero; the symmetric Wald bound is not.
+      ci_lower = pmax(0, ci[1, 1]),
       ci_upper = ci[1, 2],
       n = nrow(interviews)
     )
@@ -574,7 +577,8 @@ br_harvest_rate_estimates <- function(
   estimates_df <- tibble::as_tibble(svy_result[by_vars])
   estimates_df$estimate <- svy_result[[ratio_col]]
   estimates_df$se <- svy_result[[paste0("se.", ratio_col)]]
-  estimates_df$ci_lower <- svy_result[["ci_l"]]
+  # A catch rate is bounded below by zero; the symmetric Wald bound is not.
+  estimates_df$ci_lower <- pmax(0, svy_result[["ci_l"]])
   estimates_df$ci_upper <- svy_result[["ci_u"]]
   estimates_df$n <- n_by_group$n[match(
     do.call(paste, estimates_df[by_vars]),
@@ -1626,7 +1630,8 @@ br_build_estimates <- function(
     svy_result <- suppressWarnings(survey::svytotal(~.contribution, svy_br_taylor))
     se <- as.numeric(survey::SE(svy_result)) # nolint: object_usage_linter
     ci <- confint(svy_result, level = conf_level)
-    ci_lower <- ci[1, 1] # nolint: object_usage_linter
+    # A catch total is bounded below by zero; the symmetric Wald bound is not.
+    ci_lower <- pmax(0, ci[1, 1]) # nolint: object_usage_linter
     ci_upper <- ci[1, 2] # nolint: object_usage_linter
 
     estimates_df <- tibble::tibble(
@@ -1641,7 +1646,7 @@ br_build_estimates <- function(
       svy_br_boot <- get_variance_design(svy_br_base, "bootstrap")
       svy_boot_res <- suppressWarnings(survey::svytotal(~.contribution, svy_br_boot))
       ci_boot <- confint(svy_boot_res, level = conf_level)
-      estimates_df$ci_lo_boot <- ci_boot[1, 1]
+      estimates_df$ci_lo_boot <- pmax(0, ci_boot[1, 1])
       estimates_df$ci_hi_boot <- ci_boot[1, 2]
     }
 
@@ -1680,7 +1685,8 @@ br_build_estimates <- function(
 
     estimate <- svy_result[[".contribution"]]
     se <- svy_result[["se"]]
-    ci_lower <- svy_result[["ci_l"]]
+    # A catch total is bounded below by zero; the symmetric Wald bound is not.
+    ci_lower <- pmax(0, svy_result[["ci_l"]])
     ci_upper <- svy_result[["ci_u"]]
 
     overall_total <- sum(interviews$.contribution, na.rm = TRUE)
@@ -1714,7 +1720,7 @@ br_build_estimates <- function(
         ci.level = conf_level,
         keep.names = FALSE
       ))
-      estimates_df$ci_lo_boot <- svy_boot_by[["ci_l"]]
+      estimates_df$ci_lo_boot <- pmax(0, svy_boot_by[["ci_l"]])
       estimates_df$ci_hi_boot <- svy_boot_by[["ci_u"]]
     }
 

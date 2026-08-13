@@ -1,6 +1,51 @@
-# tidycreel 3.0.1 (development version)
+# tidycreel 3.1.0 "Sauger" (development version)
+
+## Behaviour changes
+
+* Bus-route estimators no longer report a confidence bound below zero. Every
+  `ci_lower` produced by `estimate_effort()`, `estimate_total_catch()`,
+  `estimate_total_harvest()`, `estimate_total_release()` and
+  `estimate_harvest_rate()` on a bus-route design is now clamped at zero, in
+  both the ungrouped and `by`-grouped paths and in the bootstrap columns
+  (`ci_lo_boot`). Bus-route was the last family of estimators in the package
+  without this clamp; the product totals, exploitation rate and length
+  compliance already had it.
+
+  This changes reported numbers only where the old bound was outside the
+  parameter space. Angler-hours, fish and fish-per-hour cannot be negative, so a
+  symmetric Wald bound below zero was never a possible value for the quantity.
+  It is reached whenever the coefficient of variation exceeds roughly 0.51 —
+  routine for a bus-route survey with few sites, unequal inclusion
+  probabilities, or catch concentrated in one interview. The package's own
+  bootstrap snapshot fixture was already in that regime: `estimate_total_harvest()`
+  reported an estimate of `115` with an SE of `78.3` and a lower bound of
+  `-38.8`, which is now `0`. On a deliberately skewed two-site design with
+  `p_site` of 0.05 and 0.95 the excursion is larger, with the total-catch bound
+  moving from `-15999.40` to `0` and the harvest-rate bound from `-54.85` to `0`.
+
+  A clamped bound of exactly zero means the interval is wide relative to the
+  estimate. It is not a statement that the quantity could be zero, and the
+  clamp does not narrow the interval or change the estimate or the standard
+  error. See `?creel_confidence_intervals`. Closes part of #95.
 
 ## Documentation
+
+* New topic `?creel_confidence_intervals` states the two conventions the package
+  follows when building intervals: transform where a principled transform for
+  the quantity exists (logit for exploitation rate, Sadinle's transformed logit
+  for mark-recapture abundance, optional log for product totals) and clamp at the
+  feasible limit otherwise; and use a t-quantile where an estimator has a design
+  degrees-of-freedom to appeal to, a normal quantile where it does not. Written
+  down so a new estimator does not have to pick by coin flip. Closes #95 and #99.
+
+* `est_biomass()`, `est_mean_length()`, `est_compliance()` and `est_mean_age()`
+  now record why they use a normal rather than a t quantile. Their standard error
+  is propagated from the per-bin standard errors of a length or age distribution,
+  so there is no local sample size to key degrees of freedom to: the row count is
+  the number of bins, which is the caller's binning choice, and the row totals are
+  expanded estimates rather than counts of measured fish. Keying a t-quantile to
+  either would make the interval narrow as bins got finer, with no additional
+  fish measured. Closes #99.
 
 * `est_biomass()` now states that the length-weight parameters `a` and `b` are
   treated as known constants, so `biomass_se` omits their estimation error and
