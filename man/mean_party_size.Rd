@@ -30,6 +30,19 @@ supplied, a mean is returned for each group rather than one overall value.}
 \value{
 When \code{by} is \code{NULL}, a single numeric value. Otherwise a tibble with
 the grouping columns and a \code{mean_party_size} column.
+
+Either way the return carries a \code{"se"} attribute holding the standard error
+of the mean (\code{sd / sqrt(n)} over parties), one value per group for the \code{by}
+form. \code{\link[=derive_angler_count]{derive_angler_count()}} reads it, so the sampling error of the
+multiplier reaches the effort standard error without being passed by hand.
+
+The standard error is an attribute rather than a column so that the scalar
+return stays usable directly as a multiplier, and so the \code{by} form keeps
+exactly one numeric column and remains valid as a \code{party_size} lookup.
+
+A group with a single party has no estimable standard error and gets
+\code{NA_real_}, which propagates to an \code{NA} effort standard error rather than
+being quietly treated as zero uncertainty.
 }
 \description{
 Returns the mean number of anglers per boat party, taken from an interviews
