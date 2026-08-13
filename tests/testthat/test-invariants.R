@@ -22,6 +22,15 @@ test_that("INV-04: estimate outputs stay inside confidence bounds", {
   expect_true(all(harvest_fixed$estimates$ci_lower <= harvest_fixed$estimates$estimate))
   expect_true(all(harvest_fixed$estimates$estimate <= harvest_fixed$estimates$ci_upper))
 
+  # Ordering alone would pass a negative lower bound. Angler-hours, fish, and
+  # fish-per-hour are all bounded below by zero, so a reported bound under zero
+  # is outside the parameter space and not merely imprecise. Without this the
+  # clamps in the estimators are unpinned and a regression removing one is
+  # invisible.
+  expect_true(all(effort_fixed$estimates$ci_lower >= 0))
+  expect_true(all(catch_fixed$estimates$ci_lower >= 0))
+  expect_true(all(harvest_fixed$estimates$ci_lower >= 0))
+
   quickcheck::for_all(
     design = gen_valid_creel_design(n_min = 2L),
     property = function(design) {
@@ -35,6 +44,10 @@ test_that("INV-04: estimate outputs stay inside confidence bounds", {
       expect_true(all(catch$estimates$estimate <= catch$estimates$ci_upper))
       expect_true(all(harvest$estimates$ci_lower <= harvest$estimates$estimate))
       expect_true(all(harvest$estimates$estimate <= harvest$estimates$ci_upper))
+
+      expect_true(all(effort$estimates$ci_lower >= 0))
+      expect_true(all(catch$estimates$ci_lower >= 0))
+      expect_true(all(harvest$estimates$ci_lower >= 0))
     }
   )
 })
