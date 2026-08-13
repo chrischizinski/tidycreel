@@ -1,4 +1,4 @@
-# tidycreel 3.1.0 (development version)
+# tidycreel 3.1.0 "Sauger" (development version)
 
 ## Behaviour changes
 
