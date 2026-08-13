@@ -114,7 +114,7 @@ est_effort_camera <- function(
       "{.arg design} has {.field design_type} = {.val {design$design_type}}, not {.val camera}. Proceeding anyway."
     )
   }
-  if (!is.numeric(conf_level) || conf_level <= 0 || conf_level >= 1) {
+  if (!is.numeric(conf_level) || length(conf_level) != 1L || conf_level <= 0 || conf_level >= 1) {
     cli::cli_abort(
       "{.arg conf_level} must be a number in (0, 1). Got {.val {conf_level}}."
     )

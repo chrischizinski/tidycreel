@@ -879,7 +879,10 @@ estimate_catch_rate <- function(
   }
 
   # Validate truncate_at parameter
-  if (!is.null(truncate_at) && (!is.numeric(truncate_at) || truncate_at <= 0)) {
+  if (
+    !is.null(truncate_at) &&
+      (!is.numeric(truncate_at) || length(truncate_at) != 1L || truncate_at <= 0)
+  ) {
     cli::cli_abort(c(
       "Invalid truncate_at: {.val {truncate_at}}",
       "x" = "truncate_at must be positive or NULL",

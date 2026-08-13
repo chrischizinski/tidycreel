@@ -1,4 +1,22 @@
-# tidycreel 3.0.0 "Blue Sucker" (2026-08-11)
+# tidycreel 3.0.1 (development version)
+
+## Bug fixes
+
+* Argument guards on `truncate_at` and `conf_level` now reject a value whose
+  length is not 1, rather than letting it reach the comparison. Passing
+  `truncate_at = c(0.5, 1)` to `estimate_catch_rate()` raised base R's
+  `'length = 2' in coercion to 'logical(1)'`, and `numeric(0)` raised
+  `missing value where TRUE/FALSE needed` — both of which name neither the
+  argument nor the constraint it violated. The intended error, which cites the
+  argument and its default, now fires instead. Affects `estimate_catch_rate()`,
+  the bus-route incomplete-trip path, and `est_effort_camera()`.
+
+  A `conf_level` or `truncate_at` of `NA_real_` still reaches base R's
+  "missing value where TRUE/FALSE needed". That gap predates this change and is
+  shared by the six other guards written to the same pattern; it is left for a
+  single pass over all of them rather than fixed at three sites only.
+
+# tidycreel 3.0.0 "Blue Sucker" (2026-08-12)
 
 The first major bump since the package adopted semantic versioning. It closes the
 dimensional seam audit opened 2026-08-07: 27 findings, ten of them breaking changes
