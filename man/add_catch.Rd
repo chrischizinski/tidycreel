@@ -76,7 +76,7 @@ print(design)
 
 }
 \seealso{
-Other "Survey Design": 
+Other "Survey Design":
 \code{\link{add_counts}()},
 \code{\link{add_interviews}()},
 \code{\link{add_lengths}()},
@@ -87,8 +87,10 @@ Other "Survey Design":
 \code{\link{compute_effort}()},
 \code{\link{creel_design}()},
 \code{\link{creel_schema}()},
+\code{\link{derive_angler_count}()},
 \code{\link{est_effort_camera}()},
 \code{\link{impute_camera_counts}()},
+\code{\link{mean_party_size}()},
 \code{\link{prep_counts_boat_party}()},
 \code{\link{prep_counts_daily_effort}()},
 \code{\link{prep_interview_catch}()},

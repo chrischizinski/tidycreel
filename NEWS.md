@@ -1,5 +1,47 @@
 # tidycreel 3.1.0 "Sauger" (development version)
 
+## New features
+
+* `derive_angler_count()` builds the single angler-count column `add_counts()`
+  needs from the columns a clerk actually records. Two forms, matching the two
+  ways boat anglers reach the form:
+
+  ```r
+  # Anglers aboard were counted directly
+  counts |> derive_angler_count(bank = bank_anglers, boat_anglers = boat_anglers)
+
+  # Boats were counted; anglers aboard were not
+  counts |> derive_angler_count(
+    bank       = bank_anglers,
+    boat_count = angler_boats,
+    party_size = mean_party_size(interviews, n_anglers, angler_type = angler_type)
+  )
+  ```
+
+  `party_size` accepts a single number, a column of `counts`, or a lookup table
+  keyed by stratum, so a party size that differs between weekdays and weekends
+  can be applied per group rather than averaged away.
+
+  `boat_count` and `boat_anglers` are separate arguments deliberately.
+  `boat_count` counts **hulls**, and adding it to an angler total is a units
+  error that produces a plausible-looking number; requiring `party_size`
+  alongside it makes that impossible to do by accident. Supplying both boat
+  forms is an error, since they are two routes to the same quantity.
+
+  Components are added with `na.rm = FALSE`: a count that was not taken and a
+  count of zero anglers are different observations and stay different.
+
+  Until now this derivation was available only on the sampled-day
+  `prep_counts_*` seam, via `prep_counts_boat_party()`. The raw-count pipeline —
+  the one that takes a within-day count schedule through `count_time_col` and
+  derives the within-day variance component itself — had no equivalent, so
+  callers there built the total by hand. Closes #119.
+
+* `mean_party_size()` returns the mean anglers per boat party from an interviews
+  table, optionally by stratum. It filters to boat parties, and errors rather
+  than returning `NaN` when no row matches — a silent `NaN` would propagate into
+  every expanded count.
+
 ## Behaviour changes
 
 * Bus-route estimators no longer report a confidence bound below zero. Every
