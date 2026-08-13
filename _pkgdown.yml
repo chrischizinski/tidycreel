@@ -89,6 +89,7 @@ reference:
       - estimate_angler_trips
       - estimate_effort_per_acre
       - compare_cpue_estimators
+      - creel_confidence_intervals
 
   - title: "Simulation"
     desc: >
