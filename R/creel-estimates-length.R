@@ -421,6 +421,17 @@ build_length_distribution_records <- function(
 #'   \eqn{W = a \cdot L^b}). Typical values for fish are 2.5–3.5.
 #' @param conf_level Numeric confidence level for confidence intervals.
 #'   Defaults to the level stored in `ld` (usually `0.95`).
+#' @param alpha_se Optional standard error of the pivot coefficient
+#'   \eqn{\alpha = a \cdot L_0^b}, i.e. the fitted intercept on the
+#'   \eqn{\log W = \log \alpha + b (\log L - \log L_0)} scale.
+#' @param b_se Optional standard error of the exponent `b`.
+#' @param L0 Optional pivot length at which the regression was centred, in the
+#'   same units as the bin boundaries. Use the geometric mean length of the
+#'   length-weight calibration sample.
+#'
+#'   These three are all-or-nothing: give all of them to propagate the
+#'   length-weight regression error, or none to keep the current behaviour.
+#'   There is no zero default — see Details.
 #'
 #' @details
 #' For each length bin h with midpoint \eqn{L_h = (\text{bin\_lower} +
@@ -435,12 +446,12 @@ build_length_distribution_records <- function(
 #' When positive covariances exist (likely in small surveys), this
 #' under-estimates the true variance.
 #'
-#' `a` and `b` are treated as known constants, so `biomass_se` carries no
-#' contribution from their estimation error. In practice they are point
-#' estimates from a length-weight regression, often one fitted to a different
-#' water body or year. Because \eqn{a \cdot L_h^b} multiplies every bin, that
-#' error is perfectly correlated across bins and does not shrink as bins are
-#' added — unlike the cross-bin term above.
+#' By default `a` and `b` are treated as known constants, so `biomass_se`
+#' carries no contribution from their estimation error. In practice they are
+#' point estimates from a length-weight regression, often one fitted to a
+#' different water body or year. Because \eqn{a \cdot L_h^b} multiplies every
+#' bin, that error is perfectly correlated across bins and does not shrink as
+#' bins are added — unlike the cross-bin term above.
 #'
 #' The omission is usually minor relative to count variance: on the example
 #' below it adds roughly 2–11% to a coefficient of variation of 40–65%, for
@@ -448,8 +459,36 @@ build_length_distribution_records <- function(
 #' becomes material in two situations — a survey precise enough to bring the
 #' count CV near 10%, and `a`/`b` borrowed from a system whose fish differ in
 #' size from those measured here, since the contribution scales with the
-#' distance between the two samples' mean log lengths. Treat `biomass_se` as a
-#' lower bound in either case.
+#' distance between the two samples' mean log lengths.
+#'
+#' @section Propagating the length-weight regression error:
+#' Supply `alpha_se`, `b_se`, and `L0` together to carry that term. The
+#' allometry is rewritten about a pivot length \eqn{L_0}:
+#' \deqn{W = \alpha \left(\frac{L}{L_0}\right)^b, \qquad \alpha = a L_0^b}
+#' and the delta method is applied in \eqn{(\alpha, b)}:
+#' \deqn{\widehat{\text{Var}}(B) \approx \sum_h (a L_h^b)^2 \widehat{\text{SE}}_h^2
+#'   + \left(\frac{B}{\alpha}\right)^2 \text{Var}(\alpha)
+#'   + \left(\sum_h B_h \ln\frac{L_h}{L_0}\right)^2 \text{Var}(b)}
+#'
+#' The covariance term is absent by construction rather than by assumption.
+#' Fitted on the raw \eqn{(a, b)} scale the two parameters are almost perfectly
+#' negatively correlated — typically \eqn{\text{cor} < -0.99} — so dropping
+#' their covariance there would **overstate** the variance severalfold, in some
+#' cases turning a 2–11% contribution into 5–49%. Centring at \eqn{L_0} makes
+#' them near-orthogonal, so the omitted term is genuinely negligible. Take
+#' \eqn{L_0} as the geometric mean length of the calibration sample, and take
+#' `alpha_se` from the intercept of a regression centred there — not the
+#' standard error of `a` itself.
+#'
+#' The contribution grows with \eqn{\ln(L_h / L_0)}, so borrowing parameters
+#' from a system whose fish differ in size from these is penalised
+#' automatically, which is the intended behaviour.
+#'
+#' There is deliberately no zero default for these arguments. A zero standard
+#' error would produce a `biomass_se` identical to an unpropagated one while
+#' appearing to have been propagated — worse than the documented omission it
+#' would replace. When they are absent, `attr(x, "biomass_se_params")` is `NULL`
+#' rather than `0`, and `biomass_se` should be read as a lower bound.
 #'
 #' Length and weight units are determined by the user: if lengths are in mm
 #' and `a` is calibrated for mm input, weights are returned in the
@@ -484,7 +523,7 @@ build_length_distribution_records <- function(
 #'
 #' @family "Estimation"
 #' @export
-est_biomass <- function(ld, a, b, conf_level = NULL) {
+est_biomass <- function(ld, a, b, conf_level = NULL, alpha_se = NULL, b_se = NULL, L0 = NULL) { # nolint: object_name_linter, line_length_linter
   if (!inherits(ld, "creel_length_distribution")) {
     cli::cli_abort(c(
       "{.arg ld} must be a {.cls creel_length_distribution} object.",
@@ -518,6 +557,8 @@ est_biomass <- function(ld, a, b, conf_level = NULL) {
     }
   }
 
+  params <- validate_lw_uncertainty(alpha_se, b_se, L0) # nolint: object_usage_linter
+
   by_vars <- attr(ld, "by_vars")
   if (is.null(by_vars)) {
     by_vars <- character(0)
@@ -528,11 +569,31 @@ est_biomass <- function(ld, a, b, conf_level = NULL) {
   # of freedom to. See ?creel_confidence_intervals.
   z <- stats::qnorm((1 + conf_level) / 2)
 
+  se_params <- if (is.null(params)) NULL else numeric(0)
+
   compute_biomass <- function(rows) {
     l_mid <- (rows$bin_lower + rows$bin_upper) / 2
     w_h <- a * l_mid^b
     biomass <- sum(w_h * rows$estimate)
-    se_b <- sqrt(sum(w_h^2 * rows$se^2))
+    var_counts <- sum(w_h^2 * rows$se^2)
+
+    # Length-weight parameter error, on the pivot parameterisation
+    # W = alpha * (L / L0)^b with alpha = a * L0^b. Both partials are taken at
+    # L0, where the two parameters are near-uncorrelated, which is what makes
+    # omitting their covariance defensible rather than a hidden error (GH #117).
+    var_params <- 0
+    if (!is.null(params)) {
+      alpha <- a * params$L0^b
+      bin_biomass <- w_h * rows$estimate
+      d_alpha <- biomass / alpha
+      d_b <- sum(bin_biomass * log(l_mid / params$L0))
+      var_params <- d_alpha^2 * params$alpha_se^2 + d_b^2 * params$b_se^2
+    }
+
+    se_b <- sqrt(var_counts + var_params)
+    if (!is.null(params)) {
+      se_params <<- c(se_params, sqrt(var_params))
+    }
     data.frame(
       biomass_estimate = biomass,
       biomass_se = se_b,
@@ -563,7 +624,93 @@ est_biomass <- function(ld, a, b, conf_level = NULL) {
   attr(result, "b") <- b
   attr(result, "conf_level") <- conf_level
   attr(result, "by_vars") <- if (length(by_vars) > 0L) by_vars else NULL
+  # NULL, not zero, when no regression uncertainty was supplied. A zero would
+  # read as "the length-weight parameters were propagated and contributed
+  # nothing", which is exactly the claim this function must not make silently.
+  attr(result, "biomass_se_params") <- se_params
+  attr(result, "L0") <- if (is.null(params)) NULL else params$L0
   result
+}
+
+
+#' Validate optional length-weight regression uncertainty
+#'
+#' Internal helper. The three arguments are all-or-nothing on purpose. Supplying
+#' `alpha_se` and `b_se` without `L0` would leave the pivot undefined, and the
+#' covariance between the two parameters could then only be dropped by
+#' assumption rather than by construction -- which is the error the pivot
+#' parameterisation exists to avoid. Supplying `L0` alone propagates nothing.
+#'
+#' There is deliberately no zero default. A zero standard error yields a biomass
+#' standard error identical to an unpropagated one while appearing propagated,
+#' which is strictly worse than the documented omission it would replace.
+#'
+#' @param alpha_se Standard error of the pivot coefficient, or NULL
+#' @param b_se Standard error of the exponent, or NULL
+#' @param L0 Pivot length, or NULL
+#' @param error_call Calling environment for error reporting
+#'
+#' @return `NULL` when all three are absent; otherwise a list with `alpha_se`,
+#'   `b_se`, and `L0`
+#'
+#' @keywords internal
+#' @noRd
+validate_lw_uncertainty <- function(alpha_se, b_se, L0, error_call = rlang::caller_env()) { # nolint: object_name_linter
+  supplied <- c(alpha = !is.null(alpha_se), b = !is.null(b_se), L0 = !is.null(L0))
+
+  if (!any(supplied)) {
+    return(NULL)
+  }
+  if (!all(supplied)) {
+    missing_args <- c(alpha = "alpha_se", b = "b_se", L0 = "L0")[!supplied] # nolint: object_usage_linter
+    cli::cli_abort(
+      c(
+        "{.arg alpha_se}, {.arg b_se} and {.arg L0} must be given together.",
+        "x" = "Missing: {.arg {unname(missing_args)}}.",
+        "i" = "The pivot {.arg L0} is what makes the two parameters near-uncorrelated, \\
+               so the covariance between them can be dropped by construction.",
+        "i" = "Without all three the length-weight error cannot be propagated honestly, \\
+               and a partial term would understate it."
+      ),
+      call = error_call
+    )
+  }
+
+  check_scalar <- function(x, nm, positive) {
+    if (!is.numeric(x) || length(x) != 1L || is.na(x) || !is.finite(x)) {
+      cli::cli_abort(
+        c(
+          "{.arg {nm}} must be a single finite number.",
+          "x" = "{.arg {nm}} is {.val {x}}."
+        ),
+        call = error_call
+      )
+    }
+    if (positive && x <= 0) {
+      cli::cli_abort(
+        c(
+          "{.arg {nm}} must be greater than zero.",
+          "x" = "{.arg {nm}} is {.val {x}}."
+        ),
+        call = error_call
+      )
+    }
+    if (!positive && x < 0) {
+      cli::cli_abort(
+        c(
+          "{.arg {nm}} must not be negative.",
+          "x" = "{.arg {nm}} is {.val {x}}."
+        ),
+        call = error_call
+      )
+    }
+  }
+
+  check_scalar(alpha_se, "alpha_se", positive = FALSE)
+  check_scalar(b_se, "b_se", positive = FALSE)
+  check_scalar(L0, "L0", positive = TRUE)
+
+  list(alpha_se = alpha_se, b_se = b_se, L0 = L0)
 }
 
 # Mean length estimation ----
