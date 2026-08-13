@@ -4,7 +4,15 @@
 \alias{est_biomass}
 \title{Estimate total biomass from a creel length distribution}
 \usage{
-est_biomass(ld, a, b, conf_level = NULL)
+est_biomass(
+  ld,
+  a,
+  b,
+  conf_level = NULL,
+  alpha_se = NULL,
+  b_se = NULL,
+  L0 = NULL
+)
 }
 \arguments{
 \item{ld}{A \code{creel_length_distribution} object from \code{\link[=est_length_distribution]{est_length_distribution()}}.}
@@ -17,6 +25,20 @@ est_biomass(ld, a, b, conf_level = NULL)
 
 \item{conf_level}{Numeric confidence level for confidence intervals.
 Defaults to the level stored in \code{ld} (usually \code{0.95}).}
+
+\item{alpha_se}{Optional standard error of the pivot coefficient
+\eqn{\alpha = a \cdot L_0^b}, i.e. the fitted intercept on the
+\eqn{\log W = \log \alpha + b (\log L - \log L_0)} scale.}
+
+\item{b_se}{Optional standard error of the exponent \code{b}.}
+
+\item{L0}{Optional pivot length at which the regression was centred, in the
+same units as the bin boundaries. Use the geometric mean length of the
+length-weight calibration sample.
+
+These three are all-or-nothing: give all of them to propagate the
+length-weight regression error, or none to keep the current behaviour.
+There is no zero default — see Details.}
 }
 \value{
 A \code{data.frame} with class \code{c("creel_biomass", "data.frame")} and
@@ -45,12 +67,12 @@ Variance is approximated as
 When positive covariances exist (likely in small surveys), this
 under-estimates the true variance.
 
-\code{a} and \code{b} are treated as known constants, so \code{biomass_se} carries no
-contribution from their estimation error. In practice they are point
-estimates from a length-weight regression, often one fitted to a different
-water body or year. Because \eqn{a \cdot L_h^b} multiplies every bin, that
-error is perfectly correlated across bins and does not shrink as bins are
-added — unlike the cross-bin term above.
+By default \code{a} and \code{b} are treated as known constants, so \code{biomass_se}
+carries no contribution from their estimation error. In practice they are
+point estimates from a length-weight regression, often one fitted to a
+different water body or year. Because \eqn{a \cdot L_h^b} multiplies every
+bin, that error is perfectly correlated across bins and does not shrink as
+bins are added — unlike the cross-bin term above.
 
 The omission is usually minor relative to count variance: on the example
 below it adds roughly 2–11\% to a coefficient of variation of 40–65\%, for
@@ -58,13 +80,43 @@ regression standard errors spanning well- and poorly-determined fits. It
 becomes material in two situations — a survey precise enough to bring the
 count CV near 10\%, and \code{a}/\code{b} borrowed from a system whose fish differ in
 size from those measured here, since the contribution scales with the
-distance between the two samples' mean log lengths. Treat \code{biomass_se} as a
-lower bound in either case.
+distance between the two samples' mean log lengths.
+}
+\section{Propagating the length-weight regression error}{
+
+Supply \code{alpha_se}, \code{b_se}, and \code{L0} together to carry that term. The
+allometry is rewritten about a pivot length \eqn{L_0}:
+\deqn{W = \alpha \left(\frac{L}{L_0}\right)^b, \qquad \alpha = a L_0^b}
+and the delta method is applied in \eqn{(\alpha, b)}:
+\deqn{\widehat{\text{Var}}(B) \approx \sum_h (a L_h^b)^2 \widehat{\text{SE}}_h^2
+  + \left(\frac{B}{\alpha}\right)^2 \text{Var}(\alpha)
+  + \left(\sum_h B_h \ln\frac{L_h}{L_0}\right)^2 \text{Var}(b)}
+
+The covariance term is absent by construction rather than by assumption.
+Fitted on the raw \eqn{(a, b)} scale the two parameters are almost perfectly
+negatively correlated — typically \eqn{\text{cor} < -0.99} — so dropping
+their covariance there would \strong{overstate} the variance severalfold, in some
+cases turning a 2–11\% contribution into 5–49\%. Centring at \eqn{L_0} makes
+them near-orthogonal, so the omitted term is genuinely negligible. Take
+\eqn{L_0} as the geometric mean length of the calibration sample, and take
+\code{alpha_se} from the intercept of a regression centred there — not the
+standard error of \code{a} itself.
+
+The contribution grows with \eqn{\ln(L_h / L_0)}, so borrowing parameters
+from a system whose fish differ in size from these is penalised
+automatically, which is the intended behaviour.
+
+There is deliberately no zero default for these arguments. A zero standard
+error would produce a \code{biomass_se} identical to an unpropagated one while
+appearing to have been propagated — worse than the documented omission it
+would replace. When they are absent, \code{attr(x, "biomass_se_params")} is \code{NULL}
+rather than \code{0}, and \code{biomass_se} should be read as a lower bound.
 
 Length and weight units are determined by the user: if lengths are in mm
 and \code{a} is calibrated for mm input, weights are returned in the
 corresponding unit (e.g., grams).
 }
+
 \examples{
 data(example_calendar)
 data(example_interviews)

@@ -27,6 +27,29 @@
   and is included in `se`, so it reaches catch, harvest, and release totals as
   well. The estimates tibble keeps its existing seven columns.
 
+* `est_biomass()` can now propagate the length-weight regression error (#117).
+  `a` and `b` are point estimates from a regression, and `a * L^b` multiplies
+  every length bin, so their error is perfectly correlated across bins and does
+  not shrink as bins are added.
+
+  Supply `alpha_se`, `b_se`, and `L0` together — all three or none:
+
+  ```r
+  est_biomass(ld, a = 0.0088, b = 3.1, alpha_se = 0.05, b_se = 0.03, L0 = 250)
+  ```
+
+  The allometry is rewritten about a pivot length `L0` as
+  `W = alpha * (L / L0)^b`, and the delta method applied in `(alpha, b)`. The
+  parameter covariance is then absent **by construction rather than by
+  assumption**: on the raw `(a, b)` scale the two are typically correlated below
+  -0.99, so dropping their covariance there would overstate the variance
+  severalfold. `L0` should be the geometric mean length of the calibration
+  sample, and `alpha_se` the intercept SE from a regression centred there — not
+  the standard error of `a`.
+
+  Reported as `attr(x, "biomass_se_params")` and included in `biomass_se`.
+  Absent — `NULL`, not `0` — when the arguments are not supplied.
+
 ## Breaking changes
 
 * Effort standard errors **increase** for designs that expand a boat count by
