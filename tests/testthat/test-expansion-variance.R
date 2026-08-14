@@ -436,3 +436,40 @@ test_that("an explicit party_size_se overrides the attribute", {
 
   expect_equal(unique(counts$expansion_se), 0.5)
 })
+
+# GH #132: a partial carrier set is provably malformed -------------------------
+
+test_that("a partial carrier set aborts instead of silently dropping the component (GH #132)", {
+  # Dropping one or two of the three carrier columns leaves the survivors
+  # visibly in the table while add_counts() silently treats the set as absent:
+  # se_expansion comes back NULL with no message. A table carrying a proper
+  # subset of the carriers can only arise from partial deletion -- unlike full
+  # deletion (GH #124) it is detectable today, so it must refuse loudly rather
+  # than quietly downgrade to the no-carriers path.
+  full <- derive_angler_count(
+    expansion_counts(),
+    bank = bank_anglers,
+    boat_count = angler_boats,
+    party_size = 2.5,
+    party_size_se = 0.1
+  )
+  carriers <- c("expansion_basis", "expansion_se", "expansion_group")
+
+  # one column dropped
+  for (dropped in carriers) {
+    partial <- full[, setdiff(names(full), dropped)]
+    expect_error(
+      expansion_design(partial),
+      class = "creel_error_partial_expansion_carriers"
+    )
+  }
+
+  # two columns dropped
+  for (kept in carriers) {
+    partial <- full[, setdiff(names(full), setdiff(carriers, kept))]
+    expect_error(
+      expansion_design(partial),
+      class = "creel_error_partial_expansion_carriers"
+    )
+  }
+})

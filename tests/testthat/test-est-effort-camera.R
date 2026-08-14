@@ -378,3 +378,149 @@ test_that("CEST-22: n_anglers goes through the shared party-size rule", {
     regexp = "positive party size"
   )
 })
+
+# GH #136: single paired calibration day ---------------------------------------
+
+test_that("CEST-23: one paired day yields an NA SE, not an exact ratio (GH #136)", {
+  # With a single matched interview/count day the calibration ratio has no
+  # measurable spread: its variance is unknown, not zero. A zero enters the
+  # delta combination as "the multiplier is known exactly", so the maximally
+  # uncertain calibration reported the same SE as a perfectly known one.
+  # Unknown uncertainty surfaces as NA so it propagates (se_of_mean()
+  # precedent, NEWS 3.2.0). Weekday has two paired days, weekend one: the
+  # weekend NA must survive the cross-stratum combination into the overall SE.
+  d <- make_design_with_counts()
+  mixed <- data.frame(
+    date = as.Date(c("2024-06-03", "2024-06-04", "2024-06-08")),
+    day_type = c("weekday", "weekday", "weekend"),
+    hours_fished = c(3.5, 4.0, 2.5),
+    stringsAsFactors = FALSE
+  )
+  expect_warning(
+    result <- est_effort_camera(d, interviews = mixed, n_anglers = 1),
+    class = "creel_warning_camera_single_day"
+  )
+  est <- result$estimates
+  expect_true(is.finite(est$estimate))
+  expect_true(is.na(est$se))
+  expect_true(is.na(est$ci_lower))
+  expect_true(is.na(est$ci_upper))
+})
+
+# GH #137: imputed counts entering the estimator as observed data --------------
+
+test_that("CEST-24: imputed counts trigger a warning naming the imputed share (GH #137)", {
+  # impute_camera_counts() flags predicted rows .imputed = TRUE, but nothing
+  # downstream reads the flag: inside svytotal() predictions are
+  # indistinguishable from observations, the prediction uncertainty is
+  # dropped, and model-smoothed counts shrink the between-day variance. Until
+  # the variance treatment lands (GH #137 full fix), the estimator must at
+  # least say so.
+  d <- make_camera_design()
+  counts <- make_camera_counts()
+  counts$.imputed <- c(FALSE, TRUE, FALSE, FALSE, TRUE)
+  d <- suppressWarnings(add_counts(d, counts))
+  expect_warning(
+    est_effort_camera(d, h_open = 14),
+    class = "creel_warning_camera_imputed_counts"
+  )
+})
+
+test_that("CEST-24: no imputation warning when .imputed is present but all FALSE", {
+  d <- make_camera_design()
+  counts <- make_camera_counts()
+  counts$.imputed <- rep(FALSE, 5L)
+  d <- suppressWarnings(add_counts(d, counts))
+  expect_no_warning(est_effort_camera(d, h_open = 14))
+})
+
+test_that("CEST-24: imputed-count warning text states n, share, and the SE gap (GH #137)", {
+  d <- make_camera_design()
+  counts <- make_camera_counts()
+  counts$.imputed <- c(FALSE, TRUE, FALSE, FALSE, TRUE)
+  d <- suppressWarnings(add_counts(d, counts))
+  expect_snapshot(res <- est_effort_camera(d, h_open = 14))
+})
+
+test_that("CEST-25: imputed days must not shrink the SE below dropping those days (GH #137)", {
+  # Information monotonicity: a design where 40% of days are imputed carries
+  # strictly less information than the same design with those days dropped,
+  # so its SE must not be smaller. This can fail today because model
+  # predictions are smoother than real counts AND their prediction variance
+  # is dropped. Documents the still-open defect without failing CI; activated
+  # by the GH #137 full fix (audit fix plan Phase 3).
+  skip("Prediction uncertainty for imputed counts is not yet propagated; see GH #137.")
+})
+
+test_that("CEST-23: a duplicate count row does not restore the false-precision path (GH #136)", {
+  # n_days once counted matched count *rows*, so a second row for the same
+  # date made a one-paired-day stratum look like two and computed var_rho from
+  # a single day's residuals repeated. add_counts() only warns about duplicate
+  # PSU rows, so this table reaches the estimator intact. One day repeated is
+  # still one day's information: the SE must stay NA.
+  d <- make_camera_design()
+  counts <- make_camera_counts()
+  dup <- rbind(counts, counts[counts$date == as.Date("2024-06-08"), ])
+  d <- suppressWarnings(add_counts(d, dup))
+  mixed <- data.frame(
+    date = as.Date(c("2024-06-03", "2024-06-04", "2024-06-08")),
+    day_type = c("weekday", "weekday", "weekend"),
+    hours_fished = c(3.5, 4.0, 2.5),
+    stringsAsFactors = FALSE
+  )
+  expect_warning(
+    result <- est_effort_camera(d, interviews = mixed, n_anglers = 1),
+    class = "creel_warning_camera_single_day"
+  )
+  expect_true(is.na(result$estimates$se))
+})
+
+test_that("CEST-24: within-day aggregation does not erase the imputed flag (GH #137)", {
+  # aggregate_within_day() builds each PSU row from its first sub-count, so a
+  # day whose 09:00 count was observed and whose 15:00 count was imputed came
+  # out flagged FALSE. Half the count data was model prediction and nothing
+  # warned. The flag has to collapse with any(), not by position.
+  d <- make_camera_design()
+  counts <- data.frame(
+    date = rep(as.Date(c("2024-06-03", "2024-06-04", "2024-06-05", "2024-06-08", "2024-06-09")), each = 2L),
+    day_type = rep(c("weekday", "weekday", "weekday", "weekend", "weekend"), each = 2L),
+    count_time = rep(c("am", "pm"), 5L),
+    ingress_count = c(48L, 50L, 55L, 52L, 43L, 40L, 80L, 78L, 75L, 70L),
+    camera_status = "operational",
+    .imputed = rep(c(FALSE, TRUE), 5L),
+    stringsAsFactors = FALSE
+  )
+  d <- suppressWarnings(add_counts(
+    d,
+    counts,
+    count_col = "ingress_count",
+    count_time_col = count_time
+  ))
+  expect_true(all(d$counts$.imputed))
+  expect_warning(
+    est_effort_camera(d, h_open = 14),
+    class = "creel_warning_camera_imputed_counts"
+  )
+})
+
+test_that("CEST-24: a day with no imputed sub-count stays unflagged through aggregation", {
+  # The any() collapse must not mark clean days: it reports what happened,
+  # not that imputation happened somewhere in the table.
+  d <- make_camera_design()
+  counts <- data.frame(
+    date = rep(as.Date(c("2024-06-03", "2024-06-04", "2024-06-05", "2024-06-08", "2024-06-09")), each = 2L),
+    day_type = rep(c("weekday", "weekday", "weekday", "weekend", "weekend"), each = 2L),
+    count_time = rep(c("am", "pm"), 5L),
+    ingress_count = c(48L, 50L, 55L, 52L, 43L, 40L, 80L, 78L, 75L, 70L),
+    camera_status = "operational",
+    .imputed = c(FALSE, TRUE, rep(FALSE, 8L)),
+    stringsAsFactors = FALSE
+  )
+  d <- suppressWarnings(add_counts(
+    d,
+    counts,
+    count_col = "ingress_count",
+    count_time_col = count_time
+  ))
+  expect_identical(d$counts$.imputed, c(TRUE, FALSE, FALSE, FALSE, FALSE))
+})

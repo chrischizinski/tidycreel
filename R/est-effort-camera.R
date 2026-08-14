@@ -14,6 +14,23 @@
 #'   by `h_open` (fishable hours per day).  Use when no interview data are
 #'   available.
 #'
+#' @section Uncertainty the standard error does not cover:
+#'
+#' Two cases are reported rather than absorbed, because in both the returned
+#' standard error would otherwise understate what is known:
+#'
+#' * A stratum with a single paired interview/count day gives its calibration
+#'   ratio no measurable spread. That variance is unknown rather than zero, so
+#'   it is carried as `NA` and the combined standard error and confidence
+#'   interval are `NA` too; a warning names the stratum. Add a second matched
+#'   interview day in that stratum to recover a standard error.
+#'
+#' * Counts flagged `.imputed` by [impute_camera_counts()] enter the estimator
+#'   as observations. The imputation model's prediction uncertainty is not
+#'   propagated, and model predictions vary less than real counts, so the
+#'   between-day component is understated as well. A warning reports how many
+#'   days were imputed; the standard error is a lower bound.
+#'
 #' @param design A `creel_design` object created with
 #'   `creel_design(..., survey_type = "camera")` and counts attached via
 #'   `add_counts()`.
