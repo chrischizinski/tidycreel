@@ -125,7 +125,7 @@ test_that("separate strata estimates add as independent variances", {
     mean_party_size = c(2.0, 3.0),
     stringsAsFactors = FALSE
   )
-  attr(lookup, "se") <- c(0.1, 0.2)
+  attr(lookup, "se") <- c(weekday = 0.1, weekend = 0.2)
 
   counts <- derive_angler_count(
     expansion_counts(),
@@ -171,7 +171,7 @@ test_that("a grouped estimate carries one expansion component per group", {
     mean_party_size = c(2.0, 3.0),
     stringsAsFactors = FALSE
   )
-  attr(lookup, "se") <- c(0.1, 0.2)
+  attr(lookup, "se") <- c(weekday = 0.1, weekend = 0.2)
 
   counts <- derive_angler_count(
     expansion_counts(),
@@ -696,4 +696,175 @@ test_that("the desync guard fires on a bus-route design (GH #131)", {
     suppressWarnings(add_counts(design, counts, count_col = "angler_hours")),
     class = "creel_error_expansion_basis_desync"
   )
+})
+
+# GH #133: the SE must be addressed by key, never by position -----------------
+
+party_lookup_interviews <- function() {
+  data.frame(
+    day_type = c(rep("weekday", 3), rep("weekend", 3)),
+    type = "boat",
+    n_anglers = c(2, 3, 4, 2, 5, 8),
+    stringsAsFactors = FALSE
+  )
+}
+
+test_that("reordering the lookup does not swap the per-stratum SEs (GH #133)", {
+  # The means are joined by key, so they follow a reordering. The SEs rode along
+  # in a bare positional attribute that dplyr row operations leave untouched, so
+  # an arrange() -- the most habitual length-preserving operation there is --
+  # silently attributed each stratum's SE to the other stratum. Only the
+  # uncertainty moved, which is why nothing caught it.
+  mps <- mean_party_size(
+    party_lookup_interviews(),
+    n_anglers,
+    angler_type = type,
+    by = day_type
+  )
+  reordered <- mps[order(mps$day_type, decreasing = TRUE), ]
+
+  ordered_counts <- derive_angler_count(
+    expansion_counts(),
+    boat_count = angler_boats,
+    party_size = mps
+  )
+  reordered_counts <- derive_angler_count(
+    expansion_counts(),
+    boat_count = angler_boats,
+    party_size = reordered
+  )
+
+  expect_identical(reordered_counts$expansion_se, ordered_counts$expansion_se)
+  # The means already survived reordering; the point of the test is that the
+  # uncertainty now does too.
+  expect_identical(reordered_counts$angler_count, ordered_counts$angler_count)
+})
+
+test_that("mean_party_size() names its SE attribute by the group key (GH #133)", {
+  # Naming is what makes the attribute survive a reordering of the rows it
+  # describes: a name is addressable, a position is not.
+  mps <- mean_party_size(
+    party_lookup_interviews(),
+    n_anglers,
+    angler_type = type,
+    by = day_type
+  )
+
+  expect_identical(names(attr(mps, "se")), c("weekday", "weekend"))
+  expect_equal(unname(attr(mps, "se")[["weekday"]]), stats::sd(c(2, 3, 4)) / sqrt(3))
+})
+
+test_that("an unnamed SE attribute on a multi-row lookup aborts (GH #133)", {
+  # Without names there is no way to tell a correctly ordered attribute from one
+  # that has gone stale against a reordered lookup, and the failure is silent
+  # and swaps only the uncertainty. Refuse rather than guess at row order.
+  lookup <- data.frame(
+    day_type = c("weekday", "weekend"),
+    mean_party_size = c(2.0, 3.0),
+    stringsAsFactors = FALSE
+  )
+  attr(lookup, "se") <- c(0.1, 0.2)
+
+  expect_error(
+    derive_angler_count(
+      expansion_counts(),
+      boat_count = angler_boats,
+      party_size = lookup
+    ),
+    class = "creel_error_unnamed_expansion_se"
+  )
+})
+
+test_that("a single-row lookup needs no names (GH #133)", {
+  # One row cannot be reordered against itself, so there is nothing to go stale.
+  counts <- expansion_counts()
+  counts$day_type <- "weekday"
+  lookup <- data.frame(
+    day_type = "weekday",
+    mean_party_size = 2.0,
+    stringsAsFactors = FALSE
+  )
+  attr(lookup, "se") <- 0.1
+
+  out <- derive_angler_count(counts, boat_count = angler_boats, party_size = lookup)
+  expect_equal(unique(out$expansion_se), 0.1)
+})
+
+test_that("the expansion group is keyed to counts rows, not lookup positions (GH #133)", {
+  # The issue asked for the "group" attribute to be checked for the same
+  # positional hazard. It is built from the counts rows rather than indexed into
+  # the lookup, so it is immune -- pinned here so a later refactor cannot
+  # quietly give it the defect the SE just lost.
+  mps <- mean_party_size(
+    party_lookup_interviews(),
+    n_anglers,
+    angler_type = type,
+    by = day_type
+  )
+  reordered <- mps[order(mps$day_type, decreasing = TRUE), ]
+
+  ordered_counts <- derive_angler_count(
+    expansion_counts(),
+    boat_count = angler_boats,
+    party_size = mps
+  )
+  reordered_counts <- derive_angler_count(
+    expansion_counts(),
+    boat_count = angler_boats,
+    party_size = reordered
+  )
+
+  expect_identical(
+    reordered_counts$expansion_group,
+    ordered_counts$expansion_group
+  )
+})
+
+test_that("a multi-column lookup key round-trips through the SE names (GH #133)", {
+  # The names are built from the aggregate's key columns and read back from the
+  # counts' key columns. Those are two different tables, so a single-key fixture
+  # would not show that the encodings agree.
+  interviews <- data.frame(
+    day_type = rep(c("weekday", "weekend"), each = 4),
+    section = rep(c("upper", "lower"), 4),
+    type = "boat",
+    n_anglers = c(2, 3, 4, 5, 2, 5, 8, 9),
+    stringsAsFactors = FALSE
+  )
+  mps <- mean_party_size(
+    interviews,
+    n_anglers,
+    angler_type = type,
+    by = c(day_type, section)
+  )
+
+  counts <- expansion_counts()
+  counts$section <- rep(c("upper", "lower"), 3)
+
+  ordered_counts <- derive_angler_count(
+    counts,
+    boat_count = angler_boats,
+    party_size = mps
+  )
+  reordered <- mps[order(mps$section, mps$day_type, decreasing = TRUE), ]
+  reordered_counts <- derive_angler_count(
+    counts,
+    boat_count = angler_boats,
+    party_size = reordered
+  )
+
+  expect_identical(reordered_counts$expansion_se, ordered_counts$expansion_se)
+  # Each count row must carry the SE of its own day_type/section cell.
+  expected <- vapply(
+    seq_len(nrow(counts)),
+    function(i) {
+      cell <- interviews$n_anglers[
+        interviews$day_type == counts$day_type[i] &
+          interviews$section == counts$section[i]
+      ]
+      stats::sd(cell) / sqrt(length(cell))
+    },
+    numeric(1)
+  )
+  expect_equal(ordered_counts$expansion_se, expected)
 })

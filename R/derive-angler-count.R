@@ -41,6 +41,14 @@
 #'   return stays usable directly as a multiplier, and so the `by` form keeps
 #'   exactly one numeric column and remains valid as a `party_size` lookup.
 #'
+#'   For the `by` form the attribute is **named by the group key**, and
+#'   [derive_angler_count()] addresses it by name. Attributes do not follow the
+#'   rows they describe through a `dplyr` reordering, so a positional attribute
+#'   would go stale the moment the lookup were sorted — attributing each
+#'   stratum's standard error to a different stratum while the means, which join
+#'   by key, stayed correct. A `by`-form lookup whose `"se"` attribute has no
+#'   names is refused rather than matched by row order.
+#'
 #'   A group with a single party has no estimable standard error and gets
 #'   `NA_real_`, which propagates to an `NA` effort standard error rather than
 #'   being quietly treated as zero uncertainty.
@@ -113,7 +121,7 @@ mean_party_size <- function(
 
   # Aggregated separately rather than returned as a second column: a party_size
   # lookup must have exactly one numeric column, so the standard errors ride
-  # along as an attribute in the same row order.
+  # along as an attribute.
   agg_se <- stats::aggregate(
     rows[[n_col]],
     by = lapply(rows[by_cols], identity),
@@ -121,7 +129,15 @@ mean_party_size <- function(
   )
 
   out <- tibble::as_tibble(agg)
-  attr(out, "se") <- as.numeric(agg_se[[ncol(agg_se)]])
+  # Named by the group key rather than left in row order. dplyr row operations
+  # reorder the tibble and leave attributes untouched, so a positional attribute
+  # goes stale against the rows it describes and each stratum ends up with
+  # another stratum's standard error -- silently, because the means join by key
+  # and so stay right (GH #133).
+  attr(out, "se") <- stats::setNames(
+    as.numeric(agg_se[[ncol(agg_se)]]),
+    do.call(paste, c(agg_se[by_cols], sep = "\r"))
+  )
   out
 }
 
@@ -464,10 +480,48 @@ resolve_party_size_se <- function(
         call = error_call
       )
     }
-    idx <- match(
-      do.call(paste, c(counts[key_cols], sep = "\r")),
-      do.call(paste, c(party_size[key_cols], sep = "\r"))
-    )
+    # Addressed by name, not by position. `idx` below matches counts rows to
+    # lookup rows by key, so indexing the attribute by that index would pair a
+    # key-correct mean with a row-order-correct standard error -- which are the
+    # same thing only until somebody sorts the lookup (GH #133).
+    # One lookup row cannot be reordered against itself, so there is nothing for
+    # a positional attribute to go stale against.
+    if (is.null(names(se)) && nrow(party_size) > 1L) {
+      cli::cli_abort(
+        c(
+          "The {.val se} attribute on {.arg party_size} has no names.",
+          "x" = paste(
+            "Without names it can only be matched by row order, which goes",
+            "stale as soon as the lookup is sorted or otherwise reordered --",
+            "silently, since the means still join by key."
+          ),
+          "i" = "{.fn mean_party_size} names it by the group key.",
+          "i" = paste(
+            "For a hand-built lookup, pass the standard errors as a keyed",
+            "table to {.arg party_size_se} instead."
+          )
+        ),
+        call = error_call,
+        class = "creel_error_unnamed_expansion_se"
+      )
+    }
+    idx <- if (is.null(names(se))) {
+      rep(1L, nrow(counts))
+    } else {
+      match(do.call(paste, c(counts[key_cols], sep = "\r")), names(se))
+    }
+    if (anyNA(idx)) {
+      cli::cli_abort(
+        c(
+          "The {.val se} attribute on {.arg party_size} has no entry for \\
+           {sum(is.na(idx))} count{?s}.",
+          "i" = "Names present: {.val {names(se)}}.",
+          "i" = "Every count needs the standard error of the multiplier applied to it."
+        ),
+        call = error_call,
+        class = "creel_error_unnamed_expansion_se"
+      )
+    }
     out <- as.numeric(se)[idx]
   } else {
     if (length(se) != 1L) {

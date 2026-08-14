@@ -21,6 +21,18 @@ number.
   scales the count and the basis together. **Breaking:** pipelines that
   premultiplied the count while retaining the carriers now abort.
 
+* `mean_party_size()` now names its `"se"` attribute by the group key, and
+  `derive_angler_count()` addresses it by name (#133). The attribute was matched
+  by row order while the means were joined by key, so any length-preserving
+  reordering of the lookup — an `arrange()`, most habitually — gave every
+  stratum another stratum's standard error, silently and with the point
+  estimates unchanged. On a two-stratum design the weekday and weekend standard
+  errors swapped outright. A `by`-form lookup whose `"se"` attribute has no
+  names is now refused rather than matched positionally; single-row lookups and
+  the scalar form are unaffected, having no order to go stale. The
+  `expansion_group` attribute was checked for the same hazard and does not have
+  it: it is built from the counts rows, never indexed into the lookup.
+
 * `add_counts()` now aborts when `counts` carries some but not all of the
   `expansion_*` carrier columns (#132). They are written together by
   `derive_angler_count()`, so a proper subset can only come from partial
