@@ -1351,6 +1351,17 @@ check_expansion_constant_per_psu <- function(counts, key_cols, call = rlang::cal
 #' - No NA values in design-critical columns (date, strata, PSU)
 #' - Survey construction (catches lonely PSU errors, stratification issues)
 #'
+#' @section Party-size expansion carriers:
+#' [derive_angler_count()] attaches `expansion_basis`, `expansion_se`, and
+#' `expansion_group` to the counts table so the party-size sampling error can
+#' reach the effort standard error. The three are written together and must
+#' travel together: `add_counts()` aborts on a table carrying only some of them,
+#' since that state can only come from partial deletion and would otherwise drop
+#' the variance component while leaving an `expansion_se` visible in the data.
+#'
+#' Dropping all three — which an ordinary `select()` will do — is
+#' indistinguishable here from counts that never had them, and is silent.
+#'
 #' @section PSU Specification:
 #' Per user decision (clarified 2026-02-08), PSU is specified only in add_counts(),
 #' not in creel_design() constructor. PSU is only meaningful when count data is
@@ -1656,9 +1667,38 @@ add_counts <- function(
   # Party-size expansion carried as columns by derive_angler_count(). Read
   # before aggregation, which is where the per-row link between the count and
   # its derivative has to be preserved.
-  has_expansion <- all(
-    c("expansion_basis", "expansion_se", "expansion_group") %in% names(counts)
-  )
+  expansion_carriers <- c("expansion_basis", "expansion_se", "expansion_group")
+  present_carriers <- intersect(expansion_carriers, names(counts))
+  has_expansion <- length(present_carriers) == length(expansion_carriers)
+  # A proper nonempty subset cannot be produced by derive_angler_count(), which
+  # writes all three or none, so it can only come from partial deletion. Unlike
+  # the fully-dropped case (#124) that is detectable here, and treating it as
+  # "no carriers" leaves an expansion_se visibly in the table while the variance
+  # component silently goes missing (#132).
+  if (length(present_carriers) > 0L && !has_expansion) {
+    missing_carriers <- setdiff(expansion_carriers, present_carriers)
+    cli::cli_abort(
+      c(
+        "{.arg counts} carries an incomplete party-size expansion set.",
+        "x" = "Present: {.field {present_carriers}}.",
+        "x" = "Missing: {.field {missing_carriers}}.",
+        "i" = paste(
+          "The three columns are written together by",
+          "{.fn derive_angler_count} and must travel together; keeping only",
+          "some of them would drop the party-size variance component without",
+          "any other sign."
+        ),
+        "i" = paste(
+          "Carry {.field {missing_carriers}} through whatever step dropped",
+          "{cli::qty(missing_carriers)}{?it/them}, or drop",
+          "{.field {present_carriers}} as well and re-derive with",
+          "{.fn derive_angler_count}, which refuses to overwrite carriers that",
+          "are still present."
+        )
+      ),
+      class = "creel_error_partial_expansion_carriers"
+    )
+  }
   if (has_expansion) {
     check_expansion_constant_per_psu(counts, unique(c(psu, design$strata_cols))) # nolint: object_usage_linter
   }
@@ -1678,7 +1718,12 @@ add_counts <- function(
       # The basis is d(count)/d(party_size), so it must collapse to a per-day
       # mean exactly as the count does. Left at its first value it would be the
       # derivative of a count that no longer exists.
-      mean_vars = if (has_expansion) "expansion_basis" else character()
+      mean_vars = if (has_expansion) "expansion_basis" else character(),
+      # A day is imputed if any of its sub-counts was, so the flag has to
+      # collapse with any(); left at its first value an aggregated day whose
+      # first count was observed would report itself as fully observed and the
+      # camera estimator's warning would never fire (#137).
+      any_vars = if (".imputed" %in% names(counts)) ".imputed" else character()
     )
     counts <- agg_result$aggregated
     within_day_var <- agg_result$within_day_var

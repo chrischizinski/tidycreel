@@ -143,6 +143,19 @@ add_counts() performs Tier 1 validation:
 }
 }
 
+\section{Party-size expansion carriers}{
+
+\code{\link[=derive_angler_count]{derive_angler_count()}} attaches \code{expansion_basis}, \code{expansion_se}, and
+\code{expansion_group} to the counts table so the party-size sampling error can
+reach the effort standard error. The three are written together and must
+travel together: \code{add_counts()} aborts on a table carrying only some of them,
+since that state can only come from partial deletion and would otherwise drop
+the variance component while leaving an \code{expansion_se} visible in the data.
+
+Dropping all three — which an ordinary \code{select()} will do — is
+indistinguishable here from counts that never had them, and is silent.
+}
+
 \section{PSU Specification}{
 
 Per user decision (clarified 2026-02-08), PSU is specified only in add_counts(),

@@ -64,6 +64,34 @@ estimate_effort_camera <- function(
     ))
   }
 
+  # Counts filled by impute_camera_counts() are flagged .imputed but are
+  # indistinguishable from observations once inside svytotal(): the imputation
+  # model's prediction uncertainty is dropped, and predictions are smoother
+  # than real counts, so the between-day variance is understated twice over
+  # (GH #137). Warned on both paths until that variance is propagated.
+  if (".imputed" %in% names(counts_data)) {
+    n_imputed <- sum(as.logical(counts_data[[".imputed"]]), na.rm = TRUE)
+    if (n_imputed > 0L) {
+      pct_imputed <- round(100 * n_imputed / nrow(counts_data), 1)
+      cli::cli_warn(
+        c(
+          paste0(
+            "{n_imputed} of {nrow(counts_data)} count ",
+            "{cli::qty(nrow(counts_data))}day{?s} ({pct_imputed}%) ",
+            "{cli::qty(n_imputed)}{?contains/contain} imputed counts."
+          ),
+          "x" = "Prediction uncertainty for imputed counts is not included in the SE.",
+          "i" = paste(
+            "Imputed counts also vary less than observed ones, so the",
+            "between-day component is understated as well; the reported SE is",
+            "a lower bound."
+          )
+        ),
+        class = "creel_warning_camera_imputed_counts"
+      )
+    }
+  }
+
   # Identify count variable
   excluded_cols <- c(
     design$date_col,
@@ -155,8 +183,16 @@ estimate_effort_camera <- function(
       E_d <- as.numeric(daily_effort[int_dates_matched])
       C_d <- cnt_paired
 
-      n_days <- length(E_d)
-      if (n_days == 0L || sum(C_d, na.rm = TRUE) == 0) {
+      # Two different counts: the paired vectors' length drives the variance
+      # arithmetic, but whether the ratio has any measurable spread is a
+      # question about distinct calendar days. A counts table may hold more
+      # than one row per date -- add_counts() only warns (CNT-06) -- and one
+      # day repeated twice is still one day's information, so keying the
+      # single-day test on row count would let a duplicate row restore the
+      # false-precision path this guard exists to close (#136).
+      n_pairs <- length(E_d)
+      n_days <- length(unique(int_dates_matched))
+      if (n_pairs == 0L || sum(C_d, na.rm = TRUE) == 0) {
         cli::cli_abort(c(
           "No matched interview/count days for stratum {.val {s}}.",
           "x" = "Cannot compute calibration ratio."
@@ -172,9 +208,24 @@ estimate_effort_camera <- function(
       if (n_days > 1L) {
         resid_d <- E_d - rho * C_d
         var_rho <- sum(resid_d^2, na.rm = TRUE) /
-          (n_days * (n_days - 1L) * mean_C^2)
+          (n_pairs * (n_pairs - 1L) * mean_C^2)
       } else {
-        var_rho <- 0
+        # One paired day gives the ratio no measurable spread, so its variance
+        # is unknown -- not zero. A zero would enter the delta term
+        # T^2 * var_rho as "the multiplier is known exactly", reporting the
+        # maximally uncertain calibration as the most precise one. NA is the
+        # package's mark for uncertainty it cannot measure (se_of_mean() for
+        # n < 2), and it propagates into the combined SE below.
+        cli::cli_warn(
+          c(
+            "Stratum {.val {s}} has one paired interview/count day.",
+            "x" = "The calibration ratio's variance cannot be measured from a single pair.",
+            "i" = "Its contribution is {.code NA}, so the reported SE is {.code NA} rather than falsely exact.",
+            "i" = "Add a second matched interview day in this stratum to recover an SE."
+          ),
+          class = "creel_warning_camera_single_day"
+        )
+        var_rho <- NA_real_
       }
 
       data.frame(

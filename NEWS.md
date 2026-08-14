@@ -1,3 +1,54 @@
+# tidycreel 3.3.0 (development version)
+
+## Statistical correctness
+
+Three cases where a quantity that was unknown, malformed, or modelled reached an
+estimator as though it were observed. All three were found by the statistical
+seam audits of 2026-08-14; none produced an error, a warning, or an implausible
+number.
+
+* `add_counts()` now aborts when `counts` carries some but not all of
+  `expansion_basis`, `expansion_se`, and `expansion_group` (#132). The three are
+  written together by `derive_angler_count()`, so a proper subset can only come
+  from partial deletion. The gate previously required all three and otherwise
+  took the no-carriers path, which left an `expansion_se` sitting visibly in the
+  table while the party-size variance component silently went missing. Point
+  estimates were unaffected; `se_expansion` came back `NULL`. Dropping all three
+  is still undetectable at this seam — see #124.
+
+* Camera ratio calibration reports `NA` rather than an exact ratio when a
+  stratum has a single paired interview/count day (#136). The calibration ratio
+  has no measurable spread from one pair, so its variance is unknown, not zero;
+  the delta term `T² × var(ρ)` previously vanished and the maximally uncertain
+  calibration was reported with the same standard error as a perfectly known
+  one. The `NA` propagates into the combined standard error and the confidence
+  interval, and a warning names the stratum. Strata with two or more paired days
+  are unchanged.
+
+  The single-day test counts distinct paired dates rather than matched count
+  rows, so a counts table holding two rows for one date — which `add_counts()`
+  only warns about — cannot present one day's information as two and restore
+  the false-precision path. The variance denominator is unchanged, so no
+  existing standard error moves. That such a table also shifts the point
+  estimate is a separate and older defect, filed as #142.
+
+* Camera effort estimation now warns when the counts carry `.imputed` rows
+  (#137), naming how many days contain imputed counts and what share of the
+  total they are. `impute_camera_counts()` flags rows it filled with model
+  predictions, but nothing downstream read the flag: inside `svytotal()`
+  predictions are indistinguishable from observations, so the imputation model's
+  prediction uncertainty is dropped and the between-day variance is further
+  understated because predictions are smoother than real counts. The reported
+  standard error is a lower bound. Propagating the prediction variance is still
+  open under #137.
+
+  `.imputed` now survives within-day aggregation by collapsing with `any()`,
+  alongside the existing mean-collapse for the count and `expansion_basis`. A
+  day is imputed if any of its sub-counts was; taking the first sub-count's
+  value, as every other column does, let a day whose first count was observed
+  report itself as fully observed, and the warning above never fired for
+  designs using `count_time_col`.
+
 # tidycreel 3.2.0 "Bigmouth Buffalo" (2026-08-13)
 
 ## New features

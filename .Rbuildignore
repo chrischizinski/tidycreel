@@ -127,3 +127,8 @@
 ^inst/extdata$
 ^TODO-remove-extdata\.md$
 ^AUDIT-dimensional-seams\.md$
+^AUDIT-connect-ingestion-2026-08-14\.md$
+^AUDIT-carrier-columns-2026-08-14\.md$
+^AUDIT-uncertainty-chain-2026-08-14\.md$
+^AUDIT-camera-aerial-2026-08-14\.md$
+^AUDIT-mark-recapture-2026-08-14\.md$
