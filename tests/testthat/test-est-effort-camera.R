@@ -451,3 +451,76 @@ test_that("CEST-25: imputed days must not shrink the SE below dropping those day
   # by the GH #137 full fix (audit fix plan Phase 3).
   skip("Prediction uncertainty for imputed counts is not yet propagated; see GH #137.")
 })
+
+test_that("CEST-23: a duplicate count row does not restore the false-precision path (GH #136)", {
+  # n_days once counted matched count *rows*, so a second row for the same
+  # date made a one-paired-day stratum look like two and computed var_rho from
+  # a single day's residuals repeated. add_counts() only warns about duplicate
+  # PSU rows, so this table reaches the estimator intact. One day repeated is
+  # still one day's information: the SE must stay NA.
+  d <- make_camera_design()
+  counts <- make_camera_counts()
+  dup <- rbind(counts, counts[counts$date == as.Date("2024-06-08"), ])
+  d <- suppressWarnings(add_counts(d, dup))
+  mixed <- data.frame(
+    date = as.Date(c("2024-06-03", "2024-06-04", "2024-06-08")),
+    day_type = c("weekday", "weekday", "weekend"),
+    hours_fished = c(3.5, 4.0, 2.5),
+    stringsAsFactors = FALSE
+  )
+  expect_warning(
+    result <- est_effort_camera(d, interviews = mixed, n_anglers = 1),
+    class = "creel_warning_camera_single_day"
+  )
+  expect_true(is.na(result$estimates$se))
+})
+
+test_that("CEST-24: within-day aggregation does not erase the imputed flag (GH #137)", {
+  # aggregate_within_day() builds each PSU row from its first sub-count, so a
+  # day whose 09:00 count was observed and whose 15:00 count was imputed came
+  # out flagged FALSE. Half the count data was model prediction and nothing
+  # warned. The flag has to collapse with any(), not by position.
+  d <- make_camera_design()
+  counts <- data.frame(
+    date = rep(as.Date(c("2024-06-03", "2024-06-04", "2024-06-05", "2024-06-08", "2024-06-09")), each = 2L),
+    day_type = rep(c("weekday", "weekday", "weekday", "weekend", "weekend"), each = 2L),
+    count_time = rep(c("am", "pm"), 5L),
+    ingress_count = c(48L, 50L, 55L, 52L, 43L, 40L, 80L, 78L, 75L, 70L),
+    camera_status = "operational",
+    .imputed = rep(c(FALSE, TRUE), 5L),
+    stringsAsFactors = FALSE
+  )
+  d <- suppressWarnings(add_counts(
+    d,
+    counts,
+    count_col = "ingress_count",
+    count_time_col = count_time
+  ))
+  expect_true(all(d$counts$.imputed))
+  expect_warning(
+    est_effort_camera(d, h_open = 14),
+    class = "creel_warning_camera_imputed_counts"
+  )
+})
+
+test_that("CEST-24: a day with no imputed sub-count stays unflagged through aggregation", {
+  # The any() collapse must not mark clean days: it reports what happened,
+  # not that imputation happened somewhere in the table.
+  d <- make_camera_design()
+  counts <- data.frame(
+    date = rep(as.Date(c("2024-06-03", "2024-06-04", "2024-06-05", "2024-06-08", "2024-06-09")), each = 2L),
+    day_type = rep(c("weekday", "weekday", "weekday", "weekend", "weekend"), each = 2L),
+    count_time = rep(c("am", "pm"), 5L),
+    ingress_count = c(48L, 50L, 55L, 52L, 43L, 40L, 80L, 78L, 75L, 70L),
+    camera_status = "operational",
+    .imputed = c(FALSE, TRUE, rep(FALSE, 8L)),
+    stringsAsFactors = FALSE
+  )
+  d <- suppressWarnings(add_counts(
+    d,
+    counts,
+    count_col = "ingress_count",
+    count_time_col = count_time
+  ))
+  expect_identical(d$counts$.imputed, c(TRUE, FALSE, FALSE, FALSE, FALSE))
+})

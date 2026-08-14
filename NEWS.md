@@ -25,15 +25,29 @@ number.
   interval, and a warning names the stratum. Strata with two or more paired days
   are unchanged.
 
+  The single-day test counts distinct paired dates rather than matched count
+  rows, so a counts table holding two rows for one date — which `add_counts()`
+  only warns about — cannot present one day's information as two and restore
+  the false-precision path. The variance denominator is unchanged, so no
+  existing standard error moves. That such a table also shifts the point
+  estimate is a separate and older defect, filed as #142.
+
 * Camera effort estimation now warns when the counts carry `.imputed` rows
-  (#137), naming how many days were imputed and what share of the total they
-  are. `impute_camera_counts()` flags rows it filled with model predictions, but
-  nothing downstream read the flag: inside `svytotal()` predictions are
-  indistinguishable from observations, so the imputation model's prediction
-  uncertainty is dropped and the between-day variance is further understated
-  because predictions are smoother than real counts. The reported standard error
-  is a lower bound. Propagating the prediction variance is still open under
-  #137.
+  (#137), naming how many days contain imputed counts and what share of the
+  total they are. `impute_camera_counts()` flags rows it filled with model
+  predictions, but nothing downstream read the flag: inside `svytotal()`
+  predictions are indistinguishable from observations, so the imputation model's
+  prediction uncertainty is dropped and the between-day variance is further
+  understated because predictions are smoother than real counts. The reported
+  standard error is a lower bound. Propagating the prediction variance is still
+  open under #137.
+
+  `.imputed` now survives within-day aggregation by collapsing with `any()`,
+  alongside the existing mean-collapse for the count and `expansion_basis`. A
+  day is imputed if any of its sub-counts was; taking the first sub-count's
+  value, as every other column does, let a day whose first count was observed
+  report itself as fully observed, and the warning above never fired for
+  designs using `count_time_col`.
 
 # tidycreel 3.2.0 "Bigmouth Buffalo" (2026-08-13)
 

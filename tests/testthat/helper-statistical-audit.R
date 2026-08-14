@@ -10,8 +10,18 @@ sa_shuffle_rows <- function(df, seed = 1L) {
   old_seed <- if (exists(".Random.seed", envir = globalenv())) {
     get(".Random.seed", envir = globalenv())
   }
+  # A fresh session has no .Random.seed until something draws. Restoring only
+  # the non-NULL case would leave this helper's seed behind, so a later test
+  # relying on ambient RNG state would pass alone and fail in suite order --
+  # exactly the kind of order dependence these helpers exist to rule out.
   on.exit(
-    if (!is.null(old_seed)) assign(".Random.seed", old_seed, envir = globalenv()),
+    if (is.null(old_seed)) {
+      if (exists(".Random.seed", envir = globalenv())) {
+        rm(".Random.seed", envir = globalenv())
+      }
+    } else {
+      assign(".Random.seed", old_seed, envir = globalenv())
+    },
     add = TRUE
   )
   set.seed(seed)

@@ -78,7 +78,7 @@ estimate_effort_camera <- function(
           paste0(
             "{n_imputed} of {nrow(counts_data)} count ",
             "{cli::qty(nrow(counts_data))}day{?s} ({pct_imputed}%) ",
-            "{cli::qty(n_imputed)}{?is/are} imputed."
+            "{cli::qty(n_imputed)}{?contains/contain} imputed counts."
           ),
           "x" = "Prediction uncertainty for imputed counts is not included in the SE.",
           "i" = paste(
@@ -183,8 +183,16 @@ estimate_effort_camera <- function(
       E_d <- as.numeric(daily_effort[int_dates_matched])
       C_d <- cnt_paired
 
-      n_days <- length(E_d)
-      if (n_days == 0L || sum(C_d, na.rm = TRUE) == 0) {
+      # Two different counts: the paired vectors' length drives the variance
+      # arithmetic, but whether the ratio has any measurable spread is a
+      # question about distinct calendar days. A counts table may hold more
+      # than one row per date -- add_counts() only warns (CNT-06) -- and one
+      # day repeated twice is still one day's information, so keying the
+      # single-day test on row count would let a duplicate row restore the
+      # false-precision path this guard exists to close (#136).
+      n_pairs <- length(E_d)
+      n_days <- length(unique(int_dates_matched))
+      if (n_pairs == 0L || sum(C_d, na.rm = TRUE) == 0) {
         cli::cli_abort(c(
           "No matched interview/count days for stratum {.val {s}}.",
           "x" = "Cannot compute calibration ratio."
@@ -200,7 +208,7 @@ estimate_effort_camera <- function(
       if (n_days > 1L) {
         resid_d <- E_d - rho * C_d
         var_rho <- sum(resid_d^2, na.rm = TRUE) /
-          (n_days * (n_days - 1L) * mean_C^2)
+          (n_pairs * (n_pairs - 1L) * mean_C^2)
       } else {
         # One paired day gives the ratio no measurable spread, so its variance
         # is unknown -- not zero. A zero would enter the delta term

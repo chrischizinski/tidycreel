@@ -342,6 +342,11 @@ detect_duplicate_psus <- function(counts, psu, call = rlang::caller_env()) {
 #'   (psu_col + strata_cols). These define a unique PSU.
 #' @param mean_vars Character vector of further columns to collapse by their
 #'   mean, the way `count_var` is. Every other column takes its first value.
+#' @param any_vars Character vector of logical flag columns to collapse with
+#'   `any()`. A flag marking how a sub-count was obtained describes the whole
+#'   aggregated day if it holds for any sub-count; taking the first row's value
+#'   would let an aggregated day claim to be entirely observed when part of it
+#'   was not.
 #'
 #' @return A list with elements:
 #'   \describe{
@@ -357,7 +362,8 @@ aggregate_within_day <- function(
   count_var,
   count_time_col,
   key_cols,
-  mean_vars = character()
+  mean_vars = character(),
+  any_vars = character()
 ) {
   # Create grouping key as character for split()
   if (length(key_cols) == 1) {
@@ -389,6 +395,12 @@ aggregate_within_day <- function(
     # the derivative of.
     for (mv in mean_vars) {
       row[[mv]] <- mean(g[[mv]])
+    }
+    # Provenance flags describe the aggregated day if they hold for any
+    # sub-count. The first row's value would report a day as fully observed
+    # whenever its first count happened to be.
+    for (av in any_vars) {
+      row[[av]] <- any(as.logical(g[[av]]), na.rm = TRUE)
     }
     # Drop the count_time_col column -- no longer meaningful after aggregation
     row[[count_time_col]] <- NULL

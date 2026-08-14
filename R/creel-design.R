@@ -1689,8 +1689,11 @@ add_counts <- function(
           "any other sign."
         ),
         "i" = paste(
-          "Re-derive the counts, or carry {.field {missing_carriers}} through",
-          "whatever step dropped {?it/them}."
+          "Carry {.field {missing_carriers}} through whatever step dropped",
+          "{cli::qty(missing_carriers)}{?it/them}, or drop",
+          "{.field {present_carriers}} as well and re-derive with",
+          "{.fn derive_angler_count}, which refuses to overwrite carriers that",
+          "are still present."
         )
       ),
       class = "creel_error_partial_expansion_carriers"
@@ -1715,7 +1718,12 @@ add_counts <- function(
       # The basis is d(count)/d(party_size), so it must collapse to a per-day
       # mean exactly as the count does. Left at its first value it would be the
       # derivative of a count that no longer exists.
-      mean_vars = if (has_expansion) "expansion_basis" else character()
+      mean_vars = if (has_expansion) "expansion_basis" else character(),
+      # A day is imputed if any of its sub-counts was, so the flag has to
+      # collapse with any(); left at its first value an aggregated day whose
+      # first count was observed would report itself as fully observed and the
+      # camera estimator's warning would never fire (#137).
+      any_vars = if (".imputed" %in% names(counts)) ".imputed" else character()
     )
     counts <- agg_result$aggregated
     within_day_var <- agg_result$within_day_var
