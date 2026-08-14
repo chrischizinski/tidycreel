@@ -2721,6 +2721,205 @@ compute_expansion_var_contribution <- function(design, svy_design, by_vars = NUL
 }
 
 
+#' Encode a stratum key for matching expansion components to strata
+#'
+#' Internal helper. The per-stratum expansion standard errors are attached to
+#' one table and read back against another, so both sides have to encode the key
+#' the same way. Owning that in one function is the point: a key written one way
+#' and read another is how GH #133 attributed each stratum's standard error to a
+#' different stratum.
+#'
+#' @param data A data frame holding the stratum columns
+#' @param strata_cols Character vector of stratum column names
+#'
+#' @return Character vector, one key per row
+#'
+#' @keywords internal
+#' @noRd
+expansion_stratum_key <- function(data, strata_cols) {
+  do.call(paste, c(lapply(data[strata_cols], as.character), sep = "\r"))
+}
+
+
+#' Key an effort result's expansion components by stratum
+#'
+#' Internal helper. `estimate_effort_grouped()` returns `se_expansion` as a bare
+#' vector aligned to its own rows. The totals merge effort against rates, which
+#' does not preserve that order, so the components have to be addressed by key
+#' before they travel.
+#'
+#' @param effort_result A `creel_estimates` object from the effort estimators
+#' @param strata_cols Character vector of stratum column names
+#'
+#' @return Named numeric vector, or `NULL` when no component was propagated
+#'
+#' @keywords internal
+#' @noRd
+named_expansion_se <- function(effort_result, strata_cols) {
+  se_exp <- effort_result$se_expansion
+  if (is.null(se_exp) || length(strata_cols) == 0L) {
+    return(NULL)
+  }
+  stats::setNames(
+    as.numeric(se_exp),
+    expansion_stratum_key(effort_result$estimates, strata_cols)
+  )
+}
+
+
+#' The party-size term a stratified total carries, as a standard error
+#'
+#' Internal helper. The same quantity `add_expansion_covariance()` folds into the
+#' variance, expressed as a standard error so it can be reported on the object.
+#' Deriving both from one function is the point: GH #134 was a totals object
+#' whose `se` provably contained the term while its `se_expansion` said the
+#' component had never been propagated, and a separately computed number would
+#' be free to drift the same way again.
+#'
+#' @inheritParams add_expansion_covariance
+#'
+#' @return Numeric standard error, `NA_real_` when the structure cannot support
+#'   a combination, or `NULL` when no component applies
+#'
+#' @keywords internal
+#' @noRd
+expansion_total_se <- function(rate, expansion_se, structure) {
+  if (is.null(expansion_se) || is.null(structure)) {
+    return(NULL)
+  }
+  contrib <- as.numeric(rate) * as.numeric(expansion_se)
+  switch(structure,
+    nested = sqrt(sum(contrib^2)),
+    shared = abs(sum(contrib)),
+    NA_real_
+  )
+}
+
+
+#' Add the covariance a shared party-size estimate induces between strata
+#'
+#' Internal helper. `sum(.var_sh)` treats strata as independent, which is what
+#' the stratified total variance assumes (Pollock, Jones & Brown eq. 3.12-3.13)
+#' and is true of the sampling error. It is not true of a multiplier estimated
+#' once and applied to every stratum: that error is a component common to all of
+#' them, and the covariance the sum omits is `2 * sum_{h<k} R_h R_k s_h s_k`.
+#'
+#' Adding it as a covariance rather than re-deriving the whole variance is
+#' deliberate. Written this way the independent case cancels exactly -- the term
+#' subtracted is the term already inside `pv` -- so only the case that is wrong
+#' moves, and the Goodman cross term is left alone (GH #144).
+#'
+#' @param pv Summed per-stratum product variance
+#' @param rate Per-stratum rate estimates, aligned to `expansion_se`
+#' @param expansion_se Per-stratum expansion standard errors, or NULL
+#' @param structure One of `"nested"`, `"shared"`, `"partial"`, or NULL
+#'
+#' @return The corrected variance, or `NA_real_` when the structure cannot
+#'   support a combination
+#'
+#' @keywords internal
+#' @noRd
+add_expansion_covariance <- function(pv, rate, expansion_se, structure) {
+  if (is.null(expansion_se) || is.null(structure)) {
+    return(pv)
+  }
+
+  contrib <- as.numeric(rate) * as.numeric(expansion_se)
+
+  if (identical(structure, "nested")) {
+    # Already correct: the independent contributions inside `pv` are exactly the
+    # ones this structure calls for. Returning `pv` untouched is what keeps the
+    # independent case bit-for-bit unchanged.
+    return(pv)
+  }
+
+  if (identical(structure, "partial")) {
+    # Groups straddle strata unevenly, so combining needs the group-by-stratum
+    # decomposition that a per-stratum standard error no longer carries.
+    # Quadrature would understate and the linear sum would overstate; either
+    # would be a plausible number concealing a structural assumption.
+    cli::cli_warn(
+      c(
+        "Party-size expansion groups straddle strata unevenly.",
+        "x" = "The standard error of the total cannot be combined from per-stratum components.",
+        "i" = paste(
+          "Estimate the party size within strata, or with one estimate for the",
+          "whole design, so the contributions are either independent or",
+          "shared throughout."
+        )
+      ),
+      class = "creel_warning_expansion_structure_unknown"
+    )
+    return(NA_real_)
+  }
+
+  # structure == "shared": one estimate runs through every stratum, so the
+  # contributions are perfectly correlated and add before squaring.
+  pv - sum(contrib^2) + sum(contrib)^2
+}
+
+
+#' How the party-size expansion groups sit relative to the strata
+#'
+#' Internal helper. Decides how per-stratum expansion contributions combine into
+#' a stratified total. A group is one estimated multiplier, so rows sharing a
+#' group carry perfectly correlated error and their contributions add before
+#' squaring; contributions from different groups come from disjoint interview
+#' subsets and add as variances.
+#'
+#' Whether that makes the *strata* independent depends on the geometry:
+#'
+#' - `"nested"` — every group lives in exactly one stratum, so the strata carry
+#'   disjoint estimates and their contributions are independent. This is what
+#'   the ordinary stratified variance assumes.
+#' - `"shared"` — one group spans strata, so a single estimate's error runs
+#'   through all of them and the contributions are perfectly correlated.
+#' - `"partial"` — groups straddle strata unevenly. Combining then needs the
+#'   group-by-stratum decomposition, which a per-stratum standard error no
+#'   longer carries.
+#'
+#' @param design A `creel_design` with counts attached
+#'
+#' @return One of `"nested"`, `"shared"`, `"partial"`, or `NULL` when the design
+#'   carries no expansion
+#'
+#' @keywords internal
+#' @noRd
+expansion_group_structure <- function(design) {
+  spec <- design$expansion
+  if (is.null(spec)) {
+    return(NULL)
+  }
+  strata_cols <- design$strata_cols %||% character(0)
+  if (length(strata_cols) == 0L) {
+    # Nothing to be correlated across; the single total already sums the group
+    # contributions with the right structure.
+    return("nested")
+  }
+
+  counts_data <- design$counts
+  groups <- as.character(counts_data[[spec$group_col]])
+  strata_key <- do.call(paste, c(counts_data[strata_cols], sep = ""))
+
+  strata_per_group <- vapply(
+    split(strata_key, groups),
+    function(x) length(unique(x)),
+    integer(1L)
+  )
+
+  if (all(strata_per_group == 1L)) {
+    return("nested")
+  }
+  # One estimate covering the whole design is the common case -- mean_party_size()
+  # without `by` returns exactly that -- and is cleanly correlated rather than
+  # ambiguous, so it is worth separating from the genuinely mixed geometry.
+  if (length(strata_per_group) == 1L) {
+    return("shared")
+  }
+  "partial"
+}
+
+
 compute_within_day_var_contribution <- function(
   design,
   by_vars = NULL, # nolint: object_length_linter
@@ -3706,7 +3905,9 @@ compute_stratum_product_sum <- function(
   conf_level,
   rate_suffix = "rate",
   product_variance = "goodman",
-  ci_type = "symmetric"
+  ci_type = "symmetric",
+  expansion_se = NULL,
+  expansion_structure = NULL
 ) {
   # Vectorized CI builder: log-transform for positive totals, else Wald with clamp
   .ci <- function(est, se_val, z) {
@@ -3771,15 +3972,26 @@ compute_stratum_product_sum <- function(
     product_variance
   )
   merged$.n_sh <- merged[[n_r]]
+  # Built from the merged rows so the expansion components are addressed by
+  # stratum rather than by position; merge() does not preserve effort_df's row
+  # order, so a positional match would silently pair strata with each other's
+  # components.
+  merged$.expansion_key <- expansion_stratum_key(merged, stratum_by_vars) # nolint: object_usage_linter
 
   if (is.null(interview_by_vars)) {
     # Sum all strata to a single total
     est <- sum(merged$.est_sh)
-    pv <- sum(merged$.var_sh)
+    pv <- add_expansion_covariance(
+      # nolint: object_usage_linter
+      pv = sum(merged$.var_sh),
+      rate = merged[[r_col]],
+      expansion_se = expansion_se[merged$.expansion_key],
+      structure = expansion_structure
+    )
     n <- sum(merged$.n_sh)
     se_val <- sqrt(pv)
     ci <- .ci(est, se_val, z)
-    data.frame(
+    out <- data.frame(
       estimate = est,
       se = se_val,
       ci_lower = ci$lower,
@@ -3787,6 +3999,14 @@ compute_stratum_product_sum <- function(
       n = as.integer(n),
       stringsAsFactors = FALSE
     )
+    # Carried on the result rather than recomputed by each caller, so the number
+    # reported as the component is the one that went into `se` (GH #134).
+    attr(out, "se_expansion") <- expansion_total_se( # nolint: object_usage_linter
+      rate = merged[[r_col]],
+      expansion_se = expansion_se[merged$.expansion_key],
+      structure = expansion_structure
+    )
+    out
   } else {
     # Sum strata within each interview_by_vars group; compute per-group df (#94)
     agg <- stats::aggregate(
@@ -3805,6 +4025,25 @@ compute_stratum_product_sum <- function(
     df_per_group <- pmax(1L, as.integer(agg$.n_sh) - as.integer(agg$.k_strata))
     z_per_group <- stats::qt(1 - (1 - conf_level) / 2, df = df_per_group)
 
+    # The same correction applies inside each reported group: a shared estimate
+    # runs through the strata being summed here exactly as it does through a
+    # whole-design total.
+    agg_key <- expansion_stratum_key(agg, interview_by_vars) # nolint: object_usage_linter
+    merged_key <- expansion_stratum_key(merged, interview_by_vars) # nolint: object_usage_linter
+    agg$.var_sh <- vapply(
+      seq_along(agg_key),
+      function(i) {
+        rows <- merged_key == agg_key[[i]]
+        add_expansion_covariance( # nolint: object_usage_linter
+          pv = agg$.var_sh[[i]],
+          rate = merged[[r_col]][rows],
+          expansion_se = expansion_se[merged$.expansion_key[rows]],
+          structure = expansion_structure
+        )
+      },
+      numeric(1L)
+    )
+
     sp_result <- tibble::as_tibble(agg[interview_by_vars])
     sp_result$estimate <- agg$.est_sh
     sp_result$se <- sqrt(agg$.var_sh)
@@ -3812,6 +4051,21 @@ compute_stratum_product_sum <- function(
     sp_result$ci_lower <- ci$lower
     sp_result$ci_upper <- ci$upper
     sp_result$n <- as.integer(agg$.n_sh)
+    attr(sp_result, "se_expansion") <- vapply(
+      seq_along(agg_key),
+      function(i) {
+        rows <- merged_key == agg_key[[i]]
+        expansion_total_se( # nolint: object_usage_linter
+          rate = merged[[r_col]][rows],
+          expansion_se = expansion_se[merged$.expansion_key[rows]],
+          structure = expansion_structure
+        ) %||% NA_real_
+      },
+      numeric(1L)
+    )
+    if (is.null(expansion_se) || is.null(expansion_structure)) {
+      attr(sp_result, "se_expansion") <- NULL
+    }
     sp_result
   }
 }

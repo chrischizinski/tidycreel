@@ -2754,6 +2754,21 @@ format.creel_design <- function(x, ...) {
       psu_col <- x$psu_col # nolint: object_usage_linter
       cli::cli_text("Counts: {.val {n_counts}} observation{?s}")
       cli::cli_text("  PSU column: {.field {psu_col}}")
+      # Printed unconditionally, both of them. The count column's invisibility
+      # is much of why the bank-angler omission survived, and a table whose
+      # party-size carriers were dropped by an ordinary select() is
+      # indistinguishable from one that never had them -- so the only place the
+      # loss can still be surfaced is here, where the user can act on it (#124).
+      if (!is.null(x$count_col)) {
+        cli::cli_text("  Count column: {.field {x$count_col}}")
+      }
+      party_size_display <- if (is.null(x$expansion)) { # nolint: object_usage_linter
+        "not carried"
+      } else {
+        n_groups <- length(unique(x$counts[[x$expansion$group_col]])) # nolint: object_usage_linter
+        cli::format_inline("carried ({n_groups} group{?s})")
+      }
+      cli::cli_text("  Party-size term: {party_size_display}")
       if (!is.null(x$count_time_col)) {
         cli::cli_text("  Count time column: {.field {x$count_time_col}}")
       }
