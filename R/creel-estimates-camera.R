@@ -64,6 +64,34 @@ estimate_effort_camera <- function(
     ))
   }
 
+  # Counts filled by impute_camera_counts() are flagged .imputed but are
+  # indistinguishable from observations once inside svytotal(): the imputation
+  # model's prediction uncertainty is dropped, and predictions are smoother
+  # than real counts, so the between-day variance is understated twice over
+  # (GH #137). Warned on both paths until that variance is propagated.
+  if (".imputed" %in% names(counts_data)) {
+    n_imputed <- sum(as.logical(counts_data[[".imputed"]]), na.rm = TRUE)
+    if (n_imputed > 0L) {
+      pct_imputed <- round(100 * n_imputed / nrow(counts_data), 1)
+      cli::cli_warn(
+        c(
+          paste0(
+            "{n_imputed} of {nrow(counts_data)} count ",
+            "{cli::qty(nrow(counts_data))}day{?s} ({pct_imputed}%) ",
+            "{cli::qty(n_imputed)}{?is/are} imputed."
+          ),
+          "x" = "Prediction uncertainty for imputed counts is not included in the SE.",
+          "i" = paste(
+            "Imputed counts also vary less than observed ones, so the",
+            "between-day component is understated as well; the reported SE is",
+            "a lower bound."
+          )
+        ),
+        class = "creel_warning_camera_imputed_counts"
+      )
+    }
+  }
+
   # Identify count variable
   excluded_cols <- c(
     design$date_col,
@@ -174,7 +202,22 @@ estimate_effort_camera <- function(
         var_rho <- sum(resid_d^2, na.rm = TRUE) /
           (n_days * (n_days - 1L) * mean_C^2)
       } else {
-        var_rho <- 0
+        # One paired day gives the ratio no measurable spread, so its variance
+        # is unknown -- not zero. A zero would enter the delta term
+        # T^2 * var_rho as "the multiplier is known exactly", reporting the
+        # maximally uncertain calibration as the most precise one. NA is the
+        # package's mark for uncertainty it cannot measure (se_of_mean() for
+        # n < 2), and it propagates into the combined SE below.
+        cli::cli_warn(
+          c(
+            "Stratum {.val {s}} has one paired interview/count day.",
+            "x" = "The calibration ratio's variance cannot be measured from a single pair.",
+            "i" = "Its contribution is {.code NA}, so the reported SE is {.code NA} rather than falsely exact.",
+            "i" = "Add a second matched interview day in this stratum to recover an SE."
+          ),
+          class = "creel_warning_camera_single_day"
+        )
+        var_rho <- NA_real_
       }
 
       data.frame(

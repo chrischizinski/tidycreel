@@ -378,3 +378,76 @@ test_that("CEST-22: n_anglers goes through the shared party-size rule", {
     regexp = "positive party size"
   )
 })
+
+# GH #136: single paired calibration day ---------------------------------------
+
+test_that("CEST-23: one paired day yields an NA SE, not an exact ratio (GH #136)", {
+  # With a single matched interview/count day the calibration ratio has no
+  # measurable spread: its variance is unknown, not zero. A zero enters the
+  # delta combination as "the multiplier is known exactly", so the maximally
+  # uncertain calibration reported the same SE as a perfectly known one.
+  # Unknown uncertainty surfaces as NA so it propagates (se_of_mean()
+  # precedent, NEWS 3.2.0). Weekday has two paired days, weekend one: the
+  # weekend NA must survive the cross-stratum combination into the overall SE.
+  d <- make_design_with_counts()
+  mixed <- data.frame(
+    date = as.Date(c("2024-06-03", "2024-06-04", "2024-06-08")),
+    day_type = c("weekday", "weekday", "weekend"),
+    hours_fished = c(3.5, 4.0, 2.5),
+    stringsAsFactors = FALSE
+  )
+  expect_warning(
+    result <- est_effort_camera(d, interviews = mixed, n_anglers = 1),
+    class = "creel_warning_camera_single_day"
+  )
+  est <- result$estimates
+  expect_true(is.finite(est$estimate))
+  expect_true(is.na(est$se))
+  expect_true(is.na(est$ci_lower))
+  expect_true(is.na(est$ci_upper))
+})
+
+# GH #137: imputed counts entering the estimator as observed data --------------
+
+test_that("CEST-24: imputed counts trigger a warning naming the imputed share (GH #137)", {
+  # impute_camera_counts() flags predicted rows .imputed = TRUE, but nothing
+  # downstream reads the flag: inside svytotal() predictions are
+  # indistinguishable from observations, the prediction uncertainty is
+  # dropped, and model-smoothed counts shrink the between-day variance. Until
+  # the variance treatment lands (GH #137 full fix), the estimator must at
+  # least say so.
+  d <- make_camera_design()
+  counts <- make_camera_counts()
+  counts$.imputed <- c(FALSE, TRUE, FALSE, FALSE, TRUE)
+  d <- suppressWarnings(add_counts(d, counts))
+  expect_warning(
+    est_effort_camera(d, h_open = 14),
+    class = "creel_warning_camera_imputed_counts"
+  )
+})
+
+test_that("CEST-24: no imputation warning when .imputed is present but all FALSE", {
+  d <- make_camera_design()
+  counts <- make_camera_counts()
+  counts$.imputed <- rep(FALSE, 5L)
+  d <- suppressWarnings(add_counts(d, counts))
+  expect_no_warning(est_effort_camera(d, h_open = 14))
+})
+
+test_that("CEST-24: imputed-count warning text states n, share, and the SE gap (GH #137)", {
+  d <- make_camera_design()
+  counts <- make_camera_counts()
+  counts$.imputed <- c(FALSE, TRUE, FALSE, FALSE, TRUE)
+  d <- suppressWarnings(add_counts(d, counts))
+  expect_snapshot(res <- est_effort_camera(d, h_open = 14))
+})
+
+test_that("CEST-25: imputed days must not shrink the SE below dropping those days (GH #137)", {
+  # Information monotonicity: a design where 40% of days are imputed carries
+  # strictly less information than the same design with those days dropped,
+  # so its SE must not be smaller. This can fail today because model
+  # predictions are smoother than real counts AND their prediction variance
+  # is dropped. Documents the still-open defect without failing CI; activated
+  # by the GH #137 full fix (audit fix plan Phase 3).
+  skip("Prediction uncertainty for imputed counts is not yet propagated; see GH #137.")
+})

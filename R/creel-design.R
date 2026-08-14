@@ -1351,6 +1351,17 @@ check_expansion_constant_per_psu <- function(counts, key_cols, call = rlang::cal
 #' - No NA values in design-critical columns (date, strata, PSU)
 #' - Survey construction (catches lonely PSU errors, stratification issues)
 #'
+#' @section Party-size expansion carriers:
+#' [derive_angler_count()] attaches `expansion_basis`, `expansion_se`, and
+#' `expansion_group` to the counts table so the party-size sampling error can
+#' reach the effort standard error. The three are written together and must
+#' travel together: `add_counts()` aborts on a table carrying only some of them,
+#' since that state can only come from partial deletion and would otherwise drop
+#' the variance component while leaving an `expansion_se` visible in the data.
+#'
+#' Dropping all three — which an ordinary `select()` will do — is
+#' indistinguishable here from counts that never had them, and is silent.
+#'
 #' @section PSU Specification:
 #' Per user decision (clarified 2026-02-08), PSU is specified only in add_counts(),
 #' not in creel_design() constructor. PSU is only meaningful when count data is
@@ -1656,9 +1667,35 @@ add_counts <- function(
   # Party-size expansion carried as columns by derive_angler_count(). Read
   # before aggregation, which is where the per-row link between the count and
   # its derivative has to be preserved.
-  has_expansion <- all(
-    c("expansion_basis", "expansion_se", "expansion_group") %in% names(counts)
-  )
+  expansion_carriers <- c("expansion_basis", "expansion_se", "expansion_group")
+  present_carriers <- intersect(expansion_carriers, names(counts))
+  has_expansion <- length(present_carriers) == length(expansion_carriers)
+  # A proper nonempty subset cannot be produced by derive_angler_count(), which
+  # writes all three or none, so it can only come from partial deletion. Unlike
+  # the fully-dropped case (#124) that is detectable here, and treating it as
+  # "no carriers" leaves an expansion_se visibly in the table while the variance
+  # component silently goes missing (#132).
+  if (length(present_carriers) > 0L && !has_expansion) {
+    missing_carriers <- setdiff(expansion_carriers, present_carriers)
+    cli::cli_abort(
+      c(
+        "{.arg counts} carries an incomplete party-size expansion set.",
+        "x" = "Present: {.field {present_carriers}}.",
+        "x" = "Missing: {.field {missing_carriers}}.",
+        "i" = paste(
+          "The three columns are written together by",
+          "{.fn derive_angler_count} and must travel together; keeping only",
+          "some of them would drop the party-size variance component without",
+          "any other sign."
+        ),
+        "i" = paste(
+          "Re-derive the counts, or carry {.field {missing_carriers}} through",
+          "whatever step dropped {?it/them}."
+        )
+      ),
+      class = "creel_error_partial_expansion_carriers"
+    )
+  }
   if (has_expansion) {
     check_expansion_constant_per_psu(counts, unique(c(psu, design$strata_cols))) # nolint: object_usage_linter
   }
