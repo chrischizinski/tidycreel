@@ -320,6 +320,7 @@ test_that("counts built from two derive_angler_count() calls are rejected", {
     expansion_basis = c(4, 4),
     expansion_se = c(0.1, 0.9),
     expansion_group = c("1", "1"),
+    expansion_of = "angler_count",
     stringsAsFactors = FALSE
   )
   calendar <- data.frame(
@@ -346,7 +347,7 @@ test_that("the carrier columns do not make the count column ambiguous", {
     party_size_se = 0.1
   )
   counts <- counts[, c("date", "day_type", "angler_count", "expansion_basis",
-                       "expansion_se", "expansion_group")]
+                       "expansion_se", "expansion_group", "expansion_of")]
   calendar <- data.frame(
     date = as.Date("2024-06-01") + 0:5,
     day_type = rep(c("weekday", "weekend"), 3),
@@ -472,4 +473,227 @@ test_that("a partial carrier set aborts instead of silently dropping the compone
       class = "creel_error_partial_expansion_carriers"
     )
   }
+})
+
+# GH #131: the basis must stay in the units of the column it differentiates ----
+
+expansion_calendar <- function() {
+  data.frame(
+    date = as.Date("2024-06-01") + 0:5,
+    day_type = rep(c("weekday", "weekend"), 3),
+    stringsAsFactors = FALSE
+  )
+}
+
+test_that("premultiplying the count without the basis aborts (GH #131)", {
+  # expansion_basis is d(count)/d(party_size), so it is only meaningful in the
+  # units of the count it was derived for. A transformation applied before
+  # add_counts() scales the count and leaves the basis behind: the component is
+  # then understated by exactly the scale factor while remaining present and
+  # non-NULL, so it reads as propagated. That is strictly harder to notice than
+  # the fully-dropped carriers of GH #124, which at least surface as NULL.
+  counts <- derive_angler_count(
+    expansion_counts(),
+    bank = bank_anglers,
+    boat_count = angler_boats,
+    party_size = 2.5,
+    party_size_se = 0.1
+  )
+  counts$angler_hours <- counts$angler_count * 12
+
+  design <- creel_design(expansion_calendar(), date = date, strata = day_type)
+  expect_error(
+    suppressWarnings(add_counts(design, counts, count_col = "angler_hours")),
+    class = "creel_error_expansion_basis_desync"
+  )
+})
+
+test_that("period_length_col carries the basis into effort units (GH #131)", {
+  # The supported way to express the same physics. add_counts() scales the count
+  # and the basis together, so the component is the whole boat total times the
+  # multiplier's SE, in effort units -- twelve times the count-unit value that
+  # the premultiplied path reported.
+  counts <- derive_angler_count(
+    expansion_counts(),
+    bank = bank_anglers,
+    boat_count = angler_boats,
+    party_size = 2.5,
+    party_size_se = 0.1
+  )
+  counts$shift_hours <- 12
+
+  design <- creel_design(expansion_calendar(), date = date, strata = day_type)
+  result <- suppressWarnings(estimate_effort(suppressWarnings(add_counts(
+    design,
+    counts,
+    count_col = "angler_count",
+    period_length_col = "shift_hours"
+  ))))
+
+  expect_equal(result$se_expansion, sum(counts$expansion_basis) * 12 * 0.1)
+  expect_equal(result$se_expansion, 36)
+})
+
+test_that("a count column that matches the derived-for column is not a desync (GH #131)", {
+  # The guard must fire on a mismatch, not on the presence of carriers. The
+  # ordinary pipeline names the derived column and counts on it, and has to stay
+  # silent.
+  counts <- derive_angler_count(
+    expansion_counts(),
+    bank = bank_anglers,
+    boat_count = angler_boats,
+    party_size = 2.5,
+    party_size_se = 0.1
+  )
+
+  design <- creel_design(expansion_calendar(), date = date, strata = day_type)
+  expect_no_error(
+    suppressWarnings(add_counts(design, counts, count_col = "angler_count"))
+  )
+})
+
+test_that("a differently named count with no carriers does not abort (GH #131)", {
+  # Nothing to desynchronize: without carriers there is no basis to be in the
+  # wrong units. This case is GH #124's silent NULL, which the design print
+  # guard covers -- it must not be turned into an error here.
+  counts <- expansion_counts()
+  counts$angler_hours <- (counts$bank_anglers + counts$angler_boats) * 12
+
+  design <- creel_design(expansion_calendar(), date = date, strata = day_type)
+  expect_no_error(
+    suppressWarnings(add_counts(design, counts, count_col = "angler_hours"))
+  )
+})
+
+test_that("expansion_of travels with the other carriers (GH #131, GH #132)", {
+  # It is a carrier: written with the other three, and a proper subset of the
+  # four is the malformed state GH #132 refuses.
+  counts <- derive_angler_count(
+    expansion_counts(),
+    bank = bank_anglers,
+    boat_count = angler_boats,
+    party_size = 2.5,
+    party_size_se = 0.1
+  )
+
+  expect_true("expansion_of" %in% names(counts))
+  expect_identical(unique(counts$expansion_of), "angler_count")
+
+  partial <- counts[, setdiff(names(counts), "expansion_of")]
+  design <- creel_design(expansion_calendar(), date = date, strata = day_type)
+  expect_error(
+    suppressWarnings(add_counts(design, partial, count_col = "angler_count")),
+    class = "creel_error_partial_expansion_carriers"
+  )
+})
+
+# GH #131: every path that reaches the guard needs its own fixture -------------
+#
+# Phase 1 shipped two guards that passed their own tests and still missed the
+# data they targeted, because the fixtures took the simple path into the
+# estimator. The desync check sits ahead of aggregation and of the count-type
+# branches, so each of those has to be shown reaching it rather than assumed to.
+
+desync_counts <- function() {
+  counts <- derive_angler_count(
+    expansion_counts(),
+    bank = bank_anglers,
+    boat_count = angler_boats,
+    party_size = 2.5,
+    party_size_se = 0.1
+  )
+  counts$angler_hours <- counts$angler_count * 12
+  counts
+}
+
+test_that("the desync guard fires ahead of within-day aggregation (GH #131)", {
+  # Two counts per day: aggregate_within_day() averages the basis, so a run that
+  # got past the guard would rebuild the table and hide which column the basis
+  # belonged to.
+  raw <- expansion_counts()[rep(1:6, each = 2), ]
+  raw$count_time <- rep(c("am", "pm"), 6)
+  counts <- derive_angler_count(
+    raw,
+    bank = bank_anglers,
+    boat_count = angler_boats,
+    party_size = 2.5,
+    party_size_se = 0.1
+  )
+  counts$angler_hours <- counts$angler_count * 12
+
+  design <- creel_design(expansion_calendar(), date = date, strata = day_type)
+  expect_error(
+    suppressWarnings(add_counts(
+      design,
+      counts,
+      count_col = "angler_hours",
+      count_time_col = "count_time"
+    )),
+    class = "creel_error_expansion_basis_desync"
+  )
+})
+
+test_that("the desync guard fires with duplicate PSU rows (GH #131)", {
+  # Duplicate rows for one day are only warned about (CNT-06), so they reach the
+  # estimator. They must not carry a desynchronized basis in with them.
+  counts <- desync_counts()
+  counts <- rbind(counts, counts[1, ])
+
+  design <- creel_design(expansion_calendar(), date = date, strata = day_type)
+  expect_error(
+    suppressWarnings(add_counts(design, counts, count_col = "angler_hours")),
+    class = "creel_error_expansion_basis_desync"
+  )
+})
+
+test_that("the desync guard fires on the progressive count path (GH #131)", {
+  # Progressive counts multiply through by tau and T_d in a different branch
+  # than instantaneous ones; the guard sits ahead of both.
+  counts <- desync_counts()
+  counts$shift_hours <- 12
+
+  design <- creel_design(expansion_calendar(), date = date, strata = day_type)
+  expect_error(
+    suppressWarnings(add_counts(
+      design,
+      counts,
+      count_col = "angler_hours",
+      count_type = "progressive",
+      circuit_time = 2,
+      period_length_col = "shift_hours"
+    )),
+    class = "creel_error_expansion_basis_desync"
+  )
+})
+
+test_that("the desync guard fires on a bus-route design (GH #131)", {
+  # Bus-route designs dispatch differently downstream, and ice designs are
+  # degenerate bus routes -- dispatch seams here have failed before.
+  sf <- data.frame(
+    site = c("A", "B"),
+    circuit = "C1",
+    p_site = c(0.5, 0.5),
+    p_period = 0.8,
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design(
+    expansion_calendar(),
+    date = date,
+    strata = day_type,
+    survey_type = "bus_route",
+    sampling_frame = sf,
+    site = site,
+    circuit = circuit,
+    p_site = p_site,
+    p_period = p_period
+  )
+
+  counts <- desync_counts()
+  counts$site <- rep(c("A", "B"), 3)
+  counts$circuit <- "C1"
+
+  expect_error(
+    suppressWarnings(add_counts(design, counts, count_col = "angler_hours")),
+    class = "creel_error_expansion_basis_desync"
+  )
 })

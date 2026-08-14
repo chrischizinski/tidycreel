@@ -40,12 +40,20 @@ deliberately no zero default; see the section above.}
 \value{
 \code{counts} with the derived column appended.
 
-When a party-size standard error is available, three further columns are
+When a party-size standard error is available, four further columns are
 appended for the estimators to read: \code{expansion_basis} (the boat count,
-which is what the multiplier acts on), \code{expansion_se}, and
+which is what the multiplier acts on), \code{expansion_se},
 \code{expansion_group} (which rows share one estimated multiplier, and so carry
-perfectly correlated error). \code{\link[=add_counts]{add_counts()}} recognises all three and
-excludes them from count-column detection.
+perfectly correlated error), and \code{expansion_of} (the column the basis is
+the derivative of). \code{\link[=add_counts]{add_counts()}} recognises all four and excludes them
+from count-column detection.
+
+They must travel together and must reach \code{\link[=add_counts]{add_counts()}} alongside the
+column named in \code{expansion_of}. Transforming that column in between --
+multiplying a count by a shift length, say -- scales the count but not its
+derivative, and \code{\link[=add_counts]{add_counts()}} refuses rather than propagate a component
+that is understated by exactly the scale factor. Pass the per-day count and
+let \code{period_length_col} do the multiplication instead.
 }
 \description{
 Builds the single angler-count column that \code{add_counts()} needs from the

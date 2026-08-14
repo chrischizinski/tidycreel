@@ -215,12 +215,20 @@ se_of_mean <- function(x) {
 #'
 #' @return `counts` with the derived column appended.
 #'
-#'   When a party-size standard error is available, three further columns are
+#'   When a party-size standard error is available, four further columns are
 #'   appended for the estimators to read: `expansion_basis` (the boat count,
-#'   which is what the multiplier acts on), `expansion_se`, and
+#'   which is what the multiplier acts on), `expansion_se`,
 #'   `expansion_group` (which rows share one estimated multiplier, and so carry
-#'   perfectly correlated error). [add_counts()] recognises all three and
-#'   excludes them from count-column detection.
+#'   perfectly correlated error), and `expansion_of` (the column the basis is
+#'   the derivative of). [add_counts()] recognises all four and excludes them
+#'   from count-column detection.
+#'
+#'   They must travel together and must reach [add_counts()] alongside the
+#'   column named in `expansion_of`. Transforming that column in between --
+#'   multiplying a count by a shift length, say -- scales the count but not its
+#'   derivative, and [add_counts()] refuses rather than propagate a component
+#'   that is understated by exactly the scale factor. Pass the per-day count and
+#'   let `period_length_col` do the multiplication instead.
 #'
 #' @seealso [mean_party_size()], [add_counts()], [prep_counts_boat_party()]
 #' @family "Survey Design"
@@ -321,7 +329,7 @@ derive_angler_count <- function(
       "i" = "It is the standard error of a multiplier that is not being applied here."
     ))
   }
-  carrier_cols <- c("expansion_basis", "expansion_se", "expansion_group")
+  carrier_cols <- expansion_carrier_cols()
   clash <- intersect(carrier_cols, names(counts))
   if (has_boat_count && length(clash) > 0L) {
     cli::cli_abort(c(
@@ -374,7 +382,12 @@ derive_angler_count <- function(
       expansion <- list(
         basis = boats,
         se = se_vals,
-        group = attr(party, "group") %||% rep("1", nrow(counts))
+        group = attr(party, "group") %||% rep("1", nrow(counts)),
+        # The column the basis is the derivative of. Recorded so add_counts()
+        # can tell whether the count it is handed is still the one the basis
+        # belongs to; a transformation applied in between scales the count and
+        # leaves the basis in the old units (GH #131).
+        of = to
       )
     }
   }
@@ -384,6 +397,7 @@ derive_angler_count <- function(
     counts[["expansion_basis"]] <- expansion$basis
     counts[["expansion_se"]] <- expansion$se
     counts[["expansion_group"]] <- expansion$group
+    counts[["expansion_of"]] <- expansion$of
   }
   counts
 }
@@ -716,6 +730,27 @@ resolve_party_size <- function(party_size_quo, counts, error_call = rlang::calle
     ),
     call = error_call
   )
+}
+
+
+#' The columns that carry the party-size expansion
+#'
+#' Internal helper. `derive_angler_count()` writes all of these or none of them,
+#' and `add_counts()` reads them back. They are columns rather than attributes
+#' because `add_counts()` rebuilds the counts table with `rbind()`, which drops
+#' attributes.
+#'
+#' Named in one place because the set is read at three seams -- the overwrite
+#' check here, the count-column exclusion list, and the carrier read in
+#' `add_counts()` -- and a name added to two of three is the partial set that
+#' GH #132 exists to refuse.
+#'
+#' @return Character vector of column names
+#'
+#' @keywords internal
+#' @noRd
+expansion_carrier_cols <- function() {
+  c("expansion_basis", "expansion_se", "expansion_group", "expansion_of")
 }
 
 

@@ -7,14 +7,28 @@ estimator as though it were observed. All three were found by the statistical
 seam audits of 2026-08-14; none produced an error, a warning, or an implausible
 number.
 
-* `add_counts()` now aborts when `counts` carries some but not all of
-  `expansion_basis`, `expansion_se`, and `expansion_group` (#132). The three are
-  written together by `derive_angler_count()`, so a proper subset can only come
-  from partial deletion. The gate previously required all three and otherwise
-  took the no-carriers path, which left an `expansion_se` sitting visibly in the
-  table while the party-size variance component silently went missing. Point
-  estimates were unaffected; `se_expansion` came back `NULL`. Dropping all three
-  is still undetectable at this seam — see #124.
+* `derive_angler_count()` now writes a fourth carrier column, `expansion_of`,
+  naming the column the expansion basis is the derivative of, and `add_counts()`
+  aborts when the count column is not that column (#131). `expansion_basis` is
+  `d(count)/d(party_size)`, so a count transformed between the two calls — the
+  documented `mutate(angler_hours = angler_count * shift_hours)` pattern, for
+  one — scales the count and leaves the basis in the old units. The party-size
+  variance component then came out understated by exactly the scale factor while
+  remaining present and non-`NULL`, so it read as propagated: on a six-day
+  design with a ×12 shift length, `se_expansion` was 3 where the same physics
+  expressed through `period_length_col` gives 36. Point estimates were
+  unaffected. Supply the untransformed count and `period_length_col`, which
+  scales the count and the basis together. **Breaking:** pipelines that
+  premultiplied the count while retaining the carriers now abort.
+
+* `add_counts()` now aborts when `counts` carries some but not all of the
+  `expansion_*` carrier columns (#132). They are written together by
+  `derive_angler_count()`, so a proper subset can only come from partial
+  deletion. The gate previously required the full set and otherwise took the
+  no-carriers path, which left an `expansion_se` sitting visibly in the table
+  while the party-size variance component silently went missing. Point estimates
+  were unaffected; `se_expansion` came back `NULL`. Dropping all of them is
+  still undetectable at this seam — see #124.
 
 * Camera ratio calibration reports `NA` rather than an exact ratio when a
   stratum has a single paired interview/count day (#136). The calibration ratio
