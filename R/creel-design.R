@@ -1061,11 +1061,9 @@ resolve_count_col <- function(
     "n_counts",
     "within_day_var",
     # Written by derive_angler_count() to carry the party-size variance
-    # component. They are numeric and sit beside the count, so without this they
+    # component. The numeric ones sit beside the count, so without this they
     # would make an otherwise unambiguous table look ambiguous.
-    "expansion_basis",
-    "expansion_se",
-    "expansion_group"
+    expansion_carrier_cols() # nolint: object_usage_linter
   )
 
   numeric_cols <- names(counts)[vapply(counts, is.numeric, logical(1L))]
@@ -1352,14 +1350,22 @@ check_expansion_constant_per_psu <- function(counts, key_cols, call = rlang::cal
 #' - Survey construction (catches lonely PSU errors, stratification issues)
 #'
 #' @section Party-size expansion carriers:
-#' [derive_angler_count()] attaches `expansion_basis`, `expansion_se`, and
-#' `expansion_group` to the counts table so the party-size sampling error can
-#' reach the effort standard error. The three are written together and must
-#' travel together: `add_counts()` aborts on a table carrying only some of them,
-#' since that state can only come from partial deletion and would otherwise drop
-#' the variance component while leaving an `expansion_se` visible in the data.
+#' [derive_angler_count()] attaches `expansion_basis`, `expansion_se`,
+#' `expansion_group`, and `expansion_of` to the counts table so the party-size
+#' sampling error can reach the effort standard error. The four are written
+#' together and must travel together: `add_counts()` aborts on a table carrying
+#' only some of them, since that state can only come from partial deletion and
+#' would otherwise drop the variance component while leaving an `expansion_se`
+#' visible in the data.
 #'
-#' Dropping all three — which an ordinary `select()` will do — is
+#' `add_counts()` also aborts when `count_col` is not the column named in
+#' `expansion_of`. The basis is d(count)/d(party_size), so a count transformed
+#' after `derive_angler_count()` no longer matches the basis carried beside it,
+#' and the variance component would come out understated by exactly the scale
+#' factor while still reading as propagated. Supply the untransformed count and
+#' `period_length_col`, which scales the count and the basis together.
+#'
+#' Dropping all four — which an ordinary `select()` will do — is
 #' indistinguishable here from counts that never had them, and is silent.
 #'
 #' @section PSU Specification:
@@ -1667,7 +1673,7 @@ add_counts <- function(
   # Party-size expansion carried as columns by derive_angler_count(). Read
   # before aggregation, which is where the per-row link between the count and
   # its derivative has to be preserved.
-  expansion_carriers <- c("expansion_basis", "expansion_se", "expansion_group")
+  expansion_carriers <- expansion_carrier_cols() # nolint: object_usage_linter
   present_carriers <- intersect(expansion_carriers, names(counts))
   has_expansion <- length(present_carriers) == length(expansion_carriers)
   # A proper nonempty subset cannot be produced by derive_angler_count(), which
@@ -1683,7 +1689,7 @@ add_counts <- function(
         "x" = "Present: {.field {present_carriers}}.",
         "x" = "Missing: {.field {missing_carriers}}.",
         "i" = paste(
-          "The three columns are written together by",
+          "The carrier columns are written together by",
           "{.fn derive_angler_count} and must travel together; keeping only",
           "some of them would drop the party-size variance component without",
           "any other sign."
@@ -1699,7 +1705,35 @@ add_counts <- function(
       class = "creel_error_partial_expansion_carriers"
     )
   }
+  # The basis is d(count)/d(party_size), so it is only meaningful in the units of
+  # the column it was differentiated for. A transformation the caller applies
+  # between derive_angler_count() and here scales the count and leaves the basis
+  # behind, and the variance component then comes out understated by exactly the
+  # scale factor while staying present and non-NULL -- it reads as propagated.
+  # Refusing is the only option available: nothing here can recover the
+  # transformation that was applied (GH #131).
   if (has_expansion) {
+    derived_for <- unique(as.character(counts[["expansion_of"]]))
+    if (length(derived_for) != 1L || !identical(derived_for, count_col_name)) {
+      cli::cli_abort(
+        c(
+          "{.arg counts} carries a party-size expansion derived for a different column.",
+          "x" = "{.field expansion_basis} was derived for \\
+                 {.field {derived_for}}; the count column is {.field {count_col_name}}.",
+          "i" = paste(
+            "{.field expansion_basis} is d(count)/d(party_size), so scaling the",
+            "count without scaling the basis understates the party-size",
+            "variance component by exactly the scale factor."
+          ),
+          "i" = paste(
+            "Pass the per-day count to {.fn add_counts} with",
+            "{.arg period_length_col}, which scales the count and the basis",
+            "together, instead of multiplying the count beforehand."
+          )
+        ),
+        class = "creel_error_expansion_basis_desync"
+      )
+    }
     check_expansion_constant_per_psu(counts, unique(c(psu, design$strata_cols))) # nolint: object_usage_linter
   }
 
@@ -2720,6 +2754,21 @@ format.creel_design <- function(x, ...) {
       psu_col <- x$psu_col # nolint: object_usage_linter
       cli::cli_text("Counts: {.val {n_counts}} observation{?s}")
       cli::cli_text("  PSU column: {.field {psu_col}}")
+      # Printed unconditionally, both of them. The count column's invisibility
+      # is much of why the bank-angler omission survived, and a table whose
+      # party-size carriers were dropped by an ordinary select() is
+      # indistinguishable from one that never had them -- so the only place the
+      # loss can still be surfaced is here, where the user can act on it (#124).
+      if (!is.null(x$count_col)) {
+        cli::cli_text("  Count column: {.field {x$count_col}}")
+      }
+      party_size_display <- if (is.null(x$expansion)) { # nolint: object_usage_linter
+        "not carried"
+      } else {
+        n_groups <- length(unique(x$counts[[x$expansion$group_col]])) # nolint: object_usage_linter
+        cli::format_inline("carried ({n_groups} group{?s})")
+      }
+      cli::cli_text("  Party-size term: {party_size_display}")
       if (!is.null(x$count_time_col)) {
         cli::cli_text("  Count time column: {.field {x$count_time_col}}")
       }

@@ -7,14 +7,82 @@ estimator as though it were observed. All three were found by the statistical
 seam audits of 2026-08-14; none produced an error, a warning, or an implausible
 number.
 
-* `add_counts()` now aborts when `counts` carries some but not all of
-  `expansion_basis`, `expansion_se`, and `expansion_group` (#132). The three are
-  written together by `derive_angler_count()`, so a proper subset can only come
-  from partial deletion. The gate previously required all three and otherwise
-  took the no-carriers path, which left an `expansion_se` sitting visibly in the
-  table while the party-size variance component silently went missing. Point
-  estimates were unaffected; `se_expansion` came back `NULL`. Dropping all three
-  is still undetectable at this seam — see #124.
+* **Breaking (numeric):** `estimate_total_catch()`, `estimate_total_harvest()`,
+  and `estimate_total_release()` no longer combine a shared party-size estimate
+  across strata as though the strata were independent (#144). The stratified
+  total variance adds per-stratum variances because strata are *sampled*
+  independently (Pollock, Jones & Brown eq. 3.12–3.13); a multiplier estimated
+  once and applied to every stratum is not stratum-independent error, and the
+  covariance the sum omitted is `2 Σ_{h<k} R_h R_k s_h s_k`. Standard errors
+  were understated by up to `sqrt(H)` on the expansion term for H strata. This
+  is the default configuration, since `mean_party_size()` without `by` returns
+  one estimate. **Reported standard errors move upward** on affected designs;
+  point estimates are unchanged, and designs whose party-size estimate is
+  per-stratum are unchanged bit-for-bit. Where expansion groups straddle strata
+  unevenly the combination is not recoverable from per-stratum components, so
+  the standard error is `NA` with a `creel_warning_expansion_structure_unknown`
+  warning rather than a silently chosen formula. The correction reaches the
+  ungrouped, grouped, and per-species totals; the **per-section** path
+  aggregates its lake row separately and is still affected — see #145.
+
+* The three totals now report the party-size component they carry, as
+  `se_expansion` (#134). They routed through the effort estimators, whose
+  standard error includes the term, but passed no `se_expansion` to their
+  constructors — so a totals object whose `se` demonstrably contained the
+  component reported `NULL`, the value documented to mean "never propagated".
+  Anyone applying that test to a total drew the opposite conclusion from the
+  truth. The reported number is now produced by the same code that folds the
+  term into the variance, so the two cannot drift apart. The per-section
+  constructor is not covered; it builds its result frame by hand and still
+  reports `NULL` (#145).
+
+* `print()` on a `creel_design` now shows the count column and whether the
+  party-size term is carried (#124). Counts whose expansion carriers were
+  dropped by an ordinary `select()` are indistinguishable from counts that never
+  had them, so the design print is the last point at which the loss can be
+  surfaced while the user can still act on it. Both lines print whenever counts
+  are attached. This also closes the older note that the design never showed
+  which column it used as the count.
+
+* `tidy()` is documented as lossy for uncertainty components, with the reason:
+  a tibble column cannot hold the `NULL`-versus-`NA` distinction the component
+  contract depends on. `se_between` and `se_within` are likewise documented as
+  not reconstructing `se` on expansion designs.
+
+* `derive_angler_count()` now writes a fourth carrier column, `expansion_of`,
+  naming the column the expansion basis is the derivative of, and `add_counts()`
+  aborts when the count column is not that column (#131). `expansion_basis` is
+  `d(count)/d(party_size)`, so a count transformed between the two calls — the
+  documented `mutate(angler_hours = angler_count * shift_hours)` pattern, for
+  one — scales the count and leaves the basis in the old units. The party-size
+  variance component then came out understated by exactly the scale factor while
+  remaining present and non-`NULL`, so it read as propagated: on a six-day
+  design with a ×12 shift length, `se_expansion` was 3 where the same physics
+  expressed through `period_length_col` gives 36. Point estimates were
+  unaffected. Supply the untransformed count and `period_length_col`, which
+  scales the count and the basis together. **Breaking:** pipelines that
+  premultiplied the count while retaining the carriers now abort.
+
+* `mean_party_size()` now names its `"se"` attribute by the group key, and
+  `derive_angler_count()` addresses it by name (#133). The attribute was matched
+  by row order while the means were joined by key, so any length-preserving
+  reordering of the lookup — an `arrange()`, most habitually — gave every
+  stratum another stratum's standard error, silently and with the point
+  estimates unchanged. On a two-stratum design the weekday and weekend standard
+  errors swapped outright. A `by`-form lookup whose `"se"` attribute has no
+  names is now refused rather than matched positionally; single-row lookups and
+  the scalar form are unaffected, having no order to go stale. The
+  `expansion_group` attribute was checked for the same hazard and does not have
+  it: it is built from the counts rows, never indexed into the lookup.
+
+* `add_counts()` now aborts when `counts` carries some but not all of the
+  `expansion_*` carrier columns (#132). They are written together by
+  `derive_angler_count()`, so a proper subset can only come from partial
+  deletion. The gate previously required the full set and otherwise took the
+  no-carriers path, which left an `expansion_se` sitting visibly in the table
+  while the party-size variance component silently went missing. Point estimates
+  were unaffected; `se_expansion` came back `NULL`. Dropping all of them is
+  still undetectable at this seam — see #124.
 
 * Camera ratio calibration reports `NA` rather than an exact ratio when a
   stratum has a single paired interview/count day (#136). The calibration ratio

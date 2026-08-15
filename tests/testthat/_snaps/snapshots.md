@@ -14,6 +14,48 @@
       Interviews: "none"
       Sections: "none"
 
+# print.creel_design snapshot with counts and a party-size term
+
+    Code
+      print(design)
+    Output
+      
+      -- Creel Survey Design ---------------------------------------------------------
+      Type: "instantaneous"
+      Date column: date
+      Strata: day_type
+      Calendar: 2 days (2024-06-01 to 2024-06-02)
+      day_type: 2 levels
+      Counts: 2 observations
+      PSU column: date
+      Count column: angler_count
+      Party-size term: carried (1 group)
+      Count type: "instantaneous"
+      Survey: <survey.design2> (constructed)
+      Interviews: "none"
+      Sections: "none"
+
+# print.creel_design snapshot when the party-size term is not carried
+
+    Code
+      print(design)
+    Output
+      
+      -- Creel Survey Design ---------------------------------------------------------
+      Type: "instantaneous"
+      Date column: date
+      Strata: day_type
+      Calendar: 2 days (2024-06-01 to 2024-06-02)
+      day_type: 2 levels
+      Counts: 2 observations
+      PSU column: date
+      Count column: angler_count
+      Party-size term: not carried
+      Count type: "instantaneous"
+      Survey: <survey.design2> (constructed)
+      Interviews: "none"
+      Sections: "none"
+
 # print.creel_estimates_mor snapshot
 
     Code

@@ -40,6 +40,14 @@ The standard error is an attribute rather than a column so that the scalar
 return stays usable directly as a multiplier, and so the \code{by} form keeps
 exactly one numeric column and remains valid as a \code{party_size} lookup.
 
+For the \code{by} form the attribute is \strong{named by the group key}, and
+\code{\link[=derive_angler_count]{derive_angler_count()}} addresses it by name. Attributes do not follow the
+rows they describe through a \code{dplyr} reordering, so a positional attribute
+would go stale the moment the lookup were sorted — attributing each
+stratum's standard error to a different stratum while the means, which join
+by key, stayed correct. A \code{by}-form lookup whose \code{"se"} attribute has no
+names is refused rather than matched by row order.
+
 A group with a single party has no estimable standard error and gets
 \code{NA_real_}, which propagates to an \code{NA} effort standard error rather than
 being quietly treated as zero uncertainty.
