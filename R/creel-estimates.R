@@ -97,6 +97,13 @@ product_total_variance <- function(e_est, e_se, r_est, r_se, product_variance) {
 #' @param se_expansion NULL, or the party-size expansion standard-error
 #'   component (one value, or one per group). NULL means the component was not
 #'   propagated at all, which is deliberately distinct from a propagated zero.
+#' @param se_components NULL, or a named list of numeric standard-error
+#'   contributions to `se`. An absent name means the component does not apply
+#'   to this path; `NA_real_` means it applies and is unknown; a finite value
+#'   is a contribution to `se` and never `se` itself. Never `0`, which cannot
+#'   be told apart from a component that was never propagated. `party_size` is
+#'   reserved: the constructor writes it from `se_expansion` so the two cannot
+#'   drift apart, and supplying it here is an error.
 #'
 #' @return List of class "creel_estimates" with components:
 #'   - estimates: data frame of estimates
@@ -106,6 +113,7 @@ product_total_variance <- function(e_est, e_se, r_est, r_se, product_variance) {
 #'   - conf_level: confidence level
 #'   - by_vars: grouping variable names or NULL
 #'   - se_expansion: party-size expansion SE component, or NULL
+#'   - se_components: named list of SE contributions, or NULL
 #'
 #' @keywords internal
 #' @noRd
@@ -118,13 +126,28 @@ new_creel_estimates <- function(
   by_vars = NULL,
   effort_target = NULL,
   unit = NA_character_,
-  se_expansion = NULL
+  se_expansion = NULL,
+  se_components = NULL
 ) {
+  # Every entry must be named, because an unnamed component cannot be reported
+  # and would reach print() only to fail there.
+  component_names <- names(se_components) %||% character(0)
+  components_named <- if (is.null(se_components)) {
+    TRUE
+  } else {
+    is.list(se_components) &&
+      length(component_names) == length(se_components) &&
+      all(nzchar(component_names))
+  }
+
   # Input validation
   stopifnot(
     "estimates must be a data.frame" = is.data.frame(estimates),
     "se_expansion must be NULL or numeric" = is.null(se_expansion) ||
       is.numeric(se_expansion),
+    "se_components must be NULL or a fully named list" = components_named,
+    "se_components entries must be numeric" = is.null(se_components) ||
+      all(vapply(se_components, is.numeric, logical(1))),
     "method must be character" = is.character(method) && length(method) == 1,
     "variance_method must be character" = is.character(variance_method) &&
       length(variance_method) == 1,
@@ -134,6 +157,23 @@ new_creel_estimates <- function(
       is.character(effort_target),
     "unit must be NULL or character" = is.null(unit) || is.character(unit)
   )
+
+  # One write point for the party-size component. `se_expansion` is the slot
+  # documented since 3.2.0 and is kept; mirroring it here rather than letting
+  # callers set both is what stops the two representations from disagreeing,
+  # which is the defect #134 was.
+  if ("party_size" %in% names(se_components)) {
+    cli::cli_abort(
+      c(
+        "{.arg se_components} must not contain {.val party_size}.",
+        "i" = "Supply it as {.arg se_expansion}; the constructor mirrors it into {.arg se_components}."
+      ),
+      class = "creel_error_se_component_reserved"
+    )
+  }
+  if (!is.null(se_expansion)) {
+    se_components <- c(se_components %||% list(), list(party_size = se_expansion))
+  }
 
   structure(
     list(
@@ -150,9 +190,31 @@ new_creel_estimates <- function(
       # camera and GLMM estimators and every consumer of that shape are
       # untouched, and the term still reaches catch and harvest totals through
       # `se` (GH #121).
-      se_expansion = se_expansion
+      se_expansion = se_expansion,
+      # Named contributions to `se`. A name is absent when the path has no such
+      # component, so absence and "unknown" stay distinguishable: an entry that
+      # applies but cannot be measured is NA_real_ and still prints (GH #141).
+      se_components = se_components
     ),
     class = "creel_estimates"
+  )
+}
+
+#' Display labels for named standard-error components
+#'
+#' Internal helper. One place to name the components so a component added by a
+#' later estimator cannot acquire a second spelling in a second print method.
+#' An unmapped name prints as itself rather than being dropped: an unlabelled
+#' component is still information, a silently omitted one is not.
+#'
+#' @return Named character vector mapping component name to display label.
+#' @keywords internal
+#' @noRd
+se_component_labels <- function() {
+  c(
+    party_size = "Party-size expansion SE",
+    count_sampling = "Count-sampling SE",
+    calibration = "Calibration SE"
   )
 }
 
@@ -279,16 +341,39 @@ format.creel_estimates <- function(x, ...) {
         cli::cli_text("Unit: {unit_display}")
       }
 
-      # Printed only when the party-size term was actually propagated. Silence
-      # here means the multiplier was treated as known, not that its
-      # contribution was measured and found to be zero (GH #121).
-      if (!is.null(x$se_expansion)) {
-        se_exp_display <- format( # nolint: object_usage_linter
-          signif(as.numeric(x$se_expansion), 4)
-        )
-        cli::cli_text(
-          "Party-size expansion SE: {se_exp_display} (included in {.field se})"
-        )
+      # Printed only for components that were actually propagated. Silence for
+      # a component means it was treated as known or does not apply on this
+      # path, not that its contribution was measured and found to be zero
+      # (GH #121). Each line states its relationship to `se`, which is derived
+      # here rather than stored: a component can be perfectly well known while
+      # the total is NA because a different component is not (GH #141).
+      for (component_name in names(x$se_components)) {
+        component_value <- as.numeric(x$se_components[[component_name]])
+        component_display <- format(signif(component_value, 4)) # nolint: object_usage_linter
+        component_label <- unname(se_component_labels()[component_name]) # nolint: object_usage_linter
+        if (is.na(component_label)) {
+          component_label <- component_name # nolint: object_usage_linter
+        }
+        if (all(is.na(component_value))) {
+          cli::cli_text(
+            "{component_label}: {component_display} (unknown, so {.field se} is {.code NA})"
+          )
+        } else if (anyNA(component_value)) {
+          # A grouped component can be measurable for some groups and not
+          # others. Saying flatly that `se` is NA would be false for the groups
+          # where it is not, and the groups are what the analyst acts on.
+          cli::cli_text(
+            "{component_label}: {component_display} (unknown for some groups, where {.field se} is {.code NA})"
+          )
+        } else if (any(is.finite(x$estimates$se %||% NA_real_))) {
+          cli::cli_text(
+            "{component_label}: {component_display} (included in {.field se})"
+          )
+        } else {
+          cli::cli_text(
+            "{component_label}: {component_display} (known, but {.field se} is {.code NA})"
+          )
+        }
       }
 
       cli::cli_text("")

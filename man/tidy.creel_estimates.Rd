@@ -18,13 +18,15 @@ A tibble with one row per estimate. All columns from
 (e.g. mark-recapture harvest). Guaranteed columns:
 \code{estimate}, \code{se}, \code{ci_lower}, \code{ci_upper}, \code{n}.
 
-\strong{Lossy for uncertainty components.} Named components such as
-\code{se_expansion} stay on the object and are deliberately not returned as
-columns. The contract distinguishes a component that was never propagated
-(\code{NULL}) from one that applies but is unknown (\code{NA}), and a
-tibble column collapses both to \code{NA} -- reintroducing exactly the
-ambiguity the \code{NULL} was chosen to prevent. Read them from the object
-(\code{x$se_expansion}) or from \code{print()}.
+\strong{Lossy for uncertainty components.} Named components -- the
+\code{x$se_components} list, and the \code{se_expansion} slot it mirrors --
+stay on the object and are deliberately not returned as columns. The
+contract distinguishes a component that does not apply or was never
+propagated (an absent name) from one that applies but is unknown
+(\code{NA}), and a tibble column collapses both to \code{NA} --
+reintroducing exactly the ambiguity the absent name was chosen to prevent.
+Read them from the object (\code{x$se_components}) or from \code{print()},
+which also states each component's relationship to \code{se}.
 
 Note also that \code{se_between} and \code{se_within}, where present, do
 not reconstruct \code{se} on designs carrying a party-size expansion: the
