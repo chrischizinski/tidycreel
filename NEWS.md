@@ -1,4 +1,4 @@
-# tidycreel 3.3.0 (development version)
+# tidycreel 3.3.0 "Shovelnose Sturgeon" (2026-08-15)
 
 ## Statistical correctness
 
