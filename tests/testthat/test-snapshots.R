@@ -12,6 +12,51 @@ test_that("print.creel_design snapshot", {
   expect_snapshot(print(design))
 })
 
+test_that("print.creel_design snapshot with counts and a party-size term", {
+  # The design-with-no-counts snapshot above never reaches the count block, so
+  # the count column and party-size lines (GH #124) need their own fixture.
+  local_reproducible_output(width = 80)
+  cal <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-02")),
+    day_type = c("weekday", "weekend")
+  )
+  raw <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-02")),
+    day_type = c("weekday", "weekend"),
+    bank_anglers = c(3, 5),
+    angler_boats = c(6, 2)
+  )
+  counts <- derive_angler_count(
+    raw,
+    bank = bank_anglers,
+    boat_count = angler_boats,
+    party_size = 2.5,
+    party_size_se = 0.1
+  )
+  design <- creel_design(cal, date = date, strata = day_type)
+  design <- suppressWarnings(add_counts(design, counts, count_col = "angler_count"))
+  expect_snapshot(print(design))
+})
+
+test_that("print.creel_design snapshot when the party-size term is not carried", {
+  # The silent case GH #124 exists to surface: an ordinary select() drops the
+  # carriers and the table becomes indistinguishable from one that never had
+  # them, so the design print is the last place it can be seen.
+  local_reproducible_output(width = 80)
+  cal <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-02")),
+    day_type = c("weekday", "weekend")
+  )
+  counts <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-02")),
+    day_type = c("weekday", "weekend"),
+    angler_count = c(18, 10)
+  )
+  design <- creel_design(cal, date = date, strata = day_type)
+  design <- suppressWarnings(add_counts(design, counts, count_col = "angler_count"))
+  expect_snapshot(print(design))
+})
+
 test_that("print.creel_estimates_mor snapshot", {
   local_reproducible_output(width = 80)
   cal <- data.frame(

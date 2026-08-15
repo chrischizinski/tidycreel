@@ -145,14 +145,22 @@ add_counts() performs Tier 1 validation:
 
 \section{Party-size expansion carriers}{
 
-\code{\link[=derive_angler_count]{derive_angler_count()}} attaches \code{expansion_basis}, \code{expansion_se}, and
-\code{expansion_group} to the counts table so the party-size sampling error can
-reach the effort standard error. The three are written together and must
-travel together: \code{add_counts()} aborts on a table carrying only some of them,
-since that state can only come from partial deletion and would otherwise drop
-the variance component while leaving an \code{expansion_se} visible in the data.
+\code{\link[=derive_angler_count]{derive_angler_count()}} attaches \code{expansion_basis}, \code{expansion_se},
+\code{expansion_group}, and \code{expansion_of} to the counts table so the party-size
+sampling error can reach the effort standard error. The four are written
+together and must travel together: \code{add_counts()} aborts on a table carrying
+only some of them, since that state can only come from partial deletion and
+would otherwise drop the variance component while leaving an \code{expansion_se}
+visible in the data.
 
-Dropping all three — which an ordinary \code{select()} will do — is
+\code{add_counts()} also aborts when \code{count_col} is not the column named in
+\code{expansion_of}. The basis is d(count)/d(party_size), so a count transformed
+after \code{derive_angler_count()} no longer matches the basis carried beside it,
+and the variance component would come out understated by exactly the scale
+factor while still reading as propagated. Supply the untransformed count and
+\code{period_length_col}, which scales the count and the basis together.
+
+Dropping all four — which an ordinary \code{select()} will do — is
 indistinguishable here from counts that never had them, and is silent.
 }
 

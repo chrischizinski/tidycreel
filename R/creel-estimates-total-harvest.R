@@ -228,7 +228,8 @@ estimate_total_harvest <- function(
       conf_level = conf_level,
       by_vars = by_info$all_vars,
       effort_target = target,
-      unit = "fish"
+      unit = "fish",
+      se_expansion = attr(estimates_df, "se_expansion")
     ))
   }
 
@@ -328,7 +329,7 @@ estimate_total_harvest_ungrouped <- function(
   warn_missing_rate_strata(effort_df, hpue_df, strata_cols, "estimate_total_harvest") # nolint: object_usage_linter
 
   # Stratified-sum product estimator: sum(E_h * HPUE_h) across strata h
-  estimates_df <- compute_stratum_product_sum(
+  estimates_df <- compute_stratum_product_sum( # nolint: object_usage_linter
     # nolint: object_usage_linter
     effort_df = effort_df,
     rate_df = hpue_df,
@@ -337,7 +338,9 @@ estimate_total_harvest_ungrouped <- function(
     conf_level = conf_level,
     rate_suffix = "hpue",
     product_variance = product_variance,
-    ci_type = ci_type
+    ci_type = ci_type,
+    expansion_se = named_expansion_se(effort_result, strata_cols), # nolint: object_usage_linter
+    expansion_structure = expansion_group_structure(design) # nolint: object_usage_linter
   )
 
   new_creel_estimates( # nolint: object_usage_linter
@@ -348,7 +351,8 @@ estimate_total_harvest_ungrouped <- function(
     conf_level = conf_level,
     by_vars = NULL,
     effort_target = target,
-    unit = "fish"
+    unit = "fish",
+    se_expansion = attr(estimates_df, "se_expansion")
   )
 }
 
@@ -385,7 +389,7 @@ estimate_total_harvest_grouped <- function(
 
   warn_missing_rate_strata(effort_df, hpue_df, stratum_by_vars, "estimate_total_harvest(by=)") # nolint: object_usage_linter
 
-  estimates_df <- compute_stratum_product_sum(
+  estimates_df <- compute_stratum_product_sum( # nolint: object_usage_linter
     # nolint: object_usage_linter
     effort_df = effort_df,
     rate_df = hpue_df,
@@ -394,7 +398,9 @@ estimate_total_harvest_grouped <- function(
     conf_level = conf_level,
     rate_suffix = "hpue",
     product_variance = product_variance,
-    ci_type = ci_type
+    ci_type = ci_type,
+    expansion_se = named_expansion_se(effort_result, stratum_by_vars), # nolint: object_usage_linter
+    expansion_structure = expansion_group_structure(design) # nolint: object_usage_linter
   )
 
   new_creel_estimates( # nolint: object_usage_linter
@@ -405,7 +411,8 @@ estimate_total_harvest_grouped <- function(
     conf_level = conf_level,
     by_vars = by_vars,
     effort_target = target,
-    unit = "fish"
+    unit = "fish",
+    se_expansion = attr(estimates_df, "se_expansion")
   )
 }
 
@@ -468,7 +475,7 @@ estimate_total_harvest_species <- function(
     rate_sp_df <- all_rate_df[all_rate_df[[species_col]] == sp, , drop = FALSE]
     rate_no_sp <- rate_sp_df[, setdiff(names(rate_sp_df), species_col), drop = FALSE]
 
-    sp_result <- compute_stratum_product_sum(
+    sp_result <- compute_stratum_product_sum( # nolint: object_usage_linter
       # nolint: object_usage_linter
       effort_df = effort_df,
       rate_df = rate_no_sp,
@@ -477,7 +484,9 @@ estimate_total_harvest_species <- function(
       conf_level = conf_level,
       rate_suffix = "hpue",
       product_variance = product_variance,
-      ci_type = ci_type
+      ci_type = ci_type,
+      expansion_se = named_expansion_se(effort_result, stratum_by_vars), # nolint: object_usage_linter
+      expansion_structure = expansion_group_structure(design) # nolint: object_usage_linter
     )
 
     sp_result[[species_col]] <- sp
@@ -485,7 +494,15 @@ estimate_total_harvest_species <- function(
     results_list[[i]] <- sp_result
   }
 
-  do.call(rbind, results_list)
+  out <- do.call(rbind, results_list)
+  # rbind() drops attributes, so the component has to be rebuilt from the pieces
+  # in the same row order rather than assumed to survive the bind -- the same
+  # reason the expansion carriers are columns and not attributes.
+  se_exp <- lapply(results_list, function(x) attr(x, "se_expansion"))
+  if (!all(vapply(se_exp, is.null, logical(1L)))) {
+    attr(out, "se_expansion") <- unlist(se_exp, use.names = FALSE)
+  }
+  out
 }
 
 #' Per-section total harvest estimation (product estimator)

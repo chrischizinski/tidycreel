@@ -41,6 +41,14 @@
 #'   return stays usable directly as a multiplier, and so the `by` form keeps
 #'   exactly one numeric column and remains valid as a `party_size` lookup.
 #'
+#'   For the `by` form the attribute is **named by the group key**, and
+#'   [derive_angler_count()] addresses it by name. Attributes do not follow the
+#'   rows they describe through a `dplyr` reordering, so a positional attribute
+#'   would go stale the moment the lookup were sorted — attributing each
+#'   stratum's standard error to a different stratum while the means, which join
+#'   by key, stayed correct. A `by`-form lookup whose `"se"` attribute has no
+#'   names is refused rather than matched by row order.
+#'
 #'   A group with a single party has no estimable standard error and gets
 #'   `NA_real_`, which propagates to an `NA` effort standard error rather than
 #'   being quietly treated as zero uncertainty.
@@ -113,7 +121,7 @@ mean_party_size <- function(
 
   # Aggregated separately rather than returned as a second column: a party_size
   # lookup must have exactly one numeric column, so the standard errors ride
-  # along as an attribute in the same row order.
+  # along as an attribute.
   agg_se <- stats::aggregate(
     rows[[n_col]],
     by = lapply(rows[by_cols], identity),
@@ -121,7 +129,15 @@ mean_party_size <- function(
   )
 
   out <- tibble::as_tibble(agg)
-  attr(out, "se") <- as.numeric(agg_se[[ncol(agg_se)]])
+  # Named by the group key rather than left in row order. dplyr row operations
+  # reorder the tibble and leave attributes untouched, so a positional attribute
+  # goes stale against the rows it describes and each stratum ends up with
+  # another stratum's standard error -- silently, because the means join by key
+  # and so stay right (GH #133).
+  attr(out, "se") <- stats::setNames(
+    as.numeric(agg_se[[ncol(agg_se)]]),
+    do.call(paste, c(agg_se[by_cols], sep = "\r"))
+  )
   out
 }
 
@@ -215,12 +231,20 @@ se_of_mean <- function(x) {
 #'
 #' @return `counts` with the derived column appended.
 #'
-#'   When a party-size standard error is available, three further columns are
+#'   When a party-size standard error is available, four further columns are
 #'   appended for the estimators to read: `expansion_basis` (the boat count,
-#'   which is what the multiplier acts on), `expansion_se`, and
+#'   which is what the multiplier acts on), `expansion_se`,
 #'   `expansion_group` (which rows share one estimated multiplier, and so carry
-#'   perfectly correlated error). [add_counts()] recognises all three and
-#'   excludes them from count-column detection.
+#'   perfectly correlated error), and `expansion_of` (the column the basis is
+#'   the derivative of). [add_counts()] recognises all four and excludes them
+#'   from count-column detection.
+#'
+#'   They must travel together and must reach [add_counts()] alongside the
+#'   column named in `expansion_of`. Transforming that column in between --
+#'   multiplying a count by a shift length, say -- scales the count but not its
+#'   derivative, and [add_counts()] refuses rather than propagate a component
+#'   that is understated by exactly the scale factor. Pass the per-day count and
+#'   let `period_length_col` do the multiplication instead.
 #'
 #' @seealso [mean_party_size()], [add_counts()], [prep_counts_boat_party()]
 #' @family "Survey Design"
@@ -321,7 +345,7 @@ derive_angler_count <- function(
       "i" = "It is the standard error of a multiplier that is not being applied here."
     ))
   }
-  carrier_cols <- c("expansion_basis", "expansion_se", "expansion_group")
+  carrier_cols <- expansion_carrier_cols()
   clash <- intersect(carrier_cols, names(counts))
   if (has_boat_count && length(clash) > 0L) {
     cli::cli_abort(c(
@@ -374,7 +398,12 @@ derive_angler_count <- function(
       expansion <- list(
         basis = boats,
         se = se_vals,
-        group = attr(party, "group") %||% rep("1", nrow(counts))
+        group = attr(party, "group") %||% rep("1", nrow(counts)),
+        # The column the basis is the derivative of. Recorded so add_counts()
+        # can tell whether the count it is handed is still the one the basis
+        # belongs to; a transformation applied in between scales the count and
+        # leaves the basis in the old units (GH #131).
+        of = to
       )
     }
   }
@@ -384,6 +413,7 @@ derive_angler_count <- function(
     counts[["expansion_basis"]] <- expansion$basis
     counts[["expansion_se"]] <- expansion$se
     counts[["expansion_group"]] <- expansion$group
+    counts[["expansion_of"]] <- expansion$of
   }
   counts
 }
@@ -450,10 +480,48 @@ resolve_party_size_se <- function(
         call = error_call
       )
     }
-    idx <- match(
-      do.call(paste, c(counts[key_cols], sep = "\r")),
-      do.call(paste, c(party_size[key_cols], sep = "\r"))
-    )
+    # Addressed by name, not by position. `idx` below matches counts rows to
+    # lookup rows by key, so indexing the attribute by that index would pair a
+    # key-correct mean with a row-order-correct standard error -- which are the
+    # same thing only until somebody sorts the lookup (GH #133).
+    # One lookup row cannot be reordered against itself, so there is nothing for
+    # a positional attribute to go stale against.
+    if (is.null(names(se)) && nrow(party_size) > 1L) {
+      cli::cli_abort(
+        c(
+          "The {.val se} attribute on {.arg party_size} has no names.",
+          "x" = paste(
+            "Without names it can only be matched by row order, which goes",
+            "stale as soon as the lookup is sorted or otherwise reordered --",
+            "silently, since the means still join by key."
+          ),
+          "i" = "{.fn mean_party_size} names it by the group key.",
+          "i" = paste(
+            "For a hand-built lookup, pass the standard errors as a keyed",
+            "table to {.arg party_size_se} instead."
+          )
+        ),
+        call = error_call,
+        class = "creel_error_unnamed_expansion_se"
+      )
+    }
+    idx <- if (is.null(names(se))) {
+      rep(1L, nrow(counts))
+    } else {
+      match(do.call(paste, c(counts[key_cols], sep = "\r")), names(se))
+    }
+    if (anyNA(idx)) {
+      cli::cli_abort(
+        c(
+          "The {.val se} attribute on {.arg party_size} has no entry for \\
+           {sum(is.na(idx))} count{?s}.",
+          "i" = "Names present: {.val {names(se)}}.",
+          "i" = "Every count needs the standard error of the multiplier applied to it."
+        ),
+        call = error_call,
+        class = "creel_error_unnamed_expansion_se"
+      )
+    }
     out <- as.numeric(se)[idx]
   } else {
     if (length(se) != 1L) {
@@ -716,6 +784,27 @@ resolve_party_size <- function(party_size_quo, counts, error_call = rlang::calle
     ),
     call = error_call
   )
+}
+
+
+#' The columns that carry the party-size expansion
+#'
+#' Internal helper. `derive_angler_count()` writes all of these or none of them,
+#' and `add_counts()` reads them back. They are columns rather than attributes
+#' because `add_counts()` rebuilds the counts table with `rbind()`, which drops
+#' attributes.
+#'
+#' Named in one place because the set is read at three seams -- the overwrite
+#' check here, the count-column exclusion list, and the carrier read in
+#' `add_counts()` -- and a name added to two of three is the partial set that
+#' GH #132 exists to refuse.
+#'
+#' @return Character vector of column names
+#'
+#' @keywords internal
+#' @noRd
+expansion_carrier_cols <- function() {
+  c("expansion_basis", "expansion_se", "expansion_group", "expansion_of")
 }
 
 
