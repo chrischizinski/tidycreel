@@ -117,6 +117,37 @@ number.
   report itself as fully observed, and the warning above never fired for
   designs using `count_time_col`.
 
+## Reporting of uncertainty components
+
+* `creel_estimates` objects now carry `se_components`, a named list of the
+  standard-error contributions that make up `se`, and `print()` reports each one
+  with its relationship to `se` (#141). The contract is the one the party-size
+  component has followed since 3.2.0, generalised: an absent name means the
+  component does not apply to that path or was never propagated, `NA` means it
+  applies and is unknown, a finite value is a contribution and never `se`
+  itself, and none of them is ever `0` — a zero cannot be told apart from a
+  component that never propagated. `se_expansion` is unchanged and still
+  supported; the constructor now mirrors it into `se_components[["party_size"]]`
+  so a reported component and the standard error containing it cannot drift
+  apart, which is the defect #134 was.
+
+* Camera effort estimation reports its two delta-method terms separately as the
+  `count_sampling` and `calibration` components (#141). Since 3.3.0 a stratum
+  with one paired interview/count day gives its calibration ratio an unknown
+  variance, which correctly makes the whole standard error `NA` (#136) —
+  `Var(E) = Σ_h [ρ_h² Var(T_h) + T_h² Var(ρ_h)]` is unknown if any `Var(ρ_k)`
+  is, and reporting the measurable part as the standard error would publish a
+  lower bound under the name of the real thing. That `NA` stays. What changes is
+  that the count-sampling half is now reported as a finite component alongside
+  it, so one thin stratum no longer hides everything that *is* known. The
+  reported components reconstruct `se` exactly, and the raw-count path omits
+  `calibration` entirely rather than reporting it as `NA`, because that path has
+  no calibration ratio at all. No standard error changes value.
+
+* `tidy()` remains lossy for these components, for the reason already
+  documented: a tibble column collapses an absent component and an unknown one
+  into the same `NA`.
+
 # tidycreel 3.2.0 "Bigmouth Buffalo" (2026-08-13)
 
 ## New features

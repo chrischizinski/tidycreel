@@ -260,9 +260,24 @@ estimate_effort_camera <- function(
 
     estimate <- sum(total_counts_h * rho_matched)
     # SE via delta method: Var(E_h) = rho_h^2 * Var(total_count_h) + total_count_h^2 * Var(rho_h)
-    se_between <- sqrt(
-      sum((survey::SE(svy_raw) * rho_matched)^2) +
-        sum(total_counts_h^2 * var_rho_matched)
+    #
+    # The two summands are separable and only the second can be unknown, so
+    # they are named and reported as components (GH #141). Var(rho_h) is NA for
+    # a stratum with one paired day (GH #136) and neither sum() uses na.rm, so
+    # the calibration component and the total both stay NA -- the total must,
+    # because a sum missing an unknown term is a lower bound, not an SE. What
+    # the split adds is that the count-sampling part remains reportable, so the
+    # NA says which half is unknown instead of only blocking.
+    #
+    # Split at the variance level rather than combining two SEs in quadrature:
+    # sqrt(sqrt(a)^2 + sqrt(b)^2) is not the same floating-point number as
+    # sqrt(a + b), and no existing camera SE may move.
+    var_count_sampling <- sum((survey::SE(svy_raw) * rho_matched)^2)
+    var_calibration <- sum(total_counts_h^2 * var_rho_matched)
+    se_between <- sqrt(var_count_sampling + var_calibration)
+    se_components <- list(
+      count_sampling = sqrt(var_count_sampling),
+      calibration = sqrt(var_calibration)
     )
     method_label <- "camera_ratio"
     # effort_unit_label was set above, where the party-size decision was made.
@@ -304,6 +319,12 @@ estimate_effort_camera <- function(
 
     estimate <- as.numeric(coef(svy_result)) * h_open
     se_between <- as.numeric(survey::SE(svy_result)) * h_open
+    # This branch has no calibration ratio, so `calibration` is absent rather
+    # than NA: the component does not apply here, which is a different claim
+    # from applying and being unmeasurable (GH #141). h_open is a supplied
+    # constant and contributes no variance of its own, so the whole SE is the
+    # count-sampling term.
+    se_components <- list(count_sampling = se_between)
     method_label <- "camera_raw"
     # Raw count x h_open hours. The guard above establishes that no T_d has
     # already been applied, so h_open is the sole period source and this is
@@ -343,6 +364,8 @@ estimate_effort_camera <- function(
     by_vars = NULL,
     # Set per branch above: the two paths reach this constructor with different
     # provenance for the same quantity.
-    unit = effort_unit_label # nolint: object_usage_linter
+    unit = effort_unit_label, # nolint: object_usage_linter
+    # Also set per branch: the raw path has no calibration component at all.
+    se_components = se_components # nolint: object_usage_linter
   )
 }
