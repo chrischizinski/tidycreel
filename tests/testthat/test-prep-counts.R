@@ -632,3 +632,170 @@ test_that("counts with neither column still build a design (GH #109)", {
   expect_null(d$within_day_var)
   expect_identical(compute_within_day_var_contribution(d), 0)
 })
+
+# GH #143: the party-size variance component on the prep path ------------------
+
+# prep_counts_boat_party() performs the same boat -> angler expansion as
+# derive_angler_count(), but wrote no expansion_* carriers and had no argument
+# through which a party-size standard error could be supplied. The component
+# was not omitted by default -- it was unreachable, and on the pipeline the
+# documentation calls preferred, so the two documented routes to one expansion
+# were not statistically equivalent and nothing said so.
+
+bp_raw <- function() {
+  data.frame(
+    date = as.Date("2024-06-01") + 0:5,
+    day_type = rep(c("weekday", "weekend"), 3),
+    angler_boats = rep(4, 6),
+    mps = 2.5,
+    mps_se = 0.1,
+    stringsAsFactors = FALSE
+  )
+}
+
+bp_calendar <- function() {
+  data.frame(
+    date = as.Date("2024-06-01") + 0:5,
+    day_type = rep(c("weekday", "weekend"), 3),
+    stringsAsFactors = FALSE
+  )
+}
+
+bp_effort <- function(counts, count_col) {
+  design <- creel_design(bp_calendar(), date = date, strata = day_type)
+  suppressWarnings(estimate_effort(
+    suppressWarnings(add_counts(design, counts, count_col = count_col))
+  ))
+}
+
+test_that("both documented routes to one expansion agree (GH #143)", {
+  # The point of the issue: identical design, identical party size, identical
+  # party-size SE, two documented entry points. Before this argument existed
+  # the prep path reported the pre-3.2.0 understated SE with se_expansion NULL,
+  # and no user action could change that.
+  prep <- prep_counts_boat_party(
+    bp_raw(),
+    date = date,
+    strata = day_type,
+    boat_count = angler_boats,
+    mean_party_size = mps,
+    mean_party_size_se = mps_se
+  )
+  derived <- derive_angler_count(
+    bp_raw(),
+    boat_count = angler_boats,
+    party_size = mps,
+    party_size_se = mps_se
+  )
+
+  from_prep <- bp_effort(prep, "daily_effort")
+  from_derive <- bp_effort(derived, "angler_count")
+
+  expect_equal(from_prep$estimates$estimate, from_derive$estimates$estimate)
+  expect_equal(from_prep$estimates$se, from_derive$estimates$se)
+  expect_equal(from_prep$se_expansion, from_derive$se_expansion)
+  expect_false(is.null(from_prep$se_expansion))
+})
+
+test_that("prep_counts_boat_party() emits all four carrier columns (GH #143)", {
+  # All four or none: a proper subset cannot be produced by a writer, so
+  # add_counts() treats one as evidence of partial deletion (GH #132).
+  prep <- prep_counts_boat_party(
+    bp_raw(),
+    date = date,
+    boat_count = angler_boats,
+    mean_party_size = mps,
+    mean_party_size_se = mps_se
+  )
+  expect_true(all(
+    c("expansion_basis", "expansion_se", "expansion_group", "expansion_of") %in%
+      names(prep)
+  ))
+})
+
+test_that("the emitted basis includes the correction factor (GH #131, #143)", {
+  # This function applies correction_factor to the product, so
+  # d(daily_effort)/d(mean_party_size) is boat_count * correction_factor. A
+  # basis of the bare boat count would be the derivative of a quantity this
+  # function never produces, and add_counts() would be right to reject it as
+  # desynchronised -- the exact hazard #131 added expansion_of to catch.
+  prep <- prep_counts_boat_party(
+    bp_raw(),
+    date = date,
+    strata = day_type,
+    boat_count = angler_boats,
+    mean_party_size = mps,
+    mean_party_size_se = mps_se,
+    correction_factor = 1.2
+  )
+  expect_equal(unique(prep$expansion_basis), 4 * 1.2)
+  expect_equal(unique(prep$daily_effort), 4 * 2.5 * 1.2)
+  expect_identical(unique(prep$expansion_of), "daily_effort")
+
+  # And it survives the seam rather than merely being written: the component
+  # is 4% of the total, matching the multiplier's own 0.1 / 2.5 relative error.
+  effort <- bp_effort(prep, "daily_effort")
+  expect_equal(
+    effort$se_expansion / effort$estimates$estimate,
+    0.1 / 2.5
+  )
+})
+
+test_that("omitting the SE leaves the component absent, not zero (GH #143)", {
+  # NULL is load-bearing: it distinguishes a component that was never
+  # propagated from one measured as zero. Emitting carriers with se = 0 would
+  # report the multiplier as exactly known.
+  prep <- prep_counts_boat_party(
+    bp_raw(),
+    date = date,
+    strata = day_type,
+    boat_count = angler_boats,
+    mean_party_size = mps
+  )
+  expect_false(any(c("expansion_basis", "expansion_se") %in% names(prep)))
+  expect_null(bp_effort(prep, "daily_effort")$se_expansion)
+})
+
+test_that("an unknown party-size SE propagates as NA, not as absent (GH #143)", {
+  # The third state: the component applies but could not be measured. It must
+  # reach the estimator rather than being silently dropped to nothing.
+  raw <- bp_raw()
+  raw$mps_se <- NA_real_
+  prep <- prep_counts_boat_party(
+    raw,
+    date = date,
+    strata = day_type,
+    boat_count = angler_boats,
+    mean_party_size = mps,
+    mean_party_size_se = mps_se
+  )
+  expect_true(all(is.na(prep$expansion_se)))
+  expect_true(is.na(bp_effort(prep, "daily_effort")$se_expansion))
+})
+
+test_that("a negative party-size SE is refused (GH #143)", {
+  raw <- bp_raw()
+  raw$mps_se <- -0.1
+  expect_error(
+    prep_counts_boat_party(
+      raw,
+      date = date,
+      boat_count = angler_boats,
+      mean_party_size = mps,
+      mean_party_size_se = mps_se
+    ),
+    "must not be negative"
+  )
+})
+
+test_that("a scalar party-size SE is accepted alongside a column (GH #143)", {
+  # Mirrors derive_angler_count(party_size_se = ), which takes either.
+  prep <- prep_counts_boat_party(
+    bp_raw(),
+    date = date,
+    boat_count = angler_boats,
+    mean_party_size = mps,
+    mean_party_size_se = 0.1
+  )
+  expect_equal(unique(prep$expansion_se), 0.1)
+})

@@ -10,6 +10,7 @@ prep_counts_boat_party(
   strata = NULL,
   boat_count,
   mean_party_size,
+  mean_party_size_se = NULL,
   effort_type = "boat",
   correction_factor = 1,
   psu = NULL,
@@ -29,6 +30,21 @@ prep_counts_boat_party(
 
 \item{mean_party_size}{Tidy selector for the numeric mean anglers-per-boat
 column.}
+
+\item{mean_party_size_se}{Optional standard error of \code{mean_party_size}. May
+be a scalar or an expression evaluating to one value per row. Supplying it
+emits the \verb{expansion_*} carrier columns, which \code{\link[=add_counts]{add_counts()}} reads so the
+reported standard error includes the party-size sampling error.
+
+\code{NULL} (the default) leaves the component absent rather than zero. A zero
+would enter the variance as "the multiplier is known exactly" and be
+indistinguishable from never having propagated, so the two states are kept
+apart. \code{NA} is accepted and propagates as unknown.
+
+Before tidycreel 3.4.0 this argument did not exist, and the component was
+unreachable on this path: the same expansion through
+\code{\link[=derive_angler_count]{derive_angler_count()}} reported a larger, correct standard error while
+this one silently omitted the term (GH #143).}
 
 \item{effort_type}{Effort-type values for output. Defaults to "boat". May be
 a scalar string/factor or an expression that evaluates to one value per row.}

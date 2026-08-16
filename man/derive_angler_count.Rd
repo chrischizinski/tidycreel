@@ -54,6 +54,13 @@ multiplying a count by a shift length, say -- scales the count but not its
 derivative, and \code{\link[=add_counts]{add_counts()}} refuses rather than propagate a component
 that is understated by exactly the scale factor. Pass the per-day count and
 let \code{period_length_col} do the multiplication instead.
+
+All four are written by the package and are not user inputs. In particular,
+editing \code{expansion_of} to name a transformed column silences that refusal
+whether or not the basis was actually rescaled, which re-enables the very
+defect the check exists to catch. Rescale through \code{period_length_col},
+which scales both together and can be verified, rather than by asserting
+that you did (GH #148).
 }
 \description{
 Builds the single angler-count column that \code{add_counts()} needs from the

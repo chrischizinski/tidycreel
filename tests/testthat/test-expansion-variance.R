@@ -868,3 +868,41 @@ test_that("a multi-column lookup key round-trips through the SE names (GH #133)"
   )
   expect_equal(ordered_counts$expansion_se, expected)
 })
+
+# GH #148: the refusal must not misdescribe a correct hand-rescale -------------
+
+test_that("the desync message names the correct-rescale case too (GH #148)", {
+  # The guard cannot distinguish a basis rescaled correctly alongside its count
+  # from one left behind: expansion_of records a column name, not a scale
+  # factor, so both arrive identically and both are refused. Refusing both is
+  # the conservative choice, but the message described only the mistake, and
+  # every instructional example in the companion book -- ten chapters -- met it
+  # with arithmetic that was right. Stating both cases removes the
+  # misdescription without weakening the check.
+  counts <- desync_counts()
+  design <- creel_design(expansion_calendar(), date = date, strata = day_type)
+
+  err <- tryCatch(
+    suppressWarnings(add_counts(design, counts, count_col = "angler_hours")),
+    creel_error_expansion_basis_desync = function(e) e
+  )
+  msg <- cli::ansi_strip(paste(conditionMessage(err), collapse = "\n"))
+
+  # The supported route, and an acknowledgement that correct code lands here.
+  expect_match(msg, "period_length_col", fixed = TRUE)
+  expect_match(msg, "rescaled")
+  # Still says what the actual defect is; broadening must not drop that.
+  expect_match(msg, "understates")
+})
+
+test_that("the desync guard still refuses every case it did before (GH #131, #148)", {
+  # #148 changed wording only. A message change that also changed behaviour
+  # would reopen the defect, so the refusal itself is re-asserted here.
+  counts <- desync_counts()
+  design <- creel_design(expansion_calendar(), date = date, strata = day_type)
+
+  expect_error(
+    suppressWarnings(add_counts(design, counts, count_col = "angler_hours")),
+    class = "creel_error_expansion_basis_desync"
+  )
+})

@@ -53,6 +53,39 @@
   decomposition was carried, since a combination that cannot be computed still
   must not be guessed.
 
+* `prep_counts_boat_party()` gains `mean_party_size_se`, and emits the
+  `expansion_*` carrier columns when it is supplied (#143). This function
+  performs the same boat-to-angler expansion as `derive_angler_count()`, but
+  wrote no carriers and had no argument through which a party-size standard
+  error could be given — so on this path the component was not merely omitted
+  by default, it was unreachable, and no user action could recover it. Because
+  this is the pipeline the documentation calls preferred, the two documented
+  routes to one expansion were not statistically equivalent and nothing said
+  so: the prep path reported the pre-3.2.0 understated standard error with
+  `se_expansion = NULL` as the only signal.
+
+  The emitted basis is `boat_count * correction_factor`, not the bare boat
+  count, because this function applies the correction to the product — a bare
+  basis would be the derivative of a quantity it never produces and would trip
+  the #131 desync guard. `expansion_of` is `"daily_effort"` for the same
+  reason. Omitting the argument still leaves the component absent rather than
+  zero.
+
+* The `creel_error_expansion_basis_desync` message now states that correct
+  hand-rescaling reaches it too (#148). `expansion_of` records a column name
+  rather than a scale factor, so a basis correctly rescaled alongside its count
+  is indistinguishable from one left behind, and both are refused. Refusing
+  both remains the conservative and correct choice, but the message described
+  only the mistake — and every instructional example in the companion book met
+  it with arithmetic that was right. The wording changed; the check did not.
+
+  Relatedly, the four carrier columns are now documented as package-written and
+  not user inputs. Overwriting `expansion_of` to name a transformed column
+  silences the guard whether or not the basis was actually rescaled, which
+  re-enables the defect the guard exists to catch. Use `period_length_col`,
+  which scales count and basis together and can be verified, rather than
+  asserting the rescale.
+
 * **Breaking (error):** `est_effort_camera()`'s ratio-calibration path now
   refuses a counts table that holds more than one row for the same day, rather
   than silently double-counting it (#142). The calibration pairs interview days
