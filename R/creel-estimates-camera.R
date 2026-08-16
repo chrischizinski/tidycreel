@@ -116,6 +116,55 @@ estimate_effort_camera <- function(
         "Column {.field {effort_col}} not found in {.arg interviews}."
       )
     }
+
+    date_col <- design$date_col
+
+    # The pairing below indexes `daily_effort` by date once per matching count
+    # row, so a counts table holding two rows for one date reads that day's
+    # effort twice and counts it twice on both sides of
+    # rho = sum(E_d) / sum(C_d); the svytotal of raw counts then counts it a
+    # second time. Both feed the estimate, so a duplicated row -- which carries
+    # no new information -- moves the point estimate, not only the SE (GH #142).
+    # add_counts() only warns about repeated PSU rows (CNT-06), and only when
+    # `count_time_col` is absent, so such a table reaches this path intact.
+    #
+    # Refused rather than averaged here: two counts on one day are either
+    # sub-period snapshots or a data error, and nothing on this path can tell
+    # which. `count_time_col` is how a caller states the former, and it already
+    # collapses the day to the mean that averaging here would have to assume.
+    day_key_cols <- intersect(
+      unique(c(date_col, design$strata_cols)),
+      names(counts_data)
+    )
+    day_key <- do.call(
+      paste,
+      c(lapply(counts_data[day_key_cols], as.character), sep = "\u001f")
+    )
+    dup_days <- unique(
+      as.character(counts_data[[date_col]])[duplicated(day_key)]
+    )
+    if (length(dup_days) > 0L) {
+      cli::cli_abort(
+        c(
+          "Camera ratio calibration requires one count row per day.",
+          "x" = paste(
+            "{cli::qty(length(dup_days))}Date{?s} {.val {dup_days}}",
+            "{?carries/carry} more than one count row."
+          ),
+          "i" = paste(
+            "The calibration pairs each interview day to one count, so a",
+            "repeated day enters the ratio twice and shifts the estimate."
+          ),
+          "i" = paste(
+            "If these are sub-period counts of the same day, pass",
+            "{.arg count_time_col} to {.fn add_counts}, which averages them",
+            "to one row per day."
+          ),
+          "i" = "Otherwise remove the repeated rows from the counts table."
+        ),
+        class = "creel_error_camera_duplicate_count_days"
+      )
+    }
     # Finding 22: rho is a ratio of sums, so the counts cancel and the estimate
     # inherits whatever unit `effort_col` holds. Supplying n_anglers makes this
     # function perform the party-size multiplication itself, which is what earns
@@ -150,8 +199,6 @@ estimate_effort_camera <- function(
     # Build calibration ratio per stratum: mean(effort) / mean(camera_count)
     strata_col <- design$strata_cols[1L]
     strata_vals <- unique(counts_data[[strata_col]])
-
-    date_col <- design$date_col
 
     cal_rows <- lapply(strata_vals, function(s) {
       # Counts for stratum: one row per day
@@ -190,6 +237,11 @@ estimate_effort_camera <- function(
       # day repeated twice is still one day's information, so keying the
       # single-day test on row count would let a duplicate row restore the
       # false-precision path this guard exists to close (#136).
+      #
+      # The guard at the top of this path now refuses a repeated date outright
+      # (#142), so the two are equal whenever control reaches here. Kept
+      # distinct because they answer different questions, and the counts table
+      # is only known to be one row per day for as long as that guard stands.
       n_pairs <- length(E_d)
       n_days <- length(unique(int_dates_matched))
       if (n_pairs == 0L || sum(C_d, na.rm = TRUE) == 0) {
