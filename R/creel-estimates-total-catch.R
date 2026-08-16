@@ -673,6 +673,16 @@ estimate_total_catch_sections <- function(
   section_rows <- vector("list", length(registered_sections))
   names(section_rows) <- registered_sections
 
+  # A party-size estimate shared across sections is one random quantity common
+  # to all of them, so aggregating to the lake row needs each section's rate and
+  # expansion component, not only its standard error (GH #145).
+  sec_rate <- stats::setNames(
+    rep(NA_real_, length(registered_sections)),
+    registered_sections
+  )
+  sec_expansion_se <- vector("list", length(registered_sections))
+  names(sec_expansion_se) <- registered_sections
+
   for (sec in registered_sections) {
     if (sec %in% absent_sections) {
       na_row <- tibble::tibble(
@@ -720,6 +730,8 @@ estimate_total_catch_sections <- function(
         cpue_est <- cpue_res$estimates$estimate
         effort_se <- effort_res$estimates$se
         cpue_se <- cpue_res$estimates$se
+        sec_rate[[sec]] <- cpue_est
+        sec_expansion_se[[sec]] <- effort_res$se_expansion
         sec_estimate <- effort_est * cpue_est
         sec_var <- product_total_variance(
           effort_est,
@@ -764,11 +776,28 @@ estimate_total_catch_sections <- function(
     result_df$prop_of_lake_total <- result_df$estimate / lake_sum
   }
 
+  # Row-aligned party-size component. Each section's own row is a single total,
+  # so it carries just its own contribution; the lake row's combined one is
+  # appended with the row below.
+  expansion_vec <- section_expansion_vector(sec_expansion_se) # nolint: object_usage_linter
+  se_expansion <- if (is.null(expansion_vec)) NULL else unname(abs(sec_rate * expansion_vec))
+
   # Append .lake_total row if requested (ungrouped path only)
   if (aggregate_sections && is.null(by_vars)) {
     present_rows <- result_df[!is.na(result_df$estimate), ]
     lake_est <- sum(present_rows$estimate)
-    lake_se <- sqrt(sum(present_rows$se^2))
+
+    present <- as.character(present_rows$section)
+    lake <- combine_section_variances( # nolint: object_usage_linter
+      design,
+      section_var = present_rows$se^2,
+      rate = sec_rate[present],
+      expansion_se = expansion_vec[present]
+    )
+    lake_se <- lake$se
+    if (!is.null(se_expansion)) {
+      se_expansion <- c(se_expansion, lake$component %||% NA_real_)
+    }
 
     # CI for lake total: sum(section n) - n_sections (consistent with compute_stratum_product_sum)
     df_lake <- max(1L, sum(present_rows$n) - nrow(present_rows))
@@ -805,6 +834,7 @@ estimate_total_catch_sections <- function(
     conf_level = conf_level,
     by_vars = if (!is.null(by_vars)) c("section", by_vars) else "section",
     effort_target = target,
-    unit = "fish"
+    unit = "fish",
+    se_expansion = se_expansion
   )
 }

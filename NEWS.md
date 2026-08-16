@@ -1,3 +1,32 @@
+# tidycreel 3.4.0 "Flathead Chub" (development version)
+
+## Statistical correctness
+
+* **Breaking (numeric):** the per-section totals from `estimate_total_catch()`,
+  `estimate_total_harvest()`, and `estimate_total_release()` no longer aggregate
+  to the `.lake_total` row as though the sections were independent when one
+  party-size estimate spans them (#145). This is #144 on a second partition: the
+  sections path builds its frame by hand instead of routing through the shared
+  stratum helper, so the strata correction never reached it. A multiplier
+  estimated once and applied across sections is a single random quantity common
+  to all of them, so its contributions add before squaring. **The lake-row
+  standard error moves upward** on affected designs; the per-section rows and
+  every point estimate are unchanged.
+
+  The structure is now classified against the *section* partition rather than
+  the strata, because sections may cross-cut strata — a group can be nested
+  within strata while spanning sections. One consequence is visible: a
+  party-size estimate keyed by a stratum (for example one per `day_type`) is
+  nested within strata but straddles sections unevenly, so the lake row now
+  reports `se = NA` with a warning rather than a number that quietly assumed
+  one geometry or the other. As elsewhere in the package, an unknown standard
+  error is `NA`, never a zero and never a plausible substitute.
+
+* A sections total now reports the party-size component its standard error
+  carries, per row, instead of `NULL` (#145, completing #134). `NULL` means the
+  component was never propagated, and the sections constructor was saying that
+  while its `se` demonstrably contained the term.
+
 # tidycreel 3.3.0 "Shovelnose Sturgeon" (2026-08-15)
 
 ## Statistical correctness
