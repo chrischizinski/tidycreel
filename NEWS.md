@@ -1,4 +1,4 @@
-# tidycreel 3.4.0 (development version)
+# tidycreel 3.4.0 "Flathead Chub" (development version)
 
 ## Statistical correctness
 
