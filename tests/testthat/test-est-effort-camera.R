@@ -452,12 +452,14 @@ test_that("CEST-25: imputed days must not shrink the SE below dropping those day
   skip("Prediction uncertainty for imputed counts is not yet propagated; see GH #137.")
 })
 
-test_that("CEST-23: a duplicate count row does not restore the false-precision path (GH #136)", {
+test_that("CEST-23: a duplicate count row is refused before it can reach var_rho (GH #136, #142)", {
   # n_days once counted matched count *rows*, so a second row for the same
   # date made a one-paired-day stratum look like two and computed var_rho from
-  # a single day's residuals repeated. add_counts() only warns about duplicate
-  # PSU rows, so this table reaches the estimator intact. One day repeated is
-  # still one day's information: the SE must stay NA.
+  # a single day's residuals repeated. That was closed by keying the
+  # single-day test on distinct dates (#136), a holding position that left the
+  # ratio itself double-counting the day (#142). The calibration path now
+  # refuses the table outright, so the false-precision path is unreachable by
+  # this route rather than merely guarded against.
   d <- make_camera_design()
   counts <- make_camera_counts()
   dup <- rbind(counts, counts[counts$date == as.Date("2024-06-08"), ])
@@ -468,11 +470,99 @@ test_that("CEST-23: a duplicate count row does not restore the false-precision p
     hours_fished = c(3.5, 4.0, 2.5),
     stringsAsFactors = FALSE
   )
-  expect_warning(
-    result <- est_effort_camera(d, interviews = mixed, n_anglers = 1),
-    class = "creel_warning_camera_single_day"
+  expect_error(
+    est_effort_camera(d, interviews = mixed, n_anglers = 1),
+    class = "creel_error_camera_duplicate_count_days"
   )
-  expect_true(is.na(result$estimates$se))
+})
+
+# GH #142: duplicate count rows double-count a day in the ratio calibration ----
+
+test_that("CEST-26: a repeated count date is refused on the calibration path (GH #142)", {
+  # rho = sum(E_d) / sum(C_d) pairs by date membership and re-reads
+  # daily_effort once per matching count row, so a second row for one date
+  # counts that day twice on both sides, and the svytotal of raw counts counts
+  # it again. Measured on this fixture: 16 clean vs 19.5 with 2024-06-03
+  # repeated -- a 22% move in the POINT ESTIMATE from a row carrying no new
+  # information. Only the generic CNT-06 duplicate-PSU warning fired.
+  d <- make_camera_design()
+  counts <- make_camera_counts()
+  dup <- rbind(counts, counts[counts$date == as.Date("2024-06-03"), ])
+  d <- suppressWarnings(add_counts(d, dup))
+  expect_error(
+    est_effort_camera(d, interviews = make_interviews(), n_anglers = 1),
+    class = "creel_error_camera_duplicate_count_days"
+  )
+})
+
+test_that("CEST-26: the refusal names the offending date (GH #142)", {
+  # The trigger is a duplicated row, not a modelling choice, so the caller has
+  # to be told which day to look at -- a bare "duplicate rows" would leave
+  # them diffing the counts table by hand.
+  d <- make_camera_design()
+  counts <- make_camera_counts()
+  dup <- rbind(counts, counts[counts$date == as.Date("2024-06-03"), ])
+  d <- suppressWarnings(add_counts(d, dup))
+  err <- tryCatch(
+    est_effort_camera(d, interviews = make_interviews(), n_anglers = 1),
+    creel_error_camera_duplicate_count_days = function(e) e
+  )
+  msg <- cli::ansi_strip(paste(conditionMessage(err), collapse = "\n"))
+  expect_match(msg, "2024-06-03", fixed = TRUE)
+  expect_match(msg, "count_time_col", fixed = TRUE)
+})
+
+test_that("CEST-26: the remedy the error recommends actually works (GH #142)", {
+  # The refusal is only defensible because a caller with genuine sub-daily
+  # counts has somewhere to go. count_time_col collapses them to one row per
+  # day in add_counts(), so the same raw data reaches the calibration path in
+  # the shape it requires. If this ever stops holding, the error is a dead end.
+  d <- make_camera_design()
+  sub_daily <- data.frame(
+    date = rep(
+      as.Date(c("2024-06-03", "2024-06-04", "2024-06-05", "2024-06-08", "2024-06-09")),
+      each = 2L
+    ),
+    day_type = rep(c("weekday", "weekday", "weekday", "weekend", "weekend"), each = 2L),
+    count_time = rep(c("am", "pm"), 5L),
+    ingress_count = c(48L, 50L, 55L, 52L, 43L, 40L, 80L, 78L, 75L, 70L),
+    camera_status = "operational",
+    stringsAsFactors = FALSE
+  )
+  d <- suppressWarnings(add_counts(
+    d,
+    sub_daily,
+    count_col = "ingress_count",
+    count_time_col = count_time
+  ))
+  result <- est_effort_camera(d, interviews = make_interviews(), n_anglers = 1)
+  expect_true(is.finite(result$estimates$estimate))
+})
+
+test_that("CEST-26: a clean one-row-per-day table is unaffected by the guard (GH #142)", {
+  # The guard must refuse only the duplicated case. A repeated *stratum* value
+  # across distinct dates is the ordinary shape of every camera design, so
+  # keying the check on the date alone -- or on the stratum -- would refuse
+  # every valid table.
+  d <- make_design_with_counts()
+  result <- est_effort_camera(d, interviews = make_interviews(), n_anglers = 1)
+  expect_true(is.finite(result$estimates$estimate))
+  expect_true(is.finite(result$estimates$se))
+})
+
+test_that("CEST-26: the raw-count path is deliberately left alone (GH #142)", {
+  # Scoped to the calibration path. svytotal() over a duplicated PSU row is
+  # the same shape in every design that expands counts, so refusing it here
+  # only would be an inconsistency dressed as a fix; the general question is
+  # recorded separately. This test exists so the scope is a decision on record
+  # rather than an oversight, and fails loudly if the guard is ever widened
+  # without that decision being revisited.
+  d <- make_camera_design()
+  counts <- make_camera_counts()
+  dup <- rbind(counts, counts[counts$date == as.Date("2024-06-03"), ])
+  d <- suppressWarnings(add_counts(d, dup))
+  result <- est_effort_camera(d, h_open = 14)
+  expect_true(is.finite(result$estimates$estimate))
 })
 
 test_that("CEST-24: within-day aggregation does not erase the imputed flag (GH #137)", {

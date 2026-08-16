@@ -31,6 +31,21 @@
 #'   between-day component is understated as well. A warning reports how many
 #'   days were imputed; the standard error is a lower bound.
 #'
+#' @section One count row per day on the calibration path:
+#'
+#' Ratio calibration pairs each interview day to that day's camera count, so it
+#' requires the counts table to hold exactly one row per day (per stratum). A
+#' repeated day is refused rather than averaged: two counts on one date are
+#' either sub-period snapshots or a data error, and the estimator cannot tell
+#' which. Before this was checked, a repeated date entered both sides of the
+#' calibration ratio twice and **moved the point estimate**, not merely the
+#' standard error.
+#'
+#' If the counts are genuine sub-daily observations, pass `count_time_col` to
+#' [add_counts()], which averages them into one row per day and retains the
+#' within-day variance. Otherwise remove the repeated rows. Raw count expansion
+#' (`interviews = NULL`) does no pairing and is not subject to this requirement.
+#'
 #' @param design A `creel_design` object created with
 #'   `creel_design(..., survey_type = "camera")` and counts attached via
 #'   `add_counts()`.

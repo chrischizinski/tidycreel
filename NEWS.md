@@ -27,6 +27,26 @@
   component was never propagated, and the sections constructor was saying that
   while its `se` demonstrably contained the term.
 
+* **Breaking (error):** `est_effort_camera()`'s ratio-calibration path now
+  refuses a counts table that holds more than one row for the same day, rather
+  than silently double-counting it (#142). The calibration pairs interview days
+  to count rows by date membership and reads the day's effort total once per
+  matching row, so a repeated date entered `rho = sum(E_d) / sum(C_d)` twice on
+  both sides, and the survey total of raw counts counted it again. **This moved
+  the point estimate, not only the standard error** — 16 to 19.5 on the
+  package's own five-day test fixture, a 22% shift produced by a duplicated row
+  carrying no new information. `add_counts()` only warns about repeated PSU rows
+  (CNT-06), so such a table reached the estimator intact.
+
+  The table is refused rather than averaged because two counts on one day are
+  either sub-period snapshots or a data error, and nothing on this path can tell
+  which. Callers with genuine sub-daily counts should pass `count_time_col` to
+  `add_counts()`, which already collapses them to one row per day; the error
+  names the offending dates and says so. The raw-count path (`h_open`, no
+  interviews) is deliberately unchanged: expanding a duplicated PSU row through
+  `svytotal()` has the same shape in every design, and that is a wider question
+  than this fix.
+
 # tidycreel 3.3.0 "Shovelnose Sturgeon" (2026-08-15)
 
 ## Statistical correctness
