@@ -90,6 +90,23 @@ days were imputed; the standard error is a lower bound.
 }
 }
 
+\section{One count row per day on the calibration path}{
+
+
+Ratio calibration pairs each interview day to that day's camera count, so it
+requires the counts table to hold exactly one row per day (per stratum). A
+repeated day is refused rather than averaged: two counts on one date are
+either sub-period snapshots or a data error, and the estimator cannot tell
+which. Before this was checked, a repeated date entered both sides of the
+calibration ratio twice and \strong{moved the point estimate}, not merely the
+standard error.
+
+If the counts are genuine sub-daily observations, pass \code{count_time_col} to
+\code{\link[=add_counts]{add_counts()}}, which averages them into one row per day and retains the
+within-day variance. Otherwise remove the repeated rows. Raw count expansion
+(\code{interviews = NULL}) does no pairing and is not subject to this requirement.
+}
+
 \examples{
 \dontrun{
 library(tidycreel)
