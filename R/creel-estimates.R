@@ -2898,13 +2898,23 @@ expansion_total_se <- function(rate, expansion_se, structure) {
 #' @param rate Per-stratum rate estimates, aligned to `expansion_se`
 #' @param expansion_se Per-stratum expansion standard errors, or NULL
 #' @param structure One of `"nested"`, `"shared"`, `"partial"`, or NULL
+#' @param partition,part Plural and singular nouns for the partition being
+#'   summed over, used only in the `"partial"` warning so it names the geometry
+#'   the caller actually has
 #'
 #' @return The corrected variance, or `NA_real_` when the structure cannot
 #'   support a combination
 #'
 #' @keywords internal
 #' @noRd
-add_expansion_covariance <- function(pv, rate, expansion_se, structure) {
+add_expansion_covariance <- function(
+  pv,
+  rate,
+  expansion_se,
+  structure,
+  partition = "strata",
+  part = "stratum"
+) {
   if (is.null(expansion_se) || is.null(structure)) {
     return(pv)
   }
@@ -2919,17 +2929,17 @@ add_expansion_covariance <- function(pv, rate, expansion_se, structure) {
   }
 
   if (identical(structure, "partial")) {
-    # Groups straddle strata unevenly, so combining needs the group-by-stratum
-    # decomposition that a per-stratum standard error no longer carries.
-    # Quadrature would understate and the linear sum would overstate; either
-    # would be a plausible number concealing a structural assumption.
+    # Groups straddle the partition unevenly, so combining needs the
+    # group-by-part decomposition that a per-part standard error no longer
+    # carries. Quadrature would understate and the linear sum would overstate;
+    # either would be a plausible number concealing a structural assumption.
     cli::cli_warn(
       c(
-        "Party-size expansion groups straddle strata unevenly.",
-        "x" = "The standard error of the total cannot be combined from per-stratum components.",
+        "Party-size expansion groups straddle {partition} unevenly.",
+        "x" = "The standard error of the total cannot be combined from per-{part} components.",
         "i" = paste(
-          "Estimate the party size within strata, or with one estimate for the",
-          "whole design, so the contributions are either independent or",
+          "Estimate the party size within {partition}, or with one estimate for",
+          "the whole design, so the contributions are either independent or",
           "shared throughout."
         )
       ),
@@ -2944,38 +2954,126 @@ add_expansion_covariance <- function(pv, rate, expansion_se, structure) {
 }
 
 
-#' How the party-size expansion groups sit relative to the strata
+#' Combine per-section product variances into the lake-wide total
 #'
-#' Internal helper. Decides how per-stratum expansion contributions combine into
-#' a stratified total. A group is one estimated multiplier, so rows sharing a
-#' group carry perfectly correlated error and their contributions add before
-#' squaring; contributions from different groups come from disjoint interview
-#' subsets and add as variances.
+#' Internal helper. `sum(se_h^2)` treats the sections as independent, which is
+#' true of their sampling error but not of a party-size multiplier estimated
+#' once and applied across them: that error is common to every section it
+#' covers, so its contributions add before squaring (GH #145, the sections
+#' counterpart of GH #144 on the strata).
 #'
-#' Whether that makes the *strata* independent depends on the geometry:
+#' The three `estimate_total_*_sections()` twins build their frames by hand
+#' rather than routing through `compute_stratum_product_sum()`, which is why
+#' the strata correction never reached them. They share this helper so the
+#' aggregation cannot drift apart across the three files again.
 #'
-#' - `"nested"` — every group lives in exactly one stratum, so the strata carry
+#' The structure is classified against the *section* partition, not the strata.
+#' Sections may cross-cut strata, so a group nested within strata can still
+#' span sections.
+#'
+#' @param design A `creel_design` with sections registered
+#' @param section_var Per-section product variances, one per present section
+#' @param rate Per-section rate estimates (CPUE/HPUE/RPUE), aligned to
+#'   `section_var`
+#' @param expansion_se Per-section expansion standard errors from the effort
+#'   estimates, aligned to `section_var`, or `NULL` when none was propagated
+#'
+#' @return A list with `se` (the lake-wide standard error) and `component` (the
+#'   party-size term that standard error carries, or `NULL`)
+#'
+#' @keywords internal
+#' @noRd
+combine_section_variances <- function(design, section_var, rate, expansion_se) {
+  structure <- expansion_group_structure(design, design[["section_col"]]) # nolint: object_usage_linter
+
+  pv <- add_expansion_covariance( # nolint: object_usage_linter
+    pv = sum(section_var),
+    rate = rate,
+    expansion_se = expansion_se,
+    structure = structure,
+    partition = "sections",
+    part = "section"
+  )
+
+  list(
+    se = sqrt(pv),
+    # Derived from the same two inputs the variance used, so the reported
+    # component is the one inside `se` rather than a parallel calculation free
+    # to drift from it (GH #134).
+    component = expansion_total_se(rate, expansion_se, structure) # nolint: object_usage_linter
+  )
+}
+
+
+#' Flatten per-section expansion components into one aligned vector
+#'
+#' Internal helper. The section loops collect `se_expansion` per section, which
+#' is `NULL` for every section when the design carries no expansion and a
+#' number for every section when it does. Collapsing that to a bare vector
+#' keeps the two states apart: `NULL` back means the component does not apply,
+#' whereas `NA` inside the vector means it applies but could not be estimated.
+#' A vector of zeros would say neither.
+#'
+#' @param sec_expansion_se A list of per-section `se_expansion` values, one
+#'   element per registered section, `NULL` where the section produced none
+#'
+#' @return A numeric vector aligned to `sec_expansion_se`, or `NULL` when no
+#'   section carried a component
+#'
+#' @keywords internal
+#' @noRd
+section_expansion_vector <- function(sec_expansion_se) {
+  if (all(vapply(sec_expansion_se, is.null, logical(1L)))) {
+    return(NULL)
+  }
+  vapply(
+    sec_expansion_se,
+    function(x) if (is.null(x)) NA_real_ else as.numeric(x)[[1L]],
+    numeric(1L)
+  )
+}
+
+
+#' How the party-size expansion groups sit relative to a partition
+#'
+#' Internal helper. Decides how per-part expansion contributions combine into a
+#' summed total. A group is one estimated multiplier, so rows sharing a group
+#' carry perfectly correlated error and their contributions add before squaring;
+#' contributions from different groups come from disjoint interview subsets and
+#' add as variances.
+#'
+#' Whether that makes the *parts* independent depends on the geometry:
+#'
+#' - `"nested"` — every group lives in exactly one part, so the parts carry
 #'   disjoint estimates and their contributions are independent. This is what
 #'   the ordinary stratified variance assumes.
-#' - `"shared"` — one group spans strata, so a single estimate's error runs
+#' - `"shared"` — one group spans parts, so a single estimate's error runs
 #'   through all of them and the contributions are perfectly correlated.
-#' - `"partial"` — groups straddle strata unevenly. Combining then needs the
-#'   group-by-stratum decomposition, which a per-stratum standard error no
-#'   longer carries.
+#' - `"partial"` — groups straddle parts unevenly. Combining then needs the
+#'   group-by-part decomposition, which a per-part standard error no longer
+#'   carries.
+#'
+#' The partition is a parameter because the totals sum over two different ones.
+#' The strata paths sum over `design$strata_cols`; the sections paths sum over
+#' `design$section_col`, and sections may cross-cut strata, so a group can be
+#' nested within strata while spanning sections (GH #145). Classifying against
+#' the wrong partition returns a defensible-looking answer for the other one.
 #'
 #' @param design A `creel_design` with counts attached
+#' @param partition_cols Character vector naming the partition being summed
+#'   over; defaults to the design's strata
 #'
 #' @return One of `"nested"`, `"shared"`, `"partial"`, or `NULL` when the design
 #'   carries no expansion
 #'
 #' @keywords internal
 #' @noRd
-expansion_group_structure <- function(design) {
+expansion_group_structure <- function(design, partition_cols = NULL) {
   spec <- design$expansion
   if (is.null(spec)) {
     return(NULL)
   }
-  strata_cols <- design$strata_cols %||% character(0)
+  strata_cols <- partition_cols %||% design$strata_cols %||% character(0)
   if (length(strata_cols) == 0L) {
     # Nothing to be correlated across; the single total already sums the group
     # contributions with the right structure.

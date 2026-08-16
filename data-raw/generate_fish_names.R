@@ -54,13 +54,21 @@ names_final <- sort(unique(names_clean))
 # ── Remove already-used release names ─────────────────────────────────────────
 # Add entries here each time a name is assigned to a release.
 used <- c(
-  "Sauger",        # v2.1.0
-  "Goldeye",       # v2.2.0
-  "Northern Pike", # v2.3.0
-  "Bowfin",        # v2.4.0
-  "Creek Chub",    # v2.5.0
-  "Blue Sucker"    # v3.0.0
+  "Sauger",              # v2.1.0, and reused at v3.1.0 -- see note below
+  "Goldeye",             # v2.2.0
+  "Northern Pike",       # v2.3.0
+  "Bowfin",              # v2.4.0
+  "Creek Chub",          # v2.5.0
+  "Blue Sucker",         # v3.0.0
+  "Bigmouth Buffalo",    # v3.2.0
+  "Shovelnose Sturgeon", # v3.3.0
+  "Flathead Chub"        # v3.4.0
 )
+# "Sauger" names two releases because it was drawn again for v3.1.0 while this
+# vector still stopped at v3.0.0. Left as-is: the duplicate is already in the
+# shipped NEWS and the tags, and renaming a released version is worse than
+# recording that it happened. The lesson is the one the comment above already
+# gives -- add the name here at release, not later.
 names_final <- names_final[!names_final %in% used]
 
 message(sprintf("Total unique clean names: %d", length(names_final)))
