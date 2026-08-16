@@ -27,6 +27,32 @@
   component was never propagated, and the sections constructor was saying that
   while its `se` demonstrably contained the term.
 
+* The `"partial"` party-size geometry now returns a standard error instead of
+  `NA` (#150). When one party-size estimate spans some parts of the partition
+  being summed over and another sits inside one, the combination needs the
+  group-by-part decomposition — and `compute_expansion_var_contribution()` was
+  squaring and summing the group index away before returning, so
+  `add_expansion_covariance()` had nothing to combine and correctly refused.
+  The decomposition is now carried alongside the scalar component, and the
+  exact combination is `Var = Σ_g (Σ_p rate_p × basis_{g,p} × se_g)²`:
+  contributions from one estimate add before squaring because its error is
+  common to every part it covers, while contributions from different groups
+  come from disjoint interview subsets and add as variances.
+
+  **The `"nested"` and `"shared"` numbers do not move.** Both are special cases
+  of that formula, but each keeps its own arithmetic rather than being
+  re-derived through it, so their results are unchanged bit-for-bit. Only the
+  case that previously returned `NA` produces a new number, and it lands
+  strictly between the two shortcuts the old code refused to choose between —
+  quadrature understates it, the linear sum overstates it.
+
+  This matters most on the sections path introduced in #145, where `"partial"`
+  is ordinary rather than exotic: sections cross-cut strata, so a party-size
+  estimate keyed by `day_type` straddles sections unevenly and forced the
+  `.lake_total` row to `NA`. The refusal is retained for the case where no
+  decomposition was carried, since a combination that cannot be computed still
+  must not be guessed.
+
 * **Breaking (error):** `est_effort_camera()`'s ratio-calibration path now
   refuses a counts table that holds more than one row for the same day, rather
   than silently double-counting it (#142). The calibration pairs interview days

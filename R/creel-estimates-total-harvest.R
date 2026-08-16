@@ -340,7 +340,8 @@ estimate_total_harvest_ungrouped <- function(
     product_variance = product_variance,
     ci_type = ci_type,
     expansion_se = named_expansion_se(effort_result, strata_cols), # nolint: object_usage_linter
-    expansion_structure = expansion_group_structure(design) # nolint: object_usage_linter
+    expansion_structure = expansion_group_structure(design), # nolint: object_usage_linter
+    expansion_decomposition = named_expansion_decomposition(effort_result, strata_cols) # nolint: object_usage_linter
   )
 
   new_creel_estimates( # nolint: object_usage_linter
@@ -400,7 +401,8 @@ estimate_total_harvest_grouped <- function(
     product_variance = product_variance,
     ci_type = ci_type,
     expansion_se = named_expansion_se(effort_result, stratum_by_vars), # nolint: object_usage_linter
-    expansion_structure = expansion_group_structure(design) # nolint: object_usage_linter
+    expansion_structure = expansion_group_structure(design), # nolint: object_usage_linter
+    expansion_decomposition = named_expansion_decomposition(effort_result, stratum_by_vars) # nolint: object_usage_linter
   )
 
   new_creel_estimates( # nolint: object_usage_linter
@@ -486,7 +488,8 @@ estimate_total_harvest_species <- function(
       product_variance = product_variance,
       ci_type = ci_type,
       expansion_se = named_expansion_se(effort_result, stratum_by_vars), # nolint: object_usage_linter
-      expansion_structure = expansion_group_structure(design) # nolint: object_usage_linter
+      expansion_structure = expansion_group_structure(design), # nolint: object_usage_linter
+      expansion_decomposition = named_expansion_decomposition(effort_result, stratum_by_vars) # nolint: object_usage_linter
     )
 
     sp_result[[species_col]] <- sp
@@ -573,6 +576,8 @@ estimate_total_harvest_sections <- function(
   )
   sec_expansion_se <- vector("list", length(registered_sections))
   names(sec_expansion_se) <- registered_sections
+  sec_decomposition <- vector("list", length(registered_sections))
+  names(sec_decomposition) <- registered_sections
 
   for (sec in registered_sections) {
     if (sec %in% absent_sections) {
@@ -623,6 +628,7 @@ estimate_total_harvest_sections <- function(
         hpue_se <- hpue_res$estimates$se
         sec_rate[[sec]] <- hpue_est
         sec_expansion_se[[sec]] <- effort_res$se_expansion
+        sec_decomposition[[sec]] <- effort_res$expansion_decomposition
         sec_estimate <- effort_est * hpue_est
         sec_var <- product_total_variance(
           effort_est,
@@ -661,6 +667,7 @@ estimate_total_harvest_sections <- function(
   # so it carries just its own contribution; the lake row's combined one is
   # appended with the row below.
   expansion_vec <- section_expansion_vector(sec_expansion_se) # nolint: object_usage_linter
+  decomposition_list <- section_decomposition_list(sec_decomposition) # nolint: object_usage_linter
   se_expansion <- if (is.null(expansion_vec)) NULL else unname(abs(sec_rate * expansion_vec))
 
   # Append .lake_total row if requested (ungrouped path only)
@@ -673,7 +680,8 @@ estimate_total_harvest_sections <- function(
       design,
       section_var = present_rows$se^2,
       rate = sec_rate[present],
-      expansion_se = expansion_vec[present]
+      expansion_se = expansion_vec[present],
+      decomposition = decomposition_list[present]
     )
     lake_se <- lake$se
     if (!is.null(se_expansion)) {
