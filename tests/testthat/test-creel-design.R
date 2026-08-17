@@ -1113,6 +1113,8 @@ test_that("creel_design() accepts survey_type = 'aerial' and returns creel_desig
     strata = day_type,
     survey_type = "aerial",
     visibility_correction = "none",
+    angler_ratio = 1,
+    angler_ratio_se = 0,
     h_open = 14
   )
   expect_s3_class(d, "creel_design")
@@ -1503,6 +1505,8 @@ describe("Phase 47: Aerial constructor", {
       strata = day_type,
       survey_type = "aerial",
       visibility_correction = "none",
+      angler_ratio = 1,
+      angler_ratio_se = 0,
       h_open = 14
     )
     expect_s3_class(d, "creel_design")
@@ -1540,6 +1544,8 @@ describe("Phase 47: Aerial constructor", {
       strata = day_type,
       survey_type = "aerial",
       visibility_correction = "none",
+      angler_ratio = 1,
+      angler_ratio_se = 0,
       h_open = 14
     )
     expect_equal(d$aerial$visibility_correction, 1)
@@ -1560,6 +1566,8 @@ describe("Phase 47: Aerial constructor", {
         strata = day_type,
         survey_type = "aerial",
         visibility_correction = 2.69,
+        angler_ratio = 1,
+        angler_ratio_se = 0,
         h_open = 14
       ),
       regexp = "detection probability|1 / 2.69|0.372"
@@ -1574,6 +1582,8 @@ describe("Phase 47: Aerial constructor", {
         strata = day_type,
         survey_type = "aerial",
         visibility_correction = "none",
+        angler_ratio = 1,
+        angler_ratio_se = 0,
         visibility_se = 0.05,
         h_open = 14
       ),
@@ -1589,6 +1599,8 @@ describe("Phase 47: Aerial constructor", {
         strata = day_type,
         survey_type = "aerial",
         visibility_correction = 0.85,
+        angler_ratio = 1,
+        angler_ratio_se = 0,
         visibility_se = -0.01,
         h_open = 14
       ),
@@ -1604,6 +1616,8 @@ describe("Phase 47: Aerial constructor", {
         strata = day_type,
         survey_type = "aerial",
         visibility_correction = "none",
+        angler_ratio = 1,
+        angler_ratio_se = 0,
         h_open = -1
       ),
       regexp = "h_open"
@@ -1617,7 +1631,9 @@ describe("Phase 47: Aerial constructor", {
       strata = day_type,
       survey_type = "aerial",
       h_open = 14,
-      visibility_correction = 0.85
+      visibility_correction = 0.85,
+      angler_ratio = 1,
+      angler_ratio_se = 0
     )
     expect_equal(d$aerial$visibility_correction, 0.85)
   })
@@ -1657,6 +1673,8 @@ describe("Phase 47: Aerial constructor", {
       strata = day_type,
       survey_type = "aerial",
       visibility_correction = "none",
+      angler_ratio = 1,
+      angler_ratio_se = 0,
       h_open = 14
     )
     expect_equal(d$design_type, "aerial")
@@ -1669,6 +1687,8 @@ describe("Phase 47: Aerial constructor", {
       strata = day_type,
       survey_type = "aerial",
       visibility_correction = "none",
+      angler_ratio = 1,
+      angler_ratio_se = 0,
       h_open = 14,
       open_start = 5.5
     )
@@ -1682,6 +1702,8 @@ describe("Phase 47: Aerial constructor", {
       strata = day_type,
       survey_type = "aerial",
       visibility_correction = "none",
+      angler_ratio = 1,
+      angler_ratio_se = 0,
       h_open = 14
     )
     expect_null(d$aerial$open_start)
@@ -1695,6 +1717,8 @@ describe("Phase 47: Aerial constructor", {
         strata = day_type,
         survey_type = "aerial",
         visibility_correction = "none",
+        angler_ratio = 1,
+        angler_ratio_se = 0,
         h_open = 14,
         open_start = -1
       ),
@@ -1710,6 +1734,8 @@ describe("Phase 47: Aerial constructor", {
         strata = day_type,
         survey_type = "aerial",
         visibility_correction = "none",
+        angler_ratio = 1,
+        angler_ratio_se = 0,
         h_open = 14,
         open_start = 0
       )

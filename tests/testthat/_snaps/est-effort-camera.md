@@ -1,7 +1,7 @@
 # CEST-24: imputed-count warning text states n, share, and the SE gap (GH #137)
 
     Code
-      res <- est_effort_camera(d, h_open = 14)
+      res <- est_effort_camera(d, h_open = 14, calibration = "none")
     Condition
       Warning:
       2 of 5 count days (40%) contain imputed counts.

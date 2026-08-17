@@ -143,7 +143,6 @@ Other "Survey Design":
 \code{\link{as_survey_design}()},
 \code{\link{compute_angler_effort}()},
 \code{\link{compute_effort}()},
-\code{\link{creel_design}()},
 \code{\link{derive_angler_count}()},
 \code{\link{est_effort_camera}()},
 \code{\link{impute_camera_counts}()},

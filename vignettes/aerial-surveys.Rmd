@@ -111,6 +111,8 @@ design <- creel_design(
   strata      = day_type,
   survey_type = "aerial",
   visibility_correction = "none",
+  angler_ratio = 1,
+  angler_ratio_se = 0,
   h_open      = 14
 )
 
@@ -173,6 +175,8 @@ design_corr <- creel_design(
   survey_type = "aerial",
   h_open = 14,
   visibility_correction = 0.85,
+  angler_ratio = 1,
+  angler_ratio_se = 0,
   visibility_se = 0.04
 )
 

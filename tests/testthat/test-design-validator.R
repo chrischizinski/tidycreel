@@ -107,6 +107,8 @@ make_aerial_design <- function() {
       strata = day_type, # nolint: object_usage_linter
       survey_type = "aerial",
       visibility_correction = "none",
+      angler_ratio = 1,
+      angler_ratio_se = 0,
       h_open = 14
     )
   )

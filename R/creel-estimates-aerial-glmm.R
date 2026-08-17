@@ -63,6 +63,8 @@
 #'   strata = day_type,
 #'   survey_type = "aerial",
 #'   visibility_correction = "none",
+#'   angler_ratio = 1,
+#'   angler_ratio_se = 0,
 #'   h_open = 14
 #' )
 #' design <- add_counts(design, example_aerial_glmm_counts, count_col = n_anglers)
@@ -154,6 +156,9 @@ estimate_effort_aerial_glmm <- function(
   # se_v = NA (GH #135).
   v <- design$aerial$visibility_correction
   se_v <- design$aerial$visibility_se
+  # Angler-to-people ratio: an aerial count is a raw observer count (GH #158).
+  a <- design$aerial$angler_ratio
+  se_a <- design$aerial$angler_ratio_se
   if (!is.null(design$aerial$open_start)) {
     open_start <- design$aerial$open_start
   } else {
@@ -181,9 +186,10 @@ estimate_effort_aerial_glmm <- function(
   mu <- as.numeric(exp(x_mat %*% beta))
   scale_factor <- h_open / (length(hour_grid) - 1L) # interval width: 100 pts = 99 gaps
   # sum(mu) * scale_factor integrates the fitted count-vs-time curve over h_open
-  # hours, yielding angler-hours directly. Only the visibility correction (1/v)
-  # is applied — multiplying by h_open again would double-count the time dimension.
-  total_effort <- sum(mu) * scale_factor / v
+  # hours, yielding people-hours. The visibility correction (1/v) and the
+  # angler-to-people ratio (a) convert that to angler-hours — multiplying by
+  # h_open again would double-count the time dimension.
+  total_effort <- sum(mu) * scale_factor * a / v
 
   # 8. Variance: delta method (default) or bootstrap
   #
@@ -197,15 +203,18 @@ estimate_effort_aerial_glmm <- function(
   # bootstrap, and does not speak to v; it propagates uncertainty by
   # cross-validation rather than analytically. Smucker et al. (2010) is the
   # source for v itself, not for how it composes here.
+  # The angler-to-people ratio is the same kind of object and composes the same
+  # way (GH #158).
   var_visibility <- if (is.null(se_v)) NULL else (total_effort * se_v / v)^2
+  var_angler_ratio <- if (is.null(se_a)) NULL else (total_effort * se_a / a)^2
 
   if (!boot) {
     v_mat <- as.matrix(stats::vcov(model)) # nolint: object_name_linter
-    grad <- scale_factor / v * colSums(mu * x_mat)
+    grad <- scale_factor * a / v * colSums(mu * x_mat)
     var_model <- as.numeric(t(grad) %*% v_mat %*% grad)
-    # No na.rm: var_visibility is NA under the declared "none" opt-out, and a
-    # sum missing an unknown term is a lower bound, not an SE.
-    se <- sqrt(var_model + (var_visibility %||% 0))
+    # No na.rm: these are NA under the declared "none" opt-outs, and a sum
+    # missing an unknown term is a lower bound, not an SE.
+    se <- sqrt(var_model + (var_visibility %||% 0) + (var_angler_ratio %||% 0))
     se_between <- se
 
     alpha <- 1 - conf_level
@@ -226,7 +235,7 @@ estimate_effort_aerial_glmm <- function(
 
     boot_fn <- function(m) {
       mu_b <- as.numeric(exp(x_mat %*% lme4::fixef(m)))
-      sum(mu_b) * scale_factor / v
+      sum(mu_b) * scale_factor * a / v
     }
 
     b <- lme4::bootMer(model, FUN = boot_fn, nsim = nboot, type = "parametric", use.u = FALSE)
@@ -268,6 +277,27 @@ estimate_effort_aerial_glmm <- function(
       boot_t <- boot_t * v / v_draws
     }
 
+    # The angler-to-people ratio is drawn the same way and for the same reason:
+    # one draw per replicate, outside the model refit, because it too is a
+    # shared multiplier (GH #158). boot_t carries a as a factor, so multiplying
+    # by a_draw / a substitutes the drawn value.
+    if (!is.null(se_a) && !is.na(se_a) && se_a > 0) {
+      a_draws <- stats::rnorm(length(boot_t), mean = a, sd = se_a)
+      bad_a <- sum(a_draws <= 0 | a_draws > 1)
+      if (bad_a > 0.001 * length(a_draws)) {
+        cli::cli_abort(
+          c(
+            "{.arg angler_ratio_se} is too large for a normal approximation on the bootstrap path.",
+            "x" = "{bad_a} of {length(a_draws)} draws of the angler-to-people ratio fell outside (0, 1].",
+            "i" = "Use the delta path ({.code boot = FALSE}), or supply a better-determined ratio."
+          ),
+          class = "creel_error_angler_ratio_se_bootstrap_range"
+        )
+      }
+      a_draws[a_draws <= 0 | a_draws > 1] <- NA_real_
+      boot_t <- boot_t * a_draws / a
+    }
+
     se <- stats::sd(boot_t, na.rm = TRUE)
     se_between <- se
 
@@ -276,10 +306,11 @@ estimate_effort_aerial_glmm <- function(
     ci_lower <- ci_vec[1L]
     ci_upper <- ci_vec[2L]
 
-    # The declared "none" opt-out carries se_v = NA, which the resampling block
+    # A declared "none" opt-out carries se = NA, which the resampling block
     # above deliberately skips (there is nothing to draw). The SE must still go
-    # NA: the uncertainty is unpropagated, not zero.
-    if (!is.null(se_v) && is.na(se_v)) {
+    # NA: the uncertainty is unpropagated, not zero. Applies to either
+    # multiplier (GH #135, #158).
+    if ((!is.null(se_v) && is.na(se_v)) || (!is.null(se_a) && is.na(se_a))) {
       se <- NA_real_
       se_between <- NA_real_
     }
@@ -301,9 +332,10 @@ estimate_effort_aerial_glmm <- function(
   # On the bootstrap path v is inside the replicates rather than a separable
   # summand, so only the delta path can report the two parts apart (GH #141).
   se_components <- list(model = se_between)
-  if (!boot && !is.null(var_visibility)) {
+  if (!boot && (!is.null(var_visibility) || !is.null(var_angler_ratio))) {
     se_components$model <- sqrt(var_model)
-    se_components$visibility <- sqrt(var_visibility)
+    if (!is.null(var_visibility)) se_components$visibility <- sqrt(var_visibility)
+    if (!is.null(var_angler_ratio)) se_components$angler_ratio <- sqrt(var_angler_ratio)
   }
 
   new_creel_estimates(

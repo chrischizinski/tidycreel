@@ -163,19 +163,34 @@ test_that("COMP-04: the reported components reconstruct the standard error exact
   )
 })
 
-test_that("COMP-05: the raw-count path has no calibration component at all", {
-  # h_open is a supplied constant with no variance of its own and there is no
-  # calibration ratio on this branch, so `calibration` must be absent rather
-  # than NA: "does not apply" and "applies but is unknown" are different claims
-  # and an analyst acts on them differently.
+test_that("COMP-05: the uncalibrated raw-count path reports calibration as NA, not absent", {
+  # This assertion is inverted from what it was, deliberately.
+  #
+  # It previously required `calibration` to be ABSENT here, on the reasoning
+  # that h_open is a supplied constant and no calibration ratio applies to this
+  # branch. The author ruling of 2026-08-17 is that a raw camera count is not
+  # pre-corrected, so a calibration DOES apply -- the branch simply assumes it
+  # equals 1 and never measures it. That makes this the "applies but is
+  # unknown" case, which is NA, and no longer the "does not apply" case, which
+  # is absent (GH #141, #158).
+  #
+  # The two claims remain distinct and an analyst still acts on them
+  # differently; what changed is which one this branch is making.
   d <- make_component_camera_design()
-  result <- suppressWarnings(est_effort_camera(d, h_open = 14))
+  result <- suppressWarnings(est_effort_camera(d, h_open = 14, calibration = "none"))
 
-  expect_false("calibration" %in% names(result$se_components))
-  expect_identical(
-    result$se_components$count_sampling,
-    result$estimates$se
-  )
+  expect_true("calibration" %in% names(result$se_components))
+  expect_true(is.na(result$se_components$calibration))
+  # Never 0: a zero would be indistinguishable from having propagated the
+  # calibration's uncertainty and found none.
+  expect_false(identical(result$se_components$calibration, 0))
+
+  # The count-sampling half stays reportable, so the NA says which half is
+  # unknown instead of only blocking.
+  expect_true(is.finite(result$se_components$count_sampling))
+  # The total goes NA with it: a sum missing an unknown term is a lower bound,
+  # not an SE.
+  expect_true(is.na(result$estimates$se))
 })
 
 # Constructor: the party-size component has one write point --------------------

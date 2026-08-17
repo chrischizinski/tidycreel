@@ -667,6 +667,8 @@ make_aerial_box20_6 <- function() {
     # means no correction was studied and carries se_v = NA, which would make
     # the benchmark's SE NA and mask the se > 0 check (GH #135).
     visibility_correction = 1,
+    angler_ratio = 1,
+    angler_ratio_se = 0,
     visibility_se = 0,
     h_open = 14
   )

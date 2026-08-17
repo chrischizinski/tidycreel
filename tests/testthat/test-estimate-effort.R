@@ -1874,7 +1874,11 @@ test_that("CAM-03: filtering camera_status == 'operational' before add_counts() 
 make_aerial_design <- function(
   h_open = 14,
   visibility_correction = "none",
-  visibility_se = NULL
+  visibility_se = NULL,
+  # These fixtures count anglers directly, so the angler-to-people ratio is 1
+  # and known exactly -- a claim about how the data were recorded (GH #158).
+  angler_ratio = 1,
+  angler_ratio_se = 0
 ) {
   cal <- data.frame(
     date = as.Date(c(
@@ -1897,7 +1901,38 @@ make_aerial_design <- function(
     survey_type = "aerial",
     h_open = h_open,
     visibility_correction = visibility_correction,
+    angler_ratio = angler_ratio,
+    angler_ratio_se = angler_ratio_se,
     visibility_se = visibility_se
+  )
+}
+
+#' The same aerial design with no angler_ratio supplied at all.
+#'
+#' Separate from make_aerial_design() because the argument is required and the
+#' helper must be able to omit it entirely to test that (GH #158).
+make_aerial_design_no_ratio <- function() {
+  cal <- data.frame(
+    date = as.Date(c(
+      "2024-06-01",
+      "2024-06-02",
+      "2024-06-03",
+      "2024-06-04",
+      "2024-06-08",
+      "2024-06-09",
+      "2024-06-15",
+      "2024-06-16"
+    )),
+    day_type = rep(c("weekday", "weekend"), each = 4L),
+    stringsAsFactors = FALSE
+  )
+  creel_design(
+    cal, # nolint: object_usage_linter
+    date = date,
+    strata = day_type, # nolint: object_usage_linter
+    survey_type = "aerial",
+    h_open = 14,
+    visibility_correction = "none"
   )
 }
 
@@ -2089,6 +2124,114 @@ describe("Phase 47: Aerial effort", {
     # The count-sampling half stays reportable, so the NA says which half is
     # unknown rather than only blocking.
     expect_true(is.finite(res$estimates$se_between))
+  })
+
+  # ---- GH #158: the angler-to-people ratio ----------------------------------
+
+  it("AIR-09 (#158): angler_ratio scales the estimate and is required", {
+    # An aerial count is a raw observer count. Smucker et al. (2010) apply
+    # a = 0.404 alongside v = 2.69; omitting a overstates shore effort ~2.5x.
+    d_anglers <- add_counts(
+      make_aerial_design(h_open = 14, visibility_correction = 1, visibility_se = 0),
+      make_aerial_counts()
+    ) # nolint: object_usage_linter
+    d_people <- add_counts(
+      make_aerial_design(
+        h_open = 14,
+        visibility_correction = 1,
+        visibility_se = 0,
+        angler_ratio = 0.404,
+        angler_ratio_se = 0
+      ),
+      make_aerial_counts()
+    ) # nolint: object_usage_linter
+    r_anglers <- suppressWarnings(estimate_effort(d_anglers))
+    r_people <- suppressWarnings(estimate_effort(d_people))
+    expect_equal(
+      r_people$estimates$estimate,
+      r_anglers$estimates$estimate * 0.404,
+      tolerance = 1e-9
+    )
+  })
+
+  it("AIR-09 (#158): omitting angler_ratio aborts rather than assuming 1", {
+    expect_error(
+      make_aerial_design_no_ratio(),
+      class = "creel_error_angler_ratio_required"
+    )
+  })
+
+  it("AIR-09 (#158): angler_ratio_se enters once at the total as a shared multiplier", {
+    d <- add_counts(
+      make_aerial_design(
+        h_open = 14,
+        visibility_correction = 1,
+        visibility_se = 0,
+        angler_ratio = 0.404,
+        angler_ratio_se = 0.05
+      ),
+      make_aerial_counts()
+    ) # nolint: object_usage_linter
+    res <- suppressWarnings(estimate_effort(d))
+    expect_equal(
+      res$se_components$angler_ratio,
+      res$estimates$estimate * 0.05 / 0.404,
+      tolerance = 1e-9
+    )
+  })
+
+  it("AIR-09 (#158): the two corrections push in opposite directions", {
+    # 0.404 down and 1/0.372 up. Applying only the visibility correction is
+    # therefore NOT conservative -- it is biased in the direction of the
+    # correction that was kept, which is why neither may default silently.
+    base <- suppressWarnings(estimate_effort(add_counts(
+      make_aerial_design(h_open = 14, visibility_correction = 1, visibility_se = 0),
+      make_aerial_counts()
+    )))$estimates$estimate
+    vis_only <- suppressWarnings(estimate_effort(add_counts(
+      make_aerial_design(h_open = 14, visibility_correction = 0.372, visibility_se = 0),
+      make_aerial_counts()
+    )))$estimates$estimate
+    both <- suppressWarnings(estimate_effort(add_counts(
+      make_aerial_design(
+        h_open = 14,
+        visibility_correction = 0.372,
+        visibility_se = 0,
+        angler_ratio = 0.404,
+        angler_ratio_se = 0
+      ),
+      make_aerial_counts()
+    )))$estimates$estimate
+    expect_gt(vis_only, base) # visibility alone inflates
+    expect_lt(both, vis_only) # the angler ratio pulls back down
+    expect_equal(both, vis_only * 0.404, tolerance = 1e-9)
+  })
+
+  it("AIR-10 (#158): the aerial estimator reads the party-size expansion SE", {
+    # Regression for a silent drop: estimate_effort_aerial() never called
+    # compute_expansion_var_contribution(), so a boat count expanded by
+    # derive_angler_count() with a party_size_se reached svytotal() with its
+    # multiplier's uncertainty discarded. The carrier columns survived
+    # add_counts() and were simply not read.
+    counts_boats <- make_aerial_counts()
+    counts_boats$boats <- counts_boats$n_counted
+    counts_boats$n_counted <- NULL
+    expanded <- derive_angler_count(
+      counts_boats,
+      boat_count = boats,
+      party_size = 2.5,
+      party_size_se = 0.4
+    )
+    d <- suppressWarnings(add_counts(
+      make_aerial_design(h_open = 14, visibility_correction = 1, visibility_se = 0),
+      expanded,
+      count_col = angler_count
+    )) # nolint: object_usage_linter
+    res <- suppressWarnings(estimate_effort(d))
+    # The component must be present and positive: a party size estimated with
+    # an SE of 0.4 cannot contribute nothing.
+    expect_true(!is.null(res$se_components$party_size))
+    expect_gt(res$se_components$party_size, 0)
   })
 
   it("AIR-06 (#135): omitting visibility_se reports the component as absent, not zero", {

@@ -46,7 +46,17 @@ estimate_effort_aerial <- function(
   # a stated claim rather than an absent argument (GH #135).
   v <- design$aerial$visibility_correction
   se_v <- design$aerial$visibility_se
-  h_over_v <- design$aerial$h_open / v
+
+  # Angler-to-people ratio (GH #158). An aerial count is a raw observer count
+  # and nothing in it separates anglers from other people, so the count is
+  # scaled by `a` to reach anglers. Smucker et al. (2010) apply this alongside
+  # the visibility correction; the two push in OPPOSITE directions (0.404 down,
+  # 2.69 up), so applying only the visibility correction is not conservative --
+  # it is biased in the direction of the correction that was kept.
+  a <- design$aerial$angler_ratio
+  se_a <- design$aerial$angler_ratio_se
+
+  h_over_v <- design$aerial$h_open * a / v
 
   # Identify count variable (same logic as estimate_effort_total)
   counts_data <- design$counts
@@ -100,10 +110,46 @@ estimate_effort_aerial <- function(
   var_visibility <- if (is.null(se_v)) NULL else (estimate * se_v / v)^2
   se_visibility <- if (is.null(var_visibility)) NULL else sqrt(var_visibility)
 
-  # Combined SE. `var_visibility` is NA under the declared "none" opt-out, and
-  # no na.rm is used: a sum missing an unknown term is a lower bound, not an
-  # SE, so the total must go NA with it.
-  se <- sqrt(se_between^2 + var_within + (var_visibility %||% 0))
+  # The angler-to-people ratio is the same kind of object as v -- one estimate
+  # scaling every count -- so it composes the same way and enters once at the
+  # total (GH #158).
+  var_angler_ratio <- if (is.null(se_a)) NULL else (estimate * se_a / a)^2
+  se_angler_ratio <- if (is.null(var_angler_ratio)) NULL else sqrt(var_angler_ratio)
+
+  # Party-size expansion contribution (GH #121/#158).
+  #
+  # This estimator previously never called compute_expansion_var_contribution(),
+  # so a boat count expanded by derive_angler_count() with a party_size_se
+  # reached svytotal() with its multiplier's uncertainty silently discarded --
+  # the carrier columns survived add_counts() and were then simply not read.
+  # Scaled by h_over_v^2 because the contribution is computed on the raw count
+  # scale, exactly as var_within is.
+  var_expansion_raw <- compute_expansion_var_contribution( # nolint: object_usage_linter
+    design,
+    svy_design,
+    by_vars = NULL
+  )
+  expansion_decomposition <- attr(var_expansion_raw, "decomposition")
+  # Stripped to a bare number before any arithmetic: R propagates attributes
+  # through `+` and `sqrt()`, so leaving the decomposition attached would stamp
+  # it onto the reported `se`.
+  var_expansion <- if (is.null(var_expansion_raw)) {
+    NULL
+  } else {
+    as.numeric(var_expansion_raw) * h_over_v^2
+  }
+  se_expansion <- if (is.null(var_expansion)) NULL else sqrt(var_expansion)
+
+  # Combined SE. The visibility and angler-ratio terms are NA under their
+  # declared "none" opt-outs, and no na.rm is used: a sum missing an unknown
+  # term is a lower bound, not an SE, so the total must go NA with it.
+  se <- sqrt(
+    se_between^2 +
+      var_within +
+      (var_visibility %||% 0) +
+      (var_angler_ratio %||% 0) +
+      (var_expansion %||% 0)
+  )
 
   # Degrees of freedom and CI
   df <- as.numeric(survey::degf(svy_design))
@@ -135,11 +181,16 @@ estimate_effort_aerial <- function(
   if (!is.null(se_visibility)) {
     se_components$visibility <- se_visibility
   }
+  if (!is.null(se_angler_ratio)) {
+    se_components$angler_ratio <- se_angler_ratio
+  }
 
   new_creel_estimates( # nolint: object_usage_linter
     # nolint: object_usage_linter
     estimates = estimates_df,
     se_components = se_components, # nolint: object_usage_linter
+    se_expansion = se_expansion, # nolint: object_usage_linter
+    expansion_decomposition = expansion_decomposition, # nolint: object_usage_linter
     method = "aerial_total",
     variance_method = variance_method,
     design = design,

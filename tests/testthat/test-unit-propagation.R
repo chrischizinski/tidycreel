@@ -618,6 +618,8 @@ test_that("aerial effort is angler-hours even though the design's unit is unknow
     strata = day_type, # nolint
     survey_type = "aerial",
     visibility_correction = "none",
+    angler_ratio = 1,
+    angler_ratio_se = 0,
     h_open = 14
   ))
   d <- suppressWarnings(add_counts(d, counts, count_col = anglers)) # nolint
@@ -651,7 +653,7 @@ test_that("camera effort labels the raw path but not the calibrated one", {
   ops <- example_camera_counts[example_camera_counts$camera_status == "operational", ]
   d <- suppressWarnings(add_counts(d, ops))
 
-  raw <- suppressWarnings(est_effort_camera(d, h_open = 14))
+  raw <- suppressWarnings(est_effort_camera(d, h_open = 14, calibration = "none"))
   ratio <- suppressWarnings(est_effort_camera(d, interviews = example_camera_interviews))
 
   # Raw path: count x h_open, with the finding-21 guard establishing that no

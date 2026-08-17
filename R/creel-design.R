@@ -295,6 +295,34 @@ VALID_SURVEY_TYPES <- c("instantaneous", "bus_route", "ice", "camera", "aerial")
 #'       deliberately — e.g. `visibility_correction = 1, visibility_se = 0` for
 #'       a fishery where every angler is genuinely detectable.}
 #'   }
+#' @param angler_ratio The proportion of the people recorded in the aerial
+#'   count that are anglers, as a numeric scalar in `(0, 1]`. **Required** when
+#'   `survey_type = "aerial"`; pass the string `"none"` to state explicitly
+#'   that no such correction is applied.
+#'
+#'   An aerial count column is a **raw observer count**, and observers cannot
+#'   reliably tell anglers from non-anglers from the air. Smucker et al. (2010)
+#'   apply an angler-to-people ratio of 0.404 alongside their visibility
+#'   correction; omitting it overstates shore effort by roughly 2.5x. The two
+#'   corrections push in **opposite** directions (0.404 down, 2.69 up), so
+#'   applying only the visibility correction is not conservative — it is biased
+#'   in the direction of the correction that was kept (GH \#158).
+#'
+#'   If the count column already records anglers rather than people, say so
+#'   with `angler_ratio = 1, angler_ratio_se = 0`, which asserts the ratio is
+#'   known exactly. That is a claim about how the data were recorded, and only
+#'   the surveyor can make it.
+#'
+#'   For a count of **boats** rather than people, do not use this argument:
+#'   expand the boat count to anglers with [derive_angler_count()] before
+#'   [add_counts()], which attaches the party-size multiplier and its standard
+#'   error as expansion carrier columns that the estimator reads.
+#' @param angler_ratio_se Optional positive numeric scalar: the standard error
+#'   of `angler_ratio`. All-or-none — it requires a numeric `angler_ratio` and
+#'   cannot be combined with `"none"`. Like the visibility correction, the
+#'   angler-to-people ratio is estimated from ground observation and is a
+#'   **shared** multiplier, so its contribution enters once at the total.
+#'   Omitted means the component is reported as absent, never as zero.
 #' @param open_start Optional non-negative numeric scalar specifying the
 #'   hour of day (decimal, 24-hour clock) when the fishery opens. Used only
 #'   when `survey_type = "aerial"` and only by [estimate_effort_aerial_glmm()]
@@ -395,6 +423,105 @@ VALID_SURVEY_TYPES <- c("instantaneous", "bus_route", "ice", "camera", "aerial")
 #'   p_period = p_period
 #' )
 #'
+#' Validate a shared multiplier and its optional standard error
+#'
+#' A *shared multiplier* is a single estimated proportion in `(0, 1]` that
+#' scales the whole estimate — the aerial visibility correction (GH #135), the
+#' angler-to-people ratio (GH #158). Each is estimated from data, so each may
+#' carry a standard error, and each contributes once at the total rather than
+#' per stratum.
+#'
+#' All of them share one validation shape, deliberately:
+#'
+#' * **Required, with an explicit `"none"` opt-out.** These arguments used to
+#'   default silently to 1, which asserted "no correction applies" on the
+#'   caller's behalf and made an uncorrected estimate indistinguishable from a
+#'   correction that happened to equal 1. Not supplying a value is not the same
+#'   claim as declaring no correction, so the two are spelled differently and
+#'   only one of them is silent.
+#' * **The opt-out yields `NA`, never `0`.** Declaring no correction still
+#'   leaves the correction's uncertainty unpropagated, and a zero would be
+#'   indistinguishable from having propagated it and found none. To assert a
+#'   multiplier is known exactly, supply it with an SE of `0` deliberately.
+#' * **All-or-none.** A standard error requires a numeric value to describe
+#'   (GH #117).
+#'
+#' @return A list with `value` (numeric, 1 under the opt-out), `se` (numeric,
+#'   `NA_real_` under the opt-out, `NULL` when not supplied), and `declared`
+#'   (`"none"` or `"estimate"`).
+#'
+#' @keywords internal
+#' @noRd
+validate_shared_multiplier <- function(
+  value,
+  se,
+  value_arg,
+  se_arg,
+  required_class,
+  se_class,
+  required_hint = character(0),
+  above_one_hint = character(0),
+  se_hint = character(0)
+) {
+  is_none <- is.character(value) && length(value) == 1L && identical(value, "none")
+
+  if (is.null(value)) {
+    cli::cli_abort(
+      c(
+        "{.arg {value_arg}} is required for an aerial design.",
+        required_hint,
+        "i" = "To state that no correction applies, pass {.code {value_arg} = \"none\"}."
+      ),
+      class = required_class
+    )
+  }
+
+  bad <- !is_none &&
+    (!is.numeric(value) ||
+       length(value) != 1L ||
+       is.na(value) ||
+       value <= 0 ||
+       value > 1)
+  if (bad) {
+    hint <- if (is.numeric(value) && length(value) == 1L && !is.na(value) && value > 1) {
+      above_one_hint
+    } else {
+      c("i" = "Valid range: 0 < {.arg {value_arg}} <= 1.")
+    }
+    cli::cli_abort(c(
+      "{.arg {value_arg}} must be a single number in (0, 1], or the string {.val none}.",
+      "x" = "Supplied value {.val {value}} is outside the valid range.",
+      hint
+    ))
+  }
+
+  if (!is.null(se)) {
+    if (is_none) {
+      cli::cli_abort(
+        c(
+          "{.arg {se_arg}} cannot be combined with {.code {value_arg} = \"none\"}.",
+          "x" = "There is no correction for the standard error to describe.",
+          "i" = "Supply {.arg {value_arg}} as a number in (0, 1] to propagate its uncertainty."
+        ),
+        class = se_class
+      )
+    }
+    if (!is.numeric(se) || length(se) != 1L || is.na(se) || se < 0) {
+      cli::cli_abort(c(
+        "{.arg {se_arg}} must be a single non-negative number.",
+        "x" = "Supplied value {.val {se}} is invalid.",
+        se_hint
+      ))
+    }
+  }
+
+  list(
+    value = if (is_none) 1 else value,
+    se = if (is_none) NA_real_ else se,
+    declared = if (is_none) "none" else "estimate"
+  )
+}
+
 #' @family "Survey Design"
 #' @export
 creel_design <- function(
@@ -413,6 +540,8 @@ creel_design <- function(
   h_open = NULL,
   visibility_correction = NULL,
   visibility_se = NULL,
+  angler_ratio = NULL,
+  angler_ratio_se = NULL,
   open_start = NULL
 ) {
   # 1. Structural validation (Phase 1 validator)
@@ -757,93 +886,61 @@ creel_design <- function(
         "i" = "Example: {.code h_open = 14}"
       ))
     }
-    # visibility_correction validation.
-    #
-    # Required, with an explicit "none" opt-out. It used to be optional and
-    # silently defaulted to 1.0 at the estimator, which asserted "every angler
-    # was detected" on the caller's behalf and made an uncorrected estimate
-    # indistinguishable from a correction that happened to be 1 (GH #135).
-    # Not supplying a value is not the same claim as declaring no correction,
-    # so the two are now spelled differently and only one of them is silent.
-    vc_none <- is.character(visibility_correction) &&
-      length(visibility_correction) == 1L &&
-      identical(visibility_correction, "none")
-
-    if (is.null(visibility_correction)) {
-      cli::cli_abort(
-        c(
-          "{.arg visibility_correction} is required for an aerial design.",
-          "x" = "It was previously defaulted to {.val 1}, which silently asserted that every angler was detected.",
-          "i" = "Supply the detection probability as a number in (0, 1] — e.g. {.code visibility_correction = 0.372}.",
-          "i" = "For a published ground-truthing ratio {.var r} (ground/aerial, > 1), pass {.code 1 / r}.",
-          "i" = "To state that no correction applies, pass {.code visibility_correction = \"none\"}."
-        ),
-        class = "creel_error_visibility_correction_required"
-      )
-    }
-
-    vc_bad <- !vc_none &&
-      (!is.numeric(visibility_correction) ||
-         length(visibility_correction) != 1L ||
-         is.na(visibility_correction) ||
-         visibility_correction <= 0 ||
-         visibility_correction > 1)
-    if (vc_bad) {
+    # Both aerial corrections are shared multipliers estimated from data, so
+    # they validate identically; see validate_shared_multiplier() for why each
+    # is required rather than silently defaulted (GH #135, #158).
+    vis <- validate_shared_multiplier(
+      value = visibility_correction,
+      se = visibility_se,
+      value_arg = "visibility_correction",
+      se_arg = "visibility_se",
+      required_class = "creel_error_visibility_correction_required",
+      se_class = "creel_error_visibility_se_without_correction",
+      required_hint = c(
+        "x" = "It was previously defaulted to {.val 1}, which silently asserted that every angler was detected.",
+        "i" = "Supply the detection probability as a number in (0, 1] — e.g. {.code visibility_correction = 0.372}.",
+        "i" = "For a published ground-truthing ratio {.var r} (ground/aerial, > 1), pass {.code 1 / r}."
+      ),
       # The `> 1` case is where a reader of the source paper lands: published
-      # ground-truthing ratios are ratios, not probabilities, and are > 1
+      # ground-truthing ratios are ratios, not probabilities, and exceed 1
       # exactly when the correction matters (GH #157).
-      ratio_hint <- if (
-        is.numeric(visibility_correction) &&
-          length(visibility_correction) == 1L &&
-          !is.na(visibility_correction) &&
-          visibility_correction > 1
-      ) {
-        c(
-          "i" = paste0(
-            "Values above 1 usually mean a published ground-truthing ratio ",
-            "{.var r} = ground/aerial was passed directly."
-          ),
-          "i" = paste0(
-            "{.arg visibility_correction} is a detection probability: ",
-            "pass {.code 1 / {visibility_correction}} instead."
-          ),
-          "i" = "Smucker et al. (2010) report {.var r} = 2.69 for shore anglers, i.e. {.code 1 / 2.69 = 0.372}."
-        )
-      } else {
-        c("i" = "Valid range: 0 < {.arg visibility_correction} <= 1.")
-      }
-      cli::cli_abort(c(
-        "{.arg visibility_correction} must be a single number in (0, 1], or the string {.val none}.",
-        "x" = "Supplied value {.val {visibility_correction}} is outside the valid range.",
-        ratio_hint
-      ))
-    }
+      above_one_hint = c(
+        "i" = paste0(
+          "Values above 1 usually mean a published ground-truthing ratio ",
+          "{.var r} = ground/aerial was passed directly."
+        ),
+        "i" = "{.arg visibility_correction} is a detection probability: pass {.code 1 / r} instead.",
+        "i" = "Smucker et al. (2010) report {.var r} = 2.69 for shore anglers, i.e. {.code 1 / 2.69 = 0.372}."
+      ),
+      se_hint = c(
+        "i" = "It is the standard error of {.arg visibility_correction}, on the same (0, 1] probability scale.",
+        "i" = "For an SE published on the ratio scale, convert with {.code se_r / r^2}."
+      )
+    )
 
-    # visibility_se validation: all-or-none with a numeric correction (#117).
-    if (!is.null(visibility_se)) {
-      if (vc_none) {
-        cli::cli_abort(
-          c(
-            "{.arg visibility_se} cannot be combined with {.code visibility_correction = \"none\"}.",
-            "x" = "There is no correction for the standard error to describe.",
-            "i" = "Supply the detection probability as a number in (0, 1] to propagate its uncertainty."
-          ),
-          class = "creel_error_visibility_se_without_correction"
-        )
-      }
-      se_bad <- !is.numeric(visibility_se) ||
-        length(visibility_se) != 1L ||
-        is.na(visibility_se) ||
-        visibility_se < 0
-      if (se_bad) {
-        cli::cli_abort(c(
-          "{.arg visibility_se} must be a single non-negative number.",
-          "x" = "Supplied value {.val {visibility_se}} is invalid.",
-          "i" = "It is the standard error of {.arg visibility_correction}, on the same (0, 1] probability scale.",
-          "i" = "For an SE published on the ratio scale, convert with {.code se_r / r^2}."
-        ))
-      }
-    }
+    ang <- validate_shared_multiplier(
+      value = angler_ratio,
+      se = angler_ratio_se,
+      value_arg = "angler_ratio",
+      se_arg = "angler_ratio_se",
+      required_class = "creel_error_angler_ratio_required",
+      se_class = "creel_error_angler_ratio_se_without_ratio",
+      required_hint = c(
+        "x" = "An aerial count is a raw observer count; nothing in it distinguishes anglers from other people.",
+        "i" = "Supply the angler-to-people ratio as a number in (0, 1] — Smucker et al. (2010) use {.val 0.404}.",
+        "i" = paste0(
+          "If the count column already records anglers, say so with ",
+          "{.code angler_ratio = 1, angler_ratio_se = 0}."
+        ),
+        "i" = "For a count of boats, expand it with {.fn derive_angler_count} before {.fn add_counts} instead."
+      ),
+      above_one_hint = c(
+        "i" = "{.arg angler_ratio} is a proportion of counted people, so it cannot exceed 1."
+      ),
+      se_hint = c(
+        "i" = "It is the standard error of {.arg angler_ratio}, on the same (0, 1] proportion scale."
+      )
+    )
     # open_start validation: optional, must be non-negative numeric scalar if supplied
     if (
       !is.null(open_start) &&
@@ -868,9 +965,12 @@ creel_design <- function(
     aerial <- list(
       survey_type = "aerial",
       h_open = h_open,
-      visibility_correction = if (vc_none) 1 else visibility_correction,
-      visibility_se = if (vc_none) NA_real_ else visibility_se,
-      visibility_declared = if (vc_none) "none" else "estimate",
+      visibility_correction = vis$value,
+      visibility_se = vis$se,
+      visibility_declared = vis$declared,
+      angler_ratio = ang$value,
+      angler_ratio_se = ang$se,
+      angler_ratio_declared = ang$declared,
       open_start = open_start
     )
   }
@@ -3132,6 +3232,14 @@ format.creel_design <- function(x, ...) {
         cli::cli_text("Visibility correction: {.field {x$aerial$visibility_correction}}")
         if (!is.null(x$aerial$visibility_se)) {
           cli::cli_text("Visibility SE: {.field {x$aerial$visibility_se}}")
+        }
+      }
+      if (identical(x$aerial$angler_ratio_declared, "none")) {
+        cli::cli_text("Angler-to-people ratio: {.val none} (declared; SE is {.val NA})")
+      } else if (!is.null(x$aerial$angler_ratio)) {
+        cli::cli_text("Angler-to-people ratio: {.field {x$aerial$angler_ratio}}")
+        if (!is.null(x$aerial$angler_ratio_se)) {
+          cli::cli_text("Angler ratio SE: {.field {x$aerial$angler_ratio_se}}")
         }
       }
     }
