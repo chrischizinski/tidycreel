@@ -407,15 +407,31 @@ test_that("add_counts() single-count path produces NULL within_day_var (CNT-04)"
   expect_null(d$count_time_col)
 })
 
-test_that("add_counts() warns on duplicate PSU rows when count_time_col = NULL (CNT-06)", {
+test_that("add_counts() warns on repeated sampling units when count_time_col = NULL (CNT-06)", {
   # Duplicate every row to simulate forgotten count_time_col
   dup_counts <- rbind(example_counts, example_counts)
 
   design <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
   expect_warning(
     add_counts(design, dup_counts),
-    regexp = "Duplicate PSU values"
+    regexp = "Repeated sampling units"
   )
+})
+
+test_that("CNT-06 names the key it judged the repeat on (GH #155)", {
+  # The warning used to say "duplicate values in column date", which was both
+  # the wrong question and unactionable on a design with sections or sites.
+  # Naming the key is what tells a user whether the repeat is a real one.
+  dup_counts <- rbind(example_counts, example_counts)
+  design <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
+
+  w <- tryCatch(
+    add_counts(design, dup_counts),
+    warning = function(x) x
+  )
+  msg <- cli::ansi_strip(paste(conditionMessage(w), collapse = "\n"))
+  expect_match(msg, "date", fixed = TRUE)
+  expect_match(msg, "day_type", fixed = TRUE)
 })
 
 test_that("add_counts() sets count_type slot to 'instantaneous' by default", {
@@ -1001,5 +1017,161 @@ test_that("F21: aerial effort still applies h_open once when T_d is absent", {
   expect_equal(
     suppressWarnings(estimate_effort(d))$estimates$estimate,
     1400
+  )
+})
+
+# GH #155: the sampling unit is the PSU crossed with section/site, not the date -
+
+# add_counts() held four separate notions of "the same unit" -- duplicate
+# detection, within-day aggregation, the supplied within-day-variance key, and
+# the party-size constancy check -- and none carried the section. A day sampled
+# in two sections therefore read as one unit.
+
+sec_calendar <- function() {
+  data.frame(
+    date = as.Date("2024-06-01") + 0:1,
+    day_type = "weekday",
+    stringsAsFactors = FALSE
+  )
+}
+
+sec_design <- function() {
+  d <- creel_design(sec_calendar(), date = date, strata = day_type)
+  add_sections(
+    d,
+    data.frame(section = c("North", "South"), stringsAsFactors = FALSE),
+    section_col = section
+  )
+}
+
+# North is busy (~100 anglers), South is quiet (~10). Two count times each.
+sec_subdaily_counts <- function() {
+  data.frame(
+    date = rep(as.Date("2024-06-01") + 0:1, each = 4),
+    day_type = "weekday",
+    section = rep(rep(c("North", "South"), each = 2), 2),
+    count_time = rep(c("am", "pm"), 4),
+    angler_count = c(100, 110, 10, 12, 102, 108, 11, 13),
+    stringsAsFactors = FALSE
+  )
+}
+
+test_that("within-day aggregation never averages across sections (GH #155)", {
+  # The severe case: eight rows collapsed to two, giving
+  # mean(100, 110, 10, 12) = 58 on a row still labelled North, with South gone
+  # entirely. The daily total came out 58 where the truth is 105 + 11 = 116.
+  # Silent, and it moves the point estimate.
+  d <- suppressWarnings(add_counts(
+    sec_design(),
+    sec_subdaily_counts(),
+    count_col = "angler_count",
+    count_time_col = count_time
+  ))
+
+  expect_equal(nrow(d$counts), 4L)
+  got <- d$counts[order(d$counts$date, d$counts$section), ]
+  expect_equal(as.character(got$section), c("North", "South", "North", "South"))
+  expect_equal(got$angler_count, c(105, 11, 105, 12))
+})
+
+test_that("the within-day variance measures within-day spread, not between-section (GH #155)", {
+  # ss_d came out 8888 with k_d = 4 -- almost entirely the 100-vs-10 gap
+  # between places. The component exists to capture count-to-count variation
+  # inside one unit, so keying it across sections made it report the wrong
+  # quantity, inflated by two orders of magnitude.
+  d <- suppressWarnings(add_counts(
+    sec_design(),
+    sec_subdaily_counts(),
+    count_col = "angler_count",
+    count_time_col = count_time
+  ))
+
+  wdv <- d$within_day_var[order(d$within_day_var$date, d$within_day_var$section), ]
+  expect_equal(wdv$ss_d, c(50, 2, 18, 2))
+  expect_true(all(wdv$k_d == 2L))
+})
+
+test_that("a clean multi-section day raises no duplicate warning (GH #155)", {
+  # Two sections counted once each is ordinary structure. The old key read it
+  # as a repeated date and warned, and a warning that fires on correct input is
+  # one users learn to ignore -- which matters because it is the only signal
+  # for the case that is genuinely wrong.
+  counts <- data.frame(
+    date = rep(as.Date("2024-06-01") + 0:1, each = 2),
+    day_type = "weekday",
+    section = rep(c("North", "South"), 2),
+    angler_count = c(10, 8, 12, 9),
+    stringsAsFactors = FALSE
+  )
+  expect_no_warning(
+    suppressWarnings(add_counts(sec_design(), counts, count_col = "angler_count")),
+    class = "rlang_warning"
+  )
+})
+
+test_that("a genuine repeat of one unit still warns (GH #155)", {
+  # The check must not be weakened into uselessness: same date AND same
+  # section, counted twice with no count time, is the real CNT-06 case.
+  counts <- data.frame(
+    date = rep(as.Date("2024-06-01") + 0:1, each = 2),
+    day_type = "weekday",
+    section = rep(c("North", "South"), 2),
+    angler_count = c(10, 8, 12, 9),
+    stringsAsFactors = FALSE
+  )
+  expect_warning(
+    add_counts(sec_design(), rbind(counts, counts[1, ]), count_col = "angler_count"),
+    regexp = "Repeated sampling units"
+  )
+})
+
+test_that("a section-specific party size is accepted on a multi-section day (GH #155)", {
+  # check_expansion_constant_per_psu() refused this, reporting "expansion_se
+  # varies within a single PSU" and blaming two derive_angler_count() calls.
+  # There is one call, and the design is coherent: parties in North average 2.5
+  # anglers and in South 3.0. Under sections the unit is the day WITHIN a
+  # section, and each such unit does carry exactly one estimate.
+  raw <- data.frame(
+    date = rep(as.Date("2024-06-01") + 0:1, each = 2),
+    day_type = "weekday",
+    section = rep(c("North", "South"), 2),
+    angler_boats = c(5, 4, 6, 3),
+    stringsAsFactors = FALSE
+  )
+  lookup <- data.frame(section = c("North", "South"), mps = c(2.5, 3.0))
+  attr(lookup, "se") <- c(North = 0.1, South = 0.12)
+  counts <- derive_angler_count(raw, boat_count = angler_boats, party_size = lookup)
+
+  d <- suppressWarnings(add_counts(sec_design(), counts, count_col = "angler_count"))
+  got <- unique(d$counts[, c("section", "expansion_se", "expansion_group")])
+  got <- got[order(got$section), ]
+  expect_equal(got$expansion_se, c(0.10, 0.12))
+  expect_equal(as.character(got$expansion_group), c("North", "South"))
+})
+
+test_that("two different party-size estimates for ONE unit still abort (GH #131, #155)", {
+  # The constancy guard's real purpose has to survive the key fix. Two count
+  # times inside one date+section carrying different standard errors is a
+  # malformed input, and aggregation would silently resolve it to whichever
+  # row sorted first.
+  raw <- data.frame(
+    date = rep(as.Date("2024-06-01") + 0:1, each = 4),
+    day_type = "weekday",
+    section = rep(rep(c("North", "South"), each = 2), 2),
+    count_time = rep(c("am", "pm"), 4),
+    angler_boats = c(5, 4, 6, 3, 7, 5, 6, 4),
+    stringsAsFactors = FALSE
+  )
+  lookup <- data.frame(section = c("North", "South"), mps = c(2.5, 3.0))
+  attr(lookup, "se") <- c(North = 0.1, South = 0.12)
+  counts <- derive_angler_count(raw, boat_count = angler_boats, party_size = lookup)
+  counts$expansion_se[1] <- 0.99
+
+  expect_error(
+    suppressWarnings(add_counts(
+      sec_design(), counts,
+      count_col = "angler_count", count_time_col = count_time
+    )),
+    regexp = "varies within a single PSU"
   )
 })
