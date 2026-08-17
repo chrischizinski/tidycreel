@@ -7,6 +7,7 @@
 estimate_mr_harvest(
   angler_n,
   harvest_rate,
+  harvest_rate_se = NULL,
   conf_level = 0.95,
   ci_method = c("logit", "delta", "bootstrap")
 )
@@ -22,7 +23,30 @@ fishery averaging 1.4 fish per angler is a legal value. In the notation of
 Hansen & Van Kirk (2018) eq. (1), \eqn{H = N \cdot D \cdot V}, this
 argument is the product \eqn{D \times V} — mean days fished per angler
 times mean daily harvest per angler — not \eqn{V} alone.
-Uncertainty in the harvest rate is not propagated (see Details).}
+Supply \code{harvest_rate_se} to propagate its uncertainty.}
+
+\item{harvest_rate_se}{numeric scalar or \code{NULL}. The standard error of
+\code{harvest_rate}, on the same fish-per-angler scale. When supplied, the
+total variance is Goodman's (1960) product form,
+\eqn{\hat{N}^2 \sigma_r^2 + r^2 \sigma_{\hat{N}}^2 -
+  \sigma_{\hat{N}}^2 \sigma_r^2}, via the same helper the three
+\code{estimate_total_*()} functions already use.
+
+When \code{NULL} (default), the reported SE reflects uncertainty in
+\eqn{\hat{N}} alone and is a \strong{lower bound}; the function says so at
+runtime. The component is absent rather than zero, because a zero would be
+indistinguishable from having propagated the rate's error and found none.
+Rasmussen et al. (1998) draw the distinction explicitly: the subtractive
+product formula is the one for terms "estimated from a sample", and
+differs from the population formula "used when the terms in the product
+are known, not estimated".
+
+Supplying it also changes the confidence interval. The default \code{logit}
+interval scales the endpoints of the \eqn{\hat{N}} interval by
+\code{harvest_rate}, which is exact only while that rate is a known
+positive constant. Once the rate is estimated those endpoints are
+themselves random, so the function falls back to a symmetric interval
+built from the full product SE.}
 
 \item{conf_level}{numeric. Confidence level for the CI. Default \code{0.95}.}
 
