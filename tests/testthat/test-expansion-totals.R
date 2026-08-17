@@ -204,48 +204,81 @@ test_that("a design with no expansion has no structure (GH #144)", {
   expect_null(expansion_group_structure(totals_design(counts)))
 })
 
-test_that("groups straddling strata unevenly give an NA total SE and warn (GH #144)", {
-  # A per-row party size makes the group the multiplier's own value, so a value
-  # shared by both strata alongside one confined to a single stratum produces a
-  # geometry that is neither independent nor wholly shared. Quadrature would
-  # understate and the linear sum would overstate; the decomposition needed to
-  # do better is not recoverable from a per-stratum standard error, so the
-  # honest answer is that the combination is unknown.
+# The "partial" geometry: one multiplier value shared by both strata alongside
+# one confined to a single stratum. Neither independent nor wholly shared.
+partial_strata_design <- function() {
   raw <- totals_raw()
   raw$mps <- c(2.5, 2.5, 2.5, 3.0, 2.5, 3.0)
   raw$mps_se <- 0.1
-  counts <- derive_angler_count(
+  totals_design(derive_angler_count(
     raw,
     boat_count = angler_boats,
     party_size = mps,
     party_size_se = mps_se
-  )
-  design <- totals_design(counts)
+  ))
+}
+
+test_that("groups straddling strata unevenly combine exactly (GH #144, #150)", {
+  # This case returned NA with a warning under #144, because the per-stratum
+  # standard error had already summed the group index away and neither
+  # shortcut is right: quadrature assumes the strata independent, the linear
+  # sum assumes one estimate runs through all of them. Carrying the per-group
+  # decomposition makes the exact combination available, so there is nothing
+  # left to refuse (#150).
+  #
+  # Group "2.5" spans both strata (contributions 3.0625 and 0.4), group "3"
+  # sits only in weekend (2.6). Same-group terms add before squaring, different
+  # groups add as variances: 3.4625^2 + 2.6^2 = 18.74890625.
+  design <- partial_strata_design()
   expect_identical(expansion_group_structure(design), "partial")
 
-  expect_warning(
+  expect_no_warning(
     result <- estimate_total_catch(design),
     class = "creel_warning_expansion_structure_unknown"
   )
-  expect_true(is.na(result$estimates$se))
-  # NA, not dropped and not zero: the component applies and is unknown.
-  expect_true(is.na(result$se_expansion))
+  expect_false(is.na(result$estimates$se))
+  expect_equal(result$se_expansion, sqrt(3.4625^2 + 2.6^2))
 })
 
-test_that("an NA total SE from an unknown structure carries into the CI (GH #144)", {
-  # A standard error that goes NA must not leave a confidence interval behind
-  # that looks computed.
-  raw <- totals_raw()
-  raw$mps <- c(2.5, 2.5, 2.5, 3.0, 2.5, 3.0)
-  raw$mps_se <- 0.1
-  counts <- derive_angler_count(
-    raw,
-    boat_count = angler_boats,
-    party_size = mps,
-    party_size_se = mps_se
-  )
-  result <- suppressWarnings(estimate_total_catch(totals_design(counts)))
+test_that("the exact partial combination lies strictly between the two shortcuts (GH #150)", {
+  # The value has to be bracketed, not merely finite. Quadrature understates
+  # because it drops the covariance the shared group induces; the linear sum
+  # overstates because it treats groups from disjoint interview subsets as
+  # perfectly correlated. A number outside that bracket is not a combination
+  # of these contributions at all.
+  result <- suppressWarnings(estimate_total_catch(partial_strata_design()))
 
-  expect_true(is.na(result$estimates$ci_lower))
-  expect_true(is.na(result$estimates$ci_upper))
+  quadrature <- 4.037190391
+  linear_sum <- 5.693089288
+  expect_gt(result$se_expansion, quadrature)
+  expect_lt(result$se_expansion, linear_sum)
+})
+
+test_that("a computable partial structure leaves a real CI behind (GH #144, #150)", {
+  # The NA standard error used to carry into the interval. Now that the
+  # combination is exact, the interval must be a real one -- an NA here would
+  # mean the recovered variance never reached the CI.
+  result <- suppressWarnings(estimate_total_catch(partial_strata_design()))
+
+  expect_false(is.na(result$estimates$ci_lower))
+  expect_false(is.na(result$estimates$ci_upper))
+  expect_lt(result$estimates$ci_lower, result$estimates$estimate)
+  expect_gt(result$estimates$ci_upper, result$estimates$estimate)
+})
+
+test_that("the recovered component is the one inside the reported se (GH #134, #150)", {
+  # #134's failure mode one geometry over: a totals object whose `se` carries
+  # the term while the reported component says otherwise. The partial branch
+  # computes the two in separate functions, so they can drift apart.
+  design <- partial_strata_design()
+  result <- suppressWarnings(estimate_total_catch(design))
+
+  # Rebuilding `se` without the expansion term and adding the reported
+  # component back must return the reported `se`.
+  bare <- suppressWarnings(estimate_total_catch(totals_design(
+    derive_angler_count(totals_raw(), boat_count = angler_boats, party_size = 2.5)
+  )))
+  expect_null(bare$se_expansion)
+  expect_false(is.na(result$se_expansion))
+  expect_gt(result$estimates$se, bare$estimates$se)
 })

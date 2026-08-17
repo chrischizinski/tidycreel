@@ -227,3 +227,109 @@ test_that("harvest and release sections totals carry the same correction (GH #14
   expect_gt(lake_row(release_shared)$se, lake_row(release_separate)$se)
   expect_false(is.null(release_shared$se_expansion))
 })
+
+# GH #150: recovering the "partial" geometry the per-part component lost ------
+
+# One party-size estimate per day_type. Sections cross-cut day_type -- each
+# section covers two weekdays and two weekend days -- so every group straddles
+# both sections. This is the geometry #150 names as ordinary rather than
+# exotic: `mean_party_size(by = day_type)` is a routine thing to write, and
+# before the decomposition was carried it forced the lake row to NA.
+partial_section_counts <- function() {
+  lookup <- data.frame(
+    day_type = c("weekday", "weekend"),
+    mps = c(2.5, 2.5),
+    stringsAsFactors = FALSE
+  )
+  attr(lookup, "se") <- c(weekday = 0.1, weekend = 0.1)
+  derive_angler_count(sections_raw(), boat_count = angler_boats, party_size = lookup)
+}
+
+test_that("a partial section geometry returns a finite lake SE (GH #150)", {
+  # The classifier still says "partial" -- the geometry has not changed, only
+  # what the estimator can do with it.
+  design <- sections_design(partial_section_counts())
+  expect_identical(
+    expansion_group_structure(design, design[["section_col"]]),
+    "partial"
+  )
+
+  expect_no_warning(
+    result <- estimate_total_catch(design),
+    class = "creel_warning_expansion_structure_unknown"
+  )
+  expect_false(is.na(lake_row(result)$se))
+})
+
+test_that("the partial lake SE sits between the nested and shared ones (GH #150)", {
+  # Bracketing, not just finiteness. Each group spans both sections, so the
+  # covariance is positive and the answer must exceed the independent case;
+  # the groups are disjoint from each other, so it must fall short of treating
+  # every section as driven by one estimate.
+  partial <- suppressWarnings(estimate_total_catch(sections_design(partial_section_counts())))
+  nested <- suppressWarnings(estimate_total_catch(sections_design(separate_section_counts())))
+  shared <- suppressWarnings(estimate_total_catch(sections_design(shared_section_counts())))
+
+  expect_gt(lake_row(partial)$se, lake_row(nested)$se)
+  expect_lt(lake_row(partial)$se, lake_row(shared)$se)
+})
+
+test_that("the partial lake SE equals the hand-combined decomposition (GH #150)", {
+  # Hand-computed outside the estimator: each group's per-section
+  # contributions are b = 1.0 (North) and 0.9 (South), scaled by the section
+  # rates 1.96875 and 2.06250. Same-group terms add before squaring, different
+  # groups add as variances, giving 2 * 3.825^2 = 29.26125 for the expansion
+  # term. Pinning the arithmetic rather than the output keeps this from
+  # ratifying whatever the code happens to produce.
+  result <- suppressWarnings(estimate_total_catch(sections_design(partial_section_counts())))
+  secs <- result$estimates[result$estimates$section != ".lake_total", ]
+  components <- result$se_expansion[result$estimates$section != ".lake_total"]
+
+  exact_var <- 2 * 3.825^2
+  expected <- sqrt(sum(secs$se^2) - sum(components^2) + exact_var)
+
+  expect_equal(lake_row(result)$se, expected, tolerance = 1e-9)
+  expect_equal(lake_row(result)$se, 37.23078214, tolerance = 1e-7)
+})
+
+test_that("the nested and shared section SEs are untouched by #150", {
+  # These two were already exact. #150 must recover the third case without
+  # perturbing them, so their branches keep their own arithmetic rather than
+  # routing through the general formula.
+  nested <- suppressWarnings(estimate_total_catch(sections_design(separate_section_counts())))
+  shared <- suppressWarnings(estimate_total_catch(sections_design(shared_section_counts())))
+
+  expect_equal(lake_row(nested)$se, 37.2297, tolerance = 1e-5)
+  expect_equal(lake_row(shared)$se, 37.6203, tolerance = 1e-5)
+})
+
+test_that("harvest and release recover the partial geometry too (GH #150)", {
+  # The three twins share combine_section_variances(), and the decomposition
+  # has to be collected in all three loops to reach it. A twin that forgot to
+  # collect it would fall back to NA here while catch returned a number.
+  design <- sections_design(partial_section_counts())
+
+  harvest <- suppressWarnings(estimate_total_harvest(design))
+  release <- suppressWarnings(estimate_total_release(design))
+
+  expect_false(is.na(lake_row(harvest)$se))
+  expect_false(is.na(lake_row(release)$se))
+})
+
+test_that("the refusal remains for a partial structure with no decomposition (GH #144, #150)", {
+  # The fallback is not dead code: an estimator that never carried the
+  # decomposition still reaches the partial branch with nothing to combine,
+  # and must refuse rather than pick a shortcut. Exercised directly because no
+  # first-party effort path produces that state any more.
+  expect_warning(
+    result <- add_expansion_covariance(
+      pv = 10,
+      rate = c(2, 3),
+      expansion_se = c(0.5, 0.5),
+      structure = "partial",
+      decomposition = NULL
+    ),
+    class = "creel_warning_expansion_structure_unknown"
+  )
+  expect_true(is.na(result))
+})

@@ -1729,6 +1729,19 @@ add_counts <- function(
             "Pass the per-day count to {.fn add_counts} with",
             "{.arg period_length_col}, which scales the count and the basis",
             "together, instead of multiplying the count beforehand."
+          ),
+          # The guard cannot tell a correct hand-rescale from an incorrect one:
+          # `expansion_of` records a column name, not a scale factor, so both
+          # arrive here identically and both are refused. Saying so keeps the
+          # message from describing a mistake the caller may not have made --
+          # ten chapters of the companion book hit this with arithmetic that
+          # was right (GH #148).
+          "i" = paste(
+            "This is also reached when the basis {.emph was} rescaled",
+            "correctly alongside the count: {.field expansion_of} records a",
+            "column name rather than a scale factor, so the two cases are",
+            "indistinguishable here. {.arg period_length_col} is the supported",
+            "way to state the rescaling."
           )
         ),
         class = "creel_error_expansion_basis_desync"

@@ -246,6 +246,13 @@ se_of_mean <- function(x) {
 #'   that is understated by exactly the scale factor. Pass the per-day count and
 #'   let `period_length_col` do the multiplication instead.
 #'
+#'   All four are written by the package and are not user inputs. In particular,
+#'   editing `expansion_of` to name a transformed column silences that refusal
+#'   whether or not the basis was actually rescaled, which re-enables the very
+#'   defect the check exists to catch. Rescale through `period_length_col`,
+#'   which scales both together and can be verified, rather than by asserting
+#'   that you did (GH #148).
+#'
 #' @seealso [mean_party_size()], [add_counts()], [prep_counts_boat_party()]
 #' @family "Survey Design"
 #' @export
