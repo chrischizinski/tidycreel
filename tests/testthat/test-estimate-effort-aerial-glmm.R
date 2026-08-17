@@ -12,6 +12,7 @@ make_aerial_glmm_design <- function() {
     date = date,
     strata = day_type, # nolint: object_usage_linter
     survey_type = "aerial",
+    visibility_correction = "none",
     h_open = 14
   )
   add_counts(design, example_aerial_glmm_counts, count_col = n_anglers) # nolint: object_usage_linter
@@ -143,6 +144,7 @@ test_that("GLMM-05: fixed open_start suppresses data-derived window message", {
     date = date,
     strata = day_type,
     survey_type = "aerial",
+    visibility_correction = "none",
     h_open = 14,
     open_start = 5.0
   )
@@ -182,6 +184,7 @@ test_that("GLMM-05: fixed open_start yields finite estimate", {
     date = date,
     strata = day_type,
     survey_type = "aerial",
+    visibility_correction = "none",
     h_open = 14,
     open_start = 5.0
   )

@@ -47,6 +47,7 @@ design <- creel_design(
   date = date,
   strata = day_type,
   survey_type = "aerial",
+  visibility_correction = "none",
   h_open = 14
 )
 design <- add_counts(design, example_aerial_glmm_counts, count_col = n_anglers)

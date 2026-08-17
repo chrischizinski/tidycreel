@@ -1871,7 +1871,11 @@ test_that("CAM-03: filtering camera_status == 'operational' before add_counts() 
 
 # Phase 47: Aerial effort estimation ----
 
-make_aerial_design <- function(h_open = 14, visibility_correction = NULL) {
+make_aerial_design <- function(
+  h_open = 14,
+  visibility_correction = "none",
+  visibility_se = NULL
+) {
   cal <- data.frame(
     date = as.Date(c(
       "2024-06-01",
@@ -1892,7 +1896,8 @@ make_aerial_design <- function(h_open = 14, visibility_correction = NULL) {
     strata = day_type, # nolint: object_usage_linter
     survey_type = "aerial",
     h_open = h_open,
-    visibility_correction = visibility_correction
+    visibility_correction = visibility_correction,
+    visibility_se = visibility_se
   )
 }
 
@@ -1947,7 +1952,13 @@ describe("Phase 47: Aerial effort", {
   })
 
   it("AIR-02: SE is non-zero with multiple count observations", {
-    d <- add_counts(make_aerial_design(), make_aerial_counts()) # nolint: object_usage_linter
+    # v declared known exactly, so the visibility component contributes 0 and
+    # the reported SE is a number. Under the "none" opt-out it is NA instead —
+    # pinned separately below (GH #135).
+    d <- add_counts(
+      make_aerial_design(visibility_correction = 1, visibility_se = 0),
+      make_aerial_counts()
+    ) # nolint: object_usage_linter
     result <- suppressWarnings(estimate_effort(d))
     expect_gt(result$estimates$se, 0)
   })
@@ -1965,7 +1976,7 @@ describe("Phase 47: Aerial effort", {
 
   it("AIR-03: visibility_correction = 0.85 produces effort / 0.85 relative to v = 1", {
     d_no_v <- add_counts(
-      make_aerial_design(h_open = 14, visibility_correction = NULL),
+      make_aerial_design(h_open = 14, visibility_correction = "none"),
       make_aerial_counts()
     ) # nolint: object_usage_linter
     d_v085 <- add_counts(
@@ -1983,7 +1994,7 @@ describe("Phase 47: Aerial effort", {
 
   it("AIR-03: SE with visibility_correction = 0.85 equals SE without correction / 0.85", {
     d_no_v <- add_counts(
-      make_aerial_design(h_open = 14, visibility_correction = NULL),
+      make_aerial_design(h_open = 14, visibility_correction = "none"),
       make_aerial_counts()
     ) # nolint: object_usage_linter
     d_v085 <- add_counts(
@@ -1992,11 +2003,102 @@ describe("Phase 47: Aerial effort", {
     ) # nolint: object_usage_linter
     result_no_v <- suppressWarnings(estimate_effort(d_no_v))
     result_v085 <- suppressWarnings(estimate_effort(d_v085))
+    # se_between carries only the count-sampling term, which scales linearly in
+    # 1/v. The visibility component is deliberately not in it (GH #135).
     expect_equal(
       result_v085$estimates$se_between,
       result_no_v$estimates$se_between / 0.85,
       tolerance = 1e-9
     )
+  })
+
+  # ---- GH #135: v is estimated, not known -----------------------------------
+
+  it("AIR-06 (#135): supplying visibility_se changes the reported SE", {
+    # The regression test named in the issue, and the one thing the old API
+    # could not express: with v fixed, v and v +/- se_v were the same number.
+    d_known <- add_counts(
+      make_aerial_design(h_open = 14, visibility_correction = 0.85, visibility_se = 0),
+      make_aerial_counts()
+    ) # nolint: object_usage_linter
+    d_est <- add_counts(
+      make_aerial_design(h_open = 14, visibility_correction = 0.85, visibility_se = 0.05),
+      make_aerial_counts()
+    ) # nolint: object_usage_linter
+    se_known <- suppressWarnings(estimate_effort(d_known))$estimates$se
+    se_est <- suppressWarnings(estimate_effort(d_est))$estimates$se
+    expect_gt(se_est, se_known)
+  })
+
+  it("AIR-06 (#135): the visibility term equals estimate * se_v / v exactly", {
+    # Pins the delta term itself, not merely that the SE moved. A test that only
+    # asserted "bigger" would pass for any positive addend, including one added
+    # per stratum and summed in quadrature -- the shared-multiplier error this
+    # component exists to avoid.
+    d <- add_counts(
+      make_aerial_design(h_open = 14, visibility_correction = 0.85, visibility_se = 0.05),
+      make_aerial_counts()
+    ) # nolint: object_usage_linter
+    res <- suppressWarnings(estimate_effort(d))
+    est <- res$estimates$estimate
+    expected_component <- est * 0.05 / 0.85
+    expect_equal(
+      res$se_components$visibility,
+      expected_component,
+      tolerance = 1e-9
+    )
+    expect_equal(
+      res$estimates$se,
+      sqrt(res$estimates$se_between^2 + res$estimates$se_within^2 + expected_component^2),
+      tolerance = 1e-9
+    )
+  })
+
+  it("AIR-06 (#135): the visibility term does not shrink as flights are added", {
+    # v is a shared multiplier: one estimate divides every scaled count. Its
+    # contribution is proportional to the estimate and must NOT fall like
+    # 1/sqrt(n) the way an independent per-flight term would.
+    counts_1x <- make_aerial_counts()
+    counts_2x <- rbind(counts_1x, counts_1x)
+    ratio_component <- function(counts) {
+      d <- add_counts(
+        make_aerial_design(h_open = 14, visibility_correction = 0.85, visibility_se = 0.05),
+        counts
+      )
+      res <- suppressWarnings(estimate_effort(d))
+      res$se_components$visibility / res$estimates$estimate
+    }
+    # se_v / v is a constant, so the component-to-estimate ratio is invariant.
+    expect_equal(ratio_component(counts_1x), 0.05 / 0.85, tolerance = 1e-9)
+    expect_equal(ratio_component(counts_2x), 0.05 / 0.85, tolerance = 1e-9)
+  })
+
+  it("AIR-06 (#135): the 'none' opt-out reports NA SE, never 0", {
+    # A declared opt-out still leaves the correction's uncertainty
+    # unpropagated. NA says so; 0 would be indistinguishable from having
+    # propagated it and found no uncertainty.
+    d <- add_counts(
+      make_aerial_design(h_open = 14, visibility_correction = "none"),
+      make_aerial_counts()
+    ) # nolint: object_usage_linter
+    res <- suppressWarnings(estimate_effort(d))
+    expect_true(is.na(res$estimates$se))
+    expect_false(identical(res$estimates$se, 0))
+    # The point estimate is unaffected: v = 1 divides nothing away.
+    expect_true(is.finite(res$estimates$estimate))
+    # The count-sampling half stays reportable, so the NA says which half is
+    # unknown rather than only blocking.
+    expect_true(is.finite(res$estimates$se_between))
+  })
+
+  it("AIR-06 (#135): omitting visibility_se reports the component as absent, not zero", {
+    d <- add_counts(
+      make_aerial_design(h_open = 14, visibility_correction = 0.85),
+      make_aerial_counts()
+    ) # nolint: object_usage_linter
+    res <- suppressWarnings(estimate_effort(d))
+    expect_null(res$se_components$visibility)
+    expect_true(is.finite(res$estimates$se))
   })
 })
 

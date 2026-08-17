@@ -19,6 +19,7 @@ creel_design(
   camera_mode = NULL,
   h_open = NULL,
   visibility_correction = NULL,
+  visibility_se = NULL,
   open_start = NULL
 )
 }
@@ -89,11 +90,53 @@ fishery is open per day. Required when \code{survey_type = "aerial"}. Used as
 the expansion factor in the aerial effort estimator:
 \eqn{\hat{E} = N_{obs} \times h_{open} / v}.}
 
-\item{visibility_correction}{Optional numeric scalar in \verb{(0, 1]} specifying
-the proportion of anglers on the water that are detectable from the
-aircraft. Used only when \code{survey_type = "aerial"}. Defaults to \code{1.0}
-(all anglers visible) when \code{NULL}. A value of 0.85 means 85\% of anglers
-are detected; the effort estimate is scaled up by \eqn{1 / 0.85}.}
+\item{visibility_correction}{Detection probability for the aerial count:
+the proportion of anglers present that are detected from the aircraft, as
+a numeric scalar in \verb{(0, 1]}. \strong{Required} when \code{survey_type = "aerial"};
+pass the string \code{"none"} to state explicitly that no visibility correction
+is applied. Used only when \code{survey_type = "aerial"}. A value of 0.85 means
+85\% of anglers are detected; the effort estimate is scaled up by
+\eqn{1 / 0.85}.
+
+\strong{This is the reciprocal of the ratio published by field studies.} The
+standard ground-truthing method reports \eqn{r} = (ground count) /
+(aerial count), which is \strong{greater than 1} whenever the aircraft
+undercounts: Smucker et al. (2010) report \eqn{r = 2.69} for shore
+anglers. \code{visibility_correction} is a \emph{probability}, so convert with
+\eqn{v = 1 / r} — \eqn{r = 2.69} becomes
+\code{visibility_correction = 1 / 2.69 = 0.372}. The estimator divides by
+\eqn{v}, which scales effort up by \eqn{1 / 0.372 = 2.69} as intended.
+Passing the published \eqn{r} directly is rejected by the \verb{(0, 1]} check.}
+
+\item{visibility_se}{Optional positive numeric scalar: the standard error of
+\code{visibility_correction}, on the same detection-probability scale. Used
+only when \code{survey_type = "aerial"}. \code{visibility_correction} is estimated
+from paired air–ground counts, not known, and the standard field method
+reports its SE as routine output (Smucker et al. 2010, equations 6 and 7);
+supplying it here propagates that uncertainty into the effort SE (GH
+\#135). All-or-none: \code{visibility_se} requires a numeric
+\code{visibility_correction}, and cannot be combined with \code{"none"}.
+
+To convert an SE published on the ground-truthing-ratio scale, use the
+delta method for a reciprocal: \eqn{SE(v) = SE(r) / r^2}.
+
+When omitted, the correction is treated as supplied without a measured
+uncertainty and the component is reported as absent — never as zero, which
+would be indistinguishable from having propagated it.
+
+Note the three distinct claims, which the package keeps separate:
+\describe{
+\item{\code{visibility_correction = "none"}}{No correction was studied. The
+point estimate divides by 1 and \code{visibility_se} is \code{NA}, so the
+reported SE is \code{NA} — the uncertainty is unpropagated, not zero.}
+\item{\code{visibility_correction = v} alone}{A correction was measured but
+its SE was not supplied. The component is reported as absent.}
+\item{\verb{visibility_correction = v, visibility_se = 0}}{The correction is
+asserted to be known exactly. This is the only way to obtain a
+numeric SE with no visibility uncertainty, and it must be stated
+deliberately — e.g. \verb{visibility_correction = 1, visibility_se = 0} for
+a fishery where every angler is genuinely detectable.}
+}}
 
 \item{open_start}{Optional non-negative numeric scalar specifying the
 hour of day (decimal, 24-hour clock) when the fishery opens. Used only

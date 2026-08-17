@@ -617,6 +617,7 @@ test_that("aerial effort is angler-hours even though the design's unit is unknow
     date = date,
     strata = day_type, # nolint
     survey_type = "aerial",
+    visibility_correction = "none",
     h_open = 14
   ))
   d <- suppressWarnings(add_counts(d, counts, count_col = anglers)) # nolint

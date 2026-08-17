@@ -1112,6 +1112,7 @@ test_that("creel_design() accepts survey_type = 'aerial' and returns creel_desig
     date = date,
     strata = day_type,
     survey_type = "aerial",
+    visibility_correction = "none",
     h_open = 14
   )
   expect_s3_class(d, "creel_design")
@@ -1501,6 +1502,7 @@ describe("Phase 47: Aerial constructor", {
       date = date,
       strata = day_type,
       survey_type = "aerial",
+      visibility_correction = "none",
       h_open = 14
     )
     expect_s3_class(d, "creel_design")
@@ -1515,6 +1517,85 @@ describe("Phase 47: Aerial constructor", {
     )
   })
 
+  it("AIR-07 (#135): omitting visibility_correction aborts rather than defaulting to 1", {
+    # It used to default silently to 1.0 at the estimator, which asserted "every
+    # angler was detected" on the caller's behalf and made an uncorrected
+    # estimate indistinguishable from a correction that happened to equal 1.
+    expect_error(
+      creel_design(
+        make_aerial_cal(),
+        date = date,
+        strata = day_type,
+        survey_type = "aerial",
+        h_open = 14
+      ),
+      class = "creel_error_visibility_correction_required"
+    )
+  })
+
+  it("AIR-07 (#135): 'none' is accepted and normalised to v = 1 with se = NA", {
+    d <- creel_design(
+      make_aerial_cal(),
+      date = date,
+      strata = day_type,
+      survey_type = "aerial",
+      visibility_correction = "none",
+      h_open = 14
+    )
+    expect_equal(d$aerial$visibility_correction, 1)
+    # NA, not NULL and not 0: the correction's uncertainty is unpropagated,
+    # which is a different claim from "does not apply" or "is exactly zero".
+    expect_true(is.na(d$aerial$visibility_se))
+    expect_equal(d$aerial$visibility_declared, "none")
+  })
+
+  it("AIR-08 (#157): a ground-truthing ratio > 1 is rejected with the reciprocal hint", {
+    # Published ratios are ground/aerial and exceed 1 exactly when the
+    # correction matters -- Smucker et al. (2010) report 2.69. This is where a
+    # reader of the source paper lands, so the message must name the conversion.
+    expect_error(
+      creel_design(
+        make_aerial_cal(),
+        date = date,
+        strata = day_type,
+        survey_type = "aerial",
+        visibility_correction = 2.69,
+        h_open = 14
+      ),
+      regexp = "detection probability|1 / 2.69|0.372"
+    )
+  })
+
+  it("AIR-08 (#135): visibility_se without a numeric correction aborts", {
+    expect_error(
+      creel_design(
+        make_aerial_cal(),
+        date = date,
+        strata = day_type,
+        survey_type = "aerial",
+        visibility_correction = "none",
+        visibility_se = 0.05,
+        h_open = 14
+      ),
+      class = "creel_error_visibility_se_without_correction"
+    )
+  })
+
+  it("AIR-08 (#135): a negative visibility_se aborts", {
+    expect_error(
+      creel_design(
+        make_aerial_cal(),
+        date = date,
+        strata = day_type,
+        survey_type = "aerial",
+        visibility_correction = 0.85,
+        visibility_se = -0.01,
+        h_open = 14
+      ),
+      regexp = "visibility_se"
+    )
+  })
+
   it("AIR-01: creel_design(survey_type = 'aerial', h_open = -1) aborts with informative message", {
     expect_error(
       creel_design(
@@ -1522,6 +1603,7 @@ describe("Phase 47: Aerial constructor", {
         date = date,
         strata = day_type,
         survey_type = "aerial",
+        visibility_correction = "none",
         h_open = -1
       ),
       regexp = "h_open"
@@ -1574,6 +1656,7 @@ describe("Phase 47: Aerial constructor", {
       date = date,
       strata = day_type,
       survey_type = "aerial",
+      visibility_correction = "none",
       h_open = 14
     )
     expect_equal(d$design_type, "aerial")
@@ -1585,6 +1668,7 @@ describe("Phase 47: Aerial constructor", {
       date = date,
       strata = day_type,
       survey_type = "aerial",
+      visibility_correction = "none",
       h_open = 14,
       open_start = 5.5
     )
@@ -1597,6 +1681,7 @@ describe("Phase 47: Aerial constructor", {
       date = date,
       strata = day_type,
       survey_type = "aerial",
+      visibility_correction = "none",
       h_open = 14
     )
     expect_null(d$aerial$open_start)
@@ -1609,6 +1694,7 @@ describe("Phase 47: Aerial constructor", {
         date = date,
         strata = day_type,
         survey_type = "aerial",
+        visibility_correction = "none",
         h_open = 14,
         open_start = -1
       ),
@@ -1623,6 +1709,7 @@ describe("Phase 47: Aerial constructor", {
         date = date,
         strata = day_type,
         survey_type = "aerial",
+        visibility_correction = "none",
         h_open = 14,
         open_start = 0
       )

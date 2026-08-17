@@ -2,8 +2,13 @@
 #'
 #' Internal function that estimates angler effort for aerial creel surveys.
 #' Applies a linear scaling of survey::svytotal() by the calibration constant
-#' h_over_v = h_open / visibility_correction. No delta method is needed because
-#' h_open and v are fixed constants, not sample estimates.
+#' h_over_v = h_open / visibility_correction.
+#'
+#' h_open is a fixed constant. v is not: it is estimated from paired air-ground
+#' counts, and the standard field method reports its SE as routine output
+#' (Smucker et al. 2010, eq. 6-7). When that SE is supplied, a delta term for v
+#' is added ONCE at the total -- see the comment at its computation below for
+#' why it cannot be added per stratum (GH #135).
 #'
 #' @param design A creel_design object with design_type == "aerial" and
 #'   design$counts populated by add_counts().
@@ -19,6 +24,10 @@
 #'   and Their Applications in Fisheries Management. American Fisheries Society
 #'   Special Publication 25. Sec. 15.6.1, Eq. 15.4.
 #'
+#'   Smucker, B.J., Lorantas, R.M., and Rosenberger, A.E. (2010). Correcting
+#'   bias introduced by aerial counts in angler effort estimation. (Source for
+#'   the ground-truthing ratio and its standard error.)
+#'
 #' @keywords internal
 #' @noRd
 estimate_effort_aerial <- function(
@@ -29,8 +38,15 @@ estimate_effort_aerial <- function(
   effort_target = "sampled_days"
 ) {
   # nolint: object_usage_linter
-  # Calibration constant: h_open / visibility_correction (v defaults to 1.0)
-  h_over_v <- design$aerial$h_open / (design$aerial$visibility_correction %||% 1.0)
+  # Calibration constant: h_open / visibility_correction.
+  #
+  # No `%||% 1.0` here any more. creel_design() now requires
+  # visibility_correction for an aerial design and normalises the explicit
+  # "none" opt-out to v = 1 with se_v = NA, so a 1 reaching this line is always
+  # a stated claim rather than an absent argument (GH #135).
+  v <- design$aerial$visibility_correction
+  se_v <- design$aerial$visibility_se
+  h_over_v <- design$aerial$h_open / v
 
   # Identify count variable (same logic as estimate_effort_total)
   counts_data <- design$counts
@@ -61,8 +77,33 @@ estimate_effort_aerial <- function(
     h_over_v^2 # nolint: object_usage_linter
   se_within <- sqrt(var_within)
 
-  # Combined SE
-  se <- sqrt(se_between^2 + var_within)
+  # Visibility-correction component (GH #135).
+  #
+  # With E = C * h_open / v and C independent of v, the delta method gives
+  #   Var(E) = (h_open/v)^2 Var(C)  +  (E/v)^2 Var(v)
+  # so the second term's SE contribution is E * se_v / v.
+  #
+  # Added ONCE at the total, never per stratum. v is a single estimate dividing
+  # every scaled count, so it is perfectly correlated across flights and strata
+  # and does not shrink as more flights are flown. Adding it per stratum and
+  # summing in quadrature would treat a shared multiplier as independent and
+  # understate it -- the same trap as GH #150.
+  #
+  # This mirrors the camera calibration ratio, which already solves this exact
+  # problem (creel-estimates-camera.R: var_calibration). It is deliberately not
+  # a new idiom.
+  #
+  # NOTE: this composition is tidycreel's own. Askey et al. (2018), the aerial
+  # GLMM path's cited source, contains no visibility correction and no
+  # bootstrap; it does not speak to v at all. Smucker et al. (2010) is the
+  # source for v itself, not for this variance composition.
+  var_visibility <- if (is.null(se_v)) NULL else (estimate * se_v / v)^2
+  se_visibility <- if (is.null(var_visibility)) NULL else sqrt(var_visibility)
+
+  # Combined SE. `var_visibility` is NA under the declared "none" opt-out, and
+  # no na.rm is used: a sum missing an unknown term is a lower bound, not an
+  # SE, so the total must go NA with it.
+  se <- sqrt(se_between^2 + var_within + (var_visibility %||% 0))
 
   # Degrees of freedom and CI
   df <- as.numeric(survey::degf(svy_design))
@@ -83,9 +124,22 @@ estimate_effort_aerial <- function(
     n = n
   )
 
+  # Named components (GH #141). `visibility` is present-and-NA under the
+  # declared opt-out and present-and-numeric when an SE was supplied; it is
+  # omitted entirely only when the correction was supplied without one, which
+  # is the "does not apply" case rather than the "unknown" case.
+  se_components <- list(
+    count_sampling = se_between,
+    within_day = se_within
+  )
+  if (!is.null(se_visibility)) {
+    se_components$visibility <- se_visibility
+  }
+
   new_creel_estimates( # nolint: object_usage_linter
     # nolint: object_usage_linter
     estimates = estimates_df,
+    se_components = se_components, # nolint: object_usage_linter
     method = "aerial_total",
     variance_method = variance_method,
     design = design,

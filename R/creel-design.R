@@ -249,11 +249,52 @@ VALID_SURVEY_TYPES <- c("instantaneous", "bus_route", "ice", "camera", "aerial")
 #'   fishery is open per day. Required when `survey_type = "aerial"`. Used as
 #'   the expansion factor in the aerial effort estimator:
 #'   \eqn{\hat{E} = N_{obs} \times h_{open} / v}.
-#' @param visibility_correction Optional numeric scalar in `(0, 1]` specifying
-#'   the proportion of anglers on the water that are detectable from the
-#'   aircraft. Used only when `survey_type = "aerial"`. Defaults to `1.0`
-#'   (all anglers visible) when `NULL`. A value of 0.85 means 85% of anglers
-#'   are detected; the effort estimate is scaled up by \eqn{1 / 0.85}.
+#' @param visibility_correction Detection probability for the aerial count:
+#'   the proportion of anglers present that are detected from the aircraft, as
+#'   a numeric scalar in `(0, 1]`. **Required** when `survey_type = "aerial"`;
+#'   pass the string `"none"` to state explicitly that no visibility correction
+#'   is applied. Used only when `survey_type = "aerial"`. A value of 0.85 means
+#'   85% of anglers are detected; the effort estimate is scaled up by
+#'   \eqn{1 / 0.85}.
+#'
+#'   **This is the reciprocal of the ratio published by field studies.** The
+#'   standard ground-truthing method reports \eqn{r} = (ground count) /
+#'   (aerial count), which is **greater than 1** whenever the aircraft
+#'   undercounts: Smucker et al. (2010) report \eqn{r = 2.69} for shore
+#'   anglers. `visibility_correction` is a *probability*, so convert with
+#'   \eqn{v = 1 / r} — \eqn{r = 2.69} becomes
+#'   `visibility_correction = 1 / 2.69 = 0.372`. The estimator divides by
+#'   \eqn{v}, which scales effort up by \eqn{1 / 0.372 = 2.69} as intended.
+#'   Passing the published \eqn{r} directly is rejected by the `(0, 1]` check.
+#' @param visibility_se Optional positive numeric scalar: the standard error of
+#'   `visibility_correction`, on the same detection-probability scale. Used
+#'   only when `survey_type = "aerial"`. `visibility_correction` is estimated
+#'   from paired air–ground counts, not known, and the standard field method
+#'   reports its SE as routine output (Smucker et al. 2010, equations 6 and 7);
+#'   supplying it here propagates that uncertainty into the effort SE (GH
+#'   \#135). All-or-none: `visibility_se` requires a numeric
+#'   `visibility_correction`, and cannot be combined with `"none"`.
+#'
+#'   To convert an SE published on the ground-truthing-ratio scale, use the
+#'   delta method for a reciprocal: \eqn{SE(v) = SE(r) / r^2}.
+#'
+#'   When omitted, the correction is treated as supplied without a measured
+#'   uncertainty and the component is reported as absent — never as zero, which
+#'   would be indistinguishable from having propagated it.
+#'
+#'   Note the three distinct claims, which the package keeps separate:
+#'   \describe{
+#'     \item{`visibility_correction = "none"`}{No correction was studied. The
+#'       point estimate divides by 1 and `visibility_se` is `NA`, so the
+#'       reported SE is `NA` — the uncertainty is unpropagated, not zero.}
+#'     \item{`visibility_correction = v` alone}{A correction was measured but
+#'       its SE was not supplied. The component is reported as absent.}
+#'     \item{`visibility_correction = v, visibility_se = 0`}{The correction is
+#'       asserted to be known exactly. This is the only way to obtain a
+#'       numeric SE with no visibility uncertainty, and it must be stated
+#'       deliberately — e.g. `visibility_correction = 1, visibility_se = 0` for
+#'       a fishery where every angler is genuinely detectable.}
+#'   }
 #' @param open_start Optional non-negative numeric scalar specifying the
 #'   hour of day (decimal, 24-hour clock) when the fishery opens. Used only
 #'   when `survey_type = "aerial"` and only by [estimate_effort_aerial_glmm()]
@@ -371,6 +412,7 @@ creel_design <- function(
   camera_mode = NULL,
   h_open = NULL,
   visibility_correction = NULL,
+  visibility_se = NULL,
   open_start = NULL
 ) {
   # 1. Structural validation (Phase 1 validator)
@@ -715,18 +757,92 @@ creel_design <- function(
         "i" = "Example: {.code h_open = 14}"
       ))
     }
-    # visibility_correction validation: optional, must be in (0, 1] if supplied
-    vc_bad <- !is.null(visibility_correction) &&
+    # visibility_correction validation.
+    #
+    # Required, with an explicit "none" opt-out. It used to be optional and
+    # silently defaulted to 1.0 at the estimator, which asserted "every angler
+    # was detected" on the caller's behalf and made an uncorrected estimate
+    # indistinguishable from a correction that happened to be 1 (GH #135).
+    # Not supplying a value is not the same claim as declaring no correction,
+    # so the two are now spelled differently and only one of them is silent.
+    vc_none <- is.character(visibility_correction) &&
+      length(visibility_correction) == 1L &&
+      identical(visibility_correction, "none")
+
+    if (is.null(visibility_correction)) {
+      cli::cli_abort(
+        c(
+          "{.arg visibility_correction} is required for an aerial design.",
+          "x" = "It was previously defaulted to {.val 1}, which silently asserted that every angler was detected.",
+          "i" = "Supply the detection probability as a number in (0, 1] — e.g. {.code visibility_correction = 0.372}.",
+          "i" = "For a published ground-truthing ratio {.var r} (ground/aerial, > 1), pass {.code 1 / r}.",
+          "i" = "To state that no correction applies, pass {.code visibility_correction = \"none\"}."
+        ),
+        class = "creel_error_visibility_correction_required"
+      )
+    }
+
+    vc_bad <- !vc_none &&
       (!is.numeric(visibility_correction) ||
-        length(visibility_correction) != 1L ||
-        visibility_correction <= 0 ||
-        visibility_correction > 1)
+         length(visibility_correction) != 1L ||
+         is.na(visibility_correction) ||
+         visibility_correction <= 0 ||
+         visibility_correction > 1)
     if (vc_bad) {
+      # The `> 1` case is where a reader of the source paper lands: published
+      # ground-truthing ratios are ratios, not probabilities, and are > 1
+      # exactly when the correction matters (GH #157).
+      ratio_hint <- if (
+        is.numeric(visibility_correction) &&
+          length(visibility_correction) == 1L &&
+          !is.na(visibility_correction) &&
+          visibility_correction > 1
+      ) {
+        c(
+          "i" = paste0(
+            "Values above 1 usually mean a published ground-truthing ratio ",
+            "{.var r} = ground/aerial was passed directly."
+          ),
+          "i" = paste0(
+            "{.arg visibility_correction} is a detection probability: ",
+            "pass {.code 1 / {visibility_correction}} instead."
+          ),
+          "i" = "Smucker et al. (2010) report {.var r} = 2.69 for shore anglers, i.e. {.code 1 / 2.69 = 0.372}."
+        )
+      } else {
+        c("i" = "Valid range: 0 < {.arg visibility_correction} <= 1.")
+      }
       cli::cli_abort(c(
-        "{.arg visibility_correction} must be a single numeric value in (0, 1].",
+        "{.arg visibility_correction} must be a single number in (0, 1], or the string {.val none}.",
         "x" = "Supplied value {.val {visibility_correction}} is outside the valid range.",
-        "i" = "Valid range: 0 < {.arg visibility_correction} <= 1."
+        ratio_hint
       ))
+    }
+
+    # visibility_se validation: all-or-none with a numeric correction (#117).
+    if (!is.null(visibility_se)) {
+      if (vc_none) {
+        cli::cli_abort(
+          c(
+            "{.arg visibility_se} cannot be combined with {.code visibility_correction = \"none\"}.",
+            "x" = "There is no correction for the standard error to describe.",
+            "i" = "Supply the detection probability as a number in (0, 1] to propagate its uncertainty."
+          ),
+          class = "creel_error_visibility_se_without_correction"
+        )
+      }
+      se_bad <- !is.numeric(visibility_se) ||
+        length(visibility_se) != 1L ||
+        is.na(visibility_se) ||
+        visibility_se < 0
+      if (se_bad) {
+        cli::cli_abort(c(
+          "{.arg visibility_se} must be a single non-negative number.",
+          "x" = "Supplied value {.val {visibility_se}} is invalid.",
+          "i" = "It is the standard error of {.arg visibility_correction}, on the same (0, 1] probability scale.",
+          "i" = "For an SE published on the ratio scale, convert with {.code se_r / r^2}."
+        ))
+      }
     }
     # open_start validation: optional, must be non-negative numeric scalar if supplied
     if (
@@ -739,10 +855,22 @@ creel_design <- function(
         "i" = "Example: {.code open_start = 5.5} means fishing begins at 5:30 AM."
       ))
     }
+    # Normalise the opt-out to the numbers the estimators consume, so no
+    # downstream site has to re-interpret the string.
+    #
+    # The point estimate divides by 1 (no correction), and the SE component is
+    # NA rather than 0 or absent: opting out still leaves the correction's
+    # uncertainty unpropagated, and NA is the package's mark for uncertainty it
+    # cannot measure. A 0 here would claim the multiplier is known exactly,
+    # which is the defect this argument group exists to close (GH #135); an
+    # absent component would claim the correction does not apply at all, which
+    # is the camera raw path's situation, not this one (GH #141).
     aerial <- list(
       survey_type = "aerial",
       h_open = h_open,
-      visibility_correction = visibility_correction,
+      visibility_correction = if (vc_none) 1 else visibility_correction,
+      visibility_se = if (vc_none) NA_real_ else visibility_se,
+      visibility_declared = if (vc_none) "none" else "estimate",
       open_start = open_start
     )
   }
@@ -2996,8 +3124,15 @@ format.creel_design <- function(x, ...) {
     if (!is.null(x$aerial)) {
       cli::cli_h2("Aerial Survey Design")
       cli::cli_text("Hours open (h_open): {.field {x$aerial$h_open}}")
-      if (!is.null(x$aerial$visibility_correction)) {
+      if (identical(x$aerial$visibility_declared, "none")) {
+        # Printed rather than omitted: an opt-out is a stated modelling claim,
+        # and it is the reason the reported SE will be NA.
+        cli::cli_text("Visibility correction: {.val none} (declared; SE is {.val NA})")
+      } else if (!is.null(x$aerial$visibility_correction)) {
         cli::cli_text("Visibility correction: {.field {x$aerial$visibility_correction}}")
+        if (!is.null(x$aerial$visibility_se)) {
+          cli::cli_text("Visibility SE: {.field {x$aerial$visibility_se}}")
+        }
       }
     }
 
