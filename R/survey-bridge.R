@@ -304,22 +304,34 @@ validate_counts_tier1 <- function(counts, design, psu, allow_invalid = FALSE) {
   )
 }
 
-#' Detect duplicate PSU rows in count data
+#' Detect repeated sampling units in count data
+#'
+#' Internal helper. Keyed on the whole sampling unit rather than the PSU column
+#' alone. Keying on the date by itself reported every multi-section day as a
+#' duplicate -- two sections counted once each is ordinary structure, not a
+#' repeat -- and a warning that fires on correct input is one users learn to
+#' ignore, which matters because this is the only signal for the case that is
+#' genuinely wrong (GH #155).
 #'
 #' @param counts Data frame containing count data
-#' @param psu Character name of PSU column
+#' @param key_cols Character vector identifying one sampling unit, from
+#'   `psu_key_cols()`
 #' @param call Caller environment for error reporting
 #'
 #' @keywords internal
 #' @noRd
-detect_duplicate_psus <- function(counts, psu, call = rlang::caller_env()) {
-  dup_psus <- counts[[psu]][duplicated(counts[[psu]])]
-  if (length(dup_psus) > 0) {
+detect_duplicate_psus <- function(counts, key_cols, call = rlang::caller_env()) {
+  key <- do.call(paste, c(lapply(counts[key_cols], as.character), sep = "\u001f"))
+  n_dup <- sum(duplicated(key))
+  if (n_dup > 0) {
     cli::cli_warn(
       c(
-        "Duplicate PSU values detected in count data.",
-        "i" = "Found {length(dup_psus)} duplicate value(s) in column {.field {psu}}.",
-        "i" = "If multiple counts were taken per day, specify {.arg count_time_col}.",
+        "Repeated sampling units detected in count data.",
+        "i" = paste(
+          "Found {n_dup} repeated {cli::qty(n_dup)}row{?s} keyed on",
+          "{.field {key_cols}}."
+        ),
+        "i" = "If multiple counts were taken per unit, specify {.arg count_time_col}.",
         "i" = "Example: {.code add_counts(design, counts, count_time_col = count_time)}"
       ),
       call = call

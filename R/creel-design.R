@@ -1141,8 +1141,7 @@ resolve_count_col <- function(
 #' @noRd
 read_supplied_within_day_var <- function(
   counts,
-  psu,
-  strata_cols,
+  key_cols,
   count_time_col_name,
   call = rlang::caller_env()
 ) {
@@ -1180,7 +1179,6 @@ read_supplied_within_day_var <- function(
     )
   }
 
-  key_cols <- unique(c(psu, strata_cols))
   missing_keys <- setdiff(key_cols, names(counts))
   if (length(missing_keys) > 0) {
     cli::cli_abort(
@@ -1197,6 +1195,50 @@ read_supplied_within_day_var <- function(
   out$k_d <- counts[["n_counts"]]
   out
 }
+
+#' The columns that identify one sampling unit in a counts table
+#'
+#' Internal helper. Four places in `add_counts()` need to know what "the same
+#' unit" means -- duplicate detection, within-day aggregation, the supplied
+#' within-day-variance key, and the party-size constancy check -- and they had
+#' drifted into three different answers, none of which included the section
+#' (GH #155). Owning it here is the point: a key written one way and read
+#' another is how a day sampled in two sections came to be treated as one unit.
+#'
+#' The unit is the PSU (the day, unless `psu` was overridden) crossed with
+#' every column that distinguishes places or periods within it: the strata, the
+#' section, and the site. **Period is a stratum** in this package -- the
+#' documented pattern is `strata = c(day_type, day_period)` -- so it enters
+#' through `strata_cols` rather than a slot of its own.
+#'
+#' Deliberately *not* included: the count time. Repeated counts within one unit
+#' are the ordinary field pattern, and they are what `count_time_col` averages
+#' into that unit while keeping their spread as the within-day variance. Adding
+#' the time to the key would make every count its own unit and erase that
+#' component entirely.
+#'
+#' Restricted to columns actually present in `counts`, so a design that
+#' registers a section but supplies counts without one keys exactly as it did
+#' before.
+#'
+#' @param design A `creel_design`
+#' @param psu Character name of the resolved PSU column
+#' @param counts Data frame of count data
+#'
+#' @return Character vector of column names, PSU first
+#'
+#' @keywords internal
+#' @noRd
+psu_key_cols <- function(design, psu, counts) {
+  candidates <- unique(c(
+    psu,
+    design$strata_cols,
+    design$section_col,
+    design$site_col
+  ))
+  intersect(candidates, names(counts))
+}
+
 
 #' Check that one PSU carries one party-size estimate
 #'
@@ -1653,9 +1695,17 @@ add_counts <- function(
   # Validate counts structure (Tier 1)
   validation <- validate_counts_tier1(counts, design, psu, allow_invalid) # nolint: object_usage_linter
 
+  # One definition of "the same sampling unit" for every check below. These had
+  # drifted into three different keys, none carrying the section, so a day
+  # sampled in two sections read as one unit: the counts were averaged across
+  # the sections, one section's rows vanished into the other's label, and the
+  # within-day variance measured the gap between places rather than the spread
+  # within a day (GH #155).
+  unit_key_cols <- psu_key_cols(design, psu, counts) # nolint: object_usage_linter
+
   # CNT-06: warn if duplicate PSU rows detected without count_time_col
   if (is.null(count_time_col_name)) {
-    detect_duplicate_psus(counts, psu) # nolint: object_usage_linter
+    detect_duplicate_psus(counts, unit_key_cols) # nolint: object_usage_linter
   }
 
   # Within-day variance supplied as columns by the prep_counts_* seam. Both
@@ -1665,8 +1715,7 @@ add_counts <- function(
   supplied_wdv <- read_supplied_within_day_var(
     # nolint: object_usage_linter
     counts,
-    psu,
-    design$strata_cols,
+    unit_key_cols,
     count_time_col_name
   )
 
@@ -1747,13 +1796,13 @@ add_counts <- function(
         class = "creel_error_expansion_basis_desync"
       )
     }
-    check_expansion_constant_per_psu(counts, unique(c(psu, design$strata_cols))) # nolint: object_usage_linter
+    check_expansion_constant_per_psu(counts, unit_key_cols) # nolint: object_usage_linter
   }
 
   # Aggregate multiple counts per day to single PSU-level rows
   within_day_var <- NULL
   if (!is.null(count_time_col_name)) {
-    key_cols <- unique(c(psu, design$strata_cols))
+    key_cols <- unit_key_cols
     count_var <- count_col_name
 
     agg_result <- aggregate_within_day( # nolint: object_usage_linter

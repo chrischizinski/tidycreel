@@ -12,13 +12,17 @@
 # nested within sections while spanning strata -- classifying against the
 # strata would return a defensible-looking answer for the wrong geometry.
 
-# The PSU is the day, and `check_expansion_constant_per_psu()` requires one
-# party-size estimate per PSU. A day sampled in two sections therefore *cannot*
-# carry a section-specific estimate at all, so the independent geometry only
-# exists under rotating sections: each day is sampled in exactly one section.
-# Sections still cross-cut strata here -- each section covers two weekdays and
-# two weekend days -- which is the property that makes the strata classifier
-# the wrong one to reuse.
+# Rotating sections: each day is sampled in exactly one section, and sections
+# cross-cut strata -- each covers two weekdays and two weekend days -- which is
+# the property that makes the strata classifier the wrong one to reuse.
+#
+# This fixture was originally built this way because
+# `check_expansion_constant_per_psu()` keyed on the day alone and so refused a
+# section-specific estimate on any day sampled in two sections. That was a bug
+# in the key, not a property of the statistics, and it is fixed (GH #155): a
+# multi-section day can now carry one estimate per section. The fixture stays
+# rotating regardless, because its numbers are pinned across #144/#145/#150 and
+# re-shaping it would silently re-baseline all three.
 sections_calendar <- function() {
   data.frame(
     date = as.Date("2024-06-01") + 0:7,

@@ -27,6 +27,42 @@
   component was never propagated, and the sections constructor was saying that
   while its `se` demonstrably contained the term.
 
+* **Breaking (numeric):** `add_counts()` now keys the sampling unit on the PSU
+  crossed with the section and site, not on the PSU column alone (#155). Four
+  places needed to know what "the same unit" means — duplicate detection,
+  within-day aggregation, the supplied within-day-variance key, and the
+  party-size constancy check — and they had drifted into three different
+  answers, none of which carried the section. They now share one
+  `psu_key_cols()` definition. Period enters through the strata, which is where
+  this package models it (`strata = c(day_type, day_period)`).
+
+  **A day sampled in two sections was treated as one unit**, with three
+  consequences:
+
+  - **Counts were averaged across sections.** Two days × two sections × two
+    count times collapsed to two rows instead of four: a section reporting ~100
+    anglers and one reporting ~10 became a single row of `58`, still labelled
+    with the first section's name, with the other section's rows absorbed into
+    it. **This moved the point estimate** — the daily total came out 58 where
+    the truth was 116 — and nothing downstream could detect it, because the
+    result looked like a clean frame with one section missing.
+  - **The within-day variance measured the wrong quantity.** `ss_d` was
+    dominated by the difference *between* sections rather than the spread
+    *within* a day: 8888 where the true within-section sums of squares were 50
+    and 2.
+  - **A section-specific party size was refused**, reporting `expansion_se
+    varies within a single PSU` and blaming two `derive_angler_count()` calls,
+    on a single coherent call. Under sections the unit is the day within a
+    section, and each such unit carries exactly one estimate.
+
+  The CNT-06 warning also stops firing on ordinary multi-section days and now
+  names the key it judged the repeat on. A genuine repeat — the same unit
+  counted twice with no count time — still warns, and two different party-size
+  estimates inside one unit still abort.
+
+  Affects designs with sections or sites. Bus-route designs are untouched: they
+  hold counts in `design$bus_route$data`, which never reaches these checks.
+
 * The `"partial"` party-size geometry now returns a standard error instead of
   `NA` (#150). When one party-size estimate spans some parts of the partition
   being summed over and another sits inside one, the combination needs the
