@@ -127,6 +127,7 @@ new_creel_estimates <- function(
   effort_target = NULL,
   unit = NA_character_,
   se_expansion = NULL,
+  expansion_decomposition = NULL,
   se_components = NULL
 ) {
   # Every entry must be named, because an unnamed component cannot be reported
@@ -191,6 +192,12 @@ new_creel_estimates <- function(
       # untouched, and the term still reaches catch and harvest totals through
       # `se` (GH #121).
       se_expansion = se_expansion,
+      # The same component before its groups were summed away, one entry per
+      # row of `estimates`. `se_expansion` is recoverable from it, but not the
+      # reverse, and the group index is exactly what a totals combination needs
+      # when one party-size estimate straddles the partition being summed over
+      # (GH #150). NULL whenever `se_expansion` is.
+      expansion_decomposition = expansion_decomposition,
       # Named contributions to `se`. A name is absent when the path has no such
       # component, so absence and "unknown" stay distinguishable: an entry that
       # applies but cannot be measured is NA_real_ and still prints (GH #141).
@@ -2791,10 +2798,22 @@ compute_expansion_var_contribution <- function(design, svy_design, by_vars = NUL
 
   # NA standard errors propagate deliberately: a multiplier whose uncertainty
   # could not be estimated yields an unknown total SE, not a smaller one.
-  contrib <- (as.numeric(totals[[basis_col]]) * se_vec)^2
+  #
+  # `per_group` is the per-(part, group) term before squaring. Summing its
+  # squares is the whole answer whenever each group sits inside one part, but
+  # when a group straddles parts the combination needs the group index kept:
+  # one estimate's error is common to every part it covers, so those terms add
+  # before squaring, while different groups add as variances. Squaring here and
+  # summing left `add_expansion_covariance()` with nothing to combine, which is
+  # what forced `NA` on the "partial" geometry (GH #150).
+  per_group <- as.numeric(totals[[basis_col]]) * se_vec
+  contrib <- per_group^2
+  group_labels <- as.character(totals[[group_col]])
 
   if (is.null(by_vars)) {
-    return(sum(contrib))
+    out <- sum(contrib)
+    attr(out, "decomposition") <- list(stats::setNames(per_group, group_labels))
+    return(out)
   }
 
   group_keys <- if (length(by_vars) == 1) {
@@ -2802,7 +2821,14 @@ compute_expansion_var_contribution <- function(design, svy_design, by_vars = NUL
   } else {
     do.call(paste, c(totals[by_vars], sep = ""))
   }
-  vapply(split(contrib, group_keys), sum, numeric(1L))
+  out <- vapply(split(contrib, group_keys), sum, numeric(1L))
+  # Keyed exactly like `out`, so every call site that subsets the scalar
+  # component by part key can subset the decomposition with the same keys.
+  attr(out, "decomposition") <- lapply(
+    split(seq_along(per_group), group_keys),
+    function(i) stats::setNames(per_group[i], group_labels[i])
+  )[names(out)]
+  out
 }
 
 
@@ -2852,6 +2878,33 @@ named_expansion_se <- function(effort_result, strata_cols) {
 }
 
 
+#' Key an effort result's expansion decomposition by stratum
+#'
+#' Internal helper. The companion to [named_expansion_se()] for the per-group
+#' decomposition, keyed identically so the two can be subset with the same keys
+#' at every call site. A list rather than a vector because each stratum carries
+#' one entry per party-size group present in it (GH #150).
+#'
+#' @param effort_result A `creel_estimates` object from the effort estimators
+#' @param strata_cols Character vector of stratum column names
+#'
+#' @return Named list of named numeric vectors, or `NULL` when no decomposition
+#'   was propagated
+#'
+#' @keywords internal
+#' @noRd
+named_expansion_decomposition <- function(effort_result, strata_cols) {
+  decomp <- effort_result$expansion_decomposition
+  if (is.null(decomp) || length(strata_cols) == 0L) {
+    return(NULL)
+  }
+  stats::setNames(
+    decomp,
+    expansion_stratum_key(effort_result$estimates, strata_cols)
+  )
+}
+
+
 #' The party-size term a stratified total carries, as a standard error
 #'
 #' Internal helper. The same quantity `add_expansion_covariance()` folds into the
@@ -2868,16 +2921,87 @@ named_expansion_se <- function(effort_result, strata_cols) {
 #'
 #' @keywords internal
 #' @noRd
-expansion_total_se <- function(rate, expansion_se, structure) {
+expansion_total_se <- function(rate, expansion_se, structure, decomposition = NULL) {
   if (is.null(expansion_se) || is.null(structure)) {
     return(NULL)
   }
   contrib <- as.numeric(rate) * as.numeric(expansion_se)
+  if (identical(structure, "partial")) {
+    # Reported only when the variance it belongs to was itself computable, so
+    # the component and the `se` carrying it stay the same quantity (GH #134).
+    exact <- exact_expansion_var(rate, decomposition) # nolint: object_usage_linter
+    return(if (is.null(exact)) NA_real_ else sqrt(exact))
+  }
   switch(structure,
     nested = sqrt(sum(contrib^2)),
     shared = abs(sum(contrib)),
     NA_real_
   )
+}
+
+
+#' The exact party-size variance of a summed total
+#'
+#' Internal helper. A group is one estimated multiplier, so its error is a
+#' single random quantity common to every part it covers: those contributions
+#' add before squaring. Different groups come from disjoint interview subsets,
+#' so they add as variances. That is
+#' `Var = sum_g (sum_p rate_p * basis_{g,p} * se_g)^2`, and both named
+#' geometries fall out of it -- `"nested"` puts each group in one part, so the
+#' inner sum has one term and the whole expression collapses to the quadrature
+#' already inside `pv`; `"shared"` puts one group across every part, so it
+#' collapses to `sum(contrib)^2`. Only `"partial"` needs the general form, and
+#' only it calls this (GH #150).
+#'
+#' The two named branches deliberately keep their own arithmetic rather than
+#' routing through here. They are already exact, and re-deriving them would
+#' change their floating-point results for no gain.
+#'
+#' @param rate Per-part rate estimates
+#' @param decomposition Per-part list of per-group contributions before
+#'   squaring, aligned to `rate`
+#'
+#' @return The exact variance, or `NULL` when the decomposition cannot support
+#'   the combination and the caller must fall back
+#'
+#' @keywords internal
+#' @noRd
+exact_expansion_var <- function(rate, decomposition) {
+  if (is.null(decomposition) || length(decomposition) != length(rate)) {
+    return(NULL)
+  }
+  if (any(vapply(decomposition, is.null, logical(1L)))) {
+    return(NULL)
+  }
+
+  contrib_by_part <- Map(
+    function(b, r) as.numeric(r) * b,
+    decomposition,
+    as.numeric(rate)
+  )
+  groups <- unique(unlist(lapply(contrib_by_part, names), use.names = FALSE))
+  if (length(groups) == 0L) {
+    return(NULL)
+  }
+
+  group_totals <- vapply(
+    groups,
+    function(g) {
+      # A group absent from a part contributed no expanded boats there, so it
+      # adds zero. A group present but holding NA has unknown uncertainty and
+      # must stay NA. Testing membership rather than the value keeps the two
+      # apart, the same rule the effort estimators apply per group.
+      terms <- vapply(
+        contrib_by_part,
+        function(v) if (g %in% names(v)) as.numeric(v[[g]]) else 0,
+        numeric(1L)
+      )
+      sum(terms)
+    },
+    numeric(1L)
+  )
+
+  sum(group_totals^2)
 }
 
 
@@ -2898,6 +3022,9 @@ expansion_total_se <- function(rate, expansion_se, structure) {
 #' @param rate Per-stratum rate estimates, aligned to `expansion_se`
 #' @param expansion_se Per-stratum expansion standard errors, or NULL
 #' @param structure One of `"nested"`, `"shared"`, `"partial"`, or NULL
+#' @param decomposition Per-part list of per-group contributions before
+#'   squaring, aligned to `rate`, or `NULL` when it was not carried. Only the
+#'   `"partial"` geometry needs it; the other two are exact without it.
 #' @param partition,part Plural and singular nouns for the partition being
 #'   summed over, used only in the `"partial"` warning so it names the geometry
 #'   the caller actually has
@@ -2912,6 +3039,7 @@ add_expansion_covariance <- function(
   rate,
   expansion_se,
   structure,
+  decomposition = NULL,
   partition = "strata",
   part = "stratum"
 ) {
@@ -2929,6 +3057,13 @@ add_expansion_covariance <- function(
   }
 
   if (identical(structure, "partial")) {
+    exact <- exact_expansion_var(rate, decomposition) # nolint: object_usage_linter
+    if (!is.null(exact)) {
+      # The decomposition makes the combination computable, so there is nothing
+      # to refuse and nothing to assume (GH #150). Subtract the independent
+      # terms already inside `pv` and add the exact ones back.
+      return(pv - sum(contrib^2) + exact)
+    }
     # Groups straddle the partition unevenly, so combining needs the
     # group-by-part decomposition that a per-part standard error no longer
     # carries. Quadrature would understate and the linear sum would overstate;
@@ -2983,7 +3118,13 @@ add_expansion_covariance <- function(
 #'
 #' @keywords internal
 #' @noRd
-combine_section_variances <- function(design, section_var, rate, expansion_se) {
+combine_section_variances <- function(
+  design,
+  section_var,
+  rate,
+  expansion_se,
+  decomposition = NULL
+) {
   structure <- expansion_group_structure(design, design[["section_col"]]) # nolint: object_usage_linter
 
   pv <- add_expansion_covariance( # nolint: object_usage_linter
@@ -2991,6 +3132,7 @@ combine_section_variances <- function(design, section_var, rate, expansion_se) {
     rate = rate,
     expansion_se = expansion_se,
     structure = structure,
+    decomposition = decomposition,
     partition = "sections",
     part = "section"
   )
@@ -3000,7 +3142,34 @@ combine_section_variances <- function(design, section_var, rate, expansion_se) {
     # Derived from the same two inputs the variance used, so the reported
     # component is the one inside `se` rather than a parallel calculation free
     # to drift from it (GH #134).
-    component = expansion_total_se(rate, expansion_se, structure) # nolint: object_usage_linter
+    component = expansion_total_se(rate, expansion_se, structure, decomposition) # nolint: object_usage_linter
+  )
+}
+
+
+#' Flatten per-section expansion decompositions into one aligned list
+#'
+#' Internal helper. The counterpart of [section_expansion_vector()] for the
+#' per-group decomposition. A section that produced no decomposition yields
+#' `NULL`, which propagates: a combination missing one section's groups cannot
+#' be completed and must fall back rather than treat the gap as empty
+#' (GH #150).
+#'
+#' @param sec_decomposition A list of per-section decompositions, one element
+#'   per registered section, `NULL` where the section produced none
+#'
+#' @return A list aligned to `sec_decomposition`, or `NULL` when no section
+#'   carried one
+#'
+#' @keywords internal
+#' @noRd
+section_decomposition_list <- function(sec_decomposition) {
+  if (all(vapply(sec_decomposition, is.null, logical(1L)))) {
+    return(NULL)
+  }
+  lapply(
+    sec_decomposition,
+    function(x) if (is.null(x)) NULL else x[[1L]]
   )
 }
 
@@ -3515,7 +3684,13 @@ estimate_effort_total <- function(design, variance_method, conf_level, target = 
   se_within <- sqrt(var_within)
 
   # Party-size expansion contribution (GH #121); NULL when no SE was supplied
-  var_expansion <- compute_expansion_var_contribution(design, svy_design, by_vars = NULL) # nolint: object_usage_linter
+  var_expansion_raw <- compute_expansion_var_contribution(design, svy_design, by_vars = NULL) # nolint: object_usage_linter
+  expansion_decomposition <- attr(var_expansion_raw, "decomposition")
+  # Stripped to a bare number before it reaches any arithmetic. The
+  # decomposition rides on the attribute, and R propagates attributes through
+  # `+` and `sqrt()`, so leaving it attached would stamp it onto `total_var`
+  # and then onto the reported `se`.
+  var_expansion <- if (is.null(var_expansion_raw)) NULL else as.numeric(var_expansion_raw)
   se_expansion <- if (is.null(var_expansion)) NULL else sqrt(var_expansion)
 
   # Combined SE and CI (recomputed from total variance)
@@ -3553,7 +3728,8 @@ estimate_effort_total <- function(design, variance_method, conf_level, target = 
     by_vars = NULL,
     effort_target = target,
     unit = design$effort_unit,
-    se_expansion = se_expansion
+    se_expansion = se_expansion,
+    expansion_decomposition = expansion_decomposition
   )
 }
 
@@ -3634,6 +3810,7 @@ estimate_effort_grouped <- function(
   if (is.null(var_expansion_named)) {
     var_expansion_vec <- rep(0, length(estimate))
     se_expansion <- NULL
+    expansion_decomposition <- NULL
   } else {
     var_expansion_vec <- as.numeric(var_expansion_named[result_group_keys])
     # An absent key means the group contributed no expanded boats, so zero. A
@@ -3642,6 +3819,16 @@ estimate_effort_grouped <- function(
     absent <- !(result_group_keys %in% names(var_expansion_named))
     var_expansion_vec[absent] <- 0
     se_expansion <- sqrt(var_expansion_vec)
+    # Aligned to the result rows exactly as `se_expansion` is, so the two stay
+    # addressable by the same index downstream. An absent key contributed
+    # nothing, which is an empty set of groups rather than a missing one.
+    decomp_named <- attr(var_expansion_named, "decomposition")
+    expansion_decomposition <- lapply(
+      seq_along(result_group_keys),
+      function(i) {
+        if (absent[[i]]) numeric(0) else decomp_named[[result_group_keys[[i]]]]
+      }
+    )
   }
 
   # Combined SE per group
@@ -3697,7 +3884,8 @@ estimate_effort_grouped <- function(
     by_vars = by_vars,
     effort_target = target,
     unit = design$effort_unit,
-    se_expansion = se_expansion
+    se_expansion = se_expansion,
+    expansion_decomposition = expansion_decomposition
   )
 }
 
@@ -4090,7 +4278,8 @@ compute_stratum_product_sum <- function(
   product_variance = "goodman",
   ci_type = "symmetric",
   expansion_se = NULL,
-  expansion_structure = NULL
+  expansion_structure = NULL,
+  expansion_decomposition = NULL
 ) {
   # Vectorized CI builder: log-transform for positive totals, else Wald with clamp
   .ci <- function(est, se_val, z) {
@@ -4169,7 +4358,8 @@ compute_stratum_product_sum <- function(
       pv = sum(merged$.var_sh),
       rate = merged[[r_col]],
       expansion_se = expansion_se[merged$.expansion_key],
-      structure = expansion_structure
+      structure = expansion_structure,
+      decomposition = expansion_decomposition[merged$.expansion_key]
     )
     n <- sum(merged$.n_sh)
     se_val <- sqrt(pv)
@@ -4187,7 +4377,8 @@ compute_stratum_product_sum <- function(
     attr(out, "se_expansion") <- expansion_total_se( # nolint: object_usage_linter
       rate = merged[[r_col]],
       expansion_se = expansion_se[merged$.expansion_key],
-      structure = expansion_structure
+      structure = expansion_structure,
+      decomposition = expansion_decomposition[merged$.expansion_key]
     )
     out
   } else {
@@ -4221,7 +4412,8 @@ compute_stratum_product_sum <- function(
           pv = agg$.var_sh[[i]],
           rate = merged[[r_col]][rows],
           expansion_se = expansion_se[merged$.expansion_key[rows]],
-          structure = expansion_structure
+          structure = expansion_structure,
+          decomposition = expansion_decomposition[merged$.expansion_key[rows]]
         )
       },
       numeric(1L)
@@ -4241,7 +4433,8 @@ compute_stratum_product_sum <- function(
         expansion_total_se( # nolint: object_usage_linter
           rate = merged[[r_col]][rows],
           expansion_se = expansion_se[merged$.expansion_key[rows]],
-          structure = expansion_structure
+          structure = expansion_structure,
+          decomposition = expansion_decomposition[merged$.expansion_key[rows]]
         ) %||% NA_real_
       },
       numeric(1L)

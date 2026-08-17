@@ -255,6 +255,20 @@ prep_counts_daily_effort <- function(
 #' @param boat_count Tidy selector for the numeric boat count column.
 #' @param mean_party_size Tidy selector for the numeric mean anglers-per-boat
 #'   column.
+#' @param mean_party_size_se Optional standard error of `mean_party_size`. May
+#'   be a scalar or an expression evaluating to one value per row. Supplying it
+#'   emits the `expansion_*` carrier columns, which [add_counts()] reads so the
+#'   reported standard error includes the party-size sampling error.
+#'
+#'   `NULL` (the default) leaves the component absent rather than zero. A zero
+#'   would enter the variance as "the multiplier is known exactly" and be
+#'   indistinguishable from never having propagated, so the two states are kept
+#'   apart. `NA` is accepted and propagates as unknown.
+#'
+#'   Before tidycreel 3.4.0 this argument did not exist, and the component was
+#'   unreachable on this path: the same expansion through
+#'   [derive_angler_count()] reported a larger, correct standard error while
+#'   this one silently omitted the term (GH #143).
 #' @param effort_type Effort-type values for output. Defaults to "boat". May be
 #'   a scalar string/factor or an expression that evaluates to one value per row.
 #' @param correction_factor Optional multiplicative correction applied after the
@@ -298,6 +312,7 @@ prep_counts_boat_party <- function(
   strata = NULL,
   boat_count,
   mean_party_size,
+  mean_party_size_se = NULL,
   effort_type = "boat",
   correction_factor = 1,
   psu = NULL,
@@ -309,6 +324,7 @@ prep_counts_boat_party <- function(
   strata_quo <- rlang::enquo(strata)
   boat_count_quo <- rlang::enquo(boat_count)
   mean_party_size_quo <- rlang::enquo(mean_party_size)
+  mean_party_size_se_quo <- rlang::enquo(mean_party_size_se)
   effort_type_quo <- rlang::enquo(effort_type)
   correction_factor_quo <- rlang::enquo(correction_factor)
   psu_quo <- rlang::enquo(psu)
@@ -449,6 +465,40 @@ prep_counts_boat_party <- function(
     ))
   }
 
+  # NULL rather than zero when absent, the same contract `derive_angler_count()`
+  # keeps: a zero would enter the variance as "the multiplier is known exactly"
+  # and be indistinguishable from never having propagated (GH #143).
+  mean_party_size_se_vals <- if (rlang::quo_is_null(mean_party_size_se_quo)) {
+    NULL
+  } else {
+    se_vals <- rlang::eval_tidy(mean_party_size_se_quo, data = data)
+    if (length(se_vals) == 1L) {
+      se_vals <- rep(se_vals, nrow(data))
+    }
+    if (!is.numeric(se_vals)) {
+      cli::cli_abort(c(
+        "{.arg mean_party_size_se} must be numeric.",
+        "x" = "Got class {.cls {class(se_vals)[1]}}."
+      ))
+    }
+    if (length(se_vals) != nrow(data)) {
+      cli::cli_abort(c(
+        "{.arg mean_party_size_se} must be length 1 or match the number of rows in {.arg data}.",
+        "x" = "Got length {length(se_vals)} for {nrow(data)} row(s)."
+      ))
+    }
+    # NA is allowed through and propagates: a multiplier whose uncertainty could
+    # not be estimated gives an unknown component, not a smaller one. Negative
+    # is not a standard error.
+    if (any(se_vals < 0, na.rm = TRUE)) {
+      cli::cli_abort(c(
+        "{.arg mean_party_size_se} must not be negative.",
+        "x" = "Found {sum(se_vals < 0, na.rm = TRUE)} negative value(s)."
+      ))
+    }
+    as.numeric(se_vals)
+  }
+
   effort_type_vals <- rlang::eval_tidy(effort_type_quo, data = data)
   if (length(effort_type_vals) == 1L) {
     effort_type_vals <- rep(effort_type_vals, nrow(data))
@@ -507,6 +557,30 @@ prep_counts_boat_party <- function(
       (mean_party_size_vals * correction_factor_vals)^2
   }
   out[["source_method"]] <- as.character(source_method_vals)
+
+  # Carrier columns for the party-size variance component (GH #143). This
+  # function performs the same boat -> angler expansion as
+  # `derive_angler_count()` but wrote none of them, so the component was not
+  # merely omitted by default -- it was unreachable, on the pipeline the
+  # documentation calls preferred.
+  if (!is.null(mean_party_size_se_vals)) {
+    # d(daily_effort)/d(mean_party_size). The correction factor multiplies the
+    # product here, so it belongs in the basis: a basis of the bare boat count
+    # would be the derivative of a quantity this function does not produce, and
+    # `add_counts()` would be right to call it desynchronised (GH #131).
+    out[["expansion_basis"]] <- boat_count_vals * correction_factor_vals
+    out[["expansion_se"]] <- mean_party_size_se_vals
+    # No join key is available here -- `mean_party_size` selects a column of
+    # `data` rather than arriving from `mean_party_size()` with its grouping
+    # attached -- so the group falls back to the multiplier's own value, the
+    # same fallback `with_expansion_group()` documents. Two separate estimates
+    # that happen to be numerically equal then merge into one group, which
+    # treats them as correlated and overstates rather than understates.
+    out[["expansion_group"]] <- as.character(mean_party_size_vals)
+    # This function does its own multiplication, so the basis is the derivative
+    # of the column it writes, not of a count handed to it later.
+    out[["expansion_of"]] <- "daily_effort"
+  }
 
   mark_counts_as_effort(out) # nolint: object_usage_linter
 }
