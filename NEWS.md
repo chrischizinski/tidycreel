@@ -1,3 +1,150 @@
+# tidycreel 4.0.0 "Paddlefish" (2026-08-18)
+
+The second major bump. It closes one defect class opened by the 2026-08-14 seam
+audits: a parameter estimated from data, then consumed as though it were known.
+Six issues (#135, #137, #138, #139, #157, #158) turned out to be one bug wearing
+six hats — a visibility correction, an angler-to-people ratio, a camera
+calibration, a harvest rate, a reporting rate, and an imputed count were each
+divided or multiplied into an estimate while contributing nothing to its
+standard error. Every one of them produced a plausible number and no warning.
+
+Read the **Breaking changes** section before upgrading. Aerial and camera
+designs must now state their corrections or they abort, and several standard
+errors move upward — including some that were previously smaller than the single
+term they had omitted.
+
+## Breaking changes
+
+* **Aerial designs must supply `visibility_correction` and `angler_ratio`.** Both
+  arguments previously defaulted silently to 1.0. Not supplying a correction is
+  not the same claim as declaring that none applies, and only one of those should
+  be silent. To declare that none applies, pass the string `"none"`: the point
+  estimate uses 1 and the corresponding standard-error component is reported as
+  `NA`, never 0, because a zero is indistinguishable from a term that never
+  propagated. To assert instead that a multiplier is known exactly, supply its
+  standard error as 0 deliberately (`visibility_correction = 1,
+  visibility_se = 0`).
+
+* **`est_effort_camera()` without `interviews` must pass `calibration = "none"`,
+  and then reports `NA` standard error.** Expanding a raw camera count by
+  `h_open` alone assumes each counted object contributes exactly one angler-hour
+  per hour open — a calibration of 1 that was never measured. Reaching that path
+  now requires saying so. The `calibration` component becomes
+  present-and-unknown rather than absent, because the correction genuinely
+  applies and simply was not measured. `COMP-05` asserted the opposite and is
+  inverted deliberately, with the reason recorded in the test.
+
+* **Breaking (numeric): `estimate_effort_aerial()` standard errors move upward
+  wherever a boat count was expanded by `derive_angler_count()`.** The function
+  never called `compute_expansion_var_contribution()`, so a count carrying a
+  `party_size_se` reached `svytotal()` with its multiplier's uncertainty
+  discarded — the carrier columns survived `add_counts()` and were simply not
+  read. Measured on a fixture, the dropped component was 560 against a reported
+  standard error of 236: the missing term was larger than the entire standard
+  error being reported.
+
+* **Breaking (numeric): `impute_camera_counts()` returns a different object when
+  `m > 1`.** It now yields a `camera_imputations` object of `m` completed data
+  sets rather than one. `m = 1` is unchanged and still returns a plain data
+  frame.
+
+* **Breaking (numeric): `estimate_mr_harvest()` confidence intervals are no
+  longer built by scaling the endpoints of the abundance interval** when the
+  harvest rate is estimated. That identity is exact only while the rate is a
+  known positive constant; once it is estimated the endpoints are themselves
+  random. An estimated rate now falls back to a symmetric interval built from
+  the full product standard error.
+
+## Statistical correctness
+
+* `visibility_correction` gains `visibility_se` (#135). The correction is
+  estimated from paired air-ground counts and the standard field method reports
+  its standard error as routine output (Smucker et al. 2010, eq. 6–7);
+  tidycreel had no argument that could accept that number. The delta term
+  `E * se_v / v` is added **once at the total, never per stratum**: `v` is a
+  shared multiplier, perfectly correlated across flights, and summing it per
+  stratum in quadrature would treat it as independent and understate it. On the
+  GLMM bootstrap path `v` is resampled once per replicate, outside the model
+  refit, for the same reason — drawing it per flight would shrink its
+  contribution like `1/sqrt(n_flights)`.
+
+* Aerial designs gain `angler_ratio` and `angler_ratio_se` (#158). Smucker et
+  al. (2010) apply **two** corrections to a raw observer count — a visibility
+  correction and an angler-to-people ratio of 0.404 — and tidycreel implemented
+  only the first, overstating shore effort by roughly 2.5×. The two push in
+  opposite directions (0.404 down, 2.69 up), so applying only the visibility
+  correction is not conservative: it is biased in the direction of the
+  correction that was kept.
+
+* `estimate_mr_harvest()` gains `harvest_rate_se` (#138). It computed
+  `se_H <- harvest_rate * se_N`, which is `product_total_variance()` with
+  `r_se = 0` — the package already implemented Goodman (1960) and made it the
+  default in all three `creel-estimates-total-*.R` files; this function simply
+  never called it. Rasmussen et al. (1998) draw the distinction in the package's
+  own cited literature: the subtractive form is for terms "estimated from a
+  sample", and differs from the population formula "used when the terms in the
+  product are known, not estimated". The bootstrap path now draws the rate once
+  per replicate rather than holding it fixed.
+
+* `estimate_exploitation_rate()` gains `reporting_rate_se` and the third delta
+  term `(u/lambda)^2 var(lambda)` (#139), since `d(u)/d(lambda) = -u/lambda`. It
+  enters **once at the total**: lambda is a single estimate dividing every
+  stratum, so adding it per stratum and summing in quadrature would treat a
+  shared divisor as independent. On the stratified path it is applied to the
+  aggregate, deliberately not inside `var_u_h`.
+
+  Its `reporting_rate = 1.0` default is **kept**, unlike the aerial corrections.
+  It is a visible, documented default on an exported argument the caller opts
+  into adjusting, not a value substituted invisibly inside an estimator. That
+  asymmetry is recorded in the `@param` text rather than left to be
+  rediscovered.
+
+* Multiple imputation for camera outages (#137). `impute_camera_counts()` filled
+  every outage row with the model's fitted mean and returned one completed data
+  set. Inside `svytotal()` those predictions are indistinguishable from
+  observations, so the imputation model's own error was dropped; and fitted means
+  are smoother than real counts, so the between-day component shrank as well. The
+  reported standard error was biased downward twice over. Each of the `m`
+  completed data sets is now drawn from the model's **predictive** distribution —
+  coefficients drawn from their sampling distribution, then counts drawn from the
+  fitted family. Both draws are needed: drawing only the count treats the
+  coefficients as known, and drawing only the coefficients still yields a smooth
+  mean where a real count has sampling noise.
+
+## New features
+
+* `est_effort_camera_mi()` estimates once per completed data set and pools by
+  Afrifa-Yamoah et al. (2020) eq. (5): the within-imputation mean variance plus
+  the `(M+1)/(M(M-1))` between-imputation term — the quantity a single completed
+  data set structurally cannot have. Their factor is Rubin's `(1 + 1/M)`
+  inflation written over the raw sum of squares; `MI-04` pins that the two forms
+  agree. `M = 5` follows the paper's stated bias-variance balance. Components are
+  reported as `within_imputation` / `between_imputation` so a reader can see how
+  much of the uncertainty came from imputing.
+
+* `validate_shared_multiplier()` gives the four shared-multiplier arguments one
+  validation shape — required, `"none"` opt-out yielding `NA` rather than 0,
+  all-or-none standard error. The rule is documented once there rather than
+  restated at each call site.
+
+## Documentation
+
+* `visibility_correction` is named a **detection probability** and documented as
+  the reciprocal of the published ground-truthing ratio (#157). Field studies
+  report `r = ground/aerial`, which exceeds 1 exactly when the correction matters
+  (`r = 2.69` for shore anglers); tidycreel wants `v = 1/r = 0.372`. The `> 1`
+  abort branch now names the conversion, since that is where a reader of the
+  source paper lands.
+
+* The aerial GLMM's variance composition is documented as tidycreel's own
+  reasoning and is **not** attributed to Askey et al. (2018). That paper, this
+  estimator's cited source, was read in full while specifying this work and
+  contains no visibility correction and no bootstrap — it does not speak to `v`
+  at all, and propagates uncertainty by cross-validation rather than
+  analytically. Its `nAGQ = 0` is likewise not carried over: the paper warns the
+  option is less accurate and used it only because their data set exceeded
+  250,000 observations.
+
 # tidycreel 3.4.0 "Flathead Chub" (2026-08-17)
 
 ## Statistical correctness

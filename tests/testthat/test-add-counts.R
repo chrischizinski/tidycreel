@@ -977,6 +977,9 @@ test_that("F21: add_counts() refuses period_length_col on an aerial design", {
     date = date,
     strata = day_type, # nolint
     survey_type = "aerial",
+    visibility_correction = "none",
+    angler_ratio = 1,
+    angler_ratio_se = 0,
     h_open = 14
   ))
 
@@ -1008,6 +1011,9 @@ test_that("F21: aerial effort still applies h_open once when T_d is absent", {
     date = date,
     strata = day_type, # nolint
     survey_type = "aerial",
+    visibility_correction = "none",
+    angler_ratio = 1,
+    angler_ratio_se = 0,
     h_open = 14
   ))
   d <- suppressWarnings(add_counts(d, counts, count_col = anglers)) # nolint: object_usage_linter

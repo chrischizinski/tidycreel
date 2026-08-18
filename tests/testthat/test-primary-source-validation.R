@@ -662,6 +662,14 @@ make_aerial_box20_6 <- function() {
     date = date, # nolint: object_usage_linter
     strata = day_type, # nolint: object_usage_linter
     survey_type = "aerial",
+    # The hand calculation below is 111 x 14, which assumes v = 1 and treats it
+    # as exact. Declared that way rather than via the "none" opt-out: "none"
+    # means no correction was studied and carries se_v = NA, which would make
+    # the benchmark's SE NA and mask the se > 0 check (GH #135).
+    visibility_correction = 1,
+    angler_ratio = 1,
+    angler_ratio_se = 0,
+    visibility_se = 0,
     h_open = 14
   )
   add_counts(

@@ -627,3 +627,81 @@ test_that("Test X: Schnabel warns and substitutes the continuous Poisson when lo
   # sum(M*n) = 50, and the 0.025 continuous quantile at lambda = 1 is 0.10331492
   expect_equal(result$estimates$ci_upper, 483.957208, tolerance = 1e-6)
 })
+
+# GH #138: estimate_mr_harvest() drops the harvest-rate's uncertainty ----------
+
+make_mr_result <- function() {
+  estimate_angler_n(M = 200, n = 150, m = 25, method = "chapman")
+}
+
+test_that("MRH-01 (#138): supplying harvest_rate_se increases the reported SE", {
+  # Before this, se_H was harvest_rate * se_N -- literally
+  # product_total_variance() with r_se = 0, the zero the package's invariant
+  # forbids because it is indistinguishable from never having propagated.
+  res <- make_mr_result()
+  se_known <- suppressMessages(
+    estimate_mr_harvest(angler_n = res, harvest_rate = 0.35)
+  )$estimates$se
+  se_est <- estimate_mr_harvest(
+    angler_n = res, harvest_rate = 0.35, harvest_rate_se = 0.05
+  )$estimates$se
+  expect_gt(se_est, se_known)
+})
+
+test_that("MRH-02 (#138): the SE equals Goodman's product variance exactly", {
+  # Pins the formula, not merely that the SE moved. A "bigger" assertion would
+  # pass for any positive addend, including the first-order form that omits
+  # Goodman's subtractive term.
+  res <- make_mr_result()
+  n_hat <- res$estimates$estimate
+  se_n <- res$estimates$se
+  r <- 0.35
+  r_se <- 0.05
+  first_order <- n_hat^2 * r_se^2 + r^2 * se_n^2
+  expected <- sqrt(first_order - se_n^2 * r_se^2)
+
+  out <- estimate_mr_harvest(
+    angler_n = res, harvest_rate = r, harvest_rate_se = r_se
+  )
+  expect_equal(out$estimates$se, expected, tolerance = 1e-9)
+  # And it is strictly below the first-order value, i.e. the subtraction
+  # actually happened.
+  expect_lt(out$estimates$se, sqrt(first_order))
+})
+
+test_that("MRH-03 (#138): omitting harvest_rate_se informs and reports the old number", {
+  # Absent, not zero: the number is unchanged for existing callers, but the
+  # function now says the SE is a lower bound instead of reporting it as
+  # though complete.
+  res <- make_mr_result()
+  expect_message(
+    out <- estimate_mr_harvest(angler_n = res, harvest_rate = 0.35),
+    regexp = "harvest_rate_se|lower bound"
+  )
+  expect_equal(out$estimates$se, 0.35 * res$estimates$se, tolerance = 1e-12)
+})
+
+test_that("MRH-04 (#138): an estimated rate abandons the endpoint-scaled CI", {
+  # Scaling the endpoints of the N interval is exact ONLY while harvest_rate is
+  # a known positive constant: P(N in [L, U]) = P(H in [rL, rU]). Once r is
+  # estimated those endpoints are random and the identity fails, so the scaled
+  # interval must not be reused.
+  res <- make_mr_result()
+  known <- suppressMessages(
+    estimate_mr_harvest(angler_n = res, harvest_rate = 0.35, ci_method = "logit")
+  )
+  est <- estimate_mr_harvest(
+    angler_n = res, harvest_rate = 0.35, harvest_rate_se = 0.05, ci_method = "logit"
+  )
+  width_known <- known$estimates$ci_upper - known$estimates$ci_lower
+  width_est <- est$estimates$ci_upper - est$estimates$ci_lower
+  expect_gt(width_est, width_known)
+})
+
+test_that("MRH-05 (#138): harvest_rate_se is validated", {
+  res <- make_mr_result()
+  expect_error(
+    estimate_mr_harvest(angler_n = res, harvest_rate = 0.35, harvest_rate_se = -1),
+    regexp = "harvest_rate_se"
+  )
+})

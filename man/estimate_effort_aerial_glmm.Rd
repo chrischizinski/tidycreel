@@ -81,6 +81,9 @@ design <- creel_design(
   date = date,
   strata = day_type,
   survey_type = "aerial",
+  visibility_correction = "none",
+  angler_ratio = 1,
+  angler_ratio_se = 0,
   h_open = 14
 )
 design <- add_counts(design, example_aerial_glmm_counts, count_col = n_anglers)
@@ -112,6 +115,7 @@ Other "Estimation":
 \code{\link{est_age_distribution}()},
 \code{\link{est_biomass}()},
 \code{\link{est_compliance}()},
+\code{\link{est_effort_camera_mi}()},
 \code{\link{est_length_distribution}()},
 \code{\link{est_mean_age}()},
 \code{\link{est_mean_length}()},

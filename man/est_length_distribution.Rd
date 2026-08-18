@@ -83,6 +83,7 @@ Other "Estimation":
 \code{\link{est_age_distribution}()},
 \code{\link{est_biomass}()},
 \code{\link{est_compliance}()},
+\code{\link{est_effort_camera_mi}()},
 \code{\link{est_mean_age}()},
 \code{\link{est_mean_length}()},
 \code{\link{estimate_catch_rate}()},

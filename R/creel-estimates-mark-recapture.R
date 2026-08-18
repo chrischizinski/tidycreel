@@ -743,7 +743,29 @@ estimate_angler_n <- function(
 #'   Hansen & Van Kirk (2018) eq. (1), \eqn{H = N \cdot D \cdot V}, this
 #'   argument is the product \eqn{D \times V} — mean days fished per angler
 #'   times mean daily harvest per angler — not \eqn{V} alone.
-#'   Uncertainty in the harvest rate is not propagated (see Details).
+#'   Supply \code{harvest_rate_se} to propagate its uncertainty.
+#' @param harvest_rate_se numeric scalar or \code{NULL}. The standard error of
+#'   \code{harvest_rate}, on the same fish-per-angler scale. When supplied, the
+#'   total variance is Goodman's (1960) product form,
+#'   \eqn{\hat{N}^2 \sigma_r^2 + r^2 \sigma_{\hat{N}}^2 -
+#'   \sigma_{\hat{N}}^2 \sigma_r^2}, via the same helper the three
+#'   \code{estimate_total_*()} functions already use.
+#'
+#'   When \code{NULL} (default), the reported SE reflects uncertainty in
+#'   \eqn{\hat{N}} alone and is a **lower bound**; the function says so at
+#'   runtime. The component is absent rather than zero, because a zero would be
+#'   indistinguishable from having propagated the rate's error and found none.
+#'   Rasmussen et al. (1998) draw the distinction explicitly: the subtractive
+#'   product formula is the one for terms "estimated from a sample", and
+#'   differs from the population formula "used when the terms in the product
+#'   are known, not estimated".
+#'
+#'   Supplying it also changes the confidence interval. The default \code{logit}
+#'   interval scales the endpoints of the \eqn{\hat{N}} interval by
+#'   \code{harvest_rate}, which is exact only while that rate is a known
+#'   positive constant. Once the rate is estimated those endpoints are
+#'   themselves random, so the function falls back to a symmetric interval
+#'   built from the full product SE.
 #' @param conf_level numeric. Confidence level for the CI. Default \code{0.95}.
 #' @param ci_method character(1). CI construction method: \code{"delta"} (default)
 #'   uses the analytic delta-method formula; \code{"bootstrap"} propagates the
@@ -788,6 +810,7 @@ estimate_angler_n <- function(
 estimate_mr_harvest <- function(
   angler_n,
   harvest_rate,
+  harvest_rate_se = NULL,
   conf_level = 0.95,
   ci_method = c("logit", "delta", "bootstrap")
 ) {
@@ -818,14 +841,62 @@ estimate_mr_harvest <- function(
   if (harvest_rate <= 0) {
     cli::cli_abort("{.arg harvest_rate} must be > 0, not {harvest_rate}.")
   }
+  if (!is.null(harvest_rate_se)) {
+    if (
+      !is.numeric(harvest_rate_se) ||
+        length(harvest_rate_se) != 1L ||
+        is.na(harvest_rate_se) ||
+        harvest_rate_se < 0
+    ) {
+      cli::cli_abort(c(
+        "{.arg harvest_rate_se} must be a single non-negative number.",
+        "x" = "Supplied value {.val {harvest_rate_se}} is invalid.",
+        "i" = "It is the standard error of {.arg harvest_rate}, on the same scale."
+      ))
+    }
+  }
 
   # --- extract N_hat and se_N from the creel_estimates object ---
   N_hat <- angler_n$estimates$estimate
   se_N <- angler_n$estimates$se
 
-  # --- delta-method harvest estimate (H = N_hat * harvest_rate) ---
+  # --- harvest estimate (H = N_hat * harvest_rate) ---
+  #
+  # H is a product of two estimated quantities, which is what
+  # product_total_variance() exists for -- Goodman (1960),
+  # E^2 var(R) + R^2 var(E) - var(E) var(R), already the default in all three
+  # creel-estimates-total-*.R files. This function computed the same product
+  # shape and did not use it (GH #138).
+  #
+  # What it did instead, `se_H <- harvest_rate * se_N`, IS that helper with
+  # r_se = 0 -- the zero the package's invariant forbids, because it is
+  # indistinguishable from never having propagated the rate's uncertainty.
+  # Rasmussen et al. (1998) state the distinction directly: the subtractive
+  # form "is correct if the terms in the product are estimated from a sample
+  # (Goodman 1960)", and differs from the population formula "used when the
+  # terms in the product are known, not estimated".
   harvest_hat <- N_hat * harvest_rate
-  se_H <- harvest_rate * se_N
+  rate_is_estimated <- !is.null(harvest_rate_se) && harvest_rate_se > 0
+
+  if (is.null(harvest_rate_se)) {
+    # Absent, not zero. The number below is unchanged from previous versions,
+    # but it is now stated to be a partial one rather than reported as though
+    # complete.
+    cli::cli_inform(c(
+      "i" = "{.arg harvest_rate_se} was not supplied, so the reported SE excludes harvest-rate uncertainty.",
+      " " = "It reflects uncertainty in the abundance estimate alone and is a lower bound.",
+      " " = "Supply {.arg harvest_rate_se} to propagate the rate's own error (Goodman 1960)."
+    ))
+    se_H <- harvest_rate * se_N
+  } else {
+    se_H <- sqrt(product_total_variance( # nolint: object_usage_linter
+      e_est = N_hat,
+      e_se = se_N,
+      r_est = harvest_rate,
+      r_se = harvest_rate_se,
+      product_variance = "goodman"
+    ))
+  }
 
   # --- CI ---
   # H = N x harvest_rate is a monotone linear map with harvest_rate > 0
@@ -838,9 +909,17 @@ estimate_mr_harvest <- function(
   # The capture table is rebuilt at this call's conf_level rather than reusing
   # angler_n's bounds directly, so conf_level keeps working here. Schnabel
   # carries no two-sample table and keeps the legacy Wald interval.
+  #
+  # That exactness argument holds ONLY while harvest_rate is a known positive
+  # constant. Once the rate is itself estimated, rL and rU are random and
+  # P(N in [L, U]) no longer transfers to H, so the scaled interval would
+  # understate coverage by exactly the term #138 adds. When harvest_rate_se is
+  # supplied the scaling is therefore abandoned in favour of a symmetric
+  # interval built from the full product SE, and the comment above is
+  # deliberately not carried forward to that branch.
   capture_table <- attr(angler_n, "capture_table")
   n_mr <- as.integer(angler_n$estimates$n)
-  if (ci_method != "delta" && !is.null(capture_table)) {
+  if (ci_method != "delta" && !is.null(capture_table) && !rate_is_estimated) {
     logit_ci <- .mr_logit_ci(
       capture_table[["M"]], capture_table[["n"]], capture_table[["m"]], conf_level
     )
@@ -876,7 +955,15 @@ estimate_mr_harvest <- function(
         "i" = "Call estimate_angler_n(..., ci_method = 'bootstrap') first."
       ))
     }
-    harvest_b <- boot_samples * harvest_rate
+    # The rate is drawn once per replicate, outside the abundance resampling,
+    # because one estimate of it scales every replicate -- the same shared
+    # multiplier argument as the aerial corrections (GH #135, #138). Holding it
+    # fixed here would reproduce the r_se = 0 defect inside the bootstrap.
+    harvest_b <- if (rate_is_estimated) {
+      boot_samples * stats::rnorm(length(boot_samples), harvest_rate, harvest_rate_se)
+    } else {
+      boot_samples * harvest_rate
+    }
     ci_lo_boot <- stats::quantile(harvest_b, (1 - conf_level) / 2, names = FALSE)
     ci_hi_boot <- stats::quantile(harvest_b, 1 - (1 - conf_level) / 2, names = FALSE)
     estimates_df$ci_lo_boot <- ci_lo_boot

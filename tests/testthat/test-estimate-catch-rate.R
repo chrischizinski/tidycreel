@@ -3428,6 +3428,9 @@ make_aerial_catch_rate_design <- function() {
     date = date,
     strata = day_type, # nolint: object_usage_linter
     survey_type = "aerial",
+    visibility_correction = "none",
+    angler_ratio = 1,
+    angler_ratio_se = 0,
     h_open = 14
   )
   counts <- data.frame(
