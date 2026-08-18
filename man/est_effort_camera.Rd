@@ -11,6 +11,7 @@ est_effort_camera(
   n_anglers = NULL,
   intercept_col = NULL,
   h_open = NULL,
+  calibration = NULL,
   variance = c("taylor", "replicate"),
   conf_level = 0.95
 )
@@ -46,6 +47,22 @@ Default \code{NULL} (auto-detects the first numeric count column).}
 
 \item{h_open}{Numeric scalar.  Fishable hours per day.  Required when
 \code{interviews = NULL}. Default \code{NULL}.}
+
+\item{calibration}{Pass the string \code{"none"} to run the raw-count expansion
+path without any calibration. Required to reach that path, because
+expanding a raw camera count by \code{h_open} alone silently assumes each
+counted object contributes exactly one angler-hour per hour open — a
+calibration of 1 that was never measured (GH #158).
+
+Under the opt-out the point estimate uses that assumption and the reported
+SE is \code{NA}: the \code{calibration} component is present-and-unknown rather than
+absent, because the correction applies and was simply not measured. It is
+never \code{0}, which would be indistinguishable from having propagated the
+calibration's uncertainty and found none.
+
+Supplying \code{interviews} instead uses the ratio-calibration path, which
+estimates hours of effort per camera count per stratum and propagates that
+ratio's variance. Prefer it whenever interview data exist.}
 
 \item{variance}{Character.  Variance method: \code{"taylor"} (default) or
 \code{"replicate"}.}

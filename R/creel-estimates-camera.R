@@ -53,6 +53,7 @@ estimate_effort_camera <- function(
   n_anglers = NULL,
   intercept_col = NULL,
   h_open = NULL,
+  calibration = NULL,
   variance_method = "taylor",
   conf_level = 0.95
 ) {
@@ -338,6 +339,37 @@ estimate_effort_camera <- function(
     # different (often absent) set of interviews.
   } else {
     # ---- Raw count expansion fallback ----------------------------------------
+    #
+    # This branch scales a raw camera count by h_open with no calibration at
+    # all, which silently asserts that each counted object contributes exactly
+    # one angler-hour per hour open. Its own docstring calls it "similar to the
+    # aerial estimator", and under the same author ruling that an aerial count
+    # is a raw observer count, it carries the same defect (GH #158).
+    #
+    # So the branch is now gated: reaching it without interviews requires the
+    # caller to say so. Not supplying calibration is not the same claim as
+    # declaring that none applies, and only one of them should be silent.
+    if (!identical(calibration, "none")) {
+      cli::cli_abort(
+        c(
+          "Camera effort estimation requires a calibration.",
+          "x" = "No {.arg interviews} were supplied, so there is nothing to calibrate the counts against.",
+          "i" = paste(
+            "Supply {.arg interviews} to use the ratio-calibration path, which",
+            "estimates hours of effort per camera count and propagates that",
+            "ratio's uncertainty."
+          ),
+          "i" = paste(
+            "To expand the raw counts uncalibrated, pass",
+            "{.code calibration = \"none\"}. The estimate then assumes one",
+            "angler-hour per count per hour open, and the reported SE is",
+            "{.code NA} because that assumption's uncertainty is unmeasured."
+          )
+        ),
+        class = "creel_error_camera_calibration_required"
+      )
+    }
+
     if (is.null(h_open) || !is.numeric(h_open) || h_open <= 0) {
       cli::cli_abort(
         "{.arg h_open} must be a positive number when no interview data are provided for camera effort estimation."
@@ -371,12 +403,23 @@ estimate_effort_camera <- function(
 
     estimate <- as.numeric(coef(svy_result)) * h_open
     se_between <- as.numeric(survey::SE(svy_result)) * h_open
-    # This branch has no calibration ratio, so `calibration` is absent rather
-    # than NA: the component does not apply here, which is a different claim
-    # from applying and being unmeasurable (GH #141). h_open is a supplied
-    # constant and contributes no variance of its own, so the whole SE is the
-    # count-sampling term.
-    se_components <- list(count_sampling = se_between)
+    # The declared opt-out sets rho = 1 for the point estimate, so h_open alone
+    # scales the counts. Its variance is NA, not 0 and not absent: the caller
+    # asserted that no calibration applies, but that assertion is itself
+    # unverified, and a 0 would report the maximally uncertain calibration as
+    # the most precise one -- the same reasoning as the single-paired-day guard
+    # above (GH #136, #158).
+    #
+    # `calibration` is therefore present-and-NA here, where previously it was
+    # absent. Absent means "does not apply"; NA means "applies and is unknown",
+    # and under the ruling that a raw count is not pre-corrected, this branch is
+    # the second case.
+    se_components <- list(
+      count_sampling = se_between,
+      calibration = NA_real_
+    )
+    # No na.rm: a sum missing an unknown term is a lower bound, not an SE.
+    se_between <- NA_real_
     method_label <- "camera_raw"
     # Raw count x h_open hours. The guard above establishes that no T_d has
     # already been applied, so h_open is the sole period source and this is

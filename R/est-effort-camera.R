@@ -71,6 +71,21 @@
 #'   Default `NULL` (auto-detects the first numeric count column).
 #' @param h_open Numeric scalar.  Fishable hours per day.  Required when
 #'   `interviews = NULL`. Default `NULL`.
+#' @param calibration Pass the string `"none"` to run the raw-count expansion
+#'   path without any calibration. Required to reach that path, because
+#'   expanding a raw camera count by `h_open` alone silently assumes each
+#'   counted object contributes exactly one angler-hour per hour open — a
+#'   calibration of 1 that was never measured (GH #158).
+#'
+#'   Under the opt-out the point estimate uses that assumption and the reported
+#'   SE is `NA`: the `calibration` component is present-and-unknown rather than
+#'   absent, because the correction applies and was simply not measured. It is
+#'   never `0`, which would be indistinguishable from having propagated the
+#'   calibration's uncertainty and found none.
+#'
+#'   Supplying `interviews` instead uses the ratio-calibration path, which
+#'   estimates hours of effort per camera count per stratum and propagates that
+#'   ratio's variance. Prefer it whenever interview data exist.
 #' @param variance Character.  Variance method: `"taylor"` (default) or
 #'   `"replicate"`.
 #' @param conf_level Numeric confidence level. Default `0.95`.
@@ -129,6 +144,7 @@ est_effort_camera <- function(
   n_anglers = NULL,
   intercept_col = NULL,
   h_open = NULL,
+  calibration = NULL,
   variance = c("taylor", "replicate"),
   conf_level = 0.95
 ) {
@@ -159,6 +175,7 @@ est_effort_camera <- function(
     n_anglers = n_anglers,
     intercept_col = intercept_col,
     h_open = h_open,
+    calibration = calibration,
     variance_method = variance,
     conf_level = conf_level
   )

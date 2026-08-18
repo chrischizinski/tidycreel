@@ -1,4 +1,4 @@
-# Tests for est_effort_camera() ----
+# Tests for est_effort_camera(calibration = "none") ----
 
 # Helpers ---------------------------------------------------------------------
 make_camera_design <- function() {
@@ -64,7 +64,7 @@ make_design_with_counts <- function() {
 
 test_that("CEST-01: errors when design is not creel_design", {
   expect_error(
-    est_effort_camera(list()),
+    est_effort_camera(list(), calibration = "none"),
     class = "rlang_error"
   )
 })
@@ -72,7 +72,7 @@ test_that("CEST-01: errors when design is not creel_design", {
 test_that("CEST-02: errors when conf_level out of range", {
   d <- make_design_with_counts()
   expect_error(
-    est_effort_camera(d, h_open = 14, conf_level = 1.5),
+    est_effort_camera(d, h_open = 14, conf_level = 1.5, calibration = "none"),
     class = "rlang_error"
   )
 })
@@ -84,11 +84,11 @@ test_that("CEST-02b: conf_level of length != 1 reaches the package's own error",
   # length itself so the cli_abort naming `conf_level` is what actually fires.
   d <- make_design_with_counts()
   expect_error(
-    est_effort_camera(d, h_open = 14, conf_level = c(0.90, 0.95)),
+    est_effort_camera(d, h_open = 14, conf_level = c(0.90, 0.95), calibration = "none"),
     class = "rlang_error"
   )
   expect_error(
-    est_effort_camera(d, h_open = 14, conf_level = numeric(0)),
+    est_effort_camera(d, h_open = 14, conf_level = numeric(0), calibration = "none"),
     class = "rlang_error"
   )
 })
@@ -96,7 +96,7 @@ test_that("CEST-02b: conf_level of length != 1 reaches the package's own error",
 test_that("CEST-03: errors when no counts attached", {
   d <- make_camera_design()
   expect_error(
-    est_effort_camera(d, h_open = 14),
+    est_effort_camera(d, h_open = 14, calibration = "none"),
     class = "rlang_error"
   )
 })
@@ -112,7 +112,7 @@ test_that("CEST-04: errors in raw mode when h_open is NULL", {
 test_that("CEST-05: errors in raw mode when h_open <= 0", {
   d <- make_design_with_counts()
   expect_error(
-    est_effort_camera(d, h_open = 0),
+    est_effort_camera(d, h_open = 0, calibration = "none"),
     class = "rlang_error"
   )
 })
@@ -130,13 +130,13 @@ test_that("CEST-06: errors in ratio mode when effort_col missing", {
 
 test_that("CEST-07: raw mode returns creel_estimates", {
   d <- make_design_with_counts()
-  res <- suppressWarnings(est_effort_camera(d, h_open = 14))
+  res <- suppressWarnings(est_effort_camera(d, h_open = 14, calibration = "none"))
   expect_s3_class(res, "creel_estimates")
 })
 
 test_that("CEST-08: raw mode has expected columns", {
   d <- make_design_with_counts()
-  res <- suppressWarnings(est_effort_camera(d, h_open = 14))
+  res <- suppressWarnings(est_effort_camera(d, h_open = 14, calibration = "none"))
   expect_true(all(
     c("estimate", "se", "ci_lower", "ci_upper", "n") %in%
       names(res$estimates)
@@ -166,7 +166,7 @@ test_that("CEST-10: ratio mode has expected columns", {
 
 test_that("CEST-11: raw mode estimate = svytotal * h_open (positive)", {
   d <- make_design_with_counts()
-  res <- suppressWarnings(est_effort_camera(d, h_open = 14))
+  res <- suppressWarnings(est_effort_camera(d, h_open = 14, calibration = "none"))
   expect_gt(res$estimates$estimate, 0)
 })
 
@@ -180,30 +180,41 @@ test_that("CEST-12: ratio mode estimate is positive", {
 
 test_that("CEST-13: larger h_open gives proportionally larger raw estimate", {
   d <- make_design_with_counts()
-  r1 <- suppressWarnings(est_effort_camera(d, h_open = 7))$estimates$estimate
-  r2 <- suppressWarnings(est_effort_camera(d, h_open = 14))$estimates$estimate
+  r1 <- suppressWarnings(est_effort_camera(d, h_open = 7, calibration = "none"))$estimates$estimate
+  r2 <- suppressWarnings(est_effort_camera(d, h_open = 14, calibration = "none"))$estimates$estimate
   expect_equal(r2 / r1, 2, tolerance = 1e-6)
 })
 
-test_that("CEST-14: se is non-negative", {
+test_that("CEST-14: the uncalibrated raw path reports NA se, and the calibrated one a number", {
+  # Rewritten from "se is non-negative". Under the uncalibrated opt-out the SE
+  # is NA by design (GH #158): the branch assumes one angler-hour per count per
+  # hour open and never measures that assumption, so its uncertainty is
+  # unpropagated rather than zero. NA is the only honest report.
   d <- make_design_with_counts()
-  res <- suppressWarnings(est_effort_camera(d, h_open = 14))
-  expect_gte(res$estimates$se, 0)
+  res <- suppressWarnings(est_effort_camera(d, h_open = 14, calibration = "none"))
+  expect_true(is.na(res$estimates$se))
+  expect_false(identical(res$estimates$se, 0))
+  # The point estimate is unaffected by the opt-out.
+  expect_true(is.finite(res$estimates$estimate))
+  expect_gt(res$estimates$estimate, 0)
 })
 
-test_that("CEST-15: ci_lower < estimate < ci_upper", {
+test_that("CEST-15: the uncalibrated raw path reports NA CI bounds", {
+  # A confidence interval built from an NA standard error is NA, not a wide
+  # interval. Reporting finite bounds here would imply coverage the estimator
+  # cannot claim (GH #158).
   d <- make_design_with_counts()
-  res <- suppressWarnings(est_effort_camera(d, h_open = 14))
+  res <- suppressWarnings(est_effort_camera(d, h_open = 14, calibration = "none"))
   e <- res$estimates
-  expect_lt(e$ci_lower, e$estimate)
-  expect_lt(e$estimate, e$ci_upper)
+  expect_true(is.na(e$ci_lower))
+  expect_true(is.na(e$ci_upper))
 })
 
 # Method label ----------------------------------------------------------------
 
 test_that("CEST-16: raw mode method is camera_raw", {
   d <- make_design_with_counts()
-  res <- suppressWarnings(est_effort_camera(d, h_open = 14))
+  res <- suppressWarnings(est_effort_camera(d, h_open = 14, calibration = "none"))
   expect_equal(res$method, "camera_raw")
 })
 
@@ -217,10 +228,13 @@ test_that("CEST-17: ratio mode method is camera_ratio", {
 
 # conf_level ------------------------------------------------------------------
 
-test_that("CEST-18: higher conf_level gives wider CI", {
+test_that("CEST-18: higher conf_level gives wider CI on the calibrated path", {
+  # Moved off the uncalibrated path, whose CI is now NA at every conf_level
+  # (GH #158). The monotonicity being pinned is a property of the CI
+  # construction, so it needs a path that actually produces one.
   d <- make_design_with_counts()
-  r1 <- suppressWarnings(est_effort_camera(d, h_open = 14, conf_level = 0.90))
-  r2 <- suppressWarnings(est_effort_camera(d, h_open = 14, conf_level = 0.99))
+  r1 <- suppressWarnings(est_effort_camera(d, interviews = make_interviews(), conf_level = 0.90))
+  r2 <- suppressWarnings(est_effort_camera(d, interviews = make_interviews(), conf_level = 0.99))
   w1 <- r1$estimates$ci_upper - r1$estimates$ci_lower
   w2 <- r2$estimates$ci_upper - r2$estimates$ci_lower
   expect_lt(w1, w2)
@@ -254,7 +268,7 @@ test_that("CEST-19: non-camera design type produces a cli warning", {
   d <- suppressWarnings(add_counts(d, counts))
   # The cli_warn for non-camera design type should fire
   expect_warning(
-    est_effort_camera(d, h_open = 8),
+    est_effort_camera(d, h_open = 8, calibration = "none"),
     regexp = "design_type"
   )
 })
@@ -283,7 +297,7 @@ test_that("F21: raw-count branch refuses counts that already carry T_d", {
 
   # h_open would be the second time multiplier, so the product is not effort.
   expect_error(
-    est_effort_camera(d, h_open = 14),
+    est_effort_camera(d, h_open = 14, calibration = "none"),
     class = "creel_error_camera_period_length"
   )
 })
@@ -291,7 +305,7 @@ test_that("F21: raw-count branch refuses counts that already carry T_d", {
 test_that("F21: raw-count branch is unaffected when no T_d was applied", {
   d <- make_design_with_counts()
 
-  res <- suppressWarnings(est_effort_camera(d, h_open = 14))
+  res <- suppressWarnings(est_effort_camera(d, h_open = 14, calibration = "none"))
 
   # sum(ingress) = 301 over 5 sampled days expanded to a 5-day calendar,
   # scaled by h_open = 14. Guards against the check firing on the normal path.
@@ -421,7 +435,7 @@ test_that("CEST-24: imputed counts trigger a warning naming the imputed share (G
   counts$.imputed <- c(FALSE, TRUE, FALSE, FALSE, TRUE)
   d <- suppressWarnings(add_counts(d, counts))
   expect_warning(
-    est_effort_camera(d, h_open = 14),
+    est_effort_camera(d, h_open = 14, calibration = "none"),
     class = "creel_warning_camera_imputed_counts"
   )
 })
@@ -431,7 +445,7 @@ test_that("CEST-24: no imputation warning when .imputed is present but all FALSE
   counts <- make_camera_counts()
   counts$.imputed <- rep(FALSE, 5L)
   d <- suppressWarnings(add_counts(d, counts))
-  expect_no_warning(est_effort_camera(d, h_open = 14))
+  expect_no_warning(est_effort_camera(d, h_open = 14, calibration = "none"))
 })
 
 test_that("CEST-24: imputed-count warning text states n, share, and the SE gap (GH #137)", {
@@ -439,17 +453,18 @@ test_that("CEST-24: imputed-count warning text states n, share, and the SE gap (
   counts <- make_camera_counts()
   counts$.imputed <- c(FALSE, TRUE, FALSE, FALSE, TRUE)
   d <- suppressWarnings(add_counts(d, counts))
-  expect_snapshot(res <- est_effort_camera(d, h_open = 14))
+  expect_snapshot(res <- est_effort_camera(d, h_open = 14, calibration = "none"))
 })
 
 test_that("CEST-25: imputed days must not shrink the SE below dropping those days (GH #137)", {
-  # Information monotonicity: a design where 40% of days are imputed carries
-  # strictly less information than the same design with those days dropped,
-  # so its SE must not be smaller. This can fail today because model
-  # predictions are smoother than real counts AND their prediction variance
-  # is dropped. Documents the still-open defect without failing CI; activated
-  # by the GH #137 full fix (audit fix plan Phase 3).
-  skip("Prediction uncertainty for imputed counts is not yet propagated; see GH #137.")
+  # No longer skipped. Prediction uncertainty IS propagated now, via multiple
+  # imputation and Rubin pooling in est_effort_camera_mi(); the monotonicity
+  # assertion this placeholder described lives in test-camera-mi.R as MI-06,
+  # where the fixtures for m completed data sets already exist.
+  #
+  # Kept as a pointer rather than deleted so the CEST- series stays contiguous
+  # and anyone tracing #137 from this file finds where it went.
+  expect_true(is.function(est_effort_camera_mi))
 })
 
 test_that("CEST-23: a duplicate count row is refused before it can reach var_rho (GH #136, #142)", {
@@ -561,7 +576,7 @@ test_that("CEST-26: the raw-count path is deliberately left alone (GH #142)", {
   counts <- make_camera_counts()
   dup <- rbind(counts, counts[counts$date == as.Date("2024-06-03"), ])
   d <- suppressWarnings(add_counts(d, dup))
-  result <- est_effort_camera(d, h_open = 14)
+  result <- est_effort_camera(d, h_open = 14, calibration = "none")
   expect_true(is.finite(result$estimates$estimate))
 })
 
@@ -588,7 +603,7 @@ test_that("CEST-24: within-day aggregation does not erase the imputed flag (GH #
   ))
   expect_true(all(d$counts$.imputed))
   expect_warning(
-    est_effort_camera(d, h_open = 14),
+    est_effort_camera(d, h_open = 14, calibration = "none"),
     class = "creel_warning_camera_imputed_counts"
   )
 })

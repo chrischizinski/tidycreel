@@ -29,6 +29,20 @@
 #' @param method Character scalar. Imputation model: `"glm"` (default,
 #'   Poisson GLM, no extra dependencies) or `"glmm"` (negative binomial GLMM
 #'   via `glmmTMB`, requires `glmmTMB` in `Suggests`).
+#' @param m Integer scalar. Number of completed data sets to generate.
+#'   `1L` (default) fills each outage row with the fitted mean, reproducing the
+#'   single-imputation behaviour of earlier versions and returning a plain data
+#'   frame.
+#'
+#'   `m > 1` performs **multiple imputation** and returns a `camera_imputations`
+#'   object for [est_effort_camera_mi()] to pool. Afrifa-Yamoah et al. (2020)
+#'   use `m = 5` as "an appropriate balance of the bias-variance trade-off".
+#'
+#'   The distinction matters because a single completed data set structurally
+#'   cannot carry the between-imputation variance. Inside `svytotal()` a
+#'   prediction is indistinguishable from an observation, so the imputation
+#'   model's uncertainty is dropped, and fitted means are smoother than real
+#'   counts, shrinking the between-day variance a second time (GH #137).
 #' @param site_col Character scalar or `NULL`. When `method = "glmm"` and
 #'   `site_col` is not `NULL`, a random intercept `(1 | site_col)` is included
 #'   in the GLMM formula. Default `NULL`.
@@ -87,6 +101,7 @@ impute_camera_counts <- function(
   strata_col,
   status_col = "camera_status",
   method = "glm",
+  m = 1L,
   site_col = NULL
 ) {
   # 1. Input validation --------------------------------------------------------
@@ -95,7 +110,9 @@ impute_camera_counts <- function(
   checkmate::assert_string(strata_col)
   checkmate::assert_string(status_col)
   checkmate::assert_choice(method, c("glm", "glmm"))
+  checkmate::assert_int(m, lower = 1L)
   checkmate::assert_string(site_col, null.ok = TRUE)
+  m <- as.integer(m)
 
   # Check columns exist
   for (col in c(count_col, strata_col, status_col)) {
@@ -169,9 +186,10 @@ impute_camera_counts <- function(
     outage_mask <- stratum_data[[status_col]] != "operational" &
       is.na(stratum_data[[count_col]])
 
-    # No outages in this stratum — return as-is
+    # No outages in this stratum — return as-is, in whichever shape m implies
+    # so the bind step below sees one consistent structure.
     if (!any(outage_mask)) {
-      return(stratum_data)
+      return(if (m == 1L) stratum_data else rep(list(stratum_data), m))
     }
 
     # Build GLM formula. Within a stratum, strata_col has exactly one unique
@@ -230,24 +248,114 @@ impute_camera_counts <- function(
       newdata = stratum_data[outage_mask, , drop = FALSE],
       type = "response"
     )
-    stratum_data[[count_col]][outage_mask] <- as.integer(round(predicted))
 
-    stratum_data
+    if (m == 1L) {
+      stratum_data[[count_col]][outage_mask] <- as.integer(round(predicted))
+      return(stratum_data)
+    }
+
+    # Multiple imputation: return m completed copies of this stratum, each
+    # drawn from the model's PREDICTIVE distribution rather than filled with
+    # its mean (GH #137).
+    #
+    # Two sources of variation are drawn, and both are needed. Drawing only
+    # the count would treat the fitted coefficients as known; drawing only the
+    # coefficients would still return a smooth mean where a real count has
+    # sampling noise. Filling with the mean, as m = 1 does, has neither, which
+    # is why its completed data set is smoother than observed data and shrinks
+    # the between-day variance.
+    lapply(seq_len(m), function(.i) {
+      draw <- .draw_imputed_counts(fit, stratum_data, outage_mask, predicted)
+      out <- stratum_data
+      out[[count_col]][outage_mask] <- draw
+      out
+    })
   })
 
   # 6. Bind results ------------------------------------------------------------
-  result <- do.call(rbind, imputed_list)
-  row.names(result) <- NULL
+  finalise <- function(res) {
+    row.names(res) <- NULL
+    # 7. Add .imputed flag (D-06). Use the pre-imputation NA baseline to
+    # identify rows that were genuinely imputed (was NA before, non-NA after).
+    # Avoids false positives for non-operational rows that already had a
+    # manually keyed count.
+    res$.imputed <- res[[".was_outage"]] & !is.na(res[[count_col]])
+    res[[".was_outage"]] <- NULL
+    # 8. Integer coercion (D-08)
+    storage.mode(res[[count_col]]) <- "integer"
+    res
+  }
 
-  # 7. Add .imputed flag (D-06) -----------------------------------------------
-  # Use the pre-imputation NA baseline to identify rows that were genuinely
-  # imputed (was NA before, non-NA after). Avoids false positives for
-  # non-operational rows that already had a manually keyed count.
-  result$.imputed <- result[[".was_outage"]] & !is.na(result[[count_col]])
-  result[[".was_outage"]] <- NULL
+  if (m == 1L) {
+    return(finalise(do.call(rbind, imputed_list)))
+  }
 
-  # 8. Integer coercion (D-08) ------------------------------------------------
-  storage.mode(result[[count_col]]) <- "integer"
+  # Each stratum contributed a list of m completed copies; bind the i-th copy
+  # of every stratum together to form the i-th completed data set.
+  completed <- lapply(seq_len(m), function(i) {
+    finalise(do.call(rbind, lapply(imputed_list, function(st) st[[i]])))
+  })
 
-  result
+  structure(
+    completed,
+    class = "camera_imputations",
+    m = m,
+    count_col = count_col,
+    strata_col = strata_col,
+    method = method
+  )
+}
+
+#' Draw imputed counts from a fitted model's predictive distribution
+#'
+#' Draws the regression coefficients from their sampling distribution and then
+#' the counts from the resulting conditional distribution, so a completed data
+#' set carries both the model's estimation uncertainty and the count's own
+#' sampling variation. Filling with `predict(type = "response")` has neither.
+#'
+#' @param fit A fitted `glm` or `glmmTMB` model.
+#' @param stratum_data The stratum's rows.
+#' @param outage_mask Logical vector selecting the rows to impute.
+#' @param predicted Fitted means for those rows, used as the fallback scale.
+#' @return An integer vector of drawn counts, parallel to `sum(outage_mask)`.
+#' @keywords internal
+#' @noRd
+.draw_imputed_counts <- function(fit, stratum_data, outage_mask, predicted) {
+  n_out <- sum(outage_mask)
+
+  # Coefficient draw. The models here are intercept-only within a stratum
+  # (D-09/D-10), so this is a draw of the log-mean and mu_draw is a scalar
+  # recycled across the outage rows.
+  mu_draw <- tryCatch(
+    {
+      beta_hat <- if (inherits(fit, "glmmTMB")) {
+        glmmTMB::fixef(fit)$cond
+      } else {
+        stats::coef(fit)
+      }
+      v <- as.matrix(stats::vcov(fit))
+      if (inherits(fit, "glmmTMB")) {
+        v <- as.matrix(stats::vcov(fit)$cond)
+      }
+      beta_draw <- beta_hat + sqrt(pmax(diag(v), 0)) * stats::rnorm(length(beta_hat))
+      rep(exp(unname(beta_draw[[1L]])), n_out)
+    },
+    error = function(e) as.numeric(predicted)
+  )
+
+  # Count draw, from the family the model was fitted with. A negative-binomial
+  # fit that were drawn as Poisson would discard exactly the overdispersion it
+  # was chosen to capture.
+  drawn <- if (inherits(fit, "glmmTMB")) {
+    theta <- tryCatch(stats::sigma(fit), error = function(e) NA_real_)
+    if (is.finite(theta) && theta > 0) {
+      stats::rnbinom(n_out, size = theta, mu = mu_draw)
+    } else {
+      stats::rpois(n_out, lambda = mu_draw)
+    }
+  } else {
+    stats::rpois(n_out, lambda = mu_draw)
+  }
+
+  as.integer(drawn)
 }

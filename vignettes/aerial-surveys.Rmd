@@ -27,17 +27,48 @@ mean trip duration of anglers on the water (`L_bar`). The basic estimator is:
 $$\hat{E} = N_{obs} \times \frac{h_{open}}{v}$$
 
 where $N_{obs}$ is the observed (instantaneous) angler count, $h_{open}$ is the
-number of hours the fishery is open per day, and $v$ is the visibility
-correction factor (defaulting to 1.0 when all anglers are detectable from the
-air). The mean trip duration $\bar{L}$ is estimated from ground interviews and
-enters the catch rate estimation step rather than the effort expansion step.
+number of hours the fishery is open per day, and $v$ is the **detection
+probability** — the proportion of anglers present that are detected from the
+aircraft. The mean trip duration $\bar{L}$ is estimated from ground interviews
+and enters the catch rate estimation step rather than the effort expansion step.
 
 When not all anglers are visible from the air — for example, anglers fishing
 under tree cover or in enclosed shelters — a **visibility correction**
 adjusts the count upward. If observers detect only 85% of anglers present,
 the corrected effort estimate is scaled by $1 / 0.85 \approx 1.18$, yielding a
 higher and more accurate total. The `visibility_correction` argument to
-`creel_design()` captures this calibration constant.
+`creel_design()` carries $v$, and is required for an aerial design: pass
+`"none"` to state explicitly that no correction applies.
+
+### $v$ is the reciprocal of the published ratio
+
+Field studies do not report $v$ directly. The standard ground-truthing method
+reports the ratio
+
+$$r = \frac{\text{ground count}}{\text{aerial count}}$$
+
+which is **greater than 1** whenever the aircraft undercounts — Smucker et al.
+(2010) report $r = 2.69$ for shore anglers. Because `visibility_correction` is a
+probability, convert before supplying it:
+
+$$v = 1 / r \qquad\text{so}\qquad r = 2.69 \;\longrightarrow\; v = 0.372$$
+
+Passing $r$ directly is rejected by the `(0, 1]` check rather than silently
+accepted, because the two parameterisations differ by a factor of $r^2$ in the
+effort estimate.
+
+### The correction is estimated, so it carries uncertainty
+
+$v$ is estimated from paired air–ground counts, and the standard field method
+reports its standard error as routine output. Supply it as `visibility_se` — on
+the same probability scale — and that uncertainty is propagated into the effort
+SE. For an SE published on the ratio scale, convert with $SE(v) = SE(r) / r^2$.
+
+Because one estimate of $v$ divides every scaled count, it is a *shared*
+multiplier: its contribution enters once at the total and does not shrink as
+more flights are flown. Omitting `visibility_se` reports the component as
+absent rather than as zero — a zero would be indistinguishable from never
+having propagated it at all.
 
 ## Example Data
 
@@ -79,6 +110,9 @@ design <- creel_design(
   date        = date,
   strata      = day_type,
   survey_type = "aerial",
+  visibility_correction = "none",
+  angler_ratio = 1,
+  angler_ratio_se = 0,
   h_open      = 14
 )
 
@@ -129,6 +163,10 @@ underestimates true effort. Supply a `visibility_correction` to `creel_design()`
 to account for this. A value of 0.85 means observers detected 85% of the
 anglers actually present; the effort estimate is scaled up by $1 / 0.85$.
 
+Here the correction is accompanied by `visibility_se`, so the reported effort SE
+includes the uncertainty in the correction itself rather than treating 0.85 as
+exactly known.
+
 ```{r visibility-correction}
 design_corr <- creel_design(
   aerial_cal,
@@ -136,7 +174,10 @@ design_corr <- creel_design(
   strata = day_type,
   survey_type = "aerial",
   h_open = 14,
-  visibility_correction = 0.85
+  visibility_correction = 0.85,
+  angler_ratio = 1,
+  angler_ratio_se = 0,
+  visibility_se = 0.04
 )
 
 design_corr <- add_counts(design_corr, example_aerial_counts)
@@ -189,9 +230,11 @@ the effort estimate and the CPUE estimate.
 
 The complete aerial survey workflow in `tidycreel` consists of four steps:
 
-1. `creel_design(..., survey_type = "aerial", h_open = N)` — define the survey
-   with the required `h_open` expansion factor and optional
-   `visibility_correction`.
+1. `creel_design(..., survey_type = "aerial", visibility_correction = v, h_open = N)`
+   — define the survey with the required `h_open` expansion factor and the
+   required `visibility_correction` (a detection probability, or `"none"` to
+   declare that no correction applies). Add `visibility_se` to propagate the
+   correction's own uncertainty.
 2. `add_counts(design, counts)` — attach the instantaneous angler count data
    from each overflight.
 3. `add_interviews(design, interviews, catch = ..., effort = hours_fished, ...)` — attach ground interview data for catch rate estimation.

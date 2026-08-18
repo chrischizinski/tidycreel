@@ -682,6 +682,9 @@
 #'   date = date,
 #'   strata = day_type,
 #'   survey_type = "aerial",
+#'   visibility_correction = "none",
+#'   angler_ratio = 1,
+#'   angler_ratio_se = 0,
 #'   h_open = 14
 #' )
 #' print(design)
@@ -731,6 +734,9 @@
 #'   date = date,
 #'   strata = day_type,
 #'   survey_type = "aerial",
+#'   visibility_correction = "none",
+#'   angler_ratio = 1,
+#'   angler_ratio_se = 0,
 #'   h_open = 14
 #' )
 #' design <- add_counts(design, example_aerial_counts)
@@ -794,6 +800,9 @@
 #'   date = date,
 #'   strata = day_type,
 #'   survey_type = "aerial",
+#'   visibility_correction = "none",
+#'   angler_ratio = 1,
+#'   angler_ratio_se = 0,
 #'   h_open = 14
 #' )
 #' design <- add_counts(design, example_aerial_glmm_counts, count_col = n_anglers)
