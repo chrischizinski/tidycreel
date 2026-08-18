@@ -75,7 +75,7 @@
 #'   path without any calibration. Required to reach that path, because
 #'   expanding a raw camera count by `h_open` alone silently assumes each
 #'   counted object contributes exactly one angler-hour per hour open — a
-#'   calibration of 1 that was never measured (GH \#158).
+#'   calibration of 1 that was never measured (GH #158).
 #'
 #'   Under the opt-out the point estimate uses that assumption and the reported
 #'   SE is `NA`: the `calibration` component is present-and-unknown rather than

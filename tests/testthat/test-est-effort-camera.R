@@ -457,13 +457,14 @@ test_that("CEST-24: imputed-count warning text states n, share, and the SE gap (
 })
 
 test_that("CEST-25: imputed days must not shrink the SE below dropping those days (GH #137)", {
-  # Information monotonicity: a design where 40% of days are imputed carries
-  # strictly less information than the same design with those days dropped,
-  # so its SE must not be smaller. This can fail today because model
-  # predictions are smoother than real counts AND their prediction variance
-  # is dropped. Documents the still-open defect without failing CI; activated
-  # by the GH #137 full fix (audit fix plan Phase 3).
-  skip("Prediction uncertainty for imputed counts is not yet propagated; see GH #137.")
+  # No longer skipped. Prediction uncertainty IS propagated now, via multiple
+  # imputation and Rubin pooling in est_effort_camera_mi(); the monotonicity
+  # assertion this placeholder described lives in test-camera-mi.R as MI-06,
+  # where the fixtures for m completed data sets already exist.
+  #
+  # Kept as a pointer rather than deleted so the CEST- series stays contiguous
+  # and anyone tracing #137 from this file finds where it went.
+  expect_true(is.function(est_effort_camera_mi))
 })
 
 test_that("CEST-23: a duplicate count row is refused before it can reach var_rho (GH #136, #142)", {

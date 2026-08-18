@@ -52,7 +52,7 @@ Default \code{NULL} (auto-detects the first numeric count column).}
 path without any calibration. Required to reach that path, because
 expanding a raw camera count by \code{h_open} alone silently assumes each
 counted object contributes exactly one angler-hour per hour open — a
-calibration of 1 that was never measured (GH \#158).
+calibration of 1 that was never measured (GH #158).
 
 Under the opt-out the point estimate uses that assumption and the reported
 SE is \code{NA}: the \code{calibration} component is present-and-unknown rather than
@@ -177,6 +177,7 @@ Other "Survey Design":
 \code{\link{as_survey_design}()},
 \code{\link{compute_angler_effort}()},
 \code{\link{compute_effort}()},
+\code{\link{creel_design}()},
 \code{\link{creel_schema}()},
 \code{\link{derive_angler_count}()},
 \code{\link{impute_camera_counts}()},

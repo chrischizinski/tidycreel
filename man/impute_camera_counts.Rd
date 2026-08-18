@@ -10,6 +10,7 @@ impute_camera_counts(
   strata_col,
   status_col = "camera_status",
   method = "glm",
+  m = 1L,
   site_col = NULL
 )
 }
@@ -31,6 +32,21 @@ Default \code{"camera_status"}. Rows where this column is not
 \item{method}{Character scalar. Imputation model: \code{"glm"} (default,
 Poisson GLM, no extra dependencies) or \code{"glmm"} (negative binomial GLMM
 via \code{glmmTMB}, requires \code{glmmTMB} in \code{Suggests}).}
+
+\item{m}{Integer scalar. Number of completed data sets to generate.
+\code{1L} (default) fills each outage row with the fitted mean, reproducing the
+single-imputation behaviour of earlier versions and returning a plain data
+frame.
+
+\code{m > 1} performs \strong{multiple imputation} and returns a \code{camera_imputations}
+object for \code{\link[=est_effort_camera_mi]{est_effort_camera_mi()}} to pool. Afrifa-Yamoah et al. (2020)
+use \code{m = 5} as "an appropriate balance of the bias-variance trade-off".
+
+The distinction matters because a single completed data set structurally
+cannot carry the between-imputation variance. Inside \code{svytotal()} a
+prediction is indistinguishable from an observation, so the imputation
+model's uncertainty is dropped, and fitted means are smoother than real
+counts, shrinking the between-day variance a second time (GH #137).}
 
 \item{site_col}{Character scalar or \code{NULL}. When \code{method = "glmm"} and
 \code{site_col} is not \code{NULL}, a random intercept \code{(1 | site_col)} is included
@@ -110,6 +126,7 @@ Other "Survey Design":
 \code{\link{as_survey_design}()},
 \code{\link{compute_angler_effort}()},
 \code{\link{compute_effort}()},
+\code{\link{creel_design}()},
 \code{\link{creel_schema}()},
 \code{\link{derive_angler_count}()},
 \code{\link{est_effort_camera}()},
