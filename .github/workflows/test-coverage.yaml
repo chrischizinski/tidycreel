@@ -13,6 +13,7 @@ permissions:
 jobs:
   test-coverage:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes
@@ -20,9 +21,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: ./.github/actions/harden-apt
+
       - uses: r-lib/actions/setup-pandoc@v2
 
       - uses: r-lib/actions/setup-r@v2
+        timeout-minutes: 15
         with:
           r-version: "release"
           use-public-rspm: true
