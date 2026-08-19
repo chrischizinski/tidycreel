@@ -49,5 +49,6 @@ caught. The dangerous failure is a plausible number with no error and no warning
 
 `/statistical-seam-audit` (`.claude/skills/statistical-seam-audit/SKILL.md`)
 produces findings reports; each confirmed finding should gain a regression test
-here as part of its fix PR. Checklists for new estimators and PR review:
-`inst/audit/`.
+here as part of its fix PR. Checklists for new estimators and PR review live in
+`inst/audit/`, which — like the skill and `CLAUDE.md` above — is a local working
+directory and is not tracked in the repository.

@@ -149,3 +149,11 @@ data-raw/fish_release_names.txt
 # Local quality/review reports — not for distribution
 quality_reports/
 testthat-problems.rds
+
+# Statistical audit reports and working TODOs — local only, not for distribution.
+# These are internal working documents (findings, scratch scope notes) rather
+# than package or user documentation; the issues they raised are tracked on
+# GitHub instead.
+AUDIT-*.md
+TODO-*.md
+inst/audit/
