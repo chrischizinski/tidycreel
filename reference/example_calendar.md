@@ -1,0 +1,85 @@
+# Example calendar data for creel survey
+
+A sample survey calendar dataset demonstrating the structure required
+for
+[`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md).
+Contains 14 days (June 1-14, 2024) with weekday/weekend strata,
+representing a two-week survey period.
+
+## Usage
+
+``` r
+example_calendar
+```
+
+## Format
+
+A data frame with 14 rows and 2 columns:
+
+- date:
+
+  Survey date (Date class), June 1-14, 2024
+
+- day_type:
+
+  Day type stratum: "weekday" or "weekend"
+
+## Source
+
+Simulated data for package examples
+
+## See also
+
+[example_counts](https://chrischizinski.github.io/tidycreel/reference/example_counts.md)
+for matching count data,
+[`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md)
+to create a design from calendar data
+
+Other "Example Datasets":
+[`creel_counts_toy`](https://chrischizinski.github.io/tidycreel/reference/creel_counts_toy.md),
+[`creel_interviews_toy`](https://chrischizinski.github.io/tidycreel/reference/creel_interviews_toy.md),
+[`example_aerial_counts`](https://chrischizinski.github.io/tidycreel/reference/example_aerial_counts.md),
+[`example_aerial_glmm_counts`](https://chrischizinski.github.io/tidycreel/reference/example_aerial_glmm_counts.md),
+[`example_aerial_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_aerial_interviews.md),
+[`example_ages`](https://chrischizinski.github.io/tidycreel/reference/example_ages.md),
+[`example_camera_counts`](https://chrischizinski.github.io/tidycreel/reference/example_camera_counts.md),
+[`example_camera_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_camera_interviews.md),
+[`example_camera_timestamps`](https://chrischizinski.github.io/tidycreel/reference/example_camera_timestamps.md),
+[`example_catch`](https://chrischizinski.github.io/tidycreel/reference/example_catch.md),
+[`example_counts`](https://chrischizinski.github.io/tidycreel/reference/example_counts.md),
+[`example_ice_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_ice_interviews.md),
+[`example_ice_sampling_frame`](https://chrischizinski.github.io/tidycreel/reference/example_ice_sampling_frame.md),
+[`example_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_interviews.md),
+[`example_lengths`](https://chrischizinski.github.io/tidycreel/reference/example_lengths.md),
+[`example_sections_calendar`](https://chrischizinski.github.io/tidycreel/reference/example_sections_calendar.md),
+[`example_sections_counts`](https://chrischizinski.github.io/tidycreel/reference/example_sections_counts.md),
+[`example_sections_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_sections_interviews.md)
+
+## Examples
+
+``` r
+# Load and inspect
+data(example_calendar)
+head(example_calendar)
+#>         date day_type
+#> 1 2024-06-01  weekend
+#> 2 2024-06-02  weekend
+#> 3 2024-06-03  weekday
+#> 4 2024-06-04  weekday
+#> 5 2024-06-05  weekday
+#> 6 2024-06-06  weekday
+
+# Create a creel design
+design <- creel_design(example_calendar, date = date, strata = day_type)
+print(design)
+#> 
+#> ── Creel Survey Design ─────────────────────────────────────────────────────────
+#> Type: "instantaneous"
+#> Date column: date
+#> Strata: day_type
+#> Calendar: 14 days (2024-06-01 to 2024-06-14)
+#> day_type: 2 levels
+#> Counts: "none"
+#> Interviews: "none"
+#> Sections: "none"
+```

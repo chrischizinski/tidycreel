@@ -1,0 +1,335 @@
+# Package index
+
+## Survey Design
+
+Build a creel survey design object and attach observational data. All
+estimation functions accept a `creel_design` object as their first
+argument.
+
+- [`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md)
+  : Create a creel survey design
+- [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+  : Attach count data to a creel design
+- [`prep_counts_daily_effort()`](https://chrischizinski.github.io/tidycreel/reference/prep_counts_daily_effort.md)
+  : Standardize sampled-day effort rows for count-based workflows
+- [`prep_counts_boat_party()`](https://chrischizinski.github.io/tidycreel/reference/prep_counts_boat_party.md)
+  : Standardize boat-party sampled-day effort rows
+- [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)
+  : Attach interview data to a creel design
+- [`prep_interviews_trips()`](https://chrischizinski.github.io/tidycreel/reference/prep_interviews_trips.md)
+  : Standardize trip/interview rows for interview-based workflows
+- [`prep_interview_catch()`](https://chrischizinski.github.io/tidycreel/reference/prep_interview_catch.md)
+  : Standardize long catch-table rows for interview-based workflows
+- [`add_catch()`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md)
+  : Attach species-level catch data to a creel design
+- [`add_lengths()`](https://chrischizinski.github.io/tidycreel/reference/add_lengths.md)
+  : Attach fish length frequency data to a creel design
+- [`add_ages()`](https://chrischizinski.github.io/tidycreel/reference/add_ages.md)
+  : Attach age data to a creel design
+- [`add_sections()`](https://chrischizinski.github.io/tidycreel/reference/add_sections.md)
+  : Register spatial sections for a creel survey design
+- [`as_survey_design()`](https://chrischizinski.github.io/tidycreel/reference/as_survey_design.md)
+  : Extract internal survey design object for advanced use
+- [`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md)
+  : Estimate angler effort from camera/time-lapse count data
+- [`est_effort_camera_mi()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera_mi.md)
+  : Pool camera effort estimates across multiply imputed count data sets
+- [`impute_camera_counts()`](https://chrischizinski.github.io/tidycreel/reference/impute_camera_counts.md)
+  : Impute missing camera counts using GLM or GLMM
+- [`as_hybrid_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_hybrid_svydesign.md)
+  **\[experimental\]** : Construct a hybrid access + roving survey
+  design
+- [`print(`*`<creel_hybrid_svydesign>`*`)`](https://chrischizinski.github.io/tidycreel/reference/print.creel_hybrid_svydesign.md)
+  : Print a creel_hybrid_svydesign
+- [`compute_effort()`](https://chrischizinski.github.io/tidycreel/reference/compute_effort.md)
+  : Resolve fishing effort from timestamps or self-reported time
+- [`compute_angler_effort()`](https://chrischizinski.github.io/tidycreel/reference/compute_angler_effort.md)
+  : Normalize fishing effort to angler-hours
+- [`creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/creel_schema.md)
+  : Column-mapping contract for tidycreel data sources
+- [`validate_creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/validate_creel_schema.md)
+  : Validate a creel_schema object
+
+## Estimation
+
+Design-based estimators for effort, catch rates, and totals. Functions
+dispatch automatically on survey type.
+
+- [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+  : Estimate total effort from a creel survey design
+- [`estimate_effort_aerial_glmm()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort_aerial_glmm.md)
+  : GLMM-based aerial effort estimation with diurnal correction
+- [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
+  : Estimate CPUE (Catch Per Unit Effort) from a creel survey design
+- [`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md)
+  : Estimate harvest (HPUE: Harvest Per Unit Effort) from a creel survey
+  design
+- [`estimate_release_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_release_rate.md)
+  : Estimate release rate (RPUE: Released fish Per Unit Effort) from a
+  creel survey design
+- [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md)
+  : Estimate total catch by combining effort and CPUE
+- [`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md)
+  : Estimate total harvest by combining effort and HPUE
+- [`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
+  : Estimate total extrapolated release by combining effort and release
+  rate
+- [`estimate_exploitation_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_exploitation_rate.md)
+  : Estimate exploitation rate using the Pollock et al. moment estimator
+- [`estimate_angler_n()`](https://chrischizinski.github.io/tidycreel/reference/estimate_angler_n.md)
+  : Estimate angler population size via closed-population mark-recapture
+- [`estimate_mr_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_mr_harvest.md)
+  : Estimate total harvest from a mark-recapture population estimate
+- [`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md)
+  : Estimate a weighted length distribution from creel interview data
+- [`est_biomass()`](https://chrischizinski.github.io/tidycreel/reference/est_biomass.md)
+  : Estimate total biomass from a creel length distribution
+- [`est_mean_length()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_length.md)
+  : Estimate design-weighted mean length from a creel length
+  distribution
+- [`est_age_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_age_distribution.md)
+  : Estimate a weighted age distribution from creel interview data
+- [`est_mean_age()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_age.md)
+  : Estimate design-weighted mean age from a creel age distribution
+- [`est_compliance()`](https://chrischizinski.github.io/tidycreel/reference/est_compliance.md)
+  : Estimate design-weighted size-limit compliance from a creel length
+  distribution
+- [`estimate_angler_trips()`](https://chrischizinski.github.io/tidycreel/reference/estimate_angler_trips.md)
+  : Estimate angler trips from extrapolated effort
+- [`estimate_effort_per_acre()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort_per_acre.md)
+  : Compute effort density as effort per acre
+- [`compare_cpue_estimators()`](https://chrischizinski.github.io/tidycreel/reference/compare_cpue_estimators.md)
+  : Compare CPUE estimators (ROM, MOR, Regression)
+- [`creel_confidence_intervals`](https://chrischizinski.github.io/tidycreel/reference/creel_confidence_intervals.md)
+  : Confidence interval conventions in tidycreel
+- [`derive_angler_count()`](https://chrischizinski.github.io/tidycreel/reference/derive_angler_count.md)
+  : Derive an angler count from its components
+- [`mean_party_size()`](https://chrischizinski.github.io/tidycreel/reference/mean_party_size.md)
+  : Mean anglers per boat party from interviews
+
+## Simulation
+
+Generate synthetic creel survey datasets for testing, power analysis,
+and estimator comparison. Caller supplies distributional parameters.
+
+- [`day_length()`](https://chrischizinski.github.io/tidycreel/reference/day_length.md)
+  : Day length for a latitude and date
+- [`simulate_creel_data()`](https://chrischizinski.github.io/tidycreel/reference/simulate_creel_data.md)
+  : Simulate a complete creel survey dataset
+- [`simulate_creel_catch()`](https://chrischizinski.github.io/tidycreel/reference/simulate_creel_catch.md)
+  : Simulate catch counts from a distributional family
+
+## Reporting & Diagnostics
+
+Summarize interview data by angler characteristics, validate designs,
+check data completeness, and inspect estimate output.
+
+- [`summarize_trips()`](https://chrischizinski.github.io/tidycreel/reference/summarize_trips.md)
+  : Summarize trip metadata for interview data
+- [`summarize_refusals()`](https://chrischizinski.github.io/tidycreel/reference/summarize_refusals.md)
+  : Tabulate refused vs accepted interviews by month
+- [`summarize_by_day_type()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_day_type.md)
+  : Tabulate interviews by day type and month
+- [`summarize_by_angler_type()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_angler_type.md)
+  : Tabulate interviews by angler type and month
+- [`summarize_by_method()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_method.md)
+  : Tabulate interviews by fishing method and month
+- [`summarize_by_species_sought()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_species_sought.md)
+  : Tabulate interviews by species sought and month
+- [`summarize_by_trip_length()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_trip_length.md)
+  : Tabulate interviews by trip length bin
+- [`summarize_cws_rates()`](https://chrischizinski.github.io/tidycreel/reference/summarize_cws_rates.md)
+  : Compute caught-while-sought (CWS) rates by group
+- [`summarize_hws_rates()`](https://chrischizinski.github.io/tidycreel/reference/summarize_hws_rates.md)
+  : Compute harvested-while-sought (HWS) rates by group
+- [`summarize_length_freq()`](https://chrischizinski.github.io/tidycreel/reference/summarize_length_freq.md)
+  : Compute length frequency distribution from creel interview data
+- [`summarize_successful_parties()`](https://chrischizinski.github.io/tidycreel/reference/summarize_successful_parties.md)
+  : Tabulate successful parties by angler type and species sought
+- [`summarize_boat_composition()`](https://chrischizinski.github.io/tidycreel/reference/summarize_boat_composition.md)
+  : Tabulate boat composition by month and day type
+- [`summarize_by_zip()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_zip.md)
+  : Tabulate interviews by zip code of origin
+- [`summarize_by_county()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_county.md)
+  : Tabulate interviews by county of origin
+- [`season_summary()`](https://chrischizinski.github.io/tidycreel/reference/season_summary.md)
+  : Assemble pre-computed creel estimates into a report-ready wide
+  tibble
+- [`summary(`*`<creel_estimates>`*`)`](https://chrischizinski.github.io/tidycreel/reference/summary.creel_estimates.md)
+  : Summarise creel survey estimates as a formatted table
+- [`tidy(`*`<creel_estimates>`*`)`](https://chrischizinski.github.io/tidycreel/reference/tidy.creel_estimates.md)
+  : Tidy a creel_estimates object into a flat tibble
+- [`flag_outliers()`](https://chrischizinski.github.io/tidycreel/reference/flag_outliers.md)
+  : Flag outliers in a creel interview data column
+- [`write_estimates()`](https://chrischizinski.github.io/tidycreel/reference/write_estimates.md)
+  : Export creel survey estimates to a file
+- [`validate_incomplete_trips()`](https://chrischizinski.github.io/tidycreel/reference/validate_incomplete_trips.md)
+  : Validate incomplete trip estimates using TOST equivalence testing
+- [`validate_design()`](https://chrischizinski.github.io/tidycreel/reference/validate_design.md)
+  : Validate a proposed creel survey design against sample size targets
+- [`check_completeness()`](https://chrischizinski.github.io/tidycreel/reference/check_completeness.md)
+  : Check post-season data completeness for a creel design
+- [`compare_variance()`](https://chrischizinski.github.io/tidycreel/reference/compare_variance.md)
+  : Compare Taylor linearization vs. replicate variance for creel
+  estimates
+- [`adjust_nonresponse()`](https://chrischizinski.github.io/tidycreel/reference/adjust_nonresponse.md)
+  : Adjust a creel design for nonresponse bias
+- [`validate_creel_data()`](https://chrischizinski.github.io/tidycreel/reference/validate_creel_data.md)
+  : Validate creel survey data frames
+- [`print(`*`<creel_data_validation>`*`)`](https://chrischizinski.github.io/tidycreel/reference/print.creel_data_validation.md)
+  : Print a creel_data_validation result
+- [`as.data.frame(`*`<creel_data_validation>`*`)`](https://chrischizinski.github.io/tidycreel/reference/as.data.frame.creel_data_validation.md)
+  : Coerce a creel_data_validation to a plain data frame
+- [`standardize_species()`](https://chrischizinski.github.io/tidycreel/reference/standardize_species.md)
+  : Standardize species names to AFS codes
+- [`validation_report()`](https://chrischizinski.github.io/tidycreel/reference/validation_report.md)
+  : Generate a validation summary report
+- [`print(`*`<creel_validation_report>`*`)`](https://chrischizinski.github.io/tidycreel/reference/print.creel_validation_report.md)
+  : Print a creel_validation_report
+- [`as.data.frame(`*`<creel_validation_report>`*`)`](https://chrischizinski.github.io/tidycreel/reference/as.data.frame.creel_validation_report.md)
+  : Coerce a creel_validation_report to a plain data frame
+
+## Planning & Sample Size
+
+Pre-survey tools for sample size determination, power analysis, and
+design comparison. Also includes post-design stratification diagnostics:
+verify stratum weights, simulate collapse scenarios, and reallocate
+sampling effort across strata.
+
+- [`power_creel()`](https://chrischizinski.github.io/tidycreel/reference/power_creel.md)
+  : Unified sample-size and power interface for creel surveys
+- [`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md)
+  : Calculate sampling days required to achieve a target CV on effort
+- [`creel_n_camera()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_camera.md)
+  : Calculate camera-days required to achieve a target CV
+- [`creel_n_cpue()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_cpue.md)
+  : Calculate interviews required to achieve a target CV on CPUE
+- [`creel_power()`](https://chrischizinski.github.io/tidycreel/reference/creel_power.md)
+  : Estimate statistical power to detect a change in CPUE between
+  seasons
+- [`cv_from_n()`](https://chrischizinski.github.io/tidycreel/reference/cv_from_n.md)
+  : Compute the expected CV achievable with a known sample size
+- [`audit_strata()`](https://chrischizinski.github.io/tidycreel/reference/audit_strata.md)
+  : Audit per-stratum effort precision from a completed creel design or
+  pilot statistics
+- [`simulate_strata_collapse()`](https://chrischizinski.github.io/tidycreel/reference/simulate_strata_collapse.md)
+  : Simulate the effect of collapsing strata on precision
+- [`reallocate_strata()`](https://chrischizinski.github.io/tidycreel/reference/reallocate_strata.md)
+  : Compute Neyman-optimal sample allocation across strata
+- [`optimal_n()`](https://chrischizinski.github.io/tidycreel/reference/optimal_n.md)
+  : Calculate sampling days required under Neyman-optimal allocation
+- [`compare_designs()`](https://chrischizinski.github.io/tidycreel/reference/compare_designs.md)
+  **\[experimental\]** : Compare multiple survey design estimates side
+  by side
+- [`print(`*`<creel_design_comparison>`*`)`](https://chrischizinski.github.io/tidycreel/reference/print.creel_design_comparison.md)
+  : Print a creel_design_comparison
+- [`autoplot(`*`<creel_design_comparison>`*`)`](https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_design_comparison.md)
+  : Autoplot a creel_design_comparison as a forest plot
+- [`as.data.frame(`*`<creel_design_comparison>`*`)`](https://chrischizinski.github.io/tidycreel/reference/as.data.frame.creel_design_comparison.md)
+  : Coerce a creel_design_comparison to a plain data frame
+
+## Scheduling
+
+Generate, validate, read, and write creel survey schedules.
+
+- [`generate_schedule()`](https://chrischizinski.github.io/tidycreel/reference/generate_schedule.md)
+  : Generate a creel survey sampling schedule
+- [`generate_bus_schedule()`](https://chrischizinski.github.io/tidycreel/reference/generate_bus_schedule.md)
+  : Generate a bus-route sampling frame
+- [`generate_count_times()`](https://chrischizinski.github.io/tidycreel/reference/generate_count_times.md)
+  : Generate within-day count time windows
+- [`generate_progressive_start()`](https://chrischizinski.github.io/tidycreel/reference/generate_progressive_start.md)
+  : Schedule progressive count circuit start times
+- [`attach_count_times()`](https://chrischizinski.github.io/tidycreel/reference/attach_count_times.md)
+  : Attach count time windows to a daily sampling schedule
+- [`new_creel_schedule()`](https://chrischizinski.github.io/tidycreel/reference/new_creel_schedule.md)
+  : Create a creel_schedule S3 object
+- [`validate_creel_schedule()`](https://chrischizinski.github.io/tidycreel/reference/validate_creel_schedule.md)
+  : Validate a creel_schedule object
+- [`read_schedule()`](https://chrischizinski.github.io/tidycreel/reference/read_schedule.md)
+  : Read a schedule file into a validated creel_schedule object
+- [`write_schedule()`](https://chrischizinski.github.io/tidycreel/reference/write_schedule.md)
+  : Write a creel schedule to a CSV or xlsx file
+
+## Bus-Route Helpers
+
+Exported helpers for bus-route Horvitz-Thompson estimation components.
+For advanced users who need direct access to enumeration values.
+
+- [`get_enumeration_counts()`](https://chrischizinski.github.io/tidycreel/reference/get_enumeration_counts.md)
+  : Get enumeration counts from a bus-route creel design with interviews
+- [`get_inclusion_probs()`](https://chrischizinski.github.io/tidycreel/reference/get_inclusion_probs.md)
+  : Get inclusion probabilities from a bus-route design
+- [`get_sampling_frame()`](https://chrischizinski.github.io/tidycreel/reference/get_sampling_frame.md)
+  : Extract the sampling frame from a bus-route creel design
+- [`get_site_contributions()`](https://chrischizinski.github.io/tidycreel/reference/get_site_contributions.md)
+  : Extract per-site effort contributions from a bus-route estimate
+
+## Camera Survey
+
+Preprocessing for camera-monitored creel surveys.
+
+- [`preprocess_camera_timestamps()`](https://chrischizinski.github.io/tidycreel/reference/preprocess_camera_timestamps.md)
+  : Preprocess camera ingress-egress timestamps
+
+## Visualisation
+
+ggplot2-based plotting methods for creel designs, estimates, and
+schedules.
+
+- [`plot_design()`](https://chrischizinski.github.io/tidycreel/reference/plot_design.md)
+  : Plot a creel survey design
+- [`autoplot(`*`<creel_estimates>`*`)`](https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_estimates.md)
+  : Plot creel survey estimates with ggplot2
+- [`autoplot(`*`<creel_length_distribution>`*`)`](https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_length_distribution.md)
+  : Plot a weighted length distribution with ggplot2
+- [`autoplot(`*`<creel_schedule>`*`)`](https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_schedule.md)
+  : Plot a creel schedule as a ggplot2 tile calendar
+- [`theme_creel()`](https://chrischizinski.github.io/tidycreel/reference/theme_creel.md)
+  : Package-standard ggplot2 theme for tidycreel plots
+- [`creel_palette()`](https://chrischizinski.github.io/tidycreel/reference/creel_palette.md)
+  : Package-standard colour palette for tidycreel plots
+
+## Example Datasets
+
+Simulated datasets illustrating each supported survey type. Used in
+vignettes and function examples.
+
+- [`example_calendar`](https://chrischizinski.github.io/tidycreel/reference/example_calendar.md)
+  : Example calendar data for creel survey
+- [`example_counts`](https://chrischizinski.github.io/tidycreel/reference/example_counts.md)
+  : Example count data for creel survey
+- [`example_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_interviews.md)
+  : Example interview data for creel survey
+- [`example_catch`](https://chrischizinski.github.io/tidycreel/reference/example_catch.md)
+  : Example species catch data for creel survey
+- [`example_lengths`](https://chrischizinski.github.io/tidycreel/reference/example_lengths.md)
+  : Example fish length data for creel survey
+- [`example_ages`](https://chrischizinski.github.io/tidycreel/reference/example_ages.md)
+  : Example fish age data for creel estimation
+- [`example_sections_calendar`](https://chrischizinski.github.io/tidycreel/reference/example_sections_calendar.md)
+  : Example calendar for spatially stratified creel survey
+- [`example_sections_counts`](https://chrischizinski.github.io/tidycreel/reference/example_sections_counts.md)
+  : Example effort counts for spatially stratified creel survey
+- [`example_sections_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_sections_interviews.md)
+  : Example interview data for spatially stratified creel survey
+- [`example_ice_sampling_frame`](https://chrischizinski.github.io/tidycreel/reference/example_ice_sampling_frame.md)
+  : Example sampling frame for ice fishing creel survey
+- [`example_ice_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_ice_interviews.md)
+  : Example interview data for ice fishing creel survey
+- [`example_camera_counts`](https://chrischizinski.github.io/tidycreel/reference/example_camera_counts.md)
+  : Example camera counts dataset (counter mode)
+- [`example_camera_timestamps`](https://chrischizinski.github.io/tidycreel/reference/example_camera_timestamps.md)
+  : Example camera timestamps dataset (ingress-egress mode)
+- [`example_camera_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_camera_interviews.md)
+  : Example interview data for camera-monitored creel survey
+- [`example_aerial_counts`](https://chrischizinski.github.io/tidycreel/reference/example_aerial_counts.md)
+  : Example aerial angler count dataset
+- [`example_aerial_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_aerial_interviews.md)
+  : Example angler interview data for aerial creel survey
+- [`example_aerial_glmm_counts`](https://chrischizinski.github.io/tidycreel/reference/example_aerial_glmm_counts.md)
+  : Example multi-flight aerial count data for GLMM effort estimation
+- [`creel_counts_toy`](https://chrischizinski.github.io/tidycreel/reference/creel_counts_toy.md)
+  : Toy count data for data validation examples
+- [`creel_interviews_toy`](https://chrischizinski.github.io/tidycreel/reference/creel_interviews_toy.md)
+  : Toy interview data for data validation examples

@@ -1,0 +1,112 @@
+# Example aerial angler count dataset
+
+A dataset of instantaneous angler counts from aerial overflights of a
+Nebraska reservoir, used to demonstrate aerial survey effort estimation.
+Contains 16 rows representing one overflight per sampling day across an
+8-week summer season (June-July 2024). Weekday and weekend counts vary
+realistically to produce non-trivial between-day variance in the effort
+estimate.
+
+## Usage
+
+``` r
+example_aerial_counts
+```
+
+## Format
+
+A data frame with 16 rows and 3 variables:
+
+- date:
+
+  Survey date (Date class), June-July 2024.
+
+- day_type:
+
+  Day type stratum: `"weekday"` or `"weekend"`.
+
+- n_anglers:
+
+  Instantaneous angler count from one aerial overflight (integer).
+  Weekday counts range 15-40; weekend counts range 40-80.
+
+## Source
+
+Simulated for package documentation.
+
+## See also
+
+[example_aerial_interviews](https://chrischizinski.github.io/tidycreel/reference/example_aerial_interviews.md)
+for matching interview data,
+[`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md),
+[`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md),
+[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+
+Other "Example Datasets":
+[`creel_counts_toy`](https://chrischizinski.github.io/tidycreel/reference/creel_counts_toy.md),
+[`creel_interviews_toy`](https://chrischizinski.github.io/tidycreel/reference/creel_interviews_toy.md),
+[`example_aerial_glmm_counts`](https://chrischizinski.github.io/tidycreel/reference/example_aerial_glmm_counts.md),
+[`example_aerial_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_aerial_interviews.md),
+[`example_ages`](https://chrischizinski.github.io/tidycreel/reference/example_ages.md),
+[`example_calendar`](https://chrischizinski.github.io/tidycreel/reference/example_calendar.md),
+[`example_camera_counts`](https://chrischizinski.github.io/tidycreel/reference/example_camera_counts.md),
+[`example_camera_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_camera_interviews.md),
+[`example_camera_timestamps`](https://chrischizinski.github.io/tidycreel/reference/example_camera_timestamps.md),
+[`example_catch`](https://chrischizinski.github.io/tidycreel/reference/example_catch.md),
+[`example_counts`](https://chrischizinski.github.io/tidycreel/reference/example_counts.md),
+[`example_ice_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_ice_interviews.md),
+[`example_ice_sampling_frame`](https://chrischizinski.github.io/tidycreel/reference/example_ice_sampling_frame.md),
+[`example_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_interviews.md),
+[`example_lengths`](https://chrischizinski.github.io/tidycreel/reference/example_lengths.md),
+[`example_sections_calendar`](https://chrischizinski.github.io/tidycreel/reference/example_sections_calendar.md),
+[`example_sections_counts`](https://chrischizinski.github.io/tidycreel/reference/example_sections_counts.md),
+[`example_sections_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_sections_interviews.md)
+
+## Examples
+
+``` r
+data(example_aerial_counts)
+head(example_aerial_counts)
+#>         date day_type n_anglers
+#> 1 2024-06-03  weekday        39
+#> 2 2024-06-05  weekday        32
+#> 3 2024-06-07  weekday        29
+#> 4 2024-06-08  weekend        45
+#> 5 2024-06-09  weekend        51
+#> 6 2024-06-10  weekday        34
+
+# Build a calendar from count dates and construct an aerial design
+aerial_cal <- data.frame(
+  date = example_aerial_counts$date,
+  day_type = example_aerial_counts$day_type,
+  stringsAsFactors = FALSE
+)
+design <- creel_design(
+  aerial_cal,
+  date = date,
+  strata = day_type,
+  survey_type = "aerial",
+  visibility_correction = "none",
+  angler_ratio = 1,
+  angler_ratio_se = 0,
+  h_open = 14
+)
+print(design)
+#> 
+#> ── Creel Survey Design ─────────────────────────────────────────────────────────
+#> Type: "aerial"
+#> Date column: date
+#> Strata: day_type
+#> Calendar: 16 days (2024-06-03 to 2024-07-06)
+#> day_type: 2 levels
+#> Counts: "none"
+#> Interviews: "none"
+#> Sections: "none"
+#> 
+#> ── Aerial Survey Design ──
+#> 
+#> Hours open (h_open): 14
+#> Visibility correction: "none" (declared; SE is "NA")
+#> Angler-to-people ratio: 1
+#> Angler ratio SE: 0
+```

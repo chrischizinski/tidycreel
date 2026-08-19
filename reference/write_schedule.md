@@ -1,0 +1,66 @@
+# Write a creel schedule to a CSV or xlsx file
+
+Exports a `creel_schedule` object to disk. The default format is CSV
+using base R (no extra dependencies). The `"xlsx"` format requires the
+writexl package; an informative error is raised if it is not installed.
+
+## Usage
+
+``` r
+write_schedule(schedule, path, format = c("csv", "xlsx"), overwrite = FALSE)
+```
+
+## Arguments
+
+- schedule:
+
+  A `creel_schedule` object (or plain data frame) to export.
+
+- path:
+
+  File path for the output file.
+
+- format:
+
+  One of `"csv"` (default) or `"xlsx"`. When `"csv"`, the file is
+  written with
+  [`utils::write.csv()`](https://rdrr.io/r/utils/write.table.html) (no
+  row names). When `"xlsx"`,
+  [`writexl::write_xlsx()`](https://docs.ropensci.org/writexl//reference/write_xlsx.html)
+  is used behind an
+  [`rlang::check_installed()`](https://rlang.r-lib.org/reference/is_installed.html)
+  guard.
+
+- overwrite:
+
+  Logical. If `FALSE` (default), aborts with an error when `path`
+  already exists. Set `TRUE` to replace an existing file.
+
+## Value
+
+`path`, returned invisibly.
+
+## See also
+
+Other "Scheduling":
+[`attach_count_times()`](https://chrischizinski.github.io/tidycreel/reference/attach_count_times.md),
+[`generate_bus_schedule()`](https://chrischizinski.github.io/tidycreel/reference/generate_bus_schedule.md),
+[`generate_count_times()`](https://chrischizinski.github.io/tidycreel/reference/generate_count_times.md),
+[`generate_progressive_start()`](https://chrischizinski.github.io/tidycreel/reference/generate_progressive_start.md),
+[`generate_schedule()`](https://chrischizinski.github.io/tidycreel/reference/generate_schedule.md),
+[`new_creel_schedule()`](https://chrischizinski.github.io/tidycreel/reference/new_creel_schedule.md),
+[`read_schedule()`](https://chrischizinski.github.io/tidycreel/reference/read_schedule.md),
+[`validate_creel_schedule()`](https://chrischizinski.github.io/tidycreel/reference/validate_creel_schedule.md)
+
+## Examples
+
+``` r
+sched <- generate_schedule(
+  "2024-06-01", "2024-08-31",
+  n_periods = 2,
+  sampling_rate = c(weekday = 0.3, weekend = 0.6),
+  seed = 42
+)
+tmp <- tempfile(fileext = ".csv")
+write_schedule(sched, tmp)
+```

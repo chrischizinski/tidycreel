@@ -1,0 +1,75 @@
+# Tidy a creel_estimates object into a flat tibble
+
+Tidy a creel_estimates object into a flat tibble
+
+## Usage
+
+``` r
+# S3 method for class 'creel_estimates'
+tidy(x, ...)
+```
+
+## Arguments
+
+- x:
+
+  A `creel_estimates` object.
+
+- ...:
+
+  Unused; reserved for future arguments.
+
+## Value
+
+A tibble with one row per estimate. All columns from `x$estimates` are
+returned, plus `n` padded to `NA_integer_` when the estimator does not
+produce a sample size (e.g. mark-recapture harvest). Guaranteed columns:
+`estimate`, `se`, `ci_lower`, `ci_upper`, `n`.
+
+**Lossy for uncertainty components.** Named components – the
+`x$se_components` list, and the `se_expansion` slot it mirrors – stay on
+the object and are deliberately not returned as columns. The contract
+distinguishes a component that does not apply or was never propagated
+(an absent name) from one that applies but is unknown (`NA`), and a
+tibble column collapses both to `NA` – reintroducing exactly the
+ambiguity the absent name was chosen to prevent. Read them from the
+object (`x$se_components`) or from
+[`print()`](https://rdrr.io/r/base/print.html), which also states each
+component's relationship to `se`.
+
+Note also that `se_between` and `se_within`, where present, do not
+reconstruct `se` on designs carrying a party-size expansion: the
+expansion term is a third contribution and is not among the visible
+columns.
+
+## See also
+
+[`write_estimates`](https://chrischizinski.github.io/tidycreel/reference/write_estimates.md)
+
+Other "Reporting & Diagnostics":
+[`adjust_nonresponse()`](https://chrischizinski.github.io/tidycreel/reference/adjust_nonresponse.md),
+[`check_completeness()`](https://chrischizinski.github.io/tidycreel/reference/check_completeness.md),
+[`compare_variance()`](https://chrischizinski.github.io/tidycreel/reference/compare_variance.md),
+[`flag_outliers()`](https://chrischizinski.github.io/tidycreel/reference/flag_outliers.md),
+[`season_summary()`](https://chrischizinski.github.io/tidycreel/reference/season_summary.md),
+[`standardize_species()`](https://chrischizinski.github.io/tidycreel/reference/standardize_species.md),
+[`summarize_boat_composition()`](https://chrischizinski.github.io/tidycreel/reference/summarize_boat_composition.md),
+[`summarize_by_angler_type()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_angler_type.md),
+[`summarize_by_county()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_county.md),
+[`summarize_by_day_type()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_day_type.md),
+[`summarize_by_method()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_method.md),
+[`summarize_by_species_sought()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_species_sought.md),
+[`summarize_by_trip_length()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_trip_length.md),
+[`summarize_by_zip()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_zip.md),
+[`summarize_cws_rates()`](https://chrischizinski.github.io/tidycreel/reference/summarize_cws_rates.md),
+[`summarize_hws_rates()`](https://chrischizinski.github.io/tidycreel/reference/summarize_hws_rates.md),
+[`summarize_length_freq()`](https://chrischizinski.github.io/tidycreel/reference/summarize_length_freq.md),
+[`summarize_refusals()`](https://chrischizinski.github.io/tidycreel/reference/summarize_refusals.md),
+[`summarize_successful_parties()`](https://chrischizinski.github.io/tidycreel/reference/summarize_successful_parties.md),
+[`summarize_trips()`](https://chrischizinski.github.io/tidycreel/reference/summarize_trips.md),
+[`summary.creel_estimates()`](https://chrischizinski.github.io/tidycreel/reference/summary.creel_estimates.md),
+[`validate_creel_data()`](https://chrischizinski.github.io/tidycreel/reference/validate_creel_data.md),
+[`validate_design()`](https://chrischizinski.github.io/tidycreel/reference/validate_design.md),
+[`validate_incomplete_trips()`](https://chrischizinski.github.io/tidycreel/reference/validate_incomplete_trips.md),
+[`validation_report()`](https://chrischizinski.github.io/tidycreel/reference/validation_report.md),
+[`write_estimates()`](https://chrischizinski.github.io/tidycreel/reference/write_estimates.md)
