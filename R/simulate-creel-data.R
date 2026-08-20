@@ -112,6 +112,14 @@
 #' you mean with
 #' \code{add_counts(design, sim$counts, count_col = angler_hours)}.
 #'
+#' When \code{n_counts_per_day > 1} you must also \strong{drop the measures you
+#' are not using} before attaching. \code{total_anglers} differs between the
+#' counts taken within one day, so aggregation has no single value to carry
+#' forward and would otherwise keep whichever came first. \code{add_counts()}
+#' aborts rather than do that (GH #162); select the columns you need, as the
+#' second example below does. \code{daylight_hours} is constant within a day and
+#' can stay.
+#'
 #' Note that \code{\link{day_length}} gives astronomical daylight. Where the
 #' fishing day is fixed by regulation or access hours instead, pass that period
 #' as \code{daylight_hours}.
@@ -167,9 +175,13 @@
 #' )
 #'
 #' # Round-trip: simulate → creel_design → add_counts → add_interviews
+#' # total_anglers is dropped: it varies between the counts taken within a day,
+#' # so aggregation cannot carry it forward (see the note above).
+#' counts2 <- sim2$counts[, c("date", "day_type", "count_time", "angler_hours")]
+#'
 #' design <- creel_design(sim2$schedule, date = date, strata = day_type) |>
 #'   add_counts(
-#'     sim2$counts,
+#'     counts2,
 #'     count_col = angler_hours, # counts alone are angler-days, not effort
 #'     count_time_col = count_time
 #'   ) |>

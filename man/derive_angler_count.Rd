@@ -38,7 +38,13 @@ deliberately no zero default; see the section above.}
 \item{to}{Name of the column to write. Defaults to \code{"angler_count"}.}
 }
 \value{
-\code{counts} with the derived column appended.
+\code{counts} with the derived column appended, and the columns consumed
+to build it (\code{bank}, \code{boat_anglers}, \code{boat_count}) removed — they are
+superseded by the derived count and, where applicable, by
+\code{expansion_basis}. Leaving them in produced a table that varied between
+sub-counts of one sampling unit, which \code{\link[=add_counts]{add_counts()}} cannot distinguish
+from an undeclared structural dimension (GH #162). The destination column
+is never dropped, even when it is also one of the inputs.
 
 When a party-size standard error is available, four further columns are
 appended for the estimators to read: \code{expansion_basis} (the boat count,

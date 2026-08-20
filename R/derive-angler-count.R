@@ -229,7 +229,13 @@ se_of_mean <- function(x) {
 #'   deliberately no zero default; see the section above.
 #' @param to Name of the column to write. Defaults to `"angler_count"`.
 #'
-#' @return `counts` with the derived column appended.
+#' @return `counts` with the derived column appended, and the columns consumed
+#'   to build it (`bank`, `boat_anglers`, `boat_count`) removed — they are
+#'   superseded by the derived count and, where applicable, by
+#'   `expansion_basis`. Leaving them in produced a table that varied between
+#'   sub-counts of one sampling unit, which [add_counts()] cannot distinguish
+#'   from an undeclared structural dimension (GH #162). The destination column
+#'   is never dropped, even when it is also one of the inputs.
 #'
 #'   When a party-size standard error is available, four further columns are
 #'   appended for the estimators to read: `expansion_basis` (the boat count,
@@ -364,6 +370,14 @@ derive_angler_count <- function(
     ))
   }
 
+  # Columns consumed to build the derived count. They are recorded so they can
+  # be dropped from the result: once `to` and the expansion carriers exist, the
+  # raw components are superseded, and leaving them in makes the output a table
+  # the package's own guards reject -- they vary between sub-counts of one
+  # sampling unit, which is indistinguishable from an undeclared structural
+  # dimension (GH #162).
+  consumed_cols <- character()
+
   numeric_component <- function(quo, arg_name) {
     col <- resolve_single_col(quo, counts, arg_name)
     if (!is.numeric(counts[[col]])) {
@@ -372,6 +386,7 @@ derive_angler_count <- function(
         "x" = "{.field {col}} is {.cls {class(counts[[col]])[1]}}."
       ))
     }
+    consumed_cols <<- c(consumed_cols, col)
     as.numeric(counts[[col]])
   }
 
@@ -421,6 +436,11 @@ derive_angler_count <- function(
     counts[["expansion_se"]] <- expansion$se
     counts[["expansion_group"]] <- expansion$group
     counts[["expansion_of"]] <- expansion$of
+  }
+  # Never drop the destination, which may legitimately be one of the inputs.
+  drop_cols <- setdiff(unique(consumed_cols), to)
+  if (length(drop_cols) > 0L) {
+    counts[drop_cols] <- NULL
   }
   counts
 }
