@@ -1876,6 +1876,13 @@ add_counts <- function(
   }
   unit_key_cols <- psu_key_cols(design, psu, counts, unit_cols) # nolint: object_usage_linter
 
+  # CNT-08: refuse rows that are identical in every column (GH #152). Checked
+  # before CNT-06 because it is the stronger statement about the same table, and
+  # unlike CNT-06 it does not depend on the key being right: a repeat that
+  # differs in no column carries nothing that could distinguish two sampling
+  # units, whatever the key happens to be.
+  detect_duplicate_rows(counts) # nolint: object_usage_linter
+
   # CNT-06: warn if duplicate PSU rows detected without count_time_col
   if (is.null(count_time_col_name)) {
     detect_duplicate_psus(counts, unit_key_cols) # nolint: object_usage_linter

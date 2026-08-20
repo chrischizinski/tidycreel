@@ -2094,7 +2094,12 @@ describe("Phase 47: Aerial effort", {
     # contribution is proportional to the estimate and must NOT fall like
     # 1/sqrt(n) the way an independent per-flight term would.
     counts_1x <- make_aerial_counts()
-    counts_2x <- rbind(counts_1x, counts_1x)
+    # Perturbed, not copied: rows identical in every column are a malformed
+    # table and are refused outright (GH #152). The ratio under test is
+    # se_v / v, which is unaffected by the counts' values.
+    counts_extra <- counts_1x
+    counts_extra$n_counted <- counts_extra$n_counted + 1L
+    counts_2x <- rbind(counts_1x, counts_extra)
     ratio_component <- function(counts) {
       d <- add_counts(
         make_aerial_design(h_open = 14, visibility_correction = 0.85, visibility_se = 0.05),
