@@ -134,13 +134,13 @@ test_that("summarize_boat_composition() result has one row per month x day_type 
 # --- summarize_by_zip() -------------------------------------------------------
 
 make_zip_design <- function() {
-  # Use example_interviews, inject ii_ZipCode (5 rows, 2 NA) for zip tests
+  # Use example_interviews, inject a zip_code column (5 rows, 2 NA) for zip tests
   data(example_interviews, package = "tidycreel")
   data(example_calendar, package = "tidycreel")
   ints <- example_interviews
-  # Inject ii_ZipCode: cycle through c("68502","68502",NA,"68508",NA) for all rows
+  # Inject zip_code: cycle through c("68502","68502",NA,"68508",NA) for all rows
   zip_pattern <- c("68502", "68502", NA_character_, "68508", NA_character_)
-  ints$ii_ZipCode <- rep_len(zip_pattern, nrow(ints))
+  ints$zip_code <- rep_len(zip_pattern, nrow(ints))
   d <- suppressWarnings(
     creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
   )
@@ -200,7 +200,7 @@ test_that("summarize_by_zip() Unknown row n matches NA count in interviews", {
   unk_row <- result[result$zip_code == "Unknown", ]
   # NA count should match what was injected: 2 of every 5 rows are NA
   # Verify Unknown n matches actual NA count in interviews
-  n_na <- sum(is.na(d$interviews[["ii_ZipCode"]]))
+  n_na <- sum(is.na(d$interviews[["zip_code"]]))
   expect_equal(unk_row$n, as.integer(n_na))
   # pct = n_na / total_n * 100
   total_n <- nrow(d$interviews)
@@ -221,8 +221,8 @@ test_that("summarize_by_zip() aborts when interviews not attached", {
   )
 })
 
-test_that("summarize_by_zip() aborts when ii_ZipCode not in interviews", {
-  # Use example_interviews (no ii_ZipCode column) with proper column mappings
+test_that("summarize_by_zip() aborts when the named zip column is not in interviews", {
+  # Use example_interviews, which has no zip column at all
   data(example_interviews, package = "tidycreel")
   data(example_calendar, package = "tidycreel")
   d <- suppressWarnings(
@@ -246,7 +246,7 @@ test_that("summarize_by_zip() aborts when ii_ZipCode not in interviews", {
   )
   expect_error(
     summarize_by_zip(d),
-    regexp = "ii_ZipCode"
+    regexp = "zip_code"
   )
 })
 
@@ -298,7 +298,7 @@ test_that("summarize_by_county() aborts when interviews not attached", {
   )
 })
 
-test_that("summarize_by_county() aborts when ii_ZipCode not in interviews", {
+test_that("summarize_by_county() aborts when the named zip column is not in interviews", {
   skip_if_not_installed("zipcodeR")
   data(example_interviews, package = "tidycreel")
   data(example_calendar, package = "tidycreel")
@@ -323,6 +323,6 @@ test_that("summarize_by_county() aborts when ii_ZipCode not in interviews", {
   )
   expect_error(
     summarize_by_county(d),
-    regexp = "ii_ZipCode"
+    regexp = "zip_code"
   )
 })

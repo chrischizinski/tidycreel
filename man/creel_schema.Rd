@@ -98,7 +98,8 @@ creel_schema(
 
 \item{angler_boats_col}{Column name for boats carrying anglers in counts.}
 
-\item{non_ang_boats_col}{Column name for non-angler boats in counts (NGPC-specific).}
+\item{non_ang_boats_col}{Column name for boats carrying no anglers in counts.
+Recorded by some agencies and not others; leave \code{NULL} where it is not.}
 
 \item{angler_type_col}{Column name for angler type.}
 

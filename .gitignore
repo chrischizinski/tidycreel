@@ -79,10 +79,12 @@ graphify-out/
 .gsd/
 .bg-shell/
 
-# Local-only probe/validation scripts (contain live API env var usage — not distributed)
+# Local-only probe/validation scripts: these name a specific organisation's API
+# endpoints and field names, which the package itself must not carry.
 inst/validation/ngpc-field-discovery.R
+scripts/generate-toy-data.R
 
-# External validation fixture data (local-only, downloaded from live NGPC API — not distributed)
+# External validation fixture data (local-only, downloaded from a live agency API — not distributed)
 inst/extdata/benson-2021/
 inst/extdata/flanagan-2021/
 inst/extdata/lake-halleck-2019/
@@ -139,7 +141,7 @@ kairo.db-wal
 .contextatlas.yml
 .contextatlas/
 
-# NGPC proprietary data — local only, not for distribution
+# Agency-proprietary data and fitting scripts — local only, not for distribution
 data/ngpc_creel_params.rda
 data-raw/ngpc_creel_params.rda
 data-raw/ngpc_creel_inventory.R

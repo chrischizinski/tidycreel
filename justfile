@@ -28,8 +28,9 @@ security:
     mkdir -p security
     gitleaks detect --source . --redact --report-format json --report-path security/gitleaks.json || true
 
-# Refresh NGPC creel inventory and refit ngpc_creel_params.
-# Incremental: only fetches creels not already in ~/.cache/tidycreel/ngpc_creel_inventory.rds
+# Refresh the local survey inventory and refit its parameters.
+# Local-only: the inventory script and its data are gitignored, because they
+# name one agency's API. Incremental -- only fetches surveys not already cached.
 refresh-inventory:
     Rscript data-raw/ngpc_creel_inventory.R
 

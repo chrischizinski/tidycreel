@@ -4,12 +4,14 @@
 \alias{summarize_by_county}
 \title{Tabulate interviews by county of origin}
 \usage{
-summarize_by_county(design)
+summarize_by_county(design, zip_col = "zip_code")
 }
 \arguments{
 \item{design}{A \code{creel_design} object with interviews attached via
-\code{\link{add_interviews}}. Interviews must include the
-\code{ii_ZipCode} field.}
+\code{\link{add_interviews}}.}
+
+\item{zip_col}{Name of the interview column holding the angler zip code.
+Defaults to \code{"zip_code"}.}
 }
 \value{
 A \code{data.frame} with class
@@ -33,9 +35,9 @@ Sort order: "Unknown" last; remaining rows sorted by \code{n} descending.
 \dontrun{
 # Requires zipcodeR — install with: install.packages("zipcodeR")
 interviews_df <- data.frame(
-  ii_InterviewNumber = 1:5,
-  ii_ZipCode         = c("68502", "68502", NA, "68508", NA),
-  stringsAsFactors   = FALSE
+  interview_id     = 1:5,
+  zip_code         = c("68502", "68502", NA, "68508", NA),
+  stringsAsFactors = FALSE
 )
 cal <- data.frame(
   date     = as.Date(c("2024-05-01", "2024-05-02")),

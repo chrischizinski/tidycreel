@@ -55,7 +55,7 @@ designs.}
 \item{method}{Character string specifying how the lake-wide total SE is
 computed when \code{aggregate_sections = TRUE}. \code{"correlated"}
 (default) uses \code{svyby(covmat=TRUE)} + \code{svycontrast()} for
-covariance-aware aggregation (recommended for shared-calendar NGPC
+covariance-aware aggregation (recommended for shared-calendar
 designs). \code{"independent"} uses Cochran 5.2 \code{sqrt(sum(SE_h^2))}
 as a documented approximation for genuinely independent section designs.
 Ignored for non-sectioned designs.}
