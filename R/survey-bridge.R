@@ -375,7 +375,8 @@ aggregate_within_day <- function(
   count_time_col,
   key_cols,
   mean_vars = character(),
-  any_vars = character()
+  any_vars = character(),
+  call = rlang::caller_env()
 ) {
   # Create grouping key as character for split()
   if (length(key_cols) == 1) {
@@ -385,6 +386,47 @@ aggregate_within_day <- function(
   }
 
   groups <- split(seq_len(nrow(counts)), group_key)
+
+  # Every column not handled explicitly below is taken from the group's FIRST
+  # row. That is only sound when the column is constant across the group. When
+  # it is not, the surviving row carries one sub-count's label over a mean taken
+  # across all of them: bank and boat counts averaged into a single row still
+  # labelled "bank", halving the estimate with no error and no warning (GH #162).
+  #
+  # The design cannot infer which columns are structural -- it only knows the
+  # dimensions it declares, and a counts table may carry others -- so the caller
+  # is asked rather than guessed at.
+  collapsed_ok <- unique(c(key_cols, count_var, count_time_col, mean_vars, any_vars))
+  checkable <- setdiff(names(counts), collapsed_ok)
+  if (length(checkable) > 0L) {
+    varies_in_group <- function(nm) {
+      any(vapply(
+        groups,
+        function(idx) length(unique(counts[[nm]][idx])) > 1L,
+        logical(1)
+      ))
+    }
+    varies <- vapply(checkable, varies_in_group, logical(1))
+    if (any(varies)) {
+      bad <- checkable[varies] # nolint: object_usage_linter
+      n_bad <- length(bad) # nolint: object_usage_linter
+      suggested <- paste0('"', c(key_cols, bad), '"', collapse = ", ") # nolint: object_usage_linter
+      cli::cli_abort(
+        c(
+          "{cli::qty(n_bad)}{.field {bad}} var{?ies/y} within a single sampling unit.",
+          "x" = "Aggregating would average across {cli::qty(n_bad)}{?it/them} and keep \\
+                 only the first value as the label.",
+          "i" = "If {cli::qty(n_bad)}{?it/they} distinguish{?es/} one sampling unit from \\
+                 another, name {cli::qty(n_bad)}{?it/them} in {.arg unit_cols}: \\
+                 {.code unit_cols = c({suggested})}.",
+          "i" = "If {cli::qty(n_bad)}{?it is/they are} incidental to the count, drop \\
+                 {cli::qty(n_bad)}{?it/them} from the counts table before attaching."
+        ),
+        class = "creel_error_undeclared_unit_column",
+        call = call
+      )
+    }
+  }
 
   agg_rows <- vector("list", length(groups))
   var_rows <- vector("list", length(groups))

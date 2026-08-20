@@ -1353,12 +1353,20 @@ read_supplied_within_day_var <- function(
 #' @param design A `creel_design`
 #' @param psu Character name of the resolved PSU column
 #' @param counts Data frame of count data
+#' @param unit_cols Optional character vector naming the sampling unit
+#'   explicitly. When supplied it is used verbatim, because only the surveyor
+#'   knows which columns distinguish one unit from another -- inference can only
+#'   see dimensions the *design* declares, and a counts table may carry others
+#'   (GH #162).
 #'
 #' @return Character vector of column names, PSU first
 #'
 #' @keywords internal
 #' @noRd
-psu_key_cols <- function(design, psu, counts) {
+psu_key_cols <- function(design, psu, counts, unit_cols = NULL) {
+  if (!is.null(unit_cols)) {
+    return(unit_cols)
+  }
   candidates <- unique(c(
     psu,
     design$strata_cols,
@@ -1471,6 +1479,20 @@ check_expansion_constant_per_psu <- function(counts, key_cols, call = rlang::cal
 #'   and finite. The column is dropped from `design$counts` after Ê_d is
 #'   computed (it must not be passed to `estimate_effort()` as a count
 #'   variable).
+#' @param unit_cols Optional character vector naming the columns that together
+#'   identify one sampling unit. When omitted, the unit is inferred from the
+#'   design: the PSU column plus any strata, section, and site columns.
+#'
+#'   Supply it when the counts table carries a dimension the design does not
+#'   declare. The commonest case is `effort_type`, which
+#'   [prep_counts_daily_effort()] emits: bank and boat counts on the same day
+#'   are two units, not one day counted twice. Inference cannot see such a
+#'   column, so it would treat those rows as repeats — warning about them
+#'   without `count_time_col`, and averaging across them with it (GH #162).
+#'
+#'   You are not required to guess when this matters. If aggregation would
+#'   collapse rows that differ in an undeclared column, `add_counts()` aborts
+#'   and names the column rather than silently taking its first value.
 #'
 #'   For instantaneous counts, supplying this is what makes the estimate
 #'   angler-hours. A count is a snapshot of how many anglers were present at one
@@ -1630,6 +1652,7 @@ add_counts <- function(
   count_type = "instantaneous",
   circuit_time = NULL,
   period_length_col = NULL,
+  unit_cols = NULL,
   allow_invalid = FALSE
 ) {
   # Validate design is creel_design
@@ -1830,7 +1853,28 @@ add_counts <- function(
   # the sections, one section's rows vanished into the other's label, and the
   # within-day variance measured the gap between places rather than the spread
   # within a day (GH #155).
-  unit_key_cols <- psu_key_cols(design, psu, counts) # nolint: object_usage_linter
+  # `unit_cols`, when given, is used verbatim: only the surveyor knows which
+  # columns distinguish one sampling unit from another. Inference sees only the
+  # dimensions the design declares, which is why it missed `section` (#155) and
+  # then `effort_type` (#162).
+  if (!is.null(unit_cols)) {
+    if (!is.character(unit_cols) || length(unit_cols) == 0L || anyNA(unit_cols)) {
+      cli::cli_abort(c(
+        "{.arg unit_cols} must be a non-empty character vector of column names.",
+        "x" = "Got {.cls {class(unit_cols)[1]}} of length {length(unit_cols)}."
+      ))
+    }
+    missing_unit <- setdiff(unit_cols, names(counts)) # nolint: object_usage_linter
+    if (length(missing_unit) > 0L) {
+      cli::cli_abort(c(
+        "{.arg unit_cols} names {cli::qty(length(missing_unit))}{?a column/columns} \\
+         not present in {.arg counts}.",
+        "x" = "Missing: {.field {missing_unit}}.",
+        "i" = "Available: {.field {names(counts)}}."
+      ))
+    }
+  }
+  unit_key_cols <- psu_key_cols(design, psu, counts, unit_cols) # nolint: object_usage_linter
 
   # CNT-06: warn if duplicate PSU rows detected without count_time_col
   if (is.null(count_time_col_name)) {
@@ -1948,7 +1992,8 @@ add_counts <- function(
       # collapse with any(); left at its first value an aggregated day whose
       # first count was observed would report itself as fully observed and the
       # camera estimator's warning would never fire (#137).
-      any_vars = if (".imputed" %in% names(counts)) ".imputed" else character()
+      any_vars = if (".imputed" %in% names(counts)) ".imputed" else character(),
+      call = rlang::current_env()
     )
     counts <- agg_result$aggregated
     within_day_var <- agg_result$within_day_var

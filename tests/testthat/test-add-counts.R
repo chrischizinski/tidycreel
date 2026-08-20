@@ -1181,3 +1181,140 @@ test_that("two different party-size estimates for ONE unit still abort (GH #131,
     regexp = "varies within a single PSU"
   )
 })
+
+# GH #162: the sampling unit must be declarable ---------------------------------
+
+make_unit_design <- function() {
+  cal <- data.frame(
+    date = as.Date("2024-06-01") + 0:3,
+    day_type = c("weekday", "weekday", "weekend", "weekend"),
+    stringsAsFactors = FALSE
+  )
+  creel_design(
+    cal,
+    date = date, # nolint: object_usage_linter
+    strata = day_type, # nolint: object_usage_linter
+    survey_type = "instantaneous",
+    h_open = 14
+  )
+}
+
+# Four days, bank and boat each counted am and pm. Day 1 truth: bank mean 21,
+# boat mean 5, day total 26; whole-period total 121.
+make_two_type_counts <- function() {
+  data.frame(
+    date = rep(as.Date("2024-06-01") + 0:3, each = 4),
+    day_type = rep(c("weekday", "weekday", "weekend", "weekend"), each = 4),
+    effort_type = rep(rep(c("bank", "boat"), each = 2), 4),
+    count_time = rep(c("am", "pm"), 8),
+    angler_count = c(20, 22, 4, 6, 18, 20, 3, 5, 30, 34, 6, 8, 26, 28, 5, 7),
+    stringsAsFactors = FALSE
+  )
+}
+
+test_that("CNT-07 (#162): an undeclared unit column aborts rather than averaging across it", {
+  # The defect this replaces was silent: all four rows per day collapsed to one
+  # via the group's first row, so bank and boat were averaged rather than summed
+  # and the survivor still carried the label "bank". The estimate came out 60.5
+  # against a truth of 121 -- a factor of k for k effort types, with no warning.
+  expect_error(
+    add_counts(
+      make_unit_design(), make_two_type_counts(),
+      count_col = "angler_count", count_time_col = count_time # nolint
+    ),
+    class = "creel_error_undeclared_unit_column"
+  )
+})
+
+test_that("CNT-07 (#162): the abort names the column and gives a usable unit_cols call", {
+  # A user cannot act on "something varies". The message has to say which column
+  # and what to pass, because the package deliberately will not guess whether the
+  # column is structural or incidental.
+  expect_error(
+    add_counts(
+      make_unit_design(), make_two_type_counts(),
+      count_col = "angler_count", count_time_col = count_time # nolint
+    ),
+    regexp = "effort_type"
+  )
+  err <- tryCatch(
+    add_counts(
+      make_unit_design(), make_two_type_counts(),
+      count_col = "angler_count", count_time_col = count_time # nolint
+    ),
+    error = function(e) conditionMessage(e)
+  )
+  expect_match(err, "unit_cols", fixed = TRUE)
+  expect_match(err, '"date", "day_type", "effort_type"', fixed = TRUE)
+})
+
+test_that("CNT-07 (#162): declaring unit_cols aggregates within type and sums across", {
+  # The statistical point of the whole change: bank and boat are two sampling
+  # units on the same day, so each averages its own sub-counts and the day total
+  # is their sum. Averaging across them halves the estimate.
+  d <- suppressWarnings(add_counts(
+    make_unit_design(), make_two_type_counts(),
+    count_col = "angler_count", count_time_col = count_time, # nolint
+    unit_cols = c("date", "day_type", "effort_type")
+  ))
+  expect_equal(nrow(d$counts), 8L)
+  expect_setequal(d$counts$effort_type, c("bank", "boat"))
+  # Day 1: bank (20+22)/2 = 21, boat (4+6)/2 = 5
+  day1 <- d$counts[d$counts$date == as.Date("2024-06-01"), ]
+  expect_equal(sort(day1$angler_count), c(5, 21))
+
+  est <- suppressWarnings(estimate_effort(d, verbose = FALSE))
+  expect_equal(est$estimates$estimate, 121)
+})
+
+test_that("CNT-07 (#162): unit_cols also silences the CNT-06 false positive", {
+  # Same root cause as #155: two effort types counted once each is ordinary
+  # structure, not a repeat. A warning that fires on the documented pipeline is
+  # one users learn to ignore, which matters because CNT-06 is the only signal
+  # for the genuine duplicate case (#152).
+  flat <- make_two_type_counts()
+  flat <- flat[flat$count_time == "am", setdiff(names(flat), "count_time")]
+  expect_no_warning(
+    add_counts(
+      make_unit_design(), flat,
+      count_col = "angler_count",
+      unit_cols = c("date", "day_type", "effort_type")
+    ),
+    message = "Repeated sampling units"
+  )
+})
+
+test_that("CNT-07 (#162): a single-type table is unaffected by the guard", {
+  # The guard must not fire on the ordinary case, or it becomes the thing it was
+  # written to prevent. One effort type, two counts a day: means 21, 19, 32, 27.
+  plain <- data.frame(
+    date = rep(as.Date("2024-06-01") + 0:3, each = 2),
+    day_type = rep(c("weekday", "weekday", "weekend", "weekend"), each = 2),
+    count_time = rep(c("am", "pm"), 4),
+    angler_count = c(20, 22, 18, 20, 30, 34, 26, 28),
+    stringsAsFactors = FALSE
+  )
+  d <- suppressWarnings(add_counts(
+    make_unit_design(), plain,
+    count_col = "angler_count", count_time_col = count_time # nolint
+  ))
+  expect_equal(nrow(d$counts), 4L)
+  expect_equal(sort(d$counts$angler_count), c(19, 21, 27, 32))
+})
+
+test_that("CNT-07 (#162): unit_cols is validated against the counts table", {
+  expect_error(
+    add_counts(
+      make_unit_design(), make_two_type_counts(),
+      count_col = "angler_count", unit_cols = c("date", "nonesuch")
+    ),
+    regexp = "nonesuch"
+  )
+  expect_error(
+    add_counts(
+      make_unit_design(), make_two_type_counts(),
+      count_col = "angler_count", unit_cols = 1L
+    ),
+    regexp = "character vector"
+  )
+})
