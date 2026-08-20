@@ -94,10 +94,12 @@ column position, so \code{n_anglers = 1} means one angler per party rather
 than "column 1". Values must be positive and finite; missing and
 non-integer values warn.
 
-When omitted, effort is left un-normalised and a \code{cli_inform()} message
-notes the assumption. In that case the rate estimators return quantities per
-\emph{party}-hour, and the product totals warn when they multiply one by
-count-derived angler-hours.}
+When omitted, effort is left un-normalised and a \code{cli_warn()} message
+states the assumption. In that case the rate estimators return quantities
+per \emph{party}-hour, and the product totals warn when they multiply one by
+count-derived angler-hours. Pass \code{n_anglers = 1} to state that the
+interviews really are one angler each; that is a declaration, not a default,
+and it silences the warning.}
 
 \item{refused}{Tidy selector for the refused interview flag column (optional,
 default NULL). Use bare column names (e.g., \code{refused = refused_flag}).
