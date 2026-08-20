@@ -33,6 +33,7 @@ add_counts(
   count_type = "instantaneous",
   circuit_time = NULL,
   period_length_col = NULL,
+  unit_cols = NULL,
   allow_invalid = FALSE
 )
 ```
@@ -110,6 +111,25 @@ add_counts(
   Ê_d is computed (it must not be passed to
   [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
   as a count variable).
+
+- unit_cols:
+
+  Optional character vector naming the columns that together identify
+  one sampling unit. When omitted, the unit is inferred from the design:
+  the PSU column plus any strata, section, and site columns.
+
+  Supply it when the counts table carries a dimension the design does
+  not declare. The commonest case is `effort_type`, which
+  [`prep_counts_daily_effort()`](https://chrischizinski.github.io/tidycreel/reference/prep_counts_daily_effort.md)
+  emits: bank and boat counts on the same day are two units, not one day
+  counted twice. Inference cannot see such a column, so it would treat
+  those rows as repeats — warning about them without `count_time_col`,
+  and averaging across them with it (GH \#162).
+
+  You are not required to guess when this matters. If aggregation would
+  collapse rows that differ in an undeclared column, `add_counts()`
+  aborts and names the column rather than silently taking its first
+  value.
 
   For instantaneous counts, supplying this is what makes the estimate
   angler-hours. A count is a snapshot of how many anglers were present

@@ -188,6 +188,15 @@ the counts table carries three numeric columns and
 will not guess between them: name the one you mean with
 `add_counts(design, sim$counts, count_col = angler_hours)`.
 
+When `n_counts_per_day > 1` you must also **drop the measures you are
+not using** before attaching. `total_anglers` differs between the counts
+taken within one day, so aggregation has no single value to carry
+forward and would otherwise keep whichever came first.
+[`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+aborts rather than do that (GH \#162); select the columns you need, as
+the second example below does. `daylight_hours` is constant within a day
+and can stay.
+
 Note that
 [`day_length`](https://chrischizinski.github.io/tidycreel/reference/day_length.md)
 gives astronomical daylight. Where the fishing day is fixed by
@@ -243,20 +252,20 @@ sim <- simulate_creel_data(
 )
 head(sim$schedule)
 #>         date day_type sampled
-#> 1 2026-08-19      all   FALSE
-#> 2 2026-08-20      all   FALSE
-#> 3 2026-08-21      all    TRUE
-#> 4 2026-08-22      all   FALSE
-#> 5 2026-08-23      all    TRUE
-#> 6 2026-08-24      all   FALSE
+#> 1 2026-08-20      all   FALSE
+#> 2 2026-08-21      all   FALSE
+#> 3 2026-08-22      all    TRUE
+#> 4 2026-08-23      all   FALSE
+#> 5 2026-08-24      all    TRUE
+#> 6 2026-08-25      all   FALSE
 head(sim$interviews)
 #>         date day_type interview_id trip_status hours_fished trip_duration
-#> 1 2026-08-23      all            1    complete        2.249         2.249
-#> 2 2026-08-23      all            6    complete        3.170         3.170
-#> 3 2026-08-23      all            4    complete        3.920         3.920
-#> 4 2026-08-23      all            2    complete        4.609         4.609
-#> 5 2026-08-23      all            5    complete        3.272         3.272
-#> 6 2026-08-23      all            3  incomplete        2.124         4.904
+#> 1 2026-08-24      all            1    complete        2.249         2.249
+#> 2 2026-08-24      all            6    complete        3.170         3.170
+#> 3 2026-08-24      all            4    complete        3.920         3.920
+#> 4 2026-08-24      all            2    complete        4.609         4.609
+#> 5 2026-08-24      all            5    complete        3.272         3.272
+#> 6 2026-08-24      all            3  incomplete        2.124         4.904
 #>   n_anglers catch_total catch_kept species_sought
 #> 1         1           3          2        walleye
 #> 2         1           1          1        walleye
@@ -266,12 +275,12 @@ head(sim$interviews)
 #> 6         1           1          0        walleye
 head(sim$counts)
 #>         date day_type count_time total_anglers
-#> 1 2026-08-21      all          1             9
-#> 2 2026-08-21      all          2             1
-#> 3 2026-08-21      all          3             9
-#> 4 2026-08-23      all          1             8
-#> 5 2026-08-23      all          2             0
-#> 6 2026-08-23      all          3             3
+#> 1 2026-08-22      all          1             9
+#> 2 2026-08-22      all          2             1
+#> 3 2026-08-22      all          3             9
+#> 4 2026-08-24      all          1             8
+#> 5 2026-08-24      all          2             0
+#> 6 2026-08-24      all          3             3
 head(sim$catch)
 #>   interview_id species count catch_type
 #> 1            1 walleye     3     caught
@@ -294,9 +303,13 @@ sim2 <- simulate_creel_data(
 )
 
 # Round-trip: simulate → creel_design → add_counts → add_interviews
+# total_anglers is dropped: it varies between the counts taken within a day,
+# so aggregation cannot carry it forward (see the note above).
+counts2 <- sim2$counts[, c("date", "day_type", "count_time", "angler_hours")]
+
 design <- creel_design(sim2$schedule, date = date, strata = day_type) |>
   add_counts(
-    sim2$counts,
+    counts2,
     count_col = angler_hours, # counts alone are angler-days, not effort
     count_time_col = count_time
   ) |>

@@ -1,5 +1,61 @@
 # Changelog
 
+## tidycreel (development version)
+
+### Breaking changes
+
+- [`derive_angler_count()`](https://chrischizinski.github.io/tidycreel/reference/derive_angler_count.md)
+  now removes the columns it consumed (`bank`, `boat_anglers`,
+  `boat_count`) from its result. They are superseded by the derived
+  count and by `expansion_basis`, and leaving them in produced a table
+  that varied between sub-counts of one sampling unit —
+  indistinguishable, to
+  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md),
+  from a structural dimension it had not been told about
+  ([\#162](https://github.com/chrischizinski/tidycreel/issues/162)). The
+  destination column is never dropped, even when it is also an input.
+  Code reading a raw component off the result must read it from the
+  input table instead.
+
+- [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+  aborts, rather than silently taking a first value, when within-day
+  aggregation would collapse rows that differ in a column the
+  sampling-unit key does not contain
+  ([\#162](https://github.com/chrischizinski/tidycreel/issues/162)). The
+  error names the column and supplies a ready-made `unit_cols` call.
+
+### Statistical correctness
+
+- The sampling unit is now declarable:
+  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+  gains `unit_cols`
+  ([\#162](https://github.com/chrischizinski/tidycreel/issues/162)).
+  Until now the unit was inferred from the design alone — the PSU column
+  plus strata, section, and site — so a counts table carrying a
+  dimension the design does not model was read as repeated units. That
+  is exactly what
+  [`prep_counts_daily_effort()`](https://chrischizinski.github.io/tidycreel/reference/prep_counts_daily_effort.md)
+  produces: it emits one row per `(date, strata, effort_type)`, and bank
+  and boat counts on the same day are two units, not one day counted
+  twice.
+
+  With `count_time_col` supplied, the consequence was a wrong number and
+  no warning. All rows for a day collapsed into one, so the effort types
+  were **averaged rather than summed** and the surviving row kept the
+  first row’s label: a four-day example whose true total is 121
+  angler-days reported 60.5, and the rows that vanished were labelled
+  `bank`. With `k` effort types the estimate was off by a factor of `k`.
+
+  Inference is kept as the default, so existing correct code is
+  untouched, but it can no longer fail quietly: where the unit is
+  ambiguous the call now aborts. This is the third appearance of one
+  root cause — the key omitted `section`
+  ([\#155](https://github.com/chrischizinski/tidycreel/issues/155)),
+  then `effort_type`
+  ([\#162](https://github.com/chrischizinski/tidycreel/issues/162)) —
+  which is why the fix stops enumerating dimensions and lets the caller
+  state the unit instead.
+
 ## tidycreel 4.0.0 “Paddlefish” (2026-08-18)
 
 The second major bump. It closes one defect class opened by the

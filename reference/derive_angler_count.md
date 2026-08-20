@@ -74,7 +74,15 @@ derive_angler_count(
 
 ## Value
 
-`counts` with the derived column appended.
+`counts` with the derived column appended, and the columns consumed to
+build it (`bank`, `boat_anglers`, `boat_count`) removed — they are
+superseded by the derived count and, where applicable, by
+`expansion_basis`. Leaving them in produced a table that varied between
+sub-counts of one sampling unit, which
+[`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+cannot distinguish from an undeclared structural dimension (GH \#162).
+The destination column is never dropped, even when it is also one of the
+inputs.
 
 When a party-size standard error is available, four further columns are
 appended for the estimators to read: `expansion_basis` (the boat count,
@@ -182,9 +190,9 @@ counts <- data.frame(
 
 # Direct counts
 derive_angler_count(counts, bank = bank_anglers, boat_anglers = boat_anglers)
-#>         date day_type bank_anglers angler_boats boat_anglers angler_count
-#> 1 2024-06-01  weekday            4            3            7           11
-#> 2 2024-06-02  weekend            9            7           16           25
+#>         date day_type angler_boats angler_count
+#> 1 2024-06-01  weekday            3           11
+#> 2 2024-06-02  weekend            7           25
 
 # Boat-party expansion with a single mean
 derive_angler_count(
@@ -193,9 +201,9 @@ derive_angler_count(
   boat_count = angler_boats,
   party_size = 2.4
 )
-#>         date day_type bank_anglers angler_boats boat_anglers angler_count
-#> 1 2024-06-01  weekday            4            3            7         11.2
-#> 2 2024-06-02  weekend            9            7           16         25.8
+#>         date day_type boat_anglers angler_count
+#> 1 2024-06-01  weekday            7         11.2
+#> 2 2024-06-02  weekend           16         25.8
 
 # Expansion with a stratum-specific mean
 mps <- data.frame(day_type = c("weekday", "weekend"), mean_party_size = c(2.1, 2.8))
@@ -205,7 +213,7 @@ derive_angler_count(
   boat_count = angler_boats,
   party_size = mps
 )
-#>         date day_type bank_anglers angler_boats boat_anglers angler_count
-#> 1 2024-06-01  weekday            4            3            7         10.3
-#> 2 2024-06-02  weekend            9            7           16         28.6
+#>         date day_type boat_anglers angler_count
+#> 1 2024-06-01  weekday            7         10.3
+#> 2 2024-06-02  weekend           16         28.6
 ```
