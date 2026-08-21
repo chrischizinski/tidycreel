@@ -78,7 +78,7 @@ estimate_effort(
   when `aggregate_sections = TRUE`. `"correlated"` (default) uses
   `svyby(covmat=TRUE)` +
   [`svycontrast()`](https://rdrr.io/pkg/survey/man/svycontrast.html) for
-  covariance-aware aggregation (recommended for shared-calendar NGPC
+  covariance-aware aggregation (recommended for shared-calendar
   designs). `"independent"` uses Cochran 5.2 `sqrt(sum(SE_h^2))` as a
   documented approximation for genuinely independent section designs.
   Ignored for non-sectioned designs.

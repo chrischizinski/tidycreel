@@ -7,7 +7,7 @@ codes appear as an explicit "Unknown" row.
 ## Usage
 
 ``` r
-summarize_by_county(design)
+summarize_by_county(design, zip_col = "zip_code")
 ```
 
 ## Arguments
@@ -16,7 +16,11 @@ summarize_by_county(design)
 
   A `creel_design` object with interviews attached via
   [`add_interviews`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md).
-  Interviews must include the `ii_ZipCode` field.
+
+- zip_col:
+
+  Name of the interview column holding the angler zip code. Defaults to
+  `"zip_code"`.
 
 ## Value
 
@@ -68,9 +72,9 @@ Other "Reporting & Diagnostics":
 if (FALSE) { # \dontrun{
 # Requires zipcodeR — install with: install.packages("zipcodeR")
 interviews_df <- data.frame(
-  ii_InterviewNumber = 1:5,
-  ii_ZipCode         = c("68502", "68502", NA, "68508", NA),
-  stringsAsFactors   = FALSE
+  interview_id     = 1:5,
+  zip_code         = c("68502", "68502", NA, "68508", NA),
+  stringsAsFactors = FALSE
 )
 cal <- data.frame(
   date     = as.Date(c("2024-05-01", "2024-05-02")),

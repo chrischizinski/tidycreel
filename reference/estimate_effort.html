@@ -150,7 +150,7 @@ designs.</p></dd>
 <dd><p>Character string specifying how the lake-wide total SE is
 computed when <code>aggregate_sections = TRUE</code>. <code>"correlated"</code>
 (default) uses <code>svyby(covmat=TRUE)</code> + <code><a href="https://rdrr.io/pkg/survey/man/svycontrast.html" class="external-link">svycontrast()</a></code> for
-covariance-aware aggregation (recommended for shared-calendar NGPC
+covariance-aware aggregation (recommended for shared-calendar
 designs). <code>"independent"</code> uses Cochran 5.2 <code>sqrt(sum(SE_h^2))</code>
 as a documented approximation for genuinely independent section designs.
 Ignored for non-sectioned designs.</p></dd>

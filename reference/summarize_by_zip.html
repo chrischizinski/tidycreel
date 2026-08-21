@@ -77,7 +77,7 @@ total interviews including NA rows.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">summarize_by_zip</span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">summarize_by_zip</span><span class="op">(</span><span class="va">design</span>, zip_col <span class="op">=</span> <span class="st">"zip_code"</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -86,8 +86,13 @@ total interviews including NA rows.</p>
 
 <dl><dt id="arg-design">design<a class="anchor" aria-label="anchor" href="#arg-design"></a></dt>
 <dd><p>A <code>creel_design</code> object with interviews attached via
-<code><a href="add_interviews.html">add_interviews</a></code>. Interviews must include the
-<code>ii_ZipCode</code> field.</p></dd>
+<code><a href="add_interviews.html">add_interviews</a></code>.</p></dd>
+
+
+<dt id="arg-zip-col">zip_col<a class="anchor" aria-label="anchor" href="#arg-zip-col"></a></dt>
+<dd><p>Name of the interview column holding the angler zip code.
+Defaults to <code>"zip_code"</code>. Name whatever your source calls it – no
+organisation's raw field name is assumed.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -139,7 +144,7 @@ last; remaining rows sorted by <code>n</code> descending.</p>
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_calendar</span>, package <span class="op">=</span> <span class="st">"tidycreel"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_interviews</span>, package <span class="op">=</span> <span class="st">"tidycreel"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">example_interviews</span><span class="op">$</span><span class="va">ii_ZipCode</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep_len</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span><span class="va">example_interviews</span><span class="op">$</span><span class="va">zip_code</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep_len</a></span><span class="op">(</span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"68502"</span>, <span class="st">"68502"</span>, <span class="cn">NA</span>, <span class="st">"68508"</span>, <span class="cn">NA</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">example_interviews</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>

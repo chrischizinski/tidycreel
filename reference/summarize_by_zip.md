@@ -7,7 +7,7 @@ denominator is total interviews including NA rows.
 ## Usage
 
 ``` r
-summarize_by_zip(design)
+summarize_by_zip(design, zip_col = "zip_code")
 ```
 
 ## Arguments
@@ -16,7 +16,12 @@ summarize_by_zip(design)
 
   A `creel_design` object with interviews attached via
   [`add_interviews`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md).
-  Interviews must include the `ii_ZipCode` field.
+
+- zip_col:
+
+  Name of the interview column holding the angler zip code. Defaults to
+  `"zip_code"`. Name whatever your source calls it – no organisation's
+  raw field name is assumed.
 
 ## Value
 
@@ -66,7 +71,7 @@ Other "Reporting & Diagnostics":
 ``` r
 data(example_calendar, package = "tidycreel")
 data(example_interviews, package = "tidycreel")
-example_interviews$ii_ZipCode <- rep_len(
+example_interviews$zip_code <- rep_len(
   c("68502", "68502", NA, "68508", NA),
   nrow(example_interviews)
 )

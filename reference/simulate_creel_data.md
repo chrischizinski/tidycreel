@@ -94,7 +94,7 @@ simulate_creel_data(
 
   Numeric in \[0, 1). Probability a trip has zero total catch
   (zero-inflation). Default `0.40`. **Note:** this cannot be derived
-  from the NGPC inventory (API artifact); the default is an empirical
+  from a survey inventory (API artifact); the default is an empirical
   estimate from the creel literature.
 
 - n_anglers_per_day:

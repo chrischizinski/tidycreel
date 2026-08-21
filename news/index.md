@@ -4,6 +4,14 @@
 
 ### Breaking changes
 
+- [`summarize_by_zip()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_zip.md)
+  and
+  [`summarize_by_county()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_county.md)
+  gain a `zip_col` argument, defaulting to `"zip_code"`. Both previously
+  required a hardcoded raw field name from one agency’s database, which
+  no general-purpose package should assume. Rename the column, or pass
+  `zip_col`, to keep existing code working.
+
 - [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)
   now **warns** rather than informs when `n_anglers` is omitted
   ([\#126](https://github.com/chrischizinski/tidycreel/issues/126)). The
@@ -2348,10 +2356,10 @@ rivers.
   extrapolated effort estimate and supplied acreage.
 - [`summarize_boat_composition()`](https://chrischizinski.github.io/tidycreel/reference/summarize_boat_composition.md)
   — returns percent angler boats by month and day type, computed from
-  raw count fields c_AnglerBoats and c_NonAngBoats.
+  the angler-boat and non-angler-boat count columns.
 - [`summarize_by_zip()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_zip.md)
   — tabulates interview count and percentage by zip code from the
-  ii_ZipCode interview field.
+  interview zip code column.
 - [`summarize_by_county()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_county.md)
   — maps zip codes to counties via zipcodeR and returns interview count
   and percentage by county; emits an informative error when zipcodeR is

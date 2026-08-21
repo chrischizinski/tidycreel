@@ -166,7 +166,8 @@ creel_schema(
 
 - non_ang_boats_col:
 
-  Column name for non-angler boats in counts (NGPC-specific).
+  Column name for boats carrying no anglers in counts. Recorded by some
+  agencies and not others; leave `NULL` where it is not.
 
 - angler_type_col:
 

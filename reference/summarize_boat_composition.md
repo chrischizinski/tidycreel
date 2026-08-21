@@ -2,7 +2,7 @@
 
 Computes the percentage of boats that are angler boats from raw count
 data, grouped by calendar month and day type. Formula:
-`mean(c_AnglerBoats / (c_AnglerBoats + c_NonAngBoats))` per group.
+`mean(angler_boats / (angler_boats + non_ang_boats))` per group.
 
 ## Usage
 
