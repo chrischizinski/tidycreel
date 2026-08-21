@@ -159,3 +159,7 @@ testthat-problems.rds
 AUDIT-*.md
 TODO-*.md
 inst/audit/
+
+# Quarto render cache (cheatsheet)
+.quarto/
+cheatsheet/*_files/
