@@ -339,6 +339,72 @@ detect_duplicate_psus <- function(counts, key_cols, call = rlang::caller_env()) 
   }
 }
 
+#' Refuse count rows that are identical in every column
+#'
+#' Internal helper. `svytotal()` sums the rows of `design$counts`, so a row
+#' present twice is counted twice and the estimate rises with no error and no
+#' warning (GH #152).
+#'
+#' Keyed on the whole row rather than on the sampling unit, which is what makes
+#' this checkable at all. Two rows sharing a unit key are ordinary structure --
+#' two sections, two effort types, two counts in a day -- and differ somewhere.
+#' Two rows differing in **no** column carry nothing that could distinguish one
+#' sampling unit from another, so either the row was entered twice or the
+#' dimension separating them was never recorded. Both are refusals: the second
+#' is unrecoverable here, because the information needed to expand it correctly
+#' is not in the table.
+#'
+#' Deliberately independent of the key, and so of `unit_cols`. A key can be
+#' wrong or incomplete -- it has been twice (#155, #162) -- but a table with two
+#' identical rows is malformed under every key.
+#'
+#' @param counts Data frame of count data
+#' @param call Calling environment for conditions
+#'
+#' @return `NULL`, invisibly. Called for its side effect.
+#'
+#' @keywords internal
+#' @noRd
+detect_duplicate_rows <- function(counts, call = rlang::caller_env()) {
+  dup <- duplicated(counts)
+  if (!any(dup)) {
+    return(invisible(NULL))
+  }
+  n_dup <- sum(dup)
+  # Report the rows the user can find -- every member of each identical set,
+  # not just the copies -- so the message points at something locatable.
+  affected <- which(dup | duplicated(counts, fromLast = TRUE))
+  shown <- utils::head(affected, 6L)
+  rows_txt <- paste(shown, collapse = ", ")
+  if (length(affected) > length(shown)) {
+    rows_txt <- paste0(rows_txt, ", and ", length(affected) - length(shown), " more")
+  }
+  headline <- sprintf(
+    "%s contains %d repeated %s.",
+    "{.arg counts}", n_dup, if (n_dup == 1L) "row" else "rows"
+  )
+  it_them <- if (n_dup == 1L) "it" else "them"
+  cli::cli_abort(
+    c(
+      headline,
+      "x" = paste(
+        "{cli::qty(n_dup)}The {?row is/rows are} identical to an earlier row in",
+        "every column, and identical rows are summed by the expansion, so each",
+        "repeat inflates the estimate."
+      ),
+      "i" = "Affected rows: {rows_txt}.",
+      "i" = "If this is a duplicate entry, remove {it_them}.",
+      "i" = paste(
+        "If these are separate counts of the same unit, record what separates",
+        "them -- the count time via {.arg count_time_col}, or the section, site,",
+        "or effort type via {.arg unit_cols}."
+      )
+    ),
+    class = "creel_error_duplicate_count_rows",
+    call = call
+  )
+}
+
 #' Aggregate within-day count observations to PSU-level means
 #'
 #' Groups multiple count rows per PSU into a single-row mean, storing the

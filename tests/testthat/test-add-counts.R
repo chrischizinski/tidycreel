@@ -408,8 +408,13 @@ test_that("add_counts() single-count path produces NULL within_day_var (CNT-04)"
 })
 
 test_that("add_counts() warns on repeated sampling units when count_time_col = NULL (CNT-06)", {
-  # Duplicate every row to simulate forgotten count_time_col
-  dup_counts <- rbind(example_counts, example_counts)
+  # A second count of each unit, at a different value, to simulate a forgotten
+  # count_time_col. The values must differ: rows identical in every column are a
+  # malformed table and are refused outright by CNT-08 (GH #152), which would
+  # abort before this warning could fire.
+  second <- example_counts
+  second$effort_hours <- second$effort_hours + 1
+  dup_counts <- rbind(example_counts, second)
 
   design <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
   expect_warning(
@@ -422,7 +427,9 @@ test_that("CNT-06 names the key it judged the repeat on (GH #155)", {
   # The warning used to say "duplicate values in column date", which was both
   # the wrong question and unactionable on a design with sections or sites.
   # Naming the key is what tells a user whether the repeat is a real one.
-  dup_counts <- rbind(example_counts, example_counts)
+  second <- example_counts
+  second$effort_hours <- second$effort_hours + 1
+  dup_counts <- rbind(example_counts, second)
   design <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
 
   w <- tryCatch(
@@ -1125,8 +1132,13 @@ test_that("a genuine repeat of one unit still warns (GH #155)", {
     angler_count = c(10, 8, 12, 9),
     stringsAsFactors = FALSE
   )
+  # The repeat carries a different count, so it is a genuine second observation
+  # of one unit rather than a malformed row. An identical row is refused by
+  # CNT-08 instead (GH #152).
+  repeat_row <- counts[1, ]
+  repeat_row$angler_count <- 11
   expect_warning(
-    add_counts(sec_design(), rbind(counts, counts[1, ]), count_col = "angler_count"),
+    add_counts(sec_design(), rbind(counts, repeat_row), count_col = "angler_count"),
     regexp = "Repeated sampling units"
   )
 })
@@ -1316,5 +1328,119 @@ test_that("CNT-07 (#162): unit_cols is validated against the counts table", {
       count_col = "angler_count", unit_cols = 1L
     ),
     regexp = "character vector"
+  )
+})
+
+# GH #152: rows identical in every column are refused --------------------------
+
+dup_counts <- function() {
+  data.frame(
+    date = as.Date(c(
+      "2024-06-01", "2024-06-02", "2024-06-03",
+      "2024-06-04", "2024-06-08", "2024-06-09"
+    )),
+    day_type = c("weekday", "weekday", "weekday", "weekday", "weekend", "weekend"),
+    angler_count = c(10, 8, 12, 9, 15, 11),
+    stringsAsFactors = FALSE
+  )
+}
+
+dup_design <- function() {
+  creel_design(
+    dup_counts()[, c("date", "day_type")],
+    date = date, # nolint: object_usage_linter
+    strata = day_type, # nolint: object_usage_linter
+    survey_type = "instantaneous",
+    h_open = 14
+  )
+}
+
+test_that("CNT-08 (#152): a row repeated in every column is refused", {
+  # svytotal() sums the rows of design$counts, so a repeat is counted twice and
+  # the estimate rises silently: this table produced 77 against a truth of 65,
+  # and the SE nearly tripled (5.26 -> 15.61). CNT-06 only warned.
+  cnts <- dup_counts()
+  expect_error(
+    add_counts(dup_design(), rbind(cnts, cnts[3, ]), count_col = "angler_count"),
+    class = "creel_error_duplicate_count_rows"
+  )
+})
+
+test_that("CNT-08 (#152): the refusal locates the offending rows", {
+  # "something is duplicated" is not actionable on a table of any size. Both
+  # members of the identical set are named, because the user has to look at them
+  # to decide which of the two remedies applies.
+  cnts <- dup_counts()
+  err <- tryCatch(
+    add_counts(dup_design(), rbind(cnts, cnts[3, ]), count_col = "angler_count"),
+    error = function(e) conditionMessage(e)
+  )
+  expect_match(err, "3, 7", fixed = TRUE)
+  expect_match(err, "count_time_col", fixed = TRUE)
+  expect_match(err, "unit_cols", fixed = TRUE)
+})
+
+test_that("CNT-08 (#152): identical counts in different sections are NOT a duplicate", {
+  # The whole point of keying on the row rather than the unit. Two sections that
+  # happened to hold the same number of anglers differ in `section`, so they
+  # carry the information needed to keep them apart and must pass.
+  cal <- data.frame(
+    date = as.Date("2024-06-01") + 0:3,
+    day_type = c("weekday", "weekday", "weekend", "weekend"),
+    stringsAsFactors = FALSE
+  )
+  d <- creel_design(
+    cal,
+    date = date, strata = day_type, # nolint: object_usage_linter
+    survey_type = "instantaneous", h_open = 14
+  )
+  d <- add_sections(d, data.frame(section = c("North", "South")), section_col = section) # nolint
+  sec <- data.frame(
+    date = rep(as.Date("2024-06-01") + 0:3, each = 2),
+    day_type = rep(c("weekday", "weekday", "weekend", "weekend"), each = 2),
+    section = rep(c("North", "South"), 4),
+    angler_count = c(10, 10, 12, 12, 15, 15, 14, 14),
+    stringsAsFactors = FALSE
+  )
+  expect_no_error(add_counts(d, sec, count_col = "angler_count"))
+})
+
+test_that("CNT-08 (#152): two sub-counts of equal value are NOT a duplicate", {
+  # Same reasoning one dimension over: 10 anglers at 09:00 and 10 again at 15:00
+  # is ordinary field data. count_time distinguishes them, so the table is
+  # well-formed and the guard must stay quiet.
+  cal <- data.frame(
+    date = as.Date("2024-06-01") + 0:3,
+    day_type = c("weekday", "weekday", "weekend", "weekend"),
+    stringsAsFactors = FALSE
+  )
+  d <- creel_design(
+    cal,
+    date = date, strata = day_type, # nolint: object_usage_linter
+    survey_type = "instantaneous", h_open = 14
+  )
+  tt <- data.frame(
+    date = rep(as.Date("2024-06-01") + 0:3, each = 2),
+    day_type = rep(c("weekday", "weekday", "weekend", "weekend"), each = 2),
+    count_time = rep(c("am", "pm"), 4),
+    angler_count = c(10, 10, 12, 12, 15, 15, 14, 14),
+    stringsAsFactors = FALSE
+  )
+  expect_no_error(suppressWarnings(
+    add_counts(d, tt, count_col = "angler_count", count_time_col = count_time) # nolint
+  ))
+})
+
+test_that("CNT-08 (#152): the refusal does not depend on unit_cols being right", {
+  # Deliberately independent of the key. The key has been wrong twice (#155,
+  # #162); a table with two identical rows is malformed under every key, so the
+  # guard must fire even when unit_cols names something unhelpful.
+  cnts <- dup_counts()
+  expect_error(
+    add_counts(
+      dup_design(), rbind(cnts, cnts[3, ]),
+      count_col = "angler_count", unit_cols = "date"
+    ),
+    class = "creel_error_duplicate_count_rows"
   )
 })

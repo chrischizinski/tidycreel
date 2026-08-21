@@ -637,7 +637,11 @@ test_that("the desync guard fires with duplicate PSU rows (GH #131)", {
   # Duplicate rows for one day are only warned about (CNT-06), so they reach the
   # estimator. They must not carry a desynchronized basis in with them.
   counts <- desync_counts()
-  counts <- rbind(counts, counts[1, ])
+  # A genuine second observation, not a copy: identical rows are refused before
+  # the desync guard can run (GH #152), which would test the wrong thing.
+  repeat_row <- counts[1, ]
+  repeat_row$angler_hours <- repeat_row$angler_hours + 1
+  counts <- rbind(counts, repeat_row)
 
   design <- creel_design(expansion_calendar(), date = date, strata = day_type)
   expect_error(

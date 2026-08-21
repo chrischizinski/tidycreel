@@ -477,7 +477,9 @@ test_that("CEST-23: a duplicate count row is refused before it can reach var_rho
   # this route rather than merely guarded against.
   d <- make_camera_design()
   counts <- make_camera_counts()
-  dup <- rbind(counts, counts[counts$date == as.Date("2024-06-08"), ])
+  repeat_row <- counts[counts$date == as.Date("2024-06-08"), ]
+  repeat_row$ingress_count <- repeat_row$ingress_count + 1L
+  dup <- rbind(counts, repeat_row)
   d <- suppressWarnings(add_counts(d, dup))
   mixed <- data.frame(
     date = as.Date(c("2024-06-03", "2024-06-04", "2024-06-08")),
@@ -502,7 +504,9 @@ test_that("CEST-26: a repeated count date is refused on the calibration path (GH
   # information. Only the generic CNT-06 duplicate-PSU warning fired.
   d <- make_camera_design()
   counts <- make_camera_counts()
-  dup <- rbind(counts, counts[counts$date == as.Date("2024-06-03"), ])
+  repeat_row <- counts[counts$date == as.Date("2024-06-03"), ]
+  repeat_row$ingress_count <- repeat_row$ingress_count + 1L
+  dup <- rbind(counts, repeat_row)
   d <- suppressWarnings(add_counts(d, dup))
   expect_error(
     est_effort_camera(d, interviews = make_interviews(), n_anglers = 1),
@@ -516,7 +520,9 @@ test_that("CEST-26: the refusal names the offending date (GH #142)", {
   # them diffing the counts table by hand.
   d <- make_camera_design()
   counts <- make_camera_counts()
-  dup <- rbind(counts, counts[counts$date == as.Date("2024-06-03"), ])
+  repeat_row <- counts[counts$date == as.Date("2024-06-03"), ]
+  repeat_row$ingress_count <- repeat_row$ingress_count + 1L
+  dup <- rbind(counts, repeat_row)
   d <- suppressWarnings(add_counts(d, dup))
   err <- tryCatch(
     est_effort_camera(d, interviews = make_interviews(), n_anglers = 1),
@@ -565,16 +571,34 @@ test_that("CEST-26: a clean one-row-per-day table is unaffected by the guard (GH
   expect_true(is.finite(result$estimates$se))
 })
 
-test_that("CEST-26: the raw-count path is deliberately left alone (GH #142)", {
-  # Scoped to the calibration path. svytotal() over a duplicated PSU row is
-  # the same shape in every design that expands counts, so refusing it here
-  # only would be an inconsistency dressed as a fix; the general question is
-  # recorded separately. This test exists so the scope is a decision on record
-  # rather than an oversight, and fails loudly if the guard is ever widened
-  # without that decision being revisited.
+test_that("CEST-26: the raw-count path now refuses an identical row too (GH #152)", {
+  # This test used to pin the opposite: #142 refused a repeated date on the
+  # calibration path only, and the raw path was left alone deliberately so the
+  # scope was a decision on record rather than an oversight. #152 closed that
+  # gap for the case that is decidable -- a row identical in every column, which
+  # is malformed whatever the sampling unit turns out to be.
   d <- make_camera_design()
   counts <- make_camera_counts()
   dup <- rbind(counts, counts[counts$date == as.Date("2024-06-03"), ])
+  expect_error(
+    add_counts(d, dup),
+    class = "creel_error_duplicate_count_rows"
+  )
+})
+
+test_that("CEST-26: a repeat carrying a DIFFERENT count still reaches the raw path (GH #152)", {
+  # The remaining half of #152, recorded rather than claimed fixed. Two rows for
+  # one date holding different counts are not decidable from the table alone:
+  # they may be two counts of one day whose count_time was never recorded, or a
+  # re-entry with a typo. svytotal() still sums them, so the estimate still
+  # rises -- CNT-06 warns, and that is the only signal.
+  d <- make_camera_design()
+  counts <- make_camera_counts()
+  repeat_row <- counts[counts$date == as.Date("2024-06-03"), ]
+  repeat_row$ingress_count <- repeat_row$ingress_count + 1L
+  dup <- rbind(counts, repeat_row)
+  expect_warning(add_counts(d, dup), regexp = "Repeated sampling units")
+
   d <- suppressWarnings(add_counts(d, dup))
   result <- est_effort_camera(d, h_open = 14, calibration = "none")
   expect_true(is.finite(result$estimates$estimate))

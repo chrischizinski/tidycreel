@@ -11,6 +11,22 @@
   that silences the warning and, unlike omission, marks the effort as genuine
   angler-hours.
 
+* `add_counts()` refuses a counts table containing rows identical in every
+  column (#152). `svytotal()` sums the rows of `design$counts`, so a repeated
+  row was counted twice: a six-day table rose from 65 to 77 angler-days and its
+  standard error from 5.26 to 15.61, with only a warning. Previously CNT-06
+  warned; it now aborts, naming the affected rows.
+
+  The check is on the whole row, not the sampling-unit key, and is deliberately
+  independent of `unit_cols`. Two rows sharing a key are ordinary structure —
+  two sections, two effort types, two counts within a day — and differ
+  somewhere. Two rows differing in **no** column carry nothing that could
+  distinguish one unit from another, so the table is malformed under every key,
+  including a key that is wrong (as it has twice been: #155, #162).
+
+  Tables where the repeat is a genuine second observation are unaffected, since
+  the counts themselves differ; CNT-06 still warns about those.
+
 * `derive_angler_count()` now removes the columns it consumed (`bank`,
   `boat_anglers`, `boat_count`) from its result. They are superseded by the
   derived count and by `expansion_basis`, and leaving them in produced a table
