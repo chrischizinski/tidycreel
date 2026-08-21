@@ -1,5 +1,26 @@
 # tidycreel (development version)
 
+## New features
+
+* `creel_schema()` gains `strata_cols`, naming the stratum columns to carry
+  through from the source (#171). It is the one mapping here with no canonical
+  tidycreel name on the other side: `add_counts()` matches `design$strata_cols`
+  — the caller's own calendar column names — against the names of the counts
+  frame, so the mapping is two-sided. Names are the column the design refers to,
+  values the source column holding it: `strata_cols = c(day_type = "DayType")`.
+  An unnamed entry, `c("day_type")`, means the source already uses the design's
+  name.
+
+## Bug fixes
+
+* `print()` on a `creel_schema` now groups `n_counted_col` under **interviews**
+  rather than counts (#170). Both enumeration columns live on the interviews
+  table — `add_interviews()` resolves them against the interviews frame and
+  `get_enumeration_counts()` reads them back off it — so a bus-route user
+  reading the printed schema was told the enumeration count belonged to a table
+  it is not in, while its own denominator was listed under another. Display
+  only; no estimate was affected.
+
 ## Breaking changes
 
 * `summarize_by_zip()` and `summarize_by_county()` gain a `zip_col` argument,

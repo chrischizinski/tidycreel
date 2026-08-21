@@ -126,3 +126,82 @@ test_that("make_test_db() creates interviews, counts, catch, lengths tables", {
   tables <- DBI::dbListTables(con)
   expect_true(all(c("interviews", "counts", "catch", "lengths") %in% tables))
 })
+
+
+## strata_cols (GH #171) -----------------------------------------------------
+
+test_that("strata_cols normalises a named mapping and keeps both sides", {
+  # A stratum is the one mapped quantity with no canonical name: add_counts()
+  # matches the caller's own calendar column names, so the mapping is two-sided
+  # and the design-facing name has to survive as the vector's names.
+  s <- creel_schema(survey_type = "instantaneous", strata_cols = c(day_type = "DayType"))
+  expect_equal(s$strata_cols, c(day_type = "DayType"))
+})
+
+test_that("an unnamed strata_cols entry names itself on both sides", {
+  s <- creel_schema(survey_type = "instantaneous", strata_cols = c("day_type"))
+  expect_equal(s$strata_cols, c(day_type = "day_type"))
+})
+
+test_that("strata_cols accepts a partially named vector", {
+  s <- creel_schema(
+    survey_type = "instantaneous",
+    strata_cols = c(day_type = "DayType", "period")
+  )
+  expect_equal(s$strata_cols, c(day_type = "DayType", period = "period"))
+})
+
+test_that("strata_cols rejects a non-character, an empty name, and a duplicate target", {
+  # Each of these would otherwise reach the fetch layer and silently carry
+  # nothing, which is the failure mode #171 is about.
+  expect_error(
+    creel_schema(survey_type = "instantaneous", strata_cols = 1:2),
+    class = "creel_error_schema_validation"
+  )
+  expect_error(
+    creel_schema(survey_type = "instantaneous", strata_cols = c(day_type = NA_character_)),
+    class = "creel_error_schema_validation"
+  )
+  expect_error(
+    creel_schema(survey_type = "instantaneous", strata_cols = c(day_type = "A", day_type = "B")),
+    class = "creel_error_schema_validation"
+  )
+})
+
+test_that("strata_cols prints under both tables using the design-facing name", {
+  s <- creel_schema(survey_type = "instantaneous", strata_cols = c(day_type = "DayType"))
+  out <- capture.output(print(s))
+  # The design refers to `day_type`; `strata_cols` is the field, not the column.
+  expect_true(any(grepl("day_type -> DayType", out, fixed = TRUE)))
+  expect_false(any(grepl("strata_cols ->", out, fixed = TRUE)))
+})
+
+
+## COL_TO_TABLE grouping (GH #170) -------------------------------------------
+
+test_that("both enumeration columns print under interviews, not counts", {
+  # n_counted and n_interviewed are a numerator and its denominator on the same
+  # table: add_interviews() resolves both against the interviews frame and
+  # get_enumeration_counts() reads them back off it. Grouping n_counted under
+  # counts told a bus-route user it lived in a table it is not in.
+  s <- creel_schema(
+    survey_type       = "bus_route",
+    n_counted_col     = "Seen",
+    n_interviewed_col = "Asked",
+    # Something genuinely on the counts table, so that block prints and the
+    # ordering assertion below has two headers to sit between.
+    count_col         = "AnglerCount"
+  )
+  out <- capture.output(print(s))
+
+  interviews_at <- grep("interviews:", out)
+  counts_at     <- grep("counts:", out)
+  seen_at       <- grep("n_counted -> Seen", out, fixed = TRUE)
+  asked_at      <- grep("n_interviewed -> Asked", out, fixed = TRUE)
+
+  expect_length(seen_at, 1L)
+  expect_length(asked_at, 1L)
+  # Both fall in the interviews block, i.e. after its header and before counts'.
+  expect_true(seen_at > interviews_at && seen_at < counts_at)
+  expect_true(asked_at > interviews_at && asked_at < counts_at)
+})
