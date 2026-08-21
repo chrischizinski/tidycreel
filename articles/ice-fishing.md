@@ -165,9 +165,11 @@ design <- add_interviews(
   n_counted     = n_counted,
   n_interviewed = n_interviewed
 )
-#> ℹ No `n_anglers` provided — assuming 1 angler per interview.
+#> Warning: ! No `n_anglers` provided — assuming 1 angler per interview.
 #> ℹ Pass `n_anglers = <column>` to use actual party sizes for angler-hour
 #>   normalization.
+#> ℹ If the interviews really are one angler each, pass `n_anglers = 1` to state
+#>   that and silence this warning.
 #> Warning: 23 interviews have zero catch.
 #> ℹ Zero catch may be valid (skunked) or indicate missing data.
 #> ℹ Added 72 interviews: 60 complete (83%), 12 incomplete (17%)
@@ -225,6 +227,11 @@ design_aft <- suppressMessages(add_interviews(
   n_counted     = n_counted,
   n_interviewed = n_interviewed
 ))
+#> Warning: ! No `n_anglers` provided — assuming 1 angler per interview.
+#> ℹ Pass `n_anglers = <column>` to use actual party sizes for angler-hour
+#>   normalization.
+#> ℹ If the interviews really are one angler each, pass `n_anglers = 1` to state
+#>   that and silence this warning.
 #> Warning: 23 interviews have zero catch.
 #> ℹ Zero catch may be valid (skunked) or indicate missing data.
 

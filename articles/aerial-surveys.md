@@ -192,9 +192,6 @@ design <- suppressWarnings(add_interviews(
   effort      = hours_fished,
   trip_status = trip_status
 ))
-#> ℹ No `n_anglers` provided — assuming 1 angler per interview.
-#> ℹ Pass `n_anglers = <column>` to use actual party sizes for angler-hour
-#>   normalization.
 #> ℹ Added 48 interviews: 48 complete (100%), 0 incomplete (0%)
 ```
 
@@ -262,9 +259,6 @@ design_corr <- suppressWarnings(add_interviews(
   effort      = hours_fished,
   trip_status = trip_status
 ))
-#> ℹ No `n_anglers` provided — assuming 1 angler per interview.
-#> ℹ Pass `n_anglers = <column>` to use actual party sizes for angler-hour
-#>   normalization.
 #> ℹ Added 48 interviews: 48 complete (100%), 0 incomplete (0%)
 
 effort_corr <- suppressWarnings(estimate_effort(design_corr))

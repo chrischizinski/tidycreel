@@ -209,9 +209,6 @@ but slower to compute.</p>
 <span class="r-in"><span>  catch <span class="op">=</span> <span class="va">catch_total</span>, effort <span class="op">=</span> <span class="va">hours_fished</span>,</span></span>
 <span class="r-in"><span>  trip_status <span class="op">=</span> <span class="va">trip_status</span>, trip_duration <span class="op">=</span> <span class="va">trip_duration</span></span></span>
 <span class="r-in"><span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> No `n_anglers` provided — assuming 1 angler per interview.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Pass `n_anglers = &lt;column&gt;` to use actual party sizes for angler-hour</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>   normalization.</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Added 22 interviews: 17 complete (77%), 5 incomplete (23%)</span>
 <span class="r-in"><span><span class="va">taylor_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Using complete trips for CPUE estimation</span>

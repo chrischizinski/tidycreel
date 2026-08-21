@@ -181,6 +181,11 @@ Used to stratify effort estimates by shelter type.</p></dd>
 <span class="r-in"><span>  n_counted <span class="op">=</span> <span class="va">n_counted</span>,</span></span>
 <span class="r-in"><span>  n_interviewed <span class="op">=</span> <span class="va">n_interviewed</span></span></span>
 <span class="r-in"><span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span><span style="color: #BBBB00;">!</span> No `n_anglers` provided — assuming 1 angler per interview.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Pass `n_anglers = &lt;column&gt;` to use actual party sizes for angler-hour</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   normalization.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> If the interviews really are one angler each, pass `n_anglers = 1` to state</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   that and silence this warning.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>23 interviews have zero catch.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Zero catch may be valid (skunked) or indicate missing data.</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span><span class="op">)</span></span></span>

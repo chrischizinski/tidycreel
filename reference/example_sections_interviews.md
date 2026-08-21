@@ -109,9 +109,6 @@ design <- suppressWarnings(add_interviews(design, example_sections_interviews,
   harvest = catch_kept,
   trip_status = trip_status, trip_duration = trip_duration
 ))
-#> ℹ No `n_anglers` provided — assuming 1 angler per interview.
-#> ℹ Pass `n_anglers = <column>` to use actual party sizes for angler-hour
-#>   normalization.
 #> ℹ Added 27 interviews: 27 complete (100%), 0 incomplete (0%)
 estimate_total_catch(design, aggregate_sections = TRUE)
 #> Warning: Rate and effort may be in different units.

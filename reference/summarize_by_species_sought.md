@@ -73,9 +73,11 @@ d <- add_interviews(d, example_interviews,
   catch = catch_total, effort = hours_fished, harvest = catch_kept,
   trip_status = trip_status, species_sought = species_sought
 )
-#> ℹ No `n_anglers` provided — assuming 1 angler per interview.
+#> Warning: ! No `n_anglers` provided — assuming 1 angler per interview.
 #> ℹ Pass `n_anglers = <column>` to use actual party sizes for angler-hour
 #>   normalization.
+#> ℹ If the interviews really are one angler each, pass `n_anglers = 1` to state
+#>   that and silence this warning.
 #> ℹ Added 22 interviews: 17 complete (77%), 5 incomplete (23%)
 summarize_by_species_sought(d)
 #>   month species  N percent

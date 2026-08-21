@@ -434,9 +434,11 @@ design <- creel_design(calendar, date = date, strata = day_type) |>
   )
 #> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
 #> weights or probabilities supplied, assuming equal probability
-#> ℹ No `n_anglers` provided — assuming 1 angler per interview.
+#> Warning: ! No `n_anglers` provided — assuming 1 angler per interview.
 #> ℹ Pass `n_anglers = <column>` to use actual party sizes for angler-hour
 #>   normalization.
+#> ℹ If the interviews really are one angler each, pass `n_anglers = 1` to state
+#>   that and silence this warning.
 #> ℹ Added 170 interviews: 50 complete (29%), 120 incomplete (71%)
 
 # Run validation
@@ -552,9 +554,11 @@ design_biased <- creel_design(calendar, date = date, strata = day_type) |>
   )
 #> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
 #> weights or probabilities supplied, assuming equal probability
-#> ℹ No `n_anglers` provided — assuming 1 angler per interview.
+#> Warning: ! No `n_anglers` provided — assuming 1 angler per interview.
 #> ℹ Pass `n_anglers = <column>` to use actual party sizes for angler-hour
 #>   normalization.
+#> ℹ If the interviews really are one angler each, pass `n_anglers = 1` to state
+#>   that and silence this warning.
 #> ℹ Added 155 interviews: 45 complete (29%), 110 incomplete (71%)
 
 # Run validation

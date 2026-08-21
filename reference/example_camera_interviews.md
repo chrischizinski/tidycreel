@@ -111,9 +111,6 @@ design <- suppressWarnings(add_interviews(
   design, example_camera_interviews,
   catch = walleye, effort = hours_fished, trip_status = trip_status
 ))
-#> ℹ No `n_anglers` provided — assuming 1 angler per interview.
-#> ℹ Pass `n_anglers = <column>` to use actual party sizes for angler-hour
-#>   normalization.
 #> ℹ Added 40 interviews: 40 complete (100%), 0 incomplete (0%)
 suppressWarnings(estimate_catch_rate(design))
 #> ℹ Using complete trips for CPUE estimation

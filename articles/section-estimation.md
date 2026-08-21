@@ -48,9 +48,6 @@ design <- add_interviews(
   trip_status = trip_status,
   trip_duration = trip_duration
 )
-#> ℹ No `n_anglers` provided — assuming 1 angler per interview.
-#> ℹ Pass `n_anglers = <column>` to use actual party sizes for angler-hour
-#>   normalization.
 #> ℹ Added 27 interviews: 27 complete (100%), 0 incomplete (0%)
 print(design)
 #> 
@@ -161,9 +158,6 @@ design_nosections <- add_interviews(
   catch = catch_total, effort = hours_fished,
   harvest = catch_kept, trip_status = trip_status, trip_duration = trip_duration
 )
-#> ℹ No `n_anglers` provided — assuming 1 angler per interview.
-#> ℹ Pass `n_anglers = <column>` to use actual party sizes for angler-hour
-#>   normalization.
 #> ℹ Added 27 interviews: 27 complete (100%), 0 incomplete (0%)
 estimate_catch_rate(design_nosections)$estimates
 #> ℹ Using complete trips for CPUE estimation

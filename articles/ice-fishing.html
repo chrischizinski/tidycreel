@@ -255,9 +255,11 @@ factor.</p>
 <span>  n_counted     <span class="op">=</span> <span class="va">n_counted</span>,</span>
 <span>  n_interviewed <span class="op">=</span> <span class="va">n_interviewed</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> No `n_anglers` provided — assuming 1 angler per interview.</span></span>
+<span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> No `n_anglers` provided — assuming 1 angler per interview.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Pass `n_anglers = &lt;column&gt;` to use actual party sizes for angler-hour</span></span>
 <span><span class="co">#&gt;   normalization.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> If the interviews really are one angler each, pass `n_anglers = 1` to state</span></span>
+<span><span class="co">#&gt;   that and silence this warning.</span></span>
 <span><span class="co">#&gt; Warning: 23 interviews have zero catch.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Zero catch may be valid (skunked) or indicate missing data.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Added 72 interviews: 60 complete (83%), 12 incomplete (17%)</span></span></code></pre></div>
@@ -309,6 +311,11 @@ output column is then labeled <code>total_effort_hr_active</code>.</p>
 <span>  n_counted     <span class="op">=</span> <span class="va">n_counted</span>,</span>
 <span>  n_interviewed <span class="op">=</span> <span class="va">n_interviewed</span></span>
 <span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> No `n_anglers` provided — assuming 1 angler per interview.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Pass `n_anglers = &lt;column&gt;` to use actual party sizes for angler-hour</span></span>
+<span><span class="co">#&gt;   normalization.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> If the interviews really are one angler each, pass `n_anglers = 1` to state</span></span>
+<span><span class="co">#&gt;   that and silence this warning.</span></span>
 <span><span class="co">#&gt; Warning: 23 interviews have zero catch.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Zero catch may be valid (skunked) or indicate missing data.</span></span>
 <span></span>

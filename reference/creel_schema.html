@@ -119,6 +119,8 @@ survey type are mapped.</p>
 <span>  angler_boats_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  non_ang_boats_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  angler_type_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  site_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  circuit_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  angler_method_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  species_sought_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  refused_col <span class="op">=</span> <span class="cn">NULL</span></span>
@@ -245,6 +247,17 @@ survey type are mapped.</p>
 
 <dt id="arg-angler-type-col">angler_type_col<a class="anchor" aria-label="anchor" href="#arg-angler-type-col"></a></dt>
 <dd><p>Column name for angler type.</p></dd>
+
+
+<dt id="arg-site-col">site_col<a class="anchor" aria-label="anchor" href="#arg-site-col"></a></dt>
+<dd><p>Column name for the site an interview was taken at. Bus-route
+designs need it to join the site inclusion probability; without it
+<code><a href="add_interviews.html">add_interviews()</a></code> cannot build the \(\pi_i\) term (GH #126).</p></dd>
+
+
+<dt id="arg-circuit-col">circuit_col<a class="anchor" aria-label="anchor" href="#arg-circuit-col"></a></dt>
+<dd><p>Column name for the bus-route circuit an interview belongs
+to. Required alongside <code>site_col</code> for the bus-route expansion (GH #126).</p></dd>
 
 
 <dt id="arg-angler-method-col">angler_method_col<a class="anchor" aria-label="anchor" href="#arg-angler-method-col"></a></dt>

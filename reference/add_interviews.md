@@ -149,10 +149,12 @@ add_interviews(
   party rather than "column 1". Values must be positive and finite;
   missing and non-integer values warn.
 
-  When omitted, effort is left un-normalised and a `cli_inform()`
-  message notes the assumption. In that case the rate estimators return
+  When omitted, effort is left un-normalised and a `cli_warn()` message
+  states the assumption. In that case the rate estimators return
   quantities per *party*-hour, and the product totals warn when they
-  multiply one by count-derived angler-hours.
+  multiply one by count-derived angler-hours. Pass `n_anglers = 1` to
+  state that the interviews really are one angler each; that is a
+  declaration, not a default, and it silences the warning.
 
 - refused:
 
@@ -360,9 +362,11 @@ design_with_interviews <- add_interviews(
   trip_status = trip_status,
   trip_duration = trip_duration
 )
-#> ℹ No `n_anglers` provided — assuming 1 angler per interview.
+#> Warning: ! No `n_anglers` provided — assuming 1 angler per interview.
 #> ℹ Pass `n_anglers = <column>` to use actual party sizes for angler-hour
 #>   normalization.
+#> ℹ If the interviews really are one angler each, pass `n_anglers = 1` to state
+#>   that and silence this warning.
 #> Warning: 2 strata have fewer than 3 interviews:
 #> • Stratum weekday: 2 interviews
 #> • Stratum weekend: 2 interviews
@@ -412,9 +416,11 @@ design2 <- add_interviews(
   trip_start = trip_start,
   interview_time = interview_time
 )
-#> ℹ No `n_anglers` provided — assuming 1 angler per interview.
+#> Warning: ! No `n_anglers` provided — assuming 1 angler per interview.
 #> ℹ Pass `n_anglers = <column>` to use actual party sizes for angler-hour
 #>   normalization.
+#> ℹ If the interviews really are one angler each, pass `n_anglers = 1` to state
+#>   that and silence this warning.
 #> Warning: 2 strata have fewer than 3 interviews:
 #> • Stratum weekday: 2 interviews
 #> • Stratum weekend: 2 interviews

@@ -89,9 +89,11 @@ design <- add_interviews(design, example_interviews,
   trip_status = trip_status,
   trip_duration = trip_duration
 )
-#> ℹ No `n_anglers` provided — assuming 1 angler per interview.
+#> Warning: ! No `n_anglers` provided — assuming 1 angler per interview.
 #> ℹ Pass `n_anglers = <column>` to use actual party sizes for angler-hour
 #>   normalization.
+#> ℹ If the interviews really are one angler each, pass `n_anglers = 1` to state
+#>   that and silence this warning.
 #> ℹ Added 22 interviews: 17 complete (77%), 5 incomplete (23%)
 summary <- summarize_trips(design)
 print(summary)

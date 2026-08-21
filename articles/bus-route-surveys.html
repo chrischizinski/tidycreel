@@ -365,9 +365,11 @@ still be supplied for bus-route designs.</p>
 <span>  n_interviewed <span class="op">=</span> <span class="va">n_interviewed</span>,</span>
 <span>  trip_status   <span class="op">=</span> <span class="va">trip_status</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> No `n_anglers` provided — assuming 1 angler per interview.</span></span>
+<span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> No `n_anglers` provided — assuming 1 angler per interview.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Pass `n_anglers = &lt;column&gt;` to use actual party sizes for angler-hour</span></span>
 <span><span class="co">#&gt;   normalization.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> If the interviews really are one angler each, pass `n_anglers = 1` to state</span></span>
+<span><span class="co">#&gt;   that and silence this warning.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Added 15 interviews: 15 complete (100%), 0 incomplete (0%)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>

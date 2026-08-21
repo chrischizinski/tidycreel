@@ -290,9 +290,6 @@ effort.</p>
 <span>  effort      <span class="op">=</span> <span class="va">hours_fished</span>,</span>
 <span>  trip_status <span class="op">=</span> <span class="va">trip_status</span></span>
 <span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> No `n_anglers` provided — assuming 1 angler per interview.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Pass `n_anglers = &lt;column&gt;` to use actual party sizes for angler-hour</span></span>
-<span><span class="co">#&gt;   normalization.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Added 48 interviews: 48 complete (100%), 0 incomplete (0%)</span></span></code></pre></div>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">effort</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span><span class="op">)</span></span>
@@ -354,9 +351,6 @@ rather than treating 0.85 as exactly known.</p>
 <span>  effort      <span class="op">=</span> <span class="va">hours_fished</span>,</span>
 <span>  trip_status <span class="op">=</span> <span class="va">trip_status</span></span>
 <span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> No `n_anglers` provided — assuming 1 angler per interview.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Pass `n_anglers = &lt;column&gt;` to use actual party sizes for angler-hour</span></span>
-<span><span class="co">#&gt;   normalization.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Added 48 interviews: 48 complete (100%), 0 incomplete (0%)</span></span>
 <span></span>
 <span><span class="va">effort_corr</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design_corr</span><span class="op">)</span><span class="op">)</span></span>

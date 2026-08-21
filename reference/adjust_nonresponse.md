@@ -139,9 +139,6 @@ design <- suppressWarnings(add_interviews(
   catch = catch_total, effort = hours_fished,
   trip_status = trip_status, trip_duration = trip_duration
 ))
-#> ℹ No `n_anglers` provided — assuming 1 angler per interview.
-#> ℹ Pass `n_anglers = <column>` to use actual party sizes for angler-hour
-#>   normalization.
 #> ℹ Added 22 interviews: 17 complete (77%), 5 incomplete (23%)
 
 resp <- data.frame(

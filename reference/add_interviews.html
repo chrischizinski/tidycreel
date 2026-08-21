@@ -215,10 +215,12 @@ angler). A bare number is read as a party size, <strong>not</strong> as a tidyse
 column position, so <code>n_anglers = 1</code> means one angler per party rather
 than "column 1". Values must be positive and finite; missing and
 non-integer values warn.</p>
-<p>When omitted, effort is left un-normalised and a <code>cli_inform()</code> message
-notes the assumption. In that case the rate estimators return quantities per
-<em>party</em>-hour, and the product totals warn when they multiply one by
-count-derived angler-hours.</p></dd>
+<p>When omitted, effort is left un-normalised and a <code>cli_warn()</code> message
+states the assumption. In that case the rate estimators return quantities
+per <em>party</em>-hour, and the product totals warn when they multiply one by
+count-derived angler-hours. Pass <code>n_anglers = 1</code> to state that the
+interviews really are one angler each; that is a declaration, not a default,
+and it silences the warning.</p></dd>
 
 
 <dt id="arg-refused">refused<a class="anchor" aria-label="anchor" href="#arg-refused"></a></dt>
@@ -397,9 +399,11 @@ enabling stratified estimation of catch rates.</p>
 <span class="r-in"><span>  trip_status <span class="op">=</span> <span class="va">trip_status</span>,</span></span>
 <span class="r-in"><span>  trip_duration <span class="op">=</span> <span class="va">trip_duration</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> No `n_anglers` provided — assuming 1 angler per interview.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Pass `n_anglers = &lt;column&gt;` to use actual party sizes for angler-hour</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>   normalization.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span><span style="color: #BBBB00;">!</span> No `n_anglers` provided — assuming 1 angler per interview.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Pass `n_anglers = &lt;column&gt;` to use actual party sizes for angler-hour</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   normalization.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> If the interviews really are one angler each, pass `n_anglers = 1` to state</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   that and silence this warning.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>2 strata have fewer than 3 interviews:</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> Stratum weekday: 2 interviews</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> Stratum weekend: 2 interviews</span>
@@ -449,9 +453,11 @@ enabling stratified estimation of catch rates.</p>
 <span class="r-in"><span>  trip_start <span class="op">=</span> <span class="va">trip_start</span>,</span></span>
 <span class="r-in"><span>  interview_time <span class="op">=</span> <span class="va">interview_time</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> No `n_anglers` provided — assuming 1 angler per interview.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Pass `n_anglers = &lt;column&gt;` to use actual party sizes for angler-hour</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>   normalization.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span><span style="color: #BBBB00;">!</span> No `n_anglers` provided — assuming 1 angler per interview.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Pass `n_anglers = &lt;column&gt;` to use actual party sizes for angler-hour</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   normalization.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> If the interviews really are one angler each, pass `n_anglers = 1` to state</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   that and silence this warning.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>2 strata have fewer than 3 interviews:</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> Stratum weekday: 2 interviews</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> Stratum weekend: 2 interviews</span>

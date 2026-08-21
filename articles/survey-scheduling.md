@@ -725,6 +725,11 @@ design <- add_interviews(design, example_interviews,
   effort       = hours_fished,
   trip_status  = trip_status
 )
+#> Warning: ! No `n_anglers` provided — assuming 1 angler per interview.
+#> ℹ Pass `n_anglers = <column>` to use actual party sizes for angler-hour
+#>   normalization.
+#> ℹ If the interviews really are one angler each, pass `n_anglers = 1` to state
+#>   that and silence this warning.
 comp <- check_completeness(design)
 comp
 #> 

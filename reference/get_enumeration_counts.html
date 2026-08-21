@@ -156,9 +156,11 @@ and 19.5 for bus-route effort and harvest estimation.</p>
 <span class="r-in"><span>  trip_status <span class="op">=</span> <span class="va">trip_status</span>, trip_duration <span class="op">=</span> <span class="va">trip_duration</span>,</span></span>
 <span class="r-in"><span>  n_counted <span class="op">=</span> <span class="va">n_counted</span>, n_interviewed <span class="op">=</span> <span class="va">n_interviewed</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> No `n_anglers` provided — assuming 1 angler per interview.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Pass `n_anglers = &lt;column&gt;` to use actual party sizes for angler-hour</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>   normalization.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span><span style="color: #BBBB00;">!</span> No `n_anglers` provided — assuming 1 angler per interview.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Pass `n_anglers = &lt;column&gt;` to use actual party sizes for angler-hour</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   normalization.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> If the interviews really are one angler each, pass `n_anglers = 1` to state</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   that and silence this warning.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>1 stratum has fewer than 3 interviews:</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> Stratum weekday: 2 interviews</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> Sparse strata produce unstable variance estimates.</span>

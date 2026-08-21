@@ -210,9 +210,11 @@ design_int <- add_interviews(design_int, example_aerial_interviews,
   effort      = hours_fished,
   trip_status = trip_status
 )
-#> ℹ No `n_anglers` provided — assuming 1 angler per interview.
+#> Warning: ! No `n_anglers` provided — assuming 1 angler per interview.
 #> ℹ Pass `n_anglers = <column>` to use actual party sizes for angler-hour
 #>   normalization.
+#> ℹ If the interviews really are one angler each, pass `n_anglers = 1` to state
+#>   that and silence this warning.
 #> Warning: 15 interviews have zero catch.
 #> ℹ Zero catch may be valid (skunked) or indicate missing data.
 #> ℹ Added 48 interviews: 48 complete (100%), 0 incomplete (0%)
