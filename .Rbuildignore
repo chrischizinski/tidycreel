@@ -129,3 +129,4 @@
 ^inst/audit/
 ^AUDIT-.*\.md$
 ^TODO-.*\.md$
+^cheatsheet$
