@@ -34,6 +34,7 @@ COL_TO_TABLE <- list(
   # nolint: object_name_linter
   interviews = c(
     "date_col",
+    "strata_cols",
     "catch_col",
     "effort_col",
     "trip_status_col",
@@ -42,6 +43,13 @@ COL_TO_TABLE <- list(
     "trip_start_col",
     "interview_time_col",
     "n_anglers_col",
+    # Both enumeration columns are interviews columns: add_interviews() resolves
+    # them against the interviews frame and get_enumeration_counts() reads them
+    # back off it. n_counted_col was grouped under `counts` on the strength of
+    # its name alone, which told a bus-route user the enumeration count lived in
+    # a table it is not in, while its own denominator was listed under another
+    # (GH #170).
+    "n_counted_col",
     "n_interviewed_col",
     "angler_type_col",
     "site_col",
@@ -53,7 +61,7 @@ COL_TO_TABLE <- list(
   ),
   counts = c(
     "count_col",
-    "n_counted_col",
+    "strata_cols",
     "bank_anglers_col",
     "angler_boats_col",
     "non_ang_boats_col"
@@ -70,6 +78,67 @@ COL_TO_TABLE <- list(
     "length_type_col"
   )
 )
+
+# Internal: put `strata_cols` into its fully-named form.
+#
+# Unlike every other schema field, a stratum column has no canonical tidycreel
+# name. `add_counts()` matches `design$strata_cols` -- the caller's own calendar
+# column names -- against the names of the counts frame, so the fetch layer has
+# to deliver the column under the name the design will look for, not under a
+# fixed one. That makes the mapping two-sided: names are the design-facing
+# column, values the source column. An unnamed entry means the two agree.
+#' @noRd
+#' @keywords internal
+normalize_strata_cols <- function(strata_cols) {
+  if (is.null(strata_cols)) {
+    return(NULL)
+  }
+  if (!is.character(strata_cols) || length(strata_cols) == 0L) {
+    cli::cli_abort(
+      c(
+        "{.arg strata_cols} must be a non-empty character vector.",
+        "x" = "{.arg strata_cols} is {.cls {class(strata_cols)[1]}} of length {length(strata_cols)}.",
+        "i" = paste0(
+          "Use {.code strata_cols = c(day_type = \"DayType\")}, or ",
+          "{.code c(\"day_type\")} when the source column already carries ",
+          "the name the design uses."
+        )
+      ),
+      class = "creel_error_schema_validation"
+    )
+  }
+  if (anyNA(strata_cols) || !all(nzchar(strata_cols))) {
+    cli::cli_abort(
+      c(
+        "{.arg strata_cols} must not contain {.val NA} or empty source names.",
+        "i" = "Every stratum column named must resolve to a column in the source table."
+      ),
+      class = "creel_error_schema_validation"
+    )
+  }
+
+  nms <- names(strata_cols)
+  if (is.null(nms)) {
+    nms <- rep("", length(strata_cols))
+  }
+  # An unnamed entry names itself on both sides.
+  nms[!nzchar(nms)] <- strata_cols[!nzchar(nms)]
+
+  if (anyDuplicated(nms)) {
+    dupes <- unique(nms[duplicated(nms)]) # nolint: object_usage_linter
+    cli::cli_abort(
+      c(
+        "{.arg strata_cols} maps the same design column more than once.",
+        "x" = "Duplicated: {.field {dupes}}.",
+        "i" = "Each design-facing stratum column must come from exactly one source column."
+      ),
+      class = "creel_error_schema_validation"
+    )
+  }
+
+  stats::setNames(as.character(strata_cols), nms)
+}
+
 
 # Internal constructor — not exported
 #' @noRd
@@ -101,6 +170,16 @@ new_creel_schema <- function(survey_type, mappings) {
 #' @param catch_table Name of the catch table in the data source.
 #' @param lengths_table Name of the lengths table in the data source.
 #' @param date_col Column name for survey date.
+#' @param strata_cols Stratum columns to carry through from the source, as a
+#'   named character vector whose names are the columns the design refers to and
+#'   whose values are the source columns holding them —
+#'   `c(day_type = "DayType")`. An unnamed entry, `c("day_type")`, means the
+#'   source already uses the design's name. Unlike every other field here, a
+#'   stratum has no canonical tidycreel name: [add_counts()] matches
+#'   `design$strata_cols` — the caller's own calendar column names — against the
+#'   names of the counts frame, so the mapping has to be two-sided. Without it a
+#'   fetched counts frame reaches [add_counts()] with no stratum label and any
+#'   design built with `strata =` aborts (GH #171).
 #' @param catch_col Column name for catch count in interviews.
 #' @param effort_col Column name for effort (hours) in interviews.
 #' @param trip_status_col Column name for trip status in interviews.
@@ -156,6 +235,7 @@ creel_schema <- function(
   catch_table = NULL,
   lengths_table = NULL,
   date_col = NULL,
+  strata_cols = NULL,
   catch_col = NULL,
   effort_col = NULL,
   trip_status_col = NULL,
@@ -186,6 +266,7 @@ creel_schema <- function(
   refused_col = NULL
 ) {
   survey_type <- match.arg(survey_type)
+  strata_cols <- normalize_strata_cols(strata_cols)
   new_creel_schema(
     survey_type,
     list(
@@ -194,6 +275,7 @@ creel_schema <- function(
       catch_table = catch_table,
       lengths_table = lengths_table,
       date_col = date_col,
+      strata_cols = strata_cols,
       catch_col = catch_col,
       effort_col = effort_col,
       trip_status_col = trip_status_col,
@@ -308,7 +390,15 @@ format.creel_schema <- function(x, ...) {
       if (!is.null(tbl_name) || length(mapped) > 0) {
         cli::cli_h2("{tbl_key}: {if (is.null(tbl_name)) '(not set)' else tbl_name}")
         for (cf in mapped) {
-          cli::cli_text("  {sub('_col$', '', cf)} -> {x[[cf]]}")
+          if (identical(cf, "strata_cols")) {
+            # Two-sided and possibly plural, so print one line per stratum under
+            # the design-facing name rather than the field name.
+            for (nm in names(x$strata_cols)) {
+              cli::cli_text("  {nm} -> {x$strata_cols[[nm]]}")
+            }
+          } else {
+            cli::cli_text("  {sub('_col$', '', cf)} -> {x[[cf]]}")
+          }
         }
       }
     }

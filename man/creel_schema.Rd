@@ -11,6 +11,7 @@ creel_schema(
   catch_table = NULL,
   lengths_table = NULL,
   date_col = NULL,
+  strata_cols = NULL,
   catch_col = NULL,
   effort_col = NULL,
   trip_status_col = NULL,
@@ -55,6 +56,17 @@ creel_schema(
 \item{lengths_table}{Name of the lengths table in the data source.}
 
 \item{date_col}{Column name for survey date.}
+
+\item{strata_cols}{Stratum columns to carry through from the source, as a
+named character vector whose names are the columns the design refers to and
+whose values are the source columns holding them —
+\code{c(day_type = "DayType")}. An unnamed entry, \code{c("day_type")}, means the
+source already uses the design's name. Unlike every other field here, a
+stratum has no canonical tidycreel name: \code{\link[=add_counts]{add_counts()}} matches
+\code{design$strata_cols} — the caller's own calendar column names — against the
+names of the counts frame, so the mapping has to be two-sided. Without it a
+fetched counts frame reaches \code{\link[=add_counts]{add_counts()}} with no stratum label and any
+design built with \verb{strata =} aborts (GH #171).}
 
 \item{catch_col}{Column name for catch count in interviews.}
 
