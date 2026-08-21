@@ -44,6 +44,8 @@ COL_TO_TABLE <- list(
     "n_anglers_col",
     "n_interviewed_col",
     "angler_type_col",
+    "site_col",
+    "circuit_col",
     "angler_method_col",
     "species_sought_col",
     "refused_col",
@@ -122,6 +124,11 @@ new_creel_schema <- function(survey_type, mappings) {
 #' @param n_counted_col Column name for number of anglers counted.
 #' @param n_interviewed_col Column name for number of anglers interviewed.
 #' @param angler_type_col Column name for angler type.
+#' @param site_col Column name for the site an interview was taken at. Bus-route
+#'   designs need it to join the site inclusion probability; without it
+#'   `add_interviews()` cannot build the \eqn{\pi_i} term (GH #126).
+#' @param circuit_col Column name for the bus-route circuit an interview belongs
+#'   to. Required alongside `site_col` for the bus-route expansion (GH #126).
 #' @param angler_method_col Column name for fishing method.
 #' @param species_sought_col Column name for target species.
 #' @param refused_col Column name for refused interviews indicator.
@@ -171,6 +178,8 @@ creel_schema <- function(
   angler_boats_col = NULL,
   non_ang_boats_col = NULL,
   angler_type_col = NULL,
+  site_col = NULL,
+  circuit_col = NULL,
   angler_method_col = NULL,
   species_sought_col = NULL,
   refused_col = NULL
@@ -207,6 +216,8 @@ creel_schema <- function(
       angler_boats_col = angler_boats_col,
       non_ang_boats_col = non_ang_boats_col,
       angler_type_col = angler_type_col,
+      site_col = site_col,
+      circuit_col = circuit_col,
       angler_method_col = angler_method_col,
       species_sought_col = species_sought_col,
       refused_col = refused_col

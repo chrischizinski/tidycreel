@@ -34,6 +34,8 @@ creel_schema(
   angler_boats_col = NULL,
   non_ang_boats_col = NULL,
   angler_type_col = NULL,
+  site_col = NULL,
+  circuit_col = NULL,
   angler_method_col = NULL,
   species_sought_col = NULL,
   refused_col = NULL
@@ -99,6 +101,13 @@ creel_schema(
 \item{non_ang_boats_col}{Column name for non-angler boats in counts (NGPC-specific).}
 
 \item{angler_type_col}{Column name for angler type.}
+
+\item{site_col}{Column name for the site an interview was taken at. Bus-route
+designs need it to join the site inclusion probability; without it
+\code{add_interviews()} cannot build the \eqn{\pi_i} term (GH #126).}
+
+\item{circuit_col}{Column name for the bus-route circuit an interview belongs
+to. Required alongside \code{site_col} for the bus-route expansion (GH #126).}
 
 \item{angler_method_col}{Column name for fishing method.}
 

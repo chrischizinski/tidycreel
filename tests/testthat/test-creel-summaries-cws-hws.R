@@ -119,20 +119,43 @@ test_that("compute_angler_effort() returns numeric .angler_effort", {
 
 # add_interviews() n_anglers default (Phase 32) ----
 
-test_that("add_interviews() without n_anglers emits cli_inform about assumption", {
+# Warns rather than informs (GH #126): an unstated party size makes
+# .angler_effort party-hours while count-derived effort is angler-hours, so every
+# rate denominator is wrong by the mean party size with no error raised. A
+# message was easy to miss in a fetch-driven pipeline that prints several.
+test_that("add_interviews() without n_anglers warns about the party=1 assumption", {
   data(example_calendar, package = "tidycreel")
   data(example_interviews, package = "tidycreel")
   d <- suppressWarnings(creel_design(example_calendar, date = date, strata = day_type))
-  expect_message(
-    suppressWarnings(add_interviews(
+  expect_warning(
+    add_interviews(
       d,
       example_interviews,
       catch = catch_total,
       effort = hours_fished,
       harvest = catch_kept,
       trip_status = trip_status
-    )),
+    ),
     "assuming 1 angler"
+  )
+})
+
+test_that("add_interviews() with a stated constant party size does not warn", {
+  data(example_calendar, package = "tidycreel")
+  data(example_interviews, package = "tidycreel")
+  d <- suppressWarnings(creel_design(example_calendar, date = date, strata = day_type))
+  # n_anglers = 1 is a declaration that each interview is one angler, not the
+  # same thing as omitting it: .angler_effort is then genuine angler-hours.
+  expect_no_warning(
+    suppressMessages(add_interviews(
+      d,
+      example_interviews,
+      catch = catch_total,
+      effort = hours_fished,
+      harvest = catch_kept,
+      trip_status = trip_status,
+      n_anglers = 1
+    ))
   )
 })
 

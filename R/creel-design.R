@@ -2350,10 +2350,12 @@ add_sections <- function(
 #'   than "column 1". Values must be positive and finite; missing and
 #'   non-integer values warn.
 #'
-#'   When omitted, effort is left un-normalised and a \code{cli_inform()} message
-#'   notes the assumption. In that case the rate estimators return quantities per
-#'   *party*-hour, and the product totals warn when they multiply one by
-#'   count-derived angler-hours.
+#'   When omitted, effort is left un-normalised and a \code{cli_warn()} message
+#'   states the assumption. In that case the rate estimators return quantities
+#'   per *party*-hour, and the product totals warn when they multiply one by
+#'   count-derived angler-hours. Pass \code{n_anglers = 1} to state that the
+#'   interviews really are one angler each; that is a declaration, not a default,
+#'   and it silences the warning.
 #' @param refused Tidy selector for the refused interview flag column (optional,
 #'   default NULL). Use bare column names (e.g., `refused = refused_flag`).
 #'   Values should be logical (TRUE/FALSE) or coercible to logical.
@@ -2884,13 +2886,21 @@ add_interviews <- function(
   new_design$trip_start_col <- trip_start_col
   new_design$interview_time_col <- interview_time_col
 
-  # Emit inform when n_anglers was not explicitly provided
+  # Warn -- not inform -- when n_anglers was not explicitly provided. The
+  # assumption is a statistical claim about the data, not a note about defaults:
+  # every party of two or more makes .angler_effort party-hours while
+  # count-derived effort stays angler-hours, so CPUE/HPUE denominators are wrong
+  # by the mean party size with no error and a believable number (GH #126).
   if (n_anglers_missing) {
-    cli::cli_inform(c(
-      "i" = "No {.arg n_anglers} provided \u2014 assuming 1 angler per interview.",
+    cli::cli_warn(c(
+      "!" = "No {.arg n_anglers} provided \u2014 assuming 1 angler per interview.",
       "i" = paste(
         "Pass {.code n_anglers = <column>} to use actual party sizes",
         "for angler-hour normalization."
+      ),
+      "i" = paste(
+        "If the interviews really are one angler each, pass",
+        "{.code n_anglers = 1} to state that and silence this warning."
       )
     ))
   }

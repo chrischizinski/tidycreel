@@ -2,6 +2,15 @@
 
 ## Breaking changes
 
+* `add_interviews()` now **warns** rather than informs when `n_anglers` is
+  omitted (#126). The assumption it states is a claim about the data, not a
+  note about a default: with any party larger than one, `.angler_effort` is
+  party-hours while count-derived effort is angler-hours, so every rate
+  denominator is wrong by the mean party size with no error raised. Pass
+  `n_anglers = 1` to declare that the interviews really are one angler each;
+  that silences the warning and, unlike omission, marks the effort as genuine
+  angler-hours.
+
 * `add_counts()` refuses a counts table containing rows identical in every
   column (#152). `svytotal()` sums the rows of `design$counts`, so a repeated
   row was counted twice: a six-day table rose from 65 to 77 angler-days and its
@@ -54,6 +63,13 @@
   aborts. This is the third appearance of one root cause — the key omitted
   `section` (#155), then `effort_type` (#162) — which is why the fix stops
   enumerating dimensions and lets the caller state the unit instead.
+
+* `creel_schema()` gains `site_col` and `circuit_col` (#126). A bus-route
+  interview has to name the site and circuit it was taken at, or
+  `add_interviews()` cannot join the site inclusion probability — but the schema
+  had no way to say which source columns hold them, so the connect layer dropped
+  them and the join aborted with an error that pointed nowhere near the cause.
+  Both default to `NULL`; nothing else changes.
 
 # tidycreel 4.0.0 "Paddlefish" (2026-08-18)
 
