@@ -29,7 +29,7 @@ test_that("fetch_counts.creel_connection_api() returns canonical columns (API-02
     httr2::response(
       200,
       headers = "Content-Type: application/json",
-      body    = charToRaw('[{"cd_Date":"2016-03-28","c_BankAnglers":12,"c_AnglerBoats":2,"c_NonAngBoats":1}]')
+      body    = charToRaw('[{"SurveyDate":"2016-03-28","ShoreAnglers":12,"FishingBoats":2,"OtherBoats":1}]')
     )
   })
   conn   <- make_api_conn()
@@ -55,12 +55,12 @@ test_that("fetch_counts.creel_connection_api() handles empty API response (API-0
 })
 
 test_that("fetch_counts.creel_connection_api() silently drops absent optional fields (API-11)", {
-  # Non-NGPC response: only date and bank_anglers; no angler_boats/non_ang_boats
+  # A source that counts no boats: only date and bank_anglers come back
   httr2::local_mocked_responses(function(req) {
     httr2::response(
       200,
       headers = "Content-Type: application/json",
-      body    = charToRaw('[{"cd_Date":"2016-03-28","c_BankAnglers":8}]')
+      body    = charToRaw('[{"SurveyDate":"2016-03-28","ShoreAnglers":8}]')
     )
   })
   conn   <- make_api_conn()

@@ -53,7 +53,7 @@ Must be same length as \code{species}. Default equal weights.}
 
 \item{p_zero_catch}{Numeric in [0, 1). Probability a trip has zero total
 catch (zero-inflation). Default \code{0.40}. \strong{Note:} this cannot
-be derived from the NGPC inventory (API artifact); the default is an
+be derived from a survey inventory (API artifact); the default is an
 empirical estimate from the creel literature.}
 
 \item{n_anglers_per_day}{Numeric. Mean number of angler parties arriving

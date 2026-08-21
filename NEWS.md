@@ -2,6 +2,11 @@
 
 ## Breaking changes
 
+* `summarize_by_zip()` and `summarize_by_county()` gain a `zip_col` argument,
+  defaulting to `"zip_code"`. Both previously required a hardcoded raw field
+  name from one agency's database, which no general-purpose package should
+  assume. Rename the column, or pass `zip_col`, to keep existing code working.
+
 * `add_interviews()` now **warns** rather than informs when `n_anglers` is
   omitted (#126). The assumption it states is a claim about the data, not a
   note about a default: with any party larger than one, `.angler_effort` is
@@ -1857,8 +1862,8 @@ Nebraska or the Great Plains. v2.1.0 is named for the Sauger
 
 * `estimate_angler_trips()` — estimates angler trip counts (angler days) from effort and mean trip length using Delta Method variance propagation.
 * `estimate_effort_per_acre()` — computes effort density (angler-hours per acre) by stratum from an extrapolated effort estimate and supplied acreage.
-* `summarize_boat_composition()` — returns percent angler boats by month and day type, computed from raw count fields c_AnglerBoats and c_NonAngBoats.
-* `summarize_by_zip()` — tabulates interview count and percentage by zip code from the ii_ZipCode interview field.
+* `summarize_boat_composition()` — returns percent angler boats by month and day type, computed from the angler-boat and non-angler-boat count columns.
+* `summarize_by_zip()` — tabulates interview count and percentage by zip code from the interview zip code column.
 * `summarize_by_county()` — maps zip codes to counties via zipcodeR and returns interview count and percentage by county; emits an informative error when zipcodeR is not installed.
 
 ## Documentation

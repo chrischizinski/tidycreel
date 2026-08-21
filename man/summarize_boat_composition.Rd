@@ -22,7 +22,7 @@ A \code{data.frame} with class
 \description{
 Computes the percentage of boats that are angler boats from raw count data,
 grouped by calendar month and day type. Formula:
-\code{mean(c_AnglerBoats / (c_AnglerBoats + c_NonAngBoats))} per group.
+\code{mean(angler_boats / (angler_boats + non_ang_boats))} per group.
 }
 \details{
 Count-based summary, not interview-weighted. Rows where

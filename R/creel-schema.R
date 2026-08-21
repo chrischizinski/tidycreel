@@ -107,7 +107,8 @@ new_creel_schema <- function(survey_type, mappings) {
 #' @param count_col Column name for total angler count in counts (legacy single-column format).
 #' @param bank_anglers_col Column name for bank (shore) angler count in counts.
 #' @param angler_boats_col Column name for boats carrying anglers in counts.
-#' @param non_ang_boats_col Column name for non-angler boats in counts (NGPC-specific).
+#' @param non_ang_boats_col Column name for boats carrying no anglers in counts.
+#'   Recorded by some agencies and not others; leave `NULL` where it is not.
 #' @param catch_uid_col Column name for catch unique identifier.
 #' @param interview_uid_col Column name for interview unique identifier.
 #' @param species_col Column name for species.

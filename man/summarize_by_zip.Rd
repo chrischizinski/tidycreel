@@ -4,12 +4,15 @@
 \alias{summarize_by_zip}
 \title{Tabulate interviews by zip code of origin}
 \usage{
-summarize_by_zip(design)
+summarize_by_zip(design, zip_col = "zip_code")
 }
 \arguments{
 \item{design}{A \code{creel_design} object with interviews attached via
-\code{\link{add_interviews}}. Interviews must include the
-\code{ii_ZipCode} field.}
+\code{\link{add_interviews}}.}
+
+\item{zip_col}{Name of the interview column holding the angler zip code.
+Defaults to \code{"zip_code"}. Name whatever your source calls it -- no
+organisation's raw field name is assumed.}
 }
 \value{
 A \code{data.frame} with class
@@ -31,7 +34,7 @@ last; remaining rows sorted by \code{n} descending.
 \examples{
 data(example_calendar, package = "tidycreel")
 data(example_interviews, package = "tidycreel")
-example_interviews$ii_ZipCode <- rep_len(
+example_interviews$zip_code <- rep_len(
   c("68502", "68502", NA, "68508", NA),
   nrow(example_interviews)
 )

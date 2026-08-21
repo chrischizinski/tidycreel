@@ -1538,7 +1538,7 @@ new_creel_summary <- function(table, method, variance_method, conf_level) {
 #' @description
 #' Computes the percentage of boats that are angler boats from raw count data,
 #' grouped by calendar month and day type. Formula:
-#' \code{mean(c_AnglerBoats / (c_AnglerBoats + c_NonAngBoats))} per group.
+#' \code{mean(angler_boats / (angler_boats + non_ang_boats))} per group.
 #'
 #' @details
 #' Count-based summary, not interview-weighted. Rows where
@@ -1699,8 +1699,10 @@ summarize_boat_composition <- function(design, schema) {
 #' total interviews including NA rows.
 #'
 #' @param design A \code{creel_design} object with interviews attached via
-#'   \code{\link{add_interviews}}. Interviews must include the
-#'   \code{ii_ZipCode} field.
+#'   \code{\link{add_interviews}}.
+#' @param zip_col Name of the interview column holding the angler zip code.
+#'   Defaults to \code{"zip_code"}. Name whatever your source calls it -- no
+#'   organisation's raw field name is assumed.
 #'
 #' @return A \code{data.frame} with class
 #'   \code{c("creel_summary_zip", "data.frame")} and columns:
@@ -1716,7 +1718,7 @@ summarize_boat_composition <- function(design, schema) {
 #' @examples
 #' data(example_calendar, package = "tidycreel")
 #' data(example_interviews, package = "tidycreel")
-#' example_interviews$ii_ZipCode <- rep_len(
+#' example_interviews$zip_code <- rep_len(
 #'   c("68502", "68502", NA, "68508", NA),
 #'   nrow(example_interviews)
 #' )
@@ -1735,7 +1737,7 @@ summarize_boat_composition <- function(design, schema) {
 #'
 #' @family "Reporting & Diagnostics"
 #' @export
-summarize_by_zip <- function(design) {
+summarize_by_zip <- function(design, zip_col = "zip_code") {
   # Guard 1: design type check
   if (!inherits(design, "creel_design")) {
     cli::cli_abort(c(
@@ -1754,16 +1756,19 @@ summarize_by_zip <- function(design) {
     ))
   }
 
-  # Guard 3: ii_ZipCode column present
-  if (!"ii_ZipCode" %in% names(design$interviews)) {
+  # Guard 3: the named zip column is present
+  if (!is.character(zip_col) || length(zip_col) != 1L || !nzchar(zip_col)) {
+    cli::cli_abort("{.arg zip_col} must be a single non-empty column name.")
+  }
+  if (!zip_col %in% names(design$interviews)) {
     cli::cli_abort(c(
-      "No {.field ii_ZipCode} column found in interviews.",
-      "x" = "Column {.field ii_ZipCode} is absent from {.code design$interviews}.",
-      "i" = "Confirm interview data includes NGPC zip code field {.field ii_ZipCode}."
+      "No {.field {zip_col}} column found in interviews.",
+      "x" = "Column {.field {zip_col}} is absent from {.code design$interviews}.",
+      "i" = "Name the zip code column with {.arg zip_col}."
     ))
   }
 
-  zip_vals <- design$interviews[["ii_ZipCode"]]
+  zip_vals <- design$interviews[[zip_col]]
   total_n <- length(zip_vals)
 
   # Replace NA with "Unknown" before tabulating
@@ -1793,8 +1798,9 @@ summarize_by_zip <- function(design) {
 #' zip codes appear as an explicit "Unknown" row.
 #'
 #' @param design A \code{creel_design} object with interviews attached via
-#'   \code{\link{add_interviews}}. Interviews must include the
-#'   \code{ii_ZipCode} field.
+#'   \code{\link{add_interviews}}.
+#' @param zip_col Name of the interview column holding the angler zip code.
+#'   Defaults to \code{"zip_code"}.
 #'
 #' @return A \code{data.frame} with class
 #'   \code{c("creel_summary_county", "data.frame")} and columns:
@@ -1812,9 +1818,9 @@ summarize_by_zip <- function(design) {
 #' \dontrun{
 #' # Requires zipcodeR — install with: install.packages("zipcodeR")
 #' interviews_df <- data.frame(
-#'   ii_InterviewNumber = 1:5,
-#'   ii_ZipCode         = c("68502", "68502", NA, "68508", NA),
-#'   stringsAsFactors   = FALSE
+#'   interview_id     = 1:5,
+#'   zip_code         = c("68502", "68502", NA, "68508", NA),
+#'   stringsAsFactors = FALSE
 #' )
 #' cal <- data.frame(
 #'   date     = as.Date(c("2024-05-01", "2024-05-02")),
@@ -1831,7 +1837,7 @@ summarize_by_zip <- function(design) {
 #'
 #' @family "Reporting & Diagnostics"
 #' @export
-summarize_by_county <- function(design) {
+summarize_by_county <- function(design, zip_col = "zip_code") {
   # Guard 0: zipcodeR must be installed
   rlang::check_installed(
     "zipcodeR",
@@ -1859,16 +1865,19 @@ summarize_by_county <- function(design) {
     ))
   }
 
-  # Guard 3: ii_ZipCode column present
-  if (!"ii_ZipCode" %in% names(design$interviews)) {
+  # Guard 3: the named zip column is present
+  if (!is.character(zip_col) || length(zip_col) != 1L || !nzchar(zip_col)) {
+    cli::cli_abort("{.arg zip_col} must be a single non-empty column name.")
+  }
+  if (!zip_col %in% names(design$interviews)) {
     cli::cli_abort(c(
-      "No {.field ii_ZipCode} column found in interviews.",
-      "x" = "Column {.field ii_ZipCode} is absent from {.code design$interviews}.",
-      "i" = "Confirm interview data includes NGPC zip code field {.field ii_ZipCode}."
+      "No {.field {zip_col}} column found in interviews.",
+      "x" = "Column {.field {zip_col}} is absent from {.code design$interviews}.",
+      "i" = "Name the zip code column with {.arg zip_col}."
     ))
   }
 
-  zip_vals <- design$interviews[["ii_ZipCode"]]
+  zip_vals <- design$interviews[[zip_col]]
   total_n <- length(zip_vals)
   valid_zips <- zip_vals[!is.na(zip_vals)]
   unique_zips <- unique(valid_zips)
