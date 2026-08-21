@@ -20,6 +20,7 @@ creel_schema(
   catch_table = NULL,
   lengths_table = NULL,
   date_col = NULL,
+  strata_cols = NULL,
   catch_col = NULL,
   effort_col = NULL,
   trip_status_col = NULL,
@@ -78,6 +79,22 @@ creel_schema(
 - date_col:
 
   Column name for survey date.
+
+- strata_cols:
+
+  Stratum columns to carry through from the source, as a named character
+  vector whose names are the columns the design refers to and whose
+  values are the source columns holding them —
+  `c(day_type = "DayType")`. An unnamed entry, `c("day_type")`, means
+  the source already uses the design's name. Unlike every other field
+  here, a stratum has no canonical tidycreel name:
+  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+  matches `design$strata_cols` — the caller's own calendar column names
+  — against the names of the counts frame, so the mapping has to be
+  two-sided. Without it a fetched counts frame reaches
+  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+  with no stratum label and any design built with `strata =` aborts (GH
+  \#171).
 
 - catch_col:
 

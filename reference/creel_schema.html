@@ -96,6 +96,7 @@ survey type are mapped.</p>
 <span>  catch_table <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  lengths_table <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  date_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  strata_cols <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  catch_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  effort_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  trip_status_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -155,6 +156,19 @@ survey type are mapped.</p>
 
 <dt id="arg-date-col">date_col<a class="anchor" aria-label="anchor" href="#arg-date-col"></a></dt>
 <dd><p>Column name for survey date.</p></dd>
+
+
+<dt id="arg-strata-cols">strata_cols<a class="anchor" aria-label="anchor" href="#arg-strata-cols"></a></dt>
+<dd><p>Stratum columns to carry through from the source, as a
+named character vector whose names are the columns the design refers to and
+whose values are the source columns holding them —
+<code>c(day_type = "DayType")</code>. An unnamed entry, <code>c("day_type")</code>, means the
+source already uses the design's name. Unlike every other field here, a
+stratum has no canonical tidycreel name: <code><a href="add_counts.html">add_counts()</a></code> matches
+<code>design$strata_cols</code> — the caller's own calendar column names — against the
+names of the counts frame, so the mapping has to be two-sided. Without it a
+fetched counts frame reaches <code><a href="add_counts.html">add_counts()</a></code> with no stratum label and any
+design built with <code>strata =</code> aborts (GH #171).</p></dd>
 
 
 <dt id="arg-catch-col">catch_col<a class="anchor" aria-label="anchor" href="#arg-catch-col"></a></dt>

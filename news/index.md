@@ -2,6 +2,35 @@
 
 ## tidycreel (development version)
 
+### New features
+
+- [`creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/creel_schema.md)
+  gains `strata_cols`, naming the stratum columns to carry through from
+  the source
+  ([\#171](https://github.com/chrischizinski/tidycreel/issues/171)). It
+  is the one mapping here with no canonical tidycreel name on the other
+  side:
+  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+  matches `design$strata_cols` — the caller’s own calendar column names
+  — against the names of the counts frame, so the mapping is two-sided.
+  Names are the column the design refers to, values the source column
+  holding it: `strata_cols = c(day_type = "DayType")`. An unnamed entry,
+  `c("day_type")`, means the source already uses the design’s name.
+
+### Bug fixes
+
+- [`print()`](https://rdrr.io/r/base/print.html) on a `creel_schema` now
+  groups `n_counted_col` under **interviews** rather than counts
+  ([\#170](https://github.com/chrischizinski/tidycreel/issues/170)).
+  Both enumeration columns live on the interviews table —
+  [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)
+  resolves them against the interviews frame and
+  [`get_enumeration_counts()`](https://chrischizinski.github.io/tidycreel/reference/get_enumeration_counts.md)
+  reads them back off it — so a bus-route user reading the printed
+  schema was told the enumeration count belonged to a table it is not
+  in, while its own denominator was listed under another. Display only;
+  no estimate was affected.
+
 ### Breaking changes
 
 - [`summarize_by_zip()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_zip.md)
