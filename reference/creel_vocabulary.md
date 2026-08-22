@@ -1,52 +1,37 @@
-# Resolve fishing effort from timestamps or self-reported time
+# Canonical vocabularies for the coded columns
 
-Computes fishing effort (hours) for each interview row using a
-conditional rule: if the `time_fished` column is present and non-NA for
-a row, use that value (angler self-reported hours, e.g. after a break);
-otherwise compute from timestamps as
-`difftime(interview_time, trip_start, units = "hours")`.
+The exact values `tidycreel` matches on for the three columns whose
+meaning is a fixed vocabulary rather than a number: `trip_status`,
+`catch_type` and `length_type`. Every downstream filter compares against
+these literals, so a source that codes one of these columns has to be
+translated before its values can be trusted — see the `value_maps`
+argument of
+[`creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/creel_schema.md).
 
-This function can be called standalone on raw data before entering the
-[`add_interviews`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)
-workflow, or used to preprocess a column that will be passed as the
-`effort` argument to
-[`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md).
+Exported because `tidycreel.connect` translates source codes at the
+fetch and has to check its targets against the same list this package
+filters on; a second copy of the vocabulary would be free to drift from
+this one.
 
 ## Usage
 
 ``` r
-compute_effort(data, trip_start, interview_time, time_fished = NULL)
+creel_vocabulary(column = NULL)
 ```
 
 ## Arguments
 
-- data:
+- column:
 
-  A data frame containing the interview records.
-
-- trip_start:
-
-  Tidy selector for the trip start timestamp column (POSIXct).
-
-- interview_time:
-
-  Tidy selector for the interview timestamp column (POSIXct).
-
-- time_fished:
-
-  Optional tidy selector for a self-reported hours column. When a row
-  has a non-NA value here, it overrides the timestamp calculation.
-  Default is `NULL` (always compute from timestamps).
+  Optional canonical column name. When `NULL` (default) the whole named
+  list is returned; otherwise the character vector for that column.
 
 ## Value
 
-The input data frame with an added `.effort` column (numeric, hours).
-Existing columns are preserved.
+A named list of character vectors, or one character vector when `column`
+is given.
 
 ## See also
-
-[`compute_angler_effort()`](https://chrischizinski.github.io/tidycreel/reference/compute_angler_effort.md),
-[`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)
 
 Other "Survey Design":
 [`add_catch()`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md),
@@ -57,9 +42,9 @@ Other "Survey Design":
 [`as_hybrid_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_hybrid_svydesign.md),
 [`as_survey_design()`](https://chrischizinski.github.io/tidycreel/reference/as_survey_design.md),
 [`compute_angler_effort()`](https://chrischizinski.github.io/tidycreel/reference/compute_angler_effort.md),
+[`compute_effort()`](https://chrischizinski.github.io/tidycreel/reference/compute_effort.md),
 [`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md),
 [`creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/creel_schema.md),
-[`creel_vocabulary()`](https://chrischizinski.github.io/tidycreel/reference/creel_vocabulary.md),
 [`derive_angler_count()`](https://chrischizinski.github.io/tidycreel/reference/derive_angler_count.md),
 [`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md),
 [`impute_camera_counts()`](https://chrischizinski.github.io/tidycreel/reference/impute_camera_counts.md),
@@ -69,3 +54,20 @@ Other "Survey Design":
 [`prep_interview_catch()`](https://chrischizinski.github.io/tidycreel/reference/prep_interview_catch.md),
 [`prep_interviews_trips()`](https://chrischizinski.github.io/tidycreel/reference/prep_interviews_trips.md),
 [`validate_creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/validate_creel_schema.md)
+
+## Examples
+
+``` r
+creel_vocabulary()
+#> $trip_status
+#> [1] "complete"   "incomplete"
+#> 
+#> $catch_type
+#> [1] "caught"    "harvested" "released" 
+#> 
+#> $length_type
+#> [1] "harvest" "release"
+#> 
+creel_vocabulary("trip_status")
+#> [1] "complete"   "incomplete"
+```

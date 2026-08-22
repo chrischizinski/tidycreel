@@ -453,6 +453,8 @@ argument.
   : Column-mapping contract for tidycreel data sources
 - [`validate_creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/validate_creel_schema.md)
   : Validate a creel_schema object
+- [`creel_vocabulary()`](https://chrischizinski.github.io/tidycreel/reference/creel_vocabulary.md)
+  : Canonical vocabularies for the coded columns
 
 ## Estimation
 

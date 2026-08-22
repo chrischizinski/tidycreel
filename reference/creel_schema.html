@@ -97,6 +97,7 @@ survey type are mapped.</p>
 <span>  lengths_table <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  date_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  strata_cols <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  value_maps <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  catch_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  effort_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  trip_status_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -171,6 +172,20 @@ stratum has no canonical tidycreel name: <code><a href="add_counts.html">add_cou
 names of the counts frame, so the mapping has to be two-sided. Without it a
 fetched counts frame reaches <code><a href="add_counts.html">add_counts()</a></code> with no stratum label and any
 design built with <code>strata =</code> aborts (GH #171).</p></dd>
+
+
+<dt id="arg-value-maps">value_maps<a class="anchor" aria-label="anchor" href="#arg-value-maps"></a></dt>
+<dd><p>Source vocabularies for the coded columns, as a named list
+keyed by canonical column — <code>trip_status</code>, <code>catch_type</code>, <code>length_type</code>.
+Each entry is a fully named character vector mapping the source's own codes
+to canonical values: <code>c("1" = "complete", "2" = "incomplete")</code>. Names are
+what the source writes, values what tidycreel means.</p>
+<p>Every downstream filter matches the canonical literals, so a source that
+codes these columns has to declare what its codes mean. Values already
+canonical pass through untouched; anything neither mapped nor canonical
+aborts at the fetch, where the source is still in view, rather than being
+recoded by hand afterwards — a hand recode folds an undeclared third code
+(<code>"refused"</code>, <code>"unknown"</code>) into complete or incomplete silently (GH #128).</p></dd>
 
 
 <dt id="arg-catch-col">catch_col<a class="anchor" aria-label="anchor" href="#arg-catch-col"></a></dt>
@@ -324,6 +339,7 @@ to. Required alongside <code>site_col</code> for the bus-route expansion (GH #12
 <code><a href="compute_angler_effort.html">compute_angler_effort()</a></code>,
 <code><a href="compute_effort.html">compute_effort()</a></code>,
 <code><a href="creel_design.html">creel_design()</a></code>,
+<code><a href="creel_vocabulary.html">creel_vocabulary()</a></code>,
 <code><a href="derive_angler_count.html">derive_angler_count()</a></code>,
 <code><a href="est_effort_camera.html">est_effort_camera()</a></code>,
 <code><a href="impute_camera_counts.html">impute_camera_counts()</a></code>,

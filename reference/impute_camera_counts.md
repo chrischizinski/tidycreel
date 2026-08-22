@@ -126,6 +126,7 @@ Other "Survey Design":
 [`compute_effort()`](https://chrischizinski.github.io/tidycreel/reference/compute_effort.md),
 [`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md),
 [`creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/creel_schema.md),
+[`creel_vocabulary()`](https://chrischizinski.github.io/tidycreel/reference/creel_vocabulary.md),
 [`derive_angler_count()`](https://chrischizinski.github.io/tidycreel/reference/derive_angler_count.md),
 [`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md),
 [`mean_party_size()`](https://chrischizinski.github.io/tidycreel/reference/mean_party_size.md),

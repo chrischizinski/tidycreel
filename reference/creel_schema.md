@@ -21,6 +21,7 @@ creel_schema(
   lengths_table = NULL,
   date_col = NULL,
   strata_cols = NULL,
+  value_maps = NULL,
   catch_col = NULL,
   effort_col = NULL,
   trip_status_col = NULL,
@@ -97,6 +98,22 @@ creel_schema(
   [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
   with no stratum label and any design built with `strata =` aborts (GH
   \#171).
+
+- value_maps:
+
+  Source vocabularies for the coded columns, as a named list keyed by
+  canonical column — `trip_status`, `catch_type`, `length_type`. Each
+  entry is a fully named character vector mapping the source's own codes
+  to canonical values: `c("1" = "complete", "2" = "incomplete")`. Names
+  are what the source writes, values what tidycreel means.
+
+  Every downstream filter matches the canonical literals, so a source
+  that codes these columns has to declare what its codes mean. Values
+  already canonical pass through untouched; anything neither mapped nor
+  canonical aborts at the fetch, where the source is still in view,
+  rather than being recoded by hand afterwards — a hand recode folds an
+  undeclared third code (`"refused"`, `"unknown"`) into complete or
+  incomplete silently (GH \#128).
 
 - catch_col:
 
@@ -254,6 +271,7 @@ Other "Survey Design":
 [`compute_angler_effort()`](https://chrischizinski.github.io/tidycreel/reference/compute_angler_effort.md),
 [`compute_effort()`](https://chrischizinski.github.io/tidycreel/reference/compute_effort.md),
 [`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md),
+[`creel_vocabulary()`](https://chrischizinski.github.io/tidycreel/reference/creel_vocabulary.md),
 [`derive_angler_count()`](https://chrischizinski.github.io/tidycreel/reference/derive_angler_count.md),
 [`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md),
 [`impute_camera_counts()`](https://chrischizinski.github.io/tidycreel/reference/impute_camera_counts.md),
