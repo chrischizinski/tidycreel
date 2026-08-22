@@ -62,6 +62,10 @@ COL_TO_TABLE <- list(
   counts = c(
     "count_col",
     "strata_cols",
+    # A count row is one observation at one moment, not a day's total. The time
+    # is what distinguishes two counts on the same date, and without it they
+    # read as two sampled days rather than two looks at one (GH #129).
+    "count_time_col",
     "bank_anglers_col",
     "angler_boats_col",
     "non_ang_boats_col"
@@ -331,6 +335,15 @@ new_creel_schema <- function(survey_type, mappings) {
 #' @param effort_col Column name for effort (hours) in interviews.
 #' @param trip_status_col Column name for trip status in interviews.
 #' @param count_col Column name for total angler count in counts (legacy single-column format).
+#' @param count_time_col Column name for the time of a count observation, such
+#'   as `"16:30"` or `"am"`. Optional. Map it whenever the source records more
+#'   than one count per sampled day: the fetched `count_time` column is what
+#'   [add_counts()]'s `count_time_col` argument groups on, and without it those
+#'   rows reach the design as separate sampled days rather than as repeat looks
+#'   at one, which sums the day's effort instead of averaging it and leaves the
+#'   within-day variance component uncomputed (GH #129). Carried through as
+#'   character: it is a label that distinguishes observations, not a quantity,
+#'   and a source may write a clock time in any format.
 #' @param bank_anglers_col Column name for bank (shore) angler count in counts.
 #' @param angler_boats_col Column name for boats carrying anglers in counts.
 #' @param non_ang_boats_col Column name for boats carrying no anglers in counts.
@@ -400,6 +413,7 @@ creel_schema <- function(
   effort_col = NULL,
   trip_status_col = NULL,
   count_col = NULL,
+  count_time_col = NULL,
   catch_uid_col = NULL,
   interview_uid_col = NULL,
   species_col = NULL,
@@ -444,6 +458,7 @@ creel_schema <- function(
       effort_col = effort_col,
       trip_status_col = trip_status_col,
       count_col = count_col,
+      count_time_col = count_time_col,
       catch_uid_col = catch_uid_col,
       interview_uid_col = interview_uid_col,
       species_col = species_col,

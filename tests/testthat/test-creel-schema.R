@@ -355,3 +355,58 @@ test_that("value_maps prints under its own heading", {
   expect_true(any(grepl("value maps", out)))
   expect_true(any(grepl("trip_status: 1 -> complete", out, fixed = TRUE)))
 })
+
+## count time (GH #129) --------------------------------------------------------
+
+test_that("count_time_col is carried on the schema", {
+  # A count row is one observation, not a day's total. The time is what
+  # distinguishes two counts on one date; with no field for it, those rows read
+  # as two sampled days.
+  s <- creel_schema(
+    survey_type    = "instantaneous",
+    count_time_col = "CountTime"
+  )
+
+  expect_equal(s$count_time_col, "CountTime")
+})
+
+test_that("count_time_col is optional, so an existing schema still validates", {
+  # Every schema written before #129 maps no count time, and requiring one
+  # would break all of them -- which is why it is absent from CANONICAL_COLUMNS.
+  s <- creel_schema(
+    survey_type       = "instantaneous",
+    date_col          = "SurveyDate",
+    catch_col         = "TotalCatch",
+    effort_col        = "EffortHours",
+    trip_status_col   = "TripStatus",
+    count_col         = "AnglerCount",
+    catch_uid_col     = "CatchID",
+    interview_uid_col = "InterviewID",
+    species_col       = "Species",
+    catch_count_col   = "FishCount",
+    catch_type_col    = "CatchType",
+    length_uid_col    = "LengthID",
+    length_mm_col     = "LengthMM",
+    length_type_col   = "LengthType"
+  )
+
+  expect_silent(validate_creel_schema(s))
+  expect_null(s$count_time_col)
+})
+
+test_that("count_time_col prints under counts", {
+  # It describes a count row, so listing it under any other table would send a
+  # reader to the wrong frame -- the mistake #170 fixed for n_counted_col.
+  s <- creel_schema(
+    survey_type      = "instantaneous",
+    count_time_col   = "CountTime",
+    bank_anglers_col = "ShoreAnglers"
+  )
+  out <- capture.output(print(s))
+
+  counts_at <- grep("counts:", out)
+  time_at   <- grep("count_time -> CountTime", out, fixed = TRUE)
+
+  expect_length(time_at, 1L)
+  expect_true(all(time_at > counts_at))
+})
