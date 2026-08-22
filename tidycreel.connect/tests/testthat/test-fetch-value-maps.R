@@ -248,3 +248,99 @@ test_that("a YAML code written unquoted still round-trips", {
 
   expect_equal(vm$trip_status, c("1" = "complete"))
 })
+
+test_that("a malformed value_maps block explains the shape it wanted", {
+  # The message embeds literal YAML braces, which cli reads as an interpolation
+  # delimiter unless doubled -- the hint aborted with "Could not evaluate cli {}
+  # expression" instead of printing. Only a test on this branch catches it.
+  expect_error(.yaml_value_maps(42), "keyed by canonical column")
+  expect_error(.yaml_value_maps(42), "trip_status")
+})
+
+# --- strata_cols through the same profile ---
+
+test_that("strata_cols survives the YAML profile in mapping form", {
+  # Same gap as value_maps and the same consequence: without this a
+  # profile-configured counts frame reaches add_counts() with no stratum label
+  # and any design built with `strata =` aborts (GH #171).
+  sc <- .yaml_strata_cols(list(day_type = "DayTypeCode"))
+
+  expect_type(sc, "character")
+  expect_equal(sc, c(day_type = "DayTypeCode"))
+  expect_no_error(tidycreel::creel_schema(survey_type = "instantaneous", strata_cols = sc))
+})
+
+test_that("a bare YAML sequence names the stratum on both sides", {
+  # `strata_cols: [day_type]` parses to an unnamed list, which is the shape
+  # meaning "the source already uses the design's name".
+  sc <- .yaml_strata_cols(list("day_type"))
+  s <- tidycreel::creel_schema(survey_type = "instantaneous", strata_cols = sc)
+
+  expect_equal(s$strata_cols, c(day_type = "day_type"))
+})
+
+test_that("two strata round-trip in order", {
+  sc <- .yaml_strata_cols(list(day_type = "DayTypeCode", period = "PeriodCode"))
+
+  expect_equal(sc, c(day_type = "DayTypeCode", period = "PeriodCode"))
+})
+
+test_that("a malformed strata_cols block explains both accepted shapes", {
+  expect_error(.yaml_strata_cols(42), "mapping or a sequence")
+  # Both shapes named, and the literal braces actually render.
+  expect_error(.yaml_strata_cols(42), "day_type")
+})
+
+test_that("a YAML profile's declarations reach a fetch (no {config} needed)", {
+  # The public entry point needs {config} to parse the file, which is why the
+  # tests in test-creel-connect-yaml.R skip where it is absent. The parsing is
+  # the only part {config} does, so feeding the same YAML text through {yaml}
+  # exercises the real builder and the real fetch on every machine -- otherwise
+  # this path is only ever proven in CI.
+  skip_if_not_installed("yaml")
+
+  txt <- paste(c(
+    "backend: api",
+    'base_url: "https://api.example.org/creel/"',
+    'uid_param: "survey_id"',
+    "creel_uids:",
+    '  - "s-1"',
+    "schema:",
+    "  survey_type: instantaneous",
+    "  strata_cols:",
+    '    day_type: "DayTypeCode"',
+    "  value_maps:",
+    "    trip_status:",
+    '      "1": complete',
+    '      "2": incomplete',
+    "endpoints:",
+    '  interviews: "v2/interviews"',
+    "field_map:",
+    "  interviews:",
+    '    interview_uid: "InterviewID"',
+    '    date: "SurveyDate"',
+    '    trip_status: "TripStatus"',
+    '    effort_hours: "HoursFished"',
+    '    day_type: "DayTypeCode"'
+  ), collapse = "\n")
+
+  conn <- .build_creel_conn(yaml::yaml.load(txt))
+  expect_equal(conn$schema$strata_cols, c(day_type = "DayTypeCode"))
+
+  httr2::local_mocked_responses(function(req) {
+    httr2::response(
+      200,
+      headers = "Content-Type: application/json",
+      body = charToRaw(paste0(
+        '[{"InterviewID":1,"SurveyDate":"2024-06-01","TripStatus":"1",',
+        '"HoursFished":2.5,"DayTypeCode":"weekday"},',
+        '{"InterviewID":2,"SurveyDate":"2024-06-02","TripStatus":"2",',
+        '"HoursFished":1.0,"DayTypeCode":"weekend"}]'
+      ))
+    )
+  })
+
+  iv <- suppressMessages(fetch_interviews(conn))
+  expect_equal(iv$trip_status, c("complete", "incomplete"))
+  expect_equal(iv$day_type, c("weekday", "weekend"))
+})

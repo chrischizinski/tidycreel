@@ -173,8 +173,11 @@ creel_connect_from_yaml <- function(path, config = "default") {
   backend <- cfg$backend
   survey_type <- cfg$schema$survey_type
 
-  # Build a minimal creel_schema from the YAML schema block
-  # Column mappings are not in YAML -- this schema holds table names only
+  # Build the creel_schema from the YAML schema block. Column *name* mappings
+  # stay out of YAML, but the two fields that are not column names do belong
+  # here: the stratum mapping and the value maps. Both describe the source
+  # rather than one backend, and a profile that cannot express them leaves the
+  # documented route unable to configure an ordinary stratified or coded survey.
   valid_survey_types <- c("instantaneous", "bus_route", "ice", "camera", "aerial")
   if (!survey_type %in% valid_survey_types) {
     cli::cli_abort(c(
@@ -196,6 +199,12 @@ creel_connect_from_yaml <- function(path, config = "default") {
   # entry as a nested list; creel_schema() wants a named character vector.
   if (!is.null(cfg$schema$value_maps)) {
     schema_args$value_maps <- .yaml_value_maps(cfg$schema$value_maps)
+  }
+  # Same gap, same reason: without this a profile-configured counts frame
+  # reaches add_counts() with no stratum label and any design built with
+  # `strata =` aborts -- exactly what GH #171 fixed for a hand-built schema.
+  if (!is.null(cfg$schema$strata_cols)) {
+    schema_args$strata_cols <- .yaml_strata_cols(cfg$schema$strata_cols)
   }
   schema <- do.call(tidycreel::creel_schema, schema_args)
 
@@ -252,7 +261,7 @@ creel_connect_from_yaml <- function(path, config = "default") {
   if (!is.list(block) || length(block) == 0L || is.null(names(block))) {
     cli::cli_abort(c(
       "{.field schema.value_maps} must be a block keyed by canonical column.",
-      "i" = "For example {.code value_maps: {trip_status: {\"1\": complete}}}."
+      "i" = "For example {.code value_maps: {{trip_status: {{\"1\": complete}}}}}."
     ))
   }
   lapply(block, function(entry) {
@@ -263,4 +272,32 @@ creel_connect_from_yaml <- function(path, config = "default") {
     }
     stats::setNames(as.character(unlist(entry, use.names = FALSE)), as.character(names(entry)))
   })
+}
+
+# Internal: turn the YAML `strata_cols` block into the named character vector
+# creel_schema() expects.
+#
+# Both YAML shapes are accepted, matching the two the argument itself takes:
+# a mapping (`day_type: DayType`) when the source column is named differently,
+# and a bare sequence (`- day_type`) when the source already uses the design's
+# name. A sequence parses to an unnamed list, which normalize_strata_cols()
+# then reads as naming itself on both sides.
+#' @noRd
+.yaml_strata_cols <- function(block) {
+  if (!is.list(block) && !is.character(block)) {
+    cli::cli_abort(c(
+      "{.field schema.strata_cols} must be a mapping or a sequence.",
+      "i" = paste0(
+        "Use {.code strata_cols: {{day_type: DayType}}} to rename, or ",
+        "{.code strata_cols: [day_type]} when the source already uses the ",
+        "design's name."
+      )
+    ))
+  }
+  flat <- unlist(block, use.names = TRUE)
+  if (!is.character(flat)) {
+    flat <- as.character(flat)
+    names(flat) <- names(unlist(block, use.names = TRUE))
+  }
+  flat
 }

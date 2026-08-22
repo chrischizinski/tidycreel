@@ -44,6 +44,15 @@
   no count now warns at the fetch, and a lengths table offering neither a
   measurement nor a bin is refused rather than returned empty-handed.
 
+* A YAML profile can now declare `strata_cols` and `value_maps`. The loader
+  built its schema from `survey_type` and table names alone, so neither field
+  survived the profile — the route the docs recommend for configuring a
+  deployment. A profile-configured survey therefore could not be stratified at
+  all: the counts frame arrived with no stratum label and any design built with
+  `strata =` aborted, which is the failure #171 fixed for a hand-built schema
+  and left standing here. Both YAML shapes of `strata_cols` are accepted, the
+  mapping `day_type: DayTypeCode` and the bare sequence `[day_type]`.
+
 * `fetch_counts()` and `fetch_interviews()` now carry stratum columns through
   on both backends, driven by the new `strata_cols` field on
   `tidycreel::creel_schema()` (#171). The rename maps previously had no entry
