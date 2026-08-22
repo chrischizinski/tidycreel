@@ -24,8 +24,20 @@ if (!isNamespaceLoaded("tidycreel")) {
   }
 }
 
-# Working directory is package root (verified by DESCRIPTION guard above)
+# Working directory is package root (verified by DESCRIPTION guard above).
+#
+# A source checkout keeps the fixtures under inst/; an installed package moves
+# that directory's contents to the package root, so the literal "inst/" path
+# resolves in a devtools session and nowhere else. The script was therefore
+# unrunnable under R CMD check, which is part of why its failure went unnoticed
+# for so long -- the test that sources it accepted any error (GH #130).
 fixture_dir <- file.path("inst", "extdata", "calamus-2016")
+if (!file.exists(file.path(fixture_dir, "reference-outputs.csv"))) {
+  fixture_dir <- system.file("extdata", "calamus-2016", package = "tidycreel")
+}
+if (!file.exists(file.path(fixture_dir, "reference-outputs.csv"))) {
+  stop("Cannot locate the calamus-2016 fixtures in either inst/extdata or the installed package.")
+}
 
 # ---- 1. Load fixture data ----
 message("Loading Calamus 2016 fixture data...")
@@ -137,7 +149,14 @@ design <- creel_design(
 message("Adding counts...")
 # Merge day_type from calendar into counts — add_counts requires strata columns
 cnt <- merge(cnt, cal[c("date", "day_type")], by = "date", all.x = TRUE)
-design <- add_counts(design, cnt)
+# count_col must be named: the fixture carries three numeric count columns
+# (bank, angler boats, non-angler boats) and add_counts() refuses to choose
+# among them by position. Calamus is a bank-only fishery -- angler_boats and
+# non_ang_boats are zero throughout -- so bank_anglers is the angler count.
+# Without this the script aborted here, which is where it had been failing
+# silently: nothing in CI runs it, and the one test that sources it accepts
+# any error that is not the working-directory guard (GH #130).
+design <- add_counts(design, cnt, count_col = bank_anglers)
 
 message("Adding interviews (duplicated UIDs preserved -- bus-route design)...")
 design <- add_interviews(
@@ -151,16 +170,16 @@ design <- add_interviews(
 )
 
 # ---- 7. Run estimators ----
-# Note on harvest: for bus_route, estimate_harvest_rate() dispatches to
-# estimate_harvest_br() (Jones & Pollock 2012, Eq. 19.5), which computes the
-# Horvitz-Thompson TOTAL harvest count (not a per-unit rate). The function name
-# is a domain-level convention; the returned estimate IS the total harvest.
-# estimate_total_harvest() is not used here because it computes
-# effort x HPUE via the delta method and produces a different quantity.
+# Note on harvest: estimate_harvest_rate() returns HPUE -- 0.4226 on this
+# fixture -- while reference-outputs.csv records the Horvitz-Thompson TOTAL,
+# which is what estimate_total_harvest() produces (240.5238, matching the
+# reference exactly, standard error included). The comment previously here
+# argued the opposite; the script had aborted before reaching either call, so
+# the mismatch went unseen (GH #130).
 message("Running estimators...")
 eff     <- suppressWarnings(estimate_effort(design))
 cat_est <- suppressWarnings(estimate_total_catch(design))
-harv    <- suppressWarnings(estimate_harvest_rate(design))
+harv    <- suppressWarnings(estimate_total_harvest(design))
 
 # ---- 8. Compare against reference outputs ----
 computed <- list(
