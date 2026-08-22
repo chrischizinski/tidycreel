@@ -12,6 +12,7 @@ creel_schema(
   lengths_table = NULL,
   date_col = NULL,
   strata_cols = NULL,
+  value_maps = NULL,
   catch_col = NULL,
   effort_col = NULL,
   trip_status_col = NULL,
@@ -69,6 +70,19 @@ stratum has no canonical tidycreel name: \code{\link[=add_counts]{add_counts()}}
 names of the counts frame, so the mapping has to be two-sided. Without it a
 fetched counts frame reaches \code{\link[=add_counts]{add_counts()}} with no stratum label and any
 design built with \verb{strata =} aborts (GH #171).}
+
+\item{value_maps}{Source vocabularies for the coded columns, as a named list
+keyed by canonical column — \code{trip_status}, \code{catch_type}, \code{length_type}.
+Each entry is a fully named character vector mapping the source's own codes
+to canonical values: \code{c("1" = "complete", "2" = "incomplete")}. Names are
+what the source writes, values what tidycreel means.
+
+Every downstream filter matches the canonical literals, so a source that
+codes these columns has to declare what its codes mean. Values already
+canonical pass through untouched; anything neither mapped nor canonical
+aborts at the fetch, where the source is still in view, rather than being
+recoded by hand afterwards — a hand recode folds an undeclared third code
+(\code{"refused"}, \code{"unknown"}) into complete or incomplete silently (GH #128).}
 
 \item{catch_col}{Column name for catch count in interviews.}
 
@@ -182,6 +196,7 @@ Other "Survey Design":
 \code{\link{compute_angler_effort}()},
 \code{\link{compute_effort}()},
 \code{\link{creel_design}()},
+\code{\link{creel_vocabulary}()},
 \code{\link{derive_angler_count}()},
 \code{\link{est_effort_camera}()},
 \code{\link{impute_camera_counts}()},

@@ -265,3 +265,93 @@ test_that("the binned pair prints under lengths", {
   expect_length(count_at, 1L)
   expect_true(all(c(bin_at, count_at) > lengths_at))
 })
+
+## value_maps (GH #128) -------------------------------------------------------
+
+test_that("value_maps stores a source vocabulary keyed by canonical column", {
+  # Names are the source's own codes, values what tidycreel means. Downstream
+  # filters match the canonical literals, so a coded source has to say what its
+  # codes mean before its values can be trusted.
+  s <- creel_schema(
+    survey_type = "instantaneous",
+    value_maps  = list(trip_status = c("1" = "complete", "2" = "incomplete"))
+  )
+
+  expect_equal(s$value_maps$trip_status, c("1" = "complete", "2" = "incomplete"))
+})
+
+test_that("value_maps rejects a target outside the canonical vocabulary", {
+  # Checked here rather than downstream: a typo'd target would otherwise sail
+  # through the fetch and abort at add_interviews(), pointing at the data
+  # instead of at the map that mistranslated it.
+  expect_error(
+    creel_schema(
+      survey_type = "instantaneous",
+      value_maps  = list(trip_status = c("1" = "compleet"))
+    ),
+    "outside the vocabulary",
+    class = "creel_error_schema_validation"
+  )
+})
+
+test_that("value_maps rejects a column with no canonical vocabulary", {
+  # Only trip_status, catch_type and length_type have fixed vocabularies. A map
+  # for anything else would silently never be applied.
+  expect_error(
+    creel_schema(
+      survey_type = "instantaneous",
+      value_maps  = list(day_type = c("1" = "complete"))
+    ),
+    "no canonical vocabulary",
+    class = "creel_error_schema_validation"
+  )
+})
+
+test_that("value_maps requires every entry to name its source code", {
+  expect_error(
+    creel_schema(
+      survey_type = "instantaneous",
+      value_maps  = list(trip_status = c("complete"))
+    ),
+    "fully named",
+    class = "creel_error_schema_validation"
+  )
+})
+
+test_that("value_maps refuses to map one source code twice", {
+  # A duplicated code has two meanings and no way to choose between them.
+  expect_error(
+    creel_schema(
+      survey_type = "instantaneous",
+      value_maps  = list(trip_status = c("1" = "complete", "1" = "incomplete"))
+    ),
+    "same source code twice",
+    class = "creel_error_schema_validation"
+  )
+})
+
+test_that("value_maps accepts all three coded columns", {
+  s <- creel_schema(
+    survey_type = "instantaneous",
+    value_maps  = list(
+      trip_status = c("1" = "complete"),
+      catch_type  = c(H = "harvested", R = "released"),
+      length_type = c(H = "harvest")
+    )
+  )
+
+  expect_named(s$value_maps, c("trip_status", "catch_type", "length_type"))
+})
+
+test_that("value_maps prints under its own heading", {
+  # trip_status is an interviews column and catch_type a catch column, so a
+  # vocabulary belongs to no single table block.
+  s <- creel_schema(
+    survey_type = "instantaneous",
+    value_maps  = list(trip_status = c("1" = "complete"))
+  )
+  out <- capture.output(print(s))
+
+  expect_true(any(grepl("value maps", out)))
+  expect_true(any(grepl("trip_status: 1 -> complete", out, fixed = TRUE)))
+})

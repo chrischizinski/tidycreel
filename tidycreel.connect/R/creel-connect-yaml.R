@@ -190,6 +190,13 @@ creel_connect_from_yaml <- function(path, config = "default") {
   for (k in table_keys) {
     if (!is.null(cfg$schema[[k]])) schema_args[[k]] <- cfg$schema[[k]]
   }
+  # Value maps describe the source's vocabulary rather than its column names, so
+  # they belong in the profile alongside the field map -- otherwise the feature
+  # is unreachable by the route the docs recommend (GH #128). YAML gives each
+  # entry as a nested list; creel_schema() wants a named character vector.
+  if (!is.null(cfg$schema$value_maps)) {
+    schema_args$value_maps <- .yaml_value_maps(cfg$schema$value_maps)
+  }
   schema <- do.call(tidycreel::creel_schema, schema_args)
 
   if (backend == "csv") {
@@ -233,4 +240,27 @@ creel_connect_from_yaml <- function(path, config = "default") {
     )
     .creel_connect_dbi(dbi_con, schema) # nolint: object_usage_linter
   }
+}
+
+
+# Internal: turn the YAML `value_maps` block into the named character vectors
+# creel_schema() expects. Each column's codes arrive as a nested list; a code
+# written unquoted in YAML (1, true) parses as a number or logical, so every
+# name and value is made character before creel_schema() validates them.
+#' @noRd
+.yaml_value_maps <- function(block) {
+  if (!is.list(block) || length(block) == 0L || is.null(names(block))) {
+    cli::cli_abort(c(
+      "{.field schema.value_maps} must be a block keyed by canonical column.",
+      "i" = "For example {.code value_maps: {trip_status: {\"1\": complete}}}."
+    ))
+  }
+  lapply(block, function(entry) {
+    if (!is.list(entry) && !is.character(entry)) {
+      cli::cli_abort(
+        "Each {.field schema.value_maps} entry must map source codes to canonical values."
+      )
+    }
+    stats::setNames(as.character(unlist(entry, use.names = FALSE)), as.character(names(entry)))
+  })
 }

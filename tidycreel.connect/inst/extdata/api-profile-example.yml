@@ -32,6 +32,22 @@ default:
     # below, not the schema's column mappings.
     survey_type: instantaneous
 
+    # Value maps say what YOUR codes mean. Unlike field_map, which names raw
+    # JSON fields, these describe a column's *values*, so they apply to every
+    # backend. Only three columns have a fixed vocabulary -- see
+    # tidycreel::creel_vocabulary(). Omit the block entirely if your source
+    # already writes the canonical values.
+    #
+    # A value that is neither mapped nor canonical aborts at the fetch rather
+    # than reaching a filter that matches the canonical literals.
+    # value_maps:
+    #   trip_status:
+    #     "1": complete
+    #     "2": incomplete
+    #   catch_type:
+    #     H: harvested
+    #     R: released
+
   # Endpoint paths, relative to base_url. Supply the ones you intend to fetch;
   # fetch_*() aborts for any you omit rather than guessing a path.
   endpoints:

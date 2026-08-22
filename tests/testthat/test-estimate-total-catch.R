@@ -2021,3 +2021,55 @@ test_that("standard designs keep the product-sum species totals (finding 19)", {
   expect_identical(res$method, "product-total-catch")
   expect_identical(nrow(res$estimates), 3L)
 })
+
+
+## zero complete trips on a Horvitz-Thompson design (GH #128) ------------------
+
+test_that("bus-route and ice totals refuse a design with no complete trips by name", {
+  # A HT assembly handed a zero-row frame does not notice: it failed several
+  # calls later inside rowSums() with "all arguments must have the same length",
+  # which names nothing the caller can act on and reads like a package bug. The
+  # standard designs already abort by name here, so these do too.
+  #
+  # Reachable with a perfectly valid vocabulary -- every trip genuinely still in
+  # progress -- so this is not merely the coded-value case in disguise.
+  for (type in c("bus_route", "ice")) {
+    d <- build_ht_multispecies_design(type, seed = 42)
+    d$interviews[[d$trip_status_col]] <- rep("incomplete", nrow(d$interviews))
+
+    for (fn in c("estimate_total_catch", "estimate_total_harvest", "estimate_total_release")) {
+      expect_error(
+        suppressMessages(suppressWarnings(do.call(fn, list(d)))),
+        "No complete trips available",
+        info = paste(type, fn)
+      )
+    }
+  }
+})
+
+test_that("the no-complete-trips abort names the quantity and offers a way forward", {
+  # Each total names its own quantity, so the message says which estimate could
+  # not be produced rather than pointing at a shared internal helper. The hint
+  # offers 'incomplete' and 'diagnostic' -- never 'all', which is not a valid
+  # use_trips for a bus-route design, where an uncompleted trip supports a rate
+  # but never a total.
+  d <- build_ht_multispecies_design("bus_route", seed = 42)
+  d$interviews[[d$trip_status_col]] <- rep("incomplete", nrow(d$interviews))
+
+  expect_error(
+    suppressMessages(suppressWarnings(estimate_total_harvest(d))),
+    "total harvest estimation"
+  )
+  expect_error(
+    suppressMessages(suppressWarnings(estimate_total_harvest(d))),
+    "diagnostic"
+  )
+})
+
+test_that("a design that still has complete trips is untouched by the guard", {
+  # The guard must not change any estimate that was previously produced.
+  d <- build_ht_multispecies_design("bus_route", seed = 42)
+  expect_no_error(
+    suppressMessages(suppressWarnings(estimate_total_harvest(d)))
+  )
+})
