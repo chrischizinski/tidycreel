@@ -102,6 +102,7 @@ survey type are mapped.</p>
 <span>  effort_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  trip_status_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  count_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  count_time_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  catch_uid_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  interview_uid_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  species_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -202,6 +203,18 @@ recoded by hand afterwards — a hand recode folds an undeclared third code
 
 <dt id="arg-count-col">count_col<a class="anchor" aria-label="anchor" href="#arg-count-col"></a></dt>
 <dd><p>Column name for total angler count in counts (legacy single-column format).</p></dd>
+
+
+<dt id="arg-count-time-col">count_time_col<a class="anchor" aria-label="anchor" href="#arg-count-time-col"></a></dt>
+<dd><p>Column name for the time of a count observation, such
+as <code>"16:30"</code> or <code>"am"</code>. Optional. Map it whenever the source records more
+than one count per sampled day: the fetched <code>count_time</code> column is what
+<code><a href="add_counts.html">add_counts()</a></code>'s <code>count_time_col</code> argument groups on, and without it those
+rows reach the design as separate sampled days rather than as repeat looks
+at one, which sums the day's effort instead of averaging it and leaves the
+within-day variance component uncomputed (GH #129). Carried through as
+character: it is a label that distinguishes observations, not a quantity,
+and a source may write a clock time in any format.</p></dd>
 
 
 <dt id="arg-catch-uid-col">catch_uid_col<a class="anchor" aria-label="anchor" href="#arg-catch-uid-col"></a></dt>

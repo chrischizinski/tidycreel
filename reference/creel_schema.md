@@ -26,6 +26,7 @@ creel_schema(
   effort_col = NULL,
   trip_status_col = NULL,
   count_col = NULL,
+  count_time_col = NULL,
   catch_uid_col = NULL,
   interview_uid_col = NULL,
   species_col = NULL,
@@ -131,6 +132,19 @@ creel_schema(
 
   Column name for total angler count in counts (legacy single-column
   format).
+
+- count_time_col:
+
+  Column name for the time of a count observation, such as `"16:30"` or
+  `"am"`. Optional. Map it whenever the source records more than one
+  count per sampled day: the fetched `count_time` column is what
+  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)'s
+  `count_time_col` argument groups on, and without it those rows reach
+  the design as separate sampled days rather than as repeat looks at
+  one, which sums the day's effort instead of averaging it and leaves
+  the within-day variance component uncomputed (GH \#129). Carried
+  through as character: it is a label that distinguishes observations,
+  not a quantity, and a source may write a clock time in any format.
 
 - catch_uid_col:
 
