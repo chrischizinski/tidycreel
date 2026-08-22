@@ -162,6 +162,7 @@ Other "Survey Design":
 \code{\link{compute_effort}()},
 \code{\link{creel_design}()},
 \code{\link{creel_schema}()},
+\code{\link{creel_vocabulary}()},
 \code{\link{est_effort_camera}()},
 \code{\link{impute_camera_counts}()},
 \code{\link{mean_party_size}()},

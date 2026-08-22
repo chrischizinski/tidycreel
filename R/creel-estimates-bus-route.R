@@ -384,7 +384,11 @@ estimate_harvest_br <- function(
   # Apply use_trips filtering
   if (use_trips == "complete" && !is.null(trip_status_col)) {
     is_complete <- tolower(interviews[[trip_status_col]]) == "complete"
-    interviews <- interviews[is_complete, , drop = FALSE]
+    interviews <- br_abort_if_no_complete(
+      interviews[is_complete, , drop = FALSE],
+      paste(toupper(metric), "estimation"),
+      call = call
+    )
   } else if (use_trips == "incomplete") {
     if (!is.null(trip_status_col)) {
       is_incomplete <- tolower(interviews[[trip_status_col]]) == "incomplete"
@@ -1150,7 +1154,7 @@ estimate_total_catch_br <- function(
   n_interviewed_col <- design$n_interviewed_col
 
   # Filter to complete trips only (see br_complete_trips_only)
-  interviews <- br_complete_trips_only(interviews, design)
+  interviews <- br_complete_trips_only(interviews, design, "total catch estimation")
 
   # Compute c_i = catch_col * .expansion (Eq. 19.5 catch variant)
   interviews$.c_i <- interviews[[catch_col]] * interviews$.expansion
@@ -1258,7 +1262,7 @@ estimate_total_harvest_br <- function(
   circuit_col <- design$bus_route$circuit_col
 
   # Filter to complete trips only (see br_complete_trips_only)
-  interviews <- br_complete_trips_only(interviews, design)
+  interviews <- br_complete_trips_only(interviews, design, "total harvest estimation")
 
   # Compute h_i = harvest_col * .expansion
   interviews$.h_i <- interviews[[harvest_col]] * interviews$.expansion
@@ -1364,7 +1368,7 @@ estimate_total_release_br <- function(
   circuit_col <- design$bus_route$circuit_col
 
   # Filter to complete trips only (see br_complete_trips_only)
-  interviews <- br_complete_trips_only(interviews, design)
+  interviews <- br_complete_trips_only(interviews, design, "total release estimation")
 
   # Compute r_i = .release_count * .expansion
   interviews$.r_i <- interviews$.release_count * interviews$.expansion
@@ -1417,13 +1421,46 @@ estimate_total_release_br <- function(
 # Shared by all three totals so they cannot drift onto different row sets again;
 # that drift was the defect. A design with no trip status column records nothing
 # to filter on, so its rows are treated as complete.
-br_complete_trips_only <- function(interviews, design) {
+br_complete_trips_only <- function(
+  interviews,
+  design,
+  quantity = "estimation",
+  call = rlang::caller_env()
+) {
   trip_status_col <- design$trip_status_col
   if (is.null(trip_status_col) || !trip_status_col %in% names(interviews)) {
     return(interviews)
   }
   is_complete <- tolower(interviews[[trip_status_col]]) == "complete"
-  interviews[is_complete, , drop = FALSE]
+  # `call` is threaded through so the abort names the estimator the user called,
+  # not this helper, which they have no way to reach directly.
+  br_abort_if_no_complete(interviews[is_complete, , drop = FALSE], quantity, call = call)
+}
+
+# A Horvitz-Thompson assembly handed a zero-row frame does not notice: it fails
+# several calls later inside rowSums() with "all arguments must have the same
+# length", which names nothing the caller can act on. The standard designs
+# already refuse this by name -- "No complete trips available for HPUE
+# estimation" -- so the bus-route and ice paths, which reach the same dead end
+# through a different door, say the same thing (GH #128).
+#
+# `all` is deliberately not offered here: it is not a valid `use_trips` for a
+# bus-route design, where an uncompleted trip supports a rate but never a total.
+br_abort_if_no_complete <- function(interviews, quantity = "estimation", call = rlang::caller_env()) {
+  if (nrow(interviews) > 0L) {
+    return(interviews)
+  }
+  cli::cli_abort(
+    c(
+      "No complete trips available for {quantity}.",
+      "x" = "{.arg use_trips} = 'complete' but this design has 0 complete trips.",
+      "i" = paste0(
+        "Use {.code use_trips = 'incomplete'} for a rate from uncompleted trips, ",
+        "or {.code use_trips = 'diagnostic'} to see both."
+      )
+    ),
+    call = call
+  )
 }
 
 # Species-level totals on bus-route and ice designs ----

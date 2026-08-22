@@ -83,6 +83,137 @@ COL_TO_TABLE <- list(
   )
 )
 
+# The canonical vocabularies. A source that codes these columns has to say what
+# its codes mean before the values can be trusted, because every downstream
+# filter matches these literals: "complete" for trip filtering, "harvested" for
+# harvest aggregation, "harvest"/"release" for length type.
+# nolint start: object_name_linter
+CANONICAL_VOCABULARY <- list(
+  trip_status = c("complete", "incomplete"),
+  catch_type  = c("caught", "harvested", "released"),
+  length_type = c("harvest", "release")
+)
+# nolint end
+
+#' Canonical vocabularies for the coded columns
+#'
+#' @description
+#' The exact values `tidycreel` matches on for the three columns whose meaning
+#' is a fixed vocabulary rather than a number: `trip_status`, `catch_type` and
+#' `length_type`. Every downstream filter compares against these literals, so a
+#' source that codes one of these columns has to be translated before its values
+#' can be trusted — see the `value_maps` argument of [creel_schema()].
+#'
+#' Exported because `tidycreel.connect` translates source codes at the fetch and
+#' has to check its targets against the same list this package filters on; a
+#' second copy of the vocabulary would be free to drift from this one.
+#'
+#' @param column Optional canonical column name. When `NULL` (default) the whole
+#'   named list is returned; otherwise the character vector for that column.
+#'
+#' @return A named list of character vectors, or one character vector when
+#'   `column` is given.
+#' @family "Survey Design"
+#' @export
+#' @examples
+#' creel_vocabulary()
+#' creel_vocabulary("trip_status")
+creel_vocabulary <- function(column = NULL) {
+  if (is.null(column)) {
+    return(CANONICAL_VOCABULARY)
+  }
+  if (!is.character(column) || length(column) != 1L) {
+    cli::cli_abort("{.arg column} must be a single column name or {.code NULL}.")
+  }
+  known <- names(CANONICAL_VOCABULARY) # nolint: object_name_linter
+  if (!column %in% known) {
+    cli::cli_abort(c(
+      "{.val {column}} has no canonical vocabulary.",
+      "i" = "Columns with one: {.field {known}}."
+    ))
+  }
+  CANONICAL_VOCABULARY[[column]]
+}
+
+
+# Internal: check and normalise `value_maps`.
+#
+# Names are the canonical column; each entry maps that column's SOURCE codes to
+# canonical values, `c("1" = "complete", "2" = "incomplete")` -- names are what
+# the source writes, values what tidycreel means. The targets are checked
+# against CANONICAL_VOCABULARY here rather than downstream: a map declaring
+# `"1" = "compleet"` would otherwise pass the fetch and abort much later, at
+# add_interviews(), pointing at the data instead of at the map.
+#' @noRd
+#' @keywords internal
+normalize_value_maps <- function(value_maps) {
+  if (is.null(value_maps)) {
+    return(NULL)
+  }
+  if (!is.list(value_maps) || length(value_maps) == 0L || is.null(names(value_maps))) {
+    cli::cli_abort(
+      c(
+        "{.arg value_maps} must be a non-empty named list.",
+        "i" = paste0(
+          "Key it by canonical column, e.g. ",
+          "{.code value_maps = list(trip_status = c(\"1\" = \"complete\"))}."
+        )
+      ),
+      class = "creel_error_schema_validation"
+    )
+  }
+
+  known <- names(CANONICAL_VOCABULARY) # nolint: object_name_linter
+  unknown <- setdiff(names(value_maps), known)
+  if (length(unknown) > 0L) {
+    cli::cli_abort(
+      c(
+        "{.arg value_maps} names {length(unknown)} column{?s} with no canonical vocabulary.",
+        "x" = "Unknown: {.field {unknown}}.",
+        "i" = "Mappable columns: {.field {known}}."
+      ),
+      class = "creel_error_schema_validation"
+    )
+  }
+
+  for (col in names(value_maps)) {
+    map <- value_maps[[col]]
+    valid <- CANONICAL_VOCABULARY[[col]] # nolint: object_name_linter
+    if (!is.character(map) || length(map) == 0L || is.null(names(map)) || !all(nzchar(names(map)))) {
+      cli::cli_abort(
+        c(
+          "{.arg value_maps}${.field {col}} must be a fully named character vector.",
+          "i" = "Names are the source's own codes, values the canonical meaning."
+        ),
+        class = "creel_error_schema_validation"
+      )
+    }
+    if (anyDuplicated(names(map))) {
+      dupes <- unique(names(map)[duplicated(names(map))]) # nolint: object_usage_linter
+      cli::cli_abort(
+        c(
+          "{.arg value_maps}${.field {col}} maps the same source code twice.",
+          "x" = "Duplicated: {.val {dupes}}."
+        ),
+        class = "creel_error_schema_validation"
+      )
+    }
+    bad <- setdiff(unname(map), valid)
+    if (length(bad) > 0L) {
+      cli::cli_abort(
+        c(
+          "{.arg value_maps}${.field {col}} maps to {length(bad)} value{?s} outside the vocabulary.",
+          "x" = "Not canonical: {.val {bad}}.",
+          "i" = "Accepted values for {.field {col}}: {.val {valid}}."
+        ),
+        class = "creel_error_schema_validation"
+      )
+    }
+  }
+
+  value_maps
+}
+
 # Internal: put `strata_cols` into its fully-named form.
 #
 # Unlike every other schema field, a stratum column has no canonical tidycreel
@@ -184,6 +315,18 @@ new_creel_schema <- function(survey_type, mappings) {
 #'   names of the counts frame, so the mapping has to be two-sided. Without it a
 #'   fetched counts frame reaches [add_counts()] with no stratum label and any
 #'   design built with `strata =` aborts (GH #171).
+#' @param value_maps Source vocabularies for the coded columns, as a named list
+#'   keyed by canonical column — `trip_status`, `catch_type`, `length_type`.
+#'   Each entry is a fully named character vector mapping the source's own codes
+#'   to canonical values: `c("1" = "complete", "2" = "incomplete")`. Names are
+#'   what the source writes, values what tidycreel means.
+#'
+#'   Every downstream filter matches the canonical literals, so a source that
+#'   codes these columns has to declare what its codes mean. Values already
+#'   canonical pass through untouched; anything neither mapped nor canonical
+#'   aborts at the fetch, where the source is still in view, rather than being
+#'   recoded by hand afterwards — a hand recode folds an undeclared third code
+#'   (`"refused"`, `"unknown"`) into complete or incomplete silently (GH #128).
 #' @param catch_col Column name for catch count in interviews.
 #' @param effort_col Column name for effort (hours) in interviews.
 #' @param trip_status_col Column name for trip status in interviews.
@@ -252,6 +395,7 @@ creel_schema <- function(
   lengths_table = NULL,
   date_col = NULL,
   strata_cols = NULL,
+  value_maps = NULL,
   catch_col = NULL,
   effort_col = NULL,
   trip_status_col = NULL,
@@ -285,6 +429,7 @@ creel_schema <- function(
 ) {
   survey_type <- match.arg(survey_type)
   strata_cols <- normalize_strata_cols(strata_cols)
+  value_maps <- normalize_value_maps(value_maps)
   new_creel_schema(
     survey_type,
     list(
@@ -294,6 +439,7 @@ creel_schema <- function(
       lengths_table = lengths_table,
       date_col = date_col,
       strata_cols = strata_cols,
+      value_maps = value_maps,
       catch_col = catch_col,
       effort_col = effort_col,
       trip_status_col = trip_status_col,
@@ -419,6 +565,19 @@ format.creel_schema <- function(x, ...) {
           } else {
             cli::cli_text("  {sub('_col$', '', cf)} -> {x[[cf]]}")
           }
+        }
+      }
+    }
+
+    # Vocabularies belong to no one table -- trip_status is an interviews
+    # column, catch_type a catch column -- so they print under their own heading
+    # rather than being split across the blocks above.
+    if (!is.null(x$value_maps)) {
+      cli::cli_h2("value maps")
+      for (col in names(x$value_maps)) {
+        map <- x$value_maps[[col]]
+        for (code in names(map)) {
+          cli::cli_text("  {col}: {code} -> {map[[code]]}")
         }
       }
     }

@@ -64,6 +64,7 @@ reference:
       - compute_angler_effort
       - creel_schema
       - validate_creel_schema
+      - creel_vocabulary
 
   - title: "Estimation"
     desc: >

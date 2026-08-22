@@ -10,6 +10,21 @@
   neither and is unaffected. Map the label to `length_bin_col` rather than
   `length_mm_col`, whose name asserts a unit the label does not carry.
 
+* `creel_schema()` gains `value_maps`, declaring what a source's codes mean for
+  the three columns whose meaning is a fixed vocabulary rather than a number —
+  `trip_status`, `catch_type`, `length_type` (#128). Each entry maps the
+  source's own codes to canonical values, `c("1" = "complete", "2" =
+  "incomplete")`. `tidycreel.connect` applies the map at the fetch, so a coded
+  source reaches `add_interviews()` speaking the vocabulary every downstream
+  filter matches. Map targets are checked against the canonical vocabulary at
+  construction, so a typo'd target is caught where the map is written rather
+  than several stages later against the data.
+
+* New `creel_vocabulary()` returns those canonical vocabularies. Exported
+  because `tidycreel.connect` translates source codes and must check its targets
+  against the same list this package filters on — a second copy would be free to
+  drift from this one.
+
 * `creel_schema()` gains `strata_cols`, naming the stratum columns to carry
   through from the source (#171). It is the one mapping here with no canonical
   tidycreel name on the other side: `add_counts()` matches `design$strata_cols`
@@ -30,6 +45,19 @@
   the two names `tidycreel.connect`'s fetch layer actually produces, `length_mm`
   and `length_bin`, both failed. The documented connect-to-design handoff for
   length data could not be run as written.
+
+* Bus-route and ice totals now refuse a design with no complete trips by name
+  (#128). `estimate_total_catch()`, `estimate_total_harvest()`,
+  `estimate_total_release()` and the bus-route rate estimators filter to
+  completed trips, and a Horvitz–Thompson assembly handed a zero-row frame does
+  not notice: it failed several calls later inside `rowSums()` with `all
+  arguments must have the same length`, which names nothing the caller can act
+  on and reads like a package bug. The standard designs already aborted by name
+  here; these now say the same thing, name the quantity that could not be
+  produced, and point at `use_trips = "incomplete"` or `"diagnostic"` — never
+  `"all"`, which a bus-route design does not accept, because an uncompleted trip
+  supports a rate but never a total. No estimate changes: every affected call
+  already failed, just unreadably.
 
 * `print()` on a `creel_schema` now groups `n_counted_col` under **interviews**
   rather than counts (#170). Both enumeration columns live on the interviews

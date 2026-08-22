@@ -299,6 +299,7 @@ Other "Survey Design":
 \code{\link{compute_angler_effort}()},
 \code{\link{compute_effort}()},
 \code{\link{creel_schema}()},
+\code{\link{creel_vocabulary}()},
 \code{\link{derive_angler_count}()},
 \code{\link{est_effort_camera}()},
 \code{\link{impute_camera_counts}()},
