@@ -64,6 +64,29 @@
 
 ### Bug fixes
 
+- The Calamus 2016 validation script now runs
+  ([\#130](https://github.com/chrischizinski/tidycreel/issues/130)).
+  `inst/validation/calamus-2016-validation.R` aborted at
+  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+  — the fixture carries three numeric count columns and the call named
+  none of them — so the package’s only end-to-end validation of its own
+  reference outputs had not executed at all. It also called
+  [`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md),
+  which returns HPUE (0.4226 here), where `reference-outputs.csv`
+  records the Horvitz–Thompson total that
+  [`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md)
+  produces; a comment argued explicitly for the wrong one. Both fixed,
+  and the script now reports 3/3 estimands within tolerance.
+
+- `tests/testthat/test-validation-guard.R` can now fail when that script
+  is broken
+  ([\#130](https://github.com/chrischizinski/tidycreel/issues/130)). It
+  previously accepted any error that was not the working-directory guard
+  — its comment said “any other error (e.g. from load_all or estimators)
+  is acceptable” — so it stayed green for the entire period the script
+  was aborting. It now asserts the script runs to completion and that no
+  estimand reports FAIL.
+
 - [`add_lengths()`](https://chrischizinski.github.io/tidycreel/reference/add_lengths.md)
   now accepts a `length` column whose name is not literally `length`
   ([\#127](https://github.com/chrischizinski/tidycreel/issues/127)).
