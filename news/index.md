@@ -5,6 +5,18 @@
 ### New features
 
 - [`creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/creel_schema.md)
+  gains `length_bin_col` and `length_count_col`, the pair a source needs
+  when it reports released fish as length groups rather than
+  measurements
+  ([\#127](https://github.com/chrischizinski/tidycreel/issues/127)). A
+  binned row is frequency-weighted — “350-400, 5 fish” is five fish — so
+  the count has to travel with the label. Both are optional and absent
+  from the required-column set: a source that measures every fish maps
+  neither and is unaffected. Map the label to `length_bin_col` rather
+  than `length_mm_col`, whose name asserts a unit the label does not
+  carry.
+
+- [`creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/creel_schema.md)
   gains `strata_cols`, naming the stratum columns to carry through from
   the source
   ([\#171](https://github.com/chrischizinski/tidycreel/issues/171)). It
@@ -18,6 +30,20 @@
   `c("day_type")`, means the source already uses the design’s name.
 
 ### Bug fixes
+
+- [`add_lengths()`](https://chrischizinski.github.io/tidycreel/reference/add_lengths.md)
+  now accepts a `length` column whose name is not literally `length`
+  ([\#127](https://github.com/chrischizinski/tidycreel/issues/127)).
+  `length` is one of this function’s own arguments, so an unqualified
+  [`length()`](https://rdrr.io/r/base/length.html) call in its body made
+  R force that argument while searching for a function of that name, and
+  any other column aborted with `object 'length_mm' not found` before a
+  row was read. Every example and test passed `length = length`, which
+  resolves to [`base::length`](https://rdrr.io/r/base/length.html) and
+  hid it — while the two names `tidycreel.connect`’s fetch layer
+  actually produces, `length_mm` and `length_bin`, both failed. The
+  documented connect-to-design handoff for length data could not be run
+  as written.
 
 - [`print()`](https://rdrr.io/r/base/print.html) on a `creel_schema` now
   groups `n_counted_col` under **interviews** rather than counts

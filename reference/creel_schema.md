@@ -32,6 +32,8 @@ creel_schema(
   catch_type_col = NULL,
   length_uid_col = NULL,
   length_mm_col = NULL,
+  length_bin_col = NULL,
+  length_count_col = NULL,
   length_type_col = NULL,
   harvest_col = NULL,
   trip_duration_col = NULL,
@@ -139,7 +141,28 @@ creel_schema(
 
 - length_mm_col:
 
-  Column name for fish length (mm).
+  Column name for fish length (mm). Map it only for individually
+  measured fish; a bin label belongs in `length_bin_col`, whose name
+  does not assert a unit.
+
+- length_bin_col:
+
+  Column name for a length-bin label, such as `"300-350"`. Optional, and
+  mutually exclusive with `length_mm_col` on any given row: a fish is
+  either measured or binned. Pass the fetched `length_bin` column as
+  [`add_lengths()`](https://chrischizinski.github.io/tidycreel/reference/add_lengths.md)'s
+  `length` argument together with `release_format = "binned"` (GH
+  \#127).
+
+- length_count_col:
+
+  Column name for the number of fish a binned length row represents.
+  Optional, but required by
+  [`add_lengths()`](https://chrischizinski.github.io/tidycreel/reference/add_lengths.md)
+  whenever binned release rows are present: a binned row is
+  frequency-weighted, so dropping the count weights the length
+  distribution by row multiplicity instead of by fish (GH \#127). `NA`
+  on individually measured rows.
 
 - length_type_col:
 

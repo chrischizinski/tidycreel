@@ -108,6 +108,8 @@ survey type are mapped.</p>
 <span>  catch_type_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  length_uid_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  length_mm_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  length_bin_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  length_count_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  length_type_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  harvest_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  trip_duration_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -212,7 +214,25 @@ design built with <code>strata =</code> aborts (GH #171).</p></dd>
 
 
 <dt id="arg-length-mm-col">length_mm_col<a class="anchor" aria-label="anchor" href="#arg-length-mm-col"></a></dt>
-<dd><p>Column name for fish length (mm).</p></dd>
+<dd><p>Column name for fish length (mm). Map it only for
+individually measured fish; a bin label belongs in <code>length_bin_col</code>, whose
+name does not assert a unit.</p></dd>
+
+
+<dt id="arg-length-bin-col">length_bin_col<a class="anchor" aria-label="anchor" href="#arg-length-bin-col"></a></dt>
+<dd><p>Column name for a length-bin label, such as
+<code>"300-350"</code>. Optional, and mutually exclusive with <code>length_mm_col</code> on any
+given row: a fish is either measured or binned. Pass the fetched
+<code>length_bin</code> column as <code><a href="add_lengths.html">add_lengths()</a></code>'s <code>length</code> argument together with
+<code>release_format = "binned"</code> (GH #127).</p></dd>
+
+
+<dt id="arg-length-count-col">length_count_col<a class="anchor" aria-label="anchor" href="#arg-length-count-col"></a></dt>
+<dd><p>Column name for the number of fish a binned length
+row represents. Optional, but required by <code><a href="add_lengths.html">add_lengths()</a></code> whenever binned
+release rows are present: a binned row is frequency-weighted, so dropping
+the count weights the length distribution by row multiplicity instead of by
+fish (GH #127). <code>NA</code> on individually measured rows.</p></dd>
 
 
 <dt id="arg-length-type-col">length_type_col<a class="anchor" aria-label="anchor" href="#arg-length-type-col"></a></dt>
