@@ -4326,10 +4326,16 @@ add_lengths <- function(
   # Normalize length_type to lowercase silently
   data[[type_col]] <- tolower(data[[type_col]])
 
-  # Validate length_type values
+  # base::length() is qualified everywhere below, and must stay that way: the
+  # argument `length` is a promise in this frame, and an unqualified length()
+  # call makes R force it while searching for a function of that name. Passing
+  # any column not itself named `length` -- length_mm and length_bin, the two
+  # names the fetch layer produces -- then aborted with "object not found"
+  # before this function did anything. Every example passed `length = length`,
+  # which resolves to base::length and hid it (GH #127).
   valid_types <- c("harvest", "release")
   bad_types <- setdiff(unique(data[[type_col]]), valid_types)
-  if (length(bad_types) > 0) {
+  if (base::length(bad_types) > 0) {
     cli::cli_abort(c(
       "Invalid {.field length_type} value{?s}: {.val {bad_types}}",
       "i" = "Accepted values: {.val {valid_types}}"
@@ -4340,10 +4346,11 @@ add_lengths <- function(
   length_ids <- unique(data[[length_uid_col]])
   interview_ids <- design$interviews[[interview_uid_col]]
   unmatched <- setdiff(length_ids, interview_ids)
-  if (length(unmatched) > 0) {
+  n_unmatched <- base::length(unmatched)
+  if (n_unmatched > 0) {
     cli::cli_abort(c(
-      "{length(unmatched)} interview ID{?s} in length data not found in design interviews:",
-      stats::setNames(paste0("{.val ", unmatched, "}"), rep("x", length(unmatched))),
+      "{n_unmatched} interview ID{?s} in length data not found in design interviews:",
+      stats::setNames(paste0("{.val ", unmatched, "}"), rep("x", n_unmatched)),
       "i" = "Every length row must reference an interview in the design."
     ))
   }
