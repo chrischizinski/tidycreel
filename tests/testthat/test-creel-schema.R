@@ -205,3 +205,63 @@ test_that("both enumeration columns print under interviews, not counts", {
   expect_true(seen_at > interviews_at && seen_at < counts_at)
   expect_true(asked_at > interviews_at && asked_at < counts_at)
 })
+
+
+## binned length columns (GH #127) -------------------------------------------
+
+test_that("length_bin_col and length_count_col are carried on the schema", {
+  # The pair a binned source needs: a label, and the number of fish it stands
+  # for. Storing the label in length_mm_col instead is what rested a millimetre
+  # unit on a group label.
+  s <- creel_schema(
+    survey_type      = "instantaneous",
+    length_bin_col   = "LengthGroup",
+    length_count_col = "GroupCount"
+  )
+
+  expect_equal(s$length_bin_col, "LengthGroup")
+  expect_equal(s$length_count_col, "GroupCount")
+})
+
+test_that("the binned pair is optional, so a measured schema still validates", {
+  # Requiring it would break every schema for a source that measures each fish,
+  # which is why the pair is absent from CANONICAL_COLUMNS.
+  s <- creel_schema(
+    survey_type       = "instantaneous",
+    date_col          = "SurveyDate",
+    catch_col         = "TotalCatch",
+    effort_col        = "EffortHours",
+    trip_status_col   = "TripStatus",
+    count_col         = "AnglerCount",
+    catch_uid_col     = "CatchID",
+    interview_uid_col = "InterviewID",
+    species_col       = "Species",
+    catch_count_col   = "FishCount",
+    catch_type_col    = "CatchType",
+    length_uid_col    = "LengthID",
+    length_mm_col     = "LengthMM",
+    length_type_col   = "LengthType"
+  )
+
+  expect_silent(validate_creel_schema(s))
+  expect_null(s$length_bin_col)
+  expect_null(s$length_count_col)
+})
+
+test_that("the binned pair prints under lengths", {
+  s <- creel_schema(
+    survey_type      = "instantaneous",
+    length_mm_col    = "LengthMM",
+    length_bin_col   = "LengthGroup",
+    length_count_col = "GroupCount"
+  )
+  out <- capture.output(print(s))
+
+  lengths_at <- grep("lengths:", out)
+  bin_at     <- grep("length_bin -> LengthGroup", out, fixed = TRUE)
+  count_at   <- grep("length_count -> GroupCount", out, fixed = TRUE)
+
+  expect_length(bin_at, 1L)
+  expect_length(count_at, 1L)
+  expect_true(all(c(bin_at, count_at) > lengths_at))
+})

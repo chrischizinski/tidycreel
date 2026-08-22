@@ -2,6 +2,14 @@
 
 ## New features
 
+* `creel_schema()` gains `length_bin_col` and `length_count_col`, the pair a
+  source needs when it reports released fish as length groups rather than
+  measurements (#127). A binned row is frequency-weighted — "350-400, 5 fish" is
+  five fish — so the count has to travel with the label. Both are optional and
+  absent from the required-column set: a source that measures every fish maps
+  neither and is unaffected. Map the label to `length_bin_col` rather than
+  `length_mm_col`, whose name asserts a unit the label does not carry.
+
 * `creel_schema()` gains `strata_cols`, naming the stratum columns to carry
   through from the source (#171). It is the one mapping here with no canonical
   tidycreel name on the other side: `add_counts()` matches `design$strata_cols`
@@ -12,6 +20,16 @@
   name.
 
 ## Bug fixes
+
+* `add_lengths()` now accepts a `length` column whose name is not literally
+  `length` (#127). `length` is one of this function's own arguments, so an
+  unqualified `length()` call in its body made R force that argument while
+  searching for a function of that name, and any other column aborted with
+  ``object 'length_mm' not found`` before a row was read. Every example and test
+  passed `length = length`, which resolves to `base::length` and hid it — while
+  the two names `tidycreel.connect`'s fetch layer actually produces, `length_mm`
+  and `length_bin`, both failed. The documented connect-to-design handoff for
+  length data could not be run as written.
 
 * `print()` on a `creel_schema` now groups `n_counted_col` under **interviews**
   rather than counts (#170). Both enumeration columns live on the interviews

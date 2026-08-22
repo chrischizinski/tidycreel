@@ -75,6 +75,10 @@ COL_TO_TABLE <- list(
   lengths = c(
     "length_uid_col",
     "length_mm_col",
+    # A binned length row is a bin label plus a number of fish. Both are
+    # optional: a source that measures every fish maps neither (GH #127).
+    "length_bin_col",
+    "length_count_col",
     "length_type_col"
   )
 )
@@ -194,7 +198,19 @@ new_creel_schema <- function(survey_type, mappings) {
 #' @param catch_count_col Column name for catch count in the catch table.
 #' @param catch_type_col Column name for catch type (harvest/release).
 #' @param length_uid_col Column name for length unique identifier.
-#' @param length_mm_col Column name for fish length (mm).
+#' @param length_mm_col Column name for fish length (mm). Map it only for
+#'   individually measured fish; a bin label belongs in `length_bin_col`, whose
+#'   name does not assert a unit.
+#' @param length_bin_col Column name for a length-bin label, such as
+#'   `"300-350"`. Optional, and mutually exclusive with `length_mm_col` on any
+#'   given row: a fish is either measured or binned. Pass the fetched
+#'   `length_bin` column as [add_lengths()]'s `length` argument together with
+#'   `release_format = "binned"` (GH #127).
+#' @param length_count_col Column name for the number of fish a binned length
+#'   row represents. Optional, but required by [add_lengths()] whenever binned
+#'   release rows are present: a binned row is frequency-weighted, so dropping
+#'   the count weights the length distribution by row multiplicity instead of by
+#'   fish (GH #127). `NA` on individually measured rows.
 #' @param length_type_col Column name for length type.
 #' @param harvest_col Column name for harvest count.
 #' @param trip_duration_col Column name for trip duration.
@@ -247,6 +263,8 @@ creel_schema <- function(
   catch_type_col = NULL,
   length_uid_col = NULL,
   length_mm_col = NULL,
+  length_bin_col = NULL,
+  length_count_col = NULL,
   length_type_col = NULL,
   harvest_col = NULL,
   trip_duration_col = NULL,
@@ -287,6 +305,8 @@ creel_schema <- function(
       catch_type_col = catch_type_col,
       length_uid_col = length_uid_col,
       length_mm_col = length_mm_col,
+      length_bin_col = length_bin_col,
+      length_count_col = length_count_col,
       length_type_col = length_type_col,
       harvest_col = harvest_col,
       trip_duration_col = trip_duration_col,

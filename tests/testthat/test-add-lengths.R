@@ -568,3 +568,80 @@ test_that("print omits Length Data section when not attached (LEN-05)", {
   out <- capture.output(print(d))
   expect_false(any(grepl("Length Data", out)))
 })
+
+
+test_that("the length selector accepts a column not named `length` (GH #127)", {
+  # `length` is an argument of this function, so it is a promise in its frame.
+  # An unqualified length() call inside the body made R force that promise while
+  # looking for a function, and any column name other than `length` aborted with
+  # "object 'x' not found" before a single row was read. Every example passed
+  # `length = length`, which resolves to base::length, so the whole test suite
+  # missed it -- while the two names the fetch layer actually produces,
+  # length_mm and length_bin, both failed.
+  data(example_calendar)
+  data(example_interviews)
+
+  design <- creel_design(example_calendar, date = date, strata = day_type)
+  design <- suppressWarnings(add_interviews(design, example_interviews,
+    catch = catch_total, effort = hours_fished, harvest = catch_kept,
+    trip_status = trip_status, trip_duration = trip_duration
+  ))
+
+  lengths_mm <- data.frame(
+    interview_id = example_interviews$interview_id[1:3],
+    species      = "walleye",
+    length_mm    = c(420, 385, 401),
+    length_type  = "harvest",
+    stringsAsFactors = FALSE
+  )
+
+  expect_no_error(
+    out <- add_lengths(design, lengths_mm,
+      length_uid    = interview_id,
+      interview_uid = interview_id,
+      species       = species,
+      length        = length_mm,
+      length_type   = length_type
+    )
+  )
+  expect_equal(out$lengths_length_col, "length_mm")
+})
+
+test_that("a binned selector named length_bin resolves too (GH #127)", {
+  # The release half of the same defect: the fetch layer names the bin column
+  # length_bin, so the binned path was unreachable for exactly the data it was
+  # written for.
+  data(example_calendar)
+  data(example_interviews)
+
+  design <- creel_design(example_calendar, date = date, strata = day_type)
+  design <- suppressWarnings(add_interviews(design, example_interviews,
+    catch = catch_total, effort = hours_fished, harvest = catch_kept,
+    trip_status = trip_status, trip_duration = trip_duration
+  ))
+
+  binned <- data.frame(
+    interview_id = rep(example_interviews$interview_id[1], 2L),
+    species      = "walleye",
+    length_bin   = c("300-350", "350-400"),
+    count        = c(1, 5),
+    length_type  = "release",
+    stringsAsFactors = FALSE
+  )
+
+  out <- add_lengths(design, binned,
+    length_uid     = interview_id,
+    interview_uid  = interview_id,
+    species        = species,
+    length         = length_bin,
+    length_type    = length_type,
+    count          = count,
+    release_format = "binned"
+  )
+
+  expect_equal(out$lengths_length_col, "length_bin")
+  expect_equal(out$lengths_count_col, "count")
+  # The counts reach the summary as fish, not as rows: 1 + 5, never 2.
+  freq <- summarize_length_freq(out, type = "release", bin_width = 50)
+  expect_equal(sum(freq$N), 6)
+})
