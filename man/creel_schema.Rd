@@ -17,6 +17,7 @@ creel_schema(
   effort_col = NULL,
   trip_status_col = NULL,
   count_col = NULL,
+  count_time_col = NULL,
   catch_uid_col = NULL,
   interview_uid_col = NULL,
   species_col = NULL,
@@ -91,6 +92,16 @@ recoded by hand afterwards — a hand recode folds an undeclared third code
 \item{trip_status_col}{Column name for trip status in interviews.}
 
 \item{count_col}{Column name for total angler count in counts (legacy single-column format).}
+
+\item{count_time_col}{Column name for the time of a count observation, such
+as \code{"16:30"} or \code{"am"}. Optional. Map it whenever the source records more
+than one count per sampled day: the fetched \code{count_time} column is what
+\code{\link[=add_counts]{add_counts()}}'s \code{count_time_col} argument groups on, and without it those
+rows reach the design as separate sampled days rather than as repeat looks
+at one, which sums the day's effort instead of averaging it and leaves the
+within-day variance component uncomputed (GH #129). Carried through as
+character: it is a label that distinguishes observations, not a quantity,
+and a source may write a clock time in any format.}
 
 \item{catch_uid_col}{Column name for catch unique identifier.}
 

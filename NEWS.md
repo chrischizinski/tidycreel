@@ -2,6 +2,15 @@
 
 ## New features
 
+* `creel_schema()` gains `count_time_col`, naming the time a count was taken
+  (#129). A count row is one observation at one moment, not a day's total, and
+  sources routinely record several on a sampled day; the time is the only thing
+  that tells those rows apart. Map it whenever the source records one and pass
+  the fetched `count_time` to `add_counts()`'s `count_time_col`. Optional, and
+  carried through as character rather than parsed — it is a label that
+  distinguishes observations, not a quantity, and a source may write a clock
+  time in any format.
+
 * `creel_schema()` gains `length_bin_col` and `length_count_col`, the pair a
   source needs when it reports released fish as length groups rather than
   measurements (#127). A binned row is frequency-weighted — "350-400, 5 fish" is
