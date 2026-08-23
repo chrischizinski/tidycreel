@@ -3412,16 +3412,21 @@ get_effort_target_design <- function(design, target) {
     ))
   }
 
-  available_by_strata <- dplyr::count(
-    calendar,
-    dplyr::across(dplyr::all_of(strata_cols)),
-    name = ".N_avail"
-  )
-  sampled_by_strata <- dplyr::count(
-    counts_data,
-    dplyr::across(dplyr::all_of(strata_cols)),
-    name = ".n_sampled"
-  )
+  # Both sides of N_h / n_h have to count the same kind of thing. Counting rows
+  # made the denominator "count rows in the stratum" while the numerator stayed
+  # "days in the stratum", so a counts table carrying k rows per sampled day --
+  # two shift periods, three sections -- divided every weight by k and understated
+  # the expanded total by exactly that factor, with no error and no warning
+  # (GH #183). Counting distinct sampling units on both sides keeps the ratio in
+  # days, however many rows a day happens to carry.
+  psu_col <- design$psu_col
+  frame_unit <- design$date_col
+  available_by_strata <- calendar |>
+    dplyr::distinct(dplyr::across(dplyr::all_of(c(strata_cols, frame_unit)))) |>
+    dplyr::count(dplyr::across(dplyr::all_of(strata_cols)), name = ".N_avail")
+  sampled_by_strata <- counts_data |>
+    dplyr::distinct(dplyr::across(dplyr::all_of(c(strata_cols, psu_col)))) |>
+    dplyr::count(dplyr::across(dplyr::all_of(strata_cols)), name = ".n_sampled")
 
   expanded_counts <- counts_data |>
     dplyr::left_join(available_by_strata, by = strata_cols) |>
@@ -3443,6 +3448,24 @@ get_effort_target_design <- function(design, target) {
   }
 
   expanded_counts$.expansion_weight <- expanded_counts$.N_avail / expanded_counts$.n_sampled
+
+  # Say when a day carries more than one row, because the expansion is then
+  # summing those rows into a day before expanding, and the reader should know
+  # that is the quantity being expanded rather than a per-row one.
+  rows_per_unit <- nrow(counts_data) / sum(sampled_by_strata$.n_sampled)
+  if (rows_per_unit > 1) {
+    n_units <- sum(sampled_by_strata$.n_sampled) # nolint: object_usage_linter
+    n_rows <- nrow(counts_data) # nolint: object_usage_linter
+    # cli::qty() names the quantity each {?s} belongs to. Without it the plural
+    # binds to the nearest preceding value -- psu_col, length 1 -- and the
+    # message reads "12 sampled date value".
+    cli::cli_inform(c(
+      "i" = "Expanding {n_units} sampled {cli::qty(n_units)}unit{?s} carrying \
+             {n_rows} count {cli::qty(n_rows)}row{?s} between them.",
+      "i" = "Rows sharing a {.field {psu_col}} are summed into it first: the \
+             expansion factor is days over days, not rows over rows."
+    ))
+  }
 
   survey::svydesign(
     ids = stats::reformulate(design$psu_col),
