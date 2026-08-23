@@ -140,6 +140,43 @@
 
 ## Statistical correctness
 
+* The `calamus-2016` reference outputs record a re-baselined `catch_total`
+  standard error, 55.7239 becoming 52.9963 (#178). The point estimate is
+  unchanged and always was. The file was written once at v1.7.0 and never
+  regenerated, so it had gone on recording a number the package stopped
+  producing at v3.0.0, when the dimensional seam audit routed all three
+  bus-route totals through `br_complete_trips_only()` — a filter the harvest
+  total had always applied and the catch total never had.
+
+  Nothing about the estimator changed here; only the record of what it produces.
+  The fixture's two incomplete-trip rows both carry `catch_count = 0`, so
+  dropping them cannot move a Horvitz-Thompson sum — it moves only the interview
+  count behind the variance, 24 to 22. That is worth stating plainly, because
+  the divergence was first misread as evidence *against* the trip filter on the
+  grounds that the point estimate was invariant to it: with zero-catch rows,
+  invariance is guaranteed by construction and says nothing about the SE.
+
+  The row was regenerated only after the responsible release was identified from
+  the source history and the pre-v3.0.0 value reproduced exactly by disabling
+  the filter on current code. `inst/extdata/calamus-2016/README.md` is new and
+  records that reasoning, together with the standing rule that these outputs are
+  not re-baselined to match current behaviour without it. `effort_total` and
+  `harvest_total` are untouched and have reproduced bit-for-bit since v1.7.0.
+
+* `inst/validation/calamus-2016-validation.R` now compares standard errors as
+  well as point estimates — six comparisons where there were three (#178).
+  Comparing estimates alone is the reason the stale SE above survived three
+  major versions: the script is the only thing that exercises the reference
+  outputs, and the one quantity that had moved was the one it never looked at.
+
+  Its guard test gains two related fixes. It now asserts *which* comparisons
+  ran, not merely that none failed — a script that quietly stopped checking
+  standard errors would otherwise still report no failure, which is the original
+  blind spot one level up. And it no longer wraps the script in
+  `suppressMessages()`: the script reports through `message()`, so suppressing
+  them left the captured output empty and the existing "no FAIL in output" check
+  passing on a zero-length vector, testing nothing.
+
 * The sampling unit is now declarable: `add_counts()` gains `unit_cols` (#162).
   Until now the unit was inferred from the design alone — the PSU column plus
   strata, section, and site — so a counts table carrying a dimension the design

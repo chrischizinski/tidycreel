@@ -82,16 +82,27 @@ test_that("validation script passes WD guard when run from package root", {
 })
 
 test_that("the validation script agrees with the reference outputs it ships", {
-  # The script prints PASS/FAIL per estimand and stops on failure. Running it is
-  # therefore the assertion -- but only if a failure is actually reachable from
-  # here, which is what the test above now guarantees.
+  # The script prints PASS/FAIL per comparison and stops on failure. Running it
+  # is therefore the assertion -- but only if a failure is actually reachable
+  # from here, which is what the test above now guarantees.
   pkg_root <- validation_pkg_root()
 
   withr::with_dir(pkg_root, {
+    # Not suppressMessages(): the script reports through message(), so
+    # suppressing them empties `out` and every grepl() below then passes on a
+    # zero-length vector. That is what the FAIL check here used to do.
     out <- capture.output(
-      suppressMessages(suppressWarnings(source(script_path, local = TRUE))),
+      suppressWarnings(source(script_path, local = TRUE)),
       type = "message"
     )
+    expect_true(length(out) > 0L)
     expect_false(any(grepl("FAIL", out, fixed = TRUE)))
+
+    # Which comparisons ran, not just that none failed. A script that quietly
+    # stopped checking standard errors would still print no FAIL -- and that is
+    # exactly how the catch_total SE went stale for three major versions
+    # (GH #178). Three estimands x {estimate, se}.
+    expect_equal(sum(grepl("^  \\[PASS\\]", out)), 6L)
+    expect_equal(sum(grepl("^  \\[PASS\\] \\w+ se:", out)), 3L)
   })
 })
