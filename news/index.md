@@ -1,6 +1,6 @@
 # Changelog
 
-## tidycreel (development version)
+## tidycreel 5.0.0 “Pallid Sturgeon” (2026-08-22)
 
 ### New features
 
