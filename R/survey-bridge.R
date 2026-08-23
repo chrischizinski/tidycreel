@@ -43,7 +43,7 @@
 #' design2 <- add_counts(design, counts)
 #'
 #' # Extract survey object for advanced use
-#' svy <- as_survey_design(design2)
+#' svy <- as_creel_svydesign(design2)
 #'
 #' # Use with survey package functions
 #' survey::svytotal(~count, svy)
@@ -51,7 +51,7 @@
 #'
 #' @family "Survey Design"
 #' @export
-as_survey_design <- function(design) {
+as_creel_svydesign <- function(design) {
   # Validate input is creel_design
   if (!inherits(design, "creel_design")) {
     cli::cli_abort(c(
@@ -71,19 +71,53 @@ as_survey_design <- function(design) {
   }
 
   # Issue once-per-session warning
-  rlang::warn(
-    message = c(
+  # cli_warn(), not rlang::warn(): the latter does not evaluate cli markup, so
+  # the {.fn} field printed literally to the user.
+  cli::cli_warn(
+    c(
       "Accessing internal survey design object.",
       "i" = "This is an advanced feature. Most users should use {.fn estimate_effort} instead.",
       "!" = "Modifying the survey design may produce incorrect variance estimates."
     ),
     .frequency = "once",
-    .frequency_id = "tidycreel_as_survey_design"
+    .frequency_id = "tidycreel_as_creel_svydesign"
   )
 
   # Return design$survey
   # R's copy-on-modify semantics ensure modifications don't affect original
   design$survey
+}
+
+#' Extract internal survey design object (deprecated)
+#'
+#' @description
+#' `r lifecycle::badge("deprecated")`
+#'
+#' `as_survey_design()` was renamed to [as_creel_svydesign()] in tidycreel
+#' 5.0.0. The old name collided with `srvyr::as_survey_design()`, srvyr's
+#' principal entry point: attaching both packages masked one with the other
+#' depending on load order, and a user who loaded srvyr second got srvyr's
+#' generic failing to dispatch on `creel_design` with an error that said
+#' nothing about masking. The new name also matches the sibling
+#' [as_hybrid_svydesign()] and is more accurate -- the function extracts the
+#' internal `survey` object rather than constructing a design.
+#'
+#' @inheritParams as_creel_svydesign
+#'
+#' @return A survey.design2 object, identical to [as_creel_svydesign()].
+#'
+#' @keywords internal
+#' @export
+as_survey_design <- function(design) {
+  lifecycle::deprecate_warn(
+    when = "5.0.0",
+    what = "as_survey_design()",
+    with = "as_creel_svydesign()",
+    details = c(
+      i = "The old name collided with `srvyr::as_survey_design()`."
+    )
+  )
+  as_creel_svydesign(design)
 }
 
 # Internal survey bridge functions ----

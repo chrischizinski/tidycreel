@@ -159,7 +159,7 @@ This vignette covers the core tidycreel workflow for instantaneous count surveys
 - `?creel_design` - Define survey calendar and stratification
 - `?add_counts` - Attach count data to a design
 - `?estimate_effort` - Compute effort estimates with variance
-- `?as_survey_design` - Extract internal survey object for advanced use
+- `?as_creel_svydesign` - Extract internal survey object for advanced use
 
 For information on the example datasets:
 

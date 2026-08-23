@@ -45,6 +45,17 @@
 
 ## Bug fixes
 
+* The advanced-use warning issued by `as_creel_svydesign()` (formerly
+  `as_survey_design()`) no longer prints unevaluated cli markup. It was raised
+  with `rlang::warn()`, which does not interpolate cli fields, so the line
+  reached users as `Most users should use {.fn estimate_effort} instead.` It now
+  uses `cli::cli_warn()`, as every other warning in the file already did. The
+  test covering the message could not have caught this: its assertions sat
+  behind an `if (!is.null(result))` that was never entered once the
+  once-per-session warning had been consumed by an earlier test, and it closed
+  with `expect_true(TRUE)`. It now resets that state and asserts
+  unconditionally.
+
 * The Calamus 2016 validation script now runs (#130). `inst/validation/calamus-2016-validation.R`
   aborted at `add_counts()` — the fixture carries three numeric count columns
   and the call named none of them — so the package's only end-to-end validation
@@ -137,6 +148,19 @@
   within-day aggregation would collapse rows that differ in a column the
   sampling-unit key does not contain (#162). The error names the column and
   supplies a ready-made `unit_cols` call.
+
+## Deprecated
+
+* `as_survey_design()` is renamed to `as_creel_svydesign()` (#167). The old name
+  is srvyr's principal entry point, and srvyr is the natural companion for tidy
+  survey work, so attaching both packages masked one with the other depending on
+  load order. A user who loaded srvyr second and called `as_survey_design(design)`
+  got srvyr's generic failing to dispatch on `creel_design`, with an error that
+  said nothing about masking. The new name also matches the sibling
+  `as_hybrid_svydesign()` and states what the function does: it extracts the
+  internal `survey` object rather than constructing a design. `as_survey_design()`
+  keeps working and now warns; it delegates to `as_creel_svydesign()`, so the two
+  cannot diverge.
 
 ## Statistical correctness
 
