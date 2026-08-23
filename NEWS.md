@@ -163,6 +163,20 @@
   not re-baselined to match current behaviour without it. `effort_total` and
   `harvest_total` are untouched and have reproduced bit-for-bit since v1.7.0.
 
+* `inst/validation/calamus-2016-validation.R` now compares standard errors as
+  well as point estimates — six comparisons where there were three (#178).
+  Comparing estimates alone is the reason the stale SE above survived three
+  major versions: the script is the only thing that exercises the reference
+  outputs, and the one quantity that had moved was the one it never looked at.
+
+  Its guard test gains two related fixes. It now asserts *which* comparisons
+  ran, not merely that none failed — a script that quietly stopped checking
+  standard errors would otherwise still report no failure, which is the original
+  blind spot one level up. And it no longer wraps the script in
+  `suppressMessages()`: the script reports through `message()`, so suppressing
+  them left the captured output empty and the existing "no FAIL in output" check
+  passing on a zero-length vector, testing nothing.
+
 * The sampling unit is now declarable: `add_counts()` gains `unit_cols` (#162).
   Until now the unit was inferred from the design alone — the PSU column plus
   strata, section, and site — so a counts table carrying a dimension the design

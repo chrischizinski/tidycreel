@@ -182,35 +182,62 @@ cat_est <- suppressWarnings(estimate_total_catch(design))
 harv    <- suppressWarnings(estimate_total_harvest(design))
 
 # ---- 8. Compare against reference outputs ----
+# Both the point estimate and its standard error are compared.
+#
+# Comparing estimates alone is what let this fixture's catch_total SE go stale
+# from v1.7.0 to v4.0.0 without anything noticing (GH #178): v3.0.0 put the
+# bus-route catch total behind br_complete_trips_only(), which moved the SE and
+# -- because the two dropped rows carry zero catch -- left the point estimate
+# exactly where it was. An SE is where a dropped variance component hides, and
+# every uncertainty defect this package has shipped left the estimate untouched.
 computed <- list(
-  effort_total  = eff$estimates$estimate,
-  catch_total   = cat_est$estimates$estimate,
-  harvest_total = harv$estimates$estimate
+  effort_total  = eff$estimates,
+  catch_total   = cat_est$estimates,
+  harvest_total = harv$estimates
 )
+
+QUANTITIES <- c("estimate", "se")
+
+missing_ref <- setdiff(QUANTITIES, names(ref))
+if (length(missing_ref) > 0L) {
+  stop(
+    "reference-outputs.csv is missing column(s): ",
+    paste(missing_ref, collapse = ", "),
+    " -- cannot validate without them"
+  )
+}
 
 REL_TOL <- 0.001  # 0.1% relative tolerance
 
-results <- data.frame(
-  estimand  = ref$estimand,
-  reference = ref$estimate,
-  computed  = vapply(
-    ref$estimand,
-    function(nm) computed[[nm]],
-    numeric(1L)
-  ),
-  stringsAsFactors = FALSE
-)
+rows <- list()
+for (nm in ref$estimand) {
+  for (q in QUANTITIES) {
+    got <- computed[[nm]][[q]]
+    if (is.null(got)) {
+      stop(sprintf("Estimator output for %s has no %s column", nm, q))
+    }
+    rows[[length(rows) + 1L]] <- data.frame(
+      estimand  = nm,
+      quantity  = q,
+      reference = ref[[q]][ref$estimand == nm],
+      computed  = got[1L],
+      stringsAsFactors = FALSE
+    )
+  }
+}
+results <- do.call(rbind, rows)
 results$rel_error <- abs(results$computed - results$reference) / abs(results$reference)
 results$pass      <- results$rel_error <= REL_TOL
 
-# ---- 9. Print per-estimand results ----
+# ---- 9. Print per-comparison results ----
 message("\n--- Calamus 2016 Validation Results ---")
 for (i in seq_len(nrow(results))) {
   status <- if (results$pass[i]) "PASS" else "FAIL"
   message(sprintf(
-    "  [%s] %s: reference=%.4f  computed=%.4f  rel_error=%.6f",
+    "  [%s] %s %s: reference=%.4f  computed=%.4f  rel_error=%.6f",
     status,
     results$estimand[i],
+    results$quantity[i],
     results$reference[i],
     results$computed[i],
     results$rel_error[i]
@@ -221,13 +248,17 @@ for (i in seq_len(nrow(results))) {
 all_pass <- all(results$pass)
 overall  <- if (all_pass) "PASS" else "FAIL"
 message(sprintf(
-  "\n=== Overall: %s (%d/%d estimands within %.1f%% tolerance) ===",
+  "\n=== Overall: %s (%d/%d comparisons within %.1f%% tolerance) ===",
   overall, sum(results$pass), nrow(results), REL_TOL * 100
 ))
 
 if (!all_pass) {
-  failed <- results$estimand[!results$pass]
-  message(sprintf("Failed estimands: %s", paste(failed, collapse = ", ")))
+  failed <- sprintf(
+    "%s %s",
+    results$estimand[!results$pass],
+    results$quantity[!results$pass]
+  )
+  message(sprintf("Failed comparisons: %s", paste(failed, collapse = ", ")))
   quit(status = 1L)
 }
 invisible(results)
