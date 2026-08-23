@@ -229,7 +229,10 @@
     }
   }
   result <- df[, keep, drop = FALSE]
-  names(result) <- names(keep)
+  # names(keep) is NULL when nothing mapped, which tibble deprecates rather than
+  # reading as "no columns". The caller still aborts at validate_fetch_*(); this
+  # only keeps that abort from arriving behind two deprecation warnings.
+  names(result) <- if (length(keep) > 0L) names(keep) else character(0)
   .report_dropped_cols(names(df), c(keep, also_used), table, "api_field_map")
   result
 }
@@ -258,7 +261,10 @@
     }
   }
   result <- df[, keep, drop = FALSE]
-  names(result) <- names(keep)
+  # names(keep) is NULL when nothing mapped, which tibble deprecates rather than
+  # reading as "no columns". The caller still aborts at validate_fetch_*(); this
+  # only keeps that abort from arriving behind two deprecation warnings.
+  names(result) <- if (length(keep) > 0L) names(keep) else character(0)
   .report_dropped_cols(names(df), keep, table, "creel_schema")
   result
 }
