@@ -425,7 +425,7 @@ use.
 tidycreel’s scope: custom clustering structures,
 probability-proportional-to-size (PPS) sampling, replicate-weight
 designs, or nonstandard variance estimators. The
-[`as_survey_design()`](https://chrischizinski.github.io/tidycreel/reference/as_survey_design.md)
+[`as_creel_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_creel_svydesign.md)
 function extracts the internal `svydesign` object from any tidycreel
 design, giving you full access to the survey package toolbox while still
 using tidycreel for the initial data setup.
@@ -433,7 +433,7 @@ using tidycreel for the initial data setup.
 ``` r
 
 # Extract the internal svydesign object for advanced use
-internal_svy <- as_survey_design(design)
+internal_svy <- as_creel_svydesign(design)
 # Now use any survey package function directly
 svymean(~effort_hours, internal_svy)
 ```

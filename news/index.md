@@ -64,6 +64,22 @@
 
 ### Bug fixes
 
+- The advanced-use warning issued by
+  [`as_creel_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_creel_svydesign.md)
+  (formerly
+  [`as_survey_design()`](https://chrischizinski.github.io/tidycreel/reference/as_survey_design.md))
+  no longer prints unevaluated cli markup. It was raised with
+  [`rlang::warn()`](https://rlang.r-lib.org/reference/abort.html), which
+  does not interpolate cli fields, so the line reached users as
+  `Most users should use {.fn estimate_effort} instead.` It now uses
+  [`cli::cli_warn()`](https://cli.r-lib.org/reference/cli_abort.html),
+  as every other warning in the file already did. The test covering the
+  message could not have caught this: its assertions sat behind an
+  `if (!is.null(result))` that was never entered once the
+  once-per-session warning had been consumed by an earlier test, and it
+  closed with `expect_true(TRUE)`. It now resets that state and asserts
+  unconditionally.
+
 - The Calamus 2016 validation script now runs
   ([\#130](https://github.com/chrischizinski/tidycreel/issues/130)).
   `inst/validation/calamus-2016-validation.R` aborted at
@@ -195,6 +211,26 @@
   sampling-unit key does not contain
   ([\#162](https://github.com/chrischizinski/tidycreel/issues/162)). The
   error names the column and supplies a ready-made `unit_cols` call.
+
+### Deprecated
+
+- [`as_survey_design()`](https://chrischizinski.github.io/tidycreel/reference/as_survey_design.md)
+  is renamed to
+  [`as_creel_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_creel_svydesign.md)
+  ([\#167](https://github.com/chrischizinski/tidycreel/issues/167)). The
+  old name is srvyr’s principal entry point, and srvyr is the natural
+  companion for tidy survey work, so attaching both packages masked one
+  with the other depending on load order. A user who loaded srvyr second
+  and called `as_survey_design(design)` got srvyr’s generic failing to
+  dispatch on `creel_design`, with an error that said nothing about
+  masking. The new name also matches the sibling
+  [`as_hybrid_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_hybrid_svydesign.md)
+  and states what the function does: it extracts the internal `survey`
+  object rather than constructing a design.
+  [`as_survey_design()`](https://chrischizinski.github.io/tidycreel/reference/as_survey_design.md)
+  keeps working and now warns; it delegates to
+  [`as_creel_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_creel_svydesign.md),
+  so the two cannot diverge.
 
 ### Statistical correctness
 

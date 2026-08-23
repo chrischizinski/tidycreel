@@ -517,13 +517,13 @@ the language creel biologists already use.</p>
 capabilities outside tidycreel’s scope: custom clustering structures,
 probability-proportional-to-size (PPS) sampling, replicate-weight
 designs, or nonstandard variance estimators. The
-<code><a href="../reference/as_survey_design.html">as_survey_design()</a></code> function extracts the internal
+<code><a href="../reference/as_creel_svydesign.html">as_creel_svydesign()</a></code> function extracts the internal
 <code>svydesign</code> object from any tidycreel design, giving you full
 access to the survey package toolbox while still using tidycreel for the
 initial data setup.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Extract the internal svydesign object for advanced use</span></span>
-<span><span class="va">internal_svy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_design.html">as_survey_design</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
+<span><span class="va">internal_svy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_creel_svydesign.html">as_creel_svydesign</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
 <span><span class="co"># Now use any survey package function directly</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/survey/man/surveysummary.html" class="external-link">svymean</a></span><span class="op">(</span><span class="op">~</span><span class="va">effort_hours</span>, <span class="va">internal_svy</span><span class="op">)</span></span></code></pre></div>
 </div>

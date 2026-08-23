@@ -28,7 +28,7 @@ argument.
   : Attach age data to a creel design
 - [`add_sections()`](https://chrischizinski.github.io/tidycreel/reference/add_sections.md)
   : Register spatial sections for a creel survey design
-- [`as_survey_design()`](https://chrischizinski.github.io/tidycreel/reference/as_survey_design.md)
+- [`as_creel_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_creel_svydesign.md)
   : Extract internal survey design object for advanced use
 - [`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md)
   : Estimate angler effort from camera/time-lapse count data

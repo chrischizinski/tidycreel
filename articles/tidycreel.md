@@ -300,7 +300,7 @@ surveys. For more details on specific functions, see their help pages:
   Attach count data to a design
 - [`?estimate_effort`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md) -
   Compute effort estimates with variance
-- [`?as_survey_design`](https://chrischizinski.github.io/tidycreel/reference/as_survey_design.md) -
+- [`?as_creel_svydesign`](https://chrischizinski.github.io/tidycreel/reference/as_creel_svydesign.md) -
   Extract internal survey object for advanced use
 
 For information on the example datasets:
