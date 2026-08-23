@@ -1,3 +1,32 @@
+# tidycreel (development version)
+
+## Bug fixes
+
+* Expanded effort targets (`target = "stratum_total"` and `"period_total"`)
+  understated the total whenever a sampled day carried more than one count row
+  (#183). The two sides of the expansion factor `N_h / n_h` counted different
+  things: the numerator counted calendar rows, the denominator counted rows of
+  the attached counts table. A day holding k rows — two shift periods, three
+  spatial sections — therefore divided every weight by k, and the season total
+  came back low by exactly that factor, with no error and no warning.
+
+  Both sides now count distinct sampling units, so the ratio is days over days
+  however many rows a day carries. Rows sharing a day are summed into it before
+  the expansion, which is what the Horvitz-Thompson estimator intends.
+
+  Two configurations change value, and both were wrong before: a design whose
+  counts carry a within-day dimension (the shipped `example_sections_counts`
+  expanded to 282 where the hand calculation gives 846), and one whose calendar
+  lists the frame at a finer resolution than the day, which expanded as though
+  the season held more days than it does. A design with one count row per
+  sampled day — the shape of every existing test — is unaffected.
+
+  Estimates now report when a day carries several rows, so the reader can see
+  that the quantity being expanded is a day rather than a row.
+
+  Registered sectioned designs never reached this: `add_sections()` refuses
+  expanded targets outright.
+
 # tidycreel 5.0.0 "Pallid Sturgeon" (2026-08-22)
 
 ## New features
