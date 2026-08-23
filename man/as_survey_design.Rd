@@ -2,7 +2,7 @@
 % Please edit documentation in R/survey-bridge.R
 \name{as_survey_design}
 \alias{as_survey_design}
-\title{Extract internal survey design object for advanced use}
+\title{Extract internal survey design object (deprecated)}
 \usage{
 as_survey_design(design)
 }
@@ -10,75 +10,18 @@ as_survey_design(design)
 \item{design}{A creel_design object with counts attached via \code{\link{add_counts}}}
 }
 \value{
-A survey.design2 object (from survey::svydesign). Due to R's
-copy-on-modify semantics, modifications to the returned object will not
-affect the internal design$survey object.
+A survey.design2 object, identical to \code{\link[=as_creel_svydesign]{as_creel_svydesign()}}.
 }
 \description{
-Provides power users with direct access to the internal survey.design2 object
-for advanced analysis using survey package functions. This is an escape hatch
-for workflows not yet wrapped by tidycreel. Most users should use
-\code{\link[=estimate_effort]{estimate_effort()}} instead.
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
 
-The function issues a once-per-session warning to educate users that this is
-an advanced feature with risks if the returned object is modified incorrectly.
+\code{as_survey_design()} was renamed to \code{\link[=as_creel_svydesign]{as_creel_svydesign()}} in tidycreel
+5.0.0. The old name collided with \code{srvyr::as_survey_design()}, srvyr's
+principal entry point: attaching both packages masked one with the other
+depending on load order, and a user who loaded srvyr second got srvyr's
+generic failing to dispatch on \code{creel_design} with an error that said
+nothing about masking. The new name also matches the sibling
+\code{\link[=as_hybrid_svydesign]{as_hybrid_svydesign()}} and is more accurate -- the function extracts the
+internal \code{survey} object rather than constructing a design.
 }
-\section{Warning}{
-
-This function issues a once-per-session warning explaining:
-\itemize{
-\item This is an advanced feature for power users
-\item Most users should use \code{estimate_effort()} instead
-\item Modifying the survey design may produce incorrect variance estimates
-}
-}
-
-\examples{
-# Basic workflow
-library(survey)
-cal <- data.frame(
-  date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
-  day_type = c("weekday", "weekday", "weekend", "weekend")
-)
-design <- creel_design(cal, date = date, strata = day_type)
-
-counts <- data.frame(
-  date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
-  day_type = c("weekday", "weekday", "weekend", "weekend"),
-  count = c(15, 23, 45, 52)
-)
-
-design2 <- add_counts(design, counts)
-
-# Extract survey object for advanced use
-svy <- as_survey_design(design2)
-
-# Use with survey package functions
-survey::svytotal(~count, svy)
-survey::svymean(~count, svy)
-
-}
-\seealso{
-Other "Survey Design":
-\code{\link{add_catch}()},
-\code{\link{add_counts}()},
-\code{\link{add_interviews}()},
-\code{\link{add_lengths}()},
-\code{\link{add_sections}()},
-\code{\link{as_hybrid_svydesign}()},
-\code{\link{compute_angler_effort}()},
-\code{\link{compute_effort}()},
-\code{\link{creel_design}()},
-\code{\link{creel_schema}()},
-\code{\link{creel_vocabulary}()},
-\code{\link{derive_angler_count}()},
-\code{\link{est_effort_camera}()},
-\code{\link{impute_camera_counts}()},
-\code{\link{mean_party_size}()},
-\code{\link{prep_counts_boat_party}()},
-\code{\link{prep_counts_daily_effort}()},
-\code{\link{prep_interview_catch}()},
-\code{\link{prep_interviews_trips}()},
-\code{\link{validate_creel_schema}()}
-}
-\concept{"Survey Design"}
+\keyword{internal}

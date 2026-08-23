@@ -54,7 +54,7 @@ reference:
       - add_lengths
       - add_ages
       - add_sections
-      - as_survey_design
+      - as_creel_svydesign
       - est_effort_camera
       - est_effort_camera_mi
       - impute_camera_counts
