@@ -72,6 +72,23 @@
 
 ## Bug fixes
 
+* The dependency on tidycreel is now declared as `tidycreel (>= 5.0.0)` rather
+  than left unversioned. `fetch_*()` calls `tidycreel::creel_vocabulary()`, which
+  tidycreel first exported in 5.0.0, so against an older tidycreel the package
+  installed cleanly and then aborted at run time with `'creel_vocabulary' is not
+  an exported object from 'namespace:tidycreel'` -- and only on the value-map
+  path, so everything else looked fine. `derive_angler_count()` is a quieter case
+  of the same coupling: 5.0.0 made it drop the columns it consumed, and against
+  4.0.0 those columns survive with no error at all.
+
+  Nothing could have caught this. The check workflow installs tidycreel with
+  `local::..`, from the repo root at the same commit, so connect is only ever
+  tested against the tidycreel beside it and no version skew is reachable in CI.
+  The documented install path in `README.md` takes both packages from the default
+  branch and stays consistent; the break needs an older tidycreel already
+  installed and an `install_github()` of connect alone, which `remotes` will not
+  upgrade precisely because no version was required.
+
 * `fetch_counts()` now carries the time of a count, and says so when it cannot
   (#129). A count row is one observation at one moment, not a day's total, and
   a source that records several counts per sampled day distinguishes them by
