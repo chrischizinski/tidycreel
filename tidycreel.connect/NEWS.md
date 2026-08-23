@@ -56,6 +56,20 @@
   return the identical total — a seam test built there would pass whatever the
   fetch layer did.
 
+* `creel_connect_from_yaml()` accepts `backend: api`, reading `base_url`,
+  `uid_param`, `creel_uids`, `endpoints` and `field_map` from the profile.
+
+* A commented template profile ships with the package, with every name
+  invented:
+  ```r
+  system.file("extdata", "api-profile-example.yml", package = "tidycreel.connect")
+  ```
+
+* `fetch_*()` aborts with a clear message when the connection describes no
+  endpoint path, or no field names, for the endpoint being fetched -- rather
+  than fetching and then discarding every column, which surfaced as a
+  "column missing" validation error pointing nowhere near the cause.
+
 ## Bug fixes
 
 * `fetch_counts()` now carries the time of a count, and says so when it cannot
@@ -158,22 +172,6 @@
 * `summarize_by_zip()` and `summarize_by_county()` (in tidycreel) gain a
   `zip_col` argument, defaulting to `"zip_code"`, in place of a hardcoded raw
   field name.
-
-## New features
-
-* `creel_connect_from_yaml()` accepts `backend: api`, reading `base_url`,
-  `uid_param`, `creel_uids`, `endpoints` and `field_map` from the profile.
-
-* A commented template profile ships with the package, with every name
-  invented:
-  ```r
-  system.file("extdata", "api-profile-example.yml", package = "tidycreel.connect")
-  ```
-
-* `fetch_*()` aborts with a clear message when the connection describes no
-  endpoint path, or no field names, for the endpoint being fetched -- rather
-  than fetching and then discarding every column, which surfaced as a
-  "column missing" validation error pointing nowhere near the cause.
 
 ## Statistical correctness
 
