@@ -64,7 +64,8 @@ used <- c(
   "Shovelnose Sturgeon", # v3.3.0
   "Flathead Chub",       # v3.4.0
   "Paddlefish",          # v4.0.0
-  "Pallid Sturgeon"      # v5.0.0
+  "Pallid Sturgeon",     # v5.0.0
+  "Sturgeon Chub"        # v5.1.0
 )
 # "Sauger" names two releases because it was drawn again for v3.1.0 while this
 # vector still stopped at v3.0.0. Left as-is: the duplicate is already in the
