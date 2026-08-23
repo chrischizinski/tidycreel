@@ -1,6 +1,6 @@
 # Changelog
 
-## tidycreel (development version)
+## tidycreel 5.1.0 “Sturgeon Chub” (2026-08-23)
 
 ### Bug fixes
 

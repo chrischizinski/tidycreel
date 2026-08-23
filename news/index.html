@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidycreel</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">5.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">5.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -65,9 +65,9 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="development version" id="tidycreel-development-version">tidycreel (development version)<a class="anchor" aria-label="anchor" href="#tidycreel-development-version"></a></h2>
+<h2 class="pkg-version" data-toc-text="5.1.0" id="tidycreel-510-sturgeon-chub-2026-08-23">tidycreel 5.1.0 “Sturgeon Chub” (2026-08-23)<a class="anchor" aria-label="anchor" href="#tidycreel-510-sturgeon-chub-2026-08-23"></a></h2>
 <div class="section level3">
-<h3 id="bug-fixes-development-version">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-development-version"></a></h3>
+<h3 id="bug-fixes-5-1-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-5-1-0"></a></h3>
 <ul><li>
 <p>Expanded effort targets (<code>target = "stratum_total"</code> and <code>"period_total"</code>) understated the total whenever a sampled day carried more than one count row (<a href="https://github.com/chrischizinski/tidycreel/issues/183" class="external-link">#183</a>). The two sides of the expansion factor <code>N_h / n_h</code> counted different things: the numerator counted calendar rows, the denominator counted rows of the attached counts table. A day holding k rows — two shift periods, three spatial sections — therefore divided every weight by k, and the season total came back low by exactly that factor, with no error and no warning.</p>
 <p>Both sides now count distinct sampling units, so the ratio is days over days however many rows a day carries. Rows sharing a day are summed into it before the expansion, which is what the Horvitz-Thompson estimator intends.</p>
