@@ -176,14 +176,41 @@ interview really is a single angler, to remove the ambiguity.
 
 ## Comparison: Simple vs. GLMM Estimator
 
-Both estimators are applied to the same design. The simple estimator treats
-each overflight count as a representative sample of the full open-water window
-and expands by `h_open / v` directly. The GLMM estimator corrects for the
-fixed-hour flight schedule by integrating the fitted diurnal curve.
+The two estimators need the counts at different grains, so they take different
+designs built from the same data.
+
+The GLMM consumes each overflight individually — the flight times are what it
+fits the diurnal curve against, so the four flights a day must stay four rows.
+
+The simple estimator does not model time. It treats each count as an
+instantaneous estimate of the anglers present and expands by `h_open / v`. Four
+flights on one day are therefore four looks at that day, not four sampled days:
+they average to the day's mean occupancy, and the spread between them becomes
+the within-day variance component. Naming `count_time_col` is what performs that
+aggregation. Without it the four counts would be summed as separate sampling
+units and the estimate would come back four times too large.
 
 ```{r comparison}
+# Daily means for the simple estimator: the flights are four looks at each day,
+# so they aggregate rather than accumulate.
+design_daily <- add_counts(
+  creel_design(
+    aerial_cal,
+    date        = date,
+    strata      = day_type,
+    survey_type = "aerial",
+    visibility_correction = "none",
+    angler_ratio = 1,
+    angler_ratio_se = 0,
+    h_open      = 14
+  ),
+  example_aerial_glmm_counts,
+  count_col      = n_anglers,
+  count_time_col = time_of_flight
+)
+
 # Simple aerial estimator — no diurnal correction
-simple_result <- estimate_effort(design)
+simple_result <- estimate_effort(design_daily)
 
 # GLMM result from above
 # glmm_result already computed

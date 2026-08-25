@@ -32,6 +32,14 @@
   keeps its several rows per day. `add_counts()` still warns, so the problem is
   reported next to the call that introduced it.
 
+* The `aerial-glmm` vignette compared the GLMM against the simple aerial
+  estimator on one design holding four overflights per day, with no count time
+  declared. The simple estimator sums, so the figure it published was four
+  times the correct one (roughly 20,370 angler-hours against 5,092.5). The
+  comparison now builds a second design that declares the flights via
+  `count_time_col`, aggregating them to daily means; the GLMM continues to read
+  the individual flights, which is what it fits the diurnal curve against.
+
 * `add_counts()` now records `unit_cols` on the design. It was previously
   validated and discarded, leaving the design unable to distinguish a declared
   multi-column sampling unit from an undeclared repeat.
