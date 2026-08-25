@@ -130,11 +130,13 @@ water, excluding travel, setup, and breaks. This captures actual fishing
 pressure more precisely but requires more careful interviewing.</li>
 </ul>
 <p>The <code>effort_type</code> argument to <code><a href="../reference/creel_design.html">creel_design()</a></code>
-controls which measure the design tracks and how the output column is
-labeled in <code><a href="../reference/estimate_effort.html">estimate_effort()</a></code>:
+controls which measure the design tracks, and adds a matching column to
+the <code><a href="../reference/estimate_effort.html">estimate_effort()</a></code> output:
 <code>total_effort_hr_on_ice</code> for <code>"time_on_ice"</code> and
 <code>total_effort_hr_active</code> for
-<code>"active_fishing_time"</code>.</p>
+<code>"active_fishing_time"</code>. Both are aliases of
+<code>estimate</code>, which is present on every design and is what
+generic code should read.</p>
 </div>
 <div class="section level3">
 <h3 id="shelter-mode-stratification">Shelter mode stratification<a class="anchor" aria-label="anchor" href="#shelter-mode-stratification"></a>
@@ -269,9 +271,11 @@ factor.</p>
 </h2>
 <p><code><a href="../reference/estimate_effort.html">estimate_effort()</a></code> dispatches through the bus-route
 Horvitz-Thompson estimator and returns the total angler-hours with a
-standard error and confidence interval. The output column is labeled
-<code>total_effort_hr_on_ice</code> because the design was built with
-<code>effort_type = "time_on_ice"</code>.</p>
+standard error and confidence interval. The effort column is returned
+twice: as <code>estimate</code>, the name every design uses and the one
+generic code should read, and again under a name recording the effort
+type – <code>total_effort_hr_on_ice</code> because the design was built
+with <code>effort_type = "time_on_ice"</code>.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">effort_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">effort_est</span><span class="op">)</span></span>
@@ -283,14 +287,15 @@ standard error and confidence interval. The output column is labeled
 <span><span class="co">#&gt; Effort target: sampled_days</span></span>
 <span><span class="co">#&gt; Unit: party-hours</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
-<span><span class="co">#&gt;   total_effort_hr_on_ice    se ci_lower ci_upper     n</span></span>
-<span><span class="co">#&gt;                    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>                  <span style="text-decoration: underline;">2</span>406.  107.    <span style="text-decoration: underline;">2</span>196.    <span style="text-decoration: underline;">2</span>615.    72</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 6</span></span></span>
+<span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n total_effort_hr_on_ice</span></span>
+<span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>                  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">2</span>406.  107.    <span style="text-decoration: underline;">2</span>196.    <span style="text-decoration: underline;">2</span>615.    72                  <span style="text-decoration: underline;">2</span>406.</span></span></code></pre></div>
 <p>To demonstrate the column-naming distinction, rebuild the design
 using <code>effort_type = "active_fishing_time"</code> and the
 <code>active_fishing_hours</code> column from the interview data. The
-output column is then labeled <code>total_effort_hr_active</code>.</p>
+effort-type column is then labeled <code>total_effort_hr_active</code>;
+<code>estimate</code> is present either way.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">design_aft</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_design.html">creel_design</a></span><span class="op">(</span></span>
 <span>  <span class="va">example_ice_sampling_frame</span>,</span>
@@ -329,10 +334,10 @@ output column is then labeled <code>total_effort_hr_active</code>.</p>
 <span><span class="co">#&gt; Effort target: sampled_days</span></span>
 <span><span class="co">#&gt; Unit: party-hours</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
-<span><span class="co">#&gt;   total_effort_hr_active    se ci_lower ci_upper     n</span></span>
-<span><span class="co">#&gt;                    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>                  <span style="text-decoration: underline;">1</span>990.  93.1    <span style="text-decoration: underline;">1</span>808.    <span style="text-decoration: underline;">2</span>173.    72</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 6</span></span></span>
+<span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n total_effort_hr_active</span></span>
+<span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>                  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">1</span>990.  93.1    <span style="text-decoration: underline;">1</span>808.    <span style="text-decoration: underline;">2</span>173.    72                  <span style="text-decoration: underline;">1</span>990.</span></span></code></pre></div>
 <p>Active fishing hours are shorter than time-on-ice because they
 exclude travel, setup, and breaks. The difference between the two
 estimates reflects the non-fishing portion of each trip.</p>
@@ -356,11 +361,12 @@ interview data split by the grouping variable.</p>
 <span><span class="co">#&gt; Effort target: sampled_days</span></span>
 <span><span class="co">#&gt; Unit: party-hours</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 7</span></span></span>
-<span><span class="co">#&gt;   shelter_mode total_effort_hr_on_ice    se ci_lower ci_upper proportion     n</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                         <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> dark_house                    <span style="text-decoration: underline;">1</span>250.  179.     900.    <span style="text-decoration: underline;">1</span>601.      0.520    36</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> open                          <span style="text-decoration: underline;">1</span>156.  142.     878.    <span style="text-decoration: underline;">1</span>434.      0.480    36</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 8</span></span></span>
+<span><span class="co">#&gt;   shelter_mode estimate    se ci_lower ci_upper proportion     n</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> dark_house      <span style="text-decoration: underline;">1</span>250.  179.     900.    <span style="text-decoration: underline;">1</span>601.      0.520    36</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> open            <span style="text-decoration: underline;">1</span>156.  142.     878.    <span style="text-decoration: underline;">1</span>434.      0.480    36</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1 more variable: total_effort_hr_on_ice &lt;dbl&gt;</span></span></span></code></pre></div>
 <p>The <code>proportion</code> column shows each shelter group’s share
 of total effort. Dark-house anglers tend to fish longer hours on
 average, which can make their proportional effort contribution larger

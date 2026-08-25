@@ -30,11 +30,13 @@ Ice fishing surveys collect two distinct effort measures:
 
 The `effort_type` argument to
 [`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md)
-controls which measure the design tracks and how the output column is
-labeled in
-[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md):
-`total_effort_hr_on_ice` for `"time_on_ice"` and
-`total_effort_hr_active` for `"active_fishing_time"`.
+controls which measure the design tracks, and adds a matching column to
+the
+[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+output: `total_effort_hr_on_ice` for `"time_on_ice"` and
+`total_effort_hr_active` for `"active_fishing_time"`. Both are aliases
+of `estimate`, which is present on every design and is what generic code
+should read.
 
 ### Shelter mode stratification
 
@@ -180,7 +182,9 @@ design <- add_interviews(
 [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
 dispatches through the bus-route Horvitz-Thompson estimator and returns
 the total angler-hours with a standard error and confidence interval.
-The output column is labeled `total_effort_hr_on_ice` because the design
+The effort column is returned twice: as `estimate`, the name every
+design uses and the one generic code should read, and again under a name
+recording the effort type – `total_effort_hr_on_ice` because the design
 was built with `effort_type = "time_on_ice"`.
 
 ``` r
@@ -195,16 +199,16 @@ print(effort_est)
 #> Effort target: sampled_days
 #> Unit: party-hours
 #> 
-#> # A tibble: 1 × 5
-#>   total_effort_hr_on_ice    se ci_lower ci_upper     n
-#>                    <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1                  2406.  107.    2196.    2615.    72
+#> # A tibble: 1 × 6
+#>   estimate    se ci_lower ci_upper     n total_effort_hr_on_ice
+#>      <dbl> <dbl>    <dbl>    <dbl> <int>                  <dbl>
+#> 1    2406.  107.    2196.    2615.    72                  2406.
 ```
 
 To demonstrate the column-naming distinction, rebuild the design using
 `effort_type = "active_fishing_time"` and the `active_fishing_hours`
-column from the interview data. The output column is then labeled
-`total_effort_hr_active`.
+column from the interview data. The effort-type column is then labeled
+`total_effort_hr_active`; `estimate` is present either way.
 
 ``` r
 
@@ -245,10 +249,10 @@ print(effort_aft)
 #> Effort target: sampled_days
 #> Unit: party-hours
 #> 
-#> # A tibble: 1 × 5
-#>   total_effort_hr_active    se ci_lower ci_upper     n
-#>                    <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1                  1990.  93.1    1808.    2173.    72
+#> # A tibble: 1 × 6
+#>   estimate    se ci_lower ci_upper     n total_effort_hr_active
+#>      <dbl> <dbl>    <dbl>    <dbl> <int>                  <dbl>
+#> 1    1990.  93.1    1808.    2173.    72                  1990.
 ```
 
 Active fishing hours are shorter than time-on-ice because they exclude
@@ -276,11 +280,12 @@ print(effort_by_shelter)
 #> Effort target: sampled_days
 #> Unit: party-hours
 #> 
-#> # A tibble: 2 × 7
-#>   shelter_mode total_effort_hr_on_ice    se ci_lower ci_upper proportion     n
-#>   <chr>                         <dbl> <dbl>    <dbl>    <dbl>      <dbl> <dbl>
-#> 1 dark_house                    1250.  179.     900.    1601.      0.520    36
-#> 2 open                          1156.  142.     878.    1434.      0.480    36
+#> # A tibble: 2 × 8
+#>   shelter_mode estimate    se ci_lower ci_upper proportion     n
+#>   <chr>           <dbl> <dbl>    <dbl>    <dbl>      <dbl> <dbl>
+#> 1 dark_house      1250.  179.     900.    1601.      0.520    36
+#> 2 open            1156.  142.     878.    1434.      0.480    36
+#> # ℹ 1 more variable: total_effort_hr_on_ice <dbl>
 ```
 
 The `proportion` column shows each shelter group’s share of total

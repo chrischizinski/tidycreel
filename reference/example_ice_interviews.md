@@ -141,8 +141,8 @@ suppressWarnings(estimate_effort(design))
 #> Effort target: sampled_days
 #> Unit: party-hours
 #> 
-#> # A tibble: 1 × 5
-#>   total_effort_hr_on_ice    se ci_lower ci_upper     n
-#>                    <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1                  2406.  107.    2196.    2615.    72
+#> # A tibble: 1 × 6
+#>   estimate    se ci_lower ci_upper     n total_effort_hr_on_ice
+#>      <dbl> <dbl>    <dbl>    <dbl> <int>                  <dbl>
+#> 1    2406.  107.    2196.    2615.    72                  2406.
 ```
