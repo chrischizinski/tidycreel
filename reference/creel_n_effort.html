@@ -110,8 +110,15 @@ effort per day per stratum. Values must be &gt;= 0.</p></dd>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A named integer vector. Elements named after strata in <code>N_h</code> give the
-sampling days required per stratum; element <code>"total"</code> gives the overall
-sample size before proportional allocation.</p>
+sampling days required per stratum; element <code>"total"</code> gives Cochran's
+overall sample size <em>before</em> proportional allocation, and <code>"allocated"</code>
+the sum of the per-stratum values actually returned.</p>
+<p><code>"allocated"</code> is the number of sampling days the returned allocation
+commits to, and is the one to budget against. It is greater than or equal
+to <code>"total"</code>: each stratum is rounded up independently, so the parts can
+sum to as much as <code>k - 1</code> more than the unallocated optimum for <code>k</code>
+strata. Rounding up is deliberate – it keeps every stratum at or better
+than its share of <code>cv_target</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -156,8 +163,8 @@ creel surveys. North American Journal of Fisheries Management 37:970-983.
 <span class="r-in"><span>  ybar_h <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">50</span>, <span class="fl">60</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  s2_h <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">400</span>, <span class="fl">500</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> weekday weekend   total </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       3       2       4 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   weekday   weekend     total allocated </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         3         2         4         5 </span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

@@ -36,8 +36,16 @@ creel_n_effort(cv_target, N_h, ybar_h, s2_h)
 ## Value
 
 A named integer vector. Elements named after strata in `N_h` give the
-sampling days required per stratum; element `"total"` gives the overall
-sample size before proportional allocation.
+sampling days required per stratum; element `"total"` gives Cochran's
+overall sample size *before* proportional allocation, and `"allocated"`
+the sum of the per-stratum values actually returned.
+
+`"allocated"` is the number of sampling days the returned allocation
+commits to, and is the one to budget against. It is greater than or
+equal to `"total"`: each stratum is rounded up independently, so the
+parts can sum to as much as `k - 1` more than the unallocated optimum
+for `k` strata. Rounding up is deliberate – it keeps every stratum at or
+better than its share of `cv_target`.
 
 ## Details
 
@@ -86,6 +94,6 @@ creel_n_effort(
   ybar_h = c(50, 60),
   s2_h = c(400, 500)
 )
-#> weekday weekend   total 
-#>       3       2       4 
+#>   weekday   weekend     total allocated 
+#>         3         2         4         5 
 ```

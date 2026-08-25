@@ -104,7 +104,10 @@ power_creel(
 
 A tibble (data frame) with columns varying by mode:
 
-**`mode = "effort_n"`** (one row per stratum plus a `"total"` row):
+**`mode = "effort_n"`** (one row per stratum, then a `"total"` row
+giving Cochran's n before allocation and an `"allocated"` row giving the
+sum of the per-stratum rows – budget against `"allocated"`, which is
+what the returned allocation commits to):
 
 - `stratum`:
 
@@ -218,10 +221,11 @@ power_creel(
   ybar_h     = c(50, 60),
   s2_h       = c(400, 500)
 )
-#>   stratum n_required target_rse
-#> 1 weekday          3        0.2
-#> 2 weekend          2        0.2
-#> 3   total          4        0.2
+#>     stratum n_required target_rse
+#> 1   weekday          3        0.2
+#> 2   weekend          2        0.2
+#> 3     total          4        0.2
+#> 4 allocated          5        0.2
 
 # CPUE: interviews needed for 20 percent RSE
 power_creel(

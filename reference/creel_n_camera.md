@@ -36,8 +36,12 @@ creel_n_camera(cv_target, N_h, ybar_h, s2_h)
 ## Value
 
 A named integer vector. Elements named after strata in `N_h` give the
-camera-days required per stratum; element `"total"` gives the overall
-sample size before proportional allocation.
+camera-days required per stratum; element `"total"` gives Cochran's
+overall sample size *before* proportional allocation, and `"allocated"`
+the sum of the per-stratum values actually returned. Budget against
+`"allocated"`; see
+[`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md)
+for why the two differ.
 
 ## Details
 
@@ -104,6 +108,6 @@ creel_n_camera(
   ybar_h = c(15, 20),
   s2_h = c(625, 900)
 )
-#> weekday weekend   total 
-#>      27      12      38 
+#>   weekday   weekend     total allocated 
+#>        27        12        38        39 
 ```

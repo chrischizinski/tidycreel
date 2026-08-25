@@ -475,8 +475,8 @@ creel_n_effort(
   ybar_h = c(weekday = 280, weekend = 550),
   s2_h = c(weekday = 14400, weekend = 32400)
 )
-#> weekday weekend   total 
-#>       6       2       7
+#>   weekday   weekend     total allocated 
+#>         6         2         7         8
 ```
 
 ## Within-Day Count Time Scheduling

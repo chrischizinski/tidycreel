@@ -42,10 +42,11 @@ effort_plan <- power_creel(
 )
 
 effort_plan
-#>   stratum n_required target_rse
-#> 1 weekday          3        0.2
-#> 2 weekend          1        0.2
-#> 3   total          3        0.2
+#>     stratum n_required target_rse
+#> 1   weekday          3        0.2
+#> 2   weekend          1        0.2
+#> 3     total          3        0.2
+#> 4 allocated          4        0.2
 ```
 
 The result returns one row per stratum plus a `total` row, making it

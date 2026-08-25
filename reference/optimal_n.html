@@ -120,8 +120,10 @@ allocated to cheaper, high-variance strata. Values must be &gt; 0.</p></dd>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A named integer vector. Elements named after strata in <code>N_h</code> give the
-optimal sampling days per stratum; element <code>"total"</code> gives the overall
-sample size before allocation.</p>
+optimal sampling days per stratum; element <code>"total"</code> gives Cochran's
+overall sample size <em>before</em> allocation, and <code>"allocated"</code> the sum of the
+per-stratum values actually returned. Budget against <code>"allocated"</code>; see
+<code><a href="creel_n_effort.html">creel_n_effort()</a></code> for why the two differ.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -180,8 +182,8 @@ creel surveys. North American Journal of Fisheries Management 37:970-983.
 <span class="r-in"><span>  ybar_h <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">50</span>, <span class="fl">60</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  s2_h   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">400</span>, <span class="fl">500</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> weekday weekend   total </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       3       2       4 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   weekday   weekend     total allocated </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         3         2         4         5 </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Weekend sampling costs twice as much -- shift days toward weekdays</span></span></span>
 <span class="r-in"><span><span class="fu">optimal_n</span><span class="op">(</span></span></span>
@@ -191,8 +193,8 @@ creel surveys. North American Journal of Fisheries Management 37:970-983.
 <span class="r-in"><span>  s2_h       <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">400</span>, <span class="fl">500</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  cost_ratio <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>weekday <span class="op">=</span> <span class="fl">1</span>, weekend <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> weekday weekend   total </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       3       2       4 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   weekday   weekend     total allocated </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         3         2         4         5 </span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

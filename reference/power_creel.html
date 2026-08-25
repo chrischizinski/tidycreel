@@ -171,7 +171,10 @@ Used for <code>mode = "power"</code>.</p></dd>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A tibble (data frame) with columns varying by mode:</p>
-<p><strong><code>mode = "effort_n"</code></strong> (one row per stratum plus a <code>"total"</code> row):</p><dl><dt><code>stratum</code></dt>
+<p><strong><code>mode = "effort_n"</code></strong> (one row per stratum, then a <code>"total"</code> row giving
+Cochran's n before allocation and an <code>"allocated"</code> row giving the sum of
+the per-stratum rows – budget against <code>"allocated"</code>, which is what the
+returned allocation commits to):</p><dl><dt><code>stratum</code></dt>
 <dd><p>Stratum name.</p></dd>
 
 <dt><code>n_required</code></dt>
@@ -260,10 +263,11 @@ at a given sample size (calls <code><a href="creel_power.html">creel_power()</a>
 <span class="r-in"><span>  ybar_h     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">50</span>, <span class="fl">60</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  s2_h       <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">400</span>, <span class="fl">500</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   stratum n_required target_rse</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 weekday          3        0.2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 weekend          2        0.2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3   total          4        0.2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     stratum n_required target_rse</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1   weekday          3        0.2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2   weekend          2        0.2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3     total          4        0.2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4 allocated          5        0.2</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># CPUE: interviews needed for 20 percent RSE</span></span></span>
 <span class="r-in"><span><span class="fu">power_creel</span><span class="op">(</span></span></span>

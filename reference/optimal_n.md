@@ -46,8 +46,12 @@ optimal_n(cv_target, N_h, ybar_h, s2_h, cost_ratio = 1)
 ## Value
 
 A named integer vector. Elements named after strata in `N_h` give the
-optimal sampling days per stratum; element `"total"` gives the overall
-sample size before allocation.
+optimal sampling days per stratum; element `"total"` gives Cochran's
+overall sample size *before* allocation, and `"allocated"` the sum of
+the per-stratum values actually returned. Budget against `"allocated"`;
+see
+[`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md)
+for why the two differ.
 
 ## Details
 
@@ -117,8 +121,8 @@ optimal_n(
   ybar_h = c(50, 60),
   s2_h   = c(400, 500)
 )
-#> weekday weekend   total 
-#>       3       2       4 
+#>   weekday   weekend     total allocated 
+#>         3         2         4         5 
 
 # Weekend sampling costs twice as much -- shift days toward weekdays
 optimal_n(
@@ -128,6 +132,6 @@ optimal_n(
   s2_h       = c(400, 500),
   cost_ratio = c(weekday = 1, weekend = 2)
 )
-#> weekday weekend   total 
-#>       3       2       4 
+#>   weekday   weekend     total allocated 
+#>         3         2         4         5 
 ```

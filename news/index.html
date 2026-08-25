@@ -65,6 +65,17 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="development version" id="tidycreel-development-version">tidycreel (development version)<a class="anchor" aria-label="anchor" href="#tidycreel-development-version"></a></h2>
+<div class="section level3">
+<h3 id="bug-fixes-development-version">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-development-version"></a></h3>
+<ul><li>
+<p>The stratified sample-size functions reported a <code>total</code> that was not the sum of the per-stratum values, and <code><a href="../reference/power_creel.html">power_creel()</a></code> rendered it as though it were (<a href="https://github.com/chrischizinski/tidycreel/issues/195" class="external-link">#195</a>). <code>total</code> is Cochran’s <em>n</em>, solved from the variance equation before allocation; each stratum is then rounded up from it independently, so the parts sum to as much as <code>k - 1</code> more for <code>k</code> strata. Printed beneath rows named after strata, in a column named <code>n_required</code>, that row read as their sum and under-booked the survey by the difference.</p>
+<p><code>total</code> is unchanged — it is a real quantity and was documented as such. <code><a href="../reference/creel_n_effort.html">creel_n_effort()</a></code>, <code><a href="../reference/optimal_n.html">optimal_n()</a></code> and <code><a href="../reference/creel_n_camera.html">creel_n_camera()</a></code> now additionally return <code>allocated</code>, the sum of the per-stratum values, which is what the returned allocation commits to and the number to budget against. <code><a href="../reference/power_creel.html">power_creel()</a></code> reports both rows. Code reading these results by name is unaffected; code depending on the length or exact names of the returned vector will see one more element.</p>
+<p>No estimate changes. This is a planning-stage reporting fix — the per-stratum values were correct throughout, and rounding each up is deliberate, keeping every stratum at or better than its share of <code>cv_target</code>.</p>
+</li>
+</ul></div>
+</div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="5.1.0" id="tidycreel-510-sturgeon-chub-2026-08-23">tidycreel 5.1.0 “Sturgeon Chub” (2026-08-23)<a class="anchor" aria-label="anchor" href="#tidycreel-510-sturgeon-chub-2026-08-23"></a></h2>
 <div class="section level3">
 <h3 id="bug-fixes-5-1-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-5-1-0"></a></h3>
