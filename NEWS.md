@@ -1,5 +1,41 @@
 # tidycreel (development version)
 
+## Breaking changes
+
+* Repeated sampling units with no count time are now refused at estimation
+  rather than warned about (#193). Two counts on one day are two looks at that
+  day, not two sampled days: the day's effort is the mean of its counts, and
+  the spread between them is the within-day variance component. That averaging
+  has always been what `count_time_col` triggers -- but rows repeating a unit
+  *without* one bypassed it entirely and reached `svytotal()`, which sums them.
+  The reported effort came back multiplied by the number of counts per unit
+  (measured at exactly k-fold for k = 1..4) and propagated undiminished into
+  catch, harvest and release totals, while `se_within` was reported as `0`,
+  indistinguishable from a within-day component that had been evaluated and
+  found to be nil.
+
+  `add_counts()` warned about this, and its sibling check already *aborted* on
+  rows identical in every column -- so the harmless case (a double entry) was
+  refused while the dangerous one (a genuine second count) was merely
+  announced. The package cannot tell the two apart from the table: rows sharing
+  a unit key are either repeat counts, which average, or undeclared distinct
+  units, which sum, and only the surveyor knows which. It now asks rather than
+  guesses.
+
+  To fix an affected analysis, say what separates the rows -- `count_time_col`
+  for repeat counts, or `unit_cols` for distinct units -- after which they are
+  aggregated correctly and the within-day spread is retained.
+
+  The refusal is raised by `estimate_effort()`, not `add_counts()`, so
+  estimators that never sum these rows are unaffected:
+  `estimate_effort_aerial_glmm()` models counts against their flight time and
+  keeps its several rows per day. `add_counts()` still warns, so the problem is
+  reported next to the call that introduced it.
+
+* `add_counts()` now records `unit_cols` on the design. It was previously
+  validated and discarded, leaving the design unable to distinguish a declared
+  multi-column sampling unit from an undeclared repeat.
+
 ## Bug fixes
 
 * `estimate_effort()` on an ice design renamed its `estimate` column to record

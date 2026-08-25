@@ -585,6 +585,20 @@ estimate_effort <- function(
     )
   }
 
+  # Repeated sampling units are refused here rather than at attach (GH #193).
+  # Every branch below sums the count rows -- the aerial one via svytotal scaled
+  # by h_open/v, no differently -- so rows sharing a unit key with nothing to
+  # separate them are counted as separate sampled units and inflate the estimate
+  # by however many of them there are. Estimators that do not sum, notably
+  # estimate_effort_aerial_glmm() which models the counts against their flight
+  # time, never reach this and keep their multiple rows per day.
+  if (is.null(design$count_time_col) && !is.null(design$counts)) {
+    refuse_duplicate_psus( # nolint: object_usage_linter
+      design$counts,
+      psu_key_cols(design, design$psu_col, design$counts, design$unit_cols)
+    )
+  }
+
   # Bus-route and ice dispatch (after survey NULL check, before standard tier-2 validation)
   if (!is.null(design$design_type) && design$design_type %in% c("bus_route", "ice")) {
     if (!identical(target, "sampled_days")) {

@@ -401,39 +401,132 @@ validate_counts_tier1 <- function(counts, design, psu, allow_invalid = FALSE) {
   )
 }
 
-#' Detect repeated sampling units in count data
+#' Report repeated sampling units that nothing distinguishes
 #'
 #' Internal helper. Keyed on the whole sampling unit rather than the PSU column
 #' alone. Keying on the date by itself reported every multi-section day as a
 #' duplicate -- two sections counted once each is ordinary structure, not a
-#' repeat -- and a warning that fires on correct input is one users learn to
+#' repeat -- and a signal that fires on correct input is one users learn to
 #' ignore, which matters because this is the only signal for the case that is
 #' genuinely wrong (GH #155).
+#'
+#' Only reached when `count_time_col` is absent; with a count time the repeats
+#' are sub-counts and `aggregate_within_day()` collapses them to a per-unit mean.
+#'
+#' Aborts rather than warns (GH #193). Without a count time these rows reach
+#' `svytotal()` as separate sampling units and are **summed**, so the effort
+#' estimate comes back multiplied by the number of counts per unit -- measured
+#' at exactly k-fold for k = 1..4 -- and propagates undiminished into catch,
+#' harvest and release totals. `se_within` is reported as `0` at the same time,
+#' which is indistinguishable from a within-day component that was evaluated and
+#' found to be nil.
+#'
+#' It warned until 5.2.0, which was the wrong strength for the failure. The
+#' sibling check `detect_duplicate_rows()` already aborts on rows identical in
+#' every column -- the case that is usually a harmless double entry -- so the
+#' genuinely dangerous case was the one left recoverable. The information needed
+#' to resolve it is not in the table: two rows on one unit are either two looks
+#' at it (average them) or two undeclared units (sum them), and only the surveyor
+#' knows which. Guessing either way is a silent error, so this refuses and asks.
 #'
 #' @param counts Data frame containing count data
 #' @param key_cols Character vector identifying one sampling unit, from
 #'   `psu_key_cols()`
 #' @param call Caller environment for error reporting
 #'
+#' @return `NULL`, invisibly. Called for its side effect.
+#'
+#' @keywords internal
+#' @noRd
+n_duplicate_psus <- function(counts, key_cols) {
+  key <- do.call(paste, c(lapply(counts[key_cols], as.character), sep = "\u001f"))
+  sum(duplicated(key))
+}
+
+
+#' Warn at attach time about repeated sampling units
+#'
+#' Internal helper. The abort lives at estimation time, where the summing
+#' actually happens (`refuse_duplicate_psus()`); this fires earlier, when the
+#' counts are attached, so the problem is reported next to the call that
+#' introduced it rather than several steps later. Warning rather than aborting
+#' here is deliberate: an estimator that never sums these rows -- the aerial
+#' GLMM models them against `time_of_flight` -- is entitled to them.
+#'
+#' @inheritParams refuse_duplicate_psus
+#'
+#' @return `NULL`, invisibly. Called for its side effect.
+#'
 #' @keywords internal
 #' @noRd
 detect_duplicate_psus <- function(counts, key_cols, call = rlang::caller_env()) {
+  n_dup <- n_duplicate_psus(counts, key_cols)
+  if (n_dup == 0) {
+    return(invisible(NULL))
+  }
+  cli::cli_warn(
+    c(
+      "{.arg counts} has {n_dup} repeated sampling {cli::qty(n_dup)}unit{?s}, \\
+       with no count time to tell them apart.",
+      "i" = paste(
+        "{cli::qty(n_dup)}The repeated {?row is/rows are} keyed on",
+        "{.field {key_cols}}."
+      ),
+      "i" = paste(
+        "Estimators that sum these rows refuse them; supply",
+        "{.arg count_time_col} if they are repeat counts, or {.arg unit_cols}",
+        "if they are distinct units."
+      )
+    ),
+    call = call
+  )
+}
+
+
+#' Refuse repeated sampling units at estimation time
+#'
+#' Internal helper. See `detect_duplicate_psus()` for the attach-time warning.
+#'
+#' @param counts Data frame containing count data
+#' @param key_cols Character vector identifying one sampling unit
+#' @param call Caller environment for error reporting
+#'
+#' @return `NULL`, invisibly. Called for its side effect.
+#'
+#' @keywords internal
+#' @noRd
+refuse_duplicate_psus <- function(counts, key_cols, call = rlang::caller_env()) {
   key <- do.call(paste, c(lapply(counts[key_cols], as.character), sep = "\u001f"))
   n_dup <- sum(duplicated(key))
-  if (n_dup > 0) {
-    cli::cli_warn(
-      c(
-        "Repeated sampling units detected in count data.",
-        "i" = paste(
-          "Found {n_dup} repeated {cli::qty(n_dup)}row{?s} keyed on",
-          "{.field {key_cols}}."
-        ),
-        "i" = "If multiple counts were taken per unit, specify {.arg count_time_col}.",
-        "i" = "Example: {.code add_counts(design, counts, count_time_col = count_time)}"
-      ),
-      call = call
-    )
+  if (n_dup == 0) {
+    return(invisible(NULL))
   }
+  cli::cli_abort(
+    c(
+      "{.arg counts} has {n_dup} repeated sampling {cli::qty(n_dup)}unit{?s}, \\
+       with no count time to tell them apart.",
+      "x" = paste(
+        "{cli::qty(n_dup)}The repeated {?row is/rows are} keyed on",
+        "{.field {key_cols}}."
+      ),
+      "x" = paste(
+        "Two counts on one unit are two looks at that unit, not two sampled",
+        "units. Without a count time they are summed rather than averaged, so",
+        "the effort estimate is multiplied by the number of counts per unit,",
+        "and the within-day variance component is never computed."
+      ),
+      "i" = paste(
+        "If these are repeat counts, say when each was taken:",
+        "{.code add_counts(design, counts, count_time_col = count_time)}."
+      ),
+      "i" = paste(
+        "If they really are distinct sampling units, name what separates them",
+        "-- the section, site, or effort type -- via {.arg unit_cols}."
+      )
+    ),
+    class = "creel_error_repeated_psus",
+    call = call
+  )
 }
 
 #' Refuse count rows that are identical in every column
