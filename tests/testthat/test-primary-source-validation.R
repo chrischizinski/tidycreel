@@ -493,7 +493,13 @@ test_that("Effort estimate matches manual survey::svydesign + svytotal (point es
   # Proves inverse probability weighting correctly implements Eq. 19.4
   int_data$.effort_contrib <- int_data$hours_fished * int_data$.expansion / int_data$.pi_i
   svy_manual <- suppressWarnings(
-    survey::svydesign(ids = ~1, strata = ~day_type, data = int_data)
+    # Clustered on the fishing day, the PSU (Malvestuto 1996, section 20.2.3),
+    # matching how the design is declared. Built as ~1 this was not an
+    # independent check of the variance -- it re-stated the assumption under
+    # test, so it agreed with tidycreel however wrong both were (GH #198).
+    survey::svydesign(
+      ids = ~date, strata = ~day_type, data = int_data, nest = TRUE
+    )
   )
   manual_result <- survey::svytotal(~.effort_contrib, svy_manual)
   tidycreel_result <- suppressWarnings(estimate_effort(d))
@@ -509,7 +515,13 @@ test_that("Effort SE matches manual survey::svydesign + svytotal (tol 1e-3)", {
   int_data <- d$interviews
   int_data$.effort_contrib <- int_data$hours_fished * int_data$.expansion / int_data$.pi_i
   svy_manual <- suppressWarnings(
-    survey::svydesign(ids = ~1, strata = ~day_type, data = int_data)
+    # Clustered on the fishing day, the PSU (Malvestuto 1996, section 20.2.3),
+    # matching how the design is declared. Built as ~1 this was not an
+    # independent check of the variance -- it re-stated the assumption under
+    # test, so it agreed with tidycreel however wrong both were (GH #198).
+    survey::svydesign(
+      ids = ~date, strata = ~day_type, data = int_data, nest = TRUE
+    )
   )
   manual_result <- survey::svytotal(~.effort_contrib, svy_manual)
   tidycreel_result <- suppressWarnings(estimate_effort(d))
@@ -528,7 +540,13 @@ test_that("Harvest estimate matches manual survey::svydesign + svytotal (point e
   # (expansion = 1 for Example 1)
   int_data$.harvest_contrib <- int_data$fish_kept * int_data$.expansion / int_data$.pi_i
   svy_manual <- suppressWarnings(
-    survey::svydesign(ids = ~1, strata = ~day_type, data = int_data)
+    # Clustered on the fishing day, the PSU (Malvestuto 1996, section 20.2.3),
+    # matching how the design is declared. Built as ~1 this was not an
+    # independent check of the variance -- it re-stated the assumption under
+    # test, so it agreed with tidycreel however wrong both were (GH #198).
+    survey::svydesign(
+      ids = ~date, strata = ~day_type, data = int_data, nest = TRUE
+    )
   )
   manual_result <- survey::svytotal(~.harvest_contrib, svy_manual)
   # A manual svytotal is a total, so it validates the total estimator. This
@@ -547,7 +565,13 @@ test_that("Harvest SE matches manual survey::svydesign + svytotal (tol 1e-3)", {
   int_data <- d$interviews
   int_data$.harvest_contrib <- int_data$fish_kept * int_data$.expansion / int_data$.pi_i
   svy_manual <- suppressWarnings(
-    survey::svydesign(ids = ~1, strata = ~day_type, data = int_data)
+    # Clustered on the fishing day, the PSU (Malvestuto 1996, section 20.2.3),
+    # matching how the design is declared. Built as ~1 this was not an
+    # independent check of the variance -- it re-stated the assumption under
+    # test, so it agreed with tidycreel however wrong both were (GH #198).
+    survey::svydesign(
+      ids = ~date, strata = ~day_type, data = int_data, nest = TRUE
+    )
   )
   manual_result <- survey::svytotal(~.harvest_contrib, svy_manual)
   tidycreel_result <- suppressWarnings(estimate_total_harvest(d))
@@ -568,7 +592,13 @@ test_that("Bus-route HPUE matches manual survey::svyratio (point estimate and SE
   int_data$.effort_contrib <- int_data[[d$angler_effort_col]] *
     int_data$.expansion / int_data$.pi_i
   svy_manual <- suppressWarnings(
-    survey::svydesign(ids = ~1, strata = ~day_type, data = int_data)
+    # Clustered on the fishing day, the PSU (Malvestuto 1996, section 20.2.3),
+    # matching how the design is declared. Built as ~1 this was not an
+    # independent check of the variance -- it re-stated the assumption under
+    # test, so it agreed with tidycreel however wrong both were (GH #198).
+    survey::svydesign(
+      ids = ~date, strata = ~day_type, data = int_data, nest = TRUE
+    )
   )
   manual_ratio <- suppressWarnings(
     survey::svyratio(~.harvest_contrib, ~.effort_contrib, svy_manual)

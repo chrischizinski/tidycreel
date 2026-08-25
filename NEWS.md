@@ -12,6 +12,31 @@
   The effort-type column is now an alias rather than a replacement, so both
   names are present and agree.
 
+* Bus-route and ice standard errors were computed over interview rows rather
+  than over the sampling unit (#198). `build_interview_survey()` passed
+  `ids = ~1`, declaring every interview its own PSU. Malvestuto (1996,
+  section 20.2.3) defines this design as stratified two-stage probability
+  sampling -- fishing days are the primary sampling units, and secondary units
+  are chosen within them -- so several anglers contacted on one day are not
+  independent draws from the frame.
+
+  Reported precision was therefore a function of interview-recording
+  convention. Splitting one interview into two half-effort rows at the same
+  site left the Horvitz-Thompson estimate exactly unchanged and shrank the
+  standard error by `1/sqrt(2)`: an agency recording one row per angler looked
+  more precise than one recording one row per party for the same survey.
+
+  The bus-route and ice estimators now use the ultimate-cluster estimator,
+  taking the variance between PSU totals, so partitioning interview rows within
+  a day leaves both the estimate and the standard error unchanged. Access-point
+  and roving designs are untouched -- there the interview genuinely is the
+  sampling unit and `ids = ~1` is correct.
+
+  **No point estimate changes.** Standard errors and confidence intervals on
+  bus-route and ice designs do change, and not all in one direction: on the
+  Calamus 2016 fixture `catch_total` falls by more than half while
+  `effort_total` roughly doubles. Direction is a property of the data.
+
 * The stratified sample-size functions reported a `total` that was not the sum
   of the per-stratum values, and `power_creel()` rendered it as though it were
   (#195). `total` is Cochran's *n*, solved from the variance equation before
