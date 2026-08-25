@@ -233,14 +233,13 @@ estimate_cpue_reg_grouped <- function(
 #' \emph{Fish. Res.} 106: 325–333.
 #'
 #' @examples
-#' \dontrun{
-#' design <- creel_design(calendar, date_col = date, strata_col = day_type) |>
-#'   add_interviews(interviews, catch_col = catch_total,
-#'                  effort_col = hours_fished, trip_status_col = trip_status)
+#' design <- creel_design(example_calendar, date = date, strata = day_type) |>
+#'   add_interviews(example_interviews,
+#'     catch = catch_total, effort = hours_fished,
+#'     trip_status = trip_status, n_anglers = n_anglers
+#'   )
 #'
 #' compare_cpue_estimators(design)
-#' compare_cpue_estimators(design, by = day_type)
-#' }
 #'
 #' @seealso \code{\link{estimate_catch_rate}}
 #' @family "Estimation"
