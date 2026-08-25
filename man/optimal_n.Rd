@@ -26,8 +26,10 @@ allocated to cheaper, high-variance strata. Values must be > 0.}
 }
 \value{
 A named integer vector. Elements named after strata in \code{N_h} give the
-optimal sampling days per stratum; element \code{"total"} gives the overall
-sample size before allocation.
+optimal sampling days per stratum; element \code{"total"} gives Cochran's
+overall sample size \emph{before} allocation, and \code{"allocated"} the sum of the
+per-stratum values actually returned. Budget against \code{"allocated"}; see
+\code{\link[=creel_n_effort]{creel_n_effort()}} for why the two differ.
 }
 \description{
 Determines how many sampling days are needed to achieve a target coefficient

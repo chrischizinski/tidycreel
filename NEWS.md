@@ -1,3 +1,28 @@
+# tidycreel (development version)
+
+## Bug fixes
+
+* The stratified sample-size functions reported a `total` that was not the sum
+  of the per-stratum values, and `power_creel()` rendered it as though it were
+  (#195). `total` is Cochran's *n*, solved from the variance equation before
+  allocation; each stratum is then rounded up from it independently, so the
+  parts sum to as much as `k - 1` more for `k` strata. Printed beneath rows
+  named after strata, in a column named `n_required`, that row read as their
+  sum and under-booked the survey by the difference.
+
+  `total` is unchanged — it is a real quantity and was documented as such.
+  `creel_n_effort()`, `optimal_n()` and `creel_n_camera()` now additionally
+  return `allocated`, the sum of the per-stratum values, which is what the
+  returned allocation commits to and the number to budget against.
+  `power_creel()` reports both rows. Code reading these results by name is
+  unaffected; code depending on the length or exact names of the returned
+  vector will see one more element.
+
+  No estimate changes. This is a planning-stage reporting fix — the
+  per-stratum values were correct throughout, and rounding each up is
+  deliberate, keeping every stratum at or better than its share of
+  `cv_target`.
+
 # tidycreel 5.1.0 "Sturgeon Chub" (2026-08-23)
 
 ## Bug fixes

@@ -21,8 +21,16 @@ effort per day per stratum. Values must be >= 0.}
 }
 \value{
 A named integer vector. Elements named after strata in \code{N_h} give the
-sampling days required per stratum; element \code{"total"} gives the overall
-sample size before proportional allocation.
+sampling days required per stratum; element \code{"total"} gives Cochran's
+overall sample size \emph{before} proportional allocation, and \code{"allocated"}
+the sum of the per-stratum values actually returned.
+
+\code{"allocated"} is the number of sampling days the returned allocation
+commits to, and is the one to budget against. It is greater than or equal
+to \code{"total"}: each stratum is rounded up independently, so the parts can
+sum to as much as \code{k - 1} more than the unallocated optimum for \code{k}
+strata. Rounding up is deliberate -- it keeps every stratum at or better
+than its share of \code{cv_target}.
 }
 \description{
 Uses the stratified sample size formula from McCormick & Quist (2017) to

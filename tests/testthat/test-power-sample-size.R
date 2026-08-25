@@ -17,7 +17,7 @@ test_that("creel_n_effort returns named vector with total element", {
   )
 
   expect_true(is.integer(result))
-  expect_named(result, c("weekday", "weekend", "total"), ignore.order = FALSE)
+  expect_named(result, c("weekday", "weekend", "total", "allocated"), ignore.order = FALSE)
   expect_true("total" %in% names(result))
   expect_true(all(result >= 1L))
 })
@@ -97,7 +97,7 @@ test_that("creel_n_effort works with single stratum", {
     ybar_h = c(55),
     s2_h = c(450)
   )
-  expect_named(result, c("all_days", "total"))
+  expect_named(result, c("all_days", "total", "allocated"))
   expect_true(result[["all_days"]] >= 1L)
   expect_true(result[["total"]] >= 1L)
 })
@@ -229,7 +229,7 @@ test_that("creel_n_camera returns named integer vector with total element", {
     s2_h = c(625, 900)
   )
   expect_true(is.integer(result))
-  expect_named(result, c("weekday", "weekend", "total"), ignore.order = FALSE)
+  expect_named(result, c("weekday", "weekend", "total", "allocated"), ignore.order = FALSE)
   expect_true(all(result >= 1L))
 })
 
@@ -310,7 +310,7 @@ test_that("creel_n_camera works with single stratum", {
     ybar_h = 15,
     s2_h = 25
   )
-  expect_named(result, c("all_days", "total"))
+  expect_named(result, c("all_days", "total", "allocated"))
   expect_true(result[["all_days"]] >= 1L)
 })
 
@@ -330,7 +330,7 @@ test_that("optimal_n returns named integer vector with total element", {
     s2_h = c(400, 500)
   )
   expect_true(is.integer(result))
-  expect_named(result, c("weekday", "weekend", "total"), ignore.order = FALSE)
+  expect_named(result, c("weekday", "weekend", "total", "allocated"), ignore.order = FALSE)
   expect_true(all(result >= 1L))
 })
 
@@ -441,7 +441,7 @@ test_that("optimal_n works with single stratum", {
     ybar_h = 55,
     s2_h = 450
   )
-  expect_named(result, c("all_days", "total"), ignore.order = FALSE)
+  expect_named(result, c("all_days", "total", "allocated"), ignore.order = FALSE)
   expect_true(result[["all_days"]] >= 1L)
 })
 
@@ -561,5 +561,74 @@ test_that("optimal_n errors when E_total is zero (all ybar_h zero)", {
       s2_h = c(400, 500)
     ),
     regexp = "zero total"
+  )
+})
+
+test_that("allocated is the sum of the strata, and total is the unallocated optimum (#195)", {
+  # The two summary elements answer different questions and must not be
+  # conflated. `total` is Cochran's n, solved from the variance equation before
+  # any allocation. `allocated` is what the returned per-stratum values commit
+  # to. Each stratum is rounded up on its own, so allocated >= total, with the
+  # gap reaching k - 1 for k strata.
+  #
+  # Reported side by side with no `allocated`, `total` read as the column sum of
+  # the stratum rows and under-booked the survey by that gap.
+  N_h <- c(weekday = 132, weekend = 52) # nolint: object_name_linter
+  ybar_h <- c(weekday = 280, weekend = 550) # nolint: object_name_linter
+  s2_h <- c(weekday = 14400, weekend = 32400) # nolint: object_name_linter
+
+  results <- list(
+    effort = creel_n_effort(0.15, N_h, ybar_h, s2_h),
+    optimal = optimal_n(0.15, N_h, ybar_h, s2_h, cost_ratio = 1.5),
+    camera = suppressWarnings(creel_n_camera(0.15, N_h, ybar_h, s2_h))
+  )
+
+  for (nm in names(results)) {
+    r <- results[[nm]]
+    parts <- r[!names(r) %in% c("total", "allocated")]
+    expect_identical(r[["allocated"]], sum(parts), info = nm)
+    expect_gte(r[["allocated"]], r[["total"]])
+    expect_type(r[["allocated"]], "integer")
+  }
+})
+
+test_that("the allocated-vs-total gap grows with the number of strata (#195)", {
+  # Not a fixed offset: every stratum contributes its own round-up, so the gap
+  # is bounded by k - 1 rather than by a constant. Asserted across several k so
+  # a fix that merely special-cased two strata would fail here.
+  for (k in 2:6) {
+    nm <- paste0("s", seq_len(k))
+    N_h <- stats::setNames(rep(100, k), nm) # nolint: object_name_linter
+    ybar_h <- stats::setNames(rep(300, k), nm) # nolint: object_name_linter
+    s2_h <- stats::setNames(rep(20000, k), nm) # nolint: object_name_linter
+
+    r <- creel_n_effort(0.15, N_h, ybar_h, s2_h)
+    parts <- r[!names(r) %in% c("total", "allocated")]
+
+    expect_identical(r[["allocated"]], sum(parts))
+    expect_gte(r[["allocated"]], r[["total"]])
+    expect_lte(r[["allocated"]] - r[["total"]], k - 1L)
+  }
+})
+
+test_that("power_creel() reports both summary rows, not just total (#195)", {
+  # The table is where the two were conflated: a lone `total` row beneath the
+  # stratum rows reads as their sum. Both rows present is what makes the
+  # distinction visible at the point of use.
+  out <- power_creel(
+    strata = c("weekday", "weekend"),
+    N_h = c(132, 52), ybar_h = c(280, 550), s2_h = c(14400, 32400),
+    target_rse = 0.15
+  )
+
+  expect_true(all(c("total", "allocated") %in% out$stratum))
+  strata_rows <- out$n_required[!out$stratum %in% c("total", "allocated")]
+  expect_identical(
+    out$n_required[out$stratum == "allocated"],
+    sum(strata_rows)
+  )
+  expect_gte(
+    out$n_required[out$stratum == "allocated"],
+    out$n_required[out$stratum == "total"]
   )
 })
