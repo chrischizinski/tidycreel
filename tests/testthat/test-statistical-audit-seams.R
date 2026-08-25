@@ -122,3 +122,52 @@ test_that("contract: the ice effort-type column is an alias, not a replacement (
   expect_equal(sum(out$estimate), out$estimate)
   expect_gt(sum(out$estimate), 0)
 })
+
+test_that("metamorphic: partitioning interviews within a site visit leaves the SE alone (#198)", {
+  # In a bus-route design the selected unit is the site visit -- a site within a
+  # circuit, on one date -- and interviews are nested inside it. Several anglers
+  # contacted during one visit are not independent draws from the frame, so
+  # recording the same anglers as more rows adds bookkeeping, not information.
+  #
+  # Taking the variance over interview rows made the reported precision a
+  # function of interview-recording convention: the split below left the
+  # Horvitz-Thompson estimate exactly unchanged and shrank the SE by 1/sqrt(2),
+  # so an agency recording one row per angler looked more precise than one
+  # recording one row per party for the same survey.
+  #
+  # The estimate has always been invariant here. It is the SE that is under test.
+  split_within_visit <- function(design) {
+    iv <- design$interviews
+    a <- iv
+    b <- iv
+    for (col in c("hours_fished", ".angler_effort", "catch_total", "catch_kept")) {
+      if (col %in% names(iv)) {
+        a[[col]] <- iv[[col]] / 2
+        b[[col]] <- iv[[col]] / 2
+      }
+    }
+    if ("interview_id" %in% names(b)) {
+      b$interview_id <- paste0(b$interview_id, "b")
+    }
+    out <- design
+    out$interviews <- rbind(a, b)
+    out
+  }
+
+  designs <- list(
+    bus_route = build_br_design_for_tests(4L, 8L, 40L, seed = 11L),
+    ice = build_ice_design(8L, 40L, seed = 5L),
+    br_degenerate = build_br_degenerate_design(8L, 40L, seed = 7L)
+  )
+
+  for (nm in names(designs)) {
+    d <- designs[[nm]]
+    base <- tidy(suppressWarnings(estimate_effort(d)))
+    split <- tidy(suppressWarnings(estimate_effort(split_within_visit(d))))
+
+    expect_equal(base$estimate, split$estimate, info = nm)
+    expect_equal(base$se, split$se, info = nm)
+    # A zero SE would satisfy the equality above without saying anything.
+    expect_gt(base$se, 0)
+  }
+})

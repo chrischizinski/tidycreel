@@ -130,7 +130,12 @@ estimate_effort_br <- function(
     } else {
       NULL
     }
-    svy_br <- build_interview_survey(interviews, strata = strata_formula) # nolint: object_usage_linter
+    interviews <- br_add_psu_key(interviews, design) # nolint: object_usage_linter
+    svy_br <- build_interview_survey( # nolint: object_usage_linter
+      interviews,
+      strata = strata_formula,
+      ids = ~.psu
+    )
     svy_br <- get_variance_design(svy_br, variance_method) # nolint: object_usage_linter
     svy_result <- suppressWarnings(survey::svytotal(~.contribution, svy_br))
     se <- as.numeric(survey::SE(svy_result)) # nolint: object_usage_linter
@@ -174,7 +179,12 @@ estimate_effort_br <- function(
     } else {
       NULL
     }
-    svy_br <- build_interview_survey(interviews, strata = strata_formula) # nolint: object_usage_linter
+    interviews <- br_add_psu_key(interviews, design) # nolint: object_usage_linter
+    svy_br <- build_interview_survey( # nolint: object_usage_linter
+      interviews,
+      strata = strata_formula,
+      ids = ~.psu
+    )
     svy_br <- get_variance_design(svy_br, variance_method) # nolint: object_usage_linter
 
     svy_result <- suppressWarnings(survey::svyby(
@@ -522,7 +532,12 @@ br_harvest_rate_estimates <- function(
   } else {
     NULL
   }
-  svy_br <- build_interview_survey(interviews, strata = strata_formula) # nolint: object_usage_linter
+  interviews <- br_add_psu_key(interviews, design) # nolint: object_usage_linter
+  svy_br <- build_interview_survey( # nolint: object_usage_linter
+    interviews,
+    strata = strata_formula,
+    ids = ~.psu
+  )
   svy_br <- get_variance_design(svy_br, variance_method) # nolint: object_usage_linter
 
   # A zero denominator leaves the rate undefined. Abort rather than return Inf
@@ -1662,7 +1677,12 @@ br_build_estimates <- function(
     } else {
       NULL
     }
-    svy_br_base <- build_interview_survey(interviews, strata = strata_formula) # nolint: object_usage_linter
+    interviews <- br_add_psu_key(interviews, design) # nolint: object_usage_linter
+    svy_br_base <- build_interview_survey( # nolint: object_usage_linter
+      interviews,
+      strata = strata_formula,
+      ids = ~.psu
+    )
     svy_br_taylor <- get_variance_design(svy_br_base, variance_method) # nolint: object_usage_linter
     svy_result <- suppressWarnings(survey::svytotal(~.contribution, svy_br_taylor))
     se <- as.numeric(survey::SE(svy_result)) # nolint: object_usage_linter
@@ -1707,7 +1727,12 @@ br_build_estimates <- function(
     } else {
       NULL
     }
-    svy_br_base <- build_interview_survey(interviews, strata = strata_formula) # nolint: object_usage_linter
+    interviews <- br_add_psu_key(interviews, design) # nolint: object_usage_linter
+    svy_br_base <- build_interview_survey( # nolint: object_usage_linter
+      interviews,
+      strata = strata_formula,
+      ids = ~.psu
+    )
     svy_br_taylor <- get_variance_design(svy_br_base, variance_method) # nolint: object_usage_linter
 
     svy_result <- suppressWarnings(survey::svyby(

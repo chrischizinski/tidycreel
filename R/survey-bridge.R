@@ -200,18 +200,81 @@ get_variance_design <- function(design, variance_method) {
 #' @param data Data frame of interview records.
 #' @param strata A one-sided formula (e.g. \code{~.strata}) or \code{NULL} for
 #'   no stratification.
+#' @param ids A one-sided formula naming the cluster (PSU) column, or
+#'   \code{NULL} (default) for \code{~1}, one PSU per row. Supply it where the
+#'   design declares a sampling unit above the interview -- the bus-route and
+#'   ice estimators cluster on the fishing day, their primary sampling unit
+#'   (GH #198). Access-point and roving designs keep the default: there the
+#'   interview genuinely is the unit, and the equal-probability assumption
+#'   described above holds.
 #'
 #' @return A \code{survey.design2} object.
 #'
 #' @keywords internal
 #' @noRd
-build_interview_survey <- function(data, strata = NULL) {
+build_interview_survey <- function(data, strata = NULL, ids = NULL) {
+  if (is.null(ids)) {
+    return(survey::svydesign(
+      ids = ~1,
+      strata = strata,
+      weights = rep(1, nrow(data)),
+      data = data
+    ))
+  }
+  # Clustered on a declared sampling unit. `nest = TRUE` because the unit is
+  # nested inside the stratum -- a fishing day has one day type -- rather than
+  # the same id recurring across strata.
   survey::svydesign(
-    ids = ~1,
+    ids = ids,
     strata = strata,
     weights = rep(1, nrow(data)),
-    data = data
+    data = data,
+    nest = TRUE
   )
+}
+
+
+#' Label each interview with the primary sampling unit it was collected in
+#'
+#' Internal helper. Malvestuto (1996, section 20.2.3) defines the bus-route
+#' design as stratified two-stage probability sampling: fishing days are the
+#' primary sampling units, and within each chosen day one or more secondary
+#' units -- time period by lake section -- are chosen. Interviews sit inside
+#' those, so several anglers contacted on one day are not independent draws
+#' from the frame.
+#'
+#' The variance is taken between PSU totals, the ultimate-cluster estimator.
+#' That captures every stage of subsampling within the day without needing the
+#' joint inclusion probabilities of the second stage, which the sampling frame
+#' does not carry.
+#'
+#' Taking it over interview rows instead made the reported precision a function
+#' of interview-recording convention. Splitting one interview into two
+#' half-effort rows left the Horvitz-Thompson estimate exactly unchanged and
+#' shrank the standard error by `1/sqrt(2)`, so an agency recording one row per
+#' angler looked more precise than one recording one row per party for the same
+#' survey (GH #198).
+#'
+#' Ice designs are degenerate bus routes with a single synthetic site, so the
+#' day is both PSU and site visit and this keys them identically.
+#'
+#' @param interviews Interview data frame, after `.pi_i` has been attached
+#' @param design A `creel_design` of bus-route or ice type
+#'
+#' @return `interviews` with a `.psu` column appended
+#'
+#' @keywords internal
+#' @noRd
+br_add_psu_key <- function(interviews, design) {
+  psu_col <- design$date_col
+  if (is.null(psu_col) || !psu_col %in% names(interviews)) {
+    # Nothing identifies the sampling unit. Fall back to the row, which is the
+    # pre-#198 behaviour, rather than inventing a unit that is not in the data.
+    interviews$.psu <- seq_len(nrow(interviews))
+    return(interviews)
+  }
+  interviews$.psu <- as.character(interviews[[psu_col]])
+  interviews
 }
 
 #' Validate count data structure (Tier 1)
