@@ -2,6 +2,16 @@
 
 ## Bug fixes
 
+* `estimate_effort()` on an ice design renamed its `estimate` column to record
+  the effort type, so `tidy()` returned `total_effort_hr_on_ice` (or
+  `total_effort_hr_active`) and no `estimate` at all (#199). Ice was the only
+  design to do this -- including the degenerate bus route, which is what an ice
+  design is. Generic code reading the documented accessor, `tidy(x)$estimate`,
+  a rollup across strata or species, or a report template, received `NULL`, and
+  `sum(NULL)` is `0`: a season total came back as zero rather than as an error.
+  The effort-type column is now an alias rather than a replacement, so both
+  names are present and agree.
+
 * The stratified sample-size functions reported a `total` that was not the sum
   of the per-stratum values, and `power_creel()` rendered it as though it were
   (#195). `total` is Cochran's *n*, solved from the variance equation before

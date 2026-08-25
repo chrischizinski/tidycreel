@@ -43,9 +43,10 @@ Ice fishing surveys collect two distinct effort measures:
   precisely but requires more careful interviewing.
 
 The `effort_type` argument to `creel_design()` controls which measure the
-design tracks and how the output column is labeled in `estimate_effort()`:
+design tracks, and adds a matching column to the `estimate_effort()` output:
 `total_effort_hr_on_ice` for `"time_on_ice"` and `total_effort_hr_active`
-for `"active_fishing_time"`.
+for `"active_fishing_time"`. Both are aliases of `estimate`, which is present
+on every design and is what generic code should read.
 
 ### Shelter mode stratification
 
@@ -133,7 +134,9 @@ design <- add_interviews(
 
 `estimate_effort()` dispatches through the bus-route Horvitz-Thompson
 estimator and returns the total angler-hours with a standard error and
-confidence interval. The output column is labeled `total_effort_hr_on_ice`
+confidence interval. The effort column is returned twice: as `estimate`, the
+name every design uses and the one generic code should read, and again under a
+name recording the effort type -- `total_effort_hr_on_ice`
 because the design was built with `effort_type = "time_on_ice"`.
 
 ```{r effort}
@@ -143,8 +146,8 @@ print(effort_est)
 
 To demonstrate the column-naming distinction, rebuild the design using
 `effort_type = "active_fishing_time"` and the `active_fishing_hours`
-column from the interview data. The output column is then labeled
-`total_effort_hr_active`.
+column from the interview data. The effort-type column is then labeled
+`total_effort_hr_active`; `estimate` is present either way.
 
 ```{r effort-active}
 design_aft <- creel_design(

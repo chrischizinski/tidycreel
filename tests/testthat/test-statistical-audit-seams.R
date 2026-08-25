@@ -70,3 +70,55 @@ test_that("distinction: a single-party party size has unknown SE, not zero SE", 
   expect_equal(as.numeric(out), 3)
   expect_identical(attr(out, "se"), NA_real_)
 })
+
+test_that("contract: every design's tidy() carries an `estimate` column (#199)", {
+  # tidy() is the documented accessor, and its contract is a uniform shape
+  # across designs -- that is what lets a report, a book chapter or a rollup
+  # loop over survey types. Ice renamed `estimate` to carry its effort type,
+  # so generic code reading tidy(x)$estimate got NULL, and sum(NULL) is 0: a
+  # season total came back as zero rather than as an error. The same shape as
+  # the v5.0.0 book-render defect.
+  #
+  # A design-specific name is welcome as an *additional* column. It may not
+  # replace the one every other design returns.
+  skip_if_not_installed("lme4")
+  designs <- list(
+    instantaneous = local({
+      cal <- build_property_calendar(8L)
+      d <- creel_design(cal, date = date, strata = day_type)
+      cnt <- data.frame(
+        date = sort(unique(cal$date))[1:4],
+        day_type = "weekday",
+        anglers = c(10, 20, 30, 40),
+        stringsAsFactors = FALSE
+      )
+      suppressWarnings(suppressMessages(
+        add_counts(d, cnt, count_col = anglers, psu = "date")
+      ))
+    }),
+    bus_route = build_br_design_for_tests(4L, 8L, 40L, seed = 11L),
+    ice = build_ice_design(8L, 40L, seed = 5L),
+    br_degenerate = build_br_degenerate_design(8L, 40L, seed = 7L)
+  )
+
+  for (nm in names(designs)) {
+    out <- tidy(suppressWarnings(estimate_effort(designs[[nm]])))
+    expect_true("estimate" %in% names(out), info = nm)
+    expect_true(is.numeric(out$estimate), info = nm)
+    expect_true(all(c("se", "ci_lower", "ci_upper", "n") %in% names(out)), info = nm)
+  }
+})
+
+test_that("contract: the ice effort-type column is an alias, not a replacement (#199)", {
+  # Both names, agreeing. The descriptive name is worth keeping -- it records
+  # which effort type was estimated -- but not at the cost of the shared one.
+  ice <- build_ice_design(8L, 40L, seed = 5L)
+  out <- tidy(suppressWarnings(estimate_effort(ice)))
+
+  expect_true(all(c("estimate", "total_effort_hr_on_ice") %in% names(out)))
+  expect_equal(out$estimate, out$total_effort_hr_on_ice)
+
+  # And the read that used to return NULL now returns the total.
+  expect_equal(sum(out$estimate), out$estimate)
+  expect_gt(sum(out$estimate), 0)
+})
