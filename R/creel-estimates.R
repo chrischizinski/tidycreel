@@ -641,7 +641,15 @@ estimate_effort <- function(
       effort_target = target
     ) # nolint: object_usage_linter
 
-    # Ice-specific: rename 'estimate' column to reflect effort_type
+    # Ice-specific: name the effort column for the effort type as well.
+    #
+    # An alias, not a rename (GH #199). Every other design -- including the
+    # degenerate bus route, which is what an ice design is -- returns
+    # `estimate`, and generic code reads it: `tidy(x)$estimate`, a rollup across
+    # strata or species, a report template. Renaming it away made that read
+    # NULL, and `sum(NULL)` is 0, so a season total came back as zero rather
+    # than as an error. That is the v5.0.0 book-render defect at a different
+    # seam.
     if (identical(design$design_type, "ice")) {
       col_name <- switch(
         design$ice$effort_type,
@@ -649,7 +657,9 @@ estimate_effort <- function(
         active_fishing_time = "total_effort_hr_active",
         "estimate"
       )
-      names(result$estimates)[names(result$estimates) == "estimate"] <- col_name
+      if (!identical(col_name, "estimate")) {
+        result$estimates[[col_name]] <- result$estimates$estimate
+      }
     }
 
     return(result)
