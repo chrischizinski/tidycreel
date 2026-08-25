@@ -186,14 +186,39 @@ Most robust when proportionality is violated (non-zero intercept).</p></dd>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
-<span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">calendar</span>, date_col <span class="op">=</span> <span class="va">date</span>, strata_col <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
-<span class="r-in"><span>  <span class="fu"><a href="add_interviews.html">add_interviews</a></span><span class="op">(</span><span class="va">interviews</span>, catch_col <span class="op">=</span> <span class="va">catch_total</span>,</span></span>
-<span class="r-in"><span>                 effort_col <span class="op">=</span> <span class="va">hours_fished</span>, trip_status_col <span class="op">=</span> <span class="va">trip_status</span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">example_calendar</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="add_interviews.html">add_interviews</a></span><span class="op">(</span><span class="va">example_interviews</span>,</span></span>
+<span class="r-in"><span>    catch <span class="op">=</span> <span class="va">catch_total</span>, effort <span class="op">=</span> <span class="va">hours_fished</span>,</span></span>
+<span class="r-in"><span>    trip_status <span class="op">=</span> <span class="va">trip_status</span>, n_anglers <span class="op">=</span> <span class="va">n_anglers</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Added 22 interviews: 17 complete (77%), 5 incomplete (23%)</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu">compare_cpue_estimators</span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu">compare_cpue_estimators</span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Using complete trips for CPUE estimation</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   (n=17, 77.3% of 22 interviews)</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Small sample size for CPUE estimation.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> Sample size is 17. Ratio estimates are more stable with n &gt;= 30.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Using complete trips for CPUE estimation</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   (n=17, 77.3% of 22 interviews)</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Non-standard combination: use_trips='complete' with estimator='mor'</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> MOR typically used with incomplete trips</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> You are using MOR on 17 complete trips - consider `estimator =</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   'ratio-of-means'` for standard complete trip estimation</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>MOR truncation skipped: no trip duration column in design.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Supply `trip_duration` in `add_interviews()` to enable truncation.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> All 17 trips used without truncation.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Small sample size for CPUE estimation.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> Sample size is 17. Ratio estimates are more stable with n &gt;= 30.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Using complete trips for CPUE estimation</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   (n=17, 77.3% of 22 interviews)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 3 × 6</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   cpue_method estimate     se ci_lower ci_upper     n</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">*</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> rom            0.967 0.110     0.752    1.18     17</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> mor            1.24  0.163     0.920    1.56     17</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span> regression     0.804 0.059<span style="text-decoration: underline;">7</span>    0.677    0.930    17</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

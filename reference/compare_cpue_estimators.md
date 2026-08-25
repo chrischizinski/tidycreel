@@ -106,12 +106,37 @@ Other "Estimation":
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-design <- creel_design(calendar, date_col = date, strata_col = day_type) |>
-  add_interviews(interviews, catch_col = catch_total,
-                 effort_col = hours_fished, trip_status_col = trip_status)
+design <- creel_design(example_calendar, date = date, strata = day_type) |>
+  add_interviews(example_interviews,
+    catch = catch_total, effort = hours_fished,
+    trip_status = trip_status, n_anglers = n_anglers
+  )
+#> ℹ Added 22 interviews: 17 complete (77%), 5 incomplete (23%)
 
 compare_cpue_estimators(design)
-compare_cpue_estimators(design, by = day_type)
-} # }
+#> ℹ Using complete trips for CPUE estimation
+#>   (n=17, 77.3% of 22 interviews)
+#> Warning: Small sample size for CPUE estimation.
+#> ! Sample size is 17. Ratio estimates are more stable with n >= 30.
+#> ℹ Variance estimates may be unstable with n < 30.
+#> ℹ Using complete trips for CPUE estimation
+#>   (n=17, 77.3% of 22 interviews)
+#> Warning: Non-standard combination: use_trips='complete' with estimator='mor'
+#> ℹ MOR typically used with incomplete trips
+#> ℹ You are using MOR on 17 complete trips - consider `estimator =
+#>   'ratio-of-means'` for standard complete trip estimation
+#> Warning: MOR truncation skipped: no trip duration column in design.
+#> ℹ Supply `trip_duration` in `add_interviews()` to enable truncation.
+#> ℹ All 17 trips used without truncation.
+#> Warning: Small sample size for CPUE estimation.
+#> ! Sample size is 17. Ratio estimates are more stable with n >= 30.
+#> ℹ Variance estimates may be unstable with n < 30.
+#> ℹ Using complete trips for CPUE estimation
+#>   (n=17, 77.3% of 22 interviews)
+#> # A tibble: 3 × 6
+#>   cpue_method estimate     se ci_lower ci_upper     n
+#> * <chr>          <dbl>  <dbl>    <dbl>    <dbl> <int>
+#> 1 rom            0.967 0.110     0.752    1.18     17
+#> 2 mor            1.24  0.163     0.920    1.56     17
+#> 3 regression     0.804 0.0597    0.677    0.930    17
 ```
