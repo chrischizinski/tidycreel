@@ -21,8 +21,10 @@ camera counts per day per stratum. Values must be >= 0.}
 }
 \value{
 A named integer vector. Elements named after strata in \code{N_h} give the
-camera-days required per stratum; element \code{"total"} gives the overall
-sample size before proportional allocation.
+camera-days required per stratum; element \code{"total"} gives Cochran's
+overall sample size \emph{before} proportional allocation, and \code{"allocated"}
+the sum of the per-stratum values actually returned. Budget against
+\code{"allocated"}; see \code{\link[=creel_n_effort]{creel_n_effort()}} for why the two differ.
 }
 \description{
 Uses the stratified sample size formula from Cochran (1977) to determine how

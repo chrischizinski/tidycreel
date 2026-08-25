@@ -47,7 +47,10 @@
 #'
 #' @return A tibble (data frame) with columns varying by mode:
 #'
-#'   **`mode = "effort_n"`** (one row per stratum plus a `"total"` row):
+#'   **`mode = "effort_n"`** (one row per stratum, then a `"total"` row giving
+#'   Cochran's n before allocation and an `"allocated"` row giving the sum of
+#'   the per-stratum rows -- budget against `"allocated"`, which is what the
+#'   returned allocation commits to):
 #'   \describe{
 #'     \item{`stratum`}{Stratum name.}
 #'     \item{`n_required`}{Sampling days required.}
@@ -181,7 +184,11 @@ power_creel <- function(
     s2_h = s2_h # nolint: object_name_linter
   )
 
-  all_strata <- c(strata, "total")
+  # Both summary rows, not just `total` (GH #195). Beside per-stratum rows a
+  # lone `total` reads as their sum and is not one: it is Cochran's n before
+  # allocation, while the strata are each rounded up from it. Showing only the
+  # smaller of the two under-books the survey by up to k-1 days.
+  all_strata <- c(strata, "total", "allocated")
   data.frame(
     stratum = all_strata,
     n_required = as.integer(raw[all_strata]),

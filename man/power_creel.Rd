@@ -66,7 +66,10 @@ Used for \code{mode = "power"}.}
 \value{
 A tibble (data frame) with columns varying by mode:
 
-\strong{\code{mode = "effort_n"}} (one row per stratum plus a \code{"total"} row):
+\strong{\code{mode = "effort_n"}} (one row per stratum, then a \code{"total"} row giving
+Cochran's n before allocation and an \code{"allocated"} row giving the sum of
+the per-stratum rows -- budget against \code{"allocated"}, which is what the
+returned allocation commits to):
 \describe{
 \item{\code{stratum}}{Stratum name.}
 \item{\code{n_required}}{Sampling days required.}

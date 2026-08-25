@@ -27,8 +27,16 @@
 #' `n_total`.
 #'
 #' @return A named integer vector. Elements named after strata in `N_h` give the
-#'   sampling days required per stratum; element `"total"` gives the overall
-#'   sample size before proportional allocation.
+#'   sampling days required per stratum; element `"total"` gives Cochran's
+#'   overall sample size *before* proportional allocation, and `"allocated"`
+#'   the sum of the per-stratum values actually returned.
+#'
+#'   `"allocated"` is the number of sampling days the returned allocation
+#'   commits to, and is the one to budget against. It is greater than or equal
+#'   to `"total"`: each stratum is rounded up independently, so the parts can
+#'   sum to as much as `k - 1` more than the unallocated optimum for `k`
+#'   strata. Rounding up is deliberate -- it keeps every stratum at or better
+#'   than its share of `cv_target`.
 #'
 #' @references
 #' McCormick, J.L. and Quist, M.C. 2017. Sample size estimation for on-site
@@ -72,7 +80,16 @@ creel_n_effort <- function(cv_target, N_h, ybar_h, s2_h) {
   storage.mode(n_h) <- "integer" # nolint: object_name_linter
   storage.mode(n_total) <- "integer"
 
-  c(n_h, total = n_total) # nolint: object_name_linter
+  # Two different quantities, both wanted, so both are named (GH #195).
+  # `total` is Cochran's n, solved from the variance equation before allocation.
+  # `allocated` is what actually gets sampled: each stratum is ceiling-ed on its
+  # own, so the parts sum to as much as k-1 more than n for k strata. Reporting
+  # only `total` beside per-stratum rows invited it to be read as their sum,
+  # which it is not, and under-books the survey by the difference.
+  n_allocated <- sum(n_h)
+  storage.mode(n_allocated) <- "integer"
+
+  c(n_h, total = n_total, allocated = n_allocated) # nolint: object_name_linter
 }
 
 
@@ -127,8 +144,10 @@ creel_n_effort <- function(cv_target, N_h, ybar_h, s2_h) {
 #' exceed `n_total`.
 #'
 #' @return A named integer vector. Elements named after strata in `N_h` give the
-#'   optimal sampling days per stratum; element `"total"` gives the overall
-#'   sample size before allocation.
+#'   optimal sampling days per stratum; element `"total"` gives Cochran's
+#'   overall sample size *before* allocation, and `"allocated"` the sum of the
+#'   per-stratum values actually returned. Budget against `"allocated"`; see
+#'   [creel_n_effort()] for why the two differ.
 #'
 #' @references
 #' Cochran, W.G. 1977. Sampling Techniques, 3rd ed. Wiley, New York.
@@ -212,7 +231,12 @@ optimal_n <- function(cv_target, N_h, ybar_h, s2_h, cost_ratio = 1) {
   # nolint end: object_name_linter
   storage.mode(n_total) <- "integer"
 
-  c(n_h, total = n_total) # nolint: object_name_linter
+  # See creel_n_effort(): `total` is Cochran's n before allocation, `allocated`
+  # is the sum of the independently ceiling-ed strata (GH #195).
+  n_allocated <- sum(n_h)
+  storage.mode(n_allocated) <- "integer"
+
+  c(n_h, total = n_total, allocated = n_allocated) # nolint: object_name_linter
 }
 
 
@@ -319,8 +343,10 @@ creel_n_cpue <- function(cv_catch, cv_effort, rho = 0, cv_target) {
 #' exceed their minimums and there are no unclassified strata.
 #'
 #' @return A named integer vector. Elements named after strata in `N_h` give the
-#'   camera-days required per stratum; element `"total"` gives the overall
-#'   sample size before proportional allocation.
+#'   camera-days required per stratum; element `"total"` gives Cochran's
+#'   overall sample size *before* proportional allocation, and `"allocated"`
+#'   the sum of the per-stratum values actually returned. Budget against
+#'   `"allocated"`; see [creel_n_effort()] for why the two differ.
 #'
 #' @references
 #' Cochran, W.G. 1977. Sampling Techniques, 3rd ed. Wiley, New York.
@@ -415,7 +441,16 @@ creel_n_camera <- function(cv_target, N_h, ybar_h, s2_h) {
   storage.mode(n_h) <- "integer" # nolint: object_name_linter
   storage.mode(n_total) <- "integer"
 
-  c(n_h, total = n_total) # nolint: object_name_linter
+  # Two different quantities, both wanted, so both are named (GH #195).
+  # `total` is Cochran's n, solved from the variance equation before allocation.
+  # `allocated` is what actually gets sampled: each stratum is ceiling-ed on its
+  # own, so the parts sum to as much as k-1 more than n for k strata. Reporting
+  # only `total` beside per-stratum rows invited it to be read as their sum,
+  # which it is not, and under-books the survey by the difference.
+  n_allocated <- sum(n_h)
+  storage.mode(n_allocated) <- "integer"
+
+  c(n_h, total = n_total, allocated = n_allocated) # nolint: object_name_linter
 }
 
 
