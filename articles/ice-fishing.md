@@ -202,7 +202,7 @@ print(effort_est)
 #> # A tibble: 1 × 6
 #>   estimate    se ci_lower ci_upper     n total_effort_hr_on_ice
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>                  <dbl>
-#> 1    2406.  107.    2196.    2615.    72                  2406.
+#> 1    2406.  74.6    2260.    2552.    72                  2406.
 ```
 
 To demonstrate the column-naming distinction, rebuild the design using
@@ -252,7 +252,7 @@ print(effort_aft)
 #> # A tibble: 1 × 6
 #>   estimate    se ci_lower ci_upper     n total_effort_hr_active
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>                  <dbl>
-#> 1    1990.  93.1    1808.    2173.    72                  1990.
+#> 1    1990.  69.1    1855.    2126.    72                  1990.
 ```
 
 Active fishing hours are shorter than time-on-ice because they exclude
@@ -283,8 +283,8 @@ print(effort_by_shelter)
 #> # A tibble: 2 × 8
 #>   shelter_mode estimate    se ci_lower ci_upper proportion     n
 #>   <chr>           <dbl> <dbl>    <dbl>    <dbl>      <dbl> <dbl>
-#> 1 dark_house      1250.  179.     900.    1601.      0.520    36
-#> 2 open            1156.  142.     878.    1434.      0.480    36
+#> 1 dark_house      1250.  56.7    1139.    1361.      0.520    36
+#> 2 open            1156.  23.6    1109.    1202.      0.480    36
 #> # ℹ 1 more variable: total_effort_hr_on_ice <dbl>
 ```
 
@@ -316,7 +316,7 @@ print(cpue_est)
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.198 0.0249    0.149    0.247    60
+#> 1    0.198 0.0121    0.174    0.222    60
 ```
 
 The `estimate` column is walleye per hour-on-ice, with a standard error
@@ -357,7 +357,7 @@ print(total_catch_est)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     398.  43.0     314.     483.    60
+#> 1     398.  20.6     358.     439.    60
 ```
 
 The `estimate` column is the projected total walleye catch across the

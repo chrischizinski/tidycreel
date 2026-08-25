@@ -343,7 +343,7 @@ print(effort_est)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     848.  68.9     713.     982.    15
+#> 1     848.  124.     604.    1091.    15
 
 # Inspect per-site contributions to the total
 site_contribs <- get_site_contributions(effort_est)
@@ -402,7 +402,7 @@ print(harvest_est)
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1   0.0582 0.0175   0.0239   0.0925    15
+#> 1   0.0582 0.0160   0.0269   0.0896    15
 
 # Estimate total catch (kept + released)
 catch_est <- estimate_total_catch(design)
@@ -417,7 +417,7 @@ print(catch_est)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     180.  45.7     90.7     270.    15
+#> 1     180.  30.0     122.     239.    15
 ```
 
 ## Validation

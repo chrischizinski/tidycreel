@@ -433,7 +433,7 @@ and computes
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     848.  68.9     713.     982.    15</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     848.  124.     604.    <span style="text-decoration: underline;">1</span>091.    15</span></span>
 <span></span>
 <span><span class="co"># Inspect per-site contributions to the total</span></span>
 <span><span class="va">site_contribs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_site_contributions.html">get_site_contributions</a></span><span class="op">(</span><span class="va">effort_est</span><span class="op">)</span></span>
@@ -487,7 +487,7 @@ Horvitz-Thompson logic to fish kept.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate     se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>   0.058<span style="text-decoration: underline;">2</span> 0.017<span style="text-decoration: underline;">5</span>   0.023<span style="text-decoration: underline;">9</span>   0.092<span style="text-decoration: underline;">5</span>    15</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>   0.058<span style="text-decoration: underline;">2</span> 0.016<span style="text-decoration: underline;">0</span>   0.026<span style="text-decoration: underline;">9</span>   0.089<span style="text-decoration: underline;">6</span>    15</span></span>
 <span></span>
 <span><span class="co"># Estimate total catch (kept + released)</span></span>
 <span><span class="va">catch_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
@@ -502,7 +502,7 @@ Horvitz-Thompson logic to fish kept.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     180.  45.7     90.7     270.    15</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     180.  30.0     122.     239.    15</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">

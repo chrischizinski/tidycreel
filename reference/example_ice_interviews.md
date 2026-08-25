@@ -144,5 +144,5 @@ suppressWarnings(estimate_effort(design))
 #> # A tibble: 1 × 6
 #>   estimate    se ci_lower ci_upper     n total_effort_hr_on_ice
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>                  <dbl>
-#> 1    2406.  107.    2196.    2615.    72                  2406.
+#> 1    2406.  74.6    2260.    2552.    72                  2406.
 ```
