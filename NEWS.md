@@ -34,6 +34,17 @@
 
 ## Bug fixes
 
+* `read_schedule()` restored only four column types, so `window_id` came back
+  as character (#194). The column is added by `attach_count_times()` rather than
+  by `generate_schedule()`, and `coerce_schedule_columns()` matches an
+  allow-list by name, so a `write_schedule()` -> `read_schedule()` round trip
+  was not type-stable for it: a join against an integer `window_id`, an
+  arithmetic comparison, or an `identical()` check silently saw a character
+  vector. `window_id` is now restored to integer using the same guard
+  `period_id` already used, so numeric ids become integers while character
+  window labels are preserved. No estimate changes -- schedules carry no
+  quantities that reach an estimator.
+
 * The `aerial-glmm` vignette compared the GLMM against the simple aerial
   estimator on one design holding four overflights per day, with no count time
   declared. The simple estimator sums, so the figure it published was four
