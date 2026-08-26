@@ -1,12 +1,50 @@
-# Primary Source Validation: Malvestuto (1996) Box 20.6
-# These tests are correctness proofs against published literature.
-# If these tests pass, tidycreel reproduces the canonical bus-route
-# estimation benchmark exactly.
+# Validation against Malvestuto (1996) Box 20.6, and synthetic extensions of it.
+#
+# Read the distinction before adding to this file (GH #202). Two kinds of test
+# live here and only one of them is a primary-source check:
+#
+#   PUBLISHED -- reproduces a number printed in Box 20.6 (pp. 614-615). Cited
+#     with the page. These are correctness proofs against the literature.
+#
+#   SYNTHETIC -- exercises a path Box 20.6 does not contain, on a fixture built
+#     for this package. Legitimate tests; not external validation, and not to be
+#     cited as though they were.
+#
+# What Box 20.6 actually publishes, in full:
+#
+#   Example 1 (access point). Three landings A, B, C with sampling probabilities
+#     0.50, 0.30, 0.20. ONE landing is chosen at random per sample day; C was
+#     chosen. Six interviews of 11 anglers, sum(e_i) = 57.5 angler-hours.
+#       Total lakewide daily effort = E = 57.5 / 0.20 = 287.5 angler-hours.
+#     287.5 is the COMPLETE answer, not a component of a larger sum.
+#
+#   Example 2 (enumeration expansion). As Example 1, but the 11 interviewed are
+#     part of 24 who used landing C. Mean fishing time = 57.5/11 = 5.23 h;
+#     e = 24 * 5.23 = 125.5.
+#       E = 125.5 / 0.20 = 627.5 angler-hours.
+#
+#   Example 3 (roving). Three sections (0.5, 0.25, 0.25) x two 6-h periods
+#     (0.4, 0.6); one SSU chosen. 46 anglers counted, e = 46 * 6 = 276.
+#       E = 276 / (0.40 * 0.25) = 2,760 angler-hours.
+#
+# Box 20.6 publishes NO variance and NO standard error -- all three examples are
+# point estimates. The SE tests below are therefore internal consistency checks
+# against the survey package, not primary-source validation, and cannot be cited
+# as the latter (see #198, where that distinction mattered).
+#
+# Box 20.6 contains no bus-route worked example. Earlier revisions of this file
+# described it as "the canonical bus-route estimation benchmark" and attributed
+# E_hat = 847.5 to p. 614; neither is in the source.
 
-# Malvestuto Box 20.6 Example 1 ----
-# Box 20.6 data (Malvestuto 1996, p. 614): 4 sites, 1 circuit, no expansion.
-# pi_i = p_site * p_period; n_counted == n_interviewed => expansion = 1.
-# E_hat = sum(e_i / pi_i) = 200 + 160 + 287.5 + 200 = 847.5 angler-hours.
+# Example 1 fixture: a SYNTHETIC multi-site extension ----
+# Four sites sampled together, 1 circuit, no expansion, pi_i = p_site * p_period.
+# This is NOT Box 20.6 Example 1, which has three landings, no period
+# probability, and selects exactly one landing per day. It borrows Example 1's
+# landing-C numbers (sum(e_i) = 57.5, p = 0.20, contribution 287.5) and adds
+# three further sites so the summed Horvitz-Thompson path has something to sum.
+#
+# E_hat = sum(e_i / pi_i) = 200 + 160 + 287.5 + 200 = 847.5 angler-hours is
+# therefore this fixture's own arithmetic, not a published figure (#202).
 
 make_box20_6_example1 <- function() {
   # Sampling frame: p_site sums to 1.0; p_period = 0.50 for all sites.
@@ -182,16 +220,23 @@ make_box20_6_example1 <- function() {
 }
 
 test_that("Site C contribution to effort equals 57.5/0.20 = 287.5 (Malvestuto 1996, Box 20.6, p. 614)", {
+  # PUBLISHED. Box 20.6 Example 1, p. 614: six interviews of 11 anglers at
+  # landing C give sum(e_i) = 57.5 angler-hours, and landing C was selected with
+  # probability 0.20, so E = 57.5/0.20 = 287.5. In the source this is the whole
+  # lakewide daily estimate; here it is one site's contribution, but the
+  # arithmetic under test -- the Horvitz-Thompson division by pi -- is the same
+  # and this is the file's genuine primary-source check.
   result <- estimate_effort(make_box20_6_example1())
   sc <- attr(result, "site_contributions")
   site_c <- sc[sc$site == "C", ]
-  # Malvestuto 1996, Box 20.6, p. 614
   expect_equal(sum(site_c$e_i_over_pi_i), 287.5, tolerance = 1e-6)
 })
 
 test_that("E_hat is sum of all site contributions (Horvitz-Thompson property)", {
   result <- estimate_effort(make_box20_6_example1())
-  # Malvestuto 1996, Box 20.6, p. 614: E_hat = 200+160+287.5+200 = 847.5
+  # SYNTHETIC. 847.5 is this fixture's arithmetic over four sites; Box 20.6 has
+  # three landings, selects one per day, and prints no such total (#202). What
+  # is under test is the Horvitz-Thompson summation property itself.
   expected_e_hat <- 30.0 / 0.15 + 20.0 / 0.125 + 57.5 / 0.20 + 5.0 / 0.025
   expect_equal(result$estimates$estimate, expected_e_hat, tolerance = 1e-6)
 })
@@ -341,8 +386,9 @@ make_box20_6_example2 <- function() {
       1L,
       1L
     ),
-    # Malvestuto 1996, Box 20.6, p. 614 (enumeration expansion):
-    # Site C: 24 counted, 11 interviewed. Others: n_counted = n_interviewed.
+    # PUBLISHED. Box 20.6 Example 2, p. 615: 24 anglers used landing C and 11
+    # were interviewed, giving the 24/11 enumeration expansion. Other sites are
+    # this fixture's own (n_counted = n_interviewed, expansion 1).
     n_counted = c(
       4L,
       4L,
@@ -397,8 +443,29 @@ test_that("Site C expansion factor is 24/11 in enumeration counts", {
   design <- make_box20_6_example2()
   enum_counts <- get_enumeration_counts(design)
   site_c <- enum_counts[enum_counts$site == "C", ]
-  # Malvestuto 1996, Box 20.6, p. 614
+  # PUBLISHED. Box 20.6 Example 2, p. 615: 24 counted, 11 interviewed.
   expect_equal(site_c$.expansion[1], 24 / 11, tolerance = 1e-6)
+})
+
+test_that("Landing C with enumeration expansion reproduces Box 20.6 Example 2's 627.5", {
+  # PUBLISHED. Box 20.6 Example 2, p. 615, end to end:
+  #   mean fishing time = 57.5 / 11 = 5.23 h
+  #   e = M * t = 24 * 5.23   = 125.5 angler-hours
+  #   E = e / p = 125.5 / 0.20 = 627.5 angler-hours
+  #
+  # This is the one place the whole enumeration-expansion path is checked
+  # against a printed figure: sum(e_i) -> x 24/11 -> / 0.20.
+  #
+  # The source rounds the mean fishing time to 5.23 h before multiplying, so its
+  # 627.5 is 0.036% above the unrounded 57.5 * (24/11) / 0.20 = 627.2727. The
+  # tolerance below covers that rounding and nothing looser -- it is not slack
+  # for an estimator disagreement.
+  result_ex2 <- estimate_effort(make_box20_6_example2())
+  sc <- attr(result_ex2, "site_contributions")
+  contribution_c <- sum(sc[sc$site == "C", "e_i_over_pi_i"])
+
+  expect_equal(contribution_c, 57.5 * (24 / 11) / 0.20, tolerance = 1e-9)
+  expect_equal(contribution_c, 627.5, tolerance = 1e-3)
 })
 
 test_that("E_hat with expansion is larger than E_hat without expansion (VALID-02)", {
@@ -409,7 +476,8 @@ test_that("E_hat with expansion is larger than E_hat without expansion (VALID-02
 
 test_that("Site C contribution with expansion equals (57.5 * 24/11) / 0.20", {
   result_ex2 <- estimate_effort(make_box20_6_example2())
-  # Malvestuto 1996, Box 20.6, p. 614 (enumeration expansion)
+  # The 24/11 expansion is published (Box 20.6 Example 2, p. 615); applying it
+  # to landing C's 57.5/0.20 is this fixture's extension.
   expansion <- 24 / 11
   expected_c <- (57.5 * expansion) / 0.20
   sc <- attr(result_ex2, "site_contributions")
