@@ -34,6 +34,23 @@
 
 ## Bug fixes
 
+* `estimate_exploitation_rate()` requires `se_C` when `C` is a bare number
+  (#208). It previously reached `if (se_C < 0)` holding a `NULL` and failed as
+  `argument is of length zero` -- loud, so no wrong number ever escaped, but
+  uninformative on an entirely plausible call. The error now names the argument
+  and points at the object route added in #206, which supplies the standard
+  error itself. Defaulting the absent case to `0` was rejected: a zero standard
+  error cannot be told apart from a variance that never propagated.
+
+* The `reporting_rate` documentation said the correction adjusts the
+  exploitation rate *downward*, contradicting the formula printed beside it
+  (#207). It adjusts **upward**: under-reporting means the recoveries actually
+  observed understate how many tagged fish were removed, so dividing by
+  `lambda < 1` restores them and at `lambda = 0.5` the estimate doubles. The
+  code was correct throughout and is unchanged; only the wording was wrong. The
+  direction is now also asserted in the test suite, so prose and arithmetic
+  cannot drift apart again silently.
+
 * `estimate_exploitation_rate()` now accepts the `estimate_total_harvest()`
   result itself for `C`, and checks it (#206). `u = (C/T)(m/n)/lambda` is the
   fraction of the tagged cohort removed *over the whole season*, so `C` must be
