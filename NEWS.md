@@ -32,6 +32,8 @@
   keeps its several rows per day. `add_counts()` still warns, so the problem is
   reported next to the call that introduced it.
 
+## Bug fixes
+
 * The `aerial-glmm` vignette compared the GLMM against the simple aerial
   estimator on one design holding four overflights per day, with no count time
   declared. The simple estimator sums, so the figure it published was four
@@ -43,8 +45,6 @@
 * `add_counts()` now records `unit_cols` on the design. It was previously
   validated and discarded, leaving the design unable to distinguish a declared
   multi-column sampling unit from an undeclared repeat.
-
-## Bug fixes
 
 * `estimate_effort()` on an ice design renamed its `estimate` column to record
   the effort type, so `tidy()` returned `total_effort_hr_on_ice` (or
