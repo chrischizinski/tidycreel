@@ -2,6 +2,29 @@
 
 ## Breaking changes
 
+* `estimate_angler_n(method = "schumacher", ci_method = "bootstrap")` is now
+  refused rather than silently ignored (#209). The Schumacher-Eschmeyer branch
+  appended no `ci_lo_boot`/`ci_hi_boot` columns and attached no `boot_samples`,
+  and raised nothing at all -- so an explicitly requested inference method
+  vanished, and `estimate_mr_harvest(ci_method = "bootstrap")` then aborted
+  telling the caller to do what they had already done.
+
+  The bootstrap is not implemented for this estimator on statistical grounds
+  rather than for want of effort. The other three methods resample recaptures,
+  `m_k ~ Binomial(n_k, m_k/n_k)`, which is coherent where the recaptures are the
+  random component. Schumacher-Eschmeyer's published variance is the residual
+  mean square of a weighted regression through the origin (Seber 1982
+  eq. 4.17) -- the scatter of the observed points about the fitted line, which
+  is a different quantity from binomial noise in `m`. Resampling `m_k` alone
+  would report a narrower, differently-defined uncertainty under the same column
+  names.
+
+  This breaks any call that combined the two. Such a call previously returned a
+  correct point estimate and a correct regression interval, so the fix is to
+  drop `ci_method = "bootstrap"`, which changes nothing about the numbers
+  returned. `"logit"` and `"delta"` both give that interval. Use
+  `method = "schnabel"` where a bootstrap interval is genuinely required.
+
 * Repeated sampling units with no count time are now refused at estimation
   rather than warned about (#193). Two counts on one day are two looks at that
   day, not two sampled days: the day's effort is the mean of its counts, and

@@ -41,7 +41,15 @@ bootstrap via \code{stats::rbinom()}, attaching
 \code{attr(result, "boot_samples")}. The Schnabel branch ignores this
 argument for its analytic bounds — it always inverts Poisson quantiles or
 uses the \eqn{t} approximation on \eqn{1/\hat{N}}, per Hansen & Van Kirk
-(2018) — but still honours \code{"bootstrap"} for the extra columns.}
+(2018) — but still honours \code{"bootstrap"} for the extra columns.
+
+\strong{Schumacher-Eschmeyer does not support \code{"bootstrap"} and
+refuses it} (GH #209). Its interval comes from the weighted regression
+itself (Seber 1982 eq. 4.17), whose variance is the residual mean square
+about the fitted line — not the binomial noise in the recaptures that the
+other methods resample. A bootstrap over \eqn{m_k} alone would report a
+different quantity under the same column names. \code{"logit"} and
+\code{"delta"} both yield that regression interval.}
 
 \item{B}{integer(1). Number of bootstrap replicates when
 \code{ci_method = "bootstrap"}. Default \code{2000L}.}
