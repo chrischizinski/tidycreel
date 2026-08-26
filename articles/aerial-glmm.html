@@ -178,10 +178,10 @@ expansion after the diurnal curve is integrated.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_aerial_glmm_counts</span>, count_col <span class="op">=</span> <span class="va">n_anglers</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning in add_counts(design, example_aerial_glmm_counts, count_col = n_anglers): Repeated sampling units detected in count data.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Found 36 repeated rows keyed on <span style="color: #00BB00;">date</span> and <span style="color: #00BB00;">day_type</span>.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> If multiple counts were taken per unit, specify `count_time_col`.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Example: `add_counts(design, counts, count_time_col = count_time)`</span></span>
+<span><span class="co">#&gt; Warning in add_counts(design, example_aerial_glmm_counts, count_col = n_anglers): `counts` has 36 repeated sampling units, with no count time to tell them apart.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> The repeated rows are keyed on <span style="color: #00BB00;">date</span> and <span style="color: #00BB00;">day_type</span>.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Estimators that sum these rows refuse them; supply `count_time_col` if they</span></span>
+<span><span class="co">#&gt;   are repeat counts, or `unit_cols` if they are distinct units.</span></span>
 <span><span class="co">#&gt; Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No</span></span>
 <span><span class="co">#&gt; weights or probabilities supplied, assuming equal probability</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
@@ -360,14 +360,43 @@ single angler, to remove the ambiguity.</p>
 <div class="section level2">
 <h2 id="comparison-simple-vs--glmm-estimator">Comparison: Simple vs. GLMM Estimator<a class="anchor" aria-label="anchor" href="#comparison-simple-vs--glmm-estimator"></a>
 </h2>
-<p>Both estimators are applied to the same design. The simple estimator
-treats each overflight count as a representative sample of the full
-open-water window and expands by <code>h_open / v</code> directly. The
-GLMM estimator corrects for the fixed-hour flight schedule by
-integrating the fitted diurnal curve.</p>
+<p>The two estimators need the counts at different grains, so they take
+different designs built from the same data.</p>
+<p>The GLMM consumes each overflight individually — the flight times are
+what it fits the diurnal curve against, so the four flights a day must
+stay four rows.</p>
+<p>The simple estimator does not model time. It treats each count as an
+instantaneous estimate of the anglers present and expands by
+<code>h_open / v</code>. Four flights on one day are therefore four
+looks at that day, not four sampled days: they average to the day’s mean
+occupancy, and the spread between them becomes the within-day variance
+component. Naming <code>count_time_col</code> is what performs that
+aggregation. Without it the four counts would be summed as separate
+sampling units and the estimate would come back four times too
+large.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Simple aerial estimator — no diurnal correction</span></span>
-<span><span class="va">simple_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># Daily means for the simple estimator: the flights are four looks at each day,</span></span>
+<span><span class="co"># so they aggregate rather than accumulate.</span></span>
+<span><span class="va">design_daily</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="../reference/creel_design.html">creel_design</a></span><span class="op">(</span></span>
+<span>    <span class="va">aerial_cal</span>,</span>
+<span>    date        <span class="op">=</span> <span class="va">date</span>,</span>
+<span>    strata      <span class="op">=</span> <span class="va">day_type</span>,</span>
+<span>    survey_type <span class="op">=</span> <span class="st">"aerial"</span>,</span>
+<span>    visibility_correction <span class="op">=</span> <span class="st">"none"</span>,</span>
+<span>    angler_ratio <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>    angler_ratio_se <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>    h_open      <span class="op">=</span> <span class="fl">14</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  <span class="va">example_aerial_glmm_counts</span>,</span>
+<span>  count_col      <span class="op">=</span> <span class="va">n_anglers</span>,</span>
+<span>  count_time_col <span class="op">=</span> <span class="va">time_of_flight</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No</span></span>
+<span><span class="co">#&gt; weights or probabilities supplied, assuming equal probability</span></span>
+<span></span>
+<span><span class="co"># Simple aerial estimator — no diurnal correction</span></span>
+<span><span class="va">simple_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design_daily</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># GLMM result from above</span></span>
 <span><span class="co"># glmm_result already computed</span></span>
@@ -393,9 +422,9 @@ integrating the fitted diurnal curve.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">comparison</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   method   estimate se ci_lower ci_upper</span></span>
-<span><span class="co">#&gt; 1   GLMM   378.5646 NA       NA       NA</span></span>
-<span><span class="co">#&gt; 2 Simple 20370.0000 NA       NA       NA</span></span></code></pre></div>
+<span><span class="co">#&gt;   method  estimate se ci_lower ci_upper</span></span>
+<span><span class="co">#&gt; 1   GLMM  378.5646 NA       NA       NA</span></span>
+<span><span class="co">#&gt; 2 Simple 5092.5000 NA       NA       NA</span></span></code></pre></div>
 <p>The GLMM estimate corrects for the fact that all flights occurred at
 fixed hours (7, 10, 13, 16). The simple estimator treats each count as
 representative of the full open-water window, which inflates or deflates

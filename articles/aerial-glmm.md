@@ -81,10 +81,10 @@ design <- creel_design(
 )
 
 design <- add_counts(design, example_aerial_glmm_counts, count_col = n_anglers)
-#> Warning in add_counts(design, example_aerial_glmm_counts, count_col = n_anglers): Repeated sampling units detected in count data.
-#> ℹ Found 36 repeated rows keyed on date and day_type.
-#> ℹ If multiple counts were taken per unit, specify `count_time_col`.
-#> ℹ Example: `add_counts(design, counts, count_time_col = count_time)`
+#> Warning in add_counts(design, example_aerial_glmm_counts, count_col = n_anglers): `counts` has 36 repeated sampling units, with no count time to tell them apart.
+#> ℹ The repeated rows are keyed on date and day_type.
+#> ℹ Estimators that sum these rows refuse them; supply `count_time_col` if they
+#>   are repeat counts, or `unit_cols` if they are distinct units.
 #> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
 #> weights or probabilities supplied, assuming equal probability
 print(design)
@@ -277,16 +277,46 @@ single angler, to remove the ambiguity.
 
 ## Comparison: Simple vs. GLMM Estimator
 
-Both estimators are applied to the same design. The simple estimator
-treats each overflight count as a representative sample of the full
-open-water window and expands by `h_open / v` directly. The GLMM
-estimator corrects for the fixed-hour flight schedule by integrating the
-fitted diurnal curve.
+The two estimators need the counts at different grains, so they take
+different designs built from the same data.
+
+The GLMM consumes each overflight individually — the flight times are
+what it fits the diurnal curve against, so the four flights a day must
+stay four rows.
+
+The simple estimator does not model time. It treats each count as an
+instantaneous estimate of the anglers present and expands by
+`h_open / v`. Four flights on one day are therefore four looks at that
+day, not four sampled days: they average to the day’s mean occupancy,
+and the spread between them becomes the within-day variance component.
+Naming `count_time_col` is what performs that aggregation. Without it
+the four counts would be summed as separate sampling units and the
+estimate would come back four times too large.
 
 ``` r
 
+# Daily means for the simple estimator: the flights are four looks at each day,
+# so they aggregate rather than accumulate.
+design_daily <- add_counts(
+  creel_design(
+    aerial_cal,
+    date        = date,
+    strata      = day_type,
+    survey_type = "aerial",
+    visibility_correction = "none",
+    angler_ratio = 1,
+    angler_ratio_se = 0,
+    h_open      = 14
+  ),
+  example_aerial_glmm_counts,
+  count_col      = n_anglers,
+  count_time_col = time_of_flight
+)
+#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
+#> weights or probabilities supplied, assuming equal probability
+
 # Simple aerial estimator — no diurnal correction
-simple_result <- estimate_effort(design)
+simple_result <- estimate_effort(design_daily)
 
 # GLMM result from above
 # glmm_result already computed
@@ -312,9 +342,9 @@ comparison <- rbind(
 )
 
 print(comparison)
-#>   method   estimate se ci_lower ci_upper
-#> 1   GLMM   378.5646 NA       NA       NA
-#> 2 Simple 20370.0000 NA       NA       NA
+#>   method  estimate se ci_lower ci_upper
+#> 1   GLMM  378.5646 NA       NA       NA
+#> 2 Simple 5092.5000 NA       NA       NA
 ```
 
 The GLMM estimate corrects for the fact that all flights occurred at
