@@ -9,7 +9,14 @@
 sections_expansion_design <- function() {
   suppressMessages(suppressWarnings(
     creel_design(example_sections_calendar, date = "date", strata = "day_type") |>
-      add_counts(example_sections_counts, count_col = effort_hours)
+      # The section is what makes three rows on one date three units rather
+      # than three looks at one; the design does not register sections here, so
+      # it is named explicitly (GH #193).
+      add_counts(
+        example_sections_counts,
+        count_col = effort_hours,
+        unit_cols = c("date", "day_type", "section")
+      )
   ))
 }
 

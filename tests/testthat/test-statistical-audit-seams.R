@@ -171,3 +171,125 @@ test_that("metamorphic: partitioning interviews within a site visit leaves the S
     expect_gt(base$se, 0)
   }
 })
+
+test_that("metamorphic: sub-counts and their per-day means give the same effort (#193)", {
+  # Two counts on one day are two looks at that day, not two sampled days. A
+  # design built from am/pm sub-counts must therefore agree with one built from
+  # the daily means those sub-counts average to — the point estimate is a
+  # property of the survey, not of how finely the counts were recorded.
+  #
+  # It did not agree. Without count_time_col the repeated rows survived into
+  # design$counts and were summed by the expansion, returning exactly k times
+  # the true total for k counts per day. The sub-count design is now the only
+  # accepted form of this input, and the equality below is what says the
+  # aggregation it performs is the right one.
+  cal <- data.frame(
+    date = as.Date("2024-06-03") + 0:9,
+    day_type = "weekday",
+    stringsAsFactors = FALSE
+  )
+  sampled <- as.Date("2024-06-03") + 0:3
+  day_means <- c(10, 20, 30, 40)
+
+  sub_counts <- data.frame(
+    date = rep(sampled, each = 2L),
+    day_type = "weekday",
+    count_time = rep(c("am", "pm"), 4L),
+    angler_count = as.vector(rbind(day_means - 3, day_means + 3)),
+    stringsAsFactors = FALSE
+  )
+  mean_counts <- data.frame(
+    date = sampled,
+    day_type = "weekday",
+    angler_count = day_means,
+    stringsAsFactors = FALSE
+  )
+
+  base_design <- function() {
+    creel_design(cal, date = date, strata = day_type)
+  }
+  from_subs <- add_counts(
+    base_design(), sub_counts,
+    count_col = "angler_count", count_time_col = count_time
+  )
+  from_means <- add_counts(base_design(), mean_counts, count_col = "angler_count")
+
+  eff_subs <- suppressWarnings(estimate_effort(from_subs, target = "sampled_days"))
+  eff_means <- suppressWarnings(estimate_effort(from_means, target = "sampled_days"))
+
+  # Independent reference: the estimand is the sum of the four daily means,
+  # computed here in base R rather than through any tidycreel helper.
+  expect_equal(tidy(eff_subs)$estimate, sum(day_means))
+  expect_equal(tidy(eff_means)$estimate, sum(day_means))
+
+  # The sub-count design knows something the pre-averaged one cannot: the
+  # spread within each day. That must show up as a within-day component, and
+  # as a strictly larger total SE — not as a zero that looks propagated.
+  expect_gt(tidy(eff_subs)$se_within, 0)
+  expect_gt(tidy(eff_subs)$se, tidy(eff_means)$se)
+
+  # The equality has to survive to a management-relevant number, not stop at
+  # effort: a doubled effort propagated undiminished into total catch.
+  iv <- data.frame(
+    interview_uid = as.character(1:8),
+    date = rep(sampled, each = 2L),
+    day_type = "weekday",
+    effort = 2,
+    catch_count = 4,
+    trip_status = "complete",
+    stringsAsFactors = FALSE
+  )
+  add_iv <- function(d) {
+    suppressWarnings(add_interviews(
+      d, iv,
+      catch = catch_count, effort = effort, trip_status = trip_status
+    ))
+  }
+  catch_subs <- suppressWarnings(estimate_total_catch(add_iv(from_subs)))
+  catch_means <- suppressWarnings(estimate_total_catch(add_iv(from_means)))
+  expect_equal(tidy(catch_subs)$estimate, tidy(catch_means)$estimate)
+})
+
+test_that("distinction: repeat counts with no count time are refused, not guessed (#193)", {
+  # The information needed is not in the table. Two rows on one unit are either
+  # two looks at it (average) or two undeclared units (sum), and the difference
+  # is a factor of k in the reported effort. Guessing either way is a silent
+  # error, so the refusal is the correct behaviour and is asserted as such.
+  cal <- data.frame(
+    date = as.Date("2024-06-03") + 0:9,
+    day_type = "weekday",
+    stringsAsFactors = FALSE
+  )
+  untimed <- data.frame(
+    date = rep(as.Date("2024-06-03") + 0:3, each = 2L),
+    day_type = "weekday",
+    angler_count = as.vector(rbind(c(7, 17, 27, 37), c(13, 23, 33, 43))),
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design(cal, date = date, strata = day_type)
+
+  # Attaching warns; the refusal is at estimate time, where the summing happens.
+  # An estimator that never sums them -- estimate_effort_aerial_glmm() models
+  # the counts against their flight time -- keeps its several rows per day.
+  attached <- suppressWarnings(suppressMessages(
+    add_counts(design, untimed, count_col = "angler_count")
+  ))
+  expect_error(
+    suppressWarnings(estimate_effort(attached, target = "sampled_days")),
+    class = "creel_error_repeated_psus"
+  )
+
+  # Declaring what separates them is the escape hatch, and it must work: these
+  # rows really are two effort types counted once each, not repeats.
+  typed <- untimed
+  typed$effort_type <- rep(c("bank", "boat"), 4L)
+  declared <- add_counts(
+    design, typed,
+    count_col = "angler_count",
+    unit_cols = c("date", "day_type", "effort_type")
+  )
+  # Has to survive to the estimate, not merely to attach: the design remembers
+  # how its unit was declared, so the estimate-time guard rebuilds the same key
+  # rather than refusing every unit_cols caller (GH #162).
+  expect_no_error(suppressWarnings(estimate_effort(declared, target = "sampled_days")))
+})

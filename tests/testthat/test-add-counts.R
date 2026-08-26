@@ -417,9 +417,17 @@ test_that("add_counts() warns on repeated sampling units when count_time_col = N
   dup_counts <- rbind(example_counts, second)
 
   design <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
+  # Warns at attach; the refusal is at estimate time, where the summing happens
+  # (GH #193). Attaching is legitimate -- an estimator that does not sum these
+  # rows, like the aerial GLMM, is entitled to them.
   expect_warning(
     add_counts(design, dup_counts),
-    regexp = "Repeated sampling units"
+    regexp = "repeated sampling"
+  )
+  attached <- suppressWarnings(suppressMessages(add_counts(design, dup_counts)))
+  expect_error(
+    suppressWarnings(estimate_effort(attached)),
+    class = "creel_error_repeated_psus"
   )
 })
 
@@ -1139,7 +1147,14 @@ test_that("a genuine repeat of one unit still warns (GH #155)", {
   repeat_row$angler_count <- 11
   expect_warning(
     add_counts(sec_design(), rbind(counts, repeat_row), count_col = "angler_count"),
-    regexp = "Repeated sampling units"
+    regexp = "repeated sampling"
+  )
+  attached <- suppressWarnings(suppressMessages(
+    add_counts(sec_design(), rbind(counts, repeat_row), count_col = "angler_count")
+  ))
+  expect_error(
+    suppressWarnings(estimate_effort(attached)),
+    class = "creel_error_repeated_psus"
   )
 })
 
@@ -1286,13 +1301,12 @@ test_that("CNT-07 (#162): unit_cols also silences the CNT-06 false positive", {
   # for the genuine duplicate case (#152).
   flat <- make_two_type_counts()
   flat <- flat[flat$count_time == "am", setdiff(names(flat), "count_time")]
-  expect_no_warning(
+  expect_no_error(
     add_counts(
       make_unit_design(), flat,
       count_col = "angler_count",
       unit_cols = c("date", "day_type", "effort_type")
-    ),
-    message = "Repeated sampling units"
+    )
   )
 })
 

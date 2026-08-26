@@ -2099,11 +2099,18 @@ describe("Phase 47: Aerial effort", {
     # se_v / v, which is unaffected by the counts' values.
     counts_extra <- counts_1x
     counts_extra$n_counted <- counts_extra$n_counted + 1L
+    # Two flights on one date are two looks at it, so they carry the flight
+    # that separates them; undeclared they would be summed as two sampled days
+    # and refused (GH #193). The ratio under test is se_v / v, which is
+    # unaffected either way.
+    counts_1x$flight <- 1L
+    counts_extra$flight <- 2L
     counts_2x <- rbind(counts_1x, counts_extra)
     ratio_component <- function(counts) {
       d <- add_counts(
         make_aerial_design(h_open = 14, visibility_correction = 0.85, visibility_se = 0.05),
-        counts
+        counts,
+        count_time_col = flight
       )
       res <- suppressWarnings(estimate_effort(d))
       res$se_components$visibility / res$estimates$estimate

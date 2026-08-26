@@ -1883,7 +1883,11 @@ add_counts <- function(
   # units, whatever the key happens to be.
   detect_duplicate_rows(counts) # nolint: object_usage_linter
 
-  # CNT-06: warn if duplicate PSU rows detected without count_time_col
+  # CNT-06: warn about duplicate PSU rows when no count_time_col says what
+  # separates them. The refusal lives in estimate_effort(), where the summing
+  # happens -- an estimator that never sums them, like the aerial GLMM, is
+  # entitled to them (GH #193). This fires here so the report lands next to the
+  # call that introduced the rows.
   if (is.null(count_time_col_name)) {
     detect_duplicate_psus(counts, unit_key_cols) # nolint: object_usage_linter
   }
@@ -2087,6 +2091,12 @@ add_counts <- function(
   } else {
     "angler-hours"
   }
+
+  # How the sampling unit was declared, kept so estimate_effort() can rebuild
+  # the same key. Validated here and then forgotten, the design could not tell
+  # a declared multi-column unit from an undeclared repeat, and the estimate-time
+  # guard would refuse every unit_cols caller (GH #162, #193).
+  new_design$unit_cols <- unit_cols
 
   # Construct survey design eagerly
   new_design$survey <- construct_survey_design(new_design) # nolint: object_usage_linter

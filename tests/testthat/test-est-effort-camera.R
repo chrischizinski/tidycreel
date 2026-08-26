@@ -597,7 +597,7 @@ test_that("CEST-26: a repeat carrying a DIFFERENT count still reaches the raw pa
   repeat_row <- counts[counts$date == as.Date("2024-06-03"), ]
   repeat_row$ingress_count <- repeat_row$ingress_count + 1L
   dup <- rbind(counts, repeat_row)
-  expect_warning(add_counts(d, dup), regexp = "Repeated sampling units")
+  expect_warning(add_counts(d, dup), regexp = "repeated sampling")
 
   d <- suppressWarnings(add_counts(d, dup))
   result <- est_effort_camera(d, h_open = 14, calibration = "none")
