@@ -252,3 +252,59 @@ test_that("SCHED-IO-03: write_schedule() overwrites when overwrite = TRUE", {
   write_schedule(sched, tmp)
   expect_no_error(write_schedule(sched, tmp, overwrite = TRUE))
 })
+
+test_that("SCHED-04: a count-time schedule round-trips with every column type intact (GH #194)", {
+  # read_schedule() reads every column as character and restores types through
+  # an allow-list. window_id is added by attach_count_times(), not by
+  # generate_schedule(), so the plain round-trip test above never covered it and
+  # it came back character. A character window_id silently breaks a join against
+  # an integer window_id, an arithmetic comparison, or an identical() check --
+  # no error, no warning. Assert the whole object, so any future generator
+  # column that escapes the allow-list fails here too.
+  sched <- generate_schedule(
+    "2024-06-01",
+    "2024-06-30",
+    n_periods = 4,
+    n_days = 8,
+    seed = 42
+  )
+  count_times <- generate_count_times(
+    start_time = "06:00",
+    end_time = "20:00",
+    strategy = "systematic",
+    n_windows = 2,
+    window_size = 60,
+    min_gap = 120,
+    seed = 1
+  )
+  attached <- attach_count_times(sched, count_times)
+  expect_type(attached$window_id, "integer")
+
+  tmp <- withr::local_tempfile(fileext = ".csv")
+  write_schedule(attached, tmp)
+  result <- read_schedule(tmp)
+
+  expect_type(result$window_id, "integer")
+  expect_identical(
+    vapply(result, function(x) class(x)[1], character(1)),
+    vapply(attached, function(x) class(x)[1], character(1))
+  )
+  expect_identical(result, attached)
+})
+
+test_that("SCHED-04: non-numeric window labels survive the round trip as character", {
+  # The integer restoration is guarded the same way period_id's is: a schedule
+  # labelling its windows "AM"/"PM" must not be coerced to NA integers.
+  tmp <- withr::local_tempfile(fileext = ".csv")
+  df <- data.frame(
+    date = c("2024-06-01", "2024-06-02"),
+    day_type = c("weekend", "weekend"),
+    period_id = c(1L, 1L),
+    window_id = c("AM", "PM"),
+    stringsAsFactors = FALSE
+  )
+  utils::write.csv(df, tmp, row.names = FALSE)
+  result <- read_schedule(tmp)
+  expect_type(result$window_id, "character")
+  expect_identical(result$window_id, c("AM", "PM"))
+})

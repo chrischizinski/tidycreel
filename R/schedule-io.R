@@ -63,9 +63,12 @@ coerce_to_date <- function(x) {
 #' Coerce schedule data frame columns to their canonical types
 #'
 #' Internal helper. Applies type coercion to the columns `date`, `day_type`,
-#' `period_id`, and `sampled` if present. Column matching is by name; columns
-#' absent from `df` are left alone. This ensures identical coercion logic for
-#' both CSV and xlsx paths.
+#' `period_id`, `window_id`, and `sampled` if present. Column matching is by
+#' name; columns absent from `df` are left alone. This ensures identical
+#' coercion logic for both CSV and xlsx paths.
+#'
+#' The list is an allow-list, so a column a schedule generator adds in future
+#' will round-trip as character until it is named here (GH #194).
 #'
 #' @param df A data frame with all columns as character (as produced by
 #'   `utils::read.csv(colClasses = "character")` or
@@ -90,6 +93,14 @@ coerce_schedule_columns <- function(df) {
       df$period_id <- as.integer(pid)
     }
     # else: character period labels (e.g. "AM"/"PM") — preserve as-is
+  }
+  if ("window_id" %in% names(df)) {
+    wid <- df$window_id
+    all_numeric <- all(is.na(wid) | grepl("^[0-9]+$", wid))
+    if (all_numeric) {
+      df$window_id <- as.integer(wid)
+    }
+    # else: character window labels — preserve as-is, as for period_id
   }
   if ("sampled" %in% names(df)) {
     df$sampled <- as.logical(df$sampled)
