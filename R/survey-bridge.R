@@ -401,40 +401,27 @@ validate_counts_tier1 <- function(counts, design, psu, allow_invalid = FALSE) {
   )
 }
 
-#' Report repeated sampling units that nothing distinguishes
+#' Count repeated sampling units in count data
 #'
-#' Internal helper. Keyed on the whole sampling unit rather than the PSU column
-#' alone. Keying on the date by itself reported every multi-section day as a
-#' duplicate -- two sections counted once each is ordinary structure, not a
-#' repeat -- and a signal that fires on correct input is one users learn to
-#' ignore, which matters because this is the only signal for the case that is
-#' genuinely wrong (GH #155).
+#' Internal helper, and the single definition of what "repeated" means here:
+#' rows sharing a whole sampling-unit key. Both `detect_duplicate_psus()` (the
+#' attach-time warning) and `refuse_duplicate_psus()` (the estimation-time
+#' abort) count through this, so the two signals cannot disagree about how many
+#' repeats a table holds.
 #'
-#' Only reached when `count_time_col` is absent; with a count time the repeats
-#' are sub-counts and `aggregate_within_day()` collapses them to a per-unit mean.
-#'
-#' Aborts rather than warns (GH #193). Without a count time these rows reach
-#' `svytotal()` as separate sampling units and are **summed**, so the effort
-#' estimate comes back multiplied by the number of counts per unit -- measured
-#' at exactly k-fold for k = 1..4 -- and propagates undiminished into catch,
-#' harvest and release totals. `se_within` is reported as `0` at the same time,
-#' which is indistinguishable from a within-day component that was evaluated and
-#' found to be nil.
-#'
-#' It warned until 5.2.0, which was the wrong strength for the failure. The
-#' sibling check `detect_duplicate_rows()` already aborts on rows identical in
-#' every column -- the case that is usually a harmless double entry -- so the
-#' genuinely dangerous case was the one left recoverable. The information needed
-#' to resolve it is not in the table: two rows on one unit are either two looks
-#' at it (average them) or two undeclared units (sum them), and only the surveyor
-#' knows which. Guessing either way is a silent error, so this refuses and asks.
+#' Keyed on the whole sampling unit rather than the PSU column alone. Keying on
+#' the date by itself reported every multi-section day as a duplicate -- two
+#' sections counted once each is ordinary structure, not a repeat -- and a
+#' signal that fires on correct input is one users learn to ignore, which
+#' matters because this is the only signal for the case that is genuinely wrong
+#' (GH #155).
 #'
 #' @param counts Data frame containing count data
 #' @param key_cols Character vector identifying one sampling unit, from
 #'   `psu_key_cols()`
-#' @param call Caller environment for error reporting
 #'
-#' @return `NULL`, invisibly. Called for its side effect.
+#' @return Integer count of rows repeating a sampling unit already seen; `0`
+#'   when every row is a distinct unit.
 #'
 #' @keywords internal
 #' @noRd
@@ -485,7 +472,27 @@ detect_duplicate_psus <- function(counts, key_cols, call = rlang::caller_env()) 
 
 #' Refuse repeated sampling units at estimation time
 #'
-#' Internal helper. See `detect_duplicate_psus()` for the attach-time warning.
+#' Internal helper. See `detect_duplicate_psus()` for the attach-time warning
+#' and `n_duplicate_psus()` for the shared definition of a repeat.
+#'
+#' Only reached when `count_time_col` is absent; with a count time the repeats
+#' are sub-counts and `aggregate_within_day()` collapses them to a per-unit mean.
+#'
+#' Aborts rather than warns (GH #193). Without a count time these rows reach
+#' `svytotal()` as separate sampling units and are **summed**, so the effort
+#' estimate comes back multiplied by the number of counts per unit -- measured
+#' at exactly k-fold for k = 1..4 -- and propagates undiminished into catch,
+#' harvest and release totals. `se_within` is reported as `0` at the same time,
+#' which is indistinguishable from a within-day component that was evaluated and
+#' found to be nil.
+#'
+#' It warned until 5.2.0, which was the wrong strength for the failure. The
+#' sibling check `detect_duplicate_rows()` already aborts on rows identical in
+#' every column -- the case that is usually a harmless double entry -- so the
+#' genuinely dangerous case was the one left recoverable. The information needed
+#' to resolve it is not in the table: two rows on one unit are either two looks
+#' at it (average them) or two undeclared units (sum them), and only the surveyor
+#' knows which. Guessing either way is a silent error, so this refuses and asks.
 #'
 #' @param counts Data frame containing count data
 #' @param key_cols Character vector identifying one sampling unit
@@ -496,8 +503,7 @@ detect_duplicate_psus <- function(counts, key_cols, call = rlang::caller_env()) 
 #' @keywords internal
 #' @noRd
 refuse_duplicate_psus <- function(counts, key_cols, call = rlang::caller_env()) {
-  key <- do.call(paste, c(lapply(counts[key_cols], as.character), sep = "\u001f"))
-  n_dup <- sum(duplicated(key))
+  n_dup <- n_duplicate_psus(counts, key_cols)
   if (n_dup == 0) {
     return(invisible(NULL))
   }
