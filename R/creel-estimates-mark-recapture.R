@@ -124,6 +124,14 @@
 #'   argument for its analytic bounds — it always inverts Poisson quantiles or
 #'   uses the \eqn{t} approximation on \eqn{1/\hat{N}}, per Hansen & Van Kirk
 #'   (2018) — but still honours \code{"bootstrap"} for the extra columns.
+#'
+#'   \strong{Schumacher-Eschmeyer does not support \code{"bootstrap"} and
+#'   refuses it} (GH #209). Its interval comes from the weighted regression
+#'   itself (Seber 1982 eq. 4.17), whose variance is the residual mean square
+#'   about the fitted line — not the binomial noise in the recaptures that the
+#'   other methods resample. A bootstrap over \eqn{m_k} alone would report a
+#'   different quantity under the same column names. \code{"logit"} and
+#'   \code{"delta"} both yield that regression interval.
 #' @param B integer(1). Number of bootstrap replicates when
 #'   \code{ci_method = "bootstrap"}. Default \code{2000L}.
 #' @param bias_adjust logical(1). Multi-occasion methods only; ignored by the
@@ -333,6 +341,35 @@ estimate_angler_n <- function(
   method <- match.arg(method, c("chapman", "petersen", "schnabel", "schumacher"))
   ci_method <- match.arg(ci_method)
   multi_occasion <- method %in% c("schnabel", "schumacher")
+  # Schumacher-Eschmeyer has no bootstrap. Refused rather than ignored (GH #209):
+  # the branch below appends no `ci_lo_boot`/`ci_hi_boot` columns and attaches no
+  # `boot_samples`, so the request silently produced nothing and
+  # `estimate_mr_harvest(ci_method = "bootstrap")` then aborted telling the
+  # caller to do what they had already done.
+  #
+  # Not implemented, on statistical grounds rather than effort. The other three
+  # methods bootstrap by resampling recaptures, `m_k ~ Binomial(n_k, m_k/n_k)`,
+  # which is coherent where the recaptures are the random component. This
+  # estimator's published variance is the residual mean square of a weighted
+  # regression through the origin on `s - 2` degrees of freedom (Seber 1982
+  # eq. 4.17) -- the scatter of the observed points about the fitted line, which
+  # is not the same quantity as binomial noise in `m`. Resampling `m_k` alone
+  # would report a narrower, differently-defined uncertainty under the same
+  # column names. Refusing states the gap; inventing one would hide it.
+  if (method == "schumacher" && ci_method == "bootstrap") {
+    cli::cli_abort(
+      c(
+        "{.code ci_method = \"bootstrap\"} is not available for \
+         {.code method = \"schumacher\"}.",
+        "i" = "Schumacher-Eschmeyer reports the interval from its weighted \
+               regression (Seber 1982 eq. 4.17); resampling recaptures would \
+               describe a different quantity.",
+        "i" = "Use {.code ci_method = \"logit\"} or {.code \"delta\"} here, or \
+               {.code method = \"schnabel\"} if a bootstrap interval is required."
+      ),
+      class = "creel_error_schumacher_no_bootstrap"
+    )
+  }
   if (!is.logical(bias_adjust) || length(bias_adjust) != 1L || is.na(bias_adjust)) {
     cli::cli_abort("{.arg bias_adjust} must be a single non-missing logical value.")
   }
