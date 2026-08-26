@@ -34,6 +34,28 @@
 
 ## Bug fixes
 
+* `estimate_exploitation_rate()` now accepts the `estimate_total_harvest()`
+  result itself for `C`, and checks it (#206). `u = (C/T)(m/n)/lambda` is the
+  fraction of the tagged cohort removed *over the whole season*, so `C` must be
+  a period total while `T` is the full cohort -- but `estimate_total_harvest()`
+  defaults to `target = "sampled_days"`, and `C` arrived as a bare number with
+  its estimand stripped off. The shortest correct-looking pipeline was therefore
+  the wrong one, and it failed silently: on a survey sampling 6 of 30 days the
+  exploitation rate came back understated five-fold, inside `[0, 1]` so the
+  range guard never fired, with a standard error that scaled down with it. The
+  factor is the sampling fraction, so sparser surveys were wrong by more.
+
+  Passing the object lets the target be read and a sampled-day total refused.
+  It also makes the catch-for-harvest substitution detectable -- released fish
+  were never removed from the tagged cohort, and while both totals are counts of
+  fish, the method is recorded on the object. A stratum total warns rather than
+  aborting, since it is correct when `T` is that stratum's cohort. Supplying
+  `se_C` alongside an object is an error; the standard error is read from it.
+
+  Bare numeric `C` keeps working unchanged and now reports that its target could
+  not be verified. No estimate changes on any existing call -- the object and
+  numeric paths return identical results for the same total.
+
 * `read_schedule()` restored only four column types, so `window_id` came back
   as character (#194). The column is added by `attach_count_times()` rather than
   by `generate_schedule()`, and `coerce_schedule_columns()` matches an
