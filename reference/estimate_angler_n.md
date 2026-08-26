@@ -83,6 +83,14 @@ estimate_angler_n(
   or uses the \\t\\ approximation on \\1/\hat{N}\\, per Hansen & Van
   Kirk (2018) — but still honours `"bootstrap"` for the extra columns.
 
+  **Schumacher-Eschmeyer does not support `"bootstrap"` and refuses it**
+  (GH \#209). Its interval comes from the weighted regression itself
+  (Seber 1982 eq. 4.17), whose variance is the residual mean square
+  about the fitted line — not the binomial noise in the recaptures that
+  the other methods resample. A bootstrap over \\m_k\\ alone would
+  report a different quantity under the same column names. `"logit"` and
+  `"delta"` both yield that regression interval.
+
 - B:
 
   integer(1). Number of bootstrap replicates when

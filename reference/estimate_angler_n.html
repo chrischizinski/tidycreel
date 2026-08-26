@@ -192,7 +192,14 @@ bootstrap via <code><a href="https://rdrr.io/r/stats/Binomial.html" class="exter
 <code>attr(result, "boot_samples")</code>. The Schnabel branch ignores this
 argument for its analytic bounds — it always inverts Poisson quantiles or
 uses the \(t\) approximation on \(1/\hat{N}\), per Hansen &amp; Van Kirk
-(2018) — but still honours <code>"bootstrap"</code> for the extra columns.</p></dd>
+(2018) — but still honours <code>"bootstrap"</code> for the extra columns.</p>
+<p><strong>Schumacher-Eschmeyer does not support <code>"bootstrap"</code> and
+refuses it</strong> (GH #209). Its interval comes from the weighted regression
+itself (Seber 1982 eq. 4.17), whose variance is the residual mean square
+about the fitted line — not the binomial noise in the recaptures that the
+other methods resample. A bootstrap over \(m_k\) alone would report a
+different quantity under the same column names. <code>"logit"</code> and
+<code>"delta"</code> both yield that regression interval.</p></dd>
 
 
 <dt id="arg-b">B<a class="anchor" aria-label="anchor" href="#arg-b"></a></dt>
