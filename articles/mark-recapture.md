@@ -296,6 +296,10 @@ result_expl <- estimate_exploitation_rate(
   n    = 180L,
   m    = 15L
 )
+#> ℹ `C` was supplied as a bare number, so its target cannot be verified.
+#>   It must be a season (period) total -- a sampled-day total understates `u` by
+#>   the sampling fraction.
+#>   Pass the `estimate_total_harvest()` result itself to have this checked.
 print(result_expl)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -372,6 +376,10 @@ result_adj <- estimate_exploitation_rate(
   m              = 15L,
   reporting_rate = 0.80
 )
+#> ℹ `C` was supplied as a bare number, so its target cannot be verified.
+#>   It must be a season (period) total -- a sampled-day total understates `u` by
+#>   the sampling fraction.
+#>   Pass the `estimate_total_harvest()` result itself to have this checked.
 print(result_adj)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
