@@ -1027,3 +1027,131 @@ test_that("CEST-28: a stratum whose interviews match no count day is named in fu
     "No matched interview/count days for stratum .*weekday / south"
   )
 })
+
+# CEST-29: a missing camera count is unknown, not zero (GH #215) ---------------
+#
+# `na.rm = TRUE` on the ratio path's svytotal dropped an NA count from the
+# numerator while its population day stayed in the frame, so the day
+# contributed exactly zero hours. No condition was raised and the number was
+# plausible. The raw branch of the same function had no `na.rm` and returned
+# NA, so one function treated one input two opposite ways.
+
+make_na_count_design <- function() {
+  # The NA is on 2024-06-05, which is NOT an interview day, so rho is
+  # unchanged and the whole move is attributable to the dropped count.
+  counts <- make_camera_counts()
+  counts$ingress_count[3] <- NA_integer_
+  counts$camera_status[3] <- "battery_failure"
+  suppressWarnings(add_counts(make_camera_design(), counts))
+}
+
+test_that("CEST-29: a missing count makes the calibrated estimate NA (GH #215)", {
+  expect_true(is.na(suppressWarnings(
+    est_effort_camera(make_na_count_design(), interviews = make_interviews())
+  )$estimates$estimate))
+})
+
+test_that("CEST-29: a missing count is not the same as a deleted row (GH #215)", {
+  # This is the assertion that pins the 0-vs-NA distinction rather than a
+  # particular number. Pre-fix the two were bit-identical at 15.0, which is
+  # the demonstration that the outage day contributed exactly zero while
+  # remaining a population day.
+  deleted <- make_camera_counts()[-3L, , drop = FALSE]
+  est_deleted <- suppressWarnings(
+    est_effort_camera(
+      suppressWarnings(add_counts(make_camera_design(), deleted)),
+      interviews = make_interviews()
+    )
+  )
+  est_na <- suppressWarnings(
+    est_effort_camera(make_na_count_design(), interviews = make_interviews())
+  )
+  expect_false(isTRUE(all.equal(est_na$estimates$estimate, est_deleted$estimates$estimate)))
+  # The deleted-row estimate is a real number: dropping the day from the frame
+  # entirely is a different, legitimate analysis. n distinguishes them.
+  expect_false(is.na(est_deleted$estimates$estimate))
+  expect_equal(est_deleted$estimates$n, 4L)
+  expect_equal(est_na$estimates$n, 5L)
+})
+
+test_that("CEST-29: the missing count is reported, with the date and the remedy (GH #215)", {
+  expect_warning(
+    est_effort_camera(
+      make_na_count_design(),
+      interviews = make_interviews(),
+      n_anglers = 1
+    ),
+    "2024-06-05",
+    class = "creel_warning_camera_na_counts"
+  )
+})
+
+test_that("CEST-29: the warning names the camera status that explains the gap (GH #215)", {
+  expect_warning(
+    est_effort_camera(
+      make_na_count_design(),
+      interviews = make_interviews(),
+      n_anglers = 1
+    ),
+    "battery_failure",
+    class = "creel_warning_camera_na_counts"
+  )
+})
+
+test_that("CEST-29: the raw path reports the same gap the ratio path does (GH #215)", {
+  # The raw path already returned NA, but silently. Both branches now answer
+  # the same input the same way and say why -- that symmetry is the point.
+  expect_warning(
+    est_effort_camera(make_na_count_design(), calibration = "none", h_open = 12),
+    "2024-06-05",
+    class = "creel_warning_camera_na_counts"
+  )
+  expect_true(is.na(suppressWarnings(
+    est_effort_camera(make_na_count_design(), calibration = "none", h_open = 12)
+  )$estimates$estimate))
+})
+
+test_that("CEST-29: an unknown total reports one unknown SE, not NaN (GH #215)", {
+  # survey::SE() marks the NA stratum NaN while the calibration component uses
+  # NA for the same condition (#136). One function must not report one unknown
+  # two ways -- and a printed NaN reads as a computation bug rather than a
+  # missing observation.
+  res <- suppressWarnings(
+    est_effort_camera(make_na_count_design(), interviews = make_interviews())
+  )
+  expect_true(is.na(res$estimates$se))
+  expect_false(is.nan(res$estimates$se))
+  expect_false(is.nan(res$se_components$count_sampling))
+  expect_false(is.nan(res$se_components$calibration))
+})
+
+test_that("CEST-29: complete counts raise no missing-count warning (GH #215)", {
+  # Inertness control: the guard must key on an actual NA, not on the presence
+  # of a camera_status column or a non-operational label.
+  d <- make_design_with_counts()
+  expect_no_condition(
+    suppressWarnings(est_effort_camera(d, interviews = make_interviews())),
+    class = "creel_warning_camera_na_counts"
+  )
+  expect_equal(
+    suppressWarnings(
+      est_effort_camera(d, interviews = make_interviews())
+    )$estimates$estimate,
+    18.9660194174757,
+    tolerance = 1e-12
+  )
+})
+
+test_that("CEST-29: the gap is reported even without a camera_status column (GH #215)", {
+  # `camera_status` explains an outage but is not required to have one. The
+  # warning must still name the date; only the status bullet drops out.
+  counts <- make_camera_counts()
+  counts$camera_status <- NULL
+  counts$ingress_count[3] <- NA_integer_
+  d <- suppressWarnings(add_counts(make_camera_design(), counts))
+  expect_warning(
+    est_effort_camera(d, interviews = make_interviews(), n_anglers = 1),
+    "2024-06-05",
+    class = "creel_warning_camera_na_counts"
+  )
+})
