@@ -110,6 +110,52 @@ estimate_effort_camera <- function(
     )
   }
 
+  # An outage day's count is unknown, not zero. Dropping it from the numerator
+  # while its population day stays in the frame makes it contribute exactly
+  # zero hours to the total -- a plausible number, no condition raised, and
+  # bit-identical to the estimate obtained by deleting the row (#215).
+  #
+  # Reported here rather than inside either branch because the two used to
+  # disagree about the same input: the ratio path passed `na.rm = TRUE` to
+  # `svytotal` and returned a number, the raw path did not and returned `NA`.
+  # Both now return `NA`, and both now say why.
+  #
+  # Not imputed here, and not reweighted: which day is missing is informative,
+  # so the treatment is the caller's to choose.
+  na_counts <- is.na(counts_data[[count_var]])
+  if (any(na_counts)) {
+    # Referenced only inside cli glue strings, which the linter cannot see.
+    na_dates <- as.character(counts_data[[design$date_col]][na_counts]) # nolint: object_usage_linter
+    na_status <- if ("camera_status" %in% names(counts_data)) {
+      unique(as.character(counts_data[["camera_status"]][na_counts]))
+    } else {
+      character()
+    }
+    cli::cli_warn(
+      c(
+        paste0(
+          "{sum(na_counts)} of {nrow(counts_data)} count ",
+          "{cli::qty(nrow(counts_data))}day{?s} ",
+          "{cli::qty(sum(na_counts))}{?has/have} a missing ",
+          "{.field {count_var}}."
+        ),
+        "x" = "{cli::qty(na_dates)}Affected date{?s}: {.val {na_dates}}.",
+        if (length(na_status) > 0L) {
+          c("i" = "{cli::qty(na_status)}Camera status{?es}: {.val {na_status}}.")
+        },
+        "i" = paste(
+          "An outage day's count is unknown, not zero, so the estimate is",
+          "{.code NA} rather than a total that silently omits the day."
+        ),
+        "i" = paste(
+          "Fill it with {.fn impute_camera_counts}, or remove the day from the",
+          "design if it was not sampled."
+        )
+      ),
+      class = "creel_warning_camera_na_counts"
+    )
+  }
+
   # ---- Ratio calibration path -----------------------------------------------
   if (!is.null(interviews)) {
     if (!effort_col %in% names(interviews)) {
@@ -337,14 +383,19 @@ estimate_effort_camera <- function(
     # Use svytotal on raw count then multiply stratum-level totals by rho
     count_formula <- stats::reformulate(count_var)
     svy_design <- get_variance_design(design$survey, variance_method) # nolint: object_usage_linter
-    svy_raw <- suppressWarnings(
-      survey::svyby(
-        count_formula,
-        stats::reformulate(strata_cols),
-        svy_design,
-        survey::svytotal,
-        na.rm = TRUE
-      )
+    # No `na.rm = TRUE`: it made a missing count a zero-effort day (#215).
+    #
+    # No `suppressWarnings()` either. It used to swallow every warning svyby
+    # raised, which is half of why an outage produced a confident wrong number.
+    # It was also unnecessary: survey's benign "No weights or probabilities
+    # supplied" note comes from `svydesign()` when the design is built, not
+    # from `svyby()` here -- removing the wrapper surfaces no new noise in the
+    # suite, and a narrower handler for that one string would be dead code.
+    svy_raw <- survey::svyby(
+      count_formula,
+      stats::reformulate(strata_cols),
+      svy_design,
+      survey::svytotal
     )
 
     # svyby returns one row per observed combination, with the grouping
@@ -371,10 +422,19 @@ estimate_effort_camera <- function(
     # sqrt(a + b), and no existing camera SE may move.
     var_count_sampling <- sum((survey::SE(svy_raw) * rho_matched)^2)
     var_calibration <- sum(total_counts_h^2 * var_rho_matched)
-    se_between <- sqrt(var_count_sampling + var_calibration)
+    # `survey::SE()` reports `NaN` for a stratum whose total is `NA`, which is
+    # reachable only since the missing-count fix (#215) stopped dropping those
+    # rows. Both marks mean "not measurable", but the calibration component
+    # uses `NA` for the same condition (#136), and one function must not report
+    # one unknown two ways. Normalised to `NA_real_`; `NaN` is never a
+    # meaningful SE here, so nothing measurable is lost.
+    na_if_nan <- function(x) {
+      if (length(x) == 1L && is.nan(x)) NA_real_ else x
+    }
+    se_between <- na_if_nan(sqrt(var_count_sampling + var_calibration))
     se_components <- list(
-      count_sampling = sqrt(var_count_sampling),
-      calibration = sqrt(var_calibration)
+      count_sampling = na_if_nan(sqrt(var_count_sampling)),
+      calibration = na_if_nan(sqrt(var_calibration))
     )
     method_label <- "camera_ratio"
     # effort_unit_label was set above, where the party-size decision was made.
