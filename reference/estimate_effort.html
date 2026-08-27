@@ -203,6 +203,26 @@ selection based on design). Alternative resampling method, deterministic
 unlike bootstrap.</p></li>
 </ul></div>
     <div class="section level2">
+    <h2 id="camera-designs-are-refused">Camera designs are refused<a class="anchor" aria-label="anchor" href="#camera-designs-are-refused"></a></h2>
+
+
+
+<p>This function estimates instantaneous, bus-route, ice, aerial and sectioned
+designs. It refuses a camera design, with condition class
+<code>creel_error_camera_generic_estimator</code>.</p>
+<p>A camera count is a daily total of arrivals, not an instantaneous count of
+anglers present, so summing it over days gives arrivals rather than effort.
+Because camera had no branch in the dispatch below, such a design used to fall
+through to the instantaneous path and return that sum – a plausible number
+with a plausible standard error, and no indication that it was not effort.</p>
+<p>Use <code><a href="est_effort_camera.html">est_effort_camera</a></code>, which calibrates the counts against
+interview effort and propagates the calibration's uncertainty, or
+<code><a href="est_effort_camera_mi.html">est_effort_camera_mi</a></code> to pool over multiply imputed counts. The
+same refusal is raised by <code><a href="estimate_total_catch.html">estimate_total_catch</a></code>,
+<code><a href="estimate_total_harvest.html">estimate_total_harvest</a></code> and <code><a href="estimate_total_release.html">estimate_total_release</a></code>,
+which build their own effort by this route.</p>
+    </div>
+    <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p>Other "Estimation":
 <code><a href="compare_cpue_estimators.html">compare_cpue_estimators()</a></code>,

@@ -136,6 +136,31 @@ variance.
   based on design). Alternative resampling method, deterministic unlike
   bootstrap.
 
+## Camera designs are refused
+
+This function estimates instantaneous, bus-route, ice, aerial and
+sectioned designs. It refuses a camera design, with condition class
+`creel_error_camera_generic_estimator`.
+
+A camera count is a daily total of arrivals, not an instantaneous count
+of anglers present, so summing it over days gives arrivals rather than
+effort. Because camera had no branch in the dispatch below, such a
+design used to fall through to the instantaneous path and return that
+sum – a plausible number with a plausible standard error, and no
+indication that it was not effort.
+
+Use
+[`est_effort_camera`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md),
+which calibrates the counts against interview effort and propagates the
+calibration's uncertainty, or
+[`est_effort_camera_mi`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera_mi.md)
+to pool over multiply imputed counts. The same refusal is raised by
+[`estimate_total_catch`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md),
+[`estimate_total_harvest`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md)
+and
+[`estimate_total_release`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md),
+which build their own effort by this route.
+
 ## See also
 
 Other "Estimation":

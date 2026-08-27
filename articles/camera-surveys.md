@@ -192,29 +192,88 @@ nrow(counts_clean) # 9 operational rows
 
 ### Effort Estimation
 
+Camera effort is estimated by
+[`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md),
+not by the generic
+[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md).
+The distinction matters and is not cosmetic: a camera count is a daily
+total of **arrivals**, not an instantaneous count of anglers present, so
+summing it over days gives arrivals rather than effort. The generic
+estimator refuses a camera design for that reason:
+
 ``` r
 
 design_counter <- add_counts(design_counter, counts_clean)
 #> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
 #> weights or probabilities supplied, assuming equal probability
-effort_counter <- suppressWarnings(estimate_effort(design_counter))
+estimate_effort(design_counter)
+#> Error in `estimate_effort()`:
+#> ! `estimate_effort()` does not estimate camera designs.
+#> ✖ A camera count is a daily ingress total -- a count of arrivals -- not an
+#>   instantaneous count of anglers present, so summing it over days gives
+#>   arrivals rather than effort.
+#> ℹ Use `est_effort_camera()`, which calibrates the counts against interview
+#>   effort and propagates the calibration's uncertainty.
+#> ℹ To expand the raw counts uncalibrated, pass `calibration = "none"` and
+#>   `h_open` to that function. The reported standard error is `NA`, because the
+#>   assumption of one angler-hour per count per hour open is unmeasured.
+```
+
+[`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md)
+converts counts to effort by calibrating them against interview data:
+for each stratum it estimates `rho`, the hours of effort per camera
+count, from the days that carry both a count and interviews, then
+applies it to that stratum’s total counts (Hartill et al. 2020).
+
+`example_camera_interviews` records one row per angler, so
+`n_anglers = 1` states that `hours_fished` is already an individual
+angler’s hours. Supplying it is what earns the result its `angler-hours`
+label — without it the ratio inherits whatever unit the effort column
+holds, which the package cannot identify, and the unit is reported as
+unknown.
+
+``` r
+
+effort_counter <- suppressWarnings(est_effort_camera(
+  design_counter,
+  interviews = example_camera_interviews,
+  n_anglers  = 1
+))
 print(effort_counter)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
-#> Method: Total
+#> Method: camera_ratio
 #> Variance: Taylor linearization
 #> Confidence level: 95%
-#> Effort target: sampled_days
+#> Unit: angler-hours
+#> Count-sampling SE: 4.277 (included in se)
+#> Calibration SE: 11.71 (included in se)
 #> 
 #> # A tibble: 1 × 7
 #>   estimate    se se_between se_within ci_lower ci_upper     n
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1      613  20.9       20.9         0     564.     662.     9
+#> 1     111.  12.5       12.5         0     81.4     140.     9
 ```
 
-The `estimate` column is the Horvitz-Thompson estimate of total ingress
-angler visits across the full survey period, with a 95% confidence
-interval.
+The `estimate` column is total angler-hours across the survey period.
+The standard error carries two named components, which `se_components`
+reports separately:
+
+``` r
+
+effort_counter$se_components
+#> $count_sampling
+#> [1] 4.277261
+#> 
+#> $calibration
+#> [1] 11.70725
+```
+
+`count_sampling` is the sampling variance of the camera counts
+themselves; `calibration` is the variance of the estimated `rho`.
+Splitting them shows which half of the uncertainty dominates — here the
+calibration ratio does, so more interview days would buy more precision
+than more camera days would.
 
 ## Ingress-Egress Mode
 
@@ -285,55 +344,68 @@ design_ie <- creel_design(
 design_ie <- add_counts(design_ie, daily_effort)
 #> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
 #> weights or probabilities supplied, assuming equal probability
-effort_ie <- suppressWarnings(estimate_effort(design_ie))
+```
+
+Ingress-egress counts are already in hours, so the calibration ratio
+here is close to dimensionless: it corrects camera-measured hours to
+interview-measured angler-hours rather than converting a count into a
+duration. The estimator is the same one.
+
+``` r
+
+ie_interviews <- example_camera_interviews[
+  example_camera_interviews$date %in% daily_effort$date,
+]
+
+effort_ie <- suppressWarnings(est_effort_camera(
+  design_ie,
+  interviews = ie_interviews,
+  n_anglers  = 1
+))
 print(effort_ie)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
-#> Method: Total
+#> Method: camera_ratio
 #> Variance: Taylor linearization
 #> Confidence level: 95%
-#> Effort target: sampled_days
+#> Unit: angler-hours
+#> Count-sampling SE: 5.41 (known, but se is `NA`)
+#> Calibration SE: NA (unknown, so se is `NA`)
 #> 
 #> # A tibble: 1 × 7
 #>   estimate    se se_between se_within ci_lower ci_upper     n
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1       58  7.72       7.72         0     24.8     91.2     4
+#> 1     43.6    NA         NA         0       NA       NA     4
 ```
 
-## Interview-Based Catch Estimation
+The standard error is `NA` here, and that is the estimator working
+rather than failing. These four sampling days give the `weekend` stratum
+only one day carrying both a count and interviews, and a single paired
+day gives the calibration ratio no measurable spread. Reporting `0` for
+that variance would present the most uncertain calibration as the most
+precise one, so the package carries it as `NA` and says which stratum is
+responsible. A second matched interview day in that stratum recovers a
+standard error.
 
-Camera designs support the same interview workflow as standard
-instantaneous designs. Use the counter-mode design (which spans all
-eight interview dates) and attach the interview data with
-[`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md).
+## Catch Estimation
+
+Camera designs estimate **effort only**.
+[`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
+still works — a catch rate comes from the interviews and does not
+involve the camera at all:
 
 ``` r
 
-design_catch <- add_interviews(
+design_catch <- suppressMessages(add_interviews(
   design_counter,
   example_camera_interviews,
   catch       = walleye,
   effort      = hours_fished,
-  trip_status = trip_status
-)
-#> Warning: ! No `n_anglers` provided — assuming 1 angler per interview.
-#> ℹ Pass `n_anglers = <column>` to use actual party sizes for angler-hour
-#>   normalization.
-#> ℹ If the interviews really are one angler each, pass `n_anglers = 1` to state
-#>   that and silence this warning.
+  trip_status = trip_status,
+  n_anglers   = 1
+))
 #> Warning: 14 interviews have zero catch.
 #> ℹ Zero catch may be valid (skunked) or indicate missing data.
-#> ℹ Added 40 interviews: 40 complete (100%), 0 incomplete (0%)
-```
-
-### Catch Rate
-
-[`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
-computes the ratio-of-means CPUE (walleye per angler-hour) using only
-complete trips.
-
-``` r
-
 catch_rate <- suppressWarnings(estimate_catch_rate(design_catch))
 #> ℹ Using complete trips for CPUE estimation
 #>   (n=40, 100% of 40 interviews) [default]
@@ -343,7 +415,7 @@ print(catch_rate)
 #> Method: Ratio-of-Means CPUE
 #> Variance: Taylor linearization
 #> Confidence level: 95%
-#> Unit: fish/party-hour
+#> Unit: fish/angler-hour
 #> 
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
@@ -351,29 +423,42 @@ print(catch_rate)
 #> 1    0.453 0.0755    0.305    0.601    40
 ```
 
-### Total Catch
-
+A **total** catch is a different matter, and
 [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md)
-multiplies the CPUE estimate by the total effort estimate to produce a
-projected total walleye catch over the survey period.
+refuses a camera design:
 
 ``` r
 
-total_catch <- suppressWarnings(estimate_total_catch(design_catch))
-print(total_catch)
-#> 
-#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
-#> Method: Total Catch (Effort × CPUE)
-#> Variance: Taylor linearization
-#> Confidence level: 95%
-#> Effort target: sampled_days
-#> Unit: fish
-#> 
-#> # A tibble: 1 × 5
-#>   estimate    se ci_lower ci_upper     n
-#>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     283.  46.0     190.     376.    40
+estimate_total_catch(design_catch)
+#> Error in `estimate_total_catch()`:
+#> ! `estimate_total_catch()` does not estimate camera designs.
+#> ✖ A camera count is a daily ingress total -- a count of arrivals -- not an
+#>   instantaneous count of anglers present, so summing it over days gives
+#>   arrivals rather than effort.
+#> ℹ Camera designs estimate effort only. `est_effort_camera()` returns
+#>   angler-hours; there is no camera catch estimator to multiply them by.
+#> ℹ A total from this function would multiply a rate per angler-hour by a count
+#>   of arrivals and report the product as fish.
 ```
+
+A total is the product of a rate and an effort, and this function builds
+its own effort by the generic route — the one that sums arrivals. It
+would therefore multiply a rate per angler-hour by a count of arrivals
+and report the product as fish. The number looked entirely plausible,
+which is why this is refused rather than warned about.
+
+There is no camera catch estimator to reach for instead.
+[`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md)
+gives calibrated angler-hours, and multiplying those by the catch rate
+above is arithmetic a reader can do deliberately — but the package will
+not do it silently, because the standard error of that product needs the
+calibration variance and the rate variance combined, and nothing here
+does that yet.
+
+[`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md)
+and
+[`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
+refuse camera designs for the same reason.
 
 ## Summary
 
@@ -389,14 +474,17 @@ The table below contrasts the two camera sub-modes:
 
 Comparison of camera survey sub-modes in tidycreel {.table}
 
-Both sub-modes feed into the same
+Both sub-modes are estimated by the same function,
+[`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md),
+so no changes to downstream code are required when switching between
+them. Neither sub-mode goes through
 [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),
-[`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md),
-[`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md),
-and
-[`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md)
-pipeline — no changes to downstream code are required when switching
-modes.
+which refuses camera designs, nor through
+[`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md),
+[`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md)
+or
+[`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md),
+which refuse them for the same reason.
 
 ## References
 

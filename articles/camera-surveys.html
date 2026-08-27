@@ -283,26 +283,73 @@ means no data exist — the effort during that period is unknown.</p>
 <div class="section level3">
 <h3 id="effort-estimation">Effort Estimation<a class="anchor" aria-label="anchor" href="#effort-estimation"></a>
 </h3>
+<p>Camera effort is estimated by <code><a href="../reference/est_effort_camera.html">est_effort_camera()</a></code>, not
+by the generic <code><a href="../reference/estimate_effort.html">estimate_effort()</a></code>. The distinction matters
+and is not cosmetic: a camera count is a daily total of
+<strong>arrivals</strong>, not an instantaneous count of anglers
+present, so summing it over days gives arrivals rather than effort. The
+generic estimator refuses a camera design for that reason:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">design_counter</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design_counter</span>, <span class="va">counts_clean</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No</span></span>
 <span><span class="co">#&gt; weights or probabilities supplied, assuming equal probability</span></span>
-<span><span class="va">effort_counter</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design_counter</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design_counter</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00; font-weight: bold;">Error</span><span style="font-weight: bold;"> in `estimate_effort()`:</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> `estimate_effort()` does not estimate camera designs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BB0000;">✖</span> A camera count is a daily ingress total -- a count of arrivals -- not an</span></span>
+<span><span class="co">#&gt;   instantaneous count of anglers present, so summing it over days gives</span></span>
+<span><span class="co">#&gt;   arrivals rather than effort.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Use `est_effort_camera()`, which calibrates the counts against interview</span></span>
+<span><span class="co">#&gt;   effort and propagates the calibration's uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> To expand the raw counts uncalibrated, pass `calibration = "none"` and</span></span>
+<span><span class="co">#&gt;   `h_open` to that function. The reported standard error is `NA`, because the</span></span>
+<span><span class="co">#&gt;   assumption of one angler-hour per count per hour open is unmeasured.</span></span></code></pre></div>
+<p><code><a href="../reference/est_effort_camera.html">est_effort_camera()</a></code> converts counts to effort by
+calibrating them against interview data: for each stratum it estimates
+<code>rho</code>, the hours of effort per camera count, from the days
+that carry both a count and interviews, then applies it to that
+stratum’s total counts (Hartill et al. 2020).</p>
+<p><code>example_camera_interviews</code> records one row per angler, so
+<code>n_anglers = 1</code> states that <code>hours_fished</code> is
+already an individual angler’s hours. Supplying it is what earns the
+result its <code>angler-hours</code> label — without it the ratio
+inherits whatever unit the effort column holds, which the package cannot
+identify, and the unit is reported as unknown.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">effort_counter</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/est_effort_camera.html">est_effort_camera</a></span><span class="op">(</span></span>
+<span>  <span class="va">design_counter</span>,</span>
+<span>  interviews <span class="op">=</span> <span class="va">example_camera_interviews</span>,</span>
+<span>  n_anglers  <span class="op">=</span> <span class="fl">1</span></span>
+<span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">effort_counter</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
-<span><span class="co">#&gt; Method: Total</span></span>
+<span><span class="co">#&gt; Method: camera_ratio</span></span>
 <span><span class="co">#&gt; Variance: Taylor linearization</span></span>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
-<span><span class="co">#&gt; Effort target: sampled_days</span></span>
+<span><span class="co">#&gt; Unit: angler-hours</span></span>
+<span><span class="co">#&gt; Count-sampling SE: 4.277 (included in <span style="color: #00BB00;">se</span>)</span></span>
+<span><span class="co">#&gt; Calibration SE: 11.71 (included in <span style="color: #00BB00;">se</span>)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 7</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>      613  20.9       20.9         0     564.     662.     9</span></span></code></pre></div>
-<p>The <code>estimate</code> column is the Horvitz-Thompson estimate of
-total ingress angler visits across the full survey period, with a 95%
-confidence interval.</p>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     111.  12.5       12.5         0     81.4     140.     9</span></span></code></pre></div>
+<p>The <code>estimate</code> column is total angler-hours across the
+survey period. The standard error carries two named components, which
+<code>se_components</code> reports separately:</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">effort_counter</span><span class="op">$</span><span class="va">se_components</span></span>
+<span><span class="co">#&gt; $count_sampling</span></span>
+<span><span class="co">#&gt; [1] 4.277261</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $calibration</span></span>
+<span><span class="co">#&gt; [1] 11.70725</span></span></code></pre></div>
+<p><code>count_sampling</code> is the sampling variance of the camera
+counts themselves; <code>calibration</code> is the variance of the
+estimated <code>rho</code>. Splitting them shows which half of the
+uncertainty dominates — here the calibration ratio does, so more
+interview days would buy more precision than more camera days would.</p>
 </div>
 </div>
 <div class="section level2">
@@ -315,7 +362,7 @@ pairs into daily effort hours before calling
 <div class="section level3">
 <h3 id="preprocess-timestamps">Preprocess Timestamps<a class="anchor" aria-label="anchor" href="#preprocess-timestamps"></a>
 </h3>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">daily_effort</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/preprocess_camera_timestamps.html">preprocess_camera_timestamps</a></span><span class="op">(</span></span>
 <span>  <span class="va">example_camera_timestamps</span>,</span>
 <span>  date_col    <span class="op">=</span> <span class="va">date</span>,</span>
@@ -336,7 +383,7 @@ issued for any rows where <code>egress_time &lt; ingress_time</code>
 from the daily sum.</p>
 <p>Because <code><a href="../reference/add_counts.html">add_counts()</a></code> requires all design strata columns,
 merge the day type back in from the raw timestamps:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">day_type_key</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">example_camera_timestamps</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"date"</span>, <span class="st">"day_type"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="va">daily_effort</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/merge.html" class="external-link">merge</a></span><span class="op">(</span><span class="va">daily_effort</span>, <span class="va">day_type_key</span>, by <span class="op">=</span> <span class="st">"date"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">daily_effort</span><span class="op">)</span></span>
@@ -349,7 +396,7 @@ merge the day type back in from the raw timestamps:</p>
 <div class="section level3">
 <h3 id="build-the-design-and-estimate-effort">Build the Design and Estimate Effort<a class="anchor" aria-label="anchor" href="#build-the-design-and-estimate-effort"></a>
 </h3>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ie_calendar</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  date <span class="op">=</span> <span class="va">daily_effort</span><span class="op">$</span><span class="va">date</span>,</span>
 <span>  day_type <span class="op">=</span> <span class="va">daily_effort</span><span class="op">$</span><span class="va">day_type</span>,</span>
@@ -366,52 +413,64 @@ merge the day type back in from the raw timestamps:</p>
 <span></span>
 <span><span class="va">design_ie</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design_ie</span>, <span class="va">daily_effort</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No</span></span>
-<span><span class="co">#&gt; weights or probabilities supplied, assuming equal probability</span></span>
-<span><span class="va">effort_ie</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design_ie</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; weights or probabilities supplied, assuming equal probability</span></span></code></pre></div>
+<p>Ingress-egress counts are already in hours, so the calibration ratio
+here is close to dimensionless: it corrects camera-measured hours to
+interview-measured angler-hours rather than converting a count into a
+duration. The estimator is the same one.</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ie_interviews</span> <span class="op">&lt;-</span> <span class="va">example_camera_interviews</span><span class="op">[</span></span>
+<span>  <span class="va">example_camera_interviews</span><span class="op">$</span><span class="va">date</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">daily_effort</span><span class="op">$</span><span class="va">date</span>,</span>
+<span><span class="op">]</span></span>
+<span></span>
+<span><span class="va">effort_ie</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/est_effort_camera.html">est_effort_camera</a></span><span class="op">(</span></span>
+<span>  <span class="va">design_ie</span>,</span>
+<span>  interviews <span class="op">=</span> <span class="va">ie_interviews</span>,</span>
+<span>  n_anglers  <span class="op">=</span> <span class="fl">1</span></span>
+<span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">effort_ie</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
-<span><span class="co">#&gt; Method: Total</span></span>
+<span><span class="co">#&gt; Method: camera_ratio</span></span>
 <span><span class="co">#&gt; Variance: Taylor linearization</span></span>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
-<span><span class="co">#&gt; Effort target: sampled_days</span></span>
+<span><span class="co">#&gt; Unit: angler-hours</span></span>
+<span><span class="co">#&gt; Count-sampling SE: 5.41 (known, but <span style="color: #00BB00;">se</span> is `NA`)</span></span>
+<span><span class="co">#&gt; Calibration SE: NA (unknown, so <span style="color: #00BB00;">se</span> is `NA`)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 7</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>       58  7.72       7.72         0     24.8     91.2     4</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     43.6    <span style="color: #BB0000;">NA</span>         <span style="color: #BB0000;">NA</span>         0       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>     4</span></span></code></pre></div>
+<p>The standard error is <code>NA</code> here, and that is the estimator
+working rather than failing. These four sampling days give the
+<code>weekend</code> stratum only one day carrying both a count and
+interviews, and a single paired day gives the calibration ratio no
+measurable spread. Reporting <code>0</code> for that variance would
+present the most uncertain calibration as the most precise one, so the
+package carries it as <code>NA</code> and says which stratum is
+responsible. A second matched interview day in that stratum recovers a
+standard error.</p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="interview-based-catch-estimation">Interview-Based Catch Estimation<a class="anchor" aria-label="anchor" href="#interview-based-catch-estimation"></a>
+<h2 id="catch-estimation">Catch Estimation<a class="anchor" aria-label="anchor" href="#catch-estimation"></a>
 </h2>
-<p>Camera designs support the same interview workflow as standard
-instantaneous designs. Use the counter-mode design (which spans all
-eight interview dates) and attach the interview data with
-<code><a href="../reference/add_interviews.html">add_interviews()</a></code>.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">design_catch</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_interviews.html">add_interviews</a></span><span class="op">(</span></span>
+<p>Camera designs estimate <strong>effort only</strong>.
+<code><a href="../reference/estimate_catch_rate.html">estimate_catch_rate()</a></code> still works — a catch rate comes from
+the interviews and does not involve the camera at all:</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">design_catch</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">suppressMessages</a></span><span class="op">(</span><span class="fu"><a href="../reference/add_interviews.html">add_interviews</a></span><span class="op">(</span></span>
 <span>  <span class="va">design_counter</span>,</span>
 <span>  <span class="va">example_camera_interviews</span>,</span>
 <span>  catch       <span class="op">=</span> <span class="va">walleye</span>,</span>
 <span>  effort      <span class="op">=</span> <span class="va">hours_fished</span>,</span>
-<span>  trip_status <span class="op">=</span> <span class="va">trip_status</span></span>
-<span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> No `n_anglers` provided — assuming 1 angler per interview.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Pass `n_anglers = &lt;column&gt;` to use actual party sizes for angler-hour</span></span>
-<span><span class="co">#&gt;   normalization.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> If the interviews really are one angler each, pass `n_anglers = 1` to state</span></span>
-<span><span class="co">#&gt;   that and silence this warning.</span></span>
+<span>  trip_status <span class="op">=</span> <span class="va">trip_status</span>,</span>
+<span>  n_anglers   <span class="op">=</span> <span class="fl">1</span></span>
+<span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning: 14 interviews have zero catch.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Zero catch may be valid (skunked) or indicate missing data.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Added 40 interviews: 40 complete (100%), 0 incomplete (0%)</span></span></code></pre></div>
-<div class="section level3">
-<h3 id="catch-rate">Catch Rate<a class="anchor" aria-label="anchor" href="#catch-rate"></a>
-</h3>
-<p><code><a href="../reference/estimate_catch_rate.html">estimate_catch_rate()</a></code> computes the ratio-of-means CPUE
-(walleye per angler-hour) using only complete trips.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">catch_rate</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">design_catch</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">catch_rate</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">design_catch</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Using complete trips for CPUE estimation</span></span>
 <span><span class="co">#&gt;   (n=40, 100% of 40 interviews) [default]</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">catch_rate</span><span class="op">)</span></span>
@@ -420,35 +479,39 @@ eight interview dates) and attach the interview data with
 <span><span class="co">#&gt; Method: Ratio-of-Means CPUE</span></span>
 <span><span class="co">#&gt; Variance: Taylor linearization</span></span>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
-<span><span class="co">#&gt; Unit: fish/party-hour</span></span>
+<span><span class="co">#&gt; Unit: fish/angler-hour</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate     se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.453 0.075<span style="text-decoration: underline;">5</span>    0.305    0.601    40</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="total-catch">Total Catch<a class="anchor" aria-label="anchor" href="#total-catch"></a>
-</h3>
-<p><code><a href="../reference/estimate_total_catch.html">estimate_total_catch()</a></code> multiplies the CPUE estimate by
-the total effort estimate to produce a projected total walleye catch
-over the survey period.</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">total_catch</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">design_catch</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">total_catch</span><span class="op">)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
-<span><span class="co">#&gt; Method: Total Catch (Effort × CPUE)</span></span>
-<span><span class="co">#&gt; Variance: Taylor linearization</span></span>
-<span><span class="co">#&gt; Confidence level: 95%</span></span>
-<span><span class="co">#&gt; Effort target: sampled_days</span></span>
-<span><span class="co">#&gt; Unit: fish</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
-<span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
-<span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     283.  46.0     190.     376.    40</span></span></code></pre></div>
-</div>
+<p>A <strong>total</strong> catch is a different matter, and
+<code><a href="../reference/estimate_total_catch.html">estimate_total_catch()</a></code> refuses a camera design:</p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">design_catch</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00; font-weight: bold;">Error</span><span style="font-weight: bold;"> in `estimate_total_catch()`:</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> `estimate_total_catch()` does not estimate camera designs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BB0000;">✖</span> A camera count is a daily ingress total -- a count of arrivals -- not an</span></span>
+<span><span class="co">#&gt;   instantaneous count of anglers present, so summing it over days gives</span></span>
+<span><span class="co">#&gt;   arrivals rather than effort.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Camera designs estimate effort only. `est_effort_camera()` returns</span></span>
+<span><span class="co">#&gt;   angler-hours; there is no camera catch estimator to multiply them by.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> A total from this function would multiply a rate per angler-hour by a count</span></span>
+<span><span class="co">#&gt;   of arrivals and report the product as fish.</span></span></code></pre></div>
+<p>A total is the product of a rate and an effort, and this function
+builds its own effort by the generic route — the one that sums arrivals.
+It would therefore multiply a rate per angler-hour by a count of
+arrivals and report the product as fish. The number looked entirely
+plausible, which is why this is refused rather than warned about.</p>
+<p>There is no camera catch estimator to reach for instead.
+<code><a href="../reference/est_effort_camera.html">est_effort_camera()</a></code> gives calibrated angler-hours, and
+multiplying those by the catch rate above is arithmetic a reader can do
+deliberately — but the package will not do it silently, because the
+standard error of that product needs the calibration variance and the
+rate variance combined, and nothing here does that yet.</p>
+<p><code><a href="../reference/estimate_total_harvest.html">estimate_total_harvest()</a></code> and
+<code><a href="../reference/estimate_total_release.html">estimate_total_release()</a></code> refuse camera designs for the same
+reason.</p>
 </div>
 <div class="section level2">
 <h2 id="summary">Summary<a class="anchor" aria-label="anchor" href="#summary"></a>
@@ -494,10 +557,14 @@ over the survey period.</p>
 </tr>
 </tbody>
 </table>
-<p>Both sub-modes feed into the same <code><a href="../reference/estimate_effort.html">estimate_effort()</a></code>,
-<code><a href="../reference/add_interviews.html">add_interviews()</a></code>, <code><a href="../reference/estimate_catch_rate.html">estimate_catch_rate()</a></code>, and
-<code><a href="../reference/estimate_total_catch.html">estimate_total_catch()</a></code> pipeline — no changes to downstream
-code are required when switching modes.</p>
+<p>Both sub-modes are estimated by the same function,
+<code><a href="../reference/est_effort_camera.html">est_effort_camera()</a></code>, so no changes to downstream code are
+required when switching between them. Neither sub-mode goes through
+<code><a href="../reference/estimate_effort.html">estimate_effort()</a></code>, which refuses camera designs, nor
+through <code><a href="../reference/estimate_total_catch.html">estimate_total_catch()</a></code>,
+<code><a href="../reference/estimate_total_harvest.html">estimate_total_harvest()</a></code> or
+<code><a href="../reference/estimate_total_release.html">estimate_total_release()</a></code>, which refuse them for the same
+reason.</p>
 </div>
 <div class="section level2">
 <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
