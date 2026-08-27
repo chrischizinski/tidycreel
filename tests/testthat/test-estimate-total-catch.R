@@ -1614,27 +1614,39 @@ make_camera_total_catch_design <- function() {
   ))
 }
 
-test_that("CAM-04: estimate_total_catch() on camera design returns valid creel_estimates", {
+# Rewritten for GH #214. These asserted that a camera design returns a finite,
+# positive total with an `estimate` and an `se`, and that it takes the standard
+# product path. Every one of those was true of a number built by multiplying a
+# rate per angler-hour by a count of arrivals -- the standard path is exactly the
+# wrong path for a camera design, and "finite and positive" cannot detect that.
+
+test_that("CAM-04: estimate_total_catch() refuses a camera design (GH #214)", {
   design <- make_camera_total_catch_design() # nolint: object_usage_linter
-  result <- suppressWarnings(estimate_total_catch(design)) # nolint: object_usage_linter
-  expect_s3_class(result, "creel_estimates")
-  expect_true("estimate" %in% names(result$estimates))
-  expect_true("se" %in% names(result$estimates))
+  expect_error(
+    suppressWarnings(estimate_total_catch(design)), # nolint: object_usage_linter
+    class = "creel_error_camera_generic_estimator"
+  )
 })
 
-test_that("CAM-04: estimate_total_catch() on camera design returns finite positive estimate", {
+test_that("CAM-04: the camera refusal reaches the totals, which bypass estimate_effort()", {
+  # estimate_total_catch() calls estimate_effort_total() directly, so a guard
+  # placed only in estimate_effort() would never fire here. This test is what
+  # pins the refusal to all four entry points rather than one.
   design <- make_camera_total_catch_design() # nolint: object_usage_linter
-  result <- suppressWarnings(estimate_total_catch(design)) # nolint: object_usage_linter
-  expect_true(is.numeric(result$estimates$estimate))
-  expect_true(is.finite(result$estimates$estimate))
-  expect_true(result$estimates$estimate > 0)
+  expect_error(
+    suppressWarnings(estimate_total_catch(design)), # nolint: object_usage_linter
+    regexp = "estimate_total_catch\\(\\)"
+  )
 })
 
-test_that("CAM-04: estimate_total_catch() on camera routes through standard (non-bus_route, non-ice) path", {
+test_that("CAM-04: a catch rate is still estimable on a camera design", {
+  # The refusal is scoped to the product, not to the interviews. A rate comes
+  # from the interview data and never touches the camera counts, so refusing it
+  # would remove something correct.
   design <- make_camera_total_catch_design() # nolint: object_usage_linter
-  result <- suppressWarnings(estimate_total_catch(design)) # nolint: object_usage_linter
-  # Standard path produces method = "product-total-catch" (not bus-route or HT path)
-  expect_equal(result$method, "product-total-catch")
+  rate <- suppressWarnings(estimate_catch_rate(design)) # nolint: object_usage_linter
+  expect_s3_class(rate, "creel_estimates")
+  expect_true(is.finite(rate$estimates$estimate))
 })
 
 # Phase 47: Aerial interview pipeline (AIR-05) — estimate_total_catch() ----

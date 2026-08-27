@@ -1791,13 +1791,38 @@ make_cam_design_counter <- function() {
 
 # CAM-01: counter mode effort estimate ----
 
-test_that("CAM-01: counter-mode camera + add_counts() + estimate_effort() returns valid estimate", {
+# Rewritten for GH #214. These tests asserted that a camera design "flows
+# through" estimate_effort() and returns a numeric, non-NA estimate -- all true,
+# and all true of the wrong number. A camera count is a daily total of arrivals,
+# so summing it over days gives arrivals, not effort; class and finiteness checks
+# cannot tell the two apart. They now assert the refusal and that the estimator
+# which does handle camera designs produces the estimate.
+
+test_that("CAM-01: counter-mode camera design builds and attaches counts", {
   design <- make_cam_design_counter()
   d <- add_counts(design, make_cam_counts()) # nolint: object_usage_linter
-  result <- suppressWarnings(estimate_effort(d))
+  expect_s3_class(d, "creel_design")
+  expect_identical(nrow(d$counts), 6L)
+})
+
+test_that("CAM-01: estimate_effort() refuses the counter-mode camera design (GH #214)", {
+  design <- make_cam_design_counter()
+  d <- add_counts(design, make_cam_counts()) # nolint: object_usage_linter
+  expect_error(
+    suppressWarnings(estimate_effort(d)),
+    class = "creel_error_camera_generic_estimator"
+  )
+})
+
+test_that("CAM-01: est_effort_camera() estimates the design estimate_effort() refused", {
+  design <- make_cam_design_counter()
+  d <- add_counts(design, make_cam_counts()) # nolint: object_usage_linter
+  result <- suppressWarnings(est_effort_camera(d, calibration = "none", h_open = 12))
   expect_s3_class(result, "creel_estimates")
-  expect_true(is.numeric(result$estimates$estimate))
-  expect_false(any(is.na(result$estimates$estimate)))
+  expect_true(is.finite(result$estimates$estimate))
+  # The raw path multiplies the summed counts by h_open, so it is a different
+  # quantity from the bare sum the generic estimator used to return.
+  expect_equal(result$estimates$estimate, sum(make_cam_counts()$angler_count) * 12)
 })
 
 # CAM-02: ingress-egress mode effort estimate ----
@@ -1818,7 +1843,11 @@ make_cam_daily_effort <- function() {
   )
 }
 
-test_that("CAM-02: ingress-egress camera with preprocessed daily_effort_hours flows through estimate_effort()", {
+test_that("CAM-02: estimate_effort() refuses an ingress-egress camera design too (GH #214)", {
+  # The refusal keys on design_type, not on what the count column happens to
+  # hold. An ingress-egress count column is already in hours, which makes the
+  # generic estimator's output look even more like effort -- and it is still the
+  # uncalibrated sum.
   design <- creel_design(
     make_cam_effort_cal(), # nolint: object_usage_linter
     date = date,
@@ -1828,9 +1857,10 @@ test_that("CAM-02: ingress-egress camera with preprocessed daily_effort_hours fl
   )
   daily_effort <- make_cam_daily_effort()
   d <- add_counts(design, daily_effort) # nolint: object_usage_linter
-  result <- suppressWarnings(estimate_effort(d))
-  expect_s3_class(result, "creel_estimates")
-  expect_true(is.numeric(result$estimates$estimate))
+  expect_error(
+    suppressWarnings(estimate_effort(d)),
+    class = "creel_error_camera_generic_estimator"
+  )
 })
 
 # CAM-03: camera_status gap handling ----
@@ -1859,14 +1889,22 @@ make_cam_counts_with_gap <- function() {
   )
 }
 
-test_that("CAM-03: filtering camera_status == 'operational' before add_counts() gives valid estimate", {
+test_that("CAM-03: filtering camera_status == 'operational' still yields an attachable table", {
+  # What this test was really protecting is that the gap-filtering workflow
+  # produces counts add_counts() accepts. That is unchanged; only the estimator
+  # it then feeds has moved (GH #214).
   design <- make_cam_design_counter()
   counts_gap <- make_cam_counts_with_gap()
   operational <- counts_gap[counts_gap$camera_status == "operational", ]
   d <- add_counts(design, operational) # nolint: object_usage_linter
-  result <- suppressWarnings(estimate_effort(d))
-  expect_s3_class(result, "creel_estimates")
-  expect_true(is.numeric(result$estimates$estimate))
+  expect_identical(nrow(d$counts), 5L)
+  expect_false(anyNA(d$counts$angler_count))
+  expect_error(
+    suppressWarnings(estimate_effort(d)),
+    class = "creel_error_camera_generic_estimator"
+  )
+  result <- suppressWarnings(est_effort_camera(d, calibration = "none", h_open = 12))
+  expect_true(is.finite(result$estimates$estimate))
 })
 
 # Phase 47: Aerial effort estimation ----

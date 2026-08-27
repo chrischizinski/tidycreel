@@ -113,6 +113,27 @@ selection based on design). Alternative resampling method, deterministic
 unlike bootstrap.
 }
 }
+\section{Camera designs are refused}{
+
+
+This function estimates instantaneous, bus-route, ice, aerial and sectioned
+designs. It refuses a camera design, with condition class
+\code{creel_error_camera_generic_estimator}.
+
+A camera count is a daily total of arrivals, not an instantaneous count of
+anglers present, so summing it over days gives arrivals rather than effort.
+Because camera had no branch in the dispatch below, such a design used to fall
+through to the instantaneous path and return that sum -- a plausible number
+with a plausible standard error, and no indication that it was not effort.
+
+Use \code{\link{est_effort_camera}}, which calibrates the counts against
+interview effort and propagates the calibration's uncertainty, or
+\code{\link{est_effort_camera_mi}} to pool over multiply imputed counts. The
+same refusal is raised by \code{\link{estimate_total_catch}},
+\code{\link{estimate_total_harvest}} and \code{\link{estimate_total_release}},
+which build their own effort by this route.
+}
+
 \examples{
 # Basic ungrouped usage
 calendar <- data.frame(
