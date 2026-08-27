@@ -202,6 +202,31 @@
   This follows the rule `estimate_effort_per_acre()` already used -- compose
   the unit from its inputs, and an unknown input yields an unknown result.
 
+* `est_effort_camera()` now reports the within-day variance component instead
+  of a literal `0` (#217). `add_counts(count_time_col = )` averages several
+  counts on one day into a daily mean and stores the within-day components
+  (`ss_d`, `k_d`) on the design; the camera estimators never read them. The
+  standard and aerial estimators have always called
+  `compute_within_day_var_contribution()` for exactly this, so the machinery
+  existed and only the call was missing.
+
+  On a five-day fixture with two counts per day, widening the within-day spread
+  from zero to +/-30 counts -- holding every daily mean, and therefore the
+  point estimate, fixed -- moved `design$within_day_var$ss_d` from `0` to
+  `1800` per day and left the reported SE bit-identical at `3.266133`. It is
+  now `5.991888`, with `se_within` of `5.023454` where it was `0`.
+
+  The component is scaled by the stratum's calibration ratio on the ratio path
+  and by `h_open` on the raw path, because the stored quantity is a variance of
+  the stratum count total and each path multiplies that total by a different
+  factor. It is combined with the between-day component at the variance level
+  rather than by adding two standard errors in quadrature, so a within-day
+  variance of exactly zero leaves existing estimates bit-identical.
+
+  `se_within` remains `0` for a design with one count per day. That is the one
+  case where a zero is right: there is no within-day variation to measure, so
+  the component is nil by construction rather than unknown. Designs built
+  without `count_time_col` are therefore unaffected.
 
 ## Bug fixes
 

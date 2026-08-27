@@ -156,6 +156,12 @@ estimate_effort_camera <- function(
     )
   }
 
+  # Defined before the branch split because both paths combine variances with
+  # it. See the `NaN` note at the calibration component below (#215).
+  na_if_nan <- function(x) {
+    if (length(x) == 1L && is.nan(x)) NA_real_ else x
+  }
+
   # ---- Ratio calibration path -----------------------------------------------
   if (!is.null(interviews)) {
     if (!effort_col %in% names(interviews)) {
@@ -428,14 +434,38 @@ estimate_effort_camera <- function(
     # uses `NA` for the same condition (#136), and one function must not report
     # one unknown two ways. Normalised to `NA_real_`; `NaN` is never a
     # meaningful SE here, so nothing measurable is lost.
-    na_if_nan <- function(x) {
-      if (length(x) == 1L && is.nan(x)) NA_real_ else x
-    }
-    se_between <- na_if_nan(sqrt(var_count_sampling + var_calibration))
+    var_between <- var_count_sampling + var_calibration
+    se_between <- na_if_nan(sqrt(var_between))
     se_components <- list(
       count_sampling = na_if_nan(sqrt(var_count_sampling)),
       calibration = na_if_nan(sqrt(var_calibration))
     )
+
+    # Within-day component (Rasmussen 1998). `add_counts(count_time_col = )`
+    # measures it and stores ss_d/k_d on the design; this function used to
+    # report a literal 0 for it while it sat there unread, so a 60-unit change
+    # in within-day spread produced a bit-identical SE (#217).
+    #
+    # Scaled by rho_h^2 per stratum: the stored component is a variance of the
+    # stratum COUNT total, and the estimate multiplies that total by the
+    # stratum's hours-per-count ratio. Same shape as the count-sampling term
+    # above, and the same device the aerial estimator uses with h_over_v^2.
+    #
+    # `target = "sampled_days"` because a camera design carries unit weights --
+    # the svyby above is a plain sum over sampled days, not a population
+    # expansion -- so the within-day term must be on that same scale. The
+    # helper returns a bare 0 rather than a keyed vector when the design has no
+    # within-day data, which is why that case is taken first.
+    var_within <- if (is.null(design$within_day_var)) {
+      0
+    } else {
+      wd_by_stratum <- compute_within_day_var_contribution( # nolint: object_usage_linter
+        design,
+        by_vars = strata_cols,
+        target = "sampled_days"
+      )
+      sum(rho_matched^2 * as.numeric(wd_by_stratum[strata_order]))
+    }
     method_label <- "camera_ratio"
     # effort_unit_label was set above, where the party-size decision was made.
     # design$angler_effort_col is deliberately not consulted: `interviews` is an
@@ -524,6 +554,15 @@ estimate_effort_camera <- function(
     )
     # No na.rm: a sum missing an unknown term is a lower bound, not an SE.
     se_between <- NA_real_
+    var_between <- NA_real_
+    # The point estimate is the count total times h_open, so the within-day
+    # variance of that total scales by h_open^2 (#217).
+    var_within <- compute_within_day_var_contribution( # nolint: object_usage_linter
+      design,
+      by_vars = NULL,
+      target = "sampled_days"
+    ) *
+      h_open^2
     method_label <- "camera_raw"
     # Raw count x h_open hours. The guard above establishes that no T_d has
     # already been applied, so h_open is the sole period source and this is
@@ -531,8 +570,13 @@ estimate_effort_camera <- function(
     effort_unit_label <- "angler-hours"
   }
 
-  # Combined SE (no within-day component for camera designs)
-  se <- se_between
+  # Combined at the variance level, not by adding two SEs in quadrature:
+  # sqrt(sqrt(a)^2 + sqrt(b)^2) is not the same floating-point number as
+  # sqrt(a + b). Adding a within-day variance of exactly 0 -- a design with one
+  # count per day, where the component is nil by construction rather than
+  # unknown -- is exact, so no existing camera SE moves.
+  se_within <- sqrt(var_within)
+  se <- na_if_nan(sqrt(var_between + var_within))
 
   # Degrees of freedom and CI
   df <- as.numeric(survey::degf(svy_design))
@@ -547,7 +591,7 @@ estimate_effort_camera <- function(
     estimate = estimate,
     se = se,
     se_between = se_between,
-    se_within = 0,
+    se_within = se_within,
     ci_lower = ci_lower,
     ci_upper = ci_upper,
     n = n

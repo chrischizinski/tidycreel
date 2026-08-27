@@ -109,6 +109,23 @@ days were imputed; the standard error is a lower bound.
 }
 }
 
+\section{Within-day variance}{
+
+
+When counts arrive through \code{add_counts(count_time_col = )}, several counts
+on one day are averaged into a daily mean and the within-day components
+(\code{ss_d}, \code{k_d}) are stored on the design. Both paths of this function read
+them and report the Rasmussen (1998) within-day term as \code{se_within},
+scaling it by the stratum's calibration ratio on the ratio path and by
+\code{h_open} on the raw path.
+
+\code{se_within} is \code{0} only when there is genuinely nothing to measure -- one
+count per day, where the component is nil by construction rather than
+unknown. It was previously reported as a literal \code{0} in every case, while
+the measured components sat unread on the design, so a design with real
+within-day spread received the same standard error as one with none.
+}
+
 \section{One count row per day on the calibration path}{
 
 
