@@ -415,6 +415,25 @@ print.creel_estimates <- function(x, ...) {
 #' (ungrouped) or survey::svyby() (grouped) with Tier 2 validation and
 #' domain-specific output formatting.
 #'
+#' @section Camera designs are refused:
+#'
+#' This function estimates instantaneous, bus-route, ice, aerial and sectioned
+#' designs. It refuses a camera design, with condition class
+#' \code{creel_error_camera_generic_estimator}.
+#'
+#' A camera count is a daily total of arrivals, not an instantaneous count of
+#' anglers present, so summing it over days gives arrivals rather than effort.
+#' Because camera had no branch in the dispatch below, such a design used to fall
+#' through to the instantaneous path and return that sum -- a plausible number
+#' with a plausible standard error, and no indication that it was not effort.
+#'
+#' Use \code{\link{est_effort_camera}}, which calibrates the counts against
+#' interview effort and propagates the calibration's uncertainty, or
+#' \code{\link{est_effort_camera_mi}} to pool over multiply imputed counts. The
+#' same refusal is raised by \code{\link{estimate_total_catch}},
+#' \code{\link{estimate_total_harvest}} and \code{\link{estimate_total_release}},
+#' which build their own effort by this route.
+#'
 #' @param design A creel_design object with counts attached via
 #'   \code{\link{add_counts}}. The design must have a survey object constructed.
 #' @param by Optional tidy selector for grouping variables. Accepts bare column
@@ -572,6 +591,12 @@ estimate_effort <- function(
       "i" = "Create a design with {.fn creel_design}."
     ))
   }
+
+  # Camera designs have no branch in the dispatch chain below and would fall
+  # through to the instantaneous path, which sums the count column (GH #214).
+  # Refused before the survey check so a camera design is told which function it
+  # wants, rather than being told to call add_counts() first.
+  refuse_camera_design(design, "estimate_effort") # nolint: object_usage_linter
 
   # Validate design$survey exists (skip for bus-route, ice, and aerial: custom dispatch below)
   if (!design$design_type %in% c("bus_route", "ice", "aerial") && is.null(design$survey)) {

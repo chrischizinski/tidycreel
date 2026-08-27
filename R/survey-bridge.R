@@ -2290,3 +2290,83 @@ warn_low_complete_pct <- function(n_complete, n_total, threshold = NULL) {
 
   invisible(NULL)
 }
+
+#' Refuse a camera design at an estimator that cannot handle one
+#'
+#' `estimate_effort()` and the three total estimators dispatch on
+#' `design$design_type` for `bus_route`, `ice` and `aerial`, and every remaining
+#' design falls through to the instantaneous path, which sums the count column.
+#' A camera design has no branch of its own, so it fell through too — and a
+#' camera count is a daily ingress total, a count of arrivals, not an
+#' instantaneous count of anglers present. Summing arrivals over days gives
+#' arrivals, which is not effort, and nothing said so (GH #214).
+#'
+#' Refusing rather than dispatching is deliberate. `est_effort_camera()` already
+#' implements the calibrated estimator and carries the guards added by #136,
+#' #137, #142 and #158; routing to it silently from a second entry point would
+#' give those guards two callers to be right about. The camera estimator also
+#' takes arguments the generic signature has nowhere to put — `interviews`,
+#' `n_anglers`, `h_open`, `calibration` — so a dispatch would have to guess
+#' them.
+#'
+#' Raised at all four entry points because the three totals call
+#' `estimate_effort_total()` directly rather than going through
+#' `estimate_effort()`, exactly as [warn_missing_period_length()] has to be.
+#' Guarding only `estimate_effort()` would leave `estimate_total_catch()` still
+#' building a total from the arrival count it refuses.
+#'
+#' @param design A creel_design object.
+#' @param fn Name of the estimator the caller reached, as a string. Chooses the
+#'   remedy: the effort entry point has one, the totals do not.
+#' @param call Environment for the error's call, so the abort points at the
+#'   user's call rather than at this helper.
+#'
+#' @return NULL (invisible) for every non-camera design. Aborts otherwise.
+#'
+#' @keywords internal
+#' @noRd
+refuse_camera_design <- function(design, fn, call = rlang::caller_env()) {
+  if (!identical(design$design_type, "camera")) {
+    return(invisible(NULL))
+  }
+
+  remedy <- if (identical(fn, "estimate_effort")) {
+    c(
+      "i" = paste(
+        "Use {.fn est_effort_camera}, which calibrates the counts against",
+        "interview effort and propagates the calibration's uncertainty."
+      ),
+      "i" = paste(
+        "To expand the raw counts uncalibrated, pass",
+        "{.code calibration = \"none\"} and {.arg h_open} to that function. The",
+        "reported standard error is {.code NA}, because the assumption of one",
+        "angler-hour per count per hour open is unmeasured."
+      )
+    )
+  } else {
+    c(
+      "i" = paste(
+        "Camera designs estimate effort only. {.fn est_effort_camera} returns",
+        "angler-hours; there is no camera catch estimator to multiply them by."
+      ),
+      "i" = paste(
+        "A total from this function would multiply a rate per angler-hour by a",
+        "count of arrivals and report the product as fish."
+      )
+    )
+  }
+
+  cli::cli_abort(
+    c(
+      "{.fn {fn}} does not estimate camera designs.",
+      "x" = paste(
+        "A camera count is a daily ingress total -- a count of arrivals -- not",
+        "an instantaneous count of anglers present, so summing it over days",
+        "gives arrivals rather than effort."
+      ),
+      remedy
+    ),
+    class = "creel_error_camera_generic_estimator",
+    call = call
+  )
+}

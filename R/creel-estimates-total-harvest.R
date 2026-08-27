@@ -188,6 +188,13 @@ estimate_total_harvest <- function(
     ))
   }
 
+  # Camera designs reach here with a count of arrivals where effort belongs, and
+  # this function multiplies it by a rate per angler-hour (GH #214). Raised here
+  # as well as in estimate_effort() because the totals call
+  # estimate_effort_total() directly and never hear that refusal. First in the
+  # block, so the camera case aborts instead of warning on its way out.
+  refuse_camera_design(design, "estimate_total_harvest") # nolint: object_usage_linter
+
   # Effort x rate from here on: flag a party-hour rate meeting angler-hour effort
   warn_party_hours_product(design) # nolint: object_usage_linter
   check_product_units(design) # nolint: object_usage_linter

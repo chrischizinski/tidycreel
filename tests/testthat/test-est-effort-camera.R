@@ -653,3 +653,151 @@ test_that("CEST-24: a day with no imputed sub-count stays unflagged through aggr
   ))
   expect_identical(d$counts$.imputed, c(TRUE, FALSE, FALSE, FALSE, FALSE))
 })
+
+# CEST-27: the generic estimators refuse a camera design (GH #214) -------------
+#
+# A camera design has no branch in estimate_effort()'s dispatch chain, so before
+# this guard it fell through to the instantaneous path and its daily ingress
+# counts -- a count of arrivals -- were summed as though they were instantaneous
+# counts of anglers present. The result was a plausible number with a plausible
+# SE, and nothing said it was not effort.
+#
+# The refusal is raised at all four entry points because the three totals call
+# estimate_effort_total() directly and never pass through estimate_effort().
+
+make_camera_design_with_interviews <- function() {
+  d <- make_design_with_counts()
+  ints <- make_interviews()
+  ints$walleye <- c(1L, 0L, 2L, 1L, 3L)
+  ints$trip_status <- "complete"
+  suppressMessages(suppressWarnings(add_interviews(
+    d,
+    ints,
+    catch = walleye,
+    effort = hours_fished,
+    trip_status = trip_status
+  )))
+}
+
+test_that("CEST-27: estimate_effort() refuses a camera design (GH #214)", {
+  expect_error(
+    suppressWarnings(estimate_effort(make_design_with_counts())),
+    class = "creel_error_camera_generic_estimator"
+  )
+})
+
+test_that("CEST-27: the refusal names the estimator the caller actually reached", {
+  # A generic "unsupported design" message would leave the caller guessing which
+  # of the four entry points objected. Each names itself.
+  expect_error(
+    suppressWarnings(estimate_effort(make_design_with_counts())),
+    regexp = "estimate_effort\\(\\)"
+  )
+  expect_error(
+    suppressWarnings(estimate_total_catch(make_camera_design_with_interviews())),
+    regexp = "estimate_total_catch\\(\\)"
+  )
+})
+
+test_that("CEST-27: the effort refusal states why an ingress count is not effort", {
+  # The reason is the whole point of the guard: the caller has a number, it looks
+  # like effort, and only the estimand distinguishes it. Saying "unsupported"
+  # would not tell them their data are fine and their function is wrong.
+  expect_error(
+    suppressWarnings(estimate_effort(make_design_with_counts())),
+    regexp = "arrivals"
+  )
+})
+
+test_that("CEST-27: the effort refusal points at the estimator that does handle camera", {
+  expect_error(
+    suppressWarnings(estimate_effort(make_design_with_counts())),
+    regexp = "est_effort_camera"
+  )
+})
+
+test_that("CEST-27: the remedy the effort refusal recommends actually works", {
+  # Same pattern as CEST-26: an error that recommends a fix is only correct if
+  # the fix runs on the very design that was refused.
+  d <- make_design_with_counts()
+  expect_error(
+    suppressWarnings(estimate_effort(d)),
+    class = "creel_error_camera_generic_estimator"
+  )
+  est <- suppressWarnings(est_effort_camera(d, interviews = make_interviews()))
+  expect_s3_class(est, "creel_estimates")
+  expect_true(is.finite(est$estimates$estimate))
+})
+
+test_that("CEST-27: estimate_total_catch() refuses a camera design (GH #214)", {
+  # This is the path that produced the audit's headline number: a rate per
+  # party-hour multiplied by a count of arrivals, reported as fish.
+  expect_error(
+    suppressWarnings(estimate_total_catch(make_camera_design_with_interviews())),
+    class = "creel_error_camera_generic_estimator"
+  )
+})
+
+test_that("CEST-27: estimate_total_harvest() refuses a camera design (GH #214)", {
+  expect_error(
+    suppressWarnings(estimate_total_harvest(make_camera_design_with_interviews())),
+    class = "creel_error_camera_generic_estimator"
+  )
+})
+
+test_that("CEST-27: the totals say there is no camera catch estimator to reach for", {
+  # The effort refusal has a remedy; the totals do not, and must not imply one.
+  expect_error(
+    suppressWarnings(estimate_total_catch(make_camera_design_with_interviews())),
+    regexp = "effort only"
+  )
+})
+
+test_that("CEST-27: the refusal precedes the missing-counts error", {
+  # Placement, not decoration. A camera design with no counts attached should be
+  # told which function it wants, not told to call add_counts() and come back to
+  # the same wrong function.
+  expect_error(
+    suppressWarnings(estimate_effort(make_camera_design())),
+    class = "creel_error_camera_generic_estimator"
+  )
+})
+
+test_that("CEST-27: the guard keys on design_type, not on the count column's name", {
+  # A camera design whose count column is named like an instantaneous one is
+  # still a camera design. Keying on the data would let a rename slip past.
+  d <- make_camera_design()
+  counts <- make_camera_counts()
+  names(counts)[names(counts) == "ingress_count"] <- "angler_count"
+  d <- suppressWarnings(add_counts(d, counts))
+  expect_error(
+    suppressWarnings(estimate_effort(d)),
+    class = "creel_error_camera_generic_estimator"
+  )
+})
+
+test_that("CEST-27: non-camera designs still estimate effort", {
+  # The guard must be inert everywhere else. Without this, a refusal that fired
+  # on every design would pass every test above.
+  cal <- data.frame(
+    date = as.Date("2024-06-01") + 0:5,
+    day_type = rep(c("weekday", "weekend"), 3L),
+    stringsAsFactors = FALSE
+  )
+  d <- suppressWarnings(creel_design(
+    cal,
+    date = date,
+    strata = day_type, # nolint
+    survey_type = "instantaneous"
+  ))
+  counts <- data.frame(
+    date = cal$date,
+    day_type = cal$day_type,
+    angler_count = c(10L, 20L, 12L, 22L, 11L, 21L),
+    stringsAsFactors = FALSE
+  )
+  d <- suppressWarnings(add_counts(d, counts))
+  est <- suppressWarnings(estimate_effort(d))
+  expect_s3_class(est, "creel_estimates")
+  expect_equal(est$estimates$estimate, 96)
+})

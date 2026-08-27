@@ -2,6 +2,48 @@
 
 ## Breaking changes
 
+* `estimate_effort()` and the three total estimators now refuse camera designs
+  (#214). A camera count is a daily ingress total -- a count of arrivals -- not
+  an instantaneous count of anglers present. The dispatch chain in
+  `estimate_effort()` branches on `bus_route`, `ice` and `aerial`, and camera had
+  no branch, so it fell through to the instantaneous path and its counts were
+  summed as though they were snapshots of how many anglers were present. The
+  result was a plausible number with a plausible standard error: on the package's
+  own example data, 613 "angler visits" where the calibrated estimator returns
+  111 angler-hours.
+
+  The camera vignette documented that route. It called `estimate_effort()` for
+  both sub-modes, stated that camera designs "feed into the same
+  `estimate_effort()` ... pipeline -- no changes", never mentioned
+  `est_effort_camera()`, and wrapped every call in `suppressWarnings()`. So the
+  guards added by #136, #137, #142 and #158 all sit in a function the
+  documentation never reached: a design carrying imputed counts, a stratum with
+  one paired interview day, a repeated count date, and an uncalibrated raw
+  expansion each went unreported on the documented path.
+
+  The refusal is raised at all four entry points, not only in
+  `estimate_effort()`, because `estimate_total_catch()`,
+  `estimate_total_harvest()` and `estimate_total_release()` call
+  `estimate_effort_total()` directly and never pass through it. Guarding only
+  `estimate_effort()` would have left the totals building a product from the same
+  arrival count -- multiplying a rate per angler-hour by a count of arrivals and
+  reporting it as fish.
+
+  Refusing rather than dispatching is deliberate. `est_effort_camera()` already
+  implements the calibrated estimator and carries the guards; giving those guards
+  a second caller to be right about is how the split arose. It also takes
+  arguments the generic signature has nowhere to put -- `interviews`,
+  `n_anglers`, `h_open`, `calibration` -- so a silent dispatch would have to guess
+  them.
+
+  To fix an affected analysis, call `est_effort_camera(design, interviews = ,
+  n_anglers = )` for the calibrated estimate, or
+  `est_effort_camera(design, calibration = "none", h_open = )` to expand the raw
+  counts under a declared assumption of one angler-hour per count per hour open.
+  Catch rates are unaffected -- they come from the interviews and never touch the
+  camera -- but there is no camera catch **total**, and the vignette now says so
+  rather than demonstrating one.
+
 * `estimate_angler_n(method = "schumacher", ci_method = "bootstrap")` is now
   refused rather than silently ignored (#209). The Schumacher-Eschmeyer branch
   appended no `ci_lo_boot`/`ci_hi_boot` columns and attached no `boot_samples`,
