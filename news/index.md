@@ -177,6 +177,51 @@
   Single-column-stratified camera designs – every fixture in the
   package’s own examples and tests – are bit-identical.
 
+- [`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md)
+  no longer treats a missing camera count as a zero-effort day on the
+  ratio-calibration path
+  ([\#215](https://github.com/chrischizinski/tidycreel/issues/215)).
+  `na.rm = TRUE` was passed to `svytotal` through `svyby`, so an outage
+  day’s count was dropped from the numerator while its population day
+  stayed in the frame – making it contribute exactly zero hours to the
+  total, with no error, no warning and no message.
+
+  On the package’s own five-day fixture, setting one non-interview day’s
+  count to `NA` moved the estimate from `18.97` to `15.00`, a 21%
+  undercount. That `15.00` was bit-identical to the estimate obtained by
+  deleting the row outright, which is the demonstration: the missing day
+  contributed nothing while `n` still reported `5`.
+
+  The raw-count branch of the same function passed no `na.rm` and
+  already returned `NA` for the same input, so one function answered one
+  input two opposite ways depending on which branch it took. Both now
+  return `NA`, and both now warn – naming the affected dates, the
+  `camera_status` values that explain them, and
+  [`impute_camera_counts()`](https://chrischizinski.github.io/tidycreel/reference/impute_camera_counts.md)
+  as the remedy. The count is not imputed or reweighted here: which day
+  is missing is informative, so the treatment is the caller’s to choose.
+
+  Because missing rows are no longer dropped,
+  [`survey::SE()`](https://rdrr.io/pkg/survey/man/SE.html) can now
+  report `NaN` for a stratum whose total is `NA`. That is normalised to
+  `NA_real_`, since the calibration component already uses `NA` for the
+  same condition
+  ([\#136](https://github.com/chrischizinski/tidycreel/issues/136)) and
+  one function should not report one unknown two ways.
+
+  The [`suppressWarnings()`](https://rdrr.io/r/base/warning.html) around
+  the stratified count total is removed, so `survey`’s own diagnostics
+  reach the caller. It previously swallowed every warning `svyby`
+  raised, which is half of why an outage produced a confident wrong
+  number. It was also unnecessary: the benign “No weights or
+  probabilities supplied” note it was presumably there for comes from
+  [`svydesign()`](https://rdrr.io/pkg/survey/man/svydesign.html) when
+  the design is built, not from
+  [`svyby()`](https://rdrr.io/pkg/survey/man/svyby.html), and removing
+  the wrapper surfaces no new warnings across the test suite.
+
+  Camera surveys with complete counts are unaffected.
+
 ### Bug fixes
 
 - [`estimate_exploitation_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_exploitation_rate.md)
