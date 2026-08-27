@@ -801,3 +801,229 @@ test_that("CEST-27: non-camera designs still estimate effort", {
   expect_s3_class(est, "creel_estimates")
   expect_equal(est$estimates$estimate, 96)
 })
+
+# CEST-28: the calibration honours every declared stratum column (GH #216) -----
+#
+# A design declaring `strata = c(day_type, site)` has strata day_type x site.
+# The calibration used only `strata_cols[1L]`, so one pooled hours-per-count
+# ratio was formed over the coarser partition and applied to counts belonging
+# to a stratum that never contributed to it.
+#
+# Every fixture above declares exactly one stratum column, which is why the
+# defect was unreachable from the suite: with one column `strata_cols[1L]` IS
+# the whole stratification. These fixtures declare two.
+
+make_two_strata_design <- function() {
+  cal <- data.frame(
+    date = as.Date("2024-06-01") + 0:7,
+    day_type = "weekday",
+    site = rep(c("north", "south"), each = 4L),
+    stringsAsFactors = FALSE
+  )
+  d <- suppressWarnings(
+    creel_design(
+      cal,
+      date = date,
+      strata = c(day_type, site), # nolint
+      survey_type = "camera",
+      camera_mode = "counter"
+    )
+  )
+  counts <- data.frame(
+    date = cal$date,
+    day_type = cal$day_type,
+    site = cal$site,
+    # north is the low-count site, south the high-count one: 40 and 400 counts
+    ingress_count = rep(c(10L, 100L), each = 4L),
+    camera_status = rep("operational", 8L),
+    stringsAsFactors = FALSE
+  )
+  suppressWarnings(add_counts(d, counts))
+}
+
+# north fishes 40 h on 10 counts (rho = 4.0 h/count); south 10 h on 100 counts
+# (rho = 0.1). The two regimes are 40x apart, and `site` is the column the
+# estimator dropped.
+make_two_strata_interviews <- function(days = c(1L, 2L, 3L, 5L)) {
+  all_ints <- data.frame(
+    date = as.Date("2024-06-01") + 0:7,
+    day_type = "weekday",
+    site = rep(c("north", "south"), each = 4L),
+    hours_fished = rep(c(40, 10), each = 4L),
+    party_size = 1,
+    stringsAsFactors = FALSE
+  )
+  all_ints[days, , drop = FALSE]
+}
+
+test_that("CEST-28: rho is estimated within each declared stratum, not just the first (GH #216)", {
+  # Interview effort is deliberately unbalanced across `site` -- three north
+  # days against one south day -- because that imbalance is the whole defect.
+  # Pooling weights the ratio toward whichever stratum was interviewed more,
+  # then applies it to every stratum's counts.
+  d <- make_two_strata_design()
+  res <- suppressWarnings(
+    est_effort_camera(
+      d,
+      interviews = make_two_strata_interviews(),
+      n_anglers = "party_size"
+    )
+  )
+  # north: rho 4.0 x 40 counts = 160. south: rho 0.1 x 400 counts = 40.
+  expect_equal(res$estimates$estimate, 200)
+  # The pooled ratio was 1.0 h/count over all 440 counts. Named so a future
+  # regression reports which number came back, not merely that one did.
+  expect_false(isTRUE(all.equal(res$estimates$estimate, 440)))
+})
+
+test_that("CEST-28: a balanced fixture cannot detect the pooling, but its SE can (GH #216)", {
+  # When every day is an interview day the ratio of sums telescopes and the
+  # point estimate survives the pooling unchanged. A smoke test on the estimate
+  # therefore proves nothing here; the calibration variance is what carries the
+  # evidence, because pooling two 40x-apart site regimes turns a residual of
+  # zero within each stratum into a large one across them.
+  d <- make_two_strata_design()
+  res <- suppressWarnings(
+    est_effort_camera(
+      d,
+      interviews = make_two_strata_interviews(days = 1:8),
+      n_anglers = "party_size"
+    )
+  )
+  expect_equal(res$estimates$estimate, 200)
+  # Within each stratum E_d = rho * C_d exactly, so every residual is 0.
+  # Pooled, the same data gave a calibration SE of 107.2045.
+  expect_equal(res$se_components$calibration, 0)
+  expect_equal(res$estimates$se, 0)
+})
+
+test_that("CEST-28: a third stratum column is honoured too (GH #216)", {
+  # Guards against a fix that hard-codes two columns instead of using all of
+  # `design$strata_cols`.
+  cal <- data.frame(
+    date = as.Date("2024-06-01") + 0:7,
+    day_type = "weekday",
+    site = rep(c("north", "south"), each = 4L),
+    gear = "boat",
+    stringsAsFactors = FALSE
+  )
+  d <- suppressWarnings(
+    creel_design(
+      cal,
+      date = date,
+      strata = c(day_type, site, gear), # nolint
+      survey_type = "camera",
+      camera_mode = "counter"
+    )
+  )
+  counts <- data.frame(
+    date = cal$date,
+    day_type = cal$day_type,
+    site = cal$site,
+    gear = cal$gear,
+    ingress_count = rep(c(10L, 100L), each = 4L),
+    camera_status = rep("operational", 8L),
+    stringsAsFactors = FALSE
+  )
+  d <- suppressWarnings(add_counts(d, counts))
+  ints <- cbind(make_two_strata_interviews(), gear = "boat")
+  res <- suppressWarnings(
+    est_effort_camera(d, interviews = ints, n_anglers = "party_size")
+  )
+  expect_equal(res$estimates$estimate, 200)
+})
+
+test_that("CEST-28: a stratum column absent from interviews is named, not silently dropped (GH #216)", {
+  # Before the ratio was keyed on every column, an interviews table lacking one
+  # of them still calibrated -- on whatever columns it happened to carry. Now
+  # every declared column is required, so the failure states which is missing
+  # rather than reporting an empty stratum.
+  d <- make_two_strata_design()
+  ints <- make_two_strata_interviews()
+  ints$site <- NULL
+  expect_error(
+    est_effort_camera(d, interviews = ints, n_anglers = "party_size"),
+    "missing the stratum column.*site"
+  )
+})
+
+test_that("CEST-28: the single-pair warning names the full stratum (GH #216)", {
+  # With `site` restored to the key, south has one paired interview day, so
+  # #136's guard fires -- and must say which stratum, using every column that
+  # defines it rather than the first one only.
+  d <- make_two_strata_design()
+  expect_warning(
+    est_effort_camera(
+      d,
+      interviews = make_two_strata_interviews(),
+      n_anglers = "party_size"
+    ),
+    "weekday / south",
+    class = "creel_warning_camera_single_day"
+  )
+})
+
+test_that("CEST-28: an unmeasurable stratum ratio makes the reported SE NA, not small (GH #216)", {
+  # Consequence of estimating within the declared strata: south now has one
+  # paired day, so its var(rho) is unknown. The pooled ratio hid that behind a
+  # finite 406.15. An SE built from a sum missing an unknown term is a lower
+  # bound, not an SE.
+  d <- make_two_strata_design()
+  res <- suppressWarnings(
+    est_effort_camera(
+      d,
+      interviews = make_two_strata_interviews(),
+      n_anglers = "party_size"
+    )
+  )
+  expect_true(is.na(res$estimates$se))
+  expect_true(is.na(res$se_components$calibration))
+  expect_equal(res$se_components$count_sampling, 0)
+})
+
+test_that("CEST-28: single-column designs are unaffected (GH #216)", {
+  # Inertness control. With one stratum column the new key is that column, so
+  # every existing camera estimate must be bit-identical.
+  d <- make_design_with_counts()
+  res <- suppressWarnings(
+    est_effort_camera(d, interviews = make_interviews())
+  )
+  expect_equal(res$estimates$estimate, 18.9660194174757, tolerance = 1e-12)
+  expect_equal(res$estimates$se, 3.2661325499868386, tolerance = 1e-12)
+})
+
+test_that("CEST-28: a stratum with no interviews at all is named in full (GH #216)", {
+  # Reachable *because* of the fix: keying on every declared column makes the
+  # strata finer, so a stratum can hold counts and no interviews where the
+  # pooled partition always had some. The message must identify the stratum by
+  # every column that defines it, or it points at a partition that no longer
+  # exists.
+  d <- make_two_strata_design()
+  expect_error(
+    est_effort_camera(
+      d,
+      interviews = make_two_strata_interviews(days = 1:3),
+      n_anglers = "party_size"
+    ),
+    "No interview effort data for stratum .*weekday / south"
+  )
+})
+
+test_that("CEST-28: a stratum whose interviews match no count day is named in full (GH #216)", {
+  # Same path, one step later: south has interview effort, but on a date the
+  # camera never counted, so there is no pair to form a ratio from.
+  d <- make_two_strata_design()
+  ints <- make_two_strata_interviews(days = 1:3)
+  ints <- rbind(ints, data.frame(
+    date = as.Date("2024-07-04"), # outside the count dates entirely
+    day_type = "weekday",
+    site = "south",
+    hours_fished = 10,
+    party_size = 1,
+    stringsAsFactors = FALSE
+  ))
+  expect_error(
+    est_effort_camera(d, interviews = ints, n_anglers = "party_size"),
+    "No matched interview/count days for stratum .*weekday / south"
+  )
+})

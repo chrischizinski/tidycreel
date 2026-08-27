@@ -22,9 +22,11 @@ est_effort_camera(
 \code{add_counts()}.}
 
 \item{interviews}{Optional data frame of angler interview records for ratio
-calibration.  Must contain the columns named by \code{strata_col} (matching
-\code{design$strata_cols[1]}) and \code{effort_col}.  When \code{NULL}, falls back to
-raw count expansion and \code{h_open} is required.}
+calibration.  Must contain \code{effort_col} and every column in
+\code{design$strata_cols}: the calibration ratio is estimated within each
+stratum the design declares, so a missing stratum column is an error
+rather than a coarser calibration.  When \code{NULL}, falls back to raw count
+expansion and \code{h_open} is required.}
 
 \item{effort_col}{Character scalar.  Column in \code{interviews} containing
 per-trip effort in hours. Default \code{"hours_fished"}.}
