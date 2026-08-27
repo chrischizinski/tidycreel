@@ -991,3 +991,39 @@ test_that("CEST-28: single-column designs are unaffected (GH #216)", {
   expect_equal(res$estimates$estimate, 18.9660194174757, tolerance = 1e-12)
   expect_equal(res$estimates$se, 3.2661325499868386, tolerance = 1e-12)
 })
+
+test_that("CEST-28: a stratum with no interviews at all is named in full (GH #216)", {
+  # Reachable *because* of the fix: keying on every declared column makes the
+  # strata finer, so a stratum can hold counts and no interviews where the
+  # pooled partition always had some. The message must identify the stratum by
+  # every column that defines it, or it points at a partition that no longer
+  # exists.
+  d <- make_two_strata_design()
+  expect_error(
+    est_effort_camera(
+      d,
+      interviews = make_two_strata_interviews(days = 1:3),
+      n_anglers = "party_size"
+    ),
+    "No interview effort data for stratum .*weekday / south"
+  )
+})
+
+test_that("CEST-28: a stratum whose interviews match no count day is named in full (GH #216)", {
+  # Same path, one step later: south has interview effort, but on a date the
+  # camera never counted, so there is no pair to form a ratio from.
+  d <- make_two_strata_design()
+  ints <- make_two_strata_interviews(days = 1:3)
+  ints <- rbind(ints, data.frame(
+    date = as.Date("2024-07-04"), # outside the count dates entirely
+    day_type = "weekday",
+    site = "south",
+    hours_fished = 10,
+    party_size = 1,
+    stringsAsFactors = FALSE
+  ))
+  expect_error(
+    est_effort_camera(d, interviews = ints, n_anglers = "party_size"),
+    "No matched interview/count days for stratum .*weekday / south"
+  )
+})
