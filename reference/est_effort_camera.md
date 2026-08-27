@@ -30,9 +30,11 @@ est_effort_camera(
 - interviews:
 
   Optional data frame of angler interview records for ratio calibration.
-  Must contain the columns named by `strata_col` (matching
-  `design$strata_cols[1]`) and `effort_col`. When `NULL`, falls back to
-  raw count expansion and `h_open` is required.
+  Must contain `effort_col` and every column in `design$strata_cols`:
+  the calibration ratio is estimated within each stratum the design
+  declares, so a missing stratum column is an error rather than a
+  coarser calibration. When `NULL`, falls back to raw count expansion
+  and `h_open` is required.
 
 - effort_col:
 

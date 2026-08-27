@@ -99,9 +99,11 @@ Two estimation modes are supported:</p>
 
 <dt id="arg-interviews">interviews<a class="anchor" aria-label="anchor" href="#arg-interviews"></a></dt>
 <dd><p>Optional data frame of angler interview records for ratio
-calibration.  Must contain the columns named by <code>strata_col</code> (matching
-<code>design$strata_cols[1]</code>) and <code>effort_col</code>.  When <code>NULL</code>, falls back to
-raw count expansion and <code>h_open</code> is required.</p></dd>
+calibration.  Must contain <code>effort_col</code> and every column in
+<code>design$strata_cols</code>: the calibration ratio is estimated within each
+stratum the design declares, so a missing stratum column is an error
+rather than a coarser calibration.  When <code>NULL</code>, falls back to raw count
+expansion and <code>h_open</code> is required.</p></dd>
 
 
 <dt id="arg-effort-col">effort_col<a class="anchor" aria-label="anchor" href="#arg-effort-col"></a></dt>
