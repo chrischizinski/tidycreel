@@ -97,6 +97,42 @@
   keeps its several rows per day. `add_counts()` still warns, so the problem is
   reported next to the call that introduced it.
 
+* `est_effort_camera()` now estimates the calibration ratio within every
+  stratum the design declares, not within the first stratum column only
+  (#216). A design created with `strata = c(day_type, site)` has strata
+  `day_type` x `site`, but the camera ratio path read `design$strata_cols[1]`
+  and keyed both the calibration and the count total on it. One pooled
+  hours-per-count ratio was formed over the coarser partition and applied to
+  counts belonging to a stratum that never contributed to it.
+
+  Multi-column-stratified camera estimates change. On an eight-day two-site
+  fixture where north fishes 40 h on 10 counts and south 10 h on 100 counts,
+  with interviews on three north days and one south day, the estimate was
+  `440` against a per-stratum truth of `200` -- a 2.2x overestimate with no
+  warning. The factor is set by how unevenly interview effort is allocated
+  across the dropped columns, so it is unbounded in principle.
+
+  Where every day is an interview day the ratio of sums telescopes and the
+  point estimate is unchanged, but the standard error still moves: on the
+  balanced version of that fixture the calibration component was `107.2`
+  against a within-stratum truth of `0`, because pooling two dissimilar site
+  regimes inflates the ratio residuals.
+
+  Estimating within the declared strata puts fewer paired days in each
+  stratum, so `est_effort_camera()` may now report an `NA` standard error
+  where it previously reported a number: a stratum with one paired
+  interview/count day has no measurable ratio variance (#136), and a sum
+  missing an unknown term is a lower bound rather than a standard error. The
+  warning names the stratum. Adding a second matched interview day in that
+  stratum recovers the SE.
+
+  `interviews` must now contain every column in `design$strata_cols`. A
+  missing one is an error naming the column, where before the calibration
+  proceeded on whichever columns the table happened to carry.
+
+  Single-column-stratified camera designs -- every fixture in the package's
+  own examples and tests -- are bit-identical.
+
 ## Bug fixes
 
 * `estimate_exploitation_rate()` requires `se_C` when `C` is a bare number

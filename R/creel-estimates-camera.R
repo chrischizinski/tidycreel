@@ -198,18 +198,59 @@ estimate_effort_camera <- function(
       effort_unit_label <- NA_character_
     }
     # Build calibration ratio per stratum: mean(effort) / mean(camera_count)
-    strata_col <- design$strata_cols[1L]
-    strata_vals <- unique(counts_data[[strata_col]])
+    #
+    # Keyed on every column of `design$strata_cols`, not only the first. A
+    # design declaring `strata = c(day_type, site)` has strata day_type x site,
+    # and a ratio estimated over a coarser partition than the declared one
+    # applies one stratum's hours-per-count to another stratum's counts. The
+    # damage is set by how unevenly interview effort is allocated across the
+    # columns that were dropped, so it is unbounded in principle and silent in
+    # practice; where every day is an interview day the ratio of sums
+    # telescopes and the point estimate survives, which is why it took an
+    # unbalanced fixture to see (#216).
+    #
+    # Same `\u001f` key as `day_key` above rather than the survey design's
+    # `.strata` interaction, whose "." separator can collide two distinct
+    # strata into one label.
+    strata_cols <- design$strata_cols
+    strata_key <- function(df) {
+      do.call(paste, c(lapply(df[strata_cols], as.character), sep = "\u001f"))
+    }
+    strata_label <- function(key) {
+      paste(strsplit(key, "\u001f", fixed = TRUE)[[1L]], collapse = " / ")
+    }
+
+    missing_strata <- setdiff(strata_cols, names(interviews))
+    if (length(missing_strata) > 0L) {
+      cli::cli_abort(c(
+        paste(
+          "{.arg interviews} is missing the stratum",
+          "{cli::qty(missing_strata)}column{?s} {.field {missing_strata}}."
+        ),
+        "x" = paste(
+          "The calibration ratio is estimated within each stratum the design",
+          "declares, so every stratum column must be present to assign an",
+          "interview to one."
+        ),
+        "i" = "{.arg design} declares {.field {strata_cols}}."
+      ))
+    }
+
+    counts_keys <- strata_key(counts_data)
+    interview_keys <- strata_key(interviews)
+    strata_vals <- unique(counts_keys)
 
     cal_rows <- lapply(strata_vals, function(s) {
+      # Referenced only inside cli glue strings, which the linter cannot see.
+      s_label <- strata_label(s) # nolint: object_usage_linter
       # Counts for stratum: one row per day
-      cnt_sub <- counts_data[counts_data[[strata_col]] == s, , drop = FALSE]
+      cnt_sub <- counts_data[counts_keys == s, , drop = FALSE]
       # Interviews for stratum: aggregate per-trip effort to daily totals
-      int_sub <- interviews[interviews[[strata_col]] == s, , drop = FALSE]
+      int_sub <- interviews[interview_keys == s, , drop = FALSE]
 
       if (nrow(int_sub) == 0L || all(is.na(int_sub[[effort_col]]))) {
         cli::cli_abort(c(
-          "No interview effort data for stratum {.val {s}}.",
+          "No interview effort data for stratum {.val {s_label}}.",
           "x" = "Cannot compute calibration ratio."
         ))
       }
@@ -247,7 +288,7 @@ estimate_effort_camera <- function(
       n_days <- length(unique(int_dates_matched))
       if (n_pairs == 0L || sum(C_d, na.rm = TRUE) == 0) {
         cli::cli_abort(c(
-          "No matched interview/count days for stratum {.val {s}}.",
+          "No matched interview/count days for stratum {.val {s_label}}.",
           "x" = "Cannot compute calibration ratio."
         ))
       }
@@ -271,7 +312,7 @@ estimate_effort_camera <- function(
         # n < 2), and it propagates into the combined SE below.
         cli::cli_warn(
           c(
-            "Stratum {.val {s}} has one paired interview/count day.",
+            "Stratum {.val {s_label}} has one paired interview/count day.",
             "x" = "The calibration ratio's variance cannot be measured from a single pair.",
             "i" = "Its contribution is {.code NA}, so the reported SE is {.code NA} rather than falsely exact.",
             "i" = "Add a second matched interview day in this stratum to recover an SE."
@@ -299,14 +340,17 @@ estimate_effort_camera <- function(
     svy_raw <- suppressWarnings(
       survey::svyby(
         count_formula,
-        stats::as.formula(paste0("~", strata_col)),
+        stats::reformulate(strata_cols),
         svy_design,
         survey::svytotal,
         na.rm = TRUE
       )
     )
 
-    strata_order <- as.character(svy_raw[[strata_col]])
+    # svyby returns one row per observed combination, with the grouping
+    # columns carried through under their own names, so the same key pairs the
+    # count totals to the calibration ratios computed above.
+    strata_order <- strata_key(svy_raw)
     rho_matched <- cal$rho[match(strata_order, as.character(cal$stratum))]
     var_rho_matched <- cal$var_rho[match(strata_order, as.character(cal$stratum))]
     total_counts_h <- as.numeric(coef(svy_raw))
