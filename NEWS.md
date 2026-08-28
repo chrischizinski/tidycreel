@@ -2,6 +2,36 @@
 
 ## Breaking changes
 
+* `summarize_by_day_type()` and `summarize_boat_composition()` now resolve the
+  day type column instead of assuming it is the first stratum (#221). Both read
+  `design$strata_cols[1]` and labelled whatever they found there `day_type`. But
+  `creel_design()` preserves the order the caller declared their strata in, so
+  that index is a declaration order, not a definition: a design declaring
+  `strata = c(site, day_type)` produced a table of site names under a `day_type`
+  header, with no warning, and the real weekday / weekend breakdown absent
+  entirely.
+
+  Resolution order is now an explicit `day_type_col` argument, then a stratum
+  actually named `day_type`, then the first stratum -- which warns and names the
+  column it chose when the design declares more than one. A single-stratum
+  design resolves silently and is unaffected, so the documented
+  `strata = day_type` workflow does not change.
+
+  **This moves numbers for multi-stratum designs.** On a six-day two-site
+  fixture whose boat composition is driven by site, `summarize_boat_composition()`
+  reported 90% / 10% -- the per-site means under a `day_type` header -- where the
+  per-day-type figures are 63.3% / 36.7%. `summarize_by_day_type()` moves labels
+  rather than counts in the balanced case, which is what made it invisible: the
+  6 / 6 site split and the 6 / 6 weekday / weekend split are the same numbers.
+
+  A stratum has no canonical name in this package -- the caller names their own
+  calendar columns -- so this is a resolution with a documented fallback, not a
+  lookup. Pass `day_type_col` when neither inference applies.
+
+  This is the same defect class as #216, which was the identical
+  `strata_cols[1]` shortcut on the camera calibration path. Found while fixing
+  that issue and recorded rather than fixed inline.
+
 * `estimate_effort()` and the three total estimators now refuse camera designs
   (#214). A camera count is a daily ingress total -- a count of arrivals -- not
   an instantaneous count of anglers present. The dispatch chain in

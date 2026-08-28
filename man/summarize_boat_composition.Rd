@@ -4,7 +4,7 @@
 \alias{summarize_boat_composition}
 \title{Tabulate boat composition by month and day type}
 \usage{
-summarize_boat_composition(design, schema)
+summarize_boat_composition(design, schema, day_type_col = NULL)
 }
 \arguments{
 \item{design}{A \code{creel_design} object with counts attached via
@@ -12,6 +12,10 @@ summarize_boat_composition(design, schema)
 
 \item{schema}{A \code{creel_schema} object with \code{angler_boats_col} and
 \code{non_ang_boats_col} set.}
+
+\item{day_type_col}{Name of the column holding the day type, as a single
+string. When \code{NULL} (the default) it is resolved from the design's
+strata as described above.}
 }
 \value{
 A \code{data.frame} with class
@@ -22,7 +26,10 @@ A \code{data.frame} with class
 \description{
 Computes the percentage of boats that are angler boats from raw count data,
 grouped by calendar month and day type. Formula:
-\code{mean(angler_boats / (angler_boats + non_ang_boats))} per group.
+\code{mean(angler_boats / (angler_boats + non_ang_boats))} per group. The
+day type column is resolved from the design's strata: a stratum named
+\code{day_type} when the design declares one, otherwise the first stratum
+column, which warns when the design declares more than one.
 }
 \details{
 Count-based summary, not interview-weighted. Rows where

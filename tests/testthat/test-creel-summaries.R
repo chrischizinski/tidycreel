@@ -1,4 +1,4 @@
-# Tests for summarize_*() functions — Phase 31 (USUM-01 through USUM-08)
+# Tests for summarize_*() functions — Phase 31 (USUM-01 through USUM-09)
 
 # --- Shared fixtures -----------------------------------------------------------
 
@@ -425,4 +425,136 @@ test_that("all seven functions return 'data.frame' as part of their class vector
   for (result in results) {
     expect_true("data.frame" %in% class(result))
   }
+})
+
+# --- Day type column resolution — USUM-09 (GH #221) ---------------------------
+#
+# `strata_cols[1]` is the order the caller declared their strata in, not a
+# definition of day type. A design declaring `strata = c(site, day_type)` put
+# site names under a `day_type` header with no warning, and the real weekday /
+# weekend split was absent from the output entirely. These tests pin the
+# resolution order, not the tabulation arithmetic, which USUM-02 already covers.
+
+make_two_strata_design <- function(strata_second = "day_type") {
+  dates <- as.Date("2024-06-01") + 0:5
+  cal <- data.frame(
+    date = dates,
+    site = rep(c("north", "south"), 3),
+    day_type = rep(c("weekday", "weekend"), each = 3),
+    period = rep(c("am", "pm"), each = 3),
+    stringsAsFactors = FALSE
+  )
+  ints <- data.frame(
+    date = rep(dates, each = 2),
+    site = rep(rep(c("north", "south"), 3), each = 2),
+    day_type = rep(rep(c("weekday", "weekend"), each = 3), each = 2),
+    period = rep(rep(c("am", "pm"), each = 3), each = 2),
+    hours_fished = 2,
+    catch_total = 1,
+    catch_kept = 1,
+    trip_status = "complete",
+    stringsAsFactors = FALSE
+  )
+  # `site` is declared FIRST on purpose — that is the defect's trigger.
+  d <- suppressWarnings(creel_design(
+    cal,
+    date = date, # nolint: object_usage_linter
+    strata = c("site", strata_second),
+    survey_type = "instantaneous"
+  ))
+  suppressWarnings(add_interviews(
+    d,
+    ints,
+    effort = hours_fished, # nolint: object_usage_linter
+    catch = catch_total, # nolint: object_usage_linter
+    harvest = catch_kept, # nolint: object_usage_linter
+    trip_status = trip_status # nolint: object_usage_linter
+  ))
+}
+
+test_that("summarize_by_day_type() groups by the stratum named day_type, not the first one", {
+  d <- make_two_strata_design()
+  expect_identical(d$strata_cols, c("site", "day_type"))
+
+  result <- suppressWarnings(summarize_by_day_type(d))
+
+  # The load-bearing assertion: the day_type column holds day types. Before the
+  # fix this held "north"/"south" — plausible stratum labels under a day_type
+  # header, which is exactly why no test and no reader caught it.
+  expect_setequal(result$day_type, c("weekday", "weekend"))
+  expect_false(any(c("north", "south") %in% result$day_type))
+})
+
+test_that("summarize_by_day_type() reports the real day type split, not the site split", {
+  d <- make_two_strata_design()
+  result <- suppressWarnings(summarize_by_day_type(d))
+
+  # 6 interviews on each of 3 weekdays / 3 weekend days. The site split is 6/6
+  # too, so counts alone cannot distinguish the two groupings — the labels are
+  # what carry the meaning, which is why the row identity is asserted here.
+  weekday_n <- result$N[result$day_type == "weekday"]
+  expect_identical(weekday_n, 6L)
+  expect_identical(sum(result$N), 12L)
+})
+
+test_that("summarize_by_day_type() honours an explicit day_type_col", {
+  d <- make_two_strata_design(strata_second = "period")
+  result <- summarize_by_day_type(d, day_type_col = "day_type")
+
+  # `day_type` is not a stratum in this design at all, so nothing could infer
+  # it — the caller has to be able to say so.
+  expect_setequal(result$day_type, c("weekday", "weekend"))
+})
+
+test_that("summarize_by_day_type() warns and names the column when it must guess", {
+  d <- make_two_strata_design(strata_second = "period")
+
+  # Neither stratum is named day_type. Falling back is defensible; doing it
+  # silently is not, because the output is indistinguishable from a real one.
+  expect_warning(
+    summarize_by_day_type(d),
+    "Using stratum.*site.*as the day type"
+  )
+  expect_warning(summarize_by_day_type(d), "none is named")
+})
+
+test_that("summarize_by_day_type() still uses the first stratum when it guesses", {
+  d <- make_two_strata_design(strata_second = "period")
+  result <- suppressWarnings(summarize_by_day_type(d))
+
+  # The warning changes what the caller knows, not what the function returns.
+  expect_setequal(result$day_type, c("north", "south"))
+})
+
+test_that("summarize_by_day_type() is silent for a single-stratum design", {
+  d <- make_design_with_extended_interviews()
+  expect_identical(length(d$strata_cols), 1L)
+
+  # Inertness control: with one stratum there is nothing to choose between, so
+  # the warning must not fire on the ordinary documented workflow.
+  expect_no_warning(summarize_by_day_type(d))
+})
+
+test_that("summarize_by_day_type() rejects a day_type_col that is not one column name", {
+  d <- make_two_strata_design()
+  expect_error(
+    summarize_by_day_type(d, day_type_col = c("site", "day_type")),
+    "single non-empty column name"
+  )
+  expect_error(summarize_by_day_type(d, day_type_col = ""), "single non-empty")
+})
+
+test_that("summarize_by_day_type() names the missing column when day_type_col is absent", {
+  d <- make_two_strata_design()
+  # Matching only "not_a_column" would pass against R's own "unused argument"
+  # error, i.e. it would pass on a build with no day_type_col at all. Asserting
+  # where the column is absent FROM is what pins this to the real guard.
+  expect_error(
+    summarize_by_day_type(d, day_type_col = "not_a_column"),
+    "absent from"
+  )
+  expect_error(
+    summarize_by_day_type(d, day_type_col = "not_a_column"),
+    "design\\$interviews"
+  )
 })
