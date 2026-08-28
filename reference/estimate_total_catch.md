@@ -157,6 +157,30 @@ CPUE designs is not identified and is therefore assumed zero.
 
 - Calendar stratification must be shared between counts and interviews
 
+## Unit of the total
+
+The reported `unit` is derived from the two factors, never declared. A
+total is `"fish"` only when a per-angler-hour rate multiplies an effort
+in angler-hours; anything else reports `NA_character_`, meaning unknown.
+
+Two ways to fail to cancel:
+
+- **The effort unit is unknown.** `design$effort_unit` is `NA` whenever
+  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+  received no `period_length_col`, because a bare count column may be an
+  instantaneous head count or effort the caller already expanded, and
+  nothing can tell the two apart. Unknown times known is unknown. Supply
+  `period_length_col` to make the total's unit derivable.
+
+- **The denominators disagree.** A rate per party-hour times an effort
+  in angler-hours is not a count of fish. Pass `n_anglers` to
+  [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)
+  so the rate is per angler-hour.
+
+The estimate itself is unaffected in both cases – only the label
+changes. Until version 5.2.0 the unit was the literal `"fish"`
+regardless of either factor (GH \#213).
+
 ## See also
 
 [`estimate_effort`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),
@@ -206,7 +230,6 @@ print(total_catch)
 #> Variance: Taylor linearization
 #> Confidence level: 95%
 #> Effort target: sampled_days
-#> Unit: fish
 #> 
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n

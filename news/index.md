@@ -222,6 +222,47 @@
 
   Camera surveys with complete counts are unaffected.
 
+- The three total estimators now derive the reported `unit` from their
+  two factors instead of writing the literal `"fish"`
+  ([\#213](https://github.com/chrischizinski/tidycreel/issues/213)). A
+  total is `"fish"` only when a per-angler-hour rate multiplies an
+  effort in angler-hours; anything else reports `NA_character_`.
+
+  There are two ways to fail to cancel, and both were labelled `"fish"`:
+
+  - The effort unit is unknown. `design$effort_unit` is `NA` whenever
+    [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+    received no `period_length_col`, because a bare count column may be
+    an instantaneous head count or effort the caller already expanded,
+    and nothing can tell the two apart. Unknown times known is unknown.
+  - The denominators disagree. A rate per party-hour times an effort in
+    angler-hours is not a count of fish. `warn_party_hours_product()`
+    already reported that seam, but the result still carried a confident
+    label through it.
+
+  **This changes the reported unit for the common workflow.** The
+  package’s own `example_counts` has no period-length column, so a
+  design built from it now reports `unit = NA` on its totals where it
+  previously reported `"fish"`. Point estimates, standard errors and
+  confidence intervals are unchanged – only the label moves. Supply
+  `period_length_col` to
+  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md),
+  and `n_anglers` to
+  [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md),
+  to make the unit derivable.
+
+  The same literal appeared three more times on the bus-route and ice
+  total paths (`R/creel-estimates-bus-route.R`), which reach a different
+  constructor. Those are keyed on `interview_effort_unit()` rather than
+  `design$effort_unit`, since that is the effort those totals are built
+  from. Bus-route designs whose interviews carry a party size are
+  unaffected: their units already cancelled, and now they are shown to.
+
+  This follows the rule
+  [`estimate_effort_per_acre()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort_per_acre.md)
+  already used – compose the unit from its inputs, and an unknown input
+  yields an unknown result.
+
 ### Bug fixes
 
 - [`estimate_exploitation_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_exploitation_rate.md)

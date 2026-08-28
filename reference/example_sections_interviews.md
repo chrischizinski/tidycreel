@@ -123,7 +123,6 @@ estimate_total_catch(design, aggregate_sections = TRUE)
 #> Confidence level: 95%
 #> Grouped by: section
 #> Effort target: sampled_days
-#> Unit: fish
 #> 
 #> # A tibble: 4 × 8
 #>   section     estimate    se ci_lower ci_upper     n prop_of_lake_total

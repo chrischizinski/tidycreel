@@ -386,7 +386,6 @@ estimate_total_catch(design, by = species)
 #> Confidence level: 95%
 #> Grouped by: species
 #> Effort target: sampled_days
-#> Unit: fish
 #> 
 #> # A tibble: 3 × 6
 #>   species estimate    se ci_lower ci_upper     n
@@ -408,7 +407,6 @@ estimate_total_harvest(design, by = species)
 #> Confidence level: 95%
 #> Grouped by: species
 #> Effort target: sampled_days
-#> Unit: fish
 #> 
 #> # A tibble: 3 × 6
 #>   species estimate    se ci_lower ci_upper     n
@@ -454,7 +452,6 @@ estimate_total_release(design, by = species)
 #> Confidence level: 95%
 #> Grouped by: species
 #> Effort target: sampled_days
-#> Unit: fish
 #> 
 #> # A tibble: 3 × 6
 #>   species estimate    se ci_lower ci_upper     n

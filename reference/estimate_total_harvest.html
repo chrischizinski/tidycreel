@@ -192,6 +192,26 @@ assumption: <code>sqrt(sum(se_i^2))</code>.</p>
 <li><p>Calendar stratification must be shared between counts and interviews</p></li>
 </ul></div>
     <div class="section level2">
+    <h2 id="unit-of-the-total">Unit of the total<a class="anchor" aria-label="anchor" href="#unit-of-the-total"></a></h2>
+
+
+
+<p>The reported <code>unit</code> is derived from the two factors, never declared. A
+total is <code>"fish"</code> only when a per-angler-hour rate multiplies an effort in
+angler-hours; anything else reports <code>NA_character_</code>, meaning unknown.</p>
+<p>Two ways to fail to cancel:</p><ul><li><p><strong>The effort unit is unknown.</strong> <code>design$effort_unit</code> is <code>NA</code> whenever
+<code><a href="add_counts.html">add_counts()</a></code> received no <code>period_length_col</code>, because a bare count
+column may be an instantaneous head count or effort the caller already
+expanded, and nothing can tell the two apart. Unknown times known is
+unknown. Supply <code>period_length_col</code> to make the total's unit derivable.</p></li>
+<li><p><strong>The denominators disagree.</strong> A rate per party-hour times an effort in
+angler-hours is not a count of fish. Pass <code>n_anglers</code> to
+<code><a href="add_interviews.html">add_interviews()</a></code> so the rate is per angler-hour.</p></li>
+</ul><p>The estimate itself is unaffected in both cases – only the label changes.
+Until version 5.2.0 the unit was the literal <code>"fish"</code> regardless of either
+factor (GH #213).</p>
+    </div>
+    <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p><code><a href="estimate_effort.html">estimate_effort</a></code>, <code><a href="estimate_harvest_rate.html">estimate_harvest_rate</a></code>,
 <code><a href="estimate_total_catch.html">estimate_total_catch</a></code></p>
@@ -240,7 +260,6 @@ assumption: <code>sqrt(sum(se_i^2))</code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Variance: Taylor linearization</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Confidence level: 95%</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Effort target: sampled_days</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Unit: fish</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 5</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   estimate    se ci_lower ci_upper     n</span>

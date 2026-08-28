@@ -335,7 +335,6 @@ print(total_catch)
 #> Variance: Taylor linearization
 #> Confidence level: 95%
 #> Effort target: sampled_days
-#> Unit: fish
 #> 
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
