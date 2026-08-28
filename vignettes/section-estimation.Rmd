@@ -96,11 +96,13 @@ cpue_est <- estimate_catch_rate(design)
 print(cpue_est$estimates)
 ```
 
-> **Notice there is no `.lake_total` row.** Catch rate is a ratio estimator and
-> ratios are not additive — South's high catch rate cannot simply be averaged
-> with North's low rate to produce a valid lake-wide CPUE. To estimate the
-> lake-wide catch rate, call `estimate_catch_rate()` on a design without section
-> registration.
+::: {.alert .alert-warning}
+**Notice there is no `.lake_total` row.** Catch rate is a ratio estimator and
+ratios are not additive — South's high catch rate cannot simply be averaged
+with North's low rate to produce a valid lake-wide CPUE. To estimate the
+lake-wide catch rate, call `estimate_catch_rate()` on a design without section
+registration.
+:::
 
 ```{r catch_rate_lake, warning = FALSE}
 # Lake-wide catch rate: build an unsectioned design using the same data
