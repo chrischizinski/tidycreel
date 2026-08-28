@@ -1584,7 +1584,7 @@ estimate_total_species_br <- function(
     design = design,
     conf_level = conf_level,
     by_vars = c(species_col, interview_by_vars),
-    unit = "fish"
+    unit = product_total_unit(rate_unit(design), interview_effort_unit(design)) # nolint: object_usage_linter
   )
 }
 
@@ -1715,7 +1715,7 @@ br_build_estimates <- function(
       design = design,
       conf_level = conf_level,
       by_vars = NULL,
-      unit = "fish"
+      unit = product_total_unit(rate_unit(design), interview_effort_unit(design)) # nolint: object_usage_linter
     )
     attr(result, "site_contributions") <- site_table
     result
@@ -1794,7 +1794,7 @@ br_build_estimates <- function(
       design = design,
       conf_level = conf_level,
       by_vars = by_vars,
-      unit = "fish"
+      unit = product_total_unit(rate_unit(design), interview_effort_unit(design)) # nolint: object_usage_linter
     )
     attr(result, "site_contributions") <- site_table
     result
