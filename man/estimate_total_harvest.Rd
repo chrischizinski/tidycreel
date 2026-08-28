@@ -104,6 +104,30 @@ assumption: \code{sqrt(sum(se_i^2))}.
 \item Calendar stratification must be shared between counts and interviews
 }
 }
+\section{Unit of the total}{
+
+
+The reported \code{unit} is derived from the two factors, never declared. A
+total is \code{"fish"} only when a per-angler-hour rate multiplies an effort in
+angler-hours; anything else reports \code{NA_character_}, meaning unknown.
+
+Two ways to fail to cancel:
+\itemize{
+\item \strong{The effort unit is unknown.} \code{design$effort_unit} is \code{NA} whenever
+\code{add_counts()} received no \code{period_length_col}, because a bare count
+column may be an instantaneous head count or effort the caller already
+expanded, and nothing can tell the two apart. Unknown times known is
+unknown. Supply \code{period_length_col} to make the total's unit derivable.
+\item \strong{The denominators disagree.} A rate per party-hour times an effort in
+angler-hours is not a count of fish. Pass \code{n_anglers} to
+\code{\link[=add_interviews]{add_interviews()}} so the rate is per angler-hour.
+}
+
+The estimate itself is unaffected in both cases -- only the label changes.
+Until version 5.2.0 the unit was the literal \code{"fish"} regardless of either
+factor (GH #213).
+}
+
 \examples{
 library(tidycreel)
 data(example_calendar)

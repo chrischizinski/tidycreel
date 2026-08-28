@@ -91,7 +91,14 @@ test_that("estimate_effort() carries the derived unit onto the estimates", {
   )
 })
 
-test_that("CPUE carries fish per denominator unit, and totals carry fish", {
+test_that("CPUE carries fish per denominator unit, and totals derive theirs (GH #213)", {
+  # This asserted `"fish"` for the total until #213. The design attaches
+  # `example_counts` with no `period_length_col`, so `design$effort_unit` is
+  # NA -- a bare count column may be an instantaneous head count or effort the
+  # caller already expanded, and nothing can tell the two apart. The rate is
+  # known and the effort is not, so the product is not known to be fish.
+  #
+  # The rate assertion is unchanged: it was always derived.
   data(example_counts, envir = environment())
   data(example_interviews, envir = environment())
   data(example_calendar, envir = environment())
@@ -106,13 +113,82 @@ test_that("CPUE carries fish per denominator unit, and totals carry fish", {
     n_anglers = n_anglers, trip_status = trip_status
   )))
 
+  expect_identical(d$effort_unit, NA_character_)
   expect_identical(
     suppressWarnings(suppressMessages(estimate_catch_rate(d)))$unit,
     "fish/angler-hour"
   )
   expect_identical(
     suppressWarnings(suppressMessages(estimate_total_catch(d)))$unit,
+    NA_character_
+  )
+})
+
+test_that("a total carries fish when both factors are known (GH #213)", {
+  # The paired positive case. Identical to the test above except that
+  # `period_length_col` makes the effort unit derivable, which is what
+  # distinguishes a derived label from a literal: if `"fish"` were still
+  # hardcoded, both tests could not pass at once.
+  data(example_counts, envir = environment())
+  data(example_interviews, envir = environment())
+  data(example_calendar, envir = environment())
+
+  counts <- example_counts
+  counts$shift_hours <- 8
+
+  d <- suppressWarnings(add_counts(
+    creel_design(example_calendar, date = date, strata = day_type),
+    counts,
+    period_length_col = shift_hours # nolint
+  ))
+  d <- suppressWarnings(suppressMessages(add_interviews(
+    d, example_interviews,
+    catch = catch_total, harvest = catch_kept, effort = hours_fished,
+    n_anglers = n_anglers, trip_status = trip_status
+  )))
+
+  expect_identical(d$effort_unit, "angler-hours")
+  expect_identical(
+    suppressWarnings(suppressMessages(estimate_total_catch(d)))$unit,
     "fish"
+  )
+  expect_identical(
+    suppressWarnings(suppressMessages(estimate_total_harvest(d)))$unit,
+    "fish"
+  )
+})
+
+test_that("a party-hour rate times angler-hours effort does not cancel to fish (GH #213)", {
+  # The second way to fail to cancel. Both factors are known here, so this is
+  # not the unknown-effort case above: the denominators simply disagree.
+  # `warn_party_hours_product()` already reports the seam; before #213 the
+  # result still carried a confident `"fish"` through it.
+  data(example_counts, envir = environment())
+  data(example_interviews, envir = environment())
+  data(example_calendar, envir = environment())
+
+  counts <- example_counts
+  counts$shift_hours <- 8
+
+  d <- suppressWarnings(add_counts(
+    creel_design(example_calendar, date = date, strata = day_type),
+    counts,
+    period_length_col = shift_hours # nolint
+  ))
+  # no n_anglers: the interview effort column is party-hours
+  d <- suppressWarnings(suppressMessages(add_interviews(
+    d, example_interviews,
+    catch = catch_total, effort = hours_fished, trip_status = trip_status
+  )))
+
+  expect_identical(d$effort_unit, "angler-hours")
+  expect_identical(
+    suppressWarnings(suppressMessages(estimate_catch_rate(d)))$unit,
+    "fish/party-hour"
+  )
+  expect_identical(
+    suppressWarnings(suppressMessages(estimate_total_catch(d)))$unit,
+    NA_character_
   )
 })
 
@@ -252,7 +328,12 @@ test_that("prep_counts_daily_effort() output does not trip the T_d warning", {
   d <- suppressWarnings(add_counts(design, prepped))
 
   expect_true(d$counts_are_effort)
-  expect_no_warning(estimate_effort(d), message = "angler-days")
+  # estimate_effort() also warns that both strata are sparse -- two days each is
+  # a property of this fixture, not of units. Assert it positively rather than
+  # suppressing it, so an angler-days warning cannot hide behind an escaping one.
+  effort_warnings <- testthat::capture_warnings(estimate_effort(d))
+  expect_match(effort_warnings, "fewer than 3 observations", all = FALSE)
+  expect_false(any(grepl("angler-days", effort_warnings)))
 })
 
 # ---- Scale invariance: the property a fixed-number test cannot check ----
@@ -446,7 +527,7 @@ test_that("every rate estimator on one design reports the same denominator", {
   expect_identical(baseline, "fish/angler-hour")
 })
 
-test_that("the harvest total carries fish, like total catch", {
+test_that("the harvest total derives its unit, like total catch (GH #213)", {
   data(example_counts, envir = environment())
   data(example_interviews, envir = environment())
   data(example_calendar, envir = environment())
@@ -461,9 +542,14 @@ test_that("the harvest total carries fish, like total catch", {
     n_anglers = n_anglers, trip_status = trip_status
   )))
 
+  # NA, not "fish": `example_counts` carries no `period_length_col`, so the
+  # effort unit is unknown and the product's is too. The three near-twin total
+  # estimators must agree about that, which is what "like total catch" now
+  # means. The paired known-unit case is asserted earlier in this file.
+  expect_identical(d$effort_unit, NA_character_)
   expect_identical(
     suppressWarnings(suppressMessages(estimate_total_harvest(d)))$unit,
-    "fish"
+    NA_character_
   )
 })
 
@@ -895,4 +981,103 @@ test_that("mark-recapture harvest does not launder the unknown actor into fish",
 
   expect_true(is.na(h$unit))
   expect_false(identical(h$unit, "fish"))
+})
+
+# GH #213: the product's unit is derived from its factors ----------------------
+
+test_that("product_total_unit() cancels only when the denominators match (GH #213)", {
+  # The rule, stated directly. `fish/angler-hour * angler-hours` is the only
+  # pairing that cancels; everything else is unknown rather than assumed.
+  expect_identical(product_total_unit("fish/angler-hour", "angler-hours"), "fish")
+  expect_identical(product_total_unit("fish/party-hour", "party-hours"), "fish")
+
+  # Denominators disagree.
+  expect_identical(product_total_unit("fish/party-hour", "angler-hours"), NA_character_)
+  expect_identical(product_total_unit("fish/angler-hour", "party-hours"), NA_character_)
+
+  # Either factor unknown.
+  expect_identical(product_total_unit(NA_character_, "angler-hours"), NA_character_)
+  expect_identical(product_total_unit("fish/angler-hour", NA_character_), NA_character_)
+  expect_identical(product_total_unit(NA_character_, NA_character_), NA_character_)
+  expect_identical(product_total_unit(NULL, "angler-hours"), NA_character_)
+  expect_identical(product_total_unit("fish/angler-hour", NULL), NA_character_)
+
+  # An unrecognised pairing falls through to NA rather than being assumed to
+  # cancel -- the reason this compares strings instead of stripping a prefix.
+  expect_identical(product_total_unit("fish/boat-hour", "angler-hours"), NA_character_)
+  expect_identical(product_total_unit("kg/angler-hour", "angler-hours"), NA_character_)
+})
+
+test_that("the release total derives its unit like its two near-twins (GH #213)", {
+  # The three creel-estimates-total-*.R files are near-twins, so a seam defect
+  # in one is almost always in all three. All twelve `unit = "fish"` literals
+  # were replaced together; this pins the third file.
+  data(example_counts, envir = environment())
+  data(example_interviews, envir = environment())
+  data(example_calendar, envir = environment())
+
+  counts <- example_counts
+  counts$shift_hours <- 8
+
+  data(example_catch, envir = environment())
+
+  build <- function(with_period) {
+    d <- if (with_period) {
+      suppressWarnings(add_counts(
+        creel_design(example_calendar, date = date, strata = day_type),
+        counts,
+        period_length_col = shift_hours # nolint
+      ))
+    } else {
+      suppressWarnings(add_counts(
+        creel_design(example_calendar, date = date, strata = day_type),
+        example_counts
+      ))
+    }
+    d <- suppressWarnings(suppressMessages(add_interviews(
+      d, example_interviews,
+      catch = catch_total, harvest = catch_kept, effort = hours_fished,
+      n_anglers = n_anglers, trip_status = trip_status
+    )))
+    suppressWarnings(suppressMessages(add_catch(
+      d, example_catch,
+      catch_uid = interview_id, interview_uid = interview_id, # nolint
+      species = species, count = count, catch_type = catch_type # nolint
+    )))
+  }
+
+  expect_identical(
+    suppressWarnings(suppressMessages(
+      estimate_total_release(build(FALSE))
+    ))$unit,
+    NA_character_
+  )
+  expect_identical(
+    suppressWarnings(suppressMessages(
+      estimate_total_release(build(TRUE))
+    ))$unit,
+    "fish"
+  )
+})
+
+test_that("bus-route totals derive their unit from the interview effort (GH #213)", {
+  # The bus-route and ice totals reach a different constructor than the
+  # standard path -- three more `unit = "fish"` literals that GH #213 did not
+  # name. Their effort unit comes from `interview_effort_unit()` rather than
+  # `design$effort_unit`, which is why they are keyed on it instead.
+  #
+  # This design's interviews are normalised by party size, so the pairing
+  # cancels and the answer is still "fish" -- a derived "fish", not a literal
+  # one. It passed before the fix too, which is the point of keeping it: the
+  # fix must not break the case that was already right.
+  d <- suppressWarnings(suppressMessages(
+    build_br_design_for_tests(n_sites = 3, n_days = 6, n_interviews = 30, seed = 42)
+  ))
+
+  expect_identical(interview_effort_unit(d), "angler-hours")
+  expect_identical(rate_unit(d), "fish/angler-hour")
+  expect_identical(
+    suppressWarnings(suppressMessages(estimate_total_harvest(d)))$unit,
+    "fish"
+  )
 })

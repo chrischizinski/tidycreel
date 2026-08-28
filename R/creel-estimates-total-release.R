@@ -88,6 +88,27 @@
 #' total_rel_sp <- estimate_total_release(design, by = species)
 #' print(total_rel_sp)
 #' @family "Estimation"
+#' @section Unit of the total:
+#'
+#' The reported `unit` is derived from the two factors, never declared. A
+#' total is `"fish"` only when a per-angler-hour rate multiplies an effort in
+#' angler-hours; anything else reports `NA_character_`, meaning unknown.
+#'
+#' Two ways to fail to cancel:
+#'
+#' * **The effort unit is unknown.** `design$effort_unit` is `NA` whenever
+#'   `add_counts()` received no `period_length_col`, because a bare count
+#'   column may be an instantaneous head count or effort the caller already
+#'   expanded, and nothing can tell the two apart. Unknown times known is
+#'   unknown. Supply `period_length_col` to make the total's unit derivable.
+#' * **The denominators disagree.** A rate per party-hour times an effort in
+#'   angler-hours is not a count of fish. Pass `n_anglers` to
+#'   [add_interviews()] so the rate is per angler-hour.
+#'
+#' The estimate itself is unaffected in both cases -- only the label changes.
+#' Until version 5.2.0 the unit was the literal `"fish"` regardless of either
+#' factor (GH #213).
+#'
 #' @export
 estimate_total_release <- function(
   design,
@@ -217,7 +238,7 @@ estimate_total_release <- function(
       conf_level = conf_level,
       by_vars = by_info$all_vars,
       effort_target = target,
-      unit = "fish",
+      unit = product_total_unit(rate_unit(design), design$effort_unit), # nolint: object_usage_linter
       se_expansion = attr(estimates_df, "se_expansion")
     ))
   }
@@ -340,7 +361,7 @@ estimate_total_release_ungrouped <- function(
     conf_level = conf_level,
     by_vars = NULL,
     effort_target = target,
-    unit = "fish",
+    unit = product_total_unit(rate_unit(design), design$effort_unit), # nolint: object_usage_linter
     se_expansion = attr(estimates_df, "se_expansion")
   )
 }
@@ -396,7 +417,7 @@ estimate_total_release_grouped <- function(
     conf_level = conf_level,
     by_vars = by_vars,
     effort_target = target,
-    unit = "fish",
+    unit = product_total_unit(rate_unit(design), design$effort_unit), # nolint: object_usage_linter
     se_expansion = attr(estimates_df, "se_expansion")
   )
 }
@@ -716,7 +737,7 @@ estimate_total_release_sections <- function(
     conf_level = conf_level,
     by_vars = if (!is.null(by_vars)) c("section", by_vars) else "section",
     effort_target = target,
-    unit = "fish",
+    unit = product_total_unit(rate_unit(design), design$effort_unit), # nolint: object_usage_linter
     se_expansion = se_expansion
   )
 }

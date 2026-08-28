@@ -985,6 +985,54 @@ rate_unit <- function(design) {
   paste0("fish/", sub("-hours$", "-hour", denom))
 }
 
+#' Derive the unit of a rate-times-effort product
+#'
+#' The three total estimators multiply a per-unit-effort rate by an effort
+#' total. `fish/angler-hour * angler-hours` cancels to `fish`; nothing else
+#' does. Before this existed each of them wrote `unit = "fish"` as a literal at
+#' the `new_creel_estimates()` call, so a total built on an effort estimate of
+#' unknown unit was still labelled `fish` (#213).
+#'
+#' Two ways to fail to cancel, both answered with `NA`:
+#'
+#' * either factor's unit is unknown -- `design$effort_unit` is `NA` whenever
+#'   `add_counts()` received no `period_length_col`, because a bare count column
+#'   may be an instantaneous head count or effort the caller already expanded
+#'   and nothing can tell the two apart. Unknown times known is unknown.
+#' * the denominators disagree -- `fish/party-hour * angler-hours` is not fish.
+#'   `warn_party_hours_product()` already reports that seam; this stops the
+#'   result from carrying a confident label through it.
+#'
+#' Derived rather than declared, the same rule `estimate_effort_per_acre()`
+#' follows: composing the string from its inputs is what keeps an unknown
+#' unknown.
+#'
+#' @param rate_unit The `unit` of the rate estimate, e.g. `"fish/angler-hour"`
+#' @param effort_unit The effort unit, e.g. `"angler-hours"`
+#'
+#' @return `"fish"` when the units cancel, otherwise `NA_character_`
+#'
+#' @keywords internal
+#' @noRd
+product_total_unit <- function(rate_unit, effort_unit) {
+  rate <- rate_unit %||% NA_character_
+  effort <- effort_unit %||% NA_character_
+  if (length(rate) != 1L || length(effort) != 1L) {
+    return(NA_character_)
+  }
+  if (is.na(rate) || is.na(effort)) {
+    return(NA_character_)
+  }
+  denominator <- sub("^fish/", "", rate)
+  # "angler-hour" cancels "angler-hours"; the rate's singular is the effort's
+  # plural. Compared rather than pattern-matched so an unrecognised pair falls
+  # through to NA instead of being assumed to cancel.
+  if (!identical(paste0(denominator, "s"), effort)) {
+    return(NA_character_)
+  }
+  "fish"
+}
+
 #' Derive the unit of a trip count from the effort it was divided from
 #'
 #' Trips are effort / mean trip length, and the divisor is hours per trip, so
