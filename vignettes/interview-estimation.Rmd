@@ -248,10 +248,12 @@ using them for estimation, see the **Incomplete Trip Estimation** vignette
 - Examples of passing and failing validation scenarios
 - Why you should NEVER pool complete and incomplete trips
 
+::: {.alert .alert-warning}
 **Important:** The package defaults to complete trips only. Incomplete trip
 estimation requires explicit opt-in via the `use_trips` parameter in
 `estimate_catch_rate()` and should only be used after validation with
 `validate_incomplete_trips()`.
+:::
 
 ## Next Steps
 
