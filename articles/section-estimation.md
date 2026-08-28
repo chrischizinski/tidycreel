@@ -141,12 +141,12 @@ print(cpue_est$estimates)
 #> 3 South       2.45 0.0287    2.39      2.51     9 TRUE
 ```
 
-> **Notice there is no `.lake_total` row.** Catch rate is a ratio
-> estimator and ratios are not additive — South’s high catch rate cannot
-> simply be averaged with North’s low rate to produce a valid lake-wide
-> CPUE. To estimate the lake-wide catch rate, call
-> [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
-> on a design without section registration.
+**Notice there is no `.lake_total` row.** Catch rate is a ratio
+estimator and ratios are not additive — South’s high catch rate cannot
+simply be averaged with North’s low rate to produce a valid lake-wide
+CPUE. To estimate the lake-wide catch rate, call
+[`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
+on a design without section registration.
 
 ``` r
 
