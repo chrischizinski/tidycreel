@@ -1155,3 +1155,148 @@ test_that("CEST-29: the gap is reported even without a camera_status column (GH 
     class = "creel_warning_camera_na_counts"
   )
 })
+
+# CEST-30: the within-day variance component is read, not assumed 0 (GH #217) --
+#
+# `add_counts(count_time_col = )` aggregates sub-daily counts to a daily mean
+# and stores the within-day components (ss_d, k_d) on the design. The camera
+# estimators reported `se_within = 0` as a literal while those sat unread, so a
+# design with real within-day spread got the same standard error as one with
+# none. A hard 0 is indistinguishable from a component that never propagated,
+# which is why the package reserves it for "nil by construction".
+
+make_subdaily_counts <- function(spread) {
+  dates <- as.Date(c(
+    "2024-06-03", "2024-06-04", "2024-06-05", "2024-06-08", "2024-06-09"
+  ))
+  day_type <- c("weekday", "weekday", "weekday", "weekend", "weekend")
+  # Two counts per day, symmetric about the same daily mean at every spread, so
+  # the point estimate is held fixed and only the within-day variance moves.
+  data.frame(
+    date = rep(dates, each = 2L),
+    day_type = rep(day_type, each = 2L),
+    count_time = rep(c(9, 15), 5L),
+    ingress_count = as.integer(
+      rep(c(48L, 55L, 43L, 80L, 75L), each = 2L) + rep(c(-spread, spread), 5L)
+    ),
+    camera_status = rep("operational", 10L),
+    stringsAsFactors = FALSE
+  )
+}
+
+make_subdaily_design <- function(spread) {
+  suppressWarnings(add_counts(
+    make_camera_design(),
+    make_subdaily_counts(spread),
+    count_time_col = count_time # nolint
+  ))
+}
+
+test_that("CEST-30: the design really carries the within-day spread (GH #217)", {
+  # Guards the fixture itself. If add_counts() stopped recording ss_d, every
+  # assertion below would still pass while measuring nothing.
+  expect_equal(unique(make_subdaily_design(0)$within_day_var$ss_d), 0)
+  expect_equal(unique(make_subdaily_design(30)$within_day_var$ss_d), 1800)
+  expect_equal(unique(make_subdaily_design(30)$within_day_var$k_d), 2L)
+})
+
+test_that("CEST-30: more within-day spread gives a larger SE (GH #217)", {
+  # Information monotonicity, stated as an inequality rather than a snapshot:
+  # upstream uncertainty rises with the point estimate held fixed, so the
+  # reported SE must not stay equal. Pre-fix both were 3.266133.
+  flat <- suppressWarnings(
+    est_effort_camera(make_subdaily_design(0), interviews = make_interviews())
+  )
+  spread <- suppressWarnings(
+    est_effort_camera(make_subdaily_design(30), interviews = make_interviews())
+  )
+  expect_gt(spread$estimates$se, flat$estimates$se)
+  expect_gt(spread$estimates$se_within, 0)
+  expect_equal(flat$estimates$se_within, 0)
+})
+
+test_that("CEST-30: the point estimate is untouched by within-day spread (GH #217)", {
+  # The daily means are identical by construction, so an estimate that moved
+  # would mean the SE moved for the wrong reason.
+  flat <- suppressWarnings(
+    est_effort_camera(make_subdaily_design(0), interviews = make_interviews())
+  )
+  spread <- suppressWarnings(
+    est_effort_camera(make_subdaily_design(30), interviews = make_interviews())
+  )
+  expect_equal(spread$estimates$estimate, flat$estimates$estimate)
+})
+
+test_that("CEST-30: the within-day term does not leak into se_between (GH #217)", {
+  # The two components answer different questions and are reported separately.
+  # Between-day variance is a property of the daily means, which are identical
+  # across these two designs.
+  flat <- suppressWarnings(
+    est_effort_camera(make_subdaily_design(0), interviews = make_interviews())
+  )
+  spread <- suppressWarnings(
+    est_effort_camera(make_subdaily_design(30), interviews = make_interviews())
+  )
+  expect_equal(spread$estimates$se_between, flat$estimates$se_between)
+})
+
+test_that("CEST-30: the within-day component is scaled by rho per stratum (GH #217)", {
+  # Hand-computed. The stored component is a variance of the stratum COUNT
+  # total, so it enters the effort estimate through that stratum's
+  # hours-per-count ratio -- pooling the strata or omitting rho would both give
+  # a different number.
+  #
+  # weekday: n = 3, k_bar = 2, s2 = 3*1800/(3*1) = 1800, v = (3/2)*1800 = 2700
+  # weekend: n = 2, k_bar = 2, s2 = 2*1800/(2*1) = 1800, v = (2/2)*1800 = 1800
+  # rho_weekday = (3.5 + 2.0 + 4.0) / (48 + 55) = 9.5/103
+  # rho_weekend = (2.5 + 3.0)       / (80 + 75) = 5.5/155
+  v_wd <- 2700
+  v_we <- 1800
+  rho_wd <- 9.5 / 103
+  rho_we <- 5.5 / 155
+  expected <- sqrt(rho_wd^2 * v_wd + rho_we^2 * v_we)
+  res <- suppressWarnings(
+    est_effort_camera(make_subdaily_design(30), interviews = make_interviews())
+  )
+  expect_equal(res$estimates$se_within, expected, tolerance = 1e-10)
+})
+
+test_that("CEST-30: the combined SE adds the components as variances (GH #217)", {
+  res <- suppressWarnings(
+    est_effort_camera(make_subdaily_design(30), interviews = make_interviews())
+  )
+  expect_equal(
+    res$estimates$se,
+    sqrt(res$estimates$se_between^2 + res$estimates$se_within^2),
+    tolerance = 1e-10
+  )
+})
+
+test_that("CEST-30: the raw path reports the within-day term too, scaled by h_open (GH #217)", {
+  # est = count total * h_open, so the within-day variance of that total scales
+  # by h_open^2. Ungrouped here because no rho applies.
+  #
+  # (2700 + 1800) * 12^2 = 648000; sqrt = 804.9845
+  flat <- suppressWarnings(
+    est_effort_camera(make_subdaily_design(0), calibration = "none", h_open = 12)
+  )
+  spread <- suppressWarnings(
+    est_effort_camera(make_subdaily_design(30), calibration = "none", h_open = 12)
+  )
+  expect_equal(flat$estimates$se_within, 0)
+  expect_equal(spread$estimates$se_within, sqrt(4500 * 12^2), tolerance = 1e-10)
+  expect_equal(spread$estimates$estimate, flat$estimates$estimate)
+})
+
+test_that("CEST-30: one count per day still reports se_within = 0 (GH #217)", {
+  # Inertness control, and the reason 0 is the right mark here rather than NA:
+  # with a single count per day there is no within-day variation to measure, so
+  # the component is nil by construction, not unknown. Every pre-existing
+  # camera estimate must be bit-identical.
+  res <- suppressWarnings(
+    est_effort_camera(make_design_with_counts(), interviews = make_interviews())
+  )
+  expect_equal(res$estimates$se_within, 0)
+  expect_equal(res$estimates$estimate, 18.9660194174757, tolerance = 1e-12)
+  expect_equal(res$estimates$se, 3.2661325499868386, tolerance = 1e-12)
+})
