@@ -194,6 +194,23 @@ between-day component is understated as well. A warning reports how many
 days were imputed; the standard error is a lower bound.</p></li>
 </ul></div>
     <div class="section level2">
+    <h2 id="within-day-variance">Within-day variance<a class="anchor" aria-label="anchor" href="#within-day-variance"></a></h2>
+
+
+
+<p>When counts arrive through <code>add_counts(count_time_col = )</code>, several counts
+on one day are averaged into a daily mean and the within-day components
+(<code>ss_d</code>, <code>k_d</code>) are stored on the design. Both paths of this function read
+them and report the Rasmussen (1998) within-day term as <code>se_within</code>,
+scaling it by the stratum's calibration ratio on the ratio path and by
+<code>h_open</code> on the raw path.</p>
+<p><code>se_within</code> is <code>0</code> only when there is genuinely nothing to measure – one
+count per day, where the component is nil by construction rather than
+unknown. It was previously reported as a literal <code>0</code> in every case, while
+the measured components sat unread on the design, so a design with real
+within-day spread received the same standard error as one with none.</p>
+    </div>
+    <div class="section level2">
     <h2 id="one-count-row-per-day-on-the-calibration-path">One count row per day on the calibration path<a class="anchor" aria-label="anchor" href="#one-count-row-per-day-on-the-calibration-path"></a></h2>
 
 
