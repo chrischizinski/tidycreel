@@ -1,15 +1,16 @@
 # Tabulate interviews by day type and month
 
 Counts the number of interviews in each day type stratum (e.g., weekday,
-weekend) within each calendar month. Day type is taken from the first
-strata column (`design$strata_cols[1]`), which is always present after
-[`creel_design`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md)
-is called.
+weekend) within each calendar month. The day type column is resolved
+from the design's strata: a stratum named `day_type` when the design
+declares one, otherwise the first stratum column, which warns when the
+design declares more than one. Pass `day_type_col` to state the column
+outright.
 
 ## Usage
 
 ``` r
-summarize_by_day_type(design)
+summarize_by_day_type(design, day_type_col = NULL)
 ```
 
 ## Arguments
@@ -17,6 +18,12 @@ summarize_by_day_type(design)
 - design:
 
   A `creel_design` object with interviews attached.
+
+- day_type_col:
+
+  Name of the column holding the day type, as a single string. When
+  `NULL` (the default) it is resolved from the design's strata as
+  described above.
 
 ## Value
 

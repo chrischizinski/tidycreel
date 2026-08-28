@@ -2,12 +2,15 @@
 
 Computes the percentage of boats that are angler boats from raw count
 data, grouped by calendar month and day type. Formula:
-`mean(angler_boats / (angler_boats + non_ang_boats))` per group.
+`mean(angler_boats / (angler_boats + non_ang_boats))` per group. The day
+type column is resolved from the design's strata: a stratum named
+`day_type` when the design declares one, otherwise the first stratum
+column, which warns when the design declares more than one.
 
 ## Usage
 
 ``` r
-summarize_boat_composition(design, schema)
+summarize_boat_composition(design, schema, day_type_col = NULL)
 ```
 
 ## Arguments
@@ -21,6 +24,12 @@ summarize_boat_composition(design, schema)
 
   A `creel_schema` object with `angler_boats_col` and
   `non_ang_boats_col` set.
+
+- day_type_col:
+
+  Name of the column holding the day type, as a single string. When
+  `NULL` (the default) it is resolved from the design's strata as
+  described above.
 
 ## Value
 
