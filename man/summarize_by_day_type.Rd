@@ -4,10 +4,14 @@
 \alias{summarize_by_day_type}
 \title{Tabulate interviews by day type and month}
 \usage{
-summarize_by_day_type(design)
+summarize_by_day_type(design, day_type_col = NULL)
 }
 \arguments{
 \item{design}{A \code{creel_design} object with interviews attached.}
+
+\item{day_type_col}{Name of the column holding the day type, as a single
+string. When \code{NULL} (the default) it is resolved from the design's
+strata as described above.}
 }
 \value{
 A \code{data.frame} with class \code{c("creel_summary_day_type",
@@ -16,9 +20,11 @@ A \code{data.frame} with class \code{c("creel_summary_day_type",
 }
 \description{
 Counts the number of interviews in each day type stratum (e.g., weekday,
-weekend) within each calendar month. Day type is taken from the first
-strata column (\code{design$strata_cols[1]}), which is always present
-after \code{\link{creel_design}} is called.
+weekend) within each calendar month. The day type column is resolved from
+the design's strata: a stratum named \code{day_type} when the design
+declares one, otherwise the first stratum column, which warns when the
+design declares more than one. Pass \code{day_type_col} to state the
+column outright.
 }
 \details{
 \strong{Interview-based summary, not pressure-weighted.} This function

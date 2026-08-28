@@ -103,12 +103,81 @@ summarize_refusals <- function(design) {
 }
 
 
+#' Resolve the stratum column holding the day type
+#'
+#' Internal helper. Two reporting summaries group by "day type", but a stratum
+#' has no canonical name in this package -- the caller names their own calendar
+#' columns and `creel_design()` preserves the order they were declared in. So
+#' `strata_cols[1]` is a declaration order, not a definition of day type: a
+#' design declaring `strata = c(site, day_type)` put sites under a `day_type`
+#' header with no warning (GH #221).
+#'
+#' Resolution order: an explicit `day_type_col`; then a stratum actually named
+#' `day_type`; then the first stratum, which warns when there is more than one
+#' so the assumption is visible at the point of use. A single-stratum design
+#' resolves silently, because there is nothing to choose between.
+#'
+#' @param design A `creel_design` object.
+#' @param day_type_col Caller-supplied column name, or `NULL` to infer.
+#' @param data The frame being tabulated (interviews or counts).
+#' @param data_arg Where that frame lives, for the error message.
+#' @param call Calling environment for condition reporting.
+#'
+#' @return A single column name.
+#'
+#' @keywords internal
+#' @noRd
+resolve_day_type_col <- function(design, day_type_col, data, data_arg,
+                                 call = rlang::caller_env()) {
+  strata <- design$strata_cols
+
+  if (!is.null(day_type_col)) {
+    ok <- is.character(day_type_col) &&
+      length(day_type_col) == 1L &&
+      nzchar(day_type_col)
+    if (!ok) {
+      cli::cli_abort(
+        "{.arg day_type_col} must be a single non-empty column name.",
+        call = call
+      )
+    }
+    col <- day_type_col
+  } else if ("day_type" %in% strata) {
+    col <- "day_type"
+  } else {
+    col <- strata[1L]
+    if (length(strata) > 1L) {
+      cli::cli_warn(c(
+        "Using stratum {.field {col}} as the day type.",
+        "x" = paste(
+          "The design declares {length(strata)} strata",
+          "({.field {strata}}) and none is named {.field day_type}."
+        ),
+        "i" = "Pass {.arg day_type_col} to name the day type column."
+      ), call = call)
+    }
+  }
+
+  if (!col %in% names(data)) {
+    cli::cli_abort(c(
+      "No {.field {col}} column found in {data_arg}.",
+      "x" = "Column {.field {col}} is absent from {.code {data_arg}}.",
+      "i" = "Pass {.arg day_type_col} to name the day type column."
+    ), call = call)
+  }
+
+  col
+}
+
+
 #' Tabulate interviews by day type and month
 #'
 #' Counts the number of interviews in each day type stratum (e.g., weekday,
-#' weekend) within each calendar month. Day type is taken from the first
-#' strata column (\code{design$strata_cols[1]}), which is always present
-#' after \code{\link{creel_design}} is called.
+#' weekend) within each calendar month. The day type column is resolved from
+#' the design's strata: a stratum named \code{day_type} when the design
+#' declares one, otherwise the first stratum column, which warns when the
+#' design declares more than one. Pass \code{day_type_col} to state the
+#' column outright.
 #'
 #' @details
 #' \strong{Interview-based summary, not pressure-weighted.} This function
@@ -117,6 +186,9 @@ summarize_refusals <- function(design) {
 #' \code{\link{estimate_catch_rate}} or \code{\link{estimate_harvest_rate}}.
 #'
 #' @param design A \code{creel_design} object with interviews attached.
+#' @param day_type_col Name of the column holding the day type, as a single
+#'   string. When \code{NULL} (the default) it is resolved from the design's
+#'   strata as described above.
 #'
 #' @return A \code{data.frame} with class \code{c("creel_summary_day_type",
 #'   "data.frame")} and columns: \code{month}, \code{day_type}, \code{N},
@@ -134,7 +206,7 @@ summarize_refusals <- function(design) {
 #'
 #' @family "Reporting & Diagnostics"
 #' @export
-summarize_by_day_type <- function(design) {
+summarize_by_day_type <- function(design, day_type_col = NULL) {
   # Guard 1: type check
   if (!inherits(design, "creel_design")) {
     cli::cli_abort(c(
@@ -153,8 +225,11 @@ summarize_by_day_type <- function(design) {
     ))
   }
 
-  # No Guard 3 — strata_cols always set by creel_design()
-  strata_col <- design$strata_cols[1]
+  # Guard 3: which stratum is the day type? strata_cols[1] is a declaration
+  # order, not a definition (GH #221).
+  strata_col <- resolve_day_type_col(
+    design, day_type_col, design$interviews, "design$interviews"
+  )
   day_type_vals <- design$interviews[[strata_col]]
 
   dates <- design$interviews[[design$date_col]]
@@ -1538,7 +1613,10 @@ new_creel_summary <- function(table, method, variance_method, conf_level) {
 #' @description
 #' Computes the percentage of boats that are angler boats from raw count data,
 #' grouped by calendar month and day type. Formula:
-#' \code{mean(angler_boats / (angler_boats + non_ang_boats))} per group.
+#' \code{mean(angler_boats / (angler_boats + non_ang_boats))} per group. The
+#' day type column is resolved from the design's strata: a stratum named
+#' \code{day_type} when the design declares one, otherwise the first stratum
+#' column, which warns when the design declares more than one.
 #'
 #' @details
 #' Count-based summary, not interview-weighted. Rows where
@@ -1548,6 +1626,9 @@ new_creel_summary <- function(table, method, variance_method, conf_level) {
 #'   \code{\link{add_counts}}.
 #' @param schema A \code{creel_schema} object with \code{angler_boats_col} and
 #'   \code{non_ang_boats_col} set.
+#' @param day_type_col Name of the column holding the day type, as a single
+#'   string. When \code{NULL} (the default) it is resolved from the design's
+#'   strata as described above.
 #'
 #' @return A \code{data.frame} with class
 #'   \code{c("creel_summary_boat_composition", "data.frame")} and columns:
@@ -1582,7 +1663,7 @@ new_creel_summary <- function(table, method, variance_method, conf_level) {
 #'
 #' @family "Reporting & Diagnostics"
 #' @export
-summarize_boat_composition <- function(design, schema) {
+summarize_boat_composition <- function(design, schema, day_type_col = NULL) {
   # Guard 1: design type check
   if (!inherits(design, "creel_design")) {
     cli::cli_abort(c(
@@ -1629,8 +1710,11 @@ summarize_boat_composition <- function(design, schema) {
   month_chr <- format(dates, "%B")
   month_num <- format(dates, "%m")
 
-  # Extract day_type from first strata column
-  strata_col <- design$strata_cols[1]
+  # Which stratum is the day type? strata_cols[1] is a declaration order, not a
+  # definition (GH #221).
+  strata_col <- resolve_day_type_col(
+    design, day_type_col, counts, "design$counts"
+  )
   day_type <- counts[[strata_col]]
 
   ab <- counts[[ab_col]]

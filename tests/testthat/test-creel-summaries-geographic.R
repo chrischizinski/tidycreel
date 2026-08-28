@@ -1,4 +1,4 @@
-# Tests for geographic summary functions -- Phase 96 (RPT-03, RPT-04, RPT-05)
+# Tests for geographic summary functions -- Phase 96 (RPT-03, RPT-04, RPT-05, RPT-06)
 
 # --- Shared fixtures -----------------------------------------------------------
 
@@ -325,4 +325,94 @@ test_that("summarize_by_county() aborts when the named zip column is not in inte
     summarize_by_county(d),
     regexp = "zip_code"
   )
+})
+
+# --- Day type column resolution — RPT-06 (GH #221) ----------------------------
+#
+# The same `strata_cols[1]` defect as USUM-09, in the second of its two sites.
+# Here it moves numbers as well as labels: the reported percentages were the
+# per-site means printed under a `day_type` header.
+
+make_two_strata_boat_design <- function(strata_second = "day_type") {
+  dates <- as.Date("2024-06-01") + 0:5
+  counts_df <- data.frame(
+    date = dates,
+    site = rep(c("north", "south"), 3),
+    day_type = rep(c("weekday", "weekend"), each = 3),
+    period = rep(c("am", "pm"), each = 3),
+    # Composition is driven by SITE, so a site grouping and a day_type grouping
+    # give different numbers — a balanced fixture could not tell them apart.
+    angler_boats = c(9L, 1L, 9L, 1L, 9L, 1L),
+    non_ang_boats = c(1L, 9L, 1L, 9L, 1L, 9L),
+    count = 10L,
+    stringsAsFactors = FALSE
+  )
+  cal <- counts_df[, c("date", "site", "day_type", "period")]
+  # `site` declared FIRST on purpose.
+  d <- suppressWarnings(creel_design(
+    cal,
+    date = date, # nolint: object_usage_linter
+    strata = c("site", strata_second),
+    survey_type = "instantaneous"
+  ))
+  suppressWarnings(
+    add_counts(d, counts_df, count_col = count) # nolint: object_usage_linter
+  )
+}
+
+test_that("summarize_boat_composition() groups by the stratum named day_type", {
+  d <- make_two_strata_boat_design()
+  s <- make_boat_composition_schema()
+
+  result <- suppressWarnings(summarize_boat_composition(d, s))
+
+  expect_setequal(result$day_type, c("weekday", "weekend"))
+  expect_false(any(c("north", "south") %in% result$day_type))
+})
+
+test_that("summarize_boat_composition() reports the day type percentages, not the site ones", {
+  d <- make_two_strata_boat_design()
+  s <- make_boat_composition_schema()
+
+  result <- suppressWarnings(summarize_boat_composition(d, s))
+
+  # Truth by day type: weekday days carry ratios 0.9, 0.1, 0.9 -> 63.3%;
+  # weekend days 0.1, 0.9, 0.1 -> 36.7%. Grouped by site it was 90 / 10.
+  weekday_pct <- result$pct_angler_boats[result$day_type == "weekday"]
+  weekend_pct <- result$pct_angler_boats[result$day_type == "weekend"]
+  expect_equal(weekday_pct, 63.3, tolerance = 1e-8)
+  expect_equal(weekend_pct, 36.7, tolerance = 1e-8)
+  expect_false(isTRUE(all.equal(weekday_pct, 90)))
+})
+
+test_that("summarize_boat_composition() warns and names the column when it must guess", {
+  d <- make_two_strata_boat_design(strata_second = "period")
+  s <- make_boat_composition_schema()
+
+  expect_warning(
+    summarize_boat_composition(d, s),
+    "Using stratum.*site.*as the day type"
+  )
+})
+
+test_that("summarize_boat_composition() honours an explicit day_type_col", {
+  d <- make_two_strata_boat_design(strata_second = "period")
+  s <- make_boat_composition_schema()
+
+  result <- summarize_boat_composition(d, s, day_type_col = "day_type")
+
+  expect_setequal(result$day_type, c("weekday", "weekend"))
+  expect_equal(
+    result$pct_angler_boats[result$day_type == "weekday"],
+    63.3,
+    tolerance = 1e-8
+  )
+})
+
+test_that("summarize_boat_composition() is silent for a single-stratum design", {
+  d <- make_boat_composition_design()
+  s <- make_boat_composition_schema()
+
+  # Inertness control — the documented single-stratum workflow must not warn.
+  expect_no_warning(summarize_boat_composition(d, s))
 })
