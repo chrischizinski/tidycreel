@@ -108,7 +108,7 @@ print(effort_est$estimates)
 #> 1 North            269 12.3       12.3          0    242.      296.    12
 #> 2 Central          472 19.0       19.0          0    430.      514.    12
 #> 3 South            105  9.18       9.18         0     84.6     125.    12
-#> 4 .lake_total      846 39.4       NA           NA    758.      934.    36
+#> 4 .lake_total      846 39.4       39.4          0    758.      934.    36
 #> # ℹ 2 more variables: prop_of_lake_total <dbl>, data_available <lgl>
 ```
 
@@ -257,7 +257,7 @@ estimate_effort(design, method = "correlated")$estimates
 #> 1 North            269 12.3       12.3          0    242.      296.    12
 #> 2 Central          472 19.0       19.0          0    430.      514.    12
 #> 3 South            105  9.18       9.18         0     84.6     125.    12
-#> 4 .lake_total      846 39.4       NA           NA    758.      934.    36
+#> 4 .lake_total      846 39.4       39.4          0    758.      934.    36
 #> # ℹ 2 more variables: prop_of_lake_total <dbl>, data_available <lgl>
 
 # Alternative: Cochran 5.2 additivity (independent crews, non-overlapping calendars)
@@ -268,7 +268,7 @@ estimate_effort(design, method = "independent")$estimates
 #> 1 North            269 12.3       12.3          0    242.      296.    12
 #> 2 Central          472 19.0       19.0          0    430.      514.    12
 #> 3 South            105  9.18       9.18         0     84.6     125.    12
-#> 4 .lake_total      846 24.4       NA           NA    792.      900.    36
+#> 4 .lake_total      846 24.4       24.4          0    792.      900.    36
 #> # ℹ 2 more variables: prop_of_lake_total <dbl>, data_available <lgl>
 ```
 
@@ -302,7 +302,7 @@ estimate_effort(design_missing, missing_sections = "warn")$estimates
 #> 1 North            269  12.3       12.3         0     242.     296.    12
 #> 2 Central          472  19.0       19.0         0     430.     514.    12
 #> 3 South             NA  NA         NA          NA      NA       NA      0
-#> 4 .lake_total      741  31.1       NA          NA     672.     810.    24
+#> 4 .lake_total      741  31.1       31.1         0     672.     810.    24
 #> # ℹ 2 more variables: prop_of_lake_total <dbl>, data_available <lgl>
 ```
 
