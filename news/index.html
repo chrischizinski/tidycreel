@@ -65,6 +65,22 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="development version" id="tidycreel-development-version">tidycreel (development version)<a class="anchor" aria-label="anchor" href="#tidycreel-development-version"></a></h2>
+<div class="section level3">
+<h3 id="breaking-changes-development-version">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-development-version"></a></h3>
+<ul><li>
+<p>The within-day variance component is now keyed by the sampling unit rather than by the PSU alone (<a href="https://github.com/chrischizinski/tidycreel/issues/227" class="external-link">#227</a>). <code><a href="../reference/add_counts.html">add_counts()</a></code> keys <code>design$within_day_var</code> by the full unit key – the section, the site, or whatever <code>unit_cols</code> named – and two consumers rebuilt a narrower <code>c(psu_col, strata_cols)</code> key from the design instead of reading the one the table was built with.</p>
+<p>Nothing errored, because a join on too few columns does not fail: it returns more rows than it was given. On a three-section design each section’s 12 count rows matched three within-day rows apiece and became 36, so every section summed the lake-wide sum of squares, and the inflated row count also became <code>n_sampled</code> in the variance divisor. On a fixture where two of three sections are counted identically at both count times – no within-day variation whatsoever – all three reported the same <code>se_within</code> of 849.9, roughly 85% of each section’s total standard error, against between-day components of 110 to</p>
+<ol start="228" style="list-style-type: decimal"><li>
+</li></ol><p>The same wrong key scaled the component to effort units. <code>ss_d</code> is multiplied by <code>T_d^2</code>, and <code><a href="https://rdrr.io/r/base/match.html" class="external-link">match()</a></code> on the date returned the first row carrying it, so every section of a date was scaled by whichever section sorted first. A section open 6 hours sitting alongside sections open 12 was scaled by <code>12^2</code> instead of <code>6^2</code>: fourfold too large, silently. Sections with different open hours is an ordinary field situation.</p>
+<p><strong>This moves standard errors, confidence intervals and every downstream product</strong> for any design whose unit key is wider than <code>(psu, strata)</code>: sectioned designs, site-structured designs, and any use of <code>unit_cols</code>. Point estimates are unchanged. <code><a href="../reference/estimate_total_catch.html">estimate_total_catch()</a></code>, <code><a href="../reference/estimate_total_harvest.html">estimate_total_harvest()</a></code> and <code><a href="../reference/estimate_total_release.html">estimate_total_release()</a></code> all build products from <code>estimate_effort_total()</code> and inherit the correction.</p>
+<p>The same defect crashed rather than lying when the extra unit-key column came from <code>unit_cols</code> and the caller grouped by it: the narrow join renamed the duplicated column and the estimator died inside base R with <code>replacement has 0 rows</code>. That path now returns per-group within-day variance.</p>
+<p>Both consumers now read the key off the table itself, via the new internal <code>within_day_key_cols()</code>, so a key written one way and read another cannot recur.</p>
+<p>Found by the sectioned/hybrid seam audit; the <code>.lake_total</code> row’s standard error still omits this component (<a href="https://github.com/chrischizinski/tidycreel/issues/228" class="external-link">#228</a>) and is unchanged here.</p>
+</li>
+</ul></div>
+</div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="5.2.0" id="tidycreel-520-river-carpsucker-2026-08-28">tidycreel 5.2.0 “River Carpsucker” (2026-08-28)<a class="anchor" aria-label="anchor" href="#tidycreel-520-river-carpsucker-2026-08-28"></a></h2>
 <div class="section level3">
 <h3 id="breaking-changes-5-2-0">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-5-2-0"></a></h3>
