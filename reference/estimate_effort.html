@@ -181,6 +181,19 @@ recorded per PSU and nonzero when <code>count_time_col</code> is supplied to
 <code><a href="add_counts.html">add_counts()</a></code>. For bus-route designs, a "site_contributions"
 attribute is also present containing per-site e_i, pi_i, and
 e_i_over_pi_i columns.</p>
+<p>For sectioned designs the tibble carries one row per registered section
+plus, when <code>aggregate_sections = TRUE</code>, a <code>.lake_total</code> row, and
+gains <code>section</code>, <code>prop_of_lake_total</code>,
+<code>se_prop_of_lake_total</code> and <code>data_available</code> columns.
+<code>prop_of_lake_total</code> is the section's share of the lake-wide total
+and <code>se_prop_of_lake_total</code> its standard error; both come from one
+<code><a href="https://rdrr.io/pkg/survey/man/svyratio.html" class="external-link">survey::svyratio()</a></code> call, which accounts for the correlation between
+a domain total and the overall total containing it. On the
+<code>.lake_total</code> row the share is exactly 1 with a standard error of 0,
+which is structural rather than an unpropagated component: that row's share
+of itself was never estimated. A section registered by
+<code><a href="add_sections.html">add_sections</a></code> but absent from the counts reports <code>NA</code> for
+both, alongside <code>data_available = FALSE</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>

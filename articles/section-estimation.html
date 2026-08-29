@@ -195,18 +195,25 @@ below).</p>
 <span><span class="co">#&gt;   counts, period_length_col = &lt;col&gt;)`.</span></span>
 <span><span class="co">#&gt; <span style="color: #555555;">This warning is displayed once per session.</span></span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">effort_est</span><span class="op">$</span><span class="va">estimates</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 10</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 11</span></span></span>
 <span><span class="co">#&gt;   section     estimate    se se_between se_within ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> North            269 12.3       12.3          0    242.      296.    12</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Central          472 19.0       19.0          0    430.      514.    12</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> South            105  9.18       9.18         0     84.6     125.    12</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> .lake_total      846 39.4       39.4          0    758.      934.    36</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 2 more variables: prop_of_lake_total &lt;dbl&gt;, data_available &lt;lgl&gt;</span></span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 3 more variables: prop_of_lake_total &lt;dbl&gt;, se_prop_of_lake_total &lt;dbl&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   data_available &lt;lgl&gt;</span></span></span></code></pre></div>
 <p>Central has the highest fishing effort among the three sections,
 while South has the lowest. The <code>prop_of_lake_total</code> column
-shows each section’s share of total angler-hours for the survey
-period.</p>
+shows each section’s share of total angler-hours for the survey period,
+and <code>se_prop_of_lake_total</code> its standard error, so shares can
+be compared with the same regard for precision as the totals themselves.
+Both come from one <code><a href="https://rdrr.io/pkg/survey/man/svyratio.html" class="external-link">survey::svyratio()</a></code> call, which accounts
+for the correlation between a section’s total and the lake-wide total
+that contains it. On the <code>.lake_total</code> row the share is
+exactly 1 with a standard error of 0 — that row’s share of itself is
+structural, not estimated.</p>
 <hr>
 </div>
 <div class="section level2">
@@ -330,25 +337,27 @@ If different sections have separate, non-overlapping calendars, use
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Default: accounts for cross-section covariance (shared-calendar designs)</span></span>
 <span><span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span>, method <span class="op">=</span> <span class="st">"correlated"</span><span class="op">)</span><span class="op">$</span><span class="va">estimates</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 10</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 11</span></span></span>
 <span><span class="co">#&gt;   section     estimate    se se_between se_within ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> North            269 12.3       12.3          0    242.      296.    12</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Central          472 19.0       19.0          0    430.      514.    12</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> South            105  9.18       9.18         0     84.6     125.    12</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> .lake_total      846 39.4       39.4          0    758.      934.    36</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 2 more variables: prop_of_lake_total &lt;dbl&gt;, data_available &lt;lgl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 3 more variables: prop_of_lake_total &lt;dbl&gt;, se_prop_of_lake_total &lt;dbl&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   data_available &lt;lgl&gt;</span></span></span>
 <span></span>
 <span><span class="co"># Alternative: Cochran 5.2 additivity (independent crews, non-overlapping calendars)</span></span>
 <span><span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span>, method <span class="op">=</span> <span class="st">"independent"</span><span class="op">)</span><span class="op">$</span><span class="va">estimates</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 10</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 11</span></span></span>
 <span><span class="co">#&gt;   section     estimate    se se_between se_within ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> North            269 12.3       12.3          0    242.      296.    12</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Central          472 19.0       19.0          0    430.      514.    12</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> South            105  9.18       9.18         0     84.6     125.    12</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> .lake_total      846 24.4       24.4          0    792.      900.    36</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 2 more variables: prop_of_lake_total &lt;dbl&gt;, data_available &lt;lgl&gt;</span></span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 3 more variables: prop_of_lake_total &lt;dbl&gt;, se_prop_of_lake_total &lt;dbl&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   data_available &lt;lgl&gt;</span></span></span></code></pre></div>
 <hr>
 </div>
 <div class="section level2">
@@ -371,14 +380,15 @@ silent omission of sections that should have been observed.</p>
 <span><span class="co">#&gt; Warning: 1 missing section(s) in count data.</span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Section(s) not found: <span style="color: #0000BB;">"South"</span></span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Inserting NA row(s) with <span style="color: #00BB00;">data_available = FALSE</span>.</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 10</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 11</span></span></span>
 <span><span class="co">#&gt;   section     estimate    se se_between se_within ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> North            269  12.3       12.3         0     242.     296.    12</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Central          472  19.0       19.0         0     430.     514.    12</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> South             <span style="color: #BB0000;">NA</span>  <span style="color: #BB0000;">NA</span>         <span style="color: #BB0000;">NA</span>          <span style="color: #BB0000;">NA</span>      <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>      0</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> .lake_total      741  31.1       31.1         0     672.     810.    24</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 2 more variables: prop_of_lake_total &lt;dbl&gt;, data_available &lt;lgl&gt;</span></span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 3 more variables: prop_of_lake_total &lt;dbl&gt;, se_prop_of_lake_total &lt;dbl&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   data_available &lt;lgl&gt;</span></span></span></code></pre></div>
 <p>To turn warnings into errors (for automated pipelines), use
 <code>missing_sections = "error"</code>.</p>
 </div>

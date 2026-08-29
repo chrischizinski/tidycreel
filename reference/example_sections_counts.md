@@ -96,12 +96,13 @@ estimate_effort(design)
 #> Confidence level: 95%
 #> Effort target: sampled_days
 #> 
-#> # A tibble: 4 × 10
+#> # A tibble: 4 × 11
 #>   section     estimate    se se_between se_within ci_lower ci_upper     n
 #>   <chr>          <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
 #> 1 North            269 12.3       12.3          0    242.      296.    12
 #> 2 Central          472 19.0       19.0          0    430.      514.    12
 #> 3 South            105  9.18       9.18         0     84.6     125.    12
 #> 4 .lake_total      846 39.4       39.4          0    758.      934.    36
-#> # ℹ 2 more variables: prop_of_lake_total <dbl>, data_available <lgl>
+#> # ℹ 3 more variables: prop_of_lake_total <dbl>, se_prop_of_lake_total <dbl>,
+#> #   data_available <lgl>
 ```

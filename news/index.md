@@ -251,6 +251,50 @@
   [\#230](https://github.com/chrischizinski/tidycreel/issues/230), which
   fixed the same defect in `estimate_effort_sections()`.
 
+- `estimate_effort_sections()` now forwards `target` to the per-section
+  estimator, and reports a standard error for `prop_of_lake_total`
+  ([\#231](https://github.com/chrischizinski/tidycreel/issues/231)).
+
+  The `target` argument was dropped by a positional call, so every
+  section was computed on `"sampled_days"` while the returned object was
+  labelled with the caller’s target. The lake row read `design$survey`
+  directly rather than going through `get_effort_target_design()`, so it
+  was stuck on sampled days too. On a calendar holding three times the
+  sampled days, `target = "stratum_total"` returned `104, 50, 154` – the
+  sampled-day figures, unchanged in every row – while reporting
+  `effort_target = "stratum_total"`. Nothing in the table disagreed with
+  anything else; only the label was wrong. It now returns
+  `312, 150, 462`.
+
+  This was unreachable from
+  [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),
+  which aborts for a sectioned design whenever
+  `target != "sampled_days"`. That abort describes itself as temporary,
+  and this is the estimand-mislabelling class rather than an arithmetic
+  error, so it is cheaper to forward the argument now than to remember
+  it when the guard is lifted. Behaviour for `"sampled_days"` is
+  unchanged: `get_effort_target_design()` returns `design$survey` for
+  that target.
+
+  `prop_of_lake_total` was a bare division of two survey estimates,
+  reported without uncertainty in a table where every other quantity
+  carries a standard error. It is a ratio of a domain total to the
+  overall total, both estimated from the same design and therefore
+  correlated – the denominator contains the numerator. The new
+  `se_prop_of_lake_total` column and the proportion now come from one
+  [`survey::svyratio()`](https://rdrr.io/pkg/survey/man/svyratio.html)
+  call, which handles that correlation and keeps the reported error
+  attached to the number beside it rather than to a parallel derivation
+  free to drift from it. The point estimate is unchanged.
+
+  The `.lake_total` row reports `se_prop_of_lake_total = 0`. That is a
+  structural zero rather than an unpropagated component: the lake
+  total’s share of itself is exactly 1 by construction and was never
+  estimated, so `NA` would assert an uncertainty that does not exist. An
+  absent section reports `NA` for both, since it has no share to report.
+
+  Found by the sectioned/hybrid seam audit.
+
 ## tidycreel 5.2.0 “River Carpsucker” (2026-08-28)
 
 ### Breaking changes
