@@ -5,29 +5,55 @@
 #' `r lifecycle::badge("experimental")`
 #'
 #' Combines count data from access-point and roving survey components into a
-#' single `survey::svydesign` object suitable for effort estimation via
-#' [estimate_effort()].
+#' single `survey::svydesign` object.  The two components are treated as
+#' **strata**, each carrying its own sampling fraction and its own population
+#' size, so the design total is the stratified sum of the component totals.
 #'
-#' A hybrid design is appropriate when a survey uses both fixed access-point
-#' counts (e.g., boat-launch interviews with angler counts) and roving-route
-#' counts (e.g., progressive counts along a shoreline transect) within the same
-#' sampling frame.  The two components are stacked, with a `component` column
-#' distinguishing them, and inclusion probabilities are derived from the
-#' user-supplied sampling fractions per stratum.
+#' **Disjointness precondition.**  Adding the two component totals is valid if
+#' and only if the components sample **disjoint sets of angler trips** -- no
+#' angler trip may be observed by both.  What produces that disjointness is a
+#' property of the survey protocol (angler type, geography, access mode, or a
+#' rule the designer imposes); tidycreel cannot infer it from the counts, the
+#' dates, the strata, or the method label, so you must affirm it with
+#' `trips_disjoint = TRUE`.  The design cannot be constructed otherwise.  A
+#' boat angler intercepted on the water by a roving route and again at the
+#' ramp on the same trip belongs to both frames, and the total double counts
+#' that trip.
+#'
+#' `component` names a survey **method**, not an angler population: an access
+#' point may intercept bank anglers at a pier or boat anglers at a ramp, and a
+#' roving route may be walked or run by boat.  Either method can cover either
+#' angler type, so disjointness is a fact about the protocol and never about
+#' the labels.
+#'
+#' **Estimation route.**  The returned object is a `survey.design2`, not a
+#' [creel_design()], so [estimate_effort()] does not accept it.  Estimate from
+#' it with `survey::svytotal()` and the other `survey` functions directly, as
+#' in the examples below.
+#'
+#' **Design structure.**  Rows are stratified on the interaction of
+#' `strata_col` and `component`, so each component carries its own population
+#' size at its own sampling fraction, and clustered on `date_col`, so several
+#' counts taken on one date form one primary sampling unit rather than several
+#' independent ones.  A component that sampled only one date within a stratum
+#' leaves that stratum with a single PSU: the design still constructs, but
+#' `survey` refuses to compute a variance for it.
 #'
 #' **PSU alignment requirement:** Both `access_data` and `roving_data` must
 #' share the same date and stratum columns.  Mismatched column names, or dates
 #' present in one component but absent in the other, trigger an error rather
-#' than a silent expansion.  If PSU boundaries differ (e.g., access routes
-#' cover different sections than roving routes), the estimates will be biased;
-#' a warning is issued when stratum-date combinations are asymmetric.
+#' than a silent expansion; a warning is issued when stratum-date combinations
+#' are asymmetric, because both components should sample the same days.  That
+#' is a requirement about *when* each component samples, not *where* -- two
+#' components covering different water is the condition that makes their sum
+#' valid, not a source of bias.
 #'
 #' @param access_data Data frame of access-point count observations.  Must
 #'   contain the columns named by `date_col`, `strata_col`, and `count_col`.
 #' @param roving_data Data frame of roving-route count observations.  Must
 #'   contain the same columns as `access_data`.
 #' @param date_col Character scalar.  Name of the date column (shared by both
-#'   tables). Default `"date"`.
+#'   tables). Default `"date"`.  Used to cluster observations into PSUs.
 #' @param strata_col Character scalar.  Name of the stratum column (shared by
 #'   both tables). Default `"day_type"`.
 #' @param count_col Character scalar.  Name of the count column (shared by
@@ -39,33 +65,40 @@
 #' @param roving_fraction Named numeric vector. Sampling fraction per stratum
 #'   for the roving-route component.  Names must match stratum values in
 #'   `roving_data`.
+#' @param trips_disjoint Logical scalar.  Required, with no default.  Set to
+#'   `TRUE` to affirm that the access and roving components sample disjoint
+#'   sets of angler trips, the precondition under which their totals may be
+#'   added.  tidycreel cannot verify this from the data; see the
+#'   "Disjointness precondition" section above.
 #' @param fpc Logical. Apply finite-population correction? Default `TRUE`.
 #'
 #' @return A `survey::svydesign` object with an additional class attribute
 #'   `"creel_hybrid_svydesign"`.  The design data contains a `component`
-#'   column (`"access"` or `"roving"`) and a `weight` column derived from
-#'   the sampling fractions.
+#'   column (`"access"` or `"roving"`), a `weight` column derived from the
+#'   sampling fractions, and a `.hybrid_stratum` column holding the
+#'   stratum-by-component interaction the design is stratified on.
 #'
 #' @examples
-#' \dontrun{
 #' access <- data.frame(
-#'   date     = as.Date(c("2024-06-01", "2024-06-02")),
-#'   day_type = c("weekday", "weekend"),
-#'   count    = c(12L, 30L)
+#'   date     = as.Date(c("2024-06-01", "2024-06-02", "2024-06-08", "2024-06-09")),
+#'   day_type = c("weekday", "weekday", "weekend", "weekend"),
+#'   count    = c(12L, 15L, 30L, 28L)
 #' )
 #' roving <- data.frame(
-#'   date     = as.Date(c("2024-06-01", "2024-06-02")),
-#'   day_type = c("weekday", "weekend"),
-#'   count    = c(8L, 22L)
+#'   date     = as.Date(c("2024-06-01", "2024-06-02", "2024-06-08", "2024-06-09")),
+#'   day_type = c("weekday", "weekday", "weekend", "weekend"),
+#'   count    = c(8L, 10L, 22L, 25L)
 #' )
 #' design <- as_hybrid_svydesign(
 #'   access_data      = access,
 #'   roving_data      = roving,
 #'   access_fraction  = c(weekday = 0.5, weekend = 0.5),
-#'   roving_fraction  = c(weekday = 0.4, weekend = 0.4)
+#'   roving_fraction  = c(weekday = 0.4, weekend = 0.4),
+#'   trips_disjoint   = TRUE
 #' )
+#'
+#' # estimate_effort() does not accept this object; use survey directly
 #' survey::svytotal(~count, design)
-#' }
 #'
 #' @family "Survey Design"
 #' @export
@@ -77,6 +110,7 @@ as_hybrid_svydesign <- function(
   count_col = "count",
   access_fraction = NULL,
   roving_fraction = NULL,
+  trips_disjoint = NULL,
   fpc = TRUE
 ) {
   # ---- Input validation ----------------------------------------------------
@@ -135,6 +169,38 @@ as_hybrid_svydesign <- function(
   }
   .check_fraction(access_fraction, "access_fraction", access_data, strata_col)
   .check_fraction(roving_fraction, "roving_fraction", roving_data, strata_col)
+
+  # Disjointness precondition. Adding the component totals is valid only if no
+  # angler trip can be observed by both components. Nothing in date/strata/count
+  # can establish that, so the caller has to affirm it (#229).
+  if (is.null(trips_disjoint)) {
+    cli::cli_abort(c(
+      "{.arg trips_disjoint} must be provided.",
+      "x" = paste(
+        "Summing the access and roving components assumes each angler trip",
+        "can be counted by only one of them, and tidycreel cannot verify",
+        "that from the counts, dates, or strata."
+      ),
+      "i" = "Set {.code trips_disjoint = TRUE} to affirm it holds."
+    ))
+  }
+  if (!is.logical(trips_disjoint) || length(trips_disjoint) != 1L ||
+        is.na(trips_disjoint)) {
+    cli::cli_abort("{.arg trips_disjoint} must be {.code TRUE} or {.code FALSE}.")
+  }
+  if (!trips_disjoint) {
+    cli::cli_abort(c(
+      "{.arg trips_disjoint} is {.code FALSE}, so the components may not be summed.",
+      "x" = paste(
+        "A trip observed by both components is counted twice, and the",
+        "stratified total is biased upward by the overlap."
+      ),
+      "i" = paste(
+        "Estimate the components separately, or reconcile the overlap",
+        "before combining them."
+      )
+    ))
+  }
 
   # ---- PSU alignment check -------------------------------------------------
   access_keys <- paste(
@@ -206,8 +272,21 @@ as_hybrid_svydesign <- function(
     roving_fraction[as.character(combined[[strata_col]])]
   )
 
-  ids_formula <- stats::as.formula("~1")
-  strata_formula <- stats::as.formula(paste0("~", strata_col))
+  # Each component samples its own frame at its own rate, so the stratum is the
+  # stratum-by-component interaction: pooling them derives one population size
+  # from a row count that mixes both, and `fpc` then varies within stratum.
+  combined$.hybrid_stratum <- paste(
+    as.character(combined[[strata_col]]),
+    combined$component,
+    sep = "."
+  )
+
+  # Cluster on the date so repeat counts on one day are one PSU, not several
+  # independent ones -- the defect class refuse_duplicate_psus() guards against
+  # on the creel_design path. `nest` because dates recur across the component
+  # strata.
+  ids_formula <- stats::as.formula(paste0("~", date_col))
+  strata_formula <- stats::as.formula("~.hybrid_stratum")
   weights_formula <- stats::as.formula("~weight")
 
   if (fpc) {
@@ -216,14 +295,16 @@ as_hybrid_svydesign <- function(
       strata = strata_formula,
       weights = weights_formula,
       fpc = ~fpc_val, # nolint: object_usage_linter
-      data = combined
+      data = combined,
+      nest = TRUE
     )
   } else {
     design <- survey::svydesign(
       ids = ids_formula,
       strata = strata_formula,
       weights = weights_formula,
-      data = combined
+      data = combined,
+      nest = TRUE
     )
   }
 
