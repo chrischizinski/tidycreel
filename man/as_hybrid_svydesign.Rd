@@ -12,6 +12,7 @@ as_hybrid_svydesign(
   count_col = "count",
   access_fraction = NULL,
   roving_fraction = NULL,
+  trips_disjoint = NULL,
   fpc = TRUE
 )
 }
@@ -23,7 +24,7 @@ contain the columns named by \code{date_col}, \code{strata_col}, and \code{count
 contain the same columns as \code{access_data}.}
 
 \item{date_col}{Character scalar.  Name of the date column (shared by both
-tables). Default \code{"date"}.}
+tables). Default \code{"date"}.  Used to cluster observations into PSUs.}
 
 \item{strata_col}{Character scalar.  Name of the stratum column (shared by
 both tables). Default \code{"day_type"}.}
@@ -40,56 +41,90 @@ each sampled day; must be in (0, 1]). Names must match stratum values in
 for the roving-route component.  Names must match stratum values in
 \code{roving_data}.}
 
+\item{trips_disjoint}{Logical scalar.  Required, with no default.  Set to
+\code{TRUE} to affirm that the access and roving components sample disjoint
+sets of angler trips, the precondition under which their totals may be
+added.  tidycreel cannot verify this from the data; see the
+"Disjointness precondition" section above.}
+
 \item{fpc}{Logical. Apply finite-population correction? Default \code{TRUE}.}
 }
 \value{
 A \code{survey::svydesign} object with an additional class attribute
 \code{"creel_hybrid_svydesign"}.  The design data contains a \code{component}
-column (\code{"access"} or \code{"roving"}) and a \code{weight} column derived from
-the sampling fractions.
+column (\code{"access"} or \code{"roving"}), a \code{weight} column derived from the
+sampling fractions, and a \code{.hybrid_stratum} column holding the
+stratum-by-component interaction the design is stratified on.
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 }
 \details{
 Combines count data from access-point and roving survey components into a
-single \code{survey::svydesign} object suitable for effort estimation via
-\code{\link[=estimate_effort]{estimate_effort()}}.
+single \code{survey::svydesign} object.  The two components are treated as
+\strong{strata}, each carrying its own sampling fraction and its own population
+size, so the design total is the stratified sum of the component totals.
 
-A hybrid design is appropriate when a survey uses both fixed access-point
-counts (e.g., boat-launch interviews with angler counts) and roving-route
-counts (e.g., progressive counts along a shoreline transect) within the same
-sampling frame.  The two components are stacked, with a \code{component} column
-distinguishing them, and inclusion probabilities are derived from the
-user-supplied sampling fractions per stratum.
+\strong{Disjointness precondition.}  Adding the two component totals is valid if
+and only if the components sample \strong{disjoint sets of angler trips} -- no
+angler trip may be observed by both.  What produces that disjointness is a
+property of the survey protocol (angler type, geography, access mode, or a
+rule the designer imposes); tidycreel cannot infer it from the counts, the
+dates, the strata, or the method label, so you must affirm it with
+\code{trips_disjoint = TRUE}.  The design cannot be constructed otherwise.  A
+boat angler intercepted on the water by a roving route and again at the
+ramp on the same trip belongs to both frames, and the total double counts
+that trip.
+
+\code{component} names a survey \strong{method}, not an angler population: an access
+point may intercept bank anglers at a pier or boat anglers at a ramp, and a
+roving route may be walked or run by boat.  Either method can cover either
+angler type, so disjointness is a fact about the protocol and never about
+the labels.
+
+\strong{Estimation route.}  The returned object is a \code{survey.design2}, not a
+\code{\link[=creel_design]{creel_design()}}, so \code{\link[=estimate_effort]{estimate_effort()}} does not accept it.  Estimate from
+it with \code{survey::svytotal()} and the other \code{survey} functions directly, as
+in the examples below.
+
+\strong{Design structure.}  Rows are stratified on the interaction of
+\code{strata_col} and \code{component}, so each component carries its own population
+size at its own sampling fraction, and clustered on \code{date_col}, so several
+counts taken on one date form one primary sampling unit rather than several
+independent ones.  A component that sampled only one date within a stratum
+leaves that stratum with a single PSU: the design still constructs, but
+\code{survey} refuses to compute a variance for it.
 
 \strong{PSU alignment requirement:} Both \code{access_data} and \code{roving_data} must
 share the same date and stratum columns.  Mismatched column names, or dates
 present in one component but absent in the other, trigger an error rather
-than a silent expansion.  If PSU boundaries differ (e.g., access routes
-cover different sections than roving routes), the estimates will be biased;
-a warning is issued when stratum-date combinations are asymmetric.
+than a silent expansion; a warning is issued when stratum-date combinations
+are asymmetric, because both components should sample the same days.  That
+is a requirement about \emph{when} each component samples, not \emph{where} -- two
+components covering different water is the condition that makes their sum
+valid, not a source of bias.
 }
 \examples{
-\dontrun{
 access <- data.frame(
-  date     = as.Date(c("2024-06-01", "2024-06-02")),
-  day_type = c("weekday", "weekend"),
-  count    = c(12L, 30L)
+  date     = as.Date(c("2024-06-01", "2024-06-02", "2024-06-08", "2024-06-09")),
+  day_type = c("weekday", "weekday", "weekend", "weekend"),
+  count    = c(12L, 15L, 30L, 28L)
 )
 roving <- data.frame(
-  date     = as.Date(c("2024-06-01", "2024-06-02")),
-  day_type = c("weekday", "weekend"),
-  count    = c(8L, 22L)
+  date     = as.Date(c("2024-06-01", "2024-06-02", "2024-06-08", "2024-06-09")),
+  day_type = c("weekday", "weekday", "weekend", "weekend"),
+  count    = c(8L, 10L, 22L, 25L)
 )
 design <- as_hybrid_svydesign(
   access_data      = access,
   roving_data      = roving,
   access_fraction  = c(weekday = 0.5, weekend = 0.5),
-  roving_fraction  = c(weekday = 0.4, weekend = 0.4)
+  roving_fraction  = c(weekday = 0.4, weekend = 0.4),
+  trips_disjoint   = TRUE
 )
+
+# estimate_effort() does not accept this object; use survey directly
 survey::svytotal(~count, design)
-}
 
 }
 \seealso{

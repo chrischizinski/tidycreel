@@ -145,7 +145,8 @@ test_that("HYBR-10: returns an svydesign object", {
     make_access(),
     make_roving(),
     access_fraction = fractions$access,
-    roving_fraction = fractions$roving
+    roving_fraction = fractions$roving,
+    trips_disjoint = TRUE
   ))
   expect_true(inherits(design, "survey.design"))
 })
@@ -155,7 +156,8 @@ test_that("HYBR-11: returns creel_hybrid_svydesign class", {
     make_access(),
     make_roving(),
     access_fraction = fractions$access,
-    roving_fraction = fractions$roving
+    roving_fraction = fractions$roving,
+    trips_disjoint = TRUE
   ))
   expect_s3_class(design, "creel_hybrid_svydesign")
 })
@@ -165,7 +167,8 @@ test_that("HYBR-12: combined data has component column", {
     make_access(),
     make_roving(),
     access_fraction = fractions$access,
-    roving_fraction = fractions$roving
+    roving_fraction = fractions$roving,
+    trips_disjoint = TRUE
   ))
   expect_true("component" %in% names(design$variables))
   expect_setequal(unique(design$variables$component), c("access", "roving"))
@@ -176,7 +179,8 @@ test_that("HYBR-13: combined data has weight column", {
     make_access(),
     make_roving(),
     access_fraction = fractions$access,
-    roving_fraction = fractions$roving
+    roving_fraction = fractions$roving,
+    trips_disjoint = TRUE
   ))
   expect_true("weight" %in% names(design$variables))
   expect_true(all(design$variables$weight > 0))
@@ -187,7 +191,8 @@ test_that("HYBR-14: row count equals nrow(access) + nrow(roving)", {
     make_access(),
     make_roving(),
     access_fraction = fractions$access,
-    roving_fraction = fractions$roving
+    roving_fraction = fractions$roving,
+    trips_disjoint = TRUE
   ))
   expect_equal(nrow(design$variables), nrow(make_access()) + nrow(make_roving()))
 })
@@ -199,7 +204,8 @@ test_that("HYBR-15: access weights = 1 / access_fraction", {
     make_access(),
     make_roving(),
     access_fraction = c(weekday = 0.5, weekend = 0.25),
-    roving_fraction = fractions$roving
+    roving_fraction = fractions$roving,
+    trips_disjoint = TRUE
   ))
   vars <- design$variables
   acc_wk <- vars$weight[vars$component == "access" & vars$day_type == "weekday"]
@@ -225,7 +231,8 @@ test_that("HYBR-16: asymmetric dates produce a warning", {
       access_extra,
       make_roving(),
       access_fraction = c(weekday = 0.5, weekend = 0.5),
-      roving_fraction = fractions$roving
+      roving_fraction = fractions$roving,
+      trips_disjoint = TRUE
     )
   )
 })
@@ -237,6 +244,7 @@ test_that("HYBR-17: symmetric dates produce no PSU warning", {
       make_roving(),
       access_fraction = fractions$access,
       roving_fraction = fractions$roving,
+      trips_disjoint = TRUE,
       fpc = FALSE
     )
   )
@@ -250,6 +258,7 @@ test_that("HYBR-18: fpc = FALSE produces a valid design", {
     make_roving(),
     access_fraction = fractions$access,
     roving_fraction = fractions$roving,
+    trips_disjoint = TRUE,
     fpc = FALSE
   )
   expect_s3_class(design, "creel_hybrid_svydesign")
@@ -275,7 +284,8 @@ test_that("HYBR-19: custom column names work", {
     strata_col = "stratum",
     count_col = "n_anglers",
     access_fraction = c(weekday = 0.5, weekend = 0.5),
-    roving_fraction = c(weekday = 0.4, weekend = 0.4)
+    roving_fraction = c(weekday = 0.4, weekend = 0.4),
+    trips_disjoint = TRUE
   )
   expect_s3_class(design, "creel_hybrid_svydesign")
 })
@@ -288,6 +298,7 @@ test_that("HYBR-20: svytotal runs without error on the hybrid design", {
     make_roving(),
     access_fraction = fractions$access,
     roving_fraction = fractions$roving,
+    trips_disjoint = TRUE,
     fpc = FALSE
   )
   result <- suppressWarnings(survey::svytotal(~count, design))
