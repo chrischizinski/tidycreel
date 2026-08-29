@@ -491,6 +491,20 @@ print.creel_estimates <- function(x, ...) {
 #'   attribute is also present containing per-site e_i, pi_i, and
 #'   e_i_over_pi_i columns.
 #'
+#'   For sectioned designs the tibble carries one row per registered section
+#'   plus, when \code{aggregate_sections = TRUE}, a \code{.lake_total} row, and
+#'   gains \code{section}, \code{prop_of_lake_total},
+#'   \code{se_prop_of_lake_total} and \code{data_available} columns.
+#'   \code{prop_of_lake_total} is the section's share of the lake-wide total
+#'   and \code{se_prop_of_lake_total} its standard error; both come from one
+#'   \code{survey::svyratio()} call, which accounts for the correlation between
+#'   a domain total and the overall total containing it. On the
+#'   \code{.lake_total} row the share is exactly 1 with a standard error of 0,
+#'   which is structural rather than an unpropagated component: that row's share
+#'   of itself was never estimated. A section registered by
+#'   \code{\link{add_sections}} but absent from the counts reports \code{NA} for
+#'   both, alongside \code{data_available = FALSE}.
+#'
 #' @details
 #' The function performs Tier 2 validation before estimation, issuing warnings
 #' (not errors) for: zero values in count variables, negative values in count
@@ -2519,6 +2533,49 @@ rebuild_counts_survey <- function(design, section_name) {
   design_new
 }
 
+#' One section's share of the lake-wide total, with its standard error
+#'
+#' Internal helper. `prop_of_lake_total` was a bare division of two survey
+#' estimates, reported without uncertainty in a table where every other quantity
+#' carries an SE (GH #231). It is a ratio of a domain total to the overall
+#' total, both estimated from the same design and therefore correlated -- the
+#' denominator contains the numerator.
+#'
+#' `survey::svyratio()` returns the ratio and its standard error from one
+#' calculation and handles that correlation, so the reported SE belongs to the
+#' number beside it rather than to a parallel derivation free to drift from it
+#' (GH #134). The point estimate is unchanged from the division it replaces.
+#'
+#' The numerator is the count variable zeroed outside the section rather than
+#' the design subset to it: a domain total has to be estimated on the full
+#' design for its variance to account for which units fell into the domain.
+#'
+#' @param svy_design A survey design built from the whole sectioned design
+#' @param count_var Character(1) -- name of the count column
+#' @param section_col Character(1) -- name of the section column
+#' @param section_name Character(1) -- the section to compute the share for
+#'
+#' @return A list with `estimate` and `se`
+#'
+#' @keywords internal
+#' @noRd
+section_prop_of_lake <- function(svy_design, count_var, section_col, section_name) {
+  counts <- as.numeric(svy_design$variables[[count_var]])
+  in_section <- as.character(svy_design$variables[[section_col]]) == section_name
+  svy_design$variables[[".section_count"]] <- counts * in_section
+
+  ratio <- wrap_survey_call(survey::svyratio( # nolint: object_usage_linter
+    stats::reformulate(".section_count"),
+    stats::reformulate(count_var),
+    svy_design
+  ))
+  list(
+    estimate = as.numeric(coef(ratio)),
+    se = as.numeric(survey::SE(ratio))
+  )
+}
+
+
 #' Aggregate per-section estimates to a covariance-aware lake-wide total
 #'
 #' Internal helper: computes the lake-wide effort total using either
@@ -3655,10 +3712,20 @@ estimate_effort_sections <- function(
   count_formula <- stats::reformulate(count_var)
   section_formula <- stats::reformulate(section_col)
 
-  # Full-design survey for lake total denominator (prop_of_lake_total)
-  full_svy_design <- get_variance_design(design$survey, variance_method) # nolint: object_usage_linter
-  lake_total_svy <- wrap_survey_call(survey::svytotal(count_formula, full_svy_design))
-  lake_total_est <- as.numeric(coef(lake_total_svy))
+  # Full-design survey, used for the lake-wide aggregation and as the design
+  # each section's share of the lake total is estimated on.
+  #
+  # Routed through get_effort_target_design() rather than reading design$survey
+  # directly (GH #231). `estimate_effort()` currently aborts for a sectioned
+  # design whenever `target != "sampled_days"`, and for that target the helper
+  # returns design$survey unchanged, so this is behaviour-preserving today. It
+  # matters when the abort is lifted: reading the raw survey there would compute
+  # sampled-day quantities and label them with the caller's expanded target,
+  # which is estimand mislabelling rather than an arithmetic error.
+  full_svy_design <- get_variance_design( # nolint: object_usage_linter
+    get_effort_target_design(design, target), # nolint: object_usage_linter
+    variance_method
+  )
 
   # Loop over registered sections
   section_rows <- vector("list", length(registered_sections))
@@ -3681,19 +3748,41 @@ estimate_effort_sections <- function(
         ci_upper = NA_real_,
         n = 0L,
         prop_of_lake_total = NA_real_,
+        se_prop_of_lake_total = NA_real_,
         data_available = FALSE
       )
     } else {
       # Build filtered section design and estimate
       sec_design <- suppressWarnings(rebuild_counts_survey(design, sec)) # nolint: object_usage_linter
-      sec_result <- estimate_effort_total(sec_design, variance_method, conf_level) # nolint: object_usage_linter
+      # `target` forwarded rather than left at the positional default (GH #231).
+      # The object this function returns is labelled with the caller's target,
+      # so a per-section estimate computed against a different one would carry a
+      # sampled-day number under a period-total label.
+      sec_result <- estimate_effort_total( # nolint: object_usage_linter
+        sec_design,
+        variance_method,
+        conf_level,
+        target = target
+      )
       row <- sec_result$estimates
       # A party-size estimate shared across sections is one random quantity
       # common to all of them, so aggregating to the lake row needs each
       # section's own component and decomposition, not only its `se` (GH #230).
       sec_expansion_se[[sec]] <- sec_result$se_expansion
       sec_decomposition[[sec]] <- sec_result$expansion_decomposition
-      prop <- row$estimate / lake_total_est
+      # Ratio and its standard error from one `svyratio()` call, not a bare
+      # division reported beside a separately computed SE (GH #231, GH #134).
+      # Numerator and denominator are correlated survey estimates over the same
+      # design, which is the correlation `svyratio()` handles and a hand-rolled
+      # delta method here would have to reproduce.
+      prop_ratio <- section_prop_of_lake( # nolint: object_usage_linter
+        full_svy_design,
+        count_var,
+        section_col,
+        sec
+      )
+      prop <- prop_ratio$estimate
+      prop_se <- prop_ratio$se
       section_rows[[sec]] <- tibble::tibble(
         section = sec,
         estimate = row$estimate,
@@ -3704,6 +3793,7 @@ estimate_effort_sections <- function(
         ci_upper = row$ci_upper,
         n = row$n,
         prop_of_lake_total = prop,
+        se_prop_of_lake_total = prop_se,
         data_available = TRUE
       )
     }
@@ -3829,6 +3919,11 @@ estimate_effort_sections <- function(
       ci_upper = lake_ci_upper,
       n = nrow(design$counts),
       prop_of_lake_total = 1.0,
+      # A true structural zero, not an unpropagated component: the lake total's
+      # share of itself is exactly 1 by construction and was never estimated.
+      # `NA` here would claim the quantity is unknown, which is the opposite of
+      # what holds.
+      se_prop_of_lake_total = 0,
       data_available = TRUE
     )
     result_df <- dplyr::bind_rows(result_df, lake_row)

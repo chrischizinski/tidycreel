@@ -82,6 +82,20 @@ recorded per PSU and nonzero when \code{count_time_col} is supplied to
 \code{add_counts()}. For bus-route designs, a "site_contributions"
 attribute is also present containing per-site e_i, pi_i, and
 e_i_over_pi_i columns.
+
+For sectioned designs the tibble carries one row per registered section
+plus, when \code{aggregate_sections = TRUE}, a \code{.lake_total} row, and
+gains \code{section}, \code{prop_of_lake_total},
+\code{se_prop_of_lake_total} and \code{data_available} columns.
+\code{prop_of_lake_total} is the section's share of the lake-wide total
+and \code{se_prop_of_lake_total} its standard error; both come from one
+\code{survey::svyratio()} call, which accounts for the correlation between
+a domain total and the overall total containing it. On the
+\code{.lake_total} row the share is exactly 1 with a standard error of 0,
+which is structural rather than an unpropagated component: that row's share
+of itself was never estimated. A section registered by
+\code{\link{add_sections}} but absent from the counts reports \code{NA} for
+both, alongside \code{data_available = FALSE}.
 }
 \description{
 Computes total effort estimates with standard errors and confidence intervals

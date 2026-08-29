@@ -80,7 +80,12 @@ print(effort_est$estimates)
 
 Central has the highest fishing effort among the three sections, while South has
 the lowest. The `prop_of_lake_total` column shows each section's share of total
-angler-hours for the survey period.
+angler-hours for the survey period, and `se_prop_of_lake_total` its standard
+error, so shares can be compared with the same regard for precision as the
+totals themselves. Both come from one `survey::svyratio()` call, which accounts
+for the correlation between a section's total and the lake-wide total that
+contains it. On the `.lake_total` row the share is exactly 1 with a standard
+error of 0 — that row's share of itself is structural, not estimated.
 
 ---
 
