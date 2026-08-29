@@ -210,6 +210,35 @@
 
 ## Bug fixes
 
+* The three `estimate_total_*_sections()` product totals now report
+  `se_prop_of_lake_total` alongside `prop_of_lake_total` (#243). The share of
+  the lake-wide total was the only quantity in the table without an error, so a
+  reader comparing sections had nothing to judge the comparison by.
+
+  This is not a port of the #231 fix for `estimate_effort_sections()`. There the
+  proportion is a domain total over an overall total from one survey design, so
+  `svyratio()` returns the ratio and its error together. Here
+  `prop_h = (E_h * rate_h) / sum_k (E_k * rate_k)` has a numerator and
+  denominator that are each products of two estimates from *different* designs
+  -- effort from the counts, rate from the interviews -- and the numerator is one
+  of the denominator's own terms. The error is derived by delta method, carrying
+  both the cross-section covariance a shared party-size multiplier induces and
+  the correlation from the numerator appearing in the denominator.
+
+  The denominator variance and the cross terms come from the same
+  `combine_section_variances()` call that builds the `.lake_total` row's own
+  standard error, so the reported error belongs to the number beside it rather
+  than to a parallel derivation free to drift from it (#134). With two sections
+  the shares sum to 1, so one is a linear function of the other and their errors
+  come out equal -- an identity a derivation that dropped the
+  numerator-in-denominator correlation would fail.
+
+  `.lake_total` reports `0`, not `NA`: its share of itself is exactly 1 by
+  construction and was never estimated. A section with no data reports `NA` for
+  both columns, since a zero would claim it held none of the total rather than
+  that nothing was observed there. Neither column is produced on the grouped
+  path, unchanged. No existing number moved.
+
 * The three sectioned product totals now report `expansion_decomposition`
   alongside `se_expansion` (#238). `estimate_total_catch()`,
   `estimate_total_harvest()` and `estimate_total_release()` each gathered the

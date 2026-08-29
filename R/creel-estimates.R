@@ -3308,6 +3308,140 @@ combine_section_variances <- function(
 }
 
 
+#' Per-section covariance with the lake-wide sum
+#'
+#' Internal helper. Cross-section covariance in a sectioned product total comes
+#' from one place: a party-size group estimated once and applied across more
+#' than one section. That single error is common to every section the group
+#' covers, so `Cov(T_h, T_k) = sum_g d_{h,g} * d_{k,g}`, where `d_{h,g}` is
+#' section `h`'s contribution from group `g` before squaring -- the same
+#' quantity [combine_section_decompositions()] sums across sections.
+#'
+#' The three structures are the same expression, not three rules. `"nested"`
+#' puts each group in one section, so every cross term is zero; `"shared"` puts
+#' one group across every section, so it collapses to `c_h * (sum(c) - c_h)`;
+#' `"partial"` needs the general form. Written this way the covariance model is
+#' provably the one inside [combine_section_variances()]: summing these cross
+#' terms over the pairs reproduces its
+#' `pv - sum(contrib^2) + sum(group_totals^2)` exactly.
+#'
+#' @param rate Per-section rate estimates
+#' @param expansion_se Per-section expansion standard errors, or `NULL`
+#' @param structure The expansion group structure over the section partition
+#' @param decomposition Per-section list of per-group contributions
+#' @param n Number of present sections, for the zero-covariance returns
+#'
+#' @return A numeric vector of `sum_{k != h} Cov(T_h, T_k)`, one per section,
+#'   or `NA` where the decomposition cannot support the combination
+#'
+#' @keywords internal
+#' @noRd
+section_cross_covariance <- function(
+  rate,
+  expansion_se,
+  structure,
+  decomposition,
+  n
+) {
+  # No expansion component means nothing is shared across sections, so their
+  # only common error is absent and the sections are independent.
+  if (is.null(expansion_se) || is.null(structure)) {
+    return(rep(0, n))
+  }
+  if (identical(structure, "nested")) {
+    return(rep(0, n))
+  }
+
+  contrib <- as.numeric(rate) * as.numeric(expansion_se)
+  if (identical(structure, "shared")) {
+    return(contrib * (sum(contrib) - contrib))
+  }
+
+  # "partial": the general per-group form. A NULL here means the geometry is
+  # unresolvable, and the lake variance this pairs with is NA for the same
+  # reason -- the proportion must not report an error the total cannot.
+  group_totals <- combine_section_decompositions(rate, decomposition) # nolint: object_usage_linter
+  if (is.null(group_totals)) {
+    return(rep(NA_real_, n))
+  }
+  contrib_by_section <- Map(
+    function(b, r) as.numeric(r) * b,
+    decomposition,
+    as.numeric(rate)
+  )
+  vapply(
+    contrib_by_section,
+    function(v) {
+      # A group absent from this section contributed nothing here, so it drops
+      # out of its own cross terms; subtracting the section's own contribution
+      # removes the diagonal that belongs to the variance, not the covariance.
+      own <- as.numeric(v)
+      sum(own * (as.numeric(group_totals[names(v)]) - own))
+    },
+    numeric(1L)
+  )
+}
+
+
+#' Standard error of a section's share of the lake-wide product total
+#'
+#' Internal helper. `prop_h = T_h / sum_k T_k` is a ratio whose numerator is one
+#' of the terms of its own denominator, and whose numerator and denominator are
+#' each products of two estimated quantities from different designs -- effort
+#' from the counts, rate from the interviews. There is no single survey design
+#' to hand `svyratio()`, which is why the sectioned effort path's fix (GH #231)
+#' does not port here and the error is derived instead (GH #243).
+#'
+#' The delta method on `p_h = T_h / S` linearises to `(T_h - p_h * S) / S`, so
+#'
+#' `Var(p_h) = [ Var(T_h) - 2 * p_h * Cov(T_h, S) + p_h^2 * Var(S) ] / S^2`
+#'
+#' with `Cov(T_h, S) = Var(T_h) + sum_{k != h} Cov(T_h, T_k)`. Both the
+#' denominator variance and the cross terms come from the same call that builds
+#' the lake row's own standard error, so the reported error belongs to the
+#' number beside it rather than to a parallel derivation free to drift from it
+#' (GH #134).
+#'
+#' Dropping the numerator-in-denominator correlation would break the two-section
+#' identity: with two sections the shares sum to 1, so one is a linear function
+#' of the other and their standard errors must come out equal.
+#'
+#' @param section_est Per-section product totals, present sections only
+#' @param section_var Per-section product variances, aligned to `section_est`
+#' @param lake_var The lake-wide variance the sections combine to, from
+#'   [combine_section_variances()]
+#' @param cross Per-section `sum_{k != h} Cov(T_h, T_k)`, from
+#'   [section_cross_covariance()]
+#'
+#' @return A numeric vector of standard errors, aligned to `section_est`
+#'
+#' @keywords internal
+#' @noRd
+section_prop_of_lake_se <- function(
+  section_est,
+  section_var,
+  lake_var,
+  cross
+) {
+  n <- length(section_est)
+  lake_est <- sum(section_est)
+  if (!isTRUE(is.finite(lake_est)) || lake_est == 0) {
+    return(rep(NA_real_, n))
+  }
+
+  prop <- section_est / lake_est
+  cov_hs <- section_var + cross
+  var_p <- (section_var - 2 * prop * cov_hs + prop^2 * lake_var) / lake_est^2
+
+  # `p_h = T_h / S` is a variance of a linear combination, so it cannot be
+  # negative under a valid covariance model; a negative here is floating point
+  # in the cancellation, not a component that went missing. A single section is
+  # the clean case: its share of the total is exactly 1 and the three terms
+  # cancel to zero on their own.
+  sqrt(pmax(0, var_p))
+}
+
+
 #' Flatten per-section expansion decompositions into one aligned list
 #'
 #' Internal helper. The counterpart of [section_expansion_vector()] for the
