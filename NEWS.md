@@ -116,6 +116,60 @@
   Found by the sectioned/hybrid seam audit. Depended on #227: the correct
   per-section components are its input.
 
+* A sectioned effort estimate now carries the party-size expansion component
+  into its `.lake_total` row and reports it on the returned object (#230).
+  `estimate_effort_sections()` called `new_creel_estimates()` without
+  `se_expansion`, and built the lake row's variance from the between-day and
+  within-day components alone.
+
+  Both halves were wrong. `se_expansion` came back `NULL`, which is this
+  package's signal that a component does not apply and was indistinguishable
+  from a design where no party-size standard error was ever supplied. More
+  seriously, the lake row's `se` did not depend on `party_size_se` at all: on a
+  two-section fixture the section rows moved from 15.811 to 15.937 and from
+  7.906 to 8.108 when a party-size SE was introduced, while the lake row stayed
+  bit-identical at 14.577. It now reports 15.065.
+
+  The combination now routes through `combine_section_variances()`, the helper
+  the three `estimate_total_*_sections()` twins already share, so the structure
+  classification cannot drift apart from theirs. A multiplier estimated once and
+  applied across sections is one random quantity common to them, so its
+  contributions add before squaring; per-section multipliers are independent and
+  combine in quadrature; groups that straddle the sections unevenly are resolved
+  exactly from the per-group decomposition, and only fall back to `NA` when no
+  decomposition is available to resolve them.
+
+  That helper gained an `expansion_in_section_var` argument to make this
+  possible. The twins' base is `sum(section_var)`, which already holds each
+  section's contribution as an independent term; the effort base is between-day
+  plus within-day, which does not, so the independent terms are added before the
+  covariance correction replaces them. The argument defaults to the twins'
+  behaviour, leaving their arithmetic bit-for-bit unchanged.
+
+  **This widens the lake-wide standard error and confidence interval** for any
+  sectioned effort design carrying a party-size expansion with a supplied
+  standard error. Point estimates are unchanged, and a design with no expansion
+  is unaffected -- it still reports `se_expansion` as `NULL` and an unchanged
+  `se`, rather than a zero that would be indistinguishable from a component that
+  never propagated.
+
+  `expansion_decomposition` is reported alongside the component. The
+  `creel_estimates` contract is one entry per row of `estimates`, `NULL` exactly
+  when `se_expansion` is; returning a component with no decomposition behind it
+  broke that, leaving `se_expansion` recoverable from nothing and giving a
+  combination over a wider partition no group index to work from. The
+  `.lake_total` entry is keyed by party-size group rather than by section -- the
+  groups summed across the sections -- so squaring and summing any row's
+  decomposition reproduces that row's component.
+
+  The group-wise sum is now `combine_section_decompositions()`, factored out of
+  `exact_expansion_var()` so the aggregated variance and the decomposition
+  reported beside it cannot describe different geometries.
+
+  Found by the sectioned/hybrid seam audit. The issue as filed described this as
+  metadata-only; re-deriving it before implementing showed the lake row's
+  arithmetic was affected too.
+
 # tidycreel 5.2.0 "River Carpsucker" (2026-08-28)
 
 ## Breaking changes

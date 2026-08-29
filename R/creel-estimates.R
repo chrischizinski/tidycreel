@@ -3016,6 +3016,45 @@ expansion_total_se <- function(rate, expansion_se, structure, decomposition = NU
 #' @keywords internal
 #' @noRd
 exact_expansion_var <- function(rate, decomposition) {
+  group_totals <- combine_section_decompositions(rate, decomposition) # nolint: object_usage_linter
+  if (is.null(group_totals)) {
+    return(NULL)
+  }
+  sum(group_totals^2)
+}
+
+
+#' Sum per-part expansion contributions within group across the parts
+#'
+#' Internal helper. The inner sum of
+#' `Var = sum_g (sum_p rate_p * basis_{g,p} * se_g)^2` -- one entry per party-size
+#' group, holding that group's total contribution across every part, still
+#' before squaring.
+#'
+#' Factored out of [exact_expansion_var()] so the aggregated total and the
+#' decomposition reported alongside it cannot describe different geometries.
+#' Squaring and summing the result gives the exact variance, which is what makes
+#' the same vector serve as the combined row's own decomposition: a downstream
+#' combination over a wider partition needs the group index for exactly the
+#' reason this one did (GH #150, GH #230).
+#'
+#' All three structures fall out of it. `"nested"` puts each group in one part,
+#' so every entry is that part's lone contribution and the squared sum is the
+#' quadrature; `"shared"` puts one group across every part, so there is a single
+#' entry equal to `sum(contrib)`; `"partial"` is the general case.
+#'
+#' @param rate Per-part rate estimates, aligned to `decomposition`. Must be the
+#'   same length -- a scalar recycles correctly in the arithmetic but fails the
+#'   length check below, which would refuse a resolvable geometry.
+#' @param decomposition Per-part list of per-group contributions before
+#'   squaring, aligned to `rate`
+#'
+#' @return A named numeric vector of per-group totals, or `NULL` when the
+#'   decomposition cannot support the combination and the caller must fall back
+#'
+#' @keywords internal
+#' @noRd
+combine_section_decompositions <- function(rate, decomposition) {
   if (is.null(decomposition) || length(decomposition) != length(rate)) {
     return(NULL)
   }
@@ -3033,7 +3072,7 @@ exact_expansion_var <- function(rate, decomposition) {
     return(NULL)
   }
 
-  group_totals <- vapply(
+  vapply(
     groups,
     function(g) {
       # A group absent from a part contributed no expanded boats there, so it
@@ -3049,8 +3088,6 @@ exact_expansion_var <- function(rate, decomposition) {
     },
     numeric(1L)
   )
-
-  sum(group_totals^2)
 }
 
 
@@ -3161,6 +3198,13 @@ add_expansion_covariance <- function(
 #'   `section_var`
 #' @param expansion_se Per-section expansion standard errors from the effort
 #'   estimates, aligned to `section_var`, or `NULL` when none was propagated
+#' @param expansion_in_section_var Whether `section_var` already carries each
+#'   section's expansion contribution as an independent term. `TRUE` for the
+#'   product totals, whose per-section `se` folds it in before squaring.
+#'   `FALSE` for the sectioned effort total (GH #230), whose base is the
+#'   between-day and within-day components only, so the independent terms have
+#'   to be added here before the covariance correction replaces them. The
+#'   default leaves the product totals' arithmetic bit-for-bit unchanged.
 #'
 #' @return A list with `se` (the lake-wide standard error) and `component` (the
 #'   party-size term that standard error carries, or `NULL`)
@@ -3172,12 +3216,23 @@ combine_section_variances <- function(
   section_var,
   rate,
   expansion_se,
-  decomposition = NULL
+  decomposition = NULL,
+  expansion_in_section_var = TRUE
 ) {
   structure <- expansion_group_structure(design, design[["section_col"]]) # nolint: object_usage_linter
 
+  base_var <- sum(section_var)
+  if (!expansion_in_section_var && !is.null(expansion_se)) {
+    # `add_expansion_covariance()` reads `pv` as already holding the independent
+    # contributions -- every branch either returns it untouched or subtracts
+    # `sum(contrib^2)` before adding the correlated form back. Handing it a base
+    # without them would make "nested" drop the component entirely and "shared"
+    # subtract a term that was never there.
+    base_var <- base_var + sum((as.numeric(rate) * as.numeric(expansion_se))^2)
+  }
+
   pv <- add_expansion_covariance( # nolint: object_usage_linter
-    pv = sum(section_var),
+    pv = base_var,
     rate = rate,
     expansion_se = expansion_se,
     structure = structure,
@@ -3608,6 +3663,10 @@ estimate_effort_sections <- function(
   # Loop over registered sections
   section_rows <- vector("list", length(registered_sections))
   names(section_rows) <- registered_sections
+  sec_expansion_se <- vector("list", length(registered_sections))
+  names(sec_expansion_se) <- registered_sections
+  sec_decomposition <- vector("list", length(registered_sections))
+  names(sec_decomposition) <- registered_sections
 
   for (sec in registered_sections) {
     if (sec %in% absent_sections) {
@@ -3629,6 +3688,11 @@ estimate_effort_sections <- function(
       sec_design <- suppressWarnings(rebuild_counts_survey(design, sec)) # nolint: object_usage_linter
       sec_result <- estimate_effort_total(sec_design, variance_method, conf_level) # nolint: object_usage_linter
       row <- sec_result$estimates
+      # A party-size estimate shared across sections is one random quantity
+      # common to all of them, so aggregating to the lake row needs each
+      # section's own component and decomposition, not only its `se` (GH #230).
+      sec_expansion_se[[sec]] <- sec_result$se_expansion
+      sec_decomposition[[sec]] <- sec_result$expansion_decomposition
       prop <- row$estimate / lake_total_est
       section_rows[[sec]] <- tibble::tibble(
         section = sec,
@@ -3647,6 +3711,30 @@ estimate_effort_sections <- function(
 
   # Combine section rows
   result_df <- dplyr::bind_rows(section_rows)
+
+  # Row-aligned party-size component. Each section's row is a single total, so
+  # it carries just its own contribution; the lake row's combined one is
+  # appended with the row below. `rate` is 1 throughout -- unlike the product
+  # totals, an effort component is already on the reported scale -- so the
+  # section's `se_expansion` is its contribution unmultiplied.
+  expansion_vec <- section_expansion_vector(sec_expansion_se) # nolint: object_usage_linter
+  decomposition_list <- section_decomposition_list(sec_decomposition) # nolint: object_usage_linter
+  se_expansion <- if (is.null(expansion_vec)) NULL else unname(expansion_vec)
+  # `new_creel_estimates()` states the invariant: one entry per row of
+  # `estimates`, and NULL exactly when `se_expansion` is. Returning a component
+  # without the decomposition it was summed from broke that (GH #230).
+  #
+  # `compute_expansion_var_contribution()` attaches the decomposition on every
+  # path that returns a component, so the two are non-NULL together and the
+  # fallback below is unreachable today. It is written as a fill rather than a
+  # branch anyway: a list of the right length with empty entries keeps the count
+  # aligned to the rows whatever arrives, where a branch would have to choose
+  # between a short list and no list, and both break the invariant silently.
+  expansion_decomposition <- if (is.null(expansion_vec)) {
+    NULL
+  } else {
+    unname(decomposition_list %||% vector("list", length(expansion_vec)))
+  }
 
   # Append .lake_total row if requested
   if (aggregate_sections) {
@@ -3672,6 +3760,7 @@ estimate_effort_sections <- function(
     # within a unit, so on a shared day it is independent across sections and
     # the per-section components add. The between-day covariance the sections do
     # share is already inside agg$se.
+    #
     # Absent sections are excluded by `data_available`, not by dropping NAs: a
     # section that reported no within-day component and one that has none are
     # different states, and only the first may leave the sum. A present section
@@ -3680,7 +3769,48 @@ estimate_effort_sections <- function(
     # though it were complete.
     lake_se_between <- agg$se
     lake_se_within <- sqrt(sum(result_df$se_within[result_df$data_available]^2))
-    lake_se <- sqrt(lake_se_between^2 + lake_se_within^2)
+
+    # The party-size component is the third term, and it was missing here for
+    # the same reason the within-day one was: `agg$se` is a survey aggregation
+    # and knows nothing about a multiplier estimated outside the design. The
+    # lake `se` did not depend on `party_size_se` at all while both section
+    # rows did (GH #230).
+    #
+    # Combined through `combine_section_variances()`, the same helper the three
+    # `estimate_total_*_sections()` twins share, so the three-way structure
+    # classification cannot drift away from theirs. `rate` is 1 because an
+    # effort component is already on the reported scale, and
+    # `expansion_in_section_var = FALSE` because the base below is the
+    # between-day and within-day components only.
+    present <- as.character(result_df$section[result_df$data_available])
+    lake_base_var <- lake_se_between^2 + lake_se_within^2
+    lake_se <- sqrt(lake_base_var)
+    if (!is.null(expansion_vec)) {
+      contrib <- expansion_vec[present]
+      decomp_present <- if (is.null(decomposition_list)) NULL else decomposition_list[present]
+      # A vector of ones, not the scalar 1: `exact_expansion_var()` guards on
+      # `length(decomposition) != length(rate)` and would refuse a resolvable
+      # "partial" geometry on the length check alone, warning and returning NA
+      # for a combination it could have done exactly.
+      unit_rate <- rep(1, length(contrib))
+      lake <- combine_section_variances( # nolint: object_usage_linter
+        design,
+        section_var = lake_base_var,
+        rate = unit_rate,
+        expansion_se = contrib,
+        decomposition = decomp_present,
+        expansion_in_section_var = FALSE
+      )
+      lake_se <- lake$se
+      se_expansion <- c(se_expansion, lake$component %||% NA_real_)
+      expansion_decomposition <- c(
+        expansion_decomposition,
+        # `unit_rate`, not `contrib`: the decomposition already holds each
+        # group's contribution on the effort scale, so multiplying by the
+        # section's own component would square it.
+        list(combine_section_decompositions(unit_rate, decomp_present)) # nolint: object_usage_linter
+      )
+    }
 
     # CI for lake total using full-design df
     df <- as.numeric(survey::degf(full_svy_design))
@@ -3714,7 +3844,9 @@ estimate_effort_sections <- function(
     conf_level = conf_level,
     by_vars = NULL,
     effort_target = target,
-    unit = design$effort_unit
+    unit = design$effort_unit,
+    se_expansion = se_expansion,
+    expansion_decomposition = expansion_decomposition
   )
 }
 
