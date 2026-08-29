@@ -46,9 +46,10 @@
 #'   - `method`: `"aerial_glmm_total"`
 #'
 #' @references
-#'   Askey, P.J., et al. (2018). Correcting for non-random flight timing in
-#'   aerial creel surveys using a generalized linear mixed model.
-#'   North American Journal of Fisheries Management, 38, 1204-1215.
+#'   Askey, P.J., Ward, H., Godin, T., Boucher, M., and Northrup, S. (2018).
+#'   Angler effort estimates from instantaneous aerial counts: use of
+#'   high-frequency time-lapse camera data to inform model-based estimators.
+#'   North American Journal of Fisheries Management, 38, 194-209.
 #'   \doi{10.1002/nafm.10010}
 #'
 #' @examples

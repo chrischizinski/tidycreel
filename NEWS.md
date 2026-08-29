@@ -1,5 +1,43 @@
 # tidycreel (development version)
 
+## Documentation
+
+* Corrected five references that named papers which do not exist, or whose DOI
+  resolved to an unrelated paper. Found by checking every DOI in the package
+  against Crossref after the camera citation turned out to be wrong.
+
+  - **Hartill et al. 2020**, cited by `est_effort_camera()`,
+    `estimate_effort_camera()` and `impute_camera_counts()`, gave a title, an
+    author list and a journal that belong to no paper, and a DOI
+    (`10.1016/j.fishres.2020.105706`) that resolves to a study of age
+    determination in sawsharks. The real reference is Hartill, Taylor, Keller
+    and Weltersbach 2020, *Digital camera monitoring of recreational fishing
+    effort: applications and challenges*, Fish and Fisheries 21:204-215,
+    \doi{10.1111/faf.12413}.
+  - **De Lury 1958**, cited by `estimate_angler_n()` and the mark-recapture
+    vignette, used `10.1139/f58-002`, which is *The Abundance and Distribution
+    of the Northern Sea Lion*. The correct DOI is `10.1139/f58-003`; it is one
+    article later in the same issue.
+  - **Askey et al. 2018**, cited by `estimate_effort_aerial_glmm()`,
+    `example_aerial_glmm_counts` and the aerial GLMM vignette, had the right
+    DOI but an invented title and the wrong pages, and the vignette named four
+    authors none of whom wrote it. It is *Angler effort estimates from
+    instantaneous aerial counts*, NAFM 38:194-209.
+  - **Su and Clapp**, cited by `simulate_creel_data()`, is in Transactions of
+    the American Fisheries Society 142:234-246 under the title *Evaluation of
+    sample design and estimation methods for Great Lakes angler surveys*, not
+    in NAFM 33:895-909 under the title given.
+  - **Feltz and Middaugh 2025**, cited by `creel_n_camera()`, was recorded as
+    in press under a title the paper does not carry. It is published as
+    *Improving efficiency of estimating angler effort using low-frequency
+    time-lapse camera data*, NAFM 45:322-332.
+
+  No estimator changed. What changed is that following a reference now reaches
+  the work it claims to. Two related questions are tracked separately: the
+  provenance of the `creel_n_camera()` camera-day minimums, which were
+  attributed to the Feltz and Middaugh title that does not exist (#234), and
+  the unverified Greene 1995 citation in `simulate_creel_data()` (#233).
+
 ## Breaking changes
 
 * The within-day variance component is now keyed by the sampling unit rather
