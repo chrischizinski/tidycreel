@@ -56,6 +56,54 @@
 
 ### Breaking changes
 
+- [`as_hybrid_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_hybrid_svydesign.md)
+  now requires `trips_disjoint`, stratifies on the stratum-by-component
+  interaction, and clusters on the date
+  ([\#229](https://github.com/chrischizinski/tidycreel/issues/229)).
+  Three seams, one construction.
+
+  The two components were pooled into a single stratum while each kept
+  its own sampling fraction, so `survey` derived a population size from
+  a row count that mixed access and roving rows – one stratum carried
+  two population sizes at once (weekday was simultaneously 10 and 12.5
+  in the function’s own example), and the only signal was an unexplained
+  `fpc' varies within strata` warning from `survey` next to a number
+  that looked fine. Access and roving sample different frames at
+  different rates, so each is now its own stratum and carries its own
+  population size.
+
+  `ids = ~1` made every **row** a PSU, so two counts taken on one date
+  were two independent sampling units – the defect class
+  `refuse_duplicate_psus()`
+  ([\#193](https://github.com/chrischizinski/tidycreel/issues/193))
+  exists to prevent on the `creel_design` path, routed around by this
+  bridge. Observations are now clustered on `date_col`. Point estimates
+  are unchanged; standard errors were understated and are now larger. A
+  component that sampled only one date within a stratum now leaves that
+  stratum with a single PSU, so `survey` will refuse to compute its
+  variance where it previously returned one from rows mistaken for days.
+
+  Adding the two component totals is valid only if the components sample
+  disjoint sets of angler trips, and nothing in `date`, `strata` or
+  `count` can establish that. `trips_disjoint` is now required with no
+  default: pass `TRUE` to affirm the precondition holds. `component`
+  still names a survey *method*, not an angler population – either
+  method can cover either angler type – so disjointness is a fact about
+  the protocol and never about the labels.
+
+  The documentation also said the returned object was “suitable for
+  effort estimation via
+  [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)”,
+  which refuses it: it is a `survey.design2`, not a `creel_design`. The
+  help page now sends users to
+  [`survey::svytotal()`](https://rdrr.io/pkg/survey/man/surveysummary.html),
+  and its example is no longer wrapped in `\dontrun{}`, so `R CMD check`
+  executes the documented path. The text described a hybrid design as
+  suiting both components “within the same sampling frame” – the
+  condition under which the sum is *wrong* – and gave differing coverage
+  as an example of bias when differing coverage is what makes the total
+  valid.
+
 - The within-day variance component is now keyed by the sampling unit
   rather than by the PSU alone
   ([\#227](https://github.com/chrischizinski/tidycreel/issues/227)).

@@ -261,9 +261,16 @@ by hand.</p>
 <code>as_hybrid_svydesign()</code><a class="anchor" aria-label="anchor" href="#combining-access-and-roving-counts-with-as_hybrid_svydesign"></a>
 </h2>
 <p>Some programs collect counts from both fixed access points and roving
-routes. <code><a href="../reference/as_hybrid_svydesign.html">as_hybrid_svydesign()</a></code> stacks those components into
-a single <code>survey</code> design object with component-specific
-weights.</p>
+routes. <code><a href="../reference/as_hybrid_svydesign.html">as_hybrid_svydesign()</a></code> combines those components
+into a single <code>survey</code> design object, treating each component
+as its own stratum with its own sampling fraction and its own population
+size, and clustering observations on the date so several counts taken on
+one day form one primary sampling unit.</p>
+<p>Adding the two component totals is valid only when the components
+sample <strong>disjoint sets of angler trips</strong> — no angler trip
+may be observed by both. That is a property of the field protocol, not
+of the data, so tidycreel cannot check it and asks you to affirm it with
+<code>trips_disjoint = TRUE</code>.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">access</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2024-06-03"</span>, <span class="st">"2024-06-08"</span>, <span class="st">"2024-06-10"</span>, <span class="st">"2024-06-15"</span><span class="op">)</span><span class="op">)</span>,</span>
@@ -281,7 +288,8 @@ weights.</p>
 <span>  access_data <span class="op">=</span> <span class="va">access</span>,</span>
 <span>  roving_data <span class="op">=</span> <span class="va">roving</span>,</span>
 <span>  access_fraction <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>weekday <span class="op">=</span> <span class="fl">0.5</span>, weekend <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span>,</span>
-<span>  roving_fraction <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>weekday <span class="op">=</span> <span class="fl">0.5</span>, weekend <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span>
+<span>  roving_fraction <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>weekday <span class="op">=</span> <span class="fl">0.5</span>, weekend <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span>,</span>
+<span>  trips_disjoint <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">hybrid_design</span></span>
@@ -291,16 +299,21 @@ weights.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Stratified Independent Sampling design</span></span>
 <span><span class="co">#&gt; survey::svydesign(ids = ids_formula, strata = strata_formula, </span></span>
-<span><span class="co">#&gt;     weights = weights_formula, fpc = ~fpc_val, data = combined)</span></span></code></pre></div>
-<p>With the combined design in hand, standard <code>survey</code>
-estimators work directly on the stacked data.</p>
+<span><span class="co">#&gt;     weights = weights_formula, fpc = ~fpc_val, data = combined, </span></span>
+<span><span class="co">#&gt;     nest = TRUE)</span></span></code></pre></div>
+<p>The returned object is a <code>survey</code> design rather than a
+<code>creel_design</code>, so <code><a href="../reference/estimate_effort.html">estimate_effort()</a></code> does not
+accept it; estimate from it with <code>survey</code> directly.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">survey</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/survey/man/surveysummary.html" class="external-link">svytotal</a></span><span class="op">(</span><span class="op">~</span><span class="va">count</span>, <span class="va">hybrid_design</span><span class="op">)</span></span>
-<span><span class="co">#&gt;       total     SE</span></span>
-<span><span class="co">#&gt; count   226 7.6158</span></span></code></pre></div>
+<span><span class="co">#&gt;       total    SE</span></span>
+<span><span class="co">#&gt; count   226 7.874</span></span></code></pre></div>
 <p>This small example is intentionally self-contained, but the same
 pattern scales to real field programs where access and roving counts
-represent complementary views of the same sampling frame.</p>
+cover complementary, non-overlapping parts of the fishery. Both
+components should sample the same days — the function warns when their
+date-stratum coverage is asymmetric — while covering different anglers
+or different water is exactly what makes their totals addable.</p>
 </div>
 <div class="section level2">
 <h2 id="summary">Summary<a class="anchor" aria-label="anchor" href="#summary"></a>

@@ -79,6 +79,7 @@
 <span>  count_col <span class="op">=</span> <span class="st">"count"</span>,</span>
 <span>  access_fraction <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  roving_fraction <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  trips_disjoint <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  fpc <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -99,7 +100,7 @@ contain the same columns as <code>access_data</code>.</p></dd>
 
 <dt id="arg-date-col">date_col<a class="anchor" aria-label="anchor" href="#arg-date-col"></a></dt>
 <dd><p>Character scalar.  Name of the date column (shared by both
-tables). Default <code>"date"</code>.</p></dd>
+tables). Default <code>"date"</code>.  Used to cluster observations into PSUs.</p></dd>
 
 
 <dt id="arg-strata-col">strata_col<a class="anchor" aria-label="anchor" href="#arg-strata-col"></a></dt>
@@ -125,6 +126,14 @@ for the roving-route component.  Names must match stratum values in
 <code>roving_data</code>.</p></dd>
 
 
+<dt id="arg-trips-disjoint">trips_disjoint<a class="anchor" aria-label="anchor" href="#arg-trips-disjoint"></a></dt>
+<dd><p>Logical scalar.  Required, with no default.  Set to
+<code>TRUE</code> to affirm that the access and roving components sample disjoint
+sets of angler trips, the precondition under which their totals may be
+added.  tidycreel cannot verify this from the data; see the
+"Disjointness precondition" section above.</p></dd>
+
+
 <dt id="arg-fpc">fpc<a class="anchor" aria-label="anchor" href="#arg-fpc"></a></dt>
 <dd><p>Logical. Apply finite-population correction? Default <code>TRUE</code>.</p></dd>
 
@@ -133,26 +142,50 @@ for the roving-route component.  Names must match stratum values in
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A <code><a href="https://rdrr.io/pkg/survey/man/svydesign.html" class="external-link">survey::svydesign</a></code> object with an additional class attribute
 <code>"creel_hybrid_svydesign"</code>.  The design data contains a <code>component</code>
-column (<code>"access"</code> or <code>"roving"</code>) and a <code>weight</code> column derived from
-the sampling fractions.</p>
+column (<code>"access"</code> or <code>"roving"</code>), a <code>weight</code> column derived from the
+sampling fractions, and a <code>.hybrid_stratum</code> column holding the
+stratum-by-component interaction the design is stratified on.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>Combines count data from access-point and roving survey components into a
-single <code><a href="https://rdrr.io/pkg/survey/man/svydesign.html" class="external-link">survey::svydesign</a></code> object suitable for effort estimation via
-<code><a href="estimate_effort.html">estimate_effort()</a></code>.</p>
-<p>A hybrid design is appropriate when a survey uses both fixed access-point
-counts (e.g., boat-launch interviews with angler counts) and roving-route
-counts (e.g., progressive counts along a shoreline transect) within the same
-sampling frame.  The two components are stacked, with a <code>component</code> column
-distinguishing them, and inclusion probabilities are derived from the
-user-supplied sampling fractions per stratum.</p>
+single <code><a href="https://rdrr.io/pkg/survey/man/svydesign.html" class="external-link">survey::svydesign</a></code> object.  The two components are treated as
+<strong>strata</strong>, each carrying its own sampling fraction and its own population
+size, so the design total is the stratified sum of the component totals.</p>
+<p><strong>Disjointness precondition.</strong>  Adding the two component totals is valid if
+and only if the components sample <strong>disjoint sets of angler trips</strong> – no
+angler trip may be observed by both.  What produces that disjointness is a
+property of the survey protocol (angler type, geography, access mode, or a
+rule the designer imposes); tidycreel cannot infer it from the counts, the
+dates, the strata, or the method label, so you must affirm it with
+<code>trips_disjoint = TRUE</code>.  The design cannot be constructed otherwise.  A
+boat angler intercepted on the water by a roving route and again at the
+ramp on the same trip belongs to both frames, and the total double counts
+that trip.</p>
+<p><code>component</code> names a survey <strong>method</strong>, not an angler population: an access
+point may intercept bank anglers at a pier or boat anglers at a ramp, and a
+roving route may be walked or run by boat.  Either method can cover either
+angler type, so disjointness is a fact about the protocol and never about
+the labels.</p>
+<p><strong>Estimation route.</strong>  The returned object is a <code>survey.design2</code>, not a
+<code><a href="creel_design.html">creel_design()</a></code>, so <code><a href="estimate_effort.html">estimate_effort()</a></code> does not accept it.  Estimate from
+it with <code><a href="https://rdrr.io/pkg/survey/man/surveysummary.html" class="external-link">survey::svytotal()</a></code> and the other <code>survey</code> functions directly, as
+in the examples below.</p>
+<p><strong>Design structure.</strong>  Rows are stratified on the interaction of
+<code>strata_col</code> and <code>component</code>, so each component carries its own population
+size at its own sampling fraction, and clustered on <code>date_col</code>, so several
+counts taken on one date form one primary sampling unit rather than several
+independent ones.  A component that sampled only one date within a stratum
+leaves that stratum with a single PSU: the design still constructs, but
+<code>survey</code> refuses to compute a variance for it.</p>
 <p><strong>PSU alignment requirement:</strong> Both <code>access_data</code> and <code>roving_data</code> must
 share the same date and stratum columns.  Mismatched column names, or dates
 present in one component but absent in the other, trigger an error rather
-than a silent expansion.  If PSU boundaries differ (e.g., access routes
-cover different sections than roving routes), the estimates will be biased;
-a warning is issued when stratum-date combinations are asymmetric.</p>
+than a silent expansion; a warning is issued when stratum-date combinations
+are asymmetric, because both components should sample the same days.  That
+is a requirement about <em>when</em> each component samples, not <em>where</em> – two
+components covering different water is the condition that makes their sum
+valid, not a source of bias.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
@@ -181,25 +214,28 @@ a warning is issued when stratum-date combinations are asymmetric.</p>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
-<span class="r-in"><span><span class="va">access</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
-<span class="r-in"><span>  date     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2024-06-01"</span>, <span class="st">"2024-06-02"</span><span class="op">)</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  day_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"weekday"</span>, <span class="st">"weekend"</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  count    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">12L</span>, <span class="fl">30L</span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">access</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  date     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2024-06-01"</span>, <span class="st">"2024-06-02"</span>, <span class="st">"2024-06-08"</span>, <span class="st">"2024-06-09"</span><span class="op">)</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  day_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"weekday"</span>, <span class="st">"weekday"</span>, <span class="st">"weekend"</span>, <span class="st">"weekend"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  count    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">12L</span>, <span class="fl">15L</span>, <span class="fl">30L</span>, <span class="fl">28L</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">roving</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
-<span class="r-in"><span>  date     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2024-06-01"</span>, <span class="st">"2024-06-02"</span><span class="op">)</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  day_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"weekday"</span>, <span class="st">"weekend"</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  count    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">8L</span>, <span class="fl">22L</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  date     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2024-06-01"</span>, <span class="st">"2024-06-02"</span>, <span class="st">"2024-06-08"</span>, <span class="st">"2024-06-09"</span><span class="op">)</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  day_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"weekday"</span>, <span class="st">"weekday"</span>, <span class="st">"weekend"</span>, <span class="st">"weekend"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  count    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">8L</span>, <span class="fl">10L</span>, <span class="fl">22L</span>, <span class="fl">25L</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu">as_hybrid_svydesign</span><span class="op">(</span></span></span>
 <span class="r-in"><span>  access_data      <span class="op">=</span> <span class="va">access</span>,</span></span>
 <span class="r-in"><span>  roving_data      <span class="op">=</span> <span class="va">roving</span>,</span></span>
 <span class="r-in"><span>  access_fraction  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>weekday <span class="op">=</span> <span class="fl">0.5</span>, weekend <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  roving_fraction  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>weekday <span class="op">=</span> <span class="fl">0.4</span>, weekend <span class="op">=</span> <span class="fl">0.4</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  roving_fraction  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>weekday <span class="op">=</span> <span class="fl">0.4</span>, weekend <span class="op">=</span> <span class="fl">0.4</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  trips_disjoint   <span class="op">=</span> <span class="cn">TRUE</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># estimate_effort() does not accept this object; use survey directly</span></span></span>
 <span class="r-in"><span><span class="fu">survey</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/survey/man/surveysummary.html" class="external-link">svytotal</a></span><span class="op">(</span><span class="op">~</span><span class="va">count</span>, <span class="va">design</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       total     SE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> count 332.5 8.6458</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

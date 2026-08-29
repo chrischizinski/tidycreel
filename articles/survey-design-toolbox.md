@@ -178,8 +178,16 @@ by hand.
 Some programs collect counts from both fixed access points and roving
 routes.
 [`as_hybrid_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_hybrid_svydesign.md)
-stacks those components into a single `survey` design object with
-component-specific weights.
+combines those components into a single `survey` design object, treating
+each component as its own stratum with its own sampling fraction and its
+own population size, and clustering observations on the date so several
+counts taken on one day form one primary sampling unit.
+
+Adding the two component totals is valid only when the components sample
+**disjoint sets of angler trips** — no angler trip may be observed by
+both. That is a property of the field protocol, not of the data, so
+tidycreel cannot check it and asks you to affirm it with
+`trips_disjoint = TRUE`.
 
 ``` r
 
@@ -199,7 +207,8 @@ hybrid_design <- as_hybrid_svydesign(
   access_data = access,
   roving_data = roving,
   access_fraction = c(weekday = 0.5, weekend = 0.5),
-  roving_fraction = c(weekday = 0.5, weekend = 0.5)
+  roving_fraction = c(weekday = 0.5, weekend = 0.5),
+  trips_disjoint = TRUE
 )
 
 hybrid_design
@@ -209,22 +218,28 @@ hybrid_design
 #> 
 #> Stratified Independent Sampling design
 #> survey::svydesign(ids = ids_formula, strata = strata_formula, 
-#>     weights = weights_formula, fpc = ~fpc_val, data = combined)
+#>     weights = weights_formula, fpc = ~fpc_val, data = combined, 
+#>     nest = TRUE)
 ```
 
-With the combined design in hand, standard `survey` estimators work
-directly on the stacked data.
+The returned object is a `survey` design rather than a `creel_design`,
+so
+[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+does not accept it; estimate from it with `survey` directly.
 
 ``` r
 
 survey::svytotal(~count, hybrid_design)
-#>       total     SE
-#> count   226 7.6158
+#>       total    SE
+#> count   226 7.874
 ```
 
 This small example is intentionally self-contained, but the same pattern
-scales to real field programs where access and roving counts represent
-complementary views of the same sampling frame.
+scales to real field programs where access and roving counts cover
+complementary, non-overlapping parts of the fishery. Both components
+should sample the same days — the function warns when their date-stratum
+coverage is asymmetric — while covering different anglers or different
+water is exactly what makes their totals addable.
 
 ## Summary
 

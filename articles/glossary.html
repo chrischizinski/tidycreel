@@ -401,9 +401,12 @@ surface.</p>
 <h3 id="hybrid-design">Hybrid design<a class="anchor" aria-label="anchor" href="#hybrid-design"></a>
 </h3>
 <p>A <strong>hybrid design</strong> combines more than one observation
-mode in the same survey frame — for example fixed access-point counts
-plus roving-route counts. <code><a href="../reference/as_hybrid_svydesign.html">as_hybrid_svydesign()</a></code> creates
-this kind of combined design object.</p>
+mode in one survey — for example fixed access-point counts plus
+roving-route counts — treating each mode as a stratum with its own
+sampling fraction. The component totals may be added only if the modes
+observe disjoint sets of angler trips.
+<code><a href="../reference/as_hybrid_svydesign.html">as_hybrid_svydesign()</a></code> creates this kind of combined design
+object.</p>
 </div>
 </div>
 <div class="section level2">

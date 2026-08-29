@@ -265,9 +265,11 @@ provides this surface.
 
 ### Hybrid design
 
-A **hybrid design** combines more than one observation mode in the same
-survey frame — for example fixed access-point counts plus roving-route
-counts.
+A **hybrid design** combines more than one observation mode in one
+survey — for example fixed access-point counts plus roving-route counts
+— treating each mode as a stratum with its own sampling fraction. The
+component totals may be added only if the modes observe disjoint sets of
+angler trips.
 [`as_hybrid_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_hybrid_svydesign.md)
 creates this kind of combined design object.
 
