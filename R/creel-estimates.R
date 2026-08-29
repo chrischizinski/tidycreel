@@ -3661,7 +3661,26 @@ estimate_effort_sections <- function(
       method = method
     ))
     lake_est <- agg$estimate
-    lake_se <- agg$se
+
+    # aggregate_section_totals() is a pure survey aggregation, so agg$se carries
+    # the between-day component and its across-section covariance and nothing
+    # else, while every section row above reports
+    # sqrt(var_between + var_within). Two definitions of variance in one column
+    # made the lake SE smaller than that of any section it contains (GH #228).
+    #
+    # The within-day (Rasmussen 1998) component is second-stage sampling error
+    # within a unit, so on a shared day it is independent across sections and
+    # the per-section components add. The between-day covariance the sections do
+    # share is already inside agg$se.
+    # Absent sections are excluded by `data_available`, not by dropping NAs: a
+    # section that reported no within-day component and one that has none are
+    # different states, and only the first may leave the sum. A present section
+    # holding NA therefore carries through to an NA lake `se`, which says the
+    # total is unavailable rather than offering the between-day figure alone as
+    # though it were complete.
+    lake_se_between <- agg$se
+    lake_se_within <- sqrt(sum(result_df$se_within[result_df$data_available]^2))
+    lake_se <- sqrt(lake_se_between^2 + lake_se_within^2)
 
     # CI for lake total using full-design df
     df <- as.numeric(survey::degf(full_svy_design))
@@ -3674,8 +3693,8 @@ estimate_effort_sections <- function(
       section = ".lake_total",
       estimate = lake_est,
       se = lake_se,
-      se_between = NA_real_,
-      se_within = NA_real_,
+      se_between = lake_se_between,
+      se_within = lake_se_within,
       ci_lower = lake_ci_lower,
       ci_upper = lake_ci_upper,
       n = nrow(design$counts),

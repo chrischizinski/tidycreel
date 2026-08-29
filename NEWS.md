@@ -80,7 +80,41 @@
   recur.
 
   Found by the sectioned/hybrid seam audit; the `.lake_total` row's standard
-  error still omits this component (#228) and is unchanged here.
+  error omitted this component too, corrected separately below (#228).
+
+* The `.lake_total` row of a sectioned effort estimate now reports the same
+  variance components as the section rows above it (#228). Section rows come
+  from `estimate_effort_total()`, whose `se` is
+  `sqrt(var_between + var_within)`. The lake row came from a pure
+  `survey::svyby()` + `svycontrast()` aggregation, which carries the between-day
+  component and its across-section covariance and nothing else -- two
+  definitions of variance in one column.
+
+  The result was a lake-wide standard error smaller than that of every section
+  it contained. On a fixture whose three sections have genuine within-day
+  variation the sections reported 405.6, 698.8 and 186.8 while the total
+  reported 472.3, and that figure did not move at all when a section's
+  within-day spread was widened from 0.1 to 0.9.
+
+  `se_between` and `se_within` were reported as `NA` on that row. The package's
+  convention is that `NA` means unknown, so a missing component read as a
+  decomposition that could not be performed rather than one that was never
+  added; both are now reported.
+
+  The within-day component is second-stage sampling error inside one unit, so on
+  a shared day it is independent across sections and the per-section components
+  add; the between-day covariance the sections do share is already inside the
+  `svycontrast()` figure. A present section carrying an unknown component
+  propagates to an `NA` lake `se` rather than to the between-day figure alone.
+
+  **This widens the lake-wide standard error and confidence interval** for any
+  sectioned design with more than one count per day. Point estimates are
+  unchanged, and a design with a single count per day is unaffected: its
+  within-day component is a true zero. Applies to both `method = "correlated"`
+  and `method = "independent"`.
+
+  Found by the sectioned/hybrid seam audit. Depended on #227: the correct
+  per-section components are its input.
 
 # tidycreel 5.2.0 "River Carpsucker" (2026-08-28)
 
