@@ -67,6 +67,23 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="tidycreel-development-version">tidycreel (development version)<a class="anchor" aria-label="anchor" href="#tidycreel-development-version"></a></h2>
 <div class="section level3">
+<h3 id="documentation-development-version">Documentation<a class="anchor" aria-label="anchor" href="#documentation-development-version"></a></h3>
+<ul><li>
+<p>Corrected five references that named papers which do not exist, or whose DOI resolved to an unrelated paper. Found by checking every DOI in the package against Crossref after the camera citation turned out to be wrong.</p>
+<ul><li>
+<strong>Hartill et al. 2020</strong>, cited by <code><a href="../reference/est_effort_camera.html">est_effort_camera()</a></code>, <code>estimate_effort_camera()</code> and <code><a href="../reference/impute_camera_counts.html">impute_camera_counts()</a></code>, gave a title, an author list and a journal that belong to no paper, and a DOI (<code>10.1016/j.fishres.2020.105706</code>) that resolves to a study of age determination in sawsharks. The real reference is Hartill, Taylor, Keller and Weltersbach 2020, <em>Digital camera monitoring of recreational fishing effort: applications and challenges</em>, Fish and Fisheries 21:204-215, .</li>
+<li>
+<strong>De Lury 1958</strong>, cited by <code><a href="../reference/estimate_angler_n.html">estimate_angler_n()</a></code> and the mark-recapture vignette, used <code>10.1139/f58-002</code>, which is <em>The Abundance and Distribution of the Northern Sea Lion</em>. The correct DOI is <code>10.1139/f58-003</code>; it is one article later in the same issue.</li>
+<li>
+<strong>Askey et al. 2018</strong>, cited by <code><a href="../reference/estimate_effort_aerial_glmm.html">estimate_effort_aerial_glmm()</a></code>, <code>example_aerial_glmm_counts</code> and the aerial GLMM vignette, had the right DOI but an invented title and the wrong pages, and the vignette named four authors none of whom wrote it. It is <em>Angler effort estimates from instantaneous aerial counts</em>, NAFM 38:194-209.</li>
+<li>
+<strong>Su and Clapp</strong>, cited by <code><a href="../reference/simulate_creel_data.html">simulate_creel_data()</a></code>, is in Transactions of the American Fisheries Society 142:234-246 under the title <em>Evaluation of sample design and estimation methods for Great Lakes angler surveys</em>, not in NAFM 33:895-909 under the title given.</li>
+<li>
+<strong>Feltz and Middaugh 2025</strong>, cited by <code><a href="../reference/creel_n_camera.html">creel_n_camera()</a></code>, was recorded as in press under a title the paper does not carry. It is published as <em>Improving efficiency of estimating angler effort using low-frequency time-lapse camera data</em>, NAFM 45:322-332.</li>
+</ul><p>No estimator changed. What changed is that following a reference now reaches the work it claims to. Two related questions are tracked separately: the provenance of the <code><a href="../reference/creel_n_camera.html">creel_n_camera()</a></code> camera-day minimums, which were attributed to the Feltz and Middaugh title that does not exist (<a href="https://github.com/chrischizinski/tidycreel/issues/234" class="external-link">#234</a>), and the unverified Greene 1995 citation in <code><a href="../reference/simulate_creel_data.html">simulate_creel_data()</a></code> (<a href="https://github.com/chrischizinski/tidycreel/issues/233" class="external-link">#233</a>).</p>
+</li>
+</ul></div>
+<div class="section level3">
 <h3 id="breaking-changes-development-version">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-development-version"></a></h3>
 <ul><li>
 <p>The within-day variance component is now keyed by the sampling unit rather than by the PSU alone (<a href="https://github.com/chrischizinski/tidycreel/issues/227" class="external-link">#227</a>). <code><a href="../reference/add_counts.html">add_counts()</a></code> keys <code>design$within_day_var</code> by the full unit key – the section, the site, or whatever <code>unit_cols</code> named – and two consumers rebuilt a narrower <code>c(psu_col, strata_cols)</code> key from the design instead of reading the one the table was built with.</p>

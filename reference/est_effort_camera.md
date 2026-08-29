@@ -167,10 +167,10 @@ requirement.
 
 ## References
 
-Hartill, B.W., Cryer, M., and Morrison, M.A. 2020. Camera-based creel
-surveys: estimating fishing effort and catch rates from ingress-egress
-camera counts. Fisheries Research 231:105706.
-[doi:10.1016/j.fishres.2020.105706](https://doi.org/10.1016/j.fishres.2020.105706)
+Hartill, B.W., Taylor, S.M., Keller, K., and Weltersbach, M.S. 2020.
+Digital camera monitoring of recreational fishing effort: applications
+and challenges. Fish and Fisheries 21:204-215.
+[doi:10.1111/faf.12413](https://doi.org/10.1111/faf.12413)
 
 ## See also
 

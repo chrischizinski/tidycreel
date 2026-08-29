@@ -342,7 +342,7 @@ comparison <- rbind(
 
 print(comparison)
 #>   method  estimate se ci_lower ci_upper
-#> 1   GLMM  378.5646 NA       NA       NA
+#> 1   GLMM  378.5647 NA       NA       NA
 #> 2 Simple 5092.5000 NA       NA       NA
 ```
 
@@ -390,10 +390,11 @@ formula when you have 8 or more survey days.
 
 ## References
 
-- Askey, P. J., Parkinson, E. A., Rehill, P., & Post, J. R. (2018).
-  Correcting for non-random flight timing in aerial creel surveys using
-  a generalized linear mixed model. *North American Journal of Fisheries
-  Management*, 38(5), 1204–1215. <https://doi.org/10.1002/nafm.10010>
+- Askey, P. J., Ward, H., Godin, T., Boucher, M., & Northrup, S. (2018).
+  Angler effort estimates from instantaneous aerial counts: use of
+  high-frequency time-lapse camera data to inform model-based
+  estimators. *North American Journal of Fisheries Management*, 38(1),
+  194–209. <https://doi.org/10.1002/nafm.10010>
 
 - Jones, C. M., & Pollock, K. H. (2012). Recreational survey methods:
   estimation of effort, harvest, and abundance. Chapter 19 in *Fisheries

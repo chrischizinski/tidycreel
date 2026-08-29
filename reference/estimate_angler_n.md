@@ -274,7 +274,7 @@ Parameters*, 2nd ed. Macmillan, New York.
 De Lury, D. B. (1958). The estimation of population size by a marking
 and recapture procedure. *Journal of the Fisheries Research Board of
 Canada*, 15(1), 19–25.
-[doi:10.1139/f58-002](https://doi.org/10.1139/f58-002)
+[doi:10.1139/f58-003](https://doi.org/10.1139/f58-003)
 
 ## See also
 
