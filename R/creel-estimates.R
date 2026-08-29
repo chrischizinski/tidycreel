@@ -3343,8 +3343,17 @@ compute_within_day_var_contribution <- function(
   }
   available_by_strata <- table(cal$.strata_key)
 
-  # Build a combined data frame: counts_data + within_day_var (joined by PSU key)
-  key_cols <- unique(c(design$psu_col, strata_cols))
+  # Build a combined data frame: counts_data + within_day_var, joined on the key
+  # the table was actually built with.
+  #
+  # Read off the table rather than reassembled from the design (GH #227).
+  # add_counts() keys within_day_var by the full unit key -- the section, the
+  # site, or whatever unit_cols named -- and rebuilding a narrower
+  # `c(psu_col, strata_cols)` here matched every section of a date to every other
+  # section of that date. The merge then returned three rows where it was given
+  # one, so each section summed the lake-wide ss_d, and n_sampled below counted
+  # the multiplied rows rather than the sampled units.
+  key_cols <- within_day_key_cols(wdv) # nolint: object_usage_linter
   combined <- merge(counts_data, wdv, by = key_cols, all.x = TRUE, sort = FALSE)
 
   # Days with k_d = 1 -> ss_d = 0 (VAR-03: within-day term is 0 for those days)

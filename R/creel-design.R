@@ -1376,6 +1376,25 @@ psu_key_cols <- function(design, psu, counts, unit_cols = NULL) {
   intersect(candidates, names(counts))
 }
 
+#' The columns `design$within_day_var` is keyed by
+#'
+#' Read off the table itself rather than rebuilt from the design, so a consumer
+#' cannot key a join more narrowly than `add_counts()` keyed the table (GH #227).
+#' The table is keyed with `psu_key_cols()`, which includes the section, the site,
+#' or whatever `unit_cols` named; every reconstruction of that key elsewhere is a
+#' chance to drop one of them, and dropping one is silent -- the join still runs,
+#' and returns more rows than it was given rather than fewer.
+#'
+#' @param wdv A within-day variance table: key columns plus `ss_d` and `k_d`.
+#'
+#' @return Character vector of key column names.
+#'
+#' @keywords internal
+#' @noRd
+within_day_key_cols <- function(wdv) {
+  setdiff(names(wdv), c("ss_d", "k_d"))
+}
+
 
 #' Check that one PSU carries one party-size estimate
 #'
@@ -2017,7 +2036,18 @@ add_counts <- function(
   # (Ê_d,k = C_k × T_d). Scale ss_d by T_d² per PSU before period_length_col is
   # dropped. Applies to both count types, since both now multiply through by T_d.
   if (!is.null(period_length_col_name) && !is.null(within_day_var)) {
-    td_vals <- counts[[period_length_col_name]][match(within_day_var[[psu]], counts[[psu]])]
+    # Matched on the full unit key, not `psu` alone (GH #227). match() on the
+    # date returns the first row carrying it, so every section of a date was
+    # scaled by whichever section sorted first. The scaling is T_d^2, so a 12 h
+    # period applied to a 6 h section overstated its within-day variance
+    # fourfold, silently.
+    wdv_key_cols <- within_day_key_cols(within_day_var) # nolint: object_usage_linter
+    td_vals <- counts[[period_length_col_name]][
+      match(
+        do.call(paste, c(within_day_var[wdv_key_cols], sep = "\u001f")),
+        do.call(paste, c(counts[wdv_key_cols], sep = "\u001f"))
+      )
+    ]
     within_day_var$ss_d <- within_day_var$ss_d * td_vals^2
   }
 

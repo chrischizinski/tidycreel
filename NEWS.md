@@ -1,3 +1,49 @@
+# tidycreel (development version)
+
+## Breaking changes
+
+* The within-day variance component is now keyed by the sampling unit rather
+  than by the PSU alone (#227). `add_counts()` keys `design$within_day_var` by
+  the full unit key -- the section, the site, or whatever `unit_cols` named --
+  and two consumers rebuilt a narrower `c(psu_col, strata_cols)` key from the
+  design instead of reading the one the table was built with.
+
+  Nothing errored, because a join on too few columns does not fail: it returns
+  more rows than it was given. On a three-section design each section's 12 count
+  rows matched three within-day rows apiece and became 36, so every section
+  summed the lake-wide sum of squares, and the inflated row count also became
+  `n_sampled` in the variance divisor. On a fixture where two of three sections
+  are counted identically at both count times -- no within-day variation
+  whatsoever -- all three reported the same `se_within` of 849.9, roughly 85% of
+  each section's total standard error, against between-day components of 110 to
+  228.
+
+  The same wrong key scaled the component to effort units. `ss_d` is multiplied
+  by `T_d^2`, and `match()` on the date returned the first row carrying it, so
+  every section of a date was scaled by whichever section sorted first. A
+  section open 6 hours sitting alongside sections open 12 was scaled by `12^2`
+  instead of `6^2`: fourfold too large, silently. Sections with different open
+  hours is an ordinary field situation.
+
+  **This moves standard errors, confidence intervals and every downstream
+  product** for any design whose unit key is wider than `(psu, strata)`:
+  sectioned designs, site-structured designs, and any use of `unit_cols`. Point
+  estimates are unchanged. `estimate_total_catch()`, `estimate_total_harvest()`
+  and `estimate_total_release()` all build products from `estimate_effort_total()`
+  and inherit the correction.
+
+  The same defect crashed rather than lying when the extra unit-key column came
+  from `unit_cols` and the caller grouped by it: the narrow join renamed the
+  duplicated column and the estimator died inside base R with `replacement has
+  0 rows`. That path now returns per-group within-day variance.
+
+  Both consumers now read the key off the table itself, via the new internal
+  `within_day_key_cols()`, so a key written one way and read another cannot
+  recur.
+
+  Found by the sectioned/hybrid seam audit; the `.lake_total` row's standard
+  error still omits this component (#228) and is unchanged here.
+
 # tidycreel 5.2.0 "River Carpsucker" (2026-08-28)
 
 ## Breaking changes
