@@ -351,9 +351,9 @@ creel_n_cpue <- function(cv_catch, cv_effort, rho = 0, cv_target) {
 #' @references
 #' Cochran, W.G. 1977. Sampling Techniques, 3rd ed. Wiley, New York.
 #'
-#' Feltz, C.J. and Middaugh, C.R. 2025. Minimum camera-day requirements for
-#' reliable creel-camera effort estimation. North American Journal of Fisheries
-#' Management. (in press)
+#' Feltz, C.J. and Middaugh, C.R. 2025. Improving efficiency of estimating
+#' angler effort using low-frequency time-lapse camera data. North American
+#' Journal of Fisheries Management 45:322-332.
 #'
 #' @seealso [creel_n_effort()] for the equivalent function for angler-contact
 #'   sampling days.

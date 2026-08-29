@@ -130,8 +130,9 @@
 #' \code{\link{add_counts}}.
 #'
 #' @references
-#' Su, B.C. & Clapp, D.F. (2013). Simulation-based evaluation of creel survey
-#' designs. N. Am. J. Fish. Manage. 33: 895–909.
+#' Su, Z. & Clapp, D.F. (2013). Evaluation of sample design and estimation
+#' methods for Great Lakes angler surveys. Trans. Am. Fish. Soc. 142: 234–246.
+#' \doi{10.1080/00028487.2012.728167}
 #'
 #' Greene, B.T. (1995). The ANGLER simulation model. N. Am. J. Fish. Manage.
 #' 15: 743–750.

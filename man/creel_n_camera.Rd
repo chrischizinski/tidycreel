@@ -70,9 +70,9 @@ creel_n_camera(
 \references{
 Cochran, W.G. 1977. Sampling Techniques, 3rd ed. Wiley, New York.
 
-Feltz, C.J. and Middaugh, C.R. 2025. Minimum camera-day requirements for
-reliable creel-camera effort estimation. North American Journal of Fisheries
-Management. (in press)
+Feltz, C.J. and Middaugh, C.R. 2025. Improving efficiency of estimating
+angler effort using low-frequency time-lapse camera data. North American
+Journal of Fisheries Management 45:322-332.
 }
 \seealso{
 \code{\link[=creel_n_effort]{creel_n_effort()}} for the equivalent function for angler-contact
