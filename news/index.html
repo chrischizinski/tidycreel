@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidycreel</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">5.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">5.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -65,9 +65,9 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="development version" id="tidycreel-development-version">tidycreel (development version)<a class="anchor" aria-label="anchor" href="#tidycreel-development-version"></a></h2>
+<h2 class="pkg-version" data-toc-text="5.2.0" id="tidycreel-520-river-carpsucker-2026-08-28">tidycreel 5.2.0 “River Carpsucker” (2026-08-28)<a class="anchor" aria-label="anchor" href="#tidycreel-520-river-carpsucker-2026-08-28"></a></h2>
 <div class="section level3">
-<h3 id="breaking-changes-development-version">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-development-version"></a></h3>
+<h3 id="breaking-changes-5-2-0">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-5-2-0"></a></h3>
 <ul><li>
 <p><code><a href="../reference/summarize_by_day_type.html">summarize_by_day_type()</a></code> and <code><a href="../reference/summarize_boat_composition.html">summarize_boat_composition()</a></code> now resolve the day type column instead of assuming it is the first stratum (<a href="https://github.com/chrischizinski/tidycreel/issues/221" class="external-link">#221</a>). Both read <code>design$strata_cols[1]</code> and labelled whatever they found there <code>day_type</code>. But <code><a href="../reference/creel_design.html">creel_design()</a></code> preserves the order the caller declared their strata in, so that index is a declaration order, not a definition: a design declaring <code>strata = c(site, day_type)</code> produced a table of site names under a <code>day_type</code> header, with no warning, and the real weekday / weekend breakdown absent entirely.</p>
 <p>Resolution order is now an explicit <code>day_type_col</code> argument, then a stratum actually named <code>day_type</code>, then the first stratum – which warns and names the column it chose when the design declares more than one. A single-stratum design resolves silently and is unaffected, so the documented <code>strata = day_type</code> workflow does not change.</p>
@@ -126,7 +126,7 @@
 </li>
 </ul></div>
 <div class="section level3">
-<h3 id="bug-fixes-development-version">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-development-version"></a></h3>
+<h3 id="bug-fixes-5-2-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-5-2-0"></a></h3>
 <ul><li><p><code><a href="../reference/estimate_exploitation_rate.html">estimate_exploitation_rate()</a></code> requires <code>se_C</code> when <code>C</code> is a bare number (<a href="https://github.com/chrischizinski/tidycreel/issues/208" class="external-link">#208</a>). It previously reached <code>if (se_C &lt; 0)</code> holding a <code>NULL</code> and failed as <code>argument is of length zero</code> – loud, so no wrong number ever escaped, but uninformative on an entirely plausible call. The error now names the argument and points at the object route added in <a href="https://github.com/chrischizinski/tidycreel/issues/206" class="external-link">#206</a>, which supplies the standard error itself. Defaulting the absent case to <code>0</code> was rejected: a zero standard error cannot be told apart from a variance that never propagated.</p></li>
 <li><p>The <code>reporting_rate</code> documentation said the correction adjusts the exploitation rate <em>downward</em>, contradicting the formula printed beside it (<a href="https://github.com/chrischizinski/tidycreel/issues/207" class="external-link">#207</a>). It adjusts <strong>upward</strong>: under-reporting means the recoveries actually observed understate how many tagged fish were removed, so dividing by <code>lambda &lt; 1</code> restores them and at <code>lambda = 0.5</code> the estimate doubles. The code was correct throughout and is unchanged; only the wording was wrong. The direction is now also asserted in the test suite, so prose and arithmetic cannot drift apart again silently.</p></li>
 <li>

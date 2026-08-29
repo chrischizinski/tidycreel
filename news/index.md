@@ -1,6 +1,6 @@
 # Changelog
 
-## tidycreel (development version)
+## tidycreel 5.2.0 “River Carpsucker” (2026-08-28)
 
 ### Breaking changes
 
