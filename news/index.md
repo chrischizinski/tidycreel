@@ -212,6 +212,45 @@
   this as metadata-only; re-deriving it before implementing showed the
   lake row’s arithmetic was affected too.
 
+### Bug fixes
+
+- The three sectioned product totals now report
+  `expansion_decomposition` alongside `se_expansion`
+  ([\#238](https://github.com/chrischizinski/tidycreel/issues/238)).
+  [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md),
+  [`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md)
+  and
+  [`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
+  each gathered the per-section decomposition, used it in
+  `combine_section_variances()`, and then called `new_creel_estimates()`
+  without it.
+
+  The constructor states the invariant where it stores the field: one
+  entry per row of `estimates`, `NULL` exactly when `se_expansion` is. A
+  component was reported with nothing behind it, so `se_expansion` was
+  recoverable from nothing and a combination over a wider partition – a
+  season, or several water bodies – had no group index to work from.
+  That index is what lets a “partial” geometry be resolved exactly
+  instead of refused, which is the mechanism behind
+  [\#150](https://github.com/chrischizinski/tidycreel/issues/150).
+
+  Each section’s entry is scaled by that section’s rate, as
+  `se_expansion` already was, so the per-row identity
+  `sqrt(sum(decomposition^2)) == se_expansion` holds on the reported
+  product scale. The `.lake_total` entry is keyed by party-size group
+  rather than by section – the groups summed across the sections –
+  because the section index is recoverable from the rows while the group
+  index is not.
+
+  No estimate or standard error moves. The lake row already consumed the
+  decomposition through `combine_section_variances()`; only the
+  reporting was missing. A design carrying no party-size expansion still
+  returns `NULL` for both fields.
+
+  Found while completing
+  [\#230](https://github.com/chrischizinski/tidycreel/issues/230), which
+  fixed the same defect in `estimate_effort_sections()`.
+
 ## tidycreel 5.2.0 “River Carpsucker” (2026-08-28)
 
 ### Breaking changes

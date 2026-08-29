@@ -114,6 +114,16 @@
 <p>Found by the sectioned/hybrid seam audit. The issue as filed described this as metadata-only; re-deriving it before implementing showed the lake row’s arithmetic was affected too.</p>
 </li>
 </ul></div>
+<div class="section level3">
+<h3 id="bug-fixes-development-version">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-development-version"></a></h3>
+<ul><li>
+<p>The three sectioned product totals now report <code>expansion_decomposition</code> alongside <code>se_expansion</code> (<a href="https://github.com/chrischizinski/tidycreel/issues/238" class="external-link">#238</a>). <code><a href="../reference/estimate_total_catch.html">estimate_total_catch()</a></code>, <code><a href="../reference/estimate_total_harvest.html">estimate_total_harvest()</a></code> and <code><a href="../reference/estimate_total_release.html">estimate_total_release()</a></code> each gathered the per-section decomposition, used it in <code>combine_section_variances()</code>, and then called <code>new_creel_estimates()</code> without it.</p>
+<p>The constructor states the invariant where it stores the field: one entry per row of <code>estimates</code>, <code>NULL</code> exactly when <code>se_expansion</code> is. A component was reported with nothing behind it, so <code>se_expansion</code> was recoverable from nothing and a combination over a wider partition – a season, or several water bodies – had no group index to work from. That index is what lets a “partial” geometry be resolved exactly instead of refused, which is the mechanism behind <a href="https://github.com/chrischizinski/tidycreel/issues/150" class="external-link">#150</a>.</p>
+<p>Each section’s entry is scaled by that section’s rate, as <code>se_expansion</code> already was, so the per-row identity <code>sqrt(sum(decomposition^2)) == se_expansion</code> holds on the reported product scale. The <code>.lake_total</code> entry is keyed by party-size group rather than by section – the groups summed across the sections – because the section index is recoverable from the rows while the group index is not.</p>
+<p>No estimate or standard error moves. The lake row already consumed the decomposition through <code>combine_section_variances()</code>; only the reporting was missing. A design carrying no party-size expansion still returns <code>NULL</code> for both fields.</p>
+<p>Found while completing <a href="https://github.com/chrischizinski/tidycreel/issues/230" class="external-link">#230</a>, which fixed the same defect in <code>estimate_effort_sections()</code>.</p>
+</li>
+</ul></div>
 </div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="5.2.0" id="tidycreel-520-river-carpsucker-2026-08-28">tidycreel 5.2.0 “River Carpsucker” (2026-08-28)<a class="anchor" aria-label="anchor" href="#tidycreel-520-river-carpsucker-2026-08-28"></a></h2>
