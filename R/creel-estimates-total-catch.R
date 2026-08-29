@@ -816,6 +816,29 @@ estimate_total_catch_sections <- function(
   expansion_vec <- section_expansion_vector(sec_expansion_se) # nolint: object_usage_linter
   decomposition_list <- section_decomposition_list(sec_decomposition) # nolint: object_usage_linter
   se_expansion <- if (is.null(expansion_vec)) NULL else unname(abs(sec_rate * expansion_vec))
+  # `new_creel_estimates()` requires one entry per row of `estimates`, NULL
+  # exactly when `se_expansion` is. A component was reported with no
+  # decomposition behind it, so `se_expansion` was recoverable from nothing and
+  # a combination over a wider partition had no group index to work from
+  # (GH #238).
+  #
+  # Scaled by the section's own rate for the same reason `se_expansion` is:
+  # these are contributions to a product total, which keeps the per-row identity
+  # sqrt(sum(decomposition^2)) == se_expansion true on the reported scale.
+  expansion_decomposition <- if (is.null(expansion_vec)) {
+    NULL
+  } else if (is.null(decomposition_list)) {
+    # Unreachable while every path that returns a component also attaches its
+    # decomposition. Written as a fill rather than a branch to NULL so the entry
+    # count stays aligned to the rows whatever arrives.
+    vector("list", length(expansion_vec))
+  } else {
+    unname(Map(
+      function(d, r) if (is.null(d)) NULL else d * r,
+      decomposition_list,
+      as.numeric(sec_rate)
+    ))
+  }
 
   # Append .lake_total row if requested (ungrouped path only)
   if (aggregate_sections && is.null(by_vars)) {
@@ -833,6 +856,17 @@ estimate_total_catch_sections <- function(
     lake_se <- lake$se
     if (!is.null(se_expansion)) {
       se_expansion <- c(se_expansion, lake$component %||% NA_real_)
+    }
+    if (!is.null(expansion_decomposition)) {
+      # Keyed by party-size group rather than by section -- the groups summed
+      # across the sections -- which is exactly what a wider combination needs.
+      expansion_decomposition <- c(
+        expansion_decomposition,
+        list(combine_section_decompositions( # nolint: object_usage_linter
+          sec_rate[present],
+          decomposition_list[present]
+        ))
+      )
     }
 
     # CI for lake total: sum(section n) - n_sections (consistent with compute_stratum_product_sum)
@@ -871,6 +905,7 @@ estimate_total_catch_sections <- function(
     by_vars = if (!is.null(by_vars)) c("section", by_vars) else "section",
     effort_target = target,
     unit = product_total_unit(rate_unit(design), design$effort_unit), # nolint: object_usage_linter
-    se_expansion = se_expansion
+    se_expansion = se_expansion,
+    expansion_decomposition = expansion_decomposition
   )
 }
