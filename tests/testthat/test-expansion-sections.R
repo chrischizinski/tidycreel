@@ -337,3 +337,84 @@ test_that("the refusal remains for a partial structure with no decomposition (GH
   )
   expect_true(is.na(result))
 })
+
+# The decomposition behind the component (GH #238)
+#
+# All three sectioned product totals reported `se_expansion` while passing no
+# `expansion_decomposition` to the constructor, which states the invariant at
+# the point of storage: one entry per row of `estimates`, NULL exactly when
+# `se_expansion` is. The decomposition was gathered by the section loop, used in
+# `combine_section_variances()`, and then dropped.
+
+sections_totals <- function(counts) {
+  design <- sections_design(counts)
+  lapply(
+    c(
+      catch = "estimate_total_catch",
+      harvest = "estimate_total_harvest",
+      release = "estimate_total_release"
+    ),
+    function(f) suppressWarnings(suppressMessages(get(f)(design)))
+  )
+}
+
+test_that("every sectioned product total reports the decomposition (GH #238)", {
+  # Asserted across all three because they are near-twins: a seam defect in one
+  # is a defect in all three, and this one was.
+  for (result in sections_totals(shared_section_counts())) {
+    expect_false(is.null(result$expansion_decomposition))
+    expect_length(result$expansion_decomposition, nrow(result$estimates))
+  }
+})
+
+test_that("each row's decomposition reproduces that row's component (GH #238)", {
+  # The property that makes the two describe one geometry rather than two.
+  # `se_expansion` is recoverable from the decomposition but not the reverse, so
+  # this identity is what pins them together -- and it is scale-sensitive: these
+  # are contributions to a product total, so a decomposition left on the effort
+  # scale would fail here while looking entirely plausible.
+  for (counts in list(shared_section_counts(), separate_section_counts())) {
+    for (result in sections_totals(counts)) {
+      for (i in seq_len(nrow(result$estimates))) {
+        expect_equal(
+          sqrt(sum(result$expansion_decomposition[[i]]^2)),
+          result$se_expansion[[i]]
+        )
+      }
+    }
+  }
+})
+
+test_that("the lake row's decomposition is keyed by group, not by section (GH #238)", {
+  # The whole point of carrying it. A section index would be recoverable from
+  # the rows themselves; the group index is not, and it is what a combination
+  # over a wider partition needs when one estimate straddles that partition.
+  shared <- sections_totals(shared_section_counts())$catch
+  separate <- sections_totals(separate_section_counts())$catch
+
+  lake_of <- function(r) r$expansion_decomposition[[nrow(r$estimates)]]
+
+  # One estimate covering both sections collapses to a single group.
+  expect_length(lake_of(shared), 1L)
+  # One estimate per section keeps two, named for the groups rather than
+  # positionally -- which here happen to coincide with the section names.
+  expect_setequal(names(lake_of(separate)), c("North", "South"))
+})
+
+# No test here asserts that estimates did not move. The arithmetic invariance is
+# already pinned by the tests above, which were written for GH #144/#145/#150
+# before this change and continue to pass: the lake row consumed the
+# decomposition through `combine_section_variances()` all along, and reporting it
+# is additive metadata. A fresh test with a hand-typed constant would be weaker
+# than the ones already standing.
+
+test_that("a design without expansion reports neither field (GH #238)", {
+  # The invariant's other half: NULL exactly when `se_expansion` is, so "does
+  # not apply" stays distinguishable from "summed to nothing".
+  plain <- sections_raw()
+  plain$angler_count <- plain$angler_boats * 2.5
+  for (result in sections_totals(plain)) {
+    expect_null(result$se_expansion)
+    expect_null(result$expansion_decomposition)
+  }
+})
