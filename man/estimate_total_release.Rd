@@ -95,6 +95,11 @@ When \code{\link{add_sections}} has been called on the design, each section
 is estimated independently. The lake-wide total is \code{sum(TR_i)}, not
 \code{E_total * RPUE_pooled}. The lake-wide SE uses the zero-covariance
 assumption: \code{sqrt(sum(se_i^2))}.
+
+\code{by = <species>} is supported on a sectioned design: catch is
+apportioned against each section's own whole effort, giving one row per
+section per species. As with any other grouping, the sectioned result then
+carries no \code{.lake_total} row and no \code{prop_of_lake_total}.
 }
 \section{What the pooled total assumes}{
 

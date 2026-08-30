@@ -2534,6 +2534,25 @@ abort_count_unobservable_by <- function(by_quo, design, cnd, species_route, erro
     rlang::cnd_signal(cnd)
   }
 
+  abort_count_unobservable_names(interview_only, design, species_route, error_call)
+}
+
+#' Abort naming the count-observability constraint for known column names
+#'
+#' Split out of `abort_count_unobservable_by()` so a caller that already knows
+#' which names are interview-only -- the sectioned species path, which resolves
+#' `by=` itself -- raises exactly the same refusal instead of a second wording.
+#'
+#' @param interview_only Character vector of offending column names.
+#' @param design A creel_design object.
+#' @param species_route Logical. Whether to point at the `by = <species>` route.
+#' @param error_call Environment used for error reporting.
+#'
+#' @keywords internal
+#' @noRd
+abort_count_unobservable_names <- function(interview_only, design, species_route, error_call) {
+  count_cols <- names(design[["counts"]]) # nolint: object_usage_linter
+
   # Deparse through symbols so a non-syntactic name keeps its backticks; pasting
   # raw names would suggest `estimate_catch_rate(by = trip type)`, which is not
   # valid R and is worse than offering no suggestion at all.
