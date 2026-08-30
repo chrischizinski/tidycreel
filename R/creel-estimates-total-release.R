@@ -255,7 +255,24 @@ estimate_total_release <- function(
   # A domain the counts never classified forces the pooled product form,
   # whose weighting comes from the interview mix rather than the effort mix
   # (GH #242). Raised before the section dispatch so both paths hear it.
-  warn_pooled_domain_mix(design, "estimate_total_release") # nolint: object_usage_linter
+  # The release rate this estimator uses is built from the catch table's
+  # released rows (.release_count), not the interview catch column, so the
+  # screen has to look at that same quantity. Screening on catch could warn
+  # about a difference the releases do not share, or miss one only the
+  # releases have.
+  release_screen <- tryCatch(
+    estimate_release_build_data(design, species = NULL),
+    error = function(cnd) NULL
+  )
+  if (!is.null(release_screen)) {
+    design_screen <- design
+    design_screen$interviews <- release_screen
+    warn_pooled_domain_mix( # nolint: object_usage_linter
+      design_screen,
+      "estimate_total_release",
+      num_col = ".release_count"
+    )
+  }
 
   # Validate design compatibility (counts AND interviews required for effort)
   validate_design_compatibility(design) # nolint: object_usage_linter

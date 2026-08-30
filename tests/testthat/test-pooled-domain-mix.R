@@ -75,9 +75,13 @@ make_pooled_domain_design <- function(bass_multiplier = 1L, domain = "target") {
     n_interviewed = n_interviewed
   )))
 
+  # Released rows, or the release estimator has no signal at all and any
+  # assertion about its warning passes for the wrong reason.
+  catch_df <- add_released_rows_for_tests(catch_data$catch_df)
+
   suppressMessages(suppressWarnings(add_catch(
     design,
-    catch_data$catch_df,
+    catch_df,
     catch_uid = interview_id,
     interview_uid = interview_id,
     species = species,
@@ -255,4 +259,42 @@ test_that("PDM-11: a harvest total that cannot be computed does not warn on its 
     "No harvest column available"
   )
   expect_false(warned)
+})
+
+test_that("PDM-12: the release screen reads releases, not catch", {
+  set.seed(242)
+  design <- make_pooled_domain_design(bass_multiplier = 1L, domain = "sought_pdm12")
+
+  # Flat catch rate across the domain: constant catch over constant effort. If
+  # the screen looked at the interview catch column it would see nothing here.
+  design$interviews$catch_total <- 6L
+  design$interviews$.angler_effort <- 2
+
+  # ... while the released counts differ sharply across the same domain. The
+  # release estimator builds its rate from these rows (.release_count), so this
+  # is the quantity whose domain mix actually drives the release total.
+  uid <- design$catch_interview_uid_col
+  domain_of <- stats::setNames(design$interviews$sought_pdm12, design$interviews$interview_id)
+  catch_df <- design$catch
+  is_released <- catch_df[[design$catch_type_col]] == "released"
+  row_domain <- domain_of[as.character(catch_df[[uid]])]
+  catch_df[[design$catch_count_col]][is_released & row_domain == "bass"] <- 9L
+  catch_df[[design$catch_count_col]][is_released & row_domain == "bluegill"] <- 1L
+  design$catch <- catch_df
+
+  release_data <- estimate_release_build_data(design, species = NULL)
+  catch_spread <- domain_rate_spread(design$interviews, "sought_pdm12", "catch_total", ".angler_effort")
+  release_spread <- domain_rate_spread(
+    release_data,
+    "sought_pdm12",
+    ".release_count",
+    design$angler_effort_col
+  )
+
+  # The two quantities genuinely disagree here -- that is what makes this test
+  # able to tell the screens apart rather than pass either way.
+  expect_true(is.null(catch_spread) || catch_spread$spread < pooled_domain_mix_threshold())
+  expect_true(release_spread$spread >= pooled_domain_mix_threshold())
+
+  expect_false(is.null(catch_mix_warning(estimate_total_release(design)))) # nolint: object_usage_linter
 })
