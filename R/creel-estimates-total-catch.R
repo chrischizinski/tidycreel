@@ -701,10 +701,13 @@ estimate_total_catch_sections <- function(
   if (rlang::quo_is_null(by_quo)) {
     by_vars <- NULL
   } else {
+    # No species route here: the section dispatch in the public function returns
+    # before resolve_species_by(), so `by = <species>` never reaches species
+    # apportionment on a sectioned design -- advertising it would be a dead end.
     by_vars <- eval_select_count_by( # nolint: object_usage_linter
       by_quo,
       design,
-      species_route = TRUE,
+      species_route = FALSE,
       error_call = rlang::caller_env()
     )
   }

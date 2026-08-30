@@ -2099,5 +2099,14 @@ test_that("CBY-08: sectioned total catch names the count constraint, not a missi
     estimate_total_catch(design, by = target), # nolint: object_usage_linter
     class = "creel_error_count_unobservable_by"
   )
-  expect_match(cli::ansi_strip(conditionMessage(err)), "interview data but not the count data")
+  msg <- cli::ansi_strip(conditionMessage(err))
+  expect_match(msg, "interview data but not the count data")
+
+  # The species route must NOT be offered here. estimate_total_catch() returns
+  # into the section path before resolve_species_by() runs, so `by = <species>`
+  # never reaches species apportionment on a sectioned design -- verified: it
+  # fails with tidyselect's own error, because species lives in the catch table
+  # and is in neither the counts nor the interviews. Advertising it would send
+  # the user to a second refusal.
+  expect_no_match(msg, "apportions catch against whole effort")
 })
