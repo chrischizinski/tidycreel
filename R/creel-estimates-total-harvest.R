@@ -274,6 +274,26 @@ estimate_total_harvest <- function(
   # Validate design compatibility (counts AND interviews required)
   validate_design_compatibility(design) # nolint: object_usage_linter
 
+  # Validate design$harvest_col exists
+  if (is.null(design$harvest_col)) {
+    cli::cli_abort(c(
+      "No harvest column available.",
+      "x" = "Design must have harvest_col set.",
+      "i" = "Call {.fn add_interviews} with the harvest parameter.",
+      "i" = paste(
+        "Example: {.code design <- add_interviews(design, interviews,",
+        "catch = catch_total, harvest = catch_kept, effort = hours_fished)}"
+      )
+    ))
+  }
+
+  # A domain the counts never classified forces the pooled product form,
+  # whose weighting comes from the interview mix rather than the effort mix
+  # (GH #242). After the harvest_col check, so a call that cannot produce a
+  # harvest total at all does not first warn about one, and ahead of the section
+  # dispatch below so a sectioned design hears it too.
+  warn_pooled_domain_mix(design, "estimate_total_harvest", num_col = design[["harvest_col"]]) # nolint: object_usage_linter
+
   # Ahead of the species detection below. Resolving species first returned a
   # lake-wide species total for a design that has sections -- a number computed
   # without the section machinery, reported with no section column and nothing
@@ -327,26 +347,6 @@ estimate_total_harvest <- function(
       se_expansion = attr(estimates_df, "se_expansion")
     ))
   }
-
-  # Validate design$harvest_col exists
-  if (is.null(design$harvest_col)) {
-    cli::cli_abort(c(
-      "No harvest column available.",
-      "x" = "Design must have harvest_col set.",
-      "i" = "Call {.fn add_interviews} with the harvest parameter.",
-      "i" = paste(
-        "Example: {.code design <- add_interviews(design, interviews,",
-        "catch = catch_total, harvest = catch_kept, effort = hours_fished)}"
-      )
-    ))
-  }
-
-  # A domain the counts never classified forces the pooled product form,
-  # whose weighting comes from the interview mix rather than the effort mix
-  # (GH #242). After the harvest_col check, so a call that cannot produce a
-  # harvest total at all does not first warn about one; still before the
-  # section dispatch, so both paths hear it.
-  warn_pooled_domain_mix(design, "estimate_total_harvest", num_col = design[["harvest_col"]]) # nolint: object_usage_linter
 
   # Route to grouped or ungrouped estimation
   if (rlang::quo_is_null(by_quo)) {

@@ -159,3 +159,66 @@ test_that("SPS-05: species rides on whole effort, a companion grouping still spl
     class = "creel_error_count_unobservable_by"
   )
 })
+
+test_that("SPS-06: moving the section dispatch did not strand the checks above it", {
+  set.seed(255)
+  design <- make_sectioned_species_design()
+
+  # Dispatching to sections earlier (so species could be resolved inside it)
+  # moved the return ahead of everything below it. Anything a sectioned design
+  # is still supposed to hear has to sit above that return, and this is the test
+  # that says so -- the ordering is otherwise invisible.
+  no_harvest_col <- design
+  no_harvest_col$harvest_col <- NULL
+  expect_error(
+    suppressMessages(suppressWarnings(estimate_total_harvest(no_harvest_col))), # nolint: object_usage_linter
+    "No harvest column available"
+  )
+})
+
+test_that("SPS-07: the pooled-domain warning still reaches sectioned totals", {
+  set.seed(255)
+  design <- make_sectioned_species_design()
+
+  fired <- function(expr) {
+    seen <- FALSE
+    withCallingHandlers(
+      suppressMessages(expr),
+      creel_warning_pooled_domain_mix = function(cnd) {
+        seen <<- TRUE
+        invokeRestart("muffleWarning")
+      },
+      warning = function(cnd) invokeRestart("muffleWarning")
+    )
+    seen
+  }
+
+  # #242's warning is raised before the section dispatch precisely so both paths
+  # hear it. The catch and harvest screens read the interview catch and harvest
+  # columns, so a domain difference there is what they see.
+  d_catch <- design
+  d_catch$interviews$sought_sps07 <- rep_len(c("bass", "bluegill"), nrow(d_catch$interviews))
+  bass <- d_catch$interviews$sought_sps07 == "bass"
+  d_catch$interviews$catch_total[bass] <- d_catch$interviews$catch_total[bass] * 4L
+  d_catch$interviews$catch_kept[bass] <- d_catch$interviews$catch_kept[bass] * 4L
+  expect_true(fired(estimate_total_catch(d_catch))) # nolint: object_usage_linter
+
+  d_harvest <- d_catch
+  names(d_harvest$interviews)[names(d_harvest$interviews) == "sought_sps07"] <- "sought_sps07h"
+  expect_true(fired(estimate_total_harvest(d_harvest))) # nolint: object_usage_linter
+
+  # Release screens .release_count, so its domain difference has to be in the
+  # released rows -- scaling the interview catch column would leave it silent,
+  # correctly.
+  d_release <- design
+  d_release$interviews$sought_sps07r <- rep_len(c("bass", "bluegill"), nrow(d_release$interviews))
+  uid <- d_release$catch_interview_uid_col
+  domain_of <- stats::setNames(d_release$interviews$sought_sps07r, d_release$interviews$interview_id)
+  catch_df <- d_release$catch
+  is_released <- catch_df[[d_release$catch_type_col]] == "released"
+  row_domain <- domain_of[as.character(catch_df[[uid]])]
+  catch_df[[d_release$catch_count_col]][is_released & row_domain == "bass"] <- 9L
+  catch_df[[d_release$catch_count_col]][is_released & row_domain == "bluegill"] <- 1L
+  d_release$catch <- catch_df
+  expect_true(fired(estimate_total_release(d_release))) # nolint: object_usage_linter
+})
