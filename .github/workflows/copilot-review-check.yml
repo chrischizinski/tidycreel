@@ -1,0 +1,89 @@
+name: Copilot Review Check
+
+# Asserts that a Copilot code review exists for the CURRENT head commit.
+#
+# Copilot does not re-review on a new push: a review records the commit_id it ran
+# against, so pushing after a review leaves the new commits unreviewed while the PR
+# still shows a review. This job makes that state visible instead of implicit.
+#
+# It checks only that the review happened, never what it said. Findings stay advisory
+# -- a reviewer that blocks merges on false positives gets dismissed on reflex.
+#
+# A failed API call is reported as a failed API call, never as a missing review:
+# swallowing the error would produce an empty list and an authoritative-sounding
+# "no review for this commit" that names the wrong cause.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  pull_request_review:
+    types: [submitted, dismissed]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  copilot-review:
+    # Drafts are work in progress; requiring a review per push there is noise.
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Assert a Copilot review covers the head commit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+
+          echo "PR #${PR} head commit: ${HEAD_SHA}"
+
+          # One commit_id per line, across pages.
+          #
+          # type == "Bot" because a human account named copilot-something would
+          # otherwise satisfy the check. state != "DISMISSED" because a dismissed
+          # review still carries its commit_id, and a dismissed review is exactly
+          # the case where the coverage no longer stands. Login is matched by
+          # prefix rather than exact name so a bot rename fails this check loudly
+          # instead of matching nothing and passing.
+          gh api "repos/${REPO}/pulls/${PR}/reviews" --paginate \
+            --jq '.[]
+                  | select(.user.type == "Bot")
+                  | select(.user.login | ascii_downcase | startswith("copilot"))
+                  | select(.state != "DISMISSED")
+                  | .commit_id' \
+            > reviewed_shas.txt || {
+              echo "::error title=Could not fetch reviews::gh api failed for repos/${REPO}/pulls/${PR}/reviews. This is an API, permission or rate-limit failure, NOT a missing review."
+              exit 1
+            }
+
+          echo "Copilot has an active review on these commits:"
+          if [ -s reviewed_shas.txt ]; then sed 's/^/  /' reviewed_shas.txt; else echo "  (none)"; fi
+
+          if grep -Fxq "${HEAD_SHA}" reviewed_shas.txt; then
+            echo "PASS: a Copilot review covers ${HEAD_SHA}."
+            exit 0
+          fi
+
+          echo
+          echo "::error title=No Copilot review for this commit::The most recent push is not covered by a Copilot code review."
+          cat <<EOF
+
+          No Copilot review found for head commit ${HEAD_SHA}.
+
+          Copilot does not re-review automatically after a push, so a review of an
+          earlier commit does not cover this one.
+
+          Request one, then this check re-runs on its own when the review is submitted:
+
+            gh api --method POST \\
+              repos/${REPO}/pulls/${PR}/requested_reviewers \\
+              -f "reviewers[]=copilot-pull-request-reviewer[bot]"
+
+          or use the Reviewers menu on the pull request.
+
+          This check asserts only that a review happened. It never fails on what the
+          review said.
+          EOF
+          exit 1
