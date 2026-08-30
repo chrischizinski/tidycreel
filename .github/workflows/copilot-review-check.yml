@@ -9,6 +9,21 @@ name: Copilot Review Check
 # It checks only that the review happened, never what it said. Findings stay advisory
 # -- a reviewer that blocks merges on false positives gets dismissed on reflex.
 #
+# The job REQUESTS the review and then WAITS for it, rather than failing on the push
+# and relying on a later event to re-run itself. Two things made the event-driven
+# design need a manual `gh run rerun` after every single push:
+#
+#   1. the `pull_request` run fires the instant the commit lands, when no review can
+#      possibly exist yet, so it failed by construction and stayed red until someone
+#      re-ran it by hand;
+#   2. the `pull_request_review` run that was supposed to clear that red never
+#      executed -- a run triggered by a bot's review lands in `action_required` and
+#      waits for approval, and on a PR that edits this workflow it runs from the base
+#      branch, where the change does not exist yet.
+#
+# Waiting in-job removes the dependency on both. `pull_request_review` is kept only
+# as an accelerator: when it does run, it confirms in seconds.
+#
 # A failed API call is reported as a failed API call, never as a missing review:
 # swallowing the error would produce an empty list and an authoritative-sounding
 # "no review for this commit" that names the wrong cause.
@@ -20,13 +35,15 @@ on:
 
 permissions:
   contents: read
-  pull-requests: read
+  # write, because the job requests the review it then waits for.
+  pull-requests: write
 
 jobs:
   copilot-review:
     # Drafts are work in progress; requiring a review per push there is noise.
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Assert a Copilot review covers the head commit
         env:
@@ -34,6 +51,11 @@ jobs:
           REPO: ${{ github.repository }}
           PR: ${{ github.event.pull_request.number }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          # Copilot has taken 1-4 minutes to submit in practice. Twelve minutes is
+          # slack for a slow queue without letting a silent failure hold the PR all
+          # day; the job's own timeout-minutes is the backstop.
+          WAIT_SECONDS: 720
+          POLL_SECONDS: 20
         run: |
           set -euo pipefail
 
@@ -47,41 +69,86 @@ jobs:
           # the case where the coverage no longer stands. Login is matched by
           # prefix rather than exact name so a bot rename fails this check loudly
           # instead of matching nothing and passing.
-          gh api "repos/${REPO}/pulls/${PR}/reviews" --paginate \
-            --jq '.[]
-                  | select(.user.type == "Bot")
-                  | select(.user.login | ascii_downcase | startswith("copilot"))
-                  | select(.state != "DISMISSED")
-                  | .commit_id' \
-            > reviewed_shas.txt || {
+          # Fetched into a file, and NEVER through a pipeline: a function that
+          # ends in `| grep` runs in a subshell, where `exit 1` on an API failure
+          # exits only that subshell and the caller reads it as "no review yet" --
+          # which is the exact failure mode this check was written to refuse.
+          fetch_reviews() {
+            if ! gh api "repos/${REPO}/pulls/${PR}/reviews" --paginate \
+              --jq '.[]
+                    | select(.user.type == "Bot")
+                    | select(.user.login | ascii_downcase | startswith("copilot"))
+                    | select(.state != "DISMISSED")
+                    | .commit_id' \
+              > reviewed_shas.txt
+            then
               echo "::error title=Could not fetch reviews::gh api failed for repos/${REPO}/pulls/${PR}/reviews. This is an API, permission or rate-limit failure, NOT a missing review."
               exit 1
-            }
+            fi
+          }
 
-          echo "Copilot has an active review on these commits:"
-          if [ -s reviewed_shas.txt ]; then sed 's/^/  /' reviewed_shas.txt; else echo "  (none)"; fi
-
+          fetch_reviews
           if grep -Fxq "${HEAD_SHA}" reviewed_shas.txt; then
-            echo "PASS: a Copilot review covers ${HEAD_SHA}."
+            echo "PASS: a Copilot review already covers ${HEAD_SHA}."
             exit 0
           fi
 
+          # Ask for one. HTTP 422 means the reviewer is already requested or a
+          # review is in flight -- benign, and the wait below is what decides.
+          # Anything else is a hard failure (403 on a fork PR's read-only token,
+          # an invalid reviewer, an outage), and waiting 12 minutes on it would
+          # burn CI time and then report a missing review, naming the wrong
+          # cause. Fail fast and say what actually happened.
+          echo "No review yet for ${HEAD_SHA}; requesting one."
+          set +e
+          request_out=$(gh api --method POST \
+            "repos/${REPO}/pulls/${PR}/requested_reviewers" \
+            -f "reviewers[]=copilot-pull-request-reviewer[bot]" 2>&1)
+          request_rc=$?
+          set -e
+          if [ "${request_rc}" -ne 0 ]; then
+            if printf '%s' "${request_out}" | grep -q "HTTP 422"; then
+              echo "Reviewer already requested, or a review is in flight (HTTP 422). Waiting."
+            else
+              echo "::error title=Could not request a review::Requesting the Copilot reviewer failed, and this is NOT a missing review. A fork PR's token is read-only, which returns HTTP 403."
+              printf '%s\n' "${request_out}"
+              exit 1
+            fi
+          fi
+
+          deadline=$(( SECONDS + WAIT_SECONDS ))
+          while [ "${SECONDS}" -lt "${deadline}" ]; do
+            sleep "${POLL_SECONDS}"
+            fetch_reviews
+            if grep -Fxq "${HEAD_SHA}" reviewed_shas.txt; then
+              echo "PASS: a Copilot review covers ${HEAD_SHA}."
+              exit 0
+            fi
+            echo "  still waiting ($(( deadline - SECONDS ))s left)..."
+          done
+
           echo
-          echo "::error title=No Copilot review for this commit::The most recent push is not covered by a Copilot code review."
+          echo "::error title=No Copilot review for this commit::Waited ${WAIT_SECONDS}s and the most recent push is still not covered by a Copilot code review."
+          echo "Copilot has an active review on these commits:"
+          if [ -s reviewed_shas.txt ]; then sed 's/^/  /' reviewed_shas.txt; else echo "  (none)"; fi
           cat <<EOF
 
-          No Copilot review found for head commit ${HEAD_SHA}.
+          No Copilot review found for head commit ${HEAD_SHA} after waiting
+          ${WAIT_SECONDS} seconds. A review was requested at the start of that wait.
 
           Copilot does not re-review automatically after a push, so a review of an
           earlier commit does not cover this one.
 
-          Request one, then this check re-runs on its own when the review is submitted:
+          If Copilot is simply slow or was not reachable, re-run this job -- it
+          re-requests and waits again:
+
+            gh run rerun ${GITHUB_RUN_ID}
+
+          Or request the review by hand, from the Reviewers menu or with:
 
             gh api --method POST \\
               repos/${REPO}/pulls/${PR}/requested_reviewers \\
               -f "reviewers[]=copilot-pull-request-reviewer[bot]"
-
-          or use the Reviewers menu on the pull request.
 
           This check asserts only that a review happened. It never fails on what the
           review said.
