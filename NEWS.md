@@ -98,6 +98,22 @@
   one stratum is still accepted: \eqn{N_h} counts distinct dates, so it changes
   nothing.
 
+* `as_hybrid_svydesign()` now requires `Date` date columns and refuses a missing
+  date or stratum in `access_data`, `roving_data` or `calendar` (#246).
+
+  Dates and strata are the keys the two components, the calendar and the day
+  expansion are all joined on, and they are compared through `as.character()`,
+  which renders `NA` as the string `"NA"` and then matches it to every other
+  `NA`. A missing calendar date was counted as one more day in \eqn{N_h}: on a
+  four-day weekday calendar with two sampled days, one `NA` row moved the total
+  from 156 to 195, with no error and no warning. A missing calendar stratum
+  silently withheld that day from the stratum it belonged to, and a missing
+  sampled date reached `survey::svydesign()`, which aborted with
+  ``missing values in `id'`` -- an error naming an internal column the caller
+  never supplied. `Date` is now required for the same reason the rest of the
+  package requires it: the keys must mean the same day on both sides of the
+  join.
+
 * `as_hybrid_svydesign()` now refuses repeated counts on one date (#246).
 
   A day-level expansion is only defined when a sampled day is one row per

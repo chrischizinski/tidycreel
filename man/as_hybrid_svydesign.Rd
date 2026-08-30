@@ -47,10 +47,14 @@ to a calendar larger than the one that exists.}
 
 \item{date_col}{Character scalar.  Name of the date column (shared by both
 tables and by \code{calendar}). Default \code{"date"}.  Used to cluster
-observations into PSUs.}
+observations into PSUs.  Must be of class \code{Date}, with no missing values
+in any of the three tables.}
 
 \item{strata_col}{Character scalar.  Name of the stratum column (shared by
-both tables and by \code{calendar}). Default \code{"day_type"}.}
+both tables and by \code{calendar}). Default \code{"day_type"}.  Must have no
+missing values in any of the three tables: dates and strata are the join
+keys, and a missing key matches every other missing key rather than being
+refused.}
 
 \item{count_col}{Character scalar.  Name of the count column (shared by
 both tables). Default \code{"count"}.}

@@ -359,3 +359,91 @@ test_that("HYBR-20: svytotal runs without error on the hybrid design", {
   expect_true(is.numeric(coef(result)))
   expect_true(coef(result) > 0)
 })
+
+# Missing and mistyped keys ---------------------------------------------------
+# Dates and strata are compared through as.character(), which renders NA as the
+# string "NA" and then matches it to every other NA. Left unrefused, a missing
+# calendar date counts as one more day in N_h -- on a four-day weekday calendar
+# with two sampled days, adding one NA row moved the estimated total from 156 to
+# 195 with no error and no warning.
+
+test_that("HYBR-21: a missing sampled date is refused", {
+  access_na <- make_access()
+  access_na$date[2] <- as.Date(NA)
+  expect_error(
+    as_hybrid_svydesign(
+      access_na,
+      make_roving(),
+      calendar = make_calendar(),
+      access_fraction = fractions$access,
+      roving_fraction = fractions$roving,
+      trips_disjoint = TRUE
+    ),
+    "date.*access_data.*missing"
+  )
+})
+
+test_that("HYBR-22: a missing calendar date is refused, not counted as a day", {
+  # The clean calendar is the control: the same design builds, so the refusal
+  # below is about the NA and not about the fixture.
+  design <- as_hybrid_svydesign(
+    make_access(),
+    make_roving(),
+    calendar = make_calendar(),
+    access_fraction = fractions$access,
+    roving_fraction = fractions$roving,
+    trips_disjoint = TRUE
+  )
+  expect_s3_class(design, "survey.design")
+
+  calendar_na <- make_calendar()
+  calendar_na <- rbind(
+    calendar_na,
+    data.frame(date = as.Date(NA), day_type = "weekday", stringsAsFactors = FALSE)
+  )
+  expect_error(
+    as_hybrid_svydesign(
+      make_access(),
+      make_roving(),
+      calendar = calendar_na,
+      access_fraction = fractions$access,
+      roving_fraction = fractions$roving,
+      trips_disjoint = TRUE
+    ),
+    "date.*calendar.*missing"
+  )
+})
+
+test_that("HYBR-23: a missing calendar stratum is refused", {
+  # A day whose stratum is NA reaches no stratum population at all, so the
+  # season it expands to is shorter than the calendar the caller supplied.
+  calendar_na <- make_calendar()
+  calendar_na$day_type[3] <- NA_character_
+  expect_error(
+    as_hybrid_svydesign(
+      make_access(),
+      make_roving(),
+      calendar = calendar_na,
+      access_fraction = fractions$access,
+      roving_fraction = fractions$roving,
+      trips_disjoint = TRUE
+    ),
+    "day_type.*calendar.*missing"
+  )
+})
+
+test_that("HYBR-24: a non-Date date column is refused", {
+  access_chr <- make_access()
+  access_chr$date <- as.character(access_chr$date)
+  expect_error(
+    as_hybrid_svydesign(
+      access_chr,
+      make_roving(),
+      calendar = make_calendar(),
+      access_fraction = fractions$access,
+      roving_fraction = fractions$roving,
+      trips_disjoint = TRUE
+    ),
+    "must be a.*Date.*column"
+  )
+})

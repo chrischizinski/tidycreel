@@ -108,9 +108,13 @@
 #'   to a calendar larger than the one that exists.
 #' @param date_col Character scalar.  Name of the date column (shared by both
 #'   tables and by `calendar`). Default `"date"`.  Used to cluster
-#'   observations into PSUs.
+#'   observations into PSUs.  Must be of class `Date`, with no missing values
+#'   in any of the three tables.
 #' @param strata_col Character scalar.  Name of the stratum column (shared by
-#'   both tables and by `calendar`). Default `"day_type"`.
+#'   both tables and by `calendar`). Default `"day_type"`.  Must have no
+#'   missing values in any of the three tables: dates and strata are the join
+#'   keys, and a missing key matches every other missing key rather than being
+#'   refused.
 #' @param count_col Character scalar.  Name of the count column (shared by
 #'   both tables). Default `"count"`.
 #' @param access_fraction Named numeric vector.  **Within-day** sampling
@@ -241,6 +245,45 @@ as_hybrid_svydesign <- function(
       "Column(s) {.field {missing_calendar}} missing from {.arg calendar}."
     )
   }
+
+  # ---- Date class and missing keys -----------------------------------------
+  # Every key below is compared through as.character(), which turns NA into the
+  # string "NA" and makes it match another NA. A missing calendar date then
+  # counts as a distinct day in N_h and inflates the period total with no error
+  # and no warning; a missing calendar stratum quietly withholds that day from
+  # the stratum it belongs to; and a missing sampled date reaches
+  # survey::svydesign(), which aborts with "missing values in `id'" -- an error
+  # about an internal column the caller never supplied. Refuse all three here,
+  # naming the column. Date class is required for the same reason the rest of
+  # the package requires it (prep_counts(), creel_design()'s calendar): the
+  # keys must mean the same day on both sides of the join.
+  .check_keys <- function(data, name) {
+    date_vals <- data[[date_col]]
+    if (!inherits(date_vals, "Date")) {
+      cli::cli_abort(c(
+        "{.field {date_col}} in {.arg {name}} must be a {.cls Date} column.",
+        "x" = "Got class {.cls {class(date_vals)[1]}}."
+      ))
+    }
+    for (col in c(date_col, strata_col)) {
+      n_na <- sum(is.na(data[[col]]))
+      if (n_na > 0L) {
+        cli::cli_abort(c(
+          "{.field {col}} in {.arg {name}} has {n_na} missing \\
+           {cli::qty(n_na)}value{?s}.",
+          "x" = paste(
+            "Dates and strata are the keys the components, the calendar and",
+            "the day expansion are all joined on, and a missing key is",
+            "matched to every other missing key rather than refused."
+          ),
+          "i" = "Drop or fill the affected {cli::qty(n_na)}row{?s} first."
+        ))
+      }
+    }
+  }
+  .check_keys(access_data, "access_data")
+  .check_keys(roving_data, "roving_data")
+  .check_keys(calendar, "calendar")
 
   # Validate fractions
   .check_fraction <- function(frac, name, data, strata_col) {
