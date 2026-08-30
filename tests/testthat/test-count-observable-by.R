@@ -180,3 +180,26 @@ test_that("CBY-07: a groupable column is unaffected by the new error path", {
   ))
   expect_true("day_type" %in% names(tot$estimates))
 })
+
+test_that("CBY-09: a non-syntactic column still gets the constraint, with a runnable suggestion", {
+  set.seed(241)
+  design <- make_count_unobservable_design()
+  # Agency exports routinely carry spaces in headers, so this is not exotic.
+  design$interviews[["trip type"]] <- rep_len(c("boat", "bank"), nrow(design$interviews))
+
+  err <- expect_error(
+    estimate_effort(design, by = `trip type`), # nolint: object_usage_linter
+    class = "creel_error_count_unobservable_by"
+  )
+  msg <- cli::ansi_strip(conditionMessage(err))
+
+  # The diagnostic probe must not mangle the name; if it does, the selector
+  # fails to resolve against the probe and the constraint silently never fires
+  # for exactly the columns most likely to have awkward names.
+  expect_match(msg, "trip type is in the interview data")
+
+  # The suggestion has to be code the user can actually run. Pasting the bare
+  # name would emit `estimate_catch_rate(by = trip type)`, which is a syntax
+  # error -- worse than offering nothing.
+  expect_match(msg, "estimate_catch_rate(by = `trip type`)", fixed = TRUE)
+})

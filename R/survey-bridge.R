@@ -2309,9 +2309,13 @@ abort_count_unobservable_by <- function(by_quo, design, cnd, species_route, erro
   # Diagnostic-only resolution: a zero-row frame carrying both vocabularies, so
   # that c(day_type, target) reports `target` rather than failing a second time.
   union_cols <- union(count_cols, interview_cols)
+  # check.names = FALSE or a non-syntactic column ("trip type") is mangled here,
+  # the selector then fails to resolve against the probe, and the constraint
+  # message silently never fires for exactly those columns.
   probe <- as.data.frame(
     stats::setNames(rep(list(logical(0)), length(union_cols)), union_cols),
-    stringsAsFactors = FALSE
+    stringsAsFactors = FALSE,
+    check.names = FALSE
   )
   requested <- tryCatch(
     names(tidyselect::eval_select(by_quo, data = probe, allow_rename = FALSE)),
@@ -2324,10 +2328,14 @@ abort_count_unobservable_by <- function(by_quo, design, cnd, species_route, erro
     rlang::cnd_signal(cnd)
   }
 
-  rate_by <- if (length(interview_only) > 1L) {
-    paste0("c(", paste(interview_only, collapse = ", "), ")")
+  # Deparse through symbols so a non-syntactic name keeps its backticks; pasting
+  # raw names would suggest `estimate_catch_rate(by = trip type)`, which is not
+  # valid R and is worse than offering no suggestion at all.
+  quoted <- vapply(interview_only, function(nm) deparse(as.name(nm), backtick = TRUE), character(1))
+  rate_by <- if (length(quoted) > 1L) {
+    paste0("c(", paste(quoted, collapse = ", "), ")")
   } else {
-    interview_only
+    quoted
   }
   rate_call <- paste0("estimate_catch_rate(by = ", rate_by, ")") # nolint: object_usage_linter
   hints <- c(
