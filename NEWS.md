@@ -2,6 +2,26 @@
 
 ## Documentation
 
+* Corrected the framing of `as_hybrid_svydesign()`, which described *access*
+  and *roving* as though they were count methods (#246).
+
+  They are not. In the creel literature access and roving describe how anglers
+  are **interviewed** -- access interviews intercept completed trips as anglers
+  leave, roving interviews intercept incomplete trips while anglers are still
+  fishing, and the two require different catch-rate estimators (Pollock et al.
+  1994). A survey mixing them is a *hybrid interview* design. Counts are
+  described by their own methods: instantaneous, progressive, bus-route, camera
+  or aerial -- the values `creel_schema()` accepts for `survey_type`, none of
+  which is "access" or "roving". tidycreel already carries the interview axis
+  on `add_interviews()` via `interview_type`.
+
+  The help page previously stated that `component` "names a survey method",
+  and the glossary defined a hybrid design as "fixed access-point counts plus
+  roving-route counts". Both are now corrected: the two components are two
+  disjoint **count frames**, in practice angler-type domains such as boat and
+  bank anglers, and the `access`/`roving` argument names are inherited from the
+  interview vocabulary and flagged as under review. No behaviour changed.
+
 * Corrected five references that named papers which do not exist, or whose DOI
   resolved to an unrelated paper. Found by checking every DOI in the package
   against Crossref after the camera citation turned out to be wrong.
@@ -39,6 +59,78 @@
   the unverified Greene 1995 citation in `simulate_creel_data()` (#233).
 
 ## Breaking changes
+
+* `as_hybrid_svydesign()` now requires a `calendar` and estimates a **period
+  total** rather than a sampled-day total (#246).
+
+  `access_fraction` and `roving_fraction` are within-day quantities -- the
+  proportion of a component's frame the count enumerated on a sampled day.
+  Since #229 the PSU is the date, and those fractions were passed straight to `svydesign(fpc = )`,
+  which is a stage-1 correction over the date PSUs. `survey` therefore computed
+  each stratum's population as `sampled dates / fraction` and read the result
+  as a count of **days**: three sampled dates at 0.5 made a "six day" weekday
+  stratum, where a June weekday stratum holds about twenty. A fraction that
+  should not shrink the stage-1 variance at all was shrinking it as though half
+  the calendar had been enumerated. Because each component divided by its own
+  fraction, access and roving also implied different calendars for the same
+  stratum -- 6 days and 7.5 days at once, the same arithmetic signature #229
+  fixed, displaced from within a stratum to across the pair of them. The point
+  estimate carried no signal either way; only the standard error moved.
+
+  The population now comes from a required `calendar` argument giving the days
+  each stratum holds, counted as distinct dates the way `creel_design()` counts
+  them, and shared by both components -- one stratum is one span of the season,
+  whichever method observed it. Both expansions live in the weight: the
+  within-day fraction to the whole of a sampled day, and `N_h / n_h` to the
+  season. Only the second drives the finite-population correction.
+
+  Totals from this design are now season totals and are larger than before by
+  the day expansion. `calendar` has no default, and every sampled date must
+  appear in it under the same stratum.
+
+* `as_hybrid_svydesign()` now refuses a `calendar` that assigns one date to more
+  than one stratum (#246).
+
+  A day counted in two strata lengthens the season by a day in each, so the
+  period total expands to a calendar larger than the one that exists. On the
+  probe fixture the weekend stratum grew from 5 days to 6 and the total moved
+  from 1078.75 to 1195.5, with no error and no warning. A date repeated *within*
+  one stratum is still accepted: \eqn{N_h} counts distinct dates, so it changes
+  nothing.
+
+* `as_hybrid_svydesign()` now refuses an `fpc` that is not a non-missing logical
+  scalar (#246). It is branched on with a bare `if`, where `NA` surfaced as base
+  R's `missing value where TRUE/FALSE needed` and a length-2 vector silently took
+  its first element -- building the design with a correction the caller never
+  chose.
+
+* `as_hybrid_svydesign()` now requires `Date` date columns and refuses a missing
+  date or stratum in `access_data`, `roving_data` or `calendar` (#246).
+
+  Dates and strata are the keys the two components, the calendar and the day
+  expansion are all joined on, and they are compared through `as.character()`,
+  which renders `NA` as the string `"NA"` and then matches it to every other
+  `NA`. A missing calendar date was counted as one more day in \eqn{N_h}: on a
+  four-day weekday calendar with two sampled days, one `NA` row moved the total
+  from 156 to 195, with no error and no warning. A missing calendar stratum
+  silently withheld that day from the stratum it belonged to, and a missing
+  sampled date reached `survey::svydesign()`, which aborted with
+  ``missing values in `id'`` -- an error naming an internal column the caller
+  never supplied. `Date` is now required for the same reason the rest of the
+  package requires it: the keys must mean the same day on both sides of the
+  join.
+
+* `as_hybrid_svydesign()` now refuses repeated counts on one date (#246).
+
+  A day-level expansion is only defined when a sampled day is one row per
+  component. Two counts on a date are two looks at that date, not two sampled
+  days; they were summed, which multiplied the total by the number of counts
+  per day, and the new day expansion would have multiplied that again. This is
+  the defect class `refuse_duplicate_psus()` (#193, #197) guards on the
+  `creel_design` path. Clustering on the date (#229) corrected the variance but
+  left the point estimate inflated, so the construction now aborts with a
+  `creel_error_repeated_psus` condition. Average repeats to one row per date
+  before constructing the design.
 
 * `as_hybrid_svydesign()` now requires `trips_disjoint`, stratifies on the
   stratum-by-component interaction, and clusters on the date (#229). Three

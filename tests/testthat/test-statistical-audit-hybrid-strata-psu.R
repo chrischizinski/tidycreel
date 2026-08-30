@@ -19,6 +19,13 @@
 #    over the same anglers got a double-counted total with no signal.
 #
 # See AUDIT-sections-hybrid-2026-08-28.md findings 5, 6 and 7.
+#
+# Revised for #246. The repeat count on 2024-06-01 that seam 2 was written
+# around is now refused outright, because a per-day expansion is undefined
+# when a day carries more than one row -- and the summing understated nothing,
+# it inflated the total. HYBAUD-05 and -06 pin the refusal instead of the
+# clustering it made unreachable; HYBAUD-04 and -07 move to the calendar-based
+# population, which the pre-#246 versions of both actively pinned the defect of.
 
 fr_access <- c(weekday = 0.5, weekend = 0.5)
 fr_roving <- c(weekday = 0.4, weekend = 0.4)
@@ -53,10 +60,26 @@ hy_roving <- function() {
   )
 }
 
-hy_design <- function(..., repeat_count = TRUE) {
+# The population of days both components expand to (#246). Ten weekday days
+# and six weekend days; the fixtures sample two of each.
+hy_calendar <- function() {
+  data.frame(
+    date = as.Date(c(
+      "2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04", "2024-06-05",
+      "2024-06-06", "2024-06-07", "2024-06-15", "2024-06-16", "2024-06-17",
+      "2024-06-08", "2024-06-09", "2024-06-10", "2024-06-11", "2024-06-12",
+      "2024-06-13"
+    )),
+    day_type = c(rep("weekday", 10), rep("weekend", 6)),
+    stringsAsFactors = FALSE
+  )
+}
+
+hy_design <- function(..., repeat_count = FALSE) {
   as_hybrid_svydesign(
     hy_access(repeat_count = repeat_count),
     hy_roving(),
+    calendar = hy_calendar(),
     access_fraction = fr_access,
     roving_fraction = fr_roving,
     trips_disjoint = TRUE,
@@ -69,7 +92,7 @@ hy_design <- function(..., repeat_count = TRUE) {
 test_that("HYBAUD-01: constructing with fpc does not warn that fpc varies within strata", {
   # Pre-fix this emitted `fpc' varies within strata: stratum weekday at stage 1
   # from survey::as.fpc(), uncaught and undocumented.
-  expect_no_warning(hy_design(repeat_count = FALSE))
+  expect_no_warning(hy_design())
 })
 
 test_that("HYBAUD-02: strata are the stratum-by-component interaction, not the stratum alone", {
@@ -94,65 +117,96 @@ test_that("HYBAUD-03: every stratum carries exactly one population size", {
   )
 })
 
-test_that("HYBAUD-04: each stratum's population is its own sampled dates over its own fraction", {
+test_that("HYBAUD-04: each stratum's population is its calendar days, not a fraction of its sample", {
   design <- hy_design()
   pop <- tapply(design$fpc$popsize, as.character(design$strata[, 1]), unique)
-  vars <- design$variables
-  n_dates <- function(component, stratum) {
-    length(unique(vars$date[vars$component == component &
-      vars$day_type == stratum]))
+  cal <- hy_calendar()
+  n_cal <- function(stratum) {
+    length(unique(cal$date[cal$day_type == stratum]))
   }
-  # The weekday access cell has 3 ROWS but only 2 sampled DATES. Pre-fix the
-  # population was derived from the pooled row count, so this identity failed
-  # on both counts -- wrong numerator and a fraction from the wrong component.
-  expect_equal(unname(pop[["weekday.access"]]),
-    n_dates("access", "weekday") / fr_access[["weekday"]])
-  expect_equal(unname(pop[["weekday.roving"]]),
-    n_dates("roving", "weekday") / fr_roving[["weekday"]])
-  expect_equal(unname(pop[["weekend.access"]]),
-    n_dates("access", "weekend") / fr_access[["weekend"]])
+  # Pre-#246 this identity was `sampled dates / within-day fraction`, which is
+  # what the earlier version of this test pinned: 2 / 0.5 = 4 for access and
+  # 2 / 0.4 = 5 for roving. `survey` read those as counts of DAYS, so one
+  # stratum implied two different calendars, and neither was the real one.
+  expect_equal(unname(pop[["weekday.access"]]), n_cal("weekday"))
+  expect_equal(unname(pop[["weekday.roving"]]), n_cal("weekday"))
+  expect_equal(unname(pop[["weekend.access"]]), n_cal("weekend"))
+  expect_equal(unname(pop[["weekend.roving"]]), n_cal("weekend"))
 })
 
-# Seam 2: the date is the PSU -------------------------------------------------
+test_that("HYBAUD-04b: both components agree on how many days the stratum holds", {
+  # The consequence #246 named second: access and roving derived their
+  # population from their own within-day fraction, so weekday was 4 days to one
+  # component and 5 to the other, in the same survey.
+  design <- hy_design()
+  pop <- tapply(design$fpc$popsize, as.character(design$strata[, 1]), unique)
+  expect_equal(unname(pop[["weekday.access"]]), unname(pop[["weekday.roving"]]))
+  expect_equal(unname(pop[["weekend.access"]]), unname(pop[["weekend.roving"]]))
+})
 
-test_that("HYBAUD-05: two counts on one date are one PSU, not two", {
+test_that("HYBAUD-04c: the fpc is a fraction of days and stays in range", {
+  design <- hy_design()
+  strata <- as.character(design$strata[, 1])
+  frac <- design$fpc$sampsize[, 1] / design$fpc$popsize[, 1]
+  expect_true(all(frac > 0 & frac <= 1))
+  # 2 sampled weekday dates out of 10 calendar days.
+  expect_equal(unique(frac[strata == "weekday.access"]), 2 / 10)
+})
+
+# Seam 2: the date is the PSU, and a day is one row ---------------------------
+
+test_that("HYBAUD-05: repeated counts on one date are refused, not silently pooled", {
+  # Seam 2 made every ROW a PSU. Clustering on the date fixed the variance but
+  # left the point estimate summing both looks at one day, and #246's per-day
+  # expansion then multiplies that inflation again. Refuse instead.
+  expect_error(
+    hy_design(repeat_count = TRUE),
+    class = "creel_error_repeated_psus"
+  )
+})
+
+test_that("HYBAUD-06: the refused repeat count is the one that would inflate the total", {
+  # Pins WHY the refusal exists rather than merely that it fires: summing the
+  # two looks at 2024-06-01 and averaging them are different numbers, and
+  # nothing downstream could tell which one it had been handed.
+  acc <- hy_access(repeat_count = TRUE)
+  wk <- acc[acc$day_type == "weekday", ]
+  summed <- sum(wk$count)
+  averaged <- sum(tapply(wk$count, as.character(wk$date), mean))
+  expect_gt(summed, averaged)
+  expect_equal(length(unique(wk$date)), nrow(wk) - 1L)
+})
+
+test_that("HYBAUD-06b: the date is the PSU, so a stratum has one cluster per sampled date", {
   design <- hy_design()
   vars <- design$variables
-  expect_equal(nrow(vars), 9L) # 5 access rows + 4 roving
   psus <- unique(paste(vars$.hybrid_stratum, vars$date))
-  # Pre-fix `ids = ~1` gave 9 PSUs for 9 rows; there are only 8 sampled
-  # stratum-dates, because 2024-06-01 access was counted twice.
-  expect_equal(length(psus), 8L)
   # nest = TRUE renumbers PSU ids within stratum, so the design's own cluster
-  # count is the stratum-date count -- 8 here, and 9 pre-fix.
-  expect_equal(length(unique(design$cluster[, 1])), length(psus))
+  # count is the stratum-date count.
+  expect_equal(length(unique(paste(
+    as.character(design$strata[, 1]), design$cluster[, 1]
+  ))), length(psus))
 })
 
-test_that("HYBAUD-06: the repeat count does not buy an extra degree of freedom", {
-  # A second count on an already-sampled date carries information about
-  # within-day variation, never about a further day. Treating it as an
-  # independent PSU understates the SE of the total.
-  clustered <- survey::svytotal(~count, hy_design())
-  rows_as_psus <- survey::svydesign(
-    ids = ~1,
-    strata = ~.hybrid_stratum,
-    weights = ~weight,
-    fpc = ~fpc_val,
-    data = hy_design()$variables
-  )
-  naive <- survey::svytotal(~count, rows_as_psus)
-  expect_equal(unname(coef(clustered)), unname(coef(naive)))
-  expect_gt(unname(survey::SE(clustered)), unname(survey::SE(naive)))
-})
-
-test_that("HYBAUD-07: the point total is the stratified sum and is unchanged by the repair", {
-  # The repair is variance-only. If this moves, the weights changed and the
-  # seam fix has become a silent re-estimation.
+test_that("HYBAUD-07: the point total is the stratified sum of both expansions", {
+  # If this moves, the weights changed. Pre-#246 the expected value was the
+  # sampled-day total (counts / within-day fraction); it is now the period
+  # total, which is the estimand the design documents.
   design <- hy_design()
-  acc <- hy_access()
+  acc <- hy_access(repeat_count = FALSE)
   rov <- hy_roving()
-  expected <- sum(acc$count / fr_access[as.character(acc$day_type)]) +
-    sum(rov$count / fr_roving[as.character(rov$day_type)])
+  cal <- hy_calendar()
+  n_cal <- vapply(
+    split(cal$date, cal$day_type), function(x) length(unique(x)), integer(1)
+  )
+  expand <- function(dat, frac) {
+    strata <- as.character(dat$day_type)
+    n_sampled <- vapply(
+      split(dat$date, strata), function(x) length(unique(x)), integer(1)
+    )
+    sum(dat$count / frac[strata] * (n_cal[strata] / n_sampled[strata]))
+  }
+  expected <- expand(acc, fr_access) + expand(rov, fr_roving)
   expect_equal(unname(coef(survey::svytotal(~count, design))), expected)
 })
 
@@ -163,6 +217,7 @@ test_that("HYBAUD-08: the design cannot be constructed without affirming disjoin
     as_hybrid_svydesign(
       hy_access(),
       hy_roving(),
+      calendar = hy_calendar(),
       access_fraction = fr_access,
       roving_fraction = fr_roving
     ),
@@ -178,6 +233,7 @@ test_that("HYBAUD-09: declaring the components non-disjoint refuses rather than 
     as_hybrid_svydesign(
       hy_access(),
       hy_roving(),
+      calendar = hy_calendar(),
       access_fraction = fr_access,
       roving_fraction = fr_roving,
       trips_disjoint = FALSE
@@ -194,6 +250,7 @@ test_that("HYBAUD-10: trips_disjoint must be a non-missing logical scalar", {
       as_hybrid_svydesign(
         hy_access(),
         hy_roving(),
+        calendar = hy_calendar(),
         access_fraction = fr_access,
         roving_fraction = fr_roving,
         trips_disjoint = value
