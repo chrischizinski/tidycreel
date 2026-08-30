@@ -81,7 +81,6 @@ GEMINI.md
 .ai/
 graphify-out/
 .planning-legacy-work/
-.gsd/
 .bg-shell/
 
 # Local-only probe/validation scripts: these name a specific organisation's API
@@ -113,9 +112,6 @@ docs/
 *.log
 .worktrees/
 
-# ── GSD baseline (auto-generated) ──
-.gsd
-.gsd-id
 *.swp
 *.swo
 *~
@@ -137,7 +133,7 @@ coverage/
 .cache/
 tmp/
 
-# Kairo task database (GSD workflow tool)
+# Kairo task database (github.com/programmersd21/kairo)
 kairo.db
 kairo.db-shm
 kairo.db-wal
