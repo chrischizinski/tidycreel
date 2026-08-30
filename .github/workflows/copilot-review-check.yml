@@ -93,14 +93,28 @@ jobs:
             exit 0
           fi
 
-          # Ask for one. A 422 here means a review is already requested or in
-          # flight, which is not an error -- the wait below is what decides.
+          # Ask for one. HTTP 422 means the reviewer is already requested or a
+          # review is in flight -- benign, and the wait below is what decides.
+          # Anything else is a hard failure (403 on a fork PR's read-only token,
+          # an invalid reviewer, an outage), and waiting 12 minutes on it would
+          # burn CI time and then report a missing review, naming the wrong
+          # cause. Fail fast and say what actually happened.
           echo "No review yet for ${HEAD_SHA}; requesting one."
-          gh api --method POST \
+          set +e
+          request_out=$(gh api --method POST \
             "repos/${REPO}/pulls/${PR}/requested_reviewers" \
-            -f "reviewers[]=copilot-pull-request-reviewer[bot]" \
-            --silent \
-            || echo "Request returned non-zero (already requested, or in flight). Waiting anyway."
+            -f "reviewers[]=copilot-pull-request-reviewer[bot]" 2>&1)
+          request_rc=$?
+          set -e
+          if [ "${request_rc}" -ne 0 ]; then
+            if printf '%s' "${request_out}" | grep -q "HTTP 422"; then
+              echo "Reviewer already requested, or a review is in flight (HTTP 422). Waiting."
+            else
+              echo "::error title=Could not request a review::Requesting the Copilot reviewer failed, and this is NOT a missing review. A fork PR's token is read-only, which returns HTTP 403."
+              printf '%s\n' "${request_out}"
+              exit 1
+            fi
+          fi
 
           deadline=$(( SECONDS + WAIT_SECONDS ))
           while [ "${SECONDS}" -lt "${deadline}" ]; do
