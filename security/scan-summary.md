@@ -28,7 +28,7 @@ Cloud shut down on 2026-05-22. Both of its subjects are gone, verified 2026-08-3
 - The OpenRouter API key that section flagged for precautionary rotation is no
   longer present in `~/.zshrc`. Whether the key was rotated or merely removed
   locally is not visible from here; if it may still be live, rotate at
-  openrouter.ai/keys.
+  https://openrouter.ai/keys.
 
 Kept as a record because deleting the reason a key was flagged is how a stale
 credential goes unnoticed.
