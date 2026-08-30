@@ -2085,3 +2085,28 @@ test_that("a design that still has complete trips is untouched by the guard", {
     suppressMessages(suppressWarnings(estimate_total_harvest(d)))
   )
 })
+
+# Count-observability of by= on the sectioned path (GH #241) ----
+
+test_that("CBY-08: sectioned total catch names the count constraint, not a missing column", {
+  design <- make_3section_total_catch_design()
+  # Species sought is knowable only by asking; a section counter cannot see it,
+  # so it can never split effort -- and the section dispatch must say so too,
+  # rather than reporting a column that plainly exists in the interviews.
+  design$interviews$target <- rep_len(c("bass", "bluegill"), nrow(design$interviews))
+
+  err <- expect_error(
+    estimate_total_catch(design, by = target), # nolint: object_usage_linter
+    class = "creel_error_count_unobservable_by"
+  )
+  msg <- cli::ansi_strip(conditionMessage(err))
+  expect_match(msg, "interview data but not the count data")
+
+  # The species route must NOT be offered here. estimate_total_catch() returns
+  # into the section path before resolve_species_by() runs, so `by = <species>`
+  # never reaches species apportionment on a sectioned design -- verified: it
+  # fails with tidyselect's own error, because species lives in the catch table
+  # and is in neither the counts nor the interviews. Advertising it would send
+  # the user to a second refusal.
+  expect_no_match(msg, "apportions catch against whole effort")
+})

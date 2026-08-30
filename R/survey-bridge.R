@@ -2253,6 +2253,121 @@ validate_grouping_compatibility <- function(design, by_vars) {
   invisible(NULL)
 }
 
+#' Resolve a `by=` selector against count data, explaining the count constraint
+#'
+#' Effort is estimated from the counts, so `by=` on effort and on any total can
+#' only name columns the count data carries. Resolving the selector against
+#' `design$counts` enforces that correctly, but tidyselect reports the refusal as
+#' "Column `x` doesn't exist" -- misleading when the column plainly exists in the
+#' interviews and worked in `estimate_catch_rate(by=)` one line earlier.
+#'
+#' The counts resolution is attempted unchanged, so every selector that works
+#' today keeps working byte-for-byte. Only when it fails is the selector
+#' re-resolved against a zero-row union frame, purely to learn which names were
+#' asked for. A name found in the interviews but not the counts gets the
+#' constraint message; anything else re-raises tidyselect's own error untouched.
+#'
+#' @param by_quo A quosure holding the user's `by=` selector.
+#' @param design A creel_design object.
+#' @param species_route Logical. Whether to point at the `by = <species>` route,
+#'   which the totals support and `estimate_effort()` does not.
+#' @param error_call Environment used for error reporting.
+#'
+#' @return Character vector of resolved column names.
+#'
+#' @keywords internal
+#' @noRd
+eval_select_count_by <- function(by_quo, design, species_route = FALSE, error_call = rlang::caller_env()) {
+  rlang::try_fetch(
+    names(tidyselect::eval_select(
+      by_quo,
+      data = design[["counts"]],
+      allow_rename = FALSE,
+      allow_empty = FALSE,
+      error_call = error_call
+    )),
+    error = function(cnd) {
+      abort_count_unobservable_by(by_quo, design, cnd, species_route, error_call)
+    }
+  )
+}
+
+#' Abort naming the count-observability constraint, or re-raise
+#'
+#' @param by_quo A quosure holding the user's `by=` selector.
+#' @param design A creel_design object.
+#' @param cnd The condition raised by resolving `by_quo` against the counts.
+#' @param species_route Logical. Whether to point at the `by = <species>` route.
+#' @param error_call Environment used for error reporting.
+#'
+#' @keywords internal
+#' @noRd
+abort_count_unobservable_by <- function(by_quo, design, cnd, species_route, error_call) {
+  count_cols <- names(design[["counts"]])
+  interview_cols <- names(design[["interviews"]])
+
+  # Diagnostic-only resolution: a zero-row frame carrying both vocabularies, so
+  # that c(day_type, target) reports `target` rather than failing a second time.
+  union_cols <- union(count_cols, interview_cols)
+  # check.names = FALSE or a non-syntactic column ("trip type") is mangled here,
+  # the selector then fails to resolve against the probe, and the constraint
+  # message silently never fires for exactly those columns.
+  probe <- as.data.frame(
+    stats::setNames(rep(list(logical(0)), length(union_cols)), union_cols),
+    stringsAsFactors = FALSE,
+    check.names = FALSE
+  )
+  requested <- tryCatch(
+    names(tidyselect::eval_select(by_quo, data = probe, allow_rename = FALSE)),
+    error = function(e) character(0)
+  )
+
+  interview_only <- setdiff(intersect(requested, interview_cols), count_cols)
+  if (length(interview_only) == 0L) {
+    # Not the count-observability case -- the user's own tidyselect error stands.
+    rlang::cnd_signal(cnd)
+  }
+
+  # Deparse through symbols so a non-syntactic name keeps its backticks; pasting
+  # raw names would suggest `estimate_catch_rate(by = trip type)`, which is not
+  # valid R and is worse than offering no suggestion at all.
+  quoted <- vapply(interview_only, function(nm) deparse(as.name(nm), backtick = TRUE), character(1))
+  rate_by <- if (length(quoted) > 1L) {
+    paste0("c(", paste(quoted, collapse = ", "), ")")
+  } else {
+    quoted
+  }
+  rate_call <- paste0("estimate_catch_rate(by = ", rate_by, ")") # nolint: object_usage_linter
+  hints <- c(
+    "i" = "Available for grouping effort: {.field {count_cols}}.",
+    "i" = paste(
+      "Effort comes from counts, so it can only be split by what the counter",
+      "could see. Copying the column into the count data would fabricate a",
+      "classification that was never made."
+    ),
+    "i" = "For a rate over this attribute, use {.code {rate_call}}."
+  )
+  if (isTRUE(species_route)) {
+    hints <- c(
+      hints,
+      "i" = paste(
+        "For species, use {.code by = <species column>}, which apportions catch",
+        "against whole effort instead of splitting effort."
+      )
+    )
+  }
+
+  cli::cli_abort(
+    c(
+      "{.arg by} can only group by columns present in the count data.",
+      "x" = "{.field {interview_only}} {?is/are} in the interview data but not the count data.",
+      hints
+    ),
+    class = "creel_error_count_unobservable_by",
+    call = error_call
+  )
+}
+
 #' Issue truncation message for MOR estimation
 #'
 #' @param n_truncated Number of trips excluded by truncation

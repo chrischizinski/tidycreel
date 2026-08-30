@@ -342,14 +342,12 @@ estimate_total_catch <- function(
   } else {
     # Grouped estimation
     # Resolve by parameter to column names
-    by_cols <- tidyselect::eval_select(
+    by_vars <- eval_select_count_by( # nolint: object_usage_linter
       by_quo,
-      data = design$counts, # Use counts as reference
-      allow_rename = FALSE,
-      allow_empty = FALSE,
+      design,
+      species_route = TRUE,
       error_call = rlang::caller_env()
     )
-    by_vars <- names(by_cols)
 
     # Validate grouping compatibility
     validate_grouping_compatibility(design, by_vars) # nolint: object_usage_linter
@@ -703,14 +701,15 @@ estimate_total_catch_sections <- function(
   if (rlang::quo_is_null(by_quo)) {
     by_vars <- NULL
   } else {
-    by_cols <- tidyselect::eval_select(
+    # No species route here: the section dispatch in the public function returns
+    # before resolve_species_by(), so `by = <species>` never reaches species
+    # apportionment on a sectioned design -- advertising it would be a dead end.
+    by_vars <- eval_select_count_by( # nolint: object_usage_linter
       by_quo,
-      data = design$counts,
-      allow_rename = FALSE,
-      allow_empty = FALSE,
+      design,
+      species_route = FALSE,
       error_call = rlang::caller_env()
     )
-    by_vars <- names(by_cols)
   }
 
   section_rows <- vector("list", length(registered_sections))
