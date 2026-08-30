@@ -190,34 +190,39 @@ a `.lake_total` row is appended to the output.
 
 catch_est <- estimate_total_catch(design, aggregate_sections = TRUE)
 print(catch_est$estimates)
-#> # A tibble: 4 × 8
+#> # A tibble: 4 × 9
 #>   section     estimate    se ci_lower ci_upper     n prop_of_lake_total
 #>   <chr>          <dbl> <dbl>    <dbl>    <dbl> <int>              <dbl>
 #> 1 North           285.  23.1     232.     339.     9              0.228
 #> 2 Central         711.  29.9     642.     780.     9              0.567
 #> 3 South           257.  22.7     205.     310.     9              0.205
 #> 4 .lake_total    1254.  44.1    1163.    1345.     3              1    
-#> # ℹ 1 more variable: data_available <lgl>
+#> # ℹ 2 more variables: se_prop_of_lake_total <dbl>, data_available <lgl>
 ```
 
 South has a high catch rate but the lowest effort, which limits its
 contribution to the lake total. Central has a moderate catch rate
 combined with the highest effort, making it the largest contributor. The
-`prop_of_lake_total` column shows each section’s percentage contribution
-to the lake-wide total catch.
+`prop_of_lake_total` column shows each section’s share of the lake-wide
+total catch, and `se_prop_of_lake_total` its standard error, so the
+shares can be compared against their uncertainty rather than read as
+exact. The error is derived from the same section variances the
+`.lake_total` row’s own standard error is built from; the `.lake_total`
+row reports `0`, because its share of itself is 1 by construction rather
+than estimated.
 
 ``` r
 
 harvest_est <- estimate_total_harvest(design, aggregate_sections = TRUE)
 print(harvest_est$estimates)
-#> # A tibble: 4 × 8
+#> # A tibble: 4 × 9
 #>   section     estimate    se ci_lower ci_upper     n prop_of_lake_total
 #>   <chr>          <dbl> <dbl>    <dbl>    <dbl> <int>              <dbl>
 #> 1 North           165.  15.8     128.     201.     9              0.204
 #> 2 Central         466.  23.8     411.     520.     9              0.576
 #> 3 South           178.  15.9     142.     215.     9              0.221
 #> 4 .lake_total     809.  32.7     741.     876.     3              1    
-#> # ℹ 1 more variable: data_available <lgl>
+#> # ℹ 2 more variables: se_prop_of_lake_total <dbl>, data_available <lgl>
 ```
 
 `example_sections_interviews` carries no party-size column, so both

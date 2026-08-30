@@ -166,6 +166,17 @@ Estimates tibble has columns: estimate, se, ci_lower, ci_upper, n (plus
 any grouping columns). For bus-route and ice designs, returns a bus-route
 HT estimate with method = "ht-total-release" and a "site_contributions"
 attribute.</p>
+<p>For sectioned designs the per-section rows carry
+<code>prop_of_lake_total</code>, the section's share of the lake-wide total, and
+<code>se_prop_of_lake_total</code>, its standard error. The share is a ratio
+whose numerator is one of its own denominator's terms, and whose numerator
+and denominator are each products of an effort and a rate estimated from
+different designs, so the error is derived by delta method from the same
+section variances and covariance the <code>.lake_total</code> row's own standard
+error is built from. The <code>.lake_total</code> row reports
+<code>se_prop_of_lake_total = 0</code>: its share of itself is exactly 1 by
+construction and was never estimated. A section with no data reports
+<code>NA</code> for both. Neither column is produced on the grouped path.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>

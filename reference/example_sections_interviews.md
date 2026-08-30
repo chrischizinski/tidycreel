@@ -124,12 +124,12 @@ estimate_total_catch(design, aggregate_sections = TRUE)
 #> Grouped by: section
 #> Effort target: sampled_days
 #> 
-#> # A tibble: 4 × 8
+#> # A tibble: 4 × 9
 #>   section     estimate    se ci_lower ci_upper     n prop_of_lake_total
 #>   <chr>          <dbl> <dbl>    <dbl>    <dbl> <int>              <dbl>
 #> 1 North           285.  23.1     232.     339.     9              0.228
 #> 2 Central         711.  29.9     642.     780.     9              0.567
 #> 3 South           257.  22.7     205.     310.     9              0.205
 #> 4 .lake_total    1254.  44.1    1163.    1345.     3              1    
-#> # ℹ 1 more variable: data_available <lgl>
+#> # ℹ 2 more variables: se_prop_of_lake_total <dbl>, data_available <lgl>
 ```

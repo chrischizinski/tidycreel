@@ -99,6 +99,18 @@ any grouping columns). For bus-route and ice designs, returns a
 bus-route HT estimate with method = "ht-total-release" and a
 "site_contributions" attribute.
 
+For sectioned designs the per-section rows carry `prop_of_lake_total`,
+the section's share of the lake-wide total, and `se_prop_of_lake_total`,
+its standard error. The share is a ratio whose numerator is one of its
+own denominator's terms, and whose numerator and denominator are each
+products of an effort and a rate estimated from different designs, so
+the error is derived by delta method from the same section variances and
+covariance the `.lake_total` row's own standard error is built from. The
+`.lake_total` row reports `se_prop_of_lake_total = 0`: its share of
+itself is exactly 1 by construction and was never estimated. A section
+with no data reports `NA` for both. Neither column is produced on the
+grouped path.
+
 ## Details
 
 Total release is computed as Effort x RPUE. Variance is propagated using
