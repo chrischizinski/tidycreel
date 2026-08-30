@@ -398,15 +398,31 @@ variance methods. <code><a href="../reference/compare_designs.html">compare_desi
 surface.</p>
 </div>
 <div class="section level3">
+<h3 id="hybrid-interviews">Hybrid interviews<a class="anchor" aria-label="anchor" href="#hybrid-interviews"></a>
+</h3>
+<p><strong>Hybrid interviews</strong> are on-site interviews that mix
+access-point and roving interviews within one creel survey — typically
+access-point interviews for boat anglers and roving interviews for bank
+anglers. <em>Access</em> and <em>roving</em> are properties of the
+<strong>interview</strong>, not of the count: access interviews
+intercept completed trips as anglers leave, roving interviews intercept
+incomplete trips while anglers fish, and the two require different
+catch-rate estimators. tidycreel records this on
+<code><a href="../reference/add_interviews.html">add_interviews()</a></code> via <code>interview_type</code>.</p>
+</div>
+<div class="section level3">
 <h3 id="hybrid-design">Hybrid design<a class="anchor" aria-label="anchor" href="#hybrid-design"></a>
 </h3>
-<p>A <strong>hybrid design</strong> combines more than one observation
-mode in one survey — for example fixed access-point counts plus
-roving-route counts — treating each mode as a stratum with its own
-sampling fraction. The component totals may be added only if the modes
-observe disjoint sets of angler trips.
-<code><a href="../reference/as_hybrid_svydesign.html">as_hybrid_svydesign()</a></code> creates this kind of combined design
-object.</p>
+<p>A <strong>hybrid design</strong> in the sense of
+<code><a href="../reference/as_hybrid_svydesign.html">as_hybrid_svydesign()</a></code> is a different thing: it combines two
+<strong>count</strong> series covering disjoint parts of a fishery,
+treating each as a stratum with its own within-day sampling fraction,
+while both expand to the same population of days. It estimates a period
+total rather than a sampled-day total. The two totals may be added only
+if the frames observe disjoint sets of angler trips. Its
+<code>access</code>/<code>roving</code> argument names are borrowed from
+the interview vocabulary and are under review; counts themselves are
+instantaneous, progressive, bus-route, camera or aerial.</p>
 </div>
 </div>
 <div class="section level2">

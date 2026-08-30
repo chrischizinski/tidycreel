@@ -74,6 +74,7 @@
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">as_hybrid_svydesign</span><span class="op">(</span></span>
 <span>  <span class="va">access_data</span>,</span>
 <span>  <span class="va">roving_data</span>,</span>
+<span>  calendar <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  date_col <span class="op">=</span> <span class="st">"date"</span>,</span>
 <span>  strata_col <span class="op">=</span> <span class="st">"day_type"</span>,</span>
 <span>  count_col <span class="op">=</span> <span class="st">"count"</span>,</span>
@@ -89,23 +90,49 @@
 
 
 <dl><dt id="arg-access-data">access_data<a class="anchor" aria-label="anchor" href="#arg-access-data"></a></dt>
-<dd><p>Data frame of access-point count observations.  Must
-contain the columns named by <code>date_col</code>, <code>strata_col</code>, and <code>count_col</code>.</p></dd>
+<dd><p>Data frame of count observations for the frame labelled
+<code>"access"</code> in the returned design.  Must contain the columns named by
+<code>date_col</code>, <code>strata_col</code>, and <code>count_col</code>, with at most one row per date
+within a stratum.  See "What <code>component</code> names" above: the label is
+inherited from the interview vocabulary and does not describe a count
+method.</p></dd>
 
 
 <dt id="arg-roving-data">roving_data<a class="anchor" aria-label="anchor" href="#arg-roving-data"></a></dt>
-<dd><p>Data frame of roving-route count observations.  Must
-contain the same columns as <code>access_data</code>.</p></dd>
+<dd><p>Data frame of count observations for the frame labelled
+<code>"roving"</code>.  Must contain the same columns as <code>access_data</code>.</p></dd>
+
+
+<dt id="arg-calendar">calendar<a class="anchor" aria-label="anchor" href="#arg-calendar"></a></dt>
+<dd><p>Data frame giving the population of days the totals expand
+to, carrying the columns named by <code>date_col</code> and <code>strata_col</code>.  Required:
+the <code>NULL</code> default is rejected, and exists only so the error can say what
+is missing.</p>
+<p>The stratum population size \(N_h\) is the number of <strong>distinct</strong> dates
+the stratum holds, counted the way <code><a href="creel_design.html">creel_design()</a></code> counts it.  One row
+per day is the natural form, but a duplicated row is tolerated rather than
+refused, precisely because the count is over distinct dates and a repeat
+changes nothing.</p>
+<p>Two things are required.  Every sampled date must appear in <code>calendar</code>
+under the same stratum, or the population is smaller than the sample.  And
+each date must belong to <strong>exactly one</strong> stratum – a day listed under two
+lengthens the season by a day in each, and the period total then expands
+to a calendar larger than the one that exists.</p></dd>
 
 
 <dt id="arg-date-col">date_col<a class="anchor" aria-label="anchor" href="#arg-date-col"></a></dt>
 <dd><p>Character scalar.  Name of the date column (shared by both
-tables). Default <code>"date"</code>.  Used to cluster observations into PSUs.</p></dd>
+tables and by <code>calendar</code>). Default <code>"date"</code>.  Used to cluster
+observations into PSUs.  Must be of class <code>Date</code>, with no missing values
+in any of the three tables.</p></dd>
 
 
 <dt id="arg-strata-col">strata_col<a class="anchor" aria-label="anchor" href="#arg-strata-col"></a></dt>
 <dd><p>Character scalar.  Name of the stratum column (shared by
-both tables). Default <code>"day_type"</code>.</p></dd>
+both tables and by <code>calendar</code>). Default <code>"day_type"</code>.  Must have no
+missing values in any of the three tables: dates and strata are the join
+keys, and a missing key matches every other missing key rather than being
+refused.</p></dd>
 
 
 <dt id="arg-count-col">count_col<a class="anchor" aria-label="anchor" href="#arg-count-col"></a></dt>
@@ -114,20 +141,23 @@ both tables). Default <code>"count"</code>.</p></dd>
 
 
 <dt id="arg-access-fraction">access_fraction<a class="anchor" aria-label="anchor" href="#arg-access-fraction"></a></dt>
-<dd><p>Named numeric vector. Sampling fraction per stratum
-for the access-point component (proportion of access points sampled on
-each sampled day; must be in (0, 1]). Names must match stratum values in
-<code>access_data</code>.</p></dd>
+<dd><p>Named numeric vector.  <strong>Within-day</strong> sampling
+fraction per stratum for the <code>"access"</code> component: the proportion of that
+component's frame the count enumerated on each sampled day, in (0, 1].
+Expands a sampled day to a whole day; it is not a fraction of the season
+and does not drive the finite-population correction.  Names must match
+stratum values in <code>access_data</code>.</p></dd>
 
 
 <dt id="arg-roving-fraction">roving_fraction<a class="anchor" aria-label="anchor" href="#arg-roving-fraction"></a></dt>
-<dd><p>Named numeric vector. Sampling fraction per stratum
-for the roving-route component.  Names must match stratum values in
-<code>roving_data</code>.</p></dd>
+<dd><p>Named numeric vector.  Within-day sampling fraction
+per stratum for the <code>"roving"</code> component, with the same meaning as
+<code>access_fraction</code>.  Names must match stratum values in <code>roving_data</code>.</p></dd>
 
 
 <dt id="arg-trips-disjoint">trips_disjoint<a class="anchor" aria-label="anchor" href="#arg-trips-disjoint"></a></dt>
-<dd><p>Logical scalar.  Required, with no default.  Set to
+<dd><p>Logical scalar.  Required: the <code>NULL</code> default is
+rejected, and exists only so the error can say what is missing.  Set to
 <code>TRUE</code> to affirm that the access and roving components sample disjoint
 sets of angler trips, the precondition under which their totals may be
 added.  tidycreel cannot verify this from the data; see the
@@ -135,23 +165,37 @@ added.  tidycreel cannot verify this from the data; see the
 
 
 <dt id="arg-fpc">fpc<a class="anchor" aria-label="anchor" href="#arg-fpc"></a></dt>
-<dd><p>Logical. Apply finite-population correction? Default <code>TRUE</code>.</p></dd>
+<dd><p>Logical scalar.  Apply the day-level finite-population correction
+\(n_h / N_h\)?  Default <code>TRUE</code>.  Set to <code>FALSE</code> for the conservative
+with-replacement variance.  <code>NA</code> and vectors of length other than one are
+refused.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A <code><a href="https://rdrr.io/pkg/survey/man/svydesign.html" class="external-link">survey::svydesign</a></code> object with an additional class attribute
 <code>"creel_hybrid_svydesign"</code>.  The design data contains a <code>component</code>
-column (<code>"access"</code> or <code>"roving"</code>), a <code>weight</code> column derived from the
-sampling fractions, and a <code>.hybrid_stratum</code> column holding the
-stratum-by-component interaction the design is stratified on.</p>
+column (<code>"access"</code> or <code>"roving"</code>), a <code>weight</code> column carrying both the
+within-day and the day-to-season expansion, a <code>.hybrid_stratum</code> column
+holding the stratum-by-component interaction the design is stratified on,
+and a <code>.pop_days</code> column holding the stratum population \(N_h\) the
+finite-population correction is taken against.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>Combines count data from access-point and roving survey components into a
+    <p>Combines two count series covering disjoint parts of one fishery into a
 single <code><a href="https://rdrr.io/pkg/survey/man/svydesign.html" class="external-link">survey::svydesign</a></code> object.  The two components are treated as
-<strong>strata</strong>, each carrying its own sampling fraction and its own population
-size, so the design total is the stratified sum of the component totals.</p>
+<strong>strata</strong>, each carrying its own within-day sampling fraction, and both
+expanded to the same population of days, so the design total is the
+stratified sum of the component totals over the season.</p>
+<p><strong>Estimand.</strong>  The design estimates a <strong>period total</strong> – the total over
+every day in <code>calendar</code>, not over the days that happened to be sampled.
+Two expansions get it there, and both live in the row weight: the
+within-day fraction expands the part of the component's frame that the
+count enumerated to the whole of it, and <code>N_h / n_h</code> expands the sampled
+days to the days the stratum holds.  Only the second is a
+stage-1 sampling fraction, so only the second drives the finite-population
+correction.</p>
 <p><strong>Disjointness precondition.</strong>  Adding the two component totals is valid if
 and only if the components sample <strong>disjoint sets of angler trips</strong> – no
 angler trip may be observed by both.  What produces that disjointness is a
@@ -162,22 +206,44 @@ dates, the strata, or the method label, so you must affirm it with
 boat angler intercepted on the water by a roving route and again at the
 ramp on the same trip belongs to both frames, and the total double counts
 that trip.</p>
-<p><code>component</code> names a survey <strong>method</strong>, not an angler population: an access
-point may intercept bank anglers at a pier or boat anglers at a ramp, and a
-roving route may be walked or run by boat.  Either method can cover either
-angler type, so disjointness is a fact about the protocol and never about
-the labels.</p>
+<p><strong>What <code>component</code> names, and what it does not.</strong>  The two components are
+two <strong>count frames</strong>: two disjoint parts of the fishery, each enumerated by
+its own count.  In the protocol this design was built for they are
+angler-type domains – boat anglers, and bank anglers dispersed along a
+shoreline with no well-defined access site (Malvestuto 1996).</p>
+<p>The labels <code>"access"</code> and <code>"roving"</code> are borrowed from the <strong>interview</strong>
+vocabulary and describe these frames only obliquely, by which interview
+mode happens to cover each.  In the creel literature access and roving
+describe how anglers are <em>interviewed</em>: access interviews intercept
+completed trips as anglers leave, roving interviews intercept incomplete
+trips while anglers are still fishing, and the two require different
+catch-rate estimators (Pollock et al. 1994).  A survey mixing the two is a
+<strong>hybrid interview</strong> design.  Counts are not described that way at all –
+they are instantaneous, progressive, bus-route, camera or aerial, the
+values <code><a href="creel_schema.html">creel_schema()</a></code> accepts for <code>survey_type</code>, none of which is
+"access" or "roving".  tidycreel carries the interview axis on
+<code><a href="add_interviews.html">add_interviews()</a></code>'s <code>interview_type</code> argument, which is where it belongs.
+These argument names are inherited and are under review; what the design
+requires of the two components is disjointness, not a method label.</p>
 <p><strong>Estimation route.</strong>  The returned object is a <code>survey.design2</code>, not a
 <code><a href="creel_design.html">creel_design()</a></code>, so <code><a href="estimate_effort.html">estimate_effort()</a></code> does not accept it.  Estimate from
 it with <code><a href="https://rdrr.io/pkg/survey/man/surveysummary.html" class="external-link">survey::svytotal()</a></code> and the other <code>survey</code> functions directly, as
 in the examples below.</p>
 <p><strong>Design structure.</strong>  Rows are stratified on the interaction of
-<code>strata_col</code> and <code>component</code>, so each component carries its own population
-size at its own sampling fraction, and clustered on <code>date_col</code>, so several
-counts taken on one date form one primary sampling unit rather than several
-independent ones.  A component that sampled only one date within a stratum
-leaves that stratum with a single PSU: the design still constructs, but
-<code>survey</code> refuses to compute a variance for it.</p>
+<code>strata_col</code> and <code>component</code>, so each count frame carries its own
+sampled-day count at its own within-day fraction, and clustered on <code>date_col</code>, so the
+date is the primary sampling unit.  The population size is taken from
+<code>calendar</code> and is shared by both components: one stratum is one span of the
+season, whichever method observed it.  A component that sampled only one
+date within a stratum leaves that stratum with a single PSU: the design
+still constructs, but <code>survey</code> refuses to compute a variance for it.</p>
+<p><strong>One count row per component-day.</strong>  A day-level expansion is only defined
+when a sampled day is one row per component, so repeated counts on one date
+are refused.  Two counts on a date are two looks at that date, not two
+sampled days; summed, they multiply the total by the number of counts, and
+the day expansion then multiplies that again.  Average them to one row per
+date before constructing the design, or model them on a path that keeps the
+count time.</p>
 <p><strong>PSU alignment requirement:</strong> Both <code>access_data</code> and <code>roving_data</code> must
 share the same date and stratum columns.  Mismatched column names, or dates
 present in one component but absent in the other, trigger an error rather
@@ -214,19 +280,27 @@ valid, not a source of bias.</p>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">access</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
-<span class="r-in"><span>  date     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2024-06-01"</span>, <span class="st">"2024-06-02"</span>, <span class="st">"2024-06-08"</span>, <span class="st">"2024-06-09"</span><span class="op">)</span><span class="op">)</span>,</span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">calendar</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="st">"2024-06-01"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="st">"2024-06-30"</span><span class="op">)</span>, by <span class="op">=</span> <span class="st">"day"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">calendar</span><span class="op">$</span><span class="va">day_type</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/format.html" class="external-link">format</a></span><span class="op">(</span><span class="va">calendar</span><span class="op">$</span><span class="va">date</span>, <span class="st">"%u"</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"6"</span>, <span class="st">"7"</span><span class="op">)</span>, <span class="st">"weekend"</span>, <span class="st">"weekday"</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">access</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  date     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2024-06-03"</span>, <span class="st">"2024-06-04"</span>, <span class="st">"2024-06-08"</span>, <span class="st">"2024-06-09"</span><span class="op">)</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  day_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"weekday"</span>, <span class="st">"weekday"</span>, <span class="st">"weekend"</span>, <span class="st">"weekend"</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  count    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">12L</span>, <span class="fl">15L</span>, <span class="fl">30L</span>, <span class="fl">28L</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">roving</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
-<span class="r-in"><span>  date     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2024-06-01"</span>, <span class="st">"2024-06-02"</span>, <span class="st">"2024-06-08"</span>, <span class="st">"2024-06-09"</span><span class="op">)</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  date     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2024-06-03"</span>, <span class="st">"2024-06-04"</span>, <span class="st">"2024-06-08"</span>, <span class="st">"2024-06-09"</span><span class="op">)</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  day_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"weekday"</span>, <span class="st">"weekday"</span>, <span class="st">"weekend"</span>, <span class="st">"weekend"</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  count    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">8L</span>, <span class="fl">10L</span>, <span class="fl">22L</span>, <span class="fl">25L</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu">as_hybrid_svydesign</span><span class="op">(</span></span></span>
 <span class="r-in"><span>  access_data      <span class="op">=</span> <span class="va">access</span>,</span></span>
 <span class="r-in"><span>  roving_data      <span class="op">=</span> <span class="va">roving</span>,</span></span>
+<span class="r-in"><span>  calendar         <span class="op">=</span> <span class="va">calendar</span>,</span></span>
 <span class="r-in"><span>  access_fraction  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>weekday <span class="op">=</span> <span class="fl">0.5</span>, weekend <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  roving_fraction  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>weekday <span class="op">=</span> <span class="fl">0.4</span>, weekend <span class="op">=</span> <span class="fl">0.4</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  trips_disjoint   <span class="op">=</span> <span class="cn">TRUE</span></span></span>
@@ -234,8 +308,8 @@ valid, not a source of bias.</p>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># estimate_effort() does not accept this object; use survey directly</span></span></span>
 <span class="r-in"><span><span class="fu">survey</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/survey/man/surveysummary.html" class="external-link">svytotal</a></span><span class="op">(</span><span class="op">~</span><span class="va">count</span>, <span class="va">design</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       total     SE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> count 332.5 8.6458</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>        total     SE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> count 2157.5 83.277</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

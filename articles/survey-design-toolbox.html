@@ -111,8 +111,8 @@ planning</li>
 <code><a href="../reference/compare_designs.html">compare_designs()</a></code> for side-by-side comparison of
 completed survey estimates</li>
 <li>
-<code><a href="../reference/as_hybrid_svydesign.html">as_hybrid_svydesign()</a></code> for combining access-point and
-roving count data in a single survey design</li>
+<code><a href="../reference/as_hybrid_svydesign.html">as_hybrid_svydesign()</a></code> for combining two disjoint count
+series in a single survey design</li>
 </ol>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/chrischizinski/tidycreel" class="external-link">tidycreel</a></span><span class="op">)</span></span></code></pre></div>
@@ -257,22 +257,58 @@ alternative estimation choices without rebuilding custom summary tables
 by hand.</p>
 </div>
 <div class="section level2">
-<h2 id="combining-access-and-roving-counts-with-as_hybrid_svydesign">3 Combining access and roving counts with
-<code>as_hybrid_svydesign()</code><a class="anchor" aria-label="anchor" href="#combining-access-and-roving-counts-with-as_hybrid_svydesign"></a>
+<h2 id="combining-two-disjoint-count-series-with-as_hybrid_svydesign">3 Combining two disjoint count series with
+<code>as_hybrid_svydesign()</code><a class="anchor" aria-label="anchor" href="#combining-two-disjoint-count-series-with-as_hybrid_svydesign"></a>
 </h2>
-<p>Some programs collect counts from both fixed access points and roving
-routes. <code><a href="../reference/as_hybrid_svydesign.html">as_hybrid_svydesign()</a></code> combines those components
-into a single <code>survey</code> design object, treating each component
-as its own stratum with its own sampling fraction and its own population
-size, and clustering observations on the date so several counts taken on
-one day form one primary sampling unit.</p>
+<p>Some programs count two disjoint parts of a fishery separately — most
+often boat anglers and bank anglers, which are reached by different
+field methods and enumerated at different rates.
+<code><a href="../reference/as_hybrid_svydesign.html">as_hybrid_svydesign()</a></code> combines those two count series into
+a single <code>survey</code> design object, treating each as its own
+stratum with its own within-day sampling fraction, and clustering
+observations on the date so the date is the primary sampling unit.</p>
+<p>A note on the names. In the creel literature <em>access</em> and
+<em>roving</em> describe how anglers are <strong>interviewed</strong> —
+access interviews intercept completed trips as anglers leave, roving
+interviews intercept incomplete trips while they fish — and a survey
+mixing the two is a <em>hybrid interview</em> design. Counts are not
+described that way; they are instantaneous, progressive, bus-route,
+camera or aerial. tidycreel carries the interview axis on
+<code><a href="../reference/add_interviews.html">add_interviews()</a></code>’s <code>interview_type</code> argument.
+The <code>access</code>/<code>roving</code> labels on this function name
+two <strong>disjoint count frames</strong>, typically angler-type
+domains such as boat and bank anglers, and are inherited names under
+review.</p>
+<p>The design estimates a <strong>period total</strong> — the total over
+every day in the season, not over the days that happened to be sampled.
+Two expansions get it there, and both live in the row weight. The
+within-day fraction expands the part of a component’s frame that the
+count enumerated to the whole of it. <code>N_h / n_h</code> expands the
+sampled days to the days the stratum holds, which is why a
+<code>calendar</code> is required: the sampled dates alone cannot say
+how long a stratum is. Only the second of the two is a sampling fraction
+over the date PSUs, so only the second drives the finite-population
+correction.</p>
+<p>Both components share the calendar. One stratum is one span of the
+season, whichever method observed it.</p>
 <p>Adding the two component totals is valid only when the components
 sample <strong>disjoint sets of angler trips</strong> — no angler trip
 may be observed by both. That is a property of the field protocol, not
 of the data, so tidycreel cannot check it and asks you to affirm it with
 <code>trips_disjoint = TRUE</code>.</p>
+<p>Each component may contribute at most one count row per date. Two
+counts on a date are two looks at that date, not two sampled days, and a
+per-day expansion is undefined for them; average them to one row per
+date first.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">access</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">calendar</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="st">"2024-06-01"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="st">"2024-06-30"</span><span class="op">)</span>, by <span class="op">=</span> <span class="st">"day"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">calendar</span><span class="op">$</span><span class="va">day_type</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/format.html" class="external-link">format</a></span><span class="op">(</span><span class="va">calendar</span><span class="op">$</span><span class="va">date</span>, <span class="st">"%u"</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"6"</span>, <span class="st">"7"</span><span class="op">)</span>, <span class="st">"weekend"</span>, <span class="st">"weekday"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">access</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2024-06-03"</span>, <span class="st">"2024-06-08"</span>, <span class="st">"2024-06-10"</span>, <span class="st">"2024-06-15"</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  day_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"weekday"</span>, <span class="st">"weekend"</span>, <span class="st">"weekday"</span>, <span class="st">"weekend"</span><span class="op">)</span>,</span>
 <span>  count <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">12L</span>, <span class="fl">18L</span>, <span class="fl">9L</span>, <span class="fl">21L</span><span class="op">)</span></span>
@@ -287,6 +323,7 @@ of the data, so tidycreel cannot check it and asks you to affirm it with
 <span><span class="va">hybrid_design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_hybrid_svydesign.html">as_hybrid_svydesign</a></span><span class="op">(</span></span>
 <span>  access_data <span class="op">=</span> <span class="va">access</span>,</span>
 <span>  roving_data <span class="op">=</span> <span class="va">roving</span>,</span>
+<span>  calendar <span class="op">=</span> <span class="va">calendar</span>,</span>
 <span>  access_fraction <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>weekday <span class="op">=</span> <span class="fl">0.5</span>, weekend <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span>,</span>
 <span>  roving_fraction <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>weekday <span class="op">=</span> <span class="fl">0.5</span>, weekend <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span>,</span>
 <span>  trips_disjoint <span class="op">=</span> <span class="cn">TRUE</span></span>
@@ -299,7 +336,7 @@ of the data, so tidycreel cannot check it and asks you to affirm it with
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Stratified Independent Sampling design</span></span>
 <span><span class="co">#&gt; survey::svydesign(ids = ids_formula, strata = strata_formula, </span></span>
-<span><span class="co">#&gt;     weights = weights_formula, fpc = ~fpc_val, data = combined, </span></span>
+<span><span class="co">#&gt;     weights = weights_formula, fpc = ~.pop_days, data = combined, </span></span>
 <span><span class="co">#&gt;     nest = TRUE)</span></span></code></pre></div>
 <p>The returned object is a <code>survey</code> design rather than a
 <code>creel_design</code>, so <code><a href="../reference/estimate_effort.html">estimate_effort()</a></code> does not
@@ -307,13 +344,15 @@ accept it; estimate from it with <code>survey</code> directly.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">survey</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/survey/man/surveysummary.html" class="external-link">svytotal</a></span><span class="op">(</span><span class="op">~</span><span class="va">count</span>, <span class="va">hybrid_design</span><span class="op">)</span></span>
 <span><span class="co">#&gt;       total    SE</span></span>
-<span><span class="co">#&gt; count   226 7.874</span></span></code></pre></div>
+<span><span class="co">#&gt; count  1520 78.23</span></span></code></pre></div>
+<p>That total is a season total: 20 weekday days and 10 weekend days in
+the June calendar, expanded from the two of each that were sampled.</p>
 <p>This small example is intentionally self-contained, but the same
-pattern scales to real field programs where access and roving counts
-cover complementary, non-overlapping parts of the fishery. Both
-components should sample the same days — the function warns when their
-date-stratum coverage is asymmetric — while covering different anglers
-or different water is exactly what makes their totals addable.</p>
+pattern scales to real field programs where the two count series cover
+complementary, non-overlapping parts of the fishery. Both components
+should sample the same days — the function warns when their date-stratum
+coverage is asymmetric — while covering different anglers or different
+water is exactly what makes their totals addable.</p>
 </div>
 <div class="section level2">
 <h2 id="summary">Summary<a class="anchor" aria-label="anchor" href="#summary"></a>
@@ -328,9 +367,9 @@ sizes and power targets</li>
 <code><a href="../reference/compare_designs.html">compare_designs()</a></code> turns alternative estimator outputs
 into a tidy, directly comparable object with a plotting method</li>
 <li>
-<code><a href="../reference/as_hybrid_svydesign.html">as_hybrid_svydesign()</a></code> bridges mixed access-point and
-roving count programs into one survey design for downstream
-analysis</li>
+<code><a href="../reference/as_hybrid_svydesign.html">as_hybrid_svydesign()</a></code> bridges programs that count two
+disjoint parts of a fishery separately into one survey design for
+downstream analysis</li>
 </ul>
 <p>Used together, these tools make it easier to justify sampling effort
 before the season, evaluate estimator trade-offs afterward, and support
