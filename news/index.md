@@ -384,6 +384,29 @@
 
 ### Bug fixes
 
+- Grouping effort or a total by an attribute the counts do not carry now
+  explains the constraint instead of reporting the column as
+  non-existent
+  ([\#241](https://github.com/chrischizinski/tidycreel/issues/241)).
+  [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),
+  the three `estimate_total_*()` functions and their sectioned paths
+  resolve `by=` against the count data, which is correct – effort comes
+  from counts, so it can only be split by what the counter could see.
+  But the refusal arrived as tidyselect’s “Column `target` doesn’t
+  exist”, which is false to the user’s situation: the column does exist,
+  in the interviews, and `estimate_catch_rate(by = target)` accepts it
+  one call earlier.
+
+  The message now says the column is in the interview data but not the
+  count data, lists the columns that can group effort, points at
+  `estimate_catch_rate(by=)` for a rate over that attribute and, for the
+  totals, at the `by = <species>` route that apportions catch against
+  whole effort. It also names the wrong workaround the old message
+  invited: copying the column into the counts fabricates a
+  classification the counter never made. Errors carry class
+  `creel_error_count_unobservable_by`; a column present in neither table
+  still raises tidyselect’s own error unchanged.
+
 - The three `estimate_total_*_sections()` product totals now report
   `se_prop_of_lake_total` alongside `prop_of_lake_total`
   ([\#243](https://github.com/chrischizinski/tidycreel/issues/243)). The
