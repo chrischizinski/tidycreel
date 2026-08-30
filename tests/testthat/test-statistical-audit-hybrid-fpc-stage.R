@@ -305,6 +305,36 @@ test_that("HYBFPC-14b: the repeated-day refusal covers the roving side too", {
   )
 })
 
+test_that("HYBFPC-16: a calendar date under two strata is refused", {
+  # Found by Copilot review on #249. A day listed in two strata counts toward
+  # both populations: on the probe fixture the weekend stratum grew from 5 days
+  # to 6 and the period total went 1078.75 -> 1195.5, with no error and no
+  # warning. The season cannot be longer than the calendar.
+  straddling <- rbind(
+    fpc_calendar(),
+    data.frame(
+      date = as.Date("2024-06-03"),
+      day_type = "weekend",
+      stringsAsFactors = FALSE
+    )
+  )
+  expect_error(fpc_design(calendar = straddling), "more than one stratum")
+})
+
+test_that("HYBFPC-17: a date repeated within ONE stratum is still accepted", {
+  # The other half of HYBFPC-16, and the reason the guard keys on the
+  # date-stratum pair rather than on the date alone. N_h counts DISTINCT dates,
+  # so a duplicated calendar row changes nothing and must not be refused --
+  # over-refusing here would reject an ordinary calendar built by rbind.
+  cal <- fpc_calendar()
+  dup <- rbind(cal, cal[cal$day_type == "weekday", ][1, , drop = FALSE])
+  expect_no_error(fpc_design(calendar = dup))
+  expect_equal(
+    unname(coef(survey::svytotal(~count, fpc_design(calendar = dup)))),
+    unname(coef(survey::svytotal(~count, fpc_design(calendar = cal))))
+  )
+})
+
 test_that("HYBFPC-15: the stratum-by-component strata from #229 are unchanged", {
   # A regression pin on the seam this one sits on top of. #246 changed where
   # the population comes from, not what a stratum is.

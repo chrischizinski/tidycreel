@@ -88,6 +88,16 @@
   the day expansion. `calendar` has no default, and every sampled date must
   appear in it under the same stratum.
 
+* `as_hybrid_svydesign()` now refuses a `calendar` that assigns one date to more
+  than one stratum (#246).
+
+  A day counted in two strata lengthens the season by a day in each, so the
+  period total expands to a calendar larger than the one that exists. On the
+  probe fixture the weekend stratum grew from 5 days to 6 and the total moved
+  from 1078.75 to 1195.5, with no error and no warning. A date repeated *within*
+  one stratum is still accepted: \eqn{N_h} counts distinct dates, so it changes
+  nothing.
+
 * `as_hybrid_svydesign()` now refuses repeated counts on one date (#246).
 
   A day-level expansion is only defined when a sampled day is one row per

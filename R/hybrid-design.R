@@ -96,7 +96,9 @@
 #'   so the error can say what is missing.  The number of **distinct**
 #'   dates per stratum is the stratum population size \eqn{N_h}, counted the
 #'   way [creel_design()] counts it.  Every sampled date must appear in
-#'   `calendar` under the same stratum.
+#'   `calendar` under the same stratum, and each date must belong to exactly
+#'   one stratum -- a day listed under two lengthens the season by a day in
+#'   each.  A date repeated within one stratum is harmless and is accepted.
 #' @param date_col Character scalar.  Name of the date column (shared by both
 #'   tables and by `calendar`). Default `"date"`.  Used to cluster
 #'   observations into PSUs.
@@ -378,7 +380,28 @@ as_hybrid_svydesign <- function(
   # the sampling fraction n_h / N_h would exceed 1. Refuse rather than let the
   # fpc go out of range.
   cal_strata <- as.character(calendar[[strata_col]])
-  cal_keys <- paste(cal_strata, as.character(calendar[[date_col]]))
+  cal_dates <- as.character(calendar[[date_col]])
+  cal_keys <- paste(cal_strata, cal_dates)
+
+  # A calendar day belongs to exactly one stratum. Listing one under two makes it
+  # count toward both stratum populations, so the season is longer than it is and
+  # the period total inflates -- with no error and no warning. Repeating a date
+  # WITHIN one stratum is harmless: N_h counts distinct dates either way.
+  cal_pairs <- unique(data.frame(d = cal_dates, s = cal_strata, stringsAsFactors = FALSE))
+  straddling <- unique(cal_pairs$d[duplicated(cal_pairs$d)])
+  if (length(straddling) > 0L) {
+    cli::cli_abort(c(
+      "{.arg calendar} assigns {length(straddling)} \\
+       {cli::qty(length(straddling))}date{?s} to more than one stratum.",
+      "x" = "{cli::qty(length(straddling))}Affected: {.val {straddling}}.",
+      "x" = paste(
+        "A day counted in two strata lengthens the season by one day in each,",
+        "and the period total expands to a calendar larger than the one that",
+        "exists."
+      ),
+      "i" = "Each date must appear under exactly one {.field {strata_col}} value."
+    ))
+  }
   .check_calendar_coverage <- function(data, name) {
     keys <- paste(
       as.character(data[[strata_col]]),

@@ -34,7 +34,9 @@ to, with one row per day carrying the columns named by \code{date_col} and
 so the error can say what is missing.  The number of \strong{distinct}
 dates per stratum is the stratum population size \eqn{N_h}, counted the
 way \code{\link[=creel_design]{creel_design()}} counts it.  Every sampled date must appear in
-\code{calendar} under the same stratum.}
+\code{calendar} under the same stratum, and each date must belong to exactly
+one stratum -- a day listed under two lengthens the season by a day in
+each.  A date repeated within one stratum is harmless and is accepted.}
 
 \item{date_col}{Character scalar.  Name of the date column (shared by both
 tables and by \code{calendar}). Default \code{"date"}.  Used to cluster
