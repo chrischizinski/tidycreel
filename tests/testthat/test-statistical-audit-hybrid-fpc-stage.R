@@ -256,6 +256,55 @@ test_that("HYBFPC-14: a repeated count on one date is refused", {
   )
 })
 
+test_that("HYBFPC-13b: the calendar-coverage guard covers the roving side too", {
+  # Codecov found both roving-side guards uncovered, and deleting either left
+  # all 50 hybrid tests passing. A guard tested on one component only is not
+  # tested: the two calls are separate lines and either can be lost alone.
+  roving_extra <- rbind(
+    fpc_roving(),
+    data.frame(
+      date = as.Date("2024-09-01"),
+      day_type = "weekday",
+      count = 7L,
+      stringsAsFactors = FALSE
+    )
+  )
+  expect_error(
+    suppressWarnings(as_hybrid_svydesign(
+      fpc_access(),
+      roving_extra,
+      calendar = fpc_calendar(),
+      access_fraction = c(weekday = 0.5, weekend = 0.5),
+      roving_fraction = c(weekday = 0.4, weekend = 0.4),
+      trips_disjoint = TRUE
+    )),
+    "absent from"
+  )
+})
+
+test_that("HYBFPC-14b: the repeated-day refusal covers the roving side too", {
+  roving_repeat <- rbind(
+    fpc_roving(),
+    data.frame(
+      date = as.Date("2024-06-03"),
+      day_type = "weekday",
+      count = 9L,
+      stringsAsFactors = FALSE
+    )
+  )
+  expect_error(
+    as_hybrid_svydesign(
+      fpc_access(),
+      roving_repeat,
+      calendar = fpc_calendar(),
+      access_fraction = c(weekday = 0.5, weekend = 0.5),
+      roving_fraction = c(weekday = 0.4, weekend = 0.4),
+      trips_disjoint = TRUE
+    ),
+    class = "creel_error_repeated_psus"
+  )
+})
+
 test_that("HYBFPC-15: the stratum-by-component strata from #229 are unchanged", {
   # A regression pin on the seam this one sits on top of. #246 changed where
   # the population comes from, not what a stratum is.
