@@ -447,3 +447,37 @@ test_that("HYBR-24: a non-Date date column is refused", {
     "must be a.*Date.*column"
   )
 })
+
+test_that("HYBR-25: a non-scalar or missing fpc is refused", {
+  # `fpc` is branched on with a bare `if`, where NA is base R's "missing value
+  # where TRUE/FALSE needed" and a length-2 vector silently takes its first
+  # element -- building the design with a correction the caller never chose.
+  for (bad in list(NA, c(TRUE, FALSE), "yes", 1)) {
+    expect_error(
+      as_hybrid_svydesign(
+        make_access(),
+        make_roving(),
+        calendar = make_calendar(),
+        access_fraction = fractions$access,
+        roving_fraction = fractions$roving,
+        trips_disjoint = TRUE,
+        fpc = bad
+      ),
+      "fpc.*must be"
+    )
+  }
+
+  # The two valid values still build.
+  for (good in c(TRUE, FALSE)) {
+    design <- as_hybrid_svydesign(
+      make_access(),
+      make_roving(),
+      calendar = make_calendar(),
+      access_fraction = fractions$access,
+      roving_fraction = fractions$roving,
+      trips_disjoint = TRUE,
+      fpc = good
+    )
+    expect_s3_class(design, "survey.design")
+  }
+})

@@ -98,6 +98,12 @@
   one stratum is still accepted: \eqn{N_h} counts distinct dates, so it changes
   nothing.
 
+* `as_hybrid_svydesign()` now refuses an `fpc` that is not a non-missing logical
+  scalar (#246). It is branched on with a bare `if`, where `NA` surfaced as base
+  R's `missing value where TRUE/FALSE needed` and a length-2 vector silently took
+  its first element -- building the design with a correction the caller never
+  chose.
+
 * `as_hybrid_svydesign()` now requires `Date` date columns and refuses a missing
   date or stratum in `access_data`, `roving_data` or `calendar` (#246).
 

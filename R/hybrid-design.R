@@ -132,9 +132,10 @@
 #'   sets of angler trips, the precondition under which their totals may be
 #'   added.  tidycreel cannot verify this from the data; see the
 #'   "Disjointness precondition" section above.
-#' @param fpc Logical.  Apply the day-level finite-population correction
+#' @param fpc Logical scalar.  Apply the day-level finite-population correction
 #'   \eqn{n_h / N_h}?  Default `TRUE`.  Set to `FALSE` for the conservative
-#'   with-replacement variance.
+#'   with-replacement variance.  `NA` and vectors of length other than one are
+#'   refused.
 #'
 #' @return A `survey::svydesign` object with an additional class attribute
 #'   `"creel_hybrid_svydesign"`.  The design data contains a `component`
@@ -331,6 +332,13 @@ as_hybrid_svydesign <- function(
   if (!is.logical(trips_disjoint) || length(trips_disjoint) != 1L ||
         is.na(trips_disjoint)) {
     cli::cli_abort("{.arg trips_disjoint} must be {.code TRUE} or {.code FALSE}.")
+  }
+  # `fpc` is branched on directly further down. Unvalidated, `NA` reaches
+  # `if (fpc)` as base R's "missing value where TRUE/FALSE needed" and a
+  # length-2 vector silently uses its first element, so the design is built with
+  # a correction the caller did not ask for.
+  if (!is.logical(fpc) || length(fpc) != 1L || is.na(fpc)) {
+    cli::cli_abort("{.arg fpc} must be {.code TRUE} or {.code FALSE}.")
   }
   if (!trips_disjoint) {
     cli::cli_abort(c(

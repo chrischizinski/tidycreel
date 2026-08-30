@@ -77,9 +77,10 @@ sets of angler trips, the precondition under which their totals may be
 added.  tidycreel cannot verify this from the data; see the
 "Disjointness precondition" section above.}
 
-\item{fpc}{Logical.  Apply the day-level finite-population correction
+\item{fpc}{Logical scalar.  Apply the day-level finite-population correction
 \eqn{n_h / N_h}?  Default \code{TRUE}.  Set to \code{FALSE} for the conservative
-with-replacement variance.}
+with-replacement variance.  \code{NA} and vectors of length other than one are
+refused.}
 }
 \value{
 A \code{survey::svydesign} object with an additional class attribute
