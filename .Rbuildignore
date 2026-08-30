@@ -71,9 +71,6 @@
 ^\.bg-shell$
 ^tidycreel\.connect$
 ^\.serena$
-^\.gsd$
-^\.gsd-id$
-^\.gsd\.archive.*$
 ^\.ai$
 ^justfile$
 ^opencode\.json$
@@ -121,7 +118,6 @@
 ^CLAUDE\.md$
 ^\.contextatlas\.yml$
 ^\.contextatlas$
-^\.gsd\.archive.*$
 ^air\.toml$
 ^\.codegraph$
 ^inst/extdata$
