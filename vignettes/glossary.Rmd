@@ -206,7 +206,7 @@ A **design comparison** is a side-by-side comparison of estimates or precision
 from alternative survey designs or alternative variance methods.
 `compare_designs()` provides this surface.
 
-### Hybrid design
+### Hybrid interviews
 **Hybrid interviews** are on-site interviews that mix access-point and roving
 interviews within one creel survey — typically access-point interviews for boat
 anglers and roving interviews for bank anglers. *Access* and *roving* are
@@ -215,6 +215,7 @@ completed trips as anglers leave, roving interviews intercept incomplete trips
 while anglers fish, and the two require different catch-rate estimators.
 tidycreel records this on `add_interviews()` via `interview_type`.
 
+### Hybrid design
 A **hybrid design** in the sense of `as_hybrid_svydesign()` is a different
 thing: it combines two **count** series covering disjoint parts of a fishery,
 treating each as a stratum with its own within-day sampling fraction, while
