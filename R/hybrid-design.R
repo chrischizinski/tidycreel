@@ -91,14 +91,21 @@
 #' @param roving_data Data frame of count observations for the frame labelled
 #'   `"roving"`.  Must contain the same columns as `access_data`.
 #' @param calendar Data frame giving the population of days the totals expand
-#'   to, with one row per day carrying the columns named by `date_col` and
-#'   `strata_col`.  Required: the `NULL` default is rejected, and exists only
-#'   so the error can say what is missing.  The number of **distinct**
-#'   dates per stratum is the stratum population size \eqn{N_h}, counted the
-#'   way [creel_design()] counts it.  Every sampled date must appear in
-#'   `calendar` under the same stratum, and each date must belong to exactly
-#'   one stratum -- a day listed under two lengthens the season by a day in
-#'   each.  A date repeated within one stratum is harmless and is accepted.
+#'   to, carrying the columns named by `date_col` and `strata_col`.  Required:
+#'   the `NULL` default is rejected, and exists only so the error can say what
+#'   is missing.
+#'
+#'   The stratum population size \eqn{N_h} is the number of **distinct** dates
+#'   the stratum holds, counted the way [creel_design()] counts it.  One row
+#'   per day is the natural form, but a duplicated row is tolerated rather than
+#'   refused, precisely because the count is over distinct dates and a repeat
+#'   changes nothing.
+#'
+#'   Two things are required.  Every sampled date must appear in `calendar`
+#'   under the same stratum, or the population is smaller than the sample.  And
+#'   each date must belong to **exactly one** stratum -- a day listed under two
+#'   lengthens the season by a day in each, and the period total then expands
+#'   to a calendar larger than the one that exists.
 #' @param date_col Character scalar.  Name of the date column (shared by both
 #'   tables and by `calendar`). Default `"date"`.  Used to cluster
 #'   observations into PSUs.
