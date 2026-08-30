@@ -30,7 +30,8 @@ method.}
 
 \item{calendar}{Data frame giving the population of days the totals expand
 to, with one row per day carrying the columns named by \code{date_col} and
-\code{strata_col}.  Required, with no default.  The number of \strong{distinct}
+\code{strata_col}.  Required: the \code{NULL} default is rejected, and exists only
+so the error can say what is missing.  The number of \strong{distinct}
 dates per stratum is the stratum population size \eqn{N_h}, counted the
 way \code{\link[=creel_design]{creel_design()}} counts it.  Every sampled date must appear in
 \code{calendar} under the same stratum.}
@@ -56,7 +57,8 @@ stratum values in \code{access_data}.}
 per stratum for the \code{"roving"} component, with the same meaning as
 \code{access_fraction}.  Names must match stratum values in \code{roving_data}.}
 
-\item{trips_disjoint}{Logical scalar.  Required, with no default.  Set to
+\item{trips_disjoint}{Logical scalar.  Required: the \code{NULL} default is
+rejected, and exists only so the error can say what is missing.  Set to
 \code{TRUE} to affirm that the access and roving components sample disjoint
 sets of angler trips, the precondition under which their totals may be
 added.  tidycreel cannot verify this from the data; see the

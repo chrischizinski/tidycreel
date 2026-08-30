@@ -92,7 +92,8 @@
 #'   `"roving"`.  Must contain the same columns as `access_data`.
 #' @param calendar Data frame giving the population of days the totals expand
 #'   to, with one row per day carrying the columns named by `date_col` and
-#'   `strata_col`.  Required, with no default.  The number of **distinct**
+#'   `strata_col`.  Required: the `NULL` default is rejected, and exists only
+#'   so the error can say what is missing.  The number of **distinct**
 #'   dates per stratum is the stratum population size \eqn{N_h}, counted the
 #'   way [creel_design()] counts it.  Every sampled date must appear in
 #'   `calendar` under the same stratum.
@@ -112,7 +113,8 @@
 #' @param roving_fraction Named numeric vector.  Within-day sampling fraction
 #'   per stratum for the `"roving"` component, with the same meaning as
 #'   `access_fraction`.  Names must match stratum values in `roving_data`.
-#' @param trips_disjoint Logical scalar.  Required, with no default.  Set to
+#' @param trips_disjoint Logical scalar.  Required: the `NULL` default is
+#'   rejected, and exists only so the error can say what is missing.  Set to
 #'   `TRUE` to affirm that the access and roving components sample disjoint
 #'   sets of angler trips, the precondition under which their totals may be
 #'   added.  tidycreel cannot verify this from the data; see the
