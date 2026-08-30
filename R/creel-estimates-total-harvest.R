@@ -89,6 +89,36 @@
 #'   \item Calendar stratification must be shared between counts and interviews
 #' }
 #'
+#' @section What the pooled total assumes:
+#' Effort comes from the counts, so a total can only be broken down by an
+#' attribute the counts classify. When a domain appears in the interviews but not
+#' in the counts, the only available total is \code{E_total * rate_pooled},
+#' where the pooled rate is a ratio of means weighted by the \emph{interview
+#' sample's} composition over that domain. Had the domain been classified in the
+#' counts it would be a stratum and the total would be
+#' \code{sum(E_h * rate_h)}, which is unbiased whatever the interview
+#' composition happens to be.
+#'
+#' The two agree only when the interview sample's effort composition matches the
+#' true effort composition, and interview selection is not proportional to
+#' effort by construction of the standard designs. Access interviews intercept
+#' completed trips, over-representing anglers who must return to a fixed point:
+#' Malvestuto (1996) notes that it is \dQuote{usually impossible to sample all
+#' angler types proportional to their level of effort}, a particular problem for
+#' bank anglers who may be \dQuote{widely dispersed along the shoreline and not
+#' associated with well-defined access sites}. Roving interviews are
+#' length-biased toward longer trips. So the mix differs by design rather than by
+#' accident, and where levels differ in rate the pooled total inherits that
+#' difference.
+#'
+#' None of this is verifiable from within the data, because the counts carry no
+#' composition to compare against. Where it is detectable -- the interviews hold
+#' an unclassified categorical domain and the crude rate differs materially
+#' across its levels -- a warning of class
+#' \code{creel_warning_pooled_domain_mix} is raised. It flags a risk, not a
+#' defect. Classifying the domain in the count data is what removes the
+#' assumption.
+#'
 #' @examples
 #' library(tidycreel)
 #' data(example_calendar)
@@ -285,6 +315,13 @@ estimate_total_harvest <- function(
       )
     ))
   }
+
+  # A domain the counts never classified forces the pooled product form,
+  # whose weighting comes from the interview mix rather than the effort mix
+  # (GH #242). After the harvest_col check, so a call that cannot produce a
+  # harvest total at all does not first warn about one; still before the
+  # section dispatch, so both paths hear it.
+  warn_pooled_domain_mix(design, "estimate_total_harvest", num_col = design[["harvest_col"]]) # nolint: object_usage_linter
 
   # Section dispatch guard (v0.7.0+ — only fires when add_sections() was called)
   if (!is.null(design[["sections"]])) {

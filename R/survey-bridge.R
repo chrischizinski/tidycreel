@@ -2253,6 +2253,212 @@ validate_grouping_compatibility <- function(design, by_vars) {
   invisible(NULL)
 }
 
+# Pooled-domain mix warning (GH #242) ------------------------------------
+
+#' Relative spread of a crude rate across a domain's levels
+#'
+#' Deliberately a ratio of sums straight off the interview columns, not a
+#' survey-weighted estimate. `estimate_catch_rate(by=)` aborts when a level
+#' holds fewer than 10 interviews, which is exactly the sparse case most at risk
+#' here, so a screen built on it would fail where it is needed most. This is
+#' O(n), cannot error, and is only ever compared against a threshold.
+#'
+#' @param interviews Interview data frame.
+#' @param domain_col Name of the domain column.
+#' @param num_col Name of the rate numerator column (catch or harvest).
+#' @param den_col Name of the rate denominator column (angler effort).
+#'
+#' @return Named list with `spread` (relative, `(max - min) / max`) and `rates`,
+#'   or `NULL` when fewer than two levels carry usable effort.
+#'
+#' @keywords internal
+#' @noRd
+domain_rate_spread <- function(interviews, domain_col, num_col, den_col) {
+  lev <- interviews[[domain_col]]
+  num <- suppressWarnings(as.numeric(interviews[[num_col]]))
+  den <- suppressWarnings(as.numeric(interviews[[den_col]]))
+  ok <- !is.na(lev) & !is.na(num) & !is.na(den) & den > 0
+  if (sum(ok) < 2L) {
+    return(NULL)
+  }
+
+  lev <- as.character(lev[ok])
+  num_by <- tapply(num[ok], lev, sum)
+  den_by <- tapply(den[ok], lev, sum)
+  rates <- num_by / den_by
+  # A zero rate is kept deliberately. A level with no catch against positive
+  # effort next to a level with catch is the most mix-sensitive case there is;
+  # dropping it collapsed `rates` to one level and silenced the warning exactly
+  # where it matters most. Only non-finite rates (no effort) are discarded.
+  rates <- rates[is.finite(rates)]
+  if (length(rates) < 2L || max(rates) <= 0) {
+    return(NULL)
+  }
+
+  list(spread = (max(rates) - min(rates)) / max(rates), rates = rates)
+}
+
+#' Interview columns that could be a domain the counts never classified
+#'
+#' Every column the design gave a role to is claimed through one of its `*_col`
+#' fields, so what is left is genuinely unaccounted for. Restricted to
+#' categorical columns with 2-10 levels: a domain is something effort could have
+#' been broken down by, not a free-text note or a per-trip measurement.
+#'
+#' @param design A creel_design object.
+#'
+#' @return Character vector of candidate column names.
+#'
+#' @keywords internal
+#' @noRd
+pooled_domain_candidates <- function(design) {
+  interviews <- design[["interviews"]]
+  role_cols <- unlist(design[grep("_col$", names(design))], use.names = FALSE)
+  claimed <- unique(c(
+    role_cols,
+    design[["strata_cols"]],
+    design[["date_col"]],
+    design[["psu_col"]],
+    names(design[["counts"]])
+  ))
+
+  candidates <- setdiff(names(interviews), claimed)
+  # Package-internal working columns are never a user domain.
+  candidates <- candidates[!startsWith(candidates, ".")]
+
+  keep <- vapply(
+    candidates,
+    function(nm) {
+      v <- interviews[[nm]]
+      if (!(is.character(v) || is.factor(v) || is.logical(v))) {
+        return(FALSE)
+      }
+      n_levels <- length(unique(v[!is.na(v)]))
+      n_levels > 1L && n_levels <= 10L
+    },
+    logical(1)
+  )
+
+  candidates[keep]
+}
+
+#' Warn that a total is pooled over a domain the counts never classified
+#'
+#' When a domain is not classified in the counts, the only available total is
+#' `E_total * rate_pooled`, and `rate_pooled` is a ratio of means weighted by the
+#' **interview sample's** composition over that domain. Had the domain been
+#' classified in the counts it would be a stratum and the total would be
+#' `sum_h E_h * rate_h`, which is unbiased whatever the interview composition.
+#'
+#' The two agree only when the interview sample's effort composition matches the
+#' true effort composition. Interview selection is non-proportional to effort by
+#' construction of the standard designs -- access interviews intercept completed
+#' trips, over-representing anglers who must return to a fixed point, and roving
+#' interviews are length-biased toward longer trips (Malvestuto 1996). So the
+#' mix differs by design, not by accident, and when levels differ in rate the
+#' pooled total inherits that difference.
+#'
+#' This cannot be verified from within the data: the counts hold no composition
+#' to compare against. The warning therefore flags a risk, not a defect, and is
+#' worded so it is not read as an error.
+#'
+#' @param design A creel_design object.
+#' @param fn_label Name of the calling estimator, for the message.
+#' @param num_col Rate numerator column; defaults to the design's catch column.
+#'
+#' @return NULL, invisibly. Called for its warning.
+#'
+#' @keywords internal
+#' @noRd
+warn_pooled_domain_mix <- function(design, fn_label, num_col = NULL) {
+  interviews <- design[["interviews"]]
+  # No counts means no total to compute, so there is nothing to warn about yet.
+  if (is.null(interviews) || is.null(design[["counts"]]) || nrow(interviews) < 2L) {
+    return(invisible(NULL))
+  }
+
+  num_col <- num_col %||% design[["catch_col"]]
+  den_col <- design[["angler_effort_col"]] %||% design[["effort_col"]]
+  if (is.null(num_col) || is.null(den_col)) {
+    return(invisible(NULL))
+  }
+  if (!all(c(num_col, den_col) %in% names(interviews))) {
+    return(invisible(NULL))
+  }
+
+  flagged <- character(0)
+  detail <- character(0)
+  for (nm in pooled_domain_candidates(design)) {
+    spread <- domain_rate_spread(interviews, nm, num_col, den_col)
+    if (is.null(spread) || spread$spread < pooled_domain_mix_threshold()) {
+      next
+    }
+    flagged <- c(flagged, nm)
+    detail <- c(
+      detail,
+      paste0(
+        nm, ": ",
+        paste0(names(spread$rates), " ", round(spread$rates, 3), collapse = ", ")
+      )
+    )
+  }
+
+  if (length(flagged) == 0L) {
+    return(invisible(NULL))
+  }
+
+  cli::cli_warn(
+    c(
+      paste(
+        "{.fn {fn_label}} is pooling over {cli::qty(flagged)}{?a domain/domains}",
+        "the counts do not classify: {.field {flagged}}."
+      ),
+      "!" = paste(
+        "The rate differs across {cli::qty(flagged)}{?its/their} levels in these",
+        "interviews ({detail}), so the total depends on the interview sample's",
+        "mix over {cli::qty(flagged)}{?that domain/those domains}."
+      ),
+      "i" = paste(
+        "Without the domain in the counts the total is",
+        "{.code E_total * rate_pooled}, weighted by the interview mix rather",
+        "than the effort mix. Interview selection is not proportional to effort",
+        "by construction (Malvestuto 1996)."
+      ),
+      "i" = paste(
+        "This is a risk, not an error: the counts carry no composition to check",
+        "against, so it cannot be verified from the data."
+      ),
+      "i" = paste(
+        "Classifying {.field {flagged}} in the count data removes the",
+        "assumption -- the total becomes {.code sum(E_h * rate_h)}."
+      )
+    ),
+    class = "creel_warning_pooled_domain_mix",
+    .frequency = "once",
+    # Keyed by the domain as well as the estimator: a later design with a
+    # different unclassified domain is a different risk and must still be heard,
+    # which a per-function key would silently swallow.
+    .frequency_id = paste0(
+      "tidycreel_pooled_domain_mix_", fn_label, "_", paste(flagged, collapse = "+")
+    )
+  )
+
+  invisible(NULL)
+}
+
+#' Relative-rate-difference threshold for the pooled-domain warning
+#'
+#' A deliberate, conservative default rather than a significance test: the
+#' quantity being screened is unverifiable, so the threshold only decides when a
+#' difference is large enough to be worth mentioning. 20% relative difference
+#' between the highest and lowest level.
+#'
+#' @keywords internal
+#' @noRd
+pooled_domain_mix_threshold <- function() {
+  0.2
+}
+
 #' Resolve a `by=` selector against count data, explaining the count constraint
 #'
 #' Effort is estimated from the counts, so `by=` on effort and on any total can

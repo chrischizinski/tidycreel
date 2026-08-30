@@ -300,6 +300,48 @@
   metadata-only; re-deriving it before implementing showed the lake row's
   arithmetic was affected too.
 
+## Statistical correctness
+
+* Totals pooled over a domain the counts never classified now say so (#242).
+
+  Counts bound what a total can be broken down by. When a domain is present in
+  the interviews but not in the counts, the only available total is
+  `E_total * rate_pooled`, and the pooled rate is a ratio of means weighted by
+  the *interview sample's* composition over that domain. Had the domain been
+  classified in the counts it would be a stratum, and the total would be
+  `sum(E_h * rate_h)` -- unbiased whatever the interview composition.
+
+  The two agree only when the interview sample's effort composition matches the
+  true effort composition, and interview selection is not proportional to effort
+  by construction: access interviews intercept completed trips, over-representing
+  anglers who must return to a fixed point, and roving interviews are
+  length-biased toward longer trips. Malvestuto (1996) states it directly --
+  "it is usually impossible to sample all angler types proportional to their
+  level of effort", a particular problem for bank anglers "widely dispersed
+  along the shoreline". So the mix differs by design rather than by accident,
+  and where levels differ in rate the pooled total inherits that difference.
+  Nothing in the reported output distinguished the two situations.
+
+  `estimate_total_catch()`, `estimate_total_harvest()` and
+  `estimate_total_release()` now raise a warning of class
+  `creel_warning_pooled_domain_mix` when the interviews carry an unclassified
+  categorical domain **and** a crude rate differs by more than 20% across its
+  levels. Both conditions are required: a domain the counts miss is only a
+  problem when the levels actually differ in rate, and a warning that fires
+  where nothing is wrong is one users learn to ignore. It fires once per
+  estimator and domain, and on the sectioned paths as well.
+
+  The screen is a ratio of sums taken straight off the interview columns, not a
+  survey-weighted estimate. `estimate_catch_rate(by = )` refuses sparse
+  interview data, which is precisely the case most at risk of a mismatched mix,
+  so a check built on it would fail where it is needed most.
+
+  The warning names a risk, not a defect, and is worded that way: this is
+  unverifiable from within the data, because the counts hold no composition to
+  compare against. The three estimators' help pages gain a
+  "What the pooled total assumes" section stating the same thing, and pointing
+  at classifying the domain in the counts as what removes the assumption.
+
 ## Bug fixes
 
 * Grouping effort or a total by an attribute the counts do not carry now

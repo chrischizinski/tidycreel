@@ -74,6 +74,36 @@
 #' @seealso \code{\link{estimate_total_harvest}}, \code{\link{estimate_release_rate}},
 #'   \code{\link{add_catch}}
 #'
+#' @section What the pooled total assumes:
+#' Effort comes from the counts, so a total can only be broken down by an
+#' attribute the counts classify. When a domain appears in the interviews but not
+#' in the counts, the only available total is \code{E_total * rate_pooled},
+#' where the pooled rate is a ratio of means weighted by the \emph{interview
+#' sample's} composition over that domain. Had the domain been classified in the
+#' counts it would be a stratum and the total would be
+#' \code{sum(E_h * rate_h)}, which is unbiased whatever the interview
+#' composition happens to be.
+#'
+#' The two agree only when the interview sample's effort composition matches the
+#' true effort composition, and interview selection is not proportional to
+#' effort by construction of the standard designs. Access interviews intercept
+#' completed trips, over-representing anglers who must return to a fixed point:
+#' Malvestuto (1996) notes that it is \dQuote{usually impossible to sample all
+#' angler types proportional to their level of effort}, a particular problem for
+#' bank anglers who may be \dQuote{widely dispersed along the shoreline and not
+#' associated with well-defined access sites}. Roving interviews are
+#' length-biased toward longer trips. So the mix differs by design rather than by
+#' accident, and where levels differ in rate the pooled total inherits that
+#' difference.
+#'
+#' None of this is verifiable from within the data, because the counts carry no
+#' composition to compare against. Where it is detectable -- the interviews hold
+#' an unclassified categorical domain and the crude rate differs materially
+#' across its levels -- a warning of class
+#' \code{creel_warning_pooled_domain_mix} is raised. It flags a risk, not a
+#' defect. Classifying the domain in the count data is what removes the
+#' assumption.
+#'
 #' @examples
 #' library(tidycreel)
 #' data(example_calendar)
@@ -221,6 +251,28 @@ estimate_total_release <- function(
   # so the finding-13 warning has to be raised here too or this path never
   # hears that the count column had no T_d applied.
   warn_missing_period_length(design) # nolint: object_usage_linter
+
+  # A domain the counts never classified forces the pooled product form,
+  # whose weighting comes from the interview mix rather than the effort mix
+  # (GH #242). Raised before the section dispatch so both paths hear it.
+  # The release rate this estimator uses is built from the catch table's
+  # released rows (.release_count), not the interview catch column, so the
+  # screen has to look at that same quantity. Screening on catch could warn
+  # about a difference the releases do not share, or miss one only the
+  # releases have.
+  release_screen <- tryCatch(
+    estimate_release_build_data(design, species = NULL),
+    error = function(cnd) NULL
+  )
+  if (!is.null(release_screen)) {
+    design_screen <- design
+    design_screen$interviews <- release_screen
+    warn_pooled_domain_mix( # nolint: object_usage_linter
+      design_screen,
+      "estimate_total_release",
+      num_col = ".release_count"
+    )
+  }
 
   # Validate design compatibility (counts AND interviews required for effort)
   validate_design_compatibility(design) # nolint: object_usage_linter
