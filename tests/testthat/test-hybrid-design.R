@@ -34,6 +34,23 @@ fractions <- list(
   roving = c(weekday = 0.4, weekend = 0.4)
 )
 
+# The population of days the totals expand to (#246). Ten weekday days and six
+# weekend days, chosen to contain every date the fixtures sample -- including
+# the 2024-06-15 weekday HYBR-16 adds to one component only.
+make_calendar <- function() {
+  data.frame(
+    date = as.Date(c(
+      "2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04", "2024-06-05",
+      "2024-06-06", "2024-06-07", "2024-06-15", "2024-06-16", "2024-06-17",
+      "2024-06-08", "2024-06-09", "2024-06-10", "2024-06-11", "2024-06-12",
+      "2024-06-13"
+    )),
+    day_type = c(rep("weekday", 10), rep("weekend", 6)),
+    stringsAsFactors = FALSE
+  )
+}
+
+
 # Input validation ------------------------------------------------------------
 
 test_that("HYBR-01: errors when access_data is not a data frame", {
@@ -41,6 +58,7 @@ test_that("HYBR-01: errors when access_data is not a data frame", {
     as_hybrid_svydesign(
       list(),
       make_roving(),
+      calendar = make_calendar(),
       access_fraction = fractions$access,
       roving_fraction = fractions$roving
     ),
@@ -53,6 +71,7 @@ test_that("HYBR-02: errors when roving_data is not a data frame", {
     as_hybrid_svydesign(
       make_access(),
       NULL,
+      calendar = make_calendar(),
       access_fraction = fractions$access,
       roving_fraction = fractions$roving
     ),
@@ -67,6 +86,7 @@ test_that("HYBR-03: errors when required column missing from access_data", {
     as_hybrid_svydesign(
       df,
       make_roving(),
+      calendar = make_calendar(),
       access_fraction = fractions$access,
       roving_fraction = fractions$roving
     ),
@@ -81,6 +101,7 @@ test_that("HYBR-04: errors when required column missing from roving_data", {
     as_hybrid_svydesign(
       make_access(),
       df,
+      calendar = make_calendar(),
       access_fraction = fractions$access,
       roving_fraction = fractions$roving
     ),
@@ -90,14 +111,24 @@ test_that("HYBR-04: errors when required column missing from roving_data", {
 
 test_that("HYBR-05: errors when access_fraction is NULL", {
   expect_error(
-    as_hybrid_svydesign(make_access(), make_roving(), roving_fraction = fractions$roving),
+    as_hybrid_svydesign(
+      make_access(),
+      make_roving(),
+      calendar = make_calendar(),
+      roving_fraction = fractions$roving
+    ),
     class = "rlang_error"
   )
 })
 
 test_that("HYBR-06: errors when roving_fraction is NULL", {
   expect_error(
-    as_hybrid_svydesign(make_access(), make_roving(), access_fraction = fractions$access),
+    as_hybrid_svydesign(
+      make_access(),
+      make_roving(),
+      calendar = make_calendar(),
+      access_fraction = fractions$access
+    ),
     class = "rlang_error"
   )
 })
@@ -107,6 +138,7 @@ test_that("HYBR-07: errors when fraction missing a stratum", {
     as_hybrid_svydesign(
       make_access(),
       make_roving(),
+      calendar = make_calendar(),
       access_fraction = c(weekday = 0.5), # missing weekend
       roving_fraction = fractions$roving
     ),
@@ -119,6 +151,7 @@ test_that("HYBR-08: errors when fraction value <= 0", {
     as_hybrid_svydesign(
       make_access(),
       make_roving(),
+      calendar = make_calendar(),
       access_fraction = c(weekday = 0, weekend = 0.5),
       roving_fraction = fractions$roving
     ),
@@ -131,6 +164,7 @@ test_that("HYBR-09: errors when fraction value > 1", {
     as_hybrid_svydesign(
       make_access(),
       make_roving(),
+      calendar = make_calendar(),
       access_fraction = c(weekday = 1.5, weekend = 0.5),
       roving_fraction = fractions$roving
     ),
@@ -144,6 +178,7 @@ test_that("HYBR-10: returns an svydesign object", {
   design <- suppressWarnings(as_hybrid_svydesign(
     make_access(),
     make_roving(),
+    calendar = make_calendar(),
     access_fraction = fractions$access,
     roving_fraction = fractions$roving,
     trips_disjoint = TRUE
@@ -155,6 +190,7 @@ test_that("HYBR-11: returns creel_hybrid_svydesign class", {
   design <- suppressWarnings(as_hybrid_svydesign(
     make_access(),
     make_roving(),
+    calendar = make_calendar(),
     access_fraction = fractions$access,
     roving_fraction = fractions$roving,
     trips_disjoint = TRUE
@@ -166,6 +202,7 @@ test_that("HYBR-12: combined data has component column", {
   design <- suppressWarnings(as_hybrid_svydesign(
     make_access(),
     make_roving(),
+    calendar = make_calendar(),
     access_fraction = fractions$access,
     roving_fraction = fractions$roving,
     trips_disjoint = TRUE
@@ -178,6 +215,7 @@ test_that("HYBR-13: combined data has weight column", {
   design <- suppressWarnings(as_hybrid_svydesign(
     make_access(),
     make_roving(),
+    calendar = make_calendar(),
     access_fraction = fractions$access,
     roving_fraction = fractions$roving,
     trips_disjoint = TRUE
@@ -190,6 +228,7 @@ test_that("HYBR-14: row count equals nrow(access) + nrow(roving)", {
   design <- suppressWarnings(as_hybrid_svydesign(
     make_access(),
     make_roving(),
+    calendar = make_calendar(),
     access_fraction = fractions$access,
     roving_fraction = fractions$roving,
     trips_disjoint = TRUE
@@ -199,19 +238,25 @@ test_that("HYBR-14: row count equals nrow(access) + nrow(roving)", {
 
 # Weight correctness ----------------------------------------------------------
 
-test_that("HYBR-15: access weights = 1 / access_fraction", {
+test_that("HYBR-15: access weights carry the within-day AND the day expansion", {
+  # Two factors, not one (#246): 1 / access_fraction expands the access points
+  # covered to the whole of a sampled day, and N_h / n_h expands the sampled
+  # days to the days the stratum holds. Asserting only the first would pass
+  # while the design silently estimated a sampled-day total.
   design <- suppressWarnings(as_hybrid_svydesign(
     make_access(),
     make_roving(),
+    calendar = make_calendar(),
     access_fraction = c(weekday = 0.5, weekend = 0.25),
     roving_fraction = fractions$roving,
     trips_disjoint = TRUE
   ))
   vars <- design$variables
+  # 10 weekday days and 6 weekend days in the calendar; 2 sampled dates each.
   acc_wk <- vars$weight[vars$component == "access" & vars$day_type == "weekday"]
-  expect_equal(unique(acc_wk), 1 / 0.5, tolerance = 1e-9)
+  expect_equal(unique(acc_wk), (1 / 0.5) * (10 / 2), tolerance = 1e-9)
   acc_we <- vars$weight[vars$component == "access" & vars$day_type == "weekend"]
-  expect_equal(unique(acc_we), 1 / 0.25, tolerance = 1e-9)
+  expect_equal(unique(acc_we), (1 / 0.25) * (6 / 2), tolerance = 1e-9)
 })
 
 # PSU alignment warning -------------------------------------------------------
@@ -230,6 +275,7 @@ test_that("HYBR-16: asymmetric dates produce a warning", {
     as_hybrid_svydesign(
       access_extra,
       make_roving(),
+      calendar = make_calendar(),
       access_fraction = c(weekday = 0.5, weekend = 0.5),
       roving_fraction = fractions$roving,
       trips_disjoint = TRUE
@@ -242,6 +288,7 @@ test_that("HYBR-17: symmetric dates produce no PSU warning", {
     as_hybrid_svydesign(
       make_access(),
       make_roving(),
+      calendar = make_calendar(),
       access_fraction = fractions$access,
       roving_fraction = fractions$roving,
       trips_disjoint = TRUE,
@@ -256,6 +303,7 @@ test_that("HYBR-18: fpc = FALSE produces a valid design", {
   design <- as_hybrid_svydesign(
     make_access(),
     make_roving(),
+    calendar = make_calendar(),
     access_fraction = fractions$access,
     roving_fraction = fractions$roving,
     trips_disjoint = TRUE,
@@ -277,9 +325,14 @@ test_that("HYBR-19: custom column names work", {
   names(roving_custom)[names(roving_custom) == "day_type"] <- "stratum"
   names(roving_custom)[names(roving_custom) == "count"] <- "n_anglers"
 
+  calendar_custom <- make_calendar()
+  names(calendar_custom)[names(calendar_custom) == "date"] <- "survey_date"
+  names(calendar_custom)[names(calendar_custom) == "day_type"] <- "stratum"
+
   design <- as_hybrid_svydesign(
     access_custom,
     roving_custom,
+    calendar = calendar_custom,
     date_col = "survey_date",
     strata_col = "stratum",
     count_col = "n_anglers",
@@ -296,6 +349,7 @@ test_that("HYBR-20: svytotal runs without error on the hybrid design", {
   design <- as_hybrid_svydesign(
     make_access(),
     make_roving(),
+    calendar = make_calendar(),
     access_fraction = fractions$access,
     roving_fraction = fractions$roving,
     trips_disjoint = TRUE,

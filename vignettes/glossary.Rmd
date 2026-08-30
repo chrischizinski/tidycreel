@@ -207,11 +207,22 @@ from alternative survey designs or alternative variance methods.
 `compare_designs()` provides this surface.
 
 ### Hybrid design
-A **hybrid design** combines more than one observation mode in one survey — for
-example fixed access-point counts plus roving-route counts — treating each mode
-as a stratum with its own sampling fraction. The component totals may be added
-only if the modes observe disjoint sets of angler trips.
-`as_hybrid_svydesign()` creates this kind of combined design object.
+**Hybrid interviews** are on-site interviews that mix access-point and roving
+interviews within one creel survey — typically access-point interviews for boat
+anglers and roving interviews for bank anglers. *Access* and *roving* are
+properties of the **interview**, not of the count: access interviews intercept
+completed trips as anglers leave, roving interviews intercept incomplete trips
+while anglers fish, and the two require different catch-rate estimators.
+tidycreel records this on `add_interviews()` via `interview_type`.
+
+A **hybrid design** in the sense of `as_hybrid_svydesign()` is a different
+thing: it combines two **count** series covering disjoint parts of a fishery,
+treating each as a stratum with its own within-day sampling fraction, while
+both expand to the same population of days. It estimates a period total rather
+than a sampled-day total. The two totals may be added only if the frames
+observe disjoint sets of angler trips. Its `access`/`roving` argument names are
+borrowed from the interview vocabulary and are under review; counts themselves
+are instantaneous, progressive, bus-route, camera or aerial.
 
 ## Survey-type terms
 

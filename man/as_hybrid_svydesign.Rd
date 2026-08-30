@@ -7,6 +7,7 @@
 as_hybrid_svydesign(
   access_data,
   roving_data,
+  calendar = NULL,
   date_col = "date",
   strata_col = "day_type",
   count_col = "count",
@@ -17,29 +18,43 @@ as_hybrid_svydesign(
 )
 }
 \arguments{
-\item{access_data}{Data frame of access-point count observations.  Must
-contain the columns named by \code{date_col}, \code{strata_col}, and \code{count_col}.}
+\item{access_data}{Data frame of count observations for the frame labelled
+\code{"access"} in the returned design.  Must contain the columns named by
+\code{date_col}, \code{strata_col}, and \code{count_col}, with at most one row per date
+within a stratum.  See "What \code{component} names" above: the label is
+inherited from the interview vocabulary and does not describe a count
+method.}
 
-\item{roving_data}{Data frame of roving-route count observations.  Must
-contain the same columns as \code{access_data}.}
+\item{roving_data}{Data frame of count observations for the frame labelled
+\code{"roving"}.  Must contain the same columns as \code{access_data}.}
+
+\item{calendar}{Data frame giving the population of days the totals expand
+to, with one row per day carrying the columns named by \code{date_col} and
+\code{strata_col}.  Required, with no default.  The number of \strong{distinct}
+dates per stratum is the stratum population size \eqn{N_h}, counted the
+way \code{\link[=creel_design]{creel_design()}} counts it.  Every sampled date must appear in
+\code{calendar} under the same stratum.}
 
 \item{date_col}{Character scalar.  Name of the date column (shared by both
-tables). Default \code{"date"}.  Used to cluster observations into PSUs.}
+tables and by \code{calendar}). Default \code{"date"}.  Used to cluster
+observations into PSUs.}
 
 \item{strata_col}{Character scalar.  Name of the stratum column (shared by
-both tables). Default \code{"day_type"}.}
+both tables and by \code{calendar}). Default \code{"day_type"}.}
 
 \item{count_col}{Character scalar.  Name of the count column (shared by
 both tables). Default \code{"count"}.}
 
-\item{access_fraction}{Named numeric vector. Sampling fraction per stratum
-for the access-point component (proportion of access points sampled on
-each sampled day; must be in (0, 1]). Names must match stratum values in
-\code{access_data}.}
+\item{access_fraction}{Named numeric vector.  \strong{Within-day} sampling
+fraction per stratum for the \code{"access"} component: the proportion of that
+component's frame the count enumerated on each sampled day, in (0, 1].
+Expands a sampled day to a whole day; it is not a fraction of the season
+and does not drive the finite-population correction.  Names must match
+stratum values in \code{access_data}.}
 
-\item{roving_fraction}{Named numeric vector. Sampling fraction per stratum
-for the roving-route component.  Names must match stratum values in
-\code{roving_data}.}
+\item{roving_fraction}{Named numeric vector.  Within-day sampling fraction
+per stratum for the \code{"roving"} component, with the same meaning as
+\code{access_fraction}.  Names must match stratum values in \code{roving_data}.}
 
 \item{trips_disjoint}{Logical scalar.  Required, with no default.  Set to
 \code{TRUE} to affirm that the access and roving components sample disjoint
@@ -47,23 +62,37 @@ sets of angler trips, the precondition under which their totals may be
 added.  tidycreel cannot verify this from the data; see the
 "Disjointness precondition" section above.}
 
-\item{fpc}{Logical. Apply finite-population correction? Default \code{TRUE}.}
+\item{fpc}{Logical.  Apply the day-level finite-population correction
+\eqn{n_h / N_h}?  Default \code{TRUE}.  Set to \code{FALSE} for the conservative
+with-replacement variance.}
 }
 \value{
 A \code{survey::svydesign} object with an additional class attribute
 \code{"creel_hybrid_svydesign"}.  The design data contains a \code{component}
-column (\code{"access"} or \code{"roving"}), a \code{weight} column derived from the
-sampling fractions, and a \code{.hybrid_stratum} column holding the
-stratum-by-component interaction the design is stratified on.
+column (\code{"access"} or \code{"roving"}), a \code{weight} column carrying both the
+within-day and the day-to-season expansion, a \code{.hybrid_stratum} column
+holding the stratum-by-component interaction the design is stratified on,
+and a \code{.pop_days} column holding the stratum population \eqn{N_h} the
+finite-population correction is taken against.
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 }
 \details{
-Combines count data from access-point and roving survey components into a
+Combines two count series covering disjoint parts of one fishery into a
 single \code{survey::svydesign} object.  The two components are treated as
-\strong{strata}, each carrying its own sampling fraction and its own population
-size, so the design total is the stratified sum of the component totals.
+\strong{strata}, each carrying its own within-day sampling fraction, and both
+expanded to the same population of days, so the design total is the
+stratified sum of the component totals over the season.
+
+\strong{Estimand.}  The design estimates a \strong{period total} -- the total over
+every day in \code{calendar}, not over the days that happened to be sampled.
+Two expansions get it there, and both live in the row weight: the
+within-day fraction expands the part of the component's frame that the
+count enumerated to the whole of it, and \code{N_h / n_h} expands the sampled
+days to the days the stratum holds.  Only the second is a
+stage-1 sampling fraction, so only the second drives the finite-population
+correction.
 
 \strong{Disjointness precondition.}  Adding the two component totals is valid if
 and only if the components sample \strong{disjoint sets of angler trips} -- no
@@ -76,11 +105,26 @@ boat angler intercepted on the water by a roving route and again at the
 ramp on the same trip belongs to both frames, and the total double counts
 that trip.
 
-\code{component} names a survey \strong{method}, not an angler population: an access
-point may intercept bank anglers at a pier or boat anglers at a ramp, and a
-roving route may be walked or run by boat.  Either method can cover either
-angler type, so disjointness is a fact about the protocol and never about
-the labels.
+\strong{What \code{component} names, and what it does not.}  The two components are
+two \strong{count frames}: two disjoint parts of the fishery, each enumerated by
+its own count.  In the protocol this design was built for they are
+angler-type domains -- boat anglers, and bank anglers dispersed along a
+shoreline with no well-defined access site (Malvestuto 1996).
+
+The labels \code{"access"} and \code{"roving"} are borrowed from the \strong{interview}
+vocabulary and describe these frames only obliquely, by which interview
+mode happens to cover each.  In the creel literature access and roving
+describe how anglers are \emph{interviewed}: access interviews intercept
+completed trips as anglers leave, roving interviews intercept incomplete
+trips while anglers are still fishing, and the two require different
+catch-rate estimators (Pollock et al. 1994).  A survey mixing the two is a
+\strong{hybrid interview} design.  Counts are not described that way at all --
+they are instantaneous, progressive, bus-route, camera or aerial, the
+values \code{\link[=creel_schema]{creel_schema()}} accepts for \code{survey_type}, none of which is
+"access" or "roving".  tidycreel carries the interview axis on
+\code{\link[=add_interviews]{add_interviews()}}'s \code{interview_type} argument, which is where it belongs.
+These argument names are inherited and are under review; what the design
+requires of the two components is disjointness, not a method label.
 
 \strong{Estimation route.}  The returned object is a \code{survey.design2}, not a
 \code{\link[=creel_design]{creel_design()}}, so \code{\link[=estimate_effort]{estimate_effort()}} does not accept it.  Estimate from
@@ -88,12 +132,21 @@ it with \code{survey::svytotal()} and the other \code{survey} functions directly
 in the examples below.
 
 \strong{Design structure.}  Rows are stratified on the interaction of
-\code{strata_col} and \code{component}, so each component carries its own population
-size at its own sampling fraction, and clustered on \code{date_col}, so several
-counts taken on one date form one primary sampling unit rather than several
-independent ones.  A component that sampled only one date within a stratum
-leaves that stratum with a single PSU: the design still constructs, but
-\code{survey} refuses to compute a variance for it.
+\code{strata_col} and \code{component}, so each count frame carries its own
+sampled-day count at its own within-day fraction, and clustered on \code{date_col}, so the
+date is the primary sampling unit.  The population size is taken from
+\code{calendar} and is shared by both components: one stratum is one span of the
+season, whichever method observed it.  A component that sampled only one
+date within a stratum leaves that stratum with a single PSU: the design
+still constructs, but \code{survey} refuses to compute a variance for it.
+
+\strong{One count row per component-day.}  A day-level expansion is only defined
+when a sampled day is one row per component, so repeated counts on one date
+are refused.  Two counts on a date are two looks at that date, not two
+sampled days; summed, they multiply the total by the number of counts, and
+the day expansion then multiplies that again.  Average them to one row per
+date before constructing the design, or model them on a path that keeps the
+count time.
 
 \strong{PSU alignment requirement:} Both \code{access_data} and \code{roving_data} must
 share the same date and stratum columns.  Mismatched column names, or dates
@@ -105,19 +158,27 @@ components covering different water is the condition that makes their sum
 valid, not a source of bias.
 }
 \examples{
+calendar <- data.frame(
+  date = seq(as.Date("2024-06-01"), as.Date("2024-06-30"), by = "day")
+)
+calendar$day_type <- ifelse(
+  format(calendar$date, "\%u") \%in\% c("6", "7"), "weekend", "weekday"
+)
+
 access <- data.frame(
-  date     = as.Date(c("2024-06-01", "2024-06-02", "2024-06-08", "2024-06-09")),
+  date     = as.Date(c("2024-06-03", "2024-06-04", "2024-06-08", "2024-06-09")),
   day_type = c("weekday", "weekday", "weekend", "weekend"),
   count    = c(12L, 15L, 30L, 28L)
 )
 roving <- data.frame(
-  date     = as.Date(c("2024-06-01", "2024-06-02", "2024-06-08", "2024-06-09")),
+  date     = as.Date(c("2024-06-03", "2024-06-04", "2024-06-08", "2024-06-09")),
   day_type = c("weekday", "weekday", "weekend", "weekend"),
   count    = c(8L, 10L, 22L, 25L)
 )
 design <- as_hybrid_svydesign(
   access_data      = access,
   roving_data      = roving,
+  calendar         = calendar,
   access_fraction  = c(weekday = 0.5, weekend = 0.5),
   roving_fraction  = c(weekday = 0.4, weekend = 0.4),
   trips_disjoint   = TRUE
