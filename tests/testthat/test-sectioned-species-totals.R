@@ -222,3 +222,37 @@ test_that("SPS-07: the pooled-domain warning still reaches sectioned totals", {
   d_release$catch <- catch_df
   expect_true(fired(estimate_total_release(d_release))) # nolint: object_usage_linter
 })
+
+test_that("SPS-08: a missing section does not smuggle lake-share columns into a grouped result", {
+  set.seed(255)
+  design <- make_sectioned_species_design()
+  # A registered section with no count or interview data behind it.
+  design$sections <- rbind(design$sections, data.frame(section = "East", stringsAsFactors = FALSE))
+
+  # The placeholder row for an absent section is built whatever the grouping.
+  # Carrying the share columns there put them into a grouped result through
+  # bind_rows(), which is the one thing SPS-03 says a grouped result never has --
+  # so the contract held only as long as every section had data.
+  species_est <- suppressMessages(suppressWarnings( # nolint: object_usage_linter
+    estimate_total_catch(design, by = species, missing_sections = "warn")
+  ))$estimates
+  expect_false("prop_of_lake_total" %in% names(species_est))
+  expect_false("se_prop_of_lake_total" %in% names(species_est))
+
+  # Same for an ordinary grouping: this predates the species work.
+  grouped_est <- suppressMessages(suppressWarnings( # nolint: object_usage_linter
+    estimate_total_catch(design, by = day_type, missing_sections = "warn")
+  ))$estimates
+  expect_false("prop_of_lake_total" %in% names(grouped_est))
+
+  # The ungrouped path must keep them, including on the placeholder row, or the
+  # fix would have removed a column the lake-share path is supposed to report.
+  ungrouped_est <- suppressMessages(suppressWarnings( # nolint: object_usage_linter
+    estimate_total_catch(design, missing_sections = "warn")
+  ))$estimates
+  expect_true(all(c("prop_of_lake_total", "se_prop_of_lake_total") %in% names(ungrouped_est)))
+  absent <- ungrouped_est[ungrouped_est$section == "East", ]
+  expect_identical(nrow(absent), 1L)
+  expect_true(is.na(absent$prop_of_lake_total))
+  expect_false(absent$data_available)
+})

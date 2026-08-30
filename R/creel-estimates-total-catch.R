@@ -801,8 +801,10 @@ estimate_total_catch_sections <- function(
         ci_lower = NA_real_,
         ci_upper = NA_real_,
         n = 0L,
-        prop_of_lake_total = NA_real_,
-        se_prop_of_lake_total = NA_real_,
+        # No lake-share columns here. This placeholder is built whatever the
+        # grouping, so hard-coding them made bind_rows() give a grouped result
+        # share columns it is not supposed to carry. The ungrouped path assigns
+        # both after the bind, so its rows still get them.
         data_available = FALSE
       )
       section_rows[[sec]] <- na_row
