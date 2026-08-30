@@ -2085,3 +2085,19 @@ test_that("a design that still has complete trips is untouched by the guard", {
     suppressMessages(suppressWarnings(estimate_total_harvest(d)))
   )
 })
+
+# Count-observability of by= on the sectioned path (GH #241) ----
+
+test_that("CBY-08: sectioned total catch names the count constraint, not a missing column", {
+  design <- make_3section_total_catch_design()
+  # Species sought is knowable only by asking; a section counter cannot see it,
+  # so it can never split effort -- and the section dispatch must say so too,
+  # rather than reporting a column that plainly exists in the interviews.
+  design$interviews$target <- rep_len(c("bass", "bluegill"), nrow(design$interviews))
+
+  err <- expect_error(
+    estimate_total_catch(design, by = target), # nolint: object_usage_linter
+    class = "creel_error_count_unobservable_by"
+  )
+  expect_match(cli::ansi_strip(conditionMessage(err)), "interview data but not the count data")
+})

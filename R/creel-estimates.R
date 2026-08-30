@@ -781,14 +781,12 @@ estimate_effort <- function(
   } else {
     # Grouped estimation (Phase 5 behavior)
     # Resolve by parameter to column names
-    by_cols <- tidyselect::eval_select(
+    by_vars <- eval_select_count_by( # nolint: object_usage_linter
       by_quo,
-      data = design$counts,
-      allow_rename = FALSE,
-      allow_empty = FALSE,
+      design,
+      species_route = FALSE,
       error_call = rlang::caller_env()
     )
-    by_vars <- names(by_cols)
 
     return(estimate_effort_grouped(design, by_vars, variance, conf_level, target = target)) # nolint: object_usage_linter
   }

@@ -275,14 +275,12 @@ estimate_total_release <- function(
   if (rlang::quo_is_null(by_quo)) {
     return(estimate_total_release_ungrouped(design, variance, conf_level, target = target, product_variance = product_variance, ci_type = ci_type)) # nolint: object_usage_linter
   } else {
-    by_cols <- tidyselect::eval_select(
+    by_vars <- eval_select_count_by( # nolint: object_usage_linter
       by_quo,
-      data = design$counts,
-      allow_rename = FALSE,
-      allow_empty = FALSE,
+      design,
+      species_route = TRUE,
       error_call = rlang::caller_env()
     )
-    by_vars <- names(by_cols)
     validate_grouping_compatibility(design, by_vars) # nolint: object_usage_linter
     return(estimate_total_release_grouped(design, by_vars, variance, conf_level, target = target, product_variance = product_variance, ci_type = ci_type)) # nolint: object_usage_linter
   }
@@ -570,14 +568,12 @@ estimate_total_release_sections <- function(
   if (rlang::quo_is_null(by_quo)) {
     by_vars <- NULL
   } else {
-    by_cols <- tidyselect::eval_select(
+    by_vars <- eval_select_count_by( # nolint: object_usage_linter
       by_quo,
-      data = design$counts,
-      allow_rename = FALSE,
-      allow_empty = FALSE,
+      design,
+      species_route = TRUE,
       error_call = rlang::caller_env()
     )
-    by_vars <- names(by_cols)
   }
 
   section_rows <- vector("list", length(registered_sections))
