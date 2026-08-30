@@ -2286,8 +2286,12 @@ domain_rate_spread <- function(interviews, domain_col, num_col, den_col) {
   num_by <- tapply(num[ok], lev, sum)
   den_by <- tapply(den[ok], lev, sum)
   rates <- num_by / den_by
-  rates <- rates[is.finite(rates) & rates > 0]
-  if (length(rates) < 2L) {
+  # A zero rate is kept deliberately. A level with no catch against positive
+  # effort next to a level with catch is the most mix-sensitive case there is;
+  # dropping it collapsed `rates` to one level and silenced the warning exactly
+  # where it matters most. Only non-finite rates (no effort) are discarded.
+  rates <- rates[is.finite(rates)]
+  if (length(rates) < 2L || max(rates) <= 0) {
     return(NULL)
   }
 

@@ -205,3 +205,54 @@ test_that("PDM-08: the crude screen survives what the survey-weighted rate canno
   expect_false(is.null(spread))
   expect_true(spread$spread > 0)
 })
+
+test_that("PDM-09: a level with zero catch is the loudest case, not a discarded one", {
+  set.seed(242)
+  design <- make_pooled_domain_design(bass_multiplier = 3L, domain = "sought_pdm09")
+  design$interviews$catch_total[design$interviews$sought_pdm09 == "bass"] <- 0L
+
+  # One level catching nothing against positive effort, beside a level that
+  # catches, is as mix-sensitive as this gets: the pooled total is entirely a
+  # function of which level the interviews over-sampled. Filtering the zero rate
+  # out collapsed the comparison to a single level and returned NULL, silencing
+  # the warning precisely where it matters most.
+  spread <- domain_rate_spread(design$interviews, "sought_pdm09", "catch_total", ".angler_effort")
+  expect_false(is.null(spread))
+  expect_equal(spread$spread, 1)
+
+  expect_false(is.null(catch_mix_warning(estimate_total_catch(design)))) # nolint: object_usage_linter
+})
+
+test_that("PDM-10: no rate at all is still not a comparison", {
+  set.seed(242)
+  design <- make_pooled_domain_design(bass_multiplier = 3L, domain = "sought_pdm10")
+  design$interviews$catch_total <- 0L
+
+  # Every level at zero has nothing to distinguish it -- keeping zero rates must
+  # not turn "no signal" into a 0/0 spread.
+  expect_null(domain_rate_spread(design$interviews, "sought_pdm10", "catch_total", ".angler_effort"))
+  expect_null(catch_mix_warning(estimate_total_catch(design))) # nolint: object_usage_linter
+})
+
+test_that("PDM-11: a harvest total that cannot be computed does not warn on its way out", {
+  set.seed(242)
+  design <- make_pooled_domain_design(bass_multiplier = 3L, domain = "sought_pdm11")
+  design$harvest_col <- NULL
+
+  # Warning about the mix behind a harvest total, then aborting because there is
+  # no harvest column, tells the user about a number that was never going to
+  # exist. The check belongs after the column validation.
+  warned <- FALSE
+  expect_error(
+    withCallingHandlers(
+      suppressMessages(estimate_total_harvest(design)), # nolint: object_usage_linter
+      creel_warning_pooled_domain_mix = function(cnd) {
+        warned <<- TRUE
+        invokeRestart("muffleWarning")
+      },
+      warning = function(cnd) invokeRestart("muffleWarning")
+    ),
+    "No harvest column available"
+  )
+  expect_false(warned)
+})

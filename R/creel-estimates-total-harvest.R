@@ -266,11 +266,6 @@ estimate_total_harvest <- function(
   # hears that the count column had no T_d applied.
   warn_missing_period_length(design) # nolint: object_usage_linter
 
-  # A domain the counts never classified forces the pooled product form,
-  # whose weighting comes from the interview mix rather than the effort mix
-  # (GH #242). Raised before the section dispatch so both paths hear it.
-  warn_pooled_domain_mix(design, "estimate_total_harvest", num_col = design[["harvest_col"]]) # nolint: object_usage_linter
-
   # Validate design compatibility (counts AND interviews required)
   validate_design_compatibility(design) # nolint: object_usage_linter
 
@@ -320,6 +315,13 @@ estimate_total_harvest <- function(
       )
     ))
   }
+
+  # A domain the counts never classified forces the pooled product form,
+  # whose weighting comes from the interview mix rather than the effort mix
+  # (GH #242). After the harvest_col check, so a call that cannot produce a
+  # harvest total at all does not first warn about one; still before the
+  # section dispatch, so both paths hear it.
+  warn_pooled_domain_mix(design, "estimate_total_harvest", num_col = design[["harvest_col"]]) # nolint: object_usage_linter
 
   # Section dispatch guard (v0.7.0+ — only fires when add_sections() was called)
   if (!is.null(design[["sections"]])) {
