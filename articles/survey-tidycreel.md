@@ -376,6 +376,19 @@ exactly as in Part 1c:
 ``` r
 
 total_catch <- estimate_total_catch(design)
+#> Warning: `estimate_total_catch()` is pooling over a domain the counts do not classify:
+#> angler_method.
+#> ! The rate differs across its levels in these interviews (angler_method:
+#>   artificial 1.159, bait 0.859, fly 1.184), so the total depends on the
+#>   interview sample's mix over that domain.
+#> ℹ Without the domain in the counts the total is `E_total * rate_pooled`,
+#>   weighted by the interview mix rather than the effort mix. Interview selection
+#>   is not proportional to effort by construction (Malvestuto 1996).
+#> ℹ This is a risk, not an error: the counts carry no composition to check
+#>   against, so it cannot be verified from the data.
+#> ℹ Classifying angler_method in the count data removes the assumption -- the
+#>   total becomes `sum(E_h * rate_h)`.
+#> This warning is displayed once per session.
 total_catch
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────

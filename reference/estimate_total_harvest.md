@@ -149,6 +149,37 @@ lake-wide SE uses the zero-covariance assumption: `sqrt(sum(se_i^2))`.
 
 - Calendar stratification must be shared between counts and interviews
 
+## What the pooled total assumes
+
+Effort comes from the counts, so a total can only be broken down by an
+attribute the counts classify. When a domain appears in the interviews
+but not in the counts, the only available total is
+`E_total * rate_pooled`, where the pooled rate is a ratio of means
+weighted by the *interview sample's* composition over that domain. Had
+the domain been classified in the counts it would be a stratum and the
+total would be `sum(E_h * rate_h)`, which is unbiased whatever the
+interview composition happens to be.
+
+The two agree only when the interview sample's effort composition
+matches the true effort composition, and interview selection is not
+proportional to effort by construction of the standard designs. Access
+interviews intercept completed trips, over-representing anglers who must
+return to a fixed point: Malvestuto (1996) notes that it is “usually
+impossible to sample all angler types proportional to their level of
+effort”, a particular problem for bank anglers who may be “widely
+dispersed along the shoreline and not associated with well-defined
+access sites”. Roving interviews are length-biased toward longer trips.
+So the mix differs by design rather than by accident, and where levels
+differ in rate the pooled total inherits that difference.
+
+None of this is verifiable from within the data, because the counts
+carry no composition to compare against. Where it is detectable – the
+interviews hold an unclassified categorical domain and the crude rate
+differs materially across its levels – a warning of class
+`creel_warning_pooled_domain_mix` is raised. It flags a risk, not a
+defect. Classifying the domain in the count data is what removes the
+assumption.
+
 ## Unit of the total
 
 The reported `unit` is derived from the two factors, never declared. A
@@ -217,6 +248,19 @@ design <- add_interviews(design, example_interviews,
 
 # Estimate total harvest
 total_harvest <- estimate_total_harvest(design)
+#> Warning: `estimate_total_harvest()` is pooling over a domain the counts do not classify:
+#> angler_method.
+#> ! The rate differs across its levels in these interviews (angler_method:
+#>   artificial 0.667, bait 0.519, fly 0.776), so the total depends on the
+#>   interview sample's mix over that domain.
+#> ℹ Without the domain in the counts the total is `E_total * rate_pooled`,
+#>   weighted by the interview mix rather than the effort mix. Interview selection
+#>   is not proportional to effort by construction (Malvestuto 1996).
+#> ℹ This is a risk, not an error: the counts carry no composition to check
+#>   against, so it cannot be verified from the data.
+#> ℹ Classifying angler_method in the count data removes the assumption -- the
+#>   total becomes `sum(E_h * rate_h)`.
+#> This warning is displayed once per session.
 print(total_harvest)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────

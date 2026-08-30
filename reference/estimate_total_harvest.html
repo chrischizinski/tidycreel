@@ -203,6 +203,37 @@ assumption: <code>sqrt(sum(se_i^2))</code>.</p>
 <li><p>Calendar stratification must be shared between counts and interviews</p></li>
 </ul></div>
     <div class="section level2">
+    <h2 id="what-the-pooled-total-assumes">What the pooled total assumes<a class="anchor" aria-label="anchor" href="#what-the-pooled-total-assumes"></a></h2>
+
+
+<p>Effort comes from the counts, so a total can only be broken down by an
+attribute the counts classify. When a domain appears in the interviews but not
+in the counts, the only available total is <code>E_total * rate_pooled</code>,
+where the pooled rate is a ratio of means weighted by the <em>interview
+sample's</em> composition over that domain. Had the domain been classified in the
+counts it would be a stratum and the total would be
+<code>sum(E_h * rate_h)</code>, which is unbiased whatever the interview
+composition happens to be.</p>
+<p>The two agree only when the interview sample's effort composition matches the
+true effort composition, and interview selection is not proportional to
+effort by construction of the standard designs. Access interviews intercept
+completed trips, over-representing anglers who must return to a fixed point:
+Malvestuto (1996) notes that it is “usually impossible to sample all
+angler types proportional to their level of effort”, a particular problem for
+bank anglers who may be “widely dispersed along the shoreline and not
+associated with well-defined access sites”. Roving interviews are
+length-biased toward longer trips. So the mix differs by design rather than by
+accident, and where levels differ in rate the pooled total inherits that
+difference.</p>
+<p>None of this is verifiable from within the data, because the counts carry no
+composition to compare against. Where it is detectable – the interviews hold
+an unclassified categorical domain and the crude rate differs materially
+across its levels – a warning of class
+<code>creel_warning_pooled_domain_mix</code> is raised. It flags a risk, not a
+defect. Classifying the domain in the count data is what removes the
+assumption.</p>
+    </div>
+    <div class="section level2">
     <h2 id="unit-of-the-total">Unit of the total<a class="anchor" aria-label="anchor" href="#unit-of-the-total"></a></h2>
 
 
@@ -264,6 +295,19 @@ factor (GH #213).</p>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Estimate total harvest</span></span></span>
 <span class="r-in"><span><span class="va">total_harvest</span> <span class="op">&lt;-</span> <span class="fu">estimate_total_harvest</span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>`estimate_total_harvest()` is pooling over a domain the counts do not classify:</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">angler_method</span>.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> The rate differs across its levels in these interviews (angler_method:</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   artificial 0.667, bait 0.519, fly 0.776), so the total depends on the</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   interview sample's mix over that domain.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Without the domain in the counts the total is `E_total * rate_pooled`,</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   weighted by the interview mix rather than the effort mix. Interview selection</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   is not proportional to effort by construction (Malvestuto 1996).</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> This is a risk, not an error: the counts carry no composition to check</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   against, so it cannot be verified from the data.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Classifying <span style="color: #00BB00;">angler_method</span> in the count data removes the assumption -- the</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   total becomes `sum(E_h * rate_h)`.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #555555;">This warning is displayed once per session.</span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">total_harvest</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span>
