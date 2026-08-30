@@ -23,16 +23,22 @@ jobs:
           git fetch origin ${{ github.base_ref }}
           git diff origin/${{ github.base_ref }}...HEAD > pr.diff
 
+      # No continue-on-error: a failed API call must redden this job. Green
+      # previously meant only "the job ran", because the failure left review.md
+      # absent and the post step was skipped silently. This check is advisory and
+      # is deliberately NOT in branch protection, so a red X here costs nothing
+      # but tells the truth.
       - name: Run Gemini Code Review
         id: run_review
-        continue-on-error: true
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           python scripts/gemini-review.py
 
+      # review.md is absent only when the diff was empty; any real failure has
+      # already stopped the job above.
       - name: Post Review to PR
-        if: success() && hashFiles('review.md') != ''
+        if: hashFiles('review.md') != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

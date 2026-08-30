@@ -21,16 +21,27 @@ def main():
         diff_content = f.read()
 
     if not diff_content.strip():
-        print("No changes found in the diff.")
-        with open("review.md", "w", encoding="utf-8") as f:
-            f.write("### 🌌 Antigravity Code Review\n\nNo code changes detected in this pull request.")
+        # Nothing to review. Leave review.md absent so the workflow skips posting
+        # rather than commenting on a PR with no code changes. Exiting 0 keeps
+        # this distinct from a failure, which exits non-zero and reddens the job.
+        print("No changes found in the diff; nothing to review.")
         return
 
     # Guard against excessively large diffs to avoid API limits
     MAX_DIFF_CHARS = 200000
+    truncation_notice = ""
     if len(diff_content) > MAX_DIFF_CHARS:
-        print(f"Warning: Diff is extremely large ({len(diff_content)} chars). Truncating to {MAX_DIFF_CHARS} chars.")
+        full_len = len(diff_content)
+        pct = round(100.0 * MAX_DIFF_CHARS / full_len)
+        print(f"Warning: Diff is extremely large ({full_len} chars). Truncating to {MAX_DIFF_CHARS} chars.")
         diff_content = diff_content[:MAX_DIFF_CHARS] + "\n\n... [Diff truncated due to size limit] ..."
+        # A review of part of a diff reads exactly like a review of all of it, so
+        # "No findings" would otherwise be unfalsifiable. Say so in the review body.
+        truncation_notice = (
+            f"> **Only the first {pct}% of this diff was reviewed.** "
+            f"The diff is {full_len:,} characters and was truncated at "
+            f"{MAX_DIFF_CHARS:,}. Findings below cover the reviewed portion only.\n\n"
+        )
 
     # Read review prompt instructions
     prompt_path = ".github/review_prompt.md"
@@ -49,20 +60,33 @@ def main():
         f"```diff\n{diff_content}\n```\n"
     )
 
-    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + api_key
+    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=" + api_key
     payload = {
         "contents": [{
             "parts": [{
                 "text": prompt_text
             }]
         }],
+        "generationConfig": {
+            "temperature": 0
+        },
         "systemInstruction": {
             "parts": [{
                 "text": (
-                    "You are Antigravity, a professional R package reviewer. "
-                    "Analyze the diff using the provided guidelines. "
-                    "Be constructive, concise, and focused. Start directly with the findings. "
-                    "If the diff looks excellent and has no issues, thank the developer and praise their clean code."
+                    "You are reviewing a diff for an R package that computes survey "
+                    "estimates. Report defects only.\n\n"
+                    "Do not summarize what the diff does -- the author knows. Do not "
+                    "praise, thank, or compliment; a good diff earns a short review, not "
+                    "a warm one.\n\n"
+                    "For each finding give the file and line, one sentence stating the "
+                    "defect, and a concrete failure scenario: specific inputs or state, "
+                    "and the wrong output they produce. If you cannot construct a failure "
+                    "scenario, do not report the finding. Rank most severe first.\n\n"
+                    "If you found nothing, write exactly \"No findings.\" and stop. Do "
+                    "not pad and do not invent minor observations to fill space.\n\n"
+                    "The highest-value defects in this package produce no error, no "
+                    "warning, and a believable number. Follow the guidelines supplied "
+                    "with the diff."
                 )
             }]
         }
@@ -76,7 +100,7 @@ def main():
     )
 
     try:
-        print("Calling Gemini API (gemini-2.5-flash)...")
+        print("Calling Gemini API (gemini-2.5-pro)...")
         with urllib.request.urlopen(req) as response:
             res_data = json.loads(response.read().decode("utf-8"))
 
@@ -92,9 +116,14 @@ def main():
         print(f"Error calling Gemini API: {e}", file=sys.stderr)
         sys.exit(1)
 
+    if not review_text.strip():
+        print("Error: Gemini returned an empty review.", file=sys.stderr)
+        sys.exit(1)
+
     # Write review to file
     with open("review.md", "w", encoding="utf-8") as f:
         f.write("### 🌌 Antigravity Code Review\n\n")
+        f.write(truncation_notice)
         f.write(review_text)
 
     print("Successfully generated code review and saved it to review.md")
