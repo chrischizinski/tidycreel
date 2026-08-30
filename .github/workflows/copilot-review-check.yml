@@ -8,6 +8,10 @@ name: Copilot Review Check
 #
 # It checks only that the review happened, never what it said. Findings stay advisory
 # -- a reviewer that blocks merges on false positives gets dismissed on reflex.
+#
+# A failed API call is reported as a failed API call, never as a missing review:
+# swallowing the error would produce an empty list and an authoritative-sounding
+# "no review for this commit" that names the wrong cause.
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
@@ -49,7 +53,10 @@ jobs:
                   | select(.user.login | ascii_downcase | startswith("copilot"))
                   | select(.state != "DISMISSED")
                   | .commit_id' \
-            > reviewed_shas.txt || true
+            > reviewed_shas.txt || {
+              echo "::error title=Could not fetch reviews::gh api failed for repos/${REPO}/pulls/${PR}/reviews. This is an API, permission or rate-limit failure, NOT a missing review."
+              exit 1
+            }
 
           echo "Copilot has an active review on these commits:"
           if [ -s reviewed_shas.txt ]; then sed 's/^/  /' reviewed_shas.txt; else echo "  (none)"; fi
