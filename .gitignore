@@ -35,6 +35,11 @@ cmux.json
 PROJECT.md
 inst/profiling/
 skills/
+# ...but .github/skills is Copilot's, not an agent stub, and must be committed
+# for code review to pick it up. The bare `skills/` rule above matches a
+# directory of that name at ANY depth.
+!.github/skills/
+!.github/skills/**
 skills-lock.json
 
 # AI tool stubs (various coding agents drop these)
