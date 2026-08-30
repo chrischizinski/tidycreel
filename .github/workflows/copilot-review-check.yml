@@ -35,14 +35,23 @@ jobs:
 
           echo "PR #${PR} head commit: ${HEAD_SHA}"
 
-          # One commit_id per line, across pages. Matching the login prefix rather
-          # than the exact bot name so a rename does not silently pass this check by
-          # matching nothing.
+          # One commit_id per line, across pages.
+          #
+          # type == "Bot" because a human account named copilot-something would
+          # otherwise satisfy the check. state != "DISMISSED" because a dismissed
+          # review still carries its commit_id, and a dismissed review is exactly
+          # the case where the coverage no longer stands. Login is matched by
+          # prefix rather than exact name so a bot rename fails this check loudly
+          # instead of matching nothing and passing.
           gh api "repos/${REPO}/pulls/${PR}/reviews" --paginate \
-            --jq '.[] | select(.user.login | ascii_downcase | startswith("copilot")) | .commit_id' \
+            --jq '.[]
+                  | select(.user.type == "Bot")
+                  | select(.user.login | ascii_downcase | startswith("copilot"))
+                  | select(.state != "DISMISSED")
+                  | .commit_id' \
             > reviewed_shas.txt || true
 
-          echo "Copilot has reviewed these commits on this PR:"
+          echo "Copilot has an active review on these commits:"
           if [ -s reviewed_shas.txt ]; then sed 's/^/  /' reviewed_shas.txt; else echo "  (none)"; fi
 
           if grep -Fxq "${HEAD_SHA}" reviewed_shas.txt; then
@@ -65,8 +74,7 @@ jobs:
               repos/${REPO}/pulls/${PR}/requested_reviewers \\
               -f "reviewers[]=copilot-pull-request-reviewer[bot]"
 
-          or use the Reviewers menu on the pull request, or
-          mcp__plugin_github_github__request_copilot_review.
+          or use the Reviewers menu on the pull request.
 
           This check asserts only that a review happened. It never fails on what the
           review said.
