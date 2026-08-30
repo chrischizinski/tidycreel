@@ -2459,6 +2459,39 @@ pooled_domain_mix_threshold <- function() {
   0.2
 }
 
+#' Refuse the section column inside `by=` on a sectioned design
+#'
+#' A sectioned result is already one row per section, so naming the section
+#' column in `by=` asks for a split that has happened. Left to itself it reached
+#' `tibble::add_column()` and failed with "Column `section` must not be
+#' duplicated", which describes the implementation rather than the request.
+#'
+#' @param by_vars Character vector of resolved grouping columns.
+#' @param design A creel_design object.
+#' @param error_call Environment used for error reporting.
+#'
+#' @return NULL, invisibly.
+#'
+#' @keywords internal
+#' @noRd
+refuse_section_in_by <- function(by_vars, design, error_call = rlang::caller_env()) {
+  section_col <- design[["section_col"]]
+  if (is.null(section_col) || !section_col %in% (by_vars %||% character(0))) {
+    return(invisible(NULL))
+  }
+
+  cli::cli_abort(
+    c(
+      "{.arg by} cannot name the section column on a sectioned design.",
+      "x" = "{.field {section_col}} is already how the result is split.",
+      "i" = "Every row of a sectioned estimate is one section; drop it from {.arg by}.",
+      "i" = "To group within sections, name the other variables only."
+    ),
+    class = "creel_error_section_in_by",
+    call = error_call
+  )
+}
+
 #' Resolve a `by=` selector against count data, explaining the count constraint
 #'
 #' Effort is estimated from the counts, so `by=` on effort and on any total can

@@ -659,6 +659,11 @@ estimate_total_release_sections <- function(
     }
   }
 
+  # A sectioned result is already one row per section, so naming the section
+  # column in by= asks for a split that has happened. Without this it reached
+  # tibble::add_column() and failed on a duplicated column name.
+  refuse_section_in_by(by_vars, design, error_call = rlang::caller_env()) # nolint: object_usage_linter
+
   # Species is a grouping: like the grouped path, it yields per-section rows and
   # no lake row or share. Both gates below key off this rather than `by_vars`,
   # which is NULL for a species-only call and would otherwise sum across species

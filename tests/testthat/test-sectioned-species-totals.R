@@ -256,3 +256,35 @@ test_that("SPS-08: a missing section does not smuggle lake-share columns into a 
   expect_true(is.na(absent$prop_of_lake_total))
   expect_false(absent$data_available)
 })
+
+test_that("SPS-09: naming the section column in by= is refused, not left to collide", {
+  set.seed(255)
+  design <- make_sectioned_species_design()
+
+  # A sectioned estimate is one row per section by construction, so `section` in
+  # by= asks for a split that has already happened. Left alone it reached
+  # tibble::add_column() and failed with "Column `section` must not be
+  # duplicated" -- a message about the implementation, not about the request.
+  expect_error(
+    estimate_total_catch(design, by = section), # nolint: object_usage_linter
+    class = "creel_error_section_in_by"
+  )
+  expect_error(
+    estimate_total_catch(design, by = c(species, section)), # nolint: object_usage_linter
+    class = "creel_error_section_in_by"
+  )
+
+  err <- expect_error(estimate_total_catch(design, by = section)) # nolint: object_usage_linter
+  expect_match(cli::ansi_strip(conditionMessage(err)), "already how the result is split")
+
+  # The twins are near-identical here, so the refusal belongs to all three.
+  for (fn in list(estimate_total_harvest, estimate_total_release)) {
+    expect_error(fn(design, by = section), class = "creel_error_section_in_by") # nolint: object_usage_linter
+  }
+
+  # Grouping within sections by something else is still fine.
+  ok <- suppressMessages(suppressWarnings( # nolint: object_usage_linter
+    estimate_total_catch(design, by = day_type)
+  ))$estimates
+  expect_true(all(c("section", "day_type") %in% names(ok)))
+})
