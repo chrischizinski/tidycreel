@@ -15,6 +15,9 @@ Runs: `gitleaks detect --source . --redact`
 ## Open items
 - [x] Run `just security` (gitleaks) and record findings here
 - [x] .Rbuildignore covers security/ directory
+- [ ] Confirm the 2026-05 OpenRouter key is dead. It is no longer in `~/.zshrc`,
+      but removing it locally does not revoke it; if it was never rotated, revoke
+      at https://openrouter.ai/keys. Tick this once its status is known.
 
 ## Retired: the 2026-05 GSD credential review
 
