@@ -138,7 +138,12 @@ print(catch_est$estimates)
 South has a high catch rate but the lowest effort, which limits its contribution
 to the lake total. Central has a moderate catch rate combined with the highest
 effort, making it the largest contributor. The `prop_of_lake_total` column shows
-each section's percentage contribution to the lake-wide total catch.
+each section's share of the lake-wide total catch, and `se_prop_of_lake_total`
+its standard error, so the shares can be compared against their uncertainty
+rather than read as exact. The error is derived from the same section variances
+the `.lake_total` row's own standard error is built from; the `.lake_total` row
+reports `0`, because its share of itself is 1 by construction rather than
+estimated.
 
 ```{r total_harvest, warning = FALSE}
 harvest_est <- estimate_total_harvest(design, aggregate_sections = TRUE)

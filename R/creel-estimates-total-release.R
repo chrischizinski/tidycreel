@@ -49,6 +49,18 @@
 #'   HT estimate with method = "ht-total-release" and a "site_contributions"
 #'   attribute.
 #'
+#'   For sectioned designs the per-section rows carry
+#'   \code{prop_of_lake_total}, the section's share of the lake-wide total, and
+#'   \code{se_prop_of_lake_total}, its standard error. The share is a ratio
+#'   whose numerator is one of its own denominator's terms, and whose numerator
+#'   and denominator are each products of an effort and a rate estimated from
+#'   different designs, so the error is derived by delta method from the same
+#'   section variances and covariance the \code{.lake_total} row's own standard
+#'   error is built from. The \code{.lake_total} row reports
+#'   \code{se_prop_of_lake_total = 0}: its share of itself is exactly 1 by
+#'   construction and was never estimated. A section with no data reports
+#'   \code{NA} for both. Neither column is produced on the grouped path.
+#'
 #' @details
 #' Total release is computed as Effort x RPUE. Variance is propagated using the
 #' delta method: Var(E x R) = E^2 * Var(R) + R^2 * Var(E).
@@ -593,6 +605,7 @@ estimate_total_release_sections <- function(
         ci_upper = NA_real_,
         n = 0L,
         prop_of_lake_total = NA_real_,
+        se_prop_of_lake_total = NA_real_,
         data_available = FALSE
       )
       section_rows[[sec]] <- na_row
@@ -670,6 +683,7 @@ estimate_total_release_sections <- function(
           ci_upper = if (ci_type == "log" && sec_estimate > 0) sec_estimate * exp(z_val * sec_se / sec_estimate) else sec_estimate + z_val * sec_se,
           n = sec_n,
           prop_of_lake_total = NA_real_,
+          se_prop_of_lake_total = NA_real_,
           data_available = TRUE
         )
       }
@@ -715,11 +729,13 @@ estimate_total_release_sections <- function(
     ))
   }
 
-  # Append .lake_total row if requested (ungrouped path only)
-  if (aggregate_sections && is.null(by_vars)) {
+  # Standard error of prop_of_lake_total (ungrouped path only, GH #243). The
+  # combination is hoisted out of the lake row below so both come from the one
+  # call: the proportion's denominator variance is then literally the variance
+  # the lake row reports, and an unresolvable geometry warns once, not twice.
+  lake <- NULL
+  if (is.null(by_vars)) {
     present_rows <- result_df[!is.na(result_df$estimate), ]
-    lake_est <- sum(present_rows$estimate)
-
     present <- as.character(present_rows$section)
     lake <- combine_section_variances( # nolint: object_usage_linter
       design,
@@ -728,6 +744,28 @@ estimate_total_release_sections <- function(
       expansion_se = expansion_vec[present],
       decomposition = decomposition_list[present]
     )
+    result_df$se_prop_of_lake_total <- NA_real_
+    result_df$se_prop_of_lake_total[!is.na(result_df$estimate)] <-
+      section_prop_of_lake_se( # nolint: object_usage_linter
+        section_est = present_rows$estimate,
+        section_var = present_rows$se^2,
+        lake_var = lake$se^2,
+        cross = section_cross_covariance( # nolint: object_usage_linter
+          rate = sec_rate[present],
+          expansion_se = expansion_vec[present],
+          structure = expansion_group_structure(design, design[["section_col"]]), # nolint: object_usage_linter
+          decomposition = decomposition_list[present],
+          n = nrow(present_rows)
+        )
+      )
+  }
+
+  # Append .lake_total row if requested (ungrouped path only)
+  if (aggregate_sections && is.null(by_vars)) {
+    present_rows <- result_df[!is.na(result_df$estimate), ]
+    lake_est <- sum(present_rows$estimate)
+
+    present <- as.character(present_rows$section)
     lake_se <- lake$se
     if (!is.null(se_expansion)) {
       se_expansion <- c(se_expansion, lake$component %||% NA_real_)
@@ -758,6 +796,7 @@ estimate_total_release_sections <- function(
       ci_upper = lake_ci_upper,
       n = nrow(present_rows),
       prop_of_lake_total = 1.0,
+      se_prop_of_lake_total = 0,
       data_available = TRUE
     )
     result_df <- dplyr::bind_rows(result_df, lake_row)
