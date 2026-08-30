@@ -1,16 +1,5 @@
 # Security Scan Summary — tidycreel
 
-## GSD migration context
-GSD Cloud shut down 2026-05-22. No GSD Cloud-specific credentials found in this repo
-or in ~/.gsd/agent/auth.json. Credentials in ~/.gsd are standard OAuth tokens for
-Google, GitHub Copilot, Google Antigravity, and OpenAI Codex — none addressed to
-GSD Cloud infrastructure.
-
-## OpenRouter API key
-Stored in ~/.zshrc. Used by GSD for model routing. Rotation recommended as a
-precautionary measure (route was openrouter → providers; unclear if GSD Cloud
-acted as relay). Rotate at openrouter.ai/keys.
-
 ## Scans to run
 ```bash
 just security
@@ -25,5 +14,24 @@ Runs: `gitleaks detect --source . --redact`
 
 ## Open items
 - [x] Run `just security` (gitleaks) and record findings here
-- [ ] Rotate OpenRouter API key in ~/.zshrc (precautionary)
 - [x] .Rbuildignore covers security/ directory
+- [ ] Confirm the 2026-05 OpenRouter key is dead. It is no longer in `~/.zshrc`,
+      but removing it locally does not revoke it; if it was never rotated, revoke
+      at https://openrouter.ai/keys. Tick this once its status is known.
+
+## Retired: the 2026-05 GSD credential review
+
+This file previously carried a "GSD migration context" section, written when GSD
+Cloud shut down on 2026-05-22. Both of its subjects are gone, verified 2026-08-30:
+
+- `~/.gsd/` no longer exists, so the OAuth tokens it held (Google, GitHub Copilot,
+  Google Antigravity, OpenAI Codex — none addressed to GSD Cloud) are gone with it.
+  The original finding stands: no GSD Cloud-specific credential was ever found in
+  this repo.
+- The OpenRouter API key that section flagged for precautionary rotation is no
+  longer present in `~/.zshrc`. Whether the key was rotated or merely removed
+  locally is not visible from here; if it may still be live, rotate at
+  https://openrouter.ai/keys.
+
+Kept as a record because deleting the reason a key was flagged is how a stale
+credential goes unnoticed.
