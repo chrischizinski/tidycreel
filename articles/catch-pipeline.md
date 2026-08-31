@@ -348,18 +348,19 @@ total <- estimate_total_catch(season_design)
 #> ℹ Supply the period each count was randomised within: `add_counts(design,
 #>   counts, period_length_col = <col>)`.
 #> This warning is displayed once per session.
-#> Warning: `estimate_total_catch()` is pooling over a domain the counts do not classify:
-#> angler_method.
-#> ! The rate differs across its levels in these interviews (angler_method:
-#>   artificial 1.159, bait 0.859, fly 1.184), so the total depends on the
-#>   interview sample's mix over that domain.
+#> Warning: `estimate_total_catch()` is pooling over domains the counts do not classify:
+#> angler_method and species_sought.
+#> ! The rate differs across their levels in these interviews (angler_method:
+#>   artificial 1.121, bait 0.8, fly 1.31 and species_sought: bass 1.018, panfish
+#>   1.2, walleye 0.933), so the total depends on the interview sample's mix over
+#>   those domains.
 #> ℹ Without the domain in the counts the total is `E_total * rate_pooled`,
 #>   weighted by the interview mix rather than the effort mix. Interview selection
 #>   is not proportional to effort by construction (Malvestuto 1996).
 #> ℹ This is a risk, not an error: the counts carry no composition to check
 #>   against, so it cannot be verified from the data.
-#> ℹ Classifying angler_method in the count data removes the assumption -- the
-#>   total becomes `sum(E_h * rate_h)`.
+#> ℹ Classifying angler_method and species_sought in the count data removes the
+#>   assumption -- the total becomes `sum(E_h * rate_h)`.
 #> This warning is displayed once per session.
 print(total)
 #> 

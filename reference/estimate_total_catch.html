@@ -318,18 +318,19 @@ factor (GH #213).</p>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Estimate total catch</span></span></span>
 <span class="r-in"><span><span class="va">total_catch</span> <span class="op">&lt;-</span> <span class="fu">estimate_total_catch</span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span></span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>`estimate_total_catch()` is pooling over a domain the counts do not classify:</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">angler_method</span>.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> The rate differs across its levels in these interviews (angler_method:</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span>   artificial 1.159, bait 0.859, fly 1.184), so the total depends on the</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span>   interview sample's mix over that domain.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>`estimate_total_catch()` is pooling over domains the counts do not classify:</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">angler_method</span> and <span style="color: #00BB00;">species_sought</span>.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> The rate differs across their levels in these interviews (angler_method:</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   artificial 1.121, bait 0.8, fly 1.31 and species_sought: bass 1.018, panfish</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   1.2, walleye 0.933), so the total depends on the interview sample's mix over</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   those domains.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Without the domain in the counts the total is `E_total * rate_pooled`,</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span>   weighted by the interview mix rather than the effort mix. Interview selection</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span>   is not proportional to effort by construction (Malvestuto 1996).</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> This is a risk, not an error: the counts carry no composition to check</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span>   against, so it cannot be verified from the data.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Classifying <span style="color: #00BB00;">angler_method</span> in the count data removes the assumption -- the</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span>   total becomes `sum(E_h * rate_h)`.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Classifying <span style="color: #00BB00;">angler_method</span> and <span style="color: #00BB00;">species_sought</span> in the count data removes the</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   assumption -- the total becomes `sum(E_h * rate_h)`.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #555555;">This warning is displayed once per session.</span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">total_catch</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>

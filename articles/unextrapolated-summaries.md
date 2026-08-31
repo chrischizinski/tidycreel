@@ -390,9 +390,9 @@ estimate_total_catch(design, by = species)
 #> # A tibble: 3 × 6
 #>   species estimate    se ci_lower ci_upper     n
 #>   <chr>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1 bass        23.7  10.8     1.06     46.3    22
-#> 2 panfish     16.6  17.0     0        52.0    22
-#> 3 walleye     95.5  41.7     8.65    182.     22
+#> 1 bass        27.1  11.5     2.64     51.5    17
+#> 2 panfish      0     0       0         0      17
+#> 3 walleye    113.   51.6     3.23    223.     17
 ```
 
 ### Total Harvest by Species
@@ -411,9 +411,9 @@ estimate_total_harvest(design, by = species)
 #> # A tibble: 3 × 6
 #>   species estimate    se ci_lower ci_upper     n
 #>   <chr>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1 bass        33.5  11.7     9.05     57.9    22
-#> 2 panfish     24.3  11.8     0        48.9    22
-#> 3 walleye    121.   26.6    65.3     176.     22
+#> 1 bass        29.8  9.84     8.82     50.8    17
+#> 2 panfish     18.1  6.92     3.40     32.9    17
+#> 3 walleye    131.  31.4     64.4     198.     17
 ```
 
 ### Release Rate and Total Releases by Species
@@ -456,9 +456,9 @@ estimate_total_release(design, by = species)
 #> # A tibble: 3 × 6
 #>   species estimate    se ci_lower ci_upper     n
 #>   <chr>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1 bass        32.4 12.3      6.71     58.2    22
-#> 2 panfish     14.5  8.01     0        31.2    22
-#> 3 walleye     56.3 15.8     23.3      89.3    22
+#> 1 bass       33.4  14.1      3.43     63.5    17
+#> 2 panfish     9.07  3.46     1.70     16.4    17
+#> 3 walleye    58.9  18.8     18.9      98.9    17
 ```
 
 For grouped estimates combining calendar strata with species, use

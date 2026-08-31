@@ -16,6 +16,7 @@ estimate_total_release(
   variance = "taylor",
   conf_level = 0.95,
   target = c("sampled_days", "stratum_total", "period_total"),
+  use_trips = c("complete", "all"),
   aggregate_sections = TRUE,
   missing_sections = "warn",
   product_variance = c("goodman", "first_order"),
@@ -60,6 +61,15 @@ estimate_total_release(
   `"period_total"`. This controls which effort domain is multiplied by
   release rate so total release stays aligned with the requested
   temporal target.
+
+- use_trips:
+
+  Character. Which interviews contribute to RPUE. `"complete"` (default)
+  uses only completed trips; `"all"` includes incomplete trips. An
+  interview taken mid-trip reports the releases so far against the
+  effort so far, and the two do not scale together over the trip, so
+  `"all"` gives a length-biased rate and a total built from it. Ignored
+  when the design carries no trip status column.
 
 - aggregate_sections:
 
@@ -232,8 +242,8 @@ total_rel <- estimate_total_release(design)
 #> Warning: `estimate_total_release()` is pooling over domains the counts do not classify:
 #> angler_type, angler_method, and species_sought.
 #> ! The rate differs across their levels in these interviews (angler_type: bank
-#>   0.229, boat 0.319, angler_method: artificial 0.319, bait 0.237, fly 0.286,
-#>   and species_sought: bass 0.207, panfish 0.182, walleye 0.309), so the total
+#>   0.222, boat 0.306, angler_method: artificial 0.333, bait 0.217, fly 0.276,
+#>   and species_sought: bass 0.218, panfish 0, walleye 0.293), so the total
 #>   depends on the interview sample's mix over those domains.
 #> ℹ Without the domain in the counts the total is `E_total * rate_pooled`,
 #>   weighted by the interview mix rather than the effort mix. Interview selection
@@ -254,7 +264,7 @@ print(total_rel)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     103.  19.1     63.4     143.    22
+#> 1     101.  21.2     56.2     147.    17
 
 # Total releases by species
 total_rel_sp <- estimate_total_release(design, by = species)
@@ -270,7 +280,7 @@ print(total_rel_sp)
 #> # A tibble: 3 × 6
 #>   species estimate    se ci_lower ci_upper     n
 #>   <chr>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1 bass        32.4 12.3      6.71     58.2    22
-#> 2 panfish     14.5  8.01     0        31.2    22
-#> 3 walleye     56.3 15.8     23.3      89.3    22
+#> 1 bass       33.4  14.1      3.43     63.5    17
+#> 2 panfish     9.07  3.46     1.70     16.4    17
+#> 3 walleye    58.9  18.8     18.9      98.9    17
 ```

@@ -175,18 +175,19 @@ We can combine the effort and CPUE estimates to compute total catch:
 
 # Estimate total catch
 total_catch_est <- estimate_total_catch(design)
-#> Warning: `estimate_total_catch()` is pooling over a domain the counts do not classify:
-#> angler_method.
-#> ! The rate differs across its levels in these interviews (angler_method:
-#>   artificial 1.159, bait 0.859, fly 1.184), so the total depends on the
-#>   interview sample's mix over that domain.
+#> Warning: `estimate_total_catch()` is pooling over domains the counts do not classify:
+#> angler_method and species_sought.
+#> ! The rate differs across their levels in these interviews (angler_method:
+#>   artificial 1.121, bait 0.8, fly 1.31 and species_sought: bass 1.018, panfish
+#>   1.2, walleye 0.933), so the total depends on the interview sample's mix over
+#>   those domains.
 #> ℹ Without the domain in the counts the total is `E_total * rate_pooled`,
 #>   weighted by the interview mix rather than the effort mix. Interview selection
 #>   is not proportional to effort by construction (Malvestuto 1996).
 #> ℹ This is a risk, not an error: the counts carry no composition to check
 #>   against, so it cannot be verified from the data.
-#> ℹ Classifying angler_method in the count data removes the assumption -- the
-#>   total becomes `sum(E_h * rate_h)`.
+#> ℹ Classifying angler_method and species_sought in the count data removes the
+#>   assumption -- the total becomes `sum(E_h * rate_h)`.
 #> This warning is displayed once per session.
 print(total_catch_est)
 #> 
@@ -246,7 +247,7 @@ total_harvest_est <- estimate_total_harvest(design)
 #> Warning: `estimate_total_harvest()` is pooling over a domain the counts do not classify:
 #> angler_method.
 #> ! The rate differs across its levels in these interviews (angler_method:
-#>   artificial 0.667, bait 0.519, fly 0.776), so the total depends on the
+#>   artificial 0.667, bait 0.483, fly 0.897), so the total depends on the
 #>   interview sample's mix over that domain.
 #> ℹ Without the domain in the counts the total is `E_total * rate_pooled`,
 #>   weighted by the interview mix rather than the effort mix. Interview selection
@@ -267,7 +268,7 @@ print(total_harvest_est)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     229.  24.3     178.     280.    22
+#> 1     225.  28.1     165.     284.    17
 ```
 
 Harvest estimation uses the same ratio-of-means approach as CPUE, but
@@ -499,7 +500,7 @@ print(total_harvest)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     229.  24.3     178.     280.    22
+#> 1     225.  28.1     165.     284.    17
 ```
 
 This demonstrates the complete v0.2.0 workflow from survey design

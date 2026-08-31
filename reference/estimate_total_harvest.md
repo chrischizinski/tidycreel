@@ -14,6 +14,7 @@ estimate_total_harvest(
   variance = "taylor",
   conf_level = 0.95,
   target = c("sampled_days", "stratum_total", "period_total"),
+  use_trips = c("complete", "all"),
   aggregate_sections = TRUE,
   missing_sections = "warn",
   ci_method = c("delta", "bootstrap"),
@@ -59,6 +60,15 @@ estimate_total_harvest(
   `"period_total"`. This controls which effort domain is multiplied by
   HPUE so total harvest stays aligned with the requested temporal
   target.
+
+- use_trips:
+
+  Character. Which interviews contribute to HPUE. `"complete"` (default)
+  uses only completed trips; `"all"` includes incomplete trips. An
+  interview taken mid-trip reports the harvest so far against the effort
+  so far, and the two do not scale together over the trip, so `"all"`
+  gives a length-biased rate and a total built from it. Ignored when the
+  design carries no trip status column.
 
 - aggregate_sections:
 
@@ -256,7 +266,7 @@ total_harvest <- estimate_total_harvest(design)
 #> Warning: `estimate_total_harvest()` is pooling over a domain the counts do not classify:
 #> angler_method.
 #> ! The rate differs across its levels in these interviews (angler_method:
-#>   artificial 0.667, bait 0.519, fly 0.776), so the total depends on the
+#>   artificial 0.667, bait 0.483, fly 0.897), so the total depends on the
 #>   interview sample's mix over that domain.
 #> ℹ Without the domain in the counts the total is `E_total * rate_pooled`,
 #>   weighted by the interview mix rather than the effort mix. Interview selection
@@ -277,7 +287,7 @@ print(total_harvest)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     229.  24.3     178.     280.    22
+#> 1     225.  28.1     165.     284.    17
 
 # Compare components
 effort_est <- estimate_effort(design)
