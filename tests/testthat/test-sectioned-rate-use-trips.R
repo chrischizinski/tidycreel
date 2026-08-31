@@ -22,7 +22,11 @@
 # incomplete -- the factor under test perfectly confounded with the grouping
 # variable, which hid this defect completely on the first probe. Mix the status
 # *within* each section instead.
-mixed_status_sectioned_design <- function(n_interviews = 48L) {
+mixed_status_sectioned_design <- function(n_interviews = 48L, seed = 263L) {
+  # Seeded: the shared fixture draws its catch and effort at random, so without
+  # this the file's numbers move between runs and a failure cannot be reproduced
+  # from the output alone.
+  set.seed(seed)
   design <- make_sectioned_species_design(n_interviews)
   iv <- design$interviews
   iv$trip_status <- stats::ave(
@@ -88,43 +92,47 @@ test_that("use_trips = 'all' reaches the sectioned path (GH #263)", {
 
     expect_equal(complete$estimates$n, c(12L, 12L), info = f)
     expect_equal(all_trips$estimates$n, c(24L, 24L), info = f)
-    expect_false(isTRUE(all.equal(
-      complete$estimates$estimate,
-      all_trips$estimates$estimate
-    )), info = f)
   }
 })
 
-test_that("each section's rate uses that section's complete trips alone (GH #263)", {
+test_that("each section's rate uses that section's own interviews alone (GH #263)", {
   # What makes the filtered numbers right rather than merely smaller. Removing
-  # the sections slot and filtering to one section's complete interviews has to
-  # reproduce that section's row exactly -- estimate, SE and n. A path that
-  # filtered lake-wide but then leaked the unfiltered interviews into the
-  # section loop would pass the n check above and fail here.
+  # the sections slot and reducing to one section has to reproduce that
+  # section's row exactly -- estimate, SE and n. A path that filtered lake-wide
+  # but then leaked the unfiltered interviews into the section loop would pass
+  # the n checks above and fail here.
+  #
+  # Run for both use_trips values, which pins each route to a reference
+  # computed independently of the section machinery. That is deliberately
+  # stronger than asserting the two routes merely differ from each other: an
+  # inequality between two random quantities can coincide by chance, whereas
+  # these identities hold exactly or the dispatch is wrong.
   design <- mixed_status_sectioned_design()
   sections <- design$sections[[design$section_col]]
 
   for (f in use_trips_estimators) {
-    sectioned <- quiet_rate(f, design)
+    for (trips in c("complete", "all")) {
+      sectioned <- quiet_rate(f, design, use_trips = trips)
 
-    for (i in seq_along(sections)) {
-      sec <- sections[[i]]
-      iv <- design$interviews
-      one_section <- iv[iv[[design$section_col]] == sec, ]
+      for (i in seq_along(sections)) {
+        sec <- sections[[i]]
+        iv <- design$interviews
+        one_section <- iv[iv[[design$section_col]] == sec, ]
 
-      reference_design <- design
-      reference_design$sections <- NULL
-      reference_design$interviews <- one_section
-      reference_design$interview_survey <- build_interview_survey(
-        one_section,
-        strata = stats::reformulate(design$strata_cols)
-      )
-      reference <- quiet_rate(f, reference_design)
+        reference_design <- design
+        reference_design$sections <- NULL
+        reference_design$interviews <- one_section
+        reference_design$interview_survey <- build_interview_survey(
+          one_section,
+          strata = stats::reformulate(design$strata_cols)
+        )
+        reference <- quiet_rate(f, reference_design, use_trips = trips)
 
-      label <- paste(f, sec)
-      expect_equal(sectioned$estimates$estimate[[i]], reference$estimates$estimate, info = label)
-      expect_equal(sectioned$estimates$se[[i]], reference$estimates$se, info = label)
-      expect_equal(sectioned$estimates$n[[i]], reference$estimates$n, info = label)
+        label <- paste(f, sec, trips)
+        expect_equal(sectioned$estimates$estimate[[i]], reference$estimates$estimate, info = label)
+        expect_equal(sectioned$estimates$se[[i]], reference$estimates$se, info = label)
+        expect_equal(sectioned$estimates$n[[i]], reference$estimates$n, info = label)
+      }
     }
   }
 })
