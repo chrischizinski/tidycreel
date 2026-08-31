@@ -415,6 +415,25 @@
 
 ## Bug fixes
 
+* `estimate_harvest_rate()` and `estimate_release_rate()` can now group by
+  species on a sectioned design (#257).
+
+  Both failed with tidyselect's `Column \`species\` doesn't exist` while
+  `estimate_catch_rate()` succeeded on the same design. On a sectioned design
+  the public estimators return into the section path before their own species
+  dispatch runs, and the harvest and release section helpers resolved `by=`
+  against the interviews alone -- species lives in the catch table, so it is in
+  neither the interviews nor the counts.
+
+  Both now resolve `by=` the way the catch-rate path does and estimate per
+  species inside each section, from that section's own interviews. Grouping a
+  further interview variable alongside species works too, and a missing section
+  still produces its placeholder row.
+
+  No count-observability constraint applies here, unlike the totals: a rate is
+  estimated from interviews alone, so it may be grouped by attributes a total
+  may not (#241). Nothing is apportioned and there is no lake row or share.
+
 * Grouping effort or a total by an attribute the counts do not carry now
   explains the constraint instead of reporting the column as non-existent
   (#241). `estimate_effort()`, the three `estimate_total_*()` functions and
