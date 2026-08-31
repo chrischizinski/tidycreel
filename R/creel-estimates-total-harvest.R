@@ -24,6 +24,12 @@
 #'   `"stratum_total"`, or `"period_total"`. This controls which effort domain
 #'   is multiplied by HPUE so total harvest stays aligned with the requested
 #'   temporal target.
+#' @param use_trips Character. Which interviews contribute to HPUE.
+#'   `"complete"` (default) uses only completed trips; `"all"` includes
+#'   incomplete trips. An interview taken mid-trip reports the harvest so far
+#'   against the effort so far, and the two do not scale together over the
+#'   trip, so `"all"` gives a length-biased rate and a total built from it.
+#'   Ignored when the design carries no trip status column.
 #' @param aggregate_sections Logical. When the design was created with
 #'   \code{\link{add_sections}}, should a \code{.lake_total} row be appended
 #'   that sums the per-section estimates? Default \code{TRUE}. Set to
@@ -184,6 +190,7 @@ estimate_total_harvest <- function(
   variance = "taylor",
   conf_level = 0.95,
   target = c("sampled_days", "stratum_total", "period_total"),
+  use_trips = c("complete", "all"),
   aggregate_sections = TRUE,
   missing_sections = "warn",
   ci_method = c("delta", "bootstrap"),
@@ -193,6 +200,7 @@ estimate_total_harvest <- function(
   # Capture by parameter BEFORE validation
   by_quo <- rlang::enquo(by)
   target <- match.arg(target)
+  use_trips <- match.arg(use_trips)
   ci_method <- match.arg(ci_method)
   product_variance <- match.arg(product_variance)
   ci_type <- match.arg(ci_type)
@@ -218,6 +226,23 @@ estimate_total_harvest <- function(
 
   # Bus-route / ice dispatch (before standard survey NULL check)
   if (!is.null(design$design_type) && design$design_type %in% c("bus_route", "ice")) {
+    # These designs estimate a completed-trip total; "all" has no estimator here.
+    # Refused rather than ignored, which is the defect this argument was added to
+    # remove (GH #266). Mirrors estimate_total_catch().
+    if (identical(use_trips, "all")) {
+      cli::cli_abort(c(
+        "{.code use_trips = \"all\"} is not available for {.val {design$design_type}} designs.",
+        "x" = paste(
+          "{.val {design$design_type}} designs estimate a completed-trip",
+          "Horvitz-Thompson total; an uncompleted trip contributes",
+          "harvest-so-far under the inclusion probability of a completed one."
+        ),
+        "i" = paste(
+          "Incomplete trips support a rate, not a total; see",
+          "{.code estimate_harvest_rate(use_trips = \"incomplete\")}."
+        )
+      ))
+    }
     # See estimate_total_catch(): `by = species` aborted here because eval_select()
     # resolved against the interviews, which carry no species column (finding 19).
     by_info_br <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
@@ -286,6 +311,16 @@ estimate_total_harvest <- function(
       )
     ))
   }
+
+  # One trip filter for every path below, matching estimate_total_catch(). Until
+  # this argument existed these totals had no trip filter on any path, so they
+  # were built from every interview while their own rate functions default to
+  # the complete trips (GH #266). Ahead of the pooled-domain
+  # warning so that warning describes the interviews the estimate is actually
+  # built from: with the filter after it, `use_trips = "complete"` reported a
+  # rate spread, and per-level rates, drawn from the incomplete trips it had
+  # just excluded.
+  design <- filter_interviews_use_trips(design, use_trips) # nolint: object_usage_linter
 
   # A domain the counts never classified forces the pooled product form,
   # whose weighting comes from the interview mix rather than the effort mix

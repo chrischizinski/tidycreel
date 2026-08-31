@@ -2522,6 +2522,44 @@ rebuild_interview_survey <- function(design, filtered_interviews) {
   design_new
 }
 
+#' Restrict a design's interviews to one trip status for the total estimators
+#'
+#' The three `estimate_total_*()` functions take a reduced `use_trips`
+#' vocabulary -- `"complete"` or `"all"` -- and apply it once, before any
+#' dispatch, so the ungrouped, grouped, species and sectioned paths are all
+#' built from the same interviews. Threading the value into each path instead
+#' is what let it be dropped at two call sites in `estimate_total_catch()`
+#' (GH #266) and never reach the harvest and release totals at all.
+#'
+#' Deliberately quieter than the rate functions' `use_trips` block: no
+#' messages, no minimum-sample abort, no `"incomplete"`/`"diagnostic"` values
+#' and no roving auto-routing. A total is a product of effort and a rate, and
+#' those refusals belong to the rate the caller can estimate directly.
+#'
+#' @param design A creel_design object.
+#' @param use_trips Either `"complete"` or `"all"`.
+#'
+#' @return The design, with interviews and interview survey restricted when
+#'   `use_trips = "complete"` and a trip status column is present. Returned
+#'   unchanged otherwise -- a design carrying no trip status cannot be
+#'   filtered, which preserves the pre-0.3.0 behaviour for such designs.
+#'
+#' @keywords internal
+#' @noRd
+filter_interviews_use_trips <- function(design, use_trips) {
+  trip_status_col <- design$trip_status_col
+  if (is.null(trip_status_col) || identical(use_trips, "all")) {
+    return(design)
+  }
+  # %in% rather than ==: a missing trip status makes == return NA, and a logical
+  # index carrying NA subsets a data frame to an all-NA *row* rather than
+  # dropping it. add_interviews() refuses a design whose trip status has any NA,
+  # so this is unreachable through the constructor, but a phantom interview
+  # would reach svydesign() as a missing stratum and abort inside survey.
+  keep <- tolower(design$interviews[[trip_status_col]]) %in% use_trips
+  rebuild_interview_survey(design, design$interviews[keep, , drop = FALSE]) # nolint: object_usage_linter
+}
+
 #' Rebuild counts survey design for a single section
 #'
 #' Internal helper: filters design$counts to a single section and rebuilds the

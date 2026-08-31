@@ -60,6 +60,60 @@
 
 ## Breaking changes
 
+* `estimate_total_harvest()` and `estimate_total_release()` gain a `use_trips`
+  argument and now estimate from **complete trips by default**, and
+  `estimate_total_catch()` honours `use_trips` on the paths that were silently
+  discarding it (#266). **This changes the numbers all three return on any
+  design that records trip status and holds a mix of complete and incomplete
+  interviews.**
+
+  A rate estimated from incomplete trips is length-biased: an interview taken
+  mid-trip reports the catch so far against the effort so far, and the two do
+  not scale together over the trip. Excluding incomplete trips is the
+  documented default of the rate estimators for that reason, and a total is
+  effort times a rate, so it inherits the bias while still returning a
+  plausible number.
+
+  Three separate failures, one shape:
+
+  - `estimate_total_harvest()` and `estimate_total_release()` had no
+    `use_trips` argument and no trip filter on **any** path. They were built
+    from every interview, while `estimate_harvest_rate()` and
+    `estimate_release_rate()` default to the complete ones -- so the total and
+    the rate on one design disagreed about which interviews they came from.
+  - `estimate_total_catch()` threaded `use_trips` into each dispatch branch
+    separately. It reached the ungrouped and grouped paths and was dropped at
+    the call sites for `by = <species>` and for sectioned designs, where the
+    argument was accepted, documented and inert: `"complete"` and `"all"`
+    returned the same number, which was the `"all"` number.
+  - On bus-route and ice designs the new argument refuses `use_trips = "all"`,
+    as `estimate_total_catch()` already did. Those estimate a completed-trip
+    Horvitz-Thompson total, where an uncompleted trip would contribute
+    catch-so-far under the inclusion probability of a completed one.
+
+  All three now apply one filter, once, before any dispatch, so the ungrouped,
+  grouped, species and sectioned paths are built from the same interviews. The
+  filter runs ahead of the `creel_warning_pooled_domain_mix` check, so that
+  warning now describes the interviews the estimate is built from: under
+  `use_trips = "complete"` it previously reported a rate spread, and per-level
+  rates, drawn from the incomplete trips it had just excluded.
+  Passing the value down each branch is what allowed two of them to lose it.
+  The filter is deliberately quieter than the rate functions' `use_trips`
+  block: no messages, no minimum-sample abort, and none of `"incomplete"`,
+  `"diagnostic"` or the roving auto-routing, which belong to the rate a caller
+  can estimate directly.
+
+  Designs that record no trip status are unaffected -- there is nothing to
+  filter on -- and callers wanting the previous behaviour can ask for it with
+  `use_trips = "all"`. The new argument sits after `target`, matching
+  `estimate_total_catch()`, so positional calls that reached
+  `aggregate_sections` or later without naming them will land one argument
+  short.
+
+  The totals still never consult `interview_type` and are hard-wired to
+  ratio-of-means, so a roving design's total does not follow its rate function
+  to mean-of-ratios. That is a separate defect, filed as #268.
+
 * `estimate_total_harvest()` and `estimate_total_release()` no longer ignore a
   design's sections when grouping by species (#255). **This changes the numbers
   those two calls return on a sectioned design.**

@@ -242,9 +242,9 @@ estimate_total_catch <- function(
       cli::cli_abort(c(
         "{.code use_trips = \"all\"} is not available for {.val {design$design_type}} designs.",
         "x" = paste(
-          "The bus-route total is a completed-trip Horvitz-Thompson sum;",
-          "an uncompleted trip contributes catch-so-far under the inclusion",
-          "probability of a completed one."
+          "{.val {design$design_type}} designs estimate a completed-trip",
+          "Horvitz-Thompson total; an uncompleted trip contributes",
+          "catch-so-far under the inclusion probability of a completed one."
         ),
         "i" = paste(
           "Incomplete trips support a rate, not a total; see",
@@ -307,6 +307,15 @@ estimate_total_catch <- function(
   # so the finding-13 warning has to be raised here too or this path never
   # hears that the count column had no T_d applied.
   warn_missing_period_length(design) # nolint: object_usage_linter
+
+  # One trip filter for every path below. Passing use_trips down each branch
+  # instead left it dropped at the species and section call sites, where the
+  # argument was accepted and inert (GH #266). Applied *before* the pooled-domain
+  # warning so that warning describes the interviews the estimate is actually
+  # built from: with the filter after it, `use_trips = "complete"` reported a
+  # rate spread, and per-level rates, drawn from the incomplete trips it had
+  # just excluded.
+  design <- filter_interviews_use_trips(design, use_trips) # nolint: object_usage_linter
 
   # A domain the counts never classified forces the pooled product form,
   # whose weighting comes from the interview mix rather than the effort mix
@@ -375,7 +384,6 @@ estimate_total_catch <- function(
       variance,
       conf_level,
       target = target,
-      use_trips = use_trips,
       product_variance = product_variance,
       ci_type = ci_type
     )) # nolint: object_usage_linter
@@ -398,19 +406,20 @@ estimate_total_catch <- function(
       variance,
       conf_level,
       target = target,
-      use_trips = use_trips,
       product_variance = product_variance,
       ci_type = ci_type
     )) # nolint: object_usage_linter
   }
 }
 
-#' CPUE helper that respects trip filtering for the stratified-sum product path
+#' CPUE helper for the stratified-sum product path
 #'
-#' Mirrors the trip-filtering logic of estimate_catch_rate() (complete-only default)
-#' then calls estimate_cpue_total() or estimate_cpue_grouped() directly. This
-#' avoids NSE complexity while preserving the same n= counts as the public API.
-#' Called from estimate_total_catch_ungrouped() and estimate_total_catch_grouped().
+#' Calls estimate_cpue_total() or estimate_cpue_grouped() directly, which avoids
+#' NSE complexity while preserving the same n= counts as the public API. Called
+#' from estimate_total_catch_ungrouped() and estimate_total_catch_grouped().
+#' Trip filtering happens once in estimate_total_catch(), before dispatch, so
+#' every path shares it (GH #266) -- this helper sees a design already
+#' restricted to the requested trip set.
 #'
 #' @param design A creel_design object.
 #' @param by_vars Character vector of grouping column names (may be length-0).
@@ -425,23 +434,8 @@ cpue_for_stratum_product <- function(
   design,
   by_vars,
   variance_method,
-  conf_level,
-  use_trips = "complete"
+  conf_level
 ) {
-  use_trips <- match.arg(use_trips, c("complete", "all"))
-
-  # Apply trip filter before computing CPUE so that total-catch and
-  # total-harvest/release can use the same use_trips value for consistency.
-  trip_status_col <- design$trip_status_col
-  if (!is.null(trip_status_col) && use_trips != "all") {
-    filtered_interviews <- design$interviews[
-      tolower(design$interviews[[trip_status_col]]) == use_trips,
-      ,
-      drop = FALSE
-    ]
-    design <- rebuild_interview_survey(design, filtered_interviews) # nolint: object_usage_linter
-  }
-
   if (length(by_vars) == 0L) {
     estimate_cpue_total(design, variance_method, conf_level, "ratio-of-means") # nolint: object_usage_linter
   } else {
@@ -463,7 +457,6 @@ estimate_total_catch_ungrouped <- function(
   variance_method,
   conf_level,
   target = "sampled_days",
-  use_trips = "complete",
   product_variance = "goodman",
   ci_type = "symmetric"
 ) {
@@ -488,8 +481,7 @@ estimate_total_catch_ungrouped <- function(
     design,
     strata_cols,
     variance_method,
-    conf_level,
-    use_trips = use_trips
+    conf_level
   )
   cpue_df <- cpue_result$estimates
 
@@ -541,7 +533,6 @@ estimate_total_catch_grouped <- function(
   variance_method,
   conf_level,
   target = "sampled_days",
-  use_trips = "complete",
   product_variance = "goodman",
   ci_type = "symmetric"
 ) {
@@ -564,8 +555,7 @@ estimate_total_catch_grouped <- function(
     design,
     stratum_by_vars,
     variance_method,
-    conf_level,
-    use_trips = use_trips
+    conf_level
   )
   cpue_df <- cpue_result$estimates
 
