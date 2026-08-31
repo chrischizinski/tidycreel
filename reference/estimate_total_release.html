@@ -187,6 +187,10 @@ When <code><a href="add_sections.html">add_sections</a></code> has been called o
 is estimated independently. The lake-wide total is <code>sum(TR_i)</code>, not
 <code>E_total * RPUE_pooled</code>. The lake-wide SE uses the zero-covariance
 assumption: <code>sqrt(sum(se_i^2))</code>.</p>
+<p><code>by = &lt;species&gt;</code> is supported on a sectioned design: catch is
+apportioned against each section's own whole effort, giving one row per
+section per species. As with any other grouping, the sectioned result then
+carries no <code>.lake_total</code> row and no <code>prop_of_lake_total</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="what-the-pooled-total-assumes">What the pooled total assumes<a class="anchor" aria-label="anchor" href="#what-the-pooled-total-assumes"></a></h2>

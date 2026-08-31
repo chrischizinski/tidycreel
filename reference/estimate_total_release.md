@@ -122,6 +122,11 @@ has been called on the design, each section is estimated independently.
 The lake-wide total is `sum(TR_i)`, not `E_total * RPUE_pooled`. The
 lake-wide SE uses the zero-covariance assumption: `sqrt(sum(se_i^2))`.
 
+`by = <species>` is supported on a sectioned design: catch is
+apportioned against each section's own whole effort, giving one row per
+section per species. As with any other grouping, the sectioned result
+then carries no `.lake_total` row and no `prop_of_lake_total`.
+
 ## What the pooled total assumes
 
 Effort comes from the counts, so a total can only be broken down by an

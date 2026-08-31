@@ -218,6 +218,10 @@ is estimated independently using its own count survey (via
 the zero-covariance assumption: <code>sqrt(sum(se_i^2))</code>. Cross-section
 covariance between count-based effort and interview-based CPUE designs is not
 identified and is therefore assumed zero.</p>
+<p><code>by = &lt;species&gt;</code> is supported on a sectioned design: catch is
+apportioned against each section's own whole effort, giving one row per
+section per species. As with any other grouping, the sectioned result then
+carries no <code>.lake_total</code> row and no <code>prop_of_lake_total</code>.</p>
 <p><strong>Design compatibility requirements:</strong></p><ul><li><p>Count data must be attached via <code><a href="add_counts.html">add_counts()</a></code> for effort estimation</p></li>
 <li><p>Interview data must be attached via <code><a href="add_interviews.html">add_interviews()</a></code> for CPUE estimation</p></li>
 <li><p>Grouped estimation requires identical grouping variables for both estimates</p></li>

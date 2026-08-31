@@ -196,6 +196,10 @@ When <code><a href="add_sections.html">add_sections</a></code> has been called o
 is estimated independently. The lake-wide total is <code>sum(TH_i)</code>, not
 <code>E_total * HPUE_pooled</code>. The lake-wide SE uses the zero-covariance
 assumption: <code>sqrt(sum(se_i^2))</code>.</p>
+<p><code>by = &lt;species&gt;</code> is supported on a sectioned design: catch is
+apportioned against each section's own whole effort, giving one row per
+section per species. As with any other grouping, the sectioned result then
+carries no <code>.lake_total</code> row and no <code>prop_of_lake_total</code>.</p>
 <p><strong>Design compatibility requirements:</strong></p><ul><li><p>Count data must be attached via <code><a href="add_counts.html">add_counts()</a></code> for effort estimation</p></li>
 <li><p>Interview data must be attached via <code><a href="add_interviews.html">add_interviews()</a></code> for HPUE estimation</p></li>
 <li><p>Harvest column must be specified in add_interviews (harvest parameter)</p></li>

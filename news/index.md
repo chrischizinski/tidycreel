@@ -83,6 +83,44 @@
 
 ### Breaking changes
 
+- [`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md)
+  and
+  [`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
+  no longer ignore a design’s sections when grouping by species
+  ([\#255](https://github.com/chrischizinski/tidycreel/issues/255)).
+  **This changes the numbers those two calls return on a sectioned
+  design.**
+
+  Both resolved species *before* the section dispatch, so
+  `estimate_total_harvest(sectioned_design, by = species)` returned a
+  lake-wide species total: effort estimated by pooling the sections
+  rather than per section, reported with no `section` column and nothing
+  to say the sectioning had been ignored. It was a believable number for
+  a different estimand.
+  [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md)
+  was not affected in the same way – it dispatched to sections first and
+  then failed, with tidyselect’s “Column `species` doesn’t exist”,
+  because species lives in the catch table and so is in neither the
+  counts nor the interviews.
+
+  All three now dispatch to the section path first and resolve species
+  inside it, returning one row per section per species. Catch is
+  apportioned against each section’s own whole effort, which is what
+  makes a species total formable per section at all: it rides on whole
+  effort rather than splitting it.
+
+  As with any other grouping on a sectioned design, a species result
+  carries no `.lake_total` row and no `prop_of_lake_total`. Grouping
+  decides that, not the absence of `by` – a species-only call leaves no
+  grouping columns behind, and a gate keyed on those alone would have
+  summed a lake total across species.
+
+  A grouping variable alongside species must still be present in the
+  counts, since effort is genuinely split by it. That refusal is the
+  same `creel_error_count_unobservable_by` raised on unsectioned designs
+  ([\#241](https://github.com/chrischizinski/tidycreel/issues/241)),
+  rather than a second wording.
+
 - [`as_hybrid_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_hybrid_svydesign.md)
   now requires a `calendar` and estimates a **period total** rather than
   a sampled-day total
