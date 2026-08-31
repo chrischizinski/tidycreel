@@ -422,6 +422,27 @@
 
 ### Statistical correctness
 
+- Grouped totals on sectioned designs now report the party-size
+  expansion component too
+  ([\#260](https://github.com/chrischizinski/tidycreel/issues/260)).
+
+  A sectioned design splits by section; naming another variable in `by=`
+  splits within each section, and that branch delegates to the grouped
+  estimator – which reports a component per row of its own result. Only
+  the estimates were kept at the section boundary, so every grouped
+  sectioned total reported `se_expansion = NULL` while its standard
+  error carried the party-size term.
+
+  This is the same reporting gap as
+  [\#259](https://github.com/chrischizinski/tidycreel/issues/259) one
+  branch over, and it outlived that fix in a way that made it visible:
+  afterwards `by = c(<species>, day_type)` reported the components that
+  `by = day_type` still returned `NULL` for, on the same design and over
+  the same partition.
+
+  Point estimates and standard errors are unchanged. An absent section’s
+  placeholder row reports `NA`, as it does for species.
+
 - Species totals now report the party-size expansion component their
   standard error carries
   ([\#259](https://github.com/chrischizinski/tidycreel/issues/259)).
