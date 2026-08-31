@@ -422,6 +422,34 @@
 
 ### Statistical correctness
 
+- Species totals now report the party-size expansion component their
+  standard error carries
+  ([\#259](https://github.com/chrischizinski/tidycreel/issues/259)).
+
+  `estimate_total_catch(by = <species>)` and its two near-twins reported
+  `se_expansion = NULL` on designs whose counts were expanded from boats
+  by an estimated party size, while the standard error demonstrably
+  moved with `party_size_se`. A reader decomposing the standard error
+  was told the party-size contribution was absent when it was inside the
+  number – the one thing the component contract forbids, since `NULL` is
+  how the package says a term was never propagated.
+
+  The component was computed correctly and then dropped. The species
+  estimators move the species column to the front of the result, and on
+  the ungrouped product branch that result is a base data.frame, whose
+  `[` keeps only names, row.names and class. The grouped branch returns
+  a tibble, which preserves attributes, so `by = c(<species>, x)` was
+  unaffected and the gap was invisible there. On sectioned designs a
+  second gap sat downstream: the wrapper filled its per-section
+  component only on the ungrouped branch, so a sectioned species total
+  reported nothing for its own reason.
+
+  Point estimates and standard errors are unchanged – the term was
+  always in `se`. What changes is that `se_expansion` and the
+  `party_size` entry of `se_components` are now populated, one value per
+  reported row, with `NA` for the placeholder row a missing section
+  contributes.
+
 - Totals pooled over a domain the counts never classified now say so
   ([\#242](https://github.com/chrischizinski/tidycreel/issues/242)).
 
