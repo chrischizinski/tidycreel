@@ -61,12 +61,14 @@ test_that("the fixture is not confounded: both sections mix trip statuses (GH #2
 })
 
 test_that("sectioned rates filter to complete trips by default (GH #263)", {
-  # The defect in one number. Each section holds 9 complete and 9 incomplete
-  # Each section holds 12 complete and 12 incomplete interviews, so a path
-  # honouring the documented default reports n = 12 per section; harvest and
-  # release reported 24, silently including every incomplete trip.
-  # (24 interviews per section, rather than the fixture's usual 18, because
-  # estimate_catch_rate() refuses fewer than 10 complete trips.)
+  # The defect in one number. Each section holds 12 complete and 12 incomplete
+  # interviews, so a path honouring the documented default reports n = 12 per
+  # section; harvest and release reported 24, silently including every
+  # incomplete trip.
+  #
+  # 24 interviews per section rather than the fixture's usual 18, because
+  # estimate_catch_rate() refuses fewer than 10 complete trips and the identity
+  # test below builds single-section reference designs.
   design <- mixed_status_sectioned_design()
 
   for (f in use_trips_estimators) {
