@@ -14,7 +14,7 @@ estimate_total_harvest(
   variance = "taylor",
   conf_level = 0.95,
   target = c("sampled_days", "stratum_total", "period_total"),
-  use_trips = c("complete", "all"),
+  use_trips = NULL,
   aggregate_sections = TRUE,
   missing_sections = "warn",
   ci_method = c("delta", "bootstrap"),
@@ -63,12 +63,22 @@ estimate_total_harvest(
 
 - use_trips:
 
-  Character. Which interviews contribute to HPUE. `"complete"` (default)
-  uses only completed trips; `"all"` includes incomplete trips. An
-  interview taken mid-trip reports the harvest so far against the effort
-  so far, and the two do not scale together over the trip, so `"all"`
-  gives a length-biased rate and a total built from it. Ignored when the
-  design carries no trip status column.
+  Character. Which interviews contribute to HPUE. `"complete"` uses only
+  completed trips; `"all"` includes incomplete ones. Default `NULL`
+  means "not specified", which resolves to `"complete"`. An interview
+  taken mid-trip reports the harvest so far against the effort so far,
+  and the two do not scale together over the trip, so `"all"` gives a
+  length-biased rate and a total built from it. Ignored when the design
+  carries no trip status column.
+
+  Unlike
+  [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md),
+  this function does not route a roving design to all-trip
+  mean-of-ratios, because
+  [`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md)
+  offers no estimator selection to follow (GH \#271). Both resolve
+  through the same rule, so the total always agrees with its own rate
+  function.
 
 - aggregate_sections:
 

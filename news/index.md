@@ -2,6 +2,65 @@
 
 ## tidycreel (development version)
 
+### Breaking changes
+
+- [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md)
+  now resolves its rate estimator from the design’s `interview_type`
+  instead of always requesting ratio-of-means, and gained `estimator`
+  and `truncate_at` arguments
+  ([\#268](https://github.com/chrischizinski/tidycreel/issues/268)).
+
+  **Total catch on a roving design changes by default.** On a design
+  built with `add_interviews(interview_type = "roving")`, and where the
+  caller specified neither `use_trips` nor `estimator`, the total is now
+  built from all trips using the truncated mean-of-ratios estimator –
+  the same specification
+  [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
+  already chose for that design. Previously the rate function used
+  all-trip MOR while the total used complete-trip ratio-of-means on the
+  same object, so a survey’s reported catch rate and its reported total
+  catch came from different estimators and different trip sets, with no
+  message.
+
+  Mean-of-ratios and ratio-of-means are not two spellings of one
+  quantity: MOR averages per-interview ratios and is the estimator
+  justified for mid-trip interception, and Hoenig et al. (1997)
+  recommend it, truncated at 30 minutes, “to estimate catch rate and
+  hence total catch under the roving creel survey design”. The
+  truncation is part of the estimator rather than a tuning knob, because
+  the untruncated mean-of-ratios estimator has infinite variance.
+
+  To keep the previous numbers, pass `use_trips = "complete"` or
+  `estimator = "ratio-of-means"` explicitly; naming either one
+  suppresses the automatic routing. Access-point designs are unaffected,
+  as are bus-route and ice designs, which estimate a completed-trip
+  Horvitz-Thompson total, never auto-route, and now refuse a
+  mean-of-ratios estimator rather than accepting and ignoring it.
+
+  [`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md)
+  and
+  [`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
+  are unchanged:
+  [`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md)
+  and
+  [`estimate_release_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_release_rate.md)
+  offer no estimator selection to follow, so routing their totals would
+  have re-created the same rate-versus-total disagreement in the other
+  direction. All three totals now resolve through one function, so when
+  those two rate functions grow estimator selection
+  ([\#271](https://github.com/chrischizinski/tidycreel/issues/271))
+  their totals follow without further change.
+
+- `use_trips` on all three `estimate_total_*()` functions now defaults
+  to `NULL` (“not specified”) rather than `"complete"`, so a design that
+  should be routed can be told apart from a caller who asked for
+  complete trips. `"complete"` remains what an unspecified value
+  resolves to everywhere except the roving catch case above. An
+  unrecognised value is still refused, with the wording now “Must be one
+  of” rather than
+  [`match.arg()`](https://rdrr.io/r/base/match.arg.html)’s “should be
+  one of”.
+
 ### Documentation
 
 - Corrected the framing of

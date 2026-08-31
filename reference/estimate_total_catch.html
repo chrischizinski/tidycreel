@@ -83,7 +83,9 @@ data (for effort estimation) and interview data (for CPUE estimation).</p>
 <span>  variance <span class="op">=</span> <span class="st">"taylor"</span>,</span>
 <span>  conf_level <span class="op">=</span> <span class="fl">0.95</span>,</span>
 <span>  target <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"sampled_days"</span>, <span class="st">"stratum_total"</span>, <span class="st">"period_total"</span><span class="op">)</span>,</span>
-<span>  use_trips <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"complete"</span>, <span class="st">"all"</span><span class="op">)</span>,</span>
+<span>  use_trips <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  estimator <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  truncate_at <span class="op">=</span> <span class="fl">0.5</span>,</span>
 <span>  aggregate_sections <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  missing_sections <span class="op">=</span> <span class="st">"warn"</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -129,10 +131,40 @@ temporal target.</p></dd>
 
 
 <dt id="arg-use-trips">use_trips<a class="anchor" aria-label="anchor" href="#arg-use-trips"></a></dt>
-<dd><p>Character. Which interviews contribute to CPUE. <code>"complete"</code>
-(default) uses only completed trips; <code>"all"</code> includes incomplete trips.
-Incomplete trips have lower observed CPUE (angler may catch more after
-interview), so <code>"all"</code> introduces a downward bias.</p></dd>
+<dd><p>Character. Which interviews contribute to CPUE:
+<code>"complete"</code> uses only completed trips, <code>"all"</code> includes incomplete ones.
+Default <code>NULL</code> means "not specified", which resolves to <code>"complete"</code> –
+except on a roving design, where it resolves with <code>estimator</code> as described
+below. Under ratio-of-means, an incomplete trip reports catch-so-far
+against effort-so-far, so <code>"all"</code> biases the rate downward; under
+mean-of-ratios that pooling is the intended estimator rather than a bias.</p></dd>
+
+
+<dt id="arg-estimator">estimator<a class="anchor" aria-label="anchor" href="#arg-estimator"></a></dt>
+<dd><p>Character. Rate estimator used for the CPUE component:
+<code>"ratio-of-means"</code> (a ratio of totals), <code>"mor"</code> (mean of per-interview
+ratios), or <code>"mortr"</code> (<code>"mor"</code> with truncation made mandatory). Default
+<code>NULL</code> means "not specified". When <code>use_trips</code> and <code>estimator</code> are <em>both</em>
+unspecified and the design was built with
+<code>add_interviews(interview_type = "roving")</code>, the pair resolves to all-trip
+truncated MOR, matching what <code><a href="estimate_catch_rate.html">estimate_catch_rate()</a></code> chooses for the same
+design; otherwise the pair resolves to complete-trip ratio-of-means.
+Specifying either one suppresses the auto-route. Bus-route and ice designs
+never auto-route and accept only <code>"ratio-of-means"</code>, because their total is
+a ratio of Horvitz-Thompson totals with no mean-of-ratios form.</p></dd>
+
+
+<dt id="arg-truncate-at">truncate_at<a class="anchor" aria-label="anchor" href="#arg-truncate-at"></a></dt>
+<dd><p>Numeric minimum trip duration in hours for MOR, or <code>NULL</code>
+to disable truncation. Default 0.5 (30 minutes) per Hoenig et al. (1997),
+who recommend the truncated mean of ratios for the roving catch rate
+"and hence total catch". Truncation is not a tuning knob: the untruncated
+mean-of-ratios estimator has infinite variance. Ignored under
+ratio-of-means. Requires a trip duration column on the design; without one
+a warning is raised and no truncation is applied. An interview whose
+duration is missing cannot be shown to meet the threshold, so it is
+excluded and reported separately from the trips excluded as too short –
+a missing-data loss and a truncation decision are not the same event.</p></dd>
 
 
 <dt id="arg-aggregate-sections">aggregate_sections<a class="anchor" aria-label="anchor" href="#arg-aggregate-sections"></a></dt>

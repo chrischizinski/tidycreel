@@ -16,7 +16,7 @@ estimate_total_release(
   variance = "taylor",
   conf_level = 0.95,
   target = c("sampled_days", "stratum_total", "period_total"),
-  use_trips = c("complete", "all"),
+  use_trips = NULL,
   aggregate_sections = TRUE,
   missing_sections = "warn",
   product_variance = c("goodman", "first_order"),
@@ -64,12 +64,22 @@ estimate_total_release(
 
 - use_trips:
 
-  Character. Which interviews contribute to RPUE. `"complete"` (default)
-  uses only completed trips; `"all"` includes incomplete trips. An
-  interview taken mid-trip reports the releases so far against the
-  effort so far, and the two do not scale together over the trip, so
-  `"all"` gives a length-biased rate and a total built from it. Ignored
-  when the design carries no trip status column.
+  Character. Which interviews contribute to RPUE. `"complete"` uses only
+  completed trips; `"all"` includes incomplete ones. Default `NULL`
+  means "not specified", which resolves to `"complete"`. An interview
+  taken mid-trip reports the releases so far against the effort so far,
+  and the two do not scale together over the trip, so `"all"` gives a
+  length-biased rate and a total built from it. Ignored when the design
+  carries no trip status column.
+
+  Unlike
+  [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md),
+  this function does not route a roving design to all-trip
+  mean-of-ratios, because
+  [`estimate_release_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_release_rate.md)
+  offers no estimator selection to follow (GH \#271). Both resolve
+  through the same rule, so the total always agrees with its own rate
+  function.
 
 - aggregate_sections:
 

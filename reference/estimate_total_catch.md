@@ -14,7 +14,9 @@ estimate_total_catch(
   variance = "taylor",
   conf_level = 0.95,
   target = c("sampled_days", "stratum_total", "period_total"),
-  use_trips = c("complete", "all"),
+  use_trips = NULL,
+  estimator = NULL,
+  truncate_at = 0.5,
   aggregate_sections = TRUE,
   missing_sections = "warn",
   verbose = FALSE,
@@ -61,10 +63,44 @@ estimate_total_catch(
 
 - use_trips:
 
-  Character. Which interviews contribute to CPUE. `"complete"` (default)
-  uses only completed trips; `"all"` includes incomplete trips.
-  Incomplete trips have lower observed CPUE (angler may catch more after
-  interview), so `"all"` introduces a downward bias.
+  Character. Which interviews contribute to CPUE: `"complete"` uses only
+  completed trips, `"all"` includes incomplete ones. Default `NULL`
+  means "not specified", which resolves to `"complete"` – except on a
+  roving design, where it resolves with `estimator` as described below.
+  Under ratio-of-means, an incomplete trip reports catch-so-far against
+  effort-so-far, so `"all"` biases the rate downward; under
+  mean-of-ratios that pooling is the intended estimator rather than a
+  bias.
+
+- estimator:
+
+  Character. Rate estimator used for the CPUE component:
+  `"ratio-of-means"` (a ratio of totals), `"mor"` (mean of per-interview
+  ratios), or `"mortr"` (`"mor"` with truncation made mandatory).
+  Default `NULL` means "not specified". When `use_trips` and `estimator`
+  are *both* unspecified and the design was built with
+  `add_interviews(interview_type = "roving")`, the pair resolves to
+  all-trip truncated MOR, matching what
+  [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
+  chooses for the same design; otherwise the pair resolves to
+  complete-trip ratio-of-means. Specifying either one suppresses the
+  auto-route. Bus-route and ice designs never auto-route and accept only
+  `"ratio-of-means"`, because their total is a ratio of Horvitz-Thompson
+  totals with no mean-of-ratios form.
+
+- truncate_at:
+
+  Numeric minimum trip duration in hours for MOR, or `NULL` to disable
+  truncation. Default 0.5 (30 minutes) per Hoenig et al. (1997), who
+  recommend the truncated mean of ratios for the roving catch rate "and
+  hence total catch". Truncation is not a tuning knob: the untruncated
+  mean-of-ratios estimator has infinite variance. Ignored under
+  ratio-of-means. Requires a trip duration column on the design; without
+  one a warning is raised and no truncation is applied. An interview
+  whose duration is missing cannot be shown to meet the threshold, so it
+  is excluded and reported separately from the trips excluded as too
+  short – a missing-data loss and a truncation decision are not the same
+  event.
 
 - aggregate_sections:
 

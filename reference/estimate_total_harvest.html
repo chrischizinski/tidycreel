@@ -83,7 +83,7 @@ data (for effort estimation) and interview data (for HPUE estimation).</p>
 <span>  variance <span class="op">=</span> <span class="st">"taylor"</span>,</span>
 <span>  conf_level <span class="op">=</span> <span class="fl">0.95</span>,</span>
 <span>  target <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"sampled_days"</span>, <span class="st">"stratum_total"</span>, <span class="st">"period_total"</span><span class="op">)</span>,</span>
-<span>  use_trips <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"complete"</span>, <span class="st">"all"</span><span class="op">)</span>,</span>
+<span>  use_trips <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  aggregate_sections <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  missing_sections <span class="op">=</span> <span class="st">"warn"</span>,</span>
 <span>  ci_method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"delta"</span>, <span class="st">"bootstrap"</span><span class="op">)</span>,</span>
@@ -131,11 +131,16 @@ temporal target.</p></dd>
 
 <dt id="arg-use-trips">use_trips<a class="anchor" aria-label="anchor" href="#arg-use-trips"></a></dt>
 <dd><p>Character. Which interviews contribute to HPUE.
-<code>"complete"</code> (default) uses only completed trips; <code>"all"</code> includes
-incomplete trips. An interview taken mid-trip reports the harvest so far
-against the effort so far, and the two do not scale together over the
-trip, so <code>"all"</code> gives a length-biased rate and a total built from it.
-Ignored when the design carries no trip status column.</p></dd>
+<code>"complete"</code> uses only completed trips; <code>"all"</code> includes incomplete ones.
+Default <code>NULL</code> means "not specified", which resolves to <code>"complete"</code>. An
+interview taken mid-trip reports the harvest so far against the effort so
+far, and the two do not scale together over the trip, so <code>"all"</code> gives a
+length-biased rate and a total built from it. Ignored when the design
+carries no trip status column.</p>
+<p>Unlike <code><a href="estimate_total_catch.html">estimate_total_catch()</a></code>, this function does not route a roving
+design to all-trip mean-of-ratios, because <code><a href="estimate_harvest_rate.html">estimate_harvest_rate()</a></code> offers
+no estimator selection to follow (GH #271). Both resolve through the same
+rule, so the total always agrees with its own rate function.</p></dd>
 
 
 <dt id="arg-aggregate-sections">aggregate_sections<a class="anchor" aria-label="anchor" href="#arg-aggregate-sections"></a></dt>
