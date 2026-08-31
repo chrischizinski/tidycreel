@@ -337,12 +337,40 @@ test_that("the spread fixture is not confounded: all four cells are filled (GH #
   # use_trips = "complete", the silence asserted below proves nothing: a domain
   # with a single level has no rate spread to report either way.
   design <- incomplete_only_spread_design()
-  tab <- table(design$interviews$gear_266, design$interviews$trip_status)
+  iv <- design$interviews
+  tab <- table(iv$gear_266, iv$trip_status)
 
+  # all() on an empty table is TRUE, so the dimensions are asserted first --
+  # otherwise a fixture that produced no cross-tab at all would pass this guard.
+  expect_equal(dim(tab), c(2L, 2L))
   expect_true(all(tab > 0))
-  expect_length(unique(design$interviews$gear_266[
-    tolower(design$interviews$trip_status) == "complete"
-  ]), 2L)
+  expect_length(unique(iv$gear_266[tolower(iv$trip_status) == "complete"]), 2L)
+
+  # The premise the silence assertion rests on: among the complete trips the two
+  # gear levels must have EQUAL rates, not merely both be present. The previous
+  # fixture satisfied every check above except this one and still proved nothing
+  # -- its levels differed by more than the warning threshold, and only the
+  # confounding hid that. Asserted for each of the three numerators, since each
+  # estimator screens on its own.
+  complete <- tolower(iv$trip_status) == "complete"
+  rate_by_gear <- function(num) {
+    vapply(
+      split(seq_len(nrow(iv))[complete], iv$gear_266[complete]),
+      function(i) sum(num[i]) / sum(iv$.angler_effort[i]),
+      numeric(1)
+    )
+  }
+  released <- design$catch[design$catch$catch_type == "released", ]
+  per_interview_released <- vapply(
+    iv$interview_id,
+    function(id) sum(released$count[released$interview_id == id]),
+    numeric(1)
+  )
+
+  for (num in list(iv$catch_total, iv$catch_kept, per_interview_released)) {
+    rates <- rate_by_gear(num)
+    expect_equal(unname(rates[["bank"]]), unname(rates[["boat"]]))
+  }
 })
 
 test_that("the pooled-domain warning describes the filtered interviews (GH #266)", {
