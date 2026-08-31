@@ -69,7 +69,10 @@ who recommend the truncated mean of ratios for the roving catch rate
 "and hence total catch". Truncation is not a tuning knob: the untruncated
 mean-of-ratios estimator has infinite variance. Ignored under
 ratio-of-means. Requires a trip duration column on the design; without one
-a warning is raised and no truncation is applied.}
+a warning is raised and no truncation is applied. An interview whose
+duration is missing cannot be shown to meet the threshold, so it is
+excluded and reported separately from the trips excluded as too short --
+a missing-data loss and a truncation decision are not the same event.}
 
 \item{aggregate_sections}{Logical. When the design was created with
 \code{\link{add_sections}}, should a \code{.lake_total} row be appended

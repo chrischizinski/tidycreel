@@ -388,3 +388,46 @@ test_that("MOR truncation records what it dropped", {
   untouched <- truncate_interviews_for_mor(design, "ratio-of-means", 2.0)
   expect_equal(nrow(untouched$interviews), nrow(design$interviews))
 })
+
+test_that("a trip with no recorded duration is dropped apart from the short trips", {
+  design <- drop_sections_sel(roving_selection_design())
+  duration_col <- design$trip_duration_col
+  iv <- design$interviews
+  iv[[duration_col]][1:3] <- NA_real_
+  design <- rebuild_interview_survey(design, iv)
+
+  baseline <- quiet_sel(
+    truncate_interviews_for_mor,
+    drop_sections_sel(roving_selection_design()),
+    "mor",
+    2.0
+  )
+  with_na <- quiet_sel(truncate_interviews_for_mor, design, "mor", 2.0)
+
+  # A missing duration is a missing-data loss, not a truncation decision. Rolled
+  # into one count they are indistinguishable, and the repo's own rule is that
+  # NA and absence are never silently the same thing. mor_n_truncated must
+  # therefore report only trips that were measured and found too short -- which
+  # is the same number whether or not other rows lack a duration.
+  expect_equal(with_na$mor_n_truncated, baseline$mor_n_truncated)
+  expect_equal(
+    nrow(with_na$interviews),
+    nrow(baseline$interviews) - sum(is.na(iv[[duration_col]]))
+  )
+
+  # And the loss is announced rather than absorbed. The short-trip message also
+  # fires here; muffling only that one keeps this an assertion about the
+  # missing-duration warning rather than about whichever warning happens to be
+  # raised first.
+  expect_warning(
+    suppressMessages(withCallingHandlers(
+      truncate_interviews_for_mor(design, "mor", 2.0),
+      warning = function(w) {
+        if (!grepl("missing trip duration", conditionMessage(w))) {
+          invokeRestart("muffleWarning")
+        }
+      }
+    )),
+    "missing trip duration"
+  )
+})

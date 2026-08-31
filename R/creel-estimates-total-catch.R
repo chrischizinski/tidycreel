@@ -46,7 +46,10 @@
 #'   "and hence total catch". Truncation is not a tuning knob: the untruncated
 #'   mean-of-ratios estimator has infinite variance. Ignored under
 #'   ratio-of-means. Requires a trip duration column on the design; without one
-#'   a warning is raised and no truncation is applied.
+#'   a warning is raised and no truncation is applied. An interview whose
+#'   duration is missing cannot be shown to meet the threshold, so it is
+#'   excluded and reported separately from the trips excluded as too short --
+#'   a missing-data loss and a truncation decision are not the same event.
 #' @param aggregate_sections Logical. When the design was created with
 #'   \code{\link{add_sections}}, should a \code{.lake_total} row be appended
 #'   that sums the per-section estimates? Default \code{TRUE}. Set to
@@ -278,7 +281,11 @@ estimate_total_catch <- function(
         "Roving design: total catch built from all trips via truncated MOR",
         "[auto] (Hoenig et al. 1997)."
       ),
-      " " = "Override with {.code use_trips = \"complete\"} for access-point estimation."
+      " " = paste(
+        "Override with {.code use_trips = \"complete\"} or",
+        "{.code estimator = \"ratio-of-means\"} for access-point estimation;",
+        "naming either one suppresses the routing."
+      )
     ))
   }
 

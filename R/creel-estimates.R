@@ -2762,9 +2762,27 @@ truncate_interviews_for_mor <- function(design, estimator, truncate_at) {
   # NA duration cannot be shown to clear the threshold, so it is dropped rather
   # than admitted: `>= truncate_at` on NA yields NA, and a logical index carrying
   # NA subsets to an all-NA row instead of dropping it.
-  keep <- !is.na(interviews[[duration_col]]) &
-    interviews[[duration_col]] >= truncate_at
-  n_truncated <- n_total - sum(keep)
+  #
+  # Counted apart from the short trips and reported on its own. A trip dropped
+  # for having no recorded duration is a missing-data loss, not a truncation
+  # decision, and rolling the two into one number leaves a caller unable to tell
+  # a threshold that excluded six short trips from a duration column that is
+  # half empty.
+  missing_duration <- is.na(interviews[[duration_col]])
+  n_missing_duration <- sum(missing_duration)
+  keep <- !missing_duration & interviews[[duration_col]] >= truncate_at
+  n_truncated <- n_total - sum(keep) - n_missing_duration
+
+  if (n_missing_duration > 0) {
+    cli::cli_warn(c(
+      "{n_missing_duration} interview{?s} dropped for missing trip duration.",
+      "i" = paste(
+        "A trip with no recorded duration cannot be shown to meet the",
+        "{.arg truncate_at} threshold, so it is excluded rather than assumed."
+      ),
+      "i" = "Reported separately from the {n_truncated} trip{?s} excluded as too short."
+    ))
+  }
 
   design <- rebuild_interview_survey(design, interviews[keep, , drop = FALSE]) # nolint: object_usage_linter
   design$mor_n_incomplete <- n_incomplete
