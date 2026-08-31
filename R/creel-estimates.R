@@ -2019,19 +2019,9 @@ estimate_harvest_rate <- function(
     ))
   }
 
-  # Section dispatch guard — fires AFTER validation, BEFORE standard dispatch
-  if (!is.null(design[["sections"]])) {
-    return(estimate_harvest_rate_sections(
-      # nolint: object_usage_linter
-      design,
-      by_quo,
-      variance,
-      conf_level,
-      missing_sections
-    ))
-  }
-
-  # Handle use_trips for standard (non-bus-route, non-sectioned) path
+  # Handle use_trips for the standard and sectioned paths (bus-route/ice
+  # returned above and filter for themselves). The section dispatch reads the
+  # design this block leaves behind, so the filtering reaches it too (GH #263).
   use_trips_is_default <- is.null(use_trips)
   if (is.null(use_trips)) {
     use_trips <- "complete"
@@ -2083,6 +2073,23 @@ estimate_harvest_rate <- function(
       complete_interviews <- design$interviews[design$interviews[[trip_status_col]] == "complete", ]
       design <- rebuild_interview_survey(design, complete_interviews) # nolint: object_usage_linter
     }
+  }
+
+  # Section dispatch guard — fires AFTER trip filtering, BEFORE standard dispatch.
+  # It sat above the use_trips block until GH #263, which left use_trips inert on
+  # a sectioned design: "all" and "complete" returned the same number, the
+  # invalid-value check never ran, and no filtering message was emitted. HPUE from
+  # incomplete trips is length-biased, so a sectioned design silently opted out of
+  # the documented default. estimate_catch_rate() has always dispatched from here.
+  if (!is.null(design[["sections"]])) {
+    return(estimate_harvest_rate_sections(
+      # nolint: object_usage_linter
+      design,
+      by_quo,
+      variance,
+      conf_level,
+      missing_sections
+    ))
   }
 
   # Detect species-level grouping
@@ -2339,19 +2346,9 @@ estimate_release_rate <- function(
     ))
   }
 
-  # Section dispatch guard — fires AFTER validation, BEFORE standard dispatch
-  if (!is.null(design[["sections"]])) {
-    return(estimate_release_rate_sections(
-      # nolint: object_usage_linter
-      design,
-      by_quo,
-      variance,
-      conf_level,
-      missing_sections
-    ))
-  }
-
-  # Handle use_trips for standard (non-sectioned) path
+  # Handle use_trips for the standard and sectioned paths (bus-route/ice
+  # returned above and filter for themselves). The section dispatch reads the
+  # design this block leaves behind, so the filtering reaches it too (GH #263).
   use_trips_is_default <- is.null(use_trips)
   if (is.null(use_trips)) {
     use_trips <- "complete"
@@ -2403,6 +2400,23 @@ estimate_release_rate <- function(
       complete_interviews <- design$interviews[design$interviews[[trip_status_col]] == "complete", ]
       design <- rebuild_interview_survey(design, complete_interviews) # nolint: object_usage_linter
     }
+  }
+
+  # Section dispatch guard — fires AFTER trip filtering, BEFORE standard dispatch.
+  # It sat above the use_trips block until GH #263, which left use_trips inert on
+  # a sectioned design: "all" and "complete" returned the same number, the
+  # invalid-value check never ran, and no filtering message was emitted. RPUE from
+  # incomplete trips is length-biased, so a sectioned design silently opted out of
+  # the documented default. estimate_catch_rate() has always dispatched from here.
+  if (!is.null(design[["sections"]])) {
+    return(estimate_release_rate_sections(
+      # nolint: object_usage_linter
+      design,
+      by_quo,
+      variance,
+      conf_level,
+      missing_sections
+    ))
   }
 
   # Detect species-level grouping
