@@ -658,6 +658,7 @@ estimate_total_catch_species <- function(
 
   all_species <- sort(unique(design[["catch"]][[species_col]]))
   results_list <- vector("list", length(all_species))
+  se_exp_list <- vector("list", length(all_species))
 
   for (i in seq_along(all_species)) {
     sp <- all_species[[i]]
@@ -679,6 +680,13 @@ estimate_total_catch_species <- function(
       expansion_decomposition = named_expansion_decomposition(effort_result, stratum_by_vars) # nolint: object_usage_linter
     )
 
+    # Read off the product result before anything subsets it. The ungrouped
+    # branch of compute_stratum_product_sum() returns a base data.frame, and
+    # `[.data.frame` keeps only names, row.names and class -- so the column
+    # reorder below silently dropped the component while the standard error it
+    # describes stayed inside `se` (GH #259).
+    se_exp_list[[i]] <- attr(sp_result, "se_expansion")
+
     sp_result[[species_col]] <- sp
     sp_result <- sp_result[c(species_col, setdiff(names(sp_result), species_col))]
     results_list[[i]] <- sp_result
@@ -687,8 +695,10 @@ estimate_total_catch_species <- function(
   out <- do.call(rbind, results_list)
   # rbind() drops attributes, so the component has to be rebuilt from the pieces
   # in the same row order rather than assumed to survive the bind -- the same
-  # reason the expansion carriers are columns and not attributes.
-  se_exp <- lapply(results_list, function(x) attr(x, "se_expansion"))
+  # reason the expansion carriers are columns and not attributes. The pieces are
+  # the values captured in the loop, not the attributes of the reordered frames,
+  # which no longer carry them.
+  se_exp <- se_exp_list
   if (!all(vapply(se_exp, is.null, logical(1L)))) {
     attr(out, "se_expansion") <- unlist(se_exp, use.names = FALSE)
   }
@@ -837,6 +847,15 @@ estimate_total_catch_sections <- function(
         )
         row_df <- tibble::add_column(tibble::as_tibble(sp_df), section = sec, .before = 1)
         row_df$data_available <- TRUE
+        # Carried as a column, not a per-section scalar: the species branch
+        # contributes one row per species, each with its own component, and a
+        # column is what stays aligned to those rows through bind_rows() --
+        # including the one-row placeholder an absent section adds, which has no
+        # component and fills NA. Removed again once it has been read (GH #259).
+        sp_component <- attr(sp_df, "se_expansion")
+        if (!is.null(sp_component)) {
+          row_df[[".se_expansion"]] <- sp_component
+        }
         section_rows[[sec]] <- row_df
       } else if (!is.null(by_vars)) {
         # Grouped path: delegates to existing grouped helper
@@ -940,6 +959,16 @@ estimate_total_catch_sections <- function(
       decomposition_list,
       as.numeric(sec_rate)
     ))
+  }
+
+  # The species branch fills none of the per-section scalars above -- its rows
+  # are per species, and each carried its own component out of the product path.
+  # Read them off the rows in the order bind_rows() produced rather than
+  # recombining per section, which would have to know how many species each
+  # section contributed (GH #259).
+  if (".se_expansion" %in% names(result_df)) {
+    se_expansion <- result_df[[".se_expansion"]]
+    result_df[[".se_expansion"]] <- NULL
   }
 
   # Standard error of prop_of_lake_total (ungrouped path only, GH #243). The
