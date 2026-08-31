@@ -422,6 +422,41 @@
 
 ### Statistical correctness
 
+- Harvest and release rates on sectioned designs now honour `use_trips`,
+  and no longer include incomplete trips by default
+  ([\#263](https://github.com/chrischizinski/tidycreel/issues/263)).
+
+  [`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md)
+  and
+  [`estimate_release_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_release_rate.md)
+  dispatched to their section path *before* the block that validates
+  `use_trips`, filters the interviews and reports what it did. On a
+  sectioned design the argument was therefore inert: `use_trips = "all"`
+  and `use_trips = "complete"` returned the same number, an unrecognised
+  value was accepted rather than refused, and no filtering message was
+  emitted.
+  [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
+  has always dispatched after that block, so on one design the three
+  estimators disagreed about which interviews they were built from –
+  catch rate from the complete trips, harvest and release from every
+  interview.
+
+  This changes numbers. HPUE and RPUE estimated from incomplete trips
+  are length-biased: an interview taken mid-trip reports the catch so
+  far against the effort so far, and the two do not scale together
+  across the trip. Excluding incomplete trips is the documented default
+  for exactly that reason, and a sectioned design was silently opting
+  out of it while returning a plausible-looking result.
+
+  Callers who want the previous behaviour can ask for it explicitly with
+  `use_trips = "all"`, which now reaches the sectioned path.
+
+  The sectioned path of
+  [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md)
+  discards `use_trips` for a different reason – the argument is never
+  passed to the section helper – and is tracked separately as
+  [\#266](https://github.com/chrischizinski/tidycreel/issues/266).
+
 - Grouped totals on sectioned designs now report the party-size
   expansion component too
   ([\#260](https://github.com/chrischizinski/tidycreel/issues/260)).
