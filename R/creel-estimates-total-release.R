@@ -694,10 +694,11 @@ estimate_total_release_sections <- function(
   names(sec_expansion_se) <- registered_sections
   sec_decomposition <- vector("list", length(registered_sections))
   names(sec_decomposition) <- registered_sections
-  # The species branch's components, one vector per section rather than one
-  # scalar: its rows are per species within the section.
-  sec_species_expansion <- vector("list", length(registered_sections))
-  names(sec_species_expansion) <- registered_sections
+  # Components for the branches whose sections contribute several rows -- one
+  # vector per section rather than one scalar, because a grouped or species
+  # result carries a component per row of its own.
+  sec_row_expansion <- vector("list", length(registered_sections))
+  names(sec_row_expansion) <- registered_sections
 
   for (sec in registered_sections) {
     if (sec %in% absent_sections) {
@@ -739,7 +740,7 @@ estimate_total_release_sections <- function(
         )
         row_df <- tibble::add_column(tibble::as_tibble(sp_df), section = sec, .before = 1)
         row_df$data_available <- TRUE
-        sec_species_expansion[[sec]] <- attr(sp_df, "se_expansion")
+        sec_row_expansion[[sec]] <- attr(sp_df, "se_expansion")
         section_rows[[sec]] <- row_df
       } else if (!is.null(by_vars)) {
         # Grouped path: delegates to existing grouped helper
@@ -753,6 +754,10 @@ estimate_total_release_sections <- function(
         )
         row_df <- tibble::add_column(result$estimates, section = sec, .before = 1)
         row_df$data_available <- TRUE
+        # The grouped helper reports a component per row of its own result, and
+        # only `result$estimates` was being kept -- so a sectioned grouped total
+        # reported no component while its `se` carried the term (GH #260).
+        sec_row_expansion[[sec]] <- result$se_expansion
         section_rows[[sec]] <- row_df
       } else {
         # Ungrouped path: call internal helpers directly to bypass sample-size validation.
@@ -853,17 +858,18 @@ estimate_total_release_sections <- function(
     ))
   }
 
-  # The species branch fills none of the per-section scalars above -- its rows
-  # are per species, and each carried its own component out of the product path
-  # (GH #259). Rebuilt here against each section's own row count, in the order
-  # bind_rows() bound them, so the alignment holds without a carrier column: a
-  # column named for an internal quantity can collide with a user's own grouping
-  # variable, and did -- `by = c(<species>, .se_expansion)` had its grouping
-  # column consumed and returned unlabelled duplicate rows.
-  if (!all(vapply(sec_species_expansion, is.null, logical(1L)))) {
+  # Neither the species branch nor the grouped one fills the per-section scalars
+  # above: both hand back several rows per section, each carrying its own
+  # component already (GH #259, GH #260). Rebuilt here against each section's own
+  # row count, in the order bind_rows() bound them, so the alignment holds
+  # without a carrier column: a column named for an internal quantity can
+  # collide with a user's own grouping variable, and did -- `by = c(<species>,
+  # .se_expansion)` had its grouping column consumed and returned unlabelled
+  # duplicate rows.
+  if (!all(vapply(sec_row_expansion, is.null, logical(1L)))) {
     se_expansion <- unlist(
       lapply(registered_sections, function(sec) {
-        component <- sec_species_expansion[[sec]]
+        component <- sec_row_expansion[[sec]]
         if (is.null(component)) {
           rep(NA_real_, nrow(section_rows[[sec]]))
         } else {

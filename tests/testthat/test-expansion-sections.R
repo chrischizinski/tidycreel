@@ -418,3 +418,108 @@ test_that("a design without expansion reports neither field (GH #238)", {
     expect_null(result$expansion_decomposition)
   }
 })
+
+# The grouped sectioned path (GH #260) ----
+#
+# A sectioned design splits by section; naming another variable in `by=` splits
+# within each section, and that branch delegates to the grouped helper -- which
+# reports a component per row of its own result. Only `result$estimates` was
+# kept, so the component was discarded at the section boundary and every grouped
+# sectioned total reported `se_expansion = NULL` while its `se` carried the
+# party-size term. Same reporting defect as GH #259 one branch over, and it
+# outlived that fix: afterwards `by = c(<species>, day_type)` reported the
+# components that `by = day_type` still returned NULL for, on the same design.
+
+sections_grouped_totals <- function(counts, ...) {
+  design <- sections_design(counts)
+  lapply(
+    c(
+      catch = "estimate_total_catch",
+      harvest = "estimate_total_harvest",
+      release = "estimate_total_release"
+    ),
+    function(f) suppressWarnings(suppressMessages(get(f)(design, by = day_type, ...)))
+  )
+}
+
+test_that("a grouped sectioned total reports a component per row (GH #260)", {
+  # The rows are section x day_type, and each carries its own party-size term.
+  # A single value, or a vector of the wrong length, would misdescribe every row
+  # after the first.
+  for (result in sections_grouped_totals(shared_section_counts())) {
+    expect_false(is.null(result$se_expansion))
+    expect_length(result$se_expansion, nrow(result$estimates))
+    expect_true(all(is.finite(result$se_expansion)))
+  }
+})
+
+test_that("the grouped components match the species ones over the same partition (GH #260)", {
+  # Every fish in this fixture is a walleye, so `by = day_type` and
+  # `by = c(species, day_type)` partition the design identically and must report
+  # identical components. The species side was fixed in GH #259 and is asserted
+  # elsewhere, which makes it an independent reference rather than a restatement
+  # of this code: any value invented here fails against it.
+  design <- sections_design(shared_section_counts())
+  grouped <- suppressWarnings(estimate_total_catch(design, by = day_type))
+  with_species <- suppressWarnings(estimate_total_catch(design, by = c(species, day_type)))
+
+  expect_equal(grouped$se_expansion, with_species$se_expansion)
+  expect_equal(grouped$estimates$estimate, with_species$estimates$estimate)
+})
+
+test_that("a grouped sectioned total reports nothing without a party-size SE (GH #260)", {
+  # The other half of the contract: NULL means the term is not in `se`, and `se`
+  # is correspondingly smaller. Reporting a component here would claim a
+  # decomposition of something that was never propagated.
+  plain <- sections_raw()
+  plain$angler_count <- plain$angler_boats * 2.5
+
+  without <- sections_grouped_totals(plain)
+  with_se <- sections_grouped_totals(shared_section_counts())
+
+  for (name in names(without)) {
+    expect_null(without[[name]]$se_expansion)
+    expect_true(all(with_se[[name]]$estimates$se > without[[name]]$estimates$se))
+  }
+})
+
+test_that("an absent section keeps the grouped component aligned to its rows (GH #260)", {
+  # The placeholder row a missing section contributes has no component, and has
+  # to stay in the vector as NA rather than shorten it -- otherwise every
+  # component after it describes the wrong section.
+  design <- suppressWarnings(suppressMessages({
+    d <- creel_design(sections_calendar(), date = date, strata = day_type)
+    d <- add_sections(
+      d,
+      data.frame(section = c("North", "South", "East"), stringsAsFactors = FALSE),
+      section_col = section
+    )
+    d <- add_counts(d, shared_section_counts(), count_col = "angler_count")
+    d <- add_interviews(
+      d,
+      sections_interviews(),
+      catch = catch_total,
+      effort = hours_fished,
+      harvest = harvest_total,
+      trip_status = status
+    )
+    add_catch(
+      d,
+      sections_catch(),
+      catch_uid = interview_id,
+      interview_uid = interview_id,
+      species = species,
+      count = count,
+      catch_type = catch_type
+    )
+  }))
+
+  result <- suppressWarnings(suppressMessages(
+    estimate_total_catch(design, by = day_type, missing_sections = "warn")
+  ))
+
+  expect_length(result$se_expansion, nrow(result$estimates))
+  absent <- result$estimates$section == "East"
+  expect_true(all(is.na(result$se_expansion[absent])))
+  expect_true(all(is.finite(result$se_expansion[!absent])))
+})
