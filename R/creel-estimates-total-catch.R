@@ -242,9 +242,9 @@ estimate_total_catch <- function(
       cli::cli_abort(c(
         "{.code use_trips = \"all\"} is not available for {.val {design$design_type}} designs.",
         "x" = paste(
-          "The bus-route total is a completed-trip Horvitz-Thompson sum;",
-          "an uncompleted trip contributes catch-so-far under the inclusion",
-          "probability of a completed one."
+          "{.val {design$design_type}} designs estimate a completed-trip",
+          "Horvitz-Thompson total; an uncompleted trip contributes",
+          "catch-so-far under the inclusion probability of a completed one."
         ),
         "i" = paste(
           "Incomplete trips support a rate, not a total; see",

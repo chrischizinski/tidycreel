@@ -41,7 +41,7 @@ requested temporal target.}
 
 \item{use_trips}{Character. Which interviews contribute to RPUE.
 \code{"complete"} (default) uses only completed trips; \code{"all"} includes
-incomplete trips. An interview taken mid-trip reports the harvest so far
+incomplete trips. An interview taken mid-trip reports the releases so far
 against the effort so far, and the two do not scale together over the
 trip, so \code{"all"} gives a length-biased rate and a total built from it.
 Ignored when the design carries no trip status column.}

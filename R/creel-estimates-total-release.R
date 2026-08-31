@@ -25,7 +25,7 @@
 #'   requested temporal target.
 #' @param use_trips Character. Which interviews contribute to RPUE.
 #'   `"complete"` (default) uses only completed trips; `"all"` includes
-#'   incomplete trips. An interview taken mid-trip reports the harvest so far
+#'   incomplete trips. An interview taken mid-trip reports the releases so far
 #'   against the effort so far, and the two do not scale together over the
 #'   trip, so `"all"` gives a length-biased rate and a total built from it.
 #'   Ignored when the design carries no trip status column.
@@ -221,9 +221,9 @@ estimate_total_release <- function(
       cli::cli_abort(c(
         "{.code use_trips = \"all\"} is not available for {.val {design$design_type}} designs.",
         "x" = paste(
-          "The bus-route total is a completed-trip Horvitz-Thompson sum;",
-          "an uncompleted trip contributes release-so-far under the inclusion",
-          "probability of a completed one."
+          "{.val {design$design_type}} designs estimate a completed-trip",
+          "Horvitz-Thompson total; an uncompleted trip contributes",
+          "release-so-far under the inclusion probability of a completed one."
         ),
         "i" = paste(
           "Incomplete trips support a rate, not a total; see",
