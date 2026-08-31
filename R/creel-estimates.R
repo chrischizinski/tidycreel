@@ -5501,19 +5501,13 @@ estimate_harvest_rate_sections <- function(
     }
   }
 
-  # Resolve by= ONCE before the section loop (no species dispatch for harvest in v0.7.0)
-  if (rlang::quo_is_null(by_quo)) {
-    by_vars <- NULL
-  } else {
-    by_cols <- tidyselect::eval_select(
-      by_quo,
-      data = design$interviews,
-      allow_rename = FALSE,
-      allow_empty = FALSE,
-      error_call = rlang::caller_env()
-    )
-    by_vars <- names(by_cols)
-  }
+  # Resolve by= ONCE before the section loop, species split out first. The
+  # public function returns into this branch before its own species dispatch
+  # runs, so a species selector has to be recognised here or it never reaches
+  # species estimation at all: resolved against the interviews alone it failed
+  # with "Column `species` doesn't exist", because species lives in the catch
+  # table and is in neither the interviews nor the counts (GH #257).
+  by_info <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
 
   section_rows <- vector("list", length(registered_sections))
   names(section_rows) <- registered_sections
@@ -5529,8 +5523,8 @@ estimate_harvest_rate_sections <- function(
         n = 0L,
         data_available = FALSE
       )
-      if (!is.null(by_vars)) {
-        for (v in by_vars) {
+      if (!is.null(by_info$all_vars)) {
+        for (v in by_info$all_vars) {
           na_row[[v]] <- NA_character_
         }
       }
@@ -5539,11 +5533,25 @@ estimate_harvest_rate_sections <- function(
       filtered <- design$interviews[design$interviews[[section_col]] == sec, ]
       sec_design <- rebuild_interview_survey(design, filtered) # nolint: object_usage_linter
 
-      if (!is.null(by_vars)) {
+      if (!is.null(by_info$species_var)) {
+        # Species path: HPUE per species inside this section, from this
+        # section's own interviews.
+        sp_df <- estimate_hpue_species(
+          # nolint: object_usage_linter
+          sec_design,
+          species_col = by_info$species_var,
+          interview_by_vars = by_info$interview_vars,
+          variance_method = variance_method,
+          conf_level = conf_level
+        )
+        sp_df <- tibble::add_column(tibble::as_tibble(sp_df), section = sec, .before = 1)
+        sp_df$data_available <- TRUE
+        section_rows[[sec]] <- sp_df
+      } else if (!is.null(by_info$interview_vars)) {
         result <- estimate_harvest_grouped(
           # nolint: object_usage_linter
           sec_design,
-          by_vars,
+          by_info$interview_vars,
           variance_method,
           conf_level
         )
@@ -5580,7 +5588,7 @@ estimate_harvest_rate_sections <- function(
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
-    by_vars = if (!is.null(by_vars)) c("section", by_vars) else "section",
+    by_vars = if (!is.null(by_info$all_vars)) c("section", by_info$all_vars) else "section",
     unit = rate_unit(design) # nolint: object_usage_linter
   )
 }
@@ -5619,19 +5627,13 @@ estimate_release_rate_sections <- function(
     }
   }
 
-  # Resolve by= ONCE before the section loop (no species dispatch for release in v0.7.0)
-  if (rlang::quo_is_null(by_quo)) {
-    by_vars <- NULL
-  } else {
-    by_cols <- tidyselect::eval_select(
-      by_quo,
-      data = design$interviews,
-      allow_rename = FALSE,
-      allow_empty = FALSE,
-      error_call = rlang::caller_env()
-    )
-    by_vars <- names(by_cols)
-  }
+  # Resolve by= ONCE before the section loop, species split out first. The
+  # public function returns into this branch before its own species dispatch
+  # runs, so a species selector has to be recognised here or it never reaches
+  # species estimation at all: resolved against the interviews alone it failed
+  # with "Column `species` doesn't exist", because species lives in the catch
+  # table and is in neither the interviews nor the counts (GH #257).
+  by_info <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
 
   section_rows <- vector("list", length(registered_sections))
   names(section_rows) <- registered_sections
@@ -5647,8 +5649,8 @@ estimate_release_rate_sections <- function(
         n = 0L,
         data_available = FALSE
       )
-      if (!is.null(by_vars)) {
-        for (v in by_vars) {
+      if (!is.null(by_info$all_vars)) {
+        for (v in by_info$all_vars) {
           na_row[[v]] <- NA_character_
         }
       }
@@ -5656,6 +5658,24 @@ estimate_release_rate_sections <- function(
     } else {
       filtered <- design$interviews[design$interviews[[section_col]] == sec, ]
       sec_design <- rebuild_interview_survey(design, filtered) # nolint: object_usage_linter
+
+      # Species path first, and off `sec_design`: estimate_release_rate_species()
+      # builds its own per-species release data, so handing it the pooled
+      # `design_rel` below would transform an already-transformed design.
+      if (!is.null(by_info$species_var)) {
+        sp_df <- estimate_release_rate_species(
+          # nolint: object_usage_linter
+          sec_design,
+          species_col = by_info$species_var,
+          interview_by_vars = by_info$interview_vars,
+          variance_method = variance_method,
+          conf_level = conf_level
+        )
+        sp_df <- tibble::add_column(tibble::as_tibble(sp_df), section = sec, .before = 1)
+        sp_df$data_available <- TRUE
+        section_rows[[sec]] <- sp_df
+        next
+      }
 
       # Build release data for this section's filtered design
       release_data <- estimate_release_build_data(sec_design, species = NULL) # nolint: object_usage_linter
@@ -5678,11 +5698,11 @@ estimate_release_rate_sections <- function(
         strata = strata_formula
       )
 
-      if (!is.null(by_vars)) {
+      if (!is.null(by_info$interview_vars)) {
         result <- estimate_cpue_grouped(
           # nolint: object_usage_linter
           design_rel,
-          by_vars,
+          by_info$interview_vars,
           variance_method,
           conf_level
         )
@@ -5714,7 +5734,7 @@ estimate_release_rate_sections <- function(
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
-    by_vars = if (!is.null(by_vars)) c("section", by_vars) else "section",
+    by_vars = if (!is.null(by_info$all_vars)) c("section", by_info$all_vars) else "section",
     unit = rate_unit(design) # nolint: object_usage_linter
   )
 }
