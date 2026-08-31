@@ -171,8 +171,14 @@ test_that("the totals default to complete trips (GH #266)", {
 test_that("an unrecognised use_trips value is refused on every total (GH #266)", {
   design <- drop_sections(mixed_status_total_design())
 
+  # Wording changed with GH #268: `use_trips` gained a NULL "not specified"
+  # default so a roving design can be told apart from a caller who asked for
+  # complete trips, which match.arg() cannot express. Validation moved into
+  # resolve_total_rate_spec() and says "Must be one of" rather than match.arg()'s
+  # "should be one of". The claim under test is unchanged -- every total refuses
+  # a value outside its reduced vocabulary.
   for (f in total_estimators) {
-    expect_error(quiet_total(f, design, use_trips = "banana"), "should be one of", info = f)
+    expect_error(quiet_total(f, design, use_trips = "banana"), "Must be one of", info = f)
   }
 })
 

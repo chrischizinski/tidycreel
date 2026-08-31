@@ -10,7 +10,9 @@ estimate_total_catch(
   variance = "taylor",
   conf_level = 0.95,
   target = c("sampled_days", "stratum_total", "period_total"),
-  use_trips = c("complete", "all"),
+  use_trips = NULL,
+  estimator = NULL,
+  truncate_at = 0.5,
   aggregate_sections = TRUE,
   missing_sections = "warn",
   verbose = FALSE,
@@ -41,10 +43,36 @@ and CPUE estimation, then combined via delta method.}
 is multiplied by CPUE so total catch stays aligned with the requested
 temporal target.}
 
-\item{use_trips}{Character. Which interviews contribute to CPUE. \code{"complete"}
-(default) uses only completed trips; \code{"all"} includes incomplete trips.
-Incomplete trips have lower observed CPUE (angler may catch more after
-interview), so \code{"all"} introduces a downward bias.}
+\item{use_trips}{Character. Which interviews contribute to CPUE:
+\code{"complete"} uses only completed trips, \code{"all"} includes incomplete ones.
+Default \code{NULL} means "not specified", which resolves to \code{"complete"} --
+except on a roving design, where it resolves with \code{estimator} as described
+below. Under ratio-of-means, an incomplete trip reports catch-so-far
+against effort-so-far, so \code{"all"} biases the rate downward; under
+mean-of-ratios that pooling is the intended estimator rather than a bias.}
+
+\item{estimator}{Character. Rate estimator used for the CPUE component:
+\code{"ratio-of-means"} (a ratio of totals), \code{"mor"} (mean of per-interview
+ratios), or \code{"mortr"} (\code{"mor"} with truncation made mandatory). Default
+\code{NULL} means "not specified". When \code{use_trips} and \code{estimator} are \emph{both}
+unspecified and the design was built with
+\code{add_interviews(interview_type = "roving")}, the pair resolves to all-trip
+truncated MOR, matching what \code{\link[=estimate_catch_rate]{estimate_catch_rate()}} chooses for the same
+design; otherwise the pair resolves to complete-trip ratio-of-means.
+Specifying either one suppresses the auto-route. Bus-route and ice designs
+never auto-route and accept only \code{"ratio-of-means"}, because their total is
+a ratio of Horvitz-Thompson totals with no mean-of-ratios form.}
+
+\item{truncate_at}{Numeric minimum trip duration in hours for MOR, or \code{NULL}
+to disable truncation. Default 0.5 (30 minutes) per Hoenig et al. (1997),
+who recommend the truncated mean of ratios for the roving catch rate
+"and hence total catch". Truncation is not a tuning knob: the untruncated
+mean-of-ratios estimator has infinite variance. Ignored under
+ratio-of-means. Requires a trip duration column on the design; without one
+a warning is raised and no truncation is applied. An interview whose
+duration is missing cannot be shown to meet the threshold, so it is
+excluded and reported separately from the trips excluded as too short --
+a missing-data loss and a truncation decision are not the same event.}
 
 \item{aggregate_sections}{Logical. When the design was created with
 \code{\link{add_sections}}, should a \code{.lake_total} row be appended

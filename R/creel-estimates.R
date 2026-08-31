@@ -2532,9 +2532,14 @@ rebuild_interview_survey <- function(design, filtered_interviews) {
 #' (GH #266) and never reach the harvest and release totals at all.
 #'
 #' Deliberately quieter than the rate functions' `use_trips` block: no
-#' messages, no minimum-sample abort, no `"incomplete"`/`"diagnostic"` values
-#' and no roving auto-routing. A total is a product of effort and a rate, and
-#' those refusals belong to the rate the caller can estimate directly.
+#' messages, no minimum-sample abort and no `"incomplete"`/`"diagnostic"`
+#' values. Those refusals belong to the rate the caller can estimate directly.
+#'
+#' This function no longer decides *which* trip set is requested -- that moved
+#' to [resolve_total_rate_spec()], which does apply the roving auto-route this
+#' comment once said the totals omit. Omitting it was the defect: a roving
+#' design's total used complete-trip ratio-of-means while its own rate function
+#' used all-trip MOR on the same object (GH #268).
 #'
 #' @param design A creel_design object.
 #' @param use_trips Either `"complete"` or `"all"`.
@@ -2558,6 +2563,234 @@ filter_interviews_use_trips <- function(design, use_trips) {
   # would reach svydesign() as a missing stratum and abort inside survey.
   keep <- tolower(design$interviews[[trip_status_col]]) %in% use_trips
   rebuild_interview_survey(design, design$interviews[keep, , drop = FALSE]) # nolint: object_usage_linter
+}
+
+#' Resolve the rate specification a total estimator builds its rate from
+#'
+#' Each `estimate_total_*()` function resolves `use_trips`, `estimator` and
+#' `truncate_at` by the same rule its own rate function uses, so a total never
+#' disagrees with the rate it is a product of about which estimator the design
+#' calls for (GH #268). Before this, every total requested `"ratio-of-means"`
+#' unconditionally, so a roving design's total silently used a different
+#' estimator -- and a different trip set -- from `estimate_catch_rate()` on the
+#' same object, with no message.
+#'
+#' The rule is per metric because the rate functions themselves differ:
+#'
+#' * `"catch"` mirrors [estimate_catch_rate()]: when `interview_type` is
+#'   `"roving"` and the caller specified neither `use_trips` nor `estimator`,
+#'   the design routes to all-trip mean-of-ratios. Hoenig et al. (1997)
+#'   recommend MOR truncated at 30 minutes for the roving catch rate "and hence
+#'   total catch", so the recommendation is about this function's output, not
+#'   only the rate's.
+#' * `"harvest"` and `"release"` mirror [estimate_harvest_rate()] and
+#'   [estimate_release_rate()], which take no `estimator` argument and do not
+#'   auto-route, so they resolve to ratio-of-means on complete trips. When those
+#'   two grow estimator selection (GH #271) this is the single place that has to
+#'   change for their totals to follow.
+#'
+#' Bus-route and ice designs never auto-route: they estimate a completed-trip
+#' Horvitz-Thompson total, `"all"` is not an estimator there, and the totals
+#' refuse it outright. The gate is on `design_type` here, at the point of
+#' resolution, so the flip never happens -- rather than happening and being
+#' undone downstream, which is the shape that fails in `estimate_catch_rate()`
+#' (GH #270).
+#'
+#' @param design A creel_design object.
+#' @param metric One of `"catch"`, `"harvest"` or `"release"`.
+#' @param use_trips `NULL` when the caller did not specify, otherwise
+#'   `"complete"` or `"all"`.
+#' @param estimator `NULL` when the caller did not specify, otherwise
+#'   `"ratio-of-means"`, `"mor"` or `"mortr"`.
+#' @param truncate_at Numeric minimum trip duration in hours for MOR, or `NULL`
+#'   to disable truncation.
+#'
+#' @return A list with elements `use_trips`, `estimator` and `truncate_at`.
+#'   `estimator` is normalised so `"mortr"` never leaves this function: it
+#'   becomes `"mor"` with a non-NULL `truncate_at`, matching how
+#'   `estimate_catch_rate()` normalises it.
+#'
+#' @keywords internal
+#' @noRd
+resolve_total_rate_spec <- function(
+  design,
+  metric,
+  use_trips = NULL,
+  estimator = NULL,
+  truncate_at = 0.5
+) {
+  use_trips_is_default <- is.null(use_trips)
+  estimator_is_default <- is.null(estimator)
+
+  if (use_trips_is_default) {
+    use_trips <- "complete"
+  }
+  if (estimator_is_default) {
+    estimator <- "ratio-of-means"
+  }
+
+  valid_use_trips <- c("complete", "all")
+  if (
+    !is.character(use_trips) ||
+      length(use_trips) != 1L ||
+      !use_trips %in% valid_use_trips
+  ) {
+    cli::cli_abort(c(
+      "Invalid {.arg use_trips} value: {.val {use_trips}}",
+      "x" = "Must be one of: {.val {valid_use_trips}}",
+      "i" = paste(
+        "The total estimators take a reduced vocabulary;",
+        "{.val incomplete} and {.val diagnostic} support a rate, not a total."
+      )
+    ))
+  }
+
+  valid_estimators <- c("ratio-of-means", "mor", "mortr")
+  if (
+    !is.character(estimator) ||
+      length(estimator) != 1L ||
+      !estimator %in% valid_estimators
+  ) {
+    cli::cli_abort(c(
+      "Invalid {.arg estimator} value: {.val {estimator}}",
+      "x" = "Must be one of: {.val {valid_estimators}}",
+      "i" = paste(
+        "{.val regression} returns a slope with a jackknife SE and has no",
+        "product-variance form here; use {.fn estimate_catch_rate} for it."
+      )
+    ))
+  }
+
+  # mortr is mor with mandatory truncation, normalised exactly as
+  # estimate_catch_rate() normalises it so the two cannot drift.
+  if (identical(estimator, "mortr")) {
+    if (is.null(truncate_at)) {
+      truncate_at <- 0.5
+    }
+    estimator <- "mor"
+  }
+
+  if (
+    !is.null(truncate_at) &&
+      (!is.numeric(truncate_at) || length(truncate_at) != 1L || truncate_at <= 0)
+  ) {
+    cli::cli_abort(c(
+      "Invalid {.arg truncate_at} value: {.val {truncate_at}}",
+      "x" = "{.arg truncate_at} must be a positive number or NULL.",
+      "i" = "Default is 0.5 hours (30 minutes) per Hoenig et al. (1997)."
+    ))
+  }
+
+  ht_design <- !is.null(design$design_type) &&
+    design$design_type %in% c("bus_route", "ice")
+
+  roving_auto <- identical(metric, "catch") &&
+    !ht_design &&
+    identical(design$interview_type, "roving") &&
+    use_trips_is_default &&
+    estimator_is_default
+
+  if (roving_auto) {
+    use_trips <- "all"
+    estimator <- "mor"
+  }
+
+  list(
+    use_trips = use_trips,
+    estimator = estimator,
+    truncate_at = truncate_at,
+    roving_auto = roving_auto
+  )
+}
+
+#' Drop trips shorter than the MOR truncation threshold
+#'
+#' Mean-of-ratios has infinite variance without truncation (Hoenig et al. 1997),
+#' so the threshold is part of the estimator rather than a tuning knob. The rate
+#' functions apply it inside their own MOR block; the totals apply it here,
+#' once, before dispatch, because `estimate_cpue_total()` and
+#' `estimate_cpue_grouped()` do not truncate -- they read `design$mor_truncate_at`
+#' only to report it, and average the ratios of whatever interviews the design
+#' carries.
+#'
+#' Returns the design untouched for ratio-of-means, for `truncate_at = NULL`,
+#' and for a design with no trip duration column -- the last with a warning,
+#' because a silently untruncated MOR is the infinite-variance estimator wearing
+#' the truncated one's name.
+#'
+#' @param design A creel_design object, already restricted to the requested
+#'   trip set by [filter_interviews_use_trips()].
+#' @param estimator The resolved estimator, `"ratio-of-means"` or `"mor"`.
+#' @param truncate_at Numeric minimum trip duration in hours, or `NULL`.
+#'
+#' @return The design, with interviews and interview survey restricted to trips
+#'   of at least `truncate_at` hours, carrying the MOR reporting metadata that
+#'   `new_creel_estimates_mor()` reads.
+#'
+#' @keywords internal
+#' @noRd
+truncate_interviews_for_mor <- function(design, estimator, truncate_at) {
+  if (!identical(estimator, "mor")) {
+    return(design)
+  }
+
+  interviews <- design$interviews
+  n_total <- nrow(interviews)
+  trip_status_col <- design$trip_status_col
+  n_incomplete <- if (is.null(trip_status_col)) {
+    0L
+  } else {
+    sum(tolower(interviews[[trip_status_col]]) == "incomplete", na.rm = TRUE)
+  }
+
+  duration_col <- design$trip_duration_col
+  if (is.null(truncate_at) || is.null(duration_col)) {
+    if (!is.null(truncate_at) && is.null(duration_col)) {
+      cli::cli_warn(c(
+        "MOR truncation skipped: no trip duration column in design.",
+        "i" = "Supply {.arg trip_duration} in {.fn add_interviews} to enable truncation.",
+        "i" = "All {n_total} trip{?s} used without truncation."
+      ))
+    }
+    design$mor_n_incomplete <- n_incomplete
+    design$mor_n_total <- n_total
+    design$mor_truncate_at <- truncate_at
+    design$mor_n_truncated <- 0L
+    return(design)
+  }
+
+  # NA duration cannot be shown to clear the threshold, so it is dropped rather
+  # than admitted: `>= truncate_at` on NA yields NA, and a logical index carrying
+  # NA subsets to an all-NA row instead of dropping it.
+  #
+  # Counted apart from the short trips and reported on its own. A trip dropped
+  # for having no recorded duration is a missing-data loss, not a truncation
+  # decision, and rolling the two into one number leaves a caller unable to tell
+  # a threshold that excluded six short trips from a duration column that is
+  # half empty.
+  missing_duration <- is.na(interviews[[duration_col]])
+  n_missing_duration <- sum(missing_duration)
+  keep <- !missing_duration & interviews[[duration_col]] >= truncate_at
+  n_truncated <- n_total - sum(keep) - n_missing_duration
+
+  if (n_missing_duration > 0) {
+    cli::cli_warn(c(
+      "{n_missing_duration} interview{?s} dropped for missing trip duration.",
+      "i" = paste(
+        "A trip with no recorded duration cannot be shown to meet the",
+        "{.arg truncate_at} threshold, so it is excluded rather than assumed."
+      ),
+      "i" = "Reported separately from the {n_truncated} trip{?s} excluded as too short."
+    ))
+  }
+
+  design <- rebuild_interview_survey(design, interviews[keep, , drop = FALSE]) # nolint: object_usage_linter
+  design$mor_n_incomplete <- n_incomplete
+  design$mor_n_total <- n_total
+  design$mor_truncate_at <- truncate_at
+  design$mor_n_truncated <- n_truncated
+  mor_truncation_message(n_truncated, n_incomplete, truncate_at) # nolint: object_usage_linter
+  design
 }
 
 #' Rebuild counts survey design for a single section

@@ -22,10 +22,34 @@
 #'   `"stratum_total"`, or `"period_total"`. This controls which effort domain
 #'   is multiplied by CPUE so total catch stays aligned with the requested
 #'   temporal target.
-#' @param use_trips Character. Which interviews contribute to CPUE. `"complete"`
-#'   (default) uses only completed trips; `"all"` includes incomplete trips.
-#'   Incomplete trips have lower observed CPUE (angler may catch more after
-#'   interview), so `"all"` introduces a downward bias.
+#' @param use_trips Character. Which interviews contribute to CPUE:
+#'   `"complete"` uses only completed trips, `"all"` includes incomplete ones.
+#'   Default `NULL` means "not specified", which resolves to `"complete"` --
+#'   except on a roving design, where it resolves with `estimator` as described
+#'   below. Under ratio-of-means, an incomplete trip reports catch-so-far
+#'   against effort-so-far, so `"all"` biases the rate downward; under
+#'   mean-of-ratios that pooling is the intended estimator rather than a bias.
+#' @param estimator Character. Rate estimator used for the CPUE component:
+#'   `"ratio-of-means"` (a ratio of totals), `"mor"` (mean of per-interview
+#'   ratios), or `"mortr"` (`"mor"` with truncation made mandatory). Default
+#'   `NULL` means "not specified". When `use_trips` and `estimator` are *both*
+#'   unspecified and the design was built with
+#'   `add_interviews(interview_type = "roving")`, the pair resolves to all-trip
+#'   truncated MOR, matching what [estimate_catch_rate()] chooses for the same
+#'   design; otherwise the pair resolves to complete-trip ratio-of-means.
+#'   Specifying either one suppresses the auto-route. Bus-route and ice designs
+#'   never auto-route and accept only `"ratio-of-means"`, because their total is
+#'   a ratio of Horvitz-Thompson totals with no mean-of-ratios form.
+#' @param truncate_at Numeric minimum trip duration in hours for MOR, or `NULL`
+#'   to disable truncation. Default 0.5 (30 minutes) per Hoenig et al. (1997),
+#'   who recommend the truncated mean of ratios for the roving catch rate
+#'   "and hence total catch". Truncation is not a tuning knob: the untruncated
+#'   mean-of-ratios estimator has infinite variance. Ignored under
+#'   ratio-of-means. Requires a trip duration column on the design; without one
+#'   a warning is raised and no truncation is applied. An interview whose
+#'   duration is missing cannot be shown to meet the threshold, so it is
+#'   excluded and reported separately from the trips excluded as too short --
+#'   a missing-data loss and a truncation decision are not the same event.
 #' @param aggregate_sections Logical. When the design was created with
 #'   \code{\link{add_sections}}, should a \code{.lake_total} row be appended
 #'   that sums the per-section estimates? Default \code{TRUE}. Set to
@@ -198,7 +222,9 @@ estimate_total_catch <- function(
   variance = "taylor",
   conf_level = 0.95,
   target = c("sampled_days", "stratum_total", "period_total"),
-  use_trips = c("complete", "all"),
+  use_trips = NULL,
+  estimator = NULL,
+  truncate_at = 0.5,
   aggregate_sections = TRUE,
   missing_sections = "warn",
   verbose = FALSE,
@@ -209,7 +235,6 @@ estimate_total_catch <- function(
   # Capture by parameter BEFORE validation
   by_quo <- rlang::enquo(by)
   target <- match.arg(target)
-  use_trips <- match.arg(use_trips)
   ci_method <- match.arg(ci_method)
   product_variance <- match.arg(product_variance)
   ci_type <- match.arg(ci_type)
@@ -233,6 +258,37 @@ estimate_total_catch <- function(
     ))
   }
 
+  # Resolved once, before any dispatch, and by the same rule estimate_catch_rate()
+  # uses -- so a roving design's total and its own rate function cannot disagree
+  # about which estimator the design calls for (GH #268). Resolution precedes the
+  # bus-route branch so an explicit `use_trips = "all"` still reaches the refusal
+  # below; the auto-route itself is gated off those design types inside the
+  # resolver rather than undone here.
+  rate_spec <- resolve_total_rate_spec( # nolint: object_usage_linter
+    design,
+    metric = "catch",
+    use_trips = use_trips,
+    estimator = estimator,
+    truncate_at = truncate_at
+  )
+  use_trips <- rate_spec$use_trips
+  estimator <- rate_spec$estimator
+  truncate_at <- rate_spec$truncate_at
+
+  if (verbose && rate_spec$roving_auto) {
+    cli::cli_inform(c(
+      "i" = paste(
+        "Roving design: total catch built from all trips via truncated MOR",
+        "[auto] (Hoenig et al. 1997)."
+      ),
+      " " = paste(
+        "Override with {.code use_trips = \"complete\"} or",
+        "{.code estimator = \"ratio-of-means\"} for access-point estimation;",
+        "naming either one suppresses the routing."
+      )
+    ))
+  }
+
   # Bus-route / ice dispatch (before standard survey NULL check)
   if (!is.null(design$design_type) && design$design_type %in% c("bus_route", "ice")) {
     # These designs estimate a completed-trip total; "all" has no estimator here.
@@ -248,6 +304,23 @@ estimate_total_catch <- function(
         ),
         "i" = paste(
           "Incomplete trips support a rate, not a total; see",
+          "{.code estimate_catch_rate(use_trips = \"incomplete\")}."
+        )
+      ))
+    }
+    # Refused rather than ignored: the bus-route path builds a ratio of
+    # Horvitz-Thompson totals and has no MOR form, so accepting the argument and
+    # silently estimating something else is the defect class this work removes.
+    if (!identical(estimator, "ratio-of-means")) {
+      cli::cli_abort(c(
+        "{.code estimator = \"mor\"} is not available for {.val {design$design_type}} designs.",
+        "x" = paste(
+          "{.val {design$design_type}} totals are a ratio of Horvitz-Thompson",
+          "totals (Jones & Pollock 2012, Eq. 19.5); there is no mean-of-ratios",
+          "form of that total."
+        ),
+        "i" = paste(
+          "For the mean-of-ratios rate on this design, see",
           "{.code estimate_catch_rate(use_trips = \"incomplete\")}."
         )
       ))
@@ -316,6 +389,22 @@ estimate_total_catch <- function(
   # rate spread, and per-level rates, drawn from the incomplete trips it had
   # just excluded.
   design <- filter_interviews_use_trips(design, use_trips) # nolint: object_usage_linter
+
+  # Truncation is part of the MOR estimator, not a tuning knob: untruncated MOR
+  # has infinite variance (Hoenig et al. 1997). Applied here for the same reason
+  # as the trip filter -- estimate_cpue_total() averages the ratios of whatever
+  # interviews the design carries and never truncates for itself, so every path
+  # below has to receive an already-truncated design or none of them truncate.
+  design <- truncate_interviews_for_mor(design, estimator, truncate_at) # nolint: object_usage_linter
+
+  # Carried on the design rather than threaded through the ungrouped, grouped,
+  # species and sectioned internals. Threading a resolved value into each branch
+  # is precisely what let `use_trips` be dropped at two call sites (GH #266);
+  # one slot set before dispatch cannot be dropped at a call site that forgets to
+  # pass it, only at one that forgets to read it -- and there is one reader.
+  # A list slot on the design, like design$mor_truncate_at, not a data-frame
+  # attribute: rebuild_interview_survey() replaces $interviews and preserves it.
+  design$total_estimator <- estimator
 
   # A domain the counts never classified forces the pooled product form,
   # whose weighting comes from the interview mix rather than the effort mix
@@ -436,10 +525,14 @@ cpue_for_stratum_product <- function(
   variance_method,
   conf_level
 ) {
+  # The one reader of the estimator estimate_total_catch() resolved before
+  # dispatch. Defaults to ratio-of-means so the internals stay callable on a
+  # design that never went through that resolution.
+  estimator <- design$total_estimator %||% "ratio-of-means"
   if (length(by_vars) == 0L) {
-    estimate_cpue_total(design, variance_method, conf_level, "ratio-of-means") # nolint: object_usage_linter
+    estimate_cpue_total(design, variance_method, conf_level, estimator) # nolint: object_usage_linter
   } else {
-    estimate_cpue_grouped(design, by_vars, variance_method, conf_level, "ratio-of-means") # nolint: object_usage_linter
+    estimate_cpue_grouped(design, by_vars, variance_method, conf_level, estimator) # nolint: object_usage_linter
   }
 }
 
@@ -621,6 +714,7 @@ estimate_total_catch_species <- function(
     interview_by_vars = rate_by,
     variance_method = variance_method,
     conf_level = conf_level,
+    estimator = design$total_estimator %||% "ratio-of-means",
     validate = FALSE
   )
 
@@ -869,7 +963,12 @@ estimate_total_catch_sections <- function(
           conf_level,
           target = target
         ) # nolint: object_usage_linter
-        cpue_res <- estimate_cpue_total(sec_design, variance_method, conf_level, "ratio") # nolint: object_usage_linter
+        cpue_res <- estimate_cpue_total( # nolint: object_usage_linter
+          sec_design,
+          variance_method,
+          conf_level,
+          sec_design$total_estimator %||% "ratio-of-means"
+        )
         effort_est <- effort_res$estimates$estimate
         cpue_est <- cpue_res$estimates$estimate
         effort_se <- effort_res$estimates$se

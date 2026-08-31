@@ -24,11 +24,17 @@
 #'   is multiplied by release rate so total release stays aligned with the
 #'   requested temporal target.
 #' @param use_trips Character. Which interviews contribute to RPUE.
-#'   `"complete"` (default) uses only completed trips; `"all"` includes
-#'   incomplete trips. An interview taken mid-trip reports the releases so far
-#'   against the effort so far, and the two do not scale together over the
-#'   trip, so `"all"` gives a length-biased rate and a total built from it.
-#'   Ignored when the design carries no trip status column.
+#'   `"complete"` uses only completed trips; `"all"` includes incomplete ones.
+#'   Default `NULL` means "not specified", which resolves to `"complete"`. An
+#'   interview taken mid-trip reports the releases so far against the effort so
+#'   far, and the two do not scale together over the trip, so `"all"` gives a
+#'   length-biased rate and a total built from it. Ignored when the design
+#'   carries no trip status column.
+#'
+#'   Unlike [estimate_total_catch()], this function does not route a roving
+#'   design to all-trip mean-of-ratios, because [estimate_release_rate()] offers
+#'   no estimator selection to follow (GH #271). Both resolve through the same
+#'   rule, so the total always agrees with its own rate function.
 #' @param aggregate_sections Logical. When the design was created with
 #'   \code{\link{add_sections}}, should a \code{.lake_total} row be appended
 #'   that sums the per-section estimates? Default \code{TRUE}. Set to
@@ -169,7 +175,7 @@ estimate_total_release <- function(
   variance = "taylor",
   conf_level = 0.95,
   target = c("sampled_days", "stratum_total", "period_total"),
-  use_trips = c("complete", "all"),
+  use_trips = NULL,
   aggregate_sections = TRUE,
   missing_sections = "warn",
   product_variance = c("goodman", "first_order"),
@@ -177,7 +183,6 @@ estimate_total_release <- function(
 ) {
   by_quo <- rlang::enquo(by)
   target <- match.arg(target)
-  use_trips <- match.arg(use_trips)
   product_variance <- match.arg(product_variance)
   ci_type <- match.arg(ci_type)
 
@@ -199,6 +204,18 @@ estimate_total_release <- function(
       "i" = "Create a design with {.fn creel_design}."
     ))
   }
+
+  # Resolved by the same rule estimate_release_rate() uses, in the one place the
+  # per-metric rule lives, so this total and its own rate function cannot
+  # disagree about which estimator the design calls for (GH #268). That
+  # function takes no `estimator` argument and does not auto-route, so this
+  # resolves to complete-trip ratio-of-means today; when it grows estimator
+  # selection (GH #271) this call site inherits it without changing.
+  use_trips <- resolve_total_rate_spec( # nolint: object_usage_linter
+    design,
+    metric = "release",
+    use_trips = use_trips
+  )$use_trips
 
   # Validate catch data (releases come from add_catch)
   if (is.null(design[["catch"]])) {
