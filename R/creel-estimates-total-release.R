@@ -282,6 +282,15 @@ estimate_total_release <- function(
   # hears that the count column had no T_d applied.
   warn_missing_period_length(design) # nolint: object_usage_linter
 
+  # One trip filter for every path below, matching estimate_total_catch(). Until
+  # this argument existed these totals had no trip filter on any path, so they
+  # were built from every interview while their own rate functions default to
+  # the complete trips (GH #266). Ahead of the pooled-domain screen below, which
+  # rebuilds the release rows from design$interviews: with the filter after it,
+  # `use_trips = "complete"` reported a rate spread, and per-level rates, drawn
+  # from the incomplete trips it had just excluded.
+  design <- filter_interviews_use_trips(design, use_trips) # nolint: object_usage_linter
+
   # A domain the counts never classified forces the pooled product form,
   # whose weighting comes from the interview mix rather than the effort mix
   # (GH #242). Raised before the section dispatch so both paths hear it.
@@ -306,12 +315,6 @@ estimate_total_release <- function(
 
   # Validate design compatibility (counts AND interviews required for effort)
   validate_design_compatibility(design) # nolint: object_usage_linter
-
-  # One trip filter for every path below, matching estimate_total_catch(). Until
-  # this argument existed these totals had no trip filter on any path, so they
-  # were built from every interview while their own rate functions default to
-  # the complete trips (GH #266).
-  design <- filter_interviews_use_trips(design, use_trips) # nolint: object_usage_linter
 
   # Ahead of the species detection below. Resolving species first returned a
   # lake-wide species total for a design that has sections -- a number computed

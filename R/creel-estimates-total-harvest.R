@@ -312,18 +312,22 @@ estimate_total_harvest <- function(
     ))
   }
 
+  # One trip filter for every path below, matching estimate_total_catch(). Until
+  # this argument existed these totals had no trip filter on any path, so they
+  # were built from every interview while their own rate functions default to
+  # the complete trips (GH #266). Ahead of the pooled-domain
+  # warning so that warning describes the interviews the estimate is actually
+  # built from: with the filter after it, `use_trips = "complete"` reported a
+  # rate spread, and per-level rates, drawn from the incomplete trips it had
+  # just excluded.
+  design <- filter_interviews_use_trips(design, use_trips) # nolint: object_usage_linter
+
   # A domain the counts never classified forces the pooled product form,
   # whose weighting comes from the interview mix rather than the effort mix
   # (GH #242). After the harvest_col check, so a call that cannot produce a
   # harvest total at all does not first warn about one, and ahead of the section
   # dispatch below so a sectioned design hears it too.
   warn_pooled_domain_mix(design, "estimate_total_harvest", num_col = design[["harvest_col"]]) # nolint: object_usage_linter
-
-  # One trip filter for every path below, matching estimate_total_catch(). Until
-  # this argument existed these totals had no trip filter on any path, so they
-  # were built from every interview while their own rate functions default to
-  # the complete trips (GH #266).
-  design <- filter_interviews_use_trips(design, use_trips) # nolint: object_usage_linter
 
   # Ahead of the species detection below. Resolving species first returned a
   # lake-wide species total for a design that has sections -- a number computed

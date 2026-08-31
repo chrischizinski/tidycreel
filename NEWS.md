@@ -92,7 +92,11 @@
     catch-so-far under the inclusion probability of a completed one.
 
   All three now apply one filter, once, before any dispatch, so the ungrouped,
-  grouped, species and sectioned paths are built from the same interviews.
+  grouped, species and sectioned paths are built from the same interviews. The
+  filter runs ahead of the `creel_warning_pooled_domain_mix` check, so that
+  warning now describes the interviews the estimate is built from: under
+  `use_trips = "complete"` it previously reported a rate spread, and per-level
+  rates, drawn from the incomplete trips it had just excluded.
   Passing the value down each branch is what allowed two of them to lose it.
   The filter is deliberately quieter than the rate functions' `use_trips`
   block: no messages, no minimum-sample abort, and none of `"incomplete"`,

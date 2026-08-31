@@ -243,3 +243,71 @@ test_that("a missing trip status drops the interview rather than becoming a phan
     expect_equal(result$estimates$n, nrow(filtered$interviews), info = f)
   }
 })
+
+# A design whose unclassified domain has a rate spread *only* among the
+# incomplete trips. Under use_trips = "complete" those interviews are not in the
+# estimate, so a warning about them describes data the returned number was not
+# built from -- and reports per-level rates that are not the estimate's either.
+# The domain is named distinctively because the warning is cli .frequency =
+# "once", keyed by estimator and domain: a name shared with another test file
+# would silence it here depending on run order.
+incomplete_only_spread_design <- function(seed = 266L) {
+  set.seed(seed)
+  design <- make_sectioned_species_design(48L)
+  design[["sections"]] <- NULL
+  iv <- design$interviews
+  iv$trip_status <- rep_len(c("complete", "incomplete"), nrow(iv))
+  iv$gear_266 <- rep_len(c("bank", "boat"), nrow(iv))
+
+  complete <- tolower(iv$trip_status) == "complete"
+  boat_incomplete <- !complete & iv$gear_266 == "boat"
+  bank_incomplete <- !complete & iv$gear_266 == "bank"
+
+  # Flat rate everywhere, then a wide gear split confined to the incomplete trips
+  iv$catch_total <- round(iv$hours_fished * 0.5)
+  iv$catch_kept <- round(iv$hours_fished * 0.5)
+  iv$catch_total[boat_incomplete] <- round(iv$hours_fished[boat_incomplete] * 4)
+  iv$catch_total[bank_incomplete] <- round(iv$hours_fished[bank_incomplete] * 0.05)
+  iv$catch_kept[boat_incomplete] <- round(iv$hours_fished[boat_incomplete] * 4)
+  iv$catch_kept[bank_incomplete] <- round(iv$hours_fished[bank_incomplete] * 0.05)
+
+  design$interviews <- iv
+  design$interview_survey <- build_interview_survey(
+    iv,
+    strata = stats::reformulate(design$strata_cols)
+  )
+
+  # The release screen rebuilds its numerator from the catch table's released
+  # rows rather than the interview catch column, so the same shape has to be
+  # given to it there or the release case would test nothing.
+  rel <- design$catch$catch_type == "released"
+  boat_ids <- iv$interview_id[boat_incomplete]
+  bank_ids <- iv$interview_id[bank_incomplete]
+  design$catch$count[rel & design$catch$interview_id %in% boat_ids] <- 40L
+  design$catch$count[rel & design$catch$interview_id %in% bank_ids] <- 0L
+  design$catch$count[rel & !(design$catch$interview_id %in% c(boat_ids, bank_ids))] <- 3L
+
+  design
+}
+
+test_that("the pooled-domain warning describes the filtered interviews (GH #266)", {
+  # The filter runs before warn_pooled_domain_mix() for this reason. With the
+  # order reversed both calls warn identically, because the warning reads the
+  # interviews as supplied rather than the ones the estimate is built from.
+  #
+  # "complete" is asserted first on purpose: the warning is cli .frequency =
+  # "once", so a firing in the "all" call would mask a regression in the
+  # "complete" call if the order were swapped.
+  for (f in total_estimators) {
+    design <- incomplete_only_spread_design()
+
+    expect_no_warning(
+      suppressMessages(get(f)(design, use_trips = "complete")),
+      class = "creel_warning_pooled_domain_mix"
+    )
+    expect_warning(
+      suppressMessages(get(f)(design, use_trips = "all")),
+      class = "creel_warning_pooled_domain_mix"
+    )
+  }
+})

@@ -308,16 +308,19 @@ estimate_total_catch <- function(
   # hears that the count column had no T_d applied.
   warn_missing_period_length(design) # nolint: object_usage_linter
 
+  # One trip filter for every path below. Passing use_trips down each branch
+  # instead left it dropped at the species and section call sites, where the
+  # argument was accepted and inert (GH #266). Applied *before* the pooled-domain
+  # warning so that warning describes the interviews the estimate is actually
+  # built from: with the filter after it, `use_trips = "complete"` reported a
+  # rate spread, and per-level rates, drawn from the incomplete trips it had
+  # just excluded.
+  design <- filter_interviews_use_trips(design, use_trips) # nolint: object_usage_linter
+
   # A domain the counts never classified forces the pooled product form,
   # whose weighting comes from the interview mix rather than the effort mix
   # (GH #242). Raised before the section dispatch so both paths hear it.
   warn_pooled_domain_mix(design, "estimate_total_catch") # nolint: object_usage_linter
-
-  # One trip filter for every path below. Passing use_trips down each branch
-  # instead left it dropped at the species and section call sites, where the
-  # argument was accepted and inert (GH #266). Applied after the warnings above
-  # so those still describe the design as supplied.
-  design <- filter_interviews_use_trips(design, use_trips) # nolint: object_usage_linter
 
   # Section dispatch guard (v0.7.0+ — only fires when add_sections() was called)
   if (!is.null(design[["sections"]])) {
