@@ -80,6 +80,11 @@
 #' \code{E_total * HPUE_pooled}. The lake-wide SE uses the zero-covariance
 #' assumption: \code{sqrt(sum(se_i^2))}.
 #'
+#' \code{by = <species>} is supported on a sectioned design: catch is
+#' apportioned against each section's own whole effort, giving one row per
+#' section per species. As with any other grouping, the sectioned result then
+#' carries no \code{.lake_total} row and no \code{prop_of_lake_total}.
+#'
 #' \strong{Design compatibility requirements:}
 #' \itemize{
 #'   \item Count data must be attached via \code{add_counts()} for effort estimation
@@ -269,6 +274,46 @@ estimate_total_harvest <- function(
   # Validate design compatibility (counts AND interviews required)
   validate_design_compatibility(design) # nolint: object_usage_linter
 
+  # Validate design$harvest_col exists
+  if (is.null(design$harvest_col)) {
+    cli::cli_abort(c(
+      "No harvest column available.",
+      "x" = "Design must have harvest_col set.",
+      "i" = "Call {.fn add_interviews} with the harvest parameter.",
+      "i" = paste(
+        "Example: {.code design <- add_interviews(design, interviews,",
+        "catch = catch_total, harvest = catch_kept, effort = hours_fished)}"
+      )
+    ))
+  }
+
+  # A domain the counts never classified forces the pooled product form,
+  # whose weighting comes from the interview mix rather than the effort mix
+  # (GH #242). After the harvest_col check, so a call that cannot produce a
+  # harvest total at all does not first warn about one, and ahead of the section
+  # dispatch below so a sectioned design hears it too.
+  warn_pooled_domain_mix(design, "estimate_total_harvest", num_col = design[["harvest_col"]]) # nolint: object_usage_linter
+
+  # Ahead of the species detection below. Resolving species first returned a
+  # lake-wide species total for a design that has sections -- a number computed
+  # without the section machinery, reported with no section column and nothing
+  # saying the sectioning had been ignored (GH #255).
+  # Section dispatch guard (v0.7.0+ — only fires when add_sections() was called)
+  if (!is.null(design[["sections"]])) {
+    return(estimate_total_harvest_sections(
+      # nolint: object_usage_linter
+      design,
+      by_quo,
+      variance,
+      conf_level,
+      aggregate_sections,
+      missing_sections,
+      target = target,
+      product_variance = product_variance,
+      ci_type = ci_type
+    ))
+  }
+
   # Detect species-level grouping
   by_info <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
 
@@ -300,42 +345,6 @@ estimate_total_harvest <- function(
       effort_target = target,
       unit = product_total_unit(rate_unit(design), design$effort_unit), # nolint: object_usage_linter
       se_expansion = attr(estimates_df, "se_expansion")
-    ))
-  }
-
-  # Validate design$harvest_col exists
-  if (is.null(design$harvest_col)) {
-    cli::cli_abort(c(
-      "No harvest column available.",
-      "x" = "Design must have harvest_col set.",
-      "i" = "Call {.fn add_interviews} with the harvest parameter.",
-      "i" = paste(
-        "Example: {.code design <- add_interviews(design, interviews,",
-        "catch = catch_total, harvest = catch_kept, effort = hours_fished)}"
-      )
-    ))
-  }
-
-  # A domain the counts never classified forces the pooled product form,
-  # whose weighting comes from the interview mix rather than the effort mix
-  # (GH #242). After the harvest_col check, so a call that cannot produce a
-  # harvest total at all does not first warn about one; still before the
-  # section dispatch, so both paths hear it.
-  warn_pooled_domain_mix(design, "estimate_total_harvest", num_col = design[["harvest_col"]]) # nolint: object_usage_linter
-
-  # Section dispatch guard (v0.7.0+ — only fires when add_sections() was called)
-  if (!is.null(design[["sections"]])) {
-    return(estimate_total_harvest_sections(
-      # nolint: object_usage_linter
-      design,
-      by_quo,
-      variance,
-      conf_level,
-      aggregate_sections,
-      missing_sections,
-      target = target,
-      product_variance = product_variance,
-      ci_type = ci_type
     ))
   }
 
@@ -625,20 +634,50 @@ estimate_total_harvest_sections <- function(
     }
   }
 
-  # Resolve by= ONCE before the section loop
+  # Resolve by= ONCE before the section loop. Species is split out first: the
+  # public function returns into this branch before resolve_species_by() runs,
+  # so a species selector has to be recognised here or it never reaches species
+  # apportionment at all (GH #255).
+  species_var <- NULL
   if (rlang::quo_is_null(by_quo)) {
     by_vars <- NULL
   } else {
-    # No species route here: the section dispatch in the public function returns
-    # before resolve_species_by(), so `by = <species>` never reaches species
-    # apportionment on a sectioned design -- advertising it would be a dead end.
-    by_vars <- eval_select_count_by( # nolint: object_usage_linter
-      by_quo,
-      design,
-      species_route = FALSE,
-      error_call = rlang::caller_env()
-    )
+    by_info <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
+    species_var <- by_info$species_var
+    if (is.null(species_var)) {
+      by_vars <- eval_select_count_by( # nolint: object_usage_linter
+        by_quo,
+        design,
+        species_route = TRUE,
+        error_call = rlang::caller_env()
+      )
+    } else {
+      # Species rides on whole effort, but anything grouped alongside it still
+      # splits effort and so must be count-observable, exactly as it is without
+      # sections. Raised through the same refusal rather than a second wording.
+      by_vars <- by_info$interview_vars
+      unobservable <- setdiff(by_vars %||% character(0), names(design[["counts"]]))
+      if (length(unobservable) > 0L) {
+        abort_count_unobservable_names( # nolint: object_usage_linter
+          unobservable,
+          design,
+          species_route = FALSE,
+          error_call = rlang::caller_env()
+        )
+      }
+    }
   }
+
+  # A sectioned result is already one row per section, so naming the section
+  # column in by= asks for a split that has happened. Without this it reached
+  # tibble::add_column() and failed on a duplicated column name.
+  refuse_section_in_by(by_vars, design, error_call = rlang::caller_env()) # nolint: object_usage_linter
+
+  # Species is a grouping: like the grouped path, it yields per-section rows and
+  # no lake row or share. Both gates below key off this rather than `by_vars`,
+  # which is NULL for a species-only call and would otherwise sum across species
+  # into a meaningless lake total.
+  is_grouped <- !is.null(by_vars) || !is.null(species_var)
 
   section_rows <- vector("list", length(registered_sections))
   names(section_rows) <- registered_sections
@@ -664,8 +703,10 @@ estimate_total_harvest_sections <- function(
         ci_lower = NA_real_,
         ci_upper = NA_real_,
         n = 0L,
-        prop_of_lake_total = NA_real_,
-        se_prop_of_lake_total = NA_real_,
+        # No lake-share columns here. This placeholder is built whatever the
+        # grouping, so hard-coding them made bind_rows() give a grouped result
+        # share columns it is not supposed to carry. The ungrouped path assigns
+        # both after the bind, so its rows still get them.
         data_available = FALSE
       )
       section_rows[[sec]] <- na_row
@@ -677,7 +718,24 @@ estimate_total_harvest_sections <- function(
       filtered_interviews <- design$interviews[design$interviews[[section_col]] == sec, ]
       sec_design <- rebuild_interview_survey(sec_counts_design, filtered_interviews) # nolint: object_usage_linter
 
-      if (!is.null(by_vars)) {
+      if (!is.null(species_var)) {
+        # Species path: whole-effort apportionment inside this section. The
+        # per-section design carries the full catch table, but the join is onto
+        # this section's interviews, so the counts stay section-correct.
+        sp_df <- estimate_total_harvest_species( # nolint: object_usage_linter
+          sec_design,
+          species_col = species_var,
+          interview_by_vars = by_vars,
+          variance_method = variance_method,
+          conf_level = conf_level,
+          target = target,
+          product_variance = product_variance,
+          ci_type = ci_type
+        )
+        row_df <- tibble::add_column(tibble::as_tibble(sp_df), section = sec, .before = 1)
+        row_df$data_available <- TRUE
+        section_rows[[sec]] <- row_df
+      } else if (!is.null(by_vars)) {
         # Grouped path: delegates to existing grouped helper
         result <- estimate_total_harvest_grouped(
           # nolint: object_usage_linter
@@ -735,7 +793,7 @@ estimate_total_harvest_sections <- function(
   result_df <- dplyr::bind_rows(section_rows)
 
   # Compute prop_of_lake_total (ungrouped path only; denominator = sum(TH_i))
-  if (is.null(by_vars)) {
+  if (!is_grouped) {
     present_rows <- result_df[!is.na(result_df$estimate), ]
     lake_sum <- sum(present_rows$estimate)
     result_df$prop_of_lake_total <- result_df$estimate / lake_sum
@@ -776,7 +834,7 @@ estimate_total_harvest_sections <- function(
   # call: the proportion's denominator variance is then literally the variance
   # the lake row reports, and an unresolvable geometry warns once, not twice.
   lake <- NULL
-  if (is.null(by_vars)) {
+  if (!is_grouped) {
     present_rows <- result_df[!is.na(result_df$estimate), ]
     present <- as.character(present_rows$section)
     lake <- combine_section_variances( # nolint: object_usage_linter
@@ -803,7 +861,7 @@ estimate_total_harvest_sections <- function(
   }
 
   # Append .lake_total row if requested (ungrouped path only)
-  if (aggregate_sections && is.null(by_vars)) {
+  if (aggregate_sections && !is_grouped) {
     present_rows <- result_df[!is.na(result_df$estimate), ]
     lake_est <- sum(present_rows$estimate)
 
@@ -850,7 +908,9 @@ estimate_total_harvest_sections <- function(
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
-    by_vars = if (!is.null(by_vars)) c("section", by_vars) else "section",
+    # Species is a grouping variable of the result and belongs in by_vars, or
+    # the reported metadata would describe rows it does not account for.
+    by_vars = c("section", species_var, by_vars),
     effort_target = target,
     unit = product_total_unit(rate_unit(design), design$effort_unit), # nolint: object_usage_linter
     se_expansion = se_expansion,

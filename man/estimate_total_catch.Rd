@@ -125,6 +125,11 @@ the zero-covariance assumption: \code{sqrt(sum(se_i^2))}. Cross-section
 covariance between count-based effort and interview-based CPUE designs is not
 identified and is therefore assumed zero.
 
+\code{by = <species>} is supported on a sectioned design: catch is
+apportioned against each section's own whole effort, giving one row per
+section per species. As with any other grouping, the sectioned result then
+carries no \code{.lake_total} row and no \code{prop_of_lake_total}.
+
 \strong{Design compatibility requirements:}
 \itemize{
 \item Count data must be attached via \code{add_counts()} for effort estimation
