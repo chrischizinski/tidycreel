@@ -10,7 +10,7 @@ estimate_total_release(
   variance = "taylor",
   conf_level = 0.95,
   target = c("sampled_days", "stratum_total", "period_total"),
-  use_trips = c("complete", "all"),
+  use_trips = NULL,
   aggregate_sections = TRUE,
   missing_sections = "warn",
   product_variance = c("goodman", "first_order"),
@@ -40,11 +40,17 @@ is multiplied by release rate so total release stays aligned with the
 requested temporal target.}
 
 \item{use_trips}{Character. Which interviews contribute to RPUE.
-\code{"complete"} (default) uses only completed trips; \code{"all"} includes
-incomplete trips. An interview taken mid-trip reports the releases so far
-against the effort so far, and the two do not scale together over the
-trip, so \code{"all"} gives a length-biased rate and a total built from it.
-Ignored when the design carries no trip status column.}
+\code{"complete"} uses only completed trips; \code{"all"} includes incomplete ones.
+Default \code{NULL} means "not specified", which resolves to \code{"complete"}. An
+interview taken mid-trip reports the releases so far against the effort so far,
+and the two do not scale together over the trip, so \code{"all"} gives a
+length-biased rate and a total built from it. Ignored when the design
+carries no trip status column.
+
+Unlike \code{\link[=estimate_total_catch]{estimate_total_catch()}}, this function does not route a roving
+design to all-trip mean-of-ratios, because \code{\link[=estimate_release_rate]{estimate_release_rate()}} offers no
+estimator selection to follow (GH #271). Both resolve through the same
+rule, so the total always agrees with its own rate function.}
 
 \item{aggregate_sections}{Logical. When the design was created with
 \code{\link{add_sections}}, should a \code{.lake_total} row be appended
