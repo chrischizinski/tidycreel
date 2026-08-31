@@ -211,3 +211,35 @@ test_that("a design with no trip status column is unaffected by use_trips (GH #2
     expect_equal(complete$estimates$n, nrow(design$interviews), info = f)
   }
 })
+
+test_that("a missing trip status drops the interview rather than becoming a phantom row (GH #266)", {
+  # `==` returns NA for a missing status, and a logical index carrying NA
+  # subsets a data frame to an all-NA *row* instead of dropping it. That row
+  # reaches svydesign() with a missing stratum and aborts inside survey with
+  # "missing values in `strata'" -- a failure with no tidycreel wording at all.
+  #
+  # add_interviews() refuses NA trip status ("Trip status is required for all
+  # interviews"), so this is not reachable through the constructor. The guard is
+  # cheap and exactly equivalent when no status is missing, and this test pins
+  # it: with `==` in place of `%in%` the estimators below abort.
+  design <- drop_sections(mixed_status_total_design())
+  iv <- design$interviews
+  iv$trip_status[c(3L, 7L, 11L)] <- NA
+  design$interviews <- iv
+  design$interview_survey <- build_interview_survey(
+    iv,
+    strata = stats::reformulate(design$strata_cols)
+  )
+
+  filtered <- filter_interviews_use_trips(design, "complete")
+  expect_false(anyNA(filtered$interviews$trip_status))
+  expect_equal(
+    nrow(filtered$interviews),
+    sum(tolower(iv$trip_status) == "complete", na.rm = TRUE)
+  )
+
+  for (f in total_estimators) {
+    result <- quiet_total(f, design, use_trips = "complete")
+    expect_equal(result$estimates$n, nrow(filtered$interviews), info = f)
+  }
+})

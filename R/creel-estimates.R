@@ -2551,7 +2551,12 @@ filter_interviews_use_trips <- function(design, use_trips) {
   if (is.null(trip_status_col) || identical(use_trips, "all")) {
     return(design)
   }
-  keep <- tolower(design$interviews[[trip_status_col]]) == use_trips
+  # %in% rather than ==: a missing trip status makes == return NA, and a logical
+  # index carrying NA subsets a data frame to an all-NA *row* rather than
+  # dropping it. add_interviews() refuses a design whose trip status has any NA,
+  # so this is unreachable through the constructor, but a phantom interview
+  # would reach svydesign() as a missing stratum and abort inside survey.
+  keep <- tolower(design$interviews[[trip_status_col]]) %in% use_trips
   rebuild_interview_survey(design, design$interviews[keep, , drop = FALSE]) # nolint: object_usage_linter
 }
 
