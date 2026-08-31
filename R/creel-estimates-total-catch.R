@@ -806,6 +806,10 @@ estimate_total_catch_sections <- function(
   names(sec_expansion_se) <- registered_sections
   sec_decomposition <- vector("list", length(registered_sections))
   names(sec_decomposition) <- registered_sections
+  # The species branch's components, one vector per section rather than one
+  # scalar: its rows are per species within the section.
+  sec_species_expansion <- vector("list", length(registered_sections))
+  names(sec_species_expansion) <- registered_sections
 
   for (sec in registered_sections) {
     if (sec %in% absent_sections) {
@@ -847,15 +851,7 @@ estimate_total_catch_sections <- function(
         )
         row_df <- tibble::add_column(tibble::as_tibble(sp_df), section = sec, .before = 1)
         row_df$data_available <- TRUE
-        # Carried as a column, not a per-section scalar: the species branch
-        # contributes one row per species, each with its own component, and a
-        # column is what stays aligned to those rows through bind_rows() --
-        # including the one-row placeholder an absent section adds, which has no
-        # component and fills NA. Removed again once it has been read (GH #259).
-        sp_component <- attr(sp_df, "se_expansion")
-        if (!is.null(sp_component)) {
-          row_df[[".se_expansion"]] <- sp_component
-        }
+        sec_species_expansion[[sec]] <- attr(sp_df, "se_expansion")
         section_rows[[sec]] <- row_df
       } else if (!is.null(by_vars)) {
         # Grouped path: delegates to existing grouped helper
@@ -962,13 +958,24 @@ estimate_total_catch_sections <- function(
   }
 
   # The species branch fills none of the per-section scalars above -- its rows
-  # are per species, and each carried its own component out of the product path.
-  # Read them off the rows in the order bind_rows() produced rather than
-  # recombining per section, which would have to know how many species each
-  # section contributed (GH #259).
-  if (".se_expansion" %in% names(result_df)) {
-    se_expansion <- result_df[[".se_expansion"]]
-    result_df[[".se_expansion"]] <- NULL
+  # are per species, and each carried its own component out of the product path
+  # (GH #259). Rebuilt here against each section's own row count, in the order
+  # bind_rows() bound them, so the alignment holds without a carrier column: a
+  # column named for an internal quantity can collide with a user's own grouping
+  # variable, and did -- `by = c(<species>, .se_expansion)` had its grouping
+  # column consumed and returned unlabelled duplicate rows.
+  if (!all(vapply(sec_species_expansion, is.null, logical(1L)))) {
+    se_expansion <- unlist(
+      lapply(registered_sections, function(sec) {
+        component <- sec_species_expansion[[sec]]
+        if (is.null(component)) {
+          rep(NA_real_, nrow(section_rows[[sec]]))
+        } else {
+          component
+        }
+      }),
+      use.names = FALSE
+    )
   }
 
   # Standard error of prop_of_lake_total (ungrouped path only, GH #243). The

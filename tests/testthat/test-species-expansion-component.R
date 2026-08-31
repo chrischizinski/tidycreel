@@ -274,14 +274,72 @@ test_that("an absent section keeps the sectioned component aligned to its rows (
   expect_true(all(is.finite(species_total$se_expansion[!absent])))
 })
 
-test_that("the sectioned carrier column does not reach the returned estimates (GH #259)", {
-  # The component rides to the aggregation as a column so bind_rows() keeps it
-  # row-aligned. It is an internal carrier: leaking it would add a column to a
-  # documented output shape and put the same number in two places.
-  design <- spx_sec_design()
-  species_total <- suppressWarnings(estimate_total_catch(design, by = species))
+# A grouping variable of the counts named exactly like the internal quantity.
+# The first fix carried the per-section components to the aggregation as a
+# `.se_expansion` column, which this design collides with: the assignment
+# overwrote the user's grouping column and the read-off then deleted it,
+# returning four rows labelled only by section and species -- two indeed
+# identical "North / walleye" rows carrying different standard errors. The
+# component is now rebuilt from each section's own row count instead, so no
+# name is involved and nothing can collide with it.
+spx_collide_raw <- function() {
+  raw <- spx_sec_raw()
+  # Deliberately not confounded with `section`: confounded, the split would
+  # produce one row per section and the lost labels would be invisible.
+  raw[[".se_expansion"]] <- rep(c("bank", "bank", "boat", "boat"), 2)
+  raw
+}
 
-  expect_false(".se_expansion" %in% names(species_total$estimates))
+spx_collide_design <- function() {
+  raw <- spx_collide_raw()
+  design <- creel_design(spx_sec_calendar(), date = date, strata = day_type)
+  design <- suppressMessages(suppressWarnings(add_sections(
+    design,
+    data.frame(section = c("North", "South"), stringsAsFactors = FALSE),
+    section_col = section
+  )))
+  counts <- derive_angler_count(
+    raw,
+    boat_count = angler_boats,
+    party_size = 2.5,
+    party_size_se = 0.1
+  )
+  design <- suppressWarnings(add_counts(design, counts, count_col = "angler_count"))
+  interviews <- spx_sec_interviews()
+  interviews[[".se_expansion"]] <- rep(raw[[".se_expansion"]], each = 4)
+  design <- suppressMessages(suppressWarnings(add_interviews(
+    design,
+    interviews,
+    catch = catch_total,
+    effort = hours_fished,
+    harvest = harvest_total,
+    trip_status = status
+  )))
+  suppressWarnings(add_catch(
+    design,
+    spx_sec_catch(),
+    catch_uid = interview_id,
+    interview_uid = interview_id,
+    species = species,
+    count = count,
+    catch_type = catch_type
+  ))
+}
+
+test_that("a grouping variable named like the internal component survives (GH #259)", {
+  # The requested split has to come back labelled. Without this the result is
+  # four rows the caller cannot tell apart -- a believable table describing a
+  # grouping it no longer reports.
+  design <- spx_collide_design()
+  species_total <- suppressWarnings(
+    estimate_total_catch(design, by = c(species, .se_expansion))
+  )
+
+  expect_true(".se_expansion" %in% names(species_total$estimates))
+  expect_equal(sort(unique(species_total$estimates$.se_expansion)), c("bank", "boat"))
+  expect_equal(nrow(species_total$estimates), 4L)
+  expect_length(species_total$se_expansion, 4L)
+  expect_true(all(is.finite(species_total$se_expansion)))
 })
 
 test_that("a sectioned species total reports nothing when there is no party-size SE (GH #259)", {
@@ -291,5 +349,4 @@ test_that("a sectioned species total reports nothing when there is no party-size
   species_total <- suppressWarnings(estimate_total_catch(design, by = species))
 
   expect_null(species_total$se_expansion)
-  expect_false(".se_expansion" %in% names(species_total$estimates))
 })
