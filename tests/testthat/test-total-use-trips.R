@@ -256,16 +256,38 @@ incomplete_only_spread_design <- function(seed = 266L) {
   design <- make_sectioned_species_design(48L)
   design[["sections"]] <- NULL
   iv <- design$interviews
-  iv$trip_status <- rep_len(c("complete", "incomplete"), nrow(iv))
+  # Both cycles must be co-prime with each other or the two factors confound:
+  # rep_len(c("complete","incomplete"), n) alongside rep_len(c("bank","boat"), n)
+  # makes every complete trip a bank trip and every incomplete one a boat trip,
+  # leaving one gear level after filtering. The warning would then be silent
+  # because the domain degenerated, not because its rates agree -- the assertion
+  # would hold without testing anything. Period 4 against period 2 fills all
+  # four cells evenly.
+  iv$trip_status <- rep_len(c("complete", "complete", "incomplete", "incomplete"), nrow(iv))
   iv$gear_266 <- rep_len(c("bank", "boat"), nrow(iv))
 
   complete <- tolower(iv$trip_status) == "complete"
   boat_incomplete <- !complete & iv$gear_266 == "boat"
   bank_incomplete <- !complete & iv$gear_266 == "bank"
 
-  # Flat rate everywhere, then a wide gear split confined to the incomplete trips
-  iv$catch_total <- round(iv$hours_fished * 0.5)
-  iv$catch_kept <- round(iv$hours_fished * 0.5)
+  # The complete trips must have *identical* rates across gear, not merely
+  # similar ones: the rate is a ratio of sums, so drawing effort at random and
+  # scaling catch by a constant leaves a spread that the threshold can clear on
+  # its own (measured: bank 0.251 against boat 0.174). Fixing effort and catch
+  # per row makes the two levels equal by construction, so any spread the
+  # warning reports under use_trips = "complete" came from the incomplete trips.
+  # `.angler_effort` is the denominator the rate actually divides by -- a column
+  # add_interviews() derives from hours_fished and n_anglers at attach time, so
+  # editing those two afterwards leaves the rate reading a stale denominator.
+  # Set the derived column too, or the "equal rates" this fixture depends on are
+  # not equal (measured: bank 0.301 against boat 0.209).
+  iv$hours_fished[complete] <- 4
+  iv$n_anglers[complete] <- 1L
+  iv$.angler_effort[complete] <- 4
+  iv$catch_total[complete] <- 2
+  iv$catch_kept[complete] <- 1
+
+  # The wide gear split lives entirely in the trips "complete" excludes.
   iv$catch_total[boat_incomplete] <- round(iv$hours_fished[boat_incomplete] * 4)
   iv$catch_total[bank_incomplete] <- round(iv$hours_fished[bank_incomplete] * 0.05)
   iv$catch_kept[boat_incomplete] <- round(iv$hours_fished[boat_incomplete] * 4)
@@ -280,15 +302,48 @@ incomplete_only_spread_design <- function(seed = 266L) {
   # The release screen rebuilds its numerator from the catch table's released
   # rows rather than the interview catch column, so the same shape has to be
   # given to it there or the release case would test nothing.
-  rel <- design$catch$catch_type == "released"
   boat_ids <- iv$interview_id[boat_incomplete]
   bank_ids <- iv$interview_id[bank_incomplete]
+  complete_ids <- iv$interview_id[complete]
+
+  # Setting a constant `count` on the existing released rows is not enough: the
+  # generator gives an interview one row, two rows, or none at all (35 of 48
+  # carry any), so a per-row constant still sums to 0, 3 or 6 per interview and
+  # the two gear levels end up with different RPUE anyway (measured: bank 0.812
+  # against boat 0.625). Replace the complete trips' released rows outright with
+  # exactly one row each, so the per-interview numerator is constant.
+  rel <- design$catch$catch_type == "released"
+  design$catch <- design$catch[!(rel & design$catch$interview_id %in% complete_ids), , drop = FALSE]
+  design$catch <- rbind(
+    design$catch,
+    data.frame(
+      interview_id = complete_ids,
+      species = "bass",
+      count = 3,
+      catch_type = "released",
+      stringsAsFactors = FALSE
+    )
+  )
+
+  rel <- design$catch$catch_type == "released"
   design$catch$count[rel & design$catch$interview_id %in% boat_ids] <- 40L
   design$catch$count[rel & design$catch$interview_id %in% bank_ids] <- 0L
-  design$catch$count[rel & !(design$catch$interview_id %in% c(boat_ids, bank_ids))] <- 3L
 
   design
 }
+
+test_that("the spread fixture is not confounded: all four cells are filled (GH #266)", {
+  # Guards the guard, as above. If gear collapses to one level under
+  # use_trips = "complete", the silence asserted below proves nothing: a domain
+  # with a single level has no rate spread to report either way.
+  design <- incomplete_only_spread_design()
+  tab <- table(design$interviews$gear_266, design$interviews$trip_status)
+
+  expect_true(all(tab > 0))
+  expect_length(unique(design$interviews$gear_266[
+    tolower(design$interviews$trip_status) == "complete"
+  ]), 2L)
+})
 
 test_that("the pooled-domain warning describes the filtered interviews (GH #266)", {
   # The filter runs before warn_pooled_domain_mix() for this reason. With the
