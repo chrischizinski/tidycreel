@@ -460,8 +460,21 @@ test_that("estimate_total_harvest grouped result n is per-group", {
   result <- suppressWarnings(estimate_total_harvest(design, by = day_type)) # nolint: object_usage_linter
 
   expect_true("n" %in% names(result$estimates))
-  expect_equal(sum(result$estimates$n), nrow(design$interviews))
+  # n is split across the groups rather than repeated as the whole-design count,
+  # so the per-group values sum to the interviews the estimator actually used.
+  # Since #266 that is the complete trips, not every interview: this fixture
+  # alternates trip_status, so half of it is excluded by the default. The
+  # use_trips = "all" call below is what pins the other half of the claim --
+  # without it this assertion would still pass if the split silently dropped
+  # rows for some unrelated reason.
+  n_complete <- sum(tolower(design$interviews$trip_status) == "complete")
+  expect_equal(sum(result$estimates$n), n_complete)
   expect_true(all(result$estimates$n > 0))
+
+  all_trips <- suppressWarnings( # nolint: object_usage_linter
+    estimate_total_harvest(design, by = day_type, use_trips = "all")
+  )
+  expect_equal(sum(all_trips$estimates$n), nrow(design$interviews))
 })
 
 # Total harvest vs total catch relationship test ----

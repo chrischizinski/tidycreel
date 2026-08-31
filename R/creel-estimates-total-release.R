@@ -23,6 +23,12 @@
 #'   `"stratum_total"`, or `"period_total"`. This controls which effort domain
 #'   is multiplied by release rate so total release stays aligned with the
 #'   requested temporal target.
+#' @param use_trips Character. Which interviews contribute to RPUE.
+#'   `"complete"` (default) uses only completed trips; `"all"` includes
+#'   incomplete trips. An interview taken mid-trip reports the harvest so far
+#'   against the effort so far, and the two do not scale together over the
+#'   trip, so `"all"` gives a length-biased rate and a total built from it.
+#'   Ignored when the design carries no trip status column.
 #' @param aggregate_sections Logical. When the design was created with
 #'   \code{\link{add_sections}}, should a \code{.lake_total} row be appended
 #'   that sums the per-section estimates? Default \code{TRUE}. Set to
@@ -163,6 +169,7 @@ estimate_total_release <- function(
   variance = "taylor",
   conf_level = 0.95,
   target = c("sampled_days", "stratum_total", "period_total"),
+  use_trips = c("complete", "all"),
   aggregate_sections = TRUE,
   missing_sections = "warn",
   product_variance = c("goodman", "first_order"),
@@ -170,6 +177,7 @@ estimate_total_release <- function(
 ) {
   by_quo <- rlang::enquo(by)
   target <- match.arg(target)
+  use_trips <- match.arg(use_trips)
   product_variance <- match.arg(product_variance)
   ci_type <- match.arg(ci_type)
 
@@ -206,6 +214,23 @@ estimate_total_release <- function(
   # bus-route designs: interview-based releases against a svytotal over count
   # rows, two unrelated effort bases in one design object (GH #110).
   if (!is.null(design$design_type) && design$design_type %in% c("bus_route", "ice")) {
+    # These designs estimate a completed-trip total; "all" has no estimator here.
+    # Refused rather than ignored, which is the defect this argument was added to
+    # remove (GH #266). Mirrors estimate_total_catch().
+    if (identical(use_trips, "all")) {
+      cli::cli_abort(c(
+        "{.code use_trips = \"all\"} is not available for {.val {design$design_type}} designs.",
+        "x" = paste(
+          "The bus-route total is a completed-trip Horvitz-Thompson sum;",
+          "an uncompleted trip contributes release-so-far under the inclusion",
+          "probability of a completed one."
+        ),
+        "i" = paste(
+          "Incomplete trips support a rate, not a total; see",
+          "{.code estimate_release_rate(use_trips = \"incomplete\")}."
+        )
+      ))
+    }
     # See estimate_total_catch(): `by = species` aborted here because eval_select()
     # resolved against the interviews, which carry no species column (finding 19).
     by_info_br <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
@@ -281,6 +306,12 @@ estimate_total_release <- function(
 
   # Validate design compatibility (counts AND interviews required for effort)
   validate_design_compatibility(design) # nolint: object_usage_linter
+
+  # One trip filter for every path below, matching estimate_total_catch(). Until
+  # this argument existed these totals had no trip filter on any path, so they
+  # were built from every interview while their own rate functions default to
+  # the complete trips (GH #266).
+  design <- filter_interviews_use_trips(design, use_trips) # nolint: object_usage_linter
 
   # Ahead of the species detection below. Resolving species first returned a
   # lake-wide species total for a design that has sections -- a number computed

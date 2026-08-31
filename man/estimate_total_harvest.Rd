@@ -10,6 +10,7 @@ estimate_total_harvest(
   variance = "taylor",
   conf_level = 0.95,
   target = c("sampled_days", "stratum_total", "period_total"),
+  use_trips = c("complete", "all"),
   aggregate_sections = TRUE,
   missing_sections = "warn",
   ci_method = c("delta", "bootstrap"),
@@ -40,6 +41,13 @@ and HPUE estimation, then combined via delta method.}
 \code{"stratum_total"}, or \code{"period_total"}. This controls which effort domain
 is multiplied by HPUE so total harvest stays aligned with the requested
 temporal target.}
+
+\item{use_trips}{Character. Which interviews contribute to HPUE.
+\code{"complete"} (default) uses only completed trips; \code{"all"} includes
+incomplete trips. An interview taken mid-trip reports the harvest so far
+against the effort so far, and the two do not scale together over the
+trip, so \code{"all"} gives a length-biased rate and a total built from it.
+Ignored when the design carries no trip status column.}
 
 \item{aggregate_sections}{Logical. When the design was created with
 \code{\link{add_sections}}, should a \code{.lake_total} row be appended
