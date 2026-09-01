@@ -2162,7 +2162,7 @@ test_that("MOR stores zero truncation when all trips above threshold", {
 test_that("MOR truncation function warns when >10% truncated", {
   # Test the function directly
   expect_warning(
-    mor_truncation_message(n_truncated = 15, n_incomplete_original = 30, truncate_at = 0.5),
+    mor_truncation_message(n_truncated = 15, n_before_truncation = 30, truncate_at = 0.5),
     "High truncation rate may indicate data quality issues"
   )
 })
@@ -3969,6 +3969,24 @@ mor_design_missing_duration <- function(n_missing = 3L, seed = 272L) {
   rebuild_interview_survey(design, iv)
 }
 
+# The truncation message is a warning above the 10% branch and a message below
+# it, so both have to be caught to assert on the percentage it reports.
+capture_truncation_warning <- function(expr) {
+  msgs <- character()
+  withCallingHandlers(
+    expr,
+    warning = function(w) {
+      msgs <<- c(msgs, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    },
+    message = function(m) {
+      msgs <<- c(msgs, conditionMessage(m))
+      invokeRestart("muffleMessage")
+    }
+  )
+  grep("MOR truncation", msgs, value = TRUE)
+}
+
 test_that("MOR truncation drops a missing trip duration instead of aborting", {
   # `NA >= truncate_at` is NA, and a logical index carrying NA subsets a data
   # frame to an all-NA *row* rather than dropping it. That phantom row reached
@@ -4045,5 +4063,43 @@ test_that("a complete duration column truncates exactly as before", {
       estimate_catch_rate(design, use_trips = "all", estimator = "mor", truncate_at = 2.0)
     ),
     message = "missing trip duration"
+  )
+})
+
+test_that("the truncation percentage is a share of the set that was truncated", {
+  # The reported percentage used the incomplete-trip count as its denominator
+  # while the numerator counted truncation over whatever set was being
+  # estimated. On `use_trips = "complete"` that denominator is 0, so the message
+  # read "Inf%" and always took the high-truncation-rate branch; on
+  # `use_trips = "all"` it was the wrong set, roughly doubling the reported
+  # share. Neither moved an estimate -- both misreport data quality, which is
+  # what the message exists to convey.
+  design <- mor_design_missing_duration(n_missing = 0L)
+  iv <- design$interviews
+  dur <- iv[[design$trip_duration_col]]
+
+  # Complete-trip MOR: a real percentage, never Inf.
+  complete_msg <- capture_truncation_warning(
+    estimate_catch_rate(design, use_trips = "complete", estimator = "mor", truncate_at = 2.0)
+  )
+  expect_false(any(grepl("Inf", complete_msg, fixed = TRUE)))
+  n_complete <- sum(iv$trip_status == "complete")
+  n_short_complete <- sum(dur < 2.0 & iv$trip_status == "complete")
+  expect_match(
+    complete_msg,
+    sprintf("%.1f%%", 100 * n_short_complete / n_complete),
+    fixed = TRUE,
+    all = FALSE
+  )
+
+  # All-trip MOR: the share is of every interview, not of the incomplete ones.
+  all_msg <- capture_truncation_warning(
+    estimate_catch_rate(design, use_trips = "all", estimator = "mor", truncate_at = 2.0)
+  )
+  expect_match(
+    all_msg,
+    sprintf("%.1f%%", 100 * sum(dur < 2.0) / nrow(iv)),
+    fixed = TRUE,
+    all = FALSE
   )
 })
