@@ -3866,3 +3866,88 @@ test_that("ROVING-07: use_trips='all' valid for access design too", {
   expect_s3_class(result, "creel_estimates")
   expect_equal(result$estimates$n, n)
 })
+
+# ---- the roving auto-route never reaches a Horvitz-Thompson design (GH #270)
+
+test_that("a bus-route or ice design declared roving still produces a catch rate", {
+  # The auto-route used to fire before the bus-route/ice dispatch and be undone
+  # inside it. The undo read `use_trips_is_default`, which the route itself had
+  # to clear -- clearing it is what stops the mor/incomplete auto-adjust from
+  # reversing the route on a standard design -- so the condition was false
+  # exactly when it needed to be true. `use_trips` reached the bus-route
+  # validator as "all", which it refuses, and the call aborted outright.
+  #
+  # Not a wrong number: no number at all. The estimator is now excluded at the
+  # point of resolution, as `resolve_total_rate_spec()` excludes it.
+  for (design_type in c("bus_route", "ice")) {
+    design <- suppressWarnings(suppressMessages(
+      build_ht_multispecies_design(design_type, seed = 42L)
+    ))
+
+    roving <- design
+    roving$interview_type <- "roving"
+    access <- design
+    access$interview_type <- "access"
+
+    est_roving <- suppressWarnings(suppressMessages(estimate_catch_rate(roving)))
+    est_access <- suppressWarnings(suppressMessages(estimate_catch_rate(access)))
+
+    # These designs estimate a completed-trip Horvitz-Thompson total, so
+    # interview_type must not move the number. Asserting equality rather than
+    # "does not error" is what makes this test discriminate: a fix that let the
+    # call through while still routing to all-trip MOR would pass a smoke test.
+    expect_equal(
+      est_roving$estimates$estimate,
+      est_access$estimates$estimate,
+      info = design_type
+    )
+    expect_equal(est_roving$method, est_access$method, info = design_type)
+  }
+})
+
+test_that("a roving standard design still auto-routes to all-trip MOR", {
+  # The guard against over-correcting #270: the gate is on design type, so the
+  # standard-design route must be exactly as it was.
+  design <- suppressWarnings(suppressMessages(make_sectioned_species_design(48L)))
+  design[["sections"]] <- NULL
+  design$interview_type <- "roving"
+
+  auto <- suppressWarnings(suppressMessages(estimate_catch_rate(design)))
+  explicit <- suppressWarnings(suppressMessages(
+    estimate_catch_rate(design, use_trips = "all", estimator = "mor")
+  ))
+
+  expect_equal(auto$estimates$estimate, explicit$estimates$estimate)
+  expect_equal(auto$method, "mean-of-ratios-cpue")
+})
+
+test_that("an explicit use_trips still reaches a roving bus-route design", {
+  # The pre-#270 workaround was to pass use_trips explicitly. That path has to
+  # keep working, and it is also the one that proves the gate did not simply
+  # pin `use_trips` to "complete" on this branch.
+  design <- suppressWarnings(suppressMessages(
+    build_ht_multispecies_design("bus_route", seed = 42L)
+  ))
+  design$interview_type <- "roving"
+
+  # Still refused, and that is the point: the caller's own value reaches the
+  # bus-route validator. A gate that pinned `use_trips` to "complete" on this
+  # branch would swallow this call and return a number instead.
+  expect_error(
+    suppressWarnings(suppressMessages(
+      estimate_catch_rate(design, use_trips = "all")
+    )),
+    "Must be one of"
+  )
+
+  # And an unspecified use_trips resolves to "complete" rather than to the
+  # route's "all".
+  expect_equal(
+    suppressWarnings(suppressMessages(
+      estimate_catch_rate(design)
+    ))$estimates$estimate,
+    suppressWarnings(suppressMessages(
+      estimate_catch_rate(design, use_trips = "complete")
+    ))$estimates$estimate
+  )
+})
