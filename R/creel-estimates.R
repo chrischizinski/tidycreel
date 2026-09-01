@@ -1016,7 +1016,20 @@ estimate_catch_rate <- function(
   # Auto-route roving designs: when interview_type="roving" and the user has not
   # specified use_trips or estimator, default to all-trip MOR (Hoenig 1997).
   # Access-point designs keep the ROM-on-complete default.
-  roving_auto <- !is.null(design$interview_type) &&
+  #
+  # Bus-route and ice designs are excluded at the point of resolution rather
+  # than undone downstream (GH #270). They estimate a completed-trip
+  # Horvitz-Thompson total and "all" is not an estimator there, so the route has
+  # nothing to offer them. Routing first and reversing later cost this function
+  # an outright abort: the reversal reads `use_trips_is_default`, which the
+  # route itself had to clear -- see the FALSE assignment below, which stops the
+  # mor/incomplete auto-adjust from undoing the route on a standard design.
+  # `resolve_total_rate_spec()` gates on the same condition, and the harvest and
+  # release rates get it structurally by returning before this block.
+  ht_design <- !is.null(design$design_type) &&
+    design$design_type %in% c("bus_route", "ice")
+
+  roving_auto <- !ht_design &&
     identical(design$interview_type, "roving") &&
     use_trips_is_default &&
     estimator_is_default
@@ -1113,10 +1126,12 @@ estimate_catch_rate <- function(
   if (!is.null(design$design_type) && design$design_type %in% c("bus_route", "ice")) {
     by_info_br <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
 
-    # The roving auto-route above may have flipped an unspecified use_trips to
-    # "all" + MOR. That is a standard-design heuristic and "all" is not an
-    # estimator here, so the bus-route path reads the user's own value and
-    # treats "unspecified" as "complete", matching estimate_harvest_rate().
+    # "all" is not an estimator here, so an unspecified use_trips resolves to
+    # "complete", matching estimate_harvest_rate(). The roving auto-route can no
+    # longer reach this branch -- it is gated on design type above (GH #270).
+    # Until then it fired first and was reversed here, and the reversal read a
+    # flag the route had already cleared, so a bus-route or ice design declared
+    # roving could not produce a catch rate at all.
     use_trips_br <- if (use_trips_is_default) "complete" else use_trips
     validate_use_trips_br(use_trips_br) # nolint: object_usage_linter
 
