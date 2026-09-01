@@ -1078,7 +1078,10 @@ estimate_catch_rate <- function(
   # Validate truncate_at parameter
   if (
     !is.null(truncate_at) &&
-      (!is.numeric(truncate_at) || length(truncate_at) != 1L || truncate_at <= 0)
+      (!is.numeric(truncate_at) ||
+         length(truncate_at) != 1L ||
+         is.na(truncate_at) ||
+         truncate_at <= 0)
   ) {
     cli::cli_abort(c(
       "Invalid truncate_at: {.val {truncate_at}}",
@@ -1602,6 +1605,24 @@ estimate_catch_rate <- function(
 
       # Use truncated data
       incomplete_interviews <- incomplete_interviews[keep, , drop = FALSE]
+
+      # An empty sample cannot be estimated from, and left to fall through it
+      # aborts inside rowSums() with "all arguments must have the same length",
+      # which names neither the threshold nor the duration column. The bus-route
+      # path already refuses here; this is the same refusal for the standard one.
+      if (nrow(incomplete_interviews) == 0) {
+        cli::cli_abort(c(
+          "No trips remain for mean-of-ratios estimation.",
+          "x" = paste(
+            "All {n_before_truncation} trip{?s} were shorter than the",
+            "threshold or had no recorded duration."
+          ),
+          "i" = paste(
+            "Lower {.arg truncate_at} (currently {.val {truncate_at}}) or check",
+            "{.val {duration_col}}."
+          )
+        ))
+      }
 
       # Issue truncation message
       # Share of the trips that *had* a duration to judge: a trip with none was
@@ -2910,7 +2931,10 @@ resolve_total_rate_spec <- function(
 
   if (
     !is.null(truncate_at) &&
-      (!is.numeric(truncate_at) || length(truncate_at) != 1L || truncate_at <= 0)
+      (!is.numeric(truncate_at) ||
+         length(truncate_at) != 1L ||
+         is.na(truncate_at) ||
+         truncate_at <= 0)
   ) {
     cli::cli_abort(c(
       "Invalid {.arg truncate_at} value: {.val {truncate_at}}",
@@ -3018,6 +3042,23 @@ truncate_interviews_for_mor <- function(design, estimator, truncate_at) {
         "{.arg truncate_at} threshold, so it is excluded rather than assumed."
       ),
       "i" = "Reported separately from the {n_truncated} trip{?s} excluded as too short."
+    ))
+  }
+
+  # Same refusal as the rate path: an empty post-truncation sample otherwise
+  # aborts inside rowSums() with a message naming neither the threshold nor the
+  # duration column.
+  if (sum(keep) == 0) {
+    cli::cli_abort(c(
+      "No trips remain for mean-of-ratios estimation.",
+      "x" = paste(
+        "All {n_total} trip{?s} were shorter than the threshold or had no",
+        "recorded duration."
+      ),
+      "i" = paste(
+        "Lower {.arg truncate_at} (currently {.val {truncate_at}}) or check",
+        "{.val {duration_col}}."
+      )
     ))
   }
 

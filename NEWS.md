@@ -81,6 +81,19 @@
 
 ## Bug fixes
 
+* Two degenerate MOR truncation inputs now abort with tidycreel wording rather
+  than falling through to base R or to the survey package (#279). `truncate_at =
+  NA` passed the validator's numeric and length checks and reduced it to
+  `NA <= 0`, so `if (NA)` aborted with "missing value where TRUE/FALSE needed";
+  all three validators -- the catch-rate one, the totals resolver's, and the
+  bus-route one -- carried the same gap. A threshold that truncates away every
+  interview left an empty sample to reach `rowSums()`, which aborts with "all
+  arguments must have the same length", a message about matrix conformability
+  for a condition entirely about the chosen threshold; the refusal now names
+  `truncate_at` and the duration column, as the bus-route incomplete-trip path
+  already did. Both are pre-existing, and no estimate that returned a number
+  before returns a different one.
+
 * The MOR truncation message now reports a percentage of the interviews it
   actually truncated. It divided by the incomplete-trip count regardless of
   which trip set was being estimated, so `use_trips = "complete"` with
