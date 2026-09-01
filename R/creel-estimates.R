@@ -1604,7 +1604,13 @@ estimate_catch_rate <- function(
       incomplete_interviews <- incomplete_interviews[keep, , drop = FALSE]
 
       # Issue truncation message
-      mor_truncation_message(n_truncated, n_before_truncation, truncate_at) # nolint: object_usage_linter
+      # Share of the trips that *had* a duration to judge: a trip with none was
+      # never eligible to be short, and it is already reported on its own above.
+      mor_truncation_message(
+        n_truncated,
+        n_before_truncation - n_missing_duration,
+        truncate_at
+      )
     } else {
       if (!is.null(truncate_at) && is.null(design$trip_duration_col)) {
         cli::cli_warn(c(
@@ -3020,7 +3026,7 @@ truncate_interviews_for_mor <- function(design, estimator, truncate_at) {
   design$mor_n_total <- n_total
   design$mor_truncate_at <- truncate_at
   design$mor_n_truncated <- n_truncated
-  mor_truncation_message(n_truncated, n_total, truncate_at) # nolint: object_usage_linter
+  mor_truncation_message(n_truncated, n_total - n_missing_duration, truncate_at)
   design
 }
 

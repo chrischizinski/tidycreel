@@ -2162,7 +2162,7 @@ test_that("MOR stores zero truncation when all trips above threshold", {
 test_that("MOR truncation function warns when >10% truncated", {
   # Test the function directly
   expect_warning(
-    mor_truncation_message(n_truncated = 15, n_before_truncation = 30, truncate_at = 0.5),
+    mor_truncation_message(n_truncated = 15, n_with_duration = 30, truncate_at = 0.5),
     "High truncation rate may indicate data quality issues"
   )
 })
@@ -4102,4 +4102,25 @@ test_that("the truncation percentage is a share of the set that was truncated", 
     fixed = TRUE,
     all = FALSE
   )
+})
+
+test_that("the truncation percentage excludes trips that had no duration to judge", {
+  # A trip with no recorded duration was never eligible to be judged short, and
+  # it is already reported on its own. Leaving it in the denominator dilutes the
+  # short-trip rate and can push a genuinely high rate below the 10% threshold
+  # that triggers the data-quality warning -- so the excluded trips would stop
+  # being flagged precisely when the duration column is at its worst.
+  design <- mor_design_missing_duration(n_missing = 12L)
+  iv <- design$interviews
+  dur <- iv[[design$trip_duration_col]]
+  n_known <- sum(!is.na(dur))
+  n_short <- sum(!is.na(dur) & dur < 2.0)
+
+  msg <- capture_truncation_warning(
+    estimate_catch_rate(design, use_trips = "all", estimator = "mor", truncate_at = 2.0)
+  )
+
+  expect_match(msg, sprintf("%.1f%%", 100 * n_short / n_known), fixed = TRUE, all = FALSE)
+  # And not the diluted share over every interview, missing durations included.
+  expect_no_match(msg, sprintf("%.1f%%", 100 * n_short / nrow(iv)), fixed = TRUE, all = TRUE)
 })

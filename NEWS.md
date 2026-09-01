@@ -88,8 +88,12 @@
   "high truncation rate may indicate data quality issues" branch -- and
   `use_trips = "all"` reported the share of the incomplete trips rather than of
   all of them, roughly doubling it on a half-incomplete sample. Both the rate
-  and the total paths were affected. No estimate changes; the message is what
-  a caller reads to judge whether the threshold is discarding too much data.
+  and the total paths were affected. The denominator also excludes interviews
+  with no recorded trip duration, which are reported separately: a trip with no
+  duration was never eligible to be judged short, and counting it diluted the
+  short-trip rate enough to hide it below the 10% threshold that triggers the
+  data-quality warning. No estimate changes; the message is what a caller reads
+  to judge whether the threshold is discarding too much data.
 
 * `estimate_catch_rate()` no longer aborts when an interview has no recorded
   trip duration and MOR truncation is in effect (#272). The truncation filter
