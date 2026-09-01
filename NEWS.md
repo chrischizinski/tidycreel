@@ -2,6 +2,42 @@
 
 ## Breaking changes
 
+* `estimate_harvest_rate()` and `estimate_release_rate()` gained an `estimator`
+  argument and now resolve it from the design's `interview_type`, matching
+  `estimate_catch_rate()`. `estimate_total_harvest()` and
+  `estimate_total_release()` gained `estimator` and `truncate_at` and follow
+  their own rate functions through the resolver added in #268 (#271).
+
+  **Harvest and release rates and totals on a roving design change by default.**
+  Where neither `use_trips` nor `estimator` is specified and the design was built
+  with `add_interviews(interview_type = "roving")`, all four now use all trips
+  with the truncated mean-of-ratios estimator. Previously mean-of-ratios HPUE and
+  RPUE existed nowhere outside the bus-route path: the standard internals were
+  ratio-of-means only, so a roving survey got a mean-of-ratios catch rate and a
+  ratio-of-means harvest rate off one design, with no message.
+
+  Hoenig et al. (1997) recommend the truncated mean of ratios for a roving survey
+  because the clerk intercepts trips mid-stream. That argument is about the
+  interview, not about which fish are counted — harvest and release are recorded
+  in the same interception and are length-biased the same way.
+
+  To keep the previous numbers, pass `use_trips = "complete"` or
+  `estimator = "ratio-of-means"`; naming either one suppresses the routing.
+  Access-point designs are unaffected. Bus-route and ice designs never
+  auto-route, and their totals now refuse a mean-of-ratios estimator rather than
+  accepting and ignoring it.
+
+  This completes #268. The rule established there is unchanged — each total
+  resolves by the same rule its own rate function uses — and only what that rule
+  resolves to has moved, because the harvest and release rate functions now have
+  an estimator to follow.
+
+* The `method` on a harvest or release estimate now names the estimator that
+  produced it: `"mean-of-ratios-hpue"` / `"mean-of-ratios-rpue"` (and the
+  `-truncated-` and `-sections` variants) rather than always reporting
+  `"ratio-of-means-"`. Code matching on `method` for these two metrics should
+  expect the new values on MOR paths.
+
 * `estimate_total_catch()` now resolves its rate estimator from the design's
   `interview_type` instead of always requesting ratio-of-means, and gained
   `estimator` and `truncate_at` arguments (#268).

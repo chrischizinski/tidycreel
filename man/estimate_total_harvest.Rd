@@ -11,6 +11,8 @@ estimate_total_harvest(
   conf_level = 0.95,
   target = c("sampled_days", "stratum_total", "period_total"),
   use_trips = NULL,
+  estimator = NULL,
+  truncate_at = 0.5,
   aggregate_sections = TRUE,
   missing_sections = "warn",
   ci_method = c("delta", "bootstrap"),
@@ -50,10 +52,22 @@ far, and the two do not scale together over the trip, so \code{"all"} gives a
 length-biased rate and a total built from it. Ignored when the design
 carries no trip status column.
 
-Unlike \code{\link[=estimate_total_catch]{estimate_total_catch()}}, this function does not route a roving
-design to all-trip mean-of-ratios, because \code{\link[=estimate_harvest_rate]{estimate_harvest_rate()}} offers
-no estimator selection to follow (GH #271). Both resolve through the same
-rule, so the total always agrees with its own rate function.}
+Since GH #271 a roving design routes to all-trip mean-of-ratios here, as it
+does for \code{\link[=estimate_total_catch]{estimate_total_catch()}}, because \code{\link[=estimate_harvest_rate]{estimate_harvest_rate()}} gained the same
+estimator selection. Both resolve through the same rule, so the total always
+agrees with its own rate function.}
+
+\item{estimator}{Character string selecting the rate estimator used for the
+HPUE component: \code{"ratio-of-means"}, \code{"mor"}, or \code{"mortr"}. Default \code{NULL}
+means "not specified"; see \code{\link[=estimate_harvest_rate]{estimate_harvest_rate()}} for how the pair resolves and when
+the roving auto-route applies. Bus-route and ice designs accept only
+\code{"ratio-of-means"}, because their total is a ratio of Horvitz-Thompson
+totals with no mean-of-ratios form.}
+
+\item{truncate_at}{Numeric minimum trip duration in hours for MOR, or \code{NULL}
+to disable truncation. Default 0.5 (30 minutes) per Hoenig et al. (1997).
+Truncation is not a tuning knob: the untruncated mean-of-ratios estimator
+has infinite variance. Ignored under ratio-of-means.}
 
 \item{aggregate_sections}{Logical. When the design was created with
 \code{\link{add_sections}}, should a \code{.lake_total} row be appended

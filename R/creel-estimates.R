@@ -303,6 +303,10 @@ format.creel_estimates <- function(x, ...) {
     "ratio-of-means-cpue" = "Ratio-of-Means CPUE",
     "mean-of-ratios-cpue" = "Mean-of-Ratios CPUE",
     "ratio-of-means-hpue" = "Ratio-of-Means HPUE",
+    "mean-of-ratios-hpue" = "Mean-of-Ratios HPUE",
+    "mean-of-ratios-truncated-hpue" = "Truncated Mean-of-Ratios HPUE",
+    "mean-of-ratios-rpue" = "Mean-of-Ratios RPUE",
+    "mean-of-ratios-truncated-rpue" = "Truncated Mean-of-Ratios RPUE",
     "ratio-of-means-cpue-per-angler" = "Ratio-of-Means CPUE (per angler)",
     "mean-of-ratios-cpue-per-angler" = "Mean-of-Ratios CPUE (per angler)",
     "ratio-of-means-hpue-per-angler" = "Ratio-of-Means HPUE (per angler)",
@@ -1772,15 +1776,33 @@ estimate_catch_rate <- function(
 #'   unrecognised values are an error. When \code{trip_status} was not provided
 #'   to \code{\link{add_interviews}}, this argument has no effect for standard
 #'   designs.
-#' @param truncate_at Numeric minimum trip duration in hours for the bus-route
-#'   incomplete-trip estimator (default \code{0.5}, i.e. 30 minutes). Incomplete
-#'   trips shorter than this are discarded before the mean of ratios is taken.
+#' @param estimator Character string selecting the rate estimator:
+#'   \code{"ratio-of-means"} (a ratio of totals), \code{"mor"} (the mean of
+#'   per-interview ratios), or \code{"mortr"} (\code{"mor"} with truncation made
+#'   mandatory). Default \code{NULL} means "not specified". When \code{use_trips}
+#'   and \code{estimator} are \emph{both} unspecified and the design was built
+#'   with \code{add_interviews(interview_type = "roving")}, the pair resolves to
+#'   all-trip truncated MOR; otherwise it resolves to complete-trip
+#'   ratio-of-means. Specifying either one suppresses the automatic routing.
+#'
+#'   Hoenig et al. (1997) recommend the truncated mean of ratios for a roving
+#'   survey because the clerk intercepts trips mid-stream. That argument is
+#'   about the interview rather than about which fish are counted, so it applies
+#'   to this rate exactly as it applies to the catch rate. Bus-route and ice
+#'   designs return before this resolution and are unaffected.
+#' @param truncate_at Numeric minimum trip duration in hours for the
+#'   mean-of-ratios estimator (default \code{0.5}, i.e. 30 minutes). Trips
+#'   shorter than this are discarded before the mean of ratios is taken.
 #'   Hoenig et al. (1997) recommend the 30-minute threshold because the
 #'   untruncated mean-of-ratios estimator has infinite asymptotic variance:
 #'   \code{1/L} has infinite expectation as trip length approaches zero. The
 #'   threshold applies to elapsed trip duration, not to angler-hours. Set to
-#'   \code{NULL} to disable, which warns. Ignored on every other path, including
-#'   \code{use_trips = "complete"}.
+#'   \code{NULL} to disable; the bus-route path warns when it is disabled there,
+#'   the standard mean-of-ratios path treats it as a documented opt-out and is
+#'   silent, matching \code{\link{estimate_catch_rate}}. Ignored under
+#'   \code{"ratio-of-means"}. An interview whose duration is missing cannot be
+#'   shown to meet the threshold, so it is excluded and reported separately from
+#'   the trips excluded as too short.
 #' @param missing_sections Character string controlling behavior when a
 #'   registered section has no interview observations. \code{"warn"} (default)
 #'   emits a \code{cli_warn()} and inserts an NA row with
@@ -1897,6 +1919,7 @@ estimate_harvest_rate <- function(
   conf_level = 0.95,
   verbose = FALSE,
   use_trips = NULL,
+  estimator = NULL,
   truncate_at = 0.5,
   missing_sections = "warn"
 ) {
@@ -2023,9 +2046,60 @@ estimate_harvest_rate <- function(
   # returned above and filter for themselves). The section dispatch reads the
   # design this block leaves behind, so the filtering reaches it too (GH #263).
   use_trips_is_default <- is.null(use_trips)
+  estimator_is_default <- is.null(estimator)
   if (is.null(use_trips)) {
     use_trips <- "complete"
   }
+  if (is.null(estimator)) {
+    estimator <- "ratio-of-means"
+  }
+
+  valid_estimators_std <- c("ratio-of-means", "mor", "mortr")
+  if (!estimator %in% valid_estimators_std) {
+    cli::cli_abort(c(
+      "Invalid estimator value: {.val {estimator}}",
+      "x" = "Must be one of: {.val {valid_estimators_std}}",
+      "i" = paste(
+        "{.val ratio-of-means} is a ratio of totals;",
+        "{.val mor} averages per-interview ratios;",
+        "{.val mortr} is {.val mor} with truncation made mandatory."
+      )
+    ))
+  }
+
+  # mortr is mor with mandatory truncation, normalised as estimate_catch_rate()
+  # normalises it so the three rate functions cannot drift apart. The flag is
+  # what estimate_catch_rate() keeps too: every downstream branch tests for
+  # "mor", so the string has to be normalised, but a result whose method cannot
+  # say truncation was mandatory is two estimators returning objects that look
+  # identical -- the reporting half of the defect GH #271 closes.
+  mortr_active <- identical(estimator, "mortr")
+  if (mortr_active) {
+    if (is.null(truncate_at)) {
+      truncate_at <- 0.5
+    }
+    estimator <- "mor"
+  }
+
+  # Auto-route roving designs to all-trip MOR when the caller expressed no
+  # preference, matching estimate_catch_rate(). Hoenig et al. (1997) recommend
+  # the truncated mean of ratios for a roving survey because the clerk
+  # intercepts trips mid-stream, and that argument is about the interview, not
+  # about which fish are counted -- harvest and release are collected by the
+  # same interception and are length-biased the same way (GH #271).
+  #
+  # No design_type gate is needed: bus-route and ice designs returned above and
+  # never reach this block. That ordering is why this function does not have
+  # the defect filed as GH #270, where the same auto-route runs before the
+  # bus-route branch and clears the flag that branch reads to undo it.
+  roving_auto <- identical(design$interview_type, "roving") &&
+    use_trips_is_default &&
+    estimator_is_default
+  if (roving_auto) {
+    use_trips <- "all"
+    estimator <- "mor"
+  }
+
   valid_use_trips_std <- c("all", "complete")
   if (!use_trips %in% valid_use_trips_std) {
     cli::cli_abort(c(
@@ -2075,6 +2149,12 @@ estimate_harvest_rate <- function(
     }
   }
 
+  # Truncation is part of the MOR estimator, not a tuning knob: untruncated MOR
+  # has infinite variance (Hoenig et al. 1997). Applied once here, after the trip
+  # filter and before any dispatch, so the ungrouped, grouped, species and
+  # sectioned paths are all built from the same interviews (GH #271).
+  design <- truncate_interviews_for_mor(design, estimator, truncate_at) # nolint: object_usage_linter
+
   # Section dispatch guard — fires AFTER trip filtering, BEFORE standard dispatch.
   # It sat above the use_trips block until GH #263, which left use_trips inert on
   # a sectioned design: "all" and "complete" returned the same number, the
@@ -2088,9 +2168,16 @@ estimate_harvest_rate <- function(
       by_quo,
       variance,
       conf_level,
-      missing_sections
+      missing_sections,
+      estimator = estimator
     ))
   }
+
+  # Restore the mortr string for downstream method labelling, exactly as
+  # estimate_catch_rate() does. The sectioned path above keeps the normalised
+  # value: its own label has no truncated variant there either, so handing it
+  # "mortr" would fall through to the ratio-of-means label.
+  dispatch_estimator <- if (mortr_active) "mortr" else estimator
 
   # Detect species-level grouping
   by_info <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
@@ -2110,12 +2197,19 @@ estimate_harvest_rate <- function(
       species_col = by_info$species_var,
       interview_by_vars = by_info$interview_vars,
       variance_method = variance,
-      conf_level = conf_level
+      conf_level = conf_level,
+      estimator = dispatch_estimator
     )
     return(new_creel_estimates(
       # nolint: object_usage_linter
       estimates = tibble::as_tibble(estimates_df),
-      method = "ratio-of-means-hpue-species",
+      method = if (mortr_active) {
+        "mean-of-ratios-truncated-hpue-species"
+      } else if (identical(estimator, "mor")) {
+        "mean-of-ratios-hpue-species"
+      } else {
+        "ratio-of-means-hpue-species"
+      },
       variance_method = variance,
       design = design,
       conf_level = conf_level,
@@ -2129,7 +2223,7 @@ estimate_harvest_rate <- function(
     # Ungrouped estimation
     # Validate sample size
     validate_ratio_sample_size(design, NULL, type = "harvest") # nolint: object_usage_linter
-    return(estimate_harvest_total(design, variance, conf_level)) # nolint: object_usage_linter
+    return(estimate_harvest_total(design, variance, conf_level, dispatch_estimator)) # nolint: object_usage_linter
   } else {
     # Grouped estimation
     # Resolve by parameter to column names
@@ -2144,7 +2238,7 @@ estimate_harvest_rate <- function(
 
     # Validate sample size per group
     validate_ratio_sample_size(design, by_vars, type = "harvest") # nolint: object_usage_linter
-    return(estimate_harvest_grouped(design, by_vars, variance, conf_level)) # nolint: object_usage_linter
+    return(estimate_harvest_grouped(design, by_vars, variance, conf_level, dispatch_estimator)) # nolint: object_usage_linter
   }
 }
 
@@ -2178,15 +2272,33 @@ estimate_harvest_rate <- function(
 #'   \code{"diagnostic"}, matching \code{\link{estimate_harvest_rate}};
 #'   \code{"all"} is not an estimator there, and unrecognised values are an
 #'   error rather than a silent fall-through to the complete-trip path.
-#' @param truncate_at Numeric minimum trip duration in hours for the bus-route
-#'   incomplete-trip estimator (default \code{0.5}, i.e. 30 minutes). Incomplete
-#'   trips shorter than this are discarded before the mean of ratios is taken.
+#' @param estimator Character string selecting the rate estimator:
+#'   \code{"ratio-of-means"} (a ratio of totals), \code{"mor"} (the mean of
+#'   per-interview ratios), or \code{"mortr"} (\code{"mor"} with truncation made
+#'   mandatory). Default \code{NULL} means "not specified". When \code{use_trips}
+#'   and \code{estimator} are \emph{both} unspecified and the design was built
+#'   with \code{add_interviews(interview_type = "roving")}, the pair resolves to
+#'   all-trip truncated MOR; otherwise it resolves to complete-trip
+#'   ratio-of-means. Specifying either one suppresses the automatic routing.
+#'
+#'   Hoenig et al. (1997) recommend the truncated mean of ratios for a roving
+#'   survey because the clerk intercepts trips mid-stream. That argument is
+#'   about the interview rather than about which fish are counted, so it applies
+#'   to this rate exactly as it applies to the catch rate. Bus-route and ice
+#'   designs return before this resolution and are unaffected.
+#' @param truncate_at Numeric minimum trip duration in hours for the
+#'   mean-of-ratios estimator (default \code{0.5}, i.e. 30 minutes). Trips
+#'   shorter than this are discarded before the mean of ratios is taken.
 #'   Hoenig et al. (1997) recommend the 30-minute threshold because the
 #'   untruncated mean-of-ratios estimator has infinite asymptotic variance:
 #'   \code{1/L} has infinite expectation as trip length approaches zero. The
 #'   threshold applies to elapsed trip duration, not to angler-hours. Set to
-#'   \code{NULL} to disable, which warns. Ignored on every other path, including
-#'   \code{use_trips = "complete"}.
+#'   \code{NULL} to disable; the bus-route path warns when it is disabled there,
+#'   the standard mean-of-ratios path treats it as a documented opt-out and is
+#'   silent, matching \code{\link{estimate_catch_rate}}. Ignored under
+#'   \code{"ratio-of-means"}. An interview whose duration is missing cannot be
+#'   shown to meet the threshold, so it is excluded and reported separately from
+#'   the trips excluded as too short.
 #' @param missing_sections Character string controlling behavior when a
 #'   registered section has no interview observations. \code{"warn"} (default)
 #'   emits a \code{cli_warn()} and inserts an NA row with
@@ -2261,6 +2373,7 @@ estimate_release_rate <- function(
   variance = "taylor",
   conf_level = 0.95,
   use_trips = NULL,
+  estimator = NULL,
   truncate_at = 0.5,
   missing_sections = "warn"
 ) {
@@ -2350,9 +2463,60 @@ estimate_release_rate <- function(
   # returned above and filter for themselves). The section dispatch reads the
   # design this block leaves behind, so the filtering reaches it too (GH #263).
   use_trips_is_default <- is.null(use_trips)
+  estimator_is_default <- is.null(estimator)
   if (is.null(use_trips)) {
     use_trips <- "complete"
   }
+  if (is.null(estimator)) {
+    estimator <- "ratio-of-means"
+  }
+
+  valid_estimators_std <- c("ratio-of-means", "mor", "mortr")
+  if (!estimator %in% valid_estimators_std) {
+    cli::cli_abort(c(
+      "Invalid estimator value: {.val {estimator}}",
+      "x" = "Must be one of: {.val {valid_estimators_std}}",
+      "i" = paste(
+        "{.val ratio-of-means} is a ratio of totals;",
+        "{.val mor} averages per-interview ratios;",
+        "{.val mortr} is {.val mor} with truncation made mandatory."
+      )
+    ))
+  }
+
+  # mortr is mor with mandatory truncation, normalised as estimate_catch_rate()
+  # normalises it so the three rate functions cannot drift apart. The flag is
+  # what estimate_catch_rate() keeps too: every downstream branch tests for
+  # "mor", so the string has to be normalised, but a result whose method cannot
+  # say truncation was mandatory is two estimators returning objects that look
+  # identical -- the reporting half of the defect GH #271 closes.
+  mortr_active <- identical(estimator, "mortr")
+  if (mortr_active) {
+    if (is.null(truncate_at)) {
+      truncate_at <- 0.5
+    }
+    estimator <- "mor"
+  }
+
+  # Auto-route roving designs to all-trip MOR when the caller expressed no
+  # preference, matching estimate_catch_rate(). Hoenig et al. (1997) recommend
+  # the truncated mean of ratios for a roving survey because the clerk
+  # intercepts trips mid-stream, and that argument is about the interview, not
+  # about which fish are counted -- harvest and release are collected by the
+  # same interception and are length-biased the same way (GH #271).
+  #
+  # No design_type gate is needed: bus-route and ice designs returned above and
+  # never reach this block. That ordering is why this function does not have
+  # the defect filed as GH #270, where the same auto-route runs before the
+  # bus-route branch and clears the flag that branch reads to undo it.
+  roving_auto <- identical(design$interview_type, "roving") &&
+    use_trips_is_default &&
+    estimator_is_default
+  if (roving_auto) {
+    use_trips <- "all"
+    estimator <- "mor"
+  }
+
   valid_use_trips_std <- c("all", "complete")
   if (!use_trips %in% valid_use_trips_std) {
     cli::cli_abort(c(
@@ -2402,6 +2566,12 @@ estimate_release_rate <- function(
     }
   }
 
+  # Truncation is part of the MOR estimator, not a tuning knob: untruncated MOR
+  # has infinite variance (Hoenig et al. 1997). Applied once here, after the trip
+  # filter and before any dispatch, so the ungrouped, grouped, species and
+  # sectioned paths are all built from the same interviews (GH #271).
+  design <- truncate_interviews_for_mor(design, estimator, truncate_at) # nolint: object_usage_linter
+
   # Section dispatch guard — fires AFTER trip filtering, BEFORE standard dispatch.
   # It sat above the use_trips block until GH #263, which left use_trips inert on
   # a sectioned design: "all" and "complete" returned the same number, the
@@ -2415,9 +2585,16 @@ estimate_release_rate <- function(
       by_quo,
       variance,
       conf_level,
-      missing_sections
+      missing_sections,
+      estimator = estimator
     ))
   }
+
+  # Restore the mortr string for downstream method labelling, exactly as
+  # estimate_catch_rate() does. The sectioned path above keeps the normalised
+  # value: its own label has no truncated variant there either, so handing it
+  # "mortr" would fall through to the ratio-of-means label.
+  dispatch_estimator <- if (mortr_active) "mortr" else estimator
 
   # Detect species-level grouping
   by_info <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
@@ -2430,12 +2607,19 @@ estimate_release_rate <- function(
       species_col = by_info$species_var,
       interview_by_vars = by_info$interview_vars,
       variance_method = variance,
-      conf_level = conf_level
+      conf_level = conf_level,
+      estimator = dispatch_estimator
     )
     return(new_creel_estimates(
       # nolint: object_usage_linter
       estimates = tibble::as_tibble(estimates_df),
-      method = "ratio-of-means-rpue",
+      method = if (mortr_active) {
+        "mean-of-ratios-truncated-rpue"
+      } else if (identical(estimator, "mor")) {
+        "mean-of-ratios-rpue"
+      } else {
+        "ratio-of-means-rpue"
+      },
       variance_method = variance,
       design = design,
       conf_level = conf_level,
@@ -2469,8 +2653,14 @@ estimate_release_rate <- function(
 
   if (rlang::quo_is_null(by_quo)) {
     validate_ratio_sample_size(design_rel, NULL, type = "cpue") # nolint: object_usage_linter
-    result <- estimate_cpue_total(design_rel, variance, conf_level) # nolint: object_usage_linter
-    result$method <- "ratio-of-means-rpue"
+    result <- estimate_cpue_total(design_rel, variance, conf_level, dispatch_estimator) # nolint: object_usage_linter
+    result$method <- if (mortr_active) {
+      "mean-of-ratios-truncated-rpue"
+    } else if (identical(estimator, "mor")) {
+      "mean-of-ratios-rpue"
+    } else {
+      "ratio-of-means-rpue"
+    }
     result # nolint: return_linter
   } else {
     by_cols <- tidyselect::eval_select(
@@ -2482,8 +2672,14 @@ estimate_release_rate <- function(
     )
     by_vars <- names(by_cols)
     validate_ratio_sample_size(design_rel, by_vars, type = "cpue") # nolint: object_usage_linter
-    result <- estimate_cpue_grouped(design_rel, by_vars, variance, conf_level) # nolint: object_usage_linter
-    result$method <- "ratio-of-means-rpue"
+    result <- estimate_cpue_grouped(design_rel, by_vars, variance, conf_level, dispatch_estimator) # nolint: object_usage_linter
+    result$method <- if (mortr_active) {
+      "mean-of-ratios-truncated-rpue"
+    } else if (identical(estimator, "mor")) {
+      "mean-of-ratios-rpue"
+    } else {
+      "ratio-of-means-rpue"
+    }
     result # nolint: return_linter
   }
 }
@@ -2575,7 +2771,8 @@ filter_interviews_use_trips <- function(design, use_trips) {
 #' estimator -- and a different trip set -- from `estimate_catch_rate()` on the
 #' same object, with no message.
 #'
-#' The rule is per metric because the rate functions themselves differ:
+#' The rule is per metric because the rate functions may differ; since GH #271
+#' all three agree, and the parameter records where a divergence would go:
 #'
 #' * `"catch"` mirrors [estimate_catch_rate()]: when `interview_type` is
 #'   `"roving"` and the caller specified neither `use_trips` nor `estimator`,
@@ -2584,10 +2781,11 @@ filter_interviews_use_trips <- function(design, use_trips) {
 #'   total catch", so the recommendation is about this function's output, not
 #'   only the rate's.
 #' * `"harvest"` and `"release"` mirror [estimate_harvest_rate()] and
-#'   [estimate_release_rate()], which take no `estimator` argument and do not
-#'   auto-route, so they resolve to ratio-of-means on complete trips. When those
-#'   two grow estimator selection (GH #271) this is the single place that has to
-#'   change for their totals to follow.
+#'   [estimate_release_rate()], which gained the same `estimator` argument and
+#'   the same auto-route in GH #271. They resolved to complete-trip
+#'   ratio-of-means until then, which is why `metric` remains a parameter: it is
+#'   where a future divergence between the three would be expressed, and it
+#'   documents that the rule is per metric rather than global.
 #'
 #' Bus-route and ice designs never auto-route: they estimate a completed-trip
 #' Horvitz-Thompson total, `"all"` is not an estimator there, and the totals
@@ -2684,8 +2882,7 @@ resolve_total_rate_spec <- function(
   ht_design <- !is.null(design$design_type) &&
     design$design_type %in% c("bus_route", "ice")
 
-  roving_auto <- identical(metric, "catch") &&
-    !ht_design &&
+  roving_auto <- !ht_design &&
     identical(design$interview_type, "roving") &&
     use_trips_is_default &&
     estimator_is_default
@@ -5276,6 +5473,7 @@ estimate_release_rate_species <- function(
   interview_by_vars,
   variance_method,
   conf_level,
+  estimator = "ratio-of-means",
   validate = TRUE
 ) {
   all_species <- sort(unique(design[["catch"]][[species_col]]))
@@ -5312,9 +5510,15 @@ estimate_release_rate_species <- function(
     }
 
     if (is.null(interview_by_vars)) {
-      result <- estimate_cpue_total(design_sp, variance_method, conf_level) # nolint: object_usage_linter
+      result <- estimate_cpue_total(design_sp, variance_method, conf_level, estimator) # nolint: object_usage_linter
     } else {
-      result <- estimate_cpue_grouped(design_sp, interview_by_vars, variance_method, conf_level) # nolint: object_usage_linter
+      result <- estimate_cpue_grouped( # nolint: object_usage_linter
+        design_sp,
+        interview_by_vars,
+        variance_method,
+        conf_level,
+        estimator
+      )
     }
 
     sp_df <- result$estimates
@@ -5337,6 +5541,7 @@ estimate_hpue_species <- function(
   interview_by_vars,
   variance_method,
   conf_level,
+  estimator = "ratio-of-means",
   validate = TRUE
 ) {
   all_species <- sort(unique(design[["catch"]][[species_col]]))
@@ -5370,9 +5575,15 @@ estimate_hpue_species <- function(
     }
 
     if (is.null(interview_by_vars)) {
-      result <- estimate_harvest_total(design_sp, variance_method, conf_level) # nolint: object_usage_linter
+      result <- estimate_harvest_total(design_sp, variance_method, conf_level, estimator) # nolint: object_usage_linter
     } else {
-      result <- estimate_harvest_grouped(design_sp, interview_by_vars, variance_method, conf_level) # nolint: object_usage_linter
+      result <- estimate_harvest_grouped( # nolint: object_usage_linter
+        design_sp,
+        interview_by_vars,
+        variance_method,
+        conf_level,
+        estimator
+      )
     }
 
     sp_df <- result$estimates
@@ -5389,7 +5600,12 @@ estimate_hpue_species <- function(
 #'
 #' @keywords internal
 #' @noRd
-estimate_harvest_total <- function(design, variance_method, conf_level) {
+estimate_harvest_total <- function(
+  design,
+  variance_method,
+  conf_level,
+  estimator = "ratio-of-means"
+) {
   interviews_data <- design$interviews
   harvest_col <- design$harvest_col
   effort_col <- design$angler_effort_col
@@ -5451,14 +5667,47 @@ estimate_harvest_total <- function(design, variance_method, conf_level) {
     svy_design <- get_variance_design(design$interview_survey, variance_method) # nolint: object_usage_linter
   }
 
-  # Create formulas for ratio estimation
-  harvest_formula <- stats::reformulate(harvest_col)
-  effort_formula <- stats::reformulate(effort_col)
+  # Determine method based on estimator. Mirrors estimate_cpue_total(): a roving
+  # clerk records harvest-so-far against effort-so-far, and the two do not scale
+  # together over the trip, so the mean-of-ratios argument applies to HPUE
+  # exactly as it does to CPUE (Hoenig et al. 1997). GH #271.
+  if (estimator %in% c("mor", "mortr")) {
+    # Mean-of-ratios: per-interview ratios first, then their mean.
+    interviews_data$hpue_ratio <- interviews_data[[harvest_col]] /
+      interviews_data[[effort_col]]
 
-  # Call survey::svyratio (suppress expected survey package warnings)
-  svy_result <- suppressWarnings(
-    survey::svyratio(harvest_formula, effort_formula, svy_design)
-  )
+    strata_cols_mor <- design$strata_cols
+    strata_formula_mor <- if (
+      !is.null(strata_cols_mor) && length(strata_cols_mor) > 0
+    ) {
+      stats::reformulate(strata_cols_mor)
+    } else {
+      NULL
+    }
+    temp_survey_mor <- build_interview_survey(interviews_data, strata = strata_formula_mor) # nolint: object_usage_linter
+    svy_design <- get_variance_design(temp_survey_mor, variance_method) # nolint: object_usage_linter
+
+    svy_result <- suppressWarnings(
+      survey::svymean(~hpue_ratio, svy_design)
+    )
+
+    method_name <- if (estimator == "mortr") {
+      "mean-of-ratios-truncated-hpue"
+    } else {
+      "mean-of-ratios-hpue"
+    }
+  } else {
+    # Create formulas for ratio estimation
+    harvest_formula <- stats::reformulate(harvest_col)
+    effort_formula <- stats::reformulate(effort_col)
+
+    # Call survey::svyratio (suppress expected survey package warnings)
+    svy_result <- suppressWarnings(
+      survey::svyratio(harvest_formula, effort_formula, svy_design)
+    )
+
+    method_name <- "ratio-of-means-hpue"
+  }
 
   # Extract estimates
   estimate <- as.numeric(coef(svy_result))
@@ -5481,7 +5730,7 @@ estimate_harvest_total <- function(design, variance_method, conf_level) {
   new_creel_estimates(
     # nolint: object_usage_linter
     estimates = estimates_df,
-    method = "ratio-of-means-hpue",
+    method = method_name,
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
@@ -5494,7 +5743,13 @@ estimate_harvest_total <- function(design, variance_method, conf_level) {
 #'
 #' @keywords internal
 #' @noRd
-estimate_harvest_grouped <- function(design, by_vars, variance_method, conf_level) {
+estimate_harvest_grouped <- function(
+  design,
+  by_vars,
+  variance_method,
+  conf_level,
+  estimator = "ratio-of-means"
+) {
   interviews_data <- design$interviews
   harvest_col <- design$harvest_col
   effort_col <- design$angler_effort_col
@@ -5541,8 +5796,23 @@ estimate_harvest_grouped <- function(design, by_vars, variance_method, conf_leve
     ))
   }
 
-  # Build temporary survey design from filtered data if filtering occurred
-  needs_rebuild <- any(na_effort) || any(zero_effort) || any(na_harvest)
+  # Determine method based on estimator (GH #271, mirrors estimate_cpue_grouped)
+  if (estimator %in% c("mor", "mortr")) {
+    # Mean-of-ratios: add ratio column
+    interviews_data$hpue_ratio <- interviews_data[[harvest_col]] / interviews_data[[effort_col]]
+    method_name <- if (estimator == "mortr") {
+      "mean-of-ratios-truncated-hpue"
+    } else {
+      "mean-of-ratios-hpue"
+    }
+  } else {
+    method_name <- "ratio-of-means-hpue"
+  }
+
+  # Build temporary survey design from filtered data if filtering occurred. MOR
+  # always rebuilds: the ratio column has to be in the data svyby() sees.
+  needs_rebuild <- any(na_effort) || any(zero_effort) || any(na_harvest) ||
+    estimator %in% c("mor", "mortr")
   if (needs_rebuild) {
     strata_cols <- design$strata_cols
     strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0) {
@@ -5557,30 +5827,50 @@ estimate_harvest_grouped <- function(design, by_vars, variance_method, conf_leve
   }
 
   # Build formulas for svyby
-  harvest_formula <- stats::reformulate(harvest_col)
-  effort_formula <- stats::reformulate(effort_col)
   by_formula <- stats::reformulate(by_vars)
 
-  # Call survey::svyby with svyratio (suppress expected survey package warnings)
-  svy_result <- wrap_survey_call(survey::svyby(
-    formula = harvest_formula,
-    by = by_formula,
-    design = svy_design,
-    FUN = survey::svyratio,
-    denominator = effort_formula,
-    vartype = c("se", "ci"),
-    ci.level = conf_level,
-    keep.names = FALSE
-  ))
+  if (estimator %in% c("mor", "mortr")) {
+    # MOR: use svyby with svymean on ratio
+    svy_result <- wrap_survey_call(survey::svyby(
+      formula = ~hpue_ratio,
+      by = by_formula,
+      design = svy_design,
+      FUN = survey::svymean,
+      vartype = c("se", "ci"),
+      ci.level = conf_level,
+      keep.names = FALSE
+    ))
 
-  # Extract estimate columns from svyby result
-  # svyratio creates column named "harvest_col/effort_col"
-  ratio_col <- paste0(harvest_col, "/", effort_col)
-  se_col <- paste0("se.", ratio_col)
-  estimate <- svy_result[[ratio_col]]
-  se <- svy_result[[se_col]]
-  ci_lower <- svy_result[["ci_l"]]
-  ci_upper <- svy_result[["ci_u"]]
+    # svymean uses simpler column names: hpue_ratio, se, ci_l, ci_u
+    estimate <- svy_result[["hpue_ratio"]]
+    se <- svy_result[["se"]]
+    ci_lower <- svy_result[["ci_l"]]
+    ci_upper <- svy_result[["ci_u"]]
+  } else {
+    harvest_formula <- stats::reformulate(harvest_col)
+    effort_formula <- stats::reformulate(effort_col)
+
+    # Call survey::svyby with svyratio (suppress expected survey package warnings)
+    svy_result <- wrap_survey_call(survey::svyby(
+      formula = harvest_formula,
+      by = by_formula,
+      design = svy_design,
+      FUN = survey::svyratio,
+      denominator = effort_formula,
+      vartype = c("se", "ci"),
+      ci.level = conf_level,
+      keep.names = FALSE
+    ))
+
+    # Extract estimate columns from svyby result
+    # svyratio creates column named "harvest_col/effort_col"
+    ratio_col <- paste0(harvest_col, "/", effort_col)
+    se_col <- paste0("se.", ratio_col)
+    estimate <- svy_result[[ratio_col]]
+    se <- svy_result[[se_col]]
+    ci_lower <- svy_result[["ci_l"]]
+    ci_upper <- svy_result[["ci_u"]]
+  }
 
   # Calculate per-group sample sizes
   # Use aggregate to count rows per group combination
@@ -5613,7 +5903,7 @@ estimate_harvest_grouped <- function(design, by_vars, variance_method, conf_leve
   new_creel_estimates(
     # nolint: object_usage_linter
     estimates = estimates_df,
-    method = "ratio-of-means-hpue",
+    method = method_name,
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
@@ -5761,7 +6051,8 @@ estimate_harvest_rate_sections <- function(
   by_quo,
   variance_method, # nolint: object_length_linter
   conf_level,
-  missing_sections
+  missing_sections,
+  estimator = "ratio-of-means"
 ) {
   section_col <- design[["section_col"]]
   registered_sections <- design$sections[[section_col]]
@@ -5827,7 +6118,8 @@ estimate_harvest_rate_sections <- function(
           species_col = by_info$species_var,
           interview_by_vars = by_info$interview_vars,
           variance_method = variance_method,
-          conf_level = conf_level
+          conf_level = conf_level,
+          estimator = estimator
         )
         sp_df <- tibble::add_column(tibble::as_tibble(sp_df), section = sec, .before = 1)
         sp_df$data_available <- TRUE
@@ -5838,7 +6130,8 @@ estimate_harvest_rate_sections <- function(
           sec_design,
           by_info$interview_vars,
           variance_method,
-          conf_level
+          conf_level,
+          estimator
         )
         row_df <- tibble::add_column(result$estimates, section = sec, .before = 1)
         row_df$data_available <- TRUE
@@ -5848,7 +6141,8 @@ estimate_harvest_rate_sections <- function(
           # nolint: object_usage_linter
           sec_design,
           variance_method,
-          conf_level
+          conf_level,
+          estimator
         )
         row <- result$estimates
         section_rows[[sec]] <- tibble::tibble(
@@ -5869,7 +6163,11 @@ estimate_harvest_rate_sections <- function(
   new_creel_estimates(
     # nolint: object_usage_linter
     estimates = result_df,
-    method = "ratio-of-means-hpue-sections",
+    method = if (identical(estimator, "mor")) {
+      "mean-of-ratios-hpue-sections"
+    } else {
+      "ratio-of-means-hpue-sections"
+    },
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
@@ -5887,7 +6185,8 @@ estimate_release_rate_sections <- function(
   by_quo,
   variance_method, # nolint: object_length_linter
   conf_level,
-  missing_sections
+  missing_sections,
+  estimator = "ratio-of-means"
 ) {
   section_col <- design[["section_col"]]
   registered_sections <- design$sections[[section_col]]
@@ -5954,7 +6253,8 @@ estimate_release_rate_sections <- function(
           species_col = by_info$species_var,
           interview_by_vars = by_info$interview_vars,
           variance_method = variance_method,
-          conf_level = conf_level
+          conf_level = conf_level,
+          estimator = estimator
         )
         sp_df <- tibble::add_column(tibble::as_tibble(sp_df), section = sec, .before = 1)
         sp_df$data_available <- TRUE
@@ -5989,13 +6289,14 @@ estimate_release_rate_sections <- function(
           design_rel,
           by_info$interview_vars,
           variance_method,
-          conf_level
+          conf_level,
+          estimator
         )
         row_df <- tibble::add_column(result$estimates, section = sec, .before = 1)
         row_df$data_available <- TRUE
         section_rows[[sec]] <- row_df
       } else {
-        result <- estimate_cpue_total(design_rel, variance_method, conf_level) # nolint: object_usage_linter
+        result <- estimate_cpue_total(design_rel, variance_method, conf_level, estimator) # nolint: object_usage_linter
         row <- result$estimates
         section_rows[[sec]] <- tibble::tibble(
           section = sec,
@@ -6015,7 +6316,11 @@ estimate_release_rate_sections <- function(
   new_creel_estimates(
     # nolint: object_usage_linter
     estimates = result_df,
-    method = "ratio-of-means-rpue-sections",
+    method = if (identical(estimator, "mor")) {
+      "mean-of-ratios-rpue-sections"
+    } else {
+      "ratio-of-means-rpue-sections"
+    },
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,

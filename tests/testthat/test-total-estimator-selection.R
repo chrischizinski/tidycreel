@@ -318,29 +318,38 @@ test_that("truncate_at must be a positive number or NULL", {
 
 # ---- harvest and release follow their own rate functions -------------------
 
-test_that("interview_type does not move the harvest or release total", {
+test_that("interview_type now moves the harvest and release totals too", {
   access <- drop_sections_sel(roving_selection_design())
   roving <- as_roving(access)
 
-  # Not an oversight and not a copy of the catch behaviour: estimate_harvest_rate()
-  # and estimate_release_rate() take no estimator argument and do not auto-route,
-  # so a total that auto-routed would disagree with its own rate function -- the
-  # same defect as #268 with the sign flipped. Pinned here so that when those two
-  # grow estimator selection (GH #271), this test fails and has to be updated
-  # deliberately rather than the totals drifting apart unnoticed.
-  expect_equal(
-    est_of(quiet_sel(estimate_total_harvest, roving)),
-    est_of(quiet_sel(estimate_total_harvest, access))
-  )
-  expect_equal(
-    est_of(quiet_sel(estimate_total_release, roving)),
-    est_of(quiet_sel(estimate_total_release, access))
-  )
+  # This test previously asserted the opposite, and the assertion was correct at
+  # the time: estimate_harvest_rate() and estimate_release_rate() had no
+  # estimator to follow, so a total that auto-routed would have disagreed with
+  # its own rate function -- #268 with the sign flipped. GH #271 gave those two
+  # rate functions the estimator, so the totals now follow them here as well.
+  #
+  # The rule never changed. Only what the rule resolves to did, which is exactly
+  # why the rule lives in one function rather than being restated per metric.
+  for (fn in c("estimate_total_harvest", "estimate_total_release")) {
+    f <- get(fn)
+    expect_equal(
+      est_of(quiet_sel(f, roving)),
+      est_of(quiet_sel(f, access, use_trips = "all", estimator = "mor")),
+      info = fn
+    )
+    expect_false(
+      isTRUE(all.equal(
+        est_of(quiet_sel(f, roving)),
+        est_of(quiet_sel(f, access))
+      )),
+      info = fn
+    )
+  }
 })
 
 # ---- the resolver itself ----------------------------------------------------
 
-test_that("resolve_total_rate_spec routes only catch, and only on standard designs", {
+test_that("resolve_total_rate_spec routes every metric, and only on standard designs", {
   standard <- as_roving(drop_sections_sel(roving_selection_design()))
 
   catch_spec <- resolve_total_rate_spec(standard, "catch")
@@ -348,11 +357,14 @@ test_that("resolve_total_rate_spec routes only catch, and only on standard desig
   expect_equal(catch_spec$estimator, "mor")
   expect_true(catch_spec$roving_auto)
 
+  # Harvest and release resolved to complete-trip ratio-of-means until GH #271,
+  # because their rate functions had no estimator to follow. They now route the
+  # same way catch does -- same rule, different answer than before.
   for (metric in c("harvest", "release")) {
     spec <- resolve_total_rate_spec(standard, metric)
-    expect_equal(spec$use_trips, "complete", info = metric)
-    expect_equal(spec$estimator, "ratio-of-means", info = metric)
-    expect_false(spec$roving_auto, info = metric)
+    expect_equal(spec$use_trips, "all", info = metric)
+    expect_equal(spec$estimator, "mor", info = metric)
+    expect_true(spec$roving_auto, info = metric)
   }
 
   ht <- standard

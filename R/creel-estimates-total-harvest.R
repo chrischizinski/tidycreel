@@ -32,10 +32,20 @@
 #'   length-biased rate and a total built from it. Ignored when the design
 #'   carries no trip status column.
 #'
-#'   Unlike [estimate_total_catch()], this function does not route a roving
-#'   design to all-trip mean-of-ratios, because [estimate_harvest_rate()] offers
-#'   no estimator selection to follow (GH #271). Both resolve through the same
-#'   rule, so the total always agrees with its own rate function.
+#'   Since GH #271 a roving design routes to all-trip mean-of-ratios here, as it
+#'   does for [estimate_total_catch()], because [estimate_harvest_rate()] gained the same
+#'   estimator selection. Both resolve through the same rule, so the total always
+#'   agrees with its own rate function.
+#' @param estimator Character string selecting the rate estimator used for the
+#'   HPUE component: `"ratio-of-means"`, `"mor"`, or `"mortr"`. Default `NULL`
+#'   means "not specified"; see [estimate_harvest_rate()] for how the pair resolves and when
+#'   the roving auto-route applies. Bus-route and ice designs accept only
+#'   `"ratio-of-means"`, because their total is a ratio of Horvitz-Thompson
+#'   totals with no mean-of-ratios form.
+#' @param truncate_at Numeric minimum trip duration in hours for MOR, or `NULL`
+#'   to disable truncation. Default 0.5 (30 minutes) per Hoenig et al. (1997).
+#'   Truncation is not a tuning knob: the untruncated mean-of-ratios estimator
+#'   has infinite variance. Ignored under ratio-of-means.
 #' @param aggregate_sections Logical. When the design was created with
 #'   \code{\link{add_sections}}, should a \code{.lake_total} row be appended
 #'   that sums the per-section estimates? Default \code{TRUE}. Set to
@@ -197,6 +207,8 @@ estimate_total_harvest <- function(
   conf_level = 0.95,
   target = c("sampled_days", "stratum_total", "period_total"),
   use_trips = NULL,
+  estimator = NULL,
+  truncate_at = 0.5,
   aggregate_sections = TRUE,
   missing_sections = "warn",
   ci_method = c("delta", "bootstrap"),
@@ -231,15 +243,24 @@ estimate_total_harvest <- function(
 
   # Resolved by the same rule estimate_harvest_rate() uses, in the one place the
   # per-metric rule lives, so this total and its own rate function cannot
-  # disagree about which estimator the design calls for (GH #268). That
-  # function takes no `estimator` argument and does not auto-route, so this
-  # resolves to complete-trip ratio-of-means today; when it grows estimator
-  # selection (GH #271) this call site inherits it without changing.
-  use_trips <- resolve_total_rate_spec( # nolint: object_usage_linter
+  # disagree about which estimator the design calls for (GH #268). Since GH #271
+  # that function takes an `estimator` argument and auto-routes a roving design,
+  # so this call site inherited the route without changing.
+  # Kept for the refusal message below: the resolver normalises "mortr" to
+  # "mor", so by the time a bus-route or ice design is refused, `estimator` no
+  # longer holds the string the caller typed.
+  estimator_requested <- estimator # nolint: object_usage_linter
+
+  rate_spec <- resolve_total_rate_spec( # nolint: object_usage_linter
     design,
     metric = "harvest",
-    use_trips = use_trips
-  )$use_trips
+    use_trips = use_trips,
+    estimator = estimator,
+    truncate_at = truncate_at
+  )
+  use_trips <- rate_spec$use_trips
+  estimator <- rate_spec$estimator
+  truncate_at <- rate_spec$truncate_at
 
   # Bus-route / ice dispatch (before standard survey NULL check)
   if (!is.null(design$design_type) && design$design_type %in% c("bus_route", "ice")) {
@@ -256,6 +277,25 @@ estimate_total_harvest <- function(
         ),
         "i" = paste(
           "Incomplete trips support a rate, not a total; see",
+          "{.code estimate_harvest_rate(use_trips = \"incomplete\")}."
+        )
+      ))
+    }
+    # Refused rather than ignored: the bus-route path builds a ratio of
+    # Horvitz-Thompson totals and has no mean-of-ratios form, so accepting the
+    # argument and estimating something else is the defect class this removes.
+    if (!identical(estimator, "ratio-of-means")) {
+      cli::cli_abort(c(
+        paste0(
+          "{.code estimator = \"{estimator_requested}\"} is not available for ",
+          "{.val {design$design_type}} designs."
+        ),
+        "x" = paste(
+          "{.val {design$design_type}} totals are a ratio of Horvitz-Thompson",
+          "totals; there is no mean-of-ratios form of that total."
+        ),
+        "i" = paste(
+          "For the mean-of-ratios rate on this design, see",
           "{.code estimate_harvest_rate(use_trips = \"incomplete\")}."
         )
       ))
@@ -338,6 +378,16 @@ estimate_total_harvest <- function(
   # rate spread, and per-level rates, drawn from the incomplete trips it had
   # just excluded.
   design <- filter_interviews_use_trips(design, use_trips) # nolint: object_usage_linter
+
+  # Truncation is part of the MOR estimator, not a tuning knob: untruncated MOR
+  # has infinite variance (Hoenig et al. 1997). Applied once, before dispatch,
+  # for the same reason the trip filter is (GH #271).
+  design <- truncate_interviews_for_mor(design, estimator, truncate_at) # nolint: object_usage_linter
+
+  # Carried on the design rather than threaded through the ungrouped, grouped,
+  # species and sectioned internals -- threading a resolved value into each
+  # branch is what let `use_trips` reach only two of four paths (GH #266).
+  design$total_estimator <- estimator
 
   # A domain the counts never classified forces the pooled product form,
   # whose weighting comes from the interview mix rather than the effort mix
@@ -456,9 +506,20 @@ estimate_total_harvest_ungrouped <- function(
 
   # Per-stratum HPUE
   if (length(strata_cols) == 0L) {
-    hpue_result <- estimate_harvest_total(design, variance_method, conf_level) # nolint: object_usage_linter
+    hpue_result <- estimate_harvest_total( # nolint: object_usage_linter
+      design,
+      variance_method,
+      conf_level,
+      design$total_estimator %||% "ratio-of-means"
+    )
   } else {
-    hpue_result <- estimate_harvest_grouped(design, strata_cols, variance_method, conf_level) # nolint: object_usage_linter
+    hpue_result <- estimate_harvest_grouped( # nolint: object_usage_linter
+      design,
+      strata_cols,
+      variance_method,
+      conf_level,
+      design$total_estimator %||% "ratio-of-means"
+    )
   }
   hpue_df <- hpue_result$estimates
 
@@ -521,7 +582,13 @@ estimate_total_harvest_grouped <- function(
   ) # nolint: object_usage_linter
   effort_df <- effort_result$estimates
 
-  hpue_result <- estimate_harvest_grouped(design, stratum_by_vars, variance_method, conf_level) # nolint: object_usage_linter
+  hpue_result <- estimate_harvest_grouped( # nolint: object_usage_linter
+    design,
+    stratum_by_vars,
+    variance_method,
+    conf_level,
+    design$total_estimator %||% "ratio-of-means"
+  )
   hpue_df <- hpue_result$estimates
 
   warn_missing_rate_strata(effort_df, hpue_df, stratum_by_vars, "estimate_total_harvest(by=)") # nolint: object_usage_linter
@@ -580,6 +647,7 @@ estimate_total_harvest_species <- function(
     interview_by_vars = rate_by,
     variance_method = variance_method,
     conf_level = conf_level,
+    estimator = design$total_estimator %||% "ratio-of-means",
     validate = FALSE
   )
 
@@ -828,7 +896,12 @@ estimate_total_harvest_sections <- function(
           conf_level,
           target = target
         ) # nolint: object_usage_linter
-        hpue_res <- estimate_harvest_total(sec_design, variance_method, conf_level) # nolint: object_usage_linter
+        hpue_res <- estimate_harvest_total( # nolint: object_usage_linter
+          sec_design,
+          variance_method,
+          conf_level,
+          sec_design$total_estimator %||% "ratio-of-means"
+        )
         effort_est <- effort_res$estimates$estimate
         hpue_est <- hpue_res$estimates$estimate
         effort_se <- effort_res$estimates$se
