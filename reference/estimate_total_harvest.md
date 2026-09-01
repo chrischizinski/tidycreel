@@ -15,6 +15,8 @@ estimate_total_harvest(
   conf_level = 0.95,
   target = c("sampled_days", "stratum_total", "period_total"),
   use_trips = NULL,
+  estimator = NULL,
+  truncate_at = 0.5,
   aggregate_sections = TRUE,
   missing_sections = "warn",
   ci_method = c("delta", "bootstrap"),
@@ -71,14 +73,31 @@ estimate_total_harvest(
   length-biased rate and a total built from it. Ignored when the design
   carries no trip status column.
 
-  Unlike
+  Since GH \#271 a roving design routes to all-trip mean-of-ratios here,
+  as it does for
   [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md),
-  this function does not route a roving design to all-trip
-  mean-of-ratios, because
+  because
   [`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md)
-  offers no estimator selection to follow (GH \#271). Both resolve
-  through the same rule, so the total always agrees with its own rate
-  function.
+  gained the same estimator selection. Both resolve through the same
+  rule, so the total always agrees with its own rate function.
+
+- estimator:
+
+  Character string selecting the rate estimator used for the HPUE
+  component: `"ratio-of-means"`, `"mor"`, or `"mortr"`. Default `NULL`
+  means "not specified"; see
+  [`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md)
+  for how the pair resolves and when the roving auto-route applies.
+  Bus-route and ice designs accept only `"ratio-of-means"`, because
+  their total is a ratio of Horvitz-Thompson totals with no
+  mean-of-ratios form.
+
+- truncate_at:
+
+  Numeric minimum trip duration in hours for MOR, or `NULL` to disable
+  truncation. Default 0.5 (30 minutes) per Hoenig et al. (1997).
+  Truncation is not a tuning knob: the untruncated mean-of-ratios
+  estimator has infinite variance. Ignored under ratio-of-means.
 
 - aggregate_sections:
 

@@ -17,6 +17,7 @@ estimate_harvest_rate(
   conf_level = 0.95,
   verbose = FALSE,
   use_trips = NULL,
+  estimator = NULL,
   truncate_at = 0.5,
   missing_sections = "warn"
 )
@@ -75,17 +76,41 @@ estimate_harvest_rate(
   [`add_interviews`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md),
   this argument has no effect for standard designs.
 
+- estimator:
+
+  Character string selecting the rate estimator: `"ratio-of-means"` (a
+  ratio of totals), `"mor"` (the mean of per-interview ratios), or
+  `"mortr"` (`"mor"` with truncation made mandatory). Default `NULL`
+  means "not specified". When `use_trips` and `estimator` are *both*
+  unspecified and the design was built with
+  `add_interviews(interview_type = "roving")`, the pair resolves to
+  all-trip truncated MOR; otherwise it resolves to complete-trip
+  ratio-of-means. Specifying either one suppresses the automatic
+  routing.
+
+  Hoenig et al. (1997) recommend the truncated mean of ratios for a
+  roving survey because the clerk intercepts trips mid-stream. That
+  argument is about the interview rather than about which fish are
+  counted, so it applies to this rate exactly as it applies to the catch
+  rate. Bus-route and ice designs return before this resolution and are
+  unaffected.
+
 - truncate_at:
 
-  Numeric minimum trip duration in hours for the bus-route
-  incomplete-trip estimator (default `0.5`, i.e. 30 minutes). Incomplete
-  trips shorter than this are discarded before the mean of ratios is
-  taken. Hoenig et al. (1997) recommend the 30-minute threshold because
-  the untruncated mean-of-ratios estimator has infinite asymptotic
-  variance: `1/L` has infinite expectation as trip length approaches
-  zero. The threshold applies to elapsed trip duration, not to
-  angler-hours. Set to `NULL` to disable, which warns. Ignored on every
-  other path, including `use_trips = "complete"`.
+  Numeric minimum trip duration in hours for the mean-of-ratios
+  estimator (default `0.5`, i.e. 30 minutes). Trips shorter than this
+  are discarded before the mean of ratios is taken. Hoenig et al. (1997)
+  recommend the 30-minute threshold because the untruncated
+  mean-of-ratios estimator has infinite asymptotic variance: `1/L` has
+  infinite expectation as trip length approaches zero. The threshold
+  applies to elapsed trip duration, not to angler-hours. Set to `NULL`
+  to disable; the bus-route path warns when it is disabled there, the
+  standard mean-of-ratios path treats it as a documented opt-out and is
+  silent, matching
+  [`estimate_catch_rate`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md).
+  Ignored under `"ratio-of-means"`. An interview whose duration is
+  missing cannot be shown to meet the threshold, so it is excluded and
+  reported separately from the trips excluded as too short.
 
 - missing_sections:
 

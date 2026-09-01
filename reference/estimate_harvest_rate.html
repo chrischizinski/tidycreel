@@ -90,6 +90,7 @@ from total catch rate (CPUE which includes both kept and released fish).</p>
 <span>  conf_level <span class="op">=</span> <span class="fl">0.95</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  use_trips <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  estimator <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  truncate_at <span class="op">=</span> <span class="fl">0.5</span>,</span>
 <span>  missing_sections <span class="op">=</span> <span class="st">"warn"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -148,16 +149,36 @@ to <code><a href="add_interviews.html">add_interviews</a></code>, this argument 
 designs.</p></dd>
 
 
+<dt id="arg-estimator">estimator<a class="anchor" aria-label="anchor" href="#arg-estimator"></a></dt>
+<dd><p>Character string selecting the rate estimator:
+<code>"ratio-of-means"</code> (a ratio of totals), <code>"mor"</code> (the mean of
+per-interview ratios), or <code>"mortr"</code> (<code>"mor"</code> with truncation made
+mandatory). Default <code>NULL</code> means "not specified". When <code>use_trips</code>
+and <code>estimator</code> are <em>both</em> unspecified and the design was built
+with <code>add_interviews(interview_type = "roving")</code>, the pair resolves to
+all-trip truncated MOR; otherwise it resolves to complete-trip
+ratio-of-means. Specifying either one suppresses the automatic routing.</p>
+<p>Hoenig et al. (1997) recommend the truncated mean of ratios for a roving
+survey because the clerk intercepts trips mid-stream. That argument is
+about the interview rather than about which fish are counted, so it applies
+to this rate exactly as it applies to the catch rate. Bus-route and ice
+designs return before this resolution and are unaffected.</p></dd>
+
+
 <dt id="arg-truncate-at">truncate_at<a class="anchor" aria-label="anchor" href="#arg-truncate-at"></a></dt>
-<dd><p>Numeric minimum trip duration in hours for the bus-route
-incomplete-trip estimator (default <code>0.5</code>, i.e. 30 minutes). Incomplete
-trips shorter than this are discarded before the mean of ratios is taken.
+<dd><p>Numeric minimum trip duration in hours for the
+mean-of-ratios estimator (default <code>0.5</code>, i.e. 30 minutes). Trips
+shorter than this are discarded before the mean of ratios is taken.
 Hoenig et al. (1997) recommend the 30-minute threshold because the
 untruncated mean-of-ratios estimator has infinite asymptotic variance:
 <code>1/L</code> has infinite expectation as trip length approaches zero. The
 threshold applies to elapsed trip duration, not to angler-hours. Set to
-<code>NULL</code> to disable, which warns. Ignored on every other path, including
-<code>use_trips = "complete"</code>.</p></dd>
+<code>NULL</code> to disable; the bus-route path warns when it is disabled there,
+the standard mean-of-ratios path treats it as a documented opt-out and is
+silent, matching <code><a href="estimate_catch_rate.html">estimate_catch_rate</a></code>. Ignored under
+<code>"ratio-of-means"</code>. An interview whose duration is missing cannot be
+shown to meet the threshold, so it is excluded and reported separately from
+the trips excluded as too short.</p></dd>
 
 
 <dt id="arg-missing-sections">missing_sections<a class="anchor" aria-label="anchor" href="#arg-missing-sections"></a></dt>
