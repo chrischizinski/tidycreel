@@ -1573,16 +1573,35 @@ estimate_catch_rate <- function(
 
     # Apply truncation if specified
     if (!is.null(truncate_at) && !is.null(design$trip_duration_col)) {
-      # Filter to trips >= threshold
-      truncated_interviews <- incomplete_interviews[
-        incomplete_interviews[[design$trip_duration_col]] >= truncate_at,
-      ]
+      # NA duration cannot be shown to clear the threshold, so it is dropped
+      # rather than admitted: `>= truncate_at` on NA yields NA, and a logical
+      # index carrying NA subsets to an all-NA row instead of dropping it. That
+      # phantom row reaches svydesign() as a missing stratum and aborts inside
+      # survey. Mirrors truncate_interviews_for_mor(), which the totals use.
+      #
+      # Counted apart from the short trips and reported on its own: a trip
+      # dropped for having no recorded duration is a missing-data loss, not a
+      # truncation decision.
+      duration_col <- design$trip_duration_col
+      n_before_truncation <- nrow(incomplete_interviews)
+      missing_duration <- is.na(incomplete_interviews[[duration_col]])
+      n_missing_duration <- sum(missing_duration)
+      keep <- !missing_duration & incomplete_interviews[[duration_col]] >= truncate_at
+      n_truncated <- n_before_truncation - sum(keep) - n_missing_duration
 
-      # Count truncated trips
-      n_truncated <- nrow(incomplete_interviews) - nrow(truncated_interviews)
+      if (n_missing_duration > 0) {
+        cli::cli_warn(c(
+          "{n_missing_duration} interview{?s} dropped for missing trip duration.",
+          "i" = paste(
+            "A trip with no recorded duration cannot be shown to meet the",
+            "{.arg truncate_at} threshold, so it is excluded rather than assumed."
+          ),
+          "i" = "Reported separately from the {n_truncated} trip{?s} excluded as too short."
+        ))
+      }
 
       # Use truncated data
-      incomplete_interviews <- truncated_interviews
+      incomplete_interviews <- incomplete_interviews[keep, , drop = FALSE]
 
       # Issue truncation message
       mor_truncation_message(n_truncated, n_incomplete, truncate_at) # nolint: object_usage_linter

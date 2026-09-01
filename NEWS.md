@@ -81,6 +81,29 @@
 
 ## Bug fixes
 
+* `estimate_catch_rate()` no longer aborts when an interview has no recorded
+  trip duration and MOR truncation is in effect (#272). The truncation filter
+  compared duration against the threshold without guarding for `NA`, and
+  `NA >= truncate_at` is `NA`: a logical index carrying `NA` subsets a data
+  frame to an all-`NA` row rather than dropping it. That phantom row reached
+  `svydesign()` as a missing stratum and aborted inside the survey package with
+  `missing values in 'strata'`, a message naming neither trip duration nor
+  tidycreel.
+
+  Trips with no recorded duration are now dropped, because a trip whose duration
+  is unknown cannot be shown to clear the threshold, and they are counted and
+  warned about separately from the short trips excluded by truncation — a
+  missing-duration loss is a data-quality fact, not an estimator decision, and a
+  caller needs to tell a threshold that excluded six short trips from a duration
+  column that is half empty. `mor_n_truncated` now counts only short trips.
+
+  Affects every truncating path in `estimate_catch_rate()`: `use_trips =
+  "incomplete"`, `use_trips = "all"` including the roving auto-route, and
+  `estimator = "mortr"`. This is the guard `truncate_interviews_for_mor()`
+  (#268) already applied on the totals and `br_incomplete_harvest_rate()`
+  already applied on the bus-route path; the standard rate path was the one site
+  left without it. Designs with a complete duration column are unaffected.
+
 * `estimate_catch_rate()` no longer aborts on a bus-route or ice design built
   with `add_interviews(interview_type = "roving")` (#270). The roving auto-route
   fired before the bus-route/ice dispatch and was then undone inside it, but the

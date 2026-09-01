@@ -3951,3 +3951,99 @@ test_that("an explicit use_trips still reaches a roving bus-route design", {
     ))$estimates$estimate
   )
 })
+
+# --- #272: MOR truncation and a missing trip duration -------------------------
+
+# A design whose duration column is partly empty. Trip status alternates so the
+# MOR paths have both trip kinds available; the NA durations are what the tests
+# are about.
+mor_design_missing_duration <- function(n_missing = 3L, seed = 272L) {
+  set.seed(seed)
+  design <- suppressWarnings(suppressMessages(make_sectioned_species_design(48L)))
+  design[["sections"]] <- NULL
+  iv <- design$interviews
+  iv$trip_status <- rep(c("complete", "incomplete"), length.out = nrow(iv))
+  if (n_missing > 0) {
+    iv[[design$trip_duration_col]][seq_len(n_missing)] <- NA_real_
+  }
+  rebuild_interview_survey(design, iv)
+}
+
+test_that("MOR truncation drops a missing trip duration instead of aborting", {
+  # `NA >= truncate_at` is NA, and a logical index carrying NA subsets a data
+  # frame to an all-NA *row* rather than dropping it. That phantom row reached
+  # svydesign() as a missing stratum and aborted inside survey with "missing
+  # values in `strata'", so a design with any unrecorded duration could not
+  # produce a truncated MOR catch rate at all.
+  design <- mor_design_missing_duration()
+
+  result <- suppressWarnings(suppressMessages(
+    estimate_catch_rate(design, use_trips = "all", estimator = "mor", truncate_at = 2.0)
+  ))
+
+  # The reference: the same rows removed *outside* the estimator, with nothing
+  # else changed. Asserting equality rather than "does not error" is what makes
+  # this discriminate -- admitting the NA rows, or dropping more than them,
+  # moves the estimate and the sample size.
+  iv <- design$interviews
+  reference <- rebuild_interview_survey(
+    design,
+    iv[!is.na(iv[[design$trip_duration_col]]), , drop = FALSE]
+  )
+  expected <- suppressWarnings(suppressMessages(
+    estimate_catch_rate(reference, use_trips = "all", estimator = "mor", truncate_at = 2.0)
+  ))
+
+  expect_equal(result$estimates$estimate, expected$estimates$estimate)
+  expect_equal(result$estimates$se, expected$estimates$se)
+  expect_equal(result$estimates$n, expected$estimates$n)
+})
+
+test_that("missing-duration drops are reported apart from short-trip truncation", {
+  # A caller has to be able to tell a threshold that excluded six short trips
+  # from a duration column that is half empty. Rolling both into the truncation
+  # count would report a data-quality loss as an estimator decision.
+  design <- mor_design_missing_duration(n_missing = 3L)
+
+  expect_warning(
+    suppressMessages(
+      estimate_catch_rate(design, use_trips = "all", estimator = "mor", truncate_at = 2.0)
+    ),
+    "3 interviews dropped for missing trip duration"
+  )
+
+  # And the truncation count itself counts only short trips: it is the number of
+  # non-missing durations below the threshold, not that plus the missing ones.
+  iv <- design$interviews
+  dur <- iv[[design$trip_duration_col]]
+  n_short <- sum(!is.na(dur) & dur < 2.0)
+  result <- suppressWarnings(suppressMessages(
+    estimate_catch_rate(design, use_trips = "all", estimator = "mor", truncate_at = 2.0)
+  ))
+  expect_equal(result$mor_n_truncated, n_short)
+})
+
+test_that("a complete duration column truncates exactly as before", {
+  # The guard against over-correcting: with nothing missing, the new arithmetic
+  # must reproduce the old nrow-difference count and issue no missing-duration
+  # warning.
+  design <- mor_design_missing_duration(n_missing = 0L)
+
+  iv <- design$interviews
+  n_short <- sum(iv[[design$trip_duration_col]] < 2.0)
+  result <- suppressWarnings(suppressMessages(
+    estimate_catch_rate(design, use_trips = "all", estimator = "mor", truncate_at = 2.0)
+  ))
+
+  expect_equal(result$mor_n_truncated, n_short)
+  expect_equal(result$estimates$n, nrow(iv) - n_short)
+  # No suppressWarnings here: it would swallow the very warning being asserted
+  # absent. `message =` narrows the expectation to that one warning, so the
+  # unrelated MOR-assumption warnings this path also issues do not fail it.
+  expect_no_warning(
+    suppressMessages(
+      estimate_catch_rate(design, use_trips = "all", estimator = "mor", truncate_at = 2.0)
+    ),
+    message = "missing trip duration"
+  )
+})
