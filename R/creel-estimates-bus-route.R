@@ -729,7 +729,10 @@ br_incomplete_harvest_rate <- function(
 
   if (
     !is.null(truncate_at) &&
-      (!is.numeric(truncate_at) || length(truncate_at) != 1L || truncate_at <= 0)
+      (!is.numeric(truncate_at) ||
+         length(truncate_at) != 1L ||
+         is.na(truncate_at) ||
+         truncate_at <= 0)
   ) {
     cli::cli_abort(
       c(

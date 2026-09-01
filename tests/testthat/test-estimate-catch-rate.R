@@ -4124,3 +4124,62 @@ test_that("the truncation percentage excludes trips that had no duration to judg
   # And not the diluted share over every interview, missing durations included.
   expect_no_match(msg, sprintf("%.1f%%", 100 * n_short / nrow(iv)), fixed = TRUE, all = TRUE)
 })
+
+# --- #279: MOR truncation on degenerate inputs --------------------------------
+
+test_that("a missing truncate_at is refused by the validator, not by base R", {
+  # `NA_real_` is numeric and length 1, so the validator's condition reduced to
+  # `NA <= 0`, and `if (NA)` aborts with base R's "missing value where
+  # TRUE/FALSE needed". That names neither the argument nor what is wrong with
+  # it, and it is raised from a line the caller has no way to connect to their
+  # call. The refusal itself was always correct -- only its delivery was not.
+  design <- mor_design_missing_duration(n_missing = 0L)
+
+  expect_error(
+    estimate_catch_rate(
+      design,
+      use_trips = "all",
+      estimator = "mor",
+      truncate_at = NA_real_
+    ),
+    "Invalid truncate_at"
+  )
+})
+
+test_that("truncating away every trip is refused, not left to rowSums", {
+  # With no interview clearing the threshold the MOR sample is empty, and the
+  # empty design fell through to `rowSums()`, which aborts with "all arguments
+  # must have the same length" -- a message about matrix conformability for a
+  # condition that is entirely about the threshold the caller chose. No missing
+  # duration is involved here, so this is not the #272 case in another guise.
+  design <- mor_design_missing_duration(n_missing = 0L)
+  iv <- design$interviews
+  iv[[design$trip_duration_col]] <- 0.1
+  design <- rebuild_interview_survey(design, iv)
+
+  expect_error(
+    suppressWarnings(suppressMessages(
+      estimate_catch_rate(
+        design,
+        use_trips = "all",
+        estimator = "mor",
+        truncate_at = 2.0
+      )
+    )),
+    "No trips remain for mean-of-ratios estimation"
+  )
+})
+
+test_that("a threshold that keeps some trips still estimates", {
+  # The guard against over-refusing: the empty-sample abort must key on the
+  # sample being empty, not on any trip having been truncated. A design where
+  # truncation removes some but not all trips has to come back with a number.
+  design <- mor_design_missing_duration(n_missing = 0L)
+
+  result <- suppressWarnings(suppressMessages(
+    estimate_catch_rate(design, use_trips = "all", estimator = "mor", truncate_at = 2.0)
+  ))
+
+  expect_gt(result$mor_n_truncated, 0)
+  expect_true(is.finite(result$estimates$estimate))
+})

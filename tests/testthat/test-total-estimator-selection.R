@@ -443,3 +443,41 @@ test_that("a trip with no recorded duration is dropped apart from the short trip
     "missing trip duration"
   )
 })
+
+# --- #279: degenerate truncation inputs on the totals path --------------------
+
+test_that("the totals validator refuses a missing truncate_at", {
+  # resolve_total_rate_spec() carries its own copy of the truncate_at check, so
+  # the totals reached base R's "missing value where TRUE/FALSE needed" through
+  # a validator of their own rather than through the rate function's.
+  design <- drop_sections_sel(roving_selection_design())
+
+  expect_error(
+    estimate_total_catch(
+      design,
+      use_trips = "all",
+      estimator = "mor",
+      truncate_at = NA_real_
+    ),
+    "Invalid `truncate_at` value"
+  )
+})
+
+test_that("truncating away every trip is refused on the totals path too", {
+  # truncate_interviews_for_mor() serves all three totals, so an unguarded empty
+  # sample here is one defect in three public functions. The refusal is asserted
+  # on the shared helper and on one total through it.
+  design <- drop_sections_sel(roving_selection_design())
+  iv <- design$interviews
+  iv[[design$trip_duration_col]] <- 0.1
+  design <- rebuild_interview_survey(design, iv)
+
+  expect_error(
+    quiet_sel(truncate_interviews_for_mor, design, "mor", 2.0),
+    "No trips remain for mean-of-ratios estimation"
+  )
+  expect_error(
+    quiet_sel(estimate_total_catch, design, use_trips = "all", estimator = "mor", truncate_at = 2.0),
+    "No trips remain for mean-of-ratios estimation"
+  )
+})

@@ -3205,3 +3205,21 @@ test_that("standard designs keep the standard species estimator (finding 18)", {
   expect_identical(res$method, "ratio-of-means-cpue-species")
   expect_identical(nrow(res$estimates), 3L)
 })
+
+# --- #279: the bus-route truncate_at validator --------------------------------
+
+test_that("the bus-route validator refuses a missing truncate_at", {
+  # The bus-route path validates truncate_at itself, with the same condition
+  # shape as the standard path and therefore the same gap: NA is numeric and
+  # length 1, so the check collapsed to `NA <= 0` and aborted in base R.
+  design <- suppressWarnings(suppressMessages(
+    build_br_design_for_tests(3L, 8L, 40L, seed = 279L)
+  ))
+
+  expect_error(
+    suppressWarnings(suppressMessages(
+      estimate_harvest_rate(design, use_trips = "incomplete", truncate_at = NA_real_)
+    )),
+    "Invalid `truncate_at`"
+  )
+})
