@@ -215,6 +215,33 @@ test_that("the method names the estimator that ran", {
   )
 })
 
+test_that("the MOR diagnostic banner names the quantity it measured", {
+  flat <- flatten_est(estimator_design())
+
+  # `estimate_release_rate()` returns the object `estimate_cpue_*()` built, so
+  # after GH #271 an RPUE result inherits the MOR diagnostic banner. The banner
+  # named CPUE unconditionally, which was true only while mean-of-ratios reached
+  # the catch rate alone.
+  rpue <- quiet_est(
+    estimate_release_rate,
+    flat,
+    use_trips = "all",
+    estimator = "mor"
+  )
+  banner <- paste(format(rpue), collapse = " ")
+  expect_match(banner, "RPUE estimation")
+  expect_false(grepl("CPUE estimation", banner))
+
+  # The catch rate's own banner must not have moved.
+  cpue <- quiet_est(
+    estimate_catch_rate,
+    flat,
+    use_trips = "all",
+    estimator = "mor"
+  )
+  expect_match(paste(format(cpue), collapse = " "), "CPUE estimation")
+})
+
 # ---- truncation ------------------------------------------------------------
 
 test_that("truncate_at reaches the harvest and release MOR estimators", {

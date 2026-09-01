@@ -10,12 +10,24 @@ format.creel_estimates_mor <- function(x, ...) {
   # Get base formatting from parent class
   base_output <- NextMethod("format")
 
+  # Name the quantity this estimate actually measures. The banner said "CPUE"
+  # unconditionally, which was true while mean-of-ratios reached only the catch
+  # rate; GH #271 gave the release rate the same estimator, so an RPUE result
+  # started printing a CPUE warning (GH #276).
+  rate_label <- if (grepl("rpue", x$method %||% "", fixed = TRUE)) { # nolint: object_usage_linter
+    "RPUE"
+  } else if (grepl("hpue", x$method %||% "", fixed = TRUE)) {
+    "HPUE"
+  } else {
+    "CPUE"
+  }
+
   # Build diagnostic banner
   banner <- cli::cli_format_method({
     cli::cli_rule(
       left = "DIAGNOSTIC: MOR Estimator (Incomplete Trips)"
     )
-    cli::cli_alert_warning("Complete trips preferred for CPUE estimation.")
+    cli::cli_alert_warning("Complete trips preferred for {rate_label} estimation.")
     cli::cli_text(
       "This estimate uses incomplete trip interviews ({x$n_incomplete} of {x$n_total} total)."
     )
