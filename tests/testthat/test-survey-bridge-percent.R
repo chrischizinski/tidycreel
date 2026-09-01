@@ -7,7 +7,7 @@ test_that("mor_truncation_message produces a warning with percent label", {
   expect_warning(
     tidycreel:::mor_truncation_message(
       n_truncated = 10L,
-      n_incomplete_original = 100L,
+      n_with_duration = 100L,
       truncate_at = 0.5
     ),
     regexp = "10\\.0%"
@@ -19,7 +19,7 @@ test_that("mor_truncation_message percent label uses base R sprintf format", {
   w <- tryCatch(
     tidycreel:::mor_truncation_message(
       n_truncated = 1L,
-      n_incomplete_original = 3L,
+      n_with_duration = 3L,
       truncate_at = 0.5
     ),
     warning = function(w) w

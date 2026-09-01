@@ -2629,13 +2629,22 @@ abort_count_unobservable_names <- function(interview_only, design, species_route
 #' Issue truncation message for MOR estimation
 #'
 #' @param n_truncated Number of trips excluded by truncation
-#' @param n_incomplete_original Original incomplete trip count (before truncation)
+#' @param n_with_duration Number of interviews in the truncated set that carried
+#'   a recorded trip duration, counted before truncation ran. This is the
+#'   denominator the reported percentage is a share of, and it is deliberately
+#'   neither the incomplete-trip count (a different set, and zero on a
+#'   complete-trip MOR path) nor every interview: a trip with no recorded
+#'   duration was never eligible to be judged short, so counting it here dilutes
+#'   the short-trip rate and can hide it below the 10% data-quality threshold.
 #' @param truncate_at Threshold used (hours)
 #'
 #' @keywords internal
 #' @noRd
-mor_truncation_message <- function(n_truncated, n_incomplete_original, truncate_at) {
-  pct_truncated <- n_truncated / n_incomplete_original
+mor_truncation_message <- function(n_truncated, n_with_duration, truncate_at) {
+  # Only reached with a non-zero denominator: n_with_duration == 0 means no
+  # trip could be judged short, which forces n_truncated == 0 and returns
+  # through the branch below.
+  pct_truncated <- n_truncated / n_with_duration
 
   if (n_truncated == 0) {
     # No trips truncated - informative message

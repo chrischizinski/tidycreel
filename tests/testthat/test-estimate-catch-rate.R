@@ -2162,7 +2162,7 @@ test_that("MOR stores zero truncation when all trips above threshold", {
 test_that("MOR truncation function warns when >10% truncated", {
   # Test the function directly
   expect_warning(
-    mor_truncation_message(n_truncated = 15, n_incomplete_original = 30, truncate_at = 0.5),
+    mor_truncation_message(n_truncated = 15, n_with_duration = 30, truncate_at = 0.5),
     "High truncation rate may indicate data quality issues"
   )
 })
@@ -3950,4 +3950,177 @@ test_that("an explicit use_trips still reaches a roving bus-route design", {
       estimate_catch_rate(design, use_trips = "complete")
     ))$estimates$estimate
   )
+})
+
+# --- #272: MOR truncation and a missing trip duration -------------------------
+
+# A design whose duration column is partly empty. Trip status alternates so the
+# MOR paths have both trip kinds available; the NA durations are what the tests
+# are about.
+mor_design_missing_duration <- function(n_missing = 3L, seed = 272L) {
+  set.seed(seed)
+  design <- suppressWarnings(suppressMessages(make_sectioned_species_design(48L)))
+  design[["sections"]] <- NULL
+  iv <- design$interviews
+  iv$trip_status <- rep(c("complete", "incomplete"), length.out = nrow(iv))
+  if (n_missing > 0) {
+    iv[[design$trip_duration_col]][seq_len(n_missing)] <- NA_real_
+  }
+  rebuild_interview_survey(design, iv)
+}
+
+# The truncation message is a warning above the 10% branch and a message below
+# it, so both have to be caught to assert on the percentage it reports.
+capture_truncation_warning <- function(expr) {
+  msgs <- character()
+  withCallingHandlers(
+    expr,
+    warning = function(w) {
+      msgs <<- c(msgs, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    },
+    message = function(m) {
+      msgs <<- c(msgs, conditionMessage(m))
+      invokeRestart("muffleMessage")
+    }
+  )
+  grep("MOR truncation", msgs, value = TRUE)
+}
+
+test_that("MOR truncation drops a missing trip duration instead of aborting", {
+  # `NA >= truncate_at` is NA, and a logical index carrying NA subsets a data
+  # frame to an all-NA *row* rather than dropping it. That phantom row reached
+  # svydesign() as a missing stratum and aborted inside survey with "missing
+  # values in `strata'", so a design with any unrecorded duration could not
+  # produce a truncated MOR catch rate at all.
+  design <- mor_design_missing_duration()
+
+  result <- suppressWarnings(suppressMessages(
+    estimate_catch_rate(design, use_trips = "all", estimator = "mor", truncate_at = 2.0)
+  ))
+
+  # The reference: the same rows removed *outside* the estimator, with nothing
+  # else changed. Asserting equality rather than "does not error" is what makes
+  # this discriminate -- admitting the NA rows, or dropping more than them,
+  # moves the estimate and the sample size.
+  iv <- design$interviews
+  reference <- rebuild_interview_survey(
+    design,
+    iv[!is.na(iv[[design$trip_duration_col]]), , drop = FALSE]
+  )
+  expected <- suppressWarnings(suppressMessages(
+    estimate_catch_rate(reference, use_trips = "all", estimator = "mor", truncate_at = 2.0)
+  ))
+
+  expect_equal(result$estimates$estimate, expected$estimates$estimate)
+  expect_equal(result$estimates$se, expected$estimates$se)
+  expect_equal(result$estimates$n, expected$estimates$n)
+})
+
+test_that("missing-duration drops are reported apart from short-trip truncation", {
+  # A caller has to be able to tell a threshold that excluded six short trips
+  # from a duration column that is half empty. Rolling both into the truncation
+  # count would report a data-quality loss as an estimator decision.
+  design <- mor_design_missing_duration(n_missing = 3L)
+
+  expect_warning(
+    suppressMessages(
+      estimate_catch_rate(design, use_trips = "all", estimator = "mor", truncate_at = 2.0)
+    ),
+    "3 interviews dropped for missing trip duration"
+  )
+
+  # And the truncation count itself counts only short trips: it is the number of
+  # non-missing durations below the threshold, not that plus the missing ones.
+  iv <- design$interviews
+  dur <- iv[[design$trip_duration_col]]
+  n_short <- sum(!is.na(dur) & dur < 2.0)
+  result <- suppressWarnings(suppressMessages(
+    estimate_catch_rate(design, use_trips = "all", estimator = "mor", truncate_at = 2.0)
+  ))
+  expect_equal(result$mor_n_truncated, n_short)
+})
+
+test_that("a complete duration column truncates exactly as before", {
+  # The guard against over-correcting: with nothing missing, the new arithmetic
+  # must reproduce the old nrow-difference count and issue no missing-duration
+  # warning.
+  design <- mor_design_missing_duration(n_missing = 0L)
+
+  iv <- design$interviews
+  n_short <- sum(iv[[design$trip_duration_col]] < 2.0)
+  result <- suppressWarnings(suppressMessages(
+    estimate_catch_rate(design, use_trips = "all", estimator = "mor", truncate_at = 2.0)
+  ))
+
+  expect_equal(result$mor_n_truncated, n_short)
+  expect_equal(result$estimates$n, nrow(iv) - n_short)
+  # No suppressWarnings here: it would swallow the very warning being asserted
+  # absent. `message =` narrows the expectation to that one warning, so the
+  # unrelated MOR-assumption warnings this path also issues do not fail it.
+  expect_no_warning(
+    suppressMessages(
+      estimate_catch_rate(design, use_trips = "all", estimator = "mor", truncate_at = 2.0)
+    ),
+    message = "missing trip duration"
+  )
+})
+
+test_that("the truncation percentage is a share of the set that was truncated", {
+  # The reported percentage used the incomplete-trip count as its denominator
+  # while the numerator counted truncation over whatever set was being
+  # estimated. On `use_trips = "complete"` that denominator is 0, so the message
+  # read "Inf%" and always took the high-truncation-rate branch; on
+  # `use_trips = "all"` it was the wrong set, roughly doubling the reported
+  # share. Neither moved an estimate -- both misreport data quality, which is
+  # what the message exists to convey.
+  design <- mor_design_missing_duration(n_missing = 0L)
+  iv <- design$interviews
+  dur <- iv[[design$trip_duration_col]]
+
+  # Complete-trip MOR: a real percentage, never Inf.
+  complete_msg <- capture_truncation_warning(
+    estimate_catch_rate(design, use_trips = "complete", estimator = "mor", truncate_at = 2.0)
+  )
+  expect_false(any(grepl("Inf", complete_msg, fixed = TRUE)))
+  n_complete <- sum(iv$trip_status == "complete")
+  n_short_complete <- sum(dur < 2.0 & iv$trip_status == "complete")
+  expect_match(
+    complete_msg,
+    sprintf("%.1f%%", 100 * n_short_complete / n_complete),
+    fixed = TRUE,
+    all = FALSE
+  )
+
+  # All-trip MOR: the share is of every interview, not of the incomplete ones.
+  all_msg <- capture_truncation_warning(
+    estimate_catch_rate(design, use_trips = "all", estimator = "mor", truncate_at = 2.0)
+  )
+  expect_match(
+    all_msg,
+    sprintf("%.1f%%", 100 * sum(dur < 2.0) / nrow(iv)),
+    fixed = TRUE,
+    all = FALSE
+  )
+})
+
+test_that("the truncation percentage excludes trips that had no duration to judge", {
+  # A trip with no recorded duration was never eligible to be judged short, and
+  # it is already reported on its own. Leaving it in the denominator dilutes the
+  # short-trip rate and can push a genuinely high rate below the 10% threshold
+  # that triggers the data-quality warning -- so the excluded trips would stop
+  # being flagged precisely when the duration column is at its worst.
+  design <- mor_design_missing_duration(n_missing = 12L)
+  iv <- design$interviews
+  dur <- iv[[design$trip_duration_col]]
+  n_known <- sum(!is.na(dur))
+  n_short <- sum(!is.na(dur) & dur < 2.0)
+
+  msg <- capture_truncation_warning(
+    estimate_catch_rate(design, use_trips = "all", estimator = "mor", truncate_at = 2.0)
+  )
+
+  expect_match(msg, sprintf("%.1f%%", 100 * n_short / n_known), fixed = TRUE, all = FALSE)
+  # And not the diluted share over every interview, missing durations included.
+  expect_no_match(msg, sprintf("%.1f%%", 100 * n_short / nrow(iv)), fixed = TRUE, all = TRUE)
 })
