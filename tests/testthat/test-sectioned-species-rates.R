@@ -148,3 +148,52 @@ test_that("a missing section warns by default and errors on request under specie
     )
   }
 })
+
+# Section column in by= (GH #265) ----
+#
+# The rates counterpart to SPS-09 in test-sectioned-species-totals.R. The
+# refusal and its wording already existed -- `refuse_section_in_by()`, class
+# `creel_error_section_in_by` -- and were wired into the three totals only.
+# Every rate path fell through to tibble's "Column `section` must not be
+# duplicated", a message about the implementation rather than the request.
+
+test_that("naming the section column in by= is refused on every sectioned rate (GH #265)", {
+  design <- make_sectioned_species_design()
+
+  # All three, because the sectioned paths are near-twins: fixing only the two
+  # #264 touched would re-create the catch-vs-twins asymmetry #257 removed.
+  for (f in rate_estimators) {
+    expect_error(
+      sectioned_rate(f, design, by = section), # nolint: object_usage_linter
+      class = "creel_error_section_in_by",
+      info = f
+    )
+    # Alongside species too: the selector resolves through the species
+    # prototype, so the section name survives into the same collision.
+    expect_error(
+      sectioned_rate(f, design, by = c(section, species)), # nolint: object_usage_linter
+      class = "creel_error_section_in_by",
+      info = f
+    )
+  }
+
+  # The class is the contract, but the caller reads the message: it has to name
+  # the situation, which the tibble error it replaces never did.
+  err <- expect_error(sectioned_rate("estimate_catch_rate", design, by = section)) # nolint: object_usage_linter
+  msg <- cli::ansi_strip(conditionMessage(err))
+  expect_match(msg, "already how the result is split")
+  expect_no_match(msg, "must not be duplicated")
+})
+
+test_that("the section refusal does not over-refuse other groupings (GH #265)", {
+  # The guard has to key on the section column specifically. A refusal that
+  # fired for any `by=` on a sectioned design would pass the tests above while
+  # removing grouping from sectioned rates entirely.
+  design <- make_sectioned_species_design()
+
+  for (f in rate_estimators) {
+    est <- sectioned_rate(f, design, by = day_type)$estimates
+    expect_true(all(c("section", "day_type") %in% names(est)), info = f)
+    expect_gt(nrow(est), 1L)
+  }
+})
