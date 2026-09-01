@@ -86,6 +86,13 @@
 <li><p><code>use_trips</code> on all three <code>estimate_total_*()</code> functions now defaults to <code>NULL</code> (“not specified”) rather than <code>"complete"</code>, so a design that should be routed can be told apart from a caller who asked for complete trips. <code>"complete"</code> remains what an unspecified value resolves to everywhere except the roving catch case above. An unrecognised value is still refused, with the wording now “Must be one of” rather than <code><a href="https://rdrr.io/r/base/match.arg.html" class="external-link">match.arg()</a></code>’s “should be one of”.</p></li>
 </ul></div>
 <div class="section level3">
+<h3 id="bug-fixes-development-version">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-development-version"></a></h3>
+<ul><li>
+<p><code><a href="../reference/estimate_catch_rate.html">estimate_catch_rate()</a></code> no longer aborts on a bus-route or ice design built with <code>add_interviews(interview_type = "roving")</code> (<a href="https://github.com/chrischizinski/tidycreel/issues/270" class="external-link">#270</a>). The roving auto-route fired before the bus-route/ice dispatch and was then undone inside it, but the undo read a flag the route itself had to clear, so <code>use_trips</code> reached the bus-route validator as <code>"all"</code> — which it refuses. Such a design could not produce a catch rate at all unless the caller passed <code>use_trips</code> explicitly.</p>
+<p>The route is now excluded at the point of resolution for these designs, as <code>resolve_total_rate_spec()</code> already excluded it and as the harvest and release rates get structurally by returning first. Bus-route and ice results are unchanged, and a roving one now matches the access-point one, as it should: these designs estimate a completed-trip Horvitz-Thompson total, for which <code>use_trips = "all"</code> names no estimator that exists. Standard designs are unaffected.</p>
+</li>
+</ul></div>
+<div class="section level3">
 <h3 id="documentation-development-version">Documentation<a class="anchor" aria-label="anchor" href="#documentation-development-version"></a></h3>
 <ul><li>
 <p>Corrected the framing of <code><a href="../reference/as_hybrid_svydesign.html">as_hybrid_svydesign()</a></code>, which described <em>access</em> and <em>roving</em> as though they were count methods (<a href="https://github.com/chrischizinski/tidycreel/issues/246" class="external-link">#246</a>).</p>
@@ -215,7 +222,7 @@
 </li>
 </ul></div>
 <div class="section level3">
-<h3 id="bug-fixes-development-version">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-development-version"></a></h3>
+<h3 id="bug-fixes-development-version-1">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-development-version-1"></a></h3>
 <ul><li>
 <p><code><a href="../reference/estimate_harvest_rate.html">estimate_harvest_rate()</a></code> and <code><a href="../reference/estimate_release_rate.html">estimate_release_rate()</a></code> can now group by species on a sectioned design (<a href="https://github.com/chrischizinski/tidycreel/issues/257" class="external-link">#257</a>).</p>
 <p>Both failed with tidyselect’s <code>Column \</code>species` doesn’t exist<code>while</code>estimate_catch_rate()<code>succeeded on the same design. On a sectioned design the public estimators return into the section path before their own species dispatch runs, and the harvest and release section helpers resolved</code>by=` against the interviews alone – species lives in the catch table, so it is in neither the interviews nor the counts.</p>

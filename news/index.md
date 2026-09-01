@@ -109,6 +109,26 @@
   [`match.arg()`](https://rdrr.io/r/base/match.arg.html)’s “should be
   one of”.
 
+### Bug fixes
+
+- [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
+  no longer aborts on a bus-route or ice design built with
+  `add_interviews(interview_type = "roving")`
+  ([\#270](https://github.com/chrischizinski/tidycreel/issues/270)). The
+  roving auto-route fired before the bus-route/ice dispatch and was then
+  undone inside it, but the undo read a flag the route itself had to
+  clear, so `use_trips` reached the bus-route validator as `"all"` —
+  which it refuses. Such a design could not produce a catch rate at all
+  unless the caller passed `use_trips` explicitly.
+
+  The route is now excluded at the point of resolution for these
+  designs, as `resolve_total_rate_spec()` already excluded it and as the
+  harvest and release rates get structurally by returning first.
+  Bus-route and ice results are unchanged, and a roving one now matches
+  the access-point one, as it should: these designs estimate a
+  completed-trip Horvitz-Thompson total, for which `use_trips = "all"`
+  names no estimator that exists. Standard designs are unaffected.
+
 ### Documentation
 
 - Corrected the framing of
