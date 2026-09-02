@@ -137,9 +137,12 @@ estimate_total_harvest(
 
 ## Value
 
-A creel_estimates S3 object with method = "product-total-harvest". For
-bus-route and ice designs, returns a bus-route HT estimate with method =
-"ht-total-harvest" and a "site_contributions" attribute.
+A creel_estimates S3 object with method = "product-total-harvest". The
+`estimator` component records the rate estimator this total is a product
+of, as you asked for it: `method` names the product form and is the same
+string whichever estimator produced it. For bus-route and ice designs,
+returns a bus-route HT estimate with method = "ht-total-harvest" and a
+"site_contributions" attribute.
 
 For sectioned designs the per-section rows carry `prop_of_lake_total`,
 the section's share of the lake-wide total, and `se_prop_of_lake_total`,

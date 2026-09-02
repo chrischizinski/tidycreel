@@ -191,7 +191,10 @@ columns if <code>by</code> is specified), method (character: "ratio-of-means-cpu
 or "mean-of-ratios-cpue", with "-per-angler" suffix when normalized),
 variance_method (character: reflects the variance parameter value used),
 design (reference to source creel_design), conf_level (numeric), and
-by_vars (character vector of grouping variable names or NULL).</p>
+by_vars (character vector of grouping variable names or NULL).
+The <code>estimator</code> component records the estimator as you asked for it,
+<code>"mortr"</code> included, which <code>method</code> cannot: it reports mandatory
+truncation and the default threshold with the same string.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>

@@ -115,7 +115,10 @@ if `by` is specified), method (character: "ratio-of-means-cpue" or
 "mean-of-ratios-cpue", with "-per-angler" suffix when normalized),
 variance_method (character: reflects the variance parameter value used),
 design (reference to source creel_design), conf_level (numeric), and
-by_vars (character vector of grouping variable names or NULL).
+by_vars (character vector of grouping variable names or NULL). The
+`estimator` component records the estimator as you asked for it,
+`"mortr"` included, which `method` cannot: it reports mandatory
+truncation and the default threshold with the same string.
 
 ## Details
 

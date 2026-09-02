@@ -112,7 +112,10 @@ estimate_release_rate(
 
 A creel_estimates S3 object with method = "ratio-of-means-rpue".
 Estimates tibble has columns: estimate, se, ci_lower, ci_upper, n (plus
-any grouping columns).
+any grouping columns). The `estimator` component records the estimator
+as you asked for it, `"mortr"` included, which `method` cannot: it
+reports mandatory truncation and the default threshold with the same
+string.
 
 ## Details
 

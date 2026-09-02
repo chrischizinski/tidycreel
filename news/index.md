@@ -4,6 +4,21 @@
 
 ### Breaking changes
 
+- The `method` on a sectioned catch rate now names the estimator that
+  produced it
+  ([\#284](https://github.com/chrischizinski/tidycreel/issues/284)).
+  `estimate_catch_rate_sections()` passed the caller’s estimator down
+  and computed with it, then labelled every result
+  `"ratio-of-means-cpue-sections"` whatever had run, so a mean-of-ratios
+  rate reported a ratio-of-means name – and that is the roving default,
+  because the auto-route resolves to `"mor"` with no argument from the
+  caller. A sectioned MOR catch rate is now
+  `"mean-of-ratios-cpue-sections"`, or
+  `"mean-of-ratios-truncated-cpue-sections"` when `estimator = "mortr"`.
+  Code matching on `method` for sectioned catch rates should expect the
+  new values. No estimate changes; the numbers were already
+  mean-of-ratios.
+
 - [`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md)
   and
   [`estimate_release_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_release_rate.md)
@@ -110,6 +125,32 @@
   one of”.
 
 ### Bug fixes
+
+- Estimates now record which estimator produced them, in a new
+  `estimator` component on the returned object
+  ([\#275](https://github.com/chrischizinski/tidycreel/issues/275)). A
+  total’s `method` names the product form – `"product-total-catch"`
+  whichever rate estimator built it – so ratio-of-means, mean-of-ratios
+  and truncated mean-of-ratios were the same string, and the design slot
+  carries the *normalised* estimator, where a `"mortr"` request is
+  indistinguishable from `"mor"` at the default threshold. The field
+  records the estimator as you asked for it: `"mortr"` stays `"mortr"`.
+  It is `NULL` on paths that take no estimator argument, such as effort
+  totals, which is deliberately distinct from recording a default that
+  was never chosen.
+
+  The sectioned rates gained the matching `method` labels
+  (`"mean-of-ratios-truncated-{cpue,hpue,rpue}-sections"`), and
+  `"mean-of-ratios-truncated-cpue"` gained the display label its HPUE
+  and RPUE counterparts already had in
+  [`print()`](https://rdrr.io/r/base/print.html),
+  [`format()`](https://rdrr.io/r/base/format.html) and
+  [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html).
+  No estimate changes.
+
+  The roving auto-route still resolves to `"mor"` rather than `"mortr"`
+  and still reports itself untruncated: truncation runs at the 0.5
+  default there, but the caller did not ask for it to be mandatory.
 
 - Naming the section column in `by=` on a sectioned design is now
   refused on every rate estimator, instead of failing inside tibble

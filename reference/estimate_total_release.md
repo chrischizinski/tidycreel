@@ -132,11 +132,13 @@ estimate_total_release(
 
 ## Value
 
-A creel_estimates S3 object with method = "product-total-release".
-Estimates tibble has columns: estimate, se, ci_lower, ci_upper, n (plus
-any grouping columns). For bus-route and ice designs, returns a
-bus-route HT estimate with method = "ht-total-release" and a
-"site_contributions" attribute.
+A creel_estimates S3 object with method = "product-total-release". The
+`estimator` component records the rate estimator this total is a product
+of, as you asked for it: `method` names the product form and is the same
+string whichever estimator produced it. Estimates tibble has columns:
+estimate, se, ci_lower, ci_upper, n (plus any grouping columns). For
+bus-route and ice designs, returns a bus-route HT estimate with method =
+"ht-total-release" and a "site_contributions" attribute.
 
 For sectioned designs the per-section rows carry `prop_of_lake_total`,
 the section's share of the lake-wide total, and `se_prop_of_lake_total`,
