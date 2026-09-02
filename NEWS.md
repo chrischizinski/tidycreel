@@ -127,6 +127,12 @@
   averaged. This affected all three metrics, in both the shared truncation
   helper and the catch rate's own filtering block.
 
+  Interviews the rate internals discard are no longer counted as used. Those
+  internals drop missing effort, zero effort and missing catch or harvest after
+  the design-level counts are stamped, so a design with six unusable interviews
+  printed "over 48 interviews" beside an estimate whose own `n` was 42, on all
+  three metrics and on the grouped paths.
+
   Two things found while making the above change and fixed with it. A
   mean-of-ratios rate reported no unit -- the constructor had no `unit` argument,
   so every MOR rate read `NA` while the ratio-of-means rate beside it read

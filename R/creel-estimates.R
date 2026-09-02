@@ -3202,6 +3202,38 @@ truncate_interviews_for_mor <- function(design, estimator, truncate_at, use_trip
   design
 }
 
+#' Trip counts for the MOR banner, taken from the interviews actually used
+#'
+#' The design-level `mor_n_total` / `mor_n_incomplete` are stamped before the
+#' rate internals run, and those internals drop interviews with missing effort,
+#' zero effort, or missing catch/harvest before estimating. Reading the design
+#' counts therefore reported trips the estimate never saw: with six unusable
+#' interviews the banner said 48 while `estimates$n` said 42, on all three
+#' metrics (GH #276).
+#'
+#' Called with the internal's own post-filter frame, so the counts describe the
+#' rows that reached `survey::svymean()`.
+#'
+#' @param design A creel_design object, for its trip status column.
+#' @param interviews The interview frame the estimate was computed from.
+#'
+#' @return List with `n_total` and `n_incomplete`; the latter `NA_integer_` when
+#'   the design has no trip status column, because the count was never measured.
+#'
+#' @keywords internal
+#' @noRd
+mor_trip_counts <- function(design, interviews) {
+  trip_status_col <- design$trip_status_col
+  list(
+    n_total = nrow(interviews),
+    n_incomplete = if (is.null(trip_status_col)) {
+      NA_integer_
+    } else {
+      sum(tolower(interviews[[trip_status_col]]) == "incomplete", na.rm = TRUE)
+    }
+  )
+}
+
 #' Rebuild counts survey design for a single section
 #'
 #' Internal helper: filters design$counts to a single section and rebuilds the
@@ -5148,7 +5180,8 @@ estimate_cpue_total <- function(design, variance_method, conf_level, estimator =
 
   # Return appropriate creel_estimates object (MOR or standard)
   if (estimator %in% c("mor", "mortr")) {
-    # Get trip counts and truncation metadata stored during MOR filtering
+    # Counts from the filtered frame, not the design: see mor_trip_counts().
+    mor_counts <- mor_trip_counts(design, interviews_data) # nolint: object_usage_linter
     new_creel_estimates_mor(
       # nolint: object_usage_linter
       estimates = estimates_df,
@@ -5159,8 +5192,8 @@ estimate_cpue_total <- function(design, variance_method, conf_level, estimator =
       by_vars = NULL,
       unit = rate_unit(design), # nolint: object_usage_linter
       estimator = estimator,
-      n_incomplete = design$mor_n_incomplete,
-      n_total = design$mor_n_total,
+      n_incomplete = mor_counts$n_incomplete,
+      n_total = mor_counts$n_total,
       mor_truncate_at = design$mor_truncate_at,
       mor_n_truncated = design$mor_n_truncated,
       use_trips = design$mor_use_trips
@@ -5323,7 +5356,8 @@ estimate_cpue_grouped <- function(
 
   # Return appropriate creel_estimates object (MOR or standard)
   if (estimator %in% c("mor", "mortr")) {
-    # Get trip counts and truncation metadata stored during MOR filtering
+    # Counts from the filtered frame, not the design: see mor_trip_counts().
+    mor_counts <- mor_trip_counts(design, interviews_data) # nolint: object_usage_linter
     new_creel_estimates_mor(
       # nolint: object_usage_linter
       estimates = estimates_df,
@@ -5334,8 +5368,8 @@ estimate_cpue_grouped <- function(
       by_vars = by_vars,
       unit = rate_unit(design), # nolint: object_usage_linter
       estimator = estimator,
-      n_incomplete = design$mor_n_incomplete,
-      n_total = design$mor_n_total,
+      n_incomplete = mor_counts$n_incomplete,
+      n_total = mor_counts$n_total,
       mor_truncate_at = design$mor_truncate_at,
       mor_n_truncated = design$mor_n_truncated,
       use_trips = design$mor_use_trips
@@ -5953,6 +5987,8 @@ estimate_harvest_total <- function(
   # `estimator = "mor"` request printed a caveat for CPUE and RPUE and said
   # nothing for HPUE (GH #276).
   if (estimator %in% c("mor", "mortr")) {
+    # Counts from the filtered frame, not the design: see mor_trip_counts().
+    mor_counts <- mor_trip_counts(design, interviews_data) # nolint: object_usage_linter
     new_creel_estimates_mor(
       # nolint: object_usage_linter
       estimates = estimates_df,
@@ -5963,8 +5999,8 @@ estimate_harvest_total <- function(
       by_vars = NULL,
       unit = rate_unit(design), # nolint: object_usage_linter
       estimator = estimator,
-      n_incomplete = design$mor_n_incomplete,
-      n_total = design$mor_n_total,
+      n_incomplete = mor_counts$n_incomplete,
+      n_total = mor_counts$n_total,
       mor_truncate_at = design$mor_truncate_at,
       mor_n_truncated = design$mor_n_truncated,
       use_trips = design$mor_use_trips
@@ -6152,6 +6188,8 @@ estimate_harvest_grouped <- function(
   # `estimator = "mor"` request printed a caveat for CPUE and RPUE and said
   # nothing for HPUE (GH #276).
   if (estimator %in% c("mor", "mortr")) {
+    # Counts from the filtered frame, not the design: see mor_trip_counts().
+    mor_counts <- mor_trip_counts(design, interviews_data) # nolint: object_usage_linter
     new_creel_estimates_mor(
       # nolint: object_usage_linter
       estimates = estimates_df,
@@ -6162,8 +6200,8 @@ estimate_harvest_grouped <- function(
       by_vars = by_vars,
       unit = rate_unit(design), # nolint: object_usage_linter
       estimator = estimator,
-      n_incomplete = design$mor_n_incomplete,
-      n_total = design$mor_n_total,
+      n_incomplete = mor_counts$n_incomplete,
+      n_total = mor_counts$n_total,
       mor_truncate_at = design$mor_truncate_at,
       mor_n_truncated = design$mor_n_truncated,
       use_trips = design$mor_use_trips

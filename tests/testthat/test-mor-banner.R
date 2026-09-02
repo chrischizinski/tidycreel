@@ -269,6 +269,46 @@ test_that("the reported count is the trips that survived truncation, not the set
   }
 })
 
+test_that("interviews the rate internals discard are not counted as used", {
+  # The internals drop missing effort, zero effort and missing harvest AFTER the
+  # design-level counts are stamped, so reading those counts reported trips the
+  # estimate never saw. The fixture above has none of those, which is exactly why
+  # it did not reach this path -- a green suite was not evidence the banner
+  # agreed with the estimate.
+  #
+  # The effort column is the DERIVED one. Setting `hours_fished` here changes
+  # nothing the estimator reads, and a probe that does so reports "no defect"
+  # while never entering the branch.
+  design <- mor_banner_design()
+  iv <- design$interviews
+  iv[[design$angler_effort_col]][1:4] <- 0
+  iv[[design$angler_effort_col]][5:6] <- NA_real_
+  design$interviews <- iv
+  design$interview_survey <- build_interview_survey(
+    iv,
+    strata = stats::reformulate(design$strata_cols)
+  )
+
+  for (fn in c("estimate_catch_rate", "estimate_harvest_rate", "estimate_release_rate")) {
+    result <- quiet_mor(get(fn), design, use_trips = "all", estimator = "mor")
+
+    expect_identical(result$estimates$n, 42L, info = fn)
+    expect_identical(result$n_total, result$estimates$n, info = fn)
+    expect_match(mor_banner(result), "42 interviews", info = fn)
+    expect_lte(result$n_incomplete, result$n_total)
+  }
+
+  # Grouped goes through a different internal with its own filtering.
+  grouped <- quiet_mor(
+    estimate_harvest_rate, design,
+    by = trip_status, use_trips = "all", estimator = "mor"
+  )
+  # expect_equal, not expect_identical: the grouped `n` column comes back double
+  # where the ungrouped one is integer. That inconsistency is pre-existing and
+  # unrelated to the banner, so it is not asserted on here.
+  expect_equal(grouped$n_total, sum(grouped$estimates$n))
+})
+
 # ---- information the banner reports ----------------------------------------
 
 test_that("a MOR rate carries the same unit as the ratio-of-means rate beside it", {
