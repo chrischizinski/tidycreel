@@ -6033,6 +6033,17 @@ estimate_catch_rate_sections <- function(
   # Resolve by= ONCE before the section loop
   by_info <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
 
+  # A sectioned result is already one row per section, so naming the section
+  # column in by= asks for a split that has happened. Without this the selector
+  # resolved, the section column was added a second time, and the call failed
+  # inside tibble::add_column() on a duplicated name. The three totals already
+  # refuse it here (GH #255); no rate path did (GH #265).
+  refuse_section_in_by( # nolint: object_usage_linter
+    by_info$interview_vars,
+    design,
+    error_call = rlang::caller_env()
+  )
+
   section_rows <- vector("list", length(registered_sections))
   names(section_rows) <- registered_sections
 
@@ -6165,6 +6176,17 @@ estimate_harvest_rate_sections <- function(
   # with "Column `species` doesn't exist", because species lives in the catch
   # table and is in neither the interviews nor the counts (GH #257).
   by_info <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
+
+  # A sectioned result is already one row per section, so naming the section
+  # column in by= asks for a split that has happened. Without this the selector
+  # resolved, the section column was added a second time, and the call failed
+  # inside tibble::add_column() on a duplicated name. The three totals already
+  # refuse it here (GH #255); no rate path did (GH #265).
+  refuse_section_in_by( # nolint: object_usage_linter
+    by_info$interview_vars,
+    design,
+    error_call = rlang::caller_env()
+  )
 
   section_rows <- vector("list", length(registered_sections))
   names(section_rows) <- registered_sections
@@ -6299,6 +6321,17 @@ estimate_release_rate_sections <- function(
   # with "Column `species` doesn't exist", because species lives in the catch
   # table and is in neither the interviews nor the counts (GH #257).
   by_info <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
+
+  # A sectioned result is already one row per section, so naming the section
+  # column in by= asks for a split that has happened. Without this the selector
+  # resolved, the section column was added a second time, and the call failed
+  # inside tibble::add_column() on a duplicated name. The three totals already
+  # refuse it here (GH #255); no rate path did (GH #265).
+  refuse_section_in_by( # nolint: object_usage_linter
+    by_info$interview_vars,
+    design,
+    error_call = rlang::caller_env()
+  )
 
   section_rows <- vector("list", length(registered_sections))
   names(section_rows) <- registered_sections

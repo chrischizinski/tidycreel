@@ -81,6 +81,18 @@
 
 ## Bug fixes
 
+* Naming the section column in `by=` on a sectioned design is now refused on
+  every rate estimator, instead of failing inside tibble (#265). A sectioned
+  result is already one row per section, so `estimate_catch_rate(d, by = section)`
+  asks for a split that has happened; all three rate estimators answered with
+  "Column name `section` must not be duplicated", raised by `tibble::add_column()`
+  and naming neither the design nor what to do instead. The refusal and its
+  wording already existed -- `refuse_section_in_by()`, error class
+  `creel_error_section_in_by` -- and were wired into the three totals only
+  (#255). All three rate paths now use it, at the same point in the call.
+  Grouping within sections by anything else is unaffected, and no estimate that
+  returned a number before returns a different one.
+
 * Two degenerate MOR truncation inputs now abort with tidycreel wording rather
   than falling through to base R or to the survey package (#279). `truncate_at =
   NA` passed the validator's numeric and length checks and reduced it to
