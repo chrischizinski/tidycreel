@@ -126,6 +126,66 @@
 
 ### Bug fixes
 
+- The mean-of-ratios diagnostic banner now describes the trips the
+  estimate was actually built from, and every metric that takes the
+  estimator prints one
+  ([\#276](https://github.com/chrischizinski/tidycreel/issues/276)). Two
+  problems, both exposed by mean-of-ratios spreading beyond the catch
+  rate.
+
+  HPUE got no banner at all. `estimate_cpue_total()` and
+  `estimate_cpue_grouped()` returned a mean-of-ratios object; the
+  harvest internals computed the same truncation metadata and then
+  discarded it, returning a plain result. The same `estimator = "mor"`
+  request therefore produced a caveat and a truncation report for CPUE
+  and RPUE and silence for HPUE. Harvest now returns the same object its
+  twins do, ungrouped and grouped.
+
+  The banner also said “This estimate uses incomplete trip interviews (n
+  of N total)” whatever trips had been used. That wording dates from
+  when mean-of-ratios *was* the incomplete-trip estimator; since the
+  roving auto-route
+  ([\#268](https://github.com/chrischizinski/tidycreel/issues/268) for
+  catch, [\#271](https://github.com/chrischizinski/tidycreel/issues/271)
+  for harvest and release) the default mean-of-ratios path uses **all**
+  trips, so a roving default rate announced an incomplete-trip caveat
+  while using every trip it had, and `use_trips = "complete"` announced
+  one while using none. The banner now names the trip set – “All Trips”,
+  “Complete Trips” or “DIAGNOSTIC: … (Incomplete Trips)” – and the
+  length-of-stay caveat and the
+  [`validate_incomplete_trips()`](https://chrischizinski.github.io/tidycreel/reference/validate_incomplete_trips.md)
+  pointer appear only for the incomplete set, which is what
+  `mor_estimation_warning()` already did at run time. The truncation
+  report appears on every path, because truncation is part of the
+  estimator rather than a diagnostic detail. The “n of N” denominator is
+  gone: trip filtering happens upstream, so `N` had become the filtered
+  count and the incomplete path printed a literal “24 of 24 total”.
+
+  The counts the banner reports are taken from the trips that survived
+  truncation, not the set that entered it. Reported from before
+  truncation they contradicted the truncation line printed directly
+  beneath them – “over all 48 interviews” above “Truncation: 12 trips
+  excluded”, when 36 ratios had been averaged. This affected all three
+  metrics, in both the shared truncation helper and the catch rate’s own
+  filtering block.
+
+  Interviews the rate internals discard are no longer counted as used.
+  Those internals drop missing effort, zero effort and missing catch or
+  harvest after the design-level counts are stamped, so a design with
+  six unusable interviews printed “over 48 interviews” beside an
+  estimate whose own `n` was 42, on all three metrics and on the grouped
+  paths.
+
+  Two things found while making the above change and fixed with it. A
+  mean-of-ratios rate reported no unit – the constructor had no `unit`
+  argument, so every MOR rate read `NA` while the ratio-of-means rate
+  beside it read `"fish/angler-hour"`; routing harvest through that
+  constructor would have taken harvest’s unit away. And the
+  incomplete-trip count on a design with no trip status column is now
+  `NA` rather than `0`, because that count was never measured; the
+  banner omits the clause instead of reporting an absence as a zero. No
+  estimate values change.
+
 - Estimates now record which estimator produced them, in a new
   `estimator` component on the returned object
   ([\#275](https://github.com/chrischizinski/tidycreel/issues/275)). A
