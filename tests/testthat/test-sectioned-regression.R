@@ -96,7 +96,11 @@ test_that("force_origin reaches the sections path", {
 })
 
 test_that("grouping within sections runs regression per group per section", {
-  design <- sec_reg_design()
+  # Larger than the other fixtures on purpose: each section x day_type cell is
+  # fitted standalone below, and a standalone call enforces a 10-complete-trip
+  # minimum that the sectioned path applies to the design as a whole rather than
+  # per cell. At n = 48 a cell lands at 9 and the comparison cannot be made.
+  design <- sec_reg_design(96L)
 
   grouped <- quiet_reg(estimate_catch_rate, design, by = day_type, estimator = "regression")
   grouped_rom <- quiet_reg(estimate_catch_rate, design, by = day_type, estimator = "ratio-of-means")
@@ -104,6 +108,44 @@ test_that("grouping within sections runs regression per group per section", {
   expect_true(all(c("section", "day_type") %in% names(grouped$estimates)))
   expect_false(isTRUE(all.equal(grouped$estimates$estimate, grouped_rom$estimates$estimate)))
   expect_identical(grouped$method, "regression-cpue-sections")
+
+  # Each cell must be its OWN regression. The three assertions above all pass
+  # when the grouping is ignored entirely and the section-level estimate is
+  # repeated across every group in that section -- verified with that mutant,
+  # which survived a green run of this file. Differing from ratio-of-means says
+  # the regression ran; it says nothing about which rows it ran on.
+  section_col <- design$section_col
+  compared <- 0L
+  for (sec in unique(design$interviews[[section_col]])) {
+    for (dt in unique(design$interviews$day_type)) {
+      keep <- design$interviews[[section_col]] == sec & design$interviews$day_type == dt
+      if (sum(keep) < 10L) {
+        next
+      }
+      compared <- compared + 1L
+      cell <- design
+      cell[["sections"]] <- NULL
+      cell <- rebuild_interview_survey(cell, design$interviews[keep, , drop = FALSE])
+      standalone <- quiet_reg(estimate_catch_rate, cell, estimator = "regression")
+
+      row <- grouped$estimates[
+        grouped$estimates$section == sec & grouped$estimates$day_type == dt,
+      ]
+      expect_equal(row$estimate, standalone$estimates$estimate, info = paste(sec, dt))
+      expect_equal(row$se, standalone$estimates$se, info = paste(sec, dt))
+      expect_equal(row$n, standalone$estimates$n, info = paste(sec, dt))
+    }
+  }
+
+  # A loop that skipped every cell would assert nothing while reporting success.
+  expect_gte(compared, 3L)
+
+  # And the cells within a section must not all be the same number, which is
+  # what an ignored grouping produces.
+  for (sec in unique(grouped$estimates$section)) {
+    vals <- grouped$estimates$estimate[grouped$estimates$section == sec]
+    expect_gt(length(unique(vals)), 1L)
+  }
 })
 
 test_that("a sectioned regression result reports the variance method that ran", {
