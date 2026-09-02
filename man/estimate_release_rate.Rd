@@ -83,6 +83,9 @@ emits a \code{cli_warn()} and inserts an NA row with
 A creel_estimates S3 object with method = "ratio-of-means-rpue".
 Estimates tibble has columns: estimate, se, ci_lower, ci_upper, n (plus
 any grouping columns).
+The \code{estimator} component records the estimator as you asked for it,
+\code{"mortr"} included, which \code{method} cannot: it reports mandatory
+truncation and the default threshold with the same string.
 }
 \description{
 Computes release rate estimates with standard errors and confidence intervals

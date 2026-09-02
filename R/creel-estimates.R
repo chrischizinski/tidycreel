@@ -94,6 +94,10 @@ product_total_variance <- function(e_est, e_se, r_est, r_se, product_variance) {
 #' @param by_vars NULL or character vector of grouping variable names
 #' @param effort_target NULL or character effort target
 #' @param unit NULL or character effort unit
+#' @param estimator NULL, or the rate estimator this result was produced with,
+#'   recorded as the caller asked for it. NULL means the path takes no
+#'   estimator choice (effort, aerial, camera, mark-recapture), which is
+#'   deliberately distinct from a path that took one and did not record it.
 #' @param se_expansion NULL, or the party-size expansion standard-error
 #'   component (one value, or one per group). NULL means the component was not
 #'   propagated at all, which is deliberately distinct from a propagated zero.
@@ -112,6 +116,7 @@ product_total_variance <- function(e_est, e_se, r_est, r_se, product_variance) {
 #'   - design: source design object or NULL
 #'   - conf_level: confidence level
 #'   - by_vars: grouping variable names or NULL
+#'   - estimator: rate estimator as requested, or NULL
 #'   - se_expansion: party-size expansion SE component, or NULL
 #'   - se_components: named list of SE contributions, or NULL
 #'
@@ -126,6 +131,7 @@ new_creel_estimates <- function(
   by_vars = NULL,
   effort_target = NULL,
   unit = NA_character_,
+  estimator = NULL,
   se_expansion = NULL,
   expansion_decomposition = NULL,
   se_components = NULL
@@ -156,7 +162,9 @@ new_creel_estimates <- function(
     "by_vars must be NULL or character" = is.null(by_vars) || is.character(by_vars),
     "effort_target must be NULL or character" = is.null(effort_target) ||
       is.character(effort_target),
-    "unit must be NULL or character" = is.null(unit) || is.character(unit)
+    "unit must be NULL or character" = is.null(unit) || is.character(unit),
+    "estimator must be NULL or a single string" = is.null(estimator) ||
+      (is.character(estimator) && length(estimator) == 1)
   )
 
   # One write point for the party-size component. `se_expansion` is the slot
@@ -186,6 +194,13 @@ new_creel_estimates <- function(
       by_vars = by_vars,
       effort_target = effort_target,
       unit = unit %||% NA_character_,
+      # The estimator as the caller asked for it, not as it was normalised for
+      # dispatch: "mortr" stays "mortr" here even though every branch test
+      # downstream sees the "mor" it normalises to. `method` cannot carry this
+      # -- a total's method is "product-total-catch" whatever produced it, so
+      # ratio-of-means, mor and mortr were indistinguishable from the returned
+      # object (GH #275). NULL on the paths that take no estimator argument.
+      estimator = estimator,
       # Absent rather than zero when no party-size standard error was supplied.
       # The estimates tibble keeps its seven columns either way, so the aerial,
       # camera and GLMM estimators and every consumer of that shape are
@@ -248,6 +263,7 @@ new_creel_estimates_mor <- function(
   design = NULL,
   conf_level = 0.95,
   by_vars = NULL,
+  estimator = NULL,
   n_incomplete = NULL,
   n_total = NULL,
   mor_truncate_at = NULL,
@@ -260,7 +276,8 @@ new_creel_estimates_mor <- function(
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
-    by_vars = by_vars
+    by_vars = by_vars,
+    estimator = estimator
   )
 
   # Add MOR-specific metadata
@@ -302,6 +319,7 @@ format.creel_estimates <- function(x, ...) {
     total = "Total",
     "ratio-of-means-cpue" = "Ratio-of-Means CPUE",
     "mean-of-ratios-cpue" = "Mean-of-Ratios CPUE",
+    "mean-of-ratios-truncated-cpue" = "Truncated Mean-of-Ratios CPUE",
     "ratio-of-means-hpue" = "Ratio-of-Means HPUE",
     "mean-of-ratios-hpue" = "Mean-of-Ratios HPUE",
     "mean-of-ratios-truncated-hpue" = "Truncated Mean-of-Ratios HPUE",
@@ -872,6 +890,9 @@ estimate_effort <- function(
 #'   variance_method (character: reflects the variance parameter value used),
 #'   design (reference to source creel_design), conf_level (numeric), and
 #'   by_vars (character vector of grouping variable names or NULL).
+#'   The \code{estimator} component records the estimator as you asked for it,
+#'   \code{"mortr"} included, which \code{method} cannot: it reports mandatory
+#'   truncation and the default threshold with the same string.
 #'
 #' @section Package Options:
 #' \strong{Complete Trip Percentage Threshold:}
@@ -1672,6 +1693,13 @@ estimate_catch_rate <- function(
     design <- design_incomplete
   }
 
+  # Restore the mortr string for downstream method labelling and reporting.
+  # Hoisted above the section guard because the sectioned path needs it too:
+  # handed the normalised "mor" it could not tell mandatory truncation from the
+  # default threshold, and reported every sectioned MOR rate as untruncated
+  # (GH #275).
+  dispatch_estimator <- if (mortr_active) "mortr" else estimator
+
   # Section dispatch guard — fires AFTER trip filtering, BEFORE standard dispatch
   if (!is.null(design[["sections"]])) {
     return(estimate_catch_rate_sections(
@@ -1681,7 +1709,7 @@ estimate_catch_rate <- function(
       variance,
       conf_level,
       missing_sections,
-      estimator
+      dispatch_estimator
     ))
   }
 
@@ -1724,6 +1752,7 @@ estimate_catch_rate <- function(
         design = design,
         conf_level = conf_level,
         by_vars = by_info$all_vars,
+        estimator = dispatch_estimator,
         n_incomplete = design$mor_n_incomplete,
         n_total = design$mor_n_total,
         mor_truncate_at = design$mor_truncate_at,
@@ -1739,6 +1768,7 @@ estimate_catch_rate <- function(
       design = design,
       conf_level = conf_level,
       by_vars = by_info$all_vars,
+      estimator = dispatch_estimator,
       unit = rate_unit(design) # nolint: object_usage_linter
     ))
   }
@@ -1772,8 +1802,6 @@ estimate_catch_rate <- function(
   }
 
   # Standard (non-species) routing
-  # Restore mortr estimator string for downstream method labelling
-  dispatch_estimator <- if (mortr_active) "mortr" else estimator
   if (rlang::quo_is_null(by_quo)) {
     validate_ratio_sample_size(design, NULL, type = "cpue") # nolint: object_usage_linter
     return(estimate_cpue_total(design, variance, conf_level, dispatch_estimator)) # nolint: object_usage_linter
@@ -1899,6 +1927,9 @@ estimate_catch_rate <- function(
 #'   reflects the variance parameter value used), design (reference to source
 #'   creel_design), conf_level (numeric), and by_vars (character vector of
 #'   grouping variable names or NULL).
+#'   The \code{estimator} component records the estimator as you asked for it,
+#'   \code{"mortr"} included, which \code{method} cannot: it reports mandatory
+#'   truncation and the default threshold with the same string.
 #'   For bus-route designs, a "site_contributions" attribute is also present.
 #'
 #' @details
@@ -2230,14 +2261,15 @@ estimate_harvest_rate <- function(
       variance,
       conf_level,
       missing_sections,
-      estimator = estimator
+      estimator = if (mortr_active) "mortr" else estimator
     ))
   }
 
   # Restore the mortr string for downstream method labelling, exactly as
-  # estimate_catch_rate() does. The sectioned path above keeps the normalised
-  # value: its own label has no truncated variant there either, so handing it
-  # "mortr" would fall through to the ratio-of-means label.
+  # estimate_catch_rate() does. The sectioned path above is handed it too now
+  # that the sectioned labels have truncated variants (GH #275); before that it
+  # got the normalised "mor", because "mortr" fell through to the
+  # ratio-of-means label, which was worse than reporting it untruncated.
   dispatch_estimator <- if (mortr_active) "mortr" else estimator
 
   # Detect species-level grouping
@@ -2275,6 +2307,7 @@ estimate_harvest_rate <- function(
       design = design,
       conf_level = conf_level,
       by_vars = by_info$all_vars,
+      estimator = dispatch_estimator,
       unit = rate_unit(design) # nolint: object_usage_linter
     ))
   }
@@ -2389,6 +2422,9 @@ estimate_harvest_rate <- function(
 #' @return A creel_estimates S3 object with method = "ratio-of-means-rpue".
 #'   Estimates tibble has columns: estimate, se, ci_lower, ci_upper, n (plus
 #'   any grouping columns).
+#'   The \code{estimator} component records the estimator as you asked for it,
+#'   \code{"mortr"} included, which \code{method} cannot: it reports mandatory
+#'   truncation and the default threshold with the same string.
 #'
 #' @details
 #' RPUE is estimated as the ratio of total released fish to total effort
@@ -2647,14 +2683,15 @@ estimate_release_rate <- function(
       variance,
       conf_level,
       missing_sections,
-      estimator = estimator
+      estimator = if (mortr_active) "mortr" else estimator
     ))
   }
 
   # Restore the mortr string for downstream method labelling, exactly as
-  # estimate_catch_rate() does. The sectioned path above keeps the normalised
-  # value: its own label has no truncated variant there either, so handing it
-  # "mortr" would fall through to the ratio-of-means label.
+  # estimate_catch_rate() does. The sectioned path above is handed it too now
+  # that the sectioned labels have truncated variants (GH #275); before that it
+  # got the normalised "mor", because "mortr" fell through to the
+  # ratio-of-means label, which was worse than reporting it untruncated.
   dispatch_estimator <- if (mortr_active) "mortr" else estimator
 
   # Detect species-level grouping
@@ -2685,6 +2722,7 @@ estimate_release_rate <- function(
       design = design,
       conf_level = conf_level,
       by_vars = by_info$all_vars,
+      estimator = dispatch_estimator,
       unit = rate_unit(design) # nolint: object_usage_linter
     ))
   }
@@ -2864,10 +2902,14 @@ filter_interviews_use_trips <- function(design, use_trips) {
 #' @param truncate_at Numeric minimum trip duration in hours for MOR, or `NULL`
 #'   to disable truncation.
 #'
-#' @return A list with elements `use_trips`, `estimator` and `truncate_at`.
-#'   `estimator` is normalised so `"mortr"` never leaves this function: it
-#'   becomes `"mor"` with a non-NULL `truncate_at`, matching how
-#'   `estimate_catch_rate()` normalises it.
+#' @return A list with elements `use_trips`, `estimator`, `truncate_at`,
+#'   `roving_auto` and `mortr`. `estimator` is normalised so `"mortr"` never
+#'   leaves this function as an estimator: it becomes `"mor"` with a non-NULL
+#'   `truncate_at`, matching how `estimate_catch_rate()` normalises it. `mortr`
+#'   records that it was asked for, because the normalisation is not
+#'   invertible downstream -- `"mor"` with the default threshold and `"mortr"`
+#'   resolve to the same pair, and the returned total could not tell a caller
+#'   which one it had been given (GH #275).
 #'
 #' @keywords internal
 #' @noRd
@@ -2922,7 +2964,8 @@ resolve_total_rate_spec <- function(
 
   # mortr is mor with mandatory truncation, normalised exactly as
   # estimate_catch_rate() normalises it so the two cannot drift.
-  if (identical(estimator, "mortr")) {
+  mortr <- identical(estimator, "mortr")
+  if (mortr) {
     if (is.null(truncate_at)) {
       truncate_at <- 0.5
     }
@@ -2960,8 +3003,33 @@ resolve_total_rate_spec <- function(
     use_trips = use_trips,
     estimator = estimator,
     truncate_at = truncate_at,
-    roving_auto = roving_auto
+    roving_auto = roving_auto,
+    mortr = mortr
   )
+}
+
+#' The estimator a total reports, as the caller asked for it
+#'
+#' `design$total_estimator` is the normalised value every branch test reads, so
+#' it says `"mor"` for a `"mortr"` request. The totals carry the request itself
+#' alongside it and read it back through here, one place, so the reported
+#' string and the dispatched one cannot drift the way `use_trips` did when it
+#' was threaded to each branch instead (GH #266, GH #275).
+#'
+#' Defaults to `"ratio-of-means"` for a design that never went through
+#' `resolve_total_rate_spec()`, matching every other reader of the slot.
+#'
+#' @param design A creel_design object, after the totals set `total_estimator`.
+#'
+#' @return A single string: `"ratio-of-means"`, `"mor"` or `"mortr"`.
+#'
+#' @keywords internal
+#' @noRd
+reported_estimator <- function(design) {
+  if (isTRUE(design$total_mortr)) {
+    return("mortr")
+  }
+  design$total_estimator %||% "ratio-of-means"
 }
 
 #' Drop trips shorter than the MOR truncation threshold
@@ -5026,6 +5094,7 @@ estimate_cpue_total <- function(design, variance_method, conf_level, estimator =
       design = design,
       conf_level = conf_level,
       by_vars = NULL,
+      estimator = estimator,
       n_incomplete = design$mor_n_incomplete,
       n_total = design$mor_n_total,
       mor_truncate_at = design$mor_truncate_at,
@@ -5040,6 +5109,7 @@ estimate_cpue_total <- function(design, variance_method, conf_level, estimator =
       design = design,
       conf_level = conf_level,
       by_vars = NULL,
+      estimator = estimator,
       unit = rate_unit(design) # nolint: object_usage_linter
     )
   }
@@ -5197,6 +5267,7 @@ estimate_cpue_grouped <- function(
       design = design,
       conf_level = conf_level,
       by_vars = by_vars,
+      estimator = estimator,
       n_incomplete = design$mor_n_incomplete,
       n_total = design$mor_n_total,
       mor_truncate_at = design$mor_truncate_at,
@@ -5211,6 +5282,7 @@ estimate_cpue_grouped <- function(
       design = design,
       conf_level = conf_level,
       by_vars = by_vars,
+      estimator = estimator,
       unit = rate_unit(design) # nolint: object_usage_linter
     )
   }
@@ -5816,6 +5888,7 @@ estimate_harvest_total <- function(
     design = design,
     conf_level = conf_level,
     by_vars = NULL,
+    estimator = estimator,
     unit = rate_unit(design) # nolint: object_usage_linter
   )
 }
@@ -5989,6 +6062,7 @@ estimate_harvest_grouped <- function(
     design = design,
     conf_level = conf_level,
     by_vars = by_vars,
+    estimator = estimator,
     unit = rate_unit(design) # nolint: object_usage_linter
   )
 }
@@ -6007,6 +6081,14 @@ estimate_catch_rate_sections <- function(
   missing_sections,
   estimator
 ) {
+  # `estimator` arrives as the caller asked for it, so that the label below can
+  # say whether truncation was mandatory. Everything downstream branches on the
+  # normalised value, and receives exactly what it received before this slot
+  # existed: truncation itself already ran in the caller, above the section
+  # dispatch, so "mortr" is a reporting distinction here and nothing more.
+  mortr_active <- identical(estimator, "mortr")
+  estimator <- if (mortr_active) "mor" else estimator
+
   section_col <- design[["section_col"]]
   registered_sections <- design$sections[[section_col]]
   present_sections <- unique(design$interviews[[section_col]])
@@ -6125,11 +6207,24 @@ estimate_catch_rate_sections <- function(
   new_creel_estimates(
     # nolint: object_usage_linter
     estimates = result_df,
-    method = "ratio-of-means-cpue-sections",
+    # Hardcoded until GH #284: the estimator was passed down and used, so a
+    # sectioned mean-of-ratios rate returned MOR numbers under the
+    # ratio-of-means name -- and that is the roving default, since the
+    # auto-route resolves to "mor" with no argument from the caller.
+    method = if (identical(estimator, "mor")) {
+      if (mortr_active) {
+        "mean-of-ratios-truncated-cpue-sections"
+      } else {
+        "mean-of-ratios-cpue-sections"
+      }
+    } else {
+      "ratio-of-means-cpue-sections"
+    },
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
     by_vars = if (!is.null(by_info$all_vars)) c("section", by_info$all_vars) else "section",
+    estimator = if (mortr_active) "mortr" else estimator,
     unit = rate_unit(design) # nolint: object_usage_linter
   )
 }
@@ -6146,6 +6241,14 @@ estimate_harvest_rate_sections <- function(
   missing_sections,
   estimator = "ratio-of-means"
 ) {
+  # `estimator` arrives as the caller asked for it, so that the label below can
+  # say whether truncation was mandatory. Everything downstream branches on the
+  # normalised value, and receives exactly what it received before this slot
+  # existed: truncation itself already ran in the caller, above the section
+  # dispatch, so "mortr" is a reporting distinction here and nothing more.
+  mortr_active <- identical(estimator, "mortr")
+  estimator <- if (mortr_active) "mor" else estimator
+
   section_col <- design[["section_col"]]
   registered_sections <- design$sections[[section_col]]
   present_sections <- unique(design$interviews[[section_col]])
@@ -6267,7 +6370,11 @@ estimate_harvest_rate_sections <- function(
     # nolint: object_usage_linter
     estimates = result_df,
     method = if (identical(estimator, "mor")) {
-      "mean-of-ratios-hpue-sections"
+      if (mortr_active) {
+        "mean-of-ratios-truncated-hpue-sections"
+      } else {
+        "mean-of-ratios-hpue-sections"
+      }
     } else {
       "ratio-of-means-hpue-sections"
     },
@@ -6275,6 +6382,7 @@ estimate_harvest_rate_sections <- function(
     design = design,
     conf_level = conf_level,
     by_vars = if (!is.null(by_info$all_vars)) c("section", by_info$all_vars) else "section",
+    estimator = if (mortr_active) "mortr" else estimator,
     unit = rate_unit(design) # nolint: object_usage_linter
   )
 }
@@ -6291,6 +6399,14 @@ estimate_release_rate_sections <- function(
   missing_sections,
   estimator = "ratio-of-means"
 ) {
+  # `estimator` arrives as the caller asked for it, so that the label below can
+  # say whether truncation was mandatory. Everything downstream branches on the
+  # normalised value, and receives exactly what it received before this slot
+  # existed: truncation itself already ran in the caller, above the section
+  # dispatch, so "mortr" is a reporting distinction here and nothing more.
+  mortr_active <- identical(estimator, "mortr")
+  estimator <- if (mortr_active) "mor" else estimator
+
   section_col <- design[["section_col"]]
   registered_sections <- design$sections[[section_col]]
   present_sections <- unique(design$interviews[[section_col]])
@@ -6431,7 +6547,11 @@ estimate_release_rate_sections <- function(
     # nolint: object_usage_linter
     estimates = result_df,
     method = if (identical(estimator, "mor")) {
-      "mean-of-ratios-rpue-sections"
+      if (mortr_active) {
+        "mean-of-ratios-truncated-rpue-sections"
+      } else {
+        "mean-of-ratios-rpue-sections"
+      }
     } else {
       "ratio-of-means-rpue-sections"
     },
@@ -6439,6 +6559,7 @@ estimate_release_rate_sections <- function(
     design = design,
     conf_level = conf_level,
     by_vars = if (!is.null(by_info$all_vars)) c("section", by_info$all_vars) else "section",
+    estimator = if (mortr_active) "mortr" else estimator,
     unit = rate_unit(design) # nolint: object_usage_linter
   )
 }

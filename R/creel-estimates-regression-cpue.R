@@ -61,6 +61,7 @@ estimate_cpue_regression_total <- function(design, conf_level, force_origin) {
     design = design,
     conf_level = conf_level,
     by_vars = NULL,
+    estimator = "regression",
     unit = rate_unit(design) # nolint: object_usage_linter
   )
 }
@@ -145,6 +146,7 @@ estimate_cpue_reg_grouped <- function(
     design = design,
     conf_level = conf_level,
     by_vars = by_vars,
+    estimator = "regression",
     unit = rate_unit(design) # nolint: object_usage_linter
   )
 }

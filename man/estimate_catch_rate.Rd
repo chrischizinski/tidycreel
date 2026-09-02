@@ -91,6 +91,9 @@ or "mean-of-ratios-cpue", with "-per-angler" suffix when normalized),
 variance_method (character: reflects the variance parameter value used),
 design (reference to source creel_design), conf_level (numeric), and
 by_vars (character vector of grouping variable names or NULL).
+The \code{estimator} component records the estimator as you asked for it,
+\code{"mortr"} included, which \code{method} cannot: it reports mandatory
+truncation and the default threshold with the same string.
 }
 \description{
 Computes CPUE estimates with standard errors and confidence intervals

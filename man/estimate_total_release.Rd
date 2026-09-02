@@ -91,6 +91,9 @@ strictly positive CI.}
 }
 \value{
 A creel_estimates S3 object with method = "product-total-release".
+The \code{estimator} component records the rate estimator this total is a
+product of, as you asked for it: \code{method} names the product form and
+is the same string whichever estimator produced it.
 Estimates tibble has columns: estimate, se, ci_lower, ci_upper, n (plus
 any grouping columns). For bus-route and ice designs, returns a bus-route
 HT estimate with method = "ht-total-release" and a "site_contributions"

@@ -80,6 +80,9 @@
 #'   \eqn{[\hat\theta e^{-z SE/\hat\theta},\; \hat\theta e^{z SE/\hat\theta}]}.
 #'
 #' @return A creel_estimates S3 object with method = "product-total-catch".
+#'   The \code{estimator} component records the rate estimator this total is a
+#'   product of, as you asked for it: \code{method} names the product form and
+#'   is the same string whichever estimator produced it.
 #'   For bus-route and ice designs, returns a bus-route HT estimate with
 #'   method = "ht-total-catch" and a "site_contributions" attribute.
 #'   For sectioned designs, returns per-section rows plus (by default) a
@@ -406,6 +409,13 @@ estimate_total_catch <- function(
   # attribute: rebuild_interview_survey() replaces $interviews and preserves it.
   design$total_estimator <- estimator
 
+  # The request itself, alongside the normalised value. `resolve_total_rate_spec()`
+  # turns "mortr" into "mor" plus a threshold, and that is not invertible here:
+  # "mor" with the default threshold resolves to the same pair, so without this
+  # the returned total could not say which it had been given (GH #275). Read
+  # back through reported_estimator(), never tested on directly.
+  design$total_mortr <- rate_spec$mortr
+
   # A domain the counts never classified forces the pooled product form,
   # whose weighting comes from the interview mix rather than the effort mix
   # (GH #242). Raised before the section dispatch so both paths hear it.
@@ -460,6 +470,7 @@ estimate_total_catch <- function(
       conf_level = conf_level,
       by_vars = by_info$all_vars,
       effort_target = target,
+      estimator = reported_estimator(design), # nolint: object_usage_linter
       unit = product_total_unit(rate_unit(design), design$effort_unit), # nolint: object_usage_linter
       se_expansion = attr(estimates_df, "se_expansion")
     ))
@@ -604,6 +615,7 @@ estimate_total_catch_ungrouped <- function(
     conf_level = conf_level,
     by_vars = NULL,
     effort_target = target,
+    estimator = reported_estimator(design), # nolint: object_usage_linter
     unit = product_total_unit(rate_unit(design), design$effort_unit), # nolint: object_usage_linter
     se_expansion = attr(estimates_df, "se_expansion")
   )
@@ -678,6 +690,7 @@ estimate_total_catch_grouped <- function(
     conf_level = conf_level,
     by_vars = by_vars,
     effort_target = target,
+    estimator = reported_estimator(design), # nolint: object_usage_linter
     unit = product_total_unit(rate_unit(design), design$effort_unit), # nolint: object_usage_linter
     se_expansion = attr(estimates_df, "se_expansion")
   )
@@ -1164,6 +1177,7 @@ estimate_total_catch_sections <- function(
     # the reported metadata would describe rows it does not account for.
     by_vars = c("section", species_var, by_vars),
     effort_target = target,
+    estimator = reported_estimator(design), # nolint: object_usage_linter
     unit = product_total_unit(rate_unit(design), design$effort_unit), # nolint: object_usage_linter
     se_expansion = se_expansion,
     expansion_decomposition = expansion_decomposition
