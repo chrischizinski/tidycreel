@@ -94,6 +94,8 @@
 ^\.mcpjam$
 ^\.mux$
 ^\.neovate$
+^\.ocr$
+^\.opencode$
 ^\.openhands$
 ^\.pi$
 ^\.pochi$
