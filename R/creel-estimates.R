@@ -909,11 +909,14 @@ estimate_effort <- function(
 #' @return A creel_estimates S3 object (list) with components: estimates
 #'   (tibble with estimate, se, ci_lower, ci_upper, n columns, plus grouping
 #'   columns if \code{by} is specified), method (character: names the estimator
-#'   and the shape of the result -- \code{"ratio-of-means-cpue"},
-#'   \code{"mean-of-ratios-cpue"}, \code{"mean-of-ratios-truncated-cpue"} or
-#'   \code{"regression-cpue"}, each gaining a \code{"-sections"} suffix on a
-#'   sectioned design and a \code{"-species"} suffix when \code{by} names
-#'   species, plus a \code{"-per-angler"} suffix when normalized),
+#'   and the shape of the result. The base names are
+#'   \code{"ratio-of-means-cpue"}, \code{"mean-of-ratios-cpue"},
+#'   \code{"mean-of-ratios-truncated-cpue"} and \code{"regression-cpue"}, each
+#'   gaining a \code{"-sections"} suffix on a sectioned design. The
+#'   \code{"-species"} suffix, and the \code{"-per-angler"} suffix when
+#'   normalized, apply to the ratio-of-means and mean-of-ratios names only:
+#'   regression has no species form -- the combination is refused, so
+#'   \code{"regression-cpue-species"} is not a value this returns),
 #'   variance_method (character: the variance that actually ran, which is the
 #'   \code{variance} argument for every estimator except \code{"regression"} --
 #'   the regression slope carries a leave-one-out jackknife SE and reports
