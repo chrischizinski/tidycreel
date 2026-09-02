@@ -391,13 +391,13 @@ test_that("MOR truncation records what it dropped", {
 
   # A truncation that reported nothing would be indistinguishable from one that
   # never ran, which is why the count is metadata rather than a message alone.
-  truncated <- quiet_sel(truncate_interviews_for_mor, design, "mor", 2.0)
+  truncated <- quiet_sel(truncate_interviews_for_mor, design, "mor", 2.0, "all")
   expect_gt(truncated$mor_n_truncated, 0)
   expect_equal(truncated$mor_truncate_at, 2.0)
   expect_equal(nrow(truncated$interviews), nrow(design$interviews) - truncated$mor_n_truncated)
 
   # Ratio-of-means must not be reshaped by a threshold it does not use.
-  untouched <- truncate_interviews_for_mor(design, "ratio-of-means", 2.0)
+  untouched <- truncate_interviews_for_mor(design, "ratio-of-means", 2.0, "all")
   expect_equal(nrow(untouched$interviews), nrow(design$interviews))
 })
 
@@ -412,9 +412,10 @@ test_that("a trip with no recorded duration is dropped apart from the short trip
     truncate_interviews_for_mor,
     drop_sections_sel(roving_selection_design()),
     "mor",
-    2.0
+    2.0,
+    "all"
   )
-  with_na <- quiet_sel(truncate_interviews_for_mor, design, "mor", 2.0)
+  with_na <- quiet_sel(truncate_interviews_for_mor, design, "mor", 2.0, "all")
 
   # A missing duration is a missing-data loss, not a truncation decision. Rolled
   # into one count they are indistinguishable, and the repo's own rule is that
@@ -433,7 +434,7 @@ test_that("a trip with no recorded duration is dropped apart from the short trip
   # raised first.
   expect_warning(
     suppressMessages(withCallingHandlers(
-      truncate_interviews_for_mor(design, "mor", 2.0),
+      truncate_interviews_for_mor(design, "mor", 2.0, "all"),
       warning = function(w) {
         if (!grepl("missing trip duration", conditionMessage(w))) {
           invokeRestart("muffleWarning")
@@ -473,7 +474,7 @@ test_that("truncating away every trip is refused on the totals path too", {
   design <- rebuild_interview_survey(design, iv)
 
   expect_error(
-    quiet_sel(truncate_interviews_for_mor, design, "mor", 2.0),
+    quiet_sel(truncate_interviews_for_mor, design, "mor", 2.0, "all"),
     "No trips remain for mean-of-ratios estimation"
   )
   expect_error(

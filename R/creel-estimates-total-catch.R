@@ -398,7 +398,7 @@ estimate_total_catch <- function(
   # as the trip filter -- estimate_cpue_total() averages the ratios of whatever
   # interviews the design carries and never truncates for itself, so every path
   # below has to receive an already-truncated design or none of them truncate.
-  design <- truncate_interviews_for_mor(design, estimator, truncate_at) # nolint: object_usage_linter
+  design <- truncate_interviews_for_mor(design, estimator, truncate_at, use_trips) # nolint: object_usage_linter
 
   # Carried on the design rather than threaded through the ungrouped, grouped,
   # species and sectioned internals. Threading a resolved value into each branch

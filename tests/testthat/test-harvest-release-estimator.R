@@ -228,9 +228,13 @@ test_that("the MOR diagnostic banner names the quantity it measured", {
     use_trips = "all",
     estimator = "mor"
   )
+  # Asserted on the sentence that names the quantity. That sentence used to be
+  # the "Complete trips preferred for {rate} estimation." caveat, which now
+  # appears only on the incomplete-trip path -- and release never takes that
+  # path. The claim is unchanged: the label is derived, not hardcoded (GH #276).
   banner <- paste(format(rpue), collapse = " ")
-  expect_match(banner, "RPUE estimation")
-  expect_false(grepl("CPUE estimation", banner))
+  expect_match(banner, "RPUE ratios")
+  expect_false(grepl("CPUE", banner, fixed = TRUE))
 
   # The catch rate's own banner must not have moved.
   cpue <- quiet_est(
@@ -239,7 +243,7 @@ test_that("the MOR diagnostic banner names the quantity it measured", {
     use_trips = "all",
     estimator = "mor"
   )
-  expect_match(paste(format(cpue), collapse = " "), "CPUE estimation")
+  expect_match(paste(format(cpue), collapse = " "), "CPUE ratios")
 })
 
 # ---- truncation ------------------------------------------------------------

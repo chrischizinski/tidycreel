@@ -385,7 +385,7 @@ estimate_total_harvest <- function(
   # Truncation is part of the MOR estimator, not a tuning knob: untruncated MOR
   # has infinite variance (Hoenig et al. 1997). Applied once, before dispatch,
   # for the same reason the trip filter is (GH #271).
-  design <- truncate_interviews_for_mor(design, estimator, truncate_at) # nolint: object_usage_linter
+  design <- truncate_interviews_for_mor(design, estimator, truncate_at, use_trips) # nolint: object_usage_linter
 
   # Carried on the design rather than threaded through the ungrouped, grouped,
   # species and sectioned internals -- threading a resolved value into each
