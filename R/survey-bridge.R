@@ -2492,6 +2492,51 @@ refuse_section_in_by <- function(by_vars, design, error_call = rlang::caller_env
   )
 }
 
+#' Refuse the regression estimator on a species-level request
+#'
+#' `estimate_catch_rate()` resolves species grouping and dispatches to
+#' `estimate_cpue_species()` before it reaches the regression route, so
+#' `by = species` combined with `estimator = "regression"` silently returned a
+#' ratio-of-means result under a regression request -- no error, no warning, and
+#' a believable number (GH #290). The same order applies inside
+#' `estimate_catch_rate_sections()`.
+#'
+#' Refusing rather than implementing, because a per-species regression is a
+#' modelling decision and not a correction: a species that was not caught on a
+#' trip contributes a zero at positive effort, and whether those rows belong in
+#' the slope changes the estimate. That question is open in GH #290; until it is
+#' answered, a request that cannot be honoured is refused rather than quietly
+#' answered with a different estimator.
+#'
+#' @param species_var The resolved species column, or `NULL` when `by=` names none.
+#' @param estimator The estimator as the caller asked for it.
+#' @param error_call Environment for the error message.
+#'
+#' @return Invisibly `NULL`, or aborts.
+#'
+#' @keywords internal
+#' @noRd
+refuse_species_regression <- function(species_var, estimator, error_call = rlang::caller_env()) {
+  if (is.null(species_var) || !identical(estimator, "regression")) {
+    return(invisible(NULL))
+  }
+
+  cli::cli_abort(
+    c(
+      "{.arg estimator} = {.val regression} has no species-level form.",
+      "x" = paste(
+        "{.field species} in {.arg by} routes to the species estimator, which is",
+        "ratio-of-means or mean-of-ratios only."
+      ),
+      "i" = "Returning a ratio-of-means result under a regression request is what this refusal replaces.",
+      "i" = "Use {.code estimator = 'ratio-of-means'} or {.code estimator = 'mor'} with {.field species}.",
+      "i" = "For a regression rate, drop {.field species} from {.arg by}."
+    ),
+    class = "creel_error_species_regression",
+    call = error_call
+  )
+}
+
 #' Resolve a `by=` selector against count data, explaining the count constraint
 #'
 #' Effort is estimated from the counts, so `by=` on effort and on any total can

@@ -896,6 +896,16 @@ estimate_effort <- function(
 #'   the full design. See \code{estimate_total_catch()} for lake-wide total
 #'   catch estimation.
 #'
+#' @note \code{estimator = "regression"} on a sectioned design fits one
+#'   regression per section, on that section's interviews alone. The
+#'   leave-one-out jackknife standard error therefore rests on the interviews in
+#'   that section rather than on the whole sample, so section-level regression
+#'   standard errors are based on fewer points than the unsectioned form and are
+#'   correspondingly less stable. This is a property of sectioning rather than of
+#'   the estimator; a section with fewer than three interviews cannot be fitted
+#'   at all. \code{species} in \code{by} has no regression form and is refused
+#'   rather than silently estimated by another estimator.
+#'
 #' @return A creel_estimates S3 object (list) with components: estimates
 #'   (tibble with estimate, se, ci_lower, ci_upper, n columns, plus grouping
 #'   columns if \code{by} is specified), method (character: "ratio-of-means-cpue"
@@ -1743,12 +1753,20 @@ estimate_catch_rate <- function(
       variance,
       conf_level,
       missing_sections,
-      dispatch_estimator
+      dispatch_estimator,
+      force_origin
     ))
   }
 
   # Detect species-level grouping
   by_info <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
+
+  # The species dispatch below sits above the regression route, so a species
+  # request silently won and returned ratio-of-means numbers under a regression
+  # estimator (GH #290). Refused rather than reordered: the species estimator has
+  # no regression form to route to. Only the catch rate reaches this -- the
+  # harvest and release rates refuse "regression" at validation.
+  refuse_species_regression(by_info$species_var, estimator) # nolint: object_usage_linter
 
   # Route to species-level or standard estimation
   if (!is.null(by_info$species_var)) {
@@ -6233,7 +6251,8 @@ estimate_catch_rate_sections <- function(
   variance_method, # nolint: object_length_linter
   conf_level,
   missing_sections,
-  estimator
+  estimator,
+  force_origin = TRUE
 ) {
   # `estimator` arrives as the caller asked for it, so that the label below can
   # say whether truncation was mandatory. Everything downstream branches on the
@@ -6280,6 +6299,15 @@ estimate_catch_rate_sections <- function(
     error_call = rlang::caller_env()
   )
 
+  # Same refusal the flat path makes, for the same reason: the species branch
+  # below has no regression form, and answering a regression request with
+  # ratio-of-means numbers is what this replaces (GH #290).
+  refuse_species_regression( # nolint: object_usage_linter
+    by_info$species_var,
+    estimator,
+    error_call = rlang::caller_env()
+  )
+
   section_rows <- vector("list", length(registered_sections))
   names(section_rows) <- registered_sections
 
@@ -6322,26 +6350,39 @@ estimate_catch_rate_sections <- function(
         section_rows[[sec]] <- sp_df
       } else if (!is.null(by_info$interview_vars)) {
         # Grouped (non-species) by= path
-        result <- estimate_cpue_grouped(
-          # nolint: object_usage_linter
-          sec_design,
-          by_vars = by_info$interview_vars,
-          variance_method = variance_method,
-          conf_level = conf_level,
-          estimator = estimator
-        )
+        result <- if (identical(estimator, "regression")) {
+          estimate_cpue_reg_grouped( # nolint: object_usage_linter
+            sec_design,
+            by_vars = by_info$interview_vars,
+            conf_level = conf_level,
+            force_origin = force_origin
+          )
+        } else {
+          estimate_cpue_grouped(
+            # nolint: object_usage_linter
+            sec_design,
+            by_vars = by_info$interview_vars,
+            variance_method = variance_method,
+            conf_level = conf_level,
+            estimator = estimator
+          )
+        }
         row_df <- tibble::add_column(result$estimates, section = sec, .before = 1)
         row_df$data_available <- TRUE
         section_rows[[sec]] <- row_df
       } else {
         # Ungrouped (total) path
-        result <- estimate_cpue_total(
-          # nolint: object_usage_linter
-          sec_design,
-          variance_method,
-          conf_level,
-          estimator
-        )
+        result <- if (identical(estimator, "regression")) {
+          estimate_cpue_regression_total(sec_design, conf_level, force_origin) # nolint: object_usage_linter
+        } else {
+          estimate_cpue_total(
+            # nolint: object_usage_linter
+            sec_design,
+            variance_method,
+            conf_level,
+            estimator
+          )
+        }
         row <- result$estimates
         section_rows[[sec]] <- tibble::tibble(
           section = sec,
@@ -6371,10 +6412,16 @@ estimate_catch_rate_sections <- function(
       } else {
         "mean-of-ratios-cpue-sections"
       }
+    } else if (identical(estimator, "regression")) {
+      "regression-cpue-sections"
     } else {
       "ratio-of-means-cpue-sections"
     },
-    variance_method = variance_method,
+    # The regression estimator carries its own variance: the slope's SE is a
+    # leave-one-out jackknife, computed inside the internals, and `variance` was
+    # never consulted on that path. Recording the caller's Taylor default here
+    # would name a method that did not run.
+    variance_method = if (identical(estimator, "regression")) "jackknife" else variance_method,
     design = design,
     conf_level = conf_level,
     by_vars = if (!is.null(by_info$all_vars)) c("section", by_info$all_vars) else "section",

@@ -164,6 +164,16 @@ produced. Catch rates (fish per angler-hour) are not additive across
 sections. Lake-wide catch rate requires a separate unsectioned call on
 the full design. See \code{estimate_total_catch()} for lake-wide total
 catch estimation.
+
+\code{estimator = "regression"} on a sectioned design fits one
+regression per section, on that section's interviews alone. The
+leave-one-out jackknife standard error therefore rests on the interviews in
+that section rather than on the whole sample, so section-level regression
+standard errors are based on fewer points than the unsectioned form and are
+correspondingly less stable. This is a property of sectioning rather than of
+the estimator; a section with fewer than three interviews cannot be fitted
+at all. \code{species} in \code{by} has no regression form and is refused
+rather than silently estimated by another estimator.
 }
 \section{Package Options}{
 
