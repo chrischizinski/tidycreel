@@ -269,8 +269,12 @@ test_that("creel_estimates_mor print includes trip counts", {
   output <- capture.output(print(result))
   output_text <- paste(output, collapse = "\n")
 
-  # After Phase 17, auto-switch to incomplete trips means n_total = n_incomplete
-  expect_match(output_text, "25.*25", perl = TRUE) # n_incomplete of n_total
+  # The banner reports the trips it used and nothing else. It used to print
+  # "(n of N total)", but trip filtering happens upstream, so N had become the
+  # already-filtered count and the incomplete path could only ever say "25 of 25
+  # total" -- a denominator that looks like context and carries none (GH #276).
+  expect_match(output_text, "25 trips", fixed = TRUE)
+  expect_false(grepl("of 25 total", output_text, fixed = TRUE))
 })
 
 # DESIGN-112: party-hour vs angler-hour guard (finding 7) ----

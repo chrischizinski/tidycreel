@@ -63,7 +63,7 @@
     Output
       -- DIAGNOSTIC: MOR Estimator (Incomplete Trips) --------------------------------
       ! Complete trips preferred for CPUE estimation.
-      This estimate uses incomplete trip interviews (10 of 10 total).
+      Uses incomplete trip interviews only (10 trips).
       Truncation: 0 trips excluded (threshold: 0.5 hours)
       Validate with `validate_incomplete_trips()` before use (Phase 19).
       
@@ -72,6 +72,7 @@
       Method: Mean-of-Ratios CPUE
       Variance: Taylor linearization
       Confidence level: 95%
+      Unit: fish/party-hour
       
       # A tibble: 1 x 5
         estimate    se ci_lower ci_upper     n

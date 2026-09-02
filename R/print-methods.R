@@ -22,15 +22,57 @@ format.creel_estimates_mor <- function(x, ...) {
     "CPUE"
   }
 
+  # Name the trip set the estimate was actually built from. The banner assumed
+  # incomplete trips unconditionally, which was true while mean-of-ratios *was*
+  # the incomplete-trip estimator; the roving auto-route made MOR the default
+  # over *all* trips (GH #268 for catch, GH #271 for harvest and release), so a
+  # roving default rate announced an incomplete-trip caveat while using every
+  # trip it had, and `use_trips = "complete"` announced one while using none
+  # (GH #276).
+  #
+  # `mor_estimation_warning()` already stays silent on the "all" and "complete"
+  # paths. This is the printed counterpart obeying the same rule, not a new
+  # policy: the length-of-stay caveat and the validation pointer belong to the
+  # incomplete trip set, and the truncation report belongs to every MOR result
+  # because truncation is part of the estimator (Hoenig et al. 1997).
+  trip_set <- x$mor_use_trips %||% "incomplete"
+  diagnostic <- identical(trip_set, "incomplete")
+
+  # An unknown incomplete count is not a zero one: a design with no trip status
+  # column cannot say how many of its interviews were incomplete, and printing
+  # "(0 incomplete)" there would report an absence as a measurement.
+  n_incomplete <- x$n_incomplete # nolint: object_usage_linter
+  incomplete_known <- !is.null(n_incomplete) && !is.na(n_incomplete)
+
+  rule_label <- switch(
+    trip_set,
+    incomplete = "DIAGNOSTIC: MOR Estimator (Incomplete Trips)",
+    complete = "MOR Estimator (Complete Trips)",
+    "MOR Estimator (All Trips)"
+  )
+
   # Build diagnostic banner
   banner <- cli::cli_format_method({
-    cli::cli_rule(
-      left = "DIAGNOSTIC: MOR Estimator (Incomplete Trips)"
-    )
-    cli::cli_alert_warning("Complete trips preferred for {rate_label} estimation.")
-    cli::cli_text(
-      "This estimate uses incomplete trip interviews ({x$n_incomplete} of {x$n_total} total)."
-    )
+    cli::cli_rule(left = rule_label)
+
+    if (diagnostic) {
+      cli::cli_alert_warning("Complete trips preferred for {rate_label} estimation.")
+      cli::cli_text(
+        "Uses incomplete trip interviews only ({x$n_total} trip{?s})."
+      )
+    } else if (identical(trip_set, "complete")) {
+      cli::cli_text(
+        "Averages per-trip {rate_label} ratios over {x$n_total} complete trip{?s}."
+      )
+    } else if (incomplete_known) {
+      cli::cli_text(
+        "Averages per-trip {rate_label} ratios over all {x$n_total} interview{?s} ({n_incomplete} incomplete)."
+      )
+    } else {
+      cli::cli_text(
+        "Averages per-trip {rate_label} ratios over all {x$n_total} interview{?s}."
+      )
+    }
 
     # Add truncation details if applicable
     if (!is.null(x$mor_truncate_at)) {
@@ -43,9 +85,11 @@ format.creel_estimates_mor <- function(x, ...) {
       }
     }
 
-    cli::cli_text(
-      "Validate with {.fn validate_incomplete_trips} before use (Phase 19)."
-    )
+    if (diagnostic) {
+      cli::cli_text(
+        "Validate with {.fn validate_incomplete_trips} before use (Phase 19)."
+      )
+    }
     cli::cli_text("")
   })
 
