@@ -120,6 +120,13 @@
   upstream, so `N` had become the filtered count and the incomplete path printed
   a literal "24 of 24 total".
 
+  The counts the banner reports are taken from the trips that survived
+  truncation, not the set that entered it. Reported from before truncation they
+  contradicted the truncation line printed directly beneath them -- "over all 48
+  interviews" above "Truncation: 12 trips excluded", when 36 ratios had been
+  averaged. This affected all three metrics, in both the shared truncation
+  helper and the catch rate's own filtering block.
+
   Two things found while making the above change and fixed with it. A
   mean-of-ratios rate reported no unit -- the constructor had no `unit` argument,
   so every MOR rate read `NA` while the ratio-of-means rate beside it read

@@ -1681,9 +1681,17 @@ estimate_catch_rate <- function(
     design_incomplete <- design
     design_incomplete$interviews <- incomplete_interviews
 
-    # Store trip counts for MOR constructor (before design replacement)
-    design_incomplete$mor_n_incomplete <- n_incomplete
-    design_incomplete$mor_n_total <- n_total
+    # Trip counts for the MOR constructor, taken from the final interview set
+    # rather than the pre-filter one. Truncation and the zero-catch exclusion
+    # both run above this point, so the counts computed before them describe
+    # trips that are no longer in the estimate (GH #276). The locals keep their
+    # pre-filter values because mor_estimation_warning() is about the sample the
+    # caller supplied, not the one that survived filtering.
+    design_incomplete$mor_n_incomplete <- sum(
+      tolower(incomplete_interviews[[design$trip_status_col]]) == "incomplete",
+      na.rm = TRUE
+    )
+    design_incomplete$mor_n_total <- nrow(incomplete_interviews)
 
     # Store truncation metadata for messaging (Phase 16-02)
     design_incomplete$mor_truncate_at <- truncate_at
@@ -3173,9 +3181,20 @@ truncate_interviews_for_mor <- function(design, estimator, truncate_at, use_trip
     ))
   }
 
-  design <- rebuild_interview_survey(design, interviews[keep, , drop = FALSE]) # nolint: object_usage_linter
-  design$mor_n_incomplete <- n_incomplete
-  design$mor_n_total <- n_total
+  kept <- interviews[keep, , drop = FALSE]
+  design <- rebuild_interview_survey(design, kept) # nolint: object_usage_linter
+
+  # Recomputed from the trips that survived, not the set that entered. The
+  # counts are the sample behind the estimate, and reporting the pre-truncation
+  # ones put the banner in contradiction with its own truncation line -- "over
+  # all 48 interviews" printed directly above "Truncation: 12 trips excluded",
+  # when 36 ratios were averaged (GH #276).
+  design$mor_n_incomplete <- if (is.null(trip_status_col)) {
+    NA_integer_
+  } else {
+    sum(tolower(kept[[trip_status_col]]) == "incomplete", na.rm = TRUE)
+  }
+  design$mor_n_total <- nrow(kept)
   design$mor_truncate_at <- truncate_at
   design$mor_n_truncated <- n_truncated
   design$mor_use_trips <- effective_use_trips

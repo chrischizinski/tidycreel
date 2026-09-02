@@ -164,7 +164,7 @@ test_that("a MOR estimate over all trips is not described as incomplete-trip onl
   # a hedge, it is wrong. This is the roving default path since GH #268.
   expect_identical(result$estimates$n, 48L)
   expect_match(banner, "All Trips")
-  expect_match(banner, "all 48 interviews")
+  expect_match(banner, "48 interviews")
   expect_false(grepl("DIAGNOSTIC", banner, fixed = TRUE))
   expect_false(grepl("Complete trips preferred", banner, fixed = TRUE))
   expect_false(grepl("incomplete trip interviews", banner, fixed = TRUE))
@@ -238,6 +238,35 @@ test_that("the banner names the metric it belongs to on each trip set", {
   rpue <- quiet_mor(estimate_release_rate, design, use_trips = "all", estimator = "mor")
   expect_match(mor_banner(rpue), "RPUE")
   expect_false(grepl("CPUE", mor_banner(rpue), fixed = TRUE))
+})
+
+test_that("the reported count is the trips that survived truncation, not the set that entered", {
+  design <- mor_banner_design()
+
+  # The banner's count is the sample behind the estimate. Reported from before
+  # truncation it contradicted the truncation line printed directly beneath it:
+  # "over all 48 interviews" above "Truncation: 12 trips excluded", when 36
+  # ratios had been averaged. The two numbers have to reconcile, and the only
+  # way to check that is against the n the estimator itself reports.
+  for (fn in c("estimate_catch_rate", "estimate_harvest_rate", "estimate_release_rate")) {
+    result <- quiet_mor(
+      get(fn), design,
+      use_trips = "all", estimator = "mortr", truncate_at = 2.2
+    )
+
+    expect_true(result$mor_n_truncated > 0L, info = fn)
+    expect_identical(result$n_total, result$estimates$n, info = fn)
+    expect_identical(
+      result$n_total + result$mor_n_truncated,
+      nrow(design$interviews),
+      info = fn
+    )
+
+    # The incomplete count has to move with it: counted over the pre-truncation
+    # set it can exceed the number of trips the banner says were used.
+    expect_lte(result$n_incomplete, result$n_total)
+    expect_match(mor_banner(result), paste0(result$n_total, " interviews"), info = fn)
+  }
 })
 
 # ---- information the banner reports ----------------------------------------

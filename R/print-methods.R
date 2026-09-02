@@ -66,11 +66,11 @@ format.creel_estimates_mor <- function(x, ...) {
       )
     } else if (incomplete_known) {
       cli::cli_text(
-        "Averages per-trip {rate_label} ratios over all {x$n_total} interview{?s} ({n_incomplete} incomplete)."
+        "Averages per-trip {rate_label} ratios over {x$n_total} interview{?s} ({n_incomplete} incomplete)."
       )
     } else {
       cli::cli_text(
-        "Averages per-trip {rate_label} ratios over all {x$n_total} interview{?s}."
+        "Averages per-trip {rate_label} ratios over {x$n_total} interview{?s}."
       )
     }
 
