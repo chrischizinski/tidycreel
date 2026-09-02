@@ -99,6 +99,9 @@ strictly positive CI.}
 }
 \value{
 A creel_estimates S3 object with method = "product-total-harvest".
+The \code{estimator} component records the rate estimator this total is a
+product of, as you asked for it: \code{method} names the product form and
+is the same string whichever estimator produced it.
 For bus-route and ice designs, returns a bus-route HT estimate with
 method = "ht-total-harvest" and a "site_contributions" attribute.
 

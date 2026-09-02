@@ -75,7 +75,7 @@ test_that("new_creel_estimates() creates creel_estimates S3 object", {
     result,
     c(
       "estimates", "method", "variance_method", "design", "conf_level",
-      "by_vars", "effort_target", "unit", "se_expansion",
+      "by_vars", "effort_target", "unit", "estimator", "se_expansion",
       "expansion_decomposition", "se_components"
     )
   )

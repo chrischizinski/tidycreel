@@ -152,6 +152,7 @@ print.creel_summary <- function(x, ...) {
     total = "Total",
     "ratio-of-means-cpue" = "Ratio-of-Means CPUE",
     "mean-of-ratios-cpue" = "Mean-of-Ratios CPUE",
+    "mean-of-ratios-truncated-cpue" = "Truncated Mean-of-Ratios CPUE",
     "ratio-of-means-hpue" = "Ratio-of-Means HPUE",
     "mean-of-ratios-hpue" = "Mean-of-Ratios HPUE",
     "mean-of-ratios-truncated-hpue" = "Truncated Mean-of-Ratios HPUE",
