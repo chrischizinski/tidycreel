@@ -92,6 +92,14 @@
 
 ## Bug fixes
 
+* The error raised when a `by` variable is missing from the interview data now
+  carries the condition class `creel_error_by_missing_in_interviews` and is
+  attributed to the `estimate_total_*()` call that produced it, rather than to an
+  internal helper (#254). Grouped totals require each `by` variable in both the
+  count and the interview data; the count-side half already raised a classed,
+  catchable condition and this half raised an unclassed one, so only one of the
+  two could be handled programmatically. The message is unchanged.
+
 * `estimator = "regression"` now runs on a sectioned design instead of being
   silently discarded (#285). `estimate_catch_rate()` dispatches on sections
   before it dispatches on the estimator, so a sectioned regression request fell

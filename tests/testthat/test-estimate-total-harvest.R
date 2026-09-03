@@ -1260,6 +1260,6 @@ test_that("estimate_total_harvest errors when grouping variable missing from int
   # picks `hours_fished` in the interviews and `effort_hours` in the counts.
   expect_error(
     estimate_total_harvest(design, by = matches("hours")),
-    "not found in interview data"
+    class = "creel_error_by_missing_in_interviews"
   )
 })

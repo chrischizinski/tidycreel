@@ -635,7 +635,7 @@ test_that("estimate_total_catch errors when grouping variable missing from inter
   # count-side name is the one that arrives here.
   expect_error(
     estimate_total_catch(design, by = matches("hours")),
-    "not found in interview data"
+    class = "creel_error_by_missing_in_interviews"
   )
 
   # And it names the count-only column, not just any missing column.

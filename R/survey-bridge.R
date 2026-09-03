@@ -2238,21 +2238,32 @@ validate_design_compatibility <- function(design) {
 #' @param design A creel_design object
 #' @param by_vars Character vector of grouping variable names, already resolved
 #'   against `design$counts` by the caller.
+#' @param error_call Environment the error is attributed to. Defaults to the
+#'   caller, so the abort names the public `estimate_total_*()` entrypoint rather
+#'   than this internal helper.
 #'
 #' @return NULL (invisible) - function called for side effects (errors)
 #'
 #' @keywords internal
 #' @noRd
-validate_by_vars_in_interviews <- function(design, by_vars) {
+validate_by_vars_in_interviews <- function(design, by_vars, error_call = rlang::caller_env()) {
   missing_in_interviews <- setdiff(by_vars, names(design$interviews))
   if (length(missing_in_interviews) > 0) {
     n_missing_interviews <- length(missing_in_interviews) # nolint: object_usage_linter
-    cli::cli_abort(c(
-      "{n_missing_interviews} grouping variable{?s} not found in interview data:",
-      "x" = "Missing: {.val {missing_in_interviews}}",
-      "i" = "Available in interviews: {.val {names(design$interviews)}}",
-      "i" = "Grouped total estimation requires variables present in both counts and interviews"
-    ))
+    # Classed and attributed to the public entrypoint, matching the count-side
+    # refusal in `abort_count_unobservable_names()`. The two halves of the same
+    # requirement were not catchable the same way: one had a class and a caller
+    # call, the other had neither, so only one of them could be handled.
+    cli::cli_abort(
+      c(
+        "{n_missing_interviews} grouping variable{?s} not found in interview data:",
+        "x" = "Missing: {.val {missing_in_interviews}}",
+        "i" = "Available in interviews: {.val {names(design$interviews)}}",
+        "i" = "Grouped total estimation requires variables present in both counts and interviews"
+      ),
+      class = "creel_error_by_missing_in_interviews",
+      call = error_call
+    )
   }
 
   invisible(NULL)
