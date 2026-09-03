@@ -2211,43 +2211,59 @@ validate_design_compatibility <- function(design) {
   invisible(NULL)
 }
 
-#' Validate grouping variable compatibility for total catch/harvest
+#' Validate that grouping variables exist in interview data
 #'
-#' Checks that grouping variables specified in by parameter exist in both
-#' count data (for effort) and interview data (for CPUE/HPUE), enabling grouped
-#' total catch/harvest estimation.
+#' Grouped total catch/harvest/release is a rate x effort product. The effort
+#' half is grouped in the count data and the rate half in the interview data, so
+#' each `by` variable has to resolve in both. This function checks the interview
+#' half only.
+#'
+#' The count half needs no check here, and the copy of it this function used to
+#' carry could never fire (GH #254): every caller resolves `by` through
+#' `eval_select_count_by()` against `design$counts` immediately before calling
+#' this, so `by_vars` is by construction a subset of the count column names, and
+#' a variable the counter never classified has already been refused as
+#' count-unobservable with a message written for that case (GH #241).
+#'
+#' The interview half is not symmetric with that, which is why this check
+#' survives. `resolve_species_by()` does resolve the same `by` quosure against
+#' the interviews earlier in each caller, so a *literal* name absent from the
+#' interviews aborts there and never arrives. A tidyselect helper does not
+#' behave that way: `matches("hours")` resolves to `hours_fished` in the
+#' interviews and `effort_hours` in the counts, and the count-side names are
+#' what reach this function. That is the live path -- without this check they
+#' travel on into `estimate_effort_grouped()` and fail inside a survey formula
+#' with a bare `object '<col>' not found`.
 #'
 #' @param design A creel_design object
-#' @param by_vars Character vector of grouping variable names
+#' @param by_vars Character vector of grouping variable names, already resolved
+#'   against `design$counts` by the caller.
+#' @param error_call Environment the error is attributed to. Defaults to the
+#'   caller, so the abort names the public `estimate_total_*()` entrypoint rather
+#'   than this internal helper.
 #'
 #' @return NULL (invisible) - function called for side effects (errors)
 #'
 #' @keywords internal
 #' @noRd
-validate_grouping_compatibility <- function(design, by_vars) {
-  # nolint: object_length_linter
-  # Check grouping variables exist in count data
-  missing_in_counts <- setdiff(by_vars, names(design$counts))
-  if (length(missing_in_counts) > 0) {
-    n_missing_counts <- length(missing_in_counts) # nolint: object_usage_linter
-    cli::cli_abort(c(
-      "{n_missing_counts} grouping variable{?s} not found in count data:",
-      "x" = "Missing: {.val {missing_in_counts}}",
-      "i" = "Available in counts: {.val {names(design$counts)}}",
-      "i" = "Grouped total estimation requires variables present in both counts and interviews"
-    ))
-  }
-
-  # Check grouping variables exist in interview data
+validate_by_vars_in_interviews <- function(design, by_vars, error_call = rlang::caller_env()) {
   missing_in_interviews <- setdiff(by_vars, names(design$interviews))
   if (length(missing_in_interviews) > 0) {
     n_missing_interviews <- length(missing_in_interviews) # nolint: object_usage_linter
-    cli::cli_abort(c(
-      "{n_missing_interviews} grouping variable{?s} not found in interview data:",
-      "x" = "Missing: {.val {missing_in_interviews}}",
-      "i" = "Available in interviews: {.val {names(design$interviews)}}",
-      "i" = "Grouped total estimation requires variables present in both counts and interviews"
-    ))
+    # Classed and attributed to the public entrypoint, matching the count-side
+    # refusal in `abort_count_unobservable_names()`. The two halves of the same
+    # requirement were not catchable the same way: one had a class and a caller
+    # call, the other had neither, so only one of them could be handled.
+    cli::cli_abort(
+      c(
+        "{n_missing_interviews} grouping variable{?s} not found in interview data:",
+        "x" = "Missing: {.val {missing_in_interviews}}",
+        "i" = "Available in interviews: {.val {names(design$interviews)}}",
+        "i" = "Grouped total estimation requires variables present in both counts and interviews"
+      ),
+      class = "creel_error_by_missing_in_interviews",
+      call = error_call
+    )
   }
 
   invisible(NULL)

@@ -454,7 +454,7 @@ estimate_total_release <- function(
       species_route = TRUE,
       error_call = rlang::caller_env()
     )
-    validate_grouping_compatibility(design, by_vars) # nolint: object_usage_linter
+    validate_by_vars_in_interviews(design, by_vars) # nolint: object_usage_linter
     return(estimate_total_release_grouped(design, by_vars, variance, conf_level, target = target, product_variance = product_variance, ci_type = ci_type)) # nolint: object_usage_linter
   }
 }

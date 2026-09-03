@@ -1251,3 +1251,15 @@ test_that("ice total harvest carries the bus-route method string (GH #111)", {
 
   expect_equal(result$method, "ht-total-harvest")
 })
+
+test_that("estimate_total_harvest errors when grouping variable missing from interview data", {
+  design <- make_total_harvest_design()
+
+  # The near-twin of the estimate_total_catch test, and a helper rather than a
+  # literal name for the reason recorded there (GH #254). `matches("hours")`
+  # picks `hours_fished` in the interviews and `effort_hours` in the counts.
+  expect_error(
+    estimate_total_harvest(design, by = matches("hours")),
+    class = "creel_error_by_missing_in_interviews"
+  )
+})

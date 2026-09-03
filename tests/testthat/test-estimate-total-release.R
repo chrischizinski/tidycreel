@@ -1099,3 +1099,15 @@ test_that("bus-route total release counts only completed trips (GH #112)", {
   expect_equal(release$estimates$n, harvest$estimates$n)
   expect_lt(release$estimates$n, nrow(design$interviews))
 })
+
+test_that("estimate_total_release errors when grouping variable missing from interview data", {
+  design <- make_total_release_design()
+
+  # The near-twin of the estimate_total_catch test, and a helper rather than a
+  # literal name for the reason recorded there (GH #254). `matches("hours")`
+  # picks `hours_fished` in the interviews and `effort_hours` in the counts.
+  expect_error(
+    estimate_total_release(design, by = matches("hours")),
+    class = "creel_error_by_missing_in_interviews"
+  )
+})
