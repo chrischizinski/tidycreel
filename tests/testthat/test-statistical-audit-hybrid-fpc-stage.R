@@ -1,6 +1,6 @@
 # A within-day sampling fraction was supplied as the stage-1 fpc (GH #246).
 #
-# `access_fraction` is the proportion of access points covered on a sampled
+# The within-day `fraction` is the proportion of a frame covered on a sampled
 # day. Since #229 the PSU is the date, so passing that fraction to
 # `svydesign(fpc =)` made `survey` compute each stratum's population as
 # `sampled dates / fraction` and read the result as a count of DAYS. Three
@@ -63,16 +63,28 @@ fpc_calendar <- function(n_weekday = 20L, n_weekend = 10L) {
   )
 }
 
+# Long-form counts, one row per frame per sampled date (#248). The frame column
+# is named `component` with values "access"/"roving" so the stratum keys stay
+# "weekday.access" and every assertion below tests the same arithmetic it did
+# before the API change.
+fpc_counts <- function(access = fpc_access(), roving = fpc_roving()) {
+  access$component <- "access"
+  roving$component <- "roving"
+  rbind(access, roving)
+}
+
+# The wrapper keeps its per-frame fraction arguments and assembles the list the
+# function now takes, so the call sites below are unchanged.
 fpc_design <- function(access_fraction = c(weekday = 0.5, weekend = 0.5),
                        roving_fraction = c(weekday = 0.4, weekend = 0.4),
                        calendar = fpc_calendar(),
+                       counts = fpc_counts(),
                        ...) {
   as_hybrid_svydesign(
-    fpc_access(),
-    fpc_roving(),
+    counts,
+    frame_col = "component",
     calendar = calendar,
-    access_fraction = access_fraction,
-    roving_fraction = roving_fraction,
+    fraction = list(access = access_fraction, roving = roving_fraction),
     trips_disjoint = TRUE,
     ...
   )
@@ -211,10 +223,12 @@ test_that("HYBFPC-11: a fully sampled calendar is a census and carries no stage-
 test_that("HYBFPC-12: calendar is required, with no default", {
   expect_error(
     as_hybrid_svydesign(
-      fpc_access(),
-      fpc_roving(),
-      access_fraction = c(weekday = 0.5, weekend = 0.5),
-      roving_fraction = c(weekday = 0.4, weekend = 0.4),
+      fpc_counts(),
+      frame_col = "component",
+      fraction = list(
+        access = c(weekday = 0.5, weekend = 0.5),
+        roving = c(weekday = 0.4, weekend = 0.4)
+      ),
       trips_disjoint = TRUE
     ),
     "calendar"
@@ -244,22 +258,17 @@ test_that("HYBFPC-14: a repeated count on one date is refused", {
     )
   )
   expect_error(
-    as_hybrid_svydesign(
-      repeated,
-      fpc_roving(),
-      calendar = fpc_calendar(),
-      access_fraction = c(weekday = 0.5, weekend = 0.5),
-      roving_fraction = c(weekday = 0.4, weekend = 0.4),
-      trips_disjoint = TRUE
-    ),
+    fpc_design(counts = fpc_counts(access = repeated)),
     class = "creel_error_repeated_psus"
   )
 })
 
 test_that("HYBFPC-13b: the calendar-coverage guard covers the roving side too", {
-  # Codecov found both roving-side guards uncovered, and deleting either left
-  # all 50 hybrid tests passing. A guard tested on one component only is not
-  # tested: the two calls are separate lines and either can be lost alone.
+  # Written when the guard was two parallel calls, one per table, either of
+  # which could be deleted with all 50 hybrid tests still passing. Since #248
+  # there is one guard over one long table, so that particular defect class is
+  # gone; what this still pins is that the guard sees every frame's rows and not
+  # just the first frame's.
   roving_extra <- rbind(
     fpc_roving(),
     data.frame(
@@ -270,14 +279,7 @@ test_that("HYBFPC-13b: the calendar-coverage guard covers the roving side too", 
     )
   )
   expect_error(
-    suppressWarnings(as_hybrid_svydesign(
-      fpc_access(),
-      roving_extra,
-      calendar = fpc_calendar(),
-      access_fraction = c(weekday = 0.5, weekend = 0.5),
-      roving_fraction = c(weekday = 0.4, weekend = 0.4),
-      trips_disjoint = TRUE
-    )),
+    suppressWarnings(fpc_design(counts = fpc_counts(roving = roving_extra))),
     "absent from"
   )
 })
@@ -293,14 +295,7 @@ test_that("HYBFPC-14b: the repeated-day refusal covers the roving side too", {
     )
   )
   expect_error(
-    as_hybrid_svydesign(
-      fpc_access(),
-      roving_repeat,
-      calendar = fpc_calendar(),
-      access_fraction = c(weekday = 0.5, weekend = 0.5),
-      roving_fraction = c(weekday = 0.4, weekend = 0.4),
-      trips_disjoint = TRUE
-    ),
+    fpc_design(counts = fpc_counts(roving = roving_repeat)),
     class = "creel_error_repeated_psus"
   )
 })

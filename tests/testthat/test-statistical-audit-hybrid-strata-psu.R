@@ -60,7 +60,7 @@ hy_roving <- function() {
   )
 }
 
-# The population of days both components expand to (#246). Ten weekday days
+# The population of days every frame expands to (#246). Ten weekday days
 # and six weekend days; the fixtures sample two of each.
 hy_calendar <- function() {
   data.frame(
@@ -75,13 +75,24 @@ hy_calendar <- function() {
   )
 }
 
+# Long-form counts, one row per frame per sampled date (#248). The frame column
+# is named `component` with values "access"/"roving" so the stratum keys stay
+# "weekday.access" and every assertion below tests the same arithmetic it did
+# before the API change.
+hy_counts <- function(access = hy_access(), roving = hy_roving()) {
+  access$component <- "access"
+  roving$component <- "roving"
+  rbind(access, roving)
+}
+
+hy_fraction <- list(access = fr_access, roving = fr_roving)
+
 hy_design <- function(..., repeat_count = FALSE) {
   as_hybrid_svydesign(
-    hy_access(repeat_count = repeat_count),
-    hy_roving(),
+    hy_counts(access = hy_access(repeat_count = repeat_count)),
+    frame_col = "component",
     calendar = hy_calendar(),
-    access_fraction = fr_access,
-    roving_fraction = fr_roving,
+    fraction = hy_fraction,
     trips_disjoint = TRUE,
     ...
   )
@@ -215,11 +226,10 @@ test_that("HYBAUD-07: the point total is the stratified sum of both expansions",
 test_that("HYBAUD-08: the design cannot be constructed without affirming disjointness", {
   expect_error(
     as_hybrid_svydesign(
-      hy_access(),
-      hy_roving(),
+      hy_counts(),
+      frame_col = "component",
       calendar = hy_calendar(),
-      access_fraction = fr_access,
-      roving_fraction = fr_roving
+      fraction = hy_fraction
     ),
     "trips_disjoint",
     class = "rlang_error"
@@ -231,11 +241,10 @@ test_that("HYBAUD-09: declaring the components non-disjoint refuses rather than 
   # of two overlapping frames.
   expect_error(
     as_hybrid_svydesign(
-      hy_access(),
-      hy_roving(),
+      hy_counts(),
+      frame_col = "component",
       calendar = hy_calendar(),
-      access_fraction = fr_access,
-      roving_fraction = fr_roving,
+      fraction = hy_fraction,
       trips_disjoint = FALSE
     ),
     "may not be summed",
@@ -248,11 +257,10 @@ test_that("HYBAUD-10: trips_disjoint must be a non-missing logical scalar", {
   for (value in bad) {
     expect_error(
       as_hybrid_svydesign(
-        hy_access(),
-        hy_roving(),
+        hy_counts(),
+        frame_col = "component",
         calendar = hy_calendar(),
-        access_fraction = fr_access,
-        roving_fraction = fr_roving,
+        fraction = hy_fraction,
         trips_disjoint = value
       ),
       class = "rlang_error"

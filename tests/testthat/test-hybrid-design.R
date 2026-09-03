@@ -29,6 +29,16 @@ make_roving <- function() {
   )
 }
 
+# The long-form counts table the design now takes (#248). The frame column is
+# named `component` and its values are "access"/"roving" so the stratum keys
+# stay "weekday.access" and the weight assertions below and in the audit files
+# keep testing the same arithmetic across the API change.
+make_counts <- function(access = make_access(), roving = make_roving()) {
+  access$component <- "access"
+  roving$component <- "roving"
+  rbind(access, roving)
+}
+
 fractions <- list(
   access = c(weekday = 0.5, weekend = 0.5),
   roving = c(weekday = 0.4, weekend = 0.4)
@@ -36,7 +46,7 @@ fractions <- list(
 
 # The population of days the totals expand to (#246). Ten weekday days and six
 # weekend days, chosen to contain every date the fixtures sample -- including
-# the 2024-06-15 weekday HYBR-16 adds to one component only.
+# the 2024-06-15 weekday HYBR-16 adds to one frame only.
 make_calendar <- function() {
   data.frame(
     date = as.Date(c(
@@ -53,94 +63,94 @@ make_calendar <- function() {
 
 # Input validation ------------------------------------------------------------
 
-test_that("HYBR-01: errors when access_data is not a data frame", {
+test_that("HYBR-01: errors when counts is not a data frame", {
   expect_error(
     as_hybrid_svydesign(
       list(),
-      make_roving(),
+      frame_col = "component",
       calendar = make_calendar(),
-      access_fraction = fractions$access,
-      roving_fraction = fractions$roving
+      fraction = fractions
     ),
     class = "rlang_error"
   )
 })
 
-test_that("HYBR-02: errors when roving_data is not a data frame", {
+test_that("HYBR-02: errors when frame_col is not supplied", {
+  # No default: the column carries the partition the stratified total rests on,
+  # and a default would let a missed argument pick one silently.
   expect_error(
     as_hybrid_svydesign(
-      make_access(),
-      NULL,
+      make_counts(),
       calendar = make_calendar(),
-      access_fraction = fractions$access,
-      roving_fraction = fractions$roving
+      fraction = fractions,
+      trips_disjoint = TRUE
     ),
-    class = "rlang_error"
+    "frame_col.*must be provided"
   )
 })
 
-test_that("HYBR-03: errors when required column missing from access_data", {
-  df <- make_access()
+test_that("HYBR-03: errors when required column missing from counts", {
+  df <- make_counts()
   df$count <- NULL
   expect_error(
     as_hybrid_svydesign(
       df,
-      make_roving(),
+      frame_col = "component",
       calendar = make_calendar(),
-      access_fraction = fractions$access,
-      roving_fraction = fractions$roving
+      fraction = fractions
     ),
     class = "rlang_error"
   )
 })
 
-test_that("HYBR-04: errors when required column missing from roving_data", {
-  df <- make_roving()
-  df$date <- NULL
+test_that("HYBR-04: errors when frame_col names a column counts does not have", {
   expect_error(
     as_hybrid_svydesign(
-      make_access(),
-      df,
+      make_counts(),
+      frame_col = "angler_type",
       calendar = make_calendar(),
-      access_fraction = fractions$access,
-      roving_fraction = fractions$roving
+      fraction = fractions
+    ),
+    "angler_type.*missing from"
+  )
+})
+
+test_that("HYBR-05: errors when fraction is NULL", {
+  expect_error(
+    as_hybrid_svydesign(
+      make_counts(),
+      frame_col = "component",
+      calendar = make_calendar()
     ),
     class = "rlang_error"
   )
 })
 
-test_that("HYBR-05: errors when access_fraction is NULL", {
+test_that("HYBR-06: errors when fraction has no entry for a frame", {
+  # Keyed on the frame, not positional, so a frame without an entry is named
+  # rather than silently inheriting a neighbour's fraction.
   expect_error(
     as_hybrid_svydesign(
-      make_access(),
-      make_roving(),
+      make_counts(),
+      frame_col = "component",
       calendar = make_calendar(),
-      roving_fraction = fractions$roving
+      fraction = fractions["access"],
+      trips_disjoint = TRUE
     ),
-    class = "rlang_error"
-  )
-})
-
-test_that("HYBR-06: errors when roving_fraction is NULL", {
-  expect_error(
-    as_hybrid_svydesign(
-      make_access(),
-      make_roving(),
-      calendar = make_calendar(),
-      access_fraction = fractions$access
-    ),
-    class = "rlang_error"
+    "roving"
   )
 })
 
 test_that("HYBR-07: errors when fraction missing a stratum", {
   expect_error(
     as_hybrid_svydesign(
-      make_access(),
-      make_roving(),
+      make_counts(),
+      frame_col = "component",
       calendar = make_calendar(),
-      access_fraction = c(weekday = 0.5), # missing weekend
-      roving_fraction = fractions$roving
+      fraction = list(
+        access = c(weekday = 0.5), # missing weekend
+        roving = fractions$roving
+      )
     ),
     class = "rlang_error"
   )
@@ -149,11 +159,13 @@ test_that("HYBR-07: errors when fraction missing a stratum", {
 test_that("HYBR-08: errors when fraction value <= 0", {
   expect_error(
     as_hybrid_svydesign(
-      make_access(),
-      make_roving(),
+      make_counts(),
+      frame_col = "component",
       calendar = make_calendar(),
-      access_fraction = c(weekday = 0, weekend = 0.5),
-      roving_fraction = fractions$roving
+      fraction = list(
+        access = c(weekday = 0, weekend = 0.5),
+        roving = fractions$roving
+      )
     ),
     class = "rlang_error"
   )
@@ -162,11 +174,13 @@ test_that("HYBR-08: errors when fraction value <= 0", {
 test_that("HYBR-09: errors when fraction value > 1", {
   expect_error(
     as_hybrid_svydesign(
-      make_access(),
-      make_roving(),
+      make_counts(),
+      frame_col = "component",
       calendar = make_calendar(),
-      access_fraction = c(weekday = 1.5, weekend = 0.5),
-      roving_fraction = fractions$roving
+      fraction = list(
+        access = c(weekday = 1.5, weekend = 0.5),
+        roving = fractions$roving
+      )
     ),
     class = "rlang_error"
   )
@@ -176,11 +190,10 @@ test_that("HYBR-09: errors when fraction value > 1", {
 
 test_that("HYBR-10: returns an svydesign object", {
   design <- suppressWarnings(as_hybrid_svydesign(
-    make_access(),
-    make_roving(),
+    make_counts(),
+    frame_col = "component",
     calendar = make_calendar(),
-    access_fraction = fractions$access,
-    roving_fraction = fractions$roving,
+    fraction = fractions,
     trips_disjoint = TRUE
   ))
   expect_true(inherits(design, "survey.design"))
@@ -188,67 +201,67 @@ test_that("HYBR-10: returns an svydesign object", {
 
 test_that("HYBR-11: returns creel_hybrid_svydesign class", {
   design <- suppressWarnings(as_hybrid_svydesign(
-    make_access(),
-    make_roving(),
+    make_counts(),
+    frame_col = "component",
     calendar = make_calendar(),
-    access_fraction = fractions$access,
-    roving_fraction = fractions$roving,
+    fraction = fractions,
     trips_disjoint = TRUE
   ))
   expect_s3_class(design, "creel_hybrid_svydesign")
 })
 
-test_that("HYBR-12: combined data has component column", {
+test_that("HYBR-12: combined data carries the frame column and names it", {
   design <- suppressWarnings(as_hybrid_svydesign(
-    make_access(),
-    make_roving(),
+    make_counts(),
+    frame_col = "component",
     calendar = make_calendar(),
-    access_fraction = fractions$access,
-    roving_fraction = fractions$roving,
+    fraction = fractions,
     trips_disjoint = TRUE
   ))
   expect_true("component" %in% names(design$variables))
   expect_setequal(unique(design$variables$component), c("access", "roving"))
+  # The attribute names the frame column, so a consumer does not have to guess.
+  expect_equal(attr(design, "component_col"), "component")
 })
 
 test_that("HYBR-13: combined data has weight column", {
   design <- suppressWarnings(as_hybrid_svydesign(
-    make_access(),
-    make_roving(),
+    make_counts(),
+    frame_col = "component",
     calendar = make_calendar(),
-    access_fraction = fractions$access,
-    roving_fraction = fractions$roving,
+    fraction = fractions,
     trips_disjoint = TRUE
   ))
   expect_true("weight" %in% names(design$variables))
   expect_true(all(design$variables$weight > 0))
 })
 
-test_that("HYBR-14: row count equals nrow(access) + nrow(roving)", {
+test_that("HYBR-14: row count equals the rows supplied", {
   design <- suppressWarnings(as_hybrid_svydesign(
-    make_access(),
-    make_roving(),
+    make_counts(),
+    frame_col = "component",
     calendar = make_calendar(),
-    access_fraction = fractions$access,
-    roving_fraction = fractions$roving,
+    fraction = fractions,
     trips_disjoint = TRUE
   ))
-  expect_equal(nrow(design$variables), nrow(make_access()) + nrow(make_roving()))
+  expect_equal(nrow(design$variables), nrow(make_counts()))
 })
 
 # Weight correctness ----------------------------------------------------------
 
-test_that("HYBR-15: access weights carry the within-day AND the day expansion", {
-  # Two factors, not one (#246): 1 / access_fraction expands the access points
+test_that("HYBR-15: weights carry the within-day AND the day expansion", {
+  # Two factors, not one (#246): 1 / fraction expands the access points
   # covered to the whole of a sampled day, and N_h / n_h expands the sampled
   # days to the days the stratum holds. Asserting only the first would pass
   # while the design silently estimated a sampled-day total.
   design <- suppressWarnings(as_hybrid_svydesign(
-    make_access(),
-    make_roving(),
+    make_counts(),
+    frame_col = "component",
     calendar = make_calendar(),
-    access_fraction = c(weekday = 0.5, weekend = 0.25),
-    roving_fraction = fractions$roving,
+    fraction = list(
+      access = c(weekday = 0.5, weekend = 0.25),
+      roving = fractions$roving
+    ),
     trips_disjoint = TRUE
   ))
   vars <- design$variables
@@ -257,6 +270,11 @@ test_that("HYBR-15: access weights carry the within-day AND the day expansion", 
   expect_equal(unique(acc_wk), (1 / 0.5) * (10 / 2), tolerance = 1e-9)
   acc_we <- vars$weight[vars$component == "access" & vars$day_type == "weekend"]
   expect_equal(unique(acc_we), (1 / 0.25) * (6 / 2), tolerance = 1e-9)
+
+  # The roving frame keeps its own fraction: a lookup keyed on the stratum
+  # alone would hand it the access value for the same stratum.
+  rov_we <- vars$weight[vars$component == "roving" & vars$day_type == "weekend"]
+  expect_equal(unique(rov_we), (1 / 0.4) * (6 / 2), tolerance = 1e-9)
 })
 
 # PSU alignment warning -------------------------------------------------------
@@ -273,24 +291,23 @@ test_that("HYBR-16: asymmetric dates produce a warning", {
   )
   expect_warning(
     as_hybrid_svydesign(
-      access_extra,
-      make_roving(),
+      make_counts(access = access_extra),
+      frame_col = "component",
       calendar = make_calendar(),
-      access_fraction = c(weekday = 0.5, weekend = 0.5),
-      roving_fraction = fractions$roving,
+      fraction = fractions,
       trips_disjoint = TRUE
-    )
+    ),
+    "Asymmetric"
   )
 })
 
 test_that("HYBR-17: symmetric dates produce no PSU warning", {
   expect_no_warning(
     as_hybrid_svydesign(
-      make_access(),
-      make_roving(),
+      make_counts(),
+      frame_col = "component",
       calendar = make_calendar(),
-      access_fraction = fractions$access,
-      roving_fraction = fractions$roving,
+      fraction = fractions,
       trips_disjoint = TRUE,
       fpc = FALSE
     )
@@ -301,11 +318,10 @@ test_that("HYBR-17: symmetric dates produce no PSU warning", {
 
 test_that("HYBR-18: fpc = FALSE produces a valid design", {
   design <- as_hybrid_svydesign(
-    make_access(),
-    make_roving(),
+    make_counts(),
+    frame_col = "component",
     calendar = make_calendar(),
-    access_fraction = fractions$access,
-    roving_fraction = fractions$roving,
+    fraction = fractions,
     trips_disjoint = TRUE,
     fpc = FALSE
   )
@@ -315,43 +331,38 @@ test_that("HYBR-18: fpc = FALSE produces a valid design", {
 # Custom column names ---------------------------------------------------------
 
 test_that("HYBR-19: custom column names work", {
-  access_custom <- make_access()
-  names(access_custom)[names(access_custom) == "date"] <- "survey_date"
-  names(access_custom)[names(access_custom) == "day_type"] <- "stratum"
-  names(access_custom)[names(access_custom) == "count"] <- "n_anglers"
-
-  roving_custom <- make_roving()
-  names(roving_custom)[names(roving_custom) == "date"] <- "survey_date"
-  names(roving_custom)[names(roving_custom) == "day_type"] <- "stratum"
-  names(roving_custom)[names(roving_custom) == "count"] <- "n_anglers"
+  counts_custom <- make_counts()
+  names(counts_custom)[names(counts_custom) == "date"] <- "survey_date"
+  names(counts_custom)[names(counts_custom) == "day_type"] <- "stratum"
+  names(counts_custom)[names(counts_custom) == "count"] <- "n_anglers"
+  names(counts_custom)[names(counts_custom) == "component"] <- "angler_type"
 
   calendar_custom <- make_calendar()
   names(calendar_custom)[names(calendar_custom) == "date"] <- "survey_date"
   names(calendar_custom)[names(calendar_custom) == "day_type"] <- "stratum"
 
   design <- as_hybrid_svydesign(
-    access_custom,
-    roving_custom,
+    counts_custom,
+    frame_col = "angler_type",
     calendar = calendar_custom,
     date_col = "survey_date",
     strata_col = "stratum",
     count_col = "n_anglers",
-    access_fraction = c(weekday = 0.5, weekend = 0.5),
-    roving_fraction = c(weekday = 0.4, weekend = 0.4),
+    fraction = fractions,
     trips_disjoint = TRUE
   )
   expect_s3_class(design, "creel_hybrid_svydesign")
+  expect_equal(attr(design, "component_col"), "angler_type")
 })
 
 # svytotal sanity -------------------------------------------------------------
 
 test_that("HYBR-20: svytotal runs without error on the hybrid design", {
   design <- as_hybrid_svydesign(
-    make_access(),
-    make_roving(),
+    make_counts(),
+    frame_col = "component",
     calendar = make_calendar(),
-    access_fraction = fractions$access,
-    roving_fraction = fractions$roving,
+    fraction = fractions,
     trips_disjoint = TRUE,
     fpc = FALSE
   )
@@ -368,18 +379,17 @@ test_that("HYBR-20: svytotal runs without error on the hybrid design", {
 # 195 with no error and no warning.
 
 test_that("HYBR-21: a missing sampled date is refused", {
-  access_na <- make_access()
-  access_na$date[2] <- as.Date(NA)
+  counts_na <- make_counts()
+  counts_na$date[2] <- as.Date(NA)
   expect_error(
     as_hybrid_svydesign(
-      access_na,
-      make_roving(),
+      counts_na,
+      frame_col = "component",
       calendar = make_calendar(),
-      access_fraction = fractions$access,
-      roving_fraction = fractions$roving,
+      fraction = fractions,
       trips_disjoint = TRUE
     ),
-    "date.*access_data.*missing"
+    "date.*counts.*missing"
   )
 })
 
@@ -387,11 +397,10 @@ test_that("HYBR-22: a missing calendar date is refused, not counted as a day", {
   # The clean calendar is the control: the same design builds, so the refusal
   # below is about the NA and not about the fixture.
   design <- as_hybrid_svydesign(
-    make_access(),
-    make_roving(),
+    make_counts(),
+    frame_col = "component",
     calendar = make_calendar(),
-    access_fraction = fractions$access,
-    roving_fraction = fractions$roving,
+    fraction = fractions,
     trips_disjoint = TRUE
   )
   expect_s3_class(design, "survey.design")
@@ -403,11 +412,10 @@ test_that("HYBR-22: a missing calendar date is refused, not counted as a day", {
   )
   expect_error(
     as_hybrid_svydesign(
-      make_access(),
-      make_roving(),
+      make_counts(),
+      frame_col = "component",
       calendar = calendar_na,
-      access_fraction = fractions$access,
-      roving_fraction = fractions$roving,
+      fraction = fractions,
       trips_disjoint = TRUE
     ),
     "date.*calendar.*missing"
@@ -421,11 +429,10 @@ test_that("HYBR-23: a missing calendar stratum is refused", {
   calendar_na$day_type[3] <- NA_character_
   expect_error(
     as_hybrid_svydesign(
-      make_access(),
-      make_roving(),
+      make_counts(),
+      frame_col = "component",
       calendar = calendar_na,
-      access_fraction = fractions$access,
-      roving_fraction = fractions$roving,
+      fraction = fractions,
       trips_disjoint = TRUE
     ),
     "day_type.*calendar.*missing"
@@ -433,15 +440,14 @@ test_that("HYBR-23: a missing calendar stratum is refused", {
 })
 
 test_that("HYBR-24: a non-Date date column is refused", {
-  access_chr <- make_access()
-  access_chr$date <- as.character(access_chr$date)
+  counts_chr <- make_counts()
+  counts_chr$date <- as.character(counts_chr$date)
   expect_error(
     as_hybrid_svydesign(
-      access_chr,
-      make_roving(),
+      counts_chr,
+      frame_col = "component",
       calendar = make_calendar(),
-      access_fraction = fractions$access,
-      roving_fraction = fractions$roving,
+      fraction = fractions,
       trips_disjoint = TRUE
     ),
     "must be a.*Date.*column"
@@ -455,11 +461,10 @@ test_that("HYBR-25: a non-scalar or missing fpc is refused", {
   for (bad in list(NA, c(TRUE, FALSE), "yes", 1)) {
     expect_error(
       as_hybrid_svydesign(
-        make_access(),
-        make_roving(),
+        make_counts(),
+        frame_col = "component",
         calendar = make_calendar(),
-        access_fraction = fractions$access,
-        roving_fraction = fractions$roving,
+        fraction = fractions,
         trips_disjoint = TRUE,
         fpc = bad
       ),
@@ -470,14 +475,113 @@ test_that("HYBR-25: a non-scalar or missing fpc is refused", {
   # The two valid values still build.
   for (good in c(TRUE, FALSE)) {
     design <- as_hybrid_svydesign(
-      make_access(),
-      make_roving(),
+      make_counts(),
+      frame_col = "component",
       calendar = make_calendar(),
-      access_fraction = fractions$access,
-      roving_fraction = fractions$roving,
+      fraction = fractions,
       trips_disjoint = TRUE,
       fpc = good
     )
     expect_s3_class(design, "survey.design")
   }
+})
+
+# The frame column itself (#248) ----------------------------------------------
+
+test_that("HYBR-26: frames sharing a date are not read as repeated days", {
+  # The regression the long-form table creates. Every frame samples the same
+  # dates by design, so in one table those rows share a date and a stratum and
+  # differ only by frame. Keyed without the frame, the repeated-day refusal
+  # fires on a correct design and no hybrid design can be built at all.
+  design <- as_hybrid_svydesign(
+    make_counts(),
+    frame_col = "component",
+    calendar = make_calendar(),
+    fraction = fractions,
+    trips_disjoint = TRUE
+  )
+  expect_s3_class(design, "creel_hybrid_svydesign")
+
+  # A genuine repeat -- the same frame counted twice on one date -- is still
+  # refused, so the key was widened rather than the check disabled.
+  counts_dup <- rbind(make_counts(), make_counts()[1, , drop = FALSE])
+  expect_error(
+    as_hybrid_svydesign(
+      counts_dup,
+      frame_col = "component",
+      calendar = make_calendar(),
+      fraction = fractions,
+      trips_disjoint = TRUE
+    ),
+    class = "creel_error_repeated_psus"
+  )
+})
+
+test_that("HYBR-27: a missing frame label is refused", {
+  # Through as.character() an NA label becomes the string "NA" and forms a
+  # frame of its own, carrying whatever rows lost their label into a stratum
+  # nobody asked for -- and `fraction` has no entry for it.
+  counts_na <- make_counts()
+  counts_na$component[2] <- NA_character_
+  expect_error(
+    as_hybrid_svydesign(
+      counts_na,
+      frame_col = "component",
+      calendar = make_calendar(),
+      fraction = fractions,
+      trips_disjoint = TRUE
+    ),
+    "component.*counts.*missing"
+  )
+})
+
+test_that("HYBR-28: fewer than two frames is refused", {
+  counts_one <- make_counts()
+  counts_one <- counts_one[counts_one$component == "access", , drop = FALSE]
+  expect_error(
+    as_hybrid_svydesign(
+      counts_one,
+      frame_col = "component",
+      calendar = make_calendar(),
+      fraction = fractions,
+      trips_disjoint = TRUE
+    ),
+    "at least two distinct frames"
+  )
+})
+
+test_that("HYBR-29: three frames stratify and weight independently", {
+  # The two-frame ceiling is gone (#248). A third frame is not a special case:
+  # it gets its own stratum-by-frame cells, its own n_h, and its own within-day
+  # fraction, and the arithmetic is the same as for the first two.
+  ice <- make_access()
+  ice$count <- c(3L, 4L, 6L, 5L)
+  counts3 <- rbind(make_counts(), transform(ice, component = "ice"))
+
+  design <- as_hybrid_svydesign(
+    counts3,
+    frame_col = "component",
+    calendar = make_calendar(),
+    fraction = c(fractions, list(ice = c(weekday = 0.2, weekend = 0.2))),
+    trips_disjoint = TRUE
+  )
+  vars <- design$variables
+
+  expect_setequal(unique(vars$component), c("access", "roving", "ice"))
+  expect_setequal(
+    unique(vars$.hybrid_stratum),
+    c(
+      "weekday.access", "weekend.access",
+      "weekday.roving", "weekend.roving",
+      "weekday.ice", "weekend.ice"
+    )
+  )
+
+  # The third frame's weight uses its own fraction, not a neighbour's.
+  ice_wk <- vars$weight[vars$component == "ice" & vars$day_type == "weekday"]
+  expect_equal(unique(ice_wk), (1 / 0.2) * (10 / 2), tolerance = 1e-9)
+
+  # And adding it did not disturb the first two.
+  acc_wk <- vars$weight[vars$component == "access" & vars$day_type == "weekday"]
+  expect_equal(unique(acc_wk), (1 / 0.5) * (10 / 2), tolerance = 1e-9)
 })
