@@ -606,27 +606,42 @@ test_that("estimate_total_catch grouped result n reflects per-group interview sa
 
 # Grouping validation tests ----
 
-test_that("estimate_total_catch errors when grouping variable missing from count data", {
+test_that("estimate_total_catch refuses a by variable the counts cannot observe", {
   design <- make_total_catch_design()
 
   # Add a column to interviews that doesn't exist in counts
   design$interviews$species <- rep("bass", nrow(design$interviews))
 
+  # The class is the assertion. Effort is grouped in the count data, so a column
+  # only the interviewer recorded cannot split it (GH #241) -- and matching on
+  # "species" alone would also be satisfied by a bare tidyselect "column doesn't
+  # exist" error, which carries none of that explanation.
   expect_error(
     estimate_total_catch(design, by = species), # nolint: object_usage_linter
-    "species"
+    class = "creel_error_count_unobservable_by"
   )
 })
 
 test_that("estimate_total_catch errors when grouping variable missing from interview data", {
   design <- make_total_catch_design()
 
-  # Add a column to counts that doesn't exist in interviews
-  design$counts$location <- rep("north", nrow(design$counts))
-
+  # It has to be a tidyselect helper, not a literal name. A literal is resolved
+  # against the interviews by `resolve_species_by()` before the grouped route is
+  # reached, so `by = effort_hours` would die there with a bare tidyselect
+  # "Column `effort_hours` doesn't exist" and never reach this check -- which is
+  # what the old form of this test was matching on (GH #254). A helper resolves
+  # to different columns in the two frames: `matches("hours")` picks
+  # `hours_fished` in the interviews and `effort_hours` in the counts, and the
+  # count-side name is the one that arrives here.
   expect_error(
-    estimate_total_catch(design, by = location), # nolint: object_usage_linter
-    "location"
+    estimate_total_catch(design, by = matches("hours")),
+    "not found in interview data"
+  )
+
+  # And it names the count-only column, not just any missing column.
+  expect_error(
+    estimate_total_catch(design, by = matches("hours")),
+    "effort_hours"
   )
 })
 
