@@ -237,11 +237,11 @@ That total is a season total: 20 weekday days and 10 weekend days in the June
 calendar, expanded from the two of each that were sampled.
 
 This small example is intentionally self-contained, but the same pattern scales
-to real field programs where the two count series cover complementary,
-non-overlapping parts of the fishery. Both components should sample the same
-days — the function warns when their date-stratum coverage is asymmetric — while
-covering different anglers or different water is exactly what makes their totals
-addable.
+to real field programs where the count frames cover complementary,
+non-overlapping parts of the fishery, and to more than two of them. Every frame
+should sample the same days — the function warns when their date-stratum
+coverage is asymmetric — while covering different anglers or different water is
+exactly what makes their totals addable.
 
 ## Summary
 

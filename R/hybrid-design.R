@@ -334,6 +334,26 @@ as_hybrid_svydesign <- function(
       "i" = "Every frame needs its own within-day fraction; they are not shared."
     ))
   }
+  # An entry for a frame that is not in the data is almost always a typo or a
+  # frame that has since been filtered out. Ignoring it silently is how a
+  # caller ends up believing a fraction was applied that never was.
+  extra_frames <- setdiff(names(fraction), frames)
+  if (length(extra_frames) > 0L) {
+    cli::cli_abort(c(
+      "{.arg fraction} has {cli::qty(length(extra_frames))}entr{?y/ies} for \\
+       {cli::qty(length(extra_frames))}frame{?s} not in {.field {frame_col}}.",
+      "x" = "Unused: {.val {extra_frames}}.",
+      "i" = "Frames present: {.val {frames}}."
+    ))
+  }
+  dup_frames <- unique(names(fraction)[duplicated(names(fraction))])
+  if (length(dup_frames) > 0L) {
+    cli::cli_abort(c(
+      "{.arg fraction} names {cli::qty(length(dup_frames))}frame{?s} more than once.",
+      "x" = "Duplicated: {.val {dup_frames}}.",
+      "i" = "Only the first entry would be used, so the others are silently lost."
+    ))
+  }
   for (fr in frames) {
     frac <- fraction[[fr]]
     if (!is.numeric(frac) || is.null(names(frac))) {
@@ -527,6 +547,38 @@ as_hybrid_svydesign <- function(
     as.character(combined[[frame_col]]),
     sep = "."
   )
+
+  # The separator is a readable "." rather than a control character, so two
+  # distinct pairs can land on one key when a value contains a dot itself:
+  # stratum "a" with frame "b.c" and stratum "a.b" with frame "c" both give
+  # "a.b.c". `survey` would then treat them as one stratum, n_h would be counted
+  # over the union of their dates, and the day expansion and the fpc would be
+  # wrong for both -- with no error and no warning. Refuse instead of narrowing
+  # what a label may contain.
+  pair_keys <- paste(
+    as.character(combined[[strata_col]]),
+    as.character(combined[[frame_col]]),
+    sep = "\r"
+  )
+  collisions <- unique(combined$.hybrid_stratum[
+    duplicated(unique(data.frame(k = combined$.hybrid_stratum, p = pair_keys))$k)
+  ])
+  if (length(collisions) > 0L) {
+    cli::cli_abort(c(
+      "{length(collisions)} stratum-by-frame \\
+       {cli::qty(length(collisions))}key{?s} {?is/are} ambiguous.",
+      "x" = "{cli::qty(length(collisions))}Ambiguous: {.val {collisions}}.",
+      "x" = paste(
+        "Two different {.field {strata_col}} and {.field {frame_col}}",
+        "combinations produce the same key, so they would be pooled into one",
+        "stratum and expanded over each other's sampled days."
+      ),
+      "i" = paste(
+        "A {.val .} in a stratum or frame label causes this. Rename the",
+        "affected values so each combination is distinct."
+      )
+    ))
+  }
 
   # ---- Day expansion and fpc -----------------------------------------------
   # n_h: distinct dates the frame sampled in this stratum. N_h: distinct days

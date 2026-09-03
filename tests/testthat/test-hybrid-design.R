@@ -585,3 +585,74 @@ test_that("HYBR-29: three frames stratify and weight independently", {
   acc_wk <- vars$weight[vars$component == "access" & vars$day_type == "weekday"]
   expect_equal(unique(acc_wk), (1 / 0.5) * (10 / 2), tolerance = 1e-9)
 })
+
+test_that("HYBR-30: an ambiguous stratum-by-frame key is refused", {
+  # The stratum key is `paste(stratum, frame, sep = ".")`, so a dot inside
+  # either value can make two different combinations land on one key: stratum
+  # "a" with frame "b.c" and stratum "a.b" with frame "c" both give "a.b.c".
+  # Pooled, `survey` treats them as one stratum, n_h is counted over the union
+  # of their sampled dates, and the day expansion and the fpc are wrong for
+  # both -- with no error and no warning. Measured before the guard: four
+  # distinct (stratum, frame) pairs collapsed to three strata.
+  cts <- make_counts()
+  cts$day_type <- ifelse(cts$day_type == "weekday", "a", "a.b")
+  cts$component <- ifelse(cts$component == "access", "b.c", "c")
+  cal <- make_calendar()
+  cal$day_type <- ifelse(cal$day_type == "weekday", "a", "a.b")
+
+  expect_error(
+    suppressWarnings(as_hybrid_svydesign(
+      cts,
+      frame_col = "component",
+      calendar = cal,
+      fraction = list(`b.c` = c(a = 0.5, `a.b` = 0.5), c = c(a = 0.4, `a.b` = 0.4)),
+      trips_disjoint = TRUE
+    )),
+    "ambiguous"
+  )
+
+  # A dot that cannot collide is still allowed: the guard refuses ambiguity,
+  # not dots.
+  cts_ok <- make_counts()
+  cts_ok$component <- ifelse(cts_ok$component == "access", "b.c", "d")
+  design <- as_hybrid_svydesign(
+    cts_ok,
+    frame_col = "component",
+    calendar = make_calendar(),
+    fraction = list(`b.c` = fractions$access, d = fractions$roving),
+    trips_disjoint = TRUE
+  )
+  expect_s3_class(design, "creel_hybrid_svydesign")
+})
+
+test_that("HYBR-31: fraction entries that name no frame are refused", {
+  # An entry for a frame that is not in the data is a typo or a frame that has
+  # since been filtered out. Ignored silently, the caller believes a fraction
+  # was applied that never was.
+  expect_error(
+    as_hybrid_svydesign(
+      make_counts(),
+      frame_col = "component",
+      calendar = make_calendar(),
+      fraction = c(fractions, list(baot = c(weekday = 0.9, weekend = 0.9))),
+      trips_disjoint = TRUE
+    ),
+    "baot"
+  )
+
+  # A frame named twice would silently use the first entry and lose the rest.
+  expect_error(
+    as_hybrid_svydesign(
+      make_counts(),
+      frame_col = "component",
+      calendar = make_calendar(),
+      fraction = list(
+        access = fractions$access,
+        roving = fractions$roving,
+        access = c(weekday = 0.9, weekend = 0.9)
+      ),
+      trips_disjoint = TRUE
+    ),
+    "more than once"
+  )
+})
