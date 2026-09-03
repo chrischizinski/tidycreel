@@ -111,14 +111,23 @@ estimate_catch_rate(
 
 A creel_estimates S3 object (list) with components: estimates (tibble
 with estimate, se, ci_lower, ci_upper, n columns, plus grouping columns
-if `by` is specified), method (character: "ratio-of-means-cpue" or
-"mean-of-ratios-cpue", with "-per-angler" suffix when normalized),
-variance_method (character: reflects the variance parameter value used),
-design (reference to source creel_design), conf_level (numeric), and
-by_vars (character vector of grouping variable names or NULL). The
-`estimator` component records the estimator as you asked for it,
-`"mortr"` included, which `method` cannot: it reports mandatory
-truncation and the default threshold with the same string.
+if `by` is specified), method (character: names the estimator and the
+shape of the result. The base names are `"ratio-of-means-cpue"`,
+`"mean-of-ratios-cpue"`, `"mean-of-ratios-truncated-cpue"` and
+`"regression-cpue"`, each gaining a `"-sections"` suffix on a sectioned
+design. The `"-species"` suffix, and the `"-per-angler"` suffix when
+normalized, apply to the ratio-of-means and mean-of-ratios names only:
+regression has no species form – the combination is refused, so
+`"regression-cpue-species"` is not a value this returns),
+variance_method (character: the variance that actually ran, which is the
+`variance` argument for every estimator except `"regression"` – the
+regression slope carries a leave-one-out jackknife SE and reports
+`"jackknife"` whatever `variance` was set to), design (reference to
+source creel_design), conf_level (numeric), and by_vars (character
+vector of grouping variable names or NULL). The `estimator` component
+records the estimator as you asked for it, `"mortr"` included, which
+`method` cannot: it reports mandatory truncation and the default
+threshold with the same string.
 
 ## Details
 
@@ -186,6 +195,16 @@ Lake-wide catch rate requires a separate unsectioned call on the full
 design. See
 [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md)
 for lake-wide total catch estimation.
+
+`estimator = "regression"` on a sectioned design fits one regression per
+section, on that section's interviews alone. The leave-one-out jackknife
+standard error therefore rests on the interviews in that section rather
+than on the whole sample, so section-level regression standard errors
+are based on fewer points than the unsectioned form and are
+correspondingly less stable. This is a property of sectioning rather
+than of the estimator; a section with fewer than three interviews cannot
+be fitted at all. `species` in `by` has no regression form and is
+refused rather than silently estimated by another estimator.
 
 ## Package Options
 
