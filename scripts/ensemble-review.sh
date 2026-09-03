@@ -88,7 +88,11 @@ OUT_DIR=".ai/reviews"
 #   nemotron-3-ultra   both documentation findings, zero false positives. Free.
 #   deepseek-v4-pro    the widest net: 3 of 4, top-ranked the subtlest, and found
 #                      the confounded fixture nothing else did. $0.03-0.08, and
-#                      the slowest at ~9 minutes. Returned NOTHING on #286, then
+#                      the slowest at ~9 minutes, which is why it was the model
+#                      that kept vanishing: curl's --max-time was 560s and
+#                      `set -e` killed the reporting path before it could say so.
+#                      Limit is now 900s and a failure is always announced.
+#                      Returned NOTHING on #286, then
 #                      on #276 found a real defect that only one other model saw
 #                      (and in a different function). High variance; still earns
 #                      its slot. Do not drop it for being slow or 90x the cost of
@@ -283,10 +287,30 @@ b['max_tokens'] = 60000
 b['reasoning'] = {'effort': 'low'}
 json.dump(b, open('$body', 'w'))"
 
-  curl -s --max-time 560 https://openrouter.ai/api/v1/chat/completions \
+  # `|| rc=$?` is load-bearing. With `set -e` active, a non-zero curl -- most
+  # often exit 28, the --max-time timeout -- killed run_one BEFORE the reporting
+  # parser below could run, so the model vanished from the output entirely: no
+  # row, no error line, no file. That is indistinguishable from "the script only
+  # runs three models", and it silently happened to deepseek on both #286 and
+  # #285, because deepseek is the only model slow enough to reach the limit.
+  #
+  # A model that fails must SAY so. "Found nothing" and "never ran" are different
+  # facts and the triage depends on which one it was.
+  local rc=0
+  curl -s --max-time 900 https://openrouter.ai/api/v1/chat/completions \
     -H "Authorization: Bearer $KEY" \
     -H "Content-Type: application/json" \
-    -d @"$body" > "$resp" 2>&1
+    -d @"$body" > "$resp" 2>&1 || rc=$?
+
+  if [ "$rc" -ne 0 ]; then
+    if [ "$rc" -eq 28 ]; then
+      echo "  $model: TIMED OUT after 900s (curl 28) -- DID NOT RUN, not 'no findings'."
+    else
+      echo "  $model: curl failed with exit $rc -- DID NOT RUN, not 'no findings'."
+    fi
+    rm -f "$body" "$resp"
+    return 0
+  fi
 
   python3 - "$resp" "$OUT_DIR/$slug.md" "$model" <<'PY'
 import datetime, json, os, sys

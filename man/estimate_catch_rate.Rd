@@ -86,9 +86,19 @@ estimators.}
 \value{
 A creel_estimates S3 object (list) with components: estimates
 (tibble with estimate, se, ci_lower, ci_upper, n columns, plus grouping
-columns if \code{by} is specified), method (character: "ratio-of-means-cpue"
-or "mean-of-ratios-cpue", with "-per-angler" suffix when normalized),
-variance_method (character: reflects the variance parameter value used),
+columns if \code{by} is specified), method (character: names the estimator
+and the shape of the result. The base names are
+\code{"ratio-of-means-cpue"}, \code{"mean-of-ratios-cpue"},
+\code{"mean-of-ratios-truncated-cpue"} and \code{"regression-cpue"}, each
+gaining a \code{"-sections"} suffix on a sectioned design. The
+\code{"-species"} suffix, and the \code{"-per-angler"} suffix when
+normalized, apply to the ratio-of-means and mean-of-ratios names only:
+regression has no species form -- the combination is refused, so
+\code{"regression-cpue-species"} is not a value this returns),
+variance_method (character: the variance that actually ran, which is the
+\code{variance} argument for every estimator except \code{"regression"} --
+the regression slope carries a leave-one-out jackknife SE and reports
+\code{"jackknife"} whatever \code{variance} was set to),
 design (reference to source creel_design), conf_level (numeric), and
 by_vars (character vector of grouping variable names or NULL).
 The \code{estimator} component records the estimator as you asked for it,
@@ -164,6 +174,16 @@ produced. Catch rates (fish per angler-hour) are not additive across
 sections. Lake-wide catch rate requires a separate unsectioned call on
 the full design. See \code{estimate_total_catch()} for lake-wide total
 catch estimation.
+
+\code{estimator = "regression"} on a sectioned design fits one
+regression per section, on that section's interviews alone. The
+leave-one-out jackknife standard error therefore rests on the interviews in
+that section rather than on the whole sample, so section-level regression
+standard errors are based on fewer points than the unsectioned form and are
+correspondingly less stable. This is a property of sectioning rather than of
+the estimator; a section with fewer than three interviews cannot be fitted
+at all. \code{species} in \code{by} has no regression form and is refused
+rather than silently estimated by another estimator.
 }
 \section{Package Options}{
 

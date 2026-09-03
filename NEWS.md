@@ -92,6 +92,39 @@
 
 ## Bug fixes
 
+* `estimator = "regression"` now runs on a sectioned design instead of being
+  silently discarded (#285). `estimate_catch_rate()` dispatches on sections
+  before it dispatches on the estimator, so a sectioned regression request fell
+  through to `estimate_cpue_total()`, whose estimator test names only the
+  mean-of-ratios variants -- and `"regression"` landed in the ratio-of-means
+  branch. No error, no warning, and a believable number.
+
+  The visible symptom was in `compare_cpue_estimators()`, whose purpose is making
+  estimator divergence visible: on every sectioned design it reported the
+  regression row as numerically identical to the ratio-of-means row, carrying a
+  jackknife standard error because that function requests one for regression. A
+  ratio-of-means point estimate with a jackknife SE under the `regression` label
+  corresponds to no estimator in the literature.
+
+  A sectioned regression now fits one regression per section, on that section's
+  interviews, and reports `method = "regression-cpue-sections"` with
+  `variance_method = "jackknife"` -- the variance that actually ran, rather than
+  the caller's Taylor default. `force_origin` reaches the sectioned path, which
+  previously had no such argument at all. The section-level jackknife SE rests on
+  that section's interviews rather than the whole sample and is correspondingly
+  less stable; this is documented on `estimate_catch_rate()`.
+
+* `species` in `by` combined with `estimator = "regression"` is now refused
+  rather than answered with a different estimator (#290). The species dispatch
+  also sits above the regression route, so this affected **flat designs too**,
+  not only sectioned ones: the call returned ratio-of-means numbers labelled
+  `"ratio-of-means-cpue-species"` while the caller had asked for regression.
+
+  Refused rather than implemented, because a per-species regression is a
+  modelling decision and not a correction: a species that was not caught on a
+  trip contributes a zero at positive effort, and whether those rows belong in
+  the slope changes the estimate. That question is open in #290.
+
 * The mean-of-ratios diagnostic banner now describes the trips the estimate was
   actually built from, and every metric that takes the estimator prints one
   (#276). Two problems, both exposed by mean-of-ratios spreading beyond the
