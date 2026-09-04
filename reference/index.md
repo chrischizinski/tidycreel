@@ -37,8 +37,8 @@ argument.
 - [`impute_camera_counts()`](https://chrischizinski.github.io/tidycreel/reference/impute_camera_counts.md)
   : Impute missing camera counts using GLM or GLMM
 - [`as_hybrid_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_hybrid_svydesign.md)
-  **\[experimental\]** : Construct a hybrid access + roving survey
-  design
+  **\[experimental\]** : Combine disjoint count frames into one
+  stratified survey design
 - [`print(`*`<creel_hybrid_svydesign>`*`)`](https://chrischizinski.github.io/tidycreel/reference/print.creel_hybrid_svydesign.md)
   : Print a creel_hybrid_svydesign
 - [`compute_effort()`](https://chrischizinski.github.io/tidycreel/reference/compute_effort.md)

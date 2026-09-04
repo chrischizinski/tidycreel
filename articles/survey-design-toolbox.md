@@ -8,7 +8,7 @@ workflow:
 2.  [`compare_designs()`](https://chrischizinski.github.io/tidycreel/reference/compare_designs.md)
     for side-by-side comparison of completed survey estimates
 3.  [`as_hybrid_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_hybrid_svydesign.md)
-    for combining two disjoint count series in a single survey design
+    for combining disjoint count frames in a single survey design
 
 ``` r
 
@@ -172,18 +172,18 @@ This pattern is helpful after a season when you want to compare
 alternative estimation choices without rebuilding custom summary tables
 by hand.
 
-## 3 Combining two disjoint count series with `as_hybrid_svydesign()`
+## 3 Combining disjoint count frames with `as_hybrid_svydesign()`
 
-Some programs count two disjoint parts of a fishery separately — most
-often boat anglers and bank anglers, which are reached by different
-field methods and enumerated at different rates.
+Some programs count disjoint parts of a fishery separately — most often
+boat anglers and bank anglers, which are reached by different field
+methods and enumerated at different rates.
 [`as_hybrid_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_hybrid_svydesign.md)
-combines those two count series into a single `survey` design object,
+combines those count series into a single `survey` design object,
 treating each as its own stratum with its own within-day sampling
 fraction, and clustering observations on the date so the date is the
 primary sampling unit.
 
-A note on the names. In the creel literature *access* and *roving*
+A note on the vocabulary. In the creel literature *access* and *roving*
 describe how anglers are **interviewed** — access interviews intercept
 completed trips as anglers leave, roving interviews intercept incomplete
 trips while they fish — and a survey mixing the two is a *hybrid
@@ -191,33 +191,35 @@ interview* design. Counts are not described that way; they are
 instantaneous, progressive, bus-route, camera or aerial. tidycreel
 carries the interview axis on
 [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)’s
-`interview_type` argument. The `access`/`roving` labels on this function
-name two **disjoint count frames**, typically angler-type domains such
-as boat and bank anglers, and are inherited names under review.
+`interview_type` argument. What this function takes is a **count
+frame**: a disjoint part of the fishery with its own count, typically an
+angler-type domain such as boat or bank anglers. You name the column
+holding that partition with `frame_col`, and its values become the frame
+labels — so the design speaks your vocabulary rather than borrowing the
+interview one.
 
 The design estimates a **period total** — the total over every day in
 the season, not over the days that happened to be sampled. Two
 expansions get it there, and both live in the row weight. The within-day
-fraction expands the part of a component’s frame that the count
-enumerated to the whole of it. `N_h / n_h` expands the sampled days to
-the days the stratum holds, which is why a `calendar` is required: the
-sampled dates alone cannot say how long a stratum is. Only the second of
-the two is a sampling fraction over the date PSUs, so only the second
-drives the finite-population correction.
+fraction expands the part of a frame that the count enumerated to the
+whole of it. `N_h / n_h` expands the sampled days to the days the
+stratum holds, which is why a `calendar` is required: the sampled dates
+alone cannot say how long a stratum is. Only the second of the two is a
+sampling fraction over the date PSUs, so only the second drives the
+finite-population correction.
 
-Both components share the calendar. One stratum is one span of the
-season, whichever method observed it.
+Every frame shares the calendar. One stratum is one span of the season,
+whichever frame observed it.
 
-Adding the two component totals is valid only when the components sample
-**disjoint sets of angler trips** — no angler trip may be observed by
-both. That is a property of the field protocol, not of the data, so
+Adding the frame totals is valid only when the frames sample **disjoint
+sets of angler trips** — no angler trip may be observed by more than
+one. That is a property of the field protocol, not of the data, so
 tidycreel cannot check it and asks you to affirm it with
 `trips_disjoint = TRUE`.
 
-Each component may contribute at most one count row per date. Two counts
-on a date are two looks at that date, not two sampled days, and a
-per-day expansion is undefined for them; average them to one row per
-date first.
+Each frame may contribute at most one count row per date. Two counts on
+a date are two looks at that date, not two sampled days, and a per-day
+expansion is undefined for them; average them to one row per date first.
 
 ``` r
 
@@ -228,31 +230,31 @@ calendar$day_type <- ifelse(
   format(calendar$date, "%u") %in% c("6", "7"), "weekend", "weekday"
 )
 
-access <- data.frame(
-  date = as.Date(c("2024-06-03", "2024-06-08", "2024-06-10", "2024-06-15")),
-  day_type = c("weekday", "weekend", "weekday", "weekend"),
-  count = c(12L, 18L, 9L, 21L)
-)
-
-roving <- data.frame(
-  date = as.Date(c("2024-06-03", "2024-06-08", "2024-06-10", "2024-06-15")),
-  day_type = c("weekday", "weekend", "weekday", "weekend"),
-  count = c(10L, 16L, 8L, 19L)
+counts <- data.frame(
+  date = rep(
+    as.Date(c("2024-06-03", "2024-06-08", "2024-06-10", "2024-06-15")),
+    times = 2
+  ),
+  day_type = rep(c("weekday", "weekend", "weekday", "weekend"), times = 2),
+  angler_type = rep(c("boat", "bank"), each = 4),
+  count = c(12L, 18L, 9L, 21L, 10L, 16L, 8L, 19L)
 )
 
 hybrid_design <- as_hybrid_svydesign(
-  access_data = access,
-  roving_data = roving,
+  counts,
+  frame_col = "angler_type",
   calendar = calendar,
-  access_fraction = c(weekday = 0.5, weekend = 0.5),
-  roving_fraction = c(weekday = 0.5, weekend = 0.5),
+  fraction = list(
+    boat = c(weekday = 0.5, weekend = 0.5),
+    bank = c(weekday = 0.5, weekend = 0.5)
+  ),
   trips_disjoint = TRUE
 )
 
 hybrid_design
 #> 
 #> ── Hybrid Creel Survey Design ──────────────────────────────────────────────────
-#> Components: "access" (4 obs) + "roving" (4 obs)
+#> Frames: bank (4 obs) and boat (4 obs)
 #> 
 #> Stratified Independent Sampling design
 #> survey::svydesign(ids = ids_formula, strata = strata_formula, 
@@ -276,11 +278,12 @@ That total is a season total: 20 weekday days and 10 weekend days in the
 June calendar, expanded from the two of each that were sampled.
 
 This small example is intentionally self-contained, but the same pattern
-scales to real field programs where the two count series cover
-complementary, non-overlapping parts of the fishery. Both components
-should sample the same days — the function warns when their date-stratum
-coverage is asymmetric — while covering different anglers or different
-water is exactly what makes their totals addable.
+scales to real field programs where the count frames cover
+complementary, non-overlapping parts of the fishery, and to more than
+two of them. Every frame should sample the same days — the function
+warns when their date-stratum coverage is asymmetric — while covering
+different anglers or different water is exactly what makes their totals
+addable.
 
 ## Summary
 

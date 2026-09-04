@@ -1,4 +1,4 @@
-# Construct a hybrid access + roving survey design
+# Combine disjoint count frames into one stratified survey design
 
 **\[experimental\]**
 
@@ -6,14 +6,13 @@
 
 ``` r
 as_hybrid_svydesign(
-  access_data,
-  roving_data,
+  counts,
+  frame_col,
   calendar = NULL,
   date_col = "date",
   strata_col = "day_type",
   count_col = "count",
-  access_fraction = NULL,
-  roving_fraction = NULL,
+  fraction = NULL,
   trips_disjoint = NULL,
   fpc = TRUE
 )
@@ -21,18 +20,21 @@ as_hybrid_svydesign(
 
 ## Arguments
 
-- access_data:
+- counts:
 
-  Data frame of count observations for the frame labelled `"access"` in
-  the returned design. Must contain the columns named by `date_col`,
-  `strata_col`, and `count_col`, with at most one row per date within a
-  stratum. See "What `component` names" above: the label is inherited
-  from the interview vocabulary and does not describe a count method.
+  Data frame of count observations for every frame, in long form: one
+  row per frame per sampled date. Must contain the columns named by
+  `date_col`, `strata_col`, `count_col` and `frame_col`, with at most
+  one row per frame per date within a stratum.
 
-- roving_data:
+- frame_col:
 
-  Data frame of count observations for the frame labelled `"roving"`.
-  Must contain the same columns as `access_data`.
+  Character scalar. Name of the column in `counts` that partitions it
+  into disjoint count frames – an angler-type column, for instance.
+  Required, with no default: the column carries the partition the whole
+  design rests on, and a default would let a missed argument pick one
+  silently. Must have at least two distinct non-missing values; its
+  values become the frame labels in the returned design.
 
 - calendar:
 
@@ -56,46 +58,39 @@ as_hybrid_svydesign(
 
 - date_col:
 
-  Character scalar. Name of the date column (shared by both tables and
-  by `calendar`). Default `"date"`. Used to cluster observations into
-  PSUs. Must be of class `Date`, with no missing values in any of the
-  three tables.
+  Character scalar. Name of the date column (shared by `counts` and
+  `calendar`). Default `"date"`. Used to cluster observations into PSUs.
+  Must be of class `Date`, with no missing values in either table.
 
 - strata_col:
 
-  Character scalar. Name of the stratum column (shared by both tables
-  and by `calendar`). Default `"day_type"`. Must have no missing values
-  in any of the three tables: dates and strata are the join keys, and a
-  missing key matches every other missing key rather than being refused.
+  Character scalar. Name of the stratum column (shared by `counts` and
+  `calendar`). Default `"day_type"`. Must have no missing values in
+  either table: dates and strata are the join keys, and a missing key
+  matches every other missing key rather than being refused.
 
 - count_col:
 
-  Character scalar. Name of the count column (shared by both tables).
-  Default `"count"`.
+  Character scalar. Name of the count column in `counts`. Default
+  `"count"`.
 
-- access_fraction:
+- fraction:
 
-  Named numeric vector. **Within-day** sampling fraction per stratum for
-  the `"access"` component: the proportion of that component's frame the
-  count enumerated on each sampled day, in (0, 1\]. Expands a sampled
-  day to a whole day; it is not a fraction of the season and does not
-  drive the finite-population correction. Names must match stratum
-  values in `access_data`.
-
-- roving_fraction:
-
-  Named numeric vector. Within-day sampling fraction per stratum for the
-  `"roving"` component, with the same meaning as `access_fraction`.
-  Names must match stratum values in `roving_data`.
+  Named list of named numeric vectors, one element per frame, named by
+  the frame labels in `frame_col`. Each element gives the **within-day**
+  sampling fraction per stratum for that frame: the proportion of the
+  frame the count enumerated on each sampled day, in (0, 1\]. Expands a
+  sampled day to a whole day; it is not a fraction of the season and
+  does not drive the finite-population correction. Names of each element
+  must match the stratum values that frame carries.
 
 - trips_disjoint:
 
   Logical scalar. Required: the `NULL` default is rejected, and exists
   only so the error can say what is missing. Set to `TRUE` to affirm
-  that the access and roving components sample disjoint sets of angler
-  trips, the precondition under which their totals may be added.
-  tidycreel cannot verify this from the data; see the "Disjointness
-  precondition" section above.
+  that the frames sample disjoint sets of angler trips, the precondition
+  under which their totals may be added. tidycreel cannot verify this
+  from the data; see the "Disjointness precondition" section above.
 
 - fpc:
 
@@ -108,66 +103,65 @@ as_hybrid_svydesign(
 
 A [`survey::svydesign`](https://rdrr.io/pkg/survey/man/svydesign.html)
 object with an additional class attribute `"creel_hybrid_svydesign"`.
-The design data contains a `component` column (`"access"` or
-`"roving"`), a `weight` column carrying both the within-day and the
-day-to-season expansion, a `.hybrid_stratum` column holding the
-stratum-by-component interaction the design is stratified on, and a
-`.pop_days` column holding the stratum population \\N_h\\ the
-finite-population correction is taken against.
+The design data carries the `frame_col` column unchanged, a `weight`
+column holding both the within-day and the day-to-season expansion, a
+`.hybrid_stratum` column holding the stratum-by-frame interaction the
+design is stratified on, and a `.pop_days` column holding the stratum
+population \\N_h\\ the finite-population correction is taken against.
+`attr(design, "component_col")` names the frame column.
 
 ## Details
 
-Combines two count series covering disjoint parts of one fishery into a
-single
+Combines two or more count series covering disjoint parts of one fishery
+into a single
 [`survey::svydesign`](https://rdrr.io/pkg/survey/man/svydesign.html)
-object. The two components are treated as **strata**, each carrying its
-own within-day sampling fraction, and both expanded to the same
-population of days, so the design total is the stratified sum of the
-component totals over the season.
+object. The frames are treated as **strata**, each carrying its own
+within-day sampling fraction, and all expanded to the same population of
+days, so the design total is the stratified sum of the frame totals over
+the season.
 
 **Estimand.** The design estimates a **period total** – the total over
 every day in `calendar`, not over the days that happened to be sampled.
 Two expansions get it there, and both live in the row weight: the
-within-day fraction expands the part of the component's frame that the
-count enumerated to the whole of it, and `N_h / n_h` expands the sampled
-days to the days the stratum holds. Only the second is a stage-1
-sampling fraction, so only the second drives the finite-population
-correction.
+within-day fraction expands the part of the frame that the count
+enumerated to the whole of it, and `N_h / n_h` expands the sampled days
+to the days the stratum holds. Only the second is a stage-1 sampling
+fraction, so only the second drives the finite-population correction.
 
-**Disjointness precondition.** Adding the two component totals is valid
-if and only if the components sample **disjoint sets of angler trips** –
-no angler trip may be observed by both. What produces that disjointness
+**Disjointness precondition.** Adding the frame totals is valid if and
+only if the frames sample **disjoint sets of angler trips** – no angler
+trip may be observed by more than one. What produces that disjointness
 is a property of the survey protocol (angler type, geography, access
 mode, or a rule the designer imposes); tidycreel cannot infer it from
-the counts, the dates, the strata, or the method label, so you must
+the counts, the dates, the strata, or the frame labels, so you must
 affirm it with `trips_disjoint = TRUE`. The design cannot be constructed
 otherwise. A boat angler intercepted on the water by a roving route and
-again at the ramp on the same trip belongs to both frames, and the total
+again at the ramp on the same trip belongs to two frames, and the total
 double counts that trip.
 
-**What `component` names, and what it does not.** The two components are
-two **count frames**: two disjoint parts of the fishery, each enumerated
-by its own count. In the protocol this design was built for they are
-angler-type domains – boat anglers, and bank anglers dispersed along a
-shoreline with no well-defined access site (Malvestuto 1996).
+**What a frame is.** A frame is a disjoint part of the fishery,
+enumerated by its own count. In the protocol this design was built for
+the frames are angler-type domains – boat anglers, and bank anglers
+dispersed along a shoreline with no well-defined access site (Malvestuto
+1996). Pope et al. (Chapter 17) carry exactly this as an `anglerType`
+column alongside the stratum, and estimate effort by stratum and angler
+type; `frame_col` is that column.
 
-The labels `"access"` and `"roving"` are borrowed from the **interview**
-vocabulary and describe these frames only obliquely, by which interview
-mode happens to cover each. In the creel literature access and roving
-describe how anglers are *interviewed*: access interviews intercept
-completed trips as anglers leave, roving interviews intercept incomplete
-trips while anglers are still fishing, and the two require different
-catch-rate estimators (Pollock et al. 1994). A survey mixing the two is
-a **hybrid interview** design. Counts are not described that way at all
-– they are instantaneous, progressive, bus-route, camera or aerial, the
-values
+The frame is **not** an interview mode. In the creel literature access
+and roving describe how anglers are *interviewed*: access interviews
+intercept completed trips as anglers leave, roving interviews intercept
+incomplete trips while anglers are still fishing, and the two require
+different catch-rate estimators (Pollock et al. 1994). A survey mixing
+the two is a **hybrid interview** design. Counts are not described that
+way at all – they are instantaneous, progressive, bus-route, camera or
+aerial, the values
 [`creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/creel_schema.md)
-accepts for `survey_type`, none of which is "access" or "roving".
-tidycreel carries the interview axis on
+accepts for `survey_type`. tidycreel carries the interview axis on
 [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)'s
-`interview_type` argument, which is where it belongs. These argument
-names are inherited and are under review; what the design requires of
-the two components is disjointness, not a method label.
+`interview_type` argument, which is where it belongs. Earlier versions
+of this function named its arguments `access_data` and `roving_data`,
+which borrowed the interview vocabulary for something that is not an
+interview mode (GH \#248).
 
 **Estimation route.** The returned object is a `survey.design2`, not a
 [`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md),
@@ -178,31 +172,29 @@ does not accept it. Estimate from it with
 and the other `survey` functions directly, as in the examples below.
 
 **Design structure.** Rows are stratified on the interaction of
-`strata_col` and `component`, so each count frame carries its own
+`strata_col` and `frame_col`, so each count frame carries its own
 sampled-day count at its own within-day fraction, and clustered on
 `date_col`, so the date is the primary sampling unit. The population
-size is taken from `calendar` and is shared by both components: one
-stratum is one span of the season, whichever method observed it. A
-component that sampled only one date within a stratum leaves that
-stratum with a single PSU: the design still constructs, but `survey`
-refuses to compute a variance for it.
+size is taken from `calendar` and is shared by every frame: one stratum
+is one span of the season, whichever frame observed it. A frame that
+sampled only one date within a stratum leaves that stratum with a single
+PSU: the design still constructs, but `survey` refuses to compute a
+variance for it.
 
-**One count row per component-day.** A day-level expansion is only
-defined when a sampled day is one row per component, so repeated counts
-on one date are refused. Two counts on a date are two looks at that
+**One count row per frame-day.** A day-level expansion is only defined
+when a sampled day is one row per frame, so repeated counts on one date
+within a frame are refused. Two counts on a date are two looks at that
 date, not two sampled days; summed, they multiply the total by the
 number of counts, and the day expansion then multiplies that again.
 Average them to one row per date before constructing the design, or
 model them on a path that keeps the count time.
 
-**PSU alignment requirement:** Both `access_data` and `roving_data` must
-share the same date and stratum columns. Mismatched column names, or
-dates present in one component but absent in the other, trigger an error
-rather than a silent expansion; a warning is issued when stratum-date
-combinations are asymmetric, because both components should sample the
-same days. That is a requirement about *when* each component samples,
-not *where* – two components covering different water is the condition
-that makes their sum valid, not a source of bias.
+**PSU alignment requirement:** every frame should sample the same
+date-stratum combinations. A warning is issued when coverage is
+asymmetric, because the frames should sample the same days. That is a
+requirement about *when* each frame samples, not *where* – frames
+covering different water is the condition that makes their sum valid,
+not a source of bias.
 
 ## See also
 
@@ -238,23 +230,24 @@ calendar$day_type <- ifelse(
   format(calendar$date, "%u") %in% c("6", "7"), "weekend", "weekday"
 )
 
-access <- data.frame(
-  date     = as.Date(c("2024-06-03", "2024-06-04", "2024-06-08", "2024-06-09")),
-  day_type = c("weekday", "weekday", "weekend", "weekend"),
-  count    = c(12L, 15L, 30L, 28L)
-)
-roving <- data.frame(
-  date     = as.Date(c("2024-06-03", "2024-06-04", "2024-06-08", "2024-06-09")),
-  day_type = c("weekday", "weekday", "weekend", "weekend"),
-  count    = c(8L, 10L, 22L, 25L)
+counts <- data.frame(
+  date = rep(
+    as.Date(c("2024-06-03", "2024-06-04", "2024-06-08", "2024-06-09")),
+    times = 2
+  ),
+  day_type = rep(c("weekday", "weekday", "weekend", "weekend"), times = 2),
+  angler_type = rep(c("boat", "bank"), each = 4),
+  count = c(12L, 15L, 30L, 28L, 8L, 10L, 22L, 25L)
 )
 design <- as_hybrid_svydesign(
-  access_data      = access,
-  roving_data      = roving,
-  calendar         = calendar,
-  access_fraction  = c(weekday = 0.5, weekend = 0.5),
-  roving_fraction  = c(weekday = 0.4, weekend = 0.4),
-  trips_disjoint   = TRUE
+  counts,
+  frame_col      = "angler_type",
+  calendar       = calendar,
+  fraction       = list(
+    boat = c(weekday = 0.5, weekend = 0.5),
+    bank = c(weekday = 0.4, weekend = 0.4)
+  ),
+  trips_disjoint = TRUE
 )
 
 # estimate_effort() does not accept this object; use survey directly

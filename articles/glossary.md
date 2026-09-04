@@ -279,14 +279,15 @@ via `interview_type`.
 
 A **hybrid design** in the sense of
 [`as_hybrid_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_hybrid_svydesign.md)
-is a different thing: it combines two **count** series covering disjoint
-parts of a fishery, treating each as a stratum with its own within-day
-sampling fraction, while both expand to the same population of days. It
-estimates a period total rather than a sampled-day total. The two totals
-may be added only if the frames observe disjoint sets of angler trips.
-Its `access`/`roving` argument names are borrowed from the interview
-vocabulary and are under review; counts themselves are instantaneous,
-progressive, bus-route, camera or aerial.
+is a different thing: it combines two or more **count** series covering
+disjoint parts of a fishery, treating each as a stratum with its own
+within-day sampling fraction, while all expand to the same population of
+days. It estimates a period total rather than a sampled-day total. The
+totals may be added only if the frames observe disjoint sets of angler
+trips. The frames are named by a column you nominate with `frame_col` —
+an angler-type column, typically — rather than by the interview
+vocabulary; counts themselves are instantaneous, progressive, bus-route,
+camera or aerial.
 
 ## Survey-type terms
 
