@@ -45,6 +45,17 @@
   repeated-day refusal is now keyed on the frame as well as the date and
   stratum, so frames sampling a shared date are not mistaken for repeat counts.
 
+  Two further refusals come with the caller-supplied labels. The internal
+  stratum key is `paste(stratum, frame, sep = ".")`, so a `.` inside either
+  value can make two different combinations land on one key -- stratum `"a"`
+  with frame `"b.c"` and stratum `"a.b"` with frame `"c"` both give `"a.b.c"` --
+  which `survey` would pool into one stratum, counting `n_h` over the union of
+  their sampled dates and getting the day expansion and the fpc wrong for both.
+  Ambiguous keys are now named and refused; a `.` that cannot collide is still
+  allowed. A `fraction` entry naming a frame absent from the data, or naming one
+  frame twice, is also refused rather than silently ignored, since either leaves
+  the caller believing a fraction was applied that never was.
+
 * The `method` on a sectioned catch rate now names the estimator that produced
   it (#284). `estimate_catch_rate_sections()` passed the caller's estimator down
   and computed with it, then labelled every result `"ratio-of-means-cpue-sections"`

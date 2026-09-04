@@ -600,6 +600,11 @@ test_that("HYBR-30: an ambiguous stratum-by-frame key is refused", {
   cal <- make_calendar()
   cal$day_type <- ifelse(cal$day_type == "weekday", "a", "a.b")
 
+  # The message must name the key that actually collides. Computing the guard by
+  # indexing the row-length stratum vector with a pair-length `duplicated()`
+  # recycles, and still errors, but names whichever keys the recycled positions
+  # land on -- so asserting only "ambiguous" passes on a guard that sends the
+  # caller to rename a value that is fine.
   expect_error(
     suppressWarnings(as_hybrid_svydesign(
       cts,
@@ -608,8 +613,45 @@ test_that("HYBR-30: an ambiguous stratum-by-frame key is refused", {
       fraction = list(`b.c` = c(a = 0.5, `a.b` = 0.5), c = c(a = 0.4, `a.b` = 0.4)),
       trips_disjoint = TRUE
     )),
-    "ambiguous"
+    "a\\.b\\.c"
   )
+
+  # And it must name ONLY the colliding key. Three pairs -- ("a","b.c") and
+  # ("a.b","c"), which collide on "a.b.c", plus an innocent ("z","w") -- put the
+  # recycled index out of alignment: computing the guard by indexing the
+  # row-length stratum vector with a pair-length `duplicated()` reports
+  # "a.b.c" AND "z.w", sending the caller to rename a value that is fine.
+  cts3 <- data.frame(
+    date = as.Date(c(
+      "2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04",
+      "2024-06-05", "2024-06-06"
+    )),
+    day_type = c("a", "a", "a.b", "a.b", "z", "z"),
+    component = c("b.c", "b.c", "c", "c", "w", "w"),
+    count = c(5L, 6L, 7L, 8L, 9L, 10L),
+    stringsAsFactors = FALSE
+  )
+  cal3 <- data.frame(
+    date = as.Date(c(
+      "2024-06-01", "2024-06-02", "2024-06-07",
+      "2024-06-03", "2024-06-04", "2024-06-08",
+      "2024-06-05", "2024-06-06", "2024-06-09"
+    )),
+    day_type = c("a", "a", "a", "a.b", "a.b", "a.b", "z", "z", "z"),
+    stringsAsFactors = FALSE
+  )
+  err <- tryCatch(
+    suppressWarnings(as_hybrid_svydesign(
+      cts3,
+      frame_col = "component",
+      calendar = cal3,
+      fraction = list(`b.c` = c(a = 0.5), c = c(`a.b` = 0.5), w = c(z = 0.5)),
+      trips_disjoint = TRUE
+    )),
+    error = function(e) conditionMessage(e)
+  )
+  expect_match(err, "a\\.b\\.c")
+  expect_false(grepl("z\\.w", err))
 
   # A dot that cannot collide is still allowed: the guard refuses ambiguity,
   # not dots.

@@ -560,9 +560,19 @@ as_hybrid_svydesign <- function(
     as.character(combined[[frame_col]]),
     sep = "\r"
   )
-  collisions <- unique(combined$.hybrid_stratum[
-    duplicated(unique(data.frame(k = combined$.hybrid_stratum, p = pair_keys))$k)
-  ])
+  # Reduce to distinct (key, pair) rows first, then look for a key that appears
+  # under more than one pair. Taking `duplicated()` over that frame and using it
+  # to index `combined` instead recycles a pair-length logical over a row-length
+  # vector: at least one position is always selected, so the abort still fires
+  # whenever a collision exists, but the keys it names are whichever ones the
+  # recycled positions land on -- sending the caller to rename a value that is
+  # fine while the colliding one goes unnamed. HYBR-30 pins the named set.
+  key_pairs <- unique(data.frame(
+    k = combined$.hybrid_stratum,
+    p = pair_keys,
+    stringsAsFactors = FALSE
+  ))
+  collisions <- unique(key_pairs$k[duplicated(key_pairs$k)])
   if (length(collisions) > 0L) {
     cli::cli_abort(c(
       "{length(collisions)} stratum-by-frame \\
