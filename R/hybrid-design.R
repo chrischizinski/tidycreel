@@ -361,6 +361,18 @@ as_hybrid_svydesign <- function(
         "{.arg fraction[[\"{fr}\"]]} must be a named numeric vector."
       )
     }
+    # The stratum lookup takes the first match, so a repeated name loses every
+    # entry after the first and the caller believes a fraction was applied that
+    # never was -- the same failure the repeated-frame refusal above prevents,
+    # one level down.
+    dup_strata <- unique(names(frac)[duplicated(names(frac))])
+    if (length(dup_strata) > 0L) {
+      cli::cli_abort(c(
+        "{.arg fraction[[\"{fr}\"]]} has repeated stratum names.",
+        "x" = "Duplicated: {.val {dup_strata}}.",
+        "i" = "Only the first entry would be used, so the others are silently lost."
+      ))
+    }
     strata_vals <- unique(as.character(
       counts[[strata_col]][as.character(counts[[frame_col]]) == fr]
     ))
@@ -555,21 +567,19 @@ as_hybrid_svydesign <- function(
   # over the union of their dates, and the day expansion and the fpc would be
   # wrong for both -- with no error and no warning. Refuse instead of narrowing
   # what a label may contain.
-  pair_keys <- paste(
-    as.character(combined[[strata_col]]),
-    as.character(combined[[frame_col]]),
-    sep = "\r"
-  )
-  # Reduce to distinct (key, pair) rows first, then look for a key that appears
-  # under more than one pair. Taking `duplicated()` over that frame and using it
-  # to index `combined` instead recycles a pair-length logical over a row-length
-  # vector: at least one position is always selected, so the abort still fires
-  # whenever a collision exists, but the keys it names are whichever ones the
-  # recycled positions land on -- sending the caller to rename a value that is
-  # fine while the colliding one goes unnamed. HYBR-30 pins the named set.
+  # Reduce to distinct (key, stratum, frame) rows first, then look for a key that
+  # appears under more than one pair. Taking `duplicated()` over that frame and
+  # using it to index `combined` instead recycles a pair-length logical over a
+  # row-length vector: at least one position is always selected, so the abort
+  # still fires whenever a collision exists, but the keys it names are whichever
+  # ones the recycled positions land on -- sending the caller to rename a value
+  # that is fine while the colliding one goes unnamed. HYBR-30 pins the named
+  # set. The pair is carried as two columns rather than pasted into one, because
+  # any separator a paste could use is a character a caller's label may contain.
   key_pairs <- unique(data.frame(
     k = combined$.hybrid_stratum,
-    p = pair_keys,
+    s = as.character(combined[[strata_col]]),
+    f = as.character(combined[[frame_col]]),
     stringsAsFactors = FALSE
   ))
   collisions <- unique(key_pairs$k[duplicated(key_pairs$k)])
@@ -616,17 +626,19 @@ as_hybrid_svydesign <- function(
   # fraction of the calendar and shrink the variance as though half the season
   # had been enumerated (#246).
   #
-  # Looked up on the frame-stratum pair. A separator that cannot occur in either
-  # value keeps "a.b" + "c" from colliding with "a" + "b.c".
-  frac_lookup <- unlist(lapply(frames, function(fr) {
-    v <- fraction[[fr]]
-    stats::setNames(as.numeric(v), paste(fr, names(v), sep = "\r"))
-  }))
-  within_day <- unname(frac_lookup[paste(
-    as.character(combined[[frame_col]]),
-    row_stratum,
-    sep = "\r"
-  )])
+  # Looked up one frame at a time, so the key is the stratum alone and there is
+  # no frame-stratum pair to paste. Pasting one needs a separator that cannot
+  # occur in either value, and nothing constrains a caller's labels: with a
+  # carriage return as the separator, frame "b" at stratum "c\ra" and frame
+  # "b\rc" at stratum "a" produce the same key, and the second frame silently
+  # took the first's fraction -- measured, a weight of 3 where 6 was owed, with
+  # no error and no warning.
+  row_frame <- as.character(combined[[frame_col]])
+  within_day <- numeric(nrow(combined))
+  for (fr in frames) {
+    rows <- which(row_frame == fr)
+    within_day[rows] <- unname(fraction[[fr]][row_stratum[rows]])
+  }
   combined$weight <- unname(
     (1 / within_day) * (n_pop_days / n_sampled_days)
   )

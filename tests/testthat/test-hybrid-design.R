@@ -697,4 +697,68 @@ test_that("HYBR-31: fraction entries that name no frame are refused", {
     ),
     "more than once"
   )
+
+  # A stratum named twice inside one frame's vector is the same failure one
+  # level down: the lookup takes the first match, so the later entry is lost.
+  expect_error(
+    as_hybrid_svydesign(
+      make_counts(),
+      frame_col = "component",
+      calendar = make_calendar(),
+      fraction = list(
+        access = c(weekday = 0.5, weekend = 0.5, weekday = 0.9),
+        roving = fractions$roving
+      ),
+      trips_disjoint = TRUE
+    ),
+    "repeated stratum names"
+  )
+})
+
+test_that("HYBR-32: a frame takes its own fraction whatever the labels contain", {
+  # The fraction was looked up on a key pasted from the frame and the stratum.
+  # Any separator that paste uses is a character a caller's label may contain,
+  # and a carriage return is exactly what a messy import leaves behind: frame
+  # "b" at stratum "c\ra" and frame "b\rc" at stratum "a" pasted to one key
+  # under sep = "\r", so the second frame silently took the first's fraction --
+  # weight 3 where 6 was owed, no error and no warning. The two hybrid strata
+  # differ ("c\ra.b" vs "a.b\rc"), so the ambiguity guard does not see this.
+  cr <- "\r"
+  s1 <- paste0("c", cr, "a")
+  f2 <- paste0("b", cr, "c")
+
+  cts <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
+    day_type = c(s1, s1, "a", "a"),
+    component = c("b", "b", f2, f2),
+    count = c(5L, 6L, 7L, 8L),
+    stringsAsFactors = FALSE
+  )
+  cal <- data.frame(
+    date = as.Date(c(
+      "2024-06-01", "2024-06-02", "2024-06-05",
+      "2024-06-03", "2024-06-04", "2024-06-06"
+    )),
+    day_type = c(s1, s1, s1, "a", "a", "a"),
+    stringsAsFactors = FALSE
+  )
+  frac <- list(c(0.5), c(0.25))
+  names(frac) <- c("b", f2)
+  names(frac[[1]]) <- s1
+  names(frac[[2]]) <- "a"
+
+  des <- suppressWarnings(as_hybrid_svydesign(
+    cts,
+    frame_col = "component",
+    calendar = cal,
+    fraction = frac,
+    trips_disjoint = TRUE
+  ))
+
+  # Two sampled days of three population days in each stratum, so the day
+  # expansion is 3/2 for both and the frames differ only in their fraction.
+  expect_equal(
+    des$variables$weight,
+    (1 / c(0.5, 0.5, 0.25, 0.25)) * (3 / 2)
+  )
 })
