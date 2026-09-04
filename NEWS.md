@@ -2,6 +2,61 @@
 
 ## Breaking changes
 
+* `as_hybrid_svydesign()` now takes one long-form `counts` table plus a
+  `frame_col` naming the column that partitions it, instead of two pre-split
+  tables named `access_data` and `roving_data` (#248). The two `*_fraction`
+  arguments are replaced by a single `fraction`, a named list with one entry
+  per frame.
+
+  ```r
+  # before
+  as_hybrid_svydesign(
+    access_data = boat, roving_data = bank, calendar = cal,
+    access_fraction = c(weekday = 0.5), roving_fraction = c(weekday = 0.4),
+    trips_disjoint = TRUE
+  )
+
+  # after
+  as_hybrid_svydesign(
+    counts, frame_col = "angler_type", calendar = cal,
+    fraction = list(boat = c(weekday = 0.5), bank = c(weekday = 0.4)),
+    trips_disjoint = TRUE
+  )
+  ```
+
+  The arguments borrowed the **interview** vocabulary for something that is not
+  an interview mode. Access and roving describe how anglers are interviewed and
+  select the catch-rate estimator; tidycreel carries that axis on
+  `add_interviews(interview_type =)`. What this function combines are disjoint
+  **count frames**, usually angler-type domains. Pope et al. (Chapter 17) carry
+  exactly this as an `anglerType` column beside the stratum, which is what
+  `frame_col` now names, and taking a partitioning column rather than pre-split
+  tables is how the rest of the package already works.
+
+  The frame labels now come from the data, so the design speaks the caller's
+  vocabulary. `attr(design, "component_col")` names the frame column, and the
+  design data carries that column unchanged rather than a renamed copy.
+
+  **The two-frame ceiling is gone**: three or more frames stratify, expand and
+  weight exactly as two did. Nothing in the arithmetic was ever limited to two.
+
+  A frame label that is missing, and a `frame_col` holding fewer than two
+  distinct frames, are both refused rather than silently forming a stratum. The
+  repeated-day refusal is now keyed on the frame as well as the date and
+  stratum, so frames sampling a shared date are not mistaken for repeat counts.
+
+  Two further refusals come with the caller-supplied labels. The internal
+  stratum key is `paste(stratum, frame, sep = ".")`, so a `.` inside either
+  value can make two different combinations land on one key -- stratum `"a"`
+  with frame `"b.c"` and stratum `"a.b"` with frame `"c"` both give `"a.b.c"` --
+  which `survey` would pool into one stratum, counting `n_h` over the union of
+  their sampled dates and getting the day expansion and the fpc wrong for both.
+  Ambiguous keys are now named and refused; a `.` that cannot collide is still
+  allowed. A `fraction` entry naming a frame absent from the data, naming one
+  frame twice, or naming one stratum twice inside a frame's vector, is also
+  refused rather than silently ignored, since each leaves the caller believing a
+  fraction was applied that never was.
+
 * The `method` on a sectioned catch rate now names the estimator that produced
   it (#284). `estimate_catch_rate_sections()` passed the caller's estimator down
   and computed with it, then labelled every result `"ratio-of-means-cpue-sections"`
