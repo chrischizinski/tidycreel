@@ -308,7 +308,16 @@ generic estimator refuses a camera design for that reason:</p>
 calibrating them against interview data: for each stratum it estimates
 <code>rho</code>, the hours of effort per camera count, from the days
 that carry both a count and interviews, then applies it to that
-stratum’s total counts (Hartill et al. 2020).</p>
+stratum’s total counts. The counts are the first phase of a double
+sample and the days carrying interviews are the second, so the estimator
+is a double-sampling ratio estimator (Cochran 1977, Chapter 12); the
+ratio’s variance is Cochran’s eq. 2.46 with the finite-population
+correction omitted. Calibrating camera counts against paired creel
+observations is established practice – Hartill et al. (2016), van
+Poorten et al. (2015), Eckelbecker et al. (2022) – but each of those
+uses a different estimator, and this ratio-of-totals form is the
+package’s own application rather than a reproduction of any of them. See
+<code><a href="../reference/est_effort_camera.html">?est_effort_camera</a></code> for the full note.</p>
 <p><code>example_camera_interviews</code> records one row per angler, so
 <code>n_anglers = 1</code> states that <code>hours_fished</code> is
 already an individual angler’s hours. Supplying it is what earns the
@@ -577,6 +586,26 @@ Society.</p></li>
 <li><p>Malvestuto, S. P. (1996). Sampling the recreational angler.
 Chapter 20 in <em>Fisheries Techniques</em> (2nd ed.), pp. 591-623.
 American Fisheries Society.</p></li>
+<li><p>Cochran, W. G. (1977). <em>Sampling Techniques</em> (3rd ed.).
+Wiley. Section 2.11 (ratio estimator and its variance, eq. 2.46) and
+Chapter 12 (double sampling), Section 12.9, p. 343.</p></li>
+<li><p>Hartill, B. W., Payne, G. W., Rush, N., &amp; Bian, R. (2016).
+Bridging the temporal gap: continuous and cost-effective monitoring of
+dynamic recreational fisheries by web cameras and creel surveys.
+<em>Fisheries Research</em>, 183, 488-497.</p></li>
+<li><p>van Poorten, B. T., Carruthers, T. R., Ward, H. G. M., &amp;
+Varkey, D. A. (2015). Imputing recreational angling effort from
+time-lapse cameras using an hierarchical Bayesian model. <em>Fisheries
+Research</em>, 172, 265-273.</p></li>
+<li><p>Eckelbecker, R. W., Coleman, T. S., &amp; Catalano, M. J. (2022).
+Incorporating time-lapse digital cameras into creel surveys at three
+Alabama reservoirs. <em>North American Journal of Fisheries
+Management</em>, 42, 1349-1358.</p></li>
+<li><p>Hartill, B. W., Taylor, S. M., Keller, K., &amp; Weltersbach, M.
+S. (2020). Digital camera monitoring of recreational fishing effort:
+applications and challenges. <em>Fish and Fisheries</em>, 21, 204-215. A
+review of camera monitoring practice; it presents no estimator or
+variance.</p></li>
 </ul>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

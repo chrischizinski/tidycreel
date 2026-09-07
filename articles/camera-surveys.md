@@ -223,7 +223,18 @@ estimate_effort(design_counter)
 converts counts to effort by calibrating them against interview data:
 for each stratum it estimates `rho`, the hours of effort per camera
 count, from the days that carry both a count and interviews, then
-applies it to that stratum’s total counts (Hartill et al. 2020).
+applies it to that stratum’s total counts. The counts are the first
+phase of a double sample and the days carrying interviews are the
+second, so the estimator is a double-sampling ratio estimator (Cochran
+1977, Chapter 12); the ratio’s variance is Cochran’s eq. 2.46 with the
+finite-population correction omitted. Calibrating camera counts against
+paired creel observations is established practice – Hartill et
+al. (2016), van Poorten et al. (2015), Eckelbecker et al. (2022) – but
+each of those uses a different estimator, and this ratio-of-totals form
+is the package’s own application rather than a reproduction of any of
+them. See
+[`?est_effort_camera`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md)
+for the full note.
 
 `example_camera_interviews` records one row per angler, so
 `n_anglers = 1` states that `hours_fished` is already an individual
@@ -495,3 +506,28 @@ which refuse them for the same reason.
 - Malvestuto, S. P. (1996). Sampling the recreational angler. Chapter 20
   in *Fisheries Techniques* (2nd ed.), pp. 591-623. American Fisheries
   Society.
+
+- Cochran, W. G. (1977). *Sampling Techniques* (3rd ed.). Wiley. Section
+  2.11 (ratio estimator and its variance, eq. 2.46) and Chapter 12
+  (double sampling), Section 12.9, p. 343.
+
+- Hartill, B. W., Payne, G. W., Rush, N., & Bian, R. (2016). Bridging
+  the temporal gap: continuous and cost-effective monitoring of dynamic
+  recreational fisheries by web cameras and creel surveys. *Fisheries
+  Research*, 183, 488-497.
+
+- van Poorten, B. T., Carruthers, T. R., Ward, H. G. M., & Varkey, D. A.
+  (2015). Imputing recreational angling effort from time-lapse cameras
+  using an hierarchical Bayesian model. *Fisheries Research*, 172,
+  265-273.
+
+- Eckelbecker, R. W., Coleman, T. S., & Catalano, M. J. (2022).
+  Incorporating time-lapse digital cameras into creel surveys at three
+  Alabama reservoirs. *North American Journal of Fisheries Management*,
+  42, 1349-1358.
+
+- Hartill, B. W., Taylor, S. M., Keller, K., & Weltersbach, M. S.
+  (2020). Digital camera monitoring of recreational fishing effort:
+  applications and challenges. *Fish and Fisheries*, 21, 204-215. A
+  review of camera monitoring practice; it presents no estimator or
+  variance.

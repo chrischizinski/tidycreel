@@ -467,6 +467,52 @@
 
 ### Documentation
 
+- Corrected the attribution of the camera calibration ratio, which cited
+  Hartill et al. (2020) for an estimator that paper does not contain
+  ([\#236](https://github.com/chrischizinski/tidycreel/issues/236)).
+  [`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md)
+  estimates `rho`, the hours of effort per camera count, as a ratio of
+  sums over the days carrying both a count and interviews, and applies
+  it to the stratum’s full count total.
+
+  Hartill et al. (2020) is a **review** of digital camera monitoring. It
+  presents no estimator and no variance, and where it discusses
+  combining cameras with creel data it cites others. The earlier sweep
+  in [\#235](https://github.com/chrischizinski/tidycreel/issues/235)
+  replaced a fabricated Hartill reference with the real one and verified
+  that the DOI resolved; it did not ask whether the resolved work
+  supports the formula attached to it, which is a separate question that
+  metadata cannot answer.
+
+  The citation is now split by what each source actually carries. The
+  estimator and its variance are **Cochran (1977)**: the counts are the
+  first phase of a double sample and the interview days the second,
+  which is the structure of Chapter 12 (Section 12.9, p. 343), and the
+  ratio’s variance is eq. 2.46 with the finite-population correction
+  omitted. The **practice** of calibrating camera counts against paired
+  creel observations is credited to Hartill et al. (2016), van Poorten
+  et al. (2015) and Eckelbecker et al. (2022) — each of which uses a
+  different estimator: a per-day classification proportion, a
+  hierarchical Bayesian model, and a fitted linear correction
+  respectively.
+
+  [`?est_effort_camera`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md)
+  now states plainly that the ratio-of-totals form is this package’s own
+  application of standard double-sampling ratio estimation, not a
+  reproduction of a published fisheries estimator. In particular it is
+  not Hartill et al.’s (2016) `rho`, which is a dimensionless proportion
+  of observed boats that were fishing, estimated per day from interviews
+  that are a subsample of the camera’s own frame, with a bootstrap
+  variance.
+
+  [`impute_camera_counts()`](https://chrischizinski.github.io/tidycreel/reference/impute_camera_counts.md)
+  also carried the Hartill et al. (2020) reference, for a function that
+  imputes camera outages by a per-stratum Poisson GLM or a negative
+  binomial GLMM. The review supports neither, and the entry is removed.
+
+  **No computation changes.** This release alters documentation,
+  comments and the camera vignette only.
+
 - Corrected the framing of
   [`as_hybrid_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_hybrid_svydesign.md),
   which described *access* and *roving* as though they were count
