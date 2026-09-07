@@ -56,22 +56,32 @@ under proportional allocation:
 `n_h = ceiling(n_total * N_h / sum(N_h))`. Because each stratum is
 ceiling-ed independently, `sum(n_h)` may exceed `n_total`.
 
-**Minimum camera-day check:** After computing `n_h`, the function
-applies empirical minimums from Feltz-Middaugh (2025). Stratum names are
-matched case-insensitively and partially:
+**Feltz-Middaugh (2025) empirical benchmark.** That study reports the
+camera-day schedules at which a low-frequency time-lapse deployment
+performed acceptably. Its two headline scenarios are, per **month**:
 
-- Names containing `"weekday"` require a minimum of 12 camera-days.
+- *well-performing* (under 20 percent error in at least 80 percent of
+  simulations): 12 weekdays and 7 weekend days, both at 1 count/day;
 
-- Names containing `"weekend"` require a minimum of 7 camera-days.
+- *best-performing* (under 10 percent error in at least 80 percent of
+  simulations): 18 weekdays at 2 counts/day and 8 weekend days at 4
+  counts/day.
 
-- Names matching neither pattern trigger a generic advisory (no numeric
-  floor — consult Feltz-Middaugh 2025 for the appropriate minimum).
+These are reported here as design context, not applied as a check. The
+function cannot judge a computed `n_h` against them: `N_h` is the whole
+survey period rather than a month, nothing here knows the counts per day
+the schedule assumes, the error bands are fixed by the study rather than
+taken from `cv_target`, and the simulations measured boat-trailer counts
+on six Arkansas reservoirs, whereas `ybar_h` and `s2_h` are whatever the
+caller piloted. Compare against them by hand, after converting to the
+same units.
 
-When any stratum is below threshold (or is unclassified), a single
-combined `cli_warn()` is emitted listing all affected strata with their
-computed `n` and minimum side-by-side. No warning fires if all
-classified strata meet or exceed their minimums and there are no
-unclassified strata.
+Earlier versions warned when `n_h` fell below 12 or 7, choosing which
+benchmark to apply by matching the substring `"weekday"` or `"weekend"`
+in the stratum name. That comparison was between a period-scale
+allocation and a per-month recommendation, so it under-fired by roughly
+the number of months in the survey (#234). No sample size ever changed:
+the check only ever emitted a warning.
 
 ## References
 

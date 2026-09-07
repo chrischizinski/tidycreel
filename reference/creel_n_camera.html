@@ -125,16 +125,26 @@ to deploy cameras, not to assess precision of a completed survey).</p>
 under proportional allocation: <code>n_h = ceiling(n_total * N_h / sum(N_h))</code>.
 Because each stratum is ceiling-ed independently, <code>sum(n_h)</code> may exceed
 <code>n_total</code>.</p>
-<p><strong>Minimum camera-day check:</strong> After computing <code>n_h</code>, the function applies
-empirical minimums from Feltz-Middaugh (2025). Stratum names are matched
-case-insensitively and partially:</p><ul><li><p>Names containing <code>"weekday"</code> require a minimum of 12 camera-days.</p></li>
-<li><p>Names containing <code>"weekend"</code> require a minimum of 7 camera-days.</p></li>
-<li><p>Names matching neither pattern trigger a generic advisory (no numeric
-floor — consult Feltz-Middaugh 2025 for the appropriate minimum).</p></li>
-</ul><p>When any stratum is below threshold (or is unclassified), a single combined
-<code>cli_warn()</code> is emitted listing all affected strata with their computed <code>n</code>
-and minimum side-by-side. No warning fires if all classified strata meet or
-exceed their minimums and there are no unclassified strata.</p>
+<p><strong>Feltz-Middaugh (2025) empirical benchmark.</strong> That study reports the
+camera-day schedules at which a low-frequency time-lapse deployment
+performed acceptably. Its two headline scenarios are, per <strong>month</strong>:</p><ul><li><p><em>well-performing</em> (under 20 percent error in at least 80 percent of
+simulations): 12 weekdays and 7 weekend days, both at 1 count/day;</p></li>
+<li><p><em>best-performing</em> (under 10 percent error in at least 80 percent of
+simulations): 18 weekdays at 2 counts/day and 8 weekend days at
+4 counts/day.</p></li>
+</ul><p>These are reported here as design context, not applied as a check. The
+function cannot judge a computed <code>n_h</code> against them: <code>N_h</code> is the whole
+survey period rather than a month, nothing here knows the counts per day
+the schedule assumes, the error bands are fixed by the study rather than
+taken from <code>cv_target</code>, and the simulations measured boat-trailer counts on
+six Arkansas reservoirs, whereas <code>ybar_h</code> and <code>s2_h</code> are whatever the caller
+piloted. Compare against them by hand, after converting to the same units.</p>
+<p>Earlier versions warned when <code>n_h</code> fell below 12 or 7, choosing which
+benchmark to apply by matching the substring <code>"weekday"</code> or <code>"weekend"</code> in
+the stratum name. That comparison was between a period-scale allocation and
+a per-month recommendation, so it under-fired by roughly the number of
+months in the survey (#234). No sample size ever changed: the check only
+ever emitted a warning.</p>
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
