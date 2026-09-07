@@ -467,6 +467,49 @@
 
 ### Documentation
 
+- Corrected two bad references in
+  [`simulate_creel_data()`](https://chrischizinski.github.io/tidycreel/reference/simulate_creel_data.md)
+  ([\#233](https://github.com/chrischizinski/tidycreel/issues/233)) —
+  one fabricated, one mis-cited.
+
+  The reference read “Greene, B.T. (1995). The ANGLER simulation
+  model. N. Am. J. Fish. Manage. 15: 743-750.” **No paper by that title
+  exists**, and every field of the citation was wrong. The work the
+  simulator actually draws on is
+
+  > Greene, C.J., Hoenig, J.M., Barrowman, N.J. & Pollock, K.H. (1995).
+  > Programs to simulate catch rate estimation in a roving creel survey
+  > of anglers. DFO Atlantic Fisheries Research Document 95/99.
+
+  — a Department of Fisheries and Oceans technical report describing two
+  S-PLUS functions that build an angler population and simulate a roving
+  clerk, not a journal article, which is why no Crossref search for it
+  returns anything. The author is Colin J. **Greene** with three
+  coauthors, not a solo “B.T. Greene”, and it never appeared in *North
+  American Journal of Fisheries Management*.
+
+  Found while verifying that one, and a different kind of error: the
+  Petrere reference is a real paper, cited with the right title, authors
+  and year, but given the wrong journal, volume and pages — “Fish. Res.
+  106: 325-333” for a paper published in *Brazilian Journal of Biology*
+  **70**: 483-491. Corrected, with its DOI added.
+
+  Su & Clapp (2013) was checked at the same time and is correct as
+  cited.
+
+  The `@details` sentence claimed the generative model “follows Su &
+  Clapp
+
+  2013. and Greene (1995)” without saying which part came from which.
+        Greene et al.’s simulated anglers are deterministic — evenly
+        spaced around the shoreline, all starting one hour into an
+        eight-hour day, trip lengths alternating between 3 and 6 hours —
+        so the three distributional levels are not from that paper. Only
+        the roving-clerk step is: length-biased interception, with catch
+        recorded up to the interview time. The docs now say so.
+
+  **No computation changes.** Documentation only.
+
 - Corrected the attribution of the camera calibration ratio, which cited
   Hartill et al. (2020) for an estimator that paper does not contain
   ([\#236](https://github.com/chrischizinski/tidycreel/issues/236)).
