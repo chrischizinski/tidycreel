@@ -110,7 +110,62 @@
 #' @return A `creel_estimates` object with columns `estimate`, `se`,
 #'   `se_between`, `se_within`, `ci_lower`, `ci_upper`, `n`.
 #'
+#' @section Where the calibration estimator comes from:
+#'
+#' The ratio calibration is a **double-sampling ratio estimator**, applied here
+#' to camera calibration by this package. It is not a reproduction of a
+#' published fisheries estimator, and no paper in the camera literature derives
+#' it in this form.
+#'
+#' Within each stratum the estimator forms `rho` as a ratio of sums --
+#' interview hours over camera counts on the paired days -- estimates its
+#' variance by the ratio-estimator formula on the paired daily residuals, and
+#' applies it to that stratum's first-phase count total, combining the two
+#' variances by the delta method. The counts are the first-phase sample and the
+#' days carrying interviews are the second phase, which is the structure
+#' Cochran (1977) Chapter 12 treats; the ratio's variance is Cochran's
+#' eq. 2.46 with the finite-population correction omitted.
+#'
+#' The **practice** of calibrating camera counts against paired concurrent
+#' creel observations is well established -- Hartill et al. (2016), van Poorten
+#' et al. (2015), Eckelbecker et al. (2022) -- but each of those uses a
+#' different estimator: a per-day classification proportion, a hierarchical
+#' Bayesian model, and a fitted linear correction respectively. Hartill et al.
+#' (2020) is a review of camera monitoring and presents no estimator or
+#' variance at all.
+#'
+#' In particular this is **not** Hartill et al.'s (2016) `rho`. Theirs is the
+#' dimensionless proportion of observed boats that were fishing, estimated per
+#' day from interviews that are a subsample of the camera's own frame, with a
+#' bootstrap variance. The ratio here has units of hours per count, corrects
+#' counts to effort rather than classifying them, pools over days within a
+#' stratum, and pairs the camera against an independent measurement -- a
+#' different variance structure, which is why a design-based ratio variance is
+#' used rather than a bootstrap.
+#'
 #' @references
+#'   Cochran, W.G. 1977. Sampling Techniques, 3rd ed. Wiley, New York.
+#'   Section 2.11 gives the ratio estimator and its estimated variance
+#'   (eq. 2.46), which is the form used here with the finite-population
+#'   correction omitted. Chapter 12 covers double sampling, and Section 12.9
+#'   (p. 343) the ratio estimator applied to a first-phase total.
+#'
+#'   Hartill, B.W., Payne, G.W., Rush, N., and Bian, R. 2016. Bridging the
+#'   temporal gap: continuous and cost-effective monitoring of dynamic
+#'   recreational fisheries by web cameras and creel surveys. Fisheries
+#'   Research 183:488-497.
+#'   \doi{10.1016/j.fishres.2016.06.002}
+#'
+#'   van Poorten, B.T., Carruthers, T.R., Ward, H.G.M., and Varkey, D.A. 2015.
+#'   Imputing recreational angling effort from time-lapse cameras using an
+#'   hierarchical Bayesian model. Fisheries Research 172:265-273.
+#'   \doi{10.1016/j.fishres.2015.07.032}
+#'
+#'   Eckelbecker, R.W., Coleman, T.S., and Catalano, M.J. 2022. Incorporating
+#'   time-lapse digital cameras into creel surveys at three Alabama
+#'   reservoirs. North American Journal of Fisheries Management 42:1349-1358.
+#'   \doi{10.1002/nafm.10828}
+#'
 #'   Hartill, B.W., Taylor, S.M., Keller, K., and Weltersbach, M.S. 2020.
 #'   Digital camera monitoring of recreational fishing effort: applications
 #'   and challenges. Fish and Fisheries 21:204-215.

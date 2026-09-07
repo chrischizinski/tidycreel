@@ -54,11 +54,6 @@
 #'   compatibility with [add_counts()]. Row count equals `nrow(data)`.
 #'
 #' @references
-#'   Hartill, B.W., Taylor, S.M., Keller, K., and Weltersbach, M.S. 2020.
-#'   Digital camera monitoring of recreational fishing effort: applications
-#'   and challenges. Fish and Fisheries 21:204-215.
-#'   \doi{10.1111/faf.12413}
-#'
 #'   Afrifa-Yamoah, E., Mueller, U.A., Taylor, S.M., and Fisher, A. 2020.
 #'   Missing data imputation of high-resolution temporal climate data series
 #'   using an integrated framework of expectation maximisation and long
