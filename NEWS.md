@@ -147,6 +147,34 @@
 
 ## Bug fixes
 
+* `creel_n_camera()` no longer warns that a stratum is below a Feltz and
+  Middaugh (2025) camera-day minimum (#234). The 12 weekday and 7 weekend days
+  that check used are the study's **per-month** well-performing schedule, while
+  `n_h` allocates over the whole period named in `N_h`, so the comparison ran
+  across scales and under-fired by roughly the number of months surveyed. On the
+  function's own documented example -- about three months -- the cited schedule
+  is near 36 weekday and 21 weekend camera-days, but the check fired only below
+  12 and 7 and passed a plan of 27 and 12 in silence.
+
+  Scaling the benchmark would have fixed only that one gap. Three others remain
+  and the function cannot close any of them: the 12/7 scenario is specifically
+  at 1 count/day and nothing here knows the counts per day; its error band is
+  fixed by the study rather than taken from `cv_target`, so a caller asking for
+  a tight CV was judged against the loose row; and the simulations measured
+  boat-trailer counts on six Arkansas reservoirs, whereas `ybar_h` and `s2_h`
+  are whatever the caller piloted. The benchmark is now stated in `?creel_n_camera`
+  in the study's own units, with those conditions, as design context rather than
+  a threshold.
+
+  Which benchmark applied was also chosen by matching `"weekday"` or `"weekend"`
+  as a substring of a caller-supplied stratum name, so `weekday_holiday` took 12,
+  `weekend_evening` took 7 by luck, and `Sat/Sun` took neither and drew a
+  permanent "unclassified stratum" advisory instead. No stratum name now changes
+  the result.
+
+  **No sample size changes.** The check only ever emitted a warning; `n_h`,
+  `total` and `allocated` were always returned as computed.
+
 * The error raised when a `by` variable is missing from the interview data now
   carries the condition class `creel_error_by_missing_in_interviews` and is
   attributed to the `estimate_total_*()` call that produced it, rather than to an

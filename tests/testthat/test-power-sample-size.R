@@ -251,16 +251,44 @@ test_that("creel_n_camera tighter cv_target gives larger n", {
   expect_true(n_tight[["total"]] > n_loose[["total"]])
 })
 
-test_that("creel_n_camera warns when weekday stratum below 12", {
-  expect_warning(
-    creel_n_camera(
+test_that("creel_n_camera does not judge n_h against the Feltz-Middaugh benchmark", {
+  # Feltz & Middaugh's 12 weekday / 7 weekend days are per MONTH at 1 count/day;
+  # n_h is an allocation over the whole period in `N_h`. Comparing the two was a
+  # scale error (#234). Inputs whose allocation falls under 12 and 7 must now
+  # pass silently, and must return exactly what proportional allocation gives.
+  expect_no_warning(
+    result <- creel_n_camera(
       cv_target = 0.80,
       N_h = c(weekday = 10, weekend = 5),
       ybar_h = c(2, 2),
       s2_h = c(1, 1)
-    ),
-    regexp = "minimum|Feltz-Middaugh"
+    )
   )
+  expect_lt(result[["weekday"]], 12L)
+  expect_lt(result[["weekend"]], 7L)
+  expect_identical(result[["weekday"]], 1L)
+  expect_identical(result[["weekend"]], 1L)
+})
+
+test_that("the removed check would have passed a plan short of the benchmark", {
+  # The documented example spans about three months, so the paper's benchmark
+  # scales to roughly 36 weekday and 21 weekend camera-days. The old check fired
+  # only below 12 and 7, so it passed this plan while both strata were short of
+  # what was cited -- the warning under-fired by the number of months.
+  result <- creel_n_camera(
+    cv_target = 0.20,
+    N_h = c(weekday = 65, weekend = 28),
+    ybar_h = c(15, 20),
+    s2_h = c(625, 900)
+  )
+  # Characterization only: this passes against the old implementation too, since
+  # 27 and 12 never tripped the 12/7 check. The assertions that discriminate the
+  # fix are the expect_no_warning() calls in the two tests either side of it.
+  months <- 3
+  expect_gte(result[["weekday"]], 12L) # would not have tripped the old check
+  expect_gte(result[["weekend"]], 7L)
+  expect_lt(result[["weekday"]], 12L * months) # yet short of the cited schedule
+  expect_lt(result[["weekend"]], 7L * months)
 })
 
 test_that("creel_n_camera no warning when all strata above threshold", {
@@ -274,16 +302,19 @@ test_that("creel_n_camera no warning when all strata above threshold", {
   )
 })
 
-test_that("creel_n_camera warns for unclassified strata", {
-  expect_warning(
-    creel_n_camera(
-      cv_target = 0.80,
-      N_h = c(morning = 10, afternoon = 5),
-      ybar_h = c(2, 2),
-      s2_h = c(1, 1)
-    ),
-    regexp = "consult Feltz-Middaugh"
+test_that("creel_n_camera reads no day type off the stratum names", {
+  # Day type was inferred by matching "weekday"/"weekend" as a substring of a
+  # caller-supplied label, so `weekday_holiday` took 12 and `Sat/Sun` took
+  # neither. Statistical meaning is not read off an arbitrary name (#234): no
+  # stratum name now changes the result or emits an advisory.
+  args <- list(cv_target = 0.80, ybar_h = c(2, 2), s2_h = c(1, 1))
+  expect_no_warning(
+    unlabelled <- do.call(creel_n_camera, c(args, list(N_h = c(morning = 10, afternoon = 5))))
   )
+  expect_no_warning(
+    labelled <- do.call(creel_n_camera, c(args, list(N_h = c(weekday_holiday = 10, `Sat/Sun` = 5))))
+  )
+  expect_identical(unname(unlabelled), unname(labelled))
 })
 
 test_that("creel_n_camera errors on unnamed N_h", {
