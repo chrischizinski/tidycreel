@@ -7,7 +7,13 @@
 #' generative model (day → trip → catch). Caller supplies distributional
 #' parameters via \code{params}; no default data are bundled with the package.
 #'
-#' The generative model follows Su & Clapp (2013) and Greene (1995):
+#' The generative model follows Su & Clapp (2013) for the day and trip levels;
+#' the roving-clerk step follows Greene et al. (1995). Only the sampling step is
+#' taken from the latter: its own simulated anglers are deterministic -- evenly
+#' spaced around the shoreline, all starting one hour into an eight-hour day,
+#' with trip lengths alternating between 3 and 6 hours -- whereas the levels
+#' below draw from distributions.
+#'
 #' \enumerate{
 #'   \item \strong{Day level}: Sample \code{n_sampled_days} days from the
 #'     season. Each sampled day draws the number of angler trips arriving from
@@ -134,11 +140,14 @@
 #' methods for Great Lakes angler surveys. Trans. Am. Fish. Soc. 142: 234–246.
 #' \doi{10.1080/00028487.2012.728167}
 #'
-#' Greene, B.T. (1995). The ANGLER simulation model. N. Am. J. Fish. Manage.
-#' 15: 743–750.
+#' Greene, C.J., Hoenig, J.M., Barrowman, N.J. & Pollock, K.H. (1995). Programs
+#' to simulate catch rate estimation in a roving creel survey of anglers. DFO
+#' Atlantic Fisheries Research Document 95/99. Department of Fisheries and
+#' Oceans, St. John's, NL.
 #'
-#' Petrere, M. et al. (2010). Catch-per-unit-effort: which estimator is best?
-#' Fish. Res. 106: 325–333.
+#' Petrere, M. Jr., Giacomini, H.C. & De Marco, P. Jr. (2010).
+#' Catch-per-unit-effort: which estimator is best? Braz. J. Biol. 70: 483–491.
+#' \doi{10.1590/S1519-69842010005000010}
 #'
 #' @examples
 #' my_params <- list(

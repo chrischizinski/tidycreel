@@ -171,11 +171,11 @@ variance at all.
 In particular this is \strong{not} Hartill et al.'s (2016) \code{rho}. Theirs is the
 dimensionless proportion of observed boats that were fishing, estimated per
 day from interviews that are a subsample of the camera's own frame, with a
-bootstrap variance. The ratio here has units
-of hours per count, corrects counts to effort rather than classifying them,
-pools over days within a stratum, and pairs the camera against an
-independent measurement -- a different variance structure, which is why a
-design-based ratio variance is used rather than a bootstrap.
+bootstrap variance. The ratio here has units of hours per count, corrects
+counts to effort rather than classifying them, pools over days within a
+stratum, and pairs the camera against an independent measurement -- a
+different variance structure, which is why a design-based ratio variance is
+used rather than a bootstrap.
 }
 
 \examples{
