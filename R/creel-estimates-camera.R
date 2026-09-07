@@ -38,6 +38,28 @@
 #' @return A `creel_estimates` object.
 #'
 #' @references
+#'   Cochran, W.G. 1977. Sampling Techniques, 3rd ed. Wiley, New York.
+#'   Section 2.11 gives the ratio estimator and its estimated variance
+#'   (eq. 2.46), which is the form used here with the finite-population
+#'   correction omitted. Chapter 12 covers double sampling, and Section 12.9
+#'   (p. 343) the ratio estimator applied to a first-phase total.
+#'
+#'   Hartill, B.W., Payne, G.W., Rush, N., and Bian, R. 2016. Bridging the
+#'   temporal gap: continuous and cost-effective monitoring of dynamic
+#'   recreational fisheries by web cameras and creel surveys. Fisheries
+#'   Research 183:488-497.
+#'   \doi{10.1016/j.fishres.2016.06.002}
+#'
+#'   van Poorten, B.T., Carruthers, T.R., Ward, H.G.M., and Varkey, D.A. 2015.
+#'   Imputing recreational angling effort from time-lapse cameras using an
+#'   hierarchical Bayesian model. Fisheries Research 172:265-273.
+#'   \doi{10.1016/j.fishres.2015.07.032}
+#'
+#'   Eckelbecker, R.W., Coleman, T.S., and Catalano, M.J. 2022. Incorporating
+#'   time-lapse digital cameras into creel surveys at three Alabama
+#'   reservoirs. North American Journal of Fisheries Management 42:1349-1358.
+#'   \doi{10.1002/nafm.10828}
+#'
 #'   Hartill, B.W., Taylor, S.M., Keller, K., and Weltersbach, M.S. 2020.
 #'   Digital camera monitoring of recreational fishing effort: applications
 #'   and challenges. Fish and Fisheries 21:204-215.
@@ -316,7 +338,11 @@ estimate_effort_camera <- function(
       )
       int_dates <- names(daily_effort)
 
-      # Camera counts on interview days only (paired calibration per Hartill 2020)
+      # Camera counts on interview days only. These paired days are the
+      # second phase of a double sample: the ratio below is estimated on
+      # them and applied to the stratum's full count total. Hartill 2020 is
+      # a review and carries no estimator; the form is Cochran (1977) --
+      # see the note on est_effort_camera() (#236).
       cnt_paired <- cnt_sub[[count_var]][cnt_sub[[date_col]] %in% int_dates]
       int_dates_matched <- as.character(
         cnt_sub[[date_col]][cnt_sub[[date_col]] %in% int_dates]
