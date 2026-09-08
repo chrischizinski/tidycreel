@@ -912,7 +912,7 @@ estimate_total_catch_sections <- function(
   for (sec in registered_sections) {
     if (sec %in% absent_sections) {
       na_row <- tibble::tibble(
-        section = sec,
+        !!section_col := sec,
         estimate = NA_real_,
         se = NA_real_,
         ci_lower = NA_real_,
@@ -947,7 +947,7 @@ estimate_total_catch_sections <- function(
           product_variance = product_variance,
           ci_type = ci_type
         )
-        row_df <- tibble::add_column(tibble::as_tibble(sp_df), section = sec, .before = 1)
+        row_df <- tibble::add_column(tibble::as_tibble(sp_df), !!section_col := sec, .before = 1)
         row_df$data_available <- TRUE
         sec_row_expansion[[sec]] <- attr(sp_df, "se_expansion")
         section_rows[[sec]] <- row_df
@@ -961,7 +961,7 @@ estimate_total_catch_sections <- function(
           conf_level,
           target = target
         )
-        row_df <- tibble::add_column(result$estimates, section = sec, .before = 1)
+        row_df <- tibble::add_column(result$estimates, !!section_col := sec, .before = 1)
         row_df$data_available <- TRUE
         # The grouped helper reports a component per row of its own result, and
         # only `result$estimates` was being kept -- so a sectioned grouped total
@@ -1011,7 +1011,7 @@ estimate_total_catch_sections <- function(
           sec_estimate + z_val * sec_se
         }
         section_rows[[sec]] <- tibble::tibble(
-          section = sec,
+          !!section_col := sec,
           estimate = sec_estimate,
           se = sec_se,
           ci_lower = sec_ci_lower,
@@ -1093,7 +1093,7 @@ estimate_total_catch_sections <- function(
   lake <- NULL
   if (!is_grouped) {
     present_rows <- result_df[!is.na(result_df$estimate), ]
-    present <- as.character(present_rows$section)
+    present <- as.character(present_rows[[section_col]])
     lake <- combine_section_variances( # nolint: object_usage_linter
       design,
       section_var = present_rows$se^2,
@@ -1122,7 +1122,7 @@ estimate_total_catch_sections <- function(
     present_rows <- result_df[!is.na(result_df$estimate), ]
     lake_est <- sum(present_rows$estimate)
 
-    present <- as.character(present_rows$section)
+    present <- as.character(present_rows[[section_col]])
     lake_se <- lake$se
     if (!is.null(se_expansion)) {
       se_expansion <- c(se_expansion, lake$component %||% NA_real_)
@@ -1154,7 +1154,7 @@ estimate_total_catch_sections <- function(
     }
 
     lake_row <- tibble::tibble(
-      section = ".lake_total",
+      !!section_col := ".lake_total",
       estimate = lake_est,
       se = lake_se,
       ci_lower = lake_ci_lower,
@@ -1175,7 +1175,7 @@ estimate_total_catch_sections <- function(
     conf_level = conf_level,
     # Species is a grouping variable of the result and belongs in by_vars, or
     # the reported metadata would describe rows it does not account for.
-    by_vars = c("section", species_var, by_vars),
+    by_vars = c(section_col, species_var, by_vars),
     effort_target = target,
     estimator = reported_estimator(design), # nolint: object_usage_linter
     unit = product_total_unit(rate_unit(design), design$effort_unit), # nolint: object_usage_linter
