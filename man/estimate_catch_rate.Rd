@@ -73,11 +73,26 @@ are excluded before MOR estimation. Set to NULL to disable truncation
 (research mode only). Ignored for ratio-of-means estimator.}
 
 \item{targeted}{Logical. When \code{TRUE} (default), all trips are used.
-When \code{FALSE}, zero-effort trips are excluded before MOR/MORtr
-estimation — appropriate for non-targeted species where most trips have
-zero catch. A \code{cli_warn()} is emitted when more than 70\\% of trips
-have zero catch and \code{targeted = TRUE} (possible mis-specification).
-Ignored for \code{ratio-of-means} estimator.}
+When \code{FALSE}, zero-catch trips are excluded before estimation —
+appropriate for non-targeted species where most trips have zero catch. The
+estimate is then the rate among the trips that were kept, not the
+fishery-wide rate. A \code{cli_warn()} is emitted when more than 70\\% of
+trips have zero catch and \code{targeted = TRUE} (possible
+mis-specification).
+
+Which estimators read it, and what "zero catch" means to each:
+\itemize{
+\item \code{"mor"} / \code{"mortr"} without \code{by = species}:
+excludes trips with zero \emph{total} catch.
+\item \code{"mor"} / \code{"mortr"} with \code{by = species}:
+excludes, per species, the trips that caught none of that species.
+The 70\\% warning is likewise per species. Both previously tested the
+total catch, which made them inert on any species request (GH #304).
+\item \code{"regression"} with \code{by = species}: same per-species
+exclusion (GH #290).
+\item \code{"regression"} without \code{by = species}: ignored.
+\item \code{"ratio-of-means"}: ignored on every path.
+}}
 
 \item{missing_sections}{Character string controlling behavior when a
 registered section has no interview observations. \code{"warn"} (default)

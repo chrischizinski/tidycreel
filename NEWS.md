@@ -2,6 +2,44 @@
 
 ## Breaking changes
 
+* `targeted = FALSE` on a `by = species` request now tests that species' own
+  catch, not the total catch, under the mean-of-ratios estimator (#304).
+
+  `targeted = FALSE` is documented as excluding zero-catch trips so that the
+  result is the rate among trips that caught the species. The exclusion ran
+  inside the mean-of-ratios branch, above the species split, and tested the
+  design's total catch column. A trip that caught one fish of any species
+  therefore counted as non-zero however many of the requested species it held,
+  so on a survey where every interview caught something the argument excluded
+  nothing at all and returned the untargeted rate with no warning:
+
+  ```r
+  # before: identical to the digit
+  estimate_catch_rate(design, by = species, estimator = "mor", targeted = TRUE)
+  estimate_catch_rate(design, by = species, estimator = "mor", targeted = FALSE)
+  ```
+
+  Both the exclusion and the accompanying ">70% of trips have zero catch"
+  mis-specification warning now test the species' own zero-filled count, which
+  is the only reading that makes sense for a per-species rate. The regression
+  estimator already did this (#290); the two now agree.
+
+  Three consequences for existing calls:
+
+  * `targeted = FALSE` with `by = species` under `"mor"`/`"mortr"` returns
+    different numbers. It previously returned the fishery-wide rate, so no
+    caller loses a correct estimate — but any recorded output changes.
+  * On a sparse species the surviving trips can fall below the `n >= 10` ratio
+    floor, so a call that silently returned a number now aborts. That is the
+    intended trade: a targeted rate from a handful of trips is not estimable,
+    and an error naming the sample size is preferable to an untargeted number
+    wearing a targeted label.
+  * `targeted = TRUE` (the default) emits the mis-specification warning per
+    species where it previously could not fire. **No estimate produced with
+    default arguments changes.**
+
+  `estimator = "ratio-of-means"` continues to ignore `targeted`, as documented.
+
 * Sectioned results now report their sections under the column the design
   registered, instead of a hardcoded `section` (#282).
 
