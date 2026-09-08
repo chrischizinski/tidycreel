@@ -6,15 +6,49 @@
 #'
 #' @description
 #' Fills outage rows in a camera count data frame using a per-stratum model.
-#' The GLM method (default, Hartill 2016) fits a Poisson GLM with `strata_col`
-#' (typically `day_type`) as the sole predictor. The GLMM method
-#' (Afrifa-Yamoah 2020) fits a negative binomial GLMM and
-#' requires the `glmmTMB` package (in `Suggests`).
+#' `strata_col` (typically `day_type`) partitions the data: one model is fitted
+#' within each level, from that level's own observed days. The GLM method
+#' (default) fits an intercept-only Poisson GLM, so an outage day is filled
+#' with its stratum's mean count. The GLMM method fits a negative binomial
+#' GLMM and requires the `glmmTMB` package (in `Suggests`).
 #'
 #' Outage rows are identified as any row where `status_col != "operational"`
 #' AND `count_col` is `NA`. All rows are returned; imputed rows have
 #' `.imputed = TRUE`. The original `status_col` values (e.g.,
 #' `"battery_failure"`) are preserved in imputed rows for traceability.
+#'
+#' @section Where these imputation models come from:
+#' Filling camera outages with a fitted model rather than dropping the days is
+#' established practice -- Hartill et al. (2016) and Afrifa-Yamoah et al. (2020)
+#' both do it -- but **neither of the two models offered here is taken from a
+#' published creel study.** Both are the package's own choices, and they are
+#' deliberately simpler than either paper's.
+#'
+#' Hartill et al. (2016) predict the outage ramp's daily count from the counts
+#' observed at *two other ramps* on the same day, square-root transformed and
+#' fitted as third-order polynomials, given fishing year, season and day-type,
+#' selected stepwise with ramp:year interaction terms. They chose a cross-site
+#' model precisely because counts on the days either side of an outage were
+#' "not considered to be sufficiently representative". The model here has no
+#' auxiliary site to borrow from, so it fits the stratum's own observed days.
+#'
+#' Afrifa-Yamoah et al. (2020) evaluate nine models in a fully conditional
+#' specification multiple-imputation framework -- quasi-Poisson, negative
+#' binomial, their zero-inflated forms, bootstrap variants and predictive mean
+#' matching -- with climatic covariates as fixed effects and temporal
+#' classifications as random intercepts. Their conclusion does **not** favour
+#' the negative binomial: zero-inflated Poisson models "were generally ranked
+#' best", and they report the negative binomial fits as slow and cumbersome to
+#' converge. The negative binomial offered by `method = "glmm"` is here as an
+#' overdispersion-tolerant alternative to the Poisson default, not as their
+#' recommendation, and it falls back to the Poisson GLM when `glmmTMB` fails
+#' outright. A fit that returns while flagging a convergence problem is used as
+#' it stands -- there is no convergence check beyond the error.
+#'
+#' What this function does take from Afrifa-Yamoah et al. (2020) is the
+#' multiple-imputation framing itself: that a single completed data set cannot
+#' carry the uncertainty of having imputed at all. See `m` below and
+#' [est_effort_camera_mi()].
 #'
 #' @param data A data frame of camera count records. Must have at least one row
 #'   and must contain the columns named by `count_col`, `strata_col`, and
@@ -22,7 +56,8 @@
 #' @param count_col Character scalar. Name of the integer count column (e.g.,
 #'   `"ingress_count"`). Outage rows have `NA` in this column.
 #' @param strata_col Character scalar. Name of the day-type stratum column
-#'   (e.g., `"day_type"`). Used as the predictor in the per-stratum GLM/GLMM.
+#'   (e.g., `"day_type"`). Partitions the data; a separate GLM/GLMM is fitted
+#'   within each level rather than this column entering a model as a predictor.
 #' @param status_col Character scalar. Name of the camera status column.
 #'   Default `"camera_status"`. Rows where this column is not
 #'   `"operational"` and `count_col` is `NA` are treated as outages.
@@ -54,10 +89,20 @@
 #'   compatibility with [add_counts()]. Row count equals `nrow(data)`.
 #'
 #' @references
-#'   Afrifa-Yamoah, E., Mueller, U.A., Taylor, S.M., and Fisher, A. 2020.
-#'   Missing data imputation of high-resolution temporal climate data series
-#'   using an integrated framework of expectation maximisation and long
-#'   short-term memory neural networks.
+#'   Afrifa-Yamoah, E., Taylor, S.M., Fisher, A., and Mueller, U. 2020.
+#'   Imputation of missing data from time-lapse cameras used in recreational
+#'   fishing surveys. ICES Journal of Marine Science 77(7-8):2984-2994.
+#'   \doi{10.1093/icesjms/fsaa180}
+#'   Source of the multiple-imputation framing, not of the negative binomial
+#'   model offered by `method = "glmm"`.
+#'
+#'   Hartill, B.W., Payne, G.W., Rush, N., and Bian, R. 2016. Bridging the
+#'   temporal gap: continuous and cost-effective monitoring of dynamic
+#'   recreational fisheries by web cameras and creel surveys. Fisheries
+#'   Research 183:488-497.
+#'   \doi{10.1016/j.fishres.2016.06.002}
+#'   Imputes camera outages with a generalised linear model, but a cross-site
+#'   one; it is not the source of the per-stratum model used here.
 #'
 #' @examples
 #' \dontrun{
@@ -156,7 +201,7 @@ impute_camera_counts <- function(
     cli::cli_warn(c(
       "High missingness detected in {length(high_miss_strata)} stratum{?/a}.",
       "!" = "{.val {high_miss_strata}} {?has/have} > 50% missing camera counts.",
-      "i" = "Imputation results may be unreliable (Afrifa-Yamoah 2020)."
+      "i" = "Most of the stratum's counts are model predictions, not observations."
     ))
   }
 
@@ -190,7 +235,7 @@ impute_camera_counts <- function(
     # Build GLM formula. Within a stratum, strata_col has exactly one unique
     # value so fitting count ~ strata_col would fail ("only 1 level"). Per
     # D-09/D-10 the model is intercept-only within each stratum, equivalent
-    # to the per-stratum Poisson mean (Hartill 2016).
+    # to the per-stratum Poisson mean.
     glm_formula <- stats::as.formula(paste0(count_col, " ~ 1"))
 
     if (method == "glm") {
@@ -201,7 +246,7 @@ impute_camera_counts <- function(
       )
     } else {
       # GLMM path (D-13). Within a stratum, strata_col has one level so we
-      # use an intercept-only fixed effect; random slope on site_col when
+      # use an intercept-only fixed effect; random intercept on site_col when
       # provided.
       if (!is.null(site_col)) {
         glmm_formula <- stats::as.formula(
