@@ -58,6 +58,18 @@ check that every row's section value is present in
 \code{cli_abort()} naming the bad values and listing valid section names.
 }
 
+\section{How sections are named in results}{
+
+Every sectioned estimate reports its sections in a column named after
+\code{section_col}, as a design declaring \code{strata = day_type} reports a \code{day_type}
+column. Register sections under \code{reach} and the result's first column is
+\code{reach}, so it joins back to your own section table by name. Read it as
+\code{est[[design$section_col]]} rather than assuming a fixed name (#282).
+
+The lake-wide aggregate row, where requested, is a \emph{value} in that same
+column -- the reserved name \code{.lake_total} -- not a separate column.
+}
+
 \examples{
 cal <- data.frame(
   date = as.Date(c(

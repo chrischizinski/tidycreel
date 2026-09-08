@@ -2,6 +2,43 @@
 
 ## Breaking changes
 
+* Sectioned results now report their sections under the column the design
+  registered, instead of a hardcoded `section` (#282).
+
+  `add_sections(section_col = )` lets a design name its section column whatever
+  the survey calls it, but every sectioned estimator returned a column literally
+  named `section` regardless. On a design registered with `section_col = reach`:
+
+  ```r
+  # design registered with section_col = reach
+  names(estimate_catch_rate(design))
+  # before: "section" "estimate" "se" ...
+  # after:  "reach"   "estimate" "se" ...
+  ```
+
+  The result could not be joined back to the caller's own section table by name,
+  and it disagreed with the package's own error message: `by = reach` is refused
+  with "reach is already how the result is split" while no output column was
+  named `reach`. It was also inconsistent with grouped results, which have
+  always echoed the caller's column — `by = day_type` returns a `day_type`
+  column.
+
+  This affects all seven sectioned paths: `estimate_effort()`,
+  `estimate_catch_rate()`, `estimate_harvest_rate()`, `estimate_release_rate()`,
+  and the three `estimate_total_*()`. The lake-wide aggregate row is unchanged
+  in substance — `.lake_total` is a *value* in the section column, so it now
+  appears under the caller's name too. `prop_of_lake_total` and
+  `se_prop_of_lake_total` are not caller columns and keep their fixed names.
+
+  **A design whose section column is already called `section` is completely
+  unaffected**, which is every fixture in this repo and the common case. That is
+  also why no existing test could catch this: with `section_col == "section"`
+  the hardcoded name and the correct name are the same string. The new tests use
+  a fixture that names the column something else, so they can fail.
+
+  Code that reads `est$section` on a design registered under a different name
+  should read `est[[design$section_col]]`.
+
 * `as_hybrid_svydesign()` now takes one long-form `counts` table plus a
   `frame_col` naming the column that partitions it, instead of two pre-split
   tables named `access_data` and `roving_data` (#248). The two `*_fraction`

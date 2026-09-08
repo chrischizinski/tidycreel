@@ -4625,7 +4625,7 @@ estimate_effort_sections <- function(
     if (sec %in% absent_sections) {
       # Build NA row for missing section
       section_rows[[sec]] <- tibble::tibble(
-        section = sec,
+        !!section_col := sec,
         estimate = NA_real_,
         se = NA_real_,
         se_between = NA_real_,
@@ -4670,7 +4670,7 @@ estimate_effort_sections <- function(
       prop <- prop_ratio$estimate
       prop_se <- prop_ratio$se
       section_rows[[sec]] <- tibble::tibble(
-        section = sec,
+        !!section_col := sec,
         estimate = row$estimate,
         se = row$se,
         se_between = row$se_between,
@@ -4758,7 +4758,7 @@ estimate_effort_sections <- function(
     # effort component is already on the reported scale, and
     # `expansion_in_section_var = FALSE` because the base below is the
     # between-day and within-day components only.
-    present <- as.character(result_df$section[result_df$data_available])
+    present <- as.character(result_df[[section_col]][result_df$data_available])
     lake_base_var <- lake_se_between^2 + lake_se_within^2
     lake_se <- sqrt(lake_base_var)
     if (!is.null(expansion_vec)) {
@@ -4796,7 +4796,7 @@ estimate_effort_sections <- function(
     lake_ci_upper <- lake_est + t_crit * lake_se
 
     lake_row <- tibble::tibble(
-      section = ".lake_total",
+      !!section_col := ".lake_total",
       estimate = lake_est,
       se = lake_se,
       se_between = lake_se_between,
@@ -6325,7 +6325,7 @@ estimate_catch_rate_sections <- function(
     if (sec %in% absent_sections) {
       # Build NA row — include by= columns set to NA if present
       na_row <- tibble::tibble(
-        section = sec,
+        !!section_col := sec,
         estimate = NA_real_,
         se = NA_real_,
         ci_lower = NA_real_,
@@ -6355,7 +6355,7 @@ estimate_catch_rate_sections <- function(
           conf_level = conf_level,
           estimator = estimator
         )
-        sp_df <- tibble::add_column(tibble::as_tibble(sp_df), section = sec, .before = 1)
+        sp_df <- tibble::add_column(tibble::as_tibble(sp_df), !!section_col := sec, .before = 1)
         sp_df$data_available <- TRUE
         section_rows[[sec]] <- sp_df
       } else if (!is.null(by_info$interview_vars)) {
@@ -6377,7 +6377,7 @@ estimate_catch_rate_sections <- function(
             estimator = estimator
           )
         }
-        row_df <- tibble::add_column(result$estimates, section = sec, .before = 1)
+        row_df <- tibble::add_column(result$estimates, !!section_col := sec, .before = 1)
         row_df$data_available <- TRUE
         section_rows[[sec]] <- row_df
       } else {
@@ -6395,7 +6395,7 @@ estimate_catch_rate_sections <- function(
         }
         row <- result$estimates
         section_rows[[sec]] <- tibble::tibble(
-          section = sec,
+          !!section_col := sec,
           estimate = row$estimate,
           se = row$se,
           ci_lower = row$ci_lower,
@@ -6434,7 +6434,7 @@ estimate_catch_rate_sections <- function(
     variance_method = if (identical(estimator, "regression")) "jackknife" else variance_method,
     design = design,
     conf_level = conf_level,
-    by_vars = if (!is.null(by_info$all_vars)) c("section", by_info$all_vars) else "section",
+    by_vars = if (!is.null(by_info$all_vars)) c(section_col, by_info$all_vars) else section_col,
     estimator = if (mortr_active) "mortr" else estimator,
     unit = rate_unit(design) # nolint: object_usage_linter
   )
@@ -6508,7 +6508,7 @@ estimate_harvest_rate_sections <- function(
   for (sec in registered_sections) {
     if (sec %in% absent_sections) {
       na_row <- tibble::tibble(
-        section = sec,
+        !!section_col := sec,
         estimate = NA_real_,
         se = NA_real_,
         ci_lower = NA_real_,
@@ -6538,7 +6538,7 @@ estimate_harvest_rate_sections <- function(
           conf_level = conf_level,
           estimator = estimator
         )
-        sp_df <- tibble::add_column(tibble::as_tibble(sp_df), section = sec, .before = 1)
+        sp_df <- tibble::add_column(tibble::as_tibble(sp_df), !!section_col := sec, .before = 1)
         sp_df$data_available <- TRUE
         section_rows[[sec]] <- sp_df
       } else if (!is.null(by_info$interview_vars)) {
@@ -6550,7 +6550,7 @@ estimate_harvest_rate_sections <- function(
           conf_level,
           estimator
         )
-        row_df <- tibble::add_column(result$estimates, section = sec, .before = 1)
+        row_df <- tibble::add_column(result$estimates, !!section_col := sec, .before = 1)
         row_df$data_available <- TRUE
         section_rows[[sec]] <- row_df
       } else {
@@ -6563,7 +6563,7 @@ estimate_harvest_rate_sections <- function(
         )
         row <- result$estimates
         section_rows[[sec]] <- tibble::tibble(
-          section = sec,
+          !!section_col := sec,
           estimate = row$estimate,
           se = row$se,
           ci_lower = row$ci_lower,
@@ -6592,7 +6592,7 @@ estimate_harvest_rate_sections <- function(
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
-    by_vars = if (!is.null(by_info$all_vars)) c("section", by_info$all_vars) else "section",
+    by_vars = if (!is.null(by_info$all_vars)) c(section_col, by_info$all_vars) else section_col,
     estimator = if (mortr_active) "mortr" else estimator,
     unit = rate_unit(design) # nolint: object_usage_linter
   )
@@ -6666,7 +6666,7 @@ estimate_release_rate_sections <- function(
   for (sec in registered_sections) {
     if (sec %in% absent_sections) {
       na_row <- tibble::tibble(
-        section = sec,
+        !!section_col := sec,
         estimate = NA_real_,
         se = NA_real_,
         ci_lower = NA_real_,
@@ -6697,7 +6697,7 @@ estimate_release_rate_sections <- function(
           conf_level = conf_level,
           estimator = estimator
         )
-        sp_df <- tibble::add_column(tibble::as_tibble(sp_df), section = sec, .before = 1)
+        sp_df <- tibble::add_column(tibble::as_tibble(sp_df), !!section_col := sec, .before = 1)
         sp_df$data_available <- TRUE
         section_rows[[sec]] <- sp_df
         next
@@ -6733,14 +6733,14 @@ estimate_release_rate_sections <- function(
           conf_level,
           estimator
         )
-        row_df <- tibble::add_column(result$estimates, section = sec, .before = 1)
+        row_df <- tibble::add_column(result$estimates, !!section_col := sec, .before = 1)
         row_df$data_available <- TRUE
         section_rows[[sec]] <- row_df
       } else {
         result <- estimate_cpue_total(design_rel, variance_method, conf_level, estimator) # nolint: object_usage_linter
         row <- result$estimates
         section_rows[[sec]] <- tibble::tibble(
-          section = sec,
+          !!section_col := sec,
           estimate = row$estimate,
           se = row$se,
           ci_lower = row$ci_lower,
@@ -6769,7 +6769,7 @@ estimate_release_rate_sections <- function(
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
-    by_vars = if (!is.null(by_info$all_vars)) c("section", by_info$all_vars) else "section",
+    by_vars = if (!is.null(by_info$all_vars)) c(section_col, by_info$all_vars) else section_col,
     estimator = if (mortr_active) "mortr" else estimator,
     unit = rate_unit(design) # nolint: object_usage_linter
   )

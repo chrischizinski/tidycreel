@@ -811,3 +811,72 @@ make_sectioned_species_design <- function(n_interviews = 36L) {
     catch_type = catch_type
   )))
 }
+
+# Same shape as make_sectioned_species_design(), but the section column is named
+# by the caller rather than "section". Every in-repo fixture happens to call it
+# "section", which made the hardcoded output column invisible (GH #282): with
+# section_col == "section" the bug and the correct behaviour are identical.
+# Any test of whether a result honours design$section_col needs this instead.
+make_renamed_section_design <- function(section_col_name = "reach", n_interviews = 36L) {
+  cal <- data.frame(
+    date = seq.Date(as.Date("2024-06-01"), by = "day", length.out = 8L),
+    day_type = rep_len(c("weekday", "weekend"), 8L),
+    stringsAsFactors = FALSE
+  )
+  design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+
+  sections <- c("North", "South")
+  counts <- data.frame(
+    date = rep(cal$date, each = 2L),
+    day_type = rep(cal$day_type, each = 2L),
+    effort_hours = c(15, 12, 23, 19, 18, 14, 21, 17, 45, 38, 52, 44, 48, 40, 51, 43),
+    period_hours = rep(12, 16L),
+    stringsAsFactors = FALSE
+  )
+  counts[[section_col_name]] <- rep(sections, times = 8L)
+  design <- suppressMessages(suppressWarnings( # nolint: object_usage_linter
+    add_counts(design, counts, period_length_col = period_hours)
+  ))
+
+  sec_tbl <- data.frame(x = sections, stringsAsFactors = FALSE)
+  names(sec_tbl) <- section_col_name
+  design <- suppressMessages(suppressWarnings( # nolint: object_usage_linter
+    add_sections(design, sec_tbl, section_col = tidyselect::all_of(section_col_name))
+  ))
+
+  catch_data <- build_species_catch_for_tests(
+    interview_ids = seq_len(n_interviews),
+    n_species = 2L,
+    include_harvest = TRUE
+  )
+  interviews <- build_trip_interviews_for_tests(
+    calendar = cal,
+    n_interviews = n_interviews,
+    catch_total = catch_data$interview_catch_total,
+    catch_kept = catch_data$interview_catch_kept
+  )
+  interviews[[section_col_name]] <- rep_len(sections, n_interviews)
+
+  design <- suppressMessages(suppressWarnings(add_interviews(
+    design,
+    interviews,
+    catch = catch_total,
+    effort = hours_fished,
+    harvest = catch_kept,
+    n_anglers = n_anglers,
+    trip_status = trip_status,
+    trip_duration = trip_duration,
+    n_counted = n_counted,
+    n_interviewed = n_interviewed
+  )))
+
+  suppressMessages(suppressWarnings(add_catch(
+    design,
+    add_released_rows_for_tests(catch_data$catch_df),
+    catch_uid = interview_id,
+    interview_uid = interview_id,
+    species = species,
+    count = count,
+    catch_type = catch_type
+  )))
+}

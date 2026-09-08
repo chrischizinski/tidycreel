@@ -2178,6 +2178,16 @@ add_counts <- function(
 #' `design$sections[[design$section_col]]`. An unrecognised value produces a
 #' `cli_abort()` naming the bad values and listing valid section names.
 #'
+#' @section How sections are named in results:
+#' Every sectioned estimate reports its sections in a column named after
+#' `section_col`, as a design declaring `strata = day_type` reports a `day_type`
+#' column. Register sections under `reach` and the result's first column is
+#' `reach`, so it joins back to your own section table by name. Read it as
+#' `est[[design$section_col]]` rather than assuming a fixed name (#282).
+#'
+#' The lake-wide aggregate row, where requested, is a *value* in that same
+#' column -- the reserved name `.lake_total` -- not a separate column.
+#'
 #' @seealso [creel_design()], [add_counts()], [add_interviews()]
 #'
 #' @examples
