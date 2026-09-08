@@ -184,6 +184,82 @@
 
 ## Bug fixes
 
+* `estimator = "regression"` now runs the regression on a `by = species`
+  request, instead of silently returning ratio-of-means (#290).
+
+  The species dispatch sits above the regression route, so a species request
+  reached `estimate_cpue_species()`, whose only branches were ratio-of-means and
+  mean-of-ratios. `"regression"` fell through to ratio-of-means. No error, no
+  warning, and a believable number under an estimator the caller did not ask
+  for. It affected flat designs as well as sectioned ones, which is what
+  separated it from #285.
+
+  ```r
+  reg <- estimate_catch_rate(design, by = species, estimator = "regression")
+  rom <- estimate_catch_rate(design, by = species, estimator = "ratio-of-means")
+  # before: identical estimates, method "ratio-of-means-cpue-species"
+  # after:  method "regression-cpue-species", and the estimates differ
+  ```
+
+  The species form is CPUE₃ restricted to one species: the slope of that
+  species' catch on the same angler effort, forced through the origin, with the
+  same leave-one-out jackknife SE. That is Petrere et al. (2010) eq. 3,
+  `sum(C_i f_i) / sum(f_i^2)`, computed on the trip set the call already uses.
+  Both the flat and the sectioned species paths route through it, so a sectioned
+  request reports `"regression-cpue-sections"` with per-section rows.
+
+  **Zero-catch interviews are kept by default.** An interview that caught none
+  of the target species contributes a `0` at positive effort, and it is a real
+  observation: Petrere et al. evaluated all three estimators with zeros present,
+  using a delta distribution with a 10% probability of zero precisely because
+  "zero catches are fairly common". Dropping them would change the estimand from
+  the catch rate of that species per angler-hour to the rate among anglers who
+  caught it.
+
+  `targeted = FALSE` still makes that second choice available, and **on the
+  regression species path only** the exclusion is applied per species: a trip
+  that caught none of the species being estimated is dropped, whichever other
+  species it caught, and the warning names the species and the percentage
+  excluded.
+
+  It is confined to the regression form on purpose. `targeted` has always been
+  read inside the mean-of-ratios branch, which tests the design's *total* catch
+  column and is therefore usually inert on a species request — on the release
+  fixture no interview has zero total catch while 20 of 22 have zero bass.
+  Widening the per-species test to the other estimators would move numbers
+  existing ratio-of-means callers already get, so it is filed as #304 rather
+  than changed here.
+
+  This replaces the refusal added alongside #285, which was a deliberate
+  placeholder while the modelling question was open.
+
+* Corrected the Petrere et al. (2010) reference in two more places (#290).
+
+  #233 fixed this citation in one block of `simulate_creel_data()` and missed
+  two others — a second block in the same file, and the `compare_cpue_estimators()`
+  documentation. All three gave `Fish. Res. 106: 325-333`; the paper is
+  *Braz. J. Biol.* 70: 483-491, [10.1590/S1519-69842010005000010](https://doi.org/10.1590/S1519-69842010005000010).
+  A grep for the journal name, rather than for the sentence, would have caught
+  all three at once.
+
+* `@param targeted` said zero-**effort** trips were excluded; the code excludes
+  zero-**catch** trips (#290).
+
+* A species-level regression request was held to the ratio-estimation `n >= 10`
+  floor (#290). That floor is a ratio rule; the regression slope has its own
+  "fewer than 3 interviews" rule, and the ungrouped regression path was never
+  held to the ratio one. The species path therefore refused a defined estimator
+  with a message about a different one — reachable via `use_trips = "all"`,
+  where the ungrouped regression ran at `n = 5` while the species form aborted.
+  The floor still applies to the estimators it belongs to.
+
+* A species-level regression result reported `variance_method` as the caller's
+  `variance` argument rather than `"jackknife"` (#290). The slope's SE is a
+  leave-one-out jackknife computed inside the regression internals, which never
+  consult `variance`; the ungrouped and sectioned regression paths already
+  reported it correctly, so only the species path named a variance that had not
+  run — the same class of mislabel as #284.
+
 * `by =` no longer accepts the interview id or an internal `.`-prefixed column
   as a grouping variable (#293).
 

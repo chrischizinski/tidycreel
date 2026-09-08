@@ -87,8 +87,9 @@ catch_prop <- simulate_creel_catch(
 
 }
 \references{
-Petrere, M. et al. (2010). Catch-per-unit-effort: which estimator is best?
-Fish. Res. 106: 325–333.
+Petrere, M. Jr., Giacomini, H.C. & De Marco, P. Jr. (2010).
+Catch-per-unit-effort: which estimator is best? Braz. J. Biol. 70: 483–491.
+\doi{10.1590/S1519-69842010005000010}
 }
 \seealso{
 \code{\link{simulate_creel_data}}

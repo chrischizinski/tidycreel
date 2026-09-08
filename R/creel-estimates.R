@@ -911,8 +911,9 @@ estimate_effort <- function(
 #'   standard errors are based on fewer points than the unsectioned form and are
 #'   correspondingly less stable. This is a property of sectioning rather than of
 #'   the estimator; a section with fewer than three interviews cannot be fitted
-#'   at all. \code{species} in \code{by} has no regression form and is refused
-#'   rather than silently estimated by another estimator.
+#'   at all. \code{species} in \code{by} fits one regression per species, on
+#'   that species' catch against the same angler effort, with zero-catch
+#'   interviews retained by default.
 #'
 #' @return A creel_estimates S3 object (list) with components: estimates
 #'   (tibble with estimate, se, ci_lower, ci_upper, n columns, plus grouping
@@ -922,9 +923,9 @@ estimate_effort <- function(
 #'   \code{"mean-of-ratios-truncated-cpue"} and \code{"regression-cpue"}, each
 #'   gaining a \code{"-sections"} suffix on a sectioned design. The
 #'   \code{"-species"} suffix, and the \code{"-per-angler"} suffix when
-#'   normalized, apply to the ratio-of-means and mean-of-ratios names only:
-#'   regression has no species form -- the combination is refused, so
-#'   \code{"regression-cpue-species"} is not a value this returns),
+#'   normalized, mark a species-level and an angler-normalized result
+#'   respectively; \code{"regression-cpue-species"} is returned for a species
+#'   request under \code{estimator = "regression"}),
 #'   variance_method (character: the variance that actually ran, which is the
 #'   \code{variance} argument for every estimator except \code{"regression"} --
 #'   the regression slope carries a leave-one-out jackknife SE and reports
@@ -1772,19 +1773,20 @@ estimate_catch_rate <- function(
       conf_level,
       missing_sections,
       dispatch_estimator,
-      force_origin
+      force_origin,
+      targeted
     ))
   }
 
   # Detect species-level grouping
   by_info <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
 
-  # The species dispatch below sits above the regression route, so a species
-  # request silently won and returned ratio-of-means numbers under a regression
-  # estimator (GH #290). Refused rather than reordered: the species estimator has
-  # no regression form to route to. Only the catch rate reaches this -- the
-  # harvest and release rates refuse "regression" at validation.
-  refuse_species_regression(by_info$species_var, estimator) # nolint: object_usage_linter
+  # The species dispatch sits above the regression route, so a species request
+  # used to win and return ratio-of-means numbers under a regression estimator
+  # (GH #290). estimate_cpue_species() now carries the regression form itself,
+  # so dispatch order no longer decides the estimator. Only the catch rate
+  # reaches this -- the harvest and release rates refuse "regression" at
+  # validation.
 
   # Route to species-level or standard estimation
   if (!is.null(by_info$species_var)) {
@@ -1804,10 +1806,14 @@ estimate_catch_rate <- function(
       interview_by_vars = by_info$interview_vars,
       variance_method = variance,
       conf_level = conf_level,
-      estimator = estimator
+      estimator = estimator,
+      force_origin = force_origin,
+      targeted = targeted
     )
 
-    method_label <- if (estimator == "mor") {
+    method_label <- if (estimator == "regression") {
+      "regression-cpue-species"
+    } else if (estimator == "mor") {
       if (mortr_active) "mean-of-ratios-truncated-cpue-species" else "mean-of-ratios-cpue-species"
     } else {
       "ratio-of-means-cpue-species"
@@ -1832,11 +1838,22 @@ estimate_catch_rate <- function(
       ))
     }
 
+    # The regression slope's SE is a leave-one-out jackknife computed inside the
+    # regression internals; `variance` is never consulted there. Recording the
+    # caller's Taylor default would name a variance that did not run -- the #284
+    # class of mislabel, and the ungrouped and sectioned regression paths
+    # already report "jackknife".
+    species_variance_method <- if (identical(estimator, "regression")) {
+      "jackknife"
+    } else {
+      variance
+    }
+
     return(new_creel_estimates(
       # nolint: object_usage_linter
       estimates = tibble::as_tibble(estimates_df),
       method = method_label,
-      variance_method = variance,
+      variance_method = species_variance_method,
       design = design,
       conf_level = conf_level,
       by_vars = by_info$all_vars,
@@ -5852,7 +5869,9 @@ estimate_cpue_species <- function(
   variance_method,
   conf_level,
   estimator = "ratio-of-means",
-  validate = TRUE
+  validate = TRUE,
+  force_origin = TRUE,
+  targeted = TRUE
 ) {
   all_species <- sort(unique(design[["catch"]][[species_col]]))
 
@@ -5863,6 +5882,42 @@ estimate_cpue_species <- function(
 
     # Build per-species interview data (zero-filled)
     sp_data <- make_species_catch_for_interviews(design, sp, "caught") # nolint: object_usage_linter
+
+    # targeted = FALSE drops the interviews that caught none of THIS species.
+    # It is a restriction of the domain, applied before estimation and
+    # independent of which estimator runs: the result is then the rate among
+    # trips that caught the species, not the fishery-wide rate.
+    #
+    # Note this is per species, not the zero-TOTAL-catch test the mean-of-ratios
+    # branch applies upstream -- that one is inert here, because an interview
+    # that caught something is non-zero however little of this species it holds
+    # (GH #304).
+    # Confined to the regression form deliberately. Widening it to every
+    # estimator would silently move numbers that ratio-of-means callers already
+    # get: `targeted` has always been read inside the mean-of-ratios branch
+    # upstream, which tests TOTAL catch and is inert on a species request.
+    # Whether the other estimators should adopt the per-species test is GH #304.
+    if (!targeted && identical(estimator, "regression")) {
+      n_before <- nrow(sp_data)
+      zero_rows <- sp_data[[".species_count"]] == 0 | is.na(sp_data[[".species_count"]])
+      n_zero <- sum(zero_rows, na.rm = TRUE)
+      sp_data <- sp_data[!zero_rows, , drop = FALSE]
+      if (n_zero > 0L) {
+        pct_excluded <- round(100 * n_zero / n_before) # nolint: object_usage_linter
+        cli::cli_warn(c(
+          "{.val {sp}}: {n_zero} zero-catch trip{?s} excluded ({pct_excluded}% of trips).",
+          "i" = "The estimate is the rate among trips that caught {.val {sp}}.",
+          "i" = "Set {.code targeted = TRUE} to include zero-catch trips."
+        ))
+      }
+      if (nrow(sp_data) == 0L) {
+        cli::cli_abort(c(
+          "No trips remain for {.val {sp}} after zero-catch exclusion.",
+          "x" = "No interview caught {.val {sp}} with {.code targeted = FALSE}.",
+          "i" = "Set {.code targeted = TRUE} or check catch data."
+        ))
+      }
+    }
 
     # Modify a temporary design with .species_count as catch column
     design_sp <- design
@@ -5882,11 +5937,32 @@ estimate_cpue_species <- function(
       strata = strata_formula
     )
 
-    if (validate) {
+    # The n >= 10 floor is a ratio-estimation rule, so it does not apply to the
+    # regression slope, which carries its own "fewer than 3 interviews" rule
+    # inside the regression internals. Applying it here refused a defined
+    # estimator with a message about a different one: on `use_trips = "all"`,
+    # which bypasses the complete-trips floor upstream, the ungrouped
+    # regression ran at n = 5 while the species form aborted.
+    if (validate && !identical(estimator, "regression")) {
       validate_ratio_sample_size(design_sp, interview_by_vars, type = "cpue") # nolint: object_usage_linter
     }
 
-    if (is.null(interview_by_vars)) {
+    # Regression (CPUE3) has a species form: it is the same slope through the
+    # origin, fitted on this species' zero-filled counts against the same
+    # angler effort. Before GH #290 this fell through to ratio-of-means and
+    # returned a believable number under the wrong estimator.
+    if (identical(estimator, "regression")) {
+      result <- if (is.null(interview_by_vars)) {
+        estimate_cpue_regression_total(design_sp, conf_level, force_origin) # nolint: object_usage_linter
+      } else {
+        estimate_cpue_reg_grouped( # nolint: object_usage_linter
+          design_sp,
+          interview_by_vars,
+          conf_level,
+          force_origin
+        )
+      }
+    } else if (is.null(interview_by_vars)) {
       result <- estimate_cpue_total(design_sp, variance_method, conf_level, estimator) # nolint: object_usage_linter
     } else {
       result <- estimate_cpue_grouped(
@@ -6425,7 +6501,8 @@ estimate_catch_rate_sections <- function(
   conf_level,
   missing_sections,
   estimator,
-  force_origin = TRUE
+  force_origin = TRUE,
+  targeted = TRUE
 ) {
   # `estimator` arrives as the caller asked for it, so that the label below can
   # say whether truncation was mandatory. Everything downstream branches on the
@@ -6472,14 +6549,9 @@ estimate_catch_rate_sections <- function(
     error_call = rlang::caller_env()
   )
 
-  # Same refusal the flat path makes, for the same reason: the species branch
-  # below has no regression form, and answering a regression request with
-  # ratio-of-means numbers is what this replaces (GH #290).
-  refuse_species_regression( # nolint: object_usage_linter
-    by_info$species_var,
-    estimator,
-    error_call = rlang::caller_env()
-  )
+  # The species branch below routes regression through estimate_cpue_species(),
+  # the same worker the flat path uses, so a sectioned species request gets the
+  # estimator it asked for (GH #290).
 
   section_rows <- vector("list", length(registered_sections))
   names(section_rows) <- registered_sections
@@ -6516,7 +6588,9 @@ estimate_catch_rate_sections <- function(
           interview_by_vars = by_info$interview_vars,
           variance_method = variance_method,
           conf_level = conf_level,
-          estimator = estimator
+          estimator = estimator,
+          force_origin = force_origin,
+          targeted = targeted
         )
         sp_df <- tibble::add_column(tibble::as_tibble(sp_df), !!section_col := sec, .before = 1)
         sp_df$data_available <- TRUE
