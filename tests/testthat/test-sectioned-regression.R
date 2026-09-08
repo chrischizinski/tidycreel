@@ -164,33 +164,130 @@ test_that("a sectioned regression result reports the variance method that ran", 
   expect_identical(rom$variance_method, "taylor")
 })
 
-# ---- the species request is refused, not silently substituted -------------
+# ---- the species request runs the regression, not a substitute -------------
 
-test_that("species plus regression is refused on a flat design", {
+test_that("species plus regression runs the regression on a flat design (#290)", {
   design <- sec_reg_design()
   flat <- design
   flat[["sections"]] <- NULL
 
   # GH #290, and NOT a sections defect: the species dispatch sits above the
-  # regression route on every design. Before this, the call returned
-  # ratio-of-means numbers labelled "ratio-of-means-cpue-species" while the
-  # caller had asked for regression.
-  expect_error(
-    quiet_reg(estimate_catch_rate, flat, by = species, estimator = "regression"),
-    class = "creel_error_species_regression"
-  )
+  # regression route on every design, so the call returned ratio-of-means
+  # numbers labelled "ratio-of-means-cpue-species" while the caller had asked
+  # for regression. The estimate differing from ROM is the whole assertion --
+  # a label check alone would pass against the old code with a renamed method.
+  reg <- quiet_reg(estimate_catch_rate, flat, by = species, estimator = "regression")
+  rom <- quiet_reg(estimate_catch_rate, flat, by = species, estimator = "ratio-of-means")
+
+  expect_identical(reg$method, "regression-cpue-species")
+  expect_false(isTRUE(all.equal(reg$estimates$estimate, rom$estimates$estimate)))
 })
 
-test_that("species plus regression is refused on a sectioned design", {
+test_that("the species regression is Petrere eq. 3 on the trips actually used (#290)", {
+  # Pins the value against the formula rather than against itself: cpue3 is
+  # sum(C_i f_i) / sum(f_i^2), the through-origin slope. Computed here on the
+  # same trip set the estimator uses, so a change to either the formula or the
+  # trip set fails this.
+  design <- sec_reg_design()
+  flat <- design
+  flat[["sections"]] <- NULL
+
+  reg <- quiet_reg(estimate_catch_rate, flat, by = species, estimator = "regression")
+
+  used <- flat
+  status_col <- flat$trip_status_col
+  if (!is.null(status_col)) {
+    used <- rebuild_interview_survey(
+      flat,
+      flat$interviews[flat$interviews[[status_col]] == "complete", , drop = FALSE]
+    )
+  }
+
+  for (sp in reg$estimates$species) {
+    sp_data <- tidycreel:::make_species_catch_for_interviews(used, sp, "caught")
+    catch <- sp_data[[".species_count"]]
+    effort <- sp_data[[used$angler_effort_col]]
+    keep <- effort > 0
+    expect_equal(
+      reg$estimates$estimate[reg$estimates$species == sp],
+      sum(catch[keep] * effort[keep]) / sum(effort[keep]^2),
+      tolerance = 1e-8
+    )
+  }
+})
+
+test_that("species plus regression runs the regression on a sectioned design (#290)", {
   design <- sec_reg_design()
 
-  # The sections path resolves its own `by=`, so the refusal has to be made
-  # there too. Fixing only the flat path would leave the sectioned species
-  # request silently wrong inside the code path #285 adds.
-  expect_error(
-    quiet_reg(estimate_catch_rate, design, by = species, estimator = "regression"),
-    class = "creel_error_species_regression"
+  # The sections path resolves its own `by=` and calls the same species worker,
+  # so fixing only the flat path would leave the sectioned species request
+  # silently wrong inside the code path #285 adds.
+  reg <- quiet_reg(estimate_catch_rate, design, by = species, estimator = "regression")
+  rom <- quiet_reg(estimate_catch_rate, design, by = species, estimator = "ratio-of-means")
+
+  expect_identical(reg$method, "regression-cpue-sections")
+  expect_false(isTRUE(all.equal(reg$estimates$estimate, rom$estimates$estimate)))
+  expect_true(design$section_col %in% names(reg$estimates))
+})
+
+test_that("targeted = FALSE drops this species' zeros, not zero-total-catch trips (#290)", {
+  # The estimand switches to the rate among trips that caught the species, so
+  # the exclusion has to be per species. The mean-of-ratios branch tests total
+  # catch instead and is inert here -- filed as #304 -- which is why this test
+  # asserts the count dropped, not merely that a warning appeared.
+  design <- sec_reg_design()
+  flat <- design
+  flat[["sections"]] <- NULL
+
+  status_col <- flat$trip_status_col
+  used <- if (is.null(status_col)) {
+    flat
+  } else {
+    rebuild_interview_survey(
+      flat,
+      flat$interviews[flat$interviews[[status_col]] == "complete", , drop = FALSE]
+    )
+  }
+  sp <- sort(unique(flat[["catch"]][[flat$catch_species_col]]))[[1]]
+  sp_data <- tidycreel:::make_species_catch_for_interviews(used, sp, "caught")
+  n_zero_species <- sum(sp_data[[".species_count"]] == 0)
+
+  # The premise: this species has zeros that a total-catch test would not find.
+  expect_gt(n_zero_species, 0L)
+
+  warnings <- character(0)
+  withCallingHandlers(
+    suppressMessages(
+      estimate_catch_rate(flat, by = species, estimator = "regression", targeted = FALSE)
+    ),
+    warning = function(w) {
+      warnings <<- c(warnings, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    }
   )
+
+  hit <- grep(paste0(sp, ".*zero-catch trip"), warnings, value = TRUE)
+  expect_length(hit, 1L)
+  expect_match(hit, paste0("\\b", n_zero_species, " zero-catch trip"))
+})
+
+test_that("targeted = TRUE keeps every interview for the species (#290)", {
+  # The default must not quietly drop anything: zeros are observations, and
+  # Petrere et al. (2010) evaluated cpue3 with zeros present (delta
+  # distribution, delta = 0.1). This is the control for the test above.
+  design <- sec_reg_design()
+  flat <- design
+  flat[["sections"]] <- NULL
+
+  reg <- quiet_reg(estimate_catch_rate, flat, by = species, estimator = "regression")
+
+  status_col <- flat$trip_status_col
+  n_used <- if (is.null(status_col)) {
+    nrow(flat$interviews)
+  } else {
+    sum(flat$interviews[[status_col]] == "complete")
+  }
+  expect_true(all(reg$estimates$n == n_used))
 })
 
 test_that("species still works with the estimators that have a species form", {

@@ -100,9 +100,9 @@ and the shape of the result. The base names are
 \code{"mean-of-ratios-truncated-cpue"} and \code{"regression-cpue"}, each
 gaining a \code{"-sections"} suffix on a sectioned design. The
 \code{"-species"} suffix, and the \code{"-per-angler"} suffix when
-normalized, apply to the ratio-of-means and mean-of-ratios names only:
-regression has no species form -- the combination is refused, so
-\code{"regression-cpue-species"} is not a value this returns),
+normalized, mark a species-level and an angler-normalized result
+respectively; \code{"regression-cpue-species"} is returned for a species
+request under \code{estimator = "regression"}),
 variance_method (character: the variance that actually ran, which is the
 \code{variance} argument for every estimator except \code{"regression"} --
 the regression slope carries a leave-one-out jackknife SE and reports
@@ -190,8 +190,9 @@ that section rather than on the whole sample, so section-level regression
 standard errors are based on fewer points than the unsectioned form and are
 correspondingly less stable. This is a property of sectioning rather than of
 the estimator; a section with fewer than three interviews cannot be fitted
-at all. \code{species} in \code{by} has no regression form and is refused
-rather than silently estimated by another estimator.
+at all. \code{species} in \code{by} fits one regression per species, on
+that species' catch against the same angler effort, with zero-catch
+interviews retained by default.
 }
 \section{Package Options}{
 

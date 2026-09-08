@@ -70,8 +70,9 @@ compare_cpue_estimators(design)
 
 }
 \references{
-Petrere, M. et al. (2010). Catch-per-unit-effort: which estimator is best?
-\emph{Fish. Res.} 106: 325–333.
+Petrere, M. Jr., Giacomini, H.C. & De Marco, P. Jr. (2010).
+Catch-per-unit-effort: which estimator is best? \emph{Braz. J. Biol.}
+70: 483–491. \doi{10.1590/S1519-69842010005000010}
 }
 \seealso{
 \code{\link{estimate_catch_rate}}
