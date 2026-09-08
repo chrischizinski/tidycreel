@@ -5,7 +5,9 @@
 #'
 #' @description
 #' Returns a data frame of all surveys available on the connected REST API.
-#' Not supported for CSV or SQL Server connections.
+#' Not supported for CSV connections, and inapplicable to database
+#' connections: those address one set of tables rather than a catalogue of
+#' surveys, and abort with class `creel_error_discovery_unavailable`.
 #'
 #' @param conn A `creel_connection` object created by [creel_connect_api()].
 #' @param ... Reserved for future arguments.

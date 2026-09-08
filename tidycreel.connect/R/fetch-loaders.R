@@ -53,6 +53,43 @@
   as.data.frame(DBI::dbReadTable(conn$con, tbl_name), stringsAsFactors = FALSE)
 }
 
+# Internal: render a database time-typed column back to a clock label
+#
+# The CSV reader keeps a count time as text by forcing the column to character
+# before readr can parse it, because reinterpreting the label is the thing this
+# column must not do (GH #129). A database gives no such choice: a TIME column
+# arrives already typed, and duckdb hands it back as difftime, where
+# as.character() yields the seconds since midnight -- "59400" for 16:30. That
+# is not a mangled label, it is a different quantity, and .coerce_count_time()
+# would have accepted it silently.
+#
+# Rendered rather than passed through, and to the shortest form that keeps the
+# value: seconds appear only when they are not zero, so a whole-minute time
+# reads "16:30" as the source wrote it rather than "16:30:00" (GH #185).
+.format_db_time <- function(x) {
+  if (inherits(x, "difftime")) {
+    secs <- as.numeric(x, units = "secs")
+  } else if (inherits(x, c("POSIXct", "POSIXlt"))) {
+    lt <- as.POSIXlt(x)
+    secs <- lt$hour * 3600 + lt$min * 60 + lt$sec
+  } else {
+    return(as.character(x))
+  }
+  out <- ifelse(
+    is.na(secs),
+    NA_character_,
+    sprintf("%02d:%02d", secs %/% 3600, (secs %% 3600) %/% 60)
+  )
+  has_secs <- !is.na(secs) & (secs %% 60 != 0)
+  out[has_secs] <- sprintf(
+    "%02d:%02d:%02d",
+    secs[has_secs] %/% 3600,
+    (secs[has_secs] %% 3600) %/% 60,
+    round(secs[has_secs] %% 60)
+  )
+  out
+}
+
 # Internal: the canonical <- schema-field map both lengths tables use
 #
 # Identical for harvest and release: the two differ by which table they read,
@@ -690,11 +727,11 @@ fetch_counts.creel_connection_dbi <- function(conn, ...) {
   if ("bank_anglers"  %in% names(df)) df$bank_anglers  <- .coerce_numeric(df$bank_anglers, "bank_anglers")
   if ("angler_boats"  %in% names(df)) df$angler_boats  <- .coerce_numeric(df$angler_boats, "angler_boats")
   if ("non_ang_boats" %in% names(df)) df$non_ang_boats <- .coerce_numeric(df$non_ang_boats, "non_ang_boats")
-  # A database may hand back a count time as a time-typed column, which prints
-  # and coerces to "16:30:00" rather than the label the source stored. Made
-  # character before .coerce_count_time() sees it, for the reason the CSV
-  # reader forces the same column to character (GH #129).
-  if ("count_time" %in% names(df)) df$count_time <- as.character(df$count_time)
+  # A database hands back a TIME column already typed, so unlike the CSV reader
+  # there is no chance to keep it as text. Rendered to a clock label before
+  # .coerce_count_time() sees it -- that function is as.character(), which on
+  # the difftime duckdb returns would store "59400" (GH #129, GH #185).
+  if ("count_time" %in% names(df)) df$count_time <- .format_db_time(df$count_time)
   df <- .coerce_count_time(df)
   .warn_repeat_counts_no_time(df, conn$schema)
   validate_fetch_counts(df) # nolint: object_usage_linter

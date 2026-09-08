@@ -22,6 +22,17 @@ make_dbi_test_tables <- function() {
       non_ang_boats = c(0L, 0L),
       stringsAsFactors = FALSE
     ),
+    # Written as a genuine TIME column by make_dbi_conn(), so the count-time
+    # path is exercised on the type a database actually returns rather than on
+    # a string that never leaves R.
+    counts_timed = data.frame(
+      date = as.Date(c("2024-06-01", "2024-06-01")),
+      count_time = as.difftime(c(59400, 34200), units = "secs"),
+      bank_anglers  = c(12L, 8L),
+      angler_boats  = c(0L, 0L),
+      non_ang_boats = c(0L, 0L),
+      stringsAsFactors = FALSE
+    ),
     catch = data.frame(
       catch_uid = 1L:2L,
       interview_uid = c(1L, 1L),

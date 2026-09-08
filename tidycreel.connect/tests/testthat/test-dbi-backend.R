@@ -133,6 +133,42 @@ test_that("DBI-BACKEND-07: lengths_table serves both when neither is named", {
   expect_equal(nrow(suppressMessages(fetch_release_lengths(conn))), 2L)
 })
 
+test_that("DBI-BACKEND-11: a TIME column comes back as a clock label, not seconds", {
+  skip_if_no_duckdb()
+  # The CSV reader keeps a count time as text by forcing the column to
+  # character before readr parses it (GH #129). A database gives no such
+  # chance: duckdb returns TIME as difftime, where as.character() yields the
+  # seconds since midnight. .coerce_count_time() is as.character(), so without
+  # a render step the frame would carry "59400" where the source wrote 16:30 --
+  # not a mangled label but a different quantity, accepted silently.
+  conn <- creel_connect(
+    make_dbi_conn(),
+    make_dbi_schema(counts_table = "counts_timed", count_time_col = "count_time")
+  )
+  df <- suppressMessages(fetch_counts(conn))
+
+  expect_type(df$count_time, "character")
+  expect_equal(sort(df$count_time), c("09:30", "16:30"))
+  # The failure this guards is specific and would otherwise look plausible.
+  expect_false(any(grepl("^[0-9]{4,}$", df$count_time)))
+})
+
+test_that("DBI-BACKEND-12: a non-zero seconds time keeps its seconds", {
+  skip_if_no_duckdb()
+  # Rendering to "HH:MM" must not round a real value away. Seconds appear only
+  # when they are not zero, so a whole-minute time reads as the source wrote it
+  # and a 16:30:45 count keeps its 45.
+  tables <- make_dbi_test_tables()
+  tables$counts_timed$count_time <- as.difftime(c(59445, 34200), units = "secs")
+  conn <- creel_connect(
+    make_dbi_conn(tables),
+    make_dbi_schema(counts_table = "counts_timed", count_time_col = "count_time")
+  )
+  df <- suppressMessages(fetch_counts(conn))
+  expect_true("16:30:45" %in% df$count_time)
+  expect_true("09:30" %in% df$count_time)
+})
+
 # ---- class ------------------------------------------------------------------
 
 test_that("DBI-BACKEND-08: a DBI connection carries both the new and old class", {
