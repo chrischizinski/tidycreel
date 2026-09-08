@@ -351,6 +351,85 @@ test_that("creel_n_camera errors on cv_target outside (0, 1]", {
 })
 
 
+# GH #295: creel_n_effort() and creel_n_camera() are one computation ----
+
+test_that("creel_n_effort and creel_n_camera agree on every input", {
+  # These two are the same stratified allocation reached through two
+  # vocabularies (sampling days vs camera-days). Before #295 they were separate
+  # copies of the same 37 lines, and they had already drifted once: #234 removed
+  # a warning that existed in the camera copy only. They now share one internal,
+  # and this test is what fails if someone re-copies the body and edits one.
+  set.seed(295L)
+  for (i in seq_len(50L)) {
+    k <- sample.int(4L, 1L)
+    n_h <- stats::setNames(sample.int(400L, k, replace = TRUE), paste0("s", seq_len(k))) # nolint: object_name_linter
+    ybar <- stats::runif(k, 0, 500)
+    s2 <- stats::runif(k, 0, 1e5)
+    cv <- stats::runif(1, 0.01, 1)
+    expect_identical(
+      creel_n_effort(cv, n_h, ybar, s2),
+      creel_n_camera(cv, n_h, ybar, s2),
+      info = paste("iteration", i)
+    )
+  }
+})
+
+test_that("both entry points refuse the same inputs with the same message", {
+  # Validation moved into the shared internal. The checkmate assertions name the
+  # argument, and the argument names are identical in both entry points and in
+  # the internal, so the message a caller sees must not have changed.
+  bad <- list(cv_target = 0.2, N_h = c(65, 28), ybar_h = c(15, 20), s2_h = c(25, 40))
+  msg_effort <- conditionMessage(tryCatch(do.call(creel_n_effort, bad), error = function(e) e))
+  msg_camera <- conditionMessage(tryCatch(do.call(creel_n_camera, bad), error = function(e) e))
+  expect_identical(msg_effort, msg_camera)
+  expect_match(msg_effort, "N_h")
+})
+
+test_that("the shared allocation is pinned to known values", {
+  # The agreement test above is TAUTOLOGICAL for arithmetic: both entry points
+  # now call one internal, so a wrong formula, a wrong rounding rule or a wrong
+  # element order returns the same wrong answer to both and it still passes.
+  # These pins are what actually guard the extraction. Spanning several shapes
+  # rather than one point, because a single case cannot distinguish an error
+  # that only shows up with more strata, a tighter CV, or one stratum.
+  #
+  # Values were computed from the implementation after it was verified equal to
+  # the pre-#295 one over 2000 random inputs, so they are a regression baseline
+  # rather than a restatement of whatever the code currently does.
+  cases <- list(
+    list(cv = 0.20, N_h = c(weekday = 65, weekend = 28), ybar_h = c(50, 60), s2_h = c(400, 500),
+         want = c(weekday = 3L, weekend = 2L, total = 4L, allocated = 5L)),
+    list(cv = 0.05, N_h = c(weekday = 65, weekend = 28), ybar_h = c(50, 60), s2_h = c(400, 500),
+         want = c(weekday = 26L, weekend = 12L, total = 37L, allocated = 38L)),
+    list(cv = 0.20, N_h = c(all_days = 93), ybar_h = 15, s2_h = 25,
+         want = c(all_days = 3L, total = 3L, allocated = 3L)),
+    list(cv = 0.15, N_h = c(a = 10, b = 200, c = 45), ybar_h = c(5, 80, 30), s2_h = c(9, 2500, 400),
+         want = c(a = 1L, b = 14L, c = 3L, total = 17L, allocated = 18L)),
+    list(cv = 0.30, N_h = c(weekday = 120, weekend = 48), ybar_h = c(15, 20), s2_h = c(625, 900),
+         want = c(weekday = 18L, weekend = 8L, total = 25L, allocated = 26L)),
+    # The documented creel_n_camera() example.
+    list(cv = 0.20, N_h = c(weekday = 65, weekend = 28), ybar_h = c(15, 20), s2_h = c(625, 900),
+         want = c(weekday = 27L, weekend = 12L, total = 38L, allocated = 39L))
+  )
+
+  for (i in seq_along(cases)) {
+    x <- cases[[i]]
+    expect_identical(
+      creel_n_effort(x$cv, x$N_h, x$ybar_h, x$s2_h),
+      x$want,
+      info = paste("case", i)
+    )
+  }
+
+  # `allocated` exceeds `total` wherever per-stratum ceiling rounds up more than
+  # once (GH #195). Four of the six cases above do; asserting it here keeps the
+  # distinction from being quietly collapsed by a future edit.
+  multi <- vapply(cases, function(x) length(x$N_h) > 1L, logical(1))
+  gaps <- vapply(cases[multi], function(x) x$want[["allocated"]] - x$want[["total"]], numeric(1))
+  expect_true(any(gaps > 0))
+})
+
+
 # POWER-06: optimal_n ----
 
 test_that("optimal_n returns named integer vector with total element", {
