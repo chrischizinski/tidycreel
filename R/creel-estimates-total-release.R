@@ -13,7 +13,13 @@
 #'   \code{catch_type = "released"}.
 #' @param by Optional tidy selector for grouping variables. Accepts bare column
 #'   names (e.g., \code{by = day_type}, \code{by = species}), multiple columns,
-#'   or tidyselect helpers.
+#'   or tidyselect helpers. Two kinds of column are not groupings and are
+#'   refused: the interview id registered by [add_catch()], which holds one
+#'   value per interview and so leaves no within-group variance to estimate,
+#'   and columns the package derived rather than the user supplying, such as
+#'   `.angler_effort`. A wildcard selector drops the derived columns silently;
+#'   naming one is an error. A column of your own is never treated as derived,
+#'   whatever it is called.
 #' @param variance Character string specifying variance estimation method:
 #'   "taylor" (default), "bootstrap", or "jackknife". Applied to BOTH effort
 #'   and release rate estimation, then combined via delta method.
