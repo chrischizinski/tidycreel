@@ -307,7 +307,14 @@ new_creel_schema <- function(survey_type, mappings) {
 #' @param interviews_table Name of the interviews table in the data source.
 #' @param counts_table Name of the counts table in the data source.
 #' @param catch_table Name of the catch table in the data source.
-#' @param lengths_table Name of the lengths table in the data source.
+#' @param lengths_table Name of the lengths table in the data source. Used for
+#'   both the harvest and release length fetches unless one of the two below
+#'   names its own table.
+#' @param harvest_lengths_table Name of the harvest lengths table, when the
+#'   source keeps harvest and release lengths in separate tables. Falls back to
+#'   `lengths_table` when not given.
+#' @param release_lengths_table Name of the release lengths table, on the same
+#'   terms as `harvest_lengths_table`.
 #' @param date_col Column name for survey date.
 #' @param strata_cols Stratum columns to carry through from the source, as a
 #'   named character vector whose names are the columns the design refers to and
@@ -439,7 +446,16 @@ creel_schema <- function(
   circuit_col = NULL,
   angler_method_col = NULL,
   species_sought_col = NULL,
-  refused_col = NULL
+  refused_col = NULL,
+  # Appended rather than placed beside `lengths_table`, where they read more
+  # naturally: this is an exported function, and inserting an argument ahead of
+  # an existing one silently rebinds every positional call past that point.
+  # Slotted in after `lengths_table`, `creel_schema("instantaneous", "int",
+  # "cnt", "catch", "len", "SurveyDate")` bound the date to
+  # `harvest_lengths_table` and left `date_col` NULL -- and construction is
+  # permissive, so it produced a working-looking schema with no date mapping.
+  harvest_lengths_table = NULL,
+  release_lengths_table = NULL
 ) {
   survey_type <- match.arg(survey_type)
   strata_cols <- normalize_strata_cols(strata_cols)
@@ -451,6 +467,14 @@ creel_schema <- function(
       counts_table = counts_table,
       catch_table = catch_table,
       lengths_table = lengths_table,
+      # A source may keep harvest and release lengths apart. Both fall back to
+      # `lengths_table`, so a single-table source is unaffected and needs no
+      # new argument. tidycreel.connect's YAML loader has offered these two
+      # keys since GH #176 and passed them straight to this constructor, where
+      # they landed as "unused arguments" -- a profile using them aborted with
+      # a base error naming no cause (GH #185).
+      harvest_lengths_table = harvest_lengths_table %||% lengths_table,
+      release_lengths_table = release_lengths_table %||% lengths_table,
       date_col = date_col,
       strata_cols = strata_cols,
       value_maps = value_maps,
