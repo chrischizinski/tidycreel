@@ -92,7 +92,8 @@ from total catch rate (CPUE which includes both kept and released fish).</p>
 <span>  use_trips <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  estimator <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  truncate_at <span class="op">=</span> <span class="fl">0.5</span>,</span>
-<span>  missing_sections <span class="op">=</span> <span class="st">"warn"</span></span>
+<span>  missing_sections <span class="op">=</span> <span class="st">"warn"</span>,</span>
+<span>  targeted <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -194,6 +195,24 @@ registered section has no interview observations. <code>"warn"</code> (default)
 emits a <code>cli_warn()</code> and inserts an NA row with
 <code>data_available = FALSE</code>. <code>"error"</code> aborts with
 <code>cli_abort()</code>. Ignored for non-sectioned designs.</p></dd>
+
+
+<dt id="arg-targeted">targeted<a class="anchor" aria-label="anchor" href="#arg-targeted"></a></dt>
+<dd><p>Logical. When <code>TRUE</code> (default), all trips are used.
+When <code>FALSE</code>, the interviews that recorded none of the species being
+estimated are excluded before MOR/MORtr estimation, so the result is the
+rate among trips that harvested it rather than the fishery-wide rate. A
+<code>cli_warn()</code> names the species and the percentage excluded, and a
+separate warning fires when more than 70\<!-- % of trips recorded none of a -->
+species under <code>targeted = TRUE</code> (possible mis-specification).</p>
+<p>Requires <code>by = species</code>: without one there is no per-species count to
+test, and the only available test would be "recorded nothing at all",
+which is a different estimand. <code>targeted = FALSE</code> without
+<code>by = species</code> is an error rather than a silent no-op (GH #307).</p>
+<p>Ignored for the <code>ratio-of-means</code> estimator, as for
+<code><a href="estimate_catch_rate.html">estimate_catch_rate()</a></code>. Note that the
+<code>estimate_total_*()</code> functions deliberately do not accept it — see
+their documentation for why a targeted rate has no matching total.</p></dd>
 
 </dl></div>
     <div class="section level2">

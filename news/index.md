@@ -2,6 +2,57 @@
 
 ## tidycreel (development version)
 
+### New features
+
+- [`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md)
+  and
+  [`estimate_release_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_release_rate.md)
+  gain a `targeted` argument, matching
+  [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
+  ([\#307](https://github.com/chrischizinski/tidycreel/issues/307)).
+
+  `targeted = FALSE` restricts the domain to the interviews that
+  recorded some of the species being estimated, so the result is the
+  harvest or release rate among trips that took that species rather than
+  the fishery-wide rate. It is read by the mean-of-ratios forms and
+  ignored by `ratio-of-means`, exactly as for the catch rate, and the
+  per-species exclusion is now shared by all three rate functions
+  through one internal helper rather than copied.
+
+  `targeted = FALSE` **requires `by = species`** on these two functions
+  and raises `creel_error_targeted_needs_species` otherwise. Without a
+  species there is no per-species count to test, and the only available
+  test would be “recorded nothing at all” — a different estimand, and
+  one the package has never estimated for harvest or release. Refusing
+  is deliberate: an argument that silently does nothing is the defect
+  [\#304](https://github.com/chrischizinski/tidycreel/issues/304) fixed,
+  and this avoids repeating it. The check runs above the section
+  dispatch, so it reaches sectioned designs too.
+
+  No estimate produced with default arguments changes. The per-species
+  “\>70% recorded none of this species” diagnostic warning is new on
+  these two functions and fires only under the mean-of-ratios estimator.
+
+### Documentation
+
+- [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md),
+  [`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md)
+  and
+  [`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
+  now document why they have no `targeted` argument
+  ([\#307](https://github.com/chrischizinski/tidycreel/issues/307)).
+
+  A targeted rate is conditional on having recorded the species; total
+  effort is not. Multiplying them applies a conditional rate to an
+  unconditional base: on the package’s example data one species’ rate is
+  0.48 fish/hr over all 50 trips and 2.00 fish/hr over the 12 that
+  caught it, so expanding the targeted rate by total effort returns
+  roughly 223 fish where 30 were actually caught. The domain-consistent
+  product needs the season-wide effort of species-catching trips, which
+  no creel design observes. A targeted rate is therefore available and a
+  targeted total is not, as a property of the estimand rather than a gap
+  in the implementation.
+
 ### Breaking changes
 
 - `targeted = FALSE` on a `by = species` request now tests that species’

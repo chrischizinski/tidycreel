@@ -17,7 +17,8 @@ estimate_release_rate(
   use_trips = NULL,
   estimator = NULL,
   truncate_at = 0.5,
-  missing_sections = "warn"
+  missing_sections = "warn",
+  targeted = TRUE
 )
 ```
 
@@ -120,6 +121,27 @@ estimate_release_rate(
   interview observations. `"warn"` (default) emits a `cli_warn()` and
   inserts an NA row with `data_available = FALSE`. `"error"` aborts with
   `cli_abort()`. Ignored for non-sectioned designs.
+
+- targeted:
+
+  Logical. When `TRUE` (default), all trips are used. When `FALSE`, the
+  interviews that recorded none of the species being estimated are
+  excluded before MOR/MORtr estimation, so the result is the rate among
+  trips that released it rather than the fishery-wide rate. A
+  `cli_warn()` names the species and the percentage excluded, and a
+  separate warning fires when more than 70\\ species under
+  `targeted = TRUE` (possible mis-specification).
+
+  Requires `by = species`: without one there is no per-species count to
+  test, and the only available test would be "recorded nothing at all",
+  which is a different estimand. `targeted = FALSE` without
+  `by = species` is an error rather than a silent no-op (GH \#307).
+
+  Ignored for the `ratio-of-means` estimator, as for
+  [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md).
+  Note that the `estimate_total_*()` functions deliberately do not
+  accept it — see their documentation for why a targeted rate has no
+  matching total.
 
 ## Value
 

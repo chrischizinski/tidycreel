@@ -67,6 +67,22 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="tidycreel-development-version">tidycreel (development version)<a class="anchor" aria-label="anchor" href="#tidycreel-development-version"></a></h2>
 <div class="section level3">
+<h3 id="new-features-development-version">New features<a class="anchor" aria-label="anchor" href="#new-features-development-version"></a></h3>
+<ul><li>
+<p><code><a href="../reference/estimate_harvest_rate.html">estimate_harvest_rate()</a></code> and <code><a href="../reference/estimate_release_rate.html">estimate_release_rate()</a></code> gain a <code>targeted</code> argument, matching <code><a href="../reference/estimate_catch_rate.html">estimate_catch_rate()</a></code> (<a href="https://github.com/chrischizinski/tidycreel/issues/307" class="external-link">#307</a>).</p>
+<p><code>targeted = FALSE</code> restricts the domain to the interviews that recorded some of the species being estimated, so the result is the harvest or release rate among trips that took that species rather than the fishery-wide rate. It is read by the mean-of-ratios forms and ignored by <code>ratio-of-means</code>, exactly as for the catch rate, and the per-species exclusion is now shared by all three rate functions through one internal helper rather than copied.</p>
+<p><code>targeted = FALSE</code> <strong>requires <code>by = species</code></strong> on these two functions and raises <code>creel_error_targeted_needs_species</code> otherwise. Without a species there is no per-species count to test, and the only available test would be “recorded nothing at all” — a different estimand, and one the package has never estimated for harvest or release. Refusing is deliberate: an argument that silently does nothing is the defect <a href="https://github.com/chrischizinski/tidycreel/issues/304" class="external-link">#304</a> fixed, and this avoids repeating it. The check runs above the section dispatch, so it reaches sectioned designs too.</p>
+<p>No estimate produced with default arguments changes. The per-species “&gt;70% recorded none of this species” diagnostic warning is new on these two functions and fires only under the mean-of-ratios estimator.</p>
+</li>
+</ul></div>
+<div class="section level3">
+<h3 id="documentation-development-version">Documentation<a class="anchor" aria-label="anchor" href="#documentation-development-version"></a></h3>
+<ul><li>
+<p><code><a href="../reference/estimate_total_catch.html">estimate_total_catch()</a></code>, <code><a href="../reference/estimate_total_harvest.html">estimate_total_harvest()</a></code> and <code><a href="../reference/estimate_total_release.html">estimate_total_release()</a></code> now document why they have no <code>targeted</code> argument (<a href="https://github.com/chrischizinski/tidycreel/issues/307" class="external-link">#307</a>).</p>
+<p>A targeted rate is conditional on having recorded the species; total effort is not. Multiplying them applies a conditional rate to an unconditional base: on the package’s example data one species’ rate is 0.48 fish/hr over all 50 trips and 2.00 fish/hr over the 12 that caught it, so expanding the targeted rate by total effort returns roughly 223 fish where 30 were actually caught. The domain-consistent product needs the season-wide effort of species-catching trips, which no creel design observes. A targeted rate is therefore available and a targeted total is not, as a property of the estimand rather than a gap in the implementation.</p>
+</li>
+</ul></div>
+<div class="section level3">
 <h3 id="breaking-changes-development-version">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-development-version"></a></h3>
 <ul><li>
 <p><code>targeted = FALSE</code> on a <code>by = species</code> request now tests that species’ own catch, not the total catch, under the mean-of-ratios estimator (<a href="https://github.com/chrischizinski/tidycreel/issues/304" class="external-link">#304</a>).</p>
@@ -225,7 +241,7 @@
 </li>
 </ul></div>
 <div class="section level3">
-<h3 id="documentation-development-version">Documentation<a class="anchor" aria-label="anchor" href="#documentation-development-version"></a></h3>
+<h3 id="documentation-development-version-1">Documentation<a class="anchor" aria-label="anchor" href="#documentation-development-version-1"></a></h3>
 <ul><li>
 <p><code><a href="../reference/impute_camera_counts.html">impute_camera_counts()</a></code> no longer attributes either of its imputation models to a paper that does not contain it (<a href="https://github.com/chrischizinski/tidycreel/issues/297" class="external-link">#297</a>).</p>
 <p>Both citations named the wrong work. The negative binomial GLMM was credited to a real Afrifa-Yamoah et al. (2020) paper — but the group’s <em>climate</em> time-series paper, which imputes weather data with expectation maximisation and LSTM neural networks, and which the relevant paper itself cites for that purpose. The relevant one is</p>
