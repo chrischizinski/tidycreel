@@ -1118,6 +1118,8 @@ estimate_catch_rate <- function(
   }
 
   # Validate variance parameter
+  validate_targeted(targeted) # nolint: object_usage_linter
+
   valid_methods <- c("taylor", "bootstrap", "jackknife")
   if (!variance %in% valid_methods) {
     cli::cli_abort(c(
@@ -2024,6 +2026,23 @@ estimate_catch_rate <- function(
 #'   \code{"ratio-of-means"}. An interview whose duration is missing cannot be
 #'   shown to meet the threshold, so it is excluded and reported separately from
 #'   the trips excluded as too short.
+#' @param targeted Logical. When \code{TRUE} (default), all trips are used.
+#'   When \code{FALSE}, the interviews that recorded none of the species being
+#'   estimated are excluded before MOR/MORtr estimation, so the result is the
+#'   rate among trips that harvested it rather than the fishery-wide rate. A
+#'   \code{cli_warn()} names the species and the percentage excluded, and a
+#'   separate warning fires when more than 70\% of trips recorded none of a
+#'   species under \code{targeted = TRUE} (possible mis-specification).
+#'
+#'   Requires \code{by = species}: without one there is no per-species count to
+#'   test, and the only available test would be "recorded nothing at all",
+#'   which is a different estimand. \code{targeted = FALSE} without
+#'   \code{by = species} is an error rather than a silent no-op (GH #307).
+#'
+#'   Ignored for the \code{ratio-of-means} estimator, as for
+#'   \code{\link{estimate_catch_rate}()}. Note that the
+#'   \code{estimate_total_*()} functions deliberately do not accept it — see
+#'   their documentation for why a targeted rate has no matching total.
 #' @param missing_sections Character string controlling behavior when a
 #'   registered section has no interview observations. \code{"warn"} (default)
 #'   emits a \code{cli_warn()} and inserts an NA row with
@@ -2145,12 +2164,18 @@ estimate_harvest_rate <- function(
   use_trips = NULL,
   estimator = NULL,
   truncate_at = 0.5,
-  missing_sections = "warn"
+  missing_sections = "warn",
+  # Appended rather than slotted in beside the other estimator knobs: inserting
+  # it before `missing_sections` would shift that argument's position and
+  # rebind it in any existing positional call.
+  targeted = TRUE
 ) {
   # Capture by parameter BEFORE validation
   by_quo <- rlang::enquo(by)
 
   # Validate variance parameter
+  validate_targeted(targeted) # nolint: object_usage_linter
+
   valid_methods <- c("taylor", "bootstrap", "jackknife")
   if (!variance %in% valid_methods) {
     cli::cli_abort(c(
@@ -2379,6 +2404,27 @@ estimate_harvest_rate <- function(
   # sectioned paths are all built from the same interviews (GH #271).
   design <- truncate_interviews_for_mor(design, estimator, truncate_at, use_trips) # nolint: object_usage_linter
 
+  # Resolved above the section guard, not below it, because the refusal that
+  # follows must reach a sectioned design too: the guard returns early, so a
+  # check placed after it would never run on the very designs the sectioned
+  # paths serve. Hoisting mirrors what estimate_catch_rate() does for the same
+  # reason (GH #304, GH #307).
+  by_info <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
+
+  # `targeted` restricts the domain to the interviews that recorded some of the
+  # species being estimated, so it needs a species to be about. Without
+  # `by = species` there is no such column and the only available test would be
+  # "recorded nothing at all", which is a different estimand and one this
+  # package has never estimated for harvest. Refused rather than silently
+  # ignored: an argument that quietly does nothing is what GH #304 was (GH #307).
+  if (!isTRUE(targeted) && is.null(by_info$species_var)) {
+    cli::cli_abort(c(
+      "{.code targeted = FALSE} needs {.code by = species}.",
+      "x" = "Without a species there is no per-species count to test.",
+      "i" = "Use {.code estimate_harvest_rate(by = species, targeted = FALSE)}."
+    ), class = "creel_error_targeted_needs_species")
+  }
+
   # Section dispatch guard — fires AFTER trip filtering, BEFORE standard dispatch.
   # It sat above the use_trips block until GH #263, which left use_trips inert on
   # a sectioned design: "all" and "complete" returned the same number, the
@@ -2393,7 +2439,8 @@ estimate_harvest_rate <- function(
       variance,
       conf_level,
       missing_sections,
-      estimator = if (mortr_active) "mortr" else estimator
+      estimator = if (mortr_active) "mortr" else estimator,
+      targeted = targeted
     ))
   }
 
@@ -2404,8 +2451,7 @@ estimate_harvest_rate <- function(
   # ratio-of-means label, which was worse than reporting it untruncated.
   dispatch_estimator <- if (mortr_active) "mortr" else estimator
 
-  # Detect species-level grouping
-  by_info <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
+  # `by_info` was resolved above the section guard; see the note there.
 
   # Species-level dispatch
   if (!is.null(by_info$species_var)) {
@@ -2423,7 +2469,8 @@ estimate_harvest_rate <- function(
       interview_by_vars = by_info$interview_vars,
       variance_method = variance,
       conf_level = conf_level,
-      estimator = dispatch_estimator
+      estimator = dispatch_estimator,
+      targeted = targeted
     )
     return(new_creel_estimates(
       # nolint: object_usage_linter
@@ -2533,6 +2580,23 @@ estimate_harvest_rate <- function(
 #'   \code{"ratio-of-means"}. An interview whose duration is missing cannot be
 #'   shown to meet the threshold, so it is excluded and reported separately from
 #'   the trips excluded as too short.
+#' @param targeted Logical. When \code{TRUE} (default), all trips are used.
+#'   When \code{FALSE}, the interviews that recorded none of the species being
+#'   estimated are excluded before MOR/MORtr estimation, so the result is the
+#'   rate among trips that released it rather than the fishery-wide rate. A
+#'   \code{cli_warn()} names the species and the percentage excluded, and a
+#'   separate warning fires when more than 70\% of trips recorded none of a
+#'   species under \code{targeted = TRUE} (possible mis-specification).
+#'
+#'   Requires \code{by = species}: without one there is no per-species count to
+#'   test, and the only available test would be "recorded nothing at all",
+#'   which is a different estimand. \code{targeted = FALSE} without
+#'   \code{by = species} is an error rather than a silent no-op (GH #307).
+#'
+#'   Ignored for the \code{ratio-of-means} estimator, as for
+#'   \code{\link{estimate_catch_rate}()}. Note that the
+#'   \code{estimate_total_*()} functions deliberately do not accept it — see
+#'   their documentation for why a targeted rate has no matching total.
 #' @param missing_sections Character string controlling behavior when a
 #'   registered section has no interview observations. \code{"warn"} (default)
 #'   emits a \code{cli_warn()} and inserts an NA row with
@@ -2612,11 +2676,17 @@ estimate_release_rate <- function(
   use_trips = NULL,
   estimator = NULL,
   truncate_at = 0.5,
-  missing_sections = "warn"
+  missing_sections = "warn",
+  # Appended rather than slotted in beside the other estimator knobs: inserting
+  # it before `missing_sections` would shift that argument's position and
+  # rebind it in any existing positional call.
+  targeted = TRUE
 ) {
   by_quo <- rlang::enquo(by)
 
   # Validate variance parameter
+  validate_targeted(targeted) # nolint: object_usage_linter
+
   valid_methods <- c("taylor", "bootstrap", "jackknife")
   if (!variance %in% valid_methods) {
     cli::cli_abort(c(
@@ -2809,6 +2879,27 @@ estimate_release_rate <- function(
   # sectioned paths are all built from the same interviews (GH #271).
   design <- truncate_interviews_for_mor(design, estimator, truncate_at, use_trips) # nolint: object_usage_linter
 
+  # Resolved above the section guard, not below it, because the refusal that
+  # follows must reach a sectioned design too: the guard returns early, so a
+  # check placed after it would never run on the very designs the sectioned
+  # paths serve. Hoisting mirrors what estimate_catch_rate() does for the same
+  # reason (GH #304, GH #307).
+  by_info <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
+
+  # `targeted` restricts the domain to the interviews that recorded some of the
+  # species being estimated, so it needs a species to be about. Without
+  # `by = species` there is no such column and the only available test would be
+  # "recorded nothing at all", which is a different estimand and one this
+  # package has never estimated for releases. Refused rather than silently
+  # ignored: an argument that quietly does nothing is what GH #304 was (GH #307).
+  if (!isTRUE(targeted) && is.null(by_info$species_var)) {
+    cli::cli_abort(c(
+      "{.code targeted = FALSE} needs {.code by = species}.",
+      "x" = "Without a species there is no per-species count to test.",
+      "i" = "Use {.code estimate_release_rate(by = species, targeted = FALSE)}."
+    ), class = "creel_error_targeted_needs_species")
+  }
+
   # Section dispatch guard — fires AFTER trip filtering, BEFORE standard dispatch.
   # It sat above the use_trips block until GH #263, which left use_trips inert on
   # a sectioned design: "all" and "complete" returned the same number, the
@@ -2823,7 +2914,8 @@ estimate_release_rate <- function(
       variance,
       conf_level,
       missing_sections,
-      estimator = if (mortr_active) "mortr" else estimator
+      estimator = if (mortr_active) "mortr" else estimator,
+      targeted = targeted
     ))
   }
 
@@ -2834,8 +2926,7 @@ estimate_release_rate <- function(
   # ratio-of-means label, which was worse than reporting it untruncated.
   dispatch_estimator <- if (mortr_active) "mortr" else estimator
 
-  # Detect species-level grouping
-  by_info <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
+  # `by_info` was resolved above the section guard; see the note there.
 
   if (!is.null(by_info$species_var)) {
     # Species-level release rate: loop over species
@@ -2846,7 +2937,8 @@ estimate_release_rate <- function(
       interview_by_vars = by_info$interview_vars,
       variance_method = variance,
       conf_level = conf_level,
-      estimator = dispatch_estimator
+      estimator = dispatch_estimator,
+      targeted = targeted
     )
     return(new_creel_estimates(
       # nolint: object_usage_linter
@@ -5884,6 +5976,137 @@ compute_stratum_product_sum <- function(
   }
 }
 
+#' Validate the `targeted` argument
+#'
+#' `targeted` reaches `if (!targeted)` and `targeted && ...` unguarded, so a
+#' missing or non-logical value surfaced as a base error -- "missing value
+#' where TRUE/FALSE needed" -- naming no argument and carrying no condition
+#' class. Worse, `NA` with no species reached the `by = species` refusal first
+#' and reported the wrong reason. Checked once, at each public entry point,
+#' before any branch reads it.
+#'
+#' @param targeted The value as supplied.
+#' @param call Environment for the error message.
+#'
+#' @return `TRUE` invisibly; aborts otherwise.
+#'
+#' @keywords internal
+#' @noRd
+validate_targeted <- function(targeted, call = rlang::caller_env()) {
+  if (!is.logical(targeted) || length(targeted) != 1L || is.na(targeted)) {
+    cli::cli_abort(
+      c(
+        "{.arg targeted} must be {.code TRUE} or {.code FALSE}.",
+        "x" = "Got {.obj_type_friendly {targeted}} of length {length(targeted)}.",
+        "i" = "{.code targeted = FALSE} restricts the estimate to trips that
+               recorded the species being estimated."
+      ),
+      class = "creel_error_invalid_targeted",
+      call = call
+    )
+  }
+  invisible(TRUE)
+}
+
+#' Apply `targeted` to one species' zero-filled interview data
+#'
+#' Shared by the catch, harvest and release species loops so the three cannot
+#' drift apart. `targeted = FALSE` restricts the domain to the interviews that
+#' recorded some of this species, which changes the estimand: the result is the
+#' rate among those trips, not the fishery-wide rate.
+#'
+#' The test is per species and deliberately so. The mean-of-ratios branch
+#' upstream tests the design's TOTAL catch column, which is inert on a species
+#' request because an interview that recorded anything is non-zero however
+#' little of this species it holds; that branch skips its own tests when the
+#' request names a species (GH #304).
+#'
+#' Honoured by the regression and mean-of-ratios forms only. `ratio-of-means`
+#' is documented as ignoring `targeted` and has never read it on any path, and
+#' it is the package default, so honouring it here would move numbers for
+#' callers who never asked for a different estimand.
+#'
+#' `"mortr"` is normalised here rather than assumed away, because the three
+#' callers do not agree on what they pass: `estimate_catch_rate()` hands over
+#' the already-normalised `"mor"`, while `estimate_harvest_rate()` and
+#' `estimate_release_rate()` pass `dispatch_estimator`, which is still
+#' `"mortr"`. Normalising in one place means the filter cannot depend on which
+#' caller reached it.
+#'
+#' @param sp_data Data frame. One species' zero-filled interviews.
+#' @param count_col Character(1). The zero-filled per-species count column.
+#' @param sp Character(1). Species label, used in messages.
+#' @param estimator Character(1). Normalised estimator.
+#' @param targeted Logical(1).
+#' @param label Character(1). Noun for the excluded trips, e.g. "catch".
+#' @param verb Character(1). Past-tense verb, e.g. "caught".
+#'
+#' @return `sp_data`, filtered when `targeted = FALSE`.
+#'
+#' @keywords internal
+#' @noRd
+apply_species_targeted_filter <- function(
+  sp_data,
+  count_col,
+  sp,
+  estimator,
+  targeted,
+  label = "catch",
+  verb = "caught"
+) {
+  # See the note above: callers disagree on whether they normalise "mortr".
+  # Truncation is a property of how the interviews were built, not of the
+  # domain restriction, so both forms take the same branch here.
+  estimator <- if (identical(estimator, "mortr")) "mor" else estimator
+
+  is_zero <- sp_data[[count_col]] == 0 | is.na(sp_data[[count_col]])
+
+  if (!targeted && estimator %in% c("regression", "mor")) {
+    n_before <- nrow(sp_data)
+    n_zero <- sum(is_zero, na.rm = TRUE)
+    sp_data <- sp_data[!is_zero, , drop = FALSE]
+    if (n_zero > 0L) {
+      pct_excluded <- round(100 * n_zero / n_before) # nolint: object_usage_linter
+      cli::cli_warn(c(
+        # qty() re-anchors the plural to n_zero: the {label} interpolation sits
+        # between the count and {?s}, and cli would otherwise take that
+        # length-1 string as the quantity and always print "trip".
+        "{.val {sp}}: {n_zero} zero-{label} {cli::qty(n_zero)}trip{?s} excluded ({pct_excluded}% of trips).",
+        "i" = "The estimate is the rate among trips that {verb} {.val {sp}}.",
+        "i" = "Set {.code targeted = TRUE} to include zero-{label} trips."
+      ))
+    }
+    if (nrow(sp_data) == 0L) {
+      cli::cli_abort(c(
+        "No trips remain for {.val {sp}} after zero-{label} exclusion.",
+        "x" = "No interview {verb} {.val {sp}} with {.code targeted = FALSE}.",
+        "i" = "Set {.code targeted = TRUE} or check the data."
+      ))
+    }
+  } else if (targeted && identical(estimator, "mor")) {
+    # The mis-specification warning, per species. Same rule and same 70%
+    # threshold the mean-of-ratios branch applies upstream, and confined to the
+    # same estimator; only the column it tests changes. Upstream it read the
+    # total, so on the very designs it exists to flag -- one sparse species
+    # among several -- it saw no zeros at all and never fired.
+    n_total_trips <- nrow(sp_data)
+    n_zero <- sum(is_zero, na.rm = TRUE)
+    if (n_total_trips > 0L && (n_zero / n_total_trips) > 0.70) {
+      pct_zero <- round(100 * n_zero / n_total_trips) # nolint: object_usage_linter
+      cli::cli_warn(c(
+        "{.val {sp}}: {pct_zero}% of trips {verb} none of this species.",
+        "i" = paste(
+          "For a non-targeted species, consider",
+          "{.code targeted = FALSE} to estimate the rate among trips",
+          "that {verb} it."
+        )
+      ))
+    }
+  }
+
+  sp_data
+}
+
 #' Species-level CPUE estimation (loops over species)
 #'
 #' @param design A creel_design with non-NULL catch slot.
@@ -5918,68 +6141,13 @@ estimate_cpue_species <- function(
     # Build per-species interview data (zero-filled)
     sp_data <- make_species_catch_for_interviews(design, sp, "caught") # nolint: object_usage_linter
 
-    # targeted = FALSE drops the interviews that caught none of THIS species.
-    # It is a restriction of the domain, applied before estimation and
-    # independent of which estimator runs: the result is then the rate among
-    # trips that caught the species, not the fishery-wide rate.
-    #
-    # This is per species. The upstream mean-of-ratios branch tests TOTAL catch,
-    # which is inert on a species request -- an interview that caught something
-    # is non-zero however little of this species it holds. That branch now skips
-    # both of its tests when the request names a species, and they are applied
-    # here instead against `.species_count` (GH #304).
-    #
-    # Honoured by the regression and mean-of-ratios forms. NOT by
-    # ratio-of-means, for which `targeted` is documented as ignored: ROM has
-    # never read it on any path, and making it do so here would move numbers on
-    # the package's default estimator.
-    #
-    # "mortr" is absent from the test because it cannot arrive: it is
-    # normalised to "mor" above the species dispatch, and the sectioned caller
-    # normalises it again before reaching here. Listing it would be dead code.
-    if (!targeted && estimator %in% c("regression", "mor")) {
-      n_before <- nrow(sp_data)
-      zero_rows <- sp_data[[".species_count"]] == 0 | is.na(sp_data[[".species_count"]])
-      n_zero <- sum(zero_rows, na.rm = TRUE)
-      sp_data <- sp_data[!zero_rows, , drop = FALSE]
-      if (n_zero > 0L) {
-        pct_excluded <- round(100 * n_zero / n_before) # nolint: object_usage_linter
-        cli::cli_warn(c(
-          "{.val {sp}}: {n_zero} zero-catch trip{?s} excluded ({pct_excluded}% of trips).",
-          "i" = "The estimate is the rate among trips that caught {.val {sp}}.",
-          "i" = "Set {.code targeted = TRUE} to include zero-catch trips."
-        ))
-      }
-      if (nrow(sp_data) == 0L) {
-        cli::cli_abort(c(
-          "No trips remain for {.val {sp}} after zero-catch exclusion.",
-          "x" = "No interview caught {.val {sp}} with {.code targeted = FALSE}.",
-          "i" = "Set {.code targeted = TRUE} or check catch data."
-        ))
-      }
-    } else if (targeted && identical(estimator, "mor")) {
-      # The mis-specification warning, per species. Same rule and same 70%
-      # threshold the mean-of-ratios branch applies upstream, and confined to
-      # the same estimator; only the column it tests changes. Upstream it read
-      # total catch, so on the very designs it exists to flag -- one sparse
-      # species among several -- it saw no zeros at all and never fired.
-      n_total_trips <- nrow(sp_data)
-      n_zero_catch <- sum(
-        sp_data[[".species_count"]] == 0 | is.na(sp_data[[".species_count"]]),
-        na.rm = TRUE
-      )
-      if (n_total_trips > 0L && (n_zero_catch / n_total_trips) > 0.70) {
-        pct_zero <- round(100 * n_zero_catch / n_total_trips) # nolint: object_usage_linter
-        cli::cli_warn(c(
-          "{.val {sp}}: {pct_zero}% of trips caught none of this species.",
-          "i" = paste(
-            "For a non-targeted species, consider",
-            "{.code targeted = FALSE} to estimate the rate among trips",
-            "that caught it."
-          )
-        ))
-      }
-    }
+    sp_data <- apply_species_targeted_filter( # nolint: object_usage_linter
+      sp_data,
+      count_col = ".species_count",
+      sp = sp,
+      estimator = estimator,
+      targeted = targeted
+    )
 
     # Modify a temporary design with .species_count as catch column
     design_sp <- design
@@ -6057,7 +6225,8 @@ estimate_release_rate_species <- function(
   variance_method,
   conf_level,
   estimator = "ratio-of-means",
-  validate = TRUE
+  validate = TRUE,
+  targeted = TRUE
 ) {
   all_species <- sort(unique(design[["catch"]][[species_col]]))
 
@@ -6068,6 +6237,16 @@ estimate_release_rate_species <- function(
 
     # Build per-species release interview data (zero-filled)
     sp_data <- estimate_release_build_data(design, species = sp) # nolint: object_usage_linter
+
+    sp_data <- apply_species_targeted_filter( # nolint: object_usage_linter
+      sp_data,
+      count_col = ".release_count",
+      sp = sp,
+      estimator = estimator,
+      targeted = targeted,
+      label = "release",
+      verb = "released"
+    )
 
     sp_data$.release_effort <- sp_data[[design$angler_effort_col]]
 
@@ -6125,7 +6304,8 @@ estimate_hpue_species <- function(
   variance_method,
   conf_level,
   estimator = "ratio-of-means",
-  validate = TRUE
+  validate = TRUE,
+  targeted = TRUE
 ) {
   all_species <- sort(unique(design[["catch"]][[species_col]]))
   results_list <- vector("list", length(all_species))
@@ -6135,6 +6315,16 @@ estimate_hpue_species <- function(
 
     # Build per-species harvest interview data (zero-filled, harvested only)
     sp_data <- make_species_catch_for_interviews(design, sp, "harvested") # nolint: object_usage_linter
+
+    sp_data <- apply_species_targeted_filter( # nolint: object_usage_linter
+      sp_data,
+      count_col = ".species_count",
+      sp = sp,
+      estimator = estimator,
+      targeted = targeted,
+      label = "harvest",
+      verb = "harvested"
+    )
 
     design_sp <- design
     design_sp$interviews <- sp_data
@@ -6749,7 +6939,8 @@ estimate_harvest_rate_sections <- function(
   variance_method, # nolint: object_length_linter
   conf_level,
   missing_sections,
-  estimator = "ratio-of-means"
+  estimator = "ratio-of-means",
+  targeted = TRUE
 ) {
   # `estimator` arrives as the caller asked for it, so that the label below can
   # say whether truncation was mandatory. Everything downstream branches on the
@@ -6835,7 +7026,8 @@ estimate_harvest_rate_sections <- function(
           interview_by_vars = by_info$interview_vars,
           variance_method = variance_method,
           conf_level = conf_level,
-          estimator = estimator
+          estimator = estimator,
+          targeted = targeted
         )
         sp_df <- tibble::add_column(tibble::as_tibble(sp_df), !!section_col := sec, .before = 1)
         sp_df$data_available <- TRUE
@@ -6907,7 +7099,8 @@ estimate_release_rate_sections <- function(
   variance_method, # nolint: object_length_linter
   conf_level,
   missing_sections,
-  estimator = "ratio-of-means"
+  estimator = "ratio-of-means",
+  targeted = TRUE
 ) {
   # `estimator` arrives as the caller asked for it, so that the label below can
   # say whether truncation was mandatory. Everything downstream branches on the
@@ -6994,7 +7187,8 @@ estimate_release_rate_sections <- function(
           interview_by_vars = by_info$interview_vars,
           variance_method = variance_method,
           conf_level = conf_level,
-          estimator = estimator
+          estimator = estimator,
+          targeted = targeted
         )
         sp_df <- tibble::add_column(tibble::as_tibble(sp_df), !!section_col := sec, .before = 1)
         sp_df$data_available <- TRUE

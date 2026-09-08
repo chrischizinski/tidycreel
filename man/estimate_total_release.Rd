@@ -138,6 +138,31 @@ apportioned against each section's own whole effort, giving one row per
 section per species. As with any other grouping, the sectioned result then
 carries no \code{.lake_total} row and no \code{prop_of_lake_total}.
 }
+\section{Why there is no \code{targeted} argument}{
+
+
+The rate functions accept \code{targeted = FALSE}, which restricts the domain to
+the interviews that recorded some of the species being estimated. The totals
+deliberately do not, because a total is a rate multiplied by an effort base
+and the two would no longer describe the same set of trips.
+
+A targeted rate is conditional on having recorded the species; total effort
+is not. Multiplying one by the other applies a conditional rate to an
+unconditional base. On the package's own example data one species' rate is
+0.48 fish/hr over all 50 trips and 2.00 fish/hr over the 12 that caught it,
+so expanding the targeted rate by total effort returns roughly 223 fish
+where 30 were actually caught.
+
+The domain-consistent product — the targeted rate times the effort of the
+trips that recorded the species — is well defined in the sample but cannot
+be expanded: it needs the season-wide effort of species-catching trips,
+which no creel design observes.
+
+So a targeted \strong{rate} is available and a targeted \strong{total} is not, and
+that is a property of the estimand rather than a gap in the implementation
+(GH #307).
+}
+
 \section{What the pooled total assumes}{
 
 Effort comes from the counts, so a total can only be broken down by an

@@ -12,7 +12,8 @@ estimate_release_rate(
   use_trips = NULL,
   estimator = NULL,
   truncate_at = 0.5,
-  missing_sections = "warn"
+  missing_sections = "warn",
+  targeted = TRUE
 )
 }
 \arguments{
@@ -86,6 +87,24 @@ registered section has no interview observations. \code{"warn"} (default)
 emits a \code{cli_warn()} and inserts an NA row with
 \code{data_available = FALSE}. \code{"error"} aborts with
 \code{cli_abort()}. Ignored for non-sectioned designs.}
+
+\item{targeted}{Logical. When \code{TRUE} (default), all trips are used.
+When \code{FALSE}, the interviews that recorded none of the species being
+estimated are excluded before MOR/MORtr estimation, so the result is the
+rate among trips that released it rather than the fishery-wide rate. A
+\code{cli_warn()} names the species and the percentage excluded, and a
+separate warning fires when more than 70\\% of trips recorded none of a
+species under \code{targeted = TRUE} (possible mis-specification).
+
+Requires \code{by = species}: without one there is no per-species count to
+test, and the only available test would be "recorded nothing at all",
+which is a different estimand. \code{targeted = FALSE} without
+\code{by = species} is an error rather than a silent no-op (GH #307).
+
+Ignored for the \code{ratio-of-means} estimator, as for
+\code{\link{estimate_catch_rate}()}. Note that the
+\code{estimate_total_*()} functions deliberately do not accept it — see
+their documentation for why a targeted rate has no matching total.}
 }
 \value{
 A creel_estimates S3 object with method = "ratio-of-means-rpue".
