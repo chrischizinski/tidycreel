@@ -2,6 +2,16 @@
 
 ## New features
 
+* `creel_schema()` gains `harvest_lengths_table` and `release_lengths_table`,
+  for a source that keeps harvest and release lengths in separate tables
+  (#185). Both fall back to `lengths_table`, so a single-table source needs
+  neither and nothing changes for an existing schema.
+
+  tidycreel.connect's YAML loader has offered both keys since #176 and passed
+  them straight to this constructor, where they arrived as unused arguments: a
+  profile setting either aborted with a base error naming no cause. The
+  connect DBI backend reads the two lengths tables through them.
+
 * `estimate_harvest_rate()` and `estimate_release_rate()` gain a `targeted`
   argument, matching `estimate_catch_rate()` (#307).
 
