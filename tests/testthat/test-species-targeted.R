@@ -333,6 +333,30 @@ test_that("SPECIES-TARGETED-09: a non-species request still tests total catch", 
   expect_equal(res_false$estimates$n, res_true$estimates$n)
 })
 
+test_that("SPECIES-TARGETED-12: regression without by = species ignores targeted", {
+  design <- make_species_targeted_design()
+  # The `targeted` docs enumerate which estimators read the argument. The
+  # non-species regression paths (estimate_cpue_regression_total() and
+  # estimate_cpue_reg_grouped()) take no `targeted` parameter, so it cannot
+  # reach them. Pinned because the docs make that a promise a reader can rely
+  # on, and because an earlier draft of those docs claimed the opposite.
+  flat_true <- suppressWarnings(suppressMessages(
+    estimate_catch_rate(design, estimator = "regression", use_trips = "all", targeted = TRUE)
+  ))
+  flat_false <- suppressWarnings(suppressMessages(
+    estimate_catch_rate(design, estimator = "regression", use_trips = "all", targeted = FALSE)
+  ))
+  expect_equal(flat_false$estimates$estimate, flat_true$estimates$estimate)
+
+  grouped_true <- suppressWarnings(suppressMessages(
+    estimate_catch_rate(design, by = date, estimator = "regression", use_trips = "all", targeted = TRUE)
+  ))
+  grouped_false <- suppressWarnings(suppressMessages(
+    estimate_catch_rate(design, by = date, estimator = "regression", use_trips = "all", targeted = FALSE)
+  ))
+  expect_equal(grouped_false$estimates$estimate, grouped_true$estimates$estimate)
+})
+
 test_that("SPECIES-TARGETED-11: mortr behaves as mor on the species path", {
   design <- make_species_targeted_design()
   # `mortr` is absent from the estimator test inside estimate_cpue_species()
