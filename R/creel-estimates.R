@@ -5937,7 +5937,13 @@ estimate_cpue_species <- function(
       strata = strata_formula
     )
 
-    if (validate) {
+    # The n >= 10 floor is a ratio-estimation rule, so it does not apply to the
+    # regression slope, which carries its own "fewer than 3 interviews" rule
+    # inside the regression internals. Applying it here refused a defined
+    # estimator with a message about a different one: on `use_trips = "all"`,
+    # which bypasses the complete-trips floor upstream, the ungrouped
+    # regression ran at n = 5 while the species form aborted.
+    if (validate && !identical(estimator, "regression")) {
       validate_ratio_sample_size(design_sp, interview_by_vars, type = "cpue") # nolint: object_usage_linter
     }
 

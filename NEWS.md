@@ -245,6 +245,14 @@
 * `@param targeted` said zero-**effort** trips were excluded; the code excludes
   zero-**catch** trips (#290).
 
+* A species-level regression request was held to the ratio-estimation `n >= 10`
+  floor (#290). That floor is a ratio rule; the regression slope has its own
+  "fewer than 3 interviews" rule, and the ungrouped regression path was never
+  held to the ratio one. The species path therefore refused a defined estimator
+  with a message about a different one — reachable via `use_trips = "all"`,
+  where the ungrouped regression ran at `n = 5` while the species form aborted.
+  The floor still applies to the estimators it belongs to.
+
 * A species-level regression result reported `variance_method` as the caller's
   `variance` argument rather than `"jackknife"` (#290). The slope's SE is a
   leave-one-out jackknife computed inside the regression internals, which never

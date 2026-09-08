@@ -308,6 +308,47 @@ test_that("targeted = FALSE leaves the other estimators alone (#290, #304)", {
   expect_equal(on_targeted$estimates$estimate, on_all$estimates$estimate)
 })
 
+test_that("the species regression is not held to the ratio-estimation floor (#290)", {
+  # n >= 10 is a ratio-estimation rule. The regression slope has its own
+  # "fewer than 3 interviews" rule inside the regression internals, and the
+  # ungrouped path is not held to the ratio floor either -- so applying it on
+  # the species path refused a defined estimator with a message about a
+  # different one. use_trips = "all" is what makes the window reachable: the
+  # complete-trips floor upstream would otherwise refuse both paths first.
+  design <- sec_reg_design()
+  flat <- design
+  flat[["sections"]] <- NULL
+  small <- rebuild_interview_survey(flat, flat$interviews[1:5, , drop = FALSE])
+
+  reg <- quiet_reg(
+    estimate_catch_rate, small,
+    by = species, estimator = "regression", use_trips = "all"
+  )
+  expect_identical(reg$method, "regression-cpue-species")
+  expect_true(all(is.finite(reg$estimates$se)))
+
+  # The floor still applies to the estimator it belongs to, so this is not
+  # asserting that validation was simply switched off.
+  expect_error(
+    quiet_reg(
+      estimate_catch_rate, small,
+      by = species, estimator = "ratio-of-means", use_trips = "all"
+    ),
+    "Insufficient sample size"
+  )
+
+  # And the regression's own rule still bites below its own threshold, with a
+  # message naming the estimator actually in use.
+  tiny <- rebuild_interview_survey(flat, flat$interviews[1:2, , drop = FALSE])
+  expect_error(
+    quiet_reg(
+      estimate_catch_rate, tiny,
+      by = species, estimator = "regression", use_trips = "all"
+    ),
+    "at least 3 interviews"
+  )
+})
+
 test_that("the species regression reports the variance that actually ran (#290)", {
   # The slope's SE is a leave-one-out jackknife computed inside the regression
   # internals; `variance` is never consulted there. Reporting the caller's
