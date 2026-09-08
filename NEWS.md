@@ -216,14 +216,19 @@
   the catch rate of that species per angler-hour to the rate among anglers who
   caught it.
 
-  `targeted = FALSE` still makes that second choice available, and on a species
-  request the exclusion is applied **per species**: a trip that caught none of
-  the species being estimated is dropped, whichever other species it caught, and
-  the warning names the species and the percentage excluded. Note this differs
-  from the mean-of-ratios branch, which tests the design's total catch column
-  and is therefore usually inert on a species request — see #304, filed rather
-  than changed here because fixing it moves numbers existing callers already
-  get.
+  `targeted = FALSE` still makes that second choice available, and **on the
+  regression species path only** the exclusion is applied per species: a trip
+  that caught none of the species being estimated is dropped, whichever other
+  species it caught, and the warning names the species and the percentage
+  excluded.
+
+  It is confined to the regression form on purpose. `targeted` has always been
+  read inside the mean-of-ratios branch, which tests the design's *total* catch
+  column and is therefore usually inert on a species request — on the release
+  fixture no interview has zero total catch while 20 of 22 have zero bass.
+  Widening the per-species test to the other estimators would move numbers
+  existing ratio-of-means callers already get, so it is filed as #304 rather
+  than changed here.
 
   This replaces the refusal added alongside #285, which was a deliberate
   placeholder while the modelling question was open.
@@ -239,6 +244,13 @@
 
 * `@param targeted` said zero-**effort** trips were excluded; the code excludes
   zero-**catch** trips (#290).
+
+* A species-level regression result reported `variance_method` as the caller's
+  `variance` argument rather than `"jackknife"` (#290). The slope's SE is a
+  leave-one-out jackknife computed inside the regression internals, which never
+  consult `variance`; the ungrouped and sectioned regression paths already
+  reported it correctly, so only the species path named a variance that had not
+  run — the same class of mislabel as #284.
 
 * `by =` no longer accepts the interview id or an internal `.`-prefixed column
   as a grouping variable (#293).

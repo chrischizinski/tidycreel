@@ -256,7 +256,7 @@ test_that("targeted = FALSE drops this species' zeros, not zero-total-catch trip
   expect_gt(n_zero_species, 0L)
 
   warnings <- character(0)
-  withCallingHandlers(
+  dropped <- withCallingHandlers(
     suppressMessages(
       estimate_catch_rate(flat, by = species, estimator = "regression", targeted = FALSE)
     ),
@@ -269,6 +269,63 @@ test_that("targeted = FALSE drops this species' zeros, not zero-total-catch trip
   hit <- grep(paste0(sp, ".*zero-catch trip"), warnings, value = TRUE)
   expect_length(hit, 1L)
   expect_match(hit, paste0("\\b", n_zero_species, " zero-catch trip"))
+
+  # The warning is not the behaviour. An implementation that warned and kept
+  # every row would pass on the message alone, so assert the rows actually left
+  # and that the estimate moved with them.
+  kept <- dropped$estimates
+  n_used <- nrow(sp_data)
+  expect_identical(kept$n[kept$species == sp], n_used - n_zero_species)
+
+  all_trips <- quiet_reg(estimate_catch_rate, flat, by = species, estimator = "regression")
+  expect_identical(all_trips$estimates$n[all_trips$estimates$species == sp], n_used)
+  expect_false(isTRUE(all.equal(
+    kept$estimate[kept$species == sp],
+    all_trips$estimates$estimate[all_trips$estimates$species == sp]
+  )))
+})
+
+test_that("targeted = FALSE leaves the other estimators alone (#290, #304)", {
+  # The per-species exclusion is confined to the regression form. Widening it
+  # would silently move numbers ratio-of-means callers already get, because
+  # `targeted` has always been read in the mean-of-ratios branch upstream,
+  # which tests TOTAL catch and is inert on a species request. GH #304 decides
+  # whether the others should adopt it; until then they must not change.
+  design <- sec_reg_design()
+  flat <- design
+  flat[["sections"]] <- NULL
+
+  on_all <- quiet_reg(
+    estimate_catch_rate, flat,
+    by = species, estimator = "ratio-of-means"
+  )
+  on_targeted <- quiet_reg(
+    estimate_catch_rate, flat,
+    by = species, estimator = "ratio-of-means", targeted = FALSE
+  )
+
+  expect_identical(on_targeted$estimates$n, on_all$estimates$n)
+  expect_equal(on_targeted$estimates$estimate, on_all$estimates$estimate)
+})
+
+test_that("the species regression reports the variance that actually ran (#290)", {
+  # The slope's SE is a leave-one-out jackknife computed inside the regression
+  # internals; `variance` is never consulted there. Reporting the caller's
+  # Taylor default would name a variance that did not run -- the #284 class of
+  # mislabel, and the ungrouped and sectioned paths already say "jackknife".
+  design <- sec_reg_design()
+  flat <- design
+  flat[["sections"]] <- NULL
+
+  flat_reg <- quiet_reg(estimate_catch_rate, flat, by = species, estimator = "regression")
+  sec_reg <- quiet_reg(estimate_catch_rate, design, by = species, estimator = "regression")
+  expect_identical(flat_reg$variance_method, "jackknife")
+  expect_identical(sec_reg$variance_method, "jackknife")
+
+  # Not asserting a constant: the estimators that do consult `variance` still
+  # report it.
+  rom <- quiet_reg(estimate_catch_rate, flat, by = species, estimator = "ratio-of-means")
+  expect_identical(rom$variance_method, "taylor")
 })
 
 test_that("targeted = TRUE keeps every interview for the species (#290)", {

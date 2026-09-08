@@ -1838,11 +1838,22 @@ estimate_catch_rate <- function(
       ))
     }
 
+    # The regression slope's SE is a leave-one-out jackknife computed inside the
+    # regression internals; `variance` is never consulted there. Recording the
+    # caller's Taylor default would name a variance that did not run -- the #284
+    # class of mislabel, and the ungrouped and sectioned regression paths
+    # already report "jackknife".
+    species_variance_method <- if (identical(estimator, "regression")) {
+      "jackknife"
+    } else {
+      variance
+    }
+
     return(new_creel_estimates(
       # nolint: object_usage_linter
       estimates = tibble::as_tibble(estimates_df),
       method = method_label,
-      variance_method = variance,
+      variance_method = species_variance_method,
       design = design,
       conf_level = conf_level,
       by_vars = by_info$all_vars,
@@ -5881,7 +5892,12 @@ estimate_cpue_species <- function(
     # branch applies upstream -- that one is inert here, because an interview
     # that caught something is non-zero however little of this species it holds
     # (GH #304).
-    if (!targeted) {
+    # Confined to the regression form deliberately. Widening it to every
+    # estimator would silently move numbers that ratio-of-means callers already
+    # get: `targeted` has always been read inside the mean-of-ratios branch
+    # upstream, which tests TOTAL catch and is inert on a species request.
+    # Whether the other estimators should adopt the per-species test is GH #304.
+    if (!targeted && identical(estimator, "regression")) {
       n_before <- nrow(sp_data)
       zero_rows <- sp_data[[".species_count"]] == 0 | is.na(sp_data[[".species_count"]])
       n_zero <- sum(zero_rows, na.rm = TRUE)
