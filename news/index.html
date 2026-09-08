@@ -209,6 +209,14 @@
 </li>
 </ul></div>
 <div class="section level3">
+<h3 id="internal-development-version">Internal<a class="anchor" aria-label="anchor" href="#internal-development-version"></a></h3>
+<ul><li>
+<p><code><a href="../reference/creel_n_effort.html">creel_n_effort()</a></code> and <code><a href="../reference/creel_n_camera.html">creel_n_camera()</a></code> now share one internal implementation instead of holding two copies of the same 37 lines (<a href="https://github.com/chrischizinski/tidycreel/issues/295" class="external-link">#295</a>).</p>
+<p>The two are the same stratified allocation reached through two vocabularies — sampling days for angler contact, camera-days for a camera deployment — and after <a href="https://github.com/chrischizinski/tidycreel/issues/234" class="external-link">#234</a> removed the camera-only warning their bodies were byte-identical. Two copies of one computation is how a fix lands in one twin and not the other, which this package has hit repeatedly with the three near-twin <code>creel-estimates-total-*.R</code> files.</p>
+<p><strong>No user-visible change.</strong> Both functions keep their exports, their separate help pages and their own vocabulary; validation moved into the shared internal but the checkmate assertions name the same arguments, so error messages are unchanged. Verified over 2,000 random inputs against the previous implementation: zero differences. A test now pins the two entry points as identical, so a future re-copy that edits one of them fails.</p>
+</li>
+</ul></div>
+<div class="section level3">
 <h3 id="breaking-changes-development-version-1">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-development-version-1"></a></h3>
 <ul><li>
 <p><code><a href="../reference/estimate_total_harvest.html">estimate_total_harvest()</a></code> and <code><a href="../reference/estimate_total_release.html">estimate_total_release()</a></code> gain a <code>use_trips</code> argument and now estimate from <strong>complete trips by default</strong>, and <code><a href="../reference/estimate_total_catch.html">estimate_total_catch()</a></code> honours <code>use_trips</code> on the paths that were silently discarding it (<a href="https://github.com/chrischizinski/tidycreel/issues/266" class="external-link">#266</a>). <strong>This changes the numbers all three return on any design that records trip status and holds a mix of complete and incomplete interviews.</strong></p>

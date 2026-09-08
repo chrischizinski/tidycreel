@@ -678,6 +678,32 @@
   [`simulate_creel_data()`](https://chrischizinski.github.io/tidycreel/reference/simulate_creel_data.md)
   ([\#233](https://github.com/chrischizinski/tidycreel/issues/233)).
 
+### Internal
+
+- [`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md)
+  and
+  [`creel_n_camera()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_camera.md)
+  now share one internal implementation instead of holding two copies of
+  the same 37 lines
+  ([\#295](https://github.com/chrischizinski/tidycreel/issues/295)).
+
+  The two are the same stratified allocation reached through two
+  vocabularies — sampling days for angler contact, camera-days for a
+  camera deployment — and after
+  [\#234](https://github.com/chrischizinski/tidycreel/issues/234)
+  removed the camera-only warning their bodies were byte-identical. Two
+  copies of one computation is how a fix lands in one twin and not the
+  other, which this package has hit repeatedly with the three near-twin
+  `creel-estimates-total-*.R` files.
+
+  **No user-visible change.** Both functions keep their exports, their
+  separate help pages and their own vocabulary; validation moved into
+  the shared internal but the checkmate assertions name the same
+  arguments, so error messages are unchanged. Verified over 2,000 random
+  inputs against the previous implementation: zero differences. A test
+  now pins the two entry points as identical, so a future re-copy that
+  edits one of them fails.
+
 ### Breaking changes
 
 - [`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md)
