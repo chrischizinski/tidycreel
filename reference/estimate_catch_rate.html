@@ -167,11 +167,23 @@ are excluded before MOR estimation. Set to NULL to disable truncation
 
 <dt id="arg-targeted">targeted<a class="anchor" aria-label="anchor" href="#arg-targeted"></a></dt>
 <dd><p>Logical. When <code>TRUE</code> (default), all trips are used.
-When <code>FALSE</code>, zero-effort trips are excluded before MOR/MORtr
-estimation — appropriate for non-targeted species where most trips have
-zero catch. A <code>cli_warn()</code> is emitted when more than 70\<!-- % of trips -->
-have zero catch and <code>targeted = TRUE</code> (possible mis-specification).
-Ignored for <code>ratio-of-means</code> estimator.</p></dd>
+When <code>FALSE</code>, zero-catch trips are excluded before estimation —
+appropriate for non-targeted species where most trips have zero catch. The
+estimate is then the rate among the trips that were kept, not the
+fishery-wide rate. A <code>cli_warn()</code> is emitted when more than 70\<!-- % of -->
+trips have zero catch and <code>targeted = TRUE</code> (possible
+mis-specification).</p>
+<p>Which estimators read it, and what "zero catch" means to each:</p><ul><li><p><code>"mor"</code> / <code>"mortr"</code> without <code>by = species</code>:
+excludes trips with zero <em>total</em> catch.</p></li>
+<li><p><code>"mor"</code> / <code>"mortr"</code> with <code>by = species</code>:
+excludes, per species, the trips that caught none of that species.
+The 70\<!-- % warning is likewise per species. Both previously tested the -->
+total catch, which made them inert on any species request (GH #304).</p></li>
+<li><p><code>"regression"</code> with <code>by = species</code>: same per-species
+exclusion (GH #290).</p></li>
+<li><p><code>"regression"</code> without <code>by = species</code>: ignored.</p></li>
+<li><p><code>"ratio-of-means"</code>: ignored on every path.</p></li>
+</ul></dd>
 
 
 <dt id="arg-missing-sections">missing_sections<a class="anchor" aria-label="anchor" href="#arg-missing-sections"></a></dt>
