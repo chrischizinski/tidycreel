@@ -169,6 +169,36 @@ test_that("DBI-BACKEND-12: a non-zero seconds time keeps its seconds", {
   expect_true("09:30" %in% df$count_time)
 })
 
+test_that("DBI-BACKEND-13: an NA table name is refused, not passed through", {
+  skip_if_no_duckdb()
+  # nzchar(NA_character_) is TRUE, so an NA name did not trip the empty-name
+  # guard -- it sailed past and reached DBI as a missing value. A YAML key that
+  # is present but empty is how that arrives, which makes it a configuration
+  # mistake rather than a programming one.
+  conn <- creel_connect(
+    make_dbi_conn(),
+    make_dbi_schema(interviews_table = NA_character_)
+  )
+  expect_error(fetch_interviews(conn), class = "creel_error_no_table_name")
+})
+
+test_that("DBI-BACKEND-14: fractional seconds never render as :60", {
+  skip_if_no_duckdb()
+  # SQL Server TIME(7) carries fractional seconds. Rounding the seconds
+  # remainder on its own turned 59.7 into 60, giving "16:29:60" -- not a time,
+  # and .coerce_count_time() would have stored it as readily as a real label.
+  # The total is rounded before it is split instead, so 16:29:59.7 becomes the
+  # 16:30 it is nearer to.
+  f <- tidycreel.connect:::.format_db_time
+  expect_equal(f(as.difftime(59399.7, units = "secs")), "16:30")
+  expect_equal(f(as.difftime(59459.7, units = "secs")), "16:31")
+  expect_equal(f(as.difftime(59400.6, units = "secs")), "16:30:01")
+  # The whole class of failure, not just the two cases above: no rendered label
+  # may carry a 60 in its seconds or minutes field.
+  many <- f(as.difftime(seq(0, 86399, by = 0.7), units = "secs"))
+  expect_false(any(grepl(":60", many, fixed = TRUE)))
+})
+
 # ---- class ------------------------------------------------------------------
 
 test_that("DBI-BACKEND-08: a DBI connection carries both the new and old class", {

@@ -31,7 +31,14 @@
 # one would mean querying whatever happened to match.
 .read_dbi_table <- function(conn, field, table) {
   tbl_name <- conn$schema[[field]]
-  if (is.null(tbl_name) || !nzchar(tbl_name)) {
+  # NA is checked explicitly because nzchar(NA_character_) is TRUE: an NA table
+  # name passed this guard rather than tripping it, and reached dbExistsTable()
+  # as a missing value. A YAML key present but empty is the way that arrives.
+  if (is.null(tbl_name) ||
+        !is.character(tbl_name) ||
+        length(tbl_name) != 1L ||
+        is.na(tbl_name) ||
+        !nzchar(tbl_name)) {
     cli::cli_abort(c(
       "No {table} table is named in the schema.",
       "x" = "{.field {field}} is not set.",
@@ -75,6 +82,11 @@
   } else {
     return(as.character(x))
   }
+  # Rounded to whole seconds BEFORE the split, not after. A TIME(7) column
+  # carries fractional seconds, and rounding the remainder on its own let 59.7
+  # become 60 -- "16:29:60", an invalid label that .coerce_count_time() would
+  # have stored as readily as a valid one.
+  secs <- round(secs)
   out <- ifelse(
     is.na(secs),
     NA_character_,
@@ -85,7 +97,7 @@
     "%02d:%02d:%02d",
     secs[has_secs] %/% 3600,
     (secs[has_secs] %% 3600) %/% 60,
-    round(secs[has_secs] %% 60)
+    secs[has_secs] %% 60
   )
   out
 }
