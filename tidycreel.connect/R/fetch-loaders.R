@@ -86,7 +86,11 @@
   # carries fractional seconds, and rounding the remainder on its own let 59.7
   # become 60 -- "16:29:60", an invalid label that .coerce_count_time() would
   # have stored as readily as a valid one.
-  secs <- round(secs)
+  #
+  # The %% wraps the top of the range for the same reason: rounding 23:59:59.7
+  # carries into 86400 seconds, which renders as "24:00" -- also not a time.
+  # Midnight is the label it is nearest to.
+  secs <- round(secs) %% 86400
   out <- ifelse(
     is.na(secs),
     NA_character_,

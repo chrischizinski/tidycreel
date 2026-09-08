@@ -62,17 +62,22 @@ make_dbi_test_tables <- function() {
 
 #' Open an in-memory duckdb holding the fixture tables.
 #'
-#' `tables` lets a test write a subset, or write under different names, without
-#' rebuilding the data.
-make_dbi_conn <- function(tables = make_dbi_test_tables(), names_map = NULL) {
+#' `tables` is a named list; each element is written under its own name. A test
+#' that wants a different table name passes a differently named list, which is
+#' what DBI-BACKEND-07 does for the single `lengths` table.
+#'
+#' There was a `names_map` argument here for renaming on the way in. Nothing
+#' used it, and it called `%||%`, which base R only supplies from 4.4 while
+#' this package declares R (>= 4.1.0) -- so the one branch no test exercised
+#' was also the one that would have failed for part of the supported range.
+make_dbi_conn <- function(tables = make_dbi_test_tables()) {
   if (!requireNamespace("duckdb", quietly = TRUE)) {
     testthat::skip("duckdb not installed")
   }
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
   withr::defer(DBI::dbDisconnect(con, shutdown = TRUE), envir = parent.frame())
   for (nm in names(tables)) {
-    target <- if (is.null(names_map)) nm else names_map[[nm]] %||% nm
-    DBI::dbWriteTable(con, target, tables[[nm]])
+    DBI::dbWriteTable(con, nm, tables[[nm]])
   }
   con
 }

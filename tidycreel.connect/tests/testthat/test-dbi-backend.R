@@ -193,10 +193,22 @@ test_that("DBI-BACKEND-14: fractional seconds never render as :60", {
   expect_equal(f(as.difftime(59399.7, units = "secs")), "16:30")
   expect_equal(f(as.difftime(59459.7, units = "secs")), "16:31")
   expect_equal(f(as.difftime(59400.6, units = "secs")), "16:30:01")
-  # The whole class of failure, not just the two cases above: no rendered label
-  # may carry a 60 in its seconds or minutes field.
-  many <- f(as.difftime(seq(0, 86399, by = 0.7), units = "secs"))
-  expect_false(any(grepl(":60", many, fixed = TRUE)))
+  # Rounding carries at the top of the range too: 23:59:59.7 reaches 86400
+  # seconds, which rendered as "24:00". Midnight is the nearest real label.
+  expect_equal(f(as.difftime(86399.7, units = "secs")), "00:00")
+  expect_equal(f(as.difftime(86399, units = "secs")), "23:59:59")
+
+  # The whole class of failure rather than the cases above. The first sweep
+  # stopped at 86399 and tested only for ":60", so it ran past the carry that
+  # produced "24:00" without seeing it. Every rendered label must now be a real
+  # time of day, field by field.
+  #
+  # Checked by pattern rather than strptime(): "%H:%M:%OS" returns NA for a
+  # label with no seconds, so it would have failed every whole-minute time and
+  # told us nothing about the range.
+  many <- f(as.difftime(seq(0, 86400, by = 0.7), units = "secs"))
+  valid <- grepl("^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$", many)
+  expect_true(all(valid))
 })
 
 # ---- class ------------------------------------------------------------------
