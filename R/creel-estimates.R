@@ -3440,14 +3440,9 @@ aggregate_section_totals <- function(by_formula, full_design_svy, count_formula,
 #' whether values are distinct: on a short survey a real grouping column such as
 #' `date` can be unique per row without being a key.
 #'
-#' @param vars Character vector of names already resolved from `by_quo`.
-#' @param by_quo The quosure that produced them, re-resolved to tell a wildcard
-#'   match from an explicit one.
-#' @param data The frame `vars` was resolved against.
 #' @param design A creel_design object.
-#' @param error_call Environment used for error reporting.
 #'
-#' @return `vars` with derived columns removed.
+#' @return Character vector of the interview columns this design derived.
 #'
 #' @keywords internal
 #' @noRd
@@ -3465,6 +3460,22 @@ derived_interview_cols <- function(design) {
   unique(cols[!vapply(cols, is.null, logical(1))])
 }
 
+#' Refuse or drop the by= names that cannot be grouping variables
+#'
+#' The screen itself; [derived_interview_cols()] above supplies the set it
+#' works from. See that block for why both tests are structural.
+#'
+#' @param vars Character vector of names already resolved from `by_quo`.
+#' @param by_quo The quosure that produced them, re-resolved to tell a wildcard
+#'   match from an explicit one.
+#' @param data The frame `vars` was resolved against.
+#' @param design A creel_design object.
+#' @param error_call Environment used for error reporting.
+#'
+#' @return `vars` with derived columns removed.
+#'
+#' @keywords internal
+#' @noRd
 screen_by_vars <- function(vars, by_quo, data, design, error_call = rlang::caller_env()) {
   derived_cols <- derived_interview_cols(design)
   derived <- intersect(derived_cols, vars)
@@ -3492,6 +3503,7 @@ screen_by_vars <- function(vars, by_quo, data, design, error_call = rlang::calle
           "x" = "{cli::qty(length(derived))}{?It is/They are} computed by {.fn add_interviews}, not data you supplied.",
           "i" = "Group by a column from your own interviews instead."
         ),
+        class = "creel_error_derived_col_in_by",
         call = error_call
       )
     }
@@ -3515,6 +3527,7 @@ screen_by_vars <- function(vars, by_quo, data, design, error_call = rlang::calle
         "i" = "Group by a column that repeats across interviews, such as
                {.field {design$strata_col}} or a trip attribute."
       ),
+      class = "creel_error_key_in_by",
       call = error_call
     )
   }

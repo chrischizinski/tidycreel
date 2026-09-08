@@ -51,7 +51,7 @@ test_that("BY-01 (#293): the interview key is refused as a grouping variable", {
 
   expect_error(
     tidycreel:::resolve_species_by(rlang::quo(interview_id), design),
-    "interview key"
+    class = "creel_error_key_in_by"
   )
 })
 
@@ -63,7 +63,13 @@ test_that("BY-02 (#293): everything() is refused rather than run unbounded", {
   # key -- a generic error would leave the user no way to fix the call.
   expect_error(
     tidycreel:::resolve_species_by(rlang::quo(everything()), design),
-    "interview key"
+    class = "creel_error_key_in_by"
+  )
+  # The class is what code should catch, but the message has to name the column
+  # or the user cannot tell which of their by= terms to drop.
+  expect_error(
+    tidycreel:::resolve_species_by(rlang::quo(everything()), design),
+    "interview_id"
   )
 })
 
@@ -75,14 +81,18 @@ test_that("BY-03 (#293): naming a derived column is refused", {
   expect_true(".angler_effort" %in% tidycreel:::derived_interview_cols(design))
   expect_error(
     tidycreel:::resolve_species_by(rlang::quo(.angler_effort), design),
-    "the package derived"
+    class = "creel_error_derived_col_in_by"
+  )
+  expect_error(
+    tidycreel:::resolve_species_by(rlang::quo(.angler_effort), design),
+    "\\.angler_effort"
   )
 
   # A pattern matching only derived columns is an explicit request too:
   # silently returning an empty grouping would be worse than the error.
   expect_error(
     tidycreel:::resolve_species_by(rlang::quo(starts_with(".")), design),
-    "the package derived"
+    class = "creel_error_derived_col_in_by"
   )
 })
 
@@ -149,7 +159,7 @@ test_that("BY-10 (#293): what a pattern means depends on what else it matches", 
   # Only dot-named column is the derived one -> the pattern can only have meant it.
   expect_error(
     tidycreel:::resolve_species_by(rlang::quo(starts_with(".")), design),
-    "the package derived"
+    class = "creel_error_derived_col_in_by"
   )
 
   # A user column also matches -> the pattern still has something of theirs to
@@ -214,6 +224,6 @@ test_that("BY-06 (#293): the key is refused via any attachment that registered i
 
   expect_error(
     tidycreel:::resolve_species_by(rlang::quo(interview_id), lengths_only),
-    "interview key"
+    class = "creel_error_key_in_by"
   )
 })
