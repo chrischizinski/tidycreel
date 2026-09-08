@@ -73,10 +73,18 @@ are excluded before MOR estimation. Set to NULL to disable truncation
 (research mode only). Ignored for ratio-of-means estimator.}
 
 \item{targeted}{Logical. When \code{TRUE} (default), all trips are used.
-When \code{FALSE}, zero-effort trips are excluded before MOR/MORtr
-estimation — appropriate for non-targeted species where most trips have
-zero catch. A \code{cli_warn()} is emitted when more than 70\\% of trips
-have zero catch and \code{targeted = TRUE} (possible mis-specification).
+When \code{FALSE}, zero-catch trips are excluded before MOR/MORtr or
+regression estimation — appropriate for non-targeted species where most
+trips have zero catch. The estimate is then the rate among trips that
+caught the species, not the fishery-wide rate. A \code{cli_warn()} is
+emitted when more than 70\\% of trips have zero catch and
+\code{targeted = TRUE} (possible mis-specification).
+
+On a \code{by = species} request both the exclusion and the 70\\% warning
+test that species' own zero-filled count, not the total catch. They
+previously tested the total, which made both inert on any species request
+under the mean-of-ratios estimator (GH #304).
+
 Ignored for \code{ratio-of-means} estimator.}
 
 \item{missing_sections}{Character string controlling behavior when a

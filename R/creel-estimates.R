@@ -882,10 +882,18 @@ estimate_effort <- function(
 #'   are excluded before MOR estimation. Set to NULL to disable truncation
 #'   (research mode only). Ignored for ratio-of-means estimator.
 #' @param targeted Logical. When \code{TRUE} (default), all trips are used.
-#'   When \code{FALSE}, zero-effort trips are excluded before MOR/MORtr
-#'   estimation — appropriate for non-targeted species where most trips have
-#'   zero catch. A \code{cli_warn()} is emitted when more than 70\% of trips
-#'   have zero catch and \code{targeted = TRUE} (possible mis-specification).
+#'   When \code{FALSE}, zero-catch trips are excluded before MOR/MORtr or
+#'   regression estimation — appropriate for non-targeted species where most
+#'   trips have zero catch. The estimate is then the rate among trips that
+#'   caught the species, not the fishery-wide rate. A \code{cli_warn()} is
+#'   emitted when more than 70\% of trips have zero catch and
+#'   \code{targeted = TRUE} (possible mis-specification).
+#'
+#'   On a \code{by = species} request both the exclusion and the 70\% warning
+#'   test that species' own zero-filled count, not the total catch. They
+#'   previously tested the total, which made both inert on any species request
+#'   under the mean-of-ratios estimator (GH #304).
+#'
 #'   Ignored for \code{ratio-of-means} estimator.
 #' @param missing_sections Character string controlling behavior when a
 #'   registered section has no interview observations. \code{"warn"} (default)
@@ -1529,6 +1537,22 @@ estimate_catch_rate <- function(
     }
   }
 
+  # Detect species-level grouping.
+  #
+  # Resolved HERE, above the MOR branch, rather than at the dispatch site below,
+  # because the MOR branch reads `targeted` and the >70% zero-catch warning off
+  # `design$catch_col` -- the TOTAL catch column. On a species request that is
+  # the wrong column: the split into per-species counts has not happened yet, so
+  # a trip that caught one fish of any species tests as non-zero however many of
+  # THIS species it holds. Both tests were therefore inert on exactly the
+  # requests they exist for (GH #304). They are now skipped on a species request
+  # and re-applied per species inside estimate_cpue_species().
+  #
+  # Resolving early is safe: eval_select runs against column names only, and no
+  # branch between here and the old call site adds or renames a column.
+  by_info <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
+  species_request <- !is.null(by_info$species_var)
+
   # If MOR estimator requested, validate and filter to incomplete trips
   if (estimator %in% c("mor", "mortr")) {
     # Determine if we already filtered via use_trips
@@ -1587,7 +1611,12 @@ estimate_catch_rate <- function(
     }
 
     # targeted = FALSE: exclude zero-catch trips (non-targeted species)
-    if (!targeted) {
+    #
+    # Both this exclusion and the mis-specification warning below test
+    # `design$catch_col`, the total catch. That is the right column for an
+    # ungrouped or calendar-grouped request and the wrong one for a species
+    # request, which is served per species further down (GH #304).
+    if (!targeted && !species_request) {
       catch_col_local <- design$catch_col
       n_before_target <- nrow(incomplete_interviews)
       zero_catch_rows <- incomplete_interviews[[catch_col_local]] == 0 |
@@ -1608,7 +1637,7 @@ estimate_catch_rate <- function(
           "i" = "Set {.code targeted = TRUE} or check catch data."
         ))
       }
-    } else {
+    } else if (targeted && !species_request) {
       # Warn when targeted = TRUE but most trips are zero-catch
       # (possible mis-specification for a non-targeted species)
       catch_col_local <- design$catch_col
@@ -1778,8 +1807,7 @@ estimate_catch_rate <- function(
     ))
   }
 
-  # Detect species-level grouping
-  by_info <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
+  # `by_info` was resolved above the MOR branch; see the note there.
 
   # The species dispatch sits above the regression route, so a species request
   # used to win and return ratio-of-means numbers under a regression estimator
@@ -5888,16 +5916,21 @@ estimate_cpue_species <- function(
     # independent of which estimator runs: the result is then the rate among
     # trips that caught the species, not the fishery-wide rate.
     #
-    # Note this is per species, not the zero-TOTAL-catch test the mean-of-ratios
-    # branch applies upstream -- that one is inert here, because an interview
-    # that caught something is non-zero however little of this species it holds
-    # (GH #304).
-    # Confined to the regression form deliberately. Widening it to every
-    # estimator would silently move numbers that ratio-of-means callers already
-    # get: `targeted` has always been read inside the mean-of-ratios branch
-    # upstream, which tests TOTAL catch and is inert on a species request.
-    # Whether the other estimators should adopt the per-species test is GH #304.
-    if (!targeted && identical(estimator, "regression")) {
+    # This is per species. The upstream mean-of-ratios branch tests TOTAL catch,
+    # which is inert on a species request -- an interview that caught something
+    # is non-zero however little of this species it holds. That branch now skips
+    # both of its tests when the request names a species, and they are applied
+    # here instead against `.species_count` (GH #304).
+    #
+    # Honoured by the regression and mean-of-ratios forms. NOT by
+    # ratio-of-means, for which `targeted` is documented as ignored: ROM has
+    # never read it on any path, and making it do so here would move numbers on
+    # the package's default estimator.
+    #
+    # "mortr" is absent from the test because it cannot arrive: it is
+    # normalised to "mor" above the species dispatch, and the sectioned caller
+    # normalises it again before reaching here. Listing it would be dead code.
+    if (!targeted && estimator %in% c("regression", "mor")) {
       n_before <- nrow(sp_data)
       zero_rows <- sp_data[[".species_count"]] == 0 | is.na(sp_data[[".species_count"]])
       n_zero <- sum(zero_rows, na.rm = TRUE)
@@ -5915,6 +5948,28 @@ estimate_cpue_species <- function(
           "No trips remain for {.val {sp}} after zero-catch exclusion.",
           "x" = "No interview caught {.val {sp}} with {.code targeted = FALSE}.",
           "i" = "Set {.code targeted = TRUE} or check catch data."
+        ))
+      }
+    } else if (targeted && identical(estimator, "mor")) {
+      # The mis-specification warning, per species. Same rule and same 70%
+      # threshold the mean-of-ratios branch applies upstream, and confined to
+      # the same estimator; only the column it tests changes. Upstream it read
+      # total catch, so on the very designs it exists to flag -- one sparse
+      # species among several -- it saw no zeros at all and never fired.
+      n_total_trips <- nrow(sp_data)
+      n_zero_catch <- sum(
+        sp_data[[".species_count"]] == 0 | is.na(sp_data[[".species_count"]]),
+        na.rm = TRUE
+      )
+      if (n_total_trips > 0L && (n_zero_catch / n_total_trips) > 0.70) {
+        pct_zero <- round(100 * n_zero_catch / n_total_trips) # nolint: object_usage_linter
+        cli::cli_warn(c(
+          "{.val {sp}}: {pct_zero}% of trips caught none of this species.",
+          "i" = paste(
+            "For a non-targeted species, consider",
+            "{.code targeted = FALSE} to estimate the rate among trips",
+            "that caught it."
+          )
         ))
       }
     }

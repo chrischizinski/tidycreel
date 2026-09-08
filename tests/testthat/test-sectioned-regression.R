@@ -232,9 +232,9 @@ test_that("species plus regression runs the regression on a sectioned design (#2
 
 test_that("targeted = FALSE drops this species' zeros, not zero-total-catch trips (#290)", {
   # The estimand switches to the rate among trips that caught the species, so
-  # the exclusion has to be per species. The mean-of-ratios branch tests total
-  # catch instead and is inert here -- filed as #304 -- which is why this test
-  # asserts the count dropped, not merely that a warning appeared.
+  # the exclusion has to be per species. The mean-of-ratios branch used to test
+  # total catch and was inert here until #304 redirected it, which is why this
+  # test asserts the count dropped, not merely that a warning appeared.
   design <- sec_reg_design()
   flat <- design
   flat[["sections"]] <- NULL
@@ -285,12 +285,12 @@ test_that("targeted = FALSE drops this species' zeros, not zero-total-catch trip
   )))
 })
 
-test_that("targeted = FALSE leaves the other estimators alone (#290, #304)", {
-  # The per-species exclusion is confined to the regression form. Widening it
-  # would silently move numbers ratio-of-means callers already get, because
-  # `targeted` has always been read in the mean-of-ratios branch upstream,
-  # which tests TOTAL catch and is inert on a species request. GH #304 decides
-  # whether the others should adopt it; until then they must not change.
+test_that("targeted = FALSE leaves ratio-of-means alone (#290, #304)", {
+  # #304 gave the per-species exclusion to the mean-of-ratios form as well, so
+  # regression and MOR now agree. Ratio-of-means is deliberately left out: it
+  # is the package default and `targeted` is documented as ignored for it, so
+  # honouring it here would move numbers for callers who never opted into a
+  # change of estimand.
   design <- sec_reg_design()
   flat <- design
   flat[["sections"]] <- NULL
