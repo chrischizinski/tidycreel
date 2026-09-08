@@ -128,7 +128,9 @@ survey type are mapped.</p>
 <span>  circuit_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  angler_method_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  species_sought_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  refused_col <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  refused_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  harvest_lengths_table <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  release_lengths_table <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -155,7 +157,9 @@ survey type are mapped.</p>
 
 
 <dt id="arg-lengths-table">lengths_table<a class="anchor" aria-label="anchor" href="#arg-lengths-table"></a></dt>
-<dd><p>Name of the lengths table in the data source.</p></dd>
+<dd><p>Name of the lengths table in the data source. Used for
+both the harvest and release length fetches unless one of the two below
+names its own table.</p></dd>
 
 
 <dt id="arg-date-col">date_col<a class="anchor" aria-label="anchor" href="#arg-date-col"></a></dt>
@@ -333,6 +337,17 @@ to. Required alongside <code>site_col</code> for the bus-route expansion (GH #12
 
 <dt id="arg-refused-col">refused_col<a class="anchor" aria-label="anchor" href="#arg-refused-col"></a></dt>
 <dd><p>Column name for refused interviews indicator.</p></dd>
+
+
+<dt id="arg-harvest-lengths-table">harvest_lengths_table<a class="anchor" aria-label="anchor" href="#arg-harvest-lengths-table"></a></dt>
+<dd><p>Name of the harvest lengths table, when the
+source keeps harvest and release lengths in separate tables. Falls back to
+<code>lengths_table</code> when not given.</p></dd>
+
+
+<dt id="arg-release-lengths-table">release_lengths_table<a class="anchor" aria-label="anchor" href="#arg-release-lengths-table"></a></dt>
+<dd><p>Name of the release lengths table, on the same
+terms as <code>harvest_lengths_table</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">

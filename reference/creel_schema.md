@@ -52,7 +52,9 @@ creel_schema(
   circuit_col = NULL,
   angler_method_col = NULL,
   species_sought_col = NULL,
-  refused_col = NULL
+  refused_col = NULL,
+  harvest_lengths_table = NULL,
+  release_lengths_table = NULL
 )
 ```
 
@@ -78,7 +80,9 @@ creel_schema(
 
 - lengths_table:
 
-  Name of the lengths table in the data source.
+  Name of the lengths table in the data source. Used for both the
+  harvest and release length fetches unless one of the two below names
+  its own table.
 
 - date_col:
 
@@ -267,6 +271,17 @@ creel_schema(
 - refused_col:
 
   Column name for refused interviews indicator.
+
+- harvest_lengths_table:
+
+  Name of the harvest lengths table, when the source keeps harvest and
+  release lengths in separate tables. Falls back to `lengths_table` when
+  not given.
+
+- release_lengths_table:
+
+  Name of the release lengths table, on the same terms as
+  `harvest_lengths_table`.
 
 ## Value
 
