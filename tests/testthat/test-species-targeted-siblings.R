@@ -234,6 +234,48 @@ test_that("SIBLING-TARGETED-08b: targeted is appended, not slotted in", {
   }
 })
 
+test_that("SIBLING-TARGETED-08c: targeted is validated on all three rate functions", {
+  design <- make_sibling_targeted_design()
+  # `targeted` reaches `if (!targeted)` unguarded, so NA surfaced as a base
+  # "missing value where TRUE/FALSE needed" naming no argument. NA with no
+  # species was worse: it fell through to the by = species refusal and reported
+  # the wrong reason entirely. Catch is included because the argument and the
+  # gap predate this PR, and fixing two of three would just move the asymmetry.
+  for (bad in list(NA, "yes", c(TRUE, TRUE), NULL)) {
+    expect_error(
+      suppressMessages(estimate_harvest_rate(
+        design, by = species, estimator = "mor", use_trips = "all", targeted = bad
+      )),
+      class = "creel_error_invalid_targeted"
+    )
+    expect_error(
+      suppressMessages(estimate_release_rate(
+        design, by = species, estimator = "mor", use_trips = "all", targeted = bad
+      )),
+      class = "creel_error_invalid_targeted"
+    )
+    expect_error(
+      suppressMessages(estimate_catch_rate(
+        design, by = species, estimator = "mor", use_trips = "all", targeted = bad
+      )),
+      class = "creel_error_invalid_targeted"
+    )
+  }
+})
+
+test_that("SIBLING-TARGETED-08d: NA does not masquerade as the species refusal", {
+  design <- make_sibling_targeted_design()
+  # `!isTRUE(NA)` is TRUE, so before validation an NA with no `by = species`
+  # aborted with "targeted = FALSE needs by = species" -- a true statement about
+  # a value the caller never passed.
+  expect_error(
+    suppressMessages(estimate_harvest_rate(
+      design, estimator = "mor", use_trips = "all", targeted = NA
+    )),
+    class = "creel_error_invalid_targeted"
+  )
+})
+
 test_that("SIBLING-TARGETED-09: default arguments move no sibling estimate", {
   design <- make_sibling_targeted_design()
   # #307 adds a knob and a diagnostic warning; it must not move a number for

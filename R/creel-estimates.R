@@ -1118,6 +1118,8 @@ estimate_catch_rate <- function(
   }
 
   # Validate variance parameter
+  validate_targeted(targeted) # nolint: object_usage_linter
+
   valid_methods <- c("taylor", "bootstrap", "jackknife")
   if (!variance %in% valid_methods) {
     cli::cli_abort(c(
@@ -2172,6 +2174,8 @@ estimate_harvest_rate <- function(
   by_quo <- rlang::enquo(by)
 
   # Validate variance parameter
+  validate_targeted(targeted) # nolint: object_usage_linter
+
   valid_methods <- c("taylor", "bootstrap", "jackknife")
   if (!variance %in% valid_methods) {
     cli::cli_abort(c(
@@ -2681,6 +2685,8 @@ estimate_release_rate <- function(
   by_quo <- rlang::enquo(by)
 
   # Validate variance parameter
+  validate_targeted(targeted) # nolint: object_usage_linter
+
   valid_methods <- c("taylor", "bootstrap", "jackknife")
   if (!variance %in% valid_methods) {
     cli::cli_abort(c(
@@ -5968,6 +5974,38 @@ compute_stratum_product_sum <- function(
     }
     sp_result
   }
+}
+
+#' Validate the `targeted` argument
+#'
+#' `targeted` reaches `if (!targeted)` and `targeted && ...` unguarded, so a
+#' missing or non-logical value surfaced as a base error -- "missing value
+#' where TRUE/FALSE needed" -- naming no argument and carrying no condition
+#' class. Worse, `NA` with no species reached the `by = species` refusal first
+#' and reported the wrong reason. Checked once, at each public entry point,
+#' before any branch reads it.
+#'
+#' @param targeted The value as supplied.
+#' @param call Environment for the error message.
+#'
+#' @return `TRUE` invisibly; aborts otherwise.
+#'
+#' @keywords internal
+#' @noRd
+validate_targeted <- function(targeted, call = rlang::caller_env()) {
+  if (!is.logical(targeted) || length(targeted) != 1L || is.na(targeted)) {
+    cli::cli_abort(
+      c(
+        "{.arg targeted} must be {.code TRUE} or {.code FALSE}.",
+        "x" = "Got {.obj_type_friendly {targeted}} of length {length(targeted)}.",
+        "i" = "{.code targeted = FALSE} restricts the estimate to trips that
+               recorded the species being estimated."
+      ),
+      class = "creel_error_invalid_targeted",
+      call = call
+    )
+  }
+  invisible(TRUE)
 }
 
 #' Apply `targeted` to one species' zero-filled interview data
