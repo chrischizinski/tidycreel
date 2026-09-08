@@ -512,6 +512,62 @@
 
 ### Documentation
 
+- [`impute_camera_counts()`](https://chrischizinski.github.io/tidycreel/reference/impute_camera_counts.md)
+  no longer attributes either of its imputation models to a paper that
+  does not contain it
+  ([\#297](https://github.com/chrischizinski/tidycreel/issues/297)).
+
+  Both citations named the wrong work. The negative binomial GLMM was
+  credited to a real Afrifa-Yamoah et al. (2020) paper — but the group’s
+  *climate* time-series paper, which imputes weather data with
+  expectation maximisation and LSTM neural networks, and which the
+  relevant paper itself cites for that purpose. The relevant one is
+
+  > Afrifa-Yamoah, E., Taylor, S.M., Fisher, A. & Mueller, U. (2020).
+  > Imputation of missing data from time-lapse cameras used in
+  > recreational fishing surveys. *ICES Journal of Marine Science*
+  > 77(7-8): 2984-2994.
+
+  and swapping it in unqualified would have repeated the defect at a
+  finer grain: that paper evaluates nine models in a fully conditional
+  specification multiple-imputation framework and concludes that
+  **zero-inflated Poisson** models “were generally ranked best”,
+  reporting the negative binomial fits as slow and cumbersome to
+  converge. Its fixed effects are climatic covariates and its random
+  intercepts are temporal classes; neither appears here. It is now cited
+  for what it does support — the multiple-imputation framing behind
+  `m > 1` and
+  [`est_effort_camera_mi()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera_mi.md).
+
+  The Poisson GLM default was attributed in-text to “Hartill 2016”, with
+  no matching reference entry to follow. Hartill et al. (2016) do impute
+  camera outages with a GLM, but a cross-site one: the outage ramp’s
+  daily count is predicted from the counts at *two other ramps* the same
+  day, square-root transformed as third-order polynomials, given fishing
+  year, season and day-type. The word “Poisson” does not appear in the
+  paper, and their stated reason for a cross-site model is that
+  same-ramp neighbouring days were “not considered to be sufficiently
+  representative” — an argument away from, not towards, a local mean.
+  Both papers now carry full reference entries saying what each does and
+  does not support, and a new “Where these imputation models come from”
+  section states plainly that the two models offered are the package’s
+  own choices.
+
+  Also corrected in passing: the high-missingness warning told the user
+  that results “may be unreliable (Afrifa-Yamoah 2020)”, where that
+  paper reports “no clear systematic trend in the performance of the
+  models with respect to … the proportion of missing data” and
+  successfully imputed months of complete outage. The warning is kept —
+  over half a stratum being model predictions is worth saying — but it
+  no longer claims a source that says the opposite. A code comment
+  describing the GLMM’s `(1 | site_col)` term as a random slope now
+  calls it a random intercept, matching the formula and the `site_col`
+  documentation. The description also no longer calls `strata_col` the
+  model’s “sole predictor”: it partitions the data, and a separate
+  intercept-only model is fitted within each level.
+
+  Documentation only; no estimate, imputed value or model changes.
+
 - Corrected two bad references in
   [`simulate_creel_data()`](https://chrischizinski.github.io/tidycreel/reference/simulate_creel_data.md)
   ([\#233](https://github.com/chrischizinski/tidycreel/issues/233)) —
