@@ -1,3 +1,70 @@
+#' Stratified sample size under proportional allocation
+#'
+#' Internal. The arithmetic behind [creel_n_effort()] and [creel_n_camera()],
+#' which are the same computation reached through two vocabularies: sampling
+#' days for angler contact, and camera-days for a camera deployment. They were
+#' separate copies of this body until #295, at which point they had already
+#' drifted once -- #234 removed a warning that existed in the camera copy only
+#' and left the two byte-identical. Keeping one implementation is what stops a
+#' future fix landing in one twin and not the other, a failure mode this package
+#' has hit repeatedly with the three near-twin `creel-estimates-total-*.R`
+#' files.
+#'
+#' Argument validation lives here too, so both entry points refuse the same
+#' inputs with the same messages. The checkmate assertions name the argument
+#' (`N_h`, `ybar_h`, ...), and those names are identical in both entry points
+#' and here, so the messages callers see are unchanged by the extraction.
+#'
+#' @inheritParams creel_n_effort
+#'
+#' @return A named integer vector: one element per stratum, plus `total` and
+#'   `allocated`. See [creel_n_effort()] for what those two mean and why both
+#'   are reported.
+#'
+#' @keywords internal
+#' @noRd
+stratified_n_proportional <- function(
+  cv_target,
+  N_h, # nolint: object_name_linter
+  ybar_h, # nolint: object_name_linter
+  s2_h # nolint: object_name_linter
+) {
+  # nolint: object_name_linter
+  checkmate::assert_number(cv_target, lower = 1e-6, upper = 1.0)
+  checkmate::assert_numeric(N_h, lower = 1, min.len = 1, names = "named") # nolint: object_name_linter
+  checkmate::assert_numeric(ybar_h, lower = 0, len = length(N_h)) # nolint: object_name_linter
+  checkmate::assert_numeric(s2_h, lower = 0, len = length(N_h)) # nolint: object_name_linter
+
+  E_total <- sum(N_h * ybar_h) # nolint: object_name_linter
+  V_0 <- (cv_target * E_total)^2 # nolint: object_name_linter
+  s_h <- sqrt(s2_h) # nolint: object_name_linter
+
+  # Cochran (1977) eq. 5.25 -- FPC omitted (intentional; see @details)
+  numerator <- sum(N_h * s_h)^2 # nolint: object_name_linter
+  denominator <- V_0 + sum(N_h * s2_h) # nolint: object_name_linter
+  n_total <- ceiling(numerator / denominator)
+
+  # Proportional allocation per stratum
+  w_h <- N_h / sum(N_h) # nolint: object_name_linter
+  n_h <- ceiling(n_total * w_h) # nolint: object_name_linter
+  names(n_h) <- names(N_h) # nolint: object_name_linter
+
+  storage.mode(n_h) <- "integer" # nolint: object_name_linter
+  storage.mode(n_total) <- "integer"
+
+  # Two different quantities, both wanted, so both are named (GH #195).
+  # `total` is Cochran's n, solved from the variance equation before allocation.
+  # `allocated` is what actually gets sampled: each stratum is ceiling-ed on its
+  # own, so the parts sum to as much as k-1 more than n for k strata. Reporting
+  # only `total` beside per-stratum rows invited it to be read as their sum,
+  # which it is not, and under-books the survey by the difference.
+  n_allocated <- sum(n_h)
+  storage.mode(n_allocated) <- "integer"
+
+  c(n_h, total = n_total, allocated = n_allocated) # nolint: object_name_linter
+}
+
+
 #' Calculate sampling days required to achieve a target CV on effort
 #'
 #' Uses the stratified sample size formula from McCormick & Quist (2017) to
@@ -57,39 +124,12 @@
 #'   s2_h = c(400, 500)
 #' )
 creel_n_effort <- function(cv_target, N_h, ybar_h, s2_h) {
-  # nolint: object_name_linter
-  checkmate::assert_number(cv_target, lower = 1e-6, upper = 1.0)
-  checkmate::assert_numeric(N_h, lower = 1, min.len = 1, names = "named") # nolint: object_name_linter
-  checkmate::assert_numeric(ybar_h, lower = 0, len = length(N_h)) # nolint: object_name_linter
-  checkmate::assert_numeric(s2_h, lower = 0, len = length(N_h)) # nolint: object_name_linter
-
-  E_total <- sum(N_h * ybar_h) # nolint: object_name_linter
-  V_0 <- (cv_target * E_total)^2 # nolint: object_name_linter
-  s_h <- sqrt(s2_h) # nolint: object_name_linter
-
-  # Cochran (1977) eq. 5.25 -- FPC omitted (intentional; see @details)
-  numerator <- sum(N_h * s_h)^2 # nolint: object_name_linter
-  denominator <- V_0 + sum(N_h * s2_h) # nolint: object_name_linter
-  n_total <- ceiling(numerator / denominator)
-
-  # Proportional allocation per stratum
-  w_h <- N_h / sum(N_h) # nolint: object_name_linter
-  n_h <- ceiling(n_total * w_h) # nolint: object_name_linter
-  names(n_h) <- names(N_h) # nolint: object_name_linter
-
-  storage.mode(n_h) <- "integer" # nolint: object_name_linter
-  storage.mode(n_total) <- "integer"
-
-  # Two different quantities, both wanted, so both are named (GH #195).
-  # `total` is Cochran's n, solved from the variance equation before allocation.
-  # `allocated` is what actually gets sampled: each stratum is ceiling-ed on its
-  # own, so the parts sum to as much as k-1 more than n for k strata. Reporting
-  # only `total` beside per-stratum rows invited it to be read as their sum,
-  # which it is not, and under-books the survey by the difference.
-  n_allocated <- sum(n_h)
-  storage.mode(n_allocated) <- "integer"
-
-  c(n_h, total = n_total, allocated = n_allocated) # nolint: object_name_linter
+  stratified_n_proportional(
+    cv_target = cv_target,
+    N_h = N_h, # nolint: object_name_linter
+    ybar_h = ybar_h, # nolint: object_name_linter
+    s2_h = s2_h # nolint: object_name_linter
+  )
 }
 
 
@@ -381,39 +421,12 @@ creel_n_cpue <- function(cv_catch, cv_effort, rho = 0, cv_target) {
 #'   s2_h = c(625, 900)
 #' )
 creel_n_camera <- function(cv_target, N_h, ybar_h, s2_h) {
-  # nolint: object_name_linter
-  checkmate::assert_number(cv_target, lower = 1e-6, upper = 1.0)
-  checkmate::assert_numeric(N_h, lower = 1, min.len = 1, names = "named") # nolint: object_name_linter
-  checkmate::assert_numeric(ybar_h, lower = 0, len = length(N_h)) # nolint: object_name_linter
-  checkmate::assert_numeric(s2_h, lower = 0, len = length(N_h)) # nolint: object_name_linter
-
-  E_total <- sum(N_h * ybar_h) # nolint: object_name_linter
-  V_0 <- (cv_target * E_total)^2 # nolint: object_name_linter
-  s_h <- sqrt(s2_h) # nolint: object_name_linter
-
-  # Cochran (1977) eq. 5.25 -- FPC omitted (intentional; see @details)
-  numerator <- sum(N_h * s_h)^2 # nolint: object_name_linter
-  denominator <- V_0 + sum(N_h * s2_h) # nolint: object_name_linter
-  n_total <- ceiling(numerator / denominator)
-
-  # Proportional allocation per stratum
-  w_h <- N_h / sum(N_h) # nolint: object_name_linter
-  n_h <- ceiling(n_total * w_h) # nolint: object_name_linter
-  names(n_h) <- names(N_h) # nolint: object_name_linter
-
-  storage.mode(n_h) <- "integer" # nolint: object_name_linter
-  storage.mode(n_total) <- "integer"
-
-  # Two different quantities, both wanted, so both are named (GH #195).
-  # `total` is Cochran's n, solved from the variance equation before allocation.
-  # `allocated` is what actually gets sampled: each stratum is ceiling-ed on its
-  # own, so the parts sum to as much as k-1 more than n for k strata. Reporting
-  # only `total` beside per-stratum rows invited it to be read as their sum,
-  # which it is not, and under-books the survey by the difference.
-  n_allocated <- sum(n_h)
-  storage.mode(n_allocated) <- "integer"
-
-  c(n_h, total = n_total, allocated = n_allocated) # nolint: object_name_linter
+  stratified_n_proportional(
+    cv_target = cv_target,
+    N_h = N_h, # nolint: object_name_linter
+    ybar_h = ybar_h, # nolint: object_name_linter
+    s2_h = s2_h # nolint: object_name_linter
+  )
 }
 
 
