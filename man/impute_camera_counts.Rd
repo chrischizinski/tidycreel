@@ -101,8 +101,9 @@ the negative binomial: zero-inflated Poisson models "were generally ranked
 best", and they report the negative binomial fits as slow and cumbersome to
 converge. The negative binomial offered by \code{method = "glmm"} is here as an
 overdispersion-tolerant alternative to the Poisson default, not as their
-recommendation, and it falls back to the Poisson GLM when it fails to
-converge.
+recommendation, and it falls back to the Poisson GLM when \code{glmmTMB} fails
+outright. A fit that returns while flagging a convergence problem is used as
+it stands -- there is no convergence check beyond the error.
 
 What this function does take from Afrifa-Yamoah et al. (2020) is the
 multiple-imputation framing itself: that a single completed data set cannot
