@@ -476,14 +476,6 @@ print.creel_estimates <- function(x, ...) {
 #'   \code{by = c(day_type, location)}), or tidyselect helpers (e.g.,
 #'   \code{by = starts_with("day")}). When NULL (default), computes a single
 #'   total estimate across all observations.
-#'
-#'   Two kinds of column are not groupings and are refused: the interview id
-#'   registered by [add_catch()], which holds one value per interview and so
-#'   leaves no within-group variance to estimate, and columns the package
-#'   derived rather than the user supplying, such as `.angler_effort`. A
-#'   wildcard selector drops the derived columns silently; naming one is an
-#'   error. A column of your own is never treated as derived, whatever it is
-#'   called.
 #' @param variance Character string specifying variance estimation method.
 #'   Options: \code{"taylor"} (default, Taylor linearization),
 #'   \code{"bootstrap"} (bootstrap resampling with 500 replicates), or
@@ -851,13 +843,13 @@ estimate_effort <- function(
 #'   \code{by = starts_with("day")}). When NULL (default), computes a single
 #'   CPUE estimate across all interviews.
 #'
-#'   Two kinds of column are not groupings and are refused: the interview id
-#'   registered by [add_catch()], which holds one value per interview and so
-#'   leaves no within-group variance to estimate, and columns the package
-#'   derived rather than the user supplying, such as `.angler_effort`. A
-#'   wildcard selector drops the derived columns silently; naming one is an
-#'   error. A column of your own is never treated as derived, whatever it is
-#'   called.
+#'   Two kinds of column are not groupings and are refused: the interview id,
+#'   as registered by [add_catch()], [add_lengths()] or [add_ages()], which
+#'   holds one value per interview and so leaves no within-group variance to
+#'   estimate; and columns the package derived rather than the user supplying,
+#'   such as `.angler_effort`. A wildcard selector drops the derived columns
+#'   silently; asking for one specifically is an error. A column of your own is
+#'   never treated as derived, whatever it is called.
 #' @param variance Character string specifying variance estimation method.
 #'   Options: \code{"taylor"} (default, Taylor linearization),
 #'   \code{"bootstrap"} (bootstrap resampling with 500 replicates), or
@@ -1923,13 +1915,13 @@ estimate_catch_rate <- function(
 #'   \code{by = starts_with("day")}). When NULL (default), computes a single
 #'   HPUE estimate across all interviews.
 #'
-#'   Two kinds of column are not groupings and are refused: the interview id
-#'   registered by [add_catch()], which holds one value per interview and so
-#'   leaves no within-group variance to estimate, and columns the package
-#'   derived rather than the user supplying, such as `.angler_effort`. A
-#'   wildcard selector drops the derived columns silently; naming one is an
-#'   error. A column of your own is never treated as derived, whatever it is
-#'   called.
+#'   Two kinds of column are not groupings and are refused: the interview id,
+#'   as registered by [add_catch()], [add_lengths()] or [add_ages()], which
+#'   holds one value per interview and so leaves no within-group variance to
+#'   estimate; and columns the package derived rather than the user supplying,
+#'   such as `.angler_effort`. A wildcard selector drops the derived columns
+#'   silently; asking for one specifically is an error. A column of your own is
+#'   never treated as derived, whatever it is called.
 #' @param variance Character string specifying variance estimation method.
 #'   Options: \code{"taylor"} (default, Taylor linearization),
 #'   \code{"bootstrap"} (bootstrap resampling with 500 replicates), or
@@ -2439,13 +2431,13 @@ estimate_harvest_rate <- function(
 #'   or tidyselect helpers. When species grouping is used, per-species release
 #'   rates are estimated.
 #'
-#'   Two kinds of column are not groupings and are refused: the interview id
-#'   registered by [add_catch()], which holds one value per interview and so
-#'   leaves no within-group variance to estimate, and columns the package
-#'   derived rather than the user supplying, such as `.angler_effort`. A
-#'   wildcard selector drops the derived columns silently; naming one is an
-#'   error. A column of your own is never treated as derived, whatever it is
-#'   called.
+#'   Two kinds of column are not groupings and are refused: the interview id,
+#'   as registered by [add_catch()], [add_lengths()] or [add_ages()], which
+#'   holds one value per interview and so leaves no within-group variance to
+#'   estimate; and columns the package derived rather than the user supplying,
+#'   such as `.angler_effort`. A wildcard selector drops the derived columns
+#'   silently; asking for one specifically is an error. A column of your own is
+#'   never treated as derived, whatever it is called.
 #' @param variance Character string specifying variance estimation method.
 #'   Options: \code{"taylor"} (default), \code{"bootstrap"}, or
 #'   \code{"jackknife"}.
@@ -3418,9 +3410,17 @@ aggregate_section_totals <- function(by_formula, full_design_svy, count_formula,
 #'
 #' * **Columns the package derived**, which `add_interviews()` writes into the
 #'   interviews itself. A wildcard selector such as `everything()` means every
-#'   column the user brought, so these are dropped silently; naming one is
-#'   refused, because silently returning something other than what was asked
-#'   for is worse than an error.
+#'   column the user brought, so these are dropped silently; asking for one
+#'   specifically is refused, because silently returning something other than
+#'   what was asked for is worse than an error.
+#'
+#'   The two are told apart by re-resolving the selector against the same frame
+#'   with the derived columns removed: **if that leaves nothing to select, the
+#'   selector was asking for them.** So `starts_with(".")` is a refusal on a
+#'   design whose only dot-named column is derived, and a silent drop on one
+#'   that also has a user column such as `.se_expansion` -- in the second case
+#'   the selector still has something of the user's to return, which is what a
+#'   pattern asks for.
 #' * **The interview key**, whatever column `add_catch()`, `add_lengths()` or
 #'   `add_ages()` was told holds the interview id. It is unique per row by
 #'   construction, so every group holds one interview, every group rate has
@@ -3452,11 +3452,15 @@ aggregate_section_totals <- function(by_formula, full_design_svy, count_formula,
 #' @keywords internal
 #' @noRd
 derived_interview_cols <- function(design) {
+  # angler_effort_col is always ".angler_effort" and always written by
+  # add_interviews(), so there is nothing to distinguish.
   cols <- design[["angler_effort_col"]]
-  # trip_duration_col names a derived column only when add_interviews() built
-  # one; otherwise it is the user's own column and stays groupable.
-  if (identical(design[["trip_duration_col"]], ".trip_duration_hrs")) {
-    cols <- c(cols, ".trip_duration_hrs")
+  # trip_duration_col is different: it names a column add_interviews() computed
+  # only when it computed one, and otherwise the caller's own. The design
+  # records which, because the NAME cannot answer it -- a caller may supply a
+  # column literally called ".trip_duration_hrs".
+  if (isTRUE(design[["trip_duration_derived"]])) {
+    cols <- c(cols, design[["trip_duration_col"]])
   }
   unique(cols[!vapply(cols, is.null, logical(1))])
 }

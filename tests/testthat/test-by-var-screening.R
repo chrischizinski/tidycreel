@@ -105,19 +105,67 @@ test_that("BY-07 (#293/#259): a user column with a dot name stays groupable", {
   expect_identical(vars, c("day_type", ".se_expansion"))
 })
 
-test_that("BY-08 (#293): trip duration is derived only when the package built it", {
-  # `trip_duration_col` names an internal column when add_interviews() computed
-  # the duration, and the user's own column otherwise. Treating the field as
-  # always-internal would refuse a legitimate grouping variable.
+test_that("BY-08 (#293): trip duration counts as derived only when built here", {
+  # `trip_duration_col` names a column add_interviews() computed only when it
+  # computed one, and the caller's own otherwise. The design records WHICH,
+  # because the name cannot answer it -- and answering by name would refuse a
+  # legitimate grouping variable.
   design <- suppressMessages(make_screening_design())
 
   computed <- design
   computed$trip_duration_col <- ".trip_duration_hrs"
+  computed$trip_duration_derived <- TRUE
   expect_true(".trip_duration_hrs" %in% tidycreel:::derived_interview_cols(computed))
 
   supplied <- design
   supplied$trip_duration_col <- "trip_duration"
+  supplied$trip_duration_derived <- FALSE
   expect_false("trip_duration" %in% tidycreel:::derived_interview_cols(supplied))
+
+  # The case a name test gets wrong: the caller's OWN column happens to be
+  # called .trip_duration_hrs. It is theirs, so it stays groupable.
+  collides <- design
+  collides$trip_duration_col <- ".trip_duration_hrs"
+  collides$trip_duration_derived <- FALSE
+  expect_false(".trip_duration_hrs" %in% tidycreel:::derived_interview_cols(collides))
+})
+
+test_that("BY-09 (#293): a design records whether it derived the duration", {
+  # The flag BY-08 relies on has to be set by the constructor, not just be
+  # settable. add_interviews() computes a duration only from trip_start plus
+  # interview_time; given a duration column it must record that it did not.
+  design <- suppressMessages(make_screening_design())
+  expect_false(design$trip_duration_derived)
+  expect_identical(design$trip_duration_col, "trip_duration")
+})
+
+test_that("BY-10 (#293): what a pattern means depends on what else it matches", {
+  # Wildcard-vs-explicit is decided by re-resolving with the derived columns
+  # removed: if that leaves nothing, the selector was asking for them. So the
+  # SAME selector refuses on one design and drops silently on another. That is
+  # deliberate, and pinned here so it stays a decision rather than an accident.
+  design <- suppressMessages(make_screening_design())
+
+  # Only dot-named column is the derived one -> the pattern can only have meant it.
+  expect_error(
+    tidycreel:::resolve_species_by(rlang::quo(starts_with(".")), design),
+    "the package derived"
+  )
+
+  # A user column also matches -> the pattern still has something of theirs to
+  # return, which is what a pattern asks for.
+  with_user_col <- design
+  with_user_col$interviews[[".se_expansion"]] <- rep(
+    c("bank", "boat"),
+    length.out = nrow(with_user_col$interviews)
+  )
+  expect_identical(
+    tidycreel:::resolve_species_by(
+      rlang::quo(starts_with(".")),
+      with_user_col
+    )$interview_vars,
+    ".se_expansion"
+  )
 })
 
 test_that("BY-04 (#293): a wildcard drops derived columns without complaint", {

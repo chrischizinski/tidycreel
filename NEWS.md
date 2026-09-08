@@ -224,16 +224,24 @@
 
   The derived set is read from the design one field at a time, because a
   leading `.` is not the test either. A user column literally named
-  `.se_expansion` is a supported grouping variable (#259), and
-  `design$trip_duration_col` names an internal `.trip_duration_hrs` only when
-  the package computed the duration — otherwise it points at the user's own
-  column, which stays groupable. A column of your own is never treated as
-  derived, whatever it is called.
+  `.se_expansion` is a supported grouping variable (#259). And a design now
+  records **whether** it computed the trip duration, rather than the check
+  inferring it from the column being called `.trip_duration_hrs`: a caller may
+  supply a column of their own by that name, and it stays groupable. A column
+  of your own is never treated as derived, whatever it is called.
 
   Derived columns are treated by how they were selected: a wildcard such as
   `everything()` means every column the user brought, so they are dropped
-  silently, while naming one explicitly is an error rather than a silent
-  substitution.
+  silently, while asking for one specifically is an error rather than a silent
+  substitution. The two are told apart by re-resolving the selector with the
+  derived columns removed — if that leaves nothing to select, the selector was
+  asking for them. One consequence is deliberate and worth knowing:
+  `starts_with(".")` is a refusal on a design whose only dot-named column is
+  derived, and a silent drop on one that also has a user column such as
+  `.se_expansion`.
+
+  `estimate_effort()` is unaffected: it resolves `by =` against the counts,
+  which carry neither an interview key nor these derived columns.
 
   Two limits worth stating. A design with no catch, lengths or ages attached
   registers no id column, so an id there is still accepted — nothing in the

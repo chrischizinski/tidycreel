@@ -2633,6 +2633,12 @@ add_interviews <- function(
 
   # Resolve trip duration input method
   trip_duration_col <- NULL
+  # Whether the duration column below is one this function computed, as opposed
+  # to one the caller supplied. The name alone cannot answer that: a caller may
+  # supply a column of their own literally named ".trip_duration_hrs" (GH #259
+  # shows dot-named user columns are real), and treating theirs as internal
+  # would refuse it as a grouping variable.
+  trip_duration_derived <- FALSE
   trip_start_col <- NULL
   interview_time_col <- NULL
 
@@ -2825,6 +2831,7 @@ add_interviews <- function(
       difftime(interviews[[interview_time_col]], interviews[[trip_start_col]], units = "hours")
     )
     trip_duration_col <- ".trip_duration_hrs"
+    trip_duration_derived <- TRUE
   }
 
   # Normalize trip_status to lowercase
@@ -2933,6 +2940,7 @@ add_interviews <- function(
   new_design$interview_type <- interview_type
   new_design$trip_status_col <- trip_status_col
   new_design$trip_duration_col <- trip_duration_col
+  new_design$trip_duration_derived <- trip_duration_derived
   new_design$trip_start_col <- trip_start_col
   new_design$interview_time_col <- interview_time_col
 
