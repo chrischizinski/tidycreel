@@ -109,7 +109,14 @@ attached. Both count and interview survey objects must exist.</p></dd>
 <dd><p>Optional tidy selector for grouping variables. When specified,
 must match across both effort and CPUE estimates (same calendar strata
 or interview variables). Accepts bare column names, multiple columns, or
-tidyselect helpers.</p></dd>
+tidyselect helpers.</p>
+<p>Two kinds of column are not groupings and are refused: the interview id
+registered by <code><a href="add_catch.html">add_catch()</a></code>, which holds one value per interview and so
+leaves no within-group variance to estimate, and columns the package
+derived rather than the user supplying, such as <code>.angler_effort</code>. A
+wildcard selector drops the derived columns silently; naming one is an
+error. A column of your own is never treated as derived, whatever it is
+called.</p></dd>
 
 
 <dt id="arg-variance">variance<a class="anchor" aria-label="anchor" href="#arg-variance"></a></dt>

@@ -43,7 +43,14 @@ estimate_total_release(
 
   Optional tidy selector for grouping variables. Accepts bare column
   names (e.g., `by = day_type`, `by = species`), multiple columns, or
-  tidyselect helpers.
+  tidyselect helpers. Two kinds of column are not groupings and are
+  refused: the interview id registered by
+  [`add_catch()`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md),
+  which holds one value per interview and so leaves no within-group
+  variance to estimate, and columns the package derived rather than the
+  user supplying, such as `.angler_effort`. A wildcard selector drops
+  the derived columns silently; naming one is an error. A column of your
+  own is never treated as derived, whatever it is called.
 
 - variance:
 

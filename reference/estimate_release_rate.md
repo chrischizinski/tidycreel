@@ -39,6 +39,19 @@ estimate_release_rate(
   tidyselect helpers. When species grouping is used, per-species release
   rates are estimated.
 
+  Two kinds of column are not groupings and are refused: the interview
+  id, as registered by
+  [`add_catch()`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md),
+  [`add_lengths()`](https://chrischizinski.github.io/tidycreel/reference/add_lengths.md)
+  or
+  [`add_ages()`](https://chrischizinski.github.io/tidycreel/reference/add_ages.md),
+  which holds one value per interview and so leaves no within-group
+  variance to estimate; and columns the package derived rather than the
+  user supplying, such as `.angler_effort`. A wildcard selector drops
+  the derived columns silently; asking for one specifically is an error.
+  A column of your own is never treated as derived, whatever it is
+  called.
+
 - variance:
 
   Character string specifying variance estimation method. Options:

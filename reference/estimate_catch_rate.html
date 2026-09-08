@@ -109,7 +109,14 @@ constructed with catch and effort columns.</p></dd>
 names (e.g., <code>by = day_type</code>), multiple columns (e.g.,
 <code>by = c(day_type, location)</code>), or tidyselect helpers (e.g.,
 <code>by = starts_with("day")</code>). When NULL (default), computes a single
-CPUE estimate across all interviews.</p></dd>
+CPUE estimate across all interviews.</p>
+<p>Two kinds of column are not groupings and are refused: the interview id,
+as registered by <code><a href="add_catch.html">add_catch()</a></code>, <code><a href="add_lengths.html">add_lengths()</a></code> or <code><a href="add_ages.html">add_ages()</a></code>, which
+holds one value per interview and so leaves no within-group variance to
+estimate; and columns the package derived rather than the user supplying,
+such as <code>.angler_effort</code>. A wildcard selector drops the derived columns
+silently; asking for one specifically is an error. A column of your own is
+never treated as derived, whatever it is called.</p></dd>
 
 
 <dt id="arg-variance">variance<a class="anchor" aria-label="anchor" href="#arg-variance"></a></dt>

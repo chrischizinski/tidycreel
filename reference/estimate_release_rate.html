@@ -106,7 +106,14 @@ include records with <code>catch_type = "released"</code>.</p></dd>
 <dd><p>Optional tidy selector for grouping variables. Accepts bare column
 names (e.g., <code>by = day_type</code>, <code>by = species</code>), multiple columns,
 or tidyselect helpers. When species grouping is used, per-species release
-rates are estimated.</p></dd>
+rates are estimated.</p>
+<p>Two kinds of column are not groupings and are refused: the interview id,
+as registered by <code><a href="add_catch.html">add_catch()</a></code>, <code><a href="add_lengths.html">add_lengths()</a></code> or <code><a href="add_ages.html">add_ages()</a></code>, which
+holds one value per interview and so leaves no within-group variance to
+estimate; and columns the package derived rather than the user supplying,
+such as <code>.angler_effort</code>. A wildcard selector drops the derived columns
+silently; asking for one specifically is an error. A column of your own is
+never treated as derived, whatever it is called.</p></dd>
 
 
 <dt id="arg-variance">variance<a class="anchor" aria-label="anchor" href="#arg-variance"></a></dt>
