@@ -10,8 +10,6 @@ creel_schema(
   counts_table = NULL,
   catch_table = NULL,
   lengths_table = NULL,
-  harvest_lengths_table = NULL,
-  release_lengths_table = NULL,
   date_col = NULL,
   strata_cols = NULL,
   value_maps = NULL,
@@ -45,7 +43,9 @@ creel_schema(
   circuit_col = NULL,
   angler_method_col = NULL,
   species_sought_col = NULL,
-  refused_col = NULL
+  refused_col = NULL,
+  harvest_lengths_table = NULL,
+  release_lengths_table = NULL
 )
 }
 \arguments{
@@ -62,13 +62,6 @@ creel_schema(
 \item{lengths_table}{Name of the lengths table in the data source. Used for
 both the harvest and release length fetches unless one of the two below
 names its own table.}
-
-\item{harvest_lengths_table}{Name of the harvest lengths table, when the
-source keeps harvest and release lengths in separate tables. Falls back to
-\code{lengths_table} when not given.}
-
-\item{release_lengths_table}{Name of the release lengths table, on the same
-terms as \code{harvest_lengths_table}.}
 
 \item{date_col}{Column name for survey date.}
 
@@ -179,6 +172,13 @@ to. Required alongside \code{site_col} for the bus-route expansion (GH #126).}
 \item{species_sought_col}{Column name for target species.}
 
 \item{refused_col}{Column name for refused interviews indicator.}
+
+\item{harvest_lengths_table}{Name of the harvest lengths table, when the
+source keeps harvest and release lengths in separate tables. Falls back to
+\code{lengths_table} when not given.}
+
+\item{release_lengths_table}{Name of the release lengths table, on the same
+terms as \code{harvest_lengths_table}.}
 }
 \value{
 A \code{creel_schema} S3 object.

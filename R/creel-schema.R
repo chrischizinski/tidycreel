@@ -413,8 +413,6 @@ creel_schema <- function(
   counts_table = NULL,
   catch_table = NULL,
   lengths_table = NULL,
-  harvest_lengths_table = NULL,
-  release_lengths_table = NULL,
   date_col = NULL,
   strata_cols = NULL,
   value_maps = NULL,
@@ -448,7 +446,16 @@ creel_schema <- function(
   circuit_col = NULL,
   angler_method_col = NULL,
   species_sought_col = NULL,
-  refused_col = NULL
+  refused_col = NULL,
+  # Appended rather than placed beside `lengths_table`, where they read more
+  # naturally: this is an exported function, and inserting an argument ahead of
+  # an existing one silently rebinds every positional call past that point.
+  # Slotted in after `lengths_table`, `creel_schema("instantaneous", "int",
+  # "cnt", "catch", "len", "SurveyDate")` bound the date to
+  # `harvest_lengths_table` and left `date_col` NULL -- and construction is
+  # permissive, so it produced a working-looking schema with no date mapping.
+  harvest_lengths_table = NULL,
+  release_lengths_table = NULL
 ) {
   survey_type <- match.arg(survey_type)
   strata_cols <- normalize_strata_cols(strata_cols)
