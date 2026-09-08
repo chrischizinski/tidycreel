@@ -476,6 +476,14 @@ print.creel_estimates <- function(x, ...) {
 #'   \code{by = c(day_type, location)}), or tidyselect helpers (e.g.,
 #'   \code{by = starts_with("day")}). When NULL (default), computes a single
 #'   total estimate across all observations.
+#'
+#'   Two kinds of column are not groupings and are refused: the interview id
+#'   registered by [add_catch()], which holds one value per interview and so
+#'   leaves no within-group variance to estimate, and columns the package
+#'   derived rather than the user supplying, such as `.angler_effort`. A
+#'   wildcard selector drops the derived columns silently; naming one is an
+#'   error. A column of your own is never treated as derived, whatever it is
+#'   called.
 #' @param variance Character string specifying variance estimation method.
 #'   Options: \code{"taylor"} (default, Taylor linearization),
 #'   \code{"bootstrap"} (bootstrap resampling with 500 replicates), or
@@ -842,6 +850,14 @@ estimate_effort <- function(
 #'   \code{by = c(day_type, location)}), or tidyselect helpers (e.g.,
 #'   \code{by = starts_with("day")}). When NULL (default), computes a single
 #'   CPUE estimate across all interviews.
+#'
+#'   Two kinds of column are not groupings and are refused: the interview id
+#'   registered by [add_catch()], which holds one value per interview and so
+#'   leaves no within-group variance to estimate, and columns the package
+#'   derived rather than the user supplying, such as `.angler_effort`. A
+#'   wildcard selector drops the derived columns silently; naming one is an
+#'   error. A column of your own is never treated as derived, whatever it is
+#'   called.
 #' @param variance Character string specifying variance estimation method.
 #'   Options: \code{"taylor"} (default, Taylor linearization),
 #'   \code{"bootstrap"} (bootstrap resampling with 500 replicates), or
@@ -1906,6 +1922,14 @@ estimate_catch_rate <- function(
 #'   \code{by = c(day_type, location)}), or tidyselect helpers (e.g.,
 #'   \code{by = starts_with("day")}). When NULL (default), computes a single
 #'   HPUE estimate across all interviews.
+#'
+#'   Two kinds of column are not groupings and are refused: the interview id
+#'   registered by [add_catch()], which holds one value per interview and so
+#'   leaves no within-group variance to estimate, and columns the package
+#'   derived rather than the user supplying, such as `.angler_effort`. A
+#'   wildcard selector drops the derived columns silently; naming one is an
+#'   error. A column of your own is never treated as derived, whatever it is
+#'   called.
 #' @param variance Character string specifying variance estimation method.
 #'   Options: \code{"taylor"} (default, Taylor linearization),
 #'   \code{"bootstrap"} (bootstrap resampling with 500 replicates), or
@@ -2414,6 +2438,14 @@ estimate_harvest_rate <- function(
 #'   names (e.g., \code{by = day_type}, \code{by = species}), multiple columns,
 #'   or tidyselect helpers. When species grouping is used, per-species release
 #'   rates are estimated.
+#'
+#'   Two kinds of column are not groupings and are refused: the interview id
+#'   registered by [add_catch()], which holds one value per interview and so
+#'   leaves no within-group variance to estimate, and columns the package
+#'   derived rather than the user supplying, such as `.angler_effort`. A
+#'   wildcard selector drops the derived columns silently; naming one is an
+#'   error. A column of your own is never treated as derived, whatever it is
+#'   called.
 #' @param variance Character string specifying variance estimation method.
 #'   Options: \code{"taylor"} (default), \code{"bootstrap"}, or
 #'   \code{"jackknife"}.
@@ -3379,6 +3411,113 @@ aggregate_section_totals <- function(by_formula, full_design_svy, count_formula,
   }
 }
 
+#' Screen resolved by= names for columns that cannot be grouping variables
+#'
+#' Internal helper for [resolve_species_by()]. Two kinds of column reach a `by=`
+#' selection without being a domain the user defined:
+#'
+#' * **Columns the package derived**, which `add_interviews()` writes into the
+#'   interviews itself. A wildcard selector such as `everything()` means every
+#'   column the user brought, so these are dropped silently; naming one is
+#'   refused, because silently returning something other than what was asked
+#'   for is worse than an error.
+#' * **The interview key**, whatever column `add_catch()`, `add_lengths()` or
+#'   `add_ages()` was told holds the interview id. It is unique per row by
+#'   construction, so every group holds one interview, every group rate has
+#'   `n = 1`, and no within-group variance exists to estimate (GH #293).
+#'
+#' Both tests are **structural** -- they ask what the design registered, never
+#' what a name looks like or what values happen to hold.
+#'
+#' A leading `.` is NOT the test for a derived column. GH #259 pins a user
+#' column literally named `.se_expansion` as a working grouping variable, and a
+#' `^\.` pattern silently swallowed it. `.trip_duration_hrs` shows the reverse
+#' trap: `design$trip_duration_col` names it only when the package computed the
+#' duration, and otherwise points at the user's own column, which must stay
+#' groupable. So the derived set is read from the design, one field at a time.
+#'
+#' Uniqueness is likewise decided from the registered id column, not by testing
+#' whether values are distinct: on a short survey a real grouping column such as
+#' `date` can be unique per row without being a key.
+#'
+#' @param vars Character vector of names already resolved from `by_quo`.
+#' @param by_quo The quosure that produced them, re-resolved to tell a wildcard
+#'   match from an explicit one.
+#' @param data The frame `vars` was resolved against.
+#' @param design A creel_design object.
+#' @param error_call Environment used for error reporting.
+#'
+#' @return `vars` with derived columns removed.
+#'
+#' @keywords internal
+#' @noRd
+derived_interview_cols <- function(design) {
+  cols <- design[["angler_effort_col"]]
+  # trip_duration_col names a derived column only when add_interviews() built
+  # one; otherwise it is the user's own column and stays groupable.
+  if (identical(design[["trip_duration_col"]], ".trip_duration_hrs")) {
+    cols <- c(cols, ".trip_duration_hrs")
+  }
+  unique(cols[!vapply(cols, is.null, logical(1))])
+}
+
+screen_by_vars <- function(vars, by_quo, data, design, error_call = rlang::caller_env()) {
+  derived_cols <- derived_interview_cols(design)
+  derived <- intersect(derived_cols, vars)
+  if (length(derived) > 0L) {
+    # Re-resolve against the same frame minus the derived columns. If the
+    # selector still resolves, it never asked for them by name and the wildcard
+    # simply swept them up; if it fails, the user named one.
+    reduced <- data[, setdiff(names(data), derived_cols), drop = FALSE]
+    still_resolves <- tryCatch(
+      {
+        tidyselect::eval_select(
+          by_quo,
+          data = reduced,
+          allow_rename = FALSE,
+          allow_empty = FALSE
+        )
+        TRUE
+      },
+      error = function(e) FALSE
+    )
+    if (!still_resolves) {
+      cli::cli_abort(
+        c(
+          "{.arg by} names {cli::qty(length(derived))}{?a column/columns} the package derived: {.field {derived}}.",
+          "x" = "{cli::qty(length(derived))}{?It is/They are} computed by {.fn add_interviews}, not data you supplied.",
+          "i" = "Group by a column from your own interviews instead."
+        ),
+        call = error_call
+      )
+    }
+    vars <- setdiff(vars, derived)
+  }
+
+  # add_catch(), add_lengths() and add_ages() each register the interviews' id
+  # column; any one of them naming it is enough to know it is a key.
+  key_col <- unique(unlist(design[c(
+    "catch_interview_uid_col",
+    "lengths_interview_uid_col",
+    "ages_interview_uid_col"
+  )]))
+  key_col <- intersect(key_col, vars)
+  if (length(key_col) > 0L) {
+    cli::cli_abort(
+      c(
+        "{.arg by} names the interview key {.field {key_col}}.",
+        "x" = "It holds one value per interview, so every group would be a single
+               interview and no within-group variance could be estimated.",
+        "i" = "Group by a column that repeats across interviews, such as
+               {.field {design$strata_col}} or a trip attribute."
+      ),
+      call = error_call
+    )
+  }
+
+  vars
+}
+
 #' Resolve by= selector across both interviews and catch (species) data
 #'
 #' Internal helper: splits a by= quosure into interview-level variables and the
@@ -3408,10 +3547,14 @@ resolve_species_by <- function(by_quo, design) {
       allow_empty = FALSE,
       error_call = rlang::caller_env()
     )
+    kept <- screen_by_vars(
+      names(by_cols), by_quo, design$interviews, design,
+      error_call = rlang::caller_env()
+    )
     return(list(
-      all_vars = names(by_cols),
+      all_vars = kept,
       species_var = NULL,
-      interview_vars = names(by_cols)
+      interview_vars = kept
     ))
   }
 
@@ -3432,7 +3575,10 @@ resolve_species_by <- function(by_quo, design) {
     allow_empty = FALSE,
     error_call = rlang::caller_env()
   )
-  all_vars <- names(by_cols)
+  all_vars <- screen_by_vars(
+    names(by_cols), by_quo, prototype, design,
+    error_call = rlang::caller_env()
+  )
 
   # Split: species_var vs interview_vars
   species_var <- if (species_col_name %in% all_vars) species_col_name else NULL

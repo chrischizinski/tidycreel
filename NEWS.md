@@ -184,6 +184,63 @@
 
 ## Bug fixes
 
+* `by =` no longer accepts the interview id or an internal `.`-prefixed column
+  as a grouping variable (#293).
+
+  On a design carrying catch data, `estimate_total_*(by = everything())`
+  selected the species column, routed to the species branch, and grouped by
+  **every** interview column — including `interview_id`, which is unique per
+  row. Nothing refused it. On a 22-interview fixture the call did not return
+  within 900 seconds.
+
+  The statistical stake is not the runtime. A key column as a grouping variable
+  puts one interview in each group, so every group's rate has `n = 1` and no
+  within-group variance is estimable. Had the call returned, it would have
+  produced a table of per-interview "totals" each carrying an uncertainty that
+  could not have been computed — the failure mode this package treats as the
+  dangerous one, since the number looks fine.
+
+  Two refusals now sit in the shared `by =` resolver, so every estimator that
+  groups by interview columns gets them:
+
+  ```r
+  estimate_total_release(design, by = everything())
+  #> Error: `by` names the interview key `interview_id`.
+  #> x It holds one value per interview, so every group would be a single
+  #>   interview and no within-group variance could be estimated.
+
+  estimate_total_release(design, by = .angler_effort)
+  #> Error: `by` names a column the package derived: `.angler_effort`.
+  #> x It is computed by `add_interviews()`, not data you supplied.
+  ```
+
+  **Both tests are structural** — they ask what the design registered, never
+  what a name looks like or what values happen to hold.
+
+  The key comes from whichever of `add_catch()`, `add_lengths()` or
+  `add_ages()` registered the interview id. Testing for distinct values instead
+  would be wrong: on a short survey a real grouping column such as `date` can
+  be unique per row without being a key.
+
+  The derived set is read from the design one field at a time, because a
+  leading `.` is not the test either. A user column literally named
+  `.se_expansion` is a supported grouping variable (#259), and
+  `design$trip_duration_col` names an internal `.trip_duration_hrs` only when
+  the package computed the duration — otherwise it points at the user's own
+  column, which stays groupable. A column of your own is never treated as
+  derived, whatever it is called.
+
+  Derived columns are treated by how they were selected: a wildcard such as
+  `everything()` means every column the user brought, so they are dropped
+  silently, while naming one explicitly is an error rather than a silent
+  substitution.
+
+  Two limits worth stating. A design with no catch, lengths or ages attached
+  registers no id column, so an id there is still accepted — nothing in the
+  design says it is a key. And the sparse-group warning still only warns at
+  `n < 3`; whether `n = 1` should be refused generally is a wider question this
+  did not settle.
+
 * `creel_n_camera()` no longer warns that a stratum is below a Feltz and
   Middaugh (2025) camera-day minimum (#234). The 12 weekday and 7 weekend days
   that check used are the study's **per-month** well-performing schedule, while

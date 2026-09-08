@@ -25,7 +25,15 @@ constructed with harvest, catch, and effort columns.}
 names (e.g., \code{by = day_type}), multiple columns (e.g.,
 \code{by = c(day_type, location)}), or tidyselect helpers (e.g.,
 \code{by = starts_with("day")}). When NULL (default), computes a single
-HPUE estimate across all interviews.}
+HPUE estimate across all interviews.
+
+Two kinds of column are not groupings and are refused: the interview id
+registered by \code{\link[=add_catch]{add_catch()}}, which holds one value per interview and so
+leaves no within-group variance to estimate, and columns the package
+derived rather than the user supplying, such as \code{.angler_effort}. A
+wildcard selector drops the derived columns silently; naming one is an
+error. A column of your own is never treated as derived, whatever it is
+called.}
 
 \item{variance}{Character string specifying variance estimation method.
 Options: \code{"taylor"} (default, Taylor linearization),
