@@ -87,6 +87,29 @@
 #'   log-transform so the CI stays positive:
 #'   \eqn{[\hat\theta e^{-z SE/\hat\theta},\; \hat\theta e^{z SE/\hat\theta}]}.
 #'
+#'
+#' @section Why there is no `targeted` argument:
+#'
+#' The rate functions accept `targeted = FALSE`, which restricts the domain to
+#' the interviews that recorded some of the species being estimated. The totals
+#' deliberately do not, because a total is a rate multiplied by an effort base
+#' and the two would no longer describe the same set of trips.
+#'
+#' A targeted rate is conditional on having recorded the species; total effort
+#' is not. Multiplying one by the other applies a conditional rate to an
+#' unconditional base. On the package's own example data one species' rate is
+#' 0.48 fish/hr over all 50 trips and 2.00 fish/hr over the 12 that caught it,
+#' so expanding the targeted rate by total effort returns roughly 223 fish
+#' where 30 were actually caught.
+#'
+#' The domain-consistent product — the targeted rate times the effort of the
+#' trips that recorded the species — is well defined in the sample but cannot
+#' be expanded: it needs the season-wide effort of species-catching trips,
+#' which no creel design observes.
+#'
+#' So a targeted **rate** is available and a targeted **total** is not, and
+#' that is a property of the estimand rather than a gap in the implementation
+#' (GH #307).
 #' @return A creel_estimates S3 object with method = "product-total-catch".
 #'   The \code{estimator} component records the rate estimator this total is a
 #'   product of, as you asked for it: \code{method} names the product form and
