@@ -154,6 +154,18 @@ check that every row's section value is present in
 <code>cli_abort()</code> naming the bad values and listing valid section names.</p>
     </div>
     <div class="section level2">
+    <h2 id="how-sections-are-named-in-results">How sections are named in results<a class="anchor" aria-label="anchor" href="#how-sections-are-named-in-results"></a></h2>
+
+
+<p>Every sectioned estimate reports its sections in a column named after
+<code>section_col</code>, as a design declaring <code>strata = day_type</code> reports a <code>day_type</code>
+column. Register sections under <code>reach</code> and the result's first column is
+<code>reach</code>, so it joins back to your own section table by name. Read it as
+<code>est[[design$section_col]]</code> rather than assuming a fixed name (#282).</p>
+<p>The lake-wide aggregate row, where requested, is a <em>value</em> in that same
+column – the reserved name <code>.lake_total</code> – not a separate column.</p>
+    </div>
+    <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p><code><a href="creel_design.html">creel_design()</a></code>, <code><a href="add_counts.html">add_counts()</a></code>, <code><a href="add_interviews.html">add_interviews()</a></code></p>
 <p>Other "Survey Design":
