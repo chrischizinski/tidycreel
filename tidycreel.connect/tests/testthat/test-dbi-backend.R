@@ -1,0 +1,174 @@
+# Tests for GH #185: the DBI backend actually loads data.
+#
+# WHY these tests exist
+#
+# The backend opened a real connection and reported itself open, while every
+# fetch_*() off it aborted as unimplemented. test-sqlserver-not-implemented.R
+# pinned those aborts so that implementing them would fail and prompt the docs
+# to be corrected in the same change; this file replaces it.
+#
+# The load is only ever one stage: read the named table. Rename, coercion,
+# value maps and validation are shared with the CSV backend and untouched. The
+# parity tests below are the ones that matter, because they are what would fail
+# if the DBI path ever grew its own copy of a stage the CSV path already owns.
+
+skip_if_no_duckdb <- function() {
+  testthat::skip_if_not_installed("duckdb")
+}
+
+# ---- parity with the CSV backend --------------------------------------------
+
+test_that("DBI-BACKEND-01: every fetch returns what CSV returns from the same rows", {
+  skip_if_no_duckdb()
+  con <- make_dbi_conn()
+  dbi_conn <- creel_connect(con, make_dbi_schema())
+  csv_conn <- creel_connect(make_test_csv(), make_test_schema())
+
+  fetchers <- list(
+    fetch_interviews      = fetch_interviews,
+    fetch_counts          = fetch_counts,
+    fetch_catch           = fetch_catch,
+    fetch_harvest_lengths = fetch_harvest_lengths,
+    fetch_release_lengths = fetch_release_lengths
+  )
+  for (nm in names(fetchers)) {
+    from_dbi <- suppressMessages(fetchers[[nm]](dbi_conn))
+    from_csv <- suppressMessages(fetchers[[nm]](csv_conn))
+    # as.data.frame on both sides: readr hands back a tibble and DBI a plain
+    # frame, which is a container difference rather than a data one.
+    expect_equal(
+      as.data.frame(from_dbi),
+      as.data.frame(from_csv),
+      info = nm
+    )
+  }
+})
+
+test_that("DBI-BACKEND-02: interviews come back with canonical names and types", {
+  skip_if_no_duckdb()
+  conn <- creel_connect(make_dbi_conn(), make_dbi_schema())
+  df <- suppressMessages(fetch_interviews(conn))
+
+  expect_true(all(c("interview_uid", "date", "catch_count", "effort", "trip_status") %in% names(df)))
+  # The source column is `effort_hours`; the schema maps it. A frame that came
+  # back still carrying the source name would mean the rename never ran.
+  expect_false("effort_hours" %in% names(df))
+  expect_s3_class(df$date, "Date")
+  expect_type(df$effort, "double")
+  expect_equal(nrow(df), 2L)
+})
+
+test_that("DBI-BACKEND-03: the schema selects columns, exactly as it does for CSV", {
+  skip_if_no_duckdb()
+  # An unmapped source column is dropped rather than carried, which is the
+  # behaviour #126 established and the reason a fetch reports what it dropped.
+  tables <- make_dbi_test_tables()
+  tables$interviews$comment <- c("windy", "calm")
+  conn <- creel_connect(make_dbi_conn(tables), make_dbi_schema())
+  df <- suppressMessages(fetch_interviews(conn))
+  expect_false("comment" %in% names(df))
+})
+
+# ---- table names ------------------------------------------------------------
+
+test_that("DBI-BACKEND-04: a table the schema does not name is refused by name", {
+  skip_if_no_duckdb()
+  # There is no canonical table name the way there is a canonical column name,
+  # so an unnamed table cannot be guessed at. The error has to say which
+  # setting is missing, or the caller is left guessing which of five it was.
+  conn <- creel_connect(
+    make_dbi_conn(),
+    make_dbi_schema(interviews_table = NULL)
+  )
+  expect_error(
+    fetch_interviews(conn),
+    class = "creel_error_no_table_name"
+  )
+  expect_error(fetch_interviews(conn), "interviews_table")
+})
+
+test_that("DBI-BACKEND-05: a named table the database lacks is refused as missing", {
+  skip_if_no_duckdb()
+  # Distinct from -04 on purpose: "you did not configure this" and "you
+  # configured a name that is not there" are different mistakes, and a shared
+  # message would send the caller to the wrong one.
+  conn <- creel_connect(
+    make_dbi_conn(),
+    make_dbi_schema(interviews_table = "vwInterviews")
+  )
+  expect_error(
+    fetch_interviews(conn),
+    class = "creel_error_table_not_found"
+  )
+  expect_error(fetch_interviews(conn), "vwInterviews")
+})
+
+test_that("DBI-BACKEND-06: harvest and release lengths read their own tables", {
+  skip_if_no_duckdb()
+  conn <- creel_connect(make_dbi_conn(), make_dbi_schema())
+  harvest <- suppressMessages(fetch_harvest_lengths(conn))
+  release <- suppressMessages(fetch_release_lengths(conn))
+  # Different tables, so different rows. Reading one table for both would give
+  # two identical frames and still look like it worked.
+  expect_equal(harvest$length_mm, 450.0)
+  expect_equal(release$length_mm, 380.5)
+  expect_false(identical(harvest, release))
+})
+
+test_that("DBI-BACKEND-07: lengths_table serves both when neither is named", {
+  skip_if_no_duckdb()
+  # A source keeping one lengths table needs no new setting: creel_schema()
+  # falls both specific names back to `lengths_table`.
+  tables <- make_dbi_test_tables()
+  both <- rbind(tables$harvest_lengths, tables$release_lengths)
+  conn <- creel_connect(
+    make_dbi_conn(list(lengths = both)),
+    make_dbi_schema(
+      harvest_lengths_table = NULL,
+      release_lengths_table = NULL,
+      lengths_table = "lengths"
+    )
+  )
+  expect_equal(nrow(suppressMessages(fetch_harvest_lengths(conn))), 2L)
+  expect_equal(nrow(suppressMessages(fetch_release_lengths(conn))), 2L)
+})
+
+# ---- class ------------------------------------------------------------------
+
+test_that("DBI-BACKEND-08: a DBI connection carries both the new and old class", {
+  skip_if_no_duckdb()
+  conn <- creel_connect(make_dbi_conn(), make_dbi_schema())
+  # Nothing here is SQL Server specific and the suite runs on duckdb, so the
+  # methods moved to the generic name. The old one stays in the vector so any
+  # method or user code written against it still dispatches.
+  expect_s3_class(conn, "creel_connection_dbi")
+  expect_s3_class(conn, "creel_connection_sqlserver")
+  expect_s3_class(conn, "creel_connection")
+  expect_equal(conn$backend, "dbi")
+})
+
+test_that("DBI-BACKEND-09: fetches dispatch through the old class name too", {
+  skip_if_no_duckdb()
+  # Guards the alias: dropping `creel_connection_sqlserver` from the class
+  # vector would leave this dispatching to no method.
+  conn <- creel_connect(make_dbi_conn(), make_dbi_schema())
+  class(conn) <- c("creel_connection_sqlserver", "creel_connection")
+  expect_error(fetch_interviews(conn), NA)
+})
+
+# ---- discovery is unavailable by design, not unimplemented ------------------
+
+test_that("DBI-BACKEND-10: discovery refuses as inapplicable, not as a stub", {
+  skip_if_no_duckdb()
+  conn <- creel_connect(make_dbi_conn(), make_dbi_schema())
+  # A database connection addresses one set of tables and has no catalogue to
+  # enumerate. That is a statement about the backend, so the message must not
+  # read as "not yet" -- the previous wording invited someone to implement it.
+  expect_error(list_creels(conn), class = "creel_error_discovery_unavailable")
+  expect_error(search_creels(conn, "anything"), class = "creel_error_discovery_unavailable")
+  expect_error(list_creels(conn), "does not apply")
+  expect_false(grepl("not yet", conditionMessage(tryCatch(
+    list_creels(conn),
+    error = function(e) e
+  ))))
+})

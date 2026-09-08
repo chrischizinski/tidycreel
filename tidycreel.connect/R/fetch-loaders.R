@@ -18,6 +18,57 @@
   readr::read_csv(path, show_col_types = FALSE, progress = FALSE, col_types = col_types)
 }
 
+# Internal: read one table off a DBI connection, by the name the schema gives it
+#
+# The only backend-specific stage of a fetch. Everything after it -- rename,
+# coerce, value maps, validate -- is shared with the CSV backend and untouched
+# by which source the frame came from (GH #185).
+#
+# `field` is the schema field holding the table name rather than a literal
+# name, so the refusal below can say which setting is missing. Reading a table
+# the schema does not name is not a thing this package guesses at: there is no
+# canonical table name the way there is a canonical column name, and picking
+# one would mean querying whatever happened to match.
+.read_dbi_table <- function(conn, field, table) {
+  tbl_name <- conn$schema[[field]]
+  if (is.null(tbl_name) || !nzchar(tbl_name)) {
+    cli::cli_abort(c(
+      "No {table} table is named in the schema.",
+      "x" = "{.field {field}} is not set.",
+      "i" = "Pass {.code {field} = <name>} to {.fn tidycreel::creel_schema}, or
+             set it under {.code schema:} in a YAML profile."
+    ), class = "creel_error_no_table_name")
+  }
+  if (!DBI::dbExistsTable(conn$con, tbl_name)) {
+    cli::cli_abort(c(
+      "Table {.val {tbl_name}} was not found on the connection.",
+      "x" = "{.field {field}} names a table the database does not have.",
+      "i" = "Check the name, and that the connecting account can see it."
+    ), class = "creel_error_table_not_found")
+  }
+  # dbReadTable rather than a hand-built SELECT: the column selection is done
+  # by .rename_to_canonical() downstream, identically to CSV, and a SELECT list
+  # assembled here would be a second place for the schema mapping to be applied
+  # and to drift from it.
+  as.data.frame(DBI::dbReadTable(conn$con, tbl_name), stringsAsFactors = FALSE)
+}
+
+# Internal: the canonical <- schema-field map both lengths tables use
+#
+# Identical for harvest and release: the two differ by which table they read,
+# not by how a length row is shaped.
+.lengths_rename_map <- function() {
+  c(
+    length_uid    = "length_uid_col",
+    interview_uid = "interview_uid_col",
+    species       = "species_col",
+    length_mm     = "length_mm_col",
+    length_bin    = "length_bin_col",
+    count         = "length_count_col",
+    length_type   = "length_type_col"
+  )
+}
+
 # Internal: as.numeric() that warns when coercion introduces NAs
 # Internal: is an api_field_map entry actually a field name?
 #
@@ -424,8 +475,39 @@ fetch_interviews.creel_connection_csv <- function(conn, ...) {
 }
 
 #' @export
-fetch_interviews.creel_connection_sqlserver <- function(conn, ...) {
-  cli::cli_abort("SQL Server fetch_interviews() not yet implemented (Phase 69).")
+fetch_interviews.creel_connection_dbi <- function(conn, ...) {
+  df <- .read_dbi_table(conn, "interviews_table", "interviews")
+  rename_map <- c(
+    interview_uid = "interview_uid_col",
+    date          = "date_col",
+    catch_count   = "catch_col",
+    effort        = "effort_col",
+    trip_status   = "trip_status_col",
+    n_anglers     = "n_anglers_col",
+    angler_type   = "angler_type_col",
+    site          = "site_col",
+    circuit       = "circuit_col",
+    n_counted     = "n_counted_col",
+    n_interviewed = "n_interviewed_col"
+  )
+  df <- .rename_to_canonical(
+    df, conn$schema, rename_map, "interviews",
+    direct_map = .strata_direct_map(conn$schema)
+  )
+  if ("date"        %in% names(df)) df$date        <- .coerce_date(df$date, "date")
+  if ("catch_count" %in% names(df)) df$catch_count <- .coerce_numeric(df$catch_count, "catch_count")
+  if ("effort"      %in% names(df)) df$effort      <- .coerce_numeric(df$effort, "effort")
+  if ("trip_status" %in% names(df)) df$trip_status <- as.character(df$trip_status)
+  for (nm in c("n_anglers", "n_counted", "n_interviewed")) {
+    if (nm %in% names(df)) df[[nm]] <- .coerce_numeric(df[[nm]], nm)
+  }
+  for (nm in c("angler_type", "site", "circuit")) {
+    if (nm %in% names(df)) df[[nm]] <- as.character(df[[nm]])
+  }
+  df <- .apply_value_maps(df, conn$schema, "interviews")
+
+  validate_fetch_interviews(df) # nolint: object_usage_linter
+  df
 }
 
 #' @export
@@ -591,8 +673,32 @@ fetch_counts.creel_connection_csv <- function(conn, ...) {
 }
 
 #' @export
-fetch_counts.creel_connection_sqlserver <- function(conn, ...) {
-  cli::cli_abort("SQL Server fetch_counts() not yet implemented (Phase 69).")
+fetch_counts.creel_connection_dbi <- function(conn, ...) {
+  df <- .read_dbi_table(conn, "counts_table", "counts")
+  rename_map <- c(
+    date          = "date_col",
+    count_time    = "count_time_col",
+    bank_anglers  = "bank_anglers_col",
+    angler_boats  = "angler_boats_col",
+    non_ang_boats = "non_ang_boats_col"
+  )
+  df <- .rename_to_canonical(
+    df, conn$schema, rename_map, "counts",
+    direct_map = .strata_direct_map(conn$schema)
+  )
+  if ("date"          %in% names(df)) df$date          <- .coerce_date(df$date, "date")
+  if ("bank_anglers"  %in% names(df)) df$bank_anglers  <- .coerce_numeric(df$bank_anglers, "bank_anglers")
+  if ("angler_boats"  %in% names(df)) df$angler_boats  <- .coerce_numeric(df$angler_boats, "angler_boats")
+  if ("non_ang_boats" %in% names(df)) df$non_ang_boats <- .coerce_numeric(df$non_ang_boats, "non_ang_boats")
+  # A database may hand back a count time as a time-typed column, which prints
+  # and coerces to "16:30:00" rather than the label the source stored. Made
+  # character before .coerce_count_time() sees it, for the reason the CSV
+  # reader forces the same column to character (GH #129).
+  if ("count_time" %in% names(df)) df$count_time <- as.character(df$count_time)
+  df <- .coerce_count_time(df)
+  .warn_repeat_counts_no_time(df, conn$schema)
+  validate_fetch_counts(df) # nolint: object_usage_linter
+  df
 }
 
 #' @export
@@ -681,8 +787,23 @@ fetch_catch.creel_connection_csv <- function(conn, ...) {
 }
 
 #' @export
-fetch_catch.creel_connection_sqlserver <- function(conn, ...) {
-  cli::cli_abort("SQL Server fetch_catch() not yet implemented (Phase 69).")
+fetch_catch.creel_connection_dbi <- function(conn, ...) {
+  df <- .read_dbi_table(conn, "catch_table", "catch")
+  rename_map <- c(
+    catch_uid     = "catch_uid_col",
+    interview_uid = "interview_uid_col",
+    species       = "species_col",
+    catch_count   = "catch_count_col",
+    catch_type    = "catch_type_col"
+  )
+  df <- .rename_to_canonical(df, conn$schema, rename_map, "catch")
+  if ("species"     %in% names(df)) df$species     <- as.character(df$species)
+  if ("catch_count" %in% names(df)) df$catch_count <- .coerce_numeric(df$catch_count, "catch_count")
+  if ("catch_type"  %in% names(df)) df$catch_type  <- as.character(df$catch_type)
+  df <- .apply_value_maps(df, conn$schema, "catch")
+
+  validate_fetch_catch(df) # nolint: object_usage_linter
+  df
 }
 
 #' @export
@@ -766,8 +887,13 @@ fetch_harvest_lengths.creel_connection_csv <- function(conn, ...) {
 }
 
 #' @export
-fetch_harvest_lengths.creel_connection_sqlserver <- function(conn, ...) {
-  cli::cli_abort("SQL Server fetch_harvest_lengths() not yet implemented (Phase 69).")
+fetch_harvest_lengths.creel_connection_dbi <- function(conn, ...) {
+  df <- .read_dbi_table(conn, "harvest_lengths_table", "harvest lengths")
+  df <- .rename_to_canonical(df, conn$schema, .lengths_rename_map(), "harvest_lengths")
+  df <- .coerce_length_cols(df)
+  df <- .apply_value_maps(df, conn$schema, "harvest_lengths")
+  validate_fetch_harvest_lengths(df) # nolint: object_usage_linter
+  df
 }
 
 #' @export
@@ -848,8 +974,13 @@ fetch_release_lengths.creel_connection_csv <- function(conn, ...) {
 }
 
 #' @export
-fetch_release_lengths.creel_connection_sqlserver <- function(conn, ...) {
-  cli::cli_abort("SQL Server fetch_release_lengths() not yet implemented (Phase 69).")
+fetch_release_lengths.creel_connection_dbi <- function(conn, ...) {
+  df <- .read_dbi_table(conn, "release_lengths_table", "release lengths")
+  df <- .rename_to_canonical(df, conn$schema, .lengths_rename_map(), "release_lengths")
+  df <- .coerce_length_cols(df)
+  df <- .apply_value_maps(df, conn$schema, "release_lengths")
+  validate_fetch_release_lengths(df) # nolint: object_usage_linter
+  df
 }
 
 #' @export
@@ -891,3 +1022,27 @@ fetch_release_lengths.creel_connection_api <- function(conn, ...) {
   validate_fetch_release_lengths(df) # nolint: object_usage_linter
   df
 }
+
+# Back-compatible dispatch for the pre-#185 class name.
+#
+# `creel_connect()` puts both classes on the object, most specific first, so
+# anything it builds reaches the methods above without these. They exist for an
+# object carrying only the old name -- one built before the rename, or by code
+# that constructs the class itself -- which would otherwise find no method at
+# all. Kept as assignments rather than re-implementations so the two names
+# cannot come to mean different things.
+
+#' @export
+fetch_interviews.creel_connection_sqlserver <- fetch_interviews.creel_connection_dbi
+
+#' @export
+fetch_counts.creel_connection_sqlserver <- fetch_counts.creel_connection_dbi
+
+#' @export
+fetch_catch.creel_connection_sqlserver <- fetch_catch.creel_connection_dbi
+
+#' @export
+fetch_harvest_lengths.creel_connection_sqlserver <- fetch_harvest_lengths.creel_connection_dbi
+
+#' @export
+fetch_release_lengths.creel_connection_sqlserver <- fetch_release_lengths.creel_connection_dbi
