@@ -200,9 +200,9 @@ and the shape of the result. The base names are
 <code>"mean-of-ratios-truncated-cpue"</code> and <code>"regression-cpue"</code>, each
 gaining a <code>"-sections"</code> suffix on a sectioned design. The
 <code>"-species"</code> suffix, and the <code>"-per-angler"</code> suffix when
-normalized, apply to the ratio-of-means and mean-of-ratios names only:
-regression has no species form – the combination is refused, so
-<code>"regression-cpue-species"</code> is not a value this returns),
+normalized, mark a species-level and an angler-normalized result
+respectively; <code>"regression-cpue-species"</code> is returned for a species
+request under <code>estimator = "regression"</code>),
 variance_method (character: the variance that actually ran, which is the
 <code>variance</code> argument for every estimator except <code>"regression"</code> –
 the regression slope carries a leave-one-out jackknife SE and reports
@@ -276,8 +276,9 @@ that section rather than on the whole sample, so section-level regression
 standard errors are based on fewer points than the unsectioned form and are
 correspondingly less stable. This is a property of sectioning rather than of
 the estimator; a section with fewer than three interviews cannot be fitted
-at all. <code>species</code> in <code>by</code> has no regression form and is refused
-rather than silently estimated by another estimator.</p>
+at all. <code>species</code> in <code>by</code> fits one regression per species, on
+that species' catch against the same angler effort, with zero-catch
+interviews retained by default.</p>
     </div>
     <div class="section level2">
     <h2 id="package-options">Package Options<a class="anchor" aria-label="anchor" href="#package-options"></a></h2>

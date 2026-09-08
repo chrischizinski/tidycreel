@@ -129,18 +129,17 @@ shape of the result. The base names are `"ratio-of-means-cpue"`,
 `"mean-of-ratios-cpue"`, `"mean-of-ratios-truncated-cpue"` and
 `"regression-cpue"`, each gaining a `"-sections"` suffix on a sectioned
 design. The `"-species"` suffix, and the `"-per-angler"` suffix when
-normalized, apply to the ratio-of-means and mean-of-ratios names only:
-regression has no species form – the combination is refused, so
-`"regression-cpue-species"` is not a value this returns),
-variance_method (character: the variance that actually ran, which is the
-`variance` argument for every estimator except `"regression"` – the
-regression slope carries a leave-one-out jackknife SE and reports
-`"jackknife"` whatever `variance` was set to), design (reference to
-source creel_design), conf_level (numeric), and by_vars (character
-vector of grouping variable names or NULL). The `estimator` component
-records the estimator as you asked for it, `"mortr"` included, which
-`method` cannot: it reports mandatory truncation and the default
-threshold with the same string.
+normalized, mark a species-level and an angler-normalized result
+respectively; `"regression-cpue-species"` is returned for a species
+request under `estimator = "regression"`), variance_method (character:
+the variance that actually ran, which is the `variance` argument for
+every estimator except `"regression"` – the regression slope carries a
+leave-one-out jackknife SE and reports `"jackknife"` whatever `variance`
+was set to), design (reference to source creel_design), conf_level
+(numeric), and by_vars (character vector of grouping variable names or
+NULL). The `estimator` component records the estimator as you asked for
+it, `"mortr"` included, which `method` cannot: it reports mandatory
+truncation and the default threshold with the same string.
 
 ## Details
 
@@ -216,8 +215,9 @@ than on the whole sample, so section-level regression standard errors
 are based on fewer points than the unsectioned form and are
 correspondingly less stable. This is a property of sectioning rather
 than of the estimator; a section with fewer than three interviews cannot
-be fitted at all. `species` in `by` has no regression form and is
-refused rather than silently estimated by another estimator.
+be fitted at all. `species` in `by` fits one regression per species, on
+that species' catch against the same angler effort, with zero-catch
+interviews retained by default.
 
 ## Package Options
 
