@@ -18,6 +18,10 @@
   there is no canonical table name to fall back on, and guessing would mean
   querying whatever happened to match.
 
+  A table name may be a string or a `DBI::Id()`. `Id()` is what reaches a
+  schema-qualified table — `DBI::Id(schema = "dbo", table = "vwInterviews")` —
+  since the string `"dbo.vwInterviews"` is one literal name and is not found.
+
 * Database connections now carry the class `creel_connection_dbi`, with
   `creel_connection_sqlserver` kept alongside it (#185). Nothing in the read
   path is SQL Server specific — the test suite exercises it on duckdb — so the

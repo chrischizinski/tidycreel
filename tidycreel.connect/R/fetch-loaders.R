@@ -31,14 +31,21 @@
 # one would mean querying whatever happened to match.
 .read_dbi_table <- function(conn, field, table) {
   tbl_name <- conn$schema[[field]]
-  # NA is checked explicitly because nzchar(NA_character_) is TRUE: an NA table
-  # name passed this guard rather than tripping it, and reached dbExistsTable()
-  # as a missing value. A YAML key present but empty is the way that arrives.
-  if (is.null(tbl_name) ||
-        !is.character(tbl_name) ||
-        length(tbl_name) != 1L ||
-        is.na(tbl_name) ||
-        !nzchar(tbl_name)) {
+  # A DBI::Id is a valid table name and the only way to reach a
+  # schema-qualified table: dbExistsTable(con, Id(schema = "dbo", table = "t"))
+  # finds it where the string "dbo.t" does not. SQL Server tables are routinely
+  # qualified, so rejecting Id would have put the backend's main case out of
+  # reach -- and reported it as "is not set", which is not what went wrong.
+  #
+  # NA is checked explicitly for the opposite reason: nzchar(NA_character_) is
+  # TRUE, so an NA name passed this guard rather than tripping it and reached
+  # DBI as a missing value. A YAML key present but empty is how that arrives.
+  is_named <- inherits(tbl_name, "Id") ||
+    (is.character(tbl_name) &&
+       length(tbl_name) == 1L &&
+       !is.na(tbl_name) &&
+       nzchar(tbl_name))
+  if (!is_named) {
     cli::cli_abort(c(
       "No {table} table is named in the schema.",
       "x" = "{.field {field}} is not set.",
@@ -47,8 +54,14 @@
     ), class = "creel_error_no_table_name")
   }
   if (!DBI::dbExistsTable(conn$con, tbl_name)) {
+    # An Id has no useful character form, so it is rendered for the message.
+    shown <- if (inherits(tbl_name, "Id")) { # nolint: object_usage_linter
+      paste(unname(tbl_name@name), collapse = ".")
+    } else {
+      tbl_name
+    }
     cli::cli_abort(c(
-      "Table {.val {tbl_name}} was not found on the connection.",
+      "Table {.val {shown}} was not found on the connection.",
       "x" = "{.field {field}} names a table the database does not have.",
       "i" = "Check the name, and that the connecting account can see it."
     ), class = "creel_error_table_not_found")

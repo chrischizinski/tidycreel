@@ -30,6 +30,11 @@ new_creel_connection <- function(backend, con, schema, status, subclass = NULL) 
 #' `harvest_lengths_table` / `release_lengths_table`, which fall back to
 #' `lengths_table`); a table with no name in the schema cannot be fetched.
 #'
+#' A table name may be a string or a [DBI::Id()]. Use `Id()` for a
+#' schema-qualified table — `DBI::Id(schema = "dbo", table = "vwInterviews")` —
+#' because the string `"dbo.vwInterviews"` is treated as one literal name and
+#' will not be found.
+#'
 #' ## Connections are read-only
 #'
 #' Nothing in this package writes. A connection only ever reads: no table is

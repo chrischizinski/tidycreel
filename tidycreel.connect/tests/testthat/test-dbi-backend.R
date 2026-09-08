@@ -169,6 +169,44 @@ test_that("DBI-BACKEND-12: a non-zero seconds time keeps its seconds", {
   expect_true("09:30" %in% df$count_time)
 })
 
+test_that("DBI-BACKEND-15: a schema-qualified DBI::Id names a table", {
+  skip_if_no_duckdb()
+  # The only way to reach a qualified table: dbExistsTable() finds
+  # Id(schema = "dbo", table = "t") where the string "dbo.t" returns FALSE.
+  # SQL Server tables are routinely qualified, so a guard demanding a character
+  # scalar put the backend's main case out of reach -- and called it "not set",
+  # which is not what had gone wrong.
+  con <- make_dbi_conn(list())
+  DBI::dbExecute(con, "CREATE SCHEMA dbo")
+  DBI::dbWriteTable(
+    con,
+    DBI::Id(schema = "dbo", table = "interviews"),
+    make_dbi_test_tables()$interviews
+  )
+  conn <- creel_connect(
+    con,
+    make_dbi_schema(interviews_table = DBI::Id(schema = "dbo", table = "interviews"))
+  )
+  df <- suppressMessages(fetch_interviews(conn))
+  expect_equal(nrow(df), 2L)
+  expect_true("interview_uid" %in% names(df))
+})
+
+test_that("DBI-BACKEND-16: a missing qualified table is reported by its full name", {
+  skip_if_no_duckdb()
+  # An Id has no useful character form, so the message renders it. Reporting
+  # "vwInterviews" for a table configured as dbo.vwInterviews would send the
+  # reader looking in the wrong schema.
+  con <- make_dbi_conn(list())
+  DBI::dbExecute(con, "CREATE SCHEMA dbo")
+  conn <- creel_connect(
+    con,
+    make_dbi_schema(interviews_table = DBI::Id(schema = "dbo", table = "vwInterviews"))
+  )
+  expect_error(fetch_interviews(conn), class = "creel_error_table_not_found")
+  expect_error(fetch_interviews(conn), "dbo.vwInterviews", fixed = TRUE)
+})
+
 test_that("DBI-BACKEND-13: an NA table name is refused, not passed through", {
   skip_if_no_duckdb()
   # nzchar(NA_character_) is TRUE, so an NA name did not trip the empty-name
