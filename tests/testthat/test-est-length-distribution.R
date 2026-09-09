@@ -816,6 +816,12 @@ test_that("EST-LD-29 (#310): an in-group bad interview is still refused", {
   # The other half of the same fix: restricting the check must not weaken it.
   # Here the NA sits on interview 1, which HAS measured fish and so is in the
   # requested group -- the refusal has to survive.
+  #
+  # This one deliberately passes against the pre-fix code too; it is an
+  # anti-regression test, not a discriminating one, and its partner EST-LD-27 is
+  # the discriminating half. It is not decorative: replacing the in-group
+  # `anyNA(in_group)` condition with FALSE fails this test, so a later narrowing
+  # that drops the refusal altogether cannot leave the suite green.
   measured <- sort(unique(example_lengths$interview_id))
   iv <- example_interviews
   iv$gear <- ifelse(iv$interview_id %in% measured, "bank", "boat")
