@@ -100,7 +100,23 @@ reported_total_per_interview <- function(design, type, group_info, by_vars,
       typed <- rows[rows[[type_col]] %in% c("harvested", "released"), , drop = FALSE]
     }
     if (nrow(typed) == 0L) {
-      rep(0, nrow(interviews))
+      # Refusing rather than returning zero. A species with measured fish but no
+      # reported rows is contradictory data, and scaling its measured fish by a
+      # total of 0 reports "no fish of this species" with the same confidence as
+      # a real estimate -- the silent-wrong-number failure this issue exists to
+      # remove.
+      cli::cli_abort(
+        c(
+          "No reported {type} is recorded for
+           {.val {group_info[[frame_species_col]][1]}}.",
+          "x" = "Its length or age records cannot be scaled onto a total that
+                 does not exist.",
+          "i" = "Add the missing rows to {.fn add_catch}, or drop the species
+                 from the request."
+        ),
+        class = "creel_error_no_rescale_total",
+        call = error_call
+      )
     } else {
       agg <- stats::aggregate(typed[[count_col]], by = list(uid = typed[[uid_col]]), FUN = sum)
       names(agg) <- c("uid", "total")
@@ -123,6 +139,19 @@ reported_total_per_interview <- function(design, type, group_info, by_vars,
       return(NULL)
     }
     implied <- as.numeric(interviews[[catch_col]]) - as.numeric(interviews[[harvest_col]])
+    if (anyNA(implied)) {
+      cli::cli_abort(
+        c(
+          "{sum(is.na(implied))} interview{?s} {?has/have} no usable release count.",
+          "x" = "{.field {catch_col}} or {.field {harvest_col}} is {.val {NA}}, so
+                 caught - harvested is unknown -- not zero.",
+          "i" = "Fill the missing values, or group by species so released rows
+                 are read from {.fn add_catch} directly."
+        ),
+        class = "creel_error_na_rescale_total",
+        call = error_call
+      )
+    }
     if (any(implied < 0, na.rm = TRUE)) {
       cli::cli_abort(
         c(
@@ -147,7 +176,23 @@ reported_total_per_interview <- function(design, type, group_info, by_vars,
     if (is.null(col) || !col %in% names(interviews)) {
       return(NULL)
     }
-    as.numeric(interviews[[col]])
+    vals <- as.numeric(interviews[[col]])
+    # An NA here is an unknown count, not a zero. Carrying it forward poisons
+    # svytotal() for the whole group -- and the group mask below cannot clear it
+    # either, since NA * FALSE is NA, not 0.
+    if (anyNA(vals)) {
+      cli::cli_abort(
+        c(
+          "{sum(is.na(vals))} interview{?s} {?has/have} a missing {.field {col}}.",
+          "x" = "The reported total is the scale factor for every bin, so an
+                 unknown count cannot be treated as zero.",
+          "i" = "Fill the missing values before estimating a distribution."
+        ),
+        class = "creel_error_na_rescale_total",
+        call = error_call
+      )
+    }
+    vals
   }
 
   # Restrict to the group's own interviews. Species is already handled above by
@@ -201,7 +246,18 @@ two_phase_rescale <- function(meas, total, v) {
     g[h] <- total * (s - meas[h]) / s^2
     g[h_n + 1L] <- p[h]
     var_h <- as.numeric(t(g) %*% v %*% g)
-    if (!is.finite(var_h) || var_h < 0) NA_real_ else sqrt(var_h)
+    if (!is.finite(var_h)) {
+      return(NA_real_)
+    }
+    # A quadratic form in a PSD matrix is non-negative in exact arithmetic, so a
+    # small negative is rounding noise and clamps to zero. Only a materially
+    # negative value -- which would mean the covariance is not PSD -- becomes
+    # NA, because that is a real problem and must not be reported as a zero SE.
+    tol <- .Machine$double.eps^0.5 * max(1, abs(total)^2)
+    if (var_h < -tol) {
+      return(NA_real_)
+    }
+    sqrt(max(var_h, 0))
   }, numeric(1))
 
   list(estimate = est, se = se)

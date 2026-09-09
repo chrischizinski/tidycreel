@@ -509,3 +509,94 @@ test_that("EST-LD-21 (#310): a species with no 'caught' row falls back per speci
   expect_gt(walleye, 0)
   expect_equal(walleye, sum(wal$count), tolerance = 1e-8)
 })
+
+test_that("EST-LD-22 (#310): a species with no reported rows is refused, not scaled to zero", {
+  data("example_calendar", package = "tidycreel")
+  data("example_interviews", package = "tidycreel")
+  data("example_lengths", package = "tidycreel")
+  data("example_catch", package = "tidycreel")
+
+  # Copilot review finding. Returning a reported total of 0 for a species that
+  # has measured fish but no catch rows reports "no fish of this species" with
+  # the same confidence as a real estimate -- the exact silent-wrong-number
+  # failure #310 exists to remove, reintroduced by a defensive branch.
+  ct <- example_catch[example_catch$species != "walleye", , drop = FALSE]
+  expect_true(any(example_lengths$species == "walleye"))
+
+  d <- suppressMessages(creel_design(example_calendar, date = date, strata = day_type))
+  d <- suppressWarnings(suppressMessages(add_interviews(
+    d, example_interviews,
+    catch = catch_total, effort = hours_fished,
+    harvest = catch_kept, trip_status = trip_status
+  )))
+  d <- suppressWarnings(add_catch(
+    d, ct,
+    catch_uid = interview_id, interview_uid = interview_id,
+    species = species, count = count, catch_type = catch_type
+  ))
+  d <- suppressWarnings(add_lengths(
+    d, example_lengths,
+    length_uid = interview_id, interview_uid = interview_id,
+    species = species, length = length, length_type = length_type,
+    count = count, release_format = "binned"
+  ))
+
+  expect_error(
+    suppressWarnings(est_length_distribution(d, type = "catch", by = species, bin_width = 25)),
+    class = "creel_error_no_rescale_total"
+  )
+})
+
+test_that("EST-LD-23 (#310): a missing reported count is refused, not read as zero", {
+  data("example_calendar", package = "tidycreel")
+  data("example_interviews", package = "tidycreel")
+  data("example_lengths", package = "tidycreel")
+
+  # Copilot review finding. An NA reported count is an unknown, not a zero --
+  # the distinction the project rules single out. It also could not be cleared
+  # by the group mask, because NA * FALSE is NA, so one missing value outside
+  # the group returned NA estimates for the whole group.
+  iv <- example_interviews
+  iv$catch_kept[3] <- NA
+
+  d <- suppressMessages(creel_design(example_calendar, date = date, strata = day_type))
+  d <- suppressWarnings(suppressMessages(add_interviews(
+    d, iv,
+    catch = catch_total, effort = hours_fished,
+    harvest = catch_kept, trip_status = trip_status
+  )))
+  d <- suppressWarnings(add_lengths(
+    d, example_lengths,
+    length_uid = interview_id, interview_uid = interview_id,
+    species = species, length = length, length_type = length_type,
+    count = count, release_format = "binned"
+  ))
+
+  expect_error(
+    suppressWarnings(est_length_distribution(d, type = "harvest", bin_width = 25)),
+    class = "creel_error_na_rescale_total"
+  )
+})
+
+test_that("EST-LD-24 (#310): a rounding-level negative variance clamps rather than going NA", {
+  # Copilot review finding, exercised directly on the helper: a quadratic form
+  # in a PSD matrix is non-negative in exact arithmetic, so a -1e-12 is noise
+  # and must not turn a valid SE into NA. A materially negative value still
+  # does, because that means the covariance is not PSD and a zero SE would be
+  # indistinguishable from uncertainty that never propagated.
+  meas <- c(4, 6)
+  total <- 20
+  v_ok <- matrix(c(1, 0, 0, 0, 1, 0, 0, 0, 4), nrow = 3)
+  out <- tidycreel:::two_phase_rescale(meas, total, v_ok)
+  expect_true(all(is.finite(out$se)))
+  expect_equal(sum(out$estimate), total, tolerance = 1e-8)
+
+  # Nudge the matrix so the quadratic form lands just below zero.
+  v_noise <- v_ok
+  v_noise[1, 1] <- v_noise[1, 1] - 1e-13
+  expect_true(all(is.finite(tidycreel:::two_phase_rescale(meas, total, v_noise)$se)))
+
+  # A genuinely indefinite covariance must still refuse to report an SE.
+  v_bad <- matrix(c(-1e6, 0, 0, 0, -1e6, 0, 0, 0, -1e6), nrow = 3)
+  expect_true(all(is.na(tidycreel:::two_phase_rescale(meas, total, v_bad)$se)))
+})
