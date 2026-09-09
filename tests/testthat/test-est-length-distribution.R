@@ -710,3 +710,138 @@ test_that("EST-LD-26 (#310): an NA grouping value keeps its own interviews", {
   )
   expect_gt(sum(na_rows$estimate), 0)
 })
+
+test_that("EST-LD-27 (#310): a bad interview OUTSIDE the group does not abort the request", {
+  data("example_calendar", package = "tidycreel")
+  data("example_interviews", package = "tidycreel")
+  data("example_lengths", package = "tidycreel")
+
+  # Fourth-round review finding, and the fourth instance of this PR's recurring
+  # class. The missing-count check ran on the FULL interview vector before the
+  # group mask was applied, so one interview outside the requested group aborted
+  # a request whose own interviews were all valid -- a refusal naming a row that
+  # is not in the data the caller asked about.
+  #
+  # The fixture makes that the only possible reading: every interview with a
+  # measured fish is "bank", so "bank" is the only group the request produces,
+  # and the NA sits on interview 3, which has no measured fish at all.
+  measured <- sort(unique(example_lengths$interview_id))
+  iv <- example_interviews
+  iv$gear <- ifelse(iv$interview_id %in% measured, "bank", "boat")
+  expect_false(3 %in% measured)
+  iv$catch_kept[iv$interview_id == 3] <- NA
+
+  lens <- example_lengths
+  lens$gear <- "bank"
+
+  d <- suppressMessages(creel_design(example_calendar, date = date, strata = day_type))
+  d <- suppressWarnings(suppressMessages(add_interviews(
+    d, iv,
+    catch = catch_total, effort = hours_fished,
+    harvest = catch_kept, trip_status = trip_status
+  )))
+  d <- suppressWarnings(add_lengths(
+    d, lens,
+    length_uid = interview_id, interview_uid = interview_id,
+    species = species, length = length, length_type = length_type,
+    count = count, release_format = "binned"
+  ))
+
+  ld <- suppressWarnings(
+    est_length_distribution(d, type = "harvest", by = gear, bin_width = 25)
+  )
+  expect_setequal(unique(ld$gear), "bank")
+
+  # And it scales onto the bank interviews' own reported harvest -- the NA is
+  # excluded because its interview is out of group, not because NA became 0.
+  expect_equal(
+    sum(ld$estimate),
+    weighted_interview_total(d, ifelse(iv$gear == "bank", iv$catch_kept, 0)),
+    tolerance = 1e-8
+  )
+  expect_gt(sum(ld$estimate), 0)
+})
+
+test_that("EST-LD-28 (#310): an out-of-group harvest > catch does not abort a release request", {
+  data("example_calendar", package = "tidycreel")
+  data("example_interviews", package = "tidycreel")
+  data("example_lengths", package = "tidycreel")
+
+  # Same finding, the release branch's other validation. Implied release is
+  # caught - harvested, and a negative one is contradictory data -- but only
+  # when it belongs to the group being estimated.
+  measured <- sort(unique(example_lengths$interview_id))
+  iv <- example_interviews
+  iv$gear <- ifelse(iv$interview_id %in% measured, "bank", "boat")
+  iv$catch_kept[iv$interview_id == 3] <- iv$catch_total[iv$interview_id == 3] + 5
+
+  lens <- example_lengths
+  lens$gear <- "bank"
+
+  d <- suppressMessages(creel_design(example_calendar, date = date, strata = day_type))
+  # harvest > catch is a Tier-1 validation failure, so the row only reaches the
+  # design with allow_invalid = TRUE. That is the point: the estimator must
+  # still decide for itself which interviews its own request depends on.
+  d <- suppressWarnings(suppressMessages(add_interviews(
+    d, iv,
+    catch = catch_total, effort = hours_fished,
+    harvest = catch_kept, trip_status = trip_status,
+    allow_invalid = TRUE
+  )))
+  d <- suppressWarnings(add_lengths(
+    d, lens,
+    length_uid = interview_id, interview_uid = interview_id,
+    species = species, length = length, length_type = length_type,
+    count = count, release_format = "binned"
+  ))
+
+  ld <- suppressWarnings(
+    est_length_distribution(d, type = "release", by = gear, bin_width = 25)
+  )
+  expect_equal(
+    sum(ld$estimate),
+    weighted_interview_total(
+      d, ifelse(iv$gear == "bank", iv$catch_total - iv$catch_kept, 0)
+    ),
+    tolerance = 1e-8
+  )
+  expect_gt(sum(ld$estimate), 0)
+})
+
+test_that("EST-LD-29 (#310): an in-group bad interview is still refused", {
+  data("example_calendar", package = "tidycreel")
+  data("example_interviews", package = "tidycreel")
+  data("example_lengths", package = "tidycreel")
+
+  # The other half of the same fix: restricting the check must not weaken it.
+  # Here the NA sits on interview 1, which HAS measured fish and so is in the
+  # requested group -- the refusal has to survive.
+  measured <- sort(unique(example_lengths$interview_id))
+  iv <- example_interviews
+  iv$gear <- ifelse(iv$interview_id %in% measured, "bank", "boat")
+  expect_true(1 %in% measured)
+  iv$catch_kept[iv$interview_id == 1] <- NA
+
+  lens <- example_lengths
+  lens$gear <- "bank"
+
+  d <- suppressMessages(creel_design(example_calendar, date = date, strata = day_type))
+  d <- suppressWarnings(suppressMessages(add_interviews(
+    d, iv,
+    catch = catch_total, effort = hours_fished,
+    harvest = catch_kept, trip_status = trip_status
+  )))
+  d <- suppressWarnings(add_lengths(
+    d, lens,
+    length_uid = interview_id, interview_uid = interview_id,
+    species = species, length = length, length_type = length_type,
+    count = count, release_format = "binned"
+  ))
+
+  expect_error(
+    suppressWarnings(
+      est_length_distribution(d, type = "harvest", by = gear, bin_width = 25)
+    ),
+    class = "creel_error_na_rescale_total"
+  )
+})

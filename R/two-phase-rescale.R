@@ -60,6 +60,14 @@ reported_total_per_interview <- function(design, type, group_info, by_vars,
   # total and the parts sum to more than the whole -- by = length_type gave 127
   # to each of two groups against a reported catch of 127.
   other_vars <- setdiff(by_vars, frame_species_col)
+  #
+  # The mask is built HERE, before the reported total is read, because the
+  # validation below must judge only the interviews this group actually uses. An
+  # interview outside the group contributes nothing to this group either way, so
+  # letting a missing or contradictory count in one abort the whole request is a
+  # refusal the caller cannot act on -- the offending row is not in the data the
+  # request asked about.
+  keep <- rep(TRUE, nrow(interviews))
   if (length(other_vars) > 0L && !is.null(group_info)) {
     not_interview <- setdiff(other_vars, names(interviews))
     if (length(not_interview) > 0L) {
@@ -77,6 +85,23 @@ reported_total_per_interview <- function(design, type, group_info, by_vars,
         class = "creel_error_ungroupable_rescale",
         call = error_call
       )
+    }
+    for (v in other_vars) {
+      target <- group_info[[v]][1]
+      # NA is a group like any other here. `x == NA` is NA for every row, and
+      # blanket-converting that to FALSE emptied the group -- so a grouping
+      # column with missing values reported a total of 0, and the whole
+      # distribution for that group came back as zero fish with no warning. The
+      # NA group must match the rows that are themselves NA.
+      #
+      # Character comparison for the same reason as the species filter above:
+      # factors with different level sets error rather than compare.
+      col <- interviews[[v]]
+      keep <- keep & if (is.na(target)) {
+        is.na(col)
+      } else {
+        !is.na(col) & as.character(col) == as.character(target)
+      }
     }
   }
 
@@ -149,10 +174,12 @@ reported_total_per_interview <- function(design, type, group_info, by_vars,
       return(NULL)
     }
     implied <- as.numeric(interviews[[catch_col]]) - as.numeric(interviews[[harvest_col]])
-    if (anyNA(implied)) {
+    # Only this group's interviews are judged. See the mask above.
+    in_group <- implied[keep]
+    if (anyNA(in_group)) {
       cli::cli_abort(
         c(
-          "{sum(is.na(implied))} interview{?s} {?has/have} no usable release count.",
+          "{sum(is.na(in_group))} interview{?s} {?has/have} no usable release count.",
           "x" = "{.field {catch_col}} or {.field {harvest_col}} is {.val {NA}}, so
                  caught - harvested is unknown -- not zero.",
           "i" = "Fill the missing values, or group by species so released rows
@@ -162,11 +189,11 @@ reported_total_per_interview <- function(design, type, group_info, by_vars,
         call = error_call
       )
     }
-    if (any(implied < 0, na.rm = TRUE)) {
+    if (any(in_group < 0, na.rm = TRUE)) {
       cli::cli_abort(
         c(
           "Implied release count is negative for
-           {sum(implied < 0, na.rm = TRUE)} interview{?s}.",
+           {sum(in_group < 0, na.rm = TRUE)} interview{?s}.",
           "x" = "{.field {harvest_col}} exceeds {.field {catch_col}}, so
                  caught - harvested is not a release count.",
           "i" = "Fix the interview data, or group by species so released rows
@@ -176,7 +203,6 @@ reported_total_per_interview <- function(design, type, group_info, by_vars,
         call = error_call
       )
     }
-    implied[is.na(implied)] <- 0
     implied
   } else {
     col <- switch(type,
@@ -187,13 +213,14 @@ reported_total_per_interview <- function(design, type, group_info, by_vars,
       return(NULL)
     }
     vals <- as.numeric(interviews[[col]])
-    # An NA here is an unknown count, not a zero. Carrying it forward poisons
-    # svytotal() for the whole group -- and the group mask below cannot clear it
-    # either, since NA * FALSE is NA, not 0.
-    if (anyNA(vals)) {
+    # An NA here is an unknown count, not a zero, and carrying it forward poisons
+    # svytotal() for the whole group. Only this group's interviews are judged --
+    # see the mask above.
+    in_group <- vals[keep]
+    if (anyNA(in_group)) {
       cli::cli_abort(
         c(
-          "{sum(is.na(vals))} interview{?s} {?has/have} a missing {.field {col}}.",
+          "{sum(is.na(in_group))} interview{?s} {?has/have} a missing {.field {col}}.",
           "x" = "The reported total is the scale factor for every bin, so an
                  unknown count cannot be treated as zero.",
           "i" = "Fill the missing values before estimating a distribution."
@@ -208,27 +235,11 @@ reported_total_per_interview <- function(design, type, group_info, by_vars,
   # Restrict to the group's own interviews. Species is already handled above by
   # filtering the catch table; every other grouping variable is an interview
   # attribute by the check at the top of this function.
-  if (length(other_vars) > 0L && !is.null(group_info)) {
-    keep <- rep(TRUE, nrow(interviews))
-    for (v in other_vars) {
-      target <- group_info[[v]][1]
-      # NA is a group like any other here. `x == NA` is NA for every row, and
-      # blanket-converting that to FALSE emptied the group -- so a grouping
-      # column with missing values reported a total of 0, and the whole
-      # distribution for that group came back as zero fish with no warning. The
-      # NA group must match the rows that are themselves NA.
-      #
-      # Character comparison for the same reason as the species filter above:
-      # factors with different level sets error rather than compare.
-      col <- interviews[[v]]
-      keep <- keep & if (is.na(target)) {
-        is.na(col)
-      } else {
-        !is.na(col) & as.character(col) == as.character(target)
-      }
-    }
-    base_total <- base_total * keep
-  }
+  #
+  # Assigned, not multiplied: `NA * FALSE` is NA, so multiplying could not clear
+  # an out-of-group unknown -- and out-of-group unknowns are exactly what the
+  # masked validation above now tolerates.
+  base_total[!keep] <- 0
 
   base_total
 }
