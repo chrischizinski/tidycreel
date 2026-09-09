@@ -466,3 +466,58 @@ test_that("BY-12 (#312): the release path drops the columns it built, and the on
   expect_false(grepl(".release_effort", msg, fixed = TRUE))
   expect_false(grepl(".release_count", msg, fixed = TRUE))
 })
+
+test_that("BY-13 (#312): the frame's OWN join key is refused when it is named differently", {
+  data("example_calendar", package = "tidycreel")
+  data("example_interviews", package = "tidycreel")
+  data("example_lengths", package = "tidycreel")
+  data("example_ages", package = "tidycreel")
+
+  # Every other fixture in this file names both sides of the join `interview_id`,
+  # so the length-side key and the interview-side key are the same string and no
+  # test could tell which one the guard actually checks. `add_lengths()` lets
+  # them differ, and the design records the INTERVIEW-side name -- so a `by=`
+  # resolved against `design$lengths` was screened against a name that is not in
+  # that frame, and the frame's own foreign key sailed through. Renaming here is
+  # the whole point of the fixture (cf. #282).
+  lens <- example_lengths
+  names(lens)[names(lens) == "interview_id"] <- "len_int_id"
+  ages <- example_ages
+  names(ages)[names(ages) == "interview_id"] <- "age_int_id"
+
+  design <- suppressMessages(creel_design(example_calendar, date = date, strata = day_type))
+  design <- suppressWarnings(suppressMessages(add_interviews(
+    design, example_interviews,
+    catch = catch_total, effort = hours_fished,
+    harvest = catch_kept, trip_status = trip_status
+  )))
+  design <- suppressWarnings(add_lengths(
+    design, lens,
+    length_uid = len_int_id, interview_uid = interview_id,
+    species = species, length = length, length_type = length_type,
+    count = count, release_format = "binned"
+  ))
+  design <- suppressWarnings(add_ages(
+    design, ages,
+    age_uid = age_int_id, interview_uid = interview_id,
+    species = species, age = age, age_type = age_type
+  ))
+
+  # The premise: the two names really are different on this design.
+  expect_false(identical(design$lengths_uid_col, design$lengths_interview_uid_col))
+
+  # Grouping by the frame-local key gives one interview per group just as surely
+  # as grouping by the interview key does, so it must be refused the same way.
+  expect_error(
+    suppressWarnings(est_length_distribution(design, by = len_int_id, bin_width = 25)),
+    class = "creel_error_key_in_by"
+  )
+  expect_error(
+    suppressWarnings(est_age_distribution(design, by = age_int_id)),
+    class = "creel_error_key_in_by"
+  )
+  expect_error(
+    suppressWarnings(summarize_length_freq(design, by = len_int_id)),
+    class = "creel_error_key_in_by"
+  )
+})

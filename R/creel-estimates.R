@@ -3641,13 +3641,20 @@ derived_interview_cols <- function(design) {
 #'   match from an explicit one.
 #' @param data The frame `vars` was resolved against.
 #' @param design A creel_design object.
+#' @param extra_key_cols Additional column names to treat as an interview key.
+#'   A caller resolving `by=` against an attached frame rather than against the
+#'   interviews passes that frame's own join key here: the design records the
+#'   INTERVIEW-side name, and `add_lengths(length_uid = , interview_uid = )`
+#'   lets the two differ, so the frame-local name is invisible to the check
+#'   below (GH #312 review).
 #' @param error_call Environment used for error reporting.
 #'
 #' @return `vars` with derived columns removed.
 #'
 #' @keywords internal
 #' @noRd
-screen_by_vars <- function(vars, by_quo, data, design, error_call = rlang::caller_env()) {
+screen_by_vars <- function(vars, by_quo, data, design, extra_key_cols = character(0),
+                           error_call = rlang::caller_env()) {
   derived_cols <- derived_interview_cols(design)
   derived <- intersect(derived_cols, vars)
   if (length(derived) > 0L) {
@@ -3683,11 +3690,14 @@ screen_by_vars <- function(vars, by_quo, data, design, error_call = rlang::calle
 
   # add_catch(), add_lengths() and add_ages() each register the interviews' id
   # column; any one of them naming it is enough to know it is a key.
-  key_col <- unique(unlist(design[c(
-    "catch_interview_uid_col",
-    "lengths_interview_uid_col",
-    "ages_interview_uid_col"
-  )]))
+  key_col <- unique(c(
+    unlist(design[c(
+      "catch_interview_uid_col",
+      "lengths_interview_uid_col",
+      "ages_interview_uid_col"
+    )]),
+    extra_key_cols
+  ))
   key_col <- intersect(key_col, vars)
   if (length(key_col) > 0L) {
     cli::cli_abort(
