@@ -59,17 +59,31 @@ degrees-of-freedom rule. The product-total paths use total interviews
 minus the number of strata; the section paths use the number of sections
 minus one; mark-recapture uses the number of occasions.
 
-Four estimators use
+Six estimators use
 [`stats::qnorm()`](https://rdrr.io/r/stats/Normal.html) instead —
 [`est_biomass()`](https://chrischizinski.github.io/tidycreel/reference/est_biomass.md),
 [`est_mean_length()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_length.md),
-[`est_compliance()`](https://chrischizinski.github.io/tidycreel/reference/est_compliance.md)
+[`est_compliance()`](https://chrischizinski.github.io/tidycreel/reference/est_compliance.md),
+[`est_mean_age()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_age.md),
+and since \#310
+[`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md)
 and
-[`est_mean_age()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_age.md).
-This is deliberate, not an oversight. All four form a linear combination
-of the rows of a length or age distribution, and their standard error is
-propagated from the per-bin standard errors those rows already carry.
-There is no local sample size to key a t-quantile to:
+[`est_age_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_age_distribution.md)
+themselves. This is deliberate, not an oversight.
+
+The first four form a linear combination of the rows of a length or age
+distribution, and their standard error is propagated from the per-bin
+standard errors those rows already carry. The two distributions joined
+them when their totals became two-phase: a bin total is no longer a
+quantity
+[`svytotal()`](https://rdrr.io/pkg/survey/man/surveysummary.html)
+returns directly but a delta-method function of the measured bins and
+the reported total, so its standard error is likewise propagated rather
+than design-based. (The interval width is unchanged by that switch —
+`survey`'s [`confint()`](https://rdrr.io/r/stats/confint.html) method
+for a `svystat` defaults to `df = Inf`, which is the normal quantile.)
+
+In every case there is no local sample size to key a t-quantile to:
 
 - The number of rows is the number of **bins**, which is a binning
   choice made by the caller. Keying degrees of freedom to it would make

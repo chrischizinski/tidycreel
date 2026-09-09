@@ -140,6 +140,8 @@ $$\widehat{\text{Var}}(\bar{A}) \approx
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_calendar</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_interviews</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_ages</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_catch</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">example_calendar</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="add_interviews.html">add_interviews</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_interviews</span>,</span></span>
@@ -152,6 +154,15 @@ $$\widehat{\text{Var}}(\bar{A}) \approx
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> If the interviews really are one angler each, pass `n_anglers = 1` to state</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span>   that and silence this warning.</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Added 22 interviews: 17 complete (77%), 5 incomplete (23%)</span>
+<span class="r-in"><span><span class="co"># Species catch is required to group by species: the totals are scaled onto</span></span></span>
+<span class="r-in"><span><span class="co"># the reported catch, and only this table records it per species.</span></span></span>
+<span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="add_catch.html">add_catch</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_catch</span>,</span></span>
+<span class="r-in"><span>  catch_uid <span class="op">=</span> <span class="va">interview_id</span>,</span></span>
+<span class="r-in"><span>  interview_uid <span class="op">=</span> <span class="va">interview_id</span>,</span></span>
+<span class="r-in"><span>  species <span class="op">=</span> <span class="va">species</span>,</span></span>
+<span class="r-in"><span>  count <span class="op">=</span> <span class="va">count</span>,</span></span>
+<span class="r-in"><span>  catch_type <span class="op">=</span> <span class="va">catch_type</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="add_ages.html">add_ages</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_ages</span>,</span></span>
 <span class="r-in"><span>  age_uid <span class="op">=</span> <span class="va">interview_id</span>,</span></span>
 <span class="r-in"><span>  interview_uid <span class="op">=</span> <span class="va">interview_id</span>,</span></span>
@@ -161,11 +172,15 @@ $$\widehat{\text{Var}}(\bar{A}) \approx
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">ad</span> <span class="op">&lt;-</span> <span class="fu"><a href="est_age_distribution.html">est_age_distribution</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">species</span><span class="op">)</span></span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span><span style="color: #BBBB00;">!</span> Age totals were rescaled onto the reported catch.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Measured fish (weighted): 18; reported: 50 -- a factor of 2.78.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> <span style="color: #00BB00;">estimate</span>, <span style="color: #00BB00;">se</span> and the confidence bounds describe the REPORTED catch, estimated</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   from the measured subsample. Shares (<span style="color: #00BB00;">percent</span>) are unaffected.</span>
 <span class="r-in"><span><span class="fu">est_mean_age</span><span class="op">(</span><span class="va">ad</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   species mean_age mean_age_se mean_age_ci_lower mean_age_ci_upper</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1    bass 2.600000   0.2154066         2.1778108          3.022189</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 panfish 1.000000   0.3535534         0.3070481          1.692952</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 walleye 4.444444   0.4307445         3.6002007          5.288688</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1    bass 2.600000   0.2405993         2.1284341          3.071566</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 panfish 1.000000   0.4389856         0.1396041          1.860396</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 walleye 4.444444   0.3231505         3.8110811          5.077808</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

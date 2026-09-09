@@ -352,6 +352,7 @@ followed by
 ``` r
 
 data(example_ages)
+data(example_catch)
 head(example_ages)
 #>   interview_id species age age_type
 #> 1            1 walleye   4  harvest
@@ -360,6 +361,19 @@ head(example_ages)
 #> 4            2    bass   2  harvest
 #> 5            2    bass   3  harvest
 #> 6            6 walleye   6  harvest
+
+# Ages are read from a subsample of the catch, so the age-class totals are
+# scaled onto the reported catch. Grouping by species needs this table, which
+# is the only record of catch per species.
+design <- add_catch(
+  design,
+  example_catch,
+  catch_uid     = interview_id,
+  interview_uid = interview_id,
+  species       = species,
+  count         = count,
+  catch_type    = catch_type
+)
 
 # Attach age data — one row per aged fish
 design <- add_ages(
@@ -374,28 +388,39 @@ design <- add_ages(
 
 # Estimate weighted age frequency by species
 ad <- est_age_distribution(design, by = species)
+#> Warning: ! Age totals were rescaled onto the reported catch.
+#> ℹ Measured fish (weighted): 18; reported: 50 -- a factor of 2.78.
+#> ℹ estimate, se and the confidence bounds describe the REPORTED catch, estimated
+#>   from the measured subsample. Shares (percent) are unaffected.
 print(ad)
-#>   species age estimate       se   ci_lower ci_upper percent cumulative_percent
-#> 1    bass   2        2 1.414214 -0.7718076 4.771808    40.0               40.0
-#> 2    bass   3        3 1.658312 -0.2502326 6.250233    60.0              100.0
-#> 3 panfish   0        1 1.000000 -0.9599640 2.959964    25.0               25.0
-#> 4 panfish   1        2 1.354006 -0.6538038 4.653804    50.0               75.0
-#> 5 panfish   2        1 1.000000 -0.9599640 2.959964    25.0              100.0
-#> 6 walleye   3        2 1.414214 -0.7718076 4.771808    22.2               22.2
-#> 7 walleye   4        3 1.683251 -0.2991110 6.299111    33.3               55.6
-#> 8 walleye   5        2 1.414214 -0.7718076 4.771808    22.2               77.8
-#> 9 walleye   6        2 2.000000 -1.9199280 5.919928    22.2              100.0
-#>   n
-#> 1 3
-#> 2 3
-#> 3 2
-#> 4 2
-#> 5 2
-#> 6 3
-#> 7 3
-#> 8 3
-#> 9 3
+#>   species age  estimate       se   ci_lower  ci_upper percent
+#> 1    bass   2  4.000000 2.847221 -1.5804504  9.580450    40.0
+#> 2    bass   3  6.000000 4.235564 -2.3015523 14.301552    60.0
+#> 3 panfish   0  1.750000 1.184756 -0.5720783  4.072078    25.0
+#> 4 panfish   1  3.500000 3.500000 -3.3598739 10.359874    50.0
+#> 5 panfish   2  1.750000 2.835324 -3.8071330  7.307133    25.0
+#> 6 walleye   3  7.333333 3.660239  0.1593971 14.507270    22.2
+#> 7 walleye   4 11.000000 4.668210  1.8504773 20.149523    33.3
+#> 8 walleye   5  7.333333 3.660239  0.1593971 14.507270    22.2
+#> 9 walleye   6  7.333333 5.653054 -3.7464488 18.413115    22.2
+#>   cumulative_percent n
+#> 1               40.0 3
+#> 2              100.0 3
+#> 3               25.0 2
+#> 4               75.0 2
+#> 5              100.0 2
+#> 6               22.2 3
+#> 7               55.6 3
+#> 8               77.8 3
+#> 9              100.0 3
 ```
+
+Ages come from a subsample of the catch, so
+[`est_age_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_age_distribution.md)
+reports a two-phase estimate: the age composition among aged fish,
+scaled onto the design-estimated reported catch. The call warns when it
+rescales, naming the factor. Shares (`percent`) are unaffected by how
+many fish were aged.
 
 Each row is one integer age class. The `estimate` column is the
 survey-design-weighted count of fish at that age, `percent` is the
@@ -410,9 +435,9 @@ are accepted here.
 # Compute weighted mean age from the distribution object
 est_mean_age(ad)
 #>   species mean_age mean_age_se mean_age_ci_lower mean_age_ci_upper
-#> 1    bass 2.600000   0.2154066         2.1778108          3.022189
-#> 2 panfish 1.000000   0.3535534         0.3070481          1.692952
-#> 3 walleye 4.444444   0.4307445         3.6002007          5.288688
+#> 1    bass 2.600000   0.2405993         2.1284341          3.071566
+#> 2 panfish 1.000000   0.4389856         0.1396041          1.860396
+#> 3 walleye 4.444444   0.3231505         3.8110811          5.077808
 ```
 
 [`est_mean_age()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_age.md)

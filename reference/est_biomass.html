@@ -4,12 +4,18 @@ produced by est_length_distribution() into a total biomass estimate using
 the allometric length-weight equation \(W = a \cdot L^b\).
 Variance is propagated via the delta method, treating estimated fish counts
 per length bin as uncorrelated and the length-weight parameters a and b
-as known without error (see Details)."><meta property="og:description" content="est_biomass() converts a pressure-weighted length-frequency distribution
+as known without error (see Details).
+Since GH #310 the counts supplied by est_length_distribution() describe the
+reported catch rather than the measured subsample, so biomass_estimate
+is a catch biomass. It previously described only the fish that were measured."><meta property="og:description" content="est_biomass() converts a pressure-weighted length-frequency distribution
 produced by est_length_distribution() into a total biomass estimate using
 the allometric length-weight equation \(W = a \cdot L^b\).
 Variance is propagated via the delta method, treating estimated fish counts
 per length bin as uncorrelated and the length-weight parameters a and b
-as known without error (see Details)."><meta property="og:image" content="https://chrischizinski.github.io/tidycreel/logo.png"></head><body>
+as known without error (see Details).
+Since GH #310 the counts supplied by est_length_distribution() describe the
+reported catch rather than the measured subsample, so biomass_estimate
+is a catch biomass. It previously described only the fish that were measured."><meta property="og:image" content="https://chrischizinski.github.io/tidycreel/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -82,6 +88,9 @@ the allometric length-weight equation \(W = a \cdot L^b\).</p>
 <p>Variance is propagated via the delta method, treating estimated fish counts
 per length bin as uncorrelated and the length-weight parameters <code>a</code> and <code>b</code>
 as known without error (see Details).</p>
+<p>Since GH #310 the counts supplied by <code><a href="est_length_distribution.html">est_length_distribution()</a></code> describe the
+<strong>reported catch</strong> rather than the measured subsample, so <code>biomass_estimate</code>
+is a catch biomass. It previously described only the fish that were measured.</p>
     </div>
 
     <div class="section level2">
@@ -228,6 +237,8 @@ corresponding unit (e.g., grams).</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_calendar</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_interviews</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_lengths</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_catch</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">example_calendar</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="add_interviews.html">add_interviews</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_interviews</span>,</span></span>
@@ -240,6 +251,15 @@ corresponding unit (e.g., grams).</p>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> If the interviews really are one angler each, pass `n_anglers = 1` to state</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span>   that and silence this warning.</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Added 22 interviews: 17 complete (77%), 5 incomplete (23%)</span>
+<span class="r-in"><span><span class="co"># Species catch is required to group by species: the totals are scaled onto</span></span></span>
+<span class="r-in"><span><span class="co"># the reported catch, and only this table records it per species.</span></span></span>
+<span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="add_catch.html">add_catch</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_catch</span>,</span></span>
+<span class="r-in"><span>  catch_uid <span class="op">=</span> <span class="va">interview_id</span>,</span></span>
+<span class="r-in"><span>  interview_uid <span class="op">=</span> <span class="va">interview_id</span>,</span></span>
+<span class="r-in"><span>  species <span class="op">=</span> <span class="va">species</span>,</span></span>
+<span class="r-in"><span>  count <span class="op">=</span> <span class="va">count</span>,</span></span>
+<span class="r-in"><span>  catch_type <span class="op">=</span> <span class="va">catch_type</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="add_lengths.html">add_lengths</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_lengths</span>,</span></span>
 <span class="r-in"><span>  length_uid <span class="op">=</span> <span class="va">interview_id</span>,</span></span>
 <span class="r-in"><span>  interview_uid <span class="op">=</span> <span class="va">interview_id</span>,</span></span>
@@ -251,11 +271,15 @@ corresponding unit (e.g., grams).</p>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">ld</span> <span class="op">&lt;-</span> <span class="fu"><a href="est_length_distribution.html">est_length_distribution</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">species</span>, bin_width <span class="op">=</span> <span class="fl">25</span><span class="op">)</span></span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span><span style="color: #BBBB00;">!</span> Length totals were rescaled onto the reported catch.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Measured fish (weighted): 37; reported: 50 -- a factor of 1.35.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> <span style="color: #00BB00;">estimate</span>, <span style="color: #00BB00;">se</span> and the confidence bounds describe the REPORTED catch, estimated</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   from the measured subsample. Shares (<span style="color: #00BB00;">percent</span>) are unaffected.</span>
 <span class="r-in"><span><span class="fu">est_biomass</span><span class="op">(</span><span class="va">ld</span>, a <span class="op">=</span> <span class="fl">0.0088</span>, b <span class="op">=</span> <span class="fl">3.1</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   species biomass_estimate biomass_se biomass_ci_lower biomass_ci_upper</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1    bass          5719272    3419579        -982979.4         12421524</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 panfish          1324223     856948        -355364.4          3003810</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 walleye         17476539    7133021        3496075.1         31457003</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1    bass        4399440.3  2100945.2        281663.39          8517217</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 panfish         842687.2   473498.8        -85353.44          1770728</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 walleye       44363522.7 13858340.0      17201675.40         71525370</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

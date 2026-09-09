@@ -67,6 +67,8 @@ Other "Estimation":
 data(example_calendar)
 data(example_interviews)
 data(example_ages)
+data(example_catch)
+
 
 design <- creel_design(example_calendar, date = date, strata = day_type)
 design <- add_interviews(design, example_interviews,
@@ -79,6 +81,15 @@ design <- add_interviews(design, example_interviews,
 #> ℹ If the interviews really are one angler each, pass `n_anglers = 1` to state
 #>   that and silence this warning.
 #> ℹ Added 22 interviews: 17 complete (77%), 5 incomplete (23%)
+# Species catch is required to group by species: the totals are scaled onto
+# the reported catch, and only this table records it per species.
+design <- add_catch(design, example_catch,
+  catch_uid = interview_id,
+  interview_uid = interview_id,
+  species = species,
+  count = count,
+  catch_type = catch_type
+)
 design <- add_ages(design, example_ages,
   age_uid = interview_id,
   interview_uid = interview_id,
@@ -88,9 +99,13 @@ design <- add_ages(design, example_ages,
 )
 
 ad <- est_age_distribution(design, by = species)
+#> Warning: ! Age totals were rescaled onto the reported catch.
+#> ℹ Measured fish (weighted): 18; reported: 50 -- a factor of 2.78.
+#> ℹ estimate, se and the confidence bounds describe the REPORTED catch, estimated
+#>   from the measured subsample. Shares (percent) are unaffected.
 est_mean_age(ad)
 #>   species mean_age mean_age_se mean_age_ci_lower mean_age_ci_upper
-#> 1    bass 2.600000   0.2154066         2.1778108          3.022189
-#> 2 panfish 1.000000   0.3535534         0.3070481          1.692952
-#> 3 walleye 4.444444   0.4307445         3.6002007          5.288688
+#> 1    bass 2.600000   0.2405993         2.1284341          3.071566
+#> 2 panfish 1.000000   0.4389856         0.1396041          1.860396
+#> 3 walleye 4.444444   0.3231505         3.8110811          5.077808
 ```

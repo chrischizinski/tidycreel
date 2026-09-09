@@ -80,6 +80,8 @@ Other "Estimation":
 data(example_calendar)
 data(example_interviews)
 data(example_lengths)
+data(example_catch)
+
 
 design <- creel_design(example_calendar, date = date, strata = day_type)
 design <- add_interviews(design, example_interviews,
@@ -92,6 +94,15 @@ design <- add_interviews(design, example_interviews,
 #> ℹ If the interviews really are one angler each, pass `n_anglers = 1` to state
 #>   that and silence this warning.
 #> ℹ Added 22 interviews: 17 complete (77%), 5 incomplete (23%)
+# Species catch is required to group by species: the totals are scaled onto
+# the reported catch, and only this table records it per species.
+design <- add_catch(design, example_catch,
+  catch_uid = interview_id,
+  interview_uid = interview_id,
+  species = species,
+  count = count,
+  catch_type = catch_type
+)
 design <- add_lengths(design, example_lengths,
   length_uid = interview_id,
   interview_uid = interview_id,
@@ -103,11 +114,15 @@ design <- add_lengths(design, example_lengths,
 )
 
 ld <- est_length_distribution(design, by = species, bin_width = 25)
+#> Warning: ! Length totals were rescaled onto the reported catch.
+#> ℹ Measured fish (weighted): 37; reported: 50 -- a factor of 1.35.
+#> ℹ estimate, se and the confidence bounds describe the REPORTED catch, estimated
+#>   from the measured subsample. Shares (percent) are unaffected.
 est_compliance(ld, min_length = 356)  # 14-inch limit in mm
 #>   species min_length n_legal_est n_total_est compliance_prop compliance_se
-#> 1    bass        356           0          13               0             0
-#> 2 panfish        356           0          11               0             0
-#> 3 walleye        356          13          13               1             0
+#> 1    bass        356           0          10               0             0
+#> 2 panfish        356           0           7               0             0
+#> 3 walleye        356          33          33               1             0
 #>   compliance_ci_lower compliance_ci_upper
 #> 1                   0                   0
 #> 2                   0                   0

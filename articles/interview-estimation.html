@@ -437,6 +437,7 @@ call <code><a href="../reference/est_age_distribution.html">est_age_distribution
 <code><a href="../reference/est_mean_age.html">est_mean_age()</a></code>.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_ages</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_catch</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">example_ages</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   interview_id species age age_type</span></span>
 <span><span class="co">#&gt; 1            1 walleye   4  harvest</span></span>
@@ -445,6 +446,19 @@ call <code><a href="../reference/est_age_distribution.html">est_age_distribution
 <span><span class="co">#&gt; 4            2    bass   2  harvest</span></span>
 <span><span class="co">#&gt; 5            2    bass   3  harvest</span></span>
 <span><span class="co">#&gt; 6            6 walleye   6  harvest</span></span>
+<span></span>
+<span><span class="co"># Ages are read from a subsample of the catch, so the age-class totals are</span></span>
+<span><span class="co"># scaled onto the reported catch. Grouping by species needs this table, which</span></span>
+<span><span class="co"># is the only record of catch per species.</span></span>
+<span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_catch.html">add_catch</a></span><span class="op">(</span></span>
+<span>  <span class="va">design</span>,</span>
+<span>  <span class="va">example_catch</span>,</span>
+<span>  catch_uid     <span class="op">=</span> <span class="va">interview_id</span>,</span>
+<span>  interview_uid <span class="op">=</span> <span class="va">interview_id</span>,</span>
+<span>  species       <span class="op">=</span> <span class="va">species</span>,</span>
+<span>  count         <span class="op">=</span> <span class="va">count</span>,</span>
+<span>  catch_type    <span class="op">=</span> <span class="va">catch_type</span></span>
+<span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Attach age data — one row per aged fish</span></span>
 <span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_ages.html">add_ages</a></span><span class="op">(</span></span>
@@ -459,27 +473,37 @@ call <code><a href="../reference/est_age_distribution.html">est_age_distribution
 <span></span>
 <span><span class="co"># Estimate weighted age frequency by species</span></span>
 <span><span class="va">ad</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/est_age_distribution.html">est_age_distribution</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">species</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> Age totals were rescaled onto the reported catch.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Measured fish (weighted): 18; reported: 50 -- a factor of 2.78.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> <span style="color: #00BB00;">estimate</span>, <span style="color: #00BB00;">se</span> and the confidence bounds describe the REPORTED catch, estimated</span></span>
+<span><span class="co">#&gt;   from the measured subsample. Shares (<span style="color: #00BB00;">percent</span>) are unaffected.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">ad</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   species age estimate       se   ci_lower ci_upper percent cumulative_percent</span></span>
-<span><span class="co">#&gt; 1    bass   2        2 1.414214 -0.7718076 4.771808    40.0               40.0</span></span>
-<span><span class="co">#&gt; 2    bass   3        3 1.658312 -0.2502326 6.250233    60.0              100.0</span></span>
-<span><span class="co">#&gt; 3 panfish   0        1 1.000000 -0.9599640 2.959964    25.0               25.0</span></span>
-<span><span class="co">#&gt; 4 panfish   1        2 1.354006 -0.6538038 4.653804    50.0               75.0</span></span>
-<span><span class="co">#&gt; 5 panfish   2        1 1.000000 -0.9599640 2.959964    25.0              100.0</span></span>
-<span><span class="co">#&gt; 6 walleye   3        2 1.414214 -0.7718076 4.771808    22.2               22.2</span></span>
-<span><span class="co">#&gt; 7 walleye   4        3 1.683251 -0.2991110 6.299111    33.3               55.6</span></span>
-<span><span class="co">#&gt; 8 walleye   5        2 1.414214 -0.7718076 4.771808    22.2               77.8</span></span>
-<span><span class="co">#&gt; 9 walleye   6        2 2.000000 -1.9199280 5.919928    22.2              100.0</span></span>
-<span><span class="co">#&gt;   n</span></span>
-<span><span class="co">#&gt; 1 3</span></span>
-<span><span class="co">#&gt; 2 3</span></span>
-<span><span class="co">#&gt; 3 2</span></span>
-<span><span class="co">#&gt; 4 2</span></span>
-<span><span class="co">#&gt; 5 2</span></span>
-<span><span class="co">#&gt; 6 3</span></span>
-<span><span class="co">#&gt; 7 3</span></span>
-<span><span class="co">#&gt; 8 3</span></span>
-<span><span class="co">#&gt; 9 3</span></span></code></pre></div>
+<span><span class="co">#&gt;   species age  estimate       se   ci_lower  ci_upper percent</span></span>
+<span><span class="co">#&gt; 1    bass   2  4.000000 2.847221 -1.5804504  9.580450    40.0</span></span>
+<span><span class="co">#&gt; 2    bass   3  6.000000 4.235564 -2.3015523 14.301552    60.0</span></span>
+<span><span class="co">#&gt; 3 panfish   0  1.750000 1.184756 -0.5720783  4.072078    25.0</span></span>
+<span><span class="co">#&gt; 4 panfish   1  3.500000 3.500000 -3.3598739 10.359874    50.0</span></span>
+<span><span class="co">#&gt; 5 panfish   2  1.750000 2.835324 -3.8071330  7.307133    25.0</span></span>
+<span><span class="co">#&gt; 6 walleye   3  7.333333 3.660239  0.1593971 14.507270    22.2</span></span>
+<span><span class="co">#&gt; 7 walleye   4 11.000000 4.668210  1.8504773 20.149523    33.3</span></span>
+<span><span class="co">#&gt; 8 walleye   5  7.333333 3.660239  0.1593971 14.507270    22.2</span></span>
+<span><span class="co">#&gt; 9 walleye   6  7.333333 5.653054 -3.7464488 18.413115    22.2</span></span>
+<span><span class="co">#&gt;   cumulative_percent n</span></span>
+<span><span class="co">#&gt; 1               40.0 3</span></span>
+<span><span class="co">#&gt; 2              100.0 3</span></span>
+<span><span class="co">#&gt; 3               25.0 2</span></span>
+<span><span class="co">#&gt; 4               75.0 2</span></span>
+<span><span class="co">#&gt; 5              100.0 2</span></span>
+<span><span class="co">#&gt; 6               22.2 3</span></span>
+<span><span class="co">#&gt; 7               55.6 3</span></span>
+<span><span class="co">#&gt; 8               77.8 3</span></span>
+<span><span class="co">#&gt; 9              100.0 3</span></span></code></pre></div>
+<p>Ages come from a subsample of the catch, so
+<code><a href="../reference/est_age_distribution.html">est_age_distribution()</a></code> reports a two-phase estimate: the
+age composition among aged fish, scaled onto the design-estimated
+reported catch. The call warns when it rescales, naming the factor.
+Shares (<code>percent</code>) are unaffected by how many fish were
+aged.</p>
 <p>Each row is one integer age class. The <code>estimate</code> column
 is the survey-design-weighted count of fish at that age,
 <code>percent</code> is the within-species proportion, and
@@ -491,9 +515,9 @@ up. The same <code>variance</code>, <code>type</code>, and
 <code class="sourceCode R"><span><span class="co"># Compute weighted mean age from the distribution object</span></span>
 <span><span class="fu"><a href="../reference/est_mean_age.html">est_mean_age</a></span><span class="op">(</span><span class="va">ad</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   species mean_age mean_age_se mean_age_ci_lower mean_age_ci_upper</span></span>
-<span><span class="co">#&gt; 1    bass 2.600000   0.2154066         2.1778108          3.022189</span></span>
-<span><span class="co">#&gt; 2 panfish 1.000000   0.3535534         0.3070481          1.692952</span></span>
-<span><span class="co">#&gt; 3 walleye 4.444444   0.4307445         3.6002007          5.288688</span></span></code></pre></div>
+<span><span class="co">#&gt; 1    bass 2.600000   0.2405993         2.1284341          3.071566</span></span>
+<span><span class="co">#&gt; 2 panfish 1.000000   0.4389856         0.1396041          1.860396</span></span>
+<span><span class="co">#&gt; 3 walleye 4.444444   0.3231505         3.8110811          5.077808</span></span></code></pre></div>
 <p><code><a href="../reference/est_mean_age.html">est_mean_age()</a></code> applies the ratio estimator (Σ a N̂_a / N̂)
 to the weighted age counts returned by
 <code><a href="../reference/est_age_distribution.html">est_age_distribution()</a></code> and propagates variance via the

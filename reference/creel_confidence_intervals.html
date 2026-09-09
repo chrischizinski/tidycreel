@@ -123,12 +123,20 @@ the smallest occupied bin, so a clamp at zero would be the wrong repair.</p>
 <code><a href="https://rdrr.io/r/stats/TDist.html" class="external-link">stats::qt()</a></code> on an explicit degrees-of-freedom rule. The product-total paths
 use total interviews minus the number of strata; the section paths use the
 number of sections minus one; mark-recapture uses the number of occasions.</p>
-<p>Four estimators use <code><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">stats::qnorm()</a></code> instead — <code><a href="est_biomass.html">est_biomass()</a></code>,
-<code><a href="est_mean_length.html">est_mean_length()</a></code>, <code><a href="est_compliance.html">est_compliance()</a></code> and <code><a href="est_mean_age.html">est_mean_age()</a></code>. This is
-deliberate, not an oversight. All four form a linear combination of the rows
-of a length or age distribution, and their standard error is propagated from
-the per-bin standard errors those rows already carry. There is no local
-sample size to key a t-quantile to:</p><ul><li><p>The number of rows is the number of <strong>bins</strong>, which is a binning choice made
+<p>Six estimators use <code><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">stats::qnorm()</a></code> instead — <code><a href="est_biomass.html">est_biomass()</a></code>,
+<code><a href="est_mean_length.html">est_mean_length()</a></code>, <code><a href="est_compliance.html">est_compliance()</a></code>, <code><a href="est_mean_age.html">est_mean_age()</a></code>, and since #310
+<code><a href="est_length_distribution.html">est_length_distribution()</a></code> and <code><a href="est_age_distribution.html">est_age_distribution()</a></code> themselves. This is
+deliberate, not an oversight.</p>
+<p>The first four form a linear combination of the rows of a length or age
+distribution, and their standard error is propagated from the per-bin
+standard errors those rows already carry. The two distributions joined them
+when their totals became two-phase: a bin total is no longer a quantity
+<code><a href="https://rdrr.io/pkg/survey/man/surveysummary.html" class="external-link">svytotal()</a></code> returns directly but a delta-method function of the measured
+bins and the reported total, so its standard error is likewise propagated
+rather than design-based. (The interval width is unchanged by that switch —
+<code>survey</code>'s <code><a href="https://rdrr.io/r/stats/confint.html" class="external-link">confint()</a></code> method for a <code>svystat</code> defaults to <code>df = Inf</code>, which
+is the normal quantile.)</p>
+<p>In every case there is no local sample size to key a t-quantile to:</p><ul><li><p>The number of rows is the number of <strong>bins</strong>, which is a binning choice made
 by the caller. Keying degrees of freedom to it would make the interval
 narrow as the bins got finer, with no additional fish measured.</p></li>
 <li><p>The row totals are <strong>expanded estimates</strong>, not counts of measured fish, so

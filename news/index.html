@@ -67,6 +67,18 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="tidycreel-development-version">tidycreel (development version)<a class="anchor" aria-label="anchor" href="#tidycreel-development-version"></a></h2>
 <div class="section level3">
+<h3 id="breaking-changes-development-version">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-development-version"></a></h3>
+<ul><li>
+<p><code><a href="../reference/est_length_distribution.html">est_length_distribution()</a></code> and <code><a href="../reference/est_age_distribution.html">est_age_distribution()</a></code> now scale their totals onto the design-estimated <strong>reported catch</strong> instead of expanding the measured subsample (<a href="https://github.com/chrischizinski/tidycreel/issues/310" class="external-link">#310</a>).</p>
+<p>Lengths and ages are read from a subsample of the catch. Expanding that subsample through the interview design estimated <em>the total number of fish that happened to be measured</em> — on the package’s example data, 14 against a reported harvest of 77, with no error and no warning. <code><a href="../reference/est_biomass.html">est_biomass()</a></code> multiplies those counts by weight-at-length and calls the result total biomass, so a headline number was low by whatever fraction of the catch got measured. Measuring every fish twice doubled the reported biomass.</p>
+<p>The estimator is now two-phase (double sampling, Cochran 1977 §12.9 — the structure already used for the camera calibration ratio): the bin proportion among measured fish, scaled by the reported total. Both parts come from one <code><a href="https://rdrr.io/pkg/survey/man/surveysummary.html" class="external-link">svytotal()</a></code> call, so the bin-to-total covariance is estimated rather than assumed away, and the standard error is the delta method over it.</p>
+<p><strong><code>estimate</code>, <code>se</code> and the confidence bounds change value</strong>, as does every column of <code><a href="../reference/est_biomass.html">est_biomass()</a></code>. <code>percent</code> and <code>cumulative_percent</code> do not: a share is invariant to how many fish were measured, which is why the shape of the distribution was always right and only its level was wrong.</p>
+<p><code><a href="../reference/est_mean_length.html">est_mean_length()</a></code> and <code><a href="../reference/est_compliance.html">est_compliance()</a></code> keep their <strong>point estimates</strong> for the same reason — both are ratios. Their standard errors do move, because the per-bin standard errors they read now carry the reported total’s variance through the delta method rather than being a pure rescaling of the old ones: on the example data <code>mean_length_se</code> goes 40.04 to 37.88 and <code>compliance_se</code> 0.1554 to 0.1422. The cross-bin covariance those two still assume away is a separate defect, tracked as <a href="https://github.com/chrischizinski/tidycreel/issues/311" class="external-link">#311</a>.</p>
+<p>Two consequences for existing code. Grouping by species now <strong>requires</strong> <code><a href="../reference/add_catch.html">add_catch()</a></code>, because only that table is species-resolved and scaling one species by the all-species total would be worse than refusing. And a design with no matching total — a harvest distribution with no <code>harvest =</code> supplied to <code><a href="../reference/add_interviews.html">add_interviews()</a></code> — is now an error rather than a subsample total.</p>
+<p>Every call that rescales warns, naming the measured total, the reported total and the factor between them.</p>
+</li>
+</ul></div>
+<div class="section level3">
 <h3 id="new-features-development-version">New features<a class="anchor" aria-label="anchor" href="#new-features-development-version"></a></h3>
 <ul><li>
 <p><code><a href="../reference/creel_schema.html">creel_schema()</a></code> gains <code>harvest_lengths_table</code> and <code>release_lengths_table</code>, for a source that keeps harvest and release lengths in separate tables (<a href="https://github.com/chrischizinski/tidycreel/issues/185" class="external-link">#185</a>). Both fall back to <code>lengths_table</code>, so a single-table source needs neither and nothing changes for an existing schema.</p>
@@ -87,7 +99,7 @@
 </li>
 </ul></div>
 <div class="section level3">
-<h3 id="breaking-changes-development-version">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-development-version"></a></h3>
+<h3 id="breaking-changes-development-version-1">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-development-version-1"></a></h3>
 <ul><li>
 <p><code>targeted = FALSE</code> on a <code>by = species</code> request now tests that species’ own catch, not the total catch, under the mean-of-ratios estimator (<a href="https://github.com/chrischizinski/tidycreel/issues/304" class="external-link">#304</a>).</p>
 <p><code>targeted = FALSE</code> is documented as excluding zero-catch trips so that the result is the rate among trips that caught the species. The exclusion ran inside the mean-of-ratios branch, above the species split, and tested the design’s total catch column. A trip that caught one fish of any species therefore counted as non-zero however many of the requested species it held, so on a survey where every interview caught something the argument excluded nothing at all and returned the untargeted rate with no warning:</p>
@@ -307,7 +319,7 @@
 </li>
 </ul></div>
 <div class="section level3">
-<h3 id="breaking-changes-development-version-1">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-development-version-1"></a></h3>
+<h3 id="breaking-changes-development-version-2">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-development-version-2"></a></h3>
 <ul><li>
 <p><code><a href="../reference/estimate_total_harvest.html">estimate_total_harvest()</a></code> and <code><a href="../reference/estimate_total_release.html">estimate_total_release()</a></code> gain a <code>use_trips</code> argument and now estimate from <strong>complete trips by default</strong>, and <code><a href="../reference/estimate_total_catch.html">estimate_total_catch()</a></code> honours <code>use_trips</code> on the paths that were silently discarding it (<a href="https://github.com/chrischizinski/tidycreel/issues/266" class="external-link">#266</a>). <strong>This changes the numbers all three return on any design that records trip status and holds a mix of complete and incomplete interviews.</strong></p>
 <p>A rate estimated from incomplete trips is length-biased: an interview taken mid-trip reports the catch so far against the effort so far, and the two do not scale together over the trip. Excluding incomplete trips is the documented default of the rate estimators for that reason, and a total is effort times a rate, so it inherits the bias while still returning a plausible number.</p>

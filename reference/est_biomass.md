@@ -10,6 +10,12 @@ Variance is propagated via the delta method, treating estimated fish
 counts per length bin as uncorrelated and the length-weight parameters
 `a` and `b` as known without error (see Details).
 
+Since GH \#310 the counts supplied by
+[`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md)
+describe the **reported catch** rather than the measured subsample, so
+`biomass_estimate` is a catch biomass. It previously described only the
+fish that were measured.
+
 ## Usage
 
 ``` r
@@ -161,6 +167,8 @@ Other "Estimation":
 data(example_calendar)
 data(example_interviews)
 data(example_lengths)
+data(example_catch)
+
 
 design <- creel_design(example_calendar, date = date, strata = day_type)
 design <- add_interviews(design, example_interviews,
@@ -173,6 +181,15 @@ design <- add_interviews(design, example_interviews,
 #> ℹ If the interviews really are one angler each, pass `n_anglers = 1` to state
 #>   that and silence this warning.
 #> ℹ Added 22 interviews: 17 complete (77%), 5 incomplete (23%)
+# Species catch is required to group by species: the totals are scaled onto
+# the reported catch, and only this table records it per species.
+design <- add_catch(design, example_catch,
+  catch_uid = interview_id,
+  interview_uid = interview_id,
+  species = species,
+  count = count,
+  catch_type = catch_type
+)
 design <- add_lengths(design, example_lengths,
   length_uid = interview_id,
   interview_uid = interview_id,
@@ -184,9 +201,13 @@ design <- add_lengths(design, example_lengths,
 )
 
 ld <- est_length_distribution(design, by = species, bin_width = 25)
+#> Warning: ! Length totals were rescaled onto the reported catch.
+#> ℹ Measured fish (weighted): 37; reported: 50 -- a factor of 1.35.
+#> ℹ estimate, se and the confidence bounds describe the REPORTED catch, estimated
+#>   from the measured subsample. Shares (percent) are unaffected.
 est_biomass(ld, a = 0.0088, b = 3.1)
 #>   species biomass_estimate biomass_se biomass_ci_lower biomass_ci_upper
-#> 1    bass          5719272    3419579        -982979.4         12421524
-#> 2 panfish          1324223     856948        -355364.4          3003810
-#> 3 walleye         17476539    7133021        3496075.1         31457003
+#> 1    bass        4399440.3  2100945.2        281663.39          8517217
+#> 2 panfish         842687.2   473498.8        -85353.44          1770728
+#> 3 walleye       44363522.7 13858340.0      17201675.40         71525370
 ```

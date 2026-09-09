@@ -165,6 +165,21 @@ renders this as a histogram-style bar chart.
 
 data("example_lengths")
 
+data("example_catch")
+
+# Species catch is required to group a distribution BY species: the totals are
+# scaled onto the reported catch, and only this table records catch per species
+# (the interview-level column is the all-species total).
+design <- add_catch(
+  design,
+  example_catch,
+  catch_uid     = interview_id,
+  interview_uid = interview_id,
+  species       = species,
+  count         = count,
+  catch_type    = catch_type
+)
+
 design <- add_lengths(
   design,
   example_lengths,
@@ -178,6 +193,10 @@ design <- add_lengths(
 )
 
 ld <- est_length_distribution(design, by = species, bin_width = 25)
+#> Warning: ! Length totals were rescaled onto the reported catch.
+#> ℹ Measured fish (weighted): 37; reported: 50 -- a factor of 1.35.
+#> ℹ estimate, se and the confidence bounds describe the REPORTED catch, estimated
+#>   from the measured subsample. Shares (percent) are unaffected.
 
 autoplot(ld, theme = "creel")
 ```

@@ -264,6 +264,21 @@ a histogram-style bar chart.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"example_lengths"</span><span class="op">)</span></span>
 <span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"example_catch"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Species catch is required to group a distribution BY species: the totals are</span></span>
+<span><span class="co"># scaled onto the reported catch, and only this table records catch per species</span></span>
+<span><span class="co"># (the interview-level column is the all-species total).</span></span>
+<span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_catch.html">add_catch</a></span><span class="op">(</span></span>
+<span>  <span class="va">design</span>,</span>
+<span>  <span class="va">example_catch</span>,</span>
+<span>  catch_uid     <span class="op">=</span> <span class="va">interview_id</span>,</span>
+<span>  interview_uid <span class="op">=</span> <span class="va">interview_id</span>,</span>
+<span>  species       <span class="op">=</span> <span class="va">species</span>,</span>
+<span>  count         <span class="op">=</span> <span class="va">count</span>,</span>
+<span>  catch_type    <span class="op">=</span> <span class="va">catch_type</span></span>
+<span><span class="op">)</span></span>
+<span></span>
 <span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_lengths.html">add_lengths</a></span><span class="op">(</span></span>
 <span>  <span class="va">design</span>,</span>
 <span>  <span class="va">example_lengths</span>,</span>
@@ -277,6 +292,10 @@ a histogram-style bar chart.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">ld</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/est_length_distribution.html">est_length_distribution</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">species</span>, bin_width <span class="op">=</span> <span class="fl">25</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> Length totals were rescaled onto the reported catch.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Measured fish (weighted): 37; reported: 50 -- a factor of 1.35.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> <span style="color: #00BB00;">estimate</span>, <span style="color: #00BB00;">se</span> and the confidence bounds describe the REPORTED catch, estimated</span></span>
+<span><span class="co">#&gt;   from the measured subsample. Shares (<span style="color: #00BB00;">percent</span>) are unaffected.</span></span>
 <span></span>
 <span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">ld</span>, theme <span class="op">=</span> <span class="st">"creel"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="visualisation_files/figure-html/length-dist-1.png" class="r-plt" alt="" width="100%"></p>

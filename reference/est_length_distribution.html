@@ -6,14 +6,22 @@ est_length_distribution() aggregates interview-level bin counts through the
 internal interview survey design so the result reflects the survey design
 rather than only the observed sample.
 The estimator returns one row per occupied length bin, with weighted totals,
-standard errors, confidence intervals, and within-group percentages."><meta property="og:description" content="est_length_distribution() estimates a pressure-weighted length-frequency
+standard errors, confidence intervals, and within-group percentages.
+Lengths are measured on a subsample of the catch, so the bin totals are
+scaled onto the design-estimated reported catch rather than reporting the
+subsample itself. See the section below; the call warns whenever it rescales,
+and aborts when the design carries no total to scale to."><meta property="og:description" content="est_length_distribution() estimates a pressure-weighted length-frequency
 distribution from fish length data attached via add_lengths(). Unlike
 summarize_length_freq(), which reports raw sample frequencies,
 est_length_distribution() aggregates interview-level bin counts through the
 internal interview survey design so the result reflects the survey design
 rather than only the observed sample.
 The estimator returns one row per occupied length bin, with weighted totals,
-standard errors, confidence intervals, and within-group percentages."><meta property="og:image" content="https://chrischizinski.github.io/tidycreel/logo.png"></head><body>
+standard errors, confidence intervals, and within-group percentages.
+Lengths are measured on a subsample of the catch, so the bin totals are
+scaled onto the design-estimated reported catch rather than reporting the
+subsample itself. See the section below; the call warns whenever it rescales,
+and aborts when the design carries no total to scale to."><meta property="og:image" content="https://chrischizinski.github.io/tidycreel/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -88,6 +96,10 @@ internal interview survey design so the result reflects the survey design
 rather than only the observed sample.</p>
 <p>The estimator returns one row per occupied length bin, with weighted totals,
 standard errors, confidence intervals, and within-group percentages.</p>
+<p>Lengths are measured on a <strong>subsample</strong> of the catch, so the bin totals are
+scaled onto the design-estimated reported catch rather than reporting the
+subsample itself. See the section below; the call warns whenever it rescales,
+and aborts when the design carries no total to scale to.</p>
     </div>
 
     <div class="section level2">
@@ -159,6 +171,36 @@ fish to the group. It is therefore constant across every bin of a group,
 and is neither a per-bin sample size nor a count of fish.</p>
     </div>
     <div class="section level2">
+    <h2 id="two-phase-estimation-onto-the-reported-catch">Two-phase estimation onto the reported catch<a class="anchor" aria-label="anchor" href="#two-phase-estimation-onto-the-reported-catch"></a></h2>
+
+
+<p>Lengths are a second-phase sample: interviews report how many fish were
+caught, and some subset of those fish get measured. Expanding the measured
+fish through the interview design alone estimates <em>the total number of fish
+that happened to be measured</em>, which is not the catch — on this package's
+example data it returns 14 against a reported harvest of 77. Because
+<code><a href="est_biomass.html">est_biomass()</a></code> multiplies these counts by weight-at-length and calls the
+result total biomass, the error propagated to a headline number (GH #310).</p>
+<p>The estimator is therefore two-phase (double sampling, Cochran 1977 §12.9 —
+the same structure used for the camera calibration ratio). For bin \(h\):
+$$\hat{p}_h = \hat{N}_h^{\text{meas}} / \sum_j \hat{N}_j^{\text{meas}},
+  \qquad \hat{N}_h = \hat{p}_h \hat{T}$$
+where \(\hat{T}\) is the design-estimated reported total for the group.
+Both parts come from a single <code><a href="https://rdrr.io/pkg/survey/man/surveysummary.html" class="external-link">svytotal()</a></code> call, so the covariance between a
+bin and the reported total is estimated rather than assumed away, and the
+standard error is the delta method over that joint covariance.</p>
+<p>What this changes: <code>estimate</code>, <code>se</code> and the confidence bounds now describe
+the reported catch. <code>percent</code> and <code>cumulative_percent</code> are unchanged — a
+share is invariant to the subsample size, which is why the <em>shape</em> of the
+distribution was always correct and only its <em>level</em> was not.</p>
+<p>Where \(\hat{T}\) comes from depends on the grouping. A species group can
+only be scaled by that species' own total, which lives in the table attached
+by <code><a href="add_catch.html">add_catch()</a></code>; grouping by species without it is refused rather than
+scaled by the all-species total. Any other grouping uses the interview-level
+column (<code>catch</code> or <code>harvest</code> from <code><a href="add_interviews.html">add_interviews()</a></code>), with release implied
+as caught − harvested so that harvest and release sum back to catch.</p>
+    </div>
+    <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p>Other "Estimation":
 <code><a href="compare_cpue_estimators.html">compare_cpue_estimators()</a></code>,
@@ -183,6 +225,8 @@ and is neither a per-bin sample size nor a count of fish.</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_calendar</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_interviews</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_lengths</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_catch</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">example_calendar</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="add_interviews.html">add_interviews</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_interviews</span>,</span></span>
@@ -195,6 +239,15 @@ and is neither a per-bin sample size nor a count of fish.</p>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> If the interviews really are one angler each, pass `n_anglers = 1` to state</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span>   that and silence this warning.</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Added 22 interviews: 17 complete (77%), 5 incomplete (23%)</span>
+<span class="r-in"><span><span class="co"># Species catch is required to group by species: the totals are scaled onto</span></span></span>
+<span class="r-in"><span><span class="co"># the reported catch, and only this table records it per species.</span></span></span>
+<span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="add_catch.html">add_catch</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_catch</span>,</span></span>
+<span class="r-in"><span>  catch_uid <span class="op">=</span> <span class="va">interview_id</span>,</span></span>
+<span class="r-in"><span>  interview_uid <span class="op">=</span> <span class="va">interview_id</span>,</span></span>
+<span class="r-in"><span>  species <span class="op">=</span> <span class="va">species</span>,</span></span>
+<span class="r-in"><span>  count <span class="op">=</span> <span class="va">count</span>,</span></span>
+<span class="r-in"><span>  catch_type <span class="op">=</span> <span class="va">catch_type</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="add_lengths.html">add_lengths</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_lengths</span>,</span></span>
 <span class="r-in"><span>  length_uid <span class="op">=</span> <span class="va">interview_id</span>,</span></span>
 <span class="r-in"><span>  interview_uid <span class="op">=</span> <span class="va">interview_id</span>,</span></span>
@@ -206,32 +259,36 @@ and is neither a per-bin sample size nor a count of fish.</p>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu">est_length_distribution</span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">species</span>, bin_width <span class="op">=</span> <span class="fl">25</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    species length_bin bin_lower bin_upper estimate       se   ci_lower</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1     bass  [225,250)       225       250        1 1.000000 -0.9599640</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2     bass  [250,275)       250       275        1 1.000000 -0.9599640</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3     bass  [275,300)       275       300        6 4.213075 -2.2574750</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4     bass  [325,350)       325       350        5 5.000000 -4.7998199</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5  panfish  [150,175)       150       175        2 2.000000 -1.9199280</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6  panfish  [175,200)       175       200        6 6.000000 -5.7597839</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7  panfish  [225,250)       225       250        3 3.000000 -2.8798920</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 8  walleye  [375,400)       375       400        4 2.380476 -0.6656475</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 9  walleye  [400,425)       400       425        3 2.236068 -1.3826127</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10 walleye  [425,450)       425       450        3 3.000000 -2.8798920</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11 walleye  [475,500)       475       500        1 1.000000 -0.9599640</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 12 walleye  [500,525)       500       525        2 2.000000 -1.9199280</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span><span style="color: #BBBB00;">!</span> Length totals were rescaled onto the reported catch.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Measured fish (weighted): 37; reported: 50 -- a factor of 1.35.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> <span style="color: #00BB00;">estimate</span>, <span style="color: #00BB00;">se</span> and the confidence bounds describe the REPORTED catch, estimated</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   from the measured subsample. Shares (<span style="color: #00BB00;">percent</span>) are unaffected.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    species length_bin bin_lower bin_upper   estimate       se  ci_lower</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1     bass  [225,250)       225       250  0.7692308 1.039230 -1.267622</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2     bass  [250,275)       250       275  0.7692308 1.039230 -1.267622</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3     bass  [275,300)       275       300  4.6153846 3.142368 -1.543544</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4     bass  [325,350)       325       350  3.8461538 2.834555 -1.709472</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5  panfish  [150,175)       150       175  1.2727273 2.615490 -3.853540</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6  panfish  [175,200)       175       200  3.8181818 3.143192 -2.342360</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7  panfish  [225,250)       225       250  1.9090909 1.571596 -1.171180</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8  walleye  [375,400)       375       400 10.1538462 3.979343  2.354477</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9  walleye  [400,425)       400       425  7.6153846 6.193515 -4.523683</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10 walleye  [425,450)       425       450  7.6153846 5.424938 -3.017299</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 11 walleye  [475,500)       475       500  2.5384615 1.808313 -1.005766</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 12 walleye  [500,525)       500       525  5.0769231 3.616626 -2.011533</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     ci_upper percent cumulative_percent n</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1   2.959964     7.7                7.7 3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2   2.959964     7.7               15.4 3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3  14.257475    46.2               61.5 3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4  14.799820    38.5              100.0 3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5   5.919928    18.2               18.2 2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6  17.759784    54.5               72.7 2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7   8.879892    27.3              100.0 2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 8   8.665648    30.8               30.8 3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 9   7.382613    23.1               53.8 3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10  8.879892    23.1               76.9 3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11  2.959964     7.7               84.6 3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 12  5.919928    15.4              100.0 3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1   2.806084     7.7                7.7 3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2   2.806084     7.7               15.4 3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3  10.774314    46.2               61.5 3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4   9.401780    38.5              100.0 3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5   6.398994    18.2               18.2 2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6   9.978724    54.5               72.7 2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7   4.989362    27.3              100.0 2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8  17.953215    30.8               30.8 3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9  19.754452    23.1               53.8 3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10 18.248069    23.1               76.9 3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 11  6.082690     7.7               84.6 3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 12 12.165379    15.4              100.0 3</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
