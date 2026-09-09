@@ -25,9 +25,11 @@
 #' back to the unscaled subsample.
 #'
 #' A species group cannot use the interview-level catch/harvest columns, which
-#' are not species-resolved; it reads `design$catch` instead. Everything else
-#' uses the interview-level column, except release, which has no interview-level
-#' column in this package and always comes from `design$catch`.
+#' are not species-resolved; it reads `design$catch` instead. Every other
+#' grouping uses the interview-level column -- including release, which has no
+#' column of its own and is implied as caught - harvested from the two that do.
+#' Release is deliberately NOT read from `design$catch` for a non-species group;
+#' see the comment on that branch for why the identity requires a single source.
 #'
 #' @param design A creel_design object.
 #' @param type One of "catch", "harvest", "release".

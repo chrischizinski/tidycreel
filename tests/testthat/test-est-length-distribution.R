@@ -146,7 +146,7 @@ test_that("ungrouped catch estimate sums to expected total fish count for exampl
   # Before #310 this summed to 37 -- the number of measured fish.
   d <- make_design_with_lengths_for_est()
   result <- est_length_distribution(d, type = "catch")
-  reported <- sum(d$interviews[[d$catch_col]])
+  reported <- weighted_interview_total(d, d$interviews[[d$catch_col]])
   expect_equal(sum(result[["estimate"]]), reported, tolerance = 1e-8)
   expect_equal(reported, 127)
 })
@@ -155,7 +155,7 @@ test_that("ungrouped harvest estimate sums to expected total harvest fish count"
   # Before #310 this summed to 14, the measured harvest fish.
   d <- make_design_with_lengths_for_est()
   result <- est_length_distribution(d, type = "harvest")
-  reported <- sum(d$interviews[[d$harvest_col]])
+  reported <- weighted_interview_total(d, d$interviews[[d$harvest_col]])
   expect_equal(sum(result[["estimate"]]), reported, tolerance = 1e-8)
   expect_equal(reported, 77)
 })
@@ -165,7 +165,10 @@ test_that("ungrouped release estimate sums to expected expanded release fish cou
   # caught - harvested. Before #310 this summed to 23, the measured releases.
   d <- make_design_with_lengths_for_est()
   result <- est_length_distribution(d, type = "release")
-  reported <- sum(d$interviews[[d$catch_col]]) - sum(d$interviews[[d$harvest_col]])
+  reported <- weighted_interview_total(
+    d,
+    d$interviews[[d$catch_col]] - d$interviews[[d$harvest_col]]
+  )
   expect_equal(sum(result[["estimate"]]), reported, tolerance = 1e-8)
   expect_equal(reported, 50)
 })
@@ -177,11 +180,15 @@ test_that("grouped species estimate returns expected species totals", {
   # species-resolved. Pinned against that table directly.
   result <- est_length_distribution(d, type = "catch", by = species) # nolint: object_usage_linter
   est_by_species <- tapply(result[["estimate"]], result[["species"]], sum)
+  for (sp in unique(result[[d$catch_species_col]])) {
+    expect_equal(
+      est_by_species[[sp]],
+      weighted_interview_total(d, species_reported_vector(d, sp, "catch")),
+      tolerance = 1e-8
+    )
+  }
   caught <- d[["catch"]][d[["catch"]][[d$catch_type_col]] == "caught", , drop = FALSE]
   reported <- tapply(caught[[d$catch_count_col]], caught[[d$catch_species_col]], sum)
-  for (sp in names(reported)) {
-    expect_equal(est_by_species[[sp]], as.numeric(reported[[sp]]), tolerance = 1e-8)
-  }
   # Before #310 these were the measured counts: walleye 13, bass 13, panfish 11.
   expect_equal(as.numeric(reported[["walleye"]]), 33)
 })
@@ -390,7 +397,11 @@ test_that("EST-LD-17 (#310): the totals reconcile with the design's reported tot
 
   # The reconciliation the audit found missing: the distribution's total and the
   # design's own harvest total must estimate the same quantity.
-  expect_equal(sum(ld$estimate), sum(d$interviews[[d$harvest_col]]), tolerance = 1e-8)
+  expect_equal(
+    sum(ld$estimate),
+    weighted_interview_total(d, d$interviews[[d$harvest_col]]),
+    tolerance = 1e-8
+  )
 
   # The scale factor is recorded rather than left to be inferred.
   expect_equal(attr(ld, "measured_total"), 14)
@@ -458,10 +469,14 @@ test_that("EST-LD-20 (#310): a grouped request's parts sum back to the whole", {
   # A species grouping CAN be restricted, via the catch table, and must
   # decompose exactly.
   ld <- suppressWarnings(est_length_distribution(d, type = "catch", by = species, bin_width = 25))
-  caught <- d[["catch"]][d[["catch"]][[d$catch_type_col]] == "caught", , drop = FALSE]
+  species_seen <- unique(ld[[d$catch_species_col]])
   expect_equal(
     sum(ld$estimate),
-    sum(caught[[d$catch_count_col]]),
+    sum(vapply(
+      species_seen,
+      function(sp) weighted_interview_total(d, species_reported_vector(d, sp, "catch")),
+      numeric(1)
+    )),
     tolerance = 1e-8
   )
 })

@@ -155,7 +155,7 @@ test_that("AGD-12 ungrouped catch estimate sums to total fish count", {
   result <- est_age_distribution(d, type = "catch")
   # #310: the totals describe the REPORTED catch, not the aged subsample.
   # Before #310 this summed to 18 -- the number of aged fish in example_ages.
-  reported <- sum(d$interviews[[d$catch_col]])
+  reported <- weighted_interview_total(d, d$interviews[[d$catch_col]])
   expect_equal(sum(result$estimate), reported, tolerance = 1e-8)
   expect_equal(reported, 127)
 })
@@ -164,7 +164,7 @@ test_that("AGD-13 ungrouped harvest estimate sums to harvest fish count", {
   d <- make_age_design()
   result <- est_age_distribution(d, type = "harvest")
   # Before #310 this summed to 12, the aged harvest rows.
-  reported <- sum(d$interviews[[d$harvest_col]])
+  reported <- weighted_interview_total(d, d$interviews[[d$harvest_col]])
   expect_equal(sum(result$estimate), reported, tolerance = 1e-8)
   expect_equal(reported, 77)
 })
@@ -173,7 +173,10 @@ test_that("AGD-14 ungrouped release estimate sums to release fish count", {
   d <- make_age_design()
   result <- est_age_distribution(d, type = "release")
   # Before #310 this summed to 6, the aged release rows.
-  reported <- sum(d$interviews[[d$catch_col]]) - sum(d$interviews[[d$harvest_col]])
+  reported <- weighted_interview_total(
+    d,
+    d$interviews[[d$catch_col]] - d$interviews[[d$harvest_col]]
+  )
   expect_equal(sum(result$estimate), reported, tolerance = 1e-8)
   expect_equal(reported, 50)
 })
@@ -224,11 +227,15 @@ test_that("AGD-21 by = species returns expected per-species totals", {
   # bass 5, panfish 4.
   result <- est_age_distribution(d, type = "catch", by = species) # nolint: object_usage_linter
   est_by_species <- tapply(result$estimate, result$species, sum)
+  for (sp in unique(result[[d$catch_species_col]])) {
+    expect_equal(
+      est_by_species[[sp]],
+      weighted_interview_total(d, species_reported_vector(d, sp, "catch")),
+      tolerance = 1e-8
+    )
+  }
   caught <- d[["catch"]][d[["catch"]][[d$catch_type_col]] == "caught", , drop = FALSE]
   reported <- tapply(caught[[d$catch_count_col]], caught[[d$catch_species_col]], sum)
-  for (sp in names(reported)) {
-    expect_equal(est_by_species[[sp]], as.numeric(reported[[sp]]), tolerance = 1e-8)
-  }
   expect_equal(as.numeric(reported[["walleye"]]), 33)
 })
 
