@@ -55,6 +55,17 @@ A `data.frame` with class `c("creel_age_distribution", "data.frame")`
 and columns: grouping columns (if any), `age` (integer), `estimate`,
 `se`, `ci_lower`, `ci_upper`, `percent`, `cumulative_percent`, and `n`.
 
+`percent` and `cumulative_percent` are shares of the group's estimated
+total, rounded to one decimal for display; `cumulative_percent`
+accumulates the unrounded shares, so it reaches 100 rather than
+drifting. The exception is a group whose estimated total is zero, where
+there are no shares to take and both columns are `0` rather than
+reaching 100.
+
+`n` is the number of **interviews** contributing at least one aged fish
+to the group. It is therefore constant across every age class of a
+group, and is neither a per-class sample size nor a count of fish.
+
 ## See also
 
 Other "Estimation":
@@ -108,9 +119,9 @@ est_age_distribution(design, by = species)
 #> 4 panfish   1        2 1.354006 -0.6538038 4.653804    50.0               75.0
 #> 5 panfish   2        1 1.000000 -0.9599640 2.959964    25.0              100.0
 #> 6 walleye   3        2 1.414214 -0.7718076 4.771808    22.2               22.2
-#> 7 walleye   4        3 1.683251 -0.2991110 6.299111    33.3               55.5
-#> 8 walleye   5        2 1.414214 -0.7718076 4.771808    22.2               77.7
-#> 9 walleye   6        2 2.000000 -1.9199280 5.919928    22.2               99.9
+#> 7 walleye   4        3 1.683251 -0.2991110 6.299111    33.3               55.6
+#> 8 walleye   5        2 1.414214 -0.7718076 4.771808    22.2               77.8
+#> 9 walleye   6        2 2.000000 -1.9199280 5.919928    22.2              100.0
 #>   n
 #> 1 3
 #> 2 3

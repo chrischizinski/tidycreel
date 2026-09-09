@@ -71,6 +71,17 @@ and columns: grouping columns (if any), `length_bin` (ordered factor),
 `bin_lower`, `bin_upper`, `estimate`, `se`, `ci_lower`, `ci_upper`,
 `percent`, `cumulative_percent`, and `n`.
 
+`percent` and `cumulative_percent` are shares of the group's estimated
+total, rounded to one decimal for display; `cumulative_percent`
+accumulates the unrounded shares, so it reaches 100 rather than
+drifting. The exception is a group whose estimated total is zero, where
+there are no shares to take and both columns are `0` rather than
+reaching 100.
+
+`n` is the number of **interviews** contributing at least one measured
+fish to the group. It is therefore constant across every bin of a group,
+and is neither a per-bin sample size nor a count of fish.
+
 ## See also
 
 Other "Estimation":
@@ -135,14 +146,14 @@ est_length_distribution(design, by = species, bin_width = 25)
 #>     ci_upper percent cumulative_percent n
 #> 1   2.959964     7.7                7.7 3
 #> 2   2.959964     7.7               15.4 3
-#> 3  14.257475    46.2               61.6 3
-#> 4  14.799820    38.5              100.1 3
+#> 3  14.257475    46.2               61.5 3
+#> 4  14.799820    38.5              100.0 3
 #> 5   5.919928    18.2               18.2 2
 #> 6  17.759784    54.5               72.7 2
 #> 7   8.879892    27.3              100.0 2
 #> 8   8.665648    30.8               30.8 3
-#> 9   7.382613    23.1               53.9 3
-#> 10  8.879892    23.1               77.0 3
-#> 11  2.959964     7.7               84.7 3
-#> 12  5.919928    15.4              100.1 3
+#> 9   7.382613    23.1               53.8 3
+#> 10  8.879892    23.1               76.9 3
+#> 11  2.959964     7.7               84.6 3
+#> 12  5.919928    15.4              100.0 3
 ```
