@@ -245,7 +245,10 @@ validate_incomplete_trips <- function(
       allow_empty = FALSE,
       error_call = rlang::caller_env()
     )
-    by_vars <- names(by_cols)
+    by_vars <- screen_by_vars(
+      names(by_cols), by_quo, design$interviews, design,
+      error_call = rlang::caller_env()
+    )
 
     # Overall test (ungrouped data)
     overall_result <- perform_overall_tost(

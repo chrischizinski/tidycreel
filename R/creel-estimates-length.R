@@ -153,7 +153,11 @@ est_length_distribution <- function(
       allow_empty = FALSE,
       error_call = rlang::caller_env()
     )
-    by_vars <- names(by_cols)
+    by_vars <- screen_by_vars(
+      names(by_cols), by_quo, lengths_data, design,
+      extra_key_cols = design$lengths_uid_col,
+      error_call = rlang::caller_env()
+    )
   }
 
   records <- build_length_distribution_records(

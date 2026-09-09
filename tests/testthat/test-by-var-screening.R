@@ -227,3 +227,297 @@ test_that("BY-06 (#293): the key is refused via any attachment that registered i
     class = "creel_error_key_in_by"
   )
 })
+
+# Guard coverage across every by= entry point (GH #312) -------------------------
+#
+# #293 built `screen_by_vars()` and wired it into `resolve_species_by()`. It
+# reached two of the twelve places a `by=` selection is resolved. The other ten
+# called `tidyselect::eval_select()` and used the names directly, so the same
+# interview key #293 refuses on `estimate_catch_rate()` was accepted by the
+# length, age and summary paths -- returning singleton groups in which
+# `estimate` and `se` are equal in every row, a 100% CV, alongside percentages
+# computed from one interview.
+#
+# The tests below deliberately go through the PUBLIC functions rather than
+# `screen_by_vars()` itself. A unit test of the screen passes whether or not
+# anything calls it, which is precisely the gap that let #312 exist after #293
+# shipped green. One case per entry point, because a guard passing one twin's
+# test says nothing about its siblings.
+
+make_biological_design <- function() {
+  data("example_calendar", package = "tidycreel")
+  data("example_interviews", package = "tidycreel")
+  data("example_catch", package = "tidycreel")
+  data("example_lengths", package = "tidycreel")
+  data("example_ages", package = "tidycreel")
+
+  design <- creel_design(example_calendar, date = date, strata = day_type)
+  design <- add_interviews(
+    design,
+    example_interviews,
+    catch = catch_total,
+    effort = hours_fished,
+    harvest = catch_kept,
+    trip_status = trip_status,
+    species_sought = species_sought
+  )
+  design <- add_catch(
+    design,
+    example_catch,
+    catch_uid = interview_id,
+    interview_uid = interview_id,
+    species = species,
+    count = count,
+    catch_type = catch_type
+  )
+  design <- add_lengths(
+    design,
+    example_lengths,
+    length_uid = interview_id,
+    interview_uid = interview_id,
+    species = species,
+    length = length,
+    length_type = length_type,
+    count = count,
+    release_format = "binned"
+  )
+  add_ages(
+    design,
+    example_ages,
+    age_uid = interview_id,
+    interview_uid = interview_id,
+    species = species,
+    age = age,
+    age_type = age_type
+  )
+}
+
+test_that("BY-09 (#312): every by= entry point refuses the interview key", {
+  design <- suppressWarnings(suppressMessages(make_biological_design()))
+
+  # The premise: one row per id, so any grouping by it gives groups of n = 1.
+  ids <- design$interviews[[design$catch_interview_uid_col]]
+  expect_identical(length(unique(ids)), nrow(design$interviews))
+
+  # Named individually rather than looped so a failure reports WHICH path
+  # regressed. Each of these accepted the key before #312.
+  expect_error(
+    suppressWarnings(est_length_distribution(design, by = interview_id, bin_width = 25)),
+    class = "creel_error_key_in_by"
+  )
+  expect_error(
+    suppressWarnings(est_age_distribution(design, by = interview_id)),
+    class = "creel_error_key_in_by"
+  )
+  expect_error(
+    suppressWarnings(summarize_length_freq(design, by = interview_id)),
+    class = "creel_error_key_in_by"
+  )
+  expect_error(
+    suppressWarnings(summarize_cws_rates(design, by = interview_id)),
+    class = "creel_error_key_in_by"
+  )
+  expect_error(
+    suppressWarnings(summarize_hws_rates(design, by = interview_id)),
+    class = "creel_error_key_in_by"
+  )
+
+  # The already-guarded path, kept here so the two cannot drift apart again.
+  expect_error(
+    suppressWarnings(estimate_catch_rate(design, by = interview_id)),
+    class = "creel_error_key_in_by"
+  )
+
+  # The harvest and release rates also re-resolve `by=` in their standard
+  # routing, and #312 screens those sites too. Their KEY refusal, though, comes
+  # from `resolve_species_by()` upstream and predates #312 -- these two
+  # assertions are coverage of that upstream screen, not of the new call sites,
+  # and they pass against the pre-fix code. What the new call sites change on
+  # these paths is the derived-column drop, which BY-11 pins on the catch path.
+  expect_error(
+    suppressWarnings(estimate_harvest_rate(design, by = interview_id)),
+    class = "creel_error_key_in_by"
+  )
+  expect_error(
+    suppressWarnings(estimate_release_rate(design, by = interview_id)),
+    class = "creel_error_key_in_by"
+  )
+})
+
+test_that("BY-10 (#312): the refusal names the offending column on each path", {
+  design <- suppressWarnings(suppressMessages(make_biological_design()))
+
+  # The class is what code catches; the message is the only thing that tells a
+  # user which by= term to drop. A refusal that does not name the column leaves
+  # them guessing, which on the length path is the difference between a fixable
+  # call and an abandoned one.
+  expect_error(
+    suppressWarnings(est_length_distribution(design, by = interview_id, bin_width = 25)),
+    "interview_id"
+  )
+  expect_error(
+    suppressWarnings(summarize_cws_rates(design, by = interview_id)),
+    "interview_id"
+  )
+})
+
+test_that("BY-11 (#312): a wildcard no longer re-admits a derived column downstream", {
+  data("example_calendar", package = "tidycreel")
+  data("example_interviews", package = "tidycreel")
+
+  # Interviews only: no add_catch()/add_lengths()/add_ages(), so no interview
+  # key is registered and the key guard cannot fire. That isolates the OTHER
+  # half of the screen -- the silent drop of package-derived columns.
+  design <- suppressMessages(creel_design(
+    example_calendar,
+    date = date,
+    strata = day_type
+  ))
+  design <- suppressWarnings(suppressMessages(add_interviews(
+    design,
+    example_interviews,
+    catch = catch_total,
+    effort = hours_fished,
+    harvest = catch_kept,
+    trip_status = trip_status
+  )))
+  expect_true(".angler_effort" %in% names(design$interviews))
+
+  # `resolve_species_by()` screened this selection and dropped `.angler_effort`,
+  # and then the standard (non-species) routing re-resolved the same quosure
+  # against the raw frame, which put it straight back. The call still refuses --
+  # 22 interviews cannot fill groups of 10 -- but WHICH groups it built is the
+  # observable, and `.angler_effort` was one of the grouping terms.
+  msg <- tryCatch(
+    {
+      suppressWarnings(suppressMessages(
+        estimate_catch_rate(design, by = tidyselect::everything())
+      ))
+      NULL
+    },
+    error = function(e) conditionMessage(e)
+  )
+  expect_false(is.null(msg))
+  expect_false(grepl(".angler_effort", msg, fixed = TRUE))
+})
+
+test_that("BY-12 (#312): the release path drops the columns it built, and the one it displaced", {
+  data("example_calendar", package = "tidycreel")
+  data("example_interviews", package = "tidycreel")
+  data("example_catch", package = "tidycreel")
+
+  design <- suppressMessages(creel_design(
+    example_calendar,
+    date = date,
+    strata = day_type
+  ))
+  design <- suppressWarnings(suppressMessages(add_interviews(
+    design,
+    example_interviews,
+    catch = catch_total,
+    effort = hours_fished,
+    harvest = catch_kept,
+    trip_status = trip_status
+  )))
+  design <- suppressWarnings(suppressMessages(add_catch(
+    design,
+    example_catch,
+    catch_uid = interview_id,
+    interview_uid = interview_id,
+    species = species,
+    count = count,
+    catch_type = catch_type
+  )))
+
+  # `estimate_release_rate()` builds its own interview frame: it adds
+  # `.release_count` and `.release_effort`, and re-points angler_effort_col at
+  # the latter. That displacement is the trap. `derived_interview_cols()` reads
+  # angler_effort_col, so once it names `.release_effort`, the ORIGINAL
+  # `.angler_effort` is still sitting in the frame with nothing marking it as
+  # derived -- and the standard routing re-resolves `by=` against that frame.
+  #
+  # Reaching it needs a selection with three properties, which is why this test
+  # looks so specific:
+  #   * catch data attached, or the path aborts with "No catch data available"
+  #     before any screening happens (an earlier version of this test asserted
+  #     against that abort and was therefore vacuous);
+  #   * a WILDCARD, so the upstream `resolve_species_by()` screen drops the
+  #     derived column silently instead of aborting -- an explicit mention is
+  #     refused upstream and never reaches the re-resolution;
+  #   * no integer key column, so the key guard does not pre-empt it.
+  # `where(is.double)` satisfies all three: it sweeps `.angler_effort` but not
+  # the integer `interview_id`.
+  msg <- tryCatch(
+    {
+      suppressWarnings(suppressMessages(
+        estimate_release_rate(design, by = tidyselect::where(is.double))
+      ))
+      NULL
+    },
+    error = function(e) conditionMessage(e)
+  )
+
+  # The call still refuses -- 22 interviews cannot fill groups of 10 -- but
+  # WHICH groups it built is the observable, and before the fix `.angler_effort`
+  # was one of the grouping terms.
+  expect_false(is.null(msg))
+  expect_match(msg, "Insufficient sample size")
+  expect_false(grepl(".angler_effort", msg, fixed = TRUE))
+  expect_false(grepl(".release_effort", msg, fixed = TRUE))
+  expect_false(grepl(".release_count", msg, fixed = TRUE))
+})
+
+test_that("BY-13 (#312): the frame's OWN join key is refused when it is named differently", {
+  data("example_calendar", package = "tidycreel")
+  data("example_interviews", package = "tidycreel")
+  data("example_lengths", package = "tidycreel")
+  data("example_ages", package = "tidycreel")
+
+  # Every other fixture in this file names both sides of the join `interview_id`,
+  # so the length-side key and the interview-side key are the same string and no
+  # test could tell which one the guard actually checks. `add_lengths()` lets
+  # them differ, and the design records the INTERVIEW-side name -- so a `by=`
+  # resolved against `design$lengths` was screened against a name that is not in
+  # that frame, and the frame's own foreign key sailed through. Renaming here is
+  # the whole point of the fixture (cf. #282).
+  lens <- example_lengths
+  names(lens)[names(lens) == "interview_id"] <- "len_int_id"
+  ages <- example_ages
+  names(ages)[names(ages) == "interview_id"] <- "age_int_id"
+
+  design <- suppressMessages(creel_design(example_calendar, date = date, strata = day_type))
+  design <- suppressWarnings(suppressMessages(add_interviews(
+    design, example_interviews,
+    catch = catch_total, effort = hours_fished,
+    harvest = catch_kept, trip_status = trip_status
+  )))
+  design <- suppressWarnings(add_lengths(
+    design, lens,
+    length_uid = len_int_id, interview_uid = interview_id,
+    species = species, length = length, length_type = length_type,
+    count = count, release_format = "binned"
+  ))
+  design <- suppressWarnings(add_ages(
+    design, ages,
+    age_uid = age_int_id, interview_uid = interview_id,
+    species = species, age = age, age_type = age_type
+  ))
+
+  # The premise: the two names really are different on this design.
+  expect_false(identical(design$lengths_uid_col, design$lengths_interview_uid_col))
+
+  # Grouping by the frame-local key gives one interview per group just as surely
+  # as grouping by the interview key does, so it must be refused the same way.
+  expect_error(
+    suppressWarnings(est_length_distribution(design, by = len_int_id, bin_width = 25)),
+    class = "creel_error_key_in_by"
+  )
+  expect_error(
+    suppressWarnings(est_age_distribution(design, by = age_int_id)),
+    class = "creel_error_key_in_by"
+  )
+  expect_error(
+    suppressWarnings(summarize_length_freq(design, by = len_int_id)),
+    class = "creel_error_key_in_by"
+  )
+})

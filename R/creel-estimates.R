@@ -1916,7 +1916,10 @@ estimate_catch_rate <- function(
         allow_empty = FALSE,
         error_call = rlang::caller_env()
       )
-      by_vars <- names(by_cols)
+      by_vars <- screen_by_vars(
+        names(by_cols), by_quo, design$interviews, design,
+        error_call = rlang::caller_env()
+      )
       return(estimate_cpue_reg_grouped(
         # nolint: object_usage_linter
         design,
@@ -1939,7 +1942,10 @@ estimate_catch_rate <- function(
       allow_empty = FALSE,
       error_call = rlang::caller_env()
     )
-    by_vars <- names(by_cols)
+    by_vars <- screen_by_vars(
+      names(by_cols), by_quo, design$interviews, design,
+      error_call = rlang::caller_env()
+    )
     validate_ratio_sample_size(design, by_vars, type = "cpue") # nolint: object_usage_linter
     return(estimate_cpue_grouped(
       # nolint: object_usage_linter
@@ -2507,7 +2513,10 @@ estimate_harvest_rate <- function(
       allow_empty = FALSE,
       error_call = rlang::caller_env()
     )
-    by_vars <- names(by_cols)
+    by_vars <- screen_by_vars(
+      names(by_cols), by_quo, design$interviews, design,
+      error_call = rlang::caller_env()
+    )
 
     # Validate sample size per group
     validate_ratio_sample_size(design, by_vars, type = "harvest") # nolint: object_usage_linter
@@ -2969,6 +2978,14 @@ estimate_release_rate <- function(
   design_rel$interviews <- release_data
   design_rel$catch_col <- ".release_count"
   design_rel$angler_effort_col <- ".release_effort"
+  # Every column this path added to the frame, plus the one it displaced.
+  # Recorded rather than pattern-matched: a leading "." is not the test (#293,
+  # and #259 pins a user column literally named .se_expansion as groupable).
+  design_rel$derived_frame_cols <- c(
+    ".release_count",
+    ".release_effort",
+    design$angler_effort_col
+  )
 
   strata_cols <- design$strata_cols
   strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0L) {
@@ -3001,7 +3018,10 @@ estimate_release_rate <- function(
       allow_empty = FALSE,
       error_call = rlang::caller_env()
     )
-    by_vars <- names(by_cols)
+    by_vars <- screen_by_vars(
+      names(by_cols), by_quo, release_data, design_rel,
+      error_call = rlang::caller_env()
+    )
     validate_ratio_sample_size(design_rel, by_vars, type = "cpue") # nolint: object_usage_linter
     result <- estimate_cpue_grouped(design_rel, by_vars, variance, conf_level, dispatch_estimator) # nolint: object_usage_linter
     result$method <- if (mortr_active) {
@@ -3594,6 +3614,13 @@ derived_interview_cols <- function(design) {
   # angler_effort_col is always ".angler_effort" and always written by
   # add_interviews(), so there is nothing to distinguish.
   cols <- design[["angler_effort_col"]]
+  # A path that builds its own interview frame records what it put there, for
+  # the same reason the fields below are read one at a time: only the code that
+  # wrote a column knows it is derived. `estimate_release_rate()` swaps
+  # angler_effort_col to its own column, which would otherwise make the
+  # ORIGINAL .angler_effort -- still sitting in the frame -- look like user
+  # data (GH #312).
+  cols <- c(cols, design[["derived_frame_cols"]])
   # trip_duration_col is different: it names a column add_interviews() computed
   # only when it computed one, and otherwise the caller's own. The design
   # records which, because the NAME cannot answer it -- a caller may supply a
@@ -3614,13 +3641,20 @@ derived_interview_cols <- function(design) {
 #'   match from an explicit one.
 #' @param data The frame `vars` was resolved against.
 #' @param design A creel_design object.
+#' @param extra_key_cols Additional column names to treat as an interview key.
+#'   A caller resolving `by=` against an attached frame rather than against the
+#'   interviews passes that frame's own join key here: the design records the
+#'   INTERVIEW-side name, and `add_lengths(length_uid = , interview_uid = )`
+#'   lets the two differ, so the frame-local name is invisible to the check
+#'   below (GH #312 review).
 #' @param error_call Environment used for error reporting.
 #'
 #' @return `vars` with derived columns removed.
 #'
 #' @keywords internal
 #' @noRd
-screen_by_vars <- function(vars, by_quo, data, design, error_call = rlang::caller_env()) {
+screen_by_vars <- function(vars, by_quo, data, design, extra_key_cols = character(0),
+                           error_call = rlang::caller_env()) {
   derived_cols <- derived_interview_cols(design)
   derived <- intersect(derived_cols, vars)
   if (length(derived) > 0L) {
@@ -3656,11 +3690,14 @@ screen_by_vars <- function(vars, by_quo, data, design, error_call = rlang::calle
 
   # add_catch(), add_lengths() and add_ages() each register the interviews' id
   # column; any one of them naming it is enough to know it is a key.
-  key_col <- unique(unlist(design[c(
-    "catch_interview_uid_col",
-    "lengths_interview_uid_col",
-    "ages_interview_uid_col"
-  )]))
+  key_col <- unique(c(
+    unlist(design[c(
+      "catch_interview_uid_col",
+      "lengths_interview_uid_col",
+      "ages_interview_uid_col"
+    )]),
+    extra_key_cols
+  ))
   key_col <- intersect(key_col, vars)
   if (length(key_col) > 0L) {
     cli::cli_abort(

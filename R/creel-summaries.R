@@ -921,7 +921,10 @@ summarize_cws_rates <- function(design, by = NULL, conf_level = 0.95) {
       allow_empty = FALSE,
       error_call = rlang::caller_env()
     )
-    by_vars <- names(by_cols)
+    by_vars <- screen_by_vars(
+      names(by_cols), by_quo, interviews, design,
+      error_call = rlang::caller_env()
+    )
   } else {
     by_vars <- character(0)
   }
@@ -1142,7 +1145,10 @@ summarize_hws_rates <- function(design, by = NULL, conf_level = 0.95) {
       allow_empty = FALSE,
       error_call = rlang::caller_env()
     )
-    by_vars <- names(by_cols)
+    by_vars <- screen_by_vars(
+      names(by_cols), by_quo, interviews, design,
+      error_call = rlang::caller_env()
+    )
   } else {
     by_vars <- character(0)
   }
@@ -1353,7 +1359,11 @@ summarize_length_freq <- function(design, type = "catch", by = NULL, bin_width =
       allow_empty = FALSE,
       error_call = rlang::caller_env()
     )
-    by_vars <- names(by_cols)
+    by_vars <- screen_by_vars(
+      names(by_cols), by_quo, lengths_data, design,
+      extra_key_cols = design$lengths_uid_col,
+      error_call = rlang::caller_env()
+    )
   } else {
     by_vars <- character(0)
   }
