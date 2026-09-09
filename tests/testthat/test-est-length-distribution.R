@@ -615,3 +615,98 @@ test_that("EST-LD-24 (#310): a rounding-level negative variance clamps rather th
   v_bad <- matrix(c(-1e6, 0, 0, 0, -1e6, 0, 0, 0, -1e6), nrow = 3)
   expect_true(all(is.na(tidycreel:::two_phase_rescale(meas, total, v_bad)$se)))
 })
+
+test_that("EST-LD-25 (#310): factor species columns with different levels still match", {
+  data("example_calendar", package = "tidycreel")
+  data("example_interviews", package = "tidycreel")
+  data("example_lengths", package = "tidycreel")
+  data("example_catch", package = "tidycreel")
+
+  # Copilot review finding. The catch table and the length table are attached
+  # separately, so their species columns can easily be factors with different
+  # level sets. `Ops.factor` does not return NA there -- it errors outright with
+  # "level sets of factors are different" -- so a species filter comparing them
+  # directly took the whole call down.
+  ct <- example_catch
+  ct$species <- factor(ct$species)
+  lens <- example_lengths
+  lens$species <- factor(lens$species, levels = c(sort(unique(lens$species)), "pike"))
+  expect_false(identical(levels(ct$species), levels(lens$species)))
+
+  d <- suppressMessages(creel_design(example_calendar, date = date, strata = day_type))
+  d <- suppressWarnings(suppressMessages(add_interviews(
+    d, example_interviews,
+    catch = catch_total, effort = hours_fished,
+    harvest = catch_kept, trip_status = trip_status
+  )))
+  d <- suppressWarnings(add_catch(
+    d, ct,
+    catch_uid = interview_id, interview_uid = interview_id,
+    species = species, count = count, catch_type = catch_type
+  ))
+  d <- suppressWarnings(add_lengths(
+    d, lens,
+    length_uid = interview_id, interview_uid = interview_id,
+    species = species, length = length, length_type = length_type,
+    count = count, release_format = "binned"
+  ))
+
+  ld <- suppressWarnings(est_length_distribution(d, type = "catch", by = species, bin_width = 25))
+  est <- tapply(ld$estimate, as.character(ld$species), sum)
+
+  # Each species still scales to its own reported total, not to an error and
+  # not to zero.
+  for (sp in names(est)) {
+    expect_equal(
+      as.numeric(est[[sp]]),
+      weighted_interview_total(d, species_reported_vector(d, sp, "catch")),
+      tolerance = 1e-8
+    )
+  }
+  expect_gt(as.numeric(est[["walleye"]]), 0)
+})
+
+test_that("EST-LD-26 (#310): an NA grouping value keeps its own interviews", {
+  data("example_calendar", package = "tidycreel")
+  data("example_interviews", package = "tidycreel")
+  data("example_lengths", package = "tidycreel")
+
+  # Copilot review finding, and the third instance of this PR's recurring
+  # class. `x == NA` is NA for every row; blanket-converting that to FALSE
+  # emptied the group, so an NA group reported a total of 0 and its whole
+  # distribution came back as zero fish, silently.
+  #
+  # The grouping column has to live in BOTH frames: `by=` resolves against the
+  # lengths table, and the reported total is restricted using the interviews.
+  iv <- example_interviews
+  iv$gear <- ifelse(seq_len(nrow(iv)) %% 2 == 0, "boat", NA_character_)
+  lens <- example_lengths
+  lens$gear <- iv$gear[match(lens$interview_id, iv$interview_id)]
+  expect_true(anyNA(lens$gear))
+
+  d <- suppressMessages(creel_design(example_calendar, date = date, strata = day_type))
+  d <- suppressWarnings(suppressMessages(add_interviews(
+    d, iv,
+    catch = catch_total, effort = hours_fished,
+    harvest = catch_kept, trip_status = trip_status
+  )))
+  d <- suppressWarnings(add_lengths(
+    d, lens,
+    length_uid = interview_id, interview_uid = interview_id,
+    species = species, length = length, length_type = length_type,
+    count = count, release_format = "binned"
+  ))
+
+  ld <- suppressWarnings(est_length_distribution(d, type = "harvest", by = gear, bin_width = 25))
+  na_rows <- ld[is.na(ld$gear), , drop = FALSE]
+  skip_if(nrow(na_rows) == 0L, "fixture produced no NA gear group")
+
+  # The NA group's total is the harvest reported by the interviews whose gear
+  # is itself NA -- not zero.
+  expect_equal(
+    sum(na_rows$estimate),
+    weighted_interview_total(d, ifelse(is.na(iv$gear), iv$catch_kept, 0)),
+    tolerance = 1e-8
+  )
+  expect_gt(sum(na_rows$estimate), 0)
+})

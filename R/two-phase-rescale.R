@@ -93,8 +93,16 @@ reported_total_per_interview <- function(design, type, group_info, by_vars,
     # Filter to the species FIRST. Testing the whole table for "caught" rows
     # before narrowing meant one species having them suppressed the fallback for
     # every other species, which then scaled to a reported total of zero.
-    rows <- catch_df[catch_df[[species_col]] == group_info[[frame_species_col]][1], ,
-                     drop = FALSE]
+    #
+    # Compared as character on both sides. The catch table and the length/age
+    # table are attached separately, so a caller can easily have factors with
+    # different level sets in each -- and `Ops.factor` does not return NA there,
+    # it errors outright with "level sets of factors are different".
+    rows <- catch_df[
+      as.character(catch_df[[species_col]]) ==
+        as.character(group_info[[frame_species_col]][1]), ,
+      drop = FALSE
+    ]
     typed <- rows[rows[[type_col]] == catch_type_for[[type]], , drop = FALSE]
     if (identical(type, "catch") && nrow(typed) == 0L) {
       # add_catch() makes a "caught" row optional: absent, catch is
@@ -203,9 +211,22 @@ reported_total_per_interview <- function(design, type, group_info, by_vars,
   if (length(other_vars) > 0L && !is.null(group_info)) {
     keep <- rep(TRUE, nrow(interviews))
     for (v in other_vars) {
-      keep <- keep & (interviews[[v]] == group_info[[v]][1])
+      target <- group_info[[v]][1]
+      # NA is a group like any other here. `x == NA` is NA for every row, and
+      # blanket-converting that to FALSE emptied the group -- so a grouping
+      # column with missing values reported a total of 0, and the whole
+      # distribution for that group came back as zero fish with no warning. The
+      # NA group must match the rows that are themselves NA.
+      #
+      # Character comparison for the same reason as the species filter above:
+      # factors with different level sets error rather than compare.
+      col <- interviews[[v]]
+      keep <- keep & if (is.na(target)) {
+        is.na(col)
+      } else {
+        !is.na(col) & as.character(col) == as.character(target)
+      }
     }
-    keep[is.na(keep)] <- FALSE
     base_total <- base_total * keep
   }
 
