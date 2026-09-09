@@ -227,3 +227,66 @@ test_that("autoplot() accepts theme = 'creel' for length distribution", {
   expect_s3_class(p, "ggplot")
   expect_no_error(ggplot2::ggplot_build(p))
 })
+
+# Percent accumulation and the meaning of n (GH #313) ---------------------------
+#
+# `cumulative_percent` used to be `cumsum()` of the already-rounded `percent`
+# column, so each bin's rounding error was carried into every later bin and the
+# final entry drifted off 100 -- 99.9 on this fixture. The existing coverage
+# asserted `sum(percent)` to `tolerance = 0.1`, which is wider than the drift it
+# was meant to catch, so the defect sat under a green test.
+
+test_that("EST-LD-13 (#313): cumulative_percent accumulates unrounded shares", {
+  d <- suppressWarnings(suppressMessages(make_design_with_lengths_for_est()))
+  result <- suppressWarnings(
+    est_length_distribution(d, type = "catch", by = species, bin_width = 25)
+  )
+
+  for (sp in unique(result$species)) {
+    sub <- result[result$species == sp, , drop = FALSE]
+
+    # The share of a group's own total must reach 100 exactly, not approximately.
+    expect_identical(sub$cumulative_percent[nrow(sub)], 100)
+
+    # And it must be non-decreasing, since it is a cumulative share.
+    expect_true(all(diff(sub$cumulative_percent) >= 0))
+  }
+})
+
+test_that("EST-LD-14 (#313): accumulating the rounded column would drift off 100", {
+  d <- suppressWarnings(suppressMessages(make_design_with_lengths_for_est()))
+  result <- suppressWarnings(
+    est_length_distribution(d, type = "harvest", bin_width = 25)
+  )
+
+  # This is the mutant the fix kills, pinned explicitly: on this fixture the old
+  # implementation's value and the new one differ, so a revert cannot pass. If a
+  # future fixture makes these equal the test is no longer discriminating and
+  # should be re-pointed at one where they are not.
+  old_behaviour <- cumsum(result$percent)
+  expect_false(
+    isTRUE(all.equal(old_behaviour[length(old_behaviour)], 100))
+  )
+  expect_identical(result$cumulative_percent[nrow(result)], 100)
+})
+
+test_that("EST-LD-15 (#313): n counts interviews with a measured fish, not fish", {
+  d <- suppressWarnings(suppressMessages(make_design_with_lengths_for_est()))
+  result <- suppressWarnings(
+    est_length_distribution(d, type = "harvest", bin_width = 25)
+  )
+
+  # `n` is documented as the number of interviews contributing at least one
+  # measured fish to the group. Two consequences a reader relies on: it is
+  # constant across the group's bins, and it is not the fish count.
+  expect_identical(length(unique(result$n)), 1L)
+
+  lengths_data <- d$lengths
+  harvest_rows <- lengths_data[lengths_data[[d$lengths_type_col]] == "harvest", , drop = FALSE]
+  n_interviews <- length(unique(harvest_rows[[d$lengths_interview_uid_col]]))
+  expect_identical(unique(result$n), n_interviews)
+
+  # The distinction that makes the column worth documenting: more fish were
+  # measured than there were interviews to measure them in.
+  expect_gt(nrow(harvest_rows), n_interviews)
+})

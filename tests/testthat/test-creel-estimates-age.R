@@ -410,3 +410,31 @@ test_that("AGD-42 est_mean_age() warns NA only for zero-total group in grouped c
   expect_false(is.na(walleye_row$mean_age))
   expect_true(is.na(perch_row$mean_age))
 })
+
+# Percent accumulation and the meaning of n (GH #313) ---------------------------
+#
+# The age path carries the same block as the length path, so it carried the same
+# defect: `cumulative_percent` was `cumsum()` of the rounded `percent` column.
+# AGD-16 above pins the endpoint at `tolerance = 0.1`, which is wider than the
+# drift, so it passed either way. These pin it exactly.
+
+test_that("AGD-24 (#313): cumulative_percent accumulates unrounded shares", {
+  d <- suppressWarnings(suppressMessages(make_age_design()))
+  result <- suppressWarnings(est_age_distribution(d, type = "catch"))
+
+  expect_identical(result$cumulative_percent[nrow(result)], 100)
+  expect_true(all(diff(result$cumulative_percent) >= 0))
+})
+
+test_that("AGD-25 (#313): n counts interviews with an aged fish, not fish", {
+  d <- suppressWarnings(suppressMessages(make_age_design()))
+  result <- suppressWarnings(est_age_distribution(d, type = "catch"))
+
+  # Constant across the group's age classes, and an interview count rather than
+  # a fish count -- the two things the documented meaning commits to.
+  expect_identical(length(unique(result$n)), 1L)
+
+  ages_data <- d$ages
+  n_interviews <- length(unique(ages_data[[d$ages_interview_uid_col]]))
+  expect_identical(unique(result$n), n_interviews)
+})
