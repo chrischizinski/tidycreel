@@ -400,3 +400,69 @@ test_that("BY-11 (#312): a wildcard no longer re-admits a derived column downstr
   expect_false(is.null(msg))
   expect_false(grepl(".angler_effort", msg, fixed = TRUE))
 })
+
+test_that("BY-12 (#312): the release path drops the columns it built, and the one it displaced", {
+  data("example_calendar", package = "tidycreel")
+  data("example_interviews", package = "tidycreel")
+  data("example_catch", package = "tidycreel")
+
+  design <- suppressMessages(creel_design(
+    example_calendar,
+    date = date,
+    strata = day_type
+  ))
+  design <- suppressWarnings(suppressMessages(add_interviews(
+    design,
+    example_interviews,
+    catch = catch_total,
+    effort = hours_fished,
+    harvest = catch_kept,
+    trip_status = trip_status
+  )))
+  design <- suppressWarnings(suppressMessages(add_catch(
+    design,
+    example_catch,
+    catch_uid = interview_id,
+    interview_uid = interview_id,
+    species = species,
+    count = count,
+    catch_type = catch_type
+  )))
+
+  # `estimate_release_rate()` builds its own interview frame: it adds
+  # `.release_count` and `.release_effort`, and re-points angler_effort_col at
+  # the latter. That displacement is the trap. `derived_interview_cols()` reads
+  # angler_effort_col, so once it names `.release_effort`, the ORIGINAL
+  # `.angler_effort` is still sitting in the frame with nothing marking it as
+  # derived -- and the standard routing re-resolves `by=` against that frame.
+  #
+  # Reaching it needs a selection with three properties, which is why this test
+  # looks so specific:
+  #   * catch data attached, or the path aborts with "No catch data available"
+  #     before any screening happens (an earlier version of this test asserted
+  #     against that abort and was therefore vacuous);
+  #   * a WILDCARD, so the upstream `resolve_species_by()` screen drops the
+  #     derived column silently instead of aborting -- an explicit mention is
+  #     refused upstream and never reaches the re-resolution;
+  #   * no integer key column, so the key guard does not pre-empt it.
+  # `where(is.double)` satisfies all three: it sweeps `.angler_effort` but not
+  # the integer `interview_id`.
+  msg <- tryCatch(
+    {
+      suppressWarnings(suppressMessages(
+        estimate_release_rate(design, by = tidyselect::where(is.double))
+      ))
+      NULL
+    },
+    error = function(e) conditionMessage(e)
+  )
+
+  # The call still refuses -- 22 interviews cannot fill groups of 10 -- but
+  # WHICH groups it built is the observable, and before the fix `.angler_effort`
+  # was one of the grouping terms.
+  expect_false(is.null(msg))
+  expect_match(msg, "Insufficient sample size")
+  expect_false(grepl(".angler_effort", msg, fixed = TRUE))
+  expect_false(grepl(".release_effort", msg, fixed = TRUE))
+  expect_false(grepl(".release_count", msg, fixed = TRUE))
+})

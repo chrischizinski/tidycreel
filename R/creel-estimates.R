@@ -2978,6 +2978,14 @@ estimate_release_rate <- function(
   design_rel$interviews <- release_data
   design_rel$catch_col <- ".release_count"
   design_rel$angler_effort_col <- ".release_effort"
+  # Every column this path added to the frame, plus the one it displaced.
+  # Recorded rather than pattern-matched: a leading "." is not the test (#293,
+  # and #259 pins a user column literally named .se_expansion as groupable).
+  design_rel$derived_frame_cols <- c(
+    ".release_count",
+    ".release_effort",
+    design$angler_effort_col
+  )
 
   strata_cols <- design$strata_cols
   strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0L) {
@@ -3606,6 +3614,13 @@ derived_interview_cols <- function(design) {
   # angler_effort_col is always ".angler_effort" and always written by
   # add_interviews(), so there is nothing to distinguish.
   cols <- design[["angler_effort_col"]]
+  # A path that builds its own interview frame records what it put there, for
+  # the same reason the fields below are read one at a time: only the code that
+  # wrote a column knows it is derived. `estimate_release_rate()` swaps
+  # angler_effort_col to its own column, which would otherwise make the
+  # ORIGINAL .angler_effort -- still sitting in the frame -- look like user
+  # data (GH #312).
+  cols <- c(cols, design[["derived_frame_cols"]])
   # trip_duration_col is different: it names a column add_interviews() computed
   # only when it computed one, and otherwise the caller's own. The design
   # records which, because the NAME cannot answer it -- a caller may supply a
