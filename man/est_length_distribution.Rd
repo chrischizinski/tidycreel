@@ -42,6 +42,16 @@ A \code{data.frame} with class
 grouping columns (if any), \code{length_bin} (ordered factor), \code{bin_lower},
 \code{bin_upper}, \code{estimate}, \code{se}, \code{ci_lower}, \code{ci_upper}, \code{percent},
 \code{cumulative_percent}, and \code{n}.
+
+\code{percent} and \code{cumulative_percent} are shares of the group's estimated
+total, rounded to one decimal for display; \code{cumulative_percent}
+accumulates the unrounded shares, so it reaches 100 rather than drifting.
+The exception is a group whose estimated total is zero, where there are no
+shares to take and both columns are \code{0} rather than reaching 100.
+
+\code{n} is the number of \strong{interviews} contributing at least one measured
+fish to the group. It is therefore constant across every bin of a group,
+and is neither a per-bin sample size nor a count of fish.
 }
 \description{
 \code{est_length_distribution()} estimates a pressure-weighted length-frequency

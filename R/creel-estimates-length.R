@@ -34,6 +34,16 @@
 #'   `bin_upper`, `estimate`, `se`, `ci_lower`, `ci_upper`, `percent`,
 #'   `cumulative_percent`, and `n`.
 #'
+#'   `percent` and `cumulative_percent` are shares of the group's estimated
+#'   total, rounded to one decimal for display; `cumulative_percent`
+#'   accumulates the unrounded shares, so it reaches 100 rather than drifting.
+#'   The exception is a group whose estimated total is zero, where there are no
+#'   shares to take and both columns are `0` rather than reaching 100.
+#'
+#'   `n` is the number of **interviews** contributing at least one measured
+#'   fish to the group. It is therefore constant across every bin of a group,
+#'   and is neither a per-bin sample size nor a count of fish.
+#'
 #' @examples
 #' data(example_calendar)
 #' data(example_interviews)
@@ -271,8 +281,13 @@ est_length_distribution <- function(
       group_df$percent <- 0
       group_df$cumulative_percent <- 0
     } else {
-      group_df$percent <- round(group_df$estimate / total_est * 100, 1)
-      group_df$cumulative_percent <- cumsum(group_df$percent)
+      # Accumulate on the unrounded shares, then round. Running cumsum() over
+      # the already-rounded column compounds each bin's rounding error into
+      # every later bin, so the final entry drifts off 100 -- 99.9 on the
+      # package's own example data (GH #313).
+      share <- group_df$estimate / total_est * 100
+      group_df$percent <- round(share, 1)
+      group_df$cumulative_percent <- round(cumsum(share), 1)
     }
 
     if (length(by_vars) > 0) {
