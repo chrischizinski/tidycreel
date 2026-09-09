@@ -42,11 +42,22 @@
 #' data(example_calendar)
 #' data(example_interviews)
 #' data(example_ages)
+#' data(example_catch)
+#'
 #'
 #' design <- creel_design(example_calendar, date = date, strata = day_type)
 #' design <- add_interviews(design, example_interviews,
 #'   catch = catch_total, effort = hours_fished, harvest = catch_kept,
 #'   trip_status = trip_status
+#' )
+#' # Species catch is required to group by species: the totals are scaled onto
+#' # the reported catch, and only this table records it per species.
+#' design <- add_catch(design, example_catch,
+#'   catch_uid = interview_id,
+#'   interview_uid = interview_id,
+#'   species = species,
+#'   count = count,
+#'   catch_type = catch_type
 #' )
 #' design <- add_ages(design, example_ages,
 #'   age_uid = interview_id,
@@ -57,6 +68,15 @@
 #' )
 #'
 #' est_age_distribution(design, by = species)
+#'
+#' @section Two-phase estimation onto the reported catch:
+#' Ages are read from a **subsample** of the catch, exactly as lengths are, so
+#' the age-class totals are scaled onto the design-estimated reported total
+#' rather than reporting the subsample: \eqn{\hat{N}_a = \hat{p}_a \hat{T}}.
+#' See [est_length_distribution()] for the estimator, its variance, and where
+#' \eqn{\hat{T}} comes from. `percent` and `cumulative_percent` are unaffected.
+#' The call warns when it rescales and aborts when no total is available
+#' (GH #310).
 #'
 #' @family "Estimation"
 #' @export
@@ -147,6 +167,8 @@ est_age_distribution <- function(
 
   result_rows <- vector("list", 0)
   base_interviews <- design$interviews
+  measured_total <- 0
+  reported_total <- 0
   uid_col <- design$ages_interview_uid_col
 
   if (length(by_vars) == 0L) {
@@ -200,17 +222,59 @@ est_age_distribution <- function(
       interviews_aug[[col]] <- val
     }
 
+    # Ages are a subsample of the catch, exactly as lengths are; the reported
+    # total for this group is the second phase's scale factor and joins the age
+    # columns in ONE svytotal() so their covariance is estimated (GH #310).
+    group_total <- reported_total_per_interview( # nolint: object_usage_linter
+      design, type, group_values[[i]], by_vars,
+      frame_species_col = design[["ages_species_col"]],
+      error_call = rlang::caller_env()
+    )
+    if (is.null(group_total)) {
+      cli::cli_abort(
+        c(
+          "Cannot rescale the age distribution onto the reported catch.",
+          "x" = "No reported {type} count is available on this design.",
+          "i" = "Ages are read from a subsample, so the age-class totals mean
+                 nothing without a total to scale them to.",
+          # Release needs BOTH columns, not either: it is derived as
+          # caught - harvested. And add_catch() only helps a species grouping --
+          # an ungrouped request never consults design$catch.
+          "i" = if (identical(type, "release")) {
+            "Supply both {.arg catch} and {.arg harvest} to {.fn add_interviews}:
+             release is derived as caught - harvested."
+          } else if (length(by_vars) > 0L) {
+            "Supply {.arg {type}} to {.fn add_interviews}, or attach species catch
+             with {.fn add_catch} to group by species."
+          } else {
+            "Supply {.arg {type}} to {.fn add_interviews}."
+          }
+        ),
+        class = "creel_error_no_rescale_total"
+      )
+    }
+    interviews_aug$.group_total <- group_total
+
     temp_design <- rebuild_interview_survey(design, interviews_aug) # nolint: object_usage_linter
     svy_design <- get_variance_design(temp_design$interview_survey, variance) # nolint: object_usage_linter
-    age_formula <- stats::reformulate(age_lookup$age_col)
+    age_formula <- stats::reformulate(c(age_lookup$age_col, ".group_total"))
     svy_result <- wrap_survey_call(survey::svytotal(age_formula, svy_design)) # nolint: object_usage_linter
 
-    estimates <- as.numeric(stats::coef(svy_result))
-    ses <- as.numeric(survey::SE(svy_result))
-    cis <- suppressWarnings(confint(svy_result, level = conf_level))
-    if (is.null(dim(cis))) {
-      cis <- matrix(cis, nrow = 1L)
-    }
+    all_est <- as.numeric(stats::coef(svy_result))
+    v_all <- as.matrix(stats::vcov(svy_result))
+    n_ages <- length(age_lookup$age_col)
+    measured <- all_est[seq_len(n_ages)]
+    reported <- all_est[n_ages + 1L]
+
+    measured_total <- measured_total + sum(measured)
+    reported_total <- reported_total + reported
+
+    rescaled <- two_phase_rescale(measured, reported, v_all) # nolint: object_usage_linter
+    estimates <- rescaled$estimate
+    ses <- rescaled$se
+
+    z_ci <- stats::qnorm((1 + conf_level) / 2)
+    cis <- cbind(estimates - z_ci * ses, estimates + z_ci * ses)
 
     group_df <- data.frame(
       age = as.integer(age_lookup$age),
@@ -277,12 +341,16 @@ est_age_distribution <- function(
   result <- do.call(rbind, result_rows)
   rownames(result) <- NULL
 
+  warn_two_phase_rescale(measured_total, reported_total, "Age") # nolint: object_usage_linter
+
   class(result) <- c("creel_age_distribution", "data.frame")
   attr(result, "method") <- "age-distribution"
   attr(result, "variance_method") <- variance
   attr(result, "conf_level") <- conf_level
   attr(result, "by_vars") <- if (length(by_vars) > 0) by_vars else NULL
   attr(result, "type") <- type
+  attr(result, "measured_total") <- measured_total
+  attr(result, "reported_total") <- reported_total
   result
 }
 
@@ -372,11 +440,22 @@ est_age_distribution <- function(
 #' data(example_calendar)
 #' data(example_interviews)
 #' data(example_ages)
+#' data(example_catch)
+#'
 #'
 #' design <- creel_design(example_calendar, date = date, strata = day_type)
 #' design <- add_interviews(design, example_interviews,
 #'   catch = catch_total, effort = hours_fished, harvest = catch_kept,
 #'   trip_status = trip_status
+#' )
+#' # Species catch is required to group by species: the totals are scaled onto
+#' # the reported catch, and only this table records it per species.
+#' design <- add_catch(design, example_catch,
+#'   catch_uid = interview_id,
+#'   interview_uid = interview_id,
+#'   species = species,
+#'   count = count,
+#'   catch_type = catch_type
 #' )
 #' design <- add_ages(design, example_ages,
 #'   age_uid = interview_id,

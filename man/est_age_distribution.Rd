@@ -54,15 +54,37 @@ Ages are discrete integers; each unique observed age is its own class. The
 estimator returns one row per occupied integer age, with weighted totals,
 standard errors, confidence intervals, and within-group percentages.
 }
+\section{Two-phase estimation onto the reported catch}{
+
+Ages are read from a \strong{subsample} of the catch, exactly as lengths are, so
+the age-class totals are scaled onto the design-estimated reported total
+rather than reporting the subsample: \eqn{\hat{N}_a = \hat{p}_a \hat{T}}.
+See \code{\link[=est_length_distribution]{est_length_distribution()}} for the estimator, its variance, and where
+\eqn{\hat{T}} comes from. \code{percent} and \code{cumulative_percent} are unaffected.
+The call warns when it rescales and aborts when no total is available
+(GH #310).
+}
+
 \examples{
 data(example_calendar)
 data(example_interviews)
 data(example_ages)
+data(example_catch)
+
 
 design <- creel_design(example_calendar, date = date, strata = day_type)
 design <- add_interviews(design, example_interviews,
   catch = catch_total, effort = hours_fished, harvest = catch_kept,
   trip_status = trip_status
+)
+# Species catch is required to group by species: the totals are scaled onto
+# the reported catch, and only this table records it per species.
+design <- add_catch(design, example_catch,
+  catch_uid = interview_id,
+  interview_uid = interview_id,
+  species = species,
+  count = count,
+  catch_type = catch_type
 )
 design <- add_ages(design, example_ages,
   age_uid = interview_id,

@@ -7,6 +7,7 @@ make_design_with_lengths_for_est <- function() {
   data(example_calendar, package = "tidycreel")
   data(example_interviews, package = "tidycreel")
   data(example_lengths, package = "tidycreel")
+  data(example_catch, package = "tidycreel")
 
   d <- suppressWarnings(
     creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
@@ -18,6 +19,18 @@ make_design_with_lengths_for_est <- function() {
     effort = hours_fished, # nolint: object_usage_linter
     harvest = catch_kept, # nolint: object_usage_linter
     trip_status = trip_status # nolint: object_usage_linter
+  ))
+  # #310: the distribution is now rescaled onto the REPORTED catch, so a
+  # species grouping needs that species' own total. Only add_catch() supplies
+  # it -- the interview-level column is not species-resolved.
+  d <- suppressWarnings(add_catch(
+    d,
+    example_catch, # nolint: object_usage_linter
+    catch_uid = interview_id, # nolint: object_usage_linter
+    interview_uid = interview_id, # nolint: object_usage_linter
+    species = species, # nolint: object_usage_linter
+    count = count, # nolint: object_usage_linter
+    catch_type = catch_type # nolint: object_usage_linter
   ))
   add_lengths(
     d,
@@ -127,30 +140,50 @@ test_that("est_length_distribution() stores metadata attrs", {
 # Estimation behavior tests ----
 
 test_that("ungrouped catch estimate sums to expected total fish count for example data", {
+  # #310: the totals describe the REPORTED catch, not the measured subsample.
+  # Pinned against the design's own reported total rather than a constant, so
+  # the test states the two-phase identity instead of restating an output.
+  # Before #310 this summed to 37 -- the number of measured fish.
   d <- make_design_with_lengths_for_est()
   result <- est_length_distribution(d, type = "catch")
-  expect_equal(sum(result[["estimate"]]), 37, tolerance = 1e-8)
+  reported <- sum(d$interviews[[d$catch_col]])
+  expect_equal(sum(result[["estimate"]]), reported, tolerance = 1e-8)
+  expect_equal(reported, 127)
 })
 
 test_that("ungrouped harvest estimate sums to expected total harvest fish count", {
+  # Before #310 this summed to 14, the measured harvest fish.
   d <- make_design_with_lengths_for_est()
   result <- est_length_distribution(d, type = "harvest")
-  expect_equal(sum(result[["estimate"]]), 14, tolerance = 1e-8)
+  reported <- sum(d$interviews[[d$harvest_col]])
+  expect_equal(sum(result[["estimate"]]), reported, tolerance = 1e-8)
+  expect_equal(reported, 77)
 })
 
 test_that("ungrouped release estimate sums to expected expanded release fish count", {
+  # Release has no interview column; the catch model implies it as
+  # caught - harvested. Before #310 this summed to 23, the measured releases.
   d <- make_design_with_lengths_for_est()
   result <- est_length_distribution(d, type = "release")
-  expect_equal(sum(result[["estimate"]]), 23, tolerance = 1e-8)
+  reported <- sum(d$interviews[[d$catch_col]]) - sum(d$interviews[[d$harvest_col]])
+  expect_equal(sum(result[["estimate"]]), reported, tolerance = 1e-8)
+  expect_equal(reported, 50)
 })
 
 test_that("grouped species estimate returns expected species totals", {
   d <- make_design_with_lengths_for_est()
+  # A species group can only be scaled by that species' own reported total,
+  # which lives in the catch table -- the interview column is not
+  # species-resolved. Pinned against that table directly.
   result <- est_length_distribution(d, type = "catch", by = species) # nolint: object_usage_linter
   est_by_species <- tapply(result[["estimate"]], result[["species"]], sum)
-  expect_equal(est_by_species[["walleye"]], 13, tolerance = 1e-8)
-  expect_equal(est_by_species[["bass"]], 13, tolerance = 1e-8)
-  expect_equal(est_by_species[["panfish"]], 11, tolerance = 1e-8)
+  caught <- d[["catch"]][d[["catch"]][[d$catch_type_col]] == "caught", , drop = FALSE]
+  reported <- tapply(caught[[d$catch_count_col]], caught[[d$catch_species_col]], sum)
+  for (sp in names(reported)) {
+    expect_equal(est_by_species[[sp]], as.numeric(reported[[sp]]), tolerance = 1e-8)
+  }
+  # Before #310 these were the measured counts: walleye 13, bass 13, panfish 11.
+  expect_equal(as.numeric(reported[["walleye"]]), 33)
 })
 
 test_that("grouped output includes by variable and keeps percent near 100 within group", {
@@ -289,4 +322,190 @@ test_that("EST-LD-15 (#313): n counts interviews with a measured fish, not fish"
   # The distinction that makes the column worth documenting: more fish were
   # measured than there were interviews to measure them in.
   expect_gt(nrow(harvest_rows), n_interviews)
+})
+
+# Two-phase rescaling onto the reported catch (GH #310) -------------------------
+#
+# Lengths are measured on a SUBSAMPLE of the catch. Expanding that subsample
+# through the interview design estimated "total fish that happened to get
+# measured" -- 14 against a reported harvest of 77 on this fixture -- and
+# est_biomass() then called the result total biomass. The estimator is now
+# two-phase: bin proportion among measured fish, scaled by the design-estimated
+# reported total.
+
+test_that("EST-LD-16 (#310): measuring each fish twice does not change the totals", {
+  data("example_calendar", package = "tidycreel")
+  data("example_interviews", package = "tidycreel")
+  data("example_lengths", package = "tidycreel")
+  data("example_catch", package = "tidycreel")
+
+  build <- function(lengths_df) {
+    d <- suppressMessages(creel_design(example_calendar, date = date, strata = day_type))
+    d <- suppressWarnings(suppressMessages(add_interviews(
+      d, example_interviews,
+      catch = catch_total, effort = hours_fished,
+      harvest = catch_kept, trip_status = trip_status
+    )))
+    d <- suppressWarnings(add_catch(
+      d, example_catch,
+      catch_uid = interview_id, interview_uid = interview_id,
+      species = species, count = count, catch_type = catch_type
+    ))
+    suppressWarnings(add_lengths(
+      d, lengths_df,
+      length_uid = interview_id, interview_uid = interview_id,
+      species = species, length = length, length_type = length_type,
+      count = count, release_format = "binned"
+    ))
+  }
+
+  # The sampling design, the interview weights and the true harvest are all
+  # identical between these two. ONLY the measurement effort differs.
+  once <- build(example_lengths)
+  twice <- build(example_lengths[rep(seq_len(nrow(example_lengths)), 2), ])
+
+  ld1 <- suppressWarnings(est_length_distribution(once, type = "harvest", bin_width = 25))
+  ld2 <- suppressWarnings(est_length_distribution(twice, type = "harvest", bin_width = 25))
+
+  # This is the whole point of #310. Before the fix these doubled -- and
+  # est_biomass() doubled with them, reporting twice the fish because someone
+  # measured twice as many of the same fish.
+  expect_equal(sum(ld1$estimate), sum(ld2$estimate), tolerance = 1e-8)
+
+  b1 <- est_biomass(ld1, a = 0.0088, b = 3.1)
+  b2 <- est_biomass(ld2, a = 0.0088, b = 3.1)
+  expect_equal(b1$biomass_estimate, b2$biomass_estimate, tolerance = 1e-8)
+
+  # The shape was always right and must stay right.
+  expect_equal(
+    est_mean_length(ld1)$mean_length,
+    est_mean_length(ld2)$mean_length,
+    tolerance = 1e-8
+  )
+})
+
+test_that("EST-LD-17 (#310): the totals reconcile with the design's reported total", {
+  d <- make_design_with_lengths_for_est()
+  ld <- suppressWarnings(est_length_distribution(d, type = "harvest", bin_width = 25))
+
+  # The reconciliation the audit found missing: the distribution's total and the
+  # design's own harvest total must estimate the same quantity.
+  expect_equal(sum(ld$estimate), sum(d$interviews[[d$harvest_col]]), tolerance = 1e-8)
+
+  # The scale factor is recorded rather than left to be inferred.
+  expect_equal(attr(ld, "measured_total"), 14)
+  expect_equal(attr(ld, "reported_total"), 77)
+})
+
+test_that("EST-LD-18 (#310): rescaling warns, and says by how much", {
+  d <- make_design_with_lengths_for_est()
+
+  # Silence here would be the defect in a new form: the totals are built from a
+  # subsample and the caller has to know that.
+  expect_warning(
+    est_length_distribution(d, type = "harvest", bin_width = 25),
+    class = "creel_warn_two_phase_rescale"
+  )
+  expect_warning(
+    est_length_distribution(d, type = "harvest", bin_width = 25),
+    "factor of 5.5"
+  )
+})
+
+test_that("EST-LD-19 (#310): refuses when no reported total is available", {
+  data("example_calendar", package = "tidycreel")
+  data("example_interviews", package = "tidycreel")
+  data("example_lengths", package = "tidycreel")
+
+  # No `harvest =` on this design, so there is nothing to scale a harvest
+  # distribution to. Refusing is the point: the alternative is a total on a
+  # measured-fish basis, which is exactly what #310 removed.
+  d <- suppressMessages(creel_design(example_calendar, date = date, strata = day_type))
+  d <- suppressWarnings(suppressMessages(add_interviews(
+    d, example_interviews,
+    catch = catch_total, effort = hours_fished, trip_status = trip_status
+  )))
+  d <- suppressWarnings(add_lengths(
+    d, example_lengths,
+    length_uid = interview_id, interview_uid = interview_id,
+    species = species, length = length, length_type = length_type,
+    count = count, release_format = "binned"
+  ))
+
+  expect_error(
+    est_length_distribution(d, type = "harvest", bin_width = 25),
+    class = "creel_error_no_rescale_total"
+  )
+})
+
+test_that("EST-LD-20 (#310): a grouped request's parts sum back to the whole", {
+  d <- make_design_with_lengths_for_est()
+
+  # Ensemble review finding. The first implementation handed EVERY group the
+  # whole fishery's reported total, because the total column was the raw
+  # interview column with no group restriction. by = length_type then returned
+  # 127 for each of two groups against a reported catch of 127 -- the parts
+  # summed to twice the whole, silently.
+  #
+  # length_type lives only in the lengths table, so it cannot restrict a
+  # per-interview total at all. Refusing is the correct answer; the wrong one
+  # was scaling by the whole.
+  expect_error(
+    suppressWarnings(est_length_distribution(d, type = "catch", by = length_type, bin_width = 25)),
+    class = "creel_error_ungroupable_rescale"
+  )
+
+  # A species grouping CAN be restricted, via the catch table, and must
+  # decompose exactly.
+  ld <- suppressWarnings(est_length_distribution(d, type = "catch", by = species, bin_width = 25))
+  caught <- d[["catch"]][d[["catch"]][[d$catch_type_col]] == "caught", , drop = FALSE]
+  expect_equal(
+    sum(ld$estimate),
+    sum(caught[[d$catch_count_col]]),
+    tolerance = 1e-8
+  )
+})
+
+test_that("EST-LD-21 (#310): a species with no 'caught' row falls back per species", {
+  data("example_calendar", package = "tidycreel")
+  data("example_interviews", package = "tidycreel")
+  data("example_lengths", package = "tidycreel")
+  data("example_catch", package = "tidycreel")
+
+  # Ensemble review finding. add_catch() makes a "caught" row optional --
+  # absent, catch is harvested + released. That fallback was applied by testing
+  # the WHOLE table, so one species having caught rows suppressed it for every
+  # other species, which then scaled to a reported total of zero and reported
+  # zero fish with no warning. Drop walleye's caught rows to make that concrete
+  # while other species keep theirs.
+  ct <- example_catch
+  ct <- ct[!(ct$species == "walleye" & ct$catch_type == "caught"), , drop = FALSE]
+  expect_true(any(ct$catch_type == "caught"))
+  expect_true(any(ct$species == "walleye"))
+
+  d <- suppressMessages(creel_design(example_calendar, date = date, strata = day_type))
+  d <- suppressWarnings(suppressMessages(add_interviews(
+    d, example_interviews,
+    catch = catch_total, effort = hours_fished,
+    harvest = catch_kept, trip_status = trip_status
+  )))
+  d <- suppressWarnings(add_catch(
+    d, ct,
+    catch_uid = interview_id, interview_uid = interview_id,
+    species = species, count = count, catch_type = catch_type
+  ))
+  d <- suppressWarnings(add_lengths(
+    d, example_lengths,
+    length_uid = interview_id, interview_uid = interview_id,
+    species = species, length = length, length_type = length_type,
+    count = count, release_format = "binned"
+  ))
+
+  ld <- suppressWarnings(est_length_distribution(d, type = "catch", by = species, bin_width = 25))
+  walleye <- sum(ld$estimate[ld$species == "walleye"])
+
+  # Not zero, and equal to walleye's harvested + released.
+  wal <- ct[ct$species == "walleye" & ct$catch_type %in% c("harvested", "released"), ]
+  expect_gt(walleye, 0)
+  expect_equal(walleye, sum(wal$count), tolerance = 1e-8)
 })

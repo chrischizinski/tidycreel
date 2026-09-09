@@ -40,11 +40,22 @@ cross-class covariances as zero:
 data(example_calendar)
 data(example_interviews)
 data(example_ages)
+data(example_catch)
+
 
 design <- creel_design(example_calendar, date = date, strata = day_type)
 design <- add_interviews(design, example_interviews,
   catch = catch_total, effort = hours_fished, harvest = catch_kept,
   trip_status = trip_status
+)
+# Species catch is required to group by species: the totals are scaled onto
+# the reported catch, and only this table records it per species.
+design <- add_catch(design, example_catch,
+  catch_uid = interview_id,
+  interview_uid = interview_id,
+  species = species,
+  count = count,
+  catch_type = catch_type
 )
 design <- add_ages(design, example_ages,
   age_uid = interview_id,

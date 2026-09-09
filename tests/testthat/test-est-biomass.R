@@ -6,6 +6,7 @@ make_ld_grouped <- function() {
   data(example_calendar, package = "tidycreel")
   data(example_interviews, package = "tidycreel")
   data(example_lengths, package = "tidycreel")
+  data(example_catch, package = "tidycreel")
 
   d <- suppressWarnings(
     creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
@@ -17,6 +18,18 @@ make_ld_grouped <- function() {
     effort = hours_fished, # nolint: object_usage_linter
     harvest = catch_kept, # nolint: object_usage_linter
     trip_status = trip_status # nolint: object_usage_linter
+  ))
+  # #310: the distribution is now rescaled onto the REPORTED catch, so a
+  # species grouping needs that species' own total. Only add_catch() supplies
+  # it -- the interview-level column is not species-resolved.
+  d <- suppressWarnings(add_catch(
+    d,
+    example_catch, # nolint: object_usage_linter
+    catch_uid = interview_id, # nolint: object_usage_linter
+    interview_uid = interview_id, # nolint: object_usage_linter
+    species = species, # nolint: object_usage_linter
+    count = count, # nolint: object_usage_linter
+    catch_type = catch_type # nolint: object_usage_linter
   ))
   d <- add_lengths(
     d,
@@ -36,6 +49,7 @@ make_ld_ungrouped <- function() {
   data(example_calendar, package = "tidycreel")
   data(example_interviews, package = "tidycreel")
   data(example_lengths, package = "tidycreel")
+  data(example_catch, package = "tidycreel")
 
   d <- suppressWarnings(
     creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
@@ -47,6 +61,18 @@ make_ld_ungrouped <- function() {
     effort = hours_fished, # nolint: object_usage_linter
     harvest = catch_kept, # nolint: object_usage_linter
     trip_status = trip_status # nolint: object_usage_linter
+  ))
+  # #310: the distribution is now rescaled onto the REPORTED catch, so a
+  # species grouping needs that species' own total. Only add_catch() supplies
+  # it -- the interview-level column is not species-resolved.
+  d <- suppressWarnings(add_catch(
+    d,
+    example_catch, # nolint: object_usage_linter
+    catch_uid = interview_id, # nolint: object_usage_linter
+    interview_uid = interview_id, # nolint: object_usage_linter
+    species = species, # nolint: object_usage_linter
+    count = count, # nolint: object_usage_linter
+    catch_type = catch_type # nolint: object_usage_linter
   ))
   d <- add_lengths(
     d,
