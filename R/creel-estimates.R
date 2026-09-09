@@ -1916,7 +1916,10 @@ estimate_catch_rate <- function(
         allow_empty = FALSE,
         error_call = rlang::caller_env()
       )
-      by_vars <- names(by_cols)
+      by_vars <- screen_by_vars(
+        names(by_cols), by_quo, design$interviews, design,
+        error_call = rlang::caller_env()
+      )
       return(estimate_cpue_reg_grouped(
         # nolint: object_usage_linter
         design,
@@ -1939,7 +1942,10 @@ estimate_catch_rate <- function(
       allow_empty = FALSE,
       error_call = rlang::caller_env()
     )
-    by_vars <- names(by_cols)
+    by_vars <- screen_by_vars(
+      names(by_cols), by_quo, design$interviews, design,
+      error_call = rlang::caller_env()
+    )
     validate_ratio_sample_size(design, by_vars, type = "cpue") # nolint: object_usage_linter
     return(estimate_cpue_grouped(
       # nolint: object_usage_linter
@@ -2507,7 +2513,10 @@ estimate_harvest_rate <- function(
       allow_empty = FALSE,
       error_call = rlang::caller_env()
     )
-    by_vars <- names(by_cols)
+    by_vars <- screen_by_vars(
+      names(by_cols), by_quo, design$interviews, design,
+      error_call = rlang::caller_env()
+    )
 
     # Validate sample size per group
     validate_ratio_sample_size(design, by_vars, type = "harvest") # nolint: object_usage_linter
@@ -3001,7 +3010,10 @@ estimate_release_rate <- function(
       allow_empty = FALSE,
       error_call = rlang::caller_env()
     )
-    by_vars <- names(by_cols)
+    by_vars <- screen_by_vars(
+      names(by_cols), by_quo, release_data, design_rel,
+      error_call = rlang::caller_env()
+    )
     validate_ratio_sample_size(design_rel, by_vars, type = "cpue") # nolint: object_usage_linter
     result <- estimate_cpue_grouped(design_rel, by_vars, variance, conf_level, dispatch_estimator) # nolint: object_usage_linter
     result$method <- if (mortr_active) {
