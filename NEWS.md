@@ -1,5 +1,47 @@
 # tidycreel (development version)
 
+## Breaking changes
+
+* `est_length_distribution()` and `est_age_distribution()` now scale their
+  totals onto the design-estimated **reported catch** instead of expanding the
+  measured subsample (#310).
+
+  Lengths and ages are read from a subsample of the catch. Expanding that
+  subsample through the interview design estimated *the total number of fish
+  that happened to be measured* — on the package's example data, 14 against a
+  reported harvest of 77, with no error and no warning. `est_biomass()`
+  multiplies those counts by weight-at-length and calls the result total
+  biomass, so a headline number was low by whatever fraction of the catch got
+  measured. Measuring every fish twice doubled the reported biomass.
+
+  The estimator is now two-phase (double sampling, Cochran 1977 §12.9 — the
+  structure already used for the camera calibration ratio): the bin proportion
+  among measured fish, scaled by the reported total. Both parts come from one
+  `svytotal()` call, so the bin-to-total covariance is estimated rather than
+  assumed away, and the standard error is the delta method over it.
+
+  **`estimate`, `se` and the confidence bounds change value**, as does every
+  column of `est_biomass()`. `percent` and `cumulative_percent` do not: a share
+  is invariant to how many fish were measured, which is why the shape of the
+  distribution was always right and only its level was wrong.
+
+  `est_mean_length()` and `est_compliance()` keep their **point estimates** for
+  the same reason — both are ratios. Their standard errors do move, because the
+  per-bin standard errors they read now carry the reported total's variance
+  through the delta method rather than being a pure rescaling of the old ones:
+  on the example data `mean_length_se` goes 40.04 to 37.88 and `compliance_se`
+  0.1554 to 0.1422. The cross-bin covariance those two still assume away is a
+  separate defect, tracked as #311.
+
+  Two consequences for existing code. Grouping by species now **requires**
+  `add_catch()`, because only that table is species-resolved and scaling one
+  species by the all-species total would be worse than refusing. And a design
+  with no matching total — a harvest distribution with no `harvest =` supplied
+  to `add_interviews()` — is now an error rather than a subsample total.
+
+  Every call that rescales warns, naming the measured total, the reported total
+  and the factor between them.
+
 ## New features
 
 * `creel_schema()` gains `harvest_lengths_table` and `release_lengths_table`,

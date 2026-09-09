@@ -13,6 +13,11 @@
 #' The estimator returns one row per occupied length bin, with weighted totals,
 #' standard errors, confidence intervals, and within-group percentages.
 #'
+#' Lengths are measured on a **subsample** of the catch, so the bin totals are
+#' scaled onto the design-estimated reported catch rather than reporting the
+#' subsample itself. See the section below; the call warns whenever it rescales,
+#' and aborts when the design carries no total to scale to.
+#'
 #' @param design A `creel_design` object with interviews and lengths attached.
 #' @param type Character string indicating which fish to include. One of
 #'   `"catch"` (default), `"harvest"`, or `"release"`.
@@ -48,11 +53,22 @@
 #' data(example_calendar)
 #' data(example_interviews)
 #' data(example_lengths)
+#' data(example_catch)
+#'
 #'
 #' design <- creel_design(example_calendar, date = date, strata = day_type)
 #' design <- add_interviews(design, example_interviews,
 #'   catch = catch_total, effort = hours_fished, harvest = catch_kept,
 #'   trip_status = trip_status
+#' )
+#' # Species catch is required to group by species: the totals are scaled onto
+#' # the reported catch, and only this table records it per species.
+#' design <- add_catch(design, example_catch,
+#'   catch_uid = interview_id,
+#'   interview_uid = interview_id,
+#'   species = species,
+#'   count = count,
+#'   catch_type = catch_type
 #' )
 #' design <- add_lengths(design, example_lengths,
 #'   length_uid = interview_id,
@@ -65,6 +81,36 @@
 #' )
 #'
 #' est_length_distribution(design, by = species, bin_width = 25)
+#'
+#' @section Two-phase estimation onto the reported catch:
+#' Lengths are a second-phase sample: interviews report how many fish were
+#' caught, and some subset of those fish get measured. Expanding the measured
+#' fish through the interview design alone estimates *the total number of fish
+#' that happened to be measured*, which is not the catch — on this package's
+#' example data it returns 14 against a reported harvest of 77. Because
+#' [est_biomass()] multiplies these counts by weight-at-length and calls the
+#' result total biomass, the error propagated to a headline number (GH #310).
+#'
+#' The estimator is therefore two-phase (double sampling, Cochran 1977 §12.9 —
+#' the same structure used for the camera calibration ratio). For bin \eqn{h}:
+#' \deqn{\hat{p}_h = \hat{N}_h^{\text{meas}} / \sum_j \hat{N}_j^{\text{meas}},
+#'   \qquad \hat{N}_h = \hat{p}_h \hat{T}}
+#' where \eqn{\hat{T}} is the design-estimated reported total for the group.
+#' Both parts come from a single `svytotal()` call, so the covariance between a
+#' bin and the reported total is estimated rather than assumed away, and the
+#' standard error is the delta method over that joint covariance.
+#'
+#' What this changes: `estimate`, `se` and the confidence bounds now describe
+#' the reported catch. `percent` and `cumulative_percent` are unchanged — a
+#' share is invariant to the subsample size, which is why the *shape* of the
+#' distribution was always correct and only its *level* was not.
+#'
+#' Where \eqn{\hat{T}} comes from depends on the grouping. A species group can
+#' only be scaled by that species' own total, which lives in the table attached
+#' by [add_catch()]; grouping by species without it is refused rather than
+#' scaled by the all-species total. Any other grouping uses the interview-level
+#' column (`catch` or `harvest` from [add_interviews()]), with release implied
+#' as caught − harvested so that harvest and release sum back to catch.
 #'
 #' @family "Estimation"
 #' @export
@@ -195,6 +241,8 @@ est_length_distribution <- function(
   result_rows <- vector("list", 0)
   base_interviews <- design$interviews
   uid_col <- design$lengths_interview_uid_col
+  measured_total <- 0
+  reported_total <- 0
 
   if (length(by_vars) == 0L) {
     group_indices <- list(seq_len(nrow(records)))
@@ -252,17 +300,59 @@ est_length_distribution <- function(
       interviews_aug[[col]] <- val
     }
 
+    # The reported total for this group is the second phase's scale factor. It
+    # joins the bin columns in ONE svytotal() so their covariance is estimated
+    # rather than assumed away (GH #310).
+    group_total <- reported_total_per_interview( # nolint: object_usage_linter
+      design, type, group_values[[i]], by_vars,
+      frame_species_col = design[["lengths_species_col"]],
+      error_call = rlang::caller_env()
+    )
+    if (is.null(group_total)) {
+      cli::cli_abort(
+        c(
+          "Cannot rescale the length distribution onto the reported catch.",
+          "x" = "No reported {type} count is available on this design.",
+          "i" = "Lengths are measured on a subsample, so the bin totals mean
+                 nothing without a total to scale them to.",
+          # Release needs BOTH columns, not either: it is derived as
+          # caught - harvested. And add_catch() only helps a species grouping --
+          # an ungrouped request never consults design$catch.
+          "i" = if (identical(type, "release")) {
+            "Supply both {.arg catch} and {.arg harvest} to {.fn add_interviews}:
+             release is derived as caught - harvested."
+          } else if (length(by_vars) > 0L) {
+            "Supply {.arg {type}} to {.fn add_interviews}, or attach species catch
+             with {.fn add_catch} to group by species."
+          } else {
+            "Supply {.arg {type}} to {.fn add_interviews}."
+          }
+        ),
+        class = "creel_error_no_rescale_total"
+      )
+    }
+    interviews_aug$.group_total <- group_total
+
     temp_design <- rebuild_interview_survey(design, interviews_aug) # nolint: object_usage_linter
     svy_design <- get_variance_design(temp_design$interview_survey, variance) # nolint: object_usage_linter
-    bin_formula <- stats::reformulate(bin_lookup$bin_col)
+    bin_formula <- stats::reformulate(c(bin_lookup$bin_col, ".group_total"))
     svy_result <- wrap_survey_call(survey::svytotal(bin_formula, svy_design)) # nolint: object_usage_linter
 
-    estimates <- as.numeric(stats::coef(svy_result))
-    ses <- as.numeric(survey::SE(svy_result))
-    cis <- suppressWarnings(confint(svy_result, level = conf_level))
-    if (is.null(dim(cis))) {
-      cis <- matrix(cis, nrow = 1L)
-    }
+    all_est <- as.numeric(stats::coef(svy_result))
+    v_all <- as.matrix(stats::vcov(svy_result))
+    n_bins <- length(bin_lookup$bin_col)
+    measured <- all_est[seq_len(n_bins)]
+    reported <- all_est[n_bins + 1L]
+
+    measured_total <- measured_total + sum(measured)
+    reported_total <- reported_total + reported
+
+    rescaled <- two_phase_rescale(measured, reported, v_all) # nolint: object_usage_linter
+    estimates <- rescaled$estimate
+    ses <- rescaled$se
+
+    z_ci <- stats::qnorm((1 + conf_level) / 2)
+    cis <- cbind(estimates - z_ci * ses, estimates + z_ci * ses)
 
     group_df <- data.frame(
       length_bin = factor(
@@ -323,6 +413,8 @@ est_length_distribution <- function(
   result <- do.call(rbind, result_rows)
   rownames(result) <- NULL
 
+  warn_two_phase_rescale(measured_total, reported_total, "Length") # nolint: object_usage_linter
+
   class(result) <- c("creel_length_distribution", "data.frame")
   attr(result, "method") <- "length-distribution"
   attr(result, "variance_method") <- variance
@@ -330,6 +422,11 @@ est_length_distribution <- function(
   attr(result, "by_vars") <- if (length(by_vars) > 0) by_vars else NULL
   attr(result, "type") <- type
   attr(result, "bin_width") <- bin_width
+  # The subsample scale factor, so a caller can see what the totals were
+  # multiplied by rather than inferring it. NULL is not possible here: the
+  # function aborts above when no reported total is available.
+  attr(result, "measured_total") <- measured_total
+  attr(result, "reported_total") <- reported_total
   result
 }
 
@@ -433,6 +530,10 @@ build_length_distribution_records <- function(
 #' per length bin as uncorrelated and the length-weight parameters `a` and `b`
 #' as known without error (see Details).
 #'
+#' Since GH #310 the counts supplied by [est_length_distribution()] describe the
+#' **reported catch** rather than the measured subsample, so `biomass_estimate`
+#' is a catch biomass. It previously described only the fish that were measured.
+#'
 #' @param ld A `creel_length_distribution` object from [est_length_distribution()].
 #' @param a Positive numeric allometric coefficient (the \eqn{a} in
 #'   \eqn{W = a \cdot L^b}).
@@ -521,11 +622,22 @@ build_length_distribution_records <- function(
 #' data(example_calendar)
 #' data(example_interviews)
 #' data(example_lengths)
+#' data(example_catch)
+#'
 #'
 #' design <- creel_design(example_calendar, date = date, strata = day_type)
 #' design <- add_interviews(design, example_interviews,
 #'   catch = catch_total, effort = hours_fished, harvest = catch_kept,
 #'   trip_status = trip_status
+#' )
+#' # Species catch is required to group by species: the totals are scaled onto
+#' # the reported catch, and only this table records it per species.
+#' design <- add_catch(design, example_catch,
+#'   catch_uid = interview_id,
+#'   interview_uid = interview_id,
+#'   species = species,
+#'   count = count,
+#'   catch_type = catch_type
 #' )
 #' design <- add_lengths(design, example_lengths,
 #'   length_uid = interview_id,
@@ -767,11 +879,22 @@ validate_lw_uncertainty <- function(alpha_se, b_se, L0, error_call = rlang::call
 #' data(example_calendar)
 #' data(example_interviews)
 #' data(example_lengths)
+#' data(example_catch)
+#'
 #'
 #' design <- creel_design(example_calendar, date = date, strata = day_type)
 #' design <- add_interviews(design, example_interviews,
 #'   catch = catch_total, effort = hours_fished, harvest = catch_kept,
 #'   trip_status = trip_status
+#' )
+#' # Species catch is required to group by species: the totals are scaled onto
+#' # the reported catch, and only this table records it per species.
+#' design <- add_catch(design, example_catch,
+#'   catch_uid = interview_id,
+#'   interview_uid = interview_id,
+#'   species = species,
+#'   count = count,
+#'   catch_type = catch_type
 #' )
 #' design <- add_lengths(design, example_lengths,
 #'   length_uid = interview_id,
@@ -906,11 +1029,22 @@ est_mean_length <- function(ld, conf_level = NULL) {
 #' data(example_calendar)
 #' data(example_interviews)
 #' data(example_lengths)
+#' data(example_catch)
+#'
 #'
 #' design <- creel_design(example_calendar, date = date, strata = day_type)
 #' design <- add_interviews(design, example_interviews,
 #'   catch = catch_total, effort = hours_fished, harvest = catch_kept,
 #'   trip_status = trip_status
+#' )
+#' # Species catch is required to group by species: the totals are scaled onto
+#' # the reported catch, and only this table records it per species.
+#' design <- add_catch(design, example_catch,
+#'   catch_uid = interview_id,
+#'   interview_uid = interview_id,
+#'   species = species,
+#'   count = count,
+#'   catch_type = catch_type
 #' )
 #' design <- add_lengths(design, example_lengths,
 #'   length_uid = interview_id,

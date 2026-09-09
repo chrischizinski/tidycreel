@@ -7,6 +7,7 @@ make_age_design <- function() {
   data(example_calendar, package = "tidycreel")
   data(example_interviews, package = "tidycreel")
   data(example_ages, package = "tidycreel")
+  data(example_catch, package = "tidycreel")
 
   d <- suppressWarnings(
     creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
@@ -18,6 +19,18 @@ make_age_design <- function() {
     effort = hours_fished, # nolint: object_usage_linter
     harvest = catch_kept, # nolint: object_usage_linter
     trip_status = trip_status # nolint: object_usage_linter
+  ))
+  # #310: the distribution is now rescaled onto the REPORTED catch, so a
+  # species grouping needs that species' own total. Only add_catch() supplies
+  # it -- the interview-level column is not species-resolved.
+  d <- suppressWarnings(add_catch(
+    d,
+    example_catch, # nolint: object_usage_linter
+    catch_uid = interview_id, # nolint: object_usage_linter
+    interview_uid = interview_id, # nolint: object_usage_linter
+    species = species, # nolint: object_usage_linter
+    count = count, # nolint: object_usage_linter
+    catch_type = catch_type # nolint: object_usage_linter
   ))
   add_ages(
     d,
@@ -140,22 +153,32 @@ test_that("AGD-11 est_age_distribution() ages are sorted ascending", {
 test_that("AGD-12 ungrouped catch estimate sums to total fish count", {
   d <- make_age_design()
   result <- est_age_distribution(d, type = "catch")
-  # 18 aged fish total in example_ages
-  expect_equal(sum(result$estimate), 18, tolerance = 1e-8)
+  # #310: the totals describe the REPORTED catch, not the aged subsample.
+  # Before #310 this summed to 18 -- the number of aged fish in example_ages.
+  reported <- weighted_interview_total(d, d$interviews[[d$catch_col]])
+  expect_equal(sum(result$estimate), reported, tolerance = 1e-8)
+  expect_equal(reported, 127)
 })
 
 test_that("AGD-13 ungrouped harvest estimate sums to harvest fish count", {
   d <- make_age_design()
   result <- est_age_distribution(d, type = "harvest")
-  # 12 harvest rows in example_ages
-  expect_equal(sum(result$estimate), 12, tolerance = 1e-8)
+  # Before #310 this summed to 12, the aged harvest rows.
+  reported <- weighted_interview_total(d, d$interviews[[d$harvest_col]])
+  expect_equal(sum(result$estimate), reported, tolerance = 1e-8)
+  expect_equal(reported, 77)
 })
 
 test_that("AGD-14 ungrouped release estimate sums to release fish count", {
   d <- make_age_design()
   result <- est_age_distribution(d, type = "release")
-  # 6 release rows in example_ages
-  expect_equal(sum(result$estimate), 6, tolerance = 1e-8)
+  # Before #310 this summed to 6, the aged release rows.
+  reported <- weighted_interview_total(
+    d,
+    d$interviews[[d$catch_col]] - d$interviews[[d$harvest_col]]
+  )
+  expect_equal(sum(result$estimate), reported, tolerance = 1e-8)
+  expect_equal(reported, 50)
 })
 
 test_that("AGD-15 percent sums to 100 (ungrouped)", {
@@ -199,14 +222,21 @@ test_that("AGD-20 by = species adds species column", {
 
 test_that("AGD-21 by = species returns expected per-species totals", {
   d <- make_age_design()
+  # A species group scales by that species' own reported total, which only the
+  # catch table carries. Before #310 these were the aged counts: walleye 9,
+  # bass 5, panfish 4.
   result <- est_age_distribution(d, type = "catch", by = species) # nolint: object_usage_linter
   est_by_species <- tapply(result$estimate, result$species, sum)
-  # walleye: 3 (id1) + 3 (id6 harvest) + 2 (id6 release) + 1 (id9) = 9
-  expect_equal(est_by_species[["walleye"]], 9, tolerance = 1e-8)
-  # bass: 2 (id2) + 2 (id9 release) + 1 (id12) = 5
-  expect_equal(est_by_species[["bass"]], 5, tolerance = 1e-8)
-  # panfish: 2 (id8) + 2 (id20 release) = 4
-  expect_equal(est_by_species[["panfish"]], 4, tolerance = 1e-8)
+  for (sp in unique(result[[d$catch_species_col]])) {
+    expect_equal(
+      est_by_species[[sp]],
+      weighted_interview_total(d, species_reported_vector(d, sp, "catch")),
+      tolerance = 1e-8
+    )
+  }
+  caught <- d[["catch"]][d[["catch"]][[d$catch_type_col]] == "caught", , drop = FALSE]
+  reported <- tapply(caught[[d$catch_count_col]], caught[[d$catch_species_col]], sum)
+  expect_equal(as.numeric(reported[["walleye"]]), 33)
 })
 
 test_that("AGD-22 percent sums to 100 within each species group", {

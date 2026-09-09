@@ -24,6 +24,32 @@ runs:
         Acquire::ftp::Timeout "15";
         CONF
 
+    - name: Drop third-party sources this build does not need
+      shell: bash
+      run: |
+        # The runner image ships Google's Chrome repository. On 2026-09-09 it
+        # served a Packages.gz whose hash did not match the SHA256 in its own
+        # Release file, and apt treats a hash mismatch on ANY configured source
+        # as a failure of the whole update -- so a broken third-party repo took
+        # down ubuntu-latest, pkgdown and test-coverage together while macOS and
+        # Windows stayed green.
+        #
+        # The mirror fallback below cannot rescue this: it rewrites
+        # azure.archive.ubuntu.com to archive.ubuntu.com, and dl.google.com is
+        # neither. Nothing in tidycreel needs Chrome, so the source is removed
+        # rather than repaired.
+        #
+        # Removing only what broke, deliberately. Dropping every non-Ubuntu
+        # source would be the broader guard, but it would also silently discard
+        # a repository some future job does need.
+        for f in /etc/apt/sources.list.d/google-chrome.list \
+                 /etc/apt/sources.list.d/google-chrome.sources; do
+          if [ -f "$f" ]; then
+            echo "removing ${f} (not required by this package)"
+            sudo rm -f "$f"
+          fi
+        done
+
     - name: Refresh package indexes, with a mirror fallback
       shell: bash
       run: |

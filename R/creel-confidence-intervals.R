@@ -48,12 +48,22 @@
 #' use total interviews minus the number of strata; the section paths use the
 #' number of sections minus one; mark-recapture uses the number of occasions.
 #'
-#' Four estimators use `stats::qnorm()` instead — `est_biomass()`,
-#' `est_mean_length()`, `est_compliance()` and `est_mean_age()`. This is
-#' deliberate, not an oversight. All four form a linear combination of the rows
-#' of a length or age distribution, and their standard error is propagated from
-#' the per-bin standard errors those rows already carry. There is no local
-#' sample size to key a t-quantile to:
+#' Six estimators use `stats::qnorm()` instead — `est_biomass()`,
+#' `est_mean_length()`, `est_compliance()`, `est_mean_age()`, and since #310
+#' `est_length_distribution()` and `est_age_distribution()` themselves. This is
+#' deliberate, not an oversight.
+#'
+#' The first four form a linear combination of the rows of a length or age
+#' distribution, and their standard error is propagated from the per-bin
+#' standard errors those rows already carry. The two distributions joined them
+#' when their totals became two-phase: a bin total is no longer a quantity
+#' `svytotal()` returns directly but a delta-method function of the measured
+#' bins and the reported total, so its standard error is likewise propagated
+#' rather than design-based. (The interval width is unchanged by that switch —
+#' `survey`'s `confint()` method for a `svystat` defaults to `df = Inf`, which
+#' is the normal quantile.)
+#'
+#' In every case there is no local sample size to key a t-quantile to:
 #'
 #' - The number of rows is the number of **bins**, which is a binning choice made
 #'   by the caller. Keying degrees of freedom to it would make the interval

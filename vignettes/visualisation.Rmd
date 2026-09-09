@@ -152,6 +152,21 @@ frequency. `autoplot()` renders this as a histogram-style bar chart.
 ```{r length-dist}
 data("example_lengths")
 
+data("example_catch")
+
+# Species catch is required to group a distribution BY species: the totals are
+# scaled onto the reported catch, and only this table records catch per species
+# (the interview-level column is the all-species total).
+design <- add_catch(
+  design,
+  example_catch,
+  catch_uid     = interview_id,
+  interview_uid = interview_id,
+  species       = species,
+  count         = count,
+  catch_type    = catch_type
+)
+
 design <- add_lengths(
   design,
   example_lengths,

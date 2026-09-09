@@ -63,16 +63,64 @@ rather than only the observed sample.
 
 The estimator returns one row per occupied length bin, with weighted totals,
 standard errors, confidence intervals, and within-group percentages.
+
+Lengths are measured on a \strong{subsample} of the catch, so the bin totals are
+scaled onto the design-estimated reported catch rather than reporting the
+subsample itself. See the section below; the call warns whenever it rescales,
+and aborts when the design carries no total to scale to.
 }
+\section{Two-phase estimation onto the reported catch}{
+
+Lengths are a second-phase sample: interviews report how many fish were
+caught, and some subset of those fish get measured. Expanding the measured
+fish through the interview design alone estimates \emph{the total number of fish
+that happened to be measured}, which is not the catch — on this package's
+example data it returns 14 against a reported harvest of 77. Because
+\code{\link[=est_biomass]{est_biomass()}} multiplies these counts by weight-at-length and calls the
+result total biomass, the error propagated to a headline number (GH #310).
+
+The estimator is therefore two-phase (double sampling, Cochran 1977 §12.9 —
+the same structure used for the camera calibration ratio). For bin \eqn{h}:
+\deqn{\hat{p}_h = \hat{N}_h^{\text{meas}} / \sum_j \hat{N}_j^{\text{meas}},
+  \qquad \hat{N}_h = \hat{p}_h \hat{T}}
+where \eqn{\hat{T}} is the design-estimated reported total for the group.
+Both parts come from a single \code{svytotal()} call, so the covariance between a
+bin and the reported total is estimated rather than assumed away, and the
+standard error is the delta method over that joint covariance.
+
+What this changes: \code{estimate}, \code{se} and the confidence bounds now describe
+the reported catch. \code{percent} and \code{cumulative_percent} are unchanged — a
+share is invariant to the subsample size, which is why the \emph{shape} of the
+distribution was always correct and only its \emph{level} was not.
+
+Where \eqn{\hat{T}} comes from depends on the grouping. A species group can
+only be scaled by that species' own total, which lives in the table attached
+by \code{\link[=add_catch]{add_catch()}}; grouping by species without it is refused rather than
+scaled by the all-species total. Any other grouping uses the interview-level
+column (\code{catch} or \code{harvest} from \code{\link[=add_interviews]{add_interviews()}}), with release implied
+as caught − harvested so that harvest and release sum back to catch.
+}
+
 \examples{
 data(example_calendar)
 data(example_interviews)
 data(example_lengths)
+data(example_catch)
+
 
 design <- creel_design(example_calendar, date = date, strata = day_type)
 design <- add_interviews(design, example_interviews,
   catch = catch_total, effort = hours_fished, harvest = catch_kept,
   trip_status = trip_status
+)
+# Species catch is required to group by species: the totals are scaled onto
+# the reported catch, and only this table records it per species.
+design <- add_catch(design, example_catch,
+  catch_uid = interview_id,
+  interview_uid = interview_id,
+  species = species,
+  count = count,
+  catch_type = catch_type
 )
 design <- add_lengths(design, example_lengths,
   length_uid = interview_id,

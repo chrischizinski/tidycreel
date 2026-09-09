@@ -56,12 +56,22 @@ Where an estimator has a finite sample size of its own to appeal to, it uses
 use total interviews minus the number of strata; the section paths use the
 number of sections minus one; mark-recapture uses the number of occasions.
 
-Four estimators use \code{stats::qnorm()} instead — \code{est_biomass()},
-\code{est_mean_length()}, \code{est_compliance()} and \code{est_mean_age()}. This is
-deliberate, not an oversight. All four form a linear combination of the rows
-of a length or age distribution, and their standard error is propagated from
-the per-bin standard errors those rows already carry. There is no local
-sample size to key a t-quantile to:
+Six estimators use \code{stats::qnorm()} instead — \code{est_biomass()},
+\code{est_mean_length()}, \code{est_compliance()}, \code{est_mean_age()}, and since #310
+\code{est_length_distribution()} and \code{est_age_distribution()} themselves. This is
+deliberate, not an oversight.
+
+The first four form a linear combination of the rows of a length or age
+distribution, and their standard error is propagated from the per-bin
+standard errors those rows already carry. The two distributions joined them
+when their totals became two-phase: a bin total is no longer a quantity
+\code{svytotal()} returns directly but a delta-method function of the measured
+bins and the reported total, so its standard error is likewise propagated
+rather than design-based. (The interval width is unchanged by that switch —
+\code{survey}'s \code{confint()} method for a \code{svystat} defaults to \code{df = Inf}, which
+is the normal quantile.)
+
+In every case there is no local sample size to key a t-quantile to:
 \itemize{
 \item The number of rows is the number of \strong{bins}, which is a binning choice made
 by the caller. Keying degrees of freedom to it would make the interval
