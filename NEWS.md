@@ -2,6 +2,38 @@
 
 ## Breaking changes
 
+* Species-level catch now reads `add_catch()`'s catch-type model **per
+  species-interview pair**, as that model is documented, instead of once per
+  species across the whole catch table (#318).
+
+  `add_catch()` states the rule per pair: a `"caught"` row is the pair's total
+  and is optional, and *when it is absent, total catch is inferred as
+  `harvested + released`*. CATCH-04 enforces `caught >= harvested + released`
+  for each pair. The code applied that rule table-wide instead — it asked
+  whether a `"caught"` row existed *anywhere* for the species, and if one did,
+  every other pair holding only `harvested`/`released` rows read as a catch of
+  **zero**, while its own harvest stayed positive.
+
+  On the package's own example data that made reported harvest exceed reported
+  catch for all three species — walleye 33 caught against 55 harvested plus
+  released, bass 10 against 25, panfish 7 against 13. No error, no warning, and
+  the contradiction CATCH-04 rejects row by row was reintroduced at the total.
+
+  **Species catch totals rise** wherever a catch table mixes the two shapes.
+  This reaches `estimate_total_catch(by = species)`, the species CPUE path,
+  exploitation rate (which divides harvest by catch), and the bus-route
+  equivalents, all of which read the same helper. Tables recording `"caught"`
+  rows for every pair, or none at all, are unaffected — the old rule and the
+  new one agree there, which is why no existing test moved.
+
+  An interview absent from the catch table entirely still counts as zero for
+  that species. `add_catch()` documents that too, and the two absences are
+  different: a missing row means the angler caught none, while a missing
+  `"caught"` row alongside recorded dispositions is an instruction to derive.
+
+  This is the eighth instance of the pattern tracked in #317 — a quantity that
+  is unknown or absent behaving like a zero.
+
 * `est_length_distribution()` and `est_age_distribution()` now scale their
   totals onto the design-estimated **reported catch** instead of expanding the
   measured subsample (#310).

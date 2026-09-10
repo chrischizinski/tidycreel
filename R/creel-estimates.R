@@ -3792,6 +3792,78 @@ resolve_species_by <- function(by_quo, design) {
   )
 }
 
+#' Resolve one species' reported counts, per interview
+#'
+#' The single place the `add_catch()` catch-type model is applied. That model is
+#' documented per SPECIES-INTERVIEW pair: a `"caught"` row is the pair's total
+#' and is optional, and when it is absent the pair's catch is
+#' `harvested + released`. CATCH-04 enforces `caught >= harvested + released`
+#' for each pair, so the pair is the unit the rule is written in.
+#'
+#' Deciding the fallback once per species instead -- "does a caught row exist
+#' anywhere in this table?" -- read every pair holding only sub-type rows as a
+#' catch of ZERO as soon as any one pair recorded a caught row. On the package's
+#' own example data that made reported harvest exceed reported catch for all
+#' three species, which CATCH-04 forbids per row (GH #318). An absent
+#' `"caught"` row is an instruction to derive, not a zero.
+#'
+#' A pair with no rows of any kind IS a zero, and is deliberately left to the
+#' caller's zero-fill: `add_catch()` documents that an angler who caught none of
+#' a species need not appear in the table at all. The two absences are different
+#' and only one of them means zero.
+#'
+#' @param catch_df The design's catch table.
+#' @param species_val The species to resolve.
+#' @param catch_type_val One of "caught", "harvested", "released".
+#' @param uid_col,species_col,type_col,count_col Column names in `catch_df`.
+#'
+#' @return data.frame with columns `uid` and `count`, one row per interview that
+#'   recorded this species, or a zero-row frame.
+#'
+#' @keywords internal
+#' @noRd
+species_counts_per_interview <- function(catch_df, species_val, catch_type_val,
+                                         uid_col, species_col, type_col, count_col) {
+  # Compared as character on both sides. The catch table and whichever frame
+  # names the species are attached separately, so factors with different level
+  # sets are easy to end up with -- and `Ops.factor` does not return NA there,
+  # it errors outright with "level sets of factors are different".
+  rows <- catch_df[
+    as.character(catch_df[[species_col]]) == as.character(species_val), ,
+    drop = FALSE
+  ]
+
+  sum_by_uid <- function(df) {
+    if (nrow(df) == 0L) {
+      return(data.frame(uid = df[[uid_col]], count = numeric(0)))
+    }
+    agg <- stats::aggregate(df[[count_col]], by = list(uid = df[[uid_col]]), FUN = sum)
+    names(agg) <- c("uid", "count")
+    agg
+  }
+
+  if (!identical(catch_type_val, "caught")) {
+    # "harvested" and "released" are recorded types. Nothing to derive: a pair
+    # with no row of that type harvested or released none.
+    return(sum_by_uid(rows[rows[[type_col]] == catch_type_val, , drop = FALSE]))
+  }
+
+  caught <- sum_by_uid(rows[rows[[type_col]] == "caught", , drop = FALSE])
+  derived <- sum_by_uid(
+    rows[rows[[type_col]] %in% c("harvested", "released"), , drop = FALSE]
+  )
+  # Per pair, not per table. A pair that recorded its own caught row keeps it;
+  # only the pairs WITHOUT one fall back to harvested + released.
+  derived <- derived[!as.character(derived$uid) %in% as.character(caught$uid), , drop = FALSE]
+
+  # Sorted before returning. The caller merges this onto the interviews and uses
+  # the merged frame's row order to rebuild a survey design, so the order has to
+  # depend on the uid alone -- not on how many pairs happened to record a caught
+  # row, which is what an unsorted rbind() would leak into it.
+  out <- rbind(caught, derived)
+  out[order(out$uid), , drop = FALSE]
+}
+
 #' Build per-species interview data for species-level estimation
 #'
 #' Joins design$catch (filtered to a specific catch_type) to design$interviews
@@ -3819,43 +3891,15 @@ make_species_catch_for_interviews <- function(design, species_val, catch_type_va
   count_col <- design$catch_count_col
   type_col <- design$catch_type_col
 
-  # Filter catch to this species + catch_type.
-  # When catch_type_val == "caught" (total catch), prefer "caught" rows if present;
-  # otherwise sum "harvested" + "released" (datasets that store sub-types only).
-  species_rows <- catch_df[catch_df[[species_col]] == species_val, , drop = FALSE]
-  if (catch_type_val == "caught") {
-    caught_only <- species_rows[species_rows[[type_col]] == "caught", , drop = FALSE]
-    if (nrow(caught_only) > 0L) {
-      species_catch <- caught_only[, c(uid_col, count_col), drop = FALSE]
-    } else {
-      sub_rows <- species_rows[
-        species_rows[[type_col]] %in% c("harvested", "released"),
-        ,
-        drop = FALSE
-      ]
-      species_catch <- sub_rows[, c(uid_col, count_col), drop = FALSE]
-    }
-  } else {
-    species_catch <- species_rows[
-      species_rows[[type_col]] == catch_type_val,
-      c(uid_col, count_col),
-      drop = FALSE
-    ]
-  }
-
-  # Aggregate: sum counts per interview (handles multiple rows same species)
-  if (nrow(species_catch) > 0L) {
-    agg <- stats::aggregate(
-      species_catch[[count_col]],
-      by = list(uid = species_catch[[uid_col]]),
-      FUN = sum
-    )
-    names(agg) <- c(uid_col, ".species_count")
-  } else {
-    agg <- data.frame(
-      stats::setNames(list(integer(0L), integer(0L)), c(uid_col, ".species_count"))
-    )
-  }
+  # Filter catch to this species + catch_type, applying the `add_catch()` model
+  # per species-interview pair. The pair-level rule lives in one place; see
+  # species_counts_per_interview() for why the unit matters (GH #318).
+  agg <- species_counts_per_interview(
+    catch_df, species_val, catch_type_val,
+    uid_col = uid_col, species_col = species_col,
+    type_col = type_col, count_col = count_col
+  )
+  names(agg) <- c(uid_col, ".species_count")
 
   # Left-join to interviews (all interviews appear, 0 for missing)
   result <- merge(
