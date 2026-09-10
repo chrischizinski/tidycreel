@@ -1,0 +1,25 @@
+# Guard against new "absent silently becomes zero" conversions (GH #317).
+#
+# Deliberately its own workflow rather than a step inside R-CMD-check: it needs
+# no R, no package build and no matrix, so it answers in seconds and a reviewer
+# sees the result long before the platform jobs finish. It is also the only
+# check here whose failure is a request to write a sentence, not to fix a build.
+name: absent-zero-guard
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions: read-all
+
+jobs:
+  absent-zero-guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the absent-to-zero baseline
+        run: scripts/absent-zero-guard.sh

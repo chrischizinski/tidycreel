@@ -1,0 +1,26 @@
+# Triaged baseline for scripts/absent-zero-guard.sh (GH #317).
+#
+# Format: file <TAB> code <TAB> why absence means zero HERE.
+#
+# Keyed on the code, not the line number, so an edit above a row does not
+# invalidate it. A justification has to name the semantics that make zero the
+# right reading -- "it is fine" is not one.
+#
+# A NEW hit fails the build. See the header of the script for what to do.
+R/creel-estimates.R	combined$ss_d[is.na(combined$ss_d)] <- 0	Left-join miss: the unit is absent from within_day_var, which means it was counted once, so its within-day term is 0 and k_d is 1 (VAR-03). Only safe because read_supplied_within_day_var() refuses NA at entry, so the table cannot hold an unknown (#317).
+R/creel-estimates.R	return(rep(0, n))	Statistical claim, not a fallback: with no expansion component there is no shared multiplier error, so the covariance between groups genuinely is zero.
+R/creel-estimates.R	return(rep(0, n))	Second arm of the same claim, for the branch where the expansion carries no standard error.
+R/creel-estimates.R	var_expansion_vec <- rep(0, length(estimate))	Reached only under is.null(var_expansion_named): the design carries no expansion at all, so every group's contribution is zero rather than unknown. The NA-vs-absent case is handled in the else branch, which tests the key.
+R/creel-summaries.R	interview_base$.target_count[is.na(interview_base$.target_count)] <- 0	Left-join miss on the catch table: add_catch() documents that an angler who caught none of a species need not appear at all, so an absent row means zero caught. summarize_cws_rates().
+R/creel-summaries.R	interview_base$.target_count[is.na(interview_base$.target_count)] <- 0	Same reading, summarize_hws_rates(). The two functions are near-twins; a change to one belongs in the other.
+R/derive-angler-count.R	total <- rep(0, nrow(counts))	Accumulator seed, not an absence conversion: the components are added on the following lines, and an NA in any of them propagates through `+` rather than being zeroed. A design with no components at all is refused earlier.
+R/two-phase-rescale.R	out[is.na(out)] <- 0	An interview absent from the catch table for this species caught none of it -- documented by add_catch(), and deliberately kept apart from a missing caught row alongside recorded dispositions, which means derive (#318).
+R/creel-design.R	combined$sub_total[is.na(combined$sub_total)] <- 0L	CATCH-04 validation. A pair with no harvested/released rows recorded a sub-total of zero; the full-partition flag is taken BEFORE this fill precisely so the two cases stay apart.
+R/creel-estimates-age.R	val[is.na(val)] <- 0L	Bin counts from the wide reshape: an interview with no measured fish in this age bin measured zero in it. Absence in the reshape is the absence of a measurement, not an unknown count.
+R/creel-estimates-length.R	val[is.na(val)] <- 0L	Same reading for length bins. The two files are near-twins; a change to one belongs in the other.
+R/creel-estimates.R	group_n[is.na(group_n)] <- 0L	A group svyby reported but the counts table does not contain has no sampled units, which is a count of zero rather than an unknown one (#317). The estimate itself is matched on the key, not this fill.
+R/creel-estimates.R	result$.release_count[is.na(result$.release_count)] <- 0L	Left-join miss on the catch table: add_catch() documents that an angler who released none of a species need not appear, so an absent row means zero released.
+R/creel-estimates.R	result$.species_count[is.na(result$.species_count)] <- 0L	Same reading for the species catch join; deliberately distinct from a missing `caught` row alongside recorded dispositions, which means derive (#318).
+R/creel-summaries.R	result$N_successful[is.na(result$N_successful)] <- 0L	A group with no successful parties counted zero of them. NOTE: the UPSTREAM count in summarize_successful_parties() decides success from catch_type == 'caught' with no fallback, which is a known open defect (#317, ninth instance) -- this fill is not the bug and fixing it here would hide it.
+R/schedule-generators.R	baseline_days[is.na(baseline_days)] <- 0L	match() miss over the UNION of both allocations' strata: a stratum present only in the final allocation had zero baseline days by construction. The diagnostic immediately below exists to report exactly that case.
+R/schedule-generators.R	final_days[is.na(final_days)] <- 0L	Mirror of the row above, for a stratum present only in the baseline -- which is the 'fully consumed by special-period assignments' error the loop reports.
