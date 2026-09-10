@@ -264,7 +264,7 @@ print(result_grouped)
 #> 
 #> # A tibble: 2 × 8
 #>   day_type estimate    se se_between se_within ci_lower ci_upper     n
-#>   <chr>       <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <dbl>
+#>   <chr>       <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
 #> 1 weekday        38     8          8         0     3.58     72.4     2
 #> 2 weekend        97     7          7         0    66.9     127.      2
 
