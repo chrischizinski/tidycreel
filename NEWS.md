@@ -34,6 +34,12 @@
   `creel_error_na_within_day_var`: an unknown variance component is not a zero
   one, and this table cannot carry the difference.
 
+  The party-size expansion component travels with it. That producer keyed its
+  groups with the old idiom, so an unknown group matched nothing and the
+  consumer read "no match" as *"this group contributed no expanded boats"* — a
+  confident zero in place of a real component. Caught by the ensemble review:
+  the unknown group's `se_expansion` was `0.0` where it is `0.8`.
+
   **Grouped effort results gain a row** wherever a grouping column contains
   `NA`, and a counts table supplying `NA` in either within-day column is now
   rejected at attach time rather than silently understating the SE.

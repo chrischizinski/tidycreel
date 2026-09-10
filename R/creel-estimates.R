@@ -4062,11 +4062,12 @@ compute_expansion_var_contribution <- function(design, svy_design, by_vars = NUL
     return(out)
   }
 
-  group_keys <- if (length(by_vars) == 1) {
-    as.character(totals[[by_vars]])
-  } else {
-    do.call(paste, c(totals[by_vars], sep = ""))
-  }
+  # The same key the consumer reads these names back with. An unknown group
+  # keyed as NA_character_ here does not match the consumer's sentinel, so it
+  # reads as ABSENT and a real expansion component is zeroed -- the very
+  # absent-vs-unknown confusion this issue is about (GH #317). The separator
+  # was already a unit separator; only the missing-value handling moves.
+  group_keys <- group_key(totals, by_vars) # nolint: object_usage_linter
   out <- vapply(split(contrib, group_keys), sum, numeric(1L))
   # Keyed exactly like `out`, so every call site that subsets the scalar
   # component by part key can subset the decomposition with the same keys.
