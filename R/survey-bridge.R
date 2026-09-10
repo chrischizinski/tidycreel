@@ -426,7 +426,13 @@ validate_counts_tier1 <- function(counts, design, psu, allow_invalid = FALSE) {
 #' @keywords internal
 #' @noRd
 n_duplicate_psus <- function(counts, key_cols) {
-  key <- do.call(paste, c(lapply(counts[key_cols], as.character), sep = "\u001f"))
+  # Built by the shared helper. `paste()` renders a missing value as the string
+  # "NA", so a row whose gear is UNKNOWN and a row genuinely labelled "NA"
+  # produced the same key and the second was reported as a repeat of the first
+  # (GH #317). Two unknown rows do still share a key -- the sentinel is one
+  # value -- which is the intended reading; only the collision with a real label
+  # is removed.
+  key <- group_key(counts, key_cols) # nolint: object_usage_linter
   sum(duplicated(key))
 }
 
@@ -640,14 +646,13 @@ aggregate_within_day <- function(
   any_vars = character(),
   call = rlang::caller_env()
 ) {
-  # Create grouping key as character for split()
-  if (length(key_cols) == 1) {
-    group_key <- as.character(counts[[key_cols]])
-  } else {
-    group_key <- do.call(paste, c(counts[key_cols], sep = "\u001f"))
-  }
+  # Create grouping key as character for split(). Same helper as every other
+  # consumer, so an unknown value in a unit column cannot collide with a label
+  # that spells "NA" (GH #317). Named `unit_key` rather than `group_key` because
+  # the latter is now the function that builds it.
+  unit_key <- group_key(counts, key_cols) # nolint: object_usage_linter
 
-  groups <- split(seq_len(nrow(counts)), group_key)
+  groups <- split(seq_len(nrow(counts)), unit_key)
 
   # Every column not handled explicitly below is taken from the group's FIRST
   # row. That is only sound when the column is constant across the group. When

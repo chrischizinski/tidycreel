@@ -910,3 +910,61 @@ test_that("the desync guard still refuses every case it did before (GH #131, #14
     class = "creel_error_expansion_basis_desync"
   )
 })
+
+test_that("EXPVAR-NA-01 (#317): the unknown group keeps its expansion component", {
+  # Found by the ensemble review, and real. Making the CONSUMER key groups with
+  # the shared sentinel helper while this producer still keyed them with
+  # as.character() left the unknown group matching nothing -- and the consumer
+  # reads "no match" as "this group contributed no expanded boats", which is a
+  # confident zero rather than the component it actually has.
+  #
+  # The counts-only fixtures in test-estimate-effort.R cannot see this: they
+  # carry no expansion basis at all, so the branch never runs.
+  raw <- data.frame(
+    date = rep(as.Date("2024-06-01") + 0:5, 2),
+    day_type = rep(rep(c("weekday", "weekend"), 3), 2),
+    gear = rep(c("bank", "boat"), each = 6),
+    bank_anglers = c(3, 5, 2, 4, 8, 10, 2, 4, 6, 3, 5, 7),
+    angler_boats = c(6, 2, 4, 8, 5, 5, 3, 7, 2, 6, 4, 8),
+    stringsAsFactors = FALSE
+  )
+  raw$gear[1:2] <- NA
+
+  counts <- derive_angler_count(
+    raw,
+    bank = bank_anglers, boat_count = angler_boats, # nolint: object_usage_linter
+    party_size = 2.5, party_size_se = 0.1
+  )
+  calendar <- data.frame(
+    date = as.Date("2024-06-01") + 0:5,
+    day_type = rep(c("weekday", "weekend"), 3),
+    stringsAsFactors = FALSE
+  )
+  d <- suppressMessages(creel_design(calendar, date = date, strata = day_type)) # nolint: object_usage_linter
+  d <- suppressWarnings(suppressMessages(add_counts(
+    d, counts,
+    count_col = "angler_count",
+    unit_cols = c("date", "day_type", "gear")
+  )))
+
+  res <- suppressWarnings(suppressMessages(
+    estimate_effort(d, by = gear, target = "sampled_days") # nolint: object_usage_linter
+  ))
+  na_idx <- which(is.na(as.character(res$estimates$gear)))
+  expect_length(na_idx, 1L)
+
+  # The component is the group's expanded boat total times the multiplier's SE.
+  # Written from that definition rather than read back from the estimator.
+  in_group <- is.na(raw$gear)
+  expect_equal(res$se_expansion[na_idx], sum(counts$expansion_basis[in_group]) * 0.1)
+  expect_gt(res$se_expansion[na_idx], 0)
+
+  # And it reaches the reported SE, which is what a zeroed component would not.
+  est <- res$estimates[na_idx, ]
+  expect_equal(
+    est$se,
+    sqrt(est$se_between^2 + est$se_within^2 + res$se_expansion[na_idx]^2),
+    tolerance = 1e-10
+  )
+  expect_gt(est$se, est$se_between)
+})

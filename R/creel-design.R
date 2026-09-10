@@ -1319,6 +1319,37 @@ read_supplied_within_day_var <- function(
     )
   }
 
+  # An unknown component cannot be accepted here, because the consumer cannot
+  # tell it apart from an absent one. `compute_within_day_var_contribution()`
+  # left-joins this table onto the counts and reads a missing `ss_d` as "this
+  # PSU had a single count, so its within-day term is zero" -- true for a PSU
+  # that is absent from the table, and false for one that is present with an
+  # unknown sum of squares. Three PSUs supplied as NA took se_within from 26.46
+  # to 23.45 and the reported SE from 29.56 to 26.90, with no warning: a
+  # variance of zero and a variance that never propagated are not the same
+  # claim, and the second is the one the rules forbid (GH #317).
+  bad_ss <- which(is.na(counts[["within_day_var"]]))
+  bad_k <- which(is.na(counts[["n_counts"]]))
+  if (length(bad_ss) > 0L || length(bad_k) > 0L) {
+    cli::cli_abort(
+      c(
+        "Supplied within-day variance has missing values.",
+        # Only the columns that actually carry an NA are named. Reporting both
+        # every time produced "n_counts in 0", which reads as a second problem.
+        "x" = "{.val {NA}} in {.field {c('within_day_var', 'n_counts')[
+                 c(length(bad_ss) > 0L, length(bad_k) > 0L)]}}
+               ({cli::qty(length(bad_ss) + length(bad_k))}{length(bad_ss) +
+                 length(bad_k)} value{?s}).",
+        "i" = "An unknown sum of squares is not a zero one, and this table
+               cannot carry the difference.",
+        "i" = "Fill the missing values, or drop those rows so the units are
+               absent rather than unknown."
+      ),
+      class = "creel_error_na_within_day_var",
+      call = call
+    )
+  }
+
   out <- counts[key_cols]
   out$ss_d <- counts[["within_day_var"]]
   out$k_d <- counts[["n_counts"]]

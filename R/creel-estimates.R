@@ -4062,11 +4062,12 @@ compute_expansion_var_contribution <- function(design, svy_design, by_vars = NUL
     return(out)
   }
 
-  group_keys <- if (length(by_vars) == 1) {
-    as.character(totals[[by_vars]])
-  } else {
-    do.call(paste, c(totals[by_vars], sep = ""))
-  }
+  # The same key the consumer reads these names back with. An unknown group
+  # keyed as NA_character_ here does not match the consumer's sentinel, so it
+  # reads as ABSENT and a real expansion component is zeroed -- the very
+  # absent-vs-unknown confusion this issue is about (GH #317). The separator
+  # was already a unit separator; only the missing-value handling moves.
+  group_keys <- group_key(totals, by_vars) # nolint: object_usage_linter
   out <- vapply(split(contrib, group_keys), sum, numeric(1L))
   # Keyed exactly like `out`, so every call site that subsets the scalar
   # component by part key can subset the decomposition with the same keys.
@@ -4707,6 +4708,86 @@ expansion_group_structure <- function(design, partition_cols = NULL) {
 }
 
 
+#' The group key two grouped results are lined up by
+#'
+#' Internal. `estimate_effort_grouped()` matches the within-day and expansion
+#' variance components onto the `svyby()` rows by pasting the `by=` values into
+#' one string. Both sides must build that string the same way, and both must
+#' render an **unknown** group as itself.
+#'
+#' Neither base idiom does. `paste()` renders `NA` as the literal `"NA"`, which
+#' is indistinguishable from a real label spelled `"NA"`; `as.character()` keeps
+#' it as `NA_character_`, which then matches nothing -- `combined$.group_key ==
+#' gk` is `NA` for every row when `gk` is `NA`, so `k_bar` became `NaN` and the
+#' comparison died with a bare "missing value where TRUE/FALSE needed" (GH
+#' #317). The two idioms sat on opposite sides of the same match.
+#'
+#' The `NA` group therefore gets a sentinel of its own, chosen on the same
+#' grounds as the field separator: no label can contain it (GH #248). NA is a
+#' group like any other here, exactly as `reported_total_per_interview()`
+#' already treats it on the interview side.
+#'
+#' @param df A data frame carrying the `by=` columns.
+#' @param by_vars Character vector of grouping variable names.
+#'
+#' @return Character vector, one key per row of `df`.
+#'
+#' @keywords internal
+#' @noRd
+group_key <- function(df, by_vars) {
+  cols <- lapply(by_vars, function(v) {
+    x <- as.character(df[[v]])
+    # Assigned by position, not by `ifelse()`: the sentinel must land only where
+    # the value is genuinely absent, and a zero-length column must stay
+    # zero-length rather than becoming one sentinel.
+    x[is.na(x)] <- .group_key_na
+    x
+  })
+  do.call(paste, c(cols, sep = "\u001f"))
+}
+
+# The unknown-group sentinel. A record separator, for the same reason the field
+# separator between by= values is a unit separator: a label cannot contain it,
+# so it cannot collide with real data. Kept next to group_key() because the two
+# are one decision.
+.group_key_na <- "\u001e"
+
+#' Make an unknown group survive `svyby()`
+#'
+#' Internal. `survey::svyby()` drops rows whose `by=` value is `NA`, without a
+#' warning and without a row in the result. The group's data does not move
+#' anywhere else -- it simply stops being reported, so the grouped parts no
+#' longer sum to the ungrouped whole (GH #317).
+#'
+#' Promoting `NA` to an explicit factor level makes `svyby()` report it. The
+#' level added by `addNA()` is `NA_character_` rather than the string `"NA"`, so
+#' a group genuinely labelled `"NA"` remains a separate group -- verified,
+#' because conflating the two is the collision this package has already paid for
+#' once (GH #248).
+#'
+#' Columns with no `NA` are left alone: `ifany = TRUE` adds no level, and a
+#' column that was character stays comparable either way because every consumer
+#' reads it back through `group_key()`.
+#'
+#' @param svy_design A survey design object.
+#' @param by_vars Character vector of grouping variable names.
+#'
+#' @return The design, with any `NA`-bearing `by=` column promoted to a factor
+#'   carrying an explicit `NA` level.
+#'
+#' @keywords internal
+#' @noRd
+promote_na_groups <- function(svy_design, by_vars) {
+  for (v in by_vars) {
+    col <- svy_design$variables[[v]]
+    if (is.null(col) || !anyNA(col)) {
+      next
+    }
+    svy_design$variables[[v]] <- addNA(factor(col), ifany = TRUE)
+  }
+  svy_design
+}
+
 compute_within_day_var_contribution <- function(
   design,
   by_vars = NULL, # nolint: object_length_linter
@@ -4742,7 +4823,11 @@ compute_within_day_var_contribution <- function(
   key_cols <- within_day_key_cols(wdv) # nolint: object_usage_linter
   combined <- merge(counts_data, wdv, by = key_cols, all.x = TRUE, sort = FALSE)
 
-  # Days with k_d = 1 -> ss_d = 0 (VAR-03: within-day term is 0 for those days)
+  # These NAs come from the left join above, never from the table itself: a PSU
+  # absent from `wdv` was counted once, so its within-day term is 0 and its k_d
+  # is 1 (VAR-03). That reading is only safe because the table cannot contain an
+  # unknown -- `read_supplied_within_day_var()` refuses NA at the point of entry,
+  # so absence here means absence and not "we do not know" (GH #317).
   combined$ss_d[is.na(combined$ss_d)] <- 0
   combined$k_d[is.na(combined$k_d)] <- 1L
 
@@ -4793,12 +4878,11 @@ compute_within_day_var_contribution <- function(
     }
     v_within_total
   } else {
-    # Grouped: return named vector matching svyby() row order
-    if (length(by_vars) == 1) {
-      combined$.group_key <- as.character(combined[[by_vars]])
-    } else {
-      combined$.group_key <- do.call(paste, c(combined[by_vars], sep = "\u001f"))
-    }
+    # Grouped: return named vector matching svyby() row order. Built by the
+    # shared helper so this side and the consumer in estimate_effort_grouped()
+    # cannot drift -- they were two different idioms, and an unknown group
+    # matched nothing across the seam (GH #317).
+    combined$.group_key <- group_key(combined, by_vars) # nolint: object_usage_linter
     group_keys <- unique(combined$.group_key)
     v_within_by_group <- stats::setNames(
       numeric(length(group_keys)),
@@ -5365,6 +5449,15 @@ estimate_effort_grouped <- function(
   target_design <- get_effort_target_design(design, target) # nolint: object_usage_linter
   svy_design <- get_variance_design(target_design, variance_method) # nolint: object_usage_linter
 
+  # An unknown group has to survive svyby(), which drops NA rows silently.
+  # Grouping counts whose gear was unrecorded on three days returned 662.5
+  # angler-hours across the reported groups against an ungrouped total of 773 --
+  # 110.5 hours, 14% of the fishery, gone with no warning and no row to show for
+  # it (GH #317). Promoting NA to a level of its own makes svyby report it, so
+  # the parts sum back to the whole. The level is `NA_character_`, not the
+  # string "NA", so a group genuinely labelled "NA" stays a different group.
+  svy_design <- promote_na_groups(svy_design, by_vars) # nolint: object_usage_linter
+
   # Call survey::svyby (suppress expected survey package warnings)
   svy_result <- wrap_survey_call(survey::svyby(
     formula = count_formula,
@@ -5391,20 +5484,25 @@ estimate_effort_grouped <- function(
     target = target
   ) # nolint: object_usage_linter
 
-  # Build group keys for the svyby result rows to match var_within_named names
-  if (length(by_vars) == 1) {
-    result_group_keys <- as.character(svy_result[[by_vars]])
-  } else {
-    result_group_keys <- do.call(paste, c(svy_result[by_vars], sep = "\u001f"))
-  }
+  # Build group keys for the svyby result rows to match var_within_named names.
+  # Same helper as the producer; see group_key() for why the unknown group needs
+  # a sentinel rather than either base idiom.
+  result_group_keys <- group_key(svy_result, by_vars) # nolint: object_usage_linter
 
   # Match within-day variance to svyby row order
   if (length(var_within_named) >= 1 && !is.null(names(var_within_named))) {
     var_within_vec <- as.numeric(var_within_named[result_group_keys])
+    # Testing the KEY, not the value, exactly as the expansion branch below
+    # does. An absent key means the group has no sampled unit carrying a
+    # within-day component, so zero. A present key holding NA would mean the
+    # component is unknown, and must stay NA rather than become a confident
+    # zero -- a variance of 0 and a variance that never propagated are not the
+    # same claim (GH #317).
+    absent_within <- !(result_group_keys %in% names(var_within_named))
+    var_within_vec[absent_within] <- 0
   } else {
     var_within_vec <- rep(as.numeric(var_within_named), length(estimate))
   }
-  var_within_vec[is.na(var_within_vec)] <- 0
 
   # Party-size expansion contribution per group (GH #121); NULL when no SE
   var_expansion_named <- compute_expansion_var_contribution(design, svy_design, by_vars = by_vars) # nolint: object_usage_linter
@@ -5445,16 +5543,17 @@ estimate_effort_grouped <- function(
   ci_lower <- estimate - t_crit * se
   ci_upper <- estimate + t_crit * se
 
-  # Calculate per-group sample sizes
-  # Use aggregate to count rows per group combination
-  group_data_for_n <- counts_data[by_vars]
-  group_data_for_n$.count <- 1
-  n_by_group <- stats::aggregate(
-    .count ~ .,
-    data = group_data_for_n,
-    FUN = sum
-  )
-  names(n_by_group)[names(n_by_group) == ".count"] <- "n"
+  # Per-group sample sizes, counted on the same key the estimates are matched
+  # by. `aggregate(.count ~ ., ...)` was used here, and the formula method
+  # drops NA rows by default -- so the unknown group, which now HAS a row in the
+  # result, arrived with n = NA beside a real estimate (GH #317). Counting the
+  # keys avoids both that and the merge, which could reorder the rows the
+  # estimates are already aligned to.
+  n_by_key <- table(group_key(counts_data, by_vars))
+  group_n <- as.integer(n_by_key[result_group_keys])
+  # A group svyby reported but the counts do not contain has no sampled units,
+  # which is a count of zero rather than an unknown one.
+  group_n[is.na(group_n)] <- 0L
 
   # Build result tibble with group columns first, then estimates
   # Start with group columns from svyby result (preserves factor levels)
@@ -5465,9 +5564,7 @@ estimate_effort_grouped <- function(
   estimates_df$se_within <- se_within
   estimates_df$ci_lower <- ci_lower
   estimates_df$ci_upper <- ci_upper
-
-  # Join sample sizes
-  estimates_df <- merge(estimates_df, n_by_group, by = by_vars, all.x = TRUE, sort = FALSE)
+  estimates_df$n <- group_n
 
   # Convert to tibble and reorder columns (group cols, then estimate cols, then n)
   estimates_df <- tibble::as_tibble(estimates_df)

@@ -2,6 +2,55 @@
 
 ## Breaking changes
 
+* Grouped effort now reports an **unknown group** instead of dropping it, and
+  refuses a supplied within-day variance that is `NA` (#317).
+
+  Two separate ways an unknown quantity was behaving like nothing at all.
+
+  **The unknown group.** `survey::svyby()` drops rows whose `by=` value is `NA`,
+  with no warning and no row in the result. The effort did not move anywhere
+  else — it simply stopped being reported, so the grouped parts no longer summed
+  to the ungrouped whole. On a design whose gear was unrecorded on three days,
+  `estimate_effort(by = gear)` returned groups totalling 662.5 angler-hours
+  against an ungrouped total of 773: **110.5 hours, 14% of the fishery, gone
+  silently**. With within-day variance attached the same request instead died
+  with a bare `missing value where TRUE/FALSE needed`, because the two sides of
+  the variance match built their group keys with different base idioms.
+
+  `NA` is now a group like any other here, exactly as it already is on the
+  interview side. Its row appears with its own estimate, standard error and `n`,
+  and the parts sum back to the whole. A group genuinely labelled `"NA"` remains
+  a **different** group — the two collided under `paste()`, which renders a
+  missing value as the string `"NA"`, and that collision also made
+  `add_counts()` report such a row as a repeated sampling unit.
+
+  **The supplied variance.** `add_counts()` accepts a precomputed
+  `within_day_var` column and validated nothing about it. The consumer reads a
+  missing value as *"this unit had a single count, so its within-day term is
+  zero"* — true for a unit absent from the table, false for one present with an
+  unknown sum of squares. Three unknown PSUs took `se_within` from 26.46 to
+  23.45 and the reported SE from 29.56 to 26.90, with no warning. Supplying `NA`
+  in `within_day_var` or `n_counts` now raises
+  `creel_error_na_within_day_var`: an unknown variance component is not a zero
+  one, and this table cannot carry the difference.
+
+  The party-size expansion component travels with it. That producer keyed its
+  groups with the old idiom, so an unknown group matched nothing and the
+  consumer read "no match" as *"this group contributed no expanded boats"* — a
+  confident zero in place of a real component. Caught by the ensemble review:
+  the unknown group's `se_expansion` was `0.0` where it is `0.8`.
+
+  **Grouped effort results gain a row** wherever a grouping column contains
+  `NA`, and a counts table supplying `NA` in either within-day column is now
+  rejected at attach time rather than silently understating the SE.
+
+  Still outstanding, and named here rather than left to be discovered: the other
+  grouped estimators — catch, harvest, CPUE, bus-route, camera, aerial — call
+  `svyby()` through their own paths and **still drop the unknown group**.
+  Measured: `estimate_catch_rate(by = gear)` with four unknown-gear interviews
+  reports groups totalling `n = 14` against an ungrouped `n = 17`. That sweep is
+  tracked separately.
+
 * Species-level catch now reads `add_catch()`'s catch-type model **per
   species-interview pair**, as that model is documented, instead of once per
   species across the whole catch table (#318).
