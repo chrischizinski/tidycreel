@@ -971,6 +971,10 @@ summarize_cws_rates <- function(design, by = NULL, conf_level = 0.95) {
     by.y = ".uid",
     all.x = TRUE
   )
+  # An interview absent from the catch table caught none of the target: that is
+  # what add_catch() documents, so the join miss is a real zero and not an
+  # unknown. Stated because the conversion cannot be told from the dangerous
+  # kind by looking at it (GH #317).
   interview_base$.target_count[is.na(interview_base$.target_count)] <- 0
 
   # Step 4: Exclude zero-effort interviews
@@ -1195,6 +1199,10 @@ summarize_hws_rates <- function(design, by = NULL, conf_level = 0.95) {
     by.y = ".uid",
     all.x = TRUE
   )
+  # An interview absent from the catch table caught none of the target: that is
+  # what add_catch() documents, so the join miss is a real zero and not an
+  # unknown. Stated because the conversion cannot be told from the dangerous
+  # kind by looking at it (GH #317).
   interview_base$.target_count[is.na(interview_base$.target_count)] <- 0
 
   # Step 4: Exclude zero-effort interviews

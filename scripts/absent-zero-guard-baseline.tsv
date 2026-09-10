@@ -1,0 +1,17 @@
+# Triaged baseline for scripts/absent-zero-guard.sh (GH #317).
+#
+# Format: file <TAB> code <TAB> why absence means zero HERE.
+#
+# Keyed on the code, not the line number, so an edit above a row does not
+# invalidate it. A justification has to name the semantics that make zero the
+# right reading -- "it is fine" is not one.
+#
+# A NEW hit fails the build. See the header of the script for what to do.
+R/creel-estimates.R	combined$ss_d[is.na(combined$ss_d)] <- 0	Left-join miss: the unit is absent from within_day_var, which means it was counted once, so its within-day term is 0 and k_d is 1 (VAR-03). Only safe because read_supplied_within_day_var() refuses NA at entry, so the table cannot hold an unknown (#317).
+R/creel-estimates.R	return(rep(0, n))	Statistical claim, not a fallback: with no expansion component there is no shared multiplier error, so the covariance between groups genuinely is zero.
+R/creel-estimates.R	return(rep(0, n))	Second arm of the same claim, for the branch where the expansion carries no standard error.
+R/creel-estimates.R	var_expansion_vec <- rep(0, length(estimate))	Reached only under is.null(var_expansion_named): the design carries no expansion at all, so every group's contribution is zero rather than unknown. The NA-vs-absent case is handled in the else branch, which tests the key.
+R/creel-summaries.R	interview_base$.target_count[is.na(interview_base$.target_count)] <- 0	Left-join miss on the catch table: add_catch() documents that an angler who caught none of a species need not appear at all, so an absent row means zero caught. summarize_cws_rates().
+R/creel-summaries.R	interview_base$.target_count[is.na(interview_base$.target_count)] <- 0	Same reading, summarize_hws_rates(). The two functions are near-twins; a change to one belongs in the other.
+R/derive-angler-count.R	total <- rep(0, nrow(counts))	Accumulator seed, not an absence conversion: the components are added on the following lines, and an NA in any of them propagates through `+` rather than being zeroed. A design with no components at all is refused earlier.
+R/two-phase-rescale.R	out[is.na(out)] <- 0	An interview absent from the catch table for this species caught none of it -- documented by add_catch(), and deliberately kept apart from a missing caught row alongside recorded dispositions, which means derive (#318).
