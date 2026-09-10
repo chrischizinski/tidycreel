@@ -1458,3 +1458,65 @@ test_that("CNT-08 (#152): the refusal does not depend on unit_cols being right",
     class = "creel_error_duplicate_count_rows"
   )
 })
+
+test_that("WDV-NA-01 (#317): a supplied within-day variance may not be NA", {
+  data(example_calendar, package = "tidycreel")
+  data(example_counts, package = "tidycreel")
+
+  # add_counts() accepts a precomputed within-day component. The consumer
+  # left-joins it onto the counts and reads a MISSING ss_d as "this unit had a
+  # single count, so its within-day term is zero" -- true for a unit absent from
+  # the table, false for one present with an unknown sum of squares. Accepting
+  # the NA here is what let the two become the same thing downstream: three
+  # unknown PSUs took se_within from 26.46 to 23.45 and the reported SE from
+  # 29.56 to 26.90, silently.
+  mk <- function(mutate) {
+    cnt <- example_counts
+    cnt$within_day_var <- 100
+    cnt$n_counts <- 2L
+    mutate(cnt)
+  }
+  d <- suppressMessages(creel_design(example_calendar, date = date, strata = day_type)) # nolint: object_usage_linter
+
+  expect_error(
+    suppressMessages(add_counts(d, mk(function(c) {
+      c$within_day_var[1:3] <- NA
+      c
+    }))),
+    class = "creel_error_na_within_day_var"
+  )
+  expect_error(
+    suppressMessages(add_counts(d, mk(function(c) {
+      c$n_counts[5] <- NA
+      c
+    }))),
+    class = "creel_error_na_within_day_var"
+  )
+
+  # The complete table is still accepted, so the guard is not simply refusing
+  # every supplied component.
+  ok <- suppressWarnings(suppressMessages(add_counts(d, mk(identity))))
+  expect_false(is.null(ok$within_day_var))
+  expect_false(anyNA(ok$within_day_var$ss_d))
+})
+
+test_that("WDV-NA-02 (#317): the refusal names only the column that is missing", {
+  data(example_calendar, package = "tidycreel")
+  data(example_counts, package = "tidycreel")
+
+  # Both columns were named on every refusal, which rendered as "n_counts in 0"
+  # and read as a second problem the caller did not have.
+  cnt <- example_counts
+  cnt$within_day_var <- 100
+  cnt$n_counts <- 2L
+  cnt$within_day_var[1:3] <- NA
+  d <- suppressMessages(creel_design(example_calendar, date = date, strata = day_type)) # nolint: object_usage_linter
+
+  err <- tryCatch(
+    suppressMessages(add_counts(d, cnt)),
+    creel_error_na_within_day_var = function(e) e
+  )
+  msg <- conditionMessage(err)
+  expect_match(msg, "within_day_var")
+  expect_false(grepl("n_counts", msg, fixed = TRUE))
+})

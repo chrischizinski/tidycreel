@@ -2426,3 +2426,154 @@ test_that("ICE-06: ice effort scales with party size (GH #106)", {
   expect_equal(e1$total_effort_hr_on_ice, 84, tolerance = 1e-9)
   expect_equal(e3$total_effort_hr_on_ice, 252, tolerance = 1e-9)
 })
+
+# Unknown grouping values (GH #317) ----
+
+make_na_group_counts <- function(with_within_day = FALSE) {
+  data(example_counts, package = "tidycreel")
+  bank <- example_counts
+  bank$gear <- "bank"
+  boat <- example_counts
+  boat$gear <- "boat"
+  boat$effort_hours <- boat$effort_hours + 2
+  base <- rbind(bank, boat)
+  # Three days record a count but not which gear produced it. The gear is
+  # UNKNOWN, not a third gear and not an absence: those rows are real effort.
+  base$gear[base$date %in% unique(base$date)[1:3] & base$gear == "bank"] <- NA
+  if (!with_within_day) {
+    return(base)
+  }
+  am <- base
+  am$count_time <- "08:00"
+  pm <- base
+  pm$count_time <- "16:00"
+  pm$effort_hours <- pm$effort_hours + 4
+  rbind(am, pm)
+}
+
+make_na_group_design <- function(with_within_day = FALSE) {
+  data(example_calendar, package = "tidycreel")
+  counts <- make_na_group_counts(with_within_day)
+  d <- suppressMessages(creel_design(example_calendar, date = date, strata = day_type)) # nolint: object_usage_linter
+  if (with_within_day) {
+    suppressWarnings(suppressMessages(add_counts(
+      d, counts,
+      count_time_col = count_time, # nolint: object_usage_linter
+      unit_cols = c("date", "day_type", "gear")
+    )))
+  } else {
+    suppressWarnings(suppressMessages(add_counts(
+      d, counts,
+      unit_cols = c("date", "day_type", "gear")
+    )))
+  }
+}
+
+test_that("NAGRP-01 (#317): an unknown group is reported, so the parts sum to the whole", {
+  d <- make_na_group_design()
+
+  ungrouped <- suppressWarnings(suppressMessages(
+    estimate_effort(d, target = "sampled_days")
+  ))
+  grouped <- suppressWarnings(suppressMessages(
+    estimate_effort(d, by = gear, target = "sampled_days")
+  ))
+
+  # svyby() drops NA rows silently. The effort did not move anywhere else -- it
+  # stopped being reported, and 110.5 of 773 angler-hours (14%) left the result
+  # with no row and no warning. This is the assertion that fails against that.
+  expect_equal(
+    sum(grouped$estimates$estimate),
+    ungrouped$estimates$estimate
+  )
+
+  # The unknown group is a row of its own, not folded into a known one.
+  expect_equal(nrow(grouped$estimates), 3L)
+  na_row <- grouped$estimates[is.na(as.character(grouped$estimates$gear)), ]
+  expect_equal(nrow(na_row), 1L)
+  expect_equal(na_row$estimate, 110.5)
+
+  # n is counted for it too. `aggregate(.count ~ ., ...)` drops NA rows, which
+  # put an NA sample size beside a real estimate.
+  expect_equal(na_row$n, 3L)
+  expect_false(anyNA(grouped$estimates$n))
+})
+
+test_that("NAGRP-02 (#317): an unknown group with within-day variance does not crash", {
+  d <- make_na_group_design(with_within_day = TRUE)
+  expect_false(is.null(d$within_day_var))
+
+  # Before the fix this died inside compute_within_day_var_contribution() with a
+  # bare `missing value where TRUE/FALSE needed`: the producer keyed the group
+  # with as.character() (NA stays NA) and `combined$.group_key == gk` is NA for
+  # every row, so k_bar became NaN and `if (k_bar <= 1)` had nothing to test.
+  res <- suppressWarnings(suppressMessages(
+    estimate_effort(d, by = gear, target = "sampled_days")
+  ))
+
+  na_row <- res$estimates[is.na(as.character(res$estimates$gear)), ]
+  expect_equal(nrow(na_row), 1L)
+  # A real within-day component, not a zero standing in for a failed match.
+  expect_gt(na_row$se_within, 0)
+  expect_equal(
+    na_row$se,
+    sqrt(na_row$se_between^2 + na_row$se_within^2),
+    tolerance = 1e-10
+  )
+})
+
+test_that("NAGRP-03 (#317): a group labelled \"NA\" is not the unknown group", {
+  data(example_calendar, package = "tidycreel")
+  data(example_counts, package = "tidycreel")
+
+  # The collision this package has already paid for once (#248): a key built with
+  # paste() renders a missing value as the string "NA", which is exactly what a
+  # group genuinely labelled "NA" produces. Merging the two would report one
+  # group where there are two, and the sum would still look right.
+  bank <- example_counts
+  bank$gear <- "bank"
+  lit <- example_counts
+  lit$gear <- "NA" # a real label that happens to spell NA
+  lit$effort_hours <- lit$effort_hours + 2
+  base <- rbind(bank, lit)
+  base$gear[base$date %in% unique(base$date)[1:3] & base$gear == "bank"] <- NA
+
+  d <- suppressMessages(creel_design(example_calendar, date = date, strata = day_type)) # nolint: object_usage_linter
+  d <- suppressWarnings(suppressMessages(add_counts(
+    d, base,
+    unit_cols = c("date", "day_type", "gear")
+  )))
+
+  res <- suppressWarnings(suppressMessages(
+    estimate_effort(d, by = gear, target = "sampled_days")
+  ))
+  labels <- as.character(res$estimates$gear)
+
+  # Three distinct groups: "bank", the literal "NA", and the unknown one.
+  expect_equal(nrow(res$estimates), 3L)
+  expect_true("NA" %in% labels)
+  expect_equal(sum(is.na(labels)), 1L)
+
+  # And they carry different estimates, so the test would fail if they merged.
+  literal <- res$estimates[!is.na(labels) & labels == "NA", ]
+  unknown <- res$estimates[is.na(labels), ]
+  expect_false(isTRUE(all.equal(literal$estimate, unknown$estimate)))
+})
+
+test_that("NAGRP-04 (#317): group_key() separates absent from a label spelling it", {
+  # The unit the two sides of the match agree on. Tested directly because both
+  # base idioms fail here in opposite directions: paste() turns NA into "NA",
+  # and as.character() leaves NA_character_, which matches nothing.
+  df <- data.frame(
+    a = c("x", "NA", NA, "x"),
+    b = c("y", "y", "y", NA),
+    stringsAsFactors = FALSE
+  )
+  keys <- tidycreel:::group_key(df, c("a", "b"))
+
+  expect_length(keys, 4L)
+  expect_false(anyNA(keys))
+  expect_equal(length(unique(keys)), 4L)
+  # The literal "NA" and the absent value are different keys.
+  expect_false(keys[2] == keys[3])
+})
