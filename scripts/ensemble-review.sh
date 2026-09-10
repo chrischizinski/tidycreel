@@ -69,7 +69,10 @@
 #
 # REQUIREMENTS
 #
-# An OpenRouter key, plus jq and python3. The key is read from
+# An OpenRouter key, plus jq and python3. The Codex reviewer additionally needs
+# the `codex` CLI logged in, and uses timeout(1) when one is present; each of
+# those is optional and its absence is reported rather than hidden.
+# The key is read from
 # $OPENROUTER_API_KEY, falling back to opencode's auth store at
 # ~/.local/share/opencode/auth.json. It is never printed, never passed on a
 # command line, and never written to a file.
@@ -117,6 +120,23 @@ MODELS=(
   "nvidia/nemotron-3-ultra-550b-a55b:free"
   "deepseek/deepseek-v4-pro-0813"
 )
+
+# The Codex CLI runs as a FIFTH reviewer, and it is a different kind of reviewer:
+# the four models above see only the diff, while Codex reads the repository and
+# runs commands, so it can check a claim before making it.
+#
+# That difference is not theoretical. On #323's diff -- which all four models had
+# already passed -- Codex read `add_catch()`, found that it accepts `count = NA`,
+# and reported that the `.target_count` fill in `creel-summaries.R` therefore
+# turns an UNKNOWN catch into a zero. Verified: `mean_rate` 0.2332 with the count
+# known, 0.16829 with it NA, and 0.16829 with it a genuine 0 -- an unknown and a
+# zero producing byte-identical output, at the exact line the guard's baseline
+# called safe. It also noticed that the guard greps `R/` while the repo also
+# tracks `tidycreel.connect/R`. Neither is visible in a diff.
+#
+# It is skipped, loudly, when the CLI is absent or logged out. A reviewer that
+# did not run must say so -- see the note on curl failures below for why.
+CODEX_MODEL_LABEL="codex-cli"
 
 key() {
   if [ -n "${OPENROUTER_API_KEY:-}" ]; then
@@ -364,10 +384,132 @@ PY
   rm -f "$body" "$resp"
 }
 
+# The Codex reviewer. Separate from run_one() because it is a different
+# transport entirely -- a local agent with repo access, not an HTTP completion.
+run_codex() {
+  local out="$OUT_DIR/codex.md"
+  rm -f "$out"
+
+  if ! command -v codex >/dev/null 2>&1; then
+    echo "  ${CODEX_MODEL_LABEL}: not installed -- DID NOT RUN, not 'no findings'."
+    return 0
+  fi
+  if ! codex login status >/dev/null 2>&1; then
+    echo "  ${CODEX_MODEL_LABEL}: not logged in (\`codex login\`) -- DID NOT RUN, not 'no findings'."
+    return 0
+  fi
+
+  # `main...HEAD` -> `main`; `HEAD~1..HEAD` -> `HEAD~1`; a bare ref is its own base.
+  local base="${RANGE%%.*}"
+  [ -n "$base" ] || base="$RANGE"
+
+  # An agentic reviewer can run commands, so it is pinned read-only and its
+  # effect on the tree is CHECKED rather than trusted. A sibling CLI has left
+  # this repo on a different branch mid-task before, and everything reasoned
+  # afterwards described the wrong branch.
+  local branch_before sha_before dirty_before
+  branch_before="$(git rev-parse --abbrev-ref HEAD)"
+  sha_before="$(git rev-parse HEAD)"
+  dirty_before="$(git status --porcelain | sha1sum | cut -d" " -f1)"
+
+  # `timeout` is GNU coreutils and is NOT on a stock macOS -- /usr/bin/timeout
+  # does not exist, so on a machine without Homebrew coreutils this reviewer
+  # would return 127 and be skipped on every run while the script advertised it.
+  # Found by Codex reviewing this very function. `gtimeout` is the Homebrew name
+  # when coreutils is installed unprefixed; with neither, the review still runs
+  # and the caller is told there is no cap.
+  local timeout_cmd=""
+  if command -v timeout >/dev/null 2>&1; then
+    timeout_cmd="timeout"
+  elif command -v gtimeout >/dev/null 2>&1; then
+    timeout_cmd="gtimeout"
+  else
+    echo "  ${CODEX_MODEL_LABEL}: no timeout(1) on this system; running uncapped."
+  fi
+
+  local raw rc=0
+  raw="$(mktemp)"
+  if [ -n "$timeout_cmd" ]; then
+    "$timeout_cmd" "${CODEX_TIMEOUT:-900}" codex review \
+      --base "$base" \
+      -c sandbox_mode="read-only" \
+      > "$raw" 2>&1 || rc=$?
+  else
+    codex review \
+      --base "$base" \
+      -c sandbox_mode="read-only" \
+      > "$raw" 2>&1 || rc=$?
+  fi
+
+  local branch_after sha_after dirty_after
+  branch_after="$(git rev-parse --abbrev-ref HEAD)"
+  sha_after="$(git rev-parse HEAD)"
+  dirty_after="$(git status --porcelain | sha1sum | cut -d" " -f1)"
+  if [ "$branch_before" != "$branch_after" ] || [ "$sha_before" != "$sha_after" ] ||
+     [ "$dirty_before" != "$dirty_after" ]; then
+    echo "  ${CODEX_MODEL_LABEL}: REPO CHANGED during review" >&2
+    echo "      branch $branch_before -> $branch_after" >&2
+    echo "      HEAD   $sha_before -> $sha_after" >&2
+    echo "      worktree digest changed: $([ "$dirty_before" != "$dirty_after" ] && echo yes || echo no)" >&2
+    echo "      Nothing reasoned after this point describes the tree you started with." >&2
+    rm -f "$raw"
+    return 0
+  fi
+
+  if [ "$rc" -ne 0 ]; then
+    if [ "$rc" -eq 124 ]; then
+      echo "  ${CODEX_MODEL_LABEL}: TIMED OUT after ${CODEX_TIMEOUT:-900}s -- DID NOT RUN, not 'no findings'."
+    else
+      echo "  ${CODEX_MODEL_LABEL}: exited $rc -- DID NOT RUN, not 'no findings'."
+      sed "s/^/      /" "$raw" | tail -5 >&2
+    fi
+    rm -f "$raw"
+    return 0
+  fi
+
+  # The transcript is ~230KB of tool calls and reasoning; the review itself is
+  # the block after the final `codex` marker line. That block repeats its own
+  # summary, so it is truncated at the second "Full review comments:".
+  python3 - "$raw" "$out" "$CODEX_MODEL_LABEL" <<'PYX'
+import sys
+raw, out, label = sys.argv[1], sys.argv[2], sys.argv[3]
+lines = open(raw, errors="replace").read().splitlines()
+marks = [i for i, ln in enumerate(lines) if ln.strip() == "codex"]
+body = "\n".join(lines[marks[-1] + 1:]).strip() if marks else ""
+if not body:
+    print(f"  {label}: ran but emitted no review block -- treat as DID NOT RUN.")
+    raise SystemExit
+hdr = "Full review comments:"
+first = body.find(hdr)
+second = body.find(hdr, first + 1) if first != -1 else -1
+if second != -1:
+    body = body[:second].rstrip()
+# The block also repeats its one-line summary at the very end. Dropped only when
+# it is an exact repeat of the opening line, so a genuine closing sentence that
+# happens to be similar is left alone.
+blines = body.splitlines()
+while len(blines) > 1 and blines[-1].strip() == blines[0].strip():
+    blines.pop()
+body = "\n".join(blines).rstrip()
+open(out, "w").write(f"# {label} (repo-aware)\n\n{body}\n")
+print(f"  {label}: {len(body)} chars -> {out}")
+PYX
+
+  if [ -s "$out" ]; then
+    local board="${SCOREBOARD:-.ai/reviews/scoreboard.tsv}"
+    [ -e "$board" ] || printf "date\trange\tmodel\tcost\tchars\tverified_true\tfalse\tnotes\n" > "$board"
+    printf "%s\t%s\t%s\t%s\t%s\t\t\t\n" \
+      "$(date +%F)" "$RANGE" "$CODEX_MODEL_LABEL" "subscription" \
+      "$(wc -c < "$out" | tr -d " ")" >> "$board"
+  fi
+  rm -f "$raw"
+}
+
 export REVIEW_RANGE="$RANGE"
 for m in "${MODELS[@]}"; do
   run_one "$m" &
 done
+run_codex &
 wait
 
 echo
@@ -382,6 +524,12 @@ for m in "${MODELS[@]}"; do
   echo
   cat "$f"
 done
+# Last, deliberately: it is the only reviewer that could verify its own claims,
+# so it is the one still worth reading after the others have been triaged.
+if [ -e "$OUT_DIR/codex.md" ]; then
+  echo
+  cat "$OUT_DIR/codex.md"
+fi
 
 echo
 echo "--------------------------------------------------------------"
