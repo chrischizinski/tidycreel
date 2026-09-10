@@ -4095,7 +4095,14 @@ compute_expansion_var_contribution <- function(design, svy_design, by_vars = NUL
 #' @keywords internal
 #' @noRd
 expansion_stratum_key <- function(data, strata_cols) {
-  do.call(paste, c(lapply(data[strata_cols], as.character), sep = "\r"))
+  # Delegates rather than pasting. This built its own key with `paste()`, which
+  # renders a missing value as the literal string "NA" -- so an unknown stratum
+  # and a stratum genuinely labelled "NA" received the same key and had their
+  # expansion components pooled, with the total still looking right (GH #321,
+  # the collision GH #248 already cost this package once). `group_key()` is the
+  # package's one answer to that question; a second private copy of the rule is
+  # how the two drift apart (GH #320).
+  group_key(data, strata_cols)
 }
 
 
@@ -4787,6 +4794,51 @@ promote_na_groups <- function(svy_design, by_vars) {
   }
   svy_design
 }
+
+#' Give a reported group column back its own type
+#'
+#' Internal. [promote_na_groups()] turns a `by=` column into a factor so that
+#' `svyby()` reports the unknown group, and `svyby()` carries that factor
+#' straight through to the result. The promotion is conditional -- a column with
+#' no missing value is left alone -- so the reported column came back as a
+#' factor when something was unknown and as its own type when nothing was. The
+#' same estimator on the same column returned two different schemas depending on
+#' whether a value happened to be missing, and `depth > 15` or `depth + 1` on
+#' the result worked only in the second case (GH #321, found by Codex).
+#'
+#' The factor is an implementation detail of the `svyby()` call, so it is undone
+#' on the way out. Each reported label is mapped back onto a value of the source
+#' column's own type. `match()` pairs `NA` with `NA`, so the unknown group
+#' returns as an `NA` of that type -- a numeric `NA`, a `Date` `NA` -- which is
+#' precisely what that column can say about a group whose value was never
+#' recorded.
+#'
+#' A column the caller supplied as a factor comes back as that same factor,
+#' with its own levels and its `ordered` class -- and with a **true** `NA`
+#' rather than the `addNA()` level, so `is.na()` reports the unknown group for a
+#' factor exactly as it does for every other type. Leaving the promoted level in
+#' place was the same defect one layer down: whether `is.na(result$group)` found
+#' the unknown row would have depended on the column's type.
+#'
+#' @param result_df The `svyby()` result rows, subset to the `by=` columns.
+#' @param source_df The frame the groups were built from (counts or interviews).
+#' @param by_vars Character vector of grouping variable names.
+#'
+#' @return `result_df`, with each promoted column restored to its source type.
+#'
+#' @keywords internal
+#' @noRd
+restore_group_types <- function(result_df, source_df, by_vars) {
+  for (v in by_vars) {
+    orig <- source_df[[v]]
+    if (is.null(orig) || !is.factor(result_df[[v]])) {
+      next
+    }
+    result_df[[v]] <- orig[match(as.character(result_df[[v]]), as.character(orig))]
+  }
+  result_df
+}
+
 
 compute_within_day_var_contribution <- function(
   design,
@@ -5557,7 +5609,9 @@ estimate_effort_grouped <- function(
 
   # Build result tibble with group columns first, then estimates
   # Start with group columns from svyby result (preserves factor levels)
-  estimates_df <- svy_result[by_vars]
+  # The factor promote_na_groups() needed is an implementation detail of the
+  # svyby() call; the reported column gets its own type back (GH #321).
+  estimates_df <- restore_group_types(svy_result[by_vars], counts_data, by_vars) # nolint: object_usage_linter
   estimates_df$estimate <- estimate
   estimates_df$se <- se
   estimates_df$se_between <- se_between
@@ -5796,6 +5850,13 @@ estimate_cpue_grouped <- function(
   # Build formulas for svyby
   by_formula <- stats::reformulate(by_vars)
 
+  # An unknown group has to survive svyby(), which drops NA rows silently, the
+  # same way the effort path now makes it survive (GH #317). Grouping 48
+  # complete trips by a gear recorded on only 32 of them reported those 32 and
+  # said nothing about the other 16 -- a third of the interviews, with no
+  # warning and no row (GH #321).
+  svy_design <- promote_na_groups(svy_design, by_vars) # nolint: object_usage_linter
+
   if (estimator %in% c("mor", "mortr")) {
     # MOR: use svyby with svymean on ratio
     svy_result <- wrap_survey_call(survey::svyby(
@@ -5840,27 +5901,30 @@ estimate_cpue_grouped <- function(
     ci_upper <- svy_result[["ci_u"]]
   }
 
-  # Calculate per-group sample sizes
-  # Use aggregate to count rows per group combination
-  group_data_for_n <- interviews_data[by_vars]
-  group_data_for_n$.count <- 1
-  n_by_group <- stats::aggregate(
-    .count ~ .,
-    data = group_data_for_n,
-    FUN = sum
-  )
-  names(n_by_group)[names(n_by_group) == ".count"] <- "n"
+  # Per-group sample sizes, counted on the same key the estimates are reported
+  # under. `aggregate(.count ~ ., ...)` was used here, and the formula method
+  # drops NA rows by default -- so the unknown group, which now HAS a row in
+  # the result, would arrive with n = NA beside a real estimate (GH #317).
+  # Counting the keys avoids both that and the merge, which could reorder the
+  # rows the estimates are already aligned to.
+  result_group_keys <- group_key(svy_result, by_vars) # nolint: object_usage_linter
+  n_by_key <- table(group_key(interviews_data, by_vars))
+  group_n <- as.integer(n_by_key[result_group_keys])
+  # Testing the KEY, not the value, exactly as the variance components do. An
+  # absent key means svyby reported a group the interviews do not contain, so
+  # it has no sampled units -- a count of zero rather than an unknown one.
+  group_n[!(result_group_keys %in% names(n_by_key))] <- 0L
 
   # Build result tibble with group columns first, then estimates
   # Start with group columns from svyby result (preserves factor levels)
-  estimates_df <- svy_result[by_vars]
+  # See restore_group_types(): the svyby() factor is undone on the way out.
+  estimates_df <- restore_group_types(svy_result[by_vars], interviews_data, by_vars) # nolint: object_usage_linter
   estimates_df$estimate <- estimate
   estimates_df$se <- se
   estimates_df$ci_lower <- ci_lower
   estimates_df$ci_upper <- ci_upper
 
-  # Join sample sizes
-  estimates_df <- merge(estimates_df, n_by_group, by = by_vars, all.x = TRUE, sort = FALSE)
+  estimates_df$n <- group_n
 
   # Convert to tibble and reorder columns (group cols, then estimate cols, then n)
   estimates_df <- tibble::as_tibble(estimates_df)
@@ -6091,27 +6155,37 @@ compute_stratum_product_sum <- function(
     out
   } else {
     # Sum strata within each interview_by_vars group; compute per-group df (#94)
-    agg <- stats::aggregate(
-      cbind(.est_sh, .var_sh, .n_sh) ~ .,
-      data = merged[c(interview_by_vars, ".est_sh", ".var_sh", ".n_sh")],
-      FUN = sum
-    )
-    # Count strata per group for per-group df
-    k_strata <- stats::aggregate(
-      rep(1L, nrow(merged)),
-      by = merged[interview_by_vars],
-      FUN = sum
-    )
-    names(k_strata)[ncol(k_strata)] <- ".k_strata"
-    agg <- merge(agg, k_strata, by = interview_by_vars, sort = FALSE)
+    #
+    # Split on the group key, not `aggregate(cbind(...) ~ ., ...)`. The formula
+    # method drops NA rows, so a group whose value is unknown was dropped from
+    # the product sum outright -- the grouped rows of a total then covered only
+    # part of the fishery while reading as complete (GH #321).
+    #
+    # It survived here for a while by accident: while the `by=` column was
+    # still the factor `promote_na_groups()` leaves behind, an `addNA()` level
+    # is not `is.na()` at the integer level and the formula method could not
+    # see it. Giving the reported column its own type back removed that
+    # accidental cover and exposed the real defect underneath. A key does not
+    # depend on the column's type at all, which is why it is the thing to
+    # split on.
+    merged_key <- expansion_stratum_key(merged, interview_by_vars) # nolint: object_usage_linter
+    agg_key <- sort(unique(merged_key))
+    key_factor <- factor(merged_key, levels = agg_key)
+    sum_by_key <- function(x) as.numeric(vapply(split(x, key_factor), sum, numeric(1L)))
+
+    agg <- merged[match(agg_key, merged_key), interview_by_vars, drop = FALSE]
+    row.names(agg) <- NULL
+    agg$.est_sh <- sum_by_key(merged$.est_sh)
+    agg$.var_sh <- sum_by_key(merged$.var_sh)
+    agg$.n_sh <- sum_by_key(merged$.n_sh)
+    # Strata per group, for the per-group degrees of freedom.
+    agg$.k_strata <- as.integer(table(key_factor))
     df_per_group <- pmax(1L, as.integer(agg$.n_sh) - as.integer(agg$.k_strata))
     z_per_group <- stats::qt(1 - (1 - conf_level) / 2, df = df_per_group)
 
     # The same correction applies inside each reported group: a shared estimate
     # runs through the strata being summed here exactly as it does through a
     # whole-design total.
-    agg_key <- expansion_stratum_key(agg, interview_by_vars) # nolint: object_usage_linter
-    merged_key <- expansion_stratum_key(merged, interview_by_vars) # nolint: object_usage_linter
     agg$.var_sh <- vapply(
       seq_along(agg_key),
       function(i) {
@@ -6807,6 +6881,13 @@ estimate_harvest_grouped <- function(
   # Build formulas for svyby
   by_formula <- stats::reformulate(by_vars)
 
+  # An unknown group has to survive svyby(), which drops NA rows silently, the
+  # same way the effort path now makes it survive (GH #317). Grouping 48
+  # complete trips by a gear recorded on only 32 of them reported those 32 and
+  # said nothing about the other 16 -- a third of the interviews, with no
+  # warning and no row (GH #321).
+  svy_design <- promote_na_groups(svy_design, by_vars) # nolint: object_usage_linter
+
   if (estimator %in% c("mor", "mortr")) {
     # MOR: use svyby with svymean on ratio
     svy_result <- wrap_survey_call(survey::svyby(
@@ -6850,27 +6931,30 @@ estimate_harvest_grouped <- function(
     ci_upper <- svy_result[["ci_u"]]
   }
 
-  # Calculate per-group sample sizes
-  # Use aggregate to count rows per group combination
-  group_data_for_n <- interviews_data[by_vars]
-  group_data_for_n$.count <- 1
-  n_by_group <- stats::aggregate(
-    .count ~ .,
-    data = group_data_for_n,
-    FUN = sum
-  )
-  names(n_by_group)[names(n_by_group) == ".count"] <- "n"
+  # Per-group sample sizes, counted on the same key the estimates are reported
+  # under. `aggregate(.count ~ ., ...)` was used here, and the formula method
+  # drops NA rows by default -- so the unknown group, which now HAS a row in
+  # the result, would arrive with n = NA beside a real estimate (GH #317).
+  # Counting the keys avoids both that and the merge, which could reorder the
+  # rows the estimates are already aligned to.
+  result_group_keys <- group_key(svy_result, by_vars) # nolint: object_usage_linter
+  n_by_key <- table(group_key(interviews_data, by_vars))
+  group_n <- as.integer(n_by_key[result_group_keys])
+  # Testing the KEY, not the value, exactly as the variance components do. An
+  # absent key means svyby reported a group the interviews do not contain, so
+  # it has no sampled units -- a count of zero rather than an unknown one.
+  group_n[!(result_group_keys %in% names(n_by_key))] <- 0L
 
   # Build result tibble with group columns first, then estimates
   # Start with group columns from svyby result (preserves factor levels)
-  estimates_df <- svy_result[by_vars]
+  # See restore_group_types(): the svyby() factor is undone on the way out.
+  estimates_df <- restore_group_types(svy_result[by_vars], interviews_data, by_vars) # nolint: object_usage_linter
   estimates_df$estimate <- estimate
   estimates_df$se <- se
   estimates_df$ci_lower <- ci_lower
   estimates_df$ci_upper <- ci_upper
 
-  # Join sample sizes
-  estimates_df <- merge(estimates_df, n_by_group, by = by_vars, all.x = TRUE, sort = FALSE)
+  estimates_df$n <- group_n
 
   # Convert to tibble and reorder columns (group cols, then estimate cols, then n)
   estimates_df <- tibble::as_tibble(estimates_df)

@@ -44,12 +44,88 @@
   `NA`, and a counts table supplying `NA` in either within-day column is now
   rejected at attach time rather than silently understating the SE.
 
-  Still outstanding, and named here rather than left to be discovered: the other
-  grouped estimators — catch, harvest, CPUE, bus-route, camera, aerial — call
-  `svyby()` through their own paths and **still drop the unknown group**.
-  Measured: `estimate_catch_rate(by = gear)` with four unknown-gear interviews
-  reports groups totalling `n = 14` against an ungrouped `n = 17`. That sweep is
-  tracked separately.
+  The sweep over the remaining grouped estimators followed in #321, below.
+
+* Every remaining grouped estimator now reports the **unknown group** too, and
+  the ratio-estimation sample-size floor is applied to it (#321).
+
+  #317 fixed grouped effort. `survey::svyby()` drops rows whose `by=` value is
+  `NA` with no warning and no row, and the other grouped estimators reached it
+  through their own paths, so each one went on dropping the group silently.
+  The parts stopped summing to the whole in three different places:
+
+  - **Interview-side rates.** With gear recorded on 32 of 48 complete trips,
+    `estimate_catch_rate(by = gear)` and `estimate_harvest_rate(by = gear)`
+    reported those 32 and said nothing at all about the other 16 — a third of
+    the sample.
+  - **Product totals.** `estimate_total_catch(by = zone)` on counts whose zone
+    was unrecorded on a third of the days returned **565.2 fish against an
+    ungrouped 784.6 — 28% of the catch missing**, in a table that reads as
+    complete.
+  - **Bus-route.** Grouped effort reported 1,928.7 of 2,997.0 expanded
+    angler-hours, and grouped catch 1,569.2 of 2,618.9. The `proportion`
+    column, whose denominator always included the unknown group, quietly summed
+    to 0.64 — the one visible trace, in a column nobody reads as a completeness
+    check.
+
+  Two seams behind those numbers were worse than the missing rows:
+
+  **The sample-size floor never saw the unknown group.** `n >= 10` per group
+  was counted with `aggregate(.count ~ ., ...)`, whose formula method drops
+  `NA` rows — so a grouped ratio request was admitted or refused on a
+  denominator that had silently lost interviews. The floor now counts on the
+  group key, and an unknown group must clear the same `n >= 10` as any other.
+
+  **A second private copy of the key rule.** `expansion_stratum_key()` built
+  its own key with `paste()`, which renders a missing value as the literal
+  string `"NA"` — so an unknown stratum and a stratum genuinely labelled `"NA"`
+  received the same key and had their party-size expansion components pooled,
+  with the total still looking right. It now delegates to `group_key()`, the
+  package's one answer to that question.
+
+  **Grouped results gain a row** wherever a grouping column contains `NA`, in
+  `estimate_catch_rate()`, `estimate_harvest_rate()`, `estimate_total_catch()`,
+  `estimate_total_harvest()` and the bus-route effort, catch-total and
+  catch-rate paths. A grouped ratio request whose unknown group falls below
+  `n >= 10` now errors where it previously returned an estimate for the other
+  groups.
+
+  **A reported grouping column keeps its own type.** Making the unknown group
+  survive `svyby()` means promoting the column to a factor — but only when it
+  contains a missing value, so the same estimator on the same column returned a
+  factor when something was unknown and a numeric when nothing was, and
+  `depth > 15` or `depth + 1` on the result worked only in the second case. The
+  factor is an implementation detail of the `svyby()` call and is now undone on
+  the way out: the unknown group comes back as an `NA` of the column's own type,
+  which is exactly what that column can say about a group whose value was never
+  recorded. This also repairs the grouped effort path shipped under #317.
+
+  A column supplied as a factor comes back as that factor too, with its own
+  levels and its `ordered` class, and with a **true** `NA` rather than the
+  promoted `addNA()` level — so `is.na(result$group)` finds the unknown row for
+  a factor exactly as it does for every other type.
+
+  Undoing it exposed a defect the factor had been hiding. The stratified product
+  sum aggregated with `aggregate(cbind(...) ~ ., ...)`, whose formula method
+  drops `NA` rows — so an unknown group was dropped from the product sum
+  outright. It had survived only because an `addNA()` level is not `is.na()` at
+  the integer level, so the formula method could not see it. That aggregation
+  now splits on the group key, which does not depend on the column's type at
+  all.
+
+  **The sample-size floor's message names the unknown group.** Its bullets were
+  built with `paste0(by_vars, "=", vals)`, which renders a missing value as the
+  literal string `"NA"` — the very label a group may genuinely carry. A design
+  with both produced two bullets that both read `Group gear=NA: n=6`, with no
+  way to tell which group had failed. An absent value now reads
+  `gear=<unknown>`.
+
+  Two estimators named in the issue turned out **not** to be reachable, and are
+  recorded here so the question is not re-opened: the camera path groups by
+  strata rather than by a user variable, and `add_counts()` rejects an `NA`
+  stratum at Tier 1; the aerial path calls `svytotal()` and supports no `by=`
+  at all. The sectioned paths group by a registered section, and
+  `add_sections()` rejects an unregistered `NA`.
 
 * Species-level catch now reads `add_catch()`'s catch-type model **per
   species-interview pair**, as that model is documented, instead of once per

@@ -1466,6 +1466,27 @@ warn_tier2_interview_issues <- function(design) {
   invisible(NULL)
 }
 
+#' Label a group's `by=` values for a message
+#'
+#' Internal. `paste0(by_vars, "=", vals)` renders a missing value as the literal
+#' string `"NA"`, which is exactly the label a group may genuinely carry. The
+#' sample-size floor then printed two bullets both reading `Group gear=NA`, one
+#' for the group labelled `"NA"` and one for the group whose gear is unknown,
+#' with no way to tell which had failed -- in the one place the package has gone
+#' to some trouble to keep the two apart (GH #248, GH #321).
+#'
+#' @param vals A one-row data frame of the group's `by=` values.
+#'
+#' @return Character vector of labels, one per `by=` column.
+#'
+#' @keywords internal
+#' @noRd
+group_value_labels <- function(vals) {
+  out <- as.character(unlist(vals, use.names = FALSE))
+  out[is.na(out)] <- "<unknown>"
+  out
+}
+
 #' Validate ratio estimator sample size
 #'
 #' Internal function that checks sample size adequacy for ratio estimation (CPUE or
@@ -1507,15 +1528,19 @@ validate_ratio_sample_size <- function(design, by_vars, type = "cpue") {
     }
   } else {
     # Grouped validation
-    # Count interviews per group combination
+    # Count interviews per group combination.
+    #
+    # Counted on the group key rather than with `aggregate(.count ~ ., ...)`,
+    # whose formula method drops NA rows: the unknown group was not merely
+    # unreported downstream, it was never put to this floor at all, so a
+    # request was admitted or refused on a denominator that had silently lost
+    # rows (GH #321). The unknown group is a group like any other here, and
+    # has to clear the same n >= 10 as the rest.
     group_data <- interviews[by_vars]
-    group_data$.count <- 1
-    group_counts <- stats::aggregate(
-      .count ~ .,
-      data = group_data,
-      FUN = sum
-    )
-    names(group_counts)[names(group_counts) == ".count"] <- "n"
+    group_keys <- group_key(group_data, by_vars)
+    key_counts <- table(group_keys)
+    group_counts <- group_data[match(names(key_counts), group_keys), , drop = FALSE]
+    group_counts$n <- as.integer(key_counts)
 
     # Check for groups with n < 10 (error condition)
     small_groups <- group_counts[group_counts$n < 10, ]
@@ -1525,7 +1550,7 @@ validate_ratio_sample_size <- function(design, by_vars, type = "cpue") {
       for (i in seq_len(nrow(small_groups))) {
         group_vals <- small_groups[i, by_vars, drop = FALSE]
         group_label <- paste(
-          paste0(by_vars, "=", group_vals),
+          paste0(by_vars, "=", group_value_labels(group_vals)),
           collapse = ", "
         )
         n_obs <- small_groups$n[i]
@@ -1553,7 +1578,7 @@ validate_ratio_sample_size <- function(design, by_vars, type = "cpue") {
       for (i in seq_len(nrow(medium_groups))) {
         group_vals <- medium_groups[i, by_vars, drop = FALSE]
         group_label <- paste(
-          paste0(by_vars, "=", group_vals),
+          paste0(by_vars, "=", group_value_labels(group_vals)),
           collapse = ", "
         )
         n_obs <- medium_groups$n[i]

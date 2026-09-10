@@ -186,6 +186,11 @@ estimate_effort_br <- function(
       ids = ~.psu
     )
     svy_br <- get_variance_design(svy_br, variance_method) # nolint: object_usage_linter
+    # An unknown group has to survive svyby(), which drops NA rows silently
+    # (GH #317/#321). Without this the reported groups summed to 1928.7 of
+    # 2997.0 expanded angler-hours and the `proportion` column summed to 0.64,
+    # with no warning and no row for the missing third.
+    svy_br <- promote_na_groups(svy_br, by_vars) # nolint: object_usage_linter
 
     svy_result <- suppressWarnings(survey::svyby(
       formula = ~.contribution,
@@ -208,18 +213,27 @@ estimate_effort_br <- function(
     proportion <- estimate / overall_total
 
     # Per-group sample sizes
-    group_data_for_n <- interviews[by_vars]
-    group_data_for_n$.count <- 1
-    n_by_group <- stats::aggregate(.count ~ ., data = group_data_for_n, FUN = sum)
-    names(n_by_group)[names(n_by_group) == ".count"] <- "n"
+    # Counted on the group key, not with `aggregate(.count ~ ., ...)`, whose
+    # formula method drops NA rows -- the unknown group now HAS a row in the
+    # result and would have arrived with n = NA beside a real estimate
+    # (GH #317, GH #321). Counting keys also drops the merge, which does not
+    # preserve the row order the estimates are already aligned to.
+    result_group_keys <- group_key(svy_result, by_vars) # nolint: object_usage_linter
+    n_by_key <- table(group_key(interviews, by_vars))
+    group_n <- as.integer(n_by_key[result_group_keys])
+    # Testing the KEY, not the value. An absent key means svyby reported a
+    # group the interviews do not contain, so it has no sampled units -- a
+    # count of zero rather than an unknown one.
+    group_n[!(result_group_keys %in% names(n_by_key))] <- 0L
 
-    estimates_df <- svy_result[by_vars]
+    # See restore_group_types(): the svyby() factor is undone on the way out.
+    estimates_df <- restore_group_types(svy_result[by_vars], interviews, by_vars) # nolint: object_usage_linter
     estimates_df$estimate <- estimate
     estimates_df$se <- se
     estimates_df$ci_lower <- ci_lower
     estimates_df$ci_upper <- ci_upper
     estimates_df$proportion <- proportion
-    estimates_df <- merge(estimates_df, n_by_group, by = by_vars, all.x = TRUE, sort = FALSE)
+    estimates_df$n <- group_n
     estimates_df <- tibble::as_tibble(estimates_df)
 
     # Column order: group cols, estimate cols, proportion, n
@@ -575,6 +589,10 @@ br_harvest_rate_estimates <- function(
   }
 
   by_formula <- stats::reformulate(by_vars)
+  # An unknown group has to survive svyby(), which drops NA rows silently
+  # (GH #317/#321). Without this the grouped rate covered 24 of 36 interviews
+  # and reported nothing at all about the other 12.
+  svy_br <- promote_na_groups(svy_br, by_vars) # nolint: object_usage_linter
   svy_result <- suppressWarnings(survey::svyby(
     formula = ~.contribution,
     by = by_formula,
@@ -587,22 +605,27 @@ br_harvest_rate_estimates <- function(
   ))
 
   ratio_col <- paste0(".contribution/", denom_col)
-  n_by_group <- stats::aggregate(
-    list(n = rep(1L, nrow(interviews))),
-    by = interviews[by_vars],
-    FUN = sum
-  )
+  # Counted and matched on the group key. `aggregate(by = )` drops NA groups,
+  # and the match below pasted the by= values, which renders a missing value as
+  # the literal string "NA" -- so an unknown group and a group labelled "NA"
+  # would have shared a sample size (GH #248, GH #321).
+  result_group_keys <- group_key(svy_result, by_vars) # nolint: object_usage_linter
+  n_by_key <- table(group_key(interviews, by_vars))
 
-  estimates_df <- tibble::as_tibble(svy_result[by_vars])
+  # See restore_group_types(): the svyby() factor is undone on the way out.
+  estimates_df <- tibble::as_tibble(
+    restore_group_types(svy_result[by_vars], interviews, by_vars) # nolint: object_usage_linter
+  )
   estimates_df$estimate <- svy_result[[ratio_col]]
   estimates_df$se <- svy_result[[paste0("se.", ratio_col)]]
   # A catch rate is bounded below by zero; the symmetric Wald bound is not.
   estimates_df$ci_lower <- pmax(0, svy_result[["ci_l"]])
   estimates_df$ci_upper <- svy_result[["ci_u"]]
-  estimates_df$n <- n_by_group$n[match(
-    do.call(paste, estimates_df[by_vars]),
-    do.call(paste, n_by_group[by_vars])
-  )]
+  estimates_df$n <- as.integer(n_by_key[result_group_keys])
+  # Testing the KEY, not the value. An absent key means svyby reported a group
+  # the interviews do not contain, so it has no sampled units -- a count of
+  # zero rather than an unknown one.
+  estimates_df$n[!(result_group_keys %in% names(n_by_key))] <- 0L
 
   # No `proportion` column here, unlike the HT total paths. A share-of-total is
   # meaningful for a total and meaningless for a rate -- group rates do not sum
@@ -1737,6 +1760,10 @@ br_build_estimates <- function(
       ids = ~.psu
     )
     svy_br_taylor <- get_variance_design(svy_br_base, variance_method) # nolint: object_usage_linter
+    # As in the grouped effort total above: without promotion the unknown group
+    # is dropped from both the Taylor and the bootstrap svyby, so the two stay
+    # row-aligned but both omit it (GH #321).
+    svy_br_taylor <- promote_na_groups(svy_br_taylor, by_vars) # nolint: object_usage_linter
 
     svy_result <- suppressWarnings(survey::svyby(
       formula = ~.contribution,
@@ -1757,18 +1784,27 @@ br_build_estimates <- function(
     overall_total <- sum(interviews$.contribution, na.rm = TRUE)
     proportion <- estimate / overall_total
 
-    group_data_for_n <- interviews[by_vars]
-    group_data_for_n$.count <- 1
-    n_by_group <- stats::aggregate(.count ~ ., data = group_data_for_n, FUN = sum)
-    names(n_by_group)[names(n_by_group) == ".count"] <- "n"
+    # Counted on the group key, not with `aggregate(.count ~ ., ...)`, whose
+    # formula method drops NA rows -- the unknown group now HAS a row in the
+    # result and would have arrived with n = NA beside a real estimate
+    # (GH #317, GH #321). Counting keys also drops the merge, which does not
+    # preserve the row order the estimates are already aligned to.
+    result_group_keys <- group_key(svy_result, by_vars) # nolint: object_usage_linter
+    n_by_key <- table(group_key(interviews, by_vars))
+    group_n <- as.integer(n_by_key[result_group_keys])
+    # Testing the KEY, not the value. An absent key means svyby reported a
+    # group the interviews do not contain, so it has no sampled units -- a
+    # count of zero rather than an unknown one.
+    group_n[!(result_group_keys %in% names(n_by_key))] <- 0L
 
-    estimates_df <- svy_result[by_vars]
+    # See restore_group_types(): the svyby() factor is undone on the way out.
+    estimates_df <- restore_group_types(svy_result[by_vars], interviews, by_vars) # nolint: object_usage_linter
     estimates_df$estimate <- estimate
     estimates_df$se <- se
     estimates_df$ci_lower <- ci_lower
     estimates_df$ci_upper <- ci_upper
     estimates_df$proportion <- proportion
-    estimates_df <- merge(estimates_df, n_by_group, by = by_vars, all.x = TRUE, sort = FALSE)
+    estimates_df$n <- group_n
     estimates_df <- tibble::as_tibble(estimates_df)
 
     col_order <- c(by_vars, "estimate", "se", "ci_lower", "ci_upper", "proportion", "n")
@@ -1776,6 +1812,7 @@ br_build_estimates <- function(
 
     if (ci_method == "bootstrap") {
       svy_br_boot <- get_variance_design(svy_br_base, "bootstrap")
+      svy_br_boot <- promote_na_groups(svy_br_boot, by_vars) # nolint: object_usage_linter
       svy_boot_by <- suppressWarnings(survey::svyby(
         formula = ~.contribution,
         by = by_formula,
