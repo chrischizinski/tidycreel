@@ -361,9 +361,9 @@ estimate_catch_rate(design, by = species)
 #> # A tibble: 3 × 6
 #>   species estimate     se ci_lower ci_upper     n
 #>   <chr>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1 bass      0.0930 0.0494 -0.00386    0.190    17
-#> 2 panfish   0      0       0          0        17
-#> 3 walleye   0.307  0.118   0.0748     0.539    17
+#> 1 bass      0.205  0.0743  0.0590     0.350    17
+#> 2 panfish   0.0558 0.0311 -0.00518    0.117    17
+#> 3 walleye   0.465  0.0957  0.278      0.653    17
 ```
 
 ### Total Catch by Species
@@ -390,9 +390,9 @@ estimate_total_catch(design, by = species)
 #> # A tibble: 3 × 6
 #>   species estimate    se ci_lower ci_upper     n
 #>   <chr>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1 bass        27.1  11.5     2.64     51.5    17
-#> 2 panfish      0     0       0         0      17
-#> 3 walleye    113.   51.6     3.23    223.     17
+#> 1 bass        63.2  21.9    16.5     110.     17
+#> 2 panfish     27.2  10.4     5.10     49.3    17
+#> 3 walleye    190.   46.0    92.3     288.     17
 ```
 
 ### Total Harvest by Species
